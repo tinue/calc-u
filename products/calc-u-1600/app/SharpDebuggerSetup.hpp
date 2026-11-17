@@ -9,15 +9,16 @@
 // - the level `cpu` only (CpuOnlyRules; D-17: pause-on-start fires when the
 //   processor leaves key readiness, as FS 15 found it);
 // - the trace session on SharpTraceRecorder: the trace folder where the host
-//   has one (Qt6; the harness hands its run's folder in), none on the Web,
-//   and no hand-over (LIB-10 D-10: a trace fails there, AC-40);
-//   [trace] max-file-size-mb MiB for every trace (AC-43);
+//   has one (Qt6, the harness's run folder; LibraryParts sets it from the
+//   host's places, with [trace] max-file-size-mb MiB for every trace,
+//   AC-43), none on the Web, and no hand-over (LIB-10 D-10: a trace fails
+//   there, AC-40);
 // - none of the run-control steps (pause:, resume:, step:, pause-on-start:,
 //   debug-panel:) on any Sharp model (AC-19, AC-40); no panel views;
 // - the symbol readers of the Sharp listings (AC-51).
 
 namespace shared {
 
-calcu::debugger::DebuggerSetup sharpDebuggerSetup(const AppPaths* paths, const Settings* settings, bool hasTraceFolder);
+calcu::debugger::DebuggerSetup sharpDebuggerSetup();
 
 } // namespace shared

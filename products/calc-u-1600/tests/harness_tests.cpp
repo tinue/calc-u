@@ -3,6 +3,8 @@
 // library's app session (the PC-1600 follows with LIB-18's model switch;
 // the product ACs of LIB-11, AC-18 to AC-20, are tested in M-51).
 #include "../app/HarnessProduct.hpp"
+#include "../app/Settings.hpp"
+#include "parts/LibraryParts.hpp"
 #include "TestHarness.hpp"
 #include "harness/Run.hpp"
 #include "TempFolder.hpp"
@@ -41,8 +43,13 @@ TEST(lib6_ac34_preset_wait_expect_screenshot_on_pc1600) {
 // LIB-18 design P16-6: the harness entry builds with SharpProductMachines
 // (the built-in default of each model, LIB-18 AC-26; the bounds of EC-7).
 TEST(harness_starts_with_the_product_machines) {
+    std::string error;
+    auto run = RunSetup::make({}, shared::settingsDecl(), &error);
+    CHECK(run != nullptr);
+    if (!run) return;
     auto product = shared::makeHarnessProduct();
-    calcu::startup::ProductMachines& m = product->machines();
+    product->prepare(*run);   // the app layer of a run: its machines
+    calcu::startup::ProductMachines& m = product->libraryParts().control().product();
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         const calcu::startup::MachinePlan plan = m.builtInDefault(calcu::machine::ModelId{model});
         CHECK(plan.model.value == model && !plan.variant && plan.peripherals.empty());

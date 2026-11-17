@@ -688,3 +688,17 @@ Coverage, products: 1600 has 5 of 5 (AC-34–38) and 59 has 6 of 6
 - A-8 (asked by LIB-11 S-6 for `state <topic>`, LIB-11 EC-5; decided):
   the request `topics` (§3.4) lists every declared topic name and its
   shape before one is sent.
+
+## Part E simplification E-1 (2026-11-17, branch `es-assembly`)
+
+`docs/reviews/e-simplification.md` §1 S-1. The order of a session's parts
+is written once, in `parts::LibraryParts::sessionParts(SessionSlots)`: the
+control part, the host's parts, the library's (typing first among them),
+the product's file-kind parts before the open part, the product's own, the
+host's behind them. The five hosts (`makeSharpSession`, `makeAppSession`,
+both Web engines, the harness) pass their parts into the slots. Calc-U-59
+had put LIB-5's TypingPart before the control part and its debug panel
+after the debugger; it now has the one order (its debug panel among the
+file-kind parts). Calc-U-1600's hosts had put their own parts before the
+control part; they come after it now. No reply, topic or golden run
+changed.

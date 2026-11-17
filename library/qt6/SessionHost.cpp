@@ -139,7 +139,7 @@ void SessionHost::defaultService(const sessions::ServiceAsk& a) {
     session_.answer(a.ask, std::move(answer));
 }
 
-std::string SessionHost::openAttach(harness::HarnessProduct& product, std::uint16_t port, harness::SessionParts parts) {
+std::string SessionHost::openAttach(harness::HarnessProduct& product, std::uint16_t port, parts::LibraryParts& parts) {
 #ifdef CALCU_ATTACH
     attach_.reset();
     auto a = std::make_unique<Attach>();

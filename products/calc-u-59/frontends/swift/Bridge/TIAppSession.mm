@@ -421,6 +421,9 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     std::string _logText;
     // debug-view's count of requests already shown (AC-2).
     std::uint64_t _viewRequests;
+    // The session's library parts, set by the factory on the session thread
+    // (the attached harness's commands use them, LIB-14 D-27).
+    std::shared_ptr<calcu::parts::LibraryParts*> _libraryParts;
 }
 
 - (instancetype)initWithRoms:(TIRomSet *)roms start:(TISessionStart *)start delegate:(id<TIAppSessionDelegate>)delegate {
@@ -444,10 +447,10 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         _settingsFilePath = ns(file->path());
         _settingsProblem = file->problem().empty() ? nil : ns(file->problem());
         // Where traces go, at the start (LIB-9 AC-24): by [trace] location.
-        const cu59::settings::Settings typed(*file);
         _traceDirectory = ns(paths->traceFolder().value_or(dirs.applicationSupport));
         BOOL available = YES;
 #if !TARGET_OS_OSX
+        const cu59::settings::Settings typed(*file);
         if (typed.traceLocation() == cu59::settings::TraceLocation::ICloud && NSFileManager.defaultManager.ubiquityIdentityToken == nil)
             available = NO;
 #endif
@@ -459,32 +462,34 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         calcu::shell::SettingsPartSetup ss;
         ss.file = file.get();
         ss.paths = paths.get();
-        ss.frontend = st::FrontendKind::Swift;
         ss.alsoShown = {cu59::kPortraitDebugPage};   // the iOS row (C59-8 AC-7, OQ-4)
         auto settingsPart = std::make_shared<calcu::shell::SettingsPart>(std::move(ss));
 
         cu59::TIAppSetup setup;
-        setup.roms = roms->_set;
+        setup.roms.set = roms->_set;
         // LIB-18 AC-17: the settings file decides the startup model; the
-        // session's `start` (makeAppSession) builds it.
+        // session's `start` (makeAppSession) builds it. The save folder, the
+        // trace folder by [trace] location (LIB-9 AC-24), its limit and `~/`
+        // are the places'.
         setup.settings = file.get();
+        setup.paths = paths.get();
         setup.examplesFolder = cpp(start.examplesFolder);
-        setup.home = cpp(NSHomeDirectory());
-        setup.saveFolder = cpp(start.saveFolder);
         setup.fileIO = std::make_shared<CoordinatedFiles>(delegate);
-        setup.trace = {std::filesystem::path(_traceDirectory.fileSystemRepresentation),
-                       static_cast<uint64_t>(typed.traceMaxFileSizeMB()) * 1'000'000};
         const bool traceAvailable = available == YES;
         setup.traceAvailable = [traceAvailable] { return traceAvailable; };
         // C59-5 AC-7 (the session asks none of them yet).
         const cs::HostServices services = statedServices();
         __weak TIAppSession* weakSelf = self;
         _shell = [[TIShell alloc] initWithSession:self];
+        auto libraryParts = std::make_shared<calcu::parts::LibraryParts*>(nullptr);
+        _libraryParts = libraryParts;
         _thread = std::make_unique<cu59::SessionThread>(
             // The file, its places and SettingsPart live as long as the
             // factory, which outlives the session it made (SessionThread::run).
-            [setup, file, paths, settingsPart] {
-                return cu59::makeAppSession(setup, cu59::steadyWallTime, std::nullopt, {settingsPart.get()}).session;
+            [setup, file, paths, settingsPart, libraryParts] {
+                auto app = cu59::makeAppSession(setup, cu59::steadyWallTime, std::nullopt, {settingsPart.get()});
+                *libraryParts = &app.part->libraryParts();
+                return std::move(app.session);
             },
             services, cu59::steadyWallTime,
             // One hop to the main thread per batch (FS 3); a batch that comes
@@ -671,7 +676,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     for (NSString* a in arguments) args.push_back(cpp(a));
     const std::uint16_t port = calcu::harness::attachPort(args);
     static std::unique_ptr<calcu::harness::HarnessProduct> product = cu59::makeHarnessProduct();
-    const std::string problem = _thread->openAttach(*product, port);
+    const std::string problem = _thread->openAttach(*product, port, [parts = _libraryParts]() -> calcu::parts::LibraryParts& { return **parts; });
     if (problem.empty()) {
         [_delegate diagnostic:[NSString stringWithFormat:@"Harness attach on 127.0.0.1:%u.", port]];
         return YES;

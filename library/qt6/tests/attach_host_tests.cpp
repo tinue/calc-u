@@ -47,7 +47,7 @@ struct QtApp {
         sessions::AppSessionSetup s;
         s.clock = pacing::steadyWallTime;
         s.hostTime = [] { return std::chrono::system_clock::now(); };
-        for (auto* p : product.sessionParts()) s.parts.push_back(p);
+        s.parts = product.sessionParts({});
         session = std::make_unique<sessions::AppSession>(std::move(s));
         pacing::PacingProfile profile;
         profile.slice = std::chrono::microseconds(20'000);
@@ -128,7 +128,7 @@ struct Client {
 
 TEST(qt_attach_host_line_runs_on_gui_thread) {
     QtApp app;
-    CHECK(app.host->openAttach(app.product, 0).empty());
+    CHECK(app.host->openAttach(app.product, 0, app.product.libraryParts()).empty());
     CHECK(app.host->attachOpen());
     Client c(app.host->attachPort());
     CHECK(c.fd >= 0);
@@ -142,7 +142,7 @@ TEST(qt_attach_host_line_runs_on_gui_thread) {
 
 TEST(qt_attach_host_wait_on_app_clock) {
     QtApp app;
-    CHECK(app.host->openAttach(app.product, 0).empty());
+    CHECK(app.host->openAttach(app.product, 0, app.product.libraryParts()).empty());
     Client c(app.host->attachPort());
     const auto w0 = std::chrono::steady_clock::now();
     const auto t0 = app.ticks();
@@ -160,16 +160,16 @@ TEST(qt_attach_host_port_zero) {
     CHECK_EQ(qt6::SessionHost::attachPortFrom(QStringList{"app", "--attach-port", "0"}), std::uint16_t{0});
     CHECK_EQ(qt6::SessionHost::attachPortFrom(QStringList{"app", "--attach-port=0"}), std::uint16_t{0});
     QtApp app;
-    CHECK(app.host->openAttach(app.product, 0).empty());
+    CHECK(app.host->openAttach(app.product, 0, app.product.libraryParts()).empty());
     CHECK(app.host->attachPort() != 0);   // the port the system picked, for an in-process client
 }
 
 TEST(qt_attach_host_bind_fails_logs_and_runs) {
     QtApp first;
-    CHECK(first.host->openAttach(first.product, 0).empty());
+    CHECK(first.host->openAttach(first.product, 0, first.product.libraryParts()).empty());
     const auto port = first.host->attachPort();
     QtApp second;
-    const std::string problem = second.host->openAttach(second.product, port);
+    const std::string problem = second.host->openAttach(second.product, port, second.product.libraryParts());
     CHECK(!problem.empty());
     CHECK(!second.host->attachOpen());
     const auto t0 = second.ticks();
@@ -187,12 +187,12 @@ TEST(qt_attach_host_bind_fails_logs_and_runs) {
 
 // LIB-14 D-27 (M-49): the serve form's commands through the Qt6 host: `key`
 // and `type` reply when their keys are up on the app's clock, the startup
-// commands and the preset steps are there (a session without LIB-6's part
-// refuses them with its reason; Calc-U-1600's scenarios load presets, its
-// CalcU1600QtTests lib14_ac44_scenario_through_attach).
+// commands and the preset steps are there, on the session's library parts
+// (Calc-U-1600's scenarios load presets, its CalcU1600QtTests
+// lib14_ac44_scenario_through_attach).
 TEST(qt_attach_host_preset_key_type) {
     QtApp app;
-    CHECK(app.host->openAttach(app.product, 0).empty());
+    CHECK(app.host->openAttach(app.product, 0, app.product.libraryParts()).empty());
     Client c(app.host->attachPort());
     c.send("wait 50ms");   // the app's first host calls: the typing part has its machine
     auto r = c.reply();
@@ -202,12 +202,12 @@ TEST(qt_attach_host_preset_key_type) {
         if (r.empty() || r[0] != "done") std::fprintf(stderr, "  %s: %s\n", line, r.empty() ? "-" : r[0].c_str());
         CHECK(!r.empty() && r[0] == "done");
     }
-    // The attach host names no preset vocabulary (no LIB-6 part): the preset
-    // commands are refused by the harness; LIB-18's are the session's (the
-    // test product's parts outside a run, as a frontend's).
+    // The preset commands and LIB-18's are the session's (the test product's
+    // parts outside a run, as a frontend's): a bundled preset that is not
+    // there is refused by LIB-6's part with its reason.
     c.send("preset examples:none.test");
     r = c.reply();
-    CHECK(!r.empty() && r[0] == "refused: This build reads no presets of format 2 yet.");
+    CHECK(!r.empty() && r[0].rfind("refused: ", 0) == 0 && r[0].find("format 2 yet") == std::string::npos);
     c.send("cold-boot");
     r = c.reply();
     CHECK(!r.empty() && r[0] == "done");

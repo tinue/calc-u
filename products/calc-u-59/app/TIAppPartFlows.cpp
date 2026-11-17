@@ -35,11 +35,11 @@ void TIAppPart::followMachine() {
     // LIB-10 §12.11: a pause or a step waiting to land runs on in the host
     // call that asked for it (2.3.0's freeze and STEP ran there, at most
     // 50000 weights), instead of in paced emulated time.
-    if (auto* d = m->debugging(); d && m_lib.debugger()) {
-        calcu::debugger::RunControl* rc = &m_lib.debugger()->runControl();
+    if (auto* d = m->debugging()) {
+        calcu::debugger::RunControl* rc = &m_lib.debugger().runControl();
         static_cast<TIDebugging*>(d)->setRunOn([rc] { return !rc->running() && !rc->paused(); });
     }
-    m_session = std::make_unique<EmulatorSession>(*m, *m_setup.roms);
+    m_session = std::make_unique<EmulatorSession>(*m, *m_setup.roms.set);
     m_model = m_session->model();
 
     // The own cue card (C59-2 AC-6, C59-3 AC-7, AC-8): a preset's build has
@@ -71,7 +71,7 @@ void TIAppPart::followPlugs(bool newMachine) {
     if (newMachine || module != m_moduleID) {
         m_moduleID = module;
         // C59-7 AC-22, AC-23: the module cue cards from the module file.
-        m_moduleCards = m_setup.roms ? moduleCueCards(*m_setup.roms, m_moduleID, [this](const std::string& m) { diagnostic(m); })
+        m_moduleCards = m_setup.roms.set ? moduleCueCards(*m_setup.roms.set, m_moduleID, [this](const std::string& m) { diagnostic(m); })
                                      : std::map<int, CueCardContent>{};
         refreshCueCard();
         emitChanged(ModelChanged);
@@ -144,8 +144,8 @@ void TIAppPart::refreshCueCard() {
     // The fitted magnetic card: the media part's binding of the card reader.
     const calcu::media::Binding* b = nullptr;
     std::optional<int> passing;
-    if (calcu::media::MediaPart* media = m_lib.media(); media && m_ctx) {
-        b = media->bindingOf("card-reader");
+    if (m_ctx) {
+        b = m_lib.media().bindingOf("card-reader");
         if (calcu::machine::Machine* m = machine(); b && m)
             for (const auto& e : m->capabilities(calcu::media::MediaPlace::kKind))
                 if (auto* place = calcu::machine::capabilityAs<calcu::media::MediaPlace>(*m, e.id))
@@ -197,8 +197,7 @@ bool TIAppPart::setPrinterControl(const std::string& control, bool on) {
 // ── Magnetic cards (C59-7; the library's media part) ─────────────────────────
 
 bool TIAppPart::cardFitted() const {
-    auto* media = const_cast<TIAppPart*>(this)->m_lib.media();
-    return media && media->bindingOf("card-reader") != nullptr;
+    return m_lib.media().bindingOf("card-reader") != nullptr;
 }
 
 bool TIAppPart::tapCard(double nx, double ny) {
@@ -206,9 +205,7 @@ bool TIAppPart::tapCard(double nx, double ny) {
     if (!m_onShow || !m_ctx) return false;   // AC-24: covered by a module cue card
     const auto side = cardCornerAt(nx, ny);
     if (!side) return false;
-    calcu::media::MediaPart* media = m_lib.media();
-    if (!media) return false;
-    if (auto refused = media->feed(*m_ctx, "card-reader", *side)) return false;   // AC-16: one passing
+    if (auto refused = m_lib.media().feed(*m_ctx, "card-reader", *side)) return false;   // AC-16: one passing
     refreshCueCard();
     return true;
 }
@@ -218,9 +215,8 @@ bool TIAppPart::tapCard(double nx, double ny) {
 // The run control's state, for the Web page's FREEZE ON START buttons
 // (TIWebPart's c59.web.run-state); the panel's data is TIDebugPart's.
 void TIAppPart::followRunState() {
-    calcu::debugger::RunControl* rc = runControl();
-    if (!rc || !m_session || !machine()) return;
-    const calcu::debugger::RunState now = rc->state();
+    if (!m_session || !machine()) return;
+    const calcu::debugger::RunState now = runControl().state();
     if (!now.same(m_seenRun)) {
         m_seenRun = now;
         emitChanged(RunStateChanged);

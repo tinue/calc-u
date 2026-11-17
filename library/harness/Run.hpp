@@ -59,19 +59,16 @@ public:
     const std::string& runFolder() const { return runFolder_; }
     const settings::SettingsFile& settings() const { return *settings_; }
     settings::SettingsFile& settings() { return *settings_; }   // LIB-18 AC-9 writes last-model
-    // The host folders a feature hands to settings::Paths: all inside the
-    // run folder, so nothing of the user's is reached (LIB-9 AC-18; D-11).
+    // The host folders a feature hands to settings::Paths: the save folder,
+    // the output folder for traces and screenshots (AC-8), the rest inside the
+    // run folder, so nothing of the user's is reached (LIB-9 AC-18; D-11;
+    // FrontendKind::Given), and the places on them and the run's settings.
     const settings::HostDirs& hostDirs() const { return dirs_; }
+    const settings::Paths& paths() const { return *paths_; }
     std::function<std::chrono::system_clock::time_point()> hostTime() const;
     // The text with the save folder's path written `<save folder>`, and the
     // run folder's `<run folder>` (AC-8: the path appears in no reply).
     std::string scrub(std::string) const;
-    // LIB-11 D-6, D-11: what every product's library parts take from the run:
-    // its settings, typing in emulated time, its home, its folders for
-    // screenshots (AC-8) and media (the save folder as the run passes it;
-    // LIB-7 §3.11); the product adds its own data.
-    parts::LibraryPartsSetup partsSetup(const machine::Catalogue&, startup::ProductMachines&,
-                                        const roms::LookupResult&);
 
 private:
     RunSetup() = default;
@@ -79,7 +76,7 @@ private:
     std::string runFolder_, saveFolder_, outputFolder_;
     std::unique_ptr<settings::SettingsFile> settings_;
     settings::HostDirs dirs_;
-    std::unique_ptr<settings::Paths> mediaPaths_;   // partsSetup
+    std::unique_ptr<settings::Paths> paths_;
 };
 
 // What carries the session's machine state for state-save and

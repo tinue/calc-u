@@ -44,37 +44,26 @@ namespace {
 
 std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
 
-// LIB-10 §12.6: the trace folder of the host, none on the Web (hand-over).
-TIDebuggerOptions debuggerOptions(const TIAppSetup& s, TIDebugPart& panel) {
+// LIB-10 §12.6: the debug panel shows the views; the trace folder and its
+// limit are LibraryParts' (the host's places), none on the Web (hand-over).
+TIDebuggerOptions debuggerOptions(TIDebugPart& panel) {
     TIDebuggerOptions o;
-    const TraceTarget t = s.trace;
-    const std::function<bool()> available = s.traceAvailable;
-    if (!t.dir.empty()) {
-        o.traceFolder = [t, available]() -> std::optional<calcu::settings::Paths::Ensured> {
-            if (available && !available()) return calcu::settings::Paths::Ensured{false, t.dir.string(), "The trace location is not available."};
-            std::error_code ec;
-            std::filesystem::create_directories(t.dir, ec);
-            if (ec) return calcu::settings::Paths::Ensured{false, t.dir.string(), ec.message()};
-            const std::u8string u = t.dir.u8string();
-            return calcu::settings::Paths::Ensured{true, std::string(u.begin(), u.end()), {}};
-        };
-    }
-    if (t.maxBytes > 0) o.traceLimitMb = [mb = static_cast<long>(std::max<uint64_t>(1, t.maxBytes / 1'000'000))] { return mb; };
-    o.handOver = t.dir.empty();
+    o.handOver = true;
     o.showPanel = [&panel](sessions::SessionContext& c, const std::string& view) { panel.showView(c, view); };
     return o;
 }
 
-// C59-4 AC-12: TRACE can be used where the trace folder can be written, or
-// where the host keeps the traces (the Web).
+// C59-4 AC-12: TRACE can be used where the trace folder (the one of the
+// start) can be made, or where the host keeps the traces (the Web: no trace
+// folder).
 std::function<bool()> traceAvailable(const TIAppSetup& s) {
-    const TraceTarget t = s.trace;
+    const std::optional<std::string> folder = s.paths->traceFolder();
     const std::function<bool()> available = s.traceAvailable;
-    return [t, available] {
-        if (t.dir.empty()) return true;
+    return [folder, available] {
+        if (!folder || folder->empty()) return true;
         if (available && !available()) return false;
         std::error_code ec;
-        std::filesystem::create_directories(t.dir, ec);
+        std::filesystem::create_directories(pathOf(*folder), ec);
         return !ec;
     };
 }
@@ -103,7 +92,7 @@ private:
 
 TIAppPart::TIAppPart(TIAppSetup setup)
     : m_setup(std::move(setup)),
-      m_files(m_setup.saveFolder, m_setup.fileIO),
+      m_files(m_setup.paths->saveFolder(), m_setup.fileIO),
       m_mediaFiles(std::make_shared<FileIOAccess>(m_setup.fileIO ? m_setup.fileIO : plainFileIO())),
       m_keeper(m_files, [this](std::string sentence) { if (m_ctx) m_ctx->notice(std::move(sentence)); }),
       m_machines([this] { return m_keeper.contentForBuild(); }),
@@ -113,85 +102,60 @@ TIAppPart::TIAppPart(TIAppSetup setup)
       }}),
       m_bundle(m_setup.examplesFolder.empty() ? nullptr
                                               : std::make_unique<presets::DirectoryPresetBundle>(pathOf(m_setup.examplesFolder))),
-      m_debugPart(TIDebugSetup{m_setup.roms, traceAvailable(m_setup), m_setup.debugTabsShown}),
+      m_debugPart(TIDebugSetup{m_setup.roms.set, traceAvailable(m_setup), m_setup.debugTabsShown}),
       m_fileKinds(m_debugPart),
       m_lib(librarySetup()) {
-    m_debugPart.bindDebugger(m_lib.debugger());
+    m_debugPart.bindDebugger(&m_lib.debugger());
 }
 
 calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
-    if (!m_setup.settings) {
-        m_ownSettings.emplace(calcu::settings::SettingsFile::defaultsOnly(settings::settingsDecl()));
-        m_setup.settings = &*m_ownSettings;
-    }
-    calcu::settings::HostDirs dirs;
-    dirs.frontend = calcu::settings::FrontendKind::Swift;   // the save folder as the host passed it (LIB-9 AC-14)
-    dirs.saveFolder = m_setup.saveFolder;
-    m_paths = std::make_unique<calcu::settings::Paths>(*m_setup.settings, dirs);
     calcu::parts::LibraryPartsSetup s;
-    s.catalogue = &tiCatalogue();
     s.machines = &m_machines;
     s.settings = m_setup.settings;
+    s.paths = m_setup.paths;
     s.roms = m_setup.roms;
-    if (!s.roms) s.romsMissing = m_setup.romsMissing.empty() ? std::string("The ROM files are missing.") : m_setup.romsMissing;
+    s.traceAvailable = m_setup.traceAvailable;
+    s.placesAtStart = true;   // as before Part E (LIB-10, LIB-6 E-1)
+    s.screenshotFolder = m_setup.screenshotFolder;
     s.typing = &typingProduct();
     s.hosting = m_setup.hosting;
     s.presetRules = &m_rules;
     s.bundle = m_bundle.get();
-    s.home = m_setup.home;
-    s.screenshotFolder = [this]() -> std::optional<std::string> {
-        // LIB-6 AC-25: the save folder, made when a step needs it.
-        std::optional<std::string> folder = m_setup.screenshotFolder ? m_setup.screenshotFolder()
-                                                                     : std::optional<std::string>(m_setup.saveFolder);
-        if (!folder || folder->empty()) return std::nullopt;
-        std::error_code ec;
-        std::filesystem::create_directories(pathOf(*folder), ec);
-        return folder;
-    };
-    s.papers = tiPrinterPapers();
-    s.debugger = tiDebuggerSetup(m_levelRules, debuggerOptions(m_setup, m_debugPart));
+    s.papers = tiPrinterPapers();   // LIB-4: the PC-100C owns the paper panel
+    s.debugger = tiDebuggerSetup(m_levelRules, debuggerOptions(m_debugPart));
     s.productName = "Calc-U-59";
     s.presetExtensions = tiPresetExtensions();   // LIB-13 AC-11: no size limit
     s.fileKinds = m_fileKinds.kinds();
     s.controlRules = {&m_debugPart};   // C59-4 AC-25
-    s.printers = {kPC100C};
     // LIB-7 59 (M-55): the magnetic card in the save folder, slot-1's modules.
     s.mediaKinds = {magneticCardKind()};
-    s.mediaPaths = m_paths.get();
     s.mediaFiles = m_mediaFiles;
-    s.moduleListing = tiModuleListing(m_setup.roms);
+    s.moduleListing = tiModuleListing(m_setup.roms.set);
     return s;
 }
 
 TIAppPart::~TIAppPart() {
-    if (auto* t = m_lib.typing()) t->engine().setObserver(nullptr);
+    m_lib.typing().engine().setObserver(nullptr);
     m_session.reset();
 }
 
-std::vector<sessions::SessionPart*> TIAppPart::sessionParts() {
-    std::vector<sessions::SessionPart*> parts = m_lib.sessionParts();
-    parts.push_back(&m_memoryPart);
-    parts.push_back(&m_debugPart);
-    parts.push_back(this);
-    return parts;
+std::vector<sessions::SessionPart*> TIAppPart::sessionParts(std::vector<sessions::SessionPart*> host,
+                                                           std::vector<sessions::SessionPart*> after) {
+    calcu::parts::SessionSlots slots;
+    slots.host = std::move(host);
+    slots.fileKinds = {&m_debugPart};   // the file kinds' (TIFileKinds), before the open part
+    slots.product = {&m_memoryPart, this};
+    slots.after = std::move(after);
+    return m_lib.sessionParts(slots);
 }
 
 calcu::machine::Machine* TIAppPart::machine() const { return m_ms ? m_ms->machine() : nullptr; }
 
-calcu::debugger::RunControl* TIAppPart::runControl() const {
-    auto* d = const_cast<TIAppPart*>(this)->m_lib.debugger();
-    return d ? &d->runControl() : nullptr;
-}
+const calcu::debugger::RunControl& TIAppPart::runControl() const { return m_lib.debugger().runControl(); }
 
-calcu::debugger::RunState TIAppPart::runState() const {
-    auto* rc = runControl();
-    return rc ? rc->state() : calcu::debugger::RunState{};
-}
+calcu::debugger::RunState TIAppPart::runState() const { return runControl().state(); }
 
-bool TIAppPart::isFrozen() const {
-    auto* rc = runControl();
-    return rc && rc->paused();
-}
+bool TIAppPart::isFrozen() const { return runControl().paused(); }
 
 void TIAppPart::attach(sessions::SessionSetup& s) {
     using sessions::History;
@@ -200,14 +164,6 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     m_led = &s.stateTopic(topics::kLed);
     m_cue = &s.stateTopic(topics::kCueCard);
     m_printer = &s.stateTopic(topics::kPrinter);
-    // LIB-12 AC-5, LIB-14 AC-19: without the full set no machine is built;
-    // the frontends show the files.
-    if (!m_setup.roms)
-        s.stateTopic(sessions::TopicName{"roms-missing"})
-            .set(sessions::valuePayload("roms-missing",
-                                        Value::object({{"text", m_setup.romsMissing.empty() ? std::string("The ROM files are missing.")
-                                                                                            : m_setup.romsMissing}})));
-
     auto flag = [](bool v) -> CommandOutcome { return Done{std::make_shared<TIFlag>(v)}; };
     TIAppPart& c = *this;
     using namespace commands;
@@ -353,14 +309,10 @@ calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, paci
     sessions::AppSessionSetup s;
     s.clock = std::move(clock);
     s.hostTime = [] { return std::chrono::system_clock::now(); };
-    std::vector<sessions::SessionPart*> lib = part->sessionParts();
-    // LIB-5's TypingPart first (LIB-3 AC-12: before the product's), LIB-4's
-    // ControlPart (D-13; the product entries of C59-4 AC-25), then the host's own.
-    s.parts.push_back(lib.front());
-    s.parts.push_back(&part->libraryParts().controlPart());
-    for (sessions::SessionPart* p : before) s.parts.push_back(p);
-    s.parts.insert(s.parts.end(), lib.begin() + 1, lib.end());
-    for (sessions::SessionPart* p : after) s.parts.push_back(p);
+    // The one order (parts::LibraryParts): LIB-4's ControlPart (D-13; the
+    // product entries of C59-4 AC-25), the host's own, the library's, the
+    // product's, the host's behind them.
+    s.parts = part->sessionParts(std::move(before), std::move(after));
     s.hosting = sessions::Hosting::Paced;
     s.jitterSeed = jitterSeed;
     calcu::sessions::ProductSession<TIAppPart> out;

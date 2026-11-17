@@ -18,13 +18,6 @@ namespace calcu::harness {
 
 namespace {
 
-std::vector<std::string> words(const std::string& text) {
-    std::vector<std::string> out;
-    std::istringstream in(text);
-    for (std::string w; in >> w;) out.push_back(w);
-    return out;
-}
-
 sessions::Value ownerArgs(const std::vector<std::string>& w, std::size_t at) {
     sessions::Value::Object o;
     if (w.size() > at) o.push_back({"owner", w[at]});
@@ -35,8 +28,6 @@ std::optional<Reply> noPaper(CommandContext& c) {
     if (c.host.readTopic(paper::kPapersTopic.value)) return std::nullopt;
     return refusedReply(std::string(c.host.product().name()) + " has no printer.");
 }
-
-Reply fromCommand(const sessions::ReplyMessage& r) { return r.done ? doneReply() : refusedReply(r.reason); }
 
 Reply linesReply(const sessions::ReplyMessage& r) {
     if (!r.done) return refusedReply(r.reason);
@@ -59,7 +50,7 @@ Reply cutPaperCmd(CommandContext& c) {
     sessions::Value a = ownerArgs(w, 0);
     sessions::Value::Object o = *a.members();
     o.push_back({"copy", false});
-    return fromCommand(c.host.command(sessions::Command{paper::kPaperCutCommand, sessions::Value(std::move(o))}));
+    return fromSessionReply(c.host.command(sessions::Command{paper::kPaperCutCommand, sessions::Value(std::move(o))}));
 }
 
 Reply writePng(CommandContext& c, const std::string& path, const sessions::Value& owner) {
@@ -93,13 +84,13 @@ Reply paperCmd(CommandContext& c) {
     }
     if (what == "copy") {
         if (w.size() > 2) return refusedReply(kUsage);
-        return fromCommand(c.host.command(sessions::Command{paper::kPaperCopyCommand, ownerArgs(w, 1)}));
+        return fromSessionReply(c.host.command(sessions::Command{paper::kPaperCopyCommand, ownerArgs(w, 1)}));
     }
     if (what == "cut") {
         if (w.size() > 2) return refusedReply(kUsage);
         sessions::Value::Object o = *ownerArgs(w, 1).members();
         o.push_back({"copy", true});
-        return fromCommand(c.host.command(sessions::Command{paper::kPaperCutCommand, sessions::Value(std::move(o))}));
+        return fromSessionReply(c.host.command(sessions::Command{paper::kPaperCutCommand, sessions::Value(std::move(o))}));
     }
     if (what == "png") {
         if (w.size() < 2 || w.size() > 3) return refusedReply(kUsage);

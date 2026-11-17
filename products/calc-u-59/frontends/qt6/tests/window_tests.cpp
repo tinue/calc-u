@@ -656,7 +656,7 @@ TEST(qt_attach_drives_calc_u_59) {
     auto product = cu59::makeHarnessProduct();   // outlives the window's attach
     Fixture f;
     CHECK(f.w().host().openAttach(*product, 0,
-                                  calcu::harness::SessionParts{&f.c().app().presetsPart()->vocabulary(), f.c().app().mediaPart()})
+                                  f.c().app().libraryParts())
               .empty());
     calcu::qt6::AttachLineClient client;
     CHECK(client.connectTo(f.w().host().attachPort()));

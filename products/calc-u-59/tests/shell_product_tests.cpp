@@ -138,11 +138,13 @@ TEST(lib14_ac24_faceplate_hit_map) {
 TEST(lib14_ac19_roms_missing_topic_without_a_machine) {
     calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(cu59::settings::settingsDecl());
     calcu::pacing::WallTime now{std::chrono::hours(1)};
+    const auto paths = testroms::rigPaths(settings, "save", "");
     cu59::TIAppSetup s;
     s.settings = &settings;
-    s.saveFolder = "save";
+    s.paths = paths.get();
     s.fileIO = std::make_shared<apprig::Files>();
-    s.romsMissing = "TMC0583.txt: missing";
+    s.roms.missing.files = {calcu::roms::FileProblem{"TMC0583.txt", calcu::roms::Problem::Missing, {}, {}}};
+    const std::string expected = calcu::roms::describe(s.roms.missing);
     auto app = cu59::makeAppSession(std::move(s), [&] { return now += std::chrono::milliseconds(1); }, 59u, {}, {}, false);
     calcu::sessions::test::TestFrontend fe;
     const auto me = app.session->listen(fe, {});
@@ -150,7 +152,7 @@ TEST(lib14_ac19_roms_missing_topic_without_a_machine) {
     calcu::testing::pumpFor(*app.session, now, std::chrono::milliseconds(200));
     const auto* missing = fe.mirror.state(calcu::sessions::TopicName{"roms-missing"});
     CHECK(missing != nullptr);
-    CHECK(missing && shell::read::text((*missing)->toValue(), "text") == "TMC0583.txt: missing");
+    CHECK(missing && shell::read::text((*missing)->toValue(), "text") == expected);
     CHECK(fe.reply(start) && !fe.reply(start)->done);   // no machine is built
     CHECK(app.session->machineSession().machine() == nullptr);
     app.session->close();

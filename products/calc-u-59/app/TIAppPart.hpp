@@ -67,15 +67,6 @@
 
 namespace cu59 {
 
-/// Where manual and scripted traces go (LIB-9 Paths), and the size limit per trace session.
-/// An empty dir: this host has no trace folder (the Web: traces are handed
-/// over with KeepFile, LIB-10 AC-26). maxBytes / 1'000'000: the limit in
-/// MiB of the library's trace session (LIB-10 T2).
-struct TraceTarget {
-    std::filesystem::path dir;
-    uint64_t maxBytes = 0;
-};
-
 namespace topics {
 using calcu::sessions::TopicName;
 inline const TopicName kLed{"c59.led"};
@@ -141,26 +132,32 @@ inline const CommandName kTapCard{"c59.tap-card"};               // {x, y} → T
 
 /// What the host gives the part when the session is made (C59-5 D-12, A-12).
 struct TIAppSetup {
-    std::shared_ptr<const calcu::roms::RomSet> roms;   ///< from lookUpRoms()
-    /// Without `roms`: the lookup's text (calcu::roms::describe of its
-    /// `missing`), published on LIB-12's topic `roms-missing` {text}; no
-    /// machine is built and the shell shows it in place of the faceplate
-    /// (LIB-12 AC-5, LIB-14 AC-19; M-57).
-    std::string romsMissing;
-    std::string saveFolder;                            ///< cards, ti58c.memory.yaml (LIB-9 Paths)
+    /// The host's lookUpRoms(). Without the full set no machine is built;
+    /// LIB-18's StartupPart publishes LIB-12's topic `roms-missing` {text}
+    /// and the shell shows it in place of the faceplate (LIB-12 AC-5, LIB-14
+    /// AC-19; M-57).
+    calcu::roms::LookupResult roms;
+    /// The product's settings (LIB-9; the startup model, `last-model`, the
+    /// startup presets [preset], [trace] max-file-size-mb) and the host's
+    /// places on them: the save folder (cards, ti58c.memory.yaml), the trace
+    /// folder (none on the Web: traces are handed over with KeepFile, LIB-10
+    /// AC-26), the folder for screenshots, `~/` of a preset (README §3); the
+    /// places and the trace limit as they are when the part is made
+    /// (LibraryPartsSetup::placesAtStart). Both outlive the part.
+    calcu::settings::SettingsFile* settings = nullptr;
+    const calcu::settings::Paths* paths = nullptr;
     /// The save folder's file access (cards and the constant memory file):
     /// null: plain file I/O; Swift: the coordinated iCloud access (C59-5 D-6, LIB-7 D-30).
     std::shared_ptr<FileIO> fileIO;
-    TraceTarget trace;                                 ///< LIB-9 Paths (traces), [trace] max-file-size
-    std::function<bool()> traceAvailable;              ///< null: always
-    /// The product's settings (LIB-9; the startup model, `last-model`, the
-    /// startup presets [preset]); null: the defaults, kept in memory.
-    calcu::settings::SettingsFile* settings = nullptr;
+    /// Swift: whether the trace location can be used (iCloud, C59-4 AC-12);
+    /// null: always.
+    std::function<bool()> traceAvailable;
+    /// The Web: screenshots into its save folder (where `paths` has no
+    /// folder for them); unset: the places'.
+    std::optional<std::string> screenshotFolder;
     /// The bundled examples (examples/ as bundle.yaml lists them; LIB-6
     /// AC-31, AC-33); empty: none (a bundle path is refused).
     std::string examplesFolder;
-    std::string home;                                  ///< `~/` of a preset (README §3)
-    std::function<std::optional<std::string>()> screenshotFolder;   ///< LIB-6 AC-25; unset: the save folder
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
     /// The harness (LIB-11 §11.3): the debug panel's tabs computed as if
     /// shown, so that `state calculator-debug` reads them (TIDebugSetup).
@@ -174,13 +171,18 @@ public:
     TIAppPart(const TIAppPart&) = delete;
     TIAppPart& operator=(const TIAppPart&) = delete;
 
-    /// The library's parts (LIB-6 D-40: built by parts::LibraryParts), the
-    /// program memory commands (C59-2 AC-9), then this part, in the session's
-    /// order. The host builds its AppSessionSetup from them.
-    std::vector<calcu::sessions::SessionPart*> sessionParts();
+    /// Every part of the session in the one order (parts::LibraryParts): the
+    /// control part, the host's `host`, the library's with the debug panel
+    /// before the open part (the file kinds use it), the program memory
+    /// commands (C59-2 AC-9) and this part, then the host's `after`. The host
+    /// builds its AppSessionSetup from them.
+    std::vector<calcu::sessions::SessionPart*> sessionParts(std::vector<calcu::sessions::SessionPart*> host = {},
+                                                            std::vector<calcu::sessions::SessionPart*> after = {});
     calcu::parts::LibraryParts& libraryParts() { return m_lib; }
-    /// LIB-18's machines of the session (the harness's machines()).
+    /// LIB-18's machines of the session.
     TIProductMachines& productMachines() { return m_machines; }
+    /// The host's ROM lookup (LIB-12), as the part was made with it.
+    const calcu::roms::LookupResult& romLookup() const { return m_setup.roms; }
 
     // SessionPart.
     void attach(calcu::sessions::SessionSetup&) override;
@@ -213,7 +215,7 @@ public:
     // Display, keys, speed
     const LedFrame& display() const { return m_display; }
     double calcIndicatorOpacity() const { return m_calcOpacity; }
-    calcu::typing::TypingPart* typing() { return m_lib.typing(); }
+    calcu::typing::TypingPart& typing() { return m_lib.typing(); }
     /// The session's commanded speed is full (the library's `speed`, which
     /// the display's hold sends; the Web page shows it).
     bool fullSpeed() const { return m_fullSpeed; }
@@ -236,16 +238,16 @@ public:
     /// A control of the PC-100C as LIB-2 names it: PRINT, ADV (keys), TRACE
     /// (the switch the app session keeps). False: no such control.
     bool setPrinterControl(const std::string& control, bool on);
-    calcu::paper::PaperPart* paperPart() { return m_lib.paper(); }
-    calcu::debugger::DebuggerPart* debuggerPart() { return m_lib.debugger(); }
-    calcu::presets::PresetsPart* presetsPart() { return m_lib.presets(); }
+    calcu::paper::PaperPart& paperPart() { return m_lib.paper(); }
+    calcu::debugger::DebuggerPart& debuggerPart() { return m_lib.debugger(); }
+    calcu::presets::PresetsPart& presetsPart() { return m_lib.presets(); }
     TILevelRules* levelRules() { return &m_levelRules; }
     /// The debug panel (C59-4).
     TIDebugPart& debugPart() { return m_debugPart; }
 
     // Magnetic cards (C59-7; LIB-7 59): the library's media part, its place
     // `card-reader` on the TI-59 (reference/SharedArchitecture.md § "Card Reader Flow").
-    calcu::media::MediaPart* mediaPart() { return m_lib.media(); }
+    calcu::media::MediaPart& mediaPart() { return m_lib.media(); }
     /// A tap at (nx, ny) on the card window: a top corner of a fitted card on
     /// show feeds that side (AC-12, D-12). False: nothing fed.
     bool tapCard(double nx, double ny);
@@ -309,13 +311,11 @@ private:
     /// part's `card-reader` and the library program (AC-21, AC-22, AC-24).
     void refreshCueCard();
     void followRunState();
-    calcu::debugger::RunControl* runControl() const;
+    const calcu::debugger::RunControl& runControl() const;
     calcu::machine::Machine* machine() const;
     TIAppSetup m_setup;
     TIFileAccess m_files;
     std::shared_ptr<const calcu::media::FileAccess> m_mediaFiles;   ///< m_setup.fileIO as the media part's (D-30)
-    std::optional<calcu::settings::SettingsFile> m_ownSettings;
-    std::unique_ptr<calcu::settings::Paths> m_paths;   ///< the save folder for the media part (LIB-9)
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
 
@@ -367,15 +367,15 @@ private:
 };
 
 /// The session of a native frontend (C59-5 D-12; LIB-6 D-40): the library's
-/// app session with TIAppPart::sessionParts() (the library's parts, the
-/// program memory commands, the part), which the session owns
-/// (AppSessionSetup::owned) and lets go first, paced on `clock` (the host's
-/// wall clock; the steady clock's time since its epoch in the apps), and
-/// LIB-18's `start` sent once (the startup model with its startup preset, or
-/// its built-in default). `before`: parts of the host's that go in front of
-/// the product's (tests); `after`: parts behind it (tests of TIWebPart; the
-/// Web engine builds its own, frontends/web/bindings.cpp). Single-threaded:
-/// built, called and destroyed on the host's session thread.
+/// app session with TIAppPart::sessionParts() (every part in the one order),
+/// the part owned by the session (AppSessionSetup::owned), which lets it go
+/// first, paced on `clock` (the host's wall clock; the steady clock's time
+/// since its epoch in the apps), and LIB-18's `start` sent once (the startup
+/// model with its startup preset, or its built-in default). `before`: the
+/// host's own parts, after the control part (LIB-14's SettingsPart, tests);
+/// `after`: parts behind the product's (tests of TIWebPart; the Web engine
+/// builds its own, frontends/web/bindings.cpp). Single-threaded: built,
+/// called and destroyed on the host's session thread.
 calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, calcu::pacing::WallClock clock,
                                                           std::optional<std::uint32_t> jitterSeed = std::nullopt,
                                                           std::vector<calcu::sessions::SessionPart*> before = {},

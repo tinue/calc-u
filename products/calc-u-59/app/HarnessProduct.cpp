@@ -51,52 +51,38 @@ class TIHarnessProduct final : public harness::HarnessProduct {
 public:
     std::string_view name() const override { return "Calc-U-59"; }
     std::string_view shortName() const override { return "59"; }
-    std::string_view commandWord() const override { return "ti59"; }
     std::string_view version() const override { return CALCU59_VERSION; }   // MARKETING_VERSION (CMake)
-    const machine::Catalogue& catalogue() const override { return tiCatalogue(); }
-    machine::MachineBuilder& builder() override { return machines().builder(); }
 
     const calcu::settings::ProductDecl& settingsDecl() const override { return cu59::settings::settingsDecl(); }
 
-    // The source tree's roms/, or the folder CALCU59_ROMS_DIR names (the
-    // build with one ROM file taken away, tests/rom_missing_build.sh, as
-    // frontends/web/build.sh reads it).
-    roms::LookupResult lookUpRoms() const override {
-        const char* dir = std::getenv("CALCU59_ROMS_DIR");
-        return cu59::lookUpRoms(roms::DirectoryBundle(dir && *dir ? dir : CALCU59_ROM_DIR));
-    }
-
-    // Before a run (harness attach, the CLI's options): machines of its own.
-    startup::ProductMachines& machines() override { return part_ ? part_->productMachines() : machines_; }
-
     // LIB-11 §11.3 (Part D simplification §9, as Calc-U-1600's since M-51):
     // the run's app layer is TIAppPart, as the frontends host it, on the
-    // run's settings and folders (the save folder as the run passes it, the
+    // run's settings and places (the save folder as the run passes it, the
     // traces and screenshots into the output folder), typing in emulated time
-    // (Hosting::VirtualTime), the ROM set of the source tree's roms/ and the
-    // bundle of its examples/; its library parts are the run's (LibraryParts:
-    // typing, peripherals, presets, startup, paper, debugger, media, open,
-    // the control part), then the program memory commands, the debug panel
-    // (its tabs computed as if shown) and TIAppPart.
-    void prepare(harness::RunSetup& r) override {
+    // (Hosting::VirtualTime), the ROM set of the source tree's roms/ (or the
+    // folder CALCU59_ROMS_DIR names: the build with one ROM file taken away,
+    // tests/rom_missing_build.sh, as frontends/web/build.sh reads it) and the
+    // bundle of its examples/; every part in the one order (LibraryParts:
+    // the control part, the run's own, typing, peripherals, presets, startup,
+    // media, the debug panel (its tabs computed as if shown), open, paper,
+    // debugger, then the program memory commands and TIAppPart).
+    roms::LookupResult prepare(harness::RunSetup& r) override {
         part_.reset();
-        const roms::LookupResult found = lookUpRoms();
+        const char* dir = std::getenv("CALCU59_ROMS_DIR");
         TIAppSetup s;
-        s.roms = found.set;
-        if (!found.set) s.romsMissing = roms::describe(found.missing);
-        s.saveFolder = r.saveFolder();
-        s.trace = TraceTarget{std::filesystem::path(std::u8string(r.traceFolder().begin(), r.traceFolder().end())), 0};
+        s.roms = cu59::lookUpRoms(roms::DirectoryBundle(dir && *dir ? dir : CALCU59_ROM_DIR));
         s.settings = &r.settings();
+        s.paths = &r.paths();
         s.examplesFolder = CALCU59_EXAMPLES_DIR;
-        s.home = r.hostDirs().home;
-        harness::RunSetup* run = &r;
-        s.screenshotFolder = [run]() -> std::optional<std::string> { return run->screenshotFolder(); };
         s.hosting = sessions::Hosting::VirtualTime;
         s.debugTabsShown = true;
         part_ = std::make_unique<TIAppPart>(std::move(s));
+        return part_->romLookup();
     }
     parts::LibraryParts& libraryParts() override { return part_->libraryParts(); }
-    std::vector<sessions::SessionPart*> sessionParts() override { return part_ ? part_->sessionParts() : std::vector<sessions::SessionPart*>{}; }
+    std::vector<sessions::SessionPart*> sessionParts(const std::vector<sessions::SessionPart*>& host) override {
+        return part_->sessionParts(host);
+    }
     void addCommands(harness::CommandRegistry& r) override {
         addTIHarnessCommands(r);   // C59-2, C59-4, C59-9 (app/TIHarnessCommands)
     }
@@ -113,7 +99,6 @@ public:
     }
 
 private:
-    TIProductMachines machines_;   // before a run; the run's are TIAppPart's
     std::unique_ptr<TIAppPart> part_;
 };
 

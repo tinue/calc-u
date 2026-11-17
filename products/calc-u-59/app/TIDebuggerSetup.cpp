@@ -7,8 +7,6 @@ calcu::debugger::DebuggerSetup tiDebuggerSetup(TILevelRules& rules, TIDebuggerOp
     calcu::debugger::DebuggerSetup d;
     d.rules = &rules;
     d.trace.recorder = [](calcu::machine::Machine& m) { return makeTITraceRecorder(m); };
-    d.trace.folder = std::move(o.traceFolder);
-    d.trace.limitMb = std::move(o.traceLimitMb);
     d.trace.handOver = o.handOver;
     d.runControlSteps = [](const calcu::machine::ModelId&) { return true; };
     d.panelViews = [](const calcu::machine::ModelId&) { return std::vector<std::string>{"calculator", "cpu", "log"}; };

@@ -65,12 +65,6 @@ void SharpControlRules::productEntries(const Machine& m, std::vector<calcu::cont
                                                                                           : std::string("New")}})));
 }
 
-calcu::control::ControlSetup sharpControlSetup(const calcu::machine::Catalogue& catalogue, const SharpControlRules& rules) {
-    calcu::control::ControlSetup s;
-    s.catalogue = &catalogue;
-    s.printers = {calcu::machine::PeripheralId{sharp::kCE150}, calcu::machine::PeripheralId{sharp::kCE1600P}};
-    s.rules = {&rules};
-    return s;
-}
+std::vector<const calcu::control::ControlRules*> sharpControlSetup(const SharpControlRules& rules) { return {&rules}; }
 
 } // namespace shared

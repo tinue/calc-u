@@ -48,7 +48,6 @@ struct WebPieces {
         calcu::shell::SettingsPartSetup ss;   // LIB-14's settings dialog (M-57)
         ss.file = file.get();
         ss.paths = paths.get();
-        ss.frontend = calcu::settings::FrontendKind::Web;
         settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
         web = std::make_unique<TIWebPart>();
     }
@@ -188,7 +187,7 @@ TEST(lib15_ac20_cards_are_files_of_the_save_folder) {
     };
     upload("Dropped.magnetcard.yaml");
     CHECK(fs::exists(fs::path(r.part().files().saveFolder()) / "Dropped.magnetcard.yaml"));
-    const auto* media = r.part().mediaPart()->bindingOf("card-reader");
+    const auto* media = r.part().mediaPart().bindingOf("card-reader");
     CHECK(media && media->name == "Dropped");
     upload("old.u59");
     CHECK(!fs::exists(fs::path(r.part().files().saveFolder()) / "old.u59"));   // C59-7 AC-4: no card
@@ -232,5 +231,5 @@ TEST(lib5_ac24_web_keys_through_the_typing_engine) {
     r.send("focus-lost");   // LIB-5 AC-10: released after its minimum
     r.run(300ms);
     CHECK_EQ(held(), std::int64_t(-1));
-    CHECK(r.part().typing()->engine().down().empty());
+    CHECK(r.part().typing().engine().down().empty());
 }

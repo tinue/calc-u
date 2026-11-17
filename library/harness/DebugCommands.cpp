@@ -30,13 +30,6 @@ using sessions::ReplyMessage;
 
 namespace {
 
-std::vector<std::string> words(const std::string& text) {
-    std::vector<std::string> out;
-    std::istringstream in(text);
-    for (std::string w; in >> w;) out.push_back(w);
-    return out;
-}
-
 std::string hexOf(std::uint64_t v, int bits) {
     const int digits = std::max(1, (bits + 3) / 4);
     char buf[32];
@@ -92,7 +85,6 @@ Reply runStateReply(const ReplyMessage& r) {
     return doneReply();
 }
 
-Reply fromCommand(const ReplyMessage& r) { return r.done ? doneReply() : refusedReply(r.reason); }
 
 ReplyMessage send(CommandContext& c, const sessions::CommandName& n, sessions::Value args) {
     return c.host.command(sessions::Command{n, std::move(args)}, "The machine did not pause.");   // D-6
@@ -221,19 +213,19 @@ Handler overOut(const char* kind) {
 Reply pauseOnStartCmd(CommandContext& c) {
     if (!hasDebugger(c)) return noTarget();
     if (c.line.argText.empty()) return needs("pause-on-start <level>|off");
-    return fromCommand(send(c, dbg::kPauseOnStartCommand, sessions::Value::object({{"level", c.line.argText}})));
+    return fromSessionReply(send(c, dbg::kPauseOnStartCommand, sessions::Value::object({{"level", c.line.argText}})));
 }
 
 Reply pauseAtStartCmd(CommandContext& c) {
     if (!hasDebugger(c)) return noTarget();
-    return fromCommand(send(c, dbg::kPauseAtStartCommand, {}));
+    return fromSessionReply(send(c, dbg::kPauseAtStartCommand, {}));
 }
 
 Reply traceCmd(CommandContext& c) {
     if (!hasDebugger(c)) return noTarget();
     if (c.line.argText.empty()) return needs("trace <file>|off");
-    if (c.line.argText == "off") return fromCommand(send(c, dbg::kTraceCommand, sessions::Value::object({{"off", true}})));
-    return fromCommand(send(c, dbg::kTraceCommand, sessions::Value::object({{"file", c.line.argText}})));
+    if (c.line.argText == "off") return fromSessionReply(send(c, dbg::kTraceCommand, sessions::Value::object({{"off", true}})));
+    return fromSessionReply(send(c, dbg::kTraceCommand, sessions::Value::object({{"file", c.line.argText}})));
 }
 
 // ── Targets, registers, memory ───────────────────────────────────────────
@@ -300,7 +292,7 @@ Reply setRegisterCmd(CommandContext& c) {
     if (!hasDebugger(c)) return noTarget();
     const auto w = words(c.line.argText);
     if (w.size() != 3) return needs("set-register <target> <register> <value>");
-    return fromCommand(send(c, dbg::kSetRegisterCommand,
+    return fromSessionReply(send(c, dbg::kSetRegisterCommand,
                             sessions::Value::object({{"target", w[0]}, {"register", w[1]}, {"value", numberOrName(w[2])}})));
 }
 
@@ -360,7 +352,7 @@ Reply pokeCmd(CommandContext& c) {
     for (std::size_t i = 3; i < w.size(); ++i) values.push_back(numberOrName(w[i]));
     sessions::Value::Object o{{"target", w[0]}, {"space", w[1]}, {"address", numberOrName(w[2])}, {"values", sessions::Value(std::move(values))}};
     addBank(o, opts);
-    return fromCommand(send(c, dbg::kPokeCommand, sessions::Value(std::move(o))));
+    return fromSessionReply(send(c, dbg::kPokeCommand, sessions::Value(std::move(o))));
 }
 
 // ── Breakpoints, watches ─────────────────────────────────────────────────
@@ -386,7 +378,7 @@ Reply breakCmd(CommandContext& c) {
     auto w = words(c.line.argText);
     if (w.size() == 1 && w[0] == "list") return listReply(ask(c, dbg::kBreakpointsRequest, sessions::Value::object({{"setter", "harness"}})), false);
     if (!w.empty() && w[0] == "off") {
-        if (w.size() == 1) return fromCommand(send(c, dbg::kBreakOffCommand, sessions::Value::object({{"setter", "harness"}})));
+        if (w.size() == 1) return fromSessionReply(send(c, dbg::kBreakOffCommand, sessions::Value::object({{"setter", "harness"}})));
         if (w.size() != 3) return needs("break off [<target> <address>]");
         // The harness's own at that address of that target.
         const ReplyMessage l = ask(c, dbg::kBreakpointsRequest, sessions::Value::object({{"setter", "harness"}}));
@@ -427,7 +419,7 @@ Reply watchCmd(CommandContext& c) {
     if (!hasDebugger(c)) return noTarget();
     const auto w = words(c.line.argText);
     if (w.size() == 1 && w[0] == "list") return listReply(ask(c, dbg::kWatchesRequest, sessions::Value::object({{"setter", "harness"}})), true);
-    if (w.size() == 1 && w[0] == "off") return fromCommand(send(c, dbg::kWatchOffCommand, sessions::Value::object({{"setter", "harness"}})));
+    if (w.size() == 1 && w[0] == "off") return fromSessionReply(send(c, dbg::kWatchOffCommand, sessions::Value::object({{"setter", "harness"}})));
     if (w.size() != 5) return needs("watch <target> <space> <address> <count> read|write|both | watch off | watch list");
     const ReplyMessage r = send(c, dbg::kWatchCommand,
                                 sessions::Value::object({{"setter", "harness"}, {"target", w[0]}, {"space", w[1]},
@@ -492,7 +484,7 @@ Reply profileCmd(CommandContext& c) {
     if (!hasDebugger(c)) return noTarget();
     const auto w = words(c.line.argText);
     if (w.size() == 1 && (w[0] == "on" || w[0] == "off"))
-        return fromCommand(send(c, dbg::kProfileCommand, sessions::Value::object({{"on", w[0] == "on"}})));
+        return fromSessionReply(send(c, dbg::kProfileCommand, sessions::Value::object({{"on", w[0] == "on"}})));
     if (w.empty() || w[0] != "report" || w.size() > 2) return needs("profile on|off|report [<count>]");
     sessions::Value::Object o;
     if (w.size() == 2) o.push_back({"count", numberOrName(w[1])});

@@ -1,5 +1,7 @@
 #pragma once
+#include "roms/Lookup.hpp"
 #include "roms/RomSet.hpp"
+#include "sessions/Payload.hpp"
 #include "sessions/Messages.hpp"
 #include "sessions/Operation.hpp"
 #include "sessions/SessionPart.hpp"
@@ -40,9 +42,20 @@ struct StartupSetup {
     MachineControl& control;              // the product's machines and the full ROM set (LIB-12)
     settings::SettingsFile& settings;     // [startup] model, last-model; [preset]
     PresetLoader* loader = nullptr;       // LIB-6's PresetsPart; none: [preset] is not read (D-9)
-    // LIB-12 AC-5 (M-46): without the ROM set the start is refused with this
-    // sentence (the files that are missing); a frontend shows them.
-    std::string romsMissing;
+    // LIB-12 AC-5 (M-46): the lookup found no full set: the start is refused
+    // with its text (the files that are missing), and the topic
+    // `roms-missing` holds it for the frontends (LIB-14 AC-19).
+    std::optional<roms::RomsMissing> romsMissing;
+};
+
+// LIB-12 AC-5: the topic `roms-missing` {text}, set only without the full set.
+inline const sessions::TopicName kRomsMissingTopic{"roms-missing"};
+struct RomsMissingState final : sessions::PayloadOf<RomsMissingState> {
+    static constexpr sessions::PayloadKind kKind{"roms-missing"};
+    roms::RomsMissing missing;
+    std::string text;   // roms::describe(missing)
+    bool same(const RomsMissingState& o) const { return text == o.text; }
+    sessions::Value toValue() const override { return sessions::Value::object({{"text", text}}); }
 };
 
 class StartupPart final : public sessions::SessionPart {

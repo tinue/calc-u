@@ -12,10 +12,8 @@ sessions::ProductSession<SharpAppPart> makeSharpSession(Settings& settings, AppP
     sessions::AppSessionSetup setup;
     setup.clock = options.clock ? std::move(options.clock) : calcu::pacing::WallClock(&calcu::pacing::steadyWallTime);
     setup.hostTime = std::move(options.hostTime);
-    setup.parts = options.moreParts;
-    // LIB-4 D-13: the library's control part among the library's parts.
-    setup.parts.push_back(&part->controlPart());
-    for (sessions::SessionPart* p : part->sessionParts()) setup.parts.push_back(p);
+    // The one order (parts::LibraryParts): the control part, the host's own.
+    setup.parts = part->sessionParts(std::move(options.moreParts));
     setup.hosting = options.hosting;
     sessions::ProductSession<SharpAppPart> out;
     out.part = part.get();

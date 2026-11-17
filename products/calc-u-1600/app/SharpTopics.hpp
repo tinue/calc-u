@@ -23,7 +23,6 @@ namespace shared {
 namespace topics {
 inline const calcu::sessions::TopicName kLamps{"c1600.lamps"};
 inline const calcu::sessions::TopicName kSerialLinks{"c1600.serial-links"};
-inline const calcu::sessions::TopicName kRomsMissing{"roms-missing"};
 } // namespace topics
 
 // The commands. Those that start an operation are marked (op). Arguments in
@@ -120,15 +119,6 @@ struct SerialLinksPayload final : calcu::sessions::PayloadOf<SerialLinksPayload>
     std::string rs232c, ce158;   // the path a client opens, empty while there is none
     std::uint64_t moves = 0;
     bool same(const SerialLinksPayload& o) const { return rs232c == o.rs232c && ce158 == o.ce158 && moves == o.moves; }
-    calcu::sessions::Value toValue() const override;
-};
-
-// A file of the ROM full set is missing or bad: no machine (LIB-12 AC-5).
-struct RomsMissingPayload final : calcu::sessions::PayloadOf<RomsMissingPayload> {
-    static constexpr calcu::sessions::PayloadKind kKind{"roms-missing"};
-    explicit RomsMissingPayload(calcu::roms::RomsMissing m) : missing(std::move(m)) {}
-    calcu::roms::RomsMissing missing;
-    bool same(const RomsMissingPayload& o) const { return calcu::roms::describe(missing) == calcu::roms::describe(o.missing); }
     calcu::sessions::Value toValue() const override;
 };
 

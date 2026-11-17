@@ -44,8 +44,8 @@ private:
     Inputs m_in;
 };
 
-// The setup of the library's ControlPart for Calc-U-1600 (D-13): the
-// catalogue, the printers that own the paper panel, the product's rules.
-calcu::control::ControlSetup sharpControlSetup(const calcu::machine::Catalogue&, const SharpControlRules&);
+// The product's rules of the library's ControlPart for Calc-U-1600 (D-13);
+// its catalogue and printers are LibraryParts' (the papers' printers).
+std::vector<const calcu::control::ControlRules*> sharpControlSetup(const SharpControlRules&);
 
 } // namespace shared

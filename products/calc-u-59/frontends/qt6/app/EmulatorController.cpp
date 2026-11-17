@@ -1,6 +1,5 @@
 #include "EmulatorController.hpp"
 #include "AppPaths.hpp"
-#include "AppSettings.hpp"
 #include "KeyIds.hpp"
 #include "ProductRoms.hpp"
 #include "QtResourceBundle.hpp"
@@ -11,7 +10,6 @@
 #include "shell/Inputs.hpp"
 #include "shell/SettingsPart.hpp"
 #include "typing/TypingTopics.hpp"
-#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <memory>
@@ -53,25 +51,22 @@ EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock
     calcu::shell::SettingsPartSetup ss;
     ss.file = &AppPaths::file();
     ss.paths = &AppPaths::places();
-    ss.frontend = calcu::settings::FrontendKind::Qt6;
     m_settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
 
     // The ROM lookup first (LIB-12): without the full set the session has no
     // machine and the topic roms-missing names the files (LIB-14 AC-19).
-    auto roms = cu59::lookUpRoms(QtResourceBundle());
-    m_romsFound = roms.ok();
     cu59::TIAppSetup setup;
-    if (m_romsFound) setup.roms = std::move(roms.set);
-    else setup.romsMissing = calcu::roms::describe(roms.missing);
-    setup.saveFolder = AppPaths::toFsPath(AppPaths::saveDir()).string();   // cards, ti58c.memory.yaml (LIB-9)
+    setup.roms = cu59::lookUpRoms(QtResourceBundle());
+    m_romsFound = setup.roms.ok();
+    AppPaths::saveDir();    // the save folder and the trace folder made at the start (LIB-9 EC-8)
+    AppPaths::traceDir();
     // LIB-18: the startup model, `last-model` and the startup presets are the
-    // settings file's.
+    // settings file's; the save folder (cards, ti58c.memory.yaml), the trace
+    // folder, its limit and `~/` its places' (LIB-9).
     setup.settings = &AppPaths::file();
+    setup.paths = &AppPaths::places();
     // LIB-6 AC-31, AC-33: the bundled examples beside the program (bundle.yaml).
     setup.examplesFolder = AppPaths::toFsPath(AppPaths::bundledExamplesDir()).string();
-    setup.home = AppPaths::toFsPath(QDir::homePath()).string();
-    setup.trace = {AppPaths::toFsPath(AppPaths::traceDir()),
-                   static_cast<uint64_t>(AppSettings::settings().traceMaxFileSizeMB()) * 1'000'000};
     m_app = cu59::makeAppSession(std::move(setup), clock, std::nullopt, {m_settingsPart.get()}, {}, /*start=*/false);
     cs::HostServices services;
     services.offered = {cs::HostService::ClipboardImage, cs::HostService::ClipboardText, cs::HostService::OpenUrl};

@@ -31,7 +31,7 @@ bool waitForScanLoop(PartRig& r) {
 }
 
 // The run control of the part's session (LIB-10).
-calcu::debugger::RunControl& rc(PartRig& r) { return r.part().debuggerPart()->runControl(); }
+calcu::debugger::RunControl& rc(PartRig& r) { return r.part().debuggerPart().runControl(); }
 using calcu::debugger::kCpu;
 using calcu::debugger::kProgram;
 

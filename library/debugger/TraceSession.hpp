@@ -72,8 +72,11 @@ struct TraceSetup {
     bool handOver = false;
 };
 
-// The trace folder of a product's Paths, for TraceSetup::folder.
-std::function<std::optional<settings::Paths::Ensured>()> traceFolderOf(const settings::Paths&);
+// The trace folder of a product's Paths, for TraceSetup::folder; while
+// `available` says no (the Swift frontend's iCloud, C59-4 AC-12), it is
+// reported as not available.
+std::function<std::optional<settings::Paths::Ensured>()> traceFolderOf(const settings::Paths&,
+                                                                        std::function<bool()> available = {});
 
 class TraceSession {
 public:
@@ -81,8 +84,6 @@ public:
 
     explicit TraceSession(TraceSetup s) : setup_(std::move(s)) {}
     void setTopic(sessions::StateTopic* t);
-    void setFolder(std::function<std::optional<settings::Paths::Ensured>()> f) { setup_.folder = std::move(f); }
-    void setLimit(std::function<long()> f) { setup_.limitMb = std::move(f); }
     // T1: a name with `/` or `\` is refused; a running trace ends first.
     // `name` empty with `button`: the product's name (AC-23). The reason
     // when it does not start.

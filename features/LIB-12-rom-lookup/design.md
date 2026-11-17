@@ -530,3 +530,13 @@ tested here; the column does not reopen.
   stops reading the file; LIB-12 Calc-U-59 stays Done (M-24), since
   every criterion of the column passed there and the file's last reader
   is a C59-7 matter.
+
+## Part E simplification E-1 (2026-11-17, branch `es-assembly`)
+
+`docs/reviews/e-simplification.md` §1 S-1. The lookup's result reaches the
+library's parts whole: `parts::LibraryPartsSetup::roms` is the
+`roms::LookupResult` (before: the set and a sentence), and LIB-18's
+`StartupPart` publishes the topic `roms-missing` `{text}` from it (LIB-18,
+this step). Calc-U-59's `TIAppSetup::roms` is the host's `LookupResult` too;
+`TIAppSetup::romsMissing` and Calc-U-1600's `RomsMissingPayload` are gone.
+The value form of the topic is unchanged.

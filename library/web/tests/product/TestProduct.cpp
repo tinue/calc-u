@@ -412,7 +412,6 @@ struct Parts {
         calcu::shell::SettingsPartSetup s;
         s.file = &p.settingsFile();
         s.paths = &p.paths();
-        s.frontend = st::FrontendKind::Web;
         return s;
     }
     calcu::shell::SettingsPart settings;          // LIB-14

@@ -11,11 +11,13 @@
 //
 //   settings file  <settingsBase>/<Product>/<Product>.ini (AC-2)
 //   save folder    Qt6: [storage] save-folder, else <home>/<Product> (AC-13);
-//                  Swift, Web: the folder passed (AC-14, AC-15)
+//                  Swift, Web, Given: the folder passed (AC-14, AC-15)
 //   tapes          [storage] tape-folder, else Tapes/ in the save folder (AC-16, EC-3)
 //   traces         Qt6: [trace] folder, else the save folder; Swift: by
-//                  [trace] location (AC-24); Web: none, a download (AC-17)
-//   screenshots    the save folder; Web: none, a download (AC-17)
+//                  [trace] location (AC-24); Web: none, a download (AC-17);
+//                  Given: the folder passed
+//   screenshots    the save folder; Web: none, a download (AC-17); Given:
+//                  the folder passed
 //   serial links   Qt6: [serial] link-folder, else the save folder; else none
 //   files          at the save folder's root (`ti58c.memory.yaml`, AC-16)
 

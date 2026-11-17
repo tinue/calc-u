@@ -737,3 +737,10 @@ Products: AC-26–41, 16 ACs, in P1–P5.
 - **Not verified.** That `std::span`, `<=>` and `std::chrono` as used
   above build with the CI compilers of every workflow. Both products
   build C++20 today (M-14), but they use no `<=>`. M-18's CI run shows it.
+
+## Part E simplification E-1 (2026-11-17, branch `es-assembly`)
+
+`library/parts/` (P-2) gives every part of a session in the one order
+and takes the host's places and ROM lookup (`docs/reviews/e-simplification.md`
+§1 S-1); `harness/attach/SessionParts.hpp` (named in §2a) is gone: the
+attached harness takes `parts::LibraryParts&`.

@@ -3,7 +3,6 @@
 #include "harness/HarnessHost.hpp"
 #include "harness/Product.hpp"
 #include "harness/attach/AttachEndpoint.hpp"
-#include "harness/attach/SessionParts.hpp"
 #include "sessions/AppSession.hpp"
 #include <cstdint>
 #include <deque>
@@ -24,7 +23,7 @@
 // `wait-idle` operation, at most an hour). The commands are those of
 // `calcu serve` (D-27): the first, startup, preset, typing, paper, debug,
 // media and open commands, then the product's; the preset steps and the
-// media commands use the session's parts named in SessionParts. Replies and
+// media commands use the session's library parts (LibraryParts). Replies and
 // the listener's messages go back as lines (LIB-11 design §3.9).
 
 namespace calcu::harness {
@@ -34,7 +33,7 @@ public:
     static constexpr const char* kSuspended = "the app is suspended";
 
     AttachedHarness(sessions::AppSession&, HarnessProduct&, AttachEndpoint&, std::function<bool()> callsSuspended,
-                    SessionParts parts = {});
+                    parts::LibraryParts& parts);
     ~AttachedHarness();
 
     void handle(const AttachEvent&);

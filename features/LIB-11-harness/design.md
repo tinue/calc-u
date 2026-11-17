@@ -1045,3 +1045,40 @@ Coverage: AC-14 to AC-17 (4 of 4).
 ### 11.11 Questions for the user
 
 None that splits this column.
+
+## Part E simplification E-1 (2026-11-17, branch `es-assembly`)
+
+`docs/reviews/e-simplification.md` §1 S-1, S-2. The product interface of
+§3.6 and the run of §3.4 change as follows; no reply, sentence or command
+changes.
+
+- `HarnessProduct` loses `commandWord()`, `catalogue()`, `builder()` and
+  `machines()` (no caller; the one test reads the app layer's machines
+  after `prepare()`), and `lookUpRoms()`: `prepare(RunSetup&)` returns the
+  product's `roms::LookupResult`, and without the full set the run does not
+  start with `roms::describe(missing)` (EC-1, as before). The products keep
+  no second set of machines for a time before a run.
+- `sessionParts(host)` returns every part of the session in the one order
+  of `parts::LibraryParts` (the control part first, the run's state part as
+  the host's, the library's, the product's); `Server::start` takes the list
+  as it is. `RunSetup::partsSetup()` is gone (the library's test product
+  builds its own `LibraryPartsSetup`); `RunSetup` gives `paths()`.
+- The run's host folders are `settings::FrontendKind::Given` (LIB-9, this
+  step): the save folder, and the output folder as the trace and
+  screenshot folders (AC-8). The library's parts take the trace folder,
+  its limit (`[trace] max-file-size-mb` of the run's settings) and the
+  screenshot folder from these places, so `Server::start` no longer patches
+  the debugger (`DebuggerPart::setTraceFolder`/`setTraceLimit` are gone).
+- `addServeCommands` and the attached harness take the session's
+  `parts::LibraryParts&` (the presets' vocabulary, the media part);
+  `harness::SessionParts` is gone. Every product has a vocabulary, so the
+  refusal "This build reads no presets of format 2 yet." went with its
+  mapping of `wait-idle`'s unknown command; `--help` still lists the steps
+  every product has. `media` keeps "<Product> has no media." for a product
+  without kinds of medium.
+- `harness::words()` and `harness::fromSessionReply()` (`Commands.hpp`) are
+  the library's command files' and both products' one copy.
+- Not done: a shared skeleton of the two products' `HarnessProduct`. After
+  this step the two `prepare()` share only "end the run, build the app
+  layer on the run's settings and places, return its lookup" (about six
+  lines), which a template base would not shorten.

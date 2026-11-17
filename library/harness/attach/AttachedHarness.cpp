@@ -24,10 +24,10 @@ std::string escaped(const std::string& s) {
 } // namespace
 
 AttachedHarness::AttachedHarness(AppSession& s, HarnessProduct& p, AttachEndpoint& e, std::function<bool()> suspended,
-                                 SessionParts parts)
+                                 parts::LibraryParts& parts)
     : session_(s), product_(p), endpoint_(e), suspended_(std::move(suspended)) {
     // D-27: the commands of `calcu serve`, in its order.
-    addServeCommands(registry_, parts.vocabulary, parts.media, product_);
+    addServeCommands(registry_, parts, product_);
 }
 
 AttachedHarness::~AttachedHarness() { detach(); }

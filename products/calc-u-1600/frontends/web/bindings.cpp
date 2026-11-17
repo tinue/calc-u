@@ -25,8 +25,7 @@
 namespace {
 
 // The parts of one worker's session and what they need; the session owns it
-// (AppSessionSetup::owned) and lets it go first. The Web part goes before the
-// product's part, the settings last.
+// (AppSessionSetup::owned) and lets it go first.
 struct WebParts {
     calcu::settings::SettingsFile file;
     shared::Settings settings{file};
@@ -50,16 +49,13 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     calcu::shell::SettingsPartSetup ss;
     ss.file = &parts->file;
     ss.paths = &parts->paths->places();
-    ss.frontend = calcu::settings::FrontendKind::Web;
     parts->settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
 
     calcu::sessions::AppSessionSetup setup;
     setup.clock = &calcu::web::wallTimeNow;
-    setup.parts.push_back(start.shellPart);
-    setup.parts.push_back(parts->settingsPart.get());
-    setup.parts.push_back(&parts->part->controlPart());
-    for (calcu::sessions::SessionPart* p : parts->part->sessionParts()) setup.parts.push_back(p);
-    setup.parts.push_back(parts->web.get());
+    // The one order (parts::LibraryParts): the control part, the shell's and
+    // SettingsPart, the library's and the product's, the Web part last.
+    setup.parts = parts->part->sessionParts({start.shellPart, parts->settingsPart.get()}, {parts->web.get()});
     const std::string problem = parts->file.problem();
     setup.owned = std::move(parts);
     auto session = std::make_unique<calcu::sessions::AppSession>(std::move(setup));

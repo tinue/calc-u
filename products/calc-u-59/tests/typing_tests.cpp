@@ -59,7 +59,7 @@ struct TIRig : testroms::PartRig {
         engine().setObserver(&log);
     }
     ~TIRig() { engine().setObserver(nullptr); }
-    calcu::typing::TypingEngine& engine() { return part().typing()->engine(); }
+    calcu::typing::TypingEngine& engine() { return part().typing().engine(); }
     void down(const char* key, int pointer = 1) {
         post(calcu::typing::kScreenKeyDown, Value::object({{"key", key}, {"pointer", pointer}}));
     }
@@ -242,7 +242,7 @@ TEST(lib5_ac20_freeze_inside_hold_key_up_on_frozen_machine) {
     r.runFor(30ms);
     // A pause where the machine stands (as a pause-on-start firing): the run control's (LIB-10).
     r.part().levelRules()->landNextPauseAtOnce();
-    r.part().debuggerPart()->runControl().pause(calcu::debugger::kCpu);
+    r.part().debuggerPart().runControl().pause(calcu::debugger::kCpu);
     r.frame();
     const Ticks frozenAt = r.ticks();
     r.up("5");
@@ -256,7 +256,7 @@ TEST(lib5_ac20_freeze_inside_hold_key_up_on_frozen_machine) {
     r.host(letter('a', true));   // 2nd, A: a sequence (presses that wait)
     r.runFor(300ms);
     CHECK_EQ(r.log.events.size(), std::size_t(2));
-    r.part().debuggerPart()->runControl().resume();
+    r.part().debuggerPart().runControl().resume();
     r.runFor(1s);
     CHECK(r.log.keys().size() == 6 && r.log.keys()[2] == "2nd+" && r.log.keys()[4] == "A+");
 }
@@ -594,7 +594,7 @@ TEST(lib5_ec5_reset_and_model_switch_release_held_keys) {
     r.host(produced('8', "Digit8"));
     r.post(calcu::startup::kModelCommand, Value::object({{"name", "TI-58"}}));
     CHECK(r.held().empty());
-    CHECK(r.part().typing()->engine().idle());
+    CHECK(r.part().typing().engine().idle());
 }
 
 

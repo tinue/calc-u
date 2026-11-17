@@ -422,3 +422,29 @@ Risks:
   folder.
 - Not verified: Qt's `QStandardPaths` values per OS (the design avoids
   them for AC-2); whether M-25 already removes `saveModuleID` (A-6).
+
+## Part E simplification E-1 (2026-11-17, branch `es-assembly`)
+
+`docs/reviews/e-simplification.md` §1 S-1.
+
+- `FrontendKind::Given`: no platform's rule; the save folder, the trace
+  folder and the folder for screenshots are the ones `HostDirs` passes
+  (`saveFolder`, the new `traceFolder` and `screenshotFolder`; empty: none),
+  the tape folder as for every kind, no serial link folder. The harness
+  (LIB-11 D-11) and the test rigs use it for "the folders as given"; they
+  used `Swift` for it, which made the harness patch the debugger's trace
+  folder afterwards. `HostDirs.hpp`'s comment said the harness passes
+  `Qt6`; it says `Given` now.
+- `shell::SettingsPartSetup::frontend` is gone: it was read nowhere.
+- The host's `Paths` is the one input of a product's places to the
+  library's parts (`parts::LibraryPartsSetup::paths`): the media's save and
+  tape folders, the trace folder (`debugger::traceFolderOf`), the folder for
+  screenshots and `~/` (its `home`). Calc-U-59's app layer no longer makes
+  a second `Paths` of kind `Swift` over the host's save folder; it takes
+  the host's (`TIAppSetup::paths`), as Calc-U-1600's takes `AppPaths`, and
+  asks for `LibraryPartsSetup::placesAtStart` (its places fixed at the
+  start, as before; LIB-10's E-1 section has the question for the user).
+  Its Web engine sets `LibraryPartsSetup::screenshotFolder` to its save
+  folder: AC-17 says a screenshot on the Web is a download and no folder
+  exists for it, Calc-U-59's Web writes it into its save folder (as
+  before; LIB-6's E-1 section has the question for the user).

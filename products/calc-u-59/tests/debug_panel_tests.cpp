@@ -37,7 +37,7 @@ const std::string kOverlay = "Calc-U-59 ASM 2.0\nHEX:\n0A01 0A01\n";
 // simple_count.asm: a counter on the display, a loop at 1802.
 const std::string kCounter = "Calc-U-59 ASM 2.0\nHEX:\n01D8 01DB 0D00 0A37 1805 1007\n";
 
-calcu::debugger::RunControl& rc(SessionRig& r) { return r.part().debuggerPart()->runControl(); }
+calcu::debugger::RunControl& rc(SessionRig& r) { return r.part().debuggerPart().runControl(); }
 bool paused(SessionRig& r) { return r.part().isFrozen(); }
 bool ready(SessionRig& r) { return r.until([&] { return r.machine().isKeyReady() && !r.busy(); }); }
 void program(SessionRig& r, std::vector<uint8_t> codes) {

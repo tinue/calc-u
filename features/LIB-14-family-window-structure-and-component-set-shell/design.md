@@ -1559,3 +1559,14 @@ lacks (numbers given at the D/E boundary, 2026-11-16):
 ### 10.15 Questions for the user
 
 None that split the design.
+
+## Part E simplification E-1 (2026-11-17, branch `es-assembly`)
+
+`docs/reviews/e-simplification.md` §1 S-1 (D-27). The attached harness
+takes the session's `parts::LibraryParts&` (`qt6::SessionHost::openAttach`,
+Calc-U-59's `SessionThread::openAttach`) instead of `harness::SessionParts`:
+the preset steps and the media commands are those of the app's own parts
+in every frontend (before, the Swift frontend's attach named none, and its
+preset commands were refused with "This build reads no presets of format 2
+yet."). The session order puts the control part before the shell's part and
+`SettingsPart` (LIB-3, this step).

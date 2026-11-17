@@ -152,41 +152,21 @@ private:
     dap::DapPart* part_ = nullptr;
 };
 
-std::shared_ptr<const std::vector<std::uint8_t>> hostDriveRom() {
-    auto rom = sharp::readHostDriveRom({kDir + "/firmware/pc1600-hostdrive"});
-    return rom ? std::make_shared<const std::vector<std::uint8_t>>(std::move(*rom)) : nullptr;
-}
-
 class SharpHarnessProduct final : public harness::HarnessProduct {
 public:
-    SharpHarnessProduct() : catalogue_(sharp::sharpCatalogue()), machines_(catalogue_, hostDriveRom()) {
-        // Before a run (the CLI's options, attach to a frontend): the
-        // catalogue with the module definitions, as a run's part has it.
-        sharp::addModuleDefinitions(catalogue_, kModules);
-        if (const auto found = sharp::lookUpRoms(roms::DirectoryBundle(kDir + "/roms")); found.set)
-            sharp::addModuleDefinitions(catalogue_, *found.set);
-    }
     ~SharpHarnessProduct() override { endRun(); }
 
     std::string_view name() const override { return "Calc-U-1600"; }
     std::string_view shortName() const override { return "1600"; }
-    std::string_view commandWord() const override { return "pc1600"; }
     std::string_view version() const override { return CALCU1600_VERSION; }   // APP_VERSION of the Qt build (CMake)
-    const machine::Catalogue& catalogue() const override { return part_ ? part_->catalogue() : catalogue_; }
-    machine::MachineBuilder& builder() override { return machines().builder(); }
     const settings::ProductDecl& settingsDecl() const override { return shared::settingsDecl(); }
-    startup::ProductMachines& machines() override {
-        if (part_) return part_->productMachines();
-        return machines_;
-    }
 
     // D-11: the app layer of this run, on its settings and folders (LIB-11
-    // AC-8: the save folder as the run passes it, the run's own home).
-    void prepare(harness::RunSetup& r) override {
+    // AC-8: the save and output folders as the run passes them, the run's own
+    // home); its one ROM lookup (LIB-12) is the run's.
+    roms::LookupResult prepare(harness::RunSetup& r) override {
         endRun();
         settings_ = std::make_unique<Settings>(r.settings());
-        settings::HostDirs dirs = r.hostDirs();
-        dirs.frontend = settings::FrontendKind::Swift;   // the save folder as the run passes it
         // AC-20: the bundled files where the source tree has them.
         BundleDirs bundle;
         bundle.bundledResources = kModules;
@@ -194,35 +174,25 @@ public:
         bundle.roms = kDir + "/roms";
         bundle.modules = kModules;
         bundle.hostDriveRom = kDir + "/firmware/pc1600-hostdrive";
-        paths_ = std::make_unique<AppPaths>(*settings_, dirs, bundle);
+        paths_ = std::make_unique<AppPaths>(*settings_, r.hostDirs(), bundle);
         SharpAppPartOptions o;
         o.canMountHostFolder = true;   // C1600-5 AC-11 (LIB-4 Part D, D-12)
         o.hosting = sessions::Hosting::VirtualTime;
         o.serialLinksOnRequest = true;   // C1600-5 AC-9
-        harness::RunSetup* run = &r;
-        o.screenshotFolder = [run]() -> std::optional<std::string> { return run->screenshotFolder(); };
         part_ = std::make_unique<SharpAppPart>(*settings_, *paths_, std::move(o));
         SharpAppPart* part = part_.get();
         serial_ = std::make_unique<SerialScriptsPart>([part](const std::string& port) {
             return part->serialLinked(port == "ce158" ? "calcu1600-ce158.serial" : "calcu1600-rs232c.serial");
         });
-    }
-
-    roms::LookupResult lookUpRoms() const override {
-        if (part_) return roms::LookupResult{part_->romSet(), part_->romsMissing()};
-        return sharp::lookUpRoms(roms::DirectoryBundle(kDir + "/roms"));
+        return part_->romLookup();
     }
 
     calcu::parts::LibraryParts& libraryParts() override { return part_->libraryParts(); }
 
     // The app layer's parts (the library's among them), then the display
     // text and the serial ports' scripts (Part D, D.3).
-    std::vector<sessions::SessionPart*> sessionParts() override {
-        if (!part_) return {&lcd_};
-        std::vector<sessions::SessionPart*> parts = part_->sessionParts();
-        parts.push_back(&lcd_);
-        parts.push_back(serial_.get());
-        return parts;
+    std::vector<sessions::SessionPart*> sessionParts(const std::vector<sessions::SessionPart*>& host) override {
+        return part_->sessionParts(host, {&lcd_, serial_.get()});
     }
 
     harness::DisplayText readDisplay(const machine::DisplayOutput& o, const machine::MachineDescriptor& d) override {
@@ -247,8 +217,6 @@ private:
         settings_.reset();
     }
 
-    machine::Catalogue catalogue_;
-    SharpProductMachines machines_;
     // The run's app layer (prepare).
     std::unique_ptr<Settings> settings_;
     std::unique_ptr<AppPaths> paths_;

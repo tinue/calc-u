@@ -144,10 +144,6 @@ DebuggerPart::DebuggerPart(DebuggerSetup s)
 
 DebuggerPart::~DebuggerPart() = default;
 
-void DebuggerPart::setTraceFolder(std::function<std::optional<settings::Paths::Ensured>()> f) { trace_.setFolder(std::move(f)); }
-
-void DebuggerPart::setTraceLimit(std::function<long()> f) { trace_.setLimit(std::move(f)); }
-
 const SymbolTable* DebuggerPart::symbols(const DebugTargetId& t) const {
     const auto it = symbols_.find(t);
     return it == symbols_.end() ? nullptr : &it->second;

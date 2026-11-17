@@ -1033,3 +1033,14 @@ None that splits this column.
 the startup preset per model (the `Startup` entries of `preset-list`),
 which M-54 does not add (D-28); until then a startup preset is set in
 `Calc-U-59.ini`.
+
+## Part E simplification E-1 (2026-11-17, branch `es-assembly`)
+
+`docs/reviews/e-simplification.md` §1 S-1. `StartupSetup::romsMissing` is
+the lookup's `std::optional<roms::RomsMissing>` (set: the lookup found no
+full set) instead of a sentence; `StartupPart` refuses `start` with
+`roms::describe()` of it (LIB-12 AC-5, the same text) and publishes LIB-12's
+topic `roms-missing` (`startup::kRomsMissingTopic`, payload
+`startup::RomsMissingState`, value `{text}` as before) in `attach`. The
+products publish it no more (Calc-U-1600's `RomsMissingPayload`, Calc-U-59's
+value payload in `TIAppPart::attach`).

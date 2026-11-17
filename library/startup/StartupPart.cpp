@@ -145,12 +145,20 @@ Task<OperationResult> StartupPart::restart(OperationContext& c, Restart what) {
 
 void StartupPart::attach(sessions::SessionSetup& setup) {
     const machine::Catalogue& cat = setup_.control.product().catalogue();
+    // LIB-12 AC-5, LIB-14 AC-19: without the full set no machine is built;
+    // the frontends show the files.
+    if (!setup_.control.hasRoms() && setup_.romsMissing) {
+        auto p = std::make_shared<RomsMissingState>();
+        p->missing = *setup_.romsMissing;
+        p->text = roms::describe(p->missing);
+        setup.stateTopic(kRomsMissingTopic).set(std::move(p));
+    }
 
     // The start (AC-3 to AC-5): accepted once (D-8), not while an operation runs.
     setup.command(sessions::kStartCommand, [this, &cat](const Value& args, SessionContext& c) -> CommandOutcome {
         if (started_) return Refused{kStartedAlready};
         if (c.busy()) return anotherRuns();
-        if (!setup_.control.hasRoms() && !setup_.romsMissing.empty()) return Refused{setup_.romsMissing};   // LIB-12 AC-5
+        if (!setup_.control.hasRoms() && setup_.romsMissing) return Refused{roms::describe(*setup_.romsMissing)};   // LIB-12 AC-5
         ModelId model{settings::startupModel(setup_.settings)};   // AC-3
         const std::string named = sessions::textArg(args, "model");
         if (!named.empty()) {

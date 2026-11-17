@@ -43,8 +43,10 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    frontend (M-57; Swift through `Bridge/TIShell` since M-58, its settings
    per system `ShellFrontend::SwiftMac`/`SwiftIOS`); a new menu item or
    settings row goes there. Without the
-   full ROM set the session is made with `TIAppSetup::romsMissing` and no
-   machine, and publishes `roms-missing`.
+   full ROM set the session is made with the lookup's result
+   (`TIAppSetup::roms`) and no machine; LIB-18's StartupPart publishes
+   `roms-missing`. The places (save folder, traces, screenshots, `~/`)
+   are the host's `calcu::settings::Paths` (`TIAppSetup::paths`).
    `TIAppPart` owns the library's parts of its session
    (`parts::LibraryParts`, M-54; `sessionParts()`): typing, peripherals,
    presets on `TIPresetRules` and the bundle of `examples/`

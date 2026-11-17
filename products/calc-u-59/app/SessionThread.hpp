@@ -25,6 +25,9 @@
 // frontend, one FIFO, filled only by this thread. The wake runs once per
 // batch (FS 3: "one hop per batch"); the frontend drains the whole batch.
 
+namespace calcu::parts {
+class LibraryParts;
+}
 namespace calcu::harness {
 class AttachEndpoint;
 class AttachedHarness;
@@ -76,8 +79,11 @@ public:
     std::vector<Delivery> drain();
 
     /// Debug builds (C59-5 AC-10, EC-1): harness attach on 127.0.0.1:port for
-    /// `product`. Waits for the thread. Returns the problem, empty when open.
-    std::string openAttach(calcu::harness::HarnessProduct& product, std::uint16_t port);
+    /// `product`, its commands on the session's library parts (`parts`, asked
+    /// on the session thread; LIB-14 D-27). Waits for the thread. Returns the
+    /// problem, empty when open.
+    std::string openAttach(calcu::harness::HarnessProduct& product, std::uint16_t port,
+                           std::function<calcu::parts::LibraryParts&()> parts);
 
     /// For tests: the number of host calls made, and the thread's id.
     std::uint64_t calls() const { return calls_.load(); }

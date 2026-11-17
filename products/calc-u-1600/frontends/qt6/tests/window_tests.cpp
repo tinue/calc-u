@@ -489,8 +489,7 @@ TEST(lib14_ac44_scenario_through_attach) {
     Fixture f;
     auto product = shared::makeHarnessProduct();
     CHECK(f.w().host().openAttach(*product, 0,
-                                  calcu::harness::SessionParts{&f.w().controller()->app().presetsPart().vocabulary(),
-                                                               &f.w().controller()->app().mediaPart()})
+                                  f.w().controller()->app().libraryParts())
               .empty());
     QTemporaryDir dir;
     const QString path = dir.filePath(QStringLiteral("t.shots.yaml"));

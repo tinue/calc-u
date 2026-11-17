@@ -65,7 +65,7 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 | PC-100C plugged in or out (resets) | Swift shell (bar's "PC-100C" button; Machine ▸ Peripherals ▸ on macOS) | shell (bar's "PC-100C" button; Machine ▸ Peripherals ▸) | shell (bar's "PC-100C" button) | LIB-18's `attach`/`detach printer`; LIB-4's `control-state` | All | the toggle above the paper panel went (M-57, M-58) |
 | Dot view at PC-100C proportions; text view | `PrinterView` (the paper panel from the `paper PC-100C` marks; its owner's name, an empty paper under none) | library `PaperPanel` | library `CalcuPaperPanel` | `core/PC100CPaper` (marks), LIB-8 `PaperPart` | All | |
 | Printer interrupt: cut-short lines, the interrupted row's fired columns, faint dots | `PrinterView` (the marks' darkness) | library `PaperPanel` | library `CalcuPaperPanel` | `core/PC100CPaper` (`lineDots`: `drawnRows`, `inkedColumns`, `faintColumns`; greys of `inkAlpha`) | All | |
-| PRINT / ADV (hold), T (TRACE switch) | `PrinterView` (`set-control`) | library `PaperPanel` (controls) | library `CalcuPaperPanel` (controls) | `TIAppPart` answers `set-control` (LIB-8 P-E2 until M-54) | All | |
+| PRINT / ADV (hold), T (TRACE switch) | `PrinterView` (`set-control`) | library `PaperPanel` (controls) | library `CalcuPaperPanel` (controls) | LIB-2's `PeripheralsPart` answers `set-control`; TRACE's position kept by `TIAppPart` (`c59.printer`) | All | |
 | Copy (text + 600 dpi image), cut | `PrinterView` (`paper.copy`, `paper.cut`; the bridge answers `clipboard-image`) | library `PaperPanel` (`ClipboardService`) | library `CalcuPaperPanel` (`hostServices.js`) | LIB-8 `PaperPart` (picture, cut) | All | web: image where the browser's clipboard takes one, else text |
 
 ## Debugger

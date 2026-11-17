@@ -95,6 +95,8 @@ public:
     // endsRunningOperation: when its handler starts an operation, the
     // command first stops a running one (Reset, Cold boot, a model switch;
     // LIB-18 AC-16, D-6); a handler that gives Done or Refused stops nothing.
+    // A name has one owner: declaring it a second time throws
+    // std::logic_error (Part E simplification E-3).
     virtual void command(CommandName, Handler, bool endsRunningOperation = false) = 0;
     virtual void request(RequestName, RequestHandler) = 0;
 

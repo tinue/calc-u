@@ -40,25 +40,9 @@ pacing::WallTime wallNow() {
     return std::chrono::duration_cast<pacing::WallTime>(std::chrono::steady_clock::now().time_since_epoch());
 }
 
-sessions::Task<sessions::OperationResult> runTicks(sessions::OperationContext& c, machine::Ticks n) {
-    co_await c.run(n);
-    co_return sessions::OperationResult{};
-}
-
-// LIB-6's `wait-idle` as the app's session has it (an operation until the
-// machine is idle): here 20,000 ticks of the test machine (LIB-14 D-27).
-struct WaitIdlePart final : sessions::SessionPart {
-    void attach(sessions::SessionSetup& s) override {
-        s.command(presets::kWaitIdleCommand, [](const sessions::Value&, sessions::SessionContext&) -> sessions::CommandOutcome {
-            return sessions::StartOperation{[](sessions::OperationContext& c) { return runTicks(c, 20'000); }};
-        });
-    }
-};
-
 // The app: its own frontend listening, the session called on a thread of its own.
 struct TestApp final : AttachInbox, sessions::MessageSink {
     test::TestProduct product;
-    WaitIdlePart waitIdle;
     std::unique_ptr<sessions::AppSession> session;
     std::unique_ptr<AttachEndpoint> endpoint;
     std::unique_ptr<AttachedHarness> harness;
@@ -78,7 +62,6 @@ struct TestApp final : AttachInbox, sessions::MessageSink {
         s.clock = wallNow;
         s.hostTime = [] { return std::chrono::system_clock::now(); };
         s.parts = product.sessionParts({});
-        s.parts.push_back(&waitIdle);
         session = std::make_unique<sessions::AppSession>(std::move(s));
         sessions::HostServices fe;
         fe.offered = {sessions::HostService::ClipboardText};
@@ -542,7 +525,9 @@ TEST(attach_registry_matches_serve) {
 }
 
 // LIB-6 AC-34 through attach (D-27): the bare `wait` is the session's
-// `wait-idle` on the app's clock; its reply is the time it took.
+// `wait-idle` on the app's clock (LIB-6's PresetsPart of the test product;
+// the test's own second `wait-idle` went in Part E simplification E-3, a
+// command has one owner); its reply is the time it took.
 TEST(attach_bare_wait_ends_when_idle) {
     TestApp app;
     CHECK(app.open().ok);
@@ -553,7 +538,7 @@ TEST(attach_bare_wait_ends_when_idle) {
     CHECK(r.size() == 4 && r[0] == "done 3");
     if (r.size() == 4) {
         const long long t = std::atoll(r[1].c_str() + 7);   // "ticks: N"
-        CHECK(t >= 20'000 && t < 20'000 + 4'000);
+        CHECK(t >= 0 && t < 1'000'000);   // the test machine is idle almost at once
         CHECK(r[3] == "hour reached: no");
     }
 }

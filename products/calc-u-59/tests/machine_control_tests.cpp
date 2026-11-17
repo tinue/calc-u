@@ -6,6 +6,7 @@
 #include "TestHarness.hpp"
 #include "AppRig.hpp"
 #include "../core/PC100C.hpp"
+#include "peripherals/PeripheralsPart.hpp"
 #include "../app/Bcd.hpp"
 
 using apprig::attach;
@@ -15,6 +16,10 @@ using apprig::Value;
 namespace st = calcu::startup;
 
 namespace {
+// TRACE on, as the paper panel sends it (LIB-2's set-control; Part E simplification E-3).
+calcu::sessions::Value traceOnArgs() {
+    return calcu::sessions::Value::object({{"peripheral", "PC-100C"}, {"control", "TRACE"}, {"on", true}});
+}
 const char* kSkip = "the ROMs are not fetched (roms/fetch_roms.sh)";
 bool roms() { return testroms::romSet() != nullptr; }
 std::string head(const std::string& model = "TI-59") { return "format-version: 2\nmodel: " + model + "\n"; }
@@ -167,7 +172,7 @@ TEST(lib18_ac21_trace_set_again_in_the_attached_pc100c) {
     Rig r("TI-59");
     CHECK(r.send(st::kAttachCommand, attach("printer", "PC-100C")).done);
     CHECK(!r.part().printerTrace());
-    CHECK(r.part().setPrinterControl("TRACE", true));
+    CHECK(r.send(calcu::peripherals::kSetControlCommand, traceOnArgs()).done);   // LIB-2 (E-3)
     CHECK(traceOn(*r.machine()));
     CHECK(r.send(st::kDetachCommand, detach("printer")).done);
     CHECK(r.part().printerTrace());   // the app session keeps it (C59-6 AC-6, row 59-25)

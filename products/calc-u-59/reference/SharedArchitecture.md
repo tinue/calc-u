@@ -110,13 +110,19 @@ startup preset, else its built-in default); the Web page sends `start
 `model`, `reset`, `cold-boot`, `attach`, `detach`, `load-preset`,
 `speed`, `suspend`, `continue`, …; `cu59::commands`, `c59.*`) and gets
 messages: the library's topics (`display`, `busy`, `notices`, `log`,
-`papers`, `paper PC-100C`, `run-state`, `trace`, …) and the interim
-`c59.*` topics (`c59.model` went with C59-8 (M-58): every frontend draws
-the model, the module, the printer and the card controls from LIB-4's
-`control-state`; `c59.led`, `c59.printer`
-(connected and TRACE only), `c59.cue-card` (the cue card shown, whether the fitted card is on show, its lit corner), …; each the snapshot of one of 2.3.0's change flags;
-the product topics that stay after M-59's adapter check, LIB-3 59 design §5; `c59.run-state` and the command `c59.full-speed` went in M-59: the library's `speed` and `busy`) and the debug panel's
-product topics (`TIDebugPart`, C59-4 AC-25). Qt6
+`papers`, `paper PC-100C`, `run-state`, `trace`, …) and the product
+topics `c59.led` (the LED frame and the C indicator), `c59.printer`
+(connected and TRACE only), `c59.cue-card` (the cue card shown, whether
+the fitted card is on show, its lit corner). The part sets them after
+each flow from what it left, and the session sends one when its value
+changed (LIB-3 AC-5; their payloads compare by content since Part E
+simplification E-3, which removed 2.3.0's change bits, the change
+observer and the snapshot serials). Their value forms are fixed: `calcu
+state` reads them. (`c59.model` went with C59-8 (M-58): every frontend
+draws the model, the module, the printer and the card controls from
+LIB-4's `control-state`; `c59.run-state` and the command
+`c59.full-speed` went in M-59: the library's `speed` and `busy`.) Then
+the debug panel's product topics (`TIDebugPart`, C59-4 AC-25). Qt6
 calls the session on its GUI thread, Swift on `cu59::SessionThread`, the
 Web in its worker (§ "Threads"); each talks to it through the library's
 `calcu::sessions::Listener`. The session owns the parts
@@ -455,15 +461,18 @@ build (`TIProductMachines`, a preset's header) plugs them in; LIB-18's
 the power cycle of the pin-out (row 59-11). `TIAppPart` reads what is
 plugged from the machine and keeps TRACE's position (`m_printerTrace`: off
 at the start, never saved, kept across Reset, power cycle, Cold boot and a
-detach, set again in a PC-100C an `attach` puts in; C59-6 AC-6, row 59-25);
-a preset's build sets it off unless `printer-trace: on`. Before a detach the
+detach; C59-6 AC-6, row 59-25): it follows the plugged PC-100C's switch,
+and LIB-18's `attach` puts it into a new PC-100C through the product hook
+`TIProductMachines::attaching` (the request's switch positions; Part E
+simplification E-3); a preset's build sets it off unless `printer-trace: on`. Before a detach the
 PC-100C ends the line it prints where the head is, and its rows go onto the
 paper (LIB-8 EC-7). The paper is LIB-8's `PaperPart`'s: it binds the
 `printer/paper-output` capability whenever a PC-100C is plugged in, keeps
 the paper while it is detached and gives it back on any model; a user's
 preset load empties it, a startup preset's keeps it (LIB-8 AC-8). The paper
-panel's `set-control {peripheral: PC-100C, control, on}` goes to the part's
-printer controls (P-E2, until M-57).
+panel's `set-control {peripheral: PC-100C, control, on}` is LIB-2's
+`PeripheralsPart`'s (its one owner since E-3; the session refuses a second
+declaration of a command name).
 
 ## Drawing Rules
 

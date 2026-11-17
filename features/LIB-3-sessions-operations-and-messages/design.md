@@ -720,3 +720,22 @@ overload takes a `HostSessionSetup`; the first forwards to it), both Web
 engines, both Qt6 controllers and the Swift bridge call it. The order of the
 parts and every message are as before (each host's SettingsPart was already
 after its own parts).
+
+## Part E simplification E-3 (2026-11-17, branch `es-59-topics`)
+
+`docs/reviews/e-simplification.md` §1 S-3, §2 item 2. Calc-U-59's
+product topics `c59.led`, `c59.cue-card` and `c59.printer` compare by
+content (`TILedState`, `TICueCardState`, `TIPrinterState::same`; AC-5):
+`TIAppPart` sets them after each flow from what it left and the session
+sends one when its value changed. 2.3.0's change bits (`TIAppPart::Change`),
+the change observer (`setChangeObserver`), the bits' accumulator and the
+`TISnapshot` serials went, and with them the dead `TIAppPart::error`,
+`fullSpeed()`, `keystrokesPlaying()` and the run-state follower. The names
+and value forms of the three topics are unchanged (`calcu state` reads
+them). `SessionSetup::command` throws `std::logic_error` when a command
+name is declared a second time (`AppSession`): a second registration had
+silently replaced the first (Calc-U-59's `set-control`, which hid LIB-2's;
+a test's own `wait-idle` in `attach_tests.cpp`, which hid LIB-6's). AC-29's
+test fits a fresh card for the cue card's move (a model switch with nothing
+fitted no longer sends an equal value again) and attaches the PC-100C before
+TRACE; AC-30's error is a real one (an outdated constant memory file).

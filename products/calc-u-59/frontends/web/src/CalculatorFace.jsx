@@ -123,11 +123,10 @@ function CueCardCanvas({ shell, width, height }) {
 // `faceplate`: the reply of `c59.faceplate-map` for `model` (null until it came).
 function CalculatorFace({ shell, faceplate, model, width }) {
   const held = useTopic(shell, "held-keys");
-  const run = useTopic(shell, "c59.web.run-state");
+  const fullSpeed = useTopic(shell, "busy", (b) => !!b && b.speed === "full");   // LIB-3's speed now
   const media = useTopic(shell, "media");
   const reader = ((media && media.places) || []).find((p) => p.place === "card-reader") || null;
   const cardFitted = !!(reader && reader.holds);
-  const fullSpeed = !!(run && run.fullSpeed);
   const height = width / CANVAS_ASPECT;
   const scale = width / CANVAS_WIDTH;
   const baseRef = React.useRef(null);

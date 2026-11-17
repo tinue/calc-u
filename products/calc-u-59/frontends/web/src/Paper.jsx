@@ -6,7 +6,7 @@
 // PC-100C is attached and detached by the button "PC-100C" on the shell's
 // control bar (LIB-14 AC-27), not by a toggle in the pane. Its controls are
 // the PC-100C's PRINT and ADV (keys) and TRACE (a switch, its position from
-// c59.web.printer). Copy and Cut are the panel's: the session's paper.copy /
+// c59.printer). Copy and Cut are the panel's: the session's paper.copy /
 // paper.cut through the page's clipboard service.
 
 const PC100C_CONTROLS = (trace) => [
@@ -17,7 +17,7 @@ const PC100C_CONTROLS = (trace) => [
 
 // `owner`: the paper panel's owner of the control state ("PC-100C" or "").
 function PaperPane({ shell, owner }) {
-  const printer = useTopic(shell, "c59.web.printer");
+  const printer = useTopic(shell, "c59.printer");
   return (
     <div className="calcu-printer" data-panel="paper">
       <CalcuPaperPanel shell={shell} owner={owner || null} controls={PC100C_CONTROLS(printer && printer.trace)} />

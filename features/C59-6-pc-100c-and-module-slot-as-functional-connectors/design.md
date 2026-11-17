@@ -495,3 +495,16 @@ A difference is a finding.
   `module-name`, `description` and `menu-sort` for `moduleDescriptors()`.
   The YAML reader behind `ModuleFile` is `library/formats/`'s, moved
   there from Calc-U-1600's `core/Yaml.hpp` in M-24 (LIB-12 D-4).
+
+## Part E simplification E-3 (2026-11-17, branch `es-59-topics`)
+
+`docs/reviews/e-simplification.md` §1 S-3, §2 item 2. TRACE (AC-6): the PC-100C's
+controls are set through LIB-2's `set-control` (its one owner; `TIAppPart`'s
+own handler and `setPrinterControl` went). `TIAppPart` keeps the position by
+following the plugged PC-100C's switch (after each call and before each
+flush) and holding it while none is plugged; LIB-18's attach asks the
+product hook `TIProductMachines::attaching`, which puts the kept position
+into the request's switch positions, so the PC-100C attached starts with it
+(its constructor restores it, LIB-2 D-3) instead of being switched after the
+power cycle. Reset, power cycle, cold boot, a model switch and a preset's
+build are as before.

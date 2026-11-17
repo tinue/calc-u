@@ -13,6 +13,7 @@
 #include "../app/ModuleImage.hpp"
 #include "../app/TextUtil.hpp"
 #include "../core/PC100C.hpp"
+#include "peripherals/PeripheralsPart.hpp"
 #include <algorithm>
 #include <chrono>
 #include <iterator>
@@ -214,6 +215,10 @@ TEST(part_pause_of_a_replaced_machine_is_dropped) {
 // ── C59-6 (design T7, T10) and LIB-18 AC-21: the app session's part of the places ──
 
 namespace {
+// TRACE on, as the paper panel sends it (LIB-2's set-control; Part E simplification E-3).
+calcu::sessions::Value traceOnArgs() {
+    return calcu::sessions::Value::object({{"peripheral", "PC-100C"}, {"control", "TRACE"}, {"on", true}});
+}
 // TRACE as the PC-100C in the machine has it; nullopt without a PC-100C.
 std::optional<bool> traceSwitch(TIAppPart& c) {
     auto a = c.emulator()->access();
@@ -234,7 +239,7 @@ TEST(lib18_ac21_trace_kept_through_detach_and_attach) {
     CHECK(r.attach("printer", "PC-100C").done);
     CHECK(!c.printerTrace());                       // off when the product starts
     CHECK(traceSwitch(c) == std::optional<bool>(false));
-    c.setPrinterControl("TRACE", true);
+    CHECK(r.send(calcu::peripherals::kSetControlCommand, traceOnArgs()).done);   // LIB-2 (E-3)
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
     CHECK(r.reset().done);
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
@@ -259,7 +264,7 @@ TEST(c59_6_ac6_preset_sets_trace_off_unless_printer_trace_on) {
     PartRig r;
     auto& c = r.part();
     CHECK(r.attach("printer", "PC-100C").done);
-    c.setPrinterControl("TRACE", true);
+    CHECK(r.send(calcu::peripherals::kSetControlCommand, traceOnArgs()).done);   // LIB-2 (E-3)
     CHECK(c.printerTrace());
     CHECK(r.load(preset("data:\n  01: 1\n")).done);
     r.run(20ms);

@@ -35,8 +35,13 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    `frontends/web/bindings.cpp`, since M-34). The app layer inside it is
    single-threaded: no thread, no wait, no lock (ADR 0009). Everything a
    frontend does is a command (`cu59::commands`, the Web's `c59.web.*`),
-   everything it gets a message (the interim `c59.*` topics,
-   `app/TIAppPart.hpp`; the Web page's `c59.web.*`, `app/TIWebPart.hpp`).
+   everything it gets a message (the product topics `c59.led`,
+   `c59.cue-card`, `c59.printer`, `app/TIAppPart.hpp`, compared by value:
+   set them after a flow, the session sends what changed; the Web page's
+   `c59.web.*`, `app/TIWebPart.hpp`, derived from those values). A command
+   name has one owner: the session refuses a second declaration
+   (`set-control` is LIB-2's; TRACE's kept position goes into an attached
+   PC-100C through `TIProductMachines::attaching`).
    What Calc-U-59 gives LIB-14's shell (the menus' product items, the About
    texts and links, the settings dialog per frontend and layout, the
    faceplate's hit map) is `app/TIShellProduct`, one source for every

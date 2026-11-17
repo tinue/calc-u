@@ -10,6 +10,8 @@
 // 59-10), the TI pacing profile, no sound (LIB-3 AC-33), the readiness bound
 // of 25 s (D-30). A TI-58C's built-in default carries its constant memory as
 // build content (AC-19; C59-3 AC-7: ConstantMemoryKeeper::contentForBuild).
+// A PC-100C attached gets TRACE at the position the app session keeps
+// (C59-6 AC-6: through a detach and attach, like the real switch; TIAppPart).
 // The app layer and the harness entry use the same class.
 
 namespace cu59 {
@@ -29,10 +31,14 @@ public:
         return calcu::machine::Seconds(25.0);
     }
     void setConstantMemory(ContentForBuild f) { m_constantMemory = std::move(f); }
+    /// C59-6 AC-6: TRACE's kept position, put into a PC-100C attached; unset: off.
+    void setKeptTrace(std::function<bool()> f) { m_keptTrace = std::move(f); }
+    void attaching(calcu::machine::PeripheralRequest& request) override;
 
 private:
     TIMachineBuilder m_builder;
     ContentForBuild m_constantMemory;
+    std::function<bool()> m_keptTrace;
 };
 
 /// The module the built-in default puts into `slot-1` (ADR 0021).

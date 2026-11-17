@@ -8,6 +8,8 @@
 #include <limits>
 #include <map>
 #include <span>
+#include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace calcu::sessions {
@@ -133,7 +135,13 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     SessionContext& context() override { return *this; }
     StateTopic& stateTopic(TopicName) override;
     StreamTopic& streamTopic(TopicName, History) override;
-    void command(CommandName name, Handler h, bool ends = false) override { commands[name] = CommandEntry{std::move(h), ends}; }
+    void command(CommandName name, Handler h, bool ends = false) override {
+        // One owner per command (Part E simplification E-3): a second
+        // declaration of a name would silently replace the first.
+        const std::string text = name.value;
+        if (!commands.emplace(std::move(name), CommandEntry{std::move(h), ends}).second)
+            throw std::logic_error("The command " + text + " is declared twice.");
+    }
     void request(RequestName name, RequestHandler h) override { requests[name] = std::move(h); }
 
     void registerLibraryCommands();

@@ -17,11 +17,14 @@
 // bindings.cpp at the pin) are product topics, commands and requests of the
 // app session, in the page's own form -- the page only draws them, as
 // Calc-U-1600's SharpWebPart does for its page:
-// - state topics `c59.web.*`: model, display (the LED cells), cue-card (a
-//   draw list at the page's card size), run-state, printer (connected and
-//   TRACE; the paper is the library's `paper PC-100C`, M-53),
-//   settings, debug-font; the debug panel's data are TIDebugPart's product
-//   topics (C59-4 AC-25), whose values are the page's forms (M-56);
+// - state topics `c59.web.*`, each derived from the value of a product topic
+//   and refreshed when that value changed (Part E simplification E-3):
+//   display (the LED cells of `c59.led`), cue-card (a draw list of
+//   `c59.cue-card` at the page's card size), debug-font; the page reads
+//   `c59.printer` (TRACE), the library's `run-state` (FREEZE ON START),
+//   `busy` (the speed) and `held-keys` (the key drawn pressed) itself; the
+//   debug panel's data are TIDebugPart's product topics (C59-4 AC-25), whose
+//   values are the page's forms (M-56);
 // - the command `start` (LIB-15 N3: {model, preset}); commands `c59.web.*` for
 //   the page's key grid (the pointer is the library's shell rule since M-57;
 //   on-screen keys of the library's typing, LIB-5), the three settings the page offers,
@@ -42,8 +45,6 @@ namespace cu59 {
 namespace topics {
 inline const calcu::sessions::TopicName kWebDisplay{"c59.web.display"};
 inline const calcu::sessions::TopicName kWebCueCard{"c59.web.cue-card"};
-inline const calcu::sessions::TopicName kWebRunState{"c59.web.run-state"};
-inline const calcu::sessions::TopicName kWebPrinter{"c59.web.printer"};
 inline const calcu::sessions::TopicName kWebDebugFont{"c59.web.debug-font"};
 } // namespace topics
 
@@ -62,31 +63,26 @@ public:
 
 private:
     using Value = calcu::sessions::Value;
-    /// Once per call: one set per topic of what changed since the last call.
-    void drain(calcu::sessions::SessionContext&);
+    /// Once per call: the page's forms of the product topics whose value changed.
+    void drain();
     void screenKey(int index, bool down, std::uint32_t pointer);
-    int heldKey() const;   ///< the last key live input holds (row × 5 + col), -1 none
     static constexpr std::uint32_t kButtonPointer = 2;
-    Value cueCard() const;
-    Value runState() const;
-    std::string saveFolder() const;
+    Value cueCard(const TICueCardState&) const;
 
     TIAppPart* m_app = nullptr;
     calcu::sessions::SessionContext* m_ctx = nullptr;
-    int m_lastHeld = -1;
-    uint32_t m_changes = 0;
     bool m_cueDirty = true, m_debugFontDirty = false;
     int m_debugFont = 11;
     double m_cardW = 0, m_cardH = 0;
 
+    // The product topics drawn (TIAppPart's), and their values last drawn.
+    const calcu::sessions::StateTopic* m_led = nullptr;
+    const calcu::sessions::StateTopic* m_cueCard = nullptr;
+    calcu::sessions::PayloadPtr m_ledDrawn, m_cueDrawn;
+
     calcu::sessions::StateTopic* m_display = nullptr;
     calcu::sessions::StateTopic* m_cue = nullptr;
-    calcu::sessions::StateTopic* m_run = nullptr;
-    calcu::sessions::StateTopic* m_printer = nullptr;
     calcu::sessions::StateTopic* m_font = nullptr;
 };
-
-/// A payload that is its value (the page's own forms).
-calcu::sessions::PayloadPtr webPayload(std::string_view kind, calcu::sessions::Value v);
 
 } // namespace cu59

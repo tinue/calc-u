@@ -44,10 +44,8 @@ public:
     std::string moduleID() const;
     bool printerPlugged() const;
 
-    /// A control of the PC-100C: a key down or up, the switch on or off
-    /// (C59-6 AC-5). False without a PC-100C.
-    bool printerControl(const calcu::machine::ControlId& id, bool on);
-    /// The switch's position; nullopt without a PC-100C.
+    /// The switch's position; nullopt without a PC-100C (it is set through
+    /// LIB-2's set-control, C59-6 AC-5).
     std::optional<bool> printerSwitch(const calcu::machine::ControlId& id) const;
 
     // ── Frames ───────────────────────────────────────────────────────────────

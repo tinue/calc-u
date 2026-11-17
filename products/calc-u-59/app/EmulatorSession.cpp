@@ -26,17 +26,6 @@ bool EmulatorSession::printerPlugged() const {
     return false;
 }
 
-bool EmulatorSession::printerControl(const calcu::machine::ControlId& id, bool on) {
-    auto* c = calcu::machine::capabilityAs<calcu::peripherals::Controls>(m_machine, kControls);
-    if (!c) return false;
-    for (const auto& info : c->list()) {
-        if (info.id != id) continue;
-        if (info.form == calcu::machine::ControlForm::Switch) return c->set(id, on) == calcu::peripherals::ControlCall::Done;
-        return (on ? c->press(id) : c->release(id)) == calcu::peripherals::ControlCall::Done;
-    }
-    return false;
-}
-
 std::optional<bool> EmulatorSession::printerSwitch(const calcu::machine::ControlId& id) const {
     auto* c = calcu::machine::capabilityAs<calcu::peripherals::Controls>(m_machine, kControls);
     if (!c) return std::nullopt;

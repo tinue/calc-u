@@ -6,7 +6,9 @@
 
 #include "TestHarness.hpp"
 #include "../app/TIMagneticCardKind.hpp"
+#include "debugger/RunState.hpp"
 #include "media/MediaTopics.hpp"
+#include "typing/TypingTopics.hpp"
 #include "opening/OpenRequest.hpp"
 #include "SessionRig.hpp"
 #include "../app/TIWebPart.hpp"
@@ -66,7 +68,6 @@ struct WebRig : WebPieces, testroms::SessionRig {
             until([this] { return session().machineSession().machine() && !busy(); });
         }
     }
-    ~WebRig() { web.reset(); }   // first: it tells the part it goes
     void send(const char* name, Value args = Value::object({})) {
         post(CommandName{name}, std::move(args));
         session().call(now);
@@ -196,9 +197,13 @@ TEST(lib15_ac20_cards_are_files_of_the_save_folder) {
 TEST(lib15_ac22_the_page_topics_are_there) {
     WebRig r;
     r.run(1s);
-    for (const auto* t : {&topics::kWebDisplay, &topics::kWebRunState, &topics::kWebPrinter, &calcu::media::kMediaTopic,
-                          &topics::kDebugView})
+    for (const auto* t : {&topics::kWebDisplay, &topics::kWebCueCard, &topics::kPrinter, &calcu::media::kMediaTopic,
+                          &topics::kDebugView, &calcu::debugger::kRunStateTopic, &calcu::typing::kHeldKeysTopic,
+                          &kBusyTopic})
         CHECK(r.fe.mirror.state(*t) != nullptr);
+    // E-3: the page reads c59.printer, run-state, busy and held-keys itself.
+    CHECK(r.fe.mirror.state(TopicName{"c59.web.printer"}) == nullptr);
+    CHECK(r.fe.mirror.state(TopicName{"c59.web.run-state"}) == nullptr);
     CHECK(r.fe.mirror.state(TopicName{"control-state"}) != nullptr);   // the model and the module (M-57)
     CHECK(r.fe.mirror.state(TopicName{"c59.web.model"}) == nullptr);   // gone (LIB-4 §10.7)
     const Value display = r.state(topics::kWebDisplay);
@@ -207,19 +212,20 @@ TEST(lib15_ac22_the_page_topics_are_there) {
 
 // LIB-5 (AC-21, AC-24, AC-10): the page's key grid and the host keys go
 // through the library's typing; the key the page draws pressed is the one
-// live input holds (c59.web.run-state heldKey).
+// live input holds (the library's held-keys, its last `live` key).
 TEST(lib5_ac24_web_keys_through_the_typing_engine) {
     WebRig r;
     r.run(1s);
     auto held = [&] {
-        const Value v = r.state(topics::kWebRunState);
-        const Value* h = v.find("heldKey");
-        return h && h->integer() ? *h->integer() : -2;
+        const Value v = r.state(calcu::typing::kHeldKeysTopic);
+        const Value* live = v.find("live");
+        if (!live || !live->elements()) return std::string("?");
+        return live->elements()->empty() ? std::string() : *live->elements()->back().string();
     };
     r.send("c59.web.key-button-down", Value::object({{"row", 6}, {"col", 2}}));   // 5
-    CHECK_EQ(held(), std::int64_t(32));
+    CHECK_EQ(held(), std::string("5"));
     r.send("c59.web.key-button-up");
-    CHECK_EQ(held(), std::int64_t(-1));
+    CHECK_EQ(held(), std::string());
     r.run(300ms);
     CHECK_EQ(testroms::displayText(r.machine()), std::string("5"));
     calcu::typing::HostKeyEvent e;
@@ -227,9 +233,9 @@ TEST(lib5_ac24_web_keys_through_the_typing_engine) {
     e.carried = 'a';   // AZERTY: the key at Q carries A
     e.produced = 'a';
     r.send("host-key-down", calcu::typing::toValue(e));
-    CHECK_EQ(held(), std::int64_t(0));
+    CHECK_EQ(held(), std::string("A"));
     r.send("focus-lost");   // LIB-5 AC-10: released after its minimum
     r.run(300ms);
-    CHECK_EQ(held(), std::int64_t(-1));
+    CHECK_EQ(held(), std::string());
     CHECK(r.part().typing().engine().down().empty());
 }

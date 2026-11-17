@@ -33,7 +33,8 @@ public:
     // The plan and origin of the last build that succeeded.
     const std::optional<BuiltWith>& lastBuild() const { return lastBuild_; }
     // AC-10: the request for a peripheral by place, ID and variant, from the
-    // catalogue (no content: the peripheral's default).
+    // catalogue (no content: the peripheral's default), with what the product
+    // adds to an attach (ProductMachines::attaching).
     machine::PeripheralRequest requestFor(const machine::PlacePath&, const machine::PeripheralId&,
                                           std::optional<machine::VariantId>) const;
     // AC-12: the refusal the change would get, without it (canAttach,

@@ -242,6 +242,11 @@ Column status: every criterion of the column passes: **Done**.
 - No Settings row sets the startup preset yet (D-28): `[preset] TI-59`
   (`TI-58`, `TI-58C`) in `Calc-U-59.ini`, e.g.
   `examples:startup/default-ti59.ti59`; M-57 and M-58 add the rows.
+  M-57 (2026-11-17): the Qt6 and Web settings dialogs have the section
+  Startup presets with the rows TI-59, TI-58, TI-58C (LIB-14 AC-12, AC-30;
+  "None", the startup presets of the preset list, "Choose…" in Qt6;
+  `CalcU59QtTests` `lib14_ac30_settings_sections_and_rows`, Web
+  `lib14_ac30 the web settings per layout`); Swift in M-58.
 - The TRACE position follows the PC-100C's switch after every call and is
   put into a PC-100C that an `attach` plugs into the running machine
   (D-27), not into one a build makes.

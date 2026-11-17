@@ -2,10 +2,32 @@
 
 namespace calcu::shell {
 
-std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p) {
+namespace {
+
+// B8: an Action that follows its menu item (M9), under the bar's label.
+void addAction(std::vector<BarControl>& into, const std::vector<Menu>& ms, const char* id, const char* label) {
+    const MenuItem* i = findItem(ms, id);
+    if (!i) return;
+    BarControl c;
+    c.kind = BarControl::Kind::Action;
+    c.id = id;
+    c.label = label;
+    c.item = *i;
+    into.push_back(std::move(c));
+}
+
+} // namespace
+
+std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Traits t) {
     std::vector<BarGroupModel> out;
     if (!in.started()) return out;   // B7 (AC-19)
     const sessions::Value& cs = in.controlState;
+    std::vector<Menu> ms;
+    BarGroupModel start{BarGroup::Start, {}};
+    if (!t.menuBar) {   // B8
+        ms = menus(in, p, t);
+        addAction(start.controls, ms, "reset", "Reset");
+    }
 
     BarGroupModel model{BarGroup::AfterModel, {}};
     BarControl picker;
@@ -57,11 +79,23 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p) {
         c.entry = m;
         media.controls.push_back(std::move(c));
     }
+    BarGroupModel end{BarGroup::End, {}};
+    if (!t.menuBar) {   // B8
+        addAction(end.controls, ms, actions::kLoadPreset, "Preset");
+        addAction(end.controls, ms, actions::kSettings, "Settings");
+        BarControl more;
+        more.kind = BarControl::Kind::More;
+        more.id = "more";
+        more.label = "More";
+        more.choices = moreItems(ms, p);
+        end.controls.push_back(std::move(more));
+        out.push_back(std::move(start));
+    }
     out.push_back(std::move(model));
     out.push_back(std::move(slots));
     out.push_back(std::move(places));
     out.push_back(std::move(media));
-    out.push_back(BarGroupModel{BarGroup::End, {}});
+    out.push_back(std::move(end));
     return out;
 }
 

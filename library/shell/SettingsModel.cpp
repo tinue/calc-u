@@ -102,6 +102,13 @@ std::vector<ShownSection> dialog(const Value& settings, const Value& presetList,
                 s.shown = withTilde(read::text(*r, "inUse"), home);
                 break;
             case Widget::Choice:
+                if (!row.choices.empty()) {   // S8: exactly these; a value not among them as written
+                    s.choices = row.choices;
+                    bool listed = false;
+                    for (const auto& c : row.choices) listed = listed || c.first == s.value;
+                    if (!listed) s.choices.emplace_back(s.value, s.value);
+                    break;
+                }
                 for (const auto& c : read::elements(*r, "choices"))
                     if (c.string()) s.choices.emplace_back(*c.string(), *c.string());
                 break;

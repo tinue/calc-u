@@ -32,7 +32,24 @@ Never edit the calculator there — that copy is generated.
    topics, commands and requests), `app/TIAppPart` (`c59.*`) and the
    library's topics, which the component set draws (M-53): the paper panel
    `CalcuPaperPanel` (`src/Paper.jsx`, LIB-8) and the run-control buttons
-   `CalcuRunControlButtons` (`src/Debugger.jsx`, LIB-10), on `engine.shell`.
+   `CalcuRunControlButtons` (`src/Debugger.jsx`, LIB-10), on the shell.
+   Since M-57 (LIB-14 59) the page is put together from the React set's
+   shell (`library/web/components/`): `useCalcuShell` with the layout's
+   traits (wide: the menu bar `ShellMenuBar`, File / Machine / Help, no Edit;
+   portrait: no menu bar, the bar's Reset, Preset, Settings and More,
+   `ShellMoreMenu`), `ShellControlBar` in each calculator column (the model
+   picker, LIB-7's `CalcuMediaPicker` for `slot-1`, the button "PC-100C",
+   C59-7's card controls as the media controls of `magnetic-card`),
+   `ShellDialogs` (settings, About, notices, "Loading…"),
+   `ShellStorageBanner`, `ShellRomsMissing`, and `useShellFaceplate` on the
+   hit map of `c59.faceplate-map` (a press on a fitted card's corner is the
+   product's first: `c59.tap-card`). The product's data are the request
+   `c59.shell-product {layout, version}` (`app/TIShellProduct`: items,
+   About texts and links, the settings spec of the layout); a new menu
+   item goes into `TIShellProduct` (the menu model), not into the page.
+   `src/engine.js`, `src/ControlBar.jsx`, the page's own preset picker,
+   Settings and About, `c59.static-data`, `c59.web.model`,
+   `c59.web.settings` and the page's pointer commands went in M-57.
    A trace is handed over with `keep-file` when it ends; the page lists it.
    The debug panel draws the product topics of `app/TIDebugPart` (C59-4,
    M-56): `calculator-debug`, `program-listing` (the whole listing while
@@ -43,18 +60,23 @@ Never edit the calculator there — that copy is generated.
    buttons send `c59.dump`, `c59.log-level`, `c59.heatmap-reset`,
    `c59.asm-load` / `-run` / `-clear`; Run, TRACE and the CALCULATOR tab
    follow the `control-state` product entries `c59.asm-run`, `c59.trace`,
-   `c59.calculator-tab` (`bindings.cpp` adds LIB-4's ControlPart). A drop and
-   the preset picker's upload (several files) are LIB-13's
-   `open {files, way: drop|dialog, upload: true}` (`engine.openFiles`): the
-   session decides what a file is, a refusal is its notice.
+   `c59.calculator-tab` (`bindings.cpp` adds LIB-4's ControlPart and LIB-14's
+   SettingsPart; without the full set of ROM files the session starts
+   without a machine and publishes `roms-missing`). A drop and
+   Load Preset… (several files) are LIB-13's
+   `open {files, way: drop|dialog, upload: true}`: the session decides
+   what a file is, a refusal is its notice (the shell's notice dialog).
    The magnetic cards are the library's `media` topic and `media.*`
-   commands (M-55, LIB-7 59, C59-7; `src/Dialogs.jsx`'s card picker and the
-   component set's `CalcuSavedMediaDialog`); `c59.web.card` and the
+   commands (M-55, LIB-7 59, C59-7; `src/Dialogs.jsx`'s card picker, opened
+   by the product items Arm Card… / Arm Fresh Card… or the bar's card
+   controls; File ▸ Import Media… and Saved Media…, the component set's
+   `CalcuSavedMediaDialog`); `c59.web.card` and the
    `c59.web.*-card` commands are gone; the corners stay `c59.tap-card`
    (the face's pointer) and `media.feed` (assistive buttons).
-   `bindings.cpp` is only the factory of the session; `src/engine.js` only
-   translates the components' calls to commands and requests and the topics
-   to slices (as Calc-U-1600's). No message of a protocol of its own (LIB-15
+   `bindings.cpp` is only the factory of the session; the components send
+   commands and requests by name and read the topics with `useTopic`
+   (`src/page.jsx`: the shell made with `createShell`, the traces handed
+   over, the LOG view). No message of a protocol of its own (LIB-15
    AC-22), no `localStorage` (LIB-9 AC-23).
 2. **Parity** (CLAUDE.md § "Frontend Parity"): a user-visible change to a
    feature the web has needs the matching change in the apps, or a
@@ -75,8 +97,8 @@ Never edit the calculator there — that copy is generated.
    library's worker fetches all 24 at init into `/bundle`, where the
    engine's ROM lookup finds them, LIB-12; the service worker caches them), artwork from
    `frontends/swift/App/Assets.xcassets`, presets from `examples/` (exactly the files
-   `examples/bundle.yaml` lists, into `dist/presets/`; the picker asks
-   `preset-list`), the icon from `frontends/qt6/resources/linux/` (derived from
+   `examples/bundle.yaml` lists, into `dist/presets/`; the shell's
+   Examples ▸ and the startup preset rows ask `preset-list`), the icon from `frontends/qt6/resources/linux/` (derived from
    `frontends/swift/App/AppIcon.icon`). `build.sh` copies them; never commit copies.
 8. **Build and test before committing:** `frontends/web/build.sh && frontends/web/run-tests.sh`.
    Also after any `core/` or `app/` change (CLAUDE.md).
@@ -91,6 +113,9 @@ frontends/web/run-tests.sh -g "cue card"     # extra args go to playwright test
 python3 -m http.server 8000 -d frontends/web/dist   # look at it: http://localhost:8000/
 ```
 
+`tests/shell.spec.js` (M-57) carries the scenarios of LIB-14 59 under the
+IDs of their Qt6 twins (`lib14_ac24` to `lib14_ac33`, `lib7_ac36 file menu
+…`); elements by their `data-calcu` names.
 The tests (`tests/play-calculator.spec.js`) drive `dist/index.html` and
 `dist/app/` through the real engine: arithmetic by bitmap identity of the LED
 canvas, the hit test and drag, the physical keyboard, models and the TI-58C
@@ -103,11 +128,11 @@ precache. Key presses after a program stops can extend its last entry, as
 on the real calculator — press CLR first. `tests/prerender.spec.js` renders `calc.js`
 in Node. Ports 8059 and 8060 (`CALCU_WEB_PORT` moves both).
 `tests/session.spec.js` (LIB-15 AC-19, AC-22, EC-4, LIB-3 AC-31) records the
-messages and reads the engine through the root element's `calcuEngine`;
+messages and reads the shell through the root element's `calcuShell`;
 `tests/storage.spec.js` (AC-20, AC-21, LIB-9 AC-23) reads IndexedDB
 `/persist-calc-u-59`. `tests/pacing.spec.js` (LIB-17 AC-19, Checkpoint) is
 skipped unless `CALCU59_WEB_PACING=1`; it reads the session's `ticks`
-request through `calcuEngine` for one minute.
+request through `calcuShell` for one minute.
 
 The engine's Emscripten flags live in the product's `CMakeLists.txt`
 (`calcu59_web`); the tree is configured once — delete `../../build/web`

@@ -22,6 +22,9 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC OFF)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
+if(CALCU_ATTACH)   # calcu_qt6 links Qt Network for its attach line client (M-57)
+  find_package(Qt6 REQUIRED COMPONENTS Network)
+endif()
 qt_standard_project_setup()
 
 set(REPO_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)  # the product directory
@@ -89,11 +92,8 @@ set(CALCU59_QT_SOURCES
   app/KeyboardWidget.cpp
   app/LedRenderer.cpp
   app/CueCardRenderer.cpp
-  app/ControlBar.cpp
-  app/PaperPane.cpp
+  app/CardControls.cpp
   app/CardPickerDialog.cpp
-  app/SettingsDialog.cpp
-  app/AboutDialog.cpp
   app/AppPaths.cpp
   app/debug/DebugPanel.cpp
   app/debug/LiveDebugWidget.cpp
@@ -141,13 +141,18 @@ target_link_libraries(CalcU59Qt PRIVATE Qt6::Widgets calcu_library)
 # The Qt6 component set (LIB-8, LIB-10; M-53): the paper panel, the
 # run-control buttons and the clipboard service.
 target_link_libraries(CalcU59Qt PRIVATE calcu_qt6)
-# LIB-17 AC-19 (design §5, P59-5): the test hook --pacing-probe <s> exists
-# in a build with the tests only, never in the release packaging
-# (build/release, CALCU_TESTS off). Checkpoint: CalcU59QtPacingProbe, one
-# minute offscreen with a temporary HOME (no settings of the user's).
-if(CALCU_TESTS)
-  target_compile_definitions(CalcU59Qt PRIVATE CALCU59_PACING_PROBE)
-  if(CALCU_TESTS_CHECKPOINT)
+# LIB-14 design §10.7 (M-57): harness attach in development and test builds
+# (CALCU_ATTACH: POSIX trees with the tests; `--attach-port N`, else 59059),
+# with the harness's product entry (app/HarnessProduct) that the attached
+# harness runs, and its client in the same process, the pacing probe
+# (`--pacing-probe <s>`, LIB-17 AC-19, design §5, P59-5). The release
+# packaging (build/release) and Windows have neither. Checkpoint:
+# CalcU59QtPacingProbe, one minute offscreen with a temporary HOME (no
+# settings of the user's).
+if(CALCU_ATTACH)
+  target_sources(CalcU59Qt PRIVATE ${SHARED_ROOT}/HarnessProduct.cpp)
+  set_source_files_properties(${SHARED_ROOT}/HarnessProduct.cpp PROPERTIES COMPILE_DEFINITIONS "CALCU59_VERSION=\"${APP_VERSION}\"")
+  if(CALCU_TESTS AND CALCU_TESTS_CHECKPOINT)
     set(PROBE_HOME ${CMAKE_CURRENT_BINARY_DIR}/pacing-probe-home)
     file(MAKE_DIRECTORY ${PROBE_HOME})
     calcu_add_test(CalcU59QtPacingProbe checkpoint COMMAND $<TARGET_FILE:CalcU59Qt> --pacing-probe 60
@@ -228,7 +233,7 @@ endif()
 # (library/qt6/tests/QtTestMain.cpp). On the real clock.
 if(CALCU_TESTS)
   file(GLOB CALCU59_QT_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*_tests.cpp)
-  add_executable(CalcU59QtTests ${CALCU59_QT_SOURCES} ${CALCU59_QT_TEST_SOURCES}
+  add_executable(CalcU59QtTests ${CALCU59_QT_SOURCES} ${CALCU59_QT_TEST_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/tests/QtFixture.cpp
                  ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/qt6/tests/QtTestMain.cpp)
   qt_add_resources(CalcU59QtTests "roms" PREFIX "/roms" FILES ${CALCU59_QT_ROM_FILES})
   qt_add_resources(CalcU59QtTests "artwork" PREFIX "/img" FILES ${CALCU59_QT_ARTWORK})
@@ -237,6 +242,10 @@ if(CALCU_TESTS)
   target_include_directories(CalcU59QtTests PRIVATE ${CORE_ROOT} ${SHARED_ROOT} app tests ${CMAKE_CURRENT_BINARY_DIR}/generated
                              ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/testing)
   target_link_libraries(CalcU59QtTests PRIVATE Qt6::Widgets calcu_library calcu_qt6 calcu_warnings)
+  target_compile_definitions(CalcU59QtTests PRIVATE CALCU59_DIR="${REPO_ROOT}" CALCU59_QT_TEST_OUT="${CMAKE_CURRENT_BINARY_DIR}/test-pictures")
+  if(CALCU_ATTACH)   # Q12: the attach host in the test window (`qt_attach_drives_calc_u_59`)
+    target_sources(CalcU59QtTests PRIVATE ${SHARED_ROOT}/HarnessProduct.cpp)
+  endif()
   set(QT_TEST_HOME ${CMAKE_CURRENT_BINARY_DIR}/qt-tests-home)
   file(MAKE_DIRECTORY ${QT_TEST_HOME})
   calcu_add_test(CalcU59QtTests frequent COMMAND CalcU59QtTests)

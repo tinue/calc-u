@@ -41,7 +41,7 @@ makes it); release builds and Windows have neither.
 
 **A client of harness attach** (LIB-14 AC-44). The app opens harness
 attach on a port the system picks and the runner talks to it as a line
-client (`app/screenshots/AttachLineClient`, LIB-11's serve protocol): every
+client (`library/qt6/AttachLineClient`, LIB-11's serve protocol): every
 step that loads a preset, lets time pass, presses keys or types is the
 harness's `preset`, `wait`, `key`, `type`, `reset`, `cold-boot` (and
 `expect`, `pause`, `resume`), so the runner never steps the machine

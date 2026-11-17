@@ -37,6 +37,12 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    frontend does is a command (`cu59::commands`, the Web's `c59.web.*`),
    everything it gets a message (the interim `c59.*` topics,
    `app/TIAppPart.hpp`; the Web page's `c59.web.*`, `app/TIWebPart.hpp`).
+   What Calc-U-59 gives LIB-14's shell (the menus' product items, the About
+   texts and links, the settings dialog per frontend and layout, the
+   faceplate's hit map) is `app/TIShellProduct`, one source for every
+   frontend (M-57); a new menu item or settings row goes there. Without the
+   full ROM set the session is made with `TIAppSetup::romsMissing` and no
+   machine, and publishes `roms-missing`.
    `TIAppPart` owns the library's parts of its session
    (`parts::LibraryParts`, M-54; `sessionParts()`): typing, peripherals,
    presets on `TIPresetRules` and the bundle of `examples/`

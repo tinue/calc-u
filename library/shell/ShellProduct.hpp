@@ -18,7 +18,8 @@ namespace calcu::shell {
 // The groups of AC-1 a product item goes into (M1).
 enum class MenuGroup { FileOpen, FileKinds, FileMedia, FileEnd, Edit, MachineEnd, Help };
 // The groups of the control bar (B1, B2), left to right.
-enum class BarGroup { AfterModel, Slots, Places, Media, End };
+// Start: before the model picker, only in a window without a menu bar (B8).
+enum class BarGroup { Start, AfterModel, Slots, Places, Media, End };
 
 struct ProductItem {   // AC-7
     MenuGroup group = MenuGroup::FileKinds;
@@ -27,6 +28,12 @@ struct ProductItem {   // AC-7
     // whether the item can be used now; empty: always (M9).
     std::string entry;
     std::function<void()> act;
+    // The product draws its own control for it on the bar, so a window
+    // without a menu bar leaves it out of the More menu (M14).
+    bool onBar = false;
+    // The item exists while the control state lists this media place, and
+    // is enabled exactly when its `insert` is (M17; LIB-4 AC-12). Empty: none.
+    std::string mediaPlace = {};
 };
 
 struct ShellProduct {
@@ -59,7 +66,12 @@ AboutModel about(const ShellProduct&);
 
 // The problems of a product's shell data, for its tests (D-13): a model or
 // peripheral with variants in `catalogueControlState` and no label, an empty
-// name or help address, duplicate item ids. Empty when sound.
+// name or help address, duplicate item ids, an item's `mediaPlace` that the
+// control state does not list (pass each model's control state). Empty when
+// sound.
 std::vector<std::string> checkShellProduct(const ShellProduct&, const sessions::Value& catalogueControlState);
+// The same over every model's control state, and an item's `mediaPlace`
+// that none of them lists.
+std::vector<std::string> checkShellProduct(const ShellProduct&, const std::vector<sessions::Value>& controlStates);
 
 } // namespace calcu::shell

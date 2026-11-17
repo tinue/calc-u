@@ -57,7 +57,14 @@ std::vector<MenuItem> productItems(const ShellInputs& in, const ShellProduct& p,
     for (const auto& item : p.items) {
         if (item.group != g) continue;
         MenuItem i = action(item.id, item.label);
-        if (!item.entry.empty()) {   // M9: a product item follows its product entry
+        if (!item.mediaPlace.empty()) {   // M17: only with its media place, as its `insert`
+            const Value* place = nullptr;
+            for (const auto& m : read::elements(in.controlState, "mediaPlaces"))
+                if (read::text(m, "id") == item.mediaPlace) place = &m;
+            if (!place) continue;
+            applyAvailability(i, availabilityOf(*place, "insert"));
+        }
+        if (!item.entry.empty() && i.enabled) {   // M9: a product item follows its product entry
             const Value* e = entries ? entries->find(item.entry) : nullptr;
             applyAvailability(i, e ? availabilityOf(*e) : Availability{false, ""});
         }
@@ -140,10 +147,12 @@ std::vector<MenuItem> fileMenu(const ShellInputs& in, const ShellProduct& p, Tra
     for (auto& i : productItems(in, p, MenuGroup::FileMedia)) media.push_back(std::move(i));
     appendGroup(items, std::move(media));
     std::vector<MenuItem> end = productItems(in, p, MenuGroup::FileEnd);
-    MenuItem settings = action(actions::kSettings, "Settings…");
-    settings.role = MenuItem::Role::Preferences;
-    settings.shortcut = t.shortcuts ? MenuItem::Shortcut::Preferences : MenuItem::Shortcut::None;
-    end.push_back(std::move(settings));
+    if (t.settings) {   // M18
+        MenuItem settings = action(actions::kSettings, "Settings…");
+        settings.role = MenuItem::Role::Preferences;
+        settings.shortcut = t.shortcuts ? MenuItem::Shortcut::Preferences : MenuItem::Shortcut::None;
+        end.push_back(std::move(settings));
+    }
     if (t.hasQuit) {
         MenuItem quit = action(actions::kQuit, "Quit");
         quit.role = MenuItem::Role::Quit;
@@ -237,13 +246,15 @@ std::vector<MenuItem> machineMenu(const ShellInputs& in, const ShellProduct& p, 
     return items;
 }
 
-std::vector<MenuItem> helpMenu(const ShellInputs& in, const ShellProduct& p) {   // M8
+std::vector<MenuItem> helpMenu(const ShellInputs& in, const ShellProduct& p, Traits t) {   // M8
     std::vector<MenuItem> items;
     if (!p.helpUrl.empty()) items.push_back(action(actions::kHelp, p.name + " Help"));
     for (auto& i : productItems(in, p, MenuGroup::Help)) items.push_back(std::move(i));
-    MenuItem about = action(actions::kAbout, p.aboutLabel.empty() ? "About " + p.name : p.aboutLabel);
-    about.role = MenuItem::Role::About;
-    items.push_back(std::move(about));
+    if (t.about) {
+        MenuItem about = action(actions::kAbout, p.aboutLabel.empty() ? "About " + p.name : p.aboutLabel);
+        about.role = MenuItem::Role::About;
+        items.push_back(std::move(about));
+    }
     return items;
 }
 
@@ -327,7 +338,39 @@ std::vector<Menu> menus(const ShellInputs& in, const ShellProduct& p, Traits t) 
     add("file", "File", fileMenu(in, p, t));
     add("edit", "Edit", editMenu(in, p, t));
     if (in.started()) add("machine", "Machine", machineMenu(in, p, t));   // M10 (AC-19)
-    add("help", "Help", helpMenu(in, p));
+    add("help", "Help", helpMenu(in, p, t));
+    return out;
+}
+
+std::vector<MenuItem> moreItems(const std::vector<Menu>& ms, const ShellProduct& p) {   // M14, M15
+    auto onBar = [&](const MenuItem& i) {
+        if (i.id == actions::kLoadPreset || i.id == actions::kSettings || i.id == actions::kQuit || i.id == "reset" ||
+            i.id == "model" || i.id == "peripherals")
+            return true;
+        for (const auto& item : p.items)
+            if (item.id == i.id && item.onBar) return true;
+        return false;
+    };
+    std::vector<MenuItem> out;
+    bool pending = false;
+    for (const auto& m : ms) {
+        pending = true;   // a new menu is a new group
+        for (const auto& i : m.items) {
+            if (i.kind == MenuItem::Kind::Separator) {
+                pending = true;
+                continue;
+            }
+            if (onBar(i)) continue;
+            if (pending && !out.empty()) out.push_back(separator());
+            pending = false;
+            MenuItem copy = i;
+            if (copy.id == "cold-boot") {
+                copy.confirm = kColdBootQuestion;
+                copy.destructive = true;
+            }
+            out.push_back(std::move(copy));
+        }
+    }
     return out;
 }
 

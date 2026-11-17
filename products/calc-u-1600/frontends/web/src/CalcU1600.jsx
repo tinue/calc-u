@@ -194,7 +194,6 @@ function CalcU1600(props) {
 
   const start = useShellState(shell, (st) => st.start);
   const failure = useShellState(shell, (st) => st.failure);
-  const storage = useTopic(shell, "web.storage");
   const lamps = useTopic(shell, "c1600.lamps");
   const programs = useStream(shell, "c1600.program-opened");
 
@@ -487,11 +486,8 @@ function CalcU1600(props) {
         if (files.length === 1 && shell) openFiles(files, "drop");
       }}>
       <ShellMenuBar shell={s} />
-      {storage && storage.mode && storage.mode !== "kept" && (
-        <div className="calcu-banner" role="status">
-          Calc-U-1600 is open in another tab: cards, disks and tapes saved here are not kept.
-        </div>
-      )}
+      {/* LIB-14 D-39 (M-57, ledger 1600-48): the library's storage sentence. */}
+      <ShellStorageBanner shell={shell} />
       <div className="calcu-face-row">
         {romsMissing && <ShellRomsMissing shell={s} />}
         {failed && !romsMissing && <div className="calcu-shell-roms-missing" data-calcu="start-failed" role="alert">{failure}</div>}

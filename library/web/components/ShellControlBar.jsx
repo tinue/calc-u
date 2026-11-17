@@ -6,9 +6,13 @@
 // group it names (it reads its own product entries, AC-42). A group
 // without a control takes no room (B4). Names (§3.10): control-bar,
 // bar-model, bar-slot-<place>, bar-place-<place>, bar-media-<media place>.
+// Part E (design §10.3.1, B8, B9): in a window without a menu bar the bar
+// also holds Actions (Reset in Start; Preset, Settings in End), each a
+// button with the set's icon and its label unless `compact`
+// (bar-action-<id>), and the More button (bar-more, ShellMoreMenu).
 //
 //   <ShellControlBar shell={s} slotPicker={Component?} mediaControls={{kind: Component}}
-//                    extra={{AfterModel|Slots|Places|Media|End: [elements]}} />
+//                    extra={{Start|AfterModel|Slots|Places|Media|End: [elements]}} compact={bool} />
 //
 // slotPicker and mediaControls get {shell: s, entry} (the place or media place entry).
 
@@ -28,7 +32,24 @@ function ShellPicker({ name, choices, onChoose }) {
   );
 }
 
-function ShellControlBar({ shell, slotPicker, mediaControls, extra }) {
+// The set's icons of the bar's actions (design §10.3.1).
+const CALCU_SHELL_ACTION_ICONS = { reset: "↺", "load-preset": "▤", settings: "⚙", more: "⋯" };
+
+function ShellActionButton({ s, control, compact }) {
+  const item = control.item || {};
+  const disabled = item.enabled === false;
+  return (
+    <button type="button" className="calcu-shell-action" data-calcu={`bar-action-${control.id}`}
+      aria-label={control.label} aria-disabled={disabled ? "true" : undefined}
+      title={disabled && item.reason ? item.reason : control.label}
+      onClick={() => { if (!disabled) s.choose(item); }}>
+      <span className="calcu-shell-action-icon" aria-hidden="true">{CALCU_SHELL_ACTION_ICONS[control.id] || ""}</span>
+      {!compact && <span className="calcu-shell-action-label">{control.label}</span>}
+    </button>
+  );
+}
+
+function ShellControlBar({ shell, slotPicker, mediaControls, extra, compact }) {
   const s = shell;
   if (!s.started) return null;   // B7 (AC-19)
   const Slot = slotPicker;
@@ -57,6 +78,10 @@ function ShellControlBar({ shell, slotPicker, mediaControls, extra }) {
       }
       case "picker":
         return <ShellPicker key={c.id} name={`bar-place-${c.id}`} choices={c.choices} onChoose={s.choose} />;
+      case "action":
+        return <ShellActionButton key={c.id} s={s} control={c} compact={compact} />;
+      case "more":
+        return <ShellMoreMenu key="more" shell={s} items={c.choices} label={c.label} compact={compact} />;
       case "media": {
         const Media = mediaControls && mediaControls[c.mediumKind];
         return Media ? <span key={c.id} data-calcu={`bar-media-${c.id}`}><Media shell={s} entry={c.entry} /></span> : null;

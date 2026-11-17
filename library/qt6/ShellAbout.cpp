@@ -1,6 +1,8 @@
 #include "qt6/ShellAbout.hpp"
 #include "shell/ObjectNames.hpp"
+#include <QApplication>
 #include <QDialogButtonBox>
+#include <QIcon>
 #include <QLabel>
 #include <QVBoxLayout>
 
@@ -12,6 +14,14 @@ ShellAbout::ShellAbout(const shell::ShellProduct& product, QWidget* parent) : QD
     setWindowTitle(QString::fromStdString(a.title));
     setWindowModality(Qt::WindowModal);
     auto* l = new QVBoxLayout(this);
+    // Part E (design §10.3.5, D-38): the application's window icon above the
+    // name, when it has one.
+    if (const QIcon icon = QApplication::windowIcon(); !icon.isNull()) {
+        auto* picture = new QLabel(this);
+        picture->setObjectName(QStringLiteral("about-icon"));
+        picture->setPixmap(icon.pixmap(64, 64));
+        l->addWidget(picture, 0, Qt::AlignHCenter);
+    }
     auto* name = new QLabel(QStringLiteral("<b>%1</b>").arg(QString::fromStdString(a.name).toHtmlEscaped()), this);
     name->setObjectName(QStringLiteral("about-name"));
     l->addWidget(name);

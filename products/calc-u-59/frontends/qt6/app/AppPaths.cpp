@@ -76,6 +76,9 @@ cs::HostDirs platformHostDirs() {
 
 void useHostDirs(const cs::HostDirs& dirs) { chosenHostDirs() = dirs; }
 
+cs::SettingsFile& file() { return settingsFile(); }
+const cs::Paths& places() { return paths(); }
+
 QString defaultDir() {
     const QString dir = q(cs::joinPath(hostDirs().home, cu59::settings::settingsDecl().productName));
     QDir().mkpath(dir);
@@ -84,7 +87,17 @@ QString defaultDir() {
 
 QString saveDir() { return ensured(cs::Folder::Save); }
 
+namespace {
+QString& examplesOverride() {
+    static QString dir;
+    return dir;
+}
+} // namespace
+
+void useBundledExamplesDir(const QString& dir) { examplesOverride() = dir; }
+
 QString bundledExamplesDir() {
+    if (!examplesOverride().isEmpty()) return examplesOverride();
 #if defined(Q_OS_MACOS)
     return QCoreApplication::applicationDirPath() + QStringLiteral("/../Resources/examples");
 #else

@@ -13,7 +13,10 @@
 
 #include "ShotScenario.hpp"
 
+namespace calcu::qt6 {
 class AttachLineClient;
+}
+using calcu::qt6::AttachLineClient;
 class MainWindow;
 class QAction;
 class QProcess;

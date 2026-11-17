@@ -7,7 +7,9 @@
 //
 //   <ShellMenuBar shell={s} />
 
-function ShellMenuItems({ s, items, onDone }) {
+// `prefix`: the items' names ("item-"; the More menu's "more-item-");
+// `onChoose`: in place of s.choose (the More menu asks first, M15).
+function ShellMenuItems({ s, items, onDone, prefix = "item-", onChoose }) {
   const [sub, setSub] = React.useState(null);
   return (
     <ul className="calcu-shell-menu-items" role="menu">
@@ -17,7 +19,7 @@ function ShellMenuItems({ s, items, onDone }) {
         const isSub = item.kind === "submenu";
         return (
           <li key={item.id} className={"calcu-shell-item" + (disabled ? " calcu-shell-disabled" : "")} role="menuitem"
-            data-calcu={`item-${item.id}`} aria-disabled={disabled ? "true" : undefined}
+            data-calcu={`${prefix}${item.id}`} aria-disabled={disabled ? "true" : undefined}
             aria-checked={item.checkable ? String(!!item.checked) : undefined}
             title={disabled && item.reason ? item.reason : undefined}
             onMouseEnter={() => setSub(isSub ? item.id : null)}
@@ -26,12 +28,12 @@ function ShellMenuItems({ s, items, onDone }) {
               if (disabled) return;
               if (isSub) { setSub(item.id); return; }   // opens it (a hover may have opened it already)
               onDone();
-              s.choose(item);
+              (onChoose || s.choose)(item);
             }}>
             <span className="calcu-shell-check">{item.checkable && item.checked ? "✓" : ""}</span>
             <span className="calcu-shell-label">{item.label}</span>
             {isSub && <span className="calcu-shell-arrow">▸</span>}
-            {isSub && sub === item.id && <ShellMenuItems s={s} items={item.children} onDone={onDone} />}
+            {isSub && sub === item.id && <ShellMenuItems s={s} items={item.children} onDone={onDone} prefix={prefix} onChoose={onChoose} />}
           </li>
         );
       })}

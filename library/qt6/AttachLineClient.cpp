@@ -1,7 +1,9 @@
-#include "AttachLineClient.hpp"
+#include "qt6/AttachLineClient.hpp"
 
 #include <QHostAddress>
 #include <QTcpSocket>
+
+namespace calcu::qt6 {
 
 AttachLineClient::AttachLineClient(QObject* parent) : QObject(parent), m_socket(new QTcpSocket(this)) {
     connect(m_socket, &QTcpSocket::readyRead, this, &AttachLineClient::readLines);
@@ -44,3 +46,5 @@ void AttachLineClient::readLines() {
         }
     }
 }
+
+} // namespace calcu::qt6

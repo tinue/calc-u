@@ -1,5 +1,5 @@
 #include "ShotRunner.hpp"
-#include "AttachLineClient.hpp"
+#include "qt6/AttachLineClient.hpp"
 #include "ShotCapture.hpp"
 #include "MacShotSupport.h"
 #include "../FaceplateWidget.hpp"

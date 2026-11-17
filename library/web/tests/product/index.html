@@ -34,6 +34,7 @@
   if (q.get("keyboard") === "0") base.keyboard = false;
   if (q.has("worker")) base.workerUrl = new URL(q.get("worker"), location.href).href;
   if (q.get("shell") === "1") base.shell = true;
+  if (q.has("origin")) base.faceOrigin = Number(q.get("origin"));   // LIB-14 §10.3.4
   const fill = q.get("fill") === "1";
   if (!fill && !("width" in base)) { base.width = 480; base.height = 320; }
   const root = ReactDOM.createRoot(document.getElementById("root"));

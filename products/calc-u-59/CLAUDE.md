@@ -118,6 +118,15 @@ landscape on a large screen) — its column in
   in `app/` and call it (frontends/swift/Bridge/ wrapper for Swift, directly from Qt,
   `frontends/web/bindings.cpp` for the web).
 - **`frontends/swift/Bridge/`, the Qt adapters and `frontends/web/bindings.cpp` translate types only.**
+- **The Qt6 and Web windows are put together from LIB-14's shell** (M-57;
+  the Swift frontend natively, C59-8): the menus, the control bar (and the
+  More button where there is no menu bar), the settings dialog, About,
+  Help, notices and "Loading…" are drawn from the library's models over
+  the control state, with the product's data in `app/TIShellProduct`. A
+  new menu item or setting row goes into that model (`shellProduct()`,
+  `settingsSpec()`), never into one frontend; the model, the module, the
+  printer and the card controls are drawn from `control-state` only (CTest
+  `CalcU59FrontendsDrawControlState`).
 - **`app/` never resolves locations.** It takes paths, and ROM files only
   through the library's ROM lookup (a `calcu::roms::Bundle` the frontend
   makes; LIB-12, `app/ProductRoms.hpp`);

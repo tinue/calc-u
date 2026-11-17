@@ -7,7 +7,8 @@
 // every top-level name starts with `calcuShell` or `CALCU_SHELL` (D-17).
 //
 //   calcuShellMenus(inputs, product, traits) → [{id, label, items}]
-//   calcuShellBar(inputs, product) → [{group, controls}]
+//   calcuShellBar(inputs, product, traits) → [{group, controls}]
+//   calcuShellMoreItems(menus, product) → the items of the More button (M14)
 //   calcuShellPanels(inputs) → [{kind, owner, ownerPlace}]
 //   calcuShellFamilySections(rows, keysShown) → spec; calcuShellDialog(settings, presetList, spec)
 //   calcuShellLoading() → {busy(runs, full, now), shown(now), due()}
@@ -19,14 +20,19 @@
 // topic's value or null. product: the JS form of ShellProduct (§3.2): {name, version, build,
 // helpUrl, aboutLabel, aboutLines, aboutLinks: [[label, url]], variantLabels: {id: label},
 // copyScreen: fn | null, pasteText, moduleSlotPinOuts: [...], placesWithoutControl: [...],
-// items: [{group, id, label, entry, act}]}; groups as in C++: "FileOpen", "FileKinds",
+// items: [{group, id, label, entry, act, onBar, mediaPlace}]}; groups as in C++: "FileOpen", "FileKinds",
 // "FileMedia", "FileEnd", "Edit", "MachineEnd", "Help".
+// traits: {hasQuit, shortcuts, savedMedia, menuBar, settings, about} (Part E,
+// design §10.3.1: menuBar false is a window without a menu bar, M13; settings
+// false: no Settings…, M18; about false: no About).
 
 const CALCU_SHELL_ACTIONS = {
   loadPreset: "load-preset", savedMedia: "saved-media", settings: "settings", quit: "quit",
   copyScreen: "copy-screen", pasteText: "paste-text", help: "help", about: "about",
 };
 const CALCU_SHELL_BAR_GROUPS = ["AfterModel", "Slots", "Places", "Media", "End"];
+const CALCU_SHELL_COLD_BOOT_QUESTION = "Cold boot the machine? What it holds in memory is lost.";   // M15
+const CALCU_SHELL_TRAITS = { hasQuit: false, shortcuts: false, savedMedia: true, menuBar: true, settings: true, about: true };
 const CALCU_SHELL_LOADING_MS = 500;
 const CALCU_SHELL_ASKS = "asks:";
 const CALCU_SHELL_STOPPED = "Stopped.";
@@ -70,11 +76,18 @@ function calcuShellStarted(inputs) { return !!(inputs && inputs.controlState); }
 function calcuShellProductItems(inputs, product, group) {
   if (!calcuShellStarted(inputs) && group !== "Help") return [];   // M10
   const entries = (inputs.controlState && inputs.controlState.product) || {};
-  return (product.items || []).filter((i) => i.group === group).map((i) => {
+  const out = [];
+  for (const i of (product.items || []).filter((x) => x.group === group)) {
     const item = calcuShellItem(i.id, i.label);
-    if (i.entry) calcuShellApply(item, entries[i.entry] ? calcuShellAvailability(entries[i.entry]) : { now: false, reason: "" });
-    return item;
-  });
+    if (i.mediaPlace) {   // M17: only with its media place, as its `insert`
+      const place = calcuShellList(inputs.controlState, "mediaPlaces").find((m) => calcuShellText(m, "id") === i.mediaPlace);
+      if (!place) continue;
+      calcuShellApply(item, calcuShellAvailability(place, "insert"));
+    }
+    if (i.entry && item.enabled) calcuShellApply(item, entries[i.entry] ? calcuShellAvailability(entries[i.entry]) : { now: false, reason: "" });
+    out.push(item);
+  }
+  return out;
 }
 
 function calcuShellModelItems(cs) {
@@ -165,7 +178,8 @@ function calcuShellFileMenu(inputs, product, traits) {
   media.push(...calcuShellProductItems(inputs, product, "FileMedia"));
   calcuShellAppendGroup(items, media);
   const end = calcuShellProductItems(inputs, product, "FileEnd");
-  end.push(calcuShellItem("settings", "Settings…", { role: "preferences", shortcut: traits.shortcuts ? "preferences" : "none" }));
+  if (traits.settings !== false)   // M18
+    end.push(calcuShellItem("settings", "Settings…", { role: "preferences", shortcut: traits.shortcuts ? "preferences" : "none" }));
   if (traits.hasQuit) end.push(calcuShellItem("quit", "Quit", { role: "quit", shortcut: traits.shortcuts ? "quit" : "none" }));
   calcuShellAppendGroup(items, end);
   return items;
@@ -231,22 +245,45 @@ function calcuShellMachineMenu(inputs, product, traits) {
   return items;
 }
 
-function calcuShellHelpMenu(inputs, product) {   // M8
+function calcuShellHelpMenu(inputs, product, traits) {   // M8
   const items = [];
   if (product.helpUrl) items.push(calcuShellItem("help", `${product.name} Help`));
   items.push(...calcuShellProductItems(inputs, product, "Help"));
-  items.push(calcuShellItem("about", product.aboutLabel || `About ${product.name}`, { role: "about" }));
+  if (traits.about !== false) items.push(calcuShellItem("about", product.aboutLabel || `About ${product.name}`, { role: "about" }));
   return items;
 }
 
 function calcuShellMenus(inputs, product, traits) {
-  const t = Object.assign({ hasQuit: false, shortcuts: false, savedMedia: true }, traits || {});
+  const t = Object.assign({}, CALCU_SHELL_TRAITS, traits || {});
   const out = [];
   const add = (id, label, items) => { if (items.length) out.push({ id, label, items }); };   // M1
   add("file", "File", calcuShellFileMenu(inputs, product, t));
   add("edit", "Edit", calcuShellEditMenu(inputs, product, t));
   if (calcuShellStarted(inputs)) add("machine", "Machine", calcuShellMachineMenu(inputs, product, t));   // M10
-  add("help", "Help", calcuShellHelpMenu(inputs, product));
+  add("help", "Help", calcuShellHelpMenu(inputs, product, t));
+  return out;
+}
+
+// M14, M15: the items of the More button, in menu order, without what has a
+// control on a bar without a menu bar; one separator between the groups
+// that remain, never first, last or twice; Cold boot asks first.
+function calcuShellMoreItems(menus, product) {
+  const own = ["load-preset", "settings", "quit", "reset", "model", "peripherals"];
+  const onBar = (i) => own.includes(i.id) || (product.items || []).some((p) => p.id === i.id && p.onBar);
+  const out = [];
+  let pending = false;
+  for (const m of menus) {
+    pending = true;
+    for (const i of m.items) {
+      if (i.kind === "separator") { pending = true; continue; }
+      if (onBar(i)) continue;
+      if (pending && out.length) out.push(calcuShellSeparator());
+      pending = false;
+      const copy = Object.assign({}, i);
+      if (copy.id === "cold-boot") Object.assign(copy, { confirm: CALCU_SHELL_COLD_BOOT_QUESTION, destructive: true });
+      out.push(copy);
+    }
+  }
   return out;
 }
 
@@ -266,8 +303,9 @@ function calcuShellFindItem(menus, id) {
   return null;
 }
 
-function calcuShellBar(inputs, product) {   // B1 to B7
+function calcuShellBar(inputs, product, traits) {   // B1 to B8
   if (!calcuShellStarted(inputs)) return [];
+  const t = Object.assign({}, CALCU_SHELL_TRAITS, traits || {});
   const cs = inputs.controlState;
   const groups = CALCU_SHELL_BAR_GROUPS.map((group) => ({ group, controls: [] }));
   groups[0].controls.push({ kind: "model", id: "model", label: "", plugged: false, choices: calcuShellModelItems(cs), entry: null, mediumKind: "" });
@@ -293,7 +331,18 @@ function calcuShellBar(inputs, product) {   // B1 to B7
   }
   for (const m of calcuShellList(cs, "mediaPlaces"))
     groups[3].controls.push({ kind: "media", id: calcuShellText(m, "id"), label: "", plugged: false, choices: [], entry: m, mediumKind: calcuShellText(m, "kind") });
-  return groups;
+  if (t.menuBar !== false) return groups;
+  // B8: a window without a menu bar. Start holds Reset; End Preset,
+  // Settings (M18) and More, each following its menu item (M9).
+  const menus = calcuShellMenus(inputs, product, t);
+  const action = (id, label) => {
+    const item = calcuShellFindItem(menus, id);
+    return item ? { kind: "action", id, label, plugged: false, choices: [], entry: null, mediumKind: "", item } : null;
+  };
+  const start = { group: "Start", controls: [action("reset", "Reset")].filter(Boolean) };
+  groups[4].controls.push(...[action("load-preset", "Preset"), action("settings", "Settings")].filter(Boolean));
+  groups[4].controls.push({ kind: "more", id: "more", label: "More", plugged: false, choices: calcuShellMoreItems(menus, product), entry: null, mediumKind: "" });
+  return [start, ...groups];
 }
 
 function calcuShellPanels(inputs) {   // B6
@@ -360,7 +409,10 @@ function calcuShellDialog(settings, presetList, spec) {   // S1 to S5
       } else if (row.widget === "folder") {
         s.shown = calcuShellWithTilde(calcuShellText(r, "inUse"), home);
       } else if (row.widget === "choice") {
-        s.choices = calcuShellList(r, "choices").map((c) => [c, c]);
+        if (Array.isArray(row.choices) && row.choices.length) {   // S8: exactly these; a value not among them as written
+          s.choices = row.choices.map(([v, l]) => [v, l]);
+          if (!s.choices.some(([v]) => v === s.value)) s.choices.push([s.value, s.value]);
+        } else s.choices = calcuShellList(r, "choices").map((c) => [c, c]);
       }
       shown.push(s);
     }
@@ -490,6 +542,6 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     calcuShellMenus, calcuShellFindItem, calcuShellBar, calcuShellPanels, calcuShellFamilySections,
     calcuShellDialog, calcuShellWithTilde, calcuShellLoading, calcuShellNotices, calcuShellKeyAt,
-    calcuShellPointer, calcuShellAbout, CALCU_SHELL_LOADING_MS,
+    calcuShellPointer, calcuShellAbout, calcuShellMoreItems, CALCU_SHELL_LOADING_MS, CALCU_SHELL_COLD_BOOT_QUESTION,
   };
 }

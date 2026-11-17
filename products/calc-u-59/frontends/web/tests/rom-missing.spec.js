@@ -4,12 +4,14 @@ const { test, expect } = require('@playwright/test');
 // the bundle (dist/files.json: the full set of ROM files) at init and the
 // engine looks it up. A bad or missing file shows the lookup's text and no
 // calculator (AC-10; D-8: the text in the page until LIB-14/C59-8, since M-34
-// the failed start of LIB-15 AC-3); a file the worker cannot fetch at all is
-// a failed start too (EC-3).
+// the failed start of LIB-15 AC-3; since M-57 the shell's "ROMs missing" in
+// place of the calculator, LIB-14 AC-19: no control bar, no Machine menu,
+// Help and About work); a file the worker cannot fetch at all is a failed
+// start (EC-3).
 
 test.describe.configure({ timeout: 30000 });
 
-const status = (page) => page.locator('.calcu-status');
+const status = (page) => page.locator('[data-calcu="roms-missing"], [data-calcu="start-failed"]');
 
 test('lib12_ac10_bad_rom_file_shows_the_text_and_no_calculator', async ({ page }) => {
   // A truncated response: the file is there but too short.
@@ -34,6 +36,32 @@ test('lib12_ac10_missing_rom_file_shows_the_text_and_no_calculator', async ({ pa
   await page.goto('./?layout=wide');
   await expect(status(page)).toContainText('ML.rom.yaml: missing; needed by ML', { timeout: 15000 });
   await expect(page.locator('.calcu-key')).toHaveCount(0);
+});
+
+// LIB-14 AC-19 for this product (row 59-54's Web side, M-57): the shell's
+// "ROMs missing" in place of the calculator, no control bar, no Machine
+// menu; Help and About work.
+for (const layout of ['wide', 'portrait']) test(`lib14_ac19 roms missing in the window, help and about work (${layout})`, async ({ page }) => {
+  await page.route('**/files.json', async (route) => {
+    const response = await route.fetch();
+    const files = await response.json();
+    files.bundle = files.bundle.filter((f) => f !== 'ML.rom.yaml');
+    await route.fulfill({ response, json: files });
+  });
+  // Portrait has no menu bar while the product runs; without a machine it
+  // shows one, so that Help and About still work (AC-19).
+  await page.goto(`./?layout=${layout}`);
+  const el = (name) => page.locator(`[data-calcu="${name}"]`);
+  await expect(el('roms-missing')).toContainText('ML.rom.yaml: missing', { timeout: 15000 });
+  await expect(el('control-bar')).toHaveCount(0);
+  await expect(el('menu-machine')).toHaveCount(0);
+  await expect(el('menu-help')).toBeVisible();
+  await el('menu-help').click();
+  await el('item-about').click();
+  await expect(el('about-dialog')).toContainText('Calc-U-59');
+  await el('about-close').click();
+  await el('menu-help').click();
+  await expect(el('item-help')).toBeVisible();
 });
 
 test('lib12_ec3_rom_file_that_cannot_be_fetched_is_a_failed_start', async ({ page }) => {

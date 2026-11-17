@@ -82,11 +82,17 @@ PanelArea* Shell::panelArea() { return panels_; }
 QWidget* Shell::romsMissingView() { return romsMissing_; }
 
 void Shell::setFaceplate(QWidget* faceplate, shell::HitMap map, std::function<double()> scale) {
+    setFaceplate(faceplate, std::move(map), FaceplateGeometry{std::move(scale)});
+}
+
+void Shell::setFaceplate(QWidget* faceplate, shell::HitMap map, FaceplateGeometry g) {
     faceplate_ = faceplate;
     hitMap_ = map;
-    scale_ = scale ? std::move(scale) : [] { return 1.0; };
+    scale_ = g.scale ? std::move(g.scale) : [] { return 1.0; };
+    origin_ = std::move(g.origin);
     delete faceplateInput_;
-    faceplateInput_ = faceplate ? new FaceplateInput(*faceplate, host_, std::move(map), scale_) : nullptr;
+    faceplateInput_ = faceplate ? new FaceplateInput(*faceplate, host_, std::move(map), scale_, origin_, std::move(g.productFirst))
+                                : nullptr;
     delete loadingView_;   // the overlay goes onto the faceplate, below its display (L2)
     loadingView_ = new ShellLoading(faceplate ? faceplate : &window_);
     refresh(QString());
@@ -152,7 +158,9 @@ void Shell::refreshLoading() {
     const pacing::WallTime now = host_.now();
     const bool show = loading_.shown(now);
     if (show && loadingView_->isHidden()) {
-        loadingView_->place(faceplate_ ? displayRect(hitMap_, scale_ ? scale_() : 1.0) : std::nullopt);
+        std::optional<QRect> at = faceplate_ ? displayRect(hitMap_, scale_ ? scale_() : 1.0) : std::nullopt;
+        if (at && origin_) at->translate(origin_().toPoint());
+        loadingView_->place(at);
         loadingView_->show();
         loadingView_->raise();
     } else if (!show && !loadingView_->isHidden()) {
@@ -178,7 +186,7 @@ void Shell::refresh(const QString&) {
     inputs_.media = host_.value(n.media);
     menus_ = shell::menus(inputs_, product_, options_.traits);
     menuBar_->set(menus_);
-    bar_->set(shell::bar(inputs_, product_));
+    bar_->set(shell::bar(inputs_, product_, options_.traits));
     bar_->setVisible(inputs_.started());   // B7 (AC-19)
     panels_->set(shell::panels(inputs_));
     const bool missing = !inputs_.started() && !inputs_.romsMissing.isNull();

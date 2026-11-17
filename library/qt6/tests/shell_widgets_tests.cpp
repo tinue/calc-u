@@ -14,7 +14,9 @@
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QGroupBox>
+#include <QIcon>
 #include <QLabel>
+#include <QPixmap>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -593,4 +595,79 @@ TEST(lib7_ac29_qt6_file_menu_without_media_items) {
     CHECK(w.action("saved-media") == nullptr);
     CHECK(file && titles(file) == (QStringList{"item-load-preset", "item-examples-menu", "-", "item-load-program", "-",
                                                "item-mount-drive", "-", "item-settings", "item-quit"}));
+}
+
+// ── Part E (design §10.3.4, §10.3.5; L14) ──
+
+namespace {
+
+// Records the presses that reach the faceplate past the shell's filter.
+struct PressRecorder : QObject {
+    int presses = 0, releases = 0;
+    bool eventFilter(QObject*, QEvent* e) override {
+        if (e->type() == QEvent::MouseButtonPress) ++presses;
+        if (e->type() == QEvent::MouseButtonRelease) ++releases;
+        return false;
+    }
+};
+
+} // namespace
+
+TEST(faceplate_origin_moves_the_hit_map) {
+    TestWindow w;
+    // The faceplate drawn 40 px right and 8 px down in its widget.
+    w.shell->setFaceplate(w.faceplate, shell::test::hitMap(),
+                          qt6::Shell::FaceplateGeometry{[&w] { return w.scale; }, [] { return QPointF(40, 8); }});
+    // Key 2 is 80..120 × 80..120 at scale 4; with the origin, 120..160 × 88..128.
+    click(w.faceplate, QPoint(140, 100));
+    release(w.faceplate, QPoint(140, 100));
+    w.settle();
+    CHECK_EQ(arg(&w.part.last("screen-key-down")->args, "key"), std::string("2"));
+    // Where key 2 was without the origin is now key 1's (0..40, shifted by 40).
+    click(w.faceplate, QPoint(70, 100));
+    release(w.faceplate, QPoint(70, 100));
+    w.settle();
+    CHECK_EQ(arg(&w.part.last("screen-key-down")->args, "key"), std::string("1"));
+}
+
+TEST(faceplate_press_the_product_takes_passes_through) {
+    TestWindow w;
+    PressRecorder rec;
+    w.faceplate->installEventFilter(&rec);   // before the shell's new filter: sees what it lets pass
+    w.shell->setFaceplate(w.faceplate, shell::test::hitMap(),
+                          qt6::Shell::FaceplateGeometry{[&w] { return w.scale; }, {},
+                                                        [](double x, double y) { return x >= 25 && x < 30 && y >= 20 && y < 30; }});
+    const int downs = w.part.count("screen-key-down");
+    // The right half of key 2 is the product's: no key; the press, its move and its release pass.
+    click(w.faceplate, QPoint(110, 100));
+    QMouseEvent move(QEvent::MouseMove, QPointF(90, 100), w.faceplate->mapToGlobal(QPointF(90, 100)), Qt::NoButton,
+                     Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(w.faceplate, &move);
+    release(w.faceplate, QPoint(90, 100));
+    w.settle();
+    CHECK_EQ(w.part.count("screen-key-down"), downs);
+    CHECK_EQ(rec.presses, 1);
+    CHECK_EQ(rec.releases, 1);
+    // Its left half is still key 2, consumed by the shell.
+    click(w.faceplate, QPoint(90, 100));
+    release(w.faceplate, QPoint(90, 100));
+    w.settle();
+    CHECK_EQ(w.part.count("screen-key-down"), downs + 1);
+    CHECK_EQ(rec.presses, 1);
+    w.faceplate->removeEventFilter(&rec);
+}
+
+TEST(about_shows_the_window_icon) {
+    TestWindow w;
+    const QIcon before = QApplication::windowIcon();
+    QPixmap pix(32, 32);
+    pix.fill(Qt::red);
+    QApplication::setWindowIcon(QIcon(pix));
+    w.action("about")->trigger();
+    w.settle();
+    auto* about = w.find<QDialog>(names::kAboutDialog);
+    auto* icon = about ? about->findChild<QLabel*>(QStringLiteral("about-icon")) : nullptr;
+    CHECK(icon != nullptr);
+    CHECK(icon && !icon->pixmap().isNull());
+    QApplication::setWindowIcon(before);
 }

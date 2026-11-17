@@ -2,24 +2,20 @@
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
 #include "KeyIds.hpp"
-#include "ModuleCatalog.hpp"
-#include "TIMagneticCardKind.hpp"
 #include "ProductRoms.hpp"
 #include "QtResourceBundle.hpp"
-#include "sessions/LibraryTopics.hpp"
-#include "MachineModelInfo.hpp"
-#include "presets/PresetsPart.hpp"
-#include "startup/StartupPart.hpp"
-#include <QCoreApplication>
-#include <QDir>
-#include "debugger/RunState.hpp"
-#include "paper/PaperTopics.hpp"
-#include "typing/TypingTopics.hpp"
+#include "TIMagneticCardKind.hpp"
 #include "control/ControlState.hpp"
-#include <QDebug>
+#include "debugger/RunState.hpp"
+#include "sessions/LibraryTopics.hpp"
+#include "shell/Inputs.hpp"
+#include "shell/SettingsPart.hpp"
+#include "typing/TypingTopics.hpp"
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QMessageBox>
+#include <memory>
+#include <utility>
 
 namespace {
 
@@ -34,17 +30,6 @@ std::optional<std::string> readResource(const QString& path) {
     return f.readAll().toStdString();
 }
 
-// The file's bytes as a command argument; absent when it cannot be read.
-Value withBytes(Value args, const QString& path) {
-    QFile f(path);
-    if (!f.open(QIODevice::ReadOnly)) return args;
-    const QByteArray b = f.readAll();
-    std::vector<Value::Member> members = *args.members();
-    members.push_back({"bytes", Value(Value::Bytes(b.begin(), b.end()))});
-    return Value(std::move(members));
-}
-
-const cu59::TIModelState kNoModel{};
 const cu59::TILedState kNoLed{};
 const cu59::TICueCardState kNoCue{};
 const cu59::TIPrinterState kNoPrinter{};
@@ -59,37 +44,40 @@ template <class P> const P& orNone(const P* p, const P& none) { return p ? *p : 
 
 } // namespace
 
-EmulatorController::EmulatorController(QObject* parent) : QObject(parent) {
-    // The ROM lookup first (LIB-12): without the full set, the dialog and no session.
+EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock clock) : QObject(parent) {
+    // LIB-14: the settings dialog reads and writes the product's file through
+    // the session; a change is applied at once (the LED style through the
+    // `settings` topic). A new save or trace folder is used from the next
+    // start, as today (the TI-58C's constant memory file is read at its
+    // build, C59-3).
+    calcu::shell::SettingsPartSetup ss;
+    ss.file = &AppPaths::file();
+    ss.paths = &AppPaths::places();
+    ss.frontend = calcu::settings::FrontendKind::Qt6;
+    m_settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
+
+    // The ROM lookup first (LIB-12): without the full set the session has no
+    // machine and the topic roms-missing names the files (LIB-14 AC-19).
     auto roms = cu59::lookUpRoms(QtResourceBundle());
-    if (!roms.ok()) {
-        QMessageBox::critical(nullptr, QStringLiteral("Calc-U-59: ROM files missing"),
-                              qs("Calc-U-59 cannot start.\n\n" + calcu::roms::describe(roms.missing)));
-        return;
-    }
+    m_romsFound = roms.ok();
     cu59::TIAppSetup setup;
-    setup.roms = std::move(roms.set);
+    if (m_romsFound) setup.roms = std::move(roms.set);
+    else setup.romsMissing = calcu::roms::describe(roms.missing);
     setup.saveFolder = AppPaths::toFsPath(AppPaths::saveDir()).string();   // cards, ti58c.memory.yaml (LIB-9)
     // LIB-18: the startup model, `last-model` and the startup presets are the
-    // settings file's; makeAppSession sends `start` (the startup model with its
-    // startup preset, or its built-in default: ML, no printer).
-    setup.settings = &AppSettings::settings().file();
+    // settings file's.
+    setup.settings = &AppPaths::file();
     // LIB-6 AC-31, AC-33: the bundled examples beside the program (bundle.yaml).
     setup.examplesFolder = AppPaths::toFsPath(AppPaths::bundledExamplesDir()).string();
     setup.home = AppPaths::toFsPath(QDir::homePath()).string();
     setup.trace = {AppPaths::toFsPath(AppPaths::traceDir()),
                    static_cast<uint64_t>(AppSettings::settings().traceMaxFileSizeMB()) * 1'000'000};
-    m_app = cu59::makeAppSession(std::move(setup), cu59::steadyWallTime);
-    m_listener.mirror().onChange = [this](const cs::TopicName& t) { topicChanged(t); };
-    m_listener.onMessage = [this](const cs::Message& m) { onMessage(m); };
-    // LIB-8 P-E6: the clipboard for the paper panel's Copy (until M-57).
+    m_app = cu59::makeAppSession(std::move(setup), clock, std::nullopt, {m_settingsPart.get()}, {}, /*start=*/false);
     cs::HostServices services;
-    services.offered = {cs::HostService::ClipboardImage, cs::HostService::ClipboardText};
-    m_listener.listen(*m_app.session, services);
-    m_frameTimer.setTimerType(Qt::PreciseTimer);
-    m_frameTimer.setInterval(1000 / 60);
-    connect(&m_frameTimer, &QTimer::timeout, this, [this] { m_app.session->call(cu59::steadyWallTime()); });
-    m_frameTimer.start();
+    services.offered = {cs::HostService::ClipboardImage, cs::HostService::ClipboardText, cs::HostService::OpenUrl};
+    m_host = std::make_unique<calcu::qt6::SessionHost>(*m_app.session, std::move(services), std::move(clock));
+    m_host->addMessageHandler([this](const cs::Message& m) { onMessage(m); });
+    connect(m_host.get(), &calcu::qt6::SessionHost::topicChanged, this, &EmulatorController::topicChanged);
     // The LOG tab's text at 1 Hz (AC-9; the paging of cu59::RingLog).
     m_logTimer.setInterval(1000);
     connect(&m_logTimer, &QTimer::timeout, this, [this] {
@@ -101,74 +89,48 @@ EmulatorController::EmulatorController(QObject* parent) : QObject(parent) {
 }
 
 EmulatorController::~EmulatorController() {
-    m_frameTimer.stop();
-    // The parts' last duties (the TI-58C's constant memory file, C59-3 AC-6).
+    // The parts' last duties (the TI-58C's constant memory file, C59-3 AC-6;
+    // what a card still has to write, LIB-7 AC-13). No message goes out after it.
+    if (m_host) m_host->stop();
     if (m_app.session) m_app.session->close();
-    m_listener.stop();
+    m_host.reset();
     m_app = {};
 }
 
-// What the mirror does not keep for the views: the notices, the log and the
-// panel requests, taken from it as they come. An operation's reply is not
-// waited for.
-void EmulatorController::onMessage(const cs::Message& m) {
-    if (const auto* a = std::get_if<cs::ServiceAsk>(&m)) {   // P-E6
-        cs::ServiceAnswer answer;
-        if (calcu::qt6::ClipboardService::handles(a->service)) answer = m_clipboard.answer(*a);
-        else answer.reason = "This frontend does not offer it.";
-        m_app.session->answer(a->ask, std::move(answer));
-        return;
-    }
-    if (std::holds_alternative<cs::StateMessage>(m) || std::holds_alternative<cs::StreamMessage>(m))
-        for (const auto& h : m_handlers) h(m);
-    if (const auto* s = std::get_if<cs::StreamMessage>(&m)) {
-        // The paper streams are the panel's (it keeps the paper); the mirror keeps none once it listens.
-        if (s->topic.value.rfind("paper", 0) == 0) {
-            if (m_handlers.empty()) return;   // kept until the panel takes them (addMessageHandler)
-            (void)m_listener.mirror().takeAppended(s->topic);
-            (void)m_listener.mirror().takeReset(s->topic);
-            return;
-        }
-        const bool handled = s->topic == cs::kNoticesTopic || s->topic == cs::kLogTopic;
-        if (handled) (void)m_listener.mirror().takeAppended(s->topic);
-        if (s->topic == cs::kNoticesTopic) {   // an error alert (LIB-3 AC-30), as today until C59-8
-            for (const auto& p : s->appended)
-                if (const auto* n = cs::payloadAs<cs::Notice>(p)) {
-                    const auto parts = cu59::splitNotice(n->sentence);
-                    emit errorOccurred(qs(parts.title), qs(parts.message));
-                }
-            return;
-        }
-        if (s->topic == cs::kLogTopic) {   // the LOG tab (C59-4 AC-9): the machine's and the product's lines
-            for (const auto& p : s->appended)
-                if (const auto* l = cs::payloadAs<cs::LogLine>(p)) {
-                    std::size_t at = 0;
-                    for (;;) {   // a message may hold several lines (the machine's of one call)
-                        const std::size_t nl = l->text.find('\n', at);
-                        m_log.write(l->text.substr(at, nl == std::string::npos ? std::string::npos : nl - at));
-                        if (nl == std::string::npos) break;
-                        at = nl + 1;
-                    }
-                    m_logDirty = true;
-                }
-            return;
-        }
-    }
+void EmulatorController::start() {
+    m_host->start();
+    send(cs::kStartCommand);
 }
 
-void EmulatorController::topicChanged(const cs::TopicName& t) {
+// The LOG tab keeps its own view of the log (C59-4 AC-9; LIB-14 AC-18); the
+// notices are the shell's dialog (AC-17), the paper the panel area's.
+void EmulatorController::onMessage(const cs::Message& m) {
+    const auto* s = std::get_if<cs::StreamMessage>(&m);
+    if (!s || s->topic != cs::kLogTopic) return;
+    for (const auto& p : s->appended)
+        if (const auto* l = cs::payloadAs<cs::LogLine>(p)) {
+            std::size_t at = 0;
+            for (;;) {   // a message may hold several lines (the machine's of one call)
+                const std::size_t nl = l->text.find('\n', at);
+                m_log.write(l->text.substr(at, nl == std::string::npos ? std::string::npos : nl - at));
+                if (nl == std::string::npos) break;
+                at = nl + 1;
+            }
+            m_logDirty = true;
+        }
+}
+
+void EmulatorController::topicChanged(const QString& name) {
     namespace T = cu59::topics;
-    if (t == T::kModel) {
-        // The last used model is LIB-18's StartupPart's ([startup] last-model).
-        emit modelChanged();
-        emit cardStateChanged();
-    } else if (t == T::kLed) {
+    const cs::TopicName t{name.toStdString()};
+    if (t == T::kLed) {
         emit displayChanged();
     } else if (t == T::kCueCard) {
         emit cueCardChanged();
+        emit cardStateChanged();
     } else if (t == T::kPrinter) {
         emit printerChanged();
-    } else if (t == calcu::media::kMediaTopic) {   // the card reader and slot-1 (LIB-7 59)
+    } else if (t == calcu::media::kMediaTopic) {   // the card reader (LIB-7 59)
         emit cardStateChanged();
     } else if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic) {
         emit runStateChanged();
@@ -188,57 +150,60 @@ void EmulatorController::topicChanged(const cs::TopicName& t) {
     } else if (t == T::kAsmOverlay) {
         emit asmChanged();
     } else if (t == calcu::control::kControlStateTopic) {
+        const std::string model = modelId();
+        if (model != m_model) {
+            m_model = model;
+            emit modelChanged();
+            emit cardStateChanged();
+        }
+        if (printerConnected() != m_printerSeen) {
+            m_printerSeen = printerConnected();
+            emit printerChanged();
+        }
         emit entriesChanged();
     } else if (t == calcu::debugger::kTraceTopic) {
         emit traceChanged();
+    } else if (t == calcu::shell::kSettingsTopic) {
+        emit settingsChanged();
     }
 }
 
 cs::ReplyMessage EmulatorController::send(const cs::CommandName& name, Value args) {
-    const auto sent = m_listener.send(name, std::move(args));
-    if (sent.reply) return *sent.reply;
-    return cs::ReplyMessage{sent.call, true, "", nullptr};   // an operation: its reply comes when it ends
+    // An operation replies when it ends, after this returns: the handler
+    // keeps what it writes into alive.
+    auto got = std::make_shared<std::optional<cs::ReplyMessage>>();
+    const cs::CallId id = m_host->send(name, std::move(args), [got](const cs::ReplyMessage& r) { *got = r; });
+    if (*got) return **got;
+    return cs::ReplyMessage{id, true, "", nullptr};   // an operation: its reply comes when it ends
 }
 
-std::optional<std::pair<uint64_t, double>> EmulatorController::emulatedTime() {
-    const cs::ReplyMessage r = m_listener.ask(cs::kTicksRequest, Value::object({}));
-    const auto* t = cs::payloadAs<cs::EmulatedTimeReply>(r.result);
-    if (!t) return std::nullopt;
-    return std::make_pair(static_cast<uint64_t>(t->ticks), t->seconds);
+cs::ReplyMessage EmulatorController::ask(const cs::RequestName& name, Value args) {
+    auto got = std::make_shared<std::optional<cs::ReplyMessage>>();
+    m_host->ask(name, std::move(args), [got](const cs::ReplyMessage& r) { *got = r; });   // requests do not wait (LIB-3)
+    return *got ? **got : cs::ReplyMessage{};
 }
 
-bool EmulatorController::sendFlag(const cs::CommandName& name, Value args) {
-    const cs::ReplyMessage r = send(name, std::move(args));
-    const auto* f = cs::payloadAs<cu59::TIFlag>(r.result);
-    return r.done && f && f->value;
-}
+// ── Machine: drawn from the control state (LIB-4 AC-15) ─────────────────────
 
-// ── Machine ──────────────────────────────────────────────────────────────────
-
-// LIB-18: the model switch (`model {name}`), the module (`attach`/`detach`
-// slot-1) and the printer (`attach`/`detach` printer), each an operation.
-void EmulatorController::start(cu59::Model m) {
-    send(calcu::startup::kModelCommand, Value::object({{"name", cu59::modelId(m).value}}));
+std::string EmulatorController::modelId() const {
+    const auto* c = state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+    return c ? c->model.value : std::string();
 }
-void EmulatorController::resetMachine() { send(calcu::startup::kResetCommand); }
-void EmulatorController::cleanResetMachine() { send(calcu::startup::kColdBootCommand); }
-void EmulatorController::togglePrinterConnection() {
-    if (printerConnected()) send(calcu::startup::kDetachCommand, Value::object({{"place", "printer"}}));
-    else send(calcu::startup::kAttachCommand, Value::object({{"place", "printer"}, {"peripheral", "PC-100C"}}));
+bool EmulatorController::printerConnected() const {
+    const auto* c = state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+    const auto* p = c ? c->place(calcu::machine::PlacePath{{calcu::machine::PlaceName{"printer"}}}) : nullptr;
+    if (!p) return false;
+    for (const auto& f : p->fitting)
+        if (f.plugged) return true;
+    return false;
 }
-cu59::Model EmulatorController::model() const { return orNone(state<cu59::TIModelState>(cu59::topics::kModel), kNoModel).model; }
-QString EmulatorController::moduleID() const { return qs(orNone(state<cu59::TIModelState>(cu59::topics::kModel), kNoModel).moduleID); }
-std::vector<calcu::media::PickerEntry> EmulatorController::modulePicker() const {
-    std::vector<calcu::media::PickerEntry> out;
-    const auto* media = state<calcu::media::MediaState>(calcu::media::kMediaTopic);
-    if (const auto* slot = media ? media->place("slot-1") : nullptr)
-        for (const auto& e : slot->picker)
-            if (e.group == calcu::media::PickerEntry::Group::Module) out.push_back(e);
-    return out;
-}
-void EmulatorController::chooseModule(const QString& entryId) {
-    if (entryId.isEmpty() || entryId == QStringLiteral("module:") + moduleID()) return;
-    send(calcu::media::kChooseCommand, Value::object({{"place", "slot-1"}, {"entry", entryId.toStdString()}}));
+bool EmulatorController::printerTrace() const { return orNone(state<cu59::TIPrinterState>(cu59::topics::kPrinter), kNoPrinter).trace; }
+cu59::LedStyle EmulatorController::ledStyle() const {
+    const Value v = m_host->value(calcu::shell::kSettingsTopic);
+    for (const auto& r : calcu::shell::read::elements(v, "rows"))
+        if (calcu::shell::read::text(r, "section") == "display" && calcu::shell::read::text(r, "key") == "led-style")
+            return calcu::shell::read::text(r, "value") == "classic" ? cu59::LedStyle::Classic : cu59::LedStyle::Modernized;
+    return cu59::LedStyle::Modernized;
 }
 
 // ── Display ──────────────────────────────────────────────────────────────────
@@ -247,21 +212,12 @@ const cu59::LedFrame& EmulatorController::display() const { return orNone(state<
 double EmulatorController::calcIndicatorOpacity() const {
     return orNone(state<cu59::TILedState>(cu59::topics::kLed), kNoLed).calcIndicatorOpacity;
 }
-void EmulatorController::setFullSpeed(bool on) { send(cu59::commands::kFullSpeed, Value::object({{"on", on}})); }
 const std::optional<cu59::CueCardContent>& EmulatorController::cueCard() const {
     return orNone(state<cu59::TICueCardState>(cu59::topics::kCueCard), kNoCue).card;
 }
 
 // ── Keys ─────────────────────────────────────────────────────────────────────
 
-void EmulatorController::screenKeyDown(int row, int col) {
-    const auto id = cu59::keyIdAt(cu59::matrixCode(row, col));
-    if (!id) return;
-    send(calcu::typing::kScreenKeyDown, Value::object({{"key", id->value}, {"pointer", 1}}));
-}
-void EmulatorController::screenKeyUp() {
-    send(calcu::typing::kScreenKeyUp, Value::object({{"key", ""}, {"pointer", 1}}));
-}
 void EmulatorController::hostKeyDown(const calcu::typing::HostKeyEvent& e) {
     send(calcu::typing::kHostKeyDown, calcu::typing::toValue(e));
 }
@@ -276,32 +232,13 @@ int EmulatorController::keyboardHeldKey() const {
     return code ? (*code / 10 - 1) * 5 + (*code % 10 - 1) : -1;
 }
 
-// ── Printer ──────────────────────────────────────────────────────────────────
-
-bool EmulatorController::printerConnected() const {
-    return orNone(state<cu59::TIPrinterState>(cu59::topics::kPrinter), kNoPrinter).connected;
-}
-bool EmulatorController::printerTrace() const { return orNone(state<cu59::TIPrinterState>(cu59::topics::kPrinter), kNoPrinter).trace; }
-
-void EmulatorController::addMessageHandler(std::function<void(const cs::Message&)> handler) {
-    // What the topics hold now, then every message as it comes.
-    for (const cs::TopicName& t : {calcu::paper::kPapersTopic, calcu::debugger::kRunStateTopic, calcu::debugger::kTraceTopic})
-        if (const cs::PayloadPtr* p = m_listener.mirror().state(t)) handler(cs::StateMessage{t, *p});
-    if (const auto* papers = state<calcu::paper::PaperList>(calcu::paper::kPapersTopic))
-        for (const auto& e : papers->papers) {
-            const cs::TopicName t = calcu::paper::paperTopic(e.owner);
-            cs::StreamMessage s{t, m_listener.mirror().takeReset(t), m_listener.mirror().takeAppended(t)};
-            if (s.reset || !s.appended.empty()) handler(s);
-        }
-    m_handlers.push_back(std::move(handler));
-}
-
 // ── Card reader ──────────────────────────────────────────────────────────────
 
-const calcu::media::PlaceState* EmulatorController::cardReader() const {
+const calcu::media::PlaceState* EmulatorController::mediaPlace(const std::string& place) const {
     const auto* media = state<calcu::media::MediaState>(calcu::media::kMediaTopic);
-    return media ? media->place("card-reader") : nullptr;
+    return media ? media->place(place) : nullptr;
 }
+const calcu::media::PlaceState* EmulatorController::cardReader() const { return mediaPlace("card-reader"); }
 bool EmulatorController::cardPassing() const {
     const auto* p = cardReader();
     return p && p->passing.has_value();
@@ -326,17 +263,19 @@ QString EmulatorController::armFreshCard(const QString& name, bool confirmed) {
 }
 void EmulatorController::ejectCard() { send(calcu::media::kEjectCommand, Value::object({{"place", "card-reader"}})); }
 bool EmulatorController::tapCard(double nx, double ny) {
-    return sendFlag(cu59::commands::kTapCard, Value::object({{"x", nx}, {"y", ny}}));
+    const cs::ReplyMessage r = send(cu59::commands::kTapCard, Value::object({{"x", nx}, {"y", ny}}));
+    const auto* f = cs::payloadAs<cu59::TIFlag>(r.result);
+    return r.done && f && f->value;
 }
+bool EmulatorController::cardOnShow() const { return orNone(state<cu59::TICueCardState>(cu59::topics::kCueCard), kNoCue).onShow; }
 std::optional<int> EmulatorController::litCardCorner() const {
     return orNone(state<cu59::TICueCardState>(cu59::topics::kCueCard), kNoCue).litCorner;
 }
 
 // ── Opening files (LIB-13, M-56) ─────────────────────────────────────────────
 
-bool EmulatorController::wouldTake(const QString& name) const {
-    const cs::ReplyMessage r =
-        m_listener.ask(calcu::opening::kWouldTakeRequest, Value::object({{"name", name.toStdString()}}));
+bool EmulatorController::wouldTake(const QString& name) {
+    const cs::ReplyMessage r = ask(calcu::opening::kWouldTakeRequest, Value::object({{"name", name.toStdString()}}));
     const auto* w = cs::payloadAs<calcu::opening::WouldTake>(r.result);
     return w && w->takes;
 }

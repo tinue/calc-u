@@ -159,3 +159,39 @@ TEST(b7_no_bar_without_control_state) {
     CHECK(bar(ShellInputs{}, st::product()).empty());
     CHECK(panels(ShellInputs{}).empty());
 }
+
+// Part E (design §10.3.1), B8: a window without a menu bar.
+TEST(bar_without_menu_bar_keeps_reset_preset_settings_and_more) {
+    Traits t{false, false, true};
+    t.menuBar = false;
+    const auto p = st::product();
+    const auto in = st::inputs();
+    const auto b = bar(in, p, t);
+    CHECK_EQ(describe(b), std::string("[reset][model][slot-1 slot-2][printer aux][card][load-preset settings more]"));
+    CHECK(b[0].group == BarGroup::Start);
+    CHECK(b[1].group == BarGroup::AfterModel);
+    CHECK(b[5].group == BarGroup::End);
+    const BarControl* reset = controlOf(b, "reset");
+    CHECK(reset->kind == BarControl::Kind::Action);
+    CHECK_EQ(reset->label, std::string("Reset"));
+    CHECK_EQ(reset->item.command.value, std::string("reset"));
+    const BarControl* preset = controlOf(b, "load-preset");
+    CHECK_EQ(preset->label, std::string("Preset"));
+    CHECK(preset->item.command.value.empty());   // the shell's file dialog
+    CHECK_EQ(controlOf(b, "settings")->label, std::string("Settings"));
+    const BarControl* more = controlOf(b, "more");
+    CHECK(more->kind == BarControl::Kind::More);
+    CHECK_EQ(more->choices.size(), moreItems(menus(in, p, t), p).size());
+    // Each action follows its menu item (M9).
+    auto cs = st::controlState();
+    for (auto& a : cs.actions)
+        if (a.command == control::kResetAction) a.available = st::unavailable("An operation runs.");
+    const auto b2 = bar(st::inputs(cs.toValue()), p, t);
+    CHECK(!controlOf(b2, "reset")->item.enabled);
+    CHECK_EQ(controlOf(b2, "reset")->item.reason, std::string("An operation runs."));
+    // M18: no Settings button without settings.
+    t.settings = false;
+    CHECK(controlOf(bar(in, p, t), "settings") == nullptr);
+    // With a menu bar: no Start group, no action, no More (B1 to B7).
+    CHECK_EQ(describe(bar(in, p, Traits{})), std::string("[model][slot-1 slot-2][printer aux][card][]"));
+}

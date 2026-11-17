@@ -27,6 +27,10 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
                     "See LICENSE, NOTICE and THIRD-PARTY-NOTICES.md, shipped alongside this app, for licensing details."};
     p.variantLabels = {{sharp::kPC1500, "ROM Revision"}, {sharp::kPC1600, "ROM Version"}, {sharp::kCE1600P, "CE-1600P ROM"}};
     p.presetFilter = "Presets (*.pc1500 *.pc1500a *.pc1600)";
+    // AC-41: Copy Screen is each frontend's own act; this placeholder says
+    // that the product has the item (LIB-14 D-37), so the page's form of it
+    // (`c1600.shell-product`) stays as it was.
+    p.copyScreen = [] {};
     p.pasteText = true;
     p.moduleSlotPinOuts = {sharp::kPC1500SlotPinOut, sharp::kPC1600Slot1PinOut, sharp::kPC1600Slot2PinOut};
     // AC-9: the host drive needs a folder (File ▸ Mount Directory…); a bus

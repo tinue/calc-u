@@ -236,3 +236,34 @@
 .calcu-client .calcu-form label, .calcu-client .calcu-form-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .calcu-client .calcu-form select, .calcu-client .calcu-form input { background: #1f1f1f; border: 1px solid #555; border-radius: 6px; padding: 3px 6px; max-width: 55%; }
 .calcu-client .calcu-form input[type=number] { width: 90px; }
+
+/* ---------- The React set's shell (LIB-14 59, M-57) ------------------------- */
+/* The shell's own stylesheet (library/web/components/shell.css) is light;
+   the menus, dialogs and the banner keep it, with dark text on it. */
+.calcu-client .calcu-shell-menubar,
+.calcu-client .calcu-shell-menu-items,
+.calcu-client .calcu-shell-modal { color: #1d1d1f; }
+.calcu-client .calcu-shell-menubar { flex: none; height: 26px; align-items: center; padding: 0 4px; }
+.calcu-client .calcu-bar > .calcu-shell-bar {
+  flex: 1; flex-wrap: nowrap; padding: 0; gap: 8px; overflow: hidden; color: var(--calcu-fg);
+}
+.calcu-client .calcu-bar .calcu-shell-bar-group { gap: 6px; min-width: 0; }
+.calcu-client .calcu-bar .calcu-shell-bar-group[data-calcu=bar-group-End] { margin-left: auto; }
+.calcu-client .calcu-bar .calcu-shell-picker,
+.calcu-client .calcu-bar .calcu-media-picker {
+  background: var(--calcu-pill); color: var(--calcu-fg); border: none; border-radius: 6px; padding: 3px 6px;
+  cursor: pointer; max-width: 150px; min-width: 0;
+}
+.calcu-client .calcu-bar.calcu-compact .calcu-media-picker { max-width: 72px; }
+.calcu-client .calcu-bar .calcu-bar-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: inline-flex; }
+.calcu-client .calcu-bar .calcu-shell-action {
+  border: none; background: transparent; color: var(--calcu-fg); cursor: pointer; padding: 4px 4px; white-space: nowrap;
+}
+.calcu-client .calcu-bar .calcu-shell-action[data-calcu=bar-action-reset] { color: var(--calcu-orange); }
+.calcu-client .calcu-bar .calcu-shell-action:active { opacity: 0.5; }
+.calcu-client .calcu-bar .calcu-shell-place {
+  border: none; border-radius: 6px; padding: 4px 8px; background: var(--calcu-pill); color: var(--calcu-fg);
+  font-weight: 700; font-size: 11px; cursor: pointer; white-space: nowrap;
+}
+.calcu-client .calcu-bar .calcu-shell-place.calcu-shell-plugged { background: #5a5a5a; box-shadow: inset 0 1px 3px rgba(0,0,0,0.6); }
+.calcu-client .calcu-shell-roms-missing { padding: 24px; white-space: pre-wrap; }

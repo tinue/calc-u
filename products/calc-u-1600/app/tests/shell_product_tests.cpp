@@ -5,6 +5,7 @@
 #include "TestHarness.hpp"
 #include "app/SharpShellProduct.hpp"
 #include "control/ControlState.hpp"
+#include "shell/ValueForms.hpp"
 
 #include <cstdio>
 #include <string>
@@ -41,4 +42,32 @@ TEST(lib14_ac39_help_address_and_about_texts) {
     CHECK_EQ(a.version, std::string("Version 0.9.0 (abc123)"));
     CHECK(a.lines.size() == 2 && a.lines[0] == "A Sharp PC-1500/1500A/1600 pocket-computer emulator.");
     CHECK(p.aboutLabel == "About Calc-U-1600…");
+}
+
+// LIB-14 Part E L13 (design §10.3.3, D-37): the page's forms of Calc-U-1600
+// stay as they were before M-57: the members and their order of M-49's form,
+// `copyScreen` true (the placeholder act), no `aboutLinks`, items with
+// exactly {group, id, label, entry}, and no `choices` in the settings spec.
+TEST(lib14_calc_u_1600_forms_unchanged) {
+    using calcu::sessions::Value;
+    const Value v = calcu::shell::toValue(shared::shellProduct("1.0", "", false));
+    std::vector<std::string> keys;
+    for (const auto& m : *v.members()) keys.push_back(m.key);
+    CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "variantLabels", "presetFilter",
+                                            "copyScreen", "pasteText", "moduleSlotPinOuts", "placesWithoutControl", "items"}));
+    CHECK(*v.find("copyScreen")->boolean());
+    for (const Value& item : *v.find("items")->elements()) {
+        std::vector<std::string> fields;
+        for (const auto& m : *item.members()) fields.push_back(m.key);
+        CHECK(fields == (std::vector<std::string>{"group", "id", "label", "entry"}));
+    }
+    for (bool qt6 : {false, true}) {
+        const Value spec = calcu::shell::toValue(shared::settingsSpec(qt6, true));
+        for (const Value& s : *spec.elements())
+            for (const Value& r : *s.find("rows")->elements()) {
+                std::vector<std::string> fields;
+                for (const auto& m : *r.members()) fields.push_back(m.key);
+                CHECK(fields == (std::vector<std::string>{"widget", "section", "key", "label"}));
+            }
+    }
 }

@@ -16,6 +16,7 @@ TEST(lib14_d32_shell_product_value_form) {
     p.aboutLines = {"one", "two"};
     p.variantLabels = {{"B", "Rev B"}, {"A", "Rev A"}};
     p.presetFilter = "Presets (*.tp)";
+    p.copyScreen = [] {};   // D-37: the form says whether there is the item
     p.pasteText = true;
     p.moduleSlotPinOuts = {"module"};
     p.placesWithoutControl = {"host-drive"};
@@ -39,6 +40,47 @@ TEST(lib14_d32_shell_product_value_form) {
          {"items", Value(Value::Array{Value::object(
                        {{"group", "FileMedia"}, {"id", "mount"}, {"label", "Mount…"}, {"entry", "t.mount"}})})}});
     CHECK_EQ(sessions::toText(shell::toValue(p)), sessions::toText(want));
+}
+
+// Part E (design §10.3.3): the About links when there are, Copy Screen as
+// the product has it, an item's onBar and mediaPlace when set; a dialog
+// row's labelled choices (S8).
+TEST(shell_product_form_has_links_and_copy_screen_flag) {
+    shell::ShellProduct p;
+    p.name = "Calc-U-Test";
+    p.aboutLinks = {{"Source", "https://example.org/src"}, {"Privacy", "https://example.org/p"}};
+    shell::ProductItem card;
+    card.group = shell::MenuGroup::FileMedia;
+    card.id = "arm-card";
+    card.label = "Arm Card…";
+    card.onBar = true;
+    card.mediaPlace = "card-reader";
+    p.items.push_back(card);
+    const Value v = shell::toValue(p);
+    CHECK_EQ(sessions::toText(*v.find("aboutLinks")),
+             sessions::toText(Value(Value::Array{Value(Value::Array{"Source", "https://example.org/src"}),
+                                                 Value(Value::Array{"Privacy", "https://example.org/p"})})));
+    CHECK(*v.find("copyScreen")->boolean() == false);   // no Copy Screen: no Edit item
+    const Value& item = (*v.find("items")->elements())[0];
+    CHECK(*item.find("onBar")->boolean());
+    CHECK_EQ(*item.find("mediaPlace")->string(), std::string("card-reader"));
+    // Members in the documented order: aboutLinks after aboutLines.
+    std::vector<std::string> keys;
+    for (const auto& m : *v.members()) keys.push_back(m.key);
+    CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "aboutLinks", "variantLabels",
+                                            "presetFilter", "copyScreen", "pasteText", "moduleSlotPinOuts",
+                                            "placesWithoutControl", "items"}));
+    // A labelled choice row carries its choices; one without does not.
+    shell::DialogSpec spec;
+    shell::DialogRow style{shell::DialogRow::Widget::Choice, "display", "led-style", "Segment Style"};
+    style.choices = {{"modernized", "Modernized"}, {"classic", "Classic"}};
+    spec.sections.push_back({"Display", {style, {shell::DialogRow::Widget::Integer, "trace", "max", "Max"}}});
+    const Value specValue = shell::toValue(spec);
+    const auto& rows = *(*specValue.elements())[0].find("rows")->elements();
+    CHECK_EQ(sessions::toText(*rows[0].find("choices")),
+             sessions::toText(Value(Value::Array{Value(Value::Array{"modernized", "Modernized"}),
+                                                 Value(Value::Array{"classic", "Classic"})})));
+    CHECK(rows[1].find("choices") == nullptr);
 }
 
 TEST(lib14_d32_menu_group_names) {

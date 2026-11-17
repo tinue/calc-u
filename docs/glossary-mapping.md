@@ -26,19 +26,19 @@ parenthesis is removed with it.
 
 | Glossary term | Calc-U-59 today | Calc-U-1600 today |
 |---|---|---|
-| Cold boot | "Clean" (Reset with ⌘ held) | done (M-46): "Cold boot" (Machine menu, ⇧⌘R; Qt6 and Web; the shell's Machine menu since M-49, no shortcut on the Web); was "Reset All" |
+| Cold boot | done (M-57, Qt6 and Web): "Cold boot" (Machine menu, Ctrl+Shift+R / ⇧⌘R in Qt6; the Web's wide layout's Machine menu, portrait's More button, which asks first); was "Clean" (Reset with ⌘ or Ctrl held; the long press on the Web); Swift with C59-8 (M-58) | done (M-46): "Cold boot" (Machine menu, ⇧⌘R; Qt6 and Web; the shell's Machine menu since M-49, no shortcut on the Web); was "Reset All" |
 | Pause / Resume | "FREEZE", "RESUME" (debug panel) | "Paused (debugger)" (title bar): unchanged |
 | Debug panel | CALCULATOR / CPU / LOG tabs: unchanged | "Inspector" (panel, User Guide §9.2) |
 | Memory module | — | "memory card", "card" in the User Guide |
 | Module definition | — | "custom memory cards", `Memory-Card-Definition-*.md` |
-| Solid State ROM module | "Solid State Module" (Settings, all frontends) | — |
+| Solid State ROM module | done (M-57, Qt6 and Web): the module slot's picker on the control bar, the Settings row "Solid State Module" gone (row 59-9); Swift with C59-8 | — |
 | Full speed | "full speed": unchanged | "full speed" in the User Guide: unchanged ("turbo" is code only) |
 | Medium, media | — | "media" (e.g. "Saved Media…"): unchanged |
 | Name & Save | — (cards written in place) | "Name & Save": unchanged |
-| Startup preset | — | done (M-46): "Startup presets" (Settings, Qt6 and Web); was "Default presets" |
-| Save folder | "Card Folder" (Settings, Qt6) | done (M-47): "Save folder:" (Settings ▸ Storage, Qt6); was "Battery-card saves:"; done (M-55, Calc-U-59): "Save Folder" (Qt6 Settings), was "Card Folder"; `AppPaths::saveDir()`, was `cardDir()` |
-| Startup model | "Startup Calculator" (Settings) | done (M-49): "Startup model" (Settings ▸ General, Qt6 and Web; the choices by the model's name); was "Startup device" |
-| Load Preset… | "Open Preset…" (File menu, Qt6); the button "Preset" | "Load Preset…": unchanged (Ctrl+O / ⌘O in Qt6 since M-49) |
+| Startup preset | done (M-57, Qt6 and Web): "Startup presets" (Settings, one row per model; LIB-18 P-4); was set in `Calc-U-59.ini` only | done (M-46): "Startup presets" (Settings, Qt6 and Web); was "Default presets" |
+| Save folder | done (M-57): "Save folder" (Settings ▸ Storage, Qt6); was "Card Folder", "Save Folder" (M-55) | done (M-47): "Save folder:" (Settings ▸ Storage, Qt6); was "Battery-card saves:"; done (M-55, Calc-U-59): "Save Folder" (Qt6 Settings), was "Card Folder"; `AppPaths::saveDir()`, was `cardDir()` |
+| Startup model | done (M-57, Qt6 and Web): "Startup model" (Settings ▸ General, "Last used" first); was "Startup Calculator"; Swift with C59-8 | done (M-49): "Startup model" (Settings ▸ General, Qt6 and Web; the choices by the model's name); was "Startup device" |
+| Load Preset… | done (M-57): "Load Preset…" (File menu, Qt6 with Ctrl+O / ⌘O; the Web's wide layout); was "Open Preset…"; the bar's button "Preset" stays where there is no menu bar (the Web's portrait layout, iOS) | "Load Preset…": unchanged (Ctrl+O / ⌘O in Qt6 since M-49) |
 | Examples folder | — | done (M-49): "Examples folder" (Settings ▸ Folders, Qt6); was "Samples folder" |
 | Host drive | — | "Mount Directory…", "Host drive folder": unchanged |
 | Arm | "Fit Card" → "Arm Card", "Fit Fresh Card" → "Arm Fresh Card" | done (M-55): the card buttons' names, the File menu items and the dialogs of Qt6, Web and Swift (C59-7 Q-1; row 59-50) |
@@ -49,10 +49,10 @@ parenthesis is removed with it.
 
 | Glossary term | Calc-U-59 | Calc-U-1600 |
 |---|---|---|
-| Shell | — | done (M-49): the Qt6 window from `calcu::qt6::Shell` over `calcu::qt6::SessionHost` (in `MachineController`), the Web page from the React set (`useCalcuShell`); the product's data `app/SharpShellProduct`; was `MainWindow::buildMenuBar`, `ControlBar`, `SettingsDialog`, `AboutDialog`, `Operations`, `EmulationPacer`, the Web's `MenuBar.jsx`, `ControlBar.jsx`, `engine.js` |
-| Control state | — | done (M-49): the library's `control-state` (`calcu::control::ControlPart`) with `shared::SharpControlRules` and its product entries (`c1600.disk-controls`, `c1600.ce158-printer-panel`, `c1600.host-drive-folder`, `c1600.mount-directory`, `c1600.ce1600p-next-variant`); was `shared::ControlState`, `controlStateOf`, the topics `c1600.control-state`, `c1600.machine`, `c1600.ui` |
+| Shell | done (M-57, Qt6 and Web): the Qt6 window from `calcu::qt6::Shell` over the `calcu::qt6::SessionHost` that `EmulatorController` makes, the Web page from the React set (`createShell`, `useCalcuShell`); the product's data `app/TIShellProduct`; was `ControlBar`, `SettingsDialog`, `AboutDialog`, `PaperPane`, `MainWindow::buildMenus`, the Web's `ControlBar.jsx`, `engine.js`, `Dialogs.jsx` (`PresetPicker`, `Settings`, `About`) | done (M-49): the Qt6 window from `calcu::qt6::Shell` over `calcu::qt6::SessionHost` (in `MachineController`), the Web page from the React set (`useCalcuShell`); the product's data `app/SharpShellProduct`; was `MainWindow::buildMenuBar`, `ControlBar`, `SettingsDialog`, `AboutDialog`, `Operations`, `EmulationPacer`, the Web's `MenuBar.jsx`, `ControlBar.jsx`, `engine.js` |
+| Control state | done (M-57, Qt6 and Web): the library's `control-state` with `TIDebugPart`'s product entries; was `c59.model` (still read by Swift until C59-8), `c59.web.model`, the Web's `c59.static-data` | done (M-49): the library's `control-state` (`calcu::control::ControlPart`) with `shared::SharpControlRules` and its product entries (`c1600.disk-controls`, `c1600.ce158-printer-panel`, `c1600.host-drive-folder`, `c1600.mount-directory`, `c1600.ce1600p-next-variant`); was `shared::ControlState`, `controlStateOf`, the topics `c1600.control-state`, `c1600.machine`, `c1600.ui` |
 | App session | done (M-33, M-34): `calcu::sessions::AppSession` with `cu59::TIAppPart` (every frontend; `SessionController` taken apart into `TIAppPart` in M-34) | done (M-31): the library's `calcu::sessions::AppSession`; the product's part `shared::SharpAppPart` |
-| Listener | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `EmulatorController`, on the Swift `SessionThread` (was its own sink and reply map, `HostedSession`/`AppSessionHost`), the harness and the tests | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `calcu::qt6::SessionHost` (since M-49), `tools/wasm_smoke` and the tests (was `SharpHost`; the session is made by `makeSharpSession`) |
+| Listener | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `calcu::qt6::SessionHost` (since M-57; was in `EmulatorController`), on the Swift `SessionThread` (was its own sink and reply map, `HostedSession`/`AppSessionHost`), the harness and the tests | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `calcu::qt6::SessionHost` (since M-49), `tools/wasm_smoke` and the tests (was `SharpHost`; the session is made by `makeSharpSession`) |
 | Machine session | done (M-33, M-34, M-54): `calcu::sessions::MachineSession` (every frontend; the machine built by LIB-18's machine control, `EmulatorSession` the TI runtime around it, made at `machineChanged`; was `TIFreezeGate`, `TIKeySequencerHook`) | done (M-31): the library's `calcu::sessions::MachineSession` |
 | Frontend interface | done (M-33, M-34): messages and commands of the app session (every frontend; `TIAppSession` is the Swift bridge, was `TISessionController`; the Web's through the library's `WorkerHost`) | done (M-31): messages of the app session (topics, commands, host services) |
 | App layer | `Shared/` | `Shared/` |

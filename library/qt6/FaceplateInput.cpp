@@ -8,9 +8,23 @@
 namespace calcu::qt6 {
 
 FaceplateInput::FaceplateInput(QWidget& faceplate, SessionHost& host, shell::HitMap map, std::function<double()> scale)
-    : QObject(&faceplate), faceplate_(faceplate), host_(host), tracker_(std::move(map), std::move(scale)) {
+    : FaceplateInput(faceplate, host, std::move(map), std::move(scale), {}, {}) {}
+
+FaceplateInput::FaceplateInput(QWidget& faceplate, SessionHost& host, shell::HitMap map, std::function<double()> scale,
+                               std::function<QPointF()> origin, std::function<bool(double, double)> productFirst)
+    : QObject(&faceplate), faceplate_(faceplate), host_(host), tracker_(std::move(map), scale), scale_(std::move(scale)),
+      origin_(std::move(origin)), productFirst_(std::move(productFirst)) {
     faceplate_.setAttribute(Qt::WA_AcceptTouchEvents);
     faceplate_.installEventFilter(this);
+}
+
+QPointF FaceplateInput::local(QPointF p) const { return origin_ ? p - origin_() : p; }
+
+bool FaceplateInput::productTakes(QPointF p) const {
+    if (!productFirst_) return false;
+    const QPointF l = local(p);
+    const double s = scale_ ? scale_() : 1.0;
+    return s > 0 && productFirst_(l.x() / s, l.y() / s);
 }
 
 void FaceplateInput::send(const shell::PointerTracker::Out& out) {
@@ -26,20 +40,29 @@ bool FaceplateInput::eventFilter(QObject* o, QEvent* e) {
     case QEvent::MouseButtonDblClick: {
         auto* m = static_cast<QMouseEvent*>(e);
         if (m->button() != Qt::LeftButton) return false;
-        const QPointF p = m->position();
+        if (productTakes(m->position())) {   // D-44: the product's widget gets it
+            mousePassing_ = true;
+            return false;
+        }
+        const QPointF p = local(m->position());
         send(tracker_.down(kMousePointer, p.x(), p.y()));
         return true;
     }
     case QEvent::MouseMove: {
         auto* m = static_cast<QMouseEvent*>(e);
         if (!(m->buttons() & Qt::LeftButton)) return false;
-        const QPointF p = m->position();
+        if (mousePassing_) return false;
+        const QPointF p = local(m->position());
         send(tracker_.move(kMousePointer, p.x(), p.y()));
         return true;
     }
     case QEvent::MouseButtonRelease: {
         auto* m = static_cast<QMouseEvent*>(e);
         if (m->button() != Qt::LeftButton) return false;
+        if (mousePassing_) {
+            mousePassing_ = false;
+            return false;
+        }
         send(tracker_.up(kMousePointer));
         return true;
     }
@@ -50,7 +73,12 @@ bool FaceplateInput::eventFilter(QObject* o, QEvent* e) {
         auto* t = static_cast<QTouchEvent*>(e);
         for (const auto& point : t->points()) {
             const std::int64_t id = static_cast<std::int64_t>(point.id()) + 1;
-            const QPointF p = point.position();
+            const QPointF p = local(point.position());
+            if (point.state() == QEventPoint::State::Pressed && productTakes(point.position())) touchPassing_.insert(id);
+            if (touchPassing_.count(id)) {   // the product's: Qt synthesises its mouse events
+                if (point.state() == QEventPoint::State::Released || e->type() == QEvent::TouchCancel) touchPassing_.erase(id);
+                continue;
+            }
             if (e->type() == QEvent::TouchCancel) {
                 send(tracker_.up(id));
                 continue;

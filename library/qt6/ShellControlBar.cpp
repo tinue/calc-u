@@ -112,6 +112,9 @@ QWidget* ShellControlBar::build(const BarControl& c, QWidget* parent) {
         if (w) w->setObjectName(QString::fromStdString(shell::names::barMedia(c.id)));
         return w;
     }
+    case BarControl::Kind::Action:
+    case BarControl::Kind::More:   // D-35: no Qt6 frontend is without a menu bar
+        return nullptr;
     }
     return nullptr;
 }

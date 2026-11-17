@@ -165,6 +165,11 @@ inline const CommandName kTapCard{"c59.tap-card"};               // {x, y} → T
 /// What the host gives the part when the session is made (C59-5 D-12, A-12).
 struct TIAppSetup {
     std::shared_ptr<const calcu::roms::RomSet> roms;   ///< from lookUpRoms()
+    /// Without `roms`: the lookup's text (calcu::roms::describe of its
+    /// `missing`), published on LIB-12's topic `roms-missing` {text}; no
+    /// machine is built and the shell shows it in place of the faceplate
+    /// (LIB-12 AC-5, LIB-14 AC-19; M-57).
+    std::string romsMissing;
     std::string saveFolder;                            ///< cards, ti58c.memory.yaml (LIB-9 Paths)
     /// The save folder's file access (cards and the constant memory file):
     /// null: plain file I/O; Swift: the coordinated iCloud access (C59-5 D-6, LIB-7 D-30).
@@ -223,7 +228,7 @@ public:
     /// The module in `slot-1` (empty: none), as the machine says (D-26).
     const std::string& moduleID() const { return m_moduleID; }
     /// The 14 modules from their module files, in menu order (C59-6 AC-8).
-    std::vector<ModuleMetadata> allModules() const { return allModuleMetadata(*m_setup.roms); }
+    std::vector<ModuleMetadata> allModules() const { return m_setup.roms ? allModuleMetadata(*m_setup.roms) : std::vector<ModuleMetadata>{}; }
 
     // Display, keys, speed
     const LedFrame& display() const { return m_display; }

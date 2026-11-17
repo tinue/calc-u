@@ -11,6 +11,7 @@
 #   qt-1600     calc-u-1600.yml `linux-*` up to the build (no AppImage)
 #   web-59      calc-u-59.yml `web` up to the tests (web image only)
 #   web-1600    calc-u-1600.yml `web` up to the tests (web image only)
+#   help-59     calc-u-59.yml `help`: the help asset (no upload)
 #   help-1600   calc-u-1600.yml `help`: the help asset (no upload)
 set -uo pipefail
 cd /work
@@ -67,6 +68,8 @@ job() {
       (cd frontends/web && npm ci --no-audit --no-fund) &&
       frontends/web/run-tests.sh --reporter=line &&
       (cd /work/library/web && npm ci --no-audit --no-fund && tests/run-tests.sh --reporter=line) ;;
+    help-59)
+      python3 tools/help build calc-u-59 --out build/help --quiet-warnings ;;
     help-1600)
       python3 tools/help build calc-u-1600 --out build/help --quiet-warnings ;;
     *)

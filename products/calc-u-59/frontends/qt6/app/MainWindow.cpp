@@ -1,17 +1,23 @@
 #include "MainWindow.hpp"
-#include "AboutDialog.hpp"
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
 #include "CalculatorPanel.hpp"
+#include "CardControls.hpp"
 #include "CardPickerDialog.hpp"
-#include "ControlBar.hpp"
+#include "ChromeStyle.hpp"
 #include "EmulatorController.hpp"
 #include "KeyboardWidget.hpp"
-#include "PaperPane.hpp"
-#include "SettingsDialog.hpp"
+#include "PC100C.hpp"
+#include "TICatalogue.hpp"
+#include "TIShellProduct.hpp"
+#include "Version.h"
 #include "debug/DebugPanel.hpp"
+#include "qt6/MediaPicker.hpp"
+#include "qt6/PanelArea.hpp"
+#include "qt6/PaperPanel.hpp"
+#include "qt6/Shell.hpp"
+#include "shell/Inputs.hpp"
 #include <QCloseEvent>
-#include <QDesktopServices>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QMenuBar>
@@ -20,103 +26,152 @@
 #include <QSplitter>
 #include <QUrl>
 
-MainWindow::MainWindow(EmulatorController& controller, QWidget* parent) : QMainWindow(parent), m_controller(controller) {
+MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
+    : QMainWindow(parent), m_controller(std::make_unique<EmulatorController>(nullptr, std::move(clock))) {
     setWindowTitle(QStringLiteral("Calc-U-59"));
     setAcceptDrops(true);
 
     m_splitter = new QSplitter(Qt::Horizontal, this);
+    m_splitter->setObjectName(QStringLiteral("columns"));
     m_splitter->setChildrenCollapsible(false);
-    auto* calculator = new CalculatorPanel(controller, m_splitter);
-    auto* printer = new PaperPane(controller, m_splitter);   // LIB-8: the library's paper panel (M-53)
-    auto* debug = new DebugPanel(controller, m_splitter);
-    m_splitter->addWidget(calculator);
-    m_splitter->addWidget(printer);
-    m_splitter->addWidget(debug);
+    setCentralWidget(m_splitter);
+    m_calculator = new CalculatorPanel(*m_controller, m_splitter);
+    m_keyboard = m_calculator->keyboard();
+
+    // LIB-14: the shell over the session host, with Calc-U-59's data and the
+    // Qt6 frontend's settings dialog (AC-30).
+    m_shell = new calcu::qt6::Shell(*this, host(), product(),
+                                    cu59::settingsSpec(cu59::ShellFrontend::Qt6,
+                                                       std::string("Version ") + APP_VERSION + " (" + APP_BUILD_ID + ")"));
+    m_calculator->setShellWidgets(m_shell->controlBar(), m_shell->romsMissingView());
+
+    // The paper panel in the shell's panel area (AC-23, AC-33), the
+    // splitter's second column as today.
+    calcu::qt6::PanelArea* panels = m_shell->panelArea();
+    panels->setParent(m_splitter);
+    panels->setAutoFillBackground(true);
+    QPalette pal = panels->palette();
+    pal.setColor(QPalette::Window, ChromeStyle::kPanel);
+    panels->setPalette(pal);
+    panels->setContentsMargins(8, 8, 8, 8);
+    panels->setMaximumWidth(320);
+    m_debug = new DebugPanel(*m_controller, m_splitter);
+    m_debug->setObjectName(QStringLiteral("debugpanel"));
+    m_splitter->addWidget(m_calculator);
+    m_splitter->addWidget(panels);
+    m_splitter->addWidget(m_debug);
     m_splitter->setStretchFactor(0, 0);
     m_splitter->setStretchFactor(1, 0);
     m_splitter->setStretchFactor(2, 1);  // the debug panel absorbs extra width
-    setCentralWidget(m_splitter);
 
-    connect(calculator->controlBar(), &ControlBar::openPresetRequested, this, &MainWindow::openPreset);
-    connect(calculator->controlBar(), &ControlBar::loadCardRequested, this, &MainWindow::loadCard);
-    connect(calculator->controlBar(), &ControlBar::newCardRequested, this, &MainWindow::newCard);
-    connect(debug, &DebugPanel::selectAsmFileRequested, this, &MainWindow::selectAsmFile);
-    connect(&m_controller, &EmulatorController::errorOccurred, this,
-            [this](const QString& title, const QString& message) { QMessageBox::warning(this, title, message); });
+    // The pointer on the faceplate (AC-24, AC-43): the hit map in base-image
+    // pixels at the canvas's scale and corner; a tap on the fitted card is
+    // the product's (D-44).
+    m_shell->setFaceplate(m_keyboard, cu59::faceplateHitMap(calcu::machine::ModelId{"TI-59"}),
+                          calcu::qt6::Shell::FaceplateGeometry{[this] { return m_keyboard->scale(); },
+                                                               [this] { return m_keyboard->origin(); },
+                                                               [this](double x, double y) { return m_keyboard->cardTakes(x, y); }});
+    // LIB-7's slot picker (AC-47: the modules by description in menu-sort
+    // order and the empty slot) and C59-7's card controls (AC-13).
+    m_shell->registerSlotPicker([this](const calcu::sessions::Value& entry, QWidget* p) -> QWidget* {
+        auto* picker = new calcu::qt6::MediaPicker(p);
+        const std::string place = calcu::shell::read::text(entry, "place");
+        picker->setSender([this](const calcu::sessions::CommandName& n, calcu::sessions::Value v) {
+            m_controller->sendCommand(n, std::move(v));
+        });
+        auto refresh = [this, picker, place] {
+            if (const auto* s = m_controller->mediaPlace(place)) picker->setPlace(*s);
+        };
+        refresh();
+        connect(m_controller.get(), &EmulatorController::cardStateChanged, picker, refresh);
+        return picker;
+    });
+    m_shell->registerMediaControls("magnetic-card", [this](const calcu::sessions::Value&, QWidget* p) -> QWidget* {
+        auto* cards = new CardControls(*m_controller, p);
+        connect(cards, &CardControls::armRequested, this, &MainWindow::armCard);
+        connect(cards, &CardControls::armFreshRequested, this, &MainWindow::armFreshCard);
+        return cards;
+    });
+    connect(m_controller.get(), &EmulatorController::printerChanged, this, &MainWindow::followPrinter);
+    connect(m_debug, &DebugPanel::selectAsmFileRequested, this, &MainWindow::selectAsmFile);
 
-    buildMenus();
     restoreWindowState();
-    m_keyboard = calculator->keyboard();
     m_keyboard->setFocus();
 }
 
-void MainWindow::buildMenus() {
-    QMenu* file = menuBar()->addMenu(QStringLiteral("&File"));
-    file->addAction(QStringLiteral("Open Preset…"), QKeySequence::Open, this, &MainWindow::openPreset);
-    file->addAction(QStringLiteral("Arm Card…"), this, &MainWindow::loadCard);
-    file->addAction(QStringLiteral("Arm Fresh Card…"), this, &MainWindow::newCard);
-    file->addSeparator();
-    QAction* settings = file->addAction(QStringLiteral("Settings…"), QKeySequence::Preferences, this, [this] {
-        SettingsDialog dialog(m_controller, this);
-        dialog.exec();
-        m_keyboard->reloadSettings();
-    });
-    settings->setMenuRole(QAction::PreferencesRole);
-    QAction* quit = file->addAction(QStringLiteral("Quit"), QKeySequence::Quit, this, &QWidget::close);
-    quit->setMenuRole(QAction::QuitRole);
-
-    QMenu* help = menuBar()->addMenu(QStringLiteral("&Help"));
-    help->addAction(QStringLiteral("Calc-U-59 Help"), this,
-                    [] { QDesktopServices::openUrl(QUrl(QStringLiteral("https://calc-u.org/59/"))); });
-    QAction* about = help->addAction(QStringLiteral("About Calc-U-59"), this, [this] {
-        AboutDialog dialog(this);
-        dialog.exec();
-    });
-    about->setMenuRole(QAction::AboutRole);
+MainWindow::~MainWindow() {
+    // The widgets send to the host and read the controller: they go first.
+    m_controller->host().stop();
+    delete takeCentralWidget();
+    m_calculator = nullptr;
+    m_debug = nullptr;
+    m_keyboard = nullptr;
+    delete m_shell;
+    m_shell = nullptr;
+    menuBar()->clear();
+    m_controller.reset();
 }
 
-// LIB-13 AC-5: the dialog offers the preset extensions and all files and
-// hands the file to `open`; only a file dialog moves the folder it starts in (EC-7).
-void MainWindow::openPreset() {
-    QString path = QFileDialog::getOpenFileName(this, QStringLiteral("Select a .ti59, .ti58, or .ti58c preset"),
-                                                AppSettings::openStartDir(AppSettings::OpenFolder::Presets),
-                                                QStringLiteral("Presets (*.ti59 *.ti58 *.ti58c);;All files (*)"));
-    if (path.isEmpty()) return;
-    AppSettings::rememberOpenFile(AppSettings::OpenFolder::Presets, path);
-    m_controller.openFile(path, calcu::opening::Way::Dialog);
+calcu::qt6::SessionHost& MainWindow::host() { return m_controller->host(); }
+
+void MainWindow::start() { m_controller->start(); }
+
+calcu::shell::ShellProduct MainWindow::product() {
+    calcu::shell::ShellProduct p = cu59::shellProduct(APP_VERSION, APP_BUILD_ID);
+    p.aboutLines.push_back("Built with Qt (LGPL-3.0).");   // the Qt6 frontend's line (AboutDialog.cpp:28)
+    for (auto& item : p.items) {
+        if (item.id == cu59::kItemArmCard) item.act = [this] { armCard(); };
+        else if (item.id == cu59::kItemArmFreshCard) item.act = [this] { armFreshCard(); };
+    }
+    return p;
+}
+
+// The PC-100C's controls on the paper panel while it owns it (LIB-8 AC-28):
+// PRINT and ADV keys, TRACE a switch at its position (`c59.printer`).
+void MainWindow::followPrinter() {
+    auto* paper = qobject_cast<calcu::qt6::PaperPanel*>(m_shell->panelArea()->panel("paper"));
+    if (!paper) return;
+    if (!m_controller->printerConnected()) {
+        paper->setControls({});
+        return;
+    }
+    using calcu::machine::ControlForm;
+    paper->setControls({{PC100C::kPrint, ControlForm::Key, false},
+                        {PC100C::kAdv, ControlForm::Key, false},
+                        {PC100C::kTrace, ControlForm::Switch, m_controller->printerTrace()}});
 }
 
 void MainWindow::openFile(const QString& path, bool atStart) {
-    m_controller.openFile(path, atStart ? calcu::opening::Way::Start : calcu::opening::Way::OpenWith);
+    m_controller->openFile(path, atStart ? calcu::opening::Way::Start : calcu::opening::Way::OpenWith);
 }
 
 // Arm Card (C59-7 AC-14): the saved cards of the media topic; the chosen one is fitted.
-void MainWindow::loadCard() {
-    if (!m_controller.cardReader() || m_controller.cardPassing()) return;
-    CardPickerDialog dialog(CardPickerDialog::Mode::Arm, m_controller.savedCards(), AppPaths::saveDir(), this);
-    if (dialog.exec() == QDialog::Accepted) m_controller.armCard(dialog.selectedEntry());
+void MainWindow::armCard() {
+    if (!m_controller->cardReader() || m_controller->cardPassing()) return;
+    CardPickerDialog dialog(CardPickerDialog::Mode::Arm, m_controller->savedCards(), AppPaths::saveDir(), this);
+    if (dialog.exec() == QDialog::Accepted) m_controller->armCard(dialog.selectedEntry());
 }
 
 // Arm Fresh Card (AC-15): a name, then the replace question the session asks.
-void MainWindow::newCard() {
-    if (!m_controller.cardReader() || m_controller.cardPassing()) return;
-    CardPickerDialog dialog(CardPickerDialog::Mode::ArmFresh, m_controller.savedCards(), AppPaths::saveDir(), this);
+void MainWindow::armFreshCard() {
+    if (!m_controller->cardReader() || m_controller->cardPassing()) return;
+    CardPickerDialog dialog(CardPickerDialog::Mode::ArmFresh, m_controller->savedCards(), AppPaths::saveDir(), this);
     if (dialog.exec() != QDialog::Accepted) return;
-    QString refusal = m_controller.armFreshCard(dialog.freshName(), false);
+    QString refusal = m_controller->armFreshCard(dialog.freshName(), false);
     if (refusal.startsWith(QStringLiteral("asks: "))) {
         if (!CardPickerDialog::confirmReplace(refusal.mid(6), this)) return;
-        refusal = m_controller.armFreshCard(dialog.freshName(), true);
+        refusal = m_controller->armFreshCard(dialog.freshName(), true);
     }
     if (!refusal.isEmpty()) QMessageBox::warning(this, QStringLiteral("Arm Fresh Card"), refusal);
 }
 
 void MainWindow::selectAsmFile() {
-    QString path = QFileDialog::getOpenFileName(this, QStringLiteral("Select an ASM overlay"),
-                                                AppSettings::openStartDir(AppSettings::OpenFolder::AsmOverlays),
-                                                QStringLiteral("ASM files (*.asm);;All files (*)"));
+    const std::string kind = cu59::settings::openFolderKind(cu59::settings::OpenFolder::AsmOverlays);
+    const QString path = m_shell->choosers().file(this, QStringLiteral("Select an ASM overlay"), m_shell->startFolder(kind),
+                                                  QStringLiteral("ASM files (*.asm);;All files (*)"));
     if (path.isEmpty()) return;
-    AppSettings::rememberOpenFile(AppSettings::OpenFolder::AsmOverlays, path);
-    m_controller.loadAsmFile(path);
+    m_shell->rememberFolder(kind, path);
+    m_controller->loadAsmFile(path);
 }
 
 void MainWindow::closeEvent(QCloseEvent* e) {
@@ -158,10 +213,10 @@ void MainWindow::saveWindowState() {
 void MainWindow::dragEnterEvent(QDragEnterEvent* e) {
     const auto urls = e->mimeData()->urls();
     if (urls.size() != 1 || !urls.first().isLocalFile()) return;
-    if (m_controller.wouldTake(QFileInfo(urls.first().toLocalFile()).fileName())) e->acceptProposedAction();
+    if (m_controller->wouldTake(QFileInfo(urls.first().toLocalFile()).fileName())) e->acceptProposedAction();
 }
 
 void MainWindow::dropEvent(QDropEvent* e) {
     const auto urls = e->mimeData()->urls();
-    if (urls.size() == 1) m_controller.openFile(urls.first().toLocalFile(), calcu::opening::Way::Drop);
+    if (urls.size() == 1) m_controller->openFile(urls.first().toLocalFile(), calcu::opening::Way::Drop);
 }

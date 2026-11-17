@@ -121,7 +121,6 @@ target_link_libraries(CalcU1600Qt PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Netw
 # (`--pacing-probe <s>`, LIB-17 §5). Release builds and Windows have neither.
 if(CALCU_ATTACH)
   target_sources(CalcU1600Qt PRIVATE
-    app/screenshots/AttachLineClient.cpp
     app/screenshots/ShotScenario.cpp
     app/screenshots/ShotCapture.cpp
     app/screenshots/ShotRunner.cpp
@@ -296,7 +295,7 @@ if(CALCU_TESTS)
                  ${CMAKE_CURRENT_SOURCE_DIR}/tests/QtFixture.cpp
                  ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/qt6/tests/QtTestMain.cpp)
   if(CALCU_ATTACH)
-    target_sources(CalcU1600QtTests PRIVATE app/screenshots/AttachLineClient.cpp app/screenshots/ShotScenario.cpp
+    target_sources(CalcU1600QtTests PRIVATE app/screenshots/ShotScenario.cpp
                                             app/screenshots/ShotCapture.cpp app/screenshots/ShotRunner.cpp)
     if(APPLE)
       target_sources(CalcU1600QtTests PRIVATE app/screenshots/MacShotSupport.mm)

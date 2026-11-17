@@ -21,7 +21,7 @@ struct DialogRow {
     std::string section, key, label;
     // Choice: the values offered, with their labels, in order (S8); empty:
     // every declared value as written.
-    std::vector<std::pair<std::string, std::string>> choices;
+    std::vector<std::pair<std::string, std::string>> choices = {};
 };
 struct DialogSection {
     std::string title;

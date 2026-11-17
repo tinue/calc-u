@@ -1,89 +1,87 @@
 #pragma once
 #include "DebugLog.hpp"
+#include "LedGeometry.hpp"
 #include "TIAppPart.hpp"
-#include "opening/OpenRequest.hpp"
 #include "debugger/RunState.hpp"
 #include "media/MediaTopics.hpp"
-#include "qt6/ClipboardService.hpp"
+#include "opening/OpenRequest.hpp"
+#include "pacing/WallClock.hpp"
+#include "qt6/SessionHost.hpp"
 #include "typing/HostKey.hpp"
-#include "sessions/Listener.hpp"
 #include <QObject>
 #include <QString>
-#include <QStringList>
 #include <QTimer>
-#include <QVector>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
-// The Qt face of the library's app session (LIB-3 AC-28; the Swift app's is
-// App/EmulatorViewModel.swift over cu59::SessionThread): the session lives on
-// the GUI thread, called at 60 Hz by a timer; this object is its frontend,
-// through a calcu::sessions::Listener. Every action is a command
-// (cu59::commands), everything shown comes from the listener's topic mirror;
-// the mirror's changes become the signals below. It decides
-// nothing and keeps no state of the machine (CLAUDE.md § "Frontend Parity").
-// Qt6 sends neither suspend nor continue (LIB-3 AC-31; ODD59-25).
-// Since M-53 it states and answers the clipboard host services with the
-// library's ClipboardService (LIB-8 adapter P-E6, until LIB-14's SessionHost
-// in M-57), and hands the library's paper and run-control topics to the
-// widgets that draw them (addMessageHandler).
+namespace calcu::shell {
+class SettingsPart;
+} // namespace calcu::shell
+
+// The product's glue around the session host (LIB-14 design §10.4, M-57; as
+// Calc-U-1600's MachineController): makes Calc-U-59's app session
+// (cu59::makeAppSession with LIB-14's SettingsPart in front) and the Qt6
+// component set's SessionHost over it, which hosts it on the GUI thread (the
+// 60 Hz timer, the listener, the host services, harness attach). The shell
+// draws the menus, the bar, the settings, About, the notices, "Loading…" and
+// "ROMs missing" from the host; this class keeps what only the product
+// draws: the display, the cue card, the card controls' reads, the PC-100C's
+// TRACE position, the debug panel's topics and commands (C59-4), the LOG
+// tab's view of the log. It decides nothing and keeps no state of the
+// machine (CLAUDE.md § "Frontend Parity"). Qt6 sends neither suspend nor
+// continue (LIB-3 AC-31; ODD59-25).
 class EmulatorController : public QObject {
     Q_OBJECT
 public:
     using DebugLevel = cu59::DebugLevel;
 
-    explicit EmulatorController(QObject* parent = nullptr);
+    /// `clock`: the host's wall clock (the tests' scripted one).
+    explicit EmulatorController(QObject* parent = nullptr, calcu::pacing::WallClock clock = cu59::steadyWallTime);
     ~EmulatorController() override;
-    /// false: the ROM lookup failed (the dialog was shown); nothing else may be called.
-    bool started() const { return m_app.session != nullptr; }
 
-    // ── Machine ──────────────────────────────────────────────────────────────
-    /// The model switch (LIB-18 `model`); the start is makeAppSession's `start`.
-    void start(cu59::Model model);
-    cu59::Model model() const;
-    void resetMachine();
-    void cleanResetMachine();
-    QString moduleID() const;
-    /// slot-1's picker of the library's media topic (LIB-7 AC-8, AC-47): the
-    /// modules by their `description`, in `menu-sort` order (the Module group).
-    std::vector<calcu::media::PickerEntry> modulePicker() const;
-    /// A module of that picker chosen (`media.choose {place: slot-1}`): a
-    /// replace and the power cycle (no-op if it is the module plugged now).
-    void chooseModule(const QString& entryId);
+    calcu::qt6::SessionHost& host() { return *m_host; }
+    cu59::TIAppPart& app() { return *m_app.part; }
+    calcu::sessions::AppSession& session() { return *m_app.session; }
+    /// The ROM lookup found the full set; else the topic `roms-missing` says
+    /// which files are missing and the shell shows it (LIB-14 AC-19).
+    bool romsFound() const { return m_romsFound; }
+    /// The host's timer, then LIB-18's `start` (the startup model with its
+    /// startup preset, or its built-in default: ML, no printer).
+    void start();
+
+    // ── Machine (drawn from the control state; the shell sends its commands) ──
+    /// The running model ("TI-59", …); empty before the first control state.
+    std::string modelId() const;
+    bool isTI59() const { return modelId() == "TI-59"; }
+    /// The PC-100C in `printer` (the control state), and TRACE (`c59.printer`).
+    bool printerConnected() const;
+    bool printerTrace() const;
+    /// `[display] led-style` as the `settings` topic has it.
+    cu59::LedStyle ledStyle() const;
 
     // ── Display ──────────────────────────────────────────────────────────────
     const cu59::LedFrame& display() const;
     double calcIndicatorOpacity() const;
-    void setFullSpeed(bool on);
     const std::optional<cu59::CueCardContent>& cueCard() const;
 
-    // ── Keys: the library's typing (LIB-5) ─────────────────────────────────
-    /// An on-screen key (0-based row 0–8, col 0–4) down, and up (the pointer's).
-    void screenKeyDown(int row, int col);
-    void screenKeyUp();
-    /// A host key as Qt reports it; the product's keyboard map decides.
+    // ── Keys: the library's typing (LIB-5); the pointer is the shell's ─────
     void hostKeyDown(const calcu::typing::HostKeyEvent& e);
     void hostKeyUp(const std::string& physical);
     void focusLost();
     /// The key drawn pressed (row × 5 + col; the last one live input holds), -1 none.
     int keyboardHeldKey() const;
 
-    // ── Printer (the paper: the library's paper panel, LIB-8) ──────────────────
-    /// The PC-100C's place and TRACE (`c59.printer`, adapter P-E1 until M-57).
-    bool printerConnected() const;
-    bool printerTrace() const;
-    void togglePrinterConnection();
-
     // ── The library's widgets ───────────────────────────────────────────────
     /// A command of a widget of the component set (the paper panel, the
     /// run-control buttons): paper.copy, paper.cut, set-control, pause, step, resume.
     void sendCommand(const calcu::sessions::CommandName& name, calcu::sessions::Value args) { send(name, std::move(args)); }
-    /// Every state and stream message from now on, after the topics' current
-    /// state (`papers`, `run-state`, `trace` and what the paper streams hold).
-    void addMessageHandler(std::function<void(const calcu::sessions::Message&)> handler);
 
     // ── Magnetic cards: the library's media topic and commands (C59-7, LIB-7 59) ──
+    /// A place of the media topic (`slot-1`'s picker, LIB-7 AC-47); nullptr without one.
+    const calcu::media::PlaceState* mediaPlace(const std::string& place) const;
     /// The card reader `card-reader` (TI-59 only); nullptr without one.
     const calcu::media::PlaceState* cardReader() const;
     /// A card passes through the reader now (Eject Card instead of the Crd buttons, AC-13).
@@ -98,12 +96,16 @@ public:
     /// (send again with `confirmed`), empty when done (AC-15).
     QString armFreshCard(const QString& name, bool confirmed);
     void ejectCard();
+    /// A tap on the card window, in canvas fractions: a top corner of a fitted
+    /// card on show feeds that side (`c59.tap-card`). False: nothing fed.
     bool tapCard(double nx, double ny);
+    /// The fitted magnetic card is on show (no module cue card covers it).
+    bool cardOnShow() const;
     std::optional<int> litCardCorner() const;
 
     // ── Opening files: LIB-13's `open` (M-56) ─────────────────────────────────
     /// A drag: would the session take a file of this name (`open-would-take`, AC-6)?
-    bool wouldTake(const QString& name) const;
+    bool wouldTake(const QString& name);
     /// Reads the file and sends `open {files: [{name, path, bytes}], way}`; a
     /// refusal is the session's notice (AC-15).
     void openFile(const QString& path, calcu::opening::Way way);
@@ -149,10 +151,6 @@ public:
     void dumpProg() { dump("prog"); }
     void dumpMemory() { dump("memory"); }
 
-    /// The session's emulated time (the request LIB-11's `ticks` uses): ticks
-    /// and seconds; std::nullopt without a machine. For `--pacing-probe`.
-    std::optional<std::pair<uint64_t, double>> emulatedTime();
-
     /// The TRACE button's trace (LIB-10's `trace` topic and command).
     bool traceRunning() const;
     void setTrace(bool on);
@@ -166,11 +164,12 @@ public:
     void clearAsmOverlay() { send(cu59::commands::kAsmClear); }
 
 signals:
-    void modelChanged();
+    void modelChanged();         ///< the running model (the control state)
     void displayChanged();
     void cueCardChanged();
-    void printerChanged();
+    void printerChanged();       ///< the PC-100C plugged in or out, TRACE
     void cardStateChanged();
+    void settingsChanged();      ///< the `settings` topic (the LED style)
     void runStateChanged();      ///< the run control's state, full speed, playback, held key
     void liveSnapshotChanged();
     void cpuChanged();
@@ -178,24 +177,24 @@ signals:
     void logChanged();
     void asmChanged();
     void traceChanged();
-    void errorOccurred(const QString& title, const QString& message);
     void debugPanelRequested(int tab);  ///< the topic debug-view asked for a tab (0 CALCULATOR, 1 CPU, 2 LOG)
     void entriesChanged();              ///< the control state's product entries
 
 private:
     calcu::sessions::ReplyMessage send(const calcu::sessions::CommandName& name,
                                        calcu::sessions::Value args = calcu::sessions::Value::object({}));
-    bool sendFlag(const calcu::sessions::CommandName& name, calcu::sessions::Value args);
-    template <class P> const P* state(const calcu::sessions::TopicName& t) const { return m_listener.state<P>(t); }
+    calcu::sessions::ReplyMessage ask(const calcu::sessions::RequestName& name, calcu::sessions::Value args);
+    template <class P> const P* state(const calcu::sessions::TopicName& t) const { return m_host->topics().stateOf<P>(t); }
     void onMessage(const calcu::sessions::Message&);
-    void topicChanged(const calcu::sessions::TopicName&);
+    void topicChanged(const QString&);
     void dump(const char* what) { send(cu59::commands::kDump, calcu::sessions::Value::object({{"what", what}})); }
 
+    bool m_romsFound = false;
+    std::unique_ptr<calcu::shell::SettingsPart> m_settingsPart;
     calcu::sessions::ProductSession<cu59::TIAppPart> m_app;
-    mutable calcu::sessions::Listener m_listener;   // stops listening before the session goes
-    QTimer m_frameTimer;
-    calcu::qt6::ClipboardService m_clipboard;
-    std::vector<std::function<void(const calcu::sessions::Message&)>> m_handlers;
+    std::unique_ptr<calcu::qt6::SessionHost> m_host;   // stops listening before the session goes
+    std::string m_model;               ///< the model last seen in the control state
+    bool m_printerSeen = false;
     cu59::RingLog m_log;               ///< the LOG tab's view (AC-9)
     QString m_logText;
     bool m_logDirty = false;

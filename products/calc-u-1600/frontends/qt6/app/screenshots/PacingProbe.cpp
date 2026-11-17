@@ -1,5 +1,5 @@
 #include "PacingProbe.hpp"
-#include "AttachLineClient.hpp"
+#include "qt6/AttachLineClient.hpp"
 #include "../MainWindow.hpp"
 
 #include <QApplication>
@@ -7,6 +7,8 @@
 #include <QTimer>
 #include <cmath>
 #include <cstdio>
+
+using calcu::qt6::AttachLineClient;
 
 namespace {
 

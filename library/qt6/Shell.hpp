@@ -9,6 +9,7 @@
 #include "shell/SettingsModel.hpp"
 #include "shell/ShellProduct.hpp"
 #include <QObject>
+#include <QPointF>
 #include <QString>
 #include <QUrl>
 #include <functional>
@@ -65,6 +66,14 @@ public:
     PanelArea* panelArea();           // the product places it in its layout
     QWidget* romsMissingView();       // shown by the shell in place of the faceplate (AC-19)
     void setFaceplate(QWidget*, shell::HitMap, std::function<double()> scale);   // AC-24, AC-43
+    // Part E (design §10.3.4, D-44): a faceplate drawn at an origin in its
+    // widget, with presses the product takes first (C59-7's card tap).
+    struct FaceplateGeometry {
+        std::function<double()> scale;                          // logical pixels per hit-map unit
+        std::function<QPointF()> origin = {};                   // the hit map's (0, 0) in the widget; none: (0, 0)
+        std::function<bool(double x, double y)> productFirst = {};   // a press the product takes, in hit-map units
+    };
+    void setFaceplate(QWidget*, shell::HitMap, FaceplateGeometry);
     void addBarControl(shell::BarGroup, std::string after, QWidget*);           // AC-42
     using Factory = std::function<QWidget*(const sessions::Value& entry, QWidget* parent)>;
     void registerMediaControls(std::string mediumKind, Factory);   // LIB-7's kinds; C59-7's card
@@ -127,6 +136,7 @@ private:
     FaceplateInput* faceplateInput_ = nullptr;
     shell::HitMap hitMap_;
     std::function<double()> scale_;
+    std::function<QPointF()> origin_;
     QTimer* loadingTimer_;
     std::string runningModel_;
 };

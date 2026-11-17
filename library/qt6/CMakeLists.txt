@@ -37,6 +37,14 @@ target_sources(calcu_qt6 PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/FaceplateInput.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/HostKeys.cpp          # LIB-5 AC-7: host keys to host-key-down
   ${CMAKE_CURRENT_SOURCE_DIR}/RomsMissingView.cpp)
+# LIB-14 Part E (M-57): the in-process line client of harness attach, for
+# the products' attach clients (Calc-U-1600's screenshot scenarios, both
+# pacing probes); only with CALCU_ATTACH, so only those trees need Qt Network.
+if(CALCU_ATTACH)
+  find_package(Qt6 REQUIRED COMPONENTS Network)
+  target_sources(calcu_qt6 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/AttachLineClient.cpp)
+  target_link_libraries(calcu_qt6 PUBLIC Qt6::Network)
+endif()
 # LIB-8 D-17 (M-45): on macOS the picture of `clipboard-image` goes through
 # Cocoa, which keeps its physical size (Qt's clipboard loses it).
 if(APPLE)

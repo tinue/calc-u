@@ -50,9 +50,9 @@ private:
     void layoutGroup(shell::BarGroup);
 
     Shell& shell_;
-    std::array<QWidget*, 5> groups_{};
-    std::array<std::vector<std::pair<std::string, QWidget*>>, 5> shellWidgets_;
-    std::array<std::vector<Product>, 5> productWidgets_;
+    std::array<QWidget*, 6> groups_{};   // one per shell::BarGroup, Start first
+    std::array<std::vector<std::pair<std::string, QWidget*>>, 6> shellWidgets_;
+    std::array<std::vector<Product>, 6> productWidgets_;
     std::string shown_;
     Factory slotFactory_;
     std::map<std::string, Factory> mediaFactories_;

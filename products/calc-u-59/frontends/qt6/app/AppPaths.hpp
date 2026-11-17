@@ -4,6 +4,11 @@
 
 #include "settings/HostDirs.hpp"
 
+namespace calcu::settings {
+class Paths;
+class SettingsFile;
+} // namespace calcu::settings
+
 // Where the Qt app keeps files: the one place that tells the library where
 // this host's folders are (LIB-9 AC-12). The places come from
 // calcu::settings::Paths: the save folder ~/Calc-U-59 unless [storage]
@@ -23,6 +28,11 @@ calcu::settings::HostDirs platformHostDirs();
 /// anything reads a setting or a path.
 void useHostDirs(const calcu::settings::HostDirs& dirs);
 
+/// The settings file and the places of LIB-9 over it, for LIB-14's
+/// SettingsPart (the settings dialog, M-57).
+calcu::settings::SettingsFile& file();
+const calcu::settings::Paths& places();
+
 /// ~/Calc-U-59, created on demand.
 QString defaultDir();
 
@@ -34,6 +44,9 @@ QString saveDir();
 /// AC-31): Resources/examples in the macOS bundle, resources/examples beside
 /// the program elsewhere (frontends/qt6/CMakeLists.txt copies them).
 QString bundledExamplesDir();
+/// Another folder of bundled examples for this run (CalcU59QtTests: the
+/// product's examples/); call before the window is made.
+void useBundledExamplesDir(const QString& dir);
 
 /// Binary traces: the trace folder override, else the save folder.
 QString traceDir();

@@ -33,7 +33,7 @@ struct ProductItem {   // AC-7
     bool onBar = false;
     // The item exists while the control state lists this media place, and
     // is enabled exactly when its `insert` is (M17; LIB-4 AC-12). Empty: none.
-    std::string mediaPlace;
+    std::string mediaPlace = {};
 };
 
 struct ShellProduct {

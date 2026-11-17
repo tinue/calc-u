@@ -932,7 +932,7 @@ Checkpoint entry `CalcU1600QtPacingProbe` is unchanged.
 
 **Builds.** The runner, the line client and the probe are compiled only
 with `CALCU_ATTACH` (POSIX trees with `CALCU_TESTS`, D-5). The tree of
-`tools/build_app.sh` (`build/app-1600`, `:20`) has it; release builds
+`tools/run_qt.sh 1600` (`build/app-1600`; was `tools/build_app.sh`) has it; release builds
 and Windows have neither `--shots` nor `--pacing-probe`.
 
 ### D.7 Adapters removed in M-49

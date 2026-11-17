@@ -53,14 +53,19 @@ frontends/web/run-tests.sh    # Playwright: root, sub-path, offline (Chromium, W
 engine is the CMake target `calcu_web` of the repository's root project,
 built in its `build/web` tree
 (`calcu1600-core.js` / `.wasm`): no `-pthread`, native wasm exceptions,
-`IDBFS`. `build.js` uses the library's build steps (`library/web/build/dist.js`):
-it compiles the JSX with the library's vendored Babel (`library/web/vendor/`, also React 18, ReactDOM and ReactDOMServer; no npm
+`IDBFS`. `build.js` hands the product's data (sources, component, presets,
+precached core) to the library's product build (`library/web/build/dist.js`
+`buildProduct`, which the library's test product uses too): it compiles the JSX with the library's vendored Babel (`library/web/vendor/`, also React 18, ReactDOM and ReactDOMServer; no npm
 runtime dependencies), fails on a `calc.css` selector outside `.calcu-client`, copies
 [`examples/bundle.yaml`](../../examples/bundle.yaml) and exactly the files it
 lists (each preset and the files it names; nothing else of `examples/`) into
 `presets/` (the page's Examples come from the session's `preset-list`
 request), writes `files.json`, stamps
-the service worker's precache list and writes `MANIFEST.json`. CI's `web`
+the service worker's precache list and writes `MANIFEST.json`; the version
+is the one `release.yaml` names (the Qt app's `APP_VERSION`, as ReleaseIt
+and the help tool read it). `run-tests.sh` serves `dist/` with the
+library's `library/web/tools/serve.py`; the offline and prerender tests use
+`library/web/tests/dist-helpers.js`. CI's `web`
 job builds, tests and uploads `Calc-U-1600-web-<version>.zip`; a release
 attaches it as `Calc-U-1600-web.zip`.
 

@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-qt
-description: Use this skill when working on the Qt6 desktop app of Calc-U-59 (frontends/qt6/, frontends/qt6/app/, frontends/qt6/resources/, `.github/workflows/calc-u-59.yml` (repository root), tools/build_qt.sh, build_and_run.sh, tools/gen_qt_icons.sh). Covers the class map against the Swift views, threading (the library's app session on the GUI thread), building, packaging for Windows and Linux, and the parity rule with the Swift app. Trigger on any task that touches frontends/qt6/ or the Qt CI workflow.
+description: Use this skill when working on the Qt6 desktop app of Calc-U-59 (frontends/qt6/, frontends/qt6/app/, frontends/qt6/resources/, `.github/workflows/calc-u-59.yml` (repository root), the repository's tools/run_qt.sh, tools/gen_qt_icons.sh). Covers the class map against the Swift views, threading (the library's app session on the GUI thread), building, packaging for Windows and Linux, and the parity rule with the Swift app. Trigger on any task that touches frontends/qt6/ or the Qt CI workflow.
 user-invocable: true
 ---
 
@@ -130,8 +130,8 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
 ## Build
 
 ```bash
-tools/build_qt.sh                 # Release build into ../../build/app-59 (configures once)
-./build_and_run.sh [file.ti59]    # build and start (user's call — see rule 6)
+../../tools/run_qt.sh 59 --build      # Release build into ../../build/app-59 (configures once)
+../../tools/run_qt.sh 59 [file.ti59]  # build and start (user's call — see rule 6)
 cmake -S ../.. -B ../../build/all -G Ninja && cmake --build ../../build/all   # root project: both products, tests + Qt apps
 ```
 

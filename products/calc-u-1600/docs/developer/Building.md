@@ -101,20 +101,20 @@ tools/fetch_sharpdx.sh
 
 ```sh
 brew install qt cmake ninja
-tools/build_app.sh
+../../tools/run_qt.sh 1600 --build
 ```
 
-`tools/build_app.sh` configures the root project once
+`../../tools/run_qt.sh 1600 --build` configures the root project once
 (`cmake -S ../.. -B ../../build/app-1600 -G Ninja -DCMAKE_BUILD_TYPE=Release -DCALCU_PRODUCT_59=OFF`;
 Homebrew's Qt is found automatically) and builds it. The app is
 `../../build/app-1600/products/calc-u-1600/frontends/qt6/Calc-U-1600.app`,
-a real macOS bundle (`tools/build_app.sh app_dir` prints its directory;
-`./build_and_run.sh` builds and starts it). To run it standalone outside
+a real macOS bundle (`../../tools/run_qt.sh 1600 --app-dir` prints its directory;
+`../../tools/run_qt.sh 1600` builds and starts it). To run it standalone outside
 this checkout (e.g. hand it to another Mac), also run `macdeployqt` to
 embed the Qt frameworks:
 
 ```sh
-$(brew --prefix qt)/bin/macdeployqt "$(tools/build_app.sh app_dir)/Calc-U-1600.app"
+$(brew --prefix qt)/bin/macdeployqt "$(../../tools/run_qt.sh 1600 --app-dir)/Calc-U-1600.app"
 ```
 
 Without that step the app still runs from this build directory (Qt is
@@ -129,7 +129,7 @@ sudo apt-get install -y \
   build-essential cmake ninja-build patchelf zlib1g-dev \
   qt6-base-dev qt6-base-dev-tools qt6-multimedia-dev qt6-wayland libgl1-mesa-dev \
   qt6-gtk-platformtheme qt6ct
-tools/build_app.sh
+../../tools/run_qt.sh 1600 --build
 ```
 
 This produces a plain `Calc-U-1600` executable plus a `resources/` folder

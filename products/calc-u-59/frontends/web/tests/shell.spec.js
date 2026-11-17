@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoReady: gotoReadyPage } = require('./helpers');
 
 // LIB-14 Calc-U-59 column (design §10.9, Q3 to Q11, Web; M-57): the page put
 // together from the React set's shell, on the real engine. Each case carries
@@ -24,11 +25,10 @@ async function recordCommands(page) {
 }
 const commands = (page) => page.evaluate(() => window.__calcuCommands.slice());
 
-async function gotoReady(page, query = 'layout=wide') {
-  await page.goto(`./?${query}`);
-  await expect(page.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
+// The shell's page also shows its control bar once ready.
+async function gotoReady(page, query) {
+  await gotoReadyPage(page, query);
   await expect(el(page, 'control-bar')).toBeVisible();
-  await page.waitForTimeout(600);
 }
 
 const ids = (locator) => locator.evaluateAll((items) => items.map((i) => i.getAttribute('data-calcu')));

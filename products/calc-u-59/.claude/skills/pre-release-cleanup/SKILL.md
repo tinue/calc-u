@@ -172,7 +172,7 @@ them passing on the final tree.
 
 - The three builds in `CLAUDE.md` § "Frontend Parity": CMake with ctest,
   `xcodebuild` for macOS, and `frontends/web/build.sh && frontends/web/run-tests.sh`.
-- `tools/build_qt.sh`.
+- `../../tools/run_qt.sh 59 --build`.
 - The site's build, check and tests, as `site-59` describes.
 
 If code changed after gate 2, re-judge the simplification age.

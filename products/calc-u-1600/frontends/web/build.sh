@@ -49,7 +49,7 @@ cp "$REPO"/frontends/qt6/resources/faceplates/*.png "$DIST/img/"
 cp "$REPO/frontends/qt6/resources/linux/calc-u-1600.png" "$DIST/img/icon.png"
 cp "$REPO/frontends/qt6/resources/linux/calc-u-1600.png" "$DIST/app/icon.png"
 
-cp "$WEB/index.html" "$WEB/calc.css" "$WEB/calc-engine-worker.js" "$DIST/"
+cp "$WEB/index.html" "$WEB/calc-engine-worker.js" "$DIST/"   # build.js writes calc.css
 # React 18 for the app and the demo page; a host page brings its own.
 cp "$ROOT/library/web/vendor/react.production.min.js" "$ROOT/library/web/vendor/react-dom.production.min.js" "$DIST/vendor/"
 cp "$WEB/app/index.html" "$WEB/app/app.css" "$WEB/app/manifest.json" "$DIST/app/"

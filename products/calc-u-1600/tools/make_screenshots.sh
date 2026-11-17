@@ -12,9 +12,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD_DIR="$("${ROOT}/tools/build_app.sh" app_dir)"
+BUILD_DIR="$("${ROOT}/../../tools/run_qt.sh" 1600 --app-dir)"
 
-"${ROOT}/tools/build_app.sh"
+"${ROOT}/../../tools/run_qt.sh" 1600 --build
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
   APP="${BUILD_DIR}/Calc-U-1600.app/Contents/MacOS/Calc-U-1600"

@@ -143,13 +143,7 @@ if(CALCU_TESTS)
   # LIB-16 (design §13.2): tools/help checks the help and builds
   # Calc-U-59-help.zip into the tree (the test suite builds the asset, AC-8);
   # the help's own cases are CalcU59Tests' tests/help_tests.cpp (D-13).
-  if(Python3_FOUND)
-    calcu_add_test(CalcU59HelpCheck frequent
-                   COMMAND ${Python3_EXECUTABLE} -I -B ${CMAKE_SOURCE_DIR}/tools/help check calc-u-59 --quiet-warnings)
-    calcu_add_test(CalcU59HelpBuild frequent
-                   COMMAND ${Python3_EXECUTABLE} -I -B ${CMAKE_SOURCE_DIR}/tools/help build calc-u-59 --quiet-warnings
-                           --out ${CMAKE_CURRENT_BINARY_DIR}/help)
-  endif()
+  calcu_add_help_tests(CalcU59 calc-u-59)
   calcu_add_test(CalcU59CoreSeam frequent COMMAND sh tests/check_core_seam.sh)
   # LIB-13 AC-14 (design §10.6, E13-5): Open With offers today's three preset
   # extensions on macOS, Windows and Linux.

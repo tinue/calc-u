@@ -53,7 +53,7 @@ for img in ti59_base ti58_base CueCard MagnetCard SolidStateCard; do
   cp "$REPO_ROOT/frontends/swift/App/Assets.xcassets/$img.imageset/$img.png" "$DIST/img/"
 done
 
-cp "$WEB/index.html" "$WEB/calc.css" "$WEB/calc-engine-worker.js" "$DIST/"
+cp "$WEB/index.html" "$WEB/calc-engine-worker.js" "$DIST/"   # build.js writes calc.css
 cp "$WEB"/fonts/* "$DIST/fonts/"
 # React 18 for the PWA and the demo page; a host page brings its own.
 cp "$ROOT/library/web/vendor/react.production.min.js" "$ROOT/library/web/vendor/react-dom.production.min.js" "$DIST/vendor/"

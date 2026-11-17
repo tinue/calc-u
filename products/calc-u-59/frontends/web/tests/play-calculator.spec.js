@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoReady } = require('./helpers');
 
 // The web client end to end through the real WASM engine, on dist/index.html
 // (PlayCalculator with the physical keyboard; ?layout=wide|portrait) and
@@ -6,15 +7,6 @@ const { test, expect } = require('@playwright/test');
 // a sub-path (playwright.config.js).
 
 test.describe.configure({ timeout: 30000 });
-
-async function gotoReady(page, query = 'layout=wide') {
-  await page.goto(`./?${query}`);
-  // The key buttons appear once the worker has posted its static data.
-  await expect(page.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
-  // The calculator boots in real time, as the hardware: a key pressed in its
-  // first moments is lost. Give it time to reach the keyboard scan loop.
-  await page.waitForTimeout(600);
-}
 
 async function pressKey(page, label) {
   await page.getByRole('button', { name: label, exact: true }).click();

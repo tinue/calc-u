@@ -1,7 +1,6 @@
 const { test, expect } = require('@playwright/test');
-const fs = require('fs');
-const http = require('http');
 const path = require('path');
+const { serveDist, stop } = require('../../../../../library/web/tests/dist-helpers');
 
 // The installed app started without a connection: a new page after the
 // server is gone, so the worker, its scripts, the WASM, the ROMs and the
@@ -11,35 +10,9 @@ const path = require('path');
 
 const DIST = path.join(__dirname, '..', 'dist');
 const PREFIX = '/anything/calc/';
-const TYPES = {
-  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
-  '.wasm': 'application/wasm', '.png': 'image/png',
-};
-
-function serveDist() {
-  const server = http.createServer((req, res) => {
-    let url = decodeURIComponent(req.url.split('?')[0]);
-    if (url.endsWith('/')) url += 'index.html';
-    const file = path.join(DIST, url.slice(PREFIX.length));
-    if (!url.startsWith(PREFIX) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((resolve) => server.listen(0, () => resolve(server)));
-}
-
-function stop(server) {
-  server.closeAllConnections();
-  return new Promise((resolve) => server.close(resolve));
-}
-
 test('the installed app starts without a connection and runs every model', async ({ page, context }) => {
   test.setTimeout(120000);
-  const server = await serveDist();
+  const server = await serveDist(DIST, PREFIX);
   const appUrl = `http://localhost:${server.address().port}${PREFIX}app/`;
 
   await page.goto(appUrl);

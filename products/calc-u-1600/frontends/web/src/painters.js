@@ -3,39 +3,12 @@
 // indicators: [{name, on}]}); where each indicator goes and the colours are
 // the `lcd` part of the request `c1600.faceplate-map` (app/LcdLayout: the
 // same table the Qt6 LCD draws with, LIB-14 D-31). Drawing only. The
-// plotters' paper is the library's paper panel (LIB-8).
+// plotters' paper is the library's paper panel (LIB-8); sizeCanvas and
+// calcImage are the library's (library/web/src/canvas.js).
 
 const MONO_FONT = '"SF Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace';
 
 const rgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
-
-// A canvas of `width` × `height` CSS pixels at the screen's resolution;
-// its 2D context, scaled to CSS pixels.
-function sizeCanvas(canvas, width, height) {
-  const ratio = window.devicePixelRatio || 1;
-  const w = Math.max(1, Math.round(width * ratio)), h = Math.max(1, Math.round(height * ratio));
-  if (canvas.width !== w) canvas.width = w;
-  if (canvas.height !== h) canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  return ctx;
-}
-
-// Images beside calc.js, loaded once; `onLoad` asks for a repaint.
-const imageCache = new Map();
-function calcImage(name, onLoad) {
-  let entry = imageCache.get(name);
-  if (!entry) {
-    const img = new Image();
-    entry = { img, loaded: false, waiters: [] };
-    img.onload = () => { entry.loaded = true; entry.waiters.splice(0).forEach((f) => f()); };
-    img.src = `${CALC_BASE}img/${name}`;
-    imageCache.set(name, entry);
-  }
-  if (entry.loaded) return entry.img;
-  if (onLoad) entry.waiters.push(onLoad);
-  return null;
-}
 
 // The indicators lit in `display`, laid out by the model's slots
 // (lcd::indicators of app/LcdLayout.cpp, kind by kind): [{text, x, scale, style}].

@@ -1609,3 +1609,40 @@ round trip of this step.
 host answers the session's asks itself, as without one: the clipboard
 (LIB-8's `ClipboardService`) and `open-url` (`QDesktopServices`); anything
 else is not given.
+
+## Part E simplification E-5 (2026-11-17, branch `es-web-glue`)
+
+`docs/reviews/e-simplification.md` §1 S-4 (Web pages), §2 item 3. What
+both products' pages wrote each is in the React set
+(`library/web/components/`, `COMPONENT_SOURCES`):
+
+- `useShellProduct.jsx`: `useShellProduct(shell, {request, args, fallback,
+  version, build, copyScreen, presetAccept, openFiles, acts})` (D-32: the
+  request `<prefix>.shell-product`, once per distinct `args` while the
+  session runs; the fallback until it answered; the merge with the page's
+  version, build, Copy Screen, Load Preset… and each item's act, read when
+  used) and `useFaceplateMaps(shell, request, model)` (D-31, one request
+  per model). The opening helpers are LIB-13's section of the same name.
+- `ShellMedia.jsx`: `ShellSavedMedia` (File ▸ Saved Media…: LIB-7's list in
+  `ShellModal`, `data-calcu="saved-media"`; was `C1600SavedMedia` and
+  `C59SavedMedia`, word for word) and `ShellSlotPicker` (B1: LIB-7's
+  picker of the slot, disabled by `empty`; `label` for the fieldset,
+  Calc-U-59's "Solid State Module"; an optional Name & Save button,
+  Calc-U-1600's, with the product's icon).
+- The notice queue (`calcuShellNotices`) keeps `CALCU_SHELL_ASKS = "asks:"`
+  with the spaces after it dropped: it mirrors `shell::kAsksPrefix` of
+  `Notices.cpp`, which reads a reason the same way; every sender writes
+  LIB-7's one prefix `CALCU_ASKS` ("asks: ").
+
+Kept per product: the three modal frames (Calc-U-1600's `Modal`,
+`.calcu-modal-backdrop > .calcu-modal[data-dialog]`, focus on its first
+control and Escape inside it; Calc-U-59's `Dialog`, `.calcu-modal >
+.calcu-dialog`, Escape from the window and a click outside closing it;
+`ShellModal`, `.calcu-shell-modal*` with `data-calcu`) differ in their DOM
+classes, their CSS (each product's `calc.css`) and their keys, so one frame
+would change pixels or the tests' selectors; `hitMapOf`, as the products'
+`faceplate-map` values differ in shape (flat vs `{map, card, canvas}`).
+Not done: a C++ helper that registers `<prefix>.shell-product` (the pages'
+requests are unchanged; C++ stayed out of this step). Every pixel and the
+DOM of both pages are as before (screenshots of both pages in their main
+states, before and after, compared pixel by pixel and by `outerHTML`).

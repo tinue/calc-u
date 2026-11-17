@@ -47,6 +47,16 @@ Never edit the calculator there — that copy is generated.
    `c59.shell-product {layout, version}` (`app/TIShellProduct`: items,
    About texts and links, the settings spec of the layout); a new menu
    item goes into `TIShellProduct` (the menu model), not into the page.
+   The page's glue is the library's (Part E, E-5; `library/web/components/
+   useShellProduct.jsx`, `ShellMedia.jsx`, `library/web/src/canvas.js`):
+   `useShellProduct` (the request, its fallback `C59_NO_PRODUCT`, the merge
+   with the page's acts and Load Preset…), `useFaceplateMaps`,
+   `calcuOpenFiles`, `calcuFileDrop` (Calc-U-59's rule
+   `CALCU_DROP_FIRST_FILE`: the first file of a drop), `ShellSavedMedia`,
+   `ShellSlotPicker` (label "Solid State Module"), `calcImage` (the file
+   name with `.png`) and `sizeCanvas`, `calcuAskedQuestion` (the card
+   picker's replace question), `calcuMediaPlace`; the shell is LIB-15's
+   `useShell` with the page's host services (`createC59Traces`).
    `src/engine.js`, `src/ControlBar.jsx`, the page's own preset picker,
    Settings and About, `c59.static-data`, `c59.web.model`,
    `c59.web.settings` and the page's pointer commands went in M-57;
@@ -73,13 +83,13 @@ Never edit the calculator there — that copy is generated.
    commands (M-55, LIB-7 59, C59-7; `src/Dialogs.jsx`'s card picker, opened
    by the product items Arm Card… / Arm Fresh Card… or the bar's card
    controls; File ▸ Import Media… and Saved Media…, the component set's
-   `CalcuSavedMediaDialog`); `c59.web.card` and the
+   `ShellSavedMedia`); `c59.web.card` and the
    `c59.web.*-card` commands are gone; the corners stay `c59.tap-card`
    (the face's pointer) and `media.feed` (assistive buttons).
    `bindings.cpp` is only the factory of the session; the components send
    commands and requests by name and read the topics with `useTopic`
-   (`src/page.jsx`: the shell made with `createShell`, the traces handed
-   over, the LOG view). No message of a protocol of its own (LIB-15
+   (`src/page.jsx`: the host services that keep the traces handed over
+   (`createC59Traces`, for `useShell`), the LOG view). No message of a protocol of its own (LIB-15
    AC-22), no `localStorage` (LIB-9 AC-23).
 2. **Parity** (CLAUDE.md § "Frontend Parity"): a user-visible change to a
    feature the web has needs the matching change in the apps, or a

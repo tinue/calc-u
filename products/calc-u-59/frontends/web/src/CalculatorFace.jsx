@@ -36,7 +36,7 @@ const DISPLAY_RECT = { x: 0, y: 0.052, w: 1, h: 0.05 };
 const CARD_RECT = { x: 0, y: 0.11, w: 1, h: 0.108 };
 const KEY_BUTTON_POINTER = 1002;   // the key buttons' pointer (not the faceplate's)
 
-const artworkFor = (model) => (model === "TI-59" ? "ti59_base" : "ti58_base");
+const artworkFor = (model) => (model === "TI-59" ? "ti59_base.png" : "ti58_base.png");
 const PRESS_SHIFT = 3;
 
 // The page's hit map form (useShellFaceplate) from the map's Value form.

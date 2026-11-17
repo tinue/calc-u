@@ -14,7 +14,7 @@ function CalcuSavedMediaDialog({ media, send, ask, onClose }) {
       .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
       .forEach((i) => rows.push({ kind: k, item: i }));
   });
-  const run = (command, args) => calcuMediaSendAsking(send, ask, command, args).then((reply) => {
+  const run = (command, args) => calcuSendAsking(send, ask, command, args).then((reply) => {
     setProblem(reply && !reply.done && reply.reason ? reply.reason : "");
   });
   return (

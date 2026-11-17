@@ -8,35 +8,8 @@
 //               badges, dividers and the top wash.
 //   printer   — PC-100C dots from Shared/PrinterFont (PrinterWidget.cpp).
 
-// ── Images ──────────────────────────────────────────────────────────────────
-
-const imageCache = new Map();
-/// The artwork `name` (img/<name>.png), calling `onLoad` once it has loaded.
-function calcImage(name, onLoad) {
-  let entry = imageCache.get(name);
-  if (!entry) {
-    const img = new Image();
-    entry = { img, waiting: [] };
-    img.onload = () => { entry.waiting.forEach((f) => f()); entry.waiting = []; };
-    img.src = `${CALC_BASE}img/${name}.png`;
-    imageCache.set(name, entry);
-  }
-  if (!entry.img.complete && onLoad) entry.waiting.push(onLoad);
-  return entry.img.complete && entry.img.naturalWidth ? entry.img : null;
-}
-
-/// Size a canvas for CSS px w × h at the device's pixel ratio; returns its context.
-function sizeCanvas(canvas, w, h) {
-  const dpr = window.devicePixelRatio || 1;
-  const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
-  if (canvas.width !== pw || canvas.height !== ph) {
-    canvas.width = pw;
-    canvas.height = ph;
-  }
-  const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  return ctx;
-}
+// The artwork and the canvases: the library's calcImage (img/<name>) and
+// sizeCanvas (library/web/src/canvas.js).
 
 // ── LED ─────────────────────────────────────────────────────────────────────
 
@@ -124,7 +97,7 @@ function elide(ctx, text, width) {
 
 function paintCueCard(ctx, card, onImage) {
   ctx.clearRect(0, 0, card.width, card.height);
-  const img = calcImage(card.template, onImage);
+  const img = calcImage(`${card.template}.png`, onImage);
   if (img) ctx.drawImage(img, 0, 0, card.width, card.height);
   ctx.textBaseline = "middle";
   for (const it of card.items) {

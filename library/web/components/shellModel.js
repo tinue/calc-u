@@ -34,6 +34,9 @@ const CALCU_SHELL_BAR_GROUPS = ["AfterModel", "Slots", "Places", "Media", "End"]
 const CALCU_SHELL_COLD_BOOT_QUESTION = "Cold boot the machine? What it holds in memory is lost.";   // M15
 const CALCU_SHELL_TRAITS = { hasQuit: false, shortcuts: false, savedMedia: true, menuBar: true, settings: true, about: true };
 const CALCU_SHELL_LOADING_MS = 500;
+// The notice queue's question rule, as shell::kAsksPrefix (Notices.cpp): "asks:"
+// and the spaces after it dropped. Every sender writes CALCU_ASKS ("asks: ",
+// MediaPicker.jsx; C++ media::kAsks), which this reads the same (Part E E-5).
 const CALCU_SHELL_ASKS = "asks:";
 const CALCU_SHELL_STOPPED = "Stopped.";
 

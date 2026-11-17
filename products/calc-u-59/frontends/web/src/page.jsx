@@ -1,15 +1,16 @@
 // What the page's components share (M-57, LIB-14 59): the library's shell
-// (LIB-15's createShell, its topics through useTopic) and the few things the
+// (LIB-15's useShell, its topics through useTopic) and the few things the
 // page keeps itself. There is no translation layer any more (src/engine.js
 // went in M-57): a component sends the library's commands and the
 // product's (`c59.*`) by name and reads the topics as the session sends them.
 //
-//   createC59Shell({model, preset, workerUrl}) → {shell, traces}
-//       the shell, started with LIB-18's `start {model, preset}` (the preset
-//       as its bundle path `examples:<path>`, LIB-15 N3), and the traces the
-//       session handed over with keep-file (LIB-10 AC-26, D-25: the LOG tab
-//       lists them; the worker keeps no copy)
-//   C59_PAGE        the context: {shell, s (useCalcuShell), traces, openFiles}
+//   bundlePathOf(preset)  the preset prop as its bundle path `examples:<path>`
+//       (LIB-15 N3) for LIB-18's `start {model, preset}`
+//   createC59Traces() → {services, list, subscribe, download}
+//       the page's host services for useShell (the library's, with the
+//       traces the session hands over with keep-file kept: LIB-10 AC-26,
+//       D-25, the LOG tab lists them; the worker keeps no copy)
+//   C59_PAGE        the context: {shell, s (useCalcuShell), traces, log}
 //   useLogView(shell) → {lines, clear}: the LOG tab's view of LIB-3's `log`,
 //       its last 2000 lines (C59-4 AC-9); clear empties this view only
 
@@ -23,7 +24,7 @@ function bundlePathOf(preset) {
   return preset.startsWith("examples:") ? preset : `examples:${preset}`;
 }
 
-function createC59Shell({ model, preset, workerUrl }) {
+function createC59Traces() {
   const kept = new Map();
   const listeners = new Set();
   let list = [];
@@ -40,13 +41,12 @@ function createC59Shell({ model, preset, workerUrl }) {
       return base.answer(name, args);
     },
   };
-  const shell = createShell({ product: PRODUCT, workerUrl, start: { model: model || "", preset: bundlePathOf(preset) }, services });
-  const traces = {
+  return {
+    services,
     list: () => list,
     subscribe: (l) => { listeners.add(l); return () => listeners.delete(l); },
     download: (name) => { const b = kept.get(name); if (b) calcuDownload(name, b, "application/octet-stream"); },
   };
-  return { shell, traces };
 }
 
 function useTraces(traces) {
@@ -73,6 +73,4 @@ function useLogView(shell) {
 }
 
 // The card reader's place of the `media` topic, or null (a TI-58, TI-58C).
-function cardReaderOf(media) {
-  return ((media && media.places) || []).find((p) => p.place === "card-reader") || null;
-}
+const cardReaderOf = (media) => calcuMediaPlace(media, "card-reader");

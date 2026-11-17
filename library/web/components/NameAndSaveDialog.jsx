@@ -9,7 +9,7 @@ function CalcuNameAndSaveDialog({ place, prompt, send, ask, onClose }) {
   const save = () => {
     const args = { place: place.place, name };
     if (place.askWriteProtect && protect) args.protect = true;
-    calcuMediaSendAsking(send, ask, "media.name-and-save", args).then((reply) => {
+    calcuSendAsking(send, ask, "media.name-and-save", args).then((reply) => {
       if (reply && reply.done) {
         if (onClose) onClose(true);
       } else if (reply && reply.reason) {

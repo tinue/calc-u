@@ -24,8 +24,17 @@
 // data-calcu names for the tests: media-picker-<place>, media-name,
 // media-protect, media-save, media-saved-<kind>-<name>, media-download,
 // media-delete.
+//
+// The helpers (Part E simplification E-5: one prefix for every page):
+//   CALCU_ASKS                   "asks: ", the start of a question's reason (D-6;
+//                                C++ media::kAsks)
+//   calcuAskedQuestion(reason)   the question of such a reason, else null
+//   calcuSendAsking(send, ask, command, args)   the reply of a command that may
+//                                ask first: on yes sent again with confirmed: true
+//   calcuMediaPlace(media, word) the place of the topic `media` named `word`
+//                                ("slot-1", "card-reader", "tape"), or null
 
-const CALCU_MEDIA_ASKS = "asks: ";
+const CALCU_ASKS = "asks: ";
 const CALCU_MEDIA_PROTECT = "Write-protect (switch to read-only, can't be undone)";
 
 function calcuMediaAsk(ask, question) {
@@ -33,16 +42,24 @@ function calcuMediaAsk(ask, question) {
   return Promise.resolve(typeof window !== "undefined" && window.confirm ? window.confirm(question) : false);
 }
 
+function calcuAskedQuestion(reason) {
+  return typeof reason === "string" && reason.startsWith(CALCU_ASKS) ? reason.slice(CALCU_ASKS.length) : null;
+}
+
 // The reply of a command that may ask first (D-6): sent again confirmed on yes.
-function calcuMediaSendAsking(send, ask, command, args) {
+function calcuSendAsking(send, ask, command, args) {
   return Promise.resolve(send(command, args)).then((reply) => {
-    const reason = reply && reply.reason ? reply.reason : "";
-    if (reply && !reply.done && reason.startsWith(CALCU_MEDIA_ASKS)) {
-      return calcuMediaAsk(ask, reason.slice(CALCU_MEDIA_ASKS.length)).then((yes) =>
+    const question = reply && !reply.done ? calcuAskedQuestion(reply.reason) : null;
+    if (question !== null) {
+      return calcuMediaAsk(ask, question).then((yes) =>
         yes ? send(command, Object.assign({}, args, { confirmed: true })) : { done: false, reason: "" });
     }
     return reply;
   });
+}
+
+function calcuMediaPlace(media, word) {
+  return ((media && media.places) || []).find((p) => p.place === word) || null;
 }
 
 function calcuPickerLabel(entry) {

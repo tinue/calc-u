@@ -56,33 +56,15 @@ function SaveIcon() {
   );
 }
 
-// The place of LIB-7's topic `media` named `word` ("slot-1", "floppy", "tape").
-function mediaPlaceOf(media, word) {
-  return ((media && media.places) || []).find((p) => p.place === word) || null;
-}
-
 // The product's own controls and the media controls it hands the shell's
 // bar get the page's actions through this context.
 const C1600Bar = React.createContext(null);
 
-// LIB-7's module picker of a slot (the shell's slot picker), with its Name
-// & Save button; disabled with the place's reason while it cannot be used
-// (LIB-4 AC-20).
-function SlotControls({ shell, entry }) {
+// LIB-7's module picker of a slot (the library's ShellSlotPicker), with its
+// Name & Save button.
+function SlotControls(props) {
   const bar = React.useContext(C1600Bar);
-  const word = calcuShellText(entry, "place");
-  const place = mediaPlaceOf(shell.inputs.media, word);
-  const ok = calcuShellAvailability(entry, "empty");
-  return (
-    <fieldset className="calcu-bar-fieldset" disabled={!ok.now} title={ok.now ? undefined : ok.reason}>
-      <CalcuMediaPicker place={place} send={bar.send} />
-      <button type="button" className="calcu-iconbutton" disabled={!place || !place.nameAndSave} title="Name & Save"
-        data-calcu={`name-and-save-${word}`} aria-label={`Name & Save ${word.replace("-", " ")}`}
-        onClick={() => bar.nameAndSave(word)}>
-        <SaveIcon />
-      </button>
-    </fieldset>
-  );
+  return <ShellSlotPicker {...props} nameAndSave={bar.nameAndSave} icon={<SaveIcon />} />;
 }
 
 function tapeCounter(lamps) {
@@ -96,7 +78,7 @@ function tapeCounter(lamps) {
 // Save, the counter with the motor (`c1600.lamps`).
 function TapeControls({ shell, entry }) {
   const bar = React.useContext(C1600Bar);
-  const place = mediaPlaceOf(shell.inputs.media, "tape");
+  const place = calcuMediaPlace(shell.inputs.media, "tape");
   const ok = calcuShellAvailability(entry, "insert");
   const lamps = bar.lamps;
   return (
@@ -131,7 +113,7 @@ function DiskControls({ s }) {
   const floppy = calcuShellList(cs, "mediaPlaces").find((m) => calcuShellText(m, "id") === "floppy");
   const insert = floppy ? calcuShellAvailability(floppy, "insert") : { now: true, reason: "" };
   const ok = entry.available ? insert : { now: false, reason: entry.reason || "" };
-  const place = ok.now ? mediaPlaceOf(s.inputs.media, "floppy") : null;
+  const place = ok.now ? calcuMediaPlace(s.inputs.media, "floppy") : null;
   const side = place && place.holds && place.holds.side ? 1 : 0;
   return (
     <fieldset className="calcu-bar-fieldset" data-calcu="bar-disk" disabled={!ok.now} title={ok.now ? undefined : ok.reason}>
@@ -160,16 +142,6 @@ const C1600_MEDIA_CONTROLS = { cassette: TapeControls };
 // shell's area draws none of its own.
 const C1600_PANELS = { paper: () => null };
 
-// File ▸ Saved Media… (LIB-7 AC-31, AC-43): the library's list.
-function C1600SavedMedia({ shell, onClose }) {
-  const media = useTopic(shell, "media");
-  return (
-    <ShellModal name="saved-media" title="Saved Media" onClose={onClose}>
-      <CalcuSavedMediaDialog media={media} send={(c, a) => shell.send(c, a)} onClose={onClose} />
-    </ShellModal>
-  );
-}
-
 // Before `c1600.shell-product` answered: the shell's frame with nothing of
 // the product's yet.
 const C1600_NO_PRODUCT = { name: "Calc-U-1600", items: [], variantLabels: {}, moduleSlotPinOuts: [], placesWithoutControl: [] };
@@ -197,13 +169,6 @@ function CalcU1600(props) {
   const lamps = useTopic(shell, "c1600.lamps");
   const programs = useStream(shell, "c1600.program-opened");
 
-  // The product's shell data (D-32) and the page's acts.
-  const [shellData, setShellData] = React.useState(null);
-  React.useEffect(() => {
-    if (!shell || start !== "running" || shellData) return;
-    shell.request("c1600.shell-product", null).then((r) => { if (r.done) setShellData(r.value); });
-  }, [shell, start]);
-
   const tell = (text) => dialogs.ask("notice", { text });
   const sendChecked = (name, args) => (sRef.current ? sRef.current.sendChecked(name, args) : Promise.resolve({ done: false }));
   const send = (name, args) => (shell ? shell.send(name, args || null) : Promise.resolve({ done: false, reason: "" }));
@@ -213,12 +178,7 @@ function CalcU1600(props) {
   // opened, AC-8), keeps them while busy (AC-7), refuses with a notice and
   // asks before a medium of the same name is replaced (AC-4: the shell's
   // question). A program file comes back as the stream c1600.program-opened.
-  const openFiles = async (files, way) => {
-    if (!files.length) return;
-    const list = [];
-    for (const f of files) list.push({ name: f.name, bytes: await fileBytes(f) });
-    await sendChecked("open", { files: list, way, upload: true });
-  };
+  const openFiles = (files, way) => calcuOpenFiles(sendChecked, files, way);
 
   // Load BASIC Program / Load Machine Code on a file (C1600-2 AC-16 to
   // AC-19): the session's file kind, the WAV's choice, then the load.
@@ -293,29 +253,14 @@ function CalcU1600(props) {
     copyImageOrDownload("screen.png", { "image/png": image.then(grayPng), "text/plain": image.then((i) => i.text) });
   };
 
-  const product = React.useMemo(() => {
-    if (!shellData) return C1600_NO_PRODUCT;
-    const acts = { "load-basic-program": () => pickProgram("basic"), "load-machine-code": () => pickProgram("code") };
-    const p = shellData.product;
-    return {
-      ...p,
-      version: CalcU1600.version,
-      build: "web",
-      copyScreen: () => copyScreenRef.current(),
-      settingsSpec: shellData.settingsSpec,
-      // Load Preset…: the picked files through LIB-13's `open` (AC-8: a
-      // preset with the files it names, as one folder).
-      loadPreset: async () => openFilesRef.current(await calcuPickFiles(".pc1500,.pc1500a,.pc1600,.bas,.bbin,.bin,.wav,.yaml", true), "dialog"),
-      items: p.items.map((i) => ({ ...i, act: () => actsRef.current[i.id] && actsRef.current[i.id]() })),
-    };
-  }, [shellData]);
-  // The acts read the latest closures.
-  const actsRef = React.useRef({});
-  actsRef.current = { "load-basic-program": () => pickProgram("basic"), "load-machine-code": () => pickProgram("code") };
-  const copyScreenRef = React.useRef(copyScreen);
-  copyScreenRef.current = copyScreen;
-  const openFilesRef = React.useRef(openFiles);
-  openFilesRef.current = openFiles;
+  // The product's shell data (D-32) with the page's acts. Load Preset…: the
+  // picked files through LIB-13's `open` (AC-8: a preset with the files it
+  // names, as one folder).
+  const { product, ready: productReady } = useShellProduct(shell, {
+    request: "c1600.shell-product", fallback: C1600_NO_PRODUCT, version: CalcU1600.version, build: "web",
+    copyScreen, openFiles, presetAccept: ".pc1500,.pc1500a,.pc1600,.bas,.bbin,.bin,.wav,.yaml",
+    acts: { "load-basic-program": () => pickProgram("basic"), "load-machine-code": () => pickProgram("code") },
+  });
 
   const s = useCalcuShell(shell, product, CALCU_SHELL_WEB_TRAITS);
   sRef.current = s;
@@ -324,19 +269,13 @@ function CalcU1600(props) {
   const model = (cs && cs.model) || modelProp || DEFAULT_MODEL;
 
   // The faceplate maps, one request per model (D-31).
-  const [maps, setMaps] = React.useState({});
-  React.useEffect(() => {
-    if (!shell || start !== "running" || maps[model]) return;
-    shell.request("c1600.faceplate-map", { model }).then((r) => {
-      if (r.done) setMaps((m) => ({ ...m, [model]: r.value }));
-    });
-  }, [shell, start, model]);
+  const maps = useFaceplateMaps(shell, "c1600.faceplate-map", model);
 
   // Ready once the start (an operation: the model, then its preset) is
   // over: keys pressed while an operation runs are dropped (ledger 1600-9).
   const [started, setStarted] = React.useState(false);
   React.useEffect(() => { if (!started && s.started && s.inputs.busy && !busy) setStarted(true); }, [s.started, busy, s.inputs.busy]);
-  const ready = start === "running" && started && !!maps[model] && !!shellData;
+  const ready = start === "running" && started && !!maps[model] && productReady;
 
   // The keyboard reaches the calculator without a click first: the client
   // takes the focus once it runs and after each dialog, unless the host
@@ -378,7 +317,7 @@ function CalcU1600(props) {
     lamps,
     // Name & Save of a module, a disk or a tape (LIB-7 AC-16, AC-40; D-25).
     nameAndSave: async (word) => {
-      const place = mediaPlaceOf(s.inputs.media, word);
+      const place = calcuMediaPlace(s.inputs.media, word);
       if (!place) return;
       const prompt = word === "floppy" ? "Disk name:" : word === "tape" ? "Tape name:" : "Instance name:";
       await dialogs.ask("nameAndSave", { shell, place, prompt });
@@ -387,7 +326,7 @@ function CalcU1600(props) {
     // AC-20, D-24): the name first, asked before an instance is replaced
     // (the shell's question); its files at the first motor stop.
     recordTape: async () => {
-      const place = mediaPlaceOf(s.inputs.media, "tape");
+      const place = calcuMediaPlace(s.inputs.media, "tape");
       const empty = place && (place.picker || []).find((e) => e.group === "bundled-template" && e.label === "Empty");
       if (!empty) return;
       const name = await dialogs.ask("prompt", { title: "Save Tape", label: "Tape name:" });
@@ -479,12 +418,7 @@ function CalcU1600(props) {
         const text = e.clipboardData && e.clipboardData.getData("text/plain");
         if (text && shell) { e.preventDefault(); send("paste", { text }); }
       }}
-      onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
-      onDrop={(e) => {
-        e.preventDefault();
-        const files = [...e.dataTransfer.files];
-        if (files.length === 1 && shell) openFiles(files, "drop");
-      }}>
+      {...calcuFileDrop(shell ? openFiles : null, CALCU_DROP_ONE_FILE)}>
       <ShellMenuBar shell={s} />
       {/* LIB-14 D-39 (M-57, ledger 1600-48): the library's storage sentence. */}
       <ShellStorageBanner shell={shell} />
@@ -508,7 +442,7 @@ function CalcU1600(props) {
           </ShellPanelArea>
         </div>
       )}
-      <ShellDialogs shell={s} savedMedia={C1600SavedMedia} />
+      <ShellDialogs shell={s} savedMedia={ShellSavedMedia} />
       {dialogs.element}
     </div>
   );

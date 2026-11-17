@@ -1,6 +1,7 @@
 # User-guide screenshots: a PC-1600 with the CE-1600P (its cassette
 # interface) and a short program in memory, back in RUN mode, ready to
-# CSAVE onto a new tape.
+# CSAVE onto a new tape (a two-line program: CSAVE's time is mostly the
+# leader, the program adds to it).
 format-version: 2
 model: PC-1600
 printer: CE-1600P
@@ -8,6 +9,6 @@ keys:
   - key: mode
   - type: NEW0
 program:
-  file: ../../../../examples/plotter/lissajou-1600.bas
+  file: tape-program.bas
 keys:
   - key: mode

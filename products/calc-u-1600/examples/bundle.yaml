@@ -23,6 +23,9 @@ groups:
       - preset: { file: plotter/lissajou-1600.pc1600 }
         files:
           - { file: plotter/lissajou-1600.bas }
+      - preset: { file: plotter/rectangles-1600.pc1600 }
+        files:
+          - { file: plotter/rectangles-1600.bas }
       - preset: { file: plotter/globus.pc1600 }
         files:
           - { file: plotter/globus.bas }

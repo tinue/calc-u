@@ -47,7 +47,7 @@ test('?model= and ?preset= start with them', async ({ page }) => {
   await expect(page.locator('.calcu-face[data-model="PC-1500"]')).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator(c('notice'))).toHaveCount(0);
   await page.setViewportSize(TALL);
-  await gotoReady(page, '?preset=plotter/lissajou-1600.pc1600');
+  await gotoReady(page, '?preset=plotter/rectangles-1600.pc1600');
   await expect(page.locator('[data-panel=paper][data-empty=false]')).toHaveCount(1, { timeout: 45000 });
   await expect(page.locator(c('notice'))).toHaveCount(0);
 });
@@ -194,7 +194,7 @@ test('the control bar follows the model: peripherals, floppy, tape', async ({ pa
 test('lib8_ac38 plotter example shows the paper panel with marks', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
-  await example(page, 'examples:plotter/lissajou-1600.pc1600');
+  await example(page, 'examples:plotter/rectangles-1600.pc1600');
   await expect(page.locator('[data-panel=paper][data-empty=false]')).toHaveCount(1, { timeout: 45000 });
   await expect(page.locator('[data-panel=paper] [data-calcu=paper-owner]')).toHaveText('CE-1600P');
 });

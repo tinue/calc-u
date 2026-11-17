@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 # Calc-U-59 Qt6 desktop app. Built as part of the repository's root CMake
-# project (ADR 0003; tools/build_qt.sh, the local development build on
+# project (ADR 0003; the root's tools/run_qt.sh, the local development build on
 # macOS; the release packaging for Windows and Linux in CI,
 # .github/workflows/calc-u-59.yml, in build/release). It does not configure
 # on its own. The Mac Qt build is never shipped: on macOS the Swift app

@@ -3,6 +3,11 @@
 // after the engine and the product's files are in dist/. Node, no npm
 // dependencies: the JSX is compiled with the vendored Babel run in Node.
 //
+//   buildProduct({dist, name, version, css, sources, replace, banner, component,
+//                 props, installSentence, bundle, swId, core})
+//                                every step below in its order: what a product's
+//                                build.js and the test product's call
+//   releaseVersion(productDir)   the version release.yaml names (ReleaseIt's rule)
 //   compileCalcJs({vendor, librarySources, productSources, replace, out})
 //                                one closure, one global (AC-15)
 //   compileApp({vendor, component, props, installSentence, out})
@@ -221,7 +226,71 @@ function checkScopedCss(cssText) {
   return outside;
 }
 
+// The product's version as ReleaseIt reads it: the `version:` block of
+// <productDir>/release.yaml names a preset and a file, and the preset's
+// pattern's first match is the version (the help tool's rule,
+// tools/helptool/manifest.py; the presets the products use).
+const VERSION_PRESETS = {
+  xcode: /MARKETING_VERSION = ([^;\s]+);/,
+  cmake: /^set\(APP_VERSION "([^"]+)"\)/m,
+};
+function releaseVersion(productDir) {
+  const block = (read(path.join(productDir, "release.yaml")).match(/^version:.*\n((?:[ \t]+.*\n?)*)/m) || [])[1] || "";
+  const field = (k) => ((block.match(new RegExp(`^\\s+${k}:\\s*(\\S+)`, "m")) || [])[1]);
+  const pattern = VERSION_PRESETS[field("preset")];
+  const m = pattern && field("file") && read(path.join(productDir, field("file"))).match(pattern);
+  if (!m) throw new Error(`${productDir}/release.yaml: no version (preset ${field("preset")}, file ${field("file")})`);
+  return m[1].trim();
+}
+
+// examples/bundle.yaml and exactly the files it lists, each `{ file: … }`,
+// into dist/presets/ (LIB-6 AC-31: the engine's bundled examples).
+function copyPresets(dist, bundleFile) {
+  const examples = path.dirname(bundleFile);
+  const presets = [...new Set([...read(bundleFile).matchAll(/\{\s*file:\s*([^\s}]+)\s*\}/g)].map((m) => m[1]))];
+  for (const f of presets) {
+    const from = path.join(examples, f);
+    if (!fs.existsSync(from)) throw new Error(`bundle.yaml: ${f} is not in ${path.basename(examples)}/`);
+    fs.mkdirSync(path.join(dist, "presets", path.dirname(f)), { recursive: true });
+    fs.copyFileSync(from, path.join(dist, "presets", f));
+  }
+  fs.copyFileSync(bundleFile, path.join(dist, "presets", "bundle.yaml"));
+  return presets;
+}
+
+// A product's build, after its engine and its static files are in dist/:
+// calc.css (the product's stylesheet and the component set's, AC-17),
+// calc.js (one closure: the library, the component set and `sources`,
+// AC-15), app/app.js with `component` (AC-12), the library's app files and
+// worker, the presets of `bundle` (a bundle.yaml; none without it),
+// files.json, the service worker stamped with `swId` and `core` (AC-10,
+// AC-11) and MANIFEST.json `name` (AC-14). Returns what it wrote.
+function buildProduct({ dist, name, version, css, sources, replace, banner, component, props, installSentence, bundle, swId, core }) {
+  const cssText = [css, ...COMPONENT_CSS].map(read).join("\n");
+  const outside = checkScopedCss(cssText);
+  if (outside.length) throw new Error(`calc.css: selectors outside .calcu-client (LIB-15 AC-17): ${outside.join(", ")}`);
+  fs.writeFileSync(path.join(dist, "calc.css"), cssText);
+  compileCalcJs({
+    vendor: VENDOR,
+    librarySources: [...LIBRARY_SOURCES, ...COMPONENT_SOURCES],
+    productSources: sources,
+    replace: { __CALC_VERSION__: version, ...replace },
+    banner,
+    out: path.join(dist, "calc.js"),
+  });
+  compileApp({ vendor: VENDOR, component, props, installSentence, out: path.join(dist, "app", "app.js") });
+  copyAppFiles(dist);
+  writeLibraryWorker(dist);
+  const presets = bundle ? copyPresets(dist, bundle) : [];
+  writeFilesList(dist);
+  const precached = stampServiceWorker(dist, { id: swId, core });
+  const manifest = writeManifest(dist, { name, version });
+  console.log(`${name} ${version}: ${presets.length} presets, ${precached.length} precached, ` +
+    `${Object.keys(manifest.files).length} files, ${manifest.commit}, in ${dist}`);
+  return { presets, precached, manifest };
+}
+
 module.exports = {
   VENDOR, LIBRARY_SOURCES, COMPONENT_SOURCES, COMPONENT_CSS, WORKER_SOURCES, walk, compileCalcJs, compileApp, copyAppFiles, writeLibraryWorker,
-  writeFilesList, stampServiceWorker, writeManifest, checkScopedCss,
+  writeFilesList, stampServiceWorker, writeManifest, checkScopedCss, releaseVersion, buildProduct,
 };

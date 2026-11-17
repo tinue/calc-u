@@ -5,7 +5,7 @@
 # Run by hand (workflow_dispatch) — ReleaseIt's `release` dispatches it for a
 # pre-release and attaches the artifacts (release.yaml). There is no macOS Qt
 # job on purpose: on the Mac the Swift app (built locally) is the product, and
-# the Mac Qt build is for development only (tools/build_qt.sh).
+# the Mac Qt build is for development only (tools/run_qt.sh 59).
 #
 # ROMs are not in this repository (ADR 0034): every job fetches them with
 # roms/fetch_roms.sh from tinue/TI-59-ROM and checks their md5; the Qt build

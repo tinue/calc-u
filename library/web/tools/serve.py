@@ -4,8 +4,8 @@
 
 Serves <dir> at the server's root, or, with a prefix such as
 /anything/calc, only below it (everything else a 404): the sub-path that
-shows that dist/ works wherever it is hosted. From both products'
-run-tests.sh, which were identical but for the .wasm type.
+shows that dist/ works wherever it is hosted. Both products'
+frontends/web/run-tests.sh and the library's tests/run-tests.sh start it.
 """
 import functools
 import http.server

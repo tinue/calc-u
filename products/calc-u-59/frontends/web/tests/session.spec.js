@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoReady } = require('./helpers');
 
 // The Calc-U-59 Web frontend on the library's shell and app session (M-34):
 // LIB-15 AC-19, AC-22, EC-4 for this product; LIB-3 AC-31 (the Web part).
@@ -22,12 +23,6 @@ async function recordMessages(page) {
       }
     };
   });
-}
-
-async function gotoReady(page, query = 'layout=wide') {
-  await page.goto(`./?${query}`);
-  await expect(page.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
-  await page.waitForTimeout(600);
 }
 
 // Since M-57 the page talks to the library's shell itself (src/engine.js

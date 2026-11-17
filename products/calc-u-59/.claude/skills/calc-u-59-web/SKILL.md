@@ -88,8 +88,8 @@ Never edit the calculator there — that copy is generated.
    library's service worker (build.js fails on a missing one).
 4. **Render has no side effects** (`WebClient.md` § "No side effects in render").
 5. **`calc.js` exposes `PlayCalculator` only.** The sources are concatenated
-   into one closure; a new file goes into `SOURCES` in `build.js`, in load
-   order. Its props (`WebClient.md` § "Mounting it") and the stable hooks
+   into one closure; a new file goes into `sources` in `build.js` (the
+   product's data for the library's `buildProduct`), in load order. Its props (`WebClient.md` § "Mounting it") and the stable hooks
    are the contract — changing them is a change for the website too.
 6. **The client brings its own styling** (`reference/WebClient.md`). Fonts and
    React are self-hosted in `frontends/web/` (no CDN).
@@ -126,7 +126,10 @@ panel (`LIB-8 AC-28`, `AC-31`), the debugger's run-control buttons
 (`LIB-10 AC-34`) and the trace hand-over (`LIB-10 AC-26`), the portrait pages, the service worker's
 precache. Key presses after a program stops can extend its last entry, as
 on the real calculator — press CLR first. `tests/prerender.spec.js` renders `calc.js`
-in Node. Ports 8059 and 8060 (`CALCU_WEB_PORT` moves both).
+in Node. Ports 8059 and 8060 (`CALCU_WEB_PORT` moves both; the servers are
+`library/web/tools/serve.py`). Shared: `tests/helpers.js` (`gotoReady`), and
+the library's `library/web/tests/dist-helpers.js` (`serveDist` for the
+offline test, `prerender`).
 `tests/session.spec.js` (LIB-15 AC-19, AC-22, EC-4, LIB-3 AC-31) records the
 messages and reads the shell through the root element's `calcuShell`;
 `tests/storage.spec.js` (AC-20, AC-21, LIB-9 AC-23) reads IndexedDB

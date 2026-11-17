@@ -51,3 +51,16 @@ and two builds of one tree give the same bytes.
 Tests: `tools/helptool/tests/` (`python3 -m unittest discover -s
 helptool/tests -t .` in `tools/`; CTest `LibraryHelpTool`), on the fixture
 help tree `tools/helptool/tests/fixtures/good/`.
+
+## run_qt.sh: a product's Qt6 app, built and started
+
+```sh
+tools/run_qt.sh 59 [file.ti59]   # build build/app-59 (the other product off) and start the app
+tools/run_qt.sh 1600 --build     # build only
+tools/run_qt.sh 1600 --app-dir   # print the directory holding the built app
+```
+
+The local development build (Release, Ninja; configured the first time
+only). On macOS the `.app` is started through `open`, else the binary;
+arguments after the product go to the app. Calc-U-1600's
+`tools/make_screenshots.sh` builds through it.

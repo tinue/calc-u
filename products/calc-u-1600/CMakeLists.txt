@@ -202,13 +202,7 @@ if(CALCU_TESTS)
   # tree (the test suite builds the asset, AC-8). Python 3, standard library.
   calcu1600_test_program(CalcU1600HelpTests ${CMAKE_CURRENT_SOURCE_DIR}/tests/help/help_tests.cpp)
   calcu_add_test(CalcU1600HelpTests frequent COMMAND CalcU1600HelpTests)
-  if(Python3_FOUND)
-    calcu_add_test(CalcU1600HelpCheck frequent
-                   COMMAND ${Python3_EXECUTABLE} -I -B ${CMAKE_SOURCE_DIR}/tools/help check calc-u-1600 --quiet-warnings)
-    calcu_add_test(CalcU1600HelpBuild frequent
-                   COMMAND ${Python3_EXECUTABLE} -I -B ${CMAKE_SOURCE_DIR}/tools/help build calc-u-1600 --quiet-warnings
-                           --out ${CMAKE_CURRENT_BINARY_DIR}/help)
-  endif()
+  calcu_add_help_tests(CalcU1600 calc-u-1600)
 
   # C1600-5 (design §6) and LIB-11 Part D (D.6): the product commands under
   # `pc1600` and the harness entry through SharpAppPart, each test on a

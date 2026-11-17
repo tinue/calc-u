@@ -69,7 +69,7 @@ calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀�
 | `examples/bundle.yaml` (the product's) | What File ▸ Examples ▸ offers: the request `preset-list` gives its examples in their groups (LIB-6 AC-31; C59-2 AC-13). `build.js` copies exactly the files it lists, and the file itself, to `dist/presets/` (`presets.json` went in M-54) |
 | `library/web/vendor/` (the repository's) | React 18 and ReactDOM (shipped), Babel (build only), ReactDOMServer (tests only); one copy for both products |
 | `build.sh`, `build.js` | The build (below) |
-| `tests/`, `run-tests.sh`, `playwright.config.js`, `package.json` | Playwright tests |
+| `tests/`, `run-tests.sh`, `playwright.config.js`, `package.json` | Playwright tests (`tests/helpers.js`: `gotoReady`) |
 
 ### What the session sends
 
@@ -136,8 +136,9 @@ version in the repository's `.github/workflows/calc-u-59.yml`, job `web`),
    to `dist/img/`;
 3. copies the static files, React, the font and the app icon (derived from
    `frontends/swift/App/AppIcon.icon` by `tools/gen_qt_icons.sh`);
-4. runs `build.js` on the library's build steps (`library/web/build/dist.js`):
-   compiles the library's page side and `src/*` into one `calc.js` (in
+4. runs `build.js`, which hands the product's data to the library's product
+   build (`library/web/build/dist.js` `buildProduct`, which Calc-U-1600 and
+   the library's test product use too): it compiles the library's page side and `src/*` into one `calc.js` (in
    `SOURCES` order, with the version stamped in) and the library's app page
    with `PlayCalculator` into `app/app.js`, fails on a selector of
    `calc.css` outside `.calcu-client` (LIB-15 AC-17), copies the library's
@@ -263,7 +264,8 @@ elements by their `data-calcu` names (LIB-14 §3.10, B9): `menu-bar`,
   registered relative to `app/app.js` and its precache list is relative to
   itself.
 
-`run-tests.sh` runs every test twice: against a server whose root is `dist/`,
+`run-tests.sh` runs every test twice (two servers of
+`library/web/tools/serve.py`): against a server whose root is `dist/`,
 and against one that serves `dist/` only under `/anything/calc/` and answers
 404 everywhere else, so a root-relative URL fails the second run.
 
@@ -274,7 +276,8 @@ The website prerenders `PlayCalculator` server-side in a sandbox whose
 worker, fetches and listeners start in effects, which a static render never
 runs, and module-level code may only read `document.currentScript` (and
 `location` as a fallback). `tests/prerender.spec.js` renders `calc.js` that
-way in Node with the vendored ReactDOMServer, and also checks that `calc.js`
+way in Node with the vendored ReactDOMServer (the library's sandbox,
+`library/web/tests/dist-helpers.js` `prerender`), and also checks that `calc.js`
 leaks no globals besides `PlayCalculator`.
 
 ### Styling
@@ -312,7 +315,7 @@ engine through `app/engine-worker.js`, which loads `../calc-engine-worker.js`;
 an embedded client starts that file directly, and stays outside this service
 worker even on an origin where the app is installed, so it never gets a cached
 engine older than its `calc.js`. `tests/offline.spec.js` starts the app with the
-server gone, in Chromium and WebKit: `context.setOffline()` isn't enough, as the
+server gone (its own server, `dist-helpers.js` `serveDist`), in Chromium and WebKit: `context.setOffline()` isn't enough, as the
 browser's HTTP cache then answers. The library's `stampServiceWorker` adds
 everything of `files.json` (the ROMs, the presets) to the list; the worker
 loads them all at its start. The cache is named
@@ -333,7 +336,8 @@ persistent file system (IndexedDB).
 }
 ```
 
-`version` is `MARKETING_VERSION` from the Xcode project (the only version);
+`version` is `MARKETING_VERSION` from the Xcode project (the only version;
+read through `release.yaml` as ReleaseIt and the help tool read it);
 `commit` gets `-dirty` when the working tree had changes (tracked or
 untracked); `files` lists every file in `dist/` except `MANIFEST.json`
 itself, with `/`-separated paths.

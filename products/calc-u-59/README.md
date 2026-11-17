@@ -51,7 +51,7 @@ The code is layered: `core/` emulates the hardware, `app/` (C++20, standard libr
 cmake -S ../.. -B ../../build/tests -G Ninja -DCALCU_FRONTEND_QT=OFF && cmake --build ../../build/tests && ctest --test-dir ../../build/tests/products/calc-u-59 --output-on-failure
 ```
 
-`tools/build_qt.sh` builds the Qt app into the repository's `build/app-59` tree; `./build_and_run.sh [file.ti59]` builds and starts it. On macOS, Qt comes from Homebrew and the Qt build is for development only. The Windows and Linux packages are built by CI (the repository's `.github/workflows/calc-u-59.yml`), which also lists the packages each platform needs.
+`../../tools/run_qt.sh 59 --build` builds the Qt app into the repository's `build/app-59` tree; `../../tools/run_qt.sh 59 [file.ti59]` builds and starts it. On macOS, Qt comes from Homebrew and the Qt build is for development only. The Windows and Linux packages are built by CI (the repository's `.github/workflows/calc-u-59.yml`), which also lists the packages each platform needs.
 
 **Web client:** `frontends/web/build.sh` compiles `core/` and `app/` with Emscripten (`emcc`, e.g. `brew install emscripten`) and builds a self-contained `frontends/web/dist/` that the website embeds; `frontends/web/run-tests.sh` runs its Playwright tests against it. CI builds it too and uploads it zipped. See [`reference/WebClient.md`](reference/WebClient.md).
 

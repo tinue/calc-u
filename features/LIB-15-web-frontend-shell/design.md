@@ -62,7 +62,7 @@ because each Web engine compiles it itself. Tests in `library/web/tests/`.
 | `library/web/app/app.jsx` | the installable app page: fills the viewport, install button and iOS hint (from both `app/app.jsx`), parametrised by the product's component and sentence (AC-12) |
 | `library/web/app/sw.js` | the service worker template (§3.4; AC-10, AC-11) |
 | `library/web/app/engine-worker.js` | the app's entry to the worker (both `app/engine-worker.js`, identical today) |
-| `library/web/build/dist.js` | Node, used by each product's `build.js`: `compileCalcJs`, `writeFilesList`, `stampServiceWorker`, `writeManifest`, `checkScopedCss` (§3.5) |
+| `library/web/build/dist.js` | Node, used by each product's `build.js`: `compileCalcJs`, `writeFilesList`, `stampServiceWorker`, `writeManifest`, `checkScopedCss` (§3.5); departure (Part E simplification E-6, 2026-11-17): `buildProduct` runs them all in one order for both products' `build.js` and the test product's, with the product's data as arguments |
 | `library/web/vendor/` | Departure (Part D simplification S-5 (2026-11-16)): the one copy of React 18, ReactDOM, ReactDOMServer (tests) and Babel (build only), `dist.VENDOR`; it replaced the byte-identical `frontends/web/vendor/` of both products, which their `build.sh`, `build.js` and `prerender.spec.js` and the library's tests now read from here |
 | `library/web/tools/serve.py` | the two test servers (root and `/anything/calc/`), from both `run-tests.sh` (identical but for the `.wasm` type) |
 | `library/web/tests/product/` | the product made for the tests: `TestProduct.cpp` (LIB-1's `TestMachines`, LIB-3's sessions, two product topics, a product command that writes a file), `src/CalcUTest.jsx` (component `CalcUTest`), `calc.css`, `manifest.json`, `build.sh`, `build.js`. Built into `build/web/library/web/test-dist/<name>/`, twice (product names `Test-A`, `Test-B`, AC-7) and in two releases (AC-11) |
@@ -269,6 +269,14 @@ checkScopedCss(cssText) → [selectors outside .calcu-client]      // AC-17
 - The product's `build.js` keeps its own version source (Xcode
   `MARKETING_VERSION`, Qt `APP_VERSION`) and its preset list until LIB-6
   (`presets.json`, `examples/bundled.yaml`).
+- Departure (Part E simplification E-6, 2026-11-17): the version is read
+  by one rule, `releaseVersion(productDir)`: the file and preset that
+  `release.yaml` names, as ReleaseIt and the help tool
+  (`tools/helptool/manifest.py`) read them. The source files stay the
+  same (Xcode `MARKETING_VERSION`, Qt `APP_VERSION`), and so does the
+  string; `dist/` is byte-identical. Both `run-tests.sh` start
+  `library/web/tools/serve.py`, and the products' offline and prerender
+  tests use `library/web/tests/dist-helpers.js` (`serveDist`, `prerender`).
 
 ### 3.6 C++ glue (`calcu::web`): AC-1, AC-2, AC-4, AC-22, AC-26, AC-27
 

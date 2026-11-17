@@ -83,6 +83,20 @@ function(calcu_add_test name group)
   set_tests_properties(${name} PROPERTIES LABELS ${group} ${T_PROPERTIES})
 endfunction()
 
+# calcu_add_help_tests(<prefix> <product>): <prefix>HelpCheck and
+# <prefix>HelpBuild, Frequent (LIB-16): tools/help checks the product's help
+# and builds its asset into the calling directory's tree (help/; the test
+# suite builds the asset, AC-8). Registered when Python 3 is found.
+function(calcu_add_help_tests prefix product)
+  find_package(Python3 COMPONENTS Interpreter QUIET)
+  if(Python3_FOUND)
+    set(help ${Python3_EXECUTABLE} -I -B ${CMAKE_SOURCE_DIR}/tools/help)
+    calcu_add_test(${prefix}HelpCheck frequent COMMAND ${help} check ${product} --quiet-warnings)
+    calcu_add_test(${prefix}HelpBuild frequent
+                   COMMAND ${help} build ${product} --quiet-warnings --out ${CMAKE_CURRENT_BINARY_DIR}/help)
+  endif()
+endfunction()
+
 # The warnings of every target the repository compiles (linked PRIVATE):
 # -Wall -Wextra, or MSVC's /W4 with /utf-8 (the sources are UTF-8 without a
 # BOM; MSVC would read them in the ANSI code page).

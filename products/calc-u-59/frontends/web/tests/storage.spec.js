@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoReady } = require('./helpers');
 
 // The persistent file system of the Calc-U-59 Web frontend (M-34): LIB-15
 // AC-20 (its settings part, and the TI-58C's constant memory as a file of
@@ -20,12 +21,6 @@ async function setStartupModel(page, label) {
   await el(page, 'item-settings').click();
   await el(page, 'setting-startup-model').selectOption({ label });
   await el(page, 'settings-close').click();
-}
-
-async function gotoReady(page, query = 'layout=wide') {
-  await page.goto(`./?${query}`);
-  await expect(page.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
-  await page.waitForTimeout(600);
 }
 
 // The files IndexedDB holds for the product: {path: text} (IDBFS's store).

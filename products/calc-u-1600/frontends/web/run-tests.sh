@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Runs the web client's Playwright tests against frontends/web/dist/ (build it first:
-# frontends/web/build.sh). Two HTTP servers: one serves dist/ at its root, the other
-# only under /anything/calc/ (everything else a 404) -- the sub-path that
-# proves the client is location-independent.
+# Runs the web client's Playwright tests against frontends/web/dist/ (build it
+# first: frontends/web/build.sh). Two HTTP servers (library/web/tools/serve.py):
+# one serves dist/ at its root, the other only under /anything/calc/
+# (everything else a 404) -- the sub-path that proves the client is
+# location-independent.
 set -euo pipefail
 
 WEB="$(cd "$(dirname "$0")" && pwd)"
+SERVE="$WEB/../../../../library/web/tools/serve.py"   # the library's test server
 DIST="${CALCU1600_WEB_DIST:-$WEB/dist}"
 export CALCU_WEB_PORT="${CALCU_WEB_PORT:-8160}"
 SUBPATH_PORT=$((CALCU_WEB_PORT + 1))
@@ -21,30 +23,12 @@ for port in "$CALCU_WEB_PORT" "$SUBPATH_PORT"; do
   fi
 done
 
-serve() {  # serve <port> <prefix>
-  python3 - "$DIST" "$1" "$2" <<'PY' &
-import functools, http.server, sys
-PREFIX = sys.argv[3]
-class Handler(http.server.SimpleHTTPRequestHandler):
-    extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map, ".wasm": "application/wasm", ".js": "text/javascript"}
-    def translate_path(self, path):
-        if PREFIX:
-            if not path.startswith(PREFIX + "/"):
-                return "/nonexistent"
-            path = path[len(PREFIX):]
-        return super().translate_path(path)
-    def log_message(self, *args):
-        pass
-class Server(http.server.ThreadingHTTPServer):
-    request_queue_size = 128
-Server(("", int(sys.argv[2])), functools.partial(Handler, directory=sys.argv[1])).serve_forever()
-PY
-  PIDS+=($!)
-}
 PIDS=()
 trap 'kill "${PIDS[@]}" 2>/dev/null' EXIT
-serve "$CALCU_WEB_PORT" ""
-serve "$SUBPATH_PORT" "/anything/calc"
+python3 "$SERVE" "$DIST" "$CALCU_WEB_PORT" &
+PIDS+=($!)
+python3 "$SERVE" "$DIST" "$SUBPATH_PORT" /anything/calc &
+PIDS+=($!)
 sleep 1
 
 cd "$WEB"

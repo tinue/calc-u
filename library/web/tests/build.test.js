@@ -98,3 +98,15 @@ test("service worker stamp: every precached file exists, a hash per release", ()
     dist.stampServiceWorker(other.dir, { id: "x", core: ["wasm/q.wasm"] });
   }, /precaches .* which is not in dist/);
 });
+
+test("version from release.yaml, as ReleaseIt and the help tool read it", () => {
+  const { dir, put } = tempDist();
+  put("release.yaml", "name: X\nversion:\n  preset: xcode\n  file: App.xcodeproj/project.pbxproj\n\nrelease:\n  latest: false\n");
+  put("App.xcodeproj/project.pbxproj", "MARKETING_VERSION = 3.0.0;\nMARKETING_VERSION = 1.0;\n");
+  assert.equal(dist.releaseVersion(dir), "3.0.0");   // the first one: the app's, not a test target's
+  put("release.yaml", "version:\n  preset: cmake\n  file: qt/CMakeLists.txt\n");
+  put("qt/CMakeLists.txt", 'project(X)\nset(APP_VERSION "0.9.0")\n');
+  assert.equal(dist.releaseVersion(dir), "0.9.0");
+  put("release.yaml", "version:\n  preset: cargo\n");
+  assert.throws(() => dist.releaseVersion(dir), /no version/);
+});

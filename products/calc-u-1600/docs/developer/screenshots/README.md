@@ -36,8 +36,8 @@ shot or image to stderr, and quits. The exit code is:
 That makes the same scenarios usable as a GUI smoke test.
 
 `--shots` (and `--pacing-probe`) exist in development and test builds only
-(`CALCU_ATTACH`: a POSIX tree with the tests, as `tools/build_app.sh`
-makes it); release builds and Windows have neither.
+(`CALCU_ATTACH`: a POSIX tree with the tests, as `tools/run_qt.sh 1600`
+at the repository root makes it); release builds and Windows have neither.
 
 **A client of harness attach** (LIB-14 AC-44). The app opens harness
 attach on a port the system picks and the runner talks to it as a line

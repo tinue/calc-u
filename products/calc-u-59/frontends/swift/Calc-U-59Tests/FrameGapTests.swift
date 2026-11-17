@@ -86,7 +86,10 @@ final class FrameGapTests: XCTestCase {
         let regular = measure("program running, regular speed", seconds: 2)
         let regularRate = (t.time(self).seconds - e0) / Date().timeIntervalSince(w0)
 
-        t.session.fullSpeed = true
+        // Full speed as the display's hold gives it (the shell's pointer rule, LIB-14 AC-43).
+        let d = TISharedTables.displayRect, width = 400.0, height = width / Double(TISharedTables.canvasAspect)
+        _ = t.session.shell.pointerDown(9, x: Double(d.midX) * width, y: Double(d.midY) * height,
+                                        scale: width / Double(TISharedTables.canvasWidthPixels))
         TestSession.run(0.2)
         let w1 = Date(), e1 = t.time(self).seconds
         let full = measure("program running, full speed", seconds: 3)
@@ -103,7 +106,7 @@ final class FrameGapTests: XCTestCase {
             wait(for: [e], timeout: 5)
         }
         let fullRate = (t.time(self).seconds - e1) / Date().timeIntervalSince(w1)
-        t.session.fullSpeed = false
+        t.session.shell.pointerUp(9)
         let summary = String(format: "rate against wall time: regular %.2f, full speed %.2f; key reply latency max %.1f ms",
                              regularRate, fullRate, latencies.max() ?? 0)
         print("[FrameGap] \(summary)")

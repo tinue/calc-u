@@ -21,16 +21,12 @@ enum AppInfo {
         "\(marketingVersion) (\(buildNumber))"
     }
 
-    // Mirrors text from appstore/metadata/subtitle.txt
-    static let subtitle = "Calc-U-59 Calculator Emulation"
-
-    // Condensed from appstore/metadata/description.txt
-    static let aboutSummary = "Cycle-accurate TI-59, TI-58, and TI-58C emulation with magnetic cards, paper tape printer, preset state files, and debugger tools."
-
-    // Mirrors URLs from appstore/metadata/*.txt
-    static let marketingURL = "https://github.com/tinue/Calc-U-59"
-    static let supportURL = "https://github.com/tinue/Calc-U-59/issues"
-    static let privacyURL = "https://github.com/tinue/Calc-U-59/blob/main/PRIVACY.md"
+    // C59-8 D-8: the About texts and links of every frontend (app/TIShellProduct).
+    static var subtitle: String { TIShell.aboutLines.first ?? "" }
+    static var aboutSummary: String { TIShell.aboutLines.dropFirst().joined(separator: "\n") }
+    static var aboutLinks: [(title: String, url: String)] {
+        TIShell.aboutLinks.compactMap { $0.count == 2 ? ($0[0], $0[1]) : nil }
+    }
 }
 
 #if os(macOS)
@@ -63,11 +59,10 @@ extension AppInfo {
         text.append(NSAttributedString(string: "\(subtitle)\n", attributes: subtitleAttrs))
         text.append(NSAttributedString(string: "\(aboutSummary)\n\n", attributes: bodyAttrs))
 
-        text.append(linkLine(title: "GitHub", urlString: marketingURL, paragraph: centered))
-        text.append(NSAttributedString(string: "\n", attributes: bodyAttrs))
-        text.append(linkLine(title: "Support", urlString: supportURL, paragraph: centered))
-        text.append(NSAttributedString(string: "\n", attributes: bodyAttrs))
-        text.append(linkLine(title: "Privacy", urlString: privacyURL, paragraph: centered))
+        for (i, link) in aboutLinks.enumerated() {
+            if i > 0 { text.append(NSAttributedString(string: "\n", attributes: bodyAttrs)) }
+            text.append(linkLine(title: link.title, urlString: link.url, paragraph: centered))
+        }
 
         return text
     }()

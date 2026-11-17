@@ -112,9 +112,4 @@ private:
     calcu::settings::SettingsFile& m_file;
 };
 
-// A launch value `<section>.<key>=<value>` (the Swift UI tests' `--setting`
-// arguments, design §4) set in `file`. False when it names no declared key
-// or has no `=`.
-bool applyLaunchSetting(calcu::settings::SettingsFile& file, std::string_view assignment);
-
 } // namespace cu59::settings

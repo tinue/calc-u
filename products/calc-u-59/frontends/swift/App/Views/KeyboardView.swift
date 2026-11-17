@@ -13,66 +13,25 @@ struct KeyboardView: View {
     private static let cardRect = TISharedTables.cardRect
     private static let kbYStart: CGFloat = TISharedTables.keyboardYStart
     private static let kbYScale: CGFloat = TISharedTables.keyboardYScale
+    /// The base image's width in pixels: the hit map's unit (cu59::faceplateHitMap).
+    private static let canvasPixels: CGFloat = TISharedTables.canvasWidthPixels
 
     // ── Colors ──────────────────────────────────────────────────────────
 
     private static let cardEdge = Color(red: 0x0A/255.0, green: 0x08/255.0, blue: 0x06/255.0)
     private static let maroon = Color(red: 0x1C/255.0, green: 0x06/255.0, blue: 0x06/255.0)
 
-    private var canvasImageName: String {
-        switch viewModel.model {
-        case .ti59:         return "ti59_base"
-        case .ti58, .ti58c: return "ti58_base"
-        }
-    }
+    /// The art by the control state's model (LIB-4 AC-15: no copy of the model facts).
+    private var canvasImageName: String { viewModel.modelID == "TI-59" || viewModel.modelID.isEmpty ? "ti59_base" : "ti58_base" }
 
-    @State private var pressedKey: Int? = nil   // physRow * 5 + physCol
     @State private var pointerIsDown = false
+    /// The one pointer of a mouse or of the touch tracker.
+    private static let pointer: Int64 = 1
 
     /// Whether physical keypresses go to the calculator. Only consumed on macOS,
     /// where the calculator shares the window with the printer and debug panels —
     /// see `PhysicalKeyboardModifier` below.
     @FocusState private var isKeyboardFocused: Bool
-
-    private func releaseHeldKey() {
-        if let prev = pressedKey {
-            viewModel.releaseKey(row: prev / 5, col: prev % 5)
-            pressedKey = nil
-        }
-    }
-
-    private var ledFontStyleRaw: Int { SettingsModel.shared.ledFontStyleRaw }
-
-    private var fontStyle: LEDFontStyle {
-        LEDFontStyle(rawValue: ledFontStyleRaw) ?? .modernized
-    }
-
-    #if canImport(UIKit)
-    private let haptic = UIImpactFeedbackGenerator(style: .rigid)
-    #endif
-
-    private func triggerFeedback() {
-        #if os(iOS)
-        let feedbackType = AppSettings.resolvedKeyboardFeedback()
-        switch feedbackType {
-        case .off:
-            // No feedback
-            break
-        case .haptic:
-            haptic.impactOccurred()
-        case .click:
-            playClickSound()
-        }
-        #endif
-        // macOS: No audio feedback
-    }
-
-    private func playClickSound() {
-        // iOS only: Use system UI click sound
-        #if os(iOS)
-        AudioServicesPlaySystemSound(1104)
-        #endif
-    }
 
     // ── Body ───────────────────────────────────────────────────────────────
 
@@ -95,6 +54,11 @@ struct KeyboardView: View {
                 CueCardView(content: viewModel.cueCardContent, litCorner: viewModel.litCardCorner)
                     .frame(width: cardW, height: cardH)
                     .position(x: cardW / 2, y: cardY + cardH / 2)
+                    // C59-8 AC-20: the cue card the product topic names, in its template.
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(viewModel.cueCardContent?.title ?? "")
+                    .accessibilityValue(viewModel.cueCardContent?.template.rawValue ?? "")
+                    .accessibilityIdentifier("cue-card")
 
                 // ── LED display ─────────────────────────────────────────
                 LEDDisplayView(
@@ -102,7 +66,7 @@ struct KeyboardView: View {
                     levels:        viewModel.displayLevels,
                     dpLevels:      viewModel.dpLevels,
                     calcIndicatorOpacity: viewModel.calcIndicatorOpacity,
-                    fontStyle:     fontStyle
+                    fontStyle:     viewModel.ledStyle
                 )
                 .equatable()
                 .accessibilityIdentifier("led-display")   // UI tests: a press here is full speed
@@ -117,62 +81,32 @@ struct KeyboardView: View {
                 // regardless of real touch duration — see UIKitTouchTracker's doc
                 // comment). Track touches via raw UIKit there instead; macOS mouse
                 // input is unaffected and keeps the DragGesture it always used.
+                // The library's pointer rule (LIB-14 AC-24, AC-43; C59-8 D-9):
+                // the key under the pointer, the display for full speed; the
+                // card's corners first (C59-7).
+                let scale = w / Self.canvasPixels
                 let handleChanged: (CGPoint) -> Void = { location in
                     // Touching the calculator claims physical-keyboard
                     // focus back from whichever panel had it. The drag
                     // gesture consumes the click, so relying on
                     // .focusable()'s own click-to-focus isn't enough.
                     isKeyboardFocused = true
-
-                    let nx = location.x / w
-                    let ny = location.y / h
-
-                    // A press, not a drag across the card, feeds a side.
                     if !pointerIsDown {
                         pointerIsDown = true
-                        if viewModel.tapCard(x: nx, y: ny) { return }
-                    }
-
-                    // Check if press is on display area
-                    let isOnDisplay = nx >= Self.displayRect.minX && nx <= Self.displayRect.maxX &&
-                                    ny >= Self.displayRect.minY && ny <= Self.displayRect.maxY
-                    if isOnDisplay {
-                        if !viewModel.isDisplayPressed {
-                            viewModel.isDisplayPressed = true
-                            viewModel.isFullSpeedMode = true
-                            releaseHeldKey()
+                        // A press, not a drag across the card, feeds a side.
+                        if viewModel.tapCard(x: location.x / w, y: location.y / h) { return }
+                        if viewModel.pointerDown(Self.pointer, x: location.x, y: location.y, scale: scale) {
+                            viewModel.keyFeedback()
                         }
                         return
                     }
-
-                    // Release display press if moving to keyboard
-                    if viewModel.isDisplayPressed {
-                        viewModel.isDisplayPressed = false
-                        viewModel.isFullSpeedMode = false
+                    if viewModel.pointerMove(Self.pointer, x: location.x, y: location.y, scale: scale) {
+                        viewModel.keyFeedback()
                     }
-
-                    // Convert canvas coords → keyboard-image coords
-                    let kbNy = (ny - Self.kbYStart) / Self.kbYScale
-                    // Allow margin for vertical expansion (20% of max key height ≈ 0.015)
-                    let verticalMargin: CGFloat = 0.025
-                    guard kbNy >= -verticalMargin && kbNy <= 1 + verticalMargin else {
-                        releaseHeldKey()
-                        return
-                    }
-                    let keyID = TISharedTables.keyIndex(x: nx, y: kbNy)
-                    guard keyID >= 0 else { return }
-                    let row = keyID / 5, col = keyID % 5
-                    guard pressedKey != keyID else { return }
-                    releaseHeldKey()
-                    pressedKey = keyID
-                    viewModel.pressKey(row: row, col: col)
-                    triggerFeedback()
                 }
                 let handleEnded: () -> Void = {
                     pointerIsDown = false
-                    viewModel.isDisplayPressed = false
-                    viewModel.isFullSpeedMode = false
-                    releaseHeldKey()
+                    viewModel.pointerUp(Self.pointer)
                 }
 
                 #if os(macOS)
@@ -192,7 +126,7 @@ struct KeyboardView: View {
                 // Simulate key press: shift key down-right and expose black background.
                 // Physical-keyboard presses light the same highlight, so a typed key
                 // looks exactly like a clicked one.
-                if let pk = pressedKey ?? viewModel.keyboardHeldKey {
+                if let pk = viewModel.pointerKey ?? viewModel.keyboardHeldKey {
                     let r = TISharedTables.keyRect(row: pk / 5, col: pk % 5)
                     let keyW = w * r.width
                     let keyH = h * r.height * Self.kbYScale
@@ -222,17 +156,34 @@ struct KeyboardView: View {
                                   y: canvasY + keyH / 2 + shiftY)
                         .allowsHitTesting(false)
                 }
+
+                // ── "Loading…" (C59-8 AC-9): a small sign below the display;
+                // it takes no touches, so the keys under it can be used.
+                if viewModel.loadingShown {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text("Loading…").font(.caption.bold())
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .position(x: w / 2, y: h * Self.displayRect.maxY + 18)
+                    .allowsHitTesting(false)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("loading")
+                }
             }
         }
         .aspectRatio(Self.imageAspect, contentMode: .fit)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("faceplate")
         .physicalKeyboard(viewModel: viewModel, focus: $isKeyboardFocused)
         .onDisappear {
             // If this view is torn down mid-gesture (e.g. rapid panel switching),
             // the DragGesture's onEnded never fires: let go of any held key.
-            releaseHeldKey()
+            pointerIsDown = false
+            viewModel.releasePointers()
             viewModel.keyboardRelease()
-            viewModel.isDisplayPressed = false
-            viewModel.isFullSpeedMode = false
         }
     }
 }

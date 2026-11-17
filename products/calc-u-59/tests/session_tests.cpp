@@ -3,6 +3,7 @@
 
 #include "TestHarness.hpp"
 #include "../app/TIMagneticCardKind.hpp"
+#include "control/ControlState.hpp"
 #include "media/MediaTopics.hpp"
 #include "SessionRig.hpp"
 #include "../app/Bcd.hpp"
@@ -36,7 +37,6 @@ std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
     const PayloadPtr* p = r.fe.mirror.state(t);
     if (!p || !*p) return 0;
     // Every interim payload is a TISnapshot: the serial says which set it was.
-    if (const auto* x = payloadAs<TIModelState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TILedState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TICueCardState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIPrinterState>(*p)) return x->serial;
@@ -47,18 +47,44 @@ std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
     return reinterpret_cast<std::uintptr_t>(p->get());
 }
 
+// The control state's model and what is plugged into `place` (LIB-4).
+Value controlValue(SessionRig& r) {
+    const auto* c = r.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+    return c ? c->toValue() : Value();
+}
+std::string controlModel(SessionRig& r) {
+    const Value v = controlValue(r);
+    const Value* m = v.find("model");
+    return m && m->string() ? *m->string() : std::string();
+}
+std::string pluggedIn(SessionRig& r, const std::string& place) {
+    const Value v = controlValue(r);
+    const Value* places = v.find("places");
+    if (!places || !places->elements()) return {};
+    for (const auto& p : *places->elements()) {
+        const Value* at = p.find("place");
+        if (!at || !at->string() || *at->string() != place) continue;
+        if (const Value* fs = p.find("fitting"); fs && fs->elements())
+            for (const auto& f : *fs->elements())
+                if (const Value* pl = f.find("plugged"); pl && pl->boolean() && *pl->boolean())
+                    if (const Value* id = f.find("id"); id && id->string()) return *id->string();
+    }
+    return {};
+}
+
 } // namespace
 
 // AC-29: what the fourteen change flags announced is in the mirror; each
 // flag's action moves its topic on.
 TEST(lib3_ac29_mirror_holds_every_change_flag) {
     SessionRig r;
-    for (const auto* t : {&topics::kModel, &topics::kLed, &topics::kCueCard, &topics::kPrinter, &calcu::media::kMediaTopic,
+    for (const auto* t : {&calcu::control::kControlStateTopic, &topics::kLed, &topics::kCueCard, &topics::kPrinter, &calcu::media::kMediaTopic,
                           &topics::kRunState, &topics::kCalculatorDebug, &topics::kCpuDebug,
                           &topics::kHeatmap, &topics::kAsmOverlay, &topics::kDebugView})
         CHECK(r.fe.mirror.state(*t) != nullptr);
-    CHECK(r.state<TIModelState>(topics::kModel)->model == Model::TI59);
-    CHECK_EQ(r.state<TIModelState>(topics::kModel)->moduleID, std::string("ML"));
+    // The model and the module: LIB-4's control state (C59-8: c59.model went).
+    CHECK_EQ(controlModel(r), std::string("TI-59"));
+    CHECK_EQ(pluggedIn(r, "slot-1"), std::string("ML"));
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
 
     auto moves = [&](const TopicName& t, auto action) {
@@ -68,8 +94,8 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
         return serialOf(r, t) != before;
     };
     // ModelChanged
-    CHECK(moves(topics::kModel, [&] { r.model("TI-58"); }));
-    CHECK(r.state<TIModelState>(topics::kModel)->model == Model::TI58);
+    CHECK(moves(calcu::control::kControlStateTopic, [&] { r.model("TI-58"); }));
+    CHECK_EQ(controlModel(r), std::string("TI-58"));
     // DisplayChanged
     CHECK(moves(topics::kLed, [&] { r.tap(83); }));   // 5
     // CueCardChanged, CardChanged
@@ -113,9 +139,6 @@ TEST(lib3_ac30_error_is_notice_diagnostic_is_log) {
     r.part().error("Preset load error", "Cannot read file.");
     r.frame();
     CHECK(hasNotice(r, "Preset load error: Cannot read file."));
-    const NoticeParts n = splitNotice("Preset load error: Cannot read file.");
-    CHECK_EQ(n.title, std::string("Preset load error"));
-    CHECK_EQ(n.message, std::string("Cannot read file."));
     r.part().diagnostic("a developer line");
     r.frame();
     CHECK(hasLog(r, "a developer line"));
@@ -142,7 +165,7 @@ TEST(lib3_ac30_card_and_constant_memory_files_without_frontend) {
 TEST(lib3_ac30_module_id_not_saved) {
     SessionRig r;
     CHECK(r.attach("slot-1", "LE").done);
-    CHECK_EQ(r.state<TIModelState>(topics::kModel)->moduleID, std::string("LE"));
+    CHECK_EQ(pluggedIn(r, "slot-1"), std::string("LE"));
     CHECK(testroms::fs::is_empty(r.folder.path()));   // nothing written for it
 }
 

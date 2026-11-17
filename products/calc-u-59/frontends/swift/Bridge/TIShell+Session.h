@@ -1,0 +1,33 @@
+// ObjC++ only: what TIAppSession and TIShell tell each other (C59-8 §3.1).
+// Never import from the Swift bridging header.
+#import "TIAppSession.h"
+#import "TIShell.h"
+#include "sessions/Messages.hpp"
+#include "shell/Inputs.hpp"
+#include <functional>
+#include <string>
+
+@interface TIShell ()
+- (instancetype)initWithSession:(TIAppSession *)session;
+/// A notice of the `notices` topic (AC-10).
+- (void)noticeArrived:(const std::string &)sentence;
+/// The busy topic changed ("Loading…", LIB-14 L1).
+- (void)busyChanged;
+/// The machine changed model: every pointer lets go (H6).
+- (void)modelChanged;
+@end
+
+@interface TIAppSession ()
+/// The last Value of each input topic (D-2), kept by the bridge's drain.
+- (const calcu::shell::ShellInputs &)shellInputs;
+- (void)setPresetList:(calcu::sessions::Value)list;
+/// A command of the shell's, its reply on the main thread.
+- (void)sendCommand:(calcu::sessions::Command)command
+              reply:(std::function<void(const calcu::sessions::ReplyMessage &)>)reply;
+/// A request of the shell's (the preset list), its reply on the main thread.
+- (void)askRequest:(calcu::sessions::Request)request
+             reply:(std::function<void(const calcu::sessions::ReplyMessage &)>)reply;
+/// The delegate: the notice queue or the inputs changed.
+- (void)shellNoticesChanged;
+- (void)shellInputsChanged;
+@end

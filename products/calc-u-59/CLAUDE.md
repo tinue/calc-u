@@ -119,7 +119,8 @@ landscape on a large screen) — its column in
   `frontends/web/bindings.cpp` for the web).
 - **`frontends/swift/Bridge/`, the Qt adapters and `frontends/web/bindings.cpp` translate types only.**
 - **The Qt6 and Web windows are put together from LIB-14's shell** (M-57;
-  the Swift frontend natively, C59-8): the menus, the control bar (and the
+  the Swift frontend natively since M-58, C59-8: `Bridge/TIShell` computes
+  the same models, SwiftUI draws them): the menus, the control bar (and the
   More button where there is no menu bar), the settings dialog, About,
   Help, notices and "Loading…" are drawn from the library's models over
   the control state, with the product's data in `app/TIShellProduct`. A
@@ -154,7 +155,8 @@ landscape on a large screen) — its column in
 - **Settings** are declared once, in `app/Settings.hpp` (`settingsDecl()`:
   section, key, default, accepted values; typed calls over the library's
   `calcu::settings::SettingsFile`, LIB-9), and live in `Calc-U-59.ini`.
-  `frontends/swift/App/AppSettings.swift` (through `Bridge/TISettings`),
+  The Swift frontend's file is the session's (LIB-14's `SettingsPart`,
+  read through `Bridge/TIShell`; C59-8 D-3),
   `frontends/qt6/app/AppSettings.hpp` and the Web's `app/TIWebPart` use
   them; no frontend keeps a setting in UserDefaults, QSettings or
   `localStorage` (CTest `CalcU59NoPlatformSettings`, allow-list

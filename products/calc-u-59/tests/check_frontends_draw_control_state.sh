@@ -1,15 +1,16 @@
 #!/bin/sh
-# LIB-4 AC-15 (design §10.6 T59-6, D-19): the Qt6 and Web frontends draw the
-# model, the module, the printer and the card controls from the control
-# state (M-57); no file of theirs reads the model facts or the interim
-# topics: hasCardReader, cu59::info(, c59.model, c59.web.model, allModules.
-# The Swift frontend reads `c59.model` until C59-8 (M-58), which adds it
-# here with the check that App/MachineModel.swift is gone.
+# LIB-4 AC-15 (design §10.6 T59-6, D-19): the Qt6, Web and Swift frontends
+# draw the model, the module, the printer and the card controls from the
+# control state (M-57; Swift M-58, C59-8); no file of theirs reads the model
+# facts or the interim topics: hasCardReader, cu59::info(, c59.model,
+# c59.web.model, allModules, MachineModel (the Swift copy of the model facts).
 # Run from products/calc-u-59. Exit 1 with the lines found.
 set -u
-found=$(grep -rnE 'hasCardReader|cu59::info\(|c59\.model|c59\.web\.model|allModules' \
-    frontends/qt6/app frontends/web/src frontends/web/bindings.cpp 2>/dev/null \
+found=$(grep -rnE 'hasCardReader|cu59::info\(|c59\.model|c59\.web\.model|allModules|MachineModel' \
+    frontends/qt6/app frontends/web/src frontends/web/bindings.cpp frontends/swift/App frontends/swift/Bridge 2>/dev/null \
     | grep -vE '^[^:]+:[0-9]+:\s*(//|\*|///)')
+[ -e frontends/swift/App/MachineModel.swift ] && found="$found
+frontends/swift/App/MachineModel.swift exists"
 if [ -n "$found" ]; then
     echo "A frontend decides from the model facts or an interim topic (LIB-4 AC-15):"
     echo "$found"

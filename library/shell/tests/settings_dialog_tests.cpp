@@ -49,7 +49,7 @@ struct Rig {
 
     // Not writable: a file without a format version, which is left untouched
     // for the whole run (LIB-9 AC-7).
-    explicit Rig(bool writable = true) : file(openFile(home, writable)) {
+    explicit Rig(bool writable = true, std::vector<std::string> alsoShown = {}) : file(openFile(home, writable)) {
         sett::HostDirs dirs;
         dirs.home = home.str();
         dirs.settingsBase = home.str() + "/settings";
@@ -58,6 +58,7 @@ struct Rig {
         s.file = &file;
         s.paths = paths.get();
         s.changed = [this](std::string_view sec, std::string_view key) { changed.push_back(std::string(sec) + "." + std::string(key)); };
+        s.alsoShown = std::move(alsoShown);
         part = std::make_unique<SettingsPart>(std::move(s));
         sessions::AppSessionSetup a;
         a.clock = [] { return pacing::WallTime{0}; };   // a clock that stands: nothing runs unless called
@@ -135,6 +136,21 @@ TEST(ac11_sections_shown_for_keys_present) {
     const auto withProduct = dialog(r.topic(), st::presetList(), spec);
     CHECK_EQ(withProduct.back().title, std::string("Display"));
     CHECK_EQ(withProduct.back().rows[0].choices.size(), std::size_t{2});
+}
+
+// C59-8 AC-7 (M-58): a frontend that shows a [window] key (Calc-U-59's
+// Swift frontend on iOS) names it; it is then in the topic and set like any
+// other; the rest of [window] stays out.
+TEST(also_shown_key_in_topic_and_set) {
+    Rig plain;
+    CHECK(plain.row("window", "width") == nullptr);
+    CHECK(!plain.fe.reply(plain.set("window", "width", "1000"))->done);
+    Rig r(true, {"window.width"});
+    CHECK(r.row("window", "width") != nullptr);
+    const auto call = r.set("window", "width", "1000");
+    CHECK(r.fe.reply(call) && r.fe.reply(call)->done);
+    CHECK_EQ(r.file.integer("window", "width"), 1000L);
+    CHECK_EQ(r.rowText("window", "width", "value"), std::string("1000"));
 }
 
 TEST(ac11_change_written_at_once) {

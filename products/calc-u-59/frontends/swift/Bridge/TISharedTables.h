@@ -17,6 +17,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 // ── Canvas / key layout (Shared/KeyboardLayout.hpp) ─────────────────────────
 @property (class, readonly) CGFloat canvasAspect;
+/// The base image's width in pixels: the unit of the faceplate's hit map (cu59::kCanvasWidth).
+@property (class, readonly) CGFloat canvasWidthPixels;
 @property (class, readonly) CGRect displayRect;
 @property (class, readonly) CGRect cardRect;
 @property (class, readonly) CGFloat keyboardYStart;
@@ -25,8 +27,6 @@ NS_ASSUME_NONNULL_BEGIN
 + (CGRect)keyRectAtRow:(NSInteger)row col:(NSInteger)col NS_SWIFT_NAME(keyRect(row:col:));
 /// Matrix code (state-file key code) of the key at row 0–8, col 0–4.
 + (uint8_t)matrixCodeAtRow:(NSInteger)row col:(NSInteger)col NS_SWIFT_NAME(matrixCode(row:col:));
-/// row×5 + col of the key whose widened hit rect contains the point, or -1.
-+ (NSInteger)keyIndexAtX:(CGFloat)nx y:(CGFloat)ny NS_SWIFT_NAME(keyIndex(x:y:));
 
 @end
 

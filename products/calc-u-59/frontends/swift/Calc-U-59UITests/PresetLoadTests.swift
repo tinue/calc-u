@@ -5,7 +5,7 @@ import XCTest
 /// This test drives the iOS system document picker, which is inherently brittle:
 /// navigation element labels ("Durchsuchen", "Auf meinem iPhone") are
 /// locale-dependent and Apple can restructure the picker between iOS releases.
-/// The filename itself ("test_diag.ti59") and the keystroke-playback-status assertion
+/// The filename itself ("test_diag.ti59") and the wait through harness attach
 /// are stable. If this test breaks after an Xcode/iOS upgrade, first inspect
 /// the picker's element tree with Xcode's Accessibility Inspector or a
 /// print(app.debugDescription) dump.
@@ -26,42 +26,22 @@ final class PresetLoadTests: XCTestCase {
 
     // MARK: - Tests
 
-    /// Loading diag.ti59 via the file picker must trigger keystroke playback.
-    ///
-    /// test_diag.ti59 contains "KEYSTROKES: FullSpeed: + 15" which auto-starts
-    /// the diagnostic. The keystroke-playback-status element transitions to
-    /// "playing" — that is the proof of a successful load.
+    /// C59-8 AC-17: a preset loaded through the file picker runs. The load's
+    /// end is the reply to the bare `wait` through attach (AC-21); the
+    /// diagnostic shows its result on the display.
     @MainActor
     func testLoadDiagPreset() throws {
-        // LIB-6 D-46 (M-54): it waits for the keystroke-playback-status element
-        // of 2.3.0's KEYSTROKES playback and loads a file through the document
-        // picker; C59-8's scenario of LIB-6 AC-42 (a bundled example loaded,
-        // its cue card shown) replaces it in M-58.
-        throw XCTSkip("Replaced by C59-8's LIB-6 AC-42 scenario (M-58); LIB-6 D-46.")
         let orientation: UIDeviceOrientation = UIDevice.current.userInterfaceIdiom == .pad
             ? .landscapeLeft : .portrait
         let app = launchApp(orientation: orientation)
-
-        let presetButton = app.buttons["btn-preset"]
-        XCTAssertTrue(presetButton.waitForExistence(timeout: 5), "Preset button not found")
-        presetButton.tap()
-
-        navigateToOnMyIPhone(app, targetFile: "test_diag.ti59")
-
-        let diagCell = app.cells.containing(.staticText, identifier: "test_diag.ti59").firstMatch
-        XCTAssertTrue(diagCell.waitForExistence(timeout: 5), "diag.ti59 cell not found in file picker")
-        attachScreenshot(app, name: "File picker — diag.ti59 visible")
-
-        let statusEl = app.otherElements["keystroke-playback-status"]
-        let playing = NSPredicate(format: "value == 'playing'")
-        let playbackStarted = XCTNSPredicateExpectation(predicate: playing, object: statusEl)
-
-        diagCell.tap()
-
-        XCTAssertEqual(XCTWaiter.wait(for: [playbackStarted], timeout: 8), .completed,
-                       "Keystroke playback never started — diag.ti59 may not have loaded")
-
-        attachScreenshot(app, name: "After loading diag.ti59 — playback running")
+        let harness = attachHarness()
+        waitIdle(harness)
+        loadPreset(app, file: "test_diag.ti59", idleTimeout: 60, harness: harness)
+        attachScreenshot(app, name: "After loading test_diag.ti59")
+        XCTAssertEqual(harness.command("wait 2s", timeout: 10).first, "done 2")
+        let lcd = harness.command("lcd")
+        XCTAssertTrue(lcd.count > 1 && !lcd[1].trimmingCharacters(in: .whitespaces).isEmpty, "lcd: \(lcd)")
+        app.terminate()
     }
 }
 #endif

@@ -375,7 +375,7 @@ the Web's list is the request `preset-list`. Tests:
 | AC-39 | Pass | `lib6_ac39_full_speed_unless_regular_speed_first`, `lib6_ac39_user_keys_dropped_second_load_refused`, `lib3_ac32_preset_load_is_busy_and_refuses_second` |
 | AC-40 | Pass | `lib6_ac40_type_and_syncclock_refused_when_read`, `lib6_ac40_printer_trace_sets_trace_refused_without_pc100c`, `lib6_ac40_elapsed_counts_emulated_time`, `lib6_ac40_screenshot_is_the_classic_segment_picture`, `lib6_ac40_expect_pi_13_digits_passes_10_digits_fails`, `lib6_ac40_expect_any_display_format_and_blinking`, `lib6_ac40_not_expect_by_the_same_comparison`, `lib6_ac40_expect_not_a_number_refused_when_read`, `c59_6_ac6_preset_sets_trace_off_unless_printer_trace_on` |
 | AC-41 | Pass | `lib6_ac41_user_load_empties_paper_startup_preset_keeps_it` |
-| AC-42 | Pass on the Web and in Qt6 (M-57); Swift in M-58 (D-36) | Qt6 `CalcU59QtTests` `lib6_ac42_qt6_bundled_example_sum_shows_its_cue_card` (File ▸ Examples ▸ Sum 1..N on the real window: the cue card "Sum 1..N"; M-57); Web `lib6_ac42 bundled example sum shows its cue card`, `lib6_ac42 uploaded preset by its content`, `lib6_ac42 dropped preset loads` (Playwright); Swift's `PresetLoadTests` skipped (D-46) |
+| AC-42 | Pass on the Web, in Qt6 (M-57) and in Swift (M-58: XCUITest `FamilyStructureTests.test_lib6_ac42_an_example`, More ▸ Examples ▸ Programs ▸ Sum of N numbers on the iPhone simulator: the cue card "Sum 1..N", 5 A shows 15; `PresetLoadTests.testLoadDiagPreset` loads through the document picker again) (D-36) | Qt6 `CalcU59QtTests` `lib6_ac42_qt6_bundled_example_sum_shows_its_cue_card` (File ▸ Examples ▸ Sum 1..N on the real window: the cue card "Sum 1..N"; M-57); Web `lib6_ac42 bundled example sum shows its cue card`, `lib6_ac42 uploaded preset by its content`, `lib6_ac42 dropped preset loads` (Playwright); Swift's `PresetLoadTests` skipped (D-46) |
 | AC-43 | Pass (the four card examples excluded by name until M-55) | `calcu_preset_check.CalcU59Presets` (Frequent: 53 examples and the three startup presets), `c59_2_ac15_names_short_described_once_unique_per_model` (`checkBundle`) |
 | AC-68 | Pass | `lib6_ac68_regex_refused_when_read` |
 | AC-24, AC-66 (TI) | Pass | the AC-40 cases of `expect:`, `not-expect:` |
@@ -386,6 +386,8 @@ the Web's list is the request `preset-list`. Tests:
 
 Column status: tested in M-54; **In progress** until AC-42's Swift
 scenario (M-58; D-36). AC-42's Qt6 scenario passes since M-57.
+
+M-58 (2026-11-17): AC-42's Swift scenario passes (above): **Done**.
 
 ### Deviations and findings (Calc-U-59)
 

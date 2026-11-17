@@ -1,4 +1,5 @@
 #import "TIAppSession.h"
+#import "TIShell+Session.h"
 #import "BridgeConvert.h"
 #import "TIFileFormats+Cpp.h"
 #if TARGET_OS_OSX
@@ -14,6 +15,8 @@
 #include <calcu59/app/DebugLog.hpp>
 #include <calcu59/app/TIDebugPart.hpp>
 #include <calcu59/app/KeyIds.hpp>
+#include <calcu59/app/Settings.hpp>
+#include <calcu59/app/TIShellProduct.hpp>
 #include "typing/TypingTopics.hpp"
 #if DEBUG && (TARGET_OS_OSX || TARGET_OS_SIMULATOR)
 #include <calcu59/app/HarnessProduct.hpp>
@@ -21,7 +24,11 @@
 #endif
 #include "sessions/Args.hpp"
 #include "presets/PresetsPart.hpp"
+#include "settings/HostDirs.hpp"
+#include "settings/Paths.hpp"
+#include "settings/PlatformBase.hpp"
 #include "settings/SettingsFile.hpp"
+#include "shell/SettingsPart.hpp"
 #include "startup/StartupPart.hpp"
 #include "debugger/ButtonRule.hpp"
 #include "debugger/RunState.hpp"
@@ -236,13 +243,13 @@ private:
 
 TIChange changeOf(const cs::TopicName& t) {
     namespace T = cu59::topics;
-    if (t == T::kModel) return static_cast<TIChange>(TIChangeModel | TIChangeCard);
     if (t == T::kLed) return TIChangeDisplay;
     if (t == T::kCueCard) return static_cast<TIChange>(TIChangeCueCard | TIChangeCard);   // on show, the lit corner
     if (t == T::kPrinter) return TIChangePrinter;
-    if (t == calcu::media::kMediaTopic) return TIChangeCard;   // the card reader (C59-7, M-55)
-    if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic)
-        return TIChangeRunState;
+    if (t == calcu::media::kMediaTopic) return static_cast<TIChange>(TIChangeCard | TIChangeShell);   // the card reader (C59-7, M-55)
+    if (t == calcu::debugger::kRunStateTopic) return static_cast<TIChange>(TIChangeRunState | TIChangeShell);
+    if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic) return TIChangeRunState;
+    if (t == cs::kBusyTopic || t == calcu::shell::kSettingsTopic) return TIChangeShell;
     if (t == calcu::debugger::kTraceTopic) return TIChangeTrace;
     // The debug panel's product topics (C59-4 AC-25, M-56).
     if (t == T::kCalculatorDebug) return TIChangeLive;
@@ -251,7 +258,7 @@ TIChange changeOf(const cs::TopicName& t) {
     if (t == T::kHeatmap) return TIChangeHeatmap;
     if (t == T::kAsmOverlay) return TIChangeAsm;
     if (t == T::kDebugView) return TIChangeLog;   // the log level it carries
-    if (t == calcu::control::kControlStateTopic) return TIChangeControl;
+    if (t == calcu::control::kControlStateTopic) return static_cast<TIChange>(TIChangeControl | TIChangeShell | TIChangeCard);
     return static_cast<TIChange>(0);
 }
 
@@ -400,10 +407,12 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 @implementation TIAppSession {
     __weak id<TIAppSessionDelegate> _delegate;
-    TISettings* _settings;   // the settings file the session reads (TIAppSetup::settings): kept alive with it
     std::unique_ptr<cu59::SessionThread> _thread;
+    // The shell's inputs (C59-8 D-2): the last Value of each, on the main thread.
+    calcu::shell::ShellInputs _inputs;
+    std::string _model;   // the control state's model, to let go of the pointers at a switch
     cs::TopicMirror _mirror;
-    // The PC-100C's paper as the library's topic sent it (S-P1).
+    // The PC-100C's paper as the library's topic sent it (the paper panel, C59-8).
     std::vector<std::string> _paperLines;
     std::vector<TIPaperDot> _paperDots;
     double _paperReach;
@@ -417,36 +426,88 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (instancetype)initWithRoms:(TIRomSet *)roms start:(TISessionStart *)start delegate:(id<TIAppSessionDelegate>)delegate {
     if ((self = [super init])) {
         _delegate = delegate;
-        _settings = start.settings;
+        namespace st = calcu::settings;
+        // The settings file is the session's (C59-8 D-3): opened here, then
+        // read and written on the session thread only, by LIB-18's start and
+        // LIB-14's SettingsPart; the main thread does not touch it again.
+        st::HostDirs dirs;
+        dirs.frontend = st::FrontendKind::Swift;
+        dirs.home = cpp(NSHomeDirectory());
+        dirs.settingsBase = cpp(start.settingsBase);
+        dirs.saveFolder = cpp(start.saveFolder);
+        dirs.applicationSupport = cpp([start.settingsBase stringByAppendingPathComponent:@"Calc-U-59"]);
+        if (start.chosenTraceFolder) dirs.chosenTraceFolder = cpp(start.chosenTraceFolder);
+        const auto& decl = cu59::settings::settingsDecl();
+        const std::string path = start.settingsFile ? cpp(start.settingsFile) : st::settingsFilePath(decl, dirs);
+        auto file = std::make_shared<st::SettingsFile>(st::SettingsFile::open(decl, path));
+        auto paths = std::make_shared<st::Paths>(*file, dirs);
+        _settingsFilePath = ns(file->path());
+        _settingsProblem = file->problem().empty() ? nil : ns(file->problem());
+        // Where traces go, at the start (LIB-9 AC-24): by [trace] location.
+        const cu59::settings::Settings typed(*file);
+        _traceDirectory = ns(paths->traceFolder().value_or(dirs.applicationSupport));
+        BOOL available = YES;
+#if !TARGET_OS_OSX
+        if (typed.traceLocation() == cu59::settings::TraceLocation::ICloud && NSFileManager.defaultManager.ubiquityIdentityToken == nil)
+            available = NO;
+#endif
+        if (available)
+            available = [NSFileManager.defaultManager createDirectoryAtPath:_traceDirectory withIntermediateDirectories:YES
+                                                                 attributes:nil error:nil];
+        _traceAvailable = available;
+
+        calcu::shell::SettingsPartSetup ss;
+        ss.file = file.get();
+        ss.paths = paths.get();
+        ss.frontend = st::FrontendKind::Swift;
+        ss.alsoShown = {cu59::kPortraitDebugPage};   // the iOS row (C59-8 AC-7, OQ-4)
+        auto settingsPart = std::make_shared<calcu::shell::SettingsPart>(std::move(ss));
+
         cu59::TIAppSetup setup;
         setup.roms = roms->_set;
         // LIB-18 AC-17: the settings file decides the startup model; the
         // session's `start` (makeAppSession) builds it.
-        setup.settings = static_cast<calcu::settings::SettingsFile*>([_settings cppSettingsFile]);
+        setup.settings = file.get();
         setup.examplesFolder = cpp(start.examplesFolder);
         setup.home = cpp(NSHomeDirectory());
         setup.saveFolder = cpp(start.saveFolder);
         setup.fileIO = std::make_shared<CoordinatedFiles>(delegate);
-        setup.trace = {std::filesystem::path(start.traceDirectory.fileSystemRepresentation), start.traceMaxBytes};
-        const bool traceAvailable = start.traceAvailable == YES;
+        setup.trace = {std::filesystem::path(_traceDirectory.fileSystemRepresentation),
+                       static_cast<uint64_t>(typed.traceMaxFileSizeMB()) * 1'000'000};
+        const bool traceAvailable = available == YES;
         setup.traceAvailable = [traceAvailable] { return traceAvailable; };
         // C59-5 AC-7 (the session asks none of them yet).
         const cs::HostServices services = statedServices();
         __weak TIAppSession* weakSelf = self;
+        _shell = [[TIShell alloc] initWithSession:self];
         _thread = std::make_unique<cu59::SessionThread>(
-            [setup] { return cu59::makeAppSession(setup, cu59::steadyWallTime).session; },
+            // The file, its places and SettingsPart live as long as the
+            // factory, which outlives the session it made (SessionThread::run).
+            [setup, file, paths, settingsPart] {
+                return cu59::makeAppSession(setup, cu59::steadyWallTime, std::nullopt, {settingsPart.get()}).session;
+            },
             services, cu59::steadyWallTime,
             // One hop to the main thread per batch (FS 3); a batch that comes
             // after the bridge is gone is dropped.
             [weakSelf] { dispatch_async(dispatch_get_main_queue(), ^{ [weakSelf drain]; }); });
+        [self askPresetList];
     }
     return self;
+}
+
+// The preset list (LIB-6 AC-32): the Examples menu and the startup preset rows.
+- (void)askPresetList {
+    __weak TIAppSession* weakSelf = self;
+    _thread->ask(cs::Request{calcu::presets::kPresetListRequest, cs::Value::object({})}, [weakSelf](const cs::ReplyMessage& r) {
+        TIAppSession* me = weakSelf;
+        if (!me) return;
+        [me setPresetList:r.done && r.result ? r.result->toValue() : cs::Value()];
+    });
 }
 
 - (void)dealloc { _thread.reset(); }
 
 - (const cu59::TIPrinterState *)printer { return _mirror.stateOf<cu59::TIPrinterState>(cu59::topics::kPrinter); }
-- (const cu59::TIRunState *)run { return _mirror.stateOf<cu59::TIRunState>(cu59::topics::kRunState); }
 - (const calcu::debugger::RunState *)runControl {
     return _mirror.stateOf<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
 }
@@ -462,7 +523,6 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (const calcu::control::ControlState *)controlState {
     return _mirror.stateOf<calcu::control::ControlState>(calcu::control::kControlStateTopic);
 }
-- (const cu59::TIModelState *)modelState { return _mirror.stateOf<cu59::TIModelState>(cu59::topics::kModel); }
 
 - (void)drain {
     TIChange changes = static_cast<TIChange>(0);
@@ -509,12 +569,14 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
                         [d paperCopied:static_cast<NSInteger>(o->outcome)];
                 continue;
             }
-            if (s->topic == cs::kNoticesTopic) {
+            if (s->topic == cs::kNoticesTopic) {   // C59-8 AC-10: the shell's queue, each in turn
+                bool any = false;
                 for (const auto& p : s->appended)
                     if (const auto* n = cs::payloadAs<cs::Notice>(p)) {
-                        const auto parts = cu59::splitNotice(n->sentence);
-                        [d showErrorTitle:ns(parts.title) message:ns(parts.message)];
+                        [_shell noticeArrived:n->sentence];
+                        any = true;
                     }
+                if (any) [d noticesChanged];
                 continue;
             }
             if (s->topic == cs::kLogTopic) {   // C59-4 AC-9: the LOG tab's lines (a message may hold several)
@@ -535,7 +597,10 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
                 continue;
             }
         }
-        if (const auto* st = std::get_if<cs::StateMessage>(&m)) changes = static_cast<TIChange>(changes | changeOf(st->topic));
+        if (const auto* st = std::get_if<cs::StateMessage>(&m)) {
+            changes = static_cast<TIChange>(changes | changeOf(st->topic));
+            [self takeInput:*st];
+        }
         _mirror.deliver(m);
     }
     // The tab a `debug-panel:` step asked for, each time debug-view's count grows (AC-2, EC-4).
@@ -545,6 +610,45 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     }
     if (changes) [d changed:changes];
 }
+
+// The shell's inputs (C59-8 D-2): the last Value of each topic it draws from.
+- (void)takeInput:(const cs::StateMessage&)st {
+    static const calcu::shell::InputNames n;
+    const cs::Value v = st.state ? st.state->toValue() : cs::Value();
+    if (st.topic == n.controlState) {
+        _inputs.controlState = v;
+        const std::string model = calcu::shell::read::text(v, "model");
+        if (model != _model) {
+            if (!_model.empty()) [_shell modelChanged];
+            _model = model;
+        }
+    } else if (st.topic == n.busy) {
+        _inputs.busy = v;
+        [_shell busyChanged];
+    } else if (st.topic == n.runState) {
+        _inputs.runState = v;
+    } else if (st.topic == n.romsMissing) {
+        _inputs.romsMissing = v;
+    } else if (st.topic == n.settings) {
+        _inputs.settings = v;
+    } else if (st.topic == n.media) {
+        _inputs.media = v;
+    }
+}
+
+- (const calcu::shell::ShellInputs&)shellInputs { return _inputs; }
+- (void)setPresetList:(cs::Value)list {
+    _inputs.presetList = std::move(list);
+    [self shellInputsChanged];
+}
+- (void)sendCommand:(cs::Command)command reply:(std::function<void(const cs::ReplyMessage&)>)reply {
+    _thread->send(std::move(command), std::move(reply));
+}
+- (void)askRequest:(cs::Request)request reply:(std::function<void(const cs::ReplyMessage&)>)reply {
+    _thread->ask(std::move(request), std::move(reply));
+}
+- (void)shellNoticesChanged { [_delegate noticesChanged]; }
+- (void)shellInputsChanged { [_delegate changed:TIChangeShell]; }
 
 - (void)send:(const cs::CommandName&)name args:(std::vector<cs::Value::Member>)args reply:(cu59::SessionThread::ReplyHandler)reply {
     _thread->send(cs::Command{name, cs::Value(std::move(args))}, std::move(reply));
@@ -613,28 +717,6 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (uint64_t)hostCallCount { return _thread->calls(); }
 #endif
 
-// ── Machine ──────────────────────────────────────────────────────────────────
-
-- (void)startMachine:(NSInteger)model {
-    if (model < 0 || model > 2) return;
-    [self send:calcu::startup::kModelCommand args:{{"name", cu59::modelId(static_cast<cu59::Model>(model)).value}}];
-}
-- (NSInteger)model { const auto* m = [self modelState]; return m ? static_cast<NSInteger>(m->model) : 0; }
-- (void)resetMachine { [self send:calcu::startup::kResetCommand]; }
-- (void)cleanResetMachine { [self send:calcu::startup::kColdBootCommand]; }
-- (NSString *)moduleID { const auto* m = [self modelState]; return m ? ns(m->moduleID) : @""; }
-- (void)changeModule:(NSString *)moduleID {
-    if ([moduleID isEqualToString:[self moduleID]]) return;
-    if (moduleID.length == 0) [self send:calcu::startup::kDetachCommand args:{{"place", "slot-1"}}];
-    else [self send:calcu::startup::kAttachCommand args:{{"place", "slot-1"}, {"peripheral", cpp(moduleID)}}];
-}
-- (NSArray<TIModuleMetadata *> *)allModules {
-    NSMutableArray* out = [NSMutableArray array];
-    if (const auto* m = [self modelState])
-        for (const auto& x : m->modules) [out addObject:TIModuleMetadataFrom(x)];
-    return out;
-}
-
 // ── Display, keys, speed ─────────────────────────────────────────────────────
 
 - (TIDisplaySnapshot)display {
@@ -650,10 +732,6 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     const auto* l = _mirror.stateOf<cu59::TILedState>(cu59::topics::kLed);
     return l ? l->calcIndicatorOpacity : 0;
 }
-- (void)screenKeyDown:(uint8_t)code {
-    [self send:calcu::typing::kScreenKeyDown args:{{"key", keyIdOf(code)}, {"pointer", 1}}];
-}
-- (void)screenKeyUp { [self send:calcu::typing::kScreenKeyUp args:{{"key", ""}, {"pointer", 1}}]; }
 - (void)hostKeyDownPhysical:(NSString *)physical named:(NSString *)named produced:(uint32_t)produced
                     carried:(uint32_t)carried shift:(BOOL)shift control:(BOOL)control alt:(BOOL)alt
                     command:(BOOL)command {
@@ -679,9 +757,6 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     const auto code = cu59::matrixCodeOf(h->live.back());
     return code ? (*code / 10 - 1) * 5 + (*code % 10 - 1) : -1;
 }
-- (BOOL)fullSpeed { const auto* r = [self run]; return r && r->fullSpeed; }
-- (void)setFullSpeed:(BOOL)on { [self send:cu59::commands::kFullSpeed args:{{"on", on == YES}}]; }
-- (BOOL)keystrokesPlaying { const auto* r = [self run]; return r && r->keystrokesPlaying; }
 
 // ── Cue card, printer ────────────────────────────────────────────────────────
 
@@ -703,12 +778,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (double)paperReachUnits { return _paperReach; }
 - (void)copyPaper { [self send:calcu::paper::kPaperCopyCommand args:{{"owner", kPC100COwner}}]; }
 - (void)cutPaper { [self send:calcu::paper::kPaperCutCommand args:{{"owner", kPC100COwner}, {"copy", true}}]; }
-- (BOOL)printerConnected { const auto* p = [self printer]; return p && p->connected; }
 - (BOOL)printerTrace { const auto* p = [self printer]; return p && p->trace; }
-- (void)togglePrinterConnection {
-    if ([self printerConnected]) [self send:calcu::startup::kDetachCommand args:{{"place", "printer"}}];
-    else [self send:calcu::startup::kAttachCommand args:{{"place", "printer"}, {"peripheral", "PC-100C"}}];
-}
 - (void)setPrinterControl:(NSString *)control on:(BOOL)on {
     [self send:cu59::commands::kSetControl args:{{"peripheral", kPC100COwner}, {"control", cpp(control)}, {"on", on == YES}}];
 }

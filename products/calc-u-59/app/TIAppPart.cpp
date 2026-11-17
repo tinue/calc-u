@@ -28,9 +28,6 @@ using pacing::Speed;
 
 // ── Payload values (for translating hosts and the harness's `state`) ─────────
 
-Value TIModelState::toValue() const {
-    return Value::object({{"model", static_cast<int>(model)}, {"module", moduleID}});
-}
 Value TILedState::toValue() const {
     return Value::object({{"calc-indicator", calcIndicatorOpacity}});
 }
@@ -44,11 +41,6 @@ Value TIPrinterState::toValue() const { return Value::object({{"connected", conn
 Value TIRunState::toValue() const {
     return Value::object({{"full-speed", fullSpeed},
                           {"keystrokes-playing", keystrokesPlaying}});
-}
-NoticeParts splitNotice(const std::string& sentence) {
-    const auto at = sentence.find(": ");
-    if (at == std::string::npos) return {"Calc-U-59", sentence};
-    return {sentence.substr(0, at), sentence.substr(at + 2)};
 }
 
 // ── The part ─────────────────────────────────────────────────────────────────
@@ -210,7 +202,6 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     using sessions::History;
     m_ctx = &s.context();
     m_ms = &m_ctx->machineSession();
-    m_modelTopic = &s.stateTopic(topics::kModel);
     m_led = &s.stateTopic(topics::kLed);
     m_cue = &s.stateTopic(topics::kCueCard);
     m_printer = &s.stateTopic(topics::kPrinter);
@@ -332,7 +323,7 @@ void TIAppPart::setFullSpeed(bool on) {
 }
 
 void TIAppPart::publish(uint32_t c) {
-    if (!c || !m_modelTopic) return;
+    if (!c || !m_led) return;
     if (m_observer) m_observer(c);
     using S = TIAppPart;
     const TIAppPart& k = *this;
@@ -340,13 +331,6 @@ void TIAppPart::publish(uint32_t c) {
         p->serial = ++m_serial;
         return p;
     };
-    if (c & S::ModelChanged) {
-        auto p = make(std::make_shared<TIModelState>());
-        p->model = k.model();
-        p->moduleID = k.moduleID();
-        p->modules = k.allModules();
-        m_modelTopic->set(std::move(p));
-    }
     if (c & S::DisplayChanged) {
         auto p = make(std::make_shared<TILedState>());
         p->led = k.display();

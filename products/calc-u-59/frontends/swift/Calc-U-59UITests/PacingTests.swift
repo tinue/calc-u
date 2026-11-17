@@ -31,7 +31,7 @@ final class PacingTests: XCTestCase {
 
     func testTI59KeepsOneMinute() throws {
         let app = XCUIApplication()
-        app.launchArguments += ["--UITesting", "--attach-port", String(Self.port)]
+        app.launchArguments += ["--settings-file", writeSettingsFile([]), "--attach-port", String(Self.port)]
         app.launch()
         let harness = HarnessClient()
         XCTAssertTrue(harness.connect(port: Self.port), "no harness attach on 127.0.0.1:\(Self.port)")

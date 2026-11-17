@@ -109,9 +109,9 @@ startup preset, else its built-in default); the Web page sends `start
 `speed`, `suspend`, `continue`, …; `cu59::commands`, `c59.*`) and gets
 messages: the library's topics (`display`, `busy`, `notices`, `log`,
 `papers`, `paper PC-100C`, `run-state`, `trace`, …) and the interim
-`c59.*` topics (`c59.model` (read by the Swift frontend only, until C59-8;
-Qt6 and the Web draw the model, the module, the printer and the card
-controls from LIB-4's `control-state` since M-57), `c59.led`, `c59.printer`
+`c59.*` topics (`c59.model` went with C59-8 (M-58): every frontend draws
+the model, the module, the printer and the card controls from LIB-4's
+`control-state`; `c59.led`, `c59.printer`
 (connected and TRACE only), `c59.cue-card` (the cue card shown, whether the fitted card is on show, its lit corner), `c59.run-state` (full speed and whether an
 operation runs), …; each the snapshot of one of 2.3.0's change flags,
 until the feature that owns it, LIB-3 59 design §5) and the debug panel's
@@ -517,8 +517,8 @@ geometry measured from a real unit (dot pitch ≈ 0.430 mm, line heights
 including lines cut short) and the dot rules are the core's
 (`core/PC100CPaper.hpp`), the paper is the session's `PaperPart`, and the
 Qt6 and Web frontends draw it in the library's paper panel; the picture of
-Copy (600 dpi) is the library's (`library/paper/Picture`). The Swift strip
-draws from the same marks until C59-8 (S-P1).
+Copy (600 dpi) is the library's (`library/paper/Picture`). The Swift paper
+panel draws from the same marks (C59-8).
 
 ## Solid-State Program Display
 

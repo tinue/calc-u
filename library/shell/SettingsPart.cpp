@@ -12,9 +12,6 @@ using sessions::Value;
 using settings::KeyDecl;
 using settings::ValueKind;
 
-bool shown(const KeyDecl& d) {   // every declared key but [window] and the app's last model
-    return d.section != "window" && !(d.section == "startup" && d.key == "last-model");
-}
 
 const char* kindName(const KeyDecl& d) {
     if (d.section == "folders") return "folder";
@@ -66,6 +63,12 @@ void SettingsPart::attach(sessions::SessionSetup& s) {
 
 void SettingsPart::beforeFlush(sessions::SessionContext&) {
     if (topic_) topic_->set(sessions::valuePayload("settings", state()));
+}
+
+bool SettingsPart::shown(const KeyDecl& d) const {   // every declared key but [window] and the app's last model
+    for (const auto& k : setup_.alsoShown)
+        if (k == d.section + "." + d.key) return true;
+    return d.section != "window" && !(d.section == "startup" && d.key == "last-model");
 }
 
 std::string SettingsPart::inUse(const KeyDecl& d) const {

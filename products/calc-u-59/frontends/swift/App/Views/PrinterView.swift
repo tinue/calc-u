@@ -1,9 +1,12 @@
 import SwiftUI
 
-// The PC-100C's paper (LIB-8 adapter S-P1, until C59-8's paper panel): drawn
-// from the marks and the text of the library's topic `paper PC-100C`, which
-// the bridge keeps; Copy and Cut are the session's commands (the library
-// makes the picture, the bridge puts it on the pasteboard).
+// The paper panel (C59-8 AC-12, EC-5; LIB-8 AC-12 to AC-20): always there,
+// with the paper of its owner under the owner's name, or an empty paper
+// under none while no printer is attached (the bar's "PC-100C" plugs it in).
+// Drawn from the marks and the text of the library's topic `paper PC-100C`,
+// which the bridge keeps; Copy and Cut are the session's commands (the
+// library makes the picture, the bridge puts it on the pasteboard: macOS
+// two entries, the picture first; iOS one with both, AC-13).
 struct PrinterView: View {
     @Environment(EmulatorViewModel.self) var viewModel
     @State private var dotMode = true
@@ -21,6 +24,7 @@ struct PrinterView: View {
                 Spacer()
                 buttonBar
                     .frame(height: 50)
+                    .disabled(viewModel.paperOwner.isEmpty)   // the PC-100C's buttons, while it is attached
             }
             .background(Color(white: 29.0/255.0))
             .padding(.horizontal, 8)
@@ -52,32 +56,19 @@ struct PrinterView: View {
     private var header: some View {
         HStack(spacing: 12) {
             Spacer()
-            // Printer toggle button
-            Button {
-                viewModel.togglePrinterConnection()
-            } label: {
-                HStack(spacing: 6) {
-                    Text("PC-100C")
-                    Circle()
-                        .fill(viewModel.printerConnected ? Color.red : Color.gray.opacity(0.4))
-                        .frame(width: 8, height: 8)
-                }
+            // The owner's name; none while no printer is attached (EC-5).
+            Text(viewModel.paperOwner)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(.white)
-                .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color(white: 0.25))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("PC-100C")
-            .accessibilityValue(viewModel.printerConnected ? "On" : "Off")
+                .accessibilityIdentifier("paper-owner")
             Spacer()
             // Dot / text toggle
             Button {
                 dotMode.toggle()
             } label: {
                 Image(systemName: dotMode ? "circle.grid.3x3.fill" : "text.alignleft")
+                    .accessibilityLabel(dotMode ? "Text" : "Dots")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 12)
@@ -86,6 +77,7 @@ struct PrinterView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("paper-view-mode")
         }
         .padding(.top, 8 + portraitTopInset).padding(.bottom, 8)
         .background(Color(white: 0.08))
@@ -95,7 +87,9 @@ struct PrinterView: View {
 
     private var paperStrip: some View {
         ScrollView {
-            if dotMode {
+            if viewModel.paperOwner.isEmpty {
+                Color.clear.frame(height: 1)   // an empty paper under none (EC-5)
+            } else if dotMode {
                 dotStrip
             } else {
                 textStrip
@@ -136,6 +130,7 @@ struct PrinterView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .textSelection(.enabled)
+            .accessibilityIdentifier("paper-text")
             .id(viewModel.printerClearID)
     }
 
@@ -179,14 +174,18 @@ struct PrinterView: View {
                         .font(.system(size: 13))
                         .foregroundStyle(.white)
                 }
-                .disabled(viewModel.printerLines.isEmpty)
+                .disabled(viewModel.printerLines.isEmpty || viewModel.paperOwner.isEmpty)
+                .accessibilityLabel("Copy")
+                .accessibilityIdentifier("paper-copy")
 
                 Button { viewModel.cutPaper() } label: {
                     Image(systemName: "scissors")
                         .font(.system(size: 13))
                         .foregroundStyle(.white)
                 }
-                .disabled(viewModel.printerLines.isEmpty)
+                .disabled(viewModel.printerLines.isEmpty || viewModel.paperOwner.isEmpty)
+                .accessibilityLabel("Cut")
+                .accessibilityIdentifier("paper-cut")
             }
             .buttonStyle(ChromeButtonStyle())
             .padding(.horizontal, compact ? 6 : 12)

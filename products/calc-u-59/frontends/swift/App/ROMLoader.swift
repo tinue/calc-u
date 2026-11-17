@@ -1,12 +1,6 @@
 import Foundation
 import os
 
-struct ModuleMetadata {
-    var title: String = ""
-    var id: String = ""
-    var menuTitle: String = ""
-}
-
 /// The app bundle's ROM files (the module files hold the cue cards, M-55). They are looked up
 /// once through the library's lookup (LIB-12, Bridge/TIRomSet); parsing and
 /// checks live in the C++ layers. This only names the folder.
@@ -31,11 +25,5 @@ struct ROMLoader {
 
     struct RomsMissing: Error {
         let text: String
-    }
-}
-
-extension ModuleMetadata {
-    init(_ m: TIModuleMetadata) {
-        self.init(title: m.title, id: m.moduleID, menuTitle: m.menuTitle)
     }
 }

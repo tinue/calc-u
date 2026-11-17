@@ -190,3 +190,21 @@ did not move the Frequent timings (`CalcU59Tests` 546 cases as before
 within the budget).
 
 Column status: In progress (Done in M-58 with the Swift frontend).
+
+### M-58 (2026-11-17, branch `m58-swift-59`; Swift)
+
+The Swift frontend draws the model, the module, the printer and the card
+controls from `control-state` through the library's shell models
+(`Bridge/TIShell`, C59-8): the model picker, the picker of `slot-1`, the
+button "PC-100C" and the card controls of the bar, the art by the control
+state's `model`. `App/MachineModel.swift`, the interim topic `c59.model`
+(`TIModelState`, `TIAppPart::allModules`) and the bridge's model, module
+and printer members went (LIB-4 design §10.7, C59-8 §5).
+
+| AC | Result | Evidence |
+|---|---|---|
+| AC-10 to AC-14 (Swift) | Pass | `swift_shell_tests.cpp` `c59_8_ac3_bar_per_model` (the model picker, 15 entries in the slot picker, "PC-100C", the card controls on the TI-59 only), `c59_8_ac18_…` (the card items on the TI-59 only), `c59_8_ec1_more_follows_the_control_state` (a preset loads: the examples disabled); XCUITest `test_lib14_ac8_the_bar` (LE chosen on the bar is in `state control-state`), `test_c59_8_ec3_no_card_controls_on_the_ti58`, `test_lib8_ac31_the_printer` (the bar's "PC-100C" plugs the printer in, the paper panel names it) |
+| AC-15 | Pass (Qt6, Web, Swift) | `CalcU59FrontendsDrawControlState` over the Swift sources too (no `MachineModel`, `c59.model`, `allModules`; `App/MachineModel.swift` gone); `CalcU59NoTestAids` |
+
+Ledger: 59-9 and 59-45 in effect for Swift from M-58. Column status:
+**Done**.

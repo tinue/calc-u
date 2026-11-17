@@ -11,7 +11,10 @@
   "defaultOptions" : {
     "commandLineArgumentEntries" : [
       {
-        "argument" : "--UITesting"
+        "argument" : "--settings-file"
+      },
+      {
+        "argument" : "unit-tests.ini"
       }
     ],
     "testTimeoutsEnabled" : true

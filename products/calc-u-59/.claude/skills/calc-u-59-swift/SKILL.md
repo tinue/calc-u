@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-swift
-description: Use this skill when working on the Swift/SwiftUI code of Calc-U-59 (frontends/swift/App/, frontends/swift/App/Views/, frontends/swift/Bridge/). Covers EmulatorViewModel, the ObjC++ bridge, display, keyboard, debug panels, printer, card reader, settings, and preset loading (load-preset by content). Trigger on any task that touches frontends/swift/App/*.swift, frontends/swift/App/Views/*.swift, frontends/swift/Bridge/, or the Xcode project.
+description: Use this skill when working on the Swift/SwiftUI code of Calc-U-59 (frontends/swift/App/, frontends/swift/App/Views/, frontends/swift/Bridge/). Covers EmulatorViewModel, the ObjC++ bridge, TIShell (the library's shell models: menus, control bar, More, settings, notices, "Loading…", the pointer rule), display, keyboard, debug panels, the paper panel, card reader, settings on the session, and opening files. Trigger on any task that touches frontends/swift/App/*.swift, frontends/swift/App/Views/*.swift, frontends/swift/Bridge/, or the Xcode project.
 user-invocable: true
 ---
 
@@ -35,11 +35,41 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   keystroke program) and a refusal is its notice. `wouldOpenFile:` asks
   `open-would-take`. No Swift code tells a file's kind; test
   `Calc-U-59Tests/OpeningTests.swift`.
-- The printer's paper (M-53, adapter S-P1 until C59-8): `PrinterView` draws
-  the library's topic `paper PC-100C` (dots and text the bridge keeps);
-  Copy and Cut are `paper.copy` / `paper.cut`, the picture the library's,
-  the pasteboard entry the bridge's (`clipboard-image`); PRINT, ADV, TRACE
-  are `set-control`. `reference/AppArchitecture.md` § "Printer".
+- The family structure (C59-8, M-58): the window is drawn from the
+  library's shell models (LIB-14), which `Bridge/TIShell` computes from the
+  last Value of each input topic (`control-state`, `busy`, `run-state`,
+  `roms-missing`, `settings`, `media`, the `preset-list` reply) with
+  `app/TIShellProduct`: `menus` (SwiftUI `Commands` in
+  `Views/ShellCommands.swift`; Settings…, About, Quit are the application
+  menu's), `bar` (`Views/ControlBarView.swift`: the model picker, the picker
+  of `slot-1`, "PC-100C", the card controls; on iOS Reset, Preset, Settings
+  and More, `moreItems`, Cold boot asks first), `settingsDialog`
+  (`Views/SettingsView.swift` over `cu59::settingsSpec(SwiftMac|SwiftIOS)`),
+  "Loading…" (`LoadingRule`), the notices (`NoticeQueue`: one alert after
+  the other, at the window's root and over the iOS settings sheet) and the
+  pointer on the faceplate (`PointerTracker` on `cu59::faceplateHitMap`,
+  `pointerDown/Move/Up` in points with the points per base-image pixel).
+  `choose:` sends an item's command (a refusal becomes a notice) or hands
+  back a shell action (`TIShellAction…`, `arm-card`, `arm-fresh-card`).
+  The model is the control state's `model` (`modelID`); there is no copy of
+  the model facts in Swift (`CalcU59FrontendsDrawControlState`,
+  `CalcU59NoTestAids`). A new menu item or settings row goes into
+  `app/TIShellProduct`, never into a Swift view.
+- Settings (C59-8 D-3): the settings file is the session's. The bridge
+  opens `Calc-U-59.ini` (or the Debug build's `--settings-file`), works out
+  the trace folder and hands the file to the session thread, where LIB-14's
+  `SettingsPart` (with `alsoShown` `window.portrait-debug-page`) and
+  LIB-18's start read and write it; views read the values through
+  `TIShell.setting(_:_:)` and change one with `setSetting` (`set-setting`).
+  Only the macOS trace-folder bookmark stays in UserDefaults
+  (`AppSettings.swift`).
+- The paper panel (C59-8 AC-12): `PrinterView` draws the library's topic
+  `paper PC-100C` (dots and text the bridge keeps) under its owner's name
+  (`TIShell.paperOwner`), an empty paper under none; Copy and Cut are
+  `paper.copy` / `paper.cut`, the picture the library's, the pasteboard
+  entry the bridge's (`clipboard-image`: macOS two entries, the picture
+  first; iOS one); PRINT, ADV, TRACE are `set-control`.
+  `reference/AppArchitecture.md` § "Printer".
 - TI-59 background: the calc-u-59-core skill's Domain Primer. SwiftUI
   practice: the swiftui-pro skill.
 
@@ -51,12 +81,13 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    session) or a `frontends/swift/Bridge/` wrapper. Views are thin bindings
    over `EmulatorViewModel`.
    **The session runs on its own thread** (`cu59::SessionThread`, C59-5):
-   the bridge posts commands (`c59.*`, `app/TIAppPart.hpp`) and hands each
+   the bridge posts commands (the library's and `c59.*`) and hands each
    batch of messages to the main thread; `EmulatorViewModel.apply` copies
-   what a batch changed. Nothing in Swift reads the session or runs the
-   machine; a result comes back as a reply (a completion block) or a topic.
-   A new value the views need is a field of an interim topic payload in
-   `TIAppPart` plus a getter in `TIAppSession` that reads the last message.
+   what a batch changed (`TIChangeShell`: the shell's models). Nothing in
+   Swift reads the session or runs the machine; a result comes back as a
+   reply (a completion block) or a topic. A new value the views need is a
+   topic (a library one, or a product topic of `TIAppPart`/`TIDebugPart`)
+   plus a getter in `TIAppSession` or `TIShell` that reads the last message.
    The cards are the library's `media` topic (place `card-reader`) and
    `media.*` commands since M-55 (`savedCards`, `armCard:`,
    `armFreshCard:confirmed:` with the `asks:` replace question, `ejectCard`;
@@ -64,6 +95,11 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    **Harness attach (Debug, macOS and simulator only):** the app opens its
    session on 127.0.0.1, port `--attach-port N`, else 59059; `calcu attach
    [--port N]` drives it (`library/harness/attach/`; one port per simulator).
+   The attached registry has the serve form's commands, `open` and the
+   product's `ti59 …`, not `preset` (load a file with `open <path>`).
+   A Debug build also takes `--settings-file <path>` (a relative path in the
+   app's temporary folder); the app has no other aid for its tests (C59-8
+   AC-21).
    Release and device builds have no attach (`CALCU_ATTACH` off;
    `Calc-U-59-Debug.entitlements` is the Debug configuration's only).
    `check_no_attach.sh` checks it: `--sources` in Frequent, `--binary` as a

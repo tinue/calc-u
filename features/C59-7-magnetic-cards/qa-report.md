@@ -71,6 +71,34 @@ AC-13, AC-14, AC-26, AC-28.
 Column status (INDEX): In progress; Done in M-58 (AC-28's Qt6 and Swift
 scenarios, D-11; AC-13, AC-14 and AC-26 on Swift run from the main checkout).
 
+### M-58 (2026-11-17, branch `m58-swift-59`; Swift)
+
+The card controls are C59-8's bar (`CardControls` in
+`Views/ControlBarView.swift`, following the File menu's card items, M17);
+the scenarios of AC-28 are `Calc-U-59UITests/CardScenarioTests.swift`,
+run on the iPhone 18 Pro Max simulator with the presets and the program's
+keys through attach. Qt6's two scenarios (M-57 had left them) are
+`CalcU59QtTests` `c59_7_ac15_qt6_fresh_card_written_and_listed` and
+`c59_7_ac12_qt6_card_read_by_its_corner` (`window_tests.cpp`, on the real
+window: what the bar's Arm Fresh Card and Arm Card do, the press on the
+card's corner through the faceplate's hit rule, the card written and
+listed; on a fresh machine read back: program memory holds Lbl A 1 2 3
+R/S), offscreen, passing.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-13 | Pass (Swift) | XCUITest `FamilyStructureTests.test_lib14_ac1_the_menus`, `test_lib14_ac8_the_bar` (Arm Card and Arm Fresh Card on the TI-59's bar, read "Crd", named for a screen reader), `test_c59_8_ec3_…` (none on the TI-58), `CardScenarioTests` (Eject Card while a side passes); `c59_8_ac18_…` (File ▸ Arm Card…, Arm Fresh Card… on macOS) |
+| AC-14 | Pass (Swift) | `CardScenarioTests.test_c59_7_ac15_fresh_card_written_and_listed` (Arm Card lists the written card by its name), `test_c59_7_ac12_…` (chosen from the list, fitted) |
+| AC-26 | Pass (Swift) | `CardTests.test_c59_7_ac26_swift_cards_in_the_icloud_save_folder` (macOS unit tests, M-58's run) |
+| AC-28 | Pass (Web, Qt6, Swift) | Swift `CardScenarioTests.test_c59_7_ac15_fresh_card_written_and_listed` (Arm Fresh Card, a name, the corner pressed while the program waits in `CLR 1 2nd Write`, the card given back and listed by Arm Card), `test_c59_7_ac12_card_read_by_its_corner` (that card armed on a fresh machine, its corner pressed: A shows 123) |
+
+Fixed on the way: the Swift card dialog named every element inside it
+"Arm Card" (the container's `accessibilityLabel`), so its Cancel and Arm
+buttons could not be told apart; the container is an element of its own
+now, the buttons keep their names (`card-cancel`, `card-arm`, `card-name`).
+
+Every criterion and edge case passes in every frontend: **Done**.
+
 ### The four card examples (AC-30)
 
 Upgraded by a throwaway script by `preset.md` §9.1 and AC-30's rows (not in

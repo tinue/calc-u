@@ -40,8 +40,43 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
     return p;
 }
 
+namespace {
+
+// C59-8 AC-7, design §3.4 (D-6, D-7): today's rows and labels of the Swift
+// settings (frontends/swift/App/Views/SettingsView.swift at 7bdd51c).
+shell::DialogSpec swiftSpec(bool mac, const std::string& versionLine) {
+    using W = shell::DialogRow::Widget;
+    shell::DialogSpec spec =
+        shell::familySections(settings::settingsDecl(), {"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C"});
+    for (auto& s : spec.sections)
+        if (s.title == "General") s.rows.push_back({W::Note, "general", "version", versionLine});
+    shell::DialogRow style{W::Choice, "display", "led-style", "Segment Style"};
+    style.choices = {{"modernized", "Modernized"}, {"classic", "Classic"}};
+    spec.sections.push_back({"Display", {style}});
+    if (!mac) {
+        shell::DialogRow feedback{W::Choice, "keyboard", "feedback", "Keyboard Feedback"};
+        feedback.choices = {{"off", "Off"}, {"haptic", "Haptic"}, {"click", "Click Sound"}};
+        spec.sections.push_back({"Keyboard", {feedback}});
+        // D-6: the values true and false, drawn as a Toggle.
+        shell::DialogRow page{W::Choice, "window", "portrait-debug-page", "Debug Page in Portrait"};
+        page.choices = {{"true", "On"}, {"false", "Off"}};
+        spec.sections.push_back({"Layout", {page}});
+    }
+    shell::DialogRow location{W::Choice, "trace", "location", "Save Location"};
+    location.choices = {{"app-support", "Local (App Library)"}, {"icloud", "iCloud"}};
+    if (mac) location.choices.push_back({"folder", "Custom Folder"});
+    shell::DialogSection tracing{"Tracing", {location}};
+    if (mac) tracing.rows.push_back({W::Folder, "trace", "folder", "Trace folder"});
+    tracing.rows.push_back({W::Integer, "trace", "max-file-size-mb", "Maximum file size (MB)"});
+    spec.sections.push_back(std::move(tracing));
+    return spec;
+}
+
+} // namespace
+
 shell::DialogSpec settingsSpec(ShellFrontend f, const std::string& versionLine) {
     using W = shell::DialogRow::Widget;
+    if (f == ShellFrontend::SwiftMac || f == ShellFrontend::SwiftIOS) return swiftSpec(f == ShellFrontend::SwiftMac, versionLine);
     std::vector<std::string> keys{"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C"};
     if (f == ShellFrontend::Qt6)
         for (const char* k : {"storage.save-folder", "folders.presets", "trace.folder", "trace.max-file-size-mb"}) keys.push_back(k);

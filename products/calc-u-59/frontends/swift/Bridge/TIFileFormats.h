@@ -31,10 +31,4 @@ NS_ASSUME_NONNULL_BEGIN
 + (TICueCard *)ml01Default;
 @end
 
-@interface TIModuleMetadata : NSObject
-@property (nonatomic, readonly, copy) NSString *title;
-@property (nonatomic, readonly, copy) NSString *moduleID;
-@property (nonatomic, readonly, copy) NSString *menuTitle;
-@end
-
 NS_ASSUME_NONNULL_END

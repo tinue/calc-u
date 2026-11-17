@@ -3,142 +3,133 @@ import SwiftUI
 import AppKit
 #endif
 
+/// The settings (C59-8 AC-7, AC-8; design §3.4): macOS's settings window of
+/// the app, iOS's sheet whose one button is Done. The sections and rows are
+/// the library's dialog model (`TIShell.settingsDialog`: LIB-14 S1 to S8 over
+/// `cu59::settingsSpec`, the values of the `settings` topic, the startup
+/// presets of the preset list); a change is `set-setting`, applied and
+/// written at once. A notice that comes while the sheet is open shows over
+/// it (EC-2).
 struct SettingsView: View {
+    @Environment(EmulatorViewModel.self) var viewModel
     #if !os(macOS)
     @Environment(\.dismiss) private var dismiss
     #endif
-
-    var viewModel: EmulatorViewModel
-
-    /// The settings file (Calc-U-59.ini, LIB-9); every change is written through.
-    @Bindable private var settings = SettingsModel.shared
-
-    @State private var allModules: [ModuleMetadata] = []
-    @State private var pendingModuleID: String = ""
-
-    // Trigger refresh of warning after re-authorization
-    @State private var authRefreshTrigger: UUID = UUID()
+    @State private var authRefresh = UUID()
 
     var body: some View {
         #if os(macOS)
-        settingsForm
+        form
             .frame(minWidth: 460, minHeight: 540)
             .padding()
-            .onAppear {
-                allModules = viewModel.allModules()
-                pendingModuleID = viewModel.selectedModuleID
-            }
-            .onDisappear { viewModel.changeModule(id: pendingModuleID) }
         #else
         NavigationStack {
-            settingsForm
+            form
                 .navigationTitle("Settings")
                 .toolbar {
                     // Icon too: bars on the iPhone Duo's outer display are vertical
                     // and show only items that have one.
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Done", systemImage: "checkmark") { dismiss() }
+                            .accessibilityIdentifier("settings-close")
                     }
                 }
         }
         .frame(maxHeight: .infinity)
-        .onAppear {
-            allModules = viewModel.allModules()
-            pendingModuleID = viewModel.selectedModuleID
-        }
-        .onDisappear { viewModel.changeModule(id: pendingModuleID) }
+        .noticeAlert(viewModel)
         #endif
     }
 
-    private var settingsForm: some View {
+    private var traceLocation: String {
+        viewModel.settingsSections.flatMap(\.rows).first { $0.section == "trace" && $0.key == "location" }?.value ?? ""
+    }
+
+    private var form: some View {
         Form {
-            Section("General") {
-                Picker("Startup Calculator", selection: $settings.startupModelRaw) {
-                    ForEach(MachineModel.allCases) { m in
-                        Text(m.displayName).tag(m.rawValue)
-                    }
-                    Divider()
-                    Text("Last Used").tag(-1)
-                }
-
-                Picker("Solid State Module", selection: $pendingModuleID) {
-                    ForEach(allModules, id: \.id) { module in
-                        Text(module.menuTitle).tag(module.id)
-                    }
-                }
-
-                // Keyboard feedback and portrait layout only on iOS
-                #if os(iOS)
-                Picker("Keyboard Feedback", selection: $settings.keyboardFeedbackRaw) {
-                    ForEach(KeyboardFeedbackType.allCases) { feedback in
-                        Text(feedback.displayName).tag(feedback.rawValue)
-                    }
-                }
-                Toggle("Debug Page in Portrait", isOn: $settings.portraitDebugPage)
-                #endif
-
-                HStack {
-                    Text("Version")
-                    Spacer()
-                    Text(AppInfo.versionNumberString)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Section("Display") {
-                Picker("Segment Style", selection: $settings.ledFontStyleRaw) {
-                    ForEach(LEDFontStyle.allCases) { style in
-                        Text(style.displayName).tag(style.rawValue)
-                    }
-                }
-            }
-
-            Section("Trace File") {
-                #if os(macOS)
-                Picker("Save Location", selection: $settings.traceLocationRaw) {
-                    Text(TraceLocation.local.displayName).tag(TraceLocation.local.rawValue)
-                    Text(TraceLocation.iCloud.displayName).tag(TraceLocation.iCloud.rawValue)
-                    Text(TraceLocation.custom.displayName).tag(TraceLocation.custom.rawValue)
-                }
-                if settings.traceLocationRaw == TraceLocation.custom.rawValue {
-                    HStack {
-                        Text(settings.traceCustomPath.isEmpty ? "No folder chosen" : settings.traceCustomPath)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.head)
-                        Spacer()
-                        Button("Choose…") { chooseCustomFolder() }
-                    }
-
-                    // Show warning if path exists but no bookmark (old settings without re-authorization)
-                    Group {
-                        if AppSettings.customTracePathNeedsReauthorization() {
-                            Text("⚠️ This folder needs to be re-authorized. Click 'Choose…' again to allow trace file writing.")
-                                .foregroundStyle(.orange)
-                                .font(.caption)
-                        }
-                    }
-                    .id(authRefreshTrigger)  // Re-evaluate when trigger changes
-                }
-                #endif
-
-                HStack {
-                    Text("Maximum File Size")
-                    Spacer()
-                    HStack(spacing: 4) {
-                        TextField("", value: $settings.traceMaxFileSizeMB, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 90)
-                        Text("MB")
-                            .foregroundStyle(.secondary)
+            ForEach(Array(viewModel.settingsSections.enumerated()), id: \.offset) { _, section in
+                Section(section.title) {
+                    ForEach(Array(section.rows.enumerated()), id: \.offset) { _, row in
+                        rowView(row)
                     }
                 }
             }
         }
         .formStyle(.grouped)
+        .accessibilityIdentifier("settings-dialog")
     }
 
-    private func chooseCustomFolder() {
+    @ViewBuilder
+    private func rowView(_ row: TIDialogRow) -> some View {
+        let id = "setting-\(row.section)-\(row.key)"
+        switch row.widget {
+        case .note:
+            HStack {
+                Text(row.label)
+                Spacer()
+            }
+            .foregroundStyle(.secondary)
+            .accessibilityIdentifier(id)
+        case .integer:
+            HStack {
+                Text(row.label)
+                Spacer()
+                TextField("", value: Binding(
+                    get: { Int(row.value) ?? 0 },
+                    set: { viewModel.setSetting(row.section, row.key, String($0)) }
+                ), format: .number)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 90)
+                .accessibilityIdentifier(id)
+            }
+        case .folder:
+            // The trace folder of `[trace] location = folder` (macOS, LIB-9 AC-34).
+            if row.section != "trace" || traceLocation == "folder" {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(row.shown.isEmpty ? "No folder chosen" : row.shown)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.head)
+                        Spacer()
+                        Button("Choose…") { chooseFolder() }
+                            .accessibilityIdentifier(id)
+                    }
+                    if AppSettings.traceFolderNeedsReauthorization(path: row.value) {
+                        Text("This folder needs to be authorized again. Click Choose… to allow trace files there.")
+                            .foregroundStyle(.orange)
+                            .font(.caption)
+                            .id(authRefresh)
+                    }
+                }
+            }
+        case .text:
+            HStack {
+                Text(row.label)
+                Spacer()
+                Text(row.value).foregroundStyle(.secondary)
+            }
+        default:
+            if row.isToggle {
+                Toggle(row.label, isOn: Binding(
+                    get: { row.value == "true" },
+                    set: { viewModel.setSetting(row.section, row.key, $0 ? "true" : "false") }
+                ))
+                .accessibilityIdentifier(id)
+            } else {
+                Picker(row.label, selection: Binding(
+                    get: { row.value },
+                    set: { viewModel.setSetting(row.section, row.key, $0) }
+                )) {
+                    ForEach(Array(row.choiceValues.enumerated()), id: \.offset) { i, value in
+                        Text(row.choiceLabels[i]).tag(value)
+                    }
+                }
+                .accessibilityIdentifier(id)
+            }
+        }
+    }
+
+    private func chooseFolder() {
         #if os(macOS)
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
@@ -146,18 +137,59 @@ struct SettingsView: View {
         panel.allowsMultipleSelection = false
         panel.message = "Choose a folder for CALCU59_TRACE.bin"
         if panel.runModal() == .OK, let url = panel.url {
-            print("[SettingsView] User selected folder: \(url.path)")
-            // [trace] folder, and the security-scoped bookmark (AC-34)
-            AppSettings.setCustomTraceDirectory(url)
-            print("[SettingsView] Folder saved with bookmark")
-            // Trigger refresh of warning so it disappears if bookmark was successful
-            authRefreshTrigger = UUID()
-            print("[SettingsView] Triggered UI refresh")
+            viewModel.chooseTraceFolder(url)   // [trace] folder, and the security-scoped bookmark (AC-34)
+            authRefresh = UUID()
         }
         #endif
     }
 }
 
-#Preview {
-    SettingsView(viewModel: EmulatorViewModel())
+extension View {
+    /// AC-10: a notice is an alert whose only text is the notice, with OK
+    /// (a question: Yes and No); the next follows when it is closed.
+    func noticeAlert(_ viewModel: EmulatorViewModel, when shown: Bool = true) -> some View {
+        modifier(NoticeAlert(viewModel: viewModel, shown: shown))
+    }
+}
+
+/// The notice read in the modifier's body, so the view follows it
+/// (Observation); the alert's own state follows the notice shown, so a
+/// window that redraws at 60 Hz keeps it up.
+private struct NoticeAlert: ViewModifier {
+    let viewModel: EmulatorViewModel
+    let shown: Bool
+    @State private var presented = false
+    @State private var text = ""
+    @State private var question = false
+
+    private var wanted: String? { shown ? viewModel.currentNotice : nil }
+
+    /// Shows the notice waiting, a moment after the last alert went: an
+    /// alert asked for while the one before is still going away is never
+    /// shown (the button's action already moved the queue on).
+    private func later() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            guard !presented, let next = wanted else { return }
+            text = next
+            question = viewModel.noticeIsQuestion
+            presented = true
+        }
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: wanted, initial: true) { _, _ in later() }
+            .onChange(of: presented) { _, up in if !up { later() } }
+            .alert(text, isPresented: $presented) {
+                if question {
+                    Button("Yes") { viewModel.answerNotice(true) }
+                        .accessibilityIdentifier("notice-yes")
+                    Button("No", role: .cancel) { viewModel.answerNotice(false) }
+                        .accessibilityIdentifier("notice-no")
+                } else {
+                    Button("OK") { viewModel.closeNotice() }
+                        .accessibilityIdentifier("notice-ok")
+                }
+            }
+    }
 }

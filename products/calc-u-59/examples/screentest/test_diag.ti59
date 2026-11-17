@@ -352,6 +352,5 @@ keys:
   - full-speed:  # E below runs the diagnostic, which takes a while — race through it
   - key: E  # start diagnostic
   - wait: 1.5s  # not for the calculator — full speed finishes almost instantly —
-  # but XCUITest polls keystroke-playback-status roughly once per
-  # second, so give it a window to observe "playing" before this
-  # flips back to "idle"
+  # but it keeps the load an operation long enough for a UI test to
+  # see the busy topic say so before it waits for the end

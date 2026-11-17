@@ -40,7 +40,9 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    What Calc-U-59 gives LIB-14's shell (the menus' product items, the About
    texts and links, the settings dialog per frontend and layout, the
    faceplate's hit map) is `app/TIShellProduct`, one source for every
-   frontend (M-57); a new menu item or settings row goes there. Without the
+   frontend (M-57; Swift through `Bridge/TIShell` since M-58, its settings
+   per system `ShellFrontend::SwiftMac`/`SwiftIOS`); a new menu item or
+   settings row goes there. Without the
    full ROM set the session is made with `TIAppSetup::romsMissing` and no
    machine, and publishes `roms-missing`.
    `TIAppPart` owns the library's parts of its session

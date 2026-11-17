@@ -4,8 +4,9 @@ import XCTest
 /// A second app session of the Swift frontend, made through the real bridge
 /// (`TIAppSession` over `cu59::SessionThread`) in the app the tests are loaded
 /// into: the ROM files of the app's bundle, a TI-59, a temporary save and
-/// trace folder, the settings' defaults in memory (nothing of the user's is read or written). The test plan
-/// launches the host app with `--UITesting`, so its own settings stay in memory.
+/// trace folder, a settings file of its own in that folder (nothing of the
+/// user's is read or written). The test plan launches the host app with
+/// `--settings-file`, so the host's own settings are a file of the run too.
 final class TestSession {
     let session: TIAppSession
     let folder: URL
@@ -22,32 +23,39 @@ final class TestSession {
         let roms = try XCTUnwrap(TIRomSet.lookUp(inFolder: resources, leavingOut: nil, missing: &missing),
                                  "no ROM set in the host app: \(String(describing: missing))", file: file, line: line)
         let start = TISessionStart()
-        // The defaults in memory: LIB-18's start builds a TI-59 with the
-        // Master Library module and no printer (LIB-18 AC-17, AC-18).
-        start.settings = TISettings(defaultsOnlyWithLaunchSettings: [])
+        // A new settings file at its defaults: LIB-18's start builds a TI-59
+        // with the Master Library module and no printer (LIB-18 AC-17, AC-18).
+        start.settingsBase = folder.path
+        start.settingsFile = folder.appendingPathComponent("Calc-U-59.ini").path
         start.saveFolder = folder.path
-        start.traceDirectory = folder.path
-        start.traceMaxBytes = 1_000_000
-        start.traceAvailable = false
+        start.examplesFolder = Bundle.main.url(forResource: "examples", withExtension: nil)?.path ?? ""
         session = TIAppSession(roms: roms, start: start, delegate: delegate)
+        delegate.session = session
     }
 
     deinit { try? FileManager.default.removeItem(at: folder) }
 
-    /// The notices the bridge showed so far, as "<title>: <message>".
+    /// The notices the shell's queue held so far (each taken and closed in turn).
     var notices: [String] { delegate.notices }
+    /// The batches' changes so far.
+    var changes: TIChange { delegate.changes }
 
     /// The bridge holds its delegate weakly; it keeps the notices (LIB-13
     /// AC-15), the rest is not what these tests look at.
     private final class Forward: NSObject, TIAppSessionDelegate {
+        weak var session: TIAppSession?
         var notices: [String] = []
+        var changes: TIChange = []
         func showDebugPanel(_ panel: Int) {}
-        func showErrorTitle(_ title: String, message: String) {
-            print("[TestSession] notice: \(title): \(message)")
-            notices.append("\(title): \(message)")
+        func noticesChanged() {
+            while let n = session?.shell.currentNotice {
+                print("[TestSession] notice: \(n)")
+                notices.append(n)
+                session?.shell.closeNotice()
+            }
         }
         func diagnostic(_ message: String) { print("[TestSession] log: \(message)") }
-        func changed(_ changes: TIChange) {}
+        func changed(_ changes: TIChange) { self.changes.formUnion(changes) }
         func cardWritten() {}
     }
 
@@ -66,5 +74,13 @@ final class TestSession {
     /// Lets the main run loop turn for `seconds` (the session's messages arrive).
     static func run(_ seconds: TimeInterval) {
         RunLoop.main.run(until: Date().addingTimeInterval(seconds))
+    }
+
+    /// Turns the run loop until `cond` holds or `timeout` passes.
+    @discardableResult
+    static func until(_ timeout: TimeInterval = 10, _ cond: () -> Bool) -> Bool {
+        let end = Date().addingTimeInterval(timeout)
+        while !cond() && Date() < end { run(0.05) }
+        return cond()
     }
 }

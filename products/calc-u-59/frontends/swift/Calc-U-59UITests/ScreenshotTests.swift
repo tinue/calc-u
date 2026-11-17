@@ -24,21 +24,33 @@ final class ScreenshotTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// The app settings the screenshots show, as launch arguments, so a new
-    /// simulator needs no setup by hand. Under --UITesting the app's settings
-    /// file is in memory only (LIB-9 AC-18): these values take effect for this
-    /// launch and are never saved. The module is no setting (AC-22): it is a
-    /// launch value of its own.
-    private static let settingsArguments = [
-        "--setting", "window.portrait-debug-page=true",
-        "--setting", "display.led-style=classic",
-        "--setting", "startup.last-model=TI-59",
-        "--module", "LE",
+    /// The app settings the screenshots show, in a settings file of the
+    /// launch's own (`--settings-file`, C59-8 AC-21), so a new simulator needs
+    /// no setup by hand and its own settings stay as they are. The module is
+    /// no setting (LIB-9 AC-22): it goes in through attach.
+    private static let settings = [
+        "window.portrait-debug-page=true",
+        "display.led-style=classic",
+        "startup.last-model=TI-59",
     ]
+
+    private var harness: HarnessClient!
 
     @discardableResult
     private func launchForScreenshot(orientation: UIDeviceOrientation) -> XCUIApplication {
-        launchApp(orientation: orientation, arguments: Self.settingsArguments)
+        let app = launchApp(orientation: orientation, settings: Self.settings)
+        harness = attachHarness()
+        waitIdle(harness)
+        XCTAssertEqual(harness.command("attach slot-1 LE", timeout: 20).first, "done")
+        waitIdle(harness)
+        return app
+    }
+
+    /// R/S into the machine (a running overlay among them) through attach.
+    private func pressRS() {
+        XCTAssertEqual(harness.command("key-down R/S").first, "done")
+        XCTAssertEqual(harness.command("wait 100ms").first, "done 2")
+        XCTAssertEqual(harness.command("key-up R/S").first, "done")
     }
 
     private var screenshotDir: String {
@@ -107,7 +119,7 @@ final class ScreenshotTests: XCTestCase {
         let app = launchForScreenshot(orientation: orientation)
 
         // Wait for the diagnostic to finish before capturing.
-        loadPreset(app, file: "test_diag.ti59", idleTimeout: 10)
+        loadPreset(app, file: "test_diag.ti59", idleTimeout: 10, harness: harness)
 
         try saveScreenshot(fallbackName: "Diagnostic")
         attachScreenshot(app, name: "diag.ti59 — diagnostic complete")
@@ -159,10 +171,10 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [entered], timeout: 5), .completed, "the overlay was not entered")
         XCTAssertFalse(app.buttons["btn-tab-calculator"].isEnabled, "CALCULATOR can be chosen while the overlay runs")
 
-        // If a "ROM Load Error" alert appears, dismiss it then Freeze/Resume to
-        // clear the bad state before continuing.
-        if app.alerts.buttons["OK"].waitForExistence(timeout: 2) {
-            app.alerts.buttons["OK"].tap()
+        // If a notice appears, dismiss it then Freeze/Resume to clear the bad
+        // state before continuing.
+        if app.buttons["notice-ok"].waitForExistence(timeout: 2) {
+            app.buttons["notice-ok"].tap()
             app.buttons["btn-tab-calculator"].tap()
             let freeze = app.buttons["btn-freeze"]
             XCTAssertTrue(freeze.waitForExistence(timeout: 3), "btn-freeze not found")
@@ -174,15 +186,13 @@ final class ScreenshotTests: XCTestCase {
         }
 
         // Step 4: press R/S to start the stopwatch
-        let rs = app.buttons["btn-key-rs"]
-        XCTAssertTrue(rs.waitForExistence(timeout: 3), "btn-key-rs not found")
-        rs.press(forDuration: 0.05)
+        pressRS()
 
         // Step 5: let the stopwatch run for 3.5 seconds
         Thread.sleep(forTimeInterval: 3.5)
 
         // Step 6: press R/S to stop the stopwatch
-        rs.press(forDuration: 0.05)
+        pressRS()
 
         // Screenshot
         try saveScreenshot(fallbackName: "Assembly")
@@ -209,7 +219,7 @@ final class ScreenshotTests: XCTestCase {
         let isPad = UIDevice.current.userInterfaceIdiom == .pad
         let app = launchForScreenshot(orientation: isPad ? .landscapeLeft : .portrait)
 
-        loadPreset(app, file: "test_58c_display.ti58c", idleTimeout: 15)
+        loadPreset(app, file: "test_58c_display.ti58c", idleTimeout: 15, harness: harness)
 
         try saveScreenshot(fallbackName: "PlainCalculator")
         attachScreenshot(app, name: "Plain Calculator — TI-58C display")
@@ -222,7 +232,7 @@ final class ScreenshotTests: XCTestCase {
     func testScreenshotGlyphs() throws {
         let app = launchForScreenshot(orientation: .portrait)
 
-        loadPreset(app, file: "test_58_glyphs.ti58", idleTimeout: 20)
+        loadPreset(app, file: "test_58_glyphs.ti58", idleTimeout: 20, harness: harness)
 
         try saveScreenshot(fallbackName: "Glyphs")
         attachScreenshot(app, name: "Display glyphs — TI-58 blink, lit phase")
@@ -235,7 +245,7 @@ final class ScreenshotTests: XCTestCase {
     ///   2. Switch to CPU tab
     ///   3. Arm FREEZE ON START (CPU pane)
     ///   4. Navigate right to calculator
-    ///   5. Long-press Reset (clean reset) — freeze fires on first PC change
+    ///   5. More ▸ Cold boot, confirmed — freeze fires on first PC change
     ///   6. Navigate left to debugger
     ///   7. Single-step 5 times
     ///   8. Capture screenshot
@@ -263,11 +273,18 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(right.waitForExistence(timeout: 3), "btn-page-right not found")
         right.tap()
 
-        // Step 5: clean reset (long press). FREEZE ON START fires on its first PC
-        // change; a plain Reset runs the routine out of sight, to keep the memory.
-        let resetButton = app.buttons["btn-reset"]
-        XCTAssertTrue(resetButton.waitForExistence(timeout: 3), "btn-reset not found")
-        resetButton.press(forDuration: 1.5)
+        // Step 5: Cold boot (More, then confirm; C59-8 AC-5). FREEZE ON START
+        // fires on its first PC change; a plain Reset runs the routine out of
+        // sight, to keep the memory.
+        let more = app.buttons["bar-more"]
+        XCTAssertTrue(more.waitForExistence(timeout: 3), "bar-more not found")
+        more.tap()
+        let cold = app.descendants(matching: .any)["more-item-cold-boot"].firstMatch
+        XCTAssertTrue(cold.waitForExistence(timeout: 3), "more-item-cold-boot not found")
+        cold.tap()
+        let confirm = app.buttons["confirm-cold-boot"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3), "Cold boot did not ask")
+        confirm.tap()
 
         // Step 6: navigate back to debugger
         XCTAssertTrue(left.waitForExistence(timeout: 3), "btn-page-left not found")
@@ -309,7 +326,7 @@ final class ScreenshotTests: XCTestCase {
         }
 
         // Step 1: load test_cdebug.ti59
-        loadPreset(app, file: "test_cdebug.ti59", idleTimeout: 40)
+        loadPreset(app, file: "test_cdebug.ti59", idleTimeout: 40, harness: harness)
 
         // Step 2 (iPhone): navigate left to debug panel for screenshot
         if !isPad {
@@ -329,7 +346,7 @@ final class ScreenshotTests: XCTestCase {
     func testScreenshotTexas() throws {
         let app = launchForScreenshot(orientation: .landscapeLeft)
 
-        loadPreset(app, file: "test_texas.ti59", idleTimeout: 45)
+        loadPreset(app, file: "test_texas.ti59", idleTimeout: 45, harness: harness)
 
         try saveScreenshot(fallbackName: "Texas")
         attachScreenshot(app, name: "Texas — test_texas.ti59 complete")

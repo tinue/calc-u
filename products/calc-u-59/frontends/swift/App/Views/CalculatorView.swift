@@ -36,118 +36,14 @@ struct CalculatorView: View {
     private static let presetDialogTypes = stateFileTypes + [.item]
 
 
-    #if os(macOS)
-    @State private var isCommandPressed = false
-    #else
+    #if !os(macOS)
     enum PortraitPage { case calc, printer, debug }
     @State private var portraitPage: PortraitPage = .calc
-    private var debugPageEnabled: Bool { SettingsModel.shared.portraitDebugPage }
-    @State private var showingSettings = false
-    @State private var resetLongPressTriggered = false
+    private var debugPageEnabled: Bool { viewModel.portraitDebugPage }
     #endif
-
-    #if canImport(UIKit)
-    private let haptic = UIImpactFeedbackGenerator(style: .rigid)
-    #endif
-
-    private func triggerResetFeedback() {
-        #if os(iOS)
-        let feedbackType = AppSettings.resolvedKeyboardFeedback()
-        switch feedbackType {
-        case .off:
-            break
-        case .haptic:
-            haptic.impactOccurred()
-        case .click:
-            AudioServicesPlaySystemSound(1104)
-        }
-        #endif
-    }
-
-    private func triggerMemoryClearFeedback() {
-        #if os(iOS)
-        let feedbackType = AppSettings.resolvedKeyboardFeedback()
-        switch feedbackType {
-        case .off:
-            break
-        case .haptic:
-            haptic.impactOccurred()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                haptic.impactOccurred()
-            }
-        case .click:
-            AudioServicesPlaySystemSound(1104)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                AudioServicesPlaySystemSound(1104)
-            }
-        }
-        #endif
-    }
-
-    /// True only when launched by XCUITest on iOS/iPadOS (see `--UITesting`
-    /// launch argument). Gates automation-only UI (below) out of every real
-    /// user's build entirely, so it can never be mistapped by a human and
-    /// never ships surface area real users can't reach. Always false on
-    /// macOS — this automation exists only for the iPhone/iPad screenshot
-    /// and regression test plans, never for the Mac target.
-    private static let isUITesting: Bool = {
-        #if os(macOS)
-        return false
-        #else
-        return ProcessInfo.processInfo.arguments.contains("--UITesting")
-        #endif
-    }()
 
     var body: some View {
         layout
-        .overlay(alignment: .topLeading) {
-            if Self.isUITesting {
-                // Zero-size accessibility element that exposes keystroke-playback state to XCUITest.
-                Color.clear
-                    .frame(width: 1, height: 1)
-                    .allowsHitTesting(false)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityIdentifier("keystroke-playback-status")
-                    .accessibilityValue(viewModel.isKeystrokesPlaying ? "playing" : "idle")
-            }
-        }
-        #if !os(macOS)
-        .overlay(alignment: .topLeading) {
-            if Self.isUITesting {
-                // 10×10 pt automation-only button for XCUITest — presses R/S (row 9, col 1).
-                // Tucked in the top-left corner behind UI chrome; too small for a human finger
-                // (minimum tap target is ~44 pt) but large enough for XCUITest to compute a
-                // valid hit point (1×1 produced {-1,-1} and the event never reached the app).
-                // Gated to UI-testing builds only (see isUITesting above): it overlaps the
-                // page-arrow chevron at this same corner, and while a stray touch there is no
-                // longer harmful, a real user's touch reaching this element instead of the
-                // real R/S key would silently skip that key's own press highlight and haptic
-                // feedback — acceptable for a scripted test, not for a user. iOS/iPadOS only:
-                // this automation exists only for the iPhone/iPad screenshot and regression
-                // test plans, never for the Mac target (isUITesting is always false there).
-                //
-                // Tracks a full press-and-hold — as XCTest's press(forDuration:)
-                // performs — presses R/S on touch-down and releases it on touch-up.
-                // A plain Button's action only fires once, which pressed R/S but
-                // never released it; a stuck-down R/S key left the ROM spinning
-                // forever in its wait-for-key-release idle loop (0x07EA). Uses
-                // UIKitTouchTracker, not a DragGesture, for the same iOS 27
-                // reliability reason as KeyboardView's key hit-testing (see that
-                // type's doc comment) — this button exists purely so XCUITest can
-                // drive it, so it must itself be immune to the regression it's
-                // working around everywhere else.
-                UIKitTouchTracker(
-                    onChanged: { _ in viewModel.pressKey(row: 8, col: 0) },
-                    onEnded: { viewModel.releaseKey(row: 8, col: 0) }
-                )
-                    .frame(width: 10, height: 10)
-                    .accessibilityAddTraits(.isButton)
-                    .onDisappear { viewModel.releaseKey(row: 8, col: 0) }
-                    .accessibilityIdentifier("btn-key-rs")
-                    .accessibilityLabel("R/S")
-            }
-        }
-        #endif
         .dynamicTypeSize(.small ... .large)
         .sheet(item: .init(
             get: { viewModel.cardPickerMode.map { PickerItem(mode: $0) } },
@@ -161,23 +57,15 @@ struct CalculatorView: View {
             )
         }
         #if !os(macOS)
-        .sheet(isPresented: $showingSettings) {
-            SettingsView(viewModel: viewModel)
+        .sheet(isPresented: Binding(get: { viewModel.settingsSheetShown },
+                                    set: { viewModel.settingsSheetShown = $0 })) {
+            SettingsView()
+                .environment(viewModel)
         }
         #endif
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                modelPicker
-            }
-        }
-        .alert(viewModel.errorTitle, isPresented: .init(
-            get: { viewModel.errorMessage != nil },
-            set: { if !$0 { viewModel.errorMessage = nil } }
-        )) {
-            Button("OK") { viewModel.errorMessage = nil }
-        } message: {
-            Text(viewModel.errorMessage ?? "")
-        }
+        // The shell asks for the file dialog (Load Preset…) and the settings (iOS).
+        .onChange(of: viewModel.presetDialogSerial) { openPresetDialog() }
+        .onChange(of: viewModel.settingsSerial) { viewModel.settingsSheetShown = true }
         .fileImporter(
             isPresented: $filePickerPresented,
             allowedContentTypes: {
@@ -210,15 +98,22 @@ struct CalculatorView: View {
             guard urls.count == 1, let url = urls.first, url.isFileURL else { return false }
             return viewModel.openDroppedFile(url)
         }
-        .task {
-            while true {
-                // Exit on cancellation: `try?` would swallow CancellationError and
-                // turn this loop into a busy-spin once the sleep stops sleeping.
-                do { try await Task.sleep(for: .milliseconds(50)) } catch { return }
-                let pressed = NSEvent.modifierFlags.contains(.command)
-                if isCommandPressed != pressed { isCommandPressed = pressed }
-            }
+        #endif
+    }
+
+    /// Load Preset… (File menu, ⌘O; the Preset button on iOS): the preset
+    /// types and any file (LIB-13 AC-5, D-21), opened as what it is.
+    private func openPresetDialog() {
+        #if os(macOS)
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = Self.presetDialogTypes
+        panel.allowsOtherFileTypes = true
+        panel.message = "Select a .ti59, .ti58, or .ti58c preset, or any file Calc-U-59 opens"
+        if panel.runModal() == .OK, let url = panel.url {
+            viewModel.loadStateFile(url)
         }
+        #else
+        filePickerModeBinding.wrappedValue = .stateFile
         #endif
     }
 
@@ -282,7 +177,7 @@ struct CalculatorView: View {
             VStack(spacing: 0) {
                 KeyboardView()
                 Spacer()
-                cardReaderBar(showLabels: showLabels)
+                ControlBarView(showLabels: showLabels)
             }
             .background(Color(white: 29.0/255.0))
             .padding(.horizontal, 8)
@@ -294,129 +189,6 @@ struct CalculatorView: View {
     private struct PickerItem: Identifiable {
         let mode: CardPickerView.Mode
         var id: Int { mode == .arm ? 0 : 1 }
-    }
-
-    // MARK: - Card reader bar
-
-    private func cardReaderBar(showLabels: Bool = true) -> some View {
-        HStack(spacing: 12) {
-            #if os(macOS)
-            Button(isCommandPressed ? "Clean" : "Reset",
-                   systemImage: isCommandPressed ? "xmark.circle.fill" : "arrow.counterclockwise") {
-                if NSEvent.modifierFlags.contains(.command) {
-                    viewModel.cleanResetMachine()
-                } else {
-                    viewModel.resetMachine()
-                }
-            }
-            .foregroundStyle(isCommandPressed ? .red : .orange)
-            .labelStyle(showLabel: showLabels)
-            .accessibilityIdentifier("btn-reset")
-            #else
-            Button("Reset", systemImage: "arrow.counterclockwise") {
-                if !resetLongPressTriggered {
-                    triggerResetFeedback()
-                    viewModel.resetMachine()
-                }
-            }
-            .foregroundStyle(.orange)
-            .labelStyle(showLabel: showLabels)
-            .accessibilityIdentifier("btn-reset")
-            .highPriorityGesture(
-                LongPressGesture(minimumDuration: 1.0).onEnded { _ in
-                    triggerMemoryClearFeedback()
-                    viewModel.cleanResetMachine()
-                    resetLongPressTriggered = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        resetLongPressTriggered = false
-                    }
-                }
-            )
-            #endif
-
-            #if !os(macOS)
-            modelPicker
-                .colorScheme(.dark)
-            #endif
-
-            Divider().frame(height: 20)
-
-            Spacer()
-
-            if viewModel.model.hasCardReader {
-                if viewModel.cardState == .noCard {
-                    // C59-7 AC-13: both read "Crd"; icon and screen-reader name differ.
-                    Button("Crd", systemImage: "square.and.arrow.down") {
-                        viewModel.cardPickerMode = .arm
-                    }
-                    .labelStyle(showLabel: showLabels)
-                    .controlSize(.regular)
-                    .accessibilityLabel("Arm Card")
-                    .help("Arm Card: fit a saved magnetic card, to feed by a corner")
-                    Button("Crd", systemImage: "plus.rectangle") {
-                        viewModel.cardPickerMode = .armFresh
-                    }
-                    .labelStyle(showLabel: showLabels)
-                    .controlSize(.regular)
-                    .accessibilityLabel("Arm Fresh Card")
-                    .help("Arm Fresh Card: fit a fresh magnetic card under a name")
-                } else {
-                    Button("Eject Card", systemImage: "eject") {
-                        viewModel.ejectIfSwiping()
-                    }
-                    .labelStyle(showLabel: showLabels)
-                }
-            }
-            #if os(macOS)
-            Divider().frame(height: 20)
-            Button("Preset") {
-                let panel = NSOpenPanel()
-                panel.allowedContentTypes = Self.presetDialogTypes
-                panel.allowsOtherFileTypes = true
-                panel.message = "Select a .ti59, .ti58, or .ti58c preset, or any file Calc-U-59 opens"
-                if panel.runModal() == .OK, let url = panel.url {
-                    viewModel.loadStateFile(url)
-                }
-            }
-            #else
-            Divider().frame(height: 20)
-            Button("Preset", systemImage: "doc.badge.arrow.up") {
-                filePickerModeBinding.wrappedValue = .stateFile
-            }
-            .labelStyle(showLabel: showLabels)
-            .controlSize(.large)
-            .accessibilityIdentifier("btn-preset")
-            Divider().frame(height: 20)
-            Button("Settings", systemImage: "gear") {
-                showingSettings = true
-            }
-            .labelStyle(.iconOnly)
-            .controlSize(.large)
-            .accessibilityIdentifier("btn-settings")
-            #endif
-        }
-        .buttonStyle(ChromeButtonStyle())
-        .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity)
-        .frame(height: 50)
-        .background(Color(white: 0.15))
-        .foregroundStyle(.white)
-    }
-
-    // MARK: - Model picker
-
-    private var modelPicker: some View {
-        Picker("Model", selection: .init(
-            get: { viewModel.model },
-            set: { newModel in Task { await viewModel.start(model: newModel) } }
-        )) {
-            ForEach(MachineModel.allCases) { m in
-                Text(m.displayName).tag(m)
-            }
-        }
-        .pickerStyle(.menu)
-        .menuStyle(ChromeMenuStyle())
-        .fixedSize()
     }
 
     #if !os(macOS)
@@ -478,50 +250,6 @@ struct CalculatorView: View {
         .padding(.bottom, 8)
     }
     #endif
-}
-
-// MARK: - TEMPORARY DIAGNOSTIC (remove after iOS 27 touch-tracking validation)
-
-#if !os(macOS)
-/// Raw UIKit touch tracking, bypassing SwiftUI's DragGesture, to test whether
-/// that avoids the iOS 27 unreliable-press-and-hold regression.
-private struct DiagUIKitTouchButton: UIViewRepresentable {
-    let onPress: () -> Void
-    let onRelease: () -> Void
-
-    final class TouchView: UIView {
-        var onPress: (() -> Void)?
-        var onRelease: (() -> Void)?
-        override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) { onPress?() }
-        override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) { onRelease?() }
-        override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { onRelease?() }
-    }
-
-    func makeUIView(context: Context) -> TouchView {
-        let v = TouchView()
-        v.onPress = onPress
-        v.onRelease = onRelease
-        v.backgroundColor = .clear
-        v.isAccessibilityElement = true
-        return v
-    }
-
-    func updateUIView(_ uiView: TouchView, context: Context) {
-        uiView.onPress = onPress
-        uiView.onRelease = onRelease
-    }
-}
-#endif
-
-// MARK: - Helpers
-
-private extension View {
-    /// Applies `.titleAndIcon` when `showLabel` is true, `.iconOnly` otherwise.
-    @ViewBuilder
-    func labelStyle(showLabel: Bool) -> some View {
-        if showLabel { self.labelStyle(.titleAndIcon) }
-        else { self.labelStyle(.iconOnly) }
-    }
 }
 
 #Preview {

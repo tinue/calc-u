@@ -12,8 +12,8 @@ import UIKit
 /// iOS 27.0: ~1-in-20 presses actually register). `UIView.touchesBegan` /
 /// `touchesMoved` / `touchesEnded` / `touchesCancelled`, one layer below
 /// SwiftUI's gesture-recognition engine, don't exhibit this — see the
-/// key-press-reliability investigation that replaced `KeyboardView`'s and
-/// `CalculatorView`'s `btn-key-rs`'s gestures with this type.
+/// key-press-reliability investigation that replaced `KeyboardView`'s
+/// gestures with this type.
 ///
 /// Only single-touch tracking is needed: the calculator's key matrix has no
 /// multi-touch behavior to preserve (the previous `DragGesture` didn't track

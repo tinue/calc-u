@@ -213,13 +213,16 @@ check do it). No script lists sources.
 tools/run_tests.sh
 ```
 
-Builds and runs the headless `core/` + `app/` test suite (no Qt, no
-GUI): it configures the root project with `-DCALCU_FRONTEND_QT=OFF` into
-the repository's `build/tests` tree (Debug, so Core and the tests compile
-at `-O1`) and runs `CoreTests` from this directory, since the tests load
-`roms/` via relative paths. An argument is passed on to `CoreTests` as a
-filter: `tools/run_tests.sh ce158` runs the tests whose name contains
-`ce158`. Needs CMake, Ninja and zlib (`zlib1g-dev` on Ubuntu; macOS has it).
+Builds and runs the product's Frequent tests (no Qt, no GUI): it
+configures the root project with `-DCALCU_FRONTEND_QT=OFF` into the
+repository's `build/tests` tree (Debug, so Core and the tests compile at
+`-O1`) and runs every Frequent CTest entry of the product: `CoreTests`,
+`CalcU1600SessionTests`, `CalcU1600AppSessionTests`, `CalcU1600DapTests`,
+`CalcU1600HelpTests`, the help and preset checks and the source checks
+(from this directory, since the tests load `roms/` via relative paths).
+An argument is a filter for the five runner programs:
+`tools/run_tests.sh ce158` runs the tests whose name contains `ce158` in
+each of them. Needs CMake, Ninja and zlib (`zlib1g-dev` on Ubuntu; macOS has it).
 
 The tests use the repository's one C++ test runner,
 `library/testing/TestHarness.hpp` (ADR 0038): each file registers its

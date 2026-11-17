@@ -52,7 +52,7 @@ calcu::media::ModuleListing tiModuleListing(const std::shared_ptr<const calcu::r
         const auto it = meta->find(d.id.value);
         return it != meta->end() ? it->second.menuSort : 0;
     };
-    l.slots = {kTIModulePlace};
+    l.moduleSlots = {kTIModulePlace};
     return l;
 }
 

@@ -139,7 +139,7 @@ struct ModuleListing {
     // The places of a model that are module slots although no kind of
     // medium fits them: their picker lists the empty slot and the modules
     // (AC-8, AC-47; Calc-U-59's `slot-1`, whose modules are not media).
-    std::vector<machine::PlaceName> slots;
+    std::vector<machine::PlaceName> moduleSlots;   // not `slots`: a Qt macro
 };
 
 } // namespace calcu::media

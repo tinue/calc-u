@@ -154,7 +154,7 @@ TEST(ac10_unreadable_leaves_place_empty_with_notice) {
 // by the listing's order; choosing one replaces the module.
 TEST(ac8_slot_without_media_listed_by_the_listing) {
     FixtureOptions o;
-    o.listing.slots = {machine::PlaceName{"a"}};
+    o.listing.moduleSlots = {machine::PlaceName{"a"}};
     o.listing.label = [](const machine::PeripheralDescriptor& d) { return "Listed " + d.id.value; };
     o.model = "test-dot";
     MediaFixture f(o);

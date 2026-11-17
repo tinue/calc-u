@@ -362,7 +362,7 @@ void MediaPart::computePlaces(const Machine& cm) {
         }
     }
     // AC-47: a module slot that no kind of medium fits (Calc-U-59's slot-1).
-    for (const machine::PlaceName& name : listing_.slots) {
+    for (const machine::PlaceName& name : listing_.moduleSlots) {
         if (!m.descriptor().place(name) || place(name.value)) continue;
         Place p;
         p.word = name.value;

@@ -18,7 +18,7 @@
 // link files). `roms-missing` is LIB-12's topic (LIB-12 design §3.5); its
 // payload lives here until a second product sends it.
 
-namespace shared {
+namespace cu1600 {
 
 namespace topics {
 inline const calcu::sessions::TopicName kLamps{"c1600.lamps"};
@@ -122,4 +122,4 @@ struct SerialLinksPayload final : calcu::sessions::PayloadOf<SerialLinksPayload>
     calcu::sessions::Value toValue() const override;
 };
 
-} // namespace shared
+} // namespace cu1600

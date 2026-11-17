@@ -3,19 +3,19 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Swift face of the Shared/ data tables (7-segment
+/// Swift face of the app/ data tables (7-segment
 /// patterns, canvas/key layout, matrix codes; the printer font went to the
 /// core with M-53: the paper comes as dots). Type
-/// translation only — the tables and rules live in Shared/.
+/// translation only — the tables and rules live in app/.
 @interface TISharedTables : NSObject
 
-// ── LED display (Shared/SevenSegment.hpp) ───────────────────────────────────
+// ── LED display (app/SevenSegment.hpp) ───────────────────────────────────
 /// What cell `index` (0 = rightmost) shows: segments and opacity 0–1 (cu59::ledCell).
 + (uint8_t)ledCellSegmentsAt:(NSInteger)index glyph:(uint8_t)glyph level:(uint8_t)level
                  calcOpacity:(double)calcOpacity opacity:(double *)opacity
     NS_SWIFT_NAME(ledCell(index:glyph:level:calcOpacity:opacity:));
 
-// ── Canvas / key layout (Shared/KeyboardLayout.hpp) ─────────────────────────
+// ── Canvas / key layout (app/KeyboardLayout.hpp) ─────────────────────────
 @property (class, readonly) CGFloat canvasAspect;
 /// The base image's width in pixels: the unit of the faceplate's hit map (cu59::kCanvasWidth).
 @property (class, readonly) CGFloat canvasWidthPixels;

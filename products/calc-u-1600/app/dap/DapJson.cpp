@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 namespace {
 
@@ -349,4 +349,4 @@ std::string unbase64(std::string_view text) {
     return out;
 }
 
-} // namespace shared::dap
+} // namespace cu1600::dap

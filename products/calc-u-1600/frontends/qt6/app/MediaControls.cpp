@@ -118,7 +118,7 @@ void DiskControl::refresh() {
     MediaPlaceControl::refresh();
     // The product entry (LIB-4 AC-17, LIB-14 AC-42, D-29).
     const auto* cs = m_controller.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
-    const calcu::control::ProductEntry* e = cs ? cs->productEntry(shared::kDiskControlsEntry) : nullptr;
+    const calcu::control::ProductEntry* e = cs ? cs->productEntry(cu1600::kDiskControlsEntry) : nullptr;
     const sessions::Value v = e && e->value ? e->value->toValue() : sessions::Value();
     const bool shown = calcu::shell::read::flag(v, "shown");
     const calcu::shell::Availability a = calcu::shell::availabilityOf(v);
@@ -160,7 +160,7 @@ void TapeControl::refresh() {
 }
 
 void TapeControl::refreshLamps() {
-    const shared::LampsPayload lamps = m_controller.lamps();
+    const cu1600::LampsPayload lamps = m_controller.lamps();
     const auto& t = lamps.tape;
     const int seconds = static_cast<int>(t.mode == TapeDeck::Mode::Record ? t.length : t.position);
     const QString time = QStringLiteral("%1:%2").arg(seconds / 60, 2, 10, QLatin1Char('0')).arg(seconds % 60, 2, 10, QLatin1Char('0'));

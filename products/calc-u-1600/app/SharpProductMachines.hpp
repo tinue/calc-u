@@ -19,7 +19,7 @@
 // variant, the host drive's folder and, until M-47, a module's card from the
 // module bay (adapter "bays on machineChanged", LIB-6 §10.5).
 
-namespace shared {
+namespace cu1600 {
 
 class SharpProductMachines final : public calcu::startup::ProductMachines {
 public:
@@ -42,4 +42,4 @@ private:
     std::shared_ptr<const std::vector<std::uint8_t>> hostDriveRom_;
 };
 
-} // namespace shared
+} // namespace cu1600

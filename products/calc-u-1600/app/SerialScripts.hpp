@@ -30,7 +30,7 @@
 // Single-threaded, on the session's thread. The harness's part: a frontend
 // has its ports' host links instead.
 
-namespace shared {
+namespace cu1600 {
 
 class SerialScriptsPart final : public calcu::sessions::SessionPart, public calcu::sessions::SliceHook {
 public:
@@ -87,4 +87,4 @@ private:
     std::map<std::string, Port> ports_;
 };
 
-} // namespace shared
+} // namespace cu1600

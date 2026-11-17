@@ -1063,7 +1063,7 @@ TEST(test_pc1500_reset_releases_held_keys) {
 
 // User RAM powers up 0x00 (CMOS RAM after a power loss) but the 1.5K window
 // &7600-&7BFF powers up 0xFF (measured on a real PC-1500); the reset button
-// keeps RAM (a real RESET only resets the CPU/chips), Reset All clears it.
+// keeps RAM (a real RESET only resets the CPU/chips), Cold boot clears it.
 TEST(test_pc1500_ram_powerup_reset_and_all_reset) {
     PC1500Machine machine;
     CHECK(machine.memory().peek(0x40C5) == 0x00);  // user RAM

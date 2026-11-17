@@ -5,7 +5,7 @@
 #include "Display/DisplayOutputText.hpp"
 #include "app/SharpDisplayLines.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 void LcdTextPart::machineChanged(calcu::sessions::SessionContext& c) {
     if (calcu::machine::Machine* m = c.machine()) {
@@ -33,4 +33,4 @@ calcu::harness::DisplayText LcdTextPart::read(const calcu::machine::DisplayOutpu
     return displayLines(uncovered, d, glyphs_);
 }
 
-} // namespace shared
+} // namespace cu1600

@@ -34,7 +34,7 @@ WebAssembly check.
 ## Rules
 
 - **Non-GUI logic goes in `app/`.** A frontend translates types only
-  (QString ↔ `std::string`, Qt keys → `shared::HostKey`, pixel buffers →
+  (QString ↔ `std::string`, Qt keys → `calcu::typing::HostKeyEvent`, pixel buffers →
   QImage) and shows what Shared decides.
 - **Portable C++20, standard library only.** No Qt, Cocoa or Emscripten
   headers in Core or Shared. Paths are UTF-8 `std::string`s converted
@@ -47,10 +47,10 @@ WebAssembly check.
 - **Shared never decides where files live.** The frontend hands it the
   host's folders (`calcu::settings::HostDirs`: home, the settings base of its
   platform, on the Web the save folder) and the bundled-resources folders
-  (`shared::BundleDirs`), and opens the settings file, `Calc-U-1600.ini`
+  (`cu1600::BundleDirs`), and opens the settings file, `Calc-U-1600.ini`
   (`calcu::settings::SettingsFile` at `settingsFilePath()`, LIB-9); the
-  library's `calcu::settings::Paths`, `shared::AppPaths` and
-  `shared::Settings` (the declaration of every key, `settingsDecl()`) do the
+  library's `calcu::settings::Paths`, `cu1600::AppPaths` and
+  `cu1600::Settings` (the declaration of every key, `settingsDecl()`) do the
   rest. No frontend keeps a setting in QSettings or `localStorage` (CTest
   `CalcU1600NoPlatformSettings`).
 - **Messages for the user** come back as English sentences (the app has no
@@ -63,7 +63,7 @@ WebAssembly check.
 | `SharpAppPart` | Calc-U-1600's part of the library's app session (a `calcu::sessions::SessionPart`): the live PC-1500/1500A/1600 as one `calcu::machine::Machine` handed to the machine session, memory-module slots, peripherals, tape, host drive, trace, inspector; the library's parts it hosts: `MediaPart` (LIB-7, the media); `PresetsPart` (LIB-6: `load-preset {ref \| content,name; buildOnly}`, `check-preset`, `preset-list`, `run-step`, `wait-idle`) and `StartupPart` (LIB-18: `start`, `model {name}`, `variant {name}`, `attach {place, peripheral, variant?}`, `detach {place}`, `reset`, `cold-boot`, `power-cycle`); the media commands of LIB-7 (`media.choose`, … since M-47), the product commands `c1600.mount-host-drive`, `c1600.ce1600p-rom` (each a LIB-18 plug change); the product topics `c1600.lamps` (the tape counter, the floppy lamp) and `c1600.serial-links` (`SharpTopics.hpp`; LIB-12's `roms-missing` is LIB-18's StartupPart's); the rules of the control state (`SharpControlRules`) and LIB-4's `ControlPart`, first in the one order of `LibraryParts::sessionParts` (see "The machine" below). `SharpAppPartOptions`: `canMountHostFolder` (the Web says no, LIB-4 AC-18), `uploadFolder` (the Web's uploads folder, where several files of Upload Preset… become one folder, LIB-13 AC-8) |
 | `SharpDebuggerSetup`, `SharpTraceRecorder`, `SharpSymbolReaders` | The library's debugger for the Sharp models (LIB-10): the `DebuggerPart`'s set-up (`cpu` only, the trace session on the core's records, no run-control steps), the trace records into the trace file, the symbols of the Sharp listings |
 | `SharpPrinters` | The CE-150's and the CE-1600P's papers for the library's `PaperPart` (LIB-8) |
-| `dap/` | The DAP server (C1600-3, `shared::dap`; every native tree, not Emscripten): `DapPart` (a session part: listening, the topic `c1600.dap`, held messages), `DapSession` and `DapSetup.cpp` (the requests, the set-up as operations, the events), its targets, breakpoints and steps on the library's debugger; JSON, framing and `DapTransport`, which a host fills (Qt6: `frontends/qt6/app/debug/DapSocket`; the harness: `serve --dap` on `library/harness/attach/LocalStream`) |
+| `dap/` | The DAP server (C1600-3, `cu1600::dap`; every native tree, not Emscripten): `DapPart` (a session part: listening, the topic `c1600.dap`, held messages), `DapSession` and `DapSetup.cpp` (the requests, the set-up as operations, the events), its targets, breakpoints and steps on the library's debugger; JSON, framing and `DapTransport`, which a host fills (Qt6: `frontends/qt6/app/debug/DapSocket`; the harness: `serve --dap` on `library/harness/attach/LocalStream`) |
 | `SharpTyping` | Typing on the library's typing engine (LIB-5, `library/typing/`): the typing profile per model (`typingProfile`: 4 + 4 frames, 6 more after SHIFT and KBII on the PC-1600, readiness rules, the characters, the `key` names), the keyboard map per model (`SharpKeyboardMap`), `typingProduct()` for the session's `TypingPart` |
 | `SharpSession` | `makeSharpSession()`: the library's app session with the control part and the part, which the session owns (on the library's `calcu::shell::makeHostSession`: `SharpSessionOptions` is its `HostSessionSetup`; Qt6 with LIB-14's `SettingsPart` over `AppPaths::folders()`, tests, `tools/wasm_smoke`; the Web engine calls the builder itself); a host talks to it through the library's `calcu::sessions::Listener` (Qt6: the Qt6 component set's `SessionHost`) |
 | `SharpControlRules` | The product's side of LIB-4's control state (M-49): the place `host-drive` not available where no folder can be mounted, and the product entries `c1600.disk-controls`, `c1600.ce158-printer-panel`, `c1600.host-drive-folder`, `c1600.mount-directory`, `c1600.ce1600p-next-variant`; `sharpControlSetup()` gives the `ControlPart` its rules (its catalogue and printers, CE-150 and CE-1600P, are `LibraryParts`', from the papers). Everything else of the old `ControlState` is the library's generic entries, from the descriptors (one pin-out per 60-pin place) |

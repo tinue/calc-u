@@ -19,14 +19,14 @@ namespace {
 // slice is the call, with no jitter, and full speed never paced.
 TEST(lib17_ac20_pacing_profiles_sharp) {
     for (calcu::machine::ModelId m : {calcu::machine::ModelId{"PC-1500"}, calcu::machine::ModelId{"PC-1500A"}, calcu::machine::ModelId{"PC-1600"}}) {
-        const calcu::pacing::PacingProfile p = shared::pacingProfile(m);
+        const calcu::pacing::PacingProfile p = cu1600::pacingProfile(m);
         CHECK(!p.slice.has_value());
         CHECK(!p.jitter);
         CHECK(!p.fullSpeedPacedWhileWaiting);
     }
 }
 
-struct FakeSink : shared::AudioSink {
+struct FakeSink : cu1600::AudioSink {
     bool open = false;
     int starts = 0;
     int rate = 0;
@@ -54,7 +54,7 @@ TEST(test_sound_feed) {
     using namespace calcu::sessions;
     FakeSink sink;
     std::vector<std::string> warnings;
-    shared::SoundFeed feed(sink, [&](const std::string& w) { warnings.push_back(w); });
+    cu1600::SoundFeed feed(sink, [&](const std::string& w) { warnings.push_back(w); });
     const std::vector<std::int16_t> tone(800, 5000);
 
     feed.deliver(SoundSamples{tone});

@@ -28,7 +28,7 @@ namespace {
 
 namespace fs = std::filesystem;
 namespace sessions = calcu::sessions;
-namespace c = shared::commands;
+namespace c = cu1600::commands;
 using sessionfixture::SessionFixture;
 using sessionfixture::romsPresent;
 using sessions::Value;
@@ -36,7 +36,7 @@ using Model = calcu::machine::ModelId;
 
 // The module in slot 1 has its write-protect switch on (LIB-2 AC-32: the
 // controls of the peripheral there).
-bool slot1Protected(shared::SharpAppPart& part) {
+bool slot1Protected(cu1600::SharpAppPart& part) {
     calcu::machine::Machine* m = part.machine();
     if (!m) return false;
     for (const auto& e : m->capabilities(calcu::peripherals::Controls::kKind)) {
@@ -102,7 +102,7 @@ TEST(test_operations_and_selection) {
     CHECK(f.start());
     CHECK(f.model("PC-1600"));
     CHECK(f.part().model() == calcu::machine::ModelId{"PC-1600"});
-    CHECK(shared::sharpModel(f.settings.file().text("startup", "last-model")) == calcu::machine::ModelId{"PC-1600"});
+    CHECK(cu1600::sharpModel(f.settings.file().text("startup", "last-model")) == calcu::machine::ModelId{"PC-1600"});
 
     CHECK(f.toggle("CE-1600P") && f.part().ce1600pAttached());
     CHECK(f.toggle("CE-1600P") && !f.part().ce1600pAttached());
@@ -126,7 +126,7 @@ TEST(lib7_ac44_test_tape_status_follows_calls) {
     CHECK(f.start("PC-1500A"));
     CHECK(f.toggle("CE-150"));
     CHECK(f.part().tapeInterfaceAttached());
-    auto tapes = [&] { return f.state<shared::LampsPayload>(shared::topics::kLamps)->tape.mode; };
+    auto tapes = [&] { return f.state<cu1600::LampsPayload>(cu1600::topics::kLamps)->tape.mode; };
     CHECK(tapes() == TapeDeck::Mode::Empty);
     const sessions::CallId id = f.send(calcu::media::kStartNewCommand,
                                        Value::object({{"place", "tape"}, {"template", f.entry("tape", "Empty")}, {"name", "side a"}}));
@@ -177,15 +177,15 @@ TEST(lib7_ac44_test_media_library) {
     CHECK(work && !work->isTemplate && work->inPlace && *work->inPlace == "slot-1");
     CHECK(work && work->fileName == "Work.card.yaml");
     std::string reason;
-    const auto files = media.exportFiles(kindOf(f, shared::kModuleKind), "Work", &reason);
+    const auto files = media.exportFiles(kindOf(f, cu1600::kModuleKind), "Work", &reason);
     CHECK(files && files->size() == 1 && !files->front().bytes.empty());
     if (!files) return;
     const std::string bytes = files->front().bytes;
-    CHECK(!media.remove(ctx, kindOf(f, shared::kModuleKind), "Work", true).ok);   // in slot 1
+    CHECK(!media.remove(ctx, kindOf(f, cu1600::kModuleKind), "Work", true).ok);   // in slot 1
 
     CHECK(f.choose("slot-1", "").done);
-    CHECK(media.remove(ctx, kindOf(f, shared::kModuleKind), "Work", false).reason.rfind("asks:", 0) == 0);   // OQ-4
-    CHECK(media.remove(ctx, kindOf(f, shared::kModuleKind), "Work", true).ok);
+    CHECK(media.remove(ctx, kindOf(f, cu1600::kModuleKind), "Work", false).reason.rfind("asks:", 0) == 0);   // OQ-4
+    CHECK(media.remove(ctx, kindOf(f, cu1600::kModuleKind), "Work", true).ok);
     CHECK(findItem(*f.media(), "Work") == nullptr);
     CHECK(media.importBytes(ctx, "Work.card.yaml", bytes, {}).ok);
     CHECK(findItem(*f.media(), "Work") != nullptr);
@@ -256,10 +256,10 @@ TEST(test_card_yaml_dump) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
-    std::vector<std::string> dump = shared::cardYamlDump(f.part());
+    std::vector<std::string> dump = cu1600::cardYamlDump(f.part());
     CHECK(dump.size() == 1 && dump[0].find("no card attached") != std::string::npos);
     CHECK(f.choose("slot-2", "CE-1600M").done);
-    dump = shared::cardYamlDump(f.part());
+    dump = cu1600::cardYamlDump(f.part());
     CHECK(dump.size() == 2 && dump[0].find("CE-1600M (Slot 2), unbanked") != std::string::npos);
 }
 

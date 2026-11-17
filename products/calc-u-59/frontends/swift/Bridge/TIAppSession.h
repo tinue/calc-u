@@ -43,10 +43,10 @@ typedef NS_OPTIONS(uint32_t, TIChange) {
 
 /// The level that owns a pause (LIB-10 RunState::owner; None when running).
 /// Cpu is the CPU tab's, Calculator the CALCULATOR tab's (`program`).
-typedef NS_ENUM(NSInteger, TIFreezeOwner) {
-    TIFreezeOwnerNone = -1,
-    TIFreezeOwnerCpu = 0,
-    TIFreezeOwnerCalculator = 1,
+typedef NS_ENUM(NSInteger, TIRunLevel) {
+    TIRunLevelNone = -1,
+    TIRunLevelCpu = 0,
+    TIRunLevelCalculator = 1,
 };
 
 /// Which run-control buttons of a level can be used (LIB-10 AC-18:
@@ -134,7 +134,7 @@ typedef struct {
 @property (nonatomic, readonly) BOOL isHidden;
 @end
 
-/// The CALCULATOR tab's snapshot (Shared/DebugSnapshots.hpp LiveDebugSnapshot).
+/// The CALCULATOR tab's snapshot (app/DebugSnapshots.hpp LiveDebugSnapshot).
 @interface TILiveDebugSnapshot : NSObject
 @property (nonatomic, readonly, copy) NSArray<TIRegEntry *> *nonZeroRegs;
 @property (nonatomic, readonly) NSInteger dataRegCount;
@@ -306,13 +306,13 @@ typedef struct {
 // The run control (LIB-10 59; the library's `run-state` and its commands):
 // level Cpu is `cpu`, Calculator `program`.
 @property (nonatomic, readonly) BOOL frozen;            ///< paused
-@property (nonatomic, readonly) TIFreezeOwner freezeOwner;
+@property (nonatomic, readonly) TIRunLevel pausedLevel;
 @property (nonatomic, readonly) BOOL pcChangeArmed;     ///< pause-on-start program
 @property (nonatomic, readonly) BOOL scanLoopExitArmed; ///< pause-on-start cpu
 /// The buttons of a level by the library's rule (AC-18, AC-34).
-- (TIButtonUse)buttonUseFor:(TIFreezeOwner)level NS_SWIFT_NAME(buttonUse(for:));
+- (TIButtonUse)buttonUseFor:(TIRunLevel)level NS_SWIFT_NAME(buttonUse(for:));
 /// FREEZE and FREEZE ON START of a tab (C59-4 AC-5, AC-7).
-- (TIFreezeButtons)freezeButtonsFor:(TIFreezeOwner)level NS_SWIFT_NAME(freezeButtons(for:));
+- (TIFreezeButtons)freezeButtonsFor:(TIRunLevel)level NS_SWIFT_NAME(freezeButtons(for:));
 // The product entries of the control state (C59-4 AC-25): whether Run, TRACE
 // and the CALCULATOR tab can be used, and why not.
 @property (nonatomic, readonly) BOOL asmRunAvailable;
@@ -320,12 +320,12 @@ typedef struct {
 @property (nonatomic, readonly) BOOL calculatorTabAvailable;
 @property (nonatomic, readonly) NSString *calculatorTabReason;
 /// The rule itself, for a run state given by its fields (the unit tests).
-+ (TIButtonUse)buttonUseFor:(TIFreezeOwner)level hasState:(BOOL)hasState paused:(BOOL)paused
-                      owner:(TIFreezeOwner)owner NS_SWIFT_NAME(buttonUse(for:hasState:paused:owner:));
-- (void)pause:(TIFreezeOwner)level NS_SWIFT_NAME(pause(_:));
-- (void)step:(TIFreezeOwner)level NS_SWIFT_NAME(step(_:));
++ (TIButtonUse)buttonUseFor:(TIRunLevel)level hasState:(BOOL)hasState paused:(BOOL)paused
+                      owner:(TIRunLevel)owner NS_SWIFT_NAME(buttonUse(for:hasState:paused:owner:));
+- (void)pause:(TIRunLevel)level NS_SWIFT_NAME(pause(_:));
+- (void)step:(TIRunLevel)level NS_SWIFT_NAME(step(_:));
 - (void)resume;
-- (void)pauseOnStart:(TIFreezeOwner)level NS_SWIFT_NAME(pause(onStart:));   ///< None: off
+- (void)pauseOnStart:(TIRunLevel)level NS_SWIFT_NAME(pause(onStart:));   ///< None: off
 @property (nonatomic, readonly) TILiveDebugSnapshot *liveSnapshot;
 @property (nonatomic, readonly) NSArray<TIStepEntry *> *programListing;
 @property (nonatomic, readonly) NSInteger programListingSource;

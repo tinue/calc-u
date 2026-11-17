@@ -43,8 +43,8 @@ QString bundledResourcesDir() {
 
 QString q(const std::string& s) { return QString::fromStdString(s); }
 
-std::optional<shared::BundleDirs>& chosenBundleDirs() {
-    static std::optional<shared::BundleDirs> dirs;
+std::optional<cu1600::BundleDirs>& chosenBundleDirs() {
+    static std::optional<cu1600::BundleDirs> dirs;
     return dirs;
 }
 
@@ -53,7 +53,7 @@ std::optional<shared::BundleDirs>& chosenBundleDirs() {
 calcu::qt6::HostFolders& folders() {
     // LIB-9 AC-2: on macOS the settings base is the app's Application Support
     // folder as macOS gives it (inside the container of a sandboxed app).
-    static calcu::qt6::HostFolders f(shared::settingsDecl(),
+    static calcu::qt6::HostFolders f(cu1600::settingsDecl(),
 #if defined(Q_OS_MACOS)
                                      [] { return macApplicationSupportFolder(); }
 #else
@@ -64,12 +64,12 @@ calcu::qt6::HostFolders& folders() {
 }
 
 void useHostDirs(const calcu::settings::HostDirs& dirs) { folders().useHostDirs(dirs); }
-void useBundleDirs(const shared::BundleDirs& dirs) { chosenBundleDirs() = dirs; }
+void useBundleDirs(const cu1600::BundleDirs& dirs) { chosenBundleDirs() = dirs; }
 
-shared::AppPaths& paths() {
-    static shared::AppPaths p(AppSettings::settings(), folders().hostDirs(),
+cu1600::AppPaths& paths() {
+    static cu1600::AppPaths p(AppSettings::settings(), folders().hostDirs(),
                               chosenBundleDirs() ? *chosenBundleDirs()
-                                                 : shared::BundleDirs{bundledResourcesDir().toStdString(), {}});
+                                                 : cu1600::BundleDirs{bundledResourcesDir().toStdString(), {}});
     return p;
 }
 
@@ -82,8 +82,8 @@ QString serialLinkDir() { return q(paths().serialLinkDir()); }
 }  // namespace AppPaths
 
 namespace AppSettings {
-shared::Settings& settings() {
-    static shared::Settings s(AppPaths::folders().file());
+cu1600::Settings& settings() {
+    static cu1600::Settings s(AppPaths::folders().file());
     return s;
 }
 }  // namespace AppSettings

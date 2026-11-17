@@ -25,7 +25,7 @@
 #include "sessions/Args.hpp"
 #include "sessions/LibraryTopics.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 using namespace calcu::machine;
 namespace sessions = calcu::sessions;
@@ -482,4 +482,4 @@ sessions::Value SerialLinksPayload::toValue() const {
     return sessions::Value::object({{"rs232c", rs232c}, {"ce158", ce158}, {"moves", static_cast<std::int64_t>(moves)}});
 }
 
-} // namespace shared
+} // namespace cu1600

@@ -1,4 +1,4 @@
-// Shared/ debug model: program source decoding, module image, X, the step
+// app/ debug model: program source decoding, module image, X, the step
 // views; what the debug panel shows is in debug_panel_tests.cpp (C59-4).
 
 #include "TestHarness.hpp"

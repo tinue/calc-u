@@ -262,7 +262,7 @@ Frequent except where the table says otherwise):
 |---|---|
 | `core_tests.cpp` | 17 (C59-1 AC-5; C59-6 AC-4, AC-5, M-25; LIB-8 AC-30 `lib8_ac30_print_gives_a_line`, `lib8_ac30_interrupt_rows_against_the_scan`, M-53) |
 | `debug_target_tests.cpp` | 6 (LIB-10 AC-28: the TMC0501 target; M-53) |
-| `debug_panel_tests.cpp` | 49 (C59-4 AC-1–13, AC-16–19, AC-21, AC-23, AC-25, AC-26, EC-1–5, named `c59_4_acN_…`: the product topics and entries of `TIDebugPart`, the CALCULATOR and CPU tabs, the heatmap, the LOG tab and the dumps, the ASM overlay's kind, box, Run and life, its file kind; the cases of `shared_debug_tests.cpp:184-287` and `part_flows_tests.cpp`'s `part_asm_overlay` moved here; M-56) |
+| `debug_panel_tests.cpp` | 49 (C59-4 AC-1–13, AC-16–19, AC-21, AC-23, AC-25, AC-26, EC-1–5, named `c59_4_acN_…`: the product topics and entries of `TIDebugPart`, the CALCULATOR and CPU tabs, the heatmap, the LOG tab and the dumps, the ASM overlay's kind, box, Run and life, its file kind; the cases of `debug_model_tests.cpp:184-287` and `part_flows_tests.cpp`'s `part_asm_overlay` moved here; M-56) |
 | `asm_overlay_tests.cpp` | 16 (C59-4 AC-14, AC-15, AC-20: the ASM overlay format 2.0 and the five shipped overlays against the instructions 2.3.0's reader gave them, `tests/fixtures/asm/*.words`; M-56) |
 | `opening_tests.cpp` | 18 (LIB-13 AC-11, AC-13–16, AC-23, EC-7 on Calc-U-59, named `lib13_acN_…`: the file kinds of `app/TIFileKinds`, the keystroke program, the refused kinds, the start file's rule, the ways in; M-56) |
 | `debugger_tests.cpp` | 21 (LIB-10 AC-29–32, AC-35 on the run control: levels, pause-on-start, breakpoints, the debugger steps of a preset, the freeze tests of 2.3.0 ported; M-53, M-54) |
@@ -290,11 +290,11 @@ Frequent except where the table says otherwise):
 | `machine_control_tests.cpp` | 17 (LIB-18 AC-16–24 on `TIProductMachines`; ledger row 59-39; M-54) |
 | `constant_memory_tests.cpp` | 29 (C59-3 AC-1–14, EC-1–7: the kind `c59.constant-memory`, `ti58c.memory.yaml`; M-54) |
 | `web_part_tests.cpp` | 6 (LIB-15 AC-16, AC-20, AC-22, EC-4; LIB-9 AC-23; M-34) |
-| `shared_debug_tests.cpp` | 8 (the panel's cases moved to `debug_panel_tests.cpp` and `asm_overlay_tests.cpp`, M-56) |
-| `shared_formats_tests.cpp` | 5 (M-55: the 2.3.0 card file cases and their `CARD` records went; `settings_resolve` went with `SettingsKeys.hpp`, M-32; the `STATE` cases went with 2.3.0's reader, M-54) |
-| `shared_settings_tests.cpp` | 7 (LIB-9 AC-19–22, AC-24, AC-25, AC-35; M-32) |
-| `shared_runtime_tests.cpp` | 6 (`session_plays_keystrokes_in_real_time` went with KEYSTROKES, M-54; `runner_keeps_real_time` went with the threaded runner, M-33; the two batch-rule tests with `Pacing.hpp`, M-34; the freeze and queued-step tests moved to `debugger_tests.cpp` onto the run control, M-53) |
-| `shared_tables_tests.cpp` | 6 (`pointer_tracker` went with `cu59::PointerTracker`, M-58; LIB-8 AC-30 `lib8_ac30_font_shape`, `lib8_ac30_feed_complete_and_cut_short_heights`, M-53) |
+| `debug_model_tests.cpp` | 8 (the panel's cases moved to `debug_panel_tests.cpp` and `asm_overlay_tests.cpp`, M-56) |
+| `file_formats_tests.cpp` | 5 (M-55: the 2.3.0 card file cases and their `CARD` records went; `settings_resolve` went with `SettingsKeys.hpp`, M-32; the `STATE` cases went with 2.3.0's reader, M-54) |
+| `settings_tests.cpp` | 7 (LIB-9 AC-19–22, AC-24, AC-25, AC-35; M-32) |
+| `runtime_tests.cpp` | 6 (`session_plays_keystrokes_in_real_time` went with KEYSTROKES, M-54; `runner_keeps_real_time` went with the threaded runner, M-33; the two batch-rule tests with `Pacing.hpp`, M-34; the freeze and queued-step tests moved to `debugger_tests.cpp` onto the run control, M-53) |
+| `data_tables_tests.cpp` | 6 (`pointer_tracker` went with `cu59::PointerTracker`, M-58; LIB-8 AC-30 `lib8_ac30_font_shape`, `lib8_ac30_feed_complete_and_cut_short_heights`, M-53) |
 | `pc100c_paper_tests.cpp` | 10 (LIB-8 AC-24–27 and the PC-100C's reference picture, moved from the library; M-53) |
 | `trace_tests.cpp` | 6 (LIB-10 AC-33 and the exit check of M-53; replaces `shared_trace_tests.cpp`, M-53) |
 | `swift_shell_tests.cpp` | 8 (C59-8 T1–T6, M-58: the menus, the bar, More, the settings rows and AC-19 with the Swift frontend's traits, on the session with LIB-14's `SettingsPart` as the bridge builds it) |
@@ -374,14 +374,14 @@ needs ROMs that are missing reports `SKIP`):
 | `session_tests.cpp` | 4 (LIB-3 AC-35, AC-37, AC-38, ledger 1600-9 on the library's app session; M-31) | `dap_layer_tests.cpp` | 14 (C1600-3 AC-12, AC-14, AC-23: the DAP's layer in `app/dap/`; M-45) |
 | `key_paste_tests.cpp` | 8 (the typing profile and engine; M-36) | `tc8576f_tests.cpp` | 20 |
 | `lcd_screenshot_tests.cpp` | 5 | `app/tests/serial_links_tests.cpp` | 2 (LIB-2 AC-33; M-26) |
-| `lcd_text_tests.cpp` | 21 | `app/tests/shared_app_session_tests.cpp` | 11 (SharpAppPart on the library's session, M-31; the loader cases moved to `loader_part_tests.cpp`, M-44) |
+| `lcd_text_tests.cpp` | 21 | `app/tests/app_session_tests.cpp` | 11 (SharpAppPart on the library's session, M-31; the loader cases moved to `loader_part_tests.cpp`, M-44) |
 | `lh5801_tests.cpp` | 54 (the key queue's three went, M-36) | `app/tests/media_session_tests.cpp` | 13 (LIB-7 1600 AC-38 to AC-40, AC-44: the bays' tests ported as `lib7_ac44_…`; was `shared_bay_tests.cpp`; M-47) |
-| `lh5803_tests.cpp` | 8 | `app/tests/shared_geometry_tests.cpp` | 2 (the plotter paper's three moved to `plotter_paper_tests.cpp` as `lib8_ac37_…`, M-45) |
-| `listing_tests.cpp` | 10 | `app/tests/shared_host_key_map_tests.cpp` | 3 (`SharpKeyboardMap`; M-36) |
-| `machine_code_file_tests.cpp` | 39 (C1600-2 AC-8–12, AC-23; M-44) | `app/tests/shared_machine_session_tests.cpp` | 7 |
-| `memory_card_tests.cpp` | 44 (the 8 YAML reader cases moved to the library in M-24; Part D P-4: the 3 resolver cases went with `resolveModuleSpecByName`) | `app/tests/shared_pacing_tests.cpp` | 2 (LIB-17 AC-20; the sink side of the sound; M-31) |
+| `lh5803_tests.cpp` | 8 | `app/tests/geometry_tests.cpp` | 2 (the plotter paper's three moved to `plotter_paper_tests.cpp` as `lib8_ac37_…`, M-45) |
+| `listing_tests.cpp` | 10 | `app/tests/keyboard_map_tests.cpp` | 3 (`SharpKeyboardMap`; M-36) |
+| `machine_code_file_tests.cpp` | 39 (C1600-2 AC-8–12, AC-23; M-44) | `app/tests/machine_session_tests.cpp` | 7 |
+| `memory_card_tests.cpp` | 44 (the 8 YAML reader cases moved to the library in M-24; Part D P-4: the 3 resolver cases went with `resolveModuleSpecByName`) | `app/tests/pacing_profiles_tests.cpp` | 2 (LIB-17 AC-20; the sink side of the sound; M-31) |
 | `pacing_longrun_tests.cpp` | 4, the "after" test of LIB-17 AC-21 (M-31): `lib17_ac21_pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `lib17_ac21_pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
-| `pc1500_tape_tests.cpp` | 2 | `app/tests/shared_settings_tests.cpp` | 8 (LIB-9 AC-26–32; M-30) |
+| `pc1500_tape_tests.cpp` | 2 | `app/tests/settings_tests.cpp` | 8 (LIB-9 AC-26–32; M-30) |
 | `rom_lookup_tests.cpp` | 9 (LIB-12 AC-11–14, EC-1; M-27) | `typing_tests.cpp` | 15 (LIB-5, M-36) |
 | `paper_replies_tests.cpp` | 1 (`lib8_ac39_sharp_plots_turned_into_paper_replies`: the `.paper` files of M-8 turned into `paper marks` replies, compared with the committed `*.<plotter>.paper-marks`; `CALCU1600_PAPER_REPLIES=1` writes them; LIB-8 AC-39, M-39) | `plotter_paper_tests.cpp` | 10 (LIB-8 AC-32–34, AC-37; M-45; AC-16: the plotters' reference pictures, from the library in Part D) |
 | `paper_session_tests.cpp` | 6 (LIB-8 AC-35, AC-36 in the app session; M-45) | `media_kinds_tests.cpp` | 8 (LIB-7 1600 AC-37, AC-41, AC-42: the codecs, the cassette place, a tape through the harness; M-47) |

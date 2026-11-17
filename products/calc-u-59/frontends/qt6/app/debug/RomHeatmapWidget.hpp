@@ -6,7 +6,7 @@
 class EmulatorController;
 
 // ROM HEATMAP: 80×64 cells (one per code address), coloured by
-// Shared/RomHeatmap's heat steps, repainted incrementally (steps only grow),
+// app/RomHeatmap's heat steps, repainted incrementally (steps only grow),
 // with the current PC as a green cell and the hovered address shown in the
 // header. Part of App/Views/CPUInspectorView.swift.
 class RomHeatmapWidget : public QWidget {

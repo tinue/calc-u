@@ -9,7 +9,7 @@ import AudioToolbox
 /// calcu::debugger::buttonUse, AC-18).
 enum FreezePanel { case cpu, calculator }
 
-/// Selected tab in the debug pane. Stored on EmulatorViewModel so the
+/// Selected tab in the debug panel. Stored on EmulatorViewModel so the
 /// selection survives navigation on iPhone (where DebugView is recreated).
 enum DebugTab { case live, cpu, log }
 
@@ -45,7 +45,7 @@ enum ProgramSource: Equatable {
     /// constant ROM.
     case rom
 
-    /// Decoded by Shared/ModuleImage.cpp (programSourceFrom).
+    /// Decoded by app/ModuleImage.cpp (programSourceFrom).
     init(flag: UInt8, romPC: UInt16) {
         self = Self.cases[TIViewRules.programSource(forFlag: flag, romPC: romPC)]
     }
@@ -157,7 +157,7 @@ class EmulatorViewModel {
     }
     var liveDebugSnapshot: LiveDebugSnapshot = .empty
     private(set) var isFrozen: Bool = false
-    private(set) var freezeOwner: FreezePanel? = nil
+    private(set) var pausedLevel: FreezePanel? = nil
     /// CALCULATOR "FREEZE ON START": freeze before the next program step. Setting it to
     /// false (the ARMED button) disarms it.
     var pendingFreezeOnPCChange: Bool = false {
@@ -534,7 +534,7 @@ class EmulatorViewModel {
     // The run control (LIB-10 59): FREEZE is `pause`, STEP `step`, RESUME
     // `resume` of the tab's level; FREEZE ON START `pause-on-start`.
     func freeze(from panel: FreezePanel) { session?.pause(panel == .cpu ? .cpu : .calculator) }
-    func unfreeze() { session?.resume() }
+    func resume() { session?.resume() }
     func freezeOnNextPCChange() { session?.pause(onStart: .calculator) }
     func freezeOnScanLoopExit() { session?.pause(onStart: .cpu) }
     func disarmCPUScanLoopFreeze() { session?.pause(onStart: .none) }
@@ -556,7 +556,7 @@ class EmulatorViewModel {
         debugClearID &+= 1
     }
 
-    // Dumps for the LOG tab (formats: Shared/DebugLog.cpp).
+    // Dumps for the LOG tab (formats: app/DebugLog.cpp).
     func debugDumpVars() { session?.dumpVars() }
     func debugDumpSCOM() { session?.dumpScom() }
     func debugDumpProg() { session?.dumpProg() }
@@ -577,7 +577,7 @@ class EmulatorViewModel {
     /// as what it is (a preset, an ASM overlay, a keystroke program, a card);
     /// its content goes over (D-41: the picked file is readable only inside
     /// its security scope). A refusal is the session's notice (AC-15).
-    func loadStateFile(_ url: URL) { open(url, way: "dialog") }
+    func loadPreset(_ url: URL) { open(url, way: "dialog") }
 
     #if os(macOS)
     /// A file dropped on the window (LIB-13 AC-1): `open {way: drop}`; the
@@ -672,12 +672,12 @@ class EmulatorViewModel {
         }
         if c.contains(.runState) {
             if isFrozen != controller.frozen { isFrozen = controller.frozen }
-            let owner: FreezePanel? = switch controller.freezeOwner {
+            let owner: FreezePanel? = switch controller.pausedLevel {
             case .cpu: .cpu
             case .calculator: .calculator
             default: nil
             }
-            if freezeOwner != owner { freezeOwner = owner }
+            if pausedLevel != owner { pausedLevel = owner }
             if pendingFreezeOnPCChange != controller.pcChangeArmed { pendingFreezeOnPCChange = controller.pcChangeArmed }
             if pendingCPUScanLoopFreeze != controller.scanLoopExitArmed { pendingCPUScanLoopFreeze = controller.scanLoopExitArmed }
             let calc = controller.buttonUse(for: .calculator), cpu = controller.buttonUse(for: .cpu)
@@ -834,7 +834,7 @@ struct LiveDebugSnapshot: Equatable {
     static let empty = LiveDebugSnapshot()
 }
 
-// MARK: - Bridge conversion (Shared/DebugSnapshots.hpp → SwiftUI view model)
+// MARK: - Bridge conversion (app/DebugSnapshots.hpp → SwiftUI view model)
 
 extension EmulatorViewModel.InspectorSnapshot {
     init(_ e: TIInspectorEntry) {

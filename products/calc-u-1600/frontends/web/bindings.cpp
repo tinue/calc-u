@@ -26,23 +26,23 @@ namespace {
 // (AppSessionSetup::owned) and lets it go first.
 struct WebParts {
     calcu::shell::HostSettings settings;
-    shared::Settings typed{settings.file()};
-    std::unique_ptr<shared::AppPaths> paths;
-    std::unique_ptr<shared::SharpAppPart> part;
-    std::unique_ptr<shared::SharpWebPart> web;
-    explicit WebParts(const calcu::settings::HostDirs& dirs) : settings(shared::settingsDecl(), dirs) {}
+    cu1600::Settings typed{settings.file()};
+    std::unique_ptr<cu1600::AppPaths> paths;
+    std::unique_ptr<cu1600::SharpAppPart> part;
+    std::unique_ptr<cu1600::SharpWebPart> web;
+    explicit WebParts(const calcu::settings::HostDirs& dirs) : settings(cu1600::settingsDecl(), dirs) {}
 };
 
 std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web::WebStart& start) {
     const calcu::settings::HostDirs dirs = start.placesDirs();
     auto parts = std::make_shared<WebParts>(dirs);
-    parts->paths = std::make_unique<shared::AppPaths>(parts->typed, dirs,
-                                                      shared::BundleDirs{start.bundleDir, start.presetsDir});
-    shared::SharpAppPartOptions options;
+    parts->paths = std::make_unique<cu1600::AppPaths>(parts->typed, dirs,
+                                                      cu1600::BundleDirs{start.bundleDir, start.presetsDir});
+    cu1600::SharpAppPartOptions options;
     options.canMountHostFolder = false;
     options.uploadFolder = start.uploadsDir;   // LIB-13 AC-8: several files of Upload Preset…
-    parts->part = std::make_unique<shared::SharpAppPart>(parts->typed, *parts->paths, std::move(options));
-    parts->web = std::make_unique<shared::SharpWebPart>(*parts->part, start.uploadsDir);
+    parts->part = std::make_unique<cu1600::SharpAppPart>(parts->typed, *parts->paths, std::move(options));
+    parts->web = std::make_unique<cu1600::SharpWebPart>(*parts->part, start.uploadsDir);
 
     // The one order (parts::LibraryParts): the control part, the shell's and
     // SettingsPart, the library's and the product's, the Web part last.
@@ -52,7 +52,7 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     host.after = {parts->web.get()};
     host.clock = &calcu::web::wallTimeNow;
     host.logSettingsProblem = true;
-    shared::SharpAppPart& part = *parts->part;
+    cu1600::SharpAppPart& part = *parts->part;
     host.owned = std::move(parts);
     return calcu::shell::makeHostSession(part, std::move(host)).session;
 }

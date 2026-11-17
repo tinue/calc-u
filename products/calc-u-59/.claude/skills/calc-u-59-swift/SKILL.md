@@ -15,7 +15,8 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   M-53 FREEZE, STEP, RESUME and FREEZE ON START are the library's run
   control (`pause`, `step`, `resume`, `pause-on-start`; CALCULATOR is
   `program`, CPU `cpu`), and the buttons follow its rule through the bridge
-  (`buttonUseFor:`, `calcu::debugger::buttonUse`; test
+  (`buttonUseFor:` with a `TIRunLevel`, the paused one `pausedLevel`;
+  `calcu::debugger::buttonUse`; test
   `Calc-U-59Tests/RunControlTests.swift`); TRACE is the trace session's.
   Since M-56 (C59-4) the panel draws the session's product topics
   `calculator-debug`, `program-listing`, `cpu-debug`, `heatmap`,

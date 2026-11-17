@@ -9,7 +9,7 @@ that stay drive the harness and give what their documentation says.
   range out, C59-9 D-7; the boot scenario is read with `all` and goes on
   into the idle loop).
 - tools/fastmode_matrix.py label: for each `label` case the verdicts that
-  tools/agentic/README.md documents (whether the run ended, the registers
+  2.3.0's tools/agentic/README.md documented (whether the run ended, the registers
   that differ) are those of 2.3.0's tool (tests/reference/scripts/
   fastmode-label-base.txt); the display samples and the Prg Src values seen
   are sampled at other times and are not compared.

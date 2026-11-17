@@ -20,7 +20,7 @@ inline const QColor kPaper = QColor::fromRgbF(0.96f, 0.94f, 0.88f);
 
 inline QString rgb(const QColor& c) { return c.name(QColor::HexRgb); }
 
-/// A packed 0xRRGGBB colour from Shared/.
+/// A packed 0xRRGGBB colour from app/.
 inline QColor fromRgb(uint32_t c, double alpha = 1.0) {
     QColor q(static_cast<int>(c >> 16 & 0xFF), static_cast<int>(c >> 8 & 0xFF), static_cast<int>(c & 0xFF));
     q.setAlphaF(alpha);

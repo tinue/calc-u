@@ -14,9 +14,9 @@
 // definitions in frontends/qt6/resources/cards/, the presets in examples/,
 // the host drive's ROM in firmware/pc1600-hostdrive/ (AC-20).
 
-namespace shared {
+namespace cu1600 {
 
 /// The factory registered with calcu_harness_add_product (CMakeLists.txt).
 std::unique_ptr<calcu::harness::HarnessProduct> makeHarnessProduct();
 
-} // namespace shared
+} // namespace cu1600

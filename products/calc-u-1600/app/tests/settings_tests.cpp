@@ -1,4 +1,4 @@
-// Shared/Settings (LIB-9, Calc-U-1600 column: AC-26 to AC-32), Shared/AppPaths.
+// app/Settings (LIB-9, Calc-U-1600 column: AC-26 to AC-32), app/AppPaths.
 
 #include <cstdio>
 #include <filesystem>
@@ -23,7 +23,7 @@ namespace {
 namespace fs = std::filesystem;
 namespace cs = calcu::settings;
 using Model = calcu::machine::ModelId;
-using shared::OpenFolder;
+using cu1600::OpenFolder;
 
 using calcu::testing::readText;
 
@@ -31,7 +31,7 @@ using TempDir = calcu::testing::TempFolder;
 
 // AC-26: the file is Calc-U-1600.ini and holds these keys with these defaults.
 TEST(lib9_ac26_declaration) {
-    const cs::ProductDecl& d = shared::settingsDecl();
+    const cs::ProductDecl& d = cu1600::settingsDecl();
     CHECK_EQ(d.productName, std::string("Calc-U-1600"));
     CHECK(cs::checkDeclaration(d).empty());
     for (const std::string& p : cs::checkDeclaration(d)) std::fprintf(stderr, "  %s\n", p.c_str());
@@ -69,7 +69,7 @@ TEST(lib9_ac26_declaration) {
 
     // The typed calls read those keys.
     TestSettings t;
-    shared::Settings& s = t.settings;
+    cu1600::Settings& s = t.settings;
     CHECK(s.file().integer("trace", "max-file-size-mb") == 50);
     CHECK(!s.file().boolean("debug", "dap-enabled") && s.file().integer("debug", "dap-port") == 32168);
     CHECK(s.startupModelPreference() == "last");
@@ -91,8 +91,8 @@ TEST(lib9_ac26_declaration) {
 // AC-27, EC-1: `last` without a model used before starts the PC-1500A.
 TEST(lib9_ac27_startup_last_without_last_model_is_pc1500a) {
     TestSettings t;
-    shared::Settings& s = t.settings;
-    CHECK(!shared::sharpModel(s.file().text("startup", "last-model")));
+    cu1600::Settings& s = t.settings;
+    CHECK(!cu1600::sharpModel(s.file().text("startup", "last-model")));
     CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1500A"});
     s.file().set("startup", "last-model", "PC-1600");
     CHECK(t.file.text("startup", "last-model") == "PC-1600");
@@ -109,7 +109,7 @@ TEST(lib9_ac27_startup_last_without_last_model_is_pc1500a) {
 // AC-28: a port outside 1024 to 65535 is 32168.
 TEST(lib9_ac28_dap_port_outside_range_is_32168) {
     TestSettings t;
-    shared::Settings& s = t.settings;
+    cu1600::Settings& s = t.settings;
     for (int bad : {80, 1023, 65536, 0, -1}) {
         s.file().set("debug", "dap-port", std::to_string(bad));
         CHECK(s.file().integer("debug", "dap-port") == 32168);
@@ -131,7 +131,7 @@ TEST(lib9_ac29_folders_four_kinds) {
                                                          {OpenFolder::Basic, "basic-programs"},
                                                          {OpenFolder::Assembly, "machine-code"},
                                                          {OpenFolder::HostDrive, "host-drive"}};
-    for (const auto& [folder, key] : kinds) CHECK_EQ(std::string(shared::openFolderKind(folder)), std::string(key));
+    for (const auto& [folder, key] : kinds) CHECK_EQ(std::string(cu1600::openFolderKind(folder)), std::string(key));
 }
 
 // AC-30: [window] keeps the size the user gave; without it 900 x 500.
@@ -139,13 +139,13 @@ TEST(lib9_ac30_window_size_default_900x500_and_kept) {
     TempDir tmp("calcu1600-lib9-window");
     const std::string path = (tmp.path() / "Calc-U-1600.ini").generic_string();
     {
-        cs::SettingsFile file = cs::SettingsFile::open(shared::settingsDecl(), path);
-        shared::Settings s(file);
+        cs::SettingsFile file = cs::SettingsFile::open(cu1600::settingsDecl(), path);
+        cu1600::Settings s(file);
         CHECK(s.windowWidth() == 900 && s.windowHeight() == 500);
         s.setWindowSize(1024, 640);
     }
-    cs::SettingsFile again = cs::SettingsFile::open(shared::settingsDecl(), path);
-    shared::Settings s(again);
+    cs::SettingsFile again = cs::SettingsFile::open(cu1600::settingsDecl(), path);
+    cu1600::Settings s(again);
     CHECK(s.windowWidth() == 1024 && s.windowHeight() == 640);
     const std::string text = readText(path);
     CHECK(text.find("width = 1024") != std::string::npos && text.find("height = 640") != std::string::npos);
@@ -157,30 +157,30 @@ TEST(lib9_ac30_window_size_default_900x500_and_kept) {
 TEST(lib9_ac31_first_start_defaults_and_writes_file) {
     TempDir tmp("calcu1600-lib9-first-start");
     cs::HostDirs dirs = testHostDirs((tmp.path() / "home").generic_string());
-    const std::string path = cs::settingsFilePath(shared::settingsDecl(), dirs);
+    const std::string path = cs::settingsFilePath(cu1600::settingsDecl(), dirs);
     CHECK(path == (tmp.path() / "home" / "settings" / "Calc-U-1600" / "Calc-U-1600.ini").generic_string());
     CHECK(!fs::exists(path));
 
-    cs::SettingsFile file = cs::SettingsFile::open(shared::settingsDecl(), path);
+    cs::SettingsFile file = cs::SettingsFile::open(cu1600::settingsDecl(), path);
     CHECK(file.outcome() == cs::Outcome::Created);
     CHECK(fs::exists(path));
     const std::string text = readText(path);
-    CHECK(text == cs::SettingsFile::defaultText(shared::settingsDecl()));
+    CHECK(text == cs::SettingsFile::defaultText(cu1600::settingsDecl()));
     CHECK(text.rfind("format-version = 1\n", 0) == 0);
 
-    shared::Settings s(file);
+    cu1600::Settings s(file);
     CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1500A"});
     CHECK(s.windowWidth() == 900 && s.file().integer("debug", "dap-port") == 32168 && s.file().integer("trace", "max-file-size-mb") == 50);
 
     // The save folder is ~/Calc-U-1600 on Qt6 (LIB-9 AC-13).
-    shared::AppPaths paths(s, dirs, shared::BundleDirs{(tmp.path() / "bundle").generic_string(), {}});
+    cu1600::AppPaths paths(s, dirs, cu1600::BundleDirs{(tmp.path() / "bundle").generic_string(), {}});
     CHECK(paths.instanceDir() == (tmp.path() / "home" / "Calc-U-1600").generic_string());
     CHECK(paths.places().settingsFile() == path);
 }
 
 // AC-32: Qt6 and the Web use the one declaration.
 TEST(lib9_ac32_web_and_qt6_share_declaration) {
-    // Both frontends open their file through shared::settingsDecl(), one
+    // Both frontends open their file through cu1600::settingsDecl(), one
     // declaration: one set of names, values and defaults (AC-26's table).
     // The Web's place: /persist/settings/Calc-U-1600/Calc-U-1600.ini (design §2).
     cs::HostDirs web;
@@ -188,14 +188,14 @@ TEST(lib9_ac32_web_and_qt6_share_declaration) {
     web.home = "/persist";
     web.settingsBase = cs::settingsBaseFor(cs::HostOs::Web, {}, "/persist", "/persist/settings");
     web.saveFolder = "/persist/Calc-U-1600";
-    CHECK(cs::settingsFilePath(shared::settingsDecl(), web) == "/persist/settings/Calc-U-1600/Calc-U-1600.ini");
+    CHECK(cs::settingsFilePath(cu1600::settingsDecl(), web) == "/persist/settings/Calc-U-1600/Calc-U-1600.ini");
 }
 
 // AC-32: the keys the Web has no use for are kept in the file and ignored.
 TEST(lib9_ac32_web_keeps_and_ignores_dap_serial_window_folders) {
     TempDir tmp("calcu1600-lib9-web-keeps");
     const fs::path ini = tmp.path() / "settings" / "Calc-U-1600" / "Calc-U-1600.ini";
-    std::string text = cs::SettingsFile::defaultText(shared::settingsDecl());
+    std::string text = cs::SettingsFile::defaultText(cu1600::settingsDecl());
     auto put = [&](const std::string& from, const std::string& to) {
         const auto at = text.find(from);
         CHECK(at != std::string::npos);
@@ -214,10 +214,10 @@ TEST(lib9_ac32_web_keeps_and_ignores_dap_serial_window_folders) {
     web.home = (tmp.path() / "persist").generic_string();
     web.settingsBase = (tmp.path() / "settings").generic_string();
     web.saveFolder = (tmp.path() / "persist" / "Calc-U-1600").generic_string();
-    cs::SettingsFile file = cs::SettingsFile::open(shared::settingsDecl(), ini.generic_string());
+    cs::SettingsFile file = cs::SettingsFile::open(cu1600::settingsDecl(), ini.generic_string());
     CHECK(file.outcome() == cs::Outcome::Read);
-    shared::Settings s(file);
-    shared::AppPaths paths(s, web, shared::BundleDirs{(tmp.path() / "bundle").generic_string(), {}});
+    cu1600::Settings s(file);
+    cu1600::AppPaths paths(s, web, cu1600::BundleDirs{(tmp.path() / "bundle").generic_string(), {}});
     // Ignored: the save folder override, the serial link folder (Qt6 only).
     CHECK(paths.instanceDir() == web.saveFolder);
     CHECK(paths.serialLinkDir() == web.saveFolder);
@@ -238,8 +238,8 @@ TEST(test_app_paths) {
     const fs::path& root = tmp.path();
     const std::string home = (root / "home").generic_string();
     TestSettings t;
-    shared::Settings& s = t.settings;
-    shared::AppPaths paths(s, testHostDirs(home), shared::BundleDirs{(root / "bundle").generic_string(), {}});
+    cu1600::Settings& s = t.settings;
+    cu1600::AppPaths paths(s, testHostDirs(home), cu1600::BundleDirs{(root / "bundle").generic_string(), {}});
 
     CHECK(paths.instanceDir() == home + "/Calc-U-1600");
     CHECK(fs::is_directory(home + "/Calc-U-1600"));
@@ -262,11 +262,11 @@ TEST(test_app_paths) {
 
 
     std::ofstream((root / "saves" / "f.txt").string()) << "x";
-    CHECK(shared::isUnderDir((root / "saves" / "f.txt").generic_string(), (root / "saves").generic_string()));
-    CHECK(shared::isUnderDir((root / "saves").generic_string(), (root / "saves").generic_string()));
+    CHECK(cu1600::isUnderDir((root / "saves" / "f.txt").generic_string(), (root / "saves").generic_string()));
+    CHECK(cu1600::isUnderDir((root / "saves").generic_string(), (root / "saves").generic_string()));
     fs::create_directories(root / "saves-backup");
-    CHECK(!shared::isUnderDir((root / "saves-backup").generic_string(), (root / "saves").generic_string()));
-    CHECK(!shared::isUnderDir((root / "missing").generic_string(), (root / "saves").generic_string()));
+    CHECK(!cu1600::isUnderDir((root / "saves-backup").generic_string(), (root / "saves").generic_string()));
+    CHECK(!cu1600::isUnderDir((root / "missing").generic_string(), (root / "saves").generic_string()));
 }
 
 } // namespace

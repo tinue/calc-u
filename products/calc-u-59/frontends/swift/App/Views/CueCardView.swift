@@ -17,7 +17,7 @@ struct CueCardView: View, Equatable {
 
     // MARK: - Layout
     // Geometry, inks, span merging, dividers and shrink-to-fit come from
-    // Shared/CueCard (TIViewRules), shared with the Qt6 app.
+    // app/CueCard (TIViewRules), shared with the Qt6 app.
 
     // MARK: - Body
 

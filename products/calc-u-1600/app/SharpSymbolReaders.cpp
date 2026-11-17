@@ -5,7 +5,7 @@
 
 #include "Debug/Listing/Listing.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace {
 
@@ -87,4 +87,4 @@ std::vector<const calcu::debugger::SymbolReader*> sharpSymbolReaders() {
     return {&kSymbols, &kSdas, &kZasm};
 }
 
-} // namespace shared
+} // namespace cu1600

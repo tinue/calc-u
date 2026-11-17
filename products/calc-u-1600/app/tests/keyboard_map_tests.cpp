@@ -1,5 +1,5 @@
 // The keyboard map of Calc-U-1600 (app/SharpTyping, LIB-5 AC-29, AC-37):
-// 0.8.1's HostKeyMap rules, now shared::SharpKeyboardMap per model.
+// 0.8.1's HostKeyMap rules, now cu1600::SharpKeyboardMap per model.
 
 #include <cstdio>
 
@@ -24,7 +24,7 @@ std::optional<Mapped> resolve(NamedKey key, Modifiers mods, char32_t typed, bool
     e.produced = typed;
     e.mods = mods;
     e.mods.macHost = mac;
-    return shared::keyboardMapOf(ModelId{pc1600 ? sharp::kPC1600 : sharp::kPC1500A})->map(e);
+    return cu1600::keyboardMapOf(ModelId{pc1600 ? sharp::kPC1600 : sharp::kPC1500A})->map(e);
 }
 
 // One key held (AC-31), or shift then the key (AC-8).
@@ -94,7 +94,7 @@ TEST(lib5_ac29_command_modifiers_nothing_altgr_types) {
     CHECK(resolve(NamedKey::None, meta, 'a', false, false) == std::nullopt);
     CHECK(is(resolve(NamedKey::None, altGr, '+', false, false), "+"));
     // The same map for the PC-1500 and the PC-1500A.
-    CHECK(shared::keyboardMapOf(ModelId{sharp::kPC1500}) == shared::keyboardMapOf(ModelId{sharp::kPC1500A}));
+    CHECK(cu1600::keyboardMapOf(ModelId{sharp::kPC1500}) == cu1600::keyboardMapOf(ModelId{sharp::kPC1500A}));
 }
 
 } // namespace

@@ -168,7 +168,7 @@ TEST(lib14_ac26_roles_settings_about_quit) {
     CHECK(f.action("settings")->menuRole() == QAction::PreferencesRole);
     CHECK(f.action("about")->menuRole() == QAction::AboutRole);
     CHECK(f.action("quit")->menuRole() == QAction::QuitRole);
-    CHECK(text(f.action("load-preset")) == QStringLiteral("Load Preset…"));   // today "Open Preset…"
+    CHECK(text(f.action("load-preset")) == QStringLiteral("Load Preset…"));   // was "Open Preset…"
 }
 
 // ── Q3: the bar (AC-27; AC-8 to AC-10; LIB-4 AC-11, AC-12, AC-15) ──────

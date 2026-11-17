@@ -57,7 +57,7 @@ struct LiveDebugView: View {
 
             // RESUME sits at the far left, away from STEP, to avoid accidental
             // taps while stepping.
-            Button("RESUME") { vm.unfreeze() }
+            Button("RESUME") { vm.resume() }
                 .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.orange)
                 .opacity(use.resume ? 1 : 0.4)
@@ -409,7 +409,7 @@ struct LiveDebugView: View {
         }
     }
 
-    /// "Prg Source: …" label (Shared/ModuleImage programSourceLabel): undocumented
+    /// "Prg Source: …" label (app/ModuleImage programSourceLabel): undocumented
     /// values that decode like an official one show the raw flag, as fast mode does.
     private func resolvedProgramSource(_ source: ProgramSource, flag: UInt8) -> String {
         TIViewRules.programSourceLabel(source.raw, flag: flag)
@@ -425,7 +425,7 @@ struct LiveDebugView: View {
 // MARK: - Colours
 
 extension Color {
-    /// A packed 0xRRGGBB colour from Shared/ (TIViewRules).
+    /// A packed 0xRRGGBB colour from app/ (TIViewRules).
     init(rgb: UInt32) {
         self.init(red: Double(rgb >> 16 & 0xFF) / 255, green: Double(rgb >> 8 & 0xFF) / 255, blue: Double(rgb & 0xFF) / 255)
     }

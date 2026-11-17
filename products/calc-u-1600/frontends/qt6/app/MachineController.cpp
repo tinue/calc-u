@@ -23,7 +23,7 @@ namespace sessions = calcu::sessions;
 MachineController::MachineController(QObject* parent) : QObject(parent) {
     // LIB-14: the settings dialog reads and writes the product's file
     // through the session; a change the product applies at once.
-    shared::SharpSessionOptions options;
+    cu1600::SharpSessionOptions options;
     options.settings = &AppPaths::folders().settings();
     options.settingsChanged = [this](std::string_view section, std::string_view) {
         if (section == "serial") app().refreshSerialLinkDirectory();
@@ -33,8 +33,8 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
                         sessions::HostService::ClipboardImage, sessions::HostService::FilePicker,
                         sessions::HostService::FolderPicker,   sessions::HostService::KeepFile,
                         sessions::HostService::OpenUrl};
-    m_session = std::make_unique<calcu::qt6::ProductHost<shared::SharpAppPart>>(
-        shared::makeSharpSession(AppSettings::settings(), AppPaths::paths(), std::move(options)), std::move(services));
+    m_session = std::make_unique<calcu::qt6::ProductHost<cu1600::SharpAppPart>>(
+        cu1600::makeSharpSession(AppSettings::settings(), AppPaths::paths(), std::move(options)), std::move(services));
     host().addMessageHandler([this](const sessions::Message& m) { onMessage(m); });
     connect(&host(), &calcu::qt6::SessionHost::called, this, [this] {
         const auto t = host().now();
@@ -44,7 +44,7 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
     });
     // C1600-3: the DAP server's socket; the part listens when the settings
     // or --dap say so.
-    if (shared::dap::DapPart* dap = app().dapPart()) m_dapSocket = std::make_unique<DapSocket>(*dap);
+    if (cu1600::dap::DapPart* dap = app().dapPart()) m_dapSocket = std::make_unique<DapSocket>(*dap);
 }
 
 MachineController::~MachineController() {
@@ -109,8 +109,8 @@ void MachineController::typeCommand(const std::string& line) {
 }
 void MachineController::cancelPaste() { app().typingPart().engine().focusLost(); }
 
-void MachineController::attachAudio(shared::AudioSink& sink) {
-    m_sound = std::make_unique<shared::SoundFeed>(sink, [](const std::string& text) {
+void MachineController::attachAudio(cu1600::AudioSink& sink) {
+    m_sound = std::make_unique<cu1600::SoundFeed>(sink, [](const std::string& text) {
         qWarning().noquote() << QString::fromStdString(text);
     });
     m_sound->warmUp(sharp::kSoundRate);
@@ -128,8 +128,8 @@ void MachineController::onMessage(const sessions::Message& m) {
             emit runStateChanged();
         } else if (s->topic == calcu::debugger::kTraceTopic) {
             emit traceStateChanged();
-        } else if (s->topic == shared::topics::kSerialLinks) {
-            const auto* p = state<shared::SerialLinksPayload>(s->topic);
+        } else if (s->topic == cu1600::topics::kSerialLinks) {
+            const auto* p = state<cu1600::SerialLinksPayload>(s->topic);
             if (p && p->moves != m_serialMoves) {
                 m_serialMoves = p->moves;
                 emit serialLinksMoved();
@@ -139,7 +139,7 @@ void MachineController::onMessage(const sessions::Message& m) {
     }
     if (const auto* st = std::get_if<sessions::StreamMessage>(&m)) {
         for (const auto& p : st->appended)
-            if (const auto* o = sessions::payloadAs<shared::ProgramOpenedPayload>(p))
+            if (const auto* o = sessions::payloadAs<cu1600::ProgramOpenedPayload>(p))
                 // Queued: the flow's dialogs open after the message is handed on.
                 QTimer::singleShot(0, this, [this, name = QString::fromStdString(o->name),
                                              bytes = QByteArray(reinterpret_cast<const char*>(o->bytes.data()),
@@ -176,9 +176,9 @@ bool MachineController::machinePaused() const {
     return s && s->paused;
 }
 
-shared::LampsPayload MachineController::lamps() const {
-    const auto* p = state<shared::LampsPayload>(shared::topics::kLamps);
-    return p ? *p : shared::LampsPayload{};
+cu1600::LampsPayload MachineController::lamps() const {
+    const auto* p = state<cu1600::LampsPayload>(cu1600::topics::kLamps);
+    return p ? *p : cu1600::LampsPayload{};
 }
 
 const calcu::media::MediaState* MachineController::media() const {
@@ -187,7 +187,7 @@ const calcu::media::MediaState* MachineController::media() const {
 
 std::optional<std::string> MachineController::setDapRunPort(long port) {
     std::optional<std::string> refused;
-    send(shared::dap::kDapPortCommand, sessions::Value::object({{"port", static_cast<std::int64_t>(port)}}),
+    send(cu1600::dap::kDapPortCommand, sessions::Value::object({{"port", static_cast<std::int64_t>(port)}}),
          [&refused](const sessions::ReplyMessage& r) {
              if (!r.done) refused = r.reason;
          });
@@ -195,13 +195,13 @@ std::optional<std::string> MachineController::setDapRunPort(long port) {
 }
 
 QString MachineController::dapStatus() const {
-    const auto* s = state<shared::dap::DapStatus>(shared::dap::kDapTopic);
+    const auto* s = state<cu1600::dap::DapStatus>(cu1600::dap::kDapTopic);
     return s ? QString::fromStdString(s->status) : tr("Off");
 }
 
 bool MachineController::dapClient() const {
-    const auto* s = state<shared::dap::DapStatus>(shared::dap::kDapTopic);
+    const auto* s = state<cu1600::dap::DapStatus>(cu1600::dap::kDapTopic);
     return s && s->client;
 }
 
-void MachineController::disconnectDap() { send(shared::dap::kDapDisconnectCommand); }
+void MachineController::disconnectDap() { send(cu1600::dap::kDapDisconnectCommand); }

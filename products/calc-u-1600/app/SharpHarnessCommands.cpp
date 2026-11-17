@@ -42,7 +42,7 @@
 #include "sessions/MachineSession.hpp"
 #include "sessions/Messages.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace {
 
@@ -573,4 +573,4 @@ void addSharpHarnessCommands(harness::CommandRegistry& r, SharpHarnessParts part
                  "call <target> <address> [timeout=<duration>]  run a routine until it returns (machine paused)");
 }
 
-} // namespace shared
+} // namespace cu1600

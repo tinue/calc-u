@@ -5,7 +5,7 @@
 #include "Display/LcdText.hpp"
 #include "machine/Display.hpp"
 
-namespace shared::lcd {
+namespace cu1600::lcd {
 
 namespace {
 
@@ -104,4 +104,4 @@ std::vector<Indicator> indicators(const calcu::machine::ModelId& model, const ca
     return out;
 }
 
-} // namespace shared::lcd
+} // namespace cu1600::lcd

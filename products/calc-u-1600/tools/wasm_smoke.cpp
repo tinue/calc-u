@@ -22,7 +22,7 @@ namespace {
 namespace fs = std::filesystem;
 namespace sessions = calcu::sessions;
 
-std::string screen(const sessions::Listener& host, const shared::SharpAppPart& part) {
+std::string screen(const sessions::Listener& host, const cu1600::SharpAppPart& part) {
     LcdText text;
     const calcu::machine::DisplayOutput* d = host.display();
     return d && part.lcdText(*d, &text) ? text.text() : std::string();
@@ -52,17 +52,17 @@ int main() {
     int failures = 0;
     {
         TestSettings testSettings;
-        shared::Settings& settings = testSettings.settings;
-        shared::AppPaths paths(settings, testHostDirs((root / "home").generic_string()),
-                               shared::BundleDirs{(root / "bundle").generic_string(), {}});
-        shared::SharpSessionOptions options;
+        cu1600::Settings& settings = testSettings.settings;
+        cu1600::AppPaths paths(settings, testHostDirs((root / "home").generic_string()),
+                               cu1600::BundleDirs{(root / "bundle").generic_string(), {}});
+        cu1600::SharpSessionOptions options;
         options.hosting = sessions::Hosting::VirtualTime;
         options.clock = [] { return calcu::pacing::WallTime{0}; };
-        auto app = shared::makeSharpSession(settings, paths, std::move(options));
-        shared::SharpAppPart& part = *app.part;
+        auto app = cu1600::makeSharpSession(settings, paths, std::move(options));
+        cu1600::SharpAppPart& part = *app.part;
         sessions::Listener host;
         host.listen(*app.session, sessions::HostServices{{sessions::HostService::FolderPicker}});
-        if (!run(host, shared::commands::kStart)) ++failures;
+        if (!run(host, cu1600::commands::kStart)) ++failures;
 
         struct Case {
             const char* preset;

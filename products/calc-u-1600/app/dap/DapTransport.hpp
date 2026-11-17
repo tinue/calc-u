@@ -10,7 +10,7 @@
 // Qt6 frontend's is frontends/qt6/app/debug/DapSocket (QTcpServer), the
 // harness's app/HarnessProduct.cpp's on library/harness/attach/LocalStream.
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 class DapTransport {
 public:
@@ -30,4 +30,4 @@ struct DapInput {
     std::string bytes;
 };
 
-} // namespace shared::dap
+} // namespace cu1600::dap

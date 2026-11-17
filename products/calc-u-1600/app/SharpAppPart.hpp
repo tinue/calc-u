@@ -46,11 +46,11 @@
 
 class ExpansionCard;
 
-namespace shared::dap {
+namespace cu1600::dap {
 class DapPart;
 }
 
-namespace shared {
+namespace cu1600 {
 
 
 // What an operation reports: ok, or why not (a sentence for the user).
@@ -262,4 +262,4 @@ private:
     std::uint64_t m_serialMoves = 0;
 };
 
-} // namespace shared
+} // namespace cu1600

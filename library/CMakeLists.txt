@@ -56,8 +56,6 @@ if(CALCU_ATTACH)
   target_compile_definitions(calcu_library PUBLIC CALCU_ATTACH=1)
 endif()
 target_compile_features(calcu_library PUBLIC cxx_std_20)  # ADR 0005
-# Calc-U-59's static libraries end up in a shared object (ti59headless).
-set_target_properties(calcu_library PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(calcu_library PRIVATE calcu_warnings)
 if(EMSCRIPTEN)
   # One build/web tree serves both Web engines with native wasm exceptions

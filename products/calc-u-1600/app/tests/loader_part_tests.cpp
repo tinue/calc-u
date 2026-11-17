@@ -22,8 +22,8 @@ namespace {
 
 namespace fs = std::filesystem;
 namespace sessions = calcu::sessions;
-namespace c = shared::commands;
-namespace q = shared::requests;
+namespace c = cu1600::commands;
+namespace q = cu1600::requests;
 using sessionfixture::SessionFixture;
 using sessionfixture::romsPresent;
 using sessions::Value;
@@ -98,7 +98,7 @@ TEST(c1600_2_ac13_run_types_start_and_waits_idle) {
     const calcu::machine::Ticks before = f.part().machine()->tickCount();
     const sessions::ReplyMessage r = f.run(c::kLoadCode, with(file(code), "run", true));
     CHECK(r.done);
-    const auto* loaded = sessions::payloadAs<shared::CodeLoadedReply>(r.result);
+    const auto* loaded = sessions::payloadAs<cu1600::CodeLoadedReply>(r.result);
     CHECK(loaded && loaded->started && loaded->callCommand == "CALL &C100");
     // Typed with ENTER, then idle for 20 frames at least.
     const calcu::machine::Ticks after = f.part().machine()->tickCount();
@@ -115,7 +115,7 @@ TEST(c1600_2_ac13_without_start_address_nothing_started) {
     const sessions::CallId call = f.send(c::kLoadCode, with(file(code), "run", true));
     const auto r = f.takeReply(call);
     CHECK(r && r->done && !f.busy());   // at once: no operation
-    const auto* loaded = r ? sessions::payloadAs<shared::CodeLoadedReply>(r->result) : nullptr;
+    const auto* loaded = r ? sessions::payloadAs<cu1600::CodeLoadedReply>(r->result) : nullptr;
     CHECK(loaded && !loaded->started);
 }
 
@@ -218,7 +218,7 @@ TEST(c1600_2_ac25_same_sentence_menu_harness_preset) {
     const std::string sentence = menu ? menu->reason : std::string();
     CHECK(sentence.rfind(path + ": The file has no machine-code header", 0) == 0);
 
-    auto product = shared::makeHarnessProduct();
+    auto product = cu1600::makeHarnessProduct();
     std::string error;
     auto server = calcu::harness::Server::start(*product, {}, &error);
     CHECK(server != nullptr);
@@ -248,10 +248,10 @@ TEST(c1600_2_ac22_one_wav_one_image) {
     CHECK(f.start("PC-1500A"));
     const std::vector<std::uint8_t> wav = readBytes("tests/fixtures/tape/pc1500_tape.wav");
     const sessions::ReplyMessage r = f.listener.ask(q::kFileKind, Value::object({{"bytes", Value::Bytes(wav)}}));
-    const auto* k = sessions::payloadAs<shared::FileKindReply>(r.result);
+    const auto* k = sessions::payloadAs<cu1600::FileKindReply>(r.result);
     CHECK(k && k->kind == "basic-pc1500" && k->tapeFiles.size() == 1);
     const sessions::ReplyMessage plain = f.listener.ask(q::kFileKind, Value::object({{"bytes", Value::Bytes(kRtn4)}}));
-    const auto* p = sessions::payloadAs<shared::FileKindReply>(plain.result);
+    const auto* p = sessions::payloadAs<cu1600::FileKindReply>(plain.result);
     CHECK(p && p->kind == "headerless" && p->tapeFiles.empty());
 }
 
@@ -261,7 +261,7 @@ TEST(c1600_2_ac22_two_files_listed) {
     CHECK(f.start("PC-1500A"));
     const std::vector<std::uint8_t> two = doubledTape(readBytes("tests/fixtures/tape/pc1500_tape.wav"));
     const sessions::ReplyMessage r = f.listener.ask(q::kFileKind, Value::object({{"bytes", Value::Bytes(two)}}));
-    const auto* k = sessions::payloadAs<shared::FileKindReply>(r.result);
+    const auto* k = sessions::payloadAs<cu1600::FileKindReply>(r.result);
     CHECK(k && k->tapeFiles.size() == 2 && k->tapeFiles[0].rfind("TAPEFIX", 0) == 0);
 }
 
@@ -271,17 +271,17 @@ TEST(c1600_2_ac22_address_checked_as_typed) {
     CHECK(f.start("PC-1500A"));
     auto plan = [&](const char* address) {
         const sessions::ReplyMessage r = f.listener.ask(q::kPlanCode, with(file(kRtn4), "address", address));
-        const auto* p = sessions::payloadAs<shared::CodePlanReply>(r.result);
-        return p ? *p : shared::CodePlanReply{};
+        const auto* p = sessions::payloadAs<cu1600::CodePlanReply>(r.result);
+        return p ? *p : cu1600::CodePlanReply{};
     };
-    shared::CodePlanReply p = plan("");
+    cu1600::CodePlanReply p = plan("");
     CHECK(p.needsAddress && p.length == 4 && p.cpuNote.empty() && p.placeholder == "hex, e.g. &7C01");
     CHECK(plan("zz").refusal == "Not a hex address (&0000-&FFFF).");
     CHECK(!plan("&FFFE").refusal.empty());
     p = plan("&7C01");
     CHECK(p.refusal.empty() && !p.where.empty());
     const sessions::ReplyMessage r = f.run(c::kLoadCode, with(file(kRtn4), "address", "&7C01"));
-    const auto* loaded = sessions::payloadAs<shared::CodeLoadedReply>(r.result);
+    const auto* loaded = sessions::payloadAs<cu1600::CodeLoadedReply>(r.result);
     CHECK(r.done && loaded && loaded->summary == "Loaded 4 bytes at &7C01–&7C04" && loaded->callCommand == "CALL &7C01");
 
     CHECK(f.model("PC-1600"));
@@ -290,7 +290,7 @@ TEST(c1600_2_ac22_address_checked_as_typed) {
     p = plan("&C0C5");
     CHECK(p.refusal.empty());
     const sessions::ReplyMessage r2 = f.run(c::kLoadCode, with(file(kRtn4), "address", "&C0C5"));
-    const auto* l2 = sessions::payloadAs<shared::CodeLoadedReply>(r2.result);
+    const auto* l2 = sessions::payloadAs<cu1600::CodeLoadedReply>(r2.result);
     CHECK(r2.done && l2 && l2->summary == "Loaded 4 bytes at &C0C5–&C0C8 (S0)" && l2->callCommand == "CALL &C0C5");
     p = plan("&F800");   // into the work area: a warning, still loadable
     CHECK(p.refusal.empty() && p.where.find("work area") != std::string::npos);

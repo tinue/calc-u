@@ -16,7 +16,7 @@
 // without source is reached: one library step with a test (D-16), so it runs
 // in the gate's pieces and ends at a breakpoint, as before.
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 enum class StepKind { Instruction, In, Over, Out };
 
@@ -31,4 +31,4 @@ bool locate(const DapTargets& targets, const debug::SourceMap& map, int thread, 
 calcu::debugger::RunControl::Result step(calcu::debugger::RunControl& control, const DapTargets& targets,
                                          const debug::SourceMap& map, int thread, StepKind kind, bool line);
 
-} // namespace shared::dap
+} // namespace cu1600::dap

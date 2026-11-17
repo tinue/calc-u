@@ -5,7 +5,7 @@
 #include "Machine/SharpProductKinds.hpp"
 #include "app/PacingProfiles.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 using namespace calcu::machine;
 
@@ -20,7 +20,7 @@ calcu::startup::MachinePlan SharpProductMachines::builtInDefault(const ModelId& 
 }
 
 calcu::pacing::PacingProfile SharpProductMachines::pacingProfile(const ModelId& model) const {
-    return shared::pacingProfile(model);
+    return cu1600::pacingProfile(model);
 }
 
 int SharpProductMachines::soundRate(const ModelId&) const { return sharp::kSoundRate; }
@@ -46,4 +46,4 @@ void SharpProductMachines::addRoms(PeripheralRequest& r) const {
     r.roms.push_back({d->roms.front().fileName, *hostDriveRom_});
 }
 
-} // namespace shared
+} // namespace cu1600

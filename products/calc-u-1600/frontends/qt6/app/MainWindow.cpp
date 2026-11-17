@@ -87,7 +87,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 #ifdef Q_OS_WIN
     serialPorts = false;   // no host links on Windows (AC-37)
 #endif
-    m_shell = new calcu::qt6::Shell(*this, host(), product(), shared::settingsSpec(true, serialPorts));
+    m_shell = new calcu::qt6::Shell(*this, host(), product(), cu1600::settingsSpec(true, serialPorts));
     auto* layout = new QVBoxLayout(central);
     layout->setContentsMargins(6, 6, 6, 4);
     layout->setSpacing(4);
@@ -112,7 +112,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     // The pointer on the faceplate (AC-24, AC-43): the hit map in the art's
     // pixels, at the art's scale as shown.
-    m_shell->setFaceplate(m_faceplate, shared::faceplateHitMap(calcu::machine::ModelId{"PC-1500A"}),
+    m_shell->setFaceplate(m_faceplate, cu1600::faceplateHitMap(calcu::machine::ModelId{"PC-1500A"}),
                           [this] { return m_faceplate->artScale(); });
     // LIB-7's controls on the bar: the module slots and the cassette by the
     // family rule; the disk controls are the product's (D-29).
@@ -179,13 +179,13 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 }
 
 calcu::shell::ShellProduct MainWindow::product() {
-    calcu::shell::ShellProduct p = shared::shellProduct(APP_VERSION, APP_BUILD_ID, /*withHostFolders=*/true);
+    calcu::shell::ShellProduct p = cu1600::shellProduct(APP_VERSION, APP_BUILD_ID, /*withHostFolders=*/true);
     p.copyScreen = [this] { copyScreen(); };
     for (auto& item : p.items) {
-        if (item.id == shared::kItemLoadBasic) item.act = [this] { chooseProgram(false); };
-        else if (item.id == shared::kItemLoadCode) item.act = [this] { chooseProgram(true); };
-        else if (item.id == shared::kItemMountDirectory) item.act = [this] { mountHostDirectory(); };
-        else if (item.id == shared::kItemUnmountDirectory) item.act = [this] { unmountHostDirectory(); };
+        if (item.id == cu1600::kItemLoadBasic) item.act = [this] { chooseProgram(false); };
+        else if (item.id == cu1600::kItemLoadCode) item.act = [this] { chooseProgram(true); };
+        else if (item.id == cu1600::kItemMountDirectory) item.act = [this] { mountHostDirectory(); };
+        else if (item.id == cu1600::kItemUnmountDirectory) item.act = [this] { unmountHostDirectory(); };
     }
     return p;
 }
@@ -212,10 +212,10 @@ void MainWindow::followControlState() {
     if (!model.empty() && model != m_model) {
         m_model = model;
         m_faceplate->setModel(calcu::machine::ModelId{model});
-        m_shell->setFaceplate(m_faceplate, shared::faceplateHitMap(calcu::machine::ModelId{model}),
+        m_shell->setFaceplate(m_faceplate, cu1600::faceplateHitMap(calcu::machine::ModelId{model}),
                               [this] { return m_faceplate->artScale(); });
     }
-    const bool printer = calcu::shell::read::flag(productEntry(cs, shared::kCe158PrinterPanelEntry), "shown");
+    const bool printer = calcu::shell::read::flag(productEntry(cs, cu1600::kCe158PrinterPanelEntry), "shown");
     m_ce158Printer->setVisible(printer);
     m_disk->refresh();
     // Queued after the shell's own rebuild of the menus (it runs first).
@@ -229,10 +229,10 @@ void MainWindow::applyCopyLabel() {
     const QString copyName = QString::fromStdString(calcu::shell::names::item(calcu::shell::actions::kCopyScreen));
     if (QAction* copy = menuBar()->findChild<QAction*>(copyName))
         copy->setText(m_inspector->selectedOutputText().isEmpty() ? tr("Copy Screen") : tr("Copy Log Selection"));
-    const QString unmountName = QString::fromStdString(calcu::shell::names::item(shared::kItemUnmountDirectory));
+    const QString unmountName = QString::fromStdString(calcu::shell::names::item(cu1600::kItemUnmountDirectory));
     if (QAction* unmount = menuBar()->findChild<QAction*>(unmountName)) {
         const std::string dir = calcu::shell::read::text(
-            productEntry(host().value(calcu::control::kControlStateTopic), shared::kHostDriveFolderEntry), "folder");
+            productEntry(host().value(calcu::control::kControlStateTopic), cu1600::kHostDriveFolderEntry), "folder");
         unmount->setText(dir.empty() ? tr("Unmount") : tr("Unmount \"%1\"").arg(QDir(QString::fromStdString(dir)).dirName()));
         unmount->setToolTip(QString::fromStdString(dir));
     }
@@ -341,11 +341,11 @@ void MainWindow::mountHostDirectory() {
     if (dir.isEmpty()) return;
     host().send(calcu::shell::commands::kRememberFolder,
                 calcu::sessions::Value::object({{"kind", "host-drive"}, {"folder", dir.toStdString()}}));
-    m_shell->sendChecked(shared::commands::kMountHostDrive, calcu::sessions::Value::object({{"dir", dir.toStdString()}}));
+    m_shell->sendChecked(cu1600::commands::kMountHostDrive, calcu::sessions::Value::object({{"dir", dir.toStdString()}}));
 }
 
 void MainWindow::unmountHostDirectory() {
-    m_shell->sendChecked(shared::commands::kMountHostDrive, calcu::sessions::Value::object({{"dir", ""}}));
+    m_shell->sendChecked(cu1600::commands::kMountHostDrive, calcu::sessions::Value::object({{"dir", ""}}));
 }
 
 // File ▸ Load BASIC Program… / Load Machine Code…: the file dialog starts in
@@ -383,8 +383,8 @@ std::optional<calcu::sessions::Value::Object> MainWindow::programArgs(const QStr
     }
     // C1600-2 AC-16: a WAV with several files asks which one.
     const sessions::ReplyMessage kind = m_controller->ask(
-        shared::requests::kFileKind, sessions::Value::object({{"bytes", args.front().value}}));
-    const auto* k = sessions::payloadAs<shared::FileKindReply>(kind.result);
+        cu1600::requests::kFileKind, sessions::Value::object({{"bytes", args.front().value}}));
+    const auto* k = sessions::payloadAs<cu1600::FileKindReply>(kind.result);
     if (k && k->tapeFiles.size() > 1) {
         QStringList names;
         for (std::size_t i = 0; i < k->tapeFiles.size(); ++i)
@@ -403,7 +403,7 @@ void MainWindow::loadBasicProgram(const QString& name, const QByteArray& bytes, 
     const QString title = tr("Load BASIC Program");
     std::optional<calcu::sessions::Value::Object> args = programArgs(name, bytes, title, file);
     if (!args) return;
-    m_shell->sendChecked(shared::commands::kLoadBasic, calcu::sessions::Value(std::move(*args)));
+    m_shell->sendChecked(cu1600::commands::kLoadBasic, calcu::sessions::Value(std::move(*args)));
 }
 
 void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, std::optional<int> file) {
@@ -413,8 +413,8 @@ void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, s
     if (!args) return;
     // The one plan (C1600-2 AC-8): a refusal is the notice; headerless code
     // asks the address (AC-18).
-    const sessions::ReplyMessage planned = m_controller->ask(shared::requests::kPlanCode, sessions::Value(*args));
-    const auto* plan = sessions::payloadAs<shared::CodePlanReply>(planned.result);
+    const sessions::ReplyMessage planned = m_controller->ask(cu1600::requests::kPlanCode, sessions::Value(*args));
+    const auto* plan = sessions::payloadAs<cu1600::CodePlanReply>(planned.result);
     if (!planned.done || !plan) {
         QMessageBox::warning(this, title, QString::fromStdString(planned.reason));
         return;
@@ -428,9 +428,9 @@ void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, s
         QMessageBox::warning(this, title, name + QStringLiteral(": ") + QString::fromStdString(plan->refusal));
         return;
     }
-    m_controller->send(shared::commands::kLoadCode, sessions::Value(std::move(*args)),
+    m_controller->send(cu1600::commands::kLoadCode, sessions::Value(std::move(*args)),
                        [this, title](const sessions::ReplyMessage& r) {
-                           const auto* loaded = sessions::payloadAs<shared::CodeLoadedReply>(r.result);
+                           const auto* loaded = sessions::payloadAs<cu1600::CodeLoadedReply>(r.result);
                            if (!r.done || !loaded) {
                                QMessageBox::warning(this, title, QString::fromStdString(r.reason));
                                return;
@@ -439,7 +439,7 @@ void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, s
                        });
 }
 
-void MainWindow::showMachineCodeLoaded(const shared::CodeLoadedReply& loaded) {
+void MainWindow::showMachineCodeLoaded(const cu1600::CodeLoadedReply& loaded) {
     QString html = QStringLiteral("<p>%1.</p>").arg(QString::fromStdString(loaded.summary).toHtmlEscaped());
     html += QStringLiteral("<p>%1<br>").arg(tr("Keep BASIC from overwriting it:").toHtmlEscaped());
     if (!loaded.newCommand.empty())
@@ -625,9 +625,9 @@ void MainWindow::onProgramOpened(const QString& name, const QByteArray& bytes, c
     // C1600-2 AC-16: a WAV with several files asks which one; the file
     // chosen goes to the flow of its own kind (LIB-13 AC-18).
     const sessions::ReplyMessage r = m_controller->ask(
-        shared::requests::kFileKind,
+        cu1600::requests::kFileKind,
         sessions::Value::object({{"bytes", sessions::Value(sessions::Value::Bytes(bytes.begin(), bytes.end()))}}));
-    const auto* k = sessions::payloadAs<shared::FileKindReply>(r.result);
+    const auto* k = sessions::payloadAs<cu1600::FileKindReply>(r.result);
     if (k && k->tapeFiles.size() > 1) {
         QStringList names;
         for (std::size_t i = 0; i < k->tapeFiles.size(); ++i)

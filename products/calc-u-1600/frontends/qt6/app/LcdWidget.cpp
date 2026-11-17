@@ -22,10 +22,10 @@ const QFont& fixedWidthFont() {
     return font;
 }
 
-// Layout constants and colours: Shared/LcdLayout.hpp.
-using namespace shared::lcd;
+// Layout constants and colours: app/LcdLayout.hpp.
+using namespace cu1600::lcd;
 
-QColor toQColor(shared::Rgb c) { return QColor(c.r, c.g, c.b); }
+QColor toQColor(cu1600::Rgb c) { return QColor(c.r, c.g, c.b); }
 const QColor kP15Background = toQColor(kP15BackgroundRgb);
 const QColor kP16Background = toQColor(kP16BackgroundRgb);
 const QColor kInk = toQColor(kInkRgb);

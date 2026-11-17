@@ -63,7 +63,7 @@ inline bool loadPC1600Roms(PC1600Machine& m) {
 }
 
 // ROMs loaded, ALL RESET, then the boot run to the prompt -- the same
-// sequence the GUI's Reset All and the preset loader use. Attach modules
+// sequence the GUI's Cold boot and the preset loader use. Attach modules
 // or a plotter before calling, so the boot ROM sees them.
 inline bool bootPC1600(PC1600Machine& m) {
     if (!loadPC1600Roms(m)) return false;

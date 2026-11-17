@@ -1,6 +1,6 @@
 import XCTest
 
-/// Regression tests for loading a state file via the Preset button.
+/// Regression tests for loading a preset via the Preset button.
 ///
 /// This test drives the iOS system document picker, which is inherently brittle:
 /// navigation element labels ("Durchsuchen", "Auf meinem iPhone") are

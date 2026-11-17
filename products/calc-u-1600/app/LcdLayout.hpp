@@ -16,9 +16,9 @@ struct DisplayOutput;
 // PC-1500/1500A and PC-1600 LCDs, as fractions of the panel, and the panel
 // colours. Hand-tuned against the real displays; the Qt LcdWidget paints
 // with them, a web renderer uses the same numbers.
-namespace shared::lcd {
+namespace cu1600::lcd {
 
-using shared::Rgb;
+using cu1600::Rgb;
 
 // ── PC-1500/1500A layout constants -- hand-tuned to match the real
 // device's indicator-bar/dot-matrix proportions ───────────────────────────
@@ -113,4 +113,4 @@ inline constexpr Rgb kP15BackgroundRgb{150, 158, 142};
 inline constexpr Rgb kP16BackgroundRgb{156, 168, 149};
 inline constexpr Rgb kInkRgb{0x20, 0x28, 0x18};
 
-} // namespace shared::lcd
+} // namespace cu1600::lcd

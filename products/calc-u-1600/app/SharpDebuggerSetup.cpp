@@ -3,7 +3,7 @@
 #include "app/SharpSymbolReaders.hpp"
 #include "app/SharpTraceRecorder.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 calcu::debugger::DebuggerSetup sharpDebuggerSetup() {
     calcu::debugger::DebuggerSetup d;
@@ -15,4 +15,4 @@ calcu::debugger::DebuggerSetup sharpDebuggerSetup() {
     return d;
 }
 
-} // namespace shared
+} // namespace cu1600

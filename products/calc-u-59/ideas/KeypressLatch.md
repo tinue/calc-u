@@ -65,7 +65,7 @@ uint32_t m_latchSteps = 0;           // safety budget counter
 ### Behaviour
 
 - **Freeze / unfreeze.** `TI59Machine::setKeyLatchEnabled(bool)`; the Swift
-  side calls it from `freeze()` / `unfreeze()`. Disabling latch mode must
+  side calls it from `freeze(from:)` / `resume()`. Disabling latch mode must
   **not** cancel an armed latch — resume is exactly when playback happens.
 - **Press while enabled**: apply `pressKey` normally (bit set) and record
   `{bit, slot}`; arm the latch.
@@ -139,7 +139,7 @@ uint32_t m_latchSteps = 0;           // safety budget counter
    TI59/TI58; 58C TODO), hook in `step()`, latch-aware `pressKey`/`releaseKey`.
 2. `Core/TI59Machine.hpp/.cpp`: `setKeyLatchEnabled(bool)` under `m_keyMutex`.
 3. `Bridge/TI59MachineWrapper.h/.mm`: `- (void)setKeyLatchEnabled:(BOOL)`.
-4. `App/EmulatorViewModel.swift`: call it from `freeze()` / `unfreeze()`
+4. `App/EmulatorViewModel.swift`: call it from `freeze(from:)` / `resume()`
    (both freeze owners); optional UI badge "key latched" while armed.
 5. TI-58C: capture a keypress trace, fill in the accept address.
 6. Verify: freeze in idle → tap "6" → Step repeatedly and watch arming

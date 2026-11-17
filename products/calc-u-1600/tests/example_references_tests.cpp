@@ -178,7 +178,7 @@ std::vector<std::string> compare(const std::string& base, const fs::path& copy, 
     const Excepted none{false, -1, false, false, ""};
     const Excepted& e = ex == kExcepted.end() ? none : ex->second;
 
-    auto product = shared::makeHarnessProduct();
+    auto product = cu1600::makeHarnessProduct();
     std::string error;
     auto server = Server::start(*product, {}, &error);
     if (!server) return {"cannot start: " + error};

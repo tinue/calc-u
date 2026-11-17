@@ -16,7 +16,7 @@ using sessionfixture::romsPresent;
 
 TEST(lib14_ac34_shell_product_complete) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    const calcu::shell::ShellProduct p = shared::shellProduct("1.0", "test", true);
+    const calcu::shell::ShellProduct p = cu1600::shellProduct("1.0", "test", true);
     SessionFixture f;
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         CHECK(model == std::string("PC-1500") ? f.start(model) : f.model(model));
@@ -31,11 +31,11 @@ TEST(lib14_ac34_shell_product_complete) {
     std::vector<std::string> items;
     for (const auto& i : p.items) items.push_back(i.label);
     CHECK(items == (std::vector<std::string>{"Load BASIC Program…", "Load Machine Code…", "Mount Directory…", "Unmount"}));
-    CHECK(shared::shellProduct("1.0", "", false).items.size() == 2);   // AC-35: no host folders on the Web
+    CHECK(cu1600::shellProduct("1.0", "", false).items.size() == 2);   // AC-35: no host folders on the Web
 }
 
 TEST(lib14_ac39_help_address_and_about_texts) {
-    const calcu::shell::ShellProduct p = shared::shellProduct("0.9.0", "abc123", true);
+    const calcu::shell::ShellProduct p = cu1600::shellProduct("0.9.0", "abc123", true);
     CHECK_EQ(p.helpUrl, std::string("https://calc-u.org/1600/"));
     const calcu::shell::AboutModel a = calcu::shell::about(p);
     CHECK_EQ(a.name, std::string("Calc-U-1600"));
@@ -50,7 +50,7 @@ TEST(lib14_ac39_help_address_and_about_texts) {
 // exactly {group, id, label, entry}, and no `choices` in the settings spec.
 TEST(lib14_calc_u_1600_forms_unchanged) {
     using calcu::sessions::Value;
-    const Value v = calcu::shell::toValue(shared::shellProduct("1.0", "", false));
+    const Value v = calcu::shell::toValue(cu1600::shellProduct("1.0", "", false));
     std::vector<std::string> keys;
     for (const auto& m : *v.members()) keys.push_back(m.key);
     CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "variantLabels", "presetFilter",
@@ -62,7 +62,7 @@ TEST(lib14_calc_u_1600_forms_unchanged) {
         CHECK(fields == (std::vector<std::string>{"group", "id", "label", "entry"}));
     }
     for (bool qt6 : {false, true}) {
-        const Value spec = calcu::shell::toValue(shared::settingsSpec(qt6, true));
+        const Value spec = calcu::shell::toValue(cu1600::settingsSpec(qt6, true));
         for (const Value& s : *spec.elements())
             for (const Value& r : *s.find("rows")->elements()) {
                 std::vector<std::string> fields;

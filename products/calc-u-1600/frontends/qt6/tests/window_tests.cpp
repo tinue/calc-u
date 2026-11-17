@@ -160,7 +160,7 @@ TEST(lib14_ac34_qt_menus_in_family_order) {
     CHECK(checkList("ROM Revision", labels(f.find<QMenu>(names::item("variants-model"))), {"A01", "A03", "A04"}));
     CHECK(checkList("Peripherals", labels(f.find<QMenu>(names::item("peripherals"))), {"CE-150", "-", "CE-158"}));
     // Mount Directory… is the PC-1600's (its product entry); Resume while paused.
-    CHECK(f.action(shared::kItemMountDirectory) && !f.action(shared::kItemMountDirectory)->isEnabled());
+    CHECK(f.action(cu1600::kItemMountDirectory) && !f.action(cu1600::kItemMountDirectory)->isEnabled());
     CHECK(f.action("resume") && !f.action("resume")->isEnabled());
     // AC-6: the platform's places.
     CHECK(f.action("settings")->menuRole() == QAction::PreferencesRole);
@@ -170,8 +170,8 @@ TEST(lib14_ac34_qt_menus_in_family_order) {
     f.command("model", Value::object({{"name", "PC-1600"}}));
     f.run(100);
     CHECK(checkList("PC-1600 submenus", machineSubmenus(f), {"Model ▸", "ROM Version ▸", "Peripherals ▸"}));
-    CHECK(f.action(shared::kItemMountDirectory)->isEnabled());
-    CHECK(!f.action(shared::kItemUnmountDirectory)->isEnabled());
+    CHECK(f.action(cu1600::kItemMountDirectory)->isEnabled());
+    CHECK(!f.action(cu1600::kItemUnmountDirectory)->isEnabled());
     f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-1600P"}}));
     f.run(100);
     CHECK(checkList("PC-1600 + CE-1600P", machineSubmenus(f),
@@ -262,7 +262,7 @@ TEST(lib14_ac36_bar_pc1600) {
     auto* disk = f.find<QWidget>("bar-disk");
     auto* picker = f.find<QComboBox>("media-picker-floppy");
     CHECK(disk && disk->isVisible() && picker && !picker->isEnabled());
-    CHECK(picker && picker->toolTip().toStdString() == shared::kDiskInCe1600p);
+    CHECK(picker && picker->toolTip().toStdString() == cu1600::kDiskInCe1600p);
     // The CE-1600P: the disk controls usable, the tape's with its cassette.
     f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-1600P"}}));
     CHECK(f.waitFor([&] { return f.find<QComboBox>("media-picker-floppy")->isEnabled(); }, 5000));
@@ -460,7 +460,7 @@ TEST(lib14_ac24_key_under_pointer_pc1500_pc1600) {
         CHECK(f.waitFor([&] { return held(f).empty(); }, 1000));
         // A point in the gap below a key, within the distance: that key
         // (ledger 1600-37).
-        const calcu::shell::HitMap map = shared::faceplateHitMap(calcu::machine::ModelId{model});
+        const calcu::shell::HitMap map = cu1600::faceplateHitMap(calcu::machine::ModelId{model});
         const double s = face->artScale();
         for (const auto& [id, r] : map.keys) {
             if (id.value != "enter") continue;
@@ -487,7 +487,7 @@ TEST(lib14_ac43_display_hold_full_speed) {
 TEST(lib14_ac44_scenario_through_attach) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
-    auto product = shared::makeHarnessProduct();
+    auto product = cu1600::makeHarnessProduct();
     CHECK(f.w().host().openAttach(*product, 0,
                                   f.w().controller()->app().libraryParts())
               .empty());
@@ -553,8 +553,8 @@ TEST(lib14_ac19_roms_missing_in_window) {
 TEST(c1600_2_ac15_file_items_and_filters) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
-    f.action(shared::kItemLoadBasic)->trigger();
-    f.action(shared::kItemLoadCode)->trigger();
+    f.action(cu1600::kItemLoadBasic)->trigger();
+    f.action(cu1600::kItemLoadCode)->trigger();
     CHECK(f.fileAsks.size() == 2);
     if (f.fileAsks.size() != 2) return;
     CHECK(f.fileAsks[0] == "Load BASIC Program" && f.fileFilters[0].startsWith(QStringLiteral("BASIC Programs (*.bas *.bbin *.wav)")));
@@ -562,10 +562,10 @@ TEST(c1600_2_ac15_file_items_and_filters) {
     // The start folder of [folders]: the one the dialog of its kind last used.
     f.fileAnswer = QString::fromStdString(std::string(CALCU1600_DIR) + "/examples/basic/hanoi.bas");
     answerNextModal();
-    f.action(shared::kItemLoadBasic)->trigger();
+    f.action(cu1600::kItemLoadBasic)->trigger();
     f.run(300);
     f.fileAnswer.clear();
-    f.action(shared::kItemLoadBasic)->trigger();
+    f.action(cu1600::kItemLoadBasic)->trigger();
     CHECK(f.fileStarts.back().endsWith(QStringLiteral("examples/basic")));
 }
 
@@ -689,7 +689,7 @@ TEST(c1600_2_ac16_qt_wav_with_several_programs_asks_which_one) {
         if (auto* box = m ? m->findChild<QComboBox*>() : nullptr) items = box->count();
         else if (auto* list = m ? m->findChild<QAbstractItemView*>() : nullptr) items = list->model()->rowCount();
     });
-    f.action(shared::kItemLoadBasic)->trigger();
+    f.action(cu1600::kItemLoadBasic)->trigger();
     f.run(100);
     CHECK_EQ(items, 2);
 }
@@ -711,7 +711,7 @@ TEST(c1600_2_ac18_qt_headerless_code_asks_the_address) {
         title = m->windowTitle();
         addressField = m->findChild<QLineEdit*>() != nullptr;
     });
-    f.action(shared::kItemLoadCode)->trigger();
+    f.action(cu1600::kItemLoadCode)->trigger();
     f.run(100);
     CHECK(addressField);
     if (!addressField) std::fprintf(stderr, "  dialog: %s\n", qPrintable(title));

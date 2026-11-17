@@ -2,7 +2,7 @@
 
 #include "Debug/SharpDebugging.hpp"
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 bool locate(const DapTargets& targets, const debug::SourceMap& map, int thread, debug::SourceLocation* out) {
     if (!targets.valid()) return false;
@@ -35,4 +35,4 @@ calcu::debugger::RunControl::Result step(calcu::debugger::RunControl& control, c
     return control.step(calcu::debugger::kCpu, kLineStepLimit, target, lib, 0, std::move(sameLine));
 }
 
-} // namespace shared::dap
+} // namespace cu1600::dap

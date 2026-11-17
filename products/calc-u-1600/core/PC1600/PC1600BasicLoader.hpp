@@ -20,7 +20,7 @@ class LoaderMemory;
 // It does NOT type anything and never resets the machine or changes MODE
 // or TITLE: this is LOAD semantics, not NEW+type. The target is the program
 // area TITLE (F1D5H) selects -- S0, or the S1 / S2 program module -- and the
-// caller prepares the machine first (memory cards, `INIT`, `NEW`, `TITLE`,
+// caller prepares the machine first (memory modules, `INIT`, `NEW`, `TITLE`,
 // mode) exactly as on real hardware.
 //
 // What it does, mirroring the ROM's own LOAD

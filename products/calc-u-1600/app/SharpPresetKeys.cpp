@@ -22,7 +22,7 @@
 #include "sessions/LibraryTopics.hpp"
 #include "typing/Awaitable.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace {
 
@@ -475,4 +475,4 @@ void checkSharpHeader(const calcu::presets::LoadPlan& plan, ReadContext& ctx) {
     }
 }
 
-} // namespace shared
+} // namespace cu1600

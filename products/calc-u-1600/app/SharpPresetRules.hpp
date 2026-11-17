@@ -14,7 +14,7 @@
 // display read with the ROM's font (AC-48, AC-67); the markers of preset.md
 // §7; the product's keywords (C1600-4, app/SharpPresetKeys).
 
-namespace shared {
+namespace cu1600 {
 
 class SharpModelRules final : public calcu::presets::ModelRules {
 public:
@@ -51,4 +51,4 @@ private:
 // without the indicators, at the real display's size.
 std::vector<std::uint8_t> screenPng(const calcu::machine::DisplayOutput&, bool pc1600);
 
-} // namespace shared
+} // namespace cu1600

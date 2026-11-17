@@ -12,8 +12,8 @@
 // settings file that is never read or written (LIB-9 AC-18), so a test
 // touches nothing of the user's. Not copyable: Settings holds the file.
 struct TestSettings {
-    calcu::settings::SettingsFile file = calcu::settings::SettingsFile::defaultsOnly(shared::settingsDecl());
-    shared::Settings settings{file};
+    calcu::settings::SettingsFile file = calcu::settings::SettingsFile::defaultsOnly(cu1600::settingsDecl());
+    cu1600::Settings settings{file};
 
     TestSettings() = default;
     TestSettings(const TestSettings&) = delete;

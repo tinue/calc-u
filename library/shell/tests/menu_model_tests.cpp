@@ -324,22 +324,22 @@ TEST(more_follows_availability) {   // M16
 
 TEST(media_place_item_only_with_its_media_place) {   // M17 (LIB-4 AC-12)
     auto p = st::product();
-    ProductItem fit{MenuGroup::FileMedia, "fit-card", "Fit Card…", "", {}};
+    ProductItem fit{MenuGroup::FileMedia, "arm-card", "Arm Card…", "", {}};
     fit.mediaPlace = "card";
     p.items.push_back(fit);
     // Model-A lists the media place `card`: the item, enabled.
     auto ms = menus(st::inputs(), p, kQt);
-    CHECK(findItem(ms, "fit-card") != nullptr);
-    CHECK(findItem(ms, "fit-card")->enabled);
+    CHECK(findItem(ms, "arm-card") != nullptr);
+    CHECK(findItem(ms, "arm-card")->enabled);
     // Its `insert` not available: disabled, with the reason.
     auto cs = st::controlState();
     cs.mediaPlaces[0].insert = st::unavailable("A card passes.");
     ms = menus(st::inputs(cs.toValue()), p, kQt);
-    CHECK(!findItem(ms, "fit-card")->enabled);
-    CHECK_EQ(findItem(ms, "fit-card")->reason, std::string("A card passes."));
+    CHECK(!findItem(ms, "arm-card")->enabled);
+    CHECK_EQ(findItem(ms, "arm-card")->reason, std::string("A card passes."));
     // Model-B lists none: no item.
     ms = menus(st::inputs(st::controlValue("Model-B")), p, kQt);
-    CHECK(findItem(ms, "fit-card") == nullptr);
+    CHECK(findItem(ms, "arm-card") == nullptr);
     // checkShellProduct names a media place that no model lists.
     CHECK(checkShellProduct(p, std::vector<Value>{st::controlValue("Model-A"), st::controlValue("Model-B")}).empty());
     p.items.back().mediaPlace = "tape";

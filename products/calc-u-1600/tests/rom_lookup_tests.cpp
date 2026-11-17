@@ -99,19 +99,19 @@ struct BundleCopy {
 struct Session {
     TestSettings testSettings;
     fs::path home = fs::temp_directory_path() / "calcu1600-rom-lookup-home";
-    shared::AppPaths paths;
+    cu1600::AppPaths paths;
     calcu::pacing::WallTime now{0};
-    calcu::sessions::ProductSession<shared::SharpAppPart> app;
-    shared::SharpAppPart& session;
+    calcu::sessions::ProductSession<cu1600::SharpAppPart> app;
+    cu1600::SharpAppPart& session;
     calcu::sessions::Listener host;
     explicit Session(const fs::path& bundle)
-        : paths(testSettings.settings, testHostDirs(home.generic_string()), shared::BundleDirs{bundle.generic_string(), {}}),
-          app(shared::makeSharpSession(testSettings.settings, paths, options())),
+        : paths(testSettings.settings, testHostDirs(home.generic_string()), cu1600::BundleDirs{bundle.generic_string(), {}}),
+          app(cu1600::makeSharpSession(testSettings.settings, paths, options())),
           session(*app.part) {
         host.listen(*app.session, calcu::sessions::HostServices{{calcu::sessions::HostService::FolderPicker}});
     }
-    shared::SharpSessionOptions options() {
-        shared::SharpSessionOptions o;
+    cu1600::SharpSessionOptions options() {
+        cu1600::SharpSessionOptions o;
         o.clock = [this] { return now; };
         return o;
     }
@@ -130,7 +130,7 @@ struct Session {
     bool switchModel(Model m) {
         if (!session.hasLiveMachine()) {
             testSettings.settings.setStartupModelPreference(m.value.c_str());
-            return run(shared::commands::kStart);
+            return run(cu1600::commands::kStart);
         }
         return run(calcu::startup::kModelCommand, calcu::sessions::Value::object({{"name", m.value.c_str()}}));
     }
@@ -338,10 +338,10 @@ TEST(lib12_ac13_no_rom_read_during_session) {
     CHECK(s.switchModel(calcu::machine::ModelId{"PC-1600"}));
     CHECK(s.run(calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", "Old"}})));
     CHECK(s.session.machine()->variant() && s.session.machine()->variant()->value == "Old");
-    CHECK(s.run(shared::commands::kCE1600PRom, calcu::sessions::Value::object({{"version", "old"}})));
+    CHECK(s.run(cu1600::commands::kCE1600PRom, calcu::sessions::Value::object({{"version", "old"}})));
     CHECK(attach("printer", "CE-1600P"));
     CHECK(s.session.ce1600pAttached());
-    CHECK(s.run(shared::commands::kCE1600PRom, calcu::sessions::Value::object({{"version", "new"}})));
+    CHECK(s.run(cu1600::commands::kCE1600PRom, calcu::sessions::Value::object({{"version", "new"}})));
     CHECK(s.run(calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", "New"}})));
     CHECK(s.session.hasLiveMachine());
     CHECK(s.missing() == nullptr);

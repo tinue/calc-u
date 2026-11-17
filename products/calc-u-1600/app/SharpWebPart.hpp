@@ -12,7 +12,7 @@
 #include "sessions/Payload.hpp"
 #include "sessions/SessionPart.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 // ── SharpWebPart: what only Calc-U-1600's Web page asks for ─────────────
 //
@@ -51,4 +51,4 @@ namespace topics {
 inline const calcu::sessions::TopicName kWebPrinter{"c1600.printer"};
 } // namespace topics
 
-} // namespace shared
+} // namespace cu1600

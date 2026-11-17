@@ -45,8 +45,8 @@ public:
     ~MachineController() override;
 
     calcu::qt6::SessionHost& host() { return m_session->host(); }
-    shared::SharpAppPart& app() { return m_session->part(); }
-    const shared::SharpAppPart& app() const { return m_session->part(); }
+    cu1600::SharpAppPart& app() { return m_session->part(); }
+    const cu1600::SharpAppPart& app() const { return m_session->part(); }
     calcu::sessions::AppSession& session() { return m_session->session(); }
 
     // The start (LIB-18): the host's timer, then `start`. A missing ROM file
@@ -69,7 +69,7 @@ public:
     bool busy() const;   // the busy topic: an operation runs
     // The sound messages go to `sink` from now on; the platform's audio
     // backend is started once now (its first start can block).
-    void attachAudio(shared::AudioSink& sink);
+    void attachAudio(cu1600::AudioSink& sink);
 
     // ---- Keys and typing: the library's typing part (LIB-5) ----
     void pressKey(const std::string& name);
@@ -95,7 +95,7 @@ public:
     bool traceActive() const;     // LIB-10's `trace` topic
     bool machinePaused() const;   // LIB-10's `run-state` topic
     std::vector<std::uint8_t> drainCE158PrinterOutput() { return app().drainCE158PrinterOutput(); }
-    shared::LampsPayload lamps() const;   // the tape counter, the floppy lamp
+    cu1600::LampsPayload lamps() const;   // the tape counter, the floppy lamp
     const calcu::media::MediaState* media() const;
     void refreshSerialLinkDirectory() { app().refreshSerialLinkDirectory(); }
     QString serialLinkStatus() const { return QString::fromStdString(app().serialLinkStatus()); }
@@ -128,10 +128,10 @@ private:
 
     // The session (with LIB-14's SettingsPart) and its host; ended first in
     // the destructor, while the sound feed is still there.
-    std::unique_ptr<calcu::qt6::ProductHost<shared::SharpAppPart>> m_session;
+    std::unique_ptr<calcu::qt6::ProductHost<cu1600::SharpAppPart>> m_session;
     // Declared after the session so it goes first on destruction.
     std::unique_ptr<DapSocket> m_dapSocket;
-    std::unique_ptr<shared::SoundFeed> m_sound;
+    std::unique_ptr<cu1600::SoundFeed> m_sound;
     bool m_busy = false;
     std::uint64_t m_serialMoves = 0;
     std::uint64_t m_calls = 0;

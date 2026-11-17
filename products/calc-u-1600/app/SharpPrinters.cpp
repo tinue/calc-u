@@ -3,7 +3,7 @@
 #include "Connector/PlotterPaperOutput.hpp"
 #include "Machine/SharpCatalogue.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 std::vector<calcu::paper::PrinterPaper> sharpPrinterPapers() {
     return {
@@ -12,4 +12,4 @@ std::vector<calcu::paper::PrinterPaper> sharpPrinterPapers() {
     };
 }
 
-} // namespace shared
+} // namespace cu1600

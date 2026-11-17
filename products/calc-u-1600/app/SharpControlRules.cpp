@@ -7,7 +7,7 @@
 #include "sessions/Payload.hpp"
 #include "sessions/Value.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace {
 
@@ -67,4 +67,4 @@ void SharpControlRules::productEntries(const Machine& m, std::vector<calcu::cont
 
 std::vector<const calcu::control::ControlRules*> sharpControlSetup(const SharpControlRules& rules) { return {&rules}; }
 
-} // namespace shared
+} // namespace cu1600

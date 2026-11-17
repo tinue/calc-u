@@ -15,7 +15,7 @@
 // and the LCD's layout come from the tables Qt6 draws with (app/KeyLayout,
 // app/LcdLayout; D-31: `c1600.faceplate-map`).
 
-namespace shared {
+namespace cu1600 {
 
 // The ids of the product's items (object names `item-<id>`).
 inline constexpr const char* kItemLoadBasic = "load-basic-program";
@@ -53,4 +53,4 @@ inline constexpr const char* kSavedMediaNote =
 // settingsSpec().
 calcu::sessions::Value faceplateMapValue(const calcu::machine::ModelId&);
 
-} // namespace shared
+} // namespace cu1600

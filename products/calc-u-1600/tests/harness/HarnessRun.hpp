@@ -22,7 +22,7 @@ inline bool romsPresent() {
 }
 
 struct Run {
-    std::unique_ptr<calcu::harness::HarnessProduct> product = shared::makeHarnessProduct();
+    std::unique_ptr<calcu::harness::HarnessProduct> product = cu1600::makeHarnessProduct();
     std::unique_ptr<calcu::harness::Server> server;
     std::string error;
     explicit Run(calcu::harness::RunOptions o = {}) {

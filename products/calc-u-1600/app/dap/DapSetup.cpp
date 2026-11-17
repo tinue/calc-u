@@ -31,7 +31,7 @@
 #include "startup/MachineControl.hpp"
 #include "typing/TypingPart.hpp"
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 using calcu::sessions::OperationContext;
 using calcu::sessions::OperationResult;
@@ -384,4 +384,4 @@ Task<bool> DapSession::buildAndLoad(OperationContext& op, Value d, bool inSetup,
     co_return true;
 }
 
-} // namespace shared::dap
+} // namespace cu1600::dap

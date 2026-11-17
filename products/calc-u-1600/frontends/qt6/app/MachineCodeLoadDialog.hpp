@@ -21,7 +21,7 @@ class MachineCodeLoadDialog : public QDialog {
 public:
     using Ask = std::function<calcu::sessions::ReplyMessage(const calcu::sessions::RequestName&, calcu::sessions::Value)>;
     MachineCodeLoadDialog(QWidget* parent, Ask ask, calcu::sessions::Value args,
-                          const shared::CodePlanReply& plan);
+                          const cu1600::CodePlanReply& plan);
 
     // The address as the user typed it.
     QString address() const;

@@ -11,9 +11,9 @@
 // Z-80, gap records; both CPUs of a PC-1600 in one file. The button's file is
 // TRACE.bin (AC-23). tools/read_trace.py reads the files unchanged.
 
-namespace shared {
+namespace cu1600 {
 
 // nullptr for a machine without the kind.
 std::unique_ptr<calcu::debugger::TraceRecorder> makeSharpTraceRecorder(calcu::machine::Machine&);
 
-} // namespace shared
+} // namespace cu1600

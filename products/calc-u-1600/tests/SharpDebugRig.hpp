@@ -20,7 +20,7 @@
 namespace sharpdebugtest {
 
 struct Rig {
-    calcu::debugger::DebuggerPart debugger{shared::sharpDebuggerSetup()};
+    calcu::debugger::DebuggerPart debugger{cu1600::sharpDebuggerSetup()};
     std::unique_ptr<calcu::sessions::AppSession> session;
     calcu::machine::Machine* machine = nullptr;
 

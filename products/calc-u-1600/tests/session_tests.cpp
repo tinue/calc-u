@@ -24,8 +24,8 @@ namespace {
 
 namespace fs = std::filesystem;
 namespace sessions = calcu::sessions;
-namespace c = shared::commands;
-namespace t = shared::topics;
+namespace c = cu1600::commands;
+namespace t = cu1600::topics;
 using sessionfixture::SessionFixture;
 using sessionfixture::romsPresent;
 using sessions::Value;
@@ -256,13 +256,13 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     CHECK(f.part().tapeInterfaceAttached());
     CHECK(f.run(calcu::media::kStartNewCommand, Value::object({{"place", "tape"}, {"template", f.entry("tape", "Empty")}, {"name", "ac38"}})).done);
     f.call();
-    CHECK(f.state<shared::LampsPayload>(t::kLamps)->tape.mode == TapeDeck::Mode::Record);
+    CHECK(f.state<cu1600::LampsPayload>(t::kLamps)->tape.mode == TapeDeck::Mode::Record);
 
     // serialLinksRelinked -> c1600.serial-links.
-    const auto moves = f.state<shared::SerialLinksPayload>(t::kSerialLinks)->moves;
+    const auto moves = f.state<cu1600::SerialLinksPayload>(t::kSerialLinks)->moves;
     f.part().refreshSerialLinkDirectory();
     f.call();
-    CHECK(f.state<shared::SerialLinksPayload>(t::kSerialLinks)->moves == moves + 1);
+    CHECK(f.state<cu1600::SerialLinksPayload>(t::kSerialLinks)->moves == moves + 1);
 
     // hostDirectories -> the place host-drive available or not (LIB-4 AC-18).
     const calcu::machine::PlacePath hostDrive{{calcu::machine::PlaceName{"host-drive"}}};

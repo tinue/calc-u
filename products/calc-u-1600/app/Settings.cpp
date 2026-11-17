@@ -2,7 +2,7 @@
 
 #include "settings/Startup.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace cs = calcu::settings;
 
@@ -80,4 +80,4 @@ calcu::machine::ModelId Settings::startupModel() const {
     return sharpModel(cs::startupModel(m_file)).value_or(calcu::machine::ModelId{"PC-1500A"});
 }
 
-} // namespace shared
+} // namespace cu1600

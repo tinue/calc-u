@@ -23,7 +23,7 @@ namespace {
 
 using namespace sessionfixture;
 using sessions::Value;
-namespace c = shared::commands;
+namespace c = cu1600::commands;
 
 const calcu::paper::Paper* paperOf(SessionFixture& f, const std::string& owner) {
     for (const auto& [name, paper] : f.part().paperPart().papers())

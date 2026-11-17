@@ -1,5 +1,5 @@
 // Golden generator: dumps the Swift originals of the
-// register-line helpers and BCD encoders so the C++ ports in Shared/ can be
+// register-line helpers and BCD encoders so the C++ ports in app/ can be
 // checked against them. See tools/goldens/README.md.
 import Foundation
 

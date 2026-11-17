@@ -7,7 +7,7 @@ struct KeyboardView: View {
     @Environment(EmulatorViewModel.self) var viewModel
 
     // Canvas geometry (2064×4075 base image, display/card overlays, keyboard
-    // section) lives in Shared/KeyboardLayout.hpp; rects are normalized.
+    // section) lives in app/KeyboardLayout.hpp; rects are normalized.
     private static let imageAspect: CGFloat = TISharedTables.canvasAspect
     private static let displayRect = TISharedTables.displayRect
     private static let cardRect = TISharedTables.cardRect

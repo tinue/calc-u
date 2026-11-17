@@ -12,7 +12,7 @@
 #include "typing/Awaitable.hpp"
 #include "typing/TypingSupport.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 using calcu::sessions::CommandOutcome;
 using calcu::sessions::Done;
@@ -305,4 +305,4 @@ calcu::sessions::Task<OperationResult> SharpLoaderPart::startOperation(SharpLoad
     co_return OperationResult{true, {}, loaded};
 }
 
-} // namespace shared
+} // namespace cu1600

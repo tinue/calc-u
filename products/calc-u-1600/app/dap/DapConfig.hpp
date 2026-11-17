@@ -17,7 +17,7 @@ class PresetBundle;
 // core/Debug/AttachKeys.hpp. From frontends/qt6/app/debug/DapSession.cpp of
 // 0.8.1, on calcu::sessions::Value instead of QJsonObject.
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 // The configuration in force: `args` alone, or with `project` that preset's
 // `debug:` block as the base: the keys of `args` win, `program` is merged key
@@ -38,4 +38,4 @@ bool numberOf(const Value& v, std::uint32_t max, std::uint32_t* out);
 // The qualifier `bank`, `me`, `pu`, `pv` of `o` (-1 for a missing one).
 debug::BankKey bankKeyOf(const Value& o);
 
-} // namespace shared::dap
+} // namespace cu1600::dap

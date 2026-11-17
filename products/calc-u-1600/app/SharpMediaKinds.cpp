@@ -17,7 +17,7 @@
 #include "files/Files.hpp"
 #include "formats/Yaml.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace media = calcu::media;
 using media::FileOut;
@@ -354,4 +354,4 @@ media::ModuleListing moduleListing() {
     return l;
 }
 
-} // namespace shared
+} // namespace cu1600

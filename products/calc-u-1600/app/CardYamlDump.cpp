@@ -7,7 +7,7 @@
 #include "app/SharpAppPart.hpp"
 #include "app/Text.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 std::vector<std::string> cardYamlDump(SharpAppPart& app) {
     using inspect::fmt;
@@ -38,4 +38,4 @@ std::vector<std::string> cardYamlDump(SharpAppPart& app) {
     return chunks;
 }
 
-} // namespace shared
+} // namespace cu1600

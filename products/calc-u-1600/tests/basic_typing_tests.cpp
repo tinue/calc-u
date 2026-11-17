@@ -23,7 +23,7 @@ namespace {
 
 namespace fs = std::filesystem;
 namespace sessions = calcu::sessions;
-namespace c = shared::commands;
+namespace c = cu1600::commands;
 using sessionfixture::SessionFixture;
 using sessionfixture::romsPresent;
 using sessions::Value;

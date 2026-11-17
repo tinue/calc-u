@@ -21,7 +21,7 @@
 namespace {
 
 using Reason = calcu::debugger::RunState::Reason;
-using shared::dap::StepKind;
+using cu1600::dap::StepKind;
 
 // ── Expressions ───────────────────────────────────────────────────────────
 
@@ -132,7 +132,7 @@ TEST(c1600_3_ac23_conditions_hit_counts_and_logpoints) {
 
     // A logpoint prints and never stops: 0x4214..0x43FF remain in pass 1.
     r.lineBreakpoint(137, {}, {}, "x={x} a={a}");
-    shared::dap::DapBreakpoints::InstructionRequest park;
+    cu1600::dap::DapBreakpoints::InstructionRequest park;
     park.addr = 0x4603;
     r.breakpoints.setInstructions({park});
     r.apply();
@@ -164,7 +164,7 @@ TEST(c1600_3_ac23_bank_qualified_listing) {
     r.map.addStatic(1, listing, {-1, -1, -1, 1}, "pv1");
     auto st = r.lineBreakpoint(89);
     CHECK(st[0].verified && st[0].message.find("pv=1") != std::string::npos);
-    shared::dap::DapBreakpoints::InstructionRequest park;
+    cu1600::dap::DapBreakpoints::InstructionRequest park;
     park.addr = 0x4603;
     r.breakpoints.setInstructions({park});
     r.apply();
@@ -180,7 +180,7 @@ TEST(c1600_3_ac23_bank_qualified_listing) {
 }
 
 TEST(c1600_3_ac23_hit_condition_parsing) {
-    using shared::dap::hitConditionMet;
+    using cu1600::dap::hitConditionMet;
     CHECK(hitConditionMet("3", 3) && !hitConditionMet("3", 4));
     CHECK(hitConditionMet(">= 5", 5) && !hitConditionMet(">=5", 4));
     CHECK(hitConditionMet("% 3", 6) && !hitConditionMet("%3", 7));
@@ -239,12 +239,12 @@ TEST(c1600_3_ac14_breakpoints_belong_to_dap) {
     CHECK(std::holds_alternative<calcu::debugger::BreakpointId>(harness));
     r.lineBreakpoint(89);
     r.lineBreakpoint(90);
-    const auto dap = table.breakpoints(&shared::dap::kDapSetter);
+    const auto dap = table.breakpoints(&cu1600::dap::kDapSetter);
     CHECK_EQ(dap.size(), std::size_t(1));
     CHECK(dap.size() == 1 && dap[0].address == 0x40CE);
     CHECK_EQ(table.breakpoints(&calcu::debugger::kHarnessSetter).size(), std::size_t(1));
     r.clearBreakpoints();
-    CHECK(table.breakpoints(&shared::dap::kDapSetter).empty());
+    CHECK(table.breakpoints(&cu1600::dap::kDapSetter).empty());
     CHECK_EQ(table.breakpoints().size(), std::size_t(1));
 }
 
@@ -252,7 +252,7 @@ TEST(c1600_3_ac14_log_message_writes_and_does_not_pause) {
     memtest::Rig r;
     if (!r.ok) return;
     r.lineBreakpoint(89, {}, {}, "at {p}");
-    shared::dap::DapBreakpoints::InstructionRequest park;
+    cu1600::dap::DapBreakpoints::InstructionRequest park;
     park.addr = 0x4603;
     r.breakpoints.setInstructions({park});
     r.apply();
@@ -283,7 +283,7 @@ TEST(c1600_3_ac14_other_bank_passed_status_only_while) {
     r.map.addStatic(1, listing, {-1, -1, 1, -1}, "pu1");   // PU = 1 only; the CPU runs with PU = 0
     auto st = r.lineBreakpoint(89);
     CHECK(st[0].verified && st[0].message == "Only while pu=1");
-    shared::dap::DapBreakpoints::InstructionRequest park;
+    cu1600::dap::DapBreakpoints::InstructionRequest park;
     park.addr = 0x4603;
     r.breakpoints.setInstructions({park});
     r.apply();
@@ -364,7 +364,7 @@ TEST(c1600_3_ac23_hit_conditions_and_log_templates_match_legacy) {
         for (int n = 0; n <= 20; n++) {
             bool wantValid = false, gotValid = false;
             const bool want = legacy::hitConditionMet(h, n, &wantValid);
-            const bool got = shared::dap::hitConditionMet(h, n, &gotValid);
+            const bool got = cu1600::dap::hitConditionMet(h, n, &gotValid);
             if (want != got || wantValid != gotValid) {
                 if (mismatches++ < 5) std::fprintf(stderr, "  hit \"%s\" at %d: legacy %d/%d, now %d/%d\n", h, n, want, wantValid, got, gotValid);
             }
@@ -379,10 +379,10 @@ TEST(c1600_3_ac23_hit_conditions_and_log_templates_match_legacy) {
     const char* const logs[] = {"", "plain", "a={a}", "{a}{x}", "x={x} a={a}!", "{foo}", "{[7]}", "{[8]}",
                                 "{-1}", "{1/0}", "open {a", "}{a}", "{}", "{{a}}", "a={a} b={", "{ a + 1 }"};
     for (const char* m : logs)
-        if (legacy::interpolateLog(m, ctx) != shared::dap::interpolateLog(m, ctx)) {
+        if (legacy::interpolateLog(m, ctx) != cu1600::dap::interpolateLog(m, ctx)) {
             if (mismatches++ < 10)
                 std::fprintf(stderr, "  log \"%s\": legacy '%s', now '%s'\n", m, legacy::interpolateLog(m, ctx).c_str(),
-                             shared::dap::interpolateLog(m, ctx).c_str());
+                             cu1600::dap::interpolateLog(m, ctx).c_str());
         }
     CHECK(mismatches == 0);
 }
@@ -406,18 +406,18 @@ TEST(c1600_3_ac23_function_breakpoint_on_lh5803_symbol) {
     debug::Listing symbols;
     symbols.symbols["LOOP"] = 0xC003;
     map.addStatic(2, symbols, {}, "lh.sym");
-    shared::dap::DapBreakpoints table;
-    shared::dap::DapBreakpoints::FunctionRequest r;
+    cu1600::dap::DapBreakpoints table;
+    cu1600::dap::DapBreakpoints::FunctionRequest r;
     r.name = "LOOP";
     const auto statuses = table.setFunctions({r}, map);
     CHECK(statuses.size() == 1 && statuses[0].verified && statuses[0].thread == 2 && statuses[0].addr == 0xC003);
-    table.apply(rig.rc().table(), shared::dap::DapTargets(rig.machine->debugging()), {});
+    table.apply(rig.rc().table(), cu1600::dap::DapTargets(rig.machine->debugging()), {});
     CHECK(rig.runUntilPaused(100, 1000));
     const auto st = rig.rc().state();
     CHECK(st.reason && *st.reason == calcu::debugger::RunState::Reason::Breakpoint);
     CHECK(st.target && st.target->value == "LH5803");
     CHECK(table.dapIds(st.hits) == std::vector<int>{statuses[0].id});
-    CHECK(shared::dap::DapTargets(rig.machine->debugging()).pc(2) == 0xC003);
+    CHECK(cu1600::dap::DapTargets(rig.machine->debugging()).pc(2) == 0xC003);
 }
 
 } // namespace

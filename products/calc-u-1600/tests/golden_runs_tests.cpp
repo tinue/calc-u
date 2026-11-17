@@ -174,7 +174,7 @@ struct Run {
         // (display, paper and memory the same): a press waited for readiness
         // there. Finding of M-36, LIB-5 qa-report; the core is unchanged.
         static const calcu::typing::TypingProfile asQueued = [] {
-            calcu::typing::TypingProfile p = *shared::typingProfile(ModelId{sharp::kPC1500A});   // the PC-1500's is the same
+            calcu::typing::TypingProfile p = *cu1600::typingProfile(ModelId{sharp::kPC1500A});   // the PC-1500's is the same
             p.queuedWaitsForReadiness = false;
             return p;
         }();

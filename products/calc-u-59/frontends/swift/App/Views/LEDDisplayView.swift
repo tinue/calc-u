@@ -4,7 +4,7 @@ import SwiftUI
 /// Position 0 (leftmost) is the "C" (calculate) annunciator.
 struct LEDDisplayView: View, Equatable {
     let segments:  [UInt8]   // 12 elements: last driven glyph, A–G as bits 0–6 (Shared LedFrame)
-    let levels:    [UInt8]   // 12 elements: brightness 0…255 per position (Shared/DisplayPov)
+    let levels:    [UInt8]   // 12 elements: brightness 0…255 per position (app/DisplayPov)
     let dpLevels:  [UInt8]   // 12 elements: decimal point brightness per position
     let calcIndicatorOpacity: Double
     let fontStyle: LEDFontStyle
@@ -14,7 +14,7 @@ struct LEDDisplayView: View, Equatable {
             let digitWidth = size.width / 12.0
             let height     = size.height
 
-            // Style parameters and segment geometry: Shared/LedGeometry.hpp.
+            // Style parameters and segment geometry: app/LedGeometry.hpp.
             let style = TIViewRules.ledStyle(fontStyle.rawValue)
             let slant = style.slant
             let geometry = LEDGeometry(fontStyle: fontStyle, width: digitWidth, height: height)
@@ -49,11 +49,11 @@ struct LEDDisplayView: View, Equatable {
     // MARK: - Display character decode (B-register table)
 
     // Segment patterns (bit 0=A top … 6=G middle) come from
-    // Shared/SevenSegment.hpp — never from a font.
+    // app/SevenSegment.hpp — never from a font.
 
     // MARK: - Drawing
 
-    /// One digit cell's shapes, computed once per frame (Shared/LedGeometry.hpp).
+    /// One digit cell's shapes, computed once per frame (app/LedGeometry.hpp).
     private struct LEDGeometry {
         var polygons: [Path] = []                       // modernized: segments A–G
         var segmentWidth: CGFloat = 0

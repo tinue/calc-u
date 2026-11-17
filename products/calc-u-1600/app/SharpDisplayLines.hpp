@@ -10,7 +10,7 @@
 // no glyph is U+FFFD. Printable ASCII is itself, `\` is `\\`, any other code
 // `\xHH` (the encoding of --lcd-text's rows).
 
-namespace shared {
+namespace cu1600 {
 
 // The ROM font in the harness's form.
 calcu::harness::GlyphFont glyphFontOf(const LcdFont&);
@@ -20,4 +20,4 @@ calcu::harness::DisplayText displayLines(const calcu::machine::DisplayOutput&, c
 // With the font of the machine's ROM.
 calcu::harness::DisplayText displayLines(calcu::machine::Machine&, const calcu::machine::DisplayOutput&);
 
-} // namespace shared
+} // namespace cu1600

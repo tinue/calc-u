@@ -233,8 +233,8 @@ time. `discardMachine`, `resetToPromptJob` and `powerCycleAroundJob` call
 `focus-lost`; the SHIFT tap stays in each frontend and is one screen press
 of `shift`; the debugger's `typeCommand` is the engine's `typeText` with
 ENTER; Qt6 waits with the `typing` request. Tests: `tests/typing_tests.cpp`
-(15), the ported `key_paste_tests.cpp`, `shared_host_key_map_tests.cpp`,
-`shared_machine_session_tests.cpp`, Web `typing.spec.js`.
+(15), the ported `key_paste_tests.cpp`, `keyboard_map_tests.cpp`,
+`machine_session_tests.cpp`, Web `typing.spec.js`.
 
 Results: Frequent 28 of 28 (`CoreTests` 875 tests). Longer
 (`-DCALCU_FRONTEND_QT=ON`): `CalcU1600WebPlaywright` 55 passed, 2 skipped

@@ -32,7 +32,7 @@ std::optional<Model> modelNamed(std::string_view name);
 enum class TraceLocation { AppSupport, ICloud, Folder };  // [trace] location (Swift, AC-24)
 
 // The folders a file dialog starts in, one key each in [folders] (AC-19):
-//   Presets     -- "Open Preset…": presets
+//   Presets     -- "Load Preset…": presets
 //   AsmOverlays -- the debugger's ASM overlay picker: asm-overlays
 //   Other       -- other files: other (declared; no dialog uses it yet, D-1)
 enum class OpenFolder { Presets, AsmOverlays, Other };

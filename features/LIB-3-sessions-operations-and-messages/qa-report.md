@@ -289,8 +289,8 @@ builds it for the library's `WorkerHost` (LIB-15 1600).
 | ledger 1600-9 | Pass | `session_tests.cpp` `ledger_1600_9_keys_dropped_and_reset_stops_an_operation` |
 
 Ported to the library session (scripted clock, `app/tests/SessionFixture.hpp`):
-`shared_app_session_tests.cpp` (13; `test_run_now_and_selection` became
-`test_operations_and_selection`, in parts), `shared_machine_session_tests.cpp`
+`app_session_tests.cpp` (13; `test_run_now_and_selection` became
+`test_operations_and_selection`, in parts), `machine_session_tests.cpp`
 (7), `shared_bay_tests.cpp` (4), `serial_links_tests.cpp` (LIB-2 AC-33,
 through LIB-2's `PeripheralsPart`), `rom_lookup_tests.cpp` (LIB-12 adapter
 A-5 gone: the `roms-missing` topic). The golden runs are unchanged and

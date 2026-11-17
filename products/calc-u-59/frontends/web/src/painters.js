@@ -1,12 +1,12 @@
 // Canvas painters — drawing only; every shape, size and colour comes from
-// Shared/ through the worker:
-//   LED       — the Classic style of Qt6/app/LedRenderer.cpp: Shared/
+// app/ through the worker:
+//   LED       — the Classic style of Qt6/app/LedRenderer.cpp: app/
 //               LedGeometry's dot grid per segment, sheared, with a blurred
 //               glow (Canvas 2D filter). Never a font.
-//   cue card  — the draw list bindings.cpp builds from Shared/CueCard
+//   cue card  — the draw list bindings.cpp builds from app/CueCard
 //               (CueCardRenderer.cpp in Qt): template image, text frames,
 //               badges, dividers and the top wash.
-//   printer   — PC-100C dots from Shared/PrinterFont (PrinterWidget.cpp).
+//   printer   — PC-100C dots from core/PC100CPaper (PrinterWidget.cpp).
 
 // The artwork and the canvases: the library's calcImage (img/<name>) and
 // sizeCanvas (library/web/src/canvas.js).

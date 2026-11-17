@@ -9,7 +9,7 @@ enum class MachineVariant { TI59, TI58, TI58C };
 inline bool hasConstantMemory(MachineVariant v) { return v == MachineVariant::TI58C; }
 
 /// TI-59 only: full 120-register RAM, magnetic card reader.  Governs data-
-/// register addressing, accessible memory size, and state-file handling.
+/// register addressing, accessible memory size, and preset handling.
 /// TI-58 and TI-58C both use 60 registers and lack a card reader.
 inline bool hasLargeMemory(MachineVariant v) { return v == MachineVariant::TI59; }
 

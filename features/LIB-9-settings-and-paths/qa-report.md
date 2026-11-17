@@ -112,7 +112,7 @@ the `--setting` launch values; the Web frontend opens it at
 `/settings/Calc-U-59/Calc-U-59.ini` in Emscripten's file system, filled from
 and mirrored to the page's `localStorage` entry `calcu59/Calc-U-59.ini`
 (adapter A-5). `saveModuleID` is a no-op in all three (adapter A-6). Tests in
-`products/calc-u-59/tests/shared_settings_tests.cpp` (in `CalcU59Tests`,
+`products/calc-u-59/tests/settings_tests.cpp` (in `CalcU59Tests`,
 Frequent). Result of the run: `CalcU59Tests` 234 tests, 36598 checks
 passed, 0 failed, 8.8 s; `CalcU59NoPlatformSettings` passed; the full
 Frequent run of `build/tests` passed, 16 of 16 entries. Golden runs:
@@ -183,7 +183,7 @@ A-1). Qt6 opens `Calc-U-1600.ini` in the platform's settings folder
 (`AppPaths.cpp`: Application Support from `MacAppSupport.mm` on macOS,
 `%APPDATA%` on Windows, `$XDG_CONFIG_HOME` or `~/.config` on Linux); the Web
 frontend at `/persist/settings/Calc-U-1600/Calc-U-1600.ini`. Tests in
-`products/calc-u-1600/app/tests/shared_settings_tests.cpp` (in `CoreTests`,
+`products/calc-u-1600/app/tests/settings_tests.cpp` (in `CoreTests`,
 Frequent). Result of the run: `CoreTests` 855 tests, 63275 checks passed,
 0 failed, 39.0 s; `CalcU1600NoPlatformSettings` passed; the full Frequent run
 of `build/tests` passed, 14 of 14 entries. Golden runs: `golden_runs_tests.cpp`

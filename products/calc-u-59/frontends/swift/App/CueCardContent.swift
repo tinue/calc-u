@@ -1,6 +1,6 @@
 import Foundation
 
-// Cue card parsing, encoding and the math-token table live in Shared/CueCard.cpp;
+// Cue card parsing, encoding and the math-token table live in app/CueCard.cpp;
 // this file holds the SwiftUI-facing value type and its bridge conversion.
 
 enum TextAlign: String {

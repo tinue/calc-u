@@ -272,7 +272,7 @@ TEST(c1600_4_ac6_missing_folder_or_not_pc1600_refused_at_read) {
 }
 
 TEST(c1600_4_ac7_refused_where_frontend_mounts_no_folder) {
-    PresetReadRig r(shared::SharpKeywordSetup{[] { return false; }});
+    PresetReadRig r(cu1600::SharpKeywordSetup{[] { return false; }});
     fs::create_directories(r.folder.path() / "shared");
     CHECK(has(r.error(kPc1600 + "host-drive: { folder: shared }\n"), "The host drive is not available in this frontend."));
 }
@@ -415,7 +415,7 @@ TEST(c1600_4_ac11_keys_values_paths_from_preset_folder) {
     if (!p) return;
     const auto it = p->productHeader.find("debug");
     CHECK(it != p->productHeader.end());
-    const auto* block = dynamic_cast<const shared::DebugBlock*>(it->second.get());
+    const auto* block = dynamic_cast<const cu1600::DebugBlock*>(it->second.get());
     CHECK(block && block->node.find("program") && block->node.find("program")->find("bin"));
     if (!block) return;
     const std::string bin = calcu::formats::scalarText(*block->node.find("program")->find("bin"));
@@ -448,15 +448,15 @@ TEST(c1600_4_ac12_load_does_nothing_with_block) {
 TEST(c1600_4_ac12_debug_block_of_for_the_debugger) {
     PresetReadRig r;
     const fs::path p = r.write("proj.pc1600", kPc1600 + "debug:\n  program:\n    bin: a.bin\n");
-    const auto b = shared::debugBlockOf(p.generic_string(), r.setup(), nullptr);
-    const auto* block = std::get_if<std::shared_ptr<const shared::DebugBlock>>(&b);
+    const auto b = cu1600::debugBlockOf(p.generic_string(), r.setup(), nullptr);
+    const auto* block = std::get_if<std::shared_ptr<const cu1600::DebugBlock>>(&b);
     CHECK(block && *block && (*block)->node.find("program"));
     const fs::path none = r.write("plain.pc1600", kPc1600);
-    const auto n = shared::debugBlockOf(none.generic_string(), r.setup(), nullptr);
-    const auto* empty = std::get_if<std::shared_ptr<const shared::DebugBlock>>(&n);
+    const auto n = cu1600::debugBlockOf(none.generic_string(), r.setup(), nullptr);
+    const auto* empty = std::get_if<std::shared_ptr<const cu1600::DebugBlock>>(&n);
     CHECK(empty && !*empty);
     const fs::path bad = r.write("bad.pc1600", kPc1600 + "debug:\n  colour: red\n");
-    CHECK(std::holds_alternative<std::string>(shared::debugBlockOf(bad.generic_string(), r.setup(), nullptr)));
+    CHECK(std::holds_alternative<std::string>(cu1600::debugBlockOf(bad.generic_string(), r.setup(), nullptr)));
 }
 
 TEST(c1600_4_ac20_blocks_by_the_file_syntax) {

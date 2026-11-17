@@ -3,7 +3,7 @@
 #include "Debug/AttachKeys.hpp"
 #include "presets/Source.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace {
 
@@ -98,4 +98,4 @@ std::variant<std::shared_ptr<const DebugBlock>, std::string> debugBlockOf(const 
     return std::dynamic_pointer_cast<const DebugBlock>(it->second);
 }
 
-} // namespace shared
+} // namespace cu1600

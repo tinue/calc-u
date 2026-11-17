@@ -11,7 +11,7 @@
 // integer, any other a double; objects keep their members in order. The
 // DAP is the only user; a second one moves this to library/formats/.
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 using calcu::sessions::Value;
 
@@ -37,4 +37,4 @@ void put(Value::Object& o, std::string_view key, Value value);
 std::string base64(std::string_view bytes);
 std::string unbase64(std::string_view text);
 
-} // namespace shared::dap
+} // namespace cu1600::dap

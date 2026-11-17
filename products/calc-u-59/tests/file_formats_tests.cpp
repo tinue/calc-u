@@ -1,4 +1,4 @@
-// Shared/ file formats against the Swift originals (tests/golden/formats.txt,
+// app/ file formats against the Swift originals (tests/golden/formats.txt,
 // produced by tools/goldens/formats_main.swift): cue cards, BCD encoders,
 // register lines and math tokens. Also round trips for the constant memory
 // file (C59-3). The state files of 2.3.0 and their records went in M-54

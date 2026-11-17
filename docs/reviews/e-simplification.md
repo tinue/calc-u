@@ -568,6 +568,8 @@ while Calc-U-59's Qt6 starts is no longer dropped (LIB-13 AC-7).
   passed on the re-run; the first's output was not kept.
 - F-8: `products/calc-u-1600/tools/run_tests.sh` runs only `CoreTests`
   (since D P-10 the session tests are other programs).
+  Fixed (2026-11-17): without an argument it runs every Frequent CTest
+  entry of the product; a filter goes to all five runner programs.
 - Outside the repository (not edited): `Sharp1500-1600-Ref` skill line 128
   (`headless/pc1500_cli`), calc-u-site skill `site-59` line 104
   (`StateFileFormat.md`), two memory notes of calc-u-site and

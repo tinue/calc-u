@@ -82,8 +82,8 @@ TEST(lib9_ac26_declaration) {
     CHECK(t.file.raw("debug", "dap-enabled") == std::optional<std::string>("true") && s.file().boolean("debug", "dap-enabled"));
     s.file().set("trace", "max-file-size-mb", "7");
     CHECK(s.file().integer("trace", "max-file-size-mb") == 7);
-    s.file().set("trace", "max-file-size-mb", "0");  // AC-11
-    CHECK(s.file().integer("trace", "max-file-size-mb") == 50);
+    s.file().set("trace", "max-file-size-mb", "0");  // AC-11: a value (no minimum); the trace session takes it as 50
+    CHECK(s.file().integer("trace", "max-file-size-mb") == 0);
     s.setStartupModelPreference("PC-1600");
     CHECK(t.file.text("startup", "model") == "PC-1600");
 }

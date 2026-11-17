@@ -179,3 +179,9 @@ debug examples (`debug_*`, `screentest_test_cdebug`) are the same.
 - `tools/agentic/asm59.py` assembles keystroke programs (keycodes), not
   TMC0501 overlays: it writes no ASM overlay file, so nothing changed there
   (design §7 assumed it writes overlays).
+
+## Release prep step 5 (2026-11-17, branch `rp5-one-rule`)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-12 (as amended) | Pass (C++, Web) | `c59_4_ac12_trace_refused_where_the_folder_cannot_be_written`, `c59_4_ac25_entries_asm_run_trace_calculator_tab_with_reasons` (TRACE available with a folder that cannot be written); Web `play-calculator.spec.js` "LIB-6 AC-25 a preset screenshot is offered as a download, not listed as a trace" (the LOG tab lists traces only) |

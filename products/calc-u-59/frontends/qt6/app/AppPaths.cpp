@@ -64,8 +64,6 @@ QString bundledExamplesDir() {
 #endif
 }
 
-QString traceDir() { return ensured(cs::Folder::Traces); }
-
 } // namespace AppPaths
 
 namespace AppSettings {

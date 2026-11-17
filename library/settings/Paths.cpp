@@ -49,7 +49,8 @@ std::optional<std::string> Paths::traceFolder() const {
         const std::string location = settings_->text("trace", "location");
         if (location == "icloud") return saveFolder();
         if (location == "folder") {
-            if (!dirs_.chosenTraceFolder.empty()) return dirs_.chosenTraceFolder;
+            if (dirs_.chosenTraceFolder)
+                if (std::string chosen = dirs_.chosenTraceFolder(); !chosen.empty()) return chosen;
             if (auto plain = folderValue("trace", "folder")) return plain;
         }
         return dirs_.applicationSupport;

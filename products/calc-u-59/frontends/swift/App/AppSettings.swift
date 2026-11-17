@@ -41,7 +41,14 @@ enum KeyboardFeedbackType: Int, CaseIterable, Identifiable {
 
 /// The one platform-store key: the security-scoped bookmark macOS grants for a
 /// chosen trace folder (LIB-9 AC-34). It is not a setting.
-private let traceFolderBookmarkKey = "traceCustomPathBookmark"
+nonisolated private let traceFolderBookmarkKey = "traceCustomPathBookmark"
+
+#if os(macOS)
+/// The bookmark last resolved and the folder it granted (nil: none), with its
+/// access opened; asked from the session thread (`chosenTraceFolder`).
+nonisolated(unsafe) private var resolvedTraceFolder: (bookmark: Data, url: URL?)?
+nonisolated private let resolvedTraceFolderLock = NSLock()
+#endif
 
 enum AppSettings {
 
@@ -65,11 +72,30 @@ enum AppSettings {
         #endif
     }
 
-    /// The folder the bookmark of `[trace] folder` grants (macOS), opened
-    /// for the app's lifetime; nil without a usable bookmark.
-    static func chosenTraceFolder() -> String? {
+    /// The folder the bookmark of `[trace] folder` grants (macOS); nil without
+    /// a usable bookmark. The session asks it at each trace start, on its own
+    /// thread (LIB-10 AC-53; the open panel's grant is the frontend's, the
+    /// bookmark carries it to the next launch, LIB-9 AC-34): a bookmark is
+    /// resolved once, its folder opened until another bookmark replaces it.
+    nonisolated static func chosenTraceFolder() -> String? {
         #if os(macOS)
         guard let bookmarkData = UserDefaults.standard.data(forKey: traceFolderBookmarkKey) else { return nil }
+        resolvedTraceFolderLock.lock()
+        defer { resolvedTraceFolderLock.unlock() }
+        if let kept = resolvedTraceFolder, kept.bookmark == bookmarkData { return kept.url?.path }
+        resolvedTraceFolder?.url?.stopAccessingSecurityScopedResource()
+        let url = resolveTraceFolderBookmark(bookmarkData)
+        resolvedTraceFolder = (bookmarkData, url)
+        return url?.path
+        #else
+        return nil
+        #endif
+    }
+
+    #if os(macOS)
+    /// The folder of a bookmark, its access opened; nil when it is stale or
+    /// cannot be resolved (the plain path of `[trace] folder` is used then).
+    nonisolated private static func resolveTraceFolderBookmark(_ bookmarkData: Data) -> URL? {
         var isStale = false
         do {
             let url = try URL(resolvingBookmarkData: bookmarkData, options: .withSecurityScope, relativeTo: nil,
@@ -81,15 +107,13 @@ enum AppSettings {
             if !url.startAccessingSecurityScopedResource() {
                 print("[AppSettings] no sandbox extension for \(url.path): traces there will fail")
             }
-            return url.path
+            return url
         } catch {
             print("[AppSettings] the bookmark of the trace folder cannot be resolved: \(error)")
             return nil
         }
-        #else
-        return nil
-        #endif
     }
+    #endif
 
     /// Whether a chosen trace folder needs to be chosen again (a path, no bookmark).
     static func traceFolderNeedsReauthorization(path: String) -> Bool {

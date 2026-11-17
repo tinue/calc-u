@@ -309,6 +309,40 @@ TEST(lib10_ac23_button_trace_is_trace_bin) {
     CHECK(s.traceEventCount > 0);
 }
 
+// ── AC-53 (row 1600-53): the trace folder at each trace start, the refusal ──
+
+TEST(lib10_ac53_trace_folder_changed_after_the_start_is_the_next_traces) {
+    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
+    SessionFixture f;
+    const fs::path a = f.root / "traces-a", b = f.root / "traces-b";
+    f.settings.file().set("trace", "folder", a.generic_string());
+    CHECK(f.start("PC-1500A"));
+    auto traceTo = [&f](const char* name) {
+        CHECK(f.ok(dbg::kTraceCommand, Value::object({{"file", name}})));
+        f.runFor(0.1);
+        CHECK(f.ok(dbg::kTraceCommand, Value::object({{"off", true}})));
+    };
+    traceTo("one.bin");
+    CHECK(fs::exists(a / "one.bin"));
+    f.settings.file().set("trace", "folder", b.generic_string());
+    traceTo("two.bin");
+    CHECK(fs::exists(b / "two.bin"));
+    CHECK(!fs::exists(a / "two.bin"));
+}
+
+TEST(lib10_ac53_trace_refused_with_one_sentence_where_the_folder_cannot_be_written) {
+    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
+    SessionFixture f;
+    CHECK(f.start("PC-1500A"));
+    const fs::path file = f.root / "a-file";
+    std::ofstream(file) << "x";   // a file where the folder should be: it cannot be made
+    f.settings.file().set("trace", "folder", (file / "traces").generic_string());
+    const sessions::ReplyMessage r = f.run(dbg::kTraceCommand, Value::object({{"file", "t.bin"}}));
+    CHECK(!r.done);
+    CHECK(r.reason.rfind("The trace folder cannot be written: cannot create the folder ", 0) == 0);
+    CHECK(!r.reason.empty() && r.reason.back() == '.' && r.reason.find("..") == std::string::npos);
+}
+
 // ── D16-9: the size limit (AC-43, AC-24) ─────────────────────────────────
 
 bool limitNotice(SessionFixture& f) {

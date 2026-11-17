@@ -51,7 +51,4 @@ QString bundledExamplesDir();
 /// product's examples/); call before the window is made.
 void useBundledExamplesDir(const QString& dir);
 
-/// Binary traces: the trace folder override, else the save folder.
-QString traceDir();
-
 } // namespace AppPaths

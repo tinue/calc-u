@@ -4,10 +4,15 @@
 #include "sessions/Payload.hpp"
 #include <QFile>
 #include <QFileInfo>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
 #include <QFileOpenEvent>
 #include <QList>
 #include <QMimeData>
+#include <QTimer>
 #include <QUrl>
+#include <QWidget>
 #include <utility>
 
 namespace calcu::qt6 {
@@ -54,6 +59,32 @@ opening::OpenRequest openRequest(const QString& path, opening::Way way,
 void openFile(SessionHost& host, const QString& path, opening::Way way,
               const std::map<opening::Way, std::uint64_t>& limits) {
     host.send(opening::kOpenCommand, openRequest(path, way, limits).toValue());
+}
+
+void bringToFront(QWidget& window, opening::Way way) {
+    if (way == opening::Way::Start) return;
+    window.raise();
+    window.activateWindow();
+}
+
+void openFile(QWidget& window, SessionHost& host, const QString& path, opening::Way way,
+              const std::map<opening::Way, std::uint64_t>& limits) {
+    bringToFront(window, way);
+    openFile(host, path, way, limits);
+}
+
+void dragEnter(QDragEnterEvent* e, SessionHost& host) {
+    const QString path = draggedFile(e->mimeData());
+    if (!path.isEmpty() && wouldTake(host, path)) e->acceptProposedAction();
+}
+
+void dragMove(QDragMoveEvent* e) { e->acceptProposedAction(); }
+
+void drop(QDropEvent* e, QObject* context, std::function<void(const QString&)> open) {
+    const QString path = draggedFile(e->mimeData());
+    if (path.isEmpty()) return;
+    e->acceptProposedAction();
+    QTimer::singleShot(0, context, [open = std::move(open), path] { open(path); });
 }
 
 std::optional<QString> startFile(const std::vector<std::string>& arguments) {

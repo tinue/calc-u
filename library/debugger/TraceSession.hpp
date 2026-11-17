@@ -62,8 +62,9 @@ public:
 struct TraceSetup {
     // The product's recorder for a machine; unset or nullptr: no traces.
     std::function<std::unique_ptr<TraceRecorder>(machine::Machine&)> recorder;
-    // The trace folder as Paths::ensure(Folder::Traces) gives it; nullopt or
-    // unset: this host has none (the Web, LIB-9 AC-17).
+    // The trace folder as Paths::ensure(Folder::Traces) gives it, asked at
+    // each trace start (AC-53; the problem a phrase without its final
+    // period); nullopt or unset: this host has none (the Web, LIB-9 AC-17).
     std::function<std::optional<settings::Paths::Ensured>()> folder;
     // [trace] max-file-size-mb (LIB-9 AC-11); zero or less, or unset: 50.
     std::function<long()> limitMb;
@@ -72,9 +73,10 @@ struct TraceSetup {
     bool handOver = false;
 };
 
-// The trace folder of a product's Paths, for TraceSetup::folder; while
-// `available` says no (the Swift frontend's iCloud, C59-4 AC-12), it is
-// reported as not available.
+// The trace folder of a product's Paths, for TraceSetup::folder: the places
+// and settings as they are at each call (AC-53), the folder made and written
+// once (Paths::ensure); while `available` says no (the Swift frontend's
+// iCloud, LIB-9 AC-24), it is reported as not available.
 std::function<std::optional<settings::Paths::Ensured>()> traceFolderOf(const settings::Paths&,
                                                                         std::function<bool()> available = {});
 

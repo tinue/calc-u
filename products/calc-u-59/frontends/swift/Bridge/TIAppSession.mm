@@ -437,7 +437,11 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         dirs.settingsBase = cpp(start.settingsBase);
         dirs.saveFolder = cpp(start.saveFolder);
         dirs.applicationSupport = cpp([start.settingsBase stringByAppendingPathComponent:@"Calc-U-59"]);
-        if (start.chosenTraceFolder) dirs.chosenTraceFolder = cpp(start.chosenTraceFolder);
+        // The bookmark's folder, asked at each trace start (LIB-10 AC-53).
+        if (NSString* _Nullable (^chosen)(void) = start.chosenTraceFolder)
+            dirs.chosenTraceFolder = [chosen] {
+                @autoreleasepool { return cpp(chosen()); }
+            };
         const auto& decl = cu59::settings::settingsDecl();
         std::optional<std::string> path;
         if (start.settingsFile) path = cpp(start.settingsFile);
@@ -446,18 +450,6 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         const st::Paths* paths = &settings->paths();
         _settingsFilePath = ns(file->path());
         _settingsProblem = file->problem().empty() ? nil : ns(file->problem());
-        // Where traces go, at the start (LIB-9 AC-24): by [trace] location.
-        _traceDirectory = ns(paths->traceFolder().value_or(dirs.applicationSupport));
-        BOOL available = YES;
-#if !TARGET_OS_OSX
-        const cu59::settings::Settings typed(*file);
-        if (typed.traceLocation() == cu59::settings::TraceLocation::ICloud && NSFileManager.defaultManager.ubiquityIdentityToken == nil)
-            available = NO;
-#endif
-        if (available)
-            available = [NSFileManager.defaultManager createDirectoryAtPath:_traceDirectory withIntermediateDirectories:YES
-                                                                 attributes:nil error:nil];
-        _traceAvailable = available;
 
         cu59::TIAppSetup setup;
         setup.roms.set = roms->_set;
@@ -469,8 +461,16 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         setup.paths = paths;
         setup.examplesFolder = cpp(start.examplesFolder);
         setup.files = std::make_shared<CoordinatedFiles>(delegate);
-        const bool traceAvailable = available == YES;
-        setup.traceAvailable = [traceAvailable] { return traceAvailable; };
+        // Where traces go is the places' by [trace] location (LIB-9 AC-24),
+        // read at each trace start with the folder made and written once
+        // (LIB-10 AC-53); iOS: iCloud only while signed in.
+#if !TARGET_OS_OSX
+        setup.traceAvailable = [file] {
+            const cu59::settings::Settings typed(*file);
+            return !(typed.traceLocation() == cu59::settings::TraceLocation::ICloud &&
+                     NSFileManager.defaultManager.ubiquityIdentityToken == nil);
+        };
+#endif
         // C59-5 AC-7 (the session asks none of them yet).
         const cs::HostServices services = statedServices();
         __weak TIAppSession* weakSelf = self;

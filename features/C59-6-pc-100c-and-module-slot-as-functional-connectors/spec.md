@@ -148,6 +148,12 @@ The module slot
   detached, and the power cycle that follows is over (LIB-2 AC-24), then
   the ROM finds what is plugged in now. Today the module is swapped
   under the running machine (`Shared/SessionController.cpp:220-241`).
+- [ ] **AC-12** — Given no PC-100C is plugged in, when LIB-2's
+  `set-control` is sent for one of its controls (PRINT, ADV, TRACE),
+  then it is refused with "No PC-100C is plugged in." (LIB-2's refusal;
+  the switches worked without a calculator on the hardware, but a
+  preset that needs the printer plugs it in first; user, 2026-11-17,
+  Q-3 of `docs/reviews/e-simplification.md`; ledger row 59-64).
 
 ## Edge Cases
 - **EC-1** — Given a module whose ROM file is not handed in, when it is
@@ -235,3 +241,4 @@ The module slot
 | The picker shows a module's `description`, ordered by `menu-sort`; the names of AC-8 are those of `modules.md` §2.4 | user, 2026-11-13 (question F-14 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` §2.1, §2.4 | 2026-11-13 |
 | `TRACE` belongs to the printer like its paper: kept through reset, power cycle, cold boot, model switch, detach and attach, until the product quits; a preset sets it off unless it says `printer-trace: on` (AC-6). Replaces "off after a detach and attach" of OQ-3 | user, 2026-11-13 (B-16 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round of 2026-11-13: no `fit` step (Out of Scope); the TRACE step is `printer-trace:` (Out of Scope); OQ-3 marked replaced | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| `set-control` without a PC-100C plugged in is refused with "No PC-100C is plugged in." (AC-12); no GUI sends it then | user, 2026-11-17, Q-3 of `docs/reviews/e-simplification.md`; ledger row 59-64 | 2026-11-17 |

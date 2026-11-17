@@ -230,6 +230,18 @@ std::optional<bool> traceSwitch(TIAppPart& c) {
 }
 } // namespace
 
+// C59-6 AC-12 (row 59-64; user, 2026-11-17, Q-3 of
+// docs/reviews/e-simplification.md): without a PC-100C plugged in, LIB-2's
+// set-control for one of its controls is refused.
+TEST(c59_6_ac12_set_control_without_a_pc100c_refused) {
+    PartRig r;
+    CHECK(!traceSwitch(r.part()));   // the built-in default has no printer (row 59-10)
+    const auto reply = r.send(calcu::peripherals::kSetControlCommand, traceOnArgs());
+    CHECK(!reply.done);
+    CHECK_EQ(reply.reason, std::string("No PC-100C is plugged in."));
+    CHECK(!r.part().printerTrace());
+}
+
 // LIB-18 AC-21, AC-23 (design P59-4, D-27; was c59_6_ac6_trace_kept_by_app_session):
 // TRACE keeps its position through Reset, Cold boot, a model switch and a
 // detach; an attach puts it into the new PC-100C.

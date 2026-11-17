@@ -82,7 +82,6 @@ inline constexpr const char* kCalculatorTab = "c59.calculator-tab";
 } // namespace entries
 
 inline constexpr const char* kNoAsmOverlay = "No ASM overlay loaded.";
-inline constexpr const char* kTraceFolderNotWritable = "The trace folder cannot be written.";
 inline constexpr const char* kAsmOverlayRuns = "An ASM overlay runs.";
 
 /// FREEZE and FREEZE ON START of a tab (AC-5, AC-7) for the level of the tab
@@ -147,9 +146,6 @@ struct TIDebugView final : calcu::sessions::PayloadOf<TIDebugView> {
 
 struct TIDebugSetup {
     std::shared_ptr<const calcu::roms::RomSet> roms;   ///< the module's program table (AC-4)
-    /// Whether TRACE can be used (AC-12): a trace folder can be written, or
-    /// the host keeps traces (the Web). Unset: yes.
-    std::function<bool()> traceAvailable;
     /// The harness: the CALCULATOR and CPU tabs computed as if shown (its
     /// `state` reads them; design §3.1).
     bool alwaysShown = false;

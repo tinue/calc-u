@@ -58,10 +58,11 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     // `roms-missing` in place of the faceplate.
     setup.roms = cu59::lookUpRoms(calcu::roms::DirectoryBundle(start.bundleDir));
     setup.settings = &parts->settings.file();   // [startup] model, last-model, [preset] (LIB-18 AC-17)
-    // The save folder; no trace folder: a trace is handed over with KeepFile
-    // (LIB-10 AC-26), [trace] max-file-size-mb sets its limit.
+    // The save folder; no trace folder and no folder for screenshots: a
+    // trace and a preset's screenshot are handed over with KeepFile, as a
+    // download (LIB-10 AC-26; LIB-6 AC-25, LIB-9 AC-17; row 59-63),
+    // [trace] max-file-size-mb sets a trace's limit.
     setup.paths = &parts->settings.paths();
-    setup.screenshotFolder = start.dirs.saveFolder;   // a preset's screenshot: written there
     setup.examplesFolder = start.presetsDir;   // the bundle (LIB-15 AC-16)
     setup.uploadFolder = start.uploadsDir;     // LIB-13 AC-8: several files of the preset picker's upload
     parts->app = std::make_unique<cu59::TIAppPart>(std::move(setup));

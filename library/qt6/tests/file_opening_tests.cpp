@@ -1,15 +1,19 @@
-// Part E simplification E-4: LIB-13 on a Qt6 host (library/qt6/FileOpening)
+// Part E simplification E-4: LIB-13 on a Qt6 host (library/qt6/FileOpening;
+// the window's rule of AC-24 since release prep step 5)
 // and LIB-7 D-6's round trip (library/qt6/AskedSend), without a window.
 #include "TestHarness.hpp"
 #include "qt6/AskedSend.hpp"
 #include "qt6/FileOpening.hpp"
+#include <QApplication>
 #include <QCoreApplication>
+#include <QDropEvent>
 #include <QFile>
 #include <QFileInfo>
 #include <QFileOpenEvent>
 #include <QMimeData>
 #include <QTemporaryDir>
 #include <QUrl>
+#include <QWidget>
 #include <string>
 #include <vector>
 
@@ -100,6 +104,55 @@ TEST(lib13_ac21_qt_file_open_events_kept_until_the_handler) {
     QEvent other(QEvent::User);
     QCoreApplication::sendEvent(&target, &other);   // anything else passes
     CHECK_EQ(opened.size(), std::size_t(3));
+}
+
+// AC-24 (user, 2026-11-17, Q-4 of docs/reviews/e-simplification.md): the
+// drop's proposed action is accepted and the file is opened after the drop
+// handler returned; a drop of two files is not taken.
+TEST(lib13_ac24_qt_drop_accepted_and_opened_after_the_handler) {
+    QObject context;
+    std::vector<std::string> opened;
+    const auto open = [&opened](const QString& p) { opened.push_back(p.toStdString()); };
+    QMimeData one;
+    one.setUrls({QUrl::fromLocalFile(QStringLiteral("/tmp/a.ti59"))});
+    QDropEvent drop(QPointF(10, 10), Qt::CopyAction | Qt::MoveAction, &one, Qt::LeftButton, Qt::NoModifier);
+    drop.setAccepted(false);
+    qt6::drop(&drop, &context, open);
+    CHECK(drop.isAccepted());
+    CHECK(drop.dropAction() == drop.proposedAction());
+    CHECK(opened.empty());   // not within the drop
+    QCoreApplication::processEvents();
+    CHECK((opened == std::vector<std::string>{"/tmp/a.ti59"}));
+    QMimeData two;
+    two.setUrls({QUrl::fromLocalFile(QStringLiteral("/tmp/a.ti59")), QUrl::fromLocalFile(QStringLiteral("/tmp/b.ti59"))});
+    QDropEvent twoDrop(QPointF(10, 10), Qt::CopyAction, &two, Qt::LeftButton, Qt::NoModifier);
+    twoDrop.setAccepted(false);
+    qt6::drop(&twoDrop, &context, open);
+    QCoreApplication::processEvents();
+    CHECK(!twoDrop.isAccepted());
+    CHECK_EQ(opened.size(), std::size_t(1));
+}
+
+// AC-24: a drop and Open With bring the window to the front; the file named
+// at the start does not.
+TEST(lib13_ac24_qt_window_raised_for_every_way_but_the_start) {
+    QWidget window, other;
+    window.show();
+    other.show();
+    other.activateWindow();
+    QCoreApplication::processEvents();
+    if (QApplication::activeWindow() != &other) return;   // a platform without activation: nothing to see
+    qt6::bringToFront(window, Way::Start);
+    QCoreApplication::processEvents();
+    CHECK(QApplication::activeWindow() == &other);
+    qt6::bringToFront(window, Way::OpenWith);
+    QCoreApplication::processEvents();
+    CHECK(QApplication::activeWindow() == &window);
+    other.activateWindow();
+    QCoreApplication::processEvents();
+    qt6::bringToFront(window, Way::Drop);
+    QCoreApplication::processEvents();
+    CHECK(QApplication::activeWindow() == &window);
 }
 
 TEST(lib7_d6_qt_asked_send_round_trip) {

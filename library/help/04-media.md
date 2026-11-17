@@ -120,6 +120,10 @@ do the same thing:
 - choose it in **File ▸ Load Preset…**, which offers presets and all
   files.
 
+A drop takes one file: a drop of several files is ignored. On the
+desktop, a file you drop or open with the product brings the window to
+the front.
+
 The product looks at the file and opens it as what it is:
 
 | The file is | What happens |

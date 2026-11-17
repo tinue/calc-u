@@ -72,7 +72,7 @@ product itself.
 | `[storage] save-folder` | empty | The save folder, where instances, screenshots, traces and serial links go. Empty: a folder named after the product in your home folder (desktop frontends) |
 | `[storage] tape-folder` | empty | The folder for cassette tapes. Empty: `Tapes` in the save folder |
 | `[trace] folder` | empty | The folder for traces. Empty: the save folder |
-| `[trace] max-file-size-mb` | `50` | The largest trace file, in MB; zero or less counts as 50 ([Debugger](07-debugger.md#traces)) |
+| `[trace] max-file-size-mb` | `50` | The largest trace file, in MB (MiB: 1 MB is 1 048 576 bytes); zero or less counts as 50; read when a trace starts ([Debugger](07-debugger.md#traces)) |
 | `[trace] location` | `app-support` | Where traces go in the frontends that offer the choice: `app-support`, `icloud`, or `folder` (then `[trace] folder`) |
 | `[serial] link-folder` | empty | The folder for the files of serial links. Empty: the save folder |
 | `[folders] <kind>` | empty | One key per kind of file the product opens: the folder its file dialog starts in. Written by the product: the folder last used, or `fixed:<folder>` for a folder set in the Settings dialog, which later picks do not change |

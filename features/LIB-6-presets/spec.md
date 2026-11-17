@@ -804,3 +804,4 @@ Harness
 | "Reference" is the formats' mapping; the name of a bundled preset is its bundle path (Words of this spec; glossary) | user, 2026-11-13 (consistency pass after the Q&A round) | 2026-11-13 |
 | `not-expect:` (step and command) passes when the display does not show the text, by the same comparison as `expect:` (AC-66) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |
 | `expect:` and `not-expect:` take a regular expression written between slashes on the Sharp models; the TI models refuse it (AC-67, AC-68) | user, 2026-11-14 (regular expression instead of a whole-word option) | 2026-11-14 |
+| Calc-U-59's Web follows AC-25 and D-13: a preset's `screenshot:` is handed over with KeepFile as a download (it was written into the browser's save folder); `LibraryPartsSetup::screenshotFolder` is gone | user, 2026-11-17, Q-1 of `docs/reviews/e-simplification.md`; ledger row 59-63 | 2026-11-17 |

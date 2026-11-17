@@ -1080,3 +1080,24 @@ files to `open` through `library/web/components/useShellProduct.jsx`:
 - **Q-E5-1 (AC-6, AC-8).** Should a drop of several files on a Web page be
   one rule for both products (one folder in `/uploads`, as Load Preset…'s
   several files are; or the first file; or none)?
+
+## Release prep step 5a, 5b (2026-11-17, branch `rp5-one-rule`)
+
+The user answered Q-E4-1, Q-E4-2 and Q-E5-1 with one rule, Calc-U-1600's
+(Q-4 of `docs/reviews/e-simplification.md`; AC-24, AC-25; ledger row 59-61):
+
+- `library/qt6/FileOpening` now holds the window's part too:
+  `openFile(window, host, path, way, limits)` raises and activates the
+  window for every way but the start (`bringToFront`), `dragEnter` (one file
+  the session would take), `dragMove` (every move accepted) and `drop` (the
+  proposed action accepted, `open` called from the event loop after the
+  drop). Both MainWindows call them; Calc-U-59's gained a `dragMoveEvent`.
+- `calcuFileDrop(open)` has no rule argument: a drop of exactly one file is
+  opened, any other is ignored, and no drop reaches the browser.
+  `CALCU_DROP_ONE_FILE` and `CALCU_DROP_FIRST_FILE` are gone.
+
+Tests: `lib13_ac24_qt_drop_accepted_and_opened_after_the_handler`,
+`lib13_ac24_qt_window_raised_for_every_way_but_the_start`
+(`calcu_qt6_tests`); `lib13_ac24_qt6_drop_accepted_and_opened_after_the_drop`,
+`lib13_ac24_qt6_open_with_opens_the_preset` (`CalcU59QtTests`); Calc-U-59's
+`play-calculator.spec.js` "LIB-13 AC-25 a drop of two files is ignored".

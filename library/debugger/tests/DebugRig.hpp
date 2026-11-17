@@ -97,7 +97,7 @@ public:
         d.trace.folder = [this]() -> std::optional<settings::Paths::Ensured> {
             switch (opts.folder) {
             case DebugOptions::Folder::None: return std::nullopt;
-            case DebugOptions::Folder::NotWritable: return settings::Paths::Ensured{false, traces.str(), "it is read-only."};
+            case DebugOptions::Folder::NotWritable: return settings::Paths::Ensured{false, traces.str(), "it is read-only"};
             case DebugOptions::Folder::Writable: break;
             }
             return settings::Paths::Ensured{true, traces.str(), {}};

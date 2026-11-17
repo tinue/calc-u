@@ -93,6 +93,7 @@ private:
     calcu::shell::ShellProduct product();
     void onTopic(const QString& topic);
     void followControlState();
+    calcu::qt6::Shell::FaceplateGeometry faceplateGeometry();
     void applyCopyLabel();
     void copyScreen();
     void refreshSerialStatus();

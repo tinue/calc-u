@@ -45,7 +45,7 @@ function LcdCanvas({ shell, lcd, rect }) {
   );
 }
 
-function Faceplate({ shell, model, map, width }) {
+function Faceplate({ shell, model, map, width, shiftFlash }) {
   const height = width / (FACE_ASPECT[model] || FACE_ASPECT["PC-1500A"]);
   const layout = map && map.model === model ? map : null;
   const scale = layout ? width / layout.width : 0;
@@ -53,9 +53,32 @@ function Faceplate({ shell, model, map, width }) {
   const faceRef = React.useRef(null);
   const [loaded, setLoaded] = React.useState(0);
   const held = useTopic(shell, "held-keys");
-  const live = (held && held.live) || [];
+  // A host SHIFT tap (LIB-5 AC-33) is down and up at once, too short for the
+  // held keys: `shiftFlash` counts the taps, each drawn pressed for a moment.
+  const [flashing, setFlashing] = React.useState(false);
+  React.useEffect(() => {
+    if (!shiftFlash) return undefined;
+    setFlashing(true);
+    const t = setTimeout(() => setFlashing(false), 150);
+    return () => clearTimeout(t);
+  }, [shiftFlash]);
+  const heldLive = (held && held.live) || [];
+  const live = flashing && !heldLive.includes("shift") ? [...heldLive, "shift"] : heldLive;
   const hitMap = React.useMemo(() => hitMapOf(layout), [layout]);
-  useShellFaceplate(shell, hitMap, faceRef);
+  // The shell's productFirst hook (LIB-14 D-44) notes where the pointer went
+  // down, in art pixels, and never takes the press: a held key with several
+  // rectangles (the PC-1600's two SHIFT keys, one machine key) is drawn on
+  // the one pressed, else on the first (app/KeyLayout's heldKeyIndex).
+  const [press, setPress] = React.useState(null);
+  const notePress = React.useCallback((x, y) => { setPress({ x, y }); return false; }, []);
+  React.useEffect(() => setPress(null), [model]);
+  useShellFaceplate(shell, hitMap, faceRef, { productFirst: notePress });
+  const heldIndex = (name) => {
+    const keys = layout ? layout.keys : [];
+    const hit = press && keys.findIndex((k) => k.name === name && press.x >= k.x && press.x < k.x + k.w
+      && press.y >= k.y && press.y < k.y + k.h);
+    return hit !== null && hit >= 0 ? hit : keys.findIndex((k) => k.name === name);
+  };
 
   const scaled = (r) => ({ x: r.x * scale, y: r.y * scale, w: r.w * scale, h: r.h * scale });
 
@@ -74,11 +97,11 @@ function Faceplate({ shell, model, map, width }) {
       onContextMenu={(e) => e.preventDefault()}>
       <canvas ref={artRef} className="calcu-face-art" style={{ width, height }} aria-hidden="true" />
       {layout && <LcdCanvas shell={shell} lcd={layout.lcd} rect={scaled(layout.display)} />}
-      {layout && layout.keys.map((k) => {
+      {layout && layout.keys.map((k, i) => {
         const r = scaled(k);
         return (
-          <button key={k.name} type="button" tabIndex={-1} className="calcu-key" data-key={k.name}
-            aria-label={k.name} aria-pressed={live.includes(k.name)}
+          <button key={`${k.name}-${i}`} type="button" tabIndex={-1} className="calcu-key" data-key={k.name}
+            aria-label={k.name} aria-pressed={live.includes(k.name) && heldIndex(k.name) === i}
             style={{ left: r.x, top: r.y, width: r.w, height: r.h }} />
         );
       })}

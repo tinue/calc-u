@@ -37,6 +37,8 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QKeyEvent>
+#include <algorithm>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPlainTextEdit>
@@ -468,6 +470,45 @@ TEST(lib14_ac24_key_under_pointer_pc1500_pc1600) {
             CHECK(calcu::shell::keyAt(map, s, gap.x(), gap.y()) == calcu::machine::KeyId{"enter"});
         }
     }
+}
+
+// The art letterboxed in a faceplate wider than it: a click on a key still
+// holds that key (the hit map starts at the art's corner, not the widget's;
+// a click on SML held SPACE before).
+TEST(lib14_ac24_key_under_pointer_art_letterboxed) {
+    SKIP_UNLESS_WINDOW();
+    for (const char* model : {"PC-1500A", "PC-1600"}) {
+        Fixture f(model);
+        FaceplateWidget* face = f.w().faceplate();
+        face->resize(face->width() * 2, face->height());
+        CHECK(face->artOrigin().x() > 0);
+        for (const char* key : {"sml", "q", "right"}) {
+            const QPoint c = face->keyCentre(QString::fromLatin1(key));
+            click(face, c, true);
+            CHECK(f.waitFor([&] { return held(f) == std::vector<std::string>{key}; }, 1000));
+            click(face, c, false);
+            CHECK(f.waitFor([&] { return held(f).empty(); }, 1000));
+        }
+    }
+}
+
+// A tap of the host's SHIFT (LIB-5 AC-33) is down and up at once, too short
+// for the held keys: the faceplate flashes the SHIFT key instead.
+TEST(lib5_ac33_shift_tap_flashes_the_key) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f("PC-1600");
+    FaceplateWidget* face = f.w().faceplate();
+    const auto shows = [face] {
+        const auto k = face->shownKeys();
+        return std::find(k.begin(), k.end(), std::string("shift")) != k.end();
+    };
+    CHECK(!shows());
+    QKeyEvent down(QEvent::KeyPress, Qt::Key_Shift, Qt::ShiftModifier);
+    QKeyEvent up(QEvent::KeyRelease, Qt::Key_Shift, Qt::NoModifier);
+    QCoreApplication::sendEvent(&f.w(), &down);
+    QCoreApplication::sendEvent(&f.w(), &up);
+    CHECK(shows());
+    CHECK(f.waitFor([&] { return !shows(); }, 1000));
 }
 
 TEST(lib14_ac43_display_hold_full_speed) {

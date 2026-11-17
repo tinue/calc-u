@@ -59,6 +59,15 @@ int keyIndex(const Layout& layout, const char* name) {
     return -1;
 }
 
+int heldKeyIndex(const Layout& layout, const char* name, double artX, double artY) {
+    for (std::size_t i = 0; i < layout.keyCount; ++i) {
+        const KeyRect& r = layout.keys[i];
+        if (std::strcmp(r.name, name) == 0 && artX >= r.x && artX < r.x + r.w && artY >= r.y && artY < r.y + r.h)
+            return static_cast<int>(i);
+    }
+    return keyIndex(layout, name);
+}
+
 int heightForWidth(const Layout& layout, int width) {
     if (layout.imageWidth <= 0) return width;
     return static_cast<int>(width * (layout.imageHeight / layout.imageWidth));

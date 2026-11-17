@@ -112,8 +112,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     // The pointer on the faceplate (AC-24, AC-43): the hit map in the art's
     // pixels, at the art's scale as shown.
-    m_shell->setFaceplate(m_faceplate, cu1600::faceplateHitMap(calcu::machine::ModelId{"PC-1500A"}),
-                          [this] { return m_faceplate->artScale(); });
+    m_shell->setFaceplate(m_faceplate, cu1600::faceplateHitMap(calcu::machine::ModelId{"PC-1500A"}), faceplateGeometry());
     // LIB-7's controls on the bar: the module slots and the cassette by the
     // family rule; the disk controls are the product's (D-29).
     m_shell->registerSlotPicker([this](const calcu::sessions::Value& entry, QWidget* p) -> QWidget* {
@@ -206,14 +205,22 @@ void MainWindow::onTopic(const QString& topic) {
 
 // The control state: the faceplate's art and hit map, the CE-158's printer
 // panel and the Unmount item's text from the product entries (AC-42).
+// The art's scale and its origin in the widget (the art is letterboxed: in a
+// widget wider than the art, a hit map from the widget's corner put every
+// press several keys to the right), and every press noted by the faceplate
+// (which of two keys with one name was touched) before the shell takes it.
+calcu::qt6::Shell::FaceplateGeometry MainWindow::faceplateGeometry() {
+    return {[this] { return m_faceplate->artScale(); }, [this] { return m_faceplate->artOrigin(); },
+            [this](double x, double y) { return m_faceplate->notePress(x, y); }};
+}
+
 void MainWindow::followControlState() {
     const calcu::sessions::Value cs = host().value(calcu::control::kControlStateTopic);
     const std::string model = calcu::shell::read::text(cs, "model");
     if (!model.empty() && model != m_model) {
         m_model = model;
         m_faceplate->setModel(calcu::machine::ModelId{model});
-        m_shell->setFaceplate(m_faceplate, cu1600::faceplateHitMap(calcu::machine::ModelId{model}),
-                              [this] { return m_faceplate->artScale(); });
+        m_shell->setFaceplate(m_faceplate, cu1600::faceplateHitMap(calcu::machine::ModelId{model}), faceplateGeometry());
     }
     const bool printer = calcu::shell::read::flag(productEntry(cs, cu1600::kCe158PrinterPanelEntry), "shown");
     m_ce158Printer->setVisible(printer);
@@ -538,6 +545,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event) {
             // rule stays here, D-12); the engine holds it its minimum.
             m_controller->pressKey("shift");
             m_controller->releaseKey("shift");
+            m_faceplate->flashKey("shift");   // too short for the held keys to show
             event->accept();
             return;
         }

@@ -3,9 +3,11 @@
 
 #include <QPainter>
 #include <QResizeEvent>
+#include <QTimer>
 #include <algorithm>
 
 namespace {
+constexpr int kFlashMs = 150;   // long enough to see, short as a tap
 QRect toQRect(const KeyLayout::PaneRect& r) { return QRect(r.x, r.y, r.w, r.h); }
 } // namespace
 
@@ -25,6 +27,8 @@ void FaceplateWidget::setModel(const calcu::machine::ModelId& model) {
     m_layout = layout;
     m_lcd->setModel(model);
     m_held.clear();
+    m_flashed.clear();
+    m_pressX = m_pressY = -1;
     updateGeometry();
     relayout();
     update();
@@ -34,6 +38,23 @@ void FaceplateWidget::setHeldKeys(std::vector<std::string> keys) {
     if (keys == m_held) return;
     m_held = std::move(keys);
     update();
+}
+
+void FaceplateWidget::flashKey(const std::string& name) {
+    m_flashed.push_back(name);
+    update();
+    QTimer::singleShot(kFlashMs, this, [this, name] {
+        const auto it = std::find(m_flashed.begin(), m_flashed.end(), name);
+        if (it != m_flashed.end()) m_flashed.erase(it);
+        update();
+    });
+}
+
+std::vector<std::string> FaceplateWidget::shownKeys() const {
+    std::vector<std::string> shown = m_held;
+    for (const std::string& k : m_flashed)
+        if (std::find(shown.begin(), shown.end(), k) == shown.end()) shown.push_back(k);
+    return shown;
 }
 
 int FaceplateWidget::heightForWidth(int w) const {
@@ -50,11 +71,21 @@ double FaceplateWidget::artScale() const {
     return m_fitted.art.w / m_layout->imageWidth;
 }
 
+QPointF FaceplateWidget::artOrigin() const {
+    return QPointF(m_fitted.art.x, m_fitted.art.y);
+}
+
 QPoint FaceplateWidget::keyCentre(const QString& name) const {
     if (!m_layout) return QPoint(-1, -1);
     const int i = KeyLayout::keyIndex(*m_layout, name.toUtf8().constData());
     if (i < 0 || i >= static_cast<int>(m_fitted.keys.size())) return QPoint(-1, -1);
     return toQRect(m_fitted.keys[static_cast<std::size_t>(i)]).center();
+}
+
+bool FaceplateWidget::notePress(double artX, double artY) {
+    m_pressX = artX;
+    m_pressY = artY;
+    return false;
 }
 
 void FaceplateWidget::relayout() {
@@ -76,8 +107,8 @@ void FaceplateWidget::paintEvent(QPaintEvent*) {
     // The keys live input holds (LIB-5 AC-19): a translucent white overlay
     // on each one's own area.
     if (!m_layout) return;
-    for (const std::string& k : m_held) {
-        const int i = KeyLayout::keyIndex(*m_layout, k.c_str());
+    for (const std::string& k : shownKeys()) {
+        const int i = KeyLayout::heldKeyIndex(*m_layout, k.c_str(), m_pressX, m_pressY);
         if (i >= 0 && i < static_cast<int>(m_fitted.keys.size()))
             painter.fillRect(toQRect(m_fitted.keys[static_cast<std::size_t>(i)]), QColor(255, 255, 255, 64));
     }

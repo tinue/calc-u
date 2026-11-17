@@ -214,7 +214,9 @@ TEST(lib15_ac22_the_page_topics_are_there) {
 
 // LIB-5 (AC-21, AC-24, AC-10): the page's key grid and the host keys go
 // through the library's typing; the key the page draws pressed is the one
-// live input holds (the library's held-keys, its last `live` key).
+// live input holds (the library's held-keys, its last `live` key). The key
+// grid sends the library's screen-key-down/-up (CalculatorFace.jsx); the
+// test-only `c59.web.key-button-*` went (release prep 4, LIB-15 AC-29).
 TEST(lib5_ac24_web_keys_through_the_typing_engine) {
     WebRig r;
     r.run(1s);
@@ -224,9 +226,16 @@ TEST(lib5_ac24_web_keys_through_the_typing_engine) {
         if (!live || !live->elements()) return std::string("?");
         return live->elements()->empty() ? std::string() : *live->elements()->back().string();
     };
-    r.send("c59.web.key-button-down", Value::object({{"row", 6}, {"col", 2}}));   // 5
+    for (const char* gone : {"c59.web.key-button-down", "c59.web.key-button-up"}) {
+        const calcu::sessions::CallId id = r.post(CommandName{gone}, Value::object({{"row", 6}, {"col", 2}}));
+        r.session().call(r.now);
+        const auto* reply = r.reply(id);
+        CHECK(reply != nullptr && !reply->done);   // no such command
+    }
+    CHECK_EQ(held(), std::string());
+    r.send("screen-key-down", Value::object({{"key", "5"}, {"pointer", 2}}));
     CHECK_EQ(held(), std::string("5"));
-    r.send("c59.web.key-button-up");
+    r.send("screen-key-up", Value::object({{"key", "5"}, {"pointer", 2}}));
     CHECK_EQ(held(), std::string());
     r.run(300ms);
     CHECK_EQ(testroms::displayText(r.machine()), std::string("5"));

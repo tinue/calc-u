@@ -12,7 +12,18 @@
 # Requires emcmake/cmake (e.g. `brew install emscripten`; CI pins the
 # version in .github/workflows/calc-u-59.yml), ninja and node. Re-run
 # whenever core/, app/, roms/ or anything in frontends/web/ changes.
+# --release: without the test-only commands (the CMake option
+# CALCU_WEB_TEST_AIDS off in build/web; LIB-15 AC-29), as the release's zip
+# is built; without it the test build the Playwright tests drive. Switching
+# compiles only the files the option changes again.
 set -euo pipefail
+AIDS=ON
+for arg in "$@"; do
+  case "$arg" in
+    --release) AIDS=OFF ;;
+    *) echo "usage: $0 [--release]" >&2; exit 2 ;;
+  esac
+done
 
 WEB="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$WEB/../.." && pwd)"  # the product directory
@@ -34,7 +45,9 @@ rm -rf "$DIST"
 mkdir -p "$DIST/wasm" "$DIST/bundle" "$DIST/app" "$DIST/vendor" "$DIST/fonts" "$DIST/img"
 
 if [ ! -f "$BUILD/CMakeCache.txt" ]; then
-  emcmake cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release >/dev/null
+  emcmake cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCALCU_WEB_TEST_AIDS=$AIDS >/dev/null
+elif ! grep -qx "CALCU_WEB_TEST_AIDS:BOOL=$AIDS" "$BUILD/CMakeCache.txt"; then
+  emcmake cmake -S "$ROOT" -B "$BUILD" -DCALCU_WEB_TEST_AIDS=$AIDS >/dev/null
 fi
 cmake --build "$BUILD" --target calcu59_web
 cp "$BUILD/products/calc-u-59/ti59-core.js" "$BUILD/products/calc-u-59/ti59-core.wasm" "$DIST/wasm/"

@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { gotoReady } = require('./helpers');
 
 // The web client end to end through the real WASM engine, on dist/index.html
-// (PlayCalculator with the physical keyboard; ?layout=wide|portrait) and
+// (CalcU59 with the physical keyboard; ?layout=wide|portrait) and
 // dist/app/. URLs are relative to the project's baseURL — the server root or
 // a sub-path (playwright.config.js).
 

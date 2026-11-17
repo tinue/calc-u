@@ -10,6 +10,7 @@ All three columns are worked in Part C1.
 | Library | M-29 | AC-1–18; EC-1–5 | M-29 |
 | Calc-U-1600 | M-31 (with LIB-3 1600, LIB-17 1600) | AC-24–28 | M-46 (AC-16's bundle-file clause, D-4; plan §5.1 shows M-31) |
 | Calc-U-59 | M-34 (with the session part of LIB-3 59) | AC-19–23; also LIB-3 AC-31, LIB-9 AC-23 | M-55 |
+| Library and both products | release prep step 4 (`rp4-web-embed`) | AC-29 | release prep step 4 |
 
 - M-29 waits for M-20 (LIB-9 L: `SettingsFile`, `Paths`, `HostDirs`),
   M-22 (LIB-3 L: the app session and its messages) and M-12 (both Web
@@ -415,9 +416,10 @@ the criterion.
 | T17 | 1600 settings and media | AC-25 | `P16/play.spec.js`: `ac25 settings in Calc-U-1600.ini`, `ac25 media saved by 0.8.1 still listed` (IndexedDB `/persist` seeded as 0.8.1 writes it); Longer |
 | T18 | 1600 sound | AC-26 | `P16/audio.spec.js`: `ac26 buzzer samples at regular speed, none at full speed or in an operation` (the product's test hook counts samples); Longer |
 | T19 | 1600 regression | AC-28 | `P16/play.spec.js` cases at lines 44, 236, 329, 337; `offline.spec.js:40`; `prerender.spec.js:32`, kept with new hooks; Longer |
-| T20 | Calc-U-59 on the shell | AC-19, AC-22 | `P59/play-calculator.spec.js`: `ac19 PlayCalculator props, layout and settings, no module`, `ac22 no message of the old protocol`; Longer |
+| T20 | Calc-U-59 on the shell | AC-19, AC-22 | `P59/play-calculator.spec.js`: `ac19 CalcU59 props, layout and settings, no module` (named `ac19 PlayCalculator …` until release prep 4), `ac22 no message of the old protocol`; Longer |
 | T21 | 59 persistent file system | AC-20 (settings part; `ti58c.mem` through `TIFileAccess`), LIB-9 AC-23 | `P59/storage.spec.js`: `ac20 settings survive a page load`, `lib9_ac23 no calcu59 key read or written`, and line 181's constant-memory test kept; Longer. Cards: C59-7's tests in M-55; `ti58c.memory.yaml`: C59-3's in M-54 |
 | T22 | 59 one writer, suspend | AC-21, LIB-3 AC-31 | `P59/storage.spec.js`: `ac21 a second tab says it cannot save`; `P59/play-calculator.spec.js`: `lib3_ac31 hidden page suspends`; Longer |
+| T24 | the family's embedding (release prep 4) | AC-29 | `L/embed_props.test.js`: `lib15_ac29_shared_props_in_their_order`, `lib15_ac29_layout_has_no_library_default`; Frequent (`LibraryWebNodeTests`). `P59/session.spec.js`: `ac29 CalcU59 is the component, PlayCalculator is gone`; `P16/session.spec.js`: `ac29 layout auto only, another value ignored with a warning`; Longer. `59/tests/web_part_tests.cpp` `lib5_ac24_…` (the key-button commands answer as unknown); Frequent. CTest `CalcU59WebNoTestAids`, `CalcU1600WebNoTestAids` (`tests/web_no_test_aids.sh`: a `--release` dist/ holds none of the names); Longer, and on the zipped dist/ in CI |
 | T23 | 59 regression | AC-23 | `play-calculator.spec.js:71` (both layouts), `:471-491` (example offline), `offline.spec.js:47` (Chromium, WebKit), `prerender.spec.js:33`, kept with new hooks; Longer |
 
 Every criterion assigned to the C1 steps (AC-1–28, EC-1–5: 33) is in at
@@ -589,3 +591,26 @@ the name with its extension), which both products' painters wrote each.
 is complete with a size (Calc-U-59's rule; Calc-U-1600 waited for `load`,
 which comes after `complete`, so an image is never drawn later than
 before). LIB-14's section of the same name has the component set's part.
+
+## Release prep step 4 (2026-11-17, branch `rp4-web-embed`)
+
+`docs/reviews/release-prep-plan.md` §4; AC-29. `embedProps` returns the
+shared props in their order, `{width, keyboard, layout, preset, height,
+model, workerUrl, rest}`; `layout` has no library default (each product
+sets its own). Calc-U-59's component is `CalcU59` (`src/CalcU59.jsx`,
+`CalcU59.portraitWidth`); `build.js` names it for the app page. Calc-U-1600
+checks `layout` against its one layout (`"auto"`) in an effect and warns
+once per value; its app page passes `layout: "auto"`.
+
+Test aids: the CMake option `CALCU_WEB_TEST_AIDS` (`library/CMakeLists.txt`,
+default ON) gives `SharpWebPart.cpp` alone the definition of the same name
+(`set_source_files_properties` in `products/calc-u-1600/cmake/CalcU.cmake`),
+so a switch recompiles that file and relinks the engine; `c1600.upload` and
+`c1600.display-text` are registered only with it. Calc-U-59's
+`c59.web.key-button-*` were used by no page and are deleted. Each
+`frontends/web/build.sh --release` configures `build/web` with the option
+OFF (and a plain `build.sh` with it ON again, when the cached value
+differs). CI and `ci/linux/jobs.sh` test the test build, then build the
+`--release` dist/, check it (`tests/web_no_test_aids.sh <dist>`) and zip
+that one.
+

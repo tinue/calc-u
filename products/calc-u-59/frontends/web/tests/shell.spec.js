@@ -160,7 +160,7 @@ test('lib14_ac29 settings prop off', async ({ page }) => {
     const div = document.createElement('div');
     div.id = 'second';
     document.body.appendChild(div);
-    ReactDOM.createRoot(div).render(React.createElement(PlayCalculator, { layout: 'portrait', width: 360, height: 640, settings: false }));
+    ReactDOM.createRoot(div).render(React.createElement(CalcU59, { layout: 'portrait', width: 360, height: 640, settings: false }));
   });
   const second = page.locator('#second .calcu-client');
   await expect(second.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Calc-U 59 — web client</title>
-<!-- The web client's demo and test page: PlayCalculator with the physical
+<!-- The web client's demo and test page: CalcU59 with the physical
      keyboard, sized to the window, in the layout the query names
      (?layout=wide|portrait, default wide; also ?width=, ?height=, ?model=,
      ?preset=; ?model= by its name, TI-58C). Every path is relative, like the rest of dist/
@@ -38,11 +38,11 @@
   function size() {
     const w = root.clientWidth, h = root.clientHeight;
     // Portrait: not wider than the calculator at this height needs.
-    const width = layout === "portrait" ? Math.min(w, PlayCalculator.portraitWidth(h)) : w;
+    const width = layout === "portrait" ? Math.min(w, CalcU59.portraitWidth(h)) : w;
     return { width: num("width") || Math.floor(width), height: num("height") || Math.floor(h) };
   }
   function render() {
-    reactRoot.render(React.createElement(PlayCalculator, {
+    reactRoot.render(React.createElement(CalcU59, {
       layout, keyboard: true, ...size(),
       model: q.get("model") || undefined, preset: q.get("preset") || undefined,
     }));

@@ -46,6 +46,27 @@ test('ac24 CalcU1600 takes the AC-16 props, the model by its name', async ({ pag
   await expect(page.locator('.calcu-face[data-model="PC-1500"]')).toHaveCount(1);
 });
 
+// LIB-15 AC-29 (release prep 4): `layout` is a shared prop; Calc-U-1600 has
+// one layout and takes "auto" only (its default); another value is ignored
+// with a console warning (ledger 1600-52).
+test('ac29 layout auto only, another value ignored with a warning', async ({ page }) => {
+  const warnings = [];
+  page.on('console', (m) => { if (m.type() === 'warning') warnings.push(m.text()); });
+  await gotoReady(page);
+  await page.evaluate(() => {
+    for (const layout of ['auto', 'wide']) {
+      const div = document.createElement('div');
+      div.id = `layout-${layout}`;
+      document.body.appendChild(div);
+      ReactDOM.createRoot(div).render(React.createElement(CalcU1600, { layout, width: 900, height: 600 }));
+    }
+  });
+  await expect(page.locator('#layout-wide .calcu-client')).toHaveCount(1);
+  await expect(page.locator('#layout-auto .calcu-client')).toHaveCount(1);
+  await expect.poll(() => warnings.filter((w) => /layout/.test(w))).toEqual(
+    ['CalcU1600: layout "wide" is not one of its layouts ("auto"); it is ignored.']);
+});
+
 test('ac25 settings in Calc-U-1600.ini, media in the save folder of 0.8.x', async ({ page }) => {
   await gotoReady(page, '?model=PC-1600');
   expect((await send(page, 'set-setting', { section: 'startup', key: 'model', value: 'PC-1600' })).done).toBe(true);

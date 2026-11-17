@@ -44,7 +44,7 @@ repository, or a local `frontends/web/dist/` for testing) and mounts the calcula
 from it. This document is the contract between the two.
 
 ```
-library/web/src/* + frontends/web/src/* ──(Babel, in Node)──▶ calc.js: PlayCalculator ─┐ LIB-3 messages (postMessage)
+library/web/src/* + frontends/web/src/* ──(Babel, in Node)──▶ calc.js: CalcU59        ─┐ LIB-3 messages (postMessage)
                                                                              ▼
 calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀── bindings.cpp + app/ + core/ + library (emcc)
 ```
@@ -59,7 +59,7 @@ calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀�
 | `src/Dialogs.jsx` | Card picker on the `media` topic (Arm Card, Arm Fresh Card; the replace question by the library's `calcuAskedQuestion`) (`CardPickerDialog`); File ▸ Saved Media… is the library's `ShellSavedMedia` |
 | `src/Paper.jsx` | The PC-100C's pane: the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), owner from the control state, which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (LIB-2's `set-control`; TRACE's position `c59.printer`), Copy and Cut its `paper.copy` / `paper.cut` (LIB-8, M-53; Qt6: `calcu::qt6::PaperPanel`). The PC-100C is attached by the bar's button "PC-100C" (M-57) |
 | `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) on the debug part's product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `heatmap`, `asm-overlay`, `c59.debug-view` and LIB-3's `log` (C59-4, M-56); Run, TRACE and the CALCULATOR tab follow the `control-state` entries `c59.asm-run`, `c59.trace`, `c59.calculator-tab`; FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` (LIB-10, M-53) |
-| `src/PlayCalculator.jsx` | The component, put together from the React set's shell (LIB-14 59, M-57): the menu bar (wide) or the bar's Reset, Preset, Settings and More (portrait), the shell's control bar with LIB-7's module picker (the library's `ShellSlotPicker`) and C59-7's card controls, the shell's dialogs, the storage banner, "ROMs missing"; the product's data and faceplate maps through the library's `useShellProduct` and `useFaceplateMaps`; the two layouts, focus and physical keyboard (the library's `calcuHostKeys`), drag and drop (LIB-13's `open {way: drop, upload: true}`, M-56; the library's `calcuFileDrop`: a drop of exactly one file, LIB-13 AC-25; `calcuOpenFiles`), keyboard feedback (`[keyboard] feedback`) (`MainWindow`) |
+| `src/CalcU59.jsx` | The component `CalcU59` (2.3.0's `CalcU59`, renamed in release prep 4), put together from the React set's shell (LIB-14 59, M-57): the menu bar (wide) or the bar's Reset, Preset, Settings and More (portrait), the shell's control bar with LIB-7's module picker (the library's `ShellSlotPicker`) and C59-7's card controls, the shell's dialogs, the storage banner, "ROMs missing"; the product's data and faceplate maps through the library's `useShellProduct` and `useFaceplateMaps`; the two layouts, focus and physical keyboard (the library's `calcuHostKeys`), drag and drop (LIB-13's `open {way: drop, upload: true}`, M-56; the library's `calcuFileDrop`: a drop of exactly one file, LIB-13 AC-25; `calcuOpenFiles`), keyboard feedback (`[keyboard] feedback`) (`MainWindow`) |
 | `calc-engine-worker.js` | The product's configuration of the library's Web Worker (`library/web/src/worker.js`): the engine's name, its factory, the persistent mount `/persist-calc-u-59` and the lock `calcu59-storage` |
 | `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle` (without the full set: a session without a machine and the topic `roms-missing`), the settings file, the shell's part, LIB-14's `SettingsPart`, LIB-4's ControlPart (C59-4's product entries), `TIAppPart::sessionParts()` (the library's parts with the TI rules, the bundle of `/presets`; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
 | `calc.css` | Tokens, fonts and every rule the client needs |
@@ -118,7 +118,8 @@ goes down (LIB-14 D-9: a drag no longer moves the press to another key).
 ## Build
 
 ```bash
-frontends/web/build.sh          # → frontends/web/dist/ (gitignored)
+frontends/web/build.sh          # → frontends/web/dist/ (gitignored): the test build
+frontends/web/build.sh --release  # the release build (the zip of a release): no test-only command
 frontends/web/run-tests.sh      # Playwright against dist/; build first
 ```
 
@@ -133,7 +134,10 @@ version in the repository's `.github/workflows/calc-u-59.yml`, job `web`),
    headers `SharedArrayBuffer` needs), with `-fwasm-exceptions` (app/
    reports file errors with exceptions), `MODULARIZE` as
    `createTI59CoreModule`, `FS` and `IDBFS` exported, the library's glue
-   (`calcu_web_glue`) linked;
+   (`calcu_web_glue`) linked; with `--release` the tree's option
+   `CALCU_WEB_TEST_AIDS` is OFF (LIB-15 AC-29; Calc-U-59 has no test-only
+   command left, so the engine is the same; a plain build sets it ON again),
+   and CI zips that dist/ after `tests/web_no_test_aids.sh` checked it;
 2. copies the full set of ROM files (the 24 of `roms/fetch_roms.sh`, LIB-12
    AC-9; the module files hold the cue cards, C59-7 AC-23) from `roms/` to `dist/bundle/`, and the artwork (`ti59_base`,
    `ti58_base` and the three cue-card templates) from `frontends/swift/App/Assets.xcassets`
@@ -144,7 +148,7 @@ version in the repository's `.github/workflows/calc-u-59.yml`, job `web`),
    build (`library/web/build/dist.js` `buildProduct`, which Calc-U-1600 and
    the library's test product use too): it compiles the library's page side and `src/*` into one `calc.js` (in
    `SOURCES` order, with the version stamped in) and the library's app page
-   with `PlayCalculator` into `app/app.js`, fails on a selector of
+   with `CalcU59` into `app/app.js`, fails on a selector of
    `calc.css` outside `.calcu-client` (LIB-15 AC-17), copies the library's
    worker (`library-worker.js`), service worker and app worker entry, the
    presets from `examples/`, writes `files.json` (what the worker loads),
@@ -162,7 +166,7 @@ downloads and pins.
 
 | Path | What it is |
 |---|---|
-| `calc.js` | The calculator components in one closure. Exposes one global, `PlayCalculator`. Needs a global `React` 18 loaded before it |
+| `calc.js` | The calculator components in one closure. Exposes one global, `CalcU59`. Needs a global `React` 18 loaded before it |
 | `calc.css` | Everything the calculator needs to look right: tokens, `@font-face`, cue-card rules |
 | `calc-engine-worker.js`, `library-worker.js` | The engine's Web Worker (the product's configuration, the library's worker) |
 | `wasm/` | `ti59-core.js`, `ti59-core.wasm` |
@@ -176,7 +180,7 @@ downloads and pins.
 | `MANIFEST.json` | `{name, version, commit, files}` — below |
 
 Everything else in `dist/` is internal: a host references only `calc.js`,
-`calc.css` and the `PlayCalculator` props. The worker's message protocol,
+`calc.css` and the `CalcU59` props. The worker's message protocol,
 the file names under `wasm/`, `bundle/`, `img/` and `presets/` and `files.json` may change with any build.
 
 ### Mounting it
@@ -188,22 +192,25 @@ the file names under `wasm/`, `bundle/`, `img/` and `presets/` and `files.json` 
 <script src="calc/calc.js"></script>
 <script>
   ReactDOM.createRoot(el).render(
-    React.createElement(PlayCalculator, { layout: "portrait", width: 400, keyboard: true }));
+    React.createElement(CalcU59, { layout: "portrait", width: 400, keyboard: true }));
 </script>
 ```
 
 | Prop | Default | Meaning |
 |---|---|---|
-| `layout` | `"portrait"` | `"wide"` (calculator, printer, debugger side by side), `"portrait"` (calculator and printer pages) or `"auto"` (by the window's size, the PWA's choice: needs `width` and `height`) |
 | `width` | the parent's width | CSS px the client may take. Wide: the calculator artwork takes 40 % (at most 420 px without `height`, never below 400 px), the printer 220–320 px, the debugger the rest (at least 220 px) |
-| `height` | from the width | CSS px. Without it the height follows the artwork's aspect plus the 50 px bar; with it the artwork fits inside (the PWA passes `#root`'s content box) |
 | `keyboard` | `true` | The calculator is focusable and takes the physical keyboard while focused (`AppLayer.md` § "Physical Keyboard Mapping"); `false` turns it off (LIB-15 AC-16) |
-| `settings` | `true` | Offer Settings… (the File menu, the portrait bar's Settings button and the More menu; LIB-14 AC-29) |
-| `model` | stored setting | Start with this model, by its name: `"TI-59"`, `"TI-58"` or `"TI-58C"`; another name is a notice and the client starts as without it |
+| `layout` | `"portrait"` | `"wide"` (calculator, printer, debugger side by side), `"portrait"` (calculator and printer pages) or `"auto"` (by the window's size, the PWA's choice: needs `width` and `height`) |
 | `preset` | none | Start with this bundled preset, by its path in `presets/` (`"sum.ti59"`); a path that is not there is a notice |
+| `height` | from the width | CSS px. Without it the height follows the artwork's aspect plus the 50 px bar; with it the artwork fits inside (the PWA passes `#root`'s content box) |
+| `model` | stored setting | Start with this model, by its name: `"TI-59"`, `"TI-58"` or `"TI-58C"`; another name is a notice and the client starts as without it |
 | `workerUrl` | `calc-engine-worker.js` beside `calc.js` | Start the engine through this script. The PWA's, for its service worker; a host leaves it out |
+| `settings` | `true` | Offer Settings… (the File menu, the portrait bar's Settings button and the More menu; LIB-14 AC-29) |
 
-`model`, `preset` and `workerUrl` are read once, at mount (LIB-15 EC-5).
+The props are the family's shared ones in their order (`width`, `keyboard`,
+`layout`, `preset`, then `height`, `model`, `workerUrl`; LIB-15 AC-16,
+AC-29, `docs/contracts/frontend.md` FE-7), then Calc-U-59's own
+`settings`. `model`, `preset` and `workerUrl` are read once, at mount (LIB-15 EC-5).
 2.3.0's `module` prop is gone (LIB-15 AC-19): a host page that wants
 another module names a preset that sets it.
 
@@ -275,14 +282,14 @@ and against one that serves `dist/` only under `/anything/calc/` and answers
 
 ### No side effects in render
 
-The website prerenders `PlayCalculator` server-side in a sandbox whose
+The website prerenders `CalcU59` server-side in a sandbox whose
 `fetch` and `Worker` throw. So rendering must have no side effects: the
 worker, fetches and listeners start in effects, which a static render never
 runs, and module-level code may only read `document.currentScript` (and
 `location` as a fallback). `tests/prerender.spec.js` renders `calc.js` that
 way in Node with the vendored ReactDOMServer (the library's sandbox,
 `library/web/tests/dist-helpers.js` `prerender`), and also checks that `calc.js`
-leaks no globals besides `PlayCalculator`.
+leaks no globals besides `CalcU59`.
 
 ### Styling
 
@@ -296,7 +303,7 @@ styles; the host styles only its own layout around the client.
 
 ### The PWA (`app/`)
 
-`app/index.html` mounts `PlayCalculator` with `layout="auto"`, the keyboard
+`app/index.html` mounts `CalcU59` with `layout="auto"`, the keyboard
 and an install banner. It follows the window as the iOS app does (the app layer's
 `mobileLayout`, `mobilePrinterWidth`, `mobileBarLabels`, through
 the request `c59.mobile-rules`): pages when taller than wide; calculator,

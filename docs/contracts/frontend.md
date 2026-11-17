@@ -216,6 +216,18 @@ Options:
 - (b) Each product keeps its own: the site carries two embed codes that
   drift.
 
+**Amended (2026-11-17, user; release prep step 4).** The components are
+`CalcU59` (was `PlayCalculator`, with `CalcU59.portraitWidth`) and
+`CalcU1600`. The shared props, in this order: `width`, `keyboard`,
+`layout`, `preset`, then `height`, `model`, `workerUrl`, then the
+product's own (Calc-U-59's `settings`). `layout` is shared: Calc-U-59
+takes `portrait` (its default), `wide` and `auto`; Calc-U-1600 has one
+layout and takes `auto` only (its default; another value is ignored with
+a console warning). A release's Web zip is a release build (each
+product's `frontends/web/build.sh --release`, the CMake option
+`CALCU_WEB_TEST_AIDS` off): the handle has no test-only command. LIB-15
+AC-29; calc-u-site follows in M-62.
+
 ## Sessions, pacing and operations
 
 Added in the phase 4 review: the divergence matrix marked these "merge"

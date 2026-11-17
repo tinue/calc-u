@@ -102,9 +102,13 @@ Never edit the calculator there — that copy is generated.
    files the PWA needs offline go into `build.js`'s `core` list for the
    library's service worker (build.js fails on a missing one).
 4. **Render has no side effects** (`WebClient.md` § "No side effects in render").
-5. **`calc.js` exposes `PlayCalculator` only.** The sources are concatenated
+5. **`calc.js` exposes `CalcU59` only** (`src/CalcU59.jsx`; 2.3.0's
+   `PlayCalculator` went in release prep 4). The sources are concatenated
    into one closure; a new file goes into `sources` in `build.js` (the
-   product's data for the library's `buildProduct`), in load order. Its props (`WebClient.md` § "Mounting it") and the stable hooks
+   product's data for the library's `buildProduct`), in load order. Its props (`WebClient.md` § "Mounting it": the family's
+   shared ones from the library's `embedProps`, in the order `width`,
+   `keyboard`, `layout`, `preset`, `height`, `model`, `workerUrl`, then
+   `settings`; LIB-15 AC-29) and the stable hooks
    are the contract — changing them is a change for the website too.
 6. **The client brings its own styling** (`reference/WebClient.md`). Fonts and
    React are self-hosted in `frontends/web/` (no CDN).
@@ -123,6 +127,7 @@ Never edit the calculator there — that copy is generated.
 
 ```bash
 frontends/web/build.sh                       # → frontends/web/dist/ (~15 s; engine: CMake target calcu59_web in ../../build/web)
+frontends/web/build.sh --release             # the release dist/ (CALCU_WEB_TEST_AIDS off; CI zips it after tests/web_no_test_aids.sh)
 frontends/web/run-tests.sh                   # all tests, at / and under /anything/calc/
 frontends/web/run-tests.sh -g "cue card"     # extra args go to playwright test
 python3 -m http.server 8000 -d frontends/web/dist   # look at it: http://localhost:8000/

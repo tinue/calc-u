@@ -1,4 +1,4 @@
-// PlayCalculator — the web client, and the one global calc.js exposes
+// CalcU59 — the web client, and the one global calc.js exposes
 // (reference/WebClient.md has the props). Put together from the React set's
 // shell (LIB-14 59, M-57): in the wide layout the shell's menu bar (File,
 // Machine, Help; no Edit, AC-26), in the portrait layout no menu bar and the
@@ -208,13 +208,14 @@ function PortraitLayout({ page, width, height }) {
 // the product's yet.
 const C59_NO_PRODUCT = { name: "Calc-U-59", items: [], variantLabels: {}, moduleSlotPinOuts: [], placesWithoutControl: [] };
 
-// The props (LIB-15 AC-16, AC-19): the embedding interface's width, height,
-// keyboard (on by default), model (by its name), preset (a bundled preset's
-// path) and workerUrl, and the product's own layout and settings. model and
-// preset are read once, at mount (EC-5).
-function PlayCalculator(props) {
-  const { width, height, keyboard, model: modelProp, preset, workerUrl, rest } = embedProps(props);
-  const { layout = "portrait", settings = true } = rest;
+// The props (LIB-15 AC-16, AC-19, AC-29): the embedding interface's width,
+// keyboard (on by default), layout ("portrait", the default, "wide" or
+// "auto"), preset (a bundled preset's path), height, model (by its name) and
+// workerUrl, and the product's own settings. model and preset are read
+// once, at mount (EC-5).
+function CalcU59(props) {
+  const { width, keyboard, layout = "portrait", preset, height, model: modelProp, workerUrl, rest } = embedProps(props);
+  const { settings = true } = rest;
   // The traces the session hands over (the LOG tab), kept by the page's host services.
   const traces = React.useRef(null);
   if (!traces.current) traces.current = createC59Traces();
@@ -360,6 +361,6 @@ function PlayCalculator(props) {
 
 /// The portrait client's width for a height: no wider than the calculator
 /// at that height needs (the demo page sizes itself with it).
-PlayCalculator.portraitWidth = (height) => faceWidthFor(height) + 2 * FACE_PADDING;
+CalcU59.portraitWidth = (height) => faceWidthFor(height) + 2 * FACE_PADDING;
 
-Object.assign(window, { PlayCalculator });
+Object.assign(window, { CalcU59 });

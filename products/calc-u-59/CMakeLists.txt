@@ -209,6 +209,9 @@ if(CALCU_TESTS)
   if(NOT WIN32)
     calcu_add_test(CalcU59RomMissingBuild longer COMMAND sh tests/rom_missing_build.sh
                    PROPERTIES ENVIRONMENT CALCU=$<TARGET_FILE:calcu>)
+    # LIB-15 AC-29 (release prep 4): a release Web dist/ (build.sh --release)
+    # has no test-only command; CI checks the dist/ it zips the same way.
+    calcu_add_test(CalcU59WebNoTestAids longer COMMAND sh tests/web_no_test_aids.sh PROPERTIES RUN_SERIAL TRUE)
   endif()
   if(APPLE)
     set(iphone "platform=iOS Simulator,id=$(bin/simulators resolve --role iphone)")   # bin/simulators.yaml

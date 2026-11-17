@@ -64,6 +64,17 @@ struct LibraryPartsSetup {
     // Whether the trace folder can be used now (the Swift frontend's iCloud,
     // C59-4 AC-12); null: always.
     std::function<bool()> traceAvailable;
+    // Calc-U-59 (its behaviour before Part E, a question for the user:
+    // LIB-10's Part E simplification E-1): the places as they are when the
+    // parts are made (the save and tape folders of the media, the folder for
+    // screenshots, the trace folder, made when a trace starts and not
+    // checked by a write) and the trace limit of that moment; false: each
+    // read when used (Calc-U-1600).
+    bool placesAtStart = false;
+    // Set: the folder for screenshots instead of the places' (Calc-U-59's
+    // Web: its save folder, where the places have none, LIB-9 AC-17; a
+    // question for the user: LIB-6's Part E simplification E-1).
+    std::optional<std::string> screenshotFolder;
 
     // LIB-5: the product's typing.
     const typing::TypingProduct* typing = nullptr;
@@ -136,6 +147,7 @@ public:
 
 private:
     LibraryPartsSetup setup_;
+    std::unique_ptr<settings::Paths> startPlaces_;   // placesAtStart
     startup::MachineControl machineControl_;
     std::unique_ptr<typing::TypingPart> typing_;
     std::unique_ptr<peripherals::PeripheralsPart> peripherals_;

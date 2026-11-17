@@ -1530,7 +1530,17 @@ format 2 in M-54.
   `TraceSession::setFolder`/`setLimit` are gone (the harness's late patch,
   LIB-11 this step). `DebuggerPart::runControl()` has a const overload.
 - Calc-U-59's `TraceTarget` (a folder and a byte count, divided back into
-  MiB) and its two folder lambdas are gone. Its trace folder now follows
-  the places at each trace, as Calc-U-1600's always did, not the folder of
-  the start; its limit reads the setting at each trace (a negative value
-  now gives 50 as AC-11 says).
+  MiB) and its two folder lambdas are gone. Calc-U-59 keeps its behaviour
+  through `LibraryPartsSetup::placesAtStart`: the trace folder and the
+  limit as they are when the session is made, the folder made when a trace
+  starts (refused with the file system's reason when it cannot be made,
+  with no write check), as its own lambda did; the save folder of the media
+  and the screenshots are those of the start too. A limit below 1 cannot
+  reach either product: the declaration's minimum gives the default 50.
+
+**Question for the user.** Calc-U-1600 reads the trace folder, the limit
+and the save folder at each use (a change in the settings applies at once;
+a trace start checks that the folder can be written, "cannot write to the
+folder …"); Calc-U-59 keeps the ones of its start until the next start (a
+comment of its Qt6 frontend: "A new save or trace folder is used from the
+next start"). Should both follow one rule, and which?

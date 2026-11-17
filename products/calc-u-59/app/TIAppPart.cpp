@@ -53,13 +53,13 @@ TIDebuggerOptions debuggerOptions(TIDebugPart& panel) {
     return o;
 }
 
-// C59-4 AC-12: TRACE can be used where the trace folder can be made, or
-// where the host keeps the traces (the Web: no trace folder).
+// C59-4 AC-12: TRACE can be used where the trace folder (the one of the
+// start) can be made, or where the host keeps the traces (the Web: no trace
+// folder).
 std::function<bool()> traceAvailable(const TIAppSetup& s) {
-    const calcu::settings::Paths* paths = s.paths;
+    const std::optional<std::string> folder = s.paths->traceFolder();
     const std::function<bool()> available = s.traceAvailable;
-    return [paths, available] {
-        const std::optional<std::string> folder = paths->traceFolder();
+    return [folder, available] {
         if (!folder || folder->empty()) return true;
         if (available && !available()) return false;
         std::error_code ec;
@@ -115,6 +115,8 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     s.paths = m_setup.paths;
     s.roms = m_setup.roms;
     s.traceAvailable = m_setup.traceAvailable;
+    s.placesAtStart = true;   // as before Part E (LIB-10, LIB-6 E-1)
+    s.screenshotFolder = m_setup.screenshotFolder;
     s.typing = &typingProduct();
     s.hosting = m_setup.hosting;
     s.presetRules = &m_rules;

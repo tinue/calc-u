@@ -441,4 +441,10 @@ Risks:
   tape folders, the trace folder (`debugger::traceFolderOf`), the folder for
   screenshots and `~/` (its `home`). Calc-U-59's app layer no longer makes
   a second `Paths` of kind `Swift` over the host's save folder; it takes
-  the host's (`TIAppSetup::paths`), as Calc-U-1600's takes `AppPaths`.
+  the host's (`TIAppSetup::paths`), as Calc-U-1600's takes `AppPaths`, and
+  asks for `LibraryPartsSetup::placesAtStart` (its places fixed at the
+  start, as before; LIB-10's E-1 section has the question for the user).
+  Its Web engine sets `LibraryPartsSetup::screenshotFolder` to its save
+  folder: AC-17 says a screenshot on the Web is a download and no folder
+  exists for it, Calc-U-59's Web writes it into its save folder (as
+  before; LIB-6's E-1 section has the question for the user).

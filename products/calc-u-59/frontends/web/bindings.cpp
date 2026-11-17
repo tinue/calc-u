@@ -76,6 +76,7 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     // The save folder; no trace folder: a trace is handed over with KeepFile
     // (LIB-10 AC-26), [trace] max-file-size-mb sets its limit.
     setup.paths = parts->paths.get();
+    setup.screenshotFolder = start.dirs.saveFolder;   // a preset's screenshot: written there
     setup.examplesFolder = start.presetsDir;   // the bundle (LIB-15 AC-16)
     parts->app = std::make_unique<cu59::TIAppPart>(std::move(setup));
     parts->web = std::make_unique<cu59::TIWebPart>();

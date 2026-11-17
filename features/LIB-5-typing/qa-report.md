@@ -357,3 +357,12 @@ section: a `key:` step finishes when its last key is up
 longer holds the preset (only the TI profile waits for readiness after a
 release). Column status: **In progress** until AC-22 and AC-24 are shown
 in Swift (M-58, D-15).
+
+### M-58 (2026-11-17, branch `m58-swift-59`; Swift)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-22 | Pass (Swift on macOS; none on iOS, by code) | `ShellBridgeTests.test_lib5_ac22_host_key_reaches_the_machine` (macOS unit tests: the host key 1 through the bridge's `host-key-down` holds the key 1 in `held-keys`, its key-up lets it go); on iOS `physicalKeyboard` adds nothing (unchanged) |
+| AC-24 | Pass (Swift) | `ShellBridgeTests.test_lib5_ac24_screen_key_minimum_hold` (a press of the shell's pointer rule let go at once still reaches the machine: `screen-key-down`/`-up` through the typing engine, the display shows 1); XCUITest `test_lib14_ac24_a_key_under_the_pointer` (a short tap on 1 on the faceplate shows 1) |
+
+Every criterion of the column passes in every frontend: **Done**.

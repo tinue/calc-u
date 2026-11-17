@@ -271,16 +271,6 @@ TEST(lib9_ac25_one_declaration_for_every_frontend) {
     CHECK(text.find("save-folder = /qt/cards") != std::string::npos);
     CHECK(text.find("note = kept") != std::string::npos);
     CHECK(text.find("led-style = classic") != std::string::npos);
-
-    // The UI tests' launch values (design §4): in a file never written.
-    TestSettings t;
-    CHECK(s59::applyLaunchSetting(t.file, "display.led-style=classic"));
-    CHECK(s59::applyLaunchSetting(t.file, "window.portrait-debug-page=true"));
-    CHECK(s59::applyLaunchSetting(t.file, "startup.last-model=TI-59"));
-    CHECK(!s59::applyLaunchSetting(t.file, "display.led-style"));
-    CHECK(!s59::applyLaunchSetting(t.file, "nothing.here=1"));
-    CHECK(t.settings.ledStyle() == s59::LedStyle::Classic && t.settings.portraitDebugPage());
-    CHECK(t.settings.lastUsedModel() == Model::TI59);
 }
 
 // AC-35: the Qt6 window's place, size and panel widths are plain numbers.

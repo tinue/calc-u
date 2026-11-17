@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 // The settings in the session (LIB-14 design §3.5, D-3, D-19; spec AC-11,
 // AC-13, AC-14, EC-3): the state topic `settings` and the commands
@@ -16,7 +17,8 @@
 //
 //   settings        {home, rows: [{section, key, kind, value, default,
 //                   choices, min?, max?, inUse, isDefault}]} for every
-//                   declared key but [window] and [startup] last-model;
+//                   declared key but [window] and [startup] last-model,
+//                   and the keys of `alsoShown`;
 //                   `kind`: text, path, boolean, integer, choice,
 //                   model-or-last, model-name, folder ([folders] keys)
 //   set-setting     {section, key, value | null}: null is the default; a
@@ -41,6 +43,10 @@ struct SettingsPartSetup {
     std::function<std::optional<std::string>(std::string_view, std::string_view)> inUse;
     // After a change: the product applies it.
     std::function<void(std::string_view section, std::string_view key)> changed;
+    // Keys the rule above leaves out that this frontend's dialog shows,
+    // "section.key" (Calc-U-59's Swift frontend: [window]
+    // portrait-debug-page, C59-8 AC-7); in the topic and set by set-setting.
+    std::vector<std::string> alsoShown = {};
 };
 
 class SettingsPart final : public sessions::SessionPart {
@@ -55,6 +61,7 @@ public:
 private:
     sessions::CommandOutcome set(const sessions::Value& args, sessions::SessionContext&);
     std::string inUse(const settings::KeyDecl&) const;
+    bool shown(const settings::KeyDecl&) const;
     SettingsPartSetup setup_;
     sessions::StateTopic* topic_ = nullptr;
 };

@@ -39,7 +39,7 @@ final class LayoutTests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         #endif
         let app = XCUIApplication()
-        app.launchArguments += ["--UITesting"]
+        app.launchArguments += ["--settings-file", writeSettingsFile([])]
         app.launchEnvironment["CALCU59_ROM_LEAVE_OUT"] = "TMC0583.txt"
         app.launch()
         let text = app.staticTexts["romsMissingText"]
@@ -47,21 +47,31 @@ final class LayoutTests: XCTestCase {
         XCTAssertTrue(text.label.contains("TMC0583.txt: missing"), "the text does not name the file: \(text.label)")
         XCTAssertTrue(text.label.contains("The full set of ROM files is needed"))
         XCTAssertFalse(app.buttons["btn-reset"].exists, "the calculator is shown")
+        // C59-8 AC-19: no bar; Help still works.
+        XCTAssertFalse(app.descendants(matching: .any)["bar-model"].exists, "a control bar without the ROMs")
+        XCTAssertTrue(app.buttons["item-help"].exists, "no help without the ROMs")
     }
 
     // MARK: - Button visibility
 
-    /// The Reset button must be visible and hittable in the card reader bar.
+    /// The Reset button must be visible and hittable in the control bar; on
+    /// macOS Reset and Load Preset… are in the menus (C59-8 AC-4, AC-17).
     @MainActor
     func testResetButtonVisible() throws {
         #if os(macOS)
         let app = launchApp()
+        app.menuBars.menuBarItems["Machine"].click()
+        XCTAssertTrue(app.menuItems["Reset"].waitForExistence(timeout: 5), "Machine ▸ Reset not found")
+        app.typeKey(.escape, modifierFlags: [])
+        app.menuBars.menuBarItems["File"].click()
+        XCTAssertTrue(app.menuItems["Load Preset…"].waitForExistence(timeout: 5), "File ▸ Load Preset… not found")
+        app.typeKey(.escape, modifierFlags: [])
         #else
         let app = launchApp(orientation: .portrait)
-        #endif
         let button = app.buttons["btn-reset"]
         XCTAssertTrue(button.waitForExistence(timeout: 5), "Reset button not found")
         XCTAssertTrue(button.isHittable, "Reset button exists but is not hittable")
+        #endif
     }
 
     #if !os(macOS)
@@ -169,7 +179,7 @@ final class LayoutTests: XCTestCase {
         #else
         let app = launchApp(orientation: .portrait)
         #endif
-        _ = app.buttons["btn-reset"].waitForExistence(timeout: 5)
+        _ = app.descendants(matching: .any)["bar-model"].waitForExistence(timeout: 5)
         attachScreenshot(app, name: "Portrait — \(deviceDescription)")
     }
 

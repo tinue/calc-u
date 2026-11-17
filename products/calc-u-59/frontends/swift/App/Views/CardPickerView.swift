@@ -30,6 +30,7 @@ struct CardPickerView: View {
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
+                    .accessibilityIdentifier("card-cancel")
             }
             .padding()
 
@@ -37,6 +38,7 @@ struct CardPickerView: View {
 
             if mode == .armFresh {
                 TextField("Card name", text: $name)
+                    .accessibilityIdentifier("card-name")
                     .textFieldStyle(.roundedBorder)
                     .padding([.horizontal, .top])
             }
@@ -75,6 +77,7 @@ struct CardPickerView: View {
                 Spacer()
                 if mode == .armFresh {
                     Button("Arm") { armFresh(confirmed: false) }
+                        .accessibilityIdentifier("card-arm")
                         .keyboardShortcut(.return, modifiers: [])
                         .disabled(trimmed.isEmpty)
                         .buttonStyle(.borderedProminent)
@@ -83,6 +86,8 @@ struct CardPickerView: View {
             .padding()
         }
         .frame(minWidth: 320, minHeight: 300)
+        // The dialog is named; its buttons keep their own names.
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(title)
         .alert(question ?? "",
                isPresented: Binding(get: { question != nil }, set: { if !$0 { question = nil } })) {

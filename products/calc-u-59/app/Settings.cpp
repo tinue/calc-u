@@ -213,15 +213,4 @@ bool Settings::portraitDebugPage() const { return m_file.boolean("window", "port
 
 void Settings::setPortraitDebugPage(bool on) { m_file.set("window", "portrait-debug-page", on ? "true" : "false"); }
 
-bool applyLaunchSetting(cs::SettingsFile& file, std::string_view assignment) {
-    const size_t eq = assignment.find('=');
-    const size_t dot = assignment.find('.');
-    if (eq == std::string_view::npos || dot == std::string_view::npos || dot > eq) return false;
-    const std::string_view section = assignment.substr(0, dot);
-    const std::string_view key = assignment.substr(dot + 1, eq - dot - 1);
-    if (!file.product().find(section, key)) return false;
-    file.set(section, key, assignment.substr(eq + 1));
-    return true;
-}
-
 } // namespace cu59::settings

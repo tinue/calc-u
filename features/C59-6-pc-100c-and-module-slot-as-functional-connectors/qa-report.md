@@ -175,3 +175,11 @@ kind, LIB-8 59, M-53), AC-6 and AC-8 (version-2 preset keys, LIB-6 59,
 M-54), AC-8 (the picker, LIB-7 59, M-55; C59-8, M-58), AC-11 (LIB-18's
 attach/detach command, M-54) and EC-3 (LIB-5's typing, M-36) pass in those
 steps.
+
+**M-58 (2026-11-17):** AC-8's picker in the Swift frontend: the picker of
+`slot-1` on the bar, from the control state (C59-8 AC-3, AC-12):
+`swift_shell_tests.cpp` `c59_8_ac3_bar_per_model` (None and the 14 modules
+on each model), XCUITest `FamilyStructureTests.test_lib14_ac8_the_bar`
+(LE chosen on the iPhone simulator's bar is plugged); the Settings row
+"Solid State Module" and `allModules` went (row 59-9). The other clauses
+passed in M-53 to M-55 (above). Every criterion passes: **Done**.

@@ -73,6 +73,22 @@ final class HarnessClient {
         return []
     }
 
+    /// Reads message lines until one matches, false after `timeout`.
+    func waitForMessage(timeout: TimeInterval, _ matches: (String) -> Bool) -> Bool {
+        let end = Date().addingTimeInterval(timeout)
+        while Date() < end {
+            guard let l = line(timeout: end.timeIntervalSinceNow) else { return false }
+            if l.hasPrefix("message ") && matches(l) { return true }
+        }
+        return false
+    }
+
+    /// Drops what has come so far (the messages of the past).
+    func drain(for seconds: TimeInterval = 0.3) {
+        let end = Date().addingTimeInterval(seconds)
+        while Date() < end, line(timeout: max(0.01, end.timeIntervalSinceNow)) != nil {}
+    }
+
     /// True once the app has closed the connection.
     func closedByPeer(timeout: TimeInterval = 5) -> Bool {
         while let _ = line(timeout: timeout) {}

@@ -155,7 +155,7 @@ if(CALCU_TESTS)
   # none of the product's own session classes; no thread in app/ but the
   # session thread; the bridge only through it.
   calcu_add_test(CalcU59NoOwnSession frequent COMMAND sh tests/check_no_own_session.sh)
-  # LIB-4 AC-15 (design §10.6 T59-6; M-57): Qt6 and the Web draw from the control state.
+  # LIB-4 AC-15 (design §10.6 T59-6; M-57, M-58): the three frontends draw from the control state.
   calcu_add_test(CalcU59FrontendsDrawControlState frequent COMMAND sh tests/check_frontends_draw_control_state.sh)
   # LIB-12 AC-2, LIB-9 AC-21/AC-34 (calcu_product_source_checks, library/):
   # the ROM lookup's allowed files are the product's lookUpRoms(), the
@@ -190,6 +190,8 @@ if(CALCU_TESTS)
   # C59-5 AC-13 (design B1): attach only in Debug builds for macOS and the
   # simulator, in the sources that decide it.
   calcu_add_test(CalcU59NoAttachSources frequent COMMAND sh frontends/swift/check_no_attach.sh --sources)
+  # C59-8 AC-21, LIB-4 AC-15 (design T11, T12): no test aid and no model facts in the Swift app.
+  calcu_add_test(CalcU59NoTestAids frequent COMMAND sh frontends/swift/check_no_test_aids.sh)
 
   # Longer: run locally before merging into main and at the end of a part.
   # Against frontends/web/dist/ (frontends/web/build.sh first).

@@ -252,6 +252,20 @@ The same path has served Qt6 and Swift since M-33, so these differences are
 not new with M-34: M-33's planned `reference_runs_session_tests.cpp` (design
 §8) was not written then. The references are unchanged.
 
+## Calc-U-59, M-58 (2026-11-17, branch `m58-swift-59`)
+
+The Swift frontend's last readers of the interim product topics LIB-3 59
+design §5 named for C59-8 went: `c59.model` (`TIModelState`, the bridge's
+model and module members, `App/MachineModel.swift`) is gone from
+`TIAppPart`; the Swift frontend draws the machine from `control-state` and
+the shell's models (C59-8). `lib3_ac29_mirror_holds_every_change_flag`
+checks `control-state` in its place and moves it with a model switch;
+`lib3_ac30_module_id_not_saved` reads the module from it. The other
+interim topics (`c59.led`, `c59.cue-card`, `c59.printer`, `c59.run-state`)
+stay as product topics that Qt6 and Swift read; `c59.full-speed` has no
+frontend user any more (C59-8 qa-report, findings, for M-59's adapter
+check). Every criterion of the column passes: **Done**.
+
 ## Calc-U-1600 (M-31, 2026-11-15)
 
 Calc-U-1600's own `AppSession`, `MachineSession`, `Pacer`, `AudioPump`

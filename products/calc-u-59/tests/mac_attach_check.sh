@@ -7,7 +7,7 @@
 #
 # <calcu>: the harness (build/tests/library/harness/cli/calcu). <app>: the
 # Debug Calc-U-59.app (else built with xcodebuild into build/xcode). The app
-# runs with --UITesting (its settings in memory) on port 59171.
+# runs with a settings file of its own (--settings-file, C59-8 AC-21) on port 59171.
 #   1. `calcu attach` works (AC-10): `ticks` is answered.
 #   2. AC-19: one minute of wall time, emulated time grows by one minute
 #      within AC-1's bound (the TI-59's 20 ms slice), one host call (a
@@ -70,10 +70,10 @@ def keeps(seconds, what):
 
 # Through Launch Services, as a user starts it: started directly from a shell
 # the app is not a regular foreground app and falls seconds behind a minute.
-subprocess.run(["open", "-n", app, "--args", "--UITesting", "--attach-port", PORT], check=True)
+subprocess.run(["open", "-n", app, "--args", "--settings-file", "mac-attach-check.ini", "--attach-port", PORT], check=True)
 pid = None
 for _ in range(40):
-    r = subprocess.run(["pgrep", "-n", "-f", f"Calc-U-59.app/Contents/MacOS/Calc-U-59 --UITesting --attach-port {PORT}"],
+    r = subprocess.run(["pgrep", "-n", "-f", f"Calc-U-59.app/Contents/MacOS/Calc-U-59 --settings-file mac-attach-check.ini --attach-port {PORT}"],
                        capture_output=True, text=True)
     if r.stdout.strip():
         pid = int(r.stdout.split()[0])

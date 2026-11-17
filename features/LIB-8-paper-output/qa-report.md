@@ -368,3 +368,17 @@ Swift (S-P1, until C59-8): the bridge keeps the `paper PC-100C` topic and
 
 Every criterion of the column passes in Qt6 and the Web (the Swift panel is
 C59-8): **Done**.
+
+### M-58 (2026-11-17, branch `m58-swift-59`): the Swift part
+
+The Swift paper panel is C59-8's (AC-12): `PrinterView` draws the paper of
+the panel's owner (`TIShell.paperOwner`, the bar model's B6) under its
+name, an empty paper under none; the "PC-100C" toggle above it went to the
+bar (row 59-14); Copy and Cut are `paper.copy` and `paper.cut` as since
+M-53 (S-P1 ends: the panel is the native counterpart).
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-12 (Swift) | Pass | XCUITest `FamilyStructureTests.test_lib8_ac31_the_printer` (the paper under "PC-100C" once the bar's button attached it), `test_c59_8_ac15_one_picture_per_layout` (the paper page) |
+| AC-16, AC-18 (Swift) | Pass | `test_lib8_ac31_the_printer` (Cut empties the paper); `ShellBridgeTests.test_c59_8_ac13_copy_forms` (Copy's pasteboard entries, macOS) |
+| AC-31 (Swift) | Pass | `test_lib8_ac31_the_printer` (the PC-100C prints 123, the text view shows it, Cut empties it) |

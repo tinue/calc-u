@@ -42,7 +42,9 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    which the shell shows in place of the faceplate (LIB-14 AC-19).
    Put the window together from LIB-14's shell (the Qt6 component set's
    `calcu::qt6::Shell` over a `SessionHost`, the React set's
-   `useCalcuShell`; Swift natively, C59-8) with Calc-U-59's data from
+   `useCalcuShell`; Swift natively since M-58: `Bridge/TIShell` computes the
+   library's models in C++ and SwiftUI draws them, the pattern for a
+   toolkit without a component set of its own, C59-8) with Calc-U-59's data from
    `app/TIShellProduct` (`shellProduct`, `settingsSpec`, `faceplateHitMap`):
    the menus, the control bar (the model picker, the module slot's picker,
    the "PC-100C" button, the card controls; where there is no menu bar,

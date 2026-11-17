@@ -56,19 +56,4 @@ cu59::CueCardContent CueCardFrom(TICueCard* t) {
     return c;
 }
 
-@interface TIModuleMetadata ()
-@property (nonatomic, readwrite, copy) NSString *title;
-@property (nonatomic, readwrite, copy) NSString *moduleID;
-@property (nonatomic, readwrite, copy) NSString *menuTitle;
-@end
-@implementation TIModuleMetadata
-@end
-
-TIModuleMetadata* TIModuleMetadataFrom(const cu59::ModuleMetadata& m) {
-    TIModuleMetadata* t = [[TIModuleMetadata alloc] init];
-    t.title = ns(m.title);
-    t.moduleID = ns(m.id);
-    t.menuTitle = ns(m.menuTitle);
-    return t;
-}
 

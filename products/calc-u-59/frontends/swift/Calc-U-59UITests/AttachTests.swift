@@ -14,7 +14,7 @@ final class AttachTests: XCTestCase {
 
     private func launchAttached() -> (XCUIApplication, HarnessClient) {
         let app = XCUIApplication()
-        app.launchArguments += ["--UITesting", "--attach-port", String(Self.port)]
+        app.launchArguments += ["--settings-file", writeSettingsFile([]), "--attach-port", String(Self.port)]
         app.launch()
         let harness = HarnessClient()
         XCTAssertTrue(harness.connect(port: Self.port), "no harness attach on 127.0.0.1:\(Self.port)")
@@ -44,7 +44,7 @@ final class AttachTests: XCTestCase {
         }
         XCTAssertEqual(reply, "done 2")
         XCTAssertTrue(messages.contains { $0.hasPrefix("message busy ") }, "no busy topic on attach")
-        XCTAssertTrue(messages.contains { $0.hasPrefix("message c59.model ") }, "no c59.model topic on attach")
+        XCTAssertTrue(messages.contains { $0.hasPrefix("message control-state ") }, "no control-state topic on attach")
         _ = harness.line(); _ = harness.line()   // ticks:, seconds:
 
         XCTAssertEqual(harness.command("wait 1s", timeout: 15).first, "done 2")   // the ROM is idle
@@ -137,8 +137,8 @@ final class AttachTests: XCTestCase {
 
     /// S5 (AC-5): a program runs; a press on the display (full speed) keeps
     /// the session thread busy for whole calls while the main thread takes the
-    /// touch and its end; then a tap on a key reaches the session (R/S stops
-    /// the program, `lcd` shows its display). The main thread's frame gaps
+    /// touch and its end; then a touch on a key of the faceplate reaches the
+    /// session (R/S stops the program, `lcd` shows its display). The main thread's frame gaps
     /// are measured by `FrameGapTests` (Calc-U-59Tests).
     func testTapsReachSessionAtFullSpeed() throws {
         let (app, harness) = launchAttached()
@@ -162,7 +162,9 @@ final class AttachTests: XCTestCase {
         XCTAssertGreaterThan(fullRate, 1.5, "the press did not reach the session as full speed")
         XCTAssertEqual(regularRate, 1.0, accuracy: 0.15, "the end of the press did not reach the session")
 
-        app.buttons["btn-key-rs"].press(forDuration: 0.3)   // held as long as a finger
+        // R/S under the finger (the faceplate's hit map, C59-8 D-9), held as long as a finger.
+        let face = app.descendants(matching: .any)["faceplate"].firstMatch
+        face.coordinate(withNormalizedOffset: CGVector(dx: 0.0783, dy: 0.9704)).press(forDuration: 0.3)
         XCTAssertEqual(harness.command("wait 500ms", timeout: 10).first, "done 2")
         let stopped = harness.command("lcd")
         XCTAssertTrue(stopped.count > 1 && stopped[1].contains("1"), "R/S did not stop the program: \(stopped)")

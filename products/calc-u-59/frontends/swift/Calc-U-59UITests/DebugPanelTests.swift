@@ -19,10 +19,14 @@ final class DebugPanelTests: XCTestCase {
 
     /// The app with its debug panel in view: side by side where the window is
     /// wide enough, else the paged layout's debugger page.
+    private var harness: HarnessClient!
+
     private func launchWithDebugPanel() -> XCUIApplication {
         let landscape = UIDevice.current.userInterfaceIdiom == .pad
         let app = launchApp(orientation: landscape ? .landscapeLeft : .portrait,
-                            arguments: ["--setting", "window.portrait-debug-page=true"])
+                            settings: ["window.portrait-debug-page=true"])
+        harness = attachHarness()
+        waitIdle(harness)
         XCTAssertTrue(app.buttons["btn-preset"].waitForExistence(timeout: 10), "the calculator did not start")
         let left = app.buttons["btn-page-left"]
         if left.exists { left.tap() }   // the paged layout: the debugger is left of the calculator
@@ -52,7 +56,10 @@ final class DebugPanelTests: XCTestCase {
 
         // R/S runs the (empty) program memory from step 000, so program steps
         // pass and the pause and STEP land on one (as the Web scenario runs A).
-        app.buttons["btn-key-rs"].tap()
+        // R/S into the machine through attach (C59-8 AC-21: key-down, key-up).
+        XCTAssertEqual(harness.command("key-down R/S").first, "done")
+        XCTAssertEqual(harness.command("wait 150ms").first, "done 2")
+        XCTAssertEqual(harness.command("key-up R/S").first, "done")
         freeze.tap()
         waitEnabled(resume, true, "RESUME once paused", timeout: 20)   // the pause landed at a program step boundary
         waitEnabled(step, true, "STEP while paused")

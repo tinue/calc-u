@@ -78,7 +78,6 @@ struct TraceTarget {
 
 namespace topics {
 using calcu::sessions::TopicName;
-inline const TopicName kModel{"c59.model"};
 inline const TopicName kLed{"c59.led"};
 inline const TopicName kCueCard{"c59.cue-card"};
 inline const TopicName kPrinter{"c59.printer"};
@@ -94,13 +93,6 @@ template <class D> struct TISnapshot : calcu::sessions::PayloadOf<D> {
     bool same(const D& o) const { return serial == o.serial; }
 };
 
-struct TIModelState final : TISnapshot<TIModelState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.model"};
-    Model model = Model::TI59;
-    std::string moduleID;
-    std::vector<ModuleMetadata> modules;
-    calcu::sessions::Value toValue() const override;
-};
 struct TILedState final : TISnapshot<TILedState> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.led"};
     LedFrame led;
@@ -144,10 +136,6 @@ struct TIFlag final : calcu::sessions::PayloadOf<TIFlag> {
     bool same(const TIFlag& o) const { return value == o.value; }
     calcu::sessions::Value toValue() const override { return calcu::sessions::Value(value); }
 };
-/// A notice of the part is "<title>: <message>", today's alert (LIB-3 AC-30:
-/// `error` is a notice); the frontends split it for their alert until C59-8.
-struct NoticeParts { std::string title, message; };
-NoticeParts splitNotice(const std::string& sentence);
 
 /// The commands of the part (`c59.` + name; arguments in the comments).
 namespace commands {
@@ -227,8 +215,6 @@ public:
     EmulatorSession* emulator() { return m_session.get(); }
     /// The module in `slot-1` (empty: none), as the machine says (D-26).
     const std::string& moduleID() const { return m_moduleID; }
-    /// The 14 modules from their module files, in menu order (C59-6 AC-8).
-    std::vector<ModuleMetadata> allModules() const { return m_setup.roms ? allModuleMetadata(*m_setup.roms) : std::vector<ModuleMetadata>{}; }
 
     // Display, keys, speed
     const LedFrame& display() const { return m_display; }
@@ -383,7 +369,6 @@ private:
     using Clock = std::chrono::steady_clock;
     calcu::debugger::RunState m_seenRun;
 
-    calcu::sessions::StateTopic* m_modelTopic = nullptr;
     calcu::sessions::StateTopic* m_led = nullptr;
     calcu::sessions::StateTopic* m_cue = nullptr;
     calcu::sessions::StateTopic* m_printer = nullptr;

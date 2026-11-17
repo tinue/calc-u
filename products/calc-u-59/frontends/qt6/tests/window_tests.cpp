@@ -18,11 +18,13 @@
 #include "qt6/PanelArea.hpp"
 #include "qt6/Shell.hpp"
 #include "qt6/ShellSettingsDialog.hpp"
+#include "media/MediaTopics.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "shell/HitMap.hpp"
 #include "shell/Inputs.hpp"
 #include "shell/ObjectNames.hpp"
 #include "typing/TypingTopics.hpp"
+#include <optional>
 #include <QAbstractButton>
 #include <QAction>
 #include <QApplication>
@@ -436,6 +438,84 @@ TEST(lib14_ac24_press_on_the_fitted_card_feeds_it) {
     CHECK(held(f).empty());
     f.c().ejectCard();
     f.run(200);
+}
+
+// ── C59-7 AC-28 (Qt6; M-58): the scenarios C59-7 AC-15 and C59-7 AC-12 ──
+
+namespace {
+
+const char* const kCardHead = "format-version: 2\nmodel: TI-59\nslot-1: { name: ML }\nprinter: PC-100C\n";
+// Lbl A 1 2 3 R/S; then CLR 1 2nd Write at regular speed: the machine waits for a card.
+std::string program123Write() {
+    return std::string(kCardHead) + "program:\n  keycodes: |\n    76 11 01 02 03 91\nkeys:\n  - regular-speed:\n  - key: CLR 1 Write\n";
+}
+
+// A press on the fitted card's left top corner: side 0 (C59-7 AC-12).
+void pressCardCorner(Fixture& f) {
+    KeyboardWidget* k = f.w().keyboard();
+    const QPointF corner = onFaceplate(k, (cu59::kCardRect.x + cu59::kCardRect.w * 0.05) * cu59::kCanvasWidth,
+                                       (cu59::kCardRect.y + cu59::kCardRect.h * 0.05) * cu59::kCanvasHeight);
+    mouse(k, corner, true);
+    mouse(k, corner, false);
+}
+
+// Arm Fresh Card `name` (what the bar's button and its dialog do), fed by
+// its corner while the program waits in `1 2nd Write`: written and given back.
+bool writeFreshCard(Fixture& f, const QString& name) {
+    f.command("load-preset", Value::object({{"content", program123Write()}, {"name", "write.ti59"}}));
+    if (!f.waitIdle()) return false;
+    f.run(500);
+    if (!f.c().armFreshCard(name, true).isEmpty()) return false;
+    if (!f.waitFor([&] { return f.c().cardOnShow(); }, 3000)) return false;
+    pressCardCorner(f);
+    if (!f.waitFor([&] { return f.c().cardPassing(); }, 3000)) return false;
+    return f.waitFor([&] { return !f.c().cardPassing(); }, 20000);
+}
+
+std::optional<std::string> savedEntry(Fixture& f, const std::string& name) {
+    f.c().sendCommand(calcu::media::kRefreshCommand, Value::object({}));
+    f.run(100);
+    for (const auto& e : f.c().savedCards())
+        if (e.label == name) return e.id;
+    return std::nullopt;
+}
+
+} // namespace
+
+TEST(c59_7_ac15_qt6_fresh_card_written_and_listed) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f("TI-59");
+    CHECK(writeFreshCard(f, QStringLiteral("QtProg")));
+    CHECK(savedEntry(f, "QtProg").has_value());   // Arm Card lists it by its name
+}
+
+TEST(c59_7_ac12_qt6_card_read_by_its_corner) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f("TI-59");
+    CHECK(writeFreshCard(f, QStringLiteral("QtRead")));
+    const auto entry = savedEntry(f, "QtRead");
+    CHECK(entry.has_value());
+    if (!entry) return;
+    // A fresh machine: no program, nothing fitted.
+    f.command("load-preset", Value::object({{"content", std::string(kCardHead) + "partition: 479\n"}, {"name", "fresh.ti59"}}));
+    CHECK(f.waitIdle());
+    f.c().armCard(QString::fromStdString(*entry));
+    CHECK(f.waitFor([&] { return f.c().cardOnShow(); }, 3000));
+    pressCardCorner(f);
+    CHECK(f.waitFor([&] { return f.c().cardPassing(); }, 3000));
+    CHECK(f.waitFor([&] { return !f.c().cardPassing(); }, 20000));
+    f.run(500);
+    // The program the card holds is in program memory: Lbl A 1 2 3 R/S.
+    const auto r = f.command("c59.program", Value::object({{"step", "000"}, {"count", 6}}));
+    CHECK(r.done && r.result);
+    if (!r.done || !r.result) return;
+    std::string listing;
+    const Value v = r.result->toValue();
+    if (const auto* lines = v.elements())
+        for (const auto& l : *lines)
+            if (l.string()) listing += *l.string() + "\n";
+    CHECK(listing.find("000 76") != std::string::npos && listing.find("005 91") != std::string::npos);
+    if (listing.find("000 76") == std::string::npos) std::fprintf(stderr, "  program: %s\n", listing.c_str());
 }
 
 TEST(lib14_ac43_display_hold_full_speed) {

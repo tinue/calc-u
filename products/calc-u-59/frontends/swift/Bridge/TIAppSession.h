@@ -1,7 +1,8 @@
 #import <Foundation/Foundation.h>
 #import "TITypes.h"
 #import "TIFileFormats.h"
-#import "TISettings.h"
+
+@class TIShell;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -13,7 +14,9 @@ NS_ASSUME_NONNULL_BEGIN
 // the main thread for the view model. Main thread only.
 
 /// The topics a batch of messages changed (the interim c59.* topics, LIB-3 59
-/// design §5, until their owners' steps; since M-53 also the library's
+/// design §5, until their owners' steps; shell: an input of the shell's
+/// models (C59-8 §3.1: control-state, busy, run-state, settings, media, the
+/// preset list); since M-53 also the library's
 /// `paper PC-100C` (printer: appended, paperCut: emptied), `run-state`
 /// (runState) and `trace` (trace); since M-56 the debug panel's product
 /// topics of C59-4 AC-25 (live: calculator-debug, listing: program-listing,
@@ -21,7 +24,6 @@ NS_ASSUME_NONNULL_BEGIN
 /// debug-view's level) and LIB-4's `control-state` (control: the product
 /// entries c59.asm-run, c59.trace, c59.calculator-tab)).
 typedef NS_OPTIONS(uint32_t, TIChange) {
-    TIChangeModel     NS_SWIFT_NAME(model)     = 1u << 0,
     TIChangeDisplay   NS_SWIFT_NAME(display)   = 1u << 1,
     TIChangeCueCard   NS_SWIFT_NAME(cueCard)   = 1u << 2,
     TIChangePrinter   NS_SWIFT_NAME(printer)   = 1u << 3,
@@ -36,6 +38,7 @@ typedef NS_OPTIONS(uint32_t, TIChange) {
     TIChangeTrace     NS_SWIFT_NAME(trace)     = 1u << 12,
     TIChangeListing   NS_SWIFT_NAME(listing)   = 1u << 13,
     TIChangeControl   NS_SWIFT_NAME(control)   = 1u << 14,
+    TIChangeShell     NS_SWIFT_NAME(shell)     = 1u << 15,
 };
 
 /// The level that owns a pause (LIB-10 RunState::owner; None when running).
@@ -64,7 +67,7 @@ typedef struct {
     bool armed;
 } TIFreezeButtons;
 
-/// One dot of the paper (LIB-8 S-P1, until C59-8): its centre in the
+/// One dot of the paper (C59-8 AC-12: the paper panel): its centre in the
 /// printer's unit (the dot pitch), y down the paper from where it was last
 /// empty, and its ink 0–1 (the description's grey of its darkness).
 typedef struct {
@@ -73,13 +76,14 @@ typedef struct {
     double ink;
 } TIPaperDot;
 
-/// What the session's messages ask of the app (main thread): the notices
-/// (an alert, LIB-3 AC-30), the tab a `debug-panel:` step asked for (the
+/// What the session's messages ask of the app (main thread): a notice came
+/// (the shell's notice queue holds it, C59-8 AC-10), the tab a `debug-panel:` step asked for (the
 /// product topic debug-view, C59-4 AC-2: each time its count of requests
 /// grows), the log, and a batch's changes.
 @protocol TIAppSessionDelegate <NSObject>
 - (void)showDebugPanel:(NSInteger)panel;   ///< 0 CALCULATOR, 1 CPU, 2 LOG
-- (void)showErrorTitle:(NSString *)title message:(NSString *)message;
+/// A notice or a refusal is waiting in `shell` (C59-8 AC-10: one alert after the other).
+- (void)noticesChanged;
 - (void)diagnostic:(NSString *)message;
 - (void)changed:(TIChange)changes;
 /// A file of the save folder was written (the coordinated write succeeded).
@@ -97,17 +101,22 @@ typedef struct {
 @property (nonatomic, readonly, copy, nullable) NSString *hint;
 @end
 
-/// What the session is built with (C59-5 D-12, A-12).
+/// What the session is built with (C59-5 D-12, A-12). The settings file is
+/// the session's (C59-8 D-3: LIB-14's SettingsPart on the session thread,
+/// one owner of the file; LIB-18 AC-17 reads the startup model from it); the
+/// bridge opens it and hands it to the session thread.
 @interface TISessionStart : NSObject
-/// The app's settings (LIB-18 AC-17: the startup model, `last-model`, the
-/// startup presets); the session's `start` reads them. Kept alive by the caller.
-@property (nonatomic, strong) TISettings *settings;
+/// Application Support: the settings file's base (LIB-9 AC-2) and, under
+/// `Calc-U-59/`, where traces go by default (AC-24).
+@property (nonatomic, copy) NSString *settingsBase;
+/// A settings file of its own for this launch (Debug builds' `--settings-file`,
+/// C59-8 AC-21; the unit tests); nil: `<settingsBase>/Calc-U-59/Calc-U-59.ini`.
+@property (nonatomic, copy, nullable) NSString *settingsFile;
 /// The bundled examples (the app's folder `examples`, bundle.yaml; LIB-6 AC-31).
 @property (nonatomic, copy) NSString *examplesFolder;
 @property (nonatomic, copy) NSString *saveFolder;     ///< cards and ti58c.memory.yaml (CardStorage)
-@property (nonatomic, copy) NSString *traceDirectory;
-@property (nonatomic) uint64_t traceMaxBytes;
-@property (nonatomic) BOOL traceAvailable;
+/// macOS: the folder the security-scoped bookmark of `[trace] folder` grants (LIB-9 AC-34).
+@property (nonatomic, copy, nullable) NSString *chosenTraceFolder;
 @end
 
 /// ProgramSource raw values follow the C++ enumerator order:
@@ -179,6 +188,16 @@ typedef struct {
 
 /// The session thread starts and builds the session on it; `delegate` is held weakly.
 - (instancetype)initWithRoms:(TIRomSet *)roms start:(TISessionStart *)start delegate:(id<TIAppSessionDelegate>)delegate;
+/// The library's shell models over this session's topics (C59-8 §3.1).
+@property (nonatomic, readonly) TIShell *shell;
+/// The settings file's problem when it was opened (LIB-9), nil when none.
+@property (nonatomic, readonly, nullable) NSString *settingsProblem;
+/// The settings file of this session (its path).
+@property (nonatomic, readonly) NSString *settingsFilePath;
+/// The trace folder at the start (LIB-9 Paths by `[trace] location`) and
+/// whether it can be written (iCloud signed in, the folder made).
+@property (nonatomic, readonly) NSString *traceDirectory;
+@property (nonatomic, readonly) BOOL traceAvailable;
 /// AC-8: suspend is carried out (the TI-58C memory written), then no more
 /// calls; `done` on the main thread once the suspend was carried out.
 - (void)suspendWithCompletion:(nullable void (^)(void))done;
@@ -207,26 +226,12 @@ typedef struct {
 @property (nonatomic, readonly) uint64_t hostCallCount;
 #endif
 
-// ── Machine (model = MachineModel raw value): LIB-18's commands ──────────────
-/// The model switch (`model {name}`); the start is the session's own `start`.
-- (void)startMachine:(NSInteger)model;
-@property (nonatomic, readonly) NSInteger model;
-- (void)resetMachine;        ///< `reset`
-- (void)cleanResetMachine;   ///< `cold-boot`
-@property (nonatomic, readonly) NSString *moduleID;
-/// Another module into slot-1 (`attach`), or none (`detach`); a power cycle follows (row 59-11).
-- (void)changeModule:(NSString *)moduleID;
-/// The 14 modules from their module files, in menu order (C59-6 AC-8).
-@property (nonatomic, readonly) NSArray<TIModuleMetadata *> *allModules;
-
 // ── Display, keys, speed ─────────────────────────────────────────────────────
 @property (nonatomic, readonly) TIDisplaySnapshot display;
 @property (nonatomic, readonly) double calcIndicatorOpacity;
-// Keys are the library's typing (LIB-5): on-screen keys by matrix code, host
-// keys as the host reports them (the product's keyboard map, app/TITyping,
-// decides), focus loss.
-- (void)screenKeyDown:(uint8_t)matrixCode;
-- (void)screenKeyUp;
+// Keys are the library's typing (LIB-5): on-screen keys through the shell's
+// pointer rule (TIShell, C59-8 D-9), host keys as the host reports them (the
+// product's keyboard map, app/TITyping, decides), focus loss.
 - (void)hostKeyDownPhysical:(NSString *)physical named:(NSString *)named produced:(uint32_t)produced
                     carried:(uint32_t)carried shift:(BOOL)shift control:(BOOL)control alt:(BOOL)alt
                     command:(BOOL)command;
@@ -234,14 +239,11 @@ typedef struct {
 - (void)focusLost;
 /// The key drawn pressed (the last one live input holds, `held-keys`): row×5 + col, -1 none.
 @property (nonatomic, readonly) NSInteger heldKey;
-@property (nonatomic) BOOL fullSpeed;
-/// An operation runs (a preset, a build; the topic's `keystrokes-playing`).
-@property (nonatomic, readonly) BOOL keystrokesPlaying;
 
 // ── Cue card, printer ────────────────────────────────────────────────────────
 @property (nonatomic, readonly, nullable) TICueCard *cueCard;
-// The PC-100C's paper (LIB-8 adapter S-P1, until C59-8): the library's topic
-// `paper PC-100C`, kept here as it arrives; emptied by a cut (paperCut).
+// The PC-100C's paper (C59-8 AC-12, the paper panel on LIB-8): the library's
+// topic `paper PC-100C`, kept here as it arrives; emptied by a cut (paperCut).
 /// Its text layer: one line per printed line or feed ("" for a feed).
 @property (nonatomic, readonly) NSInteger paperLineCount;
 - (NSArray<NSString *> *)paperLinesFrom:(NSInteger)start NS_SWIFT_NAME(paperLines(from:));
@@ -254,10 +256,7 @@ typedef struct {
 /// (a copy, then the paper emptied), LIB-8 AC-16, AC-18.
 - (void)copyPaper;
 - (void)cutPaper;
-@property (nonatomic, readonly) BOOL printerConnected;
 @property (nonatomic, readonly) BOOL printerTrace;
-/// The connect button: plug the PC-100C in or out and reset the calculator.
-- (void)togglePrinterConnection;
 /// PRINT, ADV (held) and TRACE (a switch) of the PC-100C (`set-control`, LIB-8 P-E2).
 - (void)setPrinterControl:(NSString *)control on:(BOOL)on NS_SWIFT_NAME(setPrinterControl(_:on:));
 

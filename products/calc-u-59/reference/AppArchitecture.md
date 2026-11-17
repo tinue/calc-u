@@ -41,26 +41,27 @@ EmulatorViewModel (@Observable, main thread)
 
 | File | Role |
 |---|---|
-| `Calc-U-59App.swift` | App entry; suspends on background, resumes on active; macOS Settings scene and About panel |
-| `EmulatorViewModel.swift` | The `@Observable` face of the app session: sends the `c59.*` commands, copies the interim `c59.*` topics into observable properties; Swift mirrors of the debug snapshot and `ProgramSource` |
-| `MachineModel.swift` | Model enum (raw values match `cu59::Model`) |
-| `ROMLoader.swift` | The ROM lookup over the bundle's resource folder (`TIRomSet`, LIB-12; a "ROMs missing" text in place of the calculator); the module list (the module files hold the cue cards since M-55) |
+| `Calc-U-59App.swift` | App entry; suspends on background, resumes on active; the family's menus (`ShellCommands`); macOS Settings scene and About panel; `RomsMissingView` with the Help item (C59-8 AC-19) |
+| `EmulatorViewModel.swift` | The `@Observable` face of the app session: sends the commands, copies the topics into observable properties; holds `TIShell` and copies the shell's models (menus, More items, bar, settings rows, the paper's owner, "Loading…", the notice shown) at each change of their inputs (C59-8); the pointer on the faceplate through the shell's rule; Swift mirrors of the debug snapshot and `ProgramSource` |
+| `ROMLoader.swift` | The ROM lookup over the bundle's resource folder (`TIRomSet`, LIB-12; a "ROMs missing" text in place of the calculator) |
 | `CardStorage.swift` | The save folder (cards, `ti58c.memory.yaml`): iCloud Documents container, else local Documents |
-| `AppSettings.swift` | `SettingsModel`, the observable face of `Calc-U-59.ini` over `TISettings` (views bind to it); the trace folder from `calcu::settings::Paths`; the security-scoped bookmark of a chosen trace folder, the one value kept in UserDefaults (LIB-9 AC-34) |
-| `AppInfo.swift` | Version and About panel content |
+| `AppSettings.swift` | Where the settings file lives (Application Support), the Debug-only `--settings-file`, and the security-scoped bookmark of a chosen trace folder, the one value kept in UserDefaults (LIB-9 AC-34); the settings themselves are the session's (C59-8 D-3) |
+| `AppInfo.swift` | Version and the macOS About panel; its texts and links are `TIShell`'s (`app/TIShellProduct`, C59-8 D-8) |
 | `CueCardContent.swift` | Swift cue-card value type and its `TICueCard` conversion |
-| `Views/CalculatorView.swift` | Root view; macOS side-by-side and iOS layouts — pages, or side by side with or without the debugger, as `TIViewRules.mobileLayout` (Shared `mobileLayout`) says for the window's size and an active fold (iPhone Duo), with the printer's width (`mobilePrinterWidth`) and a top margin for windows without a top inset (`mobileTopMargin`); Reset / Clean (Cmd held; iOS: 1 s long press); the Preset button's importer (any file, LIB-13's `open`) and the ASM file importer; the macOS drop (`open`); UI-test hooks (`--UITesting`) |
-| `Views/KeyboardView.swift` | Calculator art, hit test (`TISharedTables.keyIndex`), pressed-key effect, hold display for full speed, haptics / click, `PhysicalKeyboardModifier` (macOS) |
+| `Views/CalculatorView.swift` | Root view; macOS side-by-side and iOS layouts — pages, or side by side with or without the debugger, as `TIViewRules.mobileLayout` (Shared `mobileLayout`) says for the window's size and an active fold (iPhone Duo), with the printer's width (`mobilePrinterWidth`) and a top margin for windows without a top inset (`mobileTopMargin`); the control bar (`ControlBarView`); the notice alert; Load Preset…'s file dialog (any file, LIB-13's `open`), the settings sheet (iOS) and the ASM file importer; the macOS drop (`open`) |
+| `Views/ControlBarView.swift` | The control bar from `TIShell.bar` (C59-8 AC-3 to AC-6): the model picker, the picker of `slot-1`, the button "PC-100C", C59-7's card controls (`CardControls`); on iOS Reset, Preset, Settings and More (Cold boot asks first); a disabled control's reason as its help tag on macOS |
+| `Views/ShellCommands.swift` | The family's menus File, Machine, Help as SwiftUI `Commands` from `TIShell.menus` (C59-8 AC-1, AC-18, EC-6), the shortcuts as key equivalents |
+| `Views/KeyboardView.swift` | Calculator art; the pointer through the library's rule (`TIShell` on `cu59::faceplateHitMap`: the key, the display for full speed; the card's corners first), pressed-key effect, haptics / click, "Loading…" below the display, `PhysicalKeyboardModifier` (macOS) |
 | `Views/UIKitTouchTracking.swift` | iOS raw-touch tracker that replaces `DragGesture` for keys (iOS 27 fires `onEnded` early) |
 | `Views/LEDDisplayView.swift` | 12-digit LED in a SwiftUI `Canvas` |
 | `Views/CueCardView.swift` | Cue card on its template art |
-| `Views/PrinterView.swift` | The PC-100C's paper (LIB-8 S-P1, until C59-8): dots by band (`PaperBand`) or text; Copy and Cut are the session's |
+| `Views/PrinterView.swift` | The paper panel (C59-8 AC-12): the owner's paper under its name, an empty paper under none; dots by band (`PaperBand`) or text; Copy and Cut are the session's |
 | `Views/CardPickerView.swift` | Arm Card (the saved cards by name, from the library's `media` topic) and Arm Fresh Card (a name; the replace question) (C59-7 AC-14, AC-15) |
 | `Views/DebugView.swift` | Debug tabs; `ASMDebugContent`; LOG tab (`StaticDebugContent`) |
 | `Views/LiveDebugView.swift`, `Views/CPUInspectorView.swift` | CALCULATOR and CPU tabs |
 | `Views/HoldRepeatButton.swift` | Fires on press, repeats every 0.25 s while held and while step can be used (STEP; LIB-10 AC-18) |
 | `Views/ChromeControlStyles.swift` | Dark chrome button and menu styles |
-| `Views/SettingsView.swift` | Startup calculator, module, keyboard feedback, portrait debug page, segment style, trace location and size |
+| `Views/SettingsView.swift` | The settings from `TIShell.settingsDialog` (`cu59::settingsSpec(SwiftMac/SwiftIOS)`, C59-8 AC-7): a choice is a picker (true and false a toggle), a number a field, the macOS trace folder Choose…; a change is `set-setting` at once; the notice alert over the iOS sheet (EC-2) |
 
 ---
 
@@ -124,24 +125,36 @@ imports the public ones.
 
 | Wrapper | Wraps |
 |---|---|
-| `TIAppSession.{h,mm}` | The app session on `cu59::SessionThread`: commands (`c59.*`) out, messages in on the main thread (the last of each topic kept); `TIAppSessionDelegate` (alerts, the tab of `debug-panel:` from the topic `debug-view`, diagnostics, `changed`); since M-56 the debug panel's product topics (`calculator-debug`, `program-listing`, `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view`, C59-4), the LOG tab's `cu59::RingLog` of LIB-3's `log`, the `control-state` entries (`asmRunAvailable`, `traceButtonAvailable`, `calculatorTabAvailable`), `freezeButtonsFor:` (`cu59::freezeButtons`) and LIB-13's `open` / `open-would-take` (`openFile:…way:`, `wouldOpenFile:`); `TISessionStart`, `TIRomSet`; the coordinated save folder files (`cu59::FileIO`, also the media part's file access, LIB-7 D-30); the cards on the library's `media` topic and `media.choose`, `media.start-new`, `media.eject` (`savedCards`, `armCard:`, `armFreshCard:`, `TISavedCard`; C59-7, M-55); value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, built when Swift reads them; since M-53 also the library's `paper PC-100C` (kept as text lines and `TIPaperDot`s), `paper-copies`, `run-state` (`buttonUseFor:`, calcu::debugger::buttonUse) and `trace`, the run control's commands, and the clipboard host services (`clipboard-image`, `clipboard-text`) answered on the pasteboard |
-| `TISharedTables.{h,mm}` | `SevenSegment`, `KeyboardLayout`, `KeyIds` |
+| `TIShell.{h,mm}` | The library's shell models for Swift (C59-8 §3.1): the last Value of each input topic (`control-state`, `busy`, `run-state`, `roms-missing`, `settings`, `media`, the `preset-list` reply) gives `calcu::shell::menus`, `moreItems`, `bar`, `dialog` over `cu59::settingsSpec`, `panels`, `LoadingRule`, `NoticeQueue` and `PointerTracker` on `cu59::faceplateHitMap`, with the traits of a window with or without a menu bar; `choose:` sends an item's command (a refusal is a notice) or hands back a shell action; value objects `TIMenu`, `TIMenuItem`, `TIBarControl`, `TIDialogSection`, `TIDialogRow` |
+| `TIShell+Session.h` | ObjC++-only: what `TIAppSession` and `TIShell` tell each other (the inputs, the notices, the busy changes) |
+| `TIAppSession.{h,mm}` | The app session on `cu59::SessionThread`, with LIB-14's `SettingsPart` and the settings file it owns (opened here, then the session thread's only; C59-8 D-3; `--settings-file` in Debug builds): commands out, messages in on the main thread (the last of each topic kept); `TIAppSessionDelegate` (alerts, the tab of `debug-panel:` from the topic `debug-view`, diagnostics, `changed`); since M-56 the debug panel's product topics (`calculator-debug`, `program-listing`, `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view`, C59-4), the LOG tab's `cu59::RingLog` of LIB-3's `log`, the `control-state` entries (`asmRunAvailable`, `traceButtonAvailable`, `calculatorTabAvailable`), `freezeButtonsFor:` (`cu59::freezeButtons`) and LIB-13's `open` / `open-would-take` (`openFile:…way:`, `wouldOpenFile:`); `TISessionStart`, `TIRomSet`; the coordinated save folder files (`cu59::FileIO`, also the media part's file access, LIB-7 D-30); the cards on the library's `media` topic and `media.choose`, `media.start-new`, `media.eject` (`savedCards`, `armCard:`, `armFreshCard:`, `TISavedCard`; C59-7, M-55); value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, built when Swift reads them; since M-53 also the library's `paper PC-100C` (kept as text lines and `TIPaperDot`s), `paper-copies`, `run-state` (`buttonUseFor:`, calcu::debugger::buttonUse) and `trace`, the run control's commands, and the clipboard host services (`clipboard-image`, `clipboard-text`) answered on the pasteboard |
+| `TISharedTables.{h,mm}` | `SevenSegment`, `KeyboardLayout`, `KeyIds`, the base image's width (the hit map's unit) |
 | `TIViewRules.{h,mm}` | `CueCard` (spans, geometry, inks), `LedGeometry`, the PC-100C's paper width and dot size (`core/PC100CPaper.hpp`), `RomHeatmap`, `ModuleImage` (program source), `DebugText` (incl. the iOS `mobileLayout`, `mobilePrinterWidth`, `compactPrinterBar`, `mobileTopMargin`) |
-| `TIFileFormats.{h,mm}` | `TICueCard`, the module list (`ModuleCatalog`) |
-| `TISettings.{h,mm}` | `Settings` (`app/Settings.hpp`) over a `calcu::settings::SettingsFile`; the trace folder from `calcu::settings::Paths` |
+| `TIFileFormats.{h,mm}` | `TICueCard` |
 | `TITypes.h` | `TIDisplaySnapshot` (mirrors `LedFrame`: the glyph's segments A–G and brightness 0–255 per digit and decimal point) and `TICpuFrame` (mirrors `CpuFrame`) |
 | `BridgeConvert.h` | ObjC++-only: string / data conversions; `static_assert`s that `TICpuFrame` matches `CpuFrame` field for field, so a frame converts with one `memcpy` |
 | `TIFileFormats+Cpp.h` | ObjC++-only: `TICueCard` ↔ `CueCardContent` |
 
-Never import the two ObjC++-only headers from the bridging header.
+Never import the three ObjC++-only headers from the bridging header.
 
 ---
 
 ## Swift-specific details
 
-**Keys.** `KeyboardView` hit-tests in normalised canvas coordinates and calls
-`pressKey(row:col:)` with the 0-based grid position; the view model converts
-it with `TISharedTables.matrixCode(row:col:)`. On iOS, key touches go through
+**The family structure (C59-8).** The window is drawn from the library's
+shell models (LIB-14), computed by `TIShell` in the bridge from the same
+topics the Qt6 and React sets read: the menus (`ShellCommands`, on macOS
+and in the iPad's menu bar; Settings…, About and Quit are the application
+menu's), the control bar (`ControlBarView`; without a menu bar Reset,
+Preset, Settings and More), the settings (`SettingsView`), "Loading…" and
+the notices (one alert after the other). No Swift view decides what the
+machine offers; a control or item is enabled exactly when its entry is.
+
+**Keys.** `KeyboardView` hands the pointer (in points, with the points per
+pixel of the base image) to `TIShell`, whose library rule finds the key on
+`cu59::faceplateHitMap` and sends `screen-key-down`/`-up` (a held display
+is `speed {full}`); a press on the fitted card's corner goes first to
+`tapCard`. On iOS, key touches go through
 `UIKitTouchTracker`; macOS keeps `DragGesture(minimumDistance: 0)`.
 Physical keys (macOS only) go through `PhysicalKeyboardModifier`, which
 subscribes to `.down` and `.up` only (dropping auto-repeat) and releases the
@@ -159,8 +172,9 @@ Rules: `SharedArchitecture.md` § "Cue Card Rendering". A press on the card goes
 first to `tapCard` (`KeyboardView`), and `CueCardView` draws the side being read
 from `litCardCorner`: `SharedArchitecture.md` § "Card Reader Flow".
 
-**Printer.** The PC-100C's paper is the library's (LIB-8, M-53; adapter
-S-P1 until C59-8's paper panel): the bridge keeps what the topic
+**Printer.** The paper panel is always there (C59-8 AC-12): the owner's
+paper under its name while the PC-100C is attached (the bar's button
+attaches it), an empty paper under none. The paper is the library's (LIB-8): the bridge keeps what the topic
 `paper PC-100C` sends (text lines, dots in the dot pitch with their ink; the
 reset marker empties it), the view model files the dots by band of 10 units,
 and `PrinterView` draws the bands in view (`PaperBand`) or the selectable
@@ -186,6 +200,7 @@ the control state's product entries.
 the Preset button (the preset types and any file) go to the session's
 `open` (LIB-13, M-56: way `drop` or `dialog`) with their bytes and path; the
 session finds out what it is, and a refusal arrives as its notice (an alert).
+Load Preset… is the File menu's (⌘O) on macOS and the bar's Preset on iOS.
 A card's security scope stays open while it is fitted (written back where
 it lies).
 
@@ -193,6 +208,11 @@ it lies).
 `ti58c.memory.yaml` live in the `CardStorage` folder (iCloud Documents when
 available); reading and writing them go through `NSFileCoordinator` (the
 bridge's `cu59::FileIO`, which the app part hands the media part as its file
-access, LIB-7 D-30). Traces go to the trace location from Settings: Local
+access, LIB-7 D-30). The settings file is `Calc-U-59.ini` in Application
+Support, opened by the bridge and then the session thread's (LIB-14's
+`SettingsPart`); a Debug build takes `--settings-file <path>` (a relative
+path in the app's temporary folder), the one launch argument of the UI and
+unit tests. Traces go to the trace location from Settings (read at the
+start): Local
 (`~/Library/Application Support/Calc-U-59`), iCloud (the card folder) or a
 custom folder (macOS, security-scoped bookmark).

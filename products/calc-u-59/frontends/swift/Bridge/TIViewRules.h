@@ -93,7 +93,7 @@ typedef struct {
 @property (class, readonly) CGFloat decimalGlowBlurPerDiameter;
 @property (class, readonly) CGFloat decimalGlowOpacity;
 
-// ── PC-100C paper (core/PC100CPaper.hpp; LIB-8 S-P1 until C59-8) ──────────
+// ── PC-100C paper (core/PC100CPaper.hpp; the paper panel, C59-8) ──────────
 /// The paper's width in the unit (the dot pitch): 129.07.
 @property (class, readonly) CGFloat printerWidthUnits;
 /// A dot's radius, of the dot pitch.

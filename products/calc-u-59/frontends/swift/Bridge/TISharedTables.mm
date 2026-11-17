@@ -1,6 +1,7 @@
 #import "TISharedTables.h"
 #include <calcu59/app/KeyIds.hpp>
 #include <calcu59/app/KeyboardLayout.hpp>
+#include <calcu59/app/TIShellProduct.hpp>
 #include <calcu59/app/SevenSegment.hpp>
 
 namespace {
@@ -22,6 +23,8 @@ CGRect toCG(const cu59::NRect& r) { return CGRectMake(r.x, r.y, r.w, r.h); }
 + (CGFloat)keyboardYStart { return cu59::kKeyboardYStart; }
 + (CGFloat)keyboardYScale { return cu59::kKeyboardYScale; }
 
++ (CGFloat)canvasWidthPixels { return cu59::kCanvasWidth; }
+
 + (CGRect)keyRectAtRow:(NSInteger)row col:(NSInteger)col {
     if (row < 0 || row >= 9 || col < 0 || col >= 5) return CGRectZero;
     return toCG(cu59::kKeyRects[row][col]);
@@ -31,10 +34,6 @@ CGRect toCG(const cu59::NRect& r) { return CGRectMake(r.x, r.y, r.w, r.h); }
     return cu59::matrixCode(static_cast<int>(row), static_cast<int>(col));
 }
 
-+ (NSInteger)keyIndexAtX:(CGFloat)nx y:(CGFloat)ny {
-    cu59::KeyHit hit{};
-    return cu59::keyAt(nx, ny, hit) ? hit.row * 5 + hit.col : -1;
-}
 
 
 @end

@@ -232,7 +232,7 @@ final class ScreenshotTests: XCTestCase {
     func testScreenshotGlyphs() throws {
         let app = launchForScreenshot(orientation: .portrait)
 
-        loadPreset(app, file: "test_58_glyphs.ti58", idleTimeout: 20, harness: harness)
+        loadPreset(app, file: "test_58_glyphs.ti58", idleTimeout: 20, harness: harness, endsPaused: true)
 
         try saveScreenshot(fallbackName: "Glyphs")
         attachScreenshot(app, name: "Display glyphs — TI-58 blink, lit phase")
@@ -282,7 +282,9 @@ final class ScreenshotTests: XCTestCase {
         let cold = app.descendants(matching: .any)["more-item-cold-boot"].firstMatch
         XCTAssertTrue(cold.waitForExistence(timeout: 3), "more-item-cold-boot not found")
         cold.tap()
-        let confirm = app.buttons["confirm-cold-boot"]
+        // iOS 27 nests the dialog's button in a system button with the same
+        // identifier: one button on screen, two matches (C59-8 AC-5's test too).
+        let confirm = app.buttons["confirm-cold-boot"].firstMatch
         XCTAssertTrue(confirm.waitForExistence(timeout: 3), "Cold boot did not ask")
         confirm.tap()
 
@@ -326,7 +328,7 @@ final class ScreenshotTests: XCTestCase {
         }
 
         // Step 1: load test_cdebug.ti59
-        loadPreset(app, file: "test_cdebug.ti59", idleTimeout: 40, harness: harness)
+        loadPreset(app, file: "test_cdebug.ti59", idleTimeout: 40, harness: harness, endsPaused: true)
 
         // Step 2 (iPhone): navigate left to debug panel for screenshot
         if !isPad {

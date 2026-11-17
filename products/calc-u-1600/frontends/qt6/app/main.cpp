@@ -2,7 +2,6 @@
 #include <QCommandLineParser>
 #include <QDir>
 #include <QFileInfo>
-#include <QFileOpenEvent>
 #include <QIcon>
 #include <QTemporaryDir>
 #include <cstdio>
@@ -17,11 +16,10 @@
 #ifdef __APPLE__
 #include "MacAppSupport.h"
 #endif
-#include "FileOpenFilter.hpp"
 #include "MainWindow.hpp"
 #include "MachineController.hpp"
-#include "opening/StartFile.hpp"
 #include "opening/OpenRequest.hpp"
+#include "qt6/FileOpening.hpp"
 #ifdef CALCU_ATTACH
 #include "app/HarnessProduct.hpp"
 #include "harness/Product.hpp"
@@ -39,7 +37,7 @@ int main(int argc, char** argv) {
     macKeepTimersPrecise();        // see MacAppSupport.h: real-time pace in the background (row 1600-28)
 #endif
     QApplication app(argc, argv);
-    FileOpenFilter fileOpen;
+    calcu::qt6::FileOpenFilter fileOpen;
     app.installEventFilter(&fileOpen);
     // Without this, the running window's title-bar/taskbar icon is
     // whatever the platform defaults to (e.g. a generic AppImage icon on
@@ -119,12 +117,8 @@ int main(int argc, char** argv) {
         fileOpen.setHandler([&window](const QString& path) { window.openFile(path, calcu::opening::Way::OpenWith); });
         // LIB-13 AC-21 (OQ-2, D-14): the last argument that names a file is
         // opened; the session keeps it until the start is over (AC-7).
-        std::vector<std::string> arguments;
-        for (const QString& a : QCoreApplication::arguments()) arguments.push_back(a.toStdString());
-        if (const auto start = calcu::opening::startFile(arguments, [](const std::string& p) {
-                return QFileInfo(QString::fromStdString(p)).isFile();
-            }))
-            window.openFile(QString::fromStdString(*start), calcu::opening::Way::Start);
+        if (const auto start = calcu::qt6::startFile(QCoreApplication::arguments()))
+            window.openFile(*start, calcu::opening::Way::Start);
         const int result = app.exec();
         fileOpen.setHandler({});
         return result;

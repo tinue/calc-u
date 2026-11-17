@@ -22,11 +22,13 @@ add_library(calcu_qt6 STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/ClipboardService.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/RunControlButtons.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/MediaPicker.cpp          # LIB-7 (M-41)
-  ${CMAKE_CURRENT_SOURCE_DIR}/NameAndSaveDialog.cpp)
+  ${CMAKE_CURRENT_SOURCE_DIR}/NameAndSaveDialog.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/AskedSend.cpp)           # Part E simplification E-4: LIB-7 D-6's round trip
 # LIB-14 (M-43): the shell.
 target_sources(calcu_qt6 PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/SessionHost.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/HostFolders.cpp          # Part E simplification E-2: LIB-9 on a Qt6 host
+  ${CMAKE_CURRENT_SOURCE_DIR}/FileOpening.cpp          # Part E simplification E-4: LIB-13 on a Qt6 host
   ${CMAKE_CURRENT_SOURCE_DIR}/Shell.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ShellMenus.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ShellControlBar.cpp
@@ -43,7 +45,8 @@ target_sources(calcu_qt6 PRIVATE
 # pacing probes); only with CALCU_ATTACH, so only those trees need Qt Network.
 if(CALCU_ATTACH)
   find_package(Qt6 REQUIRED COMPONENTS Network)
-  target_sources(calcu_qt6 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/AttachLineClient.cpp)
+  target_sources(calcu_qt6 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/AttachLineClient.cpp
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/PacingProbe.cpp)   # Part E simplification E-4
   target_link_libraries(calcu_qt6 PUBLIC Qt6::Network)
 endif()
 # LIB-8 D-17 (M-45): on macOS the picture of `clipboard-image` goes through

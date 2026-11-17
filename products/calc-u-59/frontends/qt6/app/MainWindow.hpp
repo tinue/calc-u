@@ -1,4 +1,5 @@
 #pragma once
+#include "opening/OpenRequest.hpp"
 #include "pacing/WallClock.hpp"
 #include "shell/ShellProduct.hpp"
 #include <QMainWindow>
@@ -37,8 +38,10 @@ public:
     /// The host's timer and LIB-18's `start`.
     void start();
 
-    /// A file handed over by Open With (macOS) or named at the start (LIB-13 AC-14).
-    void openFile(const QString& path, bool atStart);
+    /// A file handed over (LIB-13 AC-14): a drop, Open With (macOS), the
+    /// file named at the start; the session's `open` (qt6::openFile, with the
+    /// open part's limits: none for Calc-U-59, AC-11).
+    void openFile(const QString& path, calcu::opening::Way way);
 
 protected:
     void closeEvent(QCloseEvent* e) override;

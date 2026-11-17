@@ -12,7 +12,7 @@
 #include "app/SharpControlRules.hpp"
 #include "control/ControlState.hpp"
 #include "media/MediaTopics.hpp"
-#include "media/SaveRules.hpp"
+#include "qt6/AskedSend.hpp"
 #include "qt6/MediaPicker.hpp"
 #include "qt6/NameAndSaveDialog.hpp"
 #include "shell/Inputs.hpp"
@@ -185,16 +185,14 @@ void TapeControl::saveTape() {
     sessions::Value::Object args{{"place", sessions::Value("tape")},
                                  {"template", sessions::Value(empty)},
                                  {"name", sessions::Value(name.toStdString())}};
-    sessions::ReplyMessage r = m_controller.sendAndWait(calcu::media::kStartNewCommand, sessions::Value(args));
-    if (r.done) return;
-    const QString error = QString::fromStdString(r.reason);
-    const QString asks = QString::fromLatin1(calcu::media::kAsks);
-    if (!error.startsWith(asks)) {
-        QMessageBox::warning(window(), tr("Save Tape"), error);
-        return;
-    }
-    if (QMessageBox::question(window(), tr("Save Tape"), error.mid(asks.size())) != QMessageBox::Yes) return;
-    args.push_back({"confirmed", sessions::Value(true)});
-    r = m_controller.sendAndWait(calcu::media::kStartNewCommand, sessions::Value(std::move(args)));
-    if (!r.done) QMessageBox::warning(window(), tr("Save Tape"), QString::fromStdString(r.reason));
+    const calcu::qt6::AskedSend r = calcu::qt6::sendAsking(
+        [&](bool confirmed) {
+            sessions::Value::Object a = args;
+            if (confirmed) a.push_back({"confirmed", sessions::Value(true)});
+            return m_controller.sendAndWait(calcu::media::kStartNewCommand, sessions::Value(std::move(a))).reason;
+        },
+        [this](const QString& question) {
+            return QMessageBox::question(window(), tr("Save Tape"), question) == QMessageBox::Yes;
+        });
+    if (!r.done && !r.declined) QMessageBox::warning(window(), tr("Save Tape"), QString::fromStdString(r.refusal));
 }

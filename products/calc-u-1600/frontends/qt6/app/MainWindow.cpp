@@ -15,6 +15,7 @@
 #include "app/SharpShellProduct.hpp"
 #include "control/ControlState.hpp"
 #include "opening/OpenRequest.hpp"
+#include "qt6/FileOpening.hpp"
 #include "qt6/MacClipboard.h"
 #include "qt6/PanelArea.hpp"
 #include "qt6/ShellSettingsDialog.hpp"
@@ -581,34 +582,17 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
 
 // ── Drag and drop, opening a file (LIB-13) ─────────────────────────────
 
-namespace {
-
-// The one local file a drag carries, or "".
-QString draggedPath(const QMimeData* mime) {
-    const QList<QUrl> urls = mime->hasUrls() ? mime->urls() : QList<QUrl>();
-    return urls.size() == 1 && urls.first().isLocalFile() ? urls.first().toLocalFile() : QString();
-}
-
-}  // namespace
-
 void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
     // AC-6, D4.3: one file, of a name and size the session would take; the
     // drop itself goes through all of AC-1. More than one file is not taken.
-    const QString path = draggedPath(event->mimeData());
-    if (path.isEmpty()) return;
-    const QFileInfo info(path);
-    namespace sessions = calcu::sessions;
-    const sessions::ReplyMessage r = m_controller->ask(
-        calcu::opening::kWouldTakeRequest,
-        sessions::Value::object({{"name", info.fileName().toStdString()}, {"size", static_cast<std::int64_t>(info.size())}}));
-    const auto* w = sessions::payloadAs<calcu::opening::WouldTake>(r.result);
-    if (w && w->takes) event->acceptProposedAction();
+    const QString path = calcu::qt6::draggedFile(event->mimeData());
+    if (!path.isEmpty() && calcu::qt6::wouldTake(host(), path)) event->acceptProposedAction();
 }
 
 void MainWindow::dragMoveEvent(QDragMoveEvent* event) { event->acceptProposedAction(); }
 
 void MainWindow::dropEvent(QDropEvent* event) {
-    const QString path = draggedPath(event->mimeData());
+    const QString path = calcu::qt6::draggedFile(event->mimeData());
     if (path.isEmpty()) return;
     event->acceptProposedAction();
     // Out of the drop handler: a flow and its dialogs would keep the drag
@@ -617,27 +601,13 @@ void MainWindow::dropEvent(QDropEvent* event) {
 }
 
 void MainWindow::openFile(const QString& path, calcu::opening::Way way) {
-    const QFileInfo info(path);
-    calcu::opening::OpenedFile file;
-    file.name = info.fileName().toStdString();
-    file.path = info.absoluteFilePath().toStdString();
-    // Unreadable: no bytes, and the session refuses naming the file (EC-5).
-    // Past a way's limit only one byte more is read: AC-20 refuses it by size.
-    QFile f(path);
-    if (info.isFile() && f.open(QIODevice::ReadOnly)) {
-        const bool limited = way != calcu::opening::Way::Dialog;
-        const QByteArray raw = limited ? f.read(static_cast<qint64>(shared::kMaxOpenBytes) + 1) : f.readAll();
-        file.bytes = std::vector<std::uint8_t>(raw.begin(), raw.end());
-    }
-    calcu::opening::OpenRequest request;
-    request.files.push_back(std::move(file));
-    request.way = way;
     if (way != calcu::opening::Way::Start) {
         raise();
         activateWindow();
     }
-    // A refusal is the session's notice already (AC-1).
-    m_controller->send(calcu::opening::kOpenCommand, request.toValue());
+    // Read up to the way's limit (AC-20: 1 MiB but for the file dialogs); a
+    // refusal is the session's notice already (AC-1).
+    calcu::qt6::openFile(host(), path, way, m_controller->app().libraryParts().open().setup().maxBytes);
 }
 
 void MainWindow::onProgramOpened(const QString& name, const QByteArray& bytes, const QString& kind) {

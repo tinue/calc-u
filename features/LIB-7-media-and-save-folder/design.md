@@ -1352,3 +1352,18 @@ Plan notes (for the orchestrator; the plan is not edited here):
 - M-55 "Waits for": also M-53 (the debug target that takes over the card
   reader adapter's `libExecPC`, C59-7 §3.6).
 - M-55 "Knowledge, ledger": add 59-43 and the proposed rows above.
+
+## Part E simplification E-4 (2026-11-17, branch `es-qt-glue`)
+
+`docs/reviews/e-simplification.md` §1 S-4 (Qt6). The `asks:` round trip
+of D-6 on a Qt6 host is one helper, `calcu::qt6::sendAsking`
+(`library/qt6/AskedSend`, beside `NameAndSaveDialog`): send; a reason that
+starts with `media::kAsks` is the question for the host's own dialog; on
+yes the same command again with `confirmed: true`; the outcome says done,
+declined or the refusal. `askedQuestion(reason)` gives the question.
+`NameAndSaveDialog::submit`, Calc-U-1600's `TapeControl::saveTape`
+(Save Tape's question box) and Calc-U-59's `MainWindow::armFreshCard`
+(`CardPickerDialog::confirmReplace`, D-31; it compared a literal
+`"asks: "` and took `mid(6)`) use it. The dialogs and their words are
+each product's as before. Test: `lib7_d6_qt_asked_send_round_trip`
+(`library/qt6/tests/file_opening_tests.cpp`).

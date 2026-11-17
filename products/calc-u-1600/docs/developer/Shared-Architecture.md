@@ -65,7 +65,7 @@ WebAssembly check.
 | `SharpPrinters` | The CE-150's and the CE-1600P's papers for the library's `PaperPart` (LIB-8) |
 | `dap/` | The DAP server (C1600-3, `shared::dap`; every native tree, not Emscripten): `DapPart` (a session part: listening, the topic `c1600.dap`, held messages), `DapSession` and `DapSetup.cpp` (the requests, the set-up as operations, the events), its targets, breakpoints and steps on the library's debugger; JSON, framing and `DapTransport`, which a host fills (Qt6: `frontends/qt6/app/debug/DapSocket`; the harness: `serve --dap` on `library/harness/attach/LocalStream`) |
 | `SharpTyping` | Typing on the library's typing engine (LIB-5, `library/typing/`): the typing profile per model (`typingProfile`: 4 + 4 frames, 6 more after SHIFT and KBII on the PC-1600, readiness rules, the characters, the `key` names), the keyboard map per model (`SharpKeyboardMap`), `typingProduct()` for the session's `TypingPart` |
-| `SharpSession` | `makeSharpSession()`: the library's app session with the control part and the part, which the session owns (Qt6 with LIB-14's `SettingsPart` in `moreParts`, tests, `tools/wasm_smoke`); a host talks to it through the library's `calcu::sessions::Listener` (Qt6: the Qt6 component set's `SessionHost`) |
+| `SharpSession` | `makeSharpSession()`: the library's app session with the control part and the part, which the session owns (on the library's `calcu::shell::makeHostSession`: `SharpSessionOptions` is its `HostSessionSetup`; Qt6 with LIB-14's `SettingsPart` over `AppPaths::folders()`, tests, `tools/wasm_smoke`; the Web engine calls the builder itself); a host talks to it through the library's `calcu::sessions::Listener` (Qt6: the Qt6 component set's `SessionHost`) |
 | `SharpControlRules` | The product's side of LIB-4's control state (M-49): the place `host-drive` not available where no folder can be mounted, and the product entries `c1600.disk-controls`, `c1600.ce158-printer-panel`, `c1600.host-drive-folder`, `c1600.mount-directory`, `c1600.ce1600p-next-variant`; `sharpControlSetup()` gives the `ControlPart` its rules (its catalogue and printers, CE-150 and CE-1600P, are `LibraryParts`', from the papers). Everything else of the old `ControlState` is the library's generic entries, from the descriptors (one pin-out per 60-pin place) |
 | `SharpShellProduct` | What the product gives LIB-14's shell (M-49), one source for Qt6 and the Web: `shellProduct()` (name, help address, About texts, variant labels, the product's File items), `faceplateHitMap()` (the hit map of `KeyLayout`, distance 24), `settingsSpec()` (the dialog's sections, the product's Folders labels, Serial ports, Debugger); their Value forms for the page are the library's (`shell/ValueForms`), `faceplateMapValue()` adds the art's size and the LCD layout |
 | `SharpWebPart` | What only the Web page asks for (M-49: the page is the React set's shell): `c1600.shell-product`, `c1600.faceplate-map`, the INSPECTOR's requests, Copy Screen's picture, `c1600.upload`, the stream `c1600.printer` |
@@ -165,7 +165,8 @@ messages: it sends commands and requests, and keeps what the topics send.
 
 The Qt app does this through the Qt6 component set (LIB-14, M-49):
 `MachineController` makes the session and a `calcu::qt6::SessionHost` over
-it, which hosts it on the GUI thread (a 60 Hz timer, one host call per
+it (both in a `calcu::qt6::ProductHost`; the host folders and the settings
+file are `calcu::qt6::HostFolders`, `AppPaths::folders()`), which hosts it on the GUI thread (a 60 Hz timer, one host call per
 tick, the listener, the host services, harness attach in development
 builds); `MainWindow` is put together from `calcu::qt6::Shell`, which draws
 the menus, the control bar, Settings, About, the notices, "Loading…" and

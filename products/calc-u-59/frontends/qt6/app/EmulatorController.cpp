@@ -8,7 +8,6 @@
 #include "debugger/RunState.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "shell/Inputs.hpp"
-#include "shell/SettingsPart.hpp"
 #include "typing/TypingTopics.hpp"
 #include <QFile>
 #include <QFileInfo>
@@ -43,16 +42,7 @@ template <class P> const P& orNone(const P* p, const P& none) { return p ? *p : 
 } // namespace
 
 EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock clock) : QObject(parent) {
-    // LIB-14: the settings dialog reads and writes the product's file through
-    // the session; a change is applied at once (the LED style through the
-    // `settings` topic). A new save or trace folder is used from the next
-    // start, as today (the TI-58C's constant memory file is read at its
-    // build, C59-3).
-    calcu::shell::SettingsPartSetup ss;
-    ss.file = &AppPaths::file();
-    ss.paths = &AppPaths::places();
-    m_settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
-
+    calcu::shell::HostSettings& settings = AppPaths::folders().settings();   // opened at the first use (LIB-9)
     // The ROM lookup first (LIB-12): without the full set the session has no
     // machine and the topic roms-missing names the files (LIB-14 AC-19).
     cu59::TIAppSetup setup;
@@ -63,16 +53,24 @@ EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock
     // LIB-18: the startup model, `last-model` and the startup presets are the
     // settings file's; the save folder (cards, ti58c.memory.yaml), the trace
     // folder, its limit and `~/` its places' (LIB-9).
-    setup.settings = &AppPaths::file();
-    setup.paths = &AppPaths::places();
+    setup.settings = &settings.file();
+    setup.paths = &settings.paths();
     // LIB-6 AC-31, AC-33: the bundled examples beside the program (bundle.yaml).
-    setup.examplesFolder = AppPaths::toFsPath(AppPaths::bundledExamplesDir()).string();
-    m_app = cu59::makeAppSession(std::move(setup), clock, std::nullopt, {m_settingsPart.get()}, {}, /*start=*/false);
+    setup.examplesFolder = calcu::qt6::toFsPath(AppPaths::bundledExamplesDir()).string();
+    // LIB-14: the settings dialog reads and writes the product's file through
+    // the session; a change is applied at once (the LED style through the
+    // `settings` topic). A new save or trace folder is used from the next
+    // start, as today (the TI-58C's constant memory file is read at its
+    // build, C59-3).
+    calcu::shell::HostSessionSetup host;
+    host.settings = &settings;
+    host.clock = clock;
     cs::HostServices services;
     services.offered = {cs::HostService::ClipboardImage, cs::HostService::ClipboardText, cs::HostService::OpenUrl};
-    m_host = std::make_unique<calcu::qt6::SessionHost>(*m_app.session, std::move(services), std::move(clock));
-    m_host->addMessageHandler([this](const cs::Message& m) { onMessage(m); });
-    connect(m_host.get(), &calcu::qt6::SessionHost::topicChanged, this, &EmulatorController::topicChanged);
+    m_session = std::make_unique<calcu::qt6::ProductHost<cu59::TIAppPart>>(
+        cu59::makeAppSession(std::move(setup), std::move(host)), std::move(services), std::move(clock));
+    this->host().addMessageHandler([this](const cs::Message& m) { onMessage(m); });
+    connect(&this->host(), &calcu::qt6::SessionHost::topicChanged, this, &EmulatorController::topicChanged);
     // The LOG tab's text at 1 Hz (AC-9; the paging of cu59::RingLog).
     m_logTimer.setInterval(1000);
     connect(&m_logTimer, &QTimer::timeout, this, [this] {
@@ -86,16 +84,11 @@ EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock
 EmulatorController::~EmulatorController() {
     // The parts' last duties (the TI-58C's constant memory file, C59-3 AC-6;
     // what a card still has to write, LIB-7 AC-13). No message goes out after it.
-    if (m_host) m_host->stop();
-    if (m_app.session) m_app.session->close();
-    m_host.reset();
-    m_app = {};
+    // Ended first, while the LOG tab's view is still there.
+    m_session.reset();
 }
 
-void EmulatorController::start() {
-    m_host->start();
-    send(cs::kStartCommand);
-}
+void EmulatorController::start() { m_session->start(); }
 
 // The LOG tab keeps its own view of the log (C59-4 AC-9; LIB-14 AC-18); the
 // notices are the shell's dialog (AC-17), the paper the panel area's.
@@ -167,15 +160,13 @@ cs::ReplyMessage EmulatorController::send(const cs::CommandName& name, Value arg
     // An operation replies when it ends, after this returns: the handler
     // keeps what it writes into alive.
     auto got = std::make_shared<std::optional<cs::ReplyMessage>>();
-    const cs::CallId id = m_host->send(name, std::move(args), [got](const cs::ReplyMessage& r) { *got = r; });
+    const cs::CallId id = host().send(name, std::move(args), [got](const cs::ReplyMessage& r) { *got = r; });
     if (*got) return **got;
     return cs::ReplyMessage{id, true, "", nullptr};   // an operation: its reply comes when it ends
 }
 
 cs::ReplyMessage EmulatorController::ask(const cs::RequestName& name, Value args) {
-    auto got = std::make_shared<std::optional<cs::ReplyMessage>>();
-    m_host->ask(name, std::move(args), [got](const cs::ReplyMessage& r) { *got = r; });   // requests do not wait (LIB-3)
-    return *got ? **got : cs::ReplyMessage{};
+    return m_session->ask(name, std::move(args));   // requests do not wait (LIB-3)
 }
 
 // ── Machine: drawn from the control state (LIB-4 AC-15) ─────────────────────
@@ -194,7 +185,7 @@ bool EmulatorController::printerConnected() const {
 }
 bool EmulatorController::printerTrace() const { return orNone(state<cu59::TIPrinterState>(cu59::topics::kPrinter), kNoPrinter).trace; }
 cu59::LedStyle EmulatorController::ledStyle() const {
-    const Value v = m_host->value(calcu::shell::kSettingsTopic);
+    const Value v = m_session->host().value(calcu::shell::kSettingsTopic);
     for (const auto& r : calcu::shell::read::elements(v, "rows"))
         if (calcu::shell::read::text(r, "section") == "display" && calcu::shell::read::text(r, "key") == "led-style")
             return calcu::shell::read::text(r, "value") == "classic" ? cu59::LedStyle::Classic : cu59::LedStyle::Modernized;

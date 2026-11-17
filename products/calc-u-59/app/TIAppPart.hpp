@@ -23,6 +23,7 @@
 #include "sessions/MachineSession.hpp"
 #include "sessions/Payload.hpp"
 #include "sessions/SessionPart.hpp"
+#include "shell/HostSession.hpp"
 #include <chrono>
 #include <cstdint>
 #include <deque>
@@ -381,6 +382,10 @@ calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, calc
                                                           std::vector<calcu::sessions::SessionPart*> before = {},
                                                           std::vector<calcu::sessions::SessionPart*> after = {},
                                                           bool start = true);
+/// The same on the library's host builder (calcu::shell::makeHostSession):
+/// a frontend host's settings for LIB-14's SettingsPart (Qt6, Swift), its
+/// parts, clock and `start`; `host.owned` is the part's.
+calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, calcu::shell::HostSessionSetup host);
 
 /// The steady clock as the session's wall clock, and back (the library's).
 using calcu::pacing::steadyTimeOf;

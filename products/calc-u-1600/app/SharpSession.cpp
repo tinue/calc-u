@@ -9,17 +9,10 @@ namespace sessions = calcu::sessions;
 sessions::ProductSession<SharpAppPart> makeSharpSession(Settings& settings, AppPaths& paths,
                                                         SharpSessionOptions options) {
     auto part = std::make_shared<SharpAppPart>(settings, paths, SharpAppPartOptions{options.canMountHostFolder});
-    sessions::AppSessionSetup setup;
-    setup.clock = options.clock ? std::move(options.clock) : calcu::pacing::WallClock(&calcu::pacing::steadyWallTime);
-    setup.hostTime = std::move(options.hostTime);
-    // The one order (parts::LibraryParts): the control part, the host's own.
-    setup.parts = part->sessionParts(std::move(options.moreParts));
-    setup.hosting = options.hosting;
-    sessions::ProductSession<SharpAppPart> out;
-    out.part = part.get();
-    setup.owned = std::move(part);
-    out.session = std::make_unique<sessions::AppSession>(std::move(setup));
-    return out;
+    SharpAppPart& p = *part;
+    calcu::shell::HostSessionSetup host = std::move(options);
+    host.owned = std::move(part);
+    return calcu::shell::makeHostSession(p, std::move(host));
 }
 
 } // namespace shared

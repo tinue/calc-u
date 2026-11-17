@@ -7,7 +7,6 @@
 
 #include <optional>
 
-#include "settings/PlatformBase.hpp"
 #include "settings/SettingsFile.hpp"
 #ifdef __APPLE__
 #include "MacAppSupport.h"
@@ -49,56 +48,26 @@ std::optional<shared::BundleDirs>& chosenBundleDirs() {
     return dirs;
 }
 
-std::optional<calcu::settings::HostDirs>& chosenHostDirs() {
-    static std::optional<calcu::settings::HostDirs> dirs;
-    return dirs;
-}
-
-const calcu::settings::HostDirs& hostDirs() {
-    static const calcu::settings::HostDirs dirs = chosenHostDirs() ? *chosenHostDirs() : platformHostDirs();
-    return dirs;
-}
-
-// The settings file, read once at the first use (LIB-9 AC-5, AC-6). A
-// file that cannot be read, or the first write that fails, goes to the log
-// (EC-6, AC-7); the app then runs on the defaults.
-calcu::settings::SettingsFile& settingsFile() {
-    static calcu::settings::SettingsFile file = [] {
-        const calcu::settings::ProductDecl& decl = shared::settingsDecl();
-        calcu::settings::SettingsFile f =
-            calcu::settings::SettingsFile::open(decl, calcu::settings::settingsFilePath(decl, hostDirs()));
-        if (!f.problem().empty()) qWarning("Settings: %s", f.problem().c_str());
-        return f;
-    }();
-    return file;
-}
-
 } // namespace
 
-calcu::settings::HostDirs platformHostDirs() {
-    namespace cs = calcu::settings;
-    cs::HostDirs dirs;
-    dirs.frontend = cs::FrontendKind::Qt6;
-    dirs.home = QDir::homePath().toStdString();
-    const cs::EnvLookup env = [](const char* name) -> std::optional<std::string> {
-        if (!qEnvironmentVariableIsSet(name)) return std::nullopt;
-        return qEnvironmentVariable(name).toStdString();
-    };
+calcu::qt6::HostFolders& folders() {
+    // LIB-9 AC-2: on macOS the settings base is the app's Application Support
+    // folder as macOS gives it (inside the container of a sandboxed app).
+    static calcu::qt6::HostFolders f(shared::settingsDecl(),
 #if defined(Q_OS_MACOS)
-    dirs.settingsBase = cs::settingsBaseFor(cs::HostOs::MacOS, env, dirs.home, macApplicationSupportFolder());
-#elif defined(Q_OS_WIN)
-    dirs.settingsBase = cs::settingsBaseFor(cs::HostOs::Windows, env, dirs.home, {});
+                                     [] { return macApplicationSupportFolder(); }
 #else
-    dirs.settingsBase = cs::settingsBaseFor(cs::HostOs::Linux, env, dirs.home, {});
+                                     {}
 #endif
-    return dirs;
+    );
+    return f;
 }
 
-void useHostDirs(const calcu::settings::HostDirs& dirs) { chosenHostDirs() = dirs; }
+void useHostDirs(const calcu::settings::HostDirs& dirs) { folders().useHostDirs(dirs); }
 void useBundleDirs(const shared::BundleDirs& dirs) { chosenBundleDirs() = dirs; }
 
 shared::AppPaths& paths() {
-    static shared::AppPaths p(AppSettings::settings(), hostDirs(),
+    static shared::AppPaths p(AppSettings::settings(), folders().hostDirs(),
                               chosenBundleDirs() ? *chosenBundleDirs()
                                                  : shared::BundleDirs{bundledResourcesDir().toStdString(), {}});
     return p;
@@ -114,7 +83,7 @@ QString serialLinkDir() { return q(paths().serialLinkDir()); }
 
 namespace AppSettings {
 shared::Settings& settings() {
-    static shared::Settings s(AppPaths::settingsFile());
+    static shared::Settings s(AppPaths::folders().file());
     return s;
 }
 }  // namespace AppSettings

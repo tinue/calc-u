@@ -59,9 +59,10 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
    file dialogs belongs in `app/` (calc-u-59-shared skill) so the Swift app
    gets it too. `EmulatorController` is the product's glue (as Calc-U-1600's
    `MachineController`): it makes the app session (`cu59::makeAppSession`
-   with LIB-14's `SettingsPart` in front; without the full ROM set a session
-   with no machine and the topic `roms-missing`) and the `SessionHost` over
-   it (the 60 Hz timer, the listener, the clipboard and open-url services,
+   on the library's `calcu::shell::makeHostSession`, which puts LIB-14's
+   `SettingsPart` in front; without the full ROM set a session with no
+   machine and the topic `roms-missing`) and the `SessionHost` over it
+   (the library's `calcu::qt6::ProductHost`: the 60 Hz timer, the listener, the clipboard and open-url services,
    harness attach), reads the host's topic mirror and turns topic changes
    into Qt signals; it keeps the LOG tab's view of `log`. Notices, the log
    to the platform, "Loading…" are the shell's. The paper is the library's
@@ -82,8 +83,10 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
 5. **Settings** are declared in `app/Settings.hpp` and live in
    `Calc-U-59.ini` (LIB-9); the settings dialog is the shell's
    (`ShellSettingsDialog` over the `settings` topic, rows from
-   `cu59::settingsSpec`), `AppPaths.cpp` opens the file (`AppPaths::file()`,
-   `places()`) and takes every folder from `calcu::settings::Paths`;
+   `cu59::settingsSpec`), the library's `calcu::qt6::HostFolders`
+   (`AppPaths::folders()`, `file()`, `places()`) opens the file and gives
+   the places (`calcu::settings::Paths`); `AppPaths.cpp` keeps the bundled
+   examples' folder;
    `AppSettings.hpp` wraps the rest in QString calls. No QSettings. The
    window is `[window]` numbers (`cu59::settings::WindowState`).
 6. **Compile, don't run.** Build with the commands below. To check rendering

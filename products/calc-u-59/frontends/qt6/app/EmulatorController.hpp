@@ -6,6 +6,7 @@
 #include "media/MediaTopics.hpp"
 #include "opening/OpenRequest.hpp"
 #include "pacing/WallClock.hpp"
+#include "qt6/ProductHost.hpp"
 #include "qt6/SessionHost.hpp"
 #include "typing/HostKey.hpp"
 #include <QObject>
@@ -17,14 +18,11 @@
 #include <string>
 #include <vector>
 
-namespace calcu::shell {
-class SettingsPart;
-} // namespace calcu::shell
-
 // The product's glue around the session host (LIB-14 design §10.4, M-57; as
 // Calc-U-1600's MachineController): makes Calc-U-59's app session
-// (cu59::makeAppSession with LIB-14's SettingsPart in front) and the Qt6
-// component set's SessionHost over it, which hosts it on the GUI thread (the
+// (cu59::makeAppSession with LIB-14's SettingsPart in front, over
+// AppPaths::folders()) and the Qt6 component set's SessionHost over it
+// (calcu::qt6::ProductHost), which hosts it on the GUI thread (the
 // 60 Hz timer, the listener, the host services, harness attach). The shell
 // draws the menus, the bar, the settings, About, the notices, "Loading…" and
 // "ROMs missing" from the host; this class keeps what only the product
@@ -42,9 +40,9 @@ public:
     explicit EmulatorController(QObject* parent = nullptr, calcu::pacing::WallClock clock = cu59::steadyWallTime);
     ~EmulatorController() override;
 
-    calcu::qt6::SessionHost& host() { return *m_host; }
-    cu59::TIAppPart& app() { return *m_app.part; }
-    calcu::sessions::AppSession& session() { return *m_app.session; }
+    calcu::qt6::SessionHost& host() { return m_session->host(); }
+    cu59::TIAppPart& app() { return m_session->part(); }
+    calcu::sessions::AppSession& session() { return m_session->session(); }
     /// The ROM lookup found the full set; else the topic `roms-missing` says
     /// which files are missing and the shell shows it (LIB-14 AC-19).
     bool romsFound() const { return m_romsFound; }
@@ -184,15 +182,15 @@ private:
     calcu::sessions::ReplyMessage send(const calcu::sessions::CommandName& name,
                                        calcu::sessions::Value args = calcu::sessions::Value::object({}));
     calcu::sessions::ReplyMessage ask(const calcu::sessions::RequestName& name, calcu::sessions::Value args);
-    template <class P> const P* state(const calcu::sessions::TopicName& t) const { return m_host->topics().stateOf<P>(t); }
+    template <class P> const P* state(const calcu::sessions::TopicName& t) const { return m_session->host().topics().stateOf<P>(t); }
     void onMessage(const calcu::sessions::Message&);
     void topicChanged(const QString&);
     void dump(const char* what) { send(cu59::commands::kDump, calcu::sessions::Value::object({{"what", what}})); }
 
     bool m_romsFound = false;
-    std::unique_ptr<calcu::shell::SettingsPart> m_settingsPart;
-    calcu::sessions::ProductSession<cu59::TIAppPart> m_app;
-    std::unique_ptr<calcu::qt6::SessionHost> m_host;   // stops listening before the session goes
+    // The session (with LIB-14's SettingsPart) and its host; ended first in
+    // the destructor.
+    std::unique_ptr<calcu::qt6::ProductHost<cu59::TIAppPart>> m_session;
     std::string m_model;               ///< the model last seen in the control state
     bool m_printerSeen = false;
     cu59::RingLog m_log;               ///< the LOG tab's view (AC-9)

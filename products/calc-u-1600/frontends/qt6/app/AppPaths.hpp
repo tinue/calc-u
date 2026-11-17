@@ -3,6 +3,7 @@
 #include <string>
 
 #include "app/AppPaths.hpp"
+#include "qt6/HostFolders.hpp"
 #include "settings/HostDirs.hpp"
 
 // Path resolution for bundled resources and the memory-module feature --
@@ -19,9 +20,11 @@
 // Linux).
 namespace AppPaths {
 
-// The host folders of this platform: home, and the settings base of LIB-9
-// AC-2.
-calcu::settings::HostDirs platformHostDirs();
+// The host folders and the settings file of this run (the Qt6 component
+// set's, LIB-9; the settings base on macOS: macApplicationSupportFolder()):
+// the file is opened at the first use, a problem goes to the log as
+// "Settings: <problem>"; places() for LIB-14's SettingsPart.
+calcu::qt6::HostFolders& folders();
 
 // Folders of its own for this run instead of the platform's (screenshot
 // runs, `--shots`, main.cpp: a throwaway home and settings base, so the

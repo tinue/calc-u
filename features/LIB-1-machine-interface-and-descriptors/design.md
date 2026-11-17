@@ -744,3 +744,13 @@ Products: AC-26–41, 16 ACs, in P1–P5.
 and takes the host's places and ROM lookup (`docs/reviews/e-simplification.md`
 §1 S-1); `harness/attach/SessionParts.hpp` (named in §2a) is gone: the
 attached harness takes `parts::LibraryParts&`.
+
+## Part E simplification E-2 (2026-11-17, branch `es-host-session`)
+
+The hosts' side of a session (`docs/reviews/e-simplification.md` S-1, S-4)
+is in `library/shell/HostSession.*` (it needs `sessions`, `settings`,
+`pacing` and `shell`'s own SettingsPart, all within `shell`'s rule above;
+`parts` may not include `shell`, so the builder is a template over the
+product's part and its `sessionParts(host, after)`), and in
+`library/qt6/HostFolders.*` and `ProductHost.hpp` (the Qt6 component set).
+No rule of §2a changes.

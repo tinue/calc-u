@@ -91,7 +91,9 @@ rules are documented.
 
 Every frontend hosts the library's app session (`calcu::sessions::AppSession`,
 LIB-3) made by `cu59::makeAppSession` (`app/TIAppPart.hpp`) or, on the Web,
-by `frontends/web/bindings.cpp` for the library's Web Worker host (LIB-15,
+by `frontends/web/bindings.cpp`, both on the library's
+`calcu::shell::makeHostSession` (LIB-14's `SettingsPart` over the host's
+settings file, the order, the start), for the library's Web Worker host (LIB-15,
 with `TIWebPart` behind the part). The session holds the machine session
 (the machine, LIB-17's pacer with the TI profiles of
 `app/PacingProfiles.hpp`) and Calc-U-59's parts: `TIAppPart::sessionParts()`

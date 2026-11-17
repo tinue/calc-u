@@ -305,28 +305,23 @@ calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, paci
                                                           std::optional<std::uint32_t> jitterSeed,
                                                           std::vector<sessions::SessionPart*> before,
                                                           std::vector<sessions::SessionPart*> after, bool start) {
+    shell::HostSessionSetup host;
+    host.clock = std::move(clock);
+    host.jitterSeed = jitterSeed;
+    host.before = std::move(before);
+    host.after = std::move(after);
+    host.start = start;
+    return makeAppSession(std::move(setup), std::move(host));
+}
+
+calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, shell::HostSessionSetup host) {
     auto part = std::make_shared<TIAppPart>(std::move(setup));
-    sessions::AppSessionSetup s;
-    s.clock = std::move(clock);
-    s.hostTime = [] { return std::chrono::system_clock::now(); };
+    TIAppPart& p = *part;
     // The one order (parts::LibraryParts): LIB-4's ControlPart (D-13; the
-    // product entries of C59-4 AC-25), the host's own, the library's, the
-    // product's, the host's behind them.
-    s.parts = part->sessionParts(std::move(before), std::move(after));
-    s.hosting = sessions::Hosting::Paced;
-    s.jitterSeed = jitterSeed;
-    calcu::sessions::ProductSession<TIAppPart> out;
-    out.part = part.get();
-    s.owned = std::move(part);
-    out.session = std::make_unique<sessions::AppSession>(std::move(s));
-    if (start) {
-        // LIB-18: the start, once (the startup model with its startup preset
-        // or its built-in default), sent by the factory for the native hosts.
-        sessions::Listener l;
-        l.listen(*out.session);
-        l.send(sessions::kStartCommand, Value::object({}));
-    }
-    return out;
+    // product entries of C59-4 AC-25), the host's own and SettingsPart, the
+    // library's, the product's, the host's behind them.
+    host.owned = std::move(part);
+    return shell::makeHostSession(p, std::move(host));
 }
 
 } // namespace cu59

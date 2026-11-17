@@ -36,14 +36,27 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    `cu59::makeAppSession` (`app/TIAppPart.hpp`): the `RomSet`, the settings file (the startup model,
    LIB-9), the bundled `examples/`, your save folder (cards,
    `ti58c.memory.yaml`) and trace folder (LIB-9's paths); `makeAppSession`
-   sends LIB-18's `start`. Without the full
-   set make no session and show `describe(missing)`.
+   sends LIB-18's `start`. Without the full set pass
+   `TIAppSetup::romsMissing` (`describe(missing)`) and no `roms`: the
+   session runs without a machine and publishes `roms-missing {text}`,
+   which the shell shows in place of the faceplate (LIB-14 AC-19).
+   Put the window together from LIB-14's shell (the Qt6 component set's
+   `calcu::qt6::Shell` over a `SessionHost`, the React set's
+   `useCalcuShell`; Swift natively, C59-8) with Calc-U-59's data from
+   `app/TIShellProduct` (`shellProduct`, `settingsSpec`, `faceplateHitMap`):
+   the menus, the control bar (the model picker, the module slot's picker,
+   the "PC-100C" button, the card controls; where there is no menu bar,
+   Reset, Preset, Settings and the More button), the settings dialog,
+   About, Help, notices and "Loading…" come from the control state and the
+   library's commands. A new menu item goes into that menu model, never
+   into one frontend.
 2. **Listen to it** (`AppSession::listen`) with the host services you offer;
    keep a `calcu::sessions::TopicMirror` of what it sends: the library's
-   topics (among them LIB-8's `papers`, `paper <owner>`, `paper-copies` and
-   LIB-10's `run-state`, `trace`) and the interim `c59.*` topics
-   (`c59.model`, `c59.led`, `c59.printer` (the PC-100C connected and its
-   TRACE), `c59.cue-card` (the cue card, its corner on show and lit), `c59.run-state` (full speed, playback),
+   topics (among them LIB-4's `control-state`, from which every control
+   about the machine is drawn, LIB-8's `papers`, `paper <owner>`,
+   `paper-copies` and LIB-10's `run-state`, `trace`) and the product's
+   `c59.*` topics (`c59.led`, `c59.printer` (the PC-100C's TRACE),
+   `c59.cue-card` (the cue card, its corner on show and lit), `c59.run-state` (full speed, playback),
    the library's `media` (the card reader `card-reader` and `slot-1`: what they
    hold, the pickers; send `media.choose`, `media.start-new`, `media.eject`),
    …) and the debug panel's product topics (`calculator-debug`,

@@ -42,7 +42,8 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `TIDisplayPicture` | The classic segment picture a preset's `screenshot:` writes (LIB-6 AC-40) |
 | `ConstantMemoryKeeper`, `ConstantMemoryFile` | The TI-58C's `ti58c.memory.yaml` (constant memory format 1): what a TI-58C built without a preset gets, when the file is written, the notices (C59-3, M-54) |
 | `TIFileAccess`, `PacingProfiles` | The card and `ti58c.memory.yaml` files on the save folder; the TI pacing profiles (M-33) |
-| `TIWebPart`, `WebPageData` | What the Web page draws, as `c59.web.*` topics, commands and requests; the static page data (adapter W59-1) (LIB-15 59, M-34) |
+| `TIShellProduct` | What Calc-U-59 gives LIB-14's shell, one source for Qt6, the Web and (through the bridge) Swift: the name, help address, About texts and links, the preset filter, the module slot's pin-out, the two card items (`arm-card`, `arm-fresh-card` on the media place `card-reader`); the settings dialog per frontend and layout (`settingsSpec`); the faceplate's hit map in base-image pixels (`faceplateHitMap`, `faceplateMapValue`) (M-57) |
+| `TIWebPart`, `WebPageData` | What the Web page draws, as `c59.web.*` topics and product requests (`c59.shell-product`, `c59.faceplate-map` since M-57; the LED shapes, the mobile layout rules) (LIB-15 59, M-34; LIB-14 59, M-57) |
 | `EmulatorSession` | The runtime around the machine LIB-18 built and the machine session holds (one per machine, made at `machineChanged`): frame sampler, the PC-100C's controls, the module's image, the adapters' reads |
 | `SessionThread` | The Swift frontend's session thread and its two queues (C59-5) |
 | `TILevelRules` | The levels `program` and `cpu` of the run control (LIB-10 AC-29, AC-30): where a pause lands (a step boundary, or 50000 weights), one step, pause-on-start |
@@ -108,8 +109,10 @@ startup preset, else its built-in default); the Web page sends `start
 `speed`, `suspend`, `continue`, …; `cu59::commands`, `c59.*`) and gets
 messages: the library's topics (`display`, `busy`, `notices`, `log`,
 `papers`, `paper PC-100C`, `run-state`, `trace`, …) and the interim
-`c59.*` topics (`c59.model`, `c59.led`, `c59.printer` (connected and TRACE
-only), `c59.cue-card` (the cue card shown, whether the fitted card is on show, its lit corner), `c59.run-state` (full speed and whether an
+`c59.*` topics (`c59.model` (read by the Swift frontend only, until C59-8;
+Qt6 and the Web draw the model, the module, the printer and the card
+controls from LIB-4's `control-state` since M-57), `c59.led`, `c59.printer`
+(connected and TRACE only), `c59.cue-card` (the cue card shown, whether the fitted card is on show, its lit corner), `c59.run-state` (full speed and whether an
 operation runs), …; each the snapshot of one of 2.3.0's change flags,
 until the feature that owns it, LIB-3 59 design §5) and the debug panel's
 product topics (`TIDebugPart`, C59-4 AC-25). Qt6
@@ -417,9 +420,12 @@ LIB-15 AC-20). It reads the machine through the kind `c59.constant-memory`
 A frontend looks the ROM files up once at its start (LIB-12):
 it calls `cu59::lookUpRoms` (`app/ProductRoms.hpp`; Qt6, the Swift bridge,
 the Web's `bindings.cpp`), the library's `calcu::roms::lookUp` over the full
-set of 24 files with the core's `TIRomReader`. Without the full set no app
-session is made and the frontend shows `describe(missing)` (the Web as its
-failed start, LIB-15 AC-3); there is no other ROM error. With it, every model switch and module change takes
+set of 24 files with the core's `TIRomReader`. Without the full set the app
+session is made without ROMs (`TIAppSetup::romsMissing`, `describe(missing)`):
+it builds no machine, refuses `start`, and publishes LIB-12's `roms-missing
+{text}`, which LIB-14's shell shows in place of the faceplate while Help and
+About still work (LIB-14 AC-19; Qt6 and the Web since M-57; row 59-54);
+there is no other ROM error. With it, every model switch and module change takes
 its files from the `RomSet` in memory and reads no file. The catalogue's ROM
 entries (`core/TICatalogue.cpp`) name each model's files: three ROM chips
 (Datamath text dumps: header, a `---` line, then `AAAA: WWWW …` rows, words

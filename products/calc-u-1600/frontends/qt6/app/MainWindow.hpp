@@ -117,6 +117,7 @@ private:
     // Host keys (LIB-5): the keys held down, so each key-up pairs with its
     // host-key-down (LIB-5 EC-1).
     calcu::qt6::HostKeys m_hostKeys;
+    QMetaObject::Connection m_focusChanged;
     void releaseHeldKeys();
     // A host Shift tapped on its own is one press of the machine's SHIFT
     // (LIB-5 AC-33; the wall-time rule stays here, D-12).

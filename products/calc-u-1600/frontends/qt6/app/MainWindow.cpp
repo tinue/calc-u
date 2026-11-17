@@ -140,7 +140,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_controller.get(), &MachineController::programOpened, this, &MainWindow::onProgramOpened);
     // A key held while focus moves to another widget (a combo box, a
     // dialog) releases there, not here -- let go of it now instead.
-    connect(qApp, &QApplication::focusChanged, this, [this] { releaseHeldKeys(); });
+    m_focusChanged = connect(qApp, &QApplication::focusChanged, this, [this] { releaseHeldKeys(); });
 
     // The sink is a child of the window, so it outlives m_controller (and
     // with it the session's audio pump).
@@ -154,6 +154,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 }
 
 MainWindow::~MainWindow() {
+    // ~QWidget clears the focus and so emits focusChanged after this
+    // window's members (m_hostKeys) are gone: let go of it first.
+    disconnect(m_focusChanged);
     // The widgets send to the host and read the controller: they go first.
     m_controller->host().stop();
     delete takeCentralWidget();

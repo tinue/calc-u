@@ -52,6 +52,7 @@ because each Web engine compiles it itself. Tests in `library/web/tests/`.
 | `library/web/glue/MessageCodec.hpp/.cpp` | a LIB-3 `Message` ↔ a JS object, through `Payload::toValue()` and `Value`; the sound messages (`SoundStart`, `SoundSamples`, `SoundStop`) as `Int16Array` (§3.6). Replaces Calc-U-1600's `WebAudioSink` (`bindings.cpp:133-191`) |
 | `library/web/glue/Bind.hpp` | `CALCU_WEB_PRODUCT(name, factory)`: the embind registration a product's `bindings.cpp` makes |
 | `library/web/src/base.js` | `CALC_BASE` (from both `src/engine.js:14-18`): every URL relative to `calc.js` (AC-13) |
+| `library/web/src/canvas.js` | `sizeCanvas()`, `calcImage()` (from both products' `src/painters.js`; Part E simplification E-5) |
 | `library/web/src/shell.js` | page side: `createShell()` starts the worker, keeps the last state of each state topic and what each stream topic appended, suspend/continue on `visibilitychange`, the start state (§3.1) |
 | `library/web/src/hostServices.js` | the page's host services: clipboard text and image, file picker, download, open URL (AC-4, AC-9) |
 | `library/web/src/audio.js`, `library/web/src/audio-worklet.js` | the audio sink on the page side: AudioWorklet ring buffer, unlocked on the first gesture (from Calc-U-1600 `src/engine.js:52-93`, `audio-worklet.js`) |
@@ -572,3 +573,19 @@ the library's `run-state` (`paused`; `armed` is `program` or `cpu`),
 Every pixel is as before; `data-full-speed`, a test attribute, follows the
 speed now (`busy`), which is the commanded speed except while an operation
 runs.
+
+## Part E simplification E-5 (2026-11-17, branch `es-web-glue`)
+
+`docs/reviews/e-simplification.md` §1 S-4 (Web pages). `useShell(product,
+embedded, services)` (§3.1) takes the host services too, read once like
+the start parameters and handed to `createShell` (default the page's,
+`calcuWebHostServices`): Calc-U-59's own `createC59Shell` went; its page
+passes the library's services with the traces it keeps
+(`createC59Traces`, `src/page.jsx`), the hook sets nothing else apart. The
+page side has `src/canvas.js` (in `LIBRARY_SOURCES` after `base.js`):
+`sizeCanvas` and `calcImage(name, onLoad)` (`img/<name>` beside `calc.js`,
+the name with its extension), which both products' painters wrote each.
+`sizeCanvas` is the same transform; `calcImage` returns the image once it
+is complete with a size (Calc-U-59's rule; Calc-U-1600 waited for `load`,
+which comes after `complete`, so an image is never drawn later than
+before). LIB-14's section of the same name has the component set's part.

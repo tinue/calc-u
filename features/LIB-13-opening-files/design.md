@@ -1045,3 +1045,27 @@ Questions (no answer needed for this step; nothing changed):
 - **Q-E4-2 (AC-6).** Should Calc-U-59's drop be accepted and opened after
   the drop, as Calc-U-1600's is (the drag source then shows the drop as
   taken and does not wait for the open)?
+
+## Part E simplification E-5 (2026-11-17, branch `es-web-glue`)
+
+`docs/reviews/e-simplification.md` §1 S-4 (Web pages). Both Web pages hand
+files to `open` through `library/web/components/useShellProduct.jsx`:
+
+- `calcuOpenFiles(send, files, way)`: `{name, bytes}` per file and `open
+  {files, way, upload: true}` (AC-8: several are one folder); `send` stays
+  the page's (Calc-U-1600 `sendChecked`, so a refusal is the shell's
+  notice as before; Calc-U-59 the shell's `send`, the session's notice).
+  Load Preset… (`useShellProduct`, LIB-14's section) uses it with way
+  `dialog`.
+- `calcuFileDrop(open, rule)`: the drag-over that takes files and the drop
+  by the product's rule, which stays each product's (what its users know,
+  as E-4 kept the Qt ones): `CALCU_DROP_ONE_FILE` (Calc-U-1600: a drop of
+  exactly one file is opened, any other is ignored, and no drop reaches
+  the browser) and `CALCU_DROP_FIRST_FILE` (Calc-U-59: the first file of a
+  drop; a drop without a file or before the session is the browser's).
+  The Qt6 frontends take one file of a drag (E-4); the Web rules differ
+  for a drop of several files (Q-E5-1).
+
+- **Q-E5-1 (AC-6, AC-8).** Should a drop of several files on a Web page be
+  one rule for both products (one folder in `/uploads`, as Load Preset…'s
+  several files are; or the first file; or none)?

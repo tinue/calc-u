@@ -1367,3 +1367,18 @@ declined or the refusal. `askedQuestion(reason)` gives the question.
 `"asks: "` and took `mid(6)`) use it. The dialogs and their words are
 each product's as before. Test: `lib7_d6_qt_asked_send_round_trip`
 (`library/qt6/tests/file_opening_tests.cpp`).
+
+## Part E simplification E-5 (2026-11-17, branch `es-web-glue`)
+
+`docs/reviews/e-simplification.md` §1 S-4 (Web pages). The Web side of the
+`asks:` round trip (D-6) has one prefix, `CALCU_ASKS = "asks: "` (as
+`media::kAsks`), in `library/web/components/MediaPicker.jsx`, with
+`calcuAskedQuestion(reason)` (the question, or null) and
+`calcuSendAsking(send, ask, command, args)` (was `calcuMediaSendAsking`;
+the Name & Save and Saved Media dialogs use it). Calc-U-59's card picker
+reads its replace question with `calcuAskedQuestion` (its own `CARD_ASKS`
+went); it still shows the question in its dialog with Replace (D-31). The
+place lookup of the topic `media` is `calcuMediaPlace(media, word)` (was
+Calc-U-1600's `mediaPlaceOf`, an inline `find` and Calc-U-59's
+`cardReaderOf`). The Saved Media wrapper and the slot picker are LIB-14's
+section of the same name (`ShellSavedMedia`, `ShellSlotPicker`).

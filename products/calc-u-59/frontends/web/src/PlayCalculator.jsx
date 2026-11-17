@@ -76,19 +76,9 @@ function KeyFeedback({ shell, enabled }) {
   return null;
 }
 
-// LIB-7's module picker of `slot-1` (LIB-7 AC-47; the shell's slot picker,
-// B1), disabled with the place's reason while it cannot be used.
-function SlotPicker({ shell, entry }) {
-  const word = calcuShellText(entry, "place");
-  const place = ((shell.inputs.media && shell.inputs.media.places) || []).find((p) => p.place === word) || null;
-  const ok = calcuShellAvailability(entry, "empty");
-  return (
-    <fieldset className="calcu-bar-fieldset" disabled={!ok.now} title={ok.now ? undefined : ok.reason}
-      aria-label="Solid State Module">
-      <CalcuMediaPicker place={place} send={(c, a) => shell.shell.send(c, a)} />
-    </fieldset>
-  );
-}
+// LIB-7's module picker of `slot-1` (LIB-7 AC-47; the library's
+// ShellSlotPicker).
+const SlotPicker = (props) => <ShellSlotPicker {...props} label="Solid State Module" />;
 
 function BarButton({ icon, label, compact, title, name, className = "", ...rest }) {
   return (
@@ -225,8 +215,10 @@ const C59_NO_PRODUCT = { name: "Calc-U-59", items: [], variantLabels: {}, module
 function PlayCalculator(props) {
   const { width, height, keyboard, model: modelProp, preset, workerUrl, rest } = embedProps(props);
   const { layout = "portrait", settings = true } = rest;
-  const [made, setMade] = React.useState(null);   // {shell, traces}
-  const shell = made ? made.shell : null;
+  // The traces the session hands over (the LOG tab), kept by the page's host services.
+  const traces = React.useRef(null);
+  if (!traces.current) traces.current = createC59Traces();
+  const shell = useShell(PRODUCT, { model: modelProp || "", preset: bundlePathOf(preset), workerUrl }, traces.current.services);
   const [cardDialog, setCardDialog] = React.useState(null);   // "arm" | "fresh" | null
   const rootRef = React.useRef(null);
   const [measured, setMeasured] = React.useState(0);
@@ -236,13 +228,8 @@ function PlayCalculator(props) {
   const hostKeys = React.useRef(null);
   if (!hostKeys.current) hostKeys.current = calcuHostKeys();
 
-  React.useEffect(() => {
-    const m = createC59Shell({ model: modelProp, preset, workerUrl });
-    setMade(m);
-    // The Playwright tests' hook: the shell on the client's element.
-    if (rootRef.current) rootRef.current.calcuShell = m.shell;
-    return () => m.shell.destroy();
-  }, []);
+  // The Playwright tests' hook: the shell on the client's element.
+  React.useEffect(() => { if (rootRef.current && shell) rootRef.current.calcuShell = shell; }, [shell]);
   const start = useShellState(shell, (st) => st.start);
   const failure = useShellState(shell, (st) => st.failure);
   const log = useLogView(shell);
@@ -255,54 +242,25 @@ function PlayCalculator(props) {
     return () => { current = false; };
   }, [auto, shell, start, width, height]);
 
-  // The product's shell data per layout (D-32; the settings differ, AC-30).
-  const layoutName = portrait ? "portrait" : "wide";
-  const [shellData, setShellData] = React.useState({});
-  React.useEffect(() => {
-    if (!shell || start !== "running" || shellData[layoutName]) return;
-    shell.request("c59.shell-product", { layout: layoutName, version: CALC_VERSION }).then((r) => {
-      if (r.done) setShellData((d) => ({ ...d, [layoutName]: r.value }));
-    });
-  }, [shell, start, layoutName]);
-
   // LIB-13: Load Preset… and a drop are the session's `open` (an upload):
   // it decides what the files are, several are one folder (AC-8), a refusal
   // is its notice (AC-15). The preset extensions and all files (AC-5).
-  const openFiles = (files, way) => Promise.all(Array.from(files).map((f) => f.arrayBuffer()
-    .then((b) => ({ name: f.name, bytes: new Uint8Array(b) }))))
-    .then((list) => (shell ? shell.send("open", { files: list, way, upload: true }) : null));
-  const openRef = React.useRef(openFiles);
-  openRef.current = openFiles;
+  const openFiles = (files, way) => calcuOpenFiles((name, args) => shell.send(name, args), files, way);
 
-  const product = React.useMemo(() => {
-    const data = shellData[layoutName];
-    if (!data) return C59_NO_PRODUCT;
-    const p = data.product;
-    const acts = { "arm-card": () => setCardDialog("arm"), "arm-fresh-card": () => setCardDialog("fresh") };
-    return {
-      ...p,
-      version: CALC_VERSION,
-      build: "",
-      copyScreen: null,   // AC-26: no Copy Screen
-      settingsSpec: data.settingsSpec,
-      loadPreset: async () => {
-        const files = await calcuPickFiles("", true);
-        if (files.length) openRef.current(files, "dialog");
-      },
-      items: p.items.map((i) => ({ ...i, act: acts[i.id] })),
-    };
-  }, [shellData, layoutName]);
+  // The product's shell data per layout (D-32; the settings differ, AC-30).
+  // AC-26: no Copy Screen.
+  const { product } = useShellProduct(shell, {
+    request: "c59.shell-product", args: { layout: portrait ? "portrait" : "wide", version: CALC_VERSION },
+    fallback: C59_NO_PRODUCT, version: CALC_VERSION, build: "", copyScreen: null, openFiles,
+    acts: { "arm-card": () => setCardDialog("arm"), "arm-fresh-card": () => setCardDialog("fresh") },
+  });
   const traits = React.useMemo(() => traitsFor(portrait, settings), [portrait, settings]);
   const s = useCalcuShell(shell, product, traits);
   const cs = s.inputs.controlState;
   const model = (cs && cs.model) || modelProp || "TI-59";
 
   // The faceplate map, one request per model (D-41).
-  const [maps, setMaps] = React.useState({});
-  React.useEffect(() => {
-    if (!shell || start !== "running" || maps[model]) return;
-    shell.request("c59.faceplate-map", { model }).then((r) => { if (r.done) setMaps((m) => ({ ...m, [model]: r.value })); });
-  }, [shell, start, model]);
+  const maps = useFaceplateMaps(shell, "c59.faceplate-map", model);
 
   // Without a width the client fills its container.
   React.useEffect(() => {
@@ -361,13 +319,7 @@ function PlayCalculator(props) {
   };
 
   // ── Drag and drop any file: LIB-13's `open {way: drop, upload}` ──────
-  const onDragOver = (e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); };
-  const onDrop = (e) => {
-    const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (!file || !shell) return;
-    e.preventDefault();
-    openFiles([file], "drop");
-  };
+  const drop = calcuFileDrop(shell ? openFiles : null, CALCU_DROP_FIRST_FILE);
 
   const paperOwner = (s.panels.find((p) => p.kind === "paper") || {}).owner || "";
   const page = { shell, s, faceplate: maps[model] || null, model, paperOwner, cardDialog: setCardDialog };
@@ -387,10 +339,10 @@ function PlayCalculator(props) {
       onKeyUp={onKeyUp}
       onBlur={onBlur}
       onPointerDownCapture={focusForKeys}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
+      onDragOver={drop.onDragOver}
+      onDrop={drop.onDrop}
     >
-      <C59_PAGE.Provider value={{ shell, s, traces: made ? made.traces : null, log }}>
+      <C59_PAGE.Provider value={{ shell, s, traces: traces.current, log }}>
         <ShellStorageBanner shell={shell} />
         {/* AC-19: without a machine there is no bar and no More button, so the
             portrait layout shows the menu bar for Help and About too. */}
@@ -399,7 +351,7 @@ function PlayCalculator(props) {
         {failed && !romsMissing && <div className="calcu-shell-roms-missing" data-calcu="start-failed" role="alert">{failure}</div>}
         {!romsMissing && !failed && (!auto || rules) && <Layout page={page} width={w} height={height} rules={rules || EMBEDDED_WIDE} />}
         <KeyFeedback shell={shell} enabled={touch} />
-        <ShellDialogs shell={s} savedMedia={C59SavedMedia} />
+        <ShellDialogs shell={s} savedMedia={ShellSavedMedia} />
         {cardDialog && <CardPicker shell={shell} mode={cardDialog} onClose={() => setCardDialog(null)} />}
       </C59_PAGE.Provider>
     </div>

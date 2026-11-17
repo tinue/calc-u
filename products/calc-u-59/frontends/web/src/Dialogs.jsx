@@ -2,9 +2,10 @@
 // has no window of ours to open): the card dialogs of C59-7 (Qt6/app/
 // CardPickerDialog, on the library's media topic), opened by the product
 // items Arm Card… and Arm Fresh Card… (File menu, or the bar's card
-// controls), and File ▸ Saved Media… (LIB-7 AC-31, AC-36). Since M-57 the
-// preset picker, Settings and About are the shell's (LIB-14 59): Load
-// Preset… and Examples ▸, ShellSettings, ShellAbout.
+// controls). Since M-57 the preset picker, Settings and About are the
+// shell's (LIB-14 59): Load Preset… and Examples ▸, ShellSettings,
+// ShellAbout; File ▸ Saved Media… (LIB-7 AC-31, AC-36) is the library's
+// ShellSavedMedia since Part E simplification E-5.
 
 function Dialog({ title, onClose, children, footer }) {
   React.useEffect(() => {
@@ -42,18 +43,6 @@ function readFileInput(e, as) {
 // since M-57 (LIB-7 D-29; behind the More button in portrait, D-36), no
 // longer buttons of this dialog.
 
-const CARD_ASKS = "asks: ";
-
-// File ▸ Saved Media… (LIB-7 AC-31): the library's list, in the shell's modal.
-function C59SavedMedia({ shell, onClose }) {
-  const media = useTopic(shell, "media");
-  return (
-    <ShellModal name="saved-media" title="Saved Media" onClose={onClose}>
-      <CalcuSavedMediaDialog media={media} send={(c, a) => shell.send(c, a)} onClose={onClose} />
-    </ShellModal>
-  );
-}
-
 function CardPicker({ shell, mode, onClose }) {
   const reader = cardReaderOf(useTopic(shell, "media"));
   const [selected, setSelected] = React.useState(null);
@@ -69,8 +58,9 @@ function CardPicker({ shell, mode, onClose }) {
     const args = { place: "card-reader", template: "implicit:Fresh card", name: name.trim() };
     if (confirmed) args.confirmed = true;
     shell.send("media.start-new", args).then((r) => {
+      const question = r.done ? null : calcuAskedQuestion(r.reason);
       if (r.done) onClose();
-      else if (r.reason && r.reason.startsWith(CARD_ASKS)) setAsking(r.reason.slice(CARD_ASKS.length));
+      else if (question !== null) setAsking(question);
       else setProblem(r.reason || "");
     });
   };

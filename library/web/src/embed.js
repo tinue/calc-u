@@ -6,8 +6,11 @@
 //                        preset, workerUrl, rest}
 //   useFillParent(ref, {width, height}) → {width, height}: the props when
 //                        both are given, else the size of ref's parent
-//   useShell(product, embedded) → the shell (null until the effect ran);
-//                        model, preset and workerUrl are read once (EC-5)
+//   useShell(product, embedded, services) → the shell (null until the effect
+//                        ran); model, preset and workerUrl are read once (EC-5),
+//                        and so are the host services (createShell's
+//                        `services`; default the page's, calcuWebHostServices;
+//                        Part E simplification E-5)
 //   useShellState(shell, select)   a slice of the shell's state
 //   useTopic(shell, name, select)  the last state of a topic
 //   useStream(shell, name)         what a stream topic appended since its last reset
@@ -40,14 +43,15 @@ function useFillParent(ref, { width, height }) {
   return fixed ? { width, height } : size;
 }
 
-function useShell(product, embedded) {
+function useShell(product, embedded, services) {
   const [shell, setShell] = React.useState(null);
-  const once = React.useRef({ model: embedded.model, preset: embedded.preset, workerUrl: embedded.workerUrl });
+  const once = React.useRef({ model: embedded.model, preset: embedded.preset, workerUrl: embedded.workerUrl, services });
   React.useEffect(() => {
     const s = createShell({
       product,
       workerUrl: once.current.workerUrl,
       start: { model: once.current.model, preset: once.current.preset },
+      services: once.current.services,
     });
     setShell(s);
     return () => s.destroy();

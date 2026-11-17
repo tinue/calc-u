@@ -5,7 +5,7 @@
 # session VM sets.
 #
 # A cloud session starts from a fresh clone, so it has the same gaps as a
-# CI checkout (see the core-tests job in .github/workflows/build.yml):
+# CI checkout (see the core-tests job in .github/workflows/calc-u-1600.yml):
 # no ROMs (roms/README.md) and no Linux libsharpdx. This fills both in.
 # The frontends/qt6/zlib apt packages are NOT installed here -- they belong in the
 # cloud environment's setup script (see docs/developer/Cloud-Sessions.md),

@@ -55,9 +55,9 @@ check (a step is green by the build and the Frequent group).
 
 | Job | CI job | |
 |---|---|---|
-| `library` | `library` (both workflows) | default |
+| `library` | `library` (both workflows call `library.yml`) | default |
 | `core-59`, `core-1600` | `core-tests`: build and the Frequent group | default |
-| `qt-59`, `qt-1600` | `linux` / `linux-*` up to the build | default |
+| `qt-59`, `qt-1600` | `linux` (a matrix in both workflows) up to the build | default |
 | `web-59`, `web-1600` | `web` up to the tests, each product's Emscripten | when named |
 
 `ci/linux/run.sh core-1600` runs one job. The working tree is copied into a

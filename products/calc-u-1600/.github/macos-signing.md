@@ -1,6 +1,8 @@
 # macOS signing & notarization
 
-The `mac-aarch64` job in [`workflows/build.yml`](workflows/build.yml):
+The `mac-aarch64` job in
+[`.github/workflows/calc-u-1600.yml`](../../../.github/workflows/calc-u-1600.yml)
+(repository root):
 
 1. Runs `macdeployqt` on the `.app` (frontends/qt6/CMakeLists.txt's `MACOSX_BUNDLE`) to embed the
    Qt frameworks, so the bundle doesn't depend on Homebrew's Qt being present on the

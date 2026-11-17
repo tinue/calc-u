@@ -7,6 +7,14 @@ Research repository HEADs: `ti59-research` `bf423f9`,
 `sharp/Sharp1500-1600-Ref` `43743ed`, `sharp/SC61860` `96977db`. Read on
 2026-11-08.
 
+Renamed since (Part E simplification E-12): the skill `calc-u-59-shared` is
+`calc-u-59-app`, Calc-U-59's `reference/SharedArchitecture.md` is
+`reference/AppLayer.md`, Calc-U-1600's `docs/developer/Shared-Architecture.md`
+is `docs/developer/App-Layer.md`; the rows below keep the names they had.
+Elements now live under `products/calc-u-59/` and `products/calc-u-1600/`
+of this repository, the products' memory under this repository's memory
+directory (`calc-u-59/`, `calc-u-1600/`).
+
 Scope (Briefing §1.11): every skill, `CLAUDE.md`, memory file and
 agent-facing developer document that must be updated to the glossary terms
 once `docs/GLOSSARY.md` exists.
@@ -120,6 +128,7 @@ once `docs/GLOSSARY.md` exists.
 | Calc-U-1600 `docs/background/plans/Shared-Layer-Plan.md` | agent-facing developer doc | Calc-U-1600 | 13457 | shared layer 26, core 17, session 13, preset 12, frontend 11, machine 8 |
 | Calc-U-1600 `docs/background/plans/Sixty-Pin-Connector-Plan.md` | agent-facing developer doc | Calc-U-1600 | 8904 | card 11, connector 10, model 5, tape 4, machine 4, core 4 |
 | Calc-U-1600 `docs/background/plans/Web-GUI-Plan.md` | agent-facing developer doc | Calc-U-1600 | 13425 | preset 15, tape 13, card 13, frontend 11, shared layer 10, model 9 |
+| Calc-U-1600 `docs/background/plans/RAM-Write-Protect-Plan.md` (added in the Part E simplification E-12; missing above) | agent-facing developer doc | Calc-U-1600 | 7464 | card 19, module 9, core 9, slot 7, preset 6, model 3 |
 | calc-u-site `CLAUDE.md` | `CLAUDE.md` | calc-u-site | 2911 |  |
 | calc-u-site `.claude/skills/site-59/SKILL.md` | skill | calc-u-site | 6333 | debugger 4, preset 3, module 3, session 1, machine 1, keyboard 1 |
 | calc-u-site `.claude/skills/site-59-design/SKILL.md` | skill | calc-u-site | 3645 | module 1, card 1 |
@@ -210,9 +219,15 @@ project's scope (names only, not read): `-Users-me-Development-sharp`,
   by `~/.claude/skills/PC1500`?~~ Answered by Briefing §1.11: both are
   updated; the repository's skill works stand-alone. Done in M-17
   (2026-11-14).
-- Are the Calc-U-1600 `docs/background/plans/*.md` (historic plans) in
+- ~~Are the Calc-U-1600 `docs/background/plans/*.md` (historic plans) in
   scope for the terminology update, or only `Decisions.md` and
-  `docs/developer/`?
+  `docs/developer/`?~~ Answered in the Part E simplification (E-12,
+  2026-11-17): not in scope. The 25 plans (24 listed above and
+  `RAM-Write-Protect-Plan.md`) stay as written, with the names and paths
+  of 0.8.x; a banner in `products/calc-u-1600/docs/background/README.md`
+  § "Plans" and `plans/README.md` says they are historic, maps the old
+  names to today's and points at `docs/developer/` and `features/`.
+  `Decisions.md` and `docs/developer/` are in scope.
 - ~~Should the stale Calc-U-59 memory directory for
   `-Users-me-Development-claude-ti59-emul` and the one for the removed
   `sharp/Calc-U-1600-Binary` be updated, or left as they are?~~ Answered

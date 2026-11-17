@@ -1,17 +1,17 @@
 ---
-name: calc-u-59-shared
-description: Use this skill when working on the shared C++ layer of Calc-U-59 (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, presets (the TI rules and keywords of the library's loader: TIPresetRules, TIPresetKeys, Keycodes, the ti59 commands), the TI-58C constant memory file (ConstantMemoryKeeper), magnetic cards on the library's media part (TIMagneticCardKind, TIMagneticCardsKey, the card reader place of the core), cue cards and module cue cards (ModuleCueCards), the app session's product part (TIAppPart, makeAppSession, the library's parts it owns, TIProductMachines; TIWebPart for the Web page), the Swift frontend's session thread (SessionThread), the emulator runtime (machine session, key sequencing, frame sampling), the TI's side of the library's paper (TIPrinters) and debugger (TILevelRules, TITraceRecorder, TIDebuggerSetup), the debug panel (TIDebugPart: its product topics, commands and entries; the ASM overlay reader AsmOverlay), the file kinds of LIB-13's open (TIFileKinds), the debugger model (DebugModel), debug snapshots, the trace records (TraceWriter), view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for a Shared module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
+name: calc-u-59-app
+description: Use this skill when working on the app layer of Calc-U-59 (the C++ app logic) (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, presets (the TI rules and keywords of the library's loader: TIPresetRules, TIPresetKeys, Keycodes, the ti59 commands), the TI-58C constant memory file (ConstantMemoryKeeper), magnetic cards on the library's media part (TIMagneticCardKind, TIMagneticCardsKey, the card reader place of the core), cue cards and module cue cards (ModuleCueCards), the app session's product part (TIAppPart, makeAppSession, the library's parts it owns, TIProductMachines; TIWebPart for the Web page), the Swift frontend's session thread (SessionThread), the emulator runtime (machine session, key sequencing, frame sampling), the TI's side of the library's paper (TIPrinters) and debugger (TILevelRules, TITraceRecorder, TIDebuggerSetup), the debug panel (TIDebugPart: its product topics, commands and entries; the ASM overlay reader AsmOverlay), the file kinds of LIB-13's open (TIFileKinds), the debugger model (DebugModel), debug snapshots, the trace records (TraceWriter), view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for an app-layer module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
 user-invocable: true
 ---
 
-# Calc-U-59 Shared C++ Layer
+# Calc-U-59 App Layer
 
 Architecture, module list, threads, run loop, key input, file flows and
-drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
+drawing rules: `reference/AppLayer.md`. Don't restate them here.
 
 ## Rules
 
-1. **Shared is the home of all non-GUI logic.** If code would parse, encode,
+1. **The app layer is the home of all non-GUI logic.** If code would parse, encode,
    time, sequence, build a snapshot or compute a layout number in Swift, Qt
    or the web client's JS, it belongs here instead (CLAUDE.md § "Frontend Parity").
 2. **C++20, standard library only** (ADR 0005). No Foundation, Qt or
@@ -71,7 +71,7 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    commands; the machine is the machine session's, and the part follows it
    at `machineChanged` (a new `EmulatorSession`). No freeze state, no
    printer lines, no trace writer and no preset reader in `app/`
-   (`reference/SharedArchitecture.md`). Tests drive them
+   (`reference/AppLayer.md`). Tests drive them
    on the session (`tests/SessionRig.hpp`: `SessionRig`, and `PartRig` with
    the constant memory file in memory; `tests/CardRig.hpp` for cards, with a
    save folder of its own; `tests/AppRig.hpp` for the start and the
@@ -100,7 +100,7 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    `frontends/swift/Bridge/TIFileFormats+Cpp.h` and `frontends/swift/Bridge/BridgeConvert.h` (struct/string
    conversions); never import those from the bridging header.
 4. Qt access: call it directly.
-5. Add the module to `reference/SharedArchitecture.md`, and a new wrapper to
+5. Add the module to `reference/AppLayer.md`, and a new wrapper to
    `reference/AppArchitecture.md` § "Bridge Layer".
 
 ## Porting Swift logic (goldens)

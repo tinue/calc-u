@@ -2,7 +2,7 @@
 # Builds Core + Shared for WebAssembly with Emscripten and runs the node
 # smoke test (tools/wasm_smoke.cpp) from the repo root: the check that the
 # frontend-neutral layers stay portable to a browser GUI (C++20, no Qt,
-# no threads, no blocking -- docs/developer/Shared-Architecture.md).
+# no threads, no blocking -- docs/developer/App-Layer.md).
 #
 # Needs emcc/emcmake (Homebrew `emscripten`, or an activated emsdk), node,
 # and core/Basic/vendor/sharpdx/libsharpdx-wasm.a (committed; rebuild with

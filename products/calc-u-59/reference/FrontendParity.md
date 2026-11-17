@@ -27,7 +27,7 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 
 ## Calculator
 
-| Feature | Swift | Qt | Web | Shared | Status | Notes |
+| Feature | Swift | Qt | Web | App layer | Status | Notes |
 |---|---|---|---|---|---|---|
 | Model picker TI-59 / TI-58 / TI-58C | Swift shell (the bar's model picker, first; Machine ▸ Model on macOS and the iPad's menu bar) | shell (bar's model picker; Machine ▸ Model) | shell (bar's model picker; Machine ▸ Model in the wide layout) | LIB-18's `model {name}` (`TIProductMachines`); LIB-4's `control-state` | All | the Swift toolbar picker moved to the bar (M-58, row 59-14) |
 | Reset; Cold boot (was "Clean") | Swift shell (macOS: Machine ▸ Reset ⌘R, Cold boot ⇧⌘R; iOS: the bar's Reset and More ▸ Cold boot, which asks first) | shell (Machine ▸ Reset Ctrl+R, Cold boot Ctrl+Shift+R; no bar button) | shell (wide: Machine menu; portrait: the bar's Reset and More ▸ Cold boot, which asks first) | LIB-18's `reset` / `cold-boot`, `Machine::reset()`/`coldBoot()` (C59-1) | All | the Ctrl/Cmd "Clean" and the 1 s long press went (M-57, M-58; row 59-14) |
@@ -45,7 +45,7 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 
 ## Files
 
-| Feature | Swift | Qt | Web | Shared | Status | Notes |
+| Feature | Swift | Qt | Web | App layer | Status | Notes |
 |---|---|---|---|---|---|---|
 | Load Preset… `.ti59` / `.ti58` / `.ti58c`; Examples ▸ | Swift shell (macOS: File ▸ Load Preset… ⌘O, File ▸ Examples ▸; iOS: the bar's Preset and More ▸ Examples ▸; the dialog takes the preset types and any file) | shell (File ▸ Load Preset… Ctrl+O, `Presets (*.ti59 *.ti58 *.ti58c)`, sends `load-preset {ref}`; File ▸ Examples ▸) | shell (wide: File ▸ Load Preset…, Examples ▸; portrait: the bar's Preset and More ▸ Examples ▸; an upload goes to LIB-13's `open {way: dialog}`) | LIB-13's `open` (`TIFileKinds`), LIB-6's `load-preset`, `preset-list` (`TIPresetRules`, `TIPresetKeys`) | All | Qt6 by its path, Swift and Web uploads by their content; Web: several files are one folder (LIB-13 AC-8); the bundled examples of `examples/bundle.yaml` |
 | A preset's `keys:` steps (wait, full-speed, trace, elapsed-time, expect, screenshot) | — | — | — | LIB-6's loader, LIB-5's typing engine | All | Web: a `trace:` is handed over, downloadable from the LOG tab |
@@ -60,7 +60,7 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 
 ## Printer
 
-| Feature | Swift | Qt | Web | Shared | Status | Notes |
+| Feature | Swift | Qt | Web | App layer | Status | Notes |
 |---|---|---|---|---|---|---|
 | PC-100C plugged in or out (resets) | Swift shell (bar's "PC-100C" button; Machine ▸ Peripherals ▸ on macOS) | shell (bar's "PC-100C" button; Machine ▸ Peripherals ▸) | shell (bar's "PC-100C" button) | LIB-18's `attach`/`detach printer`; LIB-4's `control-state` | All | the toggle above the paper panel went (M-57, M-58) |
 | Dot view at PC-100C proportions; text view | `PrinterView` (the paper panel from the `paper PC-100C` marks; its owner's name, an empty paper under none) | library `PaperPanel` | library `CalcuPaperPanel` | `core/PC100CPaper` (marks), LIB-8 `PaperPart` | All | |
@@ -70,7 +70,7 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 
 ## Debugger
 
-| Feature | Swift | Qt | Web | Shared | Status | Notes |
+| Feature | Swift | Qt | Web | App layer | Status | Notes |
 |---|---|---|---|---|---|---|
 | CALCULATOR tab: registers, flags, HIR, T, return stack, partition, source | `LiveDebugView` | `LiveDebugWidget` | `Debugger` (`LiveDebug`) | `TIDebugPart` (`calculator-debug`), `DebugModel`, `DebugSnapshots`, `DebugText`, `ModuleImage` | All | web: wide only; cannot be chosen while an ASM overlay runs (`c59.calculator-tab`) |
 | Program steps ±5 running / full listing frozen | `LiveDebugView` | `LiveDebugWidget` | `Debugger` (`LiveDebug`) | `TIDebugPart` (`program-listing`), `DebugModel` (listing, SolidStateReturn advance), `DebugSnapshots` | All | web: wide only |
@@ -88,7 +88,7 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 
 ## App
 
-| Feature | Swift | Qt | Web | Shared | Status | Notes |
+| Feature | Swift | Qt | Web | App layer | Status | Notes |
 |---|---|---|---|---|---|---|
 | About (icon, version, summary, links) | `AppInfo` (macOS: the system's About panel with `TIShellProduct`'s texts; none on iOS) | shell (Help ▸ About Calc-U-59; the window icon, "Built with Qt") | shell (wide: Help ▸ About; portrait: More ▸ About; no icon) | `TIShellProduct` | All | the Web's About left the settings dialog (M-57, row 59-52) |
 | Settings | Swift shell (`settingsSpec(SwiftMac/SwiftIOS)`: General, Startup presets, Display, Keyboard and Layout (iOS), Tracing; macOS the settings window, iOS a sheet with Done) | shell (`cu59::settingsSpec(Qt6)`: General, Startup presets, Storage, Folders, Tracing, Display) | shell (`settingsSpec(WebWide/WebPortrait)`: General, Startup presets, Tracing (wide), Keyboard (portrait); no Settings with the prop `settings` off) | `Settings`, LIB-14's `SettingsPart`, `TIShellProduct` | All | every change applied at once (row 59-53); Swift: Keyboard Feedback and Debug Page in Portrait on iOS only (row 59-56) |

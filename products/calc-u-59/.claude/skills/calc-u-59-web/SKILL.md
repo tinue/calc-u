@@ -17,7 +17,7 @@ name (`WebClient.md` § "Layout of `frontends/web/`" maps them).
 Layout, build steps, the `dist/` contract, mounting, location independence,
 the render rule, styling, the PWA and `MANIFEST.json`:
 **`reference/WebClient.md`**. Don't restate them here. Everything that isn't
-drawing: `reference/SharedArchitecture.md`. Feature placement:
+drawing: `reference/AppLayer.md`. Feature placement:
 `reference/FrontendParity.md` (the Web column).
 
 The website (https://calc-u.org/59/, repository `calc-u-site`) only
@@ -27,7 +27,7 @@ Never edit the calculator there — that copy is generated.
 ## Rules
 
 1. **No logic in `frontends/web/`.** Parsing, timing, key sequencing, layout numbers,
-   cue-card resolution all belong in `app/` (calc-u-59-shared skill) —
+   cue-card resolution all belong in `app/` (calc-u-59-app skill) —
    the JS draws what the session sends: `app/TIWebPart` (the `c59.web.*`
    topics, commands and requests), `app/TIAppPart` (`c59.*`) and the
    library's topics, which the component set draws (M-53): the paper panel

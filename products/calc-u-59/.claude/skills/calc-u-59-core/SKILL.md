@@ -32,7 +32,7 @@ Do not restate these here — read them:
 | What the TI-58C ROM does differently, known core issues it exposed | `rom/TI58C-ROM-Guide.md` |
 | Fast mode; the 1F printer interrupt | `rom/fastmode.md`, `rom/printerinterrupt.md` |
 | `CpuFrame` fields, trace file format, ASM overlay, debugger semantics | `reference/DebugAPI.md` |
-| Pacing, run loop, debugger model — everything above the hardware | `reference/SharedArchitecture.md` |
+| Pacing, run loop, debugger model — everything above the hardware | `reference/AppLayer.md` |
 
 Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
 (labels: `rom/*-labels.asm`; keycode sub-programs: `rom/*-keycode-programs.asm`).
@@ -96,7 +96,7 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   Every path that runs an instruction goes through `TIMachine::stepOne()`
   (the Reset restore, the polled-hardware bit).
 - **Core stays hardware-only.** File formats, run-loop pacing, key timing and
-  debugger snapshots belong in `app/` (calc-u-59-shared skill).
+  debugger snapshots belong in `app/` (calc-u-59-app skill).
 - **The core holds no lock, no atomic and starts no thread** (ADR 0009).
   Every frontend runs the machine on the one thread of its app session
   (since M-34 also the Web); nothing serialises calls on it.

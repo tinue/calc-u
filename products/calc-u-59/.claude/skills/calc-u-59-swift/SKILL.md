@@ -10,7 +10,7 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
 
 - App structure, files, threading, bridge: `reference/AppArchitecture.md`.
 - Everything that isn't drawing (run loop, keys, files, debugger, drawing
-  rules): `reference/SharedArchitecture.md` and the calc-u-59-shared skill.
+  rules): `reference/AppLayer.md` and the calc-u-59-app skill.
 - Freeze / step and the debug snapshots: `reference/DebugAPI.md`. Since
   M-53 FREEZE, STEP, RESUME and FREEZE ON START are the library's run
   control (`pause`, `step`, `resume`, `pause-on-start`; CALCULATOR is
@@ -151,7 +151,7 @@ The Xcode build first builds `CalcU59.xcframework` (the library, `core/`,
 Swift and the bridge (`reference/AppArchitecture.md` § "Build").
 
 A change to `core/` or `app/` also needs the CMake build and tests
-(calc-u-59-shared skill).
+(calc-u-59-app skill).
 
 Tests of the bridge and the session thread from Swift: the unit-test target
 `Calc-U-59Tests` (plan `UnitTests`, calc-u-59-uitesting skill). After a build

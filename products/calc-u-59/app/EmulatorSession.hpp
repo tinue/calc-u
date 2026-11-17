@@ -18,7 +18,7 @@
 // the machine: LIB-18's machine control builds it and the library's machine
 // session holds it; cu59::TIAppPart makes a new EmulatorSession around each
 // new machine (machineChanged). It runs on the session's one thread
-// (ADR 0009). See reference/SharedArchitecture.md.
+// (ADR 0009). See reference/AppLayer.md.
 
 namespace cu59 {
 

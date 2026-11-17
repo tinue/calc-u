@@ -367,7 +367,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
 
 ---
 
-## Expansion connector & memory cards
+## Expansion connector & memory modules
 
 `core/Connector/`
 
@@ -461,7 +461,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
 
 ## Preset loader
 
-`core/Preset/PresetFile.cpp`, `core/PC1600/PC1600PresetLoader.cpp`
+The library's reader (`library/presets/`, LIB-6) with the product's rules and keys (`app/SharpPresetRules`, `app/SharpPresetKeys`)
 
 - **YAML-shaped, not YAML**: tabs, flow style and multiple documents are
   rejected; 2-space indentation only (docs/background/Decisions.md).

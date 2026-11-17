@@ -11,7 +11,7 @@
 // keys. Read from the cue card blocks of presets, card files, the constant
 // memory file and the module files (app/CueCardYaml, app/ModuleCueCards). Field grammar and
 // math-token table: docs/formats/cue-card.md. How each frontend
-// draws it: reference/SharedArchitecture.md § "Cue Card Rendering".
+// draws it: reference/AppLayer.md § "Cue Card Rendering".
 
 namespace cu59 {
 

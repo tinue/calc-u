@@ -197,7 +197,7 @@ the file names under `wasm/`, `bundle/`, `img/` and `presets/` and `files.json` 
 | `layout` | `"portrait"` | `"wide"` (calculator, printer, debugger side by side), `"portrait"` (calculator and printer pages) or `"auto"` (by the window's size, the PWA's choice: needs `width` and `height`) |
 | `width` | the parent's width | CSS px the client may take. Wide: the calculator artwork takes 40 % (at most 420 px without `height`, never below 400 px), the printer 220–320 px, the debugger the rest (at least 220 px) |
 | `height` | from the width | CSS px. Without it the height follows the artwork's aspect plus the 50 px bar; with it the artwork fits inside (the PWA passes `#root`'s content box) |
-| `keyboard` | `true` | The calculator is focusable and takes the physical keyboard while focused (`SharedArchitecture.md` § "Physical Keyboard Mapping"); `false` turns it off (LIB-15 AC-16) |
+| `keyboard` | `true` | The calculator is focusable and takes the physical keyboard while focused (`AppLayer.md` § "Physical Keyboard Mapping"); `false` turns it off (LIB-15 AC-16) |
 | `settings` | `true` | Offer Settings… (the File menu, the portrait bar's Settings button and the More menu; LIB-14 AC-29) |
 | `model` | stored setting | Start with this model, by its name: `"TI-59"`, `"TI-58"` or `"TI-58C"`; another name is a notice and the client starts as without it |
 | `preset` | none | Start with this bundled preset, by its path in `presets/` (`"sum.ti59"`); a path that is not there is a notice |
@@ -297,7 +297,7 @@ styles; the host styles only its own layout around the client.
 ### The PWA (`app/`)
 
 `app/index.html` mounts `PlayCalculator` with `layout="auto"`, the keyboard
-and an install banner. It follows the window as the iOS app does (Shared
+and an install banner. It follows the window as the iOS app does (the app layer's
 `mobileLayout`, `mobilePrinterWidth`, `mobileBarLabels`, through
 the request `c59.mobile-rules`): pages when taller than wide; calculator,
 printer and debugger from 820 × 560 px; calculator and printer below that

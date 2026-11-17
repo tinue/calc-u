@@ -123,4 +123,4 @@ other sources.
 
 - XCUITest scenario files and verifying a load: `calc-u-59-uitesting`.
 - The bundled examples (`examples/bundle.yaml`) and how each frontend loads
-  them: `calc-u-59-shared`, `calc-u-59-web`.
+  them: `calc-u-59-app`, `calc-u-59-web`.

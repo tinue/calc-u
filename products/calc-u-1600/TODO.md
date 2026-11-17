@@ -20,7 +20,8 @@ obligations.
   | dampflok.bas, whistle 1→9 | 65.281 s | 64.843 s (−0.67%) | not re-run | 65.229 s (−0.08%) |
 
   2026-10-07: dampflok is timed from the F-register whistle onsets (port
-  17H bit 6 rising, `headless/beep/whistleprobe.cpp`). The same probe on
+  17H bit 6 rising, a probe in 0.8.x's gitignored `headless/beep/`, not
+  kept). The same probe on
   the dev-0.5.0 tree gives 64.847 s, so it matches the audio method. Of
   dampflok's move, 8858e75 (64 Hz timer under the LH5803) is only +10 ms
   (65.219 s just before it); the rest came with the dev-0.6.0 sub-CPU work.
@@ -44,8 +45,9 @@ obligations.
     check, SRINP, APO countdown): A and B +15 ms.
 
   **Ruled out**, all with interrupts off, emulator matching real within
-  ±0.1–0.2%. Test programs are in `headless/beep/bench/timing{,2,3,4,5}.bas`
-  (gitignored); `presetprobe` computes the emulator side:
+  ±0.1–0.2%. The test programs were in 0.8.x's gitignored
+  `headless/beep/bench/timing{,2,3,4,5}.bas` (not kept), and a probe computed
+  the emulator side:
   - Opcode fetches from RAM and from every ROM bank the interpreter uses
     (page A, page B banks 0/3, page C bank 6).
   - Data and operand reads from all those ROM banks; RAM reads and writes
@@ -153,7 +155,7 @@ docs/developer/PC1600-Core-Limitations.md (LH5803 section).
   probe went in M-51), and do one live round-trip against
   SharpDataExchange over the PTY (`pc1600 serial rs232c link`). The
   `LOAD"COM1:"` direction was covered by the one-time loader matrix
-  (dev/loader-matrix/ until M-51, set 1, fed the `sde convert` byte
+  (0.8.x's dev/loader-matrix/, gone in M-51, set 1, fed the `sde convert` byte
   stream in-process).
 - Follow-on: a localhost-socket transport (`SocketSerialLink`) so
   `OUTSTAT 0-3` and buffer-full RTS become effective end-to-end, for
@@ -378,10 +380,10 @@ that. Groundwork that needs indexing time can start before 1.0.
 - [ ] Short YouTube demo (e.g. PC-1600 plotting on the CE-1600P), linked
   from the posts.
 
-## Shared layer and web GUI: still open
+## App layer and web GUI: still open
 
-Core / Shared / frontends: docs/developer/Shared-Architecture.md and
-Web-Client.md, plans docs/background/plans/Shared-Layer-Plan.md,
+`core/`, the app layer `app/` and the frontends: docs/developer/App-Layer.md and
+Web-Client.md; the historic plans docs/background/plans/Shared-Layer-Plan.md,
 Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
 
 - **Web client: the play page on calc-u.org/1600**, wiring the pinned
@@ -404,7 +406,7 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
   EE5AH). On the PC-1600 they appear in PC-1500 mode (LH5803 ROM
   `KANA_LCD` C700H for 80H–D8H, `KANA_LCD_D9` C6BDH for D9H–E5H). Copy
   Screen's mapping is ready: `jisX0201Kana()` in
-  `Core/Display/LcdCharsets.hpp` (A1H–DFH → U+FF61–FF9F). Check first
+  `core/Display/LcdCharsets.hpp` (A1H–DFH → U+FF61–FF9F). Check first
   whether PC-1600 MODE 1 text parses at all: `PC1600LcdText` reads only
   bank 6's 6x8 font, and no test covers PC-1500-mode text.
 
@@ -491,7 +493,8 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
     and the key table in Floppy-Image-Format.md.
   - Emulator: a cheap periodic check of the inserted disk (mtime first,
     then the header only, not the 1 MB of sector hex) and the
-    unload/clear/reload in `Shared/FloppyBay`, skipped while an autosave
+    unload/clear/reload of the floppy place (`core/Machine/SharpMediaPlaces`,
+    `FloppyPlace`, with LIB-7's media part), skipped while an autosave
     is pending.
   - SharpDataExchange (separate repo): `sde put`/`del` set `dirty: true`
     (and refuse a template), and libsharpdx's reader accepts the key.
@@ -511,7 +514,7 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
   after writing to decide on `resize_file`; the size before the write
   already tells.
 - **`tests/support/PC1600BasicTyper.cpp` `codePointCount` counts UTF-8 lead bytes by
-  hand**; count with `decodeUtf8` (Core/Utf8.hpp) so malformed bytes count
+  hand**; count with `decodeUtf8` (`core/Utf8.hpp`) so malformed bytes count
   the way the typer then types them.
 - **PC-1600 LCD / sub-CPU timing model** *(behaviour/timing)*.
   `PC1600Display::kBusyClocks = 4` and the sub-CPU's 1.66 ms response
@@ -564,27 +567,21 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
      ROM (see the known issue); next is timing the FOR/NEXT routine from
      RAM.
   4. Then re-fit once, against A−C = 45 ms.
-- **The debugger parses the project preset twice per session action.**
-  Attach, restart and Build & Load call `effectiveConfig` →
-  `parsePresetFile`, then `loadPreset` / `cleanStart` parse the same file
-  again by path (`parsePresetFile` in `app/SharpAppPart.cpp`),
+- **The debugger may parse the project preset twice per session action.**
+  In 0.8.x, attach, restart and Build & Load called `effectiveConfig` →
+  `parsePresetFile`, then the load parsed the same file again by path,
   each time re-reading every `program: file:`. One parse per clean start
-  is deliberate (docs/background/Decisions.md), two isn't. Fix: pass the
-  `PresetFile` from `effectiveConfig` down (`DebugController` →
-  `Operations` → the app session's `c1600.load-preset`).
+  is deliberate (docs/background/Decisions.md), two isn't. The classes
+  named went in M-46 and M-50: check whether `effectiveConfig`
+  (`app/dap/DapConfig`, on LIB-6's reader) and LIB-6's `load-preset` still
+  read it twice before fixing.
 - **Small leftovers from the 2026-09-30 simplify pass.** Take them when
   the file is next touched:
   - `app/SharpFileKinds.cpp` `programKindOf` (was `DropFile.cpp`
-    `classify`) and `PresetFile.cpp`'s `program:` switch both sort `programfile::Kind` into BASIC / code: `isBasic(Kind)` /
+    `classify`) and the preset's `program:` section (0.8.x's
+    `PresetFile.cpp`, now the product's preset keys; check) both sort `programfile::Kind` into BASIC / code: `isBasic(Kind)` /
     `isCode(Kind)` next to `headerName()` in `ProgramFile.hpp` (the
     headerless rules stay with the callers).
-  - `parsePresetFile` spells the top-level keys three times (`kKeys`, the
-    `block` test, the dispatch chain): one `{name, isBlock}` table.
-  - `parsePresetFile`'s `plotter` / `interfaceName` locals only copy into
-    `out->` at the end; assign directly.
-  - `SettingsDialog.cpp` `addOpenFolderRow` special-cases
-    `OpenFolder::HostDrive` for the reset tooltip; pass the tooltip in
-    like the label.
   - `extension.js`: `createDebugAdapterDescriptor` falls back to
     `setting('port') || 32168` although the resolver already filled
     `config.port`.

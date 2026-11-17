@@ -221,5 +221,5 @@ program can't be run without the fill program.
 - Name & Save of the template offers "Write-protect"; presets use
   `saveas: live protected slot-1:<name>`. The live card is protected at
   once; the ROM sees it at the next OFF/ON, as in the manual.
-- `Core/tests/ce161_tests.cpp` runs the whole procedure against the A04
+- `tests/ce161_tests.cpp` runs the whole procedure against the A04
   ROM on the PC-1500 and PC-1500A.

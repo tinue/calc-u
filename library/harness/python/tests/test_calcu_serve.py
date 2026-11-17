@@ -36,6 +36,14 @@ def main() -> int:
         reply = c.send("ticks")
         check(reply["lines"] == ["ticks: 1667", "seconds: 0.016670000"], "plain: %r" % reply)
         check(c.send("key-down 1")["lines"] == [], "plain done")
+    # A reply that does not come in time ends the program.
+    c = Calcu(program, "test", timeout=1e-6)
+    try:
+        c.send("wait 10s")
+        check(False, "no timeout")
+    except TimeoutError:
+        pass
+    c.close()
 
     for f in failures:
         print("FAIL", f)

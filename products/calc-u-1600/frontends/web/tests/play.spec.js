@@ -12,6 +12,8 @@ const { c, gotoReady, screen, waitForScreen, pickModel, menu, notBusy, shown } =
 // from pixels. The shell's own cases: shell.spec.js.
 
 const FIXTURES = path.join(__dirname, 'fixtures');
+// The PC-1500 tape is the C++ tests' (tests/fixtures/tape/), one copy.
+const TAPE = path.join(__dirname, '..', '..', '..', 'tests', 'fixtures', 'tape', 'pc1500_tape.wav');
 
 // File ▸ Examples ▸ <group> ▸ the example of that bundle path.
 async function example(page, ref) {
@@ -374,7 +376,7 @@ test('lib7_ac43 import card disk and tape with wav', async ({ page }) => {
     { name: `Disk ${stamp}.floppy.yaml`, mimeType: 'text/yaml', buffer: Buffer.from(instanceOf('formatted.floppy.yaml', 'disk-name', `Disk ${stamp}`)) },
     { name: `Tape ${stamp}.tape.yaml`, mimeType: 'text/yaml',
       buffer: Buffer.from(`format: cassette-tape\nformat-version: 1\ntape-name: "Tape ${stamp}"\naudio: { file: "side${stamp}.wav" }\n`) },
-    { name: `side${stamp}.wav`, mimeType: 'audio/wav', buffer: fs.readFileSync(path.join(FIXTURES, 'pc1500_tape.wav')) },
+    { name: `side${stamp}.wav`, mimeType: 'audio/wav', buffer: fs.readFileSync(TAPE) },
   ];
   const chooser = page.waitForEvent('filechooser');
   await menu(page, 'file', 'import-media');
@@ -440,7 +442,7 @@ test('C1600-2 AC-18 headerless code asks the address, then NEW and CALL', async 
 
 // The fixture tape twice in one WAV: its data chunk doubled.
 function doubledTape() {
-  const wav = fs.readFileSync(path.join(FIXTURES, 'pc1500_tape.wav'));
+  const wav = fs.readFileSync(TAPE);
   let at = 12;
   while (wav.toString('ascii', at, at + 4) !== 'data') at += 8 + wav.readUInt32LE(at + 4);
   const size = wav.readUInt32LE(at + 4);

@@ -129,7 +129,6 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
 
   # LIB-16 (design §6): the help tool's unittest cases (tools/help,
   # tools/helptool/tests/, on the fixture help trees), Frequent.
-  find_package(Python3 COMPONENTS Interpreter QUIET)
   if(Python3_FOUND)
     calcu_add_test(LibraryHelpTool frequent
                    COMMAND ${Python3_EXECUTABLE} -I -B -m unittest discover -s helptool/tests -t .

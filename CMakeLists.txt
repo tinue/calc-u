@@ -88,7 +88,6 @@ endfunction()
 # and builds its asset into the calling directory's tree (help/; the test
 # suite builds the asset, AC-8). Registered when Python 3 is found.
 function(calcu_add_help_tests prefix product)
-  find_package(Python3 COMPONENTS Interpreter QUIET)
   if(Python3_FOUND)
     set(help ${Python3_EXECUTABLE} -I -B ${CMAKE_SOURCE_DIR}/tools/help)
     calcu_add_test(${prefix}HelpCheck frequent COMMAND ${help} check ${product} --quiet-warnings)
@@ -126,6 +125,12 @@ if(CALCU_FRONTEND_QT AND APPLE AND NOT DEFINED CMAKE_PREFIX_PATH)
       break()
     endif()
   endforeach()
+endif()
+
+# Python 3 for the tests that run a script (the help tool, the trace
+# readers, the harness's Python helper); a test without it is not registered.
+if(CALCU_TESTS)
+  find_package(Python3 COMPONENTS Interpreter QUIET)
 endif()
 
 add_subdirectory(library)

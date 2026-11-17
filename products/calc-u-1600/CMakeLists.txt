@@ -111,10 +111,12 @@ if(CALCU_TESTS)
   endfunction()
 
   # The tests on an app session (app/tests/SessionFixture.hpp: a session
-  # and a cold boot per test, about half of the suite's time) are a program
-  # of their own, so that ctest runs them beside CoreTests (the Frequent
-  # budget, docs/test-groups.md); the support sources go into both.
+  # and a cold boot per test, about half of the suite's time) are two
+  # programs of their own, those of tests/ and those of app/tests/, so that
+  # ctest runs the three side by side (the Frequent budget,
+  # docs/test-groups.md); the support sources go into each.
   set(SESSION_TEST_SOURCES)
+  set(APP_SESSION_TEST_SOURCES)
   set(SUPPORT_TEST_SOURCES)
   foreach(f ${TEST_SOURCES})
     if(NOT f MATCHES "_tests\\.cpp$")
@@ -122,21 +124,25 @@ if(CALCU_TESTS)
       continue()
     endif()
     file(STRINGS ${f} uses REGEX "SessionFixture" LIMIT_COUNT 1)
-    if(uses)
+    if(uses AND f MATCHES "/app/tests/")
+      list(APPEND APP_SESSION_TEST_SOURCES ${f})
+    elseif(uses)
       list(APPEND SESSION_TEST_SOURCES ${f})
     endif()
   endforeach()
-  list(REMOVE_ITEM TEST_SOURCES ${SESSION_TEST_SOURCES})
+  list(REMOVE_ITEM TEST_SOURCES ${SESSION_TEST_SOURCES} ${APP_SESSION_TEST_SOURCES})
 
   calcu1600_test_program(CoreTests ${TEST_SOURCES})
   target_link_libraries(CoreTests PRIVATE ZLIB::ZLIB)
   calcu1600_test_program(CalcU1600SessionTests ${SESSION_TEST_SOURCES} ${SUPPORT_TEST_SOURCES})
+  calcu1600_test_program(CalcU1600AppSessionTests ${APP_SESSION_TEST_SOURCES} ${SUPPORT_TEST_SOURCES})
 
   # Test groups (ADR 0031, docs/test-groups.md; calcu_add_test of the root
   # CMakeLists.txt): Frequent always, Longer and Checkpoint only with
   # CALCU_TESTS_LONGER / _CHECKPOINT; every entry runs in this directory.
   calcu_add_test(CoreTests frequent COMMAND CoreTests)
   calcu_add_test(CalcU1600SessionTests frequent COMMAND CalcU1600SessionTests)
+  calcu_add_test(CalcU1600AppSessionTests frequent COMMAND CalcU1600AppSessionTests)
   # LIB-6 AC-51 (design §10.6 P8; C1600-4 T7): every preset of the
   # repository is read by the library's reader through `calcu check-preset`;
   # since M-47 (LIB-7 1600) with the six that waited for the media. The
@@ -170,7 +176,6 @@ if(CALCU_TESTS)
   calcu_add_test(CalcU1600NoOldTools frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_old_tools.cmake)
   # LIB-10 AC-42 (design §10.10, D16-8): the harness writes a PC-1600 trace,
   # tools/read_trace.py reads it unchanged (well under 2 s: Frequent).
-  find_package(Python3 COMPONENTS Interpreter)
   if(Python3_FOUND AND NOT WIN32)
     calcu_add_test(CalcU1600ReadTrace frequent COMMAND sh tests/read_trace_check.sh
                    PROPERTIES ENVIRONMENT CALCU=$<TARGET_FILE:calcu>)

@@ -96,7 +96,6 @@ if(CALCU_TESTS)
   # T15: the Python helper for `calcu serve` (D-2), with uv when there is one,
   # else with Python 3 (Frequent).
   find_program(CALCU_UV uv)
-  find_package(Python3 COMPONENTS Interpreter QUIET)
   if(CALCU_UV)
     set(py ${CALCU_UV} run --no-project python -I -B)
   elseif(Python3_FOUND)

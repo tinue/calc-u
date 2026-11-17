@@ -157,8 +157,8 @@ void DapSession::handle(const Value& request) {
     const Value args = argsPtr && argsPtr->members() ? *argsPtr : Value(Value::Object{});
     Body body;
     std::string error;
-    if (command == "attach" || command == "launch" || command == "restart" || command == "calcu1600/load" ||
-        command == "calcu1600/reset") {
+    if (command == "attach" || command == "launch" || command == "restart" || command == "c1600/load" ||
+        command == "c1600/reset") {
         if (startOperation(request, &error)) return;   // answered at its end
         respond(request, false, {}, error);
         return;
@@ -186,8 +186,8 @@ void DapSession::handle(const Value& request) {
     else if (command == "readMemory") readMemory(args, &body, &error);
     else if (command == "writeMemory") writeMemory(args, &body, &error);
     else if (command == "evaluate") evaluate(args, &body, &error);
-    else if (command == "calcu1600/screen") screen(&body, &error);
-    else if (command == "calcu1600/quit") end();
+    else if (command == "c1600/screen") screen(&body, &error);
+    else if (command == "c1600/quit") end();
     else error = "Unsupported request '" + command + "'";
     respond(request, error.empty(), std::move(body), error);
 
@@ -198,7 +198,7 @@ void DapSession::handle(const Value& request) {
     }
     // Scripted runs (tools/dap_smoke.py) end the program this way: a normal
     // quit, so macOS does not take it for a crash.
-    if (command == "calcu1600/quit") {
+    if (command == "c1600/quit") {
         closing_ = true;
         if (host_.quitProgram) host_.quitProgram();
     }

@@ -66,8 +66,8 @@ The program
 - [ ] **AC-1** — Given the source repository, then it builds one program
   named `calcu` for the family, which takes the product to run from
   `--product`, in both forms: its value is the product's name as
-  written or a short form (`59`, `1600`), matched without regard to
-  case (ADR 0026; `harness.md` Q-1; OQ-2).
+  written or its product word (`c59`, `c1600`; glossary), matched
+  without regard to case (ADR 0026; `harness.md` Q-1; OQ-2).
 - [ ] **AC-2** — Given `calcu` with one command or several and their
   arguments, then it builds the machine the product starts with (LIB-18)
   under the default settings, carries out the commands in the order
@@ -121,14 +121,14 @@ The first commands
   |---|---|---|
   | `wait <duration>` | lets that much emulated time pass; the duration has a unit, `2s` or `500ms`; while the debugger has the machine paused it ends at once (LIB-10 AC-21) | the emulated time that passed, which can exceed the duration by less than one instruction |
   | `key-down <key ID>`, `key-up <key ID>` | calls key down or key up on the machine with that key | done, or refused for an unknown key ID |
-  | `lcd` | reads the display from the display topic | the display as text (AC-10) |
+  | `display-text` | reads the display from the display topic | the display as text (AC-10) |
   | `state <topic>` | reads a topic by its name | the last state of a state topic, or what a stream topic appended since it was last read |
   | `capabilities` | asks the session what the machine offers now | the capabilities with kind, ID and owner; the places and what is plugged in |
   | `ticks` | asks the session for the machine's emulated time | the tick count and the same in seconds |
   | `audio <file>` | from now on writes all of the machine's sound output to a WAV file | done; the file is complete at the end of the run |
   | `quit` | ends `serve` | none |
 
-- [ ] **AC-10** — Given `lcd`, then the reply gives what the display
+- [ ] **AC-10** — Given `display-text`, then the reply gives what the display
   shows as text: for a dot-matrix display the rows of text the dots
   form, the indicators that are on, and how many character cells could
   not be read as text; for a segment display one character per position
@@ -190,11 +190,11 @@ The first commands
   | | printer lines and dot lines; the PC-100C's PRINT, ADV and TRACE | LIB-8; LIB-2 (controls), C59-6 |
   | | insert and eject a card, whether the machine waits for one | LIB-7, C59-7 |
   | | which module is plugged in, with or without printer, the model | LIB-18 |
-  | `tools/headless/coverage.py` | which ROM addresses a run reaches | C59-9 (`ti59 coverage`); the script, with its scenarios, stays a script that drives the harness (C59-9 AC-13) |
+  | `tools/headless/coverage.py` | which ROM addresses a run reaches | C59-9 (`c59 coverage`); the script, with its scenarios, stays a script that drives the harness (C59-9 AC-13) |
   | `tools/agentic/ti59file.py` | run a preset and report the emulated time and the printout | LIB-6, LIB-8 |
   | `tools/agentic/linetimes.py`, `runtime.py`, `hotsteps.py`, `stepcost.py` | timings per printed line and per key, the hottest program steps, the cost of a step | C59-9 |
   | `tools/agentic/fastmode_matrix.py` | its table of cases, each run in fast mode and in normal mode | stays a script that drives the harness (C59-9 AC-13) |
-  | `tools/agentic/kdis.py`, `asm59.py` | list a program's keycodes; assemble keycodes | C59-9 (`ti59 keycodes list` and `assemble`); the assembler with labels stays a library of the calendar scripts |
+  | `tools/agentic/kdis.py`, `asm59.py` | list a program's keycodes; assemble keycodes | C59-9 (`c59 keycodes list` and `assemble`); the assembler with labels stays a library of the calendar scripts |
   | `tools/read_trace.py` | a trace file as text or JSON | stays a script of the product (LIB-10 AC-33, AC-42; user, 2026-11-10, batch 6 gate) |
 
   (`tools/headless/capi.cpp:47-196`, `tools/headless/ti59.py:155-437`,
@@ -202,7 +202,7 @@ The first commands
 - [ ] **AC-15** — Given `calcu --product` with Calc-U-59 on macOS, Linux
   and Windows, then it runs. Today the headless tools build on macOS
   only (`tools/headless/README.md:5-6`).
-- [ ] **AC-16** — Given a TI machine, then `lcd` gives the twelve
+- [ ] **AC-16** — Given a TI machine, then `display-text` gives the twelve
   positions as characters, leftmost first, with the decimal points:
   a digit, a minus sign, the signs for degree, quote and apostrophe, or
   a blank, as `display()` of today's tool does
@@ -228,10 +228,10 @@ The first commands
   | `--lcd-png <file>` | the display as an image | LIB-6 (`screenshot`) |
   | `--wav <file>` | the buzzer of the whole run as a WAV file | this feature (`audio`) |
   | `--dump-mem <address>,<length>` | memory as a hex dump | LIB-10 |
-  | `--inspect <view>` | an INSPECTOR view as text | C1600-5 (`pc1600 inspect`; C1600-1 AC-19) |
-  | `--dump-basic` | the BASIC pointers and the program area | C1600-5 (`pc1600 dump-basic`) |
-  | `--tape-in <wav>`, `--tape-out <wav>` | play or record a cassette | LIB-7 (`cassette`, `eject`); C1600-5 (`pc1600 cassette record`, `cassette status`) |
-  | `--ce158-pty`, `--ce158-rx`, `--ce158-rx-hold`, `--ce158-tx` | feed and capture the CE-158's serial port | C1600-5 (`pc1600 serial`) |
+  | `--inspect <view>` | an INSPECTOR view as text | C1600-5 (`c1600 inspect`; C1600-1 AC-19) |
+  | `--dump-basic` | the BASIC pointers and the program area | C1600-5 (`c1600 dump-basic`) |
+  | `--tape-in <wav>`, `--tape-out <wav>` | play or record a cassette | LIB-7 (`cassette`, `eject`); C1600-5 (`c1600 cassette record`, `cassette status`) |
+  | `--ce158-pty`, `--ce158-rx`, `--ce158-rx-hold`, `--ce158-tx` | feed and capture the CE-158's serial port | C1600-5 (`c1600 serial`) |
   | `--save-dir`, `--modules-dir` | the save folder; where module definitions are | this feature (AC-8), LIB-7 |
   | the summary after a run: registers, the last instructions, where the program counter spent its time | | LIB-10 |
   | `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | diagnostics of the plotter, of power-off and of the serial port | not taken over (OQ-5 as amended) |
@@ -242,7 +242,7 @@ The first commands
   (`tools/pc1500_cli.cpp:92-377`, `tools/pc1600_cli.cpp:90-365`,
   `tools/pc1600_plotter_probe.cpp`, `tools/pc1600_power_probe.cpp`,
   `tools/pc1600_uart_probe.cpp`.)
-- [ ] **AC-19** — Given a Sharp machine, then `lcd` gives the rows of
+- [ ] **AC-19** — Given a Sharp machine, then `display-text` gives the rows of
   text, a line with the indicators that are on, and the number of cells
   that are not text, and says "display off" when it is off, as
   `--lcd-text` does today (`tools/pc1500_cli.cpp:271-277`,
@@ -291,7 +291,7 @@ The first commands
 
 ## Open Questions
 - [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The names of the first commands (AC-9). `harness.md`
-  H-1 names `lcd`, `state` and `quit`; `wait` is a preset step with the
+  H-1 names `display-text`, `state` and `quit`; `wait` is a preset step with the
   same meaning. `key-down`, `key-up`, `capabilities`, `ticks` and
   `audio` are proposed here. *Recommendation:* as in AC-9.
 - [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* How a run names its product. H-2 says `--product`
@@ -317,7 +317,7 @@ The first commands
   longer relevant are not taken over; the three probes go, and so does
   `dev/tape-matrix/run.py`; the calendar scripts stay and are upgraded
   to version 2 (C59-2 AC-18).*
-- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The indicator C in `lcd` for a TI machine (AC-16).
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The indicator C in `display-text` for a TI machine (AC-16).
   Today's tool does not report it. *Recommendation:* report it, on a
   line of its own like the Sharp indicators; brightness only with
   `--json`.
@@ -354,3 +354,4 @@ The first commands
 | M-51: a product whose app layer brings the library's parts (Calc-U-1600's `SharpAppPart`: peripherals, presets, startup, control, media, open) hands them to the run (`HarnessProduct::appLayerParts`), which then builds none of its own; `prepare(RunSetup&)` builds the app layer on the run's settings and folders (D-11). Design D.3 took the app layer's parts to hold none of the library's | one set of parts for the frontends and the harness, so no part is in the session twice; the simpler structure (Part D, D.3; qa-report) | 2026-11-16 |
 | In the implementation (M-59): Calc-U-59's entry runs its app layer `TIAppPart` (§11.3), as Calc-U-1600's runs `SharpAppPart`; `CALCU59_ROMS_DIR` names another ROM folder for the ROM-missing build | design §11.3; LIB-12's build with one ROM file taken away | 2026-11-17 |
 | The cassette's step and command is `cassette` (`cassette { … }`, `eject cassette`), the product command `pc1600 cassette record|status` (AC-18's table edited in place; was `tape`) | user, 2026-11-17 (Part E review Q-6); C1600-5; behaviour change 1600-51 | 2026-11-17 |
+| Release prep step 1: the product word (glossary) names a product's commands and its `--product` value: `c59`, `c1600` (a future Calc-U-1403: `c1403`); the old short forms `59`, `1600` and the command words `ti59`, `pc1600` are refused, the full names (`Calc-U-59`, `Calc-U-1600`) stay. The common `lcd` is `display-text` (AC-1, AC-9, AC-10, AC-16, AC-19 and the command table edited in place, names only) | user, 2026-11-17 (`docs/reviews/e-simplification.md` §10 Q-6): one word per product everywhere; `docs/reviews/release-prep-plan.md` §1; ledger rows 59-58, 1600-50 | 2026-11-17 |

@@ -23,7 +23,7 @@ This skill covers all work inside `frontends/swift/Calc-U-59UITests/`.
 | `ScreenshotTests.swift` | App Store screenshot capture (driven by `bin/run-screenshots`); writes PNGs to the dir named in `/tmp/calc-u-59-screenshot-dir`. Its settings in a settings file, the module (LE) and R/S through attach. The runner names each test in full and fails a shot that writes no PNG. Its overlay shot is C59-4 AC-24's scenario `testC59_4_AC16AsmOverlay` (`test_stopwatch.asm`, ASM format 2.0, from `1-Testfiles`) |
 | `DebugPanelTests.swift` | C59-4 AC-24/AC-21 scenarios (M-56): `testC59_4_AC5CalculatorFreezeStepResume` (FREEZE, `btn-step`, RESUME on the CALCULATOR tab; R/S through attach), `testC59_4_AC21TabsAndLabels`; in `UIRegressionTests`, iOS |
 | `HarnessClient.swift` | A line client for harness attach: `connect(port:)`, `command(_:)` (message lines skipped), `closedByPeer()` (C59-5) |
-| `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `lcd`, `wait` on the app's clock, `quit` (C59-5 S3); Home and back, a command refused while suspended (S4); a press on `led-display` for full speed while a program runs, then a touch on R/S of the faceplate (S5). In `UIRegressionTests`; S4, S5 iOS only |
+| `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `display-text`, `wait` on the app's clock, `quit` (C59-5 S3); Home and back, a command refused while suspended (S4); a press on `led-display` for full speed while a program runs, then a touch on R/S of the faceplate (S5). In `UIRegressionTests`; S4, S5 iOS only |
 | `PacingTests.swift` | LIB-17 AC-19: a TI-59 keeps one minute, `ticks` over attach on port 59161. Checkpoint: only in the plan `PacingCheckpoint`, skipped by `UIRegressionTests` |
 | `Calc_U_59UITestsLaunchTests.swift` | Default launch test (auto-generated, rarely edited) |
 | `UIRegressionTests.xctestplan` | Local regression test plan (no CI job runs XCUITests) |
@@ -52,7 +52,7 @@ app's container `tmp/` and the app gets its name) and pass `--settings-file`
 and `--attach-port`. A test that needs the session (a load's end, the
 display as text, emulated time, the module) attaches: the runner, in the
 same simulator, connects with `HarnessClient` to 127.0.0.1 and sends
-`calcu serve` commands (`wait 1s`, `key-down R/S`, `lcd`, `ticks`,
+`calcu serve` commands (`wait 1s`, `key-down R/S`, `display-text`, `ticks`,
 `attach slot-1 LE`, `state settings`). A load started with a tap is awaited
 with `waitForOperation` (the busy topic, then the bare `wait`); a key into
 a running program (an overlay among them) is `key-down`/`key-up`. The
@@ -266,7 +266,7 @@ print(app.debugDescription)
 
 A preset is LIB-6's `load-preset` (one operation of the session). Wait for
 its end through attach (`waitForOperation`: the busy topic, then the reply
-to the bare `wait`), then check what it leaves: `lcd` through attach, or
+to the bare `wait`), then check what it leaves: `display-text` through attach, or
 the `cue-card` element's label (`FamilyStructureTests.test_lib6_ac42_an_example`).
 
 ---

@@ -28,7 +28,7 @@ bool effectiveConfig(const Value& args, const calcu::presets::ReadSetup& read, c
                      Value* out, std::string* error);
 
 // The keys of `table` in `o` (a configuration, a `debug:` block, a
-// `program`, a `calcu1600/load`): `Bad "<key>": <what>` (EC-2). Keys the
+// `program`, a `c1600/load`): `Bad "<key>": <what>` (EC-2). Keys the
 // table does not know pass: a launch configuration carries the IDE's own.
 bool checkAttach(const Value& o, const debug::attach::Table& table, std::string* error);
 

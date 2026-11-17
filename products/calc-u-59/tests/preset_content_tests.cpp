@@ -88,7 +88,7 @@ TEST(c59_2_ac2_rounds_up_to_80_at_most_960) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head() + "partition: 100\n"), std::string("done\n"));
-    CHECK_EQ(c("ti59 partition"), std::string("done 1\n159\n"));
+    CHECK_EQ(c("c59 partition"), std::string("done 1\n159\n"));
 }
 
 TEST(c59_2_ac2_point_part_not_read) {
@@ -104,7 +104,7 @@ TEST(c59_2_ac2_none_keeps_rom_partition) {
     const std::pair<const char*, const char*> want[] = {{"TI-59", "479"}, {"TI-58", "239"}, {"TI-58C", "239"}};
     for (const auto& [model, last] : want) {
         CHECK_EQ(c.preset(head(model) + "data:\n  00: 1\n", "p.ti59"), std::string("done\n"));
-        CHECK_EQ(c("ti59 partition"), "done 1\n" + std::string(last) + "\n");
+        CHECK_EQ(c("c59 partition"), "done 1\n" + std::string(last) + "\n");
     }
 }
 
@@ -179,7 +179,7 @@ TEST(c59_2_ac1_only_listed_steps_written) {
     Calcu c;
     const std::string text = head() + "program:\n  keycodes: |\n    11 12 13 14\nprogram:\n  keycodes: |\n    002 99\n";
     CHECK_EQ(c.preset(text), std::string("done\n"));
-    CHECK_EQ(c("ti59 program 000 count=5"), std::string("done 5\n000 11\n001 12\n002 99\n003 14\n004 00\n"));
+    CHECK_EQ(c("c59 program 000 count=5"), std::string("done 5\n000 11\n001 12\n002 99\n003 14\n004 00\n"));
 }
 
 TEST(c59_2_ec1_steps_beyond_partition_written) {
@@ -187,7 +187,7 @@ TEST(c59_2_ec1_steps_beyond_partition_written) {
     Calcu c;
     const std::string text = head() + "partition: 159\nprogram:\n  keycodes: |\n    700 76 LBL\n";
     CHECK_EQ(c.preset(text), std::string("done\n"));
-    CHECK_EQ(c("ti59 program 700 count=1"), std::string("done 1\n700 76\n"));
+    CHECK_EQ(c("c59 program 700 count=1"), std::string("done 1\n700 76\n"));
 }
 
 // ── T4: data: (AC-4, EC-2, EC-3) ────────────────────────────────────────────
@@ -233,7 +233,7 @@ TEST(c59_2_ac4_h00_to_h03_are_not_60_to_63) {
     CHECK(pm->readExtra(1) == nibbles("7.77e22"));
     CHECK(pm->readRaw(61) == nibbles("7.77e22"));   // rom/TI58C-ROM-Guide.md:37: H01 is RAM 61
     CHECK(pm->readRegister(59) == nibbles("5"));
-    CHECK_EQ(c("ti59 registers H01 59"), std::string("done 2\nH01: 7.77e22\n59: 5e0\n"));
+    CHECK_EQ(c("c59 data-registers H01 59"), std::string("done 2\nH01: 7.77e22\n59: 5e0\n"));
 }
 
 TEST(c59_2_ec2_data_before_partition_in_file_order) {
@@ -242,7 +242,7 @@ TEST(c59_2_ec2_data_before_partition_in_file_order) {
     // Register 05 is written while the partition is the ROM's; then the
     // partition moves; what it then holds is the calculator's matter.
     CHECK_EQ(c.preset(head() + "data:\n  05: 3\npartition: 159\n"), std::string("done\n"));
-    CHECK_EQ(c("ti59 partition"), std::string("done 1\n159\n"));
+    CHECK_EQ(c("c59 partition"), std::string("done 1\n159\n"));
     PresetRead r;
     const auto plan = r.read(head() + "data:\n  05: 3\npartition: 159\n");
     const auto* p = std::get_if<calcu::presets::LoadPlan>(&plan);
@@ -255,7 +255,7 @@ TEST(c59_2_ec3_h_registers_written_after_cold_boot_else_as_startup_left) {
     CHECK_EQ(c.preset(head("TI-58C") + "data:\n  00: 1\n", "a.ti58c"), std::string("done\n"));
     cu59::ProgramMemory* pm = cu59::programMemoryOf(*c.machine());
     const cu59::RegisterNibbles h0 = pm->readExtra(0);   // as the start-up left it in zeroed memory
-    c("ti59 registers H00=5");
+    c("c59 data-registers H00=5");
     CHECK_EQ(c.preset(head("TI-58C") + "data:\n  00: 1\n", "b.ti58c"), std::string("done\n"));
     pm = cu59::programMemoryOf(*c.machine());
     CHECK(pm->readExtra(0) == h0);   // a new preset: a cold boot, not what the last machine held
@@ -369,18 +369,18 @@ TEST(c59_2_ac7_sections_after_keys_are_reloads) {
                              "data:\n  01: 9\n";
     CHECK_EQ(c.preset(text), std::string("done\n"));
     CHECK_EQ(c("expect 2"), std::string("done\n"));   // A ran: 1 + 1 = 2
-    CHECK_EQ(c("ti59 program 000 count=7"),
+    CHECK_EQ(c("c59 program 000 count=7"),
              std::string("done 7\n000 76\n001 11\n002 01\n003 02\n004 01\n005 95\n006 91\n"));
-    CHECK_EQ(c("ti59 registers 00 01"), std::string("done 2\n00: 3e0\n01: 9e0\n"));
+    CHECK_EQ(c("c59 data-registers 00 01"), std::string("done 2\n00: 3e0\n01: 9e0\n"));
 }
 
 TEST(c59_2_ac16_apply_state_ti58_default_partition_and_limits) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head("TI-58") + "program:\n  keycodes: |\n    479 92\n", "t.ti58"), std::string("done\n"));
-    CHECK_EQ(c("ti59 partition"), std::string("done 1\n239\n"));
-    CHECK_EQ(c("ti59 program 479 count=1"), std::string("done 1\n479 92\n"));
-    CHECK(c("ti59 program 480 count=1").rfind("refused", 0) == 0);
+    CHECK_EQ(c("c59 partition"), std::string("done 1\n239\n"));
+    CHECK_EQ(c("c59 program 479 count=1"), std::string("done 1\n479 92\n"));
+    CHECK(c("c59 program 480 count=1").rfind("refused", 0) == 0);
 }
 
 TEST(c59_2_ac16_reload_changes_only_the_listed_steps_and_registers) {
@@ -389,8 +389,8 @@ TEST(c59_2_ac16_reload_changes_only_the_listed_steps_and_registers) {
     CHECK_EQ(c.preset(head() + "program:\n  keycodes: |\n    11 12 13\ndata:\n  00: 1\n  02: 2\n"
                                "keys:\n  - key: CLR\nprogram:\n  keycodes: |\n    001 22\ndata:\n  02: 7\n"),
              std::string("done\n"));
-    CHECK_EQ(c("ti59 program 000 count=3"), std::string("done 3\n000 11\n001 22\n002 13\n"));
-    CHECK_EQ(c("ti59 registers 00 02"), std::string("done 2\n00: 1e0\n02: 7e0\n"));
+    CHECK_EQ(c("c59 program 000 count=3"), std::string("done 3\n000 11\n001 22\n002 13\n"));
+    CHECK_EQ(c("c59 data-registers 00 02"), std::string("done 2\n00: 1e0\n02: 7e0\n"));
 }
 
 TEST(c59_2_ac16_data_registers_match_the_rom) {
@@ -400,7 +400,7 @@ TEST(c59_2_ac16_data_registers_match_the_rom) {
         CHECK_EQ(c.preset(head(model) + "data:\n  05: 1234.5\n  29: -2.5e-7\n", "x.ti59"), std::string("done\n"));
         c("key CLR RCL 0 5");
         c("wait");
-        CHECK(c("lcd").find("1234.5") != std::string::npos);
+        CHECK(c("display-text").find("1234.5") != std::string::npos);
         CHECK_EQ(c("expect 1234.5"), std::string("done\n"));
         c("key CLR RCL 2 9");
         c("wait");

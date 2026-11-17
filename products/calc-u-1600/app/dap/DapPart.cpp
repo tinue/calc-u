@@ -179,7 +179,7 @@ void DapPart::drain() {
         session_->handle(message);
         if (!session_) break;
         session_->poll();
-        if (session_->closing()) {   // `disconnect`, `calcu1600/quit`: answered, the client goes
+        if (session_->closing()) {   // `disconnect`, `c1600/quit`: answered, the client goes
             client_ = false;
             held_.clear();
             reader_.clear();

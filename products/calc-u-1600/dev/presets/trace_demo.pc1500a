@@ -2,7 +2,7 @@
 # its RUN in a CPU instruction trace written to `trace_demo.bin` in the
 # trace folder (the app's Settings; the harness's --output-folder).
 #
-#   calcu --product 1600 --output-folder out preset dev/presets/trace_demo.pc1500a
+#   calcu --product c1600 --output-folder out preset dev/presets/trace_demo.pc1500a
 #   python3 tools/read_trace.py out/trace_demo.bin
 #
 # Starting a new `- trace:` closes any open one; a trace still running when

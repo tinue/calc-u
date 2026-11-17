@@ -706,7 +706,7 @@ TEST(qt_attach_drives_calc_u_59) {
     calcu::qt6::AttachLineClient client;
     CHECK(client.connectTo(f.w().host().attachPort()));
     std::vector<calcu::qt6::AttachLineClient::Reply> replies;
-    for (const char* line : {"model TI-58", "key 7", "wait 300ms", "lcd"})
+    for (const char* line : {"model TI-58", "key 7", "wait 300ms", "display-text"})
         client.send(QString::fromLatin1(line), [&](const calcu::qt6::AttachLineClient::Reply& r) { replies.push_back(r); });
     CHECK(f.waitFor([&] { return replies.size() == 4; }, 30000));
     for (const auto& r : replies) CHECK(r.done);

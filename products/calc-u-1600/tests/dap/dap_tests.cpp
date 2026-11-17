@@ -155,7 +155,7 @@ struct Client {
     }
     void begin() {
         connect();
-        request("initialize", obj({{"adapterID", Value("calcu1600")}}));
+        request("initialize", obj({{"adapterID", Value("c1600")}}));
     }
     calcu::debugger::RunControl& rc() { return fx.part().debuggerPart().runControl(); }
 };
@@ -377,9 +377,9 @@ TEST(c1600_3_ec2_bad_key_refused_with_reason) {
     c.request("attach");
     const std::string bin = fs::absolute(kMemtestBin).string();
     CHECK(c.refusal("attach", obj({{"program", obj({{"listing", Value("x.rst")}})}})).rfind("Bad \"bin\"", 0) == 0);
-    CHECK(c.refusal("calcu1600/load", obj({{"bin", Value(bin)}, {"after", Value("foo")}})).rfind("Bad \"after\"", 0) == 0);
-    CHECK(c.refusal("calcu1600/load", obj({{"bin", Value(bin)}, {"cpu", Value("x86")}})).rfind("Bad \"cpu\"", 0) == 0);
-    CHECK(c.refusal("calcu1600/load", obj({{"bin", Value(bin)}, {"slot", Value(2)}})).rfind("Bad \"slot\"", 0) == 0);
+    CHECK(c.refusal("c1600/load", obj({{"bin", Value(bin)}, {"after", Value("foo")}})).rfind("Bad \"after\"", 0) == 0);
+    CHECK(c.refusal("c1600/load", obj({{"bin", Value(bin)}, {"cpu", Value("x86")}})).rfind("Bad \"cpu\"", 0) == 0);
+    CHECK(c.refusal("c1600/load", obj({{"bin", Value(bin)}, {"slot", Value(2)}})).rfind("Bad \"slot\"", 0) == 0);
     CHECK(c.refusal("restart", obj({{"arguments", obj({{"reset", Value("sometimes")}})}})).rfind("Bad \"reset\"", 0) == 0);
 }
 
@@ -476,18 +476,18 @@ TEST(c1600_3_ac7_entry_rules_and_ec3_headerless_without_address) {
     c.request("attach", obj({{"preset", Value(fs::absolute(kPc1500Preset).string())}}));
     const std::string bin = fs::absolute(kMemtestBin).string(), rst = fs::absolute(kMemtestRst).string();
     // No address: the lowest listing line with bytes; the listing's ENTRY.
-    Value b = c.request("calcu1600/load", obj({{"bin", Value(bin)}, {"listing", Value(rst)}, {"cleanStart", Value(false)}}));
+    Value b = c.request("c1600/load", obj({{"bin", Value(bin)}, {"listing", Value(rst)}, {"cleanStart", Value(false)}}));
     CHECK_EQ(cu1600::dap::textOf(b, "start"), std::string("0x40C5"));
     CHECK_EQ(cu1600::dap::textOf(b, "entry"), std::string("0x40C5"));
-    b = c.request("calcu1600/load",
+    b = c.request("c1600/load",
                   obj({{"bin", Value(bin)}, {"listing", Value(rst)}, {"entry", Value("MEMTEST")}, {"cleanStart", Value(false)}}));
     CHECK_EQ(cu1600::dap::textOf(b, "entry"), std::string("0x40CC"));
     CHECK_EQ(cu1600::dap::textOf(b, "call"), std::string("CALL &40CC"));
-    b = c.request("calcu1600/load", obj({{"bin", Value(bin)}, {"entry", Value(0x40D0)}, {"address", Value("&40C5")},
+    b = c.request("c1600/load", obj({{"bin", Value(bin)}, {"entry", Value(0x40D0)}, {"address", Value("&40C5")},
                                          {"cleanStart", Value(false)}}));
     CHECK_EQ(cu1600::dap::textOf(b, "entry"), std::string("0x40D0"));
     // EC-3: headerless, no address, no listing.
-    const std::string why = c.refusal("calcu1600/load", obj({{"bin", Value(bin)}, {"cleanStart", Value(false)}}));
+    const std::string why = c.refusal("c1600/load", obj({{"bin", Value(bin)}, {"cleanStart", Value(false)}}));
     CHECK(why.find("needs an address") != std::string::npos && why.find("listing") != std::string::npos);
 }
 
@@ -499,7 +499,7 @@ TEST(c1600_3_ec4_startup_preset_for_another_model_refused) {
     Client c(fx);
     c.begin();
     c.request("attach");
-    const std::string why = c.refusal("calcu1600/load", memtestProgram("none"));
+    const std::string why = c.refusal("c1600/load", memtestProgram("none"));
     CHECK(why.rfind("Clean start failed: ", 0) == 0 && why.find("PC-1600") != std::string::npos);
 }
 
@@ -513,7 +513,7 @@ TEST(c1600_3_ac25_rom_project_load_redoes_the_setup) {
     c.request("configurationDone");
     CHECK(c.event("stopped").has_value());
     const auto generation = fx.session().machineSession().generation();
-    c.request("calcu1600/load");   // no program: the set-up again (the preset rebuilds the machine)
+    c.request("c1600/load");   // no program: the set-up again (the preset rebuilds the machine)
     CHECK(fx.session().machineSession().generation() != generation);
     const auto stop = c.event("stopped");   // and then as at configurationDone: stopOnEntry
     CHECK(stop && cu1600::dap::textOf(*stop, "reason") == "entry");
@@ -711,20 +711,20 @@ TEST(c1600_3_ac17_reset_screen_quit) {
     Client c(fx);
     c.connect();
     fx.runFor(0.5);
-    // calcu1600/screen without a DAP session (no initialize).
-    const Value screen = c.request("calcu1600/screen");
+    // c1600/screen without a DAP session (no initialize).
+    const Value screen = c.request("c1600/screen");
     const Value* rows = screen.find("rows");
     CHECK(rows && rows->elements() && !rows->elements()->empty() && cu1600::dap::boolOf(screen, "poweredOn"));
     c.request("initialize");
     c.request("attach");
     c.request("configurationDone");
-    c.request("calcu1600/reset", obj({{"kind", Value("reset")}}));
+    c.request("c1600/reset", obj({{"kind", Value("reset")}}));
     auto stop = c.event("stopped");
     CHECK(stop && cu1600::dap::textOf(*stop, "reason") == "entry" && c.rc().paused());
-    c.request("calcu1600/reset", obj({{"kind", Value("allReset")}, {"stop", Value(false)}}));
+    c.request("c1600/reset", obj({{"kind", Value("allReset")}, {"stop", Value(false)}}));
     fx.call();
     CHECK(!c.rc().paused());   // `stop: false` runs on
-    c.request("calcu1600/quit");
+    c.request("c1600/quit");
     CHECK_EQ(c.t.quits, 1);    // the program ends
     CHECK(!fx.part().dapPart()->hasClient());
 }

@@ -127,7 +127,7 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
     r.send(calcu::sessions::kSpeedCommand, Value::object({{"full", false}}));
     CHECK(r.state<BusyState>(kBusyTopic)->speed == calcu::pacing::Speed::Regular);
     // What the debug panel shows: its product topics since M-56 (C59-4 AC-25).
-    CHECK(moves(topics::kCpuDebug, [&] { r.send(commands::kCpuDebug, Value::object({{"on", true}})); }));
+    CHECK(moves(topics::kCpuDebug, [&] { r.send(commands::kShowCpuDebug, Value::object({{"on", true}})); }));
     CHECK(moves(topics::kHeatmap, [&] { r.send(commands::kHeatmapReset); }));
     CHECK(moves(topics::kAsmOverlay, [&] { r.send(commands::kAsmRun); }));   // "No ASM overlay loaded."
     CHECK(moves(topics::kDebugView, [&] { r.send(commands::kLogLevel, Value::object({{"level", "info"}})); }));
@@ -185,7 +185,7 @@ TEST(lib3_ac30_show_debug_panel_is_product_message) {
     r.post(calcu::presets::kLoadPresetCommand,
            Value::object({{"content", "format-version: 2\nmodel: TI-59\nkeys:\n  - debug-panel: cpu\n"}, {"name", "p.ti59"}}));
     CHECK(r.until([&] { return !r.panels().empty(); }));
-    CHECK(!r.panels().empty() && r.panels()[0] == DebugPanel::Cpu);   // the product topic debug-view (C59-4 AC-2)
+    CHECK(!r.panels().empty() && r.panels()[0] == DebugPanel::Cpu);   // the product topic c59.debug-view (C59-4 AC-2)
 }
 
 // AC-32: a preset runs as an operation: busy says so, a second is refused.

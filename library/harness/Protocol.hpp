@@ -8,7 +8,7 @@
 // Lines and the one-shot form (LIB-11 design §3.2; spec AC-2, AC-3, AC-5,
 // AC-13, AC-22).
 // - The word between the commands of a one-shot run is `then`: `calcu
-//   --product 1600 wait 2s then lcd then ticks`. The words of each command
+//   --product c1600 wait 2s then display-text then ticks`. The words of each command
 //   are joined with one space into a line, so the one-shot form and `serve`
 //   share one parser. A literal argument `then` cannot be written in the
 //   one-shot form; `serve` can.
@@ -25,7 +25,7 @@ namespace calcu::harness {
 class CommandRegistry;
 
 struct CommandLine {
-    std::vector<std::string> path;   // {"lcd"} or {"test", "count"}
+    std::vector<std::string> path;   // {"display-text"} or {"test", "count"}
     std::string argText;             // the rest, as written, trimmed
 };
 

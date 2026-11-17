@@ -417,7 +417,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     // The LOG tab's view of LIB-3's `log` (C59-4 AC-9): the last 2000 lines.
     cu59::RingLog _log;
     std::string _logText;
-    // debug-view's count of requests already shown (AC-2).
+    // c59.debug-view's count of requests already shown (AC-2).
     std::uint64_t _viewRequests;
     // The session's library parts, set by the factory on the session thread
     // (the attached harness's commands use them, LIB-14 D-27).
@@ -609,7 +609,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         }
         _mirror.deliver(m);
     }
-    // The tab a `debug-panel:` step asked for, each time debug-view's count grows (AC-2, EC-4).
+    // The tab a `debug-panel:` step asked for, each time c59.debug-view's count grows (AC-2, EC-4).
     if (const auto* v = [self debugView]; v && v->requests > _viewRequests) {
         _viewRequests = v->requests;
         [d showDebugPanel:static_cast<NSInteger>(v->view)];
@@ -868,7 +868,7 @@ static const char* const kCardReaderPlace = "card-reader";
 // ── Debugger ─────────────────────────────────────────────────────────────────
 
 - (void)setLiveDebugEnabled:(BOOL)on { [self send:cu59::commands::kLiveDebug args:{{"on", on == YES}}]; }
-- (void)setCpuDebugEnabled:(BOOL)on { [self send:cu59::commands::kCpuDebug args:{{"on", on == YES}}]; }
+- (void)setCpuDebugEnabled:(BOOL)on { [self send:cu59::commands::kShowCpuDebug args:{{"on", on == YES}}]; }
 - (BOOL)frozen { const auto* r = [self runControl]; return r && r->paused; }
 - (TIRunLevel)pausedLevel {
     const auto* r = [self runControl];

@@ -1,7 +1,7 @@
 # fastmode-sst.ti59
 #
 # The shortest known way into the TI-59 "fast mode", found by tracing the ROM
-# with the headless harness (tools/headless/ then, 2026-10-17; today `calcu --product 59`). Compare
+# with the headless harness (tools/headless/ then, 2026-10-17; today `calcu --product c59`). Compare
 # examples/historic/fastmode.ti59 (the St flg trick of TI PPC Notes V9N3P5) and
 # examples/calendar/calendar-08-acosta.ti59 (the "hi2" entry); rom/TI59-ROM-Guide.md
 # § "Fast mode" explains all known entry methods side by side.

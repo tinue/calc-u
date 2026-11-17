@@ -1,6 +1,6 @@
 """A test machine on `calcu serve`, for pytest suites of any product.
 
-    session = Session(workdir, "1600")
+    session = Session(workdir, "c1600")
     session.type('PRINT "=";6*7').wait(1)
     assert "= 42" in session.lcd
 
@@ -98,7 +98,7 @@ class Session:
     @property
     def lcd(self) -> list[str]:
         """The text rows of the display."""
-        result = self.send("lcd")
+        result = self.send("display-text")
         return list(result["rows"]) if result["on"] else []
 
     def display(self) -> dict[str, Any]:

@@ -6,7 +6,7 @@
 // Bytes of a serial or printer port as text (C1600-5 AC-8, design §3.4): a
 // line end (LF) and printable ASCII stand as they are, a carriage return is
 // left out, any other byte is `<XX>` (hex). One rule for the GUI's printer
-// pane of the CE-158 and the harness's `pc1600 serial <port> report`.
+// pane of the CE-158 and the harness's `c1600 serial <port> report`.
 inline std::string printableBytes(const std::uint8_t* bytes, std::size_t size) {
     static const char kHex[] = "0123456789ABCDEF";
     std::string text;

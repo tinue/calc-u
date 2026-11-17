@@ -232,7 +232,7 @@ It adds none.
 
 Tests come before the code. `CoreTests` (Frequent) unless the row says
 otherwise; ROM-gated cases `SKIP_UNLESS` the ROMs, as today. Cases run
-the product's harness entry in virtual time (`calcu --product 1600`
+the product's harness entry in virtual time (`calcu --product c1600`
 in-process, `tests/harness_tests.cpp`'s helper) or the product's rules
 on `presets::readPreset` directly. Names `c1600_4_acN_…`.
 
@@ -245,7 +245,7 @@ on `presets::readPreset` directly. Names `c1600_4_acN_…`.
 | T5 | `debug:` | AC-11, AC-12, AC-20, EC-4 | `c1600_4_ac11_keys_values_paths_from_preset_folder`, `c1600_4_ac11_unknown_key_wrong_value_refused`, `c1600_4_ac12_load_does_nothing_with_block`, `c1600_4_ac12_debug_block_of_for_the_debugger`, `c1600_4_ac20_blocks_by_the_file_syntax` (every block form of today's tests), `c1600_4_ec4_mistake_refused_without_debugger` |
 | T6 | Errors, today's tests | AC-13, AC-14, AC-19 | `c1600_4_ac14_line_key_and_expected_debug_and_bus_rom_prefixed`; AC-13 is LIB-6 AC-45, AC-46, AC-48 (LIB-6 §10.6); AC-19: the cases of `preset_tests.cpp:480-517, 568-655, 732-850` and `pc1600_preset_tests.cpp:846-1019` (at the pin; today's `test_slot_rom_keys`, `test_parser_*`, `test_loader_machine_binary_*`, the bus-rom and debug cases) ported onto the new reader as `c1600_4_ac19_<old name>`; the old files lose them |
 | T7 | The upgrade | AC-15 | `calcu_preset_check.CalcU1600Presets` (LIB-6 §10.6, Frequent) over every file of the table of §2, the templates filled; `EXCLUDE` the five of §1 (M-47 removes the exclusions); `c1600_4_ac15_no_version_1_left` (a scan of the tracked files for `format-version: 1` in a preset, the five excepted until M-47) |
-| T8 | References | AC-16 | `example_references_tests.cpp`, program `CalcU1600ExampleReferences` (Longer): per example, in a copy of `examples/` in a temporary folder, `preset examples:<path>` (the bundle copy) or the file, then `wait`, then `lcd`, `paper marks`, `peek` of the ranges the `.out` inspector views list (BASIC pointers, program area, machine-code area); compared with `.out` and `.paper-marks`; the RTC cells and tick counts left out; the intended differences of `docs/research/preset-conversion-check.md` §4 excepted by name with their reason (`Calculat` and the like); the five of §1 listed as waiting (M-47) |
+| T8 | References | AC-16 | `example_references_tests.cpp`, program `CalcU1600ExampleReferences` (Longer): per example, in a copy of `examples/` in a temporary folder, `preset examples:<path>` (the bundle copy) or the file, then `wait`, then `display-text`, `paper marks`, `peek` of the ranges the `.out` inspector views list (BASIC pointers, program area, machine-code area); compared with `.out` and `.paper-marks`; the RTC cells and tick counts left out; the intended differences of `docs/research/preset-conversion-check.md` §4 excepted by name with their reason (`Calculat` and the like); the five of §1 listed as waiting (M-47) |
 | T9 | Bundle, names | AC-17, AC-18 | `c1600_4_ac17_bundle_lists_todays_entries` (`readBundleFile` gives today's list and order), `c1600_4_ac17_bundled_files_are_the_bundle_files` (CTest `CalcU1600BundledFiles`, `cmake -P` over the Qt and Web build trees; Longer: it needs both builds), `c1600_4_ac18_names_short_described_once_unique_per_model` (`checkBundle`; ports `app/tests/shared_preset_catalog_tests.cpp:34-99`) |
 
 Coverage: T1–T9 cover AC-1 to AC-20 and EC-1 to EC-6. AC-15 and AC-16

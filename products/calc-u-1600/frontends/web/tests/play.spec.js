@@ -8,7 +8,7 @@ const { c, gotoReady, screen, waitForScreen, pickModel, menu, notBusy, shown } =
 // (CalcU1600 with the physical keyboard), put together from the React set's
 // shell (M-49): elements by the shell's names. URLs are relative to the
 // project's baseURL -- the server root or a sub-path (playwright.config.js).
-// The display is read as text through the session (`c1600.lcd-text`), not
+// The display is read as text through the session (`c1600.display-text`), not
 // from pixels. The shell's own cases: shell.spec.js.
 
 const FIXTURES = path.join(__dirname, 'fixtures');

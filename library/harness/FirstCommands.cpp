@@ -91,9 +91,9 @@ Handler keyCmd(bool down) {
     };
 }
 
-Reply lcdCmd(CommandContext& c) {
+Reply displayTextCmd(CommandContext& c) {
     const DisplayText t = c.host.displayText();
-    return doneReply(lcdValue(t), lcdLines(t));
+    return doneReply(displayTextValue(t), displayTextLines(t));
 }
 
 Reply displayCmd(CommandContext& c) {
@@ -214,7 +214,7 @@ void addFirstCommands(CommandRegistry& r) {
     r.add("key-down", keyCmd(true), "key-down <key ID>        the key down");
     r.add("key-up", keyCmd(false), "key-up <key ID>          the key up");
     addTypingCommands(r);
-    r.add("lcd", lcdCmd, "lcd                      the display as text");
+    r.add("display-text", displayTextCmd, "display-text             the display as text");
     r.add("display", displayCmd, "display                  the display output as the machine gives it");
     r.add("state", stateCmd, "state <topic>            the state of a topic, or what a stream appended");
     r.add("capabilities", capabilitiesCmd, "capabilities             what the machine offers now; its places");

@@ -84,8 +84,8 @@ LoaderArgs loaderArgs(const std::string& argText, bool codeOptions) {
     LoaderArgs out;
     const std::vector<std::string> w = harness::words(argText);
     if (w.empty()) {
-        out.error = codeOptions ? "usage: pc1600 load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803|z80>] [run]"
-                                : "usage: pc1600 load-basic <file> [<n>]";
+        out.error = codeOptions ? "usage: c1600 load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803|z80>] [run]"
+                                : "usage: c1600 load-basic <file> [<n>]";
         return out;
     }
     out.file = w[0];
@@ -129,7 +129,7 @@ LoaderArgs loaderArgs(const std::string& argText, bool codeOptions) {
 
 Reply fileKindCmd(CommandContext& c) {
     const std::vector<std::string> w = harness::words(c.line.argText);
-    if (w.size() != 1) return refusedReply("usage: pc1600 file-kind <file>");
+    if (w.size() != 1) return refusedReply("usage: c1600 file-kind <file>");
     const auto bytes = readFile(w[0]);
     if (!bytes) return refusedReply("The file " + w[0] + " cannot be read.");
     const sessions::ReplyMessage r =
@@ -179,7 +179,7 @@ Reply loadBasicCmd(CommandContext& c) {
 
 Reply typeBasicCmd(CommandContext& c) {
     const std::vector<std::string> w = harness::words(c.line.argText);
-    if (w.size() != 1) return refusedReply("usage: pc1600 type-basic <file>");
+    if (w.size() != 1) return refusedReply("usage: c1600 type-basic <file>");
     const auto bytes = readFile(w[0]);
     if (!bytes) return refusedReply("The file " + w[0] + " cannot be read.");
     return harness::fromSessionReply(c.host.command(
@@ -224,7 +224,7 @@ Reply loadCodeCmd(CommandContext& c) {
 // ── C1600-5 AC-2, AC-3, EC-4 (§3.1): dump-basic ───────────────────────────
 
 Reply dumpBasicCmd(CommandContext& c) {
-    if (!c.line.argText.empty()) return refusedReply("usage: pc1600 dump-basic");
+    if (!c.line.argText.empty()) return refusedReply("usage: c1600 dump-basic");
     machine::Machine* m = machineOf(c);
     if (!m) return noMachine();
     const sharp::LoaderMemory* mem = calcu::machine::first<sharp::LoaderMemory>(*m);
@@ -266,7 +266,7 @@ constexpr inspect::View kViews[] = {
 
 Reply inspectCmd(CommandContext& c) {
     const std::vector<std::string> w = harness::words(c.line.argText);
-    if (w.size() != 1) return refusedReply("usage: pc1600 inspect <view>");
+    if (w.size() != 1) return refusedReply("usage: c1600 inspect <view>");
     inspect::View view;
     if (!inspect::viewFromName(w[0], &view)) {
         std::string names;
@@ -350,7 +350,7 @@ Reply cassetteCmd(CommandContext& c, const SharpHarnessParts& parts) {
         v.set("motor", s.motor);
         return doneReply(std::move(v), std::move(lines));
     }
-    if (w.size() != 2 || w[0] != "record") return refusedReply("usage: pc1600 cassette record <file.wav> | cassette status");
+    if (w.size() != 2 || w[0] != "record") return refusedReply("usage: c1600 cassette record <file.wav> | cassette status");
     if (!hasCassette(*m)) return refusedReply("The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.");   // EC-2
     SharpAppPart* app = parts.app ? parts.app() : nullptr;
     if (!app) return notInThisRun();
@@ -392,7 +392,7 @@ void addText(std::vector<std::string>& lines, const std::string& title, const st
 
 Reply serialCmd(CommandContext& c, const SharpHarnessParts& parts) {
     std::vector<std::string> w = harness::words(c.line.argText);
-    const char* usage = "usage: pc1600 serial ce158|rs232c feed <file> [hold=<n>] | capture <file> | link | report";
+    const char* usage = "usage: c1600 serial ce158|rs232c feed <file> [hold=<n>] | capture <file> | link | report";
     if (w.size() < 2 || (w[0] != "ce158" && w[0] != "rs232c")) return refusedReply(usage);
     SerialScriptsPart* serial = parts.serial ? parts.serial() : nullptr;
     SharpAppPart* app = parts.app ? parts.app() : nullptr;
@@ -460,7 +460,7 @@ Reply serialCmd(CommandContext& c, const SharpHarnessParts& parts) {
 
 Reply hostDriveCmd(CommandContext& c) {
     const std::string arg = c.line.argText;
-    if (arg.empty()) return refusedReply("usage: pc1600 host-drive <folder> | off");
+    if (arg.empty()) return refusedReply("usage: c1600 host-drive <folder> | off");
     machine::Machine* m = machineOf(c);
     if (!m) return noMachine();
     if (m->descriptor().model.value != sharp::kPC1600) return refusedReply("The host drive is a PC-1600 peripheral.");   // EC-5
@@ -499,7 +499,7 @@ std::vector<std::string> registerLines(CommandContext& c, const std::string& tar
 
 Reply callCmd(CommandContext& c) {
     const std::vector<std::string> w = harness::words(c.line.argText);
-    const char* usage = "usage: pc1600 call <target> <address> [timeout=<duration>]";
+    const char* usage = "usage: c1600 call <target> <address> [timeout=<duration>]";
     if (w.size() < 2 || w.size() > 3) return refusedReply(usage);
     machine::Machine* m = machineOf(c);
     if (!m) return noMachine();
@@ -557,19 +557,19 @@ Reply callCmd(CommandContext& c) {
 } // namespace
 
 void addSharpHarnessCommands(harness::CommandRegistry& r, SharpHarnessParts parts) {
-    r.addProduct("pc1600", "file-kind", fileKindCmd, "file-kind <file>  what the file is");
-    r.addProduct("pc1600", "load-basic", loadBasicCmd, "load-basic <file> [<n>]  load a BASIC program");
-    r.addProduct("pc1600", "type-basic", typeBasicCmd, "type-basic <file>  type a BASIC listing in (PRO mode)");
-    r.addProduct("pc1600", "load-code", loadCodeCmd,
+    r.addProduct("c1600", "file-kind", fileKindCmd, "file-kind <file>  what the file is");
+    r.addProduct("c1600", "load-basic", loadBasicCmd, "load-basic <file> [<n>]  load a BASIC program");
+    r.addProduct("c1600", "type-basic", typeBasicCmd, "type-basic <file>  type a BASIC listing in (PRO mode)");
+    r.addProduct("c1600", "load-code", loadCodeCmd,
                  "load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803|z80>] [run]  load machine code");
-    r.addProduct("pc1600", "dump-basic", dumpBasicCmd, "dump-basic  the BASIC pointers and the program area");
-    r.addProduct("pc1600", "inspect", inspectCmd, "inspect <view>  an INSPECTOR view as text");
-    r.addProduct("pc1600", "cassette", [parts](CommandContext& c) { return cassetteCmd(c, parts); },
+    r.addProduct("c1600", "dump-basic", dumpBasicCmd, "dump-basic  the BASIC pointers and the program area");
+    r.addProduct("c1600", "inspect", inspectCmd, "inspect <view>  an INSPECTOR view as text");
+    r.addProduct("c1600", "cassette", [parts](CommandContext& c) { return cassetteCmd(c, parts); },
                  "cassette record <file.wav> | cassette status  record the cassette into a WAV; the tape counter");
-    r.addProduct("pc1600", "serial", [parts](CommandContext& c) { return serialCmd(c, parts); },
+    r.addProduct("c1600", "serial", [parts](CommandContext& c) { return serialCmd(c, parts); },
                  "serial ce158|rs232c feed <file> [hold=<n>] | capture <file> | link | report  a serial port's peer");
-    r.addProduct("pc1600", "host-drive", hostDriveCmd, "host-drive <folder> | off  the PC-1600's host drive");
-    r.addProduct("pc1600", "call", callCmd,
+    r.addProduct("c1600", "host-drive", hostDriveCmd, "host-drive <folder> | off  the PC-1600's host drive");
+    r.addProduct("c1600", "call", callCmd,
                  "call <target> <address> [timeout=<duration>]  run a routine until it returns (machine paused)");
 }
 

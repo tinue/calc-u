@@ -45,7 +45,7 @@ the keys and the display output through it only (C59-1 AC-17; CTest
 went in M-55: `TICardReaderPlace`, a media place; `libExecPC` is
 `c59.calculator-state`'s); `core/TITypingSupport.hpp` holds the typing
 support and `idleAndKeyDetectRange()`, a model's scan/detect
-range (for `ti59 coverage`, the run probe and the tests). The debug panel's
+range (for `c59 coverage`, the run probe and the tests). The debug panel's
 `TIDebugPanelAdapter` went in M-56 (C59-4): what the debug target does not
 give is four product kinds of the processor (`core/TIDebugKinds.hpp`,
 `TMC0501/c59.…`): `c59.asm-overlay` (the overlay's words over 1800 to 1FFF,
@@ -414,7 +414,7 @@ because normal TI-59 registers go up to 99.
 `core/TIMemoryKinds.*`; M-54): `c59.program-memory` (capability
 `RAM/c59.program-memory` on every model: program steps, data registers,
 H00–H03, the partition, raw registers; what a preset's sections and the
-`ti59` harness commands write, C59-2 AC-17) and `c59.constant-memory`
+`c59` harness commands write, C59-2 AC-17) and `c59.constant-memory`
 (`RAM/c59.constant-memory`, TI-58C only: the 64 raw registers and a counter
 that changes with them, C59-3 AC-1).
 

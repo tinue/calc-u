@@ -20,7 +20,7 @@ const ask = (page, name, args = null) =>
 const topic = (page, name) =>
   page.evaluate((n) => document.querySelector('.calcu-client').calcuShell.getState().topics[n] || null, name);
 
-const screen = async (page) => (await ask(page, 'c1600.lcd-text')).value || '';
+const screen = async (page) => (await ask(page, 'c1600.display-text')).value || '';
 const busy = async (page) => !!((await topic(page, 'busy')) || {}).operationRuns;
 const notBusy = (page) => expect.poll(() => busy(page), { timeout: 30000 }).toBe(false);
 

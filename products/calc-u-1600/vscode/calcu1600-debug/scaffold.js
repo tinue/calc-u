@@ -66,7 +66,7 @@ async function createProject(extensionPath, uri) {
     const configName = sub ? `Debug ${sub}/${name}` : `Debug ${name}`;
     if (!configurations.some(c => c.name === configName)) {
         configurations.push({
-            type: 'calcu1600',
+            type: 'c1600',
             request: 'attach',
             name: configName,
             project: inWorkspace + target.preset,

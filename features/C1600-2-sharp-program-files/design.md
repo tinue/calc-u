@@ -36,7 +36,7 @@ The steps this design uses:
   M-44 (C1600-2: typing a program in), M-46 (LIB-6 1600)".
 - M-28 (LIB-11): the harness, `HarnessProduct::addCommands` and
   `sessionParts()` (`library/harness/Product.hpp:74-77`); the command
-  word `pc1600` (`app/HarnessProduct.cpp:99`).
+  word `c1600` (`app/HarnessProduct.cpp:99`).
 - M-4 (FS 13): the reference runs of the 32 examples
   (`products/calc-u-1600/tests/reference/v0.8.1-examples/`, made by its
   `run.sh`). AC-13's auto-run is in the machine-code examples there.
@@ -91,7 +91,7 @@ All under `products/calc-u-1600/` unless named.
 | `app/SharpAppPart.hpp/.cpp` | `MachineCodeLoadRequest` (`.hpp:56-61`), `loadBasicProgram`, `loadMachineCode` (`.hpp:146-147`, `.cpp:543-563`) and their two commands (`.cpp:283-299`) go; `sessionParts()` lists a `SharpLoaderPart` it owns |
 | `app/MachineCodeLoad.hpp/.cpp` | deleted. `programChoice` is the WAV list of `c1600.file-kind`; the plan, the address check and the reply are the part's (§3.7) |
 | `app/SharpWebPart.hpp:68`, `app/SharpWebPart.cpp:190-233` | `c1600.open-program`, `c1600.load-basic-picked`, `c1600.plan-machine-code`, `c1600.check-address`, `c1600.load-planned-machine-code` and `m_program`, `m_code` go: the page sends the part's commands. `c1600.upload` and `c1600.drop-target` stay (M-48) |
-| `app/HarnessProduct.hpp/.cpp` | a `SharpLoaderPart` in `sessionParts()` (`:119`), after `typing_`; `addCommands` registers the four commands of AC-21 under `pc1600` (§3.7) |
+| `app/HarnessProduct.hpp/.cpp` | a `SharpLoaderPart` in `sessionParts()` (`:119`), after `typing_`; `addCommands` registers the four commands of AC-21 under `c1600` (§3.7) |
 | `app/tests/SessionFixture.hpp` | unchanged; the fixture's session has the part through `sessionParts()` |
 
 ### Frontends
@@ -331,14 +331,14 @@ runner keeps its `waitUntilBasicIdle` with its hour
   dialog's calls (D-3).
 
 The harness (AC-21): `HarnessProduct::addCommands` registers under
-`pc1600` (LIB-11 AC-13):
+`c1600` (LIB-11 AC-13):
 
 | Command | Sends | Reply lines |
 |---|---|---|
-| `pc1600 file-kind <file>` | `c1600.file-kind` | `kind: …`, the header's fields, `words: …`, for a WAV `file n: <name>` per file |
-| `pc1600 load-basic <file> [<n>]` | `c1600.load-basic` | `done`, or `refused: <sentence>` |
-| `pc1600 type-basic <file>` | `c1600.type-basic` | `done`, or not done with `not stored: <line>` per line |
-| `pc1600 load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803\|z80>] [run]` | `c1600.load-code` | `range:`, `area:`, `bank:`, `new:`, `new-note:`, `start:`, `start-note:`, `warning:` per warning |
+| `c1600 file-kind <file>` | `c1600.file-kind` | `kind: …`, the header's fields, `words: …`, for a WAV `file n: <name>` per file |
+| `c1600 load-basic <file> [<n>]` | `c1600.load-basic` | `done`, or `refused: <sentence>` |
+| `c1600 type-basic <file>` | `c1600.type-basic` | `done`, or not done with `not stored: <line>` per line |
+| `c1600 load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803\|z80>] [run]` | `c1600.load-code` | `range:`, `area:`, `bank:`, `new:`, `new-note:`, `start:`, `start-note:`, `warning:` per warning |
 
 The harness session gets the part from `sessionParts()` (it has the
 machine of the harness's own start, A-1 of LIB-11 1600, and the typing
@@ -425,7 +425,7 @@ never sends `run`.
 | three wordings of a refusal | one (§3.8, row 1600-15) |
 | `typeBasicProgramTextJob` of both typers (`PC1500BasicTyper.cpp:195-255`, `PC1600BasicTyper.cpp:291-363`), keys pressed by the typers themselves | `typeProgram` over the typing engine |
 | the PC-1500 writer that writes the rest and then fails (`PC1500MachineCodeLoader.cpp:15-29`) | all or nothing (AC-10) |
-| no loader commands in the harness | `pc1600 file-kind`, `load-basic`, `type-basic`, `load-code` |
+| no loader commands in the harness | `c1600 file-kind`, `load-basic`, `type-basic`, `load-code` |
 
 ## 5. Adapters
 
@@ -464,8 +464,8 @@ with the real ROMs (`SKIP_UNLESS` without them).
 | T6 | The write | AC-10 | `machine_code_file_tests.cpp`: `c1600_2_ac10_written_any_bank_switched_in`, `_not_ram_nothing_written_pc1500`, `_not_ram_nothing_written_pc1600`, `_crossing_bfff_both_checked` |
 | T7 | The reply | AC-11, AC-12 | `machine_code_file_tests.cpp`: `c1600_2_ac11_parts_of_reply`, one case per row of the NEW table (today `:349`, `:367`), `_call_forms_call_callbank_xcall`, `_start_address_header_else_first_byte`; `c1600_2_ac12_work_area_warning_loaded` |
 | T8 | Start | AC-13 | `app/tests/loader_part_tests.cpp`: `c1600_2_ac13_run_types_start_and_waits_idle`, `_without_start_address_nothing_started`, `_bound_reached_done_with_log_line` (the hour is a member of the part, set to 2 s by the test, D-5) |
-| T9 | The part | AC-21, AC-24, EC-6 | `loader_part_tests.cpp`: `c1600_2_ac24_load_at_once_not_operations`, `_type_and_run_are_operations`, `_refused_while_another_runs`; `c1600_2_ec6_menu_and_harness_refused_while_busy`; `tests/harness_tests.cpp`: `c1600_2_ac21_file_kind`, `_load_basic_with_n`, `_type_basic_lines_not_stored`, `_load_code_options_and_run`, `_listed_under_pc1600` |
-| T10 | One sentence | AC-25 | `loader_part_tests.cpp`: `c1600_2_ac25_same_sentence_menu_harness_preset` (each case of §3.8 through `c1600.load-code`, `pc1600 load-code` and a format-1 preset; the preset's has its prefix) |
+| T9 | The part | AC-21, AC-24, EC-6 | `loader_part_tests.cpp`: `c1600_2_ac24_load_at_once_not_operations`, `_type_and_run_are_operations`, `_refused_while_another_runs`; `c1600_2_ec6_menu_and_harness_refused_while_busy`; `tests/harness_tests.cpp`: `c1600_2_ac21_file_kind`, `_load_basic_with_n`, `_type_basic_lines_not_stored`, `_load_code_options_and_run`, `_listed_under_c1600` |
+| T10 | One sentence | AC-25 | `loader_part_tests.cpp`: `c1600_2_ac25_same_sentence_menu_harness_preset` (each case of §3.8 through `c1600.load-code`, `c1600 load-code` and a format-1 preset; the preset's has its prefix) |
 | T11 | Today's tests | AC-22 | the files of the spec, ported: `program_file_tests.cpp` (its drop cases `:193-300` stay for `dropfile::classify` until M-48), `basic_fastloader_tests.cpp`, `pc1600_basicloader_tests.cpp`, `machine_code_file_tests.cpp`, `presetloader_trace_tests.cpp:326-360`, `app/tests/shared_app_session_tests.cpp:193-252` → `loader_part_tests.cpp` (`c1600_2_ac22_…`: one wav one image, two files listed, address checked as typed) |
 | T12 | Frontends | AC-15–19 | Web `play.spec.js`: `C1600-2 AC-15 the two File items and what they offer`, `C1600-2 AC-17 a BASIC program is loaded, a refusal is a notice`, `C1600-2 AC-19 the loaded dialog and the CALL in the input line, not started`. Qt6: built, checked by hand in M-44 (both items, a WAV, a headerless file); the scenarios in M-49 |
 | T13 | GUI scenarios | AC-20 | Web: `play.spec.js:297` renamed `C1600-2 AC-18 headerless code asks the address, then NEW and CALL`, `:317` `C1600-2 AC-16 a WAV with several programs asks which one`. Qt6: the same two as attach scenarios in M-49 (LIB-14 AC-44) |
@@ -476,7 +476,7 @@ half of AC-20 pass in M-49.
 
 ## 7. Tools and agent knowledge
 
-**Tools.** The harness gets the four `pc1600` commands (§3.7): the exit
+**Tools.** The harness gets the four `c1600` commands (§3.7): the exit
 check of M-44 ("every loader checked through the harness") is T9's
 harness cases plus one run by hand of each command on a PC-1500A and a
 PC-1600. `pc1500_cli`, `pc1600_cli` and the probes are unchanged for
@@ -486,7 +486,7 @@ their users (§3.10); `tools/check_presets.sh` is not affected.
 
 | File | Change |
 |---|---|
-| `products/calc-u-1600/CLAUDE.md` | § Harness: the four `pc1600` commands; "Not yet" loses "the loaders" |
+| `products/calc-u-1600/CLAUDE.md` | § Harness: the four `c1600` commands; "Not yet" loses "the loaders" |
 | `products/calc-u-1600/docs/developer/README.md` | where the loaders live (`core/Loaders`, `app/SharpLoaderPart`) (plan M-44) |
 | `products/calc-u-1600/docs/developer/Shared-Architecture.md:75` | the row `MachineCodeLoad` becomes `SharpLoaderPart` |
 | `products/calc-u-1600/docs/developer/Web-Client.md` | the page's loader messages (§2, engine) |

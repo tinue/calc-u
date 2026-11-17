@@ -140,12 +140,12 @@ TEST(lib6_ac38_2_3_0_file_refused_as_outdated_with_hint) {
 TEST(lib6_ac38_any_error_refuses_whole_machine_untouched) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
-    c("ti59 registers 00=42");
+    c("c59 data-registers 00=42");
     const std::string reply = c.preset(head("TI-58") + "data:\n  00: 1\n  70: 2\n", "t.ti58");
     CHECK(reply.rfind("refused: ", 0) == 0);
     CHECK(reply.find("line 5") != std::string::npos);   // the first error only, with its line (row 59-42)
     CHECK_EQ(c.machine()->model().value, std::string("TI-59"));   // nothing built
-    CHECK_EQ(c("ti59 registers 00"), std::string("done 1\n00: 4.2e1\n"));
+    CHECK_EQ(c("c59 data-registers 00"), std::string("done 1\n00: 4.2e1\n"));
 }
 
 // ── P4: speed, input (AC-39) ────────────────────────────────────────────────
@@ -260,7 +260,7 @@ TEST(lib6_ac40_expect_any_display_format_and_blinking) {
     Calcu c;
     // Fix 2 shows 3.14; X is still π in 13 digits.
     CHECK_EQ(c.preset(head() + "keys:\n  - key: Fix 2 π\n  - expect: 3.14159265359\n"), std::string("done\n"));
-    CHECK(c("lcd").find("3.14") != std::string::npos);
+    CHECK(c("display-text").find("3.14") != std::string::npos);
     // A number being keyed in: what the display shows.
     c("key CLR 1 2 . 5");
     c("wait");

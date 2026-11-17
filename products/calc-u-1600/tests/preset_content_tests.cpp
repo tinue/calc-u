@@ -140,7 +140,7 @@ TEST(c1600_4_ac5_blank_and_hash_lines_left_out_space_hash_typed) {
                      "t.pc1500a"));
     CHECK(h.line("type LIST").rfind("done", 0) == 0);
     h.line("wait");
-    CHECK(has(h.line("lcd"), "10:A$=\"X # Y\""));
+    CHECK(has(h.line("display-text"), "10:A$=\"X # Y\""));
 }
 
 TEST(c1600_4_ec1_text_without_lines_refused) {
@@ -174,9 +174,9 @@ TEST(c1600_4_ac3_basic_listing_tokenized_loaded) {
     h.write("l.bbin", std::string(std::istreambuf_iterator<char>(in), {}));
     h.write("p.bas", "10 PRINT 4711\n");
     CHECK(h.loadIdle(kPc1600 + "program:\n  file: p.bas\nkeys:\n  - type: RUN\n"));
-    CHECK(has(h.line("lcd"), "4711"));
+    CHECK(has(h.line("display-text"), "4711"));
     CHECK(h.loadIdle(kPc1600 + "program:\n  file: l.bbin\nkeys:\n  - key: mode\n  - type: LIST\n"));
-    CHECK(has(h.line("lcd"), "10"));
+    CHECK(has(h.line("display-text"), "10"));
 }
 
 TEST(c1600_4_ac3_typed_true_typed_in) {
@@ -184,7 +184,7 @@ TEST(c1600_4_ac3_typed_true_typed_in) {
     HarnessPreset h;
     h.write("p.bas", "10 PRINT 4712\n");
     CHECK(h.loadIdle(kPc1600 + "keys:\n  - key: mode\nprogram:\n  file: p.bas\n  typed: true\nkeys:\n  - key: mode\n  - type: RUN\n"));
-    CHECK(has(h.line("lcd"), "4712"));
+    CHECK(has(h.line("display-text"), "4712"));
 }
 
 TEST(c1600_4_ac3_machine_code_at_address_and_started) {
@@ -215,7 +215,7 @@ TEST(c1600_4_ac4_text_typed_in_program_mode) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     CHECK(h.loadIdle(kPc1600 + "keys:\n  - key: mode\nprogram:\n  text: |\n    10 PRINT 4713\nkeys:\n  - key: mode\n  - type: RUN\n"));
-    CHECK(has(h.line("lcd"), "4713"));
+    CHECK(has(h.line("display-text"), "4713"));
 }
 
 TEST(c1600_4_ac4_not_in_program_mode_fails_naming_lines) {
@@ -236,7 +236,7 @@ TEST(c1600_4_ec3_second_section_after_first_finished) {
                                 0xD300, 0xD300));
     h.write("b.bas", "10 PRINT PEEK &D3F0\n");
     CHECK(h.loadIdle(kPc1600 + "program:\n  file: a.bin\nprogram:\n  file: b.bas\nkeys:\n  - type: RUN\n"));
-    CHECK(has(h.line("lcd"), "119"));
+    CHECK(has(h.line("display-text"), "119"));
 }
 
 TEST(c1600_4_ec3_code_not_returned_fails_at_timeout) {
@@ -258,7 +258,7 @@ TEST(c1600_4_ac6_folder_shown_as_s3) {
     fs::create_directories(h.folder.path() / "shared");
     h.write("shared/HELLO.BAS", "10 PRINT 1\n");
     CHECK(h.loadIdle(kPc1600 + "host-drive: { folder: shared }\nkeys:\n  - type: FILES \"S3:\"\n"));
-    CHECK(has(h.line("lcd"), "HELLO"));
+    CHECK(has(h.line("display-text"), "HELLO"));
     CHECK(has(h.line("capabilities"), "place host-drive host-drive"));
 }
 
@@ -439,7 +439,7 @@ TEST(c1600_4_ac12_load_does_nothing_with_block) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     CHECK(h.loadIdle(kPc1600 + "debug:\n  command: CALL &C0C5\n  stopOnEntry: true\n"));
-    CHECK(h.line("lcd").find("CALL") == std::string::npos);   // the command is not typed
+    CHECK(h.line("display-text").find("CALL") == std::string::npos);   // the command is not typed
     const std::uint64_t before = h.machine() ? h.machine()->tickCount() : 0;
     h.line("wait 100ms");
     CHECK(h.machine() && h.machine()->tickCount() > before);   // not stopped on entry

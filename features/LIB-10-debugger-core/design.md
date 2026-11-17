@@ -926,7 +926,7 @@ models since M-36 (LIB-5 AC-31). So `CpuOnlyRules` suffice (D-17).
   reach it from the DAP (setter `dap`), from the harness attached to a
   development build (M-49 wires attach for Calc-U-1600; until then the
   session commands from a test host) and from Machine ▸ Resume.
-- **The harness.** `calcu --product 1600` has the `DebuggerPart`, so
+- **The harness.** `calcu --product c1600` has the `DebuggerPart`, so
   every command of AC-20, AC-50 and AC-51 works on the Sharp targets;
   `symbols` reads the Sharp listings (§10.3).
 - **Web.** The same part in the worker; Machine ▸ Resume in the page.
@@ -1367,7 +1367,7 @@ New in M-53, each with the step that removes it:
 | L-E1 KEYSTROKES directives | `TIAppPart::applyControl`, `EmulatorSession`'s playback (`Trace:`) | `Freeze:`, `FreezeOnStart:`, `Step:`, `Resume:` and `Trace:` sent as the session's `pause`, `pause-on-start`, `step`, `resume` and `trace` (`ofOperation`) | M-54 (LIB-6 59: the steps of §3.8) |
 | L-E2 restart call | `TIAppPart::resetMachine`, `cleanResetMachine`, `startMachine` | `tellRestarted(Reset/ColdBoot)`, and the build for a model switch (§3.11) | M-54 (LIB-18 59) |
 | L-E3 panel reads | `TIDebugPanelAdapter` (`snapshotCPU`, `lastStepBoundary`, `readCpuFrames`, `readROMKeycode`) | what the CALCULATOR and CPU tabs, the dumps and the overlay's entry read that the generic target does not give | M-56 (C59-4) |
-| L-E4 `debug-panel:` view | `c59.show-debug-panel` sent by `showPanel` | the library's frontend step to today's stream | M-56 (C59-4: the product topic `debug-view`) |
+| L-E4 `debug-panel:` view | `c59.show-debug-panel` sent by `showPanel` | the library's frontend step to today's stream | M-56 (C59-4: the product topic `c59.debug-view`) |
 | L-E5 slim `c59.run-state` | `TIRunState` (`fullSpeed`, `keystrokesPlaying`) | the two fields that are no debugger state | M-54 (playback) and M-57 (full speed in the control state) |
 
 ### 12.8 Tasks (AC → task → test)

@@ -35,7 +35,7 @@ image = machine.card(2)
 
 - Steps: `key(names)`, `type(text)` (the line and ENTER), `wait(seconds=None)` (without seconds
   until idle), `expect(text)`, `not_expect(text)` (text or `/regex/`), `load(path)`
-  (`pc1600 load-code`), `command(line)` (any harness command), `resume()`.
+  (`c1600 load-code`), `command(line)` (any harness command), `resume()`.
 - Reads: `run()`, `lcd` (text rows), `display()` (`rows` of 0/1, 156 × 32), `card(slot)` (bytes in
   bank order), `peek(target, space, address, count, bank=, vbank=)` → bytes,
   `expect_memory(...)`, `save_state(path)`, `restore_state(path)`,
@@ -54,6 +54,6 @@ image = machine.card(2)
   is. `wait(n)` waits n seconds after that.
 - `lcd` gives all four rows, empty ones included.
 - Module files need `format-version: 1` (required since 0.8.0).
-- Serial port tests: `command("pc1600 serial rs232c feed <file>")`, `… capture <file>`, `… report`.
+- Serial port tests: `command("c1600 serial rs232c feed <file>")`, `… capture <file>`, `… report`.
   The PC-1600 keys `bs` and `ctrl` can't be pressed by name; use
   `command("key-down bs")`, `wait(0.1)`, `command("key-up bs")`.

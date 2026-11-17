@@ -118,7 +118,7 @@ final class CardScenarioTests: XCTestCase {
         XCTAssertEqual(harness.command("wait 4s", timeout: 20).first, "done 2")
         XCTAssertEqual(harness.command("key CLR A", timeout: 20).first, "done")
         XCTAssertEqual(harness.command("wait 2s", timeout: 10).first, "done 2")
-        let lcd = harness.command("lcd")
+        let lcd = harness.command("display-text")
         XCTAssertTrue(lcd.count > 1 && lcd[1].contains("123"), "the program was not read: \(lcd)")
         app.terminate()
     }

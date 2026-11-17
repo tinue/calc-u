@@ -26,11 +26,11 @@ The script packages `headless/calcu1600-debug.vsix` and installs it with `code -
 
 | Setting | Default |
 |---|---|
-| `calcu1600.port` | `32168`, as in the app's Settings ▸ Debugger |
-| `calcu1600.zasmPath` | `$CALCU_ZASM`, else `zasm` on the PATH |
-| `calcu1600.sdccBinPath` | `$CALCU_SDCC_BIN`, else the PATH |
-| `calcu1600.romListings` | listings added to every session: a path, or `{path, source, cpu, bank, me, pu, pv}` |
-| `calcu1600.romSymbols` | `.SYMBOLS:` tables added to every session: a path, or `{path, cpu, bank, me, pu, pv}` |
+| `c1600.port` | `32168`, as in the app's Settings ▸ Debugger |
+| `c1600.zasmPath` | `$CALCU_ZASM`, else `zasm` on the PATH |
+| `c1600.sdccBinPath` | `$CALCU_SDCC_BIN`, else the PATH |
+| `c1600.romListings` | listings added to every session: a path, or `{path, source, cpu, bank, me, pu, pv}` |
+| `c1600.romSymbols` | `.SYMBOLS:` tables added to every session: a path, or `{path, cpu, bank, me, pu, pv}` |
 
 ## Configuration keys
 
@@ -41,6 +41,6 @@ On top of the app's attach keys (`preset`, `reset`, `stopOnEntry`, `program`, `l
 | `currentFile` | `pc1600` or `pc1500a`: debug the `.asm` in the editor |
 | `build` | `{assembler: zasm \| sdas, file}`: assembled before the session and on Build & Load |
 | `buildTask` | a task to run instead of `build`, e.g. a Makefile target |
-| `port` | the server port, if it isn't `calcu1600.port` |
+| `port` | the server port, if it isn't `c1600.port` |
 
 If breakpoints can't be set in `.asm` files, set `"debug.allowBreakpointsEverywhere": true`, or install a language extension for LH5801 or Z80 assembly.

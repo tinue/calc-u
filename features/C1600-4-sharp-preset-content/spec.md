@@ -236,7 +236,7 @@ The shipped presets
 
 - [ ] **AC-16** — Given each of the 32 examples, when its version 2 file
   is loaded through the harness and the harness `wait` (LIB-6 AC-34) has
-  ended with the machine idle, then the display as text (`lcd`), the
+  ended with the machine idle, then the display as text (`display-text`), the
   BASIC program area, the bytes of every machine-code program it placed
   (LIB-10 `peek`), the paper (`paper marks`; LIB-8 AC-39), the content
   of every medium in a place and of every file a `saveas` wrote, without

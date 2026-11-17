@@ -8,13 +8,13 @@
     tools/coverage.py --variant TI58C build   # same for the TI-58C ROM
     --calcu PATH                         # the calcu program (tools/calcu59.py)
 
-Drives the harness (C59-9 AC-13, `calcu --product 59 serve`): each scenario
+Drives the harness (C59-9 AC-13, `calcu --product c59 serve`): each scenario
 starts from a cold boot (with or without the PC-100C, TRACE as the scenario
 says); its "setup" keys run unprofiled, then `profile on`, its "keys" (each
 typed with `key` and run until idle with `wait`) and a card it feeds, and
-`ti59 coverage` reads the ROM words they reached. Boot is a scenario of its
-own ("boot", `profile on` then `cold-boot`, read with `ti59 coverage all`).
-The key-detect range is left out of every other scenario (`ti59 coverage`
+`c59 coverage` reads the ROM words they reached. Boot is a scenario of its
+own ("boot", `profile on` then `cold-boot`, read with `c59 coverage all`).
+The key-detect range is left out of every other scenario (`c59 coverage`
 without `all`, C59-9 D-7), so common idle code doesn't swamp every
 scenario; 2.3.0's tool left out an instruction of that range only with the
 ROM's idle flag set, so a scenario's words differ from its by the release
@@ -253,7 +253,7 @@ def fresh(r: Run, printer: bool, trace: bool):
 
 
 def covered(r: Run, all_=False) -> set[int]:
-    reply = r.c.send("ti59 coverage" + (" all" if all_ else ""))
+    reply = r.c.send("c59 coverage" + (" all" if all_ else ""))
     words = set()
     for line in reply["lines"][:-1]:
         words |= {int(a, 16) for a in line.split()}
@@ -276,7 +276,7 @@ def run(r: Run, name: str, spec) -> set[int]:
         r.cmd("wait")
     pcs = covered(r)
     r.cmd("profile off")
-    run.last_display = r.cmd("lcd")[0]
+    run.last_display = r.cmd("display-text")[0]
     run.last_printer = [l for l in r.paper() if l.strip()] if opts.get("printer") else []
     return pcs
 

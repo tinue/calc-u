@@ -65,7 +65,7 @@ uint16_t readBE16(PC1600Machine& machine, uint16_t addr) {
 
 // F865/F867 (BASPRG_ST/BASPRG_END) hold LH5803-side addresses; the
 // LH5803's $0000-$7FFF aliases the SC-7852's $8000-$FFFF (same mapping as
-// `pc1600 dump-basic` of the harness, the CLIs' --dump-basic until M-51).
+// `c1600 dump-basic` of the harness, the CLIs' --dump-basic until M-51).
 constexpr uint16_t kProgramStartPtr = 0xF865;
 
 uint8_t peekZ80(PC1600Machine& machine, uint32_t a) {

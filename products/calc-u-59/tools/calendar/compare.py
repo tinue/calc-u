@@ -2,7 +2,7 @@
 
 CLI: compare.py file.ti59... [--calcu PATH]
   For each preset: steps (without trailing zeros), seconds from the last key
-  to the last printed line (`ti59 line-times`, tools/calcu59.py), the year found in
+  to the last printed line (`c59 line-times`, tools/calcu59.py), the year found in
   the printout, and the day-row check against Python's calendar module.
   zsh note: if `uv` is aliased with noglob, expand globs with $(ls ...)."""
 import os

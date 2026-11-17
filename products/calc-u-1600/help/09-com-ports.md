@@ -90,7 +90,7 @@ Known gap: on the PC-1600, `SETDEV KI` + `INPUT` doesn't work yet.
 
 The harness `calcu` feeds and captures both ports in emulated time, without
 a serial port file unless you ask for one:
-`calcu --product 1600 pc1600 serial ce158|rs232c feed <file>`,
+`calcu --product c1600 c1600 serial ce158|rs232c feed <file>`,
 `capture <file>`, `link` (makes the serial port file) and `report`. It is
 built from the source repository
 ([Building](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/developer/Building.md)).

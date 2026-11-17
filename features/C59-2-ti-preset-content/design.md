@@ -8,7 +8,7 @@ Status: approved by the user at the Part D/E boundary (2026-11-16)
 | C59-2 | M-54 (with LIB-6 59, LIB-18 59, C59-3) | AC-1–18, EC-1–6 | M-65 (AC-10's four card examples in M-55, AC-12's site copies in M-65) |
 
 M-54 is one step with four designs: this one (the product's sections,
-the program memory kind, the `ti59` commands of AC-9, the preset files),
+the program memory kind, the `c59` commands of AC-9, the preset files),
 the Calc-U-59 column of LIB-6 (`features/LIB-6-presets/design.md` §11:
 the product's rules, the reader of 2.3.0 gone, the frontends and tools on
 the library's loader), that of LIB-18 (`features/LIB-18-machine-control-and-startup/design.md`
@@ -68,10 +68,10 @@ Clauses that pass in later steps (plan §1, "Completes" and Done):
 | File | Holds |
 |---|---|
 | `app/TIPresetKeys.hpp/.cpp` | `cu59::addTIKeywords(presets::Vocabulary&)`: the sections `partition:` (AC-2), `program:` (AC-1, AC-3), `data:` (AC-4), `cue-card:` (AC-5, AC-6) and the step `printer-trace:` (LIB-6 AC-40); called from `TIPresetRules::addKeywords` (LIB-6 §11) |
-| `app/Keycodes.hpp/.cpp` | `cu59::readKeycodes(std::string_view text, int lastStep) -> std::variant<std::vector<ProgramStep>, KeycodeError>`: the compact and the listing notation of `preset.md` §4.1 (AC-3, OQ-5); `readKeystrokeProgramFile` (format `ti-keystroke-program`, version 1; §4.1.1). Used by `program:` and by `ti59 program` (AC-9) |
+| `app/Keycodes.hpp/.cpp` | `cu59::readKeycodes(std::string_view text, int lastStep) -> std::variant<std::vector<ProgramStep>, KeycodeError>`: the compact and the listing notation of `preset.md` §4.1 (AC-3, OQ-5); `readKeystrokeProgramFile` (format `ti-keystroke-program`, version 1; §4.1.1). Used by `program:` and by `c59 program` (AC-9) |
 | `app/ProgramMemory.hpp` | the product kind `c59.program-memory` (AC-17; §3.2): its interface, as the C59-6 kind `c59.printer-output` is declared in `core/PrinterOutput.hpp` |
 | `core/TIProgramMemory.hpp/.cpp` | the kind's implementation on `TIMachine`, capability `RAM/c59.program-memory` on every TI model (§3.2) |
-| `app/TIPresetCommands.cpp` | the product commands `c59.partition`, `c59.program`, `c59.registers` of `TIAppPart` (AC-9; §3.4) |
+| `app/TIPresetCommands.cpp` | the product commands `c59.partition`, `c59.program`, `c59.data-registers` of `TIAppPart` (AC-9; §3.4) |
 | `examples/bundle.yaml` | the bundle file of AC-13 (`docs/formats/bundle.md`; §4) |
 | `examples/startup/default-ti59.ti59`, `default-ti58.ti58`, `default-ti58c.ti58c` | the three startup presets of AC-13 (§4) |
 | `tests/preset_content_tests.cpp` | AC-1–9, AC-15–17, EC-1–6 (§6) |
@@ -86,7 +86,7 @@ Clauses that pass in later steps (plan §1, "Completes" and Done):
 | `app/TIAppPart.hpp/.cpp`, `app/TIAppPartFlows.cpp` | the fitted own cue card set by `cue-card:` (`adoptPresetCue`, `TIAppPartFlows.cpp:108-114`, kept); the commands of AC-9 (`app/TIPresetCommands.cpp`); the preset flows go (LIB-6 §11.2) |
 | `core/TIMachine.hpp/.cpp` | `capabilities()`/`capability()` list `RAM/c59.program-memory` (`core/TIMachine.hpp:46-52`) |
 | `core/TIAdapters.hpp/.cpp` | `TIMemoryAdapter` (`core/TIAdapters.hpp:61-82`) loses `writeProgram`, `runInstructions` and the preset's other writes, now the kind's; it keeps the reads the debug log, the debug snapshots, the card files and the headless library use (§5) |
-| `app/HarnessProduct.cpp` | `addCommands`: `ti59 partition`, `ti59 program`, `ti59 registers` (AC-9; `library/harness/Product.hpp:55`) |
+| `app/HarnessProduct.cpp` | `addCommands`: `c59 partition`, `c59 program`, `c59 data-registers` (AC-9; `library/harness/Product.hpp:55`) |
 | the 53 examples of §1, their comments; `examples/debug/readme.md`, `examples/calendar/CALENDAR_PROGRAMS.md`, `examples/assembly/README.md` where they name a 2.3.0 key or tool | version 2 by AC-10's table (§4) |
 | `tools/agentic/calendar/fastcal.py:163-203`, `calendar-09-header.txt`, `years.py:21-25` | version 2 (AC-18; §4, LIB-6 §11.7) |
 | `tools/goldens/formats_main.swift`, `gen.sh`, `tests/golden/formats.txt` | the 150 `STATE` records and their `END` lines go; `REG`, `BCDD`, `BCDT`, `MATH` stay (AC-16; the `CARD` records are M-55's) |
@@ -211,16 +211,16 @@ public:
 
 Product session commands of `TIAppPart` (`app/TIPresetCommands.cpp`),
 each through `ProgramMemory`, and the harness commands that send them
-(`HarnessProduct::addCommands`, under the command word `ti59`,
+(`HarnessProduct::addCommands`, under the command word `c59`,
 `app/HarnessProduct.cpp:56`):
 
 | Harness | Session command | Writes | Reads (no value) |
 |---|---|---|---|
-| `ti59 partition [<value>]` | `c59.partition {value?}` | the value as `partition:` reads it (refused where it would refuse the preset) | the partition as `partition:` writes it (`479`): the last program step |
-| `ti59 program [<step>] <keycode>…` | `c59.program {step?, keycodes}` | the keycodes from `<step>` (three or more digits), else from 000, in the compact notation's rules | — |
-| `ti59 program <step> count=<n>` | `c59.program {step, count}` | — | n keycodes from that step, one line each, `NNN KK` (Q-1) |
-| `ti59 registers <NN>=<value>…` | `c59.registers {set}` | each as a `data:` entry (`H00`=… on the TI-58C) | — |
-| `ti59 registers <NN>…` | `c59.registers {get}` | — | one line per register, `NN: <value>` as `data:` writes it (13 digits, exponent) |
+| `c59 partition [<value>]` | `c59.partition {value?}` | the value as `partition:` reads it (refused where it would refuse the preset) | the partition as `partition:` writes it (`479`): the last program step |
+| `c59 program [<step>] <keycode>…` | `c59.program {step?, keycodes}` | the keycodes from `<step>` (three or more digits), else from 000, in the compact notation's rules | — |
+| `c59 program <step> count=<n>` | `c59.program {step, count}` | — | n keycodes from that step, one line each, `NNN KK` (Q-1) |
+| `c59 data-registers <NN>=<value>…` | `c59.data-registers {set}` | each as a `data:` entry (`H00`=… on the TI-58C) | — |
+| `c59 data-registers <NN>…` | `c59.data-registers {get}` | — | one line per register, `NN: <value>` as `data:` writes it (13 digits, exponent) |
 
 A refusal gives the sentence the section would give, without a line. A
 write is a change of memory, not an operation: it is done between two
@@ -242,7 +242,7 @@ commands); the reads are not.
 **The upgrade.** By hand, file by file, by AC-10's table and `preset.md`
 §9.1, §9.3, in one commit per folder (`examples/`, `calendar/`,
 `debug/`, `historic/`, `screentest/`), each folder checked by `calcu
---product 59 check-preset` and by its reference runs (§6 T7, T8) before
+--product c59 check-preset` and by its reference runs (§6 T7, T8) before
 the next. No converter is written (as C1600-4 D-4): 53 files, and the
 rows that need judgement (`let-it-finish:`, `skip-wait:`, the comments)
 are the ones a converter cannot make (`docs/research/preset-conversion-check.md`
@@ -345,7 +345,7 @@ It adds none.
 
 Tests come before the code. `CalcU59Tests` (Frequent) unless the row
 says otherwise; ROM-gated cases `SKIP_UNLESS` the ROMs. The cases run the
-product's harness entry in virtual time (`calcu --product 59` in-process,
+product's harness entry in virtual time (`calcu --product c59` in-process,
 `tests/harness_tests.cpp`'s helper), the app session with
 `tests/SessionRig.hpp`'s `PartRig`, or `presets::readPreset` with
 `TIPresetRules` on a text. Names `c59_2_acN_…`.
@@ -380,7 +380,7 @@ design).
 |---|---|
 | skill `calc-u-59-statefiles` (`products/calc-u-59/.claude/skills/calc-u-59-statefiles/`) | rewritten for preset format 2: the TI sections of this design, key IDs instead of matrix codes (`preset.md` §8.1), the steps of LIB-6; it points to `docs/formats/preset.md` instead of restating it; renamed `calc-u-59-presets` (`docs/glossary-mapping.md`, row "Preset, preset format": `StateFile`, "state file" → preset), and every reference to the old name changes in the same commit (`products/calc-u-59/CLAUDE.md` skill table) |
 | `reference/StateFileFormat.md` | deleted; `products/calc-u-59/CLAUDE.md`'s architecture list points to `docs/formats/preset.md` and `docs/formats/cue-card.md` |
-| `prompt/ti59-agent-prompt.md` | presets of version 2; key IDs; the harness commands (`preset`, `wait`, `ti59 program`) instead of `ti59file.py` |
+| `prompt/ti59-agent-prompt.md` | presets of version 2; key IDs; the harness commands (`preset`, `wait`, `c59 program`) instead of `ti59file.py` |
 | `docs/glossary-mapping.md` | row "Preset, preset format", Calc-U-59 column: done (M-54): `calcu::presets` with `cu59::TIPresetRules` and `app/TIPresetKeys`; the preset list from `examples/bundle.yaml`; was `StateFile`, `StateApplier`, `TIKeystrokePlayback`, `presets.json`. Rows "Full speed", "Regular speed": `FullSpeed:`, `RegularSpeed:` → the steps `full-speed:`, `regular-speed:` (plan M-54) |
 | memory `calc-u-59/cuecard_template_semantics.md` | a preset's cue card has no `Template`: it is the plain stand-alone card (`cue-card.md` §1); the magnetic card's look is M-55's |
 | memory `calc-u-59/rom_comment_policy.md` | "the example/state file" → "the example preset" |
@@ -430,7 +430,7 @@ are upgraded").
   the product's rules call (as Calc-U-1600's `app/SharpPresetKeys`).
 - **D-2 (the kind's surface).** One product kind for program steps, data
   registers, H00–H03, the partition and the raw registers, so that the
-  sections, the `ti59` commands, the reference comparison and C59-3 use
+  sections, the `c59` commands, the reference comparison and C59-3 use
   one interface; the RAM layout stays the core's.
 - **D-3 (no start-up run of our own).** A section writes into the
   machine as the build and LIB-18's `untilKeyReady` left it; 2.3.0's
@@ -440,7 +440,7 @@ are upgraded").
 - **D-4 (`partition:` and the ROM).** The section sets the partition
   where the ROM keeps it, as `StateApplier` did
   (`app/StateApplier.cpp:43-44`), not by keying `n Op 17`.
-- **D-5 (one keycode reader).** `program:`, `.keystrokes.yaml`, `ti59
+- **D-5 (one keycode reader).** `program:`, `.keystrokes.yaml`, `c59
   program` and LIB-13's keystroke program file kind (M-56) read keycodes
   by `readKeycodes`.
 - **D-6 (`data:` keys).** `NN` two digits; `HNN` in any case; a key
@@ -455,7 +455,7 @@ are upgraded").
   `data:` are `After::Own` and end when written (LIB-6 AC-15);
   `cue-card:` has taken effect when the topic says the card.
 - **D-9 (commands write at once).** `c59.partition`, `c59.program`,
-  `c59.registers` change memory between host calls; no operation, no
+  `c59.data-registers` change memory between host calls; no operation, no
   busy; refused while one runs.
 - **D-10 (no converter).** As C1600-4 D-4.
 - **D-11 (speed rule of the upgrade).** AC-10's table: the first `keys:`
@@ -494,9 +494,9 @@ are upgraded").
 
 ## 10. Questions for the user
 
-1. **`ti59 program` reads or writes (AC-9).** AC-9 gives `ti59 program
-   [<step>] <keycode>…` to write and `ti59 program <step> [<count>]` to
-   read. A keycode is two digits, so `ti59 program 010 05` can be
+1. **`c59 program` reads or writes (AC-9).** AC-9 gives `c59 program
+   [<step>] <keycode>…` to write and `c59 program <step> [<count>]` to
+   read. A keycode is two digits, so `c59 program 010 05` can be
    either. *Recommendation:* the count is written `count=<n>` (as
    `limit=` in C59-9 AC-3), and every bare token after the step is a
    keycode; this design is written so (§3.4, T8). A decision-log row in

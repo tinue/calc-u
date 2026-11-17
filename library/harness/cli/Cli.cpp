@@ -21,7 +21,7 @@ std::string usageText(const std::vector<std::unique_ptr<HarnessProduct>>& produc
         "       calcu --product <name> [options] serve\n"
         "       calcu attach [--port N] [--json] [--messages]   (a running app's session, C59-5)\n"
         "options:\n"
-        "  --product <name>          the product, by name or short form, any case\n"
+        "  --product <name>          the product, by name or product word (c59, c1600), any case\n"
         "  --json                    each reply as one JSON object on one line\n"
         "  --settings <file>         use this settings file (else the defaults; nothing read or written)\n"
         "  --save-folder <dir>       use this save folder (else an empty one, removed at the end)\n"

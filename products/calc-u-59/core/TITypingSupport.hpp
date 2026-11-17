@@ -28,6 +28,6 @@ private:
 };
 
 /// The full keyboard scan/detect cycle of a model: {lo, hi, extraLo, extraHi}
-/// (extra empty when lo > hi): the addresses `ti59 coverage` leaves out
+/// (extra empty when lo > hi): the addresses `c59 coverage` leaves out
 /// without `all` (C59-9 D-7), the run probe's idle loop, and the tests.
 std::array<std::uint16_t, 4> idleAndKeyDetectRange(const calcu::machine::ModelId&);

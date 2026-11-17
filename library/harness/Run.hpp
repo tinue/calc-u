@@ -138,7 +138,7 @@ private:
     std::shared_ptr<Inbox> inbox_;
 };
 
-// The products of a build matched by name or short form, any case (AC-1).
+// The products of a build matched by name or product word, any case (AC-1).
 HarnessProduct* findProduct(const std::vector<std::unique_ptr<HarnessProduct>>&, std::string_view name);
 
 } // namespace calcu::harness

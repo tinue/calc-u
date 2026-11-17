@@ -1,7 +1,7 @@
 // C1600-4 AC-16 (design §6 T8; LIB-6 §10.8): each of the 32 examples, in
 // its version 2 file, loaded through the harness until the harness `wait`
 // finds the machine idle, leaves what its reference run left: the display
-// as text (`lcd`), the BASIC program and the machine-code areas the
+// as text (`display-text`), the BASIC program and the machine-code areas the
 // reference's inspector views list (`peek`), the BASIC pointers and the
 // paper's strokes (`paper marks`; LIB-8 AC-39). The references are the
 // records of M-4 (tests/reference/v0.8.1-examples/, made with b4ea8c8's
@@ -190,7 +190,7 @@ std::vector<std::string> compare(const std::string& base, const fs::path& copy, 
 
     if (!e.lcd) {
         std::vector<std::string> rows;
-        for (const std::string& l : body(reply("lcd"))) {
+        for (const std::string& l : body(reply("display-text"))) {
             if (l.rfind("indicators:", 0) == 0 || l.rfind("not text:", 0) == 0) break;
             rows.push_back(l);
         }

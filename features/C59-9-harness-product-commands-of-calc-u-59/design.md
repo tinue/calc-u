@@ -14,8 +14,8 @@ interface in C1 (C59-1 T14) and onto the library's ROM lookup (M-24).
 
 M-59 does three things, in this order, as separate commits on short
 branches (ADR 0029), as M-51 did for Calc-U-1600:
-1. the `ti59` commands of this row (this design, §3);
-2. the harness's Calc-U-59 entry through the app layer, `lcd` and `wait`
+1. the `c59` commands of this row (this design, §3);
+2. the harness's Calc-U-59 entry through the app layer, `display-text` and `wait`
    checked against today's tools (LIB-11 AC-16, AC-17), and today's
    tools removed, the scripts that stay moved onto the harness (LIB-11
    design §11; §4 here has the table of every function);
@@ -33,7 +33,7 @@ that left it otherwise is adapted to and named in the qa-report):
   `disassemble`, `trace`, `registers`, `peek`, `poke`; the PC-100C's
   paper on the paper output kind (`paper text`, `paper marks`).
 - M-54 (C59-2, LIB-6 59, LIB-18 59): the keystroke program memory kind
-  and `ti59 partition`, `ti59 program`, `ti59 registers` (C59-2 AC-9);
+  and `c59 partition`, `c59 program`, `c59 data-registers` (C59-2 AC-9);
   `preset`, `check-preset`, `model`, `attach`, `detach`, `reset`,
   `cold-boot`, `power-cycle` on every TI model; `tools/agentic/` loading
   presets through `calcu`, `ti59file.py` gone; the calendar scripts on
@@ -41,7 +41,7 @@ that left it otherwise is adapted to and named in the qa-report):
 - M-55 (LIB-7 59, C59-7): the card reader as a media place; `card`,
   `arm`, `saveas { card: … }`, `media`; `tools/headless/capi.cpp`'s card
   calls on the place (LIB-7 §11.7).
-- M-56 (C59-4): the ASM overlay and its `ti59` commands, the dumps.
+- M-56 (C59-4): the ASM overlay and its `c59` commands, the dumps.
 - LIB-5 (M-36): `key` with the names of `preset.md` §8.1 on the TI
   models.
 
@@ -53,7 +53,7 @@ fast-mode matrix themselves (AC-13: they stay scripts).
 
 | File | Holds |
 |---|---|
-| `app/TIHarnessCommands.hpp/.cpp` (new) | `cu59::addTIHarnessCommands(calcu::harness::CommandRegistry&)`: the commands of §3 under `ti59` (`CommandRegistry::addProduct`), next to those of C59-2 and C59-4 |
+| `app/TIHarnessCommands.hpp/.cpp` (new) | `cu59::addTIHarnessCommands(calcu::harness::CommandRegistry&)`: the commands of §3 under `c59` (`CommandRegistry::addProduct`), next to those of C59-2 and C59-4 |
 | `app/TIMnemonics.hpp/.cpp` (new) | one table keycode → key name (`preset.md` §8.1, the names `key` takes, LIB-5 AC-26) and the keycode grammar (operands, addresses, labels, `Ind`) for the assembly (§3.6; AC-10, AC-11, AC-14; Technical Requirements) |
 | `app/TIRunProbe.hpp/.cpp` (new) | the run facts the timing commands read through capabilities: the program step, the program source, printer busy, the print-wait loops, a program running, the display lit, idle (§3.2) |
 | `core/TIMachineState.hpp/.cpp` (new) | the generic kind `machine-state` (`library/harness/MachineState.hpp`) on the TI machines (§3.7; AC-15) |
@@ -65,7 +65,7 @@ fast-mode matrix themselves (AC-13: they stay scripts).
 
 ## 3. The commands
 
-All are product commands under `ti59` (AC-1; `harness.md` H-2), on the
+All are product commands under `c59` (AC-1; `harness.md` H-2), on the
 TI-59, TI-58 and TI-58C. A command that needs what the machine lacks
 refuses with a sentence that says so. Every handler reaches the machine
 through capabilities (the debug target of LIB-10, the keystroke program
@@ -89,7 +89,7 @@ instructions) or, where the spec names none, today's tool's (200
 instructions for `line-times`, `linetimes.py:23`; 100 for `run-time`,
 `ti59file.py:114`) (D-1).
 
-### 3.1 `ti59 coverage [all]` (AC-2)
+### 3.1 `c59 coverage [all]` (AC-2)
 
 Refused unless `profile` is on ("Profile is off: send `profile on`
 first."). Reads the debug target's profile (`debugger::Profile`, every
@@ -129,11 +129,11 @@ and SCOM space (the names are LIB-10 59's):
 
 | Command | Design |
 |---|---|
-| `ti59 line-times [limit=<duration>]` (AC-3, AC-4, EC-2, EC-6) | Refused without a PC-100C plugged in (EC-6). Runs in slices of 200 instructions until the machine has been idle for 15 s without a printed line since the last, or the limit (default `4000s`). After each slice the new lines of the paper (LIB-8's paper output, its text layer) are noted with the time from the start of the command. Plain: one line per printed line, `<time> <gap> |<text>|`; then `feeds: n=<n> mean <s> min <s> max <s> sum <s>` and `lines: …` for the others; `printer floor: <s>` (AC-4: 4165 instructions per printed line and 1370 per feed, `PC100C::kLineInstructions`, `kFeedInstructions`, `core/PC100C.hpp:26-27`); `limit: yes|no`. Nothing printed (EC-2): `no lines printed`, after the first 15 s of idle. JSON: `{"lines":[{"time","gap","text"}],"feeds":{…},"other":{…},"floor","limited"}` |
-| `ti59 run-time <key>…` (AC-5) | Each key is pressed as `key` presses it (LIB-5 AC-15: the hold of the TI profile, 2nd before a second function). From its press the machine runs in slices of 100 instructions until the display is lit again and no program runs (the run probe; today `dark_time`, `ti59file.py:114-143`): its time, or 0 when it started no program. A key not finished after 4000 s is marked `not finished` and the command ends there, done. Plain: `<key> <s>` per key, then `total <s>`. JSON: `{"keys":[{"key","seconds","finished"}],"total"}` |
-| `ti59 hot-steps [limit=<duration>]` (AC-6, EC-6) | Runs for the limit (default `200s`), notes the run probe every 97 instructions. Plain: `notes: <n>`; `printer busy <p>%`, `printer wait <p>%` (zero without a PC-100C, EC-6); `memory <n> (fast mode <n>)`, `rom <n>`, `module <n>` (D-2); then the 25 steps noted most often, `<step>: <p>%`, the most first, equal shares by step. JSON: `{"notes","printerBusy","printerWait","sources":{"memory","fastMode","rom","module"},"steps":[{"step","share"}]}` |
-| `ti59 step-trace <from> <to>` (AC-7) | Two durations from the start of the command, `to` after `from` (else refused). Runs to `to`; from `from` on notes the program step every 20 instructions and folds equal neighbours. Plain: one line, `<step>:<count> …`; JSON: `{"steps":[{"step","count"}]}` |
-| `ti59 step-cost <keycode>…` (AC-8, EC-3) | The keycodes as C59-2 AC-9 writes them. On the session's machine, which it leaves changed (spec decision log): writes the program `91 00 00 00 00 00 00 86` + the sequence 30 times + `25 81` from step 000 and the registers of 2.3.0's tool (R00 = 10, R01 = 5, R04 = 1000, R10–R12 = 2.000311000312, R22 = 98.99; `stepcost.py:10-11, 21`) through C59-2's memory kind; runs it once entered in fast mode by the SST method (the keys of `stepcost.py:18`) and once in normal mode by `GTO 008 R/S` (`:19`), each from the last key until the processor is idle 20 slices of 25 instructions in a row (`:29-51`); the same for the program without the sequence; cost = (with − without) ÷ 30. A run past 300 s of emulated time fails the command ("The program still runs after 300 s: a jump that loops back?", EC-3). Plain: `fast <n> instructions <ms> ms`, `normal <n> instructions <ms> ms`. JSON: `{"fast":{"instructions","ms"},"normal":{…}}`. Without keycodes: refused with the usage (D-3) |
+| `c59 line-times [limit=<duration>]` (AC-3, AC-4, EC-2, EC-6) | Refused without a PC-100C plugged in (EC-6). Runs in slices of 200 instructions until the machine has been idle for 15 s without a printed line since the last, or the limit (default `4000s`). After each slice the new lines of the paper (LIB-8's paper output, its text layer) are noted with the time from the start of the command. Plain: one line per printed line, `<time> <gap> |<text>|`; then `feeds: n=<n> mean <s> min <s> max <s> sum <s>` and `lines: …` for the others; `printer floor: <s>` (AC-4: 4165 instructions per printed line and 1370 per feed, `PC100C::kLineInstructions`, `kFeedInstructions`, `core/PC100C.hpp:26-27`); `limit: yes|no`. Nothing printed (EC-2): `no lines printed`, after the first 15 s of idle. JSON: `{"lines":[{"time","gap","text"}],"feeds":{…},"other":{…},"floor","limited"}` |
+| `c59 run-time <key>…` (AC-5) | Each key is pressed as `key` presses it (LIB-5 AC-15: the hold of the TI profile, 2nd before a second function). From its press the machine runs in slices of 100 instructions until the display is lit again and no program runs (the run probe; today `dark_time`, `ti59file.py:114-143`): its time, or 0 when it started no program. A key not finished after 4000 s is marked `not finished` and the command ends there, done. Plain: `<key> <s>` per key, then `total <s>`. JSON: `{"keys":[{"key","seconds","finished"}],"total"}` |
+| `c59 hot-steps [limit=<duration>]` (AC-6, EC-6) | Runs for the limit (default `200s`), notes the run probe every 97 instructions. Plain: `notes: <n>`; `printer busy <p>%`, `printer wait <p>%` (zero without a PC-100C, EC-6); `memory <n> (fast mode <n>)`, `rom <n>`, `module <n>` (D-2); then the 25 steps noted most often, `<step>: <p>%`, the most first, equal shares by step. JSON: `{"notes","printerBusy","printerWait","sources":{"memory","fastMode","rom","module"},"steps":[{"step","share"}]}` |
+| `c59 step-trace <from> <to>` (AC-7) | Two durations from the start of the command, `to` after `from` (else refused). Runs to `to`; from `from` on notes the program step every 20 instructions and folds equal neighbours. Plain: one line, `<step>:<count> …`; JSON: `{"steps":[{"step","count"}]}` |
+| `c59 step-cost <keycode>…` (AC-8, EC-3) | The keycodes as C59-2 AC-9 writes them. On the session's machine, which it leaves changed (spec decision log): writes the program `91 00 00 00 00 00 00 86` + the sequence 30 times + `25 81` from step 000 and the registers of 2.3.0's tool (R00 = 10, R01 = 5, R04 = 1000, R10–R12 = 2.000311000312, R22 = 98.99; `stepcost.py:10-11, 21`) through C59-2's memory kind; runs it once entered in fast mode by the SST method (the keys of `stepcost.py:18`) and once in normal mode by `GTO 008 R/S` (`:19`), each from the last key until the processor is idle 20 slices of 25 instructions in a row (`:29-51`); the same for the program without the sequence; cost = (with − without) ÷ 30. A run past 300 s of emulated time fails the command ("The program still runs after 300 s: a jump that loops back?", EC-3). Plain: `fast <n> instructions <ms> ms`, `normal <n> instructions <ms> ms`. JSON: `{"fast":{"instructions","ms"},"normal":{…}}`. Without keycodes: refused with the usage (D-3) |
 
 The machine's state between the runs of `step-cost` is the one the
 previous run left (spec: the session's machine); 2.3.0's tool built a
@@ -141,7 +141,7 @@ fresh TI-59 with a PC-100C for each run (`stepcost.py:37`). The cost of
 a step that prints (`Op 05`) depends on whether a PC-100C is plugged in;
 the reply says which (`printer: yes|no`).
 
-### 3.4 Listings: `ti59 keycodes list [<first> [<last>]]` (AC-9, EC-4)
+### 3.4 Listings: `c59 keycodes list [<first> [<last>]]` (AC-9, EC-4)
 
 The program memory from `first` (default 000) to `last` (default the
 last step of the partition), through C59-2's memory kind, one line per
@@ -154,7 +154,7 @@ program (all steps `00` from `first`): trailing steps of `00` after the
 last step that is not are left out, so an empty program gives no lines
 (EC-4; D-4). No printer is needed. JSON: `{"steps":[{"step","keycode","mnemonic"}]}`.
 
-### 3.5 Assemblies: `ti59 keycodes disassemble [<first> [<last>]]` (AC-14)
+### 3.5 Assemblies: `c59 keycodes disassemble [<first> [<last>]]` (AC-14)
 
 One line per instruction: the step in three digits, two spaces, the
 mnemonic, and after one space each operand: a register, a flag or a
@@ -170,7 +170,7 @@ mnemonics are the key IDs of §8.1 (`Lbl`, `STF`, `IFF`, `Dsz`, `Ind`,
 `x⇄t`; AC-11), from `TIMnemonics`, the one table `key` resolves names
 with. Trailing `00` steps as in §3.4. JSON: `{"lines":[{"step","text"}]}`.
 
-### 3.6 `ti59 keycodes assemble <file>` (AC-10, AC-11)
+### 3.6 `c59 keycodes assemble <file>` (AC-10, AC-11)
 
 Reads a file in the form of §3.5, one instruction per line: the step
 (three digits or more), the mnemonic and its operands; blank lines and
@@ -182,7 +182,7 @@ the line, and nothing written: an unknown mnemonic, an operand missing
 or out of range, an instruction that reaches beyond the model's last
 step (959 on the TI-59, 479 on the TI-58/58C), two lines on one step.
 `disassemble` assembled again gives the same program (round trip, AC-10);
-`ti59 program` (C59-2 AC-9) reads and writes the same memory as bare
+`c59 program` (C59-2 AC-9) reads and writes the same memory as bare
 keycodes. Reply: `steps: <first>–<last>`.
 
 ### 3.7 Machine state (AC-15)
@@ -220,7 +220,7 @@ runs one block per row. Paths are under `tools/` at `7bdd51c`.
 
 **`headless/` (`capi.cpp`, `ti59.py`)**
 
-| Today | Function | After M-59 (`calcu --product 59 …`) | Feature |
+| Today | Function | After M-59 (`calcu --product c59 …`) | Feature |
 |---|---|---|---|
 | `h_new`, `h_load_model_roms` (`capi.cpp:118-139`); `Machine()` | run without a window, the ROMs through the lookup | the one-shot form or `serve` | LIB-11 |
 | `ti59.py` as a library (`from ti59 import Machine`) | drive step by step from a script | `serve` over a pipe; `library/harness/python/calcu_serve.py` | LIB-11 |
@@ -240,30 +240,30 @@ runs one block per row. Paths are under `tools/` at `7bdd51c`.
 | `h_snapshot`, `regA_display` (`:205-208`; `ti59.py:314-317`) | the processor's registers and SCOM | `registers TMC0501`; `peek TMC0501 scom <n>` | LIB-10 |
 | `h_disasm` (`:274-280`) | disassemble an instruction | `disassemble TMC0501 <address> [<count>]` | LIB-10 |
 | `h_ram_read`, `h_ram_write` (`:210-211`) | read and write the RAM | `peek`, `poke TMC0501 ram …` | LIB-10 |
-| `h_write_program`, `--program` (`:212`) | write a program | `ti59 program [<step>] <keycode>…` | C59-2 AC-9 |
+| `h_write_program`, `--program` (`:212`) | write a program | `c59 program [<step>] <keycode>…` | C59-2 AC-9 |
 | `h_lib_exec_pc` (`:213`) | the module program's address | `registers TMC0501` (the debug target's register, M-53/M-55) | LIB-10 |
-| `h_display`, `display()` (`:218-229`; `ti59.py:297-312`) | the display as text; the raw segments | `lcd` (LIB-11 AC-16); `display` (LIB-11 AC-23) | LIB-11 |
+| `h_display`, `display()` (`:218-229`; `ti59.py:297-312`) | the display as text; the raw segments | `display-text` (LIB-11 AC-16); `display` (LIB-11 AC-23) | LIB-11 |
 | `h_card_insert`, `h_card_eject`, `h_card_present`, `h_card_mode`, `h_card_waiting` (`:233-242`) | insert and eject a card, whether the machine waits for one | `card { mem: X, side: 0 }`, `card { file: … }`, `arm { … }`; `state media` (the place's `waits` and `passing`); what a pass wrote: `saveas { card: X, as: live, file: … }`, `media export magnetic-card <name> <path>` (D-10) | LIB-7, C59-7 |
 | `h_printer_lines` (`:245-252`) | the printer's text lines | `paper text` | LIB-8 |
 | `h_printer_code_lines` (`:259-272`) | the dot lines | `paper marks` | LIB-8 |
-| `h_instruction_hz`, `h_printer_busy_cycles`, `h_idle_range` (`:106-115`) | facts the scripts needed | inside the `ti59` commands of §3 (seconds in replies; the printer floor; the key-detect range of `coverage`) | C59-9 |
-| `coverage.py build|show|unique|gaps` (`coverage.py:1-14, 217-307`) | which ROM addresses a scenario reaches | `ti59 coverage [all]` per scenario; the script stays, on `calcu serve`, as `tools/coverage.py` (AC-13) | C59-9 |
+| `h_instruction_hz`, `h_printer_busy_cycles`, `h_idle_range` (`:106-115`) | facts the scripts needed | inside the `c59` commands of §3 (seconds in replies; the printer floor; the key-detect range of `coverage`) | C59-9 |
+| `coverage.py build|show|unique|gaps` (`coverage.py:1-14, 217-307`) | which ROM addresses a scenario reaches | `c59 coverage [all]` per scenario; the script stays, on `calcu serve`, as `tools/coverage.py` (AC-13) | C59-9 |
 
 **`agentic/`** (`ti59file.py` went in M-54, plan M-54)
 
 | Today | Function | After M-59 | Feature |
 |---|---|---|---|
-| `ti59file.py file.ti59 [--lines]` (until M-54) | run a preset, its time from the start key, the printout, the printer's floor | `preset <file>`, `ti59 run-time <last key>`, `paper text`; the floor in `ti59 line-times` | LIB-6, LIB-8, C59-9 |
-| `linetimes.py file [--lines] [--limit S]` | the time of each printed line, the gaps by kind | `ti59 line-times [limit=<d>]` after the preset and its keys but the last, then `key <last>` and the command; the kind `week` (a 20-character day row) is computed by the calendar scripts from the lines (D-11) | C59-9 AC-3 |
-| `runtime.py file [--keys …]` | the run time per key that runs a program, the total | `ti59 run-time <key>…` (the keys named, or the preset's last ones) | C59-9 AC-5 |
-| `hotsteps.py file [--until S]` | printer busy, print-wait, the program sources, the 25 hottest steps | `ti59 hot-steps [limit=<d>]` | C59-9 AC-6 |
-| `hotsteps.py file --window A B` | the steps run between two times | `ti59 step-trace <A> <B>` | C59-9 AC-7 |
-| `stepcost.py ["43 22" …]` | the cost of a step in fast and normal mode | `ti59 step-cost <keycode>…`, one sequence per command; the table of common cases is the skill's example list (D-3) | C59-9 AC-8 |
-| `kdis.py file` | the program instruction by instruction; the registers, the keys, the partition | `preset <file>`, `ti59 keycodes disassemble`; `ti59 registers <NN>…`, `ti59 partition` | C59-9 AC-14; C59-2 AC-9 |
-| (none: a listing by the printer) | a listing to paste into a preset | `ti59 keycodes list` | C59-9 AC-9 |
-| `asm59.py` (library: mnemonics, labels, computed addresses) | write a program with labels | stays a library of the calendar scripts, `tools/calendar/asm59.py`; a plain assembly is read by `ti59 keycodes assemble <file>` | C59-9 AC-10 (spec OQ-2) |
-| `fastmode_matrix.py [substring]` | each instruction class in fast and normal mode; the stop table | stays a script on `calcu serve`, `tools/fastmode_matrix.py` (AC-13), on `ti59 program`, `ti59 registers`, `key`, `wait`, `registers`, `history`, `lcd`, `paper text` | C59-9 AC-13 |
-| `calendar/` (`check.py`, `compare.py`, `years.py`, `fastcal.py`, `swapcal.py`) | the calendar programs' checks and generators | stay scripts, `tools/calendar/`, on `calcu serve` with `ti59 line-times`, `ti59 run-time` (LIB-11 OQ-5 as amended) | C59-2 AC-18 |
+| `ti59file.py file.ti59 [--lines]` (until M-54) | run a preset, its time from the start key, the printout, the printer's floor | `preset <file>`, `c59 run-time <last key>`, `paper text`; the floor in `c59 line-times` | LIB-6, LIB-8, C59-9 |
+| `linetimes.py file [--lines] [--limit S]` | the time of each printed line, the gaps by kind | `c59 line-times [limit=<d>]` after the preset and its keys but the last, then `key <last>` and the command; the kind `week` (a 20-character day row) is computed by the calendar scripts from the lines (D-11) | C59-9 AC-3 |
+| `runtime.py file [--keys …]` | the run time per key that runs a program, the total | `c59 run-time <key>…` (the keys named, or the preset's last ones) | C59-9 AC-5 |
+| `hotsteps.py file [--until S]` | printer busy, print-wait, the program sources, the 25 hottest steps | `c59 hot-steps [limit=<d>]` | C59-9 AC-6 |
+| `hotsteps.py file --window A B` | the steps run between two times | `c59 step-trace <A> <B>` | C59-9 AC-7 |
+| `stepcost.py ["43 22" …]` | the cost of a step in fast and normal mode | `c59 step-cost <keycode>…`, one sequence per command; the table of common cases is the skill's example list (D-3) | C59-9 AC-8 |
+| `kdis.py file` | the program instruction by instruction; the registers, the keys, the partition | `preset <file>`, `c59 keycodes disassemble`; `c59 data-registers <NN>…`, `c59 partition` | C59-9 AC-14; C59-2 AC-9 |
+| (none: a listing by the printer) | a listing to paste into a preset | `c59 keycodes list` | C59-9 AC-9 |
+| `asm59.py` (library: mnemonics, labels, computed addresses) | write a program with labels | stays a library of the calendar scripts, `tools/calendar/asm59.py`; a plain assembly is read by `c59 keycodes assemble <file>` | C59-9 AC-10 (spec OQ-2) |
+| `fastmode_matrix.py [substring]` | each instruction class in fast and normal mode; the stop table | stays a script on `calcu serve`, `tools/fastmode_matrix.py` (AC-13), on `c59 program`, `c59 data-registers`, `key`, `wait`, `registers`, `history`, `display-text`, `paper text` | C59-9 AC-13 |
+| `calendar/` (`check.py`, `compare.py`, `years.py`, `fastcal.py`, `swapcal.py`) | the calendar programs' checks and generators | stay scripts, `tools/calendar/`, on `calcu serve` with `c59 line-times`, `c59 run-time` (LIB-11 OQ-5 as amended) | C59-2 AC-18 |
 | `tools/read_trace.py` | a trace file as text or JSON | stays (two options added, D-9) | LIB-10 AC-33, AC-42 |
 
 The scripts that stay find `calcu` through one helper,
@@ -293,8 +293,8 @@ them in the test), so a difference is a finding, not a new value.
 
 | Task | What | ACs/ECs | Test (`tests/harness_product_commands_tests.cpp` unless named) |
 |---|---|---|---|
-| T1 | Registry under `ti59` on every model; the platforms | AC-1 | `c59_9_ac1_commands_under_ti59_on_ti59_ti58_ti58c` (`--help` lists them; each model answers `ti59 keycodes list 000 000`); the build on macOS, Linux and Windows is LIB-11 AC-15's CI case |
-| T2 | `coverage` | AC-2 | `c59_9_ac2_refused_without_profile`, `c59_9_ac2_addresses_of_one_key_in_order_without_key_readiness` (`profile on`, `key 5`, `ti59 coverage`: the addresses written out, compared with today's `coverage.py` scenario `digit5`), `c59_9_ac2_all_includes_key_readiness` |
+| T1 | Registry under `c59` on every model; the platforms | AC-1 | `c59_9_ac1_commands_under_c59_on_ti59_ti58_ti58c` (`--help` lists them; each model answers `c59 keycodes list 000 000`); the build on macOS, Linux and Windows is LIB-11 AC-15's CI case |
+| T2 | `coverage` | AC-2 | `c59_9_ac2_refused_without_profile`, `c59_9_ac2_addresses_of_one_key_in_order_without_key_readiness` (`profile on`, `key 5`, `c59 coverage`: the addresses written out, compared with today's `coverage.py` scenario `digit5`), `c59_9_ac2_all_includes_key_readiness` |
 | T3 | `line-times` | AC-3, AC-4, EC-2, EC-6 | `c59_9_ac3_lines_gaps_summary_floor` (a short program that prints three lines and a feed: `Op 05`, `Adv`), `c59_9_ac3_limit_ends_it`, `c59_9_ac4_floor_4165_per_line_1370_per_feed`, `c59_9_ec2_nothing_printed_after_15_s_idle`, `c59_9_ec6_line_times_refused_without_printer` |
 | T4 | `run-time` | AC-5 | `c59_9_ac5_time_per_key_and_total` (a label that loops a known count; a digit key gives 0), `c59_9_ac5_not_finished_after_4000_s_marked_done` (a program that never stops) |
 | T5 | `hot-steps`, `step-trace` | AC-6, AC-7, EC-6 | `c59_9_ac6_shares_sources_and_top_steps` (a loop of known steps), `c59_9_ec6_printer_shares_zero_without_printer`, `c59_9_ac7_steps_between_two_times_folded` |
@@ -314,7 +314,7 @@ What goes, and the knowledge that changes in the same step, is LIB-11
 §11.7. This row adds to it:
 - `products/calc-u-59/CLAUDE.md:43-47, 78`: the section on
   `tools/agentic/` and `tools/headless/` becomes the Harness section:
-  `calcu --product 59`, the `ti59` commands, the scripts that stay,
+  `calcu --product c59`, the `c59` commands, the scripts that stay,
   and where the time base and the pitfalls are (`reference/Harness.md`).
 - `reference/Harness.md` (new; replaces `tools/headless/README.md` and
   `tools/agentic/README.md`, plan M-59): the time base (emulated seconds,

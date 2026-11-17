@@ -12,8 +12,8 @@
 // | `c59.partition` | {value?: "479"}                             | without a value: ["479"] (the last step) |
 // | `c59.program`   | {step?: "010", keycodes: "76 11 …"}         | —                                       |
 // | `c59.program`   | {step: "010", count: n}                     | ["010 76", "011 11", …]                 |
-// | `c59.registers` | {set: [["05", "1.5"], …]}                  | —                                       |
-// | `c59.registers` | {get: ["05", "H01", …]}                     | ["05: 1.5e0", …]                        |
+// | `c59.data-registers` | {set: [["05", "1.5"], …]}                  | —                                       |
+// | `c59.data-registers` | {get: ["05", "H01", …]}                     | ["05: 1.5e0", …]                        |
 //
 // A write is refused where the section would refuse the preset, with its
 // sentence, and while an operation runs ("Another operation is running.");
@@ -24,7 +24,7 @@ namespace cu59 {
 namespace commands {
 inline const calcu::sessions::CommandName kPartition{"c59.partition"};
 inline const calcu::sessions::CommandName kProgram{"c59.program"};
-inline const calcu::sessions::CommandName kRegisters{"c59.registers"};
+inline const calcu::sessions::CommandName kDataRegisters{"c59.data-registers"};
 } // namespace commands
 
 class ProgramMemoryPart final : public calcu::sessions::SessionPart {

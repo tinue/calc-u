@@ -157,11 +157,11 @@ The product's part of a load
 
 Commands
 - [ ] **AC-9** — Given the harness with Calc-U-59, then these commands
-  do what the sections do: `ti59 partition <value>`,
-  `ti59 program [<step>] <keycode>…` and `ti59 registers <NN>=<value>…`;
+  do what the sections do: `c59 partition <value>`,
+  `c59 program [<step>] <keycode>…` and `c59 data-registers <NN>=<value>…`;
   each is refused where the section would refuse the preset. Without a
-  value they read: `ti59 partition` gives the partition, `ti59 program
-  <step> [count=<n>]` the keycodes, `ti59 registers <NN>…` the registers
+  value they read: `c59 partition` gives the partition, `c59 program
+  <step> [count=<n>]` the keycodes, `c59 data-registers <NN>…` the registers
   (LIB-11 AC-13, AC-14; today `tools/headless/ti59.py:265-266`).
 
 The shipped and hosted presets
@@ -209,7 +209,7 @@ The shipped and hosted presets
 - [ ] **AC-11** — Given each example, when its version 2 file is loaded
   through the harness and the harness `wait` (LIB-6 AC-34) has ended
   with the machine idle or paused, or after an hour of emulated time,
-  then the display (`lcd`), the program steps, the registers and the
+  then the display (`display-text`), the program steps, the registers and the
   partition (AC-9), the paper (`paper text`, `paper marks`; LIB-8 AC-39)
   and every magnetic card the preset wrote (its banks and its cue card,
   whether 2.3.0 wrote it as a card file or the version 2 file saves it
@@ -371,3 +371,4 @@ The shipped and hosted presets
 | Aligned with `docs/formats/` after the Q&A round of 2026-11-13: the keycode notation is as decided in OQ-5, no longer open (AC-3) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | A whole number with more than 13 significant digits is cut after the 13th, as today (AC-4; `preset.md` §4.2) | user, 2026-11-13 (consistency pass): "this needs to be a cut"; old listings do not have so many digits | 2026-11-13 |
 | The read count of `ti59 program` is written `count=<n>`, and every bare token after the step is a keycode (AC-9; was `[<count>]`) | `ti59 program 010 05` read two ways (read 5 steps or write keycode 05); `count=` as `limit=` in C59-9 AC-3; user, 2026-11-16 (Q-2 of `docs/reviews/e-designs.md`, with the approval of the Part E designs) | 2026-11-16 |
+| Release prep step 1: AC-9's commands are `c59 partition`, `c59 program` and `c59 data-registers` (were `ti59 partition|program|registers`); names only | user, 2026-11-17 (`docs/reviews/e-simplification.md` §10 Q-6): one word per product everywhere; `docs/reviews/release-prep-plan.md` §1; C59-9; ledger row 59-58 | 2026-11-17 |

@@ -2,7 +2,7 @@
 # adapter of Calc-U-59 left): tools/headless/ and tools/agentic/ are gone,
 # with the target ti59headless and its library variable TI59HEADLESS_LIB,
 # and no file is named for adapters (core/TIAdapters.* went, D-17). Their
-# functions are `calcu --product 59` commands (LIB-11 AC-14, C59-9 §4); the
+# functions are `calcu --product c59` commands (LIB-11 AC-14, C59-9 §4); the
 # scripts that stay are tools/coverage.py, tools/fastmode_matrix.py and
 # tools/calendar/. Run from products/calc-u-59 with
 # `cmake -P tools/check_no_old_tools.cmake` (CTest CalcU59NoOldTools).

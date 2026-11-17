@@ -65,7 +65,7 @@ TEST(ac15_refusal_exits_nonzero) {
     CHECK(run.server != nullptr);
     if (!run.server) return;
     std::string out;
-    const int status = run.server->oneShot({"model test-dot", "attach slot-1 test-module", "lcd"},
+    const int status = run.server->oneShot({"model test-dot", "attach slot-1 test-module", "display-text"},
                                            [&](const std::string& t) { out += t; });
     CHECK_EQ(status, 1);
     CHECK_EQ(out, std::string("done\nrefused: The test-dot has no place slot-1.\n"));

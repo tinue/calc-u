@@ -64,8 +64,8 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    `c59.cue-card` (the cue card, its corner on show and lit); full speed is the library's `speed` command and `busy` topic,
    the library's `media` (the card reader `card-reader` and `slot-1`: what they
    hold, the pickers; send `media.choose`, `media.start-new`, `media.eject`),
-   …) and the debug panel's product topics (`calculator-debug`,
-   `program-listing`, `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view`;
+   …) and the debug panel's product topics (`c59.calculator-debug`,
+   `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `asm-overlay`, `c59.debug-view`;
    `reference/DebugAPI.md`; the LOG tab keeps the last 2000 lines of the
    `log` topic). Send every file the user hands over as LIB-13's `open`
    (a drag asks `open-would-take`). Show `notices` as alerts. Offer `clipboard-image` and

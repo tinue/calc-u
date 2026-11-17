@@ -2,7 +2,7 @@
 
 How to run, trace, time and profile TI-59, TI-58 and TI-58C programs without
 a window: the family's harness `calcu` (LIB-11, `features/LIB-11-harness/` at
-the repository root) with the product commands under `ti59` (C59-9,
+the repository root) with the product commands under `c59` (C59-9,
 `features/C59-9-harness-product-commands-of-calc-u-59/`). It replaced
 `tools/headless/` and `tools/agentic/` in M-59; every function of theirs is
 a command or a script below (LIB-11 AC-14; C59-9 design §4 has the table).
@@ -16,8 +16,8 @@ run it from `products/calc-u-59` or anywhere (it finds `roms/` and
 folder). The run is the product's app layer (`app/TIAppPart`, as the
 frontends host it) in emulated time only, so two runs give the same replies.
 
-- One-shot: `calcu --product 59 preset examples:sum.ti59 then key 5 A then wait then lcd`
-- `calcu --product 59 serve`: one command per line, one reply per line; from
+- One-shot: `calcu --product c59 preset examples:sum.ti59 then key 5 A then wait then display-text`
+- `calcu --product c59 serve`: one command per line, one reply per line; from
   Python `library/harness/python/calcu_serve.py`, or `tools/calcu59.py`
   (`Run`, `split_preset`, `play_until_last`, `run_preset`, `line_times`),
   which the scripts below use. `--calcu PATH`, `CALCU59_CALCU`, else the
@@ -36,27 +36,27 @@ a second on the TI-59 at 455 000 ticks per second; the TI-58C runs at
 calendar programs within a few seconds.
 
 A **run time** is what a stopwatch on a filmed calculator shows: from the
-key press until the display is lit again and no program runs (`ti59
+key press until the display is lit again and no program runs (`c59
 run-time`; memory `run_time_measurement`). A Pause flash does not end it;
 the blinking of an error display after the stop does not move it. A
 preset's `elapsed-time: start` / `report` measures the same interval within
 a few hundredths of a second.
 
-## The `ti59` commands (C59-9)
+## The `c59` commands (C59-9)
 
 | Command | What it answers |
 |---|---|
-| `ti59 run-time <key>…` | Each key pressed as `key` presses it; its run time (0 for a key that starts no program), the total; a key not finished after 4000 s is marked and ends the command |
-| `ti59 line-times [limit=<d>]` | Runs until idle 15 s with nothing printed (or 4000 s, the limit): each printed line's time from the command and gap, the feeds and the other lines summed up, the least time the PC-100C needs for that printout (4165 instructions a line, 1370 a feed), whether the limit ended it. Needs a PC-100C |
-| `ti59 hot-steps [limit=<d>]` | Runs 200 s (the limit) and notes every 97 instructions: the shares of printer busy and of the ROM's print-wait loops, the notes by program source (memory, of them fast mode; ROM; module), the 25 hottest program steps |
-| `ti59 step-trace <from> <to>` | The program steps between two times from the command, every 20 instructions, equal neighbours folded (`step:count`) |
-| `ti59 step-cost <keycode>…` | What one run of the sequence costs in fast and normal mode, instructions and ms (30 repetitions from step 008, minus the program without them); on the session's machine, which it leaves changed; refused while a program runs |
-| `ti59 coverage [all]` | After `profile on`: the ROM addresses 0000-17FF carried out since, without the key-detect range unless `all` |
-| `ti59 keycodes list [<first> [<last>]]` | The program as the PC-100C's `List` prints it (`010 43 RCL`), pasteable into a preset's `keycodes:` |
-| `ti59 keycodes disassemble [<first> [<last>]]` | The program as an assembly, one line per instruction (`007  Dsz Ind 03 A`); the mnemonics are the key IDs of `docs/formats/preset.md` §8.1 |
-| `ti59 keycodes assemble <file>` | An assembly written back into program memory (all or nothing) |
-| `ti59 partition`, `ti59 program`, `ti59 registers` | Program memory as bare keycodes and the data registers (C59-2 AC-9) |
-| `ti59 asm`, `ti59 dump`, `ti59 log-level`, `ti59 heatmap` | The debug panel (C59-4) |
+| `c59 run-time <key>…` | Each key pressed as `key` presses it; its run time (0 for a key that starts no program), the total; a key not finished after 4000 s is marked and ends the command |
+| `c59 line-times [limit=<d>]` | Runs until idle 15 s with nothing printed (or 4000 s, the limit): each printed line's time from the command and gap, the feeds and the other lines summed up, the least time the PC-100C needs for that printout (4165 instructions a line, 1370 a feed), whether the limit ended it. Needs a PC-100C |
+| `c59 hot-steps [limit=<d>]` | Runs 200 s (the limit) and notes every 97 instructions: the shares of printer busy and of the ROM's print-wait loops, the notes by program source (memory, of them fast mode; ROM; module), the 25 hottest program steps |
+| `c59 step-trace <from> <to>` | The program steps between two times from the command, every 20 instructions, equal neighbours folded (`step:count`) |
+| `c59 step-cost <keycode>…` | What one run of the sequence costs in fast and normal mode, instructions and ms (30 repetitions from step 008, minus the program without them); on the session's machine, which it leaves changed; refused while a program runs |
+| `c59 coverage [all]` | After `profile on`: the ROM addresses 0000-17FF carried out since, without the key-detect range unless `all` |
+| `c59 keycodes list [<first> [<last>]]` | The program as the PC-100C's `List` prints it (`010 43 RCL`), pasteable into a preset's `keycodes:` |
+| `c59 keycodes disassemble [<first> [<last>]]` | The program as an assembly, one line per instruction (`007  Dsz Ind 03 A`); the mnemonics are the key IDs of `docs/formats/preset.md` §8.1 |
+| `c59 keycodes assemble <file>` | An assembly written back into program memory (all or nothing) |
+| `c59 partition`, `c59 program`, `c59 data-registers` | Program memory as bare keycodes and the data registers (C59-2 AC-9) |
+| `c59 asm`, `c59 dump`, `c59 log-level`, `c59 heatmap` | The debug panel (C59-4) |
 
 The machine state of LIB-11 AC-24 (`state-save <file>`, `state-restore
 <file>`) covers the TMC0501, the RAM (the TI-58C's constant memory), the
@@ -69,7 +69,7 @@ part's bindings and the debugger's state are the session's.
 **A ROM trace of a key sequence** (was `tools/headless/ti59.py 5 + 7 =`):
 
 ```bash
-calcu --product 59 --output-folder /tmp trace k.trace then key 5 + 7 = then trace off
+calcu --product c59 --output-folder /tmp trace k.trace then key 5 + 7 = then trace off
 python3 tools/read_trace.py --clean-heavy --skip-repeating --labels rom/TI59-labels.asm --changes /tmp/k.trace
 ```
 
@@ -81,17 +81,17 @@ then profile report 50` (by count, the most first). Registers and SCOM:
 `registers TMC0501`, `peek TMC0501 scom 0 16`; breakpoints: `break`.
 
 **Timing a program:** load the preset without its last key, press the last
-one with `ti59 run-time`, or press it with `key` and run `ti59 line-times`.
+one with `c59 run-time`, or press it with `key` and run `c59 line-times`.
 From Python: `tools/calcu59.py`'s `run_preset(path)` and `line_times(path)`.
 Compare programs that split their work between preparation keys and the
-start key with `ti59 run-time` over all their keys, not from the start key
+start key with `c59 run-time` over all their keys, not from the start key
 alone.
 
-**The hottest steps and what runs between two lines:** `ti59 hot-steps`;
-take two times from `ti59 line-times` and run `ti59 step-trace <a> <b>` on
+**The hottest steps and what runs between two lines:** `c59 hot-steps`;
+take two times from `c59 line-times` and run `c59 step-trace <a> <b>` on
 the same run.
 
-**The cost of a step:** `ti59 step-cost 43 22`. The registers of 2.3.0's
+**The cost of a step:** `c59 step-cost 43 22`. The registers of 2.3.0's
 tool are set: R00 = 10, R01 = 5, R04 = 1000, R10-R12 = 2.000311000312,
 R22 = 98.99. The table of 2.3.0's `stepcost.py` (fast / normal
 instructions; a fresh TI-59 with a PC-100C each run): Nop 144 / 225, a digit
@@ -124,7 +124,7 @@ python3 tools/calendar/years.py examples/calendar/calendar-09-dispatch.ti59 1900
 ## Pitfalls
 
 - **Two numbering systems.** `key` and a preset's key steps name keys by
-  their key IDs (`2`, `A`, `Pgm`); `program:`, `ti59 program` and `ti59
+  their key IDs (`2`, `A`, `Pgm`); `program:`, `c59 program` and `c59
   step-cost` take keycodes (`2` is 02, `Pgm` is 36); `key-down` takes a key
   ID too (2.3.0's matrix codes are gone).
 - **A program longer than the partition** writes past it into the top
@@ -134,11 +134,11 @@ python3 tools/calendar/years.py examples/calendar/calendar-09-dispatch.ti59 1900
   codes the position of the digits within the mantissa matters.
 - **Fast mode:** the rules (no SBR, no labels as targets, safe endings) are
   in `rom/fastmode.md`; `examples/fastmode-sst.ti59` is the SST entry.
-- **Jumps in `ti59 step-cost`.** The sequence is repeated 30 times in a row,
+- **Jumps in `c59 step-cost`.** The sequence is repeated 30 times in a row,
   so a jump to a fixed address lands inside the repetitions and can loop
   forever; the command fails after 300 emulated seconds. Measure a jump
   with a target that moves with each repetition.
 - **Settle overhead.** A `wait` until idle after each key costs time; don't
-  sum per-key times of separate runs, use `ti59 run-time` over the keys.
+  sum per-key times of separate runs, use `c59 run-time` over the keys.
 - **The session's machine.** `step-cost` writes its own program and
   registers and leaves them; load the preset again after it.

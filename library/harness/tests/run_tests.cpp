@@ -264,9 +264,9 @@ std::vector<std::string> script(bool json) {
     TestRun run(o, mt::kDot);
     std::vector<std::string> out;
     if (!run.server) return out;
-    for (const char* l : {"ticks", "wait 1.5s", "key-down a", "wait 20ms", "lcd", "display", "key-up a", "state busy",
+    for (const char* l : {"ticks", "wait 1.5s", "key-down a", "wait 20ms", "display-text", "display", "key-up a", "state busy",
                           "capabilities", "test operation 123457", "ticks", "state test.count", "test fail",
-                          "state notices", "state log", "key-down zz", "wait 2", "lcd"})
+                          "state notices", "state log", "key-down zz", "wait 2", "display-text"})
         out.push_back(run.line(l));
     return out;
 }
@@ -292,7 +292,7 @@ TEST(ac6_no_pacer_and_no_wall_clock) {
     // The start's one run piece (LIB-18 D-4), nothing more.
     CHECK_EQ(run.line("ticks"), std::string("done 2\nticks: 1667\nseconds: 0.016670000\n"));
     run.line("wait 10ms");
-    run.line("lcd");
+    run.line("display-text");
     CHECK_EQ(run.machine().tickCount(), std::uint64_t{2667});
     // The session is hosted in virtual time: no host call reads the clock
     // for a deadline (the pacer only notes it when it starts afresh).
@@ -304,7 +304,7 @@ TEST(ac6_no_pacer_and_no_wall_clock) {
 namespace {
 std::vector<std::string> after(TestRun& run) {
     std::vector<std::string> out;
-    for (const char* l : {"wait 10ms", "key-down 2", "wait 5ms", "lcd", "display", "ticks", "key-up 2", "wait 1ms", "lcd"})
+    for (const char* l : {"wait 10ms", "key-down 2", "wait 5ms", "display-text", "display", "ticks", "key-up 2", "wait 1ms", "display-text"})
         out.push_back(run.line(l));
     return out;
 }

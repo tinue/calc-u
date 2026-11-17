@@ -49,7 +49,7 @@ final class AttachTests: XCTestCase {
 
         XCTAssertEqual(harness.command("wait 1s", timeout: 15).first, "done 2")   // the ROM is idle
         for key in ["1", "2", "3"] { tap(harness, key) }
-        let lcd = harness.command("lcd")
+        let lcd = harness.command("display-text")
         XCTAssertEqual(lcd.first, "done 2")
         XCTAssertTrue(lcd.count > 1 && lcd[1].contains("123"), "lcd: \(lcd)")
 
@@ -138,14 +138,14 @@ final class AttachTests: XCTestCase {
     /// S5 (AC-5): a program runs; a press on the display (full speed) keeps
     /// the session thread busy for whole calls while the main thread takes the
     /// touch and its end; then a touch on a key of the faceplate reaches the
-    /// session (R/S stops the program, `lcd` shows its display). The main thread's frame gaps
+    /// session (R/S stops the program, `display-text` shows its display). The main thread's frame gaps
     /// are measured by `FrameGapTests` (Calc-U-59Tests).
     func testTapsReachSessionAtFullSpeed() throws {
         let (app, harness) = launchAttached()
         XCTAssertEqual(harness.command("wait 1s", timeout: 15).first, "done 2")
         // Lbl A, 1, SUM 00, GTO A; started with A (lcd blank while it runs).
         for key in ["LRN", "2nd", "SBR", "A", "1", "SUM", "0", "0", "GTO", "A", "LRN", "CLR", "A"] { tap(harness, key) }
-        let running = harness.command("lcd")
+        let running = harness.command("display-text")
         XCTAssertTrue(running.count > 1 && running[1].trimmingCharacters(in: .whitespaces).isEmpty, "not running: \(running)")
 
         let display = app.descendants(matching: .any)["led-display"].firstMatch
@@ -166,7 +166,7 @@ final class AttachTests: XCTestCase {
         let face = app.descendants(matching: .any)["faceplate"].firstMatch
         face.coordinate(withNormalizedOffset: CGVector(dx: 0.0783, dy: 0.9704)).press(forDuration: 0.3)
         XCTAssertEqual(harness.command("wait 500ms", timeout: 10).first, "done 2")
-        let stopped = harness.command("lcd")
+        let stopped = harness.command("display-text")
         XCTAssertTrue(stopped.count > 1 && stopped[1].contains("1"), "R/S did not stop the program: \(stopped)")
         harness.send("quit")
         app.terminate()

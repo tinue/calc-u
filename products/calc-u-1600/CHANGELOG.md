@@ -40,6 +40,14 @@
   `cassette:` and `eject: cassette`; the folder is `Cassettes` in the save
   folder (`[storage] cassette-folder`); the control bar and its dialogs
   say "Cassette".
+- **The product word is `c1600`.** The VS Code extension's debug type is
+  `c1600` (was `calcu1600`), and so are its commands (`c1600.buildAndLoad`,
+  …), settings (`c1600.port`, `c1600.zasmPath`, …) and problem matchers
+  (`$c1600-sdas`, `$c1600-zasm`): re-create a project's `launch.json` and
+  `tasks.json`, or edit them, and rename the settings. The debug server's
+  own requests are `c1600/load`, `c1600/reset`, `c1600/screen`,
+  `c1600/quit`. The harness is `calcu --product c1600`, its product
+  commands `c1600 …` (were `pc1600 …`), and `lcd` is `display-text`.
 
 ## [0.8.1] - 2026-11-14
 

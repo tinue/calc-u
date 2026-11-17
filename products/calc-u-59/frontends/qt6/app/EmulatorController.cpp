@@ -260,7 +260,7 @@ std::optional<int> EmulatorController::litCardCorner() const {
 // ── Debugger ─────────────────────────────────────────────────────────────────
 
 void EmulatorController::setLiveDebugEnabled(bool on) { send(cu59::commands::kLiveDebug, Value::object({{"on", on}})); }
-void EmulatorController::setCpuDebugEnabled(bool on) { send(cu59::commands::kCpuDebug, Value::object({{"on", on}})); }
+void EmulatorController::setCpuDebugEnabled(bool on) { send(cu59::commands::kShowCpuDebug, Value::object({{"on", on}})); }
 const calcu::debugger::RunState* EmulatorController::runState() const {
     return state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
 }

@@ -16,11 +16,11 @@ states and reports whether the calculator hangs in the redisplay loop
 
 Results: rom/fastmode.md; ROM side: rom/TI59-ROM-Guide.md § "Fast mode".
 
-Drives the harness (C59-9 AC-13, `calcu --product 59 serve`, tools/calcu59.py):
-a cold boot with a PC-100C for each run, the program by `ti59 program`, the
-registers by `ti59 registers`, the keys by `key-down`/`key-up` (as matrix
+Drives the harness (C59-9 AC-13, `calcu --product c59 serve`, tools/calcu59.py):
+a cold boot with a PC-100C for each run, the program by `c59 program`, the
+registers by `c59 data-registers`, the keys by `key-down`/`key-up` (as matrix
 codes), the run watched with `registers TMC0501` and `peek TMC0501 scom`,
-the display read with `lcd` and the printout with `paper text`; the hang of
+the display read with `display-text` and the printout with `paper text`; the hang of
 the stop table seen with `profile`.
 
 CLI: fastmode_matrix.py [substring] [--calcu PATH]   only cases whose name contains it"""
@@ -103,7 +103,7 @@ IDLE_LO, IDLE_HI = 0x0627, 0x0660
 
 
 def regval(text):
-    """`ti59 registers`' value as 2.3.0's tool wrote it ('1e1' → '1.e1')."""
+    """`c59 data-registers`' value as 2.3.0's tool wrote it ('1e1' → '1.e1')."""
     m = re.match(r'^(-?\d)(\.?\d*)(e.*)?$', text)
     if not m or text == '0':
         return text
@@ -167,8 +167,8 @@ def run(r, body, fast, extra=None, keys_after=(), exit_=EXIT, limit=60):
     for at, codes in (extra or {}).items():
         prog += [0] * max(0, at - len(prog))
         prog[at:at + len(codes)] = codes
-    r.cmd('ti59 program 000 ' + ' '.join('%02d' % k for k in prog))
-    r.cmd('ti59 registers ' + ' '.join(f'{n:02d}={v}' for n, v in REGS.items()))
+    r.cmd('c59 program 000 ' + ' '.join('%02d' % k for k in prog))
+    r.cmd('c59 data-registers ' + ' '.join(f'{n:02d}={v}' for n, v in REGS.items()))
     keys = FAST_ENTRY if fast else NORMAL_ENTRY
     for k in keys[:-1]:
         m.press(k); m.settle()
@@ -178,8 +178,8 @@ def run(r, body, fast, extra=None, keys_after=(), exit_=EXIT, limit=60):
         m.press(k); ok2, s2 = watch(m, limit); ok &= ok2; srcs |= s2
     disp = set()                                # sampled, so a blinking display compares equal
     for _ in range(30):
-        r.cmd('wait 350ms'); disp.add(r.cmd('lcd')[0].strip())
-    regs = [regval(l.split(': ')[1]) for l in r.cmd('ti59 registers ' + ' '.join('%02d' % n for n in range(60)))]
+        r.cmd('wait 350ms'); disp.add(r.cmd('display-text')[0].strip())
+    regs = [regval(l.split(': ')[1]) for l in r.cmd('c59 data-registers ' + ' '.join('%02d' % n for n in range(60)))]
     return dict(ok=ok, srcs=sorted(srcs), disp=sorted(disp), lines=r.paper(), regs=regs, m=m)
 
 

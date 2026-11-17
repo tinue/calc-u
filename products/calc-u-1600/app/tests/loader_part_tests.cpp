@@ -223,7 +223,7 @@ TEST(c1600_2_ac25_same_sentence_menu_harness_preset) {
     auto server = calcu::harness::Server::start(*product, {}, &error);
     CHECK(server != nullptr);
     if (server) {
-        CHECK_EQ(server->line("pc1600 load-code " + path).text, "refused: " + sentence + "\n");
+        CHECK_EQ(server->line("c1600 load-code " + path).text, "refused: " + sentence + "\n");
         server->finish();
     }
 

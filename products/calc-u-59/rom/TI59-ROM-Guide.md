@@ -4,7 +4,7 @@ A narrative companion to the annotated listing `rom/TI59-commented.asm` and
 the label table `rom/TI59-labels.asm`. The listing documents individual
 instructions; this guide explains the structures and conventions that span
 many routines. Everything here was derived by tracing the unmodified ROM on
-the emulator with the headless harness of 2.3.0 (`tools/headless/`; since M-59 the harness `calcu --product 59`, `reference/Harness.md`), unless marked
+the emulator with the headless harness of 2.3.0 (`tools/headless/`; since M-59 the harness `calcu --product c59`, `reference/Harness.md`), unless marked
 otherwise.
 
 Emulator-side facts (instruction set, SCOM/PREG mechanics, chip variants)
@@ -15,7 +15,7 @@ self-test) are in `rom/TI58C-ROM-Guide.md`.
 ## Reproducing the traces
 
 ```bash
-calcu --product 59 --output-folder /tmp trace k.trace then key 5 + 7 '*' 3 = then trace off
+calcu --product c59 --output-folder /tmp trace k.trace then key 5 + 7 '*' 3 = then trace off
 python3 tools/read_trace.py --clean-heavy --skip-repeating --labels rom/TI59-labels.asm --changes /tmp/k.trace   # annotated trace
 python3 tools/coverage.py build            # which scenario runs which ROM word
 python3 tools/coverage.py show 0140 0236   # per-address scenario list

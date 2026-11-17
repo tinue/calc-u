@@ -117,10 +117,10 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
                                                            {"pixels", Value(Value::Bytes(image.pixels))},
                                                            {"text", m_app.lcdText(*d, &t) ? t.plainText() : std::string()}})));
     });
-    req("c1600.lcd-text", [this](const Value&, SessionContext& c) {
+    req("c1600.display-text", [this](const Value&, SessionContext& c) {
         const calcu::machine::DisplayOutput* d = c.display();
         LcdText t;
-        return sessions::replyGiven(sessions::valuePayload("c1600.lcd-text", Value(d && m_app.lcdText(*d, &t) ? t.text() : std::string())));
+        return sessions::replyGiven(sessions::valuePayload("c1600.display-text", Value(d && m_app.lcdText(*d, &t) ? t.text() : std::string())));
     });
 }
 

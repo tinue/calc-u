@@ -1,5 +1,5 @@
-// C1600-5 design §6 (T1 to T7): the product commands under `pc1600`, each
-// on a `calcu --product 1600` run of its own, the expected replies written
+// C1600-5 design §6 (T1 to T7): the product commands under `c1600`, each
+// on a `calcu --product c1600` run of its own, the expected replies written
 // out (Technical Requirements). T8 (AC-13, the machine state) is not here:
 // it was split off (design §8; qa-report).
 #include <algorithm>
@@ -54,21 +54,21 @@ void onePrintLine(Run& r) {
 
 // ── T1: AC-1 ─────────────────────────────────────────────────────────────
 
-TEST(c1600_5_ac1_commands_under_pc1600_on_every_model) {
+TEST(c1600_5_ac1_commands_under_c1600_on_every_model) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
     if (!r.ok()) return;
     std::string usage;
     for (const std::string& u : r.server->commands().usage()) usage += u + "\n";
-    for (const char* c : {"pc1600 file-kind", "pc1600 load-basic", "pc1600 type-basic", "pc1600 load-code", "pc1600 dump-basic",
-                          "pc1600 inspect", "pc1600 cassette", "pc1600 serial", "pc1600 host-drive", "pc1600 call"})
+    for (const char* c : {"c1600 file-kind", "c1600 load-basic", "c1600 type-basic", "c1600 load-code", "c1600 dump-basic",
+                          "c1600 inspect", "c1600 cassette", "c1600 serial", "c1600 host-drive", "c1600 call"})
         CHECK(has(usage, c));
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         CHECK_EQ(r.line(std::string("model ") + model), std::string("done\n"));
-        CHECK(starts(r.line("pc1600 inspect pointers"), "done "));
-        CHECK(starts(r.line("pc1600 dump-basic"), "done "));
-        CHECK(starts(r.line("pc1600 cassette status"), "refused: "));   // no cassette (EC-2), but the command is there
+        CHECK(starts(r.line("c1600 inspect pointers"), "done "));
+        CHECK(starts(r.line("c1600 dump-basic"), "done "));
+        CHECK(starts(r.line("c1600 cassette status"), "refused: "));   // no cassette (EC-2), but the command is there
     }
 }
 
@@ -82,7 +82,7 @@ TEST(c1600_5_ac2_dump_basic_pc1500a_after_a_program) {
     CHECK(r.ok());
     if (!r.ok()) return;
     onePrintLine(r);
-    CHECK_EQ(r.line("pc1600 dump-basic"),
+    CHECK_EQ(r.line("c1600 dump-basic"),
              std::string("done 8\n"
                          "BASPRG_ST  $7865 = $40C5\n"
                          "BASPRG_END $7867 = $40CC   (len = 7)\n"
@@ -104,7 +104,7 @@ TEST(c1600_5_ac2_dump_basic_pc1600) {
     CHECK_EQ(r.line("type NEW"), std::string("done\n"));
     CHECK_EQ(r.line("type 10 PRINT 1"), std::string("done\n"));
     CHECK(starts(r.line("wait"), "done "));
-    CHECK_EQ(r.line("pc1600 dump-basic"),
+    CHECK_EQ(r.line("c1600 dump-basic"),
              std::string("done 7\n"
                          "BASPRG_ST  $F865 = $40C5  (Z-80 $C0C5)\n"
                          "BASPRG_END $F867 = $40CC  (Z-80 $C0CC, len = 7)\n"
@@ -128,7 +128,7 @@ TEST(c1600_5_ac3_lines_in_todays_form) {
     r.line("type NEW0");
     r.line("type 10 PRINT 1");
     r.line("wait");
-    const std::string j = r.line("pc1600 dump-basic");
+    const std::string j = r.line("c1600 dump-basic");
     CHECK(has(j, "{\"name\":\"BASPRG_END\",\"address\":30823,\"value\":16588,\"length\":7}"));
     CHECK(has(j, "{\"address\":16581,\"bytes\":[0,10,4,240,151,49,13,255,0,0,0,0,0,0,0,0]}"));
 }
@@ -140,7 +140,7 @@ TEST(c1600_5_ec4_basic_not_set_up_pointers_only) {
     Run r;
     CHECK(r.ok());
     if (!r.ok()) return;
-    CHECK_EQ(r.line("pc1600 dump-basic"),
+    CHECK_EQ(r.line("c1600 dump-basic"),
              std::string("done 6\n"
                          "BASPRG_ST  $7865 = $FFFF\n"
                          "BASPRG_END $7867 = $FFFF   (len = 0)\n"
@@ -175,7 +175,7 @@ TEST(c1600_5_ac4_every_view_per_model) {
             const std::vector<std::string> lines = k->view(v);
             std::string want = "done " + std::to_string(lines.size()) + "\n";
             for (const std::string& l : lines) want += l + "\n";
-            const std::string got = r.line("pc1600 inspect " + name);
+            const std::string got = r.line("c1600 inspect " + name);
             CHECK_EQ(got, want);
             const bool onModel = name == "dump-ml" ? !pc1600
                                  : std::find(only1600.begin(), only1600.end(), name) != only1600.end() ? pc1600
@@ -195,10 +195,10 @@ TEST(c1600_5_ac4_unknown_view_refused) {
     Run r;
     CHECK(r.ok());
     if (!r.ok()) return;
-    CHECK_EQ(r.line("pc1600 inspect registers"),
+    CHECK_EQ(r.line("c1600 inspect registers"),
              std::string("refused: No view registers. The views: pointers, inventory, z80, lh, basic, programs, disks, "
                          "physical, dump-basic, dump-s1, dump-s2, dump-disk-s1, dump-disk-s2, dump-ml.\n"));
-    CHECK(starts(r.line("pc1600 inspect"), "refused: usage: "));
+    CHECK(starts(r.line("c1600 inspect"), "refused: usage: "));
 }
 
 // ── T4: AC-5, AC-6, EC-2, EC-6 ───────────────────────────────────────────
@@ -220,24 +220,24 @@ TEST(c1600_5_ac5_record_writes_wav_at_motor_stop_and_eject) {
     CHECK(r.ok());
     if (!r.ok()) return;
     CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 cassette record " + wav.string()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 cassette record " + wav.string()), std::string("done\n"));
     CHECK(!fs::exists(wav));   // nothing recorded yet
     csave(r);
     CHECK(fs::exists(wav));   // written when the motor stopped
     const std::string atStop = fileText(wav);
     CHECK(atStop.size() > 44 && atStop.compare(0, 4, "RIFF") == 0);
     // The recording is a tape a loader reads: the file CSAVE wrote.
-    CHECK_EQ(r.line("pc1600 file-kind " + wav.string()),
+    CHECK_EQ(r.line("c1600 file-kind " + wav.string()),
              std::string("done 4\nkind: basic-pc1500\nname: A\nlength: 7\nfile 1: A\n"));
     CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
     CHECK(fileText(wav) == atStop);   // nothing new to write
-    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: empty\nmotor: off\n"));
+    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: empty\nmotor: off\n"));
     // Taken out while the motor runs.
     const fs::path second = dir.path() / "second.wav";
-    CHECK_EQ(r.line("pc1600 cassette record " + second.string()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 cassette record " + second.string()), std::string("done\n"));
     CHECK_EQ(r.line("type CSAVE \"B\""), std::string("done\n"));
     r.line("wait 2s");
-    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: recording 2.048618462\nmotor: on\n"));
+    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 2.048618462\nmotor: on\n"));
     const std::size_t before = fs::exists(second) ? fileText(second).size() : 0;   // to the last stop of the motor
     CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
     // Written as LIB-7 AC-42 says: what the deck holds, to its last motor stop.
@@ -251,14 +251,14 @@ TEST(c1600_5_ac5_record_ejects_the_tape_in_first) {
     CHECK(r.ok());
     if (!r.ok()) return;
     CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 cassette record " + (dir.path() / "a.wav").string()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 cassette record " + (dir.path() / "a.wav").string()), std::string("done\n"));
     csave(r);
     const std::string a = fileText(dir.path() / "a.wav");
     // A second record: the first tape is written and taken out, a new one goes in.
-    CHECK_EQ(r.line("pc1600 cassette record " + (dir.path() / "b.wav").string()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 cassette record " + (dir.path() / "b.wav").string()), std::string("done\n"));
     CHECK(fileText(dir.path() / "a.wav") == a && a.size() > 44);
     CHECK(!fs::exists(dir.path() / "b.wav"));
-    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
+    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
 }
 
 TEST(c1600_5_ac6_status_playing_recording_empty) {
@@ -269,23 +269,23 @@ TEST(c1600_5_ac6_status_playing_recording_empty) {
     CHECK(r.ok());
     if (!r.ok()) return;
     CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: empty\nmotor: off\n"));
-    CHECK_EQ(r.line("pc1600 cassette record " + wav.string()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: empty\nmotor: off\n"));
+    CHECK_EQ(r.line("c1600 cassette record " + wav.string()), std::string("done\n"));
     csave(r);
-    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: recording 12.398522308\nmotor: off\n"));
+    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 12.398522308\nmotor: off\n"));
     CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
     // The recording played back: a cassette definition beside it (LIB-7 AC-42).
     writeFile(dir.path() / "rec.cassette.yaml",
               "format: cassette\nformat-version: 1\ncassette-name: \"Rec\"\naudio: { file: \"rec.wav\" }\n");
     CHECK_EQ(r.line("cassette { file: " + (dir.path() / "rec.cassette.yaml").string() + " }"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: playing 0.000000000 of 12.398520833\nmotor: off\n"));
+    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: playing 0.000000000 of 12.398520833\nmotor: off\n"));
     calcu::harness::RunOptions o;
     o.json = true;
     Run j(o);
     CHECK(j.ok());
     if (!j.ok()) return;
     j.line("attach printer CE-150");
-    CHECK_EQ(j.line("pc1600 cassette status"),
+    CHECK_EQ(j.line("c1600 cassette status"),
              std::string("{\"done\":true,\"result\":{\"cassette\":\"empty\",\"position\":\"0.000000000\",\"length\":"
                          "\"0.000000000\",\"motor\":false},\"reason\":null}\n"));
 }
@@ -297,12 +297,12 @@ TEST(c1600_5_ec2_tape_without_cassette_refused) {
     CHECK(r.ok());
     if (!r.ok()) return;
     const std::string no = "refused: The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.\n";
-    CHECK_EQ(r.line("pc1600 cassette record " + (dir.path() / "x.wav").string()), no);
-    CHECK_EQ(r.line("pc1600 cassette status"), no);
+    CHECK_EQ(r.line("c1600 cassette record " + (dir.path() / "x.wav").string()), no);
+    CHECK_EQ(r.line("c1600 cassette status"), no);
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 cassette status"), no);
+    CHECK_EQ(r.line("c1600 cassette status"), no);
     CHECK_EQ(r.line("attach printer CE-1600P"), std::string("done\n"));   // its cassette
-    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: empty\nmotor: off\n"));
+    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: empty\nmotor: off\n"));
 }
 
 TEST(c1600_5_ec6_unwritable_path_notice_at_motor_stop) {
@@ -314,7 +314,7 @@ TEST(c1600_5_ec6_unwritable_path_notice_at_motor_stop) {
     CHECK(r.ok());
     if (!r.ok()) return;
     CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 cassette record " + wav.string()), std::string("done\n"));   // the command itself is done
+    CHECK_EQ(r.line("c1600 cassette record " + wav.string()), std::string("done\n"));   // the command itself is done
     r.line("state notices");
     csave(r);
     const std::string n = r.line("state notices");
@@ -330,7 +330,7 @@ void echoProgram(Run& r) {
     CHECK_EQ(r.line("attach interface CE-158"), std::string("done\n"));
     r.line("key cl");
     r.line("type NEW0");
-    CHECK_EQ(r.line("pc1600 load-basic tests/fixtures/basic/ce158_echo.bas"), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 load-basic tests/fixtures/basic/ce158_echo.bas"), std::string("done\n"));
     CHECK_EQ(r.line("key cl mode"), std::string("done\n"));
 }
 } // namespace
@@ -346,10 +346,10 @@ TEST(c1600_5_ac7_feed_one_byte_per_character_time_and_hold) {
         CHECK(r.ok());
         if (!r.ok()) return;
         CHECK_EQ(r.line("attach interface CE-158"), std::string("done\n"));
-        const std::string line = "pc1600 serial ce158 feed " + (dir.path() / "in.bin").string() + (hold ? " hold=10" : "");
+        const std::string line = "c1600 serial ce158 feed " + (dir.path() / "in.bin").string() + (hold ? " hold=10" : "");
         CHECK_EQ(r.line(line), std::string("done\n"));
         CHECK(starts(r.line("wait 1s"), "done 2\n"));   // 1 300 000 ticks
-        const std::string rep = r.line("pc1600 serial ce158 report");
+        const std::string rep = r.line("c1600 serial ce158 report");
         CHECK_EQ(field(rep, "speed"), std::string("300 baud"));
         // 1 300 000 ticks: 30 character times, ten of them silent with hold=10.
         CHECK_EQ(field(rep, "received"), (hold ? std::string("20") : std::string("30")) + " of 200 bytes fed");
@@ -365,11 +365,11 @@ TEST(c1600_5_ac7_second_feed_replaces_rest) {
     CHECK(r.ok());
     if (!r.ok()) return;
     r.line("attach interface CE-158");
-    r.line("pc1600 serial ce158 feed " + (dir.path() / "a.bin").string());
+    r.line("c1600 serial ce158 feed " + (dir.path() / "a.bin").string());
     r.line("wait 100ms");
-    CHECK_EQ(r.line("pc1600 serial ce158 feed " + (dir.path() / "b.bin").string()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 serial ce158 feed " + (dir.path() / "b.bin").string()), std::string("done\n"));
     r.line("wait 1s");
-    CHECK_EQ(field(r.line("pc1600 serial ce158 report"), "received"), std::string("6 of 6 bytes fed"));
+    CHECK_EQ(field(r.line("c1600 serial ce158 report"), "received"), std::string("6 of 6 bytes fed"));
 }
 
 // AC-7 capture and report, AC-8's text: the CE-158 echo program sends its
@@ -383,16 +383,16 @@ TEST(c1600_5_ac7_capture_complete_at_quit_and_switch) {
         CHECK(r.ok());
         if (!r.ok()) return;
         echoProgram(r);
-        CHECK_EQ(r.line("pc1600 serial ce158 capture " + (dir.path() / "a.bin").string()), std::string("done\n"));
+        CHECK_EQ(r.line("c1600 serial ce158 capture " + (dir.path() / "a.bin").string()), std::string("done\n"));
         CHECK(fs::exists(dir.path() / "a.bin") && fileText(dir.path() / "a.bin").empty());
         CHECK_EQ(r.line("type RUN"), std::string("done\n"));
         r.line("wait 2s");
         // Another capture file: the first is complete.
-        CHECK_EQ(r.line("pc1600 serial ce158 capture " + (dir.path() / "b.bin").string()), std::string("done\n"));
+        CHECK_EQ(r.line("c1600 serial ce158 capture " + (dir.path() / "b.bin").string()), std::string("done\n"));
         CHECK_EQ(fileText(dir.path() / "a.bin"), std::string("TYPE A LINE AND PRESS RETURN\r"));
-        CHECK_EQ(r.line("pc1600 serial ce158 feed " + (dir.path() / "in.txt").string()), std::string("done\n"));
+        CHECK_EQ(r.line("c1600 serial ce158 feed " + (dir.path() / "in.txt").string()), std::string("done\n"));
         r.line("wait 2s");
-        CHECK_EQ(r.line("pc1600 serial ce158 report"),
+        CHECK_EQ(r.line("c1600 serial ce158 report"),
                  std::string("done 10\n"
                              "speed: 300 baud\n"
                              "bits: not set\n"
@@ -404,7 +404,7 @@ TEST(c1600_5_ac7_capture_complete_at_quit_and_switch) {
                              "printer: 38 bytes\n"
                              "| HELLO FROM THE CE-158\n"
                              "| RECEIVED: HELLO\n"));
-        CHECK(has(r.line("lcd"), "\n>\n"));   // the program ended
+        CHECK(has(r.line("display-text"), "\n>\n"));   // the program ended
         // What the port sends now goes to b.bin, complete at the end of the run.
         r.line("key cl");
         r.line("type RUN");
@@ -424,12 +424,12 @@ TEST(c1600_5_ac7_link_gives_the_path_and_refuses_feed) {
     CHECK(r.ok());
     if (!r.ok()) return;
     r.line("attach interface CE-158");
-    CHECK_EQ(r.line("pc1600 serial ce158 link"), std::string("done 1\npath: <save folder>/calcu1600-ce158.serial\n"));
+    CHECK_EQ(r.line("c1600 serial ce158 link"), std::string("done 1\npath: <save folder>/calcu1600-ce158.serial\n"));
     CHECK(fs::exists(fs::path(r.saveFolder()) / "calcu1600-ce158.serial"));
     const std::string refused = "refused: The port has a host link; feed and capture are refused for it.\n";
-    CHECK_EQ(r.line("pc1600 serial ce158 feed " + (dir.path() / "in.bin").string()), refused);
-    CHECK_EQ(r.line("pc1600 serial ce158 capture " + (dir.path() / "out.bin").string()), refused);
-    CHECK_EQ(field(r.line("pc1600 serial ce158 report"), "host link"), std::string("yes"));
+    CHECK_EQ(r.line("c1600 serial ce158 feed " + (dir.path() / "in.bin").string()), refused);
+    CHECK_EQ(r.line("c1600 serial ce158 capture " + (dir.path() / "out.bin").string()), refused);
+    CHECK_EQ(field(r.line("c1600 serial ce158 report"), "host link"), std::string("yes"));
 }
 
 TEST(c1600_5_ac7_report_ce158_with_printer_port) {
@@ -440,7 +440,7 @@ TEST(c1600_5_ac7_report_ce158_with_printer_port) {
     // The bundled example: it prints, sends its prompt and waits for a line.
     CHECK_EQ(r.line("preset examples:interfaces/ce158_demo.pc1500a"), std::string("done\n"));
     r.line("wait 2s");
-    CHECK_EQ(r.line("pc1600 serial ce158 report"),
+    CHECK_EQ(r.line("c1600 serial ce158 report"),
              std::string("done 9\n"
                          "speed: 300 baud\n"
                          "bits: not set\n"
@@ -461,10 +461,10 @@ TEST(c1600_5_ac7_rs232c_on_pc1600) {
     if (!r.ok()) return;
     // The bundled example sets COM1: up; RUN "S" saves the program over it.
     CHECK_EQ(r.line("preset examples:interfaces/setcom1600.pc1600"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 serial rs232c capture " + (dir.path() / "com1.txt").string()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 serial rs232c capture " + (dir.path() / "com1.txt").string()), std::string("done\n"));
     CHECK_EQ(r.line("type RUN \"S\""), std::string("done\n"));
     r.line("wait 5s");
-    const std::string rep = r.line("pc1600 serial rs232c report");
+    const std::string rep = r.line("c1600 serial rs232c report");
     CHECK_EQ(field(rep, "speed"), std::string("9600 baud"));
     CHECK_EQ(field(rep, "sent"), std::string("308 bytes"));
     CHECK(has(rep, "\n| 61010 SETCOM \"COM1:\",9600,8,N,1,N,N\n"));
@@ -507,28 +507,28 @@ TEST(c1600_5_ac9_no_host_link_unless_asked) {
     CHECK_EQ(r.line("state c1600.serial-links"), std::string("done 1\n{\"rs232c\":\"\",\"ce158\":\"\",\"moves\":0}\n"));
     for (const auto& e : fs::recursive_directory_iterator(r.server->setup().runFolder()))
         CHECK(e.path().extension() != ".serial");
-    CHECK_EQ(field(r.line("pc1600 serial rs232c report"), "host link"), std::string("no"));
+    CHECK_EQ(field(r.line("c1600 serial rs232c report"), "host link"), std::string("no"));
 }
 
 TEST(c1600_5_ec3_port_missing_refused_not_held) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder dir("c1600-5-ec3");
     writeFile(dir.path() / "in.bin", "x");
-    const std::string feed = "pc1600 serial ce158 feed " + (dir.path() / "in.bin").string();
+    const std::string feed = "c1600 serial ce158 feed " + (dir.path() / "in.bin").string();
     Run r;
     CHECK(r.ok());
     if (!r.ok()) return;
     CHECK_EQ(r.line(feed), std::string("refused: The machine has no CE-158.\n"));
-    CHECK_EQ(r.line("pc1600 serial rs232c report"),
+    CHECK_EQ(r.line("c1600 serial rs232c report"),
              std::string("refused: The machine has no RS-232C port: only the PC-1600 has one.\n"));
     CHECK_EQ(r.line("model PC-1500"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 serial rs232c link"),
+    CHECK_EQ(r.line("c1600 serial rs232c link"),
              std::string("refused: The machine has no RS-232C port: only the PC-1600 has one.\n"));
     // Not held for a machine built later: the CE-158 plugged in now has no feed.
     CHECK_EQ(r.line("attach interface CE-158"), std::string("done\n"));
     r.line("wait 500ms");
-    CHECK_EQ(field(r.line("pc1600 serial ce158 report"), "received"), std::string("0 of 0 bytes fed"));
-    CHECK(starts(r.line("pc1600 serial ce158 jump"), "refused: usage: "));
+    CHECK_EQ(field(r.line("c1600 serial ce158 report"), "received"), std::string("0 of 0 bytes fed"));
+    CHECK(starts(r.line("c1600 serial ce158 jump"), "refused: usage: "));
 }
 
 // ── T6: AC-11, EC-5 ──────────────────────────────────────────────────────
@@ -542,19 +542,19 @@ TEST(c1600_5_ac11_host_drive_attach_folder_and_off) {
     CHECK(r.ok());
     if (!r.ok()) return;
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 host-drive " + one.str()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 host-drive " + one.str()), std::string("done\n"));
     CHECK(has(r.line("capabilities"), "place host-drive host-drive\n"));
     // A listing of S3: as help/09-host-drive.md describes it.
     CHECK_EQ(r.line("type FILES \"S3:\""), std::string("done\n"));
     r.line("wait");
-    CHECK(has(r.line("lcd"), "\nHELLO   .TXT,"));
+    CHECK(has(r.line("display-text"), "\nHELLO   .TXT,"));
     // AC-11: attached already, it shows the other folder from then on.
-    CHECK_EQ(r.line("pc1600 host-drive " + two.str()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 host-drive " + two.str()), std::string("done\n"));
     r.line("type FILES \"S3:\"");
     r.line("wait");
-    const std::string lcd = r.line("lcd");
+    const std::string lcd = r.line("display-text");
     CHECK(has(lcd, "\nOTHER   .TXT,") && !has(lcd, "HELLO"));
-    CHECK_EQ(r.line("pc1600 host-drive off"), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 host-drive off"), std::string("done\n"));
     CHECK(has(r.line("capabilities"), "place host-drive empty\n"));
 }
 
@@ -567,11 +567,11 @@ TEST(c1600_5_ec5_refused_on_pc1500_and_for_no_folder) {
     if (!r.ok()) return;
     for (const char* model : {"PC-1500", "PC-1500A"}) {
         CHECK_EQ(r.line(std::string("model ") + model), std::string("done\n"));
-        CHECK_EQ(r.line("pc1600 host-drive " + one.str()), std::string("refused: The host drive is a PC-1600 peripheral.\n"));
+        CHECK_EQ(r.line("c1600 host-drive " + one.str()), std::string("refused: The host drive is a PC-1600 peripheral.\n"));
     }
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
     const std::string notFolder = (one.path() / "file").string();
-    CHECK_EQ(r.line("pc1600 host-drive " + notFolder), "refused: The path " + notFolder + " is no folder.\n");
+    CHECK_EQ(r.line("c1600 host-drive " + notFolder), "refused: The path " + notFolder + " is no folder.\n");
     CHECK(has(r.line("capabilities"), "place host-drive empty\n"));
 }
 
@@ -600,7 +600,7 @@ TEST(c1600_5_ac12_call_returns_registers_and_time) {
         CHECK(starts(r.line("pause"), "done 1\npaused"));
         const std::string before = r.line("registers LH5801");
         CHECK_EQ(r.line("poke LH5801 me0 0x4800 0xB5 0x42 0x9A"), std::string("done\n"));
-        const std::string call = r.line("pc1600 call LH5801 0x4800");
+        const std::string call = r.line("c1600 call LH5801 0x4800");
         CHECK(starts(call, "done 13\nreturned: yes\n"));
         CHECK_EQ(reg(call, "a"), std::string("0x42"));
         CHECK_EQ(reg(call, "p"), reg(before, "p"));
@@ -617,7 +617,7 @@ TEST(c1600_5_ac12_call_returns_registers_and_time) {
     r.line("pause");
     const std::string before = r.line("registers SC7852");
     CHECK_EQ(r.line("poke SC7852 memory 0xD000 0x3E 0x42 0xC9"), std::string("done\n"));
-    const std::string call = r.line("pc1600 call sc7852 0xD000");   // the target in any case
+    const std::string call = r.line("c1600 call sc7852 0xD000");   // the target in any case
     CHECK(starts(call, "done 20\nreturned: yes\n"));
     CHECK_EQ(reg(call, "af").substr(0, 4), std::string("0x42"));
     CHECK_EQ(reg(call, "pc"), reg(before, "pc"));
@@ -634,17 +634,17 @@ TEST(c1600_5_ac12_timeout_pauses_and_says_so) {
     if (!r.ok()) return;
     r.line("pause");
     CHECK_EQ(r.line("poke LH5801 me0 0x4810 0xBA 0x48 0x10"), std::string("done\n"));
-    const std::string call = r.line("pc1600 call LH5801 0x4810 timeout=100ms");
+    const std::string call = r.line("c1600 call LH5801 0x4810 timeout=100ms");
     CHECK(starts(call, "done 13\nreturned: no, timeout\n"));
     CHECK_EQ(reg(call, "p"), std::string("0x4810"));
     const long long ticks = std::stoll(field(call, "ticks"));   // 100 ms of 1.3 MHz, to the end of an instruction
     CHECK(ticks >= 130000 && ticks < 130100);
     CHECK(starts(r.line("state run-state"), "done 1\n{\"paused\":true"));
-    CHECK(starts(r.line("pc1600 call LH5801 0x4810 timeout=1"), "refused: timeout= takes a duration"));
+    CHECK(starts(r.line("c1600 call LH5801 0x4810 timeout=1"), "refused: timeout= takes a duration"));
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
     r.line("pause");
     r.line("poke LH5803 me0 0x5100 0xB5 0x42 0x9A");
-    const std::string sub = r.line("pc1600 call LH5803 0x5100 timeout=100ms");
+    const std::string sub = r.line("c1600 call LH5803 0x5100 timeout=100ms");
     CHECK(starts(sub, "done 13\nreturned: no, timeout\n"));
     CHECK_EQ(reg(sub, "p"), std::string("0x5100"));
 }
@@ -654,9 +654,9 @@ TEST(c1600_5_ac12_refused_unless_paused) {
     Run r;
     CHECK(r.ok());
     if (!r.ok()) return;
-    CHECK_EQ(r.line("pc1600 call LH5801 0x4800"), std::string("refused: The machine is not paused (pause first).\n"));
+    CHECK_EQ(r.line("c1600 call LH5801 0x4800"), std::string("refused: The machine is not paused (pause first).\n"));
     r.line("pause");
-    CHECK_EQ(r.line("pc1600 call Z80 0x4800"), std::string("refused: The machine has no debug target Z80.\n"));
-    CHECK_EQ(r.line("pc1600 call LH5801 0x12345"), std::string("refused: The address 0x12345 is no address of 16 bits.\n"));
-    CHECK(starts(r.line("pc1600 call LH5801"), "refused: usage: "));
+    CHECK_EQ(r.line("c1600 call Z80 0x4800"), std::string("refused: The machine has no debug target Z80.\n"));
+    CHECK_EQ(r.line("c1600 call LH5801 0x12345"), std::string("refused: The address 0x12345 is no address of 16 bits.\n"));
+    CHECK(starts(r.line("c1600 call LH5801"), "refused: usage: "));
 }

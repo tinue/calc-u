@@ -54,14 +54,14 @@ AC-17). The machine is idle as LIB-6 AC-36 says.
 ## Acceptance Criteria
 
 - [ ] **AC-1** — Given the harness with Calc-U-59, then the commands of
-  this spec exist under `ti59`, next to those of C59-2 and C59-4, work
+  this spec exist under `c59`, next to those of C59-2 and C59-4, work
   on the TI-59, the TI-58 and the TI-58C, and build with the harness on
   macOS, Linux and Windows (LIB-11 AC-13, AC-15). Today the tools work
   for the TI-59 only and on macOS only
   (`tools/agentic/ti59file.py:20, 106`, `tools/headless/build.sh:10-12`).
 
 ROM coverage
-- [ ] **AC-2** — Given `profile on` (LIB-10 AC-20) and then `ti59
+- [ ] **AC-2** — Given `profile on` (LIB-10 AC-20) and then `c59
   coverage`, then the reply lists, in order and as hexadecimal numbers,
   the addresses of the calculator's own ROM, 0000 to 17FF, that were
   carried out since, and their number out of 6144; the addresses the
@@ -70,7 +70,7 @@ ROM coverage
   refused (`tools/headless/coverage.py:217-261`).
 
 Timings
-- [ ] **AC-3** — Given `ti59 line-times`, optionally with `limit=` and a
+- [ ] **AC-3** — Given `c59 line-times`, optionally with `limit=` and a
   duration (4000 s without it), then the machine runs until it has been
   idle for 15 seconds in which nothing was printed, or until the limit.
   The reply gives, for each line printed meanwhile, the time from the
@@ -84,14 +84,14 @@ Timings
   feed (`tools/agentic/ti59file.py:192-195`,
   `tools/agentic/README.md:69-70`). Both
   numbers come from measurements on a PC-100A (C59-6 AC-4).
-- [ ] **AC-5** — Given `ti59 run-time` with key names, then each key is
+- [ ] **AC-5** — Given `c59 run-time` with key names, then each key is
   pressed in turn as the command `key` presses it (LIB-5 AC-15), and the
   reply gives for each the time from its press until the display is lit
   again and no program runs, 0 for a key that starts none, and their
   sum. A key whose program has not ended after 4000 seconds is marked
   as not finished in the reply, and the command ends there, done
   (`tools/agentic/runtime.py:18-32`, `tools/agentic/ti59file.py:116-145`).
-- [ ] **AC-6** — Given `ti59 hot-steps`, optionally with `limit=` and a
+- [ ] **AC-6** — Given `c59 hot-steps`, optionally with `limit=` and a
   duration (200 s without it), then the machine runs for that long and
   the program step it is at is noted every 97 instructions. The reply
   gives the share of the notes in which the printer was printing, the
@@ -99,12 +99,12 @@ Timings
   many notes fell into a program of the calculator's memory, of the ROM
   and of the module, and the 25 program steps noted most often, each
   with its share (`tools/agentic/hotsteps.py:14-45`).
-- [ ] **AC-7** — Given `ti59 step-trace` with two times, counted from
+- [ ] **AC-7** — Given `c59 step-trace` with two times, counted from
   the start of the command, the second after the first, then the machine
   runs to the second, and the reply gives the program steps it was at
   between the two, noted every 20 instructions, each with how often in a
   row (`tools/agentic/hotsteps.py:48-62`).
-- [ ] **AC-8** — Given `ti59 step-cost` with keycodes (as C59-2 AC-9
+- [ ] **AC-8** — Given `c59 step-cost` with keycodes (as C59-2 AC-9
   writes them), then the reply gives what one run of that sequence
   costs, in instructions and in milliseconds, in normal mode and in fast
   mode. The command uses the session's machine and leaves it changed: it
@@ -115,7 +115,7 @@ Timings
   (`tools/agentic/stepcost.py:18-66`).
 
 Listings
-- [ ] **AC-9** — Given `ti59 keycodes list`, optionally with a first and
+- [ ] **AC-9** — Given `c59 keycodes list`, optionally with a first and
   a last step, then the reply is the program in the calculator's memory
   as a listing, as `2nd List` prints it on the PC-100C: one line per
   step, the step number in three digits, the keycode in two, then the
@@ -123,7 +123,7 @@ Listings
   `docs/formats/preset.md` §4.1 and can be pasted into a preset's
   `keycodes:` or a keystroke program file as it is; no printer is
   needed.
-- [ ] **AC-14** — Given `ti59 keycodes disassemble`, optionally with a
+- [ ] **AC-14** — Given `c59 keycodes disassemble`, optionally with a
   first and a last step, then the reply is the program in the
   calculator's memory as an assembly, one line per instruction: the step number in three
   digits, two spaces, the mnemonic, and after one space what the
@@ -140,12 +140,12 @@ Listings
   ```
 
   (`tools/agentic/kdis.py:20-58`).
-- [ ] **AC-10** — Given `ti59 keycodes assemble` with a file that holds
+- [ ] **AC-10** — Given `c59 keycodes assemble` with a file that holds
   an assembly, then the keycodes it stands for are written into the
   program memory, each line from the step it names; a mnemonic that is
   unknown, an operand that is missing, or a step beyond the model's last
-  one refuses the command, and nothing is written. What `ti59 keycodes
-  disassemble` gives, assembled again, gives the same program; `ti59 program`
+  one refuses the command, and nothing is written. What `c59 keycodes
+  disassemble` gives, assembled again, gives the same program; `c59 program`
   (C59-2 AC-9) reads and writes the same memory as bare keycodes (OQ-2).
 - [ ] **AC-11** — Given an assembly, then every mnemonic in it is a name
   that the command `key` takes for that key (LIB-5 AC-26; OQ-1): the
@@ -165,18 +165,18 @@ Scripts that stay
   card in the reader with its position.
 
 ## Edge Cases
-- **EC-2** — Given `ti59 line-times` and nothing is printed, then the
+- **EC-2** — Given `c59 line-times` and nothing is printed, then the
   reply says so, and the command ends after the first 15 seconds of
   idle.
-- **EC-3** — Given `ti59 step-cost` with a sequence that never ends,
+- **EC-3** — Given `c59 step-cost` with a sequence that never ends,
   then the command fails after 300 seconds of emulated time
   (`tools/agentic/README.md:239-243`).
-- **EC-4** — Given `ti59 keycodes list` for an empty program, then the
+- **EC-4** — Given `c59 keycodes list` for an empty program, then the
   reply has no lines.
 - **EC-5** — Given a TI-58C, whose instructions all take 32 ticks, then
   the times in instructions are ticks divided by 32 like on the other
   models.
-- **EC-6** — Given `ti59 line-times` or `ti59 hot-steps` on a machine
+- **EC-6** — Given `c59 line-times` or `c59 hot-steps` on a machine
   without a PC-100C, then `line-times` is refused, and `hot-steps`
   gives zero for the two shares of the printer.
 
@@ -199,13 +199,13 @@ Scripts that stay
   preset; the debug panel keeps what it shows today. *Since 2026-11-13
   (user) those names are `preset.md` §8.1's, so `StFlg` and `IfFlg`
   become `STF` and `IFF`.*
-- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* What `ti59 keycodes assemble` reads (AC-10). Today's
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* What `c59 keycodes assemble` reads (AC-10). Today's
   assembler is a library for scripts, with labels and computed
   addresses, and has no text form. *Recommendation:* the command reads
-  what `ti59 keycodes list` writes, no more; the library with labels
+  what `c59 keycodes list` writes, no more; the library with labels
   stays with the calendar scripts that use it.
-- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The names of the commands. `harness.md` H-2 names `ti59
-  keycodes` and `ti59 coverage`. *Recommendation:* as written here.
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The names of the commands. `harness.md` H-2 names `c59
+  keycodes` and `c59 coverage`. *Recommendation:* as written here.
 - [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* "Mnemonic" and "listing" for the glossary, as defined
   above. The glossary lists "listing" under Avoid for a program; here it
   is the written form of one.
@@ -232,3 +232,4 @@ Scripts that stay
 | In the implementation (M-59): `ti59 step-cost` is refused while a program runs (AC-8) | 2.3.0's entry keys pressed into a running program measure nothing | 2026-11-17 |
 | In the implementation (M-59): the listing writes keycode 65 as the PC-100C prints it, `x`; the debug panel's table of 2.3.0 keeps `|x|` (AC-9) | AC-9: "as `2nd List` prints it"; the table is a golden of 2.3.0 (qa-report, finding) | 2026-11-17 |
 | In the implementation (M-59): `coverage` leaves out the whole key-detect range without `all` (AC-2, D-7); 2.3.0's tool left out an instruction there only with the idle flag set | `profile` keeps no flag (qa-report, finding) | 2026-11-17 |
+| Release prep step 1: the commands are under the product word `c59` (was `ti59`); C59-2's `ti59 registers` (data registers) is `c59 data-registers`, its session command `c59.data-registers`, so that it does not read as the debugger's common `registers` (CPU). ACs edited in place, names only | user, 2026-11-17 (`docs/reviews/e-simplification.md` §10 Q-6): one word per product everywhere; `docs/reviews/release-prep-plan.md` §1; ledger row 59-58 | 2026-11-17 |

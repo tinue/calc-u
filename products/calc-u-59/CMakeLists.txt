@@ -164,7 +164,7 @@ if(CALCU_TESTS)
   # LIB-11 Part E (design §11.6 H4; M-59): today's tools are gone and no
   # file is named for adapters (tools/check_no_old_tools.cmake).
   calcu_add_test(CalcU59NoOldTools frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_old_tools.cmake)
-  # LIB-11 AC-15 (design §11.6 H5): `calcu --product 59` runs as a process
+  # LIB-11 AC-15 (design §11.6 H5): `calcu --product c59` runs as a process
   # of its own (tests/calcu_runs.cmake; also in every desktop job of the workflow).
   calcu_add_test(CalcU59CalcuRuns frequent COMMAND ${CMAKE_COMMAND} -DCALCU=$<TARGET_FILE:calcu> -P tests/calcu_runs.cmake)
   if(Python3_FOUND)
@@ -180,14 +180,14 @@ if(CALCU_TESTS)
     calcu_add_test(CalcU59Scripts longer
                    COMMAND ${Python3_EXECUTABLE} tests/check_scripts.py --calcu $<TARGET_FILE:calcu>)
   endif()
-  # LIB-6 AC-43 (design §11.6 P8; C59-2 T9): `calcu --product 59 check-preset`
+  # LIB-6 AC-43 (design §11.6 P8; C59-2 T9): `calcu --product c59 check-preset`
   # over the examples and the startup presets, the four with magnetic cards
   # included since M-55 (C59-7 AC-30).
   set(CALCU59_PRESET_GLOBS)
   foreach(ext ti59 ti58 ti58c)
     list(APPEND CALCU59_PRESET_GLOBS examples/*.${ext} examples/*/*.${ext})
   endforeach()
-  calcu_add_preset_check(CalcU59Presets PRODUCT 59 FILES ${CALCU59_PRESET_GLOBS})
+  calcu_add_preset_check(CalcU59Presets PRODUCT c59 FILES ${CALCU59_PRESET_GLOBS})
   # The Xcode project compiles only Swift and the bridge (C59-5, ADR 0013).
   calcu_add_test(CalcU59XcodeProjectCheck frequent COMMAND frontends/swift/check_xcode_project.sh)
   # C59-5 AC-13 (design B1): attach only in Debug builds for macOS and the

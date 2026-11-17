@@ -40,7 +40,7 @@ Architecture facts (register model, SCOM layout, PC encoding, machine variants, 
 - `reference/DebugAPI.md` — debug panel and bridge API
 - `reference/FrontendParity.md` — which feature lives where in the three GUIs
 - `reference/WebClient.md` — the web client and its `dist/` contract
-- `reference/Harness.md` — the harness `calcu --product 59`: ROM traces, timing and profiling, the `ti59` commands, the scripts that stay
+- `reference/Harness.md` — the harness `calcu --product c59`: ROM traces, timing and profiling, the `c59` commands, the scripts that stay
 - `docs/formats/preset.md`, `docs/formats/cue-card.md` (repository root) — the preset format 2 (`.ti59`/`.ti58`/`.ti58c`) and the cue card block
 - `rom/TI59-ROM-Guide.md`, `rom/TI58C-ROM-Guide.md` — how the ROMs work
 
@@ -63,10 +63,10 @@ ROMs in `roms/` (`roms/fetch_roms.sh`), the bundled presets in `examples/`
 default settings) with its startup preset or its built-in default: the
 Master Library module, no printer (LIB-18 AC-18), at key readiness.
 
-- One-shot: `calcu --product 59 wait 2s then key-down 7 then wait 100ms then key-up 7 then wait 500ms then lcd`
+- One-shot: `calcu --product c59 wait 2s then key-down 7 then wait 100ms then key-up 7 then wait 500ms then display-text`
   (commands parted by `then`; exit status 0, 1 at the first refusal, 2 when
   it cannot start).
-- `calcu --product 59 serve`: one command per line on standard input, one
+- `calcu --product c59 serve`: one command per line on standard input, one
   reply per line (`done`, `done <n>` and n lines, `refused: <reason>`);
   `--json` gives one object `{"done","result","reason"}` per reply. From
   Python: `library/harness/python/calcu_serve.py`.
@@ -74,7 +74,7 @@ Master Library module, no printer (LIB-18 AC-18), at key readiness.
   `key <name> …` (LIB-5: each pressed in turn as the app types it, 100 ms
   and until the ROM read it; the names of `docs/formats/preset.md` §8.1,
   `2nd Pgm`, `x^2`, `RTN`; replies when the last key is up; no `type` on a
-  TI model), `lcd`,
+  TI model), `display-text`,
   `display`, `state <topic>`, `capabilities`, `ticks`, `quit`
   (`calcu --help` lists them). Machine control (LIB-18): `model <TI-59|TI-58|TI-58C>`,
   `attach <place> <peripheral>` (`attach slot-1 ML`), `detach <place>`, `reset`,
@@ -88,27 +88,27 @@ Master Library module, no printer (LIB-18 AC-18), at key readiness.
   segment picture, into `--output-folder`), and the steps as commands
   (`printer-trace on|off`, `elapsed-time start|report`, `full-speed`, …).
   The product's sections and rules: `app/TIPresetKeys`, `app/TIPresetRules`.
-- Program memory (C59-2 AC-9): `ti59 partition [<value>]`, `ti59 program
-  [<step>] <keycode>…` (write) and `ti59 program <step> count=<n>` (read),
-  `ti59 registers <NN>=<value>…` (write; `H00`–`H03` on the TI-58C) and
-  `ti59 registers <NN>…` (read).
+- Program memory (C59-2 AC-9): `c59 partition [<value>]`, `c59 program
+  [<step>] <keycode>…` (write) and `c59 program <step> count=<n>` (read),
+  `c59 data-registers <NN>=<value>…` (write; `H00`–`H03` on the TI-58C) and
+  `c59 data-registers <NN>…` (read).
 - Paper (LIB-8): `paper text|marks|png <path>`, `cut-paper`; debugger
   (LIB-10): `pause`, `step`, `resume`, `registers`, `break`, `trace <file>|off`, ….
-- Debug panel (C59-4): `ti59 asm load <file>|run|clear` (the ASM overlay,
-  format 2.0, `examples/assembly/README.md`), `ti59 dump
-  scom|memory|prog|vars`, `ti59 log-level off|info|debug`, `ti59 heatmap
-  reset`; `state calculator-debug|program-listing|cpu-debug|heatmap|asm-overlay|debug-view`
+- Debug panel (C59-4): `c59 asm load <file>|run|clear` (the ASM overlay,
+  format 2.0, `examples/assembly/README.md`), `c59 dump
+  scom|memory|prog|vars`, `c59 log-level off|info|debug`, `c59 heatmap
+  reset`; `state c59.calculator-debug|c59.program-listing|c59.cpu-debug|c59.heatmap|c59.asm-overlay|c59.debug-view`
   reads what the panel shows (`app/TIDebugPart`).
 - Opening a file (LIB-13): `open <path>` opens it as a drop does: a preset
   by its extension or its `model:` line, an `.asm` overlay, a
   `.keystrokes.yaml` program written into the running machine from step 000;
   `.rom.yaml` and `ti58c.memory.yaml` are refused (`app/TIFileKinds`).
 - Product commands (C59-9, `app/TIHarnessCommands`, the run facts in
-  `app/TIRunProbe`, the assembly in `app/TIMnemonics`): `ti59 run-time
-  <key>…`, `ti59 line-times [limit=<d>]`, `ti59 hot-steps [limit=<d>]`,
-  `ti59 step-trace <from> <to>`, `ti59 step-cost <keycode>…`, `ti59 coverage
-  [all]` (after `profile on`), `ti59 keycodes list|disassemble [<first>
-  [<last>]]` and `ti59 keycodes assemble <file>`. A ROM trace of keys:
+  `app/TIRunProbe`, the assembly in `app/TIMnemonics`): `c59 run-time
+  <key>…`, `c59 line-times [limit=<d>]`, `c59 hot-steps [limit=<d>]`,
+  `c59 step-trace <from> <to>`, `c59 step-cost <keycode>…`, `c59 coverage
+  [all]` (after `profile on`), `c59 keycodes list|disassemble [<first>
+  [<last>]]` and `c59 keycodes assemble <file>`. A ROM trace of keys:
   `trace <file>`, the keys, `trace off`, then `tools/read_trace.py
   --labels rom/TI59-labels.asm --changes <file>`.
 - Machine state (LIB-11 AC-24, C59-9 AC-15): `state-save <file>`,

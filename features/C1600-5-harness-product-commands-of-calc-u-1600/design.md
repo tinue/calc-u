@@ -9,7 +9,7 @@ Status: approved by the user at the Part C2/D boundary (2026-11-16)
 
 M-51 does three things, in this order, as separate commits on short
 branches (ADR 0029):
-1. the `pc1600` commands of this row (this design);
+1. the `c1600` commands of this row (this design);
 2. the harness's Calc-U-1600 entry built through `app/SharpAppPart`, and
    today's tools removed (LIB-11's design, Part D);
 3. the adapter check of plan §1 over Calc-U-1600 and the library
@@ -22,7 +22,7 @@ part 2.
 
 What M-51 finds (taken as done by the earlier designs):
 - M-44 (C1600-2): the loaders on the loader memory kind
-  `c1600.loader-memory` and their `pc1600` commands; C1600-5's commands
+  `c1600.loader-memory` and their `c1600` commands; C1600-5's commands
   sit "next to those of C1600-2" (AC-1).
 - M-45 (LIB-10 1600): one `machine::DebugTarget` per processor, the
   run control (`pause`, `step-out`, `registers`, `peek`, `history`,
@@ -44,7 +44,7 @@ Scope).
 
 | File | Holds |
 |---|---|
-| `products/calc-u-1600/app/SharpHarnessCommands.hpp/.cpp` (new) | `shared::addSharpHarnessCommands(calcu::harness::CommandRegistry&, SharpHarnessParts&)`: every command of §3 under the word `pc1600` (`CommandRegistry::addProduct`, LIB-11 §3.3) |
+| `products/calc-u-1600/app/SharpHarnessCommands.hpp/.cpp` (new) | `shared::addSharpHarnessCommands(calcu::harness::CommandRegistry&, SharpHarnessParts&)`: every command of §3 under the word `c1600` (`CommandRegistry::addProduct`, LIB-11 §3.3) |
 | `products/calc-u-1600/app/SerialScripts.hpp/.cpp` (new) | `shared::SerialScriptsPart : calcu::sessions::SessionPart`: per serial port the feed, the capture and the report counters (§3.4) |
 | `products/calc-u-1600/app/BasicDump.hpp/.cpp` (new) | `shared::basicDump(const sharp::LoaderMemory&, Model)`: the lines of AC-2, AC-3, EC-4 (§3.1), moved from `tools/pc1500_cli.cpp:377-405` and `tools/pc1600_cli.cpp:207-237` |
 | `products/calc-u-1600/core/Connector/PrintableBytes.hpp` (new) | the text rule of AC-8, moved out of `core/Connector/Ce158Card.hpp:363-382` so that the app layer and the card share it |
@@ -58,14 +58,14 @@ Scope).
 
 ## 3. The commands
 
-All are product commands under `pc1600` (AC-1; `harness.md` H-2),
+All are product commands under `c1600` (AC-1; `harness.md` H-2),
 registered for every Sharp model; a command that needs what a model
 lacks refuses with a sentence that says so. Every handler reaches the
 machine through capabilities (C1600-1's product kinds, LIB-2's serial
 port kind, LIB-7's media) and names no machine class (Technical
 Requirements; the CTest `CalcU1600MachineIncludeCheck` covers `app/`).
 
-### 3.1 `pc1600 dump-basic` (AC-2, AC-3, EC-4)
+### 3.1 `c1600 dump-basic` (AC-2, AC-3, EC-4)
 
 Reads through `c1600.loader-memory` (`peek`, PC-1500 ME0, PC-1600 the
 Z-80's view). The lines are today's (`pc1500_cli.cpp:385-404`,
@@ -79,7 +79,7 @@ $C0C5)`). EC-4: when the start does not lie before the end, the rows
 are left out; the pointers are given as they are. `--json` gives
 `{"pointers":[{"name","address","value","z80"?,"length"?}],"rows":[{"address","bytes"}]}`.
 
-### 3.2 `pc1600 inspect <view>` (AC-4)
+### 3.2 `c1600 inspect <view>` (AC-4)
 
 `<view>` is one of the names of `inspect::viewName`
 (`core/Debug/Inspect/Inspector.cpp:35-53`). The reply is
@@ -90,7 +90,7 @@ the model lacks gives the one line the inspector writes,
 (`PC1500Inspector.cpp:388`, `PC1600Inspector.cpp:888`); that reply is
 done, not refused, as the spec gives it as the reply.
 
-### 3.3 `pc1600 cassette record <path>`, `pc1600 cassette status` (AC-5, AC-6, EC-2, EC-6)
+### 3.3 `c1600 cassette record <path>`, `c1600 cassette status` (AC-5, AC-6, EC-2, EC-6)
 
 - `record <path>`: refused without a media place `cassette` (EC-2;
   neither a CE-150 nor a CE-1600P plugged in). Otherwise a tape in the
@@ -108,7 +108,7 @@ done, not refused, as the spec gives it as the reply.
   seconds with nine decimals from ticks (LIB-11 §3.1). `--json`:
   `{"tape":"playing|recording|empty","position","length","motor"}`.
 
-### 3.4 `pc1600 serial <port> …` (AC-7, AC-8, AC-9, EC-3)
+### 3.4 `c1600 serial <port> …` (AC-7, AC-8, AC-9, EC-3)
 
 `<port>` is `ce158` (the CE-158's port, owner `peripheral:CE-158@interface`)
 or `rs232c` (the PC-1600's own port, owner the machine; OQ-1). The port
@@ -128,7 +128,7 @@ return left out, any other byte `<XX>`; one rule, `PrintableBytes.hpp`.
 AC-9: no port gets a host link unless `link` asks; the harness's
 `PeripheralsPart` starts with every link off (LIB-11 AC-6, AC-8).
 
-### 3.5 `pc1600 host-drive <folder>|off` (AC-11, EC-5)
+### 3.5 `c1600 host-drive <folder>|off` (AC-11, EC-5)
 
 On a PC-1600 the command sends LIB-18's attach of the host drive in
 `host-drive` with that folder (LIB-18 AC-30; the folder through the
@@ -137,7 +137,7 @@ attached, shows that folder from then on; `off` sends the detach. What
 follows (the power cycle) is LIB-18 AC-30's. Refused on a PC-1500 or
 PC-1500A and for a path that is no folder (EC-5).
 
-### 3.6 `pc1600 call <target> <address> [timeout=<duration>]` (AC-12)
+### 3.6 `c1600 call <target> <address> [timeout=<duration>]` (AC-12)
 
 - Refused unless the machine is paused (LIB-10's `run-state`).
   `<target>` is a debug target of LIB-10 1600 (the IDs of M-45: the
@@ -199,7 +199,7 @@ Technical Requirements ask); `SKIP_UNLESS` the ROMs are there.
 
 | Task | What | ACs/ECs | Test (`tests/harness_product_commands_tests.cpp` unless named) |
 |---|---|---|---|
-| T1 | Registry under `pc1600` on every model | AC-1 | `c1600_5_ac1_commands_under_pc1600_on_every_model` (`--help` lists them; each model answers `pc1600 inspect pointers`) |
+| T1 | Registry under `c1600` on every model | AC-1 | `c1600_5_ac1_commands_under_c1600_on_every_model` (`--help` lists them; each model answers `c1600 inspect pointers`) |
 | T2 | `dump-basic` | AC-2, AC-3, EC-4 | `c1600_5_ac2_dump_basic_pc1500a_after_a_program` (a one-line program typed in with `type`; the six pointer lines and the rows, written out), `c1600_5_ac2_dump_basic_pc1600`, `c1600_5_ac3_lines_in_todays_form`, `c1600_5_ec4_basic_not_set_up_pointers_only` (right after a cold boot) |
 | T3 | `inspect` | AC-4 | `c1600_5_ac4_every_view_per_model` (the table of AC-4: each view on each model, the "not on the" lines), `c1600_5_ac4_unknown_view_refused`; the replies compared with `c1600.inspector` on the same machine |
 | T4 | `tape` | AC-5, AC-6, EC-2, EC-6 | `c1600_5_ac5_record_writes_wav_at_motor_stop_and_eject` (PC-1500A with a CE-150: `type CSAVE`, the WAV after the motor stops; again at `eject`), `c1600_5_ac5_record_ejects_the_tape_in_first`, `c1600_5_ac6_status_playing_recording_empty`, `c1600_5_ec2_tape_without_cassette_refused`, `c1600_5_ec6_unwritable_path_notice_at_motor_stop` |
@@ -216,7 +216,7 @@ EC-2 to EC-6 (5 of 5).
 What the commands replace, and the knowledge that changes, is in
 LIB-11's Part D (D.5, D.6), because the tools go in the same step. This
 row adds to it:
-- `products/calc-u-1600/CLAUDE.md`, section Harness: the `pc1600`
+- `products/calc-u-1600/CLAUDE.md`, section Harness: the `c1600`
   commands (`dump-basic`, `inspect`, `tape record|status`, `serial`,
   `host-drive`, `call`) and `state-save`/`state-restore` on the Sharp
   models; the line "Not yet: `pc1600 …` commands" goes.

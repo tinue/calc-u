@@ -68,7 +68,7 @@ public:
     // deferred reply (LIB-5 §3.5, D-5: `key`, `type`) is waited for in
     // virtual time, in pieces of 1/60 s, at most one hour of emulated time;
     // then the reply is "not done" with `giveUp`. `within` (ticks; 0: the
-    // hour) waits less (C1600-5 AC-12: `pc1600 call`'s timeout).
+    // hour) waits less (C1600-5 AC-12: `c1600 call`'s timeout).
     sessions::ReplyMessage command(sessions::Command, std::string_view giveUp = {}, machine::Ticks within = 0);
     sessions::ReplyMessage ask(sessions::Request);
     machine::Ticks advance(machine::Ticks);       // AC-6, AC-9: session.advanceUnpaced

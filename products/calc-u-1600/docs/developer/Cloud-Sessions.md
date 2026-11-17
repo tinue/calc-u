@@ -43,7 +43,7 @@ ctest --test-dir ../../build/tests --output-on-failure
 
 No display, so the GUI app (`-DCALCU_FRONTEND_QT=ON`, Qt needed) can't be
 driven interactively. Use
-the harness `calcu --product 1600` (the library's app session in emulated
+the harness `calcu --product c1600` (the library's app session in emulated
 time, see `CLAUDE.md`) for anything that needs to run the emulator.
 
 ## Limitations

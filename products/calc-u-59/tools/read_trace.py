@@ -47,7 +47,7 @@ Flags:
                            them. Works with the filters and --labels.
 
 A ROM trace of keys through the harness (reference/Harness.md):
-    calcu --product 59 trace k.trace then key 5 + 7 = then trace off
+    calcu --product c59 trace k.trace then key 5 + 7 = then trace off
     python3 tools/read_trace.py --clean-heavy --skip-repeating --labels rom/TI59-labels.asm --changes k.trace
 
 The mnemonic disassembly uses mnemonics.tsv from the same directory.

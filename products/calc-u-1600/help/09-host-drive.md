@@ -94,7 +94,7 @@ letters, digits and ``` `@#$%^&()-_{}' ```.
   `~/`. The window then shows the drive as **File ▸ Unmount "<folder>"**
   (the example `dwx/DiskWorks.pc1600`). A preset whose folder does not
   exist is refused before the machine is touched.
-- **Without a window:** the harness's `pc1600 host-drive <folder>|off`.
+- **Without a window:** the harness's `c1600 host-drive <folder>|off`.
 
 ## Compared with a real MEP rev3
 

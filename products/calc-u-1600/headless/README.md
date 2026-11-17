@@ -1,8 +1,8 @@
 # headless/
 
-Scratch space for the output of `calcu --product 1600` runs and other ad
+Scratch space for the output of `calcu --product c1600` runs and other ad
 hoc work: screenshots and traces (`--output-folder headless`), WAV files of
-`audio` and `pc1600 cassette record`, captures of `pc1600 serial … capture`,
+`audio` and `c1600 cassette record`, captures of `c1600 serial … capture`,
 memory images (`peek … file=`), machine states (`state-save`), format-utility test images, disassembly
 scratch, and similar. The harness itself is the target `calcu` of a root
 CMake tree (`products/calc-u-1600/CLAUDE.md`, section Harness); the

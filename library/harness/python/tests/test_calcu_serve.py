@@ -24,7 +24,7 @@ def main() -> int:
         check(c.send("ticks")["result"] == {"ticks": 1667, "seconds": 0.01667}, "ticks at the start")
         waited = c.send("wait 1ms")["result"]
         check(waited["ticks"] >= 100, "wait 1ms at 100 kHz: %r" % waited)
-        lcd = c.send("lcd")["result"]
+        lcd = c.send("display-text")["result"]
         check(lcd["on"] is True and len(lcd["rows"]) == 1, "lcd: %r" % lcd)
         try:
             c.send("no-such-command")

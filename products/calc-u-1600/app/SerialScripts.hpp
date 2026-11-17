@@ -12,7 +12,7 @@
 #include "sessions/MachineSession.hpp"
 #include "sessions/SessionPart.hpp"
 
-// The serial ports of `pc1600 serial <port> …` (C1600-5 AC-7 to AC-9, EC-3;
+// The serial ports of `c1600 serial <port> …` (C1600-5 AC-7 to AC-9, EC-3;
 // design §3.4, D-4): per port (`ce158`, the CE-158's; `rs232c`, the
 // PC-1600's own) a feed, a capture file and what the report counts. Today's
 // Ce158CliPeer (tools/Ce158CliPeer.hpp at the pin) pumped between slices of

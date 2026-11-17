@@ -91,7 +91,7 @@ DisplayText readSegments(const machine::SegmentFrame& frame, const machine::Segm
     return t;
 }
 
-std::vector<std::string> lcdLines(const DisplayText& t) {
+std::vector<std::string> displayTextLines(const DisplayText& t) {
     if (!t.on) return {"display off"};
     std::vector<std::string> out = t.rows;
     std::string ind = "indicators:";
@@ -101,7 +101,7 @@ std::vector<std::string> lcdLines(const DisplayText& t) {
     return out;
 }
 
-Value lcdValue(const DisplayText& t) {
+Value displayTextValue(const DisplayText& t) {
     Value v = Value::object();
     v.set("on", t.on);
     Value rows = Value::array();

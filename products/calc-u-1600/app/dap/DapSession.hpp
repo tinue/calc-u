@@ -66,7 +66,7 @@ public:
     struct Host {
         std::function<void(const std::string& body)> send;   // one message, framed by the part
         std::function<void()> dropClient;                    // after `disconnect`
-        std::function<void()> quitProgram;                   // `calcu1600/quit`
+        std::function<void()> quitProgram;                   // `c1600/quit`
     };
     DapSession(const DapDeps&, calcu::sessions::SessionContext&, Host);
     ~DapSession();
@@ -92,7 +92,7 @@ public:
 
     bool active() const { return active_; }
     bool operationRuns() const { return opRunning_; }
-    // `disconnect` or `calcu1600/quit` was answered: the part drops the client.
+    // `disconnect` or `c1600/quit` was answered: the part drops the client.
     bool closing() const { return closing_; }
     // The machine should run now: a session that has it running (the harness).
     bool wantsTime() const;
@@ -127,7 +127,7 @@ private:
     void screen(Body* body, std::string* error);
 
     // ── Requests answered at the end of an operation (DapSetup.cpp, D-1) ──
-    // attach/launch, restart, calcu1600/load, calcu1600/reset: false when it
+    // attach/launch, restart, c1600/load, c1600/reset: false when it
     // is refused before anything starts (`error`).
     bool startOperation(const Value& request, std::string* error);
     calcu::sessions::Task<calcu::sessions::OperationResult> runRequest(calcu::sessions::OperationContext&, Value request);

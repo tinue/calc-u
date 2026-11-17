@@ -167,7 +167,7 @@ signals:
     void logChanged();
     void asmChanged();
     void traceChanged();
-    void debugPanelRequested(int tab);  ///< the topic debug-view asked for a tab (0 CALCULATOR, 1 CPU, 2 LOG)
+    void debugPanelRequested(int tab);  ///< the topic c59.debug-view asked for a tab (0 CALCULATOR, 1 CPU, 2 LOG)
     void entriesChanged();              ///< the control state's product entries
 
 private:
@@ -189,5 +189,5 @@ private:
     QString m_logText;
     bool m_logDirty = false;
     QTimer m_logTimer;                 ///< the view's text at 1 Hz, as today
-    std::uint64_t m_viewRequests = 0;  ///< debug-view's count seen
+    std::uint64_t m_viewRequests = 0;  ///< c59.debug-view's count seen
 };

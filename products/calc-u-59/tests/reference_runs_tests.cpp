@@ -4,7 +4,7 @@
 // code before any file was upgraded or core code touched).
 //
 // Each example goes through the harness entry in virtual time (`calcu
-// --product 59` in-process): `preset <file>`, then the bare `wait` (until
+// --product c59` in-process): `preset <file>`, then the bare `wait` (until
 // the machine is idle or paused, at most an hour of emulated time). Then
 // compared: the display (`display:` of the record), the partition
 // (`partition:`), the raw RAM, 120 registers of 16 nibbles (`--- ram`:

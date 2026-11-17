@@ -54,19 +54,19 @@ harness::Reply linesReply(const sessions::ReplyMessage& r) {
     return doneReply(std::move(v), out);
 }
 
-// ── C59-2 AC-9 (design §3.4): `ti59 partition|program|registers`, sent as
+// ── C59-2 AC-9 (design §3.4): `c59 partition|program|registers`, sent as
 // the product commands of ProgramMemoryPart.
 
 void addProgramMemoryCommands(harness::CommandRegistry& r) {
-    r.addProduct("ti59", "partition", [](CommandContext& c) {
+    r.addProduct("c59", "partition", [](CommandContext& c) {
         const auto w = words(c.line.argText);
-        if (w.size() > 1) return refusedReply("usage: ti59 partition [<value>]");
+        if (w.size() > 1) return refusedReply("usage: c59 partition [<value>]");
         sessions::Value args = w.empty() ? sessions::Value::object({}) : sessions::Value::object({{"value", w[0]}});
         return linesReply(c.host.command(sessions::Command{commands::kPartition, std::move(args)}));
     }, "partition [<value>]  set the partition (479, 479.59) or read it");
-    r.addProduct("ti59", "program", [](CommandContext& c) {
+    r.addProduct("c59", "program", [](CommandContext& c) {
         const auto w = words(c.line.argText);
-        if (w.empty()) return refusedReply("usage: ti59 program [<step>] <keycode>... | ti59 program <step> count=<n>");
+        if (w.empty()) return refusedReply("usage: c59 program [<step>] <keycode>... | c59 program <step> count=<n>");
         sessions::Value::Object o;
         std::size_t i = 0;
         if (w[0].size() >= 3 && w[0].find('=') == std::string::npos) {
@@ -74,7 +74,7 @@ void addProgramMemoryCommands(harness::CommandRegistry& r) {
             i = 1;
         }
         if (i < w.size() && w[i].rfind("count=", 0) == 0) {
-            if (i != 1 || w.size() != 2) return refusedReply("usage: ti59 program <step> count=<n>");
+            if (i != 1 || w.size() != 2) return refusedReply("usage: c59 program <step> count=<n>");
             const std::string n = w[i].substr(6);
             bool digits = !n.empty() && n.size() < 5;
             for (char ch : n) digits = digits && ch >= '0' && ch <= '9';
@@ -83,14 +83,14 @@ void addProgramMemoryCommands(harness::CommandRegistry& r) {
         } else {
             std::string codes;
             for (; i < w.size(); ++i) codes += (codes.empty() ? "" : " ") + w[i];
-            if (codes.empty()) return refusedReply("usage: ti59 program [<step>] <keycode>...");
+            if (codes.empty()) return refusedReply("usage: c59 program [<step>] <keycode>...");
             o.push_back({"keycodes", codes});
         }
         return linesReply(c.host.command(sessions::Command{commands::kProgram, sessions::Value(std::move(o))}));
     }, "program [<step>] <keycode>... | program <step> count=<n>  write keycodes from a step, or read n");
-    r.addProduct("ti59", "registers", [](CommandContext& c) {
+    r.addProduct("c59", "data-registers", [](CommandContext& c) {
         const auto w = words(c.line.argText);
-        if (w.empty()) return refusedReply("usage: ti59 registers <NN>=<value>... | ti59 registers <NN>...");
+        if (w.empty()) return refusedReply("usage: c59 data-registers <NN>=<value>... | c59 data-registers <NN>...");
         const bool set = w[0].find('=') != std::string::npos;
         sessions::Value::Array a;
         for (const std::string& x : w) {
@@ -100,20 +100,20 @@ void addProgramMemoryCommands(harness::CommandRegistry& r) {
             else a.emplace_back(x);
         }
         sessions::Value args = sessions::Value::object({{set ? "set" : "get", sessions::Value(std::move(a))}});
-        return linesReply(c.host.command(sessions::Command{commands::kRegisters, std::move(args)}));
-    }, "registers <NN>=<value>... | registers <NN>...  write data registers (H00-H03 on the TI-58C) or read them");
+        return linesReply(c.host.command(sessions::Command{commands::kDataRegisters, std::move(args)}));
+    }, "data-registers <NN>=<value>... | data-registers <NN>...  write data registers (H00-H03 on the TI-58C) or read them");
 }
 
 // ── C59-4 AC-22 (design §3.10): the debug panel's commands; no preset steps.
 
 void addDebugPanelCommands(harness::CommandRegistry& r) {
-    r.addProduct("ti59", "asm", [](CommandContext& c) -> Reply {
+    r.addProduct("c59", "asm", [](CommandContext& c) -> Reply {
         const auto w = words(c.line.argText);
-        if (w.empty()) return refusedReply("usage: ti59 asm load <file> | run | clear");
+        if (w.empty()) return refusedReply("usage: c59 asm load <file> | run | clear");
         if (w[0] == "load") {
             std::string path = c.line.argText.substr(4);   // after "load"
             path.erase(0, std::min(path.size(), path.find_first_not_of(" \t")));
-            if (path.empty()) return refusedReply("usage: ti59 asm load <file>");
+            if (path.empty()) return refusedReply("usage: c59 asm load <file>");
             const std::optional<std::string> text = calcu::files::readText(calcu::files::toPath(path));
             sessions::Value::Object o{{"name", sessions::Value(std::filesystem::path(path).filename().string())}};
             if (text) o.push_back({"text", sessions::Value(*text)});
@@ -131,21 +131,21 @@ void addDebugPanelCommands(harness::CommandRegistry& r) {
             return doneReply(harness::Value(status), {status});
         }
         if (w[0] == "clear") return linesReply(c.host.command(sessions::Command{commands::kAsmClear, sessions::Value::object({})}));
-        return refusedReply("usage: ti59 asm load <file> | run | clear");
+        return refusedReply("usage: c59 asm load <file> | run | clear");
     }, "asm load <file> | run | clear  the ASM overlay: put over the ROM, enter at 1800, take away");
-    r.addProduct("ti59", "dump", [](CommandContext& c) {
+    r.addProduct("c59", "dump", [](CommandContext& c) {
         const auto w = words(c.line.argText);
-        if (w.size() != 1) return refusedReply("usage: ti59 dump scom|memory|prog|vars");
+        if (w.size() != 1) return refusedReply("usage: c59 dump scom|memory|prog|vars");
         return linesReply(c.host.command(sessions::Command{commands::kDump, sessions::Value::object({{"what", w[0]}})}));
     }, "dump scom|memory|prog|vars  the lines of a dump (also into the log)");
-    r.addProduct("ti59", "log-level", [](CommandContext& c) {
+    r.addProduct("c59", "log-level", [](CommandContext& c) {
         const auto w = words(c.line.argText);
-        if (w.size() != 1) return refusedReply("usage: ti59 log-level off|info|debug");
+        if (w.size() != 1) return refusedReply("usage: c59 log-level off|info|debug");
         return linesReply(c.host.command(sessions::Command{commands::kLogLevel, sessions::Value::object({{"level", w[0]}})}));
     }, "log-level off|info|debug  the level of the machine's own log lines");
-    r.addProduct("ti59", "heatmap", [](CommandContext& c) {
+    r.addProduct("c59", "heatmap", [](CommandContext& c) {
         const auto w = words(c.line.argText);
-        if (w.size() != 1 || w[0] != "reset") return refusedReply("usage: ti59 heatmap reset");
+        if (w.size() != 1 || w[0] != "reset") return refusedReply("usage: c59 heatmap reset");
         return linesReply(c.host.command(sessions::Command{commands::kHeatmapReset, sessions::Value::object({})}));
     }, "heatmap reset  set the ROM heatmap's counts to zero");
 }
@@ -222,11 +222,11 @@ Reply settled(CommandContext& c, Reply r) {
     return r;
 }
 
-// ── `ti59 coverage [all]` (AC-2; §3.1) ──
+// ── `c59 coverage [all]` (AC-2; §3.1) ──
 
 Reply coverageCmd(CommandContext& c) {
     const auto w = words(c.line.argText);
-    if (w.size() > 1 || (w.size() == 1 && w[0] != "all")) return refusedReply("usage: ti59 coverage [all]");
+    if (w.size() > 1 || (w.size() == 1 && w[0] != "all")) return refusedReply("usage: c59 coverage [all]");
     machine::Machine* m = machineOf(c);
     if (!m) return refusedReply(kNoMachine);
     debugger::DebuggerPart* d = &c.host.product().libraryParts().debugger();
@@ -265,7 +265,7 @@ Reply coverageCmd(CommandContext& c) {
     return doneReply(std::move(v), std::move(lines));
 }
 
-// ── `ti59 line-times [limit=<d>]` (AC-3, AC-4, EC-2, EC-6; §3.3) ──
+// ── `c59 line-times [limit=<d>]` (AC-3, AC-4, EC-2, EC-6; §3.3) ──
 
 struct GapSummary {
     std::uint64_t n = 0;
@@ -361,11 +361,11 @@ Reply lineTimesCmd(CommandContext& c) {
     return settled(c, doneReply(std::move(v), std::move(lines)));
 }
 
-// ── `ti59 run-time <key>...` (AC-5; §3.3) ──
+// ── `c59 run-time <key>...` (AC-5; §3.3) ──
 
 Reply runTimeCmd(CommandContext& c) {
     const auto keys = words(c.line.argText);
-    if (keys.empty()) return refusedReply("usage: ti59 run-time <key> [<key> ...]");
+    if (keys.empty()) return refusedReply("usage: c59 run-time <key> [<key> ...]");
     machine::Machine* m = machineOf(c);
     if (!m) return refusedReply(kNoMachine);
     const std::uint32_t rate = rateOf(*m);
@@ -426,7 +426,7 @@ Reply runTimeCmd(CommandContext& c) {
     return settled(c, doneReply(std::move(v), std::move(lines)));
 }
 
-// ── `ti59 hot-steps [limit=<d>]` (AC-6, EC-6; §3.3, D-2, D-6) ──
+// ── `c59 hot-steps [limit=<d>]` (AC-6, EC-6; §3.3, D-2, D-6) ──
 
 Reply hotStepsCmd(CommandContext& c) {
     machine::Machine* m = machineOf(c);
@@ -485,11 +485,11 @@ Reply hotStepsCmd(CommandContext& c) {
     return settled(c, doneReply(std::move(v), std::move(lines)));
 }
 
-// ── `ti59 step-trace <from> <to>` (AC-7; §3.3) ──
+// ── `c59 step-trace <from> <to>` (AC-7; §3.3) ──
 
 Reply stepTraceCmd(CommandContext& c) {
     const auto w = words(c.line.argText);
-    if (w.size() != 2) return refusedReply("usage: ti59 step-trace <from> <to>");
+    if (w.size() != 2) return refusedReply("usage: c59 step-trace <from> <to>");
     machine::Machine* m = machineOf(c);
     if (!m) return refusedReply(kNoMachine);
     const std::uint32_t rate = rateOf(*m);
@@ -527,7 +527,7 @@ Reply stepTraceCmd(CommandContext& c) {
     return settled(c, doneReply(std::move(v), line.empty() ? std::vector<std::string>{} : std::vector<std::string>{line}));
 }
 
-// ── `ti59 step-cost <keycode>...` (AC-8, EC-3; §3.3, D-3) ──
+// ── `c59 step-cost <keycode>...` (AC-8, EC-3; §3.3, D-3) ──
 
 // stepcost.py of 2.3.0 (`:18-19`): the SST method of fast mode and GTO 008 R/S,
 // as matrix codes (row × 10 + column).
@@ -599,7 +599,7 @@ CostRun measure(CommandContext& c, const std::vector<std::uint8_t>& body, int re
 
 Reply stepCostCmd(CommandContext& c) {
     const auto w = words(c.line.argText);
-    if (w.empty()) return refusedReply("usage: ti59 step-cost <keycode> [<keycode> ...] (e.g. ti59 step-cost 43 22)");
+    if (w.empty()) return refusedReply("usage: c59 step-cost <keycode> [<keycode> ...] (e.g. c59 step-cost 43 22)");
     std::vector<std::uint8_t> body;
     for (const auto& x : w) {
         if (x.size() != 2 || x.find_first_not_of("0123456789") != std::string::npos)
@@ -637,7 +637,7 @@ Reply stepCostCmd(CommandContext& c) {
     return settled(c, doneReply(std::move(v), std::move(lines)));
 }
 
-// ── `ti59 keycodes list|disassemble|assemble` (AC-9, AC-10, AC-14; §3.4-§3.6) ──
+// ── `c59 keycodes list|disassemble|assemble` (AC-9, AC-10, AC-14; §3.4-§3.6) ──
 
 std::optional<int> stepWord(const std::string& w) {
     if (w.size() < 3 || w.size() > 4 || w.find_first_not_of("0123456789") != std::string::npos) return std::nullopt;
@@ -645,7 +645,7 @@ std::optional<int> stepWord(const std::string& w) {
 }
 
 Reply keycodesCmd(CommandContext& c) {
-    static const char* kUsage = "usage: ti59 keycodes list|disassemble [<first> [<last>]] | ti59 keycodes assemble <file>";
+    static const char* kUsage = "usage: c59 keycodes list|disassemble [<first> [<last>]] | c59 keycodes assemble <file>";
     const auto w = words(c.line.argText);
     if (w.empty()) return refusedReply(kUsage);
     machine::Machine* m = machineOf(c);
@@ -655,7 +655,7 @@ Reply keycodesCmd(CommandContext& c) {
         std::string path = c.line.argText.substr(c.line.argText.find("assemble") + 8);
         path.erase(0, std::min(path.size(), path.find_first_not_of(" \t")));
         while (!path.empty() && (path.back() == ' ' || path.back() == '\t')) path.pop_back();
-        if (path.empty()) return refusedReply("usage: ti59 keycodes assemble <file>");
+        if (path.empty()) return refusedReply("usage: c59 keycodes assemble <file>");
         const std::optional<std::string> text = calcu::files::readText(calcu::files::toPath(path));
         if (!text) return refusedReply("The file " + path + " cannot be read.");
         auto r = assemble(*text, pm->lastStep());
@@ -723,18 +723,18 @@ Reply keycodesCmd(CommandContext& c) {
 void addTIHarnessCommands(harness::CommandRegistry& r) {
     addProgramMemoryCommands(r);
     addDebugPanelCommands(r);
-    r.addProduct("ti59", "coverage", coverageCmd,
+    r.addProduct("c59", "coverage", coverageCmd,
                  "coverage [all]  the ROM addresses 0000-17FF carried out since `profile on` (without key readiness unless all)");
-    r.addProduct("ti59", "line-times", lineTimesCmd,
+    r.addProduct("c59", "line-times", lineTimesCmd,
                  "line-times [limit=<d>]  run until idle 15 s; each printed line's time, the gaps, the printer's floor");
-    r.addProduct("ti59", "run-time", runTimeCmd,
+    r.addProduct("c59", "run-time", runTimeCmd,
                  "run-time <key>...  press each key; the time until the display is lit and no program runs");
-    r.addProduct("ti59", "hot-steps", hotStepsCmd,
+    r.addProduct("c59", "hot-steps", hotStepsCmd,
                  "hot-steps [limit=<d>]  run 200 s (or the limit); printer shares, program sources, the 25 hottest steps");
-    r.addProduct("ti59", "step-trace", stepTraceCmd, "step-trace <from> <to>  the program steps between two times");
-    r.addProduct("ti59", "step-cost", stepCostCmd,
+    r.addProduct("c59", "step-trace", stepTraceCmd, "step-trace <from> <to>  the program steps between two times");
+    r.addProduct("c59", "step-cost", stepCostCmd,
                  "step-cost <keycode>...  what one run of the sequence costs in fast and normal mode");
-    r.addProduct("ti59", "keycodes", keycodesCmd,
+    r.addProduct("c59", "keycodes", keycodesCmd,
                  "keycodes list|disassemble [<first> [<last>]] | assemble <file>  the program as a listing or an assembly");
 }
 

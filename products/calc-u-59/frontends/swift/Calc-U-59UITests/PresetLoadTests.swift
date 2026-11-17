@@ -39,7 +39,7 @@ final class PresetLoadTests: XCTestCase {
         loadPreset(app, file: "test_diag.ti59", idleTimeout: 60, harness: harness)
         attachScreenshot(app, name: "After loading test_diag.ti59")
         XCTAssertEqual(harness.command("wait 2s", timeout: 10).first, "done 2")
-        let lcd = harness.command("lcd")
+        let lcd = harness.command("display-text")
         XCTAssertTrue(lcd.count > 1 && !lcd[1].trimmingCharacters(in: .whitespaces).isEmpty, "lcd: \(lcd)")
         app.terminate()
     }

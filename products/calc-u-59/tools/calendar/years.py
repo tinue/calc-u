@@ -7,7 +7,7 @@ CLI: years.py file.ti59 year... [--no-acosta] [--write FOLDER] [--calcu PATH]
   against Python's calendar module and compares the printout line for line
   with Acosta's program (examples/calendar/calendar-08-acosta.ti59) run for
   the same year (--no-acosta: not). The printed time is from the last key
-  until the display lights up again (`ti59 run-time`). --write FOLDER
+  until the display lights up again (`c59 run-time`). --write FOLDER
   writes a copy of the preset for each year, with that year's digits.
   Exit status 1 when a year's rows do not check.
 Library: with_year(path, year) -> the steps for calcu59.run_preset."""

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """LIB-12 AC-7, AC-10 for the harness (design §6, P5; tools/headless/ti59.py's
-until M-59): `calcu --product 59` on a ROM folder without one file of the full
+until M-59): `calcu --product c59` on a ROM folder without one file of the full
 set (CALCU59_ROMS_DIR) ends with exit status 2 and an error that names it,
 and on the full set starts as before. Run from products/calc-u-59 with
 CALCU set to the program (CTest CalcU59HarnessRomMissing, Frequent)."""
@@ -17,7 +17,7 @@ CALCU = os.environ.get("CALCU") or str(PRODUCT.parent.parent / "build" / "tests"
 
 def run(roms: Path) -> subprocess.CompletedProcess:
     env = dict(os.environ, CALCU59_ROMS_DIR=str(roms))
-    return subprocess.run([CALCU, "--product", "59", "key", "5", "+", "7", "=", "then", "wait", "500ms", "then", "lcd"],
+    return subprocess.run([CALCU, "--product", "c59", "key", "5", "+", "7", "=", "then", "wait", "500ms", "then", "display-text"],
                           env=env, capture_output=True, text=True, timeout=120)
 
 

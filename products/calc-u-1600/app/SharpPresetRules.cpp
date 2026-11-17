@@ -47,10 +47,9 @@ calcu::presets::IdleRule SharpModelRules::idle() const {
     // and read the keyboard meanwhile) the machine is not idle (M-47: the
     // disk steps of make_diskworks_media).
     if (pc1600())
-        r.readyNow = [](const calcu::machine::Machine& cm) {
-            auto& m = const_cast<calcu::machine::Machine&>(cm);   // capability() reads only
+        r.readyNow = [](const calcu::machine::Machine& m) {
             if (!m.isKeyReady()) return false;
-            const sharp::FloppyDriveAccess* drive = sharp::firstOf<sharp::FloppyDriveAccess>(m);
+            const sharp::FloppyDriveAccess* drive = calcu::machine::first<sharp::FloppyDriveAccess>(m);
             return !drive || !drive->motorOn();
         };
     r.stretch = calcu::machine::Seconds(20.0 / 60.0);

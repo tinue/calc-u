@@ -105,13 +105,13 @@ TEST(lib5_ac34_kbii_respects_latches) {
 // loader memory (the Z-80 view).
 std::string pc1600LineBuffer(SessionFixture& f) {
     std::string buf;
-    auto* mem = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
+    auto* mem = calcu::machine::first<sharp::LoaderMemory>(*f.part().machine());
     for (std::uint16_t a = 0xFBB0; mem && a <= 0xFBFF; ++a) buf.push_back(static_cast<char>(mem->peek(a)));
     return buf;
 }
 
 std::uint16_t peekBE16(SessionFixture& f, std::uint16_t addr) {
-    auto* mem = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
+    auto* mem = calcu::machine::first<sharp::LoaderMemory>(*f.part().machine());
     return mem ? static_cast<std::uint16_t>((mem->peek(addr) << 8) | mem->peek(static_cast<std::uint16_t>(addr + 1))) : 0;
 }
 
@@ -156,7 +156,7 @@ TEST(lib5_ac12_pc1600_paste_multiline_types_first_line) {
 }
 
 bool memoryContains(SessionFixture& f, const std::string& needle) {
-    auto* mem = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
+    auto* mem = calcu::machine::first<sharp::LoaderMemory>(*f.part().machine());
     for (std::uint32_t a = 0x4000; mem && a + needle.size() <= 0x8000; ++a) {
         bool match = true;
         for (std::size_t i = 0; i < needle.size() && match; ++i)

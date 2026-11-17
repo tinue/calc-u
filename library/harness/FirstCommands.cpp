@@ -1,5 +1,6 @@
 // The first commands (LIB-11 design §3.3; spec AC-9 to AC-12, AC-23, AC-24;
 // EC-2, EC-5 to EC-7).
+#include "files/Files.hpp"
 #include "formats/Duration.hpp"
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
@@ -21,7 +22,6 @@ using namespace sessions;
 
 namespace {
 
-std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
 
 Reply needs(const char* usage) { return refusedReply(std::string("usage: ") + usage); }
 
@@ -193,7 +193,7 @@ Reply stateSaveCmd(CommandContext& c) {
     if (!r.done) return refusedReply(r.reason);
     const auto* b = payloadAs<StateBytes>(r.result);
     if (!b) return refusedReply("The session gave no state.");
-    std::ofstream out(pathOf(c.line.argText), std::ios::binary | std::ios::trunc);
+    std::ofstream out(files::toPath(c.line.argText), std::ios::binary | std::ios::trunc);
     out.write(reinterpret_cast<const char*>(b->bytes.data()), static_cast<std::streamsize>(b->bytes.size()));
     if (!out) return refusedReply("Cannot write the file " + c.line.argText + ".");
     return doneReply();
@@ -201,10 +201,9 @@ Reply stateSaveCmd(CommandContext& c) {
 
 Reply stateRestoreCmd(CommandContext& c) {
     if (c.line.argText.empty()) return needs("state-restore <file>");
-    std::ifstream in(pathOf(c.line.argText), std::ios::binary);
-    if (!in) return refusedReply("Cannot read the file " + c.line.argText + ".");
-    std::vector<std::uint8_t> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    sessions::Value args = sessions::Value::object({{"bytes", sessions::Value(std::move(bytes))}});
+    std::optional<std::vector<std::uint8_t>> bytes = files::readBytes(files::toPath(c.line.argText));
+    if (!bytes) return refusedReply("Cannot read the file " + c.line.argText + ".");
+    sessions::Value args = sessions::Value::object({{"bytes", sessions::Value(std::move(*bytes))}});
     return fromSessionReply(c.host.command(Command{kStateRestoreCommand, std::move(args)}));
 }
 

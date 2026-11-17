@@ -14,7 +14,7 @@
 #include "FileIO.hpp"
 #include "Machine/SharpCatalogue.hpp"
 #include "Machine/SharpMediaPlaces.hpp"
-#include "app/Utf8Path.hpp"
+#include "files/Files.hpp"
 #include "formats/Yaml.hpp"
 
 namespace shared {
@@ -107,7 +107,7 @@ private:
         for (const MemoryCardCatalogEntry& e : scanMemoryCardDirectory(m_bundledDir, nullptr)) {
             if (e.moduleName != moduleName) continue;
             std::vector<std::uint8_t> bytes;
-            if (readWholeFile(toPath(e.filePath), &bytes)) return std::string(bytes.begin(), bytes.end());
+            if (readWholeFile(calcu::files::toPath(e.filePath), &bytes)) return std::string(bytes.begin(), bytes.end());
         }
         return std::nullopt;
     }

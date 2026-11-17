@@ -243,7 +243,7 @@ TEST(lib5_ac33_shift_tap_is_one_shift_press) {
     CHECK_EQ(log.keys(), std::string("shift "));
     CHECK(log.events.size() == 2 && log.events[1].at - log.events[0].at >= 4 * frameOf(kPC1600));
     s.engine().setObserver(nullptr);
-    auto* support = sharp::firstOf<calcu::typing::TypingSupport>(*s.part().machine());
+    auto* support = calcu::machine::first<calcu::typing::TypingSupport>(*s.part().machine());
     CHECK(support && support->latched("shift"));   // the ROM took it: SHIFT is latched
 }
 
@@ -296,7 +296,7 @@ TEST(lib5_ac35_prompt_readiness_and_latches) {
             s.runFor(0.5);
         }
         s.runFor(0.5);
-        auto* support = sharp::firstOf<calcu::typing::TypingSupport>(*s.part().machine());
+        auto* support = calcu::machine::first<calcu::typing::TypingSupport>(*s.part().machine());
         CHECK(support != nullptr);
         if (!support) continue;
         CHECK(support->promptReady() == std::optional<bool>(true));

@@ -1,6 +1,7 @@
 // The harness commands of LIB-6 (design §3.9; spec AC-34): one vocabulary
 // with the preset steps (D-15). `key` and `type` are LIB-5's commands, the
 // bare `wait` is FirstCommands.cpp's.
+#include "files/Files.hpp"
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
 #include "harness/Product.hpp"
@@ -16,10 +17,9 @@ namespace {
 // A path relative to the working directory, or a bundle path as written.
 std::string refOf(const std::string& written) {
     if (written.rfind("examples:", 0) == 0) return written;
-    const std::filesystem::path p(std::u8string(written.begin(), written.end()));
     std::error_code ec;
-    const std::u8string abs = std::filesystem::absolute(p, ec).generic_u8string();
-    return ec ? written : std::string(abs.begin(), abs.end());
+    const std::string abs = files::fromPath(std::filesystem::absolute(files::toPath(written), ec));
+    return ec ? written : abs;
 }
 
 Reply presetCmd(CommandContext& c) {

@@ -10,11 +10,7 @@ using namespace sessions;
 namespace {
 constexpr const char* kMagic = "calcu-machine-state 1\n";
 
-MachineState* stateOf(machine::Machine& m) {
-    for (const auto& e : m.capabilities(MachineState::kKind))
-        if (auto* s = machine::capabilityAs<MachineState>(m, e.id)) return s;
-    return nullptr;
-}
+MachineState* stateOf(machine::Machine& m) { return machine::first<MachineState>(m); }
 
 const char* kNoKind = "This machine does not offer its machine state.";
 } // namespace

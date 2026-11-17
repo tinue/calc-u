@@ -6,6 +6,7 @@
 #include "TIPrinters.hpp"
 #include "TITyping.hpp"
 #include "../core/TIDebugging.hpp"
+#include "files/Files.hpp"
 #include "presets/PresetsPart.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/Listener.hpp"
@@ -42,7 +43,6 @@ Value TIPrinterState::toValue() const { return Value::object({{"connected", conn
 
 namespace {
 
-std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
 
 // LIB-10 §12.6: the debug panel shows the views; the trace folder and its
 // limit are LibraryParts' (the host's places), none on the Web (hand-over).
@@ -63,7 +63,7 @@ std::function<bool()> traceAvailable(const TIAppSetup& s) {
         if (!folder || folder->empty()) return true;
         if (available && !available()) return false;
         std::error_code ec;
-        std::filesystem::create_directories(pathOf(*folder), ec);
+        std::filesystem::create_directories(calcu::files::toPath(*folder), ec);
         return !ec;
     };
 }
@@ -101,7 +101,7 @@ TIAppPart::TIAppPart(TIAppSetup setup)
           fitOwnCueCard(card);
       }}),
       m_bundle(m_setup.examplesFolder.empty() ? nullptr
-                                              : std::make_unique<presets::DirectoryPresetBundle>(pathOf(m_setup.examplesFolder))),
+                                              : std::make_unique<presets::DirectoryPresetBundle>(calcu::files::toPath(m_setup.examplesFolder))),
       m_debugPart(TIDebugSetup{m_setup.roms.set, traceAvailable(m_setup), m_setup.debugTabsShown}),
       m_fileKinds(m_debugPart),
       m_lib(librarySetup()) {

@@ -366,6 +366,7 @@ public:
     using Machine::capabilities;
     std::vector<CapabilityEntry> capabilities() const override;
     Capability* capability(const CapabilityId&) override;
+    using Machine::capability;
     std::vector<DebugTargetId> debugTargets() const override { return desc_.debugTargets; }
     Debugging* debugging() override { return cpu_.get(); }   // LIB-10: with TestProgram only
     void enableCpu(const TestProgram& p) { cpu_ = std::make_unique<TestCpu>(desc_.debugTargets, p); }

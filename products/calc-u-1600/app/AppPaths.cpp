@@ -3,8 +3,7 @@
 #include <filesystem>
 #include <system_error>
 
-#include "app/Utf8Path.hpp"
-
+#include "files/Files.hpp"
 
 namespace shared {
 
@@ -14,7 +13,7 @@ namespace {
 
 void makeDirs(const std::string& dir) {
     std::error_code ec;
-    fs::create_directories(toPath(dir), ec);
+    fs::create_directories(calcu::files::toPath(dir), ec);
 }
 
 // `path` with the leading `dir` replaced by `shown`, or empty when `path`
@@ -29,7 +28,7 @@ std::string replacePrefix(const std::string& path, const std::string& dir, const
 
 
 std::string joinPath(const std::string& dir, const std::string& name) {
-    return fromPath(toPath(dir) / toPath(name));
+    return calcu::files::fromPath(calcu::files::toPath(dir) / calcu::files::toPath(name));
 }
 
 std::string AppPaths::bundledExamplesDir() const {
@@ -87,8 +86,8 @@ std::string AppPaths::serialLinkDir() const {
 bool isUnderDir(const std::string& path, const std::string& dir) {
     if (path.empty() || dir.empty()) return false;
     std::error_code ec1, ec2;
-    const fs::path a = fs::canonical(toPath(path), ec1);
-    const fs::path b = fs::canonical(toPath(dir), ec2);
+    const fs::path a = fs::canonical(calcu::files::toPath(path), ec1);
+    const fs::path b = fs::canonical(calcu::files::toPath(dir), ec2);
     if (ec1 || ec2) return false;
     auto ai = a.begin();
     for (auto bi = b.begin(); bi != b.end(); ++bi, ++ai) {

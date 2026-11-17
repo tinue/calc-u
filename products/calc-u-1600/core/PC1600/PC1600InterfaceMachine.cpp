@@ -7,6 +7,7 @@
 #include "../Machine/SharpDisplayOutput.hpp"
 #include "../Machine/SharpLoaderMemory.hpp"
 #include "PC1600TypedInput.hpp"
+#include "files/Files.hpp"
 #include "peripherals/RealTimeClock.hpp"
 #include "typing/TypingSupport.hpp"
 
@@ -14,11 +15,6 @@ using namespace calcu::machine;
 
 namespace {
 
-std::filesystem::path pathOf(const std::string& utf8) { return std::filesystem::path(std::u8string(utf8.begin(), utf8.end())); }
-std::string utf8Of(const std::filesystem::path& p) {
-    const std::u8string s = p.generic_u8string();
-    return std::string(s.begin(), s.end());
-}
 
 } // namespace
 
@@ -111,8 +107,8 @@ struct PC1600InterfaceMachine::Kinds {
     } printerPort;
     struct HostDrive final : sharp::HostDriveFolder {
         explicit HostDrive(PC1600Machine& m) : m(m) {}
-        std::string folder() const override { return utf8Of(m.hostDriveDirectory()); }
-        void setFolder(const std::string& f) override { m.setHostDriveDirectory(pathOf(f)); }
+        std::string folder() const override { return calcu::files::fromPath(m.hostDriveDirectory()); }
+        void setFolder(const std::string& f) override { m.setHostDriveDirectory(calcu::files::toPath(f)); }
         PC1600Machine& m;
     } hostDrive;
     // C1600-5 AC-12: CALL on the Z-80, SJP on the LH5803.
@@ -217,7 +213,7 @@ void PC1600InterfaceMachine::corePlug(const PeripheralRequest& req, const Periph
         m_core->attachCE158(rom->data(), rom->size());
     } else if (id == sharp::kHostDrive) {
         const auto* folder = dynamic_cast<const sharp::HostDriveRequest*>(req.content.get());
-        m_core->attachHostDrive(rom->data(), rom->size(), pathOf(folder ? folder->folder : std::string()));
+        m_core->attachHostDrive(rom->data(), rom->size(), calcu::files::toPath(folder ? folder->folder : std::string()));
     }
 }
 

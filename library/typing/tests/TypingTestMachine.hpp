@@ -39,6 +39,7 @@ public:
     using TestMachine::capabilities;
     std::vector<machine::CapabilityEntry> capabilities() const override;
     machine::Capability* capability(const machine::CapabilityId&) override;
+    using TestMachine::capability;
 
     // The key log as "tick key down|up" lines from position `from`.
     std::vector<std::string> log(std::size_t from = 0) const;

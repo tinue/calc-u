@@ -322,7 +322,7 @@ TEST(lib6_ac50_test_syncclock_step) {
     HarnessPreset h;   // the harness's host clock: 2000-01-01 00:00:00 (LIB-11 AC-21)
     CHECK(h.loadIdle(k1500a + "keys:\n  - wait: 30s\n  - syncclock:\n", "t.pc1500a"));
     calcu::machine::Machine* m = h.machine();
-    auto* clock = m ? sharp::firstOf<calcu::peripherals::RealTimeClock>(*m) : nullptr;
+    auto* clock = m ? calcu::machine::first<calcu::peripherals::RealTimeClock>(*m) : nullptr;
     CHECK(clock != nullptr);
     if (clock) {
         const auto t = clock->read();

@@ -1,4 +1,5 @@
 #include "media/MediaPart.hpp"
+#include "files/Files.hpp"
 #include "media/Names.hpp"
 #include "media/Writer.hpp"
 #include "peripherals/Controls.hpp"
@@ -299,8 +300,7 @@ void MediaPart::operationEnded(SessionContext& c) {
 void MediaPart::suspending(SessionContext& c) { flushAll(c); }   // EC-8
 void MediaPart::closing(SessionContext& c) { flushAll(c); }      // AC-13: quit
 
-bool MediaPart::waitsForMedium(const Machine& cm) const {
-    Machine& m = const_cast<Machine&>(cm);   // capability() reads only
+bool MediaPart::waitsForMedium(const Machine& m) const {
     for (const auto& e : m.capabilities(MediaPlace::kKind))
         if (auto* p = machine::capabilityAs<MediaPlace>(m, e.id); p && p->waitsForMedium()) return true;
     return false;
@@ -314,11 +314,10 @@ void MediaPart::refreshShelf(SessionContext* c) {
 
 // ── Places and bindings ─────────────────────────────────────────────────
 
-void MediaPart::computePlaces(const Machine& cm) {
-    Machine& m = const_cast<Machine&>(cm);
+void MediaPart::computePlaces(const Machine& m) {
     places_.clear();
     for (const auto& e : m.capabilities(MediaPlace::kKind)) {
-        MediaPlace* cap = machine::capabilityAs<MediaPlace>(m, e.id);
+        const MediaPlace* cap = machine::capabilityAs<MediaPlace>(m, e.id);
         if (!cap) continue;
         Place p;
         p.id = cap->id();
@@ -378,7 +377,7 @@ const MediaPart::Place* MediaPart::place(const std::string& word) const {
     return nullptr;
 }
 
-MediaPlace* MediaPart::placeCap(Machine& m, const Place& p) const {
+template <class M> MediaPart::PlaceCap<M>* MediaPart::placeCap(M& m, const Place& p) {
     if (p.slot) return nullptr;
     for (const auto& e : m.capabilities(MediaPlace::kKind)) {
         const auto* owner = std::get_if<machine::PeripheralOwner>(&e.owner);
@@ -718,8 +717,8 @@ void MediaPart::eject(SessionContext& c, const std::string& word) {
     bindings_.erase(word);   // EC-6: an empty place stays empty
 }
 
-std::optional<std::string> MediaPart::passingNow(Machine& m, const Place& p) const {
-    if (MediaPlace* cap = placeCap(m, p); cap && p.passThrough && cap->side())
+std::optional<std::string> MediaPart::passingNow(const Machine& m, const Place& p) const {
+    if (const MediaPlace* cap = placeCap(m, p); cap && p.passThrough && cap->side())
         return "A " + p.kind->label + " is passing through " + p.word + " now.";
     return std::nullopt;
 }
@@ -1004,13 +1003,12 @@ MediaPart::Outcome MediaPart::remove(SessionContext& c, const KindDecl& k, const
     if (const ShelfEntry* e = shelf_.byPath(plan.path)) companions = e->info.companions;
     std::error_code ec;
     namespace fs = std::filesystem;
-    const auto pathOf = [](const std::string& s) { return fs::path(std::u8string(s.begin(), s.end())); };
-    fs::remove(pathOf(plan.path), ec);
+    fs::remove(files::toPath(plan.path), ec);
     if (ec) {
         out.reason = "The " + k.label + " " + inQuotes(plan.name) + " could not be deleted: " + ec.message();
         return out;
     }
-    for (const auto& rel : companions) fs::remove(pathOf(joinFile(folderOfPath(plan.path), rel)), ec);
+    for (const auto& rel : companions) fs::remove(files::toPath(joinFile(folderOfPath(plan.path), rel)), ec);
     c.log("Deleted " + k.label + " " + inQuotes(plan.name) + ".");
     refreshShelf(&c);
     out.ok = true;
@@ -1068,7 +1066,7 @@ std::vector<std::string> MediaPart::placesInCatalogue(const OpenedMedium& o) con
 std::optional<std::string> MediaPart::refusesNow(const std::string& word, const Machine& cm) const {
     const Place* p = place(word);
     if (!p) return noPlace(word);
-    return passingNow(const_cast<Machine&>(cm), *p);
+    return passingNow(cm, *p);
 }
 
 CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {

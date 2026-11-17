@@ -1,4 +1,5 @@
 #include "Settings.hpp"
+#include "files/Files.hpp"
 #include "settings/OpenFolders.hpp"
 #include "settings/Startup.hpp"
 #include <charconv>
@@ -179,12 +180,11 @@ std::string Settings::openStartDir(OpenFolder folder, const std::string& home) c
 }
 
 void Settings::rememberOpenFile(OpenFolder folder, const std::string& filePath) {
-    const fs::path file(std::u8string(filePath.begin(), filePath.end()));
+    const fs::path file = calcu::files::toPath(filePath);
     std::error_code ec;
     fs::path abs = fs::absolute(file, ec);
     if (ec) abs = file;
-    const std::u8string dir = abs.parent_path().u8string();
-    cs::rememberOpenFolder(m_file, openFolderKind(folder), std::string(dir.begin(), dir.end()));
+    cs::rememberOpenFolder(m_file, openFolderKind(folder), calcu::files::fromPathNative(abs.parent_path()));
 }
 
 WindowState Settings::windowState() const {

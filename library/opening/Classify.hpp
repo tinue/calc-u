@@ -1,4 +1,5 @@
 #pragma once
+#include "machine/Names.hpp"
 #include "opening/OpenRequest.hpp"
 #include <cstdint>
 #include <optional>
@@ -34,7 +35,7 @@ bool looksLikePreset(const std::vector<std::uint8_t>& bytes);
 bool wouldTake(std::string_view name, std::optional<std::uint64_t> size, const OpenSetup&);
 
 // Helpers the part shares.
-std::string lowerAscii(std::string_view);
+using machine::lowerAscii;   // the library's one ASCII lower case (machine/Names.hpp; E-7)
 std::string fileNameOf(const OpenedFile&);   // the name, else the last part of the path
 bool endsWith(std::string_view lowerName, std::string_view lowerSuffix);
 std::string sizeText(std::uint64_t bytes);   // "1 MiB", "64 KiB", "100 bytes" (D-5)

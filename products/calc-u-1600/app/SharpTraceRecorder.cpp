@@ -41,7 +41,7 @@ private:
 } // namespace
 
 std::unique_ptr<calcu::debugger::TraceRecorder> makeSharpTraceRecorder(calcu::machine::Machine& m) {
-    sharp::TraceRecords* records = sharp::firstOf<sharp::TraceRecords>(m);
+    sharp::TraceRecords* records = calcu::machine::first<sharp::TraceRecords>(m);
     if (!records) return nullptr;
     return std::make_unique<SharpTraceRecorder>(*records);
 }

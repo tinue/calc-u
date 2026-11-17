@@ -41,10 +41,28 @@ template <class K, class M> K* capabilityAs(M& machine, const CapabilityId& id) 
     Capability* c = machine.capability(id);
     return c && c->kind() == K::kKind ? static_cast<K*>(c) : nullptr;
 }
+template <class K, class M> const K* capabilityAs(const M& machine, const CapabilityId& id) {
+    const Capability* c = machine.capability(id);
+    return c && c->kind() == K::kKind ? static_cast<const K*>(c) : nullptr;
+}
 
 // The capabilities of kind K present now; empty if none (EC-5).
 template <class K, class M> std::vector<CapabilityEntry> capabilitiesOf(const M& machine) {
     return machine.capabilities(K::kKind);
+}
+
+// The first capability of kind K the machine has now, or nullptr (Part E
+// simplification E-7: the one form of "the machine's K" for library and
+// products).
+template <class K, class M> K* first(M& machine) {
+    for (const auto& e : machine.capabilities(K::kKind))
+        if (K* k = capabilityAs<K>(machine, e.id)) return k;
+    return nullptr;
+}
+template <class K, class M> const K* first(const M& machine) {
+    for (const auto& e : machine.capabilities(K::kKind))
+        if (const K* k = capabilityAs<K>(machine, e.id)) return k;
+    return nullptr;
 }
 
 } // namespace calcu::machine

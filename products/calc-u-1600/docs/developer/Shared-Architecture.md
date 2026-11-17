@@ -38,7 +38,7 @@ WebAssembly check.
   QImage) and shows what Shared decides.
 - **Portable C++20, standard library only.** No Qt, Cocoa or Emscripten
   headers in Core or Shared. Paths are UTF-8 `std::string`s converted
-  through `app/Utf8Path.hpp` (Windows code pages).
+  through the library's `files/Files.hpp` (`calcu::files::toPath`, `fromPath`; Windows code pages).
 - **Single-threaded and never blocking.** Everything runs on the
   frontend's one thread. Long machine work (a boot, a preset, a typed
   program, a power cycle) is a resumable job (below), never a blocking
@@ -73,7 +73,7 @@ WebAssembly check.
 | `SharpPresetRules`, `SharpPresetKeys`, `SharpDebugBlock` | The product's part of LIB-6's preset loader: its rules per model (when the machine is idle, what `expect:` reads, what `screenshot:` writes), its keys and sections (`program:`, `host-drive:`, `slot-N-rom:`, `bus-rom:`, `debug:`), and the reader of the `debug:` block (`debugBlockOf`). The bundled presets are LIB-6's preset list from `examples/bundle.yaml` (`SharpAppPart::presetEntries()`, the `preset-list` request); a bundled example is addressed as `examples:<path>` |
 | `SharpProductMachines` | The machines for LIB-18's start, model and variant switches and plug changes |
 | `PacingProfiles`, `AudioSink` | The Sharp pacing profiles (LIB-17 AC-20: the slice is the call, no jitter, full speed never paced); the host's audio output and `SoundFeed`, which plays the session's sound messages into it |
-| `Settings`, `AppPaths`, `Utf8Path` | Every settings key with its default (the declaration of `Calc-U-1600.ini`); the save/tapes/bundle folders and by-name save paths |
+| `Settings`, `AppPaths` | Every settings key with its default (the declaration of `Calc-U-1600.ini`); the save/tapes/bundle folders and by-name save paths |
 | `KeyLayout/`, `LcdLayout`, `Rgb` | Key hit-regions and the faceplate fit, by `ModelId`; LCD geometry, colours and status indicators (`lcd::indicatorSlots()`, the table the Web lays out by too, and `lcd::indicators()` of a display output) |
 | `SharpLoaderPart` | The loaders in the session (C1600-2): `c1600.file-kind` (what a file is, a WAV's files), `c1600.load-basic`, `c1600.type-basic` (an operation), `c1600.plan-code` (the one plan, asked again as the address is typed), `c1600.load-code` (the load and its advice; an operation with `run`); stateless, each call carries the file. The harness has it too (`pc1600 file-kind`, `load-basic`, `type-basic`, `load-code`) |
 | `SharpFileKinds` | Opening a file (LIB-13, M-48; it replaced `core/DropFile` and `c1600.drop-target`): a drop, Open With, the file named at the start and Load Preset… send the library's `open` (the `OpenPart` that `SharpAppPart` owns, after the loaders among the parts), and the drag `open-would-take`. The library tells presets (`.pc1500`, `.pc1500a`, `.pc1600`, a `model:` line) and media by their names; `BasicProgramKind` and `MachineCodeKind` take the rest by C1600-2's classifier (headerless code only in a `.bin`). A program file opened by a way with a window is the stream topic `c1600.program-opened`, on which the frontend runs its program flow; in the harness it is loaded at once. The limit is 1 MiB for a drop, Open With and the start argument. The library's `opening/StartFile` picks the file named when the Qt6 program starts |

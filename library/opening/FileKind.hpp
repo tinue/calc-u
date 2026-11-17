@@ -1,4 +1,5 @@
 #pragma once
+#include "machine/Names.hpp"
 #include "opening/OpenRequest.hpp"
 #include "sessions/SessionPart.hpp"
 #include <string_view>
@@ -14,7 +15,9 @@ class FileKind {
 public:
     virtual std::string_view name() const = 0;                     // "basic-program": in the reply
     virtual bool takesName(std::string_view lowerName) const = 0;  // AC-6: by the name alone, for a drag
-    virtual bool takes(const OpenedFile&) const = 0;               // AC-1 test 4: by its own rule
+    // AC-1 test 4: by its own rule; by default by the name, as takesName
+    // (Part E simplification E-7).
+    virtual bool takes(const OpenedFile& f) const { return takesName(machine::lowerAscii(f.name)); }
     // A kind may refuse what it takes, with its own sentence; the open part
     // adds the notice.
     virtual sessions::CommandOutcome open(const OpenedFile&, Way, sessions::SessionContext&) = 0;

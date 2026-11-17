@@ -33,17 +33,8 @@ int lastStepOf(const calcu::machine::ModelId& m) { return m.value == "TI-59" ? 9
 int dataRegistersOf(const calcu::machine::ModelId& m) { return m.value == "TI-59" ? 100 : 60; }
 bool hasExtraRegisters(const calcu::machine::ModelId& m) { return m.value == "TI-58C"; }
 
-ProgramMemory* programMemoryOf(calcu::machine::Machine& m) {
-    for (const auto& e : m.capabilities(ProgramMemory::kKind))
-        if (auto* k = calcu::machine::capabilityAs<ProgramMemory>(m, e.id)) return k;
-    return nullptr;
-}
-
-ConstantMemory* constantMemoryOf(calcu::machine::Machine& m) {
-    for (const auto& e : m.capabilities(ConstantMemory::kKind))
-        if (auto* k = calcu::machine::capabilityAs<ConstantMemory>(m, e.id)) return k;
-    return nullptr;
-}
+ProgramMemory* programMemoryOf(calcu::machine::Machine& m) { return calcu::machine::first<ProgramMemory>(m); }
+ConstantMemory* constantMemoryOf(calcu::machine::Machine& m) { return calcu::machine::first<ConstantMemory>(m); }
 
 std::variant<int, std::string> partitionSteps(std::string_view value, int lastStep) {
     std::string_view v = value;

@@ -279,7 +279,7 @@ struct Run {
 
     std::string finish() {
         if (!m) return out;
-        auto* memory = sharp::firstOf<sharp::LoaderMemory>(*m);
+        auto* memory = calcu::machine::first<sharp::LoaderMemory>(*m);
         Fnv f;
         if (is1600()) {
             const std::vector<uint8_t> ram = memory->internalRam();

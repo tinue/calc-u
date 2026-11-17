@@ -8,7 +8,7 @@
 
 #include "Machine/SharpCatalogue.hpp"
 #include "Machine/SharpProductKinds.hpp"
-#include "app/Utf8Path.hpp"
+#include "files/Files.hpp"
 
 namespace shared {
 
@@ -51,7 +51,7 @@ void SerialScriptsPart::feed(const std::string& word, std::vector<std::uint8_t> 
 
 std::optional<std::string> SerialScriptsPart::capture(const std::string& word, const std::string& path) {
     drain();   // what was sent until now belongs to the file before
-    std::ofstream out(toPath(path), std::ios::binary | std::ios::trunc);
+    std::ofstream out(calcu::files::toPath(path), std::ios::binary | std::ios::trunc);
     if (!out) return "The file " + path + " cannot be written.";
     ports_[word].capturePath = path;
     return std::nullopt;
@@ -75,7 +75,7 @@ SerialScriptsPart::Report SerialScriptsPart::report(const std::string& word) {
 }
 
 void SerialScriptsPart::append(const std::string& path, const std::uint8_t* bytes, std::size_t n) {
-    std::ofstream out(toPath(path), std::ios::binary | std::ios::app);
+    std::ofstream out(calcu::files::toPath(path), std::ios::binary | std::ios::app);
     out.write(reinterpret_cast<const char*>(bytes), static_cast<std::streamsize>(n));
 }
 

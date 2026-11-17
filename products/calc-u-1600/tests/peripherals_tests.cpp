@@ -144,7 +144,7 @@ std::vector<double> ce158SendTimes(const char* model) {
     typeLine(*m, "20 outstat 0");
     typeLine(*m, "30 lprint 1234567890");
     toMode(*m, "RUN");
-    pp::SerialPort* port = sharp::firstOf<pp::SerialPort>(*m);
+    pp::SerialPort* port = calcu::machine::first<pp::SerialPort>(*m);
     if (p16)   // the PC-1600's RS-232C port comes first; the CE-158's is at `interface`
         for (const auto& e : m->capabilities(pp::SerialPort::kKind))
             if (std::holds_alternative<PeripheralOwner>(e.owner)) port = capabilityAs<pp::SerialPort>(*m, e.id);
@@ -245,7 +245,7 @@ TEST(lib2_ac34_clock_runs_on_emulated_time) {
     const Catalogue& c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
         auto m = bootedSharp(c, model);
-        pp::RealTimeClock* clock = sharp::firstOf<pp::RealTimeClock>(*m);
+        pp::RealTimeClock* clock = calcu::machine::first<pp::RealTimeClock>(*m);
         clock->set(pp::ClockFields{std::nullopt, 6, 1, std::nullopt, 10, 20, 30}, 0);
         // No advance, no change (wall time does not count).
         CHECK(clock->read().second == 30);

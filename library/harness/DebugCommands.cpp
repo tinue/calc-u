@@ -9,6 +9,7 @@
 // Numbers are read as decimal, 0x… or $… and written as 0x with the digits
 // of their width (D-4); a name loaded by `symbols` stands for an address.
 #include "debugger/RunState.hpp"
+#include "files/Files.hpp"
 #include "formats/Flow.hpp"
 #include "formats/Number.hpp"
 #include "harness/Commands.hpp"
@@ -150,7 +151,6 @@ void addBank(sessions::Value::Object& args, const std::map<std::string, std::str
         if (const auto it = o.find(k); it != o.end()) args.push_back({k, numberOrName(it->second)});
 }
 
-std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
 
 // ── Run control ──────────────────────────────────────────────────────────
 
@@ -312,8 +312,8 @@ Reply peekCmd(CommandContext& c) {
     const int abits = spaceBits(view, text(v.find("space")));
     const auto& cells = *v.find("cells")->elements();
     if (const auto f = opts.find("file"); f != opts.end()) {   // AC-50: bytes into the file
-        std::filesystem::path p = pathOf(f->second);
-        if (p.is_relative() && !c.host.attached()) p = pathOf(c.host.setup().traceFolder()) / p;   // the run's folder (LIB-11 AC-8)
+        std::filesystem::path p = files::toPath(f->second);
+        if (p.is_relative() && !c.host.attached()) p = files::toPath(c.host.setup().traceFolder()) / p;   // the run's folder (LIB-11 AC-8)
         std::ofstream out(p, std::ios::binary | std::ios::trunc);
         const int perCell = std::max(1, (bits + 7) / 8);
         for (const auto& cell : cells) {

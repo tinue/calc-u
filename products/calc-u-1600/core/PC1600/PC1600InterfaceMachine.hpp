@@ -24,6 +24,7 @@ public:
     calcu::machine::Ticks tickCount() const override { return m_core->elapsedTStates(); }
     calcu::machine::DisplayOutput readDisplay() override;
     calcu::machine::Capability* capability(const calcu::machine::CapabilityId&) override;
+    using SharpMachine::capability;
     std::size_t takeSound(std::span<std::int16_t> out) override { return m_core->drainAudio(out.data(), out.size()); }
 
 private:

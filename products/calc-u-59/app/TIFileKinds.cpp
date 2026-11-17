@@ -34,6 +34,7 @@ std::vector<std::string> programArguments(const std::vector<std::string>& argv) 
 
 namespace {
 
+// Strict: a file named only ".asm" is no ASM overlay (unlike opening::endsWith).
 bool endsWith(std::string_view lowerName, std::string_view suffix) {
     return lowerName.size() > suffix.size() && lowerName.substr(lowerName.size() - suffix.size()) == suffix;
 }
@@ -49,7 +50,6 @@ public:
     explicit AsmOverlayKind(TIDebugPart& d) : m_debug(d) {}
     std::string_view name() const override { return "asm-overlay"; }
     bool takesName(std::string_view n) const override { return endsWith(n, ".asm"); }
-    bool takes(const OpenedFile& f) const override { return takesName(toLower(f.name)); }
     CommandOutcome open(const OpenedFile& f, Way, SessionContext& c) override {
         m_debug.attachContext(c);
         if (auto refusal = m_debug.loadAsm(f.name, textOf(f), false)) return Refused{*refusal};
@@ -67,7 +67,6 @@ class KeystrokesKind final : public FileKind {
 public:
     std::string_view name() const override { return "keystroke-program"; }
     bool takesName(std::string_view n) const override { return endsWith(n, ".keystrokes.yaml"); }
-    bool takes(const OpenedFile& f) const override { return takesName(toLower(f.name)); }
     CommandOutcome open(const OpenedFile& f, Way, SessionContext& c) override {
         calcu::machine::Machine* m = c.machine();
         ProgramMemory* pm = m ? programMemoryOf(*m) : nullptr;
@@ -88,7 +87,6 @@ public:
         : m_name(name), m_rule(std::move(rule)), m_why(std::move(why)) {}
     std::string_view name() const override { return m_name; }
     bool takesName(std::string_view n) const override { return m_rule(n); }
-    bool takes(const OpenedFile& f) const override { return takesName(toLower(f.name)); }
     CommandOutcome open(const OpenedFile& f, Way, SessionContext&) override {
         return Refused{f.name + " was not opened: " + m_why};
     }

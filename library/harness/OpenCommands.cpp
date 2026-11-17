@@ -2,6 +2,7 @@
 // the session command `open` as a frontend sends it, with the file's bytes
 // and its path (relative to the working directory), way `harness`. The reply
 // is that of AC-3: what the file was opened as, or why it was refused.
+#include "files/Files.hpp"
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
 #include "opening/OpenRequest.hpp"
@@ -13,22 +14,16 @@ namespace calcu::harness {
 
 namespace {
 
-std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
-std::string textOf(const std::filesystem::path& p) {
-    const std::u8string u = p.generic_u8string();
-    return std::string(u.begin(), u.end());
-}
-
 Reply openCmd(CommandContext& c) {
     if (c.line.argText.empty()) return refusedReply("usage: open <path>");
     std::error_code ec;
-    const std::filesystem::path abs = std::filesystem::absolute(pathOf(c.line.argText), ec);
-    const std::filesystem::path p = ec ? pathOf(c.line.argText) : abs;
+    const std::filesystem::path abs = std::filesystem::absolute(files::toPath(c.line.argText), ec);
+    const std::filesystem::path p = ec ? files::toPath(c.line.argText) : abs;
     opening::OpenedFile f;
-    f.name = textOf(p.filename());
-    f.path = textOf(p);
-    if (std::ifstream in(p, std::ios::binary); in && std::filesystem::is_regular_file(p, ec))
-        f.bytes = std::vector<std::uint8_t>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+    f.name = files::fromPath(p.filename());
+    f.path = files::fromPath(p);
+    if (std::filesystem::is_regular_file(p, ec))
+        if (auto bytes = files::readBytes(p)) f.bytes = std::move(*bytes);
     opening::OpenRequest req;
     req.files.push_back(std::move(f));
     req.way = opening::Way::Harness;

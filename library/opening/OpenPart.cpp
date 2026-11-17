@@ -1,4 +1,5 @@
 #include "opening/OpenPart.hpp"
+#include "files/Files.hpp"
 #include "opening/Classify.hpp"
 #include "sessions/Args.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -62,11 +63,6 @@ std::string joinedOr(const std::vector<std::string>& list) {
     return out;
 }
 
-std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
-std::string textOf(const std::filesystem::path& p) {
-    const std::u8string u = p.generic_u8string();
-    return std::string(u.begin(), u.end());
-}
 
 // The file's name without any folder, for a file written into a folder.
 std::string plainName(const OpenedFile& f) {
@@ -172,15 +168,15 @@ CommandOutcome OpenPart::openSeveral(const OpenRequest& req, SessionContext& c) 
     std::error_code ec;
     fs::path folder;
     do {
-        folder = pathOf(*setup_.uploadFolder) / ("open-" + std::to_string(++folders_));
+        folder = files::toPath(*setup_.uploadFolder) / ("open-" + std::to_string(++folders_));
     } while (fs::exists(folder, ec));
     fs::create_directories(folder, ec);
-    if (ec) return refuse(c, "The files could not be put together in " + textOf(folder) + ": " + ec.message());
+    if (ec) return refuse(c, "The files could not be put together in " + files::fromPath(folder) + ": " + ec.message());
     for (const OpenedFile& f : req.files) {
         if (!f.bytes) continue;
-        std::ofstream out(folder / pathOf(plainName(f)), std::ios::binary | std::ios::trunc);
+        std::ofstream out(folder / files::toPath(plainName(f)), std::ios::binary | std::ios::trunc);
         out.write(reinterpret_cast<const char*>(f.bytes->data()), static_cast<std::streamsize>(f.bytes->size()));
-        if (!out) return refuse(c, plainName(f) + " could not be written to " + textOf(folder) + ".");
+        if (!out) return refuse(c, plainName(f) + " could not be written to " + files::fromPath(folder) + ".");
     }
     // The first by name of those with a preset extension, else of those
     // whose text has a model line; each must pass test 1.
@@ -201,7 +197,7 @@ CommandOutcome OpenPart::openSeveral(const OpenRequest& req, SessionContext& c) 
     });
     const Classified k = classify(*first, req.way, setup_);
     if (k.what == Classified::What::Refused) return refuse(c, k.refusal);   // 1b
-    const std::string path = textOf(folder / pathOf(plainName(*first)));
+    const std::string path = files::fromPath(folder / files::toPath(plainName(*first)));
     return finish(setup_.presets->loadFile(path, c), OpenReply(OpenedAs::Preset, plainName(*first)), c);
 }
 

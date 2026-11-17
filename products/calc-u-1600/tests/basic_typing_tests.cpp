@@ -28,7 +28,7 @@ using sessionfixture::SessionFixture;
 using sessionfixture::romsPresent;
 using sessions::Value;
 
-sharp::LoaderMemory& memory(SessionFixture& f) { return *sharp::firstOf<sharp::LoaderMemory>(*f.part().machine()); }
+sharp::LoaderMemory& memory(SessionFixture& f) { return *calcu::machine::first<sharp::LoaderMemory>(*f.part().machine()); }
 
 std::uint16_t be16(const sharp::LoaderMemory& m, std::uint16_t a) {
     return static_cast<std::uint16_t>((m.peek(a) << 8) | m.peek(static_cast<std::uint16_t>(a + 1)));

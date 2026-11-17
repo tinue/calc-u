@@ -249,7 +249,7 @@ TEST(c59_4_ac3_shows_registers_partition_steps_flags_source_scom_returns) {
 TEST(c59_4_ac3_ti58c_shows_h00_to_h03) {
     auto m = testroms::makeMachine(Model::TI58C);
     testroms::runToScanLoop(*m, Model::TI58C);
-    auto* pm = cu59::kindOf<ProgramMemory>(*m);
+    auto* pm = calcu::machine::first<ProgramMemory>(*m);
     CHECK(pm && pm->extraCount() == 4);
     RegisterNibbles v{};
     const auto seven = encodeBcd(std::string_view("7"));
@@ -405,7 +405,7 @@ TEST(c59_4_ac6_newest_32_running_up_to_1024_and_next_paused) {
 TEST(c59_4_ac8_counts_each_rom_address_once) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
-    auto* h = kindOf<RomHeatmapCounter>(*m);
+    auto* h = calcu::machine::first<RomHeatmapCounter>(*m);
     CHECK(h && h->counts().size() == 0x1400);
     testroms::run(*m, 100);
     CHECK_EQ(std::count(h->counts().begin(), h->counts().end(), 0u), std::ptrdiff_t{0x1400});   // off: nothing
@@ -448,7 +448,7 @@ TEST(c59_4_ac8_reset_by_command_reset_and_model_switch) {
     CHECK(r.model("TI-58").done);
     r.frame();
     CHECK(sum() < 1'000'000);   // a new machine counts from zero
-    auto* h = kindOf<RomHeatmapCounter>(r.machine());
+    auto* h = calcu::machine::first<RomHeatmapCounter>(r.machine());
     CHECK(h && h->on());        // and counts while the tab shows
 }
 
@@ -527,7 +527,7 @@ TEST(c59_4_ac11_levels_off_info_debug) {
         CHECK(r.send(commands::kLogLevel, Value::object({{"level", l}})).done);
         r.frame();
         CHECK_EQ(std::string(debugLevelName(topic<TIDebugView>(r, topics::kDebugView)->logLevel)), std::string(l));
-        CHECK_EQ(kindOf<MachineLog>(r.machine())->level(), static_cast<int>(*debugLevelNamed(l)));
+        CHECK_EQ(calcu::machine::first<MachineLog>(r.machine())->level(), static_cast<int>(*debugLevelNamed(l)));
     }
     CHECK(!r.send(commands::kLogLevel, Value::object({{"level", "loud"}})).done);
 }
@@ -598,7 +598,7 @@ TEST(c59_4_ac12_cannot_be_used_without_a_writable_folder) {
 TEST(c59_4_ac13_up_to_2048_over_1800_to_1fff) {
     for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
         auto m = testroms::makeMachine(model);
-        auto* o = kindOf<AsmOverlay>(*m);
+        auto* o = calcu::machine::first<AsmOverlay>(*m);
         CHECK(o != nullptr);
         if (!o) continue;
         CHECK(o->load(std::vector<std::uint16_t>(2048, 0x0A01)));
@@ -611,7 +611,7 @@ TEST(c59_4_ac13_up_to_2048_over_1800_to_1fff) {
 
 TEST(c59_4_ac13_taken_away) {
     auto m = testroms::makeMachine(Model::TI59);
-    auto* o = kindOf<AsmOverlay>(*m);
+    auto* o = calcu::machine::first<AsmOverlay>(*m);
     const auto before = m->debugging()->target(0).peek(0, 0x1800, {}).value;
     CHECK(o->load({0x0A01}));
     o->clear();
@@ -622,7 +622,7 @@ TEST(c59_4_ac13_taken_away) {
 TEST(c59_4_ac13_entered_at_1800) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
-    auto* o = kindOf<AsmOverlay>(*m);
+    auto* o = calcu::machine::first<AsmOverlay>(*m);
     CHECK(!o->enter(8192).entered);   // nothing loaded
     CHECK(o->load({0x0A01, 0x0A01}));
     const auto e = o->enter(8192);
@@ -640,7 +640,7 @@ TEST(c59_4_ac16_select_file_loads_at_once) {
     CHECK_EQ(asmState(r)->fileName, std::string("two.asm"));
     CHECK_EQ(asmState(r)->instructions, 2);
     CHECK_EQ(asmState(r)->status, std::string("Loaded 2 word(s) at 0x1800."));
-    CHECK_EQ(kindOf<AsmOverlay>(r.machine())->loaded(), std::size_t{2});
+    CHECK_EQ(calcu::machine::first<AsmOverlay>(r.machine())->loaded(), std::size_t{2});
     CHECK(!asmLoad(r, std::nullopt, "gone.asm").done);   // unreadable
 }
 
@@ -690,7 +690,7 @@ TEST(c59_4_ec2_refused_file_keeps_loaded) {
     CHECK(!reply.done && reply.reason.find("older format") != std::string::npos);
     r.frame();
     CHECK_EQ(asmState(r)->fileName, std::string("good.asm"));
-    CHECK_EQ(kindOf<AsmOverlay>(r.machine())->loaded(), std::size_t{2});
+    CHECK_EQ(calcu::machine::first<AsmOverlay>(r.machine())->loaded(), std::size_t{2});
     CHECK_EQ(r.notices().size(), std::size_t{1});   // the refusal is a notice
 }
 
@@ -714,7 +714,7 @@ TEST(c59_4_ac17_fails_after_8192_with_status_and_notice) {
     // program step boundary is not needed: the entry gives up after 8192.
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
-    auto* o = kindOf<AsmOverlay>(*m);
+    auto* o = calcu::machine::first<AsmOverlay>(*m);
     CHECK(o->load({0x0A01}));
     const auto e = o->enter(0);   // no instruction allowed: not entered
     CHECK(!e.entered && !o->running());
@@ -811,7 +811,7 @@ TEST(c59_4_ac26_cold_boot_removes) {
     r.frame();
     CHECK(!asmState(r)->running);
     CHECK_EQ(asmState(r)->instructions, 0);
-    CHECK_EQ(kindOf<AsmOverlay>(r.machine())->loaded(), std::size_t{0});
+    CHECK_EQ(calcu::machine::first<AsmOverlay>(r.machine())->loaded(), std::size_t{0});
     CHECK(!r.send(commands::kAsmRun).done);   // nothing to run
 }
 
@@ -833,7 +833,7 @@ TEST(c59_4_ac26_new_machine_by_preset_and_model_switch_removes) {
     CHECK(r.until([&] { return r.reply(id) != nullptr; }, 30s));
     r.frame();
     CHECK_EQ(asmState(r)->instructions, 0);
-    CHECK_EQ(kindOf<AsmOverlay>(r.machine())->loaded(), std::size_t{0});
+    CHECK_EQ(calcu::machine::first<AsmOverlay>(r.machine())->loaded(), std::size_t{0});
 }
 
 // ── T13: opening (AC-19, EC-5) ───────────────────────────────────────────────
@@ -875,7 +875,7 @@ TEST(c59_4_ec5_opened_before_first_machine_kept) {
     CHECK(r.until([&] { return r.session().machineSession().machine() && !r.busy(); }));
     r.runFor(50ms);
     CHECK_EQ(asmState(r)->fileName, std::string("c.asm"));
-    CHECK_EQ(kindOf<AsmOverlay>(r.machine())->loaded(), std::size_t{6});
+    CHECK_EQ(calcu::machine::first<AsmOverlay>(r.machine())->loaded(), std::size_t{6});
 }
 
 // ── T15: every frontend (AC-21): the labels and short forms the panels draw ──

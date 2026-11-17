@@ -10,6 +10,7 @@
 #include "../core/PC100C.hpp"
 #include "../core/TITypingSupport.hpp"
 #include "debugger/DebuggerPart.hpp"
+#include "files/Files.hpp"
 #include "formats/Duration.hpp"
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
@@ -113,9 +114,7 @@ void addDebugPanelCommands(harness::CommandRegistry& r) {
             std::string path = c.line.argText.substr(4);   // after "load"
             path.erase(0, std::min(path.size(), path.find_first_not_of(" \t")));
             if (path.empty()) return refusedReply("usage: ti59 asm load <file>");
-            std::ifstream in(std::filesystem::path(std::u8string(path.begin(), path.end())), std::ios::binary);
-            std::optional<std::string> text;
-            if (in) text = std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+            const std::optional<std::string> text = calcu::files::readText(calcu::files::toPath(path));
             sessions::Value::Object o{{"name", sessions::Value(std::filesystem::path(path).filename().string())}};
             if (text) o.push_back({"text", sessions::Value(*text)});
             const sessions::ReplyMessage m = c.host.command(sessions::Command{commands::kAsmLoad, sessions::Value(std::move(o))});
@@ -657,10 +656,9 @@ Reply keycodesCmd(CommandContext& c) {
         path.erase(0, std::min(path.size(), path.find_first_not_of(" \t")));
         while (!path.empty() && (path.back() == ' ' || path.back() == '\t')) path.pop_back();
         if (path.empty()) return refusedReply("usage: ti59 keycodes assemble <file>");
-        std::ifstream in(std::filesystem::path(std::u8string(path.begin(), path.end())), std::ios::binary);
-        if (!in) return refusedReply("The file " + path + " cannot be read.");
-        const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-        auto r = assemble(text, pm->lastStep());
+        const std::optional<std::string> text = calcu::files::readText(calcu::files::toPath(path));
+        if (!text) return refusedReply("The file " + path + " cannot be read.");
+        auto r = assemble(*text, pm->lastStep());
         if (const auto* e = std::get_if<KeycodeError>(&r))
             return refusedReply("Line " + std::to_string(e->lineIndex + 1) + ": " + e->message);
         const auto& steps = std::get<std::vector<ProgramStep>>(r);

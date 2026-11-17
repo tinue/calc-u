@@ -10,7 +10,7 @@ using calcu::formats::YamlNode;
 
 // A′–E′ → 0–4, A–E → 5–9 (any case; ′ or ').
 int labelOf(const std::string& key) {
-    std::string k = toLower(key);
+    std::string k = calcu::machine::lowerAscii(key);
     const std::string prime = "′";
     bool primed = false;
     if (k.size() == 2 && k[1] == '\'') primed = true, k.resize(1);
@@ -20,7 +20,7 @@ int labelOf(const std::string& key) {
 }
 
 std::optional<TextAlign> alignOf(const std::string& v) {
-    const std::string l = toLower(v);
+    const std::string l = calcu::machine::lowerAscii(v);
     if (l == "left") return TextAlign::Left;
     if (l == "center") return TextAlign::Center;
     if (l == "right") return TextAlign::Right;
@@ -79,12 +79,12 @@ std::optional<CueCardContent> readStandAloneCueCard(const YamlNode& block, const
             }
             (key == "row-1-align" ? c.row1Align : key == "row-2-align" ? c.row2Align : c.row2RAlign) = *a;
         } else if (key == "style") {
-            const std::string l = toLower(text);
+            const std::string l = calcu::machine::lowerAscii(text);
             if (l == "none") c.style = CardButtonStyle::None;
             else if (l == "button") c.style = CardButtonStyle::Button;
             else fail("style: is none or button.");
         } else if (key == "pencil-color") {
-            const std::string l = toLower(text);
+            const std::string l = calcu::machine::lowerAscii(text);
             if (l == "black") c.color = CueCardInkColor::Black;
             else if (l == "pencil") c.color = CueCardInkColor::Pencil;
             else if (l == "sharpie") c.color = CueCardInkColor::Sharpie;

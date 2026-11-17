@@ -28,7 +28,7 @@ bool mode1(const LoaderMemory& m) { return m.mode() == LoaderMemory::Mode::Mode1
 
 } // namespace
 
-LoaderMemory* memoryOf(calcu::machine::Machine& m) { return firstOf<LoaderMemory>(m); }
+LoaderMemory* memoryOf(calcu::machine::Machine& m) { return calcu::machine::first<LoaderMemory>(m); }
 
 std::string refusal(const std::string& name, const std::string& reason) {
     return name.empty() ? reason : name + ": " + reason;

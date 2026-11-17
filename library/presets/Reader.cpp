@@ -1,4 +1,5 @@
 #include "presets/Reader.hpp"
+#include "files/Files.hpp"
 #include "formats/Flow.hpp"
 #include "formats/Number.hpp"
 #include "machine/Names.hpp"
@@ -557,9 +558,8 @@ std::unique_ptr<Item> readStep(std::string_view verb, const YamlNode& value, con
         // LIB-7 (M-41; LIB-11 AC-22): a file a step's reference names
         // (`floppy { file: … }`), absolute or relative to the current folder.
         std::variant<std::vector<std::uint8_t>, std::string> readNamed(std::string_view p) const override {
-            std::ifstream in(std::filesystem::path(std::u8string(p.begin(), p.end())), std::ios::binary);
-            if (!in) return "The file " + std::string(p) + " cannot be read.";
-            return std::vector<std::uint8_t>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+            if (auto bytes = files::readBytes(files::toPath(p))) return std::move(*bytes);
+            return "The file " + std::string(p) + " cannot be read.";
         }
         std::string resolvedName(std::string_view p) const override { return std::string(p); }
     } source;

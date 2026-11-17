@@ -28,6 +28,7 @@
 #include "app/SharpLoaderPart.hpp"
 #include "app/SharpTopics.hpp"
 #include "debugger/RunState.hpp"
+#include "files/Files.hpp"
 #include "formats/Duration.hpp"
 #include "formats/Number.hpp"
 #include "harness/HarnessHost.hpp"
@@ -52,19 +53,12 @@ using harness::doneReply;
 using harness::refusedReply;
 using harness::Reply;
 
-fs::path pathOf(const std::string& s) { return fs::path(std::u8string(s.begin(), s.end())); }
-std::string pathText(const fs::path& p) {
-    const std::u8string u = p.u8string();
-    return std::string(u.begin(), u.end());
-}
 
 // The file's bytes, or nullopt (it cannot be read).
 std::optional<std::vector<std::uint8_t>> readFile(const std::string& path) {
     std::error_code ec;
-    if (!fs::is_regular_file(pathOf(path), ec)) return std::nullopt;
-    std::ifstream in(pathOf(path), std::ios::binary);
-    if (!in) return std::nullopt;
-    return std::vector<std::uint8_t>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+    if (!fs::is_regular_file(calcu::files::toPath(path), ec)) return std::nullopt;
+    return calcu::files::readBytes(calcu::files::toPath(path));
 }
 
 std::string hex(std::uint64_t v, int digits) {
@@ -233,7 +227,7 @@ Reply dumpBasicCmd(CommandContext& c) {
     if (!c.line.argText.empty()) return refusedReply("usage: pc1600 dump-basic");
     machine::Machine* m = machineOf(c);
     if (!m) return noMachine();
-    const sharp::LoaderMemory* mem = sharp::firstOf<sharp::LoaderMemory>(*m);
+    const sharp::LoaderMemory* mem = calcu::machine::first<sharp::LoaderMemory>(*m);
     if (!mem) return refusedReply("The machine has no BASIC memory.");
     BasicDump d = basicDump(*mem);
     harness::Value pointers = harness::Value::array();
@@ -281,7 +275,7 @@ Reply inspectCmd(CommandContext& c) {
     }
     machine::Machine* m = machineOf(c);
     if (!m) return noMachine();
-    const sharp::InspectorViews* k = sharp::firstOf<sharp::InspectorViews>(*m);
+    const sharp::InspectorViews* k = calcu::machine::first<sharp::InspectorViews>(*m);
     if (!k) return refusedReply("The machine has no INSPECTOR.");
     std::vector<std::string> lines = k->view(view);
     harness::Value arr = harness::Value::array();
@@ -340,7 +334,7 @@ Reply tapeCmd(CommandContext& c, const SharpHarnessParts& parts) {
     machine::Machine* m = machineOf(c);
     if (!m) return noMachine();
     if (!w.empty() && w[0] == "status" && w.size() == 1) {
-        const sharp::TapeDeckAccess* deck = sharp::firstOf<sharp::TapeDeckAccess>(*m);
+        const sharp::TapeDeckAccess* deck = calcu::machine::first<sharp::TapeDeckAccess>(*m);
         if (!deck) return refusedReply("The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.");   // EC-2
         const TapeDeck::Status s = deck->status();
         const char* mode = s.mode == TapeDeck::Mode::Play ? "playing" : s.mode == TapeDeck::Mode::Record ? "recording" : "empty";
@@ -361,13 +355,13 @@ Reply tapeCmd(CommandContext& c, const SharpHarnessParts& parts) {
     SharpAppPart* app = parts.app ? parts.app() : nullptr;
     if (!app) return notInThisRun();
     std::error_code ec;
-    const fs::path target = fs::absolute(pathOf(w[1]), ec);
+    const fs::path target = fs::absolute(calcu::files::toPath(w[1]), ec);
     media::Binding b;
     b.kind = &recordingKind();
-    b.name = pathText(target.filename());
+    b.name = calcu::files::fromPathNative(target.filename());
     b.origin = media::Origin::Saved;
     b.isTemplate = false;   // an instance: written each time the motor stops and at eject (AC-5)
-    b.path = pathText(target);
+    b.path = calcu::files::fromPathNative(target);
     // A tape in the cassette is written as LIB-7 says and taken out first;
     // a new, empty tape records (AC-5).
     sessions::SessionContext& ctx = c.host.session().context();
@@ -473,8 +467,8 @@ Reply hostDriveCmd(CommandContext& c) {
     std::string dir;
     if (arg != "off") {
         std::error_code ec;
-        if (!fs::is_directory(pathOf(arg), ec)) return refusedReply("The path " + arg + " is no folder.");   // EC-5
-        dir = pathText(fs::absolute(pathOf(arg), ec));
+        if (!fs::is_directory(calcu::files::toPath(arg), ec)) return refusedReply("The path " + arg + " is no folder.");   // EC-5
+        dir = calcu::files::fromPathNative(fs::absolute(calcu::files::toPath(arg), ec));
     }
     return harness::fromSessionReply(c.host.command(sessions::Command{commands::kMountHostDrive, sessions::Value::object({{"dir", dir}})}));
 }
@@ -528,7 +522,7 @@ Reply callCmd(CommandContext& c) {
         std::transform(b.begin(), b.end(), b.begin(), [](unsigned char ch) { return static_cast<char>(std::toupper(ch)); });
         if (a == b) target = t.value;
     }
-    sharp::RoutineCall* call = sharp::firstOf<sharp::RoutineCall>(*m);
+    sharp::RoutineCall* call = calcu::machine::first<sharp::RoutineCall>(*m);
     if (target.empty() || !call || !call->call(target, static_cast<std::uint16_t>(*address)))
         return refusedReply("The machine has no debug target " + w[0] + ".");
     const machine::TickRate rate = m->descriptor().tickRate;

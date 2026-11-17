@@ -43,7 +43,7 @@ std::uint16_t freeRam(Machine& m) {
     return static_cast<std::uint16_t>((start + end) / 2);
 }
 
-pp::RealTimeClock* clockOf(Machine& m) { return sharp::firstOf<pp::RealTimeClock>(m); }
+pp::RealTimeClock* clockOf(Machine& m) { return calcu::machine::first<pp::RealTimeClock>(m); }
 
 // Switches the machine off by its `off` key; true once the display is off.
 bool switchOff(Machine& m) {
@@ -744,13 +744,13 @@ TEST(c1600_1_ac19_product_kinds_with_owners) {
         const auto port = m->capabilities(sharp::Ce158PrinterPort::kKind);
         CHECK(port.size() == 1 && peripheralIs(port[0], "CE-158", "interface"));
         CHECK(!memoryOf(*m).internalRam().empty() == (std::string(model) == "PC-1600"));
-        CHECK(!sharp::firstOf<sharp::InspectorViews>(*m)->menu(false).empty());
+        CHECK(!calcu::machine::first<sharp::InspectorViews>(*m)->menu(false).empty());
         CHECK(m->capabilities(sharp::HostDriveFolder::kKind).empty());
     }
     auto m = buildSharp(c, "PC-1600", std::nullopt, {hostDriveRequest(c, "/tmp")});
     const auto hd = m->capabilities(sharp::HostDriveFolder::kKind);
     CHECK(hd.size() == 1 && peripheralIs(hd[0], "host-drive", "host-drive"));
-    auto* folder = sharp::firstOf<sharp::HostDriveFolder>(*m);
+    auto* folder = calcu::machine::first<sharp::HostDriveFolder>(*m);
     CHECK(folder && folder->folder() == "/tmp");
     folder->setFolder("/var");
     CHECK(folder->folder() == "/var");
@@ -775,6 +775,6 @@ TEST(c1600_1_ac20_display_on_slots_cassette_one_way_on_every_model) {
         CHECK(e && e->peripheral.value == "CE-161");
         CHECK(sharptest::moduleIn(*m, 1) != nullptr);
         // The cassette is the CE-150's or CE-1600P's media place (LIB-7, M-47): none without one.
-        CHECK(sharp::firstOf<sharp::TapeDeckAccess>(*m) == nullptr);
+        CHECK(calcu::machine::first<sharp::TapeDeckAccess>(*m) == nullptr);
     }
 }

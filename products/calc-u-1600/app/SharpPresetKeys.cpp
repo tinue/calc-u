@@ -15,6 +15,7 @@
 #include "Machine/SharpCatalogue.hpp"
 #include "Machine/SharpMachine.hpp"
 #include "app/SharpDebugBlock.hpp"
+#include "files/Files.hpp"
 #include "formats/Flow.hpp"
 #include "formats/Number.hpp"
 #include "presets/Engine.hpp"
@@ -403,7 +404,7 @@ void addSharpKeywords(calcu::presets::Vocabulary& v, const SharpKeywordSetup& se
                 return;
             }
             const std::string resolved = ctx.source().resolvedName(*folder);
-            const std::filesystem::path p(std::u8string(resolved.begin(), resolved.end()));
+            const std::filesystem::path p = calcu::files::toPath(resolved);
             if (!p.is_absolute()) {   // EC-5
                 ctx.error(line, "The preset " + ctx.source().name() + " was handed over without its folder, so the folder " +
                                     *folder + " it names cannot be used.");

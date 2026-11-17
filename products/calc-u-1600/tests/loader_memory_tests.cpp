@@ -26,7 +26,7 @@ TEST(c1600_2_ac14_listed_by_every_sharp_model) {
         CHECK_EQ(e.size(), std::size_t{1});
         // Owned by the machine itself (its main CPU, C1600-1 D-1).
         if (!e.empty()) CHECK(std::holds_alternative<calcu::machine::ComponentOwner>(e[0].owner));
-        CHECK(sharp::firstOf<LoaderMemory>(*m) != nullptr);
+        CHECK(calcu::machine::first<LoaderMemory>(*m) != nullptr);
     }
 }
 

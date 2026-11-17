@@ -169,7 +169,7 @@ TEST(c1600_5_ac4_every_view_per_model) {
             inspect::View v;
             CHECK(inspect::viewFromName(name, &v));
             // The reply is the view as the INSPECTOR shows it, on the same machine.
-            const auto* k = sharp::firstOf<sharp::InspectorViews>(*r.machine());
+            const auto* k = calcu::machine::first<sharp::InspectorViews>(*r.machine());
             CHECK(k != nullptr);
             if (!k) return;
             const std::vector<std::string> lines = k->view(v);

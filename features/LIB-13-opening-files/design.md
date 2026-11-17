@@ -980,3 +980,12 @@ outside the open part and `app/TIFileKinds`.
   in the TI app session, C59-2's keystroke program reader). "Knowledge,
   ledger": add row 59-47 and `docs/glossary-mapping.md`'s "Open" row.
 - **Questions.** None that split this design.
+
+## Part E simplification E-7 (2026-11-17, branch `es-helpers`)
+
+`FileKind::takes` (§3.3) has a default: `takesName` of the name in ASCII
+lower case (`machine::lowerAscii`), the rule Calc-U-59's three kinds wrote
+each (`docs/reviews/e-simplification.md` §1 S-7). Which names a kind takes
+is unchanged: `app/TIFileKinds.cpp` keeps its strict `endsWith`, so a file
+named only `.asm` or `.keystrokes.yaml` is still not taken, unlike
+`opening::endsWith`.

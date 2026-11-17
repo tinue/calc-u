@@ -1,20 +1,16 @@
 #include "debugger/TraceSession.hpp"
+#include "files/Files.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <filesystem>
 
 namespace calcu::debugger {
 
 namespace {
-std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
-std::string textOf(const std::filesystem::path& p) {
-    const std::u8string u = p.generic_u8string();
-    return std::string(u.begin(), u.end());
-}
 } // namespace
 
 std::unique_ptr<TraceFile> TraceFile::open(const std::string& path, std::string* error) {
     std::unique_ptr<TraceFile> f(new TraceFile());
-    f->out_.open(pathOf(path), std::ios::binary | std::ios::trunc);
+    f->out_.open(files::toPath(path), std::ios::binary | std::ios::trunc);
     if (!f->out_) {
         if (error) *error = "The trace file " + path + " cannot be made.";
         return nullptr;
@@ -94,7 +90,7 @@ std::optional<std::string> TraceSession::start(sessions::SessionContext& c, std:
     } else {
         if (!folder->ok) return "The trace folder cannot be written: " + folder->problem;   // EC-8
         std::string error;
-        file = TraceFile::open(textOf(pathOf(folder->path) / pathOf(name)), &error);
+        file = TraceFile::open(files::fromPath(files::toPath(folder->path) / files::toPath(name)), &error);
         if (!file) return error;   // AC-22: the step fails
     }
     recorder_ = std::move(recorder);

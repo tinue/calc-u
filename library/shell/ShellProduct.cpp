@@ -1,5 +1,6 @@
 #include "shell/ShellProduct.hpp"
 #include "shell/Inputs.hpp"
+#include <algorithm>
 
 namespace calcu::shell {
 
@@ -31,6 +32,21 @@ std::vector<std::string> checkShellProduct(const ShellProduct& p, const sessions
     std::set<std::string> ids;
     for (const auto& item : p.items)
         if (!ids.insert(item.id).second) problems.push_back("The item id " + item.id + " is given twice.");
+    return problems;
+}
+
+std::vector<std::string> checkShellProduct(const ShellProduct& p, const std::vector<sessions::Value>& controlStates) {
+    std::vector<std::string> problems;
+    for (const auto& cs : controlStates)
+        for (auto& problem : checkShellProduct(p, cs))
+            if (std::find(problems.begin(), problems.end(), problem) == problems.end()) problems.push_back(std::move(problem));
+    for (const auto& item : p.items) {   // M17: a media place no model lists
+        if (item.mediaPlace.empty()) continue;
+        bool listed = false;
+        for (const auto& cs : controlStates)
+            for (const auto& m : read::elements(cs, "mediaPlaces")) listed = listed || read::text(m, "id") == item.mediaPlace;
+        if (!listed) problems.push_back("The item " + item.id + " names the media place " + item.mediaPlace + ", which no model lists.");
+    }
     return problems;
 }
 

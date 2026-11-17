@@ -237,6 +237,46 @@ TEST(set_setting_unwritable_gives_notice) {
     CHECK_EQ(r.rowText("startup", "model", "value"), std::string("Model-A"));
 }
 
+// Part E (design §10.3.2), S8: a choice row with labels.
+namespace {
+
+DialogSpec styleSpec() {
+    DialogSpec spec;
+    DialogRow row{DialogRow::Widget::Choice, "test", "style", "Style"};
+    row.choices = {{"one", "The first"}};   // "two" is declared and not offered
+    spec.sections.push_back({"Look", {row}});
+    return spec;
+}
+
+std::string choiceText(const ShownRow& r) {
+    std::string s;
+    for (const auto& [v, l] : r.choices) s += v + "=" + l + ";";
+    return s;
+}
+
+} // namespace
+
+TEST(choice_row_with_labels_offers_only_those) {
+    Rig r;
+    const auto ss = dialog(r.topic(), st::presetList(), styleSpec());
+    const auto style = find(ss, "test.style");
+    CHECK(style.has_value());
+    CHECK_EQ(style->value, std::string("one"));
+    CHECK_EQ(choiceText(*style), std::string("one=The first;"));
+    // Without labels: every declared value as written (as before).
+    DialogSpec plain;
+    plain.sections.push_back({"Look", {{DialogRow::Widget::Choice, "test", "style", "Style"}}});
+    CHECK_EQ(choiceText(*find(dialog(r.topic(), st::presetList(), plain), "test.style")), std::string("one=one;two=two;"));
+}
+
+TEST(choice_value_not_listed_shown_as_written) {
+    Rig r;
+    CHECK(r.fe.reply(r.set("test", "style", "two"))->done);
+    const auto style = find(dialog(r.topic(), st::presetList(), styleSpec()), "test.style");
+    CHECK_EQ(style->value, std::string("two"));
+    CHECK_EQ(choiceText(*style), std::string("one=The first;two=two;"));
+}
+
 TEST(with_tilde_only_for_home_and_below) {
     CHECK_EQ(withTilde("/Users/x", "/Users/x"), std::string("~"));
     CHECK_EQ(withTilde("/Users/x/a", "/Users/x"), std::string("~/a"));

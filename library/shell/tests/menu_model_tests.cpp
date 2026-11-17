@@ -249,3 +249,112 @@ TEST(check_shell_product_reports_missing_labels) {
     const auto problems = checkShellProduct(p, st::controlValue());
     CHECK_EQ(problems.size(), std::size_t{2});
 }
+
+// ── Part E (design §10.3.1): a window without a menu bar, rules M13 to M18 ──
+
+namespace {
+
+Traits portrait() {
+    Traits t{false, false, true};
+    t.menuBar = false;
+    return t;
+}
+
+} // namespace
+
+TEST(more_items_are_the_items_without_a_control) {   // M13, M14
+    auto in = st::inputs();
+    in.media = st::mediaWithKind();
+    auto p = st::product();
+    const auto ms = menus(in, p, portrait());
+    // M13: the menus are still computed.
+    CHECK_EQ(join(menuIds(ms)), std::string("file machine help"));
+    CHECK_EQ(join(ids(moreItems(ms, p))),
+             std::string("examples - load-program - import-media saved-media mount-drive - variants-model - cold-boot resume disk-thing - help about"));
+    // A product item the product draws on the bar is left out, and no separator doubles.
+    p.items[1].onBar = true;
+    CHECK_EQ(join(ids(moreItems(menus(in, p, portrait()), p))),
+             std::string("examples - load-program - import-media saved-media - variants-model - cold-boot resume disk-thing - help about"));
+    p.items[0].onBar = true;
+    CHECK_EQ(join(ids(moreItems(menus(in, p, portrait()), p))),
+             std::string("examples - import-media saved-media - variants-model - cold-boot resume disk-thing - help about"));
+}
+
+TEST(more_cold_boot_asks_first) {   // M15
+    const auto p = st::product();
+    const auto ms = menus(st::inputs(), p, portrait());
+    const auto more = moreItems(ms, p);
+    const MenuItem* cold = nullptr;
+    for (const auto& i : more)
+        if (i.id == "cold-boot") cold = &i;
+    CHECK(cold != nullptr);
+    CHECK_EQ(cold->confirm, std::string("Cold boot the machine? What it holds in memory is lost."));
+    CHECK(cold->destructive);
+    CHECK_EQ(cold->command.value, std::string("cold-boot"));
+    // In the menus themselves the item asks nothing.
+    CHECK(findItem(ms, "cold-boot")->confirm.empty());
+    CHECK(!findItem(ms, "cold-boot")->destructive);
+    for (const auto& i : more)
+        if (i.id != "cold-boot") CHECK(i.confirm.empty());
+}
+
+TEST(more_follows_availability) {   // M16
+    auto cs = st::controlState();
+    for (auto& a : cs.actions)
+        if (a.command == control::kColdBootAction) a.available = st::unavailable("An operation runs.");
+    const auto p = st::product();
+    auto more = moreItems(menus(st::inputs(cs.toValue()), p, portrait()), p);
+    auto byId = [&](const char* id) -> const MenuItem* {
+        for (const auto& i : more)
+            if (i.id == id) return &i;
+        return nullptr;
+    };
+    CHECK(!byId("cold-boot")->enabled);
+    CHECK_EQ(byId("cold-boot")->reason, std::string("An operation runs."));
+    CHECK(!byId("resume")->enabled);   // not paused
+    CHECK(!byId("disk-thing")->enabled);
+    CHECK_EQ(byId("disk-thing")->reason, std::string("No disk drive."));
+    // Computed again from new inputs: available now, and Resume while paused.
+    auto in = st::inputs();
+    in.runState = Value::object({{"paused", true}});
+    more = moreItems(menus(in, p, portrait()), p);
+    CHECK(byId("cold-boot")->enabled);
+    CHECK(byId("resume")->enabled);
+}
+
+TEST(media_place_item_only_with_its_media_place) {   // M17 (LIB-4 AC-12)
+    auto p = st::product();
+    ProductItem fit{MenuGroup::FileMedia, "fit-card", "Fit Card…", "", {}};
+    fit.mediaPlace = "card";
+    p.items.push_back(fit);
+    // Model-A lists the media place `card`: the item, enabled.
+    auto ms = menus(st::inputs(), p, kQt);
+    CHECK(findItem(ms, "fit-card") != nullptr);
+    CHECK(findItem(ms, "fit-card")->enabled);
+    // Its `insert` not available: disabled, with the reason.
+    auto cs = st::controlState();
+    cs.mediaPlaces[0].insert = st::unavailable("A card passes.");
+    ms = menus(st::inputs(cs.toValue()), p, kQt);
+    CHECK(!findItem(ms, "fit-card")->enabled);
+    CHECK_EQ(findItem(ms, "fit-card")->reason, std::string("A card passes."));
+    // Model-B lists none: no item.
+    ms = menus(st::inputs(st::controlValue("Model-B")), p, kQt);
+    CHECK(findItem(ms, "fit-card") == nullptr);
+    // checkShellProduct names a media place that no model lists.
+    CHECK(checkShellProduct(p, std::vector<Value>{st::controlValue("Model-A"), st::controlValue("Model-B")}).empty());
+    p.items.back().mediaPlace = "tape";
+    const auto problems = checkShellProduct(p, std::vector<Value>{st::controlValue("Model-A"), st::controlValue("Model-B")});
+    CHECK_EQ(problems.size(), std::size_t{1});
+}
+
+TEST(no_settings_item_without_settings) {   // M18; Traits::about
+    Traits t = kWeb;
+    t.settings = false;
+    auto ms = menus(st::inputs(), st::product(), t);
+    CHECK(findItem(ms, "settings") == nullptr);
+    CHECK(findItem(ms, "about") != nullptr);
+    t.about = false;
+    ms = menus(st::inputs(), st::product(), t);
+    CHECK(findItem(ms, "about") == nullptr);
+    CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help"));
+}

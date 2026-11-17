@@ -15,7 +15,8 @@
 namespace calcu::shell {
 
 struct BarControl {
-    enum class Kind { ModelPicker, SlotPicker, PlaceButton, PlacePicker, Media };
+    // Action and More only in a window without a menu bar (B8).
+    enum class Kind { ModelPicker, SlotPicker, PlaceButton, PlacePicker, Media, Action, More };
     Kind kind = Kind::ModelPicker;
     std::string id;           // "model", a place, a media place
     std::string label;        // "1:" before a slot when the model has more than one; the peripheral's name on a button
@@ -23,6 +24,7 @@ struct BarControl {
     std::vector<MenuItem> choices;   // a picker: "None" (D-11) and what fits; a button: its one choice
     sessions::Value entry;    // the place or media place entry, for LIB-7's and C59-7's factories
     std::string mediumKind;   // Media: the kind, which picks the factory
+    MenuItem item;            // Action: the menu item it carries out (id, label, enabled, reason, command)
 };
 
 struct BarGroupModel {
@@ -30,7 +32,11 @@ struct BarGroupModel {
     std::vector<BarControl> controls;
 };
 
-std::vector<BarGroupModel> bar(const ShellInputs&, const ShellProduct&);
+// B1 to B7; with `traits.menuBar == false` also B8: Start holds the Action
+// `reset` ("Reset"); End the Actions `load-preset` ("Preset") and
+// `settings` ("Settings", unless `traits.settings` is off), then More, whose
+// `choices` are moreItems(). With a menu bar there is no Start group.
+std::vector<BarGroupModel> bar(const ShellInputs&, const ShellProduct&, Traits = {});
 
 // B6, AC-23: the panels the control state lists (the paper panel always),
 // each with its owner's peripheral ID or none.

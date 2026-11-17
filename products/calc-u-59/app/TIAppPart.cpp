@@ -146,7 +146,7 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     s.machines = &m_machines;
     s.settings = m_setup.settings;
     s.roms = m_setup.roms;
-    if (!s.roms) s.romsMissing = "The ROM files are missing.";
+    if (!s.roms) s.romsMissing = m_setup.romsMissing.empty() ? std::string("The ROM files are missing.") : m_setup.romsMissing;
     s.typing = &typingProduct();
     s.hosting = m_setup.hosting;
     s.presetRules = &m_rules;
@@ -215,6 +215,13 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     m_cue = &s.stateTopic(topics::kCueCard);
     m_printer = &s.stateTopic(topics::kPrinter);
     m_run = &s.stateTopic(topics::kRunState);
+    // LIB-12 AC-5, LIB-14 AC-19: without the full set no machine is built;
+    // the frontends show the files.
+    if (!m_setup.roms)
+        s.stateTopic(sessions::TopicName{"roms-missing"})
+            .set(sessions::valuePayload("roms-missing",
+                                        Value::object({{"text", m_setup.romsMissing.empty() ? std::string("The ROM files are missing.")
+                                                                                            : m_setup.romsMissing}})));
 
     auto done = [](auto&& f) {
         return [f](const Value& a) -> CommandOutcome {

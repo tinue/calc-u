@@ -155,6 +155,8 @@ if(CALCU_TESTS)
   # none of the product's own session classes; no thread in app/ but the
   # session thread; the bridge only through it.
   calcu_add_test(CalcU59NoOwnSession frequent COMMAND sh tests/check_no_own_session.sh)
+  # LIB-4 AC-15 (design §10.6 T59-6; M-57): Qt6 and the Web draw from the control state.
+  calcu_add_test(CalcU59FrontendsDrawControlState frequent COMMAND sh tests/check_frontends_draw_control_state.sh)
   # LIB-12 AC-2, LIB-9 AC-21/AC-34 (calcu_product_source_checks, library/):
   # the ROM lookup's allowed files are the product's lookUpRoms(), the
   # catalogue's ROM entries and the Qt6 Bundle.

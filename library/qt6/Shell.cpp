@@ -178,7 +178,7 @@ void Shell::refresh(const QString&) {
     inputs_.media = host_.value(n.media);
     menus_ = shell::menus(inputs_, product_, options_.traits);
     menuBar_->set(menus_);
-    bar_->set(shell::bar(inputs_, product_));
+    bar_->set(shell::bar(inputs_, product_, options_.traits));
     bar_->setVisible(inputs_.started());   // B7 (AC-19)
     panels_->set(shell::panels(inputs_));
     const bool missing = !inputs_.started() && !inputs_.romsMissing.isNull();

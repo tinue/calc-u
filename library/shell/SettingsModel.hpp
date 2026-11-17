@@ -19,6 +19,9 @@ struct DialogRow {
     enum class Widget { StartupModel, StartupPreset, Folder, Integer, Choice, Text, Note };
     Widget widget = Widget::Text;
     std::string section, key, label;
+    // Choice: the values offered, with their labels, in order (S8); empty:
+    // every declared value as written.
+    std::vector<std::pair<std::string, std::string>> choices;
 };
 struct DialogSection {
     std::string title;

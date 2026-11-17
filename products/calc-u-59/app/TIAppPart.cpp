@@ -53,21 +53,6 @@ TIDebuggerOptions debuggerOptions(TIDebugPart& panel) {
     return o;
 }
 
-// C59-4 AC-12: TRACE can be used where the trace folder (the one of the
-// start) can be made, or where the host keeps the traces (the Web: no trace
-// folder).
-std::function<bool()> traceAvailable(const TIAppSetup& s) {
-    const std::optional<std::string> folder = s.paths->traceFolder();
-    const std::function<bool()> available = s.traceAvailable;
-    return [folder, available] {
-        if (!folder || folder->empty()) return true;
-        if (available && !available()) return false;
-        std::error_code ec;
-        std::filesystem::create_directories(calcu::files::toPath(*folder), ec);
-        return !ec;
-    };
-}
-
 } // namespace
 
 TIAppPart::TIAppPart(TIAppSetup setup)
@@ -81,7 +66,7 @@ TIAppPart::TIAppPart(TIAppSetup setup)
       }}),
       m_bundle(m_setup.examplesFolder.empty() ? nullptr
                                               : std::make_unique<presets::DirectoryPresetBundle>(calcu::files::toPath(m_setup.examplesFolder))),
-      m_debugPart(TIDebugSetup{m_setup.roms.set, traceAvailable(m_setup), m_setup.debugTabsShown}),
+      m_debugPart(TIDebugSetup{m_setup.roms.set, m_setup.debugTabsShown}),
       m_fileKinds(m_debugPart),
       m_lib(librarySetup()) {
     m_debugPart.bindDebugger(&m_lib.debugger());
@@ -95,8 +80,7 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     s.paths = m_setup.paths;
     s.roms = m_setup.roms;
     s.traceAvailable = m_setup.traceAvailable;
-    s.placesAtStart = true;   // as before Part E (LIB-10, LIB-6 E-1)
-    s.screenshotFolder = m_setup.screenshotFolder;
+    s.placesAtStart = true;   // the media's and screenshots' places as before Part E (LIB-6 E-1); traces: LIB-10 AC-53
     s.uploadFolder = m_setup.uploadFolder;
     s.typing = &typingProduct();
     s.hosting = m_setup.hosting;

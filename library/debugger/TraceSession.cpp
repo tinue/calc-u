@@ -39,7 +39,7 @@ std::function<std::optional<settings::Paths::Ensured>()> traceFolderOf(const set
     return [&paths, available]() -> std::optional<settings::Paths::Ensured> {
         const std::optional<std::string> folder = paths.folder(settings::Folder::Traces);
         if (!folder) return std::nullopt;
-        if (available && !available()) return settings::Paths::Ensured{false, *folder, "The trace location is not available."};
+        if (available && !available()) return settings::Paths::Ensured{false, *folder, "the trace location is not available"};
         return paths.ensure(settings::Folder::Traces);
     };
 }
@@ -88,7 +88,11 @@ std::optional<std::string> TraceSession::start(sessions::SessionContext& c, std:
             return std::string("There is no folder for traces.");   // EC-8
         file = TraceFile::inMemory();
     } else {
-        if (!folder->ok) return "The trace folder cannot be written: " + folder->problem;   // EC-8
+        if (!folder->ok) {   // EC-8, AC-53: one sentence, its final period once (a system message may end in one)
+            std::string why = "The trace folder cannot be written: " + folder->problem;
+            if (why.back() != '.') why += '.';
+            return why;
+        }
         std::string error;
         file = TraceFile::open(files::fromPath(files::toPath(folder->path) / files::toPath(name)), &error);
         if (!file) return error;   // AC-22: the step fails
@@ -148,7 +152,8 @@ void TraceSession::end(sessions::SessionContext& c, Ending why) {
         c.askHost(sessions::HostService::KeepFile,
                   sessions::Value::object({{"name", name},
                                            {"bytes", sessions::Value(std::move(bytes))},
-                                           {"mediaType", "application/octet-stream"}}),
+                                           {"mediaType", "application/octet-stream"},
+                                           {"kind", "trace"}}),   // what a page lists as a trace (C59-4 AC-12)
                   nullptr);
     }
     file_.reset();

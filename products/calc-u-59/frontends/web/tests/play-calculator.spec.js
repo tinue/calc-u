@@ -315,11 +315,16 @@ test('LIB-13 AC-16 a dropped preset loads like one from the dialog', async ({ pa
 // ── Magnetic cards (C59-7, LIB-7 59: the library's media part, M-55) ────
 
 async function dropFile(page, name, text) {
-  const dt = await page.evaluateHandle(([n, t]) => {
+  await dropFiles(page, [[name, text]]);
+}
+
+// Several files in one drop: [[name, text], …].
+async function dropFiles(page, files) {
+  const dt = await page.evaluateHandle((fs) => {
     const d = new DataTransfer();
-    d.items.add(new File([t], n));
+    for (const [n, t] of fs) d.items.add(new File([t], n));
     return d;
-  }, [name, text]);
+  }, files);
   await page.locator('.calcu-face').dispatchEvent('dragover', { dataTransfer: dt });
   await page.locator('.calcu-face').dispatchEvent('drop', { dataTransfer: dt });
 }
@@ -522,6 +527,17 @@ test('LIB-13 AC-15 a dropped file that is nothing Calc-U-59 opens is refused wit
   await el(page, 'notice-ok').click();
   await dropFile(page, 'old.u59', 'Calc-U-59 Card 2.0\n');   // C59-7 AC-4: a 2.3.0 card is no card
   await expect(el(page, 'notice')).toContainText('Calc-U-59 cannot open old.u59.');
+});
+
+// LIB-13 AC-25 (row 59-61): a drop of exactly one file is opened; a drop of
+// two is ignored (Calc-U-59 opened the first one before).
+test('LIB-13 AC-25 a drop of two files is ignored', async ({ page }) => {
+  await gotoReady(page);
+  await dropFiles(page, [['notes.txt', 'hello'], ['other.txt', 'world']]);
+  await page.waitForTimeout(800);
+  await expect(el(page, 'notice')).toHaveCount(0);   // the first was not opened (it would be refused)
+  await dropFile(page, 'notes.txt', 'hello');   // one file: opened, so refused with the notice
+  await expect(el(page, 'notice')).toContainText('Calc-U-59 cannot open notes.txt.');
 });
 
 // ── Printer ──────────────────────────────────────────────────────────────
@@ -736,6 +752,22 @@ test('LIB-10 AC-26 a trace is downloaded when switched off', async ({ page }) =>
   const d = await download;
   expect(d.suggestedFilename()).toBe('CALCU59_TRACE.bin');
   expect((await (await d.createReadStream()).toArray()).reduce((n, b) => n + b.length, 0)).toBeGreaterThan(1000);
+});
+
+// LIB-6 AC-25, LIB-9 AC-17 (row 59-63): a preset's screenshot is a download,
+// as Calc-U-1600's; the LOG tab lists only traces.
+test('LIB-6 AC-25 a preset screenshot is offered as a download, not listed as a trace', async ({ page }) => {
+  await gotoReady(page);
+  const debug = page.locator('[data-panel=debug]');
+  await debug.getByRole('tab', { name: 'LOG' }).click();
+  const download = page.waitForEvent('download');
+  await dropFile(page, 'shot.ti59', preset('keys:\n  - screenshot: shot.png\n'));
+  const d = await download;
+  expect(d.suggestedFilename()).toBe('shot.png');
+  const bytes = Buffer.concat(await (await d.createReadStream()).toArray());
+  expect(bytes.subarray(1, 4).toString()).toBe('PNG');
+  await page.waitForTimeout(300);
+  await expect(debug.locator('.calcu-traces')).toHaveCount(0);   // no trace was handed over
 });
 
 // ── The standalone app (app/) ────────────────────────────────────────────

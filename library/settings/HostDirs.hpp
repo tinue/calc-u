@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <string>
 
 // What the caller passes when the library starts (LIB-9 AC-12, AC-18;
@@ -19,7 +20,10 @@ struct HostDirs {
     std::string settingsBase;        // AC-2: Application Support / %APPDATA% / XDG / the Web file system
     std::string saveFolder;          // Swift: iCloud or local Documents (AC-14); Web: in its file system (AC-15); Given: the folder; Qt6: empty
     std::string applicationSupport;  // Swift: traces with [trace] location = app-support (AC-24)
-    std::string chosenTraceFolder;   // Swift macOS: the folder the bookmark grants (AC-34); else empty
+    // Swift macOS: the folder the bookmark grants (AC-34), asked each time
+    // the trace folder is (at each trace start, LIB-10 AC-53: the sandbox's
+    // grant is the frontend's); unset or empty: none.
+    std::function<std::string()> chosenTraceFolder;
     std::string traceFolder;         // Given: the trace folder; empty: none
     std::string screenshotFolder;    // Given: the screenshot folder; empty: none
 };

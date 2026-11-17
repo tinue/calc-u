@@ -319,7 +319,7 @@ function PlayCalculator(props) {
   };
 
   // ── Drag and drop any file: LIB-13's `open {way: drop, upload}` ──────
-  const drop = calcuFileDrop(shell ? openFiles : null, CALCU_DROP_FIRST_FILE);
+  const drop = calcuFileDrop(shell ? openFiles : null);
 
   const paperOwner = (s.panels.find((p) => p.kind === "paper") || {}).owner || "";
   const page = { shell, s, faceplate: maps[model] || null, model, paperOwner, cardDialog: setCardDialog };

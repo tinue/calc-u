@@ -1544,3 +1544,39 @@ a trace start checks that the folder can be written, "cannot write to the
 folder …"); Calc-U-59 keeps the ones of its start until the next start (a
 comment of its Qt6 frontend: "A new save or trace folder is used from the
 next start"). Should both follow one rule, and which?
+
+## Release prep step 5c (2026-11-17, branch `rp5-one-rule`)
+
+The question of Part E simplification E-1 answered (user, 2026-11-17, Q-2 of `docs/reviews/e-simplification.md`; AC-53):
+
+- `parts::LibraryParts` gives every product `traceFolderOf(paths,
+  available)` and the limit of `[trace] max-file-size-mb`, both read at each
+  trace start; `LibraryPartsSetup::placesAtStart` no longer applies to
+  traces (it still fixes the media's places and the screenshot folder of
+  Calc-U-59 at the start).
+- The refusal is "The trace folder cannot be written: <reason>." with the
+  final period added by `TraceSession::start` unless the reason ends in one;
+  the reasons are phrases ("cannot write to the folder …", "cannot create
+  the folder …: …", "the trace location is not available").
+- Calc-U-59's own gate is gone: `TIAppPart`'s `traceAvailable()` and
+  `TIDebugSetup::traceAvailable`, `kTraceFolderNotWritable`; the entry
+  `c59.trace` is always available (C59-4 AC-12 as amended). The Qt6
+  frontend no longer makes the trace folder at its start.
+- The Swift frontend: `HostDirs::chosenTraceFolder` is a callback the
+  places call each time they give the trace folder; the bridge's
+  `TISessionStart.chosenTraceFolder` is a block the session thread calls,
+  `AppSettings.chosenTraceFolder()` resolves the bookmark once per bookmark
+  (the folder opened until another replaces it); iOS's iCloud check
+  (`traceAvailable`) is asked at each trace too. `traceDirectory` and
+  `traceAvailable` of `TIAppSession` are gone.
+- A trace handed over with KeepFile carries `kind: trace`, so that
+  Calc-U-59's Web page lists only traces in its LOG tab (step 5e).
+
+Tests: `ac53_trace_folder_read_at_each_trace_start`,
+`ac53_refusal_is_one_sentence_with_its_reason`, `ec8_…` (the period),
+`ac24_limit_zero_or_negative_is_50_mib` (library); Calc-U-59
+`lib10_ac53_trace_folder_changed_after_the_start_is_the_next_traces`,
+`lib10_ac53_trace_limit_changed_after_the_start_is_the_next_traces`,
+`c59_4_ac12_trace_refused_where_the_folder_cannot_be_written`; Calc-U-1600
+`lib10_ac53_trace_folder_changed_after_the_start_is_the_next_traces`,
+`lib10_ac53_trace_refused_with_one_sentence_where_the_folder_cannot_be_written`.

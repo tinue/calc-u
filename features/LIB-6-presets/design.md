@@ -1385,3 +1385,14 @@ ledger row is added)?
 refused `{ name: }` (Calc-U-59's slot-1 set it true, Calc-U-1600 left the
 default), so a place key always takes a reference by name; `bare`,
 `byFile` and `noFile` stay.
+
+## Release prep step 5e (2026-11-17, branch `rp5-one-rule`)
+
+The question of Part E simplification E-1 answered (user, 2026-11-17, Q-1 of
+`docs/reviews/e-simplification.md`; ledger row 59-63): Calc-U-59's Web engine
+sets no folder for screenshots, so `screenshot:` hands the PNG over with
+KeepFile (D-13), a download as on Calc-U-1600's page.
+`LibraryPartsSetup::screenshotFolder` and `TIAppSetup::screenshotFolder` are
+gone; the page lists in its LOG tab only what is handed over with `kind:
+trace`. Test: Calc-U-59 `play-calculator.spec.js` "LIB-6 AC-25 a preset
+screenshot is offered as a download, not listed as a trace".

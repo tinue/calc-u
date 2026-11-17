@@ -142,7 +142,7 @@ TEST(ac12_every_place_from_the_passed_dirs) {
     s.home = "/Users/u";
     s.saveFolder = "/icloud/Documents";
     s.applicationSupport = "/app-support";
-    s.chosenTraceFolder = "/Volumes/Traces";
+    s.chosenTraceFolder = [] { return std::string("/Volumes/Traces"); };
     const SettingsFile sf = SettingsFile::defaultsOnly(testProduct());
     SettingsFile chosen = SettingsFile::defaultsOnly(testProduct());
     chosen.set("trace", "location", "folder");
@@ -275,10 +275,16 @@ TEST(ac17_swift_screenshots_save_folder_traces_by_location) {
     CHECK(Paths(icloud, s).traceFolder() == std::optional<std::string>("/icloud/Documents"));
     // With `folder`: the folder the bookmark grants, passed in (AC-34) ...
     const SettingsFile folder = withValues(ini, "[trace]\nlocation = folder\nfolder = /plain/path\n");
-    s.chosenTraceFolder = "/granted";
-    CHECK(Paths(folder, s).traceFolder() == std::optional<std::string>("/granted"));
+    std::string granted = "/granted";
+    s.chosenTraceFolder = [&granted] { return granted; };
+    const Paths asked(folder, s);
+    CHECK(asked.traceFolder() == std::optional<std::string>("/granted"));
+    granted = "/granted-later";   // asked each time (LIB-10 AC-53)
+    CHECK(asked.traceFolder() == std::optional<std::string>("/granted-later"));
     // ... without a usable grant, the plain path of [trace] folder, then Application Support (D-8).
-    s.chosenTraceFolder.clear();
+    granted.clear();
+    CHECK(asked.traceFolder() == std::optional<std::string>("/plain/path"));
+    s.chosenTraceFolder = nullptr;
     CHECK(Paths(folder, s).traceFolder() == std::optional<std::string>("/plain/path"));
     const SettingsFile bare = withValues(ini, "[trace]\nlocation = folder\n");
     CHECK(Paths(bare, s).traceFolder() == std::optional<std::string>("/app-support"));

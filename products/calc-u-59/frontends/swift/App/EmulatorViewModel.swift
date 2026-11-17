@@ -127,8 +127,6 @@ class EmulatorViewModel {
             session?.setManualTrace(cIndicatorDebug)   // the trace topic says whether it opened
         }
     }
-    /// False if the trace location (e.g. iCloud) is unavailable at startup.
-    private(set) var isTraceAvailable = true
 
     // ── Debug panel state ────────────────────────────────────────────────────
     var debugTab: DebugTab = .live   // persists tab selection across iPhone navigation
@@ -274,11 +272,11 @@ class EmulatorViewModel {
         start.settingsFile = AppSettings.launchSettingsFile
         start.examplesFolder = Bundle.main.url(forResource: "examples", withExtension: nil)?.path ?? ""
         start.saveFolder = CardStorage.directoryURL.path
-        start.chosenTraceFolder = AppSettings.chosenTraceFolder()
+        // Asked at each trace start, on the session thread (LIB-10 AC-53).
+        start.chosenTraceFolder = { @Sendable in AppSettings.chosenTraceFolder() }
         let made = TIAppSession(roms: romSet, start: start, delegate: platform)
         session = made
         shell = made.shell
-        isTraceAvailable = made.traceAvailable
         if let problem = made.settingsProblem { print("[Settings] \(problem)") }
         #if DEBUG && (os(macOS) || targetEnvironment(simulator))
         // Harness attach (C59-5 AC-10): `calcu attach`, the port of --attach-port, else 59059.

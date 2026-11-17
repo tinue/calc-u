@@ -349,3 +349,10 @@ into the save folder first). The cases moved onto `.magnetcard.yaml`
 | EC-4 | Pass | `lib13_ec4_card_while_one_passes_refused_nothing_imported` |
 
 Every criterion of the Calc-U-59 column passes: **Done**.
+
+## Release prep step 5 (2026-11-17, branch `rp5-one-rule`)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-24 | Pass (Qt6, both products) | `lib13_ac24_qt_drop_accepted_and_opened_after_the_handler`, `lib13_ac24_qt_window_raised_for_every_way_but_the_start` (`calcu_qt6_tests`); `lib13_ac24_qt6_drop_accepted_and_opened_after_the_drop`, `lib13_ac24_qt6_open_with_opens_the_preset` (`CalcU59QtTests`); Calc-U-1600's `lib13_ac19_drop_onto_window_opens_preset`, `lib13_ac21_open_with_and_dock_drop_open_preset` (`CalcU1600QtTests`) on the same helpers |
+| AC-25 | Pass | Calc-U-59 `play-calculator.spec.js` "LIB-13 AC-25 a drop of two files is ignored"; Calc-U-1600's page had the rule already (one `calcuFileDrop` now) |

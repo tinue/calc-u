@@ -3,6 +3,7 @@
 // instruction, 0x03.
 #include "DebugRig.hpp"
 #include "TestHarness.hpp"
+#include "settings/tests/TestProduct.hpp"
 #include <filesystem>
 #include <fstream>
 
@@ -167,8 +168,64 @@ TEST(ec8_no_writable_folder_step_fails_with_reason) {
         DebugRig r(o);
         const CallId l = r.load(pt::header() + "keys:\n  - trace: t.bin\n");
         CHECK(!r.done(l));
-        CHECK(r.reason(l).find("The trace folder cannot be written: it is read-only.") != std::string::npos);
+        CHECK(r.reason(l).find("The trace folder cannot be written: it is read-only.") != std::string::npos);   // AC-53: with the period
+        CHECK(r.reason(l).find("read-only..") == std::string::npos);
     }
+}
+
+// AC-53 (user, 2026-11-17, Q-2 of docs/reviews/e-simplification.md): the
+// trace folder of the places as the settings say at each trace start, made
+// and written once; a folder changed after the start is the next trace's.
+TEST(ac53_trace_folder_read_at_each_trace_start) {
+    namespace st = calcu::settings;
+    st::test::TempDir dir;
+    st::SettingsFile file = st::SettingsFile::defaultsOnly(st::test::testProduct());
+    st::HostDirs dirs;
+    dirs.frontend = st::FrontendKind::Qt6;
+    dirs.home = dir.str();
+    const st::Paths paths(file, dirs);
+    const auto folder = traceFolderOf(paths);
+    const std::string a = (dir.path() / "a").string(), b = (dir.path() / "b").string();
+    file.set("trace", "folder", a);
+    const auto first = folder();
+    CHECK(first && first->ok && first->path == a && std::filesystem::is_directory(a));   // made at the start
+    file.set("trace", "folder", b);
+    const auto second = folder();
+    CHECK(second && second->ok && second->path == b && std::filesystem::is_directory(b));
+    // A folder that cannot be made: the reason, a phrase for the refusal's sentence.
+    file.set("trace", "folder", "/dev/null/no");
+    const auto bad = folder();
+    CHECK(bad && !bad->ok && !bad->problem.empty() && bad->problem.back() != '.');
+    // Not available now (the Swift frontend's iCloud): asked at each call too.
+    bool available = false;
+    const auto gated = traceFolderOf(paths, [&available] { return available; });
+    file.set("trace", "folder", a);
+    CHECK(gated() && !gated()->ok && gated()->problem == "the trace location is not available");
+    available = true;
+    CHECK(gated() && gated()->ok);
+}
+
+// LIB-9 AC-11: [trace] max-file-size-mb zero or negative (now values of the
+// key, no minimum) is 50 MiB, as missing is.
+TEST(ac24_limit_zero_or_negative_is_50_mib) {
+    for (long mb : {0L, -3L}) {
+        TraceSetup s;
+        s.limitMb = [mb] { return mb; };
+        CHECK_EQ(TraceSession(s).limitBytes(), std::uint64_t(50) * 1024 * 1024);
+    }
+    TraceSetup seven;
+    seven.limitMb = [] { return 7L; };
+    CHECK_EQ(TraceSession(seven).limitBytes(), std::uint64_t(7) * 1024 * 1024);
+    CHECK_EQ(TraceSession(TraceSetup{}).limitBytes(), std::uint64_t(50) * 1024 * 1024);
+}
+
+TEST(ac53_refusal_is_one_sentence_with_its_reason) {
+    DebugOptions o;
+    o.folder = DebugOptions::Folder::NotWritable;
+    DebugRig r(o);
+    const CallId c = r.send("trace", file("t.bin"));
+    CHECK(!r.done(c));
+    CHECK_EQ(r.reason(c), std::string("The trace folder cannot be written: it is read-only."));
 }
 
 TEST(ac26_ended_trace_in_memory_handed_with_keep_file) {
@@ -190,6 +247,7 @@ TEST(ac26_ended_trace_in_memory_handed_with_keep_file) {
     CHECK(ask->service == calcu::sessions::HostService::KeepFile);
     CHECK(*ask->args.find("name")->string() == "w.bin");
     CHECK(*ask->args.find("mediaType")->string() == "application/octet-stream");
+    CHECK(ask->args.find("kind") && *ask->args.find("kind")->string() == "trace");   // a page lists it as a trace
     const auto& bytes = *ask->args.find("bytes")->bytes();
     CHECK(complete(bytes) && records(bytes) > 0);
     // Without hand-over (Calc-U-1600's Web, D-10) the start fails.

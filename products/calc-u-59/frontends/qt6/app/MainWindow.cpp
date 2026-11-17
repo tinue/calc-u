@@ -141,7 +141,7 @@ void MainWindow::followPrinter() {
 }
 
 void MainWindow::openFile(const QString& path, calcu::opening::Way way) {
-    calcu::qt6::openFile(host(), path, way, m_controller->app().libraryParts().open().setup().maxBytes);
+    calcu::qt6::openFile(*this, host(), path, way, m_controller->app().libraryParts().open().setup().maxBytes);
 }
 
 // Arm Card (C59-7 AC-14): the saved cards of the media topic; the chosen one is fitted.
@@ -206,14 +206,12 @@ void MainWindow::saveWindowState() {
 }
 
 // LIB-13 AC-6: one file the session would take, by its name and size (no
-// limit here, AC-11); the drop goes through all of `open` (a refusal is its
-// notice, AC-15).
-void MainWindow::dragEnterEvent(QDragEnterEvent* e) {
-    const QString path = calcu::qt6::draggedFile(e->mimeData());
-    if (!path.isEmpty() && calcu::qt6::wouldTake(host(), path)) e->acceptProposedAction();
-}
+// limit here, AC-11); the drop is accepted and goes through all of `open`
+// after the drop handler (AC-24; a refusal is its notice, AC-15).
+void MainWindow::dragEnterEvent(QDragEnterEvent* e) { calcu::qt6::dragEnter(e, host()); }
+
+void MainWindow::dragMoveEvent(QDragMoveEvent* e) { calcu::qt6::dragMove(e); }
 
 void MainWindow::dropEvent(QDropEvent* e) {
-    const QString path = calcu::qt6::draggedFile(e->mimeData());
-    if (!path.isEmpty()) openFile(path, calcu::opening::Way::Drop);
+    calcu::qt6::drop(e, this, [this](const QString& path) { openFile(path, calcu::opening::Way::Drop); });
 }

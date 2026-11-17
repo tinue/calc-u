@@ -459,3 +459,9 @@ After the merge (`c638bc9`, 2026-11-16) the Swift app built from the main
 checkout, plan `UnitTests` (macOS, AC-34's test passes) and plan
 `UIRegressionTests` (iPhone 18 Pro Max, 18 tests, 1 skipped) passed: the
 Calc-U-59 column is **Done**.
+
+## Release prep step 5 (2026-11-17, branch `rp5-one-rule`)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-53 | Pass (C++, Qt6, Web); Swift written, built after the merge | `ac53_trace_folder_read_at_each_trace_start`, `ac53_refusal_is_one_sentence_with_its_reason`, `ec8_no_writable_folder_step_fails_with_reason`, `ac24_limit_zero_or_negative_is_50_mib` (library); `lib10_ac53_trace_folder_changed_after_the_start_is_the_next_traces`, `lib10_ac53_trace_limit_changed_after_the_start_is_the_next_traces`, `c59_4_ac12_trace_refused_where_the_folder_cannot_be_written` (`CalcU59Tests`); `lib10_ac53_trace_folder_changed_after_the_start_is_the_next_traces`, `lib10_ac53_trace_refused_with_one_sentence_where_the_folder_cannot_be_written` (`CalcU1600SessionTests`) |

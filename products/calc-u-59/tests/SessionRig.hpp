@@ -84,6 +84,7 @@ struct RigOptions {
     fs::path traceFolder;                                ///< empty: the rig's folder
     bool noTraceFolder = false;                          ///< the Web: none, traces handed over (LIB-10 AC-26)
     int traceMaxMb = 0;                                  ///< [trace] max-file-size-mb; 0: the default
+    std::string qt6Home;                                 ///< set: the Qt6 places of this home ([trace] folder, else the save folder there)
     calcu::settings::SettingsFile* settings = nullptr;   ///< null: the rig's own (defaults, in memory)
     std::string examplesFolder;                          ///< empty: examples/
     bool start = true;                                   ///< makeAppSession sends LIB-18's start (the Web's page sends its own)
@@ -104,7 +105,14 @@ struct SessionRig {
         if (o.traceMaxMb) file.set("trace", "max-file-size-mb", std::to_string(o.traceMaxMb));
         const std::string traces = o.noTraceFolder ? std::string()
                                    : !o.traceFolder.empty() ? o.traceFolder.string() : folder.path().string();
-        paths = rigPaths(file, o.saveFolder.empty() ? folder.path().string() : o.saveFolder, traces);
+        if (!o.qt6Home.empty()) {
+            calcu::settings::HostDirs dirs;
+            dirs.frontend = calcu::settings::FrontendKind::Qt6;
+            dirs.home = o.qt6Home;
+            paths = std::make_unique<calcu::settings::Paths>(file, dirs);
+        } else {
+            paths = rigPaths(file, o.saveFolder.empty() ? folder.path().string() : o.saveFolder, traces);
+        }
         cu59::TIAppSetup s = appSetup(file, o.model, *paths);
         if (!o.examplesFolder.empty()) s.examplesFolder = o.examplesFolder;
         s.files = std::move(o.files);

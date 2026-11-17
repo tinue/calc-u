@@ -40,12 +40,14 @@ public:
 
     /// A file handed over (LIB-13 AC-14): a drop, Open With (macOS), the
     /// file named at the start; the session's `open` (qt6::openFile, with the
-    /// open part's limits: none for Calc-U-59, AC-11).
+    /// open part's limits: none for Calc-U-59, AC-11), the window raised for
+    /// every way but the start (AC-24).
     void openFile(const QString& path, calcu::opening::Way way);
 
 protected:
     void closeEvent(QCloseEvent* e) override;
     void dragEnterEvent(QDragEnterEvent* e) override;
+    void dragMoveEvent(QDragMoveEvent* e) override;
     void dropEvent(QDropEvent* e) override;
 
 private:

@@ -104,8 +104,8 @@ TEST(lib9_ac19_declaration) {
     CHECK(t.settings.traceLocation() == s59::TraceLocation::ICloud);
     f.set("trace", "max-file-size-mb", "12");
     CHECK(f.integer("trace", "max-file-size-mb") == 12);
-    f.set("trace", "max-file-size-mb", "0");  // AC-11
-    CHECK(f.integer("trace", "max-file-size-mb") == 50);
+    f.set("trace", "max-file-size-mb", "0");  // AC-11: a value (no minimum); the trace session takes it as 50
+    CHECK(f.integer("trace", "max-file-size-mb") == 0);
 
     // EC-5: a value its key does not accept reads as the default and stays.
     f.set("display", "led-style", "glowing");
@@ -226,8 +226,8 @@ TEST(lib9_ac24_trace_location_app_support_icloud_folder) {
     CHECK(cs::Paths(t.file, dirs).traceFolder() == dirs.applicationSupport);  // no folder chosen
     t.file.set("trace", "folder", "/Users/u/Traces");
     CHECK(cs::Paths(t.file, dirs).traceFolder() == std::optional<std::string>("/Users/u/Traces"));
-    dirs.chosenTraceFolder = "/Volumes/Granted/Traces";  // the bookmark's folder (AC-34)
-    CHECK(cs::Paths(t.file, dirs).traceFolder() == dirs.chosenTraceFolder);
+    dirs.chosenTraceFolder = [] { return std::string("/Volumes/Granted/Traces"); };  // the bookmark's folder (AC-34)
+    CHECK(cs::Paths(t.file, dirs).traceFolder() == std::optional<std::string>("/Volumes/Granted/Traces"));
     // The save folder override is ignored outside Qt6 (AC-25).
     t.file.set("storage", "save-folder", "/elsewhere");
     CHECK_EQ(cs::Paths(t.file, dirs).saveFolder(), dirs.saveFolder);

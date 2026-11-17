@@ -113,7 +113,7 @@ Everything that isn't drawing: `reference/AppLayer.md`.
 | Qt (`frontends/qt6/app/`) | Swift counterpart |
 |---|---|
 | `main.cpp` | `Calc-U-59App.swift` |
-| `MainWindow` | `CalculatorView` (layout, menus, presets, drag and drop: every file to LIB-13's `open` through the library's `library/qt6/FileOpening` (`calcu::qt6::openFile`, `wouldTake`, `draggedFile`, `startFile`, the macOS `FileOpenFilter` in `main.cpp`); Arm Fresh Card's replace question through `calcu::qt6::sendAsking`) |
+| `MainWindow` | `CalculatorView` (layout, menus, presets, drag and drop: every file to LIB-13's `open` through the library's `library/qt6/FileOpening` (`calcu::qt6::openFile(window, …)`, which raises the window but for the start, `dragEnter`, `dragMove`, `drop` (accepted, opened after the drop: LIB-13 AC-24), `startFile`, the macOS `FileOpenFilter` in `main.cpp`); Arm Fresh Card's replace question through `calcu::qt6::sendAsking`) |
 | `EmulatorController` | `EmulatorViewModel` |
 | `CalculatorPanel` (the faceplate, the shell's control bar and "ROMs missing") | `CalculatorView` calculator column |
 | the shell's control bar (`calcu::qt6::Shell::controlBar()`), `CardControls` | `CalculatorView` bar and card buttons |

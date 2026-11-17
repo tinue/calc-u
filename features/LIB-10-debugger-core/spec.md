@@ -292,6 +292,17 @@ Traces
   LIB-15 keeps Calc-U-1600's Web frontend without them), then a trace
   file that has ended is handed to the user to keep (LIB-15 AC-9;
   Calc-U-59 `Web/bindings.cpp:431-435`).
+- [ ] **AC-53** — Given a trace starts (a `trace:` step, the command or
+  a button), then the trace folder and `[trace] max-file-size-mb` are
+  the ones the places and the settings give at that moment, so that a
+  change after the product's start is the next trace's (LIB-14 AC-11);
+  the folder is made when it is missing and written once to see that it
+  can be; given it cannot be made or written, then the start is refused
+  with "The trace folder cannot be written: <reason>." (EC-8). One rule
+  for both products, Calc-U-1600's of today with the final period;
+  Calc-U-59 kept the folder and the limit of its start and its TRACE
+  button could not be pressed where the folder could not be made
+  (user, 2026-11-17, Q-2 of `docs/reviews/e-simplification.md`; ledger rows 59-62, 1600-53).
 - [ ] **AC-48** — Given an address space with cells that cannot be read
   back or whose reading would disturb a device (write-only and I/O
   cells), then the target may offer for it a second view, named after
@@ -535,3 +546,4 @@ Traces
 | A space may offer the values last written to its write-only and I/O cells; banked memory is reached by bank and vertical bank, a range inside one bank; `peek … file=`, `expect-register`, `expect-memory`, `symbols` (AC-48 to AC-51) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |
 | The SC7852 has an `io` space; the Sharp targets offer the `-written` views and reach every bank and vertical bank (AC-52) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |
 | For Calc-U-59, behaviour change 59-34 replaces AC-30's Reset clause: an armed pause-on-start `cpu` fires on a Reset of the TI-59 and TI-58 too, as today, since the ROM's start-up after a Reset runs in the run loop (C59-1). AC-30's text is kept as written | user, 2026-11-16 (Q-1 of `docs/reviews/e-designs.md`, with the approval of the Part E designs; LIB-10 design §12.13) | 2026-11-16 |
+| The trace folder and limit are read at each trace start and the folder is checked by a write, in both products; the refusal is "The trace folder cannot be written: <reason>." (AC-53); the Swift frontend gives the folder its bookmark grants at each trace; ledger rows 59-62, 1600-53 | user, 2026-11-17, Q-2 of `docs/reviews/e-simplification.md` | 2026-11-17 |

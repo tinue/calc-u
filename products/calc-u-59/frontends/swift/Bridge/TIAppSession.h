@@ -115,8 +115,10 @@ typedef struct {
 /// The bundled examples (the app's folder `examples`, bundle.yaml; LIB-6 AC-31).
 @property (nonatomic, copy) NSString *examplesFolder;
 @property (nonatomic, copy) NSString *saveFolder;     ///< cards and ti58c.memory.yaml (CardStorage)
-/// macOS: the folder the security-scoped bookmark of `[trace] folder` grants (LIB-9 AC-34).
-@property (nonatomic, copy, nullable) NSString *chosenTraceFolder;
+/// macOS: the folder the security-scoped bookmark of `[trace] folder` grants
+/// (LIB-9 AC-34), nil for none; called on the session thread at each trace
+/// start (LIB-10 AC-53), so that a folder chosen later is the next trace's.
+@property (nonatomic, copy, nullable) NSString * _Nullable (^chosenTraceFolder)(void);
 @end
 
 /// ProgramSource raw values follow the C++ enumerator order:
@@ -194,10 +196,6 @@ typedef struct {
 @property (nonatomic, readonly, nullable) NSString *settingsProblem;
 /// The settings file of this session (its path).
 @property (nonatomic, readonly) NSString *settingsFilePath;
-/// The trace folder at the start (LIB-9 Paths by `[trace] location`) and
-/// whether it can be written (iCloud signed in, the folder made).
-@property (nonatomic, readonly) NSString *traceDirectory;
-@property (nonatomic, readonly) BOOL traceAvailable;
 /// AC-8: suspend is carried out (the TI-58C memory written), then no more
 /// calls; `done` on the main thread once the suspend was carried out.
 - (void)suspendWithCompletion:(nullable void (^)(void))done;

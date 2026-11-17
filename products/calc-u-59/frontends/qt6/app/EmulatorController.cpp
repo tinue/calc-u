@@ -48,8 +48,7 @@ EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock
     cu59::TIAppSetup setup;
     setup.roms = cu59::lookUpRoms(QtResourceBundle());
     m_romsFound = setup.roms.ok();
-    AppPaths::saveDir();    // the save folder and the trace folder made at the start (LIB-9 EC-8)
-    AppPaths::traceDir();
+    AppPaths::saveDir();    // the save folder made at the start (LIB-9 EC-8); the trace folder at each trace (LIB-10 AC-53)
     // LIB-18: the startup model, `last-model` and the startup presets are the
     // settings file's; the save folder (cards, ti58c.memory.yaml), the trace
     // folder, its limit and `~/` its places' (LIB-9).
@@ -59,9 +58,9 @@ EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock
     setup.examplesFolder = calcu::qt6::toFsPath(AppPaths::bundledExamplesDir()).string();
     // LIB-14: the settings dialog reads and writes the product's file through
     // the session; a change is applied at once (the LED style through the
-    // `settings` topic). A new save or trace folder is used from the next
-    // start, as today (the TI-58C's constant memory file is read at its
-    // build, C59-3).
+    // `settings` topic). A new save folder is used from the next start, as
+    // today (the TI-58C's constant memory file is read at its build, C59-3);
+    // a new trace folder or limit from the next trace (LIB-10 AC-53).
     calcu::shell::HostSessionSetup host;
     host.settings = &settings;
     host.clock = clock;

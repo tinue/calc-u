@@ -142,9 +142,12 @@ LOG tab
   `reference/DebugAPI.md:343-365`).
 - [ ] **AC-12** — Given the button TRACE, then it starts and ends the
   trace of LIB-10 AC-23 under the file name of LIB-10 AC-33, shows
-  whether a trace runs, whoever started it (LIB-10 AC-25), and cannot be
-  used where the trace folder cannot be written; in the Web frontend the
-  tab lists the traces that have ended, to keep (LIB-10 AC-26)
+  whether a trace runs, whoever started it (LIB-10 AC-25), and where the
+  trace folder cannot be written its start is refused with the sentence
+  of LIB-10 AC-53 (as amended, ledger row 59-62: before, the button could
+  not be pressed there); in the Web frontend the
+  tab lists the traces that have ended, to keep (LIB-10 AC-26), and
+  nothing else that is handed over (a preset's screenshot, ledger row 59-63)
   (`Shared/SessionController.cpp:832-855`, `Web/src/Debugger.jsx:261-272`).
 
 The ASM overlay
@@ -315,3 +318,4 @@ Every frontend, and the checks
 | The fifth shipped overlay, `examples/screentest/test_stopwatch.asm`, is upgraded with the other four (AC-20) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-4); ADR 0037 and behaviour change 59-1: every shipped file of an own format is upgraded | 2026-11-11 |
 | Run enters with COND set; a word after `HEX:` refuses the file; AC-23 excepts the two lenient cases; a cold boot or a new machine removes the overlay (AC-15, AC-17, AC-20, AC-23, AC-26) | user, 2026-11-13 (B-18 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The overlays' comments and `examples/assembly/README.md` are upgraded with them (AC-20) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |
+| AC-12 amended: TRACE can always be pressed; where the trace folder cannot be written the start is refused with LIB-10 AC-53's sentence (the entry `c59.trace` is always available; design §3.9). The Web tab lists only traces | user, 2026-11-17, Q-2 of `docs/reviews/e-simplification.md` and Q-1; ledger rows 59-62, 59-63 | 2026-11-17 |

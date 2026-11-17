@@ -141,19 +141,17 @@ struct TIAppSetup {
     /// places on them: the save folder (cards, ti58c.memory.yaml), the trace
     /// folder (none on the Web: traces are handed over with KeepFile, LIB-10
     /// AC-26), the folder for screenshots, `~/` of a preset (README §3); the
-    /// places and the trace limit as they are when the part is made
-    /// (LibraryPartsSetup::placesAtStart). Both outlive the part.
+    /// places as they are when the part is made
+    /// (LibraryPartsSetup::placesAtStart), the trace folder and limit as they
+    /// are at each trace start (LIB-10 AC-53). Both outlive the part.
     calcu::settings::SettingsFile* settings = nullptr;
     const calcu::settings::Paths* paths = nullptr;
     /// The save folder's file access (cards and the constant memory file):
     /// null: the plain one; Swift: the coordinated iCloud access (C59-5 D-6, LIB-7 D-30).
     std::shared_ptr<const calcu::media::FileAccess> files;
-    /// Swift: whether the trace location can be used (iCloud, C59-4 AC-12);
-    /// null: always.
+    /// Swift: whether the trace location can be used (iCloud, LIB-9 AC-24),
+    /// asked at each trace start (LIB-10 AC-53); null: always.
     std::function<bool()> traceAvailable;
-    /// The Web: screenshots into its save folder (where `paths` has no
-    /// folder for them); unset: the places'.
-    std::optional<std::string> screenshotFolder;
     /// The bundled examples (examples/ as bundle.yaml lists them; LIB-6
     /// AC-31, AC-33); empty: none (a bundle path is refused).
     std::string examplesFolder;

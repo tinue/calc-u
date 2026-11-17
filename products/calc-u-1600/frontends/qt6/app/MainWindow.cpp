@@ -593,32 +593,22 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
 
 // ── Drag and drop, opening a file (LIB-13) ─────────────────────────────
 
-void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
-    // AC-6, D4.3: one file, of a name and size the session would take; the
-    // drop itself goes through all of AC-1. More than one file is not taken.
-    const QString path = calcu::qt6::draggedFile(event->mimeData());
-    if (!path.isEmpty() && calcu::qt6::wouldTake(host(), path)) event->acceptProposedAction();
-}
+// AC-6, D4.3: one file, of a name and size the session would take; the
+// drop itself goes through all of AC-1, accepted and opened after the drop
+// handler (AC-24, library/qt6/FileOpening). More than one file is not taken.
+void MainWindow::dragEnterEvent(QDragEnterEvent* event) { calcu::qt6::dragEnter(event, host()); }
 
-void MainWindow::dragMoveEvent(QDragMoveEvent* event) { event->acceptProposedAction(); }
+void MainWindow::dragMoveEvent(QDragMoveEvent* event) { calcu::qt6::dragMove(event); }
 
 void MainWindow::dropEvent(QDropEvent* event) {
-    const QString path = calcu::qt6::draggedFile(event->mimeData());
-    if (path.isEmpty()) return;
-    event->acceptProposedAction();
-    // Out of the drop handler: a flow and its dialogs would keep the drag
-    // source (Finder, Explorer) waiting.
-    QTimer::singleShot(0, this, [this, path] { openFile(path, calcu::opening::Way::Drop); });
+    calcu::qt6::drop(event, this, [this](const QString& path) { openFile(path, calcu::opening::Way::Drop); });
 }
 
 void MainWindow::openFile(const QString& path, calcu::opening::Way way) {
-    if (way != calcu::opening::Way::Start) {
-        raise();
-        activateWindow();
-    }
-    // Read up to the way's limit (AC-20: 1 MiB but for the file dialogs); a
-    // refusal is the session's notice already (AC-1).
-    calcu::qt6::openFile(host(), path, way, m_controller->app().libraryParts().open().setup().maxBytes);
+    // The window raised for every way but the start (AC-24); read up to the
+    // way's limit (AC-20: 1 MiB but for the file dialogs); a refusal is the
+    // session's notice already (AC-1).
+    calcu::qt6::openFile(*this, host(), path, way, m_controller->app().libraryParts().open().setup().maxBytes);
 }
 
 void MainWindow::onProgramOpened(const QString& name, const QByteArray& bytes, const QString& kind) {

@@ -62,11 +62,17 @@ trace button or with a preset's `trace:` step.
   `[trace] folder` names another one ([Settings](08-settings.md)). A
   file of the same name is replaced. In a Web frontend that has traces,
   a trace that has ended is offered as a download.
+- The trace folder and the size limit are read when a trace starts, so a
+  change in the settings is used by the next trace. The folder is made
+  when it is missing; when it cannot be made or written, the trace does
+  not start and a notice says "The trace folder cannot be written:" and
+  why.
 - A trace ends with `trace: off`, at the end of the preset that started
   it, when a new machine is built (a line of the log says so), or when
   you end it with the button.
 - **Size limit.** When the trace file reaches `[trace]
-  max-file-size-mb` (50 MB unless the settings say otherwise), the trace
+  max-file-size-mb` (50 MB unless the settings say otherwise; zero or
+  less also means 50), the trace
   ends, the file is complete up to there, and a notice says so.
 - While a trace runs, the window shows it, with the file name, whoever
   started it.

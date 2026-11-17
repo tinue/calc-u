@@ -9,7 +9,9 @@
 //   createC59Traces() → {services, list, subscribe, download}
 //       the page's host services for useShell (the library's, with the
 //       traces the session hands over with keep-file kept: LIB-10 AC-26,
-//       D-25, the LOG tab lists them; the worker keeps no copy)
+//       D-25, the LOG tab lists them; the worker keeps no copy). Every
+//       keep-file is a download; only those of kind "trace" are listed (a
+//       preset's screenshot and an exported medium are not: row 59-63)
 //   C59_PAGE        the context: {shell, s (useCalcuShell), traces, log}
 //   useLogView(shell) → {lines, clear}: the LOG tab's view of LIB-3's `log`,
 //       its last 2000 lines (C59-4 AC-9); clear empties this view only
@@ -32,7 +34,7 @@ function createC59Traces() {
   const services = {
     names: base.names,
     answer: (name, args) => {
-      if (name === "keep-file" && args) {   // the session hands over traces only
+      if (name === "keep-file" && args && args.kind === "trace") {
         const bytes = args.bytes || new Uint8Array(0);
         kept.set(args.name, bytes);
         list = list.filter((t) => t.name !== args.name).concat([{ name: args.name, size: bytes.length }]);

@@ -127,10 +127,7 @@ KeyDecl traceFolder() {
     return key("trace", "folder", ValueKind::Path, "", "The folder for traces; empty: the save folder.");
 }
 KeyDecl traceMaxFileSizeMb() {
-    KeyDecl d = key("trace", "max-file-size-mb", ValueKind::Integer, "50",
-                    "The largest trace file in MB; zero or less: 50.");
-    d.min = 1;
-    return d;
+    return key("trace", "max-file-size-mb", ValueKind::Integer, "50", "The largest trace file in MiB; zero or less: 50.");
 }
 KeyDecl traceLocation() {
     KeyDecl d = key("trace", "location", ValueKind::Choice, "app-support",

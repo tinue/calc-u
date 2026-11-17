@@ -279,7 +279,7 @@ by the rules of AC-14. The refusals of AC-15, one sentence each (D-5):
 | Entry | Can be used | Reason when not |
 |---|---|---|
 | `asm-run` | instructions are loaded and no operation runs | "No ASM overlay loaded." / LIB-4's busy reason |
-| `trace` | a trace folder can be written, or the host keeps traces (the Web) | "The trace folder cannot be written." |
+| `trace` | always (since release prep step 5c: the start is refused instead, LIB-10 AC-53; AC-12 as amended) | none |
 | `calculator-tab` | no overlay runs | "An ASM overlay runs." |
 
 ### 3.10 The harness commands (AC-22)

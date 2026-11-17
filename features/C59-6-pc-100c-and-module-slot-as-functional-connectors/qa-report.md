@@ -183,3 +183,9 @@ on each model), XCUITest `FamilyStructureTests.test_lib14_ac8_the_bar`
 (LE chosen on the iPhone simulator's bar is plugged); the Settings row
 "Solid State Module" and `allModules` went (row 59-9). The other clauses
 passed in M-53 to M-55 (above). Every criterion passes: **Done**.
+
+## Release prep step 5 (2026-11-17, branch `rp5-one-rule`)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-12 | Pass | `c59_6_ac12_set_control_without_a_pc100c_refused` (`CalcU59Tests`) |

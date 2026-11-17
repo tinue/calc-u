@@ -18,16 +18,11 @@
 //     LIB-13's `open {files: [{name, bytes}], way, upload: true}` (several
 //     files are one folder in /uploads, AC-8); `send` is the page's sender
 //     (the shell's, or useCalcuShell's sendChecked to show a refusal)
-//   calcuFileDrop(open, rule) → {onDragOver, onDrop}
-//     a drop of files: `open(files, "drop")` (null: none yet) by the
-//     product's rule, which stays its own (each is what its users know):
-//     CALCU_DROP_ONE_FILE (a drop of exactly one file; a drop never
-//     reaches the browser) or CALCU_DROP_FIRST_FILE (the first file of a
-//     drop; one without a file or before the session is the browser's);
-//     which product has which: LIB-13's design, Part E simplification E-5
-
-const CALCU_DROP_ONE_FILE = "one-file";
-const CALCU_DROP_FIRST_FILE = "first-file";
+//   calcuFileDrop(open) → {onDragOver, onDrop}
+//     a drop of files: `open(files, "drop")` (null: none yet) for a drop
+//     of exactly one file; a drop of more is ignored, and no drop reaches
+//     the browser (LIB-13 AC-25, one rule for both products: user,
+//     2026-11-17, Q-4 of docs/reviews/e-simplification.md)
 
 function useShellProduct(shell, options) {
   const start = useShellState(shell, (st) => st.start);
@@ -82,18 +77,13 @@ async function calcuOpenFiles(send, files, way) {
   return send("open", { files: named, way, upload: true });
 }
 
-function calcuFileDrop(open, rule) {
+function calcuFileDrop(open) {
   return {
     onDragOver: (e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); },
     onDrop: (e) => {
+      e.preventDefault();
       const files = [...e.dataTransfer.files];
-      if (rule === CALCU_DROP_ONE_FILE) {
-        e.preventDefault();
-        if (files.length === 1 && open) open(files, "drop");
-      } else if (files.length && open) {
-        e.preventDefault();
-        open([files[0]], "drop");
-      }
+      if (files.length === 1 && open) open(files, "drop");
     },
   };
 }

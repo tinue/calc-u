@@ -51,8 +51,8 @@ Never edit the calculator there — that copy is generated.
    useShellProduct.jsx`, `ShellMedia.jsx`, `library/web/src/canvas.js`):
    `useShellProduct` (the request, its fallback `C59_NO_PRODUCT`, the merge
    with the page's acts and Load Preset…), `useFaceplateMaps`,
-   `calcuOpenFiles`, `calcuFileDrop` (Calc-U-59's rule
-   `CALCU_DROP_FIRST_FILE`: the first file of a drop), `ShellSavedMedia`,
+   `calcuOpenFiles`, `calcuFileDrop` (the family's rule, LIB-13 AC-25: a
+   drop of exactly one file is opened, more are ignored), `ShellSavedMedia`,
    `ShellSlotPicker` (label "Solid State Module"), `calcImage` (the file
    name with `.png`) and `sizeCanvas`, `calcuAskedQuestion` (the card
    picker's replace question), `calcuMediaPlace`; the shell is LIB-15's

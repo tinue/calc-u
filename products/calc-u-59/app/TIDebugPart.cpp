@@ -611,7 +611,10 @@ void TIDebugPart::productEntries(const machine::Machine& m, std::vector<control:
                                loaded && !busy ? Value::object({{"available", true}})
                                                : Value::object({{"available", false},
                                                                 {"reason", loaded ? sessions::kAnotherOperationRuns : kNoAsmOverlay}}))});
-    entry(entries::kTrace, !m_setup.traceAvailable || m_setup.traceAvailable(), kTraceFolderNotWritable);
+    // TRACE can always be pressed: the trace folder is asked at the trace's
+    // start, which is refused when it cannot be written (LIB-10 AC-53; C59-4
+    // AC-12 as amended, row 59-62).
+    entry(entries::kTrace, true, "");
     entry(entries::kCalculatorTab, !(o && o->running()), kAsmOverlayRuns);
 }
 

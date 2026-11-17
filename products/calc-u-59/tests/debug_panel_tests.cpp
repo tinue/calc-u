@@ -127,14 +127,14 @@ TEST(c59_4_ac25_entries_asm_run_trace_calculator_tab_with_reasons) {
     r.frame();
     CHECK(!available(r, entries::kCalculatorTab));
     CHECK_EQ(reason(r, entries::kCalculatorTab), std::string(kAsmOverlayRuns));
-    // No folder to write traces to: TRACE cannot be used.
+    // No folder to write traces to: TRACE can still be pressed; the start
+    // is refused (LIB-10 AC-53, row 59-62).
     testroms::RigOptions o;
     o.traceFolder = "/dev/null/no";
     SessionRig w(o);
     CHECK(ready(w));
     w.frame();
-    CHECK(!available(w, entries::kTrace));
-    CHECK_EQ(reason(w, entries::kTrace), std::string(kTraceFolderNotWritable));
+    CHECK(available(w, entries::kTrace));
 }
 
 TEST(c59_4_ac25_cpu_and_calculator_computed_while_shown) {
@@ -578,13 +578,65 @@ TEST(c59_4_ac12_shows_a_trace_whoever_started_it) {
     r.send(calcu::debugger::kTraceCommand, Value::object({{"off", true}}));
 }
 
-TEST(c59_4_ac12_cannot_be_used_without_a_writable_folder) {
+// LIB-10 AC-53 (row 59-62; user, 2026-11-17, Q-2 of
+// docs/reviews/e-simplification.md): the trace folder and the limit as the
+// settings say at each trace start, not as they were when the session was
+// made.
+TEST(lib10_ac53_trace_folder_changed_after_the_start_is_the_next_traces) {
+    calcu::testing::TempFolder home{"calcu59-home"};
+    testroms::RigOptions o;
+    o.qt6Home = home.str();
+    SessionRig r(o);
+    CHECK(ready(r));
+    const std::filesystem::path a = home.path() / "a", b = home.path() / "b";
+    auto traceTo = [&r](const char* name) {
+        CHECK(r.send(calcu::debugger::kTraceCommand, Value::object({{"file", name}})).done);
+        r.runFor(50ms);
+        CHECK(r.send(calcu::debugger::kTraceCommand, Value::object({{"off", true}})).done);
+    };
+    r.settings.set("trace", "folder", a.string());
+    traceTo("one.bin");
+    CHECK(std::filesystem::exists(a / "one.bin"));
+    r.settings.set("trace", "folder", b.string());
+    traceTo("two.bin");
+    CHECK(std::filesystem::exists(b / "two.bin"));
+    CHECK(!std::filesystem::exists(a / "two.bin"));
+}
+
+TEST(lib10_ac53_trace_limit_changed_after_the_start_is_the_next_traces) {
+    calcu::testing::TempFolder home{"calcu59-home"};
+    testroms::RigOptions o;
+    o.qt6Home = home.str();
+    SessionRig r(o);
+    CHECK(ready(r));
+    const std::filesystem::path dir = home.path() / "t";
+    r.settings.set("trace", "folder", dir.string());
+    r.settings.set("trace", "max-file-size-mb", "1");
+    CHECK(r.send(calcu::debugger::kTraceCommand, Value::object({{"file", "big.bin"}})).done);
+    CHECK(r.until([&r] { return !r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running; },
+                  std::chrono::seconds(60)));
+    CHECK(std::filesystem::file_size(dir / "big.bin") <= 1024 * 1024);
+    CHECK(std::filesystem::file_size(dir / "big.bin") > 1000 * 1000);   // the limit was reached, in MiB
+    bool noticed = false;
+    for (const std::string& n : r.notices())
+        if (n.find("reached the size limit of 1 MB") != std::string::npos) noticed = true;
+    CHECK(noticed);
+}
+
+// C59-4 AC-12 as amended (row 59-62): where the trace folder cannot be
+// written, TRACE's start is refused with LIB-10 AC-53's sentence.
+TEST(c59_4_ac12_trace_refused_where_the_folder_cannot_be_written) {
     testroms::RigOptions o;
     o.traceFolder = "/dev/null/no";
     SessionRig r(o);
     CHECK(ready(r));
     r.frame();
-    CHECK(!available(r, entries::kTrace));
+    CHECK(available(r, entries::kTrace));
+    const auto t = r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
+    CHECK(!t.done);
+    CHECK(t.reason.rfind("The trace folder cannot be written: cannot create the folder /dev/null/no", 0) == 0);
+    CHECK(!t.reason.empty() && t.reason.back() == '.');
+    CHECK(!r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);
     testroms::RigOptions web;
     web.noTraceFolder = true;   // the Web keeps its traces (LIB-10 AC-26)
     SessionRig w(web);

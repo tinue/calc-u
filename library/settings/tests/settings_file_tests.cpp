@@ -94,16 +94,23 @@ TEST(ec5_bad_value_reads_default_and_stays_in_file) {
     CHECK_EQ(g.text("test", "style"), std::string("two"));
 }
 
+// AC-11: missing or not a number is the default 50; zero and negatives are
+// values of the key (no minimum, release prep step 5d), which the trace
+// session takes as 50 (LIB-10, debugger/tests/trace_tests.cpp).
 TEST(ac11_trace_size_missing_zero_negative_is_50) {
     TempDir dir;
     writeText(iniPath(dir), kVersioned);
     CHECK_EQ(SettingsFile::open(testProduct(), iniPath(dir)).integer("trace", "max-file-size-mb"), 50L);
-    for (const char* v : {"0", "-3", "", "ten"}) {
+    for (const char* v : {"", "ten"}) {
         writeText(iniPath(dir), kVersioned + "[trace]\nmax-file-size-mb = " + v + "\n");
         CHECK_EQ(SettingsFile::open(testProduct(), iniPath(dir)).integer("trace", "max-file-size-mb"), 50L);
     }
-    writeText(iniPath(dir), kVersioned + "[trace]\nmax-file-size-mb = 7\n");
-    CHECK_EQ(SettingsFile::open(testProduct(), iniPath(dir)).integer("trace", "max-file-size-mb"), 7L);
+    for (const auto& [v, n] : {std::pair{"0", 0L}, std::pair{"-3", -3L}, std::pair{"7", 7L}}) {
+        writeText(iniPath(dir), kVersioned + "[trace]\nmax-file-size-mb = " + v + "\n");
+        CHECK_EQ(SettingsFile::open(testProduct(), iniPath(dir)).integer("trace", "max-file-size-mb"), n);
+    }
+    CHECK(!family::traceMaxFileSizeMb().min);   // the settings dialog takes 0 too
+    CHECK_EQ(family::traceMaxFileSizeMb().help, std::string("The largest trace file in MiB; zero or less: 50."));
 }
 
 TEST(ac8_declaration_holds_no_hardware) {

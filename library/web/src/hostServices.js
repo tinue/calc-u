@@ -5,7 +5,8 @@
 //   file-picker      {accept, multiple} → [{name, bytes}] (the glue writes
 //                    them to /uploads and gives the session the paths);
 //                    nothing picked: not given, "cancelled"
-//   keep-file        {name, bytes, mediaType}: a download (AC-9)
+//   keep-file        {name, bytes, mediaType, kind?}: a download (AC-9);
+//                    kind "trace" for an ended trace (LIB-10 AC-26)
 //   open-url         {url}: a new tab
 //   clipboard-text   {text}: copied; without text: the clipboard's text, {text}
 //   clipboard-image  {bytes}: PNG bytes copied (as before LIB-8);

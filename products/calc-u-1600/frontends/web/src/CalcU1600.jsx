@@ -420,7 +420,7 @@ function CalcU1600(props) {
         const text = e.clipboardData && e.clipboardData.getData("text/plain");
         if (text && shell) { e.preventDefault(); send("paste", { text }); }
       }}
-      {...calcuFileDrop(shell ? openFiles : null, CALCU_DROP_ONE_FILE)}>
+      {...calcuFileDrop(shell ? openFiles : null)}>
       <ShellMenuBar shell={s} />
       {/* LIB-14 D-39 (M-57, ledger 1600-48): the library's storage sentence. */}
       <ShellStorageBanner shell={shell} />

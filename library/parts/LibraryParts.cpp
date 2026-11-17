@@ -9,12 +9,11 @@ namespace {
 
 std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
 
-// LIB-6 AC-25: the folder for screenshots (the setup's, else the places'),
-// made when a step needs it; none where there is none (the Web: a download).
-std::function<std::optional<std::string>()> screenshotFolderOf(const settings::Paths& places,
-                                                              std::optional<std::string> given) {
-    return [&places, given]() -> std::optional<std::string> {
-        std::optional<std::string> folder = given ? given : places.screenshotFolder();
+// LIB-6 AC-25: the folder for screenshots (the places'), made when a step
+// needs it; none where there is none (the Web: a download, LIB-9 AC-17).
+std::function<std::optional<std::string>()> screenshotFolderOf(const settings::Paths& places) {
+    return [&places]() -> std::optional<std::string> {
+        std::optional<std::string> folder = places.screenshotFolder();
         if (!folder || folder->empty()) return std::nullopt;
         std::error_code ec;
         std::filesystem::create_directories(pathOf(*folder), ec);
@@ -22,40 +21,26 @@ std::function<std::optional<std::string>()> screenshotFolderOf(const settings::P
     };
 }
 
-// LIB-10: the trace folder and its limit from the host's places and settings,
-// read at each trace; with `placesAtStart`, as they are now, the folder made
-// when a trace starts.
+// LIB-10 AC-53: the trace folder and its limit from the host's places and
+// settings, read at each trace start, the folder made and written once
+// (Paths::ensure), for every product (user, 2026-11-17, Q-2 of
+// docs/reviews/e-simplification.md); `placesAtStart` does not apply to them.
 debugger::DebuggerSetup withTraces(debugger::DebuggerSetup d, const LibraryPartsSetup& s) {
     const settings::SettingsFile* file = s.settings;
-    if (!s.placesAtStart) {
-        d.trace.folder = debugger::traceFolderOf(*s.paths, s.traceAvailable);
-        d.trace.limitMb = [file] { return static_cast<long>(file->integer("trace", "max-file-size-mb")); };
-        return d;
-    }
-    const long mb = file->integer("trace", "max-file-size-mb");
-    d.trace.limitMb = [mb] { return mb; };
-    const std::string dir = s.paths->traceFolder().value_or(std::string());
-    if (dir.empty()) return d;   // none (the Web)
-    const std::function<bool()> available = s.traceAvailable;
-    d.trace.folder = [dir, available]() -> std::optional<settings::Paths::Ensured> {
-        if (available && !available()) return settings::Paths::Ensured{false, dir, "The trace location is not available."};
-        std::error_code ec;
-        std::filesystem::create_directories(pathOf(dir), ec);
-        if (ec) return settings::Paths::Ensured{false, dir, ec.message()};
-        return settings::Paths::Ensured{true, dir, {}};
-    };
+    d.trace.folder = debugger::traceFolderOf(*s.paths, s.traceAvailable);
+    d.trace.limitMb = [file] { return static_cast<long>(file->integer("trace", "max-file-size-mb")); };
     return d;
 }
 
 // With `placesAtStart`: the host's places as they are now, every folder as
-// given (the save and tape folders of the media, the screenshots).
+// given (the save and tape folders of the media, the screenshots; not the
+// traces, AC-53).
 std::unique_ptr<settings::Paths> placesAtStart(const LibraryPartsSetup& s) {
     if (!s.placesAtStart) return nullptr;
     settings::HostDirs dirs;
     dirs.frontend = settings::FrontendKind::Given;
     dirs.home = s.paths->hostDirs().home;
     dirs.saveFolder = s.paths->saveFolder();
-    dirs.traceFolder = s.paths->traceFolder().value_or(std::string());
     dirs.screenshotFolder = s.paths->screenshotFolder().value_or(std::string());
     return std::make_unique<settings::Paths>(*s.settings, dirs);
 }
@@ -76,7 +61,7 @@ LibraryParts::LibraryParts(LibraryPartsSetup s)
     peripherals_ = std::make_unique<peripherals::PeripheralsPart>(setup_.hostLinks, setup_.serialLinkFolder);
     presets_ = std::make_unique<presets::PresetsPart>(
         presets::PresetsSetup{&catalogue, setup_.presetRules, &machineControl_, typing_.get(), setup_.bundle,
-                              places.hostDirs().home, screenshotFolderOf(places, setup_.screenshotFolder)});
+                              places.hostDirs().home, screenshotFolderOf(places)});
     std::optional<roms::RomsMissing> missing;
     if (!setup_.roms.ok()) missing = setup_.roms.missing;
     startup_ = std::make_unique<startup::StartupPart>(

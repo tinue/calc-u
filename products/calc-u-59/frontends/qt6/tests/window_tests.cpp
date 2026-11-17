@@ -14,6 +14,7 @@
 #include "QtResourceBundle.hpp"
 #include "TIShellProduct.hpp"
 #include "debug/DebugPanel.hpp"
+#include "qt6/FileOpening.hpp"
 #include "qt6/MediaPicker.hpp"
 #include "qt6/PanelArea.hpp"
 #include "qt6/Shell.hpp"
@@ -31,11 +32,14 @@
 #include <QComboBox>
 #include <QDialog>
 #include <QDir>
+#include <QDropEvent>
+#include <QFileOpenEvent>
 #include <QGroupBox>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QSplitter>
@@ -570,6 +574,47 @@ TEST(lib6_ac42_qt6_bundled_example_sum_shows_its_cue_card) {
         const auto& card = f.c().cueCard();
         return card && card->title == "Sum 1..N";
     }, 30000));
+    f.waitIdle();
+}
+
+// ── LIB-13 AC-24 (Qt6; row 59-61): a drop and Open With, as Calc-U-1600's ──
+
+namespace {
+const QString kSum = QStringLiteral(CALCU59_DIR "/examples/sum.ti59");
+bool sumCueCard(Fixture& f) {
+    const auto& card = f.c().cueCard();
+    return card && card->title == "Sum 1..N";
+}
+} // namespace
+
+TEST(lib13_ac24_qt6_drop_accepted_and_opened_after_the_drop) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f;
+    QMimeData mime;
+    mime.setUrls({QUrl::fromLocalFile(kSum)});
+    QDragEnterEvent enter(QPoint(100, 100), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(&f.w(), &enter);
+    CHECK(enter.isAccepted());
+    QDropEvent drop(QPointF(100, 100), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+    drop.setAccepted(false);
+    QCoreApplication::sendEvent(&f.w(), &drop);
+    CHECK(drop.isAccepted() && drop.dropAction() == Qt::CopyAction);
+    CHECK(!sumCueCard(f));   // opened after the drop handler
+    CHECK(f.waitFor([&] { return sumCueCard(f); }, 30000));
+    f.waitIdle();
+}
+
+TEST(lib13_ac24_qt6_open_with_opens_the_preset) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f;
+    // The Dock icon and Finder's Open With reach the app as QFileOpenEvent.
+    calcu::qt6::FileOpenFilter filter;
+    filter.setHandler([&f](const QString& p) { f.w().openFile(p, calcu::opening::Way::OpenWith); });
+    qApp->installEventFilter(&filter);
+    QFileOpenEvent e(kSum);
+    QCoreApplication::sendEvent(qApp, &e);
+    qApp->removeEventFilter(&filter);
+    CHECK(f.waitFor([&] { return sumCueCard(f); }, 30000));
     f.waitIdle();
 }
 

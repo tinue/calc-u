@@ -124,9 +124,21 @@ The ways in
   the tests 1 to 3 of AC-1 and by the names the product's file kinds go
   by; a drag of more than one file, or of a name it would not take, is
   not taken, so that the pointer shows it. The drop itself goes through
-  all of AC-1
+  all of AC-1, as AC-24 says
   (Calc-U-1600 `Qt6/app/MainWindow.cpp:781-812`; Calc-U-59
   `App/EmulatorViewModel.swift:362-374`).
+- [ ] **AC-24** — Given a Qt6 frontend, when a file is dropped onto the
+  window or handed to it by Open With, then the window comes to the
+  front and is activated (a file named at the start of the program does
+  not raise it); the drop's proposed action is accepted, and the file is
+  opened after the drop has been handled, so that the drag source does
+  not wait for what the opening shows. One rule for both products,
+  Calc-U-1600's of today (user, 2026-11-17, Q-4 of `docs/reviews/e-simplification.md`; ledger row 59-61).
+- [ ] **AC-25** — Given a Web frontend, when files are dropped onto the
+  page, then a drop of exactly one file is opened and a drop of more is
+  ignored; no drop reaches the browser. One rule for both products,
+  Calc-U-1600's of today; Calc-U-59 opened the first file of a drop
+  (user, 2026-11-17, Q-4 of `docs/reviews/e-simplification.md`; ledger row 59-61).
 - [ ] **AC-7** — Given a file is to be opened while an operation runs or
   before the product has finished its start, then the session keeps it,
   the reply says so, and it is opened when the session is free; given a
@@ -184,7 +196,9 @@ The ways in
   `Qt6/resources/windows/calc-u-59.iss:46-52`,
   `Qt6/resources/linux/calc-u-59.desktop:5-8`). A file named at the
   start, and one opened with Open With, is opened as what it is; today
-  it is always read as a preset.
+  it is always read as a preset. A drop and Open With raise the Qt6
+  window and a Web drop takes exactly one file (AC-24, AC-25); today the
+  window stays where it is and the Web opens the first file of a drop.
 - [ ] **AC-15** — Given a file that is refused in Qt6 or in the Swift
   frontend after it was handed over, then the notice of AC-1 is shown,
   as the Web frontend shows a line today (`Web/src/engine.js:140`).
@@ -239,7 +253,9 @@ The ways in
   is in that list today, goes
   (`Qt6/app/main.cpp:23-49`, `Qt6/resources/macos/Info.plist.in:49-99`).
   A file named at the start of the Qt6 program is opened too; today it
-  is passed over (`Qt6/app/main.cpp:72-101`; OQ-2).
+  is passed over (`Qt6/app/main.cpp:72-101`; OQ-2). A drop and Open With
+  raise the Qt6 window, and a Web drop takes exactly one file, as today
+  (AC-24, AC-25).
 - [ ] **AC-22** — Given what the tests of Calc-U-1600 check today about
   telling a dropped file, then it holds
   (`Core/tests/program_file_tests.cpp:199-300`).
@@ -322,3 +338,4 @@ The ways in
 | Opening a `.keystrokes.yaml` writes its program into the running machine; `.rom.yaml` and `ti58c.memory.yaml` are refused with a notice (AC-11, AC-23) | user, 2026-11-13 (consistency pass after the Q&A round) | 2026-11-13 |
 | OQ-4's "row 59-14 and its twin" are now rows 59-20 and 1600-15; a note says so | user, 2026-11-14 (question 9 of `docs/migration-plan.md`) | 2026-11-14 |
 | Calc-U-59 takes the library's rule for the file named at the start (AC-14): the last argument that does not start with `-` and names an existing file (`opening::startFile`, Calc-U-1600's AC-21 rule); today it takes the last argument that is not an option value, without checking it. Done in M-56; ledger row 59-47 | user, 2026-11-16 (Q-1 of `docs/reviews/d-simplification.md`) | 2026-11-16 |
+| One rule for the window's part of a drop and Open With (AC-24: Qt6 raises the window, accepts the drop's action, opens after the drop) and for a Web drop (AC-25: exactly one file); Calc-U-1600's rule for both, AC-6, AC-14 and AC-21 point to them; code in `library/qt6/FileOpening` and `library/web/components/useShellProduct.jsx` (`CALCU_DROP_FIRST_FILE` gone); ledger row 59-61 | user, 2026-11-17, Q-4 of `docs/reviews/e-simplification.md` (Q-E4-1, Q-E4-2, Q-E5-1 of the design's Part E simplification E-4, E-5) | 2026-11-17 |

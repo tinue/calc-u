@@ -1,0 +1,81 @@
+format-version: 1
+# superRAM -- 512 KB vertically-banked SRAM module, PC-1600 Slot 2 only.
+#
+# The "maxed-out Slot 2" card the Memory-Card-Definition-Spec.md §6 / §9
+# tables already name: mechanically a CE-1601M with a wider vertical-bank
+# decoder. Where the CE-1601M fits two 32 KB chips behind a 3-to-8
+# decoder/latch and only populates banks 0-1, superRAM fills the whole
+# decoder -- 16 x 32 KB chips = 512 KB -- and widens the latch to a 4-bit
+# register so all 16 can be addressed:
+#
+#   * VERTICAL BANK -- which 32 KB chip sits behind the 8000-BFFF window.
+#     The host picks it with `OUT (28H), A`; the module's decoder/latch
+#     samples the DATA bus (the value in A) on that write strobe and holds
+#     it until the next one. superRAM samples D0-D3 (CE-1601M samples only
+#     D0-D2), so the latched bank number runs 0-15. TRIGGER-BASED latch
+#     (Memory-Card-Definition-Spec.md §6), source-domain data -- the exact
+#     mechanism of the CE-1601M, one address line wider. PC1600Bank's
+#     Port 28H notes already anticipate this ("superRAM hardware extends
+#     this to 0-15").
+#
+#   * HALF-SELECT within the current 32 KB bank -- PVOUT (pin 5), the
+#     host's Port 31H b4, picks the low or high 16 KB. Same nested
+#     sub-range the CE-1601M carries in its bank-window (spec §4 / §9):
+#     "selected bank AND PVOUT level", one level deeper than a plain
+#     region.
+#
+# RAM1 (pin 4) is a bare enable strobe gated by the host to the 8000-BFFF
+# window, so no address-range term is needed -- `span` gives the slice
+# size and the module offsets by the low address bits.
+#
+# Slot 2 only: the Port 28H strobe (K0-K2) has no wiring on Slot 1, so the
+# vertical-bank mechanism cannot be reached there.
+#
+# As on the CE-1601M, only vertical bank 0 is usable for program /
+# expansion memory (the PC-1600 maps its module header + BASIC/machine
+# area there); banks 1-15 are RAM-disk / S0: file storage, formatted by
+# the PC-1600's own INIT (INIT"S2:","F" then split with "M"/"P",n), not
+# baked into the module.
+#
+# Ships blank (plain-ram-no-header).
+
+module-name: "ram-1m"
+template: true   # read-only starting point; Name & Save copies it
+compatible-hosts: [PC-1600-Slot-2]
+definition-terminology: PC-1600-Slot-2
+battery: true
+
+regions:
+  - name: vram-512k
+    pc1600-module-class: plain-ram-no-header
+    content:
+      kind: regular
+      writable: true
+      power-up-fill: 0x00
+    # Region-level "is this a banked access at all" -- a pure gate, no
+    # span/maps-to. The module's whole enable is RAM1 (host-gated to the
+    # 8000-BFFF window); the real slice mapping lives in bank-window.
+    addressing:
+      chip-select: RAM1
+    banking:
+      latch:
+        type: trigger-based
+        trigger: { io-port: 0x28 }         # OUT (28H) -- the Port 28H vertical-bank write
+        sampled-lines: [D0, D1, D2, D3, D4]    # bank number = the byte written (first line = LSB)
+        source-domain: data
+      bank-count: 32                        # 16 x 32 KB vertical banks = 512 KB
+      bank-size: 0x8000                     # 32 KB per vertical bank (Z-80 Bank 2 + Bank 3)
+      bank-window:
+        any-of:
+          # PVOUT low -> low 16 KB half of the current 32 KB bank.
+          - all-of:
+              - chip-select: RAM1
+              - signal-negated: PVOUT
+            span: 0x4000
+            maps-to: 0x0000
+          # PVOUT high -> high 16 KB half.
+          - all-of:
+              - chip-select: RAM1
+              - signal: PVOUT
+            span: 0x4000
+            maps-to: 0x4000

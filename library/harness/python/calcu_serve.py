@@ -10,13 +10,17 @@ Each send() writes one command line and reads its one reply. With
 json=True (the default) the reply is the JSON object of --json, with the
 keys "done", "result" and "reason"; with json=False it is a dict with
 "done", "lines" (the result lines) and "reason". A refused command raises
-Refused unless check=False. Standard library only.
+Refused unless check=False. With a timeout (seconds of wall clock, for
+the whole reply), a reply that does not come in time ends the program and
+raises TimeoutError. Standard library only.
 """
 
 from __future__ import annotations
 
 import json
+import queue
 import subprocess
+import threading
 from typing import Any, Optional, Sequence
 
 
@@ -26,43 +30,59 @@ class Refused(Exception):
 
 class Calcu:
     def __init__(self, program: str, product: str, options: Sequence[str] = (),
-                 json: bool = True, cwd: Optional[str] = None):
+                 json: bool = True, cwd: Optional[str] = None, timeout: Optional[float] = None):
         args = [program, "--product", product, *options]
         if json:
             args.append("--json")
         args.append("serve")
         self._json = json
+        self._timeout = timeout
+        self._lines: "queue.Queue[str]" = queue.Queue()
         self._proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                       stderr=subprocess.PIPE, text=True, encoding="utf-8",
                                       bufsize=1, cwd=cwd)
+        threading.Thread(target=self._read, daemon=True).start()
 
-    def send(self, line: str, check: bool = True) -> dict[str, Any]:
-        """One command and its reply."""
+    def _read(self) -> None:
+        assert self._proc.stdout
+        for line in self._proc.stdout:
+            self._lines.put(line)
+        self._lines.put("")   # the end of the output
+
+    def _line(self, timeout: Optional[float]) -> str:
+        try:
+            return self._lines.get(timeout=timeout)
+        except queue.Empty:
+            self._proc.kill()
+            raise TimeoutError("no reply from calcu within %g s" % timeout) from None
+
+    def send(self, line: str, check: bool = True, timeout: Optional[float] = None) -> dict[str, Any]:
+        """One command and its reply; timeout overrides the one of the constructor."""
         if "\n" in line:
             raise ValueError("a command is one line")
         assert self._proc.stdin and self._proc.stdout
         self._proc.stdin.write(line + "\n")
         self._proc.stdin.flush()
-        first = self._proc.stdout.readline()
+        timeout = self._timeout if timeout is None else timeout
+        first = self._line(timeout)
         if not first:
             err = self._proc.stderr.read() if self._proc.stderr else ""
             raise RuntimeError("calcu ended: " + err.strip())
         if self._json:
             reply = json.loads(first)
         else:
-            reply = self._plain(first.rstrip("\n"))
+            reply = self._plain(first.rstrip("\n"), timeout)
         if check and not reply["done"]:
             raise Refused(reply["reason"])
         return reply
 
-    def _plain(self, first: str) -> dict[str, Any]:
+    def _plain(self, first: str, timeout: Optional[float]) -> dict[str, Any]:
         if first.startswith("refused: "):
             return {"done": False, "lines": [], "reason": first[len("refused: "):]}
         lines: list[str] = []
         if first.startswith("done "):
             n = int(first[len("done "):])
-            assert self._proc.stdout
-            lines = [self._proc.stdout.readline().rstrip("\n") for _ in range(n)]
+            lines = [self._line(timeout).rstrip("\n") for _ in range(n)]
         return {"done": True, "lines": lines, "reason": None}
 
     def close(self) -> int:

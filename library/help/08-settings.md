@@ -9,7 +9,7 @@ which modules, peripherals or media a machine has; a preset does that
 
 ## The Settings dialog
 
-**File ▸ Settings…** opens the dialog (on macOS it is in the
+**File ▸ Settings…** opens the dialog (in a window without a menu bar, the Settings button; on macOS it is in the
 application menu). A change applies at once and is kept; the only
 button is Close. The dialog can be used while an operation runs. Its
 sections, each shown when the frontend has one of its settings:

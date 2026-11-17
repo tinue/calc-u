@@ -4,7 +4,8 @@
 
 Every product of the Calc-U family has the same window: the faceplate of
 the model you run, the control bar below it, a place for panels such as
-the paper, and the menus File, Edit, Machine and Help. This page shows
+the paper, and the menus File, Machine and Help, and Edit where the
+product has it. This page shows
 the parts all products share. What the faceplate and the keyboard of
 your product look like is in [the product's part of this
 chapter](chapter:2).
@@ -13,7 +14,7 @@ chapter](chapter:2).
 
 ```mermaid
 flowchart TB
-  menus["Menus: File · Edit · Machine · Help"]
+  menus["Menus: File · Edit · Machine · Help, or the More button"]
   faceplate["Faceplate: the display and the keys of the model"]
   bar["Control bar: the model, then the module slots, peripherals and media"]
   panels["Panels: the paper, and the product's own"]
@@ -38,7 +39,7 @@ greyed out; where the platform shows tooltips, its tooltip says why.
 | Menu | Items |
 |---|---|
 | File | Load Preset…; Examples ▸; the product's own kinds of files; the items for media (Import Media…, Saved Media… in the browser); Settings…; Quit |
-| Edit | Copy Screen; Paste Text |
+| Edit | the product's items for the display and the clipboard, where it has them |
 | Machine | Model ▸; a submenu for each thing that has variants; Peripherals ▸; Reset; Cold boot; Resume |
 | Help | `<Product>` Help; About `<Product>` |
 
@@ -47,9 +48,8 @@ greyed out; where the platform shows tooltips, its tooltip says why.
   ([Presets](06-presets.md)).
 - **Settings…** opens the settings dialog
   ([The settings dialog](#the-settings-dialog)).
-- **Copy Screen** puts a picture of the display on the clipboard.
-  **Paste Text** types the text of the clipboard
-  ([Typing text](#typing-text)).
+- What the Edit menu holds, if the product has one, is in [the
+  product's part of this chapter](chapter:2).
 - **Model ▸**, the variant submenus, **Peripherals ▸**, **Reset** and
   **Cold boot** are described in [Models and machine
   control](03-models-and-machine-control.md).
@@ -61,6 +61,15 @@ greyed out; where the platform shows tooltips, its tooltip says why.
 
 On macOS, Settings…, About and Quit are in the application menu, as on
 every Mac program. In the browser there is no Quit.
+
+### Without a menu bar
+
+A window without a menu bar (on a phone, on a tablet, in the browser's
+portrait layout) keeps Reset, Preset and Settings as buttons on the
+control bar and has a **More** button (⋯) with every other item:
+Examples ▸, the items for media, Cold boot, which asks first, Resume,
+Help, and About where the system has one. An item that cannot be used
+now is greyed out there too.
 
 ### Shortcuts
 
@@ -112,7 +121,8 @@ they came.
 
 ## The settings dialog
 
-**File ▸ Settings…** opens a dialog titled "Settings". A change is
+**File ▸ Settings…** (the Settings button in a window without a menu
+bar) opens a dialog titled "Settings". A change is
 applied and kept at once; the only button is Close. You can change
 settings while an operation runs. The sections are:
 
@@ -132,7 +142,7 @@ of its settings. What each setting means is in [Settings](08-settings.md).
 
 ## Keys
 
-You press the keys of the machine in three ways:
+You press the keys of the machine in these ways:
 
 - **On the faceplate.** Click or touch a key. A click near a key, in the
   gap between two keys, presses the nearest one. You can hold several
@@ -142,7 +152,8 @@ You press the keys of the machine in three ways:
   machine, such as a shifted character, is typed as those keys one
   after the other. Your keyboard's auto-repeat is ignored. The keyboard
   map of each model is in [the product's reference](chapter:10).
-- **By typing text** ([Typing text](#typing-text)).
+- **By the product's own ways**, where it has them, such as typing the
+  text of the clipboard ([the product's part of this chapter](chapter:2)).
 
 A key you press is held for at least the shortest time the machine
 needs to see it, also when you let go sooner. When you hold two keys at
@@ -157,14 +168,3 @@ you press are not passed on.
 Press and hold the pointer on the display of the faceplate: the machine
 runs at full speed while you hold it, and at regular speed again when
 you let go or leave the display.
-
-## Typing text
-
-**Edit ▸ Paste Text** types the text of the clipboard into the machine,
-character by character, as the keys the product gives for each
-character. Only the text up to the first line break is typed, a
-character for which the machine has no key is left out, and ENTER is not
-pressed at the end. A key you press while text is being typed stops it.
-
-Presets can type text too, with `type:` and `key:` steps
-([Presets](06-presets.md)).

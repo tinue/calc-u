@@ -11,7 +11,7 @@ Invoke the right skill before starting work in each area:
 | `calc-u-59-swift` | Swift/SwiftUI app (`frontends/swift/App/`, `frontends/swift/App/Views/`, `frontends/swift/Bridge/`) |
 | `calc-u-59-qt` | Qt6 desktop app (`frontends/qt6/`, the repository's `.github/workflows/calc-u-59.yml`, Qt packaging) |
 | `calc-u-59-web` | Web client (`frontends/web/`: React + WASM engine, PWA, `frontends/web/build.sh`, `frontends/web/dist/`, the `web` CI job) |
-| `calc-u-59-docs` | Documentation (`reference/`, root markdown files); the user guide lives in `../calc-u-site` and is updated with them |
+| `calc-u-59-docs` | Documentation: the user help (`help/`, LIB-16), `reference/`, root markdown files |
 | `calc-u-59-presets` | Writing `.ti59`/`.ti58`/`.ti58c` presets of format 2, keystroke program files, `examples/bundle.yaml` — the TI sections, key IDs, checking a preset with `calcu` |
 | `calc-u-59-uitesting` | XCUITest UI tests (`frontends/swift/Calc-U-59UITests/`) — file picker navigation, accessibility identifiers, orientation |
 
@@ -22,6 +22,13 @@ tinue/calc-u (ADR 0002). Work happens on short branches merged into `main`
 (ADR 0029); a release is tagged `calc-u-59-vX.Y.Z` (ADR 0028). The
 repository's `CLAUDE.md` holds the current phase and its rules; they come
 first.
+
+User help is `help/` (the product parts, one file or more per chapter,
+`help/help.yaml`) and `library/help/` at the repository root (the shared
+parts), checked by `tools/help check calc-u-59` in Frequent
+(`CalcU59HelpCheck`; LIB-16) and built into the release's
+`Calc-U-59-help.zip`; a user-visible change updates its chapter in the
+same step. Developer documents stay in `reference/`.
 
 ## Architecture Reference
 

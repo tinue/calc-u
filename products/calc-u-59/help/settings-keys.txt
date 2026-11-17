@@ -1,0 +1,29 @@
+# The settings keys Calc-U-59 declares (app/Settings.cpp, settingsDecl()),
+# for tools/help's check C7 (LIB-16 AC-14): each `[section] key` is described
+# in chapter 8, the family's in library/help/08-settings.md, the product's in
+# help/08-settings.md. Written by CalcU59Tests with CALCU59_HELP_KEYS=1.
+family [startup] model
+family [startup] last-model
+family [preset] <model>
+product [preset] TI-59
+product [preset] TI-58
+product [preset] TI-58C
+family [storage] save-folder
+family [trace] folder
+family [trace] max-file-size-mb
+family [trace] location
+product [display] led-style
+product [keyboard] feedback
+family [folders] <kind>
+product [folders] presets
+product [folders] asm-overlays
+product [folders] other
+family [window] <key>
+product [window] x
+product [window] y
+product [window] width
+product [window] height
+product [window] calculator-width
+product [window] printer-width
+product [window] debug-width
+product [window] portrait-debug-page

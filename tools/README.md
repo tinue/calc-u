@@ -12,11 +12,13 @@ only; no install.
 ```sh
 tools/help check calc-u-1600                 # the checks, no asset
 tools/help build calc-u-1600                 # the checks, then build/help/Calc-U-1600-help.zip
-tools/help build 1600 --version 1.0.0 --out /tmp/help
+tools/help check calc-u-59                   # Calc-U-59's help (M-60)
+tools/help build 59 --version 3.0.0 --out /tmp/help
 ```
 
 The product is named by its name or short form, any case (`Calc-U-1600`,
-`1600`). The help's sources:
+`1600`, `Calc-U-59`, `59`). Each product's CTest entries
+`<Product>HelpCheck` and `<Product>HelpBuild` run them in Frequent. The help's sources:
 
 - `library/help/`: the shared parts, one file per chapter that has one;
   `help.yaml` lists the ten chapters (LIB-16 AC-1), their parts, their

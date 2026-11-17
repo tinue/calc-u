@@ -21,6 +21,9 @@ listed in [the reference](10-reference.md#the-preset-format).
 - Dropping a preset file on the window, or opening it with the product
   from the computer's file manager, loads it too
   ([Media](04-media.md) describes how a file is opened as what it is).
+- In a window without a menu bar, the Preset button loads a preset
+  file, and Examples is behind the More button
+  ([Getting started](02-getting-started.md#without-a-menu-bar)).
 
 A load always builds a **new machine**: the machine that ran before is
 gone, with its memory. The new machine is built from a cold boot with

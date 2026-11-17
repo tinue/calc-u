@@ -44,9 +44,9 @@ struct PrinterPaper {
 class PaperPart final : public sessions::SessionPart {
 public:
     // The owner's name of each printer is its descriptor's name in the
-    // catalogue. `control`, for the origin of the last build (A-3), may be
-    // set later (the harness builds it after the product's parts).
-    PaperPart(const machine::Catalogue&, std::vector<PrinterPaper>, const startup::MachineControl* control = nullptr);
+    // catalogue. `control`: the origin of the last build (A-3); it outlives
+    // the part.
+    PaperPart(const machine::Catalogue&, std::vector<PrinterPaper>, const startup::MachineControl& control);
 
     void attach(sessions::SessionSetup&) override;
     void beforeCall(sessions::SessionContext&, pacing::WallTime) override;
@@ -84,7 +84,7 @@ private:
     Entry* entryOf(const Paper*);
     sessions::CommandOutcome copy(sessions::SessionContext&, Entry&, bool cutAfter);
 
-    const startup::MachineControl* control_;
+    const startup::MachineControl& control_;
     std::vector<Entry> entries_;
     sessions::StateTopic* papersTopic_ = nullptr;
     sessions::StreamTopic* copiesTopic_ = nullptr;

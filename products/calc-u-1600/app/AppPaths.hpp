@@ -60,7 +60,7 @@ public:
     // missing.
     std::string defaultInstanceDir() const;
 
-    // The save folder: Settings::instanceDirOverride() if set (Qt6), else
+    // The save folder: [storage] save-folder if set (Qt6), else
     // defaultInstanceDir(). Where battery-card instances and saved disks
     // live right now (Paths::saveFolder(); the media part reads places()).
     std::string instanceDir() const;
@@ -71,12 +71,12 @@ public:
     std::string displayPath(const std::string& path) const;
 
 
-    // Cassette tapes: Settings::tapeDirOverride() if set, else "Tapes"
+    // Cassette tapes: [storage] tape-folder if set, else "Tapes"
     // inside instanceDir(); created on demand. Tape definitions and their
     // sounds live there (LIB-7 AC-42, LIB-9 AC-16).
     std::string tapeDir() const;
 
-    // Settings::traceDirOverride() / serialLinkDirOverride() if set, else
+    // [trace] folder / [serial] link-folder if set, else
     // instanceDir(): where traces go (the library's trace session) and where
     // the serial ports' PTY symlinks live. The Web has no trace folder
     // (traceDir() is empty, LIB-10 D-10); its serial link folder is the save

@@ -473,3 +473,20 @@ Risks:
 - `web::WebStart::placesDirs()`: the Web's host folders with home the save
   folder's parent (`/persist`) when the page gives none, which both Web
   engines wrote.
+
+## Part E simplification E-8 (2026-11-17, branch `es-dead`)
+
+`docs/reviews/e-simplification.md` §1 S-8. The products' typed settings calls that only tests
+called are gone (§ "shared::Settings accessors … same accessor names where
+callers use them"): Calc-U-1600's `app/Settings.hpp` keeps the window size,
+`[startup] model` and `startupModel()` (sixteen calls went: the four
+folder overrides, `[preset]`, `[trace] max-file-size-mb`, `[debug]`,
+`[serial] link-folder`, `last-model`); Calc-U-59's keeps `traceLocation()`
+(Swift) and the window state (Qt6) and drops the rest (the startup keys,
+`[preset]`, the trace keys, `[storage]`, `[display]`, `[keyboard]`,
+`[folders]`, `portrait-debug-page`; the enum `KeyboardFeedback`); its Qt6
+`AppSettings.hpp` keeps `settings()` only. The keys, their declaration
+and every value are unchanged; production reads them where they are used
+(`Paths`, `settings::startupModel`, `settings/OpenFolders`, LIB-14's
+`SettingsPart`, the DAP part), and the products' settings tests read them
+through `SettingsFile` and those calls.

@@ -38,8 +38,10 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     auto parts = std::make_shared<WebParts>(dirs);
     parts->paths = std::make_unique<shared::AppPaths>(parts->typed, dirs,
                                                       shared::BundleDirs{start.bundleDir, start.presetsDir});
-    parts->part = std::make_unique<shared::SharpAppPart>(parts->typed, *parts->paths,
-                                                         shared::SharpAppPartOptions{/*canMountHostFolder=*/false});
+    shared::SharpAppPartOptions options;
+    options.canMountHostFolder = false;
+    options.uploadFolder = start.uploadsDir;   // LIB-13 AC-8: several files of Upload Preset…
+    parts->part = std::make_unique<shared::SharpAppPart>(parts->typed, *parts->paths, std::move(options));
     parts->web = std::make_unique<shared::SharpWebPart>(*parts->part, start.uploadsDir);
 
     // The one order (parts::LibraryParts): the control part, the shell's and

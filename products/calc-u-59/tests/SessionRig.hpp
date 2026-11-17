@@ -56,21 +56,21 @@ inline cu59::TIAppSetup appSetup(calcu::settings::SettingsFile& settings, cu59::
     return s;
 }
 
-/// The files of the save folder, in memory (a FileIO of the test's).
-struct MapFileIO final : cu59::FileIO {
-    std::map<std::string, std::string> cards;   ///< by path; the constant memory is "cards/ti58c.memory.yaml"
-    std::set<std::string> unreadableCards;      ///< paths that are there but can't be read
-    std::map<std::string, int> writes;          ///< how often each path was written
-    Read read(const std::string& path) override {
+/// The files of the save folder, in memory (a file access of the test's).
+struct MapFileIO final : calcu::media::FileAccess {
+    mutable std::map<std::string, std::string> cards;   ///< by path; the constant memory is "cards/ti58c.memory.yaml"
+    std::set<std::string> unreadableCards;              ///< paths that are there but can't be read
+    mutable std::map<std::string, int> writes;          ///< how often each path was written
+    Read read(const std::string& path) const override {
         if (unreadableCards.count(path)) return {std::nullopt, true};
         auto it = cards.find(path);
         if (it == cards.end()) return {};
-        return {std::vector<uint8_t>(it->second.begin(), it->second.end())};
+        return {it->second, false};
     }
-    bool write(const std::string& path, const std::string& text) override {
+    Written write(const std::string& path, const std::string& text) const override {
         cards[path] = text;
         ++writes[path];
-        return true;
+        return {true, {}};
     }
 };
 
@@ -79,7 +79,7 @@ struct RigOptions {
     calcu::sessions::HostServices services;
     std::vector<calcu::sessions::SessionPart*> before;   ///< parts in front of the product's
     std::vector<calcu::sessions::SessionPart*> after;    ///< parts behind it
-    std::shared_ptr<cu59::FileIO> fileIO;                ///< null: plain files in the rig's folder
+    std::shared_ptr<const calcu::media::FileAccess> files;   ///< null: plain files in the rig's folder
     std::string saveFolder;                              ///< empty: the rig's folder
     fs::path traceFolder;                                ///< empty: the rig's folder
     bool noTraceFolder = false;                          ///< the Web: none, traces handed over (LIB-10 AC-26)
@@ -107,7 +107,7 @@ struct SessionRig {
         paths = rigPaths(file, o.saveFolder.empty() ? folder.path().string() : o.saveFolder, traces);
         cu59::TIAppSetup s = appSetup(file, o.model, *paths);
         if (!o.examplesFolder.empty()) s.examplesFolder = o.examplesFolder;
-        s.fileIO = std::move(o.fileIO);
+        s.files = std::move(o.files);
         app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u,
                                    std::move(o.before), std::move(o.after), o.start);
         me = session().listen(fe, std::move(o.services));
@@ -239,7 +239,7 @@ struct PartRig : SessionRig {
     std::shared_ptr<MapFileIO> io;
     MapFileIO& p;
     explicit PartRig(cu59::Model model = cu59::Model::TI59, std::shared_ptr<MapFileIO> files = std::make_shared<MapFileIO>())
-        : SessionRig(RigOptions{.model = model, .fileIO = files, .saveFolder = "cards"}), io(std::move(files)), p(*io) {}
+        : SessionRig(RigOptions{.model = model, .files = files, .saveFolder = "cards"}), io(std::move(files)), p(*io) {}
 
     /// The notices so far (what a direct call said goes out at the next call).
     const std::vector<std::string>& errors() {

@@ -79,9 +79,9 @@ public:
     const roms::test::TempFolder& romFolder() const { return roms_; }
     std::optional<machine::ModelId> startModel;
     std::string version_ = "1.0-test";
-    // LIB-5: the typing part's machine counts as paused (a press that waits
-    // never starts; the `key` command gives up after an hour).
-    bool typingPaused = false;
+    // LIB-5: every press of the test profiles waits for key readiness (with
+    // a machine that is never ready, the `key` command gives up after an hour).
+    void pressesWaitForReadiness();
     // LIB-11 D-11: the members the run asked, in order ("prepare <save
     // folder>", "sessionParts").
     roms::LookupResult prepare(RunSetup&) override;

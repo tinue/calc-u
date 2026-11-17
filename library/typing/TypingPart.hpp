@@ -32,16 +32,6 @@ protected:
     ~TypingProduct() = default;
 };
 
-// AC-20: whether the machine is paused for typing (a freeze); by default
-// MachineSession::paused(). Calc-U-59's TI freeze until M-53 (TIFreezeProbe).
-class PauseProbe {
-public:
-    virtual bool paused(sessions::SessionContext&) const = 0;
-
-protected:
-    ~PauseProbe() = default;
-};
-
 class TypingPart final : public sessions::SessionPart {
 public:
     explicit TypingPart(const TypingProduct&, sessions::Hosting = sessions::Hosting::Paced);
@@ -53,7 +43,6 @@ public:
     // The product's profiles, for a model before its machine is built (LIB-6:
     // `key` and `type` are checked when a preset is read).
     const TypingProduct& product() const { return product_; }
-    void setPauseProbe(const PauseProbe* p) { probe_ = p; }
 
     // SessionPart
     void attach(sessions::SessionSetup&) override;
@@ -70,7 +59,6 @@ private:
     const TypingProduct& product_;
     sessions::Hosting hosting_;
     TypingEngine engine_;
-    const PauseProbe* probe_ = nullptr;
     sessions::SessionContext* ctx_ = nullptr;
     // The machine generation the engine was last set to: a second
     // machineChanged for the same machine (a session in virtual time tells

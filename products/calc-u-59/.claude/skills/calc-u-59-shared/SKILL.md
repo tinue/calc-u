@@ -59,7 +59,7 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    attach and detach on `TIProductMachines`, LIB-8's `PaperPart`, LIB-10's
    `DebuggerPart`, LIB-7's `MediaPart` (the magnetic card, `app/TIMagneticCardKind`;
    the TI-59's place `card-reader`; slot-1's module listing,
-   `tiModuleListing`; the save folder through the host's `FileIO`; since
+   `tiModuleListing`; the save folder through the host's `media::FileAccess`, `TIAppSetup::files`; since
    M-55; a card file opened goes through its MediaOpener), LIB-13's `OpenPart` with the file kinds of
    `app/TIFileKinds`; then `ProgramMemoryPart` (`c59.partition`,
    `c59.program`, `c59.registers`), `TIDebugPart` (the debug panel's six

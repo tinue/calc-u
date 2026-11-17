@@ -29,8 +29,6 @@ const calcu::settings::ProductDecl& settingsDecl();
 const char* modelName(Model model);
 std::optional<Model> modelNamed(std::string_view name);
 
-using cu59::LedStyle;                                      // [display] led-style
-enum class KeyboardFeedback { Off, Haptic, Click };       // [keyboard] feedback
 enum class TraceLocation { AppSupport, ICloud, Folder };  // [trace] location (Swift, AC-24)
 
 // The folders a file dialog starts in, one key each in [folders] (AC-19):
@@ -58,55 +56,20 @@ public:
     calcu::settings::SettingsFile& file() { return m_file; }
     const calcu::settings::SettingsFile& file() const { return m_file; }
 
-    // [startup] model: a model, or none for `last` (also for a value that is
-    // neither, AC-9).
-    std::optional<Model> startupModelChoice() const;
-    void setStartupModelChoice(std::optional<Model> model);
-    // The model to start: the chosen one, else the last used, else the
-    // TI-59 (AC-20, EC-1).
-    Model startupModel() const;
-    // [startup] last-model, written by the app at each model switch.
-    std::optional<Model> lastUsedModel() const;
-    void setLastUsedModel(Model model);
+    // The other keys are read where they are used, through the settings file:
+    // the startup keys by LIB-18's start (settings::startupModel,
+    // settings::startupPreset), the places by LIB-9's Paths, [trace]
+    // max-file-size-mb by LIB-10's trace, [folders] by the shell's dialogs
+    // (settings/OpenFolders), the rows of the settings dialog by LIB-14's
+    // SettingsPart.
 
-    // [preset] <model>: the startup preset; empty means none (AC-10).
-    std::string startupPreset(Model model) const;
-
-    // [trace] max-file-size-mb: missing, zero or negative is 50 (AC-11).
-    int traceMaxFileSizeMB() const;
-    void setTraceMaxFileSizeMB(int mb);
-    // [trace] folder: the chosen trace folder (Qt6: empty = the save folder;
-    // Swift: the folder of `location = folder`, AC-24).
-    std::string traceFolder() const;
-    void setTraceFolder(const std::string& dir);
+    // [trace] location (the Swift frontend: whether iCloud traces can be
+    // used, C59-4 AC-12).
     TraceLocation traceLocation() const;
-    void setTraceLocation(TraceLocation location);
 
-    // [storage] save-folder (Qt6 only): empty = ~/Calc-U-59 (AC-13).
-    std::string saveFolderOverride() const;
-    void setSaveFolderOverride(const std::string& dir);
-
-    LedStyle ledStyle() const;
-    void setLedStyle(LedStyle style);
-    KeyboardFeedback keyboardFeedback() const;
-    void setKeyboardFeedback(KeyboardFeedback feedback);
-
-    // [folders] <kind> (design D-2): a fixed folder set in the settings, not
-    // changed by each Open, or, when none is set, the folder last used.
-    // openDir() is the fixed folder, empty when none is set; setOpenDir("")
-    // goes back to "<last used>", starting from the folder that was fixed.
-    std::string openDir(OpenFolder folder) const;
-    void setOpenDir(OpenFolder folder, const std::string& dir);
-    // The fixed folder, else the folder last used, else `home`.
-    std::string openStartDir(OpenFolder folder, const std::string& home) const;
-    // After a pick: the folder of `filePath` (absolute) unless a fixed one is set.
-    void rememberOpenFile(OpenFolder folder, const std::string& filePath);
-
+    // [window] (Qt6, AC-35).
     WindowState windowState() const;
     void setWindowState(const WindowState& state);
-    // [window] portrait-debug-page (Swift, iOS): the debugger as a third page.
-    bool portraitDebugPage() const;
-    void setPortraitDebugPage(bool on);
 
 private:
     calcu::settings::SettingsFile& m_file;

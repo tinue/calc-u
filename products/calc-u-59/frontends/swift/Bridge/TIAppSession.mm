@@ -197,19 +197,16 @@ namespace cs = calcu::sessions;
 /// LIB-7 D-30); a card that iCloud has not
 /// downloaded yet (`.name.icloud`) is started downloading and reads as there
 /// but not readable. On the session thread.
-class CoordinatedFiles final : public cu59::FileIO {
+class CoordinatedFiles final : public calcu::media::FileAccess {
 public:
     explicit CoordinatedFiles(id<TIAppSessionDelegate> d) : delegate_(d) {}
-    Read read(const std::string& path) override {
+    Read read(const std::string& path) const override {
         NSURL* url = [NSURL fileURLWithPath:ns(path)];
         __block NSData* data = nil;
         NSError* err = nil;
         [[[NSFileCoordinator alloc] init] coordinateReadingItemAtURL:url options:0 error:&err
                                                           byAccessor:^(NSURL* src) { data = [NSData dataWithContentsOfURL:src]; }];
-        if (data) {
-            auto* p = static_cast<const uint8_t*>(data.bytes);
-            return {std::vector<uint8_t>(p, p + data.length)};
-        }
+        if (data) return {std::string(static_cast<const char*>(data.bytes), data.length), false};
         NSString* placeholder = [[url URLByDeletingLastPathComponent]
             URLByAppendingPathComponent:[NSString stringWithFormat:@".%@.icloud", url.lastPathComponent]].path;
         const bool exists = [[NSFileManager defaultManager] fileExistsAtPath:url.path];
@@ -219,7 +216,7 @@ public:
         }
         return {std::nullopt, exists};
     }
-    bool write(const std::string& path, const std::string& text) override {
+    Written write(const std::string& path, const std::string& text) const override {
         NSData* fileData = [NSData dataWithBytes:text.data() length:text.size()];
         NSURL* url = [NSURL fileURLWithPath:ns(path)];
         __block BOOL ok = NO;
@@ -231,11 +228,11 @@ public:
             // file but not its folder, where an atomic write puts its temp file.
             if (!ok) ok = [fileData writeToURL:dst atomically:NO];
         }];
-        if (!ok || err) return false;
+        if (!ok || err) return {false, "the file cannot be written."};
         __weak id<TIAppSessionDelegate> d = delegate_;
         if (!url.path.lastPathComponent || ![url.lastPathComponent isEqualToString:@"ti58c.memory.yaml"])
             dispatch_async(dispatch_get_main_queue(), ^{ [d cardWritten]; });
-        return true;
+        return {true, {}};
     }
 
 private:
@@ -471,7 +468,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         setup.settings = file;
         setup.paths = paths;
         setup.examplesFolder = cpp(start.examplesFolder);
-        setup.fileIO = std::make_shared<CoordinatedFiles>(delegate);
+        setup.files = std::make_shared<CoordinatedFiles>(delegate);
         const bool traceAvailable = available == YES;
         setup.traceAvailable = [traceAvailable] { return traceAvailable; };
         // C59-5 AC-7 (the session asks none of them yet).

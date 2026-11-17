@@ -1045,3 +1045,14 @@ Questions (no answer needed for this step; nothing changed):
 - **Q-E4-2 (AC-6).** Should Calc-U-59's drop be accepted and opened after
   the drop, as Calc-U-1600's is (the drag source then shows the drop as
   taken and does not wait for the open)?
+
+## Part E simplification E-8 (2026-11-17, branch `es-dead`)
+
+`docs/reviews/e-simplification.md` §1 S-8. The upload folder of AC-8 is a field of the setups:
+`LibraryPartsSetup::uploadFolder` (into `OpenSetup::uploadFolder`), given
+by Calc-U-59's `TIAppSetup::uploadFolder` and Calc-U-1600's
+`SharpAppPartOptions::uploadFolder`, which the two Web engines
+(`frontends/web/bindings.cpp`) set to `WebStart::uploadsDir`. Both set it
+on the open part after it was built before (`setup().uploadFolder`), so
+`OpenPart`'s mutable `setup()` is gone; the const one stays (LIB-13's
+Part E simplification E-4 reads the limits through it).

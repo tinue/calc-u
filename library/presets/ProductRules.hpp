@@ -59,11 +59,11 @@ struct ExpectReading {
     std::string shows;   // what the display shows, for the reason
 };
 
-// The forms a place key takes (D-22): `<ID>[:<variant>]`, `{ name: <ID> }`,
-// `{ file: … }` (read by LIB-7's resolver from M-41; refused without one).
+// The forms a place key takes (D-22): `<ID>[:<variant>]`, `{ name: <ID> }`
+// (always taken), `{ file: … }` (read by LIB-7's resolver from M-41;
+// refused without one).
 struct PlaceKeyRule {
     bool bare = true;
-    bool byName = true;
     bool byFile = true;
     // The sentence for a `{ file: }` the place does not take (Calc-U-59's
     // slot-1, LIB-6 D-42); empty: the reader's own.

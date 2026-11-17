@@ -39,10 +39,7 @@ Value strings(const std::vector<std::string>& items) {
 } // namespace
 
 SharpWebPart::SharpWebPart(SharpAppPart& app, std::string uploadsDir, std::string version)
-    : m_app(app), m_uploadsDir(std::move(uploadsDir)), m_version(std::move(version)) {
-    // LIB-13 AC-8: several files of Upload Preset… become one folder here.
-    m_app.openPart().setup().uploadFolder = m_uploadsDir;
-}
+    : m_app(app), m_uploadsDir(std::move(uploadsDir)), m_version(std::move(version)) {}
 
 SharpWebPart::~SharpWebPart() = default;
 

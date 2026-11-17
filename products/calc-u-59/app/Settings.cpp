@@ -1,15 +1,10 @@
 #include "Settings.hpp"
-#include "files/Files.hpp"
-#include "settings/OpenFolders.hpp"
-#include "settings/Startup.hpp"
 #include <charconv>
-#include <filesystem>
 #include <system_error>
 
 namespace cu59::settings {
 
 namespace cs = calcu::settings;
-namespace fs = std::filesystem;
 
 namespace {
 
@@ -107,84 +102,11 @@ const char* openFolderKind(OpenFolder folder) {
     return "other";
 }
 
-std::optional<Model> Settings::startupModelChoice() const { return modelNamed(m_file.text("startup", "model")); }
-
-void Settings::setStartupModelChoice(std::optional<Model> model) {
-    m_file.set("startup", "model", model ? modelName(*model) : "last");
-}
-
-Model Settings::startupModel() const { return modelNamed(cs::startupModel(m_file)).value_or(Model::TI59); }
-
-std::optional<Model> Settings::lastUsedModel() const { return modelNamed(m_file.text("startup", "last-model")); }
-
-void Settings::setLastUsedModel(Model model) { m_file.set("startup", "last-model", modelName(model)); }
-
-std::string Settings::startupPreset(Model model) const { return cs::startupPreset(m_file, modelName(model)); }
-
-int Settings::traceMaxFileSizeMB() const { return static_cast<int>(m_file.integer("trace", "max-file-size-mb")); }
-
-void Settings::setTraceMaxFileSizeMB(int mb) { m_file.set("trace", "max-file-size-mb", std::to_string(mb)); }
-
-std::string Settings::traceFolder() const { return m_file.text("trace", "folder"); }
-
-void Settings::setTraceFolder(const std::string& dir) { m_file.set("trace", "folder", dir); }
-
 TraceLocation Settings::traceLocation() const {
     const std::string v = m_file.text("trace", "location");
     if (v == "icloud") return TraceLocation::ICloud;
     if (v == "folder") return TraceLocation::Folder;
     return TraceLocation::AppSupport;
-}
-
-void Settings::setTraceLocation(TraceLocation location) {
-    const char* v = location == TraceLocation::ICloud ? "icloud"
-                    : location == TraceLocation::Folder ? "folder"
-                                                        : "app-support";
-    m_file.set("trace", "location", v);
-}
-
-std::string Settings::saveFolderOverride() const { return m_file.text("storage", "save-folder"); }
-
-void Settings::setSaveFolderOverride(const std::string& dir) { m_file.set("storage", "save-folder", dir); }
-
-LedStyle Settings::ledStyle() const {
-    return m_file.text("display", "led-style") == "classic" ? LedStyle::Classic : LedStyle::Modernized;
-}
-
-void Settings::setLedStyle(LedStyle style) {
-    m_file.set("display", "led-style", style == LedStyle::Classic ? "classic" : "modernized");
-}
-
-KeyboardFeedback Settings::keyboardFeedback() const {
-    const std::string v = m_file.text("keyboard", "feedback");
-    if (v == "haptic") return KeyboardFeedback::Haptic;
-    if (v == "click") return KeyboardFeedback::Click;
-    return KeyboardFeedback::Off;
-}
-
-void Settings::setKeyboardFeedback(KeyboardFeedback feedback) {
-    const char* v = feedback == KeyboardFeedback::Haptic ? "haptic"
-                    : feedback == KeyboardFeedback::Click ? "click"
-                                                          : "off";
-    m_file.set("keyboard", "feedback", v);
-}
-
-std::string Settings::openDir(OpenFolder folder) const { return cs::fixedOpenFolder(m_file, openFolderKind(folder)); }
-
-void Settings::setOpenDir(OpenFolder folder, const std::string& dir) {
-    cs::setFixedOpenFolder(m_file, openFolderKind(folder), dir);   // "": back to the folder last used
-}
-
-std::string Settings::openStartDir(OpenFolder folder, const std::string& home) const {
-    return cs::openStartFolder(m_file, openFolderKind(folder), home);
-}
-
-void Settings::rememberOpenFile(OpenFolder folder, const std::string& filePath) {
-    const fs::path file = calcu::files::toPath(filePath);
-    std::error_code ec;
-    fs::path abs = fs::absolute(file, ec);
-    if (ec) abs = file;
-    cs::rememberOpenFolder(m_file, openFolderKind(folder), calcu::files::fromPathNative(abs.parent_path()));
 }
 
 WindowState Settings::windowState() const {
@@ -208,9 +130,5 @@ void Settings::setWindowState(const WindowState& w) {
     setNumber(m_file, "printer-width", w.printerWidth);
     setNumber(m_file, "debug-width", w.debugWidth);
 }
-
-bool Settings::portraitDebugPage() const { return m_file.boolean("window", "portrait-debug-page"); }
-
-void Settings::setPortraitDebugPage(bool on) { m_file.set("window", "portrait-debug-page", on ? "true" : "false"); }
 
 } // namespace cu59::settings

@@ -55,11 +55,6 @@ public:
     sessions::CallId send(const sessions::CommandName&, sessions::Value args = {}, Reply = {});
     sessions::CallId ask(const sessions::RequestName&, sessions::Value args = {}, Reply = {});
 
-    // The frontend's answers to the session's asks. Unset: the clipboard
-    // (LIB-8's ClipboardService) and open-url (QDesktopServices); anything
-    // else is not given. A handler answers through answer(), now or later.
-    void setServiceHandler(std::function<void(const sessions::ServiceAsk&)>);
-    void answer(sessions::CallId ask, sessions::ServiceAnswer);
     // Every message the listener takes (state, stream, asks, replies nobody
     // waits for), in order, after the host call it came in.
     void addMessageHandler(MessageHandler);
@@ -96,7 +91,6 @@ private:
     sessions::Listener listener_;
     QTimer* timer_;
     std::unique_ptr<ClipboardService> clipboard_;
-    std::function<void(const sessions::ServiceAsk&)> service_;
     std::vector<MessageHandler> handlers_;
     std::set<sessions::TopicName> streams_;
     bool inCall_ = false;

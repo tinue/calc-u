@@ -781,3 +781,16 @@ Small helpers written once (`docs/reviews/e-simplification.md` §1 S-7):
   names it with `using` as `presets` does. `settings` keeps its own
   `lowerAscii` (`settings/Declaration.hpp`), as `settings` includes no
   `machine`.
+
+## Part E simplification E-8 (2026-11-17, branch `es-dead`)
+
+`docs/reviews/e-simplification.md` §1 S-8. The library's own CTest entries
+(`calcu_library_tests`, `calcu_library_pty_tests`,
+`LibraryPlatformStoreCheck`, `LibraryWebNodeTests`, `LibraryWebPlaywright`,
+`calcu_cli.*`, `calcu_serve_python`) use the root's `calcu_add_test` with
+`WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}`, where `add_test` ran
+them; names, labels, working folders and the listing of `ctest -N` are
+unchanged. The library's test products read their arguments with
+`sessions/Args.hpp` (`textArg`, `integerArg`); their own copies in
+`sessions/tests/TestParts.hpp` and `web/tests/product/TestProduct.cpp`
+went.

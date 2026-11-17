@@ -27,7 +27,7 @@ void test_switch_and_paste(Model model) {
     CHECK(f.part().model() == model);
     const auto* cs = f.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
     CHECK(cs && cs->model == model && f.session().machineSession().generation() == 1);
-    CHECK(f.settings.lastUsedModel() == model);
+    CHECK(shared::sharpModel(f.settings.file().text("startup", "last-model")) == model);
     CHECK(f.listener.display() && f.listener.display()->on);
     CHECK(f.part().slotCount() == (model == calcu::machine::ModelId{"PC-1600"} ? 2 : 1));
     CHECK(f.part().slotModuleName(1).empty() && f.part().slotModuleName(2).empty() && f.part().slotModuleName(3).empty());

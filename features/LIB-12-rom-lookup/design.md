@@ -540,3 +540,15 @@ library's parts whole: `parts::LibraryPartsSetup::roms` is the
 this step). Calc-U-59's `TIAppSetup::roms` is the host's `LookupResult` too;
 `TIAppSetup::romsMissing` and Calc-U-1600's `RomsMissingPayload` are gone.
 The value form of the topic is unchanged.
+
+## Part E simplification E-8 (2026-11-17, branch `es-dead`)
+
+`docs/reviews/e-simplification.md` §1 S-8 (item 5 of the step). Calc-U-1600's ROM lookup stays in
+the core (`core/Machine/SharpRoms`), against §2's `app/`: the reason its
+comment gave (the CLIs and probes linked the core only until M-51) is
+gone, but the core's scan of module definition folders
+(`core/Connector/MemoryCardCatalog.hpp`, used by `SharpCatalogue`'s
+`addModuleDefinitions`) passes over the files of the full set through
+`sharp::isFullSetFile`, which needs `fullRomSet()`. Moving the lookup to
+`app/` would split the full set from that check or make the core call
+`app/`; the comment now gives this reason.

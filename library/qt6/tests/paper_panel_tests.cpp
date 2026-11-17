@@ -5,6 +5,7 @@
 // hosts them (AC-12 to AC-16, AC-18 to AC-20).
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
+#include "TestProductMachines.hpp"
 #include "paper/PaperPart.hpp"
 #include "paper/Picture.hpp"
 #include "peripherals/PeripheralsPart.hpp"
@@ -47,9 +48,12 @@ void settle() {
 // message to the panel and answering the clipboard asks after each call.
 struct PanelRig {
     peripherals::PeripheralsPart peripherals;
+    startup::test::TestProductMachines machines;
+    startup::MachineControl control{machines, nullptr};   // no build: no preset's origin (A-3)
     paper::PaperPart paperPart{mt::paperTestCatalogue(),
                                {paper::PrinterPaper{mt::kDotter, mt::td20Description()},
-                                paper::PrinterPaper{mt::kPlotter, mt::tp4Description()}}};
+                                paper::PrinterPaper{mt::kPlotter, mt::tp4Description()}},
+                               control};
     std::unique_ptr<AppSession> session;
     Listener listener;
     PaperPanel panel;

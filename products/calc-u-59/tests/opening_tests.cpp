@@ -13,6 +13,7 @@
 #include "../app/TIPresetKeys.hpp"
 #include "opening/OpenRequest.hpp"
 #include "opening/StartFile.hpp"
+#include "settings/OpenFolders.hpp"
 #include <filesystem>
 
 using namespace cu59;
@@ -251,10 +252,11 @@ TEST(lib13_ac14_open_with_and_start_open_as_what_it_is) {
 TEST(lib13_ec7_open_by_any_way_keeps_dialog_folders) {
     SessionRig r;
     CHECK(ready(r));
-    settings::Settings s(r.settings);
-    s.setOpenDir(settings::OpenFolder::Presets, "/fixed/presets");
-    const auto before = s.openStartDir(settings::OpenFolder::Presets, "/home");
-    const auto beforeAsm = s.openStartDir(settings::OpenFolder::AsmOverlays, "/home");
+    const std::string presets = settings::openFolderKind(settings::OpenFolder::Presets);
+    const std::string asmOverlays = settings::openFolderKind(settings::OpenFolder::AsmOverlays);
+    calcu::settings::setFixedOpenFolder(r.settings, presets, "/fixed/presets");
+    const auto before = calcu::settings::openStartFolder(r.settings, presets, "/home");
+    const auto beforeAsm = calcu::settings::openStartFolder(r.settings, asmOverlays, "/home");
     calcu::testing::TempFolder dir("calcu59-ec7");
     dir.write("p.ti59", kPreset);
     for (Way w : {Way::Drop, Way::OpenWith, Way::Start, Way::Dialog, Way::Harness}) {
@@ -262,8 +264,8 @@ TEST(lib13_ec7_open_by_any_way_keeps_dialog_folders) {
         CHECK(open(r, "c.asm", "Calc-U-59 ASM 2.0\nHEX:\n0A01\n", w, (dir.path() / "c.asm").string()).done);
         CHECK(ready(r));
     }
-    CHECK_EQ(s.openStartDir(settings::OpenFolder::Presets, "/home"), before);
-    CHECK_EQ(s.openStartDir(settings::OpenFolder::AsmOverlays, "/home"), beforeAsm);
+    CHECK_EQ(calcu::settings::openStartFolder(r.settings, presets, "/home"), before);
+    CHECK_EQ(calcu::settings::openStartFolder(r.settings, asmOverlays, "/home"), beforeAsm);
 }
 
 // ── E13-6: a refusal is a notice that names the file (AC-15) ─────────────────

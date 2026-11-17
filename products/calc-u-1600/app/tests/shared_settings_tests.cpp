@@ -70,20 +70,20 @@ TEST(lib9_ac26_declaration) {
     // The typed calls read those keys.
     TestSettings t;
     shared::Settings& s = t.settings;
-    CHECK(s.traceMaxFileSizeMB() == 50);
-    CHECK(!s.dapEnabled() && s.dapPort() == 32168);
+    CHECK(s.file().integer("trace", "max-file-size-mb") == 50);
+    CHECK(!s.file().boolean("debug", "dap-enabled") && s.file().integer("debug", "dap-port") == 32168);
     CHECK(s.startupModelPreference() == "last");
-    CHECK(s.instanceDirOverride().empty() && s.tapeDirOverride().empty() && s.traceDirOverride().empty() &&
-          s.serialLinkDirOverride().empty());
-    for (Model m : {calcu::machine::ModelId{"PC-1500"}, calcu::machine::ModelId{"PC-1500A"}, calcu::machine::ModelId{"PC-1600"}}) CHECK(s.defaultPresetPath(m).empty());
-    s.setDefaultPresetPath(calcu::machine::ModelId{"PC-1600"}, "examples:basic/hanoi.pc1600");
+    CHECK(s.file().text("storage", "save-folder").empty() && s.file().text("storage", "tape-folder").empty() && s.file().text("trace", "folder").empty() &&
+          s.file().text("serial", "link-folder").empty());
+    for (Model m : {calcu::machine::ModelId{"PC-1500"}, calcu::machine::ModelId{"PC-1500A"}, calcu::machine::ModelId{"PC-1600"}}) CHECK(s.file().text("preset", m.value).empty());
+    s.file().set("preset", "PC-1600", "examples:basic/hanoi.pc1600");
     CHECK(t.file.text("preset", "PC-1600") == "examples:basic/hanoi.pc1600");
-    s.setDapEnabled(true);
-    CHECK(t.file.raw("debug", "dap-enabled") == std::optional<std::string>("true") && s.dapEnabled());
-    s.setTraceMaxFileSizeMB(7);
-    CHECK(s.traceMaxFileSizeMB() == 7);
-    s.setTraceMaxFileSizeMB(0);  // AC-11
-    CHECK(s.traceMaxFileSizeMB() == 50);
+    s.file().set("debug", "dap-enabled", "true");
+    CHECK(t.file.raw("debug", "dap-enabled") == std::optional<std::string>("true") && s.file().boolean("debug", "dap-enabled"));
+    s.file().set("trace", "max-file-size-mb", "7");
+    CHECK(s.file().integer("trace", "max-file-size-mb") == 7);
+    s.file().set("trace", "max-file-size-mb", "0");  // AC-11
+    CHECK(s.file().integer("trace", "max-file-size-mb") == 50);
     s.setStartupModelPreference("PC-1600");
     CHECK(t.file.text("startup", "model") == "PC-1600");
 }
@@ -92,9 +92,9 @@ TEST(lib9_ac26_declaration) {
 TEST(lib9_ac27_startup_last_without_last_model_is_pc1500a) {
     TestSettings t;
     shared::Settings& s = t.settings;
-    CHECK(!s.lastUsedModel());
+    CHECK(!shared::sharpModel(s.file().text("startup", "last-model")));
     CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1500A"});
-    s.setLastUsedModel(calcu::machine::ModelId{"PC-1600"});
+    s.file().set("startup", "last-model", "PC-1600");
     CHECK(t.file.text("startup", "last-model") == "PC-1600");
     CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1600"});
     s.setStartupModelPreference("PC-1500");
@@ -111,14 +111,14 @@ TEST(lib9_ac28_dap_port_outside_range_is_32168) {
     TestSettings t;
     shared::Settings& s = t.settings;
     for (int bad : {80, 1023, 65536, 0, -1}) {
-        s.setDapPort(bad);
-        CHECK(s.dapPort() == 32168);
+        s.file().set("debug", "dap-port", std::to_string(bad));
+        CHECK(s.file().integer("debug", "dap-port") == 32168);
     }
     t.file.set("debug", "dap-port", "abc");
-    CHECK(s.dapPort() == 32168);
+    CHECK(s.file().integer("debug", "dap-port") == 32168);
     for (int good : {1024, 40000, 65535}) {
-        s.setDapPort(good);
-        CHECK(s.dapPort() == good);
+        s.file().set("debug", "dap-port", std::to_string(good));
+        CHECK(s.file().integer("debug", "dap-port") == good);
     }
 }
 
@@ -170,7 +170,7 @@ TEST(lib9_ac31_first_start_defaults_and_writes_file) {
 
     shared::Settings s(file);
     CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1500A"});
-    CHECK(s.windowWidth() == 900 && s.dapPort() == 32168 && s.traceMaxFileSizeMB() == 50);
+    CHECK(s.windowWidth() == 900 && s.file().integer("debug", "dap-port") == 32168 && s.file().integer("trace", "max-file-size-mb") == 50);
 
     // The save folder is ~/Calc-U-1600 on Qt6 (LIB-9 AC-13).
     shared::AppPaths paths(s, dirs, shared::BundleDirs{(tmp.path() / "bundle").generic_string(), {}});
@@ -225,7 +225,7 @@ TEST(lib9_ac32_web_keeps_and_ignores_dap_serial_window_folders) {
 
     // A change the Web makes keeps them.
     s.setStartupModelPreference("PC-1600");
-    s.setDefaultPresetPath(calcu::machine::ModelId{"PC-1500"}, "examples:x.pc1500");
+    s.file().set("preset", "PC-1500", "examples:x.pc1500");
     const std::string after = readText(ini);
     for (const char* line : {"dap-enabled = true", "link-folder = /links", "save-folder = /elsewhere",
                              "width = 1200", "host-drive = fixed:/drive", "kept = yes", "model = PC-1600",

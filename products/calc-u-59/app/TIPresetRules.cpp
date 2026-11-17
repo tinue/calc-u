@@ -157,7 +157,6 @@ calcu::presets::PlaceKeyRule TIModelRules::placeKey(const calcu::machine::PlaceN
     calcu::presets::PlaceKeyRule r;
     if (place == kTIModulePlace) {   // AC-35, D-42
         r.bare = false;
-        r.byName = true;
         r.byFile = false;
         r.noFile = "A Solid State ROM module is named by name: in this release.";
     } else {

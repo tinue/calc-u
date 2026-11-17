@@ -68,6 +68,9 @@ struct SharpAppPartOptions {
     // unless asked for (requestSerialLink; C1600-5 AC-9).
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
     bool serialLinksOnRequest = false;
+    // The Web: where several files of Upload Preset… become one folder
+    // (LIB-13 AC-8); unset: none.
+    std::optional<std::string> uploadFolder;
 };
 
 // ── SharpAppPart: Calc-U-1600's app layer in the library's app session ───
@@ -115,8 +118,8 @@ public:
     // commands `media.*`, autosave (app/SharpMediaKinds for the formats).
     calcu::media::MediaPart& mediaPart() { return m_lib.media(); }
     SharpLoaderPart& loaderPart() { return m_loaderPart; }
-    // LIB-13: `open`, `open-would-take`; a Web host sets its upload folder
-    // (setup().uploadFolder) before the session is built.
+    // LIB-13: `open`, `open-would-take` (a Web host's upload folder:
+    // SharpAppPartOptions::uploadFolder).
     calcu::opening::OpenPart& openPart() { return m_lib.open(); }
     // The typing part (LIB-5): frontends send its commands (host-key-down,
     // screen-key-down, paste, ...); the debugger's auto-start types its line

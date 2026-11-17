@@ -63,11 +63,10 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     setup.paths = &parts->settings.paths();
     setup.screenshotFolder = start.dirs.saveFolder;   // a preset's screenshot: written there
     setup.examplesFolder = start.presetsDir;   // the bundle (LIB-15 AC-16)
+    setup.uploadFolder = start.uploadsDir;     // LIB-13 AC-8: several files of the preset picker's upload
     parts->app = std::make_unique<cu59::TIAppPart>(std::move(setup));
     parts->web = std::make_unique<cu59::TIWebPart>();
     parts->web->bind(*parts->app);
-    // LIB-13 AC-8: several files of the preset picker's upload become one folder here.
-    parts->app->libraryParts().open().setup().uploadFolder = start.uploadsDir;
 
     // The one order (parts::LibraryParts): LIB-4's ControlPart (D-13: the
     // control state with C59-4's product entries c59.asm-run, c59.trace,

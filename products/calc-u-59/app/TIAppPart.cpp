@@ -68,32 +68,11 @@ std::function<bool()> traceAvailable(const TIAppSetup& s) {
     };
 }
 
-// The host's file access of the save folder as the media part's (LIB-7 D-30;
-// C59-5 D-6): Swift's coordinated iCloud access, else the plain one.
-class FileIOAccess final : public calcu::media::FileAccess {
-public:
-    explicit FileIOAccess(std::shared_ptr<FileIO> io) : io_(std::move(io)) {}
-    Read read(const std::string& path) const override {
-        FileIO::Read r = io_->read(path);
-        if (r.unreadable) return {std::nullopt, true};
-        if (!r.raw) return {};
-        return {std::string(r.raw->begin(), r.raw->end()), false};
-    }
-    Written write(const std::string& path, const std::string& bytes) const override {
-        if (io_->write(path, bytes)) return {true, {}};
-        return {false, "the file cannot be written."};
-    }
-
-private:
-    std::shared_ptr<FileIO> io_;
-};
-
 } // namespace
 
 TIAppPart::TIAppPart(TIAppSetup setup)
     : m_setup(std::move(setup)),
-      m_files(m_setup.paths->saveFolder(), m_setup.fileIO),
-      m_mediaFiles(std::make_shared<FileIOAccess>(m_setup.fileIO ? m_setup.fileIO : plainFileIO())),
+      m_files(m_setup.paths->saveFolder(), m_setup.files),
       m_keeper(m_files, [this](std::string sentence) { if (m_ctx) m_ctx->notice(std::move(sentence)); }),
       m_machines([this] { return m_keeper.contentForBuild(); }),
       m_rules(TIKeywordSetup{[this](sessions::SessionContext& c, const CueCardContent& card) {
@@ -118,6 +97,7 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     s.traceAvailable = m_setup.traceAvailable;
     s.placesAtStart = true;   // as before Part E (LIB-10, LIB-6 E-1)
     s.screenshotFolder = m_setup.screenshotFolder;
+    s.uploadFolder = m_setup.uploadFolder;
     s.typing = &typingProduct();
     s.hosting = m_setup.hosting;
     s.presetRules = &m_rules;
@@ -130,13 +110,12 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     s.controlRules = {&m_debugPart};   // C59-4 AC-25
     // LIB-7 59 (M-55): the magnetic card in the save folder, slot-1's modules.
     s.mediaKinds = {magneticCardKind()};
-    s.mediaFiles = m_mediaFiles;
+    s.mediaFiles = m_files.files();   // the host's (C59-5 D-6), else the plain one
     s.moduleListing = tiModuleListing(m_setup.roms.set);
     return s;
 }
 
 TIAppPart::~TIAppPart() {
-    m_lib.typing().engine().setObserver(nullptr);
     m_session.reset();
 }
 

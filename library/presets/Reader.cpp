@@ -242,7 +242,7 @@ std::optional<PlaceRequest> readPlace(const std::string& key, const YamlNode& v,
             ctx.error(line, key + ": a reference by file: is not read by this release; use name:.");
             return std::nullopt;
         }
-        if (!rule.byName || !name->isScalar()) {
+        if (!name->isScalar()) {
             ctx.error(line, key + ": does not take a reference by name:.");
             return std::nullopt;
         }

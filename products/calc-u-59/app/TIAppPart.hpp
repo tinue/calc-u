@@ -146,8 +146,8 @@ struct TIAppSetup {
     calcu::settings::SettingsFile* settings = nullptr;
     const calcu::settings::Paths* paths = nullptr;
     /// The save folder's file access (cards and the constant memory file):
-    /// null: plain file I/O; Swift: the coordinated iCloud access (C59-5 D-6, LIB-7 D-30).
-    std::shared_ptr<FileIO> fileIO;
+    /// null: the plain one; Swift: the coordinated iCloud access (C59-5 D-6, LIB-7 D-30).
+    std::shared_ptr<const calcu::media::FileAccess> files;
     /// Swift: whether the trace location can be used (iCloud, C59-4 AC-12);
     /// null: always.
     std::function<bool()> traceAvailable;
@@ -157,6 +157,9 @@ struct TIAppSetup {
     /// The bundled examples (examples/ as bundle.yaml lists them; LIB-6
     /// AC-31, AC-33); empty: none (a bundle path is refused).
     std::string examplesFolder;
+    /// The Web: where several files of the preset picker's upload become one
+    /// folder (LIB-13 AC-8); unset: none.
+    std::optional<std::string> uploadFolder;
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
     /// The harness (LIB-11 §11.3): the debug panel's tabs computed as if
     /// shown, so that `state calculator-debug` reads them (TIDebugSetup).
@@ -286,8 +289,7 @@ private:
     const calcu::debugger::RunControl& runControl() const;
     calcu::machine::Machine* machine() const;
     TIAppSetup m_setup;
-    TIFileAccess m_files;
-    std::shared_ptr<const calcu::media::FileAccess> m_mediaFiles;   ///< m_setup.fileIO as the media part's (D-30)
+    TIFileAccess m_files;   ///< its file access is the media part's too (D-30)
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
 

@@ -102,7 +102,7 @@ TEST(test_operations_and_selection) {
     CHECK(f.start());
     CHECK(f.model("PC-1600"));
     CHECK(f.part().model() == calcu::machine::ModelId{"PC-1600"});
-    CHECK(f.settings.lastUsedModel() == calcu::machine::ModelId{"PC-1600"});
+    CHECK(shared::sharpModel(f.settings.file().text("startup", "last-model")) == calcu::machine::ModelId{"PC-1600"});
 
     CHECK(f.toggle("CE-1600P") && f.part().ce1600pAttached());
     CHECK(f.toggle("CE-1600P") && !f.part().ce1600pAttached());
@@ -269,7 +269,7 @@ TEST(test_pick_model) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
-    f.settings.setDefaultPresetPath(calcu::machine::ModelId{"PC-1500"}, "examples:startup/default-pc1500.pc1500");
+    f.settings.file().set("preset", "PC-1500", "examples:startup/default-pc1500.pc1500");
     CHECK(f.model("PC-1500"));
     CHECK(f.part().model() == calcu::machine::ModelId{"PC-1500"});
     CHECK(f.part().ce150Attached());   // the startup preset's plotter
@@ -283,8 +283,8 @@ TEST(test_pick_model) {
 TEST(test_example_ref_default_preset) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
-    f.settings.setDefaultPresetPath(calcu::machine::ModelId{"PC-1500A"}, "examples:startup/default-pc1500a.pc1500a");
-    f.settings.setDefaultPresetPath(calcu::machine::ModelId{"PC-1500"}, "examples:basic/hanoi.pc1600");
+    f.settings.file().set("preset", "PC-1500A", "examples:startup/default-pc1500a.pc1500a");
+    f.settings.file().set("preset", "PC-1500", "examples:basic/hanoi.pc1600");
     CHECK(f.start("PC-1500A"));
     CHECK(f.part().ce150Attached());
     CHECK(f.model("PC-1500"));

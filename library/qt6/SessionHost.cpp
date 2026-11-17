@@ -82,13 +82,6 @@ sessions::CallId SessionHost::ask(const sessions::RequestName& n, sessions::Valu
     return listener_.ask(n, std::move(args), std::move(reply));
 }
 
-void SessionHost::setServiceHandler(std::function<void(const sessions::ServiceAsk&)> h) { service_ = std::move(h); }
-
-void SessionHost::answer(sessions::CallId ask, sessions::ServiceAnswer a) {
-    flushHeld();
-    session_.answer(ask, std::move(a));
-}
-
 void SessionHost::addMessageHandler(MessageHandler h) { handlers_.push_back(std::move(h)); }
 
 sessions::Value SessionHost::value(const sessions::TopicName& t) const {
@@ -110,10 +103,9 @@ void SessionHost::flushHeld() {
 }
 
 void SessionHost::dispatch(const sessions::Message& m) {
-    if (const auto* a = std::get_if<sessions::ServiceAsk>(&m)) {
-        if (service_) service_(*a);
-        else defaultService(*a);
-    }
+    // The session's asks: the clipboard (LIB-8's ClipboardService) and
+    // open-url (QDesktopServices); anything else is not given.
+    if (const auto* a = std::get_if<sessions::ServiceAsk>(&m)) defaultService(*a);
     for (const auto& h : handlers_) h(m);
     if (const auto* s = std::get_if<sessions::StateMessage>(&m)) emit topicChanged(QString::fromStdString(s->topic.value));
     if (const auto* s = std::get_if<sessions::StreamMessage>(&m)) {

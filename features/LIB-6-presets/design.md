@@ -1378,3 +1378,10 @@ Web a screenshot is offered as a download (Calc-U-1600 does so); Calc-U-59's
 Web writes it into its save folder, where the user cannot reach it. Should
 Calc-U-59's Web offer the download too (then the setting above goes and a
 ledger row is added)?
+
+## Part E simplification E-8 (2026-11-17, branch `es-dead`)
+
+`docs/reviews/e-simplification.md` §1 S-8. `PlaceKeyRule::byName` (§3, D-22) is gone: no product
+refused `{ name: }` (Calc-U-59's slot-1 set it true, Calc-U-1600 left the
+default), so a place key always takes a reference by name; `bare`,
+`byFile` and `noFile` stay.

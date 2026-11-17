@@ -81,7 +81,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `SevenSegment` | 7-segment pattern of every display glyph |
 | `LedGeometry` | Segment polygons (modernized), dot grids (classic), decimal point, style parameters |
 | `Bcd` | Register BCD encoding, register lines, `parseDecimal` (a `data:` value) |
-| `Settings` | The settings file `Calc-U-59.ini` (LIB-9): `settingsDecl()` with every key, default and accepted value, and typed calls over the library's `calcu::settings::SettingsFile` |
+| `Settings` | The settings file `Calc-U-59.ini` (LIB-9): `settingsDecl()` with every key, default and accepted value (read and written through the library's `calcu::settings::SettingsFile`), and typed calls for what a frontend reads itself: the Qt6 window state, the Swift trace location |
 | `TextUtil` | Foundation-compatible string helpers, so ported parsers keep their edge cases |
 
 Each header's top comment says what the module is and where its format or

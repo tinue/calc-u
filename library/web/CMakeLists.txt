@@ -56,14 +56,14 @@ if(CALCU_TESTS)
   endif()
   find_program(CALCU_NODE node)
   if(CALCU_NODE)
-    add_test(NAME LibraryWebNodeTests
-             COMMAND ${CALCU_NODE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/build.test.js
-                     ${CMAKE_CURRENT_SOURCE_DIR}/tests/shell_model.test.js    # LIB-14: the shell's models
-                     ${CMAKE_CURRENT_SOURCE_DIR}/tests/host_keys.test.js)     # LIB-5: host keys
-    set_tests_properties(LibraryWebNodeTests PROPERTIES LABELS frequent)
+    calcu_add_test(LibraryWebNodeTests frequent
+                   COMMAND ${CALCU_NODE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/build.test.js
+                           ${CMAKE_CURRENT_SOURCE_DIR}/tests/shell_model.test.js    # LIB-14: the shell's models
+                           ${CMAKE_CURRENT_SOURCE_DIR}/tests/host_keys.test.js      # LIB-5: host keys
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endif()
-  if(CALCU_TESTS_LONGER AND NOT WIN32)
-    add_test(NAME LibraryWebPlaywright COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/run-tests.sh --reporter=line)
-    set_tests_properties(LibraryWebPlaywright PROPERTIES LABELS longer TIMEOUT 900)
+  if(NOT WIN32)
+    calcu_add_test(LibraryWebPlaywright longer COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/run-tests.sh --reporter=line
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} PROPERTIES TIMEOUT 900)
   endif()
 endif()

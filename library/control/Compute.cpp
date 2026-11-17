@@ -1,5 +1,6 @@
 #include "control/Compute.hpp"
 #include "machine/Attach.hpp"
+#include "peripherals/Controls.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <algorithm>
 #include <cstddef>
@@ -32,6 +33,7 @@ public:
         for (const auto& p : m_.descriptor().places) placeWalk(PlacePath{{p.name}}, nullptr, out);
         mediaPlaces(out);
         panels(out);
+        controls(out);
         actions(out);
         for (const ControlRules* r : setup_.rules)
             if (r) r->productEntries(m_, out.productEntries);
@@ -187,6 +189,14 @@ private:
                 break;
             }
         out.panels.push_back(std::move(panel));
+    }
+
+    // AC-21: the controls of each plugged-in peripheral, in the order of the
+    // place walk, each owner's in its descriptor's order (LIB-2 AC-14).
+    void controls(ControlState& out) const {
+        for (const machine::PlugEntry* p : walked_)
+            for (const auto& c : peripherals::controlsOf(m_, machine::PeripheralOwner{p->peripheral, p->place}))
+                out.controls.push_back(ControlEntry{p->place, p->peripheral, c});
     }
 
     void actions(ControlState& out) const {

@@ -1,6 +1,7 @@
 #pragma once
 #include "machine/Descriptor.hpp"
 #include "machine/Ids.hpp"
+#include "peripherals/Controls.hpp"
 #include "sessions/Messages.hpp"
 #include "sessions/Payload.hpp"
 #include "sessions/Value.hpp"
@@ -80,6 +81,15 @@ struct PanelEntry {
     bool operator==(const PanelEntry&) const = default;
 };
 
+// AC-21: one control of a plugged-in peripheral (LIB-2 AC-14), named by its
+// owner, with its form and its position (a key down, a switch on).
+struct ControlEntry {
+    machine::PlacePath place;
+    machine::PeripheralId peripheral;
+    peripherals::ControlInfo control;
+    bool operator==(const ControlEntry&) const = default;
+};
+
 // The actions that start an operation and are not a choice among entries
 // (AC-1, OQ-1), by their command names (LIB-18: reset, cold-boot; LIB-6:
 // load-preset; LIB-13: open), in this order.
@@ -110,13 +120,15 @@ struct ControlState final : sessions::PayloadOf<ControlState> {
     std::vector<PlaceEntry> places;
     std::vector<MediaPlaceEntry> mediaPlaces;
     std::vector<PanelEntry> panels;
+    std::vector<ControlEntry> controls;   // AC-21: in the order of the place walk, each owner's in its descriptor's
     std::vector<ActionEntry> actions;
     std::vector<ProductEntry> productEntries;
 
     // The fields by ==, the product entries by name and Payload::equals.
     bool same(const ControlState&) const;
     // §3.6: one object, keys in the order of the fields; `reason` only where
-    // `available` is false; `product` as {name: value}.
+    // `available` is false; `controls` as [{place, peripheral, id, form, on}];
+    // `product` as {name: value}.
     sessions::Value toValue() const override;
 
     // Lookups for translators and tests; nullptr when not listed.

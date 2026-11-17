@@ -58,9 +58,10 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
 2. **Listen to it** (`AppSession::listen`) with the host services you offer;
    keep a `calcu::sessions::TopicMirror` of what it sends: the library's
    topics (among them LIB-4's `control-state`, from which every control
-   about the machine is drawn, LIB-8's `papers`, `paper <owner>`,
+   about the machine is drawn, the PC-100C's PRINT, ADV and TRACE with their
+   positions among them (`controls`), LIB-8's `papers`, `paper <owner>`,
    `paper-copies` and LIB-10's `run-state`, `trace`) and the product's
-   `c59.*` topics (`c59.led`, `c59.printer` (the PC-100C's TRACE),
+   `c59.*` topics (`c59.calc-indicator` (the LED frame and the C indicator),
    `c59.cue-card` (the cue card, its corner on show and lit); full speed is the library's `speed` command and `busy` topic,
    the library's `media` (the card reader `card-reader` and `slot-1`: what they
    hold, the pickers; send `media.choose`, `media.start-new`, `media.eject`),

@@ -1,10 +1,11 @@
-// LIB-4 design L1, L4 to L6: the payload, the lists and what a model lacks
-// (AC-1, AC-5, EC-1, EC-3, EC-4).
+// LIB-4 design L1, L4 to L6, L13: the payload, the lists, what a model lacks
+// and the controls of what is plugged in (AC-1, AC-5, AC-21, EC-1, EC-3, EC-4).
 #include "TestControlRules.hpp"
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 #include "control/Compute.hpp"
 #include "control/ControlState.hpp"
+#include "peripherals/Controls.hpp"
 #include "startup/StartupPart.hpp"
 #include <memory>
 #include <string>
@@ -52,7 +53,7 @@ TEST(control_state_value_round_trip) {
     const std::string t = toText(s.toValue());
     // One object, keys in the order of the fields (design §3.6).
     const char* keys[] = {"\"models\":", "\"model\":", "\"variants\":", "\"variant\":", "\"places\":",
-                          "\"mediaPlaces\":", "\"panels\":", "\"actions\":", "\"product\":"};
+                          "\"mediaPlaces\":", "\"panels\":", "\"controls\":", "\"actions\":", "\"product\":"};
     std::size_t last = 0;
     for (const char* k : keys) {
         const std::size_t at = t.find(k);
@@ -270,4 +271,48 @@ TEST(ec4_peripheral_media_place_owned_by_peripheral_no_place_for_it) {
     const std::string t = toText(s.toValue());
     CHECK(contains(t, "{\"id\":\"hub-disk\",\"owner\":{\"place\":\"a\",\"peripheral\":\"test-hub\"},\"kind\":\"test-disk\","
                       "\"passage\":\"holding\""));
+}
+
+// ── L13: the controls of what is plugged in (AC-21) ─────────────────────
+
+TEST(ac21_controls_of_plugged_peripherals_with_place_form_and_position) {
+    using calcu::machine::ControlForm;
+    using calcu::machine::ControlId;
+    // Nothing with controls plugged in: none listed (a module has none).
+    CHECK(computeControlState(*seg(), testSetup(), false).controls.empty());
+    CHECK(computeControlState(*seg({plug("slot-1", mt::kModule)}), testSetup(), false).controls.empty());
+    // The printer's three, in the descriptor's order, with their owner.
+    auto m = seg({plug("slot-1", mt::kModule), plug("printer", mt::kPrinter)});
+    const ControlState s = computeControlState(*m, testSetup(), false);
+    CHECK_EQ(s.controls.size(), std::size_t(3));
+    if (s.controls.size() != 3) return;
+    const char* ids[] = {"online", "feed", "trace"};
+    const ControlForm forms[] = {ControlForm::Switch, ControlForm::Key, ControlForm::Switch};
+    for (std::size_t i = 0; i < 3; ++i) {
+        CHECK(s.controls[i].place == at({"printer"}) && s.controls[i].peripheral == mt::kPrinter);
+        CHECK(s.controls[i].control.id == ControlId{ids[i]} && s.controls[i].control.form == forms[i]);
+        CHECK(!s.controls[i].control.on);
+    }
+    // A switch moved and a key held: their positions, and the state differs.
+    const calcu::machine::Owner owner = calcu::machine::PeripheralOwner{mt::kPrinter, at({"printer"})};
+    calcu::peripherals::Controls* c = calcu::peripherals::controlsCapability(*m, owner);
+    CHECK(c != nullptr);
+    if (!c) return;
+    c->set(ControlId{"trace"}, true);
+    c->press(ControlId{"feed"});
+    const ControlState moved = computeControlState(*m, testSetup(), false);
+    CHECK(moved.controls.size() == 3 && moved.controls[1].control.on && moved.controls[2].control.on);
+    CHECK(!moved.same(s));
+    // The value form: {place, peripheral, id, form, on}, after the panels.
+    const std::string t = toText(moved.toValue());
+    CHECK(contains(t, "\"controls\":[{\"place\":\"printer\",\"peripheral\":\"test-printer\",\"id\":\"online\","
+                      "\"form\":\"switch\",\"on\":false},{\"place\":\"printer\",\"peripheral\":\"test-printer\","
+                      "\"id\":\"feed\",\"form\":\"key\",\"on\":true},{\"place\":\"printer\",\"peripheral\":\"test-printer\","
+                      "\"id\":\"trace\",\"form\":\"switch\",\"on\":true}]"));
+    // A peripheral on a peripheral's place: the place path names it.
+    const ControlState nested = computeControlState(*dotWithHubAndPrinter(), testSetup(), false);
+    CHECK(nested.controls.size() == 3 && nested.controls[0].place == at({"a", "jack"}));
+    // Unplugged: gone.
+    CHECK(!m->detach(at({"printer"}), mt::kPrinter, mt::testCatalogue()).refused);
+    CHECK(computeControlState(*m, testSetup(), false).controls.empty());
 }

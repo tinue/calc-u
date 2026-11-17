@@ -69,6 +69,20 @@ std::string pluggedIn(SessionRig& r, const std::string& place) {
     }
     return {};
 }
+// A control's position in the control state's `controls` (LIB-4 AC-21).
+bool controlOn(SessionRig& r, const std::string& place, const std::string& id) {
+    const Value v = controlValue(r);
+    const Value* cs = v.find("controls");
+    if (!cs || !cs->elements()) return false;
+    for (const auto& c : *cs->elements()) {
+        const Value* at = c.find("place");
+        const Value* name = c.find("id");
+        const Value* on = c.find("on");
+        if (at && at->string() && *at->string() == place && name && name->string() && *name->string() == id)
+            return on && on->boolean() && *on->boolean();
+    }
+    return false;
+}
 
 } // namespace
 
@@ -76,10 +90,14 @@ std::string pluggedIn(SessionRig& r, const std::string& place) {
 // flag's action moves its topic on.
 TEST(lib3_ac29_mirror_holds_every_change_flag) {
     SessionRig r;
-    for (const auto* t : {&calcu::control::kControlStateTopic, &topics::kLed, &topics::kCueCard, &topics::kPrinter, &calcu::media::kMediaTopic,
+    for (const auto* t : {&calcu::control::kControlStateTopic, &topics::kCalcIndicator, &topics::kCueCard, &calcu::media::kMediaTopic,
                           &topics::kCalculatorDebug, &topics::kCpuDebug,
                           &topics::kHeatmap, &topics::kAsmOverlay, &topics::kDebugView})
         CHECK(r.fe.mirror.state(*t) != nullptr);
+    // Release prep 3: c59.led is c59.calc-indicator; c59.printer went (the
+    // PC-100C's place and its TRACE are the control state's, LIB-4 AC-21).
+    CHECK(r.fe.mirror.state(TopicName{"c59.led"}) == nullptr);
+    CHECK(r.fe.mirror.state(TopicName{"c59.printer"}) == nullptr);
     // The model and the module: LIB-4's control state (C59-8: c59.model went).
     CHECK_EQ(controlModel(r), std::string("TI-59"));
     CHECK_EQ(pluggedIn(r, "slot-1"), std::string("ML"));
@@ -95,7 +113,7 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
     CHECK(moves(calcu::control::kControlStateTopic, [&] { r.model("TI-58"); }));
     CHECK_EQ(controlModel(r), std::string("TI-58"));
     // DisplayChanged
-    CHECK(moves(topics::kLed, [&] { r.tap(83); }));   // 5
+    CHECK(moves(topics::kCalcIndicator, [&] { r.tap(83); }));   // 5
     r.model("TI-59");
     r.runFor(100ms);
     {   // CardChanged: the library's `media` topic (M-55, LIB-7 59); CueCardChanged: the card on show
@@ -110,16 +128,18 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
         CHECK(r.state<TICueCardState>(topics::kCueCard)->onShow);
     }
     // PrinterChanged: the PC-100C attached, TRACE through LIB-2's set-control
-    // (the paper panel's; Part E simplification E-3)
-    CHECK(moves(topics::kPrinter, [&] {
+    // (the paper panel's; Part E simplification E-3), both in the control
+    // state (release prep 3; LIB-4 AC-21)
+    CHECK(moves(calcu::control::kControlStateTopic, [&] {
         r.send(calcu::startup::kAttachCommand, Value::object({{"place", "printer"}, {"peripheral", "PC-100C"}}));
     }));
     CHECK(r.until([&] { return !r.session().context().busy(); }));
-    CHECK(r.state<TIPrinterState>(topics::kPrinter)->connected);
-    CHECK(moves(topics::kPrinter, [&] {
+    CHECK_EQ(pluggedIn(r, "printer"), std::string("PC-100C"));
+    CHECK(!controlOn(r, "printer", "TRACE"));
+    CHECK(moves(calcu::control::kControlStateTopic, [&] {
         r.send(calcu::peripherals::kSetControlCommand, Value::object({{"peripheral", "PC-100C"}, {"control", "TRACE"}, {"on", true}}));
     }));
-    CHECK(r.state<TIPrinterState>(topics::kPrinter)->trace);
+    CHECK(controlOn(r, "printer", "TRACE"));
     // RunStateChanged: the library's `speed` and `busy` (c59.full-speed and the
     // interim topic c59.run-state went in M-59, c59.web.run-state in E-3).
     r.send(calcu::sessions::kSpeedCommand, Value::object({{"full", true}}));
@@ -218,7 +238,7 @@ TEST(lib3_ac32_printer_attach_is_operation) {
     CHECK(r.until([&] { return r.reply(id) != nullptr; }));
     CHECK(r.reply(id)->done && !r.busy());
     r.frame();
-    CHECK(r.state<TIPrinterState>(topics::kPrinter)->connected);
+    CHECK_EQ(pluggedIn(r, "printer"), std::string("PC-100C"));
     CHECK(r.machine().isKeyReady());
 }
 
@@ -231,7 +251,7 @@ TEST(lib3_ac32_updates_during_preset) {
                                                         "  - regular-speed:\n  - key: 1 2nd Prt\n  - key: 2 2nd Prt\n  - let-it-finish:\n"},
                                             {"name", "p.ti59"}}));
     int ledSetsWhileBusy = 0, paperWhileBusy = 0;
-    std::uint64_t led = serialOf(r, topics::kLed);
+    std::uint64_t led = serialOf(r, topics::kCalcIndicator);
     // The paper: the library's stream `paper PC-100C` (LIB-8, M-53).
     auto paperMessages = [&] {
         int n = 0;
@@ -243,7 +263,7 @@ TEST(lib3_ac32_updates_during_preset) {
     while (r.reply(id) == nullptr && r.now < calcu::pacing::WallTime(std::chrono::hours(2))) {
         r.frame();
         if (!r.busy()) continue;
-        if (serialOf(r, topics::kLed) != led) ++ledSetsWhileBusy, led = serialOf(r, topics::kLed);
+        if (serialOf(r, topics::kCalcIndicator) != led) ++ledSetsWhileBusy, led = serialOf(r, topics::kCalcIndicator);
         if (paperMessages() != paper) ++paperWhileBusy, paper = paperMessages();
     }
     CHECK(ledSetsWhileBusy > 0);

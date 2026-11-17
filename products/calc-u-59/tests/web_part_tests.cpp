@@ -6,6 +6,7 @@
 
 #include "TestHarness.hpp"
 #include "../app/TIMagneticCardKind.hpp"
+#include "control/ControlState.hpp"
 #include "debugger/RunState.hpp"
 #include "media/MediaTopics.hpp"
 #include "typing/TypingTopics.hpp"
@@ -196,12 +197,14 @@ TEST(lib15_ac20_cards_are_files_of_the_save_folder) {
 TEST(lib15_ac22_the_page_topics_are_there) {
     WebRig r;
     r.run(1s);
-    for (const auto* t : {&topics::kWebDisplay, &topics::kWebCueCard, &topics::kPrinter, &calcu::media::kMediaTopic,
+    for (const auto* t : {&topics::kWebDisplay, &topics::kWebCueCard, &calcu::control::kControlStateTopic, &calcu::media::kMediaTopic,
                           &topics::kDebugView, &calcu::debugger::kRunStateTopic, &calcu::typing::kHeldKeysTopic,
                           &kBusyTopic})
         CHECK(r.fe.mirror.state(*t) != nullptr);
-    // E-3: the page reads c59.printer, run-state, busy and held-keys itself.
+    // E-3: the page reads run-state, busy and held-keys itself; the PC-100C
+    // and its TRACE from the control state (release prep 3: c59.printer went).
     CHECK(r.fe.mirror.state(TopicName{"c59.web.printer"}) == nullptr);
+    CHECK(r.fe.mirror.state(TopicName{"c59.printer"}) == nullptr);
     CHECK(r.fe.mirror.state(TopicName{"c59.web.run-state"}) == nullptr);
     CHECK(r.fe.mirror.state(TopicName{"control-state"}) != nullptr);   // the model and the module (M-57)
     CHECK(r.fe.mirror.state(TopicName{"c59.web.model"}) == nullptr);   // gone (LIB-4 §10.7)

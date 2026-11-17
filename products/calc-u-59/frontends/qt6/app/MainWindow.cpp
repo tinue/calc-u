@@ -7,7 +7,6 @@
 #include "ChromeStyle.hpp"
 #include "EmulatorController.hpp"
 #include "KeyboardWidget.hpp"
-#include "PC100C.hpp"
 #include "TICatalogue.hpp"
 #include "TIShellProduct.hpp"
 #include "Version.h"
@@ -126,18 +125,12 @@ calcu::shell::ShellProduct MainWindow::product() {
 }
 
 // The PC-100C's controls on the paper panel while it owns it (LIB-8 AC-28):
-// PRINT and ADV keys, TRACE a switch at its position (`c59.printer`).
+// PRINT and ADV keys, TRACE a switch at its position, as the control state
+// lists them (LIB-4 AC-21).
 void MainWindow::followPrinter() {
     auto* paper = qobject_cast<calcu::qt6::PaperPanel*>(m_shell->panelArea()->panel("paper"));
     if (!paper) return;
-    if (!m_controller->printerConnected()) {
-        paper->setControls({});
-        return;
-    }
-    using calcu::machine::ControlForm;
-    paper->setControls({{PC100C::kPrint, ControlForm::Key, false},
-                        {PC100C::kAdv, ControlForm::Key, false},
-                        {PC100C::kTrace, ControlForm::Switch, m_controller->printerTrace()}});
+    paper->setControls(m_controller->printerControls());
 }
 
 void MainWindow::openFile(const QString& path, calcu::opening::Way way) {

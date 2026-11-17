@@ -27,9 +27,9 @@ using sessions::StartOperation;
 using sessions::Value;
 
 // ── Payload values (for translating hosts and the harness's `state`) ─────────
-// The value forms are fixed (`calcu state c59.led|c59.cue-card|c59.printer`).
+// The value forms are fixed (`calcu state c59.calc-indicator|c59.cue-card`).
 
-Value TILedState::toValue() const {
+Value TICalcIndicatorState::toValue() const {
     return Value::object({{"calc-indicator", calcIndicatorOpacity}});
 }
 Value TICueCardState::toValue() const {
@@ -38,7 +38,6 @@ Value TICueCardState::toValue() const {
                           {"on-show", onShow},
                           {"lit-corner", litCorner ? Value(*litCorner) : Value()}});
 }
-Value TIPrinterState::toValue() const { return Value::object({{"connected", connected}, {"trace", trace}}); }
 
 // ── The part ─────────────────────────────────────────────────────────────────
 
@@ -128,9 +127,8 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     using sessions::History;
     m_ctx = &s.context();
     m_ms = &m_ctx->machineSession();
-    m_led = &s.stateTopic(topics::kLed);
+    m_calcIndicator = &s.stateTopic(topics::kCalcIndicator);
     m_cue = &s.stateTopic(topics::kCueCard);
-    m_printer = &s.stateTopic(topics::kPrinter);
     // C59-7 D-12: a tap on the fitted card.
     add(s, commands::kTapCard, [this](const Value& a) -> CommandOutcome {
         return Done{std::make_shared<TIFlag>(tapCard(sessions::realArg(a, "x"), sessions::realArg(a, "y")))};
@@ -211,20 +209,16 @@ template <class P> void setIfChanged(sessions::StateTopic& t, std::shared_ptr<P>
 } // namespace
 
 void TIAppPart::settle() {
-    if (!m_led) return;
-    auto led = std::make_shared<TILedState>();
+    if (!m_calcIndicator) return;
+    auto led = std::make_shared<TICalcIndicatorState>();
     led->led = m_display;
     led->calcIndicatorOpacity = m_calcOpacity;
-    setIfChanged(*m_led, std::move(led));
+    setIfChanged(*m_calcIndicator, std::move(led));
     auto cue = std::make_shared<TICueCardState>();
     cue->card = m_cueCard;
     cue->onShow = m_onShow;
     cue->litCorner = m_litCorner;
     setIfChanged(*m_cue, std::move(cue));
-    auto printer = std::make_shared<TIPrinterState>();
-    printer->connected = m_printerConnected;
-    printer->trace = m_printerTrace;
-    setIfChanged(*m_printer, std::move(printer));
 }
 
 void TIAppPart::diagnostic(const std::string& message) {

@@ -19,9 +19,9 @@
 // Calc-U-1600's SharpWebPart does for its page:
 // - state topics `c59.web.*`, each derived from the value of a product topic
 //   and refreshed when that value changed (Part E simplification E-3):
-//   display (the LED cells of `c59.led`), cue-card (a draw list of
-//   `c59.cue-card` at the page's card size), debug-font; the page reads
-//   `c59.printer` (TRACE), the library's `run-state` (FREEZE ON START),
+//   display (the LED cells of `c59.calc-indicator`), cue-card (a draw list
+//   of `c59.cue-card` at the page's card size), debug-font; the page reads
+//   the control state's `controls` (TRACE), the library's `run-state` (FREEZE ON START),
 //   `busy` (the speed) and `held-keys` (the key drawn pressed) itself; the
 //   debug panel's data are TIDebugPart's product topics (C59-4 AC-25), whose
 //   values are the page's forms (M-56);
@@ -76,9 +76,9 @@ private:
     double m_cardW = 0, m_cardH = 0;
 
     // The product topics drawn (TIAppPart's), and their values last drawn.
-    const calcu::sessions::StateTopic* m_led = nullptr;
+    const calcu::sessions::StateTopic* m_calcIndicator = nullptr;
     const calcu::sessions::StateTopic* m_cueCard = nullptr;
-    calcu::sessions::PayloadPtr m_ledDrawn, m_cueDrawn;
+    calcu::sessions::PayloadPtr m_calcIndicatorDrawn, m_cueDrawn;
 
     calcu::sessions::StateTopic* m_display = nullptr;
     calcu::sessions::StateTopic* m_cue = nullptr;

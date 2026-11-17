@@ -5,6 +5,7 @@
 #include "debugger/RunState.hpp"
 #include "media/MediaTopics.hpp"
 #include "pacing/WallClock.hpp"
+#include "peripherals/Controls.hpp"
 #include "qt6/ProductHost.hpp"
 #include "qt6/SessionHost.hpp"
 #include "typing/HostKey.hpp"
@@ -15,6 +16,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 // The product's glue around the session host (LIB-14 design §10.4, M-57; as
@@ -53,8 +55,10 @@ public:
     /// The running model ("TI-59", …); empty before the first control state.
     std::string modelId() const;
     bool isTI59() const { return modelId() == "TI-59"; }
-    /// The PC-100C in `printer` (the control state), and TRACE (`c59.printer`).
+    /// The PC-100C in `printer`, its controls (PRINT, ADV, TRACE) and TRACE's
+    /// position: the control state's `places` and `controls` (LIB-4 AC-21).
     bool printerConnected() const;
+    std::vector<calcu::peripherals::ControlInfo> printerControls() const;
     bool printerTrace() const;
     /// `[display] led-style` as the `settings` topic has it.
     cu59::LedStyle ledStyle() const;
@@ -184,7 +188,7 @@ private:
     // the destructor.
     std::unique_ptr<calcu::qt6::ProductHost<cu59::TIAppPart>> m_session;
     std::string m_model;               ///< the model last seen in the control state
-    bool m_printerSeen = false;
+    std::pair<bool, std::vector<calcu::peripherals::ControlInfo>> m_printerSeen;   ///< last drawn: plugged in, its controls
     cu59::RingLog m_log;               ///< the LOG tab's view (AC-9)
     QString m_logText;
     bool m_logDirty = false;

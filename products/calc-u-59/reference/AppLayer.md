@@ -112,9 +112,12 @@ startup preset, else its built-in default); the Web page sends `start
 `speed`, `suspend`, `continue`, …; `cu59::commands`, `c59.*`) and gets
 messages: the library's topics (`display`, `busy`, `notices`, `log`,
 `papers`, `paper PC-100C`, `run-state`, `trace`, …) and the product
-topics `c59.led` (the LED frame and the C indicator), `c59.printer`
-(connected and TRACE only), `c59.cue-card` (the cue card shown, whether
-the fitted card is on show, its lit corner). The part sets them after
+topics `c59.calc-indicator` (the LED frame of the frame sampler and the C
+indicator; `c59.led` until release prep 3), `c59.cue-card` (the cue card
+shown, whether the fitted card is on show, its lit corner). The PC-100C in
+`printer` and the positions of its PRINT, ADV and TRACE are LIB-4's
+`control-state` (`places`, `controls`, AC-21; `c59.printer` went in release
+prep 3). The part sets them after
 each flow from what it left, and the session sends one when its value
 changed (LIB-3 AC-5; their payloads compare by content since Part E
 simplification E-3, which removed 2.3.0's change bits, the change

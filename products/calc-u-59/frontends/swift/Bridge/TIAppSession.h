@@ -17,7 +17,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// design §5, until their owners' steps; shell: an input of the shell's
 /// models (C59-8 §3.1: control-state, busy, run-state, settings, media, the
 /// preset list); since M-53 also the library's
-/// `paper PC-100C` (printer: appended, paperCut: emptied), `run-state`
+/// `paper PC-100C` (printer: appended, paperCut: emptied; also raised by
+/// `control-state`, whose `controls` hold TRACE's position), `run-state`
 /// (runState) and `trace` (trace); since M-56 the debug panel's product
 /// topics of C59-4 AC-25 (live: calculator-debug, listing: program-listing,
 /// cpu: cpu-debug, heatmap, asm: asm-overlay, log: LIB-3's `log` and
@@ -254,6 +255,8 @@ typedef struct {
 /// (a copy, then the paper emptied), LIB-8 AC-16, AC-18.
 - (void)copyPaper;
 - (void)cutPaper;
+/// TRACE's position: the control state's `controls` (LIB-4 AC-21), NO
+/// while no PC-100C is plugged in.
 @property (nonatomic, readonly) BOOL printerTrace;
 /// PRINT, ADV (held) and TRACE (a switch) of the PC-100C (`set-control`, LIB-8 P-E2).
 - (void)setPrinterControl:(NSString *)control on:(BOOL)on NS_SWIFT_NAME(setPrinterControl(_:on:));

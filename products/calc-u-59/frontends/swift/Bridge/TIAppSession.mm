@@ -241,9 +241,8 @@ private:
 
 TIChange changeOf(const cs::TopicName& t) {
     namespace T = cu59::topics;
-    if (t == T::kLed) return TIChangeDisplay;
+    if (t == T::kCalcIndicator) return TIChangeDisplay;
     if (t == T::kCueCard) return static_cast<TIChange>(TIChangeCueCard | TIChangeCard);   // on show, the lit corner
-    if (t == T::kPrinter) return TIChangePrinter;
     if (t == calcu::media::kMediaTopic) return static_cast<TIChange>(TIChangeCard | TIChangeShell);   // the card reader (C59-7, M-55)
     if (t == calcu::debugger::kRunStateTopic) return static_cast<TIChange>(TIChangeRunState | TIChangeShell);
     if (t == calcu::typing::kHeldKeysTopic) return TIChangeRunState;
@@ -256,7 +255,9 @@ TIChange changeOf(const cs::TopicName& t) {
     if (t == T::kHeatmap) return TIChangeHeatmap;
     if (t == T::kAsmOverlay) return TIChangeAsm;
     if (t == T::kDebugView) return TIChangeLog;   // the log level it carries
-    if (t == calcu::control::kControlStateTopic) return static_cast<TIChange>(TIChangeControl | TIChangeShell | TIChangeCard);
+    // The PC-100C's controls and TRACE's position too (LIB-4 AC-21; release prep 3: c59.printer went).
+    if (t == calcu::control::kControlStateTopic)
+        return static_cast<TIChange>(TIChangeControl | TIChangeShell | TIChangeCard | TIChangePrinter);
     return static_cast<TIChange>(0);
 }
 
@@ -513,7 +514,6 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 - (void)dealloc { _thread.reset(); }
 
-- (const cu59::TIPrinterState *)printer { return _mirror.stateOf<cu59::TIPrinterState>(cu59::topics::kPrinter); }
 - (const calcu::debugger::RunState *)runControl {
     return _mirror.stateOf<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
 }
@@ -727,7 +727,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 - (TIDisplaySnapshot)display {
     TIDisplaySnapshot d{};
-    if (const auto* l = _mirror.stateOf<cu59::TILedState>(cu59::topics::kLed)) {
+    if (const auto* l = _mirror.stateOf<cu59::TICalcIndicatorState>(cu59::topics::kCalcIndicator)) {
         memcpy(d.segments, l->led.segments, sizeof d.segments);
         memcpy(d.digitLevel, l->led.digitLevel, sizeof d.digitLevel);
         memcpy(d.dpLevel, l->led.dpLevel, sizeof d.dpLevel);
@@ -735,7 +735,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     return d;
 }
 - (double)calcIndicatorOpacity {
-    const auto* l = _mirror.stateOf<cu59::TILedState>(cu59::topics::kLed);
+    const auto* l = _mirror.stateOf<cu59::TICalcIndicatorState>(cu59::topics::kCalcIndicator);
     return l ? l->calcIndicatorOpacity : 0;
 }
 - (void)hostKeyDownPhysical:(NSString *)physical named:(NSString *)named produced:(uint32_t)produced
@@ -784,7 +784,14 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (double)paperReachUnits { return _paperReach; }
 - (void)copyPaper { [self send:calcu::paper::kPaperCopyCommand args:{{"owner", kPC100COwner}}]; }
 - (void)cutPaper { [self send:calcu::paper::kPaperCutCommand args:{{"owner", kPC100COwner}, {"copy", true}}]; }
-- (BOOL)printerTrace { const auto* p = [self printer]; return p && p->trace; }
+- (BOOL)printerTrace {
+    const auto* c = [self controlState];
+    if (!c) return NO;
+    const calcu::machine::PlacePath printer{{calcu::machine::PlaceName{"printer"}}};
+    for (const auto& e : c->controls)
+        if (e.place == printer && e.control.id == calcu::machine::ControlId{"TRACE"}) return e.control.on ? YES : NO;
+    return NO;
+}
 - (void)setPrinterControl:(NSString *)control on:(BOOL)on {
     [self send:calcu::peripherals::kSetControlCommand args:{{"peripheral", kPC100COwner}, {"control", cpp(control)}, {"on", on == YES}}];
 }

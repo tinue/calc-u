@@ -520,7 +520,8 @@ _Avoid_: event, callback, change flag
 
 **Control state**:
 What the controls around the machine offer right now: models, variants,
-places and what fits them, media places, panels.
+places and what fits them, media places, panels, and the controls of the
+plugged-in peripherals with their positions.
 
 **Control bar**:
 The bar below the calculator that holds the machine's hardware: the
@@ -765,3 +766,4 @@ in; a slice is not called a frame.
 | Date | Decision | Source |
 |---|---|---|
 | 2026-11-17 | "Cassette" names the medium everywhere (the kind, the preset step and eject word, `format: cassette`, `.cassette.yaml`, `cassette-name`, the cassette folder); its place is the `cassette-recorder` (CE-125 manual: "microcassette recorder", PC-1403 manual: "cassette recorder"); the entry "Cassette tape" became **Cassette**, "Place" and "Media place" name the cassette recorder; the module definition is `.module.yaml` | user, 2026-11-17 (Part E review Q-5, Q-6; release prep step 2) |
+| 2026-11-17 | **Control state** also holds the controls of the plugged-in peripherals with their positions (LIB-4 AC-21) | user, 2026-11-17 (Part E review Q-6; release prep step 3) |

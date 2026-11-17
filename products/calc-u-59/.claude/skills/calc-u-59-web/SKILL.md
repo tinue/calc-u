@@ -61,7 +61,9 @@ Never edit the calculator there — that copy is generated.
    Settings and About, `c59.static-data`, `c59.web.model`,
    `c59.web.settings` and the page's pointer commands went in M-57;
    `c59.web.printer` and `c59.web.run-state` in Part E (E-3): the page
-   reads `c59.printer`, the library's `run-state`, `busy` and `held-keys`.
+   reads the library's `run-state`, `busy` and `held-keys`, and the
+   PC-100C's controls from the control state's `controls` (`src/Paper.jsx`;
+   `c59.printer` went in release prep 3).
    A trace is handed over with `keep-file` when it ends; the page lists it.
    The debug panel draws the product topics of `app/TIDebugPart` (C59-4,
    M-56): `calculator-debug`, `program-listing` (the whole listing while

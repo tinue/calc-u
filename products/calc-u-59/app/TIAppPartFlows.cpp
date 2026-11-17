@@ -70,7 +70,6 @@ void TIAppPart::followPlugs(bool newMachine) {
     const std::string module = m_session->moduleID();
     if (newMachine || module != m_moduleID) {
         m_moduleID = module;
-        m_session->refreshModule();
         // C59-7 AC-22, AC-23: the module cue cards from the module file.
         m_moduleCards = m_setup.roms ? moduleCueCards(*m_setup.roms, m_moduleID, [this](const std::string& m) { diagnostic(m); })
                                      : std::map<int, CueCardContent>{};

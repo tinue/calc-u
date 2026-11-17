@@ -39,6 +39,9 @@ public:
     virtual void setPartition(int steps) = 0;                        // where the ROM keeps it (SCOM)
     virtual RegisterNibbles readRaw(int r) const = 0;                // raw RAM register R000…
     virtual int rawCount() const = 0;                                // 120
+    /// The ROM's top of the data registers (BCD in SCOM[13]): R00 is raw
+    /// register top - 1, Hnn on the TI-58C top + nn; 0 before the ROM booted.
+    virtual int registerTop() const = 0;
 };
 
 class ConstantMemory : public calcu::machine::Capability {

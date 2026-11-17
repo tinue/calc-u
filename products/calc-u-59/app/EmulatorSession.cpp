@@ -11,10 +11,8 @@ const calcu::machine::PlacePath kPrinter{{kTIPrinterPlace}};
 const calcu::machine::CapabilityId kControls{"printer/controls"};
 } // namespace
 
-EmulatorSession::EmulatorSession(calcu::machine::Machine& machine, const calcu::roms::RomSet& roms)
-    : m_model(modelFrom(machine.model()).value_or(Model::TI59)), m_machine(machine), m_roms(roms) {
-    refreshModule();
-}
+EmulatorSession::EmulatorSession(calcu::machine::Machine& machine, const calcu::roms::RomSet&)
+    : m_model(modelFrom(machine.model()).value_or(Model::TI59)), m_machine(machine) {}
 
 std::string EmulatorSession::moduleID() const {
     for (const auto& e : m_machine.plugged().byPlace)
@@ -26,13 +24,6 @@ bool EmulatorSession::printerPlugged() const {
     for (const auto& e : m_machine.plugged().byPlace)
         if (e.place == kPrinter) return true;
     return false;
-}
-
-void EmulatorSession::refreshModule() {
-    m_moduleImage.clear();
-    const std::string id = moduleID();
-    if (id.empty()) return;
-    if (auto file = moduleRomFile(id)) m_moduleImage = cu59::moduleImage(m_roms, *file).value_or(std::vector<uint8_t>{});
 }
 
 bool EmulatorSession::printerControl(const calcu::machine::ControlId& id, bool on) {

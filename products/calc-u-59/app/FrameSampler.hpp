@@ -1,5 +1,7 @@
 #pragma once
-#include "../core/TIAdapters.hpp"
+#include "../core/TIDebugKinds.hpp"
+#include "../core/TIProductKinds.hpp"
+#include "machine/Machine.hpp"
 #include "DisplayPov.hpp"
 #include "machine/Machine.hpp"
 #include <string>

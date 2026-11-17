@@ -248,7 +248,7 @@ TIChange changeOf(const cs::TopicName& t) {
     if (t == T::kPrinter) return TIChangePrinter;
     if (t == calcu::media::kMediaTopic) return static_cast<TIChange>(TIChangeCard | TIChangeShell);   // the card reader (C59-7, M-55)
     if (t == calcu::debugger::kRunStateTopic) return static_cast<TIChange>(TIChangeRunState | TIChangeShell);
-    if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic) return TIChangeRunState;
+    if (t == calcu::typing::kHeldKeysTopic) return TIChangeRunState;
     if (t == cs::kBusyTopic || t == calcu::shell::kSettingsTopic) return TIChangeShell;
     if (t == calcu::debugger::kTraceTopic) return TIChangeTrace;
     // The debug panel's product topics (C59-4 AC-25, M-56).

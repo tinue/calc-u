@@ -2,10 +2,11 @@
 #include "PC100C.hpp"
 #include "SolidStateRomModule.hpp"
 #include "TI59Machine.hpp"
-#include "TIAdapters.hpp"
+#include "TITypingSupport.hpp"
 #include "TICardReaderPlace.hpp"
 #include "TIDebugKindsImpl.hpp"
 #include "TIDebugging.hpp"
+#include "TIMachineState.hpp"
 #include "TIMemoryKinds.hpp"
 #include "TICatalogue.hpp"
 #include "TIRomRanges.hpp"
@@ -21,7 +22,8 @@
 // core-internal TI59Machine, the tick count that goes on across every
 // operation, the Reset restore of the TI-59/58, the peripherals plugged into
 // its places `printer` (the PC-100C) and `slot-1` (a Solid State ROM module;
-// C59-6), and the adapters (TIAdapters.hpp). It holds no lock and starts no
+// C59-6), and its capabilities (the product kinds, the debug target, the
+// typing support). It holds no lock and starts no
 // thread (ADR 0009).
 //
 // Ticks: one instruction is 32 ticks, 128 in the ROM's IDLE state on the
@@ -78,7 +80,6 @@ protected:
 private:
     friend class TICardReaderPlace;
     friend class TILibraryProgram;
-    friend class TIMemoryAdapter;
     friend class TIDebugTarget;
     friend class TIDebugging;
     friend class TITraceRecords;
@@ -89,7 +90,14 @@ private:
     friend class TIProgramMemory;
     friend class TIConstantMemoryCapability;
     friend struct TIMachineTesting;
-    friend TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
+    friend class TIMachineState;
+
+    /// C59-9 AC-15 (core/TIMachineState.cpp): the records of the machine's
+    /// parts, both ways; a refused restore puts the state from before back.
+    template <class Io>
+    void stateIo(Io& io);
+    std::vector<std::uint8_t> saveState();
+    std::optional<std::string> restoreState(const std::vector<std::uint8_t>&);
 
     /// One instruction; then the pending Reset restore. Every path that runs an instruction goes through here.
     std::uint32_t stepOne();
@@ -123,7 +131,6 @@ private:
     std::unique_ptr<SolidStateRomModule> m_module;
     calcu::machine::PeripheralId m_moduleId;
     std::unique_ptr<TICardReaderPlace> m_cardReader;   ///< C59-7 AC-6 (TI-59)
-    TIMemoryAdapter m_memory{*this};
     TIAsmOverlay m_asmOverlay{*this};          ///< C59-4 AC-13
     TIRomHeatmap m_heatmap{*this};             ///< C59-4 AC-8
     TICalculatorState m_calculatorState{*this};   ///< C59-4 AC-3, AC-6
@@ -134,4 +141,5 @@ private:
     TIProgramMemory m_programMemory{*this};          ///< C59-2 AC-17
     TIConstantMemoryCapability m_constantMemory{*this};   ///< C59-3 AC-1 (TI-58C)
     TILibraryProgram m_libraryProgram{*this};             ///< C59-7 AC-21
+    TIMachineState m_machineState{*this};                 ///< C59-9 AC-15 (LIB-11 AC-24)
 };

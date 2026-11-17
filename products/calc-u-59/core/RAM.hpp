@@ -29,6 +29,14 @@ public:
     void serialise(uint8_t* dst) const;   // dst must be 120*16 bytes
     void deserialise(const uint8_t* src);
 
+    /// The registers (C59-9 AC-15); on the TI-58C its constant memory.
+    template <class Io>
+    void stateIo(Io& io) {
+        io.begin("RAM ");
+        io(m_maxRegs)(m_data);
+        io.end();
+    }
+
 private:
     int     m_maxRegs{TOTAL_REGS};
     uint8_t m_data[TOTAL_REGS][NIBBLES]{};

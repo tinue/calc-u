@@ -77,13 +77,13 @@ std::vector<std::string> dumpScom(const calcu::machine::Machine& m) {
 }
 
 std::vector<std::string> dumpProg(const calcu::machine::Machine& m) {
-    const int progRegs = memoryOf(m)->partitionProgramRegs();
+    const int progRegs = kindOf<ProgramMemory>(m)->partitionSteps() / 8;
     char buf[64];
     std::snprintf(buf, sizeof buf, "── Prog P000–P%03d (key codes) ──", std::max(progRegs - 1, 0));
     std::vector<std::string> lines{buf};
     for (int reg = 0; reg < progRegs; ++reg) {
         uint8_t n[16];
-        memoryOf(m)->copyRAMReg(reg, n);
+        { const RegisterNibbles r = kindOf<ProgramMemory>(m)->readRaw(reg); std::copy(r.begin(), r.end(), n); }
         if (allZero(n)) continue;
         // Storage order (units-tens pairs), deliberately not the register-line format.
         std::string pairs;
@@ -101,9 +101,9 @@ std::vector<std::string> dumpProg(const calcu::machine::Machine& m) {
 
 std::vector<std::string> dumpMemory(const calcu::machine::Machine& m) {
     std::vector<std::string> lines{"── Registers (raw values) ──"};
-    for (int reg = 0; reg < memoryOf(m)->ramRegCount(); ++reg) {
+    for (int reg = 0; reg < kindOf<ProgramMemory>(m)->rawCount(); ++reg) {
         Nibbles16 n{};
-        memoryOf(m)->copyRAMReg(reg, n.data());
+        { const RegisterNibbles r = kindOf<ProgramMemory>(m)->readRaw(reg); std::copy(r.begin(), r.end(), n.begin()); }
         if (allZero(n.data())) continue;
         char label[16];
         std::snprintf(label, sizeof label, "R%03d: ", reg);

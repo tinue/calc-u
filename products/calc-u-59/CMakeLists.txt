@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.21)
 
 # Calc-U-59 in the repository's root CMake project (ADR 0003; option
 # CALCU_PRODUCT_59): the emulation core, the app/ C++ layer the frontends
-# use, the C++ test suite (CTest, with CALCU_TESTS), the headless harness
-# library, and, with CALCU_FRONTEND_QT and when Qt6 is found, the Qt6
+# use, the C++ test suite (CTest, with CALCU_TESTS), the product entry of
+# the harness `calcu`, and, with CALCU_FRONTEND_QT and when Qt6 is found, the Qt6
 # desktop app via add_subdirectory(frontends/qt6). Under Emscripten only
 # the core, the app layer and the Web engine (calcu59_web).
 #
@@ -40,7 +40,8 @@ add_library(calcu59_core STATIC
   ${CORE_ROOT}/TMC0501.cpp
   ${CORE_ROOT}/ROM.cpp
   ${CORE_ROOT}/RAM.cpp
-  ${CORE_ROOT}/TIAdapters.cpp
+  ${CORE_ROOT}/TITypingSupport.cpp
+  ${CORE_ROOT}/TIMachineState.cpp
   ${CORE_ROOT}/TIDebugging.cpp
   ${CORE_ROOT}/TIDebugKinds.cpp
   ${CORE_ROOT}/TICatalogue.cpp
@@ -61,7 +62,7 @@ set_target_properties(calcu59_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(calcu59_core PUBLIC calcu_library)
 
 file(GLOB SHARED_SOURCES CONFIGURE_DEPENDS ${SHARED_ROOT}/*.cpp)
-list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/HarnessProduct.cpp)   # calcu59_harness below
+list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/HarnessProduct.cpp ${SHARED_ROOT}/TIHarnessCommands.cpp)   # calcu59_harness below
 if(EMSCRIPTEN)
   # The Swift frontend's session thread (C59-5): never in the Web engine.
   list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/SessionThread.cpp)
@@ -71,8 +72,7 @@ target_include_directories(calcu59_shared PUBLIC ${SHARED_ROOT})
 find_package(Threads REQUIRED)
 target_link_libraries(calcu59_shared PUBLIC calcu59_core Threads::Threads)
 target_link_libraries(calcu59_shared PRIVATE calcu_warnings)
-# Both static libraries end up in the ti59headless shared object: on Linux
-# that needs -fPIC (macOS always builds position-independent code).
+# Position-independent, as calcu59_core (the XCFramework's libraries).
 set_target_properties(calcu59_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # -----------------------------------------------------------------------------
@@ -98,17 +98,10 @@ if(EMSCRIPTEN)
   return()
 endif()
 
-# -----------------------------------------------------------------------------
-# Headless harness (tools/headless/ti59.py loads it via ctypes; build.sh does
-# the same with one clang++ call)
-# -----------------------------------------------------------------------------
-add_library(ti59headless SHARED ${CMAKE_CURRENT_SOURCE_DIR}/tools/headless/capi.cpp)
-target_link_libraries(ti59headless PRIVATE calcu59_shared)
-
 # The product entry of the harness `calcu` (LIB-11, M-28; library/harness/cli/):
 # not in calcu59_shared, so the Swift and Web builds carry none of it. It
 # finds the ROMs in the folder the tests use (LIB-11 design §8).
-add_library(calcu59_harness STATIC ${SHARED_ROOT}/HarnessProduct.cpp)
+add_library(calcu59_harness STATIC ${SHARED_ROOT}/HarnessProduct.cpp ${SHARED_ROOT}/TIHarnessCommands.cpp)
 target_link_libraries(calcu59_harness PUBLIC calcu59_shared)
 target_link_libraries(calcu59_harness PRIVATE calcu_warnings)
 # The state-file header's version is the apps' one: the Xcode project's
@@ -163,19 +156,25 @@ if(CALCU_TESTS)
   calcu_product_source_checks(PREFIX CalcU59
                               ROM_ALLOW app/ProductRoms.cpp app/ProductRoms.hpp core/TICatalogue.cpp
                                         frontends/qt6/app/QtResourceBundle.cpp)
+  # LIB-11 Part E (design §11.6 H4; M-59): today's tools are gone and no
+  # file is named for adapters (tools/check_no_old_tools.cmake).
+  calcu_add_test(CalcU59NoOldTools frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_old_tools.cmake)
+  # LIB-11 AC-15 (design §11.6 H5): `calcu --product 59` runs as a process
+  # of its own (tests/calcu_runs.cmake; also in every desktop job of the workflow).
+  calcu_add_test(CalcU59CalcuRuns frequent COMMAND ${CMAKE_COMMAND} -DCALCU=$<TARGET_FILE:calcu> -P tests/calcu_runs.cmake)
   if(Python3_FOUND)
-    # tools/headless/ on the machine interface (C59-1 design T14): 5 + 7 = shows 12.
-    calcu_add_test(CalcU59HeadlessSmoke frequent
-                   COMMAND ${Python3_EXECUTABLE} tools/headless/ti59.py 5 + 7 = --summary
-                   PROPERTIES ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless>
-                              PASS_REGULAR_EXPRESSION "display: \\[ *12\\.? *\\]" DEPENDS CalcU59Tests)
-    # LIB-12 AC-7, AC-10 (design P5): ti59.py without one ROM file ends naming it.
-    calcu_add_test(CalcU59HeadlessRomMissing frequent COMMAND ${Python3_EXECUTABLE} tests/headless_rom_tests.py
-                   PROPERTIES ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless> DEPENDS CalcU59Tests)
+    # LIB-12 AC-7, AC-10 (design P5): `calcu` without one ROM file ends naming it
+    # (was tools/headless/ti59.py's, CalcU59HeadlessRomMissing, until M-59).
+    calcu_add_test(CalcU59HarnessRomMissing frequent COMMAND ${Python3_EXECUTABLE} tests/harness_rom_tests.py
+                   PROPERTIES ENVIRONMENT CALCU=$<TARGET_FILE:calcu>)
     # C59-2 AC-18 (design T12): fastcal.py writes the tracked calendar-09, and
-    # years.py runs it for 2026 through calcu (tools/agentic/calcu59.py).
+    # years.py runs it for 2026 through calcu (tools/calcu59.py).
     calcu_add_test(CalcU59CalendarScripts frequent
-                   COMMAND ${Python3_EXECUTABLE} tools/agentic/calendar/selftest.py --calcu $<TARGET_FILE:calcu>)
+                   COMMAND ${Python3_EXECUTABLE} tools/calendar/selftest.py --calcu $<TARGET_FILE:calcu>)
+    # C59-9 AC-13 (design T11): tools/coverage.py and tools/fastmode_matrix.py
+    # on the harness give what 2.3.0's tools gave (tests/check_scripts.py).
+    calcu_add_test(CalcU59Scripts longer
+                   COMMAND ${Python3_EXECUTABLE} tests/check_scripts.py --calcu $<TARGET_FILE:calcu>)
   endif()
   # LIB-6 AC-43 (design §11.6 P8; C59-2 T9): `calcu --product 59 check-preset`
   # over the examples and the startup presets, the four with magnetic cards
@@ -202,10 +201,10 @@ if(CALCU_TESTS)
   calcu_add_test(CalcU59ReferenceRuns longer COMMAND CalcU59Tests c59_2_ac11
                  PROPERTIES ENVIRONMENT CALCU59_REFERENCE_COMPARE=1)
   # LIB-12, Technical Requirements (design P6): a build with one ROM file
-  # taken away starts in neither headless nor the web client, naming it.
+  # taken away starts in neither the harness nor the web client, naming it.
   if(NOT WIN32)
     calcu_add_test(CalcU59RomMissingBuild longer COMMAND sh tests/rom_missing_build.sh
-                   PROPERTIES ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless>)
+                   PROPERTIES ENVIRONMENT CALCU=$<TARGET_FILE:calcu>)
   endif()
   if(APPLE)
     set(iphone "platform=iOS Simulator,id=$(bin/simulators resolve --role iphone)")   # bin/simulators.yaml

@@ -5,7 +5,7 @@ Texas Instruments' copyrighted firmware. Run [`fetch_roms.sh`](fetch_roms.sh)
 to (re)download the full set of 24 files into this directory before building.
 It checks each file against the md5 listed in the script. All 24 lie directly
 in this directory (no subfolders); every frontend, the tests and
-`tools/headless/` find them through the library's ROM lookup (LIB-12,
+the harness `calcu` find them through the library's ROM lookup (LIB-12,
 `library/roms/`), which checks at the start that the full set is there and
 names any file that is missing or bad. A build without them starts no
 calculator.

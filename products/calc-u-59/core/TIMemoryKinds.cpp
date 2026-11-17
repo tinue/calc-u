@@ -58,6 +58,8 @@ RegisterNibbles TIProgramMemory::readRaw(int r) const {
 
 int TIProgramMemory::rawCount() const { return m_.m_hw.ramRegCount(); }
 
+int TIProgramMemory::registerTop() const { return m_.m_hw.dataRegCount(); }
+
 std::array<RegisterNibbles, cu59::ConstantMemory::kRegisters> TIConstantMemoryCapability::content() const {
     std::array<RegisterNibbles, kRegisters> out{};
     for (int r = 0; r < kRegisters; ++r) m_.m_hw.copyRAMReg(r, out[static_cast<std::size_t>(r)].data());

@@ -58,7 +58,7 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    about the machine is drawn, LIB-8's `papers`, `paper <owner>`,
    `paper-copies` and LIB-10's `run-state`, `trace`) and the product's
    `c59.*` topics (`c59.led`, `c59.printer` (the PC-100C's TRACE),
-   `c59.cue-card` (the cue card, its corner on show and lit), `c59.run-state` (full speed, playback),
+   `c59.cue-card` (the cue card, its corner on show and lit); full speed is the library's `speed` command and `busy` topic,
    the library's `media` (the card reader `card-reader` and `slot-1`: what they
    hold, the pickers; send `media.choose`, `media.start-new`, `media.eject`),
    …) and the debug panel's product topics (`calculator-debug`,

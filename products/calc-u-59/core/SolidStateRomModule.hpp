@@ -23,6 +23,14 @@ public:
     /// address register and its read position clear.
     void operation();
 
+    /// The address latches (C59-9 AC-15); the image comes from the ROM set.
+    template <class Io>
+    void stateIo(Io& io) {
+        io.begin("MOD ");
+        io(m_addr)(m_readPos)(m_wasWriting);
+        io.end();
+    }
+
 private:
     // LIB.PC.OUT can shift in an address up to 9999; past the image the module reads 0.
     std::uint8_t byteAt(std::uint16_t a) const { return a < kBytes ? m_data[a] : 0; }

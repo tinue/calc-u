@@ -8,7 +8,7 @@ The debugger has three layers:
 
 | Layer | Where | What |
 |---|---|---|
-| Core | `TIMachine`, its debug target `TMC0501` (`core/TIDebugging.hpp`, LIB-10 AC-28), the capability `c59.trace-records` (`core/TraceRecords.hpp`), the debug panel's product kinds `c59.asm-overlay`, `c59.rom-heatmap`, `c59.calculator-state`, `c59.machine-log` (`core/TIDebugKinds.hpp`, C59-4, M-56) and `TIMemoryAdapter` (`core/TIAdapters.hpp`, until M-59), over `TMC0501` (`core/`) | Registers, RAM, program and SCOM access, breakpoints, the observer's marks, the trace ring, step-boundary latch, the machine's log lines, the heatmap's counts, the ASM overlay |
+| Core | `TIMachine`, its debug target `TMC0501` (`core/TIDebugging.hpp`, LIB-10 AC-28), the capability `c59.trace-records` (`core/TraceRecords.hpp`), the debug panel's product kinds `c59.asm-overlay`, `c59.rom-heatmap`, `c59.calculator-state`, `c59.machine-log` (`core/TIDebugKinds.hpp`, C59-4, M-56) and the program memory `c59.program-memory` (`core/TIProductKinds.hpp`), over `TMC0501` (`core/`) | Registers, RAM, program and SCOM access, breakpoints, the observer's marks, the trace ring, step-boundary latch, the machine's log lines, the heatmap's counts, the ASM overlay |
 | Library | LIB-10's `DebuggerPart` (`library/debugger/`): the run control (the machine session's gate), the topics `run-state` and `trace`, the trace session; the run-control buttons of the component sets | Pause, step, resume, pause-on-start, breakpoints, one trace at a time |
 | Shared | `TIDebugPart` (the six product topics, the panel's commands, the product entries), `TILevelRules`, `TITraceRecorder`, `TIDebuggerSetup`, `DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `TraceWriter`, `AsmOverlay` (`app/`) | The TI's levels and trace records, the panels' data and text, the dumps, the ASM overlay format |
 | GUI | Swift: `EmulatorViewModel` → `frontends/swift/Bridge/TIAppSession` (commands and the product topics), views in `frontends/swift/App/Views/` (`DebugView`, `LiveDebugView`, `CPUInspectorView`). Qt: `EmulatorController`, widgets in `frontends/qt6/app/debug/` (`DebugPanel`, `LiveDebugWidget`, `CpuInspectorWidget`, `RomHeatmapWidget`, `AsmOverlayBox`, `LogWidget`). Web: the product topics' values (`frontends/web/bindings.cpp`), `frontends/web/src/Debugger.jsx` (`LiveDebug`, `FreezeHeader`, `CpuInspector`, `Heatmap`, `AsmOverlay`, `LogTab`; wide layout only) | Drawing only |
@@ -43,8 +43,9 @@ https://calc-u.org/59/.
 
 ## Calculator-level machine access
 
-The adapter calls (`core/TIAdapters.hpp`) the debugger and the golden runs use (a preset
-writes through the kind `c59.program-memory` since M-54, `core/TIProductKinds.hpp`). Writes are made
+The core's memory calls the golden runs and the core tests use (through
+`TIMachineTesting`; the memory adapter went in M-59); the app layer and a
+preset read and write through the kind `c59.program-memory` (`core/TIProductKinds.hpp`). Writes are made
 on the session's thread between two advances. The debugger itself goes through the debug target `TMC0501`
 (`core/TIDebugging.hpp`) and the run control (§ "Freeze / Step Controls").
 
@@ -336,7 +337,7 @@ run control's checks) gives `TRACE_PC | TRACE_REGS_FULL`; none gives
 | `TRACE_PC` | Low | Identity fields |
 | `TRACE_REGS_LIGHT` | Medium | + light registers |
 | `TRACE_REGS_FULL` | High | + full snapshot |
-| `TRACE_BREAKPOINTS` | Low | Breakpoint check per step (headless tools only) |
+| `TRACE_BREAKPOINTS` | Low | Breakpoint check per step (the run control's `break`) |
 
 ### Breakpoints
 
@@ -346,7 +347,7 @@ breakpoint's ROM address while the run control's checks say so; a resume
 passes it once. They are set through the session's `break` command (the
 harness's `break TMC0501 <address>`); no GUI sets them (`debugger.md`
 DB-3). The core's own breakpoints (`TRACE_BREAKPOINTS`, `kBreakpointHit`)
-are left to the headless tools' tests.
+are left to the harness's tests.
 
 ### Disassembler
 

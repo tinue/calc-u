@@ -36,6 +36,24 @@ public:
     /// in the reader is taken out as by Eject Card (AC-25).
     void beforeCpuReset();
 
+    /// The card in the reader (C59-9 AC-15): its side and whether it is in;
+    /// its bytes and position are the processor's card buffers. A card
+    /// restored in the reader belongs to no binding (D-8): it is a card of
+    /// its own, which the pass gives back with what it wrote.
+    template <class Io>
+    void stateIo(Io& io) {
+        io.begin("CRD ");
+        int side = m_side.value_or(-1);
+        io(side)(m_inserted);
+        if constexpr (Io::kRestoring) {
+            m_side = side >= 0 ? std::optional<int>(side) : std::nullopt;
+            m_back.reset();
+            if (m_inserted) m_content = std::make_shared<cu59::TIMagneticCardData>();
+            ++m_revision;
+        }
+        io.end();
+    }
+
 private:
     /// The card out of the reader, the written bank (all 246 bytes) kept.
     void takeOut();

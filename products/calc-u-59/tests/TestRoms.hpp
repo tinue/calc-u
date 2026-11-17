@@ -3,7 +3,7 @@
 #include "../app/ProductRoms.hpp"
 #include "../core/PC100C.hpp"
 #include "../core/PC100CPaper.hpp"
-#include "../core/TIAdapters.hpp"
+#include "../core/TITypingSupport.hpp"
 #include "../core/TIDebugKinds.hpp"
 #include "../core/TIMachineTesting.hpp"
 #include "paper/Paper.hpp"
@@ -57,8 +57,10 @@ inline std::shared_ptr<const calcu::roms::RomSet> romSet() {
     return set;
 }
 
-// The adapters of a TI machine (C59-1 design §5).
-inline TIMemoryAdapter& mem(Machine& m) { return *memoryOf(m); }
+// The core's memory calls of a TI machine, for the tests only (the memory
+// adapter of C59-1 went in M-59; TIMachineTesting).
+inline TI59Machine& mem(Machine& m) { return TIMachineTesting::hardware(static_cast<TIMachine&>(m)); }
+inline void runInstructions(Machine& m, std::uint32_t n) { TIMachineTesting::runInstructions(static_cast<TIMachine&>(m), n); }
 /// The panel's reads of the core: the product kind c59.calculator-state (C59-4 D-3; the
 /// debug panel adapter went in M-56).
 inline cu59::CalculatorState& dbg(Machine& m) { return *cu59::kindOf<cu59::CalculatorState>(m); }

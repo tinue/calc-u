@@ -37,7 +37,7 @@ Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_6
 
 **Printer:** The PC-100C thermal printer is simulated functionally: the emulator intercepts the ROM's print commands, keeps the printer busy for a line's print time (enough for the [printer interrupt](rom/printerinterrupt.md)), and renders characters with a dot-matrix font calibrated against physical hardware. For a line cut short, the head's column-by-column firing and each dot's heating time are modeled, measured on a real PC-100A; the paper mechanics are not.
 
-**Debugger:** Live view and inspection, and stepping both calculator-level and CPU-level instructions work. The core has a breakpoint API used by the headless tools (`reference/DebugAPI.md` § "Breakpoints"), but no GUI has a UI to set one. Also missing: keypress latch while single-stepping (`ideas/KeypressLatch.md`) and conditional freezes (e.g. on a register change). The API surface will change as it matures.
+**Debugger:** Live view and inspection, and stepping both calculator-level and CPU-level instructions work. The core has a breakpoint API used by the harness's `break` (LIB-10; `reference/DebugAPI.md` § "Breakpoints"), but no GUI has a UI to set one. Also missing: keypress latch while single-stepping (`ideas/KeypressLatch.md`) and conditional freezes (e.g. on a register change). The API surface will change as it matures.
 
 ## Building
 
@@ -175,8 +175,7 @@ Checked-in analysis the project keeps for itself, distinct from any AI tool's pr
 
 | Document | Abstract |
 |---|---|
-| [`tools/headless/README.md`](tools/headless/README.md) | Python harness that drives `core/` without a GUI and prints ROM traces of key sequences. |
-| [`tools/agentic/README.md`](tools/agentic/README.md) | Command-line tools to run, time and profile `.ti59` presets through `calcu`, plus a keycode disassembler and assembler. |
+| [`reference/Harness.md`](reference/Harness.md) | The harness `calcu --product 59` without a window: ROM traces of key sequences, timing and profiling presets, the `ti59` commands, the scripts that stay (`tools/coverage.py`, `tools/fastmode_matrix.py`, `tools/calendar/`). |
 | [`tools/goldens/README.md`](tools/goldens/README.md) | How the golden files that check the `app/` ports against the former Swift code are made. |
 
 ### `prompt/` — LLM system prompt

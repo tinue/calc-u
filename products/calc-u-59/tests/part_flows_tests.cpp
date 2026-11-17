@@ -144,13 +144,13 @@ TEST(part_reset_keeps_the_memory_and_clean_reset_clears_it) {
     CHECK(waitForScanLoop(r));
     const uint8_t marked[16] = {1, 2, 3};
     uint8_t regs[16];
-    c.emulator()->access().memory().writeRAMReg(90, marked);
+    testroms::mem(c.emulator()->access().machine()).writeRAMReg(90, marked);
     CHECK(r.reset().done);
     CHECK(waitForScanLoop(r));
-    c.emulator()->access().memory().copyRAMReg(90, regs);
+    testroms::mem(c.emulator()->access().machine()).copyRAMReg(90, regs);
     CHECK(std::equal(std::begin(marked), std::end(marked), regs));
     CHECK(r.coldBoot().done);
-    c.emulator()->access().memory().copyRAMReg(90, regs);
+    testroms::mem(c.emulator()->access().machine()).copyRAMReg(90, regs);
     CHECK_EQ(int(regs[0]), 0);
 }
 
@@ -313,25 +313,23 @@ TEST(c59_6_ac11_change_module_power_cycles) {
     CHECK(waitForScanLoop(r));
     const uint8_t marked[16] = {1, 2, 3};
     uint8_t regs[16];
-    c.emulator()->access().memory().writeRAMReg(90, marked);
+    testroms::mem(c.emulator()->access().machine()).writeRAMReg(90, marked);
     CHECK(r.attach("slot-1", "LE").done);   // a replace
     CHECK_EQ(c.moduleID(), std::string("LE"));
     CHECK(testroms::moduleIn(c.emulator()->access().machine()) == "LE");
-    CHECK(c.emulator()->moduleImage() == *cu59::moduleImage(*testroms::romSet(), "LE.rom.yaml"));
     // The power cycle: the TI-59 loses its program and registers (row 59-11).
     CHECK(waitForScanLoop(r));
-    c.emulator()->access().memory().copyRAMReg(90, regs);
+    testroms::mem(c.emulator()->access().machine()).copyRAMReg(90, regs);
     CHECK_EQ(int(regs[0]), 0);
     // The printer too.
-    c.emulator()->access().memory().writeRAMReg(90, marked);
+    testroms::mem(c.emulator()->access().machine()).writeRAMReg(90, marked);
     CHECK(r.detach("printer").done);
     CHECK(waitForScanLoop(r));
-    c.emulator()->access().memory().copyRAMReg(90, regs);
+    testroms::mem(c.emulator()->access().machine()).copyRAMReg(90, regs);
     CHECK_EQ(int(regs[0]), 0);
     // An empty slot.
     CHECK(r.detach("slot-1").done);
     CHECK(c.moduleID().empty() && testroms::moduleIn(c.emulator()->access().machine()).empty());
-    CHECK(c.emulator()->moduleImage().empty());
     CHECK(waitForScanLoop(r));
     CHECK(r.errors().empty());
 }

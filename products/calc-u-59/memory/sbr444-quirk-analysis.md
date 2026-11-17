@@ -247,7 +247,7 @@ an error from a 0 ÷ 0 inside that garbage (`03D4`).
    and P/R are part of the R/S-resumed run itself** (12 fetches, 28–39, ending
    with Pgm 51; see above). rs.txt had stopped too early to show them.
 
-New traces are easiest with the headless harness (`tools/headless/`), which
+New traces are easiest with the harness's `trace` (`calcu --product 59`, `reference/Harness.md`; until M-59 `tools/headless/`), which
 replays a key sequence and prints the ROM trace directly. In a preset, put the
 steps `- trace: <name>.bin` / `- trace: off` around the key of interest in its
 `keys:` (e.g. `examples/historic/printer-quirks.ti59`, whose `trace:` step is

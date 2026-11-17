@@ -28,7 +28,7 @@ calcu::machine::Machine     (library/machine/Machine.hpp: the machine interface)
       │                      sees the PC-100C and the module through their pin-outs only)
       ├─ PC100C             (core/PC100C.hpp/.cpp: the PC-100C in the place `printer`)
       ├─ SolidStateRomModule (core/SolidStateRomModule.hpp/.cpp: a module in `slot-1`)
-      └─ the adapters       (core/TIAdapters.hpp/.cpp, until their removal steps)
+      └─ the typing support (core/TITypingSupport.hpp/.cpp) and the machine state (core/TIMachineState.*)
 tiCatalogue(), TIMachineBuilder (core/TICatalogue.hpp/.cpp: the three descriptors,
                              the PC-100C and the 14 modules)
 ```
@@ -39,11 +39,13 @@ Since C59-1 (M-19) the only interface above the core is
 (`cu59::buildMachine`, `app/ProductRoms.hpp`, from the ROM lookup's `RomSet`, LIB-12) and reaches the model, the
 advances and tick count, Reset / power cycle / cold boot, key readiness,
 the keys and the display output through it only (C59-1 AC-17; CTest
-`CalcU59CoreSeam`). What the interface does not have yet goes through the
-adapters of `core/TIAdapters.hpp` (`memoryOf(machine)` …), each with
-its removal step (`TICardReaderAdapter` went in M-55: `TICardReaderPlace`, a media place; `libExecPC` is `c59.calculator-state`'s), `TIMemoryAdapter` (program, registers,
-partition, RAM; M-54, its readers M-59); `idleAndKeyDetectRange()` gives a model's scan/detect
-range (for `tools/headless/` and the tests). The debug panel's
+`CalcU59CoreSeam`). The adapters of C59-1 are gone (the last,
+`TIMemoryAdapter`, in M-59: the debug log and snapshots read the kind
+`c59.program-memory`, the core tests `TIMachineTesting`; `TICardReaderAdapter`
+went in M-55: `TICardReaderPlace`, a media place; `libExecPC` is
+`c59.calculator-state`'s); `core/TITypingSupport.hpp` holds the typing
+support and `idleAndKeyDetectRange()`, a model's scan/detect
+range (for `ti59 coverage`, the run probe and the tests). The debug panel's
 `TIDebugPanelAdapter` went in M-56 (C59-4): what the debug target does not
 give is four product kinds of the processor (`core/TIDebugKinds.hpp`,
 `TMC0501/c59.…`): `c59.asm-overlay` (the overlay's words over 1800 to 1FFF,
@@ -110,9 +112,10 @@ brightness and the indicator C (`core/TISegments.hpp`).
 | `TI59Machine.hpp/.cpp` | — | Core-internal facade; variant setup |
 | `TIMachine.hpp/.cpp` | — | `calcu::machine::Machine`: ticks, operations, Reset restore, key readiness, keys, display output |
 | `TICatalogue.hpp/.cpp` | — | `tiCatalogue()` (models, PC-100C, 14 modules with their `<ID>.rom.yaml`), `TIMachineBuilder`, `TIConstantMemory` |
-| `TIAdapters.hpp/.cpp` | — | The adapters of C59-1 design §5 and their accessors |
+| `TITypingSupport.hpp/.cpp` | — | The typing support (`typing-support`) and the model's key-detect range (the adapters of C59-1 went in M-59) |
+| `TIMachineState.hpp/.cpp`, `TIStateRecords.hpp` | — | LIB-11's `machine-state` on the TI models (C59-9 AC-15): tagged records, each part's fields in its `stateIo` |
 | `TIKeys.hpp/.cpp`, `TISegments.hpp`, `TIRomRanges.hpp`, `TIRomText.hpp/.cpp` | — | Key IDs; glyph rules; scan-loop, idle and card-wait ranges; ROM text decoding |
-| `TIMachineTesting.hpp` | — | Test-only reads inside the core; the PC-100C's code lines (`printedCodeLines`, LIB-8 adapter P-E3: the golden runs and, until M-59, `tools/headless/capi.cpp`) |
+| `TIMachineTesting.hpp` | — | Test-only reads inside the core; the PC-100C's code lines (`printedCodeLines`, LIB-8 adapter P-E3: the golden runs; until M-59 also `tools/headless/capi.cpp`) |
 | `MachineVariant.hpp` | — | `TI59 \| TI58 \| TI58C` (core-internal), `hasConstantMemory()`, `hasLargeMemory()` |
 | `TraceTypes.hpp` | — | `CpuFrame`, `DebugEvent`, `TIStepBoundary`, `TRACE_*` flags |
 
@@ -575,7 +578,7 @@ The return value carries the weight in `kWeightMask` and two bits:
   "Frozen-display semantics").
 
 `TI59Machine::step()` adds `kBreakpointHit` (the core's own breakpoints,
-`TRACE_BREAKPOINTS`; the headless tools only).
+`TRACE_BREAKPOINTS`; the harness's `break` and the tests only).
 
 **Debug target (LIB-10 59, M-53; `core/TIDebugging.hpp`).**
 `TIMachine::debugging()` gives `TIDebugging` with one target, `TMC0501`
@@ -927,7 +930,7 @@ and the paper is fed 10.18 units (a line cut short: only its drawn rows). A
 `PRT.FEED` gives an empty text line and 7.09 units. The capability is
 `printer/paper-output`; the paper itself is the session's (`PaperPart`).
 `PC100C::CodeLine` (the 20 codes, `rowCount`, `partialColumns`,
-`partialHeat`) is kept only for the golden runs and the headless tool
+`partialHeat`) is kept only for the golden runs (and, until M-59, the headless tool)
 (`TIMachineTesting::printedCodeLines`). A `PRT.GO` while a line is printing is the
 **printer interrupt** (during a feed's BUSY it prints normally): the line
 in progress is committed with what is on paper so far, and the new print

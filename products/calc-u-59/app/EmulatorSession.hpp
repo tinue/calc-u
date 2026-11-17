@@ -1,6 +1,8 @@
 #pragma once
 #include "FrameSampler.hpp"
-#include "../core/TIAdapters.hpp"
+#include "../core/TIDebugKinds.hpp"
+#include "../core/TIProductKinds.hpp"
+#include "machine/Machine.hpp"
 #include "MachineModelInfo.hpp"
 #include "machine/Machine.hpp"
 #include "peripherals/Controls.hpp"
@@ -27,23 +29,17 @@ public:
     EmulatorSession& operator=(const EmulatorSession&) = delete;
 
     Model model() const { return m_model; }
-    /// The machine and its adapters (C59-1's TI adapters).
+    /// The machine (its capabilities: the product kinds of core/TIProductKinds.hpp).
     class Access {
     public:
         explicit Access(calcu::machine::Machine& m) : m_m(m) {}
         calcu::machine::Machine& machine() { return m_m; }
-        TIMemoryAdapter& memory() { return *memoryOf(m_m); }
 
     private:
         calcu::machine::Machine& m_m;
     };
     Access access() const { return Access(m_machine); }
     calcu::machine::Machine& machine() { return m_machine; }
-    /// The bytes of the module plugged into `slot-1` (empty if none), kept for
-    /// the debugger (adapter until M-56, C59-6 design §5); refreshModule()
-    /// reads them again after a plug change.
-    const std::vector<uint8_t>& moduleImage() const { return m_moduleImage; }
-    void refreshModule();
     /// The module in `slot-1` now (empty: none).
     std::string moduleID() const;
     bool printerPlugged() const;
@@ -60,8 +56,6 @@ public:
 private:
     const Model m_model;
     calcu::machine::Machine& m_machine;
-    const calcu::roms::RomSet& m_roms;
-    std::vector<uint8_t> m_moduleImage;
     FrameSampler m_sampler;
 };
 

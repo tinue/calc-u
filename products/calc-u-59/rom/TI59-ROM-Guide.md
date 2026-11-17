@@ -4,7 +4,7 @@ A narrative companion to the annotated listing `rom/TI59-commented.asm` and
 the label table `rom/TI59-labels.asm`. The listing documents individual
 instructions; this guide explains the structures and conventions that span
 many routines. Everything here was derived by tracing the unmodified ROM on
-the emulator with the headless harness (`tools/headless/`), unless marked
+the emulator with the headless harness of 2.3.0 (`tools/headless/`; since M-59 the harness `calcu --product 59`, `reference/Harness.md`), unless marked
 otherwise.
 
 Emulator-side facts (instruction set, SCOM/PREG mechanics, chip variants)
@@ -15,9 +15,10 @@ self-test) are in `rom/TI58C-ROM-Guide.md`.
 ## Reproducing the traces
 
 ```bash
-uv run python tools/headless/ti59.py 5 + 7 '*' 3 =        # annotated trace of each key
-uv run python tools/headless/coverage.py build            # which scenario runs which ROM word
-uv run python tools/headless/coverage.py show 0140 0236   # per-address scenario list
+calcu --product 59 --output-folder /tmp trace k.trace then key 5 + 7 '*' 3 = then trace off
+python3 tools/read_trace.py --clean-heavy --skip-repeating --labels rom/TI59-labels.asm --changes /tmp/k.trace   # annotated trace
+python3 tools/coverage.py build            # which scenario runs which ROM word
+python3 tools/coverage.py show 0140 0236   # per-address scenario list
 ```
 
 Every claim tagged "trace-confirmed" in the listing can be re-checked this
@@ -210,7 +211,7 @@ The paren level in each entry is the fence that makes `(` work: a reduce
 only pops entries whose level equals the current one, so `+` inside the
 parenthesis never touches the `×` outside it.
 
-Trace of `2 × ( 3 + 4 yˣ 2 ) =` (`tools/headless/ti59.py`):
+Trace of `2 × ( 3 + 4 yˣ 2 ) =` (2.3.0's `tools/headless/ti59.py`; now `trace` and `tools/read_trace.py --changes`):
 
 | Key | SCOM[12] (low nibbles) | Operands | SCOM[13] nibbles 2/1 (depth, paren) |
 |---|---|---|---|
@@ -464,7 +465,7 @@ and `Fix Ind` do not reach nibble 3.
 
 The full list of what works, what breaks and how to end a program is in
 `rom/fastmode.md` § "Rules for fast-mode programs" (measured with
-`uv run python tools/agentic/fastmode_matrix.py`). All of it follows from
+`python3 tools/fastmode_matrix.py`). All of it follows from
 the seven places that test the Prg Src Flag. Only the step fetch tests single
 bits; the other six ask only "non-zero?", so there a fast-mode program counts
 as a keycode sub-program or a library program:

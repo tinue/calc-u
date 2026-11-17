@@ -90,6 +90,17 @@ public:
     std::string bufferContent() const;
     calcu::peripherals::ControlTable& controls() { return m_controls; }
 
+    /// The mechanism and its line buffers (C59-9 AC-15); the paper itself is
+    /// LIB-8's output, not machine state.
+    template <class Io>
+    void stateIo(Io& io) {
+        io.begin("PRN ");
+        io(m_d12)(m_trace)(m_buf)(m_codeBuf)(m_ptr)(m_ready)(m_busy);
+        io(m_pending.codes)(m_pending.rowCount)(m_pending.partialColumns)(m_pending.partialHeat);
+        io(m_hasPending)(m_standing)(m_pendingTop);
+        io.end();
+    }
+
 private:
     void onControl(const calcu::machine::ControlId&, bool on);
     void flushPendingCodeLine(std::uint32_t elapsed);   // the pending line cut `elapsed` instructions after PRT.GO

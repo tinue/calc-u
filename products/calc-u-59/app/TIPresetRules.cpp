@@ -1,7 +1,6 @@
 #include "TIPresetRules.hpp"
 #include "Bcd.hpp"
 #include "TIDisplayPicture.hpp"
-#include "../core/TIAdapters.hpp"
 #include "media/MediaPlace.hpp"
 #include "../core/TIDebugKinds.hpp"
 #include "../core/TICatalogue.hpp"

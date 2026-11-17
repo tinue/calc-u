@@ -132,7 +132,7 @@ void EmulatorController::topicChanged(const QString& name) {
         emit printerChanged();
     } else if (t == calcu::media::kMediaTopic) {   // the card reader (LIB-7 59)
         emit cardStateChanged();
-    } else if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic) {
+    } else if (t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic) {
         emit runStateChanged();
     } else if (t == T::kCalculatorDebug || t == T::kProgramListing) {
         emit liveSnapshotChanged();

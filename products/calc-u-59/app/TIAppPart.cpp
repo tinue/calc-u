@@ -2,7 +2,6 @@
 #include "TIMagneticCardKind.hpp"
 #include "PacingProfiles.hpp"
 #include "Settings.hpp"
-#include "../core/TIAdapters.hpp"
 #include "TIDebuggerSetup.hpp"
 #include "TIPrinters.hpp"
 #include "TITyping.hpp"
@@ -38,10 +37,6 @@ Value TICueCardState::toValue() const {
                           {"lit-corner", litCorner ? Value(*litCorner) : Value()}});
 }
 Value TIPrinterState::toValue() const { return Value::object({{"connected", connected}, {"trace", trace}}); }
-Value TIRunState::toValue() const {
-    return Value::object({{"full-speed", fullSpeed},
-                          {"keystrokes-playing", keystrokesPlaying}});
-}
 
 // ── The part ─────────────────────────────────────────────────────────────────
 
@@ -118,7 +113,7 @@ TIAppPart::TIAppPart(TIAppSetup setup)
       }}),
       m_bundle(m_setup.examplesFolder.empty() ? nullptr
                                               : std::make_unique<presets::DirectoryPresetBundle>(pathOf(m_setup.examplesFolder))),
-      m_debugPart(TIDebugSetup{m_setup.roms, traceAvailable(m_setup), false}),
+      m_debugPart(TIDebugSetup{m_setup.roms, traceAvailable(m_setup), m_setup.debugTabsShown}),
       m_fileKinds(m_debugPart),
       m_lib(librarySetup()) {
     m_debugPart.bindDebugger(m_lib.debugger());
@@ -205,7 +200,6 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     m_led = &s.stateTopic(topics::kLed);
     m_cue = &s.stateTopic(topics::kCueCard);
     m_printer = &s.stateTopic(topics::kPrinter);
-    m_run = &s.stateTopic(topics::kRunState);
     // LIB-12 AC-5, LIB-14 AC-19: without the full set no machine is built;
     // the frontends show the files.
     if (!m_setup.roms)
@@ -214,12 +208,6 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
                                         Value::object({{"text", m_setup.romsMissing.empty() ? std::string("The ROM files are missing.")
                                                                                             : m_setup.romsMissing}})));
 
-    auto done = [](auto&& f) {
-        return [f](const Value& a) -> CommandOutcome {
-            f(a);
-            return Done{};
-        };
-    };
     auto flag = [](bool v) -> CommandOutcome { return Done{std::make_shared<TIFlag>(v)}; };
     TIAppPart& c = *this;
     using namespace commands;
@@ -227,7 +215,6 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     using sessions::realArg;
     using sessions::textArg;
 
-    add(s, kFullSpeed, done([&c](const Value& a) { c.setFullSpeed(sessions::flagArg(a, "on")); }));
     // P-E2: the paper panel's controls of the PC-100C.
     add(s, kSetControl, [&c](const Value& a) -> CommandOutcome {
         const std::string peripheral = textArg(a, "peripheral");
@@ -290,6 +277,9 @@ void TIAppPart::machineChanged(sessions::SessionContext& ctx) {
 
 void TIAppPart::operationEnded(sessions::SessionContext& ctx) {
     m_ctx = &ctx;
+    // An operation run in one go (Hosting::VirtualTime, the harness) ends
+    // before the session follows a machine it replaced: follow it first.
+    machineChanged(ctx);
     followPlugs(false);   // an attach or a detach (LIB-18 AC-21)
     settle();
 }
@@ -315,11 +305,6 @@ void TIAppPart::syncSpeed() {
         m_operationRuns = runs;
         emitChanged(RunStateChanged);
     }
-}
-
-void TIAppPart::setFullSpeed(bool on) {
-    if (m_ctx) m_ctx->setCommandedSpeed(on ? Speed::Full : Speed::Regular);
-    syncSpeed();
 }
 
 void TIAppPart::publish(uint32_t c) {
@@ -349,12 +334,6 @@ void TIAppPart::publish(uint32_t c) {
         p->connected = k.printerConnected();
         p->trace = k.printerTrace();
         m_printer->set(std::move(p));
-    }
-    if (c & S::RunStateChanged) {
-        auto p = make(std::make_shared<TIRunState>());
-        p->fullSpeed = k.fullSpeed();
-        p->keystrokesPlaying = k.keystrokesPlaying();
-        m_run->set(std::move(p));
     }
 }
 

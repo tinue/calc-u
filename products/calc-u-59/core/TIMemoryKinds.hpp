@@ -24,6 +24,7 @@ public:
     void setPartition(int steps) override;
     cu59::RegisterNibbles readRaw(int r) const override;
     int rawCount() const override;
+    int registerTop() const override;
 
 private:
     TIMachine& m_;

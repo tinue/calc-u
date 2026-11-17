@@ -299,6 +299,26 @@ public:
         return static_cast<uint8_t>((tens * 10) + units);
     }
 
+    /// The processor's machine state (C59-9 AC-15, design §3.7): every
+    /// register, the SCOM, the flags, the program counter, the card buffers,
+    /// the display and key matrix state and the step latch; not the
+    /// debugger's (breakpoints, the frame ring, the log) nor the connectors.
+    template <class Io>
+    void stateIo(Io& io) {
+        io.begin("CPU ");
+        io(A)(B)(C)(D)(E)(SCOM)(KR)(SR)(fA)(fB)(EXT)(PREG)(Sout)(flags)(R5)(digit)(addr);
+        io(REG_ADDR)(RAM_ADDR)(RAM_OP).raw(RAM_MASK);
+        io(m_libExecPC)(m_cardSwitchCol)(m_cardPresent)(m_waitingForCard)(m_cardFullData)(m_cardBankBuffer);
+        std::uint64_t cardPtr = m_cardPtr;
+        io(cardPtr)(m_cardMode)(m_lastWrittenBank);
+        m_cardPtr = static_cast<std::size_t>(cardPtr);
+        io(m_digitSegmentsA)(m_digitSegmentsB)(m_digitLitTicks)(m_dpLitTicks).raw(m_lastDisplay);
+        io(m_digitSuppressedMask)(m_zeroSuppressRunning)(m_drivenThisRev)(m_drivenLastRev);
+        io(m_cSteps)(m_pollSteps)(m_elapsedTicks)(key)(m_pendingOpcode)(m_lastStepWasHWPoll)(m_keySamples);
+        io.raw(m_stepBoundary);
+        io.end();
+    }
+
 private:
     ROM& rom;
     RAM& ram;

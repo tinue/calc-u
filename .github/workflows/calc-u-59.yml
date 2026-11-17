@@ -158,6 +158,8 @@ jobs:
           -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
       - name: Build
         run: cmake --build $RELEASE_BUILD --target CalcU59Qt calcu
+      - name: Run calcu (LIB-11 AC-15)
+        run: cmake -DCALCU=$RELEASE_BUILD/library/harness/cli/calcu -P tests/calcu_runs.cmake
       - name: Build AppImage
         env:
           QMAKE: /usr/lib/qt6/bin/qmake6
@@ -250,6 +252,8 @@ jobs:
           -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
       - name: Build
         run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU59Qt calcu
+      - name: Run calcu (LIB-11 AC-15)
+        run: cmake "-DCALCU=${{ env.RELEASE_BUILD }}/library/harness/cli/calcu.exe" -P tests/calcu_runs.cmake
       - name: Stage the app folder
         shell: pwsh
         run: |

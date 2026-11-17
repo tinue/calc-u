@@ -39,7 +39,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | **Orchestration and runtime** | |
 | `TIAppPart` (`TIAppPart.cpp`, `TIAppPartFlows.cpp`) | Calc-U-59 in the library's app session: everything a frontend does with a calculator that isn't drawing (below); the library's parts it brings (`parts::LibraryParts`, M-54), the interim topics and commands, `makeAppSession` (M-33; 2.3.0's `SessionController` taken apart into it in M-34) |
 | `TIProductMachines` | What Calc-U-59 hands LIB-18: the catalogue and builder, the built-in default of each model (the Master Library module, no printer; a TI-58C with the constant memory file's content), the pacing profile, no sound, the 25 s readiness bound (M-54) |
-| `TIPresetRules`, `TIPresetKeys`, `TIPresetCommands` | The TI rules of LIB-6's loader (idle, `expect:`, `screenshot:`, `slot-1` by `name:`), the sections `partition:`, `program:`, `data:`, `cue-card:` and the step `printer-trace:`; the commands `c59.partition`, `c59.program`, `c59.registers` (`ProgramMemoryPart`, C59-2 AC-9) (M-54) |
+| `TIPresetRules`, `TIPresetKeys`, `TIPresetCommands` | The TI rules of LIB-6's loader (idle, `expect:`, `screenshot:`, `slot-1` by `name:`), the sections `partition:`, `program:`, `data:`, `cue-card:` and the step `printer-trace:`; the commands `c59.partition`, `c59.program`, `c59.data-registers` (`ProgramMemoryPart`, C59-2 AC-9) (M-54) |
 | `TIDisplayPicture` | The classic segment picture a preset's `screenshot:` writes (LIB-6 AC-40) |
 | `ConstantMemoryKeeper`, `ConstantMemoryFile` | The TI-58C's `ti58c.memory.yaml` (constant memory format 1): what a TI-58C built without a preset gets, when the file is written, the notices (C59-3, M-54) |
 | `TIFileAccess`, `PacingProfiles` | The card and `ti58c.memory.yaml` files on the save folder; the TI pacing profiles (M-33) |
@@ -54,7 +54,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `FrameSampler` | The 60 Hz frame: display, C indicator, card auto-eject |
 | `DisplayPov` | LED brightness per position from the core's duty cycles (persistence of vision) |
 | **Debugger** | |
-| `TIDebugPart` | The debug panel below the frontends (C59-4, M-56): a session part with the six product topics `calculator-debug`, `program-listing`, `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view`, the commands `c59.live-debug`, `c59.cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`, `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`, and LIB-4 control rules (the product entries `c59.asm-run`, `c59.trace`, `c59.calculator-tab`); `freezeButtons` (FREEZE and FREEZE ON START of a tab) |
+| `TIDebugPart` | The debug panel below the frontends (C59-4, M-56): a session part with the six product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `heatmap`, `asm-overlay`, `c59.debug-view`, the commands `c59.live-debug`, `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`, `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`, and LIB-4 control rules (the product entries `c59.asm-run`, `c59.trace`, `c59.calculator-tab`); `freezeButtons` (FREEZE and FREEZE ON START of a tab) |
 | `TIFileKinds` | Calc-U-59's file kinds of LIB-13's `open` (M-56): `asm-overlay`, `keystroke-program`, `rom-module-file`, `constant-memory-file` (and, until M-55, the card files of today as `magnetic-card`); `tiPresetExtensions`, `programArguments` (the Qt6 start file) |
 | `DebugModel` | The panels' data: CALCULATOR snapshot and listing, CPU history (TIDebugPart owns it) |
 | `DebugSnapshots` | Builds the CALCULATOR snapshot and listing and the CPU history entries |
@@ -104,7 +104,7 @@ D-40, as Calc-U-1600's `SharpAppPart`): LIB-5's `TypingPart`, LIB-2's
 of `examples/`), LIB-18's `StartupPart` (on `TIProductMachines`), LIB-13's
 `OpenPart`, LIB-8's `PaperPart` (on `tiPrinterPapers()`), LIB-10's
 `DebuggerPart` (on `tiDebuggerSetup()`); then `ProgramMemoryPart` (the
-`c59.partition`, `c59.program`, `c59.registers` commands) and `TIAppPart`.
+`c59.partition`, `c59.program`, `c59.data-registers` commands) and `TIAppPart`.
 `makeAppSession` sends LIB-18's `start` once (the startup model with its
 startup preset, else its built-in default); the Web page sends `start
 {model, preset}` itself. A frontend sends commands (the library's: `start`,

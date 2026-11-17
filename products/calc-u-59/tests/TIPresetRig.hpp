@@ -19,7 +19,7 @@
 
 // The rigs of the M-54 tests (C59-2, LIB-6 59, LIB-18 59, C59-3): a preset
 // read with TIPresetRules (no machine), and Calc-U-59's harness entry in
-// virtual time (`calcu --product 59` in-process, as tests/harness_tests.cpp).
+// virtual time (`calcu --product c59` in-process, as tests/harness_tests.cpp).
 
 namespace tirig {
 

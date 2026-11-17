@@ -37,7 +37,7 @@ offer and which routes look workable.
 > `Core/` is now `core/`, `Shared/` (the Shared layer) the app layer
 > `app/` (namespace `cu1600`), `Qt6/` and `Web/` are `frontends/qt6/` and
 > `frontends/web/`; the CLIs `pc1500_cli`, `pc1600_cli` and the probes are
-> the harness `calcu --product 1600`; `PresetFile`, `PresetRunner` and
+> the harness `calcu --product c1600`; `PresetFile`, `PresetRunner` and
 > `bundled.yaml` are the library's presets (LIB-6, `examples/bundle.yaml`);
 > the bays (`ModuleBay`, `FloppyBay`, `TapeBay`) are the library's media
 > part (LIB-7); "card" for a memory module or a peripheral, "turbo" for

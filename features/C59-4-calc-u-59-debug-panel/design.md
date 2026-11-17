@@ -71,14 +71,14 @@ All under `products/calc-u-59/` unless named.
 | `app/DebugModel.hpp/.cpp`, `DebugSnapshots.hpp/.cpp`, `DebugLog.hpp/.cpp`, `DebugText.*`, `RomHeatmap.hpp/.cpp` | read through the debug target and the kinds of §2 instead of `debugTargetOf`/`debugPanelOf` (`DebugSnapshots.cpp:96-161`, `DebugLog.cpp:69`); `RomHeatmap::ingest` from the frame ring goes (the core counts); the colours and steps (`RomHeatmap.hpp:11-25`) stay for the frontends |
 | `app/TIAppPart.hpp/.cpp`, `TIAppPartFlows.cpp` | the debugger flows move to `TIDebugPart`; the interim topics `c59.debug.live`, `.cpu`, `.heatmap`, `.log`, `.asm`, `c59.show-debug-panel` (`app/TIAppPart.hpp:79-83`) and the commands `c59.clear-heatmap` … `c59.clear-asm` (`:241-247`) go; the `Change` bits `LiveChanged` … `ListingChanged` go |
 | `app/TIWebPart.cpp:93, 347-348` and the `c59.web.live`, `.cpu`, `.heatmap`, `.log`, `.asm`, `.debug-font` topics | go; the page reads the product topics of AC-25 (the Web's own forms, where a payload is too large, are the debug part's request `debug-text`, D-7) |
-| `app/HarnessProduct.cpp` | the `TIDebugPart` among the harness's parts; the commands of AC-22 under `ti59` (§3.10) |
-| `app/TIDebuggerSetup.cpp` (M-53) | `showPanel` sets the topic `debug-view` (AC-2; L-E4 goes) |
+| `app/HarnessProduct.cpp` | the `TIDebugPart` among the harness's parts; the commands of AC-22 under `c59` (§3.10) |
+| `app/TIDebuggerSetup.cpp` (M-53) | `showPanel` sets the topic `c59.debug-view` (AC-2; L-E4 goes) |
 
 ### Frontends
 
 | File | Change |
 |---|---|
-| `frontends/qt6/app/debug/DebugPanel.cpp:32-85` | the tabs from `debug-view` and the entry `calculator-tab`; the CALCULATOR tab disabled while an overlay runs (AC-18) |
+| `frontends/qt6/app/debug/DebugPanel.cpp:32-85` | the tabs from `c59.debug-view` and the entry `calculator-tab`; the CALCULATOR tab disabled while an overlay runs (AC-18) |
 | `frontends/qt6/app/debug/LiveDebugWidget.*`, `CpuInspectorWidget.*`, `RomHeatmapWidget.*`, `AsmOverlayBox.*`, `LogWidget.*` | read the product topics; the buttons send the debug part's commands; Run and TRACE enabled by the product entries |
 | `frontends/qt6/app/EmulatorController.*:87-150, 293-328` | the debug relays become the product topics' |
 | `frontends/qt6/app/MainWindow.cpp:43, 101-108` | Select File reads the file and sends `c59.asm-load {name, text}` |
@@ -110,20 +110,20 @@ computed below the frontends (TR; `frontend.md` FE-6).
 
 | Topic (state) | Payload | Today |
 |---|---|---|
-| `calculator-debug` | AC-3: the data registers not zero (with H00 to H03 on the TI-58C), the partition, the steps around the current one and its mark (next or running), the pending operations' registers, T and X, the flags, the display format and the angle mode, the program's source, SCOM, the return addresses | `c59.debug.live` (`TIDebugLiveState`, `app/TIAppPart.hpp:143-151`) |
-| `program-listing` | AC-4: the listing of the program that runs, its source and the current index; empty while the machine runs | `TIDebugLiveState::listing` |
-| `cpu-debug` | AC-6: the instructions with address, text and registers before; the newest 32 while running, up to 1024 and the next while paused | `c59.debug.cpu` |
+| `c59.calculator-debug` | AC-3: the data registers not zero (with H00 to H03 on the TI-58C), the partition, the steps around the current one and its mark (next or running), the pending operations' registers, T and X, the flags, the display format and the angle mode, the program's source, SCOM, the return addresses | `c59.debug.live` (`TIDebugLiveState`, `app/TIAppPart.hpp:143-151`) |
+| `c59.program-listing` | AC-4: the listing of the program that runs, its source and the current index; empty while the machine runs | `TIDebugLiveState::listing` |
+| `c59.cpu-debug` | AC-6: the instructions with address, text and registers before; the newest 32 while running, up to 1024 and the next while paused | `c59.debug.cpu` |
 | `heatmap` | AC-8: the counts of 0000 to 13FF | `c59.debug.heatmap` |
-| `asm-overlay` | the file's name, the number of instructions, the status line, whether the overlay runs | `c59.debug.asm` |
-| `debug-view` | the tab `debug-panel:` asked for last: `calculator`, `cpu` or `log` | the stream `c59.show-debug-panel` |
+| `c59.asm-overlay` | the file's name, the number of instructions, the status line, whether the overlay runs | `c59.debug.asm` |
+| `c59.debug-view` | the tab `debug-panel:` asked for last: `calculator`, `cpu` or `log` | the stream `c59.show-debug-panel` |
 
 - The topic names are the spec's (AC-25), as given there. The harness
   reads them with `state` (D-1).
-- **What is computed when.** `calculator-debug` and `cpu-debug` are
+- **What is computed when.** `c59.calculator-debug` and `c59.cpu-debug` are
   computed only while a frontend shows that tab, as today
-  (`c59.live-debug`, `c59.cpu-debug` stay as the commands that say so,
+  (`c59.live-debug`, `c59.show-cpu-debug` stay as the commands that say so,
   `app/TIAppPart.hpp:227-228`); the harness's `state` computes them once
-  on demand. `program-listing` is built when the run state turns paused,
+  on demand. `c59.program-listing` is built when the run state turns paused,
   and emptied when it runs (AC-4). The rates of today stay: the frame's 60
   Hz for the CALCULATOR snapshot, 10 Hz for the heatmap, 1 Hz for the log
   text (`app/TIAppPart.hpp:466-469`).
@@ -157,7 +157,7 @@ The kind `c59.rom-heatmap` counts, while it is on, each instruction the
 processor carries out at a ROM address from 0000 to 13FF
 (`RomHeatmap::kCodeWords`, `app/RomHeatmap.hpp:28`). It is switched on
 while the CPU tab is shown, and is set to zero by:
-- the command `ti59 heatmap reset` / `c59.heatmap-reset`, which the tab's
+- the command `c59 heatmap reset` / `c59.heatmap-reset`, which the tab's
   CLR sends and a frontend sends when the panel comes into view;
 - a Reset (`machineRestarted`) and a model switch (a new machine starts at
   zero).
@@ -190,10 +190,10 @@ so no ring is read twice.
 - **Dumps (AC-10).** `c59.dump {what: scom|memory|prog|vars}` writes the
   lines of `dumpScom`, `dumpMemory`, `dumpProg`, `dumpVars`
   (`app/DebugLog.hpp:36-45`, today's layout) into LIB-3's log; the harness's
-  `ti59 dump …` replies with the same lines (AC-22).
+  `c59 dump …` replies with the same lines (AC-22).
 - **Levels (AC-11).** `c59.log-level {level: off|info|debug}` sets the
   level of `c59.machine-log`; the button cycles through the three and shows
-  the one that holds, read from the field `logLevel` of `debug-view`
+  the one that holds, read from the field `logLevel` of `c59.debug-view`
   (D-6). The machine's lines go into LIB-3's log at their level;
   the product's own lines (a Reset, a preset's steps, the dumps) at every
   level, as today (`app/TIAppPartFlows.cpp:784-806`).
@@ -284,16 +284,16 @@ by the rules of AC-14. The refusals of AC-15, one sentence each (D-5):
 
 ### 3.10 The harness commands (AC-22)
 
-Under `ti59` (C59-9 owns the word; these are this feature's):
+Under `c59` (C59-9 owns the word; these are this feature's):
 
 | Command | Reply |
 |---|---|
-| `ti59 asm load <file>` | done, with the number of instructions; refused with §3.7's sentence |
-| `ti59 asm run` | done, with the status line; refused when nothing is loaded |
-| `ti59 asm clear` | done |
-| `ti59 dump scom\|memory\|prog\|vars` | the dump's lines |
-| `ti59 log-level off\|info\|debug` | done |
-| `ti59 heatmap reset` | done |
+| `c59 asm load <file>` | done, with the number of instructions; refused with §3.7's sentence |
+| `c59 asm run` | done, with the status line; refused when nothing is loaded |
+| `c59 asm clear` | done |
+| `c59 dump scom\|memory\|prog\|vars` | the dump's lines |
+| `c59 log-level off\|info\|debug` | done |
+| `c59 heatmap reset` | done |
 
 No preset step for any of them (AC-22).
 
@@ -309,8 +309,8 @@ No preset step for any of them (AC-22).
   (`CalculatorView.swift:238, 261, 453`); unchanged until LIB-14 59 and
   C59-8.
 - **EC-4.** A frontend that does not show the panel keeps the last
-  `debug-view` and shows that tab when the panel is shown; since
-  `debug-view` is a state topic, a frontend that starts to listen gets it
+  `c59.debug-view` and shows that tab when the panel is shown; since
+  `c59.debug-view` is a state topic, a frontend that starts to listen gets it
   too (today `Debugger.jsx:285-289`).
 
 ## 4. Product side: what is replaced
@@ -418,7 +418,7 @@ visible in M-56.
   flag in the app; after M-56 it is the core's (§3.2). If the core cannot
   tell a Reset from the overlay's own jumps, the debug part ends the run at
   `machineRestarted`.
-- **Risk: the Web payloads.** `cpu-debug` with 1024 entries and their
+- **Risk: the Web payloads.** `c59.cpu-debug` with 1024 entries and their
   registers is large for every change; the Web gets a compact form through
   a request (D-7).
 
@@ -426,7 +426,8 @@ visible in M-56.
 
 - **D-1 (AC-25, topic names).** The spec's names as given, without a
   product prefix: they are the contract the harness reads (`state
-  calculator-debug`).
+  calculator-debug`). Since release prep step 1 (2026-11-17) they carry
+  the product word, `c59.calculator-debug` and so on (spec, decision log).
 - **D-2 (AC-18 against AC-26).** A Reset ends the overlay's run and keeps
   its instructions (AC-18); a Cold boot and a new machine remove them
   (AC-26). AC-18's "given the model is switched, they are put over the new
@@ -445,7 +446,7 @@ visible in M-56.
 - **D-5 (AC-15, sentences).** The sentences of §3.7, each with the file's
   name and, after `HEX:`, the line.
 - **D-6 (AC-11, where the level shows).** The level is a field `logLevel`
-  of the topic `debug-view`: one small state topic for the panel's own
+  of the topic `c59.debug-view`: one small state topic for the panel's own
   settings, rather than a seventh topic the spec does not name.
 - **D-7 (the Web's forms).** Where today's `c59.web.*` topics carry a
   compact form (`app/TIWebPart.cpp`), the page asks the debug part's

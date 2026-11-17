@@ -448,7 +448,7 @@ TEST(c59_7_ac17_harness_commands_card_and_arm) {
     auto server = calcu::harness::Server::start(*product, o, &error);
     CHECK(server != nullptr);
     if (!server) return;
-    CHECK_EQ(server->line("ti59 program 76 11 01 02 03 91").text, std::string("done\n"));
+    CHECK_EQ(server->line("c59 program 76 11 01 02 03 91").text, std::string("done\n"));
     CHECK_EQ(server->line("key 1 Write").text, std::string("done\n"));
     CHECK_EQ(server->line("card { mem: X, side: 1 }").text, std::string("done\n"));   // LIB-11 AC-22
     CHECK_EQ(server->line("saveas { card: X, as: live, name: Saved }").text, std::string("done\n"));

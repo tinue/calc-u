@@ -54,7 +54,7 @@ final class FamilyStructureTests: XCTestCase {
     }
 
     private func lcd(_ harness: HarnessClient) -> String {
-        let r = harness.command("lcd")
+        let r = harness.command("display-text")
         return r.count > 1 ? r[1] : ""
     }
 
@@ -268,7 +268,7 @@ final class FamilyStructureTests: XCTestCase {
         let (app, harness) = launch()
         app.buttons["btn-settings"].tap()
         XCTAssertTrue(element(app, "settings-dialog").waitForExistence(timeout: 5))
-        _ = harness.command("ti59 asm load \(try badOverlay("notes.asm"))")
+        _ = harness.command("c59 asm load \(try badOverlay("notes.asm"))")
         let ok = app.alerts.buttons["OK"].firstMatch   // the alert's OK (iOS drops the identifier `notice-ok` there)
         XCTAssertTrue(ok.waitForExistence(timeout: 5), "no notice over the sheet")
         ok.tap()
@@ -314,7 +314,7 @@ final class FamilyStructureTests: XCTestCase {
         // Two notices of the session: an ASM overlay the debug panel's load
         // refuses gives one each (C59-4 EC-2).
         for name in ["first.asm", "second.asm"] {
-            _ = harness.command("ti59 asm load \(try badOverlay(name))")
+            _ = harness.command("c59 asm load \(try badOverlay(name))")
         }
         let ok = app.alerts.buttons["OK"].firstMatch   // the alert's OK (iOS drops the identifier `notice-ok` there)
         XCTAssertTrue(ok.waitForExistence(timeout: 5), "no notice")

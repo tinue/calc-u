@@ -14,13 +14,13 @@
   "main": "./extension.js",
   "activationEvents": [
     "onDebug",
-    "onDebugDynamicConfigurations:calcu1600",
-    "onDebugResolve:calcu1600",
-    "onCommand:calcu1600.buildAndLoad",
+    "onDebugDynamicConfigurations:c1600",
+    "onDebugResolve:c1600",
+    "onCommand:c1600.buildAndLoad",
     "onCommand:workbench.action.tasks.runTask",
     "onCommand:workbench.action.tasks.build",
-    "onCommand:calcu1600.createProject",
-    "onCommand:calcu1600.createProjectHere"
+    "onCommand:c1600.createProject",
+    "onCommand:c1600.createProjectHere"
   ],
   "contributes": {
     "breakpoints": [
@@ -45,57 +45,57 @@
     ],
     "commands": [
       {
-        "command": "calcu1600.buildAndLoad",
+        "command": "c1600.buildAndLoad",
         "title": "Build & Load",
         "category": "Calc-U-1600"
       },
       {
-        "command": "calcu1600.resetAndStop",
+        "command": "c1600.resetAndStop",
         "title": "Reset & Stop",
         "category": "Calc-U-1600"
       },
       {
-        "command": "calcu1600.allResetAndStop",
+        "command": "c1600.allResetAndStop",
         "title": "All Reset & Stop",
         "category": "Calc-U-1600"
       },
       {
-        "command": "calcu1600.createProject",
+        "command": "c1600.createProject",
         "title": "Create Debug Project…",
         "category": "Calc-U-1600"
       },
       {
-        "command": "calcu1600.createProjectHere",
+        "command": "c1600.createProjectHere",
         "title": "Calc-U-1600: Create Debug Project Here…"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "calcu1600.createProjectHere",
+          "command": "c1600.createProjectHere",
           "when": "explorerResourceIsFolder",
           "group": "navigation@99"
         }
       ],
       "commandPalette": [
         {
-          "command": "calcu1600.createProjectHere",
+          "command": "c1600.createProjectHere",
           "when": "false"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "calcu1600.buildAndLoad",
+        "command": "c1600.buildAndLoad",
         "key": "ctrl+alt+l",
         "mac": "cmd+alt+l",
-        "when": "debugType == 'calcu1600'"
+        "when": "debugType == 'c1600'"
       }
     ],
     "problemMatchers": [
       {
-        "name": "calcu1600-sdas",
-        "owner": "calcu1600",
+        "name": "c1600-sdas",
+        "owner": "c1600",
         "source": "sdas",
         "fileLocation": [
           "autoDetect",
@@ -110,8 +110,8 @@
         }
       },
       {
-        "name": "calcu1600-zasm",
-        "owner": "calcu1600",
+        "name": "c1600-zasm",
+        "owner": "c1600",
         "source": "zasm",
         "fileLocation": [
           "autoDetect",
@@ -136,7 +136,7 @@
     ],
     "debuggers": [
       {
-        "type": "calcu1600",
+        "type": "c1600",
         "label": "Calc-U-1600",
         "languages": [
           "lh5801-asm",
@@ -149,7 +149,7 @@
             "properties": {
               "port": {
                 "type": "number",
-                "description": "The app's debug server port. Default: the calcu1600.port setting (32168)."
+                "description": "The app's debug server port. Default: the c1600.port setting (32168)."
               },
               "project": {
                 "type": "string",
@@ -399,7 +399,7 @@
         },
         "initialConfigurations": [
           {
-            "type": "calcu1600",
+            "type": "c1600",
             "request": "attach",
             "name": "Calc-U-1600: project",
             "project": "${workspaceFolder}/debug.pc1600",
@@ -414,7 +414,7 @@
             "label": "Calc-U-1600: project (PC-1600, zasm)",
             "description": "A project preset with a debug: block; builds one source file.",
             "body": {
-              "type": "calcu1600",
+              "type": "c1600",
               "request": "attach",
               "name": "${1:Debug the project}",
               "project": "^\"\\${workspaceFolder}/debug.pc1600\"",
@@ -428,7 +428,7 @@
             "label": "Calc-U-1600: project (PC-1500, sdas)",
             "description": "A project preset with a debug: block; builds one source file.",
             "body": {
-              "type": "calcu1600",
+              "type": "c1600",
               "request": "attach",
               "name": "${1:Debug the project}",
               "project": "^\"\\${workspaceFolder}/debug.pc1500a\"",
@@ -442,7 +442,7 @@
             "label": "Calc-U-1600: debug the current file",
             "description": "Assemble the .asm in the editor and stop at its entry.",
             "body": {
-              "type": "calcu1600",
+              "type": "c1600",
               "request": "attach",
               "name": "Debug current file on ${1|PC-1600,PC-1500A|}",
               "currentFile": "${2|pc1600,pc1500a|}"
@@ -452,7 +452,7 @@
             "label": "Calc-U-1600: reset and stop (firmware)",
             "description": "Stop on the reset vector's first instruction.",
             "body": {
-              "type": "calcu1600",
+              "type": "c1600",
               "request": "attach",
               "name": "Reset and stop",
               "reset": "reset",
@@ -465,22 +465,22 @@
     "configuration": {
       "title": "Calc-U-1600 Debugger",
       "properties": {
-        "calcu1600.port": {
+        "c1600.port": {
           "type": "number",
           "default": 32168,
           "description": "The emulator's debug server port (Settings ▸ Debugger in the app). A configuration's own \"port\" wins."
         },
-        "calcu1600.zasmPath": {
+        "c1600.zasmPath": {
           "type": "string",
           "default": "",
           "description": "The zasm executable (PC-1600 builds). Empty: $CALCU_ZASM, else zasm on the PATH."
         },
-        "calcu1600.sdccBinPath": {
+        "c1600.sdccBinPath": {
           "type": "string",
           "default": "",
           "description": "The folder with sdaslh5801, sdld and makebin (PC-1500 builds). Empty: $CALCU_SDCC_BIN, else the PATH."
         },
-        "calcu1600.romListings": {
+        "c1600.romListings": {
           "type": "array",
           "default": [],
           "description": "Listings added to every session, e.g. of ROM code: a path, or {path, source, cpu, bank, me, pu, pv}.",
@@ -530,7 +530,7 @@
             }
           }
         },
-        "calcu1600.romSymbols": {
+        "c1600.romSymbols": {
           "type": "array",
           "default": [],
           "description": ".SYMBOLS: tables added to every session: a path, or {path, cpu, bank, me, pu, pv}.",
@@ -581,7 +581,7 @@
     },
     "taskDefinitions": [
       {
-        "type": "calcu1600",
+        "type": "c1600",
         "required": [
           "assembler"
         ],

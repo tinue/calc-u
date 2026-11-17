@@ -21,7 +21,7 @@ public:
     virtual void close() = 0;                       // stops listening, drops a client
     virtual void send(std::string bytes) = 0;       // to the client (nothing without one)
     virtual void dropClient() = 0;                  // after what was sent (AC-10)
-    virtual void quitProgram() = 0;                 // AC-17 calcu1600/quit
+    virtual void quitProgram() = 0;                 // AC-17 c1600/quit
 };
 
 struct DapInput {

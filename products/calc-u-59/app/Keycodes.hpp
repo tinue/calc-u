@@ -8,7 +8,7 @@
 
 // The keycode notation of docs/formats/preset.md §4.1 (C59-2 AC-3, OQ-5,
 // design §3.3, D-5): one reader for a preset's `program: keycodes: |`, a
-// keystroke program file (§4.1.1, `.keystrokes.yaml`) and `ti59 program`.
+// keystroke program file (§4.1.1, `.keystrokes.yaml`) and `c59 program`.
 //
 // A line is cut at a `#` that starts it or follows a space (a comment).
 // Listing: a first token of three or more digits is a step number (up to

@@ -46,7 +46,7 @@ TEST(ac4_json_reply_has_the_three_keys_for_every_command) {
     CHECK(run.server != nullptr);
     if (!run.server) return;
     const std::vector<std::string> lines = {
-        "wait 1ms", "wait", "key-down 1", "key-up 1", "key-down nokey", "lcd", "display", "state busy", "state nope",
+        "wait 1ms", "wait", "key-down 1", "key-up 1", "key-down nokey", "display-text", "display", "state busy", "state nope",
         "capabilities", "ticks", "audio x.wav", "state-save", "state-restore /no/such/file", "test mapping { a: 1 }",
         "test operation 10", "test fail", "test count", "nothing"};
     for (const auto& l : lines) {
@@ -69,12 +69,12 @@ TEST(ac5_refusal_carries_the_reason) {
 // ── Lines and the registry (T4) ─────────────────────────────────────────
 
 TEST(ac2_commands_part_on_then) {
-    const std::vector<std::string> words = {"wait", "2s", "then", "lcd", "then", "test", "mapping", "{", "a:", "1", "}"};
+    const std::vector<std::string> words = {"wait", "2s", "then", "display-text", "then", "test", "mapping", "{", "a:", "1", "}"};
     const auto lines = splitOneShot(words);
     CHECK_EQ(lines.size(), std::size_t{3});
     if (lines.size() == 3) {
         CHECK_EQ(lines[0], std::string("wait 2s"));
-        CHECK_EQ(lines[1], std::string("lcd"));
+        CHECK_EQ(lines[1], std::string("display-text"));
         CHECK_EQ(lines[2], std::string("test mapping { a: 1 }"));
     }
     const std::vector<std::string> one = {"ticks"};
@@ -122,15 +122,15 @@ TEST(ac13_product_command_under_product_word) {
 TEST(ac13_common_command_at_top_level) {
     TestProduct p;
     const CommandRegistry r = registryOf(p);
-    for (const char* c : {"wait", "key-down", "key-up", "lcd", "display", "state", "capabilities", "ticks", "audio",
+    for (const char* c : {"wait", "key-down", "key-up", "display-text", "display", "state", "capabilities", "ticks", "audio",
                           "state-save", "state-restore", "quit"}) {
         CHECK(r.find({c}) != nullptr);
         CHECK(r.find({"test", c}) == nullptr);
     }
     // The product-specific part of a common command comes from the product:
-    // `lcd` of the test product reads its segments by the product's rule.
+    // `display-text` of the test product reads its segments by the product's rule.
     TestRun run;
-    CHECK(run.server && run.line("lcd").rfind("done 2\n010\n", 0) == 0);   // 1667 ticks after the start (LIB-18)
+    CHECK(run.server && run.line("display-text").rfind("done 2\n010\n", 0) == 0);   // 1667 ticks after the start (LIB-18)
 }
 
 TEST(ac22_step_becomes_command_by_dropping_dash_and_colon) {

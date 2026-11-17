@@ -63,9 +63,9 @@ DisplayText readSegments(const machine::SegmentFrame&, const machine::SegmentLay
 std::vector<std::pair<std::string, std::optional<Decimal>>> indicatorsOn(std::span<const machine::IndicatorOutput>,
                                                                          const std::vector<machine::IndicatorDef>&);
 
-// The lines of `lcd` (AC-10) and its JSON result.
-std::vector<std::string> lcdLines(const DisplayText&);
-Value lcdValue(const DisplayText&);
+// The lines of `display-text` (AC-10) and its JSON result.
+std::vector<std::string> displayTextLines(const DisplayText&);
+Value displayTextValue(const DisplayText&);
 
 // The lines of `display` (AC-23) and its JSON result: the raw output.
 std::vector<std::string> displayLines(const machine::DisplayOutput&, const machine::DisplayDescriptor&);

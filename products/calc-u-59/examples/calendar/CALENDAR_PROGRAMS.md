@@ -33,7 +33,7 @@ Still to capture from the source page: the two Palmer Hanson programs (v5n7 and 
 
 ## Comparison of the programs
 
-Times are emulated seconds in the Calc-U-59 harness (`ti59 run-time`) for 2026, from
+Times are emulated seconds in the Calc-U-59 harness (`c59 run-time`) for 2026, from
 the key that starts the year's printing until the display lights up again,
 as a stopwatch on the real calculator would see it. Each program's own
 preparation after that key is included. "Published" is the
@@ -57,7 +57,7 @@ the published times are for other years. The last four programs share one
 row engine (Galidas' table of two-day entries); with it a printed line costs
 0.89 s, and 61 to 64 lines a year are most of the run time. The later gains
 come from the work per month. Fast mode and its entry methods, including
-Acosta's "hi2", are explained in `rom/fastmode.md`; the timing tools are `ti59 run-time` and `ti59 line-times`
+Acosta's "hi2", are explained in `rom/fastmode.md`; the timing tools are `c59 run-time` and `c59 line-times`
 of the harness and the scripts in `tools/calendar/` (`reference/Harness.md`).
 
 Measured the same way, adding up every key after the year is keyed in

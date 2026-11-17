@@ -64,7 +64,7 @@ std::vector<std::uint8_t> bytesOf(const std::string& path) {
 // 2 s are compared.
 std::string after2s(Run& r, const std::string& dir, const std::string& name, bool paper) {
     const std::string before = paper ? r("paper text") : std::string();
-    std::string s = r("wait 2s") + r("lcd") + r("display") + r("ticks");
+    std::string s = r("wait 2s") + r("display-text") + r("display") + r("ticks");
     if (paper) {
         const std::string now = r("paper text");
         const auto body = [](const std::string& t) { return t.substr(std::min(t.size(), t.find('\n') + 1)); };
@@ -122,7 +122,7 @@ void restoresIdentically(const std::string& name, const std::vector<std::string>
     CHECK(first == other);
 }
 
-const char* kLoop = "ti59 program 000 76 11 42 00 76 12 97 00 12 91";   // Lbl A STO 00 Lbl B Dsz 0 B R/S
+const char* kLoop = "c59 program 000 76 11 42 00 76 12 97 00 12 91";   // Lbl A STO 00 Lbl B Dsz 0 B R/S
 
 } // namespace
 
@@ -139,16 +139,16 @@ TEST(c59_9_ac15_restore_continues_identically_ti58) {
 TEST(c59_9_ac15_restore_continues_identically_ti58c) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     // The TI-58C's constant memory is its RAM (C59-3): a data register written before.
-    restoresIdentically("ti58c", {"model TI-58C", "ti59 registers 07=3.25", kLoop, "key 5 0 0 A", "wait 500ms"}, false);
+    restoresIdentically("ti58c", {"model TI-58C", "c59 data-registers 07=3.25", kLoop, "key 5 0 0 A", "wait 500ms"}, false);
 }
 
 TEST(c59_9_ac15_with_printer_module_and_card_in_reader) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     // A PC-100C printing in a loop (Lbl A Op 00 1 Prt GTO A), the ML module in slot-1.
-    restoresIdentically("printer", {"attach printer PC-100C", "ti59 program 000 76 11 69 00 01 99 61 11",
+    restoresIdentically("printer", {"attach printer PC-100C", "c59 program 000 76 11 69 00 01 99 61 11",
                                     "key A", "wait 700ms"}, true);
     // A card passing the reader: a program written onto side 0 of a card.
-    restoresIdentically("card", {"ti59 program 000 76 11 01 02 03 91", "arm { mem: X }", "key 1 Write", "feed card-reader",
+    restoresIdentically("card", {"c59 program 000 76 11 01 02 03 91", "arm { mem: X }", "key 1 Write", "feed card-reader",
                                  "wait 20ms"}, false);
 }
 

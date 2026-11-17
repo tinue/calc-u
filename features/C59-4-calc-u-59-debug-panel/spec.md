@@ -67,12 +67,12 @@ The panel
 
   | Topic | Carries |
   |---|---|
-  | `calculator-debug` | what AC-3 lists |
-  | `program-listing` | the listing of AC-4 and the current step, while the machine is paused |
-  | `cpu-debug` | the instructions of AC-6 |
-  | `heatmap` | the counts of AC-8 |
-  | `asm-overlay` | the file's name, the number of instructions, the status line, and whether the overlay runs |
-  | `debug-view` | the tab a `debug-panel:` step asked for last |
+  | `c59.calculator-debug` | what AC-3 lists |
+  | `c59.program-listing` | the listing of AC-4 and the current step, while the machine is paused |
+  | `c59.cpu-debug` | the instructions of AC-6 |
+  | `c59.heatmap` | the counts of AC-8 |
+  | `c59.asm-overlay` | the file's name, the number of instructions, the status line, and whether the overlay runs |
+  | `c59.debug-view` | the tab a `debug-panel:` step asked for last |
 
   and these product entries in the control state (LIB-4 AC-14): whether
   Run can be used, whether TRACE can be used, and whether the CALCULATOR
@@ -118,7 +118,7 @@ CPU tab
   last set to zero; it is taken through the debug target as the profile
   of LIB-10 is (AC-20 there), and is Calc-U-59's own count, apart from
   a `profile` of the harness. The CPU tab shows the counts as a picture
-  of the ROM. They are set to zero by the command `ti59 heatmap reset`,
+  of the ROM. They are set to zero by the command `c59 heatmap reset`,
   which the tab's button sends and which a frontend sends when the
   panel comes into view, and by a Reset and a model switch
   (`capabilities.md`, product kinds;
@@ -230,12 +230,12 @@ Every frontend, and the checks
   AC-19 hold in each, with the labels of today and their short forms
   where the panel is narrow ("F.START", "DEBUG")
   (`App/Views/LiveDebugView.swift:71-76`).
-- [ ] **AC-22** — Given the harness with Calc-U-59, then `ti59 asm load
-  <file>`, `ti59 asm run` and `ti59 asm clear` do what the three buttons
-  do, `ti59 dump scom|memory|prog|vars` gives the lines of a dump as its
-  reply, `ti59 log-level off|info|debug` sets the level of AC-11, and
-  `ti59 heatmap reset` is the command of AC-8. They are commands only;
-  a preset has no steps for them. The other commands under `ti59` are
+- [ ] **AC-22** — Given the harness with Calc-U-59, then `c59 asm load
+  <file>`, `c59 asm run` and `c59 asm clear` do what the three buttons
+  do, `c59 dump scom|memory|prog|vars` gives the lines of a dump as its
+  reply, `c59 log-level off|info|debug` sets the level of AC-11, and
+  `c59 heatmap reset` is the command of AC-8. They are commands only;
+  a preset has no steps for them. The other commands under `c59` are
   C59-2's and C59-9's.
 - [ ] **AC-23** — Given what the tests of Calc-U-59 check today about
   the panel, beyond what LIB-10 AC-35 covers, then it holds: what the
@@ -319,3 +319,4 @@ Every frontend, and the checks
 | Run enters with COND set; a word after `HEX:` refuses the file; AC-23 excepts the two lenient cases; a cold boot or a new machine removes the overlay (AC-15, AC-17, AC-20, AC-23, AC-26) | user, 2026-11-13 (B-18 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The overlays' comments and `examples/assembly/README.md` are upgraded with them (AC-20) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |
 | AC-12 amended: TRACE can always be pressed; where the trace folder cannot be written the start is refused with LIB-10 AC-53's sentence (the entry `c59.trace` is always available; design §3.9). The Web tab lists only traces | user, 2026-11-17, Q-2 of `docs/reviews/e-simplification.md` and Q-1; ledger rows 59-62, 59-63 | 2026-11-17 |
+| Release prep step 1: the product topics of AC-25 carry the product word: `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view`; the command that tells the part the CPU tab is shown is `c59.show-cpu-debug` (was `c59.cpu-debug`, now the topic's name); AC-22's commands are under `c59`. Names only | user, 2026-11-17 (`docs/reviews/e-simplification.md` §10 Q-6): one word per product everywhere; `docs/reviews/release-prep-plan.md` §1; ledger row 59-58 | 2026-11-17 |

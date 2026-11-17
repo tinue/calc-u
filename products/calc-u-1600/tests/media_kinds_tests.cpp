@@ -345,7 +345,7 @@ TEST(lib7_ac42_tape_flow_through_the_harness) {
     CHECK(h.line("cassette { file: " + def.generic_string() + " }").rfind("done", 0) == 0);
     CHECK(h.line("type CLOAD").rfind("done", 0) == 0);
     CHECK(h.line("wait").rfind("done", 0) == 0);
-    CHECK(h.line("lcd").find("ERROR") == std::string::npos);
+    CHECK(h.line("display-text").find("ERROR") == std::string::npos);
     CHECK(h.line("eject cassette").rfind("done", 0) == 0);
     m = h.line("media");
     CHECK(m.find("\"place\":\"cassette\"") != std::string::npos && m.find("\"holds\"") == std::string::npos);
@@ -372,7 +372,7 @@ TEST(lib7_ac42_tape_flow_through_the_harness) {
     CHECK(h.line("cassette { name: Rec }").rfind("done", 0) == 0);
     CHECK(h.line("type CLOAD \"RT\"").rfind("done", 0) == 0);
     CHECK(h.line("wait").rfind("done", 0) == 0);
-    CHECK(h.line("lcd").find("ERROR") == std::string::npos);
+    CHECK(h.line("display-text").find("ERROR") == std::string::npos);
 }
 
 } // namespace

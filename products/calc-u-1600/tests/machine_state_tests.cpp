@@ -1,6 +1,6 @@
 // C1600-5 design §6, T8 (AC-13; LIB-11 AC-24): the machine state of the
 // Sharp models through `state-save` / `state-restore`, each test on
-// `calcu --product 1600` runs of its own (tests/harness/HarnessRun.hpp).
+// `calcu --product c1600` runs of its own (tests/harness/HarnessRun.hpp).
 // A state saved while a program runs, then 2 s of emulated time; restored,
 // in the same run and in another, the same 2 s give the same display, the
 // same ticks and the same sound. A program of its own (CTest
@@ -42,7 +42,7 @@ After after(Run& r, const fs::path& folder, const std::string& name, const std::
     const fs::path state = folder / (name + ".bin");
     CHECK_EQ(r.line("audio " + wav.string()), std::string("done\n"));
     a.replies.push_back(r.line("wait " + seconds));
-    for (const char* l : {"lcd", "display", "ticks"}) a.replies.push_back(r.line(l));
+    for (const char* l : {"display-text", "display", "ticks"}) a.replies.push_back(r.line(l));
     for (const std::string& l : more) a.replies.push_back(r.line(l));
     CHECK_EQ(r.line("audio " + (folder / "closed.wav").string()), std::string("done\n"));   // the WAV above complete
     a.sound = fileBytes(wav);
@@ -130,12 +130,12 @@ TEST(c1600_5_ac13_restore_continues_identically_pc1500a) {
             CHECK_EQ(r.line("type NEW0"), std::string("done\n"));
             CHECK_EQ(r.line("type 10 A=A+1:PRINT A:BEEP 1:GOTO 10"), std::string("done\n"));
             CHECK_EQ(r.line("key mode"), std::string("done\n"));
-            CHECK(starts(r.line("pc1600 cassette record " + (folder / "tape.wav").string()), "done"));
+            CHECK(starts(r.line("c1600 cassette record " + (folder / "tape.wav").string()), "done"));
             CHECK_EQ(r.line("type CSAVE \"A\""), std::string("done\n"));
             r.line("wait 500ms");
-            CHECK(has(r.line("pc1600 cassette status"), "motor: on"));   // saved while the CSAVE records
+            CHECK(has(r.line("c1600 cassette status"), "motor: on"));   // saved while the CSAVE records
         },
-        {"pc1600 cassette status", "pc1600 serial ce158 report", "pc1600 inspect inventory", "pc1600 dump-basic"});
+        {"c1600 cassette status", "c1600 serial ce158 report", "c1600 inspect inventory", "c1600 dump-basic"});
 }
 
 TEST(c1600_5_ac13_restore_continues_identically_pc1600) {
@@ -158,17 +158,17 @@ TEST(c1600_5_ac13_full_pc1600_with_ce1600p_disk_tape_ce158_modules) {
             CHECK_EQ(r.line("attach slot-2 CE-161"), std::string("done\n"));
             CHECK_EQ(r.line("floppy { name: Formatted, side: 1 }"), std::string("done\n"));
             fs::create_directories(folder / "drive");
-            CHECK(starts(r.line("pc1600 host-drive " + (folder / "drive").string()), "done"));
+            CHECK(starts(r.line("c1600 host-drive " + (folder / "drive").string()), "done"));
             CHECK_EQ(r.line("key cl"), std::string("done\n"));
             CHECK_EQ(r.line("type NEW0"), std::string("done\n"));
             CHECK_EQ(r.line("type 10 A=A+1:PRINT A:BEEP 1:GOTO 10"), std::string("done\n"));
             CHECK_EQ(r.line("key mode"), std::string("done\n"));
-            CHECK(starts(r.line("pc1600 cassette record " + (folder / "tape.wav").string()), "done"));
+            CHECK(starts(r.line("c1600 cassette record " + (folder / "tape.wav").string()), "done"));
             CHECK_EQ(r.line("type CSAVE \"CAS:P\""), std::string("done\n"));
             r.line("wait 500ms");
-            CHECK(has(r.line("pc1600 cassette status"), "motor: on"));   // saved while the CSAVE records
+            CHECK(has(r.line("c1600 cassette status"), "motor: on"));   // saved while the CSAVE records
         },
-        {"pc1600 cassette status", "pc1600 inspect disks", "pc1600 inspect inventory", "pc1600 dump-basic"});
+        {"c1600 cassette status", "c1600 inspect disks", "c1600 inspect inventory", "c1600 dump-basic"});
 
     restoreContinuesIdentically(
         [](Run& r, const fs::path&) {
@@ -179,7 +179,7 @@ TEST(c1600_5_ac13_full_pc1600_with_ce1600p_disk_tape_ce158_modules) {
             CHECK_EQ(r.line("attach slot-2 CE-1601M"), std::string("done\n"));
             runCountingLoop(r);
         },
-        {"pc1600 cassette status", "pc1600 serial ce158 report", "pc1600 inspect inventory"});
+        {"c1600 cassette status", "c1600 serial ce158 report", "c1600 inspect inventory"});
 }
 
 // LIB-11 AC-24: a state of another set of plugged peripherals, or of
@@ -204,10 +204,10 @@ TEST(c1600_5_ac13_refused_for_other_peripherals) {
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
     r.line("wait 100ms");
     const std::string ticks = r.line("ticks");
-    const std::string lcd = r.line("lcd");
+    const std::string lcd = r.line("display-text");
     CHECK_EQ(r.line("state-restore " + state), refusal);   // no printer
     CHECK_EQ(r.line("ticks"), ticks);
-    CHECK_EQ(r.line("lcd"), lcd);
+    CHECK_EQ(r.line("display-text"), lcd);
     CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
     CHECK_EQ(r.line("state-restore " + state), refusal);   // another printer
     CHECK_EQ(r.line("detach printer"), std::string("done\n"));

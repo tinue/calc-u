@@ -175,7 +175,7 @@ Checked-in analysis the project keeps for itself, distinct from any AI tool's pr
 
 | Document | Abstract |
 |---|---|
-| [`reference/Harness.md`](reference/Harness.md) | The harness `calcu --product 59` without a window: ROM traces of key sequences, timing and profiling presets, the `ti59` commands, the scripts that stay (`tools/coverage.py`, `tools/fastmode_matrix.py`, `tools/calendar/`). |
+| [`reference/Harness.md`](reference/Harness.md) | The harness `calcu --product c59` without a window: ROM traces of key sequences, timing and profiling presets, the `c59` commands, the scripts that stay (`tools/coverage.py`, `tools/fastmode_matrix.py`, `tools/calendar/`). |
 | [`tools/goldens/README.md`](tools/goldens/README.md) | How the golden files that check the `app/` ports against the former Swift code are made. |
 
 ### `prompt/` — LLM system prompt

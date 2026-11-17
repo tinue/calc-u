@@ -49,11 +49,11 @@ serial port file.
 ## Acceptance Criteria
 
 - [ ] **AC-1** — Given the harness with Calc-U-1600, then the commands
-  of this spec exist under `pc1600`, next to those of C1600-2, for the
+  of this spec exist under `c1600`, next to those of C1600-2, for the
   PC-1500, the PC-1500A and the PC-1600 (LIB-11 AC-13, AC-20).
 
 BASIC
-- [ ] **AC-2** — Given `pc1600 dump-basic`, then the reply gives the
+- [ ] **AC-2** — Given `c1600 dump-basic`, then the reply gives the
   pointers of BASIC, one line each in this order, and then the program
   area from its start to 16 bytes past its end, in rows of 16 bytes with
   the address before them and the same bytes as characters after them:
@@ -71,7 +71,7 @@ BASIC
   `40C5: 00 0A … |…|` for a row (`tools/pc1600_cli.cpp:200-237`).
 
 INSPECTOR views
-- [ ] **AC-4** — Given `pc1600 inspect` with the name of a view, then
+- [ ] **AC-4** — Given `c1600 inspect` with the name of a view, then
   the reply is that view as the INSPECTOR shows it, as lines of text. A
   name that is no view is refused; a view the model does not have gives
   the one line `<title>: not on the PC-1500`, or `… PC-1600`:
@@ -88,13 +88,13 @@ INSPECTOR views
   `Core/tests/inspector_tests.cpp:97-250`.)
 
 Cassette
-- [ ] **AC-5** — Given `pc1600 cassette record` with a path, then a new,
+- [ ] **AC-5** — Given `c1600 cassette record` with a path, then a new,
   empty cassette is in the cassette recorder, and what the machine saves is written
   to that file as LIB-7 AC-42 says, each time the motor stops and when
   the cassette is ejected; the name LIB-7 AC-20 asks a user for is not
   asked. A cassette that was in the recorder is ejected first
   (`tools/CliCommon.hpp:56-80`, `Core/Tape/TapeDeck.hpp:55-133`).
-- [ ] **AC-6** — Given `pc1600 cassette status`, then the reply (`cassette: playing|recording|empty …`, `motor: on|off`) gives the
+- [ ] **AC-6** — Given `c1600 cassette status`, then the reply (`cassette: playing|recording|empty …`, `motor: on|off`) gives the
   position of a tape that plays, or the length of one that records, in
   seconds, the length of the whole tape, and whether the motor runs, or
   that the cassette recorder is empty (`tools/CliCommon.hpp:84-95`; LIB-7 AC-42).
@@ -106,10 +106,10 @@ Serial ports
 
   | Command | What it does |
   |---|---|
-  | `pc1600 serial <port> feed <file> [hold=<n>]` | the file's bytes are what the port receives, one in each character time in which the port's receiver is empty; with `hold`, nothing comes in the first n character times. A second `feed` takes the place of what was left |
-  | `pc1600 serial <port> capture <file>` | the bytes the port sends are written to that file; the file is complete at the end of the run, at `quit`, and when another `capture` names another file |
-  | `pc1600 serial <port> link` | the port gets the host link of LIB-2 (AC-18 there), with its serial port file in the folder made for the run; the reply gives the path. `feed` and `capture` are then refused for that port |
-  | `pc1600 serial <port> report` | the speed the port is set to, the state of its receiver and sender, how many of the bytes to receive were taken, and all bytes the port sent since the machine was built, as text; for `ce158` also the bytes sent to its printer's port, as text |
+  | `c1600 serial <port> feed <file> [hold=<n>]` | the file's bytes are what the port receives, one in each character time in which the port's receiver is empty; with `hold`, nothing comes in the first n character times. A second `feed` takes the place of what was left |
+  | `c1600 serial <port> capture <file>` | the bytes the port sends are written to that file; the file is complete at the end of the run, at `quit`, and when another `capture` names another file |
+  | `c1600 serial <port> link` | the port gets the host link of LIB-2 (AC-18 there), with its serial port file in the folder made for the run; the reply gives the path. `feed` and `capture` are then refused for that port |
+  | `c1600 serial <port> report` | the speed the port is set to, the state of its receiver and sender, how many of the bytes to receive were taken, and all bytes the port sent since the machine was built, as text; for `ce158` also the bytes sent to its printer's port, as text |
 
 - [ ] **AC-8** — Given such a text, then a line end and a character of
   ASCII that can be printed stand as they are, a carriage return is
@@ -120,10 +120,10 @@ Serial ports
   not one that repeats exactly (LIB-11 AC-6, AC-8; `harness.md` I-2).
 
 Host drive
-- [ ] **AC-11** — Given a PC-1600 and `pc1600 host-drive` with the path
+- [ ] **AC-11** — Given a PC-1600 and `c1600 host-drive` with the path
   of a folder, then the host drive is attached in the place `host-drive`
   showing that folder, or shows that folder from then on when it is
-  attached already; given `pc1600 host-drive off`, then it is detached;
+  attached already; given `c1600 host-drive off`, then it is detached;
   what follows is what LIB-18 AC-30 says (`harness.md`, fit table;
   C1600-1 AC-19).
 
@@ -134,7 +134,7 @@ Checks
   the replies of AC-2 and of `peek`.
 
 Machine-code routines
-- [ ] **AC-12** — Given a paused machine, when `pc1600 call <target>
+- [ ] **AC-12** — Given a paused machine, when `c1600 call <target>
   <address> [timeout=<duration>]` is given, then the target runs the
   routine at that address as a call from the current state, by the call
   and return of that processor, and pauses when it returns to the
@@ -159,12 +159,12 @@ Machine state
   program, then connects the port, then starts the program; today
   `pc1500_cli` connects the port before its preset builds the machine
   (`tools/pc1500_cli.cpp:185-187`).
-- **EC-4** — Given `pc1600 dump-basic` on a machine whose BASIC is not
+- **EC-4** — Given `c1600 dump-basic` on a machine whose BASIC is not
   set up, then the pointers are given as they are, and the program area
   is left out when its start does not lie before its end.
-- **EC-5** — Given `pc1600 host-drive` on a PC-1500 or PC-1500A, or with
+- **EC-5** — Given `c1600 host-drive` on a PC-1500 or PC-1500A, or with
   a path that is no folder, then it is refused.
-- **EC-6** — Given `pc1600 cassette record` with a path that cannot be
+- **EC-6** — Given `c1600 cassette record` with a path that cannot be
   written, then the save fails when the motor stops, and LIB-7's notice
   says so.
 
@@ -184,9 +184,9 @@ Machine state
   kind (LIB-2), so the same commands cost little. *Recommendation:* add
   it, as AC-7 says.
 - [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The names of the commands. `harness.md` H-2 names
-  `pc1600 dump-basic`, `pc1600 tape` and `pc1600 serial`; the INSPECTOR
+  `c1600 dump-basic`, `pc1600 tape` and `c1600 serial`; the INSPECTOR
   has a view that is also called `dump-basic`. *Recommendation:* as
-  written here: the contract's names, with the view reached as `pc1600
+  written here: the contract's names, with the view reached as `c1600
   inspect dump-basic`.
 - [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* "View" (of the INSPECTOR) and "character time" for the
   glossary, as defined above.
@@ -212,3 +212,4 @@ Machine state
 | M-51 (AC-13): the machine state holds the machine and its peripherals with their media; what the session keeps is not in it: LIB-7's record of what a media place holds and where `tape record` writes, the paper drawn, the bytes in a serial port's queues, the debugger's breakpoints, watches, history and trace. A state saved while a change of the peripherals waits for a power cycle is refused at the restore | the session's parts are not the machine (LIB-11 AC-24: files of the host are not part of the state); a waiting change is not a part of the core; qa-report | 2026-11-16 |
 | M-51 (AC-13, T8): `c1600_5_ac13_full_pc1600_…` runs two PC-1600s, the CE-1600P with its disk and tape on one, the CE-150 with the CE-158 on the other | the CE-1600P and the CE-158 cannot be used together (LIB-2 D-6, ledger 1600-22) | 2026-11-16 |
 | The cassette commands are `pc1600 cassette record <file.wav>` and `pc1600 cassette status`, the reply `cassette: …` (AC-5, AC-6, EC-2, EC-6 edited in place; was `pc1600 tape …`, `tape: …`); the word `pc1600` stays until release prep step 1 | user, 2026-11-17 (Part E review Q-6); `docs/reviews/release-prep-plan.md` §2 (2o); behaviour change 1600-51 | 2026-11-17 |
+| Release prep step 1: the commands are under the product word `c1600` (was `pc1600`), `c1600 cassette record|status` among them. ACs edited in place, names only | user, 2026-11-17 (`docs/reviews/e-simplification.md` §10 Q-6): one word per product everywhere; `docs/reviews/release-prep-plan.md` §1; ledger row 1600-50 | 2026-11-17 |

@@ -5,7 +5,7 @@
 #include <string_view>
 
 // A product's option of `serve` (C1600-3 design §3.5; AC-22): Calc-U-1600's
-// `calcu --product 1600 serve --dap <port>`. It takes its value at the
+// `calcu --product c1600 serve --dap <port>`. It takes its value at the
 // start; then it has things done on the serve loop's thread (what its own
 // I/O thread got) through the loop's inbox, with standard input's lines in
 // the order they came. While the inbox is empty and an add-on wants time,

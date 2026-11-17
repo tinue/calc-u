@@ -77,10 +77,10 @@ characters has fewer digits; keep it as printed.
 
 ## Checking a preset
 
-- `calcu --product 59 check-preset <file>…` reads it as a load would;
-  `calcu --product 59 preset <file> then wait then lcd then paper text`
+- `calcu --product c59 check-preset <file>…` reads it as a load would;
+  `calcu --product c59 preset <file> then wait then display-text then paper text`
   carries it out in emulated time (products/calc-u-59/CLAUDE.md,
-  "Harness"); `ti59 program 000 count=<n>` and `ti59 registers <NN>…` read
+  "Harness"); `c59 program 000 count=<n>` and `c59 data-registers <NN>…` read
   what it wrote.
 - The examples are checked by `calcu_preset_check.CalcU59Presets`
   (Frequent) and against their 2.3.0 reference runs by

@@ -189,7 +189,7 @@ configurations committed in the repository's `.run/`:
 |---|---|---|
 | `Calc-U-1600` | `CalcU1600Qt` | The Qt6 GUI app |
 | `CoreTests` | `CoreTests` | Headless test suite, also runnable via CTest |
-| `calcu-1600` | `calcu` | The harness, `calcu --product 1600 serve`: one command per line on standard input (LIB-11; the product's section Harness of `CLAUDE.md`). It replaced `pc1500_cli`, `pc1600_cli` and the three probes in M-51: every function of the CLIs is a `calcu` command (LIB-11 AC-18) |
+| `calcu-1600` | `calcu` | The harness, `calcu --product c1600 serve`: one command per line on standard input (LIB-11; the product's section Harness of `CLAUDE.md`). It replaced `pc1500_cli`, `pc1600_cli` and the three probes in M-51: every function of the CLIs is a `calcu` command (LIB-11 AC-18) |
 
 All of them run and debug interactively (breakpoints, variable
 inspection, stepping) — which is the main thing this build adds over
@@ -282,11 +282,11 @@ ctest --test-dir ../../build/groups/products/calc-u-1600 -L longer
 products and its group.
 
 **Checking presets.** `calcu_preset_check.CalcU1600Presets` runs
-`calcu --product 1600 check-preset` over every preset of the repository
+`calcu --product c1600 check-preset` over every preset of the repository
 (six that wait for the media update are excluded by name);
 `calcu_preset_check.CalcU1600Templates` checks the VS Code templates, filled
 in by `tests/fill_vscode_templates.cmake`. By hand:
-`calcu --product 1600 check-preset <file>…`.
+`calcu --product c1600 check-preset <file>…`.
 
 ## WebAssembly check
 

@@ -26,7 +26,7 @@ echo "rom_missing_build: roms/ without $MISSING"
 # The harness: CALCU (CTest hands the tree's), else the build/tests tree's.
 CALCU="${CALCU:-$ROOT/build/tests/library/harness/cli/calcu}"
 status=0
-CALCU59_ROMS_DIR="$TMP/roms" "$CALCU" --product 59 wait 1s >"$TMP/out" 2>"$TMP/err" || status=$?
+CALCU59_ROMS_DIR="$TMP/roms" "$CALCU" --product c59 wait 1s >"$TMP/out" 2>"$TMP/err" || status=$?
 [ "$status" -eq 2 ] || { echo "FAIL: calcu started without $MISSING (exit $status)" >&2; exit 1; }
 grep -q "$MISSING: missing" "$TMP/err" || { echo "FAIL: calcu does not name $MISSING:" >&2; cat "$TMP/err" >&2; exit 1; }
 echo "rom_missing_build: the harness names $MISSING: ok"

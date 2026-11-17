@@ -8,7 +8,7 @@ set -eu
 : "${CALCU:?CALCU must name the calcu program}"
 out=$(mktemp -d "${TMPDIR:-/tmp}/calcu1600-read-trace.XXXXXX")
 trap 'rm -rf "$out"' EXIT
-"$CALCU" --product 1600 --output-folder "$out" model PC-1600 then trace t.bin then wait 300ms then trace off >/dev/null
+"$CALCU" --product c1600 --output-folder "$out" model PC-1600 then trace t.bin then wait 300ms then trace off >/dev/null
 python3 tools/read_trace.py "$out/t.bin" > "$out/t.txt"
 grep -q "SESSION START" "$out/t.txt" || { echo "no SESSION START in the trace" >&2; exit 1; }
 grep -q "SESSION END" "$out/t.txt" || { echo "no SESSION END in the trace" >&2; exit 1; }

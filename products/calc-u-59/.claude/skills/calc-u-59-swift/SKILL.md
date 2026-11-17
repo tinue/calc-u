@@ -19,16 +19,16 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   `calcu::debugger::buttonUse`; test
   `Calc-U-59Tests/RunControlTests.swift`); TRACE is the trace session's.
   Since M-56 (C59-4) the panel draws the session's product topics
-  `calculator-debug`, `program-listing`, `cpu-debug`, `heatmap`,
-  `asm-overlay`, `debug-view` (app/TIDebugPart.hpp), which the bridge
+  `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`,
+  `c59.asm-overlay`, `c59.debug-view` (app/TIDebugPart.hpp), which the bridge
   mirrors; the LOG tab is the bridge's `cu59::RingLog` of LIB-3's `log`
   (Clear empties the view only); the buttons send `c59.live-debug`,
-  `c59.cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`,
+  `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`,
   `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`. Run, TRACE and the
   CALCULATOR tab follow the `control-state` entries `c59.asm-run`,
   `c59.trace`, `c59.calculator-tab`; FREEZE and FREEZE ON START
   `cu59::freezeButtons` (`freezeButtonsFor:`). The tab a `debug-panel:` step
-  asks for arrives as `showDebugPanel:` when debug-view's `requests` grows.
+  asks for arrives as `showDebugPanel:` when c59.debug-view's `requests` grows.
 - Opening a file (LIB-13, M-56): the macOS drop and the Preset button's
   importer (the preset types and any file) send the library's `open`
   (`openFile:path:fileName:way:completion:`, way `drop` or `dialog`); the

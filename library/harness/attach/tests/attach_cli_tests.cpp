@@ -64,10 +64,10 @@ TEST(c59_5_ac10_calcu_attach_relays_lines) {
     CHECK(app.endpoint.open().ok);
     const std::string port = std::to_string(app.endpoint.port());
     std::string out, err;
-    const int status = runAttach({"--port", port}, input({"ticks", "lcd"}), [&](const std::string& s) { out += s; },
+    const int status = runAttach({"--port", port}, input({"ticks", "display-text"}), [&](const std::string& s) { out += s; },
                                  [&](const std::string& s) { err += s; });
     CHECK_EQ(status, 0);
-    CHECK_EQ(out, std::string("done 1\nticks\ndone 1\nlcd\n"));   // message lines dropped (D-1)
+    CHECK_EQ(out, std::string("done 1\nticks\ndone 1\ndisplay-text\n"));   // message lines dropped (D-1)
     out.clear();
     app.waitDetached(1);
     CHECK_EQ(runAttach({"--port", port, "--messages"}, input({"ticks"}), [&](const std::string& s) { out += s; },

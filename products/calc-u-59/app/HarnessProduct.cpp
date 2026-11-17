@@ -50,7 +50,7 @@ using namespace calcu;
 class TIHarnessProduct final : public harness::HarnessProduct {
 public:
     std::string_view name() const override { return "Calc-U-59"; }
-    std::string_view shortName() const override { return "59"; }
+    std::string_view shortName() const override { return "c59"; }
     std::string_view version() const override { return CALCU59_VERSION; }   // MARKETING_VERSION (CMake)
 
     const calcu::settings::ProductDecl& settingsDecl() const override { return cu59::settings::settingsDecl(); }

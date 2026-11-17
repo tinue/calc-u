@@ -1014,7 +1014,7 @@ with a row, or worked together with it).
 - **Exit check:** VS Code debugs a program as before.
 
 #### M-51 C1600-5 and the LIB-11 Calc-U-1600 column
-- **Does:** today's CLI functions as `pc1600` commands, each with a test;
+- **Does:** today's CLI functions as `c1600` commands, each with a test;
   `pc1500_cli`, `pc1600_cli`, the three probes, `dev/tape-matrix/run.py`
   and `dev/loader-matrix/` go (LIB-11 OQ-5; the loader matrix: user,
   2026-11-16); the harness's Calc-U-1600 entry builds its machine
@@ -1198,7 +1198,7 @@ with a row, or worked together with it).
 - **Exit check:** the iPhone and Mac layouts pass their scenarios.
 
 #### M-59 C59-9 and the LIB-11 Calc-U-59 column
-- **Does:** today's tools' functions only Calc-U-59 has as `ti59`
+- **Does:** today's tools' functions only Calc-U-59 has as `c59`
   commands, each with a test; `tools/headless/` and `tools/agentic/` go
   (`coverage.py`, `fastmode_matrix.py` and `asm59.py` stay scripts on the
   harness). Then the adapter check of §1 over Calc-U-59 and the library.

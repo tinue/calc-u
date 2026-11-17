@@ -41,8 +41,8 @@ TEST(ac10_dot_matrix_rows_indicators_and_cells_not_text) {
         CHECK(t.indicators[0].first == "RUN" && !t.indicators[0].second);
         CHECK(t.indicators[1].first == "DIM" && t.indicators[1].second == std::optional<Decimal>(Decimal{250, 3}));
     }
-    CHECK(lcdLines(t) == (std::vector<std::string>{"A B" + std::string(kNotText), "C CA", "indicators: RUN DIM", "not text: 1"}));
-    CHECK_EQ(writeJson(lcdValue(t)),
+    CHECK(displayTextLines(t) == (std::vector<std::string>{"A B" + std::string(kNotText), "C CA", "indicators: RUN DIM", "not text: 1"}));
+    CHECK_EQ(writeJson(displayTextValue(t)),
              std::string("{\"on\":true,\"rows\":[\"A B\xEF\xBF\xBD\",\"C CA\"],\"indicators\":[{\"name\":\"RUN\",\"brightness\":null},"
                          "{\"name\":\"DIM\",\"brightness\":0.250}],\"notText\":1}"));
 }
@@ -73,7 +73,7 @@ TEST(ac10_segment_positions_left_to_right_by_product_rule) {
     run.line("key-down 1");              // a press; a key down lights DP of position 0
     run.line("wait 1ms");                // the display topic is read when time passes
     // Position 1 is the thousands of the tick count: 1 after the start's 1667 ticks.
-    CHECK_EQ(run.line("lcd"), std::string("done 2\n1.11\nindicators: C\n"));
+    CHECK_EQ(run.line("display-text"), std::string("done 2\n1.11\nindicators: C\n"));
 }
 
 TEST(ac10_display_off_says_so) {
@@ -82,7 +82,7 @@ TEST(ac10_display_off_says_so) {
     if (!run.server) return;
     run.line("key-down off");
     run.line("wait 1ms");
-    CHECK_EQ(run.line("lcd"), std::string("done 1\ndisplay off\n"));
+    CHECK_EQ(run.line("display-text"), std::string("done 1\ndisplay off\n"));
     RunOptions o;
     o.json = true;
     TestRun json(o, mt::kDot);
@@ -90,7 +90,7 @@ TEST(ac10_display_off_says_so) {
     if (!json.server) return;
     json.line("key-down off");
     json.line("wait 1ms");
-    CHECK_EQ(json.line("lcd"), std::string("{\"done\":true,\"result\":{\"on\":false,\"rows\":[],\"indicators\":[],\"notText\":null},"
+    CHECK_EQ(json.line("display-text"), std::string("{\"done\":true,\"result\":{\"on\":false,\"rows\":[],\"indicators\":[],\"notText\":null},"
                                            "\"reason\":null}\n"));
 }
 
@@ -100,12 +100,12 @@ TEST(ac9_lcd_reads_display_topic) {
     if (!run.server) return;
     // test-dot's dots are no glyph of the test font: each lit cell is not text.
     run.line("wait 1ms");
-    const std::string r = run.line("lcd");
+    const std::string r = run.line("display-text");
     CHECK(r.rfind("done 3\n", 0) == 0);
     CHECK(r.find("indicators:") != std::string::npos && r.find("not text: ") != std::string::npos);
     // What lcd shows is the display topic's last state: unchanged without a wait.
     run.machine().advance(1000);   // behind the session's back
-    CHECK_EQ(run.line("lcd"), r);
+    CHECK_EQ(run.line("display-text"), r);
 }
 
 // ── display (T17) ───────────────────────────────────────────────────────

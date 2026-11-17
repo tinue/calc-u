@@ -69,7 +69,7 @@ TEST(harness_drives_a_sharp_machine) {
     }
     auto reply = [&](const std::string& l) { return server->line(l).text; };
     CHECK(reply("wait 2s").rfind("done 2\nticks: ", 0) == 0);
-    const std::string boot = reply("lcd");
+    const std::string boot = reply("display-text");
     CHECK(boot.find("NEW0?") != std::string::npos);   // a fresh RAM asks first
     CHECK(boot.find("\nnot text: 0\n") != std::string::npos);
     for (const char* k : {"cl", "n", "e", "w", "0", "enter"}) {
@@ -79,7 +79,7 @@ TEST(harness_drives_a_sharp_machine) {
         reply("wait 70ms");
     }
     reply("wait 1s");
-    const std::string after = reply("lcd");
+    const std::string after = reply("display-text");
     CHECK(after.find("NEW0?") == std::string::npos);
     CHECK(after.find("indicators:") != std::string::npos);
     CHECK(reply("ticks").rfind("done 2\nticks: ", 0) == 0);
@@ -102,7 +102,7 @@ TEST(harness_drives_a_pc1600) {
     }
     auto reply = [&](const std::string& l) { return server->line(l).text; };
     CHECK_EQ(reply("model PC-1600"), std::string("done\n"));
-    const std::string lcd = reply("lcd");
+    const std::string lcd = reply("display-text");
     CHECK(lcd.rfind("done ", 0) == 0);
     CHECK(lcd.find(">") != std::string::npos);   // the PC-1600's prompt, read with its font
     CHECK(lcd.find("\nnot text: 0\n") != std::string::npos);
@@ -124,7 +124,7 @@ TEST(harness_variant_switch_old) {
     CHECK_EQ(reply("variant old"), std::string("done\n"));   // any case (LIB-18 D-16)
     const auto* m = server->host().session().context().machine();
     CHECK(m && m->model().value == "PC-1600" && m->variant() && m->variant()->value == "Old");
-    CHECK(reply("lcd").find(">") != std::string::npos);
+    CHECK(reply("display-text").find(">") != std::string::npos);
     CHECK_EQ(reply("variant Old"), std::string("done\n"));   // the running variant: nothing to do
     server->finish();
 }
@@ -243,7 +243,7 @@ TEST(lib10_ac52_harness_peek_bank_and_vbank) {
     h.server->finish();
 }
 
-// ---- C1600-2 AC-21 (design §3.7, T9): the loaders under `pc1600` ----
+// ---- C1600-2 AC-21 (design §3.7, T9): the loaders under `c1600` ----
 
 namespace {
 
@@ -262,14 +262,14 @@ std::string scratch(const char* name, const std::string& bytes) {
 
 } // namespace
 
-TEST(c1600_2_ac21_listed_under_pc1600) {
+TEST(c1600_2_ac21_listed_under_c1600) {
     CommandRegistry r;
     auto product = cu1600::makeHarnessProduct();
     product->addCommands(r);
-    for (const char* name : {"file-kind", "load-basic", "type-basic", "load-code"}) CHECK(r.find({"pc1600", name}) != nullptr);
+    for (const char* name : {"file-kind", "load-basic", "type-basic", "load-code"}) CHECK(r.find({"c1600", name}) != nullptr);
     bool usage = false;
     for (const std::string& u : r.usage())
-        if (u.rfind("pc1600 load-code", 0) == 0) usage = true;
+        if (u.rfind("c1600 load-code", 0) == 0) usage = true;
     CHECK(usage);   // --help lists them
 }
 
@@ -279,18 +279,18 @@ TEST(c1600_2_ac21_file_kind) {
     auto server = loaderServer(product);
     CHECK(server != nullptr);
     if (!server) return;
-    const std::string bbin = server->line("pc1600 file-kind tests/fixtures/basic/lissajou-1500.bbin").text;
+    const std::string bbin = server->line("c1600 file-kind tests/fixtures/basic/lissajou-1500.bbin").text;
     CHECK(bbin.find("kind: basic-pc1500\n") != std::string::npos && bbin.find("name: LISSAJOU-1500\n") != std::string::npos);
-    const std::string wav = server->line("pc1600 file-kind tests/fixtures/tape/pc1500_tape.wav").text;
+    const std::string wav = server->line("c1600 file-kind tests/fixtures/tape/pc1500_tape.wav").text;
     CHECK(wav.find("file 1: TAPEFIX") != std::string::npos);
     std::string ce158("\x01\x42" "COM", 5);
     ce158 += std::string(16, '\0');
     ce158 += std::string("\x7C\x01\x00\x01\x7C\x01\x9A\x9A", 8);
     const std::string code = scratch("c1600_2_code.bin", ce158);
-    const std::string k = server->line("pc1600 file-kind " + code).text;
+    const std::string k = server->line("c1600 file-kind " + code).text;
     CHECK(k.find("kind: code-lh5801\n") != std::string::npos && k.find("load: &7C01\n") != std::string::npos &&
           k.find("start: &7C01\n") != std::string::npos);
-    CHECK(server->line("pc1600 file-kind /no/such/file").text.rfind("refused: ", 0) == 0);
+    CHECK(server->line("c1600 file-kind /no/such/file").text.rfind("refused: ", 0) == 0);
     server->finish();
 }
 
@@ -302,9 +302,9 @@ TEST(c1600_2_ac21_load_basic_with_n) {
     server->line("key cl");
     server->line("type NEW0");
     server->line("wait 1s");
-    CHECK_EQ(server->line("pc1600 load-basic tests/fixtures/tape/pc1500_tape.wav 1").text, std::string("done\n"));
-    CHECK_EQ(server->line("pc1600 load-basic tests/fixtures/basic/lissajou-1500.bas").text, std::string("done\n"));
-    CHECK(server->line("pc1600 load-basic tests/fixtures/tape/pc1500_tape.wav 2").text.rfind("refused: ", 0) == 0);
+    CHECK_EQ(server->line("c1600 load-basic tests/fixtures/tape/pc1500_tape.wav 1").text, std::string("done\n"));
+    CHECK_EQ(server->line("c1600 load-basic tests/fixtures/basic/lissajou-1500.bas").text, std::string("done\n"));
+    CHECK(server->line("c1600 load-basic tests/fixtures/tape/pc1500_tape.wav 2").text.rfind("refused: ", 0) == 0);
     server->finish();
 }
 
@@ -317,9 +317,9 @@ TEST(c1600_2_ac21_type_basic_lines_not_stored) {
     server->line("type NEW0");
     server->line("wait 1s");
     const std::string ok = scratch("c1600_2_ok.bas", "10 A=1\n20 END\n");
-    CHECK_EQ(server->line("pc1600 type-basic " + ok).text, std::string("done\n"));
+    CHECK_EQ(server->line("c1600 type-basic " + ok).text, std::string("done\n"));
     const std::string bad = scratch("c1600_2_bad.bas", "30 B=2\nB=3\n");
-    const std::string r = server->line("pc1600 type-basic " + bad).text;
+    const std::string r = server->line("c1600 type-basic " + bad).text;
     CHECK(r.rfind("refused: ", 0) == 0 && r.find("1 program line(s) not stored") != std::string::npos &&
           r.find("\"B=3\"") != std::string::npos);
     server->finish();
@@ -332,20 +332,20 @@ TEST(c1600_2_ac21_load_code_options_and_run) {
     if (!server) return;
     CHECK_EQ(server->line("model PC-1600").text, std::string("done\n"));
     const std::string raw = scratch("c1600_2_raw.bin", std::string("\xC9\xC9\xC9\xC9", 4));
-    CHECK(server->line("pc1600 load-code " + raw).text.find("needs an address") != std::string::npos);
-    const std::string r = server->line("pc1600 load-code " + raw + " address=C100 length=2").text;
+    CHECK(server->line("c1600 load-code " + raw).text.find("needs an address") != std::string::npos);
+    const std::string r = server->line("c1600 load-code " + raw + " address=C100 length=2").text;
     CHECK(r.find("range: &C100-&C101\n") != std::string::npos && r.find("area: S0\n") != std::string::npos &&
           r.find("bank: 0\n") != std::string::npos && r.find("new: NEW \"S0:\",&102\n") != std::string::npos &&
           r.find("start: CALL &C100\n") != std::string::npos && r.find("started: no\n") != std::string::npos);
-    CHECK(server->line("pc1600 load-code " + raw + " address=&4000 cpu=lh5803").text.find("refused: ") == std::string::npos);
-    CHECK(server->line("pc1600 load-code " + raw + " address=&F800").text.find("warning: ") != std::string::npos);
-    CHECK(server->line("pc1600 load-code " + raw + " cpu=6502").text.rfind("refused: ", 0) == 0);
+    CHECK(server->line("c1600 load-code " + raw + " address=&4000 cpu=lh5803").text.find("refused: ") == std::string::npos);
+    CHECK(server->line("c1600 load-code " + raw + " address=&F800").text.find("warning: ") != std::string::npos);
+    CHECK(server->line("c1600 load-code " + raw + " cpu=6502").text.rfind("refused: ", 0) == 0);
     // `run` with a header that names an address to start at.
     const std::string hdr = scratch("c1600_2_hdr.bin",
                                     std::string("\xFF\x10\x00\x00\x10\x01\x00\x00\x00\xC1\x00\x00\xC1\x00\x00\x0F\xC9", 17));
-    const std::string run = server->line("pc1600 load-code " + hdr + " run").text;
+    const std::string run = server->line("c1600 load-code " + hdr + " run").text;
     CHECK(run.find("started: yes\n") != std::string::npos);
-    CHECK(server->line("lcd").text.find("CALL &C100") != std::string::npos);
+    CHECK(server->line("display-text").text.find("CALL &C100") != std::string::npos);
     server->finish();
 }
 

@@ -56,7 +56,7 @@ struct DataKey {
 };
 std::variant<DataKey, std::string> dataKey(std::string_view key, const calcu::machine::ModelId&);
 
-/// A register as `data:` writes it (`ti59 registers`, AC-9): 13 digits and the exponent (`-1.234567890123e-05`).
+/// A register as `data:` writes it (`c59 data-registers`, AC-9): 13 digits and the exponent (`-1.234567890123e-05`).
 std::string registerText(const RegisterNibbles&);
 
 } // namespace cu59

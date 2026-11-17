@@ -7,11 +7,11 @@ TI-59/TI-58 firmware, so this guide does not repeat `rom/TI59-ROM-Guide.md`.
 It describes what the TI-58C ROM does differently, and why.
 
 Everything here comes from tracing the unmodified ROMs of both machines with
-the headless harness of 2.3.0 (now `calcu --product 59`, `reference/Harness.md`). Statements marked *derived* come from reading the code
+the headless harness of 2.3.0 (now `calcu --product c59`, `reference/Harness.md`). Statements marked *derived* come from reading the code
 without a trace that shows them directly.
 
 ```bash
-calcu --product 59 --output-folder /tmp model TI-58C then trace c.trace then key 5 + 7 = then trace off   # TI-58C trace
+calcu --product c59 --output-folder /tmp model TI-58C then trace c.trace then key 5 + 7 = then trace off   # TI-58C trace
 python3 tools/read_trace.py --clean-heavy --labels rom/TI58C-labels.asm --changes /tmp/c.trace
 python3 tools/coverage.py --variant TI58C build && python3 tools/coverage.py --variant TI58C show 0350 03A6
 ```

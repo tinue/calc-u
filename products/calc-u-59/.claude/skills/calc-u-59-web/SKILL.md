@@ -66,8 +66,8 @@ Never edit the calculator there — that copy is generated.
    `c59.printer` went in release prep 3).
    A trace is handed over with `keep-file` when it ends; the page lists it.
    The debug panel draws the product topics of `app/TIDebugPart` (C59-4,
-   M-56): `calculator-debug`, `program-listing` (the whole listing while
-   paused), `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view` (the tab a
+   M-56): `c59.calculator-debug`, `c59.program-listing` (the whole listing while
+   paused), `c59.cpu-debug`, `c59.heatmap`, `asm-overlay`, `c59.debug-view` (the tab a
    `debug-panel:` step asked for: shown when its `requests` grows; the log
    level), whose values are already the page's forms; the LOG tab keeps the
    last 2000 lines of LIB-3's `log` stream (clear empties the view only); the

@@ -56,8 +56,8 @@ decisions, plans, handoffs — is in [../background/README.md](../background/REA
 - [Debugger-Internals.md](Debugger-Internals.md) — how the DAP debugger is
   built: transport, run control, where the code is, design rules.
 - [LCD-Text.md](LCD-Text.md) — reading the display as text: the ROM fonts,
-  the cursor, the encoding, and where to use it (the harness's `lcd`,
-  `expect:`, `calcu1600/screen`).
+  the cursor, the encoding, and where to use it (the harness's `display-text`,
+  `expect:`, `c1600/screen`).
 
 ## Sources
 

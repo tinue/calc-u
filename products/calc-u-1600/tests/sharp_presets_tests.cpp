@@ -153,19 +153,19 @@ TEST(lib6_ac46_cl_at_new0_check_at_most_five_pc1500a) {
     // A fresh RAM with the CE-150 plugged in asks NEW0? :CHECK; the load
     // answers it before the first item.
     CHECK(h.loadIdle(k1500a + "printer: CE-150\n", "t.pc1500a"));
-    CHECK(h.line("lcd").find("NEW0") == std::string::npos);
+    CHECK(h.line("display-text").find("NEW0") == std::string::npos);
     // The bare model asks too (a cold boot), and is answered as well.
     CHECK(h.loadIdle(k1500a, "t.pc1500a"));
-    CHECK(h.line("lcd").find("NEW0") == std::string::npos);
+    CHECK(h.line("display-text").find("NEW0") == std::string::npos);
 }
 
 TEST(lib6_ac46_pc1600_presses_nothing) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     CHECK(h.loadIdle(k1600));
-    const std::string loaded = h.line("lcd");
+    const std::string loaded = h.line("display-text");
     CHECK(done(h.line("cold-boot")));
-    CHECK_EQ(h.line("lcd"), loaded);   // as a cold boot leaves it: no key pressed after the build
+    CHECK_EQ(h.line("display-text"), loaded);   // as a cold boot leaves it: no key pressed after the build
 }
 
 // ── P4: hardware together (AC-47) ───────────────────────────────────────
@@ -377,9 +377,9 @@ TEST(lib5_ac14_in_a_preset_type_at_readiness_pc1600_at_once_pc1500) {
     // on the PC-1500 (whose presses wait for readiness each); after
     // skip-wait: the first press goes down while the machine still works.
     CHECK(h.loadIdle(k1600 + "keys:\n  - type: PRINT 7*6\n"));
-    CHECK(has(h.line("lcd"), "42"));
+    CHECK(has(h.line("display-text"), "42"));
     CHECK(h.loadIdle(k1500a + "keys:\n  - key: cl\n  - type: PRINT 7*6\n", "t.pc1500a"));
-    CHECK(has(h.line("lcd"), "42"));
+    CHECK(has(h.line("display-text"), "42"));
 }
 
 TEST(lib5_ac28_in_a_preset_cadence) {

@@ -533,7 +533,7 @@ adapters other designs already name:
 | LIB-18's stand-in for the loader | LIB-18 design (M-35) | `TestPresetLoader : startup::PresetLoader` | M-38 for the library's own start tests, which then also run with `PresetsPart`; the stand-in may stay as a test double |
 
 New in M-38: none. `HarnessProduct::presetRules()` returning `nullptr`
-is not an adapter: until M-46 and M-54 `calcu --product 59|1600 preset …`
+is not an adapter: until M-46 and M-54 `calcu --product c59|c1600 preset …`
 is refused with "This build reads no presets of format 2 yet." and
 today's tools load presets as before (plan §1, "Today's tools").
 
@@ -728,7 +728,7 @@ prefix are under `products/calc-u-1600/`; line numbers at `60e5b09`.
   (§1's table): AC-24 and AC-48 the product's comparison; AC-53 the
   idle, the after-build and the picture of the Sharp models; AC-25 the
   save folder in Qt6 and the download on the Web; AC-31 "every
-  distribution is built from it"; AC-34 through `calcu --product 1600`.
+  distribution is built from it"; AC-34 through `calcu --product c1600`.
 - Clauses of other columns that need presets of version 2 and pass
   here: LIB-5 1600 AC-14, AC-28, AC-41 "in a preset" (LIB-5 D-1; LIB-5
   1600 becomes Done here); LIB-15 1600 AC-16's bundle-file clause
@@ -779,7 +779,7 @@ place's name as a place key (`library/presets/Reader.cpp:462-472`);
 | `frontends/qt6/app/screenshots/ShotScenario.cpp:142, 263`, `ShotRunner.cpp:234` | the scenario's `preset:` step sends `load-preset` |
 | `frontends/web/src/engine.js:61-137`, `src/CalcU1600.jsx:80-82, 138-147, 244-268` | the Examples menu from `preset-list`; a bundled example by `load-preset {ref: "examples:<path>"}`; an uploaded preset by `load-preset {content, name}` (AC-54, EC-5); `?preset=` as LIB-15 AC-16's bundle path |
 | `frontends/qt6/CMakeLists.txt:214-252`, `frontends/web/build.js:60-79` | bundle the files of `bundle.yaml` (C1600-4 §4) |
-| `CMakeLists.txt:137-138` | CTest `CalcU1600CheckPresets` goes; `calcu_add_preset_check(CalcU1600Presets PRODUCT 1600 FILES … EXCLUDE … FILL tests/fill_vscode_templates.cmake)` |
+| `CMakeLists.txt:137-138` | CTest `CalcU1600CheckPresets` goes; `calcu_add_preset_check(CalcU1600Presets PRODUCT c1600 FILES … EXCLUDE … FILL tests/fill_vscode_templates.cmake)` |
 | `tools/pc1500_cli.cpp:150-240`, `tools/pc1600_cli.cpp:82-258`, `tools/pc1600_plotter_probe.cpp:24-73`, `dev/loader-matrix/LoaderMatrixCommon.hpp:86-112`, `tools/wasm_smoke.cpp:70-73` | presets through `CliPresetRun` (§10.5); `--check-preset` sends `check-preset` |
 | `library/presets/Reader.cpp:462-472` | a product header key under a place's name is read as the header key (D-31) |
 | `library/presets/ProductRules.hpp:67-84`, `Reader.cpp`, `Engine.cpp:26-32` | `ModelRules::checkHeader(ReadContext&) const`, called once every header key is read (D-32), and (P-6, D-33) `ReadContext::addPeripheral` / `setContentAt`, the header key's requests in `LoadPlan::headerPeripherals`, after the places in `machinePlan`; empty by default, so no other product and no library test changes |
@@ -891,7 +891,7 @@ product's harness entry in virtual time, or `presets::readPreset` with
 | P9 | Frontends | AC-54 | Qt6: a screenshot scenario `lib6-ac54-example-loads` run as a check (`CalcU1600Shots.lib6-ac54-example-loads`, Longer: `examples:plotter/lissajou-1600.pc1600`, then the display text and the paper); Web: `play.spec.js:208` renamed `lib6_ac54 bundled example loads and its result shows`, and `lib6_ac54 uploaded preset by its content` (Longer) |
 | P10 | Typing in a preset | LIB-5 AC-14, AC-28, AC-41 | `lib5_ac14_in_a_preset_type_at_readiness_pc1600_at_once_pc1500`, `lib5_ac28_in_a_preset_cadence`, `lib5_ac41_ent_refused_in_a_preset` |
 | P11 | Bundle path on the Web | LIB-15 AC-16 | `embed.spec.js` `lib15_ac16 preset prop takes a path of bundle.yaml` (Longer) |
-| P12 | Harness | AC-34 | `harness_tests.cpp`: `lib6_ac34_preset_wait_expect_screenshot_on_pc1600` (`calcu --product 1600 preset examples:basic/hanoi.pc1600 then wait then expect …`) |
+| P12 | Harness | AC-34 | `harness_tests.cpp`: `lib6_ac34_preset_wait_expect_screenshot_on_pc1600` (`calcu --product c1600 preset examples:basic/hanoi.pc1600 then wait then expect …`) |
 
 Coverage: P1–P9 cover AC-44 to AC-51, AC-54 and AC-67.
 
@@ -1029,7 +1029,7 @@ under `products/calc-u-59/`; line numbers at `7bdd51c`.
   after-build step and the segment picture; AC-25 the save folder in
   Qt6 and Swift (Swift: the iCloud Drive folder, OQ-4) and the download
   on the Web; AC-31 "every distribution is built from it"; AC-34 through
-  `calcu --product 59`, `printer-trace` included.
+  `calcu --product c59`, `printer-trace` included.
 - Clauses of other columns that need presets of version 2 and pass here:
   LIB-5 59 AC-17 and AC-26 "in a preset" (LIB-5 §10); LIB-15 59 AC-16's
   bundle path and AC-20's constant memory clause (LIB-15 59 becomes Done
@@ -1075,7 +1075,7 @@ under `products/calc-u-59/`; line numbers at `7bdd51c`.
 | `frontends/qt6/app/EmulatorController.cpp:260-262`, `MainWindow.cpp:87` | Open Preset… and a dropped preset send `load-preset {ref: path}` (AC-42: a file in its folder) |
 | `frontends/qt6/CMakeLists.txt` | the files of `bundle.yaml` beside the program, the folder of the `DirectoryPresetBundle` (as `products/calc-u-1600/frontends/qt6/CMakeLists.txt:219-252`) |
 | `frontends/swift/App/EmulatorViewModel.swift:394-398`, `Bridge/TIAppSession.mm:581` | `loadStateFile` sends `load-preset {content, name}` (D-41); a build phase copies the files of `bundle.yaml` into the app's `examples/` (C59-2 §4) |
-| `CMakeLists.txt` (the product's) | `calcu_add_preset_check(CalcU59Presets PRODUCT 59 FILES … EXCLUDE …)` (AC-43; D-20); `CalcU59BundledFiles` (Longer; C59-2 T11) |
+| `CMakeLists.txt` (the product's) | `calcu_add_preset_check(CalcU59Presets PRODUCT c59 FILES … EXCLUDE …)` (AC-43; D-20); `CalcU59BundledFiles` (Longer; C59-2 T11) |
 | `docs/test-groups.md` | the new entries; `CalcU59ReferenceRuns` described anew (C59-2 §6 T10) |
 
 **Deleted:** `app/StateFile.hpp/.cpp`, `app/StateApplier.hpp/.cpp`
@@ -1138,7 +1138,7 @@ class TIPresetRules final : public calcu::presets::ProductRules { /* a TIModelRu
   (`TIDebugTargetAdapter::snapshotCPU`, or LIB-10 59's debug target after
   M-53) for a result and for a number being keyed in, and the test of
   AC-40 (`π`: `3.14159265359` passes, `3.141592654` fails) fixes it.
-  `ExpectReading::shows` is the display text as the harness's `lcd`
+  `ExpectReading::shows` is the display text as the harness's `display-text`
   gives it (`HarnessProduct::readDisplay`, `app/HarnessProduct.cpp:79-88`),
   so the reason holds what the user sees. A display that is off: EC-7.
 - **AC-68, AC-40 when read.** `checkExpect` refuses a regular expression
@@ -1209,7 +1209,7 @@ Names `lib6_acN_…`, `lib5_acN_…`, `lib15_acN_…`.
 | P9 | Frontends | AC-42 | Web: `play-calculator.spec.js` `lib6_ac42 bundled example sum shows its cue card` (`:282`), `lib6_ac42 uploaded preset by its content` (`:289`), `lib6_ac42 dropped preset loads` (`:297`) (Longer); Qt6 (M-57) and Swift (M-58): §11.4 |
 | P10 | Typing in a preset | LIB-5 AC-17, AC-26 | `lib5_ac17_in_a_preset_key_finishes_at_idle`, `lib5_ac26_names_of_8_1_in_a_preset`, `lib5_ac26_2nd_before_second_function_once_in_a_preset`, `lib5_ac26_old_names_refused_when_read` |
 | P11 | Bundle path on the Web | LIB-15 AC-16 | `web_part_tests.cpp:65` `lib15_ac16_start_takes_the_model_by_name_and_a_bundled_preset` on `start {preset: "sum.ti59"}` as the bundle path `examples:sum.ti59`; `:76` `lib15_ec4_…` unchanged; Web `session.spec.js` `lib15_ac16 preset prop takes a path of bundle.yaml` (Longer) |
-| P12 | Harness | AC-34 | `harness_tests.cpp`: `lib6_ac34_preset_wait_expect_screenshot_on_ti59` (`calcu --product 59 preset examples:sum.ti59 then key 5 A then wait then expect 15 then screenshot sum.png`), `lib6_ac34_printer_trace_on_off` |
+| P12 | Harness | AC-34 | `harness_tests.cpp`: `lib6_ac34_preset_wait_expect_screenshot_on_ti59` (`calcu --product c59 preset examples:sum.ti59 then key 5 A then wait then expect 15 then screenshot sum.png`), `lib6_ac34_printer_trace_on_off` |
 
 Coverage: P1–P9 cover AC-35 to AC-43 and AC-68 (AC-42's Qt6 and Swift
 scenarios in M-57, M-58).
@@ -1221,17 +1221,17 @@ scenarios in M-57, M-58).
 - `tools/agentic/ti59file.py` goes (plan M-54): its reader of 2.3.0
   (`parse`, `load`, `tools/agentic/ti59file.py:43-151`) and its key
   playback. The scripts that loaded a preset through it run `calcu
-  --product 59 serve` through `library/harness/python/calcu_serve.py`:
+  --product c59 serve` through `library/harness/python/calcu_serve.py`:
   `preset <file>` loads it (the keys of its `keys:` included), `wait`
-  waits for idle, `paper text` gives the printout, `ti59 program`
+  waits for idle, `paper text` gives the printout, `c59 program`
   (C59-2 AC-9) the keycodes:
   - `kdis.py` (`:53`) lists the keycodes of a preset by `preset <file>`
-    and `ti59 program 000 count=<n>`;
+    and `c59 program 000 count=<n>`;
   - `runtime.py` times keys given with `--keys` (key IDs now, not matrix
     codes) after the preset is loaded, each by `dark_time`'s rule
     (memory `run_time_measurement`: the display lit again and no program
     running, never idle settling), sampled through `calcu` by
-    `wait 10ms then lcd` (D-48);
+    `wait 10ms then display-text` (D-48);
   - `linetimes.py` and `calendar/compare.py`, `calendar/years.py` time
     the printed lines and the last key the same way, with `paper text`
     after each sample;
@@ -1251,7 +1251,7 @@ scenarios in M-57, M-58).
 
 | File | Change |
 |---|---|
-| `products/calc-u-59/CLAUDE.md` | the Harness section: "Not yet: `ti59 …` commands, presets" goes; `preset`, `check-preset`, `preset-list`, `wait` without a duration, `expect`, `not-expect`, `screenshot`, `printer-trace`, `elapsed-time`, `ti59 partition`, `ti59 program`, `ti59 registers` listed; the start is "the startup model with its startup preset or its built-in default (the TI-59 with the Master Library module, no printer)" (LIB-18 AC-18); the skill table and the architecture list as C59-2 §7 says; "Agentic tools" says the tools load presets through `calcu` |
+| `products/calc-u-59/CLAUDE.md` | the Harness section: "Not yet: `ti59 …` commands, presets" goes; `preset`, `check-preset`, `preset-list`, `wait` without a duration, `expect`, `not-expect`, `screenshot`, `printer-trace`, `elapsed-time`, `c59 partition`, `c59 program`, `c59 data-registers` listed; the start is "the startup model with its startup preset or its built-in default (the TI-59 with the Master Library module, no printer)" (LIB-18 AC-18); the skill table and the architecture list as C59-2 §7 says; "Agentic tools" says the tools load presets through `calcu` |
 | `products/calc-u-59/reference/SharedArchitecture.md` | § "State File Loading" and § "Dropped Files": the load is LIB-6's `load-preset` with `TIPresetRules`; `KeySequencer`/`TIKeystrokePlayback` gone |
 | `products/calc-u-59/reference/WebClient.md`, `FrontendParity.md` | the preset list from `examples/bundle.yaml`; `presets.json` gone |
 | skills `calc-u-59-shared`, `calc-u-59-web` (`products/calc-u-59/.claude/skills/`) | the load path and the bundle file where they name `StateFile`, `loadStateFile`, `presets.json` |
@@ -1333,12 +1333,12 @@ C59-3): 59-1 (presets, constant memory), 59-3, 59-4, 59-5, 59-26 and
   tests cover each.
 - **D-48 (`dark_time` over `calcu`).** The tools keep the user's timing
   rule and get it from the harness by sampling the display every 10 ms of
-  emulated time, until C59-9's `ti59 run-time` and `ti59 line-times`
+  emulated time, until C59-9's `c59 run-time` and `c59 line-times`
   (M-59) measure inside the product.
 
 ### 11.10 Questions for the user
 
-None that splits this column. (C59-2 §10 asks how `ti59 program` tells a
+None that splits this column. (C59-2 §10 asks how `c59 program` tells a
 count from a keycode.)
 
 ### 11.11 Proposed ledger rows and plan notes

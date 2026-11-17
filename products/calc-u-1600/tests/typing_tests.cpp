@@ -410,7 +410,7 @@ TEST(lib5_ac17_harness_key_and_type_on_a_sharp_machine) {
     reply("wait 1s");
     CHECK_EQ(reply("type PRINT 6*7"), std::string("done\n"));   // the reply when ENTER is up: not yet idle
     reply("wait 2s");
-    CHECK(reply("lcd").find("42") != std::string::npos);
+    CHECK(reply("display-text").find("42") != std::string::npos);
     CHECK_EQ(reply("key ent"), std::string("refused: Unknown key: ent.\n"));
     CHECK_EQ(reply("type 1\xC3\x84"), std::string("refused: No key types the character \"\xC3\x84\".\n"));   // the PC-1500A
     server->finish();

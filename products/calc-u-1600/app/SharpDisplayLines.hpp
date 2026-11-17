@@ -6,7 +6,7 @@
 
 // The display of a Sharp machine as text (LIB-6 design §10.2; LIB-11 AC-10,
 // AC-19): one function for the preset steps `expect:`/`not-expect:` and the
-// harness's `lcd`. Each cell is read with the ROM's own font; a cell that is
+// harness's `display-text`. Each cell is read with the ROM's own font; a cell that is
 // no glyph is U+FFFD. Printable ASCII is itself, `\` is `\\`, any other code
 // `\xHH` (the encoding of --lcd-text's rows).
 

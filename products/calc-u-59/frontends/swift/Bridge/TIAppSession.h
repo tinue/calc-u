@@ -20,9 +20,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// `paper PC-100C` (printer: appended, paperCut: emptied; also raised by
 /// `control-state`, whose `controls` hold TRACE's position), `run-state`
 /// (runState) and `trace` (trace); since M-56 the debug panel's product
-/// topics of C59-4 AC-25 (live: calculator-debug, listing: program-listing,
-/// cpu: cpu-debug, heatmap, asm: asm-overlay, log: LIB-3's `log` and
-/// debug-view's level) and LIB-4's `control-state` (control: the product
+/// topics of C59-4 AC-25 (live: c59.calculator-debug, listing: c59.program-listing,
+/// cpu: c59.cpu-debug, c59.heatmap, asm: c59.asm-overlay, log: LIB-3's `log` and
+/// c59.debug-view's level) and LIB-4's `control-state` (control: the product
 /// entries c59.asm-run, c59.trace, c59.calculator-tab)).
 typedef NS_OPTIONS(uint32_t, TIChange) {
     TIChangeDisplay   NS_SWIFT_NAME(display)   = 1u << 1,
@@ -79,7 +79,7 @@ typedef struct {
 
 /// What the session's messages ask of the app (main thread): a notice came
 /// (the shell's notice queue holds it, C59-8 AC-10), the tab a `debug-panel:` step asked for (the
-/// product topic debug-view, C59-4 AC-2: each time its count of requests
+/// product topic c59.debug-view, C59-4 AC-2: each time its count of requests
 /// grows), the log, and a batch's changes.
 @protocol TIAppSessionDelegate <NSObject>
 - (void)showDebugPanel:(NSInteger)panel;   ///< 0 CALCULATOR, 1 CPU, 2 LOG
@@ -335,7 +335,7 @@ typedef struct {
 @property (nonatomic, readonly) NSData *heatmapCounts;   ///< 0x1400 uint32 counts
 - (void)clearHeatmap;   ///< `c59.heatmap-reset` (AC-8)
 
-/// The level of the machine's own log lines (debug-view, C59-4 AC-11).
+/// The level of the machine's own log lines (c59.debug-view, C59-4 AC-11).
 @property (nonatomic, readonly) NSInteger debugLevel;   ///< 0 off, 1 info, 2 debug
 /// The LOG button: `c59.log-level` with the next of off, info, debug.
 - (void)cycleDebugLevel;
@@ -352,7 +352,7 @@ typedef struct {
 @property (nonatomic, readonly) BOOL manualTrace;
 - (void)setManualTrace:(BOOL)on;
 
-// ── ASM overlay (the product topic asm-overlay, C59-4 AC-16) ─────────────────
+// ── ASM overlay (the product topic c59.asm-overlay, C59-4 AC-16) ─────────────────
 /// `c59.asm-load {name, text}`; text nil: the file could not be read.
 - (void)loadAsm:(nullable NSString *)text fileName:(NSString *)fileName;
 - (void)runAsm;

@@ -6,7 +6,7 @@
 
 #include "Machine/SharpProductKinds.hpp"
 
-// `pc1600 dump-basic` (C1600-5 AC-2, AC-3, EC-4; design §3.1, D-3): the
+// `c1600 dump-basic` (C1600-5 AC-2, AC-3, EC-4; design §3.1, D-3): the
 // pointers of BASIC and the bytes of the program area, read through the
 // loader memory kind (the PC-1500's ME0, the PC-1600's Z-80 view). The
 // lines are those of today's `--dump-basic` of the two CLIs (moved here

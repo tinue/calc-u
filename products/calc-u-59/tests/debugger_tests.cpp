@@ -363,7 +363,7 @@ TEST(lib10_ac32_debug_panel_calculator_cpu_log) {
     load(r, "  - debug-panel: calculator\n  - debug-panel: cpu\n  - debug-panel: log\n");
     CHECK(r.until([&] { return !r.busy(); }, 5s));
     r.runFor(20ms);
-    // The product topic debug-view (C59-4 AC-2, M-56): a state topic, so the
+    // The product topic c59.debug-view (C59-4 AC-2, M-56): a state topic, so the
     // three tabs asked in one call arrive as the last one, counted three times.
     CHECK(!r.panels().empty() && r.panels().back() == DebugPanel::Log);
     CHECK(r.state<TIDebugView>(topics::kDebugView) && r.state<TIDebugView>(topics::kDebugView)->requests == 3);

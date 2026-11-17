@@ -68,7 +68,7 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   M-56 (`core/TIDebugKinds.hpp`: `c59.asm-overlay`, `c59.rom-heatmap`,
   `c59.calculator-state`, `c59.machine-log`; find one with
   `calcu::machine::first<K>(machine)`, `library/machine/Capability.hpp`); `idleAndKeyDetectRange()` is
-  the scan/detect range for `ti59 coverage`, the run probe and the tests. The debugger
+  the scan/detect range for `c59 coverage`, the run probe and the tests. The debugger
   reaches the core through `Machine::debugging()`: the debug target
   `TMC0501` (`core/TIDebugging.hpp`; LIB-10, M-53), whose
   `InstructionEvent::marks` say step boundary, scan loop and weight; traces
@@ -125,7 +125,7 @@ uv run python tools/disasm.py --emit-cpp > /tmp/generated.cpp
 
 | Tool | Purpose |
 |------|---------|
-| `calcu --product 59` | The harness (`reference/Harness.md`, read it first): an annotated ROM trace per key (`trace <file>`, the keys, `trace off`, then `tools/read_trace.py --labels rom/TI59-labels.asm --changes`), `profile`, `ti59 coverage`, the timing commands `ti59 run-time`, `line-times`, `hot-steps`, `step-trace`, `step-cost`, `ti59 keycodes list|disassemble|assemble` |
+| `calcu --product c59` | The harness (`reference/Harness.md`, read it first): an annotated ROM trace per key (`trace <file>`, the keys, `trace off`, then `tools/read_trace.py --labels rom/TI59-labels.asm --changes`), `profile`, `c59 coverage`, the timing commands `c59 run-time`, `line-times`, `hot-steps`, `step-trace`, `step-cost`, `c59 keycodes list|disassemble|assemble` |
 | `tools/coverage.py` | Which keystroke scenario runs which ROM word (on `calcu serve`) |
 | `tools/fastmode_matrix.py` | Each instruction class in fast and normal mode; the stop table (on `calcu serve`) |
 | `tools/disasm.py` | ROM disassembler; `--emit-cpp` regenerates C++ mnemonic arrays |
@@ -143,7 +143,7 @@ uv run python tools/disasm.py --emit-cpp > /tmp/generated.cpp
    Parity").
    Do not launch the iOS Simulator or the built app — that is the user's job.
    When runtime verification is needed, ask the user to launch the app and
-   say precisely what to look for. Harness runs (`calcu --product 59`,
+   say precisely what to look for. Harness runs (`calcu --product c59`,
    `reference/Harness.md`) are fine.
 
 2. **Build on macOS.** Verify Swift-facing changes with a macOS build; build for iOS only when explicitly required (commands: `calc-u-59-swift` skill, § "Build Verification").

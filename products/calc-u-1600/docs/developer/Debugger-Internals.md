@@ -13,7 +13,7 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
   (standard error and a notice; the harness ends with exit status 2) and
   the server stays off for that run.
 - **Hosts:** the server is the app layer's `DapPart`; the Qt6 frontend
-  and the harness (`calcu --product 1600 serve --dap <port>`) host it, the
+  and the harness (`calcu --product c1600 serve --dap <port>`) host it, the
   Web frontend does not. Under the harness emulated time passes, unpaced,
   while the DAP session has the machine running (no wall clock): a
   scenario that pauses by a breakpoint repeats exactly, one that pauses by
@@ -21,7 +21,7 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
 - **Run control:** the library's (LIB-10, `library/debugger/`): the
   `DebuggerPart` among `SharpAppPart`'s parts is the machine session's gate
   whether or not a client is attached. Pause, step and resume come from
-  the DAP, the harness (`calcu --product 1600`), Machine ▸ Resume and the
+  the DAP, the harness (`calcu --product c1600`), Machine ▸ Resume and the
   session commands; the window's title says "Paused (debugger)" whoever
   paused it. A DAP `stopped` comes from the run control's state after the
   host call the pause landed in, or after the request that paused it
@@ -72,7 +72,7 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
     topic `c1600.dap`, the command `c1600.dap-disconnect`, the held messages, one
     `DapSession` per client;
   - `DapSession`: the requests and events; `DapSetup.cpp`: `attach`/`launch`,
-    `restart`, `calcu1600/load`, `calcu1600/reset` as operations of the session;
+    `restart`, `c1600/load`, `c1600/reset` as operations of the session;
   - `DapConfig` (a configuration over a project's `debug:` block, checked by
     `core/Debug/AttachKeys`), `DapJson` (JSON and `calcu::sessions::Value`), `DapWire`
     (the `Content-Length` framing), `DapTransport` (what a host gives);
@@ -116,7 +116,7 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
   start.
 - **Memory references** must stay numeric (VS Code can't parse `1:0000`);
   see `cu1600::dap::memoryReference()`.
-- **Scripted launches:** never SIGTERM the app; quit via `calcu1600/quit`
+- **Scripted launches:** never SIGTERM the app; quit via `c1600/quit`
   and launch with `-ApplePersistenceIgnoreState YES`. The scenarios run
   against the harness without an app (`tools/dap_smoke.py --harness`,
   CTest `CalcU1600DapSmoke`); `--app` is for the Qt check

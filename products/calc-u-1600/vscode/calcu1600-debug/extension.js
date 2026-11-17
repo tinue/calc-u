@@ -20,7 +20,7 @@ const MACHINES = {
 let extensionPath = '';
 
 function setting(key) {
-    return vscode.workspace.getConfiguration('calcu1600').get(key);
+    return vscode.workspace.getConfiguration('c1600').get(key);
 }
 
 function expandHome(p) {
@@ -76,10 +76,10 @@ function assembleTask(assembler, file, scope) {
         assembleCommand(assembler, current ? '${file}' : file,
                         current ? '${fileBasenameNoExtension}' : path.basename(file, path.extname(file))),
         { cwd: current ? '${fileDirname}' : path.dirname(file) });
-    const definition = current ? { type: 'calcu1600', assembler } : { type: 'calcu1600', assembler, file };
+    const definition = current ? { type: 'c1600', assembler } : { type: 'c1600', assembler, file };
     const task = new vscode.Task(definition, scope || vscode.TaskScope.Workspace,
                                  current ? `${assembler}: build current file` : `${assembler}: ${path.basename(file)}`,
-                                 'calcu1600', execution, [`$calcu1600-${assembler}`]);
+                                 'c1600', execution, [`$c1600-${assembler}`]);
     task.group = vscode.TaskGroup.Build;
     task.presentationOptions = { reveal: vscode.TaskRevealKind.Silent, clear: true };
     return task;
@@ -118,9 +118,9 @@ async function build(config) {
 
 function dynamicConfigurations() {
     return [
-        { type: 'calcu1600', request: 'attach', name: 'Calc-U-1600: Debug current file on PC-1600 (zasm)', currentFile: 'pc1600' },
-        { type: 'calcu1600', request: 'attach', name: 'Calc-U-1600: Debug current file on PC-1500A (sdas)', currentFile: 'pc1500a' },
-        { type: 'calcu1600', request: 'attach', name: 'Calc-U-1600: Reset and stop', reset: 'reset', stopOnEntry: true },
+        { type: 'c1600', request: 'attach', name: 'Calc-U-1600: Debug current file on PC-1600 (zasm)', currentFile: 'pc1600' },
+        { type: 'c1600', request: 'attach', name: 'Calc-U-1600: Debug current file on PC-1500A (sdas)', currentFile: 'pc1500a' },
+        { type: 'c1600', request: 'attach', name: 'Calc-U-1600: Reset and stop', reset: 'reset', stopOnEntry: true },
     ];
 }
 
@@ -209,7 +209,7 @@ const resolver = {
 
 function activeCalcuSession() {
     const s = vscode.debug.activeDebugSession;
-    return s && s.type === 'calcu1600' ? s : undefined;
+    return s && s.type === 'c1600' ? s : undefined;
 }
 
 async function buildAndLoad() {
@@ -223,7 +223,7 @@ async function buildAndLoad() {
         // The app loads the configuration's program (maybe from the project
         // preset's debug: block), or without one sets the machine up again
         // (a ROM extension).
-        const result = await session.customRequest('calcu1600/load', {});
+        const result = await session.customRequest('c1600/load', {});
         vscode.window.setStatusBarMessage(result && result.start ? `Loaded ${result.start}-${result.end}` : 'Reloaded', 4000);
     } catch (err) {
         vscode.window.showErrorMessage(`Build & Load: ${err.message || err}`);
@@ -233,35 +233,35 @@ async function buildAndLoad() {
 function reset(kind) {
     const session = activeCalcuSession();
     if (!session) return;
-    session.customRequest('calcu1600/reset', { kind, stop: true })
+    session.customRequest('c1600/reset', { kind, stop: true })
         .then(undefined, err => vscode.window.showErrorMessage(`Reset: ${err.message || err}`));
 }
 
 function activate(context) {
     extensionPath = context.extensionPath;
     context.subscriptions.push(
-        vscode.debug.registerDebugAdapterDescriptorFactory('calcu1600', {
+        vscode.debug.registerDebugAdapterDescriptorFactory('c1600', {
             createDebugAdapterDescriptor(session) {
                 return new vscode.DebugAdapterServer(session.configuration.port || setting('port') || 32168, '127.0.0.1');
             }
         }),
-        vscode.debug.registerDebugConfigurationProvider('calcu1600', resolver),
-        vscode.debug.registerDebugConfigurationProvider('calcu1600', { provideDebugConfigurations: dynamicConfigurations },
+        vscode.debug.registerDebugConfigurationProvider('c1600', resolver),
+        vscode.debug.registerDebugConfigurationProvider('c1600', { provideDebugConfigurations: dynamicConfigurations },
                                                         vscode.DebugConfigurationProviderTriggerKind.Dynamic),
-        vscode.tasks.registerTaskProvider('calcu1600', {
+        vscode.tasks.registerTaskProvider('c1600', {
             provideTasks: () => ASSEMBLERS.map(a => assembleTask(a)),
             resolveTask(task) {
                 const { assembler, file } = task.definition;
                 if (!ASSEMBLERS.includes(assembler)) return undefined;
                 const t = assembleTask(assembler, file, task.scope);
-                return new vscode.Task(task.definition, task.scope, task.name, 'calcu1600', t.execution, t.problemMatchers);
+                return new vscode.Task(task.definition, task.scope, task.name, 'c1600', t.execution, t.problemMatchers);
             },
         }),
-        vscode.commands.registerCommand('calcu1600.buildAndLoad', buildAndLoad),
-        vscode.commands.registerCommand('calcu1600.resetAndStop', () => reset('reset')),
-        vscode.commands.registerCommand('calcu1600.allResetAndStop', () => reset('allReset')),
-        vscode.commands.registerCommand('calcu1600.createProject', () => scaffold.createProject(extensionPath)),
-        vscode.commands.registerCommand('calcu1600.createProjectHere', uri => scaffold.createProject(extensionPath, uri))
+        vscode.commands.registerCommand('c1600.buildAndLoad', buildAndLoad),
+        vscode.commands.registerCommand('c1600.resetAndStop', () => reset('reset')),
+        vscode.commands.registerCommand('c1600.allResetAndStop', () => reset('allReset')),
+        vscode.commands.registerCommand('c1600.createProject', () => scaffold.createProject(extensionPath)),
+        vscode.commands.registerCommand('c1600.createProjectHere', uri => scaffold.createProject(extensionPath, uri))
     );
 }
 

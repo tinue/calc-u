@@ -19,22 +19,22 @@ and draw the same topics (C59-4 AC-25, M-56):
 
 | Topic (state) | Payload (`app/TIDebugPart.hpp`) | Carries |
 |---|---|---|
-| `calculator-debug` | `TICalculatorDebug` | the CALCULATOR tab's snapshot (computed while a frontend shows the tab: `c59.live-debug {on}`) |
-| `program-listing` | `TIProgramListing` | the whole listing of the program that runs, its source and current index; empty while the machine runs |
-| `cpu-debug` | `TICpuDebug` | the CPU tab's instructions (while shown, `c59.cpu-debug {on}`, or paused) |
-| `heatmap` | `TIHeatmap` | the counts of 0000 to 13FF, about 10 Hz |
-| `asm-overlay` | `TIAsmOverlayState` | file name, number of instructions, status line, whether the overlay runs |
-| `debug-view` | `TIDebugView` | the tab `debug-panel:` (or Run) asked for last, a count of the requests, the machine's log level |
+| `c59.calculator-debug` | `TICalculatorDebug` | the CALCULATOR tab's snapshot (computed while a frontend shows the tab: `c59.live-debug {on}`) |
+| `c59.program-listing` | `TIProgramListing` | the whole listing of the program that runs, its source and current index; empty while the machine runs |
+| `c59.cpu-debug` | `TICpuDebug` | the CPU tab's instructions (while shown, `c59.show-cpu-debug {on}`, or paused) |
+| `c59.heatmap` | `TIHeatmap` | the counts of 0000 to 13FF, about 10 Hz |
+| `c59.asm-overlay` | `TIAsmOverlayState` | file name, number of instructions, status line, whether the overlay runs |
+| `c59.debug-view` | `TIDebugView` | the tab `debug-panel:` (or Run) asked for last, a count of the requests, the machine's log level |
 
 A payload's value (`toValue`) is the form the Web page draws; the harness
 reads it with `state <topic>`. The control state (LIB-4) carries the
 product entries `c59.asm-run`, `c59.trace`, `c59.calculator-tab`, each
 `{available, reason}`. The commands: `c59.live-debug {on}`,
-`c59.cpu-debug {on}`, `c59.heatmap-reset`, `c59.log-level {level:
+`c59.show-cpu-debug {on}`, `c59.heatmap-reset`, `c59.log-level {level:
 off|info|debug}`, `c59.dump {what: scom|memory|prog|vars}` (replies with the
 lines), `c59.asm-load {name, text}`, `c59.asm-run`, `c59.asm-clear`; the
-harness's `ti59 asm load|run|clear`, `ti59 dump …`, `ti59 log-level …`,
-`ti59 heatmap reset` (C59-4 AC-22). Which panel lives where: `FrontendParity.md`
+harness's `c59 asm load|run|clear`, `c59 dump …`, `c59 log-level …`,
+`c59 heatmap reset` (C59-4 AC-22). Which panel lives where: `FrontendParity.md`
 § "Debugger". The session and controller: `AppLayer.md`. Panel
 behaviour from a user's point of view: the user guide,
 https://calc-u.org/59/.
@@ -99,7 +99,7 @@ through the bridge), with the labels FREEZE, STEP and RESUME (C59-4).
 | CALCULATOR FREEZE ON START / ARMED | `pause-on-start {level: program}` / `{off: true}` |
 | CPU FREEZE ON START / ARMED | `pause-on-start {level: cpu}` / `{off: true}` |
 | TRACE | `trace {button: true}` / `{off: true}` |
-| `setLiveDebugEnabled` / `setCpuDebugEnabled` | `c59.live-debug` / `c59.cpu-debug` |
+| `setLiveDebugEnabled` / `setCpuDebugEnabled` | `c59.live-debug` / `c59.show-cpu-debug` |
 
 ### The run state (`run-state`, `calcu::debugger::RunState`)
 
@@ -150,7 +150,7 @@ and the CALCULATOR snapshot and listing for every reason except
 snapshot at once (`rebuildLive`).
 
 The full listing is built only while frozen and sent on its own topic,
-`program-listing` (emptied when the machine runs again), so the 60 Hz
+`c59.program-listing` (emptied when the machine runs again), so the 60 Hz
 running snapshot never carries the whole program. It is never rebuilt from a `SolidStateReturn` snapshot (SCOM[0]
 then holds a raw CROM address, not a step); the previous listing is kept.
 
@@ -184,7 +184,7 @@ and T are the state before that step. `currentStep` comes from:
 The CPU tab is instruction-level and post-execution.
 
 The frozen listing: `DebugModel::listing()`, `listingSource()`,
-`listingCurrentIndex()`, sent as `program-listing` (Swift `programListing`, `programListingSource`,
+`listingCurrentIndex()`, sent as `c59.program-listing` (Swift `programListing`, `programListingSource`,
 `programListingCurrentIndex`; Qt `programListing()`,
 `programListingSource()`). The view scrolls to the current entry.
 
@@ -308,7 +308,7 @@ state; C59-4 D-3). The ROM heatmap is the core's own count (the product
 kind `c59.rom-heatmap`, one increment per instruction carried out while the
 CPU tab shows; C59-4 AC-8), set to zero by `c59.heatmap-reset` (the CLR
 button), when the tab comes into view, at a Reset and on a new machine; the
-topic `heatmap` carries it (`app/RomHeatmap.hpp`: the grid, steps and
+topic `c59.heatmap` carries it (`app/RomHeatmap.hpp`: the grid, steps and
 colours; Swift `vm.romHitCount`).
 
 ### CpuFrame fields
@@ -374,7 +374,7 @@ its clear button empties the view, not the log.
 | `dump("scom")` | 16 rows, nibble 15 first: `S00 0000000000000000` |
 | `dump("prog")` | Non-zero program registers as their 8 keycodes in step order: `P000: 76 11 …` |
 | `dump("memory")` | Every non-zero RAM register by physical index, in the register-line format of `ti58c.memory.yaml` |
-| `setLogLevel` (`c59.log-level {level}`) | Level Off → Info → Debug → Off (the button cycles; `debug-view.logLevel` shows it) |
+| `setLogLevel` (`c59.log-level {level}`) | Level Off → Info → Debug → Off (the button cycles; `c59.debug-view.logLevel` shows it) |
 
 The level is passed to the core (`c59.machine-log`'s `setLevel`). App-layer
 code logs through the session's `log` (`SessionContext::log`).

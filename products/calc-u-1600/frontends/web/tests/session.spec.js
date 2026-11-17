@@ -149,7 +149,7 @@ test('ac27 no message of the old protocol', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page);
   await h.ask(page, 'preset-list');
-  await h.ask(page, 'c1600.lcd-text');
+  await h.ask(page, 'c1600.display-text');
   const { sent, received } = await page.evaluate(() => ({
     sent: window.__calcuSent.map((m) => m && m.kind),
     received: window.__calcuReceived.map((m) => m && m.kind),

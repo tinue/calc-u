@@ -246,7 +246,7 @@ void TIDebugPart::attach(sessions::SessionSetup& s) {
         setLiveShown(flagArg(a, "on"));
         return Done{};
     });
-    add(commands::kCpuDebug, [this](const Value& a) -> CommandOutcome {
+    add(commands::kShowCpuDebug, [this](const Value& a) -> CommandOutcome {
         setCpuShown(flagArg(a, "on"));
         return Done{};
     });

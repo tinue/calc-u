@@ -153,8 +153,8 @@ if(CALCU_TESTS)
          dev/hardware-checks/*.${ext} dev/presets/*.${ext} docs/developer/screenshots/presets/*.${ext}
          vscode/calcu1600-debug/presets/*.${ext})
   endforeach()
-  calcu_add_preset_check(CalcU1600Presets PRODUCT 1600 FILES ${CALCU1600_PRESET_GLOBS})
-  calcu_add_preset_check(CalcU1600Templates PRODUCT 1600 FILES vscode/calcu1600-debug/templates/*/debug.*
+  calcu_add_preset_check(CalcU1600Presets PRODUCT c1600 FILES ${CALCU1600_PRESET_GLOBS})
+  calcu_add_preset_check(CalcU1600Templates PRODUCT c1600 FILES vscode/calcu1600-debug/templates/*/debug.*
                          FILL tests/fill_vscode_templates.cmake)
   # No file above the core includes or names a machine class (C1600-1,
   # Technical Requirements; design T13). CI runs it with the core tests.
@@ -192,7 +192,7 @@ if(CALCU_TESTS)
                    PROPERTIES ENVIRONMENT CALCU=$<TARGET_FILE:calcu>)
   endif()
   # C1600-3 AC-20, AC-22 (T14): the scenarios of tools/dap_smoke.py against
-  # `calcu --product 1600 serve --dap` (no window; ~17 s with its pauses by hand:
+  # `calcu --product c1600 serve --dap` (no window; ~17 s with its pauses by hand:
   # Longer, D-5). Where attach is built (D-3).
   if(Python3_FOUND AND NOT WIN32 AND CALCU_ATTACH)
     calcu_add_test(CalcU1600DapSmoke longer
@@ -210,7 +210,7 @@ if(CALCU_TESTS)
   calcu_add_help_tests(CalcU1600 calc-u-1600)
 
   # C1600-5 (design §6) and LIB-11 Part D (D.6): the product commands under
-  # `pc1600` and the harness entry through SharpAppPart, each test on a
+  # `c1600` and the harness entry through SharpAppPart, each test on a
   # `calcu` run of its own; a program of its own, so that CoreTests' budget
   # stays (tests/harness/). About 10 s: Longer.
   file(GLOB HARNESS_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/harness/*.cpp)

@@ -154,7 +154,7 @@ struct TIAppSetup {
     std::optional<std::string> uploadFolder;
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
     /// The harness (LIB-11 §11.3): the debug panel's tabs computed as if
-    /// shown, so that `state calculator-debug` reads them (TIDebugSetup).
+    /// shown, so that `state c59.calculator-debug` reads them (TIDebugSetup).
     bool debugTabsShown = false;
 };
 

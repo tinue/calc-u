@@ -125,7 +125,7 @@ def test_state_restores(tmp_path):
 def test_run_to_an_address(tmp_path):
     loop = tmp_path / "loop.bin"
     loop.write_bytes(bytes([0x00, 0x00, 0x18, 0xFE]))   # NOP, NOP, then a loop on itself
-    machine = Machine(tmp_path).command(f"pc1600 load-code {loop} address=0xD000").command("type CALL &D000")
+    machine = Machine(tmp_path).command(f"c1600 load-code {loop} address=0xD000").command("type CALL &D000")
     assert machine.run_to("SC7852", 0xD002, timeout=1) < 1
     with pytest.raises(MachineError, match="did not reach"):
         Machine(tmp_path / "b").run_to("SC7852", 0x0005, timeout=0.1)

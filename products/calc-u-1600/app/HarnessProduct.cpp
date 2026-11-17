@@ -157,7 +157,7 @@ public:
     ~SharpHarnessProduct() override { endRun(); }
 
     std::string_view name() const override { return "Calc-U-1600"; }
-    std::string_view shortName() const override { return "1600"; }
+    std::string_view shortName() const override { return "c1600"; }
     std::string_view version() const override { return CALCU1600_VERSION; }   // APP_VERSION of the Qt build (CMake)
     const settings::ProductDecl& settingsDecl() const override { return cu1600::settingsDecl(); }
 

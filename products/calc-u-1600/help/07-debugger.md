@@ -60,7 +60,7 @@ stays off for that run.
 
 **Without a window.** The harness `calcu`, which you build from the source
 repository ([Building](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/developer/Building.md)),
-serves a debugger too: `calcu --product 1600 serve --dap 32168`. It has no
+serves a debugger too: `calcu --product c1600 serve --dap 32168`. It has no
 wall clock: while VS Code has the machine running, emulated time passes as
 fast as the computer allows. A session that stops at breakpoints repeats
 exactly; a pause by hand lands wherever the machine got to.
@@ -99,11 +99,11 @@ Extensions ▸ Calc-U-1600 Debugger**, or `settings.json`):
 
 | Setting | What it is | Default |
 |---|---|---|
-| `calcu1600.port` | the debug server's port | `32168` |
-| `calcu1600.zasmPath` | the zasm executable | `$CALCU_ZASM`, else `zasm` on the `PATH` |
-| `calcu1600.sdccBinPath` | the folder with sdaslh5801, sdld and makebin | `$CALCU_SDCC_BIN`, else the `PATH` |
-| `calcu1600.romListings` | ROM listings that every session loads | none |
-| `calcu1600.romSymbols` | ROM symbol tables that every session loads | none |
+| `c1600.port` | the debug server's port | `32168` |
+| `c1600.zasmPath` | the zasm executable | `$CALCU_ZASM`, else `zasm` on the `PATH` |
+| `c1600.sdccBinPath` | the folder with sdaslh5801, sdld and makebin | `$CALCU_SDCC_BIN`, else the `PATH` |
+| `c1600.romListings` | ROM listings that every session loads | none |
+| `c1600.romSymbols` | ROM symbol tables that every session loads | none |
 
 **ROM listings** give the firmware source lines and names in every session:
 you step through the ROM in its disassembly instead of bare instructions,
@@ -119,7 +119,7 @@ zasm -uwy PC1600-P0-B0.asm PC1600-P0-B0.lst PC1600-P0-B0.bin
 Then list it in your settings with the CPU and the bank it lives in:
 
 ```jsonc
-"calcu1600.romListings": [
+"c1600.romListings": [
   { "path": "~/PC-1600-ROM/disasm/new/PC1600-P0-B0.lst", "cpu": "z80", "bank": 0 }
 ]
 ```
@@ -445,7 +445,7 @@ to the folder's `launch.json`:
 
 ```jsonc
 {
-  "type": "calcu1600", "request": "attach", "name": "Firmware with CE-1600P",
+  "type": "c1600", "request": "attach", "name": "Firmware with CE-1600P",
   "preset": "${workspaceFolder}/with-plotter.pc1600",
   "reset": "reset", "stopOnEntry": true
 }
@@ -584,7 +584,7 @@ A launch configuration and a project preset's `debug:` block take the same
 keys. With `project`, the block supplies whatever the launch configuration
 leaves out, and the configuration's own keys win. `program` merges key by
 key, and the configuration's `listings` and `symbols` add to the block's
-(the extension sends the `calcu1600.romListings` / `romSymbols` settings
+(the extension sends the `c1600.romListings` / `romSymbols` settings
 there). The project is read again at every restart and Build & Load.
 
 Numbers (`address`, `entry`, `bank`, `me`, `pu`, `pv`) follow the preset
@@ -613,7 +613,7 @@ The VS Code extension adds these keys:
 | `build` | `{assembler: zasm \| sdas, file}`: assemble this file before the session and on Build & Load |
 | `buildTask` | a task to run instead, e.g. a Makefile target from `tasks.json` |
 | `currentFile` | `pc1600` / `pc1500a`: debug the `.asm` in the editor (use case 2) |
-| `port` | the server port, if not `calcu1600.port` |
+| `port` | the server port, if not `c1600.port` |
 
 The preset sections for ROM development, `bus-rom:` and `debug:`, are listed
 with the other sections in [Preset sections](10-preset-sections.md).
@@ -688,6 +688,6 @@ through a program or set breakpoints, use the debugger above.
   nothing yet.
 
 The harness prints the same views without a window:
-`calcu --product 1600 pc1600 inspect <view>` with `pointers`, `inventory`,
+`calcu --product c1600 c1600 inspect <view>` with `pointers`, `inventory`,
 `z80`, `lh`, `basic`, `programs`, `disks`, `physical`, `dump-basic`,
 `dump-s1`, `dump-s2`, `dump-disk-s1`, `dump-disk-s2` or `dump-ml`.

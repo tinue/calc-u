@@ -70,7 +70,7 @@ Options:
 - (a) **Recommended:** the serve protocol's commands are the preset step
   vocabulary (`key`, `type`, `wait`, `expect`, `screenshot`, `insert`,
   `arm`, `fit`, `speed`, `pause`, `step`, `resume`, `trace`, …) plus
-  inspection and control commands (`load` a preset, `lcd`, `dump`,
+  inspection and control commands (`load` a preset, `display-text`, `dump`,
   `peek`/`poke`, `break`, `state` of a topic, `quit`). An agent learns one
   language for presets and the harness; a preset is a recorded harness
   session.
@@ -82,9 +82,9 @@ Options:
 
 Options:
 - (a) **Recommended:** common commands at the top level; commands that
-  exist for one product only live under the product's name (`ti59 asm`,
-  `ti59 keycodes`, `ti59 coverage`; `pc1600 dump-basic`, `pc1600 tape`,
-  `pc1600 serial`), and `--product` selects the product for one-shot runs.
+  exist for one product only live under the product's name (`c59 asm`,
+  `c59 keycodes`, `c59 coverage`; `c1600 dump-basic`, `c1600 cassette`,
+  `c1600 serial`), and `--product` selects the product for one-shot runs.
   A command present in both products (for example `dump`) is common, with
   product-specific output where the hardware differs.
 - (b) Flat command list with product prefixes in the names.

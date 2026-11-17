@@ -213,7 +213,7 @@ TEST(lib7_ac35_harness_card_mem_side_and_saveas_card) {
     auto server = calcu::harness::Server::start(*product, o, &error);
     CHECK(server != nullptr);
     if (!server) return;
-    CHECK_EQ(server->line("ti59 program 76 11 01 02 03 91").text, std::string("done\n"));
+    CHECK_EQ(server->line("c59 program 76 11 01 02 03 91").text, std::string("done\n"));
     CHECK_EQ(server->line("key 2 Write").text, std::string("done\n"));
     CHECK_EQ(server->line("card { mem: X, side: 0 }").text, std::string("done\n"));   // LIB-11 AC-22
     CHECK_EQ(server->line("saveas { card: X, as: live, name: Kept }").text, std::string("done\n"));

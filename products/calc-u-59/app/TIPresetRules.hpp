@@ -47,7 +47,7 @@ private:
 };
 
 /// The display as text, one position after the other from the left (the
-/// harness's `lcd` rule, tiPositionText), trimmed.
+/// harness's `display-text` rule, tiPositionText), trimmed.
 std::string tiDisplayText(const calcu::machine::DisplayOutput&);
 
 /// X, the value in the display register, as a register (AC-40, D-44): from C

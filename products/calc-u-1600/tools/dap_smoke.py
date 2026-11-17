@@ -5,12 +5,12 @@ Connects to a running app (started with `--dap <port>`, or with the debug
 server enabled in Settings) or to the harness, attaches, and drives the requests VS Code
 uses: threads, pause, stackTrace/scopes/variables, disassemble, readMemory,
 evaluate, instruction and data breakpoints, stepping, continue, disconnect,
-and the calcu1600/screen text read-out.
+and the c1600/screen text read-out.
 
 Stdlib only:  uv run tools/dap_smoke.py [--port 32168] [--app PATH | --harness PATH]
 With --app the script starts the app itself (with --dap), with --harness
-the harness `calcu --product 1600 serve --dap <port>` (no window; the
-CTest CalcU1600DapSmoke), and quits it through the calcu1600/quit request.
+the harness `calcu --product c1600 serve --dap <port>` (no window; the
+CTest CalcU1600DapSmoke), and quits it through the c1600/quit request.
 """
 
 import argparse
@@ -127,9 +127,9 @@ def program_run(port):
     """Build & Load: a plain PC-1500 (preset), memtest with its listing, stop at its entry."""
     print("program run:")
     dap = Dap(port)
-    dap.request("initialize", adapterID="calcu1600")
+    dap.request("initialize", adapterID="c1600")
     dap.wait_event("initialized")
-    attach = {"type": "calcu1600", "request": "attach",
+    attach = {"type": "c1600", "request": "attach",
               "preset": os.path.join(REPO, "examples/startup/default-pc1500.pc1500"),
               "program": {"bin": os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"),
                           "listing": os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest.rst"),
@@ -156,33 +156,33 @@ def program_run(port):
     dap.request("setBreakpoints", source={"path": MEMTEST_ASM}, breakpoints=[])
     # Build & Load again (what the extension sends): clean start, load,
     # auto-start, stop at the entry.
-    body = dap.request("calcu1600/load", bin=os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"),
+    body = dap.request("c1600/load", bin=os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"),
                        listing=os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest.rst"),
                        address="0x40C5", after="stopOnEntry")
-    check(body.get("start") == "0x40C5", f"calcu1600/load -> {body}")
+    check(body.get("start") == "0x40C5", f"c1600/load -> {body}")
     stop = dap.wait_event("stopped", timeout=30)
     check(stop.get("reason") == "entry" and top_frame(dap, 1).get("line") == 74, "reloaded and stopped at the entry again")
     # Entry from the listing: its ENTRY by default, or a named symbol.
     rst = os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest.rst")
-    body = dap.request("calcu1600/load", bin=os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"), listing=rst, after="none")
+    body = dap.request("c1600/load", bin=os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"), listing=rst, after="none")
     check(body.get("start") == "0x40C5" and body.get("entry") == "0x40C5", f"load without address/entry -> {body}")
-    body = dap.request("calcu1600/load", bin=os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"), listing=rst,
+    body = dap.request("c1600/load", bin=os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"), listing=rst,
                        entry="MEMTEST", after="none")
     check(body.get("entry") == "0x40CC" and body.get("call") == "CALL &40CC", f"entry MEMTEST -> {body}")
     # Numbers follow the preset's rule: `&`, `0x` or `$` is hex, a bare
     # number decimal; bare hex is refused.
     bin_ = os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin")
-    body = dap.request("calcu1600/load", bin=bin_, listing=rst, address="16581", entry="&40CC", after="none")
+    body = dap.request("c1600/load", bin=bin_, listing=rst, address="16581", entry="&40CC", after="none")
     check(body.get("start") == "0x40C5" and body.get("entry") == "0x40CC", f"address \"16581\", entry \"&40CC\" -> {body}")
     try:
-        dap.request("calcu1600/load", bin=bin_, listing=rst, address="40C5", after="none")
+        dap.request("c1600/load", bin=bin_, listing=rst, address="40C5", after="none")
         check(False, "address \"40C5\" (bare hex) refused")
     except RuntimeError as e:
         check("address" in str(e), f"address \"40C5\" (bare hex) refused: {e}")
     # Other values are checked against the attach-key table.
     for bad in ({"after": "foo"}, {"cpu": "x86"}, {"cleanStart": "false"}):
         try:
-            dap.request("calcu1600/load", bin=bin_, listing=rst, **bad)
+            dap.request("c1600/load", bin=bin_, listing=rst, **bad)
             check(False, f"{bad} refused")
         except RuntimeError as e:
             check(next(iter(bad)) in str(e), f"{bad} refused: {e}")
@@ -209,7 +209,7 @@ def pc1600_run(port):
     print("PC-1600 run:")
     dumper = os.path.join(REPO, "tests/fixtures/listings/zasm/pc1600-rom-dumper")
     dap = Dap(port)
-    dap.request("initialize", adapterID="calcu1600")
+    dap.request("initialize", adapterID="c1600")
     dap.wait_event("initialized")
     # No "address": the headerless .bin loads at the listing's lowest
     # address (C0C5), as "Debug current file on PC-1600" relies on.
@@ -256,7 +256,7 @@ def project_run(port):
                     "    address: &C0C5\n"
                     "    after: stopOnEntry\n")
         dap = Dap(port)
-        dap.request("initialize", adapterID="calcu1600")
+        dap.request("initialize", adapterID="c1600")
         dap.wait_event("initialized")
         dap.request("attach", project=project)
         dap.request("configurationDone")
@@ -266,8 +266,8 @@ def project_run(port):
               f"project: stopped at the entry {top.get('source', {}).get('name')}:{top.get('line')}")
         entry_line = top.get("line")
         # Build & Load without arguments reloads the project's program.
-        body = dap.request("calcu1600/load")
-        check(body.get("start") == "0xC0C5", f"calcu1600/load from the project -> {body}")
+        body = dap.request("c1600/load")
+        check(body.get("start") == "0xC0C5", f"c1600/load from the project -> {body}")
         stop = dap.wait_event("stopped", timeout=60)
         check(stop.get("reason") == "entry" and top_frame(dap, 1).get("line") == entry_line,
               "project: reloaded and stopped at the entry again")
@@ -322,7 +322,7 @@ def bus_rom_run(port):
                     "  listings:\n"
                     f"    - {source[:-4]}.rst\n")
         dap = Dap(port)
-        dap.request("initialize", adapterID="calcu1600")
+        dap.request("initialize", adapterID="c1600")
         dap.wait_event("initialized")
         dap.request("attach", project=project)
         bps = dap.request("setFunctionBreakpoints", breakpoints=[{"name": "BUSHIT"}])["breakpoints"]
@@ -340,7 +340,7 @@ def bus_rom_run(port):
     with tempfile.TemporaryDirectory() as tmp:
         project = rom_project(tmp, '  command: FILES "S3:"\n')
         dap = Dap(port)
-        dap.request("initialize", adapterID="calcu1600")
+        dap.request("initialize", adapterID="c1600")
         dap.wait_event("initialized")
         dap.request("attach", project=project)
         dap.request("setFunctionBreakpoints", breakpoints=[{"name": "HDFILE"}])
@@ -351,7 +351,7 @@ def bus_rom_run(port):
               f"host-drive bus ROM: FILES stops at {top.get('source', {}).get('name')}:{top.get('line')}")
         # Build & Load without a program: the set-up again, the command again.
         dap.request("continue", threadId=1)
-        dap.request("calcu1600/load")
+        dap.request("c1600/load")
         stop = dap.wait_event("stopped", timeout=60)
         check(stop.get("reason") == "breakpoint" and top_frame(dap, 1).get("line") == top.get("line"),
               "host-drive bus ROM: Build & Load stops there again")
@@ -363,7 +363,7 @@ def bus_rom_run(port):
     with tempfile.TemporaryDirectory() as tmp:
         project = rom_project(tmp, "  boot: debug\n")
         dap = Dap(port)
-        dap.request("initialize", adapterID="calcu1600")
+        dap.request("initialize", adapterID="c1600")
         dap.wait_event("initialized")
         dap.request("attach", project=project)
         dap.request("setFunctionBreakpoints", breakpoints=[{"name": "HDRESET"}])
@@ -392,7 +392,7 @@ def renum_template_run(port):
         for name in ("rom.asm", "rom.bin", "rom.rst", "debug.pc1500a"):
             shutil.copy(os.path.join(fixture, name), os.path.join(tmp, name))
         dap = Dap(port)
-        dap.request("initialize", adapterID="calcu1600")
+        dap.request("initialize", adapterID="c1600")
         dap.wait_event("initialized")
         # As VS Code sends it: the extension adds `listings` / `symbols` (the
         # user's ROM listings, here none), which must add to the project's;
@@ -438,7 +438,7 @@ def lh5803_run(port):
     """PC-1600 LH5803: LH5801 code loaded for the LH5803, started with the XCALL the debugger types."""
     print("LH5803 run:")
     dap = Dap(port)
-    dap.request("initialize", adapterID="calcu1600")
+    dap.request("initialize", adapterID="c1600")
     dap.wait_event("initialized")
     dap.request("attach", preset=os.path.join(REPO, "vscode/calcu1600-debug/presets/debug-pc1600.pc1600"),
                 program={"bin": os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"),
@@ -457,11 +457,11 @@ def rom_run(port):
     """ROM research: reset and stop before the first instruction, then single-step."""
     print("ROM run:")
     dap = Dap(port)
-    dap.request("initialize", adapterID="calcu1600")
+    dap.request("initialize", adapterID="c1600")
     dap.wait_event("initialized")
     dap.request("attach")
     dap.request("configurationDone")
-    dap.request("calcu1600/reset", kind="reset", stop=True)
+    dap.request("c1600/reset", kind="reset", stop=True)
     stop = dap.wait_event("stopped")
     tid = stop["threadId"]
     top = top_frame(dap, tid)
@@ -481,11 +481,11 @@ def reset_run(port):
     """All Reset & Stop, then run on: the machine boots and breakpoints fire."""
     print("All Reset run:")
     dap = Dap(port)
-    dap.request("initialize", adapterID="calcu1600")
+    dap.request("initialize", adapterID="c1600")
     dap.wait_event("initialized")
     dap.request("attach")
     dap.request("configurationDone")
-    dap.request("calcu1600/reset", kind="allReset", stop=True)
+    dap.request("c1600/reset", kind="allReset", stop=True)
     stop = dap.wait_event("stopped", timeout=30)
     check(stop.get("reason") == "entry", f"all reset stops at the vector: {top_frame(dap, stop['threadId'])['name']}")
     tid = stop["threadId"]
@@ -511,10 +511,10 @@ def reset_run(port):
 
 
 def screen_run(port):
-    """calcu1600/screen: the LCD as text, after a typed PRINT MEM."""
+    """c1600/screen: the LCD as text, after a typed PRINT MEM."""
     print("Screen run:")
     dap = Dap(port)
-    dap.request("initialize", adapterID="calcu1600")
+    dap.request("initialize", adapterID="c1600")
     dap.wait_event("initialized")
     dap.request("attach", preset=os.path.join(REPO, "vscode/calcu1600-debug/presets/debug-pc1600.pc1600"),
                 command="PRINT MEM")
@@ -522,7 +522,7 @@ def screen_run(port):
     screen = {}
     deadline = time.time() + 15
     while time.time() < deadline:
-        screen = dap.request("calcu1600/screen")
+        screen = dap.request("c1600/screen")
         if any("11834" in row for row in screen.get("rows", [])):
             break
         time.sleep(0.25)
@@ -541,7 +541,7 @@ def vscode_session(port):
     variables at each stop; next; continue; disconnect)."""
     print("VS Code session:")
     dap = Dap(port)
-    caps = dap.request("initialize", clientID="vscode", clientName="Visual Studio Code", adapterID="calcu1600",
+    caps = dap.request("initialize", clientID="vscode", clientName="Visual Studio Code", adapterID="c1600",
                        pathFormat="path", linesStartAt1=True, columnsStartAt1=True, supportsVariableType=True,
                        supportsVariablePaging=True, supportsRunInTerminalRequest=True, locale="en",
                        supportsProgressReporting=True, supportsInvalidatedEvent=True, supportsMemoryReferences=True,
@@ -551,7 +551,7 @@ def vscode_session(port):
     bin_ = os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin")
     rst = os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest.rst")
     # launch: VS Code sends the configuration with its own keys besides ours.
-    seq = dap.send("launch", type="calcu1600", request="launch", name="Debug memtest", __sessionId="x",
+    seq = dap.send("launch", type="c1600", request="launch", name="Debug memtest", __sessionId="x",
                    preset=os.path.join(REPO, "examples/startup/default-pc1500.pc1500"),
                    program={"bin": bin_, "listing": rst, "address": "0x40C5", "after": "call"},
                    listings=[], symbols=[])
@@ -600,7 +600,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--port", type=int, default=32168)
     ap.add_argument("--app", help="start this app binary with --dap <port> and quit it afterwards")
-    ap.add_argument("--harness", help="start the harness `calcu --product 1600 serve --dap <port>` (C1600-3 AC-20, "
+    ap.add_argument("--harness", help="start the harness `calcu --product c1600 serve --dap <port>` (C1600-3 AC-20, "
                                       "AC-22) and quit it afterwards")
     args = ap.parse_args()
 
@@ -611,12 +611,12 @@ def main():
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     elif args.harness:
         # No window: emulated time passes while the session has the machine
-        # running. Standard input stays open; calcu1600/quit ends the run.
-        proc = subprocess.Popen([args.harness, "--product", "1600", "serve", "--dap", str(args.port)],
+        # running. Standard input stays open; c1600/quit ends the run.
+        proc = subprocess.Popen([args.harness, "--product", "c1600", "serve", "--dap", str(args.port)],
                                 stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=REPO)
     try:
         dap = Dap(args.port, timeout=20.0)
-        caps = dap.request("initialize", adapterID="calcu1600", linesStartAt1=True, columnsStartAt1=True)
+        caps = dap.request("initialize", adapterID="c1600", linesStartAt1=True, columnsStartAt1=True)
         check(caps.get("supportsInstructionBreakpoints"), "initialize: capabilities")
         dap.wait_event("initialized")
         dap.request("attach", stopOnEntry=True)
@@ -693,7 +693,7 @@ def main():
             # Quit it the normal way (a kill makes macOS offer to restore
             # its windows on the next launch); kill only as a last resort.
             try:
-                Dap(args.port, timeout=5).request("calcu1600/quit")
+                Dap(args.port, timeout=5).request("c1600/quit")
                 proc.wait(timeout=10)
             except Exception:
                 proc.kill()

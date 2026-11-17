@@ -1,7 +1,7 @@
 """Calc-U-59 through the harness `calcu` (LIB-11), for the scripts that stay
 (C59-9 §4, AC-13; LIB-11 design D-16): tools/coverage.py,
 tools/fastmode_matrix.py and the calendar scripts in tools/calendar/. One
-`calcu --product 59 serve` per Run, in emulated time only; reference/Harness.md
+`calcu --product c59 serve` per Run, in emulated time only; reference/Harness.md
 has the commands and the recipes.
 
 The calcu program: --calcu PATH on a script's command line, else the
@@ -10,7 +10,7 @@ of the repository, else build/tools/library/harness/cli/calcu, configured
 (Release, no Qt) and built on first use. Scratch files go to tools/build/
 (ignored).
 
-Timing: `ti59 run-time` and `ti59 line-times` (C59-9 AC-3, AC-5) time on the
+Timing: `c59 run-time` and `c59 line-times` (C59-9 AC-3, AC-5) time on the
 calculator's own clock: a key's run time from its press until the display
 is lit again and no program runs (memory run_time_measurement); line times
 from the command, after the last key is up."""
@@ -75,10 +75,10 @@ def key_steps(steps):
 
 
 class Run:
-    """One `calcu --product 59 serve`."""
+    """One `calcu --product c59 serve`."""
 
     def __init__(self, program=None):
-        self.c = Calcu(program or calcu_path(), '59', json=False, cwd=ROOT)
+        self.c = Calcu(program or calcu_path(), 'c59', json=False, cwd=ROOT)
 
     def close(self):
         self.c.close()
@@ -111,8 +111,8 @@ class Run:
 
     def program(self):
         """The keycodes of program memory up to the partition."""
-        last = int(self.cmd('ti59 partition')[0].split('.')[0])
-        return [int(l.split()[1]) for l in self.cmd(f'ti59 program 000 count={last + 1}')]
+        last = int(self.cmd('c59 partition')[0].split('.')[0])
+        return [int(l.split()[1]) for l in self.cmd(f'c59 program 000 count={last + 1}')]
 
 
 def play_until_last(path, steps=None, program=None):
@@ -130,9 +130,9 @@ def play_until_last(path, steps=None, program=None):
 
 
 def run_time(run, keys, limit=None):
-    """`ti59 run-time <keys>`: [(key, seconds, finished)], the total."""
+    """`c59 run-time <keys>`: [(key, seconds, finished)], the total."""
     out = []
-    lines = run.cmd('ti59 run-time ' + keys)
+    lines = run.cmd('c59 run-time ' + keys)
     for l in lines[:-1]:
         w = l.split()
         out.append((w[0], float(w[1]), 'not' not in w[2:]))
@@ -140,7 +140,7 @@ def run_time(run, keys, limit=None):
 
 
 def run_preset(path, steps=None, program=None):
-    """Play the keys; time the last one (`ti59 run-time`). Returns (seconds, printed lines, finished)."""
+    """Play the keys; time the last one (`c59 run-time`). Returns (seconds, printed lines, finished)."""
     run, last = play_until_last(path, steps, program)
     try:
         keys, total = run_time(run, last)
@@ -150,13 +150,13 @@ def run_preset(path, steps=None, program=None):
 
 
 def line_times(path, steps=None, limit=4000, program=None):
-    """[(seconds after the last key, line)] of `ti59 line-times`; stops 15 s
+    """[(seconds after the last key, line)] of `c59 line-times`; stops 15 s
     after the last printed line once the machine is idle (C59-9 AC-3)."""
     run, last = play_until_last(path, steps, program)
     try:
         run.step('key', last)
         out = []
-        for l in run.cmd(f'ti59 line-times limit={limit}s'):
+        for l in run.cmd(f'c59 line-times limit={limit}s'):
             m = re.match(r'^(\d+\.\d+) (\d+\.\d+) \|(.*)\|$', l)
             if m:
                 out.append((float(m.group(1)), m.group(3)))

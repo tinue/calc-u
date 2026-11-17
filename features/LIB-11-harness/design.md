@@ -62,7 +62,7 @@ New. The layout follows LIB-1 design §2a: the areas `library/harness/`
 | `library/harness/Reply.hpp/.cpp` | `Reply`, `Value`, the plain and the JSON writers (§3.1) |
 | `library/harness/Protocol.hpp/.cpp` | `CommandLine`, `parseLine()`, `splitOneShot()` (§3.2) |
 | `library/harness/Commands.hpp/.cpp` | `CommandRegistry`, `CommandContext`, `Handler` (§3.3) |
-| `library/harness/FirstCommands.cpp` | `addFirstCommands()`: `wait`, `key-down`, `key-up`, `lcd`, `state`, `capabilities`, `ticks`, `audio`, `quit` (AC-9) |
+| `library/harness/FirstCommands.cpp` | `addFirstCommands()`: `wait`, `key-down`, `key-up`, `display-text`, `state`, `capabilities`, `ticks`, `audio`, `quit` (AC-9) |
 | `library/harness/HarnessHost.hpp/.cpp` | the harness's side of the app session: the listener that keeps the topics, the recording sound sink, operations run in one go (§3.4) |
 | `library/harness/DisplayText.hpp/.cpp` | `DisplayText`, `GlyphFont`, `readDotMatrix()`, `readSegments()` (§3.5) |
 | `library/harness/WavRecorder.hpp/.cpp` | 16-bit mono PCM WAV; the header is written again at close (AC-9 `audio`, EC-3) |
@@ -139,8 +139,8 @@ std::vector<std::string> splitOneShot(std::span<const std::string> words);  // A
 }
 ```
 
-- **The word between commands is `then`.** `calcu --product 1600 wait
-  2s then lcd then ticks`. The words of each command are joined with one
+- **The word between commands is `then`.** `calcu --product c1600 wait
+  2s then display-text then ticks`. The words of each command are joined with one
   space into a line, so the one-shot form and `serve` share one parser.
   A literal argument `then` cannot be written in the one-shot form. Use
   `serve` for that.
@@ -180,7 +180,7 @@ from its own area: `key`, `type` (LIB-5); `preset`, the bare `wait`,
 registry is the place AC-13 asks for: product commands under the
 product's word, common commands at the top level. A common command with
 product-specific output asks the `HarnessProduct` for the product part,
-as `lcd` does (§3.5).
+as `display-text` does (§3.5).
 
 The first commands:
 
@@ -188,7 +188,7 @@ The first commands:
 |---|---|---|---|
 | `wait <duration>` | `formats::parseDuration` (µs, integer; EC-2 when there is no unit). Ticks = ⌈µs × rate / 10⁶⌉. `host.advance(ticks)`, which is LIB-3's `AppSession::advanceUnpaced` | `ticks: <n>`, `seconds: <s>` (what passed) | `{"ticks":n,"seconds":s}` |
 | `key-down <key ID>`, `key-up <key ID>` | the key resolved as the `key` step does (other spellings of the descriptor, any case; LIB-1 D-2; D-9), then LIB-3's commands `key-down`/`key-up` `{key}` with the key ID (EC-7: LIB-1 EC-3) | — | `null` |
-| `lcd` | the last display state, through the product's rule (§3.5) | rows; `indicators: <names>`; `not text: <n>` (dot matrix); or `display off` | `{"on":…,"rows":[…],"indicators":[{"name":…,"brightness":…}],"notText":n}` |
+| `display-text` | the last display state, through the product's rule (§3.5) | rows; `indicators: <names>`; `not text: <n>` (dot matrix); or `display off` | `{"on":…,"rows":[…],"indicators":[{"name":…,"brightness":…}],"notText":n}` |
 | `state <topic>` | `host.readTopic(name)`; EC-5 when it is no topic | a state topic: its text form; a stream topic: `reset` if it started over, then what was appended, one item per line | `{"topic":…,"shape":"state","state":…}` or `{"topic":…,"shape":"stream","reset":b,"items":[…]}` |
 | `capabilities` | LIB-3's request `capabilities`, reply `MachineOffer` (LIB-3 AC-39) | `capability <kind> <id> <owner>` per capability; `place <path> <peripheral>[:<variant>]` or `place <path> empty` per place | `{"capabilities":[{"kind","id","owner"}],"places":[{"place","plugged":[…]}]}` |
 | `ticks` | LIB-3's request `ticks`, reply `EmulatedTimeReply` (LIB-3 AC-39; LIB-17 design §6) | `ticks: <n>`, `seconds: <s>` | `{"ticks":n,"seconds":s}` |
@@ -288,8 +288,8 @@ class HarnessProduct {
 public:
   virtual ~HarnessProduct() = default;
   virtual std::string_view name() const = 0;          // "Calc-U-59" (AC-1)
-  virtual std::string_view shortName() const = 0;     // "59"
-  virtual std::string_view commandWord() const = 0;   // "ti59", "pc1600" (AC-13)
+  virtual std::string_view shortName() const = 0;     // the product word, "c59" (glossary)
+  virtual std::string_view commandWord() const = 0;   // "c59", "c1600" (AC-13)
   virtual const machine::Catalogue& catalogue() const = 0;
   virtual machine::MachineBuilder& builder() = 0;
   virtual const settings::ProductDecl& settingsDecl() const = 0;      // A-3 in §5 until LIB-9 59/1600
@@ -384,7 +384,7 @@ and M-33 for Calc-U-59 (D-6).
 
 | | Calc-U-59 (`cu59::HarnessProduct`) | Calc-U-1600 (`shared::HarnessProduct`) |
 |---|---|---|
-| name, short, word | `Calc-U-59`, `59`, `ti59` | `Calc-U-1600`, `1600`, `pc1600` |
+| name, short, word | `Calc-U-59`, `59`, `c59` | `Calc-U-1600`, `1600`, `c1600` |
 | catalogue, builder | the C59-1 ones (M-19) | the C1600-1 ones (M-26) |
 | bundle | LIB-12's lookup (M-24) | LIB-12's lookup (M-27). The CLI's own lookup is gone by then (`tools/pc1600_cli.cpp:110-141`; LIB-12 1600) |
 | startup (A-1) | TI-59, its default variant (LIB-9 AC-20's fallback) | PC-1500A (LIB-9 AC-27's fallback) |
@@ -425,7 +425,7 @@ Each test is written before the code of its task.
 | T5 | Test product (`TestProduct.*`): `Calc-U-Test`/`test`/word `test`; models `test-seg` and `test-dot` (LIB-1 `TestMachines.hpp`); a segment rule and a 3-glyph font; a product topic `test.count`; commands `test mapping` (echoes its parsed value), `test operation <ticks>` (starts an operation of that length), `test fail` (refused); a ROM full set of two files in a temp bundle; the real-time clock of the test machines' component `rtc` (LIB-2 T2; O-3) | (support) | used by T6 to T13 |
 | T6 | `HarnessHost`: topics, `state` | AC-5, AC-11, EC-5 | `host_tests.cpp`: `ac11_state_reads_library_and_product_topics`, `ac11_stream_gives_what_was_appended_since_last_read`, `ac5_notices_only_through_state`, `ec5_state_of_no_topic_is_refused` |
 | T7 | `wait`, `key-down`, `key-up`, `ticks`, `capabilities`, `quit`; operations | AC-7, AC-9, EC-2, EC-7 | `commands_tests.cpp`: `ac9_wait_reports_time_passed_within_one_instruction`, `ac9_key_down_and_up`, `ac9_unknown_key_is_refused`, `ac9_ticks_gives_count_and_seconds`, `ac9_capabilities_with_kind_id_owner_and_places`, `ac9_quit_ends_serve`, `ac7_operation_runs_to_its_end_before_the_reply`, `ec2_wait_without_unit_is_refused`, `ec7_repeated_key_down_or_up_is_done_and_changes_nothing` |
-| T8 | `readDotMatrix`, `readSegments`, `lcd` | AC-9, AC-10 | `display_text_tests.cpp`: `ac10_dot_matrix_rows_indicators_and_cells_not_text` (synthetic frames), `ac10_inverted_glyph_is_text`, `ac10_segment_positions_left_to_right_by_product_rule`, `ac10_display_off_says_so` (`test-dot`, key `off`), `ac9_lcd_reads_display_topic` |
+| T8 | `readDotMatrix`, `readSegments`, `display-text` | AC-9, AC-10 | `display_text_tests.cpp`: `ac10_dot_matrix_rows_indicators_and_cells_not_text` (synthetic frames), `ac10_inverted_glyph_is_text`, `ac10_segment_positions_left_to_right_by_product_rule`, `ac10_display_off_says_so` (`test-dot`, key `off`), `ac9_lcd_reads_display_topic` |
 | T9 | `audio`, `WavRecorder` | AC-9, EC-3, EC-6 | `audio_tests.cpp`: `ac9_audio_records_all_sound_also_of_an_operation`, `ec3_wav_complete_when_input_ends` (header sizes = data), `ec6_audio_on_machine_without_sound_is_refused` |
 | T10 | `RunSetup`: run folder, settings, ROMs | AC-8, EC-1 | `run_tests.cpp`: `ac8_defaults_and_no_settings_file_read_or_written` (a fake home checked unchanged), `ac8_run_folder_empty_removed_and_in_no_reply` (a `test fail` notice that names a file in it), `ac8_traces_and_screenshots_go_to_the_run_folder` (`Paths::traceFolder`, `screenshotFolder`), `ac8_options_name_settings_save_and_output_folders`, `ac8_bundled_roms_through_the_lookup`, `ec1_missing_rom_ends_at_start_naming_files` |
 | T11 | the date and time | AC-21 | `clock_tests.cpp`: `ac21_fixed_instant_by_default_at_build_and_after_operation`, `ac21_clock_option_names_instant`, `ac21_clock_host_hands_host_time` |
@@ -433,7 +433,7 @@ Each test is written before the code of its task.
 | T13 | `cli::run`, process level | AC-2, AC-3, EC-3, EC-4 | `tests/cli/*.cmake` with `calcu_test`: `ac2_one_shot_runs_in_order_and_exits_zero`, `ac2_first_refusal_exits_nonzero_with_reason` (`wait 1s then test fail then ticks`: `ticks` not run), `ac3_serve_one_reply_per_line_until_quit`, `ec3_serve_ends_at_end_of_input` (with `audio`), `ec4_unknown_product_lists_products` |
 | T17 | `display`: the raw display output (added with AC-23, user 2026-11-14) | AC-23 | `display_tests.cpp`: `ac23_dot_matrix_rows_of_ones_and_zeros`, `ac23_segment_positions`, `ac23_indicator_bits_in_descriptor_order`, `ac23_display_off`, `ac23_json_arrays` (test machines `test-dot`, `test-seg`) |
 | T18 | `state-save`, `state-restore` (added with AC-24, user 2026-11-14): the generic capability kind machine state (`save() -> bytes`, `restore(bytes) -> refused or done`, opaque to the library) and a header the library writes (product, version, model, variant, plugged peripherals) to refuse a foreign file | AC-24 | `state_tests.cpp`: `ac24_restore_continues_identically` (test machine `test-seg` offers the kind), `ac24_restore_refused_for_other_configuration_changes_nothing`, `ac24_refused_without_the_kind`, `ac24_host_files_not_in_state` |
-| T14 | product entries (§4) | (exit check of M-28) | `products/calc-u-59/tests/harness_tests.cpp`: `harness_drives_a_ti59` (`wait 2s`, `key-down`/`key-up` of a digit, `lcd`, `ticks`); `products/calc-u-1600/tests/harness_tests.cpp`: `harness_drives_a_sharp_machine` (the PC-1500A of the default start, D-1; the same with `lcd` rows). Frequent, `SKIP_UNLESS` the ROMs are present |
+| T14 | product entries (§4) | (exit check of M-28) | `products/calc-u-59/tests/harness_tests.cpp`: `harness_drives_a_ti59` (`wait 2s`, `key-down`/`key-up` of a digit, `display-text`, `ticks`); `products/calc-u-1600/tests/harness_tests.cpp`: `harness_drives_a_sharp_machine` (the PC-1500A of the default start, D-1; the same with `display-text` rows). Frequent, `SKIP_UNLESS` the ROMs are present |
 | T15 | Python helper (D-2) | (none) | `library/harness/python/tests/test_calcu_serve.py`, run as `uv run python -I …` by a CTest entry. Frequent |
 | T16 | CI and docs | (plan M-28) | `calcu` built in both workflows on every desktop platform. The `library` job runs T1 to T13 |
 
@@ -448,7 +448,7 @@ T1 to T13.
   products' guidance"):
   - `products/calc-u-59/CLAUDE.md`: near lines 44-47, where `.ti59` runs
     and `tools/headless/` are named, add a short "Harness" section: how
-    to build and run `calcu --product 59`, the first commands, `serve`,
+    to build and run `calcu --product c59`, the first commands, `serve`,
     `--json`, and the fact that `tools/headless/` and `tools/agentic/`
     stay until M-59.
   - `products/calc-u-1600/CLAUDE.md`: the same, next to the test
@@ -512,7 +512,7 @@ T1 to T13.
   `addToSession()` in M-31 and M-33 (keeps `harness.md` I-1, no adapter).
 - **D-7 (was OQ-7; AC-10, AC-19).** From M-51 the Calc-U-1600 product puts
   the cursor cell into a product topic that its display rule reads, so
-  `lcd` shows the cell under the cursor as `--lcd-text` does today. The
+  `display-text` shows the cell under the cursor as `--lcd-text` does today. The
   lines carry this design's labels (`indicators:`, `not text:`), the same
   for every product (AC-4, AC-10); `parseLcdText` stays as the font source.
 - **D-8 (was OQ-8).** A second `audio` completes the first file and starts
@@ -576,7 +576,7 @@ Others:
 
 ## Part D: the Calc-U-1600 column
 
-Step M-51, with C1600-5 (its design holds the `pc1600` commands). Tests
+Step M-51, with C1600-5 (its design holds the `c1600` commands). Tests
 from AC-18 to AC-20; Done in M-51 (plan §5.1). M-51 also runs the
 adapter check of plan §1 over Calc-U-1600 and the library (D.7).
 
@@ -584,9 +584,9 @@ adapter check of plan §1 over Calc-U-1600 and the library (D.7).
 
 M-51 has three parts, each its own commit on short branches (C1600-5
 design §1):
-1. the `pc1600` commands (C1600-5);
+1. the `c1600` commands (C1600-5);
 2. the harness's Calc-U-1600 entry built through `app/SharpAppPart`
-   (D-6, moved here from M-31; user, 2026-11-15), `lcd` with the cursor
+   (D-6, moved here from M-31; user, 2026-11-15), `display-text` with the cursor
    cell (AC-19, D-7), and today's tools removed (D.5);
 3. the adapter check (D.7).
 
@@ -669,7 +669,7 @@ library's test product build one each. `serve` and attach list their
 commands through one `addServeCommands()`; the preset commands are refused
 when the run has no preset vocabulary (no `presetRules()` any more).
 
-### D.4 `lcd` on a Sharp machine (AC-19; D-7)
+### D.4 `display-text` on a Sharp machine (AC-19; D-7)
 
 The `FontPart` becomes `shared::LcdTextPart` (`app/LcdTextPart.hpp/.cpp`,
 new): at `machineChanged` it reads the font of the model's ROM
@@ -687,20 +687,20 @@ topic: no frontend needs it (D-12).
 Every function of AC-18's table, with the command that serves it after
 M-51 (each checked by `lib11_ac18_every_function_of_the_table`, D.6):
 
-| Today | Through `calcu --product 1600` | Feature |
+| Today | Through `calcu --product c1600` | Feature |
 |---|---|---|
 | `--preset <file>` | `preset <file>` | LIB-6 |
 | `--check-preset <file>…`, `tools/check_presets.sh` | `check-preset <file> …`; the script calls `calcu` (if M-46 left it on `PC1600_CLI`, M-51 moves it) | LIB-6 |
 | `--rom`, `--ce1600p-rom` | `variant <name>`, `attach printer CE-1600P:<variant>` | LIB-18 |
 | `--run-after <ticks>`, the run for a number of ticks | `wait <duration>` | LIB-11 |
-| `--lcd-text <file>` | `lcd` (D.4) | LIB-11 |
+| `--lcd-text <file>` | `display-text` (D.4) | LIB-11 |
 | `--lcd-png <file>` | `screenshot <file>` | LIB-6 |
 | `--wav <file>` | `audio <file>` | LIB-11 |
 | `--dump-mem <address>,<length>` | `peek <target> <space> <address> <count>` | LIB-10 |
-| `--inspect <view>` | `pc1600 inspect <view>` | C1600-5 |
-| `--dump-basic` | `pc1600 dump-basic` | C1600-5 |
-| `--tape-in <wav>`, `--tape-out <wav>` | `tape { file: … }`, `eject cassette`; `pc1600 cassette record <wav>`, `pc1600 cassette status` | LIB-7; C1600-5 |
-| `--ce158-pty`, `--ce158-rx`, `--ce158-rx-hold`, `--ce158-tx` | `pc1600 serial ce158 link`, `feed <file> hold=<n>`, `capture <file>` | C1600-5 |
+| `--inspect <view>` | `c1600 inspect <view>` | C1600-5 |
+| `--dump-basic` | `c1600 dump-basic` | C1600-5 |
+| `--tape-in <wav>`, `--tape-out <wav>` | `tape { file: … }`, `eject cassette`; `c1600 cassette record <wav>`, `c1600 cassette status` | LIB-7; C1600-5 |
+| `--ce158-pty`, `--ce158-rx`, `--ce158-rx-hold`, `--ce158-tx` | `c1600 serial ce158 link`, `feed <file> hold=<n>`, `capture <file>` | C1600-5 |
 | `--save-dir`, `--modules-dir` | `--save-folder`; the bundled module definitions (a user's module definitions in the save folder, LIB-7) | LIB-11, LIB-7 |
 | the summary after a run (registers, last instructions, where the program counter spent its time) | `registers`, `history`, `profile report` | LIB-10 |
 | the probes | not taken over (OQ-5 as amended) | — |
@@ -711,7 +711,7 @@ What the CLIs print that the table does not name, and where it goes:
 `pc1500_cli`'s "Display input-line text" (`pc1500_cli.cpp:370-375`) is
 `peek` of the ROM's input buffer; the CE-150 report
 (`CliCommon.hpp:155-166`) and `CALCU_PAPER_OUT` (`:214-234`) are
-`paper marks`; the Centronics dump is `pc1600 serial ce158 report`. The
+`paper marks`; the Centronics dump is `c1600 serial ce158 report`. The
 bare `<rom-file>` mode of `pc1500_cli` (`pc1500_cli.cpp:11, 176-191`;
 LIB-12 D-7: "stays" until the tools go) has no row in AC-18 and no
 successor: every ROM comes from the one lookup (LIB-12 AC-2) (D-13).
@@ -725,7 +725,7 @@ successor: every ROM comes from the one lookup (LIB-12 AC-2) (D-13).
 | the targets | `pc1500_cli`, `pc1600_cli` (`CMakeLists.txt:75-81`); `tools/build_tool.sh` stays only if anything is left to build with it (else it goes) |
 | the CLI's test | `tests/cli_rom_tests.sh` and the CTest `CalcU1600CliRomLookup` (`CMakeLists.txt:150-153`); LIB-12 AC-13 stays covered by the frontends' tests and `tests/rom_lookup_tests.cpp`, and the harness's missing-ROM end is LIB-11 EC-1 |
 | the one-time check | `dev/tape-matrix/` (OQ-5 as amended) |
-| the IDE run configurations | `.run/pc1500_cli.run.xml`, `pc1600_cli.run.xml`, `pc1600_plotter_probe.run.xml`, `pc1600_power_probe.run.xml`, `pc1600_uart_probe.run.xml` (repository root); a `.run/calcu-1600.run.xml` for `calcu --product 1600 serve` takes their place |
+| the IDE run configurations | `.run/pc1500_cli.run.xml`, `pc1600_cli.run.xml`, `pc1600_plotter_probe.run.xml`, `pc1600_power_probe.run.xml`, `pc1600_uart_probe.run.xml` (repository root); a `.run/calcu-1600.run.xml` for `calcu --product c1600 serve` takes their place |
 | the adapters for the tools | the section "Today's tools" of `core/Machine/LegacyCalls.hpp:75-98` (`coreParts`, `setYieldHook`, `presetMedia`, `typeLine`); `LegacyCalls.hpp/.cpp` go whole when M-44 to M-47 have removed their sections |
 | the scratch folder's tools | `headless/README.md` keeps the folder for scratch output of `calcu` and ad hoc runs; the build lines go |
 
@@ -745,7 +745,7 @@ Tests before the code. `CoreTests`, Frequent; names `lib11_acN_…`.
 | Task | What | ACs | Test |
 |---|---|---|---|
 | H1 | `prepare`, the entry through `SharpAppPart` | AC-20 | `calcu_library_tests`: `prepare_runs_before_session_parts` (the test product records the order); `CoreTests` `tests/harness_tests.cpp`: `lib11_ac20_entry_runs_sharp_app_part` (the topics and commands of the app layer are in the run: `state control-state` with the paper panel and the product entries; `media`; `c1600.serial-links`), `lib11_ac20_roms_and_module_definitions_as_the_frontends` (the bundled modules listed as the Qt6 frontend lists them) |
-| H2 | `lcd` with the cursor | AC-19 | `lib11_ac19_lcd_rows_indicators_not_text_off` (PC-1500A and PC-1600: `NEW0? :CHECK`, the indicators, `not text: 0`; `display off` after the off key), `lib11_ac19_cursor_cell_read_as_text` (a line typed, the cursor on a character: the character, not U+FFFD; the expected rows from today's `--lcd-text` for the same keys, written out) |
+| H2 | `display-text` with the cursor | AC-19 | `lib11_ac19_lcd_rows_indicators_not_text_off` (PC-1500A and PC-1600: `NEW0? :CHECK`, the indicators, `not text: 0`; `display off` after the off key), `lib11_ac19_cursor_cell_read_as_text` (a line typed, the cursor on a character: the character, not U+FFFD; the expected rows from today's `--lcd-text` for the same keys, written out) |
 | H3 | The table of AC-18 | AC-18 | `lib11_ac18_every_function_of_the_table`: one block per row of D.5, each the commands and their expected reply, on the model the row needs (the exit check of M-51) |
 | H4 | The old tools gone | (plan M-51 "Green after") | the CTest `CalcU1600NoOldTools` (`cmake -P tools/check_no_old_tools.cmake`): no target, file or `.run` configuration of D.5's list, no `PC1600_POWER_PROBE` in `core/`; Frequent |
 | H5 | `docs/test-groups.md` | — | the entries above; `CalcU1600CliRomLookup` gone |
@@ -779,17 +779,17 @@ product's `CHANGELOG.md` for the release (M-61).
 
 | File | Change |
 |---|---|
-| `products/calc-u-1600/CLAUDE.md` | section Harness: the `pc1600` commands (C1600-5 §7); the lines "Not yet: …" and "Until M-51, `pc1500_cli`, `pc1600_cli` and the probes stay" go |
+| `products/calc-u-1600/CLAUDE.md` | section Harness: the `c1600` commands (C1600-5 §7); the lines "Not yet: …" and "Until M-51, `pc1500_cli`, `pc1600_cli` and the probes stay" go |
 | `products/calc-u-1600/headless/README.md` | the folder for scratch output; the CLI build lines go |
 | `products/calc-u-1600/docs/developer/Building.md`, `README.md`, `Cloud-Sessions.md`, `LCD-Text.md`, `PC1600-Serial-Port.md` | the CLI commands become `calcu` commands |
 | `products/calc-u-1600/TODO.md` | the items on the CLIs (`:395`, `:670`) closed |
-| `docs/glossary-mapping.md` | row "Harness", Calc-U-1600: `calcu --product 1600` (was `pc1500_cli`, `pc1600_cli`, the probes) |
+| `docs/glossary-mapping.md` | row "Harness", Calc-U-1600: `calcu --product c1600` (was `pc1500_cli`, `pc1600_cli`, the probes) |
 | `docs/test-groups.md` | D.6 H5 |
 | memory `calc-u-1600/feedback_headless_dir_for_probe_output.md` | scratch output of `calcu` and ad hoc runs into `headless/`; the build scripts named there are gone |
-| memory `calc-u-1600/feedback_lcd_text_before_images.md` | `calcu --product 1600 … then lcd` in place of `pc1600_cli --lcd-text -`; the DAP request stays |
+| memory `calc-u-1600/feedback_lcd_text_before_images.md` | `calcu --product c1600 … then display-text` in place of `pc1600_cli --lcd-text -`; the DAP request stays |
 | memory `calc-u-1600/project_buzzer_audio.md` | "CLIs `--wav`" becomes `calcu`'s `audio` |
-| memory `calc-u-1600/project_cassette_tape.md` | the tape matrix is gone (OQ-5 as amended); recording through `pc1600 cassette record` |
-| memory `calc-u-1600/project_ce158_interface.md`, `project_pc1600_serial_port.md` | the PTY of the CLI becomes `pc1600 serial <port> link` |
+| memory `calc-u-1600/project_cassette_tape.md` | the tape matrix is gone (OQ-5 as amended); recording through `c1600 cassette record` |
+| memory `calc-u-1600/project_ce158_interface.md`, `project_pc1600_serial_port.md` | the PTY of the CLI becomes `c1600 serial <port> link` |
 | memory `calc-u-1600/project_pc1600_ramdisk_geometry_table.md` | "headless harness" means `calcu` |
 | memory `calc-u-1600/feedback_one_time_verification_own_dir.md`, `project_loader_matrix_pc1500.md` | as the answer to the question of D.12 says |
 | memory `calc-u-1600-headless-cli.md` of the `Sharp1500-1600-Ref` project (`~/.claude/projects/-Users-me-Development-sharp-Sharp1500-1600-Ref/memory/`) | the CLI's options become `calcu` commands (plan M-51) |
@@ -823,7 +823,7 @@ product's `CHANGELOG.md` for the release (M-61).
 - **D-13 (AC-18).** `pc1500_cli`'s bare ROM file mode is not taken
   over: AC-18 does not list it, and LIB-12 AC-2 allows one ROM lookup.
 - **D-14.** The IDE's run configurations for the CLIs go with them; one
-  for `calcu --product 1600 serve` replaces them.
+  for `calcu --product c1600 serve` replaces them.
 
 ### D.12 Questions for the user
 
@@ -838,7 +838,7 @@ product's `CHANGELOG.md` for the release (M-61).
 ## 11. Part E: the Calc-U-59 column
 
 Approved by the user at the Part D/E boundary (2026-11-16). Step M-59, with C59-9 (its
-design holds the `ti59` commands and, in its §4, the table of every
+design holds the `c59` commands and, in its §4, the table of every
 function of today's Calc-U-59 tools). Tests from AC-14 to AC-17; Done in
 M-59 (plan §5.1). Paths without a prefix are under `products/calc-u-59/`;
 line numbers at `7bdd51c`. (This design's Part D section has no number;
@@ -852,8 +852,8 @@ this one is numbered after it, as 11.)
 
 M-59 has three parts, each its own commit on short branches (C59-9
 design §1):
-1. the `ti59` commands (C59-9);
-2. the harness's Calc-U-59 entry through the app layer (11.3), `lcd` and
+1. the `c59` commands (C59-9);
+2. the harness's Calc-U-59 entry through the app layer (11.3), `display-text` and
    `wait` against today's tools (AC-16, AC-17), today's tools removed and
    the scripts that stay moved onto the harness (11.7);
 3. the adapter check of plan §1 over Calc-U-59 and the library (11.5).
@@ -861,7 +861,7 @@ design §1):
 M-59 waits for M-54, M-55 and M-56 (plan) and uses everything of M-53 to
 M-58: by then `preset`, `check-preset`, `model`, `attach`, `key`,
 `peek`, `registers`, `history`, `profile`, `trace`, `paper`, `card`,
-`arm`, `saveas`, `media` and C59-2's and C59-4's `ti59` commands work on
+`arm`, `saveas`, `media` and C59-2's and C59-4's `c59` commands work on
 Calc-U-59 through the harness, each from its feature's step. What is
 left is to show the whole table of AC-14 through `calcu` and to take the
 old tools away.
@@ -880,7 +880,7 @@ old tools away.
 | `tests/rom_missing_build.sh:4-35` | the harness instead of `tools/headless/ti59.py` (LIB-12, Technical Requirements: "starts in neither the harness nor the web client, naming it") |
 | `tests/harness_tests.cpp` | the cases of 11.6 |
 | `reference/Harness.md` (new) | C59-9 §7 |
-| `.run/calcu-59.run.xml` (new, repository root) | `calcu --product 59 serve`, as `calcu-1600.run.xml` |
+| `.run/calcu-59.run.xml` (new, repository root) | `calcu --product c59 serve`, as `calcu-1600.run.xml` |
 
 **Deleted:** `tools/headless/` (`build.sh`, `capi.cpp`, `ti59.py`,
 `README.md`; `coverage.py` moves), `tools/agentic/` (`README.md`,
@@ -901,23 +901,23 @@ Calc-U-1600's since M-51 (D.3, superseded paragraph):
 | `machines()` | the app layer's `ProductMachines` (M-54) |
 | `libraryParts()` | the `LibraryParts` the app layer filled (M-54: rules, bundle, typing, papers, debugger, kinds, file kinds, control rules; M-55: media) |
 | `sessionParts()` | the app layer's parts and `TIAppPart` |
-| `addCommands()` | C59-2's, C59-4's and C59-9's `ti59` commands |
+| `addCommands()` | C59-2's, C59-4's and C59-9's `c59` commands |
 | `readDisplay()` | `tiPositionText` (11.4) |
 
 If M-54 already made the entry so, part 2 only checks it
 (`lib11_ac14_entry_runs_ti_app_part`). No part is in the session twice.
 
-### 11.4 `lcd`, `wait` and the platforms (AC-15 to AC-17)
+### 11.4 `display-text`, `wait` and the platforms (AC-15 to AC-17)
 
 - **AC-15.** `calcu` with Calc-U-59 builds and runs on macOS, Linux and
   Windows: the workflow jobs build `calcu` already (M-28;
   `.github/workflows/calc-u-59.yml:160, 252`) and now run
-  `lib11_ac15_calcu_runs_calc_u_59` (a process test: `calcu --product 59
-  wait 1s then lcd`, exit status 0 and the display). Removing the
+  `lib11_ac15_calcu_runs_calc_u_59` (a process test: `calcu --product c59
+  wait 1s then display-text`, exit status 0 and the display). Removing the
   `ti59headless` target changes what the workflow builds only if a job
   names it (none does today); the CI dispatch at the end of Part E covers
   it (plan §1).
-- **AC-16.** `lcd` on a TI machine: twelve positions, leftmost first,
+- **AC-16.** `display-text` on a TI machine: twelve positions, leftmost first,
   each a digit, `-`, `°`, `"`, `'` or a blank, followed by `.` when the
   point is lit (`tiPositionText`, `app/HarnessProduct.cpp:98-114`, the
   table of `core/TISegments.hpp:15-31` that `tools/headless/ti59.py:76-78`
@@ -970,8 +970,8 @@ Tests before the code. `CalcU59Tests`, Frequent; names `lib11_acN_…`;
 
 | Task | What | ACs | Test |
 |---|---|---|---|
-| H1 | The entry through the app layer | AC-14 | `tests/harness_tests.cpp`: `lib11_ac14_entry_runs_ti_app_part` (the app layer's topics and commands in the run: `state c59.cue-card`, `media`, `control-state`; `ti59 partition`) |
-| H2 | `lcd` | AC-16 | `lib11_ac16_every_segment_pattern_gives_its_character` (the rule over each pattern of `TISegments.hpp`, with and without the point), `lib11_ac16_lcd_twelve_positions_with_points` (a number with a point and a minus typed with `key`, the line written out), `lib11_ac16_indicator_c_line_and_brightness_in_json` (a display output with C on) |
+| H1 | The entry through the app layer | AC-14 | `tests/harness_tests.cpp`: `lib11_ac14_entry_runs_ti_app_part` (the app layer's topics and commands in the run: `state c59.cue-card`, `media`, `control-state`; `c59 partition`) |
+| H2 | `display-text` | AC-16 | `lib11_ac16_every_segment_pattern_gives_its_character` (the rule over each pattern of `TISegments.hpp`, with and without the point), `lib11_ac16_lcd_twelve_positions_with_points` (a number with a point and a minus typed with `key`, the line written out), `lib11_ac16_indicator_c_line_and_brightness_in_json` (a display output with C on) |
 | H3 | `wait` | AC-17 | `lib11_ac17_idle_instruction_weighs_four_on_ti59_and_ti58` (`profile on`, `wait 1s` at key readiness: the instructions counted × 4 × 32 equal the ticks within one instruction), `lib11_ac17_ti58c_instruction_weighs_one` |
 | H4 | The table of AC-14; the old tools gone | AC-14 | `lib11_ac14_every_function_of_the_table`: one block per row of C59-9 §4, each the commands and their expected reply, on the model the row needs (the exit check of M-59); the CTest `CalcU59NoOldTools` (`cmake -P tools/check_no_old_tools.cmake`: no `tools/headless/`, `tools/agentic/`, `ti59headless`, `TI59HEADLESS_LIB`, no `core/TIAdapters.hpp`); Frequent |
 | H5 | The platforms | AC-15 | `lib11_ac15_calcu_runs_calc_u_59` (process test, `library/harness/tests/cli/` form, with `calcu`; run in every desktop job of `calc-u-59.yml`) |
@@ -984,18 +984,18 @@ Coverage: AC-14 to AC-17 (4 of 4).
 | File | Change |
 |---|---|
 | `products/calc-u-59/CLAUDE.md:43-47, 78` | the Harness section (C59-9 §7); "Until M-59, `tools/headless/` and `tools/agentic/` stay" goes |
-| `products/calc-u-59/.claude/skills/calc-u-59-core/SKILL.md:63, 113-115, 131-132` | the tool rows become `calcu --product 59` with `trace` and `read_trace.py`, `ti59 coverage` and `tools/coverage.py`, the `ti59` timing commands; "headless runs" are harness runs |
-| `products/calc-u-59/.claude/skills/calc-u-59-statefiles/SKILL.md:32-33` | a preset is checked with `calcu --product 59 check-preset` and run with `preset` |
+| `products/calc-u-59/.claude/skills/calc-u-59-core/SKILL.md:63, 113-115, 131-132` | the tool rows become `calcu --product c59` with `trace` and `read_trace.py`, `c59 coverage` and `tools/coverage.py`, the `c59` timing commands; "headless runs" are harness runs |
+| `products/calc-u-59/.claude/skills/calc-u-59-statefiles/SKILL.md:32-33` | a preset is checked with `calcu --product c59 check-preset` and run with `preset` |
 | `products/calc-u-59/README.md:40, 178-179`, `TODO.md:20, 31`, `reference/DebugAPI.md:311, 316`, `reference/CoreArchitecture.md:48`, `reference/SharedArchitecture.md:180` | the headless tools become the harness (breakpoints: LIB-10's `break`) |
-| `products/calc-u-59/rom/TI59-ROM-Guide.md:7, 18-20, 213`, `rom/TI58C-ROM-Guide.md:10-16`, `rom/fastmode.md:293` | the commands of the recipes: `calcu --product 59 trace … then key … then trace off` and `read_trace.py --labels --changes`; `tools/coverage.py`; `tools/fastmode_matrix.py`. Statements that say "measured with the headless harness" keep their history ("the headless harness of 2.3.0") |
-| `products/calc-u-59/examples/calendar/CALENDAR_PROGRAMS.md:36, 61` | the times are the harness's; the tools are `tools/calendar/` and `ti59 run-time` |
+| `products/calc-u-59/rom/TI59-ROM-Guide.md:7, 18-20, 213`, `rom/TI58C-ROM-Guide.md:10-16`, `rom/fastmode.md:293` | the commands of the recipes: `calcu --product c59 trace … then key … then trace off` and `read_trace.py --labels --changes`; `tools/coverage.py`; `tools/fastmode_matrix.py`. Statements that say "measured with the headless harness" keep their history ("the headless harness of 2.3.0") |
+| `products/calc-u-59/examples/calendar/CALENDAR_PROGRAMS.md:36, 61` | the times are the harness's; the tools are `tools/calendar/` and `c59 run-time` |
 | `products/calc-u-59/ideas/PresetConvergence.md:83`, `ideas/CardSound.md:82` | the tool names |
 | `products/calc-u-59/memory/sbr444-quirk-analysis.md:82-83, 250` | "new traces are easiest with the harness's `trace`"; the dated corrections keep their history |
-| `docs/glossary-mapping.md:87` | row "Harness", Calc-U-59: done (M-59): `calcu --product 59` with the product commands under `ti59`; was `tools/headless/`, `tools/agentic/` |
+| `docs/glossary-mapping.md:87` | row "Harness", Calc-U-59: done (M-59): `calcu --product c59` with the product commands under `c59`; was `tools/headless/`, `tools/agentic/` |
 | `docs/test-groups.md` | 11.6, H6 |
-| memory `calc-u-59/headless.md` | the harness `calcu --product 59` (C59-9); the ctypes library is gone; the ROM trace recipe of `reference/Harness.md` (plan M-59) |
+| memory `calc-u-59/headless.md` | the harness `calcu --product c59` (C59-9); the ctypes library is gone; the ROM trace recipe of `reference/Harness.md` (plan M-59) |
 | memory `calc-u-59/headless_printer_lines.md` | the printer's lines are read with `paper text` as LIB-8 gives them; the note on replaying KEYSTROKES goes (presets run through `preset`) (plan M-59) |
-| memory `calc-u-59/run_time_measurement.md` | `ti59 run-time` is the stopwatch measure (`dark_time` gone) (plan M-59) |
+| memory `calc-u-59/run_time_measurement.md` | `c59 run-time` is the stopwatch measure (`dark_time` gone) (plan M-59) |
 | memory `calc-u-59/calendar_speed_project.md`, `rom_documentation_effort.md`, `real_hardware_timing.md`, `printer_timing_audio.md` | the tool names where they tell how to measure now; dated findings keep their history |
 | `calc-u-59-memories.md` (index) | the descriptions of "Headless Runner", "Headless printer_lines drains", "Run-time measurement" |
 | `ti59-research` memory (`~/.claude/projects/-Users-me-Development-ti59-research/memory/`) | no file names the tools (checked 2026-11-16); nothing to change unless one is added before M-59 |
@@ -1018,7 +1018,7 @@ Coverage: AC-14 to AC-17 (4 of 4).
 
 ### 11.9 Decided (best guess)
 
-- **D-15 (AC-16).** `lcd` on a TI machine shows the characters of the
+- **D-15 (AC-16).** `display-text` on a TI machine shows the characters of the
   segment table and no hexadecimal digits: today's tool has none
   (`tools/headless/ti59.py:76-78`), so §4's "hex digits" is not carried
   over.

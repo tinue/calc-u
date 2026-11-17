@@ -50,8 +50,8 @@ after `HEX:` that is neither hexadecimal digits nor a comment, or more than
 2. Select the **CPU** tab.
 3. In the **ASM Overlay** section at the bottom, click **Select File** and pick a `.asm` file
    (or drop the file on the calculator, or open it with `calcu`'s `open <file>` or
-   `ti59 asm load <file>`).
-4. Click **Run** to execute the program (`ti59 asm run`). Run enters the overlay at `1800`
+   `c59 asm load <file>`).
+4. Click **Run** to execute the program (`c59 asm run`). Run enters the overlay at `1800`
    with the processor's COND flag set; `DPT.asm` needs it.
 
 The loaded code runs in the calculator's ROM overlay area (`0x1800–0x1FFF`) and updates the

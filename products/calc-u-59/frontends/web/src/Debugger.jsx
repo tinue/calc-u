@@ -1,8 +1,8 @@
 // The debugger panel, wide layout only (Qt6/app/debug/, App/Views/DebugView):
 // tabs CALCULATOR / CPU / LOG (C59-4). Only the visible tab's snapshots are
 // built (setLiveDebugEnabled / setCpuDebugEnabled follow it). It draws the
-// product topics of the debug part (app/TIDebugPart, M-56): calculator-debug,
-// program-listing, cpu-debug, heatmap, asm-overlay and debug-view, whose
+// product topics of the debug part (app/TIDebugPart, M-56): c59.calculator-debug,
+// c59.program-listing, c59.cpu-debug, c59.heatmap, c59.asm-overlay and c59.debug-view, whose
 // values are already the rows formatted by app/DebugText; the LOG tab is
 // LIB-3's `log`. FREEZE, STEP and RESUME of each tab are the component set's
 // run-control buttons for the level `program` (CALCULATOR) and `cpu` (CPU),
@@ -77,8 +77,8 @@ function useScrollTo(ref, index, mode, deps) {
 
 function LiveDebug({ font, narrow }) {
   const { shell } = usePage();
-  const s = useTopic(shell, "calculator-debug") || null;
-  const listing = useTopic(shell, "program-listing") || null;
+  const s = useTopic(shell, "c59.calculator-debug") || null;
+  const listing = useTopic(shell, "c59.program-listing") || null;
   const frozen = useRun(shell).frozen;
   // Paused: the whole listing of the program that runs (C59-4 AC-4); else the window.
   const full = frozen && listing && listing.steps.length > 0;
@@ -138,7 +138,7 @@ function LiveDebug({ font, narrow }) {
 
 function Heatmap({ data, currentPC }) {
   const { shell } = usePage();
-  const steps = useTopic(shell, "heatmap") || null;
+  const steps = useTopic(shell, "c59.heatmap") || null;
   const ref = React.useRef(null);
   const [hover, setHover] = React.useState(-1);
   const { cols, rows, colors } = data;
@@ -179,7 +179,7 @@ function Heatmap({ data, currentPC }) {
 
 function AsmOverlay() {
   const { shell } = usePage();
-  const asm = useTopic(shell, "asm-overlay") || NO_ASM;
+  const asm = useTopic(shell, "c59.asm-overlay") || NO_ASM;
   const entries = useEntries(shell);
   const select = (e) => readFileInput(e, "text").then((f) => { if (f) shell.send("c59.asm-load", { text: f.content, name: f.name }); });
   return (
@@ -200,7 +200,7 @@ function AsmOverlay() {
 const NO_ROWS = [];
 function CpuInspector({ data, font, narrow }) {
   const { shell } = usePage();
-  const rows = useTopic(shell, "cpu-debug") || NO_ROWS;
+  const rows = useTopic(shell, "c59.cpu-debug") || NO_ROWS;
   const frozen = useRun(shell).frozen;
   const [picked, setPicked] = React.useState(-1);
   const listRef = React.useRef(null);
@@ -256,7 +256,7 @@ function CpuInspector({ data, font, narrow }) {
 function LogTab() {
   const page = usePage();
   const shell = page.shell;
-  const view = useTopic(shell, "debug-view");
+  const view = useTopic(shell, "c59.debug-view");
   const log = { lines: page.log.lines, level: view ? view.logLevel : "off" };
   const trace = useTopic(shell, "trace") || NO_TRACE;
   const traces = useTraces(page.traces);
@@ -313,11 +313,11 @@ function Debugger() {
     if (!shell) return;
     shell.request("c59.heatmap-grid").then((r) => { if (r.done) setData(r.value); });
   }, [shell]);
-  const asmActive = (useTopic(shell, "asm-overlay") || NO_ASM).active;
+  const asmActive = (useTopic(shell, "c59.asm-overlay") || NO_ASM).active;
   const entries = useEntries(shell);
   const calculatorClosed = asmActive || !usable(entries, "c59.calculator-tab");
   const font = useTopic(shell, "c59.web.debug-font") || 11;
-  const view = useTopic(shell, "debug-view");
+  const view = useTopic(shell, "c59.debug-view");
   const panelRequest = React.useMemo(() => (view ? { panel: Math.max(0, ["calculator", "cpu", "log"].indexOf(view.view)), n: view.requests } : { panel: 0, n: 0 }),
     [view && view.view, view && view.requests]);
   const [tab, setTab] = React.useState(panelRequest.panel);
@@ -328,13 +328,13 @@ function Debugger() {
   React.useEffect(() => {
     if (!shell || !data) return undefined;
     shell.send("c59.live-debug", { on: shown === 0 });
-    shell.send("c59.cpu-debug", { on: shown === 1 });
+    shell.send("c59.show-cpu-debug", { on: shown === 1 });
     return undefined;
   }, [shell, data, shown]);
   React.useEffect(() => () => {
     if (!shell) return;
     shell.send("c59.live-debug", { on: false });
-    shell.send("c59.cpu-debug", { on: false });
+    shell.send("c59.show-cpu-debug", { on: false });
   }, [shell]);
 
   React.useEffect(() => {

@@ -3,7 +3,7 @@
 
 #include "harness/Commands.hpp"
 
-// Calc-U-1600's product commands under `pc1600` (LIB-11 AC-13; harness.md
+// Calc-U-1600's product commands under `c1600` (LIB-11 AC-13; harness.md
 // H-2): the loaders of C1600-2 (`file-kind`, `load-basic`, `type-basic`,
 // `load-code`) and the commands of C1600-5 (design §3): `dump-basic`,
 // `inspect`, `cassette record|status`, `serial <port> feed|capture|link|report`,

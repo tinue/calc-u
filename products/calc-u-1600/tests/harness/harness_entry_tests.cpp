@@ -1,5 +1,5 @@
 // LIB-11 Part D, D.6 (H1 to H3; M-51): the harness's Calc-U-1600 entry
-// built through app/SharpAppPart (AC-20), `lcd` with the cursor cell
+// built through app/SharpAppPart (AC-20), `display-text` with the cursor cell
 // (AC-19), and every function of the tools of the pin through `calcu`
 // (AC-18, the exit check of M-51).
 #include <cstdint>
@@ -24,7 +24,7 @@ std::string fileText(const fs::path& p) {
     return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
 }
 
-// The first row of an `lcd` reply ("done <n>\n<row>\n...").
+// The first row of an `display-text` reply ("done <n>\n<row>\n...").
 std::string firstRow(const std::string& lcd) {
     const auto a = lcd.find('\n');
     if (a == std::string::npos) return {};
@@ -54,7 +54,7 @@ TEST(lib11_ac20_entry_runs_sharp_app_part) {
     // SharpAppPart's commands: the host drive with its folder (C1600-5 AC-11).
     calcu::testing::TempFolder folder("lib11-ac20");
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 host-drive " + folder.str()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 host-drive " + folder.str()), std::string("done\n"));
     CHECK(has(r.line("capabilities"), "place host-drive host-drive\n"));
 }
 
@@ -83,12 +83,12 @@ TEST(lib11_ac19_lcd_rows_indicators_not_text_off) {
     Run r;
     CHECK(r.ok());
     if (!r.ok()) return;
-    CHECK_EQ(r.line("lcd"), std::string("done 3\nNEW0? :CHECK\nindicators: DE G PRO I\nnot text: 0\n"));
+    CHECK_EQ(r.line("display-text"), std::string("done 3\nNEW0? :CHECK\nindicators: DE G PRO I\nnot text: 0\n"));
     CHECK_EQ(r.line("key off"), std::string("done\n"));
     r.line("wait 500ms");
-    CHECK_EQ(r.line("lcd"), std::string("done 1\ndisplay off\n"));
+    CHECK_EQ(r.line("display-text"), std::string("done 1\ndisplay off\n"));
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
-    const std::string lcd = r.line("lcd");
+    const std::string lcd = r.line("display-text");
     CHECK(has(lcd, "\n>\n"));
     CHECK(has(lcd, "\nindicators: DE G RUN I\nnot text: 0\n"));
 }
@@ -96,8 +96,8 @@ TEST(lib11_ac19_lcd_rows_indicators_not_text_off) {
 // The cell under the cursor reads as the character the ROM saved there, as
 // --lcd-text did: `ABC` typed, the cursor moved onto the B (the PC-1500A's
 // cursor is the full block, its glyph 7FH; the PC-1600's an underline).
-// While the ROM reports the cursor, `lcd` gives ABC whatever phase of the
-// blink the display shows; when it does not, `lcd` reads the display as it
+// While the ROM reports the cursor, `display-text` gives ABC whatever phase of the
+// blink the display shows; when it does not, `display-text` reads the display as it
 // is. Sampled every 20 ms for a second.
 TEST(lib11_ac19_cursor_cell_read_as_text) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
@@ -114,7 +114,7 @@ TEST(lib11_ac19_cursor_cell_read_as_text) {
         int covered = 0, read = 0;
         for (int i = 0; i < 50; ++i) {
             r.line("wait 20ms");
-            const std::string row = firstRow(r.line("lcd"));
+            const std::string row = firstRow(r.line("display-text"));
             // The display as it is, read with the font alone.
             calcu::machine::Machine* m = r.machine();
             const calcu::harness::DisplayText raw = cu1600::displayLines(*m, m->readDisplay());
@@ -161,7 +161,7 @@ TEST(lib11_ac18_every_function_of_the_table) {
     // --run-after <ticks>, the run for a number of ticks: emulated time (LIB-11).
     CHECK(starts(r.line("wait 1s"), "done 2\nticks: "));
     // --lcd-text: the display as text (AC-10, AC-19).
-    CHECK(has(r.line("lcd"), "\nindicators: "));
+    CHECK(has(r.line("display-text"), "\nindicators: "));
     // --lcd-png: the display as an image, Copy Screen's (LIB-6).
     CHECK_EQ(r.line("screenshot shot.png"), std::string("done\n"));
     CHECK(fs::exists(out.path() / "shot.png"));
@@ -173,9 +173,9 @@ TEST(lib11_ac18_every_function_of_the_table) {
     // --dump-mem <address>,<length>: memory as a hex dump (LIB-10).
     CHECK(starts(r.line("peek SC7852 memory 0xF865 2"), "done 2\n0xf865: 0x"));
     // --inspect <view>: an INSPECTOR view (C1600-5).
-    CHECK(starts(r.line("pc1600 inspect pointers"), "done "));
+    CHECK(starts(r.line("c1600 inspect pointers"), "done "));
     // --dump-basic: the BASIC pointers and the program area (C1600-5).
-    CHECK(has(r.line("pc1600 dump-basic"), "\nBASPRG_ST  $F865 = $"));
+    CHECK(has(r.line("c1600 dump-basic"), "\nBASPRG_ST  $F865 = $"));
     // The summary after a run: registers, the last instructions, where the
     // program counter spent its time (LIB-10).
     r.line("pause");
@@ -187,11 +187,11 @@ TEST(lib11_ac18_every_function_of_the_table) {
     CHECK(starts(r.line("profile report 3"), "done "));
     CHECK_EQ(r.line("profile off"), std::string("done\n"));
     // --tape-in, --tape-out: a cassette played and recorded (LIB-7; C1600-5).
-    CHECK_EQ(r.line("pc1600 cassette record " + (out.path() / "tape.wav").string()), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
+    CHECK_EQ(r.line("c1600 cassette record " + (out.path() / "tape.wav").string()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
     CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
     CHECK_EQ(r.line("cassette { name: Empty }"), std::string("done\n"));   // the bundled blank tape
-    CHECK(starts(r.line("pc1600 cassette status"), "done 2\ncassette: recording "));
+    CHECK(starts(r.line("c1600 cassette status"), "done 2\ncassette: recording "));
     // --save-dir, --modules-dir: the save folder; the bundled module
     // definitions (LIB-11 AC-8, LIB-7).
     CHECK_EQ(r.line("saveas { place: cassette, as: live, name: Mine }"), std::string("done\n"));
@@ -204,12 +204,12 @@ TEST(lib11_ac18_every_function_of_the_table) {
     { std::ofstream(dir.path() / "in.txt", std::ios::binary) << "HELLO\r"; }
     CHECK_EQ(r.line("model PC-1500A"), std::string("done\n"));
     CHECK_EQ(r.line("attach interface CE-158"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 serial ce158 feed " + (dir.path() / "in.txt").string() + " hold=2"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 serial ce158 capture " + (dir.path() / "tx.bin").string()), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 serial ce158 feed " + (dir.path() / "in.txt").string() + " hold=2"), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 serial ce158 capture " + (dir.path() / "tx.bin").string()), std::string("done\n"));
     r.line("wait 1s");
-    CHECK(has(r.line("pc1600 serial ce158 report"), "\nreceived: 6 of 6 bytes fed\n"));
+    CHECK(has(r.line("c1600 serial ce158 report"), "\nreceived: 6 of 6 bytes fed\n"));
 #ifndef _WIN32
-    CHECK_EQ(r.line("pc1600 serial ce158 link"), std::string("done 1\npath: <save folder>/calcu1600-ce158.serial\n"));
+    CHECK_EQ(r.line("c1600 serial ce158 link"), std::string("done 1\npath: <save folder>/calcu1600-ce158.serial\n"));
 #endif
     r.server->finish();
     CHECK(fileText(out.path() / "buzz.wav").compare(0, 4, "RIFF") == 0);   // complete at the end of the run

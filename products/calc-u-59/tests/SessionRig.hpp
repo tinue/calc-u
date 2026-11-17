@@ -190,7 +190,7 @@ struct SessionRig {
                     if (const auto* x = calcu::sessions::payloadAs<calcu::sessions::Notice>(n)) out.push_back(x->sentence);
         return out;
     }
-    /// The tabs `debug-panel:` asked for (the topic debug-view, C59-4 AC-2), in order.
+    /// The tabs `debug-panel:` asked for (the topic c59.debug-view, C59-4 AC-2), in order.
     std::vector<cu59::DebugPanel> panels() const {
         std::vector<cu59::DebugPanel> out;
         std::uint64_t seen = 0;

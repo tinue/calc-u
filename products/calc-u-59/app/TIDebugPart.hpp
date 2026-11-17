@@ -22,14 +22,14 @@
 // sends it as six product topics (state topics; the harness reads them with
 // `state`); the frontends draw them and send the commands below:
 //
-//   calculator-debug   the CALCULATOR tab (AC-3), while a frontend shows it
-//   program-listing    the whole listing of the program that runs and its
-//                      current step (AC-4), while the machine is paused
-//   cpu-debug          the CPU tab's instructions (AC-6), while shown or paused
-//   heatmap            the ROM heatmap's counts (AC-8), about 10 Hz
-//   asm-overlay        the ASM overlay's box (AC-16)
-//   debug-view         the tab a `debug-panel:` step asked for last and the
-//                      level of the machine's log (AC-2, AC-11; D-6)
+//   c59.calculator-debug   the CALCULATOR tab (AC-3), while a frontend shows it
+//   c59.program-listing    the whole listing of the program that runs and its
+//                          current step (AC-4), while the machine is paused
+//   c59.cpu-debug          the CPU tab's instructions (AC-6), while shown or paused
+//   c59.heatmap            the ROM heatmap's counts (AC-8), about 10 Hz
+//   c59.asm-overlay        the ASM overlay's box (AC-16)
+//   c59.debug-view         the tab a `debug-panel:` step asked for last and the
+//                          level of the machine's log (AC-2, AC-11; D-6)
 //
 // Each payload's value (toValue) is the form the Web page draws (D-7: the
 // formatted rows, the heatmap's steps as bytes); the native frontends read
@@ -54,18 +54,18 @@ std::optional<DebugLevel> debugLevelNamed(std::string_view);
 
 namespace topics {
 using calcu::sessions::TopicName;
-inline const TopicName kCalculatorDebug{"calculator-debug"};
-inline const TopicName kProgramListing{"program-listing"};
-inline const TopicName kCpuDebug{"cpu-debug"};
-inline const TopicName kHeatmap{"heatmap"};
-inline const TopicName kAsmOverlay{"asm-overlay"};
-inline const TopicName kDebugView{"debug-view"};
+inline const TopicName kCalculatorDebug{"c59.calculator-debug"};
+inline const TopicName kProgramListing{"c59.program-listing"};
+inline const TopicName kCpuDebug{"c59.cpu-debug"};
+inline const TopicName kHeatmap{"c59.heatmap"};
+inline const TopicName kAsmOverlay{"c59.asm-overlay"};
+inline const TopicName kDebugView{"c59.debug-view"};
 } // namespace topics
 
 namespace commands {
 using calcu::sessions::CommandName;
 inline const CommandName kLiveDebug{"c59.live-debug"};         // {on}: the CALCULATOR tab is shown
-inline const CommandName kCpuDebug{"c59.cpu-debug"};           // {on}: the CPU tab is shown (the heatmap counts, from zero)
+inline const CommandName kShowCpuDebug{"c59.show-cpu-debug"};   // {on}: the CPU tab is shown (the heatmap counts, from zero)
 inline const CommandName kHeatmapReset{"c59.heatmap-reset"};   // AC-8
 inline const CommandName kLogLevel{"c59.log-level"};           // {level: off|info|debug} (AC-11)
 inline const CommandName kDump{"c59.dump"};                    // {what: scom|memory|prog|vars} → the lines (AC-10)
@@ -97,13 +97,13 @@ FreezeButtons freezeButtons(const calcu::debugger::LevelName& level, const calcu
 // ── Payloads ─────────────────────────────────────────────────────────────────
 
 struct TICalculatorDebug final : calcu::sessions::PayloadOf<TICalculatorDebug> {
-    static constexpr calcu::sessions::PayloadKind kKind{"calculator-debug"};
+    static constexpr calcu::sessions::PayloadKind kKind{"c59.calculator-debug"};
     LiveDebugSnapshot live;
     bool same(const TICalculatorDebug& o) const { return live == o.live; }
     calcu::sessions::Value toValue() const override;
 };
 struct TIProgramListing final : calcu::sessions::PayloadOf<TIProgramListing> {
-    static constexpr calcu::sessions::PayloadKind kKind{"program-listing"};
+    static constexpr calcu::sessions::PayloadKind kKind{"c59.program-listing"};
     std::vector<StepEntry> steps;   ///< empty while the machine runs
     ProgramSource source = ProgramSource::UserProgram;
     int currentIndex = -1;
@@ -111,7 +111,7 @@ struct TIProgramListing final : calcu::sessions::PayloadOf<TIProgramListing> {
     calcu::sessions::Value toValue() const override;
 };
 struct TICpuDebug final : calcu::sessions::PayloadOf<TICpuDebug> {
-    static constexpr calcu::sessions::PayloadKind kKind{"cpu-debug"};
+    static constexpr calcu::sessions::PayloadKind kKind{"c59.cpu-debug"};
     std::vector<InspectorEntry> entries;   ///< the newest 32 running; up to 1024 and the next paused
     bool paused = false;
     std::uint64_t serial = 0;
@@ -119,14 +119,14 @@ struct TICpuDebug final : calcu::sessions::PayloadOf<TICpuDebug> {
     calcu::sessions::Value toValue() const override;
 };
 struct TIHeatmap final : calcu::sessions::PayloadOf<TIHeatmap> {
-    static constexpr calcu::sessions::PayloadKind kKind{"heatmap"};
+    static constexpr calcu::sessions::PayloadKind kKind{"c59.heatmap"};
     std::vector<std::uint32_t> counts;   ///< 0000 to 13FF
     std::uint64_t serial = 0;
     bool same(const TIHeatmap& o) const { return serial == o.serial; }
     calcu::sessions::Value toValue() const override;   // the steps (heatStep), as bytes
 };
 struct TIAsmOverlayState final : calcu::sessions::PayloadOf<TIAsmOverlayState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"asm-overlay"};
+    static constexpr calcu::sessions::PayloadKind kKind{"c59.asm-overlay"};
     std::string fileName, status;
     int instructions = 0;
     bool running = false;
@@ -136,7 +136,7 @@ struct TIAsmOverlayState final : calcu::sessions::PayloadOf<TIAsmOverlayState> {
     calcu::sessions::Value toValue() const override;
 };
 struct TIDebugView final : calcu::sessions::PayloadOf<TIDebugView> {
-    static constexpr calcu::sessions::PayloadKind kKind{"debug-view"};
+    static constexpr calcu::sessions::PayloadKind kKind{"c59.debug-view"};
     DebugPanel view = DebugPanel::Calculator;
     std::uint64_t requests = 0;   ///< grows with each tab asked for: a frontend shows `view` when it grows
     DebugLevel logLevel = DebugLevel::Off;

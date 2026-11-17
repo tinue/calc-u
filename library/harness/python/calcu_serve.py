@@ -2,9 +2,9 @@
 docs/contracts/harness.md Q-2).
 
     from calcu_serve import Calcu
-    with Calcu("/path/to/calcu", "59") as c:
+    with Calcu("/path/to/calcu", "c59") as c:
         c.send("wait 2s")
-        print(c.send("lcd")["result"]["rows"])
+        print(c.send("display-text")["result"]["rows"])
 
 Each send() writes one command line and reads its one reply. With
 json=True (the default) the reply is the JSON object of --json, with the

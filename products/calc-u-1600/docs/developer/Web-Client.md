@@ -93,7 +93,7 @@ attaches it as `Calc-U-1600-web.zip`.
 - **Test hooks.** `.calcu-client[data-ready=true]` once the session's
   start is over; the root element's `calcuShell` is the library's shell
   (`createShell`: `send`, `request` by the session's names, e.g. the
-  request `c1600.lcd-text`, `ticks`); `.calcu-face[data-model=<model ID>]`
+  request `c1600.display-text`, `ticks`); `.calcu-face[data-model=<model ID>]`
   (`PC-1600`), the shell's `data-calcu` names (`menu-file`,
   `item-<id>`, `control-bar`, `bar-model`, `bar-place-<place>`,
   `settings-dialog`, `notice`, `loading`, `roms-missing`; library

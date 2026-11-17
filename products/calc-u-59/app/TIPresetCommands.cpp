@@ -82,7 +82,7 @@ void ProgramMemoryPart::attach(calcu::sessions::SessionSetup& setup) {
         }
         if (s.busy()) return Refused{busy};
         const std::string codes = calcu::sessions::textArg(args, "keycodes");
-        if (codes.empty()) return Refused{"usage: ti59 program [<step>] <keycode>… | ti59 program <step> count=<n>"};
+        if (codes.empty()) return Refused{"usage: c59 program [<step>] <keycode>… | c59 program <step> count=<n>"};
         // The compact notation's rules from the step (AC-9).
         for (char c : codes)
             if (c == '\n' || c == '#') return Refused{"The keycodes are two-digit numbers on one line."};
@@ -91,7 +91,7 @@ void ProgramMemoryPart::attach(calcu::sessions::SessionSetup& setup) {
         for (const ProgramStep& p : std::get<std::vector<ProgramStep>>(r)) pm->writeStep(*step + p.step, p.keycode);
         return Done{};
     });
-    setup.command(commands::kRegisters, [busy](const Value& args, SessionContext& s) -> CommandOutcome {
+    setup.command(commands::kDataRegisters, [busy](const Value& args, SessionContext& s) -> CommandOutcome {
         calcu::machine::Machine* m = s.machine();
         ProgramMemory* pm = m ? programMemoryOf(*m) : nullptr;
         if (!pm) return Refused{calcu::sessions::kNoMachine};
@@ -109,7 +109,7 @@ void ProgramMemoryPart::attach(calcu::sessions::SessionSetup& setup) {
         }
         const Value* set = args.find("set");
         if (!set || !set->elements() || set->elements()->empty())
-            return Refused{"usage: ti59 registers <NN>=<value>… | ti59 registers <NN>…"};
+            return Refused{"usage: c59 data-registers <NN>=<value>… | c59 data-registers <NN>…"};
         if (s.busy()) return Refused{busy};
         struct W {
             DataKey key;

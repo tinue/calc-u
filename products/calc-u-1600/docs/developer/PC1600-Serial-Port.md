@@ -91,14 +91,14 @@ The harness drives the port without a window (C1600-5 AC-7; the UART
 probe of the pin went in M-51): on a PC-1600 (`model PC-1600`, or a preset
 such as `examples:interfaces/setcom1600.pc1600`),
 
-- `pc1600 serial rs232c feed <file> [hold=<n>]` — the file's bytes are what
+- `c1600 serial rs232c feed <file> [hold=<n>]` — the file's bytes are what
   the port receives, one in each character time at the speed the program
   set, the first `n` character times silent;
-- `pc1600 serial rs232c capture <file>` — what the port sends, into a file;
-- `pc1600 serial rs232c link` — a pseudo-terminal for a live transfer (the
+- `c1600 serial rs232c capture <file>` — what the port sends, into a file;
+- `c1600 serial rs232c link` — a pseudo-terminal for a live transfer (the
   reply gives its path in the run's save folder); a run with a link does
   not repeat exactly;
-- `pc1600 serial rs232c report` — the speed, how many bytes fed were taken,
+- `c1600 serial rs232c report` — the speed, how many bytes fed were taken,
   and everything the port sent, as text.
 
 The CE-158's port is the same with `ce158`; its report adds what was sent

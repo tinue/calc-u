@@ -151,9 +151,9 @@ docs/developer/PC1600-Core-Limitations.md (LH5803 section).
   named after their connector"), carrying data only while PRIME selects
   SIO; `calcu1600-rs232c.serial` then carries RS-232C only.
 - Capture the exact on-wire `SAVE"COM1:"` framing from a real ROM trace
-  (the harness: `pc1600 serial rs232c capture`, with `trace`; the UART
+  (the harness: `c1600 serial rs232c capture`, with `trace`; the UART
   probe went in M-51), and do one live round-trip against
-  SharpDataExchange over the PTY (`pc1600 serial rs232c link`). The
+  SharpDataExchange over the PTY (`c1600 serial rs232c link`). The
   `LOAD"COM1:"` direction was covered by the one-time loader matrix
   (0.8.x's dev/loader-matrix/, gone in M-51, set 1, fed the `sde convert` byte
   stream in-process).

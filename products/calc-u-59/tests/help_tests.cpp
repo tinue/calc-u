@@ -163,7 +163,7 @@ TEST(lib16_ac9_tutorial_presets_load) {
         CHECK_EQ(c.machine()->model().value, std::string("TI-59"));
         c("wait");
         // Step 2 on: 720 steps, 30 data registers.
-        CHECK_EQ(c("ti59 partition"), std::string(i == 0 ? "done 1\n479\n" : "done 1\n719\n"));
+        CHECK_EQ(c("c59 partition"), std::string(i == 0 ? "done 1\n479\n" : "done 1\n719\n"));
         if (i == 5) {   // the finished file typed 5 A, RCL 29, - 3 = itself
             CHECK_EQ(c("expect 4e-12"), std::string("done\n"));
             continue;

@@ -28,12 +28,12 @@ TEST(harness_drives_a_ti59) {
     }
     auto reply = [&](const std::string& l) { return server->line(l).text; };
     CHECK(reply("wait 2s").rfind("done 2\nticks: ", 0) == 0);
-    CHECK(reply("lcd").rfind("done 2\n          0 \nindicators:", 0) == 0);   // as ti59.py display() shows it
+    CHECK(reply("display-text").rfind("done 2\n          0 \nindicators:", 0) == 0);   // as ti59.py display() shows it
     CHECK_EQ(reply("key-down 7"), std::string("done\n"));
     reply("wait 100ms");
     CHECK_EQ(reply("key-up 7"), std::string("done\n"));
     reply("wait 500ms");
-    CHECK_EQ(reply("lcd"), std::string("done 2\n          7 \nindicators:\n"));
+    CHECK_EQ(reply("display-text"), std::string("done 2\n          7 \nindicators:\n"));
     const std::string t = reply("ticks");
     CHECK(t.rfind("done 2\nticks: ", 0) == 0 && t.find("seconds: 2.6") != std::string::npos);
     CHECK_EQ(reply("audio x.wav"), std::string("refused: This machine has no sound.\n"));   // EC-6 on a TI
@@ -54,7 +54,7 @@ TEST(harness_switches_to_a_ti58) {
     }
     auto reply = [&](const std::string& l) { return server->line(l).text; };
     CHECK_EQ(reply("model TI-58"), std::string("done\n"));
-    CHECK(reply("lcd").rfind("done 2\n          0 \nindicators:", 0) == 0);   // ready for keys
+    CHECK(reply("display-text").rfind("done 2\n          0 \nindicators:", 0) == 0);   // ready for keys
     CHECK(reply("capabilities").find("place printer empty\n") != std::string::npos);   // the built-in default (LIB-18 AC-18)
     const auto* m = server->host().session().context().machine();
     CHECK(m && m->model().value == "TI-58");
@@ -76,11 +76,11 @@ TEST(lib5_harness_key_on_a_ti59) {
     auto reply = [&](const std::string& l) { return server->line(l).text; };
     CHECK_EQ(reply("key 2 x^2"), std::string("done\n"));
     reply("wait 300ms");
-    CHECK_EQ(reply("lcd"), std::string("done 2\n          4. \nindicators:\n"));   // a result: x² of 2
+    CHECK_EQ(reply("display-text"), std::string("done 2\n          4. \nindicators:\n"));   // a result: x² of 2
     CHECK_EQ(reply("key 1 S+"), std::string("refused: Unknown key: S+.\n"));   // AC-26: an old name; nothing typed
     CHECK_EQ(reply("key CLR 2nd pi"), std::string("done\n"));                  // 2nd before a second function: once
     reply("wait 300ms");
-    CHECK(reply("lcd").find("3.14159265") != std::string::npos);
+    CHECK(reply("display-text").find("3.14159265") != std::string::npos);
     CHECK_EQ(reply("type 12"), std::string("refused: Unknown command: type.\n"));   // D-8
     server->finish();
 }
@@ -172,50 +172,50 @@ TEST(harness_starts_with_ml_and_no_printer) {
     CHECK_EQ(c.machine()->model().value, std::string("TI-59"));
 }
 
-// C59-2 AC-9 (design §3.4, T8): `ti59 partition`, `ti59 program`, `ti59 registers`.
+// C59-2 AC-9 (design §3.4, T8): `c59 partition`, `c59 program`, `c59 data-registers`.
 TEST(c59_2_ac9_partition_program_registers_write_and_read) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
-    CHECK_EQ(c("ti59 partition"), std::string("done 1\n479\n"));
-    CHECK_EQ(c("ti59 partition 239.29"), std::string("done\n"));
-    CHECK_EQ(c("ti59 partition"), std::string("done 1\n239\n"));
-    CHECK_EQ(c("ti59 program 76 11 42"), std::string("done\n"));          // from 000
-    CHECK_EQ(c("ti59 program 010 85 01"), std::string("done\n"));         // from 010
-    CHECK_EQ(c("ti59 program 000 count=3"), std::string("done 3\n000 76\n001 11\n002 42\n"));
-    CHECK_EQ(c("ti59 program 010 count=2"), std::string("done 2\n010 85\n011 01\n"));
-    CHECK_EQ(c("ti59 registers 05=1.5e-3 06=-42"), std::string("done\n"));
-    CHECK_EQ(c("ti59 registers 05 06"), std::string("done 2\n05: 1.5e-3\n06: -4.2e1\n"));
+    CHECK_EQ(c("c59 partition"), std::string("done 1\n479\n"));
+    CHECK_EQ(c("c59 partition 239.29"), std::string("done\n"));
+    CHECK_EQ(c("c59 partition"), std::string("done 1\n239\n"));
+    CHECK_EQ(c("c59 program 76 11 42"), std::string("done\n"));          // from 000
+    CHECK_EQ(c("c59 program 010 85 01"), std::string("done\n"));         // from 010
+    CHECK_EQ(c("c59 program 000 count=3"), std::string("done 3\n000 76\n001 11\n002 42\n"));
+    CHECK_EQ(c("c59 program 010 count=2"), std::string("done 2\n010 85\n011 01\n"));
+    CHECK_EQ(c("c59 data-registers 05=1.5e-3 06=-42"), std::string("done\n"));
+    CHECK_EQ(c("c59 data-registers 05 06"), std::string("done 2\n05: 1.5e-3\n06: -4.2e1\n"));
     CHECK_EQ(c("model TI-58C"), std::string("done\n"));
-    CHECK_EQ(c("ti59 registers H02=7"), std::string("done\n"));
-    CHECK_EQ(c("ti59 registers H02"), std::string("done 1\nH02: 7e0\n"));
+    CHECK_EQ(c("c59 data-registers H02=7"), std::string("done\n"));
+    CHECK_EQ(c("c59 data-registers H02"), std::string("done 1\nH02: 7e0\n"));
 }
 
 TEST(c59_2_ac9_refused_where_the_section_refuses) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
-    CHECK(c("ti59 partition 960").rfind("refused: partition: 960 is beyond", 0) == 0);
-    CHECK(c("ti59 partition abc").rfind("refused: ", 0) == 0);
-    CHECK(c("ti59 program 76 LBL").rfind("refused: ", 0) == 0);
-    CHECK(c("ti59 program 1").rfind("refused: ", 0) == 0);
-    CHECK(c("ti59 program 959 76 11").rfind("refused: ", 0) == 0);   // past the last step
-    CHECK(c("ti59 registers H00=1").rfind("refused: ", 0) == 0);     // not a TI-58C
-    CHECK(c("ti59 registers 05=x").rfind("refused: ", 0) == 0);
+    CHECK(c("c59 partition 960").rfind("refused: partition: 960 is beyond", 0) == 0);
+    CHECK(c("c59 partition abc").rfind("refused: ", 0) == 0);
+    CHECK(c("c59 program 76 LBL").rfind("refused: ", 0) == 0);
+    CHECK(c("c59 program 1").rfind("refused: ", 0) == 0);
+    CHECK(c("c59 program 959 76 11").rfind("refused: ", 0) == 0);   // past the last step
+    CHECK(c("c59 data-registers H00=1").rfind("refused: ", 0) == 0);     // not a TI-58C
+    CHECK(c("c59 data-registers 05=x").rfind("refused: ", 0) == 0);
     CHECK_EQ(c("model TI-58"), std::string("done\n"));
-    CHECK(c("ti59 registers 60=1").rfind("refused: ", 0) == 0);
-    CHECK(c("ti59 partition 480").rfind("refused: ", 0) == 0);
+    CHECK(c("c59 data-registers 60=1").rfind("refused: ", 0) == 0);
+    CHECK(c("c59 partition 480").rfind("refused: ", 0) == 0);
 }
 
 TEST(c59_2_ac9_count_reads_keycodes) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
-    CHECK_EQ(c("ti59 program 010 05"), std::string("done\n"));   // a bare token is a keycode (Q-2)
-    CHECK_EQ(c("ti59 program 010 count=1"), std::string("done 1\n010 05\n"));
-    CHECK(c("ti59 program 010 count=0").rfind("refused: ", 0) == 0);
-    CHECK(c("ti59 program 010 count=1 05").rfind("refused: ", 0) == 0);
+    CHECK_EQ(c("c59 program 010 05"), std::string("done\n"));   // a bare token is a keycode (Q-2)
+    CHECK_EQ(c("c59 program 010 count=1"), std::string("done 1\n010 05\n"));
+    CHECK(c("c59 program 010 count=0").rfind("refused: ", 0) == 0);
+    CHECK(c("c59 program 010 count=1 05").rfind("refused: ", 0) == 0);
 }
 
 // LIB-6 design §11.6 P12 (AC-34): a preset, the bare wait, expect and
-// screenshot through `calcu --product 59`.
+// screenshot through `calcu --product c59`.
 TEST(lib6_ac34_preset_wait_expect_screenshot_on_ti59) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
@@ -244,45 +244,45 @@ TEST(lib6_ac34_printer_trace_on_off) {
 TEST(c59_4_ac22_asm_load_run_clear) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
-    CHECK_EQ(c("ti59 asm run"), std::string("refused: No ASM overlay loaded.\n"));
-    CHECK_EQ(c("ti59 asm load examples/assembly/simple_count.asm"), std::string("done 1\n6 instructions\n"));
-    const std::string run = c("ti59 asm run");
+    CHECK_EQ(c("c59 asm run"), std::string("refused: No ASM overlay loaded.\n"));
+    CHECK_EQ(c("c59 asm load examples/assembly/simple_count.asm"), std::string("done 1\n6 instructions\n"));
+    const std::string run = c("c59 asm run");
     CHECK(run.rfind("done 1\nASM entered at 0x1800 (", 0) == 0);
-    CHECK(c("state asm-overlay").find("simple_count.asm") != std::string::npos);
-    CHECK_EQ(c("ti59 asm clear"), std::string("done\n"));
-    CHECK(c("ti59 asm load examples/assembly/README.md").rfind("refused: README.md is an ASM overlay in an older format.", 0) == 0);
-    CHECK(c("ti59 asm load /no/such.asm").rfind("refused: such.asm could not be read.", 0) == 0);
-    CHECK(c("ti59 asm").rfind("refused: usage:", 0) == 0);
+    CHECK(c("state c59.asm-overlay").find("simple_count.asm") != std::string::npos);
+    CHECK_EQ(c("c59 asm clear"), std::string("done\n"));
+    CHECK(c("c59 asm load examples/assembly/README.md").rfind("refused: README.md is an ASM overlay in an older format.", 0) == 0);
+    CHECK(c("c59 asm load /no/such.asm").rfind("refused: such.asm could not be read.", 0) == 0);
+    CHECK(c("c59 asm").rfind("refused: usage:", 0) == 0);
 }
 
 TEST(c59_4_ac22_dump_replies_lines) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
-    CHECK(c("ti59 dump scom").rfind("done 17\n── SCOM ──\nS00 ", 0) == 0);
-    CHECK(c("ti59 dump prog").rfind("done ", 0) == 0);
-    CHECK(c("ti59 dump vars").rfind("done ", 0) == 0);
-    CHECK(c("ti59 dump memory").rfind("done ", 0) == 0);
-    CHECK(c("ti59 dump all").rfind("refused: ", 0) == 0);
+    CHECK(c("c59 dump scom").rfind("done 17\n── SCOM ──\nS00 ", 0) == 0);
+    CHECK(c("c59 dump prog").rfind("done ", 0) == 0);
+    CHECK(c("c59 dump vars").rfind("done ", 0) == 0);
+    CHECK(c("c59 dump memory").rfind("done ", 0) == 0);
+    CHECK(c("c59 dump all").rfind("refused: ", 0) == 0);
 }
 
 TEST(c59_4_ac22_log_level) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
-    CHECK_EQ(c("ti59 log-level debug"), std::string("done\n"));
-    CHECK(c("state debug-view").find("debug") != std::string::npos);
-    CHECK_EQ(c("ti59 log-level off"), std::string("done\n"));
-    CHECK(c("ti59 log-level loud").rfind("refused: ", 0) == 0);
+    CHECK_EQ(c("c59 log-level debug"), std::string("done\n"));
+    CHECK(c("state c59.debug-view").find("debug") != std::string::npos);
+    CHECK_EQ(c("c59 log-level off"), std::string("done\n"));
+    CHECK(c("c59 log-level loud").rfind("refused: ", 0) == 0);
 }
 
 TEST(c59_4_ac22_heatmap_reset) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
-    CHECK_EQ(c("ti59 heatmap reset"), std::string("done\n"));
-    CHECK(c("ti59 heatmap").rfind("refused: ", 0) == 0);
+    CHECK_EQ(c("c59 heatmap reset"), std::string("done\n"));
+    CHECK(c("c59 heatmap").rfind("refused: ", 0) == 0);
     // The CALCULATOR and CPU tabs are read with `state` (AC-25, design §3.1).
     c("wait 200ms");
-    CHECK(c("state calculator-debug").find("partition") != std::string::npos);
-    CHECK(c("state cpu-debug").rfind("done", 0) == 0);
+    CHECK(c("state c59.calculator-debug").find("partition") != std::string::npos);
+    CHECK(c("state c59.cpu-debug").rfind("done", 0) == 0);
 }
 
 // They are commands only: a preset has no steps for them.
@@ -309,7 +309,7 @@ TEST(lib13_ac9_open_takes_every_calc_u_59_file) {
     CHECK(c("open " + (dir.path() / "p.ti59").string()).find("preset") != std::string::npos);
     CHECK(c("open examples/assembly/DPT.asm").find("asm-overlay") != std::string::npos);
     CHECK(c("open " + (dir.path() / "two.keystrokes.yaml").string()).find("keystroke-program") != std::string::npos);
-    CHECK_EQ(c("ti59 program 000 count=2"), std::string("done 2\n000 76\n001 11\n"));
+    CHECK_EQ(c("c59 program 000 count=2"), std::string("done 2\n000 76\n001 11\n"));
     CHECK(c("open " + (dir.path() / "ML.rom.yaml").string()).rfind("refused: ML.rom.yaml was not opened: ", 0) == 0);
 }
 
@@ -357,7 +357,7 @@ TEST(lib11_ac14_entry_runs_ti_app_part) {
     CHECK(done(c("state c59.cue-card")));
     CHECK(c("state media").find("\"place\":\"card-reader\"") != std::string::npos);
     CHECK(c("state control-state").find("\"model\":\"TI-59\"") != std::string::npos);
-    CHECK_EQ(c("ti59 partition"), std::string("done 1\n479\n"));
+    CHECK_EQ(c("c59 partition"), std::string("done 1\n479\n"));
     // The model switch is LIB-18's on TIAppPart's machines; the part follows.
     CHECK_EQ(c("model TI-58C"), std::string("done\n"));
     CHECK(c("state control-state").find("\"model\":\"TI-58C\"") != std::string::npos);
@@ -374,7 +374,7 @@ TEST(lib11_ac14_entry_runs_ti_app_part) {
     CHECK_EQ(c("detach printer"), std::string("done\n"));
 }
 
-// H2 (§11.4, D-15): `lcd` reads each position by the segment table.
+// H2 (§11.4, D-15): `display-text` reads each position by the segment table.
 TEST(lib11_ac16_every_segment_pattern_gives_its_character) {
     auto position = [](std::uint8_t bits, bool point, float brightness) {
         calcu::machine::SegmentPosition p;
@@ -403,10 +403,10 @@ TEST(lib11_ac16_lcd_twelve_positions_with_points) {
     if (!c) return;
     c("key 1 . 5 +/-");
     c("wait 300ms");
-    CHECK_EQ(c("lcd"), std::string("done 2\n        -1.5 \nindicators:\n"));
+    CHECK_EQ(c("display-text"), std::string("done 2\n        -1.5 \nindicators:\n"));
     c("key CLR 1 2 3 4 5 6 7 8 9 0");
     c("wait 300ms");
-    CHECK_EQ(c("lcd"), std::string("done 2\n 1234567890 \nindicators:\n"));
+    CHECK_EQ(c("display-text"), std::string("done 2\n 1234567890 \nindicators:\n"));
 }
 
 TEST(lib11_ac16_indicator_c_line_and_brightness_in_json) {
@@ -416,14 +416,14 @@ TEST(lib11_ac16_indicator_c_line_and_brightness_in_json) {
         o.json = json;
         tirig::Calcu c(o);
         if (!c) return;
-        c("ti59 program 000 76 11 42 00 76 12 97 00 12 91");
+        c("c59 program 000 76 11 42 00 76 12 97 00 12 91");
         c("key 3 A");
         c("wait 2s");
         if (json)
-            CHECK_EQ(c("lcd"), std::string("{\"done\":true,\"result\":{\"on\":true,\"rows\":[\"          3. \"],"
+            CHECK_EQ(c("display-text"), std::string("{\"done\":true,\"result\":{\"on\":true,\"rows\":[\"          3. \"],"
                                            "\"indicators\":[{\"name\":\"C\",\"brightness\":0.021}],\"notText\":null},\"reason\":null}\n"));
         else
-            CHECK_EQ(c("lcd"), std::string("done 2\n          3. \nindicators: C\n"));
+            CHECK_EQ(c("display-text"), std::string("done 2\n          3. \nindicators: C\n"));
     }
 }
 
@@ -477,7 +477,7 @@ TEST(lib11_ac14_every_function_of_the_table) {
     CHECK(c("wait 1s").rfind("done 2\nticks: ", 0) == 0);
     {
         tirig::Calcu pipe;   // serve ends its run at the end of the input
-        std::vector<std::string> in{"ticks", "lcd"}, out;
+        std::vector<std::string> in{"ticks", "display-text"}, out;
         std::size_t i = 0;
         pipe.server->serve([&]() -> std::optional<std::string> { return i < in.size() ? std::optional<std::string>(in[i++]) : std::nullopt; },
                         [&](const std::string& s) { out.push_back(s); });
@@ -503,7 +503,7 @@ TEST(lib11_ac14_every_function_of_the_table) {
     CHECK_EQ(c("key-up 7"), std::string("done\n"));
     CHECK_EQ(c("key CLR 2nd pi"), std::string("done\n"));
     c("wait 300ms");
-    CHECK(c("lcd").find("3.14159265") != std::string::npos);
+    CHECK(c("display-text").find("3.14159265") != std::string::npos);
     // the PC-100C's TRACE, PRINT and ADV
     CHECK_EQ(c("switch PC-100C TRACE on"), std::string("done\n"));
     CHECK_EQ(c("switch PC-100C TRACE off"), std::string("done\n"));
@@ -532,7 +532,7 @@ TEST(lib11_ac14_every_function_of_the_table) {
     c("key 5");
     CHECK(c("profile report 3").find("different addresses") != std::string::npos);
     // ROM coverage of a run (coverage.py's command; the script: CalcU59Scripts)
-    CHECK(c("ti59 coverage").find(" of 6144") != std::string::npos);
+    CHECK(c("c59 coverage").find(" of 6144") != std::string::npos);
     CHECK(done(c("profile off")));
     // the processor's registers and SCOM; disassembly; RAM read and write
     CHECK(c("registers TMC0501").find("pc = ") != std::string::npos);
@@ -541,16 +541,16 @@ TEST(lib11_ac14_every_function_of_the_table) {
     CHECK(done(c("poke TMC0501 ram 0 0")));
     CHECK(done(c("peek TMC0501 ram 0 1")));
     // write a program; the display as text and as segments
-    CHECK_EQ(c("ti59 program 000 76 11 01 99 02 99 98 03 99 91"), std::string("done\n"));
-    CHECK(c("lcd").find("indicators:") != std::string::npos);
+    CHECK_EQ(c("c59 program 000 76 11 01 99 02 99 98 03 99 91"), std::string("done\n"));
+    CHECK(c("display-text").find("indicators:") != std::string::npos);
     CHECK(c("display").find("segments:") != std::string::npos);
     // the printer's text and dot lines
     c("key A");
-    CHECK(c("ti59 line-times").find("printer floor: ") != std::string::npos);
+    CHECK(c("c59 line-times").find("printer floor: ") != std::string::npos);
     CHECK(c("paper text").find("3.") != std::string::npos);
     CHECK(done(c("paper marks")));
     // a card: fed, the machine waiting for one, what a pass wrote
-    CHECK_EQ(c("ti59 program 000 76 11 01 02 03 91"), std::string("done\n"));
+    CHECK_EQ(c("c59 program 000 76 11 01 02 03 91"), std::string("done\n"));
     CHECK_EQ(c("key 1 Write"), std::string("done\n"));
     c("wait 100ms");
     CHECK(c("state media").find("\"waits\":true") != std::string::npos);
@@ -560,22 +560,22 @@ TEST(lib11_ac14_every_function_of_the_table) {
     CHECK(done(c("arm { name: Saved }")));
     // agentic/: a preset, its keys' run time, its printout; line times; the hottest steps
     CHECK_EQ(c("preset examples:sum.ti59"), std::string("done\n"));
-    CHECK(c("ti59 run-time 5 A").find("total ") != std::string::npos);
-    c("ti59 program 000 76 11 42 00 76 12 97 00 12 91");
+    CHECK(c("c59 run-time 5 A").find("total ") != std::string::npos);
+    c("c59 program 000 76 11 42 00 76 12 97 00 12 91");
     c("key 2 0 A");
-    CHECK(c("ti59 hot-steps limit=1s").find("notes: ") != std::string::npos);
-    CHECK(done(c("ti59 step-trace 100ms 200ms")));
-    CHECK_EQ(c("ti59 step-cost 43 22"), std::string("refused: A program runs: let it end first (`wait`).\n"));
+    CHECK(c("c59 hot-steps limit=1s").find("notes: ") != std::string::npos);
+    CHECK(done(c("c59 step-trace 100ms 200ms")));
+    CHECK_EQ(c("c59 step-cost 43 22"), std::string("refused: A program runs: let it end first (`wait`).\n"));
     c("wait");
-    CHECK(c("ti59 step-cost 43 22").find("fast ") != std::string::npos);
+    CHECK(c("c59 step-cost 43 22").find("fast ") != std::string::npos);
     // kdis.py: the program instruction by instruction, the registers, the partition
-    CHECK(c("ti59 keycodes disassemble").find("Lbl A") != std::string::npos || done(c("ti59 keycodes disassemble")));
-    CHECK(done(c("ti59 registers 00 01")));
-    CHECK(done(c("ti59 partition")));
+    CHECK(c("c59 keycodes disassemble").find("Lbl A") != std::string::npos || done(c("c59 keycodes disassemble")));
+    CHECK(done(c("c59 data-registers 00 01")));
+    CHECK(done(c("c59 partition")));
     // a listing to paste into a preset; asm59.py's plain assembly
-    CHECK(done(c("ti59 keycodes list")));
+    CHECK(done(c("c59 keycodes list")));
     dir.write("a.asm59", "000  Lbl A\n002  RTN\n");
-    CHECK_EQ(c("ti59 keycodes assemble " + (dir.path() / "a.asm59").string()), std::string("done 1\nsteps: 000-002\n"));
+    CHECK_EQ(c("c59 keycodes assemble " + (dir.path() / "a.asm59").string()), std::string("done 1\nsteps: 000-002\n"));
     // fastmode_matrix.py, the calendar scripts and read_trace.py stay scripts:
     // CalcU59Scripts, CalcU59CalendarScripts, CalcU59TraceReader.
 }

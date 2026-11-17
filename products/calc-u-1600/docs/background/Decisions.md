@@ -647,7 +647,7 @@ authentic speed for the span that matters.
 ### GUI
 - **The INSPECTOR's views are built in Core** (`core/Debug/Inspect`), from
   one locked snapshot (`debugInspect()`), not in the panel: they are tested
-  there and the harness prints them (`pc1600 inspect`). Every read in them is free
+  there and the harness prints them (`c1600 inspect`). Every read in them is free
   of side effects; a slot read uses `slotBusRead()` (no probe write), and a
   card register a read would disturb counts as "answers" without being read.
   A view goes into the log as one entry, so a long dump isn't cut to the

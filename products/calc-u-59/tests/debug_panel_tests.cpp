@@ -150,7 +150,7 @@ TEST(c59_4_ac25_cpu_and_calculator_computed_while_shown) {
     r.runFor(200ms);
     CHECK(topic<TICalculatorDebug>(r, topics::kCalculatorDebug)->live.currentStep >= 0);
     CHECK(topic<TICpuDebug>(r, topics::kCpuDebug)->entries.empty());   // the CPU tab not shown
-    r.send(commands::kCpuDebug, Value::object({{"on", true}}));
+    r.send(commands::kShowCpuDebug, Value::object({{"on", true}}));
     r.runFor(200ms);
     const auto* cpu = topic<TICpuDebug>(r, topics::kCpuDebug);
     CHECK(cpu && !cpu->entries.empty() && cpu->entries.size() <= 32);
@@ -385,7 +385,7 @@ TEST(c59_4_ec3_step_of_the_other_level_cannot_be_used_preset_step_is_carried_out
 TEST(c59_4_ac6_newest_32_running_up_to_1024_and_next_paused) {
     SessionRig r;
     CHECK(ready(r));
-    r.send(commands::kCpuDebug, Value::object({{"on", true}}));
+    r.send(commands::kShowCpuDebug, Value::object({{"on", true}}));
     r.runFor(100ms);
     const auto* c = topic<TICpuDebug>(r, topics::kCpuDebug);
     CHECK(c && !c->paused && c->entries.size() == 32);
@@ -427,7 +427,7 @@ TEST(c59_4_ac8_counts_each_rom_address_once) {
 TEST(c59_4_ac8_reset_by_command_reset_and_model_switch) {
     SessionRig r;
     CHECK(ready(r));
-    r.send(commands::kCpuDebug, Value::object({{"on", true}}));
+    r.send(commands::kShowCpuDebug, Value::object({{"on", true}}));
     r.runFor(300ms);
     auto sum = [&] {
         std::uint64_t t = 0;
@@ -455,7 +455,7 @@ TEST(c59_4_ac8_reset_by_command_reset_and_model_switch) {
 TEST(c59_4_ac8_apart_from_the_profile) {
     SessionRig r;
     CHECK(ready(r));
-    r.send(commands::kCpuDebug, Value::object({{"on", true}}));
+    r.send(commands::kShowCpuDebug, Value::object({{"on", true}}));
     r.runFor(100ms);
     CHECK(!rc(r).profile().on());   // the harness's profile is LIB-10's, not switched by the tab
 }

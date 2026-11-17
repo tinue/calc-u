@@ -35,7 +35,7 @@ enum class View {
 /// The menu text for a view; `pc1500` names the PC-1500's CPU (LH5801).
 const char* viewTitle(View v, bool pc1500 = false);
 
-/// A view's short name for `pc1600 inspect <view>` ("pointers", "z80",
+/// A view's short name for `c1600 inspect <view>` ("pointers", "z80",
 /// "dump-disk-s2", ...), and back; false for an unknown name.
 const char* viewName(View v);
 bool viewFromName(const std::string& name, View* v);

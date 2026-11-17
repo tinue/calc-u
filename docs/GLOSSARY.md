@@ -204,6 +204,17 @@ product-specific commands where the hardware differs. It is not a
 frontend and not meant for end users.
 _Avoid_: CLI, API, headless emulator, agentic runner
 
+**Product word**:
+The short word that names a product wherever a developer types or reads
+it: `c59`, `c1600` (a future Calc-U-1403: `c1403`). It is the harness's
+command word of the product commands (`c59 asm`, `c1600 dump-basic`), the
+value of `--product`, the prefix of the DAP server's own requests
+(`c1600/load`) and the VS Code debug type (`c1600`); with a dot it is the
+prefix of the product's topics, commands and requests (`c59.cue-card`,
+`c1600.display-text`). Machine and model names (`ti59`, `pc1600`) stay
+for files and machines (`.ti59`, `PC1600KeyLayout`).
+_Avoid_: short form, command word (for the product)
+
 ## Sessions
 
 **Machine session**:
@@ -735,7 +746,7 @@ listing is a keystroke program written as one line per step, as the
 PC-100C's `List` prints it: step number, keycode, mnemonic; a preset's
 `keycodes:` takes it (`docs/formats/preset.md` §4.1). An assembly is a
 keystroke program written as one line per instruction, mnemonics with
-their operands and no keycodes (`ti59 keycodes disassemble`, C59-9).
+their operands and no keycodes (`c59 keycodes disassemble`, C59-9).
 Both are written forms of a program; the program itself is not called
 a listing.
 
@@ -767,3 +778,4 @@ in; a slice is not called a frame.
 |---|---|---|
 | 2026-11-17 | "Cassette" names the medium everywhere (the kind, the preset step and eject word, `format: cassette`, `.cassette.yaml`, `cassette-name`, the cassette folder); its place is the `cassette-recorder` (CE-125 manual: "microcassette recorder", PC-1403 manual: "cassette recorder"); the entry "Cassette tape" became **Cassette**, "Place" and "Media place" name the cassette recorder; the module definition is `.module.yaml` | user, 2026-11-17 (Part E review Q-5, Q-6; release prep step 2) |
 | 2026-11-17 | **Control state** also holds the controls of the plugged-in peripherals with their positions (LIB-4 AC-21) | user, 2026-11-17 (Part E review Q-6; release prep step 3) |
+| 2026-11-17 | New entry **Product word**: `c59`, `c1600` (future `c1403`) for the harness's product commands, `--product`, the DAP requests and the VS Code debug type, and as the dotted prefix of product topics, commands and requests | user, 2026-11-17 (Part E review Q-6; release prep step 1) |

@@ -55,7 +55,7 @@ DebugPanel::DebugPanel(EmulatorController& controller, QWidget* parent) : QWidge
 
     // A running ASM overlay belongs to the CPU tab (C59-4 AC-18): the product
     // entry c59.calculator-tab says no meanwhile; Run asks for the CPU tab
-    // through debug-view.
+    // through c59.debug-view.
     auto calculatorTab = [this] {
         const bool can = m_controller.entryAvailable(cu59::entries::kCalculatorTab);
         m_tabs[0]->setEnabled(can);

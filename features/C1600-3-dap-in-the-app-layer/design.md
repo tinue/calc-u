@@ -15,9 +15,9 @@ Status: approved by the user at the Part C2/D boundary (2026-11-16)
   attach in the Qt6 frontend). The plan names only M-45 and M-46 (§10).
 - The spec has AC-1 to AC-25 (AC-24 and AC-25 stand after AC-7) and EC-1
   to EC-7. All pass in M-50.
-- Clauses that name other features: AC-17's `calcu1600/screen` gives the
+- Clauses that name other features: AC-17's `c1600/screen` gives the
   display as text by LIB-11 AC-19's rule. The product's reader
-  (`core/Display/LcdText`) exists today and the harness's `lcd` uses it;
+  (`core/Display/LcdText`) exists today and the harness's `display-text` uses it;
   the LIB-11 1600 column (M-51) only adds its tests. AC-19's `check-preset`
   is LIB-6 AC-51, which Calc-U-1600 has from M-46.
 - Not here: the debug targets, the run control, breakpoints and watches
@@ -96,7 +96,7 @@ Elsewhere:
 | `frontends/qt6/app/debug/DapServer.*`, `DapSession.*`, `DebugController.*` | deleted (LIB-10 §10, L-A1) | M-50 |
 | `frontends/qt6/app/debug/DapSocket.hpp/.cpp` (new) | a `QTcpServer` on 127.0.0.1 as the `DapTransport` of the Qt6 frontend; posts what arrives to the session's thread (the GUI thread) | M-50 |
 | `frontends/qt6/app/main.cpp` | `--dap <port>` is handed to the `DapPart` for the run; a port outside 1024 to 65535 is said on standard error and in a notice, and the server does not listen in that run (EC-1) | M-50 |
-| `frontends/qt6/app/MachineController.*`, `MainWindow.cpp` | `debugController()` goes; the `DapPart` is among `SharpAppPart`'s parts; `calcu1600/quit` quits the application (AC-17) | M-50 |
+| `frontends/qt6/app/MachineController.*`, `MainWindow.cpp` | `debugController()` goes; the `DapPart` is among `SharpAppPart`'s parts; `c1600/quit` quits the application (AC-17) | M-50 |
 | `frontends/qt6/app/SettingsDialog.cpp` (the Debugger section, a product section of the shell's dialog after M-49) | the status line from the `c1600.dap` topic and the button Disconnect, which sends `c1600.dap-disconnect` and can be used while a client is connected (AC-18, AC-21) | M-50 |
 | `app/SharpAppPart.hpp/.cpp` | a `DapPart` among `sessionParts()`, with the references of §3.3; not in an Emscripten tree, so the Web session has none | M-50 |
 | `app/HarnessProduct.cpp` | the same `DapPart` among the harness's parts; the serve add-on `--dap` (§3.5) | M-50 |
@@ -104,7 +104,7 @@ Elsewhere:
 | `library/harness/attach/LocalStream.hpp/.cpp` (new), `AttachEndpoint.cpp` | the one-client listener on 127.0.0.1 of attach, for bytes instead of lines; `AttachEndpoint` keeps its lines on it. With `CALCU_ATTACH`, as attach (§3.5) | M-50 |
 | `core/Debug/ProgramLoader.*`, `core/Machine/LegacyCalls.hpp/.cpp` | Build & Load places the bytes with C1600-2's machine-code loader; `LegacyCalls::loadProgram` goes; `ProgramLoader` keeps the entry and the range rules of AC-7 | M-50 |
 | `vscode/calcu1600-debug/package.json` | the description and default of `program.after`: `none` (OQ-2). Nothing else in the extension changes | M-50 |
-| `tools/dap_smoke.py` | `--harness <calcu>` starts `calcu --product 1600 serve --dap <port>` and quits it with `calcu1600/quit`; `--app` stays; the RENUM scenario uses the fixture ROM and no longer skips (AC-19) | M-50 |
+| `tools/dap_smoke.py` | `--harness <calcu>` starts `calcu --product c1600 serve --dap <port>` and quits it with `c1600/quit`; `--app` stays; the RENUM scenario uses the fixture ROM and no longer skips (AC-19) | M-50 |
 | `tests/fixtures/dap/` (new) | the RENUM ROM built once from its template with `sdaslh5801` (research skill `pc1500-build`), with its listing; the four templates filled as `scaffold.js:49-58` fills them | M-50 |
 | `tests/dap_layer_tests.cpp` (M-45), `tests/dap_tests.cpp` (new, M-50), `CMakeLists.txt` | §6 | M-45, M-50 |
 
@@ -121,7 +121,7 @@ public:
     virtual void close() = 0;                                             // stops listening, drops a client
     virtual void send(std::string bytes) = 0;                             // to the client
     virtual void dropClient(std::string lastWords) = 0;                   // AC-3, AC-10
-    virtual void quitProgram() = 0;                                       // AC-17 calcu1600/quit
+    virtual void quitProgram() = 0;                                       // AC-17 c1600/quit
 };
 // The host calls these on the session's thread, in the order they came.
 struct DapInput {
@@ -196,11 +196,11 @@ event loop of the Qt frontend (`DebugController.cpp:193-235`).
 
 - **`restart`** is S1 to S8 with the configuration it brings,
   `reset: none` taken as `reset`, then S9's resume (AC-11).
-- **`calcu1600/load`** is S7, of the `program` it brings or of the
+- **`c1600/load`** is S7, of the `program` it brings or of the
   configuration's, answered with the range, the entry and the starting
   command (AC-17). Without a `program` in the configuration (a ROM
   project) it is S1 to S8 again, then S9 (AC-25).
-- **`calcu1600/reset`** is S4 (`kind: allReset` a Cold boot), standing
+- **`c1600/reset`** is S4 (`kind: allReset` a Cold boot), standing
   before the first instruction unless `stop` is false, in which case the
   machine resumes (AC-17).
 
@@ -225,7 +225,7 @@ public:
 }
 ```
 
-- `calcu --product 1600 serve --dap <port>`: `Cli.cpp` hands the value
+- `calcu --product c1600 serve --dap <port>`: `Cli.cpp` hands the value
   to the product's add-on. An add-on that cannot start ends the run with
   exit status 2 and the reason (EC-1; LIB-11's "cannot start").
 - **The loop.** With an add-on started, standard input is read by a
@@ -240,7 +240,7 @@ public:
   127.0.0.1 (`AttachEndpoint`), for bytes. It is compiled where attach is
   (`CALCU_ATTACH`: macOS and Linux trees with the tests). Elsewhere `--dap`
   is refused "The DAP server is not in this build." (D-3).
-- `calcu1600/quit` ends the DAP session and the run (exit status 0).
+- `c1600/quit` ends the DAP session and the run (exit status 0).
 
 ### 3.6 Requests and events (AC-11, AC-12, AC-16)
 
@@ -253,9 +253,9 @@ public:
 | `next`, `stepIn`, `stepOut` | `DapStepping`: LIB-10 `step` over, in, out of the named thread; with a source line under it and no `granularity: instruction`, the step goes on until the line changes or code without source is reached (LIB-10 §10 D-16) |
 | `setBreakpoints`, `setFunctionBreakpoints`, `setInstructionBreakpoints`, `dataBreakpointInfo`, `setDataBreakpoints` | `DapBreakpoints` (§3.7) |
 | `setExceptionBreakpoints` | answered with nothing |
-| `restart`, `calcu1600/load`, `calcu1600/reset` | §3.4 |
-| `calcu1600/screen` | the display as text by the product's reader, also without a DAP session |
-| `calcu1600/quit` | §3.5, `DapTransport::quitProgram` |
+| `restart`, `c1600/load`, `c1600/reset` | §3.4 |
+| `c1600/screen` | the display as text by the product's reader, also without a DAP session |
+| `c1600/quit` | §3.5, `DapTransport::quitProgram` |
 
 Any other request: "Unsupported request '<name>'" (today's text).
 
@@ -376,7 +376,7 @@ Coverage: AC-1 to AC-25, 25 of 25; EC-1 to EC-7, 7 of 7.
   checks run against `calcu serve --dap`, no app to launch; the rule
   stays for `--app`); `project_shared_layer_wasm.md` ("DAP move open" is
   done). `feedback_lcd_text_before_images.md` keeps
-  `calcu1600/screen`.
+  `c1600/screen`.
 - No skill: Calc-U-1600 has none.
 
 ## 8. Golden runs, reference runs and risks
@@ -449,7 +449,7 @@ Coverage: AC-1 to AC-25, 25 of 25; EC-1 to EC-7, 7 of 7.
 - Proposed addition to 1600-20: "`--dap` with a port outside 1024 to
   65535 is reported, and the server does not listen in that run (today it
   is passed over without a word). The harness accepts a debugger too
-  (`calcu --product 1600 serve --dap <port>`)."
+  (`calcu --product c1600 serve --dap <port>`)."
 
 ## 12. Questions for the user
 

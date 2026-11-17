@@ -5,7 +5,7 @@ that stay drive the harness and give what their documentation says.
   scenario equal those 2.3.0's tool recorded at the base of M-59
   (tests/reference/scripts/coverage-base.json), with the key-detect range
   0627-0660 left out of both (the old tool left out an instruction of that
-  range only with the idle flag set; the harness's `ti59 coverage` leaves the
+  range only with the idle flag set; the harness's `c59 coverage` leaves the
   range out, C59-9 D-7; the boot scenario is read with `all` and goes on
   into the idle loop).
 - tools/fastmode_matrix.py label: for each `label` case the verdicts that

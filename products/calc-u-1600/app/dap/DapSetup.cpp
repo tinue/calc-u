@@ -1,6 +1,6 @@
 // The set-up of a DAP session (C1600-3 design §3.4; AC-4 to AC-7, AC-17,
 // AC-24, AC-25; EC-2 to EC-5): `attach`/`launch`, `restart`,
-// `calcu1600/load` and `calcu1600/reset`, each one operation of the app
+// `c1600/load` and `c1600/reset`, each one operation of the app
 // session (D-1), answered at its end. So the messages that arrive meanwhile
 // wait (AC-8), and the rules of operations hold inside: no breakpoint or
 // watch pauses it (LIB-10 AC-13), a reset is over when the machine stands
@@ -122,7 +122,7 @@ Task<OperationResult> DapSession::runRequest(OperationContext& op, Value request
             if (ok && stopOnEntry_) tellStopAtEnd_ = true;
             else if (ok) resumeAtEnd_ = true;
         }
-    } else if (command == "calcu1600/load") {
+    } else if (command == "c1600/load") {
         // The project may have changed since the attach.
         ok = effectiveConfig(launchArgs_, deps_.presets->readSetup(), deps_.bundle, &attachConfig_, &error);
         const Value* configured = attachConfig_.find("program");
@@ -138,7 +138,7 @@ Task<OperationResult> DapSession::runRequest(OperationContext& op, Value request
             if (ok && stopOnEntry_) tellStopAtEnd_ = true;
             else if (ok) resumeAtEnd_ = true;
         }
-    } else if (command == "calcu1600/reset") {
+    } else if (command == "c1600/reset") {
         const bool all = textOf(args, "kind") == "allReset";
         ok = resetBare(all, &error);
         if (ok && boolOf(args, "stop", true)) tellStopAtEnd_ = true;

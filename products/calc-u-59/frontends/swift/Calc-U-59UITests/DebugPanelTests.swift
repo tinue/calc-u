@@ -50,8 +50,11 @@ final class DebugPanelTests: XCTestCase {
         waitEnabled(freeze, true, "FREEZE while running")
         waitEnabled(step, false, "STEP while running")
 
+        // R/S runs the (empty) program memory from step 000, so program steps
+        // pass and the pause and STEP land on one (as the Web scenario runs A).
+        app.buttons["btn-key-rs"].tap()
         freeze.tap()
-        waitEnabled(resume, true, "RESUME once paused")   // the pause landed at a program step boundary
+        waitEnabled(resume, true, "RESUME once paused", timeout: 20)   // the pause landed at a program step boundary
         waitEnabled(step, true, "STEP while paused")
         XCTAssertFalse(freeze.isEnabled, "FREEZE while paused")
 

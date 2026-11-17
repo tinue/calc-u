@@ -189,7 +189,10 @@ struct LiveDebugView: View {
             SectionBox(title: "PROGRAM STEPS") {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 0) {
+                        // Lazy: the whole program memory (up to 960 steps) is
+                        // listed; an eager stack rebuilt every row at each STEP
+                        // and gave accessibility thousands of elements (C59-4).
+                        LazyVStack(alignment: .leading, spacing: 0) {
                             ForEach(program, id: \.stepNum) { entry in
                                 HStack(spacing: 0) {
                                     Text(String(format: "%03d", entry.stepNum))

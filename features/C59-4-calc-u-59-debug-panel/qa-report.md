@@ -118,6 +118,16 @@ built or linked, no test run. To run from the main checkout
 `-testPlan UnitTests` and `-testPlan UIRegressionTests`; `bin/simulators
 setup` first, so the simulator's `test_stopwatch.asm` is the 2.0 file.
 
+Run from the main checkout (2026-11-17): `DebugPanelTests.testC59_4_AC5…`
+failed at "RESUME after STEP is not enabled". Not the run control (the
+harness pauses and steps the same run with owner `program`), but the
+CALCULATOR tab's frozen PROGRAM STEPS list: an eager `VStack` of the whole
+program memory (960 rows, five texts each), so while paused every XCUITest
+query took about 3 s and the 5 s waits ran out. The list is a `LazyVStack`
+now (queries about 0.05 s, the test 18 s instead of 47 s); the scenario
+presses R/S (`btn-key-rs`) before FREEZE, so the empty program memory runs
+and the pause lands on a program step, as the Web scenario runs A.
+
 ### Golden and reference runs
 
 The golden replays do not use the overlay or the panel and are equal

@@ -4,7 +4,7 @@
 
 #include "Debug/SharpDebugging.hpp"
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 DapTargets::DapTargets(calcu::machine::Debugging* debugging) : m_debugging(debugging) {}
 
@@ -74,4 +74,4 @@ debug::CodePeek DapTargets::codePeek() const {
     return [self = *this](int t, std::uint16_t a, std::uint8_t* v) { return self.valid() && self.peek(t, debug::kSpaceMain, a, v); };
 }
 
-} // namespace shared::dap
+} // namespace cu1600::dap

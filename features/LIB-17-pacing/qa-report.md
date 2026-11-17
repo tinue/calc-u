@@ -143,7 +143,7 @@ machines with the profiles of `products/calc-u-1600/app/PacingProfiles.*`.
 
 | AC | Result | Evidence |
 |---|---|---|
-| AC-20 | Pass | `app/tests/shared_pacing_tests.cpp` `lib17_ac20_pacing_profiles_sharp` |
+| AC-20 | Pass | `app/tests/pacing_profiles_tests.cpp` `lib17_ac20_pacing_profiles_sharp` |
 | AC-21 | Pass | `tests/pacing_longrun_tests.cpp` `lib17_ac21_pacing_longrun_scripted_pc1500a`, `_pc1600` (Frequent; 120 s scripted each, ±4 ms jitter, an oversleep every 900 calls, a 5 s stall, switched off by OFF half way): worst \|emulated − wall\| after a call 1.2 ms, rate over a stretch 0.0 and 0.7 ppm (bound 100 ppm). 0.8.1's measured drift (first step 14: +0.0037 % on, +0.21 % off) is gone, as the decision log expects. The real-clock runs (Checkpoint, `CalcU1600PacingRealClock`) were not run in this step |
 | AC-22 | Pass | Qt6: `CalcU1600Qt --pacing-probe 60` (CTest `CalcU1600QtPacingProbe`, Checkpoint): a PC-1600, wall 60.002 s, emulated 59.993 s. Web: `frontends/web/tests/session.spec.js` `lib17_ac22` with `CALCU1600_WEB_PACING=1`: wall 60.003 s, emulated 60.001 s |
 

@@ -5,7 +5,7 @@ import AudioToolbox
 struct CalculatorView: View {
     @Environment(EmulatorViewModel.self) var viewModel
 
-    enum FilePickerMode { case asm, stateFile }
+    enum FilePickerMode { case asm, preset }
     // Two-variable design: filePickerMode is the source of truth for routing;
     // filePickerPresented is the Bool that drives isPresented. SwiftUI may
     // reset filePickerPresented to false on tap-outside dismiss (iPad popover)
@@ -26,14 +26,14 @@ struct CalculatorView: View {
     }
 
     private static let asmTypes = [UTType(filenameExtension: "asm") ?? .plainText]
-    private static let stateFileTypes = [
+    private static let presetTypes = [
         UTType(filenameExtension: "ti59") ?? .data,
         UTType(filenameExtension: "ti58") ?? .data,
         UTType(filenameExtension: "ti58c") ?? .data
     ]
     /// The Preset button's dialog (LIB-13 AC-5, D-21): the preset types and any
     /// file; the session's `open` finds out what it is.
-    private static let presetDialogTypes = stateFileTypes + [.item]
+    private static let presetDialogTypes = presetTypes + [.item]
 
 
     #if !os(macOS)
@@ -71,7 +71,7 @@ struct CalculatorView: View {
             allowedContentTypes: {
                 switch filePickerMode {
                 case .asm:       return Self.asmTypes
-                case .stateFile, .none: return Self.presetDialogTypes
+                case .preset, .none: return Self.presetDialogTypes
                 }
             }(),
             allowsMultipleSelection: false
@@ -89,7 +89,7 @@ struct CalculatorView: View {
 
             switch mode {
             case .asm:       viewModel.loadASMOverlayFile(url)
-            case .stateFile: viewModel.loadStateFile(url)
+            case .preset: viewModel.loadPreset(url)
             case .none:      break
             }
         }
@@ -110,10 +110,10 @@ struct CalculatorView: View {
         panel.allowsOtherFileTypes = true
         panel.message = "Select a .ti59, .ti58, or .ti58c preset, or any file Calc-U-59 opens"
         if panel.runModal() == .OK, let url = panel.url {
-            viewModel.loadStateFile(url)
+            viewModel.loadPreset(url)
         }
         #else
-        filePickerModeBinding.wrappedValue = .stateFile
+        filePickerModeBinding.wrappedValue = .preset
         #endif
     }
 

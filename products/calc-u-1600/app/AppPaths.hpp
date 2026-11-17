@@ -16,14 +16,14 @@
 // the save folder) and the bundled folders (BundleDirs: *.card.yaml /
 // *.floppy.yaml templates and ROM images, read only). Folders the app
 // writes to are created when asked for.
-namespace shared {
+namespace cu1600 {
 
 // The bundled folders the frontend passes (LIB-12, LIB-6 own them later).
 struct BundleDirs {
     BundleDirs(std::string resources = {}, std::string examples = {})
         : bundledResources(std::move(resources)), bundledExamples(std::move(examples)) {}
     std::string bundledResources;
-    // The bundled example presets (examples/bundled.yaml and its folders);
+    // The bundled example presets (examples/bundle.yaml and its folders);
     // empty = "<bundledResources>/examples".
     std::string bundledExamples;
     // Where the ROM set, the module definitions (and the media templates
@@ -102,4 +102,4 @@ std::string joinPath(const std::string& dir, const std::string& name);
 bool isUnderDir(const std::string& path, const std::string& dir);
 
 
-} // namespace shared
+} // namespace cu1600

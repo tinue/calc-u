@@ -305,9 +305,9 @@ void DebugPanel::fillMenu(QMenu* menu, bool dumps) {
 void DebugPanel::showView(inspect::View view) {
     const std::vector<std::string> lines = m_controller->inspectorView(view);
     // One ring entry, so a long dump isn't cut to the last display page.
-    if (!lines.empty()) ringWriteAll({shared::joinLines(lines)});
+    if (!lines.empty()) ringWriteAll({cu1600::joinLines(lines)});
 }
 
 // ── Dump Card YAML ──────────────────────────────────────────────────────
 
-void DebugPanel::debugDumpModuleCardAsYaml() { ringWriteAll(shared::cardYamlDump(m_controller->app())); }
+void DebugPanel::debugDumpModuleCardAsYaml() { ringWriteAll(cu1600::cardYamlDump(m_controller->app())); }

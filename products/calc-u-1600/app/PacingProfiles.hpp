@@ -2,7 +2,7 @@
 #include "machine/Ids.hpp"
 #include "pacing/PacingProfile.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 // The pacing profile of a Sharp model (LIB-17 AC-20; design D-8): the slice
 // is the host's call, no jitter, and full speed is never paced -- as 0.8.1's
@@ -10,4 +10,4 @@ namespace shared {
 // handed to the machine session with each new machine.
 calcu::pacing::PacingProfile pacingProfile(const calcu::machine::ModelId& model);
 
-} // namespace shared
+} // namespace cu1600

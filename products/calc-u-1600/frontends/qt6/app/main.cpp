@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
         applyDapPort(window.controller());
         window.show();
 #ifdef CALCU_ATTACH
-        std::unique_ptr<calcu::harness::HarnessProduct> attachProduct = shared::makeHarnessProduct();
+        std::unique_ptr<calcu::harness::HarnessProduct> attachProduct = cu1600::makeHarnessProduct();
         window.host().openAttach(*attachProduct, calcu::qt6::SessionHost::attachPortFrom(QCoreApplication::arguments()),
                                  window.controller()->app().libraryParts());
 #endif
@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
     MainWindow window;
     applyDapPort(window.controller());   // C1600-3 AC-18's scenario: a server to attach a client to
     // Attach on a port the system picks, for the client in this process.
-    std::unique_ptr<calcu::harness::HarnessProduct> attachProduct = shared::makeHarnessProduct();
+    std::unique_ptr<calcu::harness::HarnessProduct> attachProduct = cu1600::makeHarnessProduct();
     const std::string problem = window.host().openAttach(
         *attachProduct, 0,
         window.controller()->app().libraryParts());

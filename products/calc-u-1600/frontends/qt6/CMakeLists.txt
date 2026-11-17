@@ -63,7 +63,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/app/Version.h.in
 file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.iss
      CONTENT "#define APP_VERSION \"@APP_VERSION@\"\n" @ONLY)
 
-# Core/ and Shared/ are the calcu_core / calcu_shared static libraries the
+# core/ and app/ are the calcu_core / calcu_shared static libraries the
 # product's CMakeLists.txt makes (cmake/CalcU.cmake), with libsharpdx, which
 # classifies and tokenizes every program the loaders read.
 

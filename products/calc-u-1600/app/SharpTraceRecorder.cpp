@@ -6,7 +6,7 @@
 
 #include "Machine/SharpProductKinds.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace {
 
@@ -46,4 +46,4 @@ std::unique_ptr<calcu::debugger::TraceRecorder> makeSharpTraceRecorder(calcu::ma
     return std::make_unique<SharpTraceRecorder>(*records);
 }
 
-} // namespace shared
+} // namespace cu1600

@@ -23,7 +23,7 @@ Qt6's `AppPaths::constantMemoryFile()` is gone and its Settings row names
 the new file; the Web keeps it in the save folder. Tests:
 `tests/constant_memory_tests.cpp` (on `tests/AppRig.hpp`: the app session
 as a native frontend hosts it, the save folder in memory, the rig's wall
-clock), `tests/shared_formats_tests.cpp`, `tests/machine_control_tests.cpp`,
+clock), `tests/file_formats_tests.cpp`, `tests/machine_control_tests.cpp`,
 Web `frontends/web/tests/storage.spec.js`.
 
 | ID | Result | Test case |

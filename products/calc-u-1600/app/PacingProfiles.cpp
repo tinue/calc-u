@@ -1,6 +1,6 @@
 #include "app/PacingProfiles.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 calcu::pacing::PacingProfile pacingProfile(const calcu::machine::ModelId&) {
     calcu::pacing::PacingProfile p;
@@ -10,4 +10,4 @@ calcu::pacing::PacingProfile pacingProfile(const calcu::machine::ModelId&) {
     return p;
 }
 
-} // namespace shared
+} // namespace cu1600

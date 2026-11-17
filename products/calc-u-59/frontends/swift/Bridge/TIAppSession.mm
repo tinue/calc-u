@@ -285,8 +285,8 @@ std::vector<cs::Value::Member> argsWithBytes(std::vector<cs::Value::Member> m, N
 const std::string kPC100COwner = "PC-100C";
 const cs::TopicName kPaper = calcu::paper::paperTopic(kPC100COwner);
 
-calcu::debugger::LevelName levelOf(TIFreezeOwner l) {
-    return l == TIFreezeOwnerCpu ? calcu::debugger::kCpu : calcu::debugger::kProgram;
+calcu::debugger::LevelName levelOf(TIRunLevel l) {
+    return l == TIRunLevelCpu ? calcu::debugger::kCpu : calcu::debugger::kProgram;
 }
 
 TIButtonUse buttonUseOf(const calcu::debugger::ButtonUse& u) {
@@ -870,17 +870,17 @@ static const char* const kCardReaderPlace = "card-reader";
 - (void)setLiveDebugEnabled:(BOOL)on { [self send:cu59::commands::kLiveDebug args:{{"on", on == YES}}]; }
 - (void)setCpuDebugEnabled:(BOOL)on { [self send:cu59::commands::kCpuDebug args:{{"on", on == YES}}]; }
 - (BOOL)frozen { const auto* r = [self runControl]; return r && r->paused; }
-- (TIFreezeOwner)freezeOwner {
+- (TIRunLevel)pausedLevel {
     const auto* r = [self runControl];
-    if (!r || !r->paused || !r->owner) return TIFreezeOwnerNone;
-    return *r->owner == calcu::debugger::kCpu ? TIFreezeOwnerCpu : TIFreezeOwnerCalculator;
+    if (!r || !r->paused || !r->owner) return TIRunLevelNone;
+    return *r->owner == calcu::debugger::kCpu ? TIRunLevelCpu : TIRunLevelCalculator;
 }
 - (BOOL)pcChangeArmed { const auto* r = [self runControl]; return r && r->armed == calcu::debugger::kProgram; }
 - (BOOL)scanLoopExitArmed { const auto* r = [self runControl]; return r && r->armed == calcu::debugger::kCpu; }
-- (TIButtonUse)buttonUseFor:(TIFreezeOwner)level {
+- (TIButtonUse)buttonUseFor:(TIRunLevel)level {
     return buttonUseOf(calcu::debugger::buttonUse(levelOf(level), [self runControl]));
 }
-- (TIFreezeButtons)freezeButtonsFor:(TIFreezeOwner)level {
+- (TIFreezeButtons)freezeButtonsFor:(TIRunLevel)level {
     const cu59::FreezeButtons b = cu59::freezeButtons(levelOf(level), [self runControl]);
     TIFreezeButtons t;
     t.freeze = b.freeze;
@@ -899,19 +899,19 @@ static const char* const kCardReaderPlace = "card-reader";
     entryAvailable([self controlState], cu59::entries::kCalculatorTab, &why);
     return ns(why);
 }
-+ (TIButtonUse)buttonUseFor:(TIFreezeOwner)level hasState:(BOOL)hasState paused:(BOOL)paused owner:(TIFreezeOwner)owner {
++ (TIButtonUse)buttonUseFor:(TIRunLevel)level hasState:(BOOL)hasState paused:(BOOL)paused owner:(TIRunLevel)owner {
     calcu::debugger::RunState s;
     s.paused = paused == YES;
-    if (owner != TIFreezeOwnerNone) s.owner = levelOf(owner);
+    if (owner != TIRunLevelNone) s.owner = levelOf(owner);
     return buttonUseOf(calcu::debugger::buttonUse(levelOf(level), hasState ? &s : nullptr));
 }
-- (void)pause:(TIFreezeOwner)level { [self send:calcu::debugger::kPauseCommand args:{{"level", levelOf(level).value}}]; }
-- (void)step:(TIFreezeOwner)level {
+- (void)pause:(TIRunLevel)level { [self send:calcu::debugger::kPauseCommand args:{{"level", levelOf(level).value}}]; }
+- (void)step:(TIRunLevel)level {
     [self send:calcu::debugger::kStepCommand args:{{"level", levelOf(level).value}, {"count", 1}}];
 }
 - (void)resume { [self send:calcu::debugger::kResumeCommand]; }
-- (void)pauseOnStart:(TIFreezeOwner)level {
-    if (level == TIFreezeOwnerNone) [self send:calcu::debugger::kPauseOnStartCommand args:{{"off", true}}];
+- (void)pauseOnStart:(TIRunLevel)level {
+    if (level == TIRunLevelNone) [self send:calcu::debugger::kPauseOnStartCommand args:{{"off", true}}];
     else [self send:calcu::debugger::kPauseOnStartCommand args:{{"level", levelOf(level).value}}];
 }
 - (TILiveDebugSnapshot *)liveSnapshot {

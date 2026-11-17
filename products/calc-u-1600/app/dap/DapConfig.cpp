@@ -9,7 +9,7 @@
 #include "formats/Number.hpp"
 #include "formats/Yaml.hpp"
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 namespace {
 
@@ -167,4 +167,4 @@ bool checkAttach(const Value& o, const debug::attach::Table& table, std::string*
     return true;
 }
 
-} // namespace shared::dap
+} // namespace cu1600::dap

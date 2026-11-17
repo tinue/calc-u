@@ -7,7 +7,7 @@
 // start object the library worker passes, with the three calls the worker
 // makes. All that is left in a product's bindings.cpp:
 //
-//   CALCU_WEB_PRODUCT(CalcU1600Host, shared::makeWebAppSession)
+//   CALCU_WEB_PRODUCT(CalcU1600Host, cu1600::makeWebAppSession)
 
 namespace calcu::web {
 template <std::unique_ptr<sessions::AppSession> (*Factory)(const WebStart&)>

@@ -13,7 +13,7 @@
 // from tools/pc1500_cli.cpp and tools/pc1600_cli.cpp at the pin) without
 // their `---` headings.
 
-namespace shared {
+namespace cu1600 {
 
 struct BasicPointer {
     std::string name;                   // "BASPRG_END"
@@ -36,4 +36,4 @@ struct BasicDump {
 
 BasicDump basicDump(const sharp::LoaderMemory&);
 
-} // namespace shared
+} // namespace cu1600

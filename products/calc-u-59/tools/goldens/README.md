@@ -17,8 +17,8 @@ reference is the Swift code at the pinned commit, not the current tree.
 
 | Golden | Swift original (commit) | C++ port | Test |
 |---|---|---|---|
-| `keynames` | `frontends/swift/App/TI59KeyNames.swift` (66537d3) | `app/KeyNames.cpp` | `tests/shared_tables_tests.cpp` |
-| `formats` | `frontends/swift/App/StateFileLoader.swift`, `CueCardContent.swift`, `RegisterLineHelpers.swift`, `MachineModel.swift` (66537d3) | `CueCard.cpp`, `Bcd.cpp` (the state-file parser and its `STATE` records went in M-54, the card files and their `CARD` records in M-55) | `tests/shared_formats_tests.cpp` |
+| `keynames` | `frontends/swift/App/TI59KeyNames.swift` (66537d3) | `app/KeyNames.cpp` | `tests/data_tables_tests.cpp` |
+| `formats` | `frontends/swift/App/StateFileLoader.swift`, `CueCardContent.swift`, `RegisterLineHelpers.swift`, `MachineModel.swift` (66537d3) | `CueCard.cpp`, `Bcd.cpp` (the state-file parser and its `STATE` records went in M-54, the card files and their `CARD` records in M-55) | `tests/file_formats_tests.cpp` |
 
 The `formats` driver dumps the register-line and BCD records (the `CARD`
 records of 2.3.0's card files went in M-55, C59-7 TR). The `STATE` records of

@@ -107,7 +107,7 @@ private:
     std::optional<QByteArray> readChosen(const QString& path, const QString& title);
     std::optional<calcu::sessions::Value::Object> programArgs(const QString& name, const QByteArray& bytes,
                                                               const QString& title, std::optional<int> file);
-    void showMachineCodeLoaded(const shared::CodeLoadedReply& loaded);
+    void showMachineCodeLoaded(const cu1600::CodeLoadedReply& loaded);
     void onProgramOpened(const QString& name, const QByteArray& bytes, const QString& kind);
     bool m_programFlow = false;
     // File ▸ Mount Directory… / Unmount (the host drive, AC-9: its owner's items).

@@ -13,7 +13,7 @@
 #include "sessions/Args.hpp"
 #include "shell/ValueForms.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace sessions = calcu::sessions;
 using sessions::CommandOutcome;
@@ -134,4 +134,4 @@ void SharpWebPart::printer() {
                                                               {"text", printableBytes(b.data(), b.size())}})));
 }
 
-} // namespace shared
+} // namespace cu1600

@@ -38,7 +38,7 @@ Calc-U-59 part of Frequent 24.0 s.
 | EC-4 | Pass | `c59_1_ec4_ti58_ti58c_find_their_card_switch_line` (after build and each operation key readiness; the TI-58's idle pass through 0x0459–0x045B) |
 
 Support cases (no criterion): `c59_1_runbatch_stops_at_freeze_inside_advance`
-(`shared_runtime_tests.cpp`, design T11: FREEZE ON START lands on the same
+(`runtime_tests.cpp`, design T11: FREEZE ON START lands on the same
 instruction and tick count as 2.3.0's per-instruction `runBatch`), Pass;
 `CalcU59HeadlessSmoke` (`ti59.py 5 + 7 =` against the CMake-built
 `ti59headless`, display `12.`), Pass. The existing `shared_*_tests.cpp`

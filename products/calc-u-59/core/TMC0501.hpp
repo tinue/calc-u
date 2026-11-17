@@ -79,7 +79,7 @@ enum : uint16_t {
 
     // ── Miscellaneous ───────────────────────────────────────────────────
     FLG_BUSY      = 0x8000, // The printer connector's Busy line as the CPU sees it (kept in the
-                            // flags word for the trace format: tools/agentic read it).
+                            // flags word of the trace format).
 };
 
 // ── Connectors ────────────────────────────────────────────────────────────────

@@ -22,7 +22,7 @@ class LoaderMemory;
 // not NEW+type. It works off whatever BASPRG_ST/BASPRG_END are currently
 // live -- validates both are plausible, erases the resident program between
 // them, pokes the new payload in from BASPRG_ST, and fixes up BASPRG_END. The
-// caller is responsible for having prepared the machine first (memory cards,
+// caller is responsible for having prepared the machine first (memory modules,
 // `NEW`, mode) exactly as on real hardware.
 //
 // Layout facts (cross-checked with the CLIs' --dump-basic, now `pc1600 dump-basic`, against the

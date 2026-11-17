@@ -29,7 +29,7 @@ final class RunControlTests: XCTestCase {
         Case(level: "program", state: .init(paused: true, owner: "cpu"), pause: false, step: false, resume: false),
     ]
 
-    private func level(_ name: String?) -> TIFreezeOwner {
+    private func level(_ name: String?) -> TIRunLevel {
         switch name {
         case "cpu": .cpu
         case "program": .calculator

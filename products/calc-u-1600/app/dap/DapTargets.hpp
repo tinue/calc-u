@@ -24,7 +24,7 @@ class SharpDebugTarget;
 // the SC7852 (1) and the LH5803 (2). A thread id other than 1 names the last
 // target, as the DAP's references always did.
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 struct Thread {
     int id = 0;
@@ -75,4 +75,4 @@ private:
     calcu::machine::Debugging* m_debugging;
 };
 
-} // namespace shared::dap
+} // namespace cu1600::dap

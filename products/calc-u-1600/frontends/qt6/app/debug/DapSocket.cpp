@@ -8,9 +8,9 @@
 
 #include "app/dap/DapPart.hpp"
 
-using shared::dap::DapInput;
+using cu1600::dap::DapInput;
 
-DapSocket::DapSocket(shared::dap::DapPart& part, QObject* parent) : QObject(parent), m_part(part) {
+DapSocket::DapSocket(cu1600::dap::DapPart& part, QObject* parent) : QObject(parent), m_part(part) {
     m_server = new QTcpServer(this);
     connect(m_server, &QTcpServer::newConnection, this, &DapSocket::onNewConnection);
 }

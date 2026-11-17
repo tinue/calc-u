@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-namespace shared {
+namespace cu1600 {
 
 class SharpAppPart;
 
@@ -12,4 +12,4 @@ class SharpAppPart;
 // message when no slot holds a card with dumpable RAM.
 std::vector<std::string> cardYamlDump(SharpAppPart& app);
 
-} // namespace shared
+} // namespace cu1600

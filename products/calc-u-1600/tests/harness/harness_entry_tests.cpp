@@ -117,7 +117,7 @@ TEST(lib11_ac19_cursor_cell_read_as_text) {
             const std::string row = firstRow(r.line("lcd"));
             // The display as it is, read with the font alone.
             calcu::machine::Machine* m = r.machine();
-            const calcu::harness::DisplayText raw = shared::displayLines(*m, m->readDisplay());
+            const calcu::harness::DisplayText raw = cu1600::displayLines(*m, m->readDisplay());
             const std::string rawRow = raw.rows.empty() ? std::string() : raw.rows[0];
             const auto start = rawRow.find_first_not_of(' ');
             const std::string rawText = start == std::string::npos ? std::string() : rawRow.substr(start, 3);

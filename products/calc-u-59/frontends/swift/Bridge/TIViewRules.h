@@ -5,7 +5,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-// Swift face of the Shared/ view rules both frontends follow: cue-card spans,
+// Swift face of the app/ view rules both frontends follow: cue-card spans,
 // layout and geometry, LED segment geometry, PC-100C paper geometry, heatmap
 // colours, program-source decoding and labels, the debug panels' text. The
 // drawing stays in SwiftUI; these give it the same shapes and numbers as the
@@ -38,7 +38,7 @@ typedef struct {
 - (CGPoint)arrowPoint:(NSInteger)index;
 @end
 
-/// Text placement on a w × h card (Shared/CueCard.hpp CueCardGeometry).
+/// Text placement on a w × h card (app/CueCard.hpp CueCardGeometry).
 /// Frames: CGRect around the text's centre; height 0 = one text line.
 @interface TICueCardGeometry : NSObject
 @property (nonatomic, readonly) CGFloat titleFontSize, gridFontSize, bankFontSize;
@@ -50,7 +50,7 @@ typedef struct {
 @property (nonatomic, readonly) BOOL hasId;
 @end
 
-/// LED style parameters (Shared/LedGeometry.hpp); style 0 modernized, 1 classic.
+/// LED style parameters (app/LedGeometry.hpp); style 0 modernized, 1 classic.
 @interface TILedStyle : NSObject
 @property (nonatomic, readonly) CGFloat slant;
 @property (nonatomic, readonly) CGFloat activeR, activeG, activeB;
@@ -66,7 +66,7 @@ typedef struct {
 
 @interface TIViewRules : NSObject
 
-// ── Cue cards (Shared/CueCard.hpp) ───────────────────────────────────────────
+// ── Cue cards (app/CueCard.hpp) ───────────────────────────────────────────
 + (NSArray<TILabelSpan *> *)labelSpansOf:(TICueCard *)card row:(NSInteger)row;
 + (NSArray<NSNumber *> *)dividersBetween:(NSArray<TILabelSpan *> *)spans NS_SWIFT_NAME(dividers(between:));
 + (CGFloat)cellFittingFontSize:(NSArray<TILabelSpan *> *)spans templateKind:(NSInteger)templateKind
@@ -82,7 +82,7 @@ typedef struct {
 @property (class, readonly) uint32_t cueCardDividerColor;
 @property (class, readonly) uint32_t cueCardWashColor;
 @property (class, readonly) CGFloat cueCardWashAlpha;
-// ── LED (Shared/LedGeometry.hpp, Shared/SevenSegment.hpp) ───────────────────
+// ── LED (app/LedGeometry.hpp, app/SevenSegment.hpp) ───────────────────
 + (TILedStyle *)ledStyle:(NSInteger)style;
 /// Modernized: seven closed polygons (segments A–G) in a w × h digit cell.
 + (NSArray<NSArray<NSValue *> *> *)modernizedSegmentsWidth:(CGFloat)w height:(CGFloat)h NS_SWIFT_NAME(modernizedSegments(width:height:));
@@ -102,19 +102,19 @@ typedef struct {
 @property (class, readonly) CGFloat printerPaperPaddingX;
 @property (class, readonly) CGFloat printerPaperPaddingY;
 
-// ── Heatmap (Shared/RomHeatmap.hpp) ──────────────────────────────────────────
+// ── Heatmap (app/RomHeatmap.hpp) ──────────────────────────────────────────
 @property (class, readonly) NSInteger heatmapCols;
 @property (class, readonly) NSInteger heatmapRows;
 + (uint8_t)heatStep:(uint32_t)count;
 /// RGB of a heat step, packed 0xRRGGBB.
 + (uint32_t)heatColor:(uint8_t)step;
 
-// ── Debugger (Shared/ModuleImage.hpp, Shared/DebugSnapshots.hpp) ────────────
+// ── Debugger (app/ModuleImage.hpp, app/DebugSnapshots.hpp) ────────────
 /// ProgramSource raw value (C++ enumerator order) for a PRG SOURCE flag.
 + (NSInteger)programSourceForFlag:(uint8_t)flag romPC:(uint16_t)romPC;
 + (NSString *)programSourceLabel:(NSInteger)source flag:(uint8_t)flag;
 
-// ── Debug-panel text and colours (Shared/DebugText.hpp); colours 0xRRGGBB ───
+// ── Debug-panel text and colours (app/DebugText.hpp); colours 0xRRGGBB ───
 + (CGFloat)debugPanelFontSize:(CGFloat)width;
 /// cu59::mobileLayout — which panels an iOS window of this size shows.
 + (TIMobileLayout)mobileLayoutWidth:(CGFloat)width height:(CGFloat)height horizontalFold:(BOOL)fold;

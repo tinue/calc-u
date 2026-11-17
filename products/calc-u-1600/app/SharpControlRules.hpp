@@ -15,7 +15,7 @@
 // of today's ControlState is the library's generic entries, from the
 // descriptors (one pin-out per 60-pin place, D-11).
 
-namespace shared {
+namespace cu1600 {
 
 // The product entries (AC-17), each a value payload of the same kind.
 inline constexpr const char* kDiskControlsEntry = "c1600.disk-controls";              // {shown, available, reason}
@@ -48,4 +48,4 @@ private:
 // its catalogue and printers are LibraryParts' (the papers' printers).
 std::vector<const calcu::control::ControlRules*> sharpControlSetup(const SharpControlRules&);
 
-} // namespace shared
+} // namespace cu1600

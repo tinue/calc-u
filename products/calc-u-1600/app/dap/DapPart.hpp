@@ -24,7 +24,7 @@
 //   c1600.dap-disconnect  command: ends the DAP session (Settings ▸ Debugger)
 //   c1600.dap-port        command: {port} for this run (--dap), no setting changed
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 inline const calcu::sessions::TopicName kDapTopic{"c1600.dap"};
 inline const calcu::sessions::CommandName kDapDisconnectCommand{"c1600.dap-disconnect"};
@@ -105,4 +105,4 @@ private:
     bool endPending_ = false;
 };
 
-} // namespace shared::dap
+} // namespace cu1600::dap

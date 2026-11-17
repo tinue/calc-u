@@ -16,7 +16,7 @@
 // code are carried out at once, typing in and loading with a start are
 // operations (AC-24); every one is refused while an operation runs.
 
-namespace shared {
+namespace cu1600 {
 
 class SharpLoaderPart final : public calcu::sessions::SessionPart {
 public:
@@ -39,4 +39,4 @@ private:
     double m_idleBound = 3600;
 };
 
-} // namespace shared
+} // namespace cu1600

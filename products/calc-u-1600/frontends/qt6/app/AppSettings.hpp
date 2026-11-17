@@ -12,7 +12,7 @@
 namespace AppSettings {
 
 // The settings over the product's settings file (defined in AppPaths.cpp).
-shared::Settings& settings();
+cu1600::Settings& settings();
 
 inline QSize windowSize() { return QSize(settings().windowWidth(), settings().windowHeight()); }
 inline void setWindowSize(const QSize& size) { settings().setWindowSize(size.width(), size.height()); }

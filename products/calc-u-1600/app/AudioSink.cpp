@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <variant>
 
-namespace shared {
+namespace cu1600 {
 
 SoundFeed::SoundFeed(AudioSink& sink, Warn warn) : m_sink(sink), m_warn(std::move(warn)) {}
 
@@ -62,4 +62,4 @@ void SoundFeed::stopSink() {
     m_pending.clear();
 }
 
-} // namespace shared
+} // namespace cu1600

@@ -7,19 +7,19 @@
 class QAudioSink;
 class QIODevice;
 
-// The host's default audio output as a shared::AudioSink (a QAudioSink):
+// The host's default audio output as a cu1600::AudioSink (a QAudioSink):
 // the app session decides what is heard (LIB-3 AC-20, AC-37) and
 // MachineController's SoundFeed (app/AudioSink.hpp) writes it.
 // Must outlive the session.
-class AudioOutput : public QObject, private shared::AudioSink {
+class AudioOutput : public QObject, private cu1600::AudioSink {
     Q_OBJECT
 public:
     explicit AudioOutput(QObject* parent = nullptr);
 
-    shared::AudioSink& sink() { return *this; }
+    cu1600::AudioSink& sink() { return *this; }
 
 private:
-    // shared::AudioSink
+    // cu1600::AudioSink
     bool start(int sampleRate, int bufferMs) override;
     void stop() override;
     std::size_t room() const override;

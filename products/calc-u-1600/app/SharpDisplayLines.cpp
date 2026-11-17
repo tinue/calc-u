@@ -4,7 +4,7 @@
 
 #include "Display/DisplayOutputText.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace {
 
@@ -45,4 +45,4 @@ calcu::harness::DisplayText displayLines(calcu::machine::Machine& m, const calcu
     return displayLines(o, m.descriptor(), glyphFontOf(sharpLcdFont(m)));
 }
 
-} // namespace shared
+} // namespace cu1600

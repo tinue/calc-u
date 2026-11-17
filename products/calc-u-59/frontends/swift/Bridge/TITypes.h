@@ -7,7 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 // is checked in BridgeConvert.h).
 
 /// The display as drawn (Shared LedFrame): each position's last glyph and its
-/// brightness as the eye sees it (Shared/DisplayPov).
+/// brightness as the eye sees it (app/DisplayPov).
 typedef struct {
     uint8_t  segments[12];    ///< last driven glyph per position: A–G as bits 0–6 (the machine's display output)
     uint8_t  digitLevel[12];  ///< brightness 0 (dark) … 255 (lit) per position

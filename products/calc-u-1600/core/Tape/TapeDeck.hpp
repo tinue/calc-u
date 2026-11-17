@@ -19,7 +19,7 @@
 //
 // Time is emulated time only: the tape moves by advance()'s CPU cycles
 // while the motor runs, never by host time. So a recording or a playback
-// is the same at real-time pacing, in turbo, or in a flat-out CLI run.
+// is the same at real-time pacing, at full speed, or in a flat-out harness run.
 //
 // Play: the WAV is turned into the input line's logic level once, at load
 // time, the way the interface's input amplifier does it -- a DC-blocking

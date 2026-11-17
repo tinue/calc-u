@@ -27,23 +27,23 @@ namespace presettest {
 struct PresetReadRig {
     calcu::testing::TempFolder folder{"calcu1600-preset-read"};
     calcu::machine::Catalogue catalogue = sharp::sharpCatalogue();
-    shared::SharpPresetRules rules;
+    cu1600::SharpPresetRules rules;
     calcu::presets::Vocabulary vocabulary;
     std::unique_ptr<calcu::media::MediaPart> media;   // LIB-7: the media steps and the slot keys (M-47)
 
-    explicit PresetReadRig(shared::SharpKeywordSetup setup = {}) : rules(std::move(setup)) {
+    explicit PresetReadRig(cu1600::SharpKeywordSetup setup = {}) : rules(std::move(setup)) {
         sharp::addModuleDefinitions(catalogue, "frontends/qt6/resources/cards");
         calcu::presets::addLibraryKeywords(vocabulary);
         rules.addKeywords(vocabulary);
         calcu::media::MediaSetup ms;
-        ms.kinds = shared::mediaKinds("frontends/qt6/resources/cards", catalogue);
-        ms.listing = shared::moduleListing();
+        ms.kinds = cu1600::mediaKinds("frontends/qt6/resources/cards", catalogue);
+        ms.listing = cu1600::moduleListing();
         ms.catalogue = &catalogue;
         media = std::make_unique<calcu::media::MediaPart>(std::move(ms));
         calcu::media::addMediaToPresets(vocabulary, *media);
     }
     calcu::presets::ReadSetup setup() {
-        return calcu::presets::ReadSetup{vocabulary, rules, catalogue, &shared::typingProduct()};
+        return calcu::presets::ReadSetup{vocabulary, rules, catalogue, &cu1600::typingProduct()};
     }
     std::filesystem::path write(const std::string& name, const std::string& bytes) {
         const std::filesystem::path p = folder.path() / name;

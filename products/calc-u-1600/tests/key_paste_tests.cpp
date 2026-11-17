@@ -34,7 +34,7 @@ const ModelId kPC1600{sharp::kPC1600};
 // "~" before each press of an accent's KBII sequence, "_" for space; a
 // character without a key is left out (as a paste does, AC-12).
 std::string typed(const ModelId& m, const std::string& text, const calcu::typing::TypingSupport* s = nullptr) {
-    const calcu::typing::TypingProfile* p = shared::typingProfile(m);
+    const calcu::typing::TypingProfile* p = cu1600::typingProfile(m);
     std::string out;
     for (char32_t c : calcu::typing::decodeUtf8(text)) {
         if (c < 0x20 || c == 0x7F) continue;
@@ -97,7 +97,7 @@ TEST(lib5_ac34_kbii_respects_latches) {
     l.shift = false;
     l.kbii = true;
     CHECK_EQ(typed(kPC1600, oe, &l), std::string("| "));   // KBII on: left out, but it has a key
-    CHECK(shared::typingProfile(kPC1600)->charKeys(U'Ö', &l).has_value());
+    CHECK(cu1600::typingProfile(kPC1600)->charKeys(U'Ö', &l).has_value());
     CHECK_EQ(typed(kPC1600, oe, nullptr), std::string("kbii r kbii! | "));
 }
 

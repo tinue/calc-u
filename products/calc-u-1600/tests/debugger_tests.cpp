@@ -31,7 +31,7 @@ namespace {
 using namespace sessionfixture;
 using calcu::debugger::RunState;
 using sessions::Value;
-namespace c = shared::commands;
+namespace c = cu1600::commands;
 namespace dbg = calcu::debugger;
 
 // The PC-1600 of test_pc1600_lh5803_thread (debug_target_tests.cpp): the
@@ -266,7 +266,7 @@ void checkReference(const char* model, int frames, const char* reference) {
     auto m = sharptest::buildSharp(cat, model);
     CHECK(m != nullptr);
     if (!m || want.empty()) return;
-    auto rec = shared::makeSharpTraceRecorder(*m);
+    auto rec = cu1600::makeSharpTraceRecorder(*m);
     CHECK(rec != nullptr);
     if (!rec) return;
     std::vector<std::uint8_t> bytes;

@@ -14,7 +14,7 @@
 // `--lcd-text` of the CLIs did. Was the FontPart of app/HarnessProduct.cpp
 // (adapter A-4) until M-51.
 
-namespace shared {
+namespace cu1600 {
 
 class LcdTextPart final : public calcu::sessions::SessionPart {
 public:
@@ -30,4 +30,4 @@ private:
     std::optional<LcdCursor> cursor_;
 };
 
-} // namespace shared
+} // namespace cu1600

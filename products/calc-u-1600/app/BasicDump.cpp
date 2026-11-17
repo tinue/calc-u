@@ -2,7 +2,7 @@
 
 #include <cstdio>
 
-namespace shared {
+namespace cu1600 {
 
 namespace {
 
@@ -92,4 +92,4 @@ BasicDump basicDump(const sharp::LoaderMemory& mem) {
     return d;
 }
 
-} // namespace shared
+} // namespace cu1600

@@ -1,5 +1,5 @@
 // Golden generator: dumps TI59KeyNames (the Swift original) so the C++ port
-// in Shared/KeyNames.cpp can be checked against it. See tools/goldens/README.md.
+// in app/KeyNames.cpp can be checked against it. See tools/goldens/README.md.
 import Foundation
 
 var out = ""

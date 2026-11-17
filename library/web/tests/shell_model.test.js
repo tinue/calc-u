@@ -564,16 +564,16 @@ test("more_follows_availability", () => {
 
 test("media_place_item_only_with_its_media_place", () => {
   const p = product();
-  p.items.push({ group: "FileMedia", id: "fit-card", label: "Fit Card…", entry: "", mediaPlace: "card" });
+  p.items.push({ group: "FileMedia", id: "arm-card", label: "Arm Card…", entry: "", mediaPlace: "card" });
   let ms = m.calcuShellMenus(inputs(), p, QT);
-  assert.equal(find(ms, "fit-card").enabled, true);
+  assert.equal(find(ms, "arm-card").enabled, true);
   const cs = clone(INPUTS.modelA);
   cs.mediaPlaces[0].insert = { available: false, reason: "A card passes." };
   ms = m.calcuShellMenus(inputs(cs), p, QT);
-  assert.equal(find(ms, "fit-card").enabled, false);
-  assert.equal(find(ms, "fit-card").reason, "A card passes.");
+  assert.equal(find(ms, "arm-card").enabled, false);
+  assert.equal(find(ms, "arm-card").reason, "A card passes.");
   ms = m.calcuShellMenus(inputs(clone(INPUTS.modelB)), p, QT);
-  assert.equal(find(ms, "fit-card"), null);
+  assert.equal(find(ms, "arm-card"), null);
 });
 
 test("no_settings_item_without_settings", () => {

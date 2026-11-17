@@ -11,7 +11,7 @@
 #include "presets/IdleWatch.hpp"
 #include "typing/Awaitable.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 using calcu::presets::Applies;
 using calcu::presets::ItemResult;
@@ -138,4 +138,4 @@ calcu::presets::ModelRules& SharpPresetRules::forModel(const calcu::machine::Mod
     return m_pc1500a;
 }
 
-} // namespace shared
+} // namespace cu1600

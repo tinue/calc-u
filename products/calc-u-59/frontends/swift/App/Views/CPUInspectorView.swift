@@ -6,7 +6,7 @@ import Combine
 /// Off-screen 80×64 pixel buffer for the ROM heatmap.
 /// Cells are only repainted when their heat step increases — steps are monotonically non-decreasing.
 private final class HeatmapRenderer: ObservableObject {
-    static let cols = TIViewRules.heatmapCols   // 80 × 64 cells: Shared/RomHeatmap.hpp
+    static let cols = TIViewRules.heatmapCols   // 80 × 64 cells: app/RomHeatmap.hpp
     static let rows = TIViewRules.heatmapRows
     static let cellCount = cols * rows  // 5 120
 
@@ -34,7 +34,7 @@ private final class HeatmapRenderer: ObservableObject {
     }
 
     // Heat steps (fixed thresholds; they only grow, so repaints are incremental)
-    // and their colours come from Shared/RomHeatmap.hpp.
+    // and their colours come from app/RomHeatmap.hpp.
 
     private func setPixel(addr: Int, step: UInt8) {
         let (r, g, b) = rgb(for: step)
@@ -309,7 +309,7 @@ struct CPUInspectorView: View {
 
             // RESUME sits at the far left, away from STEP, to avoid accidental
             // taps while stepping.
-            Button("RESUME") { vm.unfreeze() }
+            Button("RESUME") { vm.resume() }
                 .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.orange)
                 .opacity(use.resume ? 1 : 0.4)

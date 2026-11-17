@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace shared {
+namespace cu1600 {
 
 namespace sessions = calcu::sessions;
 
@@ -17,4 +17,4 @@ sessions::ProductSession<SharpAppPart> makeSharpSession(Settings& settings, AppP
     return calcu::shell::makeHostSession(p, std::move(host));
 }
 
-} // namespace shared
+} // namespace cu1600

@@ -32,12 +32,12 @@ calcu::qt6::HostFolders& folders();
 // change; LIB-9 AC-18). Call before anything reads a setting or a path.
 void useHostDirs(const calcu::settings::HostDirs& dirs);
 // The tests (CalcU1600QtTests): the bundled folders of their own, before the first use.
-void useBundleDirs(const shared::BundleDirs& dirs);
+void useBundleDirs(const cu1600::BundleDirs& dirs);
 
-// The shared::AppPaths every call below forwards to (app/AppPaths.hpp
+// The cu1600::AppPaths every call below forwards to (app/AppPaths.hpp
 // has the rules); built on first use from the bundled resources folder
 // next to the executable and the host folders.
-shared::AppPaths& paths();
+cu1600::AppPaths& paths();
 
 // ~/Calc-U-1600 (home dir, non-dotted), created if missing.
 QString defaultInstanceDir();
@@ -57,7 +57,7 @@ QString instanceDir();
 // definition and its sound lie there (LIB-7 AC-42; LIB-9 AC-16).
 QString tapeDir();
 
-// shared::AppPaths::traceDir() / serialLinkDir(): the Settings override,
+// cu1600::AppPaths::traceDir() / serialLinkDir(): the Settings override,
 // else instanceDir().
 QString traceDir();
 QString serialLinkDir();

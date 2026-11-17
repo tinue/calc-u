@@ -16,7 +16,7 @@
 // its paths resolved from the preset's folder, and kept for the debugger. A
 // load does nothing with it: the debugger asks for it (debugBlockOf).
 
-namespace shared {
+namespace cu1600 {
 
 inline constexpr const char* kDebugKey = "debug";
 
@@ -35,4 +35,4 @@ std::variant<std::shared_ptr<const DebugBlock>, std::string> debugBlockOf(const 
                                                                           const calcu::presets::ReadSetup&,
                                                                           const calcu::presets::PresetBundle* bundle);
 
-} // namespace shared
+} // namespace cu1600

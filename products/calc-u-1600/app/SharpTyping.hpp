@@ -24,7 +24,7 @@
 //
 // A frame is 1/60 s of emulated time (n × rate / 60 ticks).
 
-namespace shared {
+namespace cu1600 {
 
 // The profile of a model ("PC-1500", "PC-1500A", "PC-1600"), or nullptr.
 const calcu::typing::TypingProfile* typingProfile(const calcu::machine::ModelId&);
@@ -51,4 +51,4 @@ const calcu::typing::TypingProduct& typingProduct();
 // gives them with every latch off; nullopt: no key (tests, the Qt input method).
 std::optional<std::vector<calcu::typing::Press>> charPresses(const calcu::machine::ModelId&, char32_t);
 
-} // namespace shared
+} // namespace cu1600

@@ -3,7 +3,7 @@
 #include "sessions/AppSession.hpp"
 #include "shell/HostSession.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 // ── Calc-U-1600's app session for a native host ─────────────────────────
 //
@@ -26,4 +26,4 @@ struct SharpSessionOptions : calcu::shell::HostSessionSetup {
 calcu::sessions::ProductSession<SharpAppPart> makeSharpSession(Settings& settings, AppPaths& paths,
                                                                SharpSessionOptions options = {});
 
-} // namespace shared
+} // namespace cu1600

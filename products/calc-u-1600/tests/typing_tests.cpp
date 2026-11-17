@@ -67,7 +67,7 @@ HostKeyEvent letter(char c, const char* physical) {
 
 TEST(lib5_ac28_cadence_4_4_and_6_after_shift_pc1600) {
     for (const ModelId& m : {kPC1500, kPC1500A, kPC1600}) {
-        const auto* p = shared::typingProfile(m);
+        const auto* p = cu1600::typingProfile(m);
         CHECK(p != nullptr);
         if (!p) continue;
         const Ticks f = frameOf(m);
@@ -101,7 +101,7 @@ TEST(lib5_ac28_cadence_4_4_and_6_after_shift_pc1600) {
 }
 
 TEST(lib5_ac14_type_starts_at_readiness_pc1600_bound_15s) {
-    const auto* p = shared::typingProfile(kPC1600);
+    const auto* p = cu1600::typingProfile(kPC1600);
     CHECK(p->firstPressOfStep == StartRule::KeyReadiness);
     CHECK(p->firstPressBound && *p->firstPressBound == calcu::typing::ticksOf(15.0, sharp::sharpCatalogue().model(kPC1600)->tickRate));
     CHECK(!p->queuedWaitsForReadiness);   // D-6: then the cadence only
@@ -121,7 +121,7 @@ TEST(lib5_ac14_type_starts_at_readiness_pc1600_bound_15s) {
 
 TEST(lib5_ac14_type_starts_at_once_pc1500) {
     for (const ModelId& m : {kPC1500, kPC1500A}) {
-        const auto* p = shared::typingProfile(m);
+        const auto* p = cu1600::typingProfile(m);
         CHECK(p->firstPressOfStep == StartRule::AsQueued);   // by the flag: at readiness (D-6)
         CHECK(!p->firstPressBound);
         CHECK(p->queuedWaitsForReadiness);
@@ -131,7 +131,7 @@ TEST(lib5_ac14_type_starts_at_once_pc1500) {
 TEST(lib5_ac30_characters_per_model) {
     auto keys = [](const ModelId& m, char32_t c) {
         std::string out;
-        const auto k = shared::charPresses(m, c);
+        const auto k = cu1600::charPresses(m, c);
         if (!k) return std::string("none");
         for (const auto& p : *k) out += p.key.value + " ";
         return out;
@@ -374,7 +374,7 @@ TEST(lib5_ac40_on_breaks_running_program) {
 
 TEST(lib5_ac41_break_alias_ent_refused) {
     for (const ModelId& m : {kPC1500, kPC1500A, kPC1600}) {
-        const auto* p = shared::typingProfile(m);
+        const auto* p = cu1600::typingProfile(m);
         auto one = [p](const char* n) {
             const auto r = p->name(n);
             return r && r->size() == 1 ? (*r)[0].key.value : std::string("refused");
@@ -398,7 +398,7 @@ TEST(lib5_ac41_break_alias_ent_refused) {
 // the preset parts are LIB-6's, M-46).
 TEST(lib5_ac17_harness_key_and_type_on_a_sharp_machine) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    auto product = shared::makeHarnessProduct();
+    auto product = cu1600::makeHarnessProduct();
     std::string error;
     auto server = calcu::harness::Server::start(*product, {}, &error);
     CHECK(server != nullptr);

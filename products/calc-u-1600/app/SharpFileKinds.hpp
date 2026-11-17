@@ -30,7 +30,7 @@
 // `c1600.program-opened`, and the frontend runs the flow of File ▸ Load
 // BASIC Program… or Load Machine Code… on it, without their file dialog.
 
-namespace shared {
+namespace cu1600 {
 
 // AC-17: the product's preset extensions, lower case.
 std::vector<std::string> presetExtensions();
@@ -94,4 +94,4 @@ public:
     MachineCodeKind() : ProgramFileKind(ProgramKind::MachineCode) {}
 };
 
-} // namespace shared
+} // namespace cu1600

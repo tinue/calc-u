@@ -36,7 +36,7 @@ const char* kCards = "frontends/qt6/resources/cards";
 
 struct Kinds {
     calcu::machine::Catalogue catalogue = sharp::sharpCatalogue();
-    std::vector<media::KindDecl> kinds = shared::mediaKinds(kCards, catalogue);
+    std::vector<media::KindDecl> kinds = cu1600::mediaKinds(kCards, catalogue);
     const media::KindDecl& operator[](const char* id) const {
         for (const auto& k : kinds)
             if (k.id == id) return k;
@@ -65,29 +65,29 @@ std::string writeOne(const media::KindDecl& k, const media::MediumCodec::Write& 
 TEST(lib7_ac37_three_kinds_suffixes_versions_name_keys) {
     const Kinds k;
     CHECK_EQ(k.kinds.size(), std::size_t{3});
-    CHECK_EQ(k[shared::kModuleKind].suffix, std::string(".card.yaml"));
-    CHECK_EQ(k[shared::kModuleKind].currentVersion, 1);
-    CHECK(k[shared::kModuleKind].heldBy == media::HeldBy::ModuleSlot);
-    CHECK_EQ(k[shared::kFloppyKind].suffix, std::string(".floppy.yaml"));
-    CHECK_EQ(k[shared::kFloppyKind].currentVersion, 2);
-    CHECK_EQ(k[shared::kFloppyKind].words.insertStep, std::string("floppy"));
-    CHECK_EQ(k[shared::kTapeKind].suffix, std::string(".tape.yaml"));
-    CHECK_EQ(k[shared::kTapeKind].currentVersion, 1);
-    CHECK(k[shared::kTapeKind].folder == calcu::settings::Folder::Tapes);
-    CHECK_EQ(k[shared::kTapeKind].words.ejectWord, std::string("tape"));
+    CHECK_EQ(k[cu1600::kModuleKind].suffix, std::string(".card.yaml"));
+    CHECK_EQ(k[cu1600::kModuleKind].currentVersion, 1);
+    CHECK(k[cu1600::kModuleKind].heldBy == media::HeldBy::ModuleSlot);
+    CHECK_EQ(k[cu1600::kFloppyKind].suffix, std::string(".floppy.yaml"));
+    CHECK_EQ(k[cu1600::kFloppyKind].currentVersion, 2);
+    CHECK_EQ(k[cu1600::kFloppyKind].words.insertStep, std::string("floppy"));
+    CHECK_EQ(k[cu1600::kTapeKind].suffix, std::string(".tape.yaml"));
+    CHECK_EQ(k[cu1600::kTapeKind].currentVersion, 1);
+    CHECK(k[cu1600::kTapeKind].folder == calcu::settings::Folder::Tapes);
+    CHECK_EQ(k[cu1600::kTapeKind].words.ejectWord, std::string("tape"));
     // The name tags: module-name, disk-name, tape-name; template: true.
-    const ReadOutcome m = readFile(k[shared::kModuleKind], fs::path(kCards) / "ce1600m.card.yaml");
+    const ReadOutcome m = readFile(k[cu1600::kModuleKind], fs::path(kCards) / "ce1600m.card.yaml");
     CHECK(m.status == ReadOutcome::Status::Read && m.info.name == "CE-1600M" && m.info.isTemplate);
-    const ReadOutcome d = readFile(k[shared::kFloppyKind], fs::path(kCards) / "formatted.floppy.yaml");
+    const ReadOutcome d = readFile(k[cu1600::kFloppyKind], fs::path(kCards) / "formatted.floppy.yaml");
     CHECK(d.status == ReadOutcome::Status::Read && d.info.name == "Formatted" && d.info.isTemplate);
     CHECK_EQ(d.info.description, std::string("Formatted, both sides empty"));
-    const ReadOutcome t = readFile(k[shared::kTapeKind], fs::path(kCards) / "empty.tape.yaml");
+    const ReadOutcome t = readFile(k[cu1600::kTapeKind], fs::path(kCards) / "empty.tape.yaml");
     CHECK(t.status == ReadOutcome::Status::Read && t.info.name == "Empty" && t.info.isTemplate);
 }
 
 TEST(lib7_ac37_floppy_v2_sides_0_1_v1_outdated_with_hint) {
     const Kinds k;
-    const media::KindDecl& floppy = k[shared::kFloppyKind];
+    const media::KindDecl& floppy = k[cu1600::kFloppyKind];
     std::vector<std::uint8_t> image(CE1600FCard::kImageSize, 0);
     image[3] = 0x11;
     image[CE1600FCard::kSideSize + 5] = 0x22;
@@ -115,7 +115,7 @@ TEST(lib7_ac37_floppy_v2_sides_0_1_v1_outdated_with_hint) {
 
 TEST(lib7_ac37_card_v1_read_and_written) {
     const Kinds k;
-    const media::KindDecl& module = k[shared::kModuleKind];
+    const media::KindDecl& module = k[cu1600::kModuleKind];
     const std::string source = text(fs::path(kCards) / "ce1600m.card.yaml");
     const ReadOutcome r = module.codec->read(source, {});
     CHECK(r.status == ReadOutcome::Status::Read && r.info.formatVersion == 1);
@@ -135,7 +135,7 @@ TEST(lib7_ac37_card_v1_read_and_written) {
 
 TEST(lib7_ac41_card_file_kept_but_content_name_template_mark) {
     const Kinds k;
-    const media::KindDecl& module = k[shared::kModuleKind];
+    const media::KindDecl& module = k[cu1600::kModuleKind];
     const std::string source = text(fs::path(kCards) / "ce1600m.card.yaml");
     const ReadOutcome r = module.codec->read(source, {});
     const auto* content = dynamic_cast<const sharp::ModuleContent*>(r.info.content.get());
@@ -166,7 +166,7 @@ TEST(lib7_ac41_card_file_kept_but_content_name_template_mark) {
 
 TEST(lib7_ac41_disk_written_whole_description_kept) {
     const Kinds k;
-    const media::KindDecl& floppy = k[shared::kFloppyKind];
+    const media::KindDecl& floppy = k[cu1600::kFloppyKind];
     const std::string source = text(fs::path(kCards) / "formatted.floppy.yaml");
     const ReadOutcome r = floppy.codec->read(source, {});
     media::MediumCodec::Write w;
@@ -189,7 +189,7 @@ TEST(lib7_ac41_disk_written_whole_description_kept) {
 
 TEST(lib7_ac42_definition_with_wav_is_a_medium) {
     const Kinds k;
-    const media::KindDecl& tape = k[shared::kTapeKind];
+    const media::KindDecl& tape = k[cu1600::kTapeKind];
     calcu::testing::TempFolder tmp("calcu1600-tape-codec");
     fs::create_directories(tmp.path() / "sounds");
     const std::vector<std::uint8_t> wav = wavMono16Bytes(std::vector<std::int16_t>(480, 1000), 48000);

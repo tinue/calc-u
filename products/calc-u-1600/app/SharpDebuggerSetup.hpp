@@ -17,8 +17,8 @@
 //   debug-panel:) on any Sharp model (AC-19, AC-40); no panel views;
 // - the symbol readers of the Sharp listings (AC-51).
 
-namespace shared {
+namespace cu1600 {
 
 calcu::debugger::DebuggerSetup sharpDebuggerSetup();
 
-} // namespace shared
+} // namespace cu1600

@@ -68,7 +68,7 @@ std::string keysFileText() {
            "# in chapter 8, the family's in library/help/08-settings.md, the product's in\n"
            "# help/08-settings.md. Written by CalcU1600HelpTests with CALCU1600_HELP_KEYS=1.\n";
     std::set<std::string> generalDone;
-    for (const cs::KeyDecl& d : shared::settingsDecl().keys) {
+    for (const cs::KeyDecl& d : cu1600::settingsDecl().keys) {
         const std::string name = "[" + d.section + "] " + d.key;
         if (family.fixed.count(name)) {
             out << "family " << name << "\n";
@@ -120,7 +120,7 @@ TEST(lib16_ac14_every_declared_key_is_in_the_keys_file) {
     // Every key of the declaration shows up: by its name, or by its
     // section's general form and its name as a product line.
     const std::string text = keysFileText();
-    for (const cs::KeyDecl& d : shared::settingsDecl().keys) {
+    for (const cs::KeyDecl& d : cu1600::settingsDecl().keys) {
         const std::string name = "[" + d.section + "] " + d.key;
         CHECK(text.find(" " + name + "\n") != std::string::npos);
     }

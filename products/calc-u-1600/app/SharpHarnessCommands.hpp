@@ -11,7 +11,7 @@
 // product kinds of C1600-1 and the generic kinds, or through the session's
 // commands; none names a machine class.
 
-namespace shared {
+namespace cu1600 {
 
 class SharpAppPart;
 class SerialScriptsPart;
@@ -26,4 +26,4 @@ struct SharpHarnessParts {
 
 void addSharpHarnessCommands(calcu::harness::CommandRegistry&, SharpHarnessParts);
 
-} // namespace shared
+} // namespace cu1600

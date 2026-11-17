@@ -10,7 +10,7 @@
 
 #include "Debug/SharpDebugging.hpp"
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 using namespace debug;
 
@@ -399,4 +399,4 @@ bool DapBreakpoints::entryHit(const std::vector<calcu::debugger::RunState::Hit>&
 
 std::vector<std::string> DapBreakpoints::takeOutput() { return std::exchange(m_output, {}); }
 
-} // namespace shared::dap
+} // namespace cu1600::dap

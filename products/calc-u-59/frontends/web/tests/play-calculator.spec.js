@@ -18,7 +18,7 @@ async function pressKeys(page, labels) {
 }
 
 // The display is a canvas: compare rendered bitmaps instead of reading text.
-// Digits fade in and out (Shared/DisplayPov), so wait for a settled frame.
+// Digits fade in and out (app/DisplayPov), so wait for a settled frame.
 async function settledLed(page) {
   const led = page.locator('canvas.calcu-led');
   let previous = await led.evaluate((c) => c.toDataURL());

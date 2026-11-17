@@ -15,7 +15,7 @@
 // core/Machine/SharpMediaPlaces.hpp's ModuleContent, FloppyContent,
 // TapeContent, which the library hands through unread.
 
-namespace shared {
+namespace cu1600 {
 
 inline constexpr const char* kModuleKind = "battery-backed-module";
 inline constexpr const char* kFloppyKind = "floppy-disk";
@@ -32,4 +32,4 @@ std::vector<calcu::media::KindDecl> mediaKinds(const std::string& bundledDir, ca
 // name, its description as the tooltip, in the catalogue's order.
 calcu::media::ModuleListing moduleListing();
 
-} // namespace shared
+} // namespace cu1600

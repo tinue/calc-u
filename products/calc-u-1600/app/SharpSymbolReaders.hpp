@@ -8,8 +8,8 @@
 // listing (.lst), or of a `.SYMBOLS:` table, read with core/Debug/Listing.
 // The harness's `symbols <file> [<target>]` and the DebuggerPart take them.
 
-namespace shared {
+namespace cu1600 {
 
 std::vector<const calcu::debugger::SymbolReader*> sharpSymbolReaders();
 
-} // namespace shared
+} // namespace cu1600

@@ -3,7 +3,7 @@
 #include <cctype>
 #include <cstdlib>
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 std::optional<std::string> DapReader::next() {
     for (;;) {
@@ -37,4 +37,4 @@ std::string frame(std::string_view body) {
     return out;
 }
 
-} // namespace shared::dap
+} // namespace cu1600::dap

@@ -43,7 +43,7 @@ public:
     void serialiseRAM(uint8_t* dst) const;   // 120*16 bytes
     void deserialiseRAM(const uint8_t* src);
 
-    // ── State file load helpers ───────────────────────────────────────────────
+    // ── Preset load helpers ─────────────────────────────────────────────────
     /// Write keycodes[0..count-1] to program RAM starting at step 0.
     void writeProgram(const uint8_t* keycodes, int count);
     /// Write one program step; the others stay as they are.

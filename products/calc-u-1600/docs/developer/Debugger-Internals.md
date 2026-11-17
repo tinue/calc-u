@@ -36,7 +36,7 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
   records (`c1600.trace-records`, `app/SharpTraceRecorder`) into the trace
   folder, limits every trace to `[trace] max-file-size-mb` MiB and says so
   in a notice. The Web has no trace folder: a trace fails there.
-- **`launch` is `attach`:** `shared::dap::DapSession` treats a `launch` request as
+- **`launch` is `attach`:** `cu1600::dap::DapSession` treats a `launch` request as
   `attach`, which the CLion recipe relies on.
 - **Installing the extension:** VS Code ignores extensions symlinked into
   `~/.vscode/extensions`. `tools/install_vscode_extension.sh` packages the
@@ -65,7 +65,7 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
 - **`app/`:** `SharpDebuggerSetup` (the `DebuggerPart`'s set-up: `cpu` only, the
   trace session, no run-control steps on the Sharp models), `SharpTraceRecorder`,
   `SharpSymbolReaders` (sdas, zasm, `.SYMBOLS:` for `symbols`).
-- **`app/dap/`** (C1600-3, namespace `shared::dap`; no Qt, every native tree, not
+- **`app/dap/`** (C1600-3, namespace `cu1600::dap`; no Qt, every native tree, not
   Emscripten):
   - `DapPart`: the server, a session part after the `DebuggerPart`: listening by
     `[debug] dap-enabled`/`dap-port` or the run's port (`c1600.dap-port`), the status
@@ -115,7 +115,7 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
   dialog or popup), then auto-start. `cleanStart: false` skips the clean
   start.
 - **Memory references** must stay numeric (VS Code can't parse `1:0000`);
-  see `shared::dap::memoryReference()`.
+  see `cu1600::dap::memoryReference()`.
 - **Scripted launches:** never SIGTERM the app; quit via `calcu1600/quit`
   and launch with `-ApplePersistenceIgnoreState YES`. The scenarios run
   against the harness without an app (`tools/dap_smoke.py --harness`,

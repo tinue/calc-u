@@ -11,7 +11,7 @@
 #include "SharpShiftedSymbols.hpp"
 #include "typing/TypingSupport.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 using calcu::machine::KeyId;
 using calcu::machine::ModelId;
@@ -218,4 +218,4 @@ std::optional<std::vector<Press>> charPresses(const ModelId& m, char32_t c) {
     return p && p->charKeys ? p->charKeys(c, nullptr) : std::nullopt;
 }
 
-} // namespace shared
+} // namespace cu1600

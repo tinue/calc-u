@@ -5,7 +5,7 @@
 #include <vector>
 
 // Small string helpers for the bays' names and messages.
-namespace shared {
+namespace cu1600 {
 
 // `s` without leading/trailing spaces, tabs and line breaks.
 inline std::string trimmed(const std::string& s) {
@@ -37,4 +37,4 @@ inline std::string lowered(std::string s) {
 // Equal ignoring ASCII case, the way names and file suffixes compare.
 inline bool sameIgnoringCase(const std::string& a, const std::string& b) { return lowered(a) == lowered(b); }
 
-} // namespace shared
+} // namespace cu1600

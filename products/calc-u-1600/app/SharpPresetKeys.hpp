@@ -22,7 +22,7 @@
 // ROM go into the machine plan through ReadContext::addPeripheral and
 // setContentAt as they are read (D-2; LIB-6 D-33).
 
-namespace shared {
+namespace cu1600 {
 
 struct SharpKeywordSetup {
     // AC-7: false where the frontend mounts no folder (the Web); unset: true.
@@ -35,4 +35,4 @@ void addSharpKeywords(calcu::presets::Vocabulary&, const SharpKeywordSetup&);
 // module; AC-8), at the line of the later key.
 void checkSharpHeader(const calcu::presets::LoadPlan&, calcu::presets::ReadContext&);
 
-} // namespace shared
+} // namespace cu1600

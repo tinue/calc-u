@@ -14,7 +14,7 @@
 namespace {
 
 using Reason = calcu::debugger::RunState::Reason;
-using shared::dap::StepKind;
+using cu1600::dap::StepKind;
 
 TEST(lib10_ac44_step_over_a_call) {
     memtest::Rig r;
@@ -36,9 +36,9 @@ TEST(lib10_ac44_step_over_a_call) {
 TEST(lib10_ac44_data_breakpoint_and_pause) {
     memtest::Rig r;
     if (!r.ok) return;
-    shared::dap::DataBreakpointSpec w;
+    cu1600::dap::DataBreakpointSpec w;
     w.addr = 0x40C7; // ERR_FLAG: first written by `sta (ERR_FLAG)` at 40CE
-    w.access = shared::dap::DataAccess::Write;
+    w.access = cu1600::dap::DataAccess::Write;
     auto st = r.breakpoints.setData({w});
     r.apply();
     r.resume();

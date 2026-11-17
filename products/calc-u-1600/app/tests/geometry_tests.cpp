@@ -1,4 +1,4 @@
-// Shared/KeyLayout/FaceplateLayout (the plotter paper's cases are
+// app/KeyLayout/FaceplateLayout (the plotter paper's cases are
 // tests/plotter_paper_tests.cpp's lib8_ac37_ cases since M-45).
 
 #include <cmath>
@@ -58,22 +58,22 @@ calcu::machine::DisplayOutput frameWith(std::initializer_list<const char*> lit) 
 }
 
 TEST(test_lcd_indicators) {
-    using shared::lcd::Indicator;
+    using cu1600::lcd::Indicator;
     // PC-1500: KANA reads JPN, DE+G is one word, the battery dot is always on.
-    auto p15 = shared::lcd::indicators(calcu::machine::ModelId{"PC-1500A"}, frameWith({"KANA", "DE", "G"}));
+    auto p15 = cu1600::lcd::indicators(calcu::machine::ModelId{"PC-1500A"}, frameWith({"KANA", "DE", "G"}));
     CHECK(p15.size() == 3);
-    CHECK(p15[0].text == "JPN" && p15[0].x == shared::lcd::kP15JapX);
-    CHECK(p15[1].text == "DEG" && p15[1].x == shared::lcd::kP15AngleX);
-    CHECK(p15[2].style == Indicator::Style::Dot && p15[2].x == shared::lcd::kP15BatteryX);
+    CHECK(p15[0].text == "JPN" && p15[0].x == cu1600::lcd::kP15JapX);
+    CHECK(p15[1].text == "DEG" && p15[1].x == cu1600::lcd::kP15AngleX);
+    CHECK(p15[2].style == Indicator::Style::Dot && p15[2].x == cu1600::lcd::kP15BatteryX);
     // PC-1500: I and II each have their own place.
-    CHECK(shared::lcd::indicators(calcu::machine::ModelId{"PC-1500"}, frameWith({"I", "II"})).size() == 3);
+    CHECK(cu1600::lcd::indicators(calcu::machine::ModelId{"PC-1500"}, frameWith({"I", "II"})).size() == 3);
     // PC-1600: S and BATT inverted, I/II/III share one place (first wins),
     // no battery dot.
-    auto p16 = shared::lcd::indicators(calcu::machine::ModelId{"PC-1600"}, frameWith({"S", "BATT", "II", "III"}));
+    auto p16 = cu1600::lcd::indicators(calcu::machine::ModelId{"PC-1600"}, frameWith({"S", "BATT", "II", "III"}));
     CHECK(p16.size() == 3);
     CHECK(p16[0].text == "S" && p16[0].style == Indicator::Style::Inverted);
     CHECK(p16[1].text == "BATT" && p16[1].style == Indicator::Style::Inverted);
     CHECK(p16[2].text == "II");
-    CHECK(p16[0].x > shared::lcd::kP16RowLeft && p16[1].x <= shared::lcd::kP16RowRight);
-    CHECK(shared::lcd::indicators(calcu::machine::ModelId{"PC-1600"}, frameWith({})).empty());
+    CHECK(p16[0].x > cu1600::lcd::kP16RowLeft && p16[1].x <= cu1600::lcd::kP16RowRight);
+    CHECK(cu1600::lcd::indicators(calcu::machine::ModelId{"PC-1600"}, frameWith({})).empty());
 }

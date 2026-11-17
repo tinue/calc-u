@@ -1,4 +1,4 @@
-// Shared/ data tables: key names (against the Swift golden) (the keyboard
+// app/ data tables: key names (against the Swift golden) (the keyboard
 // map's rules moved to typing_tests.cpp, lib5_ac27_map_rules),
 // 7-segment patterns, printer font, key layout and model info.
 

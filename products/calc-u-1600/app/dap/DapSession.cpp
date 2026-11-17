@@ -18,7 +18,7 @@
 #include "sessions/MachineSession.hpp"
 #include "typing/TypingPart.hpp"
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 namespace {
 
@@ -731,7 +731,7 @@ void DapSession::step(const Value& args, StepKind kind, std::string* error) {
     if (!ready(error)) return;
     const bool instruction = textOf(args, "granularity") == "instruction";
     const DapTargets t = targets();
-    if (shared::dap::step(runControl(), t, map_, threadOf(args), kind, !instruction).ok) noteRunning();
+    if (cu1600::dap::step(runControl(), t, map_, threadOf(args), kind, !instruction).ok) noteRunning();
 }
 
 // ── Code and memory ───────────────────────────────────────────────────────
@@ -881,4 +881,4 @@ void DapSession::screen(Body* body, std::string* error) {
         body->push_back({"cursor", Value::object({{"row", Value(screen.cursorRow)}, {"col", Value(screen.cursorCol)}})});
 }
 
-} // namespace shared::dap
+} // namespace cu1600::dap

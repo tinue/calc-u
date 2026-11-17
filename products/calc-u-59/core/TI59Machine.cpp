@@ -66,7 +66,7 @@ void TI59Machine::deserialiseRAM(const uint8_t* src) {
     m_ram.deserialise(src);
 }
 
-// ── State file load helpers ────────────────────────────────────────────────────
+// ── Preset load helpers ──────────────────────────────────────────────────────
 
 void TI59Machine::writeProgram(const uint8_t* keycodes, int count) {
     // 8 steps per register; never write past the physical 120-register RAM.

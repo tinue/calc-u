@@ -10,7 +10,7 @@
 #include "Machine/SharpProductKinds.hpp"
 #include "files/Files.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace sessions = calcu::sessions;
 using calcu::machine::Machine;
@@ -148,4 +148,4 @@ void SerialScriptsPart::act(Machine& m, Ticks now, calcu::pacing::WallTime) {
     }
 }
 
-} // namespace shared
+} // namespace cu1600

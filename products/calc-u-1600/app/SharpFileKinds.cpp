@@ -8,7 +8,7 @@
 #include "opening/Classify.hpp"
 #include "sessions/LibraryTopics.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 using calcu::opening::OpenedFile;
 using calcu::opening::Way;
@@ -95,4 +95,4 @@ CommandOutcome ProgramFileKind::open(const OpenedFile& f, Way way, SessionContex
     return Done{};
 }
 
-} // namespace shared
+} // namespace cu1600

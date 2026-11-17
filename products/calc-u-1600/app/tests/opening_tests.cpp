@@ -177,12 +177,12 @@ sessions::ReplyMessage openFile(SessionFixture& f, const OpenedFile& file, Way w
 }
 const opening::OpenReply* replyOf(const sessions::ReplyMessage& r) { return sessions::payloadAs<opening::OpenReply>(r.result); }
 
-std::vector<const shared::ProgramOpenedPayload*> programsOpened(SessionFixture& f,
+std::vector<const cu1600::ProgramOpenedPayload*> programsOpened(SessionFixture& f,
                                                                std::vector<sessions::PayloadPtr>& keep) {
-    keep = f.listener.mirror().takeAppended(shared::topics::kProgramOpened);
-    std::vector<const shared::ProgramOpenedPayload*> out;
+    keep = f.listener.mirror().takeAppended(cu1600::topics::kProgramOpened);
+    std::vector<const cu1600::ProgramOpenedPayload*> out;
     for (const auto& p : keep)
-        if (const auto* o = sessions::payloadAs<shared::ProgramOpenedPayload>(p)) out.push_back(o);
+        if (const auto* o = sessions::payloadAs<cu1600::ProgramOpenedPayload>(p)) out.push_back(o);
     return out;
 }
 
@@ -266,8 +266,8 @@ TEST(lib13_ac17_wav_goes_to_first_files_kind) {
     CHECK_EQ(takenAs(b.f, doubledTape(wav), "two.wav"), std::string("basic-program"));
     // The file-kind request names each file's kind, for the flow (AC-18).
     const sessions::ReplyMessage r =
-        b.f.listener.ask(shared::requests::kFileKind, sessions::Value::object({{"bytes", sessions::Value(doubledTape(wav))}}));
-    const auto* k = sessions::payloadAs<shared::FileKindReply>(r.result);
+        b.f.listener.ask(cu1600::requests::kFileKind, sessions::Value::object({{"bytes", sessions::Value(doubledTape(wav))}}));
+    const auto* k = sessions::payloadAs<cu1600::FileKindReply>(r.result);
     CHECK(k && k->tapeKinds == std::vector<std::string>({"basic-pc1500", "basic-pc1500"}));
 }
 
@@ -331,7 +331,7 @@ TEST(lib13_ac18_kept_file_also_sends_topic) {
     const sessions::CallId call = f.send(opening::kOpenCommand, req.toValue());
     const auto kept = f.takeReply(call);
     CHECK(kept && kept->done && replyOf(*kept) && replyOf(*kept)->as == opening::OpenedAs::Kept);
-    CHECK(f.ok(shared::commands::kStart));
+    CHECK(f.ok(cu1600::commands::kStart));
     f.call();
     std::vector<sessions::PayloadPtr> keep;
     const auto opened = programsOpened(f, keep);
@@ -447,7 +447,7 @@ TEST(lib13_ac19_tape_definition_into_cassette_wav_is_never_a_tape) {
 TEST(lib13_ac20_over_1mib_refused_drop_openwith_start_not_dialog_harness) {
     Built b;
     Bytes big = text("10 PRINT 1\n");
-    big.resize(shared::kMaxOpenBytes + 1, ' ');
+    big.resize(cu1600::kMaxOpenBytes + 1, ' ');
     for (Way w : {Way::Drop, Way::OpenWith, Way::Start}) {
         const opening::Classified c = opening::classify(named("big.bas", big), w, b.f.part().openPart().setup());
         CHECK(c.what == opening::Classified::What::Refused);
@@ -455,7 +455,7 @@ TEST(lib13_ac20_over_1mib_refused_drop_openwith_start_not_dialog_harness) {
     }
     for (Way w : {Way::Dialog, Way::Harness}) CHECK_EQ(takenAs(b.f, named("big.bas", big), w), std::string("basic-program"));
     Bytes exact = big;
-    exact.resize(shared::kMaxOpenBytes);
+    exact.resize(cu1600::kMaxOpenBytes);
     CHECK_EQ(takenAs(b.f, named("ok.bas", exact), Way::Drop), std::string("basic-program"));
 }
 
@@ -466,8 +466,8 @@ TEST(lib13_ec7_open_by_any_way_keeps_dialog_folders) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1500A"));
-    using shared::OpenFolder;
-    using shared::openFolderKind;
+    using cu1600::OpenFolder;
+    using cu1600::openFolderKind;
     calcu::settings::rememberOpenFolder(f.settings.file(), openFolderKind(OpenFolder::Samples), "/before/presets");
     calcu::settings::rememberOpenFolder(f.settings.file(), openFolderKind(OpenFolder::Basic), "/before/basic");
     calcu::settings::rememberOpenFolder(f.settings.file(), openFolderKind(OpenFolder::Assembly), "/before/code");

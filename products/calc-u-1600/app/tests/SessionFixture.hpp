@@ -40,10 +40,10 @@ struct SessionFixture {
     calcu::testing::TempFolder folder;
     fs::path root = folder.path();
     TestSettings testSettings;
-    shared::Settings& settings = testSettings.settings;
-    std::unique_ptr<shared::AppPaths> paths;
+    cu1600::Settings& settings = testSettings.settings;
+    std::unique_ptr<cu1600::AppPaths> paths;
     calcu::pacing::WallTime now{1'000'000'000'000LL};
-    sessions::ProductSession<shared::SharpAppPart> app;
+    sessions::ProductSession<cu1600::SharpAppPart> app;
     sessions::Listener listener;               // stops listening before the session goes
     std::vector<sessions::Message> messages;   // every message, in order
     std::map<sessions::CallId, sessions::ReplyMessage> replies;   // not taken yet
@@ -67,9 +67,9 @@ struct SessionFixture {
         // The host drive's own ROM, bundled beside the set (roms.md Q-1).
         const fs::path hostDrive = "firmware/pc1600-hostdrive/PC1600-P1-B7-HOSTDRIVE.bin";
         if (fs::exists(hostDrive)) fs::copy_file(hostDrive, bundle / hostDrive.filename());
-        paths = std::make_unique<shared::AppPaths>(
+        paths = std::make_unique<cu1600::AppPaths>(
             settings, testHostDirs((root / "home").generic_string()),
-            shared::BundleDirs{bundle.generic_string(), fs::absolute("examples").generic_string()});
+            cu1600::BundleDirs{bundle.generic_string(), fs::absolute("examples").generic_string()});
     }
     ~SessionFixture() {
         listener.stop();
@@ -78,7 +78,7 @@ struct SessionFixture {
 
     // Builds the session (not yet started).
     void open() {
-        shared::SharpSessionOptions o;
+        cu1600::SharpSessionOptions o;
         o.clock = [this] {
             now += readCost;
             return now;
@@ -88,7 +88,7 @@ struct SessionFixture {
             o.hostTime = [t] { return t; };
         }
         o.canMountHostFolder = hostDirectories;   // LIB-4 AC-18
-        app = shared::makeSharpSession(settings, *paths, std::move(o));
+        app = cu1600::makeSharpSession(settings, *paths, std::move(o));
         listener.onMessage = [this](const sessions::Message& m) {
             messages.push_back(m);
             if (const auto* r = std::get_if<sessions::ReplyMessage>(&m)) replies[r->call] = *r;
@@ -98,7 +98,7 @@ struct SessionFixture {
         listener.listen(*app.session, std::move(offered));
     }
 
-    shared::SharpAppPart& part() { return *app.part; }
+    cu1600::SharpAppPart& part() { return *app.part; }
     sessions::AppSession& session() { return *app.session; }
     bool busy() const { return app.session->busy(); }
 
@@ -138,7 +138,7 @@ struct SessionFixture {
     bool start(const char* model = nullptr) {
         if (model) settings.setStartupModelPreference(model);
         if (!app.session) open();
-        return ok(shared::commands::kStart);
+        return ok(cu1600::commands::kStart);
     }
     // ---- LIB-18's machine control and LIB-6's load, as the frontends send them ----
     bool model(const char* name) { return ok(calcu::startup::kModelCommand, sessions::Value::object({{"name", name}})); }

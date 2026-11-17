@@ -9,7 +9,7 @@
 // bodies; a header without a length is dropped, as today
 // (frontends/qt6/app/debug/DapServer.cpp of 0.8.1).
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 class DapReader {
 public:
@@ -25,4 +25,4 @@ private:
 // One body with its header, ready to send.
 std::string frame(std::string_view body);
 
-} // namespace shared::dap
+} // namespace cu1600::dap

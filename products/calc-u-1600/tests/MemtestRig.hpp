@@ -34,7 +34,7 @@ struct Rig {
     sharpdebugtest::Rig rig{sharpdebugtest::bareMachine("PC-1500A")};
     PC1500Machine& machine = static_cast<PC1500InterfaceMachine&>(*rig.machine).core();
     debug::SourceMap map;
-    shared::dap::DapBreakpoints breakpoints;
+    cu1600::dap::DapBreakpoints breakpoints;
     std::string asmFile;
     std::vector<std::string> output;   // what log messages and broken conditions wrote
     bool ok = false;
@@ -62,8 +62,8 @@ struct Rig {
         rig.rc().pause(calcu::debugger::kCpu);   // a pause of `cpu` lands at once
     }
 
-    shared::dap::DapTargets targets() { return shared::dap::DapTargets(rig.machine->debugging()); }
-    shared::dap::DapBreakpoints::SymbolLookup symbols() {
+    cu1600::dap::DapTargets targets() { return cu1600::dap::DapTargets(rig.machine->debugging()); }
+    cu1600::dap::DapBreakpoints::SymbolLookup symbols() {
         return [this](const std::string& name, int64_t* value) {
             uint16_t v = 0;
             if (!map.symbolValue(name, &v)) return false;
@@ -73,9 +73,9 @@ struct Rig {
     }
     void apply() { breakpoints.apply(rig.rc().table(), targets(), symbols()); }
 
-    std::vector<shared::dap::BreakpointStatus> lineBreakpoint(int line, const std::string& condition = {},
+    std::vector<cu1600::dap::BreakpointStatus> lineBreakpoint(int line, const std::string& condition = {},
                                                               const std::string& hit = {}, const std::string& log = {}) {
-        shared::dap::DapBreakpoints::SourceRequest r;
+        cu1600::dap::DapBreakpoints::SourceRequest r;
         r.line = line;
         r.condition = condition;
         r.hitCondition = hit;
@@ -95,7 +95,7 @@ struct Rig {
         for (std::string& l : breakpoints.takeOutput()) output.push_back(std::move(l));
         return p;
     }
-    void step(shared::dap::StepKind kind, bool line) { shared::dap::step(rig.rc(), targets(), map, 1, kind, line); }
+    void step(cu1600::dap::StepKind kind, bool line) { cu1600::dap::step(rig.rc(), targets(), map, 1, kind, line); }
     calcu::debugger::RunState state() { return rig.rc().state(); }
     bool reasonIs(calcu::debugger::RunState::Reason r) {
         const auto s = state();
@@ -105,7 +105,7 @@ struct Rig {
     uint16_t pc() { return targets().pc(1); }
     int line() {
         debug::SourceLocation loc;
-        return shared::dap::locate(targets(), map, 1, &loc) ? loc.line : 0;
+        return cu1600::dap::locate(targets(), map, 1, &loc) ? loc.line : 0;
     }
 };
 

@@ -5,7 +5,7 @@
 #include "sessions/Args.hpp"
 #include "settings/SettingsFile.hpp"
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 using calcu::sessions::CommandOutcome;
 using calcu::sessions::Done;
@@ -242,4 +242,4 @@ void DapPart::closing(SessionContext&) {
     if (session_ && !session_->operationRuns()) finishEnd();
 }
 
-} // namespace shared::dap
+} // namespace cu1600::dap

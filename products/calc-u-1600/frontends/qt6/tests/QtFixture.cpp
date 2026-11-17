@@ -49,7 +49,7 @@ void setupProcess() {
     dirs.settingsBase = (root / "settings").generic_string();
     fs::create_directories(dirs.home);
     AppPaths::useHostDirs(dirs);
-    AppPaths::useBundleDirs(shared::BundleDirs{bundle.generic_string(), (kProduct / "examples").generic_string()});
+    AppPaths::useBundleDirs(cu1600::BundleDirs{bundle.generic_string(), (kProduct / "examples").generic_string()});
 }
 
 } // namespace

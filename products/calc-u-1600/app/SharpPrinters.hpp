@@ -8,8 +8,8 @@
 // in that order. The app session's PaperPart and the harness's take them;
 // the CE-158's printer port stays a product kind.
 
-namespace shared {
+namespace cu1600 {
 
 std::vector<calcu::paper::PrinterPaper> sharpPrinterPapers();
 
-} // namespace shared
+} // namespace cu1600

@@ -23,7 +23,7 @@ namespace fs = std::filesystem;
 
 struct HarnessPreset {
     calcu::testing::TempFolder folder{"calcu1600-preset-test"};
-    std::unique_ptr<calcu::harness::HarnessProduct> product = shared::makeHarnessProduct();
+    std::unique_ptr<calcu::harness::HarnessProduct> product = cu1600::makeHarnessProduct();
     std::unique_ptr<calcu::harness::Server> server;
     std::string startError;
 

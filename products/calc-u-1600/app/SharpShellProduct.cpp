@@ -10,7 +10,7 @@
 #include "app/SharpControlRules.hpp"
 #include "shell/ValueForms.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace sessions = calcu::sessions;
 namespace shell = calcu::shell;
@@ -155,4 +155,4 @@ Value faceplateMapValue(const calcu::machine::ModelId& model) {
     return Value(std::move(out));
 }
 
-} // namespace shared
+} // namespace cu1600

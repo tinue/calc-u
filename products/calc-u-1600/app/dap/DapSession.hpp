@@ -47,7 +47,7 @@ class SettingsFile;
 //   memory refs  a number: the address in its low 16 bits, the thread
 //                above them when it is not 1, 0x100000 for ME1
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 // What the server reaches the machine through (§3.3): the library's parts
 // and the product's settings, from SharpAppPart's library parts (the
@@ -204,4 +204,4 @@ private:
 std::string memoryReference(int thread, std::uint16_t addr, bool me1 = false);
 bool parseMemoryReference(const std::string& ref, int* thread, std::uint16_t* addr, bool* me1);
 
-} // namespace shared::dap
+} // namespace cu1600::dap

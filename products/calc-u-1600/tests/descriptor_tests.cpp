@@ -135,8 +135,8 @@ TEST(lib1_ac37_module_slots_and_components) {
     // The battery-backed modules are media of that kind (LIB-7 AC-37).
     const Catalogue c = catalogueWithModules();
     calcu::machine::Catalogue copy = c;
-    const auto kinds = shared::mediaKinds("frontends/qt6/resources/cards", copy);
-    const auto module = std::find_if(kinds.begin(), kinds.end(), [](const auto& k) { return k.id == shared::kModuleKind; });
+    const auto kinds = cu1600::mediaKinds("frontends/qt6/resources/cards", copy);
+    const auto module = std::find_if(kinds.begin(), kinds.end(), [](const auto& k) { return k.id == cu1600::kModuleKind; });
     CHECK(module != kinds.end() && module->heldBy == calcu::media::HeldBy::ModuleSlot);
     if (module != kinds.end()) {
         CHECK(module->isMedium(*c.peripheral(PeripheralId{"CE-1600M"})));

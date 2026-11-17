@@ -4,7 +4,7 @@
 #include <optional>
 
 // Per-model facts the frontends need above the machine: the app's model
-// enum and its ModelId and the RAM layout of the state files. Shared by the
+// enum and its ModelId and the RAM layout of the presets. Shared by the
 // Swift app (via Bridge/) and the Qt6 app; see reference/SharedArchitecture.md.
 // The tick rate, key readiness and the ROM address ranges come from the
 // machine (calcu::machine::Machine, C59-1); the ROM files from the

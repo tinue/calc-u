@@ -158,7 +158,7 @@ The Calc-U-59 column is Done.
 With C1600-1 (its qa-report has the run, the deviations and the open
 points). Tests in `products/calc-u-1600/tests/peripherals_tests.cpp` and
 `products/calc-u-1600/app/tests/serial_links_tests.cpp`,
-`shared_app_session_tests.cpp`, program `CoreTests` (label `frequent`):
+`app_session_tests.cpp`, program `CoreTests` (label `frequent`):
 11 tests, 188 checks passed, 0 failed. The column is Done in M-47
 (plan §2.1; it also waits for M-31, the library's sessions), so it stays
 In progress.
@@ -171,7 +171,7 @@ In progress.
 | AC-31 | Pass | `lib2_ac31_ce158_same_emulated_time_pc1500_pc1600` |
 | AC-32 | Pass | `lib2_ac32_ce161_switch_blocks_writes` (the controls capability and the write block; the save that sets the switch is LIB-7's, M-47) |
 | AC-33 | Pass | `lib2_ac33_pc1600_rs232c_file`, `lib2_ac33_ce158_file_on_first_use_all_models` (`app/tests/serial_links_tests.cpp`, through the session's `HostLinks`, the product-held adapter until M-31) |
-| AC-34 | Pass | `lib2_ac34_rtc_on_three_models`, `lib2_ac34_clock_runs_on_emulated_time` (`peripherals_tests.cpp`), `lib2_ac34_set_at_build_and_after_operation` (`app/tests/shared_app_session_tests.cpp`) |
+| AC-34 | Pass | `lib2_ac34_rtc_on_three_models`, `lib2_ac34_clock_runs_on_emulated_time` (`peripherals_tests.cpp`), `lib2_ac34_set_at_build_and_after_operation` (`app/tests/app_session_tests.cpp`) |
 
 Not here: what the C1600-1 design (§1) gives the column's later steps,
 M-31 (the library's sessions) and M-47 (media places).
@@ -180,7 +180,7 @@ M-31 (the library's sessions) and M-47 (media places).
 
 What the column waited for (M-31's sessions: Done there; M-47's media
 places): AC-32's save that sets the CE-161's switch is LIB-7's and passes
-in `lib7_ac40_write_protect_power_cycle` (`app/tests/shared_app_session_tests.cpp`:
+in `lib7_ac40_write_protect_power_cycle` (`app/tests/app_session_tests.cpp`:
 Name & Save with the switch, the file says `write-protect: protected`, the
 module refuses writes at once, the instance comes back protected, a module
 without the switch refuses); the module's switch is the controls kind's

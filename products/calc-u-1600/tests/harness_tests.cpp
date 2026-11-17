@@ -23,7 +23,7 @@ using namespace calcu::harness;
 TEST(lib6_ac34_preset_wait_expect_screenshot_on_pc1600) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-new.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder out("calcu1600-ac34");
-    auto product = shared::makeHarnessProduct();
+    auto product = cu1600::makeHarnessProduct();
     RunOptions o;
     o.outputFolder = out.str();
     std::string error;
@@ -44,10 +44,10 @@ TEST(lib6_ac34_preset_wait_expect_screenshot_on_pc1600) {
 // (the built-in default of each model, LIB-18 AC-26; the bounds of EC-7).
 TEST(harness_starts_with_the_product_machines) {
     std::string error;
-    auto run = RunSetup::make({}, shared::settingsDecl(), &error);
+    auto run = RunSetup::make({}, cu1600::settingsDecl(), &error);
     CHECK(run != nullptr);
     if (!run) return;
-    auto product = shared::makeHarnessProduct();
+    auto product = cu1600::makeHarnessProduct();
     product->prepare(*run);   // the app layer of a run: its machines
     calcu::startup::ProductMachines& m = product->libraryParts().control().product();
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
@@ -59,7 +59,7 @@ TEST(harness_starts_with_the_product_machines) {
 
 TEST(harness_drives_a_sharp_machine) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    auto product = shared::makeHarnessProduct();
+    auto product = cu1600::makeHarnessProduct();
     std::string error;
     auto server = Server::start(*product, {}, &error);
     CHECK(server != nullptr);
@@ -92,7 +92,7 @@ TEST(harness_drives_a_sharp_machine) {
 // display with the PC-1600's font.
 TEST(harness_drives_a_pc1600) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-new.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    auto product = shared::makeHarnessProduct();
+    auto product = cu1600::makeHarnessProduct();
     std::string error;
     auto server = Server::start(*product, {}, &error);
     CHECK(server != nullptr);
@@ -114,7 +114,7 @@ TEST(harness_drives_a_pc1600) {
 
 TEST(harness_variant_switch_old) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-old.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    auto product = shared::makeHarnessProduct();
+    auto product = cu1600::makeHarnessProduct();
     std::string error;
     auto server = Server::start(*product, {}, &error);
     CHECK(server != nullptr);
@@ -133,7 +133,7 @@ TEST(harness_variant_switch_old) {
 // commands on the CE-150 of a PC-1500A.
 namespace {
 struct PaperHarness {
-    std::unique_ptr<HarnessProduct> product = shared::makeHarnessProduct();
+    std::unique_ptr<HarnessProduct> product = cu1600::makeHarnessProduct();
     std::unique_ptr<Server> server;
     PaperHarness() {
         std::string error;
@@ -248,7 +248,7 @@ TEST(lib10_ac52_harness_peek_bank_and_vbank) {
 namespace {
 
 std::unique_ptr<Server> loaderServer(std::unique_ptr<HarnessProduct>& product) {
-    product = shared::makeHarnessProduct();
+    product = cu1600::makeHarnessProduct();
     std::string error;
     return Server::start(*product, {}, &error);
 }
@@ -264,7 +264,7 @@ std::string scratch(const char* name, const std::string& bytes) {
 
 TEST(c1600_2_ac21_listed_under_pc1600) {
     CommandRegistry r;
-    auto product = shared::makeHarnessProduct();
+    auto product = cu1600::makeHarnessProduct();
     product->addCommands(r);
     for (const char* name : {"file-kind", "load-basic", "type-basic", "load-code"}) CHECK(r.find({"pc1600", name}) != nullptr);
     bool usage = false;
@@ -405,7 +405,7 @@ TEST(lib13_ac18_harness_open_preset_bas_and_headered_bin) {
 // harness has the paper panel owned by the plotter and the product entries.
 TEST(lib4_harness_state_control_state_has_paper_panel_and_product_entries) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    auto product = shared::makeHarnessProduct();
+    auto product = cu1600::makeHarnessProduct();
     std::string error;
     auto server = Server::start(*product, {}, &error);
     CHECK(server != nullptr);

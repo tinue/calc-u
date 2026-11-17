@@ -5,7 +5,7 @@ class EmulatorController;
 class QStackedWidget;
 class QToolButton;
 
-// The debug pane: CALCULATOR / CPU / LOG tabs (the CPU tab also holds the ASM
+// The debug panel: CALCULATOR / CPU / LOG tabs (the CPU tab also holds the ASM
 // overlay box). Tabs tell the controller which snapshots to build. The
 // counterpart of App/Views/DebugView.swift.
 class DebugPanel : public QWidget {

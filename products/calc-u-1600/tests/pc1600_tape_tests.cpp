@@ -139,7 +139,7 @@ TEST(test_pc1600_csave_cload_round_trip) {
 }
 
 // The recording is a function of emulated time only: running the same
-// CSAVE in small or large slices (as GUI pacing, turbo and the CLI do)
+// CSAVE in small or large slices (as GUI pacing, full speed and the harness do)
 // writes the identical tape.
 std::vector<int16_t> csaveInSlices(uint64_t slice) {
     PC1600Machine m;

@@ -7,7 +7,7 @@
 
 #include "sessions/Messages.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 // The host's audio output, push mode, mono int16 at the rate the session's
 // SoundStart names (Qt: QAudioSink).
@@ -62,4 +62,4 @@ private:
     std::vector<std::int16_t> m_pending;   // given but not yet accepted by the sink
 };
 
-} // namespace shared
+} // namespace cu1600

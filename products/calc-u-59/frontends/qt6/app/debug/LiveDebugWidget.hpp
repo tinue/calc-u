@@ -12,7 +12,7 @@ class QToolButton;
 // CALCULATOR tab: FA/FB/IO/KEY, partition, program source, the program steps
 // (±5 while running, the full listing when frozen), FIX/angle/Eng/2nd/INV,
 // return stack, user flags, HIR, T and the non-zero registers — all from
-// Shared/DebugSnapshots. The counterpart of App/Views/LiveDebugView.swift.
+// app/DebugSnapshots. The counterpart of App/Views/LiveDebugView.swift.
 class LiveDebugWidget : public QWidget {
     Q_OBJECT
 public:

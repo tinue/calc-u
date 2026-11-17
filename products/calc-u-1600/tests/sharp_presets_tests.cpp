@@ -134,7 +134,7 @@ TEST(lib6_ac45_running_program_not_idle) {
 }
 
 TEST(lib6_ac53_sharp_idle_rule_values) {
-    shared::SharpPresetRules rules;
+    cu1600::SharpPresetRules rules;
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         const calcu::presets::IdleRule r = rules.forModel(calcu::machine::ModelId{model}).idle();
         const auto rate = sharp::sharpCatalogue().model(calcu::machine::ModelId{model})->tickRate;
@@ -215,7 +215,7 @@ TEST(lib6_ac48_screenshot_is_copy_screen_picture) {
         if (!m) continue;
         // Copy Screen's picture: the dot matrix at the real display's size,
         // the indicators left out (SharpAppPart::screenImage, the same render).
-        const std::vector<std::uint8_t> want = shared::screenPng(m->readDisplay(), pc1600);
+        const std::vector<std::uint8_t> want = cu1600::screenPng(m->readDisplay(), pc1600);
         CHECK(fileBytes(h.folder.path() / "shot.png") == want);
     }
 }
@@ -363,8 +363,8 @@ TEST(lib6_ac50_in_parts_against_in_one_go) {
     CHECK(a && b);
     if (!a || !b) return;
     std::string sa, sb;
-    for (const auto& row : shared::displayLines(*a, a->readDisplay()).rows) sa += row + "\n";
-    for (const auto& row : shared::displayLines(*b, b->readDisplay()).rows) sb += row + "\n";
+    for (const auto& row : cu1600::displayLines(*a, a->readDisplay()).rows) sa += row + "\n";
+    for (const auto& row : cu1600::displayLines(*b, b->readDisplay()).rows) sb += row + "\n";
     CHECK_EQ(sa, sb);
 }
 

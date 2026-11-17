@@ -17,7 +17,7 @@
 // same declaration; a key a frontend has no use for is kept and ignored
 // (AC-32). No platform store (QSettings, localStorage) holds a setting
 // (AC-31).
-namespace shared {
+namespace cu1600 {
 
 // The declaration of Calc-U-1600's settings (AC-26). Lives as long as the
 // program.
@@ -85,4 +85,4 @@ private:
     calcu::settings::SettingsFile& m_file;
 };
 
-} // namespace shared
+} // namespace cu1600

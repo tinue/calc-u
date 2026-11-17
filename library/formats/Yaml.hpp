@@ -10,7 +10,7 @@
 //
 // Moved from Calc-U-1600's core/Yaml.hpp into the library (LIB-12 design
 // D-4, M-24): the reader of the own file formats of both products
-// (docs/formats/; Calc-U-1600's memory cards, floppies and presets,
+// (docs/formats/; Calc-U-1600's memory modules (code: MemoryCardDefinition), floppies and presets,
 // Calc-U-59's Solid State ROM modules). Header only, namespace
 // calcu::formats. NOT general YAML. Supported:
 //   * indent-based block mappings (`key: value`, or `key:` + nested block)

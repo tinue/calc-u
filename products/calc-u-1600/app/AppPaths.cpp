@@ -5,7 +5,7 @@
 
 #include "files/Files.hpp"
 
-namespace shared {
+namespace cu1600 {
 
 namespace fs = std::filesystem;
 
@@ -97,4 +97,4 @@ bool isUnderDir(const std::string& path, const std::string& dir) {
 }
 
 
-} // namespace shared
+} // namespace cu1600

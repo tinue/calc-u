@@ -132,7 +132,7 @@ if(CALCU_TESTS)
   # CMakeLists.txt): Frequent always, Longer and Checkpoint only with
   # CALCU_TESTS_LONGER / _CHECKPOINT; every entry runs in this directory.
   calcu_add_test(CalcU59Tests frequent COMMAND CalcU59Tests)
-  # tools/read_trace.py must read the trace CalcU59Tests wrote with Shared/TraceWriter.
+  # tools/read_trace.py must read the trace CalcU59Tests wrote with app/TraceWriter.
   find_package(Python3 COMPONENTS Interpreter)
   if(Python3_FOUND)
     calcu_add_test(CalcU59TraceReader frequent

@@ -10,7 +10,7 @@
 #include <algorithm>
 
 MachineCodeLoadDialog::MachineCodeLoadDialog(QWidget* parent, Ask ask,
-                                             calcu::sessions::Value args, const shared::CodePlanReply& plan)
+                                             calcu::sessions::Value args, const cu1600::CodePlanReply& plan)
     : QDialog(parent), m_ask(std::move(ask)), m_args(std::move(args)) {
     setWindowTitle(tr("Load Machine Code"));
     setObjectName(QStringLiteral("dialog.machinecode"));
@@ -58,8 +58,8 @@ void MachineCodeLoadDialog::refresh() {
     calcu::sessions::Value::Object o = *m_args.members();
     o.push_back({"address", calcu::sessions::Value(text)});
     const calcu::sessions::ReplyMessage r =
-        m_ask(shared::requests::kPlanCode, calcu::sessions::Value(std::move(o)));
-    const auto* plan = calcu::sessions::payloadAs<shared::CodePlanReply>(r.result);
+        m_ask(cu1600::requests::kPlanCode, calcu::sessions::Value(std::move(o)));
+    const auto* plan = calcu::sessions::payloadAs<cu1600::CodePlanReply>(r.result);
     bool holds = false;
     QString hint;
     if (!r.done) {

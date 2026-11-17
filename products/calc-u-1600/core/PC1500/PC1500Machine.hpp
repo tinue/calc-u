@@ -45,7 +45,7 @@ public:
     bool loadROMFile(const std::string& path);
     /// The reset button: CPU and chips reset, RAM kept.
     void reset();
-    /// Reset with all RAM cleared to 0x00 first (Machine > Reset All). The
+    /// Reset with all RAM cleared to 0x00 first (Machine > Cold boot). The
     /// PC-1500 has no separate ALL RESET line; this models pulling the
     /// batteries, like PC1600Machine::allReset().
     void allReset();

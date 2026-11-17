@@ -81,7 +81,7 @@ file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/frontends/qt6/CMakeLists.txt
 string(REGEX REPLACE ".*\"([0-9.]+)\".*" "\\1" CALCU1600_VERSION "${CALCU1600_VERSION_LINE}")
 target_compile_definitions(calcu1600_harness PRIVATE "CALCU1600_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\""
                                                      "CALCU1600_VERSION=\"${CALCU1600_VERSION}\"")
-calcu_harness_add_product(calcu1600_harness shared::makeHarnessProduct)
+calcu_harness_add_product(calcu1600_harness cu1600::makeHarnessProduct)
 
 # -----------------------------------------------------------------------------
 # Test Suite target (CALCU_TESTS; the release packaging turns it off, which

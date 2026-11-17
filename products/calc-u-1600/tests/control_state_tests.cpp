@@ -118,9 +118,9 @@ TEST(lib4_ac16_ac17_pc1500_models_variants_and_fields) {
     // No paper owner, no media places, no product panel, no disk controls.
     CHECK(s->panels.size() == 1 && s->panels[0].kind == "paper" && !s->panels[0].owner);
     CHECK(s->mediaPlaces.empty());
-    CHECK(!flag(product(*s, shared::kCe158PrinterPanelEntry), "shown"));
-    CHECK(!flag(product(*s, shared::kDiskControlsEntry), "shown"));
-    CHECK(!product(*s, shared::kCe1600pNextVariantEntry).ok);
+    CHECK(!flag(product(*s, cu1600::kCe158PrinterPanelEntry), "shown"));
+    CHECK(!flag(product(*s, cu1600::kDiskControlsEntry), "shown"));
+    CHECK(!product(*s, cu1600::kCe1600pNextVariantEntry).ok);
     // The CE-150: plugged, the paper panel's owner, its cassette listed.
     CHECK(f.attach("CE-150"));
     CHECK(f.attach("CE-158"));
@@ -129,7 +129,7 @@ TEST(lib4_ac16_ac17_pc1500_models_variants_and_fields) {
     CHECK(s->panels.size() == 1 && s->panels[0].owner && s->panels[0].owner->value == "CE-150");
     CHECK(s->mediaPlaces.size() == 1 && s->mediaPlaces[0].id.value == "cassette" && s->mediaPlaces[0].owner &&
           s->mediaPlaces[0].owner->value == "CE-150");
-    CHECK(flag(product(*s, shared::kCe158PrinterPanelEntry), "shown"));
+    CHECK(flag(product(*s, cu1600::kCe158PrinterPanelEntry), "shown"));
     // AC-16 on the PC-1500A: its one variant.
     CHECK(f.model("PC-1500A"));
     s = stateOf(f);
@@ -149,16 +149,16 @@ TEST(lib4_ac16_ac17_pc1600_fields_ce1600p_variants_and_next_variant) {
     CHECK(fitting(*s, "printer") == (std::vector<std::string>{"CE-150", "CE-1600P"}));
     CHECK(fitting(*s, "host-drive") == (std::vector<std::string>{"host-drive"}));
     // floppyShown on every PC-1600, usable only with the CE-1600P.
-    auto disk = product(*s, shared::kDiskControlsEntry);
-    CHECK(flag(disk, "shown") && !flag(disk, "available") && text(disk, "reason") == shared::kDiskInCe1600p);
+    auto disk = product(*s, cu1600::kDiskControlsEntry);
+    CHECK(flag(disk, "shown") && !flag(disk, "available") && text(disk, "reason") == cu1600::kDiskInCe1600p);
     // The CE-1600P's variants in `printer`, and the one an attach uses.
     const control::PlaceEntry* printer = s->place(path("printer"));
     const control::PeripheralChoice* p = printer ? control::choice(*printer, machine::PeripheralId{"CE-1600P"}) : nullptr;
     CHECK(p && ids(p->variants) == (std::vector<std::string>{"New", "Old"}));
-    CHECK(text(product(*s, shared::kCe1600pNextVariantEntry), "variant") == "New");
-    CHECK(f.ok(shared::commands::kCE1600PRom, Value::object({{"version", "old"}})));
+    CHECK(text(product(*s, cu1600::kCe1600pNextVariantEntry), "variant") == "New");
+    CHECK(f.ok(cu1600::commands::kCE1600PRom, Value::object({{"version", "old"}})));
     s = stateOf(f);
-    CHECK(text(product(*s, shared::kCe1600pNextVariantEntry), "variant") == "Old");
+    CHECK(text(product(*s, cu1600::kCe1600pNextVariantEntry), "variant") == "Old");
     // Plugged: the running variant, the disk controls usable, the floppy
     // and the cassette listed with their owner, the paper panel's owner.
     CHECK(f.attach("CE-1600P", "Old"));
@@ -166,8 +166,8 @@ TEST(lib4_ac16_ac17_pc1600_fields_ce1600p_variants_and_next_variant) {
     printer = s->place(path("printer"));
     p = printer ? control::choice(*printer, machine::PeripheralId{"CE-1600P"}) : nullptr;
     CHECK(p && p->plugged && p->variant && p->variant->value == "Old");
-    CHECK(!product(*s, shared::kCe1600pNextVariantEntry).ok);
-    CHECK(flag(product(*s, shared::kDiskControlsEntry), "available"));
+    CHECK(!product(*s, cu1600::kCe1600pNextVariantEntry).ok);
+    CHECK(flag(product(*s, cu1600::kDiskControlsEntry), "available"));
     std::vector<std::string> media;
     for (const auto& m : s->mediaPlaces) media.push_back(m.id.value + "@" + (m.owner ? m.owner->value : ""));
     CHECK(media == (std::vector<std::string>{"cassette@CE-1600P", "floppy@CE-1600P"}));
@@ -177,16 +177,16 @@ TEST(lib4_ac16_ac17_pc1600_fields_ce1600p_variants_and_next_variant) {
     const control::PeripheralChoice* ce158 = iface ? control::choice(*iface, machine::PeripheralId{"CE-158"}) : nullptr;
     CHECK(ce158 && !ce158->available.now && !ce158->available.reason.empty());
     // The host drive's folder (hostDriveDir) and File ▸ Unmount.
-    CHECK(text(product(*s, shared::kHostDriveFolderEntry), "folder").empty());
-    CHECK(!flag(product(*s, shared::kHostDriveFolderEntry), "available"));
-    CHECK(flag(product(*s, shared::kMountDirectoryEntry), "available"));
+    CHECK(text(product(*s, cu1600::kHostDriveFolderEntry), "folder").empty());
+    CHECK(!flag(product(*s, cu1600::kHostDriveFolderEntry), "available"));
+    CHECK(flag(product(*s, cu1600::kMountDirectoryEntry), "available"));
     const std::string dir = (f.root / "drive").generic_string();
     std::filesystem::create_directories(f.root / "drive");
-    CHECK(f.ok(shared::commands::kMountHostDrive, Value::object({{"dir", dir}})));
+    CHECK(f.ok(cu1600::commands::kMountHostDrive, Value::object({{"dir", dir}})));
     s = stateOf(f);
     CHECK(plugged(*s, "host-drive", "host-drive"));
-    CHECK_EQ(text(product(*s, shared::kHostDriveFolderEntry), "folder"), dir);
-    CHECK(flag(product(*s, shared::kHostDriveFolderEntry), "available"));
+    CHECK_EQ(text(product(*s, cu1600::kHostDriveFolderEntry), "folder"), dir);
+    CHECK(flag(product(*s, cu1600::kHostDriveFolderEntry), "available"));
 }
 
 // T16-4 (AC-18, D-12): two sessions on the same machine, one that cannot
@@ -204,14 +204,14 @@ TEST(lib4_ac18_host_drive_refused_where_no_folder_can_be_mounted) {
     const control::PlaceEntry* pa = a->place(path("host-drive"));
     const control::PlaceEntry* pb = b->place(path("host-drive"));
     CHECK(pa && pa->available.now);
-    CHECK(pb && !pb->available.now && pb->available.reason == shared::kNoHostFolderHere);
+    CHECK(pb && !pb->available.now && pb->available.reason == cu1600::kNoHostFolderHere);
     CHECK(pb && !pb->empty.now && pb->fitting.size() == 1 && !pb->fitting[0].available.now);
     // Everything else the same; the product entry of Mount Directory… follows.
     CHECK(a->models == b->models && a->variants == b->variants && a->mediaPlaces == b->mediaPlaces &&
           a->panels == b->panels && a->actions == b->actions);
     for (std::size_t i = 0; i < a->places.size() && i < b->places.size(); ++i)
         if (a->places[i].path != path("host-drive")) CHECK(a->places[i] == b->places[i]);
-    CHECK(!flag(product(*b, shared::kMountDirectoryEntry), "available"));
+    CHECK(!flag(product(*b, cu1600::kMountDirectoryEntry), "available"));
 }
 
 // T16-6 (AC-20, AC-3): while a preset loads, the variants, the places'

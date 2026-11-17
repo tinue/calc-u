@@ -35,7 +35,7 @@ class SharpDebugTarget;
 // IDs are the DAP's own; dapIds() maps the run state's hits back. apply()
 // hands the table everything after each change (and to a new machine).
 
-namespace shared::dap {
+namespace cu1600::dap {
 
 inline const calcu::debugger::Setter kDapSetter = "dap";
 
@@ -201,4 +201,4 @@ bool hitConditionMet(const std::string& hitCondition, int hits, bool* valid = nu
 /// Expands {expr} in a log message; unevaluable parts become "{error}".
 std::string interpolateLog(const std::string& message, const debug::ExpressionContext& ctx);
 
-} // namespace shared::dap
+} // namespace cu1600::dap

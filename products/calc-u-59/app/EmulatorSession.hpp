@@ -32,7 +32,6 @@ public:
     public:
         explicit Access(calcu::machine::Machine& m) : m_m(m) {}
         calcu::machine::Machine& machine() { return m_m; }
-        TICardReaderAdapter& cardReader() { return *cardReaderOf(m_m); }
         TIMemoryAdapter& memory() { return *memoryOf(m_m); }
 
     private:
@@ -56,7 +55,7 @@ public:
     std::optional<bool> printerSwitch(const calcu::machine::ControlId& id) const;
 
     // ── Frames ───────────────────────────────────────────────────────────────
-    FrameUpdate tick(bool cardSwiping) { return m_sampler.tick(m_machine, cardSwiping); }
+    FrameUpdate tick() { return m_sampler.tick(m_machine); }
 
 private:
     const Model m_model;

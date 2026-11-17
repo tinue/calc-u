@@ -1,6 +1,5 @@
 #import "TIFileFormats+Cpp.h"
 #import "BridgeConvert.h"
-#include <calcu59/app/CardFile.hpp>
 #include <calcu59/app/ModuleCatalog.hpp>
 
 // ── Cue card conversion ──────────────────────────────────────────────────────
@@ -73,11 +72,3 @@ TIModuleMetadata* TIModuleMetadataFrom(const cu59::ModuleMetadata& m) {
     return t;
 }
 
-// ── Entry points ─────────────────────────────────────────────────────────────
-
-@implementation TIFileFormats
-
-+ (BOOL)isCardFileName:(NSString *)name { return cu59::isCardFileName(cpp(name)); }
-+ (NSString *)withDefaultCardExtension:(NSString *)name { return ns(cu59::withDefaultCardExtension(cpp(name))); }
-
-@end

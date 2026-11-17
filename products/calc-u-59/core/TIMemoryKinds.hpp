@@ -43,3 +43,13 @@ private:
     mutable std::optional<std::array<cu59::RegisterNibbles, kRegisters>> seen_;
     mutable std::uint64_t count_ = 0;
 };
+
+// C59-7 AC-21: SCOM register 9's digits 4 and 3; none for 0.
+class TILibraryProgram final : public cu59::LibraryProgram {
+public:
+    explicit TILibraryProgram(TIMachine& m) : m_(m) {}
+    std::optional<int> selected() const override;
+
+private:
+    TIMachine& m_;
+};

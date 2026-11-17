@@ -2,6 +2,7 @@
 #include "machine/Capability.hpp"
 #include <array>
 #include <cstdint>
+#include <optional>
 
 // Calc-U-59's product kinds of memory (capabilities.md, product kinds; C-3):
 //  - `c59.program-memory` (C59-2 AC-17, design §3.2), capability
@@ -49,6 +50,17 @@ public:
     virtual std::array<RegisterNibbles, kRegisters> content() const = 0;
     /// Changes whenever a nibble of R000–R063 changed since it was last read.
     virtual std::uint64_t changeCount() const = 0;
+};
+
+/// `c59.library-program` (C59-7 AC-21, design §3.6), capability
+/// `TMC0501/c59.library-program` on every TI model: the number of the library
+/// program of the Solid State ROM module that is selected now (`Pgm nn`), or
+/// none, from the calculator's own registers.
+class LibraryProgram : public calcu::machine::Capability {
+public:
+    static constexpr calcu::machine::KindId kKind{"c59.library-program"};
+    calcu::machine::KindId kind() const override { return kKind; }
+    virtual std::optional<int> selected() const = 0;
 };
 
 } // namespace cu59

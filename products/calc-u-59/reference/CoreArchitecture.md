@@ -41,7 +41,7 @@ advances and tick count, Reset / power cycle / cold boot, key readiness,
 the keys and the display output through it only (C59-1 AC-17; CTest
 `CalcU59CoreSeam`). What the interface does not have yet goes through the
 adapters of `core/TIAdapters.hpp` (`memoryOf(machine)` …), each with
-its removal step: `TICardReaderAdapter` (M-55), `TIMemoryAdapter` (program, registers,
+its removal step (`TICardReaderAdapter` went in M-55: `TICardReaderPlace`, a media place; `libExecPC` is `c59.calculator-state`'s), `TIMemoryAdapter` (program, registers,
 partition, RAM; M-54, its readers M-59); `idleAndKeyDetectRange()` gives a model's scan/detect
 range (for `tools/headless/` and the tests). The debug panel's
 `TIDebugPanelAdapter` went in M-56 (C59-4): what the debug target does not
@@ -739,8 +739,9 @@ position.
 ## Magnetic Card Reader (TI-59)
 
 A pass reads or writes one bank of **246 bytes**. A card has two sides, one
-bank each (`app/CardFile`); the core's card image can also hold all four
-banks, for the oldest 984-byte files.
+bank each (`core/TIMagneticCard`, the content of the media place
+`core/TICardReaderPlace`; C59-7); the core's card image can also hold all
+four banks, as 2.3.0's oldest 984-byte files did.
 
 1. `2nd Read`/`Write` makes the ROM poll the card switch with `TST.BUSY`.
    The switch is held active (no card); when `TST.BUSY` samples it at its
@@ -823,7 +824,7 @@ repeats in full on every pass. `fA`/`fB` cannot tell execution from search
 fetches (verified by trace), hence the address check. The latch starts at
 `kLibExecPCNone` (0xFFFF) and is reset by `reset()`, so also by the power
 cycle that follows a module change. It
-is exposed as `TICardReaderAdapter::libExecPC()`, not as a `CpuFrame`
+is exposed as `TIDebugPanelAdapter::libExecPC()`, not as a `CpuFrame`
 field, so the trace format did not change. `ModuleImage::libraryStep` turns
 it into program number and program-relative step.
 

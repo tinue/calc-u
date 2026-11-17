@@ -53,8 +53,8 @@ MainWindow::MainWindow(EmulatorController& controller, QWidget* parent) : QMainW
 void MainWindow::buildMenus() {
     QMenu* file = menuBar()->addMenu(QStringLiteral("&File"));
     file->addAction(QStringLiteral("Open Preset…"), QKeySequence::Open, this, &MainWindow::openPreset);
-    file->addAction(QStringLiteral("Fit Card…"), this, &MainWindow::loadCard);
-    file->addAction(QStringLiteral("Fit Fresh Card…"), this, &MainWindow::newCard);
+    file->addAction(QStringLiteral("Arm Card…"), this, &MainWindow::loadCard);
+    file->addAction(QStringLiteral("Arm Fresh Card…"), this, &MainWindow::newCard);
     file->addSeparator();
     QAction* settings = file->addAction(QStringLiteral("Settings…"), QKeySequence::Preferences, this, [this] {
         SettingsDialog dialog(m_controller, this);
@@ -90,16 +90,24 @@ void MainWindow::openFile(const QString& path, bool atStart) {
     m_controller.openFile(path, atStart ? calcu::opening::Way::Start : calcu::opening::Way::OpenWith);
 }
 
+// Arm Card (C59-7 AC-14): the saved cards of the media topic; the chosen one is fitted.
 void MainWindow::loadCard() {
-    if (!cu59::info(m_controller.model()).hasCardReader) return;
-    CardPickerDialog dialog(CardPickerDialog::Mode::Load, AppPaths::cardDir(), m_controller.cardFileName(), this);
-    if (dialog.exec() == QDialog::Accepted) m_controller.fitCard(dialog.selectedPath());
+    if (!m_controller.cardReader() || m_controller.cardPassing()) return;
+    CardPickerDialog dialog(CardPickerDialog::Mode::Arm, m_controller.savedCards(), AppPaths::saveDir(), this);
+    if (dialog.exec() == QDialog::Accepted) m_controller.armCard(dialog.selectedEntry());
 }
 
+// Arm Fresh Card (AC-15): a name, then the replace question the session asks.
 void MainWindow::newCard() {
-    if (!cu59::info(m_controller.model()).hasCardReader) return;
-    CardPickerDialog dialog(CardPickerDialog::Mode::Save, AppPaths::cardDir(), m_controller.cardFileName(), this);
-    if (dialog.exec() == QDialog::Accepted) m_controller.fitBlankCard(dialog.selectedPath());
+    if (!m_controller.cardReader() || m_controller.cardPassing()) return;
+    CardPickerDialog dialog(CardPickerDialog::Mode::ArmFresh, m_controller.savedCards(), AppPaths::saveDir(), this);
+    if (dialog.exec() != QDialog::Accepted) return;
+    QString refusal = m_controller.armFreshCard(dialog.freshName(), false);
+    if (refusal.startsWith(QStringLiteral("asks: "))) {
+        if (!CardPickerDialog::confirmReplace(refusal.mid(6), this)) return;
+        refusal = m_controller.armFreshCard(dialog.freshName(), true);
+    }
+    if (!refusal.isEmpty()) QMessageBox::warning(this, QStringLiteral("Arm Fresh Card"), refusal);
 }
 
 void MainWindow::selectAsmFile() {

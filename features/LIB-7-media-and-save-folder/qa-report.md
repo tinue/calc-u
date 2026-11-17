@@ -361,3 +361,41 @@ AC-27 above name the tests added and changed. Calc-U-1600 has no
 pass-through place: nothing of it changed. No client read the topic's
 `armed`, which is gone (`library/web/components`, `library/qt6`, the
 products' frontends checked).
+
+## Calc-U-59 (M-55, 2026-11-17, branch `m55-cards-59`)
+
+Built and run as C59-7's qa-report says (Frequent, `build/qt`, the Web's
+`run-tests.sh`; Swift type-checked, run from the main checkout). The card
+itself (the place, the kind's codec, `magnetic-cards:`, the cue cards) is
+C59-7's report; here the media model's side and the library additions
+(design §11).
+
+Library additions (§11.2; Calc-U-1600 keeps the defaults, its tests pass
+unchanged): `KindDecl::rereadBeforeWrite`, `offersNameAndSave`,
+`replaceQuestion` (`replaceQuestionFor`), `media::FileAccess`
+(`library/media/FileAccess.*`; `MediaSetup::files`,
+`LibraryPartsSetup::mediaFiles`; the shelf and the writer read, list and
+write through it), `ModuleListing::slots` (a module slot that no kind of
+medium fits gets a place with the empty slot and the modules), and
+`Binding::armed` (a serial that changes with each fit, for the product's
+cue card). One rule of the presets engine: `RunContext::notWaitedFor()`,
+so a `card:` that is the last item is not waited for (C59-7 AC-17,
+`preset.md` §6.3); two library tests that loaded a lone `test-card:` as
+their last item now add `- wait: 10ms`.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-32 | Pass | `lib7_ac32_one_kind_one_place_pass_through_sides_0_1`, `lib7_ac32_no_bundled_cards_fresh_card_template_without_file` (`tests/media_tests.cpp`) |
+| AC-47 | Pass | `lib7_ac47_slot_picker_empty_and_14_modules_by_menu_sort_description_label` (each model), `lib7_ac47_choose_replaces_and_power_cycles`; library `ac8_slot_without_media_listed_by_the_listing`; the Qt6 and Web Settings module lists come from the `slot-1` picker (C59-6 §5's adapter gone); Swift with M-58 |
+| AC-33 | Pass (session, Qt6, Web); Swift written, not run | `lib7_ac33_names_and_collisions_for_cards`; Qt6 `c59_7_ac14_…` (the cards of `AppPaths::saveDir()`, LIB-9's save folder); Web `storage.spec.js` `lib7_ac33 cards in the persistent save folder`; Swift `CardTests.test_c59_7_ac26_swift_cards_in_the_icloud_save_folder` through the coordinated access (main checkout) |
+| AC-34 | Pass | `lib7_ac34_instance_written_when_given_back`, `lib7_ac34_read_pass_writes_nothing` |
+| AC-35 | Pass | `lib7_ac35_card_and_arm_by_name_file_mem`, `lib7_ac35_missing_name_or_file_refuses`, `lib7_ac35_undefined_mem_fresh`, `lib7_ac35_card_file_written_in_place_unless_template`, `lib7_ac35_harness_card_mem_side_and_saveas_card` |
+| AC-36 | Pass, but the File menu items (M-57, D-29) | Web `lib7_ac36 import a card file`, `lib7_ac36 saved media lists downloads deletes after asking`, `lib7_ac36 no per card download or upload in the card picker` (Import… and Saved Media… in the card dialog) |
+| E1 (library) | Pass | `ac17_kind_replace_question_words`, `ac16_kind_without_name_and_save_never_offers_it` (`save_tests.cpp`), `ac12_reread_before_write_hands_current_file_as_source` (`autosave_tests.cpp`), `ac1_shelf_and_writer_through_the_hosts_file_access` (`shelf_tests.cpp`) |
+
+Adapters removed (§11.5): A-4 (the interim TI card flow and the Web's card
+commands and topic), A-5 (`TIFileAccess`'s cards; it keeps the constant
+memory file), A-6 (`TICardWaitAdapter`, `TICardReaderAdapter`; the media
+part is the wait probe), A-7 (`AppPaths::cardDir()`). `tools/headless/`
+moves its `h_card_*` calls onto the place (§11.7). Column status: In
+progress; Done in M-57 (AC-36's File menu, D-29).

@@ -72,3 +72,8 @@ std::uint64_t TIConstantMemoryCapability::changeCount() const {
     }
     return count_;
 }
+
+std::optional<int> TILibraryProgram::selected() const {
+    const int n = m_.m_hw.insertedModuleNumber();
+    return n > 0 ? std::optional<int>(n) : std::nullopt;
+}

@@ -53,15 +53,19 @@ ControlBar::ControlBar(EmulatorController& controller, QWidget* parent) : QWidge
     row->addStretch(1);
 
     m_loadCard = new QToolButton(this);
+    // C59-7 AC-13: both read "Crd"; the icon and the name tell them apart.
     m_loadCard->setText(QStringLiteral("⤓ Crd"));
-    m_loadCard->setToolTip(QStringLiteral("Fit a magnetic card into the calculator"));
+    m_loadCard->setToolTip(QStringLiteral("Arm Card"));
+    m_loadCard->setAccessibleName(QStringLiteral("Arm Card"));
     connect(m_loadCard, &QToolButton::clicked, this, &ControlBar::loadCardRequested);
     m_newCard = new QToolButton(this);
     m_newCard->setText(QStringLiteral("＋ Crd"));
-    m_newCard->setToolTip(QStringLiteral("Fit a fresh magnetic card into the calculator"));
+    m_newCard->setToolTip(QStringLiteral("Arm Fresh Card"));
+    m_newCard->setAccessibleName(QStringLiteral("Arm Fresh Card"));
     connect(m_newCard, &QToolButton::clicked, this, &ControlBar::newCardRequested);
     m_eject = new QToolButton(this);
     m_eject->setText(QStringLiteral("⏏ Eject Card"));
+    m_eject->setAccessibleName(QStringLiteral("Eject Card"));
     connect(m_eject, &QToolButton::clicked, this, [this] { m_controller.ejectCard(); });
     row->addWidget(m_loadCard);
     row->addWidget(m_newCard);
@@ -92,8 +96,9 @@ void ControlBar::pollModifiers() {
 
 void ControlBar::refresh() {
     m_model->setCurrentIndex(static_cast<int>(m_controller.model()));
-    bool reader = cu59::info(m_controller.model()).hasCardReader;
-    bool swiping = m_controller.cardState() == EmulatorController::CardState::Swiping;
+    // The card reader and the card passing: the library's media topic (C59-7 AC-13).
+    const bool reader = m_controller.cardReader() != nullptr;
+    const bool swiping = m_controller.cardPassing();
     m_loadCard->setVisible(reader && !swiping);
     m_newCard->setVisible(reader && !swiping);
     m_eject->setVisible(reader && swiping);

@@ -3,6 +3,7 @@
 #include "SolidStateRomModule.hpp"
 #include "TI59Machine.hpp"
 #include "TIAdapters.hpp"
+#include "TICardReaderPlace.hpp"
 #include "TIDebugKindsImpl.hpp"
 #include "TIDebugging.hpp"
 #include "TIMemoryKinds.hpp"
@@ -53,8 +54,9 @@ public:
     /// the debug panel's kinds `TMC0501/c59.asm-overlay`, `TMC0501/c59.rom-heatmap`,
     /// `TMC0501/c59.calculator-state`, `TMC0501/c59.machine-log` (C59-4);
     /// `printer/controls` (PRINT, ADV, TRACE) and
-    /// `printer/paper-output` (C59-6 AC-1, AC-5; LIB-2 AC-26; LIB-8 AC-24). The card
-    /// reader's media place comes in M-55 (LIB-1 D-1).
+    /// `printer/paper-output` (C59-6 AC-1, AC-5; LIB-2 AC-26; LIB-8 AC-24); always
+    /// `TMC0501/c59.library-program` (C59-7 AC-21); on the TI-59 the card
+    /// reader's media place `card-reader/media-place` (C59-7 AC-6; LIB-1 D-1).
     std::vector<calcu::machine::CapabilityEntry> capabilities() const override;
     calcu::machine::Capability* capability(const calcu::machine::CapabilityId&) override;
     std::vector<calcu::machine::DebugTargetId> debugTargets() const override { return m_descriptor.debugTargets; }
@@ -74,7 +76,8 @@ protected:
     void unplug(const calcu::machine::PlacePath&, const calcu::machine::PeripheralId&) override;
 
 private:
-    friend class TICardReaderAdapter;
+    friend class TICardReaderPlace;
+    friend class TILibraryProgram;
     friend class TIMemoryAdapter;
     friend class TIDebugTarget;
     friend class TIDebugging;
@@ -86,7 +89,6 @@ private:
     friend class TIProgramMemory;
     friend class TIConstantMemoryCapability;
     friend struct TIMachineTesting;
-    friend TICardReaderAdapter* cardReaderOf(calcu::machine::Machine&);
     friend TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
 
     /// One instruction; then the pending Reset restore. Every path that runs an instruction goes through here.
@@ -120,7 +122,7 @@ private:
     bool m_recordCodeLines = false;   ///< P-E3: the PC-100C keeps its code lines (TIMachineTesting)
     std::unique_ptr<SolidStateRomModule> m_module;
     calcu::machine::PeripheralId m_moduleId;
-    TICardReaderAdapter m_cardReader{*this};
+    std::unique_ptr<TICardReaderPlace> m_cardReader;   ///< C59-7 AC-6 (TI-59)
     TIMemoryAdapter m_memory{*this};
     TIAsmOverlay m_asmOverlay{*this};          ///< C59-4 AC-13
     TIRomHeatmap m_heatmap{*this};             ///< C59-4 AC-8
@@ -131,4 +133,5 @@ private:
     TITypingSupport m_typing{*this};
     TIProgramMemory m_programMemory{*this};          ///< C59-2 AC-17
     TIConstantMemoryCapability m_constantMemory{*this};   ///< C59-3 AC-1 (TI-58C)
+    TILibraryProgram m_libraryProgram{*this};             ///< C59-7 AC-21
 };

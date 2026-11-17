@@ -67,7 +67,12 @@ inline cu59::CalculatorState& dbg(Machine& m) { return *cu59::kindOf<cu59::Calcu
 inline void stepToBoundary(Machine& m) { TIMachineTesting::stepToBoundary(static_cast<TIMachine&>(m)); }
 /// The core under the machine, for what only a test inside the core reads.
 inline TI59Machine& hw(Machine& m) { return TIMachineTesting::hardware(static_cast<TIMachine&>(m)); }
-inline TICardReaderAdapter& card(Machine& m) { return *cardReaderOf(m); }
+/// The core's card reader (insertCard, cardEject, isCardPresent, cardMode, …).
+inline TI59Machine& card(Machine& m) { return hw(m); }
+/// The TI-59's card reader as a media place (C59-7); nullptr on a TI-58/58C.
+inline calcu::media::MediaPlace* cardPlace(Machine& m) {
+    return calcu::machine::capabilityAs<calcu::media::MediaPlace>(m, calcu::machine::CapabilityId{"card-reader/media-place"});
+}
 inline cu59::CalculatorState& panel(Machine& m) { return dbg(m); }
 
 /// Instructions per second in RUN mode: tick rate / 32.

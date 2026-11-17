@@ -112,10 +112,10 @@ TEST(lib10_ac33_no_key_or_card_records) {
     r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
     CHECK(r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);
     r.tap(83);
-    r.part().fitBlankCard((r.folder.path() / "x.u59").string(), "x.u59");
-    r.part().feedSide(0);
+    r.send(calcu::media::kStartNewCommand, Value::object({{"place", "card-reader"}, {"template", "implicit:Fresh card"}, {"name", "x"}}));
+    r.send(calcu::media::kFeedCommand, Value::object({{"place", "card-reader"}, {"side", 0}}));
     r.runFor(300ms);
-    r.part().ejectCard();
+    r.send(calcu::media::kEjectCommand, Value::object({{"place", "card-reader"}}));
     r.send(calcu::debugger::kTraceCommand, Value::object({{"off", true}}));
     const auto bytes = readBytes(r.folder.path() / "CALCU59_TRACE.bin");
     const Records rec = records(bytes);

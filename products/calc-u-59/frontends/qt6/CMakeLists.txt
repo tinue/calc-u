@@ -73,6 +73,8 @@ set(CORE_SOURCES
   ${CORE_ROOT}/TIKeys.cpp
   ${CORE_ROOT}/TIMachine.cpp
   ${CORE_ROOT}/TIMemoryKinds.cpp
+  ${CORE_ROOT}/TIMagneticCard.cpp
+  ${CORE_ROOT}/TICardReaderPlace.cpp
   ${CORE_ROOT}/TIRomText.cpp
   ${CORE_ROOT}/TIRomReader.cpp
   ${CORE_ROOT}/ModuleFile.cpp
@@ -112,11 +114,11 @@ qt_add_executable(CalcU59Qt
 calcu_qt6_moc_compat(CalcU59Qt)
 
 # ---- Shared assets, one source, no copies: the ROM files of roms/ (the 24
-# of the full set, fetched by roms/fetch_roms.sh; LIB-12 AC-9), cuecards.txt
-# (the module list and cue cards until M-55) and the calculator and cue-card
+# of the full set, fetched by roms/fetch_roms.sh; LIB-12 AC-9; the module
+# files hold the cue cards since M-55) and the calculator and cue-card
 # artwork from the Swift app's asset catalog. The app finds the ROMs through
 # QtResourceBundle and the lookup (LIB-12 D-2) ----
-file(GLOB ROM_TXT ${REPO_ROOT}/roms/*.txt ${REPO_ROOT}/roms/*.rom.yaml ${REPO_ROOT}/roms/solid-state/cuecards.txt)
+file(GLOB ROM_TXT ${REPO_ROOT}/roms/*.txt ${REPO_ROOT}/roms/*.rom.yaml)
 foreach(f ${ROM_TXT})
   get_filename_component(name ${f} NAME)
   set_source_files_properties(${f} PROPERTIES QT_RESOURCE_ALIAS ${name})

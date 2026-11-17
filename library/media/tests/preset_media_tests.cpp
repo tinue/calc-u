@@ -192,15 +192,18 @@ TEST(ac26_steps_table) {
 TEST(ac26_pass_through_step_finishes_when_passed_within_timeout) {
     MediaFixture f(seg());
     const machine::Ticks before = f.machine()->tickCount();
-    CHECK(f.done(f.load(keys("test-seg", "  - test-card: { name: Prog }\n"))));
+    CHECK(f.done(f.load(keys("test-seg", "  - test-card: { name: Prog }\n  - wait: 10ms\n"))));
     CHECK(!f.reader()->side());                                  // it has passed when the step finished
     CHECK(f.machine()->tickCount() >= mt::kPassTicks);           // in emulated time (LIB-6 AC-19)
     (void)before;
     // A card the machine does not take is waited for within timeout: (LIB-6 AC-57).
     f.machines.builder_.onBuild = [](mt::TestMachine& m) { m.mediaPlace("reader")->holdsBack = true; };
-    const CallId c = f.load(header() + "timeout: 1\nkeys:\n  - test-card: { name: Prog }\n");
+    const CallId c = f.load(header() + "timeout: 1\nkeys:\n  - test-card: { name: Prog }\n  - wait: 10ms\n");
+    // As the last item it is not waited for (C59-7 AC-17; preset.md §6.3): see below.
     CHECK(!f.done(c) && f.reason(c).find("has not passed after the timeout") != std::string::npos);
     CHECK(f.machine()->tickCount() >= mt::kSegRate);   // one second of emulated time
+    const CallId last = f.load(header() + "timeout: 1\nkeys:\n  - test-card: { name: Prog }\n");
+    CHECK(f.done(last) && f.reader()->side());   // left at the reader
 }
 
 TEST(ac27_armed_never_fed_logged_at_next_build) {

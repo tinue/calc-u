@@ -6,12 +6,13 @@
 // Built by frontends/web/build.sh (CMake target calcu59_web) into dist/wasm/.
 //
 // File system (the library's worker writes it before the session is made):
-// /bundle the ROM full set and cuecards.txt (files.json; LIB-12: looked up
-// once, here), /presets the bundled examples (examples/bundle.yaml and the
+// /bundle the ROM full set (files.json; LIB-12: looked up once, here; the
+// cue cards are the module files', C59-7 AC-23), /presets the bundled examples (examples/bundle.yaml and the
 // files it lists; LIB-6 AC-31, AC-33: the bundle paths `examples:<path>`),
 // /persist-calc-u-59 the persistent file system:
 // settings/Calc-U-59/Calc-U-59.ini (LIB-9 AC-23) and the save folder
-// Calc-U-59/ (cards, ti58c.memory.yaml; LIB-15 AC-20, C59-3 AC-13). No trace
+// Calc-U-59/ (the magnetic cards of the library's media part, LIB-7 59;
+// ti58c.memory.yaml; LIB-15 AC-20, C59-3 AC-13). No trace
 // folder: a trace is kept in memory and handed over with KeepFile when it
 // ends (LIB-10 AC-26, D-10; the MEMFS /traces of LIB-9 A-3 went in M-53).
 
@@ -60,7 +61,6 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
 
     cu59::TIAppSetup setup;
     setup.roms = roms.set;
-    setup.cuecards = calcu::settings::readWholeFile(start.bundleDir + "/cuecards.txt").value_or("");
     setup.saveFolder = start.dirs.saveFolder;
     setup.settings = &parts->file;          // [startup] model, last-model, [preset] (LIB-18 AC-17)
     setup.examplesFolder = start.presetsDir;   // the bundle (LIB-15 AC-16)

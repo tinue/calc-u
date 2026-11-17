@@ -18,8 +18,6 @@ trap 'rm -rf "$TMP"' EXIT
 
 mkdir "$TMP/roms"
 cp roms/*.txt roms/*.rom.yaml "$TMP/roms/"
-mkdir "$TMP/roms/solid-state"
-cp roms/solid-state/cuecards.txt "$TMP/roms/solid-state/"
 [ -f "$TMP/roms/$MISSING" ] || { echo "no ROM file $MISSING in roms/" >&2; exit 2; }
 rm "$TMP/roms/$MISSING"
 echo "rom_missing_build: roms/ without $MISSING"

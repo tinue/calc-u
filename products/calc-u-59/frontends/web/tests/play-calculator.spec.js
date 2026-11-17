@@ -245,10 +245,10 @@ test('2nd Pgm 01 shows the Master Library diagnostic cue card', async ({ page })
 
 test('switching models: TI-58C has no card reader', async ({ page }) => {
   await gotoReady(page);
-  await expect(page.getByRole('button', { name: 'Crd' }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Arm Card', exact: true })).toBeVisible();
   await page.getByLabel('Calculator model').selectOption({ label: 'TI-58C' });
   await expect(page.getByLabel('Calculator model')).toHaveValue('2');
-  await expect(page.getByRole('button', { name: 'Crd' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Arm .*Card/ })).toHaveCount(0);
 });
 
 test('Settings: the startup model is kept', async ({ page }) => {
@@ -309,7 +309,7 @@ test('LIB-13 AC-16 a dropped preset loads like one from the dialog', async ({ pa
   expect(await settledLed(page)).toBe(expected);
 });
 
-// ── Magnetic cards (session folder) ──────────────────────────────────────
+// ── Magnetic cards (C59-7, LIB-7 59: the library's media part, M-55) ────
 
 async function dropFile(page, name, text) {
   const dt = await page.evaluateHandle(([n, t]) => {
@@ -321,48 +321,197 @@ async function dropFile(page, name, text) {
   await page.locator('.calcu-face').dispatchEvent('drop', { dataTransfer: dt });
 }
 
-/// Writes PROGRAM_123 to a blank session card and returns the card's text.
-async function writtenCardText(page) {
+// A card file of magnetic card format 3 without a written side (docs/formats/media.md §1).
+const cardFile = (name) =>
+  `format: ti59-magnetic-card\nformat-version: 3\ncard-name: "${name}"\ncue-card:\n  title: ${name}\nsides: {}\n`;
+
+const ARM = { name: 'Arm Card', exact: true };
+const ARM_FRESH = { name: 'Arm Fresh Card', exact: true };
+
+/// Arm Fresh Card with `name`, then side 0 fed by its corner while the
+/// program waits in `1 2nd Write`: the card written into the save folder.
+async function writeFreshCard(page, name = 'prog') {
   await uploadPreset(page, PROGRAM_123_WRITE);
   await page.waitForTimeout(1000);
-  await page.getByRole('button', { name: 'Crd' }).nth(1).click();
-  await page.getByLabel('Card name').fill('prog');
-  await page.getByRole('button', { name: 'Fit', exact: true }).click();
+  await page.getByRole('button', ARM_FRESH).click();
+  await page.getByLabel('Card name').fill(name);
+  await page.getByRole('button', { name: 'Arm', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0);   // fitted, not fed
   await page.getByRole('button', { name: 'Feed card side 1' }).click();
+  // In the reader until the write is done, then given back (and saved).
+  await expect(page.getByRole('button', { name: 'Eject Card' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0, { timeout: 15000 });
-  await page.getByRole('button', { name: 'Crd' }).first().click();
-  const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download prog.U59' }).click();
-  const stream = await (await download).createReadStream();
-  const chunks = [];
-  for await (const c of stream) chunks.push(c);
-  await page.getByRole('button', { name: 'Cancel' }).click();
-  return Buffer.concat(chunks).toString();
 }
 
-test('LIB-13 AC-12 a dropped card is imported and fitted', async ({ page }) => {
+/// The saved cards Arm Card lists, by name.
+async function listedCards(page) {
+  await page.getByRole('button', ARM).click();
+  const names = await page.getByRole('list', { name: 'Saved cards' }).locator('button').allTextContents();
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  return names;
+}
+
+/// A card file imported through Arm Card ▸ Import… (LIB-7 AC-30, AC-36).
+async function importCard(page, fileName, text) {
+  await page.getByRole('button', ARM).click();
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Import…' }).click()]);
+  await chooser.setFiles({ name: fileName, mimeType: 'application/yaml', buffer: Buffer.from(text) });
+  await page.waitForTimeout(500);
+  await page.getByRole('button', { name: 'Cancel' }).click();
+}
+
+// C59-7 AC-13: two "Crd" buttons, Arm Card and Arm Fresh Card, while no card
+// passes; Eject Card in their place while one does.
+test('c59_7_ac13 buttons', async ({ page }) => {
   await gotoReady(page);
-  const expected = await showing(page, ['1', '2', '3']);
-  await pressKey(page, 'CLR');
-  const card = await writtenCardText(page);
-  await uploadPreset(page, FRESH);  // a fresh machine: no program
-  await dropFile(page, 'dropped.U59', card);
+  await expect(page.getByRole('button', ARM)).toHaveText(/Crd/);
+  await expect(page.getByRole('button', ARM_FRESH)).toHaveText(/Crd/);
+  await uploadPreset(page, PROGRAM_123_WRITE);
+  await page.waitForTimeout(1000);
+  await page.getByRole('button', ARM_FRESH).click();
+  await page.getByLabel('Card name').fill('buttons');
+  await page.getByRole('button', { name: 'Arm', exact: true }).click();
   await page.getByRole('button', { name: 'Feed card side 1' }).click();
+  await expect(page.getByRole('button', { name: 'Eject Card' })).toBeVisible();
+  await expect(page.getByRole('button', ARM)).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0, { timeout: 15000 });
+  await expect(page.getByRole('button', ARM)).toBeVisible();
+});
+
+// C59-7 AC-14: Arm Card lists the saved cards by name; "No cards found" when none.
+test('c59_7_ac14 arm card lists the saved cards', async ({ page }) => {
+  await gotoReady(page);
+  await page.getByRole('button', ARM).click();
+  await expect(page.getByRole('list', { name: 'Saved cards' })).toContainText('No cards found');
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await importCard(page, 'Beta.magnetcard.yaml', cardFile('Beta'));
+  await importCard(page, 'alpha-file.magnetcard.yaml', cardFile('Alpha'));
+  expect(await listedCards(page)).toEqual(['Alpha', 'Beta']);   // by the names inside, by name
+});
+
+// C59-7 AC-28, scenario C59-7 AC-15: a fresh card armed, written by a program,
+// listed by Arm Card; an existing name asks first; its cue card has its name.
+test('C59-7 AC-15', async ({ page }) => {
+  await gotoReady(page);
+  await writeFreshCard(page, 'prog');
+  expect(await listedCards(page)).toEqual(['prog']);
+  await page.getByRole('button', ARM_FRESH).click();
+  await page.getByLabel('Card name').fill('prog');
+  await page.getByRole('button', { name: 'Arm', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Replace card “prog”? Its first write replaces both sides and the cue card.');
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await page.getByRole('button', ARM_FRESH).click();
+  await page.getByLabel('Card name').fill('Other');
+  await page.getByRole('button', { name: 'Arm', exact: true }).click();
+  await expect(page.locator('.cuecard')).toHaveAttribute('aria-label', /^Other/);
+  expect(await listedCards(page)).toEqual(['prog']);   // nothing written before the first write
+});
+
+// C59-7 AC-28, scenario C59-7 AC-12: a card armed and read when a corner is pressed.
+test('C59-7 AC-12', async ({ page }) => {
+  await gotoReady(page);
+  await uploadPreset(page, PROGRAM_123);
+  await pressKey(page, 'A');
+  const expected = await settledLed(page);
+  await writeFreshCard(page, 'prog');
+  await uploadPreset(page, FRESH);   // a fresh machine: no program, nothing fitted
+  await page.getByRole('button', ARM).click();
+  await page.getByRole('button', { name: 'prog', exact: true }).click();
+  await page.getByRole('button', { name: 'Arm', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0);   // fitted, not fed
+  await page.getByRole('button', { name: 'Feed card side 1' }).click();
   await page.waitForTimeout(3000);
   await pressKey(page, 'CLR');
   await pressKey(page, 'A');
   expect(await settledLed(page)).toBe(expected);
 });
 
+// C59-7 AC-26 (row 59-6): the cards are kept from one visit to the next.
+test('c59_7_ac26 cards kept from one visit to the next', async ({ page }) => {
+  await gotoReady(page);
+  await writeFreshCard(page, 'kept');
+  await page.waitForTimeout(1500);   // the persistent file system is synced
+  await page.reload();
+  await gotoReady(page);
+  expect(await listedCards(page)).toEqual(['kept']);
+});
+
+// LIB-7 AC-36: the import of a card file (reached from the card dialog until M-57's File menu).
+test('lib7_ac36 import a card file', async ({ page }) => {
+  await gotoReady(page);
+  await importCard(page, 'Imported.magnetcard.yaml', cardFile('Imported'));
+  expect(await listedCards(page)).toEqual(['Imported']);
+});
+
+// LIB-7 AC-36, AC-31: Saved Media… lists the cards, downloads one, deletes one after asking.
+test('lib7_ac36 saved media lists downloads deletes after asking', async ({ page }) => {
+  await gotoReady(page);
+  await importCard(page, 'Gone.magnetcard.yaml', cardFile('Gone'));
+  await page.getByRole('button', ARM).click();
+  await page.getByRole('button', { name: 'Saved Media…' }).click();
+  const row = page.locator('[data-calcu="media-saved-magnetic-card-Gone"]');
+  await expect(row).toBeVisible();
+  const download = page.waitForEvent('download');
+  await row.locator('[data-calcu=media-download]').click();
+  expect((await download).suggestedFilename()).toBe('Gone.magnetcard.yaml');
+  page.once('dialog', (d) => d.accept());
+  await row.locator('[data-calcu=media-delete]').click();
+  await expect(row).toHaveCount(0, { timeout: 5000 });
+  await page.getByRole('button', { name: 'Close' }).click();
+  expect(await listedCards(page)).toEqual([]);
+});
+
+// LIB-7 AC-36 (row 59-43): no download per card and no upload in the card picker.
+test('lib7_ac36 no per card download or upload in the card picker', async ({ page }) => {
+  await gotoReady(page);
+  await importCard(page, 'One.magnetcard.yaml', cardFile('One'));
+  for (const which of [ARM, ARM_FRESH]) {
+    await page.getByRole('button', which).click();
+    const dialog = page.locator('.calcu-dialog');
+    await expect(dialog.locator('input[type=file]')).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: /Download/ })).toHaveCount(0);
+    await expect(dialog).not.toContainText('Cards last for this page session');
+    await expect(dialog.getByRole('button', { name: 'Import…' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Saved Media…' })).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+  }
+});
+
+// LIB-13 AC-12 (on `.magnetcard.yaml` since M-55): imported into the save folder, fitted, read on a corner.
+test('LIB-13 AC-12 a dropped card is imported and fitted', async ({ page }) => {
+  await gotoReady(page);
+  await uploadPreset(page, PROGRAM_123);
+  await pressKey(page, 'A');
+  const expected = await settledLed(page);
+  await writeFreshCard(page, 'prog');
+  // The written card as a file: through Saved Media ▸ Download.
+  await page.getByRole('button', ARM).click();
+  await page.getByRole('button', { name: 'Saved Media…' }).click();
+  const download = page.waitForEvent('download');
+  await page.locator('[data-calcu="media-saved-magnetic-card-prog"] [data-calcu=media-download]').click();
+  const chunks = [];
+  for await (const c of await (await download).createReadStream()) chunks.push(c);
+  const text = Buffer.concat(chunks).toString().replace('card-name: "prog"', 'card-name: "dropped"');
+  await page.getByRole('button', { name: 'Close' }).click();
+  await uploadPreset(page, FRESH);   // a fresh machine: no program
+  await dropFile(page, 'dropped.magnetcard.yaml', text);
+  await expect(page.locator('.cuecard')).toHaveAttribute('aria-label', /^prog/);   // its own cue card
+  await page.getByRole('button', { name: 'Feed card side 1' }).click();
+  await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0, { timeout: 15000 });
+  await page.waitForTimeout(3000);
+  await pressKey(page, 'CLR');
+  await pressKey(page, 'A');
+  expect(await settledLed(page)).toBe(expected);
+  expect(await listedCards(page)).toEqual(['dropped', 'prog']);   // imported into the save folder (LIB-13 AC-4)
+});
+
 // A TI-58 has no card reader: refused with a notice (today nothing was said).
 test('LIB-13 AC-12 a card dropped on the TI-58 is refused with a notice', async ({ page }) => {
   await gotoReady(page);
-  const card = await writtenCardText(page);
   await page.getByLabel('Calculator model').selectOption({ label: 'TI-58' });
   await page.waitForTimeout(600);
-  await dropFile(page, 'dropped.U59', card);
-  await expect(page.locator('.calcu-status')).toContainText('dropped.U59 was not opened');
+  await dropFile(page, 'dropped.magnetcard.yaml', cardFile('dropped'));
+  await expect(page.locator('.calcu-status')).toContainText('dropped.magnetcard.yaml');
   await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0);
 });
 
@@ -370,48 +519,10 @@ test('LIB-13 AC-15 a dropped file that is nothing Calc-U-59 opens is refused wit
   await gotoReady(page);
   await dropFile(page, 'notes.txt', 'hello');
   await expect(page.locator('.calcu-status')).toContainText('Calc-U-59 cannot open notes.txt.');
-});
-
-test('a blank card is written, listed, and read back', async ({ page }) => {
+  await page.reload();
   await gotoReady(page);
-  await uploadPreset(page, PROGRAM_123);
-  const expected = await (async () => { await pressKey(page, 'A'); return settledLed(page); })();
-
-  // The same program again, then CLR 1 2nd Write: waits for a card.
-  await uploadPreset(page, PROGRAM_123_WRITE);
-  await page.waitForTimeout(1000);
-  await page.getByRole('button', { name: 'Crd' }).nth(1).click();  // a blank card passes: written
-  await page.getByLabel('Card name').fill('prog');
-  await page.getByRole('button', { name: 'Fit', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0);  // fitted, not fed
-  await page.getByRole('button', { name: 'Feed card side 1' }).click();
-  // In the reader until the write is done, then ejected (and saved).
-  await expect(page.getByRole('button', { name: 'Eject Card' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0, { timeout: 15000 });
-
-  await uploadPreset(page, FRESH);  // a fresh machine: no program
-  await page.getByRole('button', { name: 'Crd' }).first().click();  // read
-  await page.getByRole('button', { name: 'prog.U59', exact: true }).click();
-  await page.getByRole('button', { name: 'Fit', exact: true }).click();
-  await page.getByRole('button', { name: 'Feed card side 1' }).click();
-  await page.waitForTimeout(3000);
-  await pressKey(page, 'CLR');
-  await pressKey(page, 'A');
-  expect(await settledLed(page)).toBe(expected);
-});
-
-test('the fresh card has its file name as title, and an existing name asks first', async ({ page }) => {
-  await gotoReady(page);
-  await writtenCardText(page);  // prog.U59 exists now
-  await page.getByRole('button', { name: 'Crd' }).nth(1).click();
-  await page.getByLabel('Card name').fill('prog');
-  await page.getByRole('button', { name: 'Fit', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('Replace card prog.U59?');
-  await page.getByRole('button', { name: 'Cancel' }).click();
-  await page.getByRole('button', { name: 'Crd' }).nth(1).click();
-  await page.getByLabel('Card name').fill('Other');
-  await page.getByRole('button', { name: 'Fit', exact: true }).click();
-  await expect(page.locator('.cuecard')).toHaveAttribute('aria-label', /^Other/);
+  await dropFile(page, 'old.u59', 'Calc-U-59 Card 2.0\n');   // C59-7 AC-4: a 2.3.0 card is no card
+  await expect(page.locator('.calcu-status')).toContainText('Calc-U-59 cannot open old.u59.');
 });
 
 // ── Printer ──────────────────────────────────────────────────────────────

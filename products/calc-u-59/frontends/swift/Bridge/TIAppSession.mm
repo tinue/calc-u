@@ -28,6 +28,7 @@
 #include "control/ControlState.hpp"
 #include "opening/OpenRequest.hpp"
 #include "paper/PaperTopics.hpp"
+#include "media/MediaTopics.hpp"
 #include "roms/Bundle.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/TopicMirror.hpp"
@@ -184,7 +185,8 @@ NSArray<TIInspectorEntry*>* inspectorEntries(const std::vector<cu59::InspectorEn
 namespace cs = calcu::sessions;
 
 /// The card and constant-memory files as the app had them (C59-5 D-6): read
-/// and written through NSFileCoordinator; a card that iCloud has not
+/// and written through NSFileCoordinator (the media part's file access too,
+/// LIB-7 D-30); a card that iCloud has not
 /// downloaded yet (`.name.icloud`) is started downloading and reads as there
 /// but not readable. On the session thread.
 class CoordinatedFiles final : public cu59::FileIO {
@@ -236,9 +238,9 @@ TIChange changeOf(const cs::TopicName& t) {
     namespace T = cu59::topics;
     if (t == T::kModel) return static_cast<TIChange>(TIChangeModel | TIChangeCard);
     if (t == T::kLed) return TIChangeDisplay;
-    if (t == T::kCueCard) return TIChangeCueCard;
+    if (t == T::kCueCard) return static_cast<TIChange>(TIChangeCueCard | TIChangeCard);   // on show, the lit corner
     if (t == T::kPrinter) return TIChangePrinter;
-    if (t == T::kCardReader) return TIChangeCard;
+    if (t == calcu::media::kMediaTopic) return TIChangeCard;   // the card reader (C59-7, M-55)
     if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic)
         return TIChangeRunState;
     if (t == calcu::debugger::kTraceTopic) return TIChangeTrace;
@@ -376,6 +378,18 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
 @implementation TISessionStart
 @end
 
+@implementation TISavedCard
+- (instancetype)initWithName:(NSString *)name entryID:(NSString *)entryID outdated:(BOOL)outdated hint:(NSString *)hint {
+    if ((self = [super init])) {
+        _name = [name copy];
+        _entryID = [entryID copy];
+        _outdated = outdated;
+        _hint = [hint copy];
+    }
+    return self;
+}
+@end
+
 static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     if (!done) return {};
     return [done](const cs::ReplyMessage& r) {
@@ -406,7 +420,6 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         _settings = start.settings;
         cu59::TIAppSetup setup;
         setup.roms = roms->_set;
-        setup.cuecards = cpp(start.cuecards);
         // LIB-18 AC-17: the settings file decides the startup model; the
         // session's `start` (makeAppSession) builds it.
         setup.settings = static_cast<calcu::settings::SettingsFile*>([_settings cppSettingsFile]);
@@ -437,7 +450,11 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (const calcu::debugger::RunState *)runControl {
     return _mirror.stateOf<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
 }
-- (const cu59::TICardReaderState *)card { return _mirror.stateOf<cu59::TICardReaderState>(cu59::topics::kCardReader); }
+- (const calcu::media::PlaceState *)cardReader {
+    const auto* m = _mirror.stateOf<calcu::media::MediaState>(calcu::media::kMediaTopic);
+    return m ? m->place("card-reader") : nullptr;
+}
+- (const cu59::TICueCardState *)cue { return _mirror.stateOf<cu59::TICueCardState>(cu59::topics::kCueCard); }
 - (const cu59::TICalculatorDebug *)live { return _mirror.stateOf<cu59::TICalculatorDebug>(cu59::topics::kCalculatorDebug); }
 - (const cu59::TIProgramListing *)listing { return _mirror.stateOf<cu59::TIProgramListing>(cu59::topics::kProgramListing); }
 - (const cu59::TIDebugView *)debugView { return _mirror.stateOf<cu59::TIDebugView>(cu59::topics::kDebugView); }
@@ -698,26 +715,45 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 // ── Card reader ──────────────────────────────────────────────────────────────
 
-- (BOOL)cardSwiping { const auto* c = [self card]; return c && c->state == cu59::CardState::Swiping; }
-- (NSString *)cardFileName { const auto* c = [self card]; return c ? ns(c->fileName) : @"card.U59"; }
-- (void)fitCard:(NSData *)raw path:(NSString *)path fileName:(NSString *)fileName completion:(void (^)(BOOL))done {
-    [self send:cu59::commands::kFitCard args:argsWithBytes({{"path", cpp(path)}, {"name", cpp(fileName)}}, raw)
-         reply:flagReply(done)];
+static const char* const kCardReaderPlace = "card-reader";
+
+- (BOOL)cardPassing { const auto* p = [self cardReader]; return p && p->passing ? YES : NO; }
+- (BOOL)cardFitted { const auto* p = [self cardReader]; return p && p->holds ? YES : NO; }
+- (NSString *)fittedCardName { const auto* p = [self cardReader]; return p && p->holds ? ns(p->holds->name) : nil; }
+- (NSArray<TISavedCard *> *)savedCards {
+    NSMutableArray<TISavedCard *>* out = [NSMutableArray array];
+    const auto* p = [self cardReader];
+    if (!p) return out;
+    using G = calcu::media::PickerEntry::Group;
+    // D-10: the saved cards only; the fresh card is Arm Fresh Card's.
+    for (const auto& e : p->picker)
+        if (e.group == G::Instance || e.group == G::UserTemplate)
+            [out addObject:[[TISavedCard alloc] initWithName:ns(e.label) entryID:ns(e.id) outdated:!e.canChoose
+                                                        hint:e.hint ? ns(*e.hint) : nil]];
+    return out;
 }
-- (void)fitBlankCard:(NSString *)savePath fileName:(NSString *)fileName completion:(void (^)(BOOL))done {
-    [self send:cu59::commands::kFitBlankCard args:{{"path", cpp(savePath)}, {"name", cpp(fileName)}} reply:flagReply(done)];
+- (void)armCard:(TISavedCard *)card {
+    [self send:calcu::media::kChooseCommand args:{{"place", kCardReaderPlace}, {"entry", cpp(card.entryID)}}];
 }
-- (BOOL)cardFitted { const auto* c = [self card]; return c && c->fitted; }
-- (NSInteger)litCardCorner { const auto* c = [self card]; return c && c->litCorner ? *c->litCorner : -1; }
+- (void)armFreshCard:(NSString *)name confirmed:(BOOL)confirmed completion:(void (^)(NSString *, NSString *))done {
+    [self send:calcu::media::kStartNewCommand
+          args:{{"place", kCardReaderPlace}, {"template", "implicit:Fresh card"}, {"name", cpp(name)}, {"confirmed", confirmed == YES}}
+         reply:[done](const cs::ReplyMessage& r) {
+             if (!done) return;
+             static const std::string kAsks = "asks: ";
+             if (r.done) done(nil, nil);
+             else if (r.reason.rfind(kAsks, 0) == 0) done(ns(r.reason.substr(kAsks.size())), nil);
+             else done(nil, ns(r.reason));
+         }];
+}
+- (NSInteger)litCardCorner { const auto* c = [self cue]; return c && c->litCorner ? *c->litCorner : -1; }
 - (BOOL)tapCardAtX:(double)x y:(double)y {
-    const auto* c = [self card];
-    if (!c || !c->onShow) return NO;
-    const auto side = cu59::cardCornerAt(x, y);
-    if (!side) return NO;
-    [self send:cu59::commands::kFeedSide args:{{"side", *side}}];
+    const auto* c = [self cue];
+    if (!c || !c->onShow || !cu59::cardCornerAt(x, y)) return NO;
+    [self send:cu59::commands::kTapCard args:{{"x", x}, {"y", y}}];
     return YES;
 }
-- (void)ejectCard { [self send:cu59::commands::kEjectCard]; }
+- (void)ejectCard { [self send:calcu::media::kEjectCommand args:{{"place", kCardReaderPlace}}]; }
 
 // ── Presets (LIB-6 AC-42, D-41: the content, on iOS and on macOS) ──────────
 

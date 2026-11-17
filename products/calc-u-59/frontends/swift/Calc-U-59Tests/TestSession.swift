@@ -11,16 +11,17 @@ final class TestSession {
     let folder: URL
     private let delegate = Forward()
 
-    init(file: StaticString = #filePath, line: UInt = #line) throws {
+    /// `prepare`: files put into the save folder before the session starts.
+    init(prepare: ((URL) throws -> Void)? = nil, file: StaticString = #filePath, line: UInt = #line) throws {
         folder = FileManager.default.temporaryDirectory
             .appendingPathComponent("Calc-U-59Tests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try prepare?(folder)
         var missing: NSString?
         let resources = Bundle.main.resourcePath ?? Bundle.main.bundlePath
         let roms = try XCTUnwrap(TIRomSet.lookUp(inFolder: resources, leavingOut: nil, missing: &missing),
                                  "no ROM set in the host app: \(String(describing: missing))", file: file, line: line)
         let start = TISessionStart()
-        start.cuecards = ""
         // The defaults in memory: LIB-18's start builds a TI-59 with the
         // Master Library module and no printer (LIB-18 AC-17, AC-18).
         start.settings = TISettings(defaultsOnlyWithLaunchSettings: [])

@@ -148,3 +148,33 @@ TEST(ac10_unreadable_leaves_place_empty_with_notice) {
     const auto n = f.notices();
     CHECK(hasLine(n, "The test disk “Other” cannot be read: It is not a test-disk file."));
 }
+
+// LIB-7 §11 E3 (M-55; AC-8, AC-47): a module slot that no kind of medium
+// fits, named by the listing, has a picker: the empty slot and the modules,
+// by the listing's order; choosing one replaces the module.
+TEST(ac8_slot_without_media_listed_by_the_listing) {
+    FixtureOptions o;
+    o.listing.slots = {machine::PlaceName{"a"}};
+    o.listing.label = [](const machine::PeripheralDescriptor& d) { return "Listed " + d.id.value; };
+    o.model = "test-dot";
+    MediaFixture f(o);
+    const PlaceState* a = f.place("a");
+    CHECK(a && a->slot && a->kind.empty());
+    if (!a) return;
+    CHECK(!a->picker.empty() && a->picker.front().group == PickerEntry::Group::Empty);
+    bool modules = a->picker.size() > 1;
+    for (std::size_t i = 1; i < a->picker.size(); ++i)
+        modules = modules && a->picker[i].group == PickerEntry::Group::Module && a->picker[i].label.rfind("Listed ", 0) == 0;
+    CHECK(modules);
+    if (a->picker.size() < 2) return;
+    const std::string entry = a->picker[1].id;
+    CHECK(f.ok("media.choose", choose("a", entry)));
+    CHECK(f.place("a")->holds.has_value());
+    CHECK(f.ok("media.choose", choose("a", "")));   // the empty entry: a detach
+    CHECK(!f.place("a")->holds);
+    // Without the listing's slot, no place `a`.
+    FixtureOptions plain;
+    plain.model = "test-dot";
+    MediaFixture g(plain);
+    CHECK(!g.place("a"));
+}

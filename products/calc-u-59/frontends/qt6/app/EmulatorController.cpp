@@ -3,6 +3,7 @@
 #include "AppSettings.hpp"
 #include "KeyIds.hpp"
 #include "ModuleCatalog.hpp"
+#include "TIMagneticCardKind.hpp"
 #include "ProductRoms.hpp"
 #include "QtResourceBundle.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -47,7 +48,6 @@ const cu59::TIModelState kNoModel{};
 const cu59::TILedState kNoLed{};
 const cu59::TICueCardState kNoCue{};
 const cu59::TIPrinterState kNoPrinter{};
-const cu59::TICardReaderState kNoCard{};
 const cu59::TICalculatorDebug kNoLive{};
 const cu59::TIProgramListing kNoListing{};
 const cu59::TICpuDebug kNoCpu{};
@@ -69,8 +69,7 @@ EmulatorController::EmulatorController(QObject* parent) : QObject(parent) {
     }
     cu59::TIAppSetup setup;
     setup.roms = std::move(roms.set);
-    setup.cuecards = readResource(QStringLiteral(":/roms/cuecards.txt")).value_or("");
-    setup.saveFolder = AppPaths::toFsPath(AppPaths::cardDir()).string();   // cards, ti58c.memory.yaml (LIB-9)
+    setup.saveFolder = AppPaths::toFsPath(AppPaths::saveDir()).string();   // cards, ti58c.memory.yaml (LIB-9)
     // LIB-18: the startup model, `last-model` and the startup presets are the
     // settings file's; makeAppSession sends `start` (the startup model with its
     // startup preset, or its built-in default: ML, no printer).
@@ -169,7 +168,7 @@ void EmulatorController::topicChanged(const cs::TopicName& t) {
         emit cueCardChanged();
     } else if (t == T::kPrinter) {
         emit printerChanged();
-    } else if (t == T::kCardReader) {
+    } else if (t == calcu::media::kMediaTopic) {   // the card reader and slot-1 (LIB-7 59)
         emit cardStateChanged();
     } else if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic) {
         emit runStateChanged();
@@ -229,14 +228,17 @@ void EmulatorController::togglePrinterConnection() {
 }
 cu59::Model EmulatorController::model() const { return orNone(state<cu59::TIModelState>(cu59::topics::kModel), kNoModel).model; }
 QString EmulatorController::moduleID() const { return qs(orNone(state<cu59::TIModelState>(cu59::topics::kModel), kNoModel).moduleID); }
-void EmulatorController::changeModule(const QString& id) {
-    if (id == moduleID()) return;
-    if (id.isEmpty()) send(calcu::startup::kDetachCommand, Value::object({{"place", "slot-1"}}));
-    else send(calcu::startup::kAttachCommand, Value::object({{"place", "slot-1"}, {"peripheral", id.toStdString()}}));
+std::vector<calcu::media::PickerEntry> EmulatorController::modulePicker() const {
+    std::vector<calcu::media::PickerEntry> out;
+    const auto* media = state<calcu::media::MediaState>(calcu::media::kMediaTopic);
+    if (const auto* slot = media ? media->place("slot-1") : nullptr)
+        for (const auto& e : slot->picker)
+            if (e.group == calcu::media::PickerEntry::Group::Module) out.push_back(e);
+    return out;
 }
-QVector<cu59::ModuleMetadata> EmulatorController::allModules() const {
-    const auto& all = orNone(state<cu59::TIModelState>(cu59::topics::kModel), kNoModel).modules;
-    return QVector<cu59::ModuleMetadata>(all.begin(), all.end());
+void EmulatorController::chooseModule(const QString& entryId) {
+    if (entryId.isEmpty() || entryId == QStringLiteral("module:") + moduleID()) return;
+    send(calcu::media::kChooseCommand, Value::object({{"place", "slot-1"}, {"entry", entryId.toStdString()}}));
 }
 
 // ── Display ──────────────────────────────────────────────────────────────────
@@ -296,25 +298,38 @@ void EmulatorController::addMessageHandler(std::function<void(const cs::Message&
 
 // ── Card reader ──────────────────────────────────────────────────────────────
 
-EmulatorController::CardState EmulatorController::cardState() const {
-    return orNone(state<cu59::TICardReaderState>(cu59::topics::kCardReader), kNoCard).state;
+const calcu::media::PlaceState* EmulatorController::cardReader() const {
+    const auto* media = state<calcu::media::MediaState>(calcu::media::kMediaTopic);
+    return media ? media->place("card-reader") : nullptr;
 }
-QString EmulatorController::cardFileName() const {
-    return qs(orNone(state<cu59::TICardReaderState>(cu59::topics::kCardReader), kNoCard).fileName);
+bool EmulatorController::cardPassing() const {
+    const auto* p = cardReader();
+    return p && p->passing.has_value();
 }
-void EmulatorController::fitCard(const QString& path) {
-    send(cu59::commands::kFitCard,
-         withBytes(Value::object({{"path", path.toStdString()}, {"name", QFileInfo(path).fileName().toStdString()}}), path));
+std::vector<calcu::media::PickerEntry> EmulatorController::savedCards() const {
+    std::vector<calcu::media::PickerEntry> out;
+    if (const auto* p = cardReader())
+        for (const auto& e : p->picker)
+            if (e.group != calcu::media::PickerEntry::Group::Empty && e.id.rfind("implicit:", 0) != 0) out.push_back(e);
+    return out;
 }
-void EmulatorController::fitBlankCard(const QString& savePath) {
-    send(cu59::commands::kFitBlankCard,
-         Value::object({{"path", savePath.toStdString()}, {"name", QFileInfo(savePath).fileName().toStdString()}}));
+void EmulatorController::armCard(const QString& entryId) {
+    send(calcu::media::kChooseCommand, Value::object({{"place", "card-reader"}, {"entry", entryId.toStdString()}}));
 }
+QString EmulatorController::armFreshCard(const QString& name, bool confirmed) {
+    const cs::ReplyMessage r = send(calcu::media::kStartNewCommand,
+                                    Value::object({{"place", "card-reader"},
+                                                   {"template", std::string("implicit:") + cu59::kFreshCardTemplate},
+                                                   {"name", name.toStdString()},
+                                                   {"confirmed", confirmed}}));
+    return r.done ? QString() : qs(r.reason);
+}
+void EmulatorController::ejectCard() { send(calcu::media::kEjectCommand, Value::object({{"place", "card-reader"}})); }
 bool EmulatorController::tapCard(double nx, double ny) {
     return sendFlag(cu59::commands::kTapCard, Value::object({{"x", nx}, {"y", ny}}));
 }
 std::optional<int> EmulatorController::litCardCorner() const {
-    return orNone(state<cu59::TICardReaderState>(cu59::topics::kCardReader), kNoCard).litCorner;
+    return orNone(state<cu59::TICueCardState>(cu59::topics::kCueCard), kNoCue).litCorner;
 }
 
 // ── Opening files (LIB-13, M-56) ─────────────────────────────────────────────

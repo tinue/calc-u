@@ -2,6 +2,7 @@
 #include "Bcd.hpp"
 #include "TIDisplayPicture.hpp"
 #include "../core/TIAdapters.hpp"
+#include "media/MediaPlace.hpp"
 #include "../core/TIDebugKinds.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TISegments.hpp"
@@ -110,8 +111,11 @@ calcu::presets::IdleRule TIModelRules::idle() const {
     calcu::presets::IdleRule r;
     r.readyNow = [](const calcu::machine::Machine& cm) {
         if (cm.isKeyReady()) return true;
-        const TICardReaderAdapter* card = cardReaderOf(cm);
-        return card && card->isInCardWait() && card->isWaitingForCard();
+        // The card reader's media place says when the ROM waits for a card (C59-7 AC-9).
+        auto& m = const_cast<calcu::machine::Machine&>(cm);
+        for (const auto& e : m.capabilities(calcu::media::MediaPlace::kKind))
+            if (auto* p = calcu::machine::capabilityAs<calcu::media::MediaPlace>(m, e.id); p && p->waitsForMedium()) return true;
+        return false;
     };
     r.stretch = calcu::machine::Seconds(0.1);
     const calcu::machine::TickRate rate = tiCatalogue().model(calcu::machine::ModelId{m_model})->tickRate;

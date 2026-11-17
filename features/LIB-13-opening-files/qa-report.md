@@ -331,3 +331,21 @@ becomes Done when M-55 is merged and the card cases above run on
 (`kFindings`) as before; 4 card examples wait for M-55. The debug examples
 (`debug_*`, `screentest_test_cdebug`) show the panel through `debug-panel:`
 and are the same.
+
+## Calc-U-59, the cards (M-55, 2026-11-17, branch `m55-cards-59`)
+
+At the merge of M-56 into M-55: M-56's interim file kind `magnetic-card`
+(`TIFileKinds`' `CardFitter`, `TIAppPart::openCard`) is gone; a card file
+(`.magnetcard.yaml`) is LIB-7's medium and goes through the library's
+`MediaOpener` (fitted where it lies, written back there; an upload imported
+into the save folder first). The cases moved onto `.magnetcard.yaml`
+(`tests/card_flows_tests.cpp`, `tests/opening_tests.cpp`, Web
+`play-calculator.spec.js`).
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-11 | Pass | `lib13_ac11_one_medium_magnetic_card` (the one medium `.magnetcard.yaml`; no product file kind takes a card file; `.u59`, `.bin` are none), and the cases of M-56 |
+| AC-12 | Pass (session, Web); Qt6 and Swift by the same command | `lib13_ac12_card_fitted_where_it_lies_read_at_idle`, `lib13_ac12_card_fitted_where_it_lies_written_back` (also an upload imported and fitted), `lib13_ac12_template_card_opened_never_written`, `lib13_ac12_refused_on_ti58_and_ti58c_with_notice`; Web `LIB-13 AC-12 a dropped card is imported and fitted`, `LIB-13 AC-12 a card dropped on the TI-58 is refused with a notice` |
+| EC-4 | Pass | `lib13_ec4_card_while_one_passes_refused_nothing_imported` |
+
+Every criterion of the Calc-U-59 column passes: **Done**.

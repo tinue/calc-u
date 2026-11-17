@@ -7,7 +7,7 @@ struct ModuleMetadata {
     var menuTitle: String = ""
 }
 
-/// The app bundle's ROM files and cuecards.txt. The ROM files are looked up
+/// The app bundle's ROM files (the module files hold the cue cards, M-55). They are looked up
 /// once through the library's lookup (LIB-12, Bridge/TIRomSet); parsing and
 /// checks live in the C++ layers. This only names the folder.
 struct ROMLoader {
@@ -31,16 +31,6 @@ struct ROMLoader {
 
     struct RomsMissing: Error {
         let text: String
-    }
-
-    /// cuecards.txt (roms/solid-state): the cue cards (until M-55).
-    static var cuecardsText: String {
-        guard let url = Bundle.main.url(forResource: "cuecards", withExtension: "txt"),
-              let text = try? String(contentsOf: url, encoding: .utf8) else {
-            logger.error("cuecards.txt not found in app bundle")
-            return ""
-        }
-        return text
     }
 }
 

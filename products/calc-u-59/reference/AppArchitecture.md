@@ -22,7 +22,7 @@ CalcU59App                    (Calc-U-59App.swift: scene, background/active, mac
     │   ├─ LEDDisplayView
     │   └─ CueCardView
     ├─ PrinterView            (the PC-100C's paper, PRINT / T / ADV, copy, cut)
-    ├─ CardPickerView         (fit card / fit fresh card sheet)
+    ├─ CardPickerView         (Arm Card / Arm Fresh Card sheet)
     ├─ DebugView              (CALCULATOR / CPU / LOG tabs)
     │   ├─ LiveDebugView      (CALCULATOR)
     │   ├─ CPUInspectorView   (CPU, with the ROM heatmap) + ASMDebugContent
@@ -44,8 +44,8 @@ EmulatorViewModel (@Observable, main thread)
 | `Calc-U-59App.swift` | App entry; suspends on background, resumes on active; macOS Settings scene and About panel |
 | `EmulatorViewModel.swift` | The `@Observable` face of the app session: sends the `c59.*` commands, copies the interim `c59.*` topics into observable properties; Swift mirrors of the debug snapshot and `ProgramSource` |
 | `MachineModel.swift` | Model enum (raw values match `cu59::Model`) |
-| `ROMLoader.swift` | The ROM lookup over the bundle's resource folder (`TIRomSet`, LIB-12; a "ROMs missing" text in place of the calculator); `cuecards.txt` text and module list |
-| `CardStorage.swift` | Card folder: iCloud Documents container, else local Documents |
+| `ROMLoader.swift` | The ROM lookup over the bundle's resource folder (`TIRomSet`, LIB-12; a "ROMs missing" text in place of the calculator); the module list (the module files hold the cue cards since M-55) |
+| `CardStorage.swift` | The save folder (cards, `ti58c.memory.yaml`): iCloud Documents container, else local Documents |
 | `AppSettings.swift` | `SettingsModel`, the observable face of `Calc-U-59.ini` over `TISettings` (views bind to it); the trace folder from `calcu::settings::Paths`; the security-scoped bookmark of a chosen trace folder, the one value kept in UserDefaults (LIB-9 AC-34) |
 | `AppInfo.swift` | Version and About panel content |
 | `CueCardContent.swift` | Swift cue-card value type and its `TICueCard` conversion |
@@ -55,7 +55,7 @@ EmulatorViewModel (@Observable, main thread)
 | `Views/LEDDisplayView.swift` | 12-digit LED in a SwiftUI `Canvas` |
 | `Views/CueCardView.swift` | Cue card on its template art |
 | `Views/PrinterView.swift` | The PC-100C's paper (LIB-8 S-P1, until C59-8): dots by band (`PaperBand`) or text; Copy and Cut are the session's |
-| `Views/CardPickerView.swift` | Card files in the card folder |
+| `Views/CardPickerView.swift` | Arm Card (the saved cards by name, from the library's `media` topic) and Arm Fresh Card (a name; the replace question) (C59-7 AC-14, AC-15) |
 | `Views/DebugView.swift` | Debug tabs; `ASMDebugContent`; LOG tab (`StaticDebugContent`) |
 | `Views/LiveDebugView.swift`, `Views/CPUInspectorView.swift` | CALCULATOR and CPU tabs |
 | `Views/HoldRepeatButton.swift` | Fires on press, repeats every 0.25 s while held and while step can be used (STEP; LIB-10 AC-18) |
@@ -124,10 +124,10 @@ imports the public ones.
 
 | Wrapper | Wraps |
 |---|---|
-| `TIAppSession.{h,mm}` | The app session on `cu59::SessionThread`: commands (`c59.*`) out, messages in on the main thread (the last of each topic kept); `TIAppSessionDelegate` (alerts, the tab of `debug-panel:` from the topic `debug-view`, diagnostics, `changed`); since M-56 the debug panel's product topics (`calculator-debug`, `program-listing`, `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view`, C59-4), the LOG tab's `cu59::RingLog` of LIB-3's `log`, the `control-state` entries (`asmRunAvailable`, `traceButtonAvailable`, `calculatorTabAvailable`), `freezeButtonsFor:` (`cu59::freezeButtons`) and LIB-13's `open` / `open-would-take` (`openFile:…way:`, `wouldOpenFile:`); `TISessionStart`, `TIRomSet`; the coordinated card files (`cu59::FileIO`); value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, built when Swift reads them; since M-53 also the library's `paper PC-100C` (kept as text lines and `TIPaperDot`s), `paper-copies`, `run-state` (`buttonUseFor:`, calcu::debugger::buttonUse) and `trace`, the run control's commands, and the clipboard host services (`clipboard-image`, `clipboard-text`) answered on the pasteboard |
+| `TIAppSession.{h,mm}` | The app session on `cu59::SessionThread`: commands (`c59.*`) out, messages in on the main thread (the last of each topic kept); `TIAppSessionDelegate` (alerts, the tab of `debug-panel:` from the topic `debug-view`, diagnostics, `changed`); since M-56 the debug panel's product topics (`calculator-debug`, `program-listing`, `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view`, C59-4), the LOG tab's `cu59::RingLog` of LIB-3's `log`, the `control-state` entries (`asmRunAvailable`, `traceButtonAvailable`, `calculatorTabAvailable`), `freezeButtonsFor:` (`cu59::freezeButtons`) and LIB-13's `open` / `open-would-take` (`openFile:…way:`, `wouldOpenFile:`); `TISessionStart`, `TIRomSet`; the coordinated save folder files (`cu59::FileIO`, also the media part's file access, LIB-7 D-30); the cards on the library's `media` topic and `media.choose`, `media.start-new`, `media.eject` (`savedCards`, `armCard:`, `armFreshCard:`, `TISavedCard`; C59-7, M-55); value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, built when Swift reads them; since M-53 also the library's `paper PC-100C` (kept as text lines and `TIPaperDot`s), `paper-copies`, `run-state` (`buttonUseFor:`, calcu::debugger::buttonUse) and `trace`, the run control's commands, and the clipboard host services (`clipboard-image`, `clipboard-text`) answered on the pasteboard |
 | `TISharedTables.{h,mm}` | `SevenSegment`, `KeyboardLayout`, `KeyIds` |
 | `TIViewRules.{h,mm}` | `CueCard` (spans, geometry, inks), `LedGeometry`, the PC-100C's paper width and dot size (`core/PC100CPaper.hpp`), `RomHeatmap`, `ModuleImage` (program source), `DebugText` (incl. the iOS `mobileLayout`, `mobilePrinterWidth`, `compactPrinterBar`, `mobileTopMargin`) |
-| `TIFileFormats.{h,mm}` | `TICueCard`, card file names (`CardFile`), `cuecards.txt` module list (`ModuleCatalog`) |
+| `TIFileFormats.{h,mm}` | `TICueCard`, the module list (`ModuleCatalog`) |
 | `TISettings.{h,mm}` | `Settings` (`app/Settings.hpp`) over a `calcu::settings::SettingsFile`; the trace folder from `calcu::settings::Paths` |
 | `TITypes.h` | `TIDisplaySnapshot` (mirrors `LedFrame`: the glyph's segments A–G and brightness 0–255 per digit and decimal point) and `TICpuFrame` (mirrors `CpuFrame`) |
 | `BridgeConvert.h` | ObjC++-only: string / data conversions; `static_assert`s that `TICpuFrame` matches `CpuFrame` field for field, so a frame converts with one `memcpy` |
@@ -189,8 +189,10 @@ session finds out what it is, and a refusal arrives as its notice (an alert).
 A card's security scope stays open while it is fitted (written back where
 it lies).
 
-**Storage.** Cards and `ti58c.memory.yaml` live in the `CardStorage` folder (iCloud
-Documents when available); reading `ti58c.memory.yaml`, and reading and writing cards,
-go through `NSFileCoordinator`. Traces go to the trace location from Settings: Local
+**Storage.** Cards (`.magnetcard.yaml`, the library's media part) and
+`ti58c.memory.yaml` live in the `CardStorage` folder (iCloud Documents when
+available); reading and writing them go through `NSFileCoordinator` (the
+bridge's `cu59::FileIO`, which the app part hands the media part as its file
+access, LIB-7 D-30). Traces go to the trace location from Settings: Local
 (`~/Library/Application Support/Calc-U-59`), iCloud (the card folder) or a
 custom folder (macOS, security-scoped bookmark).

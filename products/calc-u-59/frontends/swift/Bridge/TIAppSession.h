@@ -82,16 +82,23 @@ typedef struct {
 - (void)showErrorTitle:(NSString *)title message:(NSString *)message;
 - (void)diagnostic:(NSString *)message;
 - (void)changed:(TIChange)changes;
-/// A card file was written (the coordinated write succeeded).
+/// A file of the save folder was written (the coordinated write succeeded).
 - (void)cardWritten;
 @optional
 /// LIB-8 AC-20: the outcome of a Copy of the paper: 0 copied, 1 text only, 2 failed.
 - (void)paperCopied:(NSInteger)outcome NS_SWIFT_NAME(paperCopied(_:));
 @end
 
+/// A saved magnetic card, as Arm Card lists it (C59-7 AC-14).
+@interface TISavedCard : NSObject
+@property (nonatomic, readonly, copy) NSString *name;
+@property (nonatomic, readonly, copy) NSString *entryID;   ///< the picker entry `media.choose` takes
+@property (nonatomic, readonly) BOOL outdated;
+@property (nonatomic, readonly, copy, nullable) NSString *hint;
+@end
+
 /// What the session is built with (C59-5 D-12, A-12).
 @interface TISessionStart : NSObject
-@property (nonatomic, copy) NSString *cuecards;
 /// The app's settings (LIB-18 AC-17: the startup model, `last-model`, the
 /// startup presets); the session's `start` reads them. Kept alive by the caller.
 @property (nonatomic, strong) TISettings *settings;
@@ -254,19 +261,30 @@ typedef struct {
 /// PRINT, ADV (held) and TRACE (a switch) of the PC-100C (`set-control`, LIB-8 P-E2).
 - (void)setPrinterControl:(NSString *)control on:(BOOL)on NS_SWIFT_NAME(setPrinterControl(_:on:));
 
-// ── Card reader ──────────────────────────────────────────────────────────────
-@property (nonatomic, readonly) BOOL cardSwiping;
-@property (nonatomic, readonly) NSString *cardFileName;
-/// raw nil: the file could not be read. `done(YES)` on the main thread when it was fitted.
-- (void)fitCard:(nullable NSData *)raw path:(NSString *)path fileName:(NSString *)fileName
-     completion:(nullable void (^)(BOOL fitted))done;
-- (void)fitBlankCard:(NSString *)savePath fileName:(NSString *)fileName completion:(nullable void (^)(BOOL fitted))done;
+// ── Magnetic cards (C59-7; the library's `media` topic and `media.*`
+// commands for the place `card-reader`, LIB-7 59, M-55) ─────────────────────
+/// A side of the fitted card passes through the reader now.
+@property (nonatomic, readonly) BOOL cardPassing;
+/// A magnetic card is fitted (armed, or given back after a pass).
 @property (nonatomic, readonly) BOOL cardFitted;
+/// The fitted card's name, nil when none.
+@property (nonatomic, readonly, nullable) NSString *fittedCardName;
+/// The saved cards of the save folder by the names inside them, as Arm Card
+/// lists them (C59-7 AC-14): an outdated one cannot be chosen and has a hint.
+@property (nonatomic, readonly) NSArray<TISavedCard *> *savedCards;
+/// Arm Card: the saved card fitted for the user to feed (`media.choose`).
+- (void)armCard:(TISavedCard *)card;
+/// Arm Fresh Card (AC-15, `media.start-new` from the fresh card): `question`
+/// non-nil when a card of that name is saved (ask, then call again with
+/// confirmed YES); `refusal` when it was refused for another reason.
+- (void)armFreshCard:(NSString *)name confirmed:(BOOL)confirmed
+          completion:(nullable void (^)(NSString *_Nullable question, NSString *_Nullable refusal))done;
 /// The side whose corner is lit (0 left, 1 right), -1 if none.
 @property (nonatomic, readonly) NSInteger litCardCorner;
 /// A press at canvas position (x, y), each 0…1: YES if it hit a corner of the
 /// fitted card on show (a view rule, C59-5 D-5); the side is then fed.
 - (BOOL)tapCardAtX:(double)x y:(double)y;
+/// Eject Card: a passing card is taken out and stays fitted (`media.eject`).
 - (void)ejectCard;
 
 // ── Presets (LIB-6 `load-preset {content, name}`, D-41) ─────────────────────

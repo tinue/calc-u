@@ -66,9 +66,11 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | **Files** | |
 | `Keycodes` | The keycode notation of `program:` and keystroke program files (`docs/formats/preset.md` §4.1) |
 | `CueCardYaml` | The stand-alone cue card block of a preset and of the constant memory file (`docs/formats/cue-card.md`) |
-| `CardFile` | Magnetic card files (text 2.0 and 1.0, headered and legacy binary); which names the pickers list |
+| `TIMagneticCardKind` | The kind `magnetic-card` of the library's media part and its codec for magnetic card format 3 (`.magnetcard.yaml`, `docs/formats/media.md` §1); the card's label (name, description, cue card); the fitted card's cue card |
+| `TIMagneticCardsKey` | The preset header key `magnetic-cards:` (in-file cards, `docs/formats/preset.md` §3.1) |
+| `ModuleCueCards` | The module cue cards from the `cue-cards:` of a module file (`docs/formats/modules.md` §2.3) |
 | `ProductRoms` | The ROM lookup of Calc-U-59 (`lookUpRoms`, the full set, LIB-12), `buildMachine` from the `RomSet` (the core decodes; C59-1), a module's ROM image |
-| `ModuleCatalog` | The module list from the module files (`allModuleMetadata`), a module's file name; the cue cards of `roms/solid-state/cuecards.txt` |
+| `ModuleCatalog` | The module list from the module files (`allModuleMetadata`), a module's file name, slot-1's listing for the media part (`tiModuleListing`) |
 | `CueCard` | Cue-card model, encode/parse, spans, layout, geometry, inks, which card shows |
 | **Tables and drawing rules** | |
 | `MachineModelInfo` | Per-model facts: `Model` ↔ `ModelId`, RAM, card reader, ROM files (the tick rate is the descriptor's, key readiness the machine's: C59-1) |
@@ -107,7 +109,7 @@ startup preset, else its built-in default); the Web page sends `start
 messages: the library's topics (`display`, `busy`, `notices`, `log`,
 `papers`, `paper PC-100C`, `run-state`, `trace`, …) and the interim
 `c59.*` topics (`c59.model`, `c59.led`, `c59.printer` (connected and TRACE
-only), `c59.card-reader`, `c59.run-state` (full speed and whether an
+only), `c59.cue-card` (the cue card shown, whether the fitted card is on show, its lit corner), `c59.run-state` (full speed and whether an
 operation runs), …; each the snapshot of one of 2.3.0's change flags,
 until the feature that owns it, LIB-3 59 design §5) and the debug panel's
 product topics (`TIDebugPart`, C59-4 AC-25). Qt6
@@ -310,40 +312,46 @@ works on the page.
 ## Card Reader Flow
 
 The core side (TST BUSY wait, `CRD_READ`/`CRD_WRITE`, auto-eject at
-`CRD_OFF`) is in `CoreArchitecture.md` § "Magnetic Card Reader". The
-controller's side:
+`CRD_OFF`) is in `CoreArchitecture.md` § "Magnetic Card Reader". Since M-55
+(C59-7, LIB-7 59) the card reader is the library's media part:
 
-1. `fitCard(bytes, path, name)` decodes the file (`CardFile`, a `CardDocument`)
-   and fits it into the cue card cutout, replacing the card there.
-   `fitBlankCard(savePath, name)` fits a fresh version 2 card whose cue card is
-   a Title with the file name (`freshCardCue`). Neither touches the reader.
-   Each GUI's picker asks before a fresh card takes the name of an existing
-   one: its first write replaces the file. Only the GUI knows its card folder.
-2. `tapCard(nx, ny)` is a press on the canvas: `cardCornerAt` (`KeyboardLayout`)
-   gives the side, and `feedSide(side)` puts it into the reader. GUIs call it on
-   a press only, not on a drag. A press does nothing while a module's cue card
-   covers the fitted card (`m_activeProgram > 0`).
-3. The card state is `Swiping` until the core auto-ejects, and `litCardCorner()`
-   gives the corner to draw lit (`cardCornerGeometry`, above the wash).
-4. `tick()` sees the auto-eject and calls `ejectCard()`. A written bank goes to
-   `writeFittedSide`: unless the card is fresh, it reads the file again
-   (`TIFileAccess::readCard`), so a side changed elsewhere survives, merges the side
-   and saves through `TIFileAccess::writeCard`. A file it can't read or parse is
-   left alone and reported. A failed write leaves the fitted card as it was.
-
-`refreshCueCard` shows `fittedCueCard()` when a card is fitted: its cue card, or
-a Title for a card without one (never saved), with the corners' numbers from
-the sides' headers (version 2) or `Banks:` (version 1). `resolveCueCard` still
-lets a module's cue card cover it. A version 1 card has one side: either corner
-feeds it, and a write stays version 1.
-
-The fitted card goes with another fit, a reset, a model switch, a full preset
-load, or a reload stage with its own cue card. The printer toggle and a module
-change power-cycle the machine, so they remove it too (until C59-7, row 59-17).
-
-Presets feed no cards until C59-7 (M-55: `card:`, `arm:`); `TIFileAccess::cardFilePath(name)` resolves a card file
-name in the frontend's card folder. `unreadable` from `TIFileAccess::readCard` means
-the file exists but can't be read now, so no blank card goes in to overwrite it.
+- **The place.** The TI-59 offers `card-reader/media-place`, a
+  `calcu::media::MediaPlace` (`core/TICardReaderPlace`): pass-through, the
+  sides 0 and 1; the TI-58/58C have none. Its content is a
+  `TIMagneticCardData` (`core/TIMagneticCard`): per side nothing (fresh), the
+  246 bytes of a bank, or an in-file definition that `buildCardBank` turns
+  into the bank the ROM writes when the side goes in (with the definition's
+  partition or the machine's then). The place gives the card back when the
+  core ejects it at `CRD_OFF`; Eject Card keeps a whole written bank only;
+  a Reset, power cycle or Cold boot takes a card in the reader out as Eject
+  Card does. `waitsForMedium()` is the card wait of `n Write` / `n INV Write`
+  (the idle rule of the presets and the pacing's wait probe use it).
+- **The kind.** `app/TIMagneticCardKind`: `magnetic-card`, `.magnetcard.yaml`,
+  format 3, the implicit template "Fresh card", the steps `card:` / `arm:`
+  and `saveas: { card: }`; it asks the media part to read the card's file
+  again just before each write (`rereadBeforeWrite`), so a write replaces
+  only the side that was written; no Name & Save; the replace question of
+  Arm Fresh Card.
+- **The flows** are the library's commands on the place `card-reader`:
+  `media.choose {entry: saved:<file>}` (Arm Card: fitted, not fed),
+  `media.start-new {template: "implicit:Fresh card", name}` (Arm Fresh
+  Card: Name & Save up front, the file written at the first write),
+  `media.feed {side}`, `media.eject`, and the topic `media` (the fitted card,
+  the side passing, the picker). The corner rule stays the product's:
+  `c59.tap-card {x, y}` (`cardCornerAt`, `KeyboardLayout`) sends a feed while
+  the fitted card is on show. A written card is saved when it is given back
+  (the media part's autosave); a write that fails is a notice.
+- **The cue card shown** (`TIAppPart::refreshCueCard`, at each call): one
+  fitted card at a time, the last of a fitted magnetic card, a preset's
+  `cue-card:` and the constant memory file's; while a library program is
+  selected (the product kind `c59.library-program`), the module cue card of
+  that program from the module file covers it, and its corners do nothing.
+  A fitted magnetic card shows its own cue card or one titled with its name,
+  the banks of its sides in the corners. A new machine has nothing fitted;
+  a Reset, power cycle or Cold boot keep it.
+- **Presets**: `card: { name: | file: | mem: , side: }`, `arm:`,
+  `magnetic-cards:` (`TIMagneticCardsKey`) and `saveas: { card: }` are LIB-7's
+  steps (`docs/formats/preset.md` §3.1, §5.2).
 
 ### Opened Files
 
@@ -355,14 +363,16 @@ start of the Qt6 program, File ▸ Load Preset…'s dialog, the harness's
 kinds (`app/TIFileKinds`, in this order): an `.asm` file is an ASM overlay
 (read as by Select File), a `.keystrokes.yaml` file's program is written
 into the running machine from step 000 (no cold boot), a `.rom.yaml` and
-`ti58c.memory.yaml` are refused with a notice. Until M-55 the card files of
-today (`.u59`, `.bin`) are the kind `magnetic-card`: fitted where they lie
-on the TI-59 and written back there (an upload on the Web goes into the
-save folder), refused with a notice on the TI-58/58C and while a card
-passes. A refusal is the session's notice. On the Mac, the file's security
+`ti58c.memory.yaml` are refused with a notice. A magnetic card
+(`.magnetcard.yaml`, LIB-7's medium since M-55) goes through the library's
+MediaOpener: fitted where it lies on the TI-59 and written back there (an
+upload on the Web is imported into the save folder first), refused with a
+notice on the TI-58/58C and while a card passes; a `.u59` or `.bin` of 2.3.0
+is no file of the product (C59-7 AC-4). A refusal is the session's notice. On the Mac, the file's security
 scope stays open while a card is fitted, because a write goes back to it.
 
-Card file formats: `app/CardFile.hpp` (2.3.0's, until C59-7 in M-55).
+Card file format: magnetic card format 3 (`docs/formats/media.md` §1;
+`app/TIMagneticCardKind`).
 
 ## Presets
 
@@ -426,8 +436,8 @@ The TI-59 image is checked against two sentinels: word 0 = `0x0A01`
 `roms/<ID>.rom.yaml` (`docs/formats/modules.md` §2, 5000 bytes, read by
 `core/ModuleFile`). Since M-25 (C59-6 AC-8) the module list comes from the
 14 module files (`allModuleMetadata(RomSet)`: `module-name`, `description`,
-`menu-sort`); the cue cards still come from `roms/solid-state/cuecards.txt`
-(until M-55).
+`menu-sort`); since M-55 the cue cards come from them too (`ModuleCueCards`;
+2.3.0's `roms/solid-state/cuecards.txt` is gone, LIB-12 AC-14).
 
 ## Places: the module and the PC-100C (C59-6)
 

@@ -399,24 +399,6 @@ double cellFittingFontSize(const std::vector<LabelSpan>& spans, const CueCardLay
     return std::min(scaledGridFontSize, size);
 }
 
-std::optional<CueCardContent> resolveCueCard(int activeProgram, const std::map<int, CueCardContent>& moduleCards,
-                                             const std::string& moduleTitle, const std::string& moduleID,
-                                             const std::optional<CueCardContent>& userCard) {
-    if (activeProgram > 0) {
-        auto it = moduleCards.find(activeProgram);
-        if (it != moduleCards.end()) return it->second;
-        if (!moduleTitle.empty() || !moduleID.empty()) {
-            CueCardContent c;
-            c.template_ = CueCardTemplate::SolidState;
-            c.title = moduleTitle;
-            c.id = moduleID;
-            return c;
-        }
-        return std::nullopt;
-    }
-    return userCard;
-}
-
 bool CueCardContent::operator==(const CueCardContent& o) const {
     return template_ == o.template_ && title == o.title && bankLeft == o.bankLeft &&
            bankRight == o.bankRight && id == o.id && labels == o.labels && row1 == o.row1 &&

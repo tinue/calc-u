@@ -1,7 +1,8 @@
 // The bar under the calculator (Qt6/app/ControlBar, CalculatorView's bar in
 // the Swift app): Reset — Ctrl/⌘ held shows a red "Clean", a 1 s press on a
 // touch screen does the same —, the model picker, the card reader buttons
-// (TI-59: fit a card / a fresh card, or Eject while a side passes), Preset and
+// (TI-59: Arm Card / Arm Fresh Card, both "Crd", or Eject Card while a side
+// passes, from the library's `media` topic; C59-7 AC-13), Preset and
 // the Settings gear. `compact` (portrait) shows icons only, as on iOS.
 
 const CLEAN_RESET_HOLD_MS = 1000;
@@ -23,9 +24,9 @@ function useModifierHeld() {
   return held;
 }
 
-function BarButton({ icon, label, compact, title, className = "", ...rest }) {
+function BarButton({ icon, label, compact, title, name, className = "", ...rest }) {
   return (
-    <button type="button" className={`calcu-barbutton ${className}`} title={title || label} aria-label={label} {...rest}>
+    <button type="button" className={`calcu-barbutton ${className}`} title={title || name || label} aria-label={name || label} {...rest}>
       <span className="calcu-icon" aria-hidden="true">{icon}</span>
       {!compact && <span>{label}</span>}
     </button>
@@ -81,8 +82,9 @@ function ResetButton({ engine, compact, feedback }) {
 function ControlBar({ engine, compact, showSettings, onDialog, feedback }) {
   const data = useEngine(engine, (s) => s.data);
   const model = useEngine(engine, (s) => s.model);
-  const swiping = useEngine(engine, (s) => s.card.swiping);
-  const hasReader = data && model && data.models[model.model].hasCardReader;
+  const reader = useEngine(engine, (s) => cardReaderOf(s.media));
+  const swiping = !!reader && reader.passing !== undefined && reader.passing !== null;
+  const hasReader = data && model && data.models[model.model].hasCardReader && !!reader;
 
   return (
     <div className="calcu-bar">
@@ -102,8 +104,8 @@ function ControlBar({ engine, compact, showSettings, onDialog, feedback }) {
       <span className="calcu-spacer" />
       {hasReader && !swiping && (
         <>
-          <BarButton icon="⤓" label="Crd" title="Fit a magnetic card into the calculator" compact={compact} onClick={() => onDialog("readCard")} />
-          <BarButton icon="＋" label="Crd" title="Fit a fresh magnetic card into the calculator" compact={compact} onClick={() => onDialog("writeCard")} />
+          <BarButton icon="⤓" label="Crd" name="Arm Card" compact={compact} onClick={() => onDialog("armCard")} />
+          <BarButton icon="＋" label="Crd" name="Arm Fresh Card" compact={compact} onClick={() => onDialog("armFreshCard")} />
         </>
       )}
       {hasReader && swiping && (

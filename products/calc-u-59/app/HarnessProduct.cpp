@@ -1,5 +1,7 @@
 #include "HarnessProduct.hpp"
 #include "MachineModelInfo.hpp"
+#include "ModuleCatalog.hpp"
+#include "TIMagneticCardKind.hpp"
 #include "PacingProfiles.hpp"
 #include "ProductRoms.hpp"
 #include "Settings.hpp"
@@ -178,8 +180,10 @@ public:
     // PC-100C's paper (LIB-8 59) and the debugger (LIB-10 59: the run control,
     // traces into the run's folder) since M-53; the presets (LIB-6 59: the
     // TI rules and keywords, the bundle of the source tree's examples/) and
-    // the program memory commands (C59-2 AC-9) since M-54; no media until
-    // M-55. The entry makes its own parts until M-59 (LIB-6 §11.5).
+    // the program memory commands (C59-2 AC-9) since M-54; the magnetic card
+    // in the run's save folder and slot-1's module listing (LIB-7 59, C59-7)
+    // since M-55, so `card`, `arm`, `saveas { card: … }` and `media …` work.
+    // The entry makes its own parts until M-59 (LIB-6 §11.5).
     void prepare(harness::RunSetup& r) override {
         parts_.reset();
         parts::LibraryPartsSetup s = r.partsSetup(tiCatalogue(), machines_, lookUpRoms());
@@ -195,6 +199,8 @@ public:
         s.presetExtensions = tiPresetExtensions();
         s.fileKinds = kinds_.kinds();   // LIB-13 AC-9: `open <path>` takes every Calc-U-59 file
         s.controlRules = {&debug_};      // C59-4 AC-25
+        s.mediaKinds = {magneticCardKind()};   // LIB-7 59, C59-7 (M-55)
+        s.moduleListing = tiModuleListing(s.roms);
         parts_ = std::make_unique<parts::LibraryParts>(std::move(s));
         debug_.bindDebugger(parts_->debugger());
     }

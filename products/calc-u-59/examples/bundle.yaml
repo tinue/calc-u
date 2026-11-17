@@ -3,8 +3,8 @@
 # frontend offered in 2.3.0, in today's order within the groups of C59-2
 # OQ-3 (fastmode-sst last of "Programs", behaviour change 59-26). Every
 # distribution (Qt6, Swift, Web) bundles exactly the files listed here.
-# globe-print.ti59 (the fourth printer picture) comes back with the magnetic
-# cards of C59-7 (M-55): until then the Web offers nine examples.
+# globe-print.ti59, the fourth printer picture, came back with the magnetic
+# cards of C59-7 (M-55): the Web offers ten examples, as 2.3.0 did.
 
 format: example-bundle
 format-version: 1
@@ -28,3 +28,4 @@ groups:
       - preset: { file: printer-interrupt.ti59 }
       - preset: { file: picard.ti59 }
       - preset: { file: switzerland.ti59 }
+      - preset: { file: globe-print.ti59 }

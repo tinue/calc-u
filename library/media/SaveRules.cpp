@@ -3,6 +3,14 @@
 
 namespace calcu::media {
 
+std::string replaceQuestionFor(const KindDecl& k, const std::string& name) {
+    if (k.replaceQuestion.empty()) return "A " + k.label + " named “" + name + "” exists. Replace it?";
+    std::string q = k.replaceQuestion;
+    for (std::size_t at = q.find("{name}"); at != std::string::npos; at = q.find("{name}", at + name.size()))
+        q.replace(at, 6, name);
+    return q;
+}
+
 namespace {
 
 Plan refused(std::string why) {
@@ -82,8 +90,7 @@ Plan planSave(const SaveRequest& r, const Shelf& shelf, const InPlace& inPlace) 
                 p.verdict = Plan::Verdict::Ask;
                 p.name = name;
                 p.path = same->path;
-                p.refusal = std::string(kAsks) + "A " + k.label + " named " + inQuotes(same->name) +
-                            " exists. Replace it?";
+                p.refusal = std::string(kAsks) + replaceQuestionFor(k, same->name);
                 return p;
             }
             break;

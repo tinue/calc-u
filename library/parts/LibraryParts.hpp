@@ -77,6 +77,7 @@ struct LibraryPartsSetup {
     std::vector<media::KindDecl> mediaKinds;
     const settings::Paths* mediaPaths = nullptr;   // the save folder and the tape folder
     media::ModuleListing moduleListing;
+    std::shared_ptr<const media::FileAccess> mediaFiles;   // null: plain (D-30)
     // LIB-13: `open` (the product's name for its sentences, preset
     // extensions, file kinds in the order they are asked, limits per way).
     std::string productName;

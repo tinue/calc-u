@@ -17,10 +17,10 @@
 //   constant-memory-file  ti58c.memory.yaml: refused, the product's own file
 //
 // The library decides presets (.ti59, .ti58, .ti58c, or a `model:` line)
-// and media before them. Until the magnetic card is LIB-7's medium (M-55),
-// the card files of today (.u59, .bin) are a fifth kind, `magnetic-card`,
-// fitted into the TI-59's card reader by the product's own flow (adapter of
-// LIB-13 §10.7, removed when M-55's `.magnetcard.yaml` medium is merged).
+// and media before them: a magnetic card (`.magnetcard.yaml`) is LIB-7's
+// medium since M-55, fitted into the TI-59's card reader by the library's
+// MediaOpener (the interim `magnetic-card` kind of M-56 for 2.3.0's .u59 and
+// .bin went with it; those are no files of the product, C59-7 AC-4).
 
 namespace cu59 {
 
@@ -36,14 +36,9 @@ std::vector<std::string> tiPresetExtensions();
 /// existing file (ledger 59-47), never a value of an option.
 std::vector<std::string> programArguments(const std::vector<std::string>& argv);
 
-/// The interim card flow (until M-55): fit the card from where it lies; the
-/// refusal's reason, or none.
-using CardFitter = std::function<std::optional<std::string>(const calcu::opening::OpenedFile&, calcu::opening::Way)>;
-
 class TIFileKinds {
 public:
-    /// `cards`: unset where there is no card reader flow (the harness).
-    TIFileKinds(TIDebugPart& debug, CardFitter cards = {});
+    explicit TIFileKinds(TIDebugPart& debug);
     ~TIFileKinds();
     TIFileKinds(const TIFileKinds&) = delete;
     TIFileKinds& operator=(const TIFileKinds&) = delete;

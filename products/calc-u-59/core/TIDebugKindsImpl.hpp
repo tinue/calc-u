@@ -46,6 +46,7 @@ public:
     explicit TICalculatorState(TIMachine& m) : m_(m) {}
     std::uint16_t pc() const override;
     CpuFrame snapshotCPU() const override;
+    std::uint16_t libExecPC() const override;
     TIStepBoundary lastStepBoundary() const override;
     std::uint8_t readROMKeycode(int addr) const override;
     std::uint32_t readCpuFrames(CpuFrame* out, std::uint32_t max) const override;

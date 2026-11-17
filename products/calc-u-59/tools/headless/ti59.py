@@ -4,7 +4,7 @@
 Loads tools/headless/build/libti59headless.dylib (build with build.sh) and
 the ROM files of roms/ through the library's ROM lookup (LIB-12; another
 folder with TI59_ROMS_DIR), and optionally a solid-state module (its ROM
-from <ID>.rom.yaml, the module list from roms/solid-state/cuecards.txt).
+from <ID>.rom.yaml, the module list from the module files).
 Without the full set of ROM files it ends with the lookup's message.
 
 Library use:

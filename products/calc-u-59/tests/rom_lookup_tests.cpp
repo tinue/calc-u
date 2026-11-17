@@ -79,8 +79,6 @@ std::vector<std::string> moduleIds() {
     return ids;
 }
 
-std::string cuecards() { return testroms::readFile("roms/solid-state/cuecards.txt").value_or(""); }
-
 // Every line ending of `text` replaced by `eol`.
 std::string withLineEndings(const std::string& text, const std::string& eol) {
     std::string out;
@@ -349,7 +347,6 @@ std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> startFrom(const 
     static calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(cu59::settings::settingsDecl());
     cu59::TIAppSetup s = testroms::appSetup(settings, cu59::Model::TI59, folder.path());
     s.roms = roms.set;
-    s.cuecards = cuecards();
     auto t = std::make_shared<calcu::pacing::WallTime>(std::chrono::hours(1));
     auto app = cu59::makeAppSession(std::move(s), [t] { return *t += std::chrono::milliseconds(1); }, 59u);
     settle(*app.session);   // LIB-18's start

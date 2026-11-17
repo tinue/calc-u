@@ -57,7 +57,7 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   Model, advances and tick count, Reset/power cycle/cold boot, key readiness,
   keys (key IDs) and the display output go through it only. What it does not
   have yet goes through the adapters of `core/TIAdapters.hpp`, each until its
-  removal step: `TICardReaderAdapter` (M-55),
+  removal step (`TICardReaderAdapter` went in M-55: the card reader is the media place `core/TICardReaderPlace` with `core/TIMagneticCard`'s content and `buildCardBank`; `libExecPC` is `c59.calculator-state`'s),
   `TIMemoryAdapter` (M-54; its readers M-59); `idleAndKeyDetectRange()` is
   the scan/detect range. The debug panel's reads are product kinds since
   M-56 (`core/TIDebugKinds.hpp`: `c59.asm-overlay`, `c59.rom-heatmap`,

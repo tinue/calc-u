@@ -1,5 +1,6 @@
 #include "MediaFixture.hpp"
 #include "TestHarness.hpp"
+#include "media/Names.hpp"
 
 // LIB-7 L2 (design §6): kinds and the shelf (AC-1, AC-5, AC-46, EC-3).
 
@@ -169,4 +170,42 @@ TEST(ec3_unreadable_not_listed_one_log_line_per_start) {
     CHECK(hasLine(lines, "The test disk file Broken.testdisk.yaml cannot be read: It is not a test-disk file."));
     CHECK(f.ok("media.refresh"));
     CHECK(!hasLine(f.logLines(), "Broken.testdisk.yaml"));   // D-12: once per start
+}
+
+namespace {
+// A host's file access that records what goes through it (D-30).
+struct RecordingAccess final : FileAccess {
+    mutable std::vector<std::string> calls;
+    std::vector<std::string> list(const std::string& folder) const override {
+        calls.push_back("list");
+        return FileAccess::list(folder);
+    }
+    Read read(const std::string& path) const override {
+        calls.push_back("read " + baseName(path));
+        return FileAccess::read(path);
+    }
+    Written write(const std::string& path, const std::string& bytes) const override {
+        calls.push_back("write " + baseName(path));
+        return FileAccess::write(path, bytes);
+    }
+};
+} // namespace
+
+// LIB-7 §11 E1 (M-55; D-30): the shelf and the writer go through the file
+// access the host hands the part (Calc-U-59's coordinated iCloud access).
+TEST(ac1_shelf_and_writer_through_the_hosts_file_access) {
+    auto access = std::make_shared<RecordingAccess>();
+    FixtureOptions o = onDot([](auto& s, auto&) { s.write("Work.testdisk.yaml", disk("Work", "a").text()); });
+    o.files = access;
+    MediaFixture f(o);
+    auto has = [&](const std::string& c) {
+        return std::find(access->calls.begin(), access->calls.end(), c) != access->calls.end();
+    };
+    CHECK(has("list"));
+    CHECK(has("read Work.testdisk.yaml"));
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    f.drive()->write("b");
+    f.ok("media.refresh");
+    CHECK(has("write Work.testdisk.yaml"));
+    CHECK_EQ(field(f.saved("Work.testdisk.yaml"), "content"), std::string("b"));
 }

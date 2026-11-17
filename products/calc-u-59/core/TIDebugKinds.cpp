@@ -38,6 +38,7 @@ TIAsmOverlay::Entry TIAsmOverlay::enter(std::uint32_t maxInstructions) {
 
 std::uint16_t TICalculatorState::pc() const { return m_.m_hw.pc(); }
 CpuFrame TICalculatorState::snapshotCPU() const { return m_.m_hw.snapshotCPU(); }
+std::uint16_t TICalculatorState::libExecPC() const { return m_.m_hw.libExecPC(); }
 TIStepBoundary TICalculatorState::lastStepBoundary() const { return m_.m_hw.lastStepBoundary(); }
 std::uint8_t TICalculatorState::readROMKeycode(int addr) const { return m_.m_hw.readROMKeycode(addr); }
 std::uint32_t TICalculatorState::readCpuFrames(CpuFrame* out, std::uint32_t max) const {

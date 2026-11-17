@@ -1,6 +1,8 @@
 #pragma once
 #include "../app/HarnessProduct.hpp"
 #include "../app/TIPresetRules.hpp"
+#include "../app/TIMagneticCardKind.hpp"
+#include "media/PresetMedia.hpp"
 #include "../app/TITyping.hpp"
 #include "../core/TICatalogue.hpp"
 #include "TempFolder.hpp"
@@ -27,9 +29,12 @@ struct PresetRead {
     calcu::testing::TempFolder folder{"calcu59-preset-read"};
     cu59::TIPresetRules rules;
     calcu::presets::Vocabulary vocabulary;
+    // The card steps (C59-7, M-55): the library's media part with the one kind.
+    calcu::media::MediaPart media{calcu::media::MediaSetup{{cu59::magneticCardKind()}}};
     PresetRead() {
         calcu::presets::addLibraryKeywords(vocabulary);
         rules.addKeywords(vocabulary);
+        calcu::media::addMediaToPresets(vocabulary, media);
     }
     calcu::presets::ReadSetup setup() {
         return calcu::presets::ReadSetup{vocabulary, rules, tiCatalogue(), &cu59::typingProduct()};

@@ -1,9 +1,11 @@
 #pragma once
-#include "CardFile.hpp"
 #include "ConstantMemoryKeeper.hpp"
 #include "CueCard.hpp"
 #include "TIDebugPart.hpp"
 #include "TIFileKinds.hpp"
+#include "media/FileAccess.hpp"
+#include "media/MediaPart.hpp"
+#include "settings/Paths.hpp"
 #include "EmulatorSession.hpp"
 #include "ModuleCatalog.hpp"
 #include "ProductRoms.hpp"
@@ -50,18 +52,21 @@
 // around it (EmulatorSession: the frame sampler, the debug panel's reads),
 // the module and the printer read from what is plugged (LIB-18 D-26), the
 // own cue card, the TI-58C's constant memory file (ConstantMemoryKeeper,
-// C59-3). What stays the part's: the card reader (until M-55), the PC-100C's
-// TRACE position (C59-6 AC-6), the cue card shown. The debug panel is
+// C59-3). Since M-55 the card reader is the library's media part (LIB-7 59,
+// C59-7): the kind `magnetic-card` (app/TIMagneticCardKind), the TI-59's
+// pass-through place `card-reader`, the save folder, the steps `card:` and
+// `arm:`, the header key `magnetic-cards:`; the media part is the card
+// wait's WaitProbe, and LIB-13's `open` fits a card file through it. What
+// stays the part's: the PC-100C's TRACE position (C59-6 AC-6), the cue card
+// shown (one fitted at a time, the module cue card of the library program on
+// top, C59-7 AC-22), the corner taps (c59.tap-card). The debug panel is
 // TIDebugPart's (C59-4, M-56), a part of the same session it owns; the file
-// kinds of LIB-13's `open` are TIFileKinds (M-56). The card wait is a WaitProbe
-// (TICardWaitAdapter). Errors are notices, diagnostics log lines. What
+// kinds of LIB-13's `open` are TIFileKinds (M-56). Errors are notices, diagnostics log lines. What
 // 2.3.0's change flags announced arrives as the interim product topics below
 // (removed with their owners, design §5).
 
 namespace cu59 {
 
-/// What the card reader does now.
-enum class CardState { NoCard, Swiping };
 /// Where manual and scripted traces go (LIB-9 Paths), and the size limit per trace session.
 /// An empty dir: this host has no trace folder (the Web: traces are handed
 /// over with KeepFile, LIB-10 AC-26). maxBytes / 1'000'000: the limit in
@@ -77,7 +82,6 @@ inline const TopicName kModel{"c59.model"};
 inline const TopicName kLed{"c59.led"};
 inline const TopicName kCueCard{"c59.cue-card"};
 inline const TopicName kPrinter{"c59.printer"};
-inline const TopicName kCardReader{"c59.card-reader"};
 inline const TopicName kRunState{"c59.run-state"};
 } // namespace topics
 
@@ -103,9 +107,15 @@ struct TILedState final : TISnapshot<TILedState> {
     double calcIndicatorOpacity = 0;
     calcu::sessions::Value toValue() const override;
 };
+/// The cue card to show (C59-2 AC-6, C59-7 AC-22): the module cue card of
+/// the library program selected, else the fitted one. `onShow`: a fitted
+/// magnetic card that no module cue card covers, whose corners feed it
+/// (AC-12, AC-24); `litCorner`: the side passing now, while on show.
 struct TICueCardState final : TISnapshot<TICueCardState> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.cue-card"};
     std::optional<CueCardContent> card;
+    bool onShow = false;
+    std::optional<int> litCorner;
     calcu::sessions::Value toValue() const override;
 };
 /// The PC-100C's place and TRACE (LIB-8 adapter P-E1, until M-57): the
@@ -115,15 +125,6 @@ struct TIPrinterState final : TISnapshot<TIPrinterState> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.printer"};
     bool connected = true;
     bool trace = false;
-    calcu::sessions::Value toValue() const override;
-};
-struct TICardReaderState final : TISnapshot<TICardReaderState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.card-reader"};
-    CardState state = CardState::NoCard;
-    std::string fileName;
-    bool fitted = false;
-    bool onShow = false;   ///< fitted and not covered by a module's cue card (the tap rule, C59-5 D-5)
-    std::optional<int> litCorner;
     calcu::sessions::Value toValue() const override;
 };
 /// What no debugger state is (LIB-10 adapter L-E5, until M-57): the run
@@ -155,19 +156,19 @@ inline const CommandName kFullSpeed{"c59.full-speed"};           // {on}
 // LIB-8 P-E2 (until M-57): `set-control {peripheral: "PC-100C", control: PRINT|ADV|TRACE, on}`,
 // the library's command, as the paper panel sends it.
 inline const CommandName kSetControl{"set-control"};
-inline const CommandName kFitCard{"c59.fit-card"};               // {bytes (absent: unreadable), path, name} → TIFlag
-inline const CommandName kFitBlankCard{"c59.fit-blank-card"};    // {path, name} → TIFlag
-inline const CommandName kFeedSide{"c59.feed-side"};             // {side} → TIFlag
+// C59-7 D-12: a tap on the fitted card; a top corner feeds that side
+// (media.feed of the card reader). The card commands are the library's
+// media.* (media.choose, media.start-new, media.eject, media.feed).
 inline const CommandName kTapCard{"c59.tap-card"};               // {x, y} → TIFlag
-inline const CommandName kEjectCard{"c59.eject-card"};
 } // namespace commands
 
 /// What the host gives the part when the session is made (C59-5 D-12, A-12).
 struct TIAppSetup {
     std::shared_ptr<const calcu::roms::RomSet> roms;   ///< from lookUpRoms()
-    std::string cuecards;                              ///< roms/solid-state/cuecards.txt
     std::string saveFolder;                            ///< cards, ti58c.memory.yaml (LIB-9 Paths)
-    std::shared_ptr<FileIO> fileIO;                    ///< null: plain file I/O
+    /// The save folder's file access (cards and the constant memory file):
+    /// null: plain file I/O; Swift: the coordinated iCloud access (C59-5 D-6, LIB-7 D-30).
+    std::shared_ptr<FileIO> fileIO;
     TraceTarget trace;                                 ///< LIB-9 Paths (traces), [trace] max-file-size
     std::function<bool()> traceAvailable;              ///< null: always
     /// The product's settings (LIB-9; the startup model, `last-model`, the
@@ -204,6 +205,7 @@ public:
     void operationEnded(calcu::sessions::SessionContext&) override;
     void beforeMachineChange(calcu::sessions::SessionContext&) override;
     void closing(calcu::sessions::SessionContext&) override;
+    void beforeFlush(calcu::sessions::SessionContext&) override;
 
     // ── The flows, as the commands run them. Public for the host's own
     // adapters and the tests (LIB-3 design §3.9); a frontend sends the
@@ -258,17 +260,20 @@ public:
     /// The debug panel (C59-4).
     TIDebugPart& debugPart() { return m_debugPart; }
 
-    // Card reader (reference/SharedArchitecture.md § "Card Reader Flow"; M-55: C59-7)
-    CardState cardState() const { return m_pass ? CardState::Swiping : CardState::NoCard; }
-    const std::string& cardFileName() const { return m_cardFileName; }
-    bool fitCard(const std::optional<std::vector<uint8_t>>& raw, const std::string& path, const std::string& fileName);
-    bool fitBlankCard(const std::string& savePath, const std::string& fileName);
-    bool feedSide(int side);
+    // Magnetic cards (C59-7; LIB-7 59): the library's media part, its place
+    // `card-reader` on the TI-59 (reference/SharedArchitecture.md § "Card Reader Flow").
+    calcu::media::MediaPart* mediaPart() { return m_lib.media(); }
+    /// A tap at (nx, ny) on the card window: a top corner of a fitted card on
+    /// show feeds that side (AC-12, D-12). False: nothing fed.
     bool tapCard(double nx, double ny);
-    bool cardFitted() const { return m_fitted.has_value(); }
-    bool cardOnShow() const { return m_fitted && m_activeProgram <= 0; }
-    std::optional<int> litCardCorner() const;
-    void ejectCard();
+    /// A magnetic card is fitted (the media part's binding of `card-reader`).
+    bool cardFitted() const;
+    /// The fitted magnetic card shows (no module cue card covers it, AC-24).
+    bool cardOnShow() const { return m_onShow; }
+    /// The side of the card on show passing through the reader now.
+    std::optional<int> litCardCorner() const { return m_litCorner; }
+    /// The library program selected now (C59-7 AC-21), 0: none.
+    int activeProgram() const { return m_activeProgram; }
 
     // Debugger
     calcu::debugger::RunState runState() const;
@@ -279,7 +284,7 @@ public:
         DisplayChanged = 1u << 1,   ///< display digits or the C indicator
         CueCardChanged = 1u << 2,
         PrinterChanged = 1u << 3,   ///< connection, TRACE latch
-        CardChanged = 1u << 5,      ///< card reader state or file name
+        CardChanged = 1u << 5,      ///< the fitted card or the side passing
         RunStateChanged = 1u << 6,  ///< full speed, an operation runs, the run control's state
     };
     /// Told the changes each time the interim topics are published, on the
@@ -292,7 +297,7 @@ public:
     void error(const std::string& title, const std::string& message);
     /// Developer diagnostics: a line of the log.
     void diagnostic(const std::string& message);
-    /// The card and constant-memory files (TIFileAccess, on the save folder).
+    /// The constant-memory file (TIFileAccess, on the save folder).
     TIFileAccess& files() { return m_files; }
     ConstantMemoryKeeper& constantMemory() { return m_keeper; }
 
@@ -301,7 +306,6 @@ private:
     void emitChanged(uint32_t c) { m_changes |= c; }
     calcu::parts::LibraryPartsSetup librarySetup();   // the constructor's, on the members before m_lib
 
-    struct Hooks;
     using Handler = std::function<calcu::sessions::CommandOutcome(const calcu::sessions::Value&)>;
     void add(calcu::sessions::SessionSetup&, const calcu::sessions::CommandName&, Handler);
     /// After everything a flow did: the queue, the machine, the speed, the topics.
@@ -313,36 +317,24 @@ private:
     void followPlugs(bool newMachine);
     void syncSpeed();
     void publish(uint32_t changes);
-    /// The 60 Hz duties after a host call: display, card auto-eject, and the
-    /// cue-card program check (2 Hz).
+    /// The 60 Hz duties after a host call: display and the cue card shown.
     void frame(std::chrono::steady_clock::time_point now);
     /// `cue-card:` of a preset (C59-2 AC-6): the machine's own card.
     void fitOwnCueCard(const CueCardContent& card);
 
+    /// The cue card shown, the fitted card and the corner from the media
+    /// part's `card-reader` and the library program (AC-21, AC-22, AC-24).
     void refreshCueCard();
-    void checkProgramNumber();
     void followRunState();
     calcu::debugger::RunControl* runControl() const;
     calcu::machine::Machine* machine() const;
-    /// The card in the reader now.
-    struct CardPass {
-        int side = 0;          ///< of the fitted card
-    };
-    bool canFit() const;
-    /// LIB-13's `open` of a card file until M-55 (TIFileKinds' interim kind): the refusal, or none.
-    std::optional<std::string> openCard(const calcu::opening::OpenedFile& f);
-    void fit(const std::string& path, const std::string& fileName, CardDocument doc, bool fresh);
-    bool feed(int side);
-    void writeFittedSide(int side, const std::vector<uint8_t>& written);
-    CueCardContent fittedCueCard() const;
-    void startSwipe(const std::vector<uint8_t>& data, const CardPass& pass);
-
     TIAppSetup m_setup;
     TIFileAccess m_files;
+    std::shared_ptr<const calcu::media::FileAccess> m_mediaFiles;   ///< m_setup.fileIO as the media part's (D-30)
     std::optional<calcu::settings::SettingsFile> m_ownSettings;
+    std::unique_ptr<calcu::settings::Paths> m_paths;   ///< the save folder for the media part (LIB-9)
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
-    std::unique_ptr<Hooks> m_hooks;
 
     // The product's data for the library's parts (before m_lib).
     ConstantMemoryKeeper m_keeper;
@@ -367,8 +359,12 @@ private:
 
     std::string m_moduleID;
     std::map<int, CueCardContent> m_moduleCards;
-    ModuleMetadata m_moduleMetadata;
     std::optional<CueCardContent> m_cueCard;
+    bool m_onShow = false;
+    std::optional<int> m_litCorner;
+    /// D-6: which source fitted last (each takes the place of the one before).
+    enum class Fitted { None, Card, Own } m_lastFit = Fitted::None;
+    std::uint64_t m_seenArm = 0;   ///< the card reader's binding's arm serial last seen
     std::optional<CueCardContent> m_userCueCard;
     std::uint64_t m_userCueCardGeneration = 0;   ///< the machine it was fitted on (a preset's section)
     int m_activeProgram = 0;
@@ -379,24 +375,13 @@ private:
     bool m_printerConnected = false;
     bool m_printerTrace = false;   ///< C59-6 AC-6
 
-    std::string m_cardFileName = "card.U59";  ///< the fitted card's, or the last one's in the reader
-    struct FittedCard {
-        std::string path;
-        CardDocument doc;
-        bool fresh = false;  ///< no write yet: the first one replaces whatever is at `path`
-    };
-    std::optional<FittedCard> m_fitted;
-    std::optional<CardPass> m_pass;
-
     using Clock = std::chrono::steady_clock;
-    Clock::time_point m_nextProgramCheck;
     calcu::debugger::RunState m_seenRun;
 
     calcu::sessions::StateTopic* m_modelTopic = nullptr;
     calcu::sessions::StateTopic* m_led = nullptr;
     calcu::sessions::StateTopic* m_cue = nullptr;
     calcu::sessions::StateTopic* m_printer = nullptr;
-    calcu::sessions::StateTopic* m_card = nullptr;
     calcu::sessions::StateTopic* m_run = nullptr;
 };
 

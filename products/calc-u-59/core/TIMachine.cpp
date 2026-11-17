@@ -20,6 +20,7 @@ TIMachine::TIMachine(const MachineDescriptor& d, MachineVariant v, const TIRoms&
     const std::vector<std::uint8_t> zero(kRamBytes, 0);
     m_hw.deserialiseRAM(content ? content->ram.data() : zero.data());
     m_hw.reset();
+    if (!d.mediaPlaces.empty()) m_cardReader = std::make_unique<TICardReaderPlace>(*this);   // the TI-59 (C59-7 AC-6)
 }
 
 std::uint32_t TIMachine::stepOne() {
@@ -86,6 +87,7 @@ Ticks TIMachine::tickCount() const { return m_ticksBeforeReset + kTicksPerWeight
 
 void TIMachine::cpuReset() {
     m_ticksBeforeReset = tickCount();
+    if (m_cardReader) m_cardReader->beforeCpuReset();   // C59-7 AC-25: a card in the reader is taken out
     m_asmOverlay.m_running = false;   // C59-4 AC-18: a Reset ends the overlay's run
     m_hw.reset();   // clears the key matrix (AC-8), re-presses the card switch (EC-4)
     if (m_printer) m_printer->operation();
@@ -103,6 +105,8 @@ const CapabilityId kTypingId{"TMC0501/typing-support"};
 const CapabilityId kTraceRecordsId{"TMC0501/c59.trace-records"};
 const CapabilityId kProgramMemoryId{"RAM/c59.program-memory"};
 const CapabilityId kConstantMemoryId{"RAM/c59.constant-memory"};
+const CapabilityId kCardReaderId{"card-reader/media-place"};
+const CapabilityId kLibraryProgramId{"TMC0501/c59.library-program"};
 const CapabilityId kAsmOverlayId{"TMC0501/c59.asm-overlay"};
 const CapabilityId kHeatmapId{"TMC0501/c59.rom-heatmap"};
 const CapabilityId kCalculatorStateId{"TMC0501/c59.calculator-state"};
@@ -168,6 +172,8 @@ std::vector<CapabilityEntry> TIMachine::capabilities() const {
     const ComponentOwner ram{ComponentId{"RAM"}};
     out.push_back({cu59::ProgramMemory::kKind, kProgramMemoryId, ram});
     if (hasConstantMemory(m_variant)) out.push_back({cu59::ConstantMemory::kKind, kConstantMemoryId, ram});
+    out.push_back({cu59::LibraryProgram::kKind, kLibraryProgramId, cpu});
+    if (m_cardReader) out.push_back({calcu::media::MediaPlace::kKind, kCardReaderId, ComponentOwner{ComponentId{"card-reader"}}});
     if (!m_printer) return out;
     const PeripheralOwner owner{kPC100C, kPrinterPath};
     out.push_back({calcu::peripherals::Controls::kKind, kControlsId, owner});
@@ -184,6 +190,8 @@ Capability* TIMachine::capability(const CapabilityId& id) {
     if (id == kMachineLogId) return &m_machineLog;
     if (id == kProgramMemoryId) return &m_programMemory;
     if (id == kConstantMemoryId) return hasConstantMemory(m_variant) ? &m_constantMemory : nullptr;
+    if (id == kLibraryProgramId) return &m_libraryProgram;
+    if (id == kCardReaderId) return m_cardReader.get();
     if (!m_printer) return nullptr;
     if (id == kControlsId) return &m_printer->controls();
     if (id == kPaperId) return static_cast<calcu::paper::PaperOutput*>(m_printer.get());

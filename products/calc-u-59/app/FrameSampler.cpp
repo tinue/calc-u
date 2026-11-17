@@ -11,9 +11,8 @@ bool LedFrame::operator==(const LedFrame& o) const {
            std::memcmp(dpLevel, o.dpLevel, sizeof dpLevel) == 0;
 }
 
-FrameUpdate FrameSampler::tick(calcu::machine::Machine& m, bool cardSwiping) {
+FrameUpdate FrameSampler::tick(calcu::machine::Machine& m) {
     FrameUpdate u;
-    u.cardAutoEjected = cardSwiping && !cardReaderOf(m)->isCardPresent();
 
     u.display = m.readDisplay();
     // The poll's length: what ran since the previous tick. With nothing run

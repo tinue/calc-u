@@ -8,9 +8,9 @@
 #include <vector>
 
 // Cue card model: the strip above the keyboard naming the A–E / A′–E′ user
-// keys. Parsed from CUECARD: sections (state files, card files, ti58c.mem,
-// roms/solid-state/cuecards.txt) and encoded back. Field grammar and
-// math-token table: reference/StateFileFormat.md § CUECARD. How each frontend
+// keys. Read from the cue card blocks of presets, card files, the constant
+// memory file and the module files (app/CueCardYaml, app/ModuleCueCards). Field grammar and
+// math-token table: docs/formats/cue-card.md. How each frontend
 // draws it: reference/SharedArchitecture.md § "Cue Card Rendering".
 
 namespace cu59 {
@@ -142,13 +142,6 @@ uint32_t cueCardInk(const CueCardContent& card);
 inline constexpr uint32_t kCueCardDividerColor = 0xBC9D60;
 inline constexpr uint32_t kCueCardWashColor = 0x1A0505;
 inline constexpr double kCueCardWashAlpha = 0.4;
-
-/// Which cue card shows: the active library program's card, else a generic
-/// card titled with the module's metadata, else the user's card (file, preset,
-/// ti58c.mem), else none.
-std::optional<CueCardContent> resolveCueCard(int activeProgram, const std::map<int, CueCardContent>& moduleCards,
-                                             const std::string& moduleTitle, const std::string& moduleID,
-                                             const std::optional<CueCardContent>& userCard);
 
 /// The library program number from SCOM[9] (digits 4 and 3), 0 = none.
 inline int activeLibraryProgram(const uint8_t scom9[16]) { return scom9[4] * 10 + scom9[3]; }

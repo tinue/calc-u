@@ -3,15 +3,12 @@
 // and cue cards. Ported in M-34 from 2.3.0's SessionController tests; since
 // M-54 on the library's commands (LIB-18: model, reset, cold-boot, attach,
 // detach; LIB-6: load-preset {content}, run-step) and presets of format 2.
-// The 2.3.0 preset-card cases (ArmCard:, InsertCard:, CARD: blocks) went with
-// the reader of 2.3.0 (LIB-6 D-47); C59-7 (M-55) writes them anew on
-// magnetic-cards:, card:, arm:.
+// The card cases moved to card_flows_tests.cpp in M-55 (C59-7 T9, AC-27).
 
 #include "TestHarness.hpp"
 #include "SessionRig.hpp"
 #include "opening/OpenRequest.hpp"
 #include "TestRoms.hpp"
-#include "../app/CardFile.hpp"
 #include "../app/KeyboardLayout.hpp"
 #include "../app/ModuleImage.hpp"
 #include "../app/TextUtil.hpp"
@@ -29,13 +26,9 @@ using testroms::PartRig;
 
 namespace {
 
-std::vector<uint8_t> bytes(const std::string& s) { return std::vector<uint8_t>(s.begin(), s.end()); }
-
 bool waitForScanLoop(PartRig& r) {
     return r.runUntil([&] { return !r.busy() && r.part().emulator()->access().machine().isKeyReady(); }, 3000ms);
 }
-
-bool cardIdle(PartRig& r) { return r.part().cardState() == CardState::NoCard; }
 
 // The run control of the part's session (LIB-10).
 calcu::debugger::RunControl& rc(PartRig& r) { return r.part().debuggerPart()->runControl(); }
@@ -61,10 +54,6 @@ bool drop(PartRig& r, const std::optional<std::string>& content, const std::stri
     return r.operation(calcu::opening::kOpenCommand, q.toValue()).done;
 }
 
-// `n 2nd Write` through LIB-5's `key` command (as the harness's `key`): the
-// reply comes when the keys are up; the ROM then waits for a card. (A
-// preset's or run-step's `key: n Write` does not end in the card wait in
-// M-54's first run: reported to the parent.)
 // Keys at regular speed through LIB-5's `key` command (a user's keys, as
 // 2.3.0's KEYSTROKES pressed them at regular speed; LIB-6's run-step runs at
 // full speed); the reply comes when the last key is up.
@@ -75,16 +64,6 @@ bool keys(PartRig& r, std::initializer_list<const char*> names) {
     const auto reply = r.operation(calcu::typing::kKey, Value::object({{"names", Value(std::move(a))}}), 30000ms);
     return reply.done;
 }
-
-bool write(PartRig& r, const std::string& bank) {
-    using calcu::sessions::Value;
-    Value::Array names{Value(bank), Value("Write")};
-    const auto reply = r.operation(calcu::typing::kKey, Value::object({{"names", Value(std::move(names))}}), 30000ms);
-    r.run(500ms);
-    return reply.done && testroms::card(r.part().emulator()->machine()).isInCardWait();
-}
-
-const std::string kProgramA = "program:\n  keycodes: |\n    76 11 01 02 03 91\n";   // Lbl A 1 2 3 R/S
 
 double reg(PartRig& r, int n) { return testroms::mem(r.part().emulator()->machine()).readDataReg(n); }
 int step(PartRig& r, int s) { return int(testroms::mem(r.part().emulator()->machine()).readProgramStep(s)); }
@@ -156,7 +135,7 @@ TEST(lib10_ac35_part_model_switch_keeps_log_resets_freeze) {
             for (const auto& p : l->appended)
                 if (const auto* x = calcu::sessions::payloadAs<calcu::sessions::LogLine>(p)) dumped = dumped || x->text.find("──") != std::string::npos;
     CHECK(dumped);
-    CHECK(c.cardState() == CardState::NoCard);
+    CHECK(!c.cardFitted());
 }
 
 TEST(part_reset_keeps_the_memory_and_clean_reset_clears_it) {
@@ -386,28 +365,6 @@ TEST(c59_2_ac7_reload_keeps_the_program) {
     CHECK_EQ(reg(r, 5), 3.25);
 }
 
-TEST(part_writes_and_reads_a_card) {
-    PartRig r;
-    // Lbl A 1 2 3 R/S; 1 2nd Write, the last item: the ROM waits for a card.
-    CHECK(r.load(preset(kProgramA)).done);
-    CHECK(write(r, "1"));
-    r.run(2s);
-    CHECK(r.part().fitBlankCard("web:card", "card.U59"));
-    CHECK(r.part().feedSide(0));
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK_EQ(r.p.cards.count("web:card"), size_t{1});
-    CHECK(r.load(preset("")).done);  // a fresh machine: no program
-    r.run(1s);
-    CHECK_EQ(step(r, 1), 0);
-    const std::string& card = r.p.cards["web:card"];
-    CHECK(r.part().fitCard(std::vector<uint8_t>(card.begin(), card.end()), "web:card", "card.U59"));
-    CHECK(r.part().feedSide(0));
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    r.run(1s);
-    CHECK_EQ(step(r, 1), 11);
-    CHECK(r.errors().empty());
-}
-
 TEST(part_shows_the_library_program_card) {
     PartRig r;
     r.run(50ms);
@@ -432,265 +389,6 @@ TEST(c59_2_ac7_reload_after_the_first_run) {
     CHECK_EQ(testroms::mem(m).readDataReg(7), 9.0);
     CHECK(r.part().cueCard() && r.part().cueCard()->title == "Part 2");
     CHECK(r.errors().empty());
-}
-
-namespace {
-/// A card holding the program Lbl A 1 2 3 R/S, as a blank card written by the machine.
-std::string writtenCard(PartRig& r) {
-    CHECK(r.load(preset(kProgramA)).done);
-    CHECK(write(r, "1"));
-    CHECK(r.part().fitBlankCard("first", "first.U59"));
-    CHECK(r.part().feedSide(0));
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    return r.p.cards["first"];
-}
-}  // namespace
-
-// LIB-13 AC-12: fitted where it lies, read (the card files of today until M-55).
-TEST(lib13_ac12_card_fitted_where_it_lies_read_at_idle) {
-    PartRig r;
-    const std::string card = writtenCard(r);
-    CHECK(r.load(preset("")).done);  // a fresh machine: no program
-    r.run(1s);
-    CHECK_EQ(step(r, 1), 0);
-    CHECK(drop(r, card, "dropped", "dropped.U59"));
-    CHECK(r.part().cardFitted());
-    CHECK(cardIdle(r));  // not fed until a corner is tapped
-    r.run(500ms);
-    CHECK_EQ(step(r, 1), 0);
-    CHECK(r.part().feedSide(0));
-    CHECK(r.part().cardState() == CardState::Swiping);
-    CHECK(r.part().litCardCorner() == 0);
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    r.run(1s);
-    CHECK_EQ(step(r, 1), 11);
-    CHECK_EQ(r.p.cards.count("dropped"), size_t{0});  // read, not written
-    CHECK(r.errors().empty());
-}
-
-// LIB-13 AC-12: written back where it lies.
-TEST(lib13_ac12_card_fitted_where_it_lies_written_back) {
-    PartRig r;
-    const std::string card = writtenCard(r);
-    CHECK(r.load(preset("program:\n  keycodes: |\n    76 12 04 05 06 91\n")).done);   // Lbl B …
-    CHECK(write(r, "1"));
-    r.p.cards["dropped"] = card;
-    CHECK(drop(r, card, "dropped", "dropped.U59"));
-    CHECK(r.part().feedSide(0));
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK_EQ(r.p.cards.count("dropped"), size_t{1});
-    CHECK(r.p.cards["dropped"] != card);
-
-    CHECK(r.load(preset("")).done);
-    r.run(1s);
-    const std::string overwritten = r.p.cards["dropped"];
-    CHECK(drop(r, overwritten, "dropped", "dropped.U59"));
-    CHECK(r.part().feedSide(0));
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    r.run(1s);
-    CHECK_EQ(step(r, 1), 12);
-}
-
-// LIB-13 AC-12: a card on a model without a reader is refused with a
-// notice (today nothing happened and nothing was said).
-TEST(lib13_ac12_refused_on_ti58_and_ti58c_with_notice) {
-    PartRig r;
-    const std::string card = writtenCard(r);
-    for (const char* m : {"TI-58", "TI-58C"}) {
-        CHECK(r.model(m).done);
-        CHECK(!drop(r, card, "dropped", "dropped.U59"));
-        r.run(500ms);
-        CHECK(cardIdle(r));
-    }
-    CHECK_EQ(r.errors().size(), size_t{2});
-}
-
-// LIB-13 AC-16 and EC-4: a card replaces the fitted one, but not while one passes.
-TEST(lib13_ec4_card_while_one_passes_refused_nothing_imported) {
-    PartRig r;
-    const std::string card = writtenCard(r);
-    CHECK(drop(r, card, "one", "one.U59"));
-    CHECK(drop(r, card, "two", "two.U59"));
-    CHECK_EQ(r.part().cardFileName(), std::string("two.U59"));
-    CHECK(r.part().feedSide(0));
-    CHECK(!drop(r, card, "three", "three.U59"));
-    CHECK_EQ(r.part().cardFileName(), std::string("two.U59"));
-}
-
-namespace {
-/// Two writes, 1 2nd Write then 2 2nd Write (run-step: each ends at the card
-/// wait, which counts as idle), feeding `first` then `second`.
-void feedTwoWrites(PartRig& r, int first, int second) {
-    CHECK(write(r, "1"));
-    CHECK(r.part().feedSide(first));
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK(waitForScanLoop(r));
-    CHECK(write(r, "2"));
-    CHECK(r.part().feedSide(second));
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK(waitForScanLoop(r));
-}
-}  // namespace
-
-TEST(fresh_card_writes_both_sides_into_one_file) {
-    PartRig r;
-    CHECK(r.load(preset(kProgramA)).done);
-    CHECK(r.part().fitBlankCard("cards/Fresh.U59", "Fresh.U59"));
-    CHECK(r.part().cueCard() && r.part().cueCard()->title == "Fresh");
-    CHECK(r.part().cueCard() && !r.part().cueCard()->bankLeft && !r.part().cueCard()->bankRight);
-    feedTwoWrites(r, 0, 1);
-    const std::string& text = r.p.cards["cards/Fresh.U59"];
-    CHECK(startsWith(text, "Calc-U-59 Card 2.0\n"));
-    CHECK(text.find("Banks:") == std::string::npos);
-    // The corners show what was written.
-    CHECK(r.part().cueCard() && r.part().cueCard()->bankLeft == 1 && r.part().cueCard()->bankRight == 2);
-    auto doc = decodeCardFile(bytes(text), "Fresh.U59");
-    CHECK(doc.card && doc.card->sides[0] && doc.card->sides[1]);
-
-    // Side 2 reads bank 2; the card stays fitted after the pass.
-    const std::string saved = text;
-    CHECK(r.load(preset("")).done);
-    r.run(1s);
-    CHECK(!r.part().cardFitted());
-    CHECK(r.part().fitCard(bytes(saved), "cards/Fresh.U59", "Fresh.U59"));
-    CHECK(r.part().tapCard(0.9, kCardRect.y + 0.1 * kCardRect.h));
-    CHECK(r.part().litCardCorner() == 1);
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK(!r.part().litCardCorner());
-    CHECK(r.part().cardFitted());
-    CHECK(r.errors().empty());
-}
-
-TEST(a_side_can_hold_any_bank_and_the_corner_follows) {
-    PartRig r;
-    CHECK(r.load(preset(kProgramA)).done);
-    CHECK(r.part().fitBlankCard("c", "c.U59"));
-    CHECK(write(r, "1"));   // bank 1 twice
-    CHECK(r.part().feedSide(1));
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK(waitForScanLoop(r));
-    CHECK(write(r, "1"));
-    CHECK(r.part().feedSide(0));
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK(r.part().cueCard() && r.part().cueCard()->bankLeft == 1 && r.part().cueCard()->bankRight == 1);
-    CHECK(r.errors().empty());
-}
-
-TEST(version_1_card_stays_version_1_on_a_write) {
-    PartRig r;
-    const std::string card = writtenCard(r);
-    auto oldDoc = decodeCardFile(bytes(card), "x");
-    CHECK(oldDoc.card && oldDoc.card->sides[0]);
-    CueCardContent cue;
-    cue.title = "OLD CARD";
-    cue.bankLeft = 1;
-    cue.bankRight = 2;
-    const std::string v1 = encodeCardText(*oldDoc.card->sides[0], &cue);
-    r.p.cards["v1"] = v1;
-    CHECK(r.load(preset("program:\n  keycodes: |\n    76 12 04 05 06 91\n")).done);
-    CHECK(r.part().fitCard(bytes(v1), "v1", "v1.U59"));
-    CHECK(r.part().cueCard() && r.part().cueCard()->bankLeft == 1 && r.part().cueCard()->bankRight == 2);
-    CHECK(write(r, "1"));
-    CHECK(r.part().feedSide(1));  // either corner: the one side
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    const std::string& text = r.p.cards["v1"];
-    CHECK(text != v1);
-    CHECK(startsWith(text, "Calc-U-59 Card 1.0\n"));
-    CHECK(text.find("Banks: 1, 2") != std::string::npos);
-    CHECK(r.part().cueCard() && r.part().cueCard()->bankRight == 2);
-    CHECK(r.errors().empty());
-}
-
-TEST(write_keeps_the_side_changed_elsewhere_and_refuses_a_broken_file) {
-    PartRig r;
-    const std::string card = writtenCard(r);
-    CardDocument other;
-    other.cueCard = freshCardCue("Shared.U59");
-    other.sides[1] = decodeCardFile(bytes(card), "x").card->sides[0];
-    r.p.cards["s"] = encodeCardDocument(other);
-
-    CardDocument mine;
-    mine.cueCard = freshCardCue("Shared.U59");
-    const std::string programB = preset("program:\n  keycodes: |\n    76 12 04 05 06 91\n");
-    CHECK(r.load(programB).done);
-    CHECK(r.part().fitCard(bytes(encodeCardDocument(mine)), "s", "Shared.U59"));  // fitted before side 2 appeared
-    CHECK(write(r, "1"));
-    CHECK(r.part().feedSide(0));
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    auto merged = decodeCardFile(bytes(r.p.cards["s"]), "Shared.U59");
-    CHECK(merged.card && merged.card->sides[0] && merged.card->sides[1]);
-
-    CHECK(r.load(programB).done);
-    CHECK(r.part().fitCard(bytes(r.p.cards["s"]), "s", "Shared.U59"));
-    r.p.cards["s"] = "Calc-U-59 Card 2.0\nbroken";
-    CHECK(write(r, "1"));
-    CHECK(r.part().feedSide(0));
-    CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK_EQ(r.p.cards["s"], std::string("Calc-U-59 Card 2.0\nbroken"));  // left alone, reported
-    CHECK(!r.errors().empty());
-}
-
-TEST(fresh_card_replaces_the_file_of_that_name_at_its_first_write_only) {
-    PartRig r;
-    r.p.cards["same"] = "Calc-U-59 Card 2.0\nwhatever was here";
-    CHECK(r.load(preset(kProgramA)).done);
-    CHECK(r.part().fitBlankCard("same", "same.U59"));
-    CHECK_EQ(r.p.cards["same"], std::string("Calc-U-59 Card 2.0\nwhatever was here"));  // still there
-    feedTwoWrites(r, 0, 1);
-    CHECK(decodeCardFile(bytes(r.p.cards["same"]), "same.U59").card.has_value());
-    CHECK(r.errors().empty());
-}
-
-TEST(blank_side_fed_at_idle_writes_nothing) {
-    PartRig r;
-    CHECK(r.load(preset("")).done);
-    r.run(1s);
-    CHECK(r.part().fitBlankCard("blank", "blank.U59"));
-    CHECK(r.part().feedSide(0));
-    r.run(5s);
-    r.part().ejectCard();
-    r.run(500ms);
-    CHECK_EQ(r.p.cards.count("blank"), size_t{0});
-    CHECK(r.part().cardFitted());
-    CHECK(r.errors().empty());
-}
-
-TEST(blank_side_fed_at_partition_0_writes_nothing) {
-    PartRig r;
-    CHECK(r.step("key", "0 Op 1 7").done);
-    r.run(1s);
-    CHECK(r.part().fitBlankCard("blank", "blank.U59"));
-    CHECK(r.part().feedSide(0));
-    r.run(5s);
-    r.part().ejectCard();
-    r.run(500ms);
-    CHECK_EQ(r.p.cards.count("blank"), size_t{0});
-    CHECK(r.part().cardFitted());
-}
-
-TEST(module_cue_card_covers_the_fitted_card_and_it_comes_back) {
-    PartRig r;
-    CHECK(r.part().fitBlankCard("c", "Mine.U59"));
-    auto mine = [&] { return r.part().cueCard() && r.part().cueCard()->title == "Mine"; };
-    CHECK(mine());
-    CHECK(r.step("key", "Pgm 0 1").done);
-    CHECK(r.runUntil([&] { return !mine(); }));
-    CHECK(!r.part().tapCard(0.1, kCardRect.y + 0.1 * kCardRect.h));  // not on show
-    CHECK(cardIdle(r));
-    CHECK(r.part().cardFitted());
-    CHECK(r.step("key", "Pgm 0 0").done);
-    CHECK(r.runUntil(mine));
-    CHECK(r.errors().empty());
-}
-
-TEST(card_corners_hit_only_the_top_corners) {
-    const double top = kCardRect.y + 0.1 * kCardRect.h;
-    CHECK(cardCornerAt(0.01, top) == 0);
-    CHECK(cardCornerAt(0.99, top) == 1);
-    CHECK(!cardCornerAt(0.5, top));
-    CHECK(!cardCornerAt(0.1, kCardRect.y + 0.3 * kCardRect.h));  // the title row
-    CHECK(!cardCornerAt(0.1, kCardRect.y - 0.001));
-    CHECK(!cardCornerAt(0.21, top));
 }
 
 // LIB-6 §11.2 (until LIB-13 59's `open`, M-56): a dropped preset is LIB-6's

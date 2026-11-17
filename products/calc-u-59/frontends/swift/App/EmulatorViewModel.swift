@@ -178,17 +178,17 @@ class EmulatorViewModel {
     /// ROM heatmap (5 120 code addresses 0x0000–0x13FF), published at ~10 Hz.
     var romHitCount: [UInt32] = Array(repeating: 0, count: 0x1400)
 
-    // ── Card reader state ────────────────────────────────────────────────────
+    // ── Card reader state (the library's `media` topic, C59-7, M-55) ─────────
     enum CardState: Equatable {
-        case noCard      // Nothing selected
-        case swiping     // Card is passing through; I/O in progress
+        case noCard      // No side in the reader
+        case swiping     // A side is passing through; I/O in progress
     }
     var cardState: CardState = .noCard
     var cardPickerMode: CardPickerView.Mode? = nil
-    /// `true` when a card file exists on disk.
-    var hasCardFile: Bool = false
-    /// Display name of the last card file loaded.
-    var cardFileName: String = "card.U59"
+    /// The fitted card's name, nil when none.
+    var fittedCardName: String?
+    /// The saved cards, as Arm Card lists them (AC-14).
+    var savedCards: [TISavedCard] = []
     #if os(macOS)
     /// The dropped card in the reader, whose security scope is still open.
     @ObservationIgnored private var droppedCardScope: URL?
@@ -264,7 +264,6 @@ class EmulatorViewModel {
             }
         }
         let start = TISessionStart()
-        start.cuecards = ROMLoader.cuecardsText
         start.settings = SettingsModel.shared.file
         start.examplesFolder = Bundle.main.url(forResource: "examples", withExtension: nil)?.path ?? ""
         start.saveFolder = CardStorage.directoryURL.path
@@ -275,7 +274,6 @@ class EmulatorViewModel {
         // UI tests (--module XX): that module into slot-1 once the start has built
         // the machine (the built-in default has ML; LIB-18 AC-18).
         if EmulatorViewModel.startModuleID != "ML" { pendingStartModule = EmulatorViewModel.startModuleID }
-        hasCardFile = CardStorage.hasCard
         #if DEBUG && (os(macOS) || targetEnvironment(simulator))
         // Harness attach (C59-5 AC-10): `calcu attach`, the port of --attach-port, else 59059.
         session?.openAttach(withArguments: ProcessInfo.processInfo.arguments)
@@ -358,18 +356,19 @@ class EmulatorViewModel {
         if cardState == .swiping { ejectCard() }
     }
 
-    func fitBlankCard(savingTo url: URL) {
-        session?.fitBlankCard(url.path, fileName: url.lastPathComponent) { [weak self] fitted in
-            if fitted { self?.releaseDroppedCardScope() }
-        }
+    /// Arm Card (AC-14): a saved card fitted for the user to feed.
+    func armCard(_ card: TISavedCard) {
+        releaseDroppedCardScope()
+        session?.armCard(card)
     }
 
-    func fitCard(from url: URL) {
-        // A courtesy for URLs that may be security-scoped (our own iCloud container's aren't).
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        session?.fitCard(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent) { [weak self] fitted in
-            if fitted { self?.releaseDroppedCardScope() }
+    /// Arm Fresh Card (AC-15): `asked` gets the replace question, or nil once it is fitted.
+    func armFreshCard(name: String, confirmed: Bool, asked: @escaping (String?) -> Void) {
+        session?.armFreshCard(name, confirmed: confirmed) { [weak self] question, refusal in
+            if let question { asked(question); return }
+            if let refusal { self?.showError(title: "Arm Fresh Card", message: refusal) }
+            else { self?.releaseDroppedCardScope() }
+            asked(nil)
         }
     }
 
@@ -457,7 +456,7 @@ class EmulatorViewModel {
         session?.openFile(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent, way: way) { [weak self] opened in
             guard let self else { return }
             #if os(macOS)
-            if opened && self.controller.cardFitted && self.controller.cardFileName == url.lastPathComponent {
+            if opened && self.controller.cardFitted && url.lastPathComponent.lowercased().hasSuffix(".magnetcard.yaml") {
                 self.releaseDroppedCardScope()
                 if scoped { self.droppedCardScope = url }
                 return
@@ -530,10 +529,11 @@ class EmulatorViewModel {
             if printerConnected != controller.printerConnected { printerConnected = controller.printerConnected }
         }
         if c.contains(.card) || c.contains(.model) {
-            let state: CardState = controller.cardSwiping ? .swiping : .noCard
+            let state: CardState = controller.cardPassing ? .swiping : .noCard
             if cardState != state { cardState = state }
             if !controller.cardFitted { releaseDroppedCardScope() }
-            if cardFileName != controller.cardFileName { cardFileName = controller.cardFileName }
+            if fittedCardName != controller.fittedCardName { fittedCardName = controller.fittedCardName }
+            savedCards = controller.savedCards
         }
         if c.contains(.runState) {
             if isFrozen != controller.frozen { isFrozen = controller.frozen }
@@ -596,7 +596,7 @@ class EmulatorViewModel {
         errorMessage = message
     }
 
-    fileprivate func cardWritten() { hasCardFile = CardStorage.hasCard }
+    fileprivate func cardWritten() { if let controller = session { savedCards = controller.savedCards } }
 
     fileprivate func paperCopied(_ outcome: Int) {
         paperCopyMessage = outcome == 2 ? "Copy failed" : "Copied to clipboard"

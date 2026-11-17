@@ -38,10 +38,11 @@ SettingsDialog::SettingsDialog(EmulatorController& controller, QWidget* parent) 
     });
     gf->addRow(QStringLiteral("Startup Calculator"), m_startup);
 
+    // slot-1's picker of the library's media topic (LIB-7 AC-47; C59-6 AC-8).
     m_module = new QComboBox(general);
-    for (const auto& m : m_controller.allModules())
-        m_module->addItem(QString::fromStdString(m.menuTitle), QString::fromStdString(m.id));
-    m_module->setCurrentIndex(m_module->findData(m_controller.moduleID()));
+    for (const auto& e : m_controller.modulePicker())
+        m_module->addItem(QString::fromStdString(e.label), QString::fromStdString(e.id));
+    m_module->setCurrentIndex(m_module->findData(QStringLiteral("module:") + m_controller.moduleID()));
     gf->addRow(QStringLiteral("Solid State Module"), m_module);
     gf->addRow(QStringLiteral("Version"), new QLabel(QStringLiteral(APP_VERSION " (" APP_BUILD_ID ")"), general));
     col->addWidget(general);
@@ -59,7 +60,7 @@ SettingsDialog::SettingsDialog(EmulatorController& controller, QWidget* parent) 
     col->addWidget(display);
 
     // Folders, as in Calc-U-1600: each row shows the folder in use; Reset
-    // returns to the default (cards: ~/Calc-U-59, traces: the card folder,
+    // returns to the default (the save folder: ~/Calc-U-59, traces: the save folder,
     // presets: the folder a preset was last opened from).
     auto* files = new QGroupBox(QStringLiteral("Files"), this);
     auto* grid = new QGridLayout(files);
@@ -74,8 +75,8 @@ SettingsDialog::SettingsDialog(EmulatorController& controller, QWidget* parent) 
                  [](const QString& dir) { AppSettings::setOpenDir(AppSettings::OpenFolder::Presets, dir); });
     // The new folder is used from the next start (the TI-58C's constant memory
     // file is read once, at the build of the TI-58C; C59-3 TR).
-    addFolderRow(grid, QStringLiteral("Card Folder"), QStringLiteral("Folder for cards and ti58c.memory.yaml"),
-                 [] { return AppPaths::displayPath(AppPaths::cardDir()); }, [] { return AppPaths::cardDir(); },
+    addFolderRow(grid, QStringLiteral("Save Folder"), QStringLiteral("Folder for cards and ti58c.memory.yaml"),
+                 [] { return AppPaths::displayPath(AppPaths::saveDir()); }, [] { return AppPaths::saveDir(); },
                  [] { return !AppSettings::saveFolderOverride().isEmpty(); },
                  [](const QString& dir) { AppSettings::setSaveFolderOverride(dir); });
     addFolderRow(grid, QStringLiteral("Trace Folder"), QStringLiteral("Folder for CALCU59_TRACE.bin"),
@@ -133,7 +134,6 @@ void SettingsDialog::addFolderRow(QGridLayout* grid, const QString& label, const
 }
 
 void SettingsDialog::done(int r) {
-    QString module = m_module->currentData().toString();
-    if (!module.isEmpty()) m_controller.changeModule(module);
+    m_controller.chooseModule(m_module->currentData().toString());
     QDialog::done(r);
 }

@@ -82,7 +82,7 @@ QString defaultDir() {
     return dir;
 }
 
-QString cardDir() { return ensured(cs::Folder::Save); }
+QString saveDir() { return ensured(cs::Folder::Save); }
 
 QString bundledExamplesDir() {
 #if defined(Q_OS_MACOS)

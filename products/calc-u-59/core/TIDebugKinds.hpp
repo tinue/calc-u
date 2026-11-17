@@ -68,6 +68,8 @@ public:
 
     virtual std::uint16_t pc() const = 0;
     virtual CpuFrame snapshotCPU() const = 0;
+    /// The latched module byte address of the running module program (0xFFFF: none; M-55, was the card reader adapter's).
+    virtual std::uint16_t libExecPC() const = 0;
     virtual TIStepBoundary lastStepBoundary() const = 0;
     /// A byte of the ROM's own programs, 0 to 383.
     virtual std::uint8_t readROMKeycode(int addr) const = 0;

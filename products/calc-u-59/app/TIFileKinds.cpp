@@ -1,5 +1,4 @@
 #include "TIFileKinds.hpp"
-#include "CardFile.hpp"
 #include "Keycodes.hpp"
 #include "TIDebugPart.hpp"
 #include "TIPresetKeys.hpp"
@@ -100,22 +99,6 @@ private:
     std::string m_why;
 };
 
-// The card files of today until M-55 (LIB-13 §10.7): fitted by the product.
-class CardKind final : public FileKind {
-public:
-    explicit CardKind(CardFitter fit) : m_fit(std::move(fit)) {}
-    std::string_view name() const override { return "magnetic-card"; }
-    bool takesName(std::string_view n) const override { return isCardFileName(n); }
-    bool takes(const OpenedFile& f) const override { return isCardFileName(f.name); }
-    CommandOutcome open(const OpenedFile& f, Way w, SessionContext&) override {
-        if (auto refusal = m_fit(f, w)) return Refused{f.name + " was not opened: " + *refusal};
-        return Done{};
-    }
-
-private:
-    CardFitter m_fit;
-};
-
 } // namespace
 
 struct TIFileKinds::Kinds {
@@ -128,20 +111,15 @@ struct TIFileKinds::Kinds {
                                    return base == "ti58c.memory.yaml";
                                },
                                "it is Calc-U-59's own constant memory file."};
-    std::optional<CardKind> cards;
     explicit Kinds(TIDebugPart& d) : asmKind(d) {}
 };
 
-TIFileKinds::TIFileKinds(TIDebugPart& debug, CardFitter cards) : m_kinds(std::make_unique<Kinds>(debug)) {
-    if (cards) m_kinds->cards.emplace(std::move(cards));
-}
+TIFileKinds::TIFileKinds(TIDebugPart& debug) : m_kinds(std::make_unique<Kinds>(debug)) {}
 
 TIFileKinds::~TIFileKinds() = default;
 
 std::vector<FileKind*> TIFileKinds::kinds() {
-    std::vector<FileKind*> out{&m_kinds->asmKind, &m_kinds->keystrokes, &m_kinds->romModule, &m_kinds->constantMemory};
-    if (m_kinds->cards) out.push_back(&*m_kinds->cards);
-    return out;
+    return {&m_kinds->asmKind, &m_kinds->keystrokes, &m_kinds->romModule, &m_kinds->constantMemory};
 }
 
 } // namespace cu59

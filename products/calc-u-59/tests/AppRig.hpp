@@ -63,7 +63,6 @@ struct Rig {
         if (configure) configure(settings);
         cu59::TIAppSetup s;
         s.roms = testroms::romSet();
-        s.cuecards = testroms::readFile("roms/solid-state/cuecards.txt").value_or("");
         s.settings = &settings;
         s.examplesFolder = "examples";
         s.saveFolder = "save";

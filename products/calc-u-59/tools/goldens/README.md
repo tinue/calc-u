@@ -18,10 +18,10 @@ reference is the Swift code at the pinned commit, not the current tree.
 | Golden | Swift original (commit) | C++ port | Test |
 |---|---|---|---|
 | `keynames` | `frontends/swift/App/TI59KeyNames.swift` (66537d3) | `app/KeyNames.cpp` | `tests/shared_tables_tests.cpp` |
-| `formats` | `frontends/swift/App/StateFileLoader.swift`, `CueCardContent.swift`, `RegisterLineHelpers.swift`, `MachineModel.swift` (66537d3) | `CardFile.cpp`, `CueCard.cpp`, `Bcd.cpp` (the state-file parser and its `STATE` records went in M-54) | `tests/shared_formats_tests.cpp` |
+| `formats` | `frontends/swift/App/StateFileLoader.swift`, `CueCardContent.swift`, `RegisterLineHelpers.swift`, `MachineModel.swift` (66537d3) | `CueCard.cpp`, `Bcd.cpp` (the state-file parser and its `STATE` records went in M-54, the card files and their `CARD` records in M-55) | `tests/shared_formats_tests.cpp` |
 
-The `formats` driver parses the card fixtures `tests/fixtures/cards/` (edge
-cases) and dumps the register-line and BCD records. The `STATE` records of
+The `formats` driver dumps the register-line and BCD records (the `CARD`
+records of 2.3.0's card files went in M-55, C59-7 TR). The `STATE` records of
 2.3.0's state files went in M-54 (C59-2 §2): presets of format 2 are the
 library's, checked by `calcu_preset_check.CalcU59Presets` and the reference
 runs.

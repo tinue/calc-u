@@ -112,7 +112,22 @@ struct KindDecl {
     // Empty: it fits every slot of its kind (M-47).
     std::function<bool(const MediumInfo&, const machine::PinOutId&)> fitsPinOut;
     PresetWords words;
+    // LIB-7 design §11 (M-55; Calc-U-59's magnetic card). The part reads the
+    // instance's file again just before each write and hands its bytes to
+    // the codec as Write::source, so a write keeps what the file holds of
+    // the rest (C59-7 AC-5, EC-3; D-27). Default: the bytes last read or
+    // written.
+    bool rereadBeforeWrite = false;
+    // False: no Name & Save is offered for a medium of the kind; the topic
+    // never sets `nameAndSave` and the command refuses (D-28).
+    bool offersNameAndSave = true;
+    // The question of a replace (AC-17 row 5, AC-20), `{name}` standing for
+    // the name; empty: the library's sentence (D-31).
+    std::string replaceQuestion;
 };
+
+// The `asks:` question of a replace of the medium named `name` (D-31).
+std::string replaceQuestionFor(const KindDecl&, const std::string& name);
 
 // For the non-media modules of a module slot (AC-8): label, tooltip and
 // order. Default: the descriptor's name, no tooltip, by name. Calc-U-59: the
@@ -121,6 +136,10 @@ struct ModuleListing {
     std::function<std::string(const machine::PeripheralDescriptor&)> label;
     std::function<std::optional<std::string>(const machine::PeripheralDescriptor&)> tooltip;
     std::function<int(const machine::PeripheralDescriptor&)> sortKey;   // equal keys keep the catalogue's order
+    // The places of a model that are module slots although no kind of
+    // medium fits them: their picker lists the empty slot and the modules
+    // (AC-8, AC-47; Calc-U-59's `slot-1`, whose modules are not media).
+    std::vector<machine::PlaceName> slots;
 };
 
 } // namespace calcu::media

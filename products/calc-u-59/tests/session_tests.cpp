@@ -2,6 +2,8 @@
 // library's app session, driven as a frontend drives it (AppSessionRig.hpp).
 
 #include "TestHarness.hpp"
+#include "../app/TIMagneticCardKind.hpp"
+#include "media/MediaTopics.hpp"
 #include "SessionRig.hpp"
 #include "../app/Bcd.hpp"
 #include "../app/TIPresetKeys.hpp"
@@ -38,7 +40,6 @@ std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
     if (const auto* x = payloadAs<TILedState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TICueCardState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIPrinterState>(*p)) return x->serial;
-    if (const auto* x = payloadAs<TICardReaderState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIRunState>(*p)) return x->serial;
     // The debug panel's topics (C59-4 AC-25): a serial, or a count of sets.
     if (const auto* x = payloadAs<TICpuDebug>(*p)) return x->serial;
@@ -52,7 +53,7 @@ std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
 // flag's action moves its topic on.
 TEST(lib3_ac29_mirror_holds_every_change_flag) {
     SessionRig r;
-    for (const auto* t : {&topics::kModel, &topics::kLed, &topics::kCueCard, &topics::kPrinter, &topics::kCardReader,
+    for (const auto* t : {&topics::kModel, &topics::kLed, &topics::kCueCard, &topics::kPrinter, &calcu::media::kMediaTopic,
                           &topics::kRunState, &topics::kCalculatorDebug, &topics::kCpuDebug,
                           &topics::kHeatmap, &topics::kAsmOverlay, &topics::kDebugView})
         CHECK(r.fe.mirror.state(*t) != nullptr);
@@ -73,10 +74,16 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
     CHECK(moves(topics::kLed, [&] { r.tap(83); }));   // 5
     // CueCardChanged, CardChanged
     CHECK(moves(topics::kCueCard, [&] { r.model("TI-59"); }));
-    CHECK(moves(topics::kCardReader, [&] {
-        r.send(commands::kFitBlankCard, Value::object({{"path", (r.folder.path() / "a.u59").string()}, {"name", "a.u59"}}));
-    }));
-    CHECK(r.state<TICardReaderState>(topics::kCardReader)->fitted);
+    {   // CardChanged: the library's `media` topic (M-55, LIB-7 59)
+        const PayloadPtr before = *r.fe.mirror.state(calcu::media::kMediaTopic);
+        r.send(calcu::media::kStartNewCommand,
+               Value::object({{"place", "card-reader"}, {"template", "implicit:Fresh card"}, {"name", "a"}}));
+        r.runFor(100ms);
+        CHECK(*r.fe.mirror.state(calcu::media::kMediaTopic) != before);
+        const auto* media = r.state<calcu::media::MediaState>(calcu::media::kMediaTopic);
+        CHECK(media && media->place("card-reader") && media->place("card-reader")->holds);
+        CHECK(moves(topics::kCueCard, [&] {}) || r.part().cardOnShow());
+    }
     // PrinterChanged (TRACE through the paper panel's set-control, LIB-8 P-E2)
     CHECK(moves(topics::kPrinter, [&] {
         r.send(commands::kSetControl, Value::object({{"peripheral", "PC-100C"}, {"control", "TRACE"}, {"on", true}}));
@@ -122,11 +129,13 @@ TEST(lib3_ac30_card_and_constant_memory_files_without_frontend) {
     const auto mem = r.folder.path() / TIFileAccess::kConstantMemoryFile;
     CHECK_EQ(std::string(TIFileAccess::kConstantMemoryFile), std::string("ti58c.memory.yaml"));
     CHECK(testroms::fs::exists(mem));
-    TIFileAccess& p = r.part().files();
-    CHECK_EQ(p.cardFilePath("x.u59"), (r.folder.path() / "x.u59").string());
-    CHECK(!p.readCard(p.cardFilePath("x.u59")).raw);
-    CHECK(p.writeCard(p.cardFilePath("x.u59"), "CARD"));
-    CHECK(p.readCard(p.cardFilePath("x.u59")).raw == std::optional<std::vector<uint8_t>>(std::vector<uint8_t>{'C', 'A', 'R', 'D'}));
+    CHECK_EQ(r.part().files().savePath("x"), (r.folder.path() / "x").string());
+    // The cards: the library's media part on the same save folder (M-55).
+    SessionRig c;
+    const std::string text = writeMagneticCardFile(TIMagneticCardData{}, "x", "", false, std::nullopt, "");
+    const auto imported = c.part().mediaPart()->importBytes(c.session().context(), "x.magnetcard.yaml", text, {});
+    CHECK(imported.ok);
+    CHECK(testroms::fs::exists(c.folder.path() / "x.magnetcard.yaml"));
 }
 
 // AC-30: the module ID is no longer saved (row 59-9).

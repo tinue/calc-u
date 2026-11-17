@@ -13,8 +13,12 @@
 // example without a `.paper-text` prints nothing). Not compared (AC-11, row
 // 59-23, LIB-6 AC-64): tick counts, `Elapsed:` lines, the log, the
 // `playback:` line. `historic/life.ti59` never stops: it is only loaded
-// without a failure. The four examples with magnetic cards wait for M-55
-// (C59-7), named in kWaiting. A difference is a finding (CLAUDE.md: never a
+// without a failure. The four examples with magnetic cards (C59-7 AC-30, M-55)
+// also compare the banks of their in-file cards (`--- in-file cards`, from
+// the media part's store) and of the card files they write (`--- cards
+// written`, the sides of the run's save folder's `.magnetcard.yaml`); every
+// card is fitted after it has passed, which is no difference of the machine.
+// A difference is a finding (CLAUDE.md: never a
 // new reference): named in kFindings with its reason, any other fails.
 //
 // CALCU59_REFERENCE_COMPARE=1 runs it (Longer: CalcU59ReferenceRuns);
@@ -23,6 +27,9 @@
 
 #include "../app/HarnessProduct.hpp"
 #include "../app/TIPresetKeys.hpp"
+#include "../app/TIMagneticCardKind.hpp"
+#include "media/MediaPart.hpp"
+#include "parts/LibraryParts.hpp"
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "harness/HarnessHost.hpp"
@@ -42,8 +49,6 @@ namespace fs = std::filesystem;
 
 namespace {
 
-const std::set<std::string> kWaiting = {"globe-print.ti59", "historic/characters-fastmode.ti59",
-                                        "historic/pdcm-card-tricks.ti59", "historic/pdcm-make-cards.ti59"};
 const std::string kNeverStops = "historic/life.ti59";
 
 // The differences found and named (CLAUDE.md: a finding, not a new
@@ -62,6 +67,14 @@ const std::map<std::string, std::string> kFindings = {
     {"historic/texas-print.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
     {"screentest/test_texas.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
     {"picard.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
+    {"globe-print.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's; M-55)"},
+    // M-55 (C59-7 AC-30): 2.3.0 recorded 2.7 s after its playback ended,
+    // while the program was still printing the table at fast mode (one line
+    // on paper, the display dark); the bare `wait` now runs to idle, so the
+    // whole table is printed and the display shows 0. The card reads before
+    // are the same: the program the card loads runs.
+    {"historic/characters-fastmode.ti59",
+     "the 2.3.0 record was taken while the table was still printing (2.7 s after the playback); the run now ends at idle"},
     {"switzerland.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
     // A screen test that ends paused in the error blink: `wait: 400ms` now
     // counts emulated time (LIB-6 AC-20) and the pause lands by LIB-10's rules,
@@ -77,6 +90,8 @@ const std::map<std::string, std::string> kFindingParts = {
     {"historic/texas-print.ti59", "marks"},
     {"screentest/test_texas.ti59", "marks"},
     {"picard.ti59", "marks"},
+    {"globe-print.ti59", "marks"},
+    {"historic/characters-fastmode.ti59", "display ram text marks"},
     {"switzerland.ti59", "marks"},
     {"screentest/test_58_glyphs.ti58", "display"},
 };
@@ -107,17 +122,90 @@ std::string replyBody(const std::string& reply) {
 struct Record {
     std::string display, partition;
     std::vector<std::string> ram;
+    std::map<std::string, std::string> inFile;    // mem:<name> → the bank, hex
+    std::map<std::string, std::string> written;   // <name>:<side 0|1> → the bank, hex
 };
+
+std::string hexBytes(const std::vector<std::uint8_t>& b) {
+    static const char* d = "0123456789abcdef";
+    std::string s;
+    for (std::uint8_t x : b) {
+        s += d[x >> 4];
+        s += d[x & 15];
+    }
+    return s;
+}
+
+// A 2.3.0 card file (Calc-U-59 Card 2.0) of the record: its sides as banks.
+// Its DATA rows hold the bank's bytes in order (2.3.0 CardFile.cpp).
+void writtenCard(const std::string& name, const std::vector<std::string>& lines, Record& r) {
+    int side = -1;
+    std::vector<std::uint8_t> d;
+    auto flush = [&] {
+        if (side >= 0) r.written[name + ":" + std::to_string(side)] = hexBytes(d);
+    };
+    for (const std::string& l : lines) {
+        if (l.rfind("SIDE: ", 0) == 0) {
+            flush();
+            side = std::stoi(l.substr(6)) - 1;
+            d.assign(246, 0);
+            continue;
+        }
+        if (side < 0) continue;
+        const auto colon = l.find(':');
+        if (colon == std::string::npos || colon + 2 > l.size()) continue;
+        const std::string k = l.substr(0, colon), v = l.substr(colon + 2);
+        if (k == "Partition") d[0] = static_cast<std::uint8_t>(std::stoi(v, nullptr, 16));
+        else if (k == "DataType") d[1] = v == "program" ? 0x11 : 0x10;
+        else if (k == "Bank") d[2] = cu59::pageByteOfBank(std::stoi(v));
+        else if (k == "Protection") d[3] = v == "yes" ? 0x10 : 0x00;
+        else if (k == "Checksum") d[244] = d[245] = static_cast<std::uint8_t>(std::stoi(v, nullptr, 16));
+        else if (k.size() == 4 && k[0] == 'R') {
+            const int row = std::stoi(k.substr(1)) % 30;
+            std::istringstream in(v);
+            for (int i = 0; i < 8; ++i) {
+                std::string h;
+                in >> h;
+                d[static_cast<std::size_t>(4 + row * 8 + i)] = static_cast<std::uint8_t>(std::stoi(h, nullptr, 16));
+            }
+        }
+    }
+    flush();
+}
 
 Record fromReference(const std::string& text) {
     Record r;
-    bool inRam = false;
+    std::string part;
+    std::string card;
+    std::vector<std::string> cardLines;
+    auto endCard = [&] {
+        if (!card.empty()) writtenCard(card, cardLines, r);
+        card.clear();
+        cardLines.clear();
+    };
     for (const std::string& l : linesOf(text)) {
-        if (l.rfind("display: ", 0) == 0) r.display = l;
-        else if (l.rfind("partition: ", 0) == 0) r.partition = l;
-        else if (l.rfind("--- ram", 0) == 0) inRam = true;
-        else if (inRam && !l.empty()) r.ram.push_back(l);
+        if (l.rfind("--- ", 0) == 0) {
+            endCard();
+            part = l;
+            continue;
+        }
+        if (part.empty() && l.rfind("display: ", 0) == 0) r.display = l;
+        else if (part.empty() && l.rfind("partition: ", 0) == 0) r.partition = l;
+        else if (part.rfind("--- ram", 0) == 0 && !l.empty()) r.ram.push_back(l);
+        else if (part.rfind("--- in-file cards", 0) == 0 && l.rfind("mem:", 0) == 0) {
+            const auto sp = l.find(' ');
+            r.inFile[l.substr(4, sp - 4)] = l.substr(sp + 1);
+        } else if (part.rfind("--- cards written", 0) == 0) {
+            if (l.rfind("card ", 0) == 0) {
+                endCard();
+                std::string f = l.substr(l.find_last_of('/') + 1);
+                card = f.substr(0, f.rfind('.'));
+            } else {
+                cardLines.push_back(l);
+            }
+        }
     }
+    endCard();
     return r;
 }
 
@@ -127,7 +215,7 @@ struct Run {
     std::string paperText, paperMarks;
 };
 
-Run run(const fs::path& file) {
+Run run(const fs::path& file, const Record& want) {
     Run out;
     auto product = cu59::makeHarnessProduct();
     std::string error;
@@ -144,6 +232,24 @@ Run run(const fs::path& file) {
     }
     if (file.generic_string().find(kNeverStops) == std::string::npos) server->line("wait");
     calcu::machine::Machine* m = server->host().session().context().machine();
+    // C59-7 AC-30: the in-file cards the record names, and the cards written.
+    if (calcu::media::MediaPart* media = product->libraryParts().media()) {
+        const auto& kind = cu59::magneticCardKind();
+        for (const auto& [name, bank] : want.inFile) {
+            const auto card = cu59::magneticCardOf(media->inFileContent(kind, name));
+            const auto* b = card ? std::get_if<std::vector<std::uint8_t>>(&card->sides[0]) : nullptr;
+            out.record.inFile[name] = b ? hexBytes(*b) : "(none)";
+        }
+        for (const auto& [key, bank] : want.written) {
+            const std::string name = key.substr(0, key.rfind(':'));
+            const int side = std::stoi(key.substr(key.rfind(':') + 1));
+            const auto text = testroms::readFile((fs::path(server->setup().saveFolder()) / (name + kind.suffix)).string());
+            const auto r = kind.codec->read(text.value_or(""), {});
+            const auto card = cu59::magneticCardOf(r.info.content);
+            const auto* b = card ? std::get_if<std::vector<std::uint8_t>>(&card->sides[static_cast<std::size_t>(side)]) : nullptr;
+            out.record.written[key] = b ? hexBytes(*b) : "(none)";
+        }
+    }
     if (m) {
         out.record.display = "display: |" + testroms::displayText(*m) + "|";
         if (cu59::ProgramMemory* pm = cu59::programMemoryOf(*m)) {
@@ -190,13 +296,10 @@ TEST(c59_2_ac11_reference_runs_of_the_examples) {
     CHECK_EQ(all.size(), std::size_t{57});
     int differ = 0, found = 0;
     for (const std::string& rel : all) {
-        if (kWaiting.count(rel)) {
-            std::printf("  waiting (M-55) %s\n", rel.c_str());
-            continue;
-        }
         std::printf("  ... %s\n", rel.c_str());
         std::fflush(stdout);
-        const Run r = run(examples / rel);
+        const Record recorded = fromReference(testroms::readFile((refDir / (referenceName(rel) + ".txt")).string()).value_or(""));
+        const Run r = run(examples / rel, recorded);
         std::vector<std::string> diffs, parts;   // what differs, and which part (display, partition, ram, text, marks, load)
         if (!r.failure.empty()) parts.push_back("load"), diffs.push_back("the preset: " + r.failure);
         if (rel != kNeverStops && r.failure.empty()) {
@@ -205,6 +308,12 @@ TEST(c59_2_ac11_reference_runs_of_the_examples) {
             if (want.display != r.record.display) parts.push_back("display"), diffs.push_back("recorded " + want.display + ", now " + r.record.display);
             if (want.partition != r.record.partition) parts.push_back("partition"), diffs.push_back("recorded " + want.partition + ", now " + r.record.partition);
             if (want.ram != r.record.ram) parts.push_back("ram"), diffs.push_back("ram " + firstDifference(want.ram, r.record.ram));
+            for (const auto& [name, bank] : want.inFile)
+                if (r.record.inFile.count(name) == 0 || r.record.inFile.at(name) != bank)
+                    parts.push_back("cards"), diffs.push_back("in-file card " + name + " differs");
+            for (const auto& [key, bank] : want.written)
+                if (r.record.written.count(key) == 0 || r.record.written.at(key) != bank)
+                    parts.push_back("cards"), diffs.push_back("written card " + key + " differs");
             const auto text = testroms::readFile((refDir / (base + ".paper-text")).string());
             if (text ? *text != r.paperText : !r.paperText.empty())
                 parts.push_back("text"), diffs.push_back("paper text " + firstDifference(linesOf(text.value_or("")), linesOf(r.paperText)));
@@ -229,7 +338,6 @@ TEST(c59_2_ac11_reference_runs_of_the_examples) {
         std::printf("  DIFFERS %s\n", rel.c_str());
         for (const auto& d : diffs) std::printf("    %s\n", d.c_str());
     }
-    std::printf("  %d of %zu examples differ from the reference; %d named as findings; %zu wait for M-55\n", differ,
-                all.size(), found, kWaiting.size());
+    std::printf("  %d of %zu examples differ from the reference; %d named as findings\n", differ, all.size(), found);
     CHECK_EQ(differ, 0);
 }

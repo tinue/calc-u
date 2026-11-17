@@ -1,33 +1,32 @@
 import SwiftUI
 
+/// The two card dialogs (C59-7 AC-14, AC-15; drawn natively in C59-8, M-58):
+/// Arm Card lists the saved cards of the save folder by their names (an
+/// outdated one cannot be chosen), Arm Fresh Card asks a name and, when a
+/// card of that name is saved, whether to replace it. Everything else is
+/// the library's media part through the bridge.
 struct CardPickerView: View {
-    enum Mode { case load, save }
+    enum Mode { case arm, armFresh }
 
     let mode: Mode
-    let directory: URL
-    let defaultFileName: String
-    let onPick: (URL) -> Void
+    let cards: [TISavedCard]
+    /// Arm Card: the chosen card.
+    let onArm: (TISavedCard) -> Void
+    /// Arm Fresh Card: the name and whether a replace was confirmed; the
+    /// completion gets the question to ask, or nil when it was fitted.
+    let onArmFresh: (String, Bool, @escaping (String?) -> Void) -> Void
 
-    @State private var fileName: String
-    @State private var files: [String] = []
-    @State private var replacing: URL?
+    @State private var name = ""
+    @State private var question: String?
     @Environment(\.dismiss) private var dismiss
 
-    init(mode: Mode, directory: URL, defaultFileName: String, onPick: @escaping (URL) -> Void) {
-        self.mode = mode
-        self.directory = directory
-        self.defaultFileName = defaultFileName
-        self.onPick = onPick
-        _fileName = State(initialValue: defaultFileName)
-    }
+    private var title: String { mode == .arm ? "Arm Card" : "Arm Fresh Card" }
+    private var trimmed: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     var body: some View {
         VStack(spacing: 0) {
-
-            // ── Header ────────────────────────────────────────────────────────
             HStack {
-                Text(mode == .load ? "Fit Card" : "Fit Fresh Card")
-                    .font(.headline)
+                Text(title).font(.headline)
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
@@ -36,96 +35,69 @@ struct CardPickerView: View {
 
             Divider()
 
-            // ── Filename field (save mode) ────────────────────────────────────
-            if mode == .save {
-                TextField("Filename", text: $fileName)
+            if mode == .armFresh {
+                TextField("Card name", text: $name)
                     .textFieldStyle(.roundedBorder)
                     .padding([.horizontal, .top])
             }
 
-            // ── File list ─────────────────────────────────────────────────────
-            if files.isEmpty {
+            if cards.isEmpty {
                 Spacer()
                 VStack(spacing: 8) {
                     Image(systemName: "doc.questionmark")
                         .font(.largeTitle)
                         .foregroundStyle(.secondary)
-                    Text(mode == .load ? "No cards found" : "No existing cards")
+                    Text("No cards found")
                         .foregroundStyle(.secondary)
-                    Text(directory.path)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
                 }
                 Spacer()
             } else {
-                List(files, id: \.self) { name in
+                List(cards, id: \.entryID) { card in
                     Button {
-                        if mode == .save {
-                            fileName = name
+                        if mode == .armFresh {
+                            name = card.name
                         } else {
-                            onPick(directory.appendingPathComponent(name))
+                            onArm(card)
                             dismiss()
                         }
                     } label: {
-                        Label(name, systemImage: "doc")
+                        Label(card.name, systemImage: "doc")
                     }
                     .buttonStyle(.plain)
+                    .disabled(mode == .arm && card.outdated)
+                    .help(card.hint ?? "")
                 }
             }
 
             Divider()
 
-            // ── Footer ────────────────────────────────────────────────────────
             HStack {
-                Text(directory.path)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
                 Spacer()
-                if mode == .save {
-                    Button("Fit") {
-                        let name = TIFileFormats.withDefaultCardExtension(
-                            fileName.trimmingCharacters(in: .whitespacesAndNewlines))
-                        let url = directory.appendingPathComponent(name)
-                        if CardStorage.cardExists(url) {
-                            replacing = url
-                        } else {
-                            onPick(url)
-                            dismiss()
-                        }
-                    }
-                    .keyboardShortcut(.return, modifiers: [])
-                    .disabled(fileName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .buttonStyle(.borderedProminent)
+                if mode == .armFresh {
+                    Button("Arm") { armFresh(confirmed: false) }
+                        .keyboardShortcut(.return, modifiers: [])
+                        .disabled(trimmed.isEmpty)
+                        .buttonStyle(.borderedProminent)
                 }
             }
             .padding()
         }
         .frame(minWidth: 320, minHeight: 300)
-        .onAppear { reload() }
-        .alert("Replace card \(replacing?.lastPathComponent ?? "")?",
-               isPresented: Binding(get: { replacing != nil }, set: { if !$0 { replacing = nil } })) {
-            Button("Replace", role: .destructive) {
-                if let url = replacing { onPick(url) }
-                dismiss()
-            }
+        .accessibilityLabel(title)
+        .alert(question ?? "",
+               isPresented: Binding(get: { question != nil }, set: { if !$0 { question = nil } })) {
+            Button("Replace", role: .destructive) { armFresh(confirmed: true) }
             Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Its first write replaces both sides and the cue card.")
         }
     }
 
-    private func reload() {
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let urls = (try? FileManager.default.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: [.isRegularFileKey],
-            options: .skipsHiddenFiles
-        )) ?? []
-        files = urls
-            .map { $0.lastPathComponent }
-            .filter { TIFileFormats.isCardFileName($0) }
-            .sorted()
+    private func armFresh(confirmed: Bool) {
+        onArmFresh(trimmed, confirmed) { asked in
+            if let asked {
+                question = asked
+            } else {
+                dismiss()
+            }
+        }
     }
 }

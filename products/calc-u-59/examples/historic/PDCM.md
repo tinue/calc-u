@@ -345,7 +345,7 @@ Write each strip with `1 2nd Write`, with nothing else in block 1. Then:
 
 1. At a start, enter `.012` for `7. HIR`, and feed the strip when it is asked for.
 2. Press `A`, and follow the displays. A card goes through the reader 15 times,
-   and the `KEYSTROKES:` section of the preset lists each one.
+   and the `keys:` section of the preset lists each one.
 
 The printout ends like this:
 

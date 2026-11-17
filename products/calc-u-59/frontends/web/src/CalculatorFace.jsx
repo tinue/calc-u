@@ -83,7 +83,7 @@ function CalculatorFace({ engine, width }) {
   const data = useEngine(engine, (s) => s.data);
   const model = useEngine(engine, (s) => (s.model ? s.model.model : 0));
   const heldKey = useEngine(engine, (s) => s.runState.heldKey);
-  const cardFitted = useEngine(engine, (s) => s.card.fitted);
+  const cardFitted = useEngine(engine, (s) => { const r = cardReaderOf(s.media); return !!(r && r.holds); });
   const fullSpeed = useEngine(engine, (s) => s.runState.fullSpeed);
   const height = width / CANVAS_ASPECT;
   const baseRef = React.useRef(null);

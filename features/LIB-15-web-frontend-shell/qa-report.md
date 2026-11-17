@@ -220,3 +220,11 @@ stays In progress until M-55 (AC-20's cards, design §1).
 | AC-16 (the bundle file) | Pass | `build.js` copies `examples/bundle.yaml` and exactly the files it lists into `dist/presets/` (fails on a file that is not there); the engine's Examples come from `preset-list`; `play.spec.js` `lib6_ac54 bundled example loads and its result shows`, the `preset` prop by its bundle path (`ac16 props and defaults`) |
 
 Every criterion of the column passes: **Done**.
+
+## Calc-U-59, the cards (M-55, 2026-11-17, branch `m55-cards-59`)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-20 | Pass (the cards) | `storage.spec.js` `ac20 cards survive a page load` (a card written by a program, the page reloaded, Arm Card lists it), `lib7_ac33 cards in the persistent save folder`; `web_part_tests.cpp` `lib15_ac20_cards_are_files_of_the_save_folder` (the library's media part on the persistent save folder; an upload imported) |
+
+Every criterion of the Calc-U-59 column passes: **Done**.

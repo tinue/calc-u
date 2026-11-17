@@ -5,20 +5,12 @@
 
 using calcu::machine::Machine;
 
-// ── TICardReaderAdapter (M-55) ────────────────────────────────────────────────
-void TICardReaderAdapter::insertCard(const std::uint8_t* data, std::size_t count) { m_.m_hw.insertCard(data, count); }
-std::vector<std::uint8_t> TICardReaderAdapter::cardEject() { return m_.m_hw.cardEject(); }
 std::optional<std::uint64_t> TITypingSupport::samples(const calcu::machine::KeyId& id) const {
     const TIKey* k = tiKeyById(id.value);
     if (!k) return std::nullopt;
     return m_.m_hw.keySamples(kTIKeyLineBits[k->col], k->row);
 }
 
-bool TICardReaderAdapter::isCardPresent() const { return m_.m_hw.isCardPresent(); }
-int TICardReaderAdapter::cardMode() const { return m_.m_hw.cardMode(); }
-bool TICardReaderAdapter::isWaitingForCard() const { return m_.m_hw.isWaitingForCard(); }
-bool TICardReaderAdapter::isInCardWait() const { return m_.m_ranges.cardWait.contains(m_.m_hw.pc()); }
-std::uint16_t TICardReaderAdapter::libExecPC() const { return m_.m_hw.libExecPC(); }
 
 // ── TIMemoryAdapter (M-54) ────────────────────────────────────────────────────
 void TIMemoryAdapter::writeProgram(const std::uint8_t* k, int count) { m_.m_hw.writeProgram(k, count); }
@@ -51,7 +43,5 @@ std::array<std::uint16_t, 4> idleAndKeyDetectRange(const calcu::machine::ModelId
 namespace {
 TIMachine* ti(Machine& m) { return m.descriptor().family == kTIFamily ? static_cast<TIMachine*>(&m) : nullptr; }
 } // namespace
-TICardReaderAdapter* cardReaderOf(Machine& m) { auto* t = ti(m); return t ? &t->m_cardReader : nullptr; }
 TIMemoryAdapter* memoryOf(Machine& m) { auto* t = ti(m); return t ? &t->m_memory : nullptr; }
-const TICardReaderAdapter* cardReaderOf(const Machine& m) { return cardReaderOf(const_cast<Machine&>(m)); }
 const TIMemoryAdapter* memoryOf(const Machine& m) { return memoryOf(const_cast<Machine&>(m)); }

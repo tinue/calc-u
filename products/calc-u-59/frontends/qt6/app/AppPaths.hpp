@@ -26,8 +26,9 @@ void useHostDirs(const calcu::settings::HostDirs& dirs);
 /// ~/Calc-U-59, created on demand.
 QString defaultDir();
 
-/// Cards and ti58c.memory.yaml: the save folder (the cards' adapter A-2 until M-55).
-QString cardDir();
+/// The save folder of LIB-9 (cards, ti58c.memory.yaml), created on demand;
+/// the library's media part lists and writes the cards there (LIB-7 59).
+QString saveDir();
 
 /// The bundled examples (examples/bundle.yaml and the files it lists; LIB-6
 /// AC-31): Resources/examples in the macOS bundle, resources/examples beside

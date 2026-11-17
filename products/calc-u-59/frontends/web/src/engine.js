@@ -13,6 +13,13 @@
 // example by its bundle path `examples:<path>`, an uploaded one by its
 // content); the preset list is LIB-6's request `preset-list`.
 //
+// Since M-55 the magnetic cards are the library's media part (LIB-7 59,
+// C59-7): the topic `media` (the place `card-reader`: what is fitted, the
+// side passing, its picker; the saved cards) and the commands `media.choose`
+// (Arm Card), `media.start-new` (Arm Fresh Card), `media.eject`, `media.feed`,
+// `media.import`, `media.export`, `media.delete`. The cards are files of the
+// persistent save folder (LIB-15 AC-20); no download or upload of their own.
+//
 // The LED canvas repaints from `frames` (the `c59.web.display` topic), once
 // per animation frame, without a React render. Created in an effect only (a
 // host page may prerender without a Worker). No entry of the page's storage (LIB-9 AC-23):
@@ -21,7 +28,7 @@
 
 const PRODUCT = "Calc-U-59";
 
-const flagOf = (r) => !!(r.done && r.value);
+const CARD_READER = "card-reader";
 // The models by their index in 2.3.0's picker (0 TI-59, 1 TI-58, 2 TI-58C).
 const MODEL_NAMES = ["TI-59", "TI-58", "TI-58C"];
 const valueOf = (r) => r.value;
@@ -46,11 +53,12 @@ const METHODS = {
   keyDown: ["command", "host-key-down", (event) => event],
   keyUp: ["command", "host-key-up", (physical) => ({ physical })],
   blur: ["command", "c59.web.blur", () => null],
-  fitCard: ["command", "c59.web.fit-card", (name, bytes) => (bytes ? { name, bytes } : { name }), flagOf],
-  fitBlankCard: ["command", "c59.web.fit-blank-card", (name) => ({ name }), flagOf],
-  freshCardFileName: ["request", "c59.web.fresh-card-name", (name) => ({ name }), valueOf],
-  feedSide: ["command", "c59.feed-side", (side) => ({ side })],
-  ejectCard: ["command", "c59.eject-card", () => null],
+  // LIB-7 59 (M-55): the card reader, a place of the library's media part.
+  armCard: ["command", "media.choose", (entry) => ({ place: CARD_READER, entry })],
+  feedSide: ["command", "media.feed", (side) => ({ place: CARD_READER, side })],
+  ejectCard: ["command", "media.eject", () => ({ place: CARD_READER })],
+  importMedia: ["command", "media.import", () => ({})],
+  chooseModule: ["command", "media.choose", (entry) => ({ place: "slot-1", entry })],
   // LIB-18: the PC-100C attached or detached, as the printer topic says it is now.
   togglePrinterConnection: ["command", (connected) => (connected ? "detach" : "attach"),
     (connected) => (connected ? { place: "printer" } : { place: "printer", peripheral: "PC-100C" })],
@@ -85,7 +93,7 @@ const INITIAL_STATE = {
   cueCard: null,       // draw list
   runState: { frozen: false, owner: null, pcArmed: false, scanArmed: false, fullSpeed: false, heldKey: -1 },
   printer: { connected: false, trace: false },   // the PC-100C's place and TRACE (the paper: CalcuPaperPanel)
-  card: { swiping: false, fileName: "card.U59", cards: [] },
+  media: null,         // the library's `media` topic (LIB-7): places and saved media
   // C59-4's product topics (app/TIDebugPart; their values are the page's forms):
   live: null,          // calculator-debug
   listing: null,       // program-listing: the whole listing while paused
@@ -154,12 +162,10 @@ function createEngine({ model, preset, workerUrl }) {
   };
 
   const download = (name, bytes) => { if (bytes) calcuDownload(name, bytes, "application/octet-stream"); };
+  // A trace the page was handed, as a download (kept by the page, D-25).
   const requestFile = (kind, name) => {
-    if (kind === "trace") {   // kept by the page (D-25)
-      download(name, kept.get(name));
-      return Promise.resolve();
-    }
-    return shell.request("c59.web.card-bytes", { name }).then((r) => download(name, r.value));
+    if (kind === "trace") download(name, kept.get(name));
+    return Promise.resolve();
   };
 
   const onShell = () => {
@@ -209,7 +215,7 @@ function createEngine({ model, preset, workerUrl }) {
       cueCard: t["c59.web.cue-card"] === undefined ? null : t["c59.web.cue-card"],
       runState: t["c59.web.run-state"] || INITIAL_STATE.runState,
       printer: t["c59.web.printer"] || INITIAL_STATE.printer,
-      card: t["c59.web.card"] || INITIAL_STATE.card,
+      media: t.media || null,
       live: t["calculator-debug"] || null,
       listing: t["program-listing"] || null,
       cpu: t["cpu-debug"] || INITIAL_STATE.cpu,
@@ -266,11 +272,13 @@ function createEngine({ model, preset, workerUrl }) {
     openFiles: (files, way) => Promise.all(Array.from(files).map((f) => f.arrayBuffer()
       .then((b) => ({ name: f.name, bytes: new Uint8Array(b) }))))
       .then((list) => shell.send("open", { files: list, way, upload: true })),
+    /// A media command whose reply is wanted ({done, reason}; "asks: …" is a question, LIB-7 D-6).
+    media: (command, args) => shell.send(command, args),
     /// The LOG tab's view emptied; the session's log is not (C59-4 AC-9).
     clearLogView: () => { logLines = []; onShell(); },
     /// The LED shapes for a w × h digit cell (W59-1).
     geometry: (w, h) => shell.request("c59.led-geometry", { w, h }).then((r) => set({ geometry: r.value })),
-    /// A card file (from the save folder) or a trace the page was handed, as a download (LIB-15 AC-9).
+    /// A trace the page was handed, as a download (LIB-15 AC-9).
     download: requestFile,
     setStatus: (status) => { statusOverride = status; onShell(); },
     destroy: () => {
@@ -292,4 +300,9 @@ function useEngine(engine, select) {
 function bundlePath(preset) {
   if (!preset) return "";
   return preset.startsWith("examples:") ? preset : `examples:${preset}`;
+}
+
+// The card reader's place of the `media` topic, or null (a TI-58, TI-58C).
+function cardReaderOf(media) {
+  return (media && media.places || []).find((p) => p.place === CARD_READER) || null;
 }

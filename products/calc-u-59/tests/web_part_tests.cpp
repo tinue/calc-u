@@ -5,6 +5,9 @@
 // folder, a dropped file, and the topics the page reads (AC-22).
 
 #include "TestHarness.hpp"
+#include "../app/TIMagneticCardKind.hpp"
+#include "media/MediaTopics.hpp"
+#include "opening/OpenRequest.hpp"
 #include "SessionRig.hpp"
 #include "../app/TIWebPart.hpp"
 #include "settings/AtomicFile.hpp"
@@ -111,23 +114,38 @@ TEST(lib9_ac23_web_settings_in_the_ini_file) {
     CHECK(s.find("traceMaxMB") && *s.find("traceMaxMB")->integer() == 7);
 }
 
+// LIB-15 AC-20 (M-55, LIB-7 59): the cards are the library's media of the
+// persistent save folder; a dropped card file is imported into it and fitted.
 TEST(lib15_ac20_cards_are_files_of_the_save_folder) {
     WebRig r;
     r.run(1s);
-    // A blank card fitted, written by the machine, listed by the card topic.
-    r.send("c59.web.fit-blank-card", Value::object({{"name", "Mine.U59"}}));
+    r.send("media.start-new", Value::object({{"place", "card-reader"}, {"template", "implicit:Fresh card"}, {"name", "Mine"}}));
     CHECK(r.part().cardFitted());
-    r.send("c59.web.fit-blank-card", Value::object({{"name", "../x.U59"}}));   // never out of the folder
-    r.run(50ms);
-    const Value card = r.state(topics::kWebCard);
-    CHECK(card.find("fitted") && card.find("fitted")->boolean() && *card.find("fitted")->boolean());
+    auto card = std::make_shared<TIMagneticCardData>();
+    const std::string text = writeMagneticCardFile(*card, "Dropped", "", false, std::nullopt, "");
+    auto upload = [&](const std::string& name) {   // the page's drop: LIB-13's open, an upload (M-56)
+        calcu::opening::OpenRequest q;
+        calcu::opening::OpenedFile f;
+        f.name = name;
+        f.bytes = std::vector<std::uint8_t>(text.begin(), text.end());
+        q.files = {f};
+        q.upload = true;
+        r.send("open", q.toValue());
+        r.run(200ms);
+    };
+    upload("Dropped.magnetcard.yaml");
+    CHECK(fs::exists(fs::path(r.part().files().saveFolder()) / "Dropped.magnetcard.yaml"));
+    const auto* media = r.part().mediaPart()->bindingOf("card-reader");
+    CHECK(media && media->name == "Dropped");
+    upload("old.u59");
+    CHECK(!fs::exists(fs::path(r.part().files().saveFolder()) / "old.u59"));   // C59-7 AC-4: no card
 }
 
 TEST(lib15_ac22_the_page_topics_are_there) {
     WebRig r;
     r.run(1s);
     for (const auto* t : {&topics::kWebModel, &topics::kWebDisplay, &topics::kWebRunState, &topics::kWebPrinter,
-                          &topics::kWebCard, &topics::kDebugView, &topics::kWebSettings})
+                          &calcu::media::kMediaTopic, &topics::kDebugView, &topics::kWebSettings})
         CHECK(r.fe.mirror.state(*t) != nullptr);
     const Value display = r.state(topics::kWebDisplay);
     CHECK(display.bytes() && display.bytes()->size() == 36 * sizeof(float));

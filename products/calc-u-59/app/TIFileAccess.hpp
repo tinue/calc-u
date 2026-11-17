@@ -5,12 +5,13 @@
 #include <string>
 #include <vector>
 
-// The card and constant-memory files on the session's thread (LIB-3 59
+// The constant-memory file on the session's thread (LIB-3 59
 // design §5, adapter TIFileAccess; LIB-3 AC-30): what each frontend's
 // 2.3.0's SessionController::Platform did, now in the save folder the host names
 // (LIB-9's Paths), through a FileIO the host hands in: plain file I/O for
 // Qt6 and the tests, the Swift bridge's coordinated I/O for iCloud (C59-5
-// D-6). Removed in M-54 (C59-3, constant memory) and M-55 (C59-7, cards).
+// D-6). The cards went to the library's media part in M-55 (C59-7, LIB-7
+// 59; the host's FileIO is its file access, LIB-7 D-30).
 
 namespace cu59 {
 
@@ -40,10 +41,8 @@ public:
     std::optional<std::string> readConstantMemory(bool* unreadable = nullptr);
     /// False when the write failed (C59-3 EC-4).
     bool writeConstantMemory(const std::string& text);
-    bool writeCard(const std::string& path, const std::string& text);
     /// The path of `fileName` in the save folder.
-    std::string cardFilePath(const std::string& fileName) const;
-    FileIO::Read readCard(const std::string& path);
+    std::string savePath(const std::string& fileName) const;
     const std::string& saveFolder() const { return m_saveFolder; }
 
 private:

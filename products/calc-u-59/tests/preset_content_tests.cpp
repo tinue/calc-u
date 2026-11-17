@@ -411,9 +411,7 @@ TEST(c59_2_ac16_data_registers_match_the_rom) {
 // ── T9: the upgrade (AC-10, AC-15, EC-6) ────────────────────────────────────
 
 TEST(c59_2_ac10_no_2_3_0_preset_left) {
-    // The four examples with magnetic cards wait for C59-7 (M-55; design §1).
-    const std::set<std::string> waiting = {"globe-print.ti59", "historic/characters-fastmode.ti59",
-                                           "historic/pdcm-card-tricks.ti59", "historic/pdcm-make-cards.ti59"};
+    // The four examples with magnetic cards since M-55 too (C59-7 AC-30).
     int seen = 0;
     for (const auto& e : fs::recursive_directory_iterator("examples")) {
         const auto ext = e.path().extension().string();
@@ -423,11 +421,8 @@ TEST(c59_2_ac10_no_2_3_0_preset_left) {
         std::stringstream ss;
         ss << in.rdbuf();
         const bool v2 = ss.str().find("\nformat-version: 2\n") != std::string::npos || ss.str().rfind("format-version: 2\n", 0) == 0;
-        if (waiting.count(rel)) CHECK(!v2);
-        else {
-            if (!v2) std::fprintf(stderr, "  not version 2: %s\n", rel.c_str());
-            CHECK(v2);
-        }
+        if (!v2) std::fprintf(stderr, "  not version 2: %s\n", rel.c_str());
+        CHECK(v2);
         ++seen;
     }
     CHECK_EQ(seen, 57 + 3);   // the 57 examples and the three startup presets
@@ -448,7 +443,7 @@ TEST(c59_2_ac15_names_short_described_once_unique_per_model) {
         CHECK(!e.description.empty());
         CHECK(seen.insert(e.model.value + "/" + e.name).second);
     }
-    CHECK_EQ(list.size(), std::size_t{12});   // three startup presets and nine examples (globe-print: M-55)
+    CHECK_EQ(list.size(), std::size_t{13});   // three startup presets and ten examples (globe-print since M-55)
 }
 
 TEST(c59_2_ec6_trace_quirk_keeps_extension_and_model) {
@@ -475,7 +470,8 @@ TEST(c59_2_ac13_bundle_lists_three_startup_and_todays_examples_in_groups) {
         "startup startup/default-ti59.ti59", "startup startup/default-ti58.ti58", "startup startup/default-ti58c.ti58c",
         "Diagnostics diag.ti59", "Diagnostics diag.ti58", "Diagnostics ram_test.ti59",
         "Programs sum.ti59", "Programs characters.ti59", "Programs fastmode-sst.ti59",
-        "Printer pictures printer-interrupt.ti59", "Printer pictures picard.ti59", "Printer pictures switzerland.ti59"};
+        "Printer pictures printer-interrupt.ti59", "Printer pictures picard.ti59", "Printer pictures switzerland.ti59",
+        "Printer pictures globe-print.ti59"};
     CHECK(got == want);
     // Each startup preset: the Master Library module, the PC-100C, nothing else (ADR 0021 as amended).
     PresetRead r;

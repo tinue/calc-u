@@ -254,7 +254,7 @@ TEST(ac15_preset_named_template_not_written) {
 
 TEST(ac15_in_file_medium_not_written_unless_saveas) {
     MediaFixture f;
-    CHECK(f.done(f.load(header() + "test-cards:\n  - { name: A, content: abc }\nkeys:\n  - test-card: { mem: A }\n")));
+    CHECK(f.done(f.load(header() + "test-cards:\n  - { name: A, content: abc }\nkeys:\n  - test-card: { mem: A }\n  - wait: 10ms\n")));   // not last: waited for (C59-7 AC-17)
     CHECK_EQ(contentOf(f.media->bindingOf("reader")->content), std::string("abc"));
     f.reader()->writeOnPass = "first";
     CHECK(f.done(f.step("test-card", "{ mem: A }")));
@@ -305,4 +305,65 @@ TEST(ec8_suspend_writes_every_pending_change) {
     CHECK(f.ok("suspend"));
     CHECK_EQ(content(f), std::string("one pending"));
     CHECK_EQ(content(f, "Two.testdisk.yaml"), std::string("two pending"));
+}
+
+namespace {
+// The test card's codec, recording the source each write is handed.
+std::vector<std::optional<std::string>> g_sources;
+struct RecordingCodec final : MediumCodec {
+    const MediumCodec* inner = nullptr;
+    ReadOutcome read(const std::string& b, const Companion& c) const override { return inner->read(b, c); }
+    std::vector<FileOut> write(const Write& w, std::string& problem) const override {
+        g_sources.push_back(w.source);
+        return inner->write(w, problem);
+    }
+};
+RecordingCodec g_recording;
+// A host's file access whose reads fail while `unreadable` is set.
+struct FlakyAccess final : FileAccess {
+    bool unreadable = false;
+    Read read(const std::string& path) const override {
+        if (unreadable) return {std::nullopt, true};
+        return FileAccess::read(path);
+    }
+};
+} // namespace
+
+// LIB-7 §11 E1 (M-55; D-27): a kind that asks for it gets the instance's
+// file as it is just before each write, not the bytes last read (C59-7 AC-5, EC-3).
+TEST(ac12_reread_before_write_hands_current_file_as_source) {
+    g_sources.clear();
+    auto access = std::make_shared<FlakyAccess>();
+    FixtureOptions o;
+    o.files = access;
+    o.prepare = [](auto& s, auto&) { s.write("Prog.testcard.yaml", card("Prog", "p").text()); };
+    o.kinds = [](std::vector<KindDecl>& ks) {
+        for (KindDecl& k : ks)
+            if (k.id == "test-card") {
+                g_recording.inner = k.codec;
+                k.codec = &g_recording;
+                k.rereadBeforeWrite = true;
+            }
+    };
+    MediaFixture f(o);
+    CHECK(f.ok("media.arm", Value::object({{"place", "reader"}, {"entry", "saved:Prog.testcard.yaml"}})));
+    TestFile outside = card("Prog", "changed elsewhere");
+    outside.description = "by another device";
+    f.saveFile("Prog.testcard.yaml", outside);   // after it was fitted
+    CHECK(f.ok("media.feed", Value::object({{"place", "reader"}, {"side", 0}})));
+    f.reader()->writeOnPass = "written";
+    f.session->advanceUnpaced(mt::kPassTicks + 10);
+    f.ok("media.refresh");
+    CHECK_EQ(g_sources.size(), std::size_t{1});
+    CHECK(!g_sources.empty() && g_sources.front() && g_sources.front()->find("changed elsewhere") != std::string::npos);
+    CHECK_EQ(field(f.saved("Prog.testcard.yaml"), "content"), std::string("written"));
+    // A file that cannot be read then: the write fails with one notice (C59-7 EC-4).
+    access->unreadable = true;
+    CHECK(f.ok("media.feed", Value::object({{"place", "reader"}, {"side", 0}})));
+    f.reader()->writeOnPass = "again";
+    f.session->advanceUnpaced(mt::kPassTicks + 10);
+    f.ok("media.refresh");
+    CHECK(hasLine(f.notices(), "could not be saved"));
+    CHECK_EQ(g_sources.size(), std::size_t{1});   // the codec was not asked
+    CHECK_EQ(field(f.saved("Prog.testcard.yaml"), "content"), std::string("written"));
 }

@@ -118,7 +118,7 @@ Options:
   kebab-case like the preset format, values in glossary terms rather
   than numbers: `[startup] model = last | TI-59 | …`, `[preset]
   TI-59 = <path>` (the startup preset per model), `[storage] save-folder =`,
-  `tape-folder =`, `[trace] folder =`, `max-file-size-mb = 50`, `[debug]
+  `cassette-folder =`, `[trace] folder =`, `max-file-size-mb = 50`, `[debug]
   dap-enabled =`, `dap-port =` (Calc-U-1600), `[serial] link-folder =`,
   `[display] led-style = modernized | classic` and `[keyboard] feedback =
   off | haptic | click` (Calc-U-59), `[window]` and `[folders]` for
@@ -134,7 +134,7 @@ Options:
 | Frontends and platforms | Swift iOS, Swift macOS, Qt Windows/Linux (macOS dev), Web | Qt macOS/Windows/Linux, Web |
 | Settings file (ST-2) | Application Support (Swift); `%APPDATA%`, `~/.config` (Qt); IDBFS (web) | Application Support (macOS Qt); `%APPDATA%`, `~/.config`; IDBFS |
 | Save folder (ST-3) | iCloud Documents / local (Swift); `~/Calc-U-59` (Qt); IndexedDB (web) | `~/Calc-U-1600` (Qt); IndexedDB (web) |
-| Product keys | `[display] led-style`, `[keyboard] feedback`, Swift trace location | `[debug]`, `[serial]`, `[storage] tape-folder` |
+| Product keys | `[display] led-style`, `[keyboard] feedback`, Swift trace location | `[debug]`, `[serial]`, `[storage] cassette-folder` |
 
 (The machine columns of the other contracts do not apply: settings are
 per product, not per model.)

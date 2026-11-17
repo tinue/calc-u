@@ -553,7 +553,7 @@ Read against the fit tables of `docs/contracts/`; nothing was changed for it.
   reviewed by hand: none current inside the repository and the memory; the
   rest outside the repository (§10).
 - **Local Linux CI** (GCC 13) on `7b9b050`: every job green (`library`, `core-59`, `core-1600`, `qt-59`, `qt-1600`, `help-59`, `help-1600`, `web-59`, `web-1600`); after every merge of this pass as well, but for F-2 and F-7.
-- **GitHub CI:** GH_RESULTS
+- **GitHub CI** on `1fd29db`, both workflows green on every job: Calc-U-1600 44111986721 (core tests, `library / library` from the reusable workflow, help, Web, Linux x86_64 and aarch64, Windows x86_64 and arm64 from the new matrices with their old job names, macOS arm64 signed and notarised); Calc-U-59 44111994920 (core tests, `library / library`, help, Web, Linux and Windows per arch).
 
 Line counts by the method of C1 and D (`.cpp .hpp .h .swift .js .jsx .mm
 .py CMakeLists.txt .cmake`, tracked files, without `node_modules`, `dist`,

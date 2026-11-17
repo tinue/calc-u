@@ -23,4 +23,8 @@ Calc-U-59, so existing users, releases and links stay.
   (Briefing §3); the SC61860 product is the paper case for that in phase 5.
 - What the SC61860 product shares with Calc-U-1600 (Sharp BASIC handling,
   SDE exchange, cassette tape) lives in the library, not in Calc-U-1600.
+  *Note (user, 2026-11-17, Q-8 of `docs/reviews/e-simplification.md`
+  §10):* until a second product needs them they stay in Calc-U-1600, as
+  the status line says; they move into the library with the third
+  product's first step.
 - The third product's name is chosen when it is started.

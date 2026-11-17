@@ -47,7 +47,25 @@ def rewritten(help_, path, text):
         new = own.name if dest == own else _relative(own, dest)
         return new + (f"#{r.anchor}" if r.anchor else "")
 
-    return markdown.rewrite_links(text, rewrite)
+    return markdown.rewrite_links(without_follows(text), rewrite)
+
+
+def without_follows(text):
+    """The text without its `<!-- follows: -->` line and the blank lines after it (AC-17).
+
+    The line is for the check (C6, AC-3); a reader of the asset has no use for it.
+    """
+    lines = text.splitlines(keepends=True)
+    for i, line in enumerate(lines):
+        if not line.strip():
+            continue
+        if not checks.FOLLOWS.match(line.strip()):
+            return text
+        rest = lines[i + 1:]
+        while rest and not rest[0].strip():
+            rest = rest[1:]
+        return "".join(lines[:i] + rest)
+    return text
 
 
 def build(help_, version, out_dir, used_pictures):

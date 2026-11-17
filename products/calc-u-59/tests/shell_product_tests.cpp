@@ -99,7 +99,7 @@ TEST(lib14_ac30_settings_spec_per_frontend_and_layout) {
     const auto portrait = cu59::settingsSpec(F::WebPortrait, "");
     CHECK(portrait.sections.back().rows[0].choices ==
           (std::vector<std::pair<std::string, std::string>>{{"off", "Off"}, {"click", "Click Sound"}}));
-    // No Solid State Module row (row 59-9); the [folders] kinds asm-overlays and other get none (D-43).
+    // No Solid State Module row (row 59-9); the [folders] kind asm-overlays gets none (D-43).
     for (const auto& s : qt.sections)
         for (const auto& r : s.rows) {
             CHECK(r.key != "module");

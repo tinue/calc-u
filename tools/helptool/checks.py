@@ -9,7 +9,7 @@ from . import markdown
 from .manifest import ASIDE, PICTURE_SUFFIXES
 
 _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
-_FOLLOWS = re.compile(r"^<!--\s*follows:\s*(.*?)\s*-->$")
+FOLLOWS = re.compile(r"^<!--\s*follows:\s*(.*?)\s*-->$")
 _AVOID = re.compile(r"^_Avoid_:\s*(.*)$")
 _TERM = re.compile(r"^\*\*([^*]+)\*\*:?\s*$")
 
@@ -209,7 +209,7 @@ def _c6_follows(help_, report):
             if not f.is_file():
                 continue
             first = next((l.strip() for l in f.read_text(encoding="utf-8").splitlines() if l.strip()), "")
-            m = _FOLLOWS.match(first)
+            m = FOLLOWS.match(first)
             want = ", ".join(chapter.follows)
             if not m:
                 report.fail(f, 1, f"a shared part starts with <!-- follows: {want} --> (AC-3)")

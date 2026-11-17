@@ -68,12 +68,13 @@ same actions plus its waiting rules.*
 
 Options:
 - (a) **Recommended:** the serve protocol's commands are the preset step
-  vocabulary (`key`, `type`, `wait`, `expect`, `screenshot`, `insert`,
-  `arm`, `fit`, `speed`, `pause`, `step`, `resume`, `trace`, …) plus
-  inspection and control commands (`load` a preset, `display-text`, `dump`,
-  `peek`/`poke`, `break`, `state` of a topic, `quit`). An agent learns one
-  language for presets and the harness; a preset is a recorded harness
-  session.
+  vocabulary (`key`, `type`, `wait`, `expect`, `screenshot`, the kind
+  words that insert a medium, `card`, `floppy`, `cassette`, and `arm`,
+  `eject`, `saveas`, `full-speed`/`regular-speed`, `pause`, `step`,
+  `resume`, `trace`, …) plus inspection and control commands (`preset`
+  to load one, `display-text`, `registers`, `peek`/`poke`, `break`,
+  `state` of a topic, `quit`). An agent learns one language for presets
+  and the harness.
 - (b) A separate command language for the harness.
 
 ### H-2: Product-specific commands
@@ -85,7 +86,7 @@ Options:
   exist for one product only live under the product's name (`c59 asm`,
   `c59 keycodes`, `c59 coverage`; `c1600 dump-basic`, `c1600 cassette`,
   `c1600 serial`), and `--product` selects the product for one-shot runs.
-  A command present in both products (for example `dump`) is common, with
+  A command present in both products (for example `registers`) is common, with
   product-specific output where the hardware differs.
 - (b) Flat command list with product prefixes in the names.
 
@@ -127,8 +128,8 @@ Options:
 
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
 |---|---|---|---|---|---|
-| Common commands | key, type (—), wait, expect, lcd, dump, peek, break, trace, screenshot | same, with `type` | same | same | same |
-| Product commands (H-2) | `asm` (ASM overlay), keycode (dis)assembler, ROM coverage, printer lines, card dump | BASIC dump, tape in/out, CE-158 serial | BASIC dump, tape, serial, host drive | — | — |
+| Common commands | key, type (—), wait, expect, display-text, registers, peek, break, trace, screenshot | same, with `type` | same | same | same |
+| Product commands (H-2) | `c59 asm` (ASM overlay), `c59 keycodes` ((dis)assembler), `c59 coverage` (ROM coverage), `c59 line-times` (printer lines), `c59 dump` (SCOM, memory, program, variables) | `c1600 dump-basic`, `c1600 cassette`, `c1600 serial` (CE-158) | `c1600 dump-basic`, `c1600 cassette`, `c1600 serial`, `c1600 host-drive` | — | — |
 | Attach (ADR 0033, H-4) | Swift (iOS simulator, macOS) and Qt6 in the migration; web later | Qt in the migration (screenshot scenarios); web later | Qt in the migration (screenshot scenarios); web later | — | — |
 
 ## Open questions
@@ -152,3 +153,4 @@ Options:
 | 2026-11-13 | H-1 (reworded; question F-15 of `docs/walkthroughs/presets.md` §5.4, left to the specification by the user on 2026-11-13 ("what works best for agentic use")) | Commands carry the names and meanings of the steps that act and reply when carried out; waiting is asked for with `wait` (a duration, or none: until idle, at most one hour); the preset's waiting rules have no commands; frontend steps have none. |
 | 2026-11-13 | H-4 (the need shows; B-22 of `docs/walkthroughs/presets.md` §5.2, left to the specification by the user) | The Qt6 frontend gets attach in the migration: its screenshot scenarios become a client of it (LIB-14 AC-44) |
 | 2026-11-13 | Functions to keep (amended, user; B-25 of `docs/walkthroughs/presets.md`) | The three Calc-U-1600 probes and `dev/tape-matrix/run.py` are not taken over; the Calc-U-59 calendar scripts stay scripts that use `calcu serve` and are upgraded to version 2 (C59-2 AC-18). |
+| 2026-11-17 | H-1, H-2 (corrected, user, Q-6 of `docs/reviews/e-simplification.md` §10) | Option (a)'s list names the commands as registered (`preset`, the kind words `card`/`floppy`/`cassette`, `arm`, `full-speed`/`regular-speed`, `display-text`, `registers`; no `load`, `insert`, `fit`, `speed`, `lcd`) and drops "a preset is a recorded harness session" (the 2026-11-13 rewording); there is no common `dump` (`c59 dump`, `c1600 dump-basic`): H-2's example is `registers`; the fit table names the registered commands. |

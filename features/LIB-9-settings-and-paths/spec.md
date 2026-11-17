@@ -164,7 +164,7 @@ Paths
   `[trace] location = app-support` (accepts `app-support`, `icloud`,
   `folder`; used by the Swift frontend only, AC-24);
   and, written by the app: `[startup] last-model`; `[folders] presets`,
-  `asm-overlays` and `other`, each the folder in which a file dialog
+  and `asm-overlays`, each the folder in which a file dialog
   for that kind of file starts; and `[window]`, which holds plain
   numbers and, for the Swift frontend, `portrait-debug-page`
   (`settings.md` ST-4; today's defaults: Calc-U-59
@@ -321,3 +321,4 @@ Paths
 | The trace folder (AC-17, AC-24) and its limit are read at each trace start in every frontend (LIB-10 AC-53); the Swift frontend passes the folder the bookmark grants (AC-34) as a callback the places ask each time | user, 2026-11-17, Q-2 of `docs/reviews/e-simplification.md`; ledger rows 59-62, 1600-53 | 2026-11-17 |
 | Calc-U-59's Web offers a preset's screenshot as a download, as AC-17 says (it wrote it into its save folder) | user, 2026-11-17, Q-1 of `docs/reviews/e-simplification.md`; ledger row 59-63 | 2026-11-17 |
 | The cassette folder is `[storage] cassette-folder`, default `Cassettes/` in the save folder (AC-12, AC-16, EC-3, EC-8 edited in place; was `tape-folder`, `Tapes/`) | user, 2026-11-17 (Part E review Q-6: "cassette" names the medium everywhere); behaviour change 1600-51 | 2026-11-17 |
+| `[folders] other` removed from Calc-U-59 (AC-19 edited in place): declared, but no dialog used it (design D-1); a file that still has it keeps it as an unknown key | user, 2026-11-17, Q-6 of `docs/reviews/e-simplification.md` §10; release prep step 6e | 2026-11-17 |

@@ -254,7 +254,7 @@ Stays: the dialogs and their rows (LIB-14 changes them later); the
 |---|---|
 | `cu59::settings` constants and `resolve*` (`app/SettingsKeys.hpp`) | `app/Settings.hpp`: `settingsDecl()` with AC-19's keys and typed accessors; `resolveStartupModel` → `calcu::settings::startupModel()` with fallback `TI-59` (AC-20) |
 | `solidStateModuleID` stored by `saveModuleID` (Qt6 `EmulatorController.cpp:113-114`, Swift `EmulatorViewModel.swift:557`, Web `bindings.cpp:387`) and read at start | not stored, not read (AC-22, row 59-9); the module at start is the built-in default. If M-25 has already removed the call, nothing is left to do here |
-| Qt6 `AppSettings::store()` = `QSettings("Calc-U-59","Calc-U-59")` (`frontends/qt6/app/AppSettings.hpp:16`) and its keys (lines 23-92) | wrappers over `cu59::settings`; `storage/cardDirOverride` → `[storage] save-folder`; `trace/dirOverride` → `[trace] folder`; `preset/…`, `asm/…` → `[folders] presets`, `asm-overlays`; `[folders] other` is declared, no dialog uses it yet (D-1); one key per kind (D-2) |
+| Qt6 `AppSettings::store()` = `QSettings("Calc-U-59","Calc-U-59")` (`frontends/qt6/app/AppSettings.hpp:16`) and its keys (lines 23-92) | wrappers over `cu59::settings`; `storage/cardDirOverride` → `[storage] save-folder`; `trace/dirOverride` → `[trace] folder`; `preset/…`, `asm/…` → `[folders] presets`, `asm-overlays`; `[folders] other` was declared, no dialog used it; removed (D-1); one key per kind (D-2) |
 | `windowGeometry`, `splitterState` as `QByteArray` (`MainWindow.cpp:48-49, 112-113`) | `[window] x`, `y`, `width`, `height` and the three panel widths of the splitter (calculator, printer, debug; `MainWindow.cpp:30-37`) as plain numbers (AC-35); default 1280 × 860 as today (line 48); key names `x`, `y`, `width`, `height`, `calculator-width`, `printer-width`, `debug-width` (D-7) |
 | Qt6 `AppPaths::defaultDir/cardDir/traceDir/constantMemoryFile` (`frontends/qt6/app/AppPaths.cpp:19-25`) | forward to `Paths` (`saveFolder`, `traceFolder`, `saveFolderFile("ti58c.mem")`); the file's new name comes with C59-3 |
 | Swift `SettingsKey` and `UserDefaults` (`App/AppSettings.swift:39-217`), `@AppStorage` (`Views/SettingsView.swift:14-21`, `CalculatorView.swift:41`, `KeyboardView.swift:44`), `saveLastUsedModel` (`EmulatorViewModel.swift:556`) | an `@Observable` settings model over `TISettings` (the bridge to `SettingsFile`); views bind to it; `ledFontStyle` → `[display] led-style`, `keyboardFeedback` → `[keyboard] feedback`, `traceLocation` → `[trace] location`, `traceCustomPath` → `[trace] folder`, `portraitDebugPage` → `[window] portrait-debug-page` |
@@ -384,7 +384,9 @@ Risks:
 
 - **D-1 (was OQ-1; AC-19).** `[folders] other` is declared and written
   empty; no dialog uses it yet (the spec names it; no code has a third
-  dialog).
+  dialog). *Note (2026-11-17, release prep step 6e; user, Q-6 of
+  `docs/reviews/e-simplification.md` §10):* removed; a third kind gets its
+  key when a dialog needs it.
 - **D-2 (was OQ-2; AC-29, AC-19).** One key per kind, as the spec's OQ-5
   rules. The value is the folder last used, updated on every pick; a
   fixed folder set in the settings dialog is written as `fixed:<folder>`

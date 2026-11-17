@@ -116,6 +116,9 @@ The asset
   with the heading's anchor made by the rule GitHub uses for Markdown
   headings, and as a full `https://` address otherwise; LIB-19 renders
   by the same rule.
+- [ ] **AC-17** — Given the help tool builds an asset, then a shared
+  part's `<!-- follows: -->` line (AC-3, check C6) is not in it, and the
+  source keeps it.
 - [ ] **AC-8** — Given the release of a product is built, then the help
   tool builds the help asset of that version, and the asset is among the
   release's files; the test suite builds both products' assets
@@ -250,3 +253,4 @@ The asset
 | The shared chapter 2 keeps only what both products have: "Typing text" (Edit ▸ Paste Text) and the menus Calc-U-59 lacks move to Calc-U-1600's part of the chapter, and the shared text says how a window without a menu bar offers them (the More button, LIB-14 AC-29). Done in M-60 | user, 2026-11-16 (Q-3 of `docs/reviews/d-simplification.md`) | 2026-11-16 |
 | M-60, design turned out otherwise: `reference/StateFileFormat.md` (design 13.2, D-18) was deleted in M-54 (C59-2: its content is `docs/formats/preset.md` and `cue-card.md`), so there is nothing to move with `git mv`; `help/10-preset-sections.md` is written new from `docs/formats/`, and the code comments that named the old file point at `preset.md` §8.1 | the file no longer existed at M-60 | 2026-11-17 |
 | M-60, design made precise: the pictures of AC-16 that show the control bar or the menus (`app-screenshot.png`, `ipad-13-2752x2064.png`, `iphone-duo-2852x2006.png`, `ipad-2752x2064-asm.png`) are moved as they are for now and stay to be taken anew by hand, with the two new ones (the macOS menus, the iPhone's More menu), from the main checkout's Swift app; AC-16 stays open until then (M-64 at the latest) | pictures by hand need the Swift app on macOS and a simulator from the main checkout, not a worktree (design 13.11) | 2026-11-17 |
+| AC-17: the asset leaves out the shared parts' `<!-- follows: -->` lines; the source keeps them and the check still requires them | user, 2026-11-17 (Q-6 of `docs/reviews/e-simplification.md` §10; release prep step 6c) | 2026-11-17 |

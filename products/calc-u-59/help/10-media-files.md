@@ -211,15 +211,50 @@ stay where they are, and you convert them by hand:
 
 | 2.3.0 | Now |
 |---|---|
-| a card file `Calc-U-59 Card 2.0` | a magnetic card of format 3; `card-name` is the old file name without its extension |
+| a card file `Calc-U-59 Card 2.0`, ending with `END-CARD` | a magnetic card of format 3 (`.magnetcard.yaml`); `card-name` is the old file name without its extension; no end line |
+| the card's `CUECARD:` block | `cue-card:` (its keys below) |
 | `SIDE: 1` / `SIDE: 2` | `sides:` `0:` / `1:` |
-| `HEADER:` keys `Partition`, `DataType`, `Bank`, `Protection`, `Checksum` | the side's `partition`, `data-type`, `bank`, `protection` (`yes` → `true`), `checksum` |
-| `DATA:` rows `R###: …` | `encoding: register-hex` and `bytes:`, each row's 8 bytes in reverse order |
+| `HEADER:` keys `Partition`, `DataType`, `Bank`, `Protection`, `Checksum` | the side's `partition`, `data-type`, `bank`, `protection`, `checksum`, every one needed |
+| `Partition: 18`, `Checksum: 03` (hex without a prefix) | `partition: 0x18`, `checksum: 0x03`: without `0x` the number is read as decimal |
+| `Protection: yes` / `no` | `protection: true` / `false` |
+| `DATA:` rows `R###: …` | `encoding: register-hex` and `bytes:`, the 30 rows copied unchanged, in the same order |
 | card files 1.0 and the binary layouts | not converted |
 | `ti58c.mem` (cue card, `R###:` rows) | `ti58c.memory.yaml`, format 1, the rows copied unchanged |
 | `CUECARD:` keys `Title`, `ID`, `Style`, `Row1`, `Row2`, `Row2R`, `Row1Align`, `Row2Align`, `Row2RAlign`, `PencilColor` | `title`, `id`, `style`, `row-1`, `row-2`, `row-2-r`, `row-1-align`, `row-2-align`, `row-2-r-align`, `pencil-color` |
 | `CUECARD:` keys `Template`, `Banks` | dropped: the kind follows from where the block stands, the corners from the sides |
 | `CUECARD:` unknown keys and `IDAlign` were ignored | an error |
+
+For example, the first side of a card 2.3.0 wrote (rows R002 to R029 left
+out):
+
+```text
+SIDE: 1
+HEADER:
+Partition: 18
+DataType: program
+Bank: 1
+Protection: no
+Checksum: 03
+
+DATA:
+R000: 30 19 75 49 90 90 90 39
+R001: 23 49 80 90 90 39 69 22
+```
+
+becomes, in `sides:` of the new card:
+
+```yaml
+  0:
+    partition: 0x18
+    data-type: program
+    bank: 1
+    protection: false
+    checksum: 0x03
+    encoding: register-hex
+    bytes: |
+      R000: 30 19 75 49 90 90 90 39
+      R001: 23 49 80 90 90 39 69 22
+```
 
 The full rules of every format are in the source repository:
 [media.md](https://github.com/tinue/calc-u/blob/main/docs/formats/media.md),

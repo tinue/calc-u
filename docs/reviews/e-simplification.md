@@ -554,7 +554,10 @@ while Calc-U-59's Qt6 starts is no longer dropped (LIB-13 AC-7).
   All 9 shots pass with the sizes of the runner's header and were looked
   at. The iPhone Duo shot (the tenth, taken when the Duo is open) came out
   black once, while the Duo was reported folded partway through the run;
-  the size check now rejects such a picture.
+  the size check now rejects such a picture. Re-run with the Duo opened
+  flat: passes, 2853 × 2007. Seen on it (not fixed, cosmetic): the narrow
+  debug column wraps its header words mid-word ("DE-BUG", "RESUM E",
+  "F.STAR T").
 - F-6: `CalcU1600Shots.*` fail when the display sleeps ("screencapture
   failed"); run the Longer group under `caffeinate -d`.
 - F-7: one local CI `core-1600` failure (GCC 13) and one `CalcU1600DapSmokeQt`

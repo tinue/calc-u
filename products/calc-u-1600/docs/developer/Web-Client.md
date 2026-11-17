@@ -129,7 +129,7 @@ attaches it as `Calc-U-1600-web.zip`.
 
 Things that are only in the Qt app, or that a browser can't do:
 
-- the DAP debugger (not in Shared);
+- the DAP debugger (`app/dap/` is not in the Emscripten build);
 - serial ports (PC-1600 RS-232C, CE-158 serial: host PTYs);
 - the host drive S3: (Mount Directory);
 - the INSPECTOR's TRACE and LOG;
@@ -138,7 +138,7 @@ Things that are only in the Qt app, or that a browser can't do:
 ## Input
 
 - **Pointer.** One key per pointer, so a tablet can hold SHIFT and a
-  key with two fingers. Holding the LCD runs turbo.
+  key with two fingers. Holding the LCD runs at full speed.
 - **Keyboard.** `KeyboardEvent.code` / `.key` go to
   the library's `host-key-down` / `host-key-up` (the library's
   `components/hostKeys.js` turns the event into the command's fields and

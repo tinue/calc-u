@@ -10,7 +10,7 @@ The debugger has three layers:
 |---|---|---|
 | Core | `TIMachine`, its debug target `TMC0501` (`core/TIDebugging.hpp`, LIB-10 AC-28), the capability `c59.trace-records` (`core/TraceRecords.hpp`), the debug panel's product kinds `c59.asm-overlay`, `c59.rom-heatmap`, `c59.calculator-state`, `c59.machine-log` (`core/TIDebugKinds.hpp`, C59-4, M-56) and the program memory `c59.program-memory` (`core/TIProductKinds.hpp`), over `TMC0501` (`core/`) | Registers, RAM, program and SCOM access, breakpoints, the observer's marks, the trace ring, step-boundary latch, the machine's log lines, the heatmap's counts, the ASM overlay |
 | Library | LIB-10's `DebuggerPart` (`library/debugger/`): the run control (the machine session's gate), the topics `run-state` and `trace`, the trace session; the run-control buttons of the component sets | Pause, step, resume, pause-on-start, breakpoints, one trace at a time |
-| Shared | `TIDebugPart` (the six product topics, the panel's commands, the product entries), `TILevelRules`, `TITraceRecorder`, `TIDebuggerSetup`, `DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `TraceWriter`, `AsmOverlay` (`app/`) | The TI's levels and trace records, the panels' data and text, the dumps, the ASM overlay format |
+| App layer | `TIDebugPart` (the six product topics, the panel's commands, the product entries), `TILevelRules`, `TITraceRecorder`, `TIDebuggerSetup`, `DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `TraceWriter`, `AsmOverlay` (`app/`) | The TI's levels and trace records, the panels' data and text, the dumps, the ASM overlay format |
 | GUI | Swift: `EmulatorViewModel` → `frontends/swift/Bridge/TIAppSession` (commands and the product topics), views in `frontends/swift/App/Views/` (`DebugView`, `LiveDebugView`, `CPUInspectorView`). Qt: `EmulatorController`, widgets in `frontends/qt6/app/debug/` (`DebugPanel`, `LiveDebugWidget`, `CpuInspectorWidget`, `RomHeatmapWidget`, `AsmOverlayBox`, `LogWidget`). Web: the product topics' values (`frontends/web/bindings.cpp`), `frontends/web/src/Debugger.jsx` (`LiveDebug`, `FreezeHeader`, `CpuInspector`, `Heatmap`, `AsmOverlay`, `LogTab`; wide layout only) | Drawing only |
 
 All three GUIs send the same commands (the library's for pause, step,
@@ -35,7 +35,7 @@ off|info|debug}`, `c59.dump {what: scom|memory|prog|vars}` (replies with the
 lines), `c59.asm-load {name, text}`, `c59.asm-run`, `c59.asm-clear`; the
 harness's `ti59 asm load|run|clear`, `ti59 dump …`, `ti59 log-level …`,
 `ti59 heatmap reset` (C59-4 AC-22). Which panel lives where: `FrontendParity.md`
-§ "Debugger". The session and controller: `SharedArchitecture.md`. Panel
+§ "Debugger". The session and controller: `AppLayer.md`. Panel
 behaviour from a user's point of view: the user guide,
 https://calc-u.org/59/.
 
@@ -238,7 +238,7 @@ PRG SOURCE values and how the firmware tests them: `CoreArchitecture.md`
 | `SolidState` | The running module program (`ModuleImage::libraryStep`), steps program-relative |
 | `SolidStateReturn` | None; the previous listing is kept |
 
-Solid-state display details: `SharedArchitecture.md` § "Solid-State Program
+Solid-state display details: `AppLayer.md` § "Solid-State Program
 Display".
 
 ### X
@@ -376,7 +376,7 @@ its clear button empties the view, not the log.
 | `dump("memory")` | Every non-zero RAM register by physical index, in the register-line format of `ti58c.memory.yaml` |
 | `setLogLevel` (`c59.log-level {level}`) | Level Off → Info → Debug → Off (the button cycles; `debug-view.logLevel` shows it) |
 
-The level is passed to the core (`c59.machine-log`'s `setLevel`). Shared
+The level is passed to the core (`c59.machine-log`'s `setLevel`). App-layer
 code logs through the session's `log` (`SessionContext::log`).
 
 ### Core debug events
@@ -410,7 +410,7 @@ a call through `m_cpu`. `fmtNibs(d, buf, reverse)` in `TMC0501.cpp` formats
 Runs hand-assembled TMC0501 code from a debug-only ROM region, for
 ROM-level experiments (C59-4 AC-13 to AC-19, AC-26). Core: the product kind
 `c59.asm-overlay` (`core/TIDebugKinds.hpp`: `load`, `clear`, `loaded`,
-`enter`, `running`). Shared: `cu59::readAsmOverlay` (`app/AsmOverlay.hpp`),
+`enter`, `running`). App layer: `cu59::readAsmOverlay` (`app/AsmOverlay.hpp`),
 driven by `TIDebugPart::loadAsm`, `runAsm`, `clearAsm` (the commands
 `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`); an `.asm` file opened by
 any way (LIB-13's `open`) is read as by Select File.
@@ -554,7 +554,7 @@ run control's advance.
 Constant memory format 1 (`docs/formats/media.md` §4; C59-3), read when a
 TI-58C is built without a preset and written while that machine runs
 (`app/ConstantMemoryKeeper`, `app/ConstantMemoryFile`; when:
-`SharedArchitecture.md` § "TI-58C Constant Memory"), through `TIFileAccess`
+`AppLayer.md` § "TI-58C Constant Memory"), through `TIFileAccess`
 in the save folder each host names.
 
 ```yaml

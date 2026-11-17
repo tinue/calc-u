@@ -193,7 +193,7 @@ struct KeyboardView: View {
 private extension View {
     /// Route physical key presses to the calculator, on the platforms that have a
     /// keyboard to route. No-op off macOS: iOS/iPadOS is deliberately out of
-    /// scope (see `reference/SharedArchitecture.md` § "Physical Keyboard Mapping").
+    /// scope (see `reference/AppLayer.md` § "Physical Keyboard Mapping").
     @ViewBuilder
     func physicalKeyboard(viewModel: EmulatorViewModel, focus: FocusState<Bool>.Binding) -> some View {
         #if os(macOS)

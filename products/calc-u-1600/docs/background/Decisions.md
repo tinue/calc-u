@@ -108,7 +108,7 @@ a CE-152 on the remote jack. The ROM waits ~0.6 s for the motor before it
 counts the leader, so a tape needs a long leader (`bin2wav -s 3` or
 `-l 0x400`); don't
 start the tape before the relay closes to make short leaders work. Because
-time is emulated, a recording is the same in real time, turbo or the harness.
+time is emulated, a recording is the same in real time, at full speed or in the harness.
 
 ### Tape recordings are AC-coupled at 12 Hz, spikes included
 `TapeDeck` records the cassette line through a 12 Hz high-pass at 0.45 of
@@ -430,10 +430,10 @@ authentic speed for the span that matters.
 ### Names and descriptions (docs/background/plans/Media-Names-Plan.md)
 - **The name lives in the file.** A preset's `preset-name:` / `description:`,
   a card's or disk's `description:`: no list kept beside the files says
-  what they are. `examples/bundled.yaml` only says *which* presets the app
+  what they are. `examples/bundle.yaml` only says *which* presets the app
   ships and in which group, so it can't drift from them.
 - **Optional in a file, required in the bundle.** A user's preset without
-  them still loads (the file name stands in); every preset `bundled.yaml`
+  them still loads (the file name stands in); every preset `bundle.yaml`
   lists must have both, short names at most 18 characters and unique per
   model within a list (`presetNameProblems()`, checked by the tests).
   (M-46: `bundled.yaml` became `examples/bundle.yaml`,
@@ -603,7 +603,7 @@ authentic speed for the span that matters.
   the same gap: with two keys down the ROM drops one, so the hold must
   never create an overlap the typist didn't make. A quick double tap of
   one key queues the same way and stays two taps. The minimum counts
-  emulated time, so it holds under pacing and turbo alike. The timed taps
+  emulated time, so it holds under pacing and at full speed alike. The timed taps
   and the paste feeder press the machine directly, keeping their own holds.
 - **A button inside the web client never keeps the focus**
   (`onFocusCapture` in `frontends/web/src/CalcU1600.jsx`): every key, Tab included,
@@ -745,9 +745,9 @@ authentic speed for the span that matters.
   interpolation, and the tests check the compiled forms against it. The
   duplication is deliberate.
 
-### Shared layer (docs/background/plans/Shared-Layer-Plan.md)
-- **Shared is single-threaded; there is no threaded mode.** Unlike
-  Calc-U-59's Shared layer, nothing here runs on a worker thread: the app
+### App layer (docs/background/plans/Shared-Layer-Plan.md, which calls it the Shared layer)
+- **The app layer is single-threaded; there is no threaded mode.** Unlike
+  Calc-U-59 2.3.0's app layer, nothing here runs on a worker thread: the app
   has always run the emulation on its GUI thread, and a browser can't share
   memory with a worker without COOP/COEP headers. Everything long is a
   resumable job instead. Core holds no lock (ADR 0009: the machine mutexes are
@@ -766,11 +766,11 @@ authentic speed for the span that matters.
   the CLIs (they drained WAV audio from it) and went with them in M-51.
 - **The PC-1600's live key taps count emulated time.** `tapKey()` /
   `tapShiftedKey()` (30 ms hold, 100 ms gap) release on `advance()`'s
-  budget, not on wall-clock QTimers, so they follow pause and turbo like
+  budget, not on wall-clock QTimers, so they follow pause and full speed like
   the paste queue.
 - **A host character outside ASCII types nothing, except PC-1600 KBII
-  accents** (`app/HostKeyMap`).
-- **Bay messages are English sentences from Shared.** The app has no
+  accents** (the keyboard map `cu1600::SharpKeyboardMap`, `app/SharpTyping`).
+- **Media messages are English sentences from the app layer.** The app has no
   translations; a frontend shows them as they are.
 - **The busy state is AppSession's alone.** `AppSession::busy()` and
   `Platform::busyChanged` are the only "an operation runs" signal; the Qt
@@ -779,7 +779,7 @@ authentic speed for the span that matters.
   instead of each call site picking the pieces it remembers. The resync
   runs directly, not queued, so a caller sees a synced window when its
   operation returns.
-- **`tick()` owns the audio policy.** The pump is AppSession's: turbo
+- **`tick()` owns the audio policy.** The pump is AppSession's: full-speed
   ticks and operation slices aren't real time and their audio is thrown
   away; scripted runs (`runFor()`) too. A frontend supplies only the sink.
 - **Rebuilds re-attach one peripheral snapshot.** `switchModelJob(model,
@@ -790,10 +790,10 @@ authentic speed for the span that matters.
 - **Settings are stored as strings.** `QSettings` reads back the native
   ints/bools older versions wrote, and older versions read the strings.
 
-- **The UI's rules are Shared's, also the small ones.** Which peripheral a
-  model offers and what excludes what (`ControlState`), the multi-file
+- **The UI's rules are the app layer's, also the small ones.** Which peripheral a
+  model offers and what excludes what (the control state, `app/SharpControlRules`), the multi-file
   tape choice and the Load Machine Code plan, hints and advice
-  (`MachineCodeLoad`), a model pick with its default preset
+  (`c1600.plan-code`, `app/SharpLoaderPart`), a model pick with its default preset
   (`pickModelJob()`), the Card YAML dump: each was Qt code once and moved
   when the web client needed it. Opening a file is the session's `open`
   (LIB-13): it decides what the file is and keeps one that comes while

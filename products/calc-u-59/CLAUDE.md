@@ -7,7 +7,7 @@ Invoke the right skill before starting work in each area:
 | Skill | Invoke for |
 |-------|-----------|
 | `calc-u-59-core` | C++ emulation core (`core/`, `tools/`, ROM disassembly, trace infrastructure) |
-| `calc-u-59-shared` | Shared C++ layer (`app/`, `tests/`, the product's `CMakeLists.txt`, `tools/goldens/`) — non-GUI logic all three frontends use |
+| `calc-u-59-app` | The app layer (`app/`, `tests/`, the product's `CMakeLists.txt`, `tools/goldens/`) — non-GUI logic all three frontends use |
 | `calc-u-59-swift` | Swift/SwiftUI app (`frontends/swift/App/`, `frontends/swift/App/Views/`, `frontends/swift/Bridge/`) |
 | `calc-u-59-qt` | Qt6 desktop app (`frontends/qt6/`, the repository's `.github/workflows/calc-u-59.yml`, Qt packaging) |
 | `calc-u-59-web` | Web client (`frontends/web/`: React + WASM engine, PWA, `frontends/web/build.sh`, `frontends/web/dist/`, the `web` CI job) |
@@ -35,7 +35,7 @@ same step. Developer documents stay in `reference/`.
 Architecture facts (register model, SCOM layout, PC encoding, machine variants, trace API) live in:
 
 - `reference/CoreArchitecture.md` — C++ emulation core
-- `reference/SharedArchitecture.md` — the shared C++ layer and its runtime threads
+- `reference/AppLayer.md` — the app layer `app/` and its one thread
 - `reference/AppArchitecture.md` — Swift app and bridge layer
 - `reference/DebugAPI.md` — debug panel and bridge API
 - `reference/FrontendParity.md` — which feature lives where in the three GUIs

@@ -296,7 +296,7 @@ root, into `../../build/web`, the tree `frontends/web/build.sh` uses too)
 and runs `tools/wasm_smoke.cpp` under node from the repo root: the
 library's app session with Calc-U-1600's part, in virtual time, starts a
 machine and runs presets through their commands, then types. It keeps the
-frontend-neutral layers portable ([Shared-Architecture.md](Shared-Architecture.md));
+frontend-neutral layers portable ([App-Layer.md](App-Layer.md));
 CI runs it in the `web` job. Needs `emcc`/`emcmake` (Homebrew
 `emscripten`, or an activated emsdk; 6.0.13 matches the committed
 `libsharpdx-wasm.a`, see `core/Basic/vendor/sharpdx/README.md`), node, and

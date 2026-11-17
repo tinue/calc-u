@@ -31,9 +31,24 @@ offer and which routes look workable.
 
 ## Plans
 
+> **Historic.** These plans were written for Calc-U-1600 up to 0.8.1, in
+> its own repository, before the move into the Calc-U repository (phase 6
+> of `docs/Process.md` there). They use the names and paths of 0.8.x:
+> `Core/` is now `core/`, `Shared/` (the Shared layer) the app layer
+> `app/` (namespace `cu1600`), `Qt6/` and `Web/` are `frontends/qt6/` and
+> `frontends/web/`; the CLIs `pc1500_cli`, `pc1600_cli` and the probes are
+> the harness `calcu --product 1600`; `PresetFile`, `PresetRunner` and
+> `bundled.yaml` are the library's presets (LIB-6, `examples/bundle.yaml`);
+> the bays (`ModuleBay`, `FloppyBay`, `TapeBay`) are the library's media
+> part (LIB-7); "card" for a memory module or a peripheral, "turbo" for
+> full speed. They are not updated. How the product works today:
+> [developer documentation](../developer/README.md) and, at the
+> repository root, the features in `features/` (`C1600-n` and the
+> library's `LIB-n`) with `docs/GLOSSARY.md`.
+
 Each plan was written before the work and committed with it. Most start
-with a status note on how the implementation differed. New plans go into
-`plans/<Topic>-Plan.md`.
+with a status note on how the implementation differed. A new feature is
+specified and designed in `features/` at the repository root, not here.
 
 | Plan | Written | Status |
 |---|---|---|
@@ -57,7 +72,7 @@ with a status note on how the implementation differed. New plans go into
 | [Cassette CLOAD / CSAVE via WAV files](plans/Cassette-Tape-Plan.md) | 2026-10-04 | Implemented for PC-1500 + CE-150 and PC-1600 MODE 0; MODE 1 `CLOAD`, CE-150 on PC-1600 and the real-unit cross-check open in TODO.md |
 | [Pre-1.0 format freeze: versions, `slot-N-rom:`, one `saveas:`](plans/Format-Freeze-Plan.md) | 2026-10-10 | Implemented |
 | [Debug panel → INSPECTOR: pointers, memory views, dumps](plans/Inspector-Panel-Plan.md) | 2026-10-10 | Implemented; RAM-disk directory listing open in TODO.md |
-| [Shared layer for a WebAssembly GUI](plans/Shared-Layer-Plan.md) | 2026-11-06 | Implemented (phases 0–5); DAP move open |
+| [Shared layer for a WebAssembly GUI](plans/Shared-Layer-Plan.md) | 2026-11-06 | Implemented (phases 0–5); the DAP moved into the app layer in M-50 (C1600-3) |
 | [Shared layer follow-up: frontend-neutral seams](plans/Shared-Layer-Followup-Plan.md) | 2026-11-06 | Implemented |
 | [Web GUI: WebAssembly frontend, embed + PWA](plans/Web-GUI-Plan.md) | 2026-11-06 | Implemented; calc-u.org page, user docs and iPad check in TODO.md |
 | [Names and descriptions: presets, cards, disks](plans/Media-Names-Plan.md) | 2026-11-07 | Implemented |

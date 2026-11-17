@@ -2,8 +2,10 @@
 # libraries, for every CMake build in the repository:
 #
 #   calcu_core    core/ -- the hardware (CPUs, machines, cards, loaders)
-#   calcu_shared  app/  -- everything above the core that isn't drawing
-#                 (docs/developer/Shared-Architecture.md); links calcu_core
+#   calcu_shared  app/  -- the app layer: everything above the core that
+#                 isn't drawing (docs/developer/App-Layer.md); links
+#                 calcu_core (the target keeps the app layer's old name,
+#                 Part D simplification)
 #
 # Included once, by the product's CMakeLists.txt (a subdirectory of the
 # repository's root CMake project, ADR 0003).
@@ -94,7 +96,7 @@ calcu_debug_o1(calcu_core)
 
 # ---- calcu_shared
 # app/ is C++20 and standard-library-only: no Qt, Cocoa or Emscripten
-# headers, and single-threaded (docs/developer/Shared-Architecture.md).
+# headers, and single-threaded (docs/developer/App-Layer.md).
 # Headers include their core dependencies relative to core/ ("PC1600/...")
 # and each other as "app/...".
 file(GLOB_RECURSE CALCU_SHARED_SOURCES CONFIGURE_DEPENDS ${CALCU_SHARED_ROOT}/*.cpp)

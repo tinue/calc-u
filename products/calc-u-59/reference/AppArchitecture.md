@@ -9,7 +9,7 @@ The Swift app (`frontends/swift/App/`, `frontends/swift/Bridge/`) for macOS and 
 over the library's app session with `app/TIAppPart` (through
 `frontends/swift/Bridge/TIAppSession` on `cu59::SessionThread`); everything that isn't drawing — the run
 loop, keys, presets, cards, the printer's paper, the debugger, the rules the
-views draw with — is in `app/` and documented in `SharedArchitecture.md`.
+views draw with — is in `app/` and documented in `AppLayer.md`.
 
 ---
 
@@ -159,18 +159,18 @@ is `speed {full}`); a press on the fitted card's corner goes first to
 Physical keys (macOS only) go through `PhysicalKeyboardModifier`, which
 subscribes to `.down` and `.up` only (dropping auto-repeat) and releases the
 held key when focus is lost. Mapping, timing and focus rules:
-`SharedArchitecture.md` § "Physical Keyboard Mapping".
+`AppLayer.md` § "Physical Keyboard Mapping".
 
 **LED.** `LEDDisplayView` draws each cell in a `Canvas` with the shared
 segments and shear, the glow and bloom as blurred copies under the crisp
 fill, each at the cell's `LedFrame` brightness. Rules:
-`SharedArchitecture.md` § "LED Display Rendering".
+`AppLayer.md` § "LED Display Rendering".
 
 **Cue card.** `CueCardView` places the artwork `Image(template)`, then text
 at the frames and font sizes `TIViewRules` returns, with `.lineLimit(1)`.
-Rules: `SharedArchitecture.md` § "Cue Card Rendering". A press on the card goes
+Rules: `AppLayer.md` § "Cue Card Rendering". A press on the card goes
 first to `tapCard` (`KeyboardView`), and `CueCardView` draws the side being read
-from `litCardCorner`: `SharedArchitecture.md` § "Card Reader Flow".
+from `litCardCorner`: `AppLayer.md` § "Card Reader Flow".
 
 **Printer.** The paper panel is always there (C59-8 AC-12): the owner's
 paper under its name while the PC-100C is attached (the bar's button

@@ -31,8 +31,8 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
   set-up runs only from `configurationDone`, so the client's breakpoints
   are set first (ledger 1600-20).
 - **Traces:** the library's trace session (`trace` command, the
-  INSPECTOR's TRACE button as `trace {button: true}`, a version 1
-  preset's `trace:` through `PresetFile::traceHook`) writes the core's
+  INSPECTOR's TRACE button as `trace {button: true}`, a preset's
+  `trace:` step through LIB-6's preset engine) writes the core's
   records (`c1600.trace-records`, `app/SharpTraceRecorder`) into the trace
   folder, limits every trace to `[trace] max-file-size-mb` MiB and says so
   in a notice. The Web has no trace folder: a trace fails there.

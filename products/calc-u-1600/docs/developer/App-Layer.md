@@ -1,4 +1,4 @@
-# Shared architecture: Core, Shared, frontends
+# App layer: core, app layer, frontends
 
 Calc-U-1600 is built in three layers, so the desktop app and the
 WebAssembly client ([Web-Client.md](Web-Client.md)) run the same emulator
@@ -8,17 +8,17 @@ and the same app logic:
 flowchart TB
     Qt["frontends/qt6/app/ — desktop GUI<br/>(widgets, dialogs, menus, QAudioSink, the DAP's socket)"]
     Web["frontends/web/ — web client<br/>(React, canvas, IndexedDB, AudioWorklet)"]
-    Shared["app/ — app logic, no GUI<br/>SharpAppPart on the library's app session, media kinds, settings, paths, layouts"]
+    App["app/ — the app layer, no GUI<br/>SharpAppPart on the library's app session, media kinds, settings, paths, layouts"]
     Core["core/ — the hardware<br/>CPUs, machines, cards, loaders, jobs"]
-    Qt --> Shared
-    Web --> Shared
-    Shared --> Core
+    Qt --> App
+    Web --> App
+    App --> Core
 ```
 
 - **`core/`** is the emulated hardware and what drives it: CPUs, machines,
   cards and connectors, program loaders, the debugger core. Presets are
   the library's (LIB-6, `library/presets/`).
-- **`app/`** is everything above Core that is not drawing: the product's
+- **`app/`** is everything above `core/` that is not drawing: the product's
   part of the library's app session (the live machine and its operations,
   the media kinds of the library's media part), the pacing profiles, settings keys, file
   locations, and the layout numbers renderers draw with. The session
@@ -28,23 +28,23 @@ flowchart TB
   storage, the audio device, the debugger transport and packaging.
 
 Both libraries are built by [`cmake/CalcU.cmake`](../../cmake/CalcU.cmake)
-(`calcu_core`, `calcu_shared`) for the Qt app, the CLIs, the tests and the
-WebAssembly check.
+(`calcu_core`, and `calcu_shared` for `app/`: the target keeps its old
+name) for the Qt app, the harness, the tests and the WebAssembly check.
 
 ## Rules
 
 - **Non-GUI logic goes in `app/`.** A frontend translates types only
   (QString ↔ `std::string`, Qt keys → `calcu::typing::HostKeyEvent`, pixel buffers →
-  QImage) and shows what Shared decides.
+  QImage) and shows what the app layer decides.
 - **Portable C++20, standard library only.** No Qt, Cocoa or Emscripten
-  headers in Core or Shared. Paths are UTF-8 `std::string`s converted
+  headers in `core/` or `app/`. Paths are UTF-8 `std::string`s converted
   through the library's `files/Files.hpp` (`calcu::files::toPath`, `fromPath`; Windows code pages).
 - **Single-threaded and never blocking.** Everything runs on the
   frontend's one thread. Long machine work (a boot, a preset, a typed
   program, a power cycle) is a resumable job (below), never a blocking
-  loop with a yield hook. There is no threaded mode (unlike Calc-U-59's
-  Shared layer); see Decisions.md.
-- **Shared never decides where files live.** The frontend hands it the
+  loop with a yield hook. There is no threaded mode (Calc-U-59 2.3.0's app
+  layer had one); see Decisions.md.
+- **The app layer never decides where files live.** The frontend hands it the
   host's folders (`calcu::settings::HostDirs`: home, the settings base of its
   platform, on the Web the save folder) and the bundled-resources folders
   (`cu1600::BundleDirs`), and opens the settings file, `Calc-U-1600.ini`
@@ -202,7 +202,7 @@ expression that created it.
 
 ## WebAssembly
 
-`tools/build_wasm_check.sh` builds Core + Shared with Emscripten and runs
+`tools/build_wasm_check.sh` builds `core/` and `app/` with Emscripten and runs
 `tools/wasm_smoke.cpp` under node: the library's app session in virtual
 time, three presets through `load-preset`, typed input. `libsharpdx-wasm.a` is the
 program loaders' Rust library built for `wasm32-unknown-emscripten`
@@ -211,7 +211,7 @@ program loaders' Rust library built for `wasm32-unknown-emscripten`
 library's `NoHostLink.cpp`). The web client builds the same libraries as the `calcu_web`
 target ([Web-Client.md](Web-Client.md)).
 
-## Not in Shared yet
+## Not in the app layer yet
 
 Nothing of the tools: the harness `calcu` runs the app session with
 `SharpAppPart` (LIB-11 D-6; the CLIs went in M-51). What is left is in

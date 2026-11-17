@@ -12,7 +12,7 @@ Unsorted collection of ideas, bugs, observations etc.
 
 ## UI
 - **Unified Mac input surface** — the target design: on macOS the whole window is one keyboard surface, every key has exactly one meaning, and focus stops being a concept. The three panels only remain separate because iPhone portrait swipes between them, which is a layout concern, not an input one. Today's `KeyboardView` focus scoping (`PhysicalKeyboardModifier`) is a stepping stone toward this, and it has a live rough edge in the meantime: clicking the debug panel silently stops keys reaching the calculator, with no indicator — the focus ring was removed rather than made visible, because indicating focus is not where this is heading.
-- **Keyboard support** for debugging panels — the calculator itself is done (macOS app, Qt6 app and the website's `/59/play/`, see `reference/SharedArchitecture.md` § "Physical Keyboard Mapping"); the debug panels and the printer were deliberately left out. On macOS all three panels are visible at once, so Space (R/S vs. STEP) and ⌘C/⌘X (printer tape vs. selected debugger text) have no unambiguous owner. Resolved by the unified surface above: one meaning per key settles the ownership question instead of arbitrating it per panel.
+- **Keyboard support** for debugging panels — the calculator itself is done (macOS app, Qt6 app and the website's `/59/play/`, see `reference/AppLayer.md` § "Physical Keyboard Mapping"); the debug panels and the printer were deliberately left out. On macOS all three panels are visible at once, so Space (R/S vs. STEP) and ⌘C/⌘X (printer tape vs. selected debugger text) have no unambiguous owner. Resolved by the unified surface above: one meaning per key settles the ownership question instead of arbitrating it per panel.
 - **Keyboard support on iPadOS** — an iPad with a hardware keyboard is a plausible case the current macOS-only gating excludes. The map and the view-model machinery are already platform-neutral; only `KeyboardView`'s `#if os(macOS)` and a focus story for the portrait page navigation would need work.
 
 ## Debugger
@@ -28,7 +28,7 @@ Unsorted collection of ideas, bugs, observations etc.
 - **Event callbacks** — push notifications for display updates and register changes, replacing the current polling model.
 - **Card stacking in the GUI** — presets feed cards (`card:`, `arm:`; `docs/formats/preset.md` §5.2, from M-55); what remains is letting a user queue a stack by hand.
 - **Card sound** — play a recorded card pass, with the emulator's pass timed to match; plan and measurements in `ideas/CardSound.md`.
-- **REST API** — scripted control of a running app. Headless runs (the harness `calcu --product 59`, `reference/Harness.md`) and GUI decoupling (`Shared/`, `reference/NewGUIGuide.md`) are done.
+- **REST API** — scripted control of a running app. Headless runs (the harness `calcu --product 59`, `reference/Harness.md`) and GUI decoupling (`app/`, `reference/NewGUIGuide.md`) are done.
 - **Frozen** - Visually indicate when the calculator is frozen in one of the debuggers (mostly useful on iPhone, where only one panel is visible at a time)
 
 ## Far out (if ever)

@@ -26,7 +26,7 @@ portrait layout).
 
 ## If your GUI can call C++
 
-Build on `app/` (`SharedArchitecture.md`). The Qt app is the worked
+Build on `app/` (`AppLayer.md`). The Qt app is the worked
 example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 lines
 (header and source).
 
@@ -88,7 +88,7 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    `paper.copy`, `paper.cut` and `set-control`, the run-control buttons'
    `pause`, `step`, `resume` (levels `program` for the CALCULATOR tab, `cpu`
    for the CPU tab), `pause-on-start` and `trace` are the library's.
-5. **Draw** with the shared rules (`SharedArchitecture.md` § "Drawing
+5. **Draw** with the shared rules (`AppLayer.md` § "Drawing
    Rules"): `SevenSegment` + `LedGeometry` for the LED — never a font, no
    font reproduces the hardware's lit segments — `CueCard` for cue cards
    (with `litCardCorner` and `cardCornerGeometry` for the side being read),

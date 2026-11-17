@@ -12,7 +12,7 @@ This document describes the C++ emulation core (`core/`) for the TI-59,
 TI-58 and TI-58C. How the firmware uses the hardware (SCOM map, flags,
 run loop, fast mode) is in `rom/TI59-ROM-Guide.md` and
 `rom/TI58C-ROM-Guide.md`; everything above the hardware (pacing, debugger,
-file formats) is in `reference/SharedArchitecture.md`.
+file formats) is in `reference/AppLayer.md`.
 
 ---
 
@@ -601,7 +601,7 @@ to land), an advance goes on past the ticks asked for until the observer
 stops it, at most 50000 weights later, so a pause lands in the host call
 that asked for it, as 2.3.0's freeze did. The levels (`program`, `cpu`)
 and what lands where are the app's `TILevelRules`
-(`reference/SharedArchitecture.md`). The frame ring is on while the debug
+(`reference/AppLayer.md`). The frame ring is on while the debug
 panel (`c59.calculator-state`'s `setFrameRing`), a trace
 (`c59.trace-records`) or the run control's checks want it.
 
@@ -827,7 +827,8 @@ repeats in full on every pass. `fA`/`fB` cannot tell execution from search
 fetches (verified by trace), hence the address check. The latch starts at
 `kLibExecPCNone` (0xFFFF) and is reset by `reset()`, so also by the power
 cycle that follows a module change. It
-is exposed as `TIDebugPanelAdapter::libExecPC()`, not as a `CpuFrame`
+is exposed as `TI59Machine::libExecPC()` and the kind `c59.calculator-state`'s
+`libExecPC()` (`core/TIDebugKinds.hpp`), not as a `CpuFrame`
 field, so the trace format did not change. `ModuleImage::libraryStep` turns
 it into program number and program-relative step.
 

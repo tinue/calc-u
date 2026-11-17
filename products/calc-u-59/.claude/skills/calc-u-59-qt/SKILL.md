@@ -46,7 +46,7 @@ Structure follows the sibling project Calc-U-1600
 (`~/Development/sharp/Calc-U-1600/Qt6`): Widgets, AUTOMOC/AUTORCC, no `.ui`
 files, QPainter rendering.
 
-Everything that isn't drawing: `reference/SharedArchitecture.md`.
+Everything that isn't drawing: `reference/AppLayer.md`.
 
 ## Rules
 
@@ -56,7 +56,7 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
    or a `Pending (Swift)` / `Pending (Web)` row in `reference/FrontendParity.md`.
    Update the table either way.
 2. **No logic in `frontends/qt6/app/`.** Anything that isn't Qt widgets, painting or
-   file dialogs belongs in `app/` (calc-u-59-shared skill) so the Swift app
+   file dialogs belongs in `app/` (calc-u-59-app skill) so the Swift app
    gets it too. `EmulatorController` is the product's glue (as Calc-U-1600's
    `MachineController`): it makes the app session (`cu59::makeAppSession`
    on the library's `calcu::shell::makeHostSession`, which puts LIB-14's

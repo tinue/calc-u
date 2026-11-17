@@ -456,7 +456,7 @@ class EmulatorViewModel {
         session?.openFile(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent, way: way) { [weak self] opened in
             guard let self else { return }
             #if os(macOS)
-            if opened && self.controller.cardFitted && self.controller.cardFileName == url.lastPathComponent {
+            if opened && self.controller.cardFitted && url.lastPathComponent.lowercased().hasSuffix(".magnetcard.yaml") {
                 self.releaseDroppedCardScope()
                 if scoped { self.droppedCardScope = url }
                 return

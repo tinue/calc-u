@@ -68,9 +68,15 @@ alert's button).
 
 Click the diamond icon next to the test function in Xcode, or from the
 terminal. Use a simulator from `bin/simulators status` (the configured set in
-`bin/simulators.yaml`); never hard-code a model name from memory:
+`bin/simulators.yaml`); never hard-code a model name from memory.
+Reset the simulator first, as the CTest entries and `bin/run-screenshots` do:
+`bin/simulators reset` puts back the example presets and deletes what the app
+saved (its cards and `ti58c.memory.yaml` in the app's Documents folder), so a
+run never sees the cards of earlier runs (review E F-4: Arm Card's list grew
+past the screen and a card test stopped finding its card):
 
 ```bash
+bin/simulators reset --role iphone
 xcodebuild test \
   -project frontends/swift/Calc-U-59.xcodeproj \
   -scheme "Calc-U-59" \
@@ -146,7 +152,7 @@ override class func tearDown() {
 
 ## Preset Prerequisites
 
-Screenshot tests that load `.ti59` files require those files to be present on the simulator's local storage. Run `bin/simulators setup` once before running tests — it ensures the target simulators from `bin/simulators.yaml` exist and installs presets into each one: an explicit list of files from `examples/` goes to the storage root, and everything from `examples/screentest/` goes into a `1-Testfiles/` folder (sorted first by name) in the simulator's "On My iPhone/iPad" storage. It also boots each new simulator once and launches the Files app, which is what initialises the AppGroup storage in the first place. `bin/simulators status` reports whether a machine is fully provisioned; `bin/simulators` alone prints the full command reference. `setup` leaves the files of a simulator already provisioned as they are: after a change to `examples/screentest/` (M-54 upgraded them to format 2) run `bin/simulators files`, or a test loads the old file and gets the session's refusal instead of a load (found in M-58).
+Screenshot tests that load `.ti59` files require those files to be present on the simulator's local storage. Run `bin/simulators setup` once before running tests — it ensures the target simulators from `bin/simulators.yaml` exist and installs presets into each one: an explicit list of files from `examples/` goes to the storage root, and everything from `examples/screentest/` goes into a `1-Testfiles/` folder (sorted first by name) in the simulator's "On My iPhone/iPad" storage. It also boots each new simulator once and launches the Files app, which is what initialises the AppGroup storage in the first place. `bin/simulators status` reports whether a machine is fully provisioned; `bin/simulators` alone prints the full command reference. `setup` leaves the files of a simulator already provisioned as they are: after a change to `examples/screentest/` (M-54 upgraded them to format 2) run `bin/simulators files` (or `bin/simulators reset`, which also deletes the app's saved cards; `status` shows how many there are), or a test loads the old file and gets the session's refusal instead of a load (found in M-58).
 
 ---
 

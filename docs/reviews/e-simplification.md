@@ -2,7 +2,8 @@
 
 Status: done (2026-11-17). The survey (§1), the three large changes (§2)
 and the plan (§3) were written and committed (`a080d5c`) before any code
-edit; §4 onwards report the result. Questions for the user: §10.
+edit; §4 onwards report the result. Questions for the user: §10 (all
+answered by the user on 2026-11-17; the answers are under each question).
 
 Baseline: `main` at `5db83d7`; build `build/tests` (RelWithDebInfo, Qt
 OFF); Frequent 50/50, 45.2 s wall (`-j8`): `CalcU1600SessionTests` 45.2 s,
@@ -414,36 +415,72 @@ while Calc-U-59's Qt6 starts is no longer dropped (LIB-13 AC-7).
 - **Q-1 (LIB-9 AC-17, LIB-6 D-13).** The spec says a preset's `screenshot:`
   step on the Web offers a download (Calc-U-1600 does); Calc-U-59's Web
   writes it into the save folder. Follow the spec (a ledger row) or keep?
+  **Answered (user, 2026-11-17):** follow the spec: Calc-U-59's Web offers
+  the download too; a ledger row.
 - **Q-2 (LIB-10, LIB-9).** Calc-U-1600 reads the trace folder and limit at
   each trace and checks that the folder can be written ("cannot write to
   the folder …"); Calc-U-59 keeps the folders of its start ("The trace
   folder cannot be written: <reason>"). One rule?
+  **Answered (user, 2026-11-17):** one rule: both read the folder and the
+  limit at each trace start (LIB-14 AC-11) and refuse with "The trace
+  folder cannot be written: <reason>."; a ledger row per product. Checked:
+  Swift macOS is sandboxed (`ENABLE_APP_SANDBOX`, user-selected files);
+  the open panel grants the chosen folder for the run, the bookmark
+  (LIB-9 AC-34) only carries it to the next launch, so the session takes
+  the folder from the frontend at each trace; the Qt6 `.dmg` builds are
+  Developer ID + hardened runtime, not sandboxed, and need no bookmark.
 - **Q-3 (LIB-2, C59-6).** `set-control` without a PC-100C plugged in is
   now LIB-2's refusal ("No PC-100C is plugged in."); it was "done". No GUI
   can send it. Accept?
+  **Answered (user, 2026-11-17):** accept the refusal (a Calc-U-59 ledger
+  row). On the hardware the PC-100C's switches work without a calculator,
+  but a preset that needs the printer plugs it in first.
 - **Q-4 (LIB-13 AC-6, AC-14, AC-21).** Qt6: Calc-U-1600 raises its window
   on a drop and on Open With and accepts the drop's action; Calc-U-59 does
   not. Web: Calc-U-1600 opens a drop of exactly one file and ignores more;
   Calc-U-59 opens the first. One rule?
+  **Answered (user, 2026-11-17):** Calc-U-1600's rule for both: raise the
+  window on a drop and on Open With, accept the drop's action, the Web
+  opens a drop of exactly one file only; a Calc-U-59 ledger row.
 
 **Names and public surfaces that freeze at the release**
 - **Q-5.** Calc-U-1600's `CardBase`, `ExpansionCard`, `SoftwareDefinedCard`,
   `BatteryCardInstance`, `MemoryCardDefinition` and the suffix `.card.yaml`
   (the glossary avoids "card"): rename (and to what), or keep as
   core-internal names?
+  **Answered (user, 2026-11-17):** the module definition becomes
+  `.module.yaml` with `format: memory-module`; `.card.yaml` is not read
+  (0.9.0 reads no old formats; no exception), so ledger row 1600-1's
+  "module definitions stay readable" changes; every shipped preset and
+  example is updated. The C++ class names stay core-internal.
 - **Q-6. Surfaces that look wrong** (details in the survey notes):
   - harness command words `ti59`/`pc1600` (machine names; `pc1600` also
     runs the PC-1500) beside the prefixes `c59.`/`c1600.` and the DAP's
     `calcu1600/`;
+    **Answered (user, 2026-11-17):** one word per product everywhere:
+    `c59`, `c1600` (a future Calc-U-1403: `c1403`): `c59 asm`,
+    `c1600 dump-basic`, DAP `c1600/load`; the dotted prefixes stay; the one-shot selector too: `--product c59|c1600`;
   - Calc-U-59's debug-panel topics without a prefix (`program-listing`, …);
   - `ti59 registers` (data registers) beside the common `registers` (CPU);
   - `docs/contracts/harness.md` H-2 promises a common `dump`, H-1 names
     `load`/`insert`/`fit`;
   - three spellings per medium (`cassette-tape` / `cassette` / `.tape.yaml`;
     `.magnetcard.yaml`);
+    **Answered (user, 2026-11-17):** "cassette" names the medium
+    everywhere: kind, step, eject word and `format: cassette` (no machine
+    prefix; a CE-126P tape would get its own format), `.cassette.yaml`,
+    `cassette-name`, the cassette folder, `c1600 cassette record|status`;
+    the place is the `cassette-recorder` (CE-125 manual: "microcassette
+    recorder", "tape counter"; PC-1403 manual: "cassette recorder"); the
+    glossary's "Cassette tape" and "Place" change with a decision-log row;
   - no `format:` key in the preset and the module definition; no version
     in the `calcu` line protocol; ASM overlay version "2.0";
   - `lcd` for the TI's LED display; camelCase `debug:` keys (`allReset`);
+    **Answered (user, 2026-11-17):** `lcd` becomes `display-text`
+    (`c1600.lcd-text` → `c1600.display-text`); the `debug:` keys stay
+    camelCase, the debugger's own words shared with `launch.json` (a note
+    in the format document); the VS Code extension's debug type becomes
+    `c1600` (with Q2's rule);
   - INI: Calc-U-1600's `[window]` has 2 keys, Calc-U-59's 8; `[folders]
     other` declared but unused; `[trace] max-file-size-mb` (LIB-9 AC-11:
     0 means 50, the declaration has min 1; the unit is MiB);
@@ -453,16 +490,36 @@ while Calc-U-59's Qt6 starts is no longer dropped (LIB-13 AC-7).
     `portraitWidth`; test-only commands (`c1600.upload`, `c1600.lcd-text`,
     `c59.web.key-button-*`) reachable through the embed handle; the site
     hook `[data-panel=printer]` → `[data-panel=paper]` (calc-u-site updated?);
+    **Answered (user, 2026-11-17):** components `CalcU59` and `CalcU1600`
+    with the shared props (`width`, `keyboard`, `layout`, `preset`, then
+    product extras); test-only commands not in a release build's handle;
+    calc-u-site adjusted in M-62;
   - internal paths and "M-47" in Calc-U-1600's shipped help
     (`09-module-definitions.md`); the `<!-- follows: -->` lines in the asset;
   - `c59.led`, `c59.cue-card`, `c59.printer`: part of the frozen `calcu`
     protocol in their current shape?
+    **Answered (user, 2026-11-17):** `c59.cue-card` stays; `c59.printer`
+    goes (its `trace` is the PC-100C control in `control-state`, `connected`
+    its place in `capabilities`); `c59.led` becomes `c59.calc-indicator`
+    (the frame through `display` if its payload can carry it). Also:
+    `ti59 registers` becomes `c59 data-registers`; the other small items
+    of Q-6 as proposed in the session (topics `c59.`-prefixed, the
+    contract corrected, writers `0x`, `saved` and the comment line on
+    every medium, `[folders] other` removed, AC-11 for the trace size,
+    the help's internal references removed; `[window]`, the protocol
+    without a version and ASM 2.0 kept).
 - **Q-7 (preset.md §9.3).** The card format 3 text says the rows' bytes are
   "in reverse order"; the codec writes them in order (checked against a
   ROM-written card). Correct the document?
+  **Answered (user, 2026-11-17):** correct it ("copied unchanged, in the
+  same order"), check the other rows of §9.3 against the codec and add a
+  worked example from a real card.
 - **Q-8 (ADR 0001).** The ADR puts Sharp BASIC, SDE and the cassette tape
   in the library; they are in Calc-U-1600. Move them with the third
   product's first step (an ADR note), or now?
+  **Answered (user, 2026-11-17):** with the third product's first step; a
+  note on ADR 0001 says they stay in Calc-U-1600 until a second product
+  needs them.
 
 **Findings (no golden or reference run differed)**
 - Golden replays of both products equal after every merge; the 57 TI

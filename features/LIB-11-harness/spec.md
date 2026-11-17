@@ -42,7 +42,7 @@ What the three status columns mean for this feature:
 - The commands of other features: `key` and `type` (LIB-5); the command
   `preset`, the other steps as commands, the bare `wait` that waits until
   the machine is idle, `expect`, `screenshot`, checking presets (LIB-6);
-  media (LIB-7); paper (LIB-8); `dump`, `peek`, `poke`, `break`,
+  media (LIB-7); paper (LIB-8); `peek`, `poke`, `break`,
   stepping, traces (LIB-10); model, variant, attach, reset (LIB-18).
   Each is specified with its feature (rule 4 of the cut).
 - Product commands (`harness.md` H-2) for functions that are carried

@@ -54,8 +54,9 @@ struct Queued {
     std::optional<std::string> refused;   // nothing was queued
 };
 
-// The keys the engine puts down and lets up (the manual trace of Calc-U-59
-// until M-53, D-13; tests).
+// The keys the engine puts down and lets up, with their ticks: a test seam
+// (the products' typing tests of LIB-5's Calc-U-59 and Calc-U-1600 columns);
+// no production code sets one.
 class KeyObserver {
 public:
     virtual void keyChanged(const machine::KeyId&, bool down, machine::Ticks) = 0;

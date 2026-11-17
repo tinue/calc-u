@@ -28,7 +28,7 @@ struct Fixture : sessionfixture::SessionFixture {
     fs::path links = root / "links";
     Fixture() : SessionFixture("calcu-serial-links-test") {
         fs::create_directories(links);
-        settings.setSerialLinkDirOverride(links.generic_string());
+        settings.file().set("serial", "link-folder", links.generic_string());
     }
 };
 

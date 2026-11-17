@@ -86,11 +86,11 @@ if(CALCU_TESTS)
     list(APPEND cases ${c})
   endforeach()
   foreach(case ${cases})
-    add_test(NAME calcu_cli.${case}
-             COMMAND ${CMAKE_COMMAND} -DCALCU=$<TARGET_FILE:calcu_test> -DCASE=${case}
-                     -DWORK=${CMAKE_CURRENT_BINARY_DIR}/work-${case}
-                     -P ${lib}/harness/tests/cli/cli_cases.cmake)
-    set_tests_properties(calcu_cli.${case} PROPERTIES LABELS frequent)
+    calcu_add_test(calcu_cli.${case} frequent
+                   COMMAND ${CMAKE_COMMAND} -DCALCU=$<TARGET_FILE:calcu_test> -DCASE=${case}
+                           -DWORK=${CMAKE_CURRENT_BINARY_DIR}/work-${case}
+                           -P ${lib}/harness/tests/cli/cli_cases.cmake
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endforeach()
 
   # T15: the Python helper for `calcu serve` (D-2), with uv when there is one,
@@ -103,8 +103,8 @@ if(CALCU_TESTS)
     set(py ${Python3_EXECUTABLE} -I -B)
   endif()
   if(DEFINED py)
-    add_test(NAME calcu_serve_python
-             COMMAND ${py} ${lib}/harness/python/tests/test_calcu_serve.py $<TARGET_FILE:calcu_test>)
-    set_tests_properties(calcu_serve_python PROPERTIES LABELS frequent)
+    calcu_add_test(calcu_serve_python frequent
+                   COMMAND ${py} ${lib}/harness/python/tests/test_calcu_serve.py $<TARGET_FILE:calcu_test>
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endif()
 endif()

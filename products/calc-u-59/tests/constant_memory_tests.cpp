@@ -406,7 +406,7 @@ TEST(c59_3_ac14_model_switch_away_and_back_keeps_memory) {
 
 TEST(c59_3_ac13_the_host_folder_is_the_one_written) {
     SKIP_UNLESS(roms(), kSkip);
-    // Each host passes TIAppSetup::saveFolder and its FileIO (Qt6: plain
+    // Each host passes TIAppSetup::saveFolder and its file access (Qt6: plain
     // files in LIB-9's save folder; Swift: the bridge's coordinated I/O; the
     // Web: the persistent file system): the file goes where the host says.
     auto files = std::make_shared<Files>();

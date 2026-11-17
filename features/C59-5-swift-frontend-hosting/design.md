@@ -583,3 +583,12 @@ Names other designs must match: Calc-U-59 `products/calc-u-59/app/`
 in `calcu_library` with the CMake option `CALCU_ATTACH`;
 `calcu attach`; launch argument `--attach-port`; bridge class
 `TIAppSession`.
+
+## Part E simplification E-8 (2026-11-17, branch `es-dead`)
+
+`docs/reviews/e-simplification.md` §1 S-8. D-6's coordinated file access implements the
+library's `calcu::media::FileAccess` (LIB-7 D-30), not `cu59::FileIO`,
+which is gone: `CoordinatedFiles` in `Bridge/TIAppSession.mm` is handed as
+`TIAppSetup::files`; `TIFileAccess` and the media part both use it. Its
+reads and writes, the `.icloud` placeholder and `cardWritten` are
+unchanged; a failed write gives "the file cannot be written." as before.

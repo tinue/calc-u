@@ -17,6 +17,7 @@
 #include "settings/PlatformBase.hpp"
 #include "settings/Paths.hpp"
 #include "settings/SettingsFile.hpp"
+#include "settings/Startup.hpp"
 #include "shell/SettingsPart.hpp"
 #include <fstream>
 
@@ -33,7 +34,6 @@ struct WebPieces {
     calcu::testing::TempFolder webFolder{"calcu59-web"};
     calcu::settings::HostDirs dirs;
     std::unique_ptr<calcu::settings::SettingsFile> file;
-    std::unique_ptr<settings::Settings> settings;
     std::unique_ptr<calcu::settings::Paths> paths;
     std::unique_ptr<calcu::shell::SettingsPart> settingsPart;
     std::unique_ptr<TIWebPart> web;
@@ -45,7 +45,6 @@ struct WebPieces {
         webFolder.write("presets/one.ti59", "format-version: 2\nmodel: TI-58\ndata:\n  05: 3.25\n");
         file = std::make_unique<calcu::settings::SettingsFile>(calcu::settings::SettingsFile::open(
             settings::settingsDecl(), calcu::settings::settingsFilePath(settings::settingsDecl(), dirs)));
-        settings = std::make_unique<settings::Settings>(*file);
         paths = std::make_unique<calcu::settings::Paths>(*file, dirs);
         calcu::shell::SettingsPartSetup ss;   // LIB-14's settings dialog (M-57)
         ss.file = file.get();
@@ -58,7 +57,7 @@ struct WebPieces {
 // The Web engine's session, natively: the Web part behind the product's.
 struct WebRig : WebPieces, testroms::SessionRig {
     explicit WebRig(bool started = true)
-        : SessionRig(testroms::RigOptions{.model = WebPieces::settings->startupModel(),
+        : SessionRig(testroms::RigOptions{.model = settings::modelNamed(calcu::settings::startupModel(*file)).value_or(cu59::Model::TI59),
                                           .before = {settingsPart.get()}, .after = {web.get()},
                                           .saveFolder = dirs.saveFolder, .noTraceFolder = true, .settings = file.get(),
                                           .examplesFolder = (webFolder.path() / "presets").string(), .start = false}) {

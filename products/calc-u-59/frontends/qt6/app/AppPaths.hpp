@@ -17,7 +17,7 @@ class SettingsFile;
 // folder unless [trace] folder names another (AC-17); the settings file,
 // Calc-U-59.ini, in the platform's settings folder (AC-2). The Swift app
 // uses iCloud Documents instead (App/CardStorage.swift). Where "Open
-// Preset…" starts is an open-dialog setting (AppSettings::openStartDir), not
+// Preset…" starts is an open-dialog setting ([folders], the shell's dialogs), not
 // a storage folder. This file keeps the bundled examples' folder.
 namespace AppPaths {
 

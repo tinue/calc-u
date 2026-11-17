@@ -763,3 +763,18 @@ None.
 **Plan note P-5.** §5.1: LIB-5's Calc-U-59 column is tested in M-36 and
 M-54 and Done in M-58 (D-15): AC-22 and AC-24 in the Swift frontend pass
 with C59-8; M-58's "Tests from" gains LIB-5 AC-22, AC-24 (Swift).
+
+## Part E simplification E-8 (2026-11-17, branch `es-dead`)
+
+`docs/reviews/e-simplification.md` §1 S-8. `typing::PauseProbe` and
+`TypingPart::setPauseProbe` are gone: their one product user
+(`TIFreezeProbe`) went in M-53, and the pause of AC-20 is
+`MachineSession::paused()` only. The library's harness test product
+(`library/harness/tests/TestProduct`) set one to keep a press waiting for
+`harness_key_gives_up_after_an_hour` (AC-17); it now makes every press of
+its profiles wait for key readiness (`pressesWaitForReadiness()`) on a
+machine that is never ready, which tests the same give-up. `KeyObserver`
+and `TypingEngine::setObserver` stay as a test seam: the products' typing
+tests (LIB-5's Calc-U-59 and Calc-U-1600 columns, `tests/typing_tests.cpp`
+in both) log the keys through it; no production code sets one (the reset
+in `TIAppPart`'s destructor went).

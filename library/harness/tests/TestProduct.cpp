@@ -77,11 +77,9 @@ struct TestProduct::Part final : SessionPart {
 };
 
 // LIB-5: typing on the test machines.
-struct TestProduct::Typing final : typing::TypingProduct, typing::PauseProbe {
-    TestProduct& product;
+struct TestProduct::Typing final : typing::TypingProduct {
     typing::TypingProfile seg, dot;
-    explicit Typing(TestProduct& p) : product(p), seg(profileFor(machine::test::kSegRate, '3', "clr")),
-                                      dot(profileFor(machine::test::kDotRate, 'c', "on")) {}
+    Typing() : seg(profileFor(machine::test::kSegRate, '3', "clr")), dot(profileFor(machine::test::kDotRate, 'c', "on")) {}
     static typing::TypingProfile profileFor(TickRate rate, char last, const char* enter) {
         typing::TypingProfile p;
         p.minHold = typing::ticksOf(0.010, rate);
@@ -100,7 +98,6 @@ struct TestProduct::Typing final : typing::TypingProduct, typing::PauseProbe {
     }
     const typing::KeyboardMap* keyboardMap(const ModelId&) const override { return nullptr; }
     bool typesText() const override { return true; }
-    bool paused(SessionContext& c) const override { return product.typingPaused || c.machineSession().paused(); }
 };
 
 // LIB-10: the debugger with the test rules; its trace folder and limit are
@@ -136,7 +133,7 @@ GlyphFont testFont() {
 }
 
 TestProduct::TestProduct()
-    : part_(std::make_unique<Part>()), typing_(std::make_unique<Typing>(*this)), debug_(std::make_unique<Debug>()),
+    : part_(std::make_unique<Part>()), typing_(std::make_unique<Typing>()), debug_(std::make_unique<Debug>()),
       presetRules_(std::make_unique<presets::test::TestPresetRules>()) {
     roms::test::writeFullSet(roms_, roms::fullSet(catalogue()));
     // LIB-6: the bundled presets of the test product.
@@ -155,7 +152,6 @@ TestProduct::TestProduct()
     dirs.frontend = settings::FrontendKind::Given;
     ownPaths_ = std::make_unique<settings::Paths>(*ownSettings_, dirs);
     parts_ = std::make_unique<parts::LibraryParts>(partsSetup(*ownSettings_, *ownPaths_));
-    parts_->typing().setPauseProbe(typing_.get());
 }
 
 parts::LibraryPartsSetup TestProduct::partsSetup(settings::SettingsFile& file, const settings::Paths& paths) {
@@ -180,6 +176,11 @@ parts::LibraryPartsSetup TestProduct::partsSetup(settings::SettingsFile& file, c
 
 presets::ProductRules* TestProduct::presetRules() { return presetRules_.get(); }
 
+void TestProduct::pressesWaitForReadiness() {
+    typing_->seg.queuedWaitsForReadiness = true;
+    typing_->dot.queuedWaitsForReadiness = true;
+}
+
 TestProduct::~TestProduct() = default;
 
 const settings::ProductDecl& TestProduct::settingsDecl() const {
@@ -197,7 +198,6 @@ roms::LookupResult TestProduct::prepare(RunSetup& r) {
     asked.push_back("prepare " + r.saveFolder());
     parts_.reset();
     parts_ = std::make_unique<parts::LibraryParts>(partsSetup(r.settings(), r.paths()));
-    parts_->typing().setPauseProbe(typing_.get());
     return lookUp();
 }
 

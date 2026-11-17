@@ -101,6 +101,9 @@ struct LibraryPartsSetup {
     std::vector<std::string> presetExtensions;
     std::vector<opening::FileKind*> fileKinds;
     std::map<opening::Way, std::uint64_t> openLimits;
+    // LIB-13 AC-8: where several files become one folder (the Web hosts'
+    // uploads folder); none: several files are opened one by one.
+    std::optional<std::string> uploadFolder;
     // LIB-4: the product's rules.
     std::vector<const control::ControlRules*> controlRules;
 };

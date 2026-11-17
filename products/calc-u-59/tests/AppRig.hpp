@@ -20,7 +20,7 @@
 // The app session as a native frontend hosts it, for the M-54 tests of
 // LIB-18 59 and C59-3 (tests/machine_control_tests.cpp,
 // tests/constant_memory_tests.cpp): the settings set up before the start
-// (`configure`), a save folder with a FileIO the test can make fail, a wall
+// (`configure`), a save folder with a file access the test can make fail, a wall
 // clock of the test's own (1 ms per reading), and LIB-18's `start` sent once
 // after the rig listens (its notices are seen). Unlike SessionRig it can be made again on the same save
 // folder, which a "quit and start again" needs.
@@ -30,20 +30,20 @@ namespace apprig {
 using Value = calcu::sessions::Value;
 
 /// The save folder in memory; `failWrites` makes every write fail (C59-3 EC-4).
-struct Files final : cu59::FileIO {
-    std::map<std::string, std::string> files;
-    std::map<std::string, int> writes;
+struct Files final : calcu::media::FileAccess {
+    mutable std::map<std::string, std::string> files;
+    mutable std::map<std::string, int> writes;
     bool failWrites = false;
-    Read read(const std::string& path) override {
+    Read read(const std::string& path) const override {
         auto it = files.find(path);
         if (it == files.end()) return {};
-        return {std::vector<uint8_t>(it->second.begin(), it->second.end())};
+        return {it->second, false};
     }
-    bool write(const std::string& path, const std::string& text) override {
-        if (failWrites) return false;
+    Written write(const std::string& path, const std::string& text) const override {
+        if (failWrites) return {false, "the file cannot be written."};
         files[path] = text;
         ++writes[path];
-        return true;
+        return {true, {}};
     }
 };
 
@@ -68,7 +68,7 @@ struct Rig {
         s.settings = &settings;
         s.paths = paths.get();
         s.examplesFolder = "examples";
-        s.fileIO = files;
+        s.files = files;
         app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u, {}, {},
                                    /*start=*/false);
         me = session().listen(fe, {});

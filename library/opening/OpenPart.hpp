@@ -29,7 +29,6 @@ class OpenPart final : public sessions::SessionPart {
 public:
     explicit OpenPart(OpenSetup);
     const OpenSetup& setup() const { return setup_; }
-    OpenSetup& setup() { return setup_; }   // before the session is built
 
     void attach(sessions::SessionSetup&) override;
     void afterCall(sessions::SessionContext&, pacing::WallTime) override;   // opens the file kept (AC-7)

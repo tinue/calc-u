@@ -1367,3 +1367,17 @@ declined or the refusal. `askedQuestion(reason)` gives the question.
 `"asks: "` and took `mid(6)`) use it. The dialogs and their words are
 each product's as before. Test: `lib7_d6_qt_asked_send_round_trip`
 (`library/qt6/tests/file_opening_tests.cpp`).
+
+## Part E simplification E-8 (2026-11-17, branch `es-dead`)
+
+`docs/reviews/e-simplification.md` §1 S-8. D-30's host file access is the one interface for
+Calc-U-59 too: `cu59::FileIO`, `plainFileIO` and the adapter
+`FileIOAccess` are gone. `TIAppSetup::files` is a
+`std::shared_ptr<const media::FileAccess>` (null: `plainFileAccess()`);
+`TIFileAccess` (the constant memory file, C59-3) reads and writes through
+it, and the app part hands the same object to the media part
+(`LibraryPartsSetup::mediaFiles`). The Swift bridge's `CoordinatedFiles`
+and the tests' save folders in memory (`tests/SessionRig.hpp`,
+`tests/AppRig.hpp`) implement `media::FileAccess`; `list` stays the
+default (plain) one, as the adapter left it. C59-3 EC-4: a failed write is
+`Written::ok == false`, as `false` was.

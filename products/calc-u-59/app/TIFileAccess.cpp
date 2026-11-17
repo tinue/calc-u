@@ -1,29 +1,9 @@
 #include "TIFileAccess.hpp"
-#include "settings/AtomicFile.hpp"
 
 namespace cu59 {
 
-namespace {
-
-class PlainFileIO final : public FileIO {
-public:
-    Read read(const std::string& path) override {
-        if (!calcu::settings::fileExists(path)) return {};
-        auto text = calcu::settings::readWholeFile(path);
-        if (!text) return {std::nullopt, true};
-        return {std::vector<uint8_t>(text->begin(), text->end())};
-    }
-    bool write(const std::string& path, const std::string& text) override {
-        return calcu::settings::writeFileAtomically(path, text).ok;
-    }
-};
-
-} // namespace
-
-std::shared_ptr<FileIO> plainFileIO() { return std::make_shared<PlainFileIO>(); }
-
-TIFileAccess::TIFileAccess(std::string saveFolder, std::shared_ptr<FileIO> io)
-    : m_saveFolder(std::move(saveFolder)), m_io(io ? std::move(io) : plainFileIO()) {}
+TIFileAccess::TIFileAccess(std::string saveFolder, std::shared_ptr<const calcu::media::FileAccess> files)
+    : m_saveFolder(std::move(saveFolder)), m_files(files ? std::move(files) : calcu::media::plainFileAccess()) {}
 
 std::string TIFileAccess::savePath(const std::string& fileName) const {
     if (m_saveFolder.empty()) return fileName;
@@ -32,13 +12,13 @@ std::string TIFileAccess::savePath(const std::string& fileName) const {
 }
 
 std::optional<std::string> TIFileAccess::readConstantMemory(bool* unreadable) {
-    auto r = m_io->read(savePath(kConstantMemoryFile));
+    calcu::media::FileAccess::Read r = m_files->read(savePath(kConstantMemoryFile));
     if (unreadable) *unreadable = r.unreadable;
-    if (!r.raw) return std::nullopt;
-    return std::string(r.raw->begin(), r.raw->end());
+    return std::move(r.bytes);
 }
 
-bool TIFileAccess::writeConstantMemory(const std::string& text) { return m_io->write(savePath(kConstantMemoryFile), text); }
-
+bool TIFileAccess::writeConstantMemory(const std::string& text) {
+    return m_files->write(savePath(kConstantMemoryFile), text).ok;
+}
 
 } // namespace cu59

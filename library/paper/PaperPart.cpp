@@ -32,7 +32,7 @@ std::string joined(const std::vector<std::string>& lines) {
 } // namespace
 
 PaperPart::PaperPart(const machine::Catalogue& cat, std::vector<PrinterPaper> printers,
-                     const startup::MachineControl* control)
+                     const startup::MachineControl& control)
     : control_(control) {
     for (auto& p : printers) {
         const machine::PeripheralDescriptor* d = cat.peripheral(p.printer);
@@ -129,8 +129,8 @@ void PaperPart::bindAll(SessionContext& c) {
         generation_ = gen;
         for (auto& e : entries_) e.paper->release();
         // A-3: a user's preset load starts with empty paper for the printers it names.
-        if (m && control_ && control_->lastBuild() && control_->lastBuild()->origin == startup::BuildOrigin::Preset)
-            for (const auto& r : control_->lastBuild()->plan.peripherals)
+        if (m && control_.lastBuild() && control_.lastBuild()->origin == startup::BuildOrigin::Preset)
+            for (const auto& r : control_.lastBuild()->plan.peripherals)
                 if (Entry* e = entryOf(r.peripheral)) e->paper->cut();
     }
     std::vector<PaperOutput*> found(entries_.size(), nullptr);

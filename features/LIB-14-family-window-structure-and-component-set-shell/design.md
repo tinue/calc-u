@@ -1601,3 +1601,11 @@ and 20 ms + 1/60 s (`main.cpp`), so `CalcU1600QtPacingProbe` and
 `CalcU59QtPacingProbe` read the same output as before. LIB-13's and
 LIB-7's sections of the same name have the file opening and the `asks:`
 round trip of this step.
+
+## Part E simplification E-8 (2026-11-17, branch `es-dead`)
+
+`docs/reviews/e-simplification.md` §1 S-8. `SessionHost::setServiceHandler` and `answer` (§3,
+"the frontend answers") are gone: no frontend or test set a handler. The
+host answers the session's asks itself, as without one: the clipboard
+(LIB-8's `ClipboardService`) and `open-url` (`QDesktopServices`); anything
+else is not given.

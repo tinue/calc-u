@@ -8,7 +8,9 @@
 #include "settings/HostDirs.hpp"
 #include "settings/Paths.hpp"
 #include "settings/PlatformBase.hpp"
+#include "settings/OpenFolders.hpp"
 #include "settings/SettingsFile.hpp"
+#include "settings/Startup.hpp"
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -85,77 +87,65 @@ TEST(lib9_ac19_declaration) {
     for (const char* v : {"app-support", "icloud", "folder"}) CHECK(accepts("trace", "location", v));
     CHECK(!accepts("trace", "location", "local"));
 
-    // The typed calls read and write those keys.
+    // The settings file reads and writes those keys by the declaration.
     TestSettings t;
-    s59::Settings& s = t.settings;
-    CHECK(!s.startupModelChoice());
-    CHECK(s.traceMaxFileSizeMB() == 50);
-    CHECK(s.ledStyle() == s59::LedStyle::Modernized);
-    CHECK(s.keyboardFeedback() == s59::KeyboardFeedback::Off);
-    CHECK(s.traceLocation() == s59::TraceLocation::AppSupport);
-    CHECK(s.saveFolderOverride().empty() && s.traceFolder().empty());
-    for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) CHECK(s.startupPreset(m).empty());
-    CHECK(!s.portraitDebugPage());
-    s.setLedStyle(s59::LedStyle::Classic);
-    CHECK_EQ(t.file.text("display", "led-style"), std::string("classic"));
-    CHECK(s.ledStyle() == s59::LedStyle::Classic);
-    s.setKeyboardFeedback(s59::KeyboardFeedback::Click);
-    CHECK_EQ(t.file.text("keyboard", "feedback"), std::string("click"));
-    s.setTraceLocation(s59::TraceLocation::Folder);
-    CHECK_EQ(t.file.text("trace", "location"), std::string("folder"));
-    s.setTraceMaxFileSizeMB(12);
-    CHECK(s.traceMaxFileSizeMB() == 12);
-    s.setTraceMaxFileSizeMB(0);  // AC-11
-    CHECK(s.traceMaxFileSizeMB() == 50);
-    s.setStartupModelChoice(Model::TI58C);
-    CHECK_EQ(t.file.text("startup", "model"), std::string("TI-58C"));
-    CHECK(s.startupModelChoice() == Model::TI58C);
-    s.setStartupModelChoice(std::nullopt);
-    CHECK_EQ(t.file.text("startup", "model"), std::string("last"));
-    s.setPortraitDebugPage(true);
-    CHECK_EQ(t.file.text("window", "portrait-debug-page"), std::string("true"));
-    s.setSaveFolderOverride("/tmp/cards");
-    CHECK_EQ(t.file.text("storage", "save-folder"), std::string("/tmp/cards"));
+    cs::SettingsFile& f = t.file;
+    CHECK_EQ(f.text("startup", "model"), std::string("last"));
+    CHECK(f.integer("trace", "max-file-size-mb") == 50);
+    CHECK_EQ(f.text("display", "led-style"), std::string("modernized"));
+    CHECK_EQ(f.text("keyboard", "feedback"), std::string("off"));
+    CHECK(t.settings.traceLocation() == s59::TraceLocation::AppSupport);
+    CHECK(f.text("storage", "save-folder").empty() && f.text("trace", "folder").empty());
+    for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) CHECK(cs::startupPreset(f, s59::modelName(m)).empty());
+    CHECK(!f.boolean("window", "portrait-debug-page"));
+    f.set("trace", "location", "folder");
+    CHECK(t.settings.traceLocation() == s59::TraceLocation::Folder);
+    f.set("trace", "location", "icloud");
+    CHECK(t.settings.traceLocation() == s59::TraceLocation::ICloud);
+    f.set("trace", "max-file-size-mb", "12");
+    CHECK(f.integer("trace", "max-file-size-mb") == 12);
+    f.set("trace", "max-file-size-mb", "0");  // AC-11
+    CHECK(f.integer("trace", "max-file-size-mb") == 50);
 
     // EC-5: a value its key does not accept reads as the default and stays.
-    t.file.set("display", "led-style", "glowing");
-    CHECK(s.ledStyle() == s59::LedStyle::Modernized);
-    CHECK(t.file.raw("display", "led-style") == std::optional<std::string>("glowing"));
+    f.set("display", "led-style", "glowing");
+    CHECK_EQ(f.text("display", "led-style"), std::string("modernized"));
+    CHECK(f.raw("display", "led-style") == std::optional<std::string>("glowing"));
 
     // [folders]: the folder last used, or a fixed one that picks don't change (D-2).
     const std::string home = "/home/u";
-    CHECK_EQ(s.openStartDir(s59::OpenFolder::Presets, home), home);
-    s.rememberOpenFile(s59::OpenFolder::Presets, "/data/presets/a.ti59");
-    CHECK_EQ(s.openStartDir(s59::OpenFolder::Presets, home), std::string("/data/presets"));
-    CHECK(s.openDir(s59::OpenFolder::Presets).empty());
-    s.setOpenDir(s59::OpenFolder::Presets, "/fixed");
-    s.rememberOpenFile(s59::OpenFolder::Presets, "/elsewhere/b.ti59");
-    CHECK_EQ(s.openStartDir(s59::OpenFolder::Presets, home), std::string("/fixed"));
-    CHECK_EQ(s.openDir(s59::OpenFolder::Presets), std::string("/fixed"));
-    s.setOpenDir(s59::OpenFolder::Presets, "");  // Reset: starts where the fixed folder was
-    CHECK(s.openDir(s59::OpenFolder::Presets).empty());
-    CHECK_EQ(s.openStartDir(s59::OpenFolder::Presets, home), std::string("/fixed"));
-    s.rememberOpenFile(s59::OpenFolder::AsmOverlays, "/asm/x.asm");
-    CHECK_EQ(t.file.text("folders", "asm-overlays"), std::string("/asm"));
-    CHECK_EQ(s.openStartDir(s59::OpenFolder::Other, home), home);  // D-1: declared, no dialog yet
+    const std::string presets = s59::openFolderKind(s59::OpenFolder::Presets);
+    CHECK_EQ(cs::openStartFolder(f, presets, home), home);
+    cs::rememberOpenFolder(f, presets, "/data/presets");
+    CHECK_EQ(cs::openStartFolder(f, presets, home), std::string("/data/presets"));
+    CHECK(cs::fixedOpenFolder(f, presets).empty());
+    cs::setFixedOpenFolder(f, presets, "/fixed");
+    cs::rememberOpenFolder(f, presets, "/elsewhere");
+    CHECK_EQ(cs::openStartFolder(f, presets, home), std::string("/fixed"));
+    CHECK_EQ(cs::fixedOpenFolder(f, presets), std::string("/fixed"));
+    cs::setFixedOpenFolder(f, presets, "");  // Reset: starts where the fixed folder was
+    CHECK(cs::fixedOpenFolder(f, presets).empty());
+    CHECK_EQ(cs::openStartFolder(f, presets, home), std::string("/fixed"));
+    cs::rememberOpenFolder(f, s59::openFolderKind(s59::OpenFolder::AsmOverlays), "/asm");
+    CHECK_EQ(f.text("folders", "asm-overlays"), std::string("/asm"));
+    CHECK_EQ(cs::openStartFolder(f, s59::openFolderKind(s59::OpenFolder::Other), home), home);  // D-1: declared, no dialog yet
 }
 
 // AC-20, EC-1: `last` without a model used before starts the TI-59.
 TEST(lib9_ac20_startup_last_without_last_model_is_ti59) {
     TestSettings t;
-    s59::Settings& s = t.settings;
-    CHECK(!s.lastUsedModel());
-    CHECK(s.startupModel() == Model::TI59);
-    s.setLastUsedModel(Model::TI58);
-    CHECK_EQ(t.file.text("startup", "last-model"), std::string("TI-58"));
-    CHECK(s.startupModel() == Model::TI58);
-    s.setStartupModelChoice(Model::TI58C);
-    CHECK(s.startupModel() == Model::TI58C);
+    const auto startup = [&t] { return cs::startupModel(t.file); };
+    CHECK(t.file.text("startup", "last-model").empty());
+    CHECK_EQ(startup(), std::string("TI-59"));
+    t.file.set("startup", "last-model", "TI-58");
+    CHECK_EQ(startup(), std::string("TI-58"));
+    t.file.set("startup", "model", "TI-58C");
+    CHECK_EQ(startup(), std::string("TI-58C"));
     t.file.set("startup", "model", "7");  // neither last nor a model: counts as last (AC-9)
-    CHECK(s.startupModel() == Model::TI58);
+    CHECK_EQ(startup(), std::string("TI-58"));
     t.file.set("startup", "model", "last");
     t.file.set("startup", "last-model", "PC-1500");  // EC-1
-    CHECK(s.startupModel() == Model::TI59);
+    CHECK_EQ(startup(), std::string("TI-59"));
     CHECK(s59::modelNamed("TI-58C") == Model::TI58C && !s59::modelNamed("ti58c"));
     CHECK_EQ(std::string(s59::modelName(Model::TI58C)), std::string("TI-58C"));
 }
@@ -175,10 +165,9 @@ TEST(lib9_ac21_first_start_defaults_and_writes_file) {
     {
         cs::SettingsFile f = cs::SettingsFile::open(d, path);
         CHECK(f.outcome() == cs::Outcome::Created);
-        s59::Settings s(f);
-        CHECK(s.startupModel() == Model::TI59);
-        CHECK(s.ledStyle() == s59::LedStyle::Modernized);
-        CHECK(s.windowState() == s59::WindowState{});
+        CHECK_EQ(cs::startupModel(f), std::string("TI-59"));
+        CHECK_EQ(f.text("display", "led-style"), std::string("modernized"));
+        CHECK(s59::Settings(f).windowState() == s59::WindowState{});
     }
     CHECK(fs::exists(path));
     const std::string text = readText(path);
@@ -189,10 +178,10 @@ TEST(lib9_ac21_first_start_defaults_and_writes_file) {
     {
         cs::SettingsFile f = cs::SettingsFile::open(d, path);
         CHECK(f.outcome() == cs::Outcome::Read);
-        s59::Settings(f).setKeyboardFeedback(s59::KeyboardFeedback::Haptic);
+        f.set("keyboard", "feedback", "haptic");
     }
     cs::SettingsFile again = cs::SettingsFile::open(d, path);
-    CHECK(s59::Settings(again).keyboardFeedback() == s59::KeyboardFeedback::Haptic);
+    CHECK_EQ(again.text("keyboard", "feedback"), std::string("haptic"));
     // The Qt6 save folder is ~/Calc-U-59 unless [storage] save-folder names another (AC-13).
     cs::Paths paths(again, dirs);
     CHECK_EQ(paths.saveFolder(), dirs.home + "/Calc-U-59");
@@ -219,7 +208,6 @@ TEST(lib9_ac22_no_key_holds_a_module) {
 // passed in, else [trace] folder, else Application Support (D-8).
 TEST(lib9_ac24_trace_location_app_support_icloud_folder) {
     TestSettings t;
-    s59::Settings& s = t.settings;
     cs::HostDirs dirs;
     dirs.frontend = cs::FrontendKind::Swift;
     dirs.home = "/Users/u";
@@ -232,17 +220,16 @@ TEST(lib9_ac24_trace_location_app_support_icloud_folder) {
         CHECK(p.screenshotFolder() == dirs.saveFolder);
         CHECK_EQ(p.saveFolder(), dirs.saveFolder);  // AC-14
     }
-    s.setTraceLocation(s59::TraceLocation::ICloud);
+    t.file.set("trace", "location", "icloud");
     CHECK(cs::Paths(t.file, dirs).traceFolder() == dirs.saveFolder);
-    s.setTraceLocation(s59::TraceLocation::Folder);
+    t.file.set("trace", "location", "folder");
     CHECK(cs::Paths(t.file, dirs).traceFolder() == dirs.applicationSupport);  // no folder chosen
-    s.setTraceFolder("/Users/u/Traces");
-    CHECK_EQ(t.file.text("trace", "folder"), std::string("/Users/u/Traces"));
+    t.file.set("trace", "folder", "/Users/u/Traces");
     CHECK(cs::Paths(t.file, dirs).traceFolder() == std::optional<std::string>("/Users/u/Traces"));
     dirs.chosenTraceFolder = "/Volumes/Granted/Traces";  // the bookmark's folder (AC-34)
     CHECK(cs::Paths(t.file, dirs).traceFolder() == dirs.chosenTraceFolder);
     // The save folder override is ignored outside Qt6 (AC-25).
-    s.setSaveFolderOverride("/elsewhere");
+    t.file.set("storage", "save-folder", "/elsewhere");
     CHECK_EQ(cs::Paths(t.file, dirs).saveFolder(), dirs.saveFolder);
 }
 
@@ -264,7 +251,7 @@ TEST(lib9_ac25_one_declaration_for_every_frontend) {
         web.saveFolder = "/persist-calc-u-59/Calc-U-59";
         CHECK_EQ(cs::Paths(f, web).saveFolder(), web.saveFolder);
         CHECK(!cs::Paths(f, web).traceFolder());
-        s59::Settings(f).setLedStyle(s59::LedStyle::Classic);
+        f.set("display", "led-style", "classic");
     }
     const std::string text = readText(path);
     CHECK(text.find("feedback = haptic") != std::string::npos);

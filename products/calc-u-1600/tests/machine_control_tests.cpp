@@ -82,7 +82,7 @@ TEST(lib18_ac26_version1_startup_preset_gives_default_and_notice) {
     // A startup preset of format 1 (row 1600-1): the built-in default and EC-1's notice.
     const fs::path v1 = f.root / "startup-v1.pc1600";
     std::ofstream(v1) << "format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nfloppy: Formatted\nslot-1: CE-1600M\n";
-    f.settings.setDefaultPresetPath(calcu::machine::ModelId{"PC-1600"}, v1.generic_string());
+    f.settings.file().set("preset", "PC-1600", v1.generic_string());
     CHECK(f.start("PC-1600"));
     CHECK(f.part().model() == calcu::machine::ModelId{"PC-1600"});
     CHECK_EQ(pluggedCount(f), std::size_t{0});
@@ -154,7 +154,7 @@ TEST(lib18_ac28_disk_in_drive_again_same_side) {
 TEST(lib18_ac28_no_startup_preset_loaded) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
-    f.settings.setDefaultPresetPath(calcu::machine::ModelId{"PC-1500"}, "examples:startup/default-pc1500.pc1500");
+    f.settings.file().set("preset", "PC-1500", "examples:startup/default-pc1500.pc1500");
     CHECK(f.start("PC-1500"));
     CHECK(plugged(f, "CE-150"));   // the startup preset's
     CHECK(f.detach("CE-150"));

@@ -18,8 +18,11 @@
 // read again (AC-6); otherwise no machine starts and describe() of the
 // result is the message (AC-5, AC-13).
 //
-// In the core, not in app/ as the design has it: until M-51 the CLIs and
-// probes linked the core only.
+// In the core, not in app/ as the design has it: the core's scan of module
+// definition folders (Connector/MemoryCardCatalog.hpp, used by
+// SharpCatalogue's addModuleDefinitions) passes over the files of the full
+// set (isFullSetFile), so the full set lives beside it (LIB-12's Part E
+// simplification E-8).
 
 namespace sharp {
 

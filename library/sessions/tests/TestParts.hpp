@@ -3,6 +3,7 @@
 #include "TestFrontend.hpp"
 #include "TestMachines.hpp"
 #include "sessions/AppSession.hpp"
+#include "sessions/Args.hpp"
 #include "sessions/MachineSession.hpp"
 #include "sessions/SessionPart.hpp"
 #include <functional>
@@ -57,15 +58,6 @@ inline Operation runningFor(Ticks n) {
     return [n](OperationContext& c) { return runFor(c, n); };
 }
 
-inline std::int64_t intArg(const Value& args, const char* key, std::int64_t fallback = 0) {
-    const Value* v = args.find(key);
-    return v && v->integer() ? *v->integer() : fallback;
-}
-inline std::string textArg(const Value& args, const char* key) {
-    const Value* v = args.find(key);
-    return v && v->string() ? *v->string() : std::string();
-}
-
 class TestPart : public SessionPart {
 public:
     explicit TestPart(std::string prefix = "tp") : p_(std::move(prefix) + ".") {}
@@ -77,7 +69,7 @@ public:
         state_ = &s.stateTopic(stateName());
         stream_ = &s.streamTopic(streamName(), History::SinceReset);
         s.command(CommandName{p_ + "set"}, [this](const Value& a, SessionContext&) -> CommandOutcome {
-            set(intArg(a, "value"));
+            set(integerArg(a, "value"));
             return Done{};
         });
         s.command(CommandName{p_ + "append"}, [this](const Value& a, SessionContext&) -> CommandOutcome {
@@ -112,7 +104,7 @@ public:
             return Done{};
         });
         s.command(CommandName{p_ + "ask"}, [this](const Value& a, SessionContext& c) -> CommandOutcome {
-            const auto id = c.askHost(static_cast<HostService>(intArg(a, "service")), a, [this](const ServiceAnswer& ans) {
+            const auto id = c.askHost(static_cast<HostService>(integerArg(a, "service")), a, [this](const ServiceAnswer& ans) {
                 answers.push_back(ans);
                 set(ans.given ? 1 : 0);
             });
@@ -120,7 +112,7 @@ public:
             return Done{std::make_shared<TestValue>(static_cast<std::int64_t>(*id))};
         });
         s.request(RequestName{p_ + "echo"}, [](const Value& a, SessionContext&) {
-            return replyGiven(std::make_shared<TestValue>(intArg(a, "value")));
+            return replyGiven(std::make_shared<TestValue>(integerArg(a, "value")));
         });
     }
     void beforeCall(SessionContext&, pacing::WallTime) override { ++beforeCalls; }

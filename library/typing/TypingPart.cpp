@@ -162,8 +162,7 @@ void TypingPart::heldChanged() {
 
 void TypingPart::sync() {
     if (!ctx_) return;
-    const bool paused = probe_ ? probe_->paused(*ctx_) : ctx_->machineSession().paused();
-    engine_.setPaused(paused, wall_);
+    engine_.setPaused(ctx_->machineSession().paused(), wall_);   // AC-20
 }
 
 void TypingPart::beforeCall(SessionContext& c, pacing::WallTime now) {

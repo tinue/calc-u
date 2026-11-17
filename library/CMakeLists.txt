@@ -113,16 +113,14 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   target_compile_definitions(calcu_library_tests PRIVATE CALCU_PRESET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/presets/tests/fixtures"
                                                      CALCU_PAPER_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/paper/tests/fixtures"
                                                      CALCU_SHELL_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/shell/tests")
-  add_test(NAME calcu_library_tests COMMAND calcu_library_tests)
-  set_tests_properties(calcu_library_tests PROPERTIES LABELS frequent)
+  calcu_add_test(calcu_library_tests frequent COMMAND calcu_library_tests WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   # LIB-2 T8: the host links on real pseudo-terminals (Frequent; macOS and
   # Linux only), a program of their own so that they can move to Longer.
   if(CALCU_HAS_PTY)
     add_executable(calcu_library_pty_tests ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/pty_tests.cpp)
     target_link_libraries(calcu_library_pty_tests PRIVATE calcu_test_machines calcu_test_runner calcu_warnings)
-    add_test(NAME calcu_library_pty_tests COMMAND calcu_library_pty_tests)
-    set_tests_properties(calcu_library_pty_tests PROPERTIES LABELS frequent)
+    calcu_add_test(calcu_library_pty_tests frequent COMMAND calcu_library_pty_tests WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endif()
 
   # LIB-6 L14: the suite check of presets with calcu_test (Frequent): the
@@ -143,9 +141,9 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   # LIB-9 T-14: the self-test of the platform-store source check the
   # products run over their frontends (Frequent).
   if(NOT WIN32)
-    add_test(NAME LibraryPlatformStoreCheck
-             COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/settings/tests/check_platform_stores_test.sh)
-    set_tests_properties(LibraryPlatformStoreCheck PROPERTIES LABELS frequent)
+    calcu_add_test(LibraryPlatformStoreCheck frequent
+                   COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/settings/tests/check_platform_stores_test.sh
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     # LIB-14 L11: no product code in the shell and the component sets (AC-22).
     calcu_add_test(LibraryShellNoProduct frequent COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/qt6/tests/check_no_product_code.sh)
   endif()

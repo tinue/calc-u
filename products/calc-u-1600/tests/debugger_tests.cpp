@@ -321,7 +321,7 @@ bool limitNotice(SessionFixture& f) {
 TEST(lib10_ac43_preset_trace_ends_at_the_limit_with_a_notice) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
-    f.settings.setTraceMaxFileSizeMB(1);
+    f.settings.file().set("trace", "max-file-size-mb", "1");
     CHECK(f.start("PC-1600"));
     const fs::path preset = writePreset(f, "long.pc1600", "format-version: 2\nmodel: PC-1600\nkeys:\n  - trace: long.bin\n  - wait: 8s\n");
     CHECK(f.ok(calcu::presets::kLoadPresetCommand, Value::object({{"ref", preset.generic_string()}})));
@@ -335,7 +335,7 @@ TEST(lib10_ac43_preset_trace_ends_at_the_limit_with_a_notice) {
 TEST(lib10_ac43_button_trace_ends_at_the_limit_with_a_notice) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
-    f.settings.setTraceMaxFileSizeMB(1);
+    f.settings.file().set("trace", "max-file-size-mb", "1");
     CHECK(f.start("PC-1600"));
     CHECK(f.ok(dbg::kTraceCommand, Value::object({{"button", true}})));
     f.call(500);

@@ -56,9 +56,12 @@
 #include "peripherals/Controls.hpp"
 #include "peripherals/PeripheralsPart.hpp"
 #include "sessions/AppSession.hpp"
+#include "sessions/Args.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/MachineSession.hpp"
 #include "sessions/SessionPart.hpp"
+#include "startup/MachineControl.hpp"
+#include "startup/ProductMachines.hpp"
 #include "settings/Declaration.hpp"
 #include "settings/Paths.hpp"
 #include "settings/SettingsFile.hpp"
@@ -82,14 +85,10 @@ namespace s = calcu::sessions;
 namespace st = calcu::settings;
 namespace mt = calcu::machine::test;
 namespace cm = calcu::machine;
+using calcu::sessions::textArg;
 using calcu::web::WebStart;
 
 namespace {
-
-std::string textArg(const s::Value& args, const char* key) {
-    const s::Value* v = args.find(key);
-    return v && v->string() ? *v->string() : std::string();
-}
 
 std::optional<std::string> readText(const std::string& path) {
     std::ifstream in(path, std::ios::binary);
@@ -391,9 +390,26 @@ private:
 // with the two test printers, the product's part.
 bool hostsMedia(const WebStart& w) { return w.product == "Test-M"; }
 
+// LIB-18's machine control for the paper part only: the product part builds
+// its machines itself (above), so this one builds none.
+class NoMachines final : public calcu::startup::ProductMachines {
+public:
+    const cm::Catalogue& catalogue() const override { return mt::paperTestCatalogue(); }
+    cm::MachineBuilder& builder() override { return builder_; }
+    calcu::startup::MachinePlan builtInDefault(const cm::ModelId& m) override { return {m, std::nullopt, {}, nullptr}; }
+    calcu::pacing::PacingProfile pacingProfile(const cm::ModelId&) const override { return {}; }
+    int soundRate(const cm::ModelId&) const override { return 0; }
+    cm::Seconds readinessBound(const cm::ModelId&) const override { return cm::Seconds(1.0); }
+
+private:
+    mt::TestBuilder builder_;
+};
+
 struct Parts {
     explicit Parts(const WebStart& w)
-        : paper(mt::paperTestCatalogue(), {{mt::kDotter, mt::td20Description()}, {mt::kPlotter, mt::tp4Description()}}),
+        : control(machines, nullptr),
+          paper(mt::paperTestCatalogue(), {{mt::kDotter, mt::td20Description()}, {mt::kPlotter, mt::tp4Description()}},
+                control),
           product(w, hostsMedia(w)), debugger(debuggerSetup()), settings(settingsSetup(product)),
           shellPart(true, false, !hostsMedia(w)) {
         if (hostsMedia(w)) {   // LIB-7 (M-42)
@@ -405,6 +421,8 @@ struct Parts {
         }
     }
     calcu::peripherals::PeripheralsPart peripherals;
+    NoMachines machines;
+    calcu::startup::MachineControl control;   // builds nothing: no preset's origin for the paper (LIB-8 A-3)
     calcu::paper::PaperPart paper;
     TestProductPart product;
     calcu::debugger::DebuggerPart debugger;   // LIB-10

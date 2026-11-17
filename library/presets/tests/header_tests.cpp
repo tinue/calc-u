@@ -70,7 +70,7 @@ TEST(ac3_module_by_name_reference) {
     Reading rd;
     const auto r = rd.read(header() + "slot-1: { name: TEST-MODULE }\n");
     CHECK(planOf(r) && planOf(r)->places[0].request.peripheral == mt::kModule);
-    rd.rules.seg.places["slot-1"] = PlaceKeyRule{false, true, false};   // a product that takes name: only
+    rd.rules.seg.places["slot-1"] = PlaceKeyRule{false, false};   // a product that takes name: only
     CHECK(hasLine({rd.error(header() + "slot-1: test-module\n")}, "slot-1: takes a reference"));
 }
 

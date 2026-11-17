@@ -168,12 +168,14 @@ landscape on a large screen) — its column in
   thread: the app session's (Qt6's GUI thread, the Swift frontend's
   `SessionThread`, the Web's Worker since M-34).
 - **Settings** are declared once, in `app/Settings.hpp` (`settingsDecl()`:
-  section, key, default, accepted values; typed calls over the library's
-  `calcu::settings::SettingsFile`, LIB-9), and live in `Calc-U-59.ini`.
-  The Swift frontend's file is the session's (LIB-14's `SettingsPart`,
-  read through `Bridge/TIShell`; C59-8 D-3),
-  `frontends/qt6/app/AppSettings.hpp` and the Web's `app/TIWebPart` use
-  them; no frontend keeps a setting in UserDefaults, QSettings or
+  section, key, default, accepted values; LIB-9), read and written
+  through the library's `calcu::settings::SettingsFile` (its `Paths`,
+  `settings::startupModel`, `settings/OpenFolders`, LIB-14's
+  `SettingsPart`), and live in `Calc-U-59.ini`. `Settings` keeps typed
+  calls only for what a frontend reads itself (the Qt6 window state,
+  `frontends/qt6/app/AppSettings.hpp`; the Swift trace location). The Swift
+  frontend's file is the session's (LIB-14's `SettingsPart`, read through
+  `Bridge/TIShell`; C59-8 D-3); no frontend keeps a setting in UserDefaults, QSettings or
   `localStorage` (CTest `CalcU59NoPlatformSettings`, allow-list
   `tools/platform_stores_allowed.txt`).
 - **Assets have one source:** ROMs in `roms/`, artwork in `frontends/swift/App/Assets.xcassets`,

@@ -216,14 +216,14 @@ TEST(c1600_3_ac2_listens_on_127_0_0_1_by_setting_or_run_port) {
     part->setTransport(&t);
     CHECK(!t.listening);   // dap-enabled is off by default
     CHECK_EQ(part->status().status, std::string("Off"));
-    fx.settings.setDapEnabled(true);
-    fx.settings.setDapPort(40001);
+    fx.settings.file().set("debug", "dap-enabled", "true");
+    fx.settings.file().set("debug", "dap-port", "40001");
     fx.call();   // the settings changed: the part follows at the next call
     CHECK(t.listening && *t.listening == 40001);
     CHECK_EQ(part->status().status, std::string("Listening on 127.0.0.1:40001"));
     CHECK(!part->setRunPort(40002));   // --dap: for this run, no setting changed
     CHECK(t.listening && *t.listening == 40002);
-    CHECK_EQ(fx.settings.dapPort(), 40001);
+    CHECK_EQ(fx.settings.file().integer("debug", "dap-port"), 40001);
     part->setTransport(nullptr);
 }
 
@@ -275,7 +275,7 @@ TEST(c1600_3_ec1_port_out_of_range_not_listening) {
     SessionFixture fx;
     fx.open();
     TestTransport t;
-    fx.settings.setDapEnabled(true);   // also over the setting: off for the run
+    fx.settings.file().set("debug", "dap-enabled", "true");   // also over the setting: off for the run
     fx.part().dapPart()->setTransport(&t);
     CHECK(t.listening);
     const sessions::ReplyMessage r = fx.run(shared::dap::kDapPortCommand, sessions::Value::object({{"port", 80}}));

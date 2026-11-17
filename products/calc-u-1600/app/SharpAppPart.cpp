@@ -128,6 +128,7 @@ calcu::parts::LibraryPartsSetup SharpAppPart::librarySetup() {
     s.presetExtensions = presetExtensions();
     s.fileKinds = {&m_basicKind, &m_codeKind};   // AC-17: BASIC first
     s.openLimits = openLimits();
+    s.uploadFolder = m_options.uploadFolder;
     s.controlRules = sharpControlSetup(m_controlRules);
     return s;
 }

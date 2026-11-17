@@ -142,7 +142,7 @@ TEST(lib14_ac19_roms_missing_topic_without_a_machine) {
     cu59::TIAppSetup s;
     s.settings = &settings;
     s.paths = paths.get();
-    s.fileIO = std::make_shared<apprig::Files>();
+    s.files = std::make_shared<apprig::Files>();
     s.roms.missing.files = {calcu::roms::FileProblem{"TMC0583.txt", calcu::roms::Problem::Missing, {}, {}}};
     const std::string expected = calcu::roms::describe(s.roms.missing);
     auto app = cu59::makeAppSession(std::move(s), [&] { return now += std::chrono::milliseconds(1); }, 59u, {}, {}, false);

@@ -3,6 +3,7 @@
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
 #include "TestProduct.hpp"
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -266,7 +267,8 @@ TEST(harness_key_gives_up_after_an_hour) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
-    run.product.typingPaused = true;   // the press waits for the machine to run, for ever
+    run.product.pressesWaitForReadiness();
+    run.machine().setStartUp(std::numeric_limits<calcu::machine::Ticks>::max());   // never ready: the press waits for ever
     const auto before = run.machine().tickCount();
     CHECK_EQ(run.line("key 1"), std::string("refused: The keys were not taken within an hour.\n"));
     const auto ran = run.machine().tickCount() - before;

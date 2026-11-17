@@ -14,27 +14,28 @@ shots:
 
   # Cassette: Save puts a new tape in, CSAVE records onto it (saved when the
   # motor stops); then the tape picked from the list plays into CLOAD. The
-  # shot run starts with an empty tape folder, so it records first.
+  # shot run starts with an empty tape folder, so it records first. The
+  # pictures mid-transfer come after fixed times; the ends are wait-idle.
   - name: 04-tape
     window: 1760x1000   # the Tape group widens the PC-1600 control bar
     preset: ../presets/pc1600-tape.pc1600
     steps:
       - click: media-save-tape
-      - enter-text: Lissajous
+      - enter-text: Hello
       - capture: { target: dialog, file: 04-tape-save.png }
       - accept
-      - type: CSAVE "LISSAJOU"
-      - run: 12
+      - type: CSAVE "HELLO"
+      - run: 6
       - capture: { target: control-bar, file: 04-tape-recording.png, padding: 4 }
-      - run: 40
+      - wait-idle
       - key: mode
       - type: NEW0
       - key: mode
-      - select: media-picker-tape = Lissajous
+      - select: media-picker-tape = Hello
       - type: CLOAD
       - run: 5
       - capture: { target: control-bar, file: 04-tape-loading.png, padding: 4 }
-      - run: 25
+      - wait-idle
     capture: { target: lcd, file: 04-tape-loaded.png }
 
   # A file without a header: the app asks where it goes.

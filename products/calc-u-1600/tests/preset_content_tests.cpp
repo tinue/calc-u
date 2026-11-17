@@ -577,6 +577,7 @@ TEST(c1600_4_ac17_bundle_lists_todays_entries) {
                                            "BASIC basic/hanoi.pc1600",
                                            "Plotter plotter/lissajou-1500.pc1500a",
                                            "Plotter plotter/lissajou-1600.pc1600",
+                                           "Plotter plotter/rectangles-1600.pc1600",
                                            "Plotter plotter/globus.pc1600",
                                            "Plotter plotter/biorhythmus_1600.pc1600",
                                            "Plotter plotter/ascii.pc1600",

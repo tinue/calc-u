@@ -1,0 +1,14 @@
+# User-guide screenshots: the CE-1600P has just plotted the four nested
+# rectangles (examples/plotter/rectangles-1600.bas): quick, every pen.
+format-version: 2
+model: PC-1600
+printer: CE-1600P
+keys:
+  - key: mode
+  - type: NEW0
+program:
+  file: ../../../../examples/plotter/rectangles-1600.bas
+keys:
+  - key: mode
+  - type: RUN
+  - let-it-finish:

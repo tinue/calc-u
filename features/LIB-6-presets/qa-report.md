@@ -266,7 +266,7 @@ Tests: `tests/sharp_presets_tests.cpp`, the `lib6_` cases of
 | AC-50 | Pass | `lib6_ac50_test_inline_comment_and_raw_values`, `lib6_ac50_test_keys_given_twice_and_names_any_case`, `lib6_ac50_test_wait_step_value`, `lib6_ac50_test_syncclock_step`, `lib6_ac50_test_preset_screenshot_parse`, `lib6_ac50_in_parts_against_in_one_go` |
 | AC-51 | Pass (the six files since M-47) | `calcu_preset_check.CalcU1600Presets` (without exclusions since M-47), `calcu_preset_check.CalcU1600Templates` (Frequent) |
 | AC-53 (Calc-U-1600) | Pass | `lib6_ac53_sharp_idle_rule_values`; C1600-4 AC-13 |
-| AC-54 | Pass | Qt6 `CalcU1600Shots.lib6-ac54` (`examples:plotter/lissajou-1600.pc1600`, the paper shows); Web `play.spec.js` `lib6_ac54 bundled example loads and its result shows`, `session.spec.js` `lib6_ac54 uploaded preset is loaded` |
+| AC-54 | Pass | Qt6 `CalcU1600Shots.lib6-ac54` (`examples:plotter/rectangles-1600.pc1600` since 2026-11-17, was `lissajou-1600`: quicker; the paper shows); Web `play.spec.js` `lib6_ac54 bundled example loads and its result shows`, `session.spec.js` `lib6_ac54 uploaded preset is loaded` |
 | AC-67 | Pass | `lib6_ac67_regex_error_1_not_error_10`, `lib6_ac67_bad_regex_refused_at_read`, `lib6_ac67_leading_slash_escaped_literal` |
 | AC-24, AC-25, AC-31, AC-34 (Calc-U-1600) | Pass | C1600-4 AC-13, AC-17; `lib6_ac25_screenshot_into_save_folder`, `lib6_ac34_preset_wait_expect_screenshot_on_pc1600` |
 

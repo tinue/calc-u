@@ -256,7 +256,8 @@ The shipped presets
   `startup/default-pc1500a.pc1500a` and `startup/default-pc1600.pc1600`;
   as examples, in the group "BASIC" `basic/hanoi.pc1600`, in the group
   "Plotter" `plotter/lissajou-1500.pc1500a`,
-  `plotter/lissajou-1600.pc1600`, `plotter/globus.pc1600`,
+  `plotter/lissajou-1600.pc1600`, `plotter/rectangles-1600.pc1600`
+  (added 2026-11-17, see the decision log), `plotter/globus.pc1600`,
   `plotter/biorhythmus_1600.pc1600` and `plotter/ascii.pc1600`, and in
   the group "Machine code" `machine-code/memtest_1500a.pc1500a`
   (`examples/bundled.yaml:12-31`), each with the files its preset
@@ -381,3 +382,4 @@ The shipped presets
 | Its comments are corrected where they name a key, a tool or a format that changed, and the READMEs under `examples/` are upgraded with the files (AC-15) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |
 | The bundle file lists each preset with its files; only these are bundled, not whole folders (AC-17) | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk | 2026-11-13 |
 | Program mode before `text: \|` is the preset's, unless the model's start leaves the machine in it (AC-4) | user, 2026-11-13 (B-29 of `docs/walkthroughs/presets.md` §5.2); the RENUM template relies on a PC-1500A in PRO after its cold start | 2026-11-13 |
+| The bundle adds `plotter/rectangles-1600.pc1600` after `lissajou-1600` (AC-17): four nested rectangles, one per pen, for the GUI tests and the guide pictures that only need the plotter to draw (25 s of emulated time against Lissajous' 116 s) | user, 2026-11-17 (the slow GUI tests); behaviour change 1600-49 | 2026-11-17 |

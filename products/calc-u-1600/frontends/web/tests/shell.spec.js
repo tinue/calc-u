@@ -224,7 +224,7 @@ test('lib4_ac20 peripheral buttons, disk picker and tape controls disabled while
     };
     setInterval(look, 50);
   });
-  await h.send(page, 'load-preset', { ref: 'examples:plotter/lissajou-1600.pc1600' });
+  await h.send(page, 'load-preset', { ref: 'examples:plotter/rectangles-1600.pc1600' });
   await h.notBusy(page);
   const seen = await page.evaluate(() => window.__whileBusy.filter((s) => s.disk !== null && s.tape !== null));
   expect(seen.length).toBeGreaterThan(0);

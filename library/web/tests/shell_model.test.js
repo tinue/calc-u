@@ -509,3 +509,121 @@ test("ac21_about_shows_product_texts", () => {
   p.build = "";
   assert.equal(m.calcuShellAbout(p).version, "Version 1.2.3");
 });
+
+// Part E (design §10.3.1, §10.3.2): a window without a menu bar (M13 to
+// M18, B8) and labelled choices (S8); the C++ cases of the same names in
+// menu_model_tests.cpp, bar_model_tests.cpp, settings_dialog_tests.cpp.
+const PORTRAIT = Object.assign({}, WEB, { menuBar: false });
+const withAction = (cs, command, available) => {
+  for (const a of cs.actions) if (a.command === command) Object.assign(a, available);
+  return cs;
+};
+
+test("more_items_are_the_items_without_a_control", () => {
+  const p = product();
+  const inp = Object.assign(inputs(), { media: clone(INPUTS.media) });
+  const ms = m.calcuShellMenus(inp, p, PORTRAIT);
+  assert.equal(ms.map((x) => x.id).join(" "), "file machine help");
+  assert.equal(ids(m.calcuShellMoreItems(ms, p)),
+    "examples - load-program - import-media saved-media mount-drive - variants-model - cold-boot resume disk-thing - help about");
+  p.items[1].onBar = true;
+  assert.equal(ids(m.calcuShellMoreItems(m.calcuShellMenus(inp, p, PORTRAIT), p)),
+    "examples - load-program - import-media saved-media - variants-model - cold-boot resume disk-thing - help about");
+  p.items[0].onBar = true;
+  assert.equal(ids(m.calcuShellMoreItems(m.calcuShellMenus(inp, p, PORTRAIT), p)),
+    "examples - import-media saved-media - variants-model - cold-boot resume disk-thing - help about");
+});
+
+test("more_cold_boot_asks_first", () => {
+  const p = product();
+  const ms = m.calcuShellMenus(inputs(), p, PORTRAIT);
+  const more = m.calcuShellMoreItems(ms, p);
+  const cold = more.find((i) => i.id === "cold-boot");
+  assert.equal(cold.confirm, "Cold boot the machine? What it holds in memory is lost.");
+  assert.equal(cold.destructive, true);
+  assert.equal(cold.command, "cold-boot");
+  assert.ok(!find(ms, "cold-boot").confirm);
+  for (const i of more) if (i.id !== "cold-boot") assert.ok(!i.confirm);
+});
+
+test("more_follows_availability", () => {
+  const p = product();
+  const cs = withAction(clone(INPUTS.modelA), "cold-boot", { available: false, reason: "An operation runs." });
+  let more = m.calcuShellMoreItems(m.calcuShellMenus(inputs(cs), p, PORTRAIT), p);
+  const by = (id) => more.find((i) => i.id === id);
+  assert.equal(by("cold-boot").enabled, false);
+  assert.equal(by("cold-boot").reason, "An operation runs.");
+  assert.equal(by("resume").enabled, false);
+  assert.equal(by("disk-thing").reason, "No disk drive.");
+  const inp = inputs();
+  inp.runState = { paused: true };
+  more = m.calcuShellMoreItems(m.calcuShellMenus(inp, p, PORTRAIT), p);
+  assert.equal(by("cold-boot").enabled, true);
+  assert.equal(by("resume").enabled, true);
+});
+
+test("media_place_item_only_with_its_media_place", () => {
+  const p = product();
+  p.items.push({ group: "FileMedia", id: "fit-card", label: "Fit Card…", entry: "", mediaPlace: "card" });
+  let ms = m.calcuShellMenus(inputs(), p, QT);
+  assert.equal(find(ms, "fit-card").enabled, true);
+  const cs = clone(INPUTS.modelA);
+  cs.mediaPlaces[0].insert = { available: false, reason: "A card passes." };
+  ms = m.calcuShellMenus(inputs(cs), p, QT);
+  assert.equal(find(ms, "fit-card").enabled, false);
+  assert.equal(find(ms, "fit-card").reason, "A card passes.");
+  ms = m.calcuShellMenus(inputs(clone(INPUTS.modelB)), p, QT);
+  assert.equal(find(ms, "fit-card"), null);
+});
+
+test("no_settings_item_without_settings", () => {
+  const t = Object.assign({}, WEB, { settings: false });
+  let ms = m.calcuShellMenus(inputs(), product(), t);
+  assert.equal(find(ms, "settings"), null);
+  assert.ok(find(ms, "about"));
+  t.about = false;
+  ms = m.calcuShellMenus(inputs(), product(), t);
+  assert.equal(find(ms, "about"), null);
+  assert.equal(ids(menu(ms, "help").items), "help");
+});
+
+test("bar_without_menu_bar_keeps_reset_preset_settings_and_more", () => {
+  const p = product();
+  const b = m.calcuShellBar(inputs(), p, PORTRAIT);
+  assert.equal(describeBar(b), "[reset][model][slot-1 slot-2][printer aux][card][load-preset settings more]");
+  assert.equal(b[0].group, "Start");
+  assert.equal(b[5].group, "End");
+  const reset = control(b, "reset");
+  assert.equal(reset.kind, "action");
+  assert.equal(reset.label, "Reset");
+  assert.equal(reset.item.command, "reset");
+  assert.equal(control(b, "load-preset").label, "Preset");
+  assert.equal(control(b, "load-preset").item.command, "");
+  assert.equal(control(b, "settings").label, "Settings");
+  const more = control(b, "more");
+  assert.equal(more.kind, "more");
+  assert.equal(more.choices.length, m.calcuShellMoreItems(m.calcuShellMenus(inputs(), p, PORTRAIT), p).length);
+  const cs = withAction(clone(INPUTS.modelA), "reset", { available: false, reason: "An operation runs." });
+  const b2 = m.calcuShellBar(inputs(cs), p, PORTRAIT);
+  assert.equal(control(b2, "reset").item.enabled, false);
+  assert.equal(control(b2, "reset").item.reason, "An operation runs.");
+  assert.equal(control(m.calcuShellBar(inputs(), p, Object.assign({}, PORTRAIT, { settings: false })), "settings"), null);
+  assert.equal(describeBar(m.calcuShellBar(inputs(), p, WEB)), "[model][slot-1 slot-2][printer aux][card][]");
+});
+
+const styleSpec = () => [{ title: "Look", rows: [{ widget: "choice", section: "test", key: "style", label: "Style", choices: [["one", "The first"]] }] }];
+const styleSettings = (value) => ({ home: "/home/u", rows: [{ section: "test", key: "style", kind: "choice", value, default: "one",
+  choices: ["one", "two"], inUse: value, isDefault: value === "one" }] });
+
+test("choice_row_with_labels_offers_only_those", () => {
+  const style = shownRow(m.calcuShellDialog(styleSettings("one"), null, styleSpec()), "test.style");
+  assert.deepEqual(style.choices, [["one", "The first"]]);
+  const plain = [{ title: "Look", rows: [{ widget: "choice", section: "test", key: "style", label: "Style" }] }];
+  assert.deepEqual(shownRow(m.calcuShellDialog(styleSettings("one"), null, plain), "test.style").choices, [["one", "one"], ["two", "two"]]);
+});
+
+test("choice_value_not_listed_shown_as_written", () => {
+  const style = shownRow(m.calcuShellDialog(styleSettings("two"), null, styleSpec()), "test.style");
+  assert.equal(style.value, "two");
+  assert.deepEqual(style.choices, [["one", "The first"], ["two", "two"]]);
+});

@@ -10,48 +10,6 @@ namespace cu59 {
 
 using calcu::sessions::Value;
 
-namespace {
-Value rect(double x, double y, double w, double h) { return Value(Value::Array{Value(x), Value(y), Value(w), Value(h)}); }
-} // namespace
-
-Value webStaticData(const std::vector<ModuleMetadata>& moduleList) {
-    Value::Array models;
-    for (int raw = 0; raw <= 2; ++raw) {
-        const auto& i = info(static_cast<Model>(raw));
-        models.push_back(Value::object({{"model", raw}, {"name", std::string(i.displayName)}, {"hasCardReader", i.hasCardReader}}));
-    }
-    Value::Array modules;
-    for (const auto& m : moduleList) modules.push_back(Value::object({{"id", m.id}, {"menuTitle", m.menuTitle}}));
-
-    const auto& d = kDisplayRect;
-    const auto& c = kCardRect;
-    Value::Array corners;
-    for (int side : {0, 1}) {
-        const NRect r = cardCornerRect(side);
-        corners.push_back(rect(r.x, r.y, r.w, r.h));
-    }
-    Value::Array keys;
-    for (int row = 0; row < 9; ++row)
-        for (int col = 0; col < 5; ++col) {
-            const auto& k = kKeyRects[row][col];
-            keys.push_back(rect(k.x, kKeyboardYStart + k.y * kKeyboardYScale, k.w, k.h * kKeyboardYScale));
-        }
-    Value layout = Value::object({{"display", rect(d.x, d.y, d.w, d.h)},
-                                  {"card", rect(c.x, c.y, c.w, c.h)},
-                                  {"cardCorners", Value(std::move(corners))},
-                                  {"keys", Value(std::move(keys))}});
-
-    Value::Array colors;   // [r, g, b] per heat step
-    for (int i = 0; i < 6; ++i)
-        colors.push_back(Value(Value::Array{Value(kHeatColors[i].r), Value(kHeatColors[i].g), Value(kHeatColors[i].b)}));
-    Value heat = Value::object({{"cols", kHeatmapCols}, {"rows", kHeatmapRows}, {"colors", Value(std::move(colors))}});
-
-    return Value::object({{"models", Value(std::move(models))},
-                          {"modules", Value(std::move(modules))},
-                          {"layout", std::move(layout)},
-                          {"heatmap", std::move(heat)}});
-}
-
 Value webLedGeometry(double w, double h) {
     const LedStyleParams& p = ledStyleParams(LedStyle::Classic);
     Value::Array segments;

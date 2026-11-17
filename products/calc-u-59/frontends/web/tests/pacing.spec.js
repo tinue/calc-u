@@ -19,7 +19,7 @@ const BOUND = 0.020 + 1 / 60;
 
 async function read(page) {
   const sent = Date.now();
-  const { seconds } = await page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.request('ticks'));
+  const { seconds } = await page.evaluate(() => document.querySelector('.calcu-client').calcuShell.request('ticks').then((r) => r.value));
   const back = Date.now();
   return { seconds, wall: (sent + back) / 2000, roundTrip: (back - sent) / 1000 };
 }

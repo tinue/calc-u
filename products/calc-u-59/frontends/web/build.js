@@ -41,7 +41,7 @@ if (outside.length) throw new Error(`calc.css: selectors outside .calcu-client (
 
 // In load order: helpers before the components that use them. One closure,
 // so nothing but PlayCalculator reaches the host page's globals.
-const SOURCES = ["engine.js", "painters.js", "CalculatorFace.jsx", "ControlBar.jsx", "Dialogs.jsx",
+const SOURCES = ["page.jsx", "painters.js", "CalculatorFace.jsx", "Dialogs.jsx",
   "Paper.jsx", "Debugger.jsx", "PlayCalculator.jsx"].map((n) => path.join(WEB, "src", n));
 // The React component set (M-53): LIB-8's paper panel and LIB-10's run-control buttons.
 dist.compileCalcJs({

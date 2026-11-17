@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { open, send, request } = require('./helpers');
+const { open, send, request, SENTENCES } = require('./helpers');
 
 // LIB-14 L9 (design §6; spec AC-22, AC-25): the React set's shell in the
 // test product (src/CalcUTest.jsx with shell=1), drawn from the topics of
@@ -220,6 +220,48 @@ test('ac43 holding the display', async ({ page }) => {
   await expect(el(page, 'loading')).toHaveCount(0);   // no operation: no "Loading…"
   await page.mouse.up();
   await expect.poll(async () => (await topic(page, 'busy')).speed).toBe('regular');
+});
+
+// Part E L14 (design §10.3.4, D-44): the hit map's origin inside the
+// faceplate element, and a press the product takes first passes by.
+test('faceplate origin and a press the product takes', async ({ page }) => {
+  await open(page, 'Test-A', 'shell=1&width=900&height=900&origin=40');
+  await expect(el(page, 'control-bar')).toBeVisible();
+  const box = await el(page, 'test-faceplate').boundingBox();
+  const at = (x, y) => [box.x + 40 + x * 4, box.y + 40 + y * 4];
+  // Key 2's centre, measured from the origin.
+  let [x, y] = at(25, 25);
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect.poll(async () => (await sent(page, 'screen-key-down')).map((s) => s.args.key)).toEqual(['2']);
+  // The same point without the origin would be key 1's area: no key 1.
+  [x, y] = at(5, 25);
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect.poll(async () => (await sent(page, 'screen-key-down')).map((s) => s.args.key)).toEqual(['2', '1']);
+  // A press at x ≥ 60 is the product's: no key, no speed, its release passes too.
+  [x, y] = at(65, 25);
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.calcuTestProductPresses)).toBe(1);
+  expect((await sent(page, 'screen-key-down')).length).toBe(2);
+  expect((await sent(page, 'screen-key-up')).length).toBe(2);
+});
+
+// Part E L15 (design §10.3.5, D-39; ledger 1600-48): the storage banner is
+// the library's sentence while what is saved is not kept.
+test("storage banner shows the library's sentence while not kept", async ({ page, context }) => {
+  await open(page, 'Test-A', 'shell=1&width=900&height=900');
+  await expect(el(page, 'storage-banner')).toHaveCount(0);   // the first copy keeps what it saves
+  const second = await context.newPage();
+  await open(second, 'Test-A', 'shell=1&width=900&height=900');
+  await expect(second.locator('[data-calcu="storage-banner"]')).toHaveText(SENTENCES.secondCopy('Test-A'));
+  await expect(second.locator('[data-calcu="storage-banner"]')).toHaveAttribute('role', 'status');
+  await second.close();
 });
 
 test('ac29 file menu has import and saved media', async ({ page }) => {

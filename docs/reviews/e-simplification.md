@@ -540,6 +540,21 @@ while Calc-U-59's Qt6 starts is no longer dropped (LIB-13 AC-7).
   before this work (`testScreenshotCPUInspector`: two `confirm-cold-boot`
   buttons; `CalcDebugger` ×2 and `Glyphs`: `AppHelpers.swift:91`);
   `ipad-01` writes no picture. Needed before the App Store release (M-64).
+  **Fixed (2026-11-17, branch `fix-f5-screenshots`), no app change:**
+  (1) one dialog: iOS 27 nests the dialog's button in a system button
+  with the same identifier, so the query takes `.firstMatch` (as C59-8
+  AC-5's test does); (2) `CalcDebugger` and `Glyphs` load presets that end
+  paused (preset.md §5.6), and the bare `wait` on a paused machine waits
+  until it is resumed (§6.2; `calcu serve` refuses instead, having no wall
+  clock to wait on), so `loadPreset(…, endsPaused: true)` reads the
+  `run-state` topic until it says paused; (3) M-56 renamed
+  `testScreenshotAssembly` to `testC59_4_AC16AsmOverlay` and the runner,
+  still asking for the old name, ran no test and passed: it names each test
+  in full now and fails a shot without a PNG or of the wrong pixel size.
+  All 9 shots pass with the sizes of the runner's header and were looked
+  at. The iPhone Duo shot (the tenth, taken when the Duo is open) came out
+  black once, while the Duo was reported folded partway through the run;
+  the size check now rejects such a picture.
 - F-6: `CalcU1600Shots.*` fail when the display sleeps ("screencapture
   failed"); run the Longer group under `caffeinate -d`.
 - F-7: one local CI `core-1600` failure (GCC 13) and one `CalcU1600DapSmokeQt`

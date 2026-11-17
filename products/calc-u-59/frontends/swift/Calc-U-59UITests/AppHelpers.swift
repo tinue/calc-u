@@ -81,12 +81,27 @@ extension XCTestCase {
     /// topic received as a stream (C59-8 AC-21): it says that one runs, then
     /// that none does; then the reply to the bare `wait` (until idle). The
     /// bare `wait` alone is refused while an operation runs ("Another
-    /// operation is running."), so the stream comes first.
-    func waitForOperation(_ harness: HarnessClient, timeout: TimeInterval) {
+    /// operation is running."), so the stream comes first. A preset that
+    /// ends paused (`pause:`, or `pause-on-start:` fired by what its last key
+    /// starts) stays paused (preset.md §5.6); a paused machine is never idle,
+    /// so the bare `wait` would wait until it is resumed (§6.2): for
+    /// `endsPaused` the run-state topic is read until it says paused.
+    func waitForOperation(_ harness: HarnessClient, timeout: TimeInterval, endsPaused: Bool = false) {
         XCTAssertTrue(harness.waitForMessage(timeout: 15) { $0.hasPrefix("message busy ") && $0.contains("\"operationRuns\":true") },
                       "no operation started")
         XCTAssertTrue(harness.waitForMessage(timeout: timeout) { $0.hasPrefix("message busy ") && $0.contains("\"operationRuns\":false") },
                       "the operation did not end")
+        if endsPaused {
+            let end = Date().addingTimeInterval(10)
+            var state: [String] = []
+            repeat {
+                state = harness.command("state run-state", timeout: 5)
+                if state.contains(where: { $0.contains("\"paused\":true") }) { break }
+                Thread.sleep(forTimeInterval: 0.2)
+            } while Date() < end
+            XCTAssertTrue(state.contains(where: { $0.contains("\"paused\":true") }), "the preset did not end paused: \(state)")
+            return
+        }
         let reply = harness.command("wait", timeout: 30)
         XCTAssertTrue(reply.first?.hasPrefix("done") ?? false, "the session is not idle: \(reply)")
     }
@@ -133,8 +148,9 @@ extension XCTestCase {
     }
 
     /// Load `file` through the Preset button and wait, through attach, for
-    /// the load to end within `idleTimeout`.
-    func loadPreset(_ app: XCUIApplication, file: String, idleTimeout: TimeInterval, harness: HarnessClient) {
+    /// the load to end within `idleTimeout` (paused, for `endsPaused`).
+    func loadPreset(_ app: XCUIApplication, file: String, idleTimeout: TimeInterval, harness: HarnessClient,
+                    endsPaused: Bool = false) {
         let presetButton = app.buttons["btn-preset"]
         XCTAssertTrue(presetButton.waitForExistence(timeout: 5), "Preset button not found")
         presetButton.tap()
@@ -144,7 +160,7 @@ extension XCTestCase {
         XCTAssertTrue(cell.waitForExistence(timeout: 5), "\(file) not found in file picker")
         harness.drain()   // the busy messages before the tap
         cell.tap()
-        waitForOperation(harness, timeout: idleTimeout)
+        waitForOperation(harness, timeout: idleTimeout, endsPaused: endsPaused)
     }
     #endif
 

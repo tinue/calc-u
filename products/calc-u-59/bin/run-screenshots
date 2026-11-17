@@ -42,7 +42,7 @@ run_test() {
     local udid="$1"
     local only="${2:-}"
     local -a extra=()
-    [[ -n "$only" ]] && extra+=(-only-testing "Calc-U-59UITests/ScreenshotTests/testScreenshot$only")
+    [[ -n "$only" ]] && extra+=(-only-testing "Calc-U-59UITests/ScreenshotTests/$only")
     echo "▶ $udid${only:+ ($only)}"
     xcodebuild test \
         -project "$SRCROOT/frontends/swift/Calc-U-59.xcodeproj" \
@@ -107,8 +107,29 @@ run_named_test() {
     rm -f "$CAPTURE_REQUEST"
     capture_on_request "$udid" "$SCREENSHOT_DIR/$name.png" &
     CAPTURE_WATCHER=$!
+    rm -f "$SCREENSHOT_DIR/$name.png"
     run_test "$udid" "$fn" || result=$?
     stop_capture_watcher
+    # A test that does not exist runs nothing and passes: no picture is a failure.
+    if (( result == 0 )) && [[ ! -s "$SCREENSHOT_DIR/$name.png" ]]; then
+        echo "✗ $name: $fn wrote no picture"
+        result=1
+    elif (( result == 0 )); then
+        # The sizes of the header; another size is the wrong display or orientation.
+        local want size
+        case "$name" in
+            iphoneduo-*) want="2853x2007" ;;
+            iphone-*)    want="1320x2868" ;;
+            ipad-*)      want="2752x2064" ;;
+        esac
+        size=$(sips -g pixelWidth -g pixelHeight "$SCREENSHOT_DIR/$name.png" |
+               awk '/pixelWidth/{w=$2} /pixelHeight/{h=$2} END{print w "x" h}')
+        if [[ "$size" != "$want" ]]; then
+            echo "✗ $name: $size, not $want"
+            rm -f "$SCREENSHOT_DIR/$name.png"   # never handed to `release ios`
+            result=1
+        fi
+    fi
     return $result
 }
 
@@ -141,18 +162,18 @@ duo_is_open() {
 # a portrait test reads it and names its PNG accordingly.
 # iPhone — order here determines the NN sequence numbers.
 
-run_named_test "iphone-01-plain-calculator" "$IPHONE_UDID" PlainCalculator
-run_named_test "iphone-02-cpu-inspector"    "$IPHONE_UDID" CPUInspector
-run_named_test "iphone-03-calc-debugger"    "$IPHONE_UDID" CalcDebugger
-run_named_test "iphone-04-diagnostics"      "$IPHONE_UDID" LoadDiagPreset
-run_named_test "iphone-05-settings"         "$IPHONE_UDID" Settings
-run_named_test "iphone-06-display-glyphs"   "$IPHONE_UDID" Glyphs
-run_named_test "ipad-01-assembly"           "$IPAD_UDID"   Assembly
-run_named_test "ipad-02-calc-debugger"      "$IPAD_UDID"   CalcDebugger
-run_named_test "ipad-03-texas"              "$IPAD_UDID"   Texas
+run_named_test "iphone-01-plain-calculator" "$IPHONE_UDID" testScreenshotPlainCalculator
+run_named_test "iphone-02-cpu-inspector"    "$IPHONE_UDID" testScreenshotCPUInspector
+run_named_test "iphone-03-calc-debugger"    "$IPHONE_UDID" testScreenshotCalcDebugger
+run_named_test "iphone-04-diagnostics"      "$IPHONE_UDID" testScreenshotLoadDiagPreset
+run_named_test "iphone-05-settings"         "$IPHONE_UDID" testScreenshotSettings
+run_named_test "iphone-06-display-glyphs"   "$IPHONE_UDID" testScreenshotGlyphs
+run_named_test "ipad-01-assembly"           "$IPAD_UDID"   testC59_4_AC16AsmOverlay
+run_named_test "ipad-02-calc-debugger"      "$IPAD_UDID"   testScreenshotCalcDebugger
+run_named_test "ipad-03-texas"              "$IPAD_UDID"   testScreenshotTexas
 if [[ -z "$FILTER" || "iphoneduo-03-calc-debugger" == *"$FILTER"* ]]; then
     if duo_is_open; then
-        run_named_test "iphoneduo-03-calc-debugger" "$DUO_UDID" CalcDebugger
+        run_named_test "iphoneduo-03-calc-debugger" "$DUO_UDID" testScreenshotCalcDebugger
     else
         echo "⚠ iPhone Duo is folded — open it flat in Device Hub, then: bin/run-screenshots iphoneduo"
     fi

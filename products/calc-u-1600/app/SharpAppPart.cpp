@@ -218,7 +218,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         ch.place = placeOf(sharp::kPrinter);
         ch.request = machineControl().requestFor(ch.place, PeripheralId{sharp::kCE1600P}, VariantId{v});
         if (auto refused = machineControl().check(*m, ch)) return Refused{refused->reason};
-        // The disk and the tape stay in the new CE-1600P, the disk with the
+        // The disk and the cassette stay in the new CE-1600P, the disk with the
         // same side up (AC-31, as today).
         struct Held {
             std::string word;
@@ -226,7 +226,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
             calcu::media::Content content;
         };
         auto held = std::make_shared<std::vector<Held>>();
-        for (const char* word : {"floppy", "tape"}) {
+        for (const char* word : {"floppy", "cassette"}) {
             m_lib.media().flush(s, word);
             const calcu::media::Binding* b = m_lib.media().bindingOf(word);
             if (!b) continue;
@@ -293,7 +293,7 @@ void SharpAppPart::refreshTopics() {
     if (!m_lampsTopic) return;
     auto lamps = std::make_shared<LampsPayload>();
     lamps->tape = tapeStatus();
-    const calcu::media::Binding* tape = m_lib.media().bindingOf("tape");
+    const calcu::media::Binding* tape = m_lib.media().bindingOf("cassette");
     lamps->tapeName = tape ? tape->name : std::string();
     lamps->floppyMotor = floppyMotorOn();
     m_lampsTopic->set(std::move(lamps));

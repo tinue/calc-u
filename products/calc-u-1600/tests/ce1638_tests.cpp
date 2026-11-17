@@ -1,5 +1,5 @@
 // Headless C++ tests for the CE-1638 banked-RAM module, run against the
-// bundled definition Qt6/resources/cards/ce1638.card.yaml
+// bundled definition Qt6/resources/cards/ce1638.module.yaml
 // (SoftwareDefinedCard). Same no-framework, assert-and-tally style as the
 // other Core tests.
 //
@@ -24,9 +24,9 @@ namespace {
 // Declares `card` (a fresh CE-1638). The definition ships in the repo, so a
 // missing or unloadable one fails the test.
 #define CE1638_OR_SKIP(card, host)                                                        \
-    auto card = bundledCard("ce1638.card.yaml", host);                                    \
+    auto card = bundledCard("ce1638.module.yaml", host);                                    \
     if (!card) {                                                                          \
-        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce1638.card.yaml missing or unloadable\n", __func__); \
+        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce1638.module.yaml missing or unloadable\n", __func__); \
         return;                                                                           \
     }
 
@@ -102,7 +102,7 @@ TEST(test_ce1638_end_to_end_via_machine) {
     // Same card, PC-1500A: pin 18 is S5 there, so the trigger window moves
     // to &6800-&6FFF -- the card is identical, only the connector differs.
     PC1500Machine pc1500a(PC1500Variant::PC1500A);
-    pc1500a.attachExpansionCard(bundledCard("ce1638.card.yaml", CardHost::PC1500A));
+    pc1500a.attachExpansionCard(bundledCard("ce1638.module.yaml", CardHost::PC1500A));
     pc1500a.memory().writeME0(0x1000, 0xCC);
     pc1500a.memory().writeME0(0x6803, 0x00); // low nibble 0x3 -> bank 3
     pc1500a.memory().writeME0(0x1000, 0xDD);

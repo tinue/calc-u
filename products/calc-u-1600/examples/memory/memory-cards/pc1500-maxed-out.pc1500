@@ -1,4 +1,4 @@
-# Loads the fictional 22 KB "maxed-out" card (pc1500-maxed-out.card.yaml,
+# Loads the fictional 22 KB "maxed-out" card (pc1500-maxed-out.module.yaml,
 # same directory) through the universal software-defined module, then
 # prints how much of it BASIC sees as free. Companion to
 # help/09-module-definitions.md's walkthrough.
@@ -8,7 +8,7 @@ preset-name: Maxed-out card
 description: A fictional 22 KB card, and how much BASIC sees
 model: PC-1500
 
-slot-1: { file: pc1500-maxed-out.card.yaml }
+slot-1: { file: pc1500-maxed-out.module.yaml }
 
 keys:
   - key: cl

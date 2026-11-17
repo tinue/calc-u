@@ -37,11 +37,11 @@ test('lib12_ac13_missing_rom_file_shows_the_text_and_no_calculator', async ({ pa
   await page.route('**/files.json', async (route) => {
     const response = await route.fetch();
     const files = await response.json();
-    files.bundle = files.bundle.filter((f) => f !== 'CE-502B.card.yaml');
+    files.bundle = files.bundle.filter((f) => f !== 'CE-502B.module.yaml');
     await route.fulfill({ response, json: files });
   });
   await page.goto('./');
-  await expect(fatal(page)).toContainText('CE-502B.card.yaml: missing; needed by CE-502B', { timeout: 30000 });
+  await expect(fatal(page)).toContainText('CE-502B.module.yaml: missing; needed by CE-502B', { timeout: 30000 });
   await expect(ready(page)).toHaveCount(0);
 });
 

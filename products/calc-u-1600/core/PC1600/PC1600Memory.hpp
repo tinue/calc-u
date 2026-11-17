@@ -255,7 +255,7 @@ public:
 
     /// Plugs a card into Slot 1 / Slot 2 -- the connector-level path, taking
     /// ownership of the card (mirrors PC1500Machine::attachExpansionCard).
-    /// Any card (a SoftwareDefinedCard built from a .card.yaml definition)
+    /// Any card (a SoftwareDefinedCard built from a .module.yaml definition)
     /// plugs in pin-for-pin; the MemorySlotConnector drives the PC-1600
     /// bay's pins.
     void attachSlot1Card(std::unique_ptr<ExpansionCard> card) {

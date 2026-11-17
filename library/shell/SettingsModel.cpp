@@ -47,8 +47,8 @@ DialogSpec familySections(const settings::ProductDecl& decl, const std::vector<s
             presets.rows.push_back({Widget::StartupPreset, d.section, d.key, d.key});
         else if (d.section == "storage" && d.key == "save-folder")
             storage.rows.push_back({Widget::Folder, d.section, d.key, "Save folder"});
-        else if (d.section == "storage" && d.key == "tape-folder")
-            storage.rows.push_back({Widget::Folder, d.section, d.key, "Tapes"});
+        else if (d.section == "storage" && d.key == "cassette-folder")
+            storage.rows.push_back({Widget::Folder, d.section, d.key, "Cassettes"});
         else if (d.section == "folders")
             folders.rows.push_back({Widget::Folder, d.section, d.key, capitalised(d.key) + " folder"});
         else if (d.section == "trace" && d.key == "folder")

@@ -199,8 +199,8 @@ The ways in
 
 - [ ] **AC-17** — Given Calc-U-1600, then its preset extensions are
   `.pc1500`, `.pc1500a` and `.pc1600`; its kinds of media are the
-  battery-backed module (`.card.yaml`), the floppy disk
-  (`.floppy.yaml`) and the cassette tape (`.tape.yaml`, AC-19); its file kinds, asked in this order, are the BASIC
+  battery-backed module (`.module.yaml`), the floppy disk
+  (`.floppy.yaml`) and the cassette (`.cassette.yaml`, AC-19); its file kinds, asked in this order, are the BASIC
   program and the machine-code program, told by what C1600-2 says the
   file is (C1600-2 AC-1): a BASIC listing or tokenized BASIC is a BASIC
   program; machine code with a header is a machine-code program;
@@ -224,9 +224,9 @@ The ways in
   clear from the context, and refused otherwise; in the Web frontend it
   is imported, and plugged in under the same rule (AC-4).
   Today such a file can only be imported from the menu of the Web
-  frontend (`Shared/MediaLibrary.cpp:59-107`). A tape definition
-  (`.tape.yaml`) is a medium, inserted into the cassette when the model
-  has one (LIB-7 AC-42). A WAV is never taken as a tape here: it is a
+  frontend (`Shared/MediaLibrary.cpp:59-107`). A cassette definition
+  (`.cassette.yaml`) is a medium, inserted into the cassette recorder when the model
+  has one (LIB-7 AC-42). A WAV is never taken as a cassette here: it is a
   program file and is loaded (`docs/formats/media.md` §3; C1600-2).
 - [ ] **AC-20** — Given a drop or Open With, then a file of more than
   1 MiB is refused; today it is passed over without a word (OQ-4) (`Qt6/app/MainWindow.cpp:768-779`,
@@ -322,3 +322,4 @@ The ways in
 | Opening a `.keystrokes.yaml` writes its program into the running machine; `.rom.yaml` and `ti58c.memory.yaml` are refused with a notice (AC-11, AC-23) | user, 2026-11-13 (consistency pass after the Q&A round) | 2026-11-13 |
 | OQ-4's "row 59-14 and its twin" are now rows 59-20 and 1600-15; a note says so | user, 2026-11-14 (question 9 of `docs/migration-plan.md`) | 2026-11-14 |
 | Calc-U-59 takes the library's rule for the file named at the start (AC-14): the last argument that does not start with `-` and names an existing file (`opening::startFile`, Calc-U-1600's AC-21 rule); today it takes the last argument that is not an option value, without checking it. Done in M-56; ledger row 59-47 | user, 2026-11-16 (Q-1 of `docs/reviews/d-simplification.md`) | 2026-11-16 |
+| The media suffixes are `.module.yaml` (was `.card.yaml`, not read) and `.cassette.yaml` (was `.tape.yaml`); the cassette goes into the `cassette-recorder` (AC-17, AC-19 edited in place) | user, 2026-11-17 (Part E review Q-5, Q-6); behaviour changes 1600-1, 1600-51 | 2026-11-17 |

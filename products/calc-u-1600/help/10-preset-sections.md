@@ -18,7 +18,7 @@ in [Presets](06-presets.md).
 | `timeout:` | the longest wait for the computer to become idle between two items, in seconds of emulated time; default `3600` |
 | `printer:` | `CE-150`, `CE-1600P[:new\|old]` (default new; PC-1600) |
 | `interface:` | `CE-158` |
-| `slot-1:`, `slot-2:` | a module by `{ name: … }` (its module name) or `{ file: … }` (a `.card.yaml` file); `slot-2:` on the PC-1600 only |
+| `slot-1:`, `slot-2:` | a module by `{ name: … }` (its module name) or `{ file: … }` (a `.module.yaml` file); `slot-2:` on the PC-1600 only |
 | `slot-1-rom:`, `slot-2-rom:` | `{ file: … }`: a ROM file whose bytes replace the ROM of the module in that slot ([below](#slot-n-rom)) |
 | `host-drive:` | `{ folder: … }`: the folder of drive `S3:` (PC-1600; [The host drive](09-host-drive.md)) |
 | `bus-rom:` | ROM files on the 60-pin connector ([below](#bus-rom)) |
@@ -40,16 +40,16 @@ Both may appear any number of times, and are carried out in file order.
 `key:`, `type:`, `wait:`, `skip-wait:`, `let-it-finish:`, `full-speed:`,
 `regular-speed:`, `expect:`, `not-expect:`, `screenshot:`, `syncclock:`,
 `trace:`, `elapsed-time:`, `cut-paper:`, and the media steps `floppy:`,
-`tape:`, `eject:`, `saveas:` ([Presets](06-presets.md#media-steps)). The
+`cassette:`, `eject:`, `saveas:` ([Presets](06-presets.md#media-steps)). The
 debugger steps `pause:`, `pause-on-start:`, `step:` and `resume:` are not
 available on these models.
 
 | Step | Value |
 |---|---|
 | `floppy:` | `{ name: … }` or `{ file: … }`, with `side: 0\|1` (default 0); PC-1600 with the CE-1600P |
-| `tape:` | `{ name: … }` or `{ file: … }` (a `.tape.yaml`); with the CE-150 or the CE-1600P |
-| `eject:` | `floppy` or `tape` |
-| `saveas:` | `place:` (`slot-1`, `slot-2`, `floppy`), `as:` (`live` or `template`), `protected: true` (CE-161 only), and `name:` or `file:` |
+| `cassette:` | `{ name: … }` or `{ file: … }` (a `.cassette.yaml`); with the CE-150 or the CE-1600P |
+| `eject:` | `floppy` or `cassette` |
+| `saveas:` | `place:` (`slot-1`, `slot-2`, `floppy`, `cassette`), `as:` (`live` or `template`), `protected: true` (CE-161 only), and `name:` or `file:` |
 | `expect:`, `not-expect:` | text in one line of the display; `\\` for a backslash, `\xHH` for a character outside ASCII; `/…/` a regular expression |
 | `syncclock:` | sets the computer's clock from your computer's |
 
@@ -63,7 +63,7 @@ and `bs` (PC-1600) can't be pressed from a preset.
 While a ROM module is being developed, its bytes come from the build:
 
 ```yaml
-slot-1: { file: module.card.yaml }     # decode, banking, the ROM's size
+slot-1: { file: module.module.yaml }     # decode, banking, the ROM's size
 slot-1-rom: { file: build/module.bin } # what the ROM holds
 ```
 

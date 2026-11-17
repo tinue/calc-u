@@ -239,10 +239,10 @@ TEST(lib14_ac36_bar_pc1500_pc1500a) {
         CHECK_EQ(barPlaceText(f, "interface"), std::string("CE-158"));
         CHECK(!f.find<QWidget>(names::barPlace("bus-rom")) && !f.find<QWidget>(names::barPlace("host-drive")));
         CHECK(!f.find<QWidget>("bar-disk")->isVisible());
-        CHECK(!f.find<QWidget>("media-picker-tape"));
+        CHECK(!f.find<QWidget>("media-picker-cassette"));
         // The CE-150: the button pressed, the tape controls with its cassette.
         f.find<QToolButton>(names::barPlace("printer"))->click();
-        CHECK(f.waitFor([&] { return f.find<QWidget>("media-picker-tape") != nullptr; }, 15000));
+        CHECK(f.waitFor([&] { return f.find<QWidget>("media-picker-cassette") != nullptr; }, 15000));
         CHECK(f.find<QToolButton>(names::barPlace("printer"))->isChecked());
     }
 }
@@ -268,7 +268,7 @@ TEST(lib14_ac36_bar_pc1600) {
     // The CE-1600P: the disk controls usable, the tape's with its cassette.
     f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-1600P"}}));
     CHECK(f.waitFor([&] { return f.find<QComboBox>("media-picker-floppy")->isEnabled(); }, 5000));
-    CHECK(f.waitFor([&] { return f.find<QWidget>("media-picker-tape") != nullptr; }, 5000));
+    CHECK(f.waitFor([&] { return f.find<QWidget>("media-picker-cassette") != nullptr; }, 5000));
 }
 
 // ── Q5: the settings (AC-37; AC-11 to AC-13) ───────────────────────────
@@ -289,7 +289,7 @@ TEST(lib14_ac37_settings_sections_and_rows) {
     }
     std::vector<std::string> want{"General: Startup model",
                                   "Startup presets: PC-1500 PC-1500A PC-1600",
-                                  "Storage: Save folder Tapes",
+                                  "Storage: Save folder Cassettes",
                                   "Folders: Examples folder Basic folder Assembly folder Host drive folder",
                                   "Tracing: Trace folder Maximum file size (MB)"};
 #ifndef Q_OS_WIN

@@ -13,7 +13,7 @@ which a release reads one version back). Oddities: Calc-U-1600's "`saveas:` need
 `template`/`live`; name lives in the file" (`docs/oddities-triage.md`).
 Builds on `presets.md` (PR-8: media places pass-through or holding) and
 `docs/formats/preset.md` §3.1, §5.2 (steps `card:`, `arm:`, `floppy:`,
-`tape:`, `eject:`, `saveas:`; the header key `magnetic-cards:`).
+`cassette:` (was `tape:`, release prep step 2), `eject:`, `saveas:`; the header key `magnetic-cards:`).
 
 Glossary: medium, template, instance, Name & Save (autosave), insert and
 eject, fit, save folder.
@@ -190,7 +190,7 @@ Options:
 |---|---|---|---|---|---|
 | Media places (PR-8) | card reader, pass-through, sides 0/1 (TI-59 only) | module slot (battery-backed modules), cassette (CE-150) | 2 module slots, floppy (CE-1600F; holding, sides 0/1), cassette (CE-1600P, CE-150) | cassette (CE-126P, CE-124) | RAM card slot (CE-201M, CE-202M: battery-backed), cassette |
 | Templates | the fresh card (implicit, no file) | bundled modules | bundled modules and disks (Blank, Formatted) | — | — |
-| Instance files | `.magnetcard.yaml` (format 3) | `.card.yaml`, `.tape.yaml` | `.card.yaml`, `.floppy.yaml` (version 2), `.tape.yaml` | — | — |
+| Instance files | `.magnetcard.yaml` (format 3) | `.module.yaml`, `.cassette.yaml` | `.module.yaml`, `.floppy.yaml` (version 2), `.cassette.yaml` | — | — |
 | Name (MD-2) | in the file (new card version) | in the file | in the file | — | — |
 | Preset-defined media | `magnetic-cards:` (in-file cards; today `CARD: mem:`) | — | — | — | — |
 | External media formats | — | cassette WAV | cassette WAV | cassette WAV | cassette WAV |

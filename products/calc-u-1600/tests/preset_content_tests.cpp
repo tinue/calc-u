@@ -125,8 +125,8 @@ TEST(c1600_4_ac2_unreadable_empty_not_a_program_refused) {
 
 TEST(c1600_4_ac2_tape_definition_is_not_a_program_file) {
     PresetReadRig r;
-    r.write("t.tape.yaml", "format: tape\nformat-version: 1\ntape-name: T\n");
-    CHECK(has(r.error(kPc1600 + "program:\n  file: t.tape.yaml\n"), "not a program"));
+    r.write("t.cassette.yaml", "format: tape\nformat-version: 1\ncassette-name: T\n");
+    CHECK(has(r.error(kPc1600 + "program:\n  file: t.cassette.yaml\n"), "not a program"));
 }
 
 TEST(c1600_4_ac5_blank_and_hash_lines_left_out_space_hash_typed) {

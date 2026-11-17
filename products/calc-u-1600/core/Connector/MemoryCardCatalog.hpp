@@ -13,11 +13,11 @@ namespace sharp {
 bool isFullSetFile(std::string_view fileName);
 }  // namespace sharp
 
-constexpr const char* kCardFileSuffix = ".card.yaml";
+constexpr const char* kCardFileSuffix = ".module.yaml";
 
-// ── Catalogue of on-disk memory-card definition files ─────────────────
+// ── Catalogue of on-disk module definition files ──────────────────────
 //
-// Scans a directory of help/10-module-definition-format.md `.card.yaml`
+// Scans a directory of help/10-module-definition-format.md `.module.yaml`
 // files and indexes them by `module-name` (the catalogue's module
 // definitions, sharp::addModuleDefinitions; the media kinds' listing,
 // app/SharpMediaKinds).
@@ -39,7 +39,7 @@ struct MemoryCardCatalogEntry {
     }
 };
 
-// Parse every "*.card.yaml" in `dir` (non-recursive). A file that fails to
+// Parse every "*.module.yaml" in `dir` (non-recursive). A file that fails to
 // parse is skipped, with "<filename>: <error>" appended to `*error`
 // (newline-separated) -- one malformed file never hides the rest. A
 // missing / unreadable directory yields an empty list and sets `*error`.

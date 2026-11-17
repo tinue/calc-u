@@ -261,7 +261,7 @@ std::vector<std::string> compare(const std::string& base, const fs::path& copy, 
     // the module and the disk as the ones of examples/dwx/ (made with 0.8.1,
     // the disk since upgraded to version 2), but their time stamps.
     if (base == "dwx_make_diskworks_media.pc1600")
-        for (const char* file : {"CE-1601M - Progs.card.yaml", "Progs.floppy.yaml"}) {
+        for (const char* file : {"CE-1601M - Progs.module.yaml", "Progs.floppy.yaml"}) {
             // Left out besides the time stamps: the comments (a module file
             // keeps those of the bundled CE-1601M it was spliced into, which
             // were edited since) and the disk's description, which a save now

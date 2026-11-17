@@ -28,6 +28,7 @@
 # docs/developer/PC1600-Core-Limitations.md ("CE-1638 / CE-163F only work
 # in Slot 2 on a PC-1600") for the full writeup.
 
+format: memory-module
 format-version: 1
 module-name: "CE-1638"
 description: "128 KB battery-backed RAM, 8 banks of 16 KB"

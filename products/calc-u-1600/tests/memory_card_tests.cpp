@@ -33,7 +33,7 @@
 
 namespace {
 
-// ── inline card definitions (CE-155 / CE-1600M / CE-1601M shapes) ───────
+// ── inline module definitions (CE-155 / CE-1600M / CE-1601M shapes) ───────
 
 const char* kCe155Yaml =
     "format-version: 1\nmodule-name: CE-155\n"
@@ -311,7 +311,7 @@ TEST(test_reject_missing_or_unknown_format_version) {
     std::string v2 = body;
     v2.replace(0, std::string("format-version: 1").size(), "format-version: 2");
     CHECK(rejects(v2 + "new-key: 1\n", &err));
-    CHECK(err == "unsupported card format-version 2 (this build reads 1)");
+    CHECK(err == "unsupported module definition format-version 2 (this build reads 1)");
 }
 
 TEST(test_reject_terminology_not_in_hosts) {
@@ -435,7 +435,7 @@ TEST(test_compat_gate_inline) {
 }
 
 TEST(test_compat_gate_via_file_if_present) {
-    const char* path = "frontends/qt6/resources/cards/ce155.card.yaml";
+    const char* path = "frontends/qt6/resources/cards/ce155.module.yaml";
     std::ifstream probe(path);
     SKIP_UNLESS(probe, (std::string(path) + " not found").c_str());
     std::string err;
@@ -446,7 +446,7 @@ TEST(test_compat_gate_via_file_if_present) {
 }
 
 TEST(test_superram_card_yaml_if_present) {
-    const char* path = "frontends/qt6/resources/cards/superram.card.yaml";
+    const char* path = "frontends/qt6/resources/cards/superram.module.yaml";
     std::ifstream probe(path);
     SKIP_UNLESS(probe, (std::string(path) + " not found").c_str());
     // Slot 2 only.
@@ -542,7 +542,7 @@ TEST(test_rom_replaced_from_a_file) {
     // Through the card factory, read on the bus.
     calcu::testing::TempFolder tmp("calcu1600-card-rom");
     const std::string dir = tmp.str();
-    const std::string cardPath = std::string(dir) + "/rom.card.yaml";
+    const std::string cardPath = std::string(dir) + "/rom.module.yaml";
     std::ofstream(cardPath) << placeholder;
     PinState p;
     p.pin[4] = true;
@@ -1164,19 +1164,19 @@ TEST(test_slot1map_slot2map_collision_last_call_wins) {
 
 // ── catalogue: scan a directory + resolve modulespec by module-name ────
 
-// A throwaway directory of .card.yaml files for the catalogue tests, in `tmp`.
+// A throwaway directory of .module.yaml files for the catalogue tests, in `tmp`.
 std::string makeScratchCardDir(const calcu::testing::TempFolder& tmp) {
     const std::string dir = tmp.str();
     auto put = [&](const char* file, const char* body) {
         std::ofstream(dir + "/" + file) << body;
     };
-    put("ce155.card.yaml", kCe155Yaml);
-    put("ce1600m.card.yaml", kCe1600mYaml);
-    put("ce1601m.card.yaml", kCe1601mYaml);
-    // Not a card file -- must be ignored by the ".card.yaml" tail match.
+    put("ce155.module.yaml", kCe155Yaml);
+    put("ce1600m.module.yaml", kCe1600mYaml);
+    put("ce1601m.module.yaml", kCe1601mYaml);
+    // Not a card file -- must be ignored by the ".module.yaml" tail match.
     put("notes.yaml", "hello: world\n");
     // Malformed card -- must be skipped, not abort the scan.
-    put("broken.card.yaml", "format-version: 1\nmodule-name: BROKEN\nbogus-key: 1\n");
+    put("broken.module.yaml", "format-version: 1\nmodule-name: BROKEN\nbogus-key: 1\n");
     return dir;
 }
 
@@ -1194,7 +1194,16 @@ TEST(test_catalog_scan_lists_and_sorts) {
         CHECK(!entries[0].compatibleWith(CardHost::PC1600Slot2));
         CHECK(entries[2].compatibleWith(CardHost::PC1600Slot2));
     }
-    CHECK(err.find("broken.card.yaml") != std::string::npos);  // reported, not fatal
+    CHECK(err.find("broken.module.yaml") != std::string::npos);  // reported, not fatal
+}
+
+// LIB-7 AC-48 (ledger 1600-1): a `.card.yaml` is not read.
+TEST(lib7_ac48_card_yaml_not_read) {
+    const calcu::testing::TempFolder dirFolder("calcu1600-old-cards");
+    std::ofstream(dirFolder.str() + "/ce155.card.yaml") << kCe155Yaml;
+    std::string err;
+    CHECK(scanMemoryCardDirectory(dirFolder.str(), &err).empty());
+    CHECK_EQ(std::string(kCardFileSuffix), std::string(".module.yaml"));
 }
 
 TEST(test_catalog_scan_missing_dir) {

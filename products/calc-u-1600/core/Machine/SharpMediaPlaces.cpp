@@ -70,7 +70,7 @@ Content FloppyPlace::content() const {
 
 calcu::media::MediaPlace::Inserted CassettePlace::insert(Content c, int) {
     auto tape = std::dynamic_pointer_cast<const TapeContent>(c);
-    if (!tape) return {false, "That is not a cassette tape."};
+    if (!tape) return {false, "That is not a cassette."};
     WavData wav;
     std::string error;
     if (!readWavBytes(tape->wav, wav, error)) return {false, "The tape's sound cannot be read: " + error + "."};

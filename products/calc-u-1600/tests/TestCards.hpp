@@ -13,7 +13,7 @@
 // (tools/run_tests.sh): the bundled definitions live in
 // Qt6/resources/cards/.
 
-// A bundled module, e.g. bundledCard("ce163f.card.yaml", CardHost::PC1500A).
+// A bundled module, e.g. bundledCard("ce163f.module.yaml", CardHost::PC1500A).
 // nullptr when the file is missing or doesn't fit `host` -- the caller
 // prints SKIP, same convention as the ROM helpers in TestRoms.hpp.
 inline std::unique_ptr<SoftwareDefinedCard> bundledCard(const std::string& file, CardHost host) {

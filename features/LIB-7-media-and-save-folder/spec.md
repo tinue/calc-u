@@ -27,11 +27,11 @@ Glossary terms used: Medium, Template, Instance, Name & Save, Insert,
 Fit, Arm, Save folder, Media place (pass-through, holding), Outdated,
 Module, Memory module. A **kind** of medium is what one sort of media
 place takes (a magnetic card, a floppy disk, a battery-backed module, a
-cassette tape); each kind has its file suffix and its format, which its
+cassette); each kind has its file suffix and its format, which its
 product supplies (AC-46). A **user template** is a template the user
 made, a file in the save folder that says it is one; the glossary's
 Template covers both. The **saved media** are
-the media in the save folder and the tape folder, and the list of them
+the media in the save folder and the cassette folder, and the list of them
 that a Web frontend shows.
 
 What the three status columns mean for this feature:
@@ -42,7 +42,7 @@ What the three status columns mean for this feature:
 - **Calc-U-59:** magnetic cards are media of this model in every
   frontend; the card reader, the card format and fitting are C59-7, and
   this column is complete only together with it.
-- **Calc-U-1600:** memory modules, floppy disks and cassette tapes are
+- **Calc-U-1600:** memory modules, floppy disks and cassettes are
   media of this model in both frontends.
 
 ## User Stories
@@ -58,14 +58,14 @@ What the three status columns mean for this feature:
   and into it.
 
 ## Out of Scope
-- Where the save folder and the tape folder are (owner: LIB-9); the
+- Where the save folder and the cassette folder are (owner: LIB-9); the
   persistent file system of a Web frontend and two tabs (LIB-15).
 - What a medium's content means and the format of each kind: the
   magnetic card and its new version, the card reader, fitting, the
-  corner taps and the cue cards (owner: C59-7); `.card.yaml`, which
-  stays as it is, `.floppy.yaml`, which goes to version 2 with the
-  sides `0` and `1` (AC-37), and the cassette tape
-  definition `.tape.yaml` with its WAV (Calc-U-1600; OQ-6;
+  corner taps and the cue cards (owner: C59-7); `.module.yaml` (was
+  `.card.yaml`, AC-48), `.floppy.yaml`, which goes to version 2 with the
+  sides `0` and `1` (AC-37), and the cassette
+  definition `.cassette.yaml` with its WAV (Calc-U-1600; OQ-6;
   `docs/formats/media.md` §3).
 - Which places a model has and what fits them (LIB-1, LIB-2, LIB-4);
   what a module change does to the machine (LIB-18 AC-29).
@@ -238,7 +238,7 @@ Name & Save
 Media in presets
 - [ ] **AC-21** — Given a preset, then the module slot keys
   (`slot-1:`, `slot-2:`) and the media steps (`card:`, `arm:` on the
-  TI-59; `floppy:`, `tape:` on the Sharp models) take a reference as
+  TI-59; `floppy:`, `cassette:` on the Sharp models) take a reference as
   `docs/formats/README.md` §3 defines it: a mapping with exactly one of
   `name:` or `file:`, on the TI-59 also `mem:` for an in-file card of
   `magnetic-cards:`, plus `side: 0|1` where the place has sides
@@ -280,8 +280,8 @@ Steps and commands
   harness has commands of the same names and values (`presets.md` PR-8;
   a mapping written as LIB-11 AC-22 says).
   Removable media are inserted and ejected by steps, never by header
-  keys: on the Sharp models `floppy:` and `tape:` insert, replacing what
-  is in (EC-5), and `eject: floppy` or `eject: tape` empties the place,
+  keys: on the Sharp models `floppy:` and `cassette:` insert, replacing what
+  is in (EC-5), and `eject: floppy` or `eject: cassette` empties the place,
   which its selector then shows as empty (EC-6); modules and other
   installed peripherals are header keys only and are fitted before the
   machine starts (`preset.md` §3, §5.2; user, 2026-11-13). The table
@@ -292,8 +292,8 @@ Steps and commands
   | `card:` [TI-59] | a reference (AC-21) by `file:`, `name:` or `mem:`, with `side: 0\|1` (default 0) | pushes that side through the card reader; the step has finished when the card has passed and is fitted; a card the ROM does not take is waited for within `timeout:` (`preset.md` §6.3; C59-7 AC-17) | needs it |
   | `arm:` [TI-59] | a reference by `file:`, `name:` or `mem:`, no side | fits the card for the user to feed by a corner; finished when it is fitted (C59-7) | none |
   | `floppy:` [PC-1600 with CE-1600P] | a reference by `file:` or `name:`, with `side: 0\|1` (default 0) | the disk is in at once and stays; one in the drive is ejected first (EC-5) | none |
-  | `tape:` [with CE-150 or CE-1600P] | a reference by `file:` or `name:` | the tape is in the cassette interface; one that is in is ejected first (EC-5) | none |
-  | `eject:` [Sharp] | `floppy` or `tape` | takes the medium out (AC-13 first); the place shows as empty (EC-6) | none |
+  | `cassette:` [with CE-150 or CE-1600P] | a reference by `file:` or `name:` | the cassette is in the cassette recorder; one that is in is ejected first (EC-5) | none |
+  | `eject:` [Sharp] | `floppy` or `cassette` | takes the medium out (AC-13 first); the place shows as empty (EC-6) | none |
   | `saveas:` | a mapping: `place:` (or `card:` on the TI-59), `as: live\|template`, optionally `protected: true`, and `name:` or `file:` (`preset.md` §5.2.1) | AC-17 to AC-19; a failure fails the preset | none |
 
   (Calc-U-1600 `Core/Preset/PresetFile.cpp:295-367`; Calc-U-59
@@ -359,14 +359,14 @@ Getting media in and out
 ### Calc-U-1600
 
 - [ ] **AC-37** — Given Calc-U-1600, then its kinds of media are the
-  battery-backed module (`.card.yaml`), the floppy disk
-  (`.floppy.yaml`) and the cassette tape (a tape definition
-  `.tape.yaml` with its `.wav`, `media.md` §3, version 1, new); the
+  battery-backed module (`.module.yaml`), the floppy disk
+  (`.floppy.yaml`) and the cassette (a cassette definition
+  `.cassette.yaml` with its `.wav`, `media.md` §3, version 1, new); the
   module definition stays at `format-version: 1`, the floppy disk goes
   to version 2, whose sides are `0:` and `1:` in place of `a:` and `b:`
   (`media.md` §2; `preset.md` §9.4), and both are read and written as
   today otherwise, the name being `module-name:`, `disk-name:` or
-  `tape-name:` and a template saying `template: true` (`Core/Connector/MemoryCardDefinition.hpp:24-25, 168-172`,
+  `cassette-name:` and a template saying `template: true` (`Core/Connector/MemoryCardDefinition.hpp:24-25, 168-172`,
   `Core/Connector/FloppyImageFile.hpp:23-54`; behaviour change 1600-1).
 - [ ] **AC-38** — Given the picker of a module slot, then it is that of
   AC-8, with the modules that fit the slot (LIB-2 AC-2); choosing one
@@ -393,29 +393,30 @@ Getting media in and out
   mark, as today; a disk is written whole and keeps its description
   (`Core/Connector/BatteryCardInstance.hpp:233-249, 329`,
   `Shared/FloppyBay.cpp:154`).
-- [ ] **AC-42** — Given cassette tapes, then a tape is a medium like the
-  others: a tape definition (`media.md` §3) with its name tag
-  `tape-name`, its `description`, the sound file it names by `file:`
+- [ ] **AC-42** — Given cassettes, then a cassette is a medium like the
+  others: a cassette definition (`media.md` §3, `format: cassette`) with its name tag
+  `cassette-name`, its `description`, the sound file it names by `file:`
   and its `position`, which is reserved for future use and is 0, a
   template when it says `template: true` and an
-  instance otherwise (AC-25). The product bundles one tape template, the
-  empty tape, which the tape picker offers; Name & Save of a tape copies
+  instance otherwise (AC-25). The product bundles one cassette template,
+  the empty cassette, which the cassette picker offers; Name & Save of a cassette copies
   the definition and its sound file into an instance, written side by
-  side in the tape folder (LIB-9 AC-16), and recording onto an instance
+  side in the cassette folder (LIB-9 AC-16), and recording onto an instance
   writes into its sound file; a definition the user writes around an
   existing WAV may name it by any relative path. A preset inserts a
-  tape with the step `tape:` and takes it out with `eject: tape`
-  (`preset.md` §5.2), and the picker lists the tape definitions
-  (the topic of AC-7). A `.wav` on its own is not a tape but a program
+  cassette with the step `cassette:` and takes it out with `eject: cassette`
+  (`preset.md` §5.2) into and out of the media place `cassette-recorder`,
+  and the picker lists the cassette definitions
+  (the topic of AC-7). A `.wav` on its own is not a cassette but a program
   file (C1600-2; LIB-13 AC-19). What stays of today: a recording is
   written as mono 16-bit WAV at 48000 Hz, each time the motor stops and
-  when the tape is ejected; a failed write is a notice; the counter
+  when the cassette is ejected; a failed write is a notice; the counter
   shows the position while playing and the length while recording, and
   is green while the motor runs (`Shared/TapeBay.cpp:28-80`,
   `Core/Tape/TapeDeck.hpp:30-163`, `Qt6/app/ControlBar.cpp:386-411`;
   OQ-9 as decided).
 - [ ] **AC-43** — Given the Web frontend, then importing takes module
-  files, disk files and tape definitions with their WAV, and the saved
+  files, disk files and cassette definitions with their WAV, and the saved
   media list is today's
   (`Shared/MediaLibrary.cpp:59-116`); deleting now asks first (OQ-4).
 - [ ] **AC-44** — Given what the tests of Calc-U-1600 check today about
@@ -433,6 +434,19 @@ Getting media in and out
   template is saved under a name and is an instance afterwards; under
   the ID LIB-7 AC-8, the picker of that slot then lists it among the
   instances (today `Web/tests/play.spec.js:236-266`; ADR 0032).
+- [ ] **AC-48** — Given a module definition, then its file is
+  `.module.yaml` with `format: memory-module` (`modules.md` §1.2): the
+  product writes the key into every module it saves and every bundled
+  or example module carries it; a file that has it is read, one with
+  another value is refused, and one without it is still read (the
+  CE-502B's definition, fetched unchanged); a `.card.yaml` is not read
+  (behaviour change 1600-1 as amended).
+- [ ] **AC-49** — Given any file a product writes for a medium (the
+  magnetic card, the floppy disk, the cassette, a saved memory module;
+  also the TI-58C's constant memory file, C59-3), then it starts with a
+  comment line naming the product and the kind and carries `saved:`,
+  the time of the write (`media.md`, Templates and instances; behaviour
+  changes 1600-51, 59-59).
 
 ## Edge Cases
 - **EC-1** — Given the save folder does not exist when a medium is first
@@ -449,7 +463,7 @@ Getting media in and out
 - **EC-4** — Given a medium is deleted from the saved media while the
   list is open elsewhere, then a second delete says that it is no longer
   there.
-- **EC-5** — Given `floppy:` or `tape:` while the place holds a medium,
+- **EC-5** — Given `floppy:` or `cassette:` while the place holds a medium,
   then that one is ejected first (AC-13; `preset.md` §5.2).
 - **EC-6** — Given `eject:` for an empty place, then nothing happens.
 - **EC-7** — Given `saveas:` for a place whose medium has no
@@ -506,10 +520,10 @@ Getting media in and out
 - [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* Where the readers and writers of the media formats sit
   (`capabilities.md` Q-2; the open point "Sharp media formats" of
   `features/INDEX.md`). *Recommendation:* product code behind one seam
-  of this feature: the magnetic card with C59-7; `.card.yaml`,
+  of this feature: the magnetic card with C59-7; `.module.yaml`,
   `.floppy.yaml` and the tape's WAV with the Calc-U-1600 column of this
   feature, moved under the seam unchanged. No product row is added for
-  them. *Since 2026-11-13 (user) the tape definition `.tape.yaml` is
+  them. *Since 2026-11-13 (user) the tape definition `.cassette.yaml` is
   new there too.*
 - [x] **OQ-7** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* "Kind" (of medium), "user template" and "saved media"
   for the glossary, as defined above; the glossary's Template then says
@@ -574,3 +588,4 @@ Getting media in and out
 | Aligned with `docs/formats/` after the Q&A round: references are mappings `{ name: }`, `{ file: }`, `{ mem: }`; steps `card:`, `arm:`, `floppy:`, `tape:`, `eject:` and a `saveas:` mapping, no `insert:` step and no `medium:` section; in-file media are the TI-59's `magnetic-cards:`; `.magnetcard.yaml` with sides 0 and 1; the floppy button shows 0 or 1 (AC-17, AC-21 to AC-24, AC-26, AC-32, AC-35, AC-39, AC-42, EC-5, EC-7) | user rulings of 2026-11-12/13 (`docs/formats/README.md` §3, `preset.md` §3.1, §5.2; `docs/walkthroughs/presets.md` §5.2, §5.4) | 2026-11-13 |
 | A medium started under a name is Name & Save done up front (AC-20; `media.md` §1.3) | user, 2026-11-13 (consistency pass after the Q&A round): today's flow, read as Name & Save done up front | 2026-11-13 |
 | Pass-through place, two readings confirmed (LIB-7 design D-22): Eject Card while a card passes takes it out of the reader and it stays fitted (C59-7 AC-25); AC-27's log line is not written at a variant switch, which carries the fitted card over | user, 2026-11-16 (Q-2 of `docs/reviews/d-simplification.md`) | 2026-11-16 |
+| "Cassette" names the medium (kind, step `cassette:`, eject word `cassette`, `format: cassette`, `.cassette.yaml`, `cassette-name`, the cassette folder) and the media place is the `cassette-recorder` (AC-42 edited in place, AC-26, EC-5); module definitions are `.module.yaml` with `format: memory-module`, `.card.yaml` not read (new AC-48); every medium's file carries `saved` and its leading comment line (new AC-49) | user, 2026-11-17 (Part E review Q-5, Q-6); `docs/reviews/release-prep-plan.md` §2; behaviour changes 1600-1 (amended), 1600-51, 59-59 | 2026-11-17 |

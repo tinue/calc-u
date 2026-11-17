@@ -9,9 +9,9 @@ the pages below add what is Calc-U-1600's own.
 | File | Extension | Version | Where |
 |---|---|---|---|
 | Preset | `.pc1500`, `.pc1500a`, `.pc1600` | `format-version: 2` | [Preset sections](10-preset-sections.md) |
-| Module definition (a memory module, and a saved battery-backed module) | `.card.yaml` | `format-version: 1` | [Module definition format](10-module-definition-format.md) |
+| Module definition (a memory module, and a saved battery-backed module) | `.module.yaml` | `format: memory-module`, `format-version: 1` | [Module definition format](10-module-definition-format.md) |
 | Floppy disk | `.floppy.yaml` | `format-version: 2` | [Media files](10-media-files.md#floppy-disk) |
-| Tape definition (with its sound file) | `.tape.yaml` and `.wav` | `format-version: 1` | [Media files](10-media-files.md#tape-definition) |
+| Cassette definition (with its sound file) | `.cassette.yaml` and `.wav` | `format: cassette`, `format-version: 1` | [Media files](10-media-files.md#cassette-definition) |
 | Settings file | `Calc-U-1600.ini` | `format-version = 1` | [below](#the-settings-file) |
 | Keyboard map | (built in) | | [Keyboard map](10-keyboard-map.md) |
 

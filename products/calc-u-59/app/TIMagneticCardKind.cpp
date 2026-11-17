@@ -226,7 +226,7 @@ public:
 
 std::string writeMagneticCardFile(const TIMagneticCardData& card, const std::string& name, const std::string& description,
                                   bool isTemplate, const std::optional<CueCardContent>& cueCard, const std::string& savedAt) {
-    std::string out = "format: ti59-magnetic-card\nformat-version: 3\ncard-name: " + quoted(name) + "\n";
+    std::string out = "# Calc-U-59 magnetic card\nformat: ti59-magnetic-card\nformat-version: 3\ncard-name: " + quoted(name) + "\n";
     if (!description.empty()) out += "description: " + quoted(description) + "\n";
     if (isTemplate) out += "template: true\n";
     if (!savedAt.empty()) out += "saved: " + savedAt + "\n";

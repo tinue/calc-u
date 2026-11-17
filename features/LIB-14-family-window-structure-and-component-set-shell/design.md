@@ -837,7 +837,7 @@ plugged in (D-29). If `registerMediaControls` does not take a factory
 that gives no widget, `ShellControlBar` gets that one-line change in
 M-49. The cassette controls follow the family rule (B1): LIB-7's tape
 controls with the product's counter and motor lamp (`c1600.lamps`)
-through `registerMediaControls("cassette-tape", …)`, shown while a
+through `registerMediaControls("cassette", …)`, shown while a
 peripheral with a cassette is plugged in.
 
 ### D.4 The Web frontend (`products/calc-u-1600/frontends/web/`)
@@ -1054,7 +1054,7 @@ the same step, consequences of the spec that the ledger lacks:
   undone; their designs say what they do.
 - **D-26 (AC-37).** Calc-U-1600 gives its own Folders section with
   today's labels and "Samples" renamed: "Examples folder", "Basic
-  folder", "Assembly folder", "Host drive folder". Storage keeps "Tapes"
+  folder", "Assembly folder", "Host drive folder". Storage keeps "Tapes" ("Cassettes" since release prep step 2)
   beside "Save folder".
 - **D-27 (AC-44).** The attached harness registers the serve form's
   commands, and its bare `wait` ends at idle on the app's clock. It is a

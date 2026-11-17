@@ -1,6 +1,6 @@
 # A RAM module (CE-151).
 model PC-1500A
-card ce151.card.yaml
+card ce151.module.yaml
 boot
 keys cl
 type new0

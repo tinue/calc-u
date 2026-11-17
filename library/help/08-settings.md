@@ -70,7 +70,7 @@ product itself.
 | `[startup] last-model` | empty | The model used last; written by the product. A model built by a preset counts too. If it names no model of the product, the product's fallback model starts |
 | `[preset] <model>` | empty | One key per model, named after the model: the startup preset of that model, a path or a bundled preset. Empty: none, so the model is built as the product's built-in default machine |
 | `[storage] save-folder` | empty | The save folder, where instances, screenshots, traces and serial links go. Empty: a folder named after the product in your home folder (desktop frontends) |
-| `[storage] tape-folder` | empty | The folder for cassette tapes. Empty: `Tapes` in the save folder |
+| `[storage] cassette-folder` | empty | The folder for cassettes. Empty: `Cassettes` in the save folder |
 | `[trace] folder` | empty | The folder for traces. Empty: the save folder |
 | `[trace] max-file-size-mb` | `50` | The largest trace file, in MB; zero or less counts as 50 ([Debugger](07-debugger.md#traces)) |
 | `[trace] location` | `app-support` | Where traces go in the frontends that offer the choice: `app-support`, `icloud`, or `folder` (then `[trace] folder`) |

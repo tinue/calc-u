@@ -42,7 +42,7 @@ slot-1: { name: CE-1600M }    # a bundled or saved module, by name
 - **Names** are Sharp's, with the hyphen, in any case: `CE-1600P`,
   `ce-1600p`.
 - **By name or by file:** `slot-1: { name: … }` names a module,
-  `slot-1: { file: … }` a `.card.yaml` file. Paths are relative to the
+  `slot-1: { file: … }` a `.module.yaml` file. Paths are relative to the
   preset; `~/` is your home folder.
 - **PC-1500 and PC-1500A:** there is only `slot-1:`.
 - **CE-158:** `interface: CE-158` (not together with the CE-1600P).
@@ -50,7 +50,7 @@ slot-1: { name: CE-1600M }    # a bundled or saved module, by name
   ([The host drive](09-host-drive.md)).
 - **Nothing plugged in:** leave the key out.
 
-A floppy disk and a tape are steps, since they change while the computer
+A floppy disk and a cassette are steps, since they change while the computer
 runs ([below](#media-steps)).
 
 ## Loading a BASIC program
@@ -114,12 +114,12 @@ More on machine code is in [Machine-code programs](09-machine-code.md).
 | Step | What it does |
 |---|---|
 | `- floppy: { name: Formatted }` | Puts a disk into the CE-1600F (PC-1600 with the CE-1600P), by `name:` or `file:`, with `side: 0` or `1` (default 0) |
-| `- tape: { file: mytape.tape.yaml }` | Puts a tape into the cassette interface of the CE-150 or CE-1600P, by `name:` or `file:` |
-| `- eject: floppy` / `- eject: tape` | Takes the disk or the tape out |
-| `- saveas: { place: slot-1, as: live, name: My module }` | Name & Save the module in slot 1 into your save folder. `slot-2` and `floppy` are PC-1600 only |
+| `- cassette: { file: mytape.cassette.yaml }` | Puts a cassette into the cassette recorder of the CE-150 or CE-1600P, by `name:` or `file:` |
+| `- eject: floppy` / `- eject: cassette` | Takes the disk or the cassette out |
+| `- saveas: { place: slot-1, as: live, name: My module }` | Name & Save the module in slot 1 into your save folder. `cassette` saves the cassette; `slot-2` and `floppy` are PC-1600 only |
 | `- saveas: { place: slot-1, as: template, name: My module }` | The same, saved as a template |
 | `- saveas: { place: slot-1, as: live, protected: true, name: My ROM }` | The same, with the module's write-protect switch on (the CE-161; not a disk) |
-| `- saveas: { place: slot-2, as: template, file: Module.card.yaml }` | Saves to that file, next to the preset (`.card.yaml` for a module, `.floppy.yaml` for `place: floppy`); the name is the file name |
+| `- saveas: { place: slot-2, as: template, file: Module.module.yaml }` | Saves to that file, next to the preset (`.module.yaml` for a module, `.floppy.yaml` for `place: floppy`); the name is the file name |
 
 A preset that prepares a module and a disk and saves both as templates
 next to itself, and the preset that uses them:

@@ -4,7 +4,7 @@
 # Self-contained: everything comes from this folder.
 #   - S3/ is mounted as drive S3: (host-drive). It holds DWX.BIN and the
 #     DW.CFG that DiskWorks reads from the drive it was loaded from.
-#   - "CE-1601M - Progs.card.yaml" (S2:) and "Progs.floppy.yaml" (X:) are
+#   - "CE-1601M - Progs.module.yaml" (S2:) and "Progs.floppy.yaml" (X:) are
 #     templates made by make_diskworks_media.pc1600: every run starts from
 #     them, changes are not saved back (Name & Save keeps a copy).
 #
@@ -18,7 +18,7 @@ printer: CE-1600P
 host-drive: { folder: S3 }
 
 slot-1: { name: CE-1600M }
-slot-2: { file: CE-1601M - Progs.card.yaml }
+slot-2: { file: CE-1601M - Progs.module.yaml }
 
 # The card is pre-populated, only reserve the machine-code area in S0:
 keys:

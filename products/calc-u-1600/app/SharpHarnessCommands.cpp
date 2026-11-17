@@ -283,10 +283,10 @@ Reply inspectCmd(CommandContext& c) {
     return doneReply(std::move(arr), std::move(lines));
 }
 
-// ── C1600-5 AC-5, AC-6, EC-2, EC-6 (§3.3, D-1): tape ─────────────────────
+// ── C1600-5 AC-5, AC-6, EC-2, EC-6 (§3.3, D-1): cassette ─────────────────
 
-// The recording of `tape record <path>`: the tape's sound alone, as a WAV
-// at the path (D-1; today's --tape-out); no tape definition.
+// The recording of `cassette record <path>`: the tape's sound alone, as a WAV
+// at the path (D-1; 0.8.1's --tape-out); no cassette definition.
 class RecordingCodec final : public media::MediumCodec {
 public:
     media::ReadOutcome read(const std::string&, const Companion&) const override {
@@ -297,7 +297,7 @@ public:
     std::vector<media::FileOut> write(const Write& w, std::string& problem) const override {
         const auto* tape = dynamic_cast<const sharp::TapeContent*>(w.content.get());
         if (!tape) {
-            problem = "It is not a cassette tape.";
+            problem = "It is not a cassette.";
             return {};
         }
         return {media::FileOut{"", std::string(tape->wav.begin(), tape->wav.end())}};
@@ -308,7 +308,7 @@ const media::KindDecl& recordingKind() {
     static const RecordingCodec codec;
     static const media::KindDecl k = [] {
         media::KindDecl d;
-        d.id = "cassette-tape";
+        d.id = "cassette-recording";
         d.label = "cassette recording";
         d.suffix = ".wav";
         d.codec = &codec;
@@ -319,7 +319,7 @@ const media::KindDecl& recordingKind() {
 
 bool hasCassette(machine::Machine& m) {
     for (const auto& e : m.capabilities(media::MediaPlace::kKind))
-        if (auto* p = machine::capabilityAs<media::MediaPlace>(m, e.id); p && p->id().value == "cassette") return true;
+        if (auto* p = machine::capabilityAs<media::MediaPlace>(m, e.id); p && p->id().value == "cassette-recorder") return true;
     return false;
 }
 
@@ -329,7 +329,7 @@ std::string seconds(double s) {
     return b;
 }
 
-Reply tapeCmd(CommandContext& c, const SharpHarnessParts& parts) {
+Reply cassetteCmd(CommandContext& c, const SharpHarnessParts& parts) {
     const std::vector<std::string> w = harness::words(c.line.argText);
     machine::Machine* m = machineOf(c);
     if (!m) return noMachine();
@@ -339,18 +339,18 @@ Reply tapeCmd(CommandContext& c, const SharpHarnessParts& parts) {
         const TapeDeck::Status s = deck->status();
         const char* mode = s.mode == TapeDeck::Mode::Play ? "playing" : s.mode == TapeDeck::Mode::Record ? "recording" : "empty";
         std::vector<std::string> lines;
-        if (s.mode == TapeDeck::Mode::Play) lines.push_back("tape: playing " + seconds(s.position) + " of " + seconds(s.length));
-        else if (s.mode == TapeDeck::Mode::Record) lines.push_back("tape: recording " + seconds(s.length));
-        else lines.push_back("tape: empty");
+        if (s.mode == TapeDeck::Mode::Play) lines.push_back("cassette: playing " + seconds(s.position) + " of " + seconds(s.length));
+        else if (s.mode == TapeDeck::Mode::Record) lines.push_back("cassette: recording " + seconds(s.length));
+        else lines.push_back("cassette: empty");
         lines.push_back(std::string("motor: ") + (s.motor ? "on" : "off"));
         harness::Value v = harness::Value::object();
-        v.set("tape", mode);
+        v.set("cassette", mode);
         v.set("position", seconds(s.position));
         v.set("length", seconds(s.length));
         v.set("motor", s.motor);
         return doneReply(std::move(v), std::move(lines));
     }
-    if (w.size() != 2 || w[0] != "record") return refusedReply("usage: pc1600 tape record <file.wav> | tape status");
+    if (w.size() != 2 || w[0] != "record") return refusedReply("usage: pc1600 cassette record <file.wav> | cassette status");
     if (!hasCassette(*m)) return refusedReply("The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.");   // EC-2
     SharpAppPart* app = parts.app ? parts.app() : nullptr;
     if (!app) return notInThisRun();
@@ -365,9 +365,9 @@ Reply tapeCmd(CommandContext& c, const SharpHarnessParts& parts) {
     // A tape in the cassette is written as LIB-7 says and taken out first;
     // a new, empty tape records (AC-5).
     sessions::SessionContext& ctx = c.host.session().context();
-    app->mediaPart().eject(ctx, "tape");
+    app->mediaPart().eject(ctx, "cassette");
     const media::Content blank = std::make_shared<sharp::TapeContent>(wavMono16Bytes({}, TapeDeck::kRecordSampleRate));
-    if (std::optional<std::string> refused = app->mediaPart().insert(ctx, "tape", std::move(b), blank, 0)) return refusedReply(*refused);
+    if (std::optional<std::string> refused = app->mediaPart().insert(ctx, "cassette", std::move(b), blank, 0)) return refusedReply(*refused);
     return doneReply();
 }
 
@@ -564,8 +564,8 @@ void addSharpHarnessCommands(harness::CommandRegistry& r, SharpHarnessParts part
                  "load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803|z80>] [run]  load machine code");
     r.addProduct("pc1600", "dump-basic", dumpBasicCmd, "dump-basic  the BASIC pointers and the program area");
     r.addProduct("pc1600", "inspect", inspectCmd, "inspect <view>  an INSPECTOR view as text");
-    r.addProduct("pc1600", "tape", [parts](CommandContext& c) { return tapeCmd(c, parts); },
-                 "tape record <file.wav> | tape status  record the cassette into a WAV; the tape counter");
+    r.addProduct("pc1600", "cassette", [parts](CommandContext& c) { return cassetteCmd(c, parts); },
+                 "cassette record <file.wav> | cassette status  record the cassette into a WAV; the tape counter");
     r.addProduct("pc1600", "serial", [parts](CommandContext& c) { return serialCmd(c, parts); },
                  "serial ce158|rs232c feed <file> [hold=<n>] | capture <file> | link | report  a serial port's peer");
     r.addProduct("pc1600", "host-drive", hostDriveCmd, "host-drive <folder> | off  the PC-1600's host drive");

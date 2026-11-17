@@ -44,7 +44,7 @@ std::variant<ConstantMemoryContents, ConstantMemoryProblem> readConstantMemoryFi
     if (std::stol(v) > 1) return ConstantMemoryProblem{ConstantMemoryProblem::Kind::Newer, {}};
     ConstantMemoryContents out;
     for (const auto& [k, n] : root.map)
-        if (k != "format" && k != "format-version" && k != "memory-name" && k != "description" && k != "cue-card" && k != "ram")
+        if (k != "format" && k != "format-version" && k != "memory-name" && k != "description" && k != "saved" && k != "cue-card" && k != "ram")
             return damaged(n.line, "unknown key " + k);
     if (const YamlNode* card = root.find("cue-card")) {
         std::string why;
@@ -85,8 +85,9 @@ std::variant<ConstantMemoryContents, ConstantMemoryProblem> readConstantMemoryFi
     return out;
 }
 
-std::string writeConstantMemoryFile(const ConstantMemoryContents& c) {
-    std::string out = "format: ti58c-constant-memory\nformat-version: 1\n";
+std::string writeConstantMemoryFile(const ConstantMemoryContents& c, const std::string& savedAt) {
+    std::string out = "# Calc-U-59 TI-58C constant memory\nformat: ti58c-constant-memory\nformat-version: 1\n";
+    if (!savedAt.empty()) out += "saved: " + savedAt + "\n";
     if (c.cueCard) out += "cue-card:\n" + writeStandAloneCueCard(*c.cueCard, 2);
     out += "ram:\n  encoding: register-hex\n";
     std::string rows;

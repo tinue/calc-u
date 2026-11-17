@@ -466,8 +466,8 @@ The harness has no upload folder. Today's tools (`tools/headless/`,
 M-48 waits for M-42 (the Library column, Done), M-44 (C1600-2: the
 loaders, the part `SharpLoaderPart` and its commands, the menu flows on
 them; `features/C1600-2-sharp-program-files/design.md`) and M-47
-(LIB-7 1600: Calc-U-1600's media kinds `.card.yaml`, `.floppy.yaml`,
-`.tape.yaml` in a `MediaPart` of the product's session). It uses M-46
+(LIB-7 1600: Calc-U-1600's media kinds `.module.yaml`, `.floppy.yaml`,
+`.cassette.yaml` in a `MediaPart` of the product's session). It uses M-46
 (LIB-6 1600: the product's `PresetsPart`, the preset extensions
 `.pc1500`, `.pc1500a`, `.pc1600`). The line numbers below are those of
 `main` at `60e5b09`; M-44, M-46 and M-47 change some of these files
@@ -613,7 +613,7 @@ the Web it is imported, then inserted when the drive is there. A module
 file is plugged in when its slot is clear from the context (the
 PC-1500's one slot, or a module that fits only one of the PC-1600's),
 else refused with the notice of AC-4; the Web imports it first. A
-`.tape.yaml` is inserted into the cassette when the model has one
+`.cassette.yaml` is inserted into the cassette when the model has one
 (LIB-7 AC-42). A WAV is never a tape here: it is a program file (D4.1).
 
 ### D5. Adapters

@@ -73,7 +73,7 @@ roms/fetch_roms.sh
 ```
 
 It fetches the full set into `roms/`: the 21 dumps and the CE-502B's
-module definition (`CE-502B.card.yaml`, which holds the module's ROM),
+module definition (`CE-502B.module.yaml`, which holds the module's ROM),
 each checked against its md5. The build bundles every file of it with
 the app (the Qt6 bundle's resources folder, the Web `dist/bundle/`).
 
@@ -133,7 +133,7 @@ sudo apt-get install -y \
 ```
 
 This produces a plain `Calc-U-1600` executable plus a `resources/` folder
-(bundled `.card.yaml` definitions and ROMs) that must stay next to it, in
+(bundled `.module.yaml` definitions and ROMs) that must stay next to it, in
 `../../build/app-1600/products/calc-u-1600/frontends/qt6/`. That's enough
 to run on the machine that built it. To package a standalone `.AppImage`
 that runs on other Linux machines, see the `linux-x86_64`/`linux-aarch64`

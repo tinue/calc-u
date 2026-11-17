@@ -105,7 +105,7 @@ struct ProductDecl {
 };
 namespace family {  // the keys ST-4 gives both products; a product lists those it has
     KeyDecl startupModel(); KeyDecl startupLastModel(); KeyDecl presetFor(std::string model);
-    KeyDecl saveFolder(); KeyDecl tapeFolder(); KeyDecl traceFolder();
+    KeyDecl saveFolder(); KeyDecl cassetteFolder(); KeyDecl traceFolder();
     KeyDecl traceMaxFileSizeMb(); KeyDecl traceLocation(); KeyDecl serialLinkFolder();
     KeyDecl openFolder(std::string kind); KeyDecl windowNumber(std::string key, long def);
 }
@@ -149,13 +149,13 @@ std::string settingsBaseFor(HostOs, const std::function<std::optional<std::strin
                             const std::string& home, const std::string& applicationSupport);
 std::string settingsFilePath(const ProductDecl&, const HostDirs&);  // <settingsBase>/<Product>/<Product>.ini
 
-enum class Folder { Save, Tapes, Traces, Screenshots, SerialLinks };
+enum class Folder { Save, Cassettes, Traces, Screenshots, SerialLinks };
 class Paths {
 public:
     Paths(const ProductDecl&, const SettingsFile&, HostDirs);
     std::string settingsFile() const;
     std::string saveFolder() const;                         // AC-13–15
-    std::string tapeFolder() const;                         // AC-16, EC-3
+    std::string cassetteFolder() const;                         // AC-16, EC-3
     std::optional<std::string> traceFolder() const;         // AC-17, AC-24; none on Web
     std::optional<std::string> screenshotFolder() const;    // AC-17; none on Web
     std::optional<std::string> serialLinkFolder() const;    // AC-17; Qt6 only
@@ -234,7 +234,7 @@ Rules the seams carry:
 | Today | After M-30 |
 |---|---|
 | `shared::SettingsStore` (`app/Settings.hpp:15-21`), `QtSettingsStore` (`frontends/qt6/app/AppSettings.hpp:32-43`), `WebSettingsStore` (`frontends/web/bindings.cpp:195-236`), `MemorySettingsStore` (tests) | deleted; one `calcu::settings::SettingsFile` per app |
-| `shared::Settings` accessors, key strings `startup/modelPreference`, `preset/default/<model>`, `storage/instanceDirOverride`, … (`app/Settings.hpp:35-126`) | same accessor names where callers use them, over AC-26's keys: `[startup] model`, `last-model` (a model name, today an int, line 120), `[preset] PC-1500`… (today `PC1500`), `[storage] save-folder`, `tape-folder`, `[trace] folder`, `max-file-size-mb`, `[debug] dap-enabled`, `dap-port`, `[serial] link-folder`, `[folders] presets`, `basic-programs`, `machine-code`, `host-drive`, `[window] width`, `height` |
+| `shared::Settings` accessors, key strings `startup/modelPreference`, `preset/default/<model>`, `storage/instanceDirOverride`, … (`app/Settings.hpp:35-126`) | same accessor names where callers use them, over AC-26's keys: `[startup] model`, `last-model` (a model name, today an int, line 120), `[preset] PC-1500`… (today `PC1500`), `[storage] save-folder`, `cassette-folder`, `[trace] folder`, `max-file-size-mb`, `[debug] dap-enabled`, `dap-port`, `[serial] link-folder`, `[folders] presets`, `basic-programs`, `machine-code`, `host-drive`, `[window] width`, `height` |
 | `Settings::startupModel()` (`app/Settings.cpp:80-90`) | `calcu::settings::startupModel()`, then the name mapped to `shared::Model` |
 | `Settings::dapPort()` range (`app/Settings.cpp:75-78`) | declared `Integer{1024, 65535}`, default 32168 (AC-28) |
 | `integer()` reading a non-number as 0 (`app/Settings.cpp:45`) | the declared default (EC-5; decision log, AC-11 row) |
@@ -430,7 +430,7 @@ Risks:
 - `FrontendKind::Given`: no platform's rule; the save folder, the trace
   folder and the folder for screenshots are the ones `HostDirs` passes
   (`saveFolder`, the new `traceFolder` and `screenshotFolder`; empty: none),
-  the tape folder as for every kind, no serial link folder. The harness
+  the cassette folder as for every kind, no serial link folder. The harness
   (LIB-11 D-11) and the test rigs use it for "the folders as given"; they
   used `Swift` for it, which made the harness patch the debugger's trace
   folder afterwards. `HostDirs.hpp`'s comment said the harness passes
@@ -438,7 +438,7 @@ Risks:
 - `shell::SettingsPartSetup::frontend` is gone: it was read nowhere.
 - The host's `Paths` is the one input of a product's places to the
   library's parts (`parts::LibraryPartsSetup::paths`): the media's save and
-  tape folders, the trace folder (`debugger::traceFolderOf`), the folder for
+  cassette folders, the trace folder (`debugger::traceFolderOf`), the folder for
   screenshots and `~/` (its `home`). Calc-U-59's app layer no longer makes
   a second `Paths` of kind `Swift` over the host's save folder; it takes
   the host's (`TIAppSetup::paths`), as Calc-U-1600's takes `AppPaths`, and

@@ -63,7 +63,7 @@ test suite checks it).
 | File | Machine | What it does |
 |---|---|---|
 | `DiskWorks.pc1600` | PC-1600 + CE-1600P/F + CE-1600M + CE-1601M + host drive | DiskWorks v3 (KiKiSoft), loaded from the folder `S3/` mounted as `S3:`; S2: and X: hold the sample programs |
-| `make_diskworks_media.pc1600` | same | Makes the card `CE-1601M - Progs.card.yaml` and the disk `Progs.floppy.yaml` next to it, as templates |
+| `make_diskworks_media.pc1600` | same | Makes the card `CE-1601M - Progs.module.yaml` and the disk `Progs.floppy.yaml` next to it, as templates |
 
 ## memory/ — memory modules and cards
 
@@ -71,7 +71,7 @@ test suite checks it).
 |---|---|---|
 | `maxed-out-mem.pc1600` | PC-1600 + CE-1600M + CE-1601M | Formats the CE-1601M and splits it into RAM disk and expansion memory |
 | `flashtest_ce163f.pc1500a` | PC-1500A + CE-163F | How flash writes work, from BASIC POKE/PEEK |
-| `memory-cards/` | PC-1500 | A self-made YAML memory card definition and a preset that uses it |
+| `memory-cards/` | PC-1500 | A self-made module definition and a preset that uses it |
 
 ## startup/ — startup presets
 

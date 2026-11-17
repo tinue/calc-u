@@ -230,7 +230,7 @@ The first commands
   | `--dump-mem <address>,<length>` | memory as a hex dump | LIB-10 |
   | `--inspect <view>` | an INSPECTOR view as text | C1600-5 (`pc1600 inspect`; C1600-1 AC-19) |
   | `--dump-basic` | the BASIC pointers and the program area | C1600-5 (`pc1600 dump-basic`) |
-  | `--tape-in <wav>`, `--tape-out <wav>` | play or record a cassette | LIB-7 (`tape`, `eject`); C1600-5 (`pc1600 tape record`, `tape status`) |
+  | `--tape-in <wav>`, `--tape-out <wav>` | play or record a cassette | LIB-7 (`cassette`, `eject`); C1600-5 (`pc1600 cassette record`, `cassette status`) |
   | `--ce158-pty`, `--ce158-rx`, `--ce158-rx-hold`, `--ce158-tx` | feed and capture the CE-158's serial port | C1600-5 (`pc1600 serial`) |
   | `--save-dir`, `--modules-dir` | the save folder; where module definitions are | this feature (AC-8), LIB-7 |
   | the summary after a run: registers, the last instructions, where the program counter spent its time | | LIB-10 |
@@ -353,3 +353,4 @@ The first commands
 | `state-save` and `state-restore` keep and restore the full machine state in an internal form; a restore is refused for another version or machine configuration (AC-24) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |
 | M-51: a product whose app layer brings the library's parts (Calc-U-1600's `SharpAppPart`: peripherals, presets, startup, control, media, open) hands them to the run (`HarnessProduct::appLayerParts`), which then builds none of its own; `prepare(RunSetup&)` builds the app layer on the run's settings and folders (D-11). Design D.3 took the app layer's parts to hold none of the library's | one set of parts for the frontends and the harness, so no part is in the session twice; the simpler structure (Part D, D.3; qa-report) | 2026-11-16 |
 | In the implementation (M-59): Calc-U-59's entry runs its app layer `TIAppPart` (§11.3), as Calc-U-1600's runs `SharpAppPart`; `CALCU59_ROMS_DIR` names another ROM folder for the ROM-missing build | design §11.3; LIB-12's build with one ROM file taken away | 2026-11-17 |
+| The cassette's step and command is `cassette` (`cassette { … }`, `eject cassette`), the product command `pc1600 cassette record|status` (AC-18's table edited in place; was `tape`) | user, 2026-11-17 (Part E review Q-6); C1600-5; behaviour change 1600-51 | 2026-11-17 |

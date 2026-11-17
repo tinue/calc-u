@@ -246,8 +246,8 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   side. A `SoftwareDefinedCard` with a trigger-based latch samples the
   data bus on `OUT (28H)` and selects which 32 KB chip sits behind the
   8000-BFFF window, with PVOUT (Port 31H b4) as the nested 16 KB
-  half-select. `frontends/qt6/resources/cards/ce1601m.card.yaml` ships two vertical
-  banks populated behind a 3-bit (D0-D2) latch; `superram.card.yaml` is the
+  half-select. `frontends/qt6/resources/cards/ce1601m.module.yaml` ships two vertical
+  banks populated behind a 3-bit (D0-D2) latch; `superram.module.yaml` is the
   same card with a 4-bit (D0-D3) latch and all 16 x 32 KB banks fitted =
   512 KB. `PC1600Memory::writeIO()` (routes 28-2FH to the card as an
   `ioWrite`), `tests/pc1600_slot_module_tests.cpp`
@@ -265,9 +265,9 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   host-directory drive); bank 6 has no known card, so it reads open bus. `PC1600Memory::resolveConst()`
 - **Page C banks 0/1 (Slot 1) and 2/3 (Slot 2)**: open bus only when the
   slot is *empty*; otherwise the attached card answers (software-defined
-  cards from `.card.yaml` files, attached by a preset's `slot-N:` key or
+  cards from `.module.yaml` files, attached by a preset's `slot-N:` key or
   the control-bar module picker). `core/Connector/SoftwareDefinedCard.hpp`,
-  `frontends/qt6/resources/cards/*.card.yaml`
+  `frontends/qt6/resources/cards/*.module.yaml`
 - **Page D bank 1**: the weakest-evidenced cell in the whole
   bank-switching map (single-source, routing it to the external 60-pin
   system bus). Left open bus rather than built on that; revisit only if a
@@ -372,7 +372,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
 `core/Connector/`
 
 - **40-pin `ExpansionConnector` (PC-1500 side)**: concrete cards attach
-  through it — the `SoftwareDefinedCard`, built from a `.card.yaml`
+  through it — the `SoftwareDefinedCard`, built from a `.module.yaml`
   definition and wired by `PC1500PresetLoader`. The GUI reads the
   attached module's name from the slot (`ExpansionCard::moduleName()`).
 - **60-pin `SystemBus`: WEX / W1 / WAIT, INT / IRQ, BFO / φOS, RSTE** are
@@ -399,7 +399,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   and program complete instantaneously, so the firmware's poll loops exit
   naturally. `SoftwareDefinedCard::flashWrite()`
 - **No battery backup model** — a module's contents persist only as its
-  `.card.yaml` file (a live card autosaves); there is no per-chip
+  `.module.yaml` file (a live card autosaves); there is no per-chip
   battery-backed state in a machine snapshot.
 - **`MemoryCardDefinition` v1 scope**: Regular, Flash and ROM content,
   single-kind or `by-bank`-split, with Unbanked or trigger-based Banked

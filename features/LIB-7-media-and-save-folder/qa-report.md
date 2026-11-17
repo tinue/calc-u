@@ -412,3 +412,23 @@ the portrait layout (LIB-14 D-36); the card dialog no longer has them
 | AC-36 | Pass | Web `shell.spec.js` `lib7_ac36 file menu has import and saved media` (M-57); `lib7_ac36 import a card file`, `lib7_ac36 saved media lists downloads deletes after asking` through the File menu; `lib7_ac36 no per card download or upload in the card picker` (now: neither Import… nor Saved Media… in the card dialog) |
 
 Column status: Done (AC-32 to AC-36 and AC-47 pass).
+
+## Release prep step 2 (2026-11-17, branch `rp2-files-media`): files and media
+
+The user's answers Q-5 and Q-6 of the Part E review (`docs/reviews/release-prep-plan.md`
+§2): the module definition `.module.yaml` with `format: memory-module`, the
+cassette names, `saved` and the comment line on every medium. AC-42 and AC-26 were
+edited in place; AC-48 and AC-49 are new.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-42 | Pass | `lib7_ac42_definition_with_wav_is_a_medium`, `lib7_ac42_tape_flow_through_the_harness` (step `cassette:`, `eject cassette`, `saveas { place: cassette }`), `lib7_ac42_old_format_cassette_tape_refused` (`media_kinds_tests.cpp`); `lib7_ac37_three_kinds_suffixes_versions_name_keys` (`.cassette.yaml`, the cassette folder) |
+| AC-48 | Pass | `lib7_ac48_module_definition_format_key` (`media_kinds_tests.cpp`: written always, read with or without it, another value refused), `lib7_ac48_card_yaml_not_read` (`memory_card_tests.cpp`); every shipped module definition read by `calcu_preset_check.CalcU1600Presets` / `Templates` and the catalogue tests |
+| AC-49 | Pass | `lib7_ac49_cassette_comment_and_saved` (the cassette; the floppy disk's, unchanged), `lib7_ac37_card_v1_read_and_written` (the module instance's comment line, `format:`, `saved:`); Calc-U-59 `lib7_ac49_magnetic_card_comment_and_saved` (`magnetic_card_tests.cpp`), `lib7_ac49_constant_memory_comment_and_saved` (`constant_memory_tests.cpp`) |
+
+Deviations: the golden-run scripts `pc1500a-ce151.run` and `pc1600-ce1600m.run`
+name the renamed bundled files (`card ce151.module.yaml`); their `.golden`
+references are unchanged and still equal. The Qt6 control bar registers its
+control by the kind `cassette` (`Shell::registerMediaControls` takes a medium
+kind, not a place), so `MainWindow.cpp` keeps `"cassette"`; the Web control bar's
+test id follows the place: `bar-media-cassette-recorder`.

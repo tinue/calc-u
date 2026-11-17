@@ -27,7 +27,7 @@
 //   by the debug panel and the bank tests); the live vertical-bank decode
 //   lives in the card itself, whose latch samples the Port 28H data-bus
 //   write forwarded by PC1600Memory::writeIO (see MemorySlotConnector::
-//   ioWrite and the CE-1601M card definition). vertical bank 0 is the only
+//   ioWrite and the CE-1601M module definition). vertical bank 0 is the only
 //   one usable for program/expansion memory; banks 1+ are RAM/ROM-file
 //   storage (per the CE-1601M manual).
 //

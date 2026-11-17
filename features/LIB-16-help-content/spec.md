@@ -181,7 +181,7 @@ The asset
   describes, each in its current version: the preset format with the
   Sharp sections and the YAML of `debug:` and `bus-rom:` (LIB-6,
   C1600-4 AC-20), the module definition, the floppy disk file
-  (LIB-7 AC-37) and the tape definition (`.tape.yaml`, LIB-7 AC-42), the settings file (LIB-9) and the keyboard map (LIB-5
+  (LIB-7 AC-37) and the cassette definition (`.cassette.yaml`, LIB-7 AC-42), the settings file (LIB-9) and the keyboard map (LIB-5
   AC-29).
 
 ## Edge Cases

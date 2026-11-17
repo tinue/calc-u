@@ -98,7 +98,7 @@ TEST(lib7_ac44_test_module_bay) {
 
     CHECK(!f.nameAndSave("slot-1", "CE-1600M").done);   // a bundled template's name
     CHECK(f.nameAndSave("slot-1", "My RAM").done);
-    CHECK(fs::exists(fs::path(f.saveFolder()) / "My RAM.card.yaml"));
+    CHECK(fs::exists(fs::path(f.saveFolder()) / "My RAM.module.yaml"));
     CHECK(f.held("slot-1") && f.held("slot-1")->name == "My RAM" && f.held("slot-1")->instance());
     CHECK(f.mediaPlace("slot-1") && !f.mediaPlace("slot-1")->nameAndSave);   // EC-9: autosaved now
     CHECK(has(labels(f, "slot-1", G::Instance), "My RAM"));
@@ -286,9 +286,9 @@ TEST(lib7_ac40_instance_name_replaced_after_asking) {
     CHECK(!asked.done && asked.reason.rfind("asks:", 0) == 0);
     CHECK(f.nameAndSave("slot-2", "work", false, /*confirmed=*/true).done);
     CHECK(f.held("slot-2") && f.held("slot-2")->name == "work");
-    CHECK(fs::exists(fs::path(f.saveFolder()) / "Work.card.yaml"));   // its file kept (D-4)
-    CHECK(!fs::exists(fs::path(f.saveFolder()) / "work.card.yaml") || fs::equivalent(fs::path(f.saveFolder()) / "work.card.yaml",
-                                                                             fs::path(f.saveFolder()) / "Work.card.yaml"));
+    CHECK(fs::exists(fs::path(f.saveFolder()) / "Work.module.yaml"));   // its file kept (D-4)
+    CHECK(!fs::exists(fs::path(f.saveFolder()) / "work.module.yaml") || fs::equivalent(fs::path(f.saveFolder()) / "work.module.yaml",
+                                                                             fs::path(f.saveFolder()) / "Work.module.yaml"));
     // An instance in another place now: refused (AC-17 row 4).
     CHECK(f.choose("slot-1", "CE-1600M").done);
     CHECK(!f.nameAndSave("slot-1", "work", false, true).done);

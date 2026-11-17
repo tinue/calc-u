@@ -389,7 +389,7 @@ does, is in [PC-1500 keyword modules](09-keyword-modules.md).
 
 **ROM modules in a memory slot.** A ROM in a memory module (the PC-1500's
 module slot, or the PC-1600's Slot 1 or Slot 2) needs two things: a module
-definition (`.card.yaml`, see [Module definitions](09-module-definitions.md)
+definition (`.module.yaml`, see [Module definitions](09-module-definitions.md)
 and [the format](10-module-definition-format.md)) that says how the module
 decodes, and your `.bin` for what the ROM holds. The module's ROM region
 carries a placeholder, so the definition loads on its own:
@@ -407,7 +407,7 @@ carries a placeholder, so the definition loads on its own:
 The project preset plugs the module in and puts your build into its ROM:
 
 ```yaml
-slot-1: { file: module.card.yaml }     # or slot-2: on the PC-1600
+slot-1: { file: module.module.yaml }     # or slot-2: on the PC-1600
 slot-1-rom: { file: build/module.bin } # read at every clean start
 ```
 

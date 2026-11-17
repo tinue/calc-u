@@ -9,7 +9,7 @@ product [preset] PC-1500
 product [preset] PC-1500A
 product [preset] PC-1600
 family [storage] save-folder
-family [storage] tape-folder
+family [storage] cassette-folder
 family [trace] folder
 family [trace] max-file-size-mb
 product [debug] dap-enabled

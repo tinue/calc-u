@@ -12,7 +12,7 @@
 //   settings file  <settingsBase>/<Product>/<Product>.ini (AC-2)
 //   save folder    Qt6: [storage] save-folder, else <home>/<Product> (AC-13);
 //                  Swift, Web, Given: the folder passed (AC-14, AC-15)
-//   tapes          [storage] tape-folder, else Tapes/ in the save folder (AC-16, EC-3)
+//   cassettes      [storage] cassette-folder, else Cassettes/ in the save folder (AC-16, EC-3)
 //   traces         Qt6: [trace] folder, else the save folder; Swift: by
 //                  [trace] location (AC-24); Web: none, a download (AC-17);
 //                  Given: the folder passed
@@ -23,7 +23,7 @@
 
 namespace calcu::settings {
 
-enum class Folder { Save, Tapes, Traces, Screenshots, SerialLinks };
+enum class Folder { Save, Cassettes, Traces, Screenshots, SerialLinks };
 
 // A path value with a leading `~` expanded against `home` (AC-33).
 std::string expandHome(std::string_view value, const std::string& home);
@@ -35,7 +35,7 @@ public:
 
     std::string settingsFile() const;
     std::string saveFolder() const;
-    std::string tapeFolder() const;
+    std::string cassetteFolder() const;
     std::optional<std::string> traceFolder() const;
     std::optional<std::string> screenshotFolder() const;
     std::optional<std::string> serialLinkFolder() const;

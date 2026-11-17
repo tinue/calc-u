@@ -39,7 +39,7 @@ can install it as an app, which then runs offline.
 
 - The **Examples** menu has the bundled examples; **File ▸ Upload
   Preset…** loads your own.
-- Cards, disks and tapes you save stay in the browser.
+- Modules, disks and cassettes you save stay in the browser.
   **File ▸ Import Media…** brings files in, **File ▸ Saved
   Media…** downloads or deletes them. Only one tab saves; a second tab
   says so.
@@ -79,9 +79,9 @@ PC-1600 drive `S3:`.
 **Module definitions**
 
 - [Module definitions](help/09-module-definitions.md) — what a
-  `.card.yaml` describes, and why.
+  `.module.yaml` describes, and why.
 - [Module definition format](help/10-module-definition-format.md) — every
-  key of a `.card.yaml` file.
+  key of a `.module.yaml` file.
 
 ## Serial port
 

@@ -1,6 +1,6 @@
 # A RAM module in slot 1 (CE-1600M).
 model PC-1600
-card ce1600m.card.yaml slot 1
+card ce1600m.module.yaml slot 1
 boot
 type print mem
 keys enter

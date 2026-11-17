@@ -248,7 +248,7 @@ void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
         }
         // LIB-7: the cassette of either interface (C1600-1 AC-16).
         if (e->peripheral.value == sharp::kCE150 || e->peripheral.value == sharp::kCE1600P) {
-            out.push_back(byPeripheral(*e, k.cassette, "cassette"));
+            out.push_back(byPeripheral(*e, k.cassette, "cassette-recorder"));
             out.push_back(byPeripheral(*e, k.tape));
         }
     }

@@ -34,9 +34,9 @@ only Calc-U-1600 has; the other two name the wiring.
 
 **What waits for M-47** (plan question 6, applied): the presets that name
 a removable medium or save one cannot be read before LIB-7's Calc-U-1600
-kinds exist, since `floppy:`, `tape:`, `eject:` and `saveas:` are steps
+kinds exist, since `floppy:`, `cassette:`, `eject:` and `saveas:` are steps
 of those kinds (LIB-7 §3.8, `library/media/PresetMedia.cpp:443-494`) and
-`slot-N: { file: x.card.yaml }` is read through the kind of its suffix.
+`slot-N: { file: x.module.yaml }` is read through the kind of its suffix.
 They are, by the rule of LIB-6 AC-51 ("the presets that can only be
 upgraded when LIB-7 … is built"):
 

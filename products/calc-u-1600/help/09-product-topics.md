@@ -7,7 +7,7 @@ What only Calc-U-1600 has:
   PC-1600.
 - [BASIC programs and the cassette](09-basic-programs.md): loading a BASIC
   listing, a tokenized program or a cassette WAV; `CLOAD` and `CSAVE` on a
-  tape.
+  cassette.
 - [Machine-code programs](09-machine-code.md): loading a `.bin`, where it
   goes, and how to start it.
 - [COM ports](09-com-ports.md): the PC-1600's RS-232C port and the CE-158 as

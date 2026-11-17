@@ -49,7 +49,7 @@ struct FamilyKeys {
 FamilyKeys familyKeys() {
     FamilyKeys f;
     for (const cs::KeyDecl& d : {cs::family::startupModel(), cs::family::startupLastModel(), cs::family::saveFolder(),
-                                 cs::family::tapeFolder(), cs::family::traceFolder(), cs::family::traceMaxFileSizeMb(),
+                                 cs::family::cassetteFolder(), cs::family::traceFolder(), cs::family::traceMaxFileSizeMb(),
                                  cs::family::traceLocation(), cs::family::serialLinkFolder()})
         f.fixed.insert("[" + d.section + "] " + d.key);
     f.namedSections = {cs::family::presetFor("x").section, cs::family::openFolder("x").section,

@@ -59,12 +59,12 @@ starts on a clean sheet.
 
 The CE-1600P plugs in with its New ROM; **Machine ▸ CE-1600P ROM** (while
 it is plugged in) switches to the Old one and back, keeping the disk and
-the tape. Unplugging the CE-1600P takes the disk out of the CE-1600F.
+the cassette. Unplugging the CE-1600P takes the disk out of the CE-1600F.
 
-Both plotters have a cassette interface: while one is plugged in, the
-control bar shows the tape picker and the counter
+Both plotters have a cassette recorder: while one is plugged in, the
+control bar shows the cassette picker and the counter
 ([Loading a BASIC program](09-basic-programs.md)); unplugging it takes the
-tape out.
+cassette out.
 
 ## The CE-158
 

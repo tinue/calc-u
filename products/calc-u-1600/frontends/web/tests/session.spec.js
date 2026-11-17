@@ -50,7 +50,7 @@ test('ac25 settings in Calc-U-1600.ini, media in the save folder of 0.8.x', asyn
   await gotoReady(page, '?model=PC-1600');
   expect((await send(page, 'set-setting', { section: 'startup', key: 'model', value: 'PC-1600' })).done).toBe(true);
   await notBusy(page);
-  expect((await send(page, 'media.choose', { place: 'slot-1', entry: 'bundled:ce1600m.card.yaml' })).done).toBe(true);   // LIB-7 (M-47)
+  expect((await send(page, 'media.choose', { place: 'slot-1', entry: 'bundled:ce1600m.module.yaml' })).done).toBe(true);   // LIB-7 (M-47)
   await notBusy(page);
   expect((await send(page, 'media.name-and-save', { place: 'slot-1', name: 'Kept' })).done).toBe(true);
   // The persistent file system is IndexedDB "/persist", as 0.8.x's.
@@ -65,11 +65,11 @@ test('ac25 settings in Calc-U-1600.ini, media in the save folder of 0.8.x', asyn
     open.onerror = () => resolve([]);
   })), { timeout: 10000 }).toEqual(expect.arrayContaining([
     '/persist/settings/Calc-U-1600/Calc-U-1600.ini',
-    '/persist/Calc-U-1600/Kept.card.yaml',
+    '/persist/Calc-U-1600/Kept.module.yaml',
   ]));
   await gotoReady(page);
   await expect.poll(async () => ((await h.topic(page, 'media')) || { kinds: [] }).kinds
-    .flatMap((k) => k.instances).map((i) => i.fileName), { timeout: 10000 }).toContain('Kept.card.yaml');
+    .flatMap((k) => k.instances).map((i) => i.fileName), { timeout: 10000 }).toContain('Kept.module.yaml');
   expect(await setting(page, 'startup', 'model')).toBe('PC-1600');
 });
 

@@ -197,7 +197,7 @@ struct SessionFixture {
     const calcu::media::Binding* held(const std::string& place) { return part().mediaPart().bindingOf(place); }
     // The save folder and the tape folder of the session.
     std::string saveFolder() const { return paths->places().saveFolder(); }
-    std::string tapeFolder() const { return paths->places().tapeFolder(); }
+    std::string cassetteFolder() const { return paths->places().cassetteFolder(); }
     sessions::ReplyMessage loadPreset(const std::string& ref) {
         return run(calcu::presets::kLoadPresetCommand, sessions::Value::object({{"ref", ref}}));
     }

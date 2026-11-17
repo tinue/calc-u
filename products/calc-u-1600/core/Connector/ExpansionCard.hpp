@@ -135,7 +135,7 @@ public:
     /// card in this project so far) sits on whatever its trigger-pin latch
     /// last sampled -- which stays bank 0 for the whole life of a PC-1600
     /// Slot 2 card, since that bay's pin 18 carries K2, not the S3 strobe
-    /// (see ce1638.card.yaml's Slot 1 caveat). Showing it there is more of a
+    /// (see ce1638.module.yaml's Slot 1 caveat). Showing it there is more of a
     /// curiosity than a useful number, but it is the module's real state.
     virtual int debugCurrentBank() const { return -1; }
 

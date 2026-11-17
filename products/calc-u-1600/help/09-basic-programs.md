@@ -60,7 +60,7 @@ Good to know:
   line ([Preset sections](10-preset-sections.md)).
 - **No export.** Calc-U-1600 doesn't export programs as files. Use the machine's
   own `SAVE` to a memory module or a floppy disk. To get a program onto your
-  computer, `CSAVE` it to a [tape](#the-cassette-cload-and-csave), `SAVE` it
+  computer, `CSAVE` it to a [cassette](#the-cassette-cload-and-csave), `SAVE` it
   to a [folder mounted as a drive](09-host-drive.md) (PC-1600) or over
   `COM1:` ([COM ports](09-com-ports.md)).
 
@@ -83,44 +83,46 @@ interface in real time, and the ROM's `CLOAD` reads it.
 ## The cassette: CLOAD and CSAVE
 
 The CE-150 (on any model) and the CE-1600P (PC-1600) have the jacks of a
-cassette recorder. A tape is a medium ([Media](04-media.md)): a **tape
-definition** (`<name>.tape.yaml`: its name, a description, and the sound
-file it uses) with its sound, a WAV file beside it, in the tape folder
-(**File ▸ Settings… ▸ Storage ▸ Tapes**, `Tapes` in the save folder by
-default). The tape controls sit on the control bar whenever a CE-150 or a
-CE-1600P is plugged in. The cassette starts empty, and detaching its
-interface takes the tape out. You put a tape in, then type the command as on
-the real machine:
+cassette recorder. A cassette is a medium ([Media](04-media.md)): a
+**cassette definition** (`<name>.cassette.yaml`: its name, a description,
+and the sound file it uses) with the sound of its tape, a WAV file beside
+it, in the cassette folder (**File ▸ Settings… ▸ Storage ▸ Cassettes**,
+`Cassettes` in the save folder by default). The cassette controls sit on
+the control bar whenever a CE-150 or a CE-1600P is plugged in. The
+recorder starts empty, and detaching its interface takes the cassette
+out. You put a cassette in, then type the command as on the real
+machine:
 
-- **To load,** pick a tape from the **Tape** list. It goes in rewound.
+- **To load,** pick a cassette from the **Cassette** list. It goes in rewound.
   Type `CLOAD`, `CLOAD "name"`, `CLOAD M` or `CLOAD?`. A second `CLOAD`
   reads on from where the first one stopped, as on a real tape.
 - **To save,** click the save button next to the list and name the new
-  tape. Type `CSAVE "name"` (or `CSAVE M`). The tape's definition and its
-  WAV are written each time the motor stops, so a finished `CSAVE` is
-  saved at once. Another `CSAVE` onto the same tape goes after it. If a
-  tape of that name exists, you're asked before it is replaced.
-- **The empty tape** in the list is a template: a `CSAVE` onto it stays in
-  the recorder until you Name & Save it (or take the tape out).
+  cassette. Type `CSAVE "name"` (or `CSAVE M`). The cassette's definition
+  and its WAV are written each time the motor stops, so a finished `CSAVE`
+  is saved at once. Another `CSAVE` onto the same cassette goes after it.
+  If a cassette of that name exists, you're asked before it is replaced.
+- **The empty cassette** in the list is a template: a `CSAVE` onto it
+  stays in the recorder until you Name & Save it (or take the cassette
+  out).
 
-![Naming a new tape](images/04-tape-save.png)
+![Naming a new cassette](images/04-tape-save.png)
 
-A tape keeps its role: one picked from the list only plays, a new one only
-records. To play back what you recorded, pick it from the list; that also
-takes the recording tape out. "(empty)" takes a tape out. The counter shows
+A cassette keeps its role: one picked from the list only plays, a new one
+only records. To play back what you recorded, pick it from the list; that
+also takes the recording cassette out. "(empty)" takes a cassette out. The counter shows
 ▶ (playing) or ● (recording) and the tape position. It turns green while
 the motor runs:
 
-![CSAVE running onto a new tape](images/04-tape-recording.png)
+![CSAVE running onto a new cassette](images/04-tape-recording.png)
 
-![CLOAD running from the same tape, picked from the list](images/04-tape-loading.png)
+![CLOAD running from the same cassette, picked from the list](images/04-tape-loading.png)
 
 ![The program loaded from the tape](images/04-tape-loaded.png)
 
 Good to know:
 - **The calculator runs the motor.** As with a real CE-152 on the remote
   jack, the tape moves only while the calculator's remote relay is on: from
-  the moment it starts `CLOAD` or `CSAVE` until it's done. A tape put in
+  the moment it starts `CLOAD` or `CSAVE` until it's done. A cassette put in
   early simply waits.
 - **Real time or faster.** The tape runs in the calculator's own time, so
   you hear `CSAVE` (and see the counter) at the real speed. Pressing and
@@ -129,8 +131,8 @@ Good to know:
 - **Interchangeable WAVs.** The sound files are standard 48 kHz, 16-bit
   WAVs. Calc-U-1600 plays any PCM WAV, 8 to 32 bits, mono or stereo: recordings
   of a real calculator, or files made with Pocket Tools' `bin2wav` and read
-  with its `wav2bin`. A WAV on its own is not a tape: write a small
-  definition next to it ([Media files](10-media-files.md)), and it is
+  with its `wav2bin`. A WAV on its own is not a cassette: write a small
+  cassette definition next to it ([Media files](10-media-files.md)), and it is
   listed. Opened or dropped on its own, a WAV is loaded as a program, as
   above.
 - **The buzzer sounds the tape** while saving and loading, as on the real
@@ -145,5 +147,5 @@ Good to know:
   MODE 0 reads and writes PC-1600 tapes. Not yet supported: the PC-1600
   reading PC-1500 tapes in MODE 1 (`CLOAD` through the CE-1600P). The
   CE-150's cassette on a PC-1600 is offered but not tested yet.
-- **In a preset** the step `tape:` puts a tape in and `eject: tape` takes it
+- **In a preset** the step `cassette:` puts a cassette in and `eject: cassette` takes it
   out ([Presets](06-presets.md)).

@@ -7,7 +7,7 @@
 # on-module decode -- unlike CE-155, which gates one of its four chips on
 # Y0 AND three address lines) plus the three bare 2 KB S1/S2/S3 strobes,
 # for 22 KB total. Same "OR of bare per-strobe groups" shape as
-# ce155.card.yaml's S1/S2/S3 groups, just with Y0 given the whole 16 KB
+# ce155.module.yaml's S1/S2/S3 groups, just with Y0 given the whole 16 KB
 # instead of one more 2 KB slice behind an address-bits decode.
 #
 # help/09-module-definitions.md's own worked-example table has a
@@ -17,6 +17,7 @@
 # file deliberately stops at S1-S3 so the same definition is identically
 # "maxed out" on both models, with nothing dormant on either.
 
+format: memory-module
 format-version: 1
 module-name: "PC-1500 Maxed-Out (fictional)"
 # A template: the app never writes to this file, wherever it is stored.

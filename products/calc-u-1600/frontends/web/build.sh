@@ -42,7 +42,7 @@ cp "$BUILD/products/calc-u-1600/calcu1600-core.js" "$BUILD/products/calc-u-1600/
 # stays out: the web has no host drive. CALCU1600_ROMS_DIR: another ROM
 # folder (tests/rom_missing_build.sh).
 ROMS="${CALCU1600_ROMS_DIR:-$REPO/roms}"
-find "$ROMS" -maxdepth 1 -type f \( -iname '*.bin' -o -iname '*.rom' -o -name '*.card.yaml' \) -exec cp {} "$DIST/bundle/" \;
+find "$ROMS" -maxdepth 1 -type f \( -iname '*.bin' -o -iname '*.rom' -o -name '*.module.yaml' \) -exec cp {} "$DIST/bundle/" \;
 cp "$REPO"/frontends/qt6/resources/cards/*.yaml "$REPO"/frontends/qt6/resources/cards/*.wav "$DIST/bundle/"   # the empty tape's sound too (LIB-7 D-23)
 
 cp "$REPO"/frontends/qt6/resources/faceplates/*.png "$DIST/img/"

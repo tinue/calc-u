@@ -1,6 +1,6 @@
 """Reads the byte image of a saved card and the RAM disk on it.
 
-A card comes from the step `saveas: live slot-N:file:NAME.card.yaml`. The format is
+A card comes from the step `saveas: live slot-N:file:NAME.module.yaml`. The format is
 docs/Memory-Card-Definition-Format.md of Calc-U-1600, chapter 6. The RAM disk layout follows
 the PC-1600 file system (header, FAT, directory). Project neutral, no PC-1600 is needed to use this module.
 """

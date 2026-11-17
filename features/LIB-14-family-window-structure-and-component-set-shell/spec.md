@@ -347,13 +347,13 @@ The shell and what goes into it
 - [ ] **AC-36** — Given a PC-1500 or PC-1500A, then the control bar
   holds: the model picker, the picker of `slot-1` with its Name & Save
   button (LIB-7), the buttons "CE-150" and "CE-158", and the cassette
-  tape controls while a peripheral with a cassette is plugged in. Given a
+  controls while a peripheral with a cassette is plugged in. Given a
   PC-1600, then it holds: the model picker, the pickers of `slot-1` and
   `slot-2`, marked "1:" and "2:", a picker for `printer` with the
   CE-150, the CE-1600P and the empty place, the button "CE-158", the
   floppy disk controls, which Calc-U-1600 shows on every PC-1600 and
   which can be used only while the CE-1600P is plugged in (a product
-  entry, AC-42; LIB-4 AC-17), and the cassette tape controls while a
+  entry, AC-42; LIB-4 AC-17), and the cassette controls while a
   peripheral with a cassette is plugged in. Today the PC-1600 has a button
   "CE-1600P" on the bar and the CE-150 and CE-158 in the menu only
   (`Qt6/app/ControlBar.cpp:76-272`, `Shared/ControlState.cpp:7-48`;
@@ -362,7 +362,7 @@ The shell and what goes into it
   shows: General with Startup model (today "Startup device"); Startup
   presets (today "Default presets") with the rows PC-1500, PC-1500A and
   PC-1600; Storage with Save folder (today "Battery-card saves") and
-  Tapes (Qt6), and in the Web frontend the sentence that says where
+  Cassettes (Qt6), and in the Web frontend the sentence that says where
   saved media are kept; Folders with the examples folder (today
   "Samples folder") and the BASIC, assembly and host drive folders
   (Qt6); Tracing with Trace folder and Maximum file size (Qt6); Serial
@@ -515,3 +515,4 @@ The shell and what goes into it
 | The Qt6 frontend gets harness attach in development and test builds; the screenshot scenarios are its client and are owned here with their object names (AC-44) | user, 2026-11-13 (B-22 of `docs/walkthroughs/presets.md` §5.2, left to the specification: "what works best for an agentic workflow"); today's runner steps the machine itself, which the operation rules (LIB-3 AC-3, AC-14, AC-35) no longer allow | 2026-11-13 |
 | The ledger row of the Calc-U-1600 menus (OQ-7) is 1600-10; it is cited with the others | user, 2026-11-14 (question 9 of `docs/migration-plan.md`) | 2026-11-14 |
 | The magnetic card items of C59-7 (AC-26) read "Arm Card…" and "Arm Fresh Card…" (today "Fit Card…", "Fit Fresh Card…"); behaviour change 59-50 | C59-7 decision log 2026-11-16; `docs/glossary-mapping.md` row "Arm"; user, 2026-11-16 (Q-3 of `docs/reviews/e-designs.md`, with the approval of the Part E designs) | 2026-11-16 |
+| The Storage row of the cassette folder is "Cassettes" and the bar's controls are the cassette controls (AC-36, AC-37 edited in place; was "Tapes") | user, 2026-11-17 (Part E review Q-6); behaviour change 1600-51 | 2026-11-17 |

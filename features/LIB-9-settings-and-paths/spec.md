@@ -123,7 +123,7 @@ Startup keys
 Paths
 - [ ] **AC-12** — Given the host directories its caller passes when the
   library starts, then the library gives the place of the settings file,
-  the save folder, the tape folder, the trace folder, the folder for
+  the save folder, the cassette folder, the trace folder, the folder for
   screenshots and the folder for serial links, and of `ti58c.memory.yaml`; no
   frontend and no other feature works out one of these places itself.
   A folder the user chooses through the platform (AC-24) is passed in by
@@ -137,8 +137,8 @@ Paths
 - [ ] **AC-15** — Given a Web frontend, then the save folder and the
   settings file are inside the file system that frontend passes.
 - [ ] **AC-16** — Given the save folder, then media instances and
-  `ti58c.memory.yaml` are at its root and cassette tapes are in `Tapes/` inside
-  it, unless `[storage] tape-folder` names another folder.
+  `ti58c.memory.yaml` are at its root and cassettes are in `Cassettes/` inside
+  it, unless `[storage] cassette-folder` names another folder.
 - [ ] **AC-17** — Given a Qt6 frontend, then traces are written to the
   save folder unless `[trace] folder` names another folder, serial links
   to the save folder unless `[serial] link-folder` names another folder,
@@ -204,7 +204,7 @@ Paths
   `[startup] model = last` (accepts `last`, `PC-1500`, `PC-1500A`,
   `PC-1600`);
   `[preset] PC-1500`, `PC-1500A`, `PC-1600` (empty);
-  `[storage] save-folder` and `tape-folder` (empty);
+  `[storage] save-folder` and `cassette-folder` (empty);
   `[trace] folder` (empty) and `max-file-size-mb = 50`;
   `[debug] dap-enabled = false` and `dap-port = 32168`;
   `[serial] link-folder` (empty);
@@ -245,7 +245,7 @@ Paths
   AC-14 gives at each start; media are not moved between the two
   folders.
 - **EC-3** — Given `[storage] save-folder` names another folder and
-  `[storage] tape-folder` is empty, then tapes go to `Tapes/` inside
+  `[storage] cassette-folder` is empty, then cassettes go to `Cassettes/` inside
   that folder.
 - **EC-4** — Given the Calc-U-59 Swift frontend on macOS and a Qt6
   build of Calc-U-59 on the same Mac, then each has its own settings
@@ -260,7 +260,7 @@ Paths
 - **EC-7** — Given the product is ended by force while it writes the
   settings file, then the file holds either the old or the new content,
   never part of one.
-- **EC-8** — Given the save folder, or `Tapes/` inside it, does not
+- **EC-8** — Given the save folder, or `Cassettes/` inside it, does not
   exist, when something is first written there, then it is created.
 - **EC-9** — Given `[storage] save-folder` names a folder that cannot be
   created or written, then the user is told, and nothing is written to
@@ -317,3 +317,4 @@ Paths
 | At the first start the product ignores the old platform stores, starts with the defaults and writes its first settings file at that moment, with every key; so no older version of the file can exist in the migration release | user, 2026-11-10, batch 2 gate (prompted). Consequence: a default that a later release changes does not reach a file that already holds the old value | 2026-11-10 |
 | The app-written keys: `[startup] last-model`; `[folders]` with one key for each kind of file; `[window]` with plain numbers and, for Swift, `portrait-debug-page`. The Swift trace location is `[trace] location` (`app-support`, `icloud`, `folder`) | user, 2026-11-11; OQ-5, OQ-7 | 2026-11-11 |
 | Aligned with `docs/formats/` after the Q&A round: `ti58c.memory.yaml` (AC-12, AC-16) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| The cassette folder is `[storage] cassette-folder`, default `Cassettes/` in the save folder (AC-12, AC-16, EC-3, EC-8 edited in place; was `tape-folder`, `Tapes/`) | user, 2026-11-17 (Part E review Q-6: "cassette" names the medium everywhere); behaviour change 1600-51 | 2026-11-17 |

@@ -130,12 +130,12 @@ TEST(ac12_every_place_from_the_passed_dirs) {
     const std::string save = dir / "home/Test-Product";
     CHECK_EQ(p.settingsFile(), dir / "config/Test-Product/Test-Product.ini");
     CHECK_EQ(p.saveFolder(), save);
-    CHECK_EQ(p.tapeFolder(), save + "/Tapes");
+    CHECK_EQ(p.cassetteFolder(), save + "/Cassettes");
     CHECK(p.traceFolder() == std::optional<std::string>(save));
     CHECK(p.screenshotFolder() == std::optional<std::string>(save));
     CHECK(p.serialLinkFolder() == std::optional<std::string>(save));
     CHECK_EQ(p.saveFolderFile("ti58c.memory.yaml"), save + "/ti58c.memory.yaml");
-    CHECK(p.folder(Folder::Tapes) == std::optional<std::string>(save + "/Tapes"));
+    CHECK(p.folder(Folder::Cassettes) == std::optional<std::string>(save + "/Cassettes"));
     // A folder the user chose through the platform is passed in like a host directory.
     HostDirs s;
     s.frontend = FrontendKind::Swift;
@@ -202,7 +202,7 @@ TEST(ec2_swift_save_folder_follows_each_start) {
     CHECK_EQ(Paths(f, s).saveFolder(), std::string("/icloud/Documents"));
     s.saveFolder = "/local/Documents";   // not at the next
     CHECK_EQ(Paths(f, s).saveFolder(), std::string("/local/Documents"));
-    CHECK_EQ(Paths(f, s).tapeFolder(), std::string("/local/Documents/Tapes"));
+    CHECK_EQ(Paths(f, s).cassetteFolder(), std::string("/local/Documents/Cassettes"));
 }
 
 TEST(ac15_web_save_folder_inside_passed_fs) {
@@ -216,7 +216,7 @@ TEST(ac15_web_save_folder_inside_passed_fs) {
     const Paths p(f, w);
     CHECK_EQ(p.saveFolder(), std::string("/persist/Test-Product"));
     CHECK_EQ(p.settingsFile(), std::string("/persist/settings/Test-Product/Test-Product.ini"));
-    CHECK_EQ(p.tapeFolder(), std::string("/persist/Test-Product/Tapes"));
+    CHECK_EQ(p.cassetteFolder(), std::string("/persist/Test-Product/Cassettes"));
 }
 
 TEST(ac16_files_at_root_tapes_in_Tapes) {
@@ -224,21 +224,21 @@ TEST(ac16_files_at_root_tapes_in_Tapes) {
     const Paths p(f, qt6("/home/u"));
     CHECK_EQ(p.saveFolderFile("ti58c.memory.yaml"), std::string("/home/u/Test-Product/ti58c.memory.yaml"));
     CHECK_EQ(p.saveFolderFile("card.yaml"), std::string("/home/u/Test-Product/card.yaml"));
-    CHECK_EQ(p.tapeFolder(), std::string("/home/u/Test-Product/Tapes"));
+    CHECK_EQ(p.cassetteFolder(), std::string("/home/u/Test-Product/Cassettes"));
 }
 
 TEST(ac16_tape_override) {
     TempDir dir;
-    const SettingsFile f = withValues(dir / "c/Test-Product.ini", "[storage]\ntape-folder = /tapes/here\n");
-    CHECK_EQ(Paths(f, qt6("/home/u")).tapeFolder(), std::string("/tapes/here"));
+    const SettingsFile f = withValues(dir / "c/Test-Product.ini", "[storage]\ncassette-folder = /tapes/here\n");
+    CHECK_EQ(Paths(f, qt6("/home/u")).cassetteFolder(), std::string("/tapes/here"));
     CHECK_EQ(Paths(f, qt6("/home/u")).saveFolder(), std::string("/home/u/Test-Product"));
 }
 
 TEST(ec3_override_save_folder_keeps_Tapes_inside) {
     TempDir dir;
     const SettingsFile f =
-        withValues(dir / "c/Test-Product.ini", "[storage]\nsave-folder = /data/mine\ntape-folder =\n");
-    CHECK_EQ(Paths(f, qt6("/home/u")).tapeFolder(), std::string("/data/mine/Tapes"));
+        withValues(dir / "c/Test-Product.ini", "[storage]\nsave-folder = /data/mine\ncassette-folder =\n");
+    CHECK_EQ(Paths(f, qt6("/home/u")).cassetteFolder(), std::string("/data/mine/Cassettes"));
 }
 
 TEST(ac17_qt6_traces_screenshots_links_default_to_save_folder) {
@@ -308,10 +308,10 @@ TEST(ec8_missing_folder_created_on_first_write) {
     const SettingsFile f = SettingsFile::defaultsOnly(testProduct());
     const Paths p(f, d);
     CHECK(!exists(p.saveFolder()));
-    const Paths::Ensured tapes = p.ensure(Folder::Tapes);  // creates the save folder too
+    const Paths::Ensured tapes = p.ensure(Folder::Cassettes);  // creates the save folder too
     CHECK(tapes.ok);
-    CHECK_EQ(tapes.path, dir / "home/Test-Product/Tapes");
-    CHECK(std::filesystem::is_directory(dir / "home/Test-Product/Tapes"));
+    CHECK_EQ(tapes.path, dir / "home/Test-Product/Cassettes");
+    CHECK(std::filesystem::is_directory(dir / "home/Test-Product/Cassettes"));
     const Paths::Ensured save = p.ensure(Folder::Save);
     CHECK(save.ok && save.problem.empty());
     // An existing folder is fine as it is; nothing is left behind by the check.
@@ -322,7 +322,7 @@ TEST(ec8_missing_folder_created_on_first_write) {
         (void)e;
         ++entries;
     }
-    CHECK_EQ(entries, std::size_t{2});  // Tapes and kept.txt
+    CHECK_EQ(entries, std::size_t{2});  // Cassettes and kept.txt
 }
 
 TEST(ec9_unusable_override_reported_no_fallback) {
@@ -336,7 +336,7 @@ TEST(ec9_unusable_override_reported_no_fallback) {
     CHECK(!e.ok);
     CHECK(!e.problem.empty());
     CHECK_EQ(e.path, dir / "a-file/save");  // the folder the user named, reported
-    CHECK(!p.ensure(Folder::Tapes).ok);
+    CHECK(!p.ensure(Folder::Cassettes).ok);
     // Nothing is written to another folder instead.
     CHECK(!exists(dir / "home/Test-Product"));
     CHECK_EQ(p.saveFolder(), dir / "a-file/save");
@@ -357,7 +357,7 @@ TEST(ac18_own_host_dirs_touch_nothing_else) {
     CHECK_EQ(f.text("test", "style"), std::string("one"));  // not the user's value
     CHECK(f.set("test", "name", "run").ok);
     const Paths p(f, d);
-    for (Folder which : {Folder::Save, Folder::Tapes, Folder::Traces, Folder::Screenshots, Folder::SerialLinks})
+    for (Folder which : {Folder::Save, Folder::Cassettes, Folder::Traces, Folder::Screenshots, Folder::SerialLinks})
         CHECK(p.ensure(which).ok);
     CHECK_EQ(p.saveFolder().rfind(run.str(), 0), std::size_t{0});
     CHECK_EQ(p.settingsFile().rfind(run.str(), 0), std::size_t{0});

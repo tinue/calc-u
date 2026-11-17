@@ -130,12 +130,12 @@ TEST(c1600_5_ac13_restore_continues_identically_pc1500a) {
             CHECK_EQ(r.line("type NEW0"), std::string("done\n"));
             CHECK_EQ(r.line("type 10 A=A+1:PRINT A:BEEP 1:GOTO 10"), std::string("done\n"));
             CHECK_EQ(r.line("key mode"), std::string("done\n"));
-            CHECK(starts(r.line("pc1600 tape record " + (folder / "tape.wav").string()), "done"));
+            CHECK(starts(r.line("pc1600 cassette record " + (folder / "tape.wav").string()), "done"));
             CHECK_EQ(r.line("type CSAVE \"A\""), std::string("done\n"));
             r.line("wait 500ms");
-            CHECK(has(r.line("pc1600 tape status"), "motor: on"));   // saved while the CSAVE records
+            CHECK(has(r.line("pc1600 cassette status"), "motor: on"));   // saved while the CSAVE records
         },
-        {"pc1600 tape status", "pc1600 serial ce158 report", "pc1600 inspect inventory", "pc1600 dump-basic"});
+        {"pc1600 cassette status", "pc1600 serial ce158 report", "pc1600 inspect inventory", "pc1600 dump-basic"});
 }
 
 TEST(c1600_5_ac13_restore_continues_identically_pc1600) {
@@ -163,12 +163,12 @@ TEST(c1600_5_ac13_full_pc1600_with_ce1600p_disk_tape_ce158_modules) {
             CHECK_EQ(r.line("type NEW0"), std::string("done\n"));
             CHECK_EQ(r.line("type 10 A=A+1:PRINT A:BEEP 1:GOTO 10"), std::string("done\n"));
             CHECK_EQ(r.line("key mode"), std::string("done\n"));
-            CHECK(starts(r.line("pc1600 tape record " + (folder / "tape.wav").string()), "done"));
+            CHECK(starts(r.line("pc1600 cassette record " + (folder / "tape.wav").string()), "done"));
             CHECK_EQ(r.line("type CSAVE \"CAS:P\""), std::string("done\n"));
             r.line("wait 500ms");
-            CHECK(has(r.line("pc1600 tape status"), "motor: on"));   // saved while the CSAVE records
+            CHECK(has(r.line("pc1600 cassette status"), "motor: on"));   // saved while the CSAVE records
         },
-        {"pc1600 tape status", "pc1600 inspect disks", "pc1600 inspect inventory", "pc1600 dump-basic"});
+        {"pc1600 cassette status", "pc1600 inspect disks", "pc1600 inspect inventory", "pc1600 dump-basic"});
 
     restoreContinuesIdentically(
         [](Run& r, const fs::path&) {
@@ -179,7 +179,7 @@ TEST(c1600_5_ac13_full_pc1600_with_ce1600p_disk_tape_ce158_modules) {
             CHECK_EQ(r.line("attach slot-2 CE-1601M"), std::string("done\n"));
             runCountingLoop(r);
         },
-        {"pc1600 tape status", "pc1600 serial ce158 report", "pc1600 inspect inventory"});
+        {"pc1600 cassette status", "pc1600 serial ce158 report", "pc1600 inspect inventory"});
 }
 
 // LIB-11 AC-24: a state of another set of plugged peripherals, or of

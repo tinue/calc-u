@@ -146,7 +146,7 @@ void PC1500InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     if (const PlugEntry* e = at(sharp::kPrinter); e && e->peripheral.value == sharp::kCE150) {
         // LIB-8: the plotter's paper output, once its card is on the bus.
         if (calcu::paper::PaperOutput* paper = m_core->ce150PaperOutput()) out.push_back(byPeripheral(*e, *paper));
-        out.push_back(byPeripheral(*e, k.cassette, "cassette"));   // LIB-7: the CE-150's cassette (C1600-1 AC-16)
+        out.push_back(byPeripheral(*e, k.cassette, "cassette-recorder"));   // LIB-7: the CE-150's cassette (C1600-1 AC-16)
         out.push_back(byPeripheral(*e, k.tape));
     }
     if (const PlugEntry* e = at(sharp::kInterface)) {

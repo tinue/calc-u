@@ -17,7 +17,7 @@ The CE-1600P has its own ROM, New (the default) or Old: **Machine ▸
 CE-1600P ROM** while the CE-1600P is plugged in. The CE-1600F floppy disk
 drive uses that ROM too. The control bar and the menus attach the CE-1600P
 with the New ROM; a preset or the harness can name the Old one. Changing the
-CE-1600P's ROM keeps the disk in the drive, the same side up, and the tape.
+CE-1600P's ROM keeps the disk in the drive, the same side up, and the cassette.
 
 ## Reset, power cycle and Cold boot
 

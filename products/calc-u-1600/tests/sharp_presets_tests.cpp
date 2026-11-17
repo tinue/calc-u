@@ -84,7 +84,7 @@ TEST(lib6_ac44_plotter_key_unknown) {
 TEST(lib6_ac44_floppy_and_tape_not_header_keys) {
     PresetReadRig r;
     CHECK(has(r.error(k1600 + "printer: CE-1600P\nfloppy: Formatted\n"), "Unknown key floppy."));
-    CHECK(has(r.error(k1600 + "tape: { file: t.tape.yaml }\n"), "Unknown key tape."));
+    CHECK(has(r.error(k1600 + "cassette: { file: t.cassette.yaml }\n"), "Unknown key cassette."));
 }
 
 TEST(lib6_ac44_ctrl_kbii_bs_refused_in_key) {
@@ -182,7 +182,7 @@ TEST(lib6_ac47_ce158_with_ce1600p_names_both) {
 }
 
 // The `floppy:` clause (M-47, LIB-7 1600): [1600: PC-1600 with CE-1600P];
-// `tape:` [with CE-150 or CE-1600P].
+// `cassette:` [with CE-150 or CE-1600P].
 TEST(lib6_ac47_floppy_without_ce1600p_refused) {
     HarnessPreset h;
     CHECK(h.ok());
@@ -190,9 +190,9 @@ TEST(lib6_ac47_floppy_without_ce1600p_refused) {
     CHECK(has(r, "floppy: the PC-1600 has no place for a floppy disk without the CE-1600P."));
     r = h.load("format-version: 2\nmodel: PC-1500\nkeys:\n  - floppy: { name: Formatted }\n", "t.pc1500");
     CHECK(has(r, "floppy is not available on the PC-1500."));
-    r = h.load(k1600 + "keys:\n  - tape: { name: Empty }\n");
-    CHECK(has(r, "tape: the PC-1600 has no place for a cassette tape without the CE-150 or CE-1600P."));
-    CHECK(has(h.line("check-preset " + h.write("ok.pc1600", k1600 + "printer: CE-1600P\nkeys:\n  - floppy: { name: Formatted }\n  - tape: { name: Empty }\n").generic_string()),
+    r = h.load(k1600 + "keys:\n  - cassette: { name: Empty }\n");
+    CHECK(has(r, "cassette: the PC-1600 has no place for a cassette without the CE-150 or CE-1600P."));
+    CHECK(has(h.line("check-preset " + h.write("ok.pc1600", k1600 + "printer: CE-1600P\nkeys:\n  - floppy: { name: Formatted }\n  - cassette: { name: Empty }\n").generic_string()),
               "ok "));
 }
 

@@ -17,6 +17,7 @@
 # Compatibility is an author-declared list, not a pin-derived one (spec
 # section 1).
 
+format: memory-module
 format-version: 1
 module-name: "CE-151"
 description: "4 KB static RAM"

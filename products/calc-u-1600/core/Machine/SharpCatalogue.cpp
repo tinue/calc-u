@@ -142,7 +142,7 @@ std::vector<PeripheralDescriptor> peripherals() {
     ce150.name = "CE-150";
     ce150.roms = {rom("CE-150.ROM", 8192, "eb9aa5156c6849890b137799efc50a4b")};
     ce150.fits = {PinOutId{kPC1500PrinterPinOut}, PinOutId{kPC1600PrinterPinOut}};
-    ce150.mediaPlaces = {{MediaPlaceId{"cassette"}, "cassette", MediaPassage::Holding, {}}};
+    ce150.mediaPlaces = {{MediaPlaceId{"cassette-recorder"}, "cassette", MediaPassage::Holding, {}}};
     ce150.components = {{ComponentId{"plotter"}, "ALPS plotter mechanism and its paper", Depth::Functional, std::nullopt}};
 
     PeripheralDescriptor ce158;
@@ -165,7 +165,7 @@ std::vector<PeripheralDescriptor> peripherals() {
     ce1600p.defaultVariant = VariantId{"New"};
     ce1600p.fits = {PinOutId{kPC1600PrinterPinOut}};
     // The CE-1600F is described with it, as today (P-3; LIB-1 AC-39).
-    ce1600p.mediaPlaces = {{MediaPlaceId{"cassette"}, "cassette", MediaPassage::Holding, {}},
+    ce1600p.mediaPlaces = {{MediaPlaceId{"cassette-recorder"}, "cassette", MediaPassage::Holding, {}},
                            {MediaPlaceId{"floppy"}, "floppy-disk", MediaPassage::Holding, {0, 1}}};
     const ComponentId plotter{"plotter"};
     ce1600p.components = {{plotter, "ALPS plotter mechanism and its paper", Depth::Functional, std::nullopt},

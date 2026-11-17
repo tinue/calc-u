@@ -16,7 +16,7 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
 mkdir "$TMP/roms"
-for f in roms/*.ROM roms/*.bin roms/*.card.yaml; do cp "$f" "$TMP/roms/"; done
+for f in roms/*.ROM roms/*.bin roms/*.module.yaml; do cp "$f" "$TMP/roms/"; done
 [ -f "$TMP/roms/$MISSING" ] || { echo "no ROM file $MISSING in roms/" >&2; exit 2; }
 rm "$TMP/roms/$MISSING"
 echo "rom_missing_build: roms/ without $MISSING"

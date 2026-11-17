@@ -64,8 +64,8 @@ std::string AppPaths::displayPath(const std::string& path) const {
 
 
 
-std::string AppPaths::tapeDir() const {
-    const std::string dir = m_paths.tapeFolder();
+std::string AppPaths::cassetteDir() const {
+    const std::string dir = m_paths.cassetteFolder();
     makeDirs(dir);
     return dir;
 }

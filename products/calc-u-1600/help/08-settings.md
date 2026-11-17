@@ -16,8 +16,8 @@ opens the settings dialog; a change applies at once.
   PC-1500, PC-1500A or PC-1600 (`[startup] model`).
 - **Startup presets:** one per model, see
   [Startup presets](#startup-presets) below.
-- **Storage ▸ Save folder** and **Tapes:** where your saved modules, disks
-  and tapes go ([Media](04-media.md)).
+- **Storage ▸ Save folder** and **Cassettes:** where your saved modules, disks
+  and cassettes go ([Media](04-media.md)).
 - **Folders:** where the file dialogs start, see [Folders](#folders).
 - **Tracing:** the trace folder and the size limit of a trace (the
   family's keys).
@@ -28,7 +28,7 @@ opens the settings dialog; a change applies at once.
   **Disconnect** ([Debugger](07-debugger.md)).
 
 The Web frontend shows the startup model and the startup presets only; it
-keeps your modules, disks and tapes in the browser's storage for the page.
+keeps your modules, disks and cassettes in the browser's storage for the page.
 
 ## Startup presets
 

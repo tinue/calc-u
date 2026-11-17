@@ -17,7 +17,7 @@ cs::ProductDecl makeDecl() {
     d.keys.push_back(cs::family::startupLastModel());
     for (const std::string& m : d.models) d.keys.push_back(cs::family::presetFor(m));
     d.keys.push_back(cs::family::saveFolder());
-    d.keys.push_back(cs::family::tapeFolder());
+    d.keys.push_back(cs::family::cassetteFolder());
     d.keys.push_back(cs::family::traceFolder());
     d.keys.push_back(cs::family::traceMaxFileSizeMb());
 

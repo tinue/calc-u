@@ -94,6 +94,26 @@ TEST(c59_3_ac2_memory_in_place_before_the_processor) {
 
 // ── T3: the file (AC-3, AC-4, EC-2, EC-3, EC-5) ─────────────────────────────
 
+// LIB-7 AC-49 (ledger 59-59): the file's comment line and `saved:`.
+TEST(lib7_ac49_constant_memory_comment_and_saved) {
+    cu59::ConstantMemoryContents c;
+    c.ram[0] = num("25");
+    const std::string text = cu59::writeConstantMemoryFile(c, "2026-11-17T10:00:00Z");
+    CHECK(text.rfind("# Calc-U-59 TI-58C constant memory\nformat: ti58c-constant-memory\nformat-version: 1\n"
+                     "saved: 2026-11-17T10:00:00Z\n", 0) == 0);
+    auto back = cu59::readConstantMemoryFile(text);
+    CHECK(std::holds_alternative<cu59::ConstantMemoryContents>(back) && std::get<cu59::ConstantMemoryContents>(back) == c);
+    SKIP_UNLESS(roms(), kSkip);
+    auto files = std::make_shared<Files>();
+    files->files[kMemoryPath] = fileWith(55, "3.5");
+    Rig r("TI-58C", files);
+    r.memory().writeRegister(5, num("7"));
+    r.runFor(std::chrono::milliseconds(700));   // AC-5: written
+    const std::string& saved = files->files[kMemoryPath];
+    CHECK(saved.rfind("# Calc-U-59 TI-58C constant memory\n", 0) == 0);
+    CHECK(saved.find("\nsaved: 20") != std::string::npos);
+}
+
 TEST(c59_3_ac3_file_at_root_of_save_folder_not_a_medium) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
@@ -110,7 +130,7 @@ TEST(c59_3_ac4_format_1_r000_to_r063_h_as_r060_r063) {
     c.ram[60] = num("1");   // H00
     c.ram[63] = num("-2");  // H03
     const std::string text = cu59::writeConstantMemoryFile(c);
-    CHECK(text.rfind("format: ti58c-constant-memory\nformat-version: 1\n", 0) == 0);
+    CHECK(text.rfind("# Calc-U-59 TI-58C constant memory\nformat: ti58c-constant-memory\nformat-version: 1\n", 0) == 0);
     CHECK(text.find("  encoding: register-hex\n") != std::string::npos);
     CHECK(text.find("    R000: ") != std::string::npos);
     CHECK(text.find("    R060: ") != std::string::npos);

@@ -13,7 +13,7 @@
 // and how a path is shown to the user. The places come from the library
 // (calcu::settings::Paths, LIB-9 AC-12): the frontend passes the host's
 // folders (calcu::settings::HostDirs: home, settings base, and on the Web
-// the save folder) and the bundled folders (BundleDirs: *.card.yaml /
+// the save folder) and the bundled folders (BundleDirs: *.module.yaml /
 // *.floppy.yaml templates and ROM images, read only). Folders the app
 // writes to are created when asked for.
 namespace cu1600 {
@@ -71,10 +71,10 @@ public:
     std::string displayPath(const std::string& path) const;
 
 
-    // Cassette tapes: [storage] tape-folder if set, else "Tapes"
-    // inside instanceDir(); created on demand. Tape definitions and their
+    // Cassettes: [storage] cassette-folder if set, else "Cassettes"
+    // inside instanceDir(); created on demand. Cassette definitions and their
     // sounds live there (LIB-7 AC-42, LIB-9 AC-16).
-    std::string tapeDir() const;
+    std::string cassetteDir() const;
 
     // [trace] folder / [serial] link-folder if set, else
     // instanceDir(): where traces go (the library's trace session) and where

@@ -54,7 +54,7 @@ behind, made with `b4ea8c8` (AC-16).
 - How a program gets into the machine: telling a BASIC listing from
   tokenized BASIC and from machine code, loading, typing in, placing
   machine code and starting it (owner: C1600-2).
-- Naming a module, a disk or a tape, by name or by file, and the step
+- Naming a module, a disk or a cassette, by name or by file, and the step
   `saveas` (owner: LIB-7); the step `trace` (LIB-10).
 - What the debugger does with the settings of a `debug:` block (owner:
   C1600-3).
@@ -73,7 +73,7 @@ The `program:` section
 
   | Field | Value | Rules |
   |---|---|---|
-  | `file:` | a path (LIB-6 AC-1): a BASIC listing, tokenized BASIC, machine code with or without a header, or the sound of a tape (`.wav`); a cassette tape definition is not a program file (`preset.md` §4.1) | exactly one of `file:` and `text:` is required |
+  | `file:` | a path (LIB-6 AC-1): a BASIC listing, tokenized BASIC, machine code with or without a header, or the sound of a tape (`.wav`); a cassette definition is not a program file (`preset.md` §4.1) | exactly one of `file:` and `text:` is required |
   | `text: \|` | a block scalar: the lines of a BASIC program | not together with `typed:`, `address:` or `length:` |
   | `typed:` | `true` or `false` | only for a file that is a BASIC listing |
   | `address:` | a number up to &FFFF | only for a file that is machine code |

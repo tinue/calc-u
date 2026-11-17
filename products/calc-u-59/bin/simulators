@@ -34,6 +34,9 @@ NETWORK_TIMEOUT = 10
 DEFAULT_INDEX_TTL = 86400
 
 FILES_APP = "com.apple.DocumentsApp"
+# The app's own Documents folder is its save folder on a simulator (no iCloud
+# there, App/CardStorage.swift): the cards and ti58c.memory.yaml it writes.
+APP_BUNDLE_ID = "ch.erzberger.calcu59"
 LOCAL_STORAGE_GROUP = "group.com.apple.FileProvider.LocalStorage"
 BOOTSTRAP_TIMEOUT = 60
 
@@ -483,6 +486,46 @@ def bootstrap_storage(udid, name, keep_booted=False):
     return found
 
 
+def app_documents_dir(udid):
+    """The app's Documents folder on the device, or None (app never installed).
+
+    Found by the container's metadata plist, so the device need not be booted.
+    """
+    root = DEVICES_DIR / udid / "data/Containers/Data/Application"
+    if not root.is_dir():
+        return None
+    for meta in root.glob("*/.com.apple.mobile_container_manager.metadata.plist"):
+        try:
+            data = plistlib.loads(meta.read_bytes())
+        except (plistlib.InvalidFileException, ValueError):
+            continue
+        if data.get("MCMMetadataIdentifier") == APP_BUNDLE_ID:
+            return meta.parent / "Documents"
+    return None
+
+
+def saved_files(udid):
+    """What the app saved on the device: its cards, the TI-58C memory, …"""
+    docs = app_documents_dir(udid)
+    if not docs or not docs.is_dir():
+        return []
+    return sorted(p for p in docs.rglob("*") if p.is_file())
+
+
+def clear_saved_files(udid, dry_run=False):
+    """Empty the app's save folder; the number of files removed."""
+    files = saved_files(udid)
+    if dry_run or not files:
+        return len(files)
+    docs = app_documents_dir(udid)
+    for child in docs.iterdir():
+        if child.is_dir() and not child.is_symlink():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+    return len(files)
+
+
 def device_state(udid):
     for devs in simctl_json("list", "devices")["devices"].values():
         for d in devs:
@@ -654,6 +697,9 @@ def cmd_status(args):
         else:
             mark, state = yellow("·"), "not provisioned"
             problems += 1
+        saved = len(saved_files(dev["udid"]))
+        if saved:
+            state += f", {saved} saved file(s) — bin/simulators reset"
         print(f"  {mark} {name:<24} {rt['name']:<9} {dim(dev['udid'])}  {state}")
 
     print("\nRuntimes")
@@ -817,6 +863,37 @@ def cmd_files(args):
     return 0
 
 
+def cmd_reset(args):
+    """The known state the simulator tests start from: the example files as
+    `files` installs them, and nothing the app saved (cards pile up otherwise,
+    and a test looking for its card in Arm Card's list stops finding it)."""
+    config = load_config(args.config)
+    if args.role:
+        config = [d for d in config if d.get("screenshots") == args.role]
+        if not config:
+            die(f"no device with screenshots: {args.role} in {args.config}")
+    config = select(config, args.only)
+    failed = 0
+    for entry, rt, dev in resolve_all(config):
+        name = entry["name"]
+        if not dev:
+            print(f"  {red('✗')} {name}: not created — run bin/simulators setup")
+            failed += 1
+            continue
+        dest = storage_dir(dev["udid"])
+        if not dest and not args.dry_run:
+            dest = bootstrap_storage(dev["udid"], name)
+        if not dest:
+            print(f"  {red('✗')} {name}: no local storage — run bin/simulators setup")
+            failed += 1
+            continue
+        n = install_files(dest, args.dry_run)
+        removed = clear_saved_files(dev["udid"], args.dry_run)
+        verb = "would remove" if args.dry_run else "removed"
+        print(f"  {green('✓')} {name}: {n} example file(s), {verb} {removed} saved file(s)")
+    return 1 if failed else 0
+
+
 def cmd_cleanup(args):
     config = load_config(args.config)
     runtimes = installed_runtimes()
@@ -967,6 +1044,7 @@ typical workflows
   Apple shipped a new iOS   bin/simulators update --download --delete
   check what's going on     bin/simulators status
   after editing examples/   bin/simulators files
+  before simulator tests    bin/simulators reset [--role iphone]  (ctest does it)
   reclaim disk space        bin/simulators cleanup   →   cleanup --delete
   before screenshots        bin/simulators status --strict
 
@@ -1044,6 +1122,11 @@ def build_parser():
     add("setup", cmd_setup, "Create missing simulators and provision them with example files.",
         only=True, net=True, download=True, setup_flags=True, dry=True, yes=True)
     add("files", cmd_files, "Reinstall the example presets only.", only=True, dry=True)
+    sp = add("reset", cmd_reset,
+             "Known state for the tests: reinstall the example presets and delete "
+             "what the app saved (cards, TI-58C memory).", only=True, dry=True)
+    sp.add_argument("--role", choices=["iphone", "ipad", "duo"],
+                    help="only the device with this screenshots role")
     add("cleanup", cmd_cleanup, "Delete simulators, stale records and orphans not in the config.",
         cleanup_flags=True, yes=True)
     add("update", cmd_update, "Refresh runtimes, recreate devices on them, then clean up.",

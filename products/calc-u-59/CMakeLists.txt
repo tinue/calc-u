@@ -212,14 +212,17 @@ if(CALCU_TESTS)
   endif()
   if(APPLE)
     set(iphone "platform=iOS Simulator,id=$(bin/simulators resolve --role iphone)")   # bin/simulators.yaml
+    # Every simulator test starts from the known state: the example presets,
+    # nothing the app saved (cards pile up otherwise; review E F-4).
+    set(reset_iphone "bin/simulators reset --role iphone >/dev/null")
     # XCUITest UIRegressionTests on one simulator (the iphone role).
     calcu_add_test(CalcU59UIRegression longer
-                   COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
+                   COMMAND sh -c "${reset_iphone} && xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
 -testPlan UIRegressionTests -destination \"${iphone}\"")
     # C59-5 S1, S2, AC-5 (D-9), AC-8: the Swift unit tests through the real
     # bridge, in the app on the same simulator.
     calcu_add_test(CalcU59SwiftUnitTests longer
-                   COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
+                   COMMAND sh -c "${reset_iphone} && xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
 -testPlan UnitTests -destination \"${iphone}\""
                    PROPERTIES RUN_SERIAL TRUE)
     # C59-5 AC-13 (B1): the Release Mac app, the Release XCFramework and the
@@ -250,7 +253,7 @@ if(CALCU_TESTS)
                    PROPERTIES RUN_SERIAL TRUE TIMEOUT 1200)
     # LIB-17 AC-19 (P59-5) on the iOS simulator: one minute over attach.
     calcu_add_test(CalcU59PacingIOS checkpoint
-                   COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
+                   COMMAND sh -c "${reset_iphone} && xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
 -testPlan PacingCheckpoint -destination \"${iphone}\""
                    PROPERTIES RUN_SERIAL TRUE TIMEOUT 1200)
     # C59-5 S6 (AC-8, AC-9, AC-10) and LIB-17 AC-19 on the Mac: the Debug app

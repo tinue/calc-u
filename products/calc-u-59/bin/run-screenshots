@@ -144,6 +144,12 @@ echo "  ipad:   $IPAD_UDID"
 echo "  duo:    $DUO_UDID"
 echo ""
 
+# The known state every shot starts from: the example presets, no saved cards.
+for role in iphone ipad duo; do
+    "$SRCROOT/bin/simulators" reset --role "$role"
+done
+echo ""
+
 mkdir -p "$SCREENSHOT_DIR"
 
 # The Duo is shot opened flat; simctl cannot unfold it, so check that the

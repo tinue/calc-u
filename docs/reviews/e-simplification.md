@@ -536,6 +536,9 @@ while Calc-U-59's Qt6 starts is no longer dropped (LIB-13 AC-7).
   built list row off screen does not exist for XCUITest); it failed alone
   at `5db83d7` too and passed after the app was removed from the
   simulator. The test should remove its cards or scroll.
+  Fixed (2026-11-17) the other way: `bin/simulators reset` (example presets
+  back, the app's saved files deleted) runs before every simulator CTest entry
+  and in `bin/run-screenshots`; `status` counts the saved files.
 - F-5: the App Store screenshot plan fails 4 of 9 shots on `main` since
   before this work (`testScreenshotCPUInspector`: two `confirm-cold-boot`
   buttons; `CalcDebugger` ×2 and `Glyphs`: `AppHelpers.swift:91`);

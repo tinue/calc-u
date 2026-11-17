@@ -45,6 +45,24 @@ TEST(test_faceplate_fit) {
     CHECK(KeyLayout::heightForWidth(l, 1000) == static_cast<int>(1000 * (l.imageHeight / l.imageWidth)));
 }
 
+// The PC-1600's two SHIFT keys are one machine key: the one pressed is drawn
+// pressed, the top one when no press was on either (typing).
+TEST(test_faceplate_held_key_of_press) {
+    const KeyLayout::Layout& l = KeyLayout::layoutFor(calcu::machine::ModelId{"PC-1600"});
+    std::vector<int> shifts;
+    for (std::size_t i = 0; i < l.keyCount; ++i)
+        if (std::string(l.keys[i].name) == "shift") shifts.push_back(static_cast<int>(i));
+    CHECK(shifts.size() == 2);
+    if (shifts.size() != 2) return;
+    const KeyLayout::KeyRect& bottom = l.keys[shifts[1]];
+    CHECK(bottom.y > l.keys[shifts[0]].y);
+    CHECK_EQ(KeyLayout::heldKeyIndex(l, "shift", bottom.x + bottom.w / 2, bottom.y + bottom.h / 2), shifts[1]);
+    CHECK_EQ(KeyLayout::heldKeyIndex(l, "shift", -1, -1), shifts[0]);
+    const KeyLayout::KeyRect& q = l.keys[KeyLayout::keyIndex(l, "q")];
+    CHECK_EQ(KeyLayout::heldKeyIndex(l, "shift", q.x + 1, q.y + 1), shifts[0]);
+    CHECK_EQ(KeyLayout::heldKeyIndex(l, "no-such-key", 0, 0), -1);
+}
+
 } // namespace
 
 calcu::machine::DisplayOutput frameWith(std::initializer_list<const char*> lit) {

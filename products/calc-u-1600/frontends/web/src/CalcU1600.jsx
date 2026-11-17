@@ -157,6 +157,7 @@ function CalcU1600(props) {
   const rootRef = React.useRef(null);
   const hostKeys = React.useRef(null);        // the host keys held (the library's calcuHostKeys)
   if (!hostKeys.current) hostKeys.current = calcuHostKeys();
+  const [shiftFlash, setShiftFlash] = React.useState(0);   // SHIFT taps, drawn as a flash
   const shiftTap = React.useRef(null);        // time the bare Shift went down
   const programFlow = React.useRef(false);    // a program flow runs (one at a time)
   const dialogs = useDialogs();
@@ -366,6 +367,7 @@ function CalcU1600(props) {
       if (tapped) {
         send("screen-key-down", { key: "shift", pointer: SHIFT_TAP_POINTER });
         send("screen-key-up", { key: "shift", pointer: SHIFT_TAP_POINTER });
+        setShiftFlash((n) => n + 1);   // too short for the held keys to show
       }
     }
     // The engine keeps a quick tap down long enough to be scanned (LIB-5 AC-1).
@@ -425,7 +427,7 @@ function CalcU1600(props) {
       <div className="calcu-face-row">
         {romsMissing && <ShellRomsMissing shell={s} />}
         {failed && !romsMissing && <div className="calcu-shell-roms-missing" data-calcu="start-failed" role="alert">{failure}</div>}
-        {!romsMissing && !failed && <Faceplate shell={shell} model={model} map={maps[model] || null} width={faceWidth} />}
+        {!romsMissing && !failed && <Faceplate shell={shell} model={model} map={maps[model] || null} width={faceWidth} shiftFlash={shiftFlash} />}
       </div>
       <C1600Bar.Provider value={bar}>
         <div className="calcu-controlbar">

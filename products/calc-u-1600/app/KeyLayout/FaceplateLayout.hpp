@@ -34,6 +34,12 @@ int hitTest(const FittedLayout& fitted, int x, int y);
 // Index of the key named `name`, or -1.
 int keyIndex(const Layout& layout, const char* name);
 
+// Which key to draw pressed while `name` is held: the key of that name whose
+// rectangle holds (artX, artY), the last pointer press in art pixels, or else
+// the first of that name. Several keys can share a name (the PC-1600's two
+// SHIFT keys are one machine key); the press tells which one was touched.
+int heldKeyIndex(const Layout& layout, const char* name, double artX, double artY);
+
 // heightForWidth for a pane that keeps the art's aspect ratio.
 int heightForWidth(const Layout& layout, int width);
 

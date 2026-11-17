@@ -12,6 +12,8 @@
 #include "TIShellProduct.hpp"
 #include "Version.h"
 #include "debug/DebugPanel.hpp"
+#include "qt6/AskedSend.hpp"
+#include "qt6/FileOpening.hpp"
 #include "qt6/MediaPicker.hpp"
 #include "qt6/PanelArea.hpp"
 #include "qt6/PaperPanel.hpp"
@@ -19,12 +21,9 @@
 #include "shell/Inputs.hpp"
 #include <QCloseEvent>
 #include <QFileDialog>
-#include <QFileInfo>
 #include <QMenuBar>
 #include <QMessageBox>
-#include <QMimeData>
 #include <QSplitter>
-#include <QUrl>
 
 MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
     : QMainWindow(parent), m_controller(std::make_unique<EmulatorController>(nullptr, std::move(clock))) {
@@ -141,8 +140,8 @@ void MainWindow::followPrinter() {
                         {PC100C::kTrace, ControlForm::Switch, m_controller->printerTrace()}});
 }
 
-void MainWindow::openFile(const QString& path, bool atStart) {
-    m_controller->openFile(path, atStart ? calcu::opening::Way::Start : calcu::opening::Way::OpenWith);
+void MainWindow::openFile(const QString& path, calcu::opening::Way way) {
+    calcu::qt6::openFile(host(), path, way, m_controller->app().libraryParts().open().setup().maxBytes);
 }
 
 // Arm Card (C59-7 AC-14): the saved cards of the media topic; the chosen one is fitted.
@@ -157,12 +156,10 @@ void MainWindow::armFreshCard() {
     if (!m_controller->cardReader() || m_controller->cardPassing()) return;
     CardPickerDialog dialog(CardPickerDialog::Mode::ArmFresh, m_controller->savedCards(), AppPaths::saveDir(), this);
     if (dialog.exec() != QDialog::Accepted) return;
-    QString refusal = m_controller->armFreshCard(dialog.freshName(), false);
-    if (refusal.startsWith(QStringLiteral("asks: "))) {
-        if (!CardPickerDialog::confirmReplace(refusal.mid(6), this)) return;
-        refusal = m_controller->armFreshCard(dialog.freshName(), true);
-    }
-    if (!refusal.isEmpty()) QMessageBox::warning(this, QStringLiteral("Arm Fresh Card"), refusal);
+    const calcu::qt6::AskedSend r = calcu::qt6::sendAsking(
+        [&](bool confirmed) { return m_controller->armFreshCard(dialog.freshName(), confirmed).toStdString(); },
+        [this](const QString& question) { return CardPickerDialog::confirmReplace(question, this); });
+    if (!r.done && !r.declined) QMessageBox::warning(this, QStringLiteral("Arm Fresh Card"), QString::fromStdString(r.refusal));
 }
 
 void MainWindow::selectAsmFile() {
@@ -208,15 +205,15 @@ void MainWindow::saveWindowState() {
     AppSettings::settings().setWindowState(w);
 }
 
-// LIB-13 AC-6: one file whose name the session would take; the drop goes
-// through all of `open` (a refusal is its notice, AC-15).
+// LIB-13 AC-6: one file the session would take, by its name and size (no
+// limit here, AC-11); the drop goes through all of `open` (a refusal is its
+// notice, AC-15).
 void MainWindow::dragEnterEvent(QDragEnterEvent* e) {
-    const auto urls = e->mimeData()->urls();
-    if (urls.size() != 1 || !urls.first().isLocalFile()) return;
-    if (m_controller->wouldTake(QFileInfo(urls.first().toLocalFile()).fileName())) e->acceptProposedAction();
+    const QString path = calcu::qt6::draggedFile(e->mimeData());
+    if (!path.isEmpty() && calcu::qt6::wouldTake(host(), path)) e->acceptProposedAction();
 }
 
 void MainWindow::dropEvent(QDropEvent* e) {
-    const auto urls = e->mimeData()->urls();
-    if (urls.size() == 1) m_controller->openFile(urls.first().toLocalFile(), calcu::opening::Way::Drop);
+    const QString path = calcu::qt6::draggedFile(e->mimeData());
+    if (!path.isEmpty()) openFile(path, calcu::opening::Way::Drop);
 }

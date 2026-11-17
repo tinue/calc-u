@@ -362,7 +362,7 @@ The core side (TST BUSY wait, `CRD_READ`/`CRD_WRITE`, auto-eject at
 Every way a file reaches Calc-U-59 (a drop, Open With, a file named at the
 start of the Qt6 program, File ▸ Load Preset…'s dialog, the harness's
 `open <path>`) sends LIB-13's `open {files, way}`; a drag first asks
-`open-would-take {name}`. The library tells presets (`.ti59`, `.ti58`,
+`open-would-take {name, size}` (Qt6: the library's `library/qt6/FileOpening`). The library tells presets (`.ti59`, `.ti58`,
 `.ti58c`, or a top-level `model:` line) and media; then the product's file
 kinds (`app/TIFileKinds`, in this order): an `.asm` file is an ASM overlay
 (read as by Select File), a `.keystrokes.yaml` file's program is written

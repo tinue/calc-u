@@ -1,11 +1,9 @@
 #include "MainWindow.hpp"
 #include "EmulatorController.hpp"
 #include "TIFileKinds.hpp"
-#include "opening/StartFile.hpp"
+#include "qt6/FileOpening.hpp"
 #include "qt6/SessionHost.hpp"
 #include <QApplication>
-#include <QFileInfo>
-#include <QFileOpenEvent>
 #include <QIcon>
 #include <QPalette>
 #include <QStyleFactory>
@@ -15,32 +13,11 @@
 #ifdef CALCU_ATTACH
 #include "HarnessProduct.hpp"
 #include "harness/Product.hpp"
-#include "qt6/AttachLineClient.hpp"
-#include <QElapsedTimer>
+#include "qt6/PacingProbe.hpp"
 #include <cmath>
 #endif
 
 namespace {
-
-/// Catches files opened from the Dock or Finder (macOS QFileOpenEvent), which
-/// can arrive before the window exists.
-class App : public QApplication {
-public:
-    using QApplication::QApplication;
-    MainWindow* window = nullptr;
-    QString pendingFile;
-
-protected:
-    bool event(QEvent* e) override {
-        if (e->type() == QEvent::FileOpen) {
-            QString path = static_cast<QFileOpenEvent*>(e)->file();
-            if (window) window->openFile(path, false);   // LIB-13 AC-14: Open With
-            else pendingFile = path;
-            return true;
-        }
-        return QApplication::event(e);
-    }
-};
 
 /// The Swift app is always dark (preferredColorScheme(.dark)); so is this.
 void applyDarkPalette(QApplication& app) {
@@ -63,61 +40,31 @@ void applyDarkPalette(QApplication& app) {
 }
 
 #ifdef CALCU_ATTACH
-double secondsOf(const calcu::qt6::AttachLineClient::Reply& r) {
-    for (const QString& l : r.lines)
-        if (l.startsWith(QLatin1String("seconds: "))) return l.mid(9).toDouble();
-    return -1;
-}
-unsigned long long ticksOf(const calcu::qt6::AttachLineClient::Reply& r) {
-    for (const QString& l : r.lines)
-        if (l.startsWith(QLatin1String("ticks: "))) return l.mid(7).toULongLong();
-    return 0;
-}
-
 // --pacing-probe <s> (LIB-17 AC-19, design §5, P59-5; LIB-14 design §10.7):
-// an attach client in the app's own process. Once the start is over (the
-// bare `wait`), `ticks` through attach, `s` seconds of wall time, `ticks`
-// again; today's lines, and exit 0 when the emulated time grew by the wall
-// time within AC-1's bound (the TI-59's slice, 20 ms, LIB-17 AC-15) plus one
-// host call, else 1. It steps the machine only through attach.
+// the library's measurement through attach (qt6::runPacingProbe); today's
+// lines, and exit 0 when the emulated time grew by the wall time within
+// AC-1's bound (the TI-59's slice, 20 ms, LIB-17 AC-15) plus one host call,
+// else 1.
 int runPacingProbe(QApplication& app, std::uint16_t port, double seconds) {
-    calcu::qt6::AttachLineClient client;
-    if (!client.connectTo(port)) {
-        std::printf("pacing-probe: attach is not open on port %u\n", port);
-        return 1;
-    }
-    int result = 1;
-    calcu::qt6::AttachLineClient::Reply first;
-    QElapsedTimer wall;
-    client.send(QStringLiteral("wait"), [&](const calcu::qt6::AttachLineClient::Reply&) {
-        client.send(QStringLiteral("ticks"), [&](const calcu::qt6::AttachLineClient::Reply& r) {
-            first = r;
-            wall.start();
-            QTimer::singleShot(static_cast<int>(seconds * 1000), &app, [&] {
-                client.send(QStringLiteral("ticks"), [&](const calcu::qt6::AttachLineClient::Reply& r2) {
-                    const double w = static_cast<double>(wall.nsecsElapsed()) * 1e-9;
-                    const double emulated = secondsOf(r2) - secondsOf(first);
-                    const double bound = 0.020 + 1.0 / 60;
-                    const bool ok = ticksOf(r2) > ticksOf(first) && std::fabs(emulated - w) <= bound;
-                    std::printf("ticks: %llu\nseconds: %.6f\nwall: %.6f\nemulated: %.6f\ndifference: %+.6f\nbound: %.6f\n%s\n",
-                                ticksOf(r2) - ticksOf(first), secondsOf(r2), w, emulated, emulated - w, bound,
-                                ok ? "ok" : "FAIL: emulated time did not keep wall time");
-                    std::fflush(stdout);
-                    result = ok ? 0 : 1;
-                    app.quit();
-                });
-            });
-        });
+    return calcu::qt6::runPacingProbe(app, port, seconds, [](const calcu::qt6::PacingSample& s) {
+        const double w = s.wall;
+        const double emulated = s.emulated();
+        const double bound = 0.020 + 1.0 / 60;
+        const bool ok = s.ticksAfter > s.ticksBefore && std::fabs(emulated - w) <= bound;
+        std::printf("ticks: %llu\nseconds: %.6f\nwall: %.6f\nemulated: %.6f\ndifference: %+.6f\nbound: %.6f\n%s\n",
+                    s.ticksAfter - s.ticksBefore, s.secondsAfter, w, emulated, emulated - w, bound,
+                    ok ? "ok" : "FAIL: emulated time did not keep wall time");
+        return ok ? 0 : 1;
     });
-    app.exec();
-    return result;
 }
 #endif
 
 } // namespace
 
 int main(int argc, char* argv[]) {
-    App app(argc, argv);
+    QApplication app(argc, argv);
+    calcu::qt6::FileOpenFilter fileOpen;   // macOS Open With, at a cold launch before the window (LIB-13 AC-14)
+    app.installEventFilter(&fileOpen);
     QApplication::setApplicationName(QStringLiteral("Calc-U-59"));
     QApplication::setOrganizationName(QStringLiteral("Calc-U-59"));
     QApplication::setWindowIcon(QIcon(QStringLiteral(":/app/icon.png")));   // also About's (LIB-14 D-38)
@@ -153,7 +100,6 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<calcu::harness::HarnessProduct> attachProduct = cu59::makeHarnessProduct();
 #endif
     MainWindow window;
-    app.window = &window;
 #ifdef CALCU_ATTACH
     const std::uint16_t port = probeSeconds > 0 ? 0 : calcu::qt6::SessionHost::attachPortFrom(args);
     const std::string problem = window.host().openAttach(
@@ -170,16 +116,16 @@ int main(int argc, char* argv[]) {
     if (probeSeconds > 0) return runPacingProbe(app, window.host().attachPort(), probeSeconds);
 #endif
 
-    const auto startFile = calcu::opening::startFile(cu59::programArguments(all), [](const std::string& f) {
-        return QFileInfo(QString::fromStdString(f)).isFile();
-    });
-    if (startFile) window.openFile(QString::fromStdString(*startFile), true);
-    else if (!app.pendingFile.isEmpty()) window.openFile(app.pendingFile, false);
+    if (const auto startFile = calcu::qt6::startFile(cu59::programArguments(all)))
+        window.openFile(*startFile, calcu::opening::Way::Start);
+    fileOpen.setHandler([&window](const QString& path) { window.openFile(path, calcu::opening::Way::OpenWith); });
     if (!grabPath.isEmpty()) {
         QTimer::singleShot(grabAfter, &window, [&window, grabPath] {
             window.grab().save(grabPath);
             QApplication::quit();
         });
     }
-    return QApplication::exec();
+    const int result = QApplication::exec();
+    fileOpen.setHandler({});
+    return result;
 }

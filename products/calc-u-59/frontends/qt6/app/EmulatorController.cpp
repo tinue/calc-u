@@ -258,29 +258,6 @@ std::optional<int> EmulatorController::litCardCorner() const {
     return orNone(state<cu59::TICueCardState>(cu59::topics::kCueCard), kNoCue).litCorner;
 }
 
-// ── Opening files (LIB-13, M-56) ─────────────────────────────────────────────
-
-bool EmulatorController::wouldTake(const QString& name) {
-    const cs::ReplyMessage r = ask(calcu::opening::kWouldTakeRequest, Value::object({{"name", name.toStdString()}}));
-    const auto* w = cs::payloadAs<calcu::opening::WouldTake>(r.result);
-    return w && w->takes;
-}
-
-void EmulatorController::openFile(const QString& path, calcu::opening::Way way) {
-    calcu::opening::OpenedFile f;
-    f.name = QFileInfo(path).fileName().toStdString();
-    f.path = path.toStdString();   // UTF-8: a preset is loaded from its folder (LIB-6 AC-42)
-    QFile file(path);
-    if (file.open(QIODevice::ReadOnly)) {
-        const QByteArray b = file.readAll();
-        f.bytes = std::vector<std::uint8_t>(b.begin(), b.end());
-    }
-    calcu::opening::OpenRequest q;
-    q.files = {std::move(f)};
-    q.way = way;
-    send(calcu::opening::kOpenCommand, q.toValue());
-}
-
 // ── Debugger ─────────────────────────────────────────────────────────────────
 
 void EmulatorController::setLiveDebugEnabled(bool on) { send(cu59::commands::kLiveDebug, Value::object({{"on", on}})); }

@@ -1,4 +1,5 @@
 #include "qt6/NameAndSaveDialog.hpp"
+#include "qt6/AskedSend.hpp"
 #include "media/SaveRules.hpp"
 #include <QCheckBox>
 #include <QDialogButtonBox>
@@ -57,17 +58,14 @@ sessions::Value NameAndSaveDialog::args(bool confirmed) const {
 
 std::string NameAndSaveDialog::submit() {
     if (!sender_) return "Nothing receives the save.";
-    std::string why = sender_(media::kNameAndSaveCommand, args());
-    const std::string asks = media::kAsks;
-    if (why.rfind(asks, 0) == 0) {   // D-6: the question, then the same command confirmed
-        const QString question = QString::fromStdString(why.substr(asks.size()));
-        const bool yes = asker_ ? asker_(question)
-                                : QMessageBox::question(this, windowTitle(), question) == QMessageBox::Yes;
-        if (!yes) return {};
-        why = sender_(media::kNameAndSaveCommand, args(true));
-    }
-    if (why.empty()) accept();
-    return why;
+    // D-6: the question, then the same command confirmed (AskedSend).
+    const AskedSend r = sendAsking(
+        [this](bool confirmed) { return sender_(media::kNameAndSaveCommand, args(confirmed)); },
+        [this](const QString& question) {
+            return asker_ ? asker_(question) : QMessageBox::question(this, windowTitle(), question) == QMessageBox::Yes;
+        });
+    if (r.done) accept();
+    return r.refusal;
 }
 
 } // namespace calcu::qt6

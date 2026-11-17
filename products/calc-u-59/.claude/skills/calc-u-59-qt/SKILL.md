@@ -32,7 +32,7 @@ scale and corner, and `KeyboardWidget::cardTakes` for the card tap).
 `media` topic's place `card-reader` (what is fitted, `passing`, the picker)
 and the commands `media.choose` (Arm Card), `media.start-new` with the
 template `implicit:Fresh card` (Arm Fresh Card; a refusal `asks: …` is the
-replace question, sent again with `confirmed`), `media.eject`, through
+replace question, sent again with `confirmed`: `calcu::qt6::sendAsking`, `library/qt6/AskedSend`), `media.eject`, through
 `EmulatorController` (`cardReader`, `savedCards`, `armCard`, `armFreshCard`,
 `ejectCard`). `CardControls` (on the bar while the control state lists the
 card reader, the TI-59) shows the two "Crd" buttons (names "Arm Card",
@@ -96,7 +96,7 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
    attach (`--attach-port N`, else 59059; `calcu attach`) and
    `--pacing-probe <s>` (LIB-17 AC-19, CTest `CalcU59QtPacingProbe`), an
    attach client in the app's own process (the library's
-   `calcu::qt6::AttachLineClient`): `ticks` over `<s>` seconds against wall
+   `calcu::qt6::runPacingProbe` over `AttachLineClient`; the lines and the bound are `main.cpp`'s): `ticks` over `<s>` seconds against wall
    time, exit 0 or 1; run it offscreen with a temporary `HOME`, so no
    settings of the user's are touched. Release builds and Windows have neither.
 7. **Tests:** `CalcU59QtTests` (`frontends/qt6/tests/`, Frequent in a
@@ -113,7 +113,7 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
 | Qt (`frontends/qt6/app/`) | Swift counterpart |
 |---|---|
 | `main.cpp` | `Calc-U-59App.swift` |
-| `MainWindow` | `CalculatorView` (layout, menus, presets, drag and drop: every file to LIB-13's `open`, `EmulatorController::openFile`; a drag asks `wouldTake`) |
+| `MainWindow` | `CalculatorView` (layout, menus, presets, drag and drop: every file to LIB-13's `open` through the library's `library/qt6/FileOpening` (`calcu::qt6::openFile`, `wouldTake`, `draggedFile`, `startFile`, the macOS `FileOpenFilter` in `main.cpp`); Arm Fresh Card's replace question through `calcu::qt6::sendAsking`) |
 | `EmulatorController` | `EmulatorViewModel` |
 | `CalculatorPanel` (the faceplate, the shell's control bar and "ROMs missing") | `CalculatorView` calculator column |
 | the shell's control bar (`calcu::qt6::Shell::controlBar()`), `CardControls` | `CalculatorView` bar and card buttons |

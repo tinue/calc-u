@@ -1586,3 +1586,18 @@ it, `start()` (the host's timer, then `start`), the end (stop the timer,
 (`ask`). `MachineController` and `EmulatorController` keep a
 `ProductHost` and end it first in their destructors, while their own
 members (the sound feed, the LOG tab's view) are still there, as before.
+
+## Part E simplification E-4 (2026-11-17, branch `es-qt-glue`)
+
+`docs/reviews/e-simplification.md` §1 S-4 (Qt6, survey A S-10). The
+measurement of both products' `--pacing-probe <s>` (§10.7; LIB-17 AC-19,
+AC-22) is `calcu::qt6::runPacingProbe` (`library/qt6/PacingProbe`, with
+`AttachLineClient` only in `CALCU_ATTACH` builds): attach not open, the
+bare `wait`, `ticks`, `s` seconds of wall time, `ticks` again, a
+`PacingSample`. What is printed, the bound and the exit code stay each
+product's (`report`): Calc-U-1600's one line and 25 ms
+(`frontends/qt6/app/screenshots/PacingProbe.cpp`), Calc-U-59's seven lines
+and 20 ms + 1/60 s (`main.cpp`), so `CalcU1600QtPacingProbe` and
+`CalcU59QtPacingProbe` read the same output as before. LIB-13's and
+LIB-7's sections of the same name have the file opening and the `asks:`
+round trip of this step.

@@ -4,7 +4,6 @@
 #include "TIAppPart.hpp"
 #include "debugger/RunState.hpp"
 #include "media/MediaTopics.hpp"
-#include "opening/OpenRequest.hpp"
 #include "pacing/WallClock.hpp"
 #include "qt6/ProductHost.hpp"
 #include "qt6/SessionHost.hpp"
@@ -100,13 +99,6 @@ public:
     /// The fitted magnetic card is on show (no module cue card covers it).
     bool cardOnShow() const;
     std::optional<int> litCardCorner() const;
-
-    // ── Opening files: LIB-13's `open` (M-56) ─────────────────────────────────
-    /// A drag: would the session take a file of this name (`open-would-take`, AC-6)?
-    bool wouldTake(const QString& name);
-    /// Reads the file and sends `open {files: [{name, path, bytes}], way}`; a
-    /// refusal is the session's notice (AC-15).
-    void openFile(const QString& path, calcu::opening::Way way);
 
     // ── Debugger ─────────────────────────────────────────────────────────────
     void setLiveDebugEnabled(bool on);

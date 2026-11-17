@@ -11,7 +11,7 @@
 #include "LcdWidget.hpp"
 #include "DebugPanel.hpp"
 #include "FaceplateWidget.hpp"
-#include "FileOpenFilter.hpp"
+#include "qt6/FileOpening.hpp"
 #include "app/SharpShellProduct.hpp"
 #include "opening/StartFile.hpp"
 #include "control/ControlState.hpp"
@@ -593,7 +593,7 @@ TEST(lib13_ac21_open_with_and_dock_drop_open_preset) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1500A");
     // The Dock icon and Finder's Open With reach the app as QFileOpenEvent.
-    FileOpenFilter filter;
+    calcu::qt6::FileOpenFilter filter;
     filter.setHandler([&f](const QString& p) { f.w().openFile(p, calcu::opening::Way::OpenWith); });
     qApp->installEventFilter(&filter);
     QFileOpenEvent e(kExample);

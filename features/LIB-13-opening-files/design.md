@@ -989,3 +989,59 @@ each (`docs/reviews/e-simplification.md` §1 S-7). Which names a kind takes
 is unchanged: `app/TIFileKinds.cpp` keeps its strict `endsWith`, so a file
 named only `.asm` or `.keystrokes.yaml` is still not taken, unlike
 `opening::endsWith`.
+
+## Part E simplification E-4 (2026-11-17, branch `es-qt-glue`)
+
+`docs/reviews/e-simplification.md` §1 S-4 (Qt6), §2 item 3. Both Qt6
+frontends hand a file to `open` through `library/qt6/FileOpening`
+(`calcu::qt6`), which they wrote each (Calc-U-1600 `MainWindow::openFile`,
+`draggedPath`, `frontends/qt6/app/FileOpenFilter.hpp`; Calc-U-59
+`EmulatorController::wouldTake`/`openFile`, `main.cpp`'s `App::event`):
+
+- `draggedFile(mime)`: the one local file a drag or drop carries (AC-6);
+  both products took one file only already.
+- `wouldTake(host, path)`: `open-would-take {name, size}`. Calc-U-59 now
+  sends the size too; it has no limit (AC-11), so `wouldTake` (§3.3) does
+  not read it and nothing changes.
+- `openRequest`/`openFile(host, path, way, limits)`: name, absolute path and
+  bytes, read up to the way's limit plus one byte where the open part's
+  `OpenSetup::maxBytes` has one (AC-20), else the whole file; no bytes for
+  what is no file or cannot be read (EC-5). The limits come from the
+  session's `LibraryParts::open().setup()`, so Calc-U-1600's frontend no
+  longer names `kMaxOpenBytes`. Calc-U-59's path is now the absolute one
+  (was the path as given; the same file).
+- `startFile(arguments)`: `opening::startFile` with Qt's file test.
+- `FileOpenFilter`: Calc-U-1600's filter for the macOS `QFileOpenEvent`
+  (files kept in their order until the handler is set). Calc-U-59 installs
+  it in place of its `QApplication` subclass and sets the handler after the
+  start file; it kept one pending file and opened it only without a start
+  file, now every pending file is sent, after the start file, and the
+  session keeps the last (AC-7). Qt itself does not send a `FileOpen` for a
+  file named in the arguments, so both are only met when a second file is
+  opened during the start.
+
+Kept per product (each is what a user sees today):
+
+- Calc-U-1600 raises and activates its window for every way but the start;
+  Calc-U-59 does not (Q-E4-1 below).
+- Calc-U-1600 accepts the drop's action and sends `open` from the event
+  loop after the drop (a flow's dialogs would keep the drag source
+  waiting), and accepts every drag move; Calc-U-59 sends it within the
+  drop and leaves the action as the drag's (Q-E4-2).
+
+Tests: `library/qt6/tests/file_opening_tests.cpp` (`calcu_qt6_tests`):
+`lib13_ac6_qt_dragged_file_is_one_local_file`,
+`lib13_ac6_qt_would_take_asks_by_name_and_size`,
+`lib13_ac20_qt_read_up_to_the_ways_limit`,
+`lib13_ec5_qt_unreadable_file_has_no_bytes`,
+`lib13_ac21_qt_start_file_is_last_existing_file`,
+`lib13_ac21_qt_file_open_events_kept_until_the_handler`; the products'
+window tests as before.
+
+Questions (no answer needed for this step; nothing changed):
+
+- **Q-E4-1 (AC-14, AC-21).** Should Calc-U-59's Qt6 window come to the
+  front on a drop and on Open With, as Calc-U-1600's does?
+- **Q-E4-2 (AC-6).** Should Calc-U-59's drop be accepted and opened after
+  the drop, as Calc-U-1600's is (the drag source then shows the drop as
+  taken and does not wait for the open)?

@@ -11,6 +11,17 @@ const STORE = '/persist-calc-u-59';
 const INI = `${STORE}/settings/Calc-U-59/Calc-U-59.ini`;
 const MEM = `${STORE}/Calc-U-59/ti58c.memory.yaml`;
 
+// Since M-57 the shell's (LIB-14 59): elements by their data-calcu names.
+const el = (page, name) => page.locator(`[data-calcu="${name}"]`);
+const modelPicker = (page) => el(page, 'bar-model');
+/// File ▸ Settings… (the shell's dialog), the startup model set, closed.
+async function setStartupModel(page, label) {
+  await el(page, 'menu-file').click();
+  await el(page, 'item-settings').click();
+  await el(page, 'setting-startup-model').selectOption({ label });
+  await el(page, 'settings-close').click();
+}
+
 async function gotoReady(page, query = 'layout=wide') {
   await page.goto(`./?${query}`);
   await expect(page.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
@@ -39,12 +50,10 @@ const storedFiles = (page) => page.evaluate((store) => new Promise((resolve) => 
 
 test('ac20 settings survive a page load, in Calc-U-59.ini', async ({ page }) => {
   await gotoReady(page);
-  await page.getByRole('button', { name: 'Settings' }).click();
-  await page.getByLabel('Startup Calculator').selectOption({ label: 'TI-58' });
-  await page.getByRole('button', { name: 'Done' }).click();
+  await setStartupModel(page, 'TI-58');
   await expect.poll(async () => (await storedFiles(page))[INI] || '', { timeout: 5000 }).toContain('model = TI-58');
   await gotoReady(page);
-  await expect(page.getByLabel('Calculator model')).toHaveValue('1');
+  await expect(modelPicker(page)).toHaveValue('1');
 });
 
 async function press(page, keys) {
@@ -82,15 +91,15 @@ test('c59_3_ac13 the constant memory is ti58c.memory.yaml in the save folder', a
 // TI-58C, a value stored, a page load: the last model and the value come back.
 test('c59_3_ac14 kept across a page load', async ({ page }) => {
   await gotoReady(page);
-  await page.getByLabel('Calculator model').selectOption({ label: 'TI-58C' });
-  await expect(page.getByLabel('Calculator model')).toHaveValue('2');
+  await modelPicker(page).selectOption({ label: 'TI-58C' });
+  await expect(modelPicker(page)).toHaveValue('2');
   await page.waitForTimeout(1500);   // the TI-58C boots
   await press(page, ['CLR', '7', '=']);
   const seven = await settledLed(page);
   await press(page, ['STO', '1', '2', 'CLR']);
   await page.waitForTimeout(1000);   // the half-second write (C59-3 AC-5)
   await gotoReady(page);
-  await expect(page.getByLabel('Calculator model')).toHaveValue('2');   // [startup] last-model
+  await expect(modelPicker(page)).toHaveValue('2');   // [startup] last-model
   await page.waitForTimeout(1500);
   await press(page, ['CLR', 'RCL', '1', '2']);
   expect(await settledLed(page)).toBe(seven);
@@ -110,7 +119,7 @@ test("c59_3_ec8 2.3.0's localStorage memory is not read", async ({ page }) => {
   const zero = await settledLed(page);
   await press(page, ['CLR', 'RCL', '0', '0']);
   expect(await settledLed(page)).toBe(zero);
-  await expect(page.locator('.calcu-status')).toHaveCount(0);
+  await expect(el(page, 'notice')).toHaveCount(0);
   await page.evaluate(() => window.localStorage.removeItem('calcu59/ti58c.mem'));
 });
 
@@ -126,10 +135,8 @@ test('lib9_ac23 no calcu59 key read or written', async ({ page }) => {
     }
   });
   await gotoReady(page);
-  await page.getByRole('button', { name: 'Settings' }).click();
-  await page.getByLabel('Startup Calculator').selectOption({ label: 'TI-58C' });
-  await page.getByRole('button', { name: 'Done' }).click();
-  await page.getByLabel('Calculator model').selectOption({ label: 'TI-58C' });
+  await setStartupModel(page, 'TI-58C');
+  await modelPicker(page).selectOption({ label: 'TI-58C' });
   await page.waitForTimeout(1500);
   const keys = await page.evaluate(() => window.__calcuKeys);
   expect(keys.filter((k) => k.startsWith('calcu59/'))).toEqual([]);
@@ -139,14 +146,15 @@ test('ac21 a second tab says it cannot save', async ({ page, context }, testInfo
   await gotoReady(page);
   const second = await context.newPage();
   await gotoReady(second);
-  await expect(second.locator('.calcu-status')).toContainText(
+  // Row 59-55 (M-57): the sentence stays in the shell's storage banner, besides its notice.
+  await expect(el(second, 'storage-banner')).toHaveText(
     'Calc-U-59 is open in another tab or window: what you save here is not kept.');
-  await expect(page.locator('.calcu-status')).toHaveCount(0);   // the first keeps what it saves
+  await expect(el(page, 'storage-banner')).toHaveCount(0);   // the first keeps what it saves
+  await expect(el(second, 'notice')).toContainText('open in another tab or window');
+  await el(second, 'notice-ok').click();
+  await expect(el(second, 'storage-banner')).toBeVisible();   // the banner stays
   // What the second saves is not kept: its startup model stays out of the store.
-  await second.getByRole('button', { name: 'Dismiss' }).click();
-  await second.getByRole('button', { name: 'Settings' }).click();
-  await second.getByLabel('Startup Calculator').selectOption({ label: 'TI-58C' });
-  await second.getByRole('button', { name: 'Done' }).click();
+  await setStartupModel(second, 'TI-58C');
   await second.waitForTimeout(1500);
   expect((await storedFiles(page))[INI] || '').not.toContain('model = TI-58C');
   testInfo.annotations.push({ type: 'exit check', description: 'a second tab says it cannot save' });
@@ -172,10 +180,10 @@ async function listedCards(page) {
 // LIB-7 AC-33: a card imported is a file of the persistent save folder, named after its name.
 test('lib7_ac33 cards in the persistent save folder', async ({ page }) => {
   await gotoReady(page);
-  await page.getByRole('button', { name: 'Arm Card', exact: true }).click();
-  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Import…' }).click()]);
-  await chooser.setFiles({ name: 'Saved.magnetcard.yaml', mimeType: 'application/yaml', buffer: Buffer.from(cardFile('Saved')) });
-  await page.getByRole('button', { name: 'Cancel' }).click();
+  const chooser = page.waitForEvent('filechooser');
+  await el(page, 'menu-file').click();
+  await el(page, 'item-import-media').click();   // File ▸ Import Media… (M-57)
+  await (await chooser).setFiles({ name: 'Saved.magnetcard.yaml', mimeType: 'application/yaml', buffer: Buffer.from(cardFile('Saved')) });
   await expect.poll(async () => Object.keys(await storedFiles(page)), { timeout: 5000 }).toContain(`${CARDS}/Saved.magnetcard.yaml`);
   expect((await storedFiles(page))[`${CARDS}/Saved.magnetcard.yaml`]).toContain('format: ti59-magnetic-card');
 });
@@ -183,8 +191,10 @@ test('lib7_ac33 cards in the persistent save folder', async ({ page }) => {
 // LIB-15 AC-20: a card written by a program, the page loaded again: the card dialog lists it.
 test('ac20 cards survive a page load', async ({ page }) => {
   await gotoReady(page);
-  await page.getByRole('button', { name: 'Preset' }).click();
-  await page.locator('.calcu-dialog input[type=file]').setInputFiles({ name: 'w.ti59', mimeType: 'text/plain', buffer: Buffer.from(PROGRAM_WRITE) });
+  const presetChooser = page.waitForEvent('filechooser');
+  await el(page, 'menu-file').click();
+  await el(page, 'item-load-preset').click();
+  await (await presetChooser).setFiles({ name: 'w.ti59', mimeType: 'text/plain', buffer: Buffer.from(PROGRAM_WRITE) });
   await page.waitForTimeout(1600);
   await page.getByRole('button', { name: 'Arm Fresh Card', exact: true }).click();
   await page.getByLabel('Card name').fill('Written');

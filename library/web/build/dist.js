@@ -42,7 +42,7 @@ const COMPONENT_CSS = ["paper.css", "media.css"].map((n) => path.join(WEB, "comp
 // LIB-14 (M-43): the shell, its models first (design §2.3).
 COMPONENT_SOURCES.push(...["shellModel.js", "useShell.jsx", "ShellModal.jsx", "ShellMenuBar.jsx", "ShellControlBar.jsx",
   "ShellSettings.jsx", "ShellAbout.jsx", "ShellNotice.jsx", "ShellLoading.jsx", "ShellPanelArea.jsx",
-  "useShellFaceplate.jsx", "ShellRomsMissing.jsx"].map((n) => path.join(WEB, "components", n)));
+  "useShellFaceplate.jsx", "ShellRomsMissing.jsx", "ShellMoreMenu.jsx", "ShellStorageBanner.jsx"].map((n) => path.join(WEB, "components", n)));
 COMPONENT_CSS.push(path.join(WEB, "components", "shell.css"));
 // LIB-5 AC-7, AC-10: host keys to `host-key-down` and the keys held down.
 COMPONENT_SOURCES.push(path.join(WEB, "components", "hostKeys.js"));

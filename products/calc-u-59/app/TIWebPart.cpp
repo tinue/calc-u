@@ -5,6 +5,10 @@
 #include "SevenSegment.hpp"
 #include "presets/PresetsPart.hpp"
 #include "WebPageData.hpp"
+#include "TIShellProduct.hpp"
+#include "KeyboardLayout.hpp"
+#include "RomHeatmap.hpp"
+#include "shell/ValueForms.hpp"
 #include "settings/AtomicFile.hpp"
 #include "sessions/Args.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -49,8 +53,7 @@ ReplyMessage answer(std::string_view kind, Value v) {
 
 sessions::PayloadPtr webPayload(std::string_view kind, Value v) { return sessions::valuePayload(kind, std::move(v)); }
 
-TIWebPart::TIWebPart(settings::Settings& settings)
-    : m_settings(settings) {}
+TIWebPart::TIWebPart() = default;
 
 TIWebPart::~TIWebPart() {
     if (m_app) m_app->setChangeObserver(nullptr);
@@ -66,12 +69,10 @@ std::string TIWebPart::saveFolder() const { return m_app ? m_app->files().saveFo
 
 void TIWebPart::attach(sessions::SessionSetup& s) {
     using sessions::History;
-    m_model = &s.stateTopic(topics::kWebModel);
     m_display = &s.stateTopic(topics::kWebDisplay);
     m_cue = &s.stateTopic(topics::kWebCueCard);
     m_run = &s.stateTopic(topics::kWebRunState);
     m_printer = &s.stateTopic(topics::kWebPrinter);
-    m_settingsTopic = &s.stateTopic(topics::kWebSettings);
     m_font = &s.stateTopic(topics::kWebDebugFont);
     m_ctx = &s.context();
 
@@ -89,17 +90,6 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     // model by its name, the preset as a bundle path `examples:<path>`;
     // LIB-18 §11.2, LIB-6 §11.2): the page sends it.
 
-    // The pointer on the canvas (canvas-normalized, KeyboardLayout's
-    // PointerTracker): keys go through the keyboard path, so a click shorter
-    // than the ROM's debounce still holds the key the minimum time.
-    cmd("c59.web.pointer-down", done([this](const Value& a) {
-        if (!m_app) return;
-        // A press, not a drag across the card, feeds a side of the fitted card.
-        if (m_app->tapCard(realArg(a, "x"), realArg(a, "y"))) return;
-        apply(m_pointer.move(realArg(a, "x"), realArg(a, "y")));
-    }));
-    cmd("c59.web.pointer-move", done([this](const Value& a) { apply(m_pointer.move(realArg(a, "x"), realArg(a, "y"))); }));
-    cmd("c59.web.pointer-up", done([this](const Value&) { apply(m_pointer.up()); }));
     // The page's own key grid (the portrait layout's buttons): an on-screen
     // key of the library's typing (LIB-5 AC-24). Host keys are the library's
     // commands host-key-down / host-key-up, which the page sends itself.
@@ -108,33 +98,6 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
                   kButtonPointer);
     }));
     cmd("c59.web.key-button-up", done([this](const Value&) { screenKey(-1, false, kButtonPointer); }));
-    // The page lost the focus: the pointer's full speed goes, every key held comes up (AC-10).
-    cmd("c59.web.blur", done([this](const Value&) {
-        if (!m_app) return;
-        const auto c = m_pointer.up();
-        if (c.fullSpeed) m_app->setFullSpeed(*c.fullSpeed);
-        if (c.release >= 0) screenKey(-1, false, kCanvasPointer);
-        if (auto* t = m_app->typing()) t->engine().focusLost();
-    }));
-
-    // The settings the page offers (Calc-U-59.ini, LIB-9).
-    cmd("c59.web.set-startup-model", done([this](const Value& a) {
-        const auto raw = truncatedIntegerArg(a, "model", -1);
-        m_settings.setStartupModelChoice(raw >= 0 && raw <= 2 ? std::optional<Model>(static_cast<Model>(raw)) : std::nullopt);
-        m_settingsDirty = true;
-    }));
-    cmd("c59.web.set-trace-max-mb", done([this](const Value& a) {
-        m_settings.setTraceMaxFileSizeMB(static_cast<int>(truncatedIntegerArg(a, "mb", 50)));
-        m_settingsDirty = true;
-    }));
-    cmd("c59.web.set-keyboard-feedback", done([this](const Value& a) {
-        const auto mode = truncatedIntegerArg(a, "mode");
-        m_settings.setKeyboardFeedback(mode == 1   ? settings::KeyboardFeedback::Haptic
-                                       : mode == 2 ? settings::KeyboardFeedback::Click
-                                                   : settings::KeyboardFeedback::Off);
-        m_settingsDirty = true;
-    }));
-
     // The sizes the page draws at.
     cmd("c59.web.cue-card-size", done([this](const Value& a) {
         m_cardW = realArg(a, "width");
@@ -149,18 +112,54 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     auto req = [&s](const char* name, std::function<ReplyMessage(const Value&)> f) {
         s.request(sessions::RequestName{name}, [f = std::move(f)](const Value& a, SessionContext&) { return f(a); });
     };
-    req("c59.static-data", [this](const Value&) {
-        return answer("c59.static-data", webStaticData(m_app ? m_app->allModules() : std::vector<ModuleMetadata>{}));
+    // LIB-14 §10.5, D-32: the product's data for the React set's shell, the
+    // settings dialog of the layout (AC-30), from TIShellProduct; the page
+    // adds its acts and its version.
+    req("c59.shell-product", [](const Value& a) {
+        const std::string version = textArg(a, "version");
+        const ShellFrontend f = textArg(a, "layout") == "portrait" ? ShellFrontend::WebPortrait : ShellFrontend::WebWide;
+        return answer("c59.shell-product",
+                      Value::object({{"product", calcu::shell::toValue(shellProduct(version, ""))},
+                                     {"settingsSpec", calcu::shell::toValue(settingsSpec(f, "Version " + version))}}));
+    });
+    // D-41: the faceplate of a model: the hit map (base image pixels), the
+    // card area and the canvas (faceplateMapValue), and what the page draws
+    // with: each key's own rectangle by key ID (the pressed key, the key
+    // buttons) and the card's two corners (fractions of the card).
+    req("c59.faceplate-map", [](const Value& a) {
+        Value v = faceplateMapValue(calcu::machine::ModelId{textArg(a, "model")});
+        Value::Array keys;
+        for (int row = 0; row < 9; ++row)
+            for (int col = 0; col < 5; ++col) {
+                const auto id = keyIdAt(matrixCode(row, col));
+                if (!id) continue;
+                const NRect& k = kKeyRects[row][col];
+                keys.push_back(Value::object({{"name", id->value},
+                                              {"x", k.x * kCanvasWidth},
+                                              {"y", (kKeyboardYStart + k.y * kKeyboardYScale) * kCanvasHeight},
+                                              {"w", k.w * kCanvasWidth},
+                                              {"h", k.h * kKeyboardYScale * kCanvasHeight}}));
+            }
+        Value::Array corners;
+        for (int side : {0, 1}) {
+            const NRect r = cardCornerRect(side);
+            corners.push_back(rect(r.x, r.y, r.w, r.h));
+        }
+        Value::Object o = *v.members();
+        o.push_back({"keyRects", Value(std::move(keys))});
+        o.push_back({"cardCorners", Value(std::move(corners))});
+        return answer("c59.faceplate-map", Value(std::move(o)));
+    });
+    // The ROM heatmap's grid and colours (the debug panel's CPU tab; until
+    // M-57 part of `c59.static-data`).
+    req("c59.heatmap-grid", [](const Value&) {
+        Value::Array colors;   // [r, g, b] per heat step
+        for (int i = 0; i < 6; ++i)
+            colors.push_back(Value(Value::Array{Value(kHeatColors[i].r), Value(kHeatColors[i].g), Value(kHeatColors[i].b)}));
+        return answer("c59.heatmap-grid", Value::object({{"cols", kHeatmapCols}, {"rows", kHeatmapRows}, {"colors", Value(std::move(colors))}}));
     });
     req("c59.led-geometry", [](const Value& a) { return answer("c59.led-geometry", webLedGeometry(realArg(a, "w"), realArg(a, "h"))); });
     req("c59.mobile-rules", [](const Value& a) { return answer("c59.mobile-rules", webMobileRules(realArg(a, "w"), realArg(a, "h"))); });
-}
-
-void TIWebPart::apply(const PointerTracker::Change& c) {
-    if (!m_app) return;
-    if (c.fullSpeed) m_app->setFullSpeed(*c.fullSpeed);
-    if (c.release >= 0) screenKey(c.release, false, kCanvasPointer);
-    if (c.press >= 0) screenKey(c.press, true, kCanvasPointer);
 }
 
 // An on-screen key by its index (row × 5 + column) through the typing
@@ -199,10 +198,6 @@ void TIWebPart::drain(SessionContext&) {
     }
     auto set = [](sessions::StateTopic* t, std::string_view kind, Value v) { t->set(webPayload(kind, std::move(v))); };
 
-    if (c & S::ModelChanged) {
-        set(m_model, "c59.web.model", Value::object({{"model", static_cast<int>(m_app->model())}, {"moduleID", m_app->moduleID()}}));
-        // The model used last (LIB-9: the startup model "last used").
-    }
     if (c & (S::DisplayChanged | S::ModelChanged)) {
         // Per cell (0 = rightmost) its segment mask, brightness and decimal
         // point (0–1), flat: [segments, level, dp] × 12, as float32 bytes.
@@ -227,21 +222,10 @@ void TIWebPart::drain(SessionContext&) {
     if (c & (S::PrinterChanged | S::ModelChanged))   // LIB-8 P-E1: the paper is the library's `paper PC-100C`
         set(m_printer, "c59.web.printer",
             Value::object({{"connected", m_app->printerConnected()}, {"trace", m_app->printerTrace()}}));
-    if (m_settingsDirty) {
-        m_settingsDirty = false;
-        set(m_settingsTopic, "c59.web.settings", settingsValue());
-    }
     if (m_debugFontDirty) {
         m_debugFontDirty = false;
         set(m_font, "c59.web.debug-font", Value(m_debugFont));
     }
-}
-
-Value TIWebPart::settingsValue() const {
-    const auto chosen = m_settings.startupModelChoice();
-    return Value::object({{"startupModel", chosen ? static_cast<int>(*chosen) : -1},
-                          {"traceMaxMB", m_settings.traceMaxFileSizeMB()},
-                          {"keyboardFeedback", static_cast<int>(m_settings.keyboardFeedback())}});
 }
 
 // The run control's state as the page's FREEZE ON START buttons read it

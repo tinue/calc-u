@@ -22,6 +22,10 @@
 // components over the topic `media`: a CalcuMediaPicker per place, with a
 // Name & Save button (CalcuNameAndSaveDialog) where the place offers it;
 // File ▸ Saved Media… shows CalcuSavedMediaDialog.
+// From LIB-14 Part E (M-57): with the prop `faceOrigin` (host page:
+// origin=N) the hit map's (0, 0) is N logical pixels into the faceplate, and
+// a press at hit-map x ≥ 60 is the product's (`window.calcuTestProductPresses`
+// counts them; design §10.3.4); the storage banner above the menu bar.
 
 const CALCU_PRODUCT = "__CALCU_PRODUCT__";
 
@@ -81,16 +85,27 @@ function CalcUTestSavedMedia({ shell, onClose }) {
   return <CalcuSavedMediaDialog media={media} send={(c, a) => shell.send(c, a)} onClose={onClose} />;
 }
 
-function CalcUTestShell({ shell }) {
+function CalcUTestShell({ shell, faceOrigin }) {
   const s = useCalcuShell(shell, CALCU_TEST_SHELL_PRODUCT, CALCU_SHELL_WEB_TRAITS);
   const face = React.useRef(null);
-  useShellFaceplate(shell, CALCU_TEST_HIT_MAP, face, 4);
+  const origin = faceOrigin || 0;
+  useShellFaceplate(shell, CALCU_TEST_HIT_MAP, face, {
+    scale: 4,
+    origin: { x: origin, y: origin },
+    productFirst: (x) => {
+      if (!origin || x < 60) return false;
+      window.calcuTestProductPresses = (window.calcuTestProductPresses || 0) + 1;
+      return true;
+    },
+  });
   React.useEffect(() => { if (typeof window !== "undefined") window.calcuTestShellModel = s; });
   return (
     <div className="calcu-test-shell">
+      <ShellStorageBanner shell={shell} />
       <ShellMenuBar shell={s} />
       <div className="calcu-test-faceplate" data-calcu="test-faceplate" ref={face}
-        style={{ display: s.romsMissing && !s.started ? "none" : undefined }} />
+        style={{ display: s.romsMissing && !s.started ? "none" : undefined,
+                 height: origin ? origin + 160 : undefined, width: origin ? origin + 320 : undefined }} />
       <ShellRomsMissing shell={s} />
       <ShellControlBar shell={s} mediaControls={CALCU_PRODUCT === "Test-M" ? CALCU_TEST_MEDIA_M : CALCU_TEST_MEDIA}
         extra={CALCU_TEST_EXTRA} />
@@ -130,7 +145,7 @@ function CalcUTest(props) {
       <div className="calcu-client calcu-test" ref={ref} tabIndex={0}
         style={{ width: size.width || undefined, height: size.height || undefined }}
         data-start={start} data-model={(machine && machine.model) || ""}>
-        <CalcUTestShell shell={shell} />
+        <CalcUTestShell shell={shell} faceOrigin={props.faceOrigin} />
       </div>
     );
   }

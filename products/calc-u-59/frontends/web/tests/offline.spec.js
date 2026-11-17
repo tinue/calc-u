@@ -72,7 +72,7 @@ test('the installed app starts without a connection and runs every model', async
   await expect(app.locator('.calcu-key')).toHaveCount(45, { timeout: 30000 });
 
   // A model or module not started with is read later, by a synchronous request.
-  const model = app.getByLabel('Calculator model');
+  const model = app.locator('[data-calcu="bar-model"]');   // the shell's model picker (M-57)
   for (const name of ['TI-58C', 'TI-58', 'TI-59']) {
     await model.selectOption({ label: name });
     await expect(model).toHaveValue(await model.locator(`option:text-is("${name}")`).getAttribute('value'));
@@ -82,15 +82,14 @@ test('the installed app starts without a connection and runs every model', async
   // A switch shows "Starting Calc-U-59…" until the new model runs (row 59-38):
   // on a slow runner that outlasts the 500 ms above. Nothing may stay; a failure
   // names the text that did.
-  const status = app.locator('.calcu-status, [role=status]');
+  const status = app.locator('[data-calcu="notice"], [role=status]');
   await expect.poll(async () => (await status.count()) ? await status.allTextContents() : [],
     { timeout: 30000 }).toEqual([]);
 
-  await app.getByRole('button', { name: 'Settings' }).click();
-  await app.getByLabel('Solid State Module').selectOption({ label: 'Applied Statistics' });
-  await app.getByRole('button', { name: 'Done' }).click();
+  // The module picker of the bar (row 59-9, M-57).
+  const modules = app.locator('[data-calcu="media-picker-slot-1"]');
+  await modules.selectOption({ label: 'Applied Statistics' });
   await app.waitForTimeout(1000);
-  // A module whose image can't be read is not selected: the dialog would still show ML.
-  await app.getByRole('button', { name: 'Settings' }).click();
-  await expect(app.getByLabel('Solid State Module')).toHaveValue('ST');
+  // A module whose image can't be read is not selected: the picker would still show ML.
+  await expect(modules.locator('option:checked')).toHaveText('Applied Statistics');
 });

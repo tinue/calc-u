@@ -113,3 +113,40 @@
 }
 @keyframes calcu-shell-spin { to { transform: rotate(360deg); } }
 .calcu-client .calcu-shell-roms-missing { padding: 24px; white-space: pre-wrap; }
+
+/* Part E (design §10.3.1, §10.3.5): the bar's actions and the More button of
+   a window without a menu bar, its popup inside the client (submenus open
+   inline, as a narrow portrait has no room beside), the storage banner. */
+.calcu-client .calcu-shell-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+}
+.calcu-client .calcu-shell-action[aria-disabled="true"] { color: #999999; }
+.calcu-client .calcu-shell-action-icon { font-size: 15px; line-height: 1; }
+.calcu-client .calcu-shell-more { display: inline-flex; }
+.calcu-client .calcu-shell-more-popup {
+  position: fixed;
+  z-index: 30;
+  overflow-y: auto;
+  max-height: 70vh;
+}
+.calcu-client .calcu-shell-more-popup > .calcu-shell-menu-items { position: static; min-width: 180px; }
+.calcu-client .calcu-shell-more-popup .calcu-shell-item { flex-wrap: wrap; white-space: normal; }
+.calcu-client .calcu-shell-more-popup .calcu-shell-menu-items .calcu-shell-menu-items {
+  position: static;
+  flex: 1 0 100%;
+  min-width: 0;
+  border: 0;
+  box-shadow: none;
+  padding: 0 0 0 12px;
+}
+.calcu-client .calcu-shell-destructive { color: #b00020; }
+.calcu-client .calcu-shell-storage-banner {
+  flex: none;
+  padding: 5px 12px;
+  background: #fff4c2;
+  color: #5c4a00;
+  font: 12px system-ui, sans-serif;
+}

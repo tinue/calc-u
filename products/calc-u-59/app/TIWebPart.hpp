@@ -40,12 +40,10 @@
 namespace cu59 {
 
 namespace topics {
-inline const calcu::sessions::TopicName kWebModel{"c59.web.model"};
 inline const calcu::sessions::TopicName kWebDisplay{"c59.web.display"};
 inline const calcu::sessions::TopicName kWebCueCard{"c59.web.cue-card"};
 inline const calcu::sessions::TopicName kWebRunState{"c59.web.run-state"};
 inline const calcu::sessions::TopicName kWebPrinter{"c59.web.printer"};
-inline const calcu::sessions::TopicName kWebSettings{"c59.web.settings"};
 inline const calcu::sessions::TopicName kWebDebugFont{"c59.web.debug-font"};
 } // namespace topics
 
@@ -53,7 +51,7 @@ class TIWebPart final : public calcu::sessions::SessionPart {
 public:
     /// `presetsDir`: the bundled presets (/presets). Traces are the library's,
     /// handed over with KeepFile when they end (LIB-10 AC-26; M-53).
-    explicit TIWebPart(settings::Settings& settings);
+    TIWebPart();
     ~TIWebPart();
 
     /// Once, before the session is built: the product's part it draws.
@@ -66,31 +64,25 @@ private:
     using Value = calcu::sessions::Value;
     /// Once per call: one set per topic of what changed since the last call.
     void drain(calcu::sessions::SessionContext&);
-    void apply(const PointerTracker::Change& c);
     void screenKey(int index, bool down, std::uint32_t pointer);
     int heldKey() const;   ///< the last key live input holds (row × 5 + col), -1 none
-    static constexpr std::uint32_t kCanvasPointer = 1, kButtonPointer = 2;
+    static constexpr std::uint32_t kButtonPointer = 2;
     Value cueCard() const;
-    Value settingsValue() const;
     Value runState() const;
     std::string saveFolder() const;
 
-    settings::Settings& m_settings;
     TIAppPart* m_app = nullptr;
     calcu::sessions::SessionContext* m_ctx = nullptr;
     int m_lastHeld = -1;
     uint32_t m_changes = 0;
-    bool m_settingsDirty = true, m_cueDirty = true, m_debugFontDirty = false;
+    bool m_cueDirty = true, m_debugFontDirty = false;
     int m_debugFont = 11;
-    PointerTracker m_pointer;
     double m_cardW = 0, m_cardH = 0;
 
-    calcu::sessions::StateTopic* m_model = nullptr;
     calcu::sessions::StateTopic* m_display = nullptr;
     calcu::sessions::StateTopic* m_cue = nullptr;
     calcu::sessions::StateTopic* m_run = nullptr;
     calcu::sessions::StateTopic* m_printer = nullptr;
-    calcu::sessions::StateTopic* m_settingsTopic = nullptr;
     calcu::sessions::StateTopic* m_font = nullptr;
 };
 

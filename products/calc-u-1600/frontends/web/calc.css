@@ -138,14 +138,7 @@
 .calcu-client .calcu-menu-separator { height: 1px; margin: 5px 8px; background: var(--calcu-menu-border); }
 .calcu-client .calcu-menu-heading { padding: 4px 8px 2px 20px; font-size: 11px; font-weight: 600; opacity: 0.55; }
 
-.calcu-client .calcu-banner {
-  flex: none;
-  padding: 5px 12px;
-  background: #fff4c2;
-  color: #5c4a00;
-  font-size: 12px;
-  border-bottom: 1px solid #e6d27a;
-}
+.calcu-client .calcu-shell-storage-banner { border-bottom: 1px solid #e6d27a; }   /* the shell's (M-57) */
 
 /* ── Faceplate ────────────────────────────────────────────────────── */
 .calcu-client .calcu-face-row { flex: none; display: flex; justify-content: center; }

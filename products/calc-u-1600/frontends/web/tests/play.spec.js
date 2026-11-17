@@ -512,12 +512,15 @@ test('the inspector shows the pointers and the card dump', async ({ page }) => {
   await expect(page.locator('.calcu-inspector-output')).toContainText('Module card dump');
 });
 
+// LIB-14 D-39 (M-57, ledger 1600-48): the shell's storage banner with the
+// library's sentence (LIB-15 AC-8), not Calc-U-1600's own.
 test('a second tab says its changes are not saved', async ({ page, context }) => {
   await gotoReady(page);
-  await expect(page.locator('.calcu-banner')).toHaveCount(0);
+  await expect(page.locator('[data-calcu="storage-banner"]')).toHaveCount(0);
   const second = await context.newPage();
   await gotoReady(second);
-  await expect(second.locator('.calcu-banner')).toContainText('open in another tab');
+  await expect(second.locator('[data-calcu="storage-banner"]')).toHaveText(
+    'Calc-U-1600 is open in another tab or window: what you save here is not kept.');
 });
 
 test('the installed app shell starts', async ({ page }) => {

@@ -9,6 +9,15 @@
 // on the library's `run-state` (LIB-10 AC-34, M-53); TRACE is the trace
 // session's button. Run, TRACE and the CALCULATOR tab follow the control
 // state's product entries c59.asm-run, c59.trace and c59.calculator-tab.
+// Since M-57 it reads the topics through the library's shell (useTopic) and
+// sends the commands by name (the page's context C59_PAGE, src/page.jsx).
+
+const NO_RUN = { frozen: false, owner: null, pcArmed: false, scanArmed: false, fullSpeed: false, heldKey: -1 };
+const NO_ASM = { fileName: "", words: 0, status: "", active: false };
+const NO_TRACE = { running: false, fileName: "" };
+const usePage = () => React.useContext(C59_PAGE);
+const useRun = (shell) => useTopic(shell, "c59.web.run-state") || NO_RUN;
+const useEntries = (shell) => useTopic(shell, "control-state", (cs) => (cs && cs.product) || null);
 
 const CURRENT_PC_RGB = [52, 199, 89];
 
@@ -33,19 +42,20 @@ const usable = (entries, name) => !entries || !entries[name] || entries[name].av
 
 /// FREEZE / STEP / RESUME (the run-control buttons of the tab's level) and
 /// FREEZE ON START / ARMED for one tab.
-function FreezeHeader({ engine, title, narrowTitle, cpu, narrow }) {
-  const rs = useEngine(engine, (s) => s.runState);
+function FreezeHeader({ title, narrowTitle, cpu, narrow }) {
+  const { shell } = usePage();
+  const rs = useRun(shell);
   const level = cpu ? "cpu" : "program";
   const armed = cpu ? rs.scanArmed : rs.pcArmed;
   const canArm = !rs.frozen && !armed;
   return (
     <div className="calcu-debug-header">
       <span className="calcu-debug-title">{narrow ? narrowTitle : title}</span>
-      <CalcuRunControlButtons shell={engine ? engine.shell : null} level={level} labels={RUN_CONTROL_LABELS} />
+      <CalcuRunControlButtons shell={shell} level={level} labels={RUN_CONTROL_LABELS} />
       <button type="button" className="calcu-hb" disabled={!canArm}
-        onClick={() => engine.call("pauseOnStart", level)}>{narrow ? "F.START" : "FREEZE ON START"}</button>
+        onClick={() => shell.send("pause-on-start", { level })}>{narrow ? "F.START" : "FREEZE ON START"}</button>
       <button type="button" className="calcu-hb calcu-hb-yellow" disabled={!armed}
-        onClick={() => engine.call("pauseOnStart", null)}>ARMED</button>
+        onClick={() => shell.send("pause-on-start", { off: true })}>ARMED</button>
     </div>
   );
 }
@@ -61,10 +71,11 @@ function useScrollTo(ref, index, mode, deps) {
   }, deps);
 }
 
-function LiveDebug({ engine, font, narrow }) {
-  const s = useEngine(engine, (st) => st.live);
-  const listing = useEngine(engine, (st) => st.listing);
-  const frozen = useEngine(engine, (st) => st.runState.frozen);
+function LiveDebug({ font, narrow }) {
+  const { shell } = usePage();
+  const s = useTopic(shell, "calculator-debug") || null;
+  const listing = useTopic(shell, "program-listing") || null;
+  const frozen = useRun(shell).frozen;
   // Paused: the whole listing of the program that runs (C59-4 AC-4); else the window.
   const full = frozen && listing && listing.steps.length > 0;
   const steps = s ? (full ? listing.steps : s.steps) : [];
@@ -75,7 +86,7 @@ function LiveDebug({ engine, font, narrow }) {
   const dim = (on) => (on ? 0.85 : 0.4);
   return (
     <div className="calcu-debug-tab" style={{ fontSize: font }}>
-      <FreezeHeader engine={engine} title="CALCULATOR DEBUG" narrowTitle="DEBUG" narrow={narrow} />
+      <FreezeHeader title="CALCULATOR DEBUG" narrowTitle="DEBUG" narrow={narrow} />
       {s && <>
         <div className="calcu-debug-fixed">
           <Section title="DEBUG"><Run white={0.65}>{s.fA}</Run><Gap /><Run white={0.65}>{s.fB}</Run><Gap /><Run>{s.hir0}</Run></Section>
@@ -121,11 +132,12 @@ function LiveDebug({ engine, font, narrow }) {
   );
 }
 
-function Heatmap({ engine, data, currentPC }) {
-  const steps = useEngine(engine, (s) => s.heatmap);
+function Heatmap({ data, currentPC }) {
+  const { shell } = usePage();
+  const steps = useTopic(shell, "heatmap") || null;
   const ref = React.useRef(null);
   const [hover, setHover] = React.useState(-1);
-  const { cols, rows, colors } = data.heatmap;
+  const { cols, rows, colors } = data;
 
   React.useEffect(() => {
     const canvas = ref.current;
@@ -153,7 +165,7 @@ function Heatmap({ engine, data, currentPC }) {
   return (
     <Section title="ROM HEATMAP" extra={<span className="calcu-section-extra">
       <span className="calcu-hover">{hover >= 0 ? hex(hover) : ""}</span>
-      <button type="button" className="calcu-clr" onClick={() => engine.call("resetHeatmap")}>CLR</button>
+      <button type="button" className="calcu-clr" onClick={() => shell.send("c59.heatmap-reset")}>CLR</button>
     </span>}>
       <canvas ref={ref} className="calcu-heatmap" style={{ aspectRatio: `${cols} / ${rows}` }}
         onPointerMove={onMove} onPointerLeave={() => setHover(-1)} />
@@ -161,10 +173,11 @@ function Heatmap({ engine, data, currentPC }) {
   );
 }
 
-function AsmOverlay({ engine }) {
-  const asm = useEngine(engine, (s) => s.asm);
-  const entries = useEngine(engine, (s) => s.entries);
-  const select = (e) => readFileInput(e, "text").then((f) => { if (f) engine.call("loadAsm", f.content, f.name); });
+function AsmOverlay() {
+  const { shell } = usePage();
+  const asm = useTopic(shell, "asm-overlay") || NO_ASM;
+  const entries = useEntries(shell);
+  const select = (e) => readFileInput(e, "text").then((f) => { if (f) shell.send("c59.asm-load", { text: f.content, name: f.name }); });
   return (
     <Section title="ASM OVERLAY">
       <div>File: {asm.fileName}</div>
@@ -173,16 +186,18 @@ function AsmOverlay({ engine }) {
       <div className="calcu-buttonrow">
         <label className="calcu-pill calcu-filebutton-inline">Select File<input type="file" onChange={select} /></label>
         <button type="button" className="calcu-pill" disabled={asm.words === 0 || !usable(entries, "c59.asm-run")}
-          onClick={() => engine.call("runAsm")}>Run</button>
-        <button type="button" className="calcu-pill" onClick={() => engine.call("clearAsm")}>Clear</button>
+          onClick={() => shell.send("c59.asm-run")}>Run</button>
+        <button type="button" className="calcu-pill" onClick={() => shell.send("c59.asm-clear")}>Clear</button>
       </div>
     </Section>
   );
 }
 
-function CpuInspector({ engine, data, font, narrow }) {
-  const rows = useEngine(engine, (s) => s.cpu);
-  const frozen = useEngine(engine, (s) => s.runState.frozen);
+const NO_ROWS = [];
+function CpuInspector({ data, font, narrow }) {
+  const { shell } = usePage();
+  const rows = useTopic(shell, "cpu-debug") || NO_ROWS;
+  const frozen = useRun(shell).frozen;
   const [picked, setPicked] = React.useState(-1);
   const listRef = React.useRef(null);
   const current = rows.findIndex((r) => r.current);
@@ -196,7 +211,7 @@ function CpuInspector({ engine, data, font, narrow }) {
   const value = grey(0.85);
   return (
     <div className="calcu-debug-tab" style={{ fontSize: font }}>
-      <FreezeHeader engine={engine} title="CPU DEBUG" narrowTitle="CPU" cpu={true} narrow={narrow} />
+      <FreezeHeader title="CPU DEBUG" narrowTitle="CPU" cpu={true} narrow={narrow} />
       <div className="calcu-cpu-list" ref={listRef}>
         {rows.map((r, i) => (
           <div key={i} onClick={() => setPicked(i)}
@@ -227,18 +242,21 @@ function CpuInspector({ engine, data, font, narrow }) {
           {f && <><Run>{f.lit}</Run><Gap />
             <Run color={f.displayOn ? "rgba(52,199,89,0.85)" : "rgba(255,59,48,0.7)"}>{f.displayOn ? "ON" : "OFF"}</Run></>}
         </Section>
-        <Heatmap engine={engine} data={data} currentPC={current >= 0 ? rows[current].pc : -1} />
-        <AsmOverlay engine={engine} />
+        <Heatmap data={data} currentPC={current >= 0 ? rows[current].pc : -1} />
+        <AsmOverlay />
       </div>
     </div>
   );
 }
 
-function LogTab({ engine }) {
-  const log = useEngine(engine, (s) => s.log);
-  const trace = useEngine(engine, (s) => s.trace);
-  const traces = useEngine(engine, (s) => s.traces);
-  const entries = useEngine(engine, (s) => s.entries);
+function LogTab() {
+  const page = usePage();
+  const shell = page.shell;
+  const view = useTopic(shell, "debug-view");
+  const log = { lines: page.log.lines, level: view ? view.logLevel : "off" };
+  const trace = useTopic(shell, "trace") || NO_TRACE;
+  const traces = useTraces(page.traces);
+  const entries = useEntries(shell);
   const ref = React.useRef(null);
   const text = React.useMemo(() => log.lines.join("\n"), [log.lines]);
   React.useLayoutEffect(() => { ref.current.scrollTop = ref.current.scrollHeight; }, [text]);
@@ -254,27 +272,27 @@ function LogTab({ engine }) {
       <div className="calcu-log-bar">
         <div className="calcu-buttonrow">
           {[["SCOM", "scom"], ["Memory", "memory"], ["Prog", "prog"], ["Vars", "vars"]].map(([label, what]) => (
-            <button key={what} type="button" className="calcu-pill" onClick={() => engine.call("dump", what)}>{label}</button>
+            <button key={what} type="button" className="calcu-pill" onClick={() => shell.send("c59.dump", { what })}>{label}</button>
           ))}
           <span className="calcu-spacer" />
           <button type="button" className="calcu-pill" title="Clear the log" aria-label="Clear the log" disabled={!text}
-            onClick={() => engine.clearLogView()}>🗑</button>
+            onClick={() => page.log.clear()}>🗑</button>
         </div>
         <div className="calcu-buttonrow">
           <button type="button" className="calcu-pill" aria-pressed={trace.running}
             title="Write every executed instruction to the binary trace file (downloaded when switched off)"
             style={trace.running ? { color: "orange" } : undefined}
             disabled={!trace.running && !usable(entries, "c59.trace")}
-            onClick={() => engine.call("setTrace", !trace.running)}>{trace.running ? "TRACE ●" : "TRACE ○"}</button>
+            onClick={() => shell.send("trace", trace.running ? { off: true } : { button: true })}>{trace.running ? "TRACE ●" : "TRACE ○"}</button>
           <button type="button" className="calcu-pill" title="Core log level: off / info / debug"
             style={level ? { color: level === 1 ? "orange" : "#ff3b30" } : undefined}
-            onClick={() => engine.call("setLogLevel", LEVELS[(level + 1) % 3])}>{labels[level]}</button>
+            onClick={() => shell.send("c59.log-level", { level: LEVELS[(level + 1) % 3] })}>{labels[level]}</button>
         </div>
         {traces.length > 0 && (
           <div className="calcu-traces" aria-label="Trace files">
             {traces.map((t) => (
               <button key={t.name} type="button" className="calcu-link" title={`Download ${t.name}`}
-                onClick={() => engine.download("trace", t.name)}>⤓ {t.name} ({mb(t.size)})</button>
+                onClick={() => page.traces.download(t.name)}>⤓ {t.name} ({mb(t.size)})</button>
             ))}
           </div>
         )}
@@ -283,37 +301,45 @@ function LogTab({ engine }) {
   );
 }
 
-function Debugger({ engine }) {
-  const data = useEngine(engine, (s) => s.data);
-  const asmActive = useEngine(engine, (s) => s.asm.active);
-  const entries = useEngine(engine, (s) => s.entries);
+function Debugger() {
+  const { shell } = usePage();
+  // The ROM heatmap's grid and colours (`c59.heatmap-grid`), asked once.
+  const [data, setData] = React.useState(null);
+  React.useEffect(() => {
+    if (!shell) return;
+    shell.request("c59.heatmap-grid").then((r) => { if (r.done) setData(r.value); });
+  }, [shell]);
+  const asmActive = (useTopic(shell, "asm-overlay") || NO_ASM).active;
+  const entries = useEntries(shell);
   const calculatorClosed = asmActive || !usable(entries, "c59.calculator-tab");
-  const font = useEngine(engine, (s) => s.debugFont);
-  const panelRequest = useEngine(engine, (s) => s.debugPanel);
+  const font = useTopic(shell, "c59.web.debug-font") || 11;
+  const view = useTopic(shell, "debug-view");
+  const panelRequest = React.useMemo(() => (view ? { panel: Math.max(0, ["calculator", "cpu", "log"].indexOf(view.view)), n: view.requests } : { panel: 0, n: 0 }),
+    [view && view.view, view && view.requests]);
   const [tab, setTab] = React.useState(panelRequest.panel);
-  React.useEffect(() => { if (panelRequest.n) setTab(panelRequest.panel); }, [panelRequest]);
+  React.useEffect(() => { if (panelRequest.n) setTab(panelRequest.panel); }, [panelRequest.n]);
   const rootRef = React.useRef(null);
   const shown = calculatorClosed && tab === 0 ? 1 : tab;  // the overlay runs on the CPU tab (AC-18)
 
   React.useEffect(() => {
-    if (!data) return undefined;
-    engine.call("setLiveDebugEnabled", shown === 0);
-    engine.call("setCpuDebugEnabled", shown === 1);
+    if (!shell || !data) return undefined;
+    shell.send("c59.live-debug", { on: shown === 0 });
+    shell.send("c59.cpu-debug", { on: shown === 1 });
     return undefined;
-  }, [engine, data, shown]);
+  }, [shell, data, shown]);
   React.useEffect(() => () => {
-    if (!engine) return;
-    engine.call("setLiveDebugEnabled", false);
-    engine.call("setCpuDebugEnabled", false);
-  }, [engine]);
+    if (!shell) return;
+    shell.send("c59.live-debug", { on: false });
+    shell.send("c59.cpu-debug", { on: false });
+  }, [shell]);
 
   React.useEffect(() => {
     const el = rootRef.current;
-    if (!engine || !data) return undefined;
-    const ro = new ResizeObserver(() => engine.call("setDebugWidth", el.clientWidth));
+    if (!shell || !data) return undefined;
+    const ro = new ResizeObserver(() => shell.send("c59.web.debug-width", { width: el.clientWidth }));
     ro.observe(el);
     return () => ro.disconnect();
-  }, [engine, data]);
+  }, [shell, data]);
 
   const narrow = font < 13;
   return (
@@ -324,9 +350,9 @@ function Debugger({ engine }) {
             onClick={() => setTab(i)}>{t}</button>
         ))}
       </div>
-      {data && shown === 0 && <LiveDebug engine={engine} font={font + 2} narrow={narrow} />}
-      {data && shown === 1 && <CpuInspector engine={engine} data={data} font={font + 2} narrow={narrow} />}
-      {data && shown === 2 && <LogTab engine={engine} />}
+      {data && shown === 0 && <LiveDebug font={font + 2} narrow={narrow} />}
+      {data && shown === 1 && <CpuInspector data={data} font={font + 2} narrow={narrow} />}
+      {data && shown === 2 && <LogTab />}
     </div>
   );
 }

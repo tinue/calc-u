@@ -13,7 +13,9 @@
 #include "settings/AtomicFile.hpp"
 #include "settings/HostDirs.hpp"
 #include "settings/PlatformBase.hpp"
+#include "settings/Paths.hpp"
 #include "settings/SettingsFile.hpp"
+#include "shell/SettingsPart.hpp"
 #include <fstream>
 
 using namespace cu59;
@@ -30,6 +32,8 @@ struct WebPieces {
     calcu::settings::HostDirs dirs;
     std::unique_ptr<calcu::settings::SettingsFile> file;
     std::unique_ptr<settings::Settings> settings;
+    std::unique_ptr<calcu::settings::Paths> paths;
+    std::unique_ptr<calcu::shell::SettingsPart> settingsPart;
     std::unique_ptr<TIWebPart> web;
     WebPieces() {
         dirs.frontend = calcu::settings::FrontendKind::Web;
@@ -40,14 +44,21 @@ struct WebPieces {
         file = std::make_unique<calcu::settings::SettingsFile>(calcu::settings::SettingsFile::open(
             settings::settingsDecl(), calcu::settings::settingsFilePath(settings::settingsDecl(), dirs)));
         settings = std::make_unique<settings::Settings>(*file);
-        web = std::make_unique<TIWebPart>(*settings);
+        paths = std::make_unique<calcu::settings::Paths>(*file, dirs);
+        calcu::shell::SettingsPartSetup ss;   // LIB-14's settings dialog (M-57)
+        ss.file = file.get();
+        ss.paths = paths.get();
+        ss.frontend = calcu::settings::FrontendKind::Web;
+        settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
+        web = std::make_unique<TIWebPart>();
     }
 };
 
 // The Web engine's session, natively: the Web part behind the product's.
 struct WebRig : WebPieces, testroms::SessionRig {
     explicit WebRig(bool started = true)
-        : SessionRig(testroms::RigOptions{.model = WebPieces::settings->startupModel(), .after = {web.get()},
+        : SessionRig(testroms::RigOptions{.model = WebPieces::settings->startupModel(),
+                                          .before = {settingsPart.get()}, .after = {web.get()},
                                           .saveFolder = dirs.saveFolder, .noTraceFolder = true, .settings = file.get(),
                                           .examplesFolder = (webFolder.path() / "presets").string(), .start = false}) {
         web->bind(part());
@@ -65,6 +76,11 @@ struct WebRig : WebPieces, testroms::SessionRig {
     Value state(const TopicName& t) const {
         const PayloadPtr* p = fe.mirror.state(t);
         return p && *p ? (*p)->toValue() : Value();
+    }
+    Value ask(const char* name, Value args = Value::object({})) {
+        const CallId id = session().ask(me, Request{RequestName{name}, std::move(args)});
+        const ReplyMessage* r = fe.reply(id);
+        return r && r->done && r->result ? r->result->toValue() : Value();
     }
 };
 
@@ -101,17 +117,54 @@ TEST(lib15_ec4_unknown_model_and_preset_are_notices) {
     }
 }
 
+// LIB-9 AC-23 (since M-57 through LIB-14's SettingsPart, the shell's
+// dialog): a change is written into Calc-U-59.ini at once.
 TEST(lib9_ac23_web_settings_in_the_ini_file) {
     WebRig r;
-    r.send("c59.web.set-startup-model", Value::object({{"model", 2}}));
-    r.send("c59.web.set-trace-max-mb", Value::object({{"mb", 7}}));
+    r.send("set-setting", Value::object({{"section", "startup"}, {"key", "model"}, {"value", "TI-58C"}}));
+    r.send("set-setting", Value::object({{"section", "trace"}, {"key", "max-file-size-mb"}, {"value", 7}}));
+    r.send("set-setting", Value::object({{"section", "keyboard"}, {"key", "feedback"}, {"value", "click"}}));
     r.run(50ms);
     const auto ini = calcu::settings::readWholeFile(
         calcu::settings::settingsFilePath(settings::settingsDecl(), r.dirs)).value_or("");
     CHECK(ini.find("model = TI-58C") != std::string::npos);
-    const Value s = r.state(topics::kWebSettings);
-    CHECK(s.find("startupModel") && s.find("startupModel")->integer() && *s.find("startupModel")->integer() == 2);
-    CHECK(s.find("traceMaxMB") && *s.find("traceMaxMB")->integer() == 7);
+    CHECK(ini.find("max-file-size-mb = 7") != std::string::npos);
+    CHECK(ini.find("feedback = click") != std::string::npos);
+    CHECK(r.fe.mirror.state(TopicName{"settings"}) != nullptr);
+}
+
+// LIB-14 §10.5 (D-32): the product's shell data for the page, per layout.
+TEST(lib14_web_shell_product_per_layout) {
+    WebRig r;
+    const Value wide = r.ask("c59.shell-product", Value::object({{"layout", "wide"}, {"version", "3.0.0"}}));
+    const Value* product = wide.find("product");
+    CHECK(product && product->find("name") && *product->find("name")->string() == "Calc-U-59");
+    CHECK(product && product->find("aboutLinks") && product->find("aboutLinks")->elements()->size() == 3);
+    CHECK(product && product->find("copyScreen") && !*product->find("copyScreen")->boolean());
+    const std::string wideSpec = toText(*wide.find("settingsSpec"));
+    CHECK(wideSpec.find("max-file-size-mb") != std::string::npos);
+    CHECK(wideSpec.find("Version 3.0.0") != std::string::npos);
+    CHECK(wideSpec.find("feedback") == std::string::npos);
+    const std::string portrait = toText(*r.ask("c59.shell-product", Value::object({{"layout", "portrait"}, {"version", "3.0.0"}}))
+                                             .find("settingsSpec"));
+    CHECK(portrait.find("feedback") != std::string::npos);
+    CHECK(portrait.find("Click Sound") != std::string::npos);
+    CHECK(portrait.find("max-file-size-mb") == std::string::npos);
+}
+
+// D-41: the faceplate of a model, the key rectangles and the card corners;
+// the heatmap grid.
+TEST(lib14_web_faceplate_map_and_heatmap_grid) {
+    WebRig r;
+    const Value m = r.ask("c59.faceplate-map", Value::object({{"model", "TI-59"}}));
+    CHECK(m.find("map") && m.find("map")->find("keys")->elements()->size() == 45);
+    CHECK(m.find("map") && m.find("map")->find("display"));
+    CHECK(m.find("card") && m.find("canvas"));
+    CHECK(m.find("keyRects") && m.find("keyRects")->elements()->size() == 45);
+    CHECK(m.find("cardCorners") && m.find("cardCorners")->elements()->size() == 2);
+    const Value h = r.ask("c59.heatmap-grid");
+    CHECK(h.find("cols") && *h.find("cols")->integer() == 80);
+    CHECK(h.find("colors") && h.find("colors")->elements()->size() == 6);
 }
 
 // LIB-15 AC-20 (M-55, LIB-7 59): the cards are the library's media of the
@@ -144,13 +197,13 @@ TEST(lib15_ac20_cards_are_files_of_the_save_folder) {
 TEST(lib15_ac22_the_page_topics_are_there) {
     WebRig r;
     r.run(1s);
-    for (const auto* t : {&topics::kWebModel, &topics::kWebDisplay, &topics::kWebRunState, &topics::kWebPrinter,
-                          &calcu::media::kMediaTopic, &topics::kDebugView, &topics::kWebSettings})
+    for (const auto* t : {&topics::kWebDisplay, &topics::kWebRunState, &topics::kWebPrinter, &calcu::media::kMediaTopic,
+                          &topics::kDebugView})
         CHECK(r.fe.mirror.state(*t) != nullptr);
+    CHECK(r.fe.mirror.state(TopicName{"control-state"}) != nullptr);   // the model and the module (M-57)
+    CHECK(r.fe.mirror.state(TopicName{"c59.web.model"}) == nullptr);   // gone (LIB-4 §10.7)
     const Value display = r.state(topics::kWebDisplay);
     CHECK(display.bytes() && display.bytes()->size() == 36 * sizeof(float));
-    const Value model = r.state(topics::kWebModel);
-    CHECK(model.find("moduleID") && model.find("moduleID")->string() && *model.find("moduleID")->string() == "ML");
 }
 
 // LIB-5 (AC-21, AC-24, AC-10): the page's key grid and the host keys go
@@ -176,7 +229,7 @@ TEST(lib5_ac24_web_keys_through_the_typing_engine) {
     e.produced = 'a';
     r.send("host-key-down", calcu::typing::toValue(e));
     CHECK_EQ(held(), std::int64_t(0));
-    r.send("c59.web.blur");   // focus lost: released after its minimum
+    r.send("focus-lost");   // LIB-5 AC-10: released after its minimum
     r.run(300ms);
     CHECK_EQ(held(), std::int64_t(-1));
     CHECK(r.part().typing()->engine().down().empty());

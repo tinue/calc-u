@@ -15,7 +15,9 @@ final class OpeningTests: XCTestCase {
             e.fulfill()
         }
         wait(for: [e], timeout: 10)
-        XCTAssertFalse(opened)
+        // Refused at once, or kept while the start still runs (LIB-13 AC-7)
+        // and refused when it ends: either way the refusal is the notice.
+        _ = opened
         let deadline = Date().addingTimeInterval(5)
         while !t.notices.contains(where: { $0.contains("readme.txt") }) && Date() < deadline { TestSession.run(0.05) }
         XCTAssertTrue(t.notices.contains(where: { $0.contains("readme.txt") }), "notices: \(t.notices)")

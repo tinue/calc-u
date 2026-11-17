@@ -109,6 +109,7 @@ qt_add_executable(CalcU59Qt
   ${CALCU59_QT_SOURCES}
   resources/calc-u-59.qrc
 )
+calcu_qt6_moc_compat(CalcU59Qt)
 
 # ---- Shared assets, one source, no copies: the ROM files of roms/ (the 24
 # of the full set, fetched by roms/fetch_roms.sh; LIB-12 AC-9), cuecards.txt

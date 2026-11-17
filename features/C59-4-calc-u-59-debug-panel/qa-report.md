@@ -91,7 +91,7 @@ runs". CI was not dispatched (plan §1).
 | AC-21 | Pass (Qt6, Web; Swift written, not run) | `c59_4_ac21_labels_and_short_forms`; Web `C59-4 AC-21 the three tabs, labels and short forms`; Swift `DebugPanelTests.testC59_4_AC21TabsAndLabels` (not run); Qt6: the widgets keep their labels and short forms (`DEBUG`, `F.START`), unchanged code, `CalcU59QtTests` builds them; the attach scenario comes with M-57 |
 | AC-22 | Pass | `harness_tests.cpp`: `c59_4_ac22_asm_load_run_clear`, `_dump_replies_lines`, `_log_level`, `_heatmap_reset`, `_no_preset_steps_for_them` |
 | AC-23 | Pass | the cases of 2.3.0's `shared_debug_tests.cpp:184-287` named in AC-3, AC-8, AC-9, AC-10, AC-14; `asm_overlay_parser` without its two lenient cases (now refused, AC-15 rows); `asm_overlay_runs` as `c59_4_ac13_entered_at_1800` |
-| AC-24 | Web Pass; Swift written, not run; Qt6 in M-57 | Web `C59-4 AC-5 …`, `C59-4 AC-16 …`; Swift `DebugPanelTests.testC59_4_AC5CalculatorFreezeStepResume`, `ScreenshotTests.testC59_4_AC16AsmOverlay` (Screenshots plan) |
+| AC-24 | Web and Qt6 Pass (Qt6 since M-57); Swift written, not run | Qt6 `CalcU59QtTests` `c59_4_ac5_qt6_freeze_step_resume_on_the_calculator_tab`, `c59_4_ac16_qt6_overlay_chosen_run_cpu_tab_shows_it` (Select File through the shell's file chooser, Run, "ASM entered at 0x1800", the CPU history at 18xx; M-57); Web `C59-4 AC-5 …`, `C59-4 AC-16 …`; Swift `DebugPanelTests.testC59_4_AC5CalculatorFreezeStepResume`, `ScreenshotTests.testC59_4_AC16AsmOverlay` (Screenshots plan) |
 | AC-25 | Pass | `c59_4_ac25_six_product_topics_read_by_state`, `_entries_asm_run_trace_calculator_tab_with_reasons`, `_cpu_and_calculator_computed_while_shown`; `harness_tests.cpp` `c59_4_ac22_heatmap_reset` (`state calculator-debug`, `state cpu-debug`) |
 | AC-26 | Pass | `c59_4_ac26_cold_boot_removes`, `_new_machine_by_preset_and_model_switch_removes` (replaces `part_flows_tests.cpp` `part_asm_overlay`) |
 | EC-1 | Pass | `c59_4_ec1_run_without_instructions_status` |
@@ -102,7 +102,7 @@ runs". CI was not dispatched (plan §1).
 
 Coverage: every AC and EC has its test. Column status: In progress. The
 plan makes C59-4 Done in M-65 (AC-20's hosted copies with the site); AC-24's
-Qt6 scenarios come with M-57's attach scenarios; the Swift UI and unit
+Qt6 scenarios pass since M-57 (on the real window); the Swift UI and unit
 tests are written and type-checked but must be run from the main checkout
 (below) before AC-21 and AC-24 count for Swift.
 

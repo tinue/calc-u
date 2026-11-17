@@ -8,8 +8,13 @@ All three GUIs run the same `core/` and `app/` code; this table tracks
 the GUI on top. The web client (`frontends/web/`, `WebClient.md`) has two layouts:
 wide (as the macOS/Qt window) and portrait (as the iPhone, no debugger).
 Web paths are relative to `frontends/web/src/`; `TIWebPart` is
-`app/TIWebPart` (what the page draws, as the session's `c59.web.*` topics,
-since M-34), `engine.js` translates for the components.
+`app/TIWebPart` (what the page draws, as the session's `c59.web.*` topics
+and product requests, since M-34). Since M-57 the Qt6 and Web windows are
+put together from LIB-14's shell (the family structure: the menus, the
+control bar, the More button where there is no menu bar, the settings
+dialog, About, Help, notices, "Loading…"), drawn from the control state
+with the product's data `app/TIShellProduct`; "shell" in the table means
+that (Qt6 `calcu::qt6::Shell`, Web the React set's shell components).
 
 **Status:** `All` — in all three (web: in both layouts unless the Notes say
 "wide only"); `Both` — in both apps, deliberately not in the web client; `Pending (Qt)` / `Pending (Swift)` / `Pending (Web)` —
@@ -20,8 +25,8 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 
 | Feature | Swift | Qt | Web | Shared | Status | Notes |
 |---|---|---|---|---|---|---|
-| Model picker TI-59 / TI-58 / TI-58C | `CalculatorView` | `ControlBar` | `ControlBar` | LIB-18's `model {name}` (`TIProductMachines`), `MachineModelInfo` | All | |
-| Reset; clean reset (Cmd/Ctrl held, red "Clean") | `CalculatorView` | `ControlBar` | `ControlBar` | LIB-18's `reset` / `cold-boot`, `Machine::reset()`/`coldBoot()` (C59-1) | All | iOS and web touch: 1 s long press |
+| Model picker TI-59 / TI-58 / TI-58C | `CalculatorView` | shell (bar's model picker; Machine ▸ Model) | shell (bar's model picker; Machine ▸ Model in the wide layout) | LIB-18's `model {name}` (`TIProductMachines`); LIB-4's `control-state` | All | Swift on the control state with C59-8 (M-58) |
+| Reset; Cold boot (was "Clean") | `CalculatorView` | shell (Machine ▸ Reset Ctrl+R, Cold boot Ctrl+Shift+R; no bar button) | shell (wide: Machine menu; portrait: the bar's Reset and More ▸ Cold boot, which asks first) | LIB-18's `reset` / `cold-boot`, `Machine::reset()`/`coldBoot()` (C59-1) | All | the Ctrl/Cmd "Clean" and the 1 s long press went in Qt6 and the Web (M-57, row 59-14); Swift with C59-8 |
 | Calculator artwork, key hit test (widened rects) | `KeyboardView` | `KeyboardWidget` | `CalculatorFace`, `TIWebPart` (hit test) | `KeyboardLayout` | All | Web: transparent key buttons for assistive technology |
 | Pressed-key effect (blacked out, shifted 3 px) | `KeyboardView` | `KeyboardWidget` | `CalculatorFace` | — | All | |
 | One key at a time; release on focus loss / teardown | `KeyboardView` | `KeyboardWidget` | `CalculatorFace`, `TIWebPart` | — | All | |
@@ -31,29 +36,29 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 | Digit and decimal-point brightness (persistence of vision), "C" indicator brightness | `LEDDisplayView` | `LedRenderer` | `painters.js`, `TIWebPart` | `FrameSampler`, `DisplayPov` | All | |
 | Cue card: 3 templates, `\blank` spans, shrink-to-fit, inks | `CueCardView` | `CueCardRenderer` | `painters.js`, `TIWebPart` (draw list) | `CueCard` (layout, geometry, inks) | All | |
 | Module program cards (the product kind `c59.library-program`), fitted cards | `EmulatorViewModel` | `EmulatorController` | `TIWebPart` | `TIAppPart` refreshCueCard (`c59.cue-card`), `ModuleCueCards` (the module files) | All | |
-| Solid State module selection | `SettingsView` | `SettingsDialog` | `Dialogs` (Settings) | `ModuleCatalog`, LIB-18's `attach`/`detach slot-1` | All | power cycle on change (row 59-11) |
-| Startup calculator (model / last used) | `SettingsView` | `SettingsDialog` | `Dialogs` (Settings) | `Settings` | All | `Calc-U-59.ini` everywhere; web: the file in the persistent file system (IndexedDB, since M-34); the `model` prop overrides it |
+| Solid State module selection | `SettingsView` | shell (bar's picker of `slot-1`, LIB-7's `MediaPicker`; the empty slot) | shell (bar's picker of `slot-1`, LIB-7's `CalcuMediaPicker`; the empty slot) | `ModuleCatalog`, LIB-7's `media.choose {place: slot-1}` | Pending (Swift) | power cycle on change (row 59-11); on the bar in Qt6 and the Web since M-57 (row 59-9); Swift with C59-8 |
+| Startup model (model / last used) | `SettingsView` | shell (Settings ▸ General, "Last used" first) | shell (Settings ▸ General) | `Settings`, LIB-14's `SettingsPart` | All | `Calc-U-59.ini` everywhere; web: the file in the persistent file system (IndexedDB, since M-34); the `model` prop overrides it |
 
 ## Files
 
 | Feature | Swift | Qt | Web | Shared | Status | Notes |
 |---|---|---|---|---|---|---|
-| Open preset `.ti59` / `.ti58` / `.ti58c` (or any file: the dialog sends LIB-13's `open {way: dialog}`) | `CalculatorView` (the Preset button's importer: the preset types and any file) | `MainWindow` (Open Preset…: `Presets (*.ti59 *.ti58 *.ti58c);;All files (*)`) | `Dialogs` (preset picker: bundled, an upload of one or several files) | LIB-13's `open` (`TIFileKinds`), LIB-6's `load-preset` (`TIPresetRules`, `TIPresetKeys`) | All | Qt6 by its path, Swift and Web uploads by their content; Web: several files are one folder (LIB-13 AC-8); the bundled examples of `examples/bundle.yaml` (`preset-list`); Qt6 and Swift bundle the same files (their Examples menu: M-57, M-58) |
+| Load Preset… `.ti59` / `.ti58` / `.ti58c`; Examples ▸ | `CalculatorView` (the Preset button's importer: the preset types and any file) | shell (File ▸ Load Preset… Ctrl+O, `Presets (*.ti59 *.ti58 *.ti58c)`, sends `load-preset {ref}`; File ▸ Examples ▸) | shell (wide: File ▸ Load Preset…, Examples ▸; portrait: the bar's Preset and More ▸ Examples ▸; an upload goes to LIB-13's `open {way: dialog}`) | LIB-13's `open` (`TIFileKinds`), LIB-6's `load-preset`, `preset-list` (`TIPresetRules`, `TIPresetKeys`) | All | Qt6 by its path, Swift and Web uploads by their content; Web: several files are one folder (LIB-13 AC-8); the bundled examples of `examples/bundle.yaml`; Swift's Examples menu: M-58 |
 | A preset's `keys:` steps (wait, full-speed, trace, elapsed-time, expect, screenshot) | — | — | — | LIB-6's loader, LIB-5's typing engine | All | Web: a `trace:` is handed over, downloadable from the LOG tab |
 | A preset's `debug-panel:` selects the tab (the product topic `debug-view`, its `requests` count) | `EmulatorViewModel` (`showDebugPanel`) | `EmulatorController` → `DebugPanel` (`debugPanelRequested`) | `engine.js` `debugPanel`, `Debugger.jsx` | `TIDebugPart::showView` (LIB-10's step; `calculator` passed over while an overlay runs) | All | Paged layouts keep their page; web portrait has no debugger and remembers the tab |
 | Sections after a `keys:` section (2.3.0's reloads); magnetic cards in presets | — | — | — | LIB-6's loader, `TIPresetKeys`, `TIMagneticCardsKey`, LIB-7's `card:`, `arm:`, `saveas: { card: }` | All | |
-| Drag-and-drop of any one file | `CalculatorView` (macOS; `open-would-take`, then `open {way: drop}`) | `MainWindow` (`open-would-take`, then `open {way: drop}`) | `PlayCalculator`, `engine.js` (`open {way: drop, upload: true}`) | LIB-13's `open` (a `.magnetcard.yaml`: LIB-7's MediaOpener, fitted on the TI-59 (refused on the TI-58/58C), imported first on the Web; `TIFileKinds`: presets, `.asm`, `.keystrokes.yaml`; `.rom.yaml` and `ti58c.memory.yaml` refused; until M-55 the `.u59`/`.bin` cards) | All | Not in the iOS build. A refusal is a notice. A card is fitted where it lies (TI-59; refused with a notice on the TI-58/58C). Web: an upload, a card goes into the save folder |
+| Drag-and-drop of any one file | `CalculatorView` (macOS; `open-would-take`, then `open {way: drop}`) | `MainWindow` (`open-would-take`, then `open {way: drop}`) | `PlayCalculator` (`open {way: drop, upload: true}`) | LIB-13's `open` (a `.magnetcard.yaml`: LIB-7's MediaOpener, fitted on the TI-59 (refused on the TI-58/58C), imported first on the Web; `TIFileKinds`: presets, `.asm`, `.keystrokes.yaml`; `.rom.yaml` and `ti58c.memory.yaml` refused; until M-55 the `.u59`/`.bin` cards) | All | Not in the iOS build. A refusal is a notice. A card is fitted where it lies (TI-59; refused with a notice on the TI-58/58C). Web: an upload, a card goes into the save folder |
 | Open-with of presets; a file named at the start | — | `main.cpp` (`QFileOpenEvent`: `open {way: open-with}`; the start file by `opening::startFile` after the program's own options, `open {way: start}`) | — | `programArguments` (`TIFileKinds`) | Qt only | The three preset extensions on macOS, Windows, Linux (`CalcU59OpenWithTypes`); opened as what it is |
-| Magnetic cards: Arm Card, Arm Fresh Card, feed by corner, lit corner, Eject Card, given back after a pass, replace question | `CalculatorView`, `KeyboardView`, `CueCardView`, `CardPickerView` | `ControlBar`, `KeyboardWidget`, `CueCardRenderer`, `CardPickerDialog` | `ControlBar`, `CalculatorFace`, `painters.js`, `Dialogs` (card picker with Import… and Saved Media…), `TIWebPart` | the library's media part and topic `media` (place `card-reader`), `TIMagneticCardKind`, `core/TICardReaderPlace`, `CueCard` cardCornerGeometry, `KeyboardLayout` cardCornerAt (`c59.tap-card`) | All | TI-59 only; web: Import… and Saved Media… in the card dialog until its File menu (M-57) |
+| Magnetic cards: Arm Card, Arm Fresh Card, feed by corner, lit corner, Eject Card, given back after a pass, replace question | `CalculatorView`, `KeyboardView`, `CueCardView`, `CardPickerView` | `CardControls` on the shell's bar, File ▸ Arm Card… / Arm Fresh Card…, `KeyboardWidget` (the corner tap the shell lets through), `CueCardRenderer`, `CardPickerDialog` | C59-7's card controls on the shell's bar, File ▸ Arm Card… / Arm Fresh Card…, `CalculatorFace`, `painters.js`, `Dialogs` (card picker), `TIWebPart` | the library's media part and topic `media` (place `card-reader`), `TIMagneticCardKind`, `core/TICardReaderPlace`, `CueCard` cardCornerGeometry, `KeyboardLayout` cardCornerAt (`c59.tap-card`) | All | TI-59 only (the control state's media place); web: Import Media… and Saved Media… in File (wide) or More (portrait) since M-57 |
 | Card and `ti58c.memory.yaml` location | iCloud Documents (`CardStorage`) | `~/Calc-U-59` (`AppPaths`) | the save folder in the persistent file system (IndexedDB `/persist-calc-u-59`, `TIWebPart`; since M-34) | — | Swift only / Qt only / Web only | Qt: the save folder in Settings; web: cards and `ti58c.memory.yaml` are kept between visits; a second tab keeps nothing (LIB-15 AC-8, AC-21) |
-| Open Preset start folder | system file importer | last used, or fixed in Settings | — | — | Qt only | Calc-U-1600 layout |
+| Load Preset… start folder | system file importer | last used, or fixed in Settings ▸ Folders ▸ Preset folder (`remember-folder`) | — | LIB-14's `SettingsPart` | Qt only | Calc-U-1600 layout |
 | TI-58C constant memory (`ti58c.memory.yaml`: restored at a build without a preset, written on change, suspend, quit) | the bridge's `FileIO` | `TIFileAccess` (LIB-9's save folder) | `TIFileAccess` (the persistent file system) | `ConstantMemoryKeeper`, `ConstantMemoryFile`, the kind `c59.constant-memory` | All | The same file in all three frontends (C59-3 AC-13) |
 
 ## Printer
 
 | Feature | Swift | Qt | Web | Shared | Status | Notes |
 |---|---|---|---|---|---|---|
-| PC-100C connect toggle (resets) | `PrinterView` | toggle above the paper panel (`MainWindow`) | toggle above `CalcuPaperPanel` | `TIAppPart` (`c59.printer` connected; LIB-8 P-E1 until M-57) | All | |
+| PC-100C plugged in or out (resets) | `PrinterView` | shell (bar's "PC-100C" button; Machine ▸ Peripherals ▸) | shell (bar's "PC-100C" button) | LIB-18's `attach`/`detach printer`; LIB-4's `control-state` | All | the toggle above the paper panel went in Qt6 and the Web (M-57); Swift with C59-8 |
 | Dot view at PC-100C proportions; text view | `PrinterView` (from the `paper PC-100C` marks, S-P1 until C59-8) | library `PaperPanel` | library `CalcuPaperPanel` | `core/PC100CPaper` (marks), LIB-8 `PaperPart` | All | |
 | Printer interrupt: cut-short lines, the interrupted row's fired columns, faint dots | `PrinterView` (the marks' darkness) | library `PaperPanel` | library `CalcuPaperPanel` | `core/PC100CPaper` (`lineDots`: `drawnRows`, `inkedColumns`, `faintColumns`; greys of `inkAlpha`) | All | |
 | PRINT / ADV (hold), T (TRACE switch) | `PrinterView` (`set-control`) | library `PaperPanel` (controls) | library `CalcuPaperPanel` (controls) | `TIAppPart` answers `set-control` (LIB-8 P-E2 until M-54) | All | |
@@ -80,9 +85,9 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 
 | Feature | Swift | Qt | Web | Shared | Status | Notes |
 |---|---|---|---|---|---|---|
-| About (version, links) | `AppInfo` | `AboutDialog` | `Dialogs` (About) | — | All | |
-| Settings | `SettingsView` | `SettingsDialog` | `Dialogs` (Settings) | `Settings` | All | Qt: preset, save and trace folders instead of the trace location; Swift: Keyboard Feedback and Debug Page in Portrait on iOS only; web: no folders, no segment style, Keyboard Feedback in portrait and the PWA only, Maximum Trace File Size whenever the pages sit side by side (the wide layout, the PWA in landscape) |
-| Help (user guide link) | — | Help menu | `Dialogs` (Settings, About) | — | Pending (Swift) | opens `https://calc-u.org/59/`; the Swift app has no Help command yet |
+| About (icon, version, summary, links) | `AppInfo` | shell (Help ▸ About Calc-U-59; the window icon, "Built with Qt") | shell (wide: Help ▸ About; portrait: More ▸ About; no icon) | `TIShellProduct` | All | the Web's About left the settings dialog (M-57, row 59-52) |
+| Settings | `SettingsView` | shell (`cu59::settingsSpec(Qt6)`: General, Startup presets, Storage, Folders, Tracing, Display) | shell (`settingsSpec(WebWide/WebPortrait)`: General, Startup presets, Tracing (wide), Keyboard (portrait); no Settings with the prop `settings` off) | `Settings`, LIB-14's `SettingsPart`, `TIShellProduct` | All | every change applied at once (row 59-53); Swift: Keyboard Feedback and Debug Page in Portrait on iOS only, the family rows with C59-8 |
+| Help (user guide link) | — | shell (Help ▸ Calc-U-59 Help) | shell (wide: Help menu; portrait: More ▸ Calc-U-59 Help) | `TIShellProduct` | Pending (Swift) | opens `https://calc-u.org/59/`; the Swift app has no Help command yet |
 | iOS layouts (portrait pages, iPhone; side by side, iPad and iPhone Duo), haptics, click sound | `CalculatorView`, `KeyboardView` | — | `PlayCalculator` (portrait layout; the PWA's `auto` layout, keyboard feedback) | `DebugText` (`mobileLayout`) | Swift only / Web only | Swift: iOS only: pages when tall or folded; side by side when wide: calculator and printer, plus the debugger on iPad and iPhone Duo; web: the PWA picks the same layouts by the window's size (no fold), click via WebAudio only (no haptics in a browser) |
 | UI test automation hooks | `CalculatorView` | — | — | — | Swift only | |
 | `--grab <png>` offscreen screenshot | — | `main.cpp` | — | — | Qt only | developer check |

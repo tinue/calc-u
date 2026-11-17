@@ -392,7 +392,9 @@ function PlayCalculator(props) {
     >
       <C59_PAGE.Provider value={{ shell, s, traces: made ? made.traces : null, log }}>
         <ShellStorageBanner shell={shell} />
-        {!portrait && !failed && <ShellMenuBar shell={s} />}
+        {/* AC-19: without a machine there is no bar and no More button, so the
+            portrait layout shows the menu bar for Help and About too. */}
+        {(!portrait || romsMissing) && !failed && <ShellMenuBar shell={s} />}
         {romsMissing && <ShellRomsMissing shell={s} />}
         {failed && !romsMissing && <div className="calcu-shell-roms-missing" data-calcu="start-failed" role="alert">{failure}</div>}
         {!romsMissing && !failed && (!auto || rules) && <Layout page={page} width={w} height={height} rules={rules || EMBEDDED_WIDE} />}

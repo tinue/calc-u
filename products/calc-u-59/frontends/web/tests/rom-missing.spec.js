@@ -41,14 +41,16 @@ test('lib12_ac10_missing_rom_file_shows_the_text_and_no_calculator', async ({ pa
 // LIB-14 AC-19 for this product (row 59-54's Web side, M-57): the shell's
 // "ROMs missing" in place of the calculator, no control bar, no Machine
 // menu; Help and About work.
-test('lib14_ac19 roms missing in the window, help and about work', async ({ page }) => {
+for (const layout of ['wide', 'portrait']) test(`lib14_ac19 roms missing in the window, help and about work (${layout})`, async ({ page }) => {
   await page.route('**/files.json', async (route) => {
     const response = await route.fetch();
     const files = await response.json();
     files.bundle = files.bundle.filter((f) => f !== 'ML.rom.yaml');
     await route.fulfill({ response, json: files });
   });
-  await page.goto('./?layout=wide');
+  // Portrait has no menu bar while the product runs; without a machine it
+  // shows one, so that Help and About still work (AC-19).
+  await page.goto(`./?layout=${layout}`);
   const el = (name) => page.locator(`[data-calcu="${name}"]`);
   await expect(el('roms-missing')).toContainText('ML.rom.yaml: missing', { timeout: 15000 });
   await expect(el('control-bar')).toHaveCount(0);

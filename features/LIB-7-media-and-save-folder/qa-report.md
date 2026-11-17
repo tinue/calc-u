@@ -399,3 +399,16 @@ memory file), A-6 (`TICardWaitAdapter`, `TICardReaderAdapter`; the media
 part is the wait probe), A-7 (`AppPaths::cardDir()`). `tools/headless/`
 moves its `h_card_*` calls onto the place (§11.7). Column status: In
 progress; Done in M-57 (AC-36's File menu, D-29).
+
+### M-57 (2026-11-17, branch `m57-shell-59`): AC-36's File menu
+
+The Web page has the shell's File menu (LIB-14 59): Import Media… and
+Saved Media… are there in the wide layout and behind the More button in
+the portrait layout (LIB-14 D-36); the card dialog no longer has them
+(D-29).
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-36 | Pass | Web `shell.spec.js` `lib7_ac36 file menu has import and saved media` (M-57); `lib7_ac36 import a card file`, `lib7_ac36 saved media lists downloads deletes after asking` through the File menu; `lib7_ac36 no per card download or upload in the card picker` (now: neither Import… nor Saved Media… in the card dialog) |
+
+Column status: Done (AC-32 to AC-36 and AC-47 pass).

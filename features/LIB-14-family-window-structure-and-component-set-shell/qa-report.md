@@ -306,3 +306,126 @@ library code of `calcu_qt6` and `harness/attach` changes: one CI dispatch
 at the merge.
 
 Column status: Done.
+
+## Calc-U-59 (M-57, 2026-11-17, branch `m57-shell-59`)
+
+Design §10. Both frontends of Calc-U-59 are put together from the shell;
+the Swift frontend is C59-8 (M-58).
+
+Qt6: `MainWindow` is a `calcu::qt6::Shell` over the `SessionHost` that
+`EmulatorController` makes (the session with LIB-14's `SettingsPart` in
+front); `ControlBar`, `SettingsDialog`, `AboutDialog`, `PaperPane` and
+`buildMenus` are deleted; C59-7's card buttons are `CardControls`, the bar's
+media controls of `card-reader`; the slot picker is LIB-7's `MediaPicker`;
+the faceplate's pointer is the shell's (`FaceplateGeometry`), the host keys
+go through `calcu::qt6::HostKeys`; harness attach and `--pacing-probe` as
+its client (`CALCU_ATTACH`). Web (branch `m57-web`, merged): the page on
+the React set's shell (`src/page.jsx`, `PlayCalculator.jsx`), the More
+button in the portrait layout, `engine.js` and `ControlBar.jsx` deleted,
+`TIWebPart` without `c59.web.model`, `c59.web.settings`, the settings and
+pointer commands and `c59.static-data`, with `c59.shell-product` and
+`c59.faceplate-map`. The product's data is `app/TIShellProduct` (one source,
+D-32). Without the full ROM set the app session runs without a machine and
+publishes `roms-missing` (`TIAppSetup::romsMissing`).
+
+Library additions (§10.3; Calc-U-1600 keeps its forms byte for byte): the
+More model (`Traits::menuBar`, `settings`, `about`; `moreItems`;
+`MenuItem::confirm`, `destructive`; `ProductItem::onBar`, `mediaPlace`;
+`BarGroup::Start`, the bar's `Action` and `More`), labelled choices
+(`DialogRow::choices`), the value forms (`copyScreen` as the product has it,
+`aboutLinks`, `onBar`, `mediaPlace`, `choices`), `Shell::FaceplateGeometry`
+(origin, a press the product takes), the About icon, the storage banner of
+the React set (`ShellStorageBanner`, used by both products: ledger 1600-48
+and 59-55 in effect), the More menu of the React set (`ShellMoreMenu`), and
+`calcu::qt6::AttachLineClient` (moved from Calc-U-1600's screenshot runner
+into the Qt6 set, for both products' attach clients).
+
+Checks run: `build/tests` Frequent 46/46 (`calcu_library_tests` 958,
+`CalcU59Tests` 546, the CTest `CalcU59FrontendsDrawControlState` new);
+`build/qt` Frequent 51/51 (`calcu_qt6_tests` 57, `calcu_qt6_scenarios`,
+`CalcU59QtTests` 25 cases in 22 s); `CalcU1600QtTests` (Longer) 25 cases
+pass; `CalcU59QtPacingProbe` (Checkpoint, through attach) passes: wall
+59.513 s, emulated 59.521 s, difference +0.008 s within 0.037 s;
+Playwright: Calc-U-59 149 passed, 5 skipped; Calc-U-1600 112 passed,
+2 skipped; the library's 140 passed, 2 skipped; `shell_model.test.js` 48.
+
+| AC | Result | Evidence |
+|---|---|---|
+| AC-26 | Pass | `CalcU59QtTests` `lib14_ac26_qt_menus_in_family_order` (File: Load Preset…, Examples ▸, Arm Card…, Arm Fresh Card…, Settings…, Quit, the card items on the TI-59 only; no Edit; Machine: Model ▸, Peripherals ▸ with the PC-100C, Reset, Cold boot, Resume; Help: Calc-U-59 Help, About Calc-U-59), `lib14_ac26_shortcuts_ctrl_o_r_shift_r` (and Load Preset…'s filter), `lib14_ac26_roles_settings_about_quit`; `CalcU59Tests` `lib14_ac26_shell_product_complete` (`checkShellProduct` against each model's control state; no Edit menu; the card items by the media place) |
+| AC-27 | Pass | `lib14_ac27_bar_per_model` (the model picker; `slot-1`'s picker with the 14 modules and the empty slot; "PC-100C" pressed while plugged in; the card controls on the TI-59, none on the TI-58); Web `lib14_ac27 the bar per model` |
+| AC-28 | Pass | `lib14_ac28_no_reset_preset_settings_on_the_bar`, `lib14_ac28_cold_boot_is_the_menu_item` (Cold boot runs from the Machine menu; no button changes); Web `lib14_ac28 the wide layout has the menus and no reset preset or settings on the bar` |
+| AC-29 | Pass (Web) | `lib14_ac29 portrait bar keeps reset preset settings and more`, `lib14_ac29 more holds examples cold boot resume and help` (and Import Media…, Saved Media…, About, D-36; the popup inside the client at 280 px), `lib14_ac29 cold boot asks first`, `lib14_ac29 no long press for clean`, `lib14_ac29 settings prop off`; the model rules M13 to M18, B8 in `calcu_library_tests` and `shell_model.test.js` (L12) |
+| AC-30 | Pass | `lib14_ac30_settings_sections_and_rows` (General with Startup model, "Last used" first, and the version; Startup presets TI-59, TI-58, TI-58C; Storage: Save folder; Folders: Preset folder; Tracing; Display: Segment Style "Modernized"/"Classic", a change written at once and drawn; no Solid State Module row); `CalcU59Tests` `lib14_ac30_settings_spec_per_frontend_and_layout`; Web `lib14_ac30 the web settings per layout` (Keyboard Feedback "Off"/"Click Sound" in portrait only, Maximum file size in wide only) |
+| AC-31 | Pass | `lib14_ac31_loading_after_500_ms_blocks_nothing` (nothing at 300 ms, "Loading…" by 1.5 s; the model picker, Reset and Cold boot usable; Reset ends it), `lib14_ac31_notice_without_title`; Web `lib14_ac31 loading and the notice dialog` |
+| AC-32 | Pass | `lib14_ac32_help_opens_calc_u_org_59`, `lib14_ac32_about_icon_name_version_summary_links` (the window icon, the name, "Version …", the two lines, GitHub, Support, Privacy, "Built with Qt (LGPL-3.0)."); `CalcU59Tests` `lib14_ac32_help_address_about_texts_and_links`; Web `lib14_ac32 help and about in the help menu and not in the settings` |
+| AC-33 | Pass | `lib14_ac33_three_columns_with_dividers` (calculator, the panel area with the paper panel, the debug panel; the dividers move; the window's picture written to `build/qt/products/calc-u-59/frontends/qt6/test-pictures/`); Web `lib14_ac33 the layouts portrait wide and auto` (a screenshot each) |
+| AC-19 (this product) | Pass | `lib14_ac19_roms_missing_in_window` (the text naming TMC0583.txt in place of the faceplate, no bar, menus File and Help, About and Help work, the window stays; row 59-54); `CalcU59Tests` `lib14_ac19_roms_missing_topic_without_a_machine`; Web `rom-missing.spec.js` `lib14_ac19 roms missing in the window, help and about work (wide)`, `(portrait)` |
+| AC-24 (this product) | Pass | `lib14_ac24_key_under_pointer_ti59_ti58` (a key's centre held in `held-keys`; a point in a widened area is that key; a point in a gap is no key, distance 0), `lib14_ac24_press_on_the_fitted_card_feeds_it` (with a card on show a top-row key is still a key; the card's corner feeds side 0); `CalcU59Tests` `lib14_ac24_faceplate_hit_map` (the 45 centres); Web `lib14_ac24 a key under the pointer` |
+| AC-43 (this product) | Pass | `lib14_ac43_display_hold_full_speed` |
+| AC-1, AC-4, AC-6, AC-8, AC-11, AC-15, AC-17, AC-20 (this product) | Pass | in the cases of AC-26 to AC-32 above |
+| L12 to L15 (library) | Pass | `more_items_are_the_items_without_a_control`, `more_cold_boot_asks_first`, `more_follows_availability`, `media_place_item_only_with_its_media_place`, `no_settings_item_without_settings`, `bar_without_menu_bar_keeps_reset_preset_settings_and_more`, `choice_row_with_labels_offers_only_those`, `choice_value_not_listed_shown_as_written`, `shell_product_form_has_links_and_copy_screen_flag` (C++ and `shell_model.test.js`); Calc-U-1600 `lib14_calc_u_1600_forms_unchanged`; `calcu_qt6_tests` `faceplate_origin_moves_the_hit_map`, `faceplate_press_the_product_takes_passes_through`, `about_shows_the_window_icon`; library `shell.spec.js` `faceplate origin and a press the product takes`, `storage banner shows the library's sentence while not kept`; Calc-U-1600 `storage.spec.js` on `storage-banner` |
+| Q12 (attach) | Pass | `qt_attach_drives_calc_u_59` (`model TI-58`, `key 7`, `wait`, `lcd` through the window's endpoint; the window follows); `CalcU59QtPacingProbe` through attach |
+
+Adapters removed (§10.8): `--pacing-probe` outside attach; W59-1
+(`c59.static-data`; the heatmap's grid is the product request
+`c59.heatmap-grid`); `src/engine.js`; `c59.web.model`; the settings
+commands and `c59.web.settings` of `TIWebPart`; `c59.web.pointer-*`; A-4,
+the frontends' own "ROMs missing" (Qt6's message box and quit, the Web's
+failed-start line); `cu59::PointerTracker` in Qt6 and the Web (it stays
+for the Swift bridge until M-58). The `c59.*` commands of LIB-4 §10.3
+(`c59.start-machine`, …) are no longer sent by Qt6 or the Web; they go
+with the Swift frontend's last use in M-58.
+
+Golden runs: no core change; the replays pass unchanged.
+
+### Deviations from the design, chosen by the simpler structure
+
+- **`CalcU59QtTests` on the real clock**, as `CalcU1600QtTests` (Part D
+  deviation): the host is made inside `EmulatorController`; the cases wait
+  for conditions with a bound. It stays Frequent (22 s in the Qt tree).
+- **The PC-100C's controls on the panel area's own paper panel**: the
+  window sets PRINT, ADV and TRACE on the default paper panel while the
+  PC-100C owns it (`MainWindow::followPrinter`, TRACE's position from
+  `c59.printer`), rather than registering a panel of its own.
+- **`AttachLineClient` moved into the Qt6 component set** so that
+  Calc-U-59's pacing probe does not copy Calc-U-1600's; in trees with
+  `CALCU_ATTACH` `calcu_qt6` links Qt Network (both products' Qt projects
+  find it there).
+- **Two test hooks in the Qt6 frontend**: `QtResourceBundle::hideForTests`
+  (the ROMs-missing case; the ROMs are compiled in) and
+  `AppPaths::useBundledExamplesDir` (the examples beside a test program).
+- **A new save or trace folder is used from the next start**, as today:
+  `SettingsPartSetup::changed` has nothing to apply (C59-3 reads the
+  constant memory file at the TI-58C's build).
+- **Web: Load Preset… sends LIB-13's `open {way: dialog, upload}`**, with
+  no extension filter, as the page's preset upload did and as Calc-U-1600's
+  page does, rather than the shell's `load-preset {content}`.
+- **Web: the assistive key buttons** send `screen-key-down`/`up`; the
+  commands `c59.web.key-button-*` stay in `TIWebPart` (not in §10.8's list;
+  its tests use them).
+- **Web: the card dialog** no longer has Import… and Saved Media… (they are
+  in File and behind More, LIB-7 D-29).
+- **Web, a second tab**: the banner stays (row 59-55) and the library's
+  storage notice shows as a dialog as well.
+- **The test preset of AC-31** runs a program loop (Lbl A, GTO A) while it
+  waits: a bare `wait:` at full speed passes 300 s of emulated time in
+  under 300 ms.
+
+- **Web portrait without ROMs shows the menu bar** (by AC-19: Help and
+  About still work): the portrait layout has no menu bar while the product
+  runs, and B7 hides the bar with its More button when there is no
+  machine, so the page draws the menu bar (File, Help) in that case only.
+  The same holds for iOS in C59-8 (no About there, C59-8 AC-11).
+- **A drag keeps the key first pressed** (Qt6 and Web): ledger row 59-44,
+  in effect from M-57.
+
+### CI
+
+The Qt6 frontend's build changes (files gone and new, `HarnessProduct`
+and Qt Network with `CALCU_ATTACH`), the library's `calcu_qt6` links Qt
+Network in attach trees, and Calc-U-1600's screenshot sources moved: one
+local Linux CI run (`qt-59`, `qt-1600`, `web-59`, `web-1600`) at the merge,
+GitHub CI at the end of Part E.
+
+Column status: Done (AC-26 to AC-33 pass; the Swift frontend's family
+structure is C59-8).

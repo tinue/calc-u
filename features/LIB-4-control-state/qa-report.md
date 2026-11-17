@@ -159,3 +159,34 @@ only (about 1.4 s).
   "Old") replace `currentModel()` and the ROM enums (LIB-14 D-28).
 
 Column status: Done.
+
+## Calc-U-59 (M-57, 2026-11-17, branch `m57-shell-59`; Qt6 and Web)
+
+Design §10. M-54 left `LibraryPartsSetup::printers = {PC-100C}` and M-56
+`controlRules = {&TIDebugPart}` with C59-4's product entries, so the
+product side was only checked; no `TIControlRules` file was needed (the
+debug part is the rules, D-16 holds: no refusal of the product's own).
+The Qt6 and Web frontends draw the model, the module, the printer and the
+card controls from `control-state` (LIB-14 §10); `c59.web.model` is gone,
+Qt6 no longer reads `c59.model` (the Swift frontend does until M-58, D-17).
+
+Tests: `CalcU59Tests` `tests/control_state_tests.cpp` on `tests/AppRig.hpp`
+(the real ROMs), the CTest `CalcU59FrontendsDrawControlState`, the drawing
+in `CalcU59QtTests` and the Web's `shell.spec.js`.
+
+| AC | Result | Evidence |
+|---|---|---|
+| AC-10 | Pass | `lib4_ac10_models_ti59_ti58_ti58c_without_variants` |
+| AC-11 | Pass | `lib4_ac11_slot_1_lists_14_modules_and_the_empty_slot` (each model; ML plugged at the start), `lib4_ac11_printer_lists_pc100c_and_the_empty_place` (attach and detach), `lib4_ac11_choices_refused_while_a_preset_loads` (the empty slot and a module disabled with a reason while a preset runs, available after; row 59-45) |
+| AC-12 | Pass | `lib4_ac12_card_reader_on_the_ti59_only` (kind `magnetic-card`, pass-through, sides 0 and 1, the machine's own); the drawing: `CalcU59QtTests` `lib14_ac27_bar_per_model`, `c59_7_ac13_…` (no card controls on the TI-58), `lib14_ac26_qt_menus_in_family_order` (no card items on the TI-58); Web `lib14_ac27 the bar per model` |
+| AC-13 | Pass | `lib4_ac13_paper_panel_owned_by_pc100c_or_none` (attach, model switch, detach) |
+| AC-14 | Pass | `lib4_ac14_debug_panel_entries_carried` (`c59.asm-run`, `c59.trace`, `c59.calculator-tab` with `available`, under `product`) |
+| AC-15 | Pass for Qt6 and the Web; Swift in M-58 | `CalcU59FrontendsDrawControlState` (no file of the Qt6 and Web frontends reads `hasCardReader`, `cu59::info(`, `c59.model`, `c59.web.model` or `allModules`); the drawing cases above. `App/MachineModel.swift` goes with C59-8 |
+| AC-9 (this product) | Pass | `lib4_harness_state_control_state_has_paper_panel_and_card_reader` (`state control-state` through `calcu`) |
+
+Ledger: 59-9 and 59-45 in effect for Qt6 and the Web from M-57.
+Cost per flush (§10.9): not visible; the TI-59's 14 `canReplace` per flush
+did not move the Frequent timings (`CalcU59Tests` 546 cases as before
+within the budget).
+
+Column status: In progress (Done in M-58 with the Swift frontend).

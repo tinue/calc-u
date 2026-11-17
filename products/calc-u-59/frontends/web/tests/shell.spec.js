@@ -72,11 +72,11 @@ test('lib14_ac28 the wide layout has the menus and no reset preset or settings o
   const titles = await page.locator('[data-calcu^="menu-"]:not([data-calcu="menu-bar"])').allTextContents();
   expect(titles).toEqual(['File', 'Machine', 'Help']);   // no Edit (AC-26)
   await el(page, 'menu-file').click();
-  expect(await menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(
+  await expect.poll(() => menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(
     ['load-preset', 'examples', 'import-media', 'saved-media', 'arm-card', 'arm-fresh-card', 'settings']);   // no Quit (AC-6)
   await expect(el(page, 'item-load-preset')).toHaveText(/Load Preset…/);
   await el(page, 'menu-machine').click();
-  expect(await menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(['model', 'peripherals', 'reset', 'cold-boot', 'resume']);
+  await expect.poll(() => menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(['model', 'peripherals', 'reset', 'cold-boot', 'resume']);
   await expect(el(page, 'item-resume')).toHaveAttribute('aria-disabled', 'true');
   // The bar has none of Reset, Preset, Settings, More; Cold boot is the menu item.
   for (const n of ['bar-action-reset', 'bar-action-load-preset', 'bar-action-settings', 'bar-more']) await expect(el(page, n)).toHaveCount(0);
@@ -84,7 +84,7 @@ test('lib14_ac28 the wide layout has the menus and no reset preset or settings o
   await expect(el(page, 'more-confirm')).toHaveCount(0);   // the menu item asks nothing (M15 is the More menu's)
   await expect.poll(() => commands(page)).toContain('cold-boot');
   await el(page, 'menu-help').click();
-  expect(await menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(['help', 'about']);
+  await expect.poll(() => menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(['help', 'about']);
   await expect(el(page, 'item-help')).toHaveText(/Calc-U-59 Help/);
   await expect(el(page, 'item-about')).toHaveText(/About Calc-U-59/);
 });
@@ -107,7 +107,7 @@ test('lib14_ac29 more holds examples cold boot resume and help', async ({ page }
   await el(page, 'bar-more').click();
   const menu = el(page, 'more-menu');
   await expect(menu).toBeVisible();
-  expect(await menuIds(page, 'more-item-', menu)).toEqual(
+  await expect.poll(() => menuIds(page, 'more-item-', menu)).toEqual(
     ['examples', 'import-media', 'saved-media', 'cold-boot', 'resume', 'help', 'about']);   // D-36
   await expect(el(page, 'more-item-resume')).toHaveAttribute('aria-disabled', 'true');
   // Inside the client at the narrowest portrait (design §10.12).

@@ -133,10 +133,11 @@ if(CALCU_TESTS)
   # CALCU_TESTS_LONGER / _CHECKPOINT; every entry runs in this directory.
   calcu_add_test(CalcU59Tests frequent COMMAND CalcU59Tests)
   # tools/read_trace.py must read the trace CalcU59Tests wrote with app/TraceWriter.
-  find_package(Python3 COMPONENTS Interpreter)
+  # Its 4 MB of JSON go to /dev/null: CTest took 15 s to take them in (E-11);
+  # a failure still shows on standard error and in the exit status.
   if(Python3_FOUND)
     calcu_add_test(CalcU59TraceReader frequent
-                   COMMAND ${Python3_EXECUTABLE} tools/read_trace.py --json build/trace-test.bin
+                   COMMAND sh -c "\"$0\" tools/read_trace.py --json build/trace-test.bin > /dev/null" ${Python3_EXECUTABLE}
                    PROPERTIES DEPENDS CalcU59Tests)
   endif()
   # C59-1 AC-17: the app layer reaches the machine through the interface only.
@@ -167,8 +168,7 @@ if(CALCU_TESTS)
   # of its own (tests/calcu_runs.cmake; also in every desktop job of the workflow).
   calcu_add_test(CalcU59CalcuRuns frequent COMMAND ${CMAKE_COMMAND} -DCALCU=$<TARGET_FILE:calcu> -P tests/calcu_runs.cmake)
   if(Python3_FOUND)
-    # LIB-12 AC-7, AC-10 (design P5): `calcu` without one ROM file ends naming it
-    # (was tools/headless/ti59.py's, CalcU59HeadlessRomMissing, until M-59).
+    # LIB-12 AC-7, AC-10 (design P5): `calcu` without one ROM file ends naming it.
     calcu_add_test(CalcU59HarnessRomMissing frequent COMMAND ${Python3_EXECUTABLE} tests/harness_rom_tests.py
                    PROPERTIES ENVIRONMENT CALCU=$<TARGET_FILE:calcu>)
     # C59-2 AC-18 (design T12): fastcal.py writes the tracked calendar-09, and

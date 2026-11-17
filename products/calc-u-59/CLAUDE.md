@@ -33,25 +33,22 @@ Architecture facts (register model, SCOM layout, PC encoding, machine variants, 
 - `reference/DebugAPI.md` — debug panel and bridge API
 - `reference/FrontendParity.md` — which feature lives where in the three GUIs
 - `reference/WebClient.md` — the web client and its `dist/` contract
+- `reference/Harness.md` — the harness `calcu --product 59`: ROM traces, timing and profiling, the `ti59` commands, the scripts that stay
 - `docs/formats/preset.md`, `docs/formats/cue-card.md` (repository root) — the preset format 2 (`.ti59`/`.ti58`/`.ti58c`) and the cue card block
 - `rom/TI59-ROM-Guide.md`, `rom/TI58C-ROM-Guide.md` — how the ROMs work
 
 Do not restate these facts in CLAUDE.md, skills, or memory files — link to the reference doc instead.
 
-## Agentic tools
-
-`tools/agentic/` holds command-line tools for running, timing and profiling
-`.ti59` presets (run a file, per-line print times, run time per key, hot
-steps, step costs, keycode disassembler/assembler); they load presets
-through `calcu` (`calcu --product 59 serve`, the harness below). Read
-`tools/agentic/README.md` before measuring or comparing program speed.
-ROM-level traces of key sequences come from `tools/headless/` (its README).
-
 ## Harness
 
 `calcu` is the family's harness (LIB-11, `features/LIB-11-harness/` at the
 repository root): the product without a window, on the library's app
-session, in emulated time only, so two runs give the same replies. Build
+session with the product's app layer `app/TIAppPart` as the frontends host
+it (built in `prepare()` on the run's settings and folders,
+`app/HarnessProduct.cpp`), in emulated time only, so two runs give the same
+replies. It replaced `tools/headless/` and `tools/agentic/` in M-59. Read
+`reference/Harness.md` before tracing the ROM or measuring or comparing
+program speed (the time base, the recipes, the pitfalls). Build
 the target `calcu` of a root tree (`cmake --build ../../build/tests --target
 calcu`; the program is `build/tests/library/harness/cli/calcu`). It finds the
 ROMs in `roms/` (`roms/fetch_roms.sh`), the bundled presets in `examples/`
@@ -99,8 +96,19 @@ Master Library module, no printer (LIB-18 AC-18), at key readiness.
   by its extension or its `model:` line, an `.asm` overlay, a
   `.keystrokes.yaml` program written into the running machine from step 000;
   `.rom.yaml` and `ti58c.memory.yaml` are refused (`app/TIFileKinds`).
-- Not yet: the product commands of C59-9 (M-59). Until then
-  `tools/headless/` stays the tool for ROM traces.
+- Product commands (C59-9, `app/TIHarnessCommands`, the run facts in
+  `app/TIRunProbe`, the assembly in `app/TIMnemonics`): `ti59 run-time
+  <key>…`, `ti59 line-times [limit=<d>]`, `ti59 hot-steps [limit=<d>]`,
+  `ti59 step-trace <from> <to>`, `ti59 step-cost <keycode>…`, `ti59 coverage
+  [all]` (after `profile on`), `ti59 keycodes list|disassemble [<first>
+  [<last>]]` and `ti59 keycodes assemble <file>`. A ROM trace of keys:
+  `trace <file>`, the keys, `trace off`, then `tools/read_trace.py
+  --labels rom/TI59-labels.asm --changes <file>`.
+- Machine state (LIB-11 AC-24, C59-9 AC-15): `state-save <file>`,
+  `state-restore <file>` (`core/TIMachineState.*`; the fields of each part
+  in its `stateIo` template, the records in `core/TIStateRecords.hpp`).
+- Scripts on the harness (`tools/calcu59.py`): `tools/coverage.py`,
+  `tools/fastmode_matrix.py`, `tools/calendar/`; output in `tools/build/`.
 
 ## Frontend Parity (Swift app ↔ Qt6 app ↔ web client)
 

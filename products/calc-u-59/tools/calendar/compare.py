@@ -2,7 +2,7 @@
 
 CLI: compare.py file.ti59... [--calcu PATH]
   For each preset: steps (without trailing zeros), seconds from the last key
-  to the last printed line (linetimes.py, through calcu), the year found in
+  to the last printed line (`ti59 line-times`, tools/calcu59.py), the year found in
   the printout, and the day-row check against Python's calendar module.
   zsh note: if `uv` is aliased with noglob, expand globs with $(ls ...)."""
 import os
@@ -10,8 +10,7 @@ import re
 import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE)); sys.path.insert(0, HERE)
-from calcu59 import Run, calcu_path, split_preset  # noqa: E402
-from linetimes import line_times  # noqa: E402
+from calcu59 import Run, calcu_path, line_times, split_preset  # noqa: E402
 from check import check  # noqa: E402
 
 

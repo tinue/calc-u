@@ -112,9 +112,8 @@ messages: the library's topics (`display`, `busy`, `notices`, `log`,
 `c59.*` topics (`c59.model` went with C59-8 (M-58): every frontend draws
 the model, the module, the printer and the card controls from LIB-4's
 `control-state`; `c59.led`, `c59.printer`
-(connected and TRACE only), `c59.cue-card` (the cue card shown, whether the fitted card is on show, its lit corner), `c59.run-state` (full speed and whether an
-operation runs), …; each the snapshot of one of 2.3.0's change flags,
-until the feature that owns it, LIB-3 59 design §5) and the debug panel's
+(connected and TRACE only), `c59.cue-card` (the cue card shown, whether the fitted card is on show, its lit corner), …; each the snapshot of one of 2.3.0's change flags;
+the product topics that stay after M-59's adapter check, LIB-3 59 design §5; `c59.run-state` and the command `c59.full-speed` went in M-59: the library's `speed` and `busy`) and the debug panel's
 product topics (`TIDebugPart`, C59-4 AC-25). Qt6
 calls the session on its GUI thread, Swift on `cu59::SessionThread`, the
 Web in its worker (§ "Threads"); each talks to it through the library's
@@ -205,8 +204,8 @@ does not count). A call drops a lag over 100 ms; full speed runs at most
 marks a step boundary (a `program` pause or step lands on it). Bit 30 marks a confirmed
 hardware poll (a key or card-switch wait; not a printer BUSY wait, which is
 counted in emulated cycles, so full speed speeds up printing). Bit 31 marks
-a breakpoint of the core's own (`TRACE_BREAKPOINTS`), set only by the
-headless tools. The run control's breakpoints (LIB-10 AC-31, set through
+a breakpoint of the core's own (`TRACE_BREAKPOINTS`), set only by
+2.3.0's headless tools (none since M-59). The run control's breakpoints (LIB-10 AC-31, set through
 the harness) stop the advance before the instruction (`TIDebugging`); an
 armed start that fires stops it after one, and the run control pauses
 there.

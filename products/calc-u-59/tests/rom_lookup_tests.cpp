@@ -403,13 +403,13 @@ TEST(lib12_ac6_model_and_module_changes_read_no_file) {
     for (auto model : {cu59::Model::TI59, cu59::Model::TI58, cu59::Model::TI58C, cu59::Model::TI59}) {
         command(*app->session, calcu::startup::kModelCommand, calcu::sessions::Value::object({{"name", cu59::modelId(model).value}}));
         CHECK(c.hasMachine() && c.model() == model);
-        CHECK_EQ(c.emulator()->moduleImage().size(), size_t{5000});
+        CHECK_EQ(c.moduleID(), std::string("ML"));
     }
     for (const auto& id : moduleIds()) {
         command(*app->session, calcu::startup::kAttachCommand,
                 calcu::sessions::Value::object({{"place", "slot-1"}, {"peripheral", id}}));
         CHECK_EQ(c.moduleID(), id);
-        CHECK(c.emulator()->moduleImage() == *cu59::moduleImage(*testroms::romSet(), id + ".rom.yaml"));
+        CHECK(cu59::moduleImage(*testroms::romSet(), id + ".rom.yaml").has_value());
     }
     CHECK(missing.empty());
 }

@@ -5,6 +5,7 @@
 // the media place clause passes in M-55, LIB-1 D-1).
 
 #include "TestHarness.hpp"
+#include "harness/MachineState.hpp"
 #include "typing/TypingSupport.hpp"
 #include "TestRoms.hpp"
 #include "../core/TIKeys.hpp"
@@ -162,8 +163,8 @@ TEST(lib1_ac33_machine_conforms_without_peripherals) {
         // program memory (C59-2 AC-17), the library program (C59-7 AC-21), on
         // the TI-58C the constant memory (C59-3 AC-1), the debug panel's four
         // kinds (C59-4), on the TI-59 the card reader's media place (C59-7
-        // AC-6; LIB-1 AC-33, D-1, M-55).
-        const std::size_t own = std::string(m) == "TI-58" ? 8 : 9;
+        // AC-6; LIB-1 AC-33, D-1, M-55), the machine state (C59-9 AC-15).
+        const std::size_t own = std::string(m) == "TI-58" ? 9 : 10;
         CHECK_EQ(machine->capabilities().size(), own);
         const auto media = calcu::media::checkMediaPlaces(*machine, tiCatalogue());
         for (const auto& d : media) std::printf("  %s: %s\n", m, d.c_str());
@@ -217,8 +218,9 @@ TEST(lib1_ac33_machine_conforms_with_printer_and_module) {
             CHECK_EQ(machine->plugged().byPlace.size(), size_t{with ? 2u : 0u});
             // + typing support (LIB-5), trace records (LIB-10), program memory (C59-2),
             // library program (C59-7), constant memory (C59-3, TI-58C), card reader (C59-7, TI-59),
-            // the debug panel's asm-overlay, rom-heatmap, calculator-state, machine-log (C59-4)
-            const std::size_t own = std::string(m) == "TI-58" ? 8 : 9;
+            // the debug panel's asm-overlay, rom-heatmap, calculator-state, machine-log (C59-4),
+            // the machine state (C59-9 AC-15)
+            const std::size_t own = std::string(m) == "TI-58" ? 9 : 10;
             CHECK_EQ(machine->capabilities().size(), (with ? 2u : 0u) + own);
             CHECK(calcu::media::checkMediaPlaces(*machine, tiCatalogue()).empty());
             for (const auto& e : machine->capabilities()) {
@@ -232,6 +234,11 @@ TEST(lib1_ac33_machine_conforms_with_printer_and_module) {
                     e.kind == cu59::CalculatorState::kKind || e.kind == cu59::MachineLog::kKind) {
                     const auto* c = std::get_if<ComponentOwner>(&e.owner);
                     CHECK(c && c->component.value == "TMC0501" && e.id.value == "TMC0501/" + std::string(e.kind.value));
+                    continue;
+                }
+                if (e.kind == calcu::harness::MachineState::kKind) {
+                    const auto* c = std::get_if<ComponentOwner>(&e.owner);
+                    CHECK(c && c->component.value == "TMC0501" && e.id.value == "TMC0501/machine-state");
                     continue;
                 }
                 if (e.kind == TraceRecords::kKind) {

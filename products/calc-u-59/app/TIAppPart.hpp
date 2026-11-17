@@ -81,7 +81,6 @@ using calcu::sessions::TopicName;
 inline const TopicName kLed{"c59.led"};
 inline const TopicName kCueCard{"c59.cue-card"};
 inline const TopicName kPrinter{"c59.printer"};
-inline const TopicName kRunState{"c59.run-state"};
 } // namespace topics
 
 // ── Payloads of the interim topics. Each is a snapshot set when today's
@@ -119,15 +118,6 @@ struct TIPrinterState final : TISnapshot<TIPrinterState> {
     bool trace = false;
     calcu::sessions::Value toValue() const override;
 };
-/// What no debugger state is (LIB-10 adapter L-E5, until M-57): the run
-/// state is the library's `run-state`; `keystrokes-playing` says that an
-/// operation runs (a preset, a build; LIB-6 replaced the KEYSTROKES playback).
-struct TIRunState final : TISnapshot<TIRunState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.run-state"};
-    bool fullSpeed = false;
-    bool keystrokesPlaying = false;
-    calcu::sessions::Value toValue() const override;
-};
 /// The result of a command that answers yes or no (fit-card, tap-card, …).
 struct TIFlag final : calcu::sessions::PayloadOf<TIFlag> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.flag"};
@@ -140,7 +130,6 @@ struct TIFlag final : calcu::sessions::PayloadOf<TIFlag> {
 /// The commands of the part (`c59.` + name; arguments in the comments).
 namespace commands {
 using calcu::sessions::CommandName;
-inline const CommandName kFullSpeed{"c59.full-speed"};           // {on}
 // LIB-8 P-E2 (until M-57): `set-control {peripheral: "PC-100C", control: PRINT|ADV|TRACE, on}`,
 // the library's command, as the paper panel sends it.
 inline const CommandName kSetControl{"set-control"};
@@ -173,6 +162,9 @@ struct TIAppSetup {
     std::string home;                                  ///< `~/` of a preset (README §3)
     std::function<std::optional<std::string>()> screenshotFolder;   ///< LIB-6 AC-25; unset: the save folder
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
+    /// The harness (LIB-11 §11.3): the debug panel's tabs computed as if
+    /// shown, so that `state calculator-debug` reads them (TIDebugSetup).
+    bool debugTabsShown = false;
 };
 
 class TIAppPart final : public calcu::sessions::SessionPart {
@@ -187,6 +179,8 @@ public:
     /// order. The host builds its AppSessionSetup from them.
     std::vector<calcu::sessions::SessionPart*> sessionParts();
     calcu::parts::LibraryParts& libraryParts() { return m_lib; }
+    /// LIB-18's machines of the session (the harness's machines()).
+    TIProductMachines& productMachines() { return m_machines; }
 
     // SessionPart.
     void attach(calcu::sessions::SessionSetup&) override;
@@ -220,12 +214,10 @@ public:
     const LedFrame& display() const { return m_display; }
     double calcIndicatorOpacity() const { return m_calcOpacity; }
     calcu::typing::TypingPart* typing() { return m_lib.typing(); }
-    /// Full speed as the display's hold gesture asks (c59.full-speed): the
-    /// session's commanded speed.
-    void setFullSpeed(bool on);
+    /// The session's commanded speed is full (the library's `speed`, which
+    /// the display's hold sends; the Web page shows it).
     bool fullSpeed() const { return m_fullSpeed; }
-    /// An operation runs (a preset, a build, a plug change): the field the
-    /// interim topic `c59.run-state` names keystrokes-playing.
+    /// An operation runs (a preset, a build, a plug change).
     bool keystrokesPlaying() const { return m_operationRuns; }
 
     // Cue card
@@ -372,7 +364,6 @@ private:
     calcu::sessions::StateTopic* m_led = nullptr;
     calcu::sessions::StateTopic* m_cue = nullptr;
     calcu::sessions::StateTopic* m_printer = nullptr;
-    calcu::sessions::StateTopic* m_run = nullptr;
 };
 
 /// The session of a native frontend (C59-5 D-12; LIB-6 D-40): the library's

@@ -16,13 +16,19 @@ states and reports whether the calculator hangs in the redisplay loop
 
 Results: rom/fastmode.md; ROM side: rom/TI59-ROM-Guide.md § "Fast mode".
 
-CLI: fastmode_matrix.py [substring]     only cases whose name contains it"""
+Drives the harness (C59-9 AC-13, `calcu --product 59 serve`, tools/calcu59.py):
+a cold boot with a PC-100C for each run, the program by `ti59 program`, the
+registers by `ti59 registers`, the keys by `key-down`/`key-up` (as matrix
+codes), the run watched with `registers TMC0501` and `peek TMC0501 scom`,
+the display read with `lcd` and the printout with `paper text`; the hang of
+the stop table seen with `profile`.
+
+CLI: fastmode_matrix.py [substring] [--calcu PATH]   only cases whose name contains it"""
 import os
+import re
 import sys
-import ctypes as C
-from collections import Counter
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'headless'))
-from ti59 import Machine, LIB, INSTR_PER_SEC, regbytes, press, settle, idle  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from calcu59 import Run, calcu_path  # noqa: E402
 
 FAST_ENTRY = ['82', '85', '83', '52', '82', '83', '94', '95', '61', '92', '92', '62', '41', '92', '42']
 NORMAL_ENTRY = ['21', '81', '72', '61', '92', '92', '63', '91']   # St flg 4, GTO 008 R/S
@@ -86,75 +92,130 @@ STOPS = [
 ]
 
 
-def regval(b):
-    """register image → short decimal string"""
-    if not any(b):
-        return '0'
-    m = ''.join(str(b[i]) for i in range(15, 2, -1))
-    s = ('-' if b[0] & 2 else '') + m[0] + '.' + m[1:].rstrip('0')
-    e = b[2] * 10 + b[1]
-    return s + (f'e{"-" if b[0] & 4 else ""}{e}' if e else '')
+# The key of each matrix code (row × 10 + column; docs/formats/preset.md §8.1).
+KEY_AT = {11: 'A', 12: 'B', 13: 'C', 14: 'D', 15: 'E', 21: '2nd', 22: 'INV', 23: 'lnx', 24: 'CE', 25: 'CLR',
+          31: 'LRN', 32: 'x<>t', 33: 'x^2', 34: 'sqrt', 35: '1/x', 41: 'SST', 42: 'STO', 43: 'RCL', 44: 'SUM',
+          45: 'y^x', 51: 'BST', 52: 'EE', 53: '(', 54: ')', 55: '/', 61: 'GTO', 62: '7', 63: '8', 64: '9',
+          65: '*', 71: 'SBR', 72: '4', 73: '5', 74: '6', 75: '-', 81: 'RST', 82: '1', 83: '2', 84: '3',
+          85: '+', 91: 'R/S', 92: '0', 93: '.', 94: '+/-', 95: '='}
+FLG_BUSY, FLG_IDLE = 0x8000, 0x0001
+IDLE_LO, IDLE_HI = 0x0627, 0x0660
+
+
+def regval(text):
+    """`ti59 registers`' value as 2.3.0's tool wrote it ('1e1' → '1.e1')."""
+    m = re.match(r'^(-?\d)(\.?\d*)(e.*)?$', text)
+    if not m or text == '0':
+        return text
+    exp = m.group(3) or ''
+    return m.group(1) + (m.group(2) or '.') + ('' if exp in ('e0', 'e-0') else exp)
+
+
+class Machine:
+    """One cold-booted TI-59 with a PC-100C on a `calcu serve` (tools/calcu59.py)."""
+
+    def __init__(self, r):
+        self.r = r
+        r.cmd('cold-boot')
+        r.cmd('cut-paper')
+
+    def cpu(self):
+        out = {}
+        for l in self.r.cmd('registers TMC0501'):
+            k, _, v = l.partition(' = ')
+            out[k.strip()] = int(v, 16)
+        return out
+
+    def source(self):
+        """SCOM[0] digit 3, the Prg Src flag."""
+        v = int(self.r.cmd('peek TMC0501 scom 0 1')[0].split(': ')[1], 16)
+        return (v >> 12) & 0xF
+
+    def idle(self, s=None):
+        s = s or self.cpu()
+        return (not s['fB'] & 1) and not (s['flags'] & FLG_BUSY) and IDLE_LO <= s['pc'] <= IDLE_HI and bool(s['flags'] & FLG_IDLE)
+
+    def press(self, code, hold='400ms'):
+        self.r.cmd('key-down ' + KEY_AT[int(code)])
+        self.r.cmd('wait ' + hold)
+        self.r.cmd('key-up ' + KEY_AT[int(code)])
+
+    def settle(self):
+        self.r.cmd('wait')
+
+    def seconds(self):
+        return float([l for l in self.r.cmd('ticks') if l.startswith('seconds: ')][0].split()[1])
 
 
 def watch(m, limit=60):
     """run until idle; (finished, Prg Src values seen while running)"""
-    t0 = m.elapsed(); srcs = set(); quiet = 0
-    while (m.elapsed() - t0) / INSTR_PER_SEC < limit:
-        LIB.h_stepn(m.h, 400)
-        s = m.snapshot()
-        if s.fB & 1:
-            srcs.add(s.SCOM[0][3])
-        quiet = quiet + 1 if idle(m) else 0
+    t0 = m.seconds(); srcs = set(); quiet = 0
+    while m.seconds() - t0 < limit:
+        m.r.cmd('wait 28ms')                 # about 400 instructions
+        s = m.cpu()
+        if s['fB'] & 1:
+            srcs.add(m.source())
+        quiet = quiet + 1 if m.idle(s) else 0
         if quiet >= 40:
             return True, srcs
     return False, srcs
 
 
-def run(body, fast, extra=None, keys_after=(), exit_=EXIT, limit=60):
-    m = Machine(printer=True)
+def run(r, body, fast, extra=None, keys_after=(), exit_=EXIT, limit=60):
+    m = Machine(r)
     prog = [43, 59, 91, 0, 0, 0, 0, 86, 25] + list(body) + list(exit_)
     for at, codes in (extra or {}).items():
         prog += [0] * max(0, at - len(prog))
         prog[at:at + len(codes)] = codes
-    m.write_program(prog)
-    for n, v in REGS.items():
-        LIB.h_ram_write(m.h, 119 - n, (C.c_uint8 * 16)(*regbytes(v)))
+    r.cmd('ti59 program 000 ' + ' '.join('%02d' % k for k in prog))
+    r.cmd('ti59 registers ' + ' '.join(f'{n:02d}={v}' for n, v in REGS.items()))
     keys = FAST_ENTRY if fast else NORMAL_ENTRY
     for k in keys[:-1]:
-        press(m, k); settle(m, 60)
-    m.press(keys[-1]); LIB.h_stepn(m.h, 3000); m.release(keys[-1])
+        m.press(k); m.settle()
+    m.press(keys[-1], '200ms')
     ok, srcs = watch(m, limit)
     for k in keys_after:
-        press(m, k); ok2, s2 = watch(m, limit); ok &= ok2; srcs |= s2
+        m.press(k); ok2, s2 = watch(m, limit); ok &= ok2; srcs |= s2
     disp = set()                                # sampled, so a blinking display compares equal
     for _ in range(30):
-        LIB.h_stepn(m.h, 5000); disp.add(m.display().strip())
-    return dict(ok=ok, srcs=sorted(srcs), disp=sorted(disp), lines=m.printer_lines(),
-                regs=[regval(m.ram(119 - n)) for n in range(60)], m=m)
+        r.cmd('wait 350ms'); disp.add(r.cmd('lcd')[0].strip())
+    regs = [regval(l.split(': ')[1]) for l in r.cmd('ti59 registers ' + ' '.join('%02d' % n for n in range(60)))]
+    return dict(ok=ok, srcs=sorted(srcs), disp=sorted(disp), lines=r.paper(), regs=regs, m=m)
 
 
-def compare(name, body, extra=None, keys_after=()):
-    f = run(body, True, extra, keys_after); n = run(body, False, extra, keys_after)
+def compare(r, name, body, extra=None, keys_after=()):
+    f = run(r, body, True, extra, keys_after); n = run(r, body, False, extra, keys_after)
     diffs = [f'{k}: fast={f[k]!r} normal={n[k]!r}' for k in ('ok', 'disp', 'lines') if f[k] != n[k]]
-    diffs += [f'R{r:02}: fast={a} normal={b}' for r, (a, b) in enumerate(zip(f['regs'], n['regs'])) if a != b]
+    diffs += [f'R{i:02}: fast={a} normal={b}' for i, (a, b) in enumerate(zip(f['regs'], n['regs'])) if a != b]
     print(f'{"DIFF" if diffs else "SAME"} {name:32} fast {f["srcs"]}  normal {n["srcs"]}')
     for d in diffs[:4]:
         print('      ', d)
 
 
-def stop_test(name, body):
-    r = run(body, True, exit_=[], limit=3)
-    m = r['m']; pcs = Counter(x.pc for x in m.record(200000))
-    hung = min(pcs) >= 0x030A and max(pcs) <= 0x030E
-    print(f'{name:20} {"HANGS 030A-030E" if hung else "stops":16} Prg Src {m.snapshot().SCOM[0][3]}  display {r["disp"]!r}')
+def stop_test(r, name, body):
+    res = run(r, body, True, exit_=[], limit=3)
+    m = res['m']
+    r.cmd('profile on')
+    r.cmd('wait 14s')                         # about 200000 instructions
+    pcs = [int(l.split()[1], 16) for l in r.cmd('profile report 100000')[:-1]]
+    r.cmd('profile off')
+    hung = bool(pcs) and min(pcs) >= 0x030A and max(pcs) <= 0x030E
+    print(f'{name:20} {"HANGS 030A-030E" if hung else "stops":16} Prg Src {m.source()}  display {res["disp"]!r}')
 
 
 if __name__ == '__main__':
-    pick = sys.argv[1] if len(sys.argv) > 1 else ''
-    for c in CASES:
-        if pick in c[0]:
-            compare(c[0], c[1], c[2] if len(c) > 2 else None, c[3] if len(c) > 3 else ())
-    if not pick:
-        print('\nstopping a fast-mode program:')
-        for name, body in STOPS:
-            stop_test(name, body)
+    args = sys.argv[1:]
+    program = calcu_path(args)
+    pick = args[0] if args else ''
+    r = Run(program)
+    try:
+        r.cmd('attach printer PC-100C')
+        for c in CASES:
+            if pick in c[0]:
+                compare(r, c[0], c[1], c[2] if len(c) > 2 else None, c[3] if len(c) > 3 else ())
+        if not pick:
+            print('\nstopping a fast-mode program:')
+            for name, body in STOPS:
+                stop_test(r, name, body)
+    finally:
+        r.close()

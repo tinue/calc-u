@@ -38,13 +38,25 @@ Flags:
                            Takes precedence over --clean.
     --color                Colorize trace entries (DISP ON: light yellow, IDLE=1: darker white,
                            both: dark yellow). Works with any filter combination.
+    --labels <file>        ROM labels inline, from a label table (rom/TI59-labels.asm,
+                           rom/TI58C-labels.asm: lines "ADDR  NAME ..."), as
+                           2.3.0's tools/headless/ti59.py showed them (C59-9 D-9).
+    --changes              One line per instruction, "PC OPCODE dDIGIT [c0] mnemonic
+                           changes…": only the registers the instruction changed
+                           (A-E, IO, fA, fB, KR, SR, EXT, R5), as ti59.py printed
+                           them. Works with the filters and --labels.
+
+A ROM trace of keys through the harness (reference/Harness.md):
+    calcu --product 59 trace k.trace then key 5 + 7 = then trace off
+    python3 tools/read_trace.py --clean-heavy --skip-repeating --labels rom/TI59-labels.asm --changes k.trace
 
 The mnemonic disassembly uses mnemonics.tsv from the same directory.
 """
 
-import sys
-import struct
 import json
+import re
+import struct
+import sys
 from disasm import disasm
 
 # ── Constants (must match DebugAPI.md) ────────────────────────────────────────
@@ -698,7 +710,31 @@ def _apply_clean_heavy(records):
 
     return records
 
-def format_as_log(records, dedup=False, skip_repeating=False, color=False):
+def load_labels(path):
+    """{address: name} of a label table (lines "ADDR  NAME ...", ';' comments)."""
+    out = {}
+    for line in open(path, encoding='utf-8'):
+        m = re.match(r'^([0-9A-Fa-f]{4})\s+(\S+)', line)
+        if m:
+            out[int(m.group(1), 16)] = m.group(2)
+    return out
+
+
+_CHANGE_FIELDS = ('A', 'B', 'C', 'D', 'E', 'IO', 'fA', 'fB', 'KR', 'SR', 'EXT', 'R5')
+
+
+def _format_changes(rec, prev, labels):
+    """One line: PC OPCODE dDIGIT [c0] [label:] mnemonic, then what changed since prev."""
+    addr = int(rec['pc'], 16)
+    cond = '' if rec['COND'] == '1' else ' c0'
+    lab = (labels or {}).get(addr, '')
+    lab = f'{lab}: ' if lab else ''
+    changes = [f"{k}={rec[k]}" for k in _CHANGE_FIELDS if prev is not None and rec[k] != prev[k]]
+    return (f"{rec['pc']} {rec['opcode']} d{rec['digit']:x}{cond:3} {lab}{disasm(addr, int(rec['opcode'], 16)):24} "
+            + ' '.join(changes)).rstrip()
+
+
+def format_as_log(records, dedup=False, skip_repeating=False, color=False, labels=None, changes=False):
     """
     Render records as TI59E.LOG-style text.
 
@@ -726,6 +762,7 @@ def format_as_log(records, dedup=False, skip_repeating=False, color=False):
 
     # Format output
     out = []
+    prev = None
 
     for rec in records:
         t = rec['type']
@@ -742,9 +779,15 @@ def format_as_log(records, dedup=False, skip_repeating=False, color=False):
             out.append(_user_banner(rec))
         elif t == 'comment':
             out.append(rec['text'])
+        elif t == 'trace' and changes:
+            out.append(_apply_color(_format_changes(rec, prev, labels), rec, color))
+            prev = rec
         elif t == 'trace':
             trace_num = rec.get('_trace_index')
             formatted = _format_trace_record(rec, trace_number=trace_num)
+            if labels and int(rec['pc'], 16) in labels:
+                head, _, rest = formatted.partition('\n')
+                formatted = f"{head}  <{labels[int(rec['pc'], 16)]}>\n{rest}"
             formatted = _apply_color(formatted, rec, color)
             out.append(formatted)
 
@@ -760,6 +803,12 @@ def main():
     color = '--color' in args
     clean_heavy = '--clean-heavy' in args
     clean = '--clean' in args and not clean_heavy
+    changes = '--changes' in args
+    labels = None
+    if '--labels' in args:
+        i = args.index('--labels')
+        labels = load_labels(args[i + 1])
+        del args[i:i + 2]
     paths = [a for a in args if not a.startswith('--')]
     if not paths:
         print(__doc__)
@@ -774,7 +823,8 @@ def main():
         if as_json:
             print(json.dumps(records, indent=2))
         else:
-            print(format_as_log(records, dedup=dedup, skip_repeating=skip_repeating, color=color))
+            print(format_as_log(records, dedup=dedup, skip_repeating=skip_repeating, color=color,
+                                labels=labels, changes=changes))
 
 if __name__ == '__main__':
     main()

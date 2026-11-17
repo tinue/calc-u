@@ -241,7 +241,7 @@ struct Run {
             // 2.3.0's StateApplier::powerOn (gone in M-54), as it was recorded: on
             // the TI-58C the ROM's start-up for 300,000 instructions, then the RAM.
             if (cu59::info(model).hasConstantMemory) {
-                mem(*m).runInstructions(300'000);
+                testroms::runInstructions(*m, 300'000);
                 if (savedRam.size() >= 120 * 16) mem(*m).deserialiseRAM(savedRam.data());
             }
         }

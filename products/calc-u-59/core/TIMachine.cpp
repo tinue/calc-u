@@ -107,6 +107,7 @@ const CapabilityId kProgramMemoryId{"RAM/c59.program-memory"};
 const CapabilityId kConstantMemoryId{"RAM/c59.constant-memory"};
 const CapabilityId kCardReaderId{"card-reader/media-place"};
 const CapabilityId kLibraryProgramId{"TMC0501/c59.library-program"};
+const CapabilityId kMachineStateId{"TMC0501/machine-state"};
 const CapabilityId kAsmOverlayId{"TMC0501/c59.asm-overlay"};
 const CapabilityId kHeatmapId{"TMC0501/c59.rom-heatmap"};
 const CapabilityId kCalculatorStateId{"TMC0501/c59.calculator-state"};
@@ -173,6 +174,7 @@ std::vector<CapabilityEntry> TIMachine::capabilities() const {
     out.push_back({cu59::ProgramMemory::kKind, kProgramMemoryId, ram});
     if (hasConstantMemory(m_variant)) out.push_back({cu59::ConstantMemory::kKind, kConstantMemoryId, ram});
     out.push_back({cu59::LibraryProgram::kKind, kLibraryProgramId, cpu});
+    out.push_back({calcu::harness::MachineState::kKind, kMachineStateId, cpu});
     if (m_cardReader) out.push_back({calcu::media::MediaPlace::kKind, kCardReaderId, ComponentOwner{ComponentId{"card-reader"}}});
     if (!m_printer) return out;
     const PeripheralOwner owner{kPC100C, kPrinterPath};
@@ -191,6 +193,7 @@ Capability* TIMachine::capability(const CapabilityId& id) {
     if (id == kProgramMemoryId) return &m_programMemory;
     if (id == kConstantMemoryId) return hasConstantMemory(m_variant) ? &m_constantMemory : nullptr;
     if (id == kLibraryProgramId) return &m_libraryProgram;
+    if (id == kMachineStateId) return &m_machineState;
     if (id == kCardReaderId) return m_cardReader.get();
     if (!m_printer) return nullptr;
     if (id == kControlsId) return &m_printer->controls();

@@ -69,7 +69,8 @@ set(CORE_SOURCES
   ${CORE_ROOT}/TMC0501.cpp
   ${CORE_ROOT}/ROM.cpp
   ${CORE_ROOT}/RAM.cpp
-  ${CORE_ROOT}/TIAdapters.cpp
+  ${CORE_ROOT}/TITypingSupport.cpp
+  ${CORE_ROOT}/TIMachineState.cpp
   ${CORE_ROOT}/TIDebugging.cpp
   ${CORE_ROOT}/TIDebugKinds.cpp
   ${CORE_ROOT}/TICatalogue.cpp

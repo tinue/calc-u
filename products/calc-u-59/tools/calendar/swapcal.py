@@ -9,7 +9,7 @@ more than they save. The successor is fastcal.py.
 Usage: swapcal.py out.ti59"""
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from asm59 import assemble, digits
 
 PB = 28                        # P(x) lives in R(PB + x), x = -5..35  -> R23..R63

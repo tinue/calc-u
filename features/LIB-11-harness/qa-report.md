@@ -250,3 +250,105 @@ folder helpers, each with its reason above.
 `CoreTests` passes unchanged, the golden replays
 (`c1600_1_ac4_golden_runs_through_the_interface`) among them; no golden run
 differs.
+
+## Calc-U-59 (M-59, 2026-11-17, branch `m59-harness-59`)
+
+Built and run on an M4 Pro, macOS 27.2, Apple clang, CMake, Ninja: the
+worktree's `build/tests` (RelWithDebInfo, Qt off; Frequent), `build/qt`
+(the Qt6 app), the XCFramework and the Swift app (`xcodebuild`, macOS). With
+C59-9 (its qa-report has the `ti59` commands and the machine state).
+
+The code (§11.2):
+- `products/calc-u-59/app/HarnessProduct.cpp`: the entry builds `TIAppPart`
+  in `prepare()` on the run's settings and folders (§11.3: the save folder,
+  the traces and screenshots into the output folder, typing in emulated
+  time, the debug panel's tabs computed as if shown, `TIAppSetup::
+  debugTabsShown`); its library parts and session parts are the run's;
+  before a run, machines of its own. `CALCU59_ROMS_DIR` names another ROM
+  folder (the ROM-missing build). `TIAppPart::operationEnded` now follows a
+  machine an operation replaced before it reads the plugs: an operation run
+  in one go (the harness) ended before the session followed the new
+  machine, and the part read the old one (a use after free on `model`).
+- `core/TIAdapters.*` → `core/TITypingSupport.*` (D-17): the typing support
+  and `idleAndKeyDetectRange()`; `TIMemoryAdapter` and `memoryOf` are gone
+  (the debug log and snapshots read `c59.program-memory`, which got
+  `registerTop()`; the core tests `TIMachineTesting`).
+- Removed: `tools/headless/` (`capi.cpp`, `ti59.py`, `build.sh`, README),
+  `tools/agentic/` (README, `linetimes.py`, `runtime.py`, `hotsteps.py`,
+  `stepcost.py`, `kdis.py`), the target `ti59headless`, the CTests
+  `CalcU59HeadlessSmoke` and `CalcU59HeadlessRomMissing`,
+  `tests/headless_rom_tests.py`. Moved onto `calcu serve` (D-16):
+  `tools/coverage.py`, `tools/fastmode_matrix.py`, `tools/calendar/` with
+  `asm59.py`, the helper `tools/calcu59.py`; `tools/read_trace.py` got
+  `--labels` and `--changes` (C59-9 D-9). New: `reference/Harness.md` (D-18),
+  `.run/calcu-59.run.xml`, `tools/check_no_old_tools.cmake`,
+  `tests/calcu_runs.cmake`, `tests/harness_rom_tests.py`.
+
+Tests: the `lib11_…` cases of `products/calc-u-59/tests/harness_tests.cpp`
+in `CalcU59Tests` (Frequent); the CTests `CalcU59NoOldTools`,
+`CalcU59CalcuRuns`, `CalcU59HarnessRomMissing` (Frequent), `CalcU59Scripts`
+(Longer). `CalcU59Tests`: 591 `TEST`s, 0 failed; Frequent all passed.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-14 | Pass | `lib11_ac14_entry_runs_ti_app_part` (TIAppPart's topic `c59.cue-card`, LIB-7's `media` with the card reader, LIB-4's `control-state`, `ti59 partition`; the model switch followed); `lib11_ac14_every_function_of_the_table`: one block per row of C59-9 §4 on one run (one-shot and `serve`; the ROMs missing named; `model`, `attach slot-1 ML`, `attach printer PC-100C`, `power-cycle`, `reset`, `cold-boot`; `key-down`/`key-up`, `key CLR 2nd pi`; `switch PC-100C TRACE|PRINT|ADV`; `wait <d>`, `wait`, `pause`, `step { level: cpu, count: 10 }`, `resume`; `ticks`; `trace` of keys and of a cold boot; `profile report`; `ti59 coverage`; `registers TMC0501`, `peek … scom`, `disassemble`, `poke`/`peek … ram`; `ti59 program`; `lcd`, `display`; `ti59 line-times`, `paper text`, `paper marks`; `key 1 Write` with `state media` waiting, `card { mem: X }`, `saveas { card: … }`, `arm`; `preset`, `ti59 run-time`, `hot-steps`, `step-trace`, `step-cost` (refused while a program runs, then done); `ti59 keycodes disassemble|list|assemble`, `ti59 registers`, `ti59 partition`); the scripts: `CalcU59Scripts`, `CalcU59CalendarScripts`, `CalcU59TraceReader`; the old tools gone: `CalcU59NoOldTools` |
+| AC-15 | Pass (macOS) | `CalcU59CalcuRuns` (`tests/calcu_runs.cmake`, the process test `lib11_ac15_calcu_runs_calc_u_59`); the same script is a step of the `linux` and `windows` jobs of `calc-u-59.yml` after their build: Linux and Windows at the CI dispatch (plan §1: the step changes the workflow) |
+| AC-16 | Pass | `lib11_ac16_every_segment_pattern_gives_its_character` (the ten digits, -, °, ", ', a position not driven, a pattern of no glyph; each with and without the point; no hexadecimal digits, D-15), `lib11_ac16_lcd_twelve_positions_with_points` (`        -1.5 `, ` 1234567890 `), `lib11_ac16_indicator_c_line_and_brightness_in_json` (`indicators: C`; `--json` with its brightness 0.021) |
+| AC-17 | Pass | `lib11_ac17_idle_instruction_weighs_four_on_ti59_and_ti58` (the instructions `profile` counted in 1 s at key readiness × 128 ticks equal the ticks within one instruction), `lib11_ac17_ti58c_instruction_weighs_one` (× 32) |
+
+Coverage of the Calc-U-59 column: AC-14 to AC-17, 4 of 4. Column Done
+(AC-15 on Linux and Windows with the CI dispatch).
+
+### Exit check of M-59
+
+Every function of the table of AC-14 through `calcu`:
+`lib11_ac14_every_function_of_the_table` and C59-9's tests pass.
+
+### Deviations from the design, chosen by the simpler structure
+
+- **`CALCU59_ROMS_DIR`** names another ROM folder for the harness (as
+  `frontends/web/build.sh` reads it): `tests/rom_missing_build.sh` and
+  `tests/harness_rom_tests.py` start `calcu` on a folder without one file
+  (2.3.0's `ti59.py` read `TI59_ROMS_DIR`).
+- **`CalcU59HarnessRomMissing`** (Frequent) takes the place of
+  `CalcU59HeadlessRomMissing` (§11.6 H6 named only the removal): LIB-12
+  AC-7, AC-10 stay tested.
+- **The scripts' output** goes to `tools/build/` (ignored).
+
+### The adapter check (plan §1; §11.5)
+
+Every adapter row of the approved designs about Calc-U-59 or the library,
+removed in M-59 or earlier, looked up in the code, and the source search of
+§11.5 (outside `docs/`, the feature files and comments that tell history).
+`CalcU59NoOldTools` fails if the tools, `ti59headless`, `TIMemoryAdapter`,
+`memoryOf(` or `core/TIAdapters.hpp` come back.
+
+| Row (design) | Removed in | Result |
+|---|---|---|
+| `TIDebugTargetAdapter`, `TIFreezeGate`, `TIFreezeProbe`, `TIKeyTraceObserver`, the interim topic `c59.trace`, `c59.printer-output`, `c59.cut-paper`, LIB-9 A-3 (C59-1, LIB-3, LIB-5, LIB-8, LIB-10, C59-6) | M-53 | Gone (`c59.trace` is now the name of the debug panel's TRACE entry in the control rules, `TIDebugPart`, not a topic) |
+| `EmulatorSession::moduleImage()` (C59-1, C59-6 §5) | M-53 | **Finding, fixed in M-59**: still there, read only by two tests; removed with `refreshModule()` |
+| `typing::PauseProbe` (LIB-5) | M-53 | **Finding, stays**: the product side (`TIFreezeProbe`) is gone; the library seam `TypingPart::setPauseProbe` has one user, the library's test product (`library/harness/tests/TestProduct.cpp`, its frozen machine). Not an adapter of a product's caller; removing it is a library change of its own, for the user |
+| `TIMemoryAdapter` (C59-1, C59-2 §5: "its readers M-59") | M-59 | Gone, with `memoryOf` (the debug log and snapshots on `c59.program-memory`, `registerTop()` added; the core tests and golden runs on `TIMachineTesting`) |
+| The TI-58C start of 2.3.0, `TIKeySequencerHook`, `TIKeystrokePlayback`, `SliceRequest::due`, `TIPresetOperation`, `StateFile`, `StateApplier`, the 2.3.0 directives on places, the machine-control commands of `TIAppPart`/`TIWebPart`, `HarnessMachines`, printer connect and module change, `TIFileAccess`'s constant memory, the restart call | M-54 | Gone (`StateApplier`, `StateFile`, `HarnessMachines` are names in comments; `TIFileAccess` stays as the save folder access of the constant memory file, `ConstantMemoryKeeper`, C59-3: no old call behind it; `SliceRequest` is the library pacer's own type, `::due` gone) |
+| LIB-7 A-4 to A-7, `TICardReaderAdapter`, `TICardWaitAdapter`, the module list for today's menus, LIB-1's card reader row, `cuecards.txt` | M-55 | Gone (`cuecards` names the module files' cue card sections) |
+| `TIDebugPanelAdapter`, the drop flow (`c59.open-dropped`, `c59.drop-action`) | M-56 | Gone (named in comments only) |
+| PC-100C buttons, `c59.model`, `c59.web.model`, `--pacing-probe` (59), the settings commands of `TIWebPart`, `c59.web.pointer-*`, A-4 drawing of "ROMs missing" | M-57 | Gone (`--pacing-probe` is an attach client of the Qt6 app; `c59.web.model` is named by a test that checks it is gone) |
+| `MachineModel.swift`, the Swift test aids, the Swift copy of the model facts | M-58 | Gone (named by the checks that keep them out) |
+| `c59.full-speed` (the display hold's command; C59-8 qa-report) | M-57, M-58 | **Finding, fixed in M-59**: no frontend sent it any more (the hold is the library's `speed`); the command and `TIAppPart::setFullSpeed` removed, the session test sends `speed` |
+| `c59.run-state` (`TIRunState`: full speed, keystrokes playing; LIB-10 L-E5) | M-54, M-57 | **Finding, fixed in M-59**: still published; Qt6 (`EmulatorController`) and Swift (`Bridge/TIAppSession.mm`) only mapped its name to a refresh, no field was read (the Web shows full speed from `TIWebPart`'s own topic). The topic and `TIRunState` removed, the two readers' name tests with them (the Qt6 app and the Swift app build) |
+| `c59.led` (`TILedState`: the LED frame and the C indicator) | — | **Stays, a product topic**: no adapter row names it (LIB-3 §5's interim list has no `c59.led`); it is the frame sampler's picture of the TI's LEDs that the frontends draw (the library's `display` is the raw output). Read by Qt6 and Swift |
+| `c59.cue-card` (`TICueCardState`) | — | **Stays, a product topic**: C59-7 design §5 kept it "as the product topic of C59-2 AC-6 and AC-22, no longer interim" (the module cue card over the fitted one, the corner on show). Read by Qt6 and Swift |
+| `c59.printer` (`TIPrinterState`: `connected`, `trace`; LIB-8 P-E1) | M-57 | **Stays, a product topic, for TRACE**: the PC-100C's TRACE position is kept by the app session (C59-6 AC-6), which no library topic carries; Qt6 (`printerTrace`) and Swift read `trace`. Its `connected` field (P-E1) has no reader any more (the bar's printer control is LIB-4's); left in the payload, for the user |
+| LIB-8 P-E3, the PC-100C's code lines (`TIMachineTesting::printedCodeLines`) | M-59 (the tool's use) | The tool's use gone with `tools/headless/capi.cpp`; the golden runs keep it, a test inside the core (as the row says) |
+| `tools/headless/`, `tools/agentic/` and their CTests | M-59 | Gone (`CalcU59NoOldTools`) |
+| `core/TIAdapters.*` (D-17) | M-59 | Renamed `core/TITypingSupport.*`; no file named for adapters |
+
+So no adapter of Calc-U-59 is left in the plan's sense: what stays is
+named above with its reason (the library's `PauseProbe` for its test
+product, the three product topics, `c59.printer`'s unread `connected`).
+With M-51's check this closes plan §1's adapter rule for both products.
+
+### Golden runs
+
+`golden_runs_tests.cpp` passes unchanged (in `CalcU59Tests`); no golden run
+differs.

@@ -1,10 +1,16 @@
-// The exit check of M-28 (LIB-11 design §6, T14): `calcu` drives a TI-59
-// headless, through the library's app session (the product ACs of LIB-11,
-// AC-14 to AC-17, are tested in M-59).
+// The exit check of M-28 (LIB-11 design §6, T14) and the Calc-U-59 column
+// (§11.6, M-59): `calcu` drives a TI-59
+// headless, through the library's app session with TIAppPart; LIB-11 AC-14
+// to AC-17 at the end.
 #include "../app/HarnessProduct.hpp"
 #include "TestHarness.hpp"
 #include "harness/Run.hpp"
 #include "TIPresetRig.hpp"
+#include "../app/ProductRoms.hpp"
+#include "../core/TISegments.hpp"
+#include "roms/Bundle.hpp"
+#include <sstream>
+#include <vector>
 #include <filesystem>
 #include <string>
 
@@ -305,4 +311,264 @@ TEST(lib13_ac9_open_takes_every_calc_u_59_file) {
     CHECK(c("open " + (dir.path() / "two.keystrokes.yaml").string()).find("keystroke-program") != std::string::npos);
     CHECK_EQ(c("ti59 program 000 count=2"), std::string("done 2\n000 76\n001 11\n"));
     CHECK(c("open " + (dir.path() / "ML.rom.yaml").string()).rfind("refused: ML.rom.yaml was not opened: ", 0) == 0);
+}
+
+// ── LIB-11, the Calc-U-59 column (design §11.6; M-59) ──
+
+namespace {
+
+std::vector<std::string> replyLines(const std::string& reply) {
+    std::vector<std::string> out;
+    std::istringstream in(reply);
+    std::string l;
+    std::getline(in, l);
+    while (std::getline(in, l)) out.push_back(l);
+    return out;
+}
+
+bool done(const std::string& reply) { return reply.rfind("done", 0) == 0; }
+
+// The instructions the profile counted (every address's count).
+std::uint64_t profiled(tirig::Calcu& c) {
+    std::uint64_t n = 0;
+    for (const auto& l : replyLines(c("profile report 100000"))) {
+        std::istringstream in(l);
+        std::string target, address;
+        std::uint64_t count = 0;
+        if (in >> target >> address >> count && target == "TMC0501") n += count;
+    }
+    return n;
+}
+
+std::uint64_t ticksOf(tirig::Calcu& c) {
+    const auto l = replyLines(c("ticks"));
+    return l.empty() ? 0 : std::stoull(l[0].substr(7));
+}
+
+} // namespace
+
+// H1 (§11.3): the entry runs the app layer, TIAppPart, as the frontends host it.
+TEST(lib11_ac14_entry_runs_ti_app_part) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    CHECK(c);
+    if (!c) return;
+    // TIAppPart's topic, LIB-7's media, LIB-4's control state, C59-2's command.
+    CHECK(done(c("state c59.cue-card")));
+    CHECK(c("state media").find("\"place\":\"card-reader\"") != std::string::npos);
+    CHECK(c("state control-state").find("\"model\":\"TI-59\"") != std::string::npos);
+    CHECK_EQ(c("ti59 partition"), std::string("done 1\n479\n"));
+    // The model switch is LIB-18's on TIAppPart's machines; the part follows.
+    CHECK_EQ(c("model TI-58C"), std::string("done\n"));
+    CHECK(c("state control-state").find("\"model\":\"TI-58C\"") != std::string::npos);
+    CHECK(c("state c59.led").find("refused") == std::string::npos);
+    // No part is in the session twice: one reply per command.
+    CHECK_EQ(c("attach printer PC-100C"), std::string("done\n"));
+    CHECK_EQ(c("detach printer"), std::string("done\n"));
+}
+
+// H2 (§11.4, D-15): `lcd` reads each position by the segment table.
+TEST(lib11_ac16_every_segment_pattern_gives_its_character) {
+    auto position = [](std::uint8_t bits, bool point, float brightness) {
+        calcu::machine::SegmentPosition p;
+        p.lit.assign(8, false);
+        for (int s = 0; s < 7; ++s) p.lit[static_cast<std::size_t>(s)] = (bits >> s) & 1;
+        p.lit[kTIDecimalPoint] = point;
+        p.brightness = brightness;
+        return p;
+    };
+    for (bool point : {false, true}) {
+        const std::string dot = point ? "." : "";
+        for (int d = 0; d < 10; ++d)
+            CHECK_EQ(cu59::tiPositionText(position(kDigitSegments[d], point, 1.0f)), std::string(1, char('0' + d)) + dot);
+        CHECK_EQ(cu59::tiPositionText(position(kSegmentsMinus, point, 1.0f)), "-" + dot);
+        CHECK_EQ(cu59::tiPositionText(position(kSegmentsDegree, point, 1.0f)), "\xC2\xB0" + dot);
+        CHECK_EQ(cu59::tiPositionText(position(kSegmentsQuote, point, 1.0f)), "\"" + dot);
+        CHECK_EQ(cu59::tiPositionText(position(kSegmentsApostrophe, point, 1.0f)), "'" + dot);
+        CHECK_EQ(cu59::tiPositionText(position(0, point, 0.0f)), " " + dot);          // not driven: a blank
+        CHECK_EQ(cu59::tiPositionText(position(0b0110110, point, 1.0f)), " " + dot);  // no glyph of the table: a blank
+    }
+}
+
+TEST(lib11_ac16_lcd_twelve_positions_with_points) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    if (!c) return;
+    c("key 1 . 5 +/-");
+    c("wait 300ms");
+    CHECK_EQ(c("lcd"), std::string("done 2\n        -1.5 \nindicators:\n"));
+    c("key CLR 1 2 3 4 5 6 7 8 9 0");
+    c("wait 300ms");
+    CHECK_EQ(c("lcd"), std::string("done 2\n 1234567890 \nindicators:\n"));
+}
+
+TEST(lib11_ac16_indicator_c_line_and_brightness_in_json) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    for (bool json : {false, true}) {
+        calcu::harness::RunOptions o;
+        o.json = json;
+        tirig::Calcu c(o);
+        if (!c) return;
+        c("ti59 program 000 76 11 42 00 76 12 97 00 12 91");
+        c("key 3 A");
+        c("wait 2s");
+        if (json)
+            CHECK_EQ(c("lcd"), std::string("{\"done\":true,\"result\":{\"on\":true,\"rows\":[\"          3. \"],"
+                                           "\"indicators\":[{\"name\":\"C\",\"brightness\":0.021}],\"notText\":null},\"reason\":null}\n"));
+        else
+            CHECK_EQ(c("lcd"), std::string("done 2\n          3. \nindicators: C\n"));
+    }
+}
+
+// H3 (§11.4): an instruction in the ROM's idle state weighs four on the
+// TI-59 and TI-58, one on the TI-58C; ticks ÷ 32 are today's instructions.
+TEST(lib11_ac17_idle_instruction_weighs_four_on_ti59_and_ti58) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    for (const char* model : {"TI-59", "TI-58"}) {
+        tirig::Calcu c;
+        if (!c) return;
+        c(std::string("model ") + model);
+        c("wait 100ms");
+        c("profile on");
+        const std::uint64_t t0 = ticksOf(c);
+        c("wait 1s");
+        const std::uint64_t ticks = ticksOf(c) - t0;
+        const std::uint64_t n = profiled(c);
+        CHECK(n > 0);
+        // At key readiness every instruction is in the idle state: 4 × 32 ticks.
+        CHECK(n * 128 <= ticks + 128 && ticks <= n * 128 + 128);
+    }
+}
+
+TEST(lib11_ac17_ti58c_instruction_weighs_one) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    if (!c) return;
+    c("model TI-58C");
+    c("wait 100ms");
+    c("profile on");
+    const std::uint64_t t0 = ticksOf(c);
+    c("wait 1s");
+    const std::uint64_t ticks = ticksOf(c) - t0;
+    const std::uint64_t n = profiled(c);
+    CHECK(n > 0);
+    CHECK(n * 32 <= ticks + 32 && ticks <= n * 32 + 32);
+}
+
+// H4, the exit check of M-59: every function of LIB-11 AC-14's table (C59-9
+// design §4, one block per row) through `calcu`.
+TEST(lib11_ac14_every_function_of_the_table) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    calcu::testing::TempFolder dir("calcu59-ac14");
+    calcu::harness::RunOptions o;
+    o.saveFolder = (dir.path() / "save").string();
+    std::filesystem::create_directories(dir.path() / "save");
+    tirig::Calcu c(o);
+    CHECK(c);
+    if (!c) return;
+    // headless/: run without a window, the ROMs through the lookup (one-shot and serve).
+    CHECK(c("wait 1s").rfind("done 2\nticks: ", 0) == 0);
+    {
+        tirig::Calcu pipe;   // serve ends its run at the end of the input
+        std::vector<std::string> in{"ticks", "lcd"}, out;
+        std::size_t i = 0;
+        pipe.server->serve([&]() -> std::optional<std::string> { return i < in.size() ? std::optional<std::string>(in[i++]) : std::nullopt; },
+                        [&](const std::string& s) { out.push_back(s); });
+        CHECK(out.size() == 2 && out[1].find("indicators:") != std::string::npos);
+    }
+    // the ROMs missing, named (LIB-11 EC-1; the start itself: CalcU59RomMissingBuild)
+    {
+        const auto r = cu59::lookUpRoms(calcu::roms::DirectoryBundle((dir.path() / "none").string()));
+        CHECK(!r.set && calcu::roms::describe(r.missing).find("TMC0571B.txt") != std::string::npos);
+    }
+    // the model; a module; with or without printer; a power cycle, reset, cold boot
+    CHECK_EQ(c("model TI-58C"), std::string("done\n"));
+    CHECK_EQ(c("model TI-59"), std::string("done\n"));
+    CHECK_EQ(c("detach slot-1"), std::string("done\n"));
+    CHECK_EQ(c("attach slot-1 ML"), std::string("done\n"));
+    CHECK_EQ(c("attach printer PC-100C"), std::string("done\n"));
+    CHECK_EQ(c("power-cycle"), std::string("done\n"));
+    CHECK_EQ(c("reset"), std::string("done\n"));
+    CHECK_EQ(c("cold-boot"), std::string("done\n"));
+    // press and release a key by name; type keys by name, second functions included
+    CHECK_EQ(c("key-down 7"), std::string("done\n"));
+    c("wait 100ms");
+    CHECK_EQ(c("key-up 7"), std::string("done\n"));
+    CHECK_EQ(c("key CLR 2nd pi"), std::string("done\n"));
+    c("wait 300ms");
+    CHECK(c("lcd").find("3.14159265") != std::string::npos);
+    // the PC-100C's TRACE, PRINT and ADV
+    CHECK_EQ(c("switch PC-100C TRACE on"), std::string("done\n"));
+    CHECK_EQ(c("switch PC-100C TRACE off"), std::string("done\n"));
+    CHECK_EQ(c("switch PC-100C PRINT on"), std::string("done\n"));
+    CHECK_EQ(c("switch PC-100C PRINT off"), std::string("done\n"));
+    CHECK_EQ(c("switch PC-100C ADV on"), std::string("done\n"));
+    CHECK_EQ(c("switch PC-100C ADV off"), std::string("done\n"));
+    // let instructions pass; until idle; an exact count on a paused machine
+    CHECK(done(c("wait 500ms")));
+    CHECK(c("wait").find("hour reached: no") != std::string::npos);
+    CHECK(done(c("pause")));
+    CHECK(done(c("step { level: cpu, count: 10 }")));
+    CHECK(done(c("resume")));
+    // the emulated time (ticks ÷ 32 are today's instructions)
+    CHECK(c("ticks").find("seconds: ") != std::string::npos);
+    // a record per instruction; the power-on trace (read with tools/read_trace.py, CalcU59TraceReader)
+    CHECK(done(c("trace k.trace")));
+    c("key 5");
+    CHECK(done(c("trace off")));
+    CHECK(done(c("trace boot.trace")));
+    CHECK(done(c("cold-boot")));
+    CHECK(done(c("trace off")));
+    CHECK(std::filesystem::exists(c.folder.path() / "k.trace") && std::filesystem::exists(c.folder.path() / "boot.trace"));
+    // the addresses a key runs, with their counts
+    CHECK(done(c("profile on")));
+    c("key 5");
+    CHECK(c("profile report 3").find("different addresses") != std::string::npos);
+    // ROM coverage of a run (coverage.py's command; the script: CalcU59Scripts)
+    CHECK(c("ti59 coverage").find(" of 6144") != std::string::npos);
+    CHECK(done(c("profile off")));
+    // the processor's registers and SCOM; disassembly; RAM read and write
+    CHECK(c("registers TMC0501").find("pc = ") != std::string::npos);
+    CHECK(done(c("peek TMC0501 scom 0 1")));
+    CHECK(done(c("disassemble TMC0501 0x0000 2")));
+    CHECK(done(c("poke TMC0501 ram 0 0")));
+    CHECK(done(c("peek TMC0501 ram 0 1")));
+    // write a program; the display as text and as segments
+    CHECK_EQ(c("ti59 program 000 76 11 01 99 02 99 98 03 99 91"), std::string("done\n"));
+    CHECK(c("lcd").find("indicators:") != std::string::npos);
+    CHECK(c("display").find("segments:") != std::string::npos);
+    // the printer's text and dot lines
+    c("key A");
+    CHECK(c("ti59 line-times").find("printer floor: ") != std::string::npos);
+    CHECK(c("paper text").find("3.") != std::string::npos);
+    CHECK(done(c("paper marks")));
+    // a card: fed, the machine waiting for one, what a pass wrote
+    CHECK_EQ(c("ti59 program 000 76 11 01 02 03 91"), std::string("done\n"));
+    CHECK_EQ(c("key 1 Write"), std::string("done\n"));
+    c("wait 100ms");
+    CHECK(c("state media").find("\"waits\":true") != std::string::npos);
+    CHECK_EQ(c("card { mem: X, side: 0 }"), std::string("done\n"));
+    CHECK_EQ(c("saveas { card: X, as: live, name: Saved }"), std::string("done\n"));
+    CHECK(std::filesystem::exists(dir.path() / "save" / "Saved.magnetcard.yaml"));
+    CHECK(done(c("arm { name: Saved }")));
+    // agentic/: a preset, its keys' run time, its printout; line times; the hottest steps
+    CHECK_EQ(c("preset examples:sum.ti59"), std::string("done\n"));
+    CHECK(c("ti59 run-time 5 A").find("total ") != std::string::npos);
+    c("ti59 program 000 76 11 42 00 76 12 97 00 12 91");
+    c("key 2 0 A");
+    CHECK(c("ti59 hot-steps limit=1s").find("notes: ") != std::string::npos);
+    CHECK(done(c("ti59 step-trace 100ms 200ms")));
+    CHECK_EQ(c("ti59 step-cost 43 22"), std::string("refused: A program runs: let it end first (`wait`).\n"));
+    c("wait");
+    CHECK(c("ti59 step-cost 43 22").find("fast ") != std::string::npos);
+    // kdis.py: the program instruction by instruction, the registers, the partition
+    CHECK(c("ti59 keycodes disassemble").find("Lbl A") != std::string::npos || done(c("ti59 keycodes disassemble")));
+    CHECK(done(c("ti59 registers 00 01")));
+    CHECK(done(c("ti59 partition")));
+    // a listing to paste into a preset; asm59.py's plain assembly
+    CHECK(done(c("ti59 keycodes list")));
+    dir.write("a.asm59", "000  Lbl A\n002  RTN\n");
+    CHECK_EQ(c("ti59 keycodes assemble " + (dir.path() / "a.asm59").string()), std::string("done 1\nsteps: 000-002\n"));
+    // fastmode_matrix.py, the calendar scripts and read_trace.py stay scripts:
+    // CalcU59Scripts, CalcU59CalendarScripts, CalcU59TraceReader.
 }

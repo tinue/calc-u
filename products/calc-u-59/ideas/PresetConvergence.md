@@ -80,7 +80,7 @@ KEYSTROKES line are ignored as comments.
 **Worth bringing to Calc-U-59:**
 - **`Expect: <text>`** (the display contains it). This lets the `examples/`
   presets be checked in ctest, as the 1600's `tools/check_presets.sh` does,
-  and gives the agentic tools (`tools/agentic/`) an assertion.
+  and gives the harness's scripts (`reference/Harness.md`) an assertion.
 - **`Screenshot:`, plus a paper image.** This completes the reason for
   `CutPaper:`: something like `SavePaper: plot.png` followed by `CutPaper:`
   automates printer PNGs without XCUITest. App Store screenshots still need

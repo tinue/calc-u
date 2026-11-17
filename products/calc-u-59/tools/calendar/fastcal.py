@@ -11,7 +11,7 @@ header code. Usage: fastcal.py out.ti59   (e.g. examples/calendar/calendar-09-di
 the file is a preset of format 2 (C59-2 AC-18)."""
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from asm59 import assemble, digits
 
 PB = 6                         # P(x) lives in R(PB + x), x = -5..36  -> R01..R42. PB = 6 makes the

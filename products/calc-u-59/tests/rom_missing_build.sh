@@ -1,9 +1,10 @@
 #!/bin/sh
 # LIB-12, Technical Requirements (design §6, P6; D-5): "a build of each
 # product with one ROM file taken away". The ROM folder is copied without
-# one file (default TMC0583.txt; another as $1), the headless library and the
-# web client's dist/ are built from it, and both start without the full set:
-#   - tools/headless/ti59.py ends with exit 1 and names the file (AC-7);
+# one file (default TMC0583.txt; another as $1), the web client's dist/ is
+# built from it, and neither starts with it:
+#   - the harness `calcu` (CALCU, CTest hands the tree's) on that folder
+#     (CALCU59_ROMS_DIR) ends with exit 2 and names the file (AC-7);
 #   - the web client shows the lookup's text naming it and no calculator
 #     (AC-5, AC-10; Playwright, tests/rom-missing.spec.js).
 # The build itself succeeds (D-5). Run from products/calc-u-59 (CTest
@@ -22,15 +23,13 @@ cp roms/*.txt roms/*.rom.yaml "$TMP/roms/"
 rm "$TMP/roms/$MISSING"
 echo "rom_missing_build: roms/ without $MISSING"
 
-# The headless library: TI59HEADLESS_LIB (CTest hands the tree's), else
-# tools/headless/build.sh builds it.
-[ -n "${TI59HEADLESS_LIB:-}" ] || tools/headless/build.sh >/dev/null
-if TI59_ROMS_DIR="$TMP/roms" python3 tools/headless/ti59.py 5 + 7 = >"$TMP/out" 2>"$TMP/err"; then
-  echo "FAIL: ti59.py started without $MISSING" >&2
-  exit 1
-fi
-grep -q "$MISSING: missing" "$TMP/err" || { echo "FAIL: ti59.py does not name $MISSING:" >&2; cat "$TMP/err" >&2; exit 1; }
-echo "rom_missing_build: headless names $MISSING: ok"
+# The harness: CALCU (CTest hands the tree's), else the build/tests tree's.
+CALCU="${CALCU:-$ROOT/build/tests/library/harness/cli/calcu}"
+status=0
+CALCU59_ROMS_DIR="$TMP/roms" "$CALCU" --product 59 wait 1s >"$TMP/out" 2>"$TMP/err" || status=$?
+[ "$status" -eq 2 ] || { echo "FAIL: calcu started without $MISSING (exit $status)" >&2; exit 1; }
+grep -q "$MISSING: missing" "$TMP/err" || { echo "FAIL: calcu does not name $MISSING:" >&2; cat "$TMP/err" >&2; exit 1; }
+echo "rom_missing_build: the harness names $MISSING: ok"
 
 # The web client, built from that folder into its own dist/.
 CALCU59_ROMS_DIR="$TMP/roms" CALCU59_WEB_DIST="$TMP/dist" frontends/web/build.sh >/dev/null

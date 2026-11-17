@@ -7,7 +7,7 @@
 #include <vector>
 
 // The core-internal facade over CPU, ROM and RAM (C59-1 design §3.1): only
-// TIMachine and the adapters of TIAdapters.hpp use it. It holds no lock and
+// TIMachine, its capabilities and the tests (TIMachineTesting) use it. It holds no lock and
 // starts no thread (ADR 0009); the caller serialises every call.
 class TI59Machine {
 public:
@@ -169,6 +169,13 @@ public:
     int  ramRegCount() const { return m_ram.size(); }
 
     MachineVariant variant() const { return m_variant; }
+
+    /// The processor and the RAM (C59-9 AC-15; the ROM comes from the ROM set).
+    template <class Io>
+    void stateIo(Io& io) {
+        m_ram.stateIo(io);
+        m_cpu.stateIo(io);
+    }
 
 private:
     int dataRegCountLocked() const;

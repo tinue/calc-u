@@ -1,33 +1,43 @@
 #!/usr/bin/env python3
 """ROM coverage by scenario: which keystroke scenarios execute which ROM words.
 
-    tools/headless/coverage.py build            # run all SCENARIOS → coverage.json
-    tools/headless/coverage.py show 0400 04FF   # per-address scenario list
-    tools/headless/coverage.py unique sqrt      # addresses only that scenario hits
-    tools/headless/coverage.py gaps             # never-executed address ranges
-    tools/headless/coverage.py --variant TI58C build   # same for the TI-58C ROM
+    tools/coverage.py build [name...]   # run the SCENARIOS (or those named) → tools/build/coverage.json
+    tools/coverage.py show 0400 04FF    # per-address scenario list
+    tools/coverage.py unique sqrt       # addresses only that scenario hits
+    tools/coverage.py gaps              # never-executed address ranges
+    tools/coverage.py --variant TI58C build   # same for the TI-58C ROM
+    --calcu PATH                         # the calcu program (tools/calcu59.py)
 
-Each scenario starts from a freshly booted machine. A scenario's "setup"
-keys run untraced; only its "keys" are attributed. Boot is a scenario of
-its own ("boot"). The idle-loop window is excluded from attribution except
-in "boot", so common idle code doesn't swamp every scenario.
+Drives the harness (C59-9 AC-13, `calcu --product 59 serve`): each scenario
+starts from a cold boot (with or without the PC-100C, TRACE as the scenario
+says); its "setup" keys run unprofiled, then `profile on`, its "keys" (each
+typed with `key` and run until idle with `wait`) and a card it feeds, and
+`ti59 coverage` reads the ROM words they reached. Boot is a scenario of its
+own ("boot", `profile on` then `cold-boot`, read with `ti59 coverage all`).
+The key-detect range is left out of every other scenario (`ti59 coverage`
+without `all`, C59-9 D-7), so common idle code doesn't swamp every
+scenario; 2.3.0's tool left out an instruction of that range only with the
+ROM's idle flag set, so a scenario's words differ from its by the release
+gate 0627-062A (reference/Harness.md).
 """
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from ti59 import Machine, SECOND, in_idle  # noqa: E402
+from calcu59 import BUILD, Run, calcu_path  # noqa: E402
 
+PROGRAM = calcu_path(sys.argv)
 VARIANT = "TI59"
 if "--variant" in sys.argv:
     _i = sys.argv.index("--variant")
     VARIANT = sys.argv[_i + 1]
     del sys.argv[_i:_i + 2]
-OUT = Path(__file__).resolve().parent / "build" / (
-    "coverage.json" if VARIANT == "TI59" else f"coverage-{VARIANT}.json")
+OUT = Path(BUILD) / ("coverage.json" if VARIANT == "TI59" else f"coverage-{VARIANT}.json")
+MODEL = {"TI59": "TI-59", "TI58": "TI-58", "TI58C": "TI-58C"}[VARIANT]
 
 # name: (setup keys, traced keys[, options])
 S = lambda *k: list(k)  # noqa: E731
@@ -165,10 +175,11 @@ SCENARIOS["list_labels"] = ([S("LRN","Lbl","A","STO","1","2","GTO","A","LRN","RS
 SCENARIOS["prt_lrn"] = ([S("LRN","5","+")], S("Prt"), {"printer": True})
 SCENARIOS["trace_run"] = ([S("LRN","5","+","3","=","R/S","LRN","RST")], S("R/S"), {"printer": True, "trace": True})
 SCENARIOS["pause_run"] = ([S("LRN","5","Pause","Pause","R/S","LRN","RST")], S("R/S"))
-SCENARIOS["write_card"] = ([S("LRN","5","+","3","=","LRN")], S("1", "Write"), {"card": "blank"})
-# a bank-1 image written by the scenario above (headless run): program 5 + 3 =
-_CARD = bytes.fromhex("161110000000005930582010" + "00" * 232 + "0808")
-SCENARIOS["read_card"] = ([], S(), {"card": _CARD})
+SCENARIOS["write_card"] = ([S("LRN","5","+","3","=","LRN")], S("1", "Write"), {"card": ("write", "W")})
+# The card W is the one write_card wrote (bank 1: the program 5 + 3 =), P
+# the one write_card_prot wrote (the same bank, protected); both stay in
+# the run as in-file cards (LIB-7 `card { mem: … }`).
+SCENARIOS["read_card"] = ([], S(), {"card": ("read", "W")})
 SCENARIOS["lib_return"] = ([S("Pgm","0","2","5")], S("C"))
 SCENARIOS["op09_copy"] = ([S("0","Op","1","7","CLR","Pgm","0","2")], S("Op", "0", "9"))
 SCENARIOS["op17_big"] = ([], S("1","3","Op","1","7"))
@@ -182,11 +193,10 @@ SCENARIOS["pct_add"] = ([], S("2", "+", "3", "x>=t"))  # x>=t from keyboard = no
 SCENARIOS["pgm01"] = ([], S("Pgm", "0", "1", "SBR", "0", "0", "0"))
 
 # ── added in the second ROM documentation pass ──
-_PCARD = _CARD[:3] + b"\x10" + _CARD[4:]          # same bank, protect byte set
-SCENARIOS["write_card_prot"] = ([S("LRN","5","+","3","=","LRN")], S("1", "+/-", "Write"), {"card": "blank"})
-SCENARIOS["read_card_prot"] = ([], S(), {"card": _PCARD})
-SCENARIOS["read_card_part"] = ([S("3","Op","1","7","CLR")], S(), {"card": _CARD})
-SCENARIOS["read_card_inv"] = ([], S("1", "INV", "Write"), {"card": _CARD})
+SCENARIOS["write_card_prot"] = ([S("LRN","5","+","3","=","LRN")], S("1", "+/-", "Write"), {"card": ("write", "P")})
+SCENARIOS["read_card_prot"] = ([], S(), {"card": ("read", "P")})
+SCENARIOS["read_card_part"] = ([S("3","Op","1","7","CLR")], S(), {"card": ("read", "W")})
+SCENARIOS["read_card_inv"] = ([], S("1", "INV", "Write"), {"card": ("feed", "W")})
 SCENARIOS["lrn_ind_merge"] = ([S("LRN")], S("STO","Ind","0","5","GTO","Ind","0","3","Op","Ind","0","4","Exc","Ind","0","1","Fix","Ind","0","2"))
 SCENARIOS["p2r_deep_aos"] = ([S("1","+","(","2","*","(","3","+","(","4","*","(","5","+","(")], S("3","x<>t","4","P>R"))
 SCENARIOS["p2r_in_program"] = ([S("LRN","Lbl","A","3","x<>t","4","Nop","Nop","P>R","R/S","LRN")], S("A"))
@@ -204,58 +214,97 @@ SCENARIOS["prt_sci_err"] = ([], S("1",".","5","EE","3","+/-","Prt","1","/","0","
 SCENARIOS["trace_ind"] = ([S("5","STO","0","1")], S("RCL","Ind","0","1"), {"printer": True, "trace": True})
 
 
+# 2.3.0's key names that preset.md §8.1 spells otherwise (C59-9 OQ-1).
+RENAMED = {"S+": ["sum+"], "StFlg": ["STF"], "IfFlg": ["IFF"], "mean": ["xbar"], "P>R": ["P/R"], "2ndCLR": ["2nd", "CLR"]}
+
+
 def expand(keys):
     out = []
     for k in keys:
         if isinstance(k, list):
             out += expand(k)
         else:
-            out += ["2nd", str(SECOND[k])] if k in SECOND else [k]
+            out += RENAMED.get(k, [k])
     return out
 
 
-def run(name: str, spec) -> set[int]:
+def press(r: Run, keys):
+    """Each key typed as `key` types it, then until idle; `2nd` goes with the key after it."""
+    i = 0
+    while i < len(keys):
+        k = keys[i]
+        group = [k, keys[i + 1]] if k == "2nd" and i + 1 < len(keys) else [k]
+        i += len(group)
+        r.cmd("key " + " ".join(group))
+        r.cmd("wait")
+
+
+def fresh(r: Run, printer: bool, trace: bool):
+    """A cold-booted machine of the model, with or without the PC-100C."""
+    has = any(l.startswith("place printer PC-100C") for l in r.cmd("capabilities"))
+    if printer and not has:
+        r.cmd("attach printer PC-100C")
+    if not printer and has:
+        r.cmd("detach printer")
+    r.cmd("cold-boot")
+    if printer:
+        r.cmd("switch PC-100C TRACE " + ("on" if trace else "off"))
+        r.cmd("cut-paper")
+
+
+def covered(r: Run, all_=False) -> set[int]:
+    reply = r.c.send("ti59 coverage" + (" all" if all_ else ""))
+    words = set()
+    for line in reply["lines"][:-1]:
+        words |= {int(a, 16) for a in line.split()}
+    return words
+
+
+def run(r: Run, name: str, spec) -> set[int]:
     setup, keys = spec[0], spec[1]
     opts = spec[2] if len(spec) > 2 else {}
-    m = Machine(printer=opts.get("printer", False), variant=VARIANT)
-    run.last_card = b""
-    if opts.get("trace"):
-        from ti59 import LIB
-        LIB.h_trace_sw(m.h, 1)
-    for k in expand(setup):
-        m.key(k)
-    pcs: set[int] = set()
-    recs_all = []
-    for k in expand(keys):
-        recs_all += m.key(k)
+    fresh(r, opts.get("printer", False), opts.get("trace", False))
+    press(r, expand(setup))
+    r.cmd("profile on")
     card = opts.get("card")
-    if card is not None:          # feed a card: b"" = blank (write), bytes = read
-        m.card_insert(card if isinstance(card, bytes) else b"")
-        for _ in range(40):
-            recs_all += m.record(20000)
-            if not m.card_present():
-                break
-        recs_all += m.record(50000)
-        run.last_card = m.card_eject()
-    for r in recs_all:
-        if not in_idle(r, VARIANT):
-            pcs.add(r.pc)
-    run.last_display = m.display()
-    run.last_printer = m.printer_lines()
+    if card and card[0] == "read":     # a card fed while the calculator waits for keys
+        r.cmd(f"card {{ mem: {card[1]}, side: 0 }}")
+        r.cmd("wait")
+    press(r, expand(keys))
+    if card and card[0] in ("write", "feed"):   # the program waits for a card (Write, INV Write)
+        r.cmd(f"card {{ mem: {card[1]}, side: 0 }}")
+        r.cmd("wait")
+    pcs = covered(r)
+    r.cmd("profile off")
+    run.last_display = r.cmd("lcd")[0]
+    run.last_printer = [l for l in r.paper() if l.strip()] if opts.get("printer") else []
     return pcs
 
 
-def build():
-    cov: dict[str, list[int]] = {}
-    m = Machine(variant=VARIANT)
-    cov["boot"] = sorted({r.pc for r in m.boot_recs})
-    for name, spec in SCENARIOS.items():
-        if VARIANT != "TI59" and len(spec) > 2 and "card" in spec[2]:
-            continue                  # no card reader on the TI-58/58C
-        pcs = run(name, spec)
-        cov[name] = sorted(pcs)
-        prn = " | ".join(run.last_printer)
-        print(f"{name:16} {len(pcs):5} words  [{run.last_display}] {prn}", file=sys.stderr)
+def build(names=None):
+    r = Run(PROGRAM)
+    try:
+        if MODEL != "TI-59":
+            r.cmd("model " + MODEL)
+        cov: dict[str, list[int]] = {}
+        if not names or "boot" in names:
+            fresh(r, False, False)
+            r.cmd("profile on")
+            r.cmd("cold-boot")
+            cov["boot"] = sorted(covered(r, all_=True))
+            r.cmd("profile off")
+        for name, spec in SCENARIOS.items():
+            if names and name not in names:
+                continue
+            if MODEL != "TI-59" and len(spec) > 2 and "card" in spec[2]:
+                continue                  # no card reader on the TI-58/58C
+            pcs = run(r, name, spec)
+            cov[name] = sorted(pcs)
+            prn = " | ".join(run.last_printer)
+            print(f"{name:16} {len(pcs):5} words  [{run.last_display}] {prn}", file=sys.stderr)
+    finally:
+        r.close()
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(cov))
     allpcs = set().union(*map(set, cov.values()))
     print(f"total covered: {len(allpcs)} / 6144", file=sys.stderr)
@@ -276,7 +325,7 @@ def by_addr(cov):
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "build"
     if cmd == "build":
-        build()
+        build(sys.argv[2:])
         return
     cov = load()
     d = by_addr(cov)

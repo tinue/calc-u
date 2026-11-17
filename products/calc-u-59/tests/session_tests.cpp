@@ -40,7 +40,6 @@ std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
     if (const auto* x = payloadAs<TILedState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TICueCardState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIPrinterState>(*p)) return x->serial;
-    if (const auto* x = payloadAs<TIRunState>(*p)) return x->serial;
     // The debug panel's topics (C59-4 AC-25): a serial, or a count of sets.
     if (const auto* x = payloadAs<TICpuDebug>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIHeatmap>(*p)) return x->serial;
@@ -79,7 +78,7 @@ std::string pluggedIn(SessionRig& r, const std::string& place) {
 TEST(lib3_ac29_mirror_holds_every_change_flag) {
     SessionRig r;
     for (const auto* t : {&calcu::control::kControlStateTopic, &topics::kLed, &topics::kCueCard, &topics::kPrinter, &calcu::media::kMediaTopic,
-                          &topics::kRunState, &topics::kCalculatorDebug, &topics::kCpuDebug,
+                          &topics::kCalculatorDebug, &topics::kCpuDebug,
                           &topics::kHeatmap, &topics::kAsmOverlay, &topics::kDebugView})
         CHECK(r.fe.mirror.state(*t) != nullptr);
     // The model and the module: LIB-4's control state (C59-8: c59.model went).
@@ -115,10 +114,12 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
         r.send(commands::kSetControl, Value::object({{"peripheral", "PC-100C"}, {"control", "TRACE"}, {"on", true}}));
     }));
     CHECK(r.state<TIPrinterState>(topics::kPrinter)->trace);
-    // RunStateChanged
-    CHECK(moves(topics::kRunState, [&] { r.send(commands::kFullSpeed, Value::object({{"on", true}})); }));
-    CHECK(r.state<TIRunState>(topics::kRunState)->fullSpeed);
-    r.send(commands::kFullSpeed, Value::object({{"on", false}}));
+    // RunStateChanged: the library's `speed` (c59.full-speed and the interim
+    // topic c59.run-state went in M-59); the part follows the commanded speed.
+    r.send(calcu::sessions::kSpeedCommand, Value::object({{"full", true}}));
+    CHECK(r.part().fullSpeed());
+    r.send(calcu::sessions::kSpeedCommand, Value::object({{"full", false}}));
+    CHECK(!r.part().fullSpeed());
     // What the debug panel shows: its product topics since M-56 (C59-4 AC-25).
     CHECK(moves(topics::kCpuDebug, [&] { r.send(commands::kCpuDebug, Value::object({{"on", true}})); }));
     CHECK(moves(topics::kHeatmap, [&] { r.send(commands::kHeatmapReset); }));

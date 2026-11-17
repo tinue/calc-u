@@ -17,7 +17,7 @@ Unsorted collection of ideas, bugs, observations etc.
 
 ## Debugger
 ### CPU Debugger
-- **Break points** The core has PC breakpoints (`TI59Machine::addBreakpoint`, `reference/DebugAPI.md` § "Breakpoints"), used only by the headless tools; the unwired Swift UI and the view model's breakpoint API were removed in 2.0.0. Remaining: a UI in the GUIs (through `Shared/`), then conditional triggers (register content, IDLE-RUN change, and more).
+- **Break points** The core has PC breakpoints (`TI59Machine::addBreakpoint`, `reference/DebugAPI.md` § "Breakpoints"), used only by the harness (`break`, LIB-10); the unwired Swift UI and the view model's breakpoint API were removed in 2.0.0. Remaining: a UI in the GUIs (through `Shared/`), then conditional triggers (register content, IDLE-RUN change, and more).
 - **Latch keyboard entries** Support catching a keypress in single step mode — see `ideas/KeypressLatch.md` for the existing design proposal.
 
 ### Calculator Debugger
@@ -28,7 +28,7 @@ Unsorted collection of ideas, bugs, observations etc.
 - **Event callbacks** — push notifications for display updates and register changes, replacing the current polling model.
 - **Card stacking in the GUI** — presets feed cards (`card:`, `arm:`; `docs/formats/preset.md` §5.2, from M-55); what remains is letting a user queue a stack by hand.
 - **Card sound** — play a recorded card pass, with the emulator's pass timed to match; plan and measurements in `ideas/CardSound.md`.
-- **REST API** — scripted control of a running app. Headless runs (`tools/headless/`, `tools/agentic/`) and GUI decoupling (`Shared/`, `reference/NewGUIGuide.md`) are done.
+- **REST API** — scripted control of a running app. Headless runs (the harness `calcu --product 59`, `reference/Harness.md`) and GUI decoupling (`Shared/`, `reference/NewGUIGuide.md`) are done.
 - **Frozen** - Visually indicate when the calculator is frozen in one of the debuggers (mostly useful on iPhone, where only one panel is visible at a time)
 
 ## Far out (if ever)

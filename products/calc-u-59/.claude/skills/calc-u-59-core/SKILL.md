@@ -55,15 +55,20 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   (`core/TICatalogue.hpp`; `cu59::buildMachine` in `app/ProductRoms.hpp`,
   from the `RomSet` of the ROM lookup, LIB-12).
   Model, advances and tick count, Reset/power cycle/cold boot, key readiness,
-  keys (key IDs) and the display output go through it only. What it does not
-  have yet goes through the adapters of `core/TIAdapters.hpp`, each until its
-  removal step (`TICardReaderAdapter` went in M-55: the card reader is the media place `core/TICardReaderPlace` with `core/TIMagneticCard`'s content and `buildCardBank`; `libExecPC` is `c59.calculator-state`'s),
-  `TIMemoryAdapter` (M-54; its readers M-59); `idleAndKeyDetectRange()` is
-  the scan/detect range. The debug panel's reads are product kinds since
+  keys (key IDs) and the display output go through it only; everything else
+  is a capability (the adapters of C59-1 are gone since M-59: the card
+  reader is the media place `core/TICardReaderPlace` with
+  `core/TIMagneticCard`'s content and `buildCardBank`; `libExecPC` is
+  `c59.calculator-state`'s; program memory and registers are
+  `c59.program-memory`; the core tests reach the core's own calls through
+  `TIMachineTesting`). `core/TITypingSupport.hpp` holds the typing support
+  and `idleAndKeyDetectRange()`; `core/TIMachineState.*` the `machine-state`
+  kind (C59-9 AC-15: each part's fields in its `stateIo`, records of
+  `core/TIStateRecords.hpp`; a new field of a part goes into its `stateIo`). The debug panel's reads are product kinds since
   M-56 (`core/TIDebugKinds.hpp`: `c59.asm-overlay`, `c59.rom-heatmap`,
   `c59.calculator-state`, `c59.machine-log`; find one with
   `cu59::kindOf<K>(machine)`); `idleAndKeyDetectRange()` is
-  the scan/detect range for `tools/headless/` and the tests. The debugger
+  the scan/detect range for `ti59 coverage`, the run probe and the tests. The debugger
   reaches the core through `Machine::debugging()`: the debug target
   `TMC0501` (`core/TIDebugging.hpp`; LIB-10, M-53), whose
   `InstructionEvent::marks` say step boundary, scan loop and weight; traces
@@ -83,8 +88,8 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   `libExecPC` latch stays in the CPU. The PC-100C's controls (PRINT, ADV,
   TRACE) and its paper (`printer/paper-output`, LIB-8's kind; the
   description, font and dot rules in `core/PC100CPaper.hpp`) are
-  capabilities; its code lines are kept only for the golden runs and the
-  headless tool (`TIMachineTesting::printedCodeLines`, until M-59); `CoreArchitecture.md` § "Component Overview", "Printer
+  capabilities; its code lines are kept only for the golden runs
+  (`TIMachineTesting::printedCodeLines`); `CoreArchitecture.md` § "Component Overview", "Printer
   (PC-100C)", "Solid-State Library Module".
 - **Ticks:** one instruction is 32 ticks, 128 in IDLE on the TI-59/58; the
   tick count is monotonic across every operation (`TIMachine::cpuReset`).
@@ -120,12 +125,12 @@ uv run python tools/disasm.py --emit-cpp > /tmp/generated.cpp
 
 | Tool | Purpose |
 |------|---------|
-| `tools/headless/ti59.py` | Drive the core from Python, annotated ROM trace per key (`--variant`, `--program`, `--module`); see `tools/headless/README.md` |
-| `tools/headless/coverage.py` | Which keystroke scenario runs which ROM word |
-| `tools/agentic/` | Run, time and profile `.ti59` programs headless; read `tools/agentic/README.md` first |
+| `calcu --product 59` | The harness (`reference/Harness.md`, read it first): an annotated ROM trace per key (`trace <file>`, the keys, `trace off`, then `tools/read_trace.py --labels rom/TI59-labels.asm --changes`), `profile`, `ti59 coverage`, the timing commands `ti59 run-time`, `line-times`, `hot-steps`, `step-trace`, `step-cost`, `ti59 keycodes list|disassemble|assemble` |
+| `tools/coverage.py` | Which keystroke scenario runs which ROM word (on `calcu serve`) |
+| `tools/fastmode_matrix.py` | Each instruction class in fast and normal mode; the stop table (on `calcu serve`) |
 | `tools/disasm.py` | ROM disassembler; `--emit-cpp` regenerates C++ mnemonic arrays |
 | `tools/annotate_rom.py` | Apply comment batches to `rom/*-commented.asm` |
-| `tools/read_trace.py` | Parse a binary trace file → text/JSON |
+| `tools/read_trace.py` | Parse a binary trace file → text/JSON (`--labels`, `--changes`) |
 | `tools/compare_trace.py` | Find the first divergence between two trace files |
 | `tools/compare_logs.py` | Align two log files on matching ROM address sequence |
 
@@ -138,8 +143,8 @@ uv run python tools/disasm.py --emit-cpp > /tmp/generated.cpp
    Parity").
    Do not launch the iOS Simulator or the built app — that is the user's job.
    When runtime verification is needed, ask the user to launch the app and
-   say precisely what to look for. Headless runs (`tools/headless/`,
-   `tools/agentic/`) are fine.
+   say precisely what to look for. Harness runs (`calcu --product 59`,
+   `reference/Harness.md`) are fine.
 
 2. **Build on macOS.** Verify Swift-facing changes with a macOS build; build for iOS only when explicitly required (commands: `calc-u-59-swift` skill, § "Build Verification").
 

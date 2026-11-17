@@ -1,4 +1,5 @@
 #include "presets/Source.hpp"
+#include "files/Files.hpp"
 #include <fstream>
 #include <iterator>
 
@@ -8,24 +9,17 @@ namespace fs = std::filesystem;
 
 namespace {
 
-fs::path pathOf(std::string_view s) { return fs::path(std::u8string(s.begin(), s.end())); }
-std::string textOf(const fs::path& p) {
-    const std::u8string u = p.generic_u8string();
-    return std::string(u.begin(), u.end());
-}
 
 std::optional<std::vector<std::uint8_t>> readFile(const fs::path& p) {
     std::error_code ec;
     if (!fs::is_regular_file(p, ec)) return std::nullopt;
-    std::ifstream in(p, std::ios::binary);
-    if (!in) return std::nullopt;
-    return std::vector<std::uint8_t>((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    return files::readBytes(p);
 }
 
 // `~/x` against the home folder; nullopt when the path does not start so.
 std::optional<fs::path> homePath(std::string_view path, const std::string& home) {
     if (path.size() < 2 || path[0] != '~' || (path[1] != '/' && path[1] != '\\')) return std::nullopt;
-    return pathOf(home) / pathOf(path.substr(2));
+    return files::toPath(home) / files::toPath(path.substr(2));
 }
 
 // The text of the bytes: BOM dropped, UTF-8 checked (EC-1, D-28).
@@ -46,8 +40,8 @@ std::string notRead(std::string_view path) { return "The file " + std::string(pa
 class FolderSource final : public PresetSource {
 public:
     FolderSource(fs::path file, std::string home) : file_(std::move(file)), home_(std::move(home)) {}
-    std::string name() const override { return textOf(file_); }
-    std::string stem() const override { return stemOf(textOf(file_.filename())); }
+    std::string name() const override { return files::fromPath(file_); }
+    std::string stem() const override { return stemOf(files::fromPath(file_.filename())); }
     std::optional<std::string> text() const override {
         const auto bytes = readFile(file_);
         if (!bytes) {
@@ -60,14 +54,14 @@ public:
     std::variant<std::vector<std::uint8_t>, std::string> readNamed(std::string_view path) const override {
         const fs::path p = resolve(path);
         if (auto b = readFile(p)) return *b;
-        return notRead(textOf(p));
+        return notRead(files::fromPath(p));
     }
-    std::string resolvedName(std::string_view path) const override { return textOf(resolve(path)); }
+    std::string resolvedName(std::string_view path) const override { return files::fromPath(resolve(path)); }
 
 private:
     fs::path resolve(std::string_view path) const {
         if (auto h = homePath(path, home_)) return *h;
-        const fs::path p = pathOf(path);
+        const fs::path p = files::toPath(path);
         if (p.is_absolute()) return p;
         return file_.parent_path() / p;
     }
@@ -88,15 +82,15 @@ public:
     std::string readError() const override { return why_; }
     std::variant<std::vector<std::uint8_t>, std::string> readNamed(std::string_view path) const override {
         std::optional<fs::path> p = homePath(path, home_);
-        if (!p && pathOf(path).is_absolute()) p = pathOf(path);
+        if (!p && files::toPath(path).is_absolute()) p = files::toPath(path);
         if (!p)   // EC-5
             return "The preset " + name_ + " was handed over without its folder, so the file " + std::string(path) +
                    " it names cannot be read.";
         if (auto b = readFile(*p)) return *b;
-        return notRead(textOf(*p));
+        return notRead(files::fromPath(*p));
     }
     std::string resolvedName(std::string_view path) const override {
-        if (auto h = homePath(path, home_)) return textOf(*h);
+        if (auto h = homePath(path, home_)) return files::fromPath(*h);
         return std::string(path);
     }
 
@@ -147,10 +141,10 @@ private:
 std::optional<std::vector<std::uint8_t>> DirectoryPresetBundle::read(std::string_view pathInBundle) const {
     const auto p = normalBundlePath(pathInBundle);
     if (!p) return std::nullopt;
-    return readFile(root_ / pathOf(*p));
+    return readFile(root_ / files::toPath(*p));
 }
 
-std::string DirectoryPresetBundle::where() const { return textOf(root_); }
+std::string DirectoryPresetBundle::where() const { return files::fromPath(root_); }
 
 std::unique_ptr<PresetSource> folderSource(fs::path file, std::string home) {
     return std::make_unique<FolderSource>(std::move(file), std::move(home));
@@ -203,7 +197,7 @@ std::unique_ptr<PresetSource> sourceFor(std::string_view ref, const PresetBundle
         return bundleSource(bundle ? *bundle : none, p ? *p : std::string(ref.substr(9)));
     }
     if (auto h = homePath(ref, home)) return folderSource(*h, std::move(home));
-    return folderSource(pathOf(ref), std::move(home));
+    return folderSource(files::toPath(ref), std::move(home));
 }
 
 bool isUtf8(std::string_view s) {

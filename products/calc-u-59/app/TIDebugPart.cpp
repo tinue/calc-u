@@ -217,7 +217,7 @@ bool TIDebugPart::paused() const {
 
 bool TIDebugPart::overlayRunning() const {
     machine::Machine* m = machine();
-    const AsmOverlay* o = m ? kindOf<AsmOverlay>(*m) : nullptr;
+    const AsmOverlay* o = m ? calcu::machine::first<AsmOverlay>(*m) : nullptr;
     return o && o->running();
 }
 
@@ -305,7 +305,7 @@ void TIDebugPart::afterCall(sessions::SessionContext& c, pacing::WallTime now) {
         if (u.diagnostic) c.log(*u.diagnostic);
     }
     // The machine's own lines, at their level (AC-11): one log message per call.
-    if (auto* log = kindOf<MachineLog>(*m)) {
+    if (auto* log = calcu::machine::first<MachineLog>(*m)) {
         std::vector<std::string> lines;
         for (auto& l : log->take()) lines.push_back(std::move(l.text));
         if (!lines.empty()) c.log(joined(lines));
@@ -328,7 +328,7 @@ void TIDebugPart::machineRestarted(sessions::SessionContext& c, sessions::Restar
     m_ctx = &c;
     machine::Machine* m = machine();
     if (!m) return;
-    if (auto* h = kindOf<RomHeatmapCounter>(*m)) h->reset();   // AC-8: a Reset zeroes the counts
+    if (auto* h = calcu::machine::first<RomHeatmapCounter>(*m)) h->reset();   // AC-8: a Reset zeroes the counts
     m_heatDirty = true;
     if (r == sessions::Restart::ColdBoot && m_asm.instructions > 0) {   // AC-26
         m_asm.fileName = kNoFile;
@@ -369,8 +369,8 @@ void TIDebugPart::follow() {
         m_generation = m_ctx->machineSession().generation();
         m_debug.attach({});
         refreshModule();
-        if (auto* log = kindOf<MachineLog>(*m)) log->setLevel(static_cast<int>(m_logLevel));
-        if (auto* h = kindOf<RomHeatmapCounter>(*m)) h->setOn(m_cpuShown || m_setup.alwaysShown);
+        if (auto* log = calcu::machine::first<MachineLog>(*m)) log->setLevel(static_cast<int>(m_logLevel));
+        if (auto* h = calcu::machine::first<RomHeatmapCounter>(*m)) h->setOn(m_cpuShown || m_setup.alwaysShown);
         if (m_asm.instructions > 0) {
             m_asm.fileName = kNoFile;
             m_asm.instructions = 0;
@@ -391,7 +391,7 @@ void TIDebugPart::follow() {
     if (rc) rc->sync();   // a new machine first (G11): a pause of the old one is not shown on it
     const debugger::RunState now = rc ? rc->state() : debugger::RunState{};
     const bool isPaused = rc && rc->paused();
-    if (auto* cs = kindOf<CalculatorState>(*m))   // the CPU tab's ring: shown, paused or a start armed
+    if (auto* cs = calcu::machine::first<CalculatorState>(*m))   // the CPU tab's ring: shown, paused or a start armed
         cs->setFrameRing(m_cpuShown || m_setup.alwaysShown || isPaused || now.armed.has_value());
     if (isPaused) {
         const machine::Ticks at = m->tickCount();
@@ -444,7 +444,7 @@ void TIDebugPart::publish() {
     }
     if (std::exchange(m_heatDirty, false)) {
         auto p = std::make_shared<TIHeatmap>();
-        if (auto* h = kindOf<RomHeatmapCounter>(*m)) p->counts = h->counts();
+        if (auto* h = calcu::machine::first<RomHeatmapCounter>(*m)) p->counts = h->counts();
         p->serial = ++m_serial;
         m_heatTopic->set(std::move(p));
     }
@@ -486,7 +486,7 @@ void TIDebugPart::setCpuShown(bool on) {
     m_cpuShown = on;
     machine::Machine* m = machine();
     if (!m) return;
-    if (auto* h = kindOf<RomHeatmapCounter>(*m)) {
+    if (auto* h = calcu::machine::first<RomHeatmapCounter>(*m)) {
         h->setOn(on || m_setup.alwaysShown);
         // The heatmap shows what ran since the tab came into view (AC-8); a
         // paused machine's heatmap is kept.
@@ -498,14 +498,14 @@ void TIDebugPart::setCpuShown(bool on) {
 
 void TIDebugPart::resetHeatmap() {
     if (machine::Machine* m = machine())
-        if (auto* h = kindOf<RomHeatmapCounter>(*m)) h->reset();
+        if (auto* h = calcu::machine::first<RomHeatmapCounter>(*m)) h->reset();
     m_heatDirty = true;
 }
 
 void TIDebugPart::setLogLevel(DebugLevel l) {
     m_logLevel = l;
     if (machine::Machine* m = machine())
-        if (auto* log = kindOf<MachineLog>(*m)) log->setLevel(static_cast<int>(l));
+        if (auto* log = calcu::machine::first<MachineLog>(*m)) log->setLevel(static_cast<int>(l));
     m_view.logLevel = l;
     if (m_viewTopic) m_viewTopic->set(std::make_shared<TIDebugView>(m_view));
 }
@@ -533,7 +533,7 @@ std::optional<std::string> TIDebugPart::loadAsm(const std::string& name, const s
         else words = std::move(std::get<std::vector<std::uint16_t>>(r));
     }
     machine::Machine* m = machine();
-    AsmOverlay* o = m ? kindOf<AsmOverlay>(*m) : nullptr;
+    AsmOverlay* o = m ? calcu::machine::first<AsmOverlay>(*m) : nullptr;
     if (refusal.empty() && !o) refusal = sessions::kNoMachine;
     if (refusal.empty() && !o->load(words))
         refusal = name + " holds " + std::to_string(words.size()) + " instructions; at most 2048 fit from 1800 to 1FFF.";
@@ -551,7 +551,7 @@ std::optional<std::string> TIDebugPart::loadAsm(const std::string& name, const s
 
 std::optional<std::string> TIDebugPart::runAsm() {
     machine::Machine* m = machine();
-    AsmOverlay* o = m ? kindOf<AsmOverlay>(*m) : nullptr;
+    AsmOverlay* o = m ? calcu::machine::first<AsmOverlay>(*m) : nullptr;
     if (!o || o->loaded() == 0) {   // EC-1
         setStatus(kNoAsmOverlay);
         return std::string(kNoAsmOverlay);
@@ -580,7 +580,7 @@ std::optional<std::string> TIDebugPart::runAsm() {
 
 void TIDebugPart::clearAsm() {
     machine::Machine* m = machine();
-    AsmOverlay* o = m ? kindOf<AsmOverlay>(*m) : nullptr;
+    AsmOverlay* o = m ? calcu::machine::first<AsmOverlay>(*m) : nullptr;
     const bool wasRunning = o && o->running();
     if (o) o->clear();
     m_asm.instructions = 0;
@@ -602,7 +602,7 @@ void TIDebugPart::productEntries(const machine::Machine& m, std::vector<control:
         if (!available) o.push_back({"reason", Value(reason)});
         out.push_back(control::ProductEntry{name, sessions::valuePayload(name, Value(std::move(o)))});
     };
-    const AsmOverlay* o = kindOf<AsmOverlay>(m);
+    const AsmOverlay* o = calcu::machine::first<AsmOverlay>(m);
     const bool loaded = o && o->loaded() > 0;
     const bool busy = m_ctx && m_ctx->busy();
     out.push_back(control::ProductEntry{

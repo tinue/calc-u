@@ -213,7 +213,7 @@ inline void runProgram(Machine& m, const std::string& line) {
     typeLine(m, "run", 0.1);
 }
 
-inline sharp::LoaderMemory& memoryOf(Machine& m) { return *sharp::firstOf<sharp::LoaderMemory>(m); }
+inline sharp::LoaderMemory& memoryOf(Machine& m) { return *calcu::machine::first<sharp::LoaderMemory>(m); }
 
 // The card in a module slot (from 1) as plugged() shows it, or nullptr (the
 // PC-1500 has one slot). Was sharp::legacy::moduleIn until M-51.

@@ -1,16 +1,10 @@
 #include "opening/Classify.hpp"
+#include "machine/Names.hpp"
 #include "opening/FileKind.hpp"
 #include "opening/OpenPart.hpp"
 #include <cstring>
 
 namespace calcu::opening {
-
-std::string lowerAscii(std::string_view s) {
-    std::string out(s);
-    for (char& c : out)
-        if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
-    return out;
-}
 
 std::string fileNameOf(const OpenedFile& f) {
     if (!f.name.empty()) return f.name;
@@ -69,7 +63,7 @@ bool validUtf8(const std::uint8_t* p, std::size_t n) {
 
 bool hasAny(std::string_view lowerName, const std::vector<std::string>& suffixes) {
     for (const auto& s : suffixes)
-        if (endsWith(lowerName, lowerAscii(s))) return true;
+        if (endsWith(lowerName, machine::lowerAscii(s))) return true;
     return false;
 }
 
@@ -104,7 +98,7 @@ bool looksLikePreset(const std::vector<std::uint8_t>& bytes) {
 Classified classify(const OpenedFile& f, Way way, const OpenSetup& s) {
     Classified out;
     const std::string name = fileNameOf(f);
-    const std::string lower = lowerAscii(name);
+    const std::string lower = machine::lowerAscii(name);
     if (!f.bytes) {   // 1a
         out.refusal = name + " could not be read.";
         return out;
@@ -142,7 +136,7 @@ Classified classify(const OpenedFile& f, Way way, const OpenSetup& s) {
 bool wouldTake(std::string_view name, std::optional<std::uint64_t> size, const OpenSetup& s) {
     if (const auto limit = limitOf(Way::Drop, s); limit && size && *size > *limit) return false;   // 1b
     if (name.empty() || name[0] == '.') return false;                                           // 1c
-    const std::string lower = lowerAscii(name);
+    const std::string lower = machine::lowerAscii(name);
     if (s.presets && hasAny(lower, s.presets->extensions())) return true;   // 2
     if (s.media && hasAny(lower, s.media->suffixes())) return true;         // 3
     for (FileKind* k : s.kinds)

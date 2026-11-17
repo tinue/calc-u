@@ -109,7 +109,7 @@ void replaceAll(std::string& s, std::string_view from, std::string_view to) {
 }
 
 TextAlign parseAlignment(std::string_view value) {
-    std::string v = toLower(value);
+    std::string v = calcu::machine::lowerAscii(value);
     if (v == "right") return TextAlign::Right;
     if (v == "center") return TextAlign::Center;
     return TextAlign::Left;
@@ -187,7 +187,7 @@ CueCardContent CueCardContent::ml01Default() {
 void CueCardContent::parseLine(std::string_view line) {
     size_t colon = line.find(':');
     if (colon == std::string_view::npos) return;
-    std::string key = toLower(trim(line.substr(0, colon)));
+    std::string key = calcu::machine::lowerAscii(trim(line.substr(0, colon)));
     std::string_view value = trim(line.substr(colon + 1));
 
     if (key == "template") {
@@ -210,7 +210,7 @@ void CueCardContent::parseLine(std::string_view line) {
     } else if (key == "row2r") {
         row2R = expandMathTokens(value);
     } else if (key == "style") {
-        std::string v = toLower(value);
+        std::string v = calcu::machine::lowerAscii(value);
         if (v == "none") style = CardButtonStyle::None;
         else if (v == "button") style = CardButtonStyle::Button;
     } else if (key == "row1align") {
@@ -220,7 +220,7 @@ void CueCardContent::parseLine(std::string_view line) {
     } else if (key == "row2ralign") {
         row2RAlign = parseAlignment(value);
     } else if (key == "pencilcolor") {
-        std::string v = toLower(value);
+        std::string v = calcu::machine::lowerAscii(value);
         for (auto c : {CueCardInkColor::Black, CueCardInkColor::Pencil, CueCardInkColor::Sharpie})
             if (v == toString(c)) color = c;
     } else if (int idx = labelIndex(key); idx >= 0) {

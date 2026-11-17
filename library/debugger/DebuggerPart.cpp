@@ -1,5 +1,7 @@
 #include "debugger/DebuggerPart.hpp"
+#include "files/Files.hpp"
 #include "formats/Number.hpp"
+#include "machine/Names.hpp"
 #include "sessions/Args.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/MachineSession.hpp"
@@ -22,11 +24,6 @@ using sessions::SessionContext;
 using sessions::Value;
 
 namespace {
-
-std::string lower(std::string s) {
-    for (char& c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return s;
-}
 
 Value u64(std::uint64_t v) { return Value(static_cast<std::int64_t>(v)); }
 
@@ -58,13 +55,13 @@ CommandOutcome withRunState(const RunControl::Result& r, const RunControl& rc) {
 std::optional<std::size_t> findTarget(const machine::Debugging& d, const std::string& name) {
     if (auto i = targetIndex(d, DebugTargetId{name})) return i;
     for (std::size_t i = 0; i < d.targetCount(); ++i)
-        if (lower(d.target(i).info().name.value) == lower(name)) return i;
+        if (machine::lowerAscii(d.target(i).info().name.value) == machine::lowerAscii(name)) return i;
     return std::nullopt;
 }
 
 std::optional<std::size_t> findSpace(const machine::TargetInfo& info, const std::string& name) {
     for (std::size_t i = 0; i < info.spaces.size(); ++i)
-        if (info.spaces[i].name == name || lower(info.spaces[i].name) == lower(name)) return i;
+        if (info.spaces[i].name == name || machine::lowerAscii(info.spaces[i].name) == machine::lowerAscii(name)) return i;
     return std::nullopt;
 }
 
@@ -130,12 +127,6 @@ std::optional<std::string> bankOf(const Value& a, const machine::SpaceInfo& spac
     return std::nullopt;
 }
 
-std::optional<std::vector<std::uint8_t>> readFileBytes(const std::string& path) {
-    std::ifstream in(std::filesystem::path(std::u8string(path.begin(), path.end())), std::ios::binary);
-    if (!in) return std::nullopt;
-    return std::vector<std::uint8_t>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
-}
-
 } // namespace
 
 DebuggerPart::DebuggerPart(DebuggerSetup s)
@@ -194,7 +185,7 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
     };
     auto levelOf = [](const Value& a) {
         const std::string l = sessions::textArg(a, "level");
-        return LevelName{l.empty() ? std::string("cpu") : lower(l)};
+        return LevelName{l.empty() ? std::string("cpu") : machine::lowerAscii(l)};
     };
 
     s.command(kPauseCommand, [&rc, levelOf](const Value& a, SessionContext& c) -> CommandOutcome {
@@ -220,7 +211,7 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
         return withRunState(rc.step(levelOf(a), static_cast<std::uint64_t>(count), target, kind, c.currentCall()), rc);
     });
     s.command(kPauseOnStartCommand, [&rc](const Value& a, SessionContext&) -> CommandOutcome {
-        const std::string l = lower(sessions::textArg(a, "level"));
+        const std::string l = machine::lowerAscii(sessions::textArg(a, "level"));
         if (sessions::flagArg(a, "off") || l == "off") return fromResult(rc.pauseOnStart(std::nullopt), nullptr);
         if (l.empty()) return Refused{"pause-on-start takes a level, or off."};
         return fromResult(rc.pauseOnStart(LevelName{l}), nullptr);
@@ -306,7 +297,7 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
         const std::string name = sessions::textArg(a, "register");
         const auto& regs = target.info().registers;
         const auto r = std::find_if(regs.begin(), regs.end(), [&](const machine::RegisterInfo& x) {
-            return x.name == name || lower(x.name) == lower(name);
+            return x.name == name || machine::lowerAscii(x.name) == machine::lowerAscii(name);
         });
         if (r == regs.end()) return Refused{"The target " + target.info().name.value + " has no register " + name + "."};
         const auto value = numberOf(a.find("value"));
@@ -382,7 +373,7 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
         }
         const std::string file = sessions::textArg(a, "file");
         std::optional<std::vector<std::uint8_t>> bytes = sessions::bytesArg(a, "bytes");
-        if (!bytes) bytes = readFileBytes(file);
+        if (!bytes) bytes = files::readBytes(files::toPath(file));
         if (!bytes) return Refused{"Cannot read " + file + "."};
         for (const SymbolReader* r : setup_.symbolReaders) {
             if (!r->reads(file, *bytes)) continue;

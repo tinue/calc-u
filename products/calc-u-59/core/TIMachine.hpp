@@ -61,6 +61,7 @@ public:
     /// reader's media place `card-reader/media-place` (C59-7 AC-6; LIB-1 D-1).
     std::vector<calcu::machine::CapabilityEntry> capabilities() const override;
     calcu::machine::Capability* capability(const calcu::machine::CapabilityId&) override;
+    using calcu::machine::Machine::capability;
     std::vector<calcu::machine::DebugTargetId> debugTargets() const override { return m_descriptor.debugTargets; }
     /// LIB-10 AC-28: the one target TMC0501 (core/TIDebugging.hpp).
     calcu::machine::Debugging* debugging() override { return &m_debugging; }

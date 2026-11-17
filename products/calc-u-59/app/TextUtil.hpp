@@ -1,4 +1,5 @@
 #pragma once
+#include "machine/Names.hpp"
 #include <cctype>
 #include <clocale>
 #include <cmath>
@@ -93,17 +94,11 @@ inline std::string_view stripInlineComment(std::string_view line) {
     return trim(line.substr(0, line.find('#')));
 }
 
-inline std::string toLower(std::string_view s) {
-    std::string out(s);
-    for (char& c : out) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return out;
-}
-
 /// A file name's extension in lower case; empty when it has none or is a hidden file.
 inline std::string lowerExtension(std::string_view name) {
     size_t dot = name.rfind('.');
     if (name.empty() || name.front() == '.' || dot == std::string_view::npos) return {};
-    return toLower(name.substr(dot + 1));
+    return calcu::machine::lowerAscii(name.substr(dot + 1));
 }
 
 /// Swift's Double(String): the whole string must be a strtod-style literal —

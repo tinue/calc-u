@@ -1,4 +1,5 @@
 #include "harness/Run.hpp"
+#include "files/Files.hpp"
 #include "machine/Names.hpp"
 #include "debugger/DebuggerPart.hpp"
 #include "media/PresetMedia.hpp"
@@ -21,11 +22,6 @@ namespace calcu::harness {
 namespace fs = std::filesystem;
 
 namespace {
-std::string pathText(const fs::path& p) {
-    const std::u8string u = p.u8string();
-    return std::string(u.begin(), u.end());
-}
-fs::path pathOf(const std::string& s) { return fs::path(std::u8string(s.begin(), s.end())); }
 
 bool digits(std::string_view s, std::size_t at, std::size_t n, int* out) {
     int v = 0;
@@ -84,27 +80,27 @@ std::unique_ptr<RunSetup> RunSetup::make(const RunOptions& o, const settings::Pr
     const fs::path run = base / ("calcu-run-" + std::to_string(stamp) + "-" + std::to_string(n++));
     fs::create_directories(run / "save", ec);
     if (ec) {
-        *error = "Cannot make the run folder " + pathText(run) + ": " + ec.message();
+        *error = "Cannot make the run folder " + files::fromPathNative(run) + ": " + ec.message();
         return nullptr;
     }
-    r->runFolder_ = pathText(run);
+    r->runFolder_ = files::fromPathNative(run);
     if (o.saveFolder) {
-        fs::create_directories(pathOf(*o.saveFolder), ec);
-        if (ec || !fs::is_directory(pathOf(*o.saveFolder), ec)) {
+        fs::create_directories(files::toPath(*o.saveFolder), ec);
+        if (ec || !fs::is_directory(files::toPath(*o.saveFolder), ec)) {
             *error = "Cannot use the save folder " + *o.saveFolder + ".";
             return nullptr;
         }
-        r->saveFolder_ = pathText(fs::absolute(pathOf(*o.saveFolder), ec));
+        r->saveFolder_ = files::fromPathNative(fs::absolute(files::toPath(*o.saveFolder), ec));
     } else {
-        r->saveFolder_ = pathText(run / "save");
+        r->saveFolder_ = files::fromPathNative(run / "save");
     }
     if (o.outputFolder) {
-        fs::create_directories(pathOf(*o.outputFolder), ec);
-        if (ec || !fs::is_directory(pathOf(*o.outputFolder), ec)) {
+        fs::create_directories(files::toPath(*o.outputFolder), ec);
+        if (ec || !fs::is_directory(files::toPath(*o.outputFolder), ec)) {
             *error = "Cannot use the output folder " + *o.outputFolder + ".";
             return nullptr;
         }
-        r->outputFolder_ = pathText(fs::absolute(pathOf(*o.outputFolder), ec));
+        r->outputFolder_ = files::fromPathNative(fs::absolute(files::toPath(*o.outputFolder), ec));
     } else {
         r->outputFolder_ = r->saveFolder_;
     }
@@ -113,8 +109,8 @@ std::unique_ptr<RunSetup> RunSetup::make(const RunOptions& o, const settings::Pr
     // LIB-9 AC-18, D-11: the folders as the run passes them, the others
     // inside the run folder.
     r->dirs_.frontend = settings::FrontendKind::Given;
-    r->dirs_.home = pathText(run / "home");
-    r->dirs_.settingsBase = pathText(run / "settings");
+    r->dirs_.home = files::fromPathNative(run / "home");
+    r->dirs_.settingsBase = files::fromPathNative(run / "settings");
     r->dirs_.saveFolder = r->saveFolder_;
     r->dirs_.traceFolder = r->outputFolder_;
     r->dirs_.screenshotFolder = r->outputFolder_;
@@ -124,7 +120,7 @@ std::unique_ptr<RunSetup> RunSetup::make(const RunOptions& o, const settings::Pr
 
 RunSetup::~RunSetup() {
     std::error_code ec;
-    if (!runFolder_.empty()) fs::remove_all(pathOf(runFolder_), ec);
+    if (!runFolder_.empty()) fs::remove_all(files::toPath(runFolder_), ec);
 }
 
 std::function<std::chrono::system_clock::time_point()> RunSetup::hostTime() const {

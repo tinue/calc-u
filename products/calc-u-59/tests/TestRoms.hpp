@@ -63,7 +63,7 @@ inline TI59Machine& mem(Machine& m) { return TIMachineTesting::hardware(static_c
 inline void runInstructions(Machine& m, std::uint32_t n) { TIMachineTesting::runInstructions(static_cast<TIMachine&>(m), n); }
 /// The panel's reads of the core: the product kind c59.calculator-state (C59-4 D-3; the
 /// debug panel adapter went in M-56).
-inline cu59::CalculatorState& dbg(Machine& m) { return *cu59::kindOf<cu59::CalculatorState>(m); }
+inline cu59::CalculatorState& dbg(Machine& m) { return *calcu::machine::first<cu59::CalculatorState>(m); }
 /// To the next program step boundary (at most 50000 weighted cycles), as STEP did
 /// (TIMachineTesting; the overlay's entry does it in the core).
 inline void stepToBoundary(Machine& m) { TIMachineTesting::stepToBoundary(static_cast<TIMachine&>(m)); }

@@ -19,7 +19,7 @@ constexpr std::uint16_t kPrintWaitLoops[] = {0x154C, 0x154D, 0x1425, 0x1426, 0x1
 
 RunNote noteRun(calcu::machine::Machine& m) {
     RunNote n;
-    auto* cs = kindOf<CalculatorState>(m);
+    auto* cs = calcu::machine::first<CalculatorState>(m);
     if (!cs) return n;
     const CpuFrame f = cs->snapshotCPU();
     const auto* s = f.SCOM[0];

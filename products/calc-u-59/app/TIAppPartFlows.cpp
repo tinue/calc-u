@@ -138,8 +138,7 @@ void TIAppPart::refreshCueCard() {
     // AC-21: the library program selected now, from the product kind.
     int program = 0;
     if (calcu::machine::Machine* m = machine())
-        for (const auto& e : m->capabilities(LibraryProgram::kKind))
-            if (auto* k = calcu::machine::capabilityAs<LibraryProgram>(*m, e.id)) program = k->selected().value_or(0);
+        if (auto* k = calcu::machine::first<LibraryProgram>(*m)) program = k->selected().value_or(0);
     m_activeProgram = program;
     // The fitted magnetic card: the media part's binding of the card reader.
     const calcu::media::Binding* b = nullptr;
@@ -147,9 +146,7 @@ void TIAppPart::refreshCueCard() {
     if (m_ctx) {
         b = m_lib.media().bindingOf("card-reader");
         if (calcu::machine::Machine* m = machine(); b && m)
-            for (const auto& e : m->capabilities(calcu::media::MediaPlace::kKind))
-                if (auto* place = calcu::machine::capabilityAs<calcu::media::MediaPlace>(*m, e.id))
-                    passing = place->side();
+            if (auto* place = calcu::machine::first<calcu::media::MediaPlace>(*m)) passing = place->side();
     }
     if (b && b->armed != m_seenArm) {   // D-6: a card fitted takes the place of the card before
         m_seenArm = b->armed;

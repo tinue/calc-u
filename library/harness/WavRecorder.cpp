@@ -1,4 +1,5 @@
 #include "harness/WavRecorder.hpp"
+#include "files/Files.hpp"
 #include <filesystem>
 
 namespace calcu::harness {
@@ -17,7 +18,7 @@ void u16(std::ofstream& o, std::uint16_t v) {
 
 bool WavRecorder::open(const std::string& path, int sampleRate, std::string* error) {
     close();
-    out_.open(std::filesystem::path(std::u8string(path.begin(), path.end())), std::ios::binary | std::ios::trunc);
+    out_.open(files::toPath(path), std::ios::binary | std::ios::trunc);
     if (!out_) {
         *error = "Cannot write the file " + path + ".";
         return false;

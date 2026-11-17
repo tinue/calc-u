@@ -74,7 +74,7 @@ TEST(c59_4_ac14_crlf) {
 TEST(c59_4_ac14_first_at_1800) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
-    auto* o = kindOf<AsmOverlay>(*m);
+    auto* o = calcu::machine::first<AsmOverlay>(*m);
     CHECK(o && o->load(words(kHead + "HEX:\n0A01 01D8\n")));
     calcu::machine::DebugTarget& t = m->debugging()->target(0);
     CHECK_EQ(t.peek(0, 0x1800, {}).value, std::uint64_t{0x0A01});
@@ -145,7 +145,7 @@ TEST(c59_4_ac20_five_overlays_in_2_0_give_2_3_0s_instructions) {
 TEST(c59_4_ac20_dpt_runs_with_cond) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
-    auto* o = kindOf<AsmOverlay>(*m);
+    auto* o = calcu::machine::first<AsmOverlay>(*m);
     CHECK(o && o->load(words(*testroms::readFile("examples/assembly/DPT.asm"))));
     const AsmOverlay::Entry e = o->enter(8192);
     CHECK(e.entered && o->running());

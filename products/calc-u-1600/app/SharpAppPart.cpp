@@ -14,10 +14,10 @@
 #include "app/SharpDebuggerSetup.hpp"
 #include "app/SharpMediaKinds.hpp"
 #include "app/SharpPrinters.hpp"
-#include "app/Utf8Path.hpp"
 #ifndef __EMSCRIPTEN__
 #include "app/dap/DapPart.hpp"
 #endif
+#include "files/Files.hpp"
 #include "media/PresetMedia.hpp"
 #include "peripherals/Controls.hpp"
 #include "peripherals/RealTimeClock.hpp"
@@ -61,7 +61,7 @@ calcu::machine::Catalogue catalogueOf(const AppPaths& paths, const calcu::roms::
 }
 
 calcu::roms::LookupResult lookUp(const AppPaths& paths) {
-    return sharp::lookUpRoms(calcu::roms::DirectoryBundle(toPath(paths.bundledRomsDir())));
+    return sharp::lookUpRoms(calcu::roms::DirectoryBundle(calcu::files::toPath(paths.bundledRomsDir())));
 }
 
 std::shared_ptr<const std::vector<std::uint8_t>> hostDriveRomOf(const AppPaths& paths) {
@@ -82,7 +82,7 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOpti
       m_catalogue(catalogueOf(paths, m_found.set.get())),
       m_machines(m_catalogue, m_hostDriveRom),
       m_rules(SharpKeywordSetup{[this] { return canMountHostFolder(); }}),
-      m_bundle(toPath(paths.bundledExamplesDir())),
+      m_bundle(calcu::files::toPath(paths.bundledExamplesDir())),
       m_controlRules(SharpControlRules::Inputs{options.canMountHostFolder, [this] { return ce1600pVariant(); }}),
       m_lib(librarySetup()) {
 #ifndef __EMSCRIPTEN__

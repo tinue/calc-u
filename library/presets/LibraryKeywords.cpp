@@ -2,6 +2,7 @@
 // AC-66): `keys:` is the reader's; here the steps key, type, wait,
 // regular-speed, full-speed, elapsed-time, expect, not-expect, screenshot
 // and syncclock.
+#include "files/Files.hpp"
 #include "formats/Duration.hpp"
 #include "formats/Flow.hpp"
 #include "machine/Names.hpp"
@@ -256,7 +257,6 @@ std::function<std::unique_ptr<Item>(const YamlNode&, ReadContext&)> readExpect(b
     };
 }
 
-std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
 
 class ScreenshotItem final : public Item {
 public:
@@ -267,7 +267,7 @@ public:
         const auto png = run.rules().screenshot(*m, run.display());
         if (!png) co_return failed("There is no picture of the display.");
         if (const auto folder = run.screenshotFolder()) {   // AC-25: the folder for screenshots
-            const std::filesystem::path p = pathOf(*folder) / pathOf(name_);
+            const std::filesystem::path p = files::toPath(*folder) / files::toPath(name_);
             std::ofstream out(p, std::ios::binary | std::ios::trunc);
             out.write(reinterpret_cast<const char*>(png->data()), static_cast<std::streamsize>(png->size()));
             if (!out) co_return failed("The screenshot " + name_ + " cannot be written to " + *folder + ".");

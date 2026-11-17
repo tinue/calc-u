@@ -298,7 +298,7 @@ calcu::sessions::Task<OperationResult> SharpLoaderPart::startOperation(SharpLoad
         }
         spent += co_await ctx.run(frame);
         calcu::machine::Machine* now = ctx.session().machine();
-        auto* support = now ? sharp::firstOf<calcu::typing::TypingSupport>(*now) : nullptr;
+        auto* support = now ? calcu::machine::first<calcu::typing::TypingSupport>(*now) : nullptr;
         if (support && support->promptReady().value_or(false)) held++;
         else held = 0;
     }

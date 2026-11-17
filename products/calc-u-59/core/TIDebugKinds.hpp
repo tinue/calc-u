@@ -96,14 +96,4 @@ public:
 /// A 16-nibble register of the TI's BCD layout as a number (the panel's reads).
 double decodeRegister(const std::uint8_t* nibbles16);
 
-/// The first capability of kind K of `m`, or nullptr (not a TI machine).
-/// M is calcu::machine::Machine (const or not).
-template <class K, class M> K* kindOf(M& m) {
-    using Mut = std::remove_const_t<M>;
-    Mut& mm = const_cast<Mut&>(m);
-    for (const auto& e : mm.capabilities(K::kKind))
-        if (auto* k = calcu::machine::capabilityAs<K>(mm, e.id)) return k;
-    return nullptr;
-}
-
 } // namespace cu59

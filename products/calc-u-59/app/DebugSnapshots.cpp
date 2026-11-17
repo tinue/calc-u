@@ -86,15 +86,15 @@ int decodeProgramCounter(const CpuFrame& cpu) {
 }
 
 std::vector<uint8_t> programSteps(const calcu::machine::Machine& m) {
-    int count = std::min((kindOf<ProgramMemory>(m)->partitionSteps() / 8), kindOf<ProgramMemory>(m)->rawCount()) * 8;
+    int count = std::min((calcu::machine::first<ProgramMemory>(m)->partitionSteps() / 8), calcu::machine::first<ProgramMemory>(m)->rawCount()) * 8;
     std::vector<uint8_t> steps(static_cast<size_t>(std::max(count, 0)));
-    for (int i = 0; i < count; ++i) steps[static_cast<size_t>(i)] = kindOf<ProgramMemory>(m)->readStep(i);
+    for (int i = 0; i < count; ++i) steps[static_cast<size_t>(i)] = calcu::machine::first<ProgramMemory>(m)->readStep(i);
     return steps;
 }
 
 std::vector<uint8_t> romKeycodes(const calcu::machine::Machine& m) {
     std::vector<uint8_t> k(384);
-    for (int i = 0; i < 384; ++i) k[static_cast<size_t>(i)] = kindOf<CalculatorState>(m)->readROMKeycode(i);
+    for (int i = 0; i < 384; ++i) k[static_cast<size_t>(i)] = calcu::machine::first<CalculatorState>(m)->readROMKeycode(i);
     return k;
 }
 
@@ -122,7 +122,7 @@ bool LiveDebugSnapshot::operator==(const LiveDebugSnapshot& o) const {
 
 void readTraceRing(const calcu::machine::Machine& m, std::vector<CpuFrame>& frames) {
     frames.resize(1024);
-    frames.resize(kindOf<CalculatorState>(m)->readCpuFrames(frames.data(), 1024));
+    frames.resize(calcu::machine::first<CalculatorState>(m)->readCpuFrames(frames.data(), 1024));
 }
 
 std::vector<CpuFrame> readTraceRing(const calcu::machine::Machine& m) {
@@ -140,8 +140,8 @@ std::vector<InspectorEntry> inspectorHistory(const calcu::machine::Machine& m) {
         out.push_back({f.pc, f.opcode, TIDebugging::disassemble(f.pc, f.opcode), f, true, i + 1 == frames.size()});
     }
     // snapshotCPU() carries the real next opcode.
-    uint16_t pc = kindOf<CalculatorState>(m)->pc();
-    uint16_t next = kindOf<CalculatorState>(m)->snapshotCPU().opcode;
+    uint16_t pc = calcu::machine::first<CalculatorState>(m)->pc();
+    uint16_t next = calcu::machine::first<CalculatorState>(m)->snapshotCPU().opcode;
     out.push_back({pc, next, TIDebugging::disassemble(pc, next), CpuFrame{}, false, false});
     return out;
 }
@@ -157,24 +157,24 @@ std::vector<InspectorEntry> recentInstructions(const std::vector<CpuFrame>& fram
 }
 
 TIStepBoundary calcViewState(const calcu::machine::Machine& m) {
-    TIStepBoundary latched = kindOf<CalculatorState>(m)->lastStepBoundary();
+    TIStepBoundary latched = calcu::machine::first<CalculatorState>(m)->lastStepBoundary();
     if (latched.count != 0) return latched;
-    return {kindOf<CalculatorState>(m)->snapshotCPU(), kindOf<CalculatorState>(m)->libExecPC(), false, 0};
+    return {calcu::machine::first<CalculatorState>(m)->snapshotCPU(), calcu::machine::first<CalculatorState>(m)->libExecPC(), false, 0};
 }
 
 namespace {
 // Quirky partitions may claim more registers than physically exist.
-int programRAMRegs(const calcu::machine::Machine& m) { return std::min((kindOf<ProgramMemory>(m)->partitionSteps() / 8), kindOf<ProgramMemory>(m)->rawCount()); }
+int programRAMRegs(const calcu::machine::Machine& m) { return std::min((calcu::machine::first<ProgramMemory>(m)->partitionSteps() / 8), calcu::machine::first<ProgramMemory>(m)->rawCount()); }
 } // namespace
 
-int partitionDataRegCount(const calcu::machine::Machine& m) { return std::max(0, kindOf<ProgramMemory>(m)->registerTop() - programRAMRegs(m)); }
+int partitionDataRegCount(const calcu::machine::Machine& m) { return std::max(0, calcu::machine::first<ProgramMemory>(m)->registerTop() - programRAMRegs(m)); }
 
 std::vector<LiveDebugSnapshot::RegEntry> nonZeroDataRegs(const calcu::machine::Machine& m) {
-    const int top = kindOf<ProgramMemory>(m)->registerTop();  // Rnn = RAM[top - 1 - nn]; Hnn = RAM[top + nn]
+    const int top = calcu::machine::first<ProgramMemory>(m)->registerTop();  // Rnn = RAM[top - 1 - nn]; Hnn = RAM[top + nn]
     std::vector<LiveDebugSnapshot::RegEntry> regs;
-    for (int ramIdx = programRAMRegs(m); ramIdx < kindOf<ProgramMemory>(m)->rawCount(); ++ramIdx) {
+    for (int ramIdx = programRAMRegs(m); ramIdx < calcu::machine::first<ProgramMemory>(m)->rawCount(); ++ramIdx) {
         uint8_t n[16];
-        { const RegisterNibbles r = kindOf<ProgramMemory>(m)->readRaw(ramIdx); std::copy(r.begin(), r.end(), n); }
+        { const RegisterNibbles r = calcu::machine::first<ProgramMemory>(m)->readRaw(ramIdx); std::copy(r.begin(), r.end(), n); }
         if (std::all_of(n, n + 16, [](uint8_t v) { return v == 0; })) continue;
         const double value = decodeRegister(n);
         if (ramIdx < top) regs.push_back({top - 1 - ramIdx, value, false});
@@ -187,7 +187,7 @@ LiveDebugBuild buildLiveSnapshot(const calcu::machine::Machine& m, const ModuleI
                                  std::vector<uint8_t>& romCache, const TIStepBoundary& state) {
     LiveDebugBuild out;
     LiveDebugSnapshot& snap = out.snap;
-    snap.programRegCount = (kindOf<ProgramMemory>(m)->partitionSteps() / 8);
+    snap.programRegCount = (calcu::machine::first<ProgramMemory>(m)->partitionSteps() / 8);
     snap.dataRegCount = partitionDataRegCount(m);
     snap.nonZeroRegs = nonZeroDataRegs(m);
 

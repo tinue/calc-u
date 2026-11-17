@@ -32,7 +32,7 @@ Seconds SharpProductMachines::readinessBound(const ModelId& model) const {
 PeripheralRequest SharpProductMachines::carried(const PlugEntry& entry, Machine& m) {
     PeripheralRequest r = ProductMachines::carried(entry, m);
     if (entry.peripheral.value == sharp::kHostDrive) {   // AC-28: the folder goes along
-        if (auto* f = sharp::firstOf<sharp::HostDriveFolder>(m)) r.content = std::make_shared<sharp::HostDriveRequest>(f->folder());
+        if (auto* f = calcu::machine::first<sharp::HostDriveFolder>(m)) r.content = std::make_shared<sharp::HostDriveRequest>(f->folder());
     }
     return r;
 }

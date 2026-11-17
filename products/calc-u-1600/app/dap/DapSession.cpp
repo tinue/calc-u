@@ -14,6 +14,7 @@
 #include "debugger/RunControl.hpp"
 #include "debugger/RunState.hpp"
 #include "machine/Machine.hpp"
+#include "machine/Names.hpp"
 #include "sessions/MachineSession.hpp"
 #include "typing/TypingPart.hpp"
 
@@ -40,10 +41,6 @@ std::string hexBare(std::uint32_t v, int digits) {
 
 std::string upper(std::string s) {
     for (char& c : s) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
-    return s;
-}
-std::string lower(std::string s) {
-    for (char& c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     return s;
 }
 
@@ -226,7 +223,7 @@ int DapSession::threadOf(const Value& args) const {
 }
 
 int DapSession::threadForCpu(const std::string& cpu) const {
-    const std::string c = lower(cpu);
+    const std::string c = calcu::machine::lowerAscii(cpu);
     if (c == "lh5803") return 2;
     const DapTargets t = targets();
     for (const auto& th : t.threads())
@@ -566,7 +563,7 @@ void DapSession::setVariable(const Value& args, Body* body, std::string* error) 
         *error = r.error;
         return;
     }
-    std::string name = lower(textOf(args, "name"));
+    std::string name = calcu::machine::lowerAscii(textOf(args, "name"));
     if (ref % 4 == kVarFlags) name += "f";
     const DapTargets t = targets();
     if (ref % 4 == kVarBanks || !t.writeRegister(thread, name, std::uint32_t(r.value))) {

@@ -221,7 +221,7 @@ TEST(lib7_ac40_write_protect_power_cycle) {
     CHECK(f.choose("slot-1", "CE-161").done);
     const calcu::media::PlaceState* p = f.mediaPlace("slot-1");
     CHECK(p && p->nameAndSave && p->askWriteProtect);
-    sharp::LoaderMemory* m = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
+    sharp::LoaderMemory* m = calcu::machine::first<sharp::LoaderMemory>(*f.part().machine());
     CHECK(m != nullptr);
     if (!m) return;
     const std::uint8_t b55 = 0x55, bAA = 0xAA;
@@ -231,7 +231,7 @@ TEST(lib7_ac40_write_protect_power_cycle) {
     CHECK(f.nameAndSave("slot-1", "Rom", /*protect=*/true).done);
     p = f.mediaPlace("slot-1");
     CHECK(p && !p->askWriteProtect && !p->nameAndSave);
-    m = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
+    m = calcu::machine::first<sharp::LoaderMemory>(*f.part().machine());
     CHECK(m && slot1Protected(f.part()));
     if (!m) return;
     CHECK(!m->writeBuiltIn(0x0000, &bAA, 1).stored);   // the switch blocks it
@@ -242,7 +242,7 @@ TEST(lib7_ac40_write_protect_power_cycle) {
 
     CHECK(f.choose("slot-1", "").done);
     CHECK(f.choose("slot-1", "Rom").done);
-    m = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
+    m = calcu::machine::first<sharp::LoaderMemory>(*f.part().machine());
     CHECK(m && slot1Protected(f.part()));
     if (m) CHECK(m->peek(0x0000) == 0x55);
 
@@ -313,7 +313,7 @@ TEST(lib2_ac34_set_at_build_and_after_operation) {
         f.fixedTime = fixed;
         CHECK(f.start(model));
         auto read = [&] {
-            auto* clock = sharp::firstOf<calcu::peripherals::RealTimeClock>(*f.part().machine());
+            auto* clock = calcu::machine::first<calcu::peripherals::RealTimeClock>(*f.part().machine());
             return clock ? clock->read() : calcu::peripherals::ClockFields{};
         };
         auto isFixed = [](const calcu::peripherals::ClockFields& cf) {

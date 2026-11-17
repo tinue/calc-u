@@ -9,7 +9,7 @@
 #include "app/CardYamlDump.hpp"
 #include "app/SharpShellProduct.hpp"
 #include "app/Text.hpp"
-#include "app/Utf8Path.hpp"
+#include "files/Files.hpp"
 #include "sessions/Args.hpp"
 #include "shell/ValueForms.hpp"
 
@@ -77,11 +77,11 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     // preset over with it (`session.spec.js`; LIB-13, LIB-7 and C1600-2's
     // designs keep it).
     cmd("c1600.upload", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        const std::string path = m_uploadsDir + "/" + fromPath(toPath(textArg(a, "name")).filename());
+        const std::string path = m_uploadsDir + "/" + calcu::files::fromPath(calcu::files::toPath(textArg(a, "name")).filename());
         std::error_code ec;
-        std::filesystem::create_directories(toPath(m_uploadsDir), ec);
+        std::filesystem::create_directories(calcu::files::toPath(m_uploadsDir), ec);
         const std::vector<std::uint8_t> b = bytesArg(a, "bytes").value_or(std::vector<std::uint8_t>{});
-        std::ofstream out(toPath(path), std::ios::binary | std::ios::trunc);
+        std::ofstream out(calcu::files::toPath(path), std::ios::binary | std::ios::trunc);
         out.write(reinterpret_cast<const char*>(b.data()), static_cast<std::streamsize>(b.size()));
         if (!out) return Refused{"The file could not be written: " + path};
         return result("c1600.path", Value(path));

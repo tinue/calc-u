@@ -215,7 +215,7 @@ private:
     // The model and the counters of the machine topic follow a new machine.
     void followNewMachine();
     std::string pluggedAt(const char* place) const;
-    template <class K> K* kind() const { return machine() ? sharp::firstOf<K>(*machine()) : nullptr; }
+    template <class K> K* kind() const { return machine() ? calcu::machine::first<K>(*machine()) : nullptr; }
 
     Settings& m_settings;
     AppPaths& m_paths;

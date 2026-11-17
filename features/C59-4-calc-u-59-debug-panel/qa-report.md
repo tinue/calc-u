@@ -15,7 +15,7 @@ The code (design §2; all under `products/calc-u-59/` unless named):
 - core: `core/TIDebugKinds.hpp` (the product kinds `c59.asm-overlay`
   `cu59::AsmOverlay`, `c59.rom-heatmap` `cu59::RomHeatmapCounter`,
   `c59.calculator-state` `cu59::CalculatorState`, `c59.machine-log`
-  `cu59::MachineLog`; `kindOf<K>`, `decodeRegister`),
+  `cu59::MachineLog`; `decodeRegister`; found with the library's `calcu::machine::first<K>` since Part E simplification E-7),
   `core/TIDebugKindsImpl.hpp`, `core/TIDebugKinds.cpp`; `TIMachine` offers
   them as `TMC0501/c59.…`, counts the heatmap in `stepOne` while it is on,
   ends the overlay's run at every processor reset and removes the overlay at

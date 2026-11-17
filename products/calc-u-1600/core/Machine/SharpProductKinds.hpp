@@ -158,11 +158,4 @@ public:
     virtual bool motorOn() const = 0;
 };
 
-// The first capability of kind K the machine `m` has now, or nullptr.
-template <class K, class M> K* firstOf(M& m) {
-    for (const auto& e : m.capabilities(K::kKind))
-        if (K* k = calcu::machine::capabilityAs<K>(m, e.id)) return k;
-    return nullptr;
-}
-
 } // namespace sharp

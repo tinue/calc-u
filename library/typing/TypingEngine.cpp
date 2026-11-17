@@ -112,10 +112,7 @@ bool TypingEngine::current() {
 }
 
 TypingSupport* TypingEngine::support() const {
-    if (!machine_) return nullptr;
-    for (const auto& e : machine_->capabilities(TypingSupport::kKind))
-        if (auto* s = machine::capabilityAs<TypingSupport>(*machine_, e.id)) return s;
-    return nullptr;
+    return machine_ ? machine::first<TypingSupport>(*machine_) : nullptr;
 }
 
 Ticks TypingEngine::effHold(Ticks h) const { return std::max(h, profile_ ? profile_->minHold : Ticks{0}); }

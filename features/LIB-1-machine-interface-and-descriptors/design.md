@@ -74,7 +74,7 @@ not named here adds a folder in the same pattern.
 - **One folder per area**, headers and sources together, file names in
   PascalCase (`Machine.hpp`), as in both products: `library/machine/`,
   `peripherals/`, `sessions/`, `settings/`, `pacing/`, `harness/`,
-  `roms/`, `formats/`, `typing/`, `shell/`, `web/`.
+  `roms/`, `formats/`, `files/`, `typing/`, `shell/`, `web/`.
 - Namespace `calcu::<area>`. Nothing at namespace `calcu` itself.
 - Includes are rooted at `library/`: `#include "machine/Machine.hpp"`.
   `calcu_library` exports `${PROJECT_SOURCE_DIR}/library` as its PUBLIC
@@ -84,7 +84,9 @@ not named here adds a folder in the same pattern.
 - **Dependency direction** between areas is a rule, not enforced by
   CMake (it follows the graph of `docs/migration-plan.md` §2.1). An area
   includes only the areas it names here:
-  - `machine`, `formats`, `settings`: the standard library only;
+  - `machine`, `formats`, `settings`: the standard library and `files`
+    (Part E simplification E-7);
+  - `files`: the standard library only; any area includes it;
   - `pacing`: `machine`;
   - `peripherals`: `machine`, `sessions` (the host-link session part,
     LIB-2 and LIB-3 designs; settled at M-23, 2026-11-15);
@@ -744,3 +746,28 @@ Products: AC-26–41, 16 ACs, in P1–P5.
 and takes the host's places and ROM lookup (`docs/reviews/e-simplification.md`
 §1 S-1); `harness/attach/SessionParts.hpp` (named in §2a) is gone: the
 attached harness takes `parts::LibraryParts&`.
+
+## Part E simplification E-7 (2026-11-17, branch `es-helpers`)
+
+Small helpers written once (`docs/reviews/e-simplification.md` §1 S-7):
+
+- **The first capability of a kind** (§3.7): `machine::first<K>(m)` in
+  `machine/Capability.hpp`, for a `Machine&` (`K*`) and a `const Machine&`
+  (`const K*`), beside a const `capabilityAs`. `Machine` has a non-virtual
+  `const Capability* capability(const CapabilityId&) const` over the
+  virtual one, so readers of a const machine cast no more; a machine that
+  overrides `capability()` says `using Machine::capability;`. The
+  products' `sharp::firstOf` and `cu59::kindOf` are gone.
+- **A new area `files`** (§2a): `files/Files.hpp`, header only, namespace
+  `calcu::files`: `toPath` (UTF-8 text to `std::filesystem::path`),
+  `fromPath` (generic form) and `fromPathNative` (the host's separators),
+  `readText` and `readBytes` (the whole file; nullopt when it cannot be
+  opened). The standard library only; any area and the products may
+  include it, so the rule of §2a reads "`machine`, `formats`, `settings`:
+  the standard library and `files`". It replaces the private copies of
+  the library and both products (Calc-U-1600's `app/Utf8Path.hpp` went);
+  a caller that refuses a folder still asks `is_regular_file` first.
+- **ASCII lower case**: `machine::lowerAscii` is the one form; `opening`
+  names it with `using` as `presets` does. `settings` keeps its own
+  `lowerAscii` (`settings/Declaration.hpp`), as `settings` includes no
+  `machine`.

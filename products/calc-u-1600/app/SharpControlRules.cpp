@@ -21,7 +21,7 @@ std::string pluggedAt(const Machine& m, const char* place) {
 }
 
 std::string hostDriveFolder(const Machine& m) {
-    auto* f = sharp::firstOf<sharp::HostDriveFolder>(const_cast<Machine&>(m));
+    auto* f = calcu::machine::first<sharp::HostDriveFolder>(m);
     return f ? f->folder() : std::string();
 }
 

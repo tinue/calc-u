@@ -67,7 +67,7 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   `core/TIStateRecords.hpp`; a new field of a part goes into its `stateIo`). The debug panel's reads are product kinds since
   M-56 (`core/TIDebugKinds.hpp`: `c59.asm-overlay`, `c59.rom-heatmap`,
   `c59.calculator-state`, `c59.machine-log`; find one with
-  `cu59::kindOf<K>(machine)`); `idleAndKeyDetectRange()` is
+  `calcu::machine::first<K>(machine)`, `library/machine/Capability.hpp`); `idleAndKeyDetectRange()` is
   the scan/detect range for `ti59 coverage`, the run probe and the tests. The debugger
   reaches the core through `Machine::debugging()`: the debug target
   `TMC0501` (`core/TIDebugging.hpp`; LIB-10, M-53), whose

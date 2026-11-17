@@ -81,6 +81,9 @@ public:
     virtual Plugged plugged() const = 0;
     virtual std::vector<CapabilityEntry> capabilities() const = 0;
     virtual Capability* capability(const CapabilityId&) = 0;   // nullptr if not present now
+    // The same for a reader of a const machine: capability() only looks up.
+    // A machine that overrides capability() says `using Machine::capability;`.
+    const Capability* capability(const CapabilityId& id) const { return const_cast<Machine*>(this)->capability(id); }
     std::vector<CapabilityEntry> capabilities(const KindId&) const;   // empty if none (EC-5)
     virtual std::vector<DebugTargetId> debugTargets() const = 0;  // their interface: LIB-10
     // LIB-10 (design §3.1, §3.2): the debug targets with the checks of the

@@ -1,4 +1,5 @@
 #include "settings/Paths.hpp"
+#include "files/Files.hpp"
 #include "settings/PlatformBase.hpp"
 #include <filesystem>
 #include <fstream>
@@ -89,7 +90,7 @@ std::optional<std::string> Paths::folder(Folder which) const {
 Paths::Ensured Paths::ensure(Folder which) const {
     const std::optional<std::string> where = folder(which);
     if (!where || where->empty()) return {false, {}, "this frontend has no such folder"};
-    const fs::path p(std::u8string(where->begin(), where->end()));
+    const fs::path p = files::toPath(*where);
     std::error_code ec;
     fs::create_directories(p, ec);
     if (ec || !fs::is_directory(p, ec))

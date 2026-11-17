@@ -5,6 +5,7 @@
 #include "TextUtil.hpp"
 #include "formats/Flow.hpp"
 #include "formats/Yaml.hpp"
+#include "machine/Names.hpp"
 #include <cstdio>
 #include <sstream>
 
@@ -18,11 +19,6 @@ namespace {
 
 constexpr int kPowerOnProgramRegs = 60;   // the TI-59 at power-on: 479.59
 
-std::string lower(std::string s) {
-    for (char& c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return s;
-}
-
 std::string text(const YamlNode& n) { return calcu::formats::scalarText(n); }
 
 std::string hex2(unsigned v) {
@@ -35,7 +31,7 @@ std::string quoted(const std::string& v) { return v.find('"') == std::string::np
 
 // A byte value written `0x1C` (or a decimal number), any case (README.md §1, §4).
 std::optional<int> byteValue(const std::string& t) {
-    const std::string l = lower(t);
+    const std::string l = calcu::machine::lowerAscii(t);
     if (l.empty()) return std::nullopt;
     try {
         std::size_t used = 0;
@@ -68,19 +64,19 @@ std::optional<std::vector<std::uint8_t>> readSide(const YamlNode& n, const std::
     const auto partition = byteValue(text(*n.find("partition")));
     if (!partition) return fail(n.find("partition")->line, "partition: is a byte, as 0x1C.");
     d[0] = static_cast<std::uint8_t>(*partition);
-    const std::string type = lower(text(*n.find("data-type")));
+    const std::string type = calcu::machine::lowerAscii(text(*n.find("data-type")));
     if (type != "program" && type != "data") return fail(n.find("data-type")->line, "data-type: is program or data.");
     d[1] = type == "program" ? 0x11 : 0x10;
     const std::string bank = text(*n.find("bank"));
     if (bank.size() != 1 || bank[0] < '1' || bank[0] > '4') return fail(n.find("bank")->line, "bank: is 1 to 4.");
     d[2] = pageByteOfBank(bank[0] - '0');
-    const std::string protection = lower(text(*n.find("protection")));
+    const std::string protection = calcu::machine::lowerAscii(text(*n.find("protection")));
     if (protection != "true" && protection != "false") return fail(n.find("protection")->line, "protection: is true or false.");
     d[3] = protection == "true" ? 0x10 : 0x00;
     const auto checksum = byteValue(text(*n.find("checksum")));
     if (!checksum) return fail(n.find("checksum")->line, "checksum: is a byte, as 0x02.");
     d[244] = d[245] = static_cast<std::uint8_t>(*checksum);
-    if (lower(text(*n.find("encoding"))) != "register-hex") return fail(n.find("encoding")->line, "encoding: is register-hex.");
+    if (calcu::machine::lowerAscii(text(*n.find("encoding"))) != "register-hex") return fail(n.find("encoding")->line, "encoding: is register-hex.");
     const YamlNode& bytes = *n.find("bytes");
     if (!bytes.isScalar()) return fail(bytes.line, "bytes: is a block (bytes: |).");
     std::istringstream in(bytes.scalar);
@@ -119,7 +115,7 @@ public:
         if (!calcu::formats::parseYaml(bytes, &root, &error)) return unreadable(error);
         if (!root.isMap()) return unreadable("It is no magnetic card file.");
         const YamlNode* format = root.find("format");
-        if (!format || lower(text(*format)) != "ti59-magnetic-card") return unreadable("It is no magnetic card file (format: ti59-magnetic-card).");
+        if (!format || calcu::machine::lowerAscii(text(*format)) != "ti59-magnetic-card") return unreadable("It is no magnetic card file (format: ti59-magnetic-card).");
         const YamlNode* version = root.find("format-version");
         if (!version) return unreadable("It has no format-version.");
         const std::string v = text(*version);
@@ -150,7 +146,7 @@ public:
         label->name = text(*name);
         if (const YamlNode* d = root.find("description")) label->description = text(*d);
         if (const YamlNode* t = root.find("template")) {
-            const std::string tv = lower(text(*t));
+            const std::string tv = calcu::machine::lowerAscii(text(*t));
             if (tv != "true" && tv != "false") return unreadable("line " + std::to_string(t->line) + ": template: is true or false.");
             label->isTemplate = tv == "true";
         }

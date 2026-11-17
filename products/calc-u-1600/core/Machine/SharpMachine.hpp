@@ -94,6 +94,7 @@ public:
     calcu::machine::Plugged plugged() const override;
     std::vector<calcu::machine::CapabilityEntry> capabilities() const override;
     calcu::machine::Capability* capability(const calcu::machine::CapabilityId&) override;
+    using calcu::machine::Machine::capability;
     std::vector<calcu::machine::DebugTargetId> debugTargets() const override { return m_descriptor.debugTargets; }
     // LIB-10 (design §10.4, §10.5): the model's debug targets; advance()
     // honours their Checks.

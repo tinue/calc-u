@@ -76,7 +76,7 @@ calcu::sessions::Task<BasicTypeResult> typeProgram(calcu::sessions::OperationCon
                                                    calcu::typing::TypingEngine& engine,
                                                    calcu::machine::Machine& machine, std::string listing) {
     BasicTypeResult result;
-    LoaderMemory* mem = firstOf<LoaderMemory>(machine);
+    LoaderMemory* mem = calcu::machine::first<LoaderMemory>(machine);
     const calcu::typing::TypingProfile* profile = engine.profile();
     if (!mem || !profile || !profile->charKeys) {
         result.error = calcu::sessions::kNoMachine;
@@ -114,7 +114,7 @@ calcu::sessions::Task<BasicTypeResult> typeProgram(calcu::sessions::OperationCon
         }
         typed++;
         // Prompt readiness, at most 12 s.
-        auto* support = firstOf<calcu::typing::TypingSupport>(machine);
+        auto* support = calcu::machine::first<calcu::typing::TypingSupport>(machine);
         for (Ticks spent = 0; spent < promptBound;) {
             if (!support || support->promptReady().value_or(true)) break;
             spent += co_await ctx.run(frame);

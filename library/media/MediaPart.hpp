@@ -16,6 +16,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 // The media part (LIB-7 design §3.7; spec AC-1, AC-7 to AC-20, AC-27, AC-30,
@@ -207,7 +208,9 @@ private:
     void newMachine(sessions::SessionContext&);
     void computePlaces(const machine::Machine&);
     const Place* place(const std::string& word) const;
-    MediaPlace* placeCap(machine::Machine&, const Place&) const;
+    // M is Machine or const Machine: MediaPlace* or const MediaPlace*.
+    template <class M> using PlaceCap = std::conditional_t<std::is_const_v<M>, const MediaPlace, MediaPlace>;
+    template <class M> static PlaceCap<M>* placeCap(M&, const Place&);
     ModuleMedium* moduleCap(machine::Machine&, const Place&) const;
     std::optional<machine::PeripheralId> pluggedAt(const machine::Machine&, const Place&) const;
     std::uint64_t revisionOf(machine::Machine&, const Place&) const;
@@ -220,7 +223,7 @@ private:
     void updateTopic(sessions::SessionContext&);
     std::vector<PickerEntry> picker(sessions::SessionContext&, const Place&) const;
     std::optional<std::string> inPlace(const std::string& path) const;
-    std::optional<std::string> passingNow(machine::Machine&, const Place&) const;   // the refusal while a medium passes
+    std::optional<std::string> passingNow(const machine::Machine&, const Place&) const;   // the refusal while a medium passes
     // Command helpers.
     sessions::CommandOutcome choose(sessions::SessionContext&, const std::string& word, const std::string& entry);
     sessions::CommandOutcome changeSlot(sessions::SessionContext&, const Place&, std::optional<machine::PeripheralRequest>,

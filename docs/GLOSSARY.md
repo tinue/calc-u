@@ -106,7 +106,8 @@ _Avoid_: card slot, bay
 
 **Module definition**:
 The file that describes one memory module: its memory, how it is
-addressed and the hosts it fits.
+addressed and the hosts it fits (`.module.yaml`, `format: memory-module`,
+`docs/formats/modules.md` §1).
 _Avoid_: card definition, card file
 
 **Magnetic card**:
@@ -138,11 +139,12 @@ A disk for the PC-1600's CE-1600F drive, with two **sides**, 0 and 1, used
 one at a time.
 _Avoid_: disk image, floppy (bare)
 
-**Cassette tape**:
-A tape for the cassette interface of a CE-150 or CE-1600P, stored as a
-**tape definition** (`.tape.yaml`) that names its sound file (`.wav`)
-(`docs/formats/media.md` §3).
-_Avoid_: tape image, WAV (for this)
+**Cassette**:
+The medium of the cassette recorder of a CE-150 or CE-1600P, stored as a
+**cassette definition** (`.cassette.yaml`) that names its sound file
+(`.wav`) (`docs/formats/media.md` §3). What it holds is a tape, whose
+sound the recorder plays or records; the tape counter counts it.
+_Avoid_: tape image, WAV (for this), cassette tape (as the name of the file)
 
 **Host drive**:
 A PC-1600 drive (S3:) that the emulator backs with a folder on the
@@ -288,9 +290,9 @@ Power gone long enough for a real device's RAM to lose its contents.
 
 **Medium**:
 A removable item that holds user data and can be named and saved: a
-magnetic card, a floppy disk, a cassette tape, a battery-backed module.
+magnetic card, a floppy disk, a cassette, a battery-backed module.
 Plural: media. A **removable medium** (a magnetic card, a floppy disk,
-a cassette tape) is changed while the machine runs and is inserted by a
+a cassette) is changed while the machine runs and is inserted by a
 preset step; a module is installed before the machine starts, by a
 header key, like the other **installed peripherals**
 (`docs/formats/preset.md` §3, §5.2).
@@ -456,12 +458,15 @@ _Avoid_: model info, machine info
 
 **Place**:
 A named position on a machine or peripheral where the user puts a
-peripheral, as the control bar and the presets name it: `slot-1`,
-`printer`, `interface`. Several places can share one connector.
+peripheral or a medium, as the control bar and the presets name it:
+`slot-1`, `printer`, `interface`, `card-reader`, `floppy`,
+`cassette-recorder`. Several places can share one connector.
 _Avoid_: bay, slot (for this), port
 
 **Media place**:
-A place for a medium: the card reader, a floppy drive, a cassette. It is
+A place for a medium: the card reader (`card-reader`), a floppy drive
+(`floppy`), the cassette recorder (`cassette-recorder`) of a CE-150 or
+CE-1600P. It is
 **pass-through** (takes the medium through and gives it back, as the
 TI-59 card reader) or **holding** (keeps it until it is ejected).
 _Avoid_: bay, drive (for the general term)
@@ -641,11 +646,11 @@ What says which area of a faceplate is which key.
 
 **Kind** (of medium):
 What one sort of media place takes: a magnetic card, a floppy disk, a
-battery-backed module, a cassette tape. Each kind has its file suffix
+battery-backed module, a cassette. Each kind has its file suffix
 and its format.
 
 **Saved media**:
-The media in the save folder and the tape folder, and the list of them
+The media in the save folder and the cassette folder, and the list of them
 that a Web frontend shows.
 
 **Breakpoint**:
@@ -754,3 +759,9 @@ key. Typed text is a string the typing engine types by itself (a paste,
 a `type` step). A press is one key going down and later up. A frame is
 1/60 second of emulated time, the unit Calc-U-1600 counts its key holds
 in; a slice is not called a frame.
+
+## Decision log
+
+| Date | Decision | Source |
+|---|---|---|
+| 2026-11-17 | "Cassette" names the medium everywhere (the kind, the preset step and eject word, `format: cassette`, `.cassette.yaml`, `cassette-name`, the cassette folder); its place is the `cassette-recorder` (CE-125 manual: "microcassette recorder", PC-1403 manual: "cassette recorder"); the entry "Cassette tape" became **Cassette**, "Place" and "Media place" name the cassette recorder; the module definition is `.module.yaml` | user, 2026-11-17 (Part E review Q-5, Q-6; release prep step 2) |

@@ -80,9 +80,9 @@ struct ImplicitTemplate {
 enum class HeldBy { MediaPlace, ModuleSlot };
 
 struct PresetWords {                 // AC-21, AC-26; empty: the kind has no such step
-    std::string insertStep;          // "card", "floppy", "tape"
+    std::string insertStep;          // "card", "floppy", "cassette"
     std::string armStep;             // "arm" (pass-through places only)
-    std::string ejectWord;           // "floppy", "tape": `eject: <word>`, also the `saveas: { place: }` word
+    std::string ejectWord;           // "floppy", "cassette": `eject: <word>`, also the `saveas: { place: }` word
     std::string inFileKey;           // "card": `saveas: { card: }`, and `mem:` references (AC-22)
     bool insertNeedsTime = false;    // `card:` waits until the card has passed (LIB-6 AC-19, AC-56)
 };
@@ -95,7 +95,7 @@ struct KindDecl {
     // tape's ".wav"): Import Media… offers them in its file picker and takes
     // them as companions of the media picked with them (AC-30, AC-43).
     std::vector<std::string> companionSuffixes;
-    settings::Folder folder = settings::Folder::Save;   // Tapes for a tape (LIB-9 AC-16)
+    settings::Folder folder = settings::Folder::Save;   // Cassettes for a cassette (LIB-9 AC-16)
     std::string bundledFolder;       // as the frontend or harness finds it; empty: none
     const MediumCodec* codec = nullptr;
     std::string formatName, describedAt;   // the hint of AC-9

@@ -23,8 +23,10 @@ namespace cu59 {
 
 class ConstantMemoryKeeper {
 public:
-    ConstantMemoryKeeper(TIFileAccess& files, std::function<void(std::string)> notice)
-        : m_files(files), m_notice(std::move(notice)) {}
+    // `savedAt`: the time of a write for the file's `saved:` key (ISO-8601 UTC).
+    ConstantMemoryKeeper(TIFileAccess& files, std::function<void(std::string)> notice,
+                         std::function<std::string()> savedAt = {})
+        : m_files(files), m_notice(std::move(notice)), m_savedAt(std::move(savedAt)) {}
 
     /// AC-7, EC-1–EC-3, EC-6: what a TI-58C built without a preset gets (the
     /// file's registers, or zeroed memory); reads the file, once per build,
@@ -49,6 +51,7 @@ private:
 
     TIFileAccess& m_files;
     std::function<void(std::string)> m_notice;
+    std::function<std::string()> m_savedAt;
     std::optional<CueCardContent> m_fileCard;
     std::shared_ptr<const calcu::machine::ProductData> m_handed;   // the content of the last contentForBuild()
     bool m_fromFile = false;

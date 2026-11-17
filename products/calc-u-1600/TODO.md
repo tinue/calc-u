@@ -317,7 +317,7 @@ Decisions.md, "One 60-pin connector per machine".
 - The PU drive handover between the SC7852 and the LH5803 (one shared line)
   is not measured.
 
-## Cassette tape: still open
+## Cassette: still open
 
 CLOAD/CSAVE work on the PC-1500/1500A + CE-150 and the PC-1600 (MODE 0) +
 CE-1600P (docs/background/plans/Cassette-Tape-Plan.md; the one-time
@@ -460,7 +460,7 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
   probe), then a layer on the existing `DebugTarget`, one thin slice
   first. How to plan it: docs/background/plans/BASIC-Debugger-Planning.md.
 - **Create Debug Project…: templates for slot-module ROMs** (PC-1500
-  module, PC-1600 S1/S2): a placeholder `.card.yaml`, a preset with
+  module, PC-1600 S1/S2): a placeholder `.module.yaml`, a preset with
   `slot-N-file:`/`slot-N-rom:` and a hello-world `.asm`. Needs the correct
   module header per machine first (help/07-debugger.md, "ROM modules in a
   memory slot").

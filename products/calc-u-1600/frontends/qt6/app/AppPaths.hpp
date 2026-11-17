@@ -8,7 +8,7 @@
 
 // Path resolution for bundled resources and the memory-module feature --
 // the one place that tells the library where this host's folders are and
-// where bundled resources (*.card.yaml templates AND ROM images, side by
+// where bundled resources (*.module.yaml templates AND ROM images, side by
 // side) live. Bundled resources ship as loose files next to the executable
 // (not Qt's .qrc embedding, since Core's scanMemoryCardDirectory() and
 // the ROM lookup read a real filesystem directory). The places the app
@@ -52,10 +52,10 @@ QString displayPath(const QString& path);
 // to find "where battery-card instances live right now".
 QString instanceDir();
 
-// Cassette tapes: [storage] tape-folder if
-// non-empty, else "Tapes" inside instanceDir(); created on demand. A tape's
+// Cassettes: [storage] cassette-folder if
+// non-empty, else "Cassettes" inside instanceDir(); created on demand. A tape's
 // definition and its sound lie there (LIB-7 AC-42; LIB-9 AC-16).
-QString tapeDir();
+QString cassetteDir();
 
 // cu1600::AppPaths::traceDir() / serialLinkDir(): the Settings override,
 // else instanceDir().

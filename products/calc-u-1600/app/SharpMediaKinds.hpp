@@ -6,10 +6,10 @@
 #include "media/Kind.hpp"
 
 // Calc-U-1600's kinds of medium (LIB-7 design §10.3; spec AC-37, AC-41,
-// AC-42, AC-46): the battery-backed module (`.card.yaml`, version 1, held by
+// AC-42, AC-46): the battery-backed module (`.module.yaml`, version 1, held by
 // a module slot), the floppy disk (`.floppy.yaml`, version 2, the CE-1600F's
-// place `floppy`, sides 0 and 1) and the cassette tape (`.tape.yaml`,
-// version 1, with its WAV, in the tape folder; the cassette's place `tape`).
+// place `floppy`, sides 0 and 1) and the cassette (`.cassette.yaml`,
+// version 1, with its WAV, in the cassette folder; the place word `cassette`).
 // Their codecs read and write the files (docs/formats/media.md §2, §3,
 // help/10-module-definition-format.md); the content they give is
 // core/Machine/SharpMediaPlaces.hpp's ModuleContent, FloppyContent,
@@ -20,7 +20,7 @@ namespace cu1600 {
 inline constexpr const char* kModuleKind = "battery-backed-module";
 inline constexpr const char* kFloppyKind = "floppy-disk";
 inline constexpr const char* kTapeKind = "cassette";
-inline constexpr const char* kTapeFileSuffix = ".tape.yaml";
+inline constexpr const char* kTapeFileSuffix = ".cassette.yaml";
 
 // The three kinds. `bundledDir` holds the bundled templates (the module
 // definitions, `blank` and `formatted` disks, the `empty` tape);

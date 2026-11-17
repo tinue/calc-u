@@ -62,13 +62,13 @@ TEST(c1600_5_ac1_commands_under_pc1600_on_every_model) {
     std::string usage;
     for (const std::string& u : r.server->commands().usage()) usage += u + "\n";
     for (const char* c : {"pc1600 file-kind", "pc1600 load-basic", "pc1600 type-basic", "pc1600 load-code", "pc1600 dump-basic",
-                          "pc1600 inspect", "pc1600 tape", "pc1600 serial", "pc1600 host-drive", "pc1600 call"})
+                          "pc1600 inspect", "pc1600 cassette", "pc1600 serial", "pc1600 host-drive", "pc1600 call"})
         CHECK(has(usage, c));
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         CHECK_EQ(r.line(std::string("model ") + model), std::string("done\n"));
         CHECK(starts(r.line("pc1600 inspect pointers"), "done "));
         CHECK(starts(r.line("pc1600 dump-basic"), "done "));
-        CHECK(starts(r.line("pc1600 tape status"), "refused: "));   // no cassette (EC-2), but the command is there
+        CHECK(starts(r.line("pc1600 cassette status"), "refused: "));   // no cassette (EC-2), but the command is there
     }
 }
 
@@ -220,7 +220,7 @@ TEST(c1600_5_ac5_record_writes_wav_at_motor_stop_and_eject) {
     CHECK(r.ok());
     if (!r.ok()) return;
     CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 tape record " + wav.string()), std::string("done\n"));
+    CHECK_EQ(r.line("pc1600 cassette record " + wav.string()), std::string("done\n"));
     CHECK(!fs::exists(wav));   // nothing recorded yet
     csave(r);
     CHECK(fs::exists(wav));   // written when the motor stopped
@@ -229,17 +229,17 @@ TEST(c1600_5_ac5_record_writes_wav_at_motor_stop_and_eject) {
     // The recording is a tape a loader reads: the file CSAVE wrote.
     CHECK_EQ(r.line("pc1600 file-kind " + wav.string()),
              std::string("done 4\nkind: basic-pc1500\nname: A\nlength: 7\nfile 1: A\n"));
-    CHECK_EQ(r.line("eject tape"), std::string("done\n"));
+    CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
     CHECK(fileText(wav) == atStop);   // nothing new to write
-    CHECK_EQ(r.line("pc1600 tape status"), std::string("done 2\ntape: empty\nmotor: off\n"));
+    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: empty\nmotor: off\n"));
     // Taken out while the motor runs.
     const fs::path second = dir.path() / "second.wav";
-    CHECK_EQ(r.line("pc1600 tape record " + second.string()), std::string("done\n"));
+    CHECK_EQ(r.line("pc1600 cassette record " + second.string()), std::string("done\n"));
     CHECK_EQ(r.line("type CSAVE \"B\""), std::string("done\n"));
     r.line("wait 2s");
-    CHECK_EQ(r.line("pc1600 tape status"), std::string("done 2\ntape: recording 2.048618462\nmotor: on\n"));
+    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: recording 2.048618462\nmotor: on\n"));
     const std::size_t before = fs::exists(second) ? fileText(second).size() : 0;   // to the last stop of the motor
-    CHECK_EQ(r.line("eject tape"), std::string("done\n"));
+    CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
     // Written as LIB-7 AC-42 says: what the deck holds, to its last motor stop.
     CHECK(fs::exists(second) && fileText(second).size() >= before && fileText(second).compare(0, 4, "RIFF") == 0);
 }
@@ -251,14 +251,14 @@ TEST(c1600_5_ac5_record_ejects_the_tape_in_first) {
     CHECK(r.ok());
     if (!r.ok()) return;
     CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 tape record " + (dir.path() / "a.wav").string()), std::string("done\n"));
+    CHECK_EQ(r.line("pc1600 cassette record " + (dir.path() / "a.wav").string()), std::string("done\n"));
     csave(r);
     const std::string a = fileText(dir.path() / "a.wav");
     // A second record: the first tape is written and taken out, a new one goes in.
-    CHECK_EQ(r.line("pc1600 tape record " + (dir.path() / "b.wav").string()), std::string("done\n"));
+    CHECK_EQ(r.line("pc1600 cassette record " + (dir.path() / "b.wav").string()), std::string("done\n"));
     CHECK(fileText(dir.path() / "a.wav") == a && a.size() > 44);
     CHECK(!fs::exists(dir.path() / "b.wav"));
-    CHECK_EQ(r.line("pc1600 tape status"), std::string("done 2\ntape: recording 0.000000000\nmotor: off\n"));
+    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
 }
 
 TEST(c1600_5_ac6_status_playing_recording_empty) {
@@ -269,24 +269,24 @@ TEST(c1600_5_ac6_status_playing_recording_empty) {
     CHECK(r.ok());
     if (!r.ok()) return;
     CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 tape status"), std::string("done 2\ntape: empty\nmotor: off\n"));
-    CHECK_EQ(r.line("pc1600 tape record " + wav.string()), std::string("done\n"));
+    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: empty\nmotor: off\n"));
+    CHECK_EQ(r.line("pc1600 cassette record " + wav.string()), std::string("done\n"));
     csave(r);
-    CHECK_EQ(r.line("pc1600 tape status"), std::string("done 2\ntape: recording 12.398522308\nmotor: off\n"));
-    CHECK_EQ(r.line("eject tape"), std::string("done\n"));
-    // The recording played back: a tape definition beside it (LIB-7 AC-42).
-    writeFile(dir.path() / "rec.tape.yaml",
-              "format: cassette-tape\nformat-version: 1\ntape-name: \"Rec\"\naudio: { file: \"rec.wav\" }\n");
-    CHECK_EQ(r.line("tape { file: " + (dir.path() / "rec.tape.yaml").string() + " }"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 tape status"), std::string("done 2\ntape: playing 0.000000000 of 12.398520833\nmotor: off\n"));
+    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: recording 12.398522308\nmotor: off\n"));
+    CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
+    // The recording played back: a cassette definition beside it (LIB-7 AC-42).
+    writeFile(dir.path() / "rec.cassette.yaml",
+              "format: cassette\nformat-version: 1\ncassette-name: \"Rec\"\naudio: { file: \"rec.wav\" }\n");
+    CHECK_EQ(r.line("cassette { file: " + (dir.path() / "rec.cassette.yaml").string() + " }"), std::string("done\n"));
+    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: playing 0.000000000 of 12.398520833\nmotor: off\n"));
     calcu::harness::RunOptions o;
     o.json = true;
     Run j(o);
     CHECK(j.ok());
     if (!j.ok()) return;
     j.line("attach printer CE-150");
-    CHECK_EQ(j.line("pc1600 tape status"),
-             std::string("{\"done\":true,\"result\":{\"tape\":\"empty\",\"position\":\"0.000000000\",\"length\":"
+    CHECK_EQ(j.line("pc1600 cassette status"),
+             std::string("{\"done\":true,\"result\":{\"cassette\":\"empty\",\"position\":\"0.000000000\",\"length\":"
                          "\"0.000000000\",\"motor\":false},\"reason\":null}\n"));
 }
 
@@ -297,12 +297,12 @@ TEST(c1600_5_ec2_tape_without_cassette_refused) {
     CHECK(r.ok());
     if (!r.ok()) return;
     const std::string no = "refused: The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.\n";
-    CHECK_EQ(r.line("pc1600 tape record " + (dir.path() / "x.wav").string()), no);
-    CHECK_EQ(r.line("pc1600 tape status"), no);
+    CHECK_EQ(r.line("pc1600 cassette record " + (dir.path() / "x.wav").string()), no);
+    CHECK_EQ(r.line("pc1600 cassette status"), no);
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 tape status"), no);
+    CHECK_EQ(r.line("pc1600 cassette status"), no);
     CHECK_EQ(r.line("attach printer CE-1600P"), std::string("done\n"));   // its cassette
-    CHECK_EQ(r.line("pc1600 tape status"), std::string("done 2\ntape: empty\nmotor: off\n"));
+    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: empty\nmotor: off\n"));
 }
 
 TEST(c1600_5_ec6_unwritable_path_notice_at_motor_stop) {
@@ -314,7 +314,7 @@ TEST(c1600_5_ec6_unwritable_path_notice_at_motor_stop) {
     CHECK(r.ok());
     if (!r.ok()) return;
     CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 tape record " + wav.string()), std::string("done\n"));   // the command itself is done
+    CHECK_EQ(r.line("pc1600 cassette record " + wav.string()), std::string("done\n"));   // the command itself is done
     r.line("state notices");
     csave(r);
     const std::string n = r.line("state notices");

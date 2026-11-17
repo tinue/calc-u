@@ -1,5 +1,5 @@
 // Headless C++ tests for the CE-155 (8 KB) memory module, run against the
-// bundled definition Qt6/resources/cards/ce155.card.yaml
+// bundled definition Qt6/resources/cards/ce155.module.yaml
 // (SoftwareDefinedCard). Same no-framework, assert-and-tally style as the
 // other Core tests.
 //
@@ -26,9 +26,9 @@ PinState makePins(uint16_t addr, bool y0 = false, bool y2 = false) {
 // Declares `card` (a fresh CE-155). The definition ships in the repo, so a
 // missing or unloadable one fails the test.
 #define CE155_OR_SKIP(card, host)                                                         \
-    auto card = bundledCard("ce155.card.yaml", host);                                     \
+    auto card = bundledCard("ce155.module.yaml", host);                                     \
     if (!card) {                                                                          \
-        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce155.card.yaml missing or unloadable\n", __func__); \
+        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce155.module.yaml missing or unloadable\n", __func__); \
         return;                                                                           \
     }
 
@@ -110,7 +110,7 @@ TEST(test_ce155_end_to_end_via_machine) {
     CHECK(pc1500.memory().readME0(0x3800) == 0x66);
 
     PC1500Machine pc1500a(PC1500Variant::PC1500A);
-    pc1500a.attachExpansionCard(bundledCard("ce155.card.yaml", CardHost::PC1500A));
+    pc1500a.attachExpansionCard(bundledCard("ce155.module.yaml", CardHost::PC1500A));
     pc1500a.memory().writeME0(0x5800, 0x88);
     CHECK(pc1500a.memory().readME0(0x5800) == 0x88);
     // On the PC-1500A, &4800 is built-in RAM -- resolve() claims it before

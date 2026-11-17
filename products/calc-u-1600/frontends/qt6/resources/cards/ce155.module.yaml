@@ -28,6 +28,7 @@
 # for these hosts. The loader declines any host not listed (spec
 # section 2) without second-guessing the list against pin tables.
 
+format: memory-module
 format-version: 1
 module-name: "CE-155"
 description: "8 KB static RAM"

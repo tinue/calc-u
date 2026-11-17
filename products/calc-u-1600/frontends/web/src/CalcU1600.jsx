@@ -78,23 +78,23 @@ function tapeCounter(lamps) {
 // Save, the counter with the motor (`c1600.lamps`).
 function TapeControls({ shell, entry }) {
   const bar = React.useContext(C1600Bar);
-  const place = calcuMediaPlace(shell.inputs.media, "tape");
+  const place = calcuMediaPlace(shell.inputs.media, "cassette");
   const ok = calcuShellAvailability(entry, "insert");
   const lamps = bar.lamps;
   return (
     <fieldset className="calcu-bar-fieldset" disabled={!ok.now} title={ok.now ? undefined : ok.reason}>
-      <span className="calcu-bar-label">Tape:</span>
+      <span className="calcu-bar-label">Cassette:</span>
       <CalcuMediaPicker place={place} send={bar.send} />
-      <button type="button" className="calcu-iconbutton" title="A new tape to record onto (CSAVE)"
-        data-calcu="tape-new" aria-label="New tape" onClick={() => bar.recordTape()}>
+      <button type="button" className="calcu-iconbutton" title="A new cassette to record onto (CSAVE)"
+        data-calcu="tape-new" aria-label="New cassette" onClick={() => bar.recordTape()}>
         <SaveIcon />
       </button>
       <button type="button" className="calcu-iconbutton" disabled={!place || !place.nameAndSave} title="Name & Save"
-        data-calcu="name-and-save-tape" aria-label="Name & Save tape" onClick={() => bar.nameAndSave("tape")}>
+        data-calcu="name-and-save-cassette" aria-label="Name & Save cassette" onClick={() => bar.nameAndSave("cassette")}>
         <SaveIcon />
       </button>
       <span className={`calcu-tape-counter${lamps && lamps.tapeMotor ? " on" : ""}`} data-lamp="tape"
-        title={lamps && lamps.tapeMode === "play" ? `Playing ${lamps.tapeFile}` : lamps && lamps.tapeMode === "record" ? `Recording onto ${lamps.tapeFile}` : "No tape"}>
+        title={lamps && lamps.tapeMode === "play" ? `Playing ${lamps.tapeFile}` : lamps && lamps.tapeMode === "record" ? `Recording onto ${lamps.tapeFile}` : "No cassette"}>
         {tapeCounter(lamps)}
       </span>
     </fieldset>
@@ -320,19 +320,19 @@ function CalcU1600(props) {
     nameAndSave: async (word) => {
       const place = calcuMediaPlace(s.inputs.media, word);
       if (!place) return;
-      const prompt = word === "floppy" ? "Disk name:" : word === "tape" ? "Tape name:" : "Instance name:";
+      const prompt = word === "floppy" ? "Disk name:" : word === "cassette" ? "Cassette name:" : "Instance name:";
       await dialogs.ask("nameAndSave", { shell, place, prompt });
     },
     // The record button: a new tape under a name, on the empty tape (LIB-7
     // AC-20, D-24): the name first, asked before an instance is replaced
     // (the shell's question); its files at the first motor stop.
     recordTape: async () => {
-      const place = calcuMediaPlace(s.inputs.media, "tape");
+      const place = calcuMediaPlace(s.inputs.media, "cassette");
       const empty = place && (place.picker || []).find((e) => e.group === "bundled-template" && e.label === "Empty");
       if (!empty) return;
-      const name = await dialogs.ask("prompt", { title: "Save Tape", label: "Tape name:" });
+      const name = await dialogs.ask("prompt", { title: "Save Cassette", label: "Cassette name:" });
       if (name === null) return;
-      await sendChecked("media.start-new", { place: "tape", template: empty.id, name });
+      await sendChecked("media.start-new", { place: "cassette", template: empty.id, name });
     },
   };
 

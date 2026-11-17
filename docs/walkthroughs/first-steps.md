@@ -381,7 +381,7 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
   and are taken through the ROM's key-matrix reads (the display shows the
   whole text); no bound was hit. C-4: `DiskWorks.pc1600` mounts
   `examples/dwx/S3` and writes nothing into it;
-  `make_diskworks_media.pc1600` rewrites `CE-1601M - Progs.card.yaml` and
+  `make_diskworks_media.pc1600` rewrites `CE-1601M - Progs.module.yaml` and
   `Progs.floppy.yaml`. C1600-1, C1600-4 AC-16 stand as written.
 
 ### 14. The long-run pacing tests on the old code (record)

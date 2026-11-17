@@ -11,7 +11,7 @@
 
 #include "formats/Yaml.hpp"
 
-// ── Parsed + validated memory-card definition ─────────────────────────
+// ── Parsed + validated module definition ──────────────────────────────
 //
 // The runtime model of a help/10-module-definition-format.md file, after
 // YAML parsing, schema validation, and terminology→pin resolution. Built
@@ -61,7 +61,7 @@ enum class ContentKind { Regular, Flash, Rom };
 // A JEDEC-style unlock/program/erase protocol for a Flash content range --
 // "chip/firmware properties, not something the loader infers" (spec §5), so
 // every field is required at parse time, no defaults. Modeled on the
-// CE-163F's flash chip (Qt6/resources/cards/ce163f.card.yaml and
+// CE-163F's flash chip (Qt6/resources/cards/ce163f.module.yaml and
 // SoftwareDefinedCard::flashWrite() document every field).
 struct FlashProtocol {
     struct AddrData {
@@ -1347,13 +1347,24 @@ inline bool parseMemoryCardDefinition(const std::string& yamlText, MemoryCardDef
     calcu::formats::YamlNode root;
     if (!calcu::formats::parseYaml(yamlText, &root, error)) return false;
     if (!root.isMap()) {
-        *error = "card definition must be a mapping";
+        *error = "module definition must be a mapping";
         return false;
     }
-    if (!calcu::formats::requireFormatVersion(root, kCardFormatVersion, "card", error)) return false;
+    // `format: memory-module` is written always and read when there
+    // (docs/formats/modules.md §1.2); a file without it is still read (the
+    // CE-502B's definition comes unchanged from PC-1500-ROM).
+    if (const calcu::formats::YamlNode* formatN = root.find("format")) {
+        std::string format;
+        if (!formatN->asString(&format, error)) return false;
+        if (format != "memory-module") {
+            *error = "line " + std::to_string(formatN->line) + ": not a module definition (expected 'format: memory-module')";
+            return false;
+        }
+    }
+    if (!calcu::formats::requireFormatVersion(root, kCardFormatVersion, "module definition", error)) return false;
     if (!root.requireOnlyKeys(
-            {"format-version", "module-name", "description", "compatible-hosts", "definition-terminology", "regions",
-             "notes", "battery", "template"},
+            {"format", "format-version", "module-name", "description", "saved", "compatible-hosts",
+             "definition-terminology", "regions", "notes", "battery", "template"},
             error))
         return false;
 
@@ -1362,7 +1373,7 @@ inline bool parseMemoryCardDefinition(const std::string& yamlText, MemoryCardDef
     const calcu::formats::YamlNode* termN = root.find("definition-terminology");
     const calcu::formats::YamlNode* regionsN = root.find("regions");
     if (!nameN || !hostsN || !termN || !regionsN) {
-        *error = "card definition needs module-name, compatible-hosts, definition-terminology, regions";
+        *error = "module definition needs module-name, compatible-hosts, definition-terminology, regions";
         return false;
     }
     if (!nameN->asString(&out->moduleName, error)) return false;

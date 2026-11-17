@@ -73,13 +73,13 @@ format-version: 2
 model: PC-1600:new
 printer: CE-1600P
 slot-1: { name: CE-1600M }
-slot-2: { file: cards/my.card.yaml }
+slot-2: { file: cards/my.module.yaml }
 ```
 
 The header holds what is installed before the machine starts: the
 printer, the interface, the modules, the ROMs, the host drive.
 Removable media, which are changed while the machine runs (a magnetic
-card, a floppy disk, a cassette tape), are steps (§5.2).
+card, a floppy disk, a cassette), are steps (§5.2).
 
 ### 3.1 `magnetic-cards` [59: TI-59]
 
@@ -133,7 +133,7 @@ magnetic-cards:
 While a ROM module is being developed, its bytes come from the build:
 
 ```yaml
-slot-1: { file: module.card.yaml }     # decode, banking, the ROM's size
+slot-1: { file: module.module.yaml }   # decode, banking, the ROM's size
 slot-1-rom: { file: build/module.bin } # what the ROM holds
 ```
 
@@ -263,7 +263,7 @@ keycodes: |
 
 | Key | Value |
 |---|---|
-| `file: <path>` | Loaded by what the file holds: a BASIC listing (`.bas`), tokenized BASIC, machine code with or without a header, or the sound of a tape (`.wav`), whose program goes into the program area. A cassette tape definition is not a program file |
+| `file: <path>` | Loaded by what the file holds: a BASIC listing (`.bas`), tokenized BASIC, machine code with or without a header, or the sound of a tape (`.wav`), whose program goes into the program area. A cassette definition is not a program file |
 | `typed: true` | With a listing in `file:`: type it in line by line instead of writing it into memory |
 | `address: <n>` | Machine code: where it goes. Required for headerless code |
 | `length: <n>` | Machine code: load only this many bytes |
@@ -363,8 +363,8 @@ keys:
 | `card: <reference>` | [59: TI-59] | **Insert** a magnetic card: push one side through the card reader. Reference by `file:`, `name:` or `mem:`, with `side: 0\|1` (default 0) |
 | `arm: <reference>` | [59: TI-59] | **Arm** a magnetic card: make it ready for the user to feed. Reference by `file:`, `name:` or `mem:`, without a side |
 | `floppy: <reference>` | [1600: PC-1600 with `printer: CE-1600P`] | **Insert** a floppy disk ([media.md §2](media.md#2-floppy-disk)) into the CE-1600F drive, by `file:` or `name:`, with `side: 0\|1` (default `0`). A disk that is in the drive is ejected first |
-| `tape: <reference>` | [1600: with `printer: CE-150` or `CE-1600P`] | **Insert** a cassette tape ([media.md §3](media.md#3-cassette-tape)) into the printer's cassette interface, by `file:` or `name:`. A tape that is in is ejected first |
-| `eject: <place>` | [1600] | **Eject** the floppy disk (`floppy`) or the tape (`tape`): the place is empty afterwards, and its selector shows it so. An empty place: nothing happens |
+| `cassette: <reference>` | [1600: with `printer: CE-150` or `CE-1600P`] | **Insert** a cassette ([media.md §3](media.md#3-cassette)) into the printer's cassette recorder, by `file:` or `name:`. A cassette that is in is ejected first |
+| `eject: <place>` | [1600] | **Eject** the floppy disk (`floppy`) or the cassette (`cassette`): the place is empty afterwards, and its selector shows it so. An empty place: nothing happens |
 | `saveas: <target>` | [both] | **Name & Save** the medium or module at a place, or an in-file magnetic card [59: TI-59] (§5.2.1) |
 
 **`card:`** is the user pushing a card into the calculator. The ROM
@@ -402,11 +402,11 @@ one only to leave it to the user, typically as its last step.
 
 | Key | Value |
 |---|---|
-| `place` | [1600]: `slot-1`, `slot-2` [PC-1600] or `floppy` [PC-1600]: the place whose medium or module is saved |
+| `place` | [1600]: `slot-1`, `slot-2` [PC-1600], `floppy` [PC-1600] or `cassette`: the place whose medium or module is saved |
 | `card` | [59: TI-59]: the `card-name` of an in-file card (§3.1), defined or fresh. Exactly one of `place` and `card` |
 | `as` | `live`: an instance, saved again after each change. `template`: a template, never written again |
 | `protected` | `true`: save with the module's write-protect switch on, and switch it on in the machine. Only for a module that has the switch (CE-161); not for a floppy disk or a magnetic card |
-| `name` / `file` | Exactly one. `name`: the name tag of the saved copy, which goes into the save folder. `file`: the file to write; its name tag is the file name without the suffix (`.card.yaml`, `.floppy.yaml`, `.magnetcard.yaml`), which it must have |
+| `name` / `file` | Exactly one. `name`: the name tag of the saved copy, which goes into the save folder. `file`: the file to write; its name tag is the file name without the suffix (`.module.yaml`, `.floppy.yaml`, `.cassette.yaml`, `.magnetcard.yaml`), which it must have |
 
 - A name must not contain `"`. A saved copy never takes the name of a
   bundled template.
@@ -612,7 +612,7 @@ then fails, and so ends the preset ([README.md §4](README.md#4-errors)).
 | `slot-2-rom` | | | | | | ✓ |
 | `interface`, `bus-rom`, `debug` | | | | ✓ | ✓ | ✓ |
 | `magnetic-cards` | ✓ | | | | | |
-| steps `tape`, `eject` | | | | ✓ | ✓ | ✓ |
+| steps `cassette`, `eject` | | | | ✓ | ✓ | ✓ |
 | `program` | keycodes | keycodes | keycodes | BASIC, code | BASIC, code | BASIC, code |
 | `data` | ✓ | ✓ | ✓, with H00–H03 | undefined | undefined | undefined |
 | `partition`, `cue-card` | ✓ | ✓ | ✓ | | | |

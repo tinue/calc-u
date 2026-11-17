@@ -16,7 +16,7 @@ namespace AppPaths {
 
 namespace {
 
-// Where the bundled resources live -- *.card.yaml catalog AND ROM images
+// Where the bundled resources live -- *.module.yaml catalog AND ROM images
 // (disjoint filename extensions, one shared directory) -- resolved
 // relative to the running executable: macOS .app bundle's
 // Contents/Resources (via applicationDirPath()'s Contents/MacOS +
@@ -76,7 +76,7 @@ cu1600::AppPaths& paths() {
 QString defaultInstanceDir() { return q(paths().defaultInstanceDir()); }
 QString displayPath(const QString& path) { return q(paths().displayPath(path.toStdString())); }
 QString instanceDir() { return q(paths().instanceDir()); }
-QString tapeDir() { return q(paths().tapeDir()); }
+QString cassetteDir() { return q(paths().cassetteDir()); }
 QString traceDir() { return q(paths().traceDir()); }
 QString serialLinkDir() { return q(paths().serialLinkDir()); }
 }  // namespace AppPaths

@@ -254,7 +254,7 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
 
     // tapesChanged -> the topic `media`; the tape status -> c1600.lamps (M-49).
     CHECK(f.part().tapeInterfaceAttached());
-    CHECK(f.run(calcu::media::kStartNewCommand, Value::object({{"place", "tape"}, {"template", f.entry("tape", "Empty")}, {"name", "ac38"}})).done);
+    CHECK(f.run(calcu::media::kStartNewCommand, Value::object({{"place", "cassette"}, {"template", f.entry("cassette", "Empty")}, {"name", "ac38"}})).done);
     f.call();
     CHECK(f.state<cu1600::LampsPayload>(t::kLamps)->tape.mode == TapeDeck::Mode::Record);
 

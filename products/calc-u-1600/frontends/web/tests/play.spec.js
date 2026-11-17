@@ -175,7 +175,7 @@ test('the control bar follows the model: peripherals, floppy, tape', async ({ pa
   await expect(page.locator(c('bar-disk'))).toHaveCount(0);
   await page.locator(c('bar-place-printer')).click();
   await expect(page.locator(c('bar-place-printer'))).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
-  await expect(page.locator(c('media-picker-tape'))).toBeVisible();
+  await expect(page.locator(c('media-picker-cassette'))).toBeVisible();
   await expect(page.locator('[data-panel=paper]')).toBeVisible();
 
   await pickModel(page, 'PC-1600');
@@ -338,7 +338,7 @@ test('lib7_ac43 saved media list', async ({ page }) => {
   await expect(row.getByRole('button', { name: 'Delete' })).toBeDisabled();
   const download = page.waitForEvent('download');
   await row.getByRole('button', { name: 'Download' }).click();
-  expect((await download).suggestedFilename()).toBe(`${name}.card.yaml`);
+  expect((await download).suggestedFilename()).toBe(`${name}.module.yaml`);
   await page.locator(c('saved-media')).getByRole('button', { name: 'Close' }).click();
   await expect(page.locator(c('saved-media'))).toHaveCount(0);
 });
@@ -366,16 +366,16 @@ test('lib7_ac43 delete asks first', async ({ page }) => {
 });
 
 // AC-43: Import Media… (the library's `media.import`: the host's file
-// picker) takes module files, disk files and a tape definition with its
+// picker) takes module files, disk files and a cassette definition with its
 // WAV, chosen together.
 test('lib7_ac43 import card disk and tape with wav', async ({ page }) => {
   await gotoReady(page);
   const stamp = Date.now();
   const files = [
-    { name: `Card ${stamp}.card.yaml`, mimeType: 'text/yaml', buffer: Buffer.from(instanceOf('ce1600m.card.yaml', 'module-name', `Card ${stamp}`)) },
+    { name: `Card ${stamp}.module.yaml`, mimeType: 'text/yaml', buffer: Buffer.from(instanceOf('ce1600m.module.yaml', 'module-name', `Card ${stamp}`)) },
     { name: `Disk ${stamp}.floppy.yaml`, mimeType: 'text/yaml', buffer: Buffer.from(instanceOf('formatted.floppy.yaml', 'disk-name', `Disk ${stamp}`)) },
-    { name: `Tape ${stamp}.tape.yaml`, mimeType: 'text/yaml',
-      buffer: Buffer.from(`format: cassette-tape\nformat-version: 1\ntape-name: "Tape ${stamp}"\naudio: { file: "side${stamp}.wav" }\n`) },
+    { name: `Tape ${stamp}.cassette.yaml`, mimeType: 'text/yaml',
+      buffer: Buffer.from(`format: cassette\nformat-version: 1\ncassette-name: "Tape ${stamp}"\naudio: { file: "side${stamp}.wav" }\n`) },
     { name: `side${stamp}.wav`, mimeType: 'audio/wav', buffer: fs.readFileSync(TAPE) },
   ];
   const chooser = page.waitForEvent('filechooser');
@@ -389,7 +389,7 @@ test('lib7_ac43 import card disk and tape with wav', async ({ page }) => {
   await page.locator(c('saved-media')).getByRole('button', { name: 'Close' }).click();
   // The tape plays from the picker of the CE-150's cassette.
   await page.locator(c('bar-place-printer')).click();
-  await expect(page.locator(c('media-picker-tape')).locator('option', { hasText: `Tape ${stamp}` })).toHaveCount(1, { timeout: 30000 });
+  await expect(page.locator(c('media-picker-cassette')).locator('option', { hasText: `Tape ${stamp}` })).toHaveCount(1, { timeout: 30000 });
 });
 
 // AC-39: the side button shows the side up, 0 or 1, and turns the disk over.
@@ -411,12 +411,12 @@ test('lib7_ac44 a new tape is recorded under its name', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
   await page.locator(c('bar-place-printer')).click();
-  await expect(page.locator(c('media-picker-tape'))).toBeVisible({ timeout: 30000 });
+  await expect(page.locator(c('media-picker-cassette'))).toBeVisible({ timeout: 30000 });
   await page.locator(c('tape-new')).click();
   const name = `Rec ${Date.now()}`;
   await page.locator('[data-dialog=prompt] input[type=text]').fill(name);
   await page.locator('[data-dialog=prompt] button', { hasText: 'OK' }).click();
-  await expect.poll(() => shown(page.locator(c('media-picker-tape'))), { timeout: 30000 }).toBe(name);
+  await expect.poll(() => shown(page.locator(c('media-picker-cassette'))), { timeout: 30000 }).toBe(name);
   await expect(page.locator('[data-lamp=tape]')).toContainText('●');
 });
 

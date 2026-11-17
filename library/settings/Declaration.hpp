@@ -54,7 +54,7 @@ KeyDecl startupModel();                              // [startup] model = last (
 KeyDecl startupLastModel();                          // [startup] last-model (app)
 KeyDecl presetFor(const std::string& model);         // [preset] <model> (AC-10)
 KeyDecl saveFolder();                                // [storage] save-folder (AC-13)
-KeyDecl tapeFolder();                                // [storage] tape-folder (AC-16)
+KeyDecl cassetteFolder();                                // [storage] cassette-folder (AC-16)
 KeyDecl traceFolder();                               // [trace] folder (AC-17, AC-24)
 KeyDecl traceMaxFileSizeMb();                        // [trace] max-file-size-mb = 50 (AC-11)
 KeyDecl traceLocation();                             // [trace] location = app-support (AC-24)

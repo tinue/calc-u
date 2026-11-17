@@ -1,6 +1,6 @@
 // Headless C++ tests for the CE-502B (Statistics) program module -- a 16 KB
 // mask ROM -- run against its definition from the ROM set of roms/
-// (`CE-502B.card.yaml`, fetched from PC-1500-ROM; LIB-12 AC-14;
+// (`CE-502B.module.yaml`, fetched from PC-1500-ROM; LIB-12 AC-14;
 // SoftwareDefinedCard, `content: rom`). Same no-framework, assert-and-tally style as the other Core tests.
 //
 // Build & run: see tools/run_tests.sh

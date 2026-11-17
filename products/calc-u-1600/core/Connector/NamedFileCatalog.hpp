@@ -11,7 +11,7 @@
 
 // ── Directory catalogues of named files ────────────────────────────────
 //
-// The mechanism behind the memory-card catalogue (`*.card.yaml`, keyed by
+// The mechanism behind the memory-card catalogue (`*.module.yaml`, keyed by
 // `module-name` -- MemoryCardCatalog.hpp): scan a directory for files
 // with one suffix and index them by the name each declares. Each format
 // only supplies its suffix and a function reading the name.
@@ -65,7 +65,7 @@ std::vector<Entry> scanNamedFiles(const std::string& dir, const std::string& suf
             break;
         }
         const std::filesystem::path& p = it->path();
-        // Double extensions (".card.yaml") -- path::extension() only sees
+        // Double extensions (".module.yaml") -- path::extension() only sees
         // ".yaml", so match the filename tail directly.
         const std::string name = p.filename().string();
         if (!named_file_detail::hasSuffix(name, suffix)) continue;

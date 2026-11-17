@@ -92,14 +92,14 @@ Changed: `library/CMakeLists.txt` (the `library/roms/` sources in
 | File | Change |
 |---|---|
 | `products/calc-u-1600/core/Resources/BundledRomCatalog.hpp` | deleted. The core reads no file (I-2) |
-| `products/calc-u-1600/core/SharpRomReader.hpp`, `.cpp` | new: `ProductRomReader` for the one text entry, `CE-502B.card.yaml`, read by the module definition reader of `core/Connector/` |
+| `products/calc-u-1600/core/SharpRomReader.hpp`, `.cpp` | new: `ProductRomReader` for the one text entry, `CE-502B.module.yaml`, read by the module definition reader of `core/Connector/` |
 | `products/calc-u-1600/app/ProductRoms.hpp`, `.cpp` | new: `shared::lookUpRoms(const calcu::roms::Bundle&)` |
 | `products/calc-u-1600/app/MachineSession.hpp`, `.cpp` | builds and attaches from the `RomSet`. These go: `romMissing` (`:77-79`), `bundledRomDirs`, `makePC1600WithRomFallback` (`:146-158`), the CE-1600P fallback (`:706-722`), `Notice::OldPC1600RomUnavailable`, `OldCE1600PRomUnavailable` |
 | `products/calc-u-1600/app/AppSession.cpp` | `romDirs` (`:208-209`) gives way to the session's `RomSet` |
 | `products/calc-u-1600/core/PC1500/PC1500PresetLoader.*`, `core/PC1600/PC1600PresetLoader.*`, `core/Preset/PresetInterface.hpp` | `romDirs` parameters give way to `const calcu::roms::RomSet&` |
 | `products/calc-u-1600/app/ModuleBay.cpp` | the CE-502B definition comes from the `RomSet`, not from scanning the bundled folder |
 | `products/calc-u-1600/frontends/qt6/app/MachineController.cpp` | `romMissing` (`:37-48`, which names a stale `tools/fetch_roms.sh`) shows `describe()`, then exits as today |
-| `products/calc-u-1600/frontends/qt6/CMakeLists.txt` | bundles `roms/CE-502B.card.yaml` with the ROMs (`:183-198`) |
+| `products/calc-u-1600/frontends/qt6/CMakeLists.txt` | bundles `roms/CE-502B.module.yaml` with the ROMs (`:183-198`) |
 | `products/calc-u-1600/frontends/web/build.sh`, `bindings.cpp` | CE-502B copied from `roms/`. `DirectoryBundle("/bundle")` |
 | `products/calc-u-1600/tools/pc1500_cli.cpp`, `pc1600_cli.cpp`, `pc1600_*_probe.cpp`, `wasm_smoke.cpp`, `dev/loader-matrix/pc1600_loader_matrix.cpp` | `DirectoryBundle` of the folder they use today (`roms`, relative to the working directory) + `lookUpRoms` (LIB-11 AC-20). The bare `<rom-file>` mode of `pc1500_cli` stays (D-7) |
 | `products/calc-u-1600/roms/fetch_roms.sh`, `.gitignore` | the copy into `frontends/qt6/resources/cards/` (`:146-149`) goes, and so does its ignore line (`.gitignore:84`) |
@@ -277,7 +277,7 @@ looked up.
 | The core finds and reads ROM files itself (`core/Resources/BundledRomCatalog.hpp`, from `MachineSession`, `AppSession` and the preset loaders with `romDirs`) | `shared::lookUpRoms` at the start of the app session. The core gets `RomImage`s through `BuildRequest`/`PeripheralRequest` (C1600-1, LIB-2) and a `const RomSet&` in the preset loaders |
 | Missing PC-1500 or New PC-1600 file: `romMissing` ends the Qt6 frontend, also in the middle of a session. Missing Old set (PC-1600, CE-1600P): replaced by New, with a notice (`MachineSession.cpp:146-158, 706-722`) | checked once at the start; no substitution (AC-13). The golden run `pc1600-rom-old` keeps the Old set in use |
 | CLI tools: `{"roms"}` relative to the working directory (`pc1600_cli.cpp:110-141`) | `DirectoryBundle("roms")` + `lookUpRoms` (LIB-11 AC-20). The folder is still the tool's argument, but the looking is the library's |
-| CE-502B: `frontends/qt6/resources/cards/ce502b.card.yaml`, copied there by `fetch_roms.sh:146-149`, found by the module scan | `roms/CE-502B.card.yaml`, a `Text` entry of the full set, 16384 bytes (`capacity: 0x4000`, not verified as the reader's yield, §9). Added to the catalogue from the `RomSet` (`Catalogue::addPeripheral`, LIB-1 §3.4) |
+| CE-502B: `frontends/qt6/resources/cards/ce502b.card.yaml`, copied there by `fetch_roms.sh:146-149`, found by the module scan | `roms/CE-502B.module.yaml`, a `Text` entry of the full set, 16384 bytes (`capacity: 0x4000`, not verified as the reader's yield, §9). Added to the catalogue from the `RomSet` (`Catalogue::addPeripheral`, LIB-1 §3.4) |
 | Host-drive ROM `PC1600-P1-B7-HOSTDRIVE.bin`, read by `BundledRoms::attachHostDrive` | not in the full set (`roms.md` Q-1). `app/MachineSession` reads it from the bundle folder as today: the one named exception to I-2, which Q-1 implies; `check_no_own_rom_lookup.sh` lists it (D-6) |
 
 ## 5. Adapters

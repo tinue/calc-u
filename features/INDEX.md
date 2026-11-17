@@ -79,7 +79,7 @@ Values: Planned, Specified, In progress, Done.
 | LIB-4 | Control state | The generic control state computed from the descriptors and the live machine: models, variants, places and what fits them ("available now" with a reason), media places, panels; product entries | frontend FE-2, FE-6 | LIB-2, LIB-3 | Done | Done | Done |
 | LIB-5 | Typing | Typing engine for host keys, on-screen keys and text; holds in emulated time; readiness through typing support; two keys; Paste Text; typing profile and keyboard map per model; the `key` and `type` steps and commands | typing | LIB-1, LIB-3, LIB-11 | Done | Done | Done |
 | LIB-6 | Presets | One loader for the family format version 2 (grammar, all or nothing, older files refused); the machine built from a cold boot with the hardware the preset names; the step engine and the steps over typing, places, controls and clock (`key`, `type`, `wait`, `skip-wait`, `let-it-finish`, `regular-speed`, `full-speed`, `expect`, `screenshot`, `elapsed-time`, `printer-trace`, `syncclock`); the place for product sections; the preset list from the bundle file (startup presets and examples); check of shipped and hosted presets | presets; ADR 0016-0018, 0021, 0037 | LIB-2, LIB-5, LIB-9, LIB-11, LIB-18 | Done | Done | Done |
-| LIB-7 | Media and save folder | Templates and instances, Name & Save, autosave, names and collisions, outdated files, preset-named media and in-file magnetic cards (`magnetic-cards:`); `card`, `arm`, `floppy`, `tape`, `eject`, `saveas` as steps and commands; the module and media pickers | media; presets PR-8; ADR 0019, 0020, 0025, 0037 | LIB-4, LIB-6, LIB-9, LIB-11 | Done | Done | Done |
+| LIB-7 | Media and save folder | Templates and instances, Name & Save, autosave, names and collisions, outdated files, preset-named media and in-file magnetic cards (`magnetic-cards:`); `card`, `arm`, `floppy`, `cassette`, `eject`, `saveas` as steps and commands; the module and media pickers | media; presets PR-8; ADR 0019, 0020, 0025, 0037 | LIB-4, LIB-6, LIB-9, LIB-11 | Done | Done | Done |
 | LIB-8 | Paper output | One paper output kind (marks and a text layer); the paper panel; Copy and Cut; `cut-paper` as step and command | capabilities C-2; ADR 0023 | LIB-3, LIB-6, LIB-11 | Done | Done | Done |
 | LIB-9 | Settings and paths | One INI file per product, its place per platform, the save folder per platform, keys and defaults | settings; ADR 0021, 0022 | — | Done | Done | Done |
 | LIB-10 | Debugger core | Debug targets, run control (pause, step, resume, levels, pause on start), breakpoints and watches; the run-control buttons; `debug-panel`, `pause`, `pause-on-start`, `step`, `resume` as steps and commands, and `break`, `peek`, `poke` as commands | debugger | LIB-3, LIB-6, LIB-11 | Done | Done | Done |
@@ -144,7 +144,7 @@ Points this index leaves open:
   does not emulate yet (user, 2026-11-13). When it is, it belongs to its
   printer as TRACE does (C59-6 AC-6) and gets a preset step and a default
   (LIB-6 AC-65). Not in the migration.
-- **Sharp media formats.** `.card.yaml` stays at version 1;
+- **Sharp media formats.** `.module.yaml` stays at version 1;
   `.floppy.yaml` goes to version 2 (behaviour change 1600-19). If moving their readers and writers under
   the media model (`capabilities.md` Q-2) turns out to be more than
   per-product criteria of LIB-7, they get a `C1600` row. Settled (user,

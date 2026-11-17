@@ -24,8 +24,8 @@ the PC-1500 and PC-1500A, two on the PC-1600), and the peripherals:
 - **PC-1600:** a printer picker (none, CE-150, CE-1600P) and the button
   **CE-158**.
 
-While a plotter with a cassette interface is plugged in, the bar has the
-tape controls ([BASIC programs](09-basic-programs.md)); while the
+While a plotter with a cassette recorder is plugged in, the bar has the
+cassette controls ([BASIC programs](09-basic-programs.md)); while the
 CE-1600P is plugged in, the disk controls follow them
 ([Media](04-media.md#the-floppy-disk-pc-1600)).
 
@@ -138,7 +138,7 @@ PC-1600) and a bundled preset to start with:
 |---|---|---|
 | Models, modules, plotters, the CE-1600F | yes | yes |
 | Presets: the examples, your own | **File ▸ Examples**, **File ▸ Load Preset…** | **Examples**, **Upload Preset…** |
-| Saved modules, disks and tapes | files in the save folder | kept in the browser; **Import Media…** brings files in, **Saved Media…** downloads or deletes them; only one tab saves, a second tab says so |
+| Saved modules, disks and cassettes | files in the save folder | kept in the browser; **Import Media…** brings files in, **Saved Media…** downloads or deletes them; only one tab saves, a second tab says so |
 | Shortcuts for menu items | yes ([Shortcuts](../../../library/help/02-getting-started.md#shortcuts)) | none: they are the browser's; pasting still types |
 | The debugger (VS Code) | yes | no |
 | The serial ports (CE-158, the PC-1600's RS-232C) | yes | no |

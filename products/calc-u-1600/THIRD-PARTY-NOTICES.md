@@ -45,7 +45,7 @@ license -- see [LICENSE](LICENSE) for Calc-U-1600's own code, and treat
 `roms/` as a separate, unlicensed-by-us inclusion.
 
 The same applies to ROM content bundled inside memory-module definitions
-fetched into `roms/` with the dumps — currently `CE-502B.card.yaml`
+fetched into `roms/` with the dumps — currently `CE-502B.module.yaml`
 (from tinue/PC-1500-ROM, `modules/`), Sharp's CE-502B Statistics module,
 from Jeff Birt's dump (https://github.com/Jeff-Birt/PC-1500_ROM_Modules).
 

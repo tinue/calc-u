@@ -57,7 +57,7 @@ public:
     void send(const calcu::sessions::CommandName& name, calcu::sessions::Value args = {}, Reply done = {});
     // A command waited for in a nested event loop while the host's timer
     // goes on calling the session (a dialog that answers with the outcome:
-    // Name & Save, Save Tape).
+    // Name & Save, Save Cassette).
     calcu::sessions::ReplyMessage sendAndWait(const calcu::sessions::CommandName& name, calcu::sessions::Value args = {});
     // A request, answered at once (requests do not wait, LIB-3).
     calcu::sessions::ReplyMessage ask(const calcu::sessions::RequestName& name, calcu::sessions::Value args = {});

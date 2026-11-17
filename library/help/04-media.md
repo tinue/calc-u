@@ -3,7 +3,7 @@
 # Media
 
 A **medium** holds your data and can be named and saved: a memory
-module that keeps its contents on a battery, a disk, a tape or a card. Which media your product has, and where each goes, is in
+module that keeps its contents on a battery, a disk, a cassette or a card. Which media your product has, and where each goes, is in
 [the product's part of this chapter](chapter:4).
 
 ## Templates and instances
@@ -56,7 +56,7 @@ drive, a cassette), lists in this order, each group sorted by name:
 The tooltip of an entry is its description.
 
 When you choose an entry, anything the old medium still has to save is
-saved first. A disk or a tape is in at once. A module is a change of
+saved first. A disk or a cassette is in at once. A module is a change of
 hardware, so the machine goes through a power cycle
 ([What follows a change of hardware](03-models-and-machine-control.md#what-follows-a-change-of-hardware)).
 A medium that cannot be read leaves the place empty, and a notice says
@@ -86,13 +86,13 @@ When you switch the write-protect switch on with a save, the medium is
 protected at once and the machine goes through a power cycle, as when a
 module is plugged in. No control switches it off again.
 
-Where a place starts a new, empty medium (a tape you record onto, for
+Where a place starts a new, empty medium (a cassette you record onto, for
 example), it asks for the name first. That is Name & Save done up front:
 nothing is written until the machine writes the first time.
 
 ## Insert and eject
 
-A disk or a tape is inserted by choosing it in its place's picker and
+A disk or a cassette is inserted by choosing it in its place's picker and
 ejected by choosing the empty place or the eject control. What is in a
 place stays there across a Reset and a Cold boot. Before a medium leaves
 its place, before a preset loads, before the machine is replaced and

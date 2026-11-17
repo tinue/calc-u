@@ -13,7 +13,7 @@ namespace sharp {
 
 namespace {
 
-constexpr std::string_view kCardSuffix = ".card.yaml";
+constexpr std::string_view kCardSuffix = ".module.yaml";
 
 bool isModuleFile(const std::string& name) {
     return name.size() > kCardSuffix.size() &&
@@ -31,7 +31,7 @@ const calcu::roms::FullSet& fullRomSet() {
         // The CE-502B: a module definition with its ROM bytes, from
         // PC-1500-ROM (modules/CE-502B.card.yaml; roms/fetch_roms.sh).
         const calcu::roms::FullSetEntry ce502b{
-            RomEntry{"CE-502B.card.yaml", RomEncoding::Text, 16384, ContentUnit::Bytes, "7c7af4b7adab69b5e75297bc1c3d7279"},
+            RomEntry{"CE-502B.module.yaml", RomEncoding::Text, 16384, ContentUnit::Bytes, "7c7af4b7adab69b5e75297bc1c3d7279"},
             {calcu::roms::NeededBy{PeripheralId{"CE-502B"}, std::nullopt}}};
         calcu::roms::FullSet s = calcu::roms::fullSet(sharpCatalogue(), std::span(&ce502b, 1));
         const std::string hostDrive = hostDriveEntry().fileName;

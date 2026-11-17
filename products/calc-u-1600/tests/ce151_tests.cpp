@@ -1,5 +1,5 @@
 // Headless C++ tests for the CE-151 (4 KB) memory module, run against the
-// bundled definition Qt6/resources/cards/ce151.card.yaml
+// bundled definition Qt6/resources/cards/ce151.module.yaml
 // (SoftwareDefinedCard). Same no-framework, assert-and-tally style as the
 // other Core tests.
 //
@@ -24,9 +24,9 @@ PinState makePins(uint16_t addr) {
 // Declares `card` (a fresh CE-151). The definition ships in the repo, so a
 // missing or unloadable one fails the test.
 #define CE151_OR_FAIL(card, host)                                                         \
-    auto card = bundledCard("ce151.card.yaml", host);                                     \
+    auto card = bundledCard("ce151.module.yaml", host);                                     \
     if (!card) {                                                                          \
-        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce151.card.yaml missing or unloadable\n", __func__); \
+        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce151.module.yaml missing or unloadable\n", __func__); \
         return;                                                                           \
     }
 
@@ -93,10 +93,10 @@ TEST(test_ce151_end_to_end_via_machine) {
 // The definition is declared for the PC-1500 family and PC-1600 Slot 1
 // (TRM 3.12.1: "only in slot 1").
 TEST(test_ce151_hosts) {
-    CHECK(bundledCard("ce151.card.yaml", CardHost::PC1500) != nullptr);
-    CHECK(bundledCard("ce151.card.yaml", CardHost::PC1500A) != nullptr);
-    CHECK(bundledCard("ce151.card.yaml", CardHost::PC1600Slot1) != nullptr);
-    CHECK(bundledCard("ce151.card.yaml", CardHost::PC1600Slot2) == nullptr);
+    CHECK(bundledCard("ce151.module.yaml", CardHost::PC1500) != nullptr);
+    CHECK(bundledCard("ce151.module.yaml", CardHost::PC1500A) != nullptr);
+    CHECK(bundledCard("ce151.module.yaml", CardHost::PC1600Slot1) != nullptr);
+    CHECK(bundledCard("ce151.module.yaml", CardHost::PC1600Slot2) == nullptr);
 }
 
 } // namespace

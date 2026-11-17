@@ -18,6 +18,7 @@
 # Hosts: PC-1500/1500A natively; on the PC-1600 it fills the slot's
 # 8000-BFFF page (pin 4) in Slot 1, or Slot 2 (as a RAM disk).
 
+format: memory-module
 format-version: 1
 module-name: "CE-161"
 description: "16 KB battery-backed RAM, write-protect switch"

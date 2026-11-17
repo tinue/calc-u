@@ -60,7 +60,7 @@ std::optional<ConstantMemoryContents> ConstantMemoryKeeper::current(calcu::machi
 
 void ConstantMemoryKeeper::write(const ConstantMemoryContents& c) {
     m_due.reset();
-    if (m_files.writeConstantMemory(writeConstantMemoryFile(c))) {
+    if (m_files.writeConstantMemory(writeConstantMemoryFile(c, m_savedAt ? m_savedAt() : std::string()))) {
         m_written = c;
         return;
     }

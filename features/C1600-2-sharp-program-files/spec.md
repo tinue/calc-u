@@ -57,7 +57,7 @@ area** is the memory the system keeps its own variables in.
 - Telling what a file is and decoding a cassette WAV: SharpDataExchange
   does both, and it is used as it is, as a built library that the build
   on GitHub fetches, as today (OQ-1).
-- Playing and recording a cassette tape in the tape bay (owner: LIB-7).
+- Playing and recording a cassette in the cassette recorder (owner: LIB-7).
 - How a key is pressed (owner: LIB-5).
 - A menu item that types a program in (today only a preset can; a new
   function).

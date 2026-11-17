@@ -84,7 +84,7 @@ What the three status columns mean for this feature:
 - How a key is pressed and how text is typed, the names a `key` takes
   (owner: LIB-5).
 - Media and modules in presets: references by `name:`, `file:` and
-  `mem:` (`docs/formats/README.md` §3), the steps `floppy:`, `tape:`,
+  `mem:` (`docs/formats/README.md` §3), the steps `floppy:`, `cassette:`,
   `eject:` and `saveas` (owner: LIB-7); the header key
   `magnetic-cards:` and the steps `card` and `arm` (owner: C59-7).
 - The steps `cut-paper` (owner: LIB-8) and `debug-panel`, `pause`,
@@ -136,7 +136,7 @@ The file
   each place of the model's descriptor that holds an installed peripheral, under
   the name of that place (`slot-1`, `slot-2`, `printer`, `interface`,
   `host-drive`; `presets.md` PR-2, PR-9, PR-11); a removable medium is
-  no header key but a step (`card:`, `floppy:`, `tape:`; `preset.md`
+  no header key but a step (`card:`, `floppy:`, `cassette:`; `preset.md`
   §3, §5.2; LIB-7; `docs/formats/README.md` §2). The product header keys of `preset.md` §3
   (`magnetic-cards`, `slot-N-rom`, `bus-rom`, `debug`) are added by
   their owners (AC-29). That a `preset-name` differs from those of the
@@ -561,8 +561,8 @@ Harness
   PC-1600 also `slot-2:`, `printer: CE-1600P` with the variants `new`
   and `old` and `host-drive:`
   (`Core/Preset/PresetFile.cpp:745-946`; `presets.md` PR-11); a floppy
-  disk and a cassette tape are not header keys but the steps `floppy:`
-  and `tape:` (`preset.md` §5.2; LIB-7). The key `plotter:` is
+  disk and a cassette are not header keys but the steps `floppy:`
+  and `cassette:` (`preset.md` §5.2; LIB-7). The key `plotter:` is
   gone (behaviour change 1600-3). The keys `ctrl`, `kbii` and `bs` are
   refused in a `key:` step (`preset.md` §5.1).
 - [ ] **AC-45** — Given a Sharp machine, then it is idle when it waits
@@ -805,3 +805,4 @@ Harness
 | `not-expect:` (step and command) passes when the display does not show the text, by the same comparison as `expect:` (AC-66) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |
 | `expect:` and `not-expect:` take a regular expression written between slashes on the Sharp models; the TI models refuse it (AC-67, AC-68) | user, 2026-11-14 (regular expression instead of a whole-word option) | 2026-11-14 |
 | Calc-U-59's Web follows AC-25 and D-13: a preset's `screenshot:` is handed over with KeepFile as a download (it was written into the browser's save folder); `LibraryPartsSetup::screenshotFolder` is gone | user, 2026-11-17, Q-1 of `docs/reviews/e-simplification.md`; ledger row 59-63 | 2026-11-17 |
+| The step that inserts a cassette is `cassette:` (was `tape:`; the ACs edited in place) | user, 2026-11-17 (Part E review Q-6); LIB-7 AC-26; behaviour change 1600-51 | 2026-11-17 |

@@ -73,7 +73,7 @@ cite it as `Ref/<path>`, a path inside that repository, e.g.
 
 - [Floppy-Image-Format.md](Floppy-Image-Format.md) — the `*.floppy.yaml`
   CE-1600F diskette format, for other tools that read or write it.
-- Memory modules (`*.card.yaml`) are user-level:
+- Memory modules (`*.module.yaml`) are user-level:
   [09-module-definitions.md](../../help/09-module-definitions.md) and
   [10-module-definition-format.md](../../help/10-module-definition-format.md).
 - Presets are described in the help,

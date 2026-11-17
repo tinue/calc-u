@@ -34,9 +34,9 @@ std::string Paths::saveFolder() const {
     return joinPath(dirs_.home, settings_->product().productName);
 }
 
-std::string Paths::tapeFolder() const {
-    if (auto over = folderValue("storage", "tape-folder")) return *over;
-    return joinPath(saveFolder(), "Tapes");
+std::string Paths::cassetteFolder() const {
+    if (auto over = folderValue("storage", "cassette-folder")) return *over;
+    return joinPath(saveFolder(), "Cassettes");
 }
 
 std::optional<std::string> Paths::traceFolder() const {
@@ -80,7 +80,7 @@ std::string Paths::saveFolderFile(std::string_view name) const { return joinPath
 std::optional<std::string> Paths::folder(Folder which) const {
     switch (which) {
     case Folder::Save: return saveFolder();
-    case Folder::Tapes: return tapeFolder();
+    case Folder::Cassettes: return cassetteFolder();
     case Folder::Traces: return traceFolder();
     case Folder::Screenshots: return screenshotFolder();
     case Folder::SerialLinks: return serialLinkFolder();

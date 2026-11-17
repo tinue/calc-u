@@ -711,7 +711,7 @@ TEST(c1600_1_ac16_ce150_cassette_listed_on_pc1500) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     const PeripheralDescriptor* ce150 = c.peripheral(PeripheralId{"CE-150"});
-    CHECK(ce150 && ce150->mediaPlaces.size() == 1 && ce150->mediaPlaces[0].id.value == "cassette");
+    CHECK(ce150 && ce150->mediaPlaces.size() == 1 && ce150->mediaPlaces[0].id.value == "cassette-recorder");
     for (const char* model : {"PC-1500", "PC-1500A"}) {
         if (!haveModelRoms(model)) continue;
         auto m = buildSharp(c, model, std::nullopt, {request(c, "CE-150", "printer")});

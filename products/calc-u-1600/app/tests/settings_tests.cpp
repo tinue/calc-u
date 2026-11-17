@@ -42,7 +42,7 @@ TEST(lib9_ac26_declaration) {
         {"startup.model", "last"},          {"startup.last-model", ""},
         {"preset.PC-1500", ""},             {"preset.PC-1500A", ""},
         {"preset.PC-1600", ""},             {"storage.save-folder", ""},
-        {"storage.tape-folder", ""},        {"trace.folder", ""},
+        {"storage.cassette-folder", ""},        {"trace.folder", ""},
         {"trace.max-file-size-mb", "50"},   {"debug.dap-enabled", "false"},
         {"debug.dap-port", "32168"},        {"serial.link-folder", ""},
         {"folders.presets", ""},            {"folders.basic-programs", ""},
@@ -73,7 +73,7 @@ TEST(lib9_ac26_declaration) {
     CHECK(s.file().integer("trace", "max-file-size-mb") == 50);
     CHECK(!s.file().boolean("debug", "dap-enabled") && s.file().integer("debug", "dap-port") == 32168);
     CHECK(s.startupModelPreference() == "last");
-    CHECK(s.file().text("storage", "save-folder").empty() && s.file().text("storage", "tape-folder").empty() && s.file().text("trace", "folder").empty() &&
+    CHECK(s.file().text("storage", "save-folder").empty() && s.file().text("storage", "cassette-folder").empty() && s.file().text("trace", "folder").empty() &&
           s.file().text("serial", "link-folder").empty());
     for (Model m : {calcu::machine::ModelId{"PC-1500"}, calcu::machine::ModelId{"PC-1500A"}, calcu::machine::ModelId{"PC-1600"}}) CHECK(s.file().text("preset", m.value).empty());
     s.file().set("preset", "PC-1600", "examples:basic/hanoi.pc1600");
@@ -243,10 +243,10 @@ TEST(test_app_paths) {
 
     CHECK(paths.instanceDir() == home + "/Calc-U-1600");
     CHECK(fs::is_directory(home + "/Calc-U-1600"));
-    CHECK(paths.tapeDir() == home + "/Calc-U-1600/Tapes");
+    CHECK(paths.cassetteDir() == home + "/Calc-U-1600/Cassettes");
     CHECK(paths.traceDir() == home + "/Calc-U-1600");
     CHECK(paths.serialLinkDir() == home + "/Calc-U-1600");
-    CHECK(paths.displayPath(home + "/Calc-U-1600/x.card.yaml") == "~/Calc-U-1600/x.card.yaml");
+    CHECK(paths.displayPath(home + "/Calc-U-1600/x.module.yaml") == "~/Calc-U-1600/x.module.yaml");
     CHECK(paths.displayPath(home + "/Documents/y") == "~/Documents/y");
     CHECK(paths.displayPath(home + "-other/y") == home + "-other/y");
     CHECK(paths.displayPath("/elsewhere") == "/elsewhere");
@@ -254,9 +254,9 @@ TEST(test_app_paths) {
     t.file.set("storage", "save-folder", (root / "saves").generic_string());
     CHECK(paths.instanceDir() == (root / "saves").generic_string());
     CHECK(fs::is_directory(root / "saves"));
-    CHECK(paths.tapeDir() == (root / "saves" / "Tapes").generic_string());  // LIB-9 EC-3
-    t.file.set("storage", "tape-folder", (root / "tapes").generic_string());
-    CHECK(paths.tapeDir() == (root / "tapes").generic_string());
+    CHECK(paths.cassetteDir() == (root / "saves" / "Cassettes").generic_string());  // LIB-9 EC-3
+    t.file.set("storage", "cassette-folder", (root / "tapes").generic_string());
+    CHECK(paths.cassetteDir() == (root / "tapes").generic_string());
     t.file.set("trace", "folder", (root / "traces").generic_string());
     CHECK(paths.traceDir() == (root / "traces").generic_string());
 

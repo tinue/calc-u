@@ -28,7 +28,7 @@
 #        joined; originally Jeff-Birt/Sharp_CE-158)
 #   CE-150.ROM
 #     -- from tinue/PC-1500-ROM (dumps/ce150/CE-150.BIN)
-#   CE-502B.card.yaml
+#   CE-502B.module.yaml
 #     -- from tinue/PC-1500-ROM (modules/CE-502B.card.yaml): the CE-502B
 #        module definition with its ROM bytes (LIB-12 AC-14)
 #   PC1500_ROM_BASE=<url> overrides that repo's base URL (its root, e.g. a
@@ -102,7 +102,7 @@ fetch_if_needed "$ROMS_DIR/PC-1500_A04.ROM" 8ebec8b0ef358645df14807c31df7d06 "$P
 fetch_if_needed "$ROMS_DIR/CE-150.ROM" eb9aa5156c6849890b137799efc50a4b "$PC1500_BASE/ce150/CE-150.BIN"
 fetch_if_needed "$ROMS_DIR/CE-158.ROM" aa952878fb29da4844791d95185649ca \
   "$PC1500_BASE/ce158/CE-158-LOW.BIN" "$PC1500_BASE/ce158/CE-158-HIGH.BIN"
-fetch_if_needed "$ROMS_DIR/CE-502B.card.yaml" 7c7af4b7adab69b5e75297bc1c3d7279 "$PC1500_REPO/modules/CE-502B.card.yaml"
+fetch_if_needed "$ROMS_DIR/CE-502B.module.yaml" 7c7af4b7adab69b5e75297bc1c3d7279 "$PC1500_REPO/modules/CE-502B.card.yaml"
 
 # ---- PC-1600 (tinue/PC-1600-ROM) -- upstream files are uppercase .BIN in
 # dumps/new/ (current ROM), dumps/old/ (older ROM) and dumps/ce1600p/{new,old}/

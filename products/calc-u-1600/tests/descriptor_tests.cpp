@@ -177,7 +177,7 @@ TEST(lib1_ac38_rom_entries_per_variant) {
 }
 
 TEST(lib1_ac39_peripheral_descriptors) {
-    SKIP_UNLESS(std::filesystem::exists(std::string(cardsDir()) + "/ce161.card.yaml"), "module definitions missing");
+    SKIP_UNLESS(std::filesystem::exists(std::string(cardsDir()) + "/ce161.module.yaml"), "module definitions missing");
     const Catalogue c = catalogueWithModules();
     auto p = [&](const char* id) { return c.peripheral(PeripheralId{id}); };
     for (const char* m : {"CE-151", "CE-155", "CE-161", "CE-1638", "CE-163F", "CE-1600M", "CE-1601M", "superRAM"})

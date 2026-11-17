@@ -1,16 +1,16 @@
 # Media files
 
 Calc-U-1600 has three kinds of media: the battery-backed module, the
-floppy disk and the cassette tape. Each is a file you can keep, copy,
+floppy disk and the cassette. Each is a file you can keep, copy,
 import and export. How media are used (templates and instances, Name &
 Save, inserting and ejecting) is in the [shared Media chapter](../../../library/help/04-media.md)
 and in [Media](04-media.md); this page gives the files themselves.
 
 | Medium | File | Version | Its place |
 |---|---|---|---|
-| Battery-backed module | `.card.yaml` | 1 | a module slot |
+| Battery-backed module | `.module.yaml` | 1 | a module slot |
 | Floppy disk | `.floppy.yaml` | 2 | the CE-1600F drive of the CE-1600P (PC-1600) |
-| Cassette tape | `.tape.yaml` with a `.wav` | 1 | the cassette interface of a CE-150 or CE-1600P |
+| Cassette | `.cassette.yaml` with a `.wav` | 1 | the cassette recorder of a CE-150 or CE-1600P |
 
 Common to all three:
 
@@ -20,8 +20,8 @@ Common to all three:
 - Name & Save copies a template (or an instance) into a new instance
   under the name you give. A preset's `saveas:` step can save a copy as
   a template instead ([Presets](06-presets.md)).
-- Instances lie in the save folder; tapes lie in the tape folder,
-  `Tapes` in the save folder unless the settings name another one
+- Instances lie in the save folder; cassettes lie in the cassette folder,
+  `Cassettes` in the save folder unless the settings name another one
   ([Settings](08-settings.md)).
 - A floppy disk written by Calc-U-1600 0.8 (version 1) is refused with a
   hint until you update it by hand: set `format-version: 2` and rename
@@ -33,7 +33,7 @@ Common to all three:
 
 A battery-backed module is a module definition with `battery: true`
 ([Module definition format](10-module-definition-format.md)). Its saved
-instance is the same kind of file, a `.card.yaml`, written from the
+instance is the same kind of file, a `.module.yaml`, written from the
 template it came from:
 
 - everything but the content, the name and the template mark is kept as
@@ -45,8 +45,11 @@ template it came from:
   a template);
 - for a module with a write-protect switch (the CE-161), `write-protect:`
   holds the switch's position;
-- a comment at the top says from which module the instance was made and
-  when.
+- it has `format: memory-module` and `saved:`, the time of
+  the last write;
+- a comment at the top (`# Calc-U-1600 memory module instance -- generated
+  from "…".` and `# created: …`) says from which module the instance was
+  made and when.
 
 A preset plugs a saved instance in by its name, `slot-1: { name: … }`,
 like a bundled module: the bundled modules are searched first, then the
@@ -116,41 +119,48 @@ eject the disk before you edit its file.
 The bundled templates are **Blank** (unformatted: `INIT` it before use)
 and **Formatted** (both sides formatted and empty).
 
-## Tape definition
+## Cassette definition
 
-A tape for the cassette interface of a CE-150 or a CE-1600P. The tape
-itself is sound, in a `.wav` file; the tape definition gives it a name
-and a description, like any other medium, and names the sound file.
+A cassette for the cassette recorder of a CE-150 or a CE-1600P. Its tape
+is sound, in a `.wav` file; the cassette definition gives it a name and
+a description, like any other medium, and names the sound file.
 
 ```yaml
-format: cassette-tape
+# Calc-U-1600 cassette
+format: cassette
 format-version: 1
-tape-name: "Games"
+cassette-name: "Games"
 description: "Three games saved with CSAVE"
+saved: 2026-11-17T10:00:00Z
 audio: { file: games.wav }
 position: 0
 ```
 
 | Key | Required | Value |
 |---|---|---|
-| `format` | yes | `cassette-tape` |
+| `format` | yes | `cassette` |
 | `format-version` | yes | `1` |
-| `tape-name` | yes | The name tag, shown in the tape picker; without `"` or a line break |
-| `description` | no | One line about the tape |
+| `cassette-name` | yes | The name tag, shown in the cassette picker; without `"` or a line break |
+| `description` | no | One line about the cassette |
 | `template` | no | `true`: a template; its sound file is never written either |
-| `audio` | yes | The sound file, by `file:` only, relative to the tape definition |
+| `saved` | no | The time of the last write (UTC, ISO 8601); for information |
+| `audio` | yes | The sound file, by `file:` only, relative to the cassette definition |
 | `position` | no | Reserved for later use; must be `0`, the default |
 
 - Recording onto an instance writes into its sound file, as a mono
-  16-bit WAV at 48000 Hz, each time the motor stops and when the tape is
-  ejected. A write that fails is shown as a notice.
-- Name & Save copies the definition and its sound file into the tape
-  folder, side by side.
-- To use a WAV you already have as a tape, write a tape definition next
-  to it that names it; the definition may name it by any relative path.
-- Several recordings on one tape are part of the sound, not of the
+  16-bit WAV at 48000 Hz, each time the motor stops and when the cassette
+  is ejected. A write that fails is shown as a notice.
+- Name & Save copies the definition and its sound file into the cassette
+  folder, side by side; the definition gets `saved` and the comment line.
+- To use a WAV you already have as a cassette, write a cassette
+  definition next to it that names it; the definition may name it by any
+  relative path.
+- Several recordings on one cassette are part of the sound, not of the
   definition.
-- A `.wav` on its own is not a tape but a program file: opened or
+- A `.wav` on its own is not a cassette but a program file: opened or
   dropped, it is loaded as a program ([BASIC programs](09-basic-programs.md)).
+- A `.tape.yaml` (`format: cassette-tape`, `tape-name:`) of an earlier
+  build is not read: rename it to `.cassette.yaml` and change those two
+  keys to `format: cassette` and `cassette-name:`.
 
 The bundled template is **Empty**, a blank cassette.

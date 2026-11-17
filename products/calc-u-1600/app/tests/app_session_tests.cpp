@@ -129,18 +129,18 @@ TEST(lib7_ac44_test_tape_status_follows_calls) {
     auto tapes = [&] { return f.state<cu1600::LampsPayload>(cu1600::topics::kLamps)->tape.mode; };
     CHECK(tapes() == TapeDeck::Mode::Empty);
     const sessions::CallId id = f.send(calcu::media::kStartNewCommand,
-                                       Value::object({{"place", "tape"}, {"template", f.entry("tape", "Empty")}, {"name", "side a"}}));
+                                       Value::object({{"place", "cassette"}, {"template", f.entry("cassette", "Empty")}, {"name", "side a"}}));
     const auto r = f.takeReply(id);
     CHECK(r && r->done);
     CHECK(tapes() == TapeDeck::Mode::Empty);   // not seen yet
     f.call();
     CHECK(tapes() == TapeDeck::Mode::Record);
-    CHECK(f.held("tape") && f.held("tape")->name == "side a");
-    CHECK(f.run(calcu::media::kEjectCommand, Value::object({{"place", "tape"}})).done);
+    CHECK(f.held("cassette") && f.held("cassette")->name == "side a");
+    CHECK(f.run(calcu::media::kEjectCommand, Value::object({{"place", "cassette"}})).done);
     CHECK(f.reset());
     CHECK(tapes() == TapeDeck::Mode::Empty);
     // Nothing was recorded: no file (AC-20: the file at the first write).
-    CHECK(!fs::exists(fs::path(f.tapeFolder()) / "side a.tape.yaml"));
+    CHECK(!fs::exists(fs::path(f.cassetteFolder()) / "side a.cassette.yaml"));
 }
 
 std::vector<std::uint8_t> readBytes(const char* path) {
@@ -175,7 +175,7 @@ TEST(lib7_ac44_test_media_library) {
     auto state = f.media();
     const calcu::media::KindState::Item* work = findItem(*state, "Work");
     CHECK(work && !work->isTemplate && work->inPlace && *work->inPlace == "slot-1");
-    CHECK(work && work->fileName == "Work.card.yaml");
+    CHECK(work && work->fileName == "Work.module.yaml");
     std::string reason;
     const auto files = media.exportFiles(kindOf(f, cu1600::kModuleKind), "Work", &reason);
     CHECK(files && files->size() == 1 && !files->front().bytes.empty());
@@ -187,12 +187,12 @@ TEST(lib7_ac44_test_media_library) {
     CHECK(media.remove(ctx, kindOf(f, cu1600::kModuleKind), "Work", false).reason.rfind("asks:", 0) == 0);   // OQ-4
     CHECK(media.remove(ctx, kindOf(f, cu1600::kModuleKind), "Work", true).ok);
     CHECK(findItem(*f.media(), "Work") == nullptr);
-    CHECK(media.importBytes(ctx, "Work.card.yaml", bytes, {}).ok);
+    CHECK(media.importBytes(ctx, "Work.module.yaml", bytes, {}).ok);
     CHECK(findItem(*f.media(), "Work") != nullptr);
-    CHECK(!media.importBytes(ctx, "Work.card.yaml", bytes, {}).ok);   // the name is taken
-    CHECK(!media.importBytes(ctx, "x.card.yaml", "nope", {}).ok);
-    const std::vector<std::uint8_t> bundled = readBytes("frontends/qt6/resources/cards/ce161.card.yaml");
-    CHECK(!media.importBytes(ctx, "ce161.card.yaml", std::string(bundled.begin(), bundled.end()), {}).ok);   // a bundled name
+    CHECK(!media.importBytes(ctx, "Work.module.yaml", bytes, {}).ok);   // the name is taken
+    CHECK(!media.importBytes(ctx, "x.module.yaml", "nope", {}).ok);
+    const std::vector<std::uint8_t> bundled = readBytes("frontends/qt6/resources/cards/ce161.module.yaml");
+    CHECK(!media.importBytes(ctx, "ce161.module.yaml", std::string(bundled.begin(), bundled.end()), {}).ok);   // a bundled name
 
     // A tape: its definition with its WAV (AC-43); a WAV alone is no medium.
     const std::vector<std::uint8_t> wav = readBytes("tests/fixtures/tape/pc1500_tape.wav");
@@ -200,13 +200,13 @@ TEST(lib7_ac44_test_media_library) {
     const auto companion = [&](const std::string& rel) -> std::optional<std::string> {
         return rel == "Side A.wav" ? std::optional<std::string>(sound) : std::nullopt;
     };
-    const std::string def = "format: cassette-tape\nformat-version: 1\ntape-name: \"Side A\"\naudio: { file: \"Side A.wav\" }\n";
-    CHECK(media.importBytes(ctx, "Side A.tape.yaml", def, companion).ok);
-    CHECK(!media.importBytes(ctx, "side a.tape.yaml", def, companion).ok);   // one name, any case
-    CHECK(!media.importBytes(ctx, "Broken.tape.yaml", def, {}).ok);          // without its WAV
+    const std::string def = "format: cassette\nformat-version: 1\ncassette-name: \"Side A\"\naudio: { file: \"Side A.wav\" }\n";
+    CHECK(media.importBytes(ctx, "Side A.cassette.yaml", def, companion).ok);
+    CHECK(!media.importBytes(ctx, "side a.cassette.yaml", def, companion).ok);   // one name, any case
+    CHECK(!media.importBytes(ctx, "Broken.cassette.yaml", def, {}).ok);          // without its WAV
     state = f.media();
     const calcu::media::KindState::Item* tape = findItem(*state, "Side A");
-    CHECK(tape && !tape->inPlace && fs::exists(fs::path(f.tapeFolder()) / "Side A.wav"));
+    CHECK(tape && !tape->inPlace && fs::exists(fs::path(f.cassetteFolder()) / "Side A.wav"));
     CHECK(!media.importBytes(ctx, "Side A.wav", sound, {}).ok);
     CHECK(!media.importBytes(ctx, "notes.txt", "x", {}).ok);
 }
@@ -236,7 +236,7 @@ TEST(lib7_ac40_write_protect_power_cycle) {
     if (!m) return;
     CHECK(!m->writeBuiltIn(0x0000, &bAA, 1).stored);   // the switch blocks it
     CHECK(m->peek(0x0000) == 0x55);
-    std::ifstream in(fs::path(f.saveFolder()) / "Rom.card.yaml");
+    std::ifstream in(fs::path(f.saveFolder()) / "Rom.module.yaml");
     const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     CHECK(text.find("write-protect: protected") != std::string::npos);
 

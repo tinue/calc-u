@@ -5,7 +5,7 @@ into a module slot. Its two kinds have a format each:
 
 | Kind | Format | Version | Products |
 |---|---|---|---|
-| Memory module | §1, module definition `.card.yaml` | 1 | [1600] |
+| Memory module | §1, module definition `.module.yaml` | 1 | [1600] |
 | Solid State ROM module | §2, `.rom.yaml` | 1 | [59] |
 
 A preset puts a module into a slot with `slot-1:` / `slot-2:`, by
@@ -89,6 +89,7 @@ four independent dimensions; none can be inferred from another:
 
 | Key | Required | Value |
 |---|---|---|
+| `format` | no | `memory-module`. Every writer writes it; a reader refuses another value and reads a file without it (the CE-502B's definition, fetched unchanged from PC-1500-ROM, has none) |
 | `format-version` | yes | `1` |
 | `module-name` | yes | The name tag (`CE-155`, `CE-1600M`), shown in the module picker; what `slot-N: { name: … }` resolves against. Unique within a folder of modules |
 | `description` | no | One line (`"8 KB static RAM"`), the picker's tooltip. A saved instance keeps its template's |
@@ -97,9 +98,12 @@ four independent dimensions; none can be inferred from another:
 | `regions` | yes | A list of one or more regions (§1.3) |
 | `battery` | no | `true` for battery-backed hardware. A battery-backed template offers Name & Save, which makes it a medium |
 | `template` | no | `true`: a template, never written. Absent or `false`: an instance, autosaved in place. Never written into a saved instance |
+| `saved` | no | ISO-8601 UTC time of the last write, `YYYY-MM-DDTHH:MM:SSZ`. Written into every saved instance (after `module-name`, or its `template`). Informational |
 | `notes` | no | Free text, ignored by the loader |
 
 The versioning rules are those of [README.md §2](README.md#2-version-name-and-description).
+The file's suffix is `.module.yaml`; a `.card.yaml` (Calc-U-1600 0.8.x)
+is not read.
 
 **Terminology → signal names** (besides `A0`… address and `D0`… data
 lines):
@@ -262,6 +266,12 @@ initial-content:
   template is listed with them.
 - Battery-backed template: Name & Save copies it, with the live contents
   as `initial-content`, into an instance without the `template` key.
+- A saved instance starts with the comment line
+  `# Calc-U-1600 memory module instance -- generated from "<template>".`
+  (`template` in place of `instance` for one a preset saves as a
+  template) and `# created: <time>`; the rest of its template's text,
+  comments included, is kept. The writer sets `format: memory-module`
+  and `saved` on every write.
 - Instance: every write to the module is saved back into its file.
 - `slot-N: { name: X }` finds the definition whose `module-name` is X;
   `slot-N: { file: … }` names the file. How a name is found (bundled

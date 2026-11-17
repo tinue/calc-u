@@ -271,7 +271,7 @@ TEST(test_debug_slot_image_returns_the_whole_card_backing_store) {
     CHECK(m.debugSlotImage(2).empty());
 
     // A banked card: 8 x 16 KB, contiguous, powered up 0x00.
-    m.memory().attachSlot1Card(bundledCard("ce1638.card.yaml", CardHost::PC1600Slot1));
+    m.memory().attachSlot1Card(bundledCard("ce1638.module.yaml", CardHost::PC1600Slot1));
     std::vector<uint8_t> img = m.debugSlotImage(1);
     CHECK(img.size() == 8u * 0x4000);
     CHECK(img[0] == 0x00 && img.back() == 0x00);
@@ -310,7 +310,7 @@ TEST(test_debug_write_internal_ram_and_slot_image_land_directly) {
 // offset 0800H, not 2000H.
 TEST(test_debug_write_slot_bus_follows_card_wiring) {
     PC1600Machine m;
-    m.memory().attachSlot1Card(bundledCard("ce155.card.yaml", CardHost::PC1600Slot1));
+    m.memory().attachSlot1Card(bundledCard("ce155.module.yaml", CardHost::PC1600Slot1));
     m.memory().writeIO(0x3C, 0x5B);                      // what the boot probe sets for a CE-155
     m.memory().writeIO(0x31, 0x20);                      // page-C bank 2 mapped: the loader doesn't care
     const uint8_t v = 0x5A;
@@ -340,7 +340,7 @@ TEST(test_debug_bank_state_reports_registers_and_card_bank) {
     m.bank().writePort3C(0x24);  // SLOT1MAP b2 set, SLOT2MAP b5:4 = 10 -> mode 1
 
     // A banked card in Slot 1; its own latch starts at bank 0.
-    m.memory().attachSlot1Card(bundledCard("ce1638.card.yaml", CardHost::PC1600Slot1));
+    m.memory().attachSlot1Card(bundledCard("ce1638.module.yaml", CardHost::PC1600Slot1));
 
     s = m.debugBankState();
     CHECK(s.port31 == 0x5A);
@@ -384,7 +384,7 @@ TEST(test_debug_bank_state_resolves_the_live_address_map) {
 
     // Now page C selects bank 1 AND a Slot 2 card is present: the mode-1
     // redirect goes live and steals page C for Slot 2.
-    m.memory().attachSlot2Card(bundledCard("ce1638.card.yaml", CardHost::PC1600Slot2));
+    m.memory().attachSlot2Card(bundledCard("ce1638.module.yaml", CardHost::PC1600Slot2));
     m.bank().writePort31(0x10);          // page C field = 1
     s = m.debugBankState();
     CHECK(s.target[2] == PT::Slot2);

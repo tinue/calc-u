@@ -8,7 +8,7 @@
 
 ## Dependencies
 - Features: LIB-11 (the harness, product commands under the product's
-  name), LIB-7 (cassette tapes, `tape` and `eject`), LIB-10 (reading
+  name), LIB-7 (cassettes, `cassette` and `eject`), LIB-10 (reading
   memory); also named here: C1600-1 (the product kinds for the INSPECTOR
   views, for the CE-158's printer port and for the host drive's folder),
   LIB-2 (the serial port kind, its host link and serial port file),
@@ -41,7 +41,7 @@ serial port file.
   dump, registers, the last instructions and where time was spent
   (LIB-10); the model's variants and attaching a peripheral (LIB-18);
   the paper of the plotters (LIB-8); the loaders (C1600-2).
-- Playing a cassette recording and taking a tape out: `tape` and
+- Playing a cassette recording and taking a cassette out: `cassette` and
   `eject` of LIB-7 for the cassette (LIB-7 AC-26, AC-42).
 - The three probes and `dev/tape-matrix/run.py`, which are not taken over
   (LIB-11 OQ-5 as amended, 2026-11-13).
@@ -88,16 +88,16 @@ INSPECTOR views
   `Core/tests/inspector_tests.cpp:97-250`.)
 
 Cassette
-- [ ] **AC-5** — Given `pc1600 tape record` with a path, then a new,
-  empty tape is in the cassette, and what the machine saves is written
+- [ ] **AC-5** — Given `pc1600 cassette record` with a path, then a new,
+  empty cassette is in the cassette recorder, and what the machine saves is written
   to that file as LIB-7 AC-42 says, each time the motor stops and when
-  the tape is ejected; the name LIB-7 AC-20 asks a user for is not
-  asked. A tape that was in the cassette is ejected first
+  the cassette is ejected; the name LIB-7 AC-20 asks a user for is not
+  asked. A cassette that was in the recorder is ejected first
   (`tools/CliCommon.hpp:56-80`, `Core/Tape/TapeDeck.hpp:55-133`).
-- [ ] **AC-6** — Given `pc1600 tape status`, then the reply gives the
+- [ ] **AC-6** — Given `pc1600 cassette status`, then the reply (`cassette: playing|recording|empty …`, `motor: on|off`) gives the
   position of a tape that plays, or the length of one that records, in
   seconds, the length of the whole tape, and whether the motor runs, or
-  that the cassette is empty (`tools/CliCommon.hpp:84-95`; LIB-7 AC-42).
+  that the cassette recorder is empty (`tools/CliCommon.hpp:84-95`; LIB-7 AC-42).
 
 Serial ports
 - [ ] **AC-7** — Given a serial port of the machine, `ce158` or, on a
@@ -146,11 +146,11 @@ Machine state
 - [ ] **AC-13** — Given a PC-1500, PC-1500A or PC-1600, then it offers the
   machine state of LIB-11 AC-24: every processor, all memory with its
   banks, the clocks and timers, and every plugged peripheral with a
-  medium in it (a cassette tape with its position, a floppy disk).
+  medium in it (a cassette with its position, a floppy disk).
 
 ## Edge Cases
-- **EC-2** — Given a `tape` command on a machine without a cassette
-  (neither a CE-150 nor a CE-1600P), then it is refused.
+- **EC-2** — Given a `cassette` command on a machine without a cassette
+  recorder (neither a CE-150 nor a CE-1600P), then it is refused.
 - **EC-3** — Given `serial ce158` on a machine without a CE-158, or
   `serial rs232c` on a PC-1500 or PC-1500A, then it is refused; it is
   not held for a machine built later. A script that needs the port from
@@ -164,7 +164,7 @@ Machine state
   is left out when its start does not lie before its end.
 - **EC-5** — Given `pc1600 host-drive` on a PC-1500 or PC-1500A, or with
   a path that is no folder, then it is refused.
-- **EC-6** — Given `pc1600 tape record` with a path that cannot be
+- **EC-6** — Given `pc1600 cassette record` with a path that cannot be
   written, then the save fails when the motor stops, and LIB-7's notice
   says so.
 
@@ -211,3 +211,4 @@ Machine state
 | M-51: the CE-158 gives its serial port the speed its ROM set (LIB-2's line settings), so `report` and `feed` know it | today the card kept the speed to itself; the PC-1600's port already did (LIB-2 AC-17) | 2026-11-16 |
 | M-51 (AC-13): the machine state holds the machine and its peripherals with their media; what the session keeps is not in it: LIB-7's record of what a media place holds and where `tape record` writes, the paper drawn, the bytes in a serial port's queues, the debugger's breakpoints, watches, history and trace. A state saved while a change of the peripherals waits for a power cycle is refused at the restore | the session's parts are not the machine (LIB-11 AC-24: files of the host are not part of the state); a waiting change is not a part of the core; qa-report | 2026-11-16 |
 | M-51 (AC-13, T8): `c1600_5_ac13_full_pc1600_…` runs two PC-1600s, the CE-1600P with its disk and tape on one, the CE-150 with the CE-158 on the other | the CE-1600P and the CE-158 cannot be used together (LIB-2 D-6, ledger 1600-22) | 2026-11-16 |
+| The cassette commands are `pc1600 cassette record <file.wav>` and `pc1600 cassette status`, the reply `cassette: …` (AC-5, AC-6, EC-2, EC-6 edited in place; was `pc1600 tape …`, `tape: …`); the word `pc1600` stays until release prep step 1 | user, 2026-11-17 (Part E review Q-6); `docs/reviews/release-prep-plan.md` §2 (2o); behaviour change 1600-51 | 2026-11-17 |

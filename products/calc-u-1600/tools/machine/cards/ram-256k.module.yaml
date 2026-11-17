@@ -1,3 +1,4 @@
+format: memory-module
 format-version: 1
 # superRAM -- 512 KB vertically-banked SRAM module, PC-1600 Slot 2 only.
 #

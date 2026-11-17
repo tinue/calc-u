@@ -185,7 +185,7 @@ The terms this help uses, each with one meaning.
 | Printer | A peripheral that prints or plots |
 | Module | A peripheral that holds memory and plugs into a module slot |
 | Module slot | A place of a machine for modules |
-| Medium | A removable item that holds your data and can be named and saved: a floppy disk, a cassette tape, a magnetic card, a battery-backed module |
+| Medium | A removable item that holds your data and can be named and saved: a floppy disk, a cassette, a magnetic card, a battery-backed module |
 | Template | A medium bundled with the product, which is never written, or one you made a template |
 | Instance | A medium that is not a template; it saves itself in place after each change |
 | Name & Save | Giving a template a name and saving it as an instance |

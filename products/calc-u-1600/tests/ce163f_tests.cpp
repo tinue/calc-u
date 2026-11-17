@@ -1,5 +1,5 @@
 // Headless C++ tests for the CE-163F 16-bank module (8 RAM + 8 FLASH banks),
-// run against the bundled definition Qt6/resources/cards/ce163f.card.yaml
+// run against the bundled definition Qt6/resources/cards/ce163f.module.yaml
 // (SoftwareDefinedCard) -- the flash quirks the real CE-163F firmware relies
 // on. Same no-framework, assert-and-tally style as the other Core tests.
 //
@@ -15,14 +15,14 @@
 
 namespace {
 
-std::unique_ptr<SoftwareDefinedCard> ce163f() { return bundledCard("ce163f.card.yaml", CardHost::PC1500A); }
+std::unique_ptr<SoftwareDefinedCard> ce163f() { return bundledCard("ce163f.module.yaml", CardHost::PC1500A); }
 
 // Declares `card` (a fresh CE-163F). The definition ships in the repo, so a
 // missing or unloadable one fails the test.
 #define CE163F_OR_SKIP(card)                                                              \
     auto card##Owned = ce163f();                                                          \
     if (!card##Owned) {                                                                   \
-        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce163f.card.yaml missing or unloadable\n", __func__); \
+        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce163f.module.yaml missing or unloadable\n", __func__); \
         return;                                                                           \
     }                                                                                     \
     SoftwareDefinedCard& card = *card##Owned
@@ -257,7 +257,7 @@ TEST(test_ce163f_trigger_is_pin_18) {
 TEST(test_ce163f_end_to_end_via_machine_and_poke_bypass) {
     PC1500Machine pc1500(PC1500Variant::PC1500);
     auto card = ce163f();
-    if (!card) { testharness::failCount()++; std::fprintf(stderr, "FAIL %s: ce163f.card.yaml missing\n", __func__); return; }
+    if (!card) { testharness::failCount()++; std::fprintf(stderr, "FAIL %s: ce163f.module.yaml missing\n", __func__); return; }
     pc1500.attachExpansionCard(std::move(card));
 
     // RAM bank 2 via guest-CPU writes.
@@ -302,7 +302,7 @@ TEST(test_ce163f_end_to_end_via_machine_and_poke_bypass) {
 TEST(test_ce163f_interleaved_bank_strobes_during_unlock) {
     PC1500Machine pc(PC1500Variant::PC1500A);
     auto card = ce163f();
-    if (!card) { testharness::failCount()++; std::fprintf(stderr, "FAIL %s: ce163f.card.yaml missing\n", __func__); return; }
+    if (!card) { testharness::failCount()++; std::fprintf(stderr, "FAIL %s: ce163f.module.yaml missing\n", __func__); return; }
     pc.attachExpansionCard(std::move(card));
     auto& m = pc.memory();
     auto unlock = [&] {                       // LOADER_HELPER_3

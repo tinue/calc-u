@@ -284,7 +284,7 @@ function settings(over) {
     row("preset", "Model-A", "text", "", ""),
     row("preset", "Model-B", "text", "", ""),
     row("storage", "save-folder", "path", "", "", { inUse: "/home/u/Test-Product" }),
-    row("storage", "tape-folder", "path", "", "", { inUse: "/home/u/Test-Product/Tapes" }),
+    row("storage", "cassette-folder", "path", "", "", { inUse: "/home/u/Test-Product/Cassettes" }),
     row("trace", "folder", "path", "", "", { inUse: "/home/u/Test-Product" }),
     row("trace", "max-file-size-mb", "integer", "50", "50", { min: 1, max: 1000 }),
     row("folders", "presets", "folder", "", "", { inUse: "/home/u" }),

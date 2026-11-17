@@ -40,7 +40,7 @@ inline const ProductDecl& testProduct() {
             family::presetFor("Model-A"),
             family::presetFor("Model-B"),
             family::saveFolder(),
-            family::tapeFolder(),
+            family::cassetteFolder(),
             family::traceFolder(),
             family::traceMaxFileSizeMb(),
             family::traceLocation(),

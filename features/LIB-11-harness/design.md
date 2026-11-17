@@ -699,7 +699,7 @@ M-51 (each checked by `lib11_ac18_every_function_of_the_table`, D.6):
 | `--dump-mem <address>,<length>` | `peek <target> <space> <address> <count>` | LIB-10 |
 | `--inspect <view>` | `pc1600 inspect <view>` | C1600-5 |
 | `--dump-basic` | `pc1600 dump-basic` | C1600-5 |
-| `--tape-in <wav>`, `--tape-out <wav>` | `tape { file: … }`, `eject tape`; `pc1600 tape record <wav>`, `pc1600 tape status` | LIB-7; C1600-5 |
+| `--tape-in <wav>`, `--tape-out <wav>` | `tape { file: … }`, `eject cassette`; `pc1600 cassette record <wav>`, `pc1600 cassette status` | LIB-7; C1600-5 |
 | `--ce158-pty`, `--ce158-rx`, `--ce158-rx-hold`, `--ce158-tx` | `pc1600 serial ce158 link`, `feed <file> hold=<n>`, `capture <file>` | C1600-5 |
 | `--save-dir`, `--modules-dir` | `--save-folder`; the bundled module definitions (a user's module definitions in the save folder, LIB-7) | LIB-11, LIB-7 |
 | the summary after a run (registers, last instructions, where the program counter spent its time) | `registers`, `history`, `profile report` | LIB-10 |
@@ -788,7 +788,7 @@ product's `CHANGELOG.md` for the release (M-61).
 | memory `calc-u-1600/feedback_headless_dir_for_probe_output.md` | scratch output of `calcu` and ad hoc runs into `headless/`; the build scripts named there are gone |
 | memory `calc-u-1600/feedback_lcd_text_before_images.md` | `calcu --product 1600 … then lcd` in place of `pc1600_cli --lcd-text -`; the DAP request stays |
 | memory `calc-u-1600/project_buzzer_audio.md` | "CLIs `--wav`" becomes `calcu`'s `audio` |
-| memory `calc-u-1600/project_cassette_tape.md` | the tape matrix is gone (OQ-5 as amended); recording through `pc1600 tape record` |
+| memory `calc-u-1600/project_cassette_tape.md` | the tape matrix is gone (OQ-5 as amended); recording through `pc1600 cassette record` |
 | memory `calc-u-1600/project_ce158_interface.md`, `project_pc1600_serial_port.md` | the PTY of the CLI becomes `pc1600 serial <port> link` |
 | memory `calc-u-1600/project_pc1600_ramdisk_geometry_table.md` | "headless harness" means `calcu` |
 | memory `calc-u-1600/feedback_one_time_verification_own_dir.md`, `project_loader_matrix_pc1500.md` | as the answer to the question of D.12 says |

@@ -15,7 +15,7 @@ Terms follow `docs/GLOSSARY.md`.
 |---|---|
 | [README.md](README.md) | This index and the rules every format shares: syntax, byte blocks, version, name and description, addressing a resource, errors, platform markers |
 | [preset.md](preset.md) | The preset format, with the chapter on full speed, and the keystroke program file |
-| [media.md](media.md) | The media: magnetic card, floppy disk, cassette tape; and the TI-58C's constant memory file |
+| [media.md](media.md) | The media: magnetic card, floppy disk, cassette; and the TI-58C's constant memory file |
 | [modules.md](modules.md) | The modules: module definition (memory module) and Solid State ROM module |
 | [cue-card.md](cue-card.md) | The cue card block, shared by presets, magnetic cards, Solid State ROM modules and the constant memory file |
 | [bundle.md](bundle.md) | The bundle file: what a product bundles from `examples/` and how the bundled presets are shown |
@@ -27,9 +27,9 @@ Terms follow `docs/GLOSSARY.md`.
 | Preset | — | `.ti59` `.ti58` `.ti58c` `.pc1500` `.pc1500a` `.pc1600` | — | 2 | `preset-name` | both |
 | Magnetic card | medium | `.magnetcard.yaml` | `ti59-magnetic-card` | 3 | `card-name` | Calc-U-59 (TI-59) |
 | Floppy disk | medium | `.floppy.yaml` | `ce1600f-floppy` | 2 | `disk-name` | Calc-U-1600 (PC-1600) |
-| Cassette tape | medium | `.tape.yaml`, with a `.wav` | `cassette-tape` | 1 | `tape-name` | Calc-U-1600 |
+| Cassette | medium | `.cassette.yaml`, with a `.wav` | `cassette` | 1 | `cassette-name` | Calc-U-1600 |
 | Constant memory | — | `ti58c.memory.yaml` | `ti58c-constant-memory` | 1 | `memory-name` | Calc-U-59 (TI-58C) |
-| Module definition | module (memory module) | `.card.yaml` | — | 1 | `module-name` | Calc-U-1600 |
+| Module definition | module (memory module) | `.module.yaml` | `memory-module` (optional on read) | 1 | `module-name` | Calc-U-1600 |
 | Keystroke program | — | `.keystrokes.yaml` | `ti-keystroke-program` | 1 | `program-name` | Calc-U-59 |
 | Solid State ROM module | module | `.rom.yaml` | `solid-state-rom-module` | 1 | `module-name` | Calc-U-59 |
 | Bundle file | — | `examples/bundle.yaml` | `example-bundle` | 1 | — | both |
@@ -72,6 +72,8 @@ read in any case (`Center` is `center`).
 
 **Numbers.** `&`, `0x` or `$` makes a number hex; without one it is
 decimal. In the module definition, a number is decimal or hex with `0x`.
+Writers use `0x` for a hex number; the `$` of an `addressed-hex` row is
+part of that encoding (§1.1).
 
 **Booleans** are `true` or `false`.
 
@@ -104,7 +106,7 @@ Every format has these keys at the top level:
 | Key | Required | Meaning |
 |---|---|---|
 | `format-version` | yes | The integer version of the format the file is written in |
-| `<kind>-name` | yes, except in presets, the constant memory file and the bundle file | The **name tag**: the short name shown in GUIs, pickers and drop-down lists, and the name a `name:` reference resolves against (§3). The key is named after the kind: `preset-name`, `card-name`, `disk-name`, `tape-name`, `memory-name`, `module-name`, `program-name` |
+| `<kind>-name` | yes, except in presets, the constant memory file and the bundle file | The **name tag**: the short name shown in GUIs, pickers and drop-down lists, and the name a `name:` reference resolves against (§3). The key is named after the kind: `preset-name`, `card-name`, `disk-name`, `cassette-name`, `memory-name`, `module-name`, `program-name` |
 | `description` | no, except in the Solid State ROM module | One line about the item, for a tooltip or a longer list entry |
 
 - A reader rejects a file without `format-version`, or with a version it

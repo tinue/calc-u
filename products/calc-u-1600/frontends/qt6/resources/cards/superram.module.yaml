@@ -38,6 +38,7 @@
 #
 # Ships blank (plain-ram-no-header).
 
+format: memory-module
 format-version: 1
 module-name: "superRAM"
 description: "512 KB battery-backed RAM, banked (Slot 2)"

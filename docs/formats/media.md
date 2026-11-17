@@ -9,7 +9,7 @@ battery-backed module, the fourth kind of medium, is a module definition
 |---|---|---|---|
 | Magnetic card | §1, version 3 | the TI-59's card reader (pass-through) | [59: TI-59] |
 | Floppy disk | §2, version 2 | the CE-1600F drive of the CE-1600P (holding) | [1600: PC-1600] |
-| Cassette tape | §3, version 1 | the cassette interface of a CE-150 or CE-1600P | [1600] |
+| Cassette | §3, version 1 | the cassette recorder of a CE-150 or CE-1600P (holding) | [1600] |
 
 §4 specifies the TI-58C's constant memory file, which is not a medium.
 
@@ -32,6 +32,12 @@ is stored:
   always there and has no file.
 - A medium is addressed by its name tag or by its file
   ([README.md §3](README.md#3-addressing-a-resource)).
+- **Every file a product writes for a medium** starts with a comment
+  line that names the product and the kind (`# Calc-U-59 magnetic card`,
+  `# Calc-U-1600 CE-1600F floppy disk image`, `# Calc-U-1600 cassette`,
+  `# Calc-U-1600 memory module instance …`) and carries `saved`, the
+  time of the write. So does the constant memory file (§4). Readers
+  ignore the comment; `saved` is informational.
 
 ---
 
@@ -45,6 +51,7 @@ side has been written.
 ### 1.1 Keys
 
 ```yaml
+# Calc-U-59 magnetic card
 format: ti59-magnetic-card
 format-version: 3
 card-name: "My Program"
@@ -125,9 +132,10 @@ card, from the implicit template.
 - A side the machine writes goes into the card's file (an instance), or
   stays in memory for an in-file card.
 - A write into a card file rewrites the file whole, in the key order of
-  §1.1. It replaces only the side that was written, keeps `card-name`,
-  `description`, `template` and `cue-card` as they were, and sets
-  `saved` to the time of the write. Comments in the file are not kept.
+  §1.1, after the comment line `# Calc-U-59 magnetic card`. It replaces
+  only the side that was written, keeps `card-name`, `description`,
+  `template` and `cue-card` as they were, and sets `saved` to the time of
+  the write. Other comments in the file are not kept.
 - A template card is never written; the product makes an instance first
   or refuses the write.
 - A card file's cue card is its own `cue-card`; a saved in-file card
@@ -210,32 +218,36 @@ sides:
 
 ---
 
-## 3. Cassette tape
+## 3. Cassette
 
-A tape for the cassette interface of a CE-150 or CE-1600P. The tape
-itself is sound, in a `.wav` file. The **tape definition** gives it a
-name and a description, like any other medium, and refers to the sound
-file, as a preset refers to a `.bas` or `.bin` file.
+A cassette for the cassette recorder of a CE-150 or CE-1600P (the media
+place `cassette-recorder`). What the cassette holds, its tape, is sound,
+in a `.wav` file. The **cassette definition** (`.cassette.yaml`) gives
+it a name and a description, like any other medium, and refers to the
+sound file, as a preset refers to a `.bas` or `.bin` file.
 
 ### 3.1 Keys
 
 ```yaml
-format: cassette-tape
+# Calc-U-1600 cassette
+format: cassette
 format-version: 1
-tape-name: "Games"
+cassette-name: "Games"
 description: "Three games saved with CSAVE"
+saved: 2026-11-17T10:00:00Z
 audio: { file: games.wav }
 position: 0
 ```
 
 | Key | Required | Value |
 |---|---|---|
-| `format` | yes | `cassette-tape` |
+| `format` | yes | `cassette` |
 | `format-version` | yes | `1` |
-| `tape-name` | yes | The name tag. Must not contain `"` or a newline |
-| `description` | no | One line about the tape |
+| `cassette-name` | yes | The name tag. Must not contain `"` or a newline |
+| `description` | no | One line about the cassette |
 | `template` | no | `true`: a template. Its sound file is never written either |
-| `audio` | yes | The sound file, by `file:` only, relative to the tape definition |
+| `saved` | no | ISO-8601 UTC time of the last write. Informational |
+| `audio` | yes | The sound file, by `file:` only, relative to the cassette definition |
 | `position` | no | Reserved for future use (where the tape stands, in seconds from the start of the sound). Must be `0`, the default; any other value is an error |
 
 - The sound file is a WAV file of the tape's sound. Its sample format is
@@ -244,12 +256,17 @@ position: 0
   copies the definition and the sound file, and writes them side by
   side. A definition written by hand around an existing WAV may name it
   by any relative path.
+- Writers emit, in this order: the comment line `# Calc-U-1600 cassette`,
+  `format`, `format-version`, `cassette-name`, `description` (when set),
+  `template` (when true), `saved`, `audio`, `position`.
 - Several recordings on one tape are part of the sound, not of this
-  format. Which recorder connection a tape is used on belongs to the
-  machine, not to the tape.
-- A `.wav` file on its own is a program file, not a tape: a preset's
-  `program:` loads it into the program area. A tape definition is a
-  medium, inserted as a cassette.
+  format. Which recorder connection a cassette is used on belongs to the
+  machine, not to the cassette.
+- A `.wav` file on its own is a program file, not a cassette: a preset's
+  `program:` loads it into the program area. A cassette definition is a
+  medium, inserted into the cassette recorder.
+- Calc-U-1600 0.8.x and the first migration builds wrote `format:
+  cassette-tape`, `tape-name` and `.tape.yaml`; such a file is not read.
 
 ---
 
@@ -272,8 +289,10 @@ suspended or the product quits.
 ### 4.1 Keys
 
 ```yaml
+# Calc-U-59 TI-58C constant memory
 format: ti58c-constant-memory
 format-version: 1
+saved: 2026-11-17T10:00:00Z
 cue-card:
   title: Loan
   A: n
@@ -290,5 +309,6 @@ ram:
 | `format-version` | yes | `1` |
 | `memory-name` | no | A name tag, for a product that lists constant memory files |
 | `description` | no | One line |
+| `saved` | no | ISO-8601 UTC time of the last write, written each time. Informational |
 | `cue-card` | no | The cue card fitted when the file was written ([cue-card.md](cue-card.md), a stand-alone cue card). Absent: none fitted |
 | `ram` | yes | `encoding: register-hex` and `bytes`: the constant memory as its 64 raw registers, `R000`–`R063`; the registers H00 to H03 are `R060` to `R063`, and a register above `R063` is an error. A register that is not listed is zero; writers leave out registers that are zero. Byte order: [README.md §1.1](README.md#11-byte-blocks) |

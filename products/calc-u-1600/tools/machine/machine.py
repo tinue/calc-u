@@ -38,7 +38,7 @@ class Machine(Session):
 
     def card(self, slot: int) -> bytes:
         """The byte image of the module in a slot, now."""
-        path = self.workdir / f"slot-{slot}.card.yaml"
+        path = self.workdir / f"slot-{slot}.module.yaml"
         path.unlink(missing_ok=True)
         self.send(f"saveas {{ place: slot-{slot}, as: live, file: {path} }}")
         return read_card(path)
@@ -47,7 +47,7 @@ class Machine(Session):
         lines = ["format-version: 2", f"model: {self.model}"]
         for slot, name in self.slots.items():
             if name:
-                file = CARDS / f"{name}.card.yaml"
+                file = CARDS / f"{name}.module.yaml"
                 lines.append(f"slot-{slot}: {{ file: {file} }}" if file.exists() else f"slot-{slot}: {{ name: {name} }}")
         if self.host_drive:
             lines.append(f"host-drive: {{ folder: {Path(self.host_drive).resolve()} }}")

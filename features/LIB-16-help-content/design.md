@@ -241,13 +241,13 @@ folder):
 | `docs/PC1600-Host-Drive.md` | `09-host-drive.md` |
 | `docs/PC1500-Keyword-Modules.md` | `09-keyword-modules.md` |
 | (new, EC-3) | `09-models.md`: what Reset, Cold boot and a power cycle keep per model and module (C1600-1 AC-6; rows 1600-4, 1600-16, 1600-17) |
-| (new, AC-13) | `10-media-files.md`: the floppy disk file (LIB-7 AC-37) and the tape definition (LIB-7 AC-42); `10-reference.md`: the settings file of this product, links to the shared reference |
+| (new, AC-13) | `10-media-files.md`: the floppy disk file (LIB-7 AC-37) and the cassette definition (LIB-7 AC-42); `10-reference.md`: the settings file of this product, links to the shared reference |
 
 `09-product-topics.md` is the chapter's opening page that lists its
 files. AC-13's reference chapter: the preset format with the Sharp
 sections and the YAML of `debug:` and `bus-rom:` (C1600-4 AC-20) in
 `10-preset-sections.md`; the module definition; the floppy disk file
-and the tape definition; the settings file; the keyboard map (LIB-5
+and the cassette definition; the settings file; the keyboard map (LIB-5
 AC-29).
 
 **The old files.** The files of the table are moved with `git mv` into
@@ -256,8 +256,8 @@ AC-29).
 is changed in the same step: `products/calc-u-1600/README.md`,
 `vscode/calcu1600-debug/README.md`, `examples/README.md`,
 `examples/setup/README.md`, the comments in
-`examples/memory/memory-cards/*`, `examples/dwx/*.card.yaml` and the
-bundled module definitions (`frontends/qt6/resources/cards/*.card.yaml`),
+`examples/memory/memory-cards/*`, `examples/dwx/*.module.yaml` and the
+bundled module definitions (`frontends/qt6/resources/cards/*.module.yaml`),
 the core headers that name `Memory-Card-Definition-*.md` or
 `PC1600-Host-Drive.md` (`core/Connector/*.hpp`, `core/Preset/*.hpp`,
 `core/PC1500/PC1500PresetLoader.hpp`, `core/PC1600/PC1600PresetLoader.*`,

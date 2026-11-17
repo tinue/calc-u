@@ -31,7 +31,7 @@ shots:
       - key: mode
       - type: NEW0
       - key: mode
-      - select: media-picker-tape = Hello
+      - select: media-picker-cassette = Hello
       - type: CLOAD
       - run: 5
       - capture: { target: control-bar, file: 04-tape-loading.png, padding: 4 }

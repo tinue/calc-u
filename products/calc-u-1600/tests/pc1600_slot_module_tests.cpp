@@ -1,5 +1,5 @@
 // Headless C++ tests for real module definitions (the bundled
-// Qt6/resources/cards/*.card.yaml, as SoftwareDefinedCard) plugged into a
+// Qt6/resources/cards/*.module.yaml, as SoftwareDefinedCard) plugged into a
 // PC-1600 40-pin memory-slot connector (Core/Connector/MemorySlotConnector.hpp),
 // end to end through PC1600Machine. The card is the *same* definition the
 // PC-1500 side uses -- it wires in pin-for-pin and the connector drives the
@@ -61,7 +61,7 @@ void selectPageCBank(PC1600Machine& m, uint8_t bank) {
 }
 
 TEST(test_ce155_in_slot1_both_cpu_views) {
-    auto ce155 = card("ce155.card.yaml", CardHost::PC1600Slot1);
+    auto ce155 = card("ce155.module.yaml", CardHost::PC1600Slot1);
     if (!ce155) return;
     PC1600Machine m;
     m.attachSlot1Card(std::move(ce155));
@@ -212,7 +212,7 @@ TEST(test_slot2_plain_card_ignores_vertical_bank_through_connector) {
 TEST(test_boot_with_ce155_in_slot1_is_stable) {
     PC1600Machine m;
     SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
-    auto ce155 = card("ce155.card.yaml", CardHost::PC1600Slot1);
+    auto ce155 = card("ce155.module.yaml", CardHost::PC1600Slot1);
     if (!ce155) return;
     m.attachSlot1Card(std::move(ce155));
     m.allReset();
@@ -236,7 +236,7 @@ TEST(test_boot_with_ce155_in_slot1_is_stable) {
 // documented CE-159 figure -- Ref/PC-1600/PC-1600-Memory-Architecture.md), i.e. every
 // RAM-base/size work-area pointer moves by exactly 8192.
 TEST(test_ce155_contributes_full_8k_to_mem) {
-    auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce155.card.yaml");
+    auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce155.module.yaml");
     SKIP_UNLESS(m0 && m1, "PC-1600 ROM images not found");
     // The BASIC program start (C0C5H stock).
     CHECK(programStart(*m0) == 0xC0C5);
@@ -251,8 +251,8 @@ TEST(test_ce155_contributes_full_8k_to_mem) {
 // were taped off (electrically a CE-151). The probe picks 1BH with an empty
 // slot and 5BH for a CE-155.
 TEST(test_ce151_fills_b000_bfff_in_slot1) {
-    auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce151.card.yaml"),
-         m5 = bootWithCard(1, "ce155.card.yaml");
+    auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce151.module.yaml"),
+         m5 = bootWithCard(1, "ce155.module.yaml");
     SKIP_UNLESS(m0 && m1 && m5, "PC-1600 ROM images not found");
     CHECK(m0->memory().read(0xF08D) == 0x1B);
     CHECK(m1->memory().read(0xF08D) == 0x1A);
@@ -276,8 +276,8 @@ TEST(test_ce151_fills_b000_bfff_in_slot1) {
 // credits +16384 (MEM 11834 + 16384, Ref/PC-1600/PC-1600-Memory-Architecture.md),
 // BASIC RAM base C0C5H -> 80C5H.
 TEST(test_ce161_contributes_full_16k_in_both_slots) {
-    auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce161.card.yaml"),
-         m2 = bootWithCard(2, "ce161.card.yaml");
+    auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce161.module.yaml"),
+         m2 = bootWithCard(2, "ce161.module.yaml");
     SKIP_UNLESS(m0 && m1 && m2, "PC-1600 ROM images not found");
     CHECK(programStart(*m1) == 0x80C5);
     CHECK(programStart(*m2) == 0x80C5);
@@ -293,7 +293,7 @@ TEST(test_ce161_contributes_full_16k_in_both_slots) {
 // 1 S3, at B000-B7FF once the boot probe has set Port 3CH = 5BH for a full
 // 16KB module), bank number from address bits A0-A2 of the strobing write.
 TEST(test_ce1638_in_slot1_banked_window) {
-    auto ce1638 = card("ce1638.card.yaml", CardHost::PC1600Slot1);
+    auto ce1638 = card("ce1638.module.yaml", CardHost::PC1600Slot1);
     if (!ce1638) return;
     PC1600Machine m;
     m.attachSlot1Card(std::move(ce1638));
@@ -332,7 +332,7 @@ TEST(test_ce1638_in_slot1_banked_window) {
 // slot hit the same 0x555/0x2AA the firmware uses at &1555/&2AAA on a
 // PC-1500.
 TEST(test_ce163f_in_slot1_ram_and_flash_protocol) {
-    auto ce163f = card("ce163f.card.yaml", CardHost::PC1600Slot1);
+    auto ce163f = card("ce163f.module.yaml", CardHost::PC1600Slot1);
     if (!ce163f) return;
     PC1600Machine m;
     m.attachSlot1Card(std::move(ce163f));
@@ -382,8 +382,8 @@ TEST(test_trigger_latch_modules_in_slot2_contribute_full_16k) {
         return m;
     };
     auto m0 = boot(nullptr);
-    auto c1 = card("ce1638.card.yaml", CardHost::PC1600Slot2);
-    auto c2 = card("ce163f.card.yaml", CardHost::PC1600Slot2);
+    auto c1 = card("ce1638.module.yaml", CardHost::PC1600Slot2);
+    auto c2 = card("ce163f.module.yaml", CardHost::PC1600Slot2);
     if (!c1 || !c2) return;
     auto m1 = boot(std::move(c1));
     auto m2 = boot(std::move(c2));
@@ -404,7 +404,7 @@ TEST(test_trigger_latch_modules_in_slot2_contribute_full_16k) {
 // statement's handover, with the Z-80's 31H = 26H already in place. XPOKE
 // lands in Slot 2 either way, so it carries the result back to the test.
 TEST(test_mode1_xpeek_maps_program_bank_via_lh5803_p_bank) {
-    auto ce163f = card("ce163f.card.yaml", CardHost::PC1600Slot2);
+    auto ce163f = card("ce163f.module.yaml", CardHost::PC1600Slot2);
     if (!ce163f) return;
     PC1600Machine m;
     m.attachSlot2Card(std::move(ce163f));

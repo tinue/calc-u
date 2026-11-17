@@ -72,7 +72,7 @@ const std::vector<Row> kAc12 = {
 };
 // AC-14: the CE-502B's module definition, md5 recorded when it was moved
 // into PC-1500-ROM (roms/README.md).
-constexpr const char* kCe502bFile = "CE-502B.card.yaml";
+constexpr const char* kCe502bFile = "CE-502B.module.yaml";
 constexpr const char* kCe502bMd5 = "7c7af4b7adab69b5e75297bc1c3d7279";
 
 using calcu::testing::readText;
@@ -271,9 +271,9 @@ TEST(lib12_ac14_ce502b_definition_from_the_set) {
 TEST(lib12_ac14_ce502b_not_in_qt6_resources) {
     // The definition left the source repository's Qt6 resources: nothing
     // there names it, and the card scans pass over the ROM set's file.
-    CHECK(!fs::exists("frontends/qt6/resources/cards/ce502b.card.yaml"));
+    CHECK(!fs::exists("frontends/qt6/resources/cards/ce502b.module.yaml"));
     const std::string ignore = readText(".gitignore");
-    CHECK(ignore.find("ce502b.card.yaml") == std::string::npos);
+    CHECK(ignore.find("ce502b.module.yaml") == std::string::npos);
     CHECK(sharp::isFullSetFile(kCe502bFile));
     SKIP_UNLESS(testRomSet() != nullptr, "no ROM set in roms/");
     for (const auto& e : scanMemoryCardDirectory("roms", nullptr)) CHECK(e.moduleName != "CE-502B");

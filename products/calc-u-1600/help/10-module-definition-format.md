@@ -1,6 +1,6 @@
 # Module definition format
 
-A **module definition** (`.card.yaml`) describes one memory module: its
+A **module definition** (`.module.yaml`) describes one memory module: its
 memory, how it is addressed and the hosts it fits. The bundled memory
 modules are module definitions, and so is a battery-backed module you
 saved with Name & Save. [Module definitions](09-module-definitions.md)
@@ -9,7 +9,9 @@ is written, in its current version, `format-version: 1`.
 
 ## 0. The file
 
-- **YAML**, UTF-8, one module per file, extension `.card.yaml`. A
+- **YAML**, UTF-8, one module per file, extension `.module.yaml` (a
+  `.card.yaml` of Calc-U-1600 0.8 is not read: rename it and add
+  `format: memory-module`). A
   definition is written and reviewed by hand, so it has comments (`#`
   starts one anywhere).
 - Integers are decimal (`8192`) or hex with `0x` (`0x2000`); hex is usual
@@ -27,6 +29,7 @@ is written, in its current version, `format-version: 1`.
 
 | Key | Required | Value |
 |---|---|---|
+| `format` | no | `memory-module`. Calc-U-1600 writes it into every module it saves; a file without it is read too, one with another value is refused. |
 | `format-version` | yes | Integer; this document is version **1**. |
 | `module-name` | yes | Short identifier for the module (e.g. `CE-155`, `CE-1600M`). Shown as it is in the module picker, and what a preset's `slot-N: { name: … }` resolves against (§8). Unique within a folder of modules. |
 | `description` | no | One line about the module (e.g. `"8 KB static RAM"`), the picker's tooltip for it. A saved instance keeps its template's. |
@@ -35,6 +38,7 @@ is written, in its current version, `format-version: 1`.
 | `regions` | yes | List of one or more region maps (§2). |
 | `battery` | no | `true` for battery-backed hardware. A battery-backed template offers Name & Save, which makes the module a medium ([Media files](10-media-files.md#battery-backed-module)). |
 | `template` | no | `true` marks a read-only **template** (§8): the product never writes the file, wherever it lies. Absent or `false` = an instance, autosaved in place. Never written into a saved instance. |
+| `saved` | no | The time of the last write (UTC, ISO 8601), written into every saved instance; for information. |
 | `notes` | no | Free text; ignored by the loader. |
 
 The reset-on-load behaviour is a loader invariant,
@@ -317,15 +321,15 @@ bytes: |
 
 | File | Module | Shows |
 |---|---|---|
-| `ce151.card.yaml` | CE-151, 4 KB | Two bare-strobe `span` groups (`S1`, `S2`), one 2 KB chip each, no on-module decode (Service Manual schematic 5-3); PC-1500/1500A and PC-1600 Slot 1. |
-| `ce161.card.yaml` | CE-161, 16 KB | One bare `Y0` group spanning the whole 16 KB window; battery-backed with a `write-protect:` switch ([CE-161 program module](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/background/CE-161-Program-Module.md)); PC-1500/1500A and both PC-1600 slots. |
-| `ce155.card.yaml` | CE-155, 8 KB | one `address-bits` group (the on-module `AD11–AD13` decoder) OR'd with three bare-strobe `span` groups; an author-declared host list covering PC-1500 and PC-1600 Slot 1. |
-| `ce1600m.card.yaml` | CE-1600M, 32 KB | `PVOUT` folded into addressing as a half-select line — unbanked despite two physical halves; one Slot-1-terminology file declared for both PC-1600 slots (`RAM2` resolves to the pin-4 enable on both). |
-| `ce1601m.card.yaml` | CE-1601M, 64 KB | Trigger-based vertical banking — `trigger: { io-port: 0x28 }`, `source-domain: data` (the byte written by `OUT (28H)`); `bank-window` nesting the `PVOUT` half-select. |
-| `superram.card.yaml` | superRAM, 512 KB | The CE-1601M mechanism with a 4-bit (`D0`–`D3`) `OUT (28H)` latch and all 16 × 32 KB vertical banks fitted; PC-1600 Slot 2 only. |
-| `ce1638.card.yaml` | CE-1638, 128 KB | A single-kind banked region — trigger-based, address-domain, 8 banks sampling `A0`-`A2`. |
-| `CE-502B.card.yaml` (comes with the ROMs) | CE-502B, 16 KB ROM | `content: rom` with one `addressed-hex` block covering the whole region: a Sharp program module (ROM header at &0000, BASIC program from &00C5) on Y0. |
-| `ce163f.card.yaml` | CE-163F, 256 KB | `content: by-bank:` (§4) splitting one 16-bank region into Regular (0-7) and Flash (8-15) content, and a `flash` `protocol:` block including `command-address-mask` for its real low-11-bit command decode quirk. |
+| `ce151.module.yaml` | CE-151, 4 KB | Two bare-strobe `span` groups (`S1`, `S2`), one 2 KB chip each, no on-module decode (Service Manual schematic 5-3); PC-1500/1500A and PC-1600 Slot 1. |
+| `ce161.module.yaml` | CE-161, 16 KB | One bare `Y0` group spanning the whole 16 KB window; battery-backed with a `write-protect:` switch ([CE-161 program module](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/background/CE-161-Program-Module.md)); PC-1500/1500A and both PC-1600 slots. |
+| `ce155.module.yaml` | CE-155, 8 KB | one `address-bits` group (the on-module `AD11–AD13` decoder) OR'd with three bare-strobe `span` groups; an author-declared host list covering PC-1500 and PC-1600 Slot 1. |
+| `ce1600m.module.yaml` | CE-1600M, 32 KB | `PVOUT` folded into addressing as a half-select line — unbanked despite two physical halves; one Slot-1-terminology file declared for both PC-1600 slots (`RAM2` resolves to the pin-4 enable on both). |
+| `ce1601m.module.yaml` | CE-1601M, 64 KB | Trigger-based vertical banking — `trigger: { io-port: 0x28 }`, `source-domain: data` (the byte written by `OUT (28H)`); `bank-window` nesting the `PVOUT` half-select. |
+| `superram.module.yaml` | superRAM, 512 KB | The CE-1601M mechanism with a 4-bit (`D0`–`D3`) `OUT (28H)` latch and all 16 × 32 KB vertical banks fitted; PC-1600 Slot 2 only. |
+| `ce1638.module.yaml` | CE-1638, 128 KB | A single-kind banked region — trigger-based, address-domain, 8 banks sampling `A0`-`A2`. |
+| `CE-502B.module.yaml` (comes with the ROMs) | CE-502B, 16 KB ROM | `content: rom` with one `addressed-hex` block covering the whole region: a Sharp program module (ROM header at &0000, BASIC program from &00C5) on Y0. |
+| `ce163f.module.yaml` | CE-163F, 256 KB | `content: by-bank:` (§4) splitting one 16-bank region into Regular (0-7) and Flash (8-15) content, and a `flash` `protocol:` block including `command-address-mask` for its real low-11-bit command decode quirk. |
 
 ---
 
@@ -340,7 +344,7 @@ slot-1: { name: CE-155 }
 
 # PC-1600: two slots
 slot-1: { name: CE-1600M }
-slot-2: { file: cards/prototype.card.yaml }   # relative to the preset
+slot-2: { file: cards/prototype.module.yaml }   # relative to the preset
 ```
 
 - `name:` finds the definition whose `module-name` is that name: the
@@ -355,7 +359,7 @@ slot-2: { file: cards/prototype.card.yaml }   # relative to the preset
 developed, its bytes come from the build, not from the module definition:
 
 ```yaml
-slot-1: { file: module.card.yaml }      # decode, banking, the ROM's size
+slot-1: { file: module.module.yaml }      # decode, banking, the ROM's size
 slot-1-rom: { file: build/module.bin }  # what the ROM holds
 ```
 

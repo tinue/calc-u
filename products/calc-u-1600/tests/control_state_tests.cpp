@@ -127,7 +127,7 @@ TEST(lib4_ac16_ac17_pc1500_models_variants_and_fields) {
     s = stateOf(f);
     CHECK(plugged(*s, "printer", "CE-150") && plugged(*s, "interface", "CE-158"));   // EC-1
     CHECK(s->panels.size() == 1 && s->panels[0].owner && s->panels[0].owner->value == "CE-150");
-    CHECK(s->mediaPlaces.size() == 1 && s->mediaPlaces[0].id.value == "cassette" && s->mediaPlaces[0].owner &&
+    CHECK(s->mediaPlaces.size() == 1 && s->mediaPlaces[0].id.value == "cassette-recorder" && s->mediaPlaces[0].owner &&
           s->mediaPlaces[0].owner->value == "CE-150");
     CHECK(flag(product(*s, cu1600::kCe158PrinterPanelEntry), "shown"));
     // AC-16 on the PC-1500A: its one variant.
@@ -170,7 +170,7 @@ TEST(lib4_ac16_ac17_pc1600_fields_ce1600p_variants_and_next_variant) {
     CHECK(flag(product(*s, cu1600::kDiskControlsEntry), "available"));
     std::vector<std::string> media;
     for (const auto& m : s->mediaPlaces) media.push_back(m.id.value + "@" + (m.owner ? m.owner->value : ""));
-    CHECK(media == (std::vector<std::string>{"cassette@CE-1600P", "floppy@CE-1600P"}));
+    CHECK(media == (std::vector<std::string>{"cassette-recorder@CE-1600P", "floppy@CE-1600P"}));
     CHECK(s->panels.size() == 1 && s->panels[0].owner && s->panels[0].owner->value == "CE-1600P");
     // The CE-158 beside the CE-1600P is refused by the machine (ledger 1600-22).
     const control::PlaceEntry* iface = s->place(path("interface"));

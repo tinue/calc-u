@@ -32,7 +32,7 @@
 //   calcuSendAsking(send, ask, command, args)   the reply of a command that may
 //                                ask first: on yes sent again with confirmed: true
 //   calcuMediaPlace(media, word) the place of the topic `media` named `word`
-//                                ("slot-1", "card-reader", "tape"), or null
+//                                ("slot-1", "card-reader", "cassette"), or null
 
 const CALCU_ASKS = "asks: ";
 const CALCU_MEDIA_PROTECT = "Write-protect (switch to read-only, can't be undone)";

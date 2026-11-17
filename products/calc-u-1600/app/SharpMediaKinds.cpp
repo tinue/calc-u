@@ -39,7 +39,7 @@ std::string yamlQuoted(const std::string& s) {
     return std::string(1, q) + s + q;
 }
 
-// ── Battery-backed module (`.card.yaml`, version 1; AC-37, AC-41) ───────
+// ── Battery-backed module (`.module.yaml`, version 1; AC-37, AC-41) ───────
 
 bool switchOf(const MemoryCardDefinition& d, bool* on) {
     bool has = false;
@@ -169,7 +169,7 @@ public:
     }
 };
 
-// ── Cassette tape (`.tape.yaml`, version 1, with its WAV; AC-42) ────────
+// ── Cassette (`.cassette.yaml`, version 1, with its WAV; AC-42) ──────────────
 
 struct TapeDefinition {
     std::string name, description, audio;
@@ -180,17 +180,17 @@ std::optional<TapeDefinition> tapeDefinition(const std::string& text, std::strin
     if (!calcu::formats::parseYaml(text, &root, error)) return std::nullopt;
     std::string format;
     const auto* f = root.find("format");
-    if (!root.isMap() || !f || !f->asString(&format, error) || format != "cassette-tape") {
-        *error = "not a tape definition (expected 'format: cassette-tape')";
+    if (!root.isMap() || !f || !f->asString(&format, error) || format != "cassette") {
+        *error = "not a cassette definition (expected 'format: cassette')";
         return std::nullopt;
     }
-    if (!calcu::formats::requireFormatVersion(root, 1, "tape", error)) return std::nullopt;
-    if (!root.requireOnlyKeys({"format", "format-version", "tape-name", "description", "template", "audio", "position"}, error))
+    if (!calcu::formats::requireFormatVersion(root, 1, "cassette definition", error)) return std::nullopt;
+    if (!root.requireOnlyKeys({"format", "format-version", "cassette-name", "description", "template", "saved", "audio", "position"}, error))
         return std::nullopt;
     TapeDefinition t;
-    const auto* n = root.find("tape-name");
+    const auto* n = root.find("cassette-name");
     if (!n || !n->asString(&t.name, error) || t.name.empty()) {
-        *error = "missing 'tape-name'";
+        *error = "missing 'cassette-name'";
         return std::nullopt;
     }
     if (const auto* d = root.find("description"); d && !d->asString(&t.description, error)) return std::nullopt;
@@ -236,7 +236,7 @@ public:
     std::vector<FileOut> write(const Write& w, std::string& problem) const override {
         const auto* tape = dynamic_cast<const sharp::TapeContent*>(w.content.get());
         if (!tape) {
-            problem = "It is not a cassette tape.";
+            problem = "It is not a cassette.";
             return {};
         }
         // D-26: a definition written again keeps its sound file's path; a
@@ -249,10 +249,11 @@ public:
                 if (t->name == w.name) audio = t->audio;
             }
         }
-        std::string text = "# Calc-U-1600 cassette tape\nformat: cassette-tape\nformat-version: 1\n";
-        text += "tape-name: \"" + w.name + "\"\n";
+        std::string text = "# Calc-U-1600 cassette\nformat: cassette\nformat-version: 1\n";
+        text += "cassette-name: \"" + w.name + "\"\n";
         if (!description.empty()) text += "description: " + yamlQuoted(description) + "\n";
         if (w.asTemplate) text += "template: true\n";
+        if (!w.savedAt.empty()) text += "saved: " + w.savedAt + "\n";
         text += "audio: { file: " + yamlQuoted(audio) + " }\nposition: 0\n";
         return {FileOut{"", text}, FileOut{audio, std::string(tape->wav.begin(), tape->wav.end())}};
     }
@@ -280,7 +281,7 @@ std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::ma
     module.bundledFolder = bundledDir;
     module.codec = cardCodecs.back().get();
     module.formatName = "The module definition format";
-    module.describedAt = "the Memory Card Definition Format";
+    module.describedAt = "the module definition format";
     module.currentVersion = static_cast<int>(kCardFormatVersion);
     module.heldBy = media::HeldBy::ModuleSlot;
     module.isMedium = [](const calcu::machine::PeripheralDescriptor& d) {
@@ -328,16 +329,16 @@ std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::ma
 
     media::KindDecl tape;
     tape.id = kTapeKind;
-    tape.label = "cassette tape";
+    tape.label = "cassette";
     tape.suffix = kTapeFileSuffix;
     tape.companionSuffixes = {".wav"};   // its sound, beside it (LIB-7 AC-43)
-    tape.folder = calcu::settings::Folder::Tapes;
+    tape.folder = calcu::settings::Folder::Cassettes;
     tape.bundledFolder = bundledDir;
     tape.codec = &tapeCodec;
-    tape.formatName = "The tape definition format";
-    tape.describedAt = "the User Guide, \"Cassette tapes\"";
+    tape.formatName = "The cassette definition format";
+    tape.describedAt = "the User Guide, \"Cassettes\"";
     tape.currentVersion = 1;
-    tape.words = media::PresetWords{"tape", "", "tape", "", false};
+    tape.words = media::PresetWords{"cassette", "", "cassette", "", false};
 
     return {module, floppy, tape};
 }

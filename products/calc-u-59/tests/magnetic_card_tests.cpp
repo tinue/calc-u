@@ -78,13 +78,21 @@ RegisterNibbles value(const char* text) { return *parseDecimal(text); }
 
 // ── T1 Codec, read ───────────────────────────────────────────────────────────
 
+// LIB-7 AC-49 (ledger 59-59): the card file's comment line and `saved:`.
+TEST(lib7_ac49_magnetic_card_comment_and_saved) {
+    const std::string text = fileOf(*card(bank(1, 0x12), std::nullopt), "Mine");
+    CHECK(text.rfind("# Calc-U-59 magnetic card\nformat: ti59-magnetic-card\n", 0) == 0);
+    CHECK(text.find("\nsaved: 2026-11-16T10:00:00Z\n") != std::string::npos);
+    CHECK(read(text).status == ReadOutcome::Status::Read);
+}
+
 TEST(c59_7_ac2_reads_format_3_both_sides_and_one_side) {
     const auto both = card(bank(1, 0x12), bank(2, 0x34, false));
     CueCardContent cue;
     cue.title = "My Program";
     cue.labels[5] = "run";
     const std::string text = fileOf(*both, "My Program", "Bank 1 and 2", false, cue);
-    CHECK(text.rfind("format: ti59-magnetic-card\nformat-version: 3\ncard-name: \"My Program\"\n", 0) == 0);
+    CHECK(text.rfind("# Calc-U-59 magnetic card\nformat: ti59-magnetic-card\nformat-version: 3\ncard-name: \"My Program\"\n", 0) == 0);
     CHECK(text.find("    encoding: register-hex\n    bytes: |\n      R000: 12 12") != std::string::npos);
     CHECK(text.find("      R030: 34 34") != std::string::npos);   // the row labels of bank 2
     const ReadOutcome r = read(text);

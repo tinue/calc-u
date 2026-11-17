@@ -80,7 +80,7 @@ std::string SettingsPart::inUse(const KeyDecl& d) const {
     if (setup_.paths) {
         const auto& p = *setup_.paths;
         if (d.section == "storage" && d.key == "save-folder") return p.saveFolder();
-        if (d.section == "storage" && d.key == "tape-folder") return p.tapeFolder();
+        if (d.section == "storage" && d.key == "cassette-folder") return p.cassetteFolder();
         if (d.section == "trace" && d.key == "folder") return p.traceFolder().value_or("");
         if (d.section == "serial" && d.key == "link-folder") return p.serialLinkFolder().value_or("");
     }

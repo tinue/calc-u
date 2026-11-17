@@ -15,7 +15,7 @@
 // The one general-purpose module, configured per-target via a table: an
 // ExpansionCard whose behaviour comes entirely from a parsed
 // MemoryCardDefinition (help/10-module-definition-format.md) -- every
-// memory module in this project is one of these, built from a .card.yaml.
+// memory module in this project is one of these, built from a .module.yaml.
 //
 // Regular, Flash (a JEDEC-style flash command decoder, see flashWrite())
 // or ROM content, single-kind or `by-bank`-split; Unbanked or

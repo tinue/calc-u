@@ -77,11 +77,11 @@ test('lib14_ac36 the bar per model', async ({ page }) => {
   await expect(page.locator(c('bar-slot-slot-2'))).toHaveCount(0);
   await expect(page.locator(c('bar-place-printer'))).toHaveText('CE-150');
   await expect(page.locator(c('bar-place-interface'))).toHaveText('CE-158');
-  for (const none of ['bar-place-host-drive', 'bar-place-bus-rom', 'bar-disk', 'bar-media-cassette'])
+  for (const none of ['bar-place-host-drive', 'bar-place-bus-rom', 'bar-disk', 'bar-media-cassette-recorder'])
     await expect(page.locator(c(none))).toHaveCount(0);
   await page.locator(c('bar-place-printer')).click();
   await expect(page.locator(c('bar-place-printer'))).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
-  await expect(page.locator(c('bar-media-cassette'))).toBeVisible();
+  await expect(page.locator(c('bar-media-cassette-recorder'))).toBeVisible();
   // PC-1600: "1:" and "2:", a printer picker with None, CE-150, CE-1600P,
   // the CE-158's button, the disk controls disabled with the reason.
   await h.pickModel(page, 'PC-1600');
@@ -92,10 +92,10 @@ test('lib14_ac36 the bar per model', async ({ page }) => {
   const fieldsetDisabled = (n) => page.locator(c(n)).evaluate((e) => e.disabled);
   expect(await fieldsetDisabled('bar-disk')).toBe(true);
   await expect(page.locator(c('bar-disk'))).toHaveAttribute('title', 'The disk drive is in the CE-1600P.');
-  await expect(page.locator(c('bar-media-cassette'))).toHaveCount(0);
+  await expect(page.locator(c('bar-media-cassette-recorder'))).toHaveCount(0);
   await page.locator(c('bar-place-printer')).selectOption({ label: 'CE-1600P' });
   await expect.poll(() => fieldsetDisabled('bar-disk'), { timeout: 30000 }).toBe(false);
-  await expect(page.locator(c('bar-media-cassette'))).toBeVisible();
+  await expect(page.locator(c('bar-media-cassette-recorder'))).toBeVisible();
   // The CE-158 beside the CE-1600P: refused, with the machine's reason (AC-5).
   await expect(page.locator(c('bar-place-interface'))).toHaveAttribute('aria-disabled', 'true');
 });
@@ -219,7 +219,7 @@ test('lib4_ac20 peripheral buttons, disk picker and tape controls disabled while
       const q = (n) => document.querySelector(`[data-calcu="${n}"]`);
       const disabled = (n) => { const e = q(n); return e ? (e.disabled || e.getAttribute('aria-disabled') === 'true') : null; };
       window.__whileBusy.push({ printer: disabled('bar-place-printer'), iface: disabled('bar-place-interface'),
-        disk: disabled('bar-disk'), tape: q('bar-media-cassette') ? !!q('bar-media-cassette').querySelector('fieldset:disabled') : null,
+        disk: disabled('bar-disk'), tape: q('bar-media-cassette-recorder') ? !!q('bar-media-cassette-recorder').querySelector('fieldset:disabled') : null,
         model: disabled('bar-model') });
     };
     setInterval(look, 50);

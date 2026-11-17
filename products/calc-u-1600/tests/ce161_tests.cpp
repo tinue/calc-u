@@ -1,5 +1,5 @@
 // Headless C++ tests for the CE-161 (16 KB) memory module, run against the
-// bundled definition Qt6/resources/cards/ce161.card.yaml
+// bundled definition Qt6/resources/cards/ce161.module.yaml
 // (SoftwareDefinedCard). Same no-framework, assert-and-tally style as the
 // other Core tests. The PC-1600 slot cases are in
 // pc1600_slot_module_tests.cpp.
@@ -25,9 +25,9 @@ PinState makePins(uint16_t addr, bool y0) {
 }
 
 #define CE161_OR_FAIL(card, host)                                                         \
-    auto card = bundledCard("ce161.card.yaml", host);                                     \
+    auto card = bundledCard("ce161.module.yaml", host);                                     \
     if (!card) {                                                                          \
-        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce161.card.yaml missing or unloadable\n", __func__); \
+        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce161.module.yaml missing or unloadable\n", __func__); \
         return;                                                                           \
     }
 
@@ -71,10 +71,10 @@ TEST(test_ce161_end_to_end_via_machine) {
 }
 
 TEST(test_ce161_hosts) {
-    CHECK(bundledCard("ce161.card.yaml", CardHost::PC1500) != nullptr);
-    CHECK(bundledCard("ce161.card.yaml", CardHost::PC1500A) != nullptr);
-    CHECK(bundledCard("ce161.card.yaml", CardHost::PC1600Slot1) != nullptr);
-    CHECK(bundledCard("ce161.card.yaml", CardHost::PC1600Slot2) != nullptr);
+    CHECK(bundledCard("ce161.module.yaml", CardHost::PC1500) != nullptr);
+    CHECK(bundledCard("ce161.module.yaml", CardHost::PC1500A) != nullptr);
+    CHECK(bundledCard("ce161.module.yaml", CardHost::PC1600Slot1) != nullptr);
+    CHECK(bundledCard("ce161.module.yaml", CardHost::PC1600Slot2) != nullptr);
 }
 
 // The Instruction Manual's "exclusive readout" procedure against the real

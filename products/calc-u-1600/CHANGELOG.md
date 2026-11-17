@@ -30,6 +30,16 @@
   the built-in default machine and a notice).
 - **Bundled examples:** the desktop and Web versions bundle exactly the
   files `examples/bundle.yaml` lists, not whole folders.
+- **Module definitions are `.module.yaml`** with `format: memory-module`;
+  a `.card.yaml` is not read (rename it and add the line). The bundled
+  and example modules and the CE-502B's file in `roms/`
+  (`CE-502B.module.yaml`, fetched by `roms/fetch_roms.sh`) are renamed. A
+  saved module carries `saved:` with the time of the write.
+- **Cassettes:** a cassette is a `.cassette.yaml` with `format: cassette`
+  and `cassette-name:` (a `.tape.yaml` is not read); the preset step is
+  `cassette:` and `eject: cassette`; the folder is `Cassettes` in the save
+  folder (`[storage] cassette-folder`); the control bar and its dialogs
+  say "Cassette".
 
 ## [0.8.1] - 2026-11-14
 

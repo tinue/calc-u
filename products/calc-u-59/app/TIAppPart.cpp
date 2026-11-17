@@ -7,6 +7,7 @@
 #include "TITyping.hpp"
 #include "../core/TIDebugging.hpp"
 #include "files/Files.hpp"
+#include "media/Writer.hpp"
 #include "presets/PresetsPart.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/Listener.hpp"
@@ -58,7 +59,9 @@ TIDebuggerOptions debuggerOptions(TIDebugPart& panel) {
 TIAppPart::TIAppPart(TIAppSetup setup)
     : m_setup(std::move(setup)),
       m_files(m_setup.paths->saveFolder(), m_setup.files),
-      m_keeper(m_files, [this](std::string sentence) { if (m_ctx) m_ctx->notice(std::move(sentence)); }),
+      m_keeper(
+          m_files, [this](std::string sentence) { if (m_ctx) m_ctx->notice(std::move(sentence)); },
+          [this] { return m_ctx ? calcu::media::isoTime(m_ctx->hostTime()) : std::string(); }),
       m_machines([this] { return m_keeper.contentForBuild(); }),
       m_rules(TIKeywordSetup{[this](sessions::SessionContext& c, const CueCardContent& card) {
           m_ctx = &c;

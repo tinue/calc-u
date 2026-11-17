@@ -31,7 +31,7 @@ An entry is a mapping:
 | Key | Required | Meaning |
 |---|---|---|
 | `preset` | yes | The preset, as a reference that accepts `file:` only (README §3) |
-| `files` | no | Every other file the preset needs, each a reference that accepts `file:` only: a BASIC or program file, a machine-code file, a magnetic card, a floppy disk, a tape and its WAV, a module definition |
+| `files` | no | Every other file the preset needs, each a reference that accepts `file:` only: a BASIC or program file, a machine-code file, a magnetic card, a floppy disk, a cassette and its WAV, a module definition |
 
 - A path is relative to the folder of the bundle file and stays inside
   it.

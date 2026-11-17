@@ -40,7 +40,7 @@ public:
     std::vector<std::uint8_t> image;
 };
 
-// A cassette tape: the bytes of its sound file (WAV). A tape without a
+// A cassette: the bytes of its tape's sound file (WAV). A tape without a
 // sample is blank: inserted, it records (today's "new tape to record");
 // one with samples plays.
 class TapeContent final : public calcu::machine::ProductData {
@@ -80,13 +80,13 @@ private:
     Drive m_drive;
 };
 
-// The cassette recorder of a CE-150 or CE-1600P: the media place `cassette`.
+// The cassette recorder of a CE-150 or CE-1600P: the media place `cassette-recorder`.
 // Recording onto a blank tape keeps the sound in the place; it is written
 // each time the motor stops and when the tape leaves (writesWhenAsked, D-11).
 class CassettePlace final : public calcu::media::MediaPlace {
 public:
     explicit CassettePlace(TapeDeck& deck) : m_deck(deck) {}
-    calcu::machine::MediaPlaceId id() const override { return calcu::machine::MediaPlaceId{"cassette"}; }
+    calcu::machine::MediaPlaceId id() const override { return calcu::machine::MediaPlaceId{"cassette-recorder"}; }
     Inserted insert(calcu::media::Content, int side) override;
     calcu::media::Content eject() override;
     std::optional<int> side() const override;

@@ -163,7 +163,7 @@ function LoadedDialog({ result, done }) {
 
 // Name & Save (LIB-7 AC-16, AC-40; design D-25): the library's dialog with
 // today's prompt ("Instance name:" with the write-protect switch where the
-// module has one still off, "Disk name:", "Tape name:"); a name an instance
+// module has one still off, "Disk name:", "Cassette name:"); a name an instance
 // has asks before it is replaced.
 function NameAndSaveDialog({ shell, place, prompt, done }) {
   return (

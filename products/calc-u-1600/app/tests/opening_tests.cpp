@@ -212,13 +212,13 @@ TEST(lib13_ac17_preset_extensions_media_suffixes) {
     const opening::OpenSetup& s = b.f.part().openPart().setup();
     CHECK_EQ(s.productName, std::string("Calc-U-1600"));
     CHECK(s.presets && s.presets->extensions() == std::vector<std::string>({".pc1500", ".pc1500a", ".pc1600"}));
-    CHECK(s.media && s.media->suffixes() == std::vector<std::string>({".card.yaml", ".floppy.yaml", ".tape.yaml"}));
+    CHECK(s.media && s.media->suffixes() == std::vector<std::string>({".module.yaml", ".floppy.yaml", ".cassette.yaml"}));
     // A preset by its extension in any case, whatever it holds (EC-1).
     CHECK_EQ(takenAs(b.f, text("10 PRINT 1\n"), "Hanoi.PC1500A"), std::string("preset"));
     CHECK_EQ(takenAs(b.f, Bytes{}, "x.pc1600"), std::string("preset"));
     CHECK_EQ(takenAs(b.f, text("anything"), "Mine.FLOPPY.yaml"), std::string("medium"));
-    CHECK_EQ(takenAs(b.f, text("anything"), "x.card.yaml"), std::string("medium"));
-    CHECK_EQ(takenAs(b.f, text("anything"), "x.tape.yaml"), std::string("medium"));
+    CHECK_EQ(takenAs(b.f, text("anything"), "x.module.yaml"), std::string("medium"));
+    CHECK_EQ(takenAs(b.f, text("anything"), "x.cassette.yaml"), std::string("medium"));
 }
 
 TEST(lib13_ac17_kinds_asked_basic_then_code) {
@@ -412,7 +412,7 @@ TEST(lib13_ac19_module_one_place_plugged_pc1500_two_places_refused_pc1600) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1500A"));
-    const sessions::ReplyMessage one = openFile(f, onDisk(fs::path(kCards) / "ce161.card.yaml"), Way::Drop);
+    const sessions::ReplyMessage one = openFile(f, onDisk(fs::path(kCards) / "ce161.module.yaml"), Way::Drop);
     CHECK(one.done);
     CHECK(replyOf(one) && replyOf(one)->as == opening::OpenedAs::Medium);
     const calcu::media::Binding* held = f.held(replyOf(one) ? replyOf(one)->detail : std::string());
@@ -420,7 +420,7 @@ TEST(lib13_ac19_module_one_place_plugged_pc1500_two_places_refused_pc1600) {
 
     CHECK(f.model("PC-1600"));
     (void)f.notices();
-    const sessions::ReplyMessage two = openFile(f, onDisk(fs::path(kCards) / "ce1600m.card.yaml"), Way::Drop);
+    const sessions::ReplyMessage two = openFile(f, onDisk(fs::path(kCards) / "ce1600m.module.yaml"), Way::Drop);
     CHECK(!two.done);
     CHECK(contains(f.notices(), "fits more than one place"));
 }
@@ -430,10 +430,10 @@ TEST(lib13_ac19_tape_definition_into_cassette_wav_is_never_a_tape) {
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1500A"));
     CHECK(f.attach("CE-150"));
-    const sessions::ReplyMessage r = openFile(f, onDisk(fs::path(kCards) / "empty.tape.yaml"), Way::Drop);
+    const sessions::ReplyMessage r = openFile(f, onDisk(fs::path(kCards) / "empty.cassette.yaml"), Way::Drop);
     CHECK(r.done);
-    CHECK(replyOf(r) && replyOf(r)->detail == "tape");
-    CHECK(f.held("tape") != nullptr);
+    CHECK(replyOf(r) && replyOf(r)->detail == "cassette");
+    CHECK(f.held("cassette") != nullptr);
     // A WAV is a program file (docs/formats/media.md §3).
     const Bytes wav = fileBytes("tests/fixtures/tape/pc1500_tape.wav");
     if (!wav.empty()) {
@@ -476,7 +476,7 @@ TEST(lib13_ec7_open_by_any_way_keeps_dialog_folders) {
     std::ofstream(dir / "p.bas", std::ios::binary) << "10 PRINT 1\n";
     for (Way w : {Way::Drop, Way::OpenWith, Way::Start, Way::Dialog}) {
         CHECK(openFile(f, onDisk(dir / "p.bas"), w).done);
-        CHECK(openFile(f, onDisk(fs::path(kCards) / "ce161.card.yaml"), w).done);
+        CHECK(openFile(f, onDisk(fs::path(kCards) / "ce161.module.yaml"), w).done);
     }
     CHECK_EQ(f.settings.file().text("folders", openFolderKind(OpenFolder::Samples)), std::string("/before/presets"));
     CHECK_EQ(f.settings.file().text("folders", openFolderKind(OpenFolder::Basic)), std::string("/before/basic"));

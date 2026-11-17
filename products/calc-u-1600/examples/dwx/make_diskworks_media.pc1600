@@ -1,6 +1,6 @@
 # PC-1600 Prepare the media for DiskWorks.pc1600: the same few BASIC programs
 # and a DW.CFG on a CE-1601M RAM card (S2:) and on a CE-1600F floppy (X:).
-# Both are saved as templates next to this preset -- "CE-1601M - Progs.card.yaml"
+# Both are saved as templates next to this preset -- "CE-1601M - Progs.module.yaml"
 # and "Progs.floppy.yaml" -- so DiskWorks.pc1600 always starts from them.
 
 format-version: 2
@@ -77,5 +77,5 @@ keys:
 
 # Save both as templates next to this preset, for DiskWorks.pc1600
 keys:
-  - saveas: { place: slot-2, as: template, file: CE-1601M - Progs.card.yaml }
+  - saveas: { place: slot-2, as: template, file: CE-1601M - Progs.module.yaml }
   - saveas: { place: floppy, as: template, file: Progs.floppy.yaml }

@@ -341,7 +341,7 @@ void checkSameWorkArea(const WorkAreaSnapshot& typed, const WorkAreaSnapshot& fa
 
 // A module of `size` bytes: 8 KB is the bundled CE-155, 16 / 32 KB plain RAM.
 std::unique_ptr<SoftwareDefinedCard> slotModule(size_t size, CardHost host) {
-    auto module = size == 0x2000 ? bundledCard("ce155.card.yaml", host) : plainRamCard(size);
+    auto module = size == 0x2000 ? bundledCard("ce155.module.yaml", host) : plainRamCard(size);
     CHECK(module != nullptr);
     return module;
 }

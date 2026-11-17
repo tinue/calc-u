@@ -75,7 +75,7 @@ bool preset1600(PC1600Machine& m, const std::string& yaml) {
         for (int slot : {1, 2}) {
             const std::string key = "slot-" + std::to_string(slot) + ": ";
             if (line.rfind(key, 0) != 0) continue;
-            // The bundled file of a module: CE-1600M is ce1600m.card.yaml.
+            // The bundled file of a module: CE-1600M is ce1600m.module.yaml.
             std::string path = "frontends/qt6/resources/cards/", err;
             for (char c : line.substr(key.size()))
                 if (c != '-') path += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));

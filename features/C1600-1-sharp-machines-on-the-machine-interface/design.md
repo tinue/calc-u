@@ -98,7 +98,7 @@ public:
   cannot differ (AC-1).
 - Peripheral descriptors (LIB-1 AC-39): `CE-150`, `CE-158`, `CE-1600P`
   {New, Old; New} with the CE-1600F described with it, `host-drive`,
-  and the nine modules of `frontends/qt6/resources/cards/*.card.yaml`,
+  and the nine modules of `frontends/qt6/resources/cards/*.module.yaml`,
   each `fits` from `compatible-hosts` (LIB-1 AC-41). The parsed
   `MemoryCardDefinition` rides as `ProductData`
   (`core/Connector/MemoryCardDefinition.hpp`).

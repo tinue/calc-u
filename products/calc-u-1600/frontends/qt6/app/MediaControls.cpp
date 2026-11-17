@@ -136,14 +136,14 @@ void DiskControl::refresh() {
 
 void DiskControl::refreshLamps() { lampStyle(m_lamp, m_controller.lamps().floppyMotor); }
 
-TapeControl::TapeControl(MachineController& c, QWidget* parent) : MediaPlaceControl(c, "tape", parent) {
+TapeControl::TapeControl(MachineController& c, QWidget* parent) : MediaPlaceControl(c, "cassette", parent) {
     auto* l = new QHBoxLayout(this);
     l->setContentsMargins(0, 0, 0, 0);
     l->setSpacing(2);
-    l->addWidget(new QLabel(tr("Tape:"), this));
-    m_picker->setToolTip(tr("A tape to play (CLOAD)"));
+    l->addWidget(new QLabel(tr("Cassette:"), this));
+    m_picker->setToolTip(tr("A cassette to play (CLOAD)"));
     l->addWidget(m_picker);
-    m_save = compactButton(this, tr("A new tape to record onto (CSAVE)"), QStringLiteral("media-save-tape"));
+    m_save = compactButton(this, tr("A new cassette to record onto (CSAVE)"), QStringLiteral("media-save-tape"));
     l->addWidget(m_save);
     m_counter = new QLabel(QStringLiteral("–"), this);
     m_counter->setObjectName(QStringLiteral("media-counter-tape"));
@@ -175,14 +175,14 @@ void TapeControl::refreshLamps() {
 void TapeControl::saveTape() {
     bool ok = false;
     const QString name =
-        QInputDialog::getText(window(), tr("Save Tape"), tr("Tape name:"), QLineEdit::Normal, QString(), &ok).trimmed();
+        QInputDialog::getText(window(), tr("Save Cassette"), tr("Cassette name:"), QLineEdit::Normal, QString(), &ok).trimmed();
     if (!ok) return;
     std::string empty;   // the bundled empty tape's entry
     if (const calcu::media::MediaState* s = m_controller.media())
-        if (const calcu::media::PlaceState* p = s->place("tape"))
+        if (const calcu::media::PlaceState* p = s->place("cassette"))
             for (const auto& e : p->picker)
                 if (e.group == calcu::media::PickerEntry::Group::BundledTemplate && e.label == "Empty") empty = e.id;
-    sessions::Value::Object args{{"place", sessions::Value("tape")},
+    sessions::Value::Object args{{"place", sessions::Value("cassette")},
                                  {"template", sessions::Value(empty)},
                                  {"name", sessions::Value(name.toStdString())}};
     const calcu::qt6::AskedSend r = calcu::qt6::sendAsking(
@@ -192,7 +192,7 @@ void TapeControl::saveTape() {
             return m_controller.sendAndWait(calcu::media::kStartNewCommand, sessions::Value(std::move(a))).reason;
         },
         [this](const QString& question) {
-            return QMessageBox::question(window(), tr("Save Tape"), question) == QMessageBox::Yes;
+            return QMessageBox::question(window(), tr("Save Cassette"), question) == QMessageBox::Yes;
         });
-    if (!r.done && !r.declined) QMessageBox::warning(window(), tr("Save Tape"), QString::fromStdString(r.refusal));
+    if (!r.done && !r.declined) QMessageBox::warning(window(), tr("Save Cassette"), QString::fromStdString(r.refusal));
 }

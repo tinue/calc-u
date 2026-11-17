@@ -76,7 +76,7 @@ const calcu::machine::Catalogue& sharpCatalogue();
 // (AC-39), the definition as ProductData.
 calcu::machine::PeripheralDescriptor moduleDescriptor(const MemoryCardDefinition&);
 
-// Adds every module definition (`*.card.yaml`) of `dir` that is not in the
+// Adds every module definition (`*.module.yaml`) of `dir` that is not in the
 // catalogue yet; returns how many it added. A file that does not parse is
 // skipped (MemoryCardCatalog's rule).
 int addModuleDefinitions(calcu::machine::Catalogue&, const std::string& dir);

@@ -31,6 +31,7 @@ struct ConstantMemoryProblem {
 };
 
 std::variant<ConstantMemoryContents, ConstantMemoryProblem> readConstantMemoryFile(std::string_view text);
-std::string writeConstantMemoryFile(const ConstantMemoryContents&);
+// `savedAt`: ISO-8601 UTC of the write, the `saved:` key (left out when empty).
+std::string writeConstantMemoryFile(const ConstantMemoryContents&, const std::string& savedAt = {});
 
 } // namespace cu59

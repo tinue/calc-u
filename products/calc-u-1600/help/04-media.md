@@ -5,7 +5,7 @@ and outdated files are the family's; the
 [shared part of this chapter](../../../library/help/04-media.md)
 describes them. This part covers the media of Calc-U-1600: the memory
 modules, the CE-1600F's floppy disks, and which files the product opens.
-Cassette tapes are in [Loading a BASIC program](09-basic-programs.md); a
+Cassettes are in [Loading a BASIC program](09-basic-programs.md); a
 folder of your computer as a drive is in [The host drive](09-host-drive.md).
 
 ## The slot pickers
@@ -114,9 +114,9 @@ rules for it, autosave and the save folder are in the
 
 ![Name & Save](images/05-name-and-save.png)
 
-- **Files.** A module is saved as `<name>.card.yaml`, a disk as
-  `<name>.floppy.yaml`, a tape as `<name>.tape.yaml` with `<name>.wav` in
-  the tape folder. Modules and disks go into the save folder (desktop:
+- **Files.** A module is saved as `<name>.module.yaml`, a disk as
+  `<name>.floppy.yaml`, a cassette as `<name>.cassette.yaml` with `<name>.wav` in
+  the cassette folder. Modules and disks go into the save folder (desktop:
   **Settings ▸ Storage**, default `~/Calc-U-1600`; in the browser they are
   kept by the browser). The file formats are in
   [Media files](10-media-files.md) and the
@@ -146,13 +146,13 @@ the box ticked, and `NEW 0`.
 Drop a file on the window, or open it with **File ▸ Load Preset…**, and it
 is opened as what it is (the family's rules for opening files are in the
 [shared part](../../../library/help/04-media.md)). A preset and a module,
-disk or tape file are told by their names; for the rest, what's inside the
+disk or cassette file are told by their names; for the rest, what's inside the
 file decides:
 
 | The file holds | Opened as if by |
 |---|---|
 | a preset (`.pc1500`, `.pc1500a`, `.pc1600`, or a line starting with `model:`) | **File ▸ Load Preset…** ([Presets](06-presets.md)) |
-| a module (`.card.yaml`), a floppy disk (`.floppy.yaml`) or a cassette tape (`.tape.yaml`) | put into its place from where it lies and saved back there; a module only when it is clear which slot it goes into (the PC-1500's one slot, or a module that fits only one), a disk only while the CE-1600F is there |
+| a module (`.module.yaml`), a floppy disk (`.floppy.yaml`) or a cassette (`.cassette.yaml`) | put into its place from where it lies and saved back there; a module only when it is clear which slot it goes into (the PC-1500's one slot, or a module that fits only one), a disk only while the CE-1600F is there |
 | a BASIC listing, or tokenized BASIC (`.bbin`) | **File ▸ Load BASIC Program…** ([BASIC programs](09-basic-programs.md)) |
 | machine code with a CE-158 or PC-1600 header | **File ▸ Load Machine Code…** ([Machine code](09-machine-code.md)) |
 | machine code without a header, in a `.bin` file | **File ▸ Load Machine Code…**, which asks for the address |
@@ -161,7 +161,7 @@ file decides:
 Anything else, and a file over 1 MiB, is refused with a notice. A file
 loads into the running computer, exactly like the menu item, so prepare
 the computer the same way first (`NEW0` before a BASIC program, and so
-on). In the browser a module, disk or tape file is imported into the
+on). In the browser a module, disk or cassette file is imported into the
 saved media first.
 
 On macOS you can also drop a file onto the Dock icon, or open it from the

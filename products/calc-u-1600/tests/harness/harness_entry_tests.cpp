@@ -187,15 +187,15 @@ TEST(lib11_ac18_every_function_of_the_table) {
     CHECK(starts(r.line("profile report 3"), "done "));
     CHECK_EQ(r.line("profile off"), std::string("done\n"));
     // --tape-in, --tape-out: a cassette played and recorded (LIB-7; C1600-5).
-    CHECK_EQ(r.line("pc1600 tape record " + (out.path() / "tape.wav").string()), std::string("done\n"));
-    CHECK_EQ(r.line("pc1600 tape status"), std::string("done 2\ntape: recording 0.000000000\nmotor: off\n"));
-    CHECK_EQ(r.line("eject tape"), std::string("done\n"));
-    CHECK_EQ(r.line("tape { name: Empty }"), std::string("done\n"));   // the bundled blank tape
-    CHECK(starts(r.line("pc1600 tape status"), "done 2\ntape: recording "));
+    CHECK_EQ(r.line("pc1600 cassette record " + (out.path() / "tape.wav").string()), std::string("done\n"));
+    CHECK_EQ(r.line("pc1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
+    CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
+    CHECK_EQ(r.line("cassette { name: Empty }"), std::string("done\n"));   // the bundled blank tape
+    CHECK(starts(r.line("pc1600 cassette status"), "done 2\ncassette: recording "));
     // --save-dir, --modules-dir: the save folder; the bundled module
     // definitions (LIB-11 AC-8, LIB-7).
-    CHECK_EQ(r.line("saveas { place: tape, as: live, name: Mine }"), std::string("done\n"));
-    CHECK(fs::exists(save.path() / "Tapes" / "Mine.tape.yaml"));
+    CHECK_EQ(r.line("saveas { place: cassette, as: live, name: Mine }"), std::string("done\n"));
+    CHECK(fs::exists(save.path() / "Cassettes" / "Mine.cassette.yaml"));
     CHECK(has(r.line("media"), "\"CE-1600M\""));
 
     // --ce158-pty, --ce158-rx, --ce158-rx-hold, --ce158-tx: the CE-158's

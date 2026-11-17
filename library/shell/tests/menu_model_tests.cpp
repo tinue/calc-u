@@ -342,7 +342,7 @@ TEST(media_place_item_only_with_its_media_place) {   // M17 (LIB-4 AC-12)
     CHECK(findItem(ms, "arm-card") == nullptr);
     // checkShellProduct names a media place that no model lists.
     CHECK(checkShellProduct(p, std::vector<Value>{st::controlValue("Model-A"), st::controlValue("Model-B")}).empty());
-    p.items.back().mediaPlace = "tape";
+    p.items.back().mediaPlace = "cassette";
     const auto problems = checkShellProduct(p, std::vector<Value>{st::controlValue("Model-A"), st::controlValue("Model-B")});
     CHECK_EQ(problems.size(), std::size_t{1});
 }

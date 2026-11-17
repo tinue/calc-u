@@ -120,8 +120,8 @@ KeyDecl saveFolder() {
     return key("storage", "save-folder", ValueKind::Path, "",
                "The save folder; empty: the product's folder in the home folder (Qt6 only).");
 }
-KeyDecl tapeFolder() {
-    return key("storage", "tape-folder", ValueKind::Path, "", "The folder for tapes; empty: Tapes in the save folder.");
+KeyDecl cassetteFolder() {
+    return key("storage", "cassette-folder", ValueKind::Path, "", "The folder for cassettes; empty: Cassettes in the save folder.");
 }
 KeyDecl traceFolder() {
     return key("trace", "folder", ValueKind::Path, "", "The folder for traces; empty: the save folder.");

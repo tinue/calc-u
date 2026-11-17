@@ -9,8 +9,8 @@ the record; where their notation or a rule differs from the format, the
 format holds: references `{ name: }`, `{ file: }`, `{ mem: }` in place
 of PR-8's notation (also `{ folder: }`); `magnetic-cards:`, `card:`
 and `arm:` in place of `medium:`, `fit:`, `insert:` and the auto-fed
-`arm:` (PR-8); a floppy disk and a tape are the steps `floppy:` and
-`tape:`, with `eject:` for both, and the header holds installed
+`arm:` (PR-8); a floppy disk and a cassette are the steps `floppy:` and
+`cassette:` (was `tape:`, release prep step 2), with `eject:` for both, and the header holds installed
 peripherals only (PR-8, PR-9, PR-11, as ruled 2026-11-13);
 `keycodes:`, `data:` and a cue card block in place of `steps: |`,
 `registers: |`, `cue-card: |` (PR-3); `full-speed:`, `regular-speed:`,
@@ -333,7 +333,7 @@ at every speed. The oddity and its rule go.
 | Product sections (PR-3) | `partition:`, `program:` `keycodes: \|` or `file:`, `data:`, `cue-card:` | `program:` `file:` / `text: \|` | as PC-1500 | as PC-1500 | as PC-1500 |
 | `key:` (PR-5) | `- key: 2nd Pgm 0 1 SBR =` | `- key: mode cl` | `- key: mode cl` | key IDs of the model | key IDs of the model |
 | `type:` | — (no text typing) | yes | yes (KBII accents) | yes | yes |
-| Media places (PR-8) | card reader (TI-59; pass-through, sides 0/1): `card:`, `arm:` | cassette (CE-150): `tape:`, `eject:` | floppy (CE-1600F; holding, sides 0/1): `floppy:`, `eject:`; cassette: `tape:`, `eject:` | cassette (CE-126P) | cassette |
+| Media places (PR-8) | card reader (TI-59; pass-through, sides 0/1): `card:`, `arm:` | cassette recorder (CE-150): `cassette:`, `eject:` | floppy (CE-1600F; holding, sides 0/1): `floppy:`, `eject:`; cassette recorder: `cassette:`, `eject:` | cassette (CE-126P) | cassette |
 | `arm:` | card reader | — | — | — | — |
 | GUI steps (PR-7) | debugger, `debug-panel:`, `cut-paper:`, `printer-trace:`, `screenshot:` | `cut-paper:`, `screenshot:` (debugger steps [undefined]) | `cut-paper:`, `screenshot:` (debugger steps [undefined]) | same | same |
 

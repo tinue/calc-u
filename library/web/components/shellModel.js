@@ -368,7 +368,7 @@ function calcuShellFamilySections(rows, keysShown) {
     if (r.section === "startup" && r.key === "model") general.push(row("startup-model", "Startup model"));
     else if (r.section === "preset") presets.push(row("startup-preset", r.key));
     else if (r.section === "storage" && r.key === "save-folder") storage.push(row("folder", "Save folder"));
-    else if (r.section === "storage" && r.key === "tape-folder") storage.push(row("folder", "Tapes"));
+    else if (r.section === "storage" && r.key === "cassette-folder") storage.push(row("folder", "Cassettes"));
     else if (r.section === "folders") folders.push(row("folder", `${cap(r.key)} folder`));
     else if (r.section === "trace" && r.key === "folder") tracing.push(row("folder", "Trace folder"));
     else if (r.section === "trace" && r.key === "max-file-size-mb") tracing.push(row("integer", "Maximum file size (MB)"));

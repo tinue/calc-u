@@ -1,3 +1,4 @@
+format: memory-module
 format-version: 1
 # superRAM -- 512 KB vertically-banked SRAM module, PC-1600 Slot 2 only.
 #
@@ -39,7 +40,7 @@ format-version: 1
 #
 # Ships blank (plain-ram-no-header).
 
-module-name: "ram-1m"
+module-name: "ram-512k"
 template: true   # read-only starting point; Name & Save copies it
 compatible-hosts: [PC-1600-Slot-2]
 definition-terminology: PC-1600-Slot-2
@@ -61,9 +62,9 @@ regions:
       latch:
         type: trigger-based
         trigger: { io-port: 0x28 }         # OUT (28H) -- the Port 28H vertical-bank write
-        sampled-lines: [D0, D1, D2, D3, D4]    # bank number = the byte written (first line = LSB)
+        sampled-lines: [D0, D1, D2, D3]    # bank number = the byte written (first line = LSB)
         source-domain: data
-      bank-count: 32                        # 16 x 32 KB vertical banks = 512 KB
+      bank-count: 16                        # 16 x 32 KB vertical banks = 512 KB
       bank-size: 0x8000                     # 32 KB per vertical bank (Z-80 Bank 2 + Bank 3)
       bank-window:
         any-of:

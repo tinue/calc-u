@@ -30,7 +30,7 @@ What M-51 finds (taken as done by the earlier designs):
 - M-46 (LIB-6, LIB-18 1600): `preset`, `check-preset`, `model`,
   `variant`, `attach`, `detach` for every Sharp model; the host drive
   attached with its folder (LIB-18 AC-30).
-- M-47 (LIB-7 1600): the media place `cassette` (holding, the tape
+- M-47 (LIB-7 1600; renamed in release prep step 2: place `cassette-recorder`, kind `cassette`, step `cassette`): the media place `cassette` (holding, the tape
   deck behind it), the kind `cassette-tape` with its codec, `tape` and
   `eject`; the deck's counter and motor in a product kind.
 - M-50 (C1600-3): the DAP in the app layer; nothing here depends on it.
@@ -90,7 +90,7 @@ the model lacks gives the one line the inspector writes,
 (`PC1500Inspector.cpp:388`, `PC1600Inspector.cpp:888`); that reply is
 done, not refused, as the spec gives it as the reply.
 
-### 3.3 `pc1600 tape record <path>`, `pc1600 tape status` (AC-5, AC-6, EC-2, EC-6)
+### 3.3 `pc1600 cassette record <path>`, `pc1600 cassette status` (AC-5, AC-6, EC-2, EC-6)
 
 - `record <path>`: refused without a media place `cassette` (EC-2;
   neither a CE-150 nor a CE-1600P plugged in). Otherwise a tape in the
@@ -98,7 +98,7 @@ done, not refused, as the spec gives it as the reply.
   tape goes in through `MediaPart::insert` with a binding to the file
   at `<path>`, relative to the working directory. `<path>` is the
   sound file, a WAV, as with today's `--tape-out`
-  (`tools/CliCommon.hpp:178-212`); no tape definition is written and no
+  (`tools/CliCommon.hpp:178-212`); no cassette definition is written and no
   name is asked (D-1). The recording is written each time the motor
   stops and at `eject`, by the codec of M-47. A path that cannot be
   written fails at that write with LIB-7's notice, which `state notices`
@@ -246,7 +246,7 @@ row adds to it:
 
 - **D-1 (AC-5).** `tape record <path>` writes the WAV at the path, as
   `--tape-out` does today and as the user story asks ("a WAV file of my
-  choice"); it writes no tape definition.
+  choice"); it writes no cassette definition.
 - **D-2 (AC-4).** A view the model lacks is a done reply with the
   inspector's one line, not a refusal: the spec gives it as the reply.
 - **D-3 (AC-2, AC-3).** The reply drops today's `---` heading lines;

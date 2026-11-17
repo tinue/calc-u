@@ -4,7 +4,7 @@
 // The reader Calc-U-1600 supplies to the ROM lookup (LIB-12 AC-11, AC-14;
 // design §3.2). Every ROM dump of the full set is binary and checked by its
 // size, without a reader (AC-11). The one text file is the CE-502B's module
-// definition (`CE-502B.card.yaml`, docs/formats/modules.md §1), read by the
+// definition (`CE-502B.module.yaml`, docs/formats/modules.md §1), read by the
 // module definition reader of core/Connector/: what it yields is the bytes
 // of its content, every region's initial content added up (16384 for the
 // CE-502B). Calc-U-1600 adds no checks of the set.

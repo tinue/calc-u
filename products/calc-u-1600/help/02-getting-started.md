@@ -90,6 +90,9 @@ symbol:
 
 ## Copy Screen and Paste Text
 
+Calc-U-1600 has the **Edit** menu, after File: **Copy Screen** and
+**Paste Text**.
+
 **Edit ▸ Copy Screen** puts the LCD's dots on the clipboard as a picture
 at the real display's size. Here is a PC-1600 LCD, as it gets pasted:
 
@@ -109,8 +112,14 @@ Selection** and copies that text instead.
 **Edit ▸ Paste Text** types the clipboard's **first line** into the
 computer, key by key. It stops at the line break and doesn't press ENTER,
 so you can check the line before you run it. Paste Text after Copy Screen
-types the screen's first line back in. For whole programs, see
+types the screen's first line back in. Each character is typed as the
+keys the keyboard map gives for it; a character for which the computer
+has no key is left out, and a key you press while the text is being
+typed stops it. For whole programs, see
 [Loading a BASIC program](09-basic-programs.md).
+
+Presets type text too, with `type:` and `key:` steps
+([Presets](06-presets.md)).
 
 ## The browser version
 

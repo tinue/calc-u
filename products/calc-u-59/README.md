@@ -18,7 +18,7 @@ Whether you want a classic calculator that just works, or you want to run progra
 
 ### → https://calc-u.org/59/
 
-This repository is developer documentation only — architecture, APIs, and file formats for people building or extending the emulator (including AI agents doing so). It does not duplicate the website's end-user content; the website links back here for anyone who wants the technical detail behind a file format or feature.
+The user guide is the help in [`help/`](help/) (Calc-U-59's chapters) and [`library/help/`](../../library/help/) (the chapters both Calc-U products share), Markdown that each release carries as `Calc-U-59-help.zip` and calc-u.org/59 renders. Everything else here is developer documentation: architecture and APIs for people building or extending the emulator (including AI agents doing so).
 
 Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_64, aarch64) are on this repository's [Releases page](../../releases); the iPhone and iPad app is on the App Store.
 
@@ -150,7 +150,7 @@ Trigger conditions and workflows for Claude Code when working in specific areas 
 | [`calc-u-59-web`](.claude/skills/calc-u-59-web/SKILL.md) | Working on the web client (`frontends/web/`): rules (no logic, location independence, no side effects in render, own styling), build and tests; points to `reference/WebClient.md`. |
 | [`pre-release-cleanup`](.claude/skills/pre-release-cleanup/SKILL.md) | User-invoked release audit: parity, simplification, docs, changelog, screenshots, builds. |
 | [`calc-u-59-swift`](.claude/skills/calc-u-59-swift/SKILL.md) | Working on the Swift/SwiftUI app (`frontends/swift/App/`, `frontends/swift/Bridge/`): view model, bridge, display, keyboard, debug panels, printer, card reader, settings. |
-| [`calc-u-59-docs`](.claude/skills/calc-u-59-docs/SKILL.md) | Working on documentation (`reference/`, root markdown files); states the developer-vs-end-user documentation split, where the user guide lives, and the release documentation update workflow. |
+| [`calc-u-59-docs`](.claude/skills/calc-u-59-docs/SKILL.md) | Working on documentation (the help in `help/`, `reference/`, root markdown files); states the help-vs-developer documentation split, the help tool, and the release documentation update workflow. |
 | [`calc-u-59-presets`](.claude/skills/calc-u-59-presets/SKILL.md) | Pointer to `docs/formats/preset.md` plus the mistakes that come up most in presets of format 2 (keycodes vs. key IDs, second functions, full speed, the last item) and how to check one with `calcu`. |
 | [`calc-u-59-uitesting`](.claude/skills/calc-u-59-uitesting/SKILL.md) | Writing/debugging XCUITest UI tests (`frontends/swift/Calc-U-59UITests/`): file picker navigation, accessibility identifiers, orientation. |
 
@@ -194,4 +194,4 @@ Checked-in analysis the project keeps for itself, distinct from any AI tool's pr
 
 ### The user guide (not indexed here)
 
-The end-user website (linked at the top of this README) lives in its own repository, [`calc-u-site`](https://github.com/tinue/calc-u-site), with its own internal (build/design-system) documentation. It is intentionally not enumerated here: this repository points to it once, rather than indexing its pages alongside developer documentation.
+The help (`help/`, `help/help.yaml` lists its files chapter by chapter; checked and built by `tools/help` at the repository root, `tools/README.md`) is not enumerated here. The website that renders it lives in its own repository, [`calc-u-site`](https://github.com/tinue/calc-u-site), with its own internal (build/design-system) documentation.

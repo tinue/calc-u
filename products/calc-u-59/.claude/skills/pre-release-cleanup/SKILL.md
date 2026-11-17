@@ -24,8 +24,10 @@ that area.
 2. Find **base**, the previous release tag, as the `calc-u-59-docs` skill's
    Release Documentation Update Workflow, step 1, describes. Every "this
    release" below means `base..HEAD`.
-3. In `../calc-u-site`, confirm the branch is `59/X.Y.Z`. Its rules are in that
-   repository's `CLAUDE.md`.
+3. The user guide is the help in `help/` (and `library/help/`; LIB-16).
+   Where this release also changes what stays the site's (the software
+   collection, the articles), in `../calc-u-site` confirm the branch is
+   `59/X.Y.Z`; its rules are in that repository's `CLAUDE.md`.
 4. Confirm both working trees are clean. If either is dirty or on another
    branch, ask before going on: your commits would mix with the user's work.
 
@@ -73,19 +75,19 @@ it and continue. On no, the gate stays **open**.
 ## 3. Documentation of this release
 
 Follow the `calc-u-59-docs` skill's Release Documentation Update Workflow, for
-`reference/` and for the user guide in `../calc-u-site` (with its `site-59`
-skill). The workflow's changelog step only needs completeness here, since gate
+`reference/` and for the help (`help/`, `tools/help check calc-u-59`), and for
+what stays the site's in `../calc-u-site` (with its `site-59` skill). The workflow's changelog step only needs completeness here, since gate
 5 reworks the text.
 
 Done when each user-visible change and each changed developer fact (file format,
 directive, setting, API, architecture) points to a passage in the right
-repository that describes its final state, and the site's build, check and tests
-pass.
+repository that describes its final state, `tools/help check calc-u-59` passes,
+and the site's build, check and tests pass where the site changed.
 
 ## 4. Documentation consistency
 
 Sweep `README.md`, `CLAUDE.md`, `TODO.md`, `reference/`, `rom/*.md`,
-`.claude/skills/` and the site's `59/Pages.jsx`. A read-only subagent per group
+`.claude/skills/` and the help (`help/`, `library/help/`). A read-only subagent per group
 keeps the file dumps out of this context; verify each finding before editing.
 
 Look for:
@@ -154,14 +156,14 @@ the simulators and takes a while.
    in it on iOS. A later commit alone proves nothing: a Mac-only change or a
    change to a screen the shot does not show leaves it current.
 
-**Site set** (images under `59/assets/` that `59/Pages.jsx` shows): open them
-and compare them with the current UI as the code and App Store set describe it.
+**Help set** (the pictures in `help/images/`, LIB-16 AC-16): open them and
+compare them with the current UI as the code and App Store set describe it.
 
 If a shot is out of date, list it with the commit that outdated it and propose
 the narrowest command: `bin/run-screenshots [filter]`. The iPhone Duo shot needs
 the simulator opened flat first. If the user agrees, run it, check the new
-images, and commit them in the `appstore` worktree. Site images are copied over
-by hand, so name the copies needed. Otherwise the gate stays **open**.
+images, and commit them in the `appstore` worktree. Help pictures are taken by
+hand into `help/images/`, so name the ones needed. Otherwise the gate stays **open**.
 
 ## 7. Builds
 
@@ -187,7 +189,7 @@ End with this report, every gate included:
 | GUI parity | | |
 | Simplification age | | |
 | Docs of this release: this repository | | |
-| Docs of this release: calc-u-site | | |
+| Docs of this release: the help (and calc-u-site where it changed) | | |
 | Docs consistency | | |
 | Changelog | | |
 | Screenshots | | |

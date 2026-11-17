@@ -7,7 +7,7 @@
 // Program-step keycodes (0–99) → mnemonics, and the keycode grammar that
 // tells operand steps from opcodes. Keycodes are what program memory stores;
 // they are not the row×10+col matrix codes of KeyMatrix.hpp — see
-// reference/StateFileFormat.md § "Matrix Code Table".
+// docs/formats/preset.md §8.1 (the key positions; help/10-preset-sections.md).
 
 namespace cu59 {
 

@@ -45,6 +45,14 @@ parenthesis is removed with it.
 | Side | sides 1 and 2 of a magnetic card → 0 and 1 | done (M-47): sides A and B of a floppy disk → 0 and 1 (the side button, the disk file `0:`/`1:`, `floppy: { side: }`) |
 | Insert / Eject | "Eject Card": unchanged | module picker, floppy insert/eject: unchanged |
 
+The help (LIB-16, `library/help/` and `products/<product>/help/`) uses
+the glossary's terms and the names of this table: Calc-U-1600's since M-52
+(its `docs/` User Guide), Calc-U-59's since M-60 (converted from
+calc-u-site's `59/` pages, whose "Clean", "debug pane", "state file",
+"Card Folder", "Startup Calculator", "Open Preset" and "fit a card" are
+Cold boot, debug panel, preset, Save folder, Startup model, Load Preset…
+and arm there). A later rename changes the help in the same step.
+
 ## Code names
 
 | Glossary term | Calc-U-59 | Calc-U-1600 |

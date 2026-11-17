@@ -274,3 +274,25 @@ jobs:
           name: Calc-U-59-windows-${{ matrix.arch }}
           path: products/calc-u-59/${{ matrix.installer }}
           if-no-files-found: error
+
+  # The help asset Calc-U-59-help.zip (LIB-16 AC-6, AC-8): tools/help
+  # (Python 3, standard library only; the runner's python3) checks the help
+  # (library/help/ and help/) and builds the zip with the version of the
+  # Xcode project's MARKETING_VERSION; release.yaml attaches it.
+  help:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the help asset
+        run: python3 tools/help build calc-u-59 --out build/help --quiet-warnings
+
+      - name: Upload the help asset
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-59-help
+          path: build/help/Calc-U-59-help.zip
+          if-no-files-found: error

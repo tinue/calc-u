@@ -16,7 +16,7 @@ using namespace testroms;
 
 namespace {
 
-// Matrix codes (reference/StateFileFormat.md): 2 = 83, 3 = 84, + = 85, = = 95, CLR = 25.
+// Matrix codes (the key positions of docs/formats/preset.md §8.1): 2 = 83, 3 = 84, + = 85, = = 95, CLR = 25.
 constexpr int kKey2 = 83, kKey3 = 84, kPlus = 85, kEquals = 95, kClr = 25;
 constexpr int kKey0 = 92, kRecip = 35;
 

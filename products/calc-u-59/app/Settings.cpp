@@ -46,7 +46,7 @@ cs::ProductDecl makeDecl() {
                             "The display's segments: modernized or classic."));
     d.keys.push_back(choice("keyboard", "feedback", {"off", "haptic", "click"},
                             "Feedback on a key press: off, haptic or click (Swift on iOS, Web)."));
-    for (OpenFolder f : {OpenFolder::Presets, OpenFolder::AsmOverlays, OpenFolder::Other})
+    for (OpenFolder f : {OpenFolder::Presets, OpenFolder::AsmOverlays})
         d.keys.push_back(cs::family::openFolder(openFolderKind(f)));
     d.keys.push_back(windowOptional("x", "window's left edge"));
     d.keys.push_back(windowOptional("y", "window's top edge"));
@@ -97,9 +97,8 @@ const char* openFolderKind(OpenFolder folder) {
     switch (folder) {
     case OpenFolder::Presets: return "presets";
     case OpenFolder::AsmOverlays: return "asm-overlays";
-    case OpenFolder::Other: return "other";
     }
-    return "other";
+    return "presets";
 }
 
 TraceLocation Settings::traceLocation() const {

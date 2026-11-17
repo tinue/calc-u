@@ -17,7 +17,6 @@ product [keyboard] feedback
 family [folders] <kind>
 product [folders] presets
 product [folders] asm-overlays
-product [folders] other
 family [window] <key>
 product [window] x
 product [window] y

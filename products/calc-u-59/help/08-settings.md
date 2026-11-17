@@ -61,7 +61,6 @@ folder given as `fixed:<folder>`.
 |---|---|
 | `[folders] presets` | **File ▸ Load Preset…** (in the dialog: the preset folder) |
 | `[folders] asm-overlays` | **Select File** of the ASM overlay ([Debugger](07-debugger.md)) |
-| `[folders] other` | kept for other kinds of files; no dialog uses it yet |
 
 ## Window
 

@@ -34,8 +34,7 @@ enum class TraceLocation { AppSupport, ICloud, Folder };  // [trace] location (S
 // The folders a file dialog starts in, one key each in [folders] (AC-19):
 //   Presets     -- "Load Preset…": presets
 //   AsmOverlays -- the debugger's ASM overlay picker: asm-overlays
-//   Other       -- other files: other (declared; no dialog uses it yet, D-1)
-enum class OpenFolder { Presets, AsmOverlays, Other };
+enum class OpenFolder { Presets, AsmOverlays };
 const char* openFolderKind(OpenFolder folder);
 
 // The Qt6 window as plain numbers in [window] (AC-35; design D-7): its place

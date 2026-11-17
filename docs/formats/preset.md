@@ -776,15 +776,69 @@ For converting files written for the products before this specification.
 
 | Version 1 | Version 2 |
 |---|---|
-| card file `Calc-U-59 Card 2.0`, one per card | magnetic card format 3 ([media.md §1](media.md#1-magnetic-card)); `card-name` from the file stem |
-| `SIDE: n` (1 or 2), `HEADER:` keys `Partition`, `DataType`, `Bank`, `Protection`, `Checksum` | `sides: n−1:` (0 or 1) keys `partition`, `data-type`, `bank`, `protection` (`yes` → `true`), `checksum` |
-| `DATA:` rows `R###: …` | `encoding: register-hex`, `bytes:` rows with their 8 bytes in reverse order |
+| card file `Calc-U-59 Card 2.0` (`.U59`), one per card, ending with `END-CARD` | magnetic card format 3 ([media.md §1](media.md#1-magnetic-card)), `.magnetcard.yaml`; `card-name` from the file stem; no end line |
+| the card's `CUECARD:` block | `cue-card:` (its keys below) |
+| `SIDE: n` (1 or 2) | `sides:` `n−1:` (0 or 1) |
+| `HEADER:` keys `Partition`, `DataType`, `Bank`, `Protection`, `Checksum` | the side's keys `partition`, `data-type`, `bank`, `protection`, `checksum`, every one required |
+| `Partition` and `Checksum`: a byte in hex without a prefix (`18`) | `0x18`: the prefix is needed, since a number without it is read as decimal |
+| `DataType` `program` / `data`, `Bank` 1–4 | the same words and numbers |
+| `Protection` `yes` / `no` | `true` / `false` |
+| `DATA:` rows `R###: …` | `encoding: register-hex`, `bytes:` the 30 rows copied unchanged, in the same order (labels and bytes) |
 | card files 1.0 and the binary layouts | not converted |
 | `ti58c.mem` (cue card, `R###:` rows) | constant memory format 1 ([media.md §4](media.md#4-constant-memory-file)), rows copied unchanged |
 | `roms/solid-state/cuecards.txt` + one `TMC05xx.txt` per module | one Solid State ROM module file per module ([modules.md §2](modules.md#2-solid-state-rom-module)): `MODULE-ID` → `module-name`, `MODULE-MENU-TITLE` → `description`, `MODULE-TITLE` → `title`, `MODULE-MENU-SORT` → `menu-sort`, `CUECARD: n` → a `cue-cards:` item with `program: n`. The dump's decimal row addresses become hex `addressed-hex` addresses; its header lines go into `notes` |
 | `CUECARD:` keys `Title`, `ID`, `Style`, `Row1`, `Row2`, `Row2R`, `Row1Align`, `Row2Align`, `Row2RAlign`, `PencilColor` | `title`, `id`, `style`, `row-1`, `row-2`, `row-2-r`, `row-1-align`, `row-2-align`, `row-2-r-align`, `pencil-color` ([cue-card.md](cue-card.md)) |
 | `CUECARD:` keys `Template` and `Banks` | dropped: the kind follows from where the card is defined; a magnetic card's corners show its sides' banks |
 | `CUECARD:` unknown keys and `IDAlign` are ignored | an error |
+
+A card the ROM wrote: `PDCM-1.U59`, written by Calc-U-59 2.3.0's
+example `historic/pdcm-make-cards.ti59` (side 1; rows R002 to R029 left
+out here):
+
+```text
+Calc-U-59 Card 2.0
+
+CUECARD:
+Template: MagnetCard
+Title: PDCM 1: 11.-03 / -998.-03
+
+SIDE: 1
+HEADER:
+Partition: 18
+DataType: program
+Bank: 1
+Protection: no
+Checksum: 03
+
+DATA:
+R000: 30 19 75 49 90 90 90 39
+R001: 23 49 80 90 90 39 69 22
+```
+
+The same card as Calc-U-59 writes it in format 3, `PDCM-1.magnetcard.yaml`,
+from today's example of that name (`saved` is the time of the write; the
+same rows left out, side 1 not shown):
+
+```yaml
+# Calc-U-59 magnetic card
+format: ti59-magnetic-card
+format-version: 3
+card-name: "PDCM-1"
+saved: 1999-12-31T23:00:00Z
+cue-card:
+  title: "PDCM 1: 11.-03 / -998.-03"
+sides:
+  0:
+    partition: 0x18
+    data-type: program
+    bank: 1
+    protection: false
+    checksum: 0x03
+    encoding: register-hex
+    bytes: |
+      R000: 30 19 75 49 90 90 90 39
+      R001: 23 49 80 90 90 39 69 22
+```
 
 ### 9.4 Calc-U-1600 floppy disk version 1
 

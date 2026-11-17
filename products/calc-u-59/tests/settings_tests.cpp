@@ -56,11 +56,11 @@ TEST(lib9_ac19_declaration) {
         {"trace.folder", ""},                  {"trace.max-file-size-mb", "50"},
         {"trace.location", "app-support"},     {"display.led-style", "modernized"},
         {"keyboard.feedback", "off"},          {"folders.presets", ""},
-        {"folders.asm-overlays", ""},          {"folders.other", ""},
-        {"window.x", ""},                      {"window.y", ""},
-        {"window.width", "1280"},              {"window.height", "860"},
-        {"window.calculator-width", ""},       {"window.printer-width", ""},
-        {"window.debug-width", ""},            {"window.portrait-debug-page", "false"},
+        {"folders.asm-overlays", ""},          {"window.x", ""},
+        {"window.y", ""},                      {"window.width", "1280"},
+        {"window.height", "860"},              {"window.calculator-width", ""},
+        {"window.printer-width", ""},          {"window.debug-width", ""},
+        {"window.portrait-debug-page", "false"},
     };
     std::vector<std::pair<std::string, std::string>> actual;
     for (const cs::KeyDecl& k : d.keys) actual.emplace_back(k.section + "." + k.key, k.defaultValue);
@@ -70,9 +70,10 @@ TEST(lib9_ac19_declaration) {
     for (const cs::KeyDecl& k : d.keys)
         if (k.writtenByApp) byApp.insert(k.section + "." + k.key);
     CHECK((byApp == std::set<std::string>{"startup.last-model", "folders.presets", "folders.asm-overlays",
-                                          "folders.other", "window.x", "window.y", "window.width",
-                                          "window.height", "window.calculator-width", "window.printer-width",
+                                          "window.x", "window.y", "window.width", "window.height",
+                                          "window.calculator-width", "window.printer-width",
                                           "window.debug-width", "window.portrait-debug-page"}));
+    CHECK(d.find("folders", "other") == nullptr);  // D-1: removed, no dialog used it
 
     // The accepted values.
     const auto accepts = [&](const char* sec, const char* key, const char* v) {
@@ -128,7 +129,6 @@ TEST(lib9_ac19_declaration) {
     CHECK_EQ(cs::openStartFolder(f, presets, home), std::string("/fixed"));
     cs::rememberOpenFolder(f, s59::openFolderKind(s59::OpenFolder::AsmOverlays), "/asm");
     CHECK_EQ(f.text("folders", "asm-overlays"), std::string("/asm"));
-    CHECK_EQ(cs::openStartFolder(f, s59::openFolderKind(s59::OpenFolder::Other), home), home);  // D-1: declared, no dialog yet
 }
 
 // AC-20, EC-1: `last` without a model used before starts the TI-59.

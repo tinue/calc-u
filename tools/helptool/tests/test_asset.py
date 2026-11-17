@@ -24,6 +24,18 @@ class AssetTests(HelpTestCase):
         self.assertNotIn("product/help.yaml", names)
         self.assertNotIn("product/settings-keys.txt", names)
 
+    def test_ac17_follows_line_kept_in_the_source_left_out_of_the_asset(self):
+        source = (self.root / "library/help/02-getting-started.md").read_text(encoding="utf-8")
+        self.assertTrue(source.startswith("<!-- follows:"))
+        with zipfile.ZipFile(self.build()) as z:
+            shared = [n for n in z.namelist() if n.startswith("shared/") and n.endswith(".md")]
+            self.assertTrue(shared)
+            for name in shared:
+                text = z.read(name).decode("utf-8")
+                self.assertNotIn("follows:", text, name)
+                self.assertFalse(text.startswith("\n"), name)
+            self.assertTrue(z.read("shared/02-getting-started.md").decode("utf-8").startswith("# "))
+
     def test_ac6_toc_lists_chapters_files_shared_product_version(self):
         with zipfile.ZipFile(self.build()) as z:
             toc = json.loads(z.read("toc.json"))

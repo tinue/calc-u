@@ -1359,3 +1359,10 @@ format 2 in M-54.
 ### 11.13 Questions for the user
 
 None that split this design.
+
+## Part E simplification E-3 (2026-11-17, branch `es-59-topics`)
+
+`docs/reviews/e-simplification.md` §1 S-3, §2 item 2. P-E2 ended: the paper
+panel's `set-control` is LIB-2's `PeripheralsPart`'s alone in Calc-U-59 too
+(the product's handler had replaced it); TRACE's kept position goes into an
+attached PC-100C through `TIProductMachines::attaching` (C59-6 E-3).

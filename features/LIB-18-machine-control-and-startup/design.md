@@ -1044,3 +1044,11 @@ topic `roms-missing` (`startup::kRomsMissingTopic`, payload
 `startup::RomsMissingState`, value `{text}` as before) in `attach`. The
 products publish it no more (Calc-U-1600's `RomsMissingPayload`, Calc-U-59's
 value payload in `TIAppPart::attach`).
+
+## Part E simplification E-3 (2026-11-17, branch `es-59-topics`)
+
+`docs/reviews/e-simplification.md` §1 S-3, §2 item 2. `ProductMachines` has a
+second product hook beside `carried`: `attaching(PeripheralRequest&)`,
+called by `MachineControl::requestFor` (the attach command, a product's own
+attach), default nothing. Calc-U-59 adds TRACE's kept position for a
+PC-100C (C59-6 AC-6); Calc-U-1600 does not override it.

@@ -529,3 +529,20 @@ hook.
   nothing more from this feature.
 - A-6: the session looks capabilities up again after a change, because
   pointers go stale (LIB-1 §3.5).
+
+## Part E simplification E-3 (2026-11-17, branch `es-59-topics`)
+
+`docs/reviews/e-simplification.md` §1 S-3, §2 item 2. `set-control` has one
+owner, `PeripheralsPart`: Calc-U-59's second registration in `TIAppPart`
+(which the session had kept in place of this one) went, and so did
+`TIAppPart::setPrinterControl` and `EmulatorSession::printerControl`.
+TRACE's kept position across a detach (C59-6 AC-6) is not a rule of this
+part for every switch: LIB-18's `ProductMachines::attaching` (a product hook
+called on the request of an attach, as `carried` is at a rebuild) lets
+Calc-U-59 put the position it keeps into the PC-100C attached; Calc-U-1600
+does not override it, so its CE-161 write-protect switch behaves as before.
+The replies of `set-control` in Calc-U-59 are this part's (EC-6): without a
+machine "No machine is running.", without a PC-100C "No PC-100C is plugged
+in." (Calc-U-59's handler had answered done and remembered TRACE), another
+peripheral "No <id> is plugged in.". No frontend sends it then: the paper
+panel's controls exist only while the PC-100C owns it.

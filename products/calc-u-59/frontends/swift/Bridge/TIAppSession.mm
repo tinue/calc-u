@@ -35,6 +35,7 @@
 #include "control/ControlState.hpp"
 #include "opening/OpenRequest.hpp"
 #include "paper/PaperTopics.hpp"
+#include "peripherals/PeripheralsPart.hpp"
 #include "media/MediaTopics.hpp"
 #include "roms/Bundle.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -788,7 +789,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (void)cutPaper { [self send:calcu::paper::kPaperCutCommand args:{{"owner", kPC100COwner}, {"copy", true}}]; }
 - (BOOL)printerTrace { const auto* p = [self printer]; return p && p->trace; }
 - (void)setPrinterControl:(NSString *)control on:(BOOL)on {
-    [self send:cu59::commands::kSetControl args:{{"peripheral", kPC100COwner}, {"control", cpp(control)}, {"on", on == YES}}];
+    [self send:calcu::peripherals::kSetControlCommand args:{{"peripheral", kPC100COwner}, {"control", cpp(control)}, {"on", on == YES}}];
 }
 
 // ── Card reader ──────────────────────────────────────────────────────────────

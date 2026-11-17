@@ -554,3 +554,21 @@ Decided here (best guess; LIB-3 needs no change for them):
 - **N5.** The display payload's `toValue()` gives its frame as `bytes`,
   so that the worker can transfer it at 60 Hz without a copy into JS
   arrays.
+
+## Part E simplification E-3 (2026-11-17, branch `es-59-topics`)
+
+`docs/reviews/e-simplification.md` §1 S-3, §2 item 2. `TIWebPart` keeps only the
+page's own forms and derives them from the product topics' values (it holds
+the topics `c59.led` and `c59.cue-card` of the same session and redraws when
+their value differs from the one it drew): `c59.web.display` (the LED cell
+bytes of `ledCell`), `c59.web.cue-card` (the draw list at the page's card
+size, also redrawn when the size changes), `c59.web.debug-font`, and the
+requests (shell product, faceplate, heatmap grid, LED geometry, mobile
+rules). `c59.web.printer` (the value of `c59.printer`) and
+`c59.web.run-state` went: `Paper.jsx` reads `c59.printer`, `Debugger.jsx`
+the library's `run-state` (`paused`; `armed` is `program` or `cpu`),
+`CalculatorFace.jsx` `busy` (`speed`, for `data-full-speed`) and, as before,
+`held-keys`. The change observer and `webPayload` (= `valuePayload`) went.
+Every pixel is as before; `data-full-speed`, a test attribute, follows the
+speed now (`busy`), which is the commanded speed except while an operation
+runs.

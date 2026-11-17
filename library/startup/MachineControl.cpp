@@ -114,6 +114,7 @@ PeripheralRequest MachineControl::requestFor(const PlacePath& place, const machi
     r.place = place;
     r.peripheral = id;
     r.variant = std::move(variant);
+    product_.attaching(r);
     return r;
 }
 

@@ -37,6 +37,12 @@ public:
         r.variant = entry.variant;
         return r;
     }
+    // AC-10: a request to attach `request.peripheral` (the attach command,
+    // a product's own attach). Default: as the catalogue gives it. A product
+    // adds the switch positions it keeps while the peripheral is detached
+    // (Calc-U-59's TRACE, C59-6 AC-6); a switch it does not name starts at
+    // the peripheral's own position (LIB-2 D-3).
+    virtual void attaching(machine::PeripheralRequest& request) { (void)request; }
     // A ROM image the product bundles outside the RomSet (Calc-U-1600's host
     // drive, roms.md Q-1; M-46): added to a request's images after the set's.
     virtual void addRoms(machine::PeripheralRequest& request) const { (void)request; }

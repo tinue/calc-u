@@ -24,9 +24,9 @@ using sessions::Done;
 using sessions::Refused;
 using sessions::StartOperation;
 using sessions::Value;
-using pacing::Speed;
 
 // ── Payload values (for translating hosts and the harness's `state`) ─────────
+// The value forms are fixed (`calcu state c59.led|c59.cue-card|c59.printer`).
 
 Value TILedState::toValue() const {
     return Value::object({{"calc-indicator", calcIndicatorOpacity}});
@@ -106,6 +106,7 @@ TIAppPart::TIAppPart(TIAppSetup setup)
       m_fileKinds(m_debugPart),
       m_lib(librarySetup()) {
     m_debugPart.bindDebugger(&m_lib.debugger());
+    m_machines.setKeptTrace([this] { return m_printerTrace; });   // C59-6 AC-6: into an attached PC-100C
 }
 
 calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
@@ -164,24 +165,11 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     m_led = &s.stateTopic(topics::kLed);
     m_cue = &s.stateTopic(topics::kCueCard);
     m_printer = &s.stateTopic(topics::kPrinter);
-    auto flag = [](bool v) -> CommandOutcome { return Done{std::make_shared<TIFlag>(v)}; };
-    TIAppPart& c = *this;
-    using namespace commands;
-    using sessions::bytesArg;
-    using sessions::realArg;
-    using sessions::textArg;
-
-    // P-E2: the paper panel's controls of the PC-100C.
-    add(s, kSetControl, [&c](const Value& a) -> CommandOutcome {
-        const std::string peripheral = textArg(a, "peripheral");
-        if (!peripheral.empty() && peripheral != kPC100C.value) return Refused{"There is no peripheral " + peripheral + "."};
-        if (!c.setPrinterControl(textArg(a, "control"), sessions::flagArg(a, "on")))
-            return Refused{"The PC-100C has no control " + textArg(a, "control") + "."};
-        return Done{};
+    // C59-7 D-12: a tap on the fitted card.
+    add(s, commands::kTapCard, [this](const Value& a) -> CommandOutcome {
+        return Done{std::make_shared<TIFlag>(tapCard(sessions::realArg(a, "x"), sessions::realArg(a, "y")))};
     });
-    add(s, kTapCard, [&c, flag](const Value& a) { return flag(c.tapCard(realArg(a, "x"), realArg(a, "y"))); });
     // The machine comes with LIB-18's `start`; the card wait is the media part's (LIB-17 AC-16).
-    m_changes = ~0u;
     settle();
 }
 
@@ -242,59 +230,35 @@ void TIAppPart::operationEnded(sessions::SessionContext& ctx) {
 
 void TIAppPart::beforeFlush(sessions::SessionContext& ctx) {
     m_ctx = &ctx;
+    // A switch set by LIB-2's set-control (TRACE, C59-6 AC-6), on the machine followed.
+    if (m_ms && m_ms->generation() == m_seenGeneration) followPlugs(false);
     refreshCueCard();   // a card fitted or fed by a library command (C59-7 AC-22)
     settle();
 }
 
+namespace {
+// A topic set only when the value differs from the one it holds.
+template <class P> void setIfChanged(sessions::StateTopic& t, std::shared_ptr<P> p) {
+    const auto* now = sessions::payloadAs<P>(t.current());
+    if (!now || !now->same(*p)) t.set(std::move(p));
+}
+} // namespace
+
 void TIAppPart::settle() {
-    syncSpeed();
-    followRunState();
-    publish(std::exchange(m_changes, 0u));
-}
-
-void TIAppPart::syncSpeed() {
-    if (!m_ctx) return;
-    const bool full = m_ctx->commandedSpeed() == Speed::Full;
-    const bool runs = m_ctx->busy();
-    if (full != m_fullSpeed || runs != m_operationRuns) {
-        m_fullSpeed = full;
-        m_operationRuns = runs;
-        emitChanged(RunStateChanged);
-    }
-}
-
-void TIAppPart::publish(uint32_t c) {
-    if (!c || !m_led) return;
-    if (m_observer) m_observer(c);
-    using S = TIAppPart;
-    const TIAppPart& k = *this;
-    auto make = [this](auto p) {
-        p->serial = ++m_serial;
-        return p;
-    };
-    if (c & S::DisplayChanged) {
-        auto p = make(std::make_shared<TILedState>());
-        p->led = k.display();
-        p->calcIndicatorOpacity = k.calcIndicatorOpacity();
-        m_led->set(std::move(p));
-    }
-    if (c & (S::CueCardChanged | S::CardChanged | S::ModelChanged)) {
-        auto p = make(std::make_shared<TICueCardState>());
-        p->card = k.cueCard();
-        p->onShow = k.cardOnShow();
-        p->litCorner = k.litCardCorner();
-        m_cue->set(std::move(p));
-    }
-    if (c & S::PrinterChanged) {
-        auto p = make(std::make_shared<TIPrinterState>());
-        p->connected = k.printerConnected();
-        p->trace = k.printerTrace();
-        m_printer->set(std::move(p));
-    }
-}
-
-void TIAppPart::error(const std::string& title, const std::string& message) {
-    if (m_ctx) m_ctx->notice(title + ": " + message);
+    if (!m_led) return;
+    auto led = std::make_shared<TILedState>();
+    led->led = m_display;
+    led->calcIndicatorOpacity = m_calcOpacity;
+    setIfChanged(*m_led, std::move(led));
+    auto cue = std::make_shared<TICueCardState>();
+    cue->card = m_cueCard;
+    cue->onShow = m_onShow;
+    cue->litCorner = m_litCorner;
+    setIfChanged(*m_cue, std::move(cue));
+    auto printer = std::make_shared<TIPrinterState>();
+    printer->connected = m_printerConnected;
+    printer->trace = m_printerTrace;
+    setIfChanged(*m_printer, std::move(printer));
 }
 
 void TIAppPart::diagnostic(const std::string& message) {

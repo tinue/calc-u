@@ -49,7 +49,9 @@ Never edit the calculator there — that copy is generated.
    item goes into `TIShellProduct` (the menu model), not into the page.
    `src/engine.js`, `src/ControlBar.jsx`, the page's own preset picker,
    Settings and About, `c59.static-data`, `c59.web.model`,
-   `c59.web.settings` and the page's pointer commands went in M-57.
+   `c59.web.settings` and the page's pointer commands went in M-57;
+   `c59.web.printer` and `c59.web.run-state` in Part E (E-3): the page
+   reads `c59.printer`, the library's `run-state`, `busy` and `held-keys`.
    A trace is handed over with `keep-file` when it ends; the page lists it.
    The debug panel draws the product topics of `app/TIDebugPart` (C59-4,
    M-56): `calculator-debug`, `program-listing` (the whole listing while

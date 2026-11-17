@@ -45,34 +45,24 @@ Value rect(double x, double y, double w, double h) { return Value(Value::Array{V
 ReplyMessage answer(std::string_view kind, Value v) {
     ReplyMessage r;
     r.done = true;
-    r.result = webPayload(kind, std::move(v));
+    r.result = sessions::valuePayload(kind, std::move(v));
     return r;
 }
 
 } // namespace
 
-sessions::PayloadPtr webPayload(std::string_view kind, Value v) { return sessions::valuePayload(kind, std::move(v)); }
-
 TIWebPart::TIWebPart() = default;
 
-TIWebPart::~TIWebPart() {
-    if (m_app) m_app->setChangeObserver(nullptr);
-}
+TIWebPart::~TIWebPart() = default;
 
-void TIWebPart::bind(TIAppPart& app) {
-    m_app = &app;
-    m_changes = ~0u;
-    app.setChangeObserver([this](uint32_t c) { m_changes |= c; });
-}
-
-std::string TIWebPart::saveFolder() const { return m_app ? m_app->files().saveFolder() : std::string(); }
+void TIWebPart::bind(TIAppPart& app) { m_app = &app; }
 
 void TIWebPart::attach(sessions::SessionSetup& s) {
-    using sessions::History;
+    // TIAppPart's topics (declared before: the part is behind it), drawn in the page's form.
+    m_led = &s.stateTopic(topics::kLed);
+    m_cueCard = &s.stateTopic(topics::kCueCard);
     m_display = &s.stateTopic(topics::kWebDisplay);
     m_cue = &s.stateTopic(topics::kWebCueCard);
-    m_run = &s.stateTopic(topics::kWebRunState);
-    m_printer = &s.stateTopic(topics::kWebPrinter);
     m_font = &s.stateTopic(topics::kWebDebugFont);
     m_ctx = &s.context();
 
@@ -176,36 +166,28 @@ void TIWebPart::screenKey(int index, bool down, std::uint32_t pointer) {
     if (const auto id = keyIdAt(matrixCode(index / 5, index % 5))) t->engine().screenKeyDown(*id, pointer);
 }
 
-int TIWebPart::heldKey() const {
-    calcu::typing::TypingPart* t = m_app ? &m_app->typing() : nullptr;
-    if (!t) return -1;
-    const auto held = t->engine().liveHeld();
-    if (held.empty()) return -1;
-    const auto code = matrixCodeOf(held.back());
-    return code ? (*code / 10 - 1) * 5 + (*code % 10 - 1) : -1;
-}
+void TIWebPart::afterCall(SessionContext&, calcu::pacing::WallTime) { drain(); }
 
-void TIWebPart::afterCall(SessionContext& ctx, calcu::pacing::WallTime) { drain(ctx); }
+// The page's forms of the product topics whose value changed since they were
+// last drawn (and the cue card when the page's card size changed).
+void TIWebPart::drain() {
+    if (!m_app || !m_led) return;
+    auto set = [](sessions::StateTopic* t, std::string_view kind, Value v) { t->set(sessions::valuePayload(kind, std::move(v))); };
+    auto changed = [](const sessions::StateTopic& source, sessions::PayloadPtr& drawn) {
+        const sessions::PayloadPtr& now = source.current();
+        if (!now || (drawn && drawn->equals(*now))) return false;
+        drawn = now;
+        return true;
+    };
 
-// One post per kind of change, as 2.3.0's WebController::drain().
-void TIWebPart::drain(SessionContext&) {
-    if (!m_app) return;
-    uint32_t c = std::exchange(m_changes, 0u);
-    using S = TIAppPart;
-    if (const int h = heldKey(); h != m_lastHeld) {   // the key drawn pressed: the typing's held-keys
-        m_lastHeld = h;
-        c |= S::RunStateChanged;
-    }
-    auto set = [](sessions::StateTopic* t, std::string_view kind, Value v) { t->set(webPayload(kind, std::move(v))); };
-
-    if (c & (S::DisplayChanged | S::ModelChanged)) {
+    if (changed(*m_led, m_ledDrawn)) {
         // Per cell (0 = rightmost) its segment mask, brightness and decimal
         // point (0–1), flat: [segments, level, dp] × 12, as float32 bytes.
-        const LedFrame& d = m_app->display();
-        const double calc = m_app->calcIndicatorOpacity();
+        const auto& led = *sessions::payloadAs<TILedState>(m_ledDrawn);
+        const LedFrame& d = led.led;
         float cells[36];
         for (int i = 0; i < 12; ++i) {
-            const LedCell cell = ledCell(i, d.segments[i], d.digitLevel[i], calc);
+            const LedCell cell = ledCell(i, d.segments[i], d.digitLevel[i], led.calcIndicatorOpacity);
             cells[i * 3] = cell.segments;
             cells[i * 3 + 1] = static_cast<float>(cell.opacity);
             cells[i * 3 + 2] = d.dpLevel[i] / 255.0f;
@@ -214,36 +196,19 @@ void TIWebPart::drain(SessionContext&) {
         std::memcpy(raw.data(), cells, sizeof cells);
         set(m_display, "c59.web.display", Value(std::move(raw)));
     }
-    if ((c & (S::CueCardChanged | S::CardChanged | S::ModelChanged)) || m_cueDirty) {   // the lit corner too
+    if (changed(*m_cueCard, m_cueDrawn) || (m_cueDirty && m_cueDrawn)) {   // the lit corner too
         m_cueDirty = false;
-        set(m_cue, "c59.web.cue-card", cueCard());
+        set(m_cue, "c59.web.cue-card", cueCard(*sessions::payloadAs<TICueCardState>(m_cueDrawn)));
     }
-    if (c & (S::RunStateChanged | S::ModelChanged)) set(m_run, "c59.web.run-state", runState());
-    if (c & (S::PrinterChanged | S::ModelChanged))   // LIB-8 P-E1: the paper is the library's `paper PC-100C`
-        set(m_printer, "c59.web.printer",
-            Value::object({{"connected", m_app->printerConnected()}, {"trace", m_app->printerTrace()}}));
     if (m_debugFontDirty) {
         m_debugFontDirty = false;
         set(m_font, "c59.web.debug-font", Value(m_debugFont));
     }
 }
 
-// The run control's state as the page's FREEZE ON START buttons read it
-// (LIB-10: FREEZE, STEP and RESUME follow the library's `run-state`).
-Value TIWebPart::runState() const {
-    const calcu::debugger::RunState d = m_app->runState();
-    return Value::object({{"frozen", d.paused},
-                          {"owner", !d.owner ? Value() : Value(*d.owner == calcu::debugger::kCpu ? "cpu" : "calculator")},
-                          {"pcArmed", d.armed == calcu::debugger::kProgram},
-                          {"scanArmed", d.armed == calcu::debugger::kCpu},
-                          {"fullSpeed", m_app->fullSpeed()},
-                          {"heldKey", heldKey()}});
-}
-
-
 // ── Cue card: a draw list for m_cardW × m_cardH (CueCardRenderer in Qt) ──────
-Value TIWebPart::cueCard() const {
-    const auto& card = m_app->cueCard();
+Value TIWebPart::cueCard(const TICueCardState& state) const {
+    const auto& card = state.card;
     if (!card || m_cardW <= 0) return Value();
     const double w = m_cardW, h = m_cardH;
     const CueCardLayout& L = cueCardLayout(card->template_);
@@ -312,7 +277,7 @@ Value TIWebPart::cueCard() const {
         gridRow(1, g.gridY1);
     }
     rectItem(0, 0, w, g.washHeight, hexColor(kCueCardWashColor), kCueCardWashAlpha);
-    if (auto lit = m_app->litCardCorner()) {
+    if (auto lit = state.litCorner) {
         const CardCornerGeometry cg = cardCornerGeometry(*lit, w, h);
         Value::Array arrow;
         for (const auto& pt : cg.arrow) {

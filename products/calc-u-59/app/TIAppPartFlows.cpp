@@ -29,7 +29,6 @@ void TIAppPart::followMachine() {
     m_activeProgram = 0;
     if (!m) {
         m_session.reset();
-        emitChanged(~0u);
         return;
     }
     // LIB-10 §12.11: a pause or a step waiting to land runs on in the host
@@ -61,7 +60,6 @@ void TIAppPart::followMachine() {
     m_moduleCards.clear();
     followPlugs(true);
     refreshCueCard();
-    emitChanged(ModelChanged | RunStateChanged | CardChanged | PrinterChanged | CueCardChanged);
 }
 
 void TIAppPart::followPlugs(bool newMachine) {
@@ -74,22 +72,14 @@ void TIAppPart::followPlugs(bool newMachine) {
         m_moduleCards = m_setup.roms.set ? moduleCueCards(*m_setup.roms.set, m_moduleID, [this](const std::string& m) { diagnostic(m); })
                                      : std::map<int, CueCardContent>{};
         refreshCueCard();
-        emitChanged(ModelChanged);
     }
-    // The printer, and TRACE (C59-6 AC-6, LIB-18 D-27): an attach puts the
-    // remembered position into the new PC-100C; otherwise the position follows
-    // what the machine's PC-100C shows (a preset's build, printer-trace:).
-    const bool plugged = m_session->printerPlugged();
-    if (plugged && !m_printerConnected && !newMachine) m_session->printerControl(PC100C::kTrace, m_printerTrace);
-    if (plugged != m_printerConnected) {
-        m_printerConnected = plugged;
-        emitChanged(PrinterChanged);
-    }
-    if (plugged)
-        if (const auto on = m_session->printerSwitch(PC100C::kTrace); on && *on != m_printerTrace) {
-            m_printerTrace = *on;
-            emitChanged(PrinterChanged);
-        }
+    // The printer, and TRACE (C59-6 AC-6, LIB-18 D-27): the position follows
+    // what the machine's PC-100C shows (LIB-2's set-control, a preset's build,
+    // printer-trace:) and stays while none is plugged; an attach puts it into
+    // the new PC-100C (TIProductMachines::attaching).
+    m_printerConnected = m_session->printerPlugged();
+    if (m_printerConnected)
+        if (const auto on = m_session->printerSwitch(PC100C::kTrace)) m_printerTrace = *on;
 }
 
 void TIAppPart::machineRestarted(calcu::sessions::SessionContext& ctx, calcu::sessions::Restart r) {
@@ -101,7 +91,6 @@ void TIAppPart::machineRestarted(calcu::sessions::SessionContext& ctx, calcu::se
     m_activeProgram = 0;
     diagnostic(r == calcu::sessions::Restart::ColdBoot ? "Clean Reset — all registers cleared" : "Calculator Reset");
     refreshCueCard();
-    emitChanged(ModelChanged | CardChanged);
 }
 
 void TIAppPart::fitOwnCueCard(const CueCardContent& card) {
@@ -110,28 +99,16 @@ void TIAppPart::fitOwnCueCard(const CueCardContent& card) {
     m_userCueCardGeneration = m_ms ? m_ms->generation() : 0;
     m_lastFit = Fitted::Own;   // D-6: in the place of the card fitted before
     refreshCueCard();
-    emitChanged(CardChanged | CueCardChanged);
 }
 
 // ── 60 Hz frame ──────────────────────────────────────────────────────────────
 
-void TIAppPart::frame(Clock::time_point now) {
+void TIAppPart::frame(Clock::time_point) {
     if (!m_session || !machine()) return;
-    uint32_t changes = 0;
-    FrameUpdate f = m_session->tick();
-
-    if (f.led != m_display) {
-        m_display = f.led;
-        changes |= DisplayChanged;
-    }
-    if (f.calcIndicatorOpacity != m_calcOpacity) {
-        m_calcOpacity = f.calcIndicatorOpacity;
-        changes |= DisplayChanged;
-    }
-
-    (void)now;
+    const FrameUpdate f = m_session->tick();
+    m_display = f.led;
+    m_calcOpacity = f.calcIndicatorOpacity;
     refreshCueCard();   // D-7: the library program and the fitted card at each call
-    emitChanged(changes);
 }
 
 void TIAppPart::refreshCueCard() {
@@ -167,28 +144,9 @@ void TIAppPart::refreshCueCard() {
         }
     const bool onShow = m_lastFit == Fitted::Card && b && !covered;
     const std::optional<int> lit = onShow ? passing : std::nullopt;
-    if (card != m_cueCard || onShow != m_onShow || lit != m_litCorner) {
-        m_cueCard = card;
-        m_onShow = onShow;
-        m_litCorner = lit;
-        emitChanged(CueCardChanged);
-    }
-}
-
-// ── Printer ──────────────────────────────────────────────────────────────────
-
-bool TIAppPart::setPrinterControl(const std::string& control, bool on) {
-    if (control == PC100C::kTrace.value) {   // C59-6 AC-6: the app session keeps TRACE
-        m_printerTrace = on;
-        if (m_session) m_session->printerControl(PC100C::kTrace, on);
-        emitChanged(PrinterChanged);
-        return true;
-    }
-    if (control == PC100C::kPrint.value || control == PC100C::kAdv.value) {
-        if (m_session) m_session->printerControl(calcu::machine::ControlId{control}, on);
-        return true;
-    }
-    return false;
+    m_cueCard = std::move(card);
+    m_onShow = onShow;
+    m_litCorner = lit;
 }
 
 // ── Magnetic cards (C59-7; the library's media part) ─────────────────────────
@@ -205,19 +163,6 @@ bool TIAppPart::tapCard(double nx, double ny) {
     if (auto refused = m_lib.media().feed(*m_ctx, "card-reader", *side)) return false;   // AC-16: one passing
     refreshCueCard();
     return true;
-}
-
-// ── Debugger ─────────────────────────────────────────────────────────────────
-
-// The run control's state, for the Web page's FREEZE ON START buttons
-// (TIWebPart's c59.web.run-state); the panel's data is TIDebugPart's.
-void TIAppPart::followRunState() {
-    if (!m_session || !machine()) return;
-    const calcu::debugger::RunState now = runControl().state();
-    if (!now.same(m_seenRun)) {
-        m_seenRun = now;
-        emitChanged(RunStateChanged);
-    }
 }
 
 } // namespace cu59

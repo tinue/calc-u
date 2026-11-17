@@ -57,7 +57,7 @@ calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀�
 | `src/painters.js` | Canvas painting: the LED (`LedRenderer`), the cue card's draw list (`CueCardRenderer`) |
 | `src/CalculatorFace.jsx` | Artwork, LED and cue card overlays, pressed-key effect (`held-keys`); the pointer is the React set's `useShellFaceplate` on `c59.faceplate-map` (a press on a fitted card's corner: `c59.tap-card`); transparent key buttons for assistive technology (`KeyboardWidget`) |
 | `src/Dialogs.jsx` | Card picker on the `media` topic (Arm Card, Arm Fresh Card) and File ▸ Saved Media… (the library's `CalcuSavedMediaDialog`) (`CardPickerDialog`) |
-| `src/Paper.jsx` | The PC-100C's pane: the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), owner from the control state, which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (`set-control`; TRACE's position `c59.web.printer`), Copy and Cut its `paper.copy` / `paper.cut` (LIB-8, M-53; Qt6: `calcu::qt6::PaperPanel`). The PC-100C is attached by the bar's button "PC-100C" (M-57) |
+| `src/Paper.jsx` | The PC-100C's pane: the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), owner from the control state, which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (LIB-2's `set-control`; TRACE's position `c59.printer`), Copy and Cut its `paper.copy` / `paper.cut` (LIB-8, M-53; Qt6: `calcu::qt6::PaperPanel`). The PC-100C is attached by the bar's button "PC-100C" (M-57) |
 | `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) on the debug part's product topics `calculator-debug`, `program-listing`, `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view` and LIB-3's `log` (C59-4, M-56); Run, TRACE and the CALCULATOR tab follow the `control-state` entries `c59.asm-run`, `c59.trace`, `c59.calculator-tab`; FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` (LIB-10, M-53) |
 | `src/PlayCalculator.jsx` | The component, put together from the React set's shell (LIB-14 59, M-57): the menu bar (wide) or the bar's Reset, Preset, Settings and More (portrait), the shell's control bar with LIB-7's module picker and C59-7's card controls, the shell's dialogs, the storage banner, "ROMs missing"; the two layouts, focus and physical keyboard (the library's `calcuHostKeys`), drag and drop (LIB-13's `open {way: drop, upload: true}`, M-56), keyboard feedback (`[keyboard] feedback`) (`MainWindow`) |
 | `calc-engine-worker.js` | The product's configuration of the library's Web Worker (`library/web/src/worker.js`): the engine's name, its factory, the persistent mount `/persist-calc-u-59` and the lock `calcu59-storage` |
@@ -75,10 +75,14 @@ calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀�
 
 Everything that crosses `postMessage` is a LIB-3 message in the library's
 JS form (commands, requests, replies, state and stream topics; LIB-15 AC-22).
-`app/TIWebPart` sends what changed as the `c59.web.*` topics, already in the
-form the page draws: LED cells (`ledCell`, as float32 bytes), the cue card as
-a draw list laid out by `cueCardGeometry` and friends for the size the page
-reports, the PC-100C's place and TRACE (`c59.web.printer`). The settings are
+`app/TIWebPart` sends the `c59.web.*` topics, already in the form the page
+draws, each derived from a product topic's value when it changed (Part E
+simplification E-3): LED cells of `c59.led` (`ledCell`, as float32 bytes),
+the cue card of `c59.cue-card` as a draw list laid out by `cueCardGeometry`
+and friends for the size the page reports. The page reads `c59.printer`
+(TRACE), the library's `run-state` (FREEZE ON START, ARMED), `busy` (the
+display's full-speed hold, `data-full-speed`) and `held-keys` (the key drawn
+pressed) itself; `c59.web.printer` and `c59.web.run-state` went in E-3. The settings are
 LIB-14's `settings` topic and `set-setting` (the shell's dialog). The
 cards are the library's `media` topic (the place `card-reader`: the fitted
 card, the side passing, its picker; the saved cards by kind) and its

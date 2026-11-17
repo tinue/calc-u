@@ -58,13 +58,15 @@
 // pass-through place `card-reader`, the save folder, the steps `card:` and
 // `arm:`, the header key `magnetic-cards:`; the media part is the card
 // wait's WaitProbe, and LIB-13's `open` fits a card file through it. What
-// stays the part's: the PC-100C's TRACE position (C59-6 AC-6), the cue card
-// shown (one fitted at a time, the module cue card of the library program on
-// top, C59-7 AC-22), the corner taps (c59.tap-card). The debug panel is
-// TIDebugPart's (C59-4, M-56), a part of the same session it owns; the file
-// kinds of LIB-13's `open` are TIFileKinds (M-56). Errors are notices, diagnostics log lines. What
-// 2.3.0's change flags announced arrives as the interim product topics below
-// (removed with their owners, design §5).
+// stays the part's: the PC-100C's TRACE position (C59-6 AC-6; the switch is
+// set through LIB-2's `set-control`, the position kept while the PC-100C is
+// detached and put into the next one by TIProductMachines::attaching), the
+// cue card shown (one fitted at a time, the module cue card of the library
+// program on top, C59-7 AC-22), the corner taps (c59.tap-card). The debug
+// panel is TIDebugPart's (C59-4, M-56), a part of the same session it owns;
+// the file kinds of LIB-13's `open` are TIFileKinds (M-56). Diagnostics are
+// log lines. The product topics below are set after each flow with what it
+// left; the session sends one when its value changed (LIB-3 AC-5).
 
 namespace cu59 {
 
@@ -75,39 +77,36 @@ inline const TopicName kCueCard{"c59.cue-card"};
 inline const TopicName kPrinter{"c59.printer"};
 } // namespace topics
 
-// ── Payloads of the interim topics. Each is a snapshot set when today's
-// change flag fires; two snapshots are equal when they are the same set
-// (the serial), so a flag sends its topic once.
+// ── Payloads of the product topics, equal when their content is (LIB-3 AC-5).
 
-template <class D> struct TISnapshot : calcu::sessions::PayloadOf<D> {
-    std::uint64_t serial = 0;
-    bool same(const D& o) const { return serial == o.serial; }
-};
-
-struct TILedState final : TISnapshot<TILedState> {
+/// The display's LED frame and the C indicator (the frontends draw it).
+struct TILedState final : calcu::sessions::PayloadOf<TILedState> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.led"};
     LedFrame led;
     double calcIndicatorOpacity = 0;
+    bool same(const TILedState& o) const { return led == o.led && calcIndicatorOpacity == o.calcIndicatorOpacity; }
     calcu::sessions::Value toValue() const override;
 };
 /// The cue card to show (C59-2 AC-6, C59-7 AC-22): the module cue card of
 /// the library program selected, else the fitted one. `onShow`: a fitted
 /// magnetic card that no module cue card covers, whose corners feed it
 /// (AC-12, AC-24); `litCorner`: the side passing now, while on show.
-struct TICueCardState final : TISnapshot<TICueCardState> {
+struct TICueCardState final : calcu::sessions::PayloadOf<TICueCardState> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.cue-card"};
     std::optional<CueCardContent> card;
     bool onShow = false;
     std::optional<int> litCorner;
+    bool same(const TICueCardState& o) const { return card == o.card && onShow == o.onShow && litCorner == o.litCorner; }
     calcu::sessions::Value toValue() const override;
 };
-/// The PC-100C's place and TRACE (LIB-8 adapter P-E1, until M-57): the
-/// paper panel's owner and the connect toggle above it; the paper itself is
-/// the library's `paper PC-100C`.
-struct TIPrinterState final : TISnapshot<TIPrinterState> {
+/// The PC-100C in `printer` and TRACE's position (C59-6 AC-6): what the
+/// frontends draw the paper panel's controls with; the paper itself is the
+/// library's `paper PC-100C`.
+struct TIPrinterState final : calcu::sessions::PayloadOf<TIPrinterState> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.printer"};
     bool connected = true;
     bool trace = false;
+    bool same(const TIPrinterState& o) const { return connected == o.connected && trace == o.trace; }
     calcu::sessions::Value toValue() const override;
 };
 /// The result of a command that answers yes or no (fit-card, tap-card, …).
@@ -120,11 +119,10 @@ struct TIFlag final : calcu::sessions::PayloadOf<TIFlag> {
 };
 
 /// The commands of the part (`c59.` + name; arguments in the comments).
+/// The PC-100C's PRINT, ADV and TRACE are LIB-2's `set-control
+/// {peripheral: "PC-100C", control, on}` (calcu::peripherals::kSetControlCommand).
 namespace commands {
 using calcu::sessions::CommandName;
-// LIB-8 P-E2 (until M-57): `set-control {peripheral: "PC-100C", control: PRINT|ADV|TRACE, on}`,
-// the library's command, as the paper panel sends it.
-inline const CommandName kSetControl{"set-control"};
 // C59-7 D-12: a tap on the fitted card; a top corner feeds that side
 // (media.feed of the card reader). The card commands are the library's
 // media.* (media.choose, media.start-new, media.eject, media.feed).
@@ -217,11 +215,6 @@ public:
     const LedFrame& display() const { return m_display; }
     double calcIndicatorOpacity() const { return m_calcOpacity; }
     calcu::typing::TypingPart& typing() { return m_lib.typing(); }
-    /// The session's commanded speed is full (the library's `speed`, which
-    /// the display's hold sends; the Web page shows it).
-    bool fullSpeed() const { return m_fullSpeed; }
-    /// An operation runs (a preset, a build, a plug change).
-    bool keystrokesPlaying() const { return m_operationRuns; }
 
     // Cue card
     const std::optional<CueCardContent>& cueCard() const { return m_cueCard; }
@@ -234,11 +227,9 @@ public:
     /// TRACE's position: kept by the app session from the start (off) to the
     /// end, through reset, power cycle, cold boot, detach and attach; never
     /// saved (C59-6 AC-6; row 59-25); a preset's build sets it as the preset
-    /// says (LIB-18 D-27).
+    /// says (LIB-18 D-27). It follows the plugged PC-100C's switch (LIB-2's
+    /// `set-control`) and goes into the next one attached (TIProductMachines).
     bool printerTrace() const { return m_printerTrace; }
-    /// A control of the PC-100C as LIB-2 names it: PRINT, ADV (keys), TRACE
-    /// (the switch the app session keeps). False: no such control.
-    bool setPrinterControl(const std::string& control, bool on);
     calcu::paper::PaperPart& paperPart() { return m_lib.paper(); }
     calcu::debugger::DebuggerPart& debuggerPart() { return m_lib.debugger(); }
     calcu::presets::PresetsPart& presetsPart() { return m_lib.presets(); }
@@ -264,23 +255,8 @@ public:
     // Debugger
     calcu::debugger::RunState runState() const;
     bool isFrozen() const;
-    /// What changed since the last publish: each bit moves its interim topic.
-    enum Change : uint32_t {
-        ModelChanged = 1u << 0,     ///< model, module, machine replaced or reset (card reader emptied)
-        DisplayChanged = 1u << 1,   ///< display digits or the C indicator
-        CueCardChanged = 1u << 2,
-        PrinterChanged = 1u << 3,   ///< connection, TRACE latch
-        CardChanged = 1u << 5,      ///< the fitted card or the side passing
-        RunStateChanged = 1u << 6,  ///< full speed, an operation runs, the run control's state
-    };
-    /// Told the changes each time the interim topics are published, on the
-    /// session's thread: another part of the same session that draws its own
-    /// form of them (the Web's TIWebPart, LIB-15 59).
-    void setChangeObserver(std::function<void(uint32_t)> observer) { m_observer = std::move(observer); }
 
     // What the flows report (LIB-3 AC-30)
-    /// An error: the notice "<title>: <message>" (today's alert).
-    void error(const std::string& title, const std::string& message);
     /// Developer diagnostics: a line of the log.
     void diagnostic(const std::string& message);
     /// The constant-memory file (TIFileAccess, on the save folder).
@@ -288,21 +264,17 @@ public:
     ConstantMemoryKeeper& constantMemory() { return m_keeper; }
 
 private:
-    static uint32_t changeIf(bool on, Change bit) { return on ? static_cast<uint32_t>(bit) : 0u; }
-    void emitChanged(uint32_t c) { m_changes |= c; }
     calcu::parts::LibraryPartsSetup librarySetup();   // the constructor's, on the members before m_lib
 
     using Handler = std::function<calcu::sessions::CommandOutcome(const calcu::sessions::Value&)>;
     void add(calcu::sessions::SessionSetup&, const calcu::sessions::CommandName&, Handler);
-    /// After everything a flow did: the queue, the machine, the speed, the topics.
+    /// After everything a flow did: the product topics set from what it left.
     void settle();
     /// A new machine of the session (LIB-18 §11.3): the runtime around it, the
     /// plugs read from it, the own cue card, the constant memory keeper.
     void followMachine();
     /// What is plugged now: the module (and its cards), the printer, TRACE.
     void followPlugs(bool newMachine);
-    void syncSpeed();
-    void publish(uint32_t changes);
     /// The 60 Hz duties after a host call: display and the cue card shown.
     void frame(std::chrono::steady_clock::time_point now);
     /// `cue-card:` of a preset (C59-2 AC-6): the machine's own card.
@@ -311,7 +283,6 @@ private:
     /// The cue card shown, the fitted card and the corner from the media
     /// part's `card-reader` and the library program (AC-21, AC-22, AC-24).
     void refreshCueCard();
-    void followRunState();
     const calcu::debugger::RunControl& runControl() const;
     calcu::machine::Machine* machine() const;
     TIAppSetup m_setup;
@@ -330,12 +301,6 @@ private:
     TIDebugPart m_debugPart;
     TIFileKinds m_fileKinds;
     calcu::parts::LibraryParts m_lib;
-
-    std::function<void(uint32_t)> m_observer;
-    uint32_t m_changes = 0;
-    bool m_fullSpeed = false;
-    bool m_operationRuns = false;
-    std::uint64_t m_serial = 0;
 
     std::unique_ptr<EmulatorSession> m_session;
     std::uint64_t m_seenGeneration = 0;
@@ -360,7 +325,6 @@ private:
     bool m_printerTrace = false;   ///< C59-6 AC-6
 
     using Clock = std::chrono::steady_clock;
-    calcu::debugger::RunState m_seenRun;
 
     calcu::sessions::StateTopic* m_led = nullptr;
     calcu::sessions::StateTopic* m_cue = nullptr;

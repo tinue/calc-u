@@ -6,6 +6,8 @@
 #include "control/ControlState.hpp"
 #include "media/MediaTopics.hpp"
 #include "SessionRig.hpp"
+#include "peripherals/PeripheralsPart.hpp"
+#include "startup/StartupPart.hpp"
 #include "../app/Bcd.hpp"
 #include "../app/TIPresetKeys.hpp"
 #include <fstream>
@@ -17,11 +19,11 @@ using testroms::SessionRig;
 
 namespace {
 
-bool hasNotice(SessionRig& r, const std::string& sentence) {
+bool hasNoticeWith(SessionRig& r, const std::string& part) {
     for (const auto& m : r.fe.log)
         if (const auto* s = std::get_if<StreamMessage>(&m); s && s->topic == kNoticesTopic)
             for (const auto& p : s->appended)
-                if (const auto* n = payloadAs<Notice>(p); n && n->sentence == sentence) return true;
+                if (const auto* n = payloadAs<Notice>(p); n && n->sentence.find(part) != std::string::npos) return true;
     return false;
 }
 
@@ -36,11 +38,8 @@ bool hasLog(SessionRig& r, const std::string& line) {
 std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
     const PayloadPtr* p = r.fe.mirror.state(t);
     if (!p || !*p) return 0;
-    // Every interim payload is a TISnapshot: the serial says which set it was.
-    if (const auto* x = payloadAs<TILedState>(*p)) return x->serial;
-    if (const auto* x = payloadAs<TICueCardState>(*p)) return x->serial;
-    if (const auto* x = payloadAs<TIPrinterState>(*p)) return x->serial;
-    // The debug panel's topics (C59-4 AC-25): a serial, or a count of sets.
+    // The product topics are sent when their value changed (LIB-3 AC-5): a
+    // new payload is a new value. The debug panel's topics (C59-4 AC-25): a serial, or a count of sets.
     if (const auto* x = payloadAs<TICpuDebug>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIHeatmap>(*p)) return x->serial;
     return reinterpret_cast<std::uintptr_t>(p->get());
@@ -97,29 +96,36 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
     CHECK_EQ(controlModel(r), std::string("TI-58"));
     // DisplayChanged
     CHECK(moves(topics::kLed, [&] { r.tap(83); }));   // 5
-    // CueCardChanged, CardChanged
-    CHECK(moves(topics::kCueCard, [&] { r.model("TI-59"); }));
-    {   // CardChanged: the library's `media` topic (M-55, LIB-7 59)
+    r.model("TI-59");
+    r.runFor(100ms);
+    {   // CardChanged: the library's `media` topic (M-55, LIB-7 59); CueCardChanged: the card on show
         const PayloadPtr before = *r.fe.mirror.state(calcu::media::kMediaTopic);
-        r.send(calcu::media::kStartNewCommand,
-               Value::object({{"place", "card-reader"}, {"template", "implicit:Fresh card"}, {"name", "a"}}));
-        r.runFor(100ms);
+        CHECK(moves(topics::kCueCard, [&] {
+            r.send(calcu::media::kStartNewCommand,
+                   Value::object({{"place", "card-reader"}, {"template", "implicit:Fresh card"}, {"name", "a"}}));
+        }));
         CHECK(*r.fe.mirror.state(calcu::media::kMediaTopic) != before);
         const auto* media = r.state<calcu::media::MediaState>(calcu::media::kMediaTopic);
         CHECK(media && media->place("card-reader") && media->place("card-reader")->holds);
-        CHECK(moves(topics::kCueCard, [&] {}) || r.part().cardOnShow());
+        CHECK(r.state<TICueCardState>(topics::kCueCard)->onShow);
     }
-    // PrinterChanged (TRACE through the paper panel's set-control, LIB-8 P-E2)
+    // PrinterChanged: the PC-100C attached, TRACE through LIB-2's set-control
+    // (the paper panel's; Part E simplification E-3)
     CHECK(moves(topics::kPrinter, [&] {
-        r.send(commands::kSetControl, Value::object({{"peripheral", "PC-100C"}, {"control", "TRACE"}, {"on", true}}));
+        r.send(calcu::startup::kAttachCommand, Value::object({{"place", "printer"}, {"peripheral", "PC-100C"}}));
+    }));
+    CHECK(r.until([&] { return !r.session().context().busy(); }));
+    CHECK(r.state<TIPrinterState>(topics::kPrinter)->connected);
+    CHECK(moves(topics::kPrinter, [&] {
+        r.send(calcu::peripherals::kSetControlCommand, Value::object({{"peripheral", "PC-100C"}, {"control", "TRACE"}, {"on", true}}));
     }));
     CHECK(r.state<TIPrinterState>(topics::kPrinter)->trace);
-    // RunStateChanged: the library's `speed` (c59.full-speed and the interim
-    // topic c59.run-state went in M-59); the part follows the commanded speed.
+    // RunStateChanged: the library's `speed` and `busy` (c59.full-speed and the
+    // interim topic c59.run-state went in M-59, c59.web.run-state in E-3).
     r.send(calcu::sessions::kSpeedCommand, Value::object({{"full", true}}));
-    CHECK(r.part().fullSpeed());
+    CHECK(r.state<BusyState>(kBusyTopic)->speed == calcu::pacing::Speed::Full);
     r.send(calcu::sessions::kSpeedCommand, Value::object({{"full", false}}));
-    CHECK(!r.part().fullSpeed());
+    CHECK(r.state<BusyState>(kBusyTopic)->speed == calcu::pacing::Speed::Regular);
     // What the debug panel shows: its product topics since M-56 (C59-4 AC-25).
     CHECK(moves(topics::kCpuDebug, [&] { r.send(commands::kCpuDebug, Value::object({{"on", true}})); }));
     CHECK(moves(topics::kHeatmap, [&] { r.send(commands::kHeatmapReset); }));
@@ -137,9 +143,12 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
 // AC-30: an error is a notice, a diagnostic a line of the log.
 TEST(lib3_ac30_error_is_notice_diagnostic_is_log) {
     SessionRig r;
-    r.part().error("Preset load error", "Cannot read file.");
+    // An error of the part's flows: the constant memory file of the TI-58C
+    // built is outdated (C59-3 EC-2).
+    std::ofstream(r.folder.path() / TIFileAccess::kConstantMemoryFile) << "format: ti58c-constant-memory\nram:\n  encoding: register-hex\n";
+    r.model("TI-58C");
     r.frame();
-    CHECK(hasNotice(r, "Preset load error: Cannot read file."));
+    CHECK(hasNoticeWith(r, "is outdated"));
     r.part().diagnostic("a developer line");
     r.frame();
     CHECK(hasLog(r, "a developer line"));

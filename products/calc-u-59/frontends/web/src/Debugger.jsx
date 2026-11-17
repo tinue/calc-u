@@ -6,17 +6,21 @@
 // values are already the rows formatted by app/DebugText; the LOG tab is
 // LIB-3's `log`. FREEZE, STEP and RESUME of each tab are the component set's
 // run-control buttons for the level `program` (CALCULATOR) and `cpu` (CPU),
-// on the library's `run-state` (LIB-10 AC-34, M-53); TRACE is the trace
+// on the library's `run-state` (LIB-10 AC-34, M-53), which FREEZE ON START
+// and ARMED read too (Part E simplification E-3); TRACE is the trace
 // session's button. Run, TRACE and the CALCULATOR tab follow the control
 // state's product entries c59.asm-run, c59.trace and c59.calculator-tab.
 // Since M-57 it reads the topics through the library's shell (useTopic) and
 // sends the commands by name (the page's context C59_PAGE, src/page.jsx).
 
-const NO_RUN = { frozen: false, owner: null, pcArmed: false, scanArmed: false, fullSpeed: false, heldKey: -1 };
 const NO_ASM = { fileName: "", words: 0, status: "", active: false };
 const NO_TRACE = { running: false, fileName: "" };
 const usePage = () => React.useContext(C59_PAGE);
-const useRun = (shell) => useTopic(shell, "c59.web.run-state") || NO_RUN;
+// The library's run-state as the tabs read it: frozen, and armed per level.
+const useRun = (shell) => {
+  const r = useTopic(shell, "run-state");
+  return { frozen: !!(r && r.paused), pcArmed: !!r && r.armed === "program", scanArmed: !!r && r.armed === "cpu" };
+};
 const useEntries = (shell) => useTopic(shell, "control-state", (cs) => (cs && cs.product) || null);
 
 const CURRENT_PC_RGB = [52, 199, 89];

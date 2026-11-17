@@ -37,7 +37,10 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    the settings file (the startup model, LIB-9), your `calcu::settings::Paths`
    (the save folder: cards, `ti58c.memory.yaml`; the trace folder, the
    screenshots, `~/`) and the bundled `examples/`; `makeAppSession` sends
-   LIB-18's `start`. Without the full set the session runs without a
+   LIB-18's `start`. Its second form takes a `calcu::shell::HostSessionSetup`
+   (`shell/HostSession.hpp`: your `calcu::shell::HostSettings`, the settings
+   file and places opened for you, for LIB-14's `SettingsPart`; your own
+   parts, the clock, whether to send `start`). Without the full set the session runs without a
    machine and LIB-18's StartupPart publishes `roms-missing {text}`,
    which the shell shows in place of the faceplate (LIB-14 AC-19).
    Put the window together from LIB-14's shell (the Qt6 component set's

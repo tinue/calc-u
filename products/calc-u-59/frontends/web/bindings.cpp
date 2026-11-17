@@ -1,7 +1,8 @@
 // The Calc-U-59 Web engine (LIB-15 design §3.6, §4; M-34): the product's
 // factory of the library's app session for the library's Web Worker host.
 // All the rest is the library's (library/web/glue/: WorkerHost translates
-// the session's messages to the page and back) and the app layer's
+// the session's messages to the page and back; shell/HostSession: the
+// settings file, LIB-14's SettingsPart, the order) and the app layer's
 // (TIAppPart: the machine and the flows; TIWebPart: what the page draws).
 // Built by frontends/web/build.sh (CMake target calcu59_web) into dist/wasm/.
 //
@@ -19,7 +20,6 @@
 #include <chrono>
 #include <filesystem>
 #include <memory>
-#include <stdexcept>
 #include <string>
 
 #include "../../app/ProductRoms.hpp"
@@ -27,11 +27,7 @@
 #include "../../app/TIAppPart.hpp"
 #include "../../app/TIWebPart.hpp"
 #include "roms/Bundle.hpp"
-#include "settings/AtomicFile.hpp"
-#include "settings/PlatformBase.hpp"
-#include "settings/Paths.hpp"
-#include "settings/SettingsFile.hpp"
-#include "shell/SettingsPart.hpp"
+#include "shell/HostSession.hpp"
 #include "web/glue/Bind.hpp"
 
 namespace {
@@ -45,37 +41,26 @@ namespace s59 = cu59::settings;
 // `set-setting` of the shell's dialog, M-57), the library's parts (LIB-6
 // D-40), the program memory commands and itself; the Web part last.
 struct WebParts {
-    calcu::settings::SettingsFile file;
-    std::unique_ptr<calcu::settings::Paths> paths;
-    std::unique_ptr<calcu::shell::SettingsPart> settingsPart;
+    calcu::shell::HostSettings settings;
     std::unique_ptr<cu59::TIAppPart> app;
     std::unique_ptr<cu59::TIWebPart> web;
-    explicit WebParts(calcu::settings::SettingsFile f) : file(std::move(f)) {}
+    explicit WebParts(const calcu::settings::HostDirs& dirs) : settings(s59::settingsDecl(), dirs) {}
 };
 
 std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web::WebStart& start) {
-    auto parts = std::make_shared<WebParts>(calcu::settings::SettingsFile::open(
-        s59::settingsDecl(), calcu::settings::settingsFilePath(s59::settingsDecl(), start.dirs)));
+    auto parts = std::make_shared<WebParts>(start.placesDirs());
     std::error_code ec;
     std::filesystem::create_directories(start.dirs.saveFolder, ec);
-
-    calcu::settings::HostDirs dirs = start.dirs;
-    if (dirs.home.empty()) dirs.home = std::filesystem::path(dirs.saveFolder).parent_path().generic_string();   // /persist
-    parts->paths = std::make_unique<calcu::settings::Paths>(parts->file, dirs);
-    calcu::shell::SettingsPartSetup ss;
-    ss.file = &parts->file;
-    ss.paths = parts->paths.get();
-    parts->settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
 
     cu59::TIAppSetup setup;
     // LIB-12 AC-5, LIB-14 AC-19 (M-57): without the full set the session
     // still starts, with no machine; the shell shows the topic
     // `roms-missing` in place of the faceplate.
     setup.roms = cu59::lookUpRoms(calcu::roms::DirectoryBundle(start.bundleDir));
-    setup.settings = &parts->file;          // [startup] model, last-model, [preset] (LIB-18 AC-17)
+    setup.settings = &parts->settings.file();   // [startup] model, last-model, [preset] (LIB-18 AC-17)
     // The save folder; no trace folder: a trace is handed over with KeepFile
     // (LIB-10 AC-26), [trace] max-file-size-mb sets its limit.
-    setup.paths = parts->paths.get();
+    setup.paths = &parts->settings.paths();
     setup.screenshotFolder = start.dirs.saveFolder;   // a preset's screenshot: written there
     setup.examplesFolder = start.presetsDir;   // the bundle (LIB-15 AC-16)
     parts->app = std::make_unique<cu59::TIAppPart>(std::move(setup));
@@ -84,19 +69,20 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     // LIB-13 AC-8: several files of the preset picker's upload become one folder here.
     parts->app->libraryParts().open().setup().uploadFolder = start.uploadsDir;
 
-    calcu::sessions::AppSessionSetup s;
-    s.clock = &calcu::web::wallTimeNow;
-    s.hostTime = [] { return std::chrono::system_clock::now(); };
     // The one order (parts::LibraryParts): LIB-4's ControlPart (D-13: the
     // control state with C59-4's product entries c59.asm-run, c59.trace,
     // c59.calculator-tab; AC-25), the shell's part and SettingsPart, the
     // library's and the product's, the Web part last.
-    s.parts = parts->app->sessionParts({start.shellPart, parts->settingsPart.get()}, {parts->web.get()});
-    const std::string problem = parts->file.problem();
-    s.owned = std::move(parts);
-    auto session = std::make_unique<calcu::sessions::AppSession>(std::move(s));
-    if (!problem.empty()) session->context().log("Settings: " + problem);
-    return session;
+    calcu::shell::HostSessionSetup host;
+    host.settings = &parts->settings;
+    host.before = {start.shellPart};
+    host.after = {parts->web.get()};
+    host.clock = &calcu::web::wallTimeNow;
+    host.hostTime = [] { return std::chrono::system_clock::now(); };
+    host.logSettingsProblem = true;
+    cu59::TIAppPart& app = *parts->app;
+    host.owned = std::move(parts);
+    return calcu::shell::makeHostSession(app, std::move(host)).session;
 }
 
 } // namespace

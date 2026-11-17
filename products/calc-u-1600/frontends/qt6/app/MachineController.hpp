@@ -16,6 +16,7 @@
 #include "app/AudioSink.hpp"
 #include "app/SharpSession.hpp"
 #include "app/SharpTopics.hpp"
+#include "qt6/ProductHost.hpp"
 #include "qt6/SessionHost.hpp"
 #include "sessions/AppSession.hpp"
 #include "typing/HostKey.hpp"
@@ -23,17 +24,14 @@
 namespace calcu::media {
 struct MediaState;
 } // namespace calcu::media
-namespace calcu::shell {
-class SettingsPart;
-} // namespace calcu::shell
 
 class DapSocket;
 
 // ── MachineController: the product's glue around the session host ─────────
 //
 // LIB-14 Part D (D.3): makes Calc-U-1600's app session (makeSharpSession,
-// with LIB-14's SettingsPart) and the Qt6 component set's SessionHost over
-// it, which hosts it on the GUI thread (the 60 Hz timer, the listener, the
+// with LIB-14's SettingsPart over AppPaths::folders()) and the Qt6 component
+// set's SessionHost over it (calcu::qt6::ProductHost), which hosts it on the GUI thread (the 60 Hz timer, the listener, the
 // host services, harness attach). The shell draws from the host; this class
 // keeps what only the product needs: the sound feed (a message handler of
 // the host), the DAP server's socket (C1600-3), the typed keys of the
@@ -46,10 +44,10 @@ public:
     explicit MachineController(QObject* parent = nullptr);
     ~MachineController() override;
 
-    calcu::qt6::SessionHost& host() { return *m_host; }
-    shared::SharpAppPart& app() { return *m_app.part; }
-    const shared::SharpAppPart& app() const { return *m_app.part; }
-    calcu::sessions::AppSession& session() { return *m_app.session; }
+    calcu::qt6::SessionHost& host() { return m_session->host(); }
+    shared::SharpAppPart& app() { return m_session->part(); }
+    const shared::SharpAppPart& app() const { return m_session->part(); }
+    calcu::sessions::AppSession& session() { return m_session->session(); }
 
     // The start (LIB-18): the host's timer, then `start`. A missing ROM file
     // gives the topic roms-missing; the shell shows it (LIB-14 AC-19).
@@ -64,7 +62,7 @@ public:
     // A request, answered at once (requests do not wait, LIB-3).
     calcu::sessions::ReplyMessage ask(const calcu::sessions::RequestName& name, calcu::sessions::Value args = {});
     template <class P> const P* state(const calcu::sessions::TopicName& t) const {
-        const calcu::sessions::PayloadPtr* p = m_host->topics().state(t);
+        const calcu::sessions::PayloadPtr* p = m_session->host().topics().state(t);
         return p ? calcu::sessions::payloadAs<P>(*p) : nullptr;
     }
 
@@ -128,9 +126,9 @@ signals:
 private:
     void onMessage(const calcu::sessions::Message& message);
 
-    std::unique_ptr<calcu::shell::SettingsPart> m_settingsPart;
-    calcu::sessions::ProductSession<shared::SharpAppPart> m_app;
-    std::unique_ptr<calcu::qt6::SessionHost> m_host;   // stops listening before the session goes
+    // The session (with LIB-14's SettingsPart) and its host; ended first in
+    // the destructor, while the sound feed is still there.
+    std::unique_ptr<calcu::qt6::ProductHost<shared::SharpAppPart>> m_session;
     // Declared after the session so it goes first on destruction.
     std::unique_ptr<DapSocket> m_dapSocket;
     std::unique_ptr<shared::SoundFeed> m_sound;

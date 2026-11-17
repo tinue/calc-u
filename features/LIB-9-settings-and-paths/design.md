@@ -448,3 +448,28 @@ Risks:
   folder: AC-17 says a screenshot on the Web is a download and no folder
   exists for it, Calc-U-59's Web writes it into its save folder (as
   before; LIB-6's E-1 section has the question for the user).
+
+## Part E simplification E-2 (2026-11-17, branch `es-host-session`)
+
+`docs/reviews/e-simplification.md` §1 S-1, S-4 (survey A S-9).
+
+- `shell::HostSettings` (`shell/HostSession.hpp`): the product's settings
+  file opened at `settingsFilePath(decl, dirs)` (or a path the host names:
+  the Swift UI tests' file) and the `Paths` over it, for every host that
+  opened the file and made its `Paths` itself (both Web engines, the Swift
+  bridge, the Qt6 hosts below). A host logs `problem()` as before.
+- `qt6::HostFolders` (`library/qt6/HostFolders.hpp`): the Qt6 hosts' folders
+  and settings file, which both products' `frontends/qt6/app/AppPaths.cpp`
+  wrote: the platform's host folders (home, the settings base of AC-2 with
+  Qt's environment), a run's own folders before the first use
+  (`useHostDirs`, AC-18), the file opened once at the first use with the
+  warning "Settings: <problem>" (EC-6), the places over it, `toFsPath`.
+  The macOS settings base stays each product's: Calc-U-1600 passes
+  `macApplicationSupportFolder()`, Calc-U-59 nothing
+  (`~/Library/Application Support`); no settings file moves. Each
+  product's `AppPaths` keeps its bundled-resource folders. Calc-U-59's
+  `AppPaths::displayPath` and `platformHostDirs` (both read nowhere) and
+  Calc-U-1600's `AppPaths::platformHostDirs` (read only inside) are gone.
+- `web::WebStart::placesDirs()`: the Web's host folders with home the save
+  folder's parent (`/persist`) when the page gives none, which both Web
+  engines wrote.

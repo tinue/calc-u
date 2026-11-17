@@ -26,6 +26,7 @@ add_library(calcu_qt6 STATIC
 # LIB-14 (M-43): the shell.
 target_sources(calcu_qt6 PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/SessionHost.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/HostFolders.cpp          # Part E simplification E-2: LIB-9 on a Qt6 host
   ${CMAKE_CURRENT_SOURCE_DIR}/Shell.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ShellMenus.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ShellControlBar.cpp

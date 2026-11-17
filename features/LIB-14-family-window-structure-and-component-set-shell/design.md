@@ -1570,3 +1570,19 @@ in every frontend (before, the Swift frontend's attach named none, and its
 preset commands were refused with "This build reads no presets of format 2
 yet."). The session order puts the control part before the shell's part and
 `SettingsPart` (LIB-3, this step).
+
+## Part E simplification E-2 (2026-11-17, branch `es-host-session`)
+
+`docs/reviews/e-simplification.md` §1 S-1, §2 item 1 (host half). No host
+makes `SettingsPart` itself: `shell::makeHostSession` (LIB-3's E-2 section)
+makes it from `HostSessionSetup::settings` (a `shell::HostSettings`, LIB-9's
+E-2 section), `settingsChanged` (Calc-U-1600's serial folder) and
+`settingsAlsoShown` (the Swift frontend's portrait row), after the host's
+own parts (the Web's shell part), and the session owns it.
+`qt6::ProductHost<Part>` (`library/qt6/ProductHost.hpp`) is the common half
+of both Qt6 controllers: the product's session and the `SessionHost` over
+it, `start()` (the host's timer, then `start`), the end (stop the timer,
+`close()`, the host before the session) and the request answered at once
+(`ask`). `MachineController` and `EmulatorController` keep a
+`ProductHost` and end it first in their destructors, while their own
+members (the sound feed, the LOG tab's view) are still there, as before.

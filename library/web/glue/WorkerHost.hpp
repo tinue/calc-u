@@ -6,6 +6,7 @@
 #include "sessions/SessionPart.hpp"
 #include "settings/HostDirs.hpp"
 #include <emscripten/val.h>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <set>
@@ -39,6 +40,14 @@ struct WebStart {
     // The shell's own part (web.start, web.storage): the factory lists it
     // first among the session's parts.
     sessions::SessionPart* shellPart = nullptr;
+
+    // The host folders of the product's places: `dirs`, home the save
+    // folder's parent (/persist) when the page gives none.
+    settings::HostDirs placesDirs() const {
+        settings::HostDirs d = dirs;
+        if (d.home.empty()) d.home = std::filesystem::path(d.saveFolder).parent_path().generic_string();
+        return d;
+    }
 };
 
 // The product's session (Hosting::Paced); it owns the product's parts and

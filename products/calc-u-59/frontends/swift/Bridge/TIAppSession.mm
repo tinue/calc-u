@@ -441,9 +441,11 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         dirs.applicationSupport = cpp([start.settingsBase stringByAppendingPathComponent:@"Calc-U-59"]);
         if (start.chosenTraceFolder) dirs.chosenTraceFolder = cpp(start.chosenTraceFolder);
         const auto& decl = cu59::settings::settingsDecl();
-        const std::string path = start.settingsFile ? cpp(start.settingsFile) : st::settingsFilePath(decl, dirs);
-        auto file = std::make_shared<st::SettingsFile>(st::SettingsFile::open(decl, path));
-        auto paths = std::make_shared<st::Paths>(*file, dirs);
+        std::optional<std::string> path;
+        if (start.settingsFile) path = cpp(start.settingsFile);
+        auto settings = std::make_shared<calcu::shell::HostSettings>(decl, dirs, path);
+        st::SettingsFile* file = &settings->file();
+        const st::Paths* paths = &settings->paths();
         _settingsFilePath = ns(file->path());
         _settingsProblem = file->problem().empty() ? nil : ns(file->problem());
         // Where traces go, at the start (LIB-9 AC-24): by [trace] location.
@@ -459,20 +461,14 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
                                                                  attributes:nil error:nil];
         _traceAvailable = available;
 
-        calcu::shell::SettingsPartSetup ss;
-        ss.file = file.get();
-        ss.paths = paths.get();
-        ss.alsoShown = {cu59::kPortraitDebugPage};   // the iOS row (C59-8 AC-7, OQ-4)
-        auto settingsPart = std::make_shared<calcu::shell::SettingsPart>(std::move(ss));
-
         cu59::TIAppSetup setup;
         setup.roms.set = roms->_set;
         // LIB-18 AC-17: the settings file decides the startup model; the
         // session's `start` (makeAppSession) builds it. The save folder, the
         // trace folder by [trace] location (LIB-9 AC-24), its limit and `~/`
         // are the places'.
-        setup.settings = file.get();
-        setup.paths = paths.get();
+        setup.settings = file;
+        setup.paths = paths;
         setup.examplesFolder = cpp(start.examplesFolder);
         setup.fileIO = std::make_shared<CoordinatedFiles>(delegate);
         const bool traceAvailable = available == YES;
@@ -484,10 +480,17 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         auto libraryParts = std::make_shared<calcu::parts::LibraryParts*>(nullptr);
         _libraryParts = libraryParts;
         _thread = std::make_unique<cu59::SessionThread>(
-            // The file, its places and SettingsPart live as long as the
-            // factory, which outlives the session it made (SessionThread::run).
-            [setup, file, paths, settingsPart, libraryParts] {
-                auto app = cu59::makeAppSession(setup, cu59::steadyWallTime, std::nullopt, {settingsPart.get()});
+            // The file and its places live as long as the factory, which
+            // outlives the session it made (SessionThread::run); LIB-14's
+            // SettingsPart is the session's (calcu::shell::makeHostSession).
+            [setup, settings, libraryParts] {
+                calcu::shell::HostSessionSetup host;
+                host.settings = settings.get();
+                host.settingsAlsoShown = {cu59::kPortraitDebugPage};   // the iOS row (C59-8 AC-7, OQ-4)
+                host.clock = cu59::steadyWallTime;
+                host.hostTime = [] { return std::chrono::system_clock::now(); };
+                host.start = true;
+                auto app = cu59::makeAppSession(setup, std::move(host));
                 *libraryParts = &app.part->libraryParts();
                 return std::move(app.session);
             },

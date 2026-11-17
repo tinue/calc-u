@@ -56,9 +56,10 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   `CalcU59NoTestAids`). A new menu item or settings row goes into
   `app/TIShellProduct`, never into a Swift view.
 - Settings (C59-8 D-3): the settings file is the session's. The bridge
-  opens `Calc-U-59.ini` (or the Debug build's `--settings-file`), works out
-  the trace folder and hands the file to the session thread, where LIB-14's
-  `SettingsPart` (with `alsoShown` `window.portrait-debug-page`) and
+  opens `Calc-U-59.ini` (or the Debug build's `--settings-file`; the
+  library's `calcu::shell::HostSettings`), works out the trace folder and
+  hands the file to the session thread, where LIB-14's `SettingsPart` (made
+  by `makeAppSession`'s `calcu::shell::HostSessionSetup`) (with `alsoShown` `window.portrait-debug-page`) and
   LIB-18's start read and write it; views read the values through
   `TIShell.setting(_:_:)` and change one with `setSetting` (`set-setting`).
   Only the macOS trace-folder bookmark stays in UserDefaults

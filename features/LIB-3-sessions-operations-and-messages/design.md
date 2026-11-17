@@ -702,3 +702,21 @@ after the debugger; it now has the one order (its debug panel among the
 file-kind parts). Calc-U-1600's hosts had put their own parts before the
 control part; they come after it now. No reply, topic or golden run
 changed.
+
+## Part E simplification E-2 (2026-11-17, branch `es-host-session`)
+
+`docs/reviews/e-simplification.md` §1 S-1 ("Assemblies"). A host's side of
+a product's session is written once, in `shell/HostSession`
+(`calcu::shell::makeHostSession(part, HostSessionSetup)`): LIB-14's
+`SettingsPart` over the host's settings, put after the host's own parts in
+the product's `sessionParts(host, after)`, the clock (default: the steady
+clock), the host time, the hosting, the jitter seed, `owned` (the product's
+part and what the host made for it; `SettingsPart` goes first), the line
+"Settings: <problem>" in the log where the host asks for it (the Web
+engines) and LIB-18's `start` where the host asks for it (the Swift bridge,
+the tests). `makeSharpSession` (its `SharpSessionOptions` is a
+`HostSessionSetup` with `canMountHostFolder`), `makeAppSession` (a second
+overload takes a `HostSessionSetup`; the first forwards to it), both Web
+engines, both Qt6 controllers and the Swift bridge call it. The order of the
+parts and every message are as before (each host's SettingsPart was already
+after its own parts).

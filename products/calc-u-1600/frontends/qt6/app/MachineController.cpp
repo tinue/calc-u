@@ -16,7 +16,6 @@
 #include "debugger/RunState.hpp"
 #include "media/MediaTopics.hpp"
 #include "sessions/LibraryTopics.hpp"
-#include "shell/SettingsPart.hpp"
 #include "typing/TypingTopics.hpp"
 
 namespace sessions = calcu::sessions;
@@ -24,26 +23,21 @@ namespace sessions = calcu::sessions;
 MachineController::MachineController(QObject* parent) : QObject(parent) {
     // LIB-14: the settings dialog reads and writes the product's file
     // through the session; a change the product applies at once.
-    calcu::shell::SettingsPartSetup ss;
-    ss.file = &AppSettings::settings().file();
-    ss.paths = &AppPaths::paths().places();
-    ss.changed = [this](std::string_view section, std::string_view) {
+    shared::SharpSessionOptions options;
+    options.settings = &AppPaths::folders().settings();
+    options.settingsChanged = [this](std::string_view section, std::string_view) {
         if (section == "serial") app().refreshSerialLinkDirectory();
     };
-    m_settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
-
-    shared::SharpSessionOptions options;
-    options.moreParts = {m_settingsPart.get()};
-    m_app = shared::makeSharpSession(AppSettings::settings(), AppPaths::paths(), std::move(options));
     sessions::HostServices services;
     services.offered = {sessions::HostService::AudioSink,     sessions::HostService::ClipboardText,
                         sessions::HostService::ClipboardImage, sessions::HostService::FilePicker,
                         sessions::HostService::FolderPicker,   sessions::HostService::KeepFile,
                         sessions::HostService::OpenUrl};
-    m_host = std::make_unique<calcu::qt6::SessionHost>(*m_app.session, std::move(services));
-    m_host->addMessageHandler([this](const sessions::Message& m) { onMessage(m); });
-    connect(m_host.get(), &calcu::qt6::SessionHost::called, this, [this] {
-        const auto t = m_host->now();
+    m_session = std::make_unique<calcu::qt6::ProductHost<shared::SharpAppPart>>(
+        shared::makeSharpSession(AppSettings::settings(), AppPaths::paths(), std::move(options)), std::move(services));
+    host().addMessageHandler([this](const sessions::Message& m) { onMessage(m); });
+    connect(&host(), &calcu::qt6::SessionHost::called, this, [this] {
+        const auto t = host().now();
         if (m_calls++ > 0)
             m_longestGapMs = std::max(m_longestGapMs, std::chrono::duration<double, std::milli>(t - m_lastCall).count());
         m_lastCall = t;
@@ -59,26 +53,22 @@ MachineController::~MachineController() {
     m_dapSocket.reset();
     // The product quits: what a medium still has to save is written (LIB-7
     // AC-13; the parts' `closing`, LIB-3). No message goes out after it.
-    if (m_host) m_host->stop();
-    if (m_app.session) m_app.session->close();
-    m_host.reset();
-    m_app = {};
+    m_session.reset();
 }
 
 void MachineController::start() {
-    m_host->start();
-    send(shared::commands::kStart);
+    m_session->start();
     if (m_dapSocket) app().dapPart()->setTransport(m_dapSocket.get());
 }
 
 void MachineController::send(const sessions::CommandName& name, sessions::Value args, Reply done) {
-    m_host->send(name, std::move(args), std::move(done));
+    host().send(name, std::move(args), std::move(done));
 }
 
 sessions::ReplyMessage MachineController::sendAndWait(const sessions::CommandName& name, sessions::Value args) {
     QEventLoop loop;
     std::optional<sessions::ReplyMessage> got;
-    m_host->send(name, std::move(args), [&](const sessions::ReplyMessage& r) {
+    host().send(name, std::move(args), [&](const sessions::ReplyMessage& r) {
         got = r;
         loop.quit();
     });
@@ -87,9 +77,7 @@ sessions::ReplyMessage MachineController::sendAndWait(const sessions::CommandNam
 }
 
 sessions::ReplyMessage MachineController::ask(const sessions::RequestName& name, sessions::Value args) {
-    sessions::ReplyMessage got;
-    m_host->ask(name, std::move(args), [&got](const sessions::ReplyMessage& r) { got = r; });
-    return got;
+    return m_session->ask(name, std::move(args));
 }
 
 bool MachineController::busy() const {

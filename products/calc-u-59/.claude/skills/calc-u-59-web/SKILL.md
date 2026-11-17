@@ -60,7 +60,8 @@ Never edit the calculator there — that copy is generated.
    buttons send `c59.dump`, `c59.log-level`, `c59.heatmap-reset`,
    `c59.asm-load` / `-run` / `-clear`; Run, TRACE and the CALCULATOR tab
    follow the `control-state` product entries `c59.asm-run`, `c59.trace`,
-   `c59.calculator-tab` (`bindings.cpp` adds LIB-4's ControlPart and LIB-14's
+   `c59.calculator-tab` (`bindings.cpp` builds the session with the library's
+   `calcu::shell::makeHostSession`: LIB-4's ControlPart and LIB-14's
    SettingsPart; without the full set of ROM files the session starts
    without a machine and publishes `roms-missing`). A drop and
    Load Preset… (several files) are LIB-13's

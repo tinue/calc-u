@@ -82,7 +82,7 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
 | Qt (`frontends/qt6/app/`) | Swift counterpart |
 |---|---|
 | `main.cpp` | `Calc-U-59App.swift` |
-| `MainWindow` | `CalculatorView` (layout, menus, presets, drag and drop) |
+| `MainWindow` | `CalculatorView` (layout, menus, presets, drag and drop: every file to LIB-13's `open`, `EmulatorController::openFile`; a drag asks `wouldTake`) |
 | `EmulatorController` | `EmulatorViewModel` |
 | `CalculatorPanel`, `ControlBar` | `CalculatorView` calculator column and card bar |
 | `KeyboardWidget` | `KeyboardView` |
@@ -90,7 +90,7 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
 | `CueCardRenderer` | `CueCardView` |
 | `PaperPane` (the library's `calcu::qt6::PaperPanel` with the PC-100C's connect toggle above it, LIB-8 since M-53) | `PrinterView` |
 | `CardPickerDialog` | `CardPickerView` |
-| `debug/DebugPanel`, `debug/AsmOverlayBox`, `debug/LogWidget` | `DebugView` (`ASMDebugContent`, `StaticDebugContent`) |
+| `debug/DebugPanel`, `debug/AsmOverlayBox`, `debug/LogWidget` | `DebugView` (`ASMDebugContent`, `StaticDebugContent`); they draw `TIDebugPart`'s product topics through `EmulatorController`, which keeps the LOG tab's view (`cu59::RingLog`) of the `log` topic; Run, TRACE and the CALCULATOR tab follow the product entries (`entryAvailable`) |
 | `debug/LiveDebugWidget` | `LiveDebugView` |
 | `debug/CpuInspectorWidget`, `debug/RomHeatmapWidget` | `CPUInspectorView` |
 | the library's `calcu::qt6::RunControlButtons` (FREEZE, STEP, RESUME of each debug tab, LIB-10 since M-53) | `HoldRepeatButton.swift` |

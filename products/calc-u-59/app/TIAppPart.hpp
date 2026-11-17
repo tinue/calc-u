@@ -1,7 +1,11 @@
 #pragma once
 #include "ConstantMemoryKeeper.hpp"
 #include "CueCard.hpp"
-#include "DebugModel.hpp"
+#include "TIDebugPart.hpp"
+#include "TIFileKinds.hpp"
+#include "media/FileAccess.hpp"
+#include "media/MediaPart.hpp"
+#include "settings/Paths.hpp"
 #include "EmulatorSession.hpp"
 #include "ModuleCatalog.hpp"
 #include "ProductRoms.hpp"
@@ -13,10 +17,7 @@
 #include "TITyping.hpp"
 #include "debugger/DebuggerPart.hpp"
 #include "paper/PaperPart.hpp"
-#include "media/FileAccess.hpp"
-#include "media/MediaPart.hpp"
 #include "parts/LibraryParts.hpp"
-#include "settings/Paths.hpp"
 #include "presets/Source.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/MachineSession.hpp"
@@ -54,29 +55,18 @@
 // C59-3). Since M-55 the card reader is the library's media part (LIB-7 59,
 // C59-7): the kind `magnetic-card` (app/TIMagneticCardKind), the TI-59's
 // pass-through place `card-reader`, the save folder, the steps `card:` and
-// `arm:`, the header key `magnetic-cards:`; the media part is the card wait's
-// WaitProbe. What stays the part's: the PC-100C's TRACE position (C59-6
-// AC-6), the cue card shown (one fitted at a time, the module cue card of
-// the library program on top, C59-7 AC-22), the corner taps (c59.tap-card),
-// the debug panel's data, the ASM overlay and the LOG tab. Errors are notices, diagnostics log lines. What
+// `arm:`, the header key `magnetic-cards:`; the media part is the card
+// wait's WaitProbe, and LIB-13's `open` fits a card file through it. What
+// stays the part's: the PC-100C's TRACE position (C59-6 AC-6), the cue card
+// shown (one fitted at a time, the module cue card of the library program on
+// top, C59-7 AC-22), the corner taps (c59.tap-card). The debug panel is
+// TIDebugPart's (C59-4, M-56), a part of the same session it owns; the file
+// kinds of LIB-13's `open` are TIFileKinds (M-56). Errors are notices, diagnostics log lines. What
 // 2.3.0's change flags announced arrives as the interim product topics below
 // (removed with their owners, design §5).
 
 namespace cu59 {
 
-/// A tab of the debug panel, as the step `debug-panel:` names it.
-enum class DebugPanel { Calculator, Cpu, Log };
-/// The debug level of the LOG tab (cycled by c59.cycle-debug-level).
-enum class DebugLevel { Off = 0, Info = 1, Debug = 2 };
-/// What a file dropped on the calculator does (reference/SharedArchitecture.md § "Dropped Files").
-enum class DropAction {
-    LoadPreset,   ///< as the Preset button
-    FitCard,      ///< a magnetic card: fitted into the calculator's card cutout (media.open-file)
-    Ignore,       ///< a card, and this model has no reader
-    NotAccepted,  ///< not a preset or a card
-};
-/// The pure rule: by the file's name and the model (C59-5 D-5, a view rule).
-DropAction dropActionFor(const std::string& fileName, Model model);
 /// Where manual and scripted traces go (LIB-9 Paths), and the size limit per trace session.
 /// An empty dir: this host has no trace folder (the Web: traces are handed
 /// over with KeepFile, LIB-10 AC-26). maxBytes / 1'000'000: the limit in
@@ -93,12 +83,6 @@ inline const TopicName kLed{"c59.led"};
 inline const TopicName kCueCard{"c59.cue-card"};
 inline const TopicName kPrinter{"c59.printer"};
 inline const TopicName kRunState{"c59.run-state"};
-inline const TopicName kDebugLive{"c59.debug.live"};
-inline const TopicName kDebugCpu{"c59.debug.cpu"};
-inline const TopicName kDebugHeatmap{"c59.debug.heatmap"};
-inline const TopicName kDebugLog{"c59.debug.log"};
-inline const TopicName kDebugAsm{"c59.debug.asm"};
-inline const TopicName kShowDebugPanel{"c59.show-debug-panel"};   // stream, History::None
 } // namespace topics
 
 // ── Payloads of the interim topics. Each is a snapshot set when today's
@@ -152,46 +136,6 @@ struct TIRunState final : TISnapshot<TIRunState> {
     bool keystrokesPlaying = false;
     calcu::sessions::Value toValue() const override;
 };
-struct TIDebugLiveState final : TISnapshot<TIDebugLiveState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.debug.live"};
-    bool enabled = false;
-    LiveDebugSnapshot live;
-    std::vector<StepEntry> listing;
-    ProgramSource listingSource{};
-    int listingCurrentIndex = -1;
-    calcu::sessions::Value toValue() const override;
-};
-struct TIDebugCpuState final : TISnapshot<TIDebugCpuState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.debug.cpu"};
-    bool enabled = false;
-    std::vector<InspectorEntry> history;
-    calcu::sessions::Value toValue() const override;
-};
-struct TIDebugHeatmapState final : TISnapshot<TIDebugHeatmapState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.debug.heatmap"};
-    std::vector<uint32_t> counts;
-    calcu::sessions::Value toValue() const override;
-};
-struct TIDebugLogState final : TISnapshot<TIDebugLogState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.debug.log"};
-    DebugLevel level = DebugLevel::Off;
-    std::string text;
-    calcu::sessions::Value toValue() const override;
-};
-struct TIDebugAsmState final : TISnapshot<TIDebugAsmState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.debug.asm"};
-    std::string fileName, status;
-    int wordCount = 0;
-    bool active = false;
-    calcu::sessions::Value toValue() const override;
-};
-struct TIShowDebugPanel final : calcu::sessions::PayloadOf<TIShowDebugPanel> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.show-debug-panel"};
-    explicit TIShowDebugPanel(DebugPanel p) : panel(p) {}
-    DebugPanel panel;
-    bool same(const TIShowDebugPanel& o) const { return panel == o.panel; }
-    calcu::sessions::Value toValue() const override;
-};
 /// The result of a command that answers yes or no (fit-card, tap-card, …).
 struct TIFlag final : calcu::sessions::PayloadOf<TIFlag> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.flag"};
@@ -200,15 +144,6 @@ struct TIFlag final : calcu::sessions::PayloadOf<TIFlag> {
     bool same(const TIFlag& o) const { return value == o.value; }
     calcu::sessions::Value toValue() const override { return calcu::sessions::Value(value); }
 };
-/// The reply of the request c59.drop-action.
-struct TIDropAction final : calcu::sessions::PayloadOf<TIDropAction> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.drop-action"};
-    explicit TIDropAction(DropAction a) : action(a) {}
-    DropAction action;
-    bool same(const TIDropAction& o) const { return action == o.action; }
-    calcu::sessions::Value toValue() const override { return calcu::sessions::Value(static_cast<int>(action)); }
-};
-
 /// A notice of the part is "<title>: <message>", today's alert (LIB-3 AC-30:
 /// `error` is a notice); the frontends split it for their alert until C59-8.
 struct NoticeParts { std::string title, message; };
@@ -225,20 +160,6 @@ inline const CommandName kSetControl{"set-control"};
 // (media.feed of the card reader). The card commands are the library's
 // media.* (media.choose, media.start-new, media.eject, media.feed).
 inline const CommandName kTapCard{"c59.tap-card"};               // {x, y} → TIFlag
-inline const CommandName kOpenDropped{"c59.open-dropped"};       // {bytes, path, name} → TIFlag; a preset: LIB-6's load-preset {content, name}; a card: media.open-file (until M-56)
-inline const CommandName kLiveDebug{"c59.live-debug"};           // {on}
-inline const CommandName kCpuDebug{"c59.cpu-debug"};             // {on}
-inline const CommandName kClearHeatmap{"c59.clear-heatmap"};
-inline const CommandName kCycleDebugLevel{"c59.cycle-debug-level"};
-inline const CommandName kClearLog{"c59.clear-log"};
-inline const CommandName kDumpVars{"c59.dump-vars"};
-inline const CommandName kDumpScom{"c59.dump-scom"};
-inline const CommandName kDumpProg{"c59.dump-prog"};
-inline const CommandName kDumpMemory{"c59.dump-memory"};
-inline const CommandName kLoadAsm{"c59.load-asm"};               // {text (absent: unreadable), name}
-inline const CommandName kRunAsm{"c59.run-asm"};
-inline const CommandName kClearAsm{"c59.clear-asm"};
-inline const calcu::sessions::RequestName kDropAction{"c59.drop-action"};   // {name} → TIDropAction
 } // namespace commands
 
 /// What the host gives the part when the session is made (C59-5 D-12, A-12).
@@ -282,9 +203,9 @@ public:
     void machineChanged(calcu::sessions::SessionContext&) override;
     void machineRestarted(calcu::sessions::SessionContext&, calcu::sessions::Restart) override;
     void operationEnded(calcu::sessions::SessionContext&) override;
-    void beforeFlush(calcu::sessions::SessionContext&) override;
     void beforeMachineChange(calcu::sessions::SessionContext&) override;
     void closing(calcu::sessions::SessionContext&) override;
+    void beforeFlush(calcu::sessions::SessionContext&) override;
 
     // ── The flows, as the commands run them. Public for the host's own
     // adapters and the tests (LIB-3 design §3.9); a frontend sends the
@@ -336,8 +257,8 @@ public:
     calcu::debugger::DebuggerPart* debuggerPart() { return m_lib.debugger(); }
     calcu::presets::PresetsPart* presetsPart() { return m_lib.presets(); }
     TILevelRules* levelRules() { return &m_levelRules; }
-    /// The debug panel's view by the name of `debug-panel:` (calculator, cpu, log).
-    void showDebugPanelNamed(const std::string& view);
+    /// The debug panel (C59-4).
+    TIDebugPart& debugPart() { return m_debugPart; }
 
     // Magnetic cards (C59-7; LIB-7 59): the library's media part, its place
     // `card-reader` on the TI-59 (reference/SharedArchitecture.md § "Card Reader Flow").
@@ -351,44 +272,12 @@ public:
     bool cardOnShow() const { return m_onShow; }
     /// The side of the card on show passing through the reader now.
     std::optional<int> litCardCorner() const { return m_litCorner; }
-    /// A card file dropped on the calculator (until LIB-13 59, M-56): the
-    /// library's media.open-file into `card-reader`, fitted; without a path
-    /// (the Web) it is imported into the save folder first. False: refused, a notice says why.
-    bool fitDroppedCard(const std::string& name, const std::string& path, const std::optional<std::vector<uint8_t>>& bytes);
     /// The library program selected now (C59-7 AC-21), 0: none.
     int activeProgram() const { return m_activeProgram; }
 
-    // Dropped files
-    /// By the file's name and the current model (dropActionFor).
-    DropAction dropAction(const std::string& fileName) const { return dropActionFor(fileName, m_model); }
-
     // Debugger
-    void setLiveDebugEnabled(bool on);
-    void setCpuDebugEnabled(bool on);
-    bool liveDebugEnabled() const { return m_liveDebugEnabled; }
-    bool cpuDebugEnabled() const { return m_cpuDebugEnabled; }
     calcu::debugger::RunState runState() const;
     bool isFrozen() const;
-    const DebugModel& debug() const { return m_debug; }
-    void clearHeatmap();
-    DebugLevel debugLevel() const { return m_debugLevel; }
-    void cycleDebugLevel();
-    const std::string& logText() const { return m_logText; }
-    void clearLog();
-    void dumpVars();
-    void dumpScom();
-    void dumpProg();
-    void dumpMemory();
-
-    // ASM overlay
-    void loadAsm(const std::optional<std::string>& text, const std::string& fileName);
-    void runAsm();
-    void clearAsm();
-    const std::string& asmFileName() const { return m_asmFileName; }
-    int asmWordCount() const { return static_cast<int>(m_asmWords.size()); }
-    const std::string& asmStatus() const { return m_asmStatus; }
-    bool asmActive() const { return m_asmActive; }
-
     /// What changed since the last publish: each bit moves its interim topic.
     enum Change : uint32_t {
         ModelChanged = 1u << 0,     ///< model, module, machine replaced or reset (card reader emptied)
@@ -396,13 +285,7 @@ public:
         CueCardChanged = 1u << 2,
         PrinterChanged = 1u << 3,   ///< connection, TRACE latch
         CardChanged = 1u << 5,      ///< the fitted card or the side passing
-        RunStateChanged = 1u << 6,  ///< full speed, an operation runs
-        LiveChanged = 1u << 7,      ///< CALCULATOR tab snapshot
-        CpuChanged = 1u << 8,       ///< CPU tab history
-        HeatmapChanged = 1u << 9,
-        LogChanged = 1u << 10,
-        AsmChanged = 1u << 11,
-        ListingChanged = 1u << 13,  ///< CALCULATOR tab program listing (rebuilt when frozen)
+        RunStateChanged = 1u << 6,  ///< full speed, an operation runs, the run control's state
     };
     /// Told the changes each time the interim topics are published, on the
     /// session's thread: another part of the same session that draws its own
@@ -434,8 +317,7 @@ private:
     void followPlugs(bool newMachine);
     void syncSpeed();
     void publish(uint32_t changes);
-    /// The 60 Hz duties after a host call: display, log, the debugger, the
-    /// cue card shown, and the LOG text (1 Hz).
+    /// The 60 Hz duties after a host call: display and the cue card shown.
     void frame(std::chrono::steady_clock::time_point now);
     /// `cue-card:` of a preset (C59-2 AC-6): the machine's own card.
     void fitOwnCueCard(const CueCardContent& card);
@@ -443,10 +325,7 @@ private:
     /// The cue card shown, the fitted card and the corner from the media
     /// part's `card-reader` and the library program (AC-21, AC-22, AC-24).
     void refreshCueCard();
-    void refreshLog();
-    void log(const std::vector<std::string>& lines);
     void followRunState();
-    void showDebugPanel(DebugPanel panel);
     calcu::debugger::RunControl* runControl() const;
     calcu::machine::Machine* machine() const;
     TIAppSetup m_setup;
@@ -464,6 +343,8 @@ private:
     std::unique_ptr<calcu::presets::PresetBundle> m_bundle;
     TILevelRules m_levelRules;
     ProgramMemoryPart m_memoryPart;
+    TIDebugPart m_debugPart;
+    TIFileKinds m_fileKinds;
     calcu::parts::LibraryParts m_lib;
 
     std::function<void(uint32_t)> m_observer;
@@ -494,33 +375,14 @@ private:
     bool m_printerConnected = false;
     bool m_printerTrace = false;   ///< C59-6 AC-6
 
-    bool m_liveDebugEnabled = false;
-    bool m_cpuDebugEnabled = false;
-    DebugModel m_debug;
-    DebugLevel m_debugLevel = DebugLevel::Off;
-    std::string m_logText;
-    calcu::debugger::RunState m_seenRun;
-    std::optional<calcu::machine::Ticks> m_frozenAt;
-
-    std::vector<uint16_t> m_asmWords;
-    std::string m_asmFileName = "No file selected";
-    std::string m_asmStatus = "Load a hex opcode file and press Run.";
-    bool m_asmActive = false;
-
     using Clock = std::chrono::steady_clock;
-    Clock::time_point m_nextLogRefresh;
+    calcu::debugger::RunState m_seenRun;
 
     calcu::sessions::StateTopic* m_modelTopic = nullptr;
     calcu::sessions::StateTopic* m_led = nullptr;
     calcu::sessions::StateTopic* m_cue = nullptr;
     calcu::sessions::StateTopic* m_printer = nullptr;
     calcu::sessions::StateTopic* m_run = nullptr;
-    calcu::sessions::StateTopic* m_live = nullptr;
-    calcu::sessions::StateTopic* m_cpu = nullptr;
-    calcu::sessions::StateTopic* m_heatmap = nullptr;
-    calcu::sessions::StateTopic* m_log = nullptr;
-    calcu::sessions::StateTopic* m_asm = nullptr;
-    calcu::sessions::StreamTopic* m_panel = nullptr;
 };
 
 /// The session of a native frontend (C59-5 D-12; LIB-6 D-40): the library's

@@ -59,10 +59,10 @@ calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀�
 | `src/ControlBar.jsx` | Reset / clean reset, model picker, card buttons, Preset, Settings (`ControlBar`) |
 | `src/Dialogs.jsx` | Card picker on the `media` topic (Arm Card, Arm Fresh Card) and the library's `CalcuSavedMediaDialog`, preset picker, Settings, About (`CardPickerDialog`, `SettingsDialog`, `AboutDialog`) |
 | `src/Paper.jsx` | The PC-100C's pane: its connect toggle (`c59.web.printer`, until M-57) above the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (`set-control`), Copy and Cut its `paper.copy` / `paper.cut` (LIB-8, M-53; Qt6: `calcu::qt6::PaperPanel`) |
-| `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`); FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` (LIB-10, M-53) |
-| `src/PlayCalculator.jsx` | The component: the two layouts, focus and physical keyboard, drag and drop, keyboard feedback (`MainWindow`) |
+| `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) on the debug part's product topics `calculator-debug`, `program-listing`, `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view` and LIB-3's `log` (C59-4, M-56); Run, TRACE and the CALCULATOR tab follow the `control-state` entries `c59.asm-run`, `c59.trace`, `c59.calculator-tab`; FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` (LIB-10, M-53) |
+| `src/PlayCalculator.jsx` | The component: the two layouts, focus and physical keyboard, drag and drop (LIB-13's `open {way: drop, upload: true}`, M-56), keyboard feedback (`MainWindow`) |
 | `calc-engine-worker.js` | The product's configuration of the library's Web Worker (`library/web/src/worker.js`): the engine's name, its factory, the persistent mount `/persist-calc-u-59` and the lock `calcu59-storage` |
-| `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle`, the settings file, the shell's part, `TIAppPart::sessionParts()` (the library's parts with the TI rules, the bundle of `/presets`; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
+| `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle`, the settings file, the shell's part, LIB-4's ControlPart (C59-4's product entries), `TIAppPart::sessionParts()` (the library's parts with the TI rules, the bundle of `/presets`; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
 | `calc.css` | Tokens, fonts and every rule the client needs |
 | `fonts/` | Archivo (WOFF2, SIL OFL 1.1), for the cue card, as the family `Calc-U Archivo` |
 | `app/` | The installable PWA's own files: `index.html`, `app.css`, `manifest.json`; its page, service worker and worker entry are the library's (`library/web/app/`) |
@@ -79,16 +79,20 @@ JS form (commands, requests, replies, state and stream topics; LIB-15 AC-22).
 `app/TIWebPart` sends what changed as the `c59.web.*` topics, already in the
 form the page draws: LED cells (`ledCell`, as float32 bytes), the cue card as
 a draw list laid out by `cueCardGeometry` and friends for the size the page
-reports, the PC-100C's place and TRACE (`c59.web.printer`), debug rows formatted by `DebugText`, heatmap
-steps (`heatStep`), the settings. The cards are the library's `media` topic
-(the place `card-reader`: the fitted card, the side passing, its picker; the
-saved cards by kind) and its `media.*` commands: Arm Card `media.choose
-{place: card-reader, entry: saved:<file>}`, Arm Fresh Card `media.start-new
-{place: card-reader, template: "implicit:Fresh card", name}` (a reply
-`asks: …` is the replace question, sent again with `confirmed`), Eject Card
-`media.eject`, a corner `media.feed`, `media.import`, `media.export`,
-`media.delete` (LIB-7 59, C59-7); Settings' module list is the `slot-1`
-picker (LIB-7 AC-47). Static
+reports, the PC-100C's place and TRACE (`c59.web.printer`), the settings. The
+cards are the library's `media` topic (the place `card-reader`: the fitted
+card, the side passing, its picker; the saved cards by kind) and its
+`media.*` commands: Arm Card `media.choose {place: card-reader, entry:
+saved:<file>}`, Arm Fresh Card `media.start-new {place: card-reader,
+template: "implicit:Fresh card", name}` (a reply `asks: …` is the replace
+question, sent again with `confirmed`), Eject Card `media.eject`, a corner
+`media.feed`, `media.import`, `media.export`, `media.delete` (LIB-7 59,
+C59-7); Settings' module list is the `slot-1` picker (LIB-7 AC-47). The debug panel's data are the product topics
+of `app/TIDebugPart` (C59-4 AC-25, M-56), whose values are the page's forms:
+rows formatted by `DebugText`, heatmap steps (`heatStep`) as bytes. A file
+dropped on the calculator or uploaded in the preset picker (several at once:
+one folder, `/uploads`) is LIB-13's `open` with `upload: true`; the session
+decides what it is. Static
 data — models, modules, `KeyboardLayout` rects, the heatmap colours — is the request `c59.static-data`, the LED shapes
 `c59.led-geometry`, the PWA's layout rules `c59.mobile-rules` (adapter W59-1,
 `app/WebPageData`, until M-57). The start is the shell's `start` command with

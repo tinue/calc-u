@@ -41,12 +41,10 @@ std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
     if (const auto* x = payloadAs<TICueCardState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIPrinterState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIRunState>(*p)) return x->serial;
-    if (const auto* x = payloadAs<TIDebugLiveState>(*p)) return x->serial;
-    if (const auto* x = payloadAs<TIDebugCpuState>(*p)) return x->serial;
-    if (const auto* x = payloadAs<TIDebugHeatmapState>(*p)) return x->serial;
-    if (const auto* x = payloadAs<TIDebugLogState>(*p)) return x->serial;
-    if (const auto* x = payloadAs<TIDebugAsmState>(*p)) return x->serial;
-    return 0;
+    // The debug panel's topics (C59-4 AC-25): a serial, or a count of sets.
+    if (const auto* x = payloadAs<TICpuDebug>(*p)) return x->serial;
+    if (const auto* x = payloadAs<TIHeatmap>(*p)) return x->serial;
+    return reinterpret_cast<std::uintptr_t>(p->get());
 }
 
 } // namespace
@@ -56,8 +54,8 @@ std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
 TEST(lib3_ac29_mirror_holds_every_change_flag) {
     SessionRig r;
     for (const auto* t : {&topics::kModel, &topics::kLed, &topics::kCueCard, &topics::kPrinter, &calcu::media::kMediaTopic,
-                          &topics::kRunState, &topics::kDebugLive, &topics::kDebugCpu,
-                          &topics::kDebugHeatmap, &topics::kDebugAsm})
+                          &topics::kRunState, &topics::kCalculatorDebug, &topics::kCpuDebug,
+                          &topics::kHeatmap, &topics::kAsmOverlay, &topics::kDebugView})
         CHECK(r.fe.mirror.state(*t) != nullptr);
     CHECK(r.state<TIModelState>(topics::kModel)->model == Model::TI59);
     CHECK_EQ(r.state<TIModelState>(topics::kModel)->moduleID, std::string("ML"));
@@ -95,19 +93,11 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
     CHECK(moves(topics::kRunState, [&] { r.send(commands::kFullSpeed, Value::object({{"on", true}})); }));
     CHECK(r.state<TIRunState>(topics::kRunState)->fullSpeed);
     r.send(commands::kFullSpeed, Value::object({{"on", false}}));
-    // LiveChanged, ListingChanged
-    CHECK(moves(topics::kDebugLive, [&] { r.send(commands::kLiveDebug, Value::object({{"on", true}})); }));
-    // CpuChanged
-    CHECK(moves(topics::kDebugCpu, [&] { r.send(commands::kCpuDebug, Value::object({{"on", true}})); }));
-    // HeatmapChanged
-    CHECK(moves(topics::kDebugHeatmap, [&] { r.send(commands::kClearHeatmap); }));
-    // LogChanged
-    CHECK(moves(topics::kDebugLog, [&] {
-        r.send(commands::kDumpVars);
-        r.runFor(1100ms);   // the LOG pane at 1 Hz
-    }));
-    // AsmChanged
-    CHECK(moves(topics::kDebugAsm, [&] { r.send(commands::kClearAsm); }));
+    // What the debug panel shows: its product topics since M-56 (C59-4 AC-25).
+    CHECK(moves(topics::kCpuDebug, [&] { r.send(commands::kCpuDebug, Value::object({{"on", true}})); }));
+    CHECK(moves(topics::kHeatmap, [&] { r.send(commands::kHeatmapReset); }));
+    CHECK(moves(topics::kAsmOverlay, [&] { r.send(commands::kAsmRun); }));   // "No ASM overlay loaded."
+    CHECK(moves(topics::kDebugView, [&] { r.send(commands::kLogLevel, Value::object({{"level", "info"}})); }));
     // The trace and the pause are the library's topics since M-53 (LIB-10).
     r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
     CHECK(r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);
@@ -120,7 +110,8 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
 // AC-30: an error is a notice, a diagnostic a line of the log.
 TEST(lib3_ac30_error_is_notice_diagnostic_is_log) {
     SessionRig r;
-    r.send(commands::kOpenDropped, Value::object({{"name", "p.ti59"}}));   // no bytes: the file could not be read
+    r.part().error("Preset load error", "Cannot read file.");
+    r.frame();
     CHECK(hasNotice(r, "Preset load error: Cannot read file."));
     const NoticeParts n = splitNotice("Preset load error: Cannot read file.");
     CHECK_EQ(n.title, std::string("Preset load error"));
@@ -160,12 +151,8 @@ TEST(lib3_ac30_show_debug_panel_is_product_message) {
     SessionRig r;
     r.post(calcu::presets::kLoadPresetCommand,
            Value::object({{"content", "format-version: 2\nmodel: TI-59\nkeys:\n  - debug-panel: cpu\n"}, {"name", "p.ti59"}}));
-    std::vector<PayloadPtr> got;
-    CHECK(r.until([&] {
-        for (auto& p : r.fe.mirror.takeAppended(topics::kShowDebugPanel)) got.push_back(p);
-        return !got.empty();
-    }));
-    CHECK(!got.empty() && payloadAs<TIShowDebugPanel>(got[0])->panel == DebugPanel::Cpu);
+    CHECK(r.until([&] { return !r.panels().empty(); }));
+    CHECK(!r.panels().empty() && r.panels()[0] == DebugPanel::Cpu);   // the product topic debug-view (C59-4 AC-2)
 }
 
 // AC-32: a preset runs as an operation: busy says so, a second is refused.

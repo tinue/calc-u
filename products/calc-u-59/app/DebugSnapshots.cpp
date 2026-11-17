@@ -1,4 +1,5 @@
 #include "DebugSnapshots.hpp"
+#include "../core/TIDebugging.hpp"
 #include "Bcd.hpp"
 #include "CueCard.hpp"
 #include "KeyNames.hpp"
@@ -93,7 +94,7 @@ std::vector<uint8_t> programSteps(const calcu::machine::Machine& m) {
 
 std::vector<uint8_t> romKeycodes(const calcu::machine::Machine& m) {
     std::vector<uint8_t> k(384);
-    for (int i = 0; i < 384; ++i) k[static_cast<size_t>(i)] = debugPanelOf(m)->readROMKeycode(i);
+    for (int i = 0; i < 384; ++i) k[static_cast<size_t>(i)] = kindOf<CalculatorState>(m)->readROMKeycode(i);
     return k;
 }
 
@@ -121,7 +122,7 @@ bool LiveDebugSnapshot::operator==(const LiveDebugSnapshot& o) const {
 
 void readTraceRing(const calcu::machine::Machine& m, std::vector<CpuFrame>& frames) {
     frames.resize(1024);
-    frames.resize(debugPanelOf(m)->readCpuFrames(frames.data(), 1024));
+    frames.resize(kindOf<CalculatorState>(m)->readCpuFrames(frames.data(), 1024));
 }
 
 std::vector<CpuFrame> readTraceRing(const calcu::machine::Machine& m) {
@@ -136,12 +137,12 @@ std::vector<InspectorEntry> inspectorHistory(const calcu::machine::Machine& m) {
     out.reserve(frames.size() + 1);
     for (size_t i = 0; i < frames.size(); ++i) {
         const CpuFrame& f = frames[i];
-        out.push_back({f.pc, f.opcode, TIDebugPanelAdapter::disassemble(f.pc, f.opcode), f, true, i + 1 == frames.size()});
+        out.push_back({f.pc, f.opcode, TIDebugging::disassemble(f.pc, f.opcode), f, true, i + 1 == frames.size()});
     }
     // snapshotCPU() carries the real next opcode.
-    uint16_t pc = debugPanelOf(m)->pc();
-    uint16_t next = debugPanelOf(m)->snapshotCPU().opcode;
-    out.push_back({pc, next, TIDebugPanelAdapter::disassemble(pc, next), CpuFrame{}, false, false});
+    uint16_t pc = kindOf<CalculatorState>(m)->pc();
+    uint16_t next = kindOf<CalculatorState>(m)->snapshotCPU().opcode;
+    out.push_back({pc, next, TIDebugging::disassemble(pc, next), CpuFrame{}, false, false});
     return out;
 }
 
@@ -150,15 +151,15 @@ std::vector<InspectorEntry> recentInstructions(const std::vector<CpuFrame>& fram
     size_t first = frames.size() > count ? frames.size() - count : 0;
     for (size_t i = first; i < frames.size(); ++i) {
         const CpuFrame& f = frames[i];
-        out.push_back({f.pc, f.opcode, TIDebugPanelAdapter::disassemble(f.pc, f.opcode), f, true, i + 1 == frames.size()});
+        out.push_back({f.pc, f.opcode, TIDebugging::disassemble(f.pc, f.opcode), f, true, i + 1 == frames.size()});
     }
     return out;
 }
 
 TIStepBoundary calcViewState(const calcu::machine::Machine& m) {
-    TIStepBoundary latched = debugPanelOf(m)->lastStepBoundary();
+    TIStepBoundary latched = kindOf<CalculatorState>(m)->lastStepBoundary();
     if (latched.count != 0) return latched;
-    return {debugPanelOf(m)->snapshotCPU(), debugPanelOf(m)->libExecPC(), false, 0};
+    return {kindOf<CalculatorState>(m)->snapshotCPU(), kindOf<CalculatorState>(m)->libExecPC(), false, 0};
 }
 
 namespace {
@@ -175,7 +176,7 @@ std::vector<LiveDebugSnapshot::RegEntry> nonZeroDataRegs(const calcu::machine::M
         uint8_t n[16];
         memoryOf(m)->copyRAMReg(ramIdx, n);
         if (std::all_of(n, n + 16, [](uint8_t v) { return v == 0; })) continue;
-        const double value = TIDebugPanelAdapter::decodeBCD(n);
+        const double value = decodeRegister(n);
         if (ramIdx < top) regs.push_back({top - 1 - ramIdx, value, false});
         else regs.push_back({ramIdx - top, value, true});
     }
@@ -194,8 +195,8 @@ LiveDebugBuild buildLiveSnapshot(const calcu::machine::Machine& m, const ModuleI
     const auto& S = cpu.SCOM;
     const bool atStepBoundary = state.atStep;
 
-    for (int h = 1; h <= 8; ++h) snap.hir[static_cast<size_t>(h - 1)] = TIDebugPanelAdapter::decodeBCD(S[h]);  // HIR n in SCOM[n]
-    snap.tRegister = TIDebugPanelAdapter::decodeBCD(S[11]);
+    for (int h = 1; h <= 8; ++h) snap.hir[static_cast<size_t>(h - 1)] = decodeRegister(S[h]);  // HIR n in SCOM[n]
+    snap.tRegister = decodeRegister(S[11]);
     decodeX(cpu, atStepBoundary, snap);
 
     snap.prSourceFlag = S[0][3];

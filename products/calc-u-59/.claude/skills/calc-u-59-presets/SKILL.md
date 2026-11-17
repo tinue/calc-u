@@ -29,6 +29,12 @@ with the kind `app/TIMagneticCardKind`; the keycode reader `app/Keycodes`;
 the cue card reader `app/CueCardYaml`. The code wins where it and these notes disagree;
 the format documents win over the code.
 
+A keystroke program file can also be opened on its own (a drop, the
+dialog, `calcu`'s `open <file>`; LIB-13 AC-23, `app/TIFileKinds`): its
+program is written into the running machine from step 000, without a cold
+boot; the partition, the data registers and the steps it does not list
+stay.
+
 ## Mistakes that come up most
 
 - **`program:` takes keycodes, `key:` takes key IDs.** Digit 1 is keycode

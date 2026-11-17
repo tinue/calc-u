@@ -7,6 +7,7 @@
 #include "TestHarness.hpp"
 #include "../app/TIMagneticCardKind.hpp"
 #include "media/MediaTopics.hpp"
+#include "opening/OpenRequest.hpp"
 #include "SessionRig.hpp"
 #include "../app/TIWebPart.hpp"
 #include "settings/AtomicFile.hpp"
@@ -122,12 +123,21 @@ TEST(lib15_ac20_cards_are_files_of_the_save_folder) {
     CHECK(r.part().cardFitted());
     auto card = std::make_shared<TIMagneticCardData>();
     const std::string text = writeMagneticCardFile(*card, "Dropped", "", false, std::nullopt, "");
-    r.send("c59.web.drop", Value::object({{"name", "Dropped.magnetcard.yaml"}, {"bytes", Value(Value::Bytes(text.begin(), text.end()))}}));
-    r.run(50ms);
+    auto upload = [&](const std::string& name) {   // the page's drop: LIB-13's open, an upload (M-56)
+        calcu::opening::OpenRequest q;
+        calcu::opening::OpenedFile f;
+        f.name = name;
+        f.bytes = std::vector<std::uint8_t>(text.begin(), text.end());
+        q.files = {f};
+        q.upload = true;
+        r.send("open", q.toValue());
+        r.run(200ms);
+    };
+    upload("Dropped.magnetcard.yaml");
     CHECK(fs::exists(fs::path(r.part().files().saveFolder()) / "Dropped.magnetcard.yaml"));
     const auto* media = r.part().mediaPart()->bindingOf("card-reader");
     CHECK(media && media->name == "Dropped");
-    r.send("c59.web.drop", Value::object({{"name", "old.u59"}, {"bytes", Value(Value::Bytes(text.begin(), text.end()))}}));
+    upload("old.u59");
     CHECK(!fs::exists(fs::path(r.part().files().saveFolder()) / "old.u59"));   // C59-7 AC-4: no card
 }
 
@@ -135,7 +145,7 @@ TEST(lib15_ac22_the_page_topics_are_there) {
     WebRig r;
     r.run(1s);
     for (const auto* t : {&topics::kWebModel, &topics::kWebDisplay, &topics::kWebRunState, &topics::kWebPrinter,
-                          &calcu::media::kMediaTopic, &topics::kWebLog, &topics::kWebSettings})
+                          &calcu::media::kMediaTopic, &topics::kDebugView, &topics::kWebSettings})
         CHECK(r.fe.mirror.state(*t) != nullptr);
     const Value display = r.state(topics::kWebDisplay);
     CHECK(display.bytes() && display.bytes()->size() == 36 * sizeof(float));

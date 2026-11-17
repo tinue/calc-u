@@ -34,6 +34,19 @@ Never edit the calculator there — that copy is generated.
    `CalcuPaperPanel` (`src/Paper.jsx`, LIB-8) and the run-control buttons
    `CalcuRunControlButtons` (`src/Debugger.jsx`, LIB-10), on `engine.shell`.
    A trace is handed over with `keep-file` when it ends; the page lists it.
+   The debug panel draws the product topics of `app/TIDebugPart` (C59-4,
+   M-56): `calculator-debug`, `program-listing` (the whole listing while
+   paused), `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view` (the tab a
+   `debug-panel:` step asked for: shown when its `requests` grows; the log
+   level), whose values are already the page's forms; the LOG tab keeps the
+   last 2000 lines of LIB-3's `log` stream (clear empties the view only); the
+   buttons send `c59.dump`, `c59.log-level`, `c59.heatmap-reset`,
+   `c59.asm-load` / `-run` / `-clear`; Run, TRACE and the CALCULATOR tab
+   follow the `control-state` product entries `c59.asm-run`, `c59.trace`,
+   `c59.calculator-tab` (`bindings.cpp` adds LIB-4's ControlPart). A drop and
+   the preset picker's upload (several files) are LIB-13's
+   `open {files, way: drop|dialog, upload: true}` (`engine.openFiles`): the
+   session decides what a file is, a refusal is its notice.
    The magnetic cards are the library's `media` topic and `media.*`
    commands (M-55, LIB-7 59, C59-7; `src/Dialogs.jsx`'s card picker and the
    component set's `CalcuSavedMediaDialog`); `c59.web.card` and the

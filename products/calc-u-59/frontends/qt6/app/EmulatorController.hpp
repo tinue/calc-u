@@ -1,5 +1,7 @@
 #pragma once
+#include "DebugLog.hpp"
 #include "TIAppPart.hpp"
+#include "opening/OpenRequest.hpp"
 #include "debugger/RunState.hpp"
 #include "media/MediaTopics.hpp"
 #include "qt6/ClipboardService.hpp"
@@ -99,12 +101,12 @@ public:
     bool tapCard(double nx, double ny);
     std::optional<int> litCardCorner() const;
 
-    // ── Presets: LIB-6 load-preset {ref: path} ───────────────────────────────
-    void loadPreset(const QString& path);
-
-    // ── Dropped files ────────────────────────────────────────────────────────
-    cu59::DropAction dropAction(const QString& path) const;
-    void openDroppedFile(const QString& path);
+    // ── Opening files: LIB-13's `open` (M-56) ─────────────────────────────────
+    /// A drag: would the session take a file of this name (`open-would-take`, AC-6)?
+    bool wouldTake(const QString& name) const;
+    /// Reads the file and sends `open {files: [{name, path, bytes}], way}`; a
+    /// refusal is the session's notice (AC-15).
+    void openFile(const QString& path, calcu::opening::Way way);
 
     // ── Debugger ─────────────────────────────────────────────────────────────
     void setLiveDebugEnabled(bool on);
@@ -117,22 +119,35 @@ public:
     void armStart(const calcu::debugger::LevelName& level);
     void disarmStart();
 
+    /// FREEZE and FREEZE ON START of a tab (C59-4 AC-5, AC-7).
+    cu59::FreezeButtons freezeButtons(const calcu::debugger::LevelName& level) const {
+        return cu59::freezeButtons(level, runState());
+    }
+    /// A product entry of the control state (C59-4 AC-25): c59.asm-run,
+    /// c59.trace, c59.calculator-tab; true while there is none yet.
+    bool entryAvailable(const char* name) const;
+    QString entryReason(const char* name) const;
+
+    // The debug panel's product topics (C59-4 AC-25).
     const cu59::LiveDebugSnapshot& liveSnapshot() const;
     const std::vector<cu59::StepEntry>& programListing() const;
     cu59::ProgramSource programListingSource() const;
     /// Running: the last 32 instructions; frozen: the whole ring plus the next.
     const std::vector<cu59::InspectorEntry>& cpuHistory() const;
     const std::vector<uint32_t>& heatmapCounts() const;
-    void clearHeatmap() { send(cu59::commands::kClearHeatmap); }
+    void clearHeatmap() { send(cu59::commands::kHeatmapReset); }
 
     DebugLevel debugLevel() const;
-    void cycleDebugLevel() { send(cu59::commands::kCycleDebugLevel); }
-    QString logText() const;
-    void clearLog() { send(cu59::commands::kClearLog); }
-    void dumpVars() { send(cu59::commands::kDumpVars); }
-    void dumpScom() { send(cu59::commands::kDumpScom); }
-    void dumpProg() { send(cu59::commands::kDumpProg); }
-    void dumpMemory() { send(cu59::commands::kDumpMemory); }
+    /// The LOG button: off, info, debug, off (`c59.log-level`, AC-11).
+    void cycleDebugLevel();
+    /// The LOG tab's view of LIB-3's `log`: the last 2000 lines (AC-9).
+    QString logText() const { return m_logText; }
+    /// Empties the tab's view, not the log.
+    void clearLog();
+    void dumpVars() { dump("vars"); }
+    void dumpScom() { dump("scom"); }
+    void dumpProg() { dump("prog"); }
+    void dumpMemory() { dump("memory"); }
 
     /// The session's emulated time (the request LIB-11's `ticks` uses): ticks
     /// and seconds; std::nullopt without a machine. For `--pacing-probe`.
@@ -147,8 +162,8 @@ public:
     QString asmStatus() const;
     bool asmOverlayActive() const;
     void loadAsmFile(const QString& path);
-    void runAsmOverlay() { send(cu59::commands::kRunAsm); }
-    void clearAsmOverlay() { send(cu59::commands::kClearAsm); }
+    void runAsmOverlay() { send(cu59::commands::kAsmRun); }
+    void clearAsmOverlay() { send(cu59::commands::kAsmClear); }
 
 signals:
     void modelChanged();
@@ -164,7 +179,8 @@ signals:
     void asmChanged();
     void traceChanged();
     void errorOccurred(const QString& title, const QString& message);
-    void debugPanelRequested(int tab);  ///< KEYSTROKES DebugPanel: (0 CALCULATOR, 1 CPU, 2 LOG)
+    void debugPanelRequested(int tab);  ///< the topic debug-view asked for a tab (0 CALCULATOR, 1 CPU, 2 LOG)
+    void entriesChanged();              ///< the control state's product entries
 
 private:
     calcu::sessions::ReplyMessage send(const calcu::sessions::CommandName& name,
@@ -173,10 +189,16 @@ private:
     template <class P> const P* state(const calcu::sessions::TopicName& t) const { return m_listener.state<P>(t); }
     void onMessage(const calcu::sessions::Message&);
     void topicChanged(const calcu::sessions::TopicName&);
+    void dump(const char* what) { send(cu59::commands::kDump, calcu::sessions::Value::object({{"what", what}})); }
 
     calcu::sessions::ProductSession<cu59::TIAppPart> m_app;
     mutable calcu::sessions::Listener m_listener;   // stops listening before the session goes
     QTimer m_frameTimer;
     calcu::qt6::ClipboardService m_clipboard;
     std::vector<std::function<void(const calcu::sessions::Message&)>> m_handlers;
+    cu59::RingLog m_log;               ///< the LOG tab's view (AC-9)
+    QString m_logText;
+    bool m_logDirty = false;
+    QTimer m_logTimer;                 ///< the view's text at 1 Hz, as today
+    std::uint64_t m_viewRequests = 0;  ///< debug-view's count seen
 };

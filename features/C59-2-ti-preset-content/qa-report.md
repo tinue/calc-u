@@ -140,3 +140,15 @@ difference.
 
 Rows that became visible: 59-1 (presets of 2.3.0 refused with the hint),
 59-3, 59-4, 59-5, 59-26. No new row.
+
+## M-55 (2026-11-17, branch `m55-cards-59`): the four card examples
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-10 | Pass for all 57 examples | `c59_2_ac10_no_2_3_0_preset_left` (no example excepted), `calcu_preset_check.CalcU59Presets` without exclusions; the four card examples upgraded by C59-7 AC-30 (C59-7's qa-report) |
+| AC-11 | Pass (57 examples; 10 named findings) | `CalcU59ReferenceRuns`: 0 of 57 differ; new findings `globe-print.ti59` (paper marks of a printer-interrupt picture, as the six of M-54) and `historic/characters-fastmode.ti59` (the record was taken while the table was still printing); `pdcm-card-tricks` and `pdcm-make-cards` equal, their card banks too |
+| AC-13 | Pass (ten examples) | `c59_2_ac13_bundle_lists_three_startup_and_todays_examples_in_groups` with `globe-print.ti59` back in "Printer pictures"; `c59_2_ac15_…` (13 entries) |
+
+The 2.3.0 file the tests of an outdated preset read is now the fixture
+`tests/fixtures/v2.3.0/globe-print.ti59`. Column status stays In progress:
+AC-12 (the site's copies) is M-65's.

@@ -7,13 +7,15 @@ class QSplitter;
 
 // The window: calculator | printer | debug side by side (the Swift app's Mac
 // layout, CalculatorView), menus for presets, cards, settings and About, and
-// drag-and-drop of presets and cards.
+// drag-and-drop of any one file: every way a file reaches the program is
+// LIB-13's `open` (M-56), the session tells what the file is.
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(EmulatorController& controller, QWidget* parent = nullptr);
 
-    void openStateFile(const QString& path);
+    /// A file handed over by Open With (macOS) or named at the start (LIB-13 AC-14).
+    void openFile(const QString& path, bool atStart);
 
 protected:
     void closeEvent(QCloseEvent* e) override;

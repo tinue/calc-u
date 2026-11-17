@@ -4,6 +4,7 @@
 #include "TI59Machine.hpp"
 #include "TIAdapters.hpp"
 #include "TICardReaderPlace.hpp"
+#include "TIDebugKindsImpl.hpp"
 #include "TIDebugging.hpp"
 #include "TIMemoryKinds.hpp"
 #include "TICatalogue.hpp"
@@ -50,6 +51,8 @@ public:
     /// Always `TMC0501/typing-support` (LIB-5 §3.4),
     /// `TMC0501/c59.trace-records` (LIB-10 D-24) and `RAM/c59.program-memory`
     /// (C59-2 AC-17); on the TI-58C `RAM/c59.constant-memory` (C59-3 AC-1); with the PC-100C:
+    /// the debug panel's kinds `TMC0501/c59.asm-overlay`, `TMC0501/c59.rom-heatmap`,
+    /// `TMC0501/c59.calculator-state`, `TMC0501/c59.machine-log` (C59-4);
     /// `printer/controls` (PRINT, ADV, TRACE) and
     /// `printer/paper-output` (C59-6 AC-1, AC-5; LIB-2 AC-26; LIB-8 AC-24); always
     /// `TMC0501/c59.library-program` (C59-7 AC-21); on the TI-59 the card
@@ -79,13 +82,14 @@ private:
     friend class TIDebugTarget;
     friend class TIDebugging;
     friend class TITraceRecords;
-    friend class TIDebugPanelAdapter;
+    friend class TIAsmOverlay;
+    friend class TICalculatorState;
+    friend class TIMachineLog;
     friend class TITypingSupport;
     friend class TIProgramMemory;
     friend class TIConstantMemoryCapability;
     friend struct TIMachineTesting;
     friend TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
-    friend TIDebugPanelAdapter* debugPanelOf(calcu::machine::Machine&);
 
     /// One instruction; then the pending Reset restore. Every path that runs an instruction goes through here.
     std::uint32_t stepOne();
@@ -110,7 +114,7 @@ private:
     calcu::machine::Ticks m_ticksBeforeReset = 0;
     std::optional<SavedMemory> m_restore;   ///< AC-19: RAM and partition until key readiness
     std::uint64_t m_retired = 0;          ///< instructions carried out (DebugTarget::retired)
-    bool m_panelTrace = false;            ///< the debug panel wants the frame ring (TIDebugPanelAdapter)
+    bool m_panelTrace = false;            ///< the debug panel wants the frame ring (c59.calculator-state)
     bool m_recordTrace = false;           ///< a trace runs (c59.trace-records)
     bool m_checksTrace = false;           ///< the run control's checks are set
 
@@ -120,7 +124,10 @@ private:
     calcu::machine::PeripheralId m_moduleId;
     std::unique_ptr<TICardReaderPlace> m_cardReader;   ///< C59-7 AC-6 (TI-59)
     TIMemoryAdapter m_memory{*this};
-    TIDebugPanelAdapter m_debugPanel{*this};
+    TIAsmOverlay m_asmOverlay{*this};          ///< C59-4 AC-13
+    TIRomHeatmap m_heatmap{*this};             ///< C59-4 AC-8
+    TICalculatorState m_calculatorState{*this};   ///< C59-4 AC-3, AC-6
+    TIMachineLog m_machineLog{*this};          ///< C59-4 AC-11
     TIDebugging m_debugging{*this};
     TITraceRecords m_traceRecords{*this};
     TITypingSupport m_typing{*this};

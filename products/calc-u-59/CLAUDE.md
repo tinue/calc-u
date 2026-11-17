@@ -90,6 +90,15 @@ Master Library module, no printer (LIB-18 AC-18), at key readiness.
   `ti59 registers <NN>…` (read).
 - Paper (LIB-8): `paper text|marks|png <path>`, `cut-paper`; debugger
   (LIB-10): `pause`, `step`, `resume`, `registers`, `break`, `trace <file>|off`, ….
+- Debug panel (C59-4): `ti59 asm load <file>|run|clear` (the ASM overlay,
+  format 2.0, `examples/assembly/README.md`), `ti59 dump
+  scom|memory|prog|vars`, `ti59 log-level off|info|debug`, `ti59 heatmap
+  reset`; `state calculator-debug|program-listing|cpu-debug|heatmap|asm-overlay|debug-view`
+  reads what the panel shows (`app/TIDebugPart`).
+- Opening a file (LIB-13): `open <path>` opens it as a drop does: a preset
+  by its extension or its `model:` line, an `.asm` overlay, a
+  `.keystrokes.yaml` program written into the running machine from step 000;
+  `.rom.yaml` and `ti58c.memory.yaml` are refused (`app/TIFileKinds`).
 - Not yet: the product commands of C59-9 (M-59). Until then
   `tools/headless/` stays the tool for ROM traces.
 

@@ -191,3 +191,11 @@ place"; the approved LIB-7 design (§10.1, D-22, Part C2/D boundary,
 2026-11-16) takes the slots out of `mediaPlaces`, since a module slot is a
 place of a kind, not a media place (D-1). The spec's decision log has a row
 for it. Every AC of the Calc-U-1600 column passes: the column is **Done**.
+
+## Calc-U-59, the media place (M-55, 2026-11-17, branch `m55-cards-59`)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-33 | Pass (the media place clause) | `lib1_ac33_machine_conforms_without_peripherals`, `lib1_ac33_machine_conforms_with_printer_and_module`: the TI-59 offers `card-reader/media-place` (a `MediaPlace`, owner component `card-reader`), the TI-58 and TI-58C none; `media::checkMediaPlaces` empty for every model, with and without peripherals; also `TMC0501/c59.library-program` (C59-7 AC-21) |
+
+Every criterion of the Calc-U-59 column passes: **Done**.

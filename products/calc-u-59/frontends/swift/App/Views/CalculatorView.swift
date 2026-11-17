@@ -31,6 +31,9 @@ struct CalculatorView: View {
         UTType(filenameExtension: "ti58") ?? .data,
         UTType(filenameExtension: "ti58c") ?? .data
     ]
+    /// The Preset button's dialog (LIB-13 AC-5, D-21): the preset types and any
+    /// file; the session's `open` finds out what it is.
+    private static let presetDialogTypes = stateFileTypes + [.item]
 
 
     #if os(macOS)
@@ -180,7 +183,7 @@ struct CalculatorView: View {
             allowedContentTypes: {
                 switch filePickerMode {
                 case .asm:       return Self.asmTypes
-                case .stateFile, .none: return Self.stateFileTypes
+                case .stateFile, .none: return Self.presetDialogTypes
                 }
             }(),
             allowsMultipleSelection: false
@@ -368,9 +371,9 @@ struct CalculatorView: View {
             Divider().frame(height: 20)
             Button("Preset") {
                 let panel = NSOpenPanel()
-                panel.allowedContentTypes = Self.stateFileTypes
+                panel.allowedContentTypes = Self.presetDialogTypes
                 panel.allowsOtherFileTypes = true
-                panel.message = "Select a .ti59, .ti58, or .ti58c preset"
+                panel.message = "Select a .ti59, .ti58, or .ti58c preset, or any file Calc-U-59 opens"
                 if panel.runModal() == .OK, let url = panel.url {
                     viewModel.loadStateFile(url)
                 }

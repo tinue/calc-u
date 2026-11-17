@@ -4,6 +4,7 @@
 #include "../core/PC100C.hpp"
 #include "../core/PC100CPaper.hpp"
 #include "../core/TIAdapters.hpp"
+#include "../core/TIDebugKinds.hpp"
 #include "../core/TIMachineTesting.hpp"
 #include "paper/Paper.hpp"
 #include "../core/TICatalogue.hpp"
@@ -58,8 +59,12 @@ inline std::shared_ptr<const calcu::roms::RomSet> romSet() {
 
 // The adapters of a TI machine (C59-1 design §5).
 inline TIMemoryAdapter& mem(Machine& m) { return *memoryOf(m); }
-/// The panel's reads of the core (LIB-10 L-E3; the debug target adapter went in M-53).
-inline TIDebugPanelAdapter& dbg(Machine& m) { return *debugPanelOf(m); }
+/// The panel's reads of the core: the product kind c59.calculator-state (C59-4 D-3; the
+/// debug panel adapter went in M-56).
+inline cu59::CalculatorState& dbg(Machine& m) { return *cu59::kindOf<cu59::CalculatorState>(m); }
+/// To the next program step boundary (at most 50000 weighted cycles), as STEP did
+/// (TIMachineTesting; the overlay's entry does it in the core).
+inline void stepToBoundary(Machine& m) { TIMachineTesting::stepToBoundary(static_cast<TIMachine&>(m)); }
 /// The core under the machine, for what only a test inside the core reads.
 inline TI59Machine& hw(Machine& m) { return TIMachineTesting::hardware(static_cast<TIMachine&>(m)); }
 /// The core's card reader (insertCard, cardEject, isCardPresent, cardMode, …).
@@ -68,7 +73,7 @@ inline TI59Machine& card(Machine& m) { return hw(m); }
 inline calcu::media::MediaPlace* cardPlace(Machine& m) {
     return calcu::machine::capabilityAs<calcu::media::MediaPlace>(m, calcu::machine::CapabilityId{"card-reader/media-place"});
 }
-inline TIDebugPanelAdapter& panel(Machine& m) { return *debugPanelOf(m); }
+inline cu59::CalculatorState& panel(Machine& m) { return dbg(m); }
 
 /// Instructions per second in RUN mode: tick rate / 32.
 inline double instructionHz(cu59::Model model) {

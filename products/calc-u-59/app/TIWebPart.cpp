@@ -2,7 +2,6 @@
 #include "DebugText.hpp"
 #include "KeyIds.hpp"
 #include "typing/TypingTopics.hpp"
-#include "RomHeatmap.hpp"
 #include "SevenSegment.hpp"
 #include "presets/PresetsPart.hpp"
 #include "WebPageData.hpp"
@@ -72,11 +71,6 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     m_cue = &s.stateTopic(topics::kWebCueCard);
     m_run = &s.stateTopic(topics::kWebRunState);
     m_printer = &s.stateTopic(topics::kWebPrinter);
-    m_live = &s.stateTopic(topics::kWebLive);
-    m_cpu = &s.stateTopic(topics::kWebCpu);
-    m_heatmap = &s.stateTopic(topics::kWebHeatmap);
-    m_log = &s.stateTopic(topics::kWebLog);
-    m_asm = &s.stateTopic(topics::kWebAsm);
     m_settingsTopic = &s.stateTopic(topics::kWebSettings);
     m_font = &s.stateTopic(topics::kWebDebugFont);
     m_ctx = &s.context();
@@ -140,27 +134,6 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
                                                    : settings::KeyboardFeedback::Off);
         m_settingsDirty = true;
     }));
-
-    // A dropped file: a preset loads as an operation (LIB-3 AC-32), a card is
-    // fitted as an opened one; anything else is refused with today's sentence.
-    cmd("c59.web.drop", [this](const Value& a, SessionContext& ctx) -> CommandOutcome {
-        const std::string name = textArg(a, "name");
-        if (!m_app) return Refused{"No machine is running."};
-        switch (m_app->dropAction(name)) {
-            case DropAction::NotAccepted: return Refused{name + ": not a .ti59, .ti58, .ti58c or .magnetcard.yaml file"};
-            case DropAction::Ignore: return Done{};
-            case DropAction::LoadPreset: {   // LIB-6 §11.2: load-preset {content, name}
-                const auto bytes = bytesArg(a, "bytes");
-                if (!bytes || !m_app->presetsPart()) return Refused{"Cannot read file."};
-                return m_app->presetsPart()->loadPreset(
-                    Value::object({{"content", std::string(bytes->begin(), bytes->end())}, {"name", name}}), ctx);
-            }
-            case DropAction::FitCard: break;
-        }
-        // C59-7 §3.7: imported into the save folder and fitted (media.open-file, LIB-13 AC-4).
-        m_app->fitDroppedCard(name, {}, bytesArg(a, "bytes"));
-        return Done{};
-    });
 
     // The sizes the page draws at.
     cmd("c59.web.cue-card-size", done([this](const Value& a) {
@@ -250,26 +223,10 @@ void TIWebPart::drain(SessionContext&) {
         m_cueDirty = false;
         set(m_cue, "c59.web.cue-card", cueCard());
     }
-    if (c & (S::RunStateChanged | S::ModelChanged | S::AsmChanged)) set(m_run, "c59.web.run-state", runState());
+    if (c & (S::RunStateChanged | S::ModelChanged)) set(m_run, "c59.web.run-state", runState());
     if (c & (S::PrinterChanged | S::ModelChanged))   // LIB-8 P-E1: the paper is the library's `paper PC-100C`
         set(m_printer, "c59.web.printer",
             Value::object({{"connected", m_app->printerConnected()}, {"trace", m_app->printerTrace()}}));
-    // Freezing switches the step window to the full listing and the CPU rows
-    // to every row's registers; a panel switched on gets its view at once.
-    const bool freezeFlipped = m_app->isFrozen() != m_postedFrozen;
-    m_postedFrozen = m_app->isFrozen();
-    const bool liveOn = m_app->liveDebugEnabled() && !m_liveWasOn, cpuOn = m_app->cpuDebugEnabled() && !m_cpuWasOn;
-    m_liveWasOn = m_app->liveDebugEnabled();
-    m_cpuWasOn = m_app->cpuDebugEnabled();
-    if (((c & (S::LiveChanged | S::ListingChanged)) || freezeFlipped || liveOn) && m_app->liveDebugEnabled())
-        set(m_live, "c59.web.live", live());
-    if (((c & S::CpuChanged) || freezeFlipped || cpuOn) && m_app->cpuDebugEnabled()) set(m_cpu, "c59.web.cpu", cpu());
-    if (((c & S::HeatmapChanged) || cpuOn) && m_app->cpuDebugEnabled()) set(m_heatmap, "c59.web.heatmap", heatmap());
-    if (c & S::LogChanged) set(m_log, "c59.web.log", log());
-    if (c & S::AsmChanged)
-        set(m_asm, "c59.web.asm",
-            Value::object({{"fileName", m_app->asmFileName()}, {"words", m_app->asmWordCount()},
-                           {"status", m_app->asmStatus()}, {"active", m_app->asmActive()}}));
     if (m_settingsDirty) {
         m_settingsDirty = false;
         set(m_settingsTopic, "c59.web.settings", settingsValue());
@@ -296,13 +253,9 @@ Value TIWebPart::runState() const {
                           {"pcArmed", d.armed == calcu::debugger::kProgram},
                           {"scanArmed", d.armed == calcu::debugger::kCpu},
                           {"fullSpeed", m_app->fullSpeed()},
-                          {"heldKey", heldKey()},
-                          {"asmActive", m_app->asmActive()}});
+                          {"heldKey", heldKey()}});
 }
 
-Value TIWebPart::log() const {
-    return Value::object({{"text", m_app->logText()}, {"level", static_cast<int>(m_app->debugLevel())}});
-}
 
 // ── Cue card: a draw list for m_cardW × m_cardH (CueCardRenderer in Qt) ──────
 Value TIWebPart::cueCard() const {
@@ -402,101 +355,6 @@ Value TIWebPart::cueCard() const {
                           {"height", h},
                           {"items", Value(std::move(items))},
                           {"label", label}});
-}
-
-// ── Debugger rows, formatted as Qt6/app/debug/*Widget do ─────────────────────
-Value TIWebPart::live() const {
-    const LiveDebugSnapshot& s = m_app->debug().live();
-    char buf[64];
-    Value::Object o;
-    std::snprintf(buf, sizeof buf, "FA:%04X", s.fA);
-    o.push_back({"fA", Value(std::string(buf))});
-    std::snprintf(buf, sizeof buf, "FB:%04X", s.fB);
-    o.push_back({"fB", Value(std::string(buf))});
-    o.push_back({"hir0", Value("HIR0:" + s.statusRegister)});
-    o.push_back({"partition", Value(partitionLine(s.programRegCount, s.dataRegCount))});
-    o.push_back({"source", Value(programSourceLabel(s.programSource, s.prSourceFlag))});
-    // Program steps: the full listing when frozen, else ±5 around the current step.
-    const bool frozen = m_app->isFrozen() && !m_app->debug().listing().empty();
-    const auto& entries = frozen ? m_app->debug().listing() : s.programWindow;
-    Value::Array steps;
-    for (const auto& e : entries) steps.push_back(Value::object({{"text", programStepLine(e, frozen)}, {"current", e.isCurrent}}));
-    o.push_back({"steps", Value(std::move(steps))});
-    o.push_back({"stepHighlight",
-                 Value(hexColor(stepHighlightColor(frozen ? m_app->debug().listingSource() : s.programSource)))});
-    o.push_back({"fix", Value("FIX:" + s.fixIndicator)});
-    o.push_back({"angle", Value(angleModeLabel(s.angleMode))});
-    o.push_back({"angleKnown", Value(s.angleMode.has_value())});
-    o.push_back({"eng", Value(!s.engIndicator.empty())});
-    o.push_back({"second", Value(!s.secondIndicator.empty())});
-    o.push_back({"inv", Value(!s.invIndicator.empty())});
-    Value::Array returns;
-    for (int i = 0; i < 6; ++i) {
-        const int a = s.returnAddresses[static_cast<size_t>(i)];
-        returns.push_back(Value::object({{"text", returnLevelLine(i + 1, a)},
-                                         {"color", hexColor(returnLevelColor(s.returnAddressSourceFlags[static_cast<size_t>(i)], a == 0))}}));
-    }
-    o.push_back({"returns", Value(std::move(returns))});
-    Value::Array flags;
-    for (int i = 0; i < 10; ++i) flags.emplace_back(static_cast<bool>(s.calcFlags[static_cast<size_t>(i)]));
-    o.push_back({"flags", Value(std::move(flags))});
-    Value::Array hir;
-    for (int i = 0; i < 8; ++i)
-        hir.push_back(Value::object({{"text", hirLine(i + 1, s.hir[static_cast<size_t>(i)])}, {"zero", s.hir[static_cast<size_t>(i)] == 0}}));
-    o.push_back({"hir", Value(std::move(hir))});
-    o.push_back({"x", Value(xRegisterLine(s.xValue, s.xRaw))});
-    o.push_back({"xColor", Value(hexColor(xRegisterColor(s.xValue, s.xRaw)))});
-    o.push_back({"t", Value(tRegisterLine(s.tRegister))});
-    o.push_back({"tZero", Value(s.tRegister == 0)});
-    Value::Array vars;
-    for (const auto& r : s.nonZeroRegs) vars.emplace_back(registerLine(r));
-    o.push_back({"vars", Value(std::move(vars))});
-    return Value(std::move(o));
-}
-
-// The CPU rows; the registers only for the rows the panel can show — the
-// newest while running, any when frozen.
-Value TIWebPart::cpu() const {
-    const auto& history = m_app->debug().cpuHistory();
-    const bool frozen = m_app->isFrozen();
-    char buf[64];
-    Value::Array rows;
-    for (size_t i = 0; i < history.size(); ++i) {
-        const auto& e = history[i];
-        const CpuFrame& f = e.frame;
-        Value::Object r{{"text", Value(inspectorLine(e))},
-                        {"pc", Value(e.pc)},
-                        {"history", Value(e.isHistory)},
-                        {"current", Value(e.isCurrent)}};
-        if (frozen || i + 1 == history.size()) {
-            Value::Array regs;
-            const std::pair<const char*, const uint8_t*> named[] = {
-                {"A", f.A}, {"B", f.B}, {"C", f.C}, {"D", f.D}, {"E", f.E}, {"Sout", f.Sout}};
-            for (const auto& [name, nib] : named) regs.push_back(Value(Value::Array{Value(name), Value(registerNibbles(nib))}));
-            r.push_back({"registers", Value(std::move(regs))});
-            r.push_back({"KR", Value("KR: " + hexBin16(f.KR))});
-            r.push_back({"fA", Value("fA: " + hexBin16(f.fA))});
-            r.push_back({"fB", Value("fB: " + hexBin16(f.fB))});
-            std::snprintf(buf, sizeof buf, "SR: %04X", f.SR);
-            r.push_back({"SR", Value(std::string(buf))});
-            r.push_back({"R5", Value("R5: " + std::to_string(f.R5))});
-            r.push_back({"cond", Value(condFlag(f.flags))});
-            r.push_back({"idle", Value(idleFlag(f.flags))});
-            std::snprintf(buf, sizeof buf, "DIGIT: %2d", f.postDigit);
-            r.push_back({"digit", Value(std::string(buf))});
-            r.push_back({"lit", Value("Lit: " + std::to_string(f.maxDigitDecay))});
-            r.push_back({"displayOn", Value(f.displayOn != 0)});
-        }
-        rows.emplace_back(std::move(r));
-    }
-    return Value(std::move(rows));
-}
-
-Value TIWebPart::heatmap() const {
-    const auto& counts = m_app->debug().heatmapCounts();
-    Value::Bytes steps(counts.size());
-    for (size_t i = 0; i < counts.size(); ++i) steps[i] = heatStep(counts[i]);
-    return Value(std::move(steps));
 }
 
 } // namespace cu59

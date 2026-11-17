@@ -26,15 +26,14 @@ struct FrameUpdate {
     calcu::machine::DisplayOutput display;  ///< the machine's display output (C59-1 AC-13)
     LedFrame led;
     double calcIndicatorOpacity = 0;      ///< 0–1, see FrameSampler
-    std::vector<std::string> logLines;    ///< core debug messages at or below debugLevel
 };
 
 class FrameSampler {
 public:
-    /// debugLevel: 0 off, 1 info, 2 debug. The poll covers the emulated time since the previous tick (tick
+    /// The poll covers the emulated time since the previous tick (tick
     /// count difference over the tick rate). The only reader of the machine's
     /// display output (C59-1 OQ-7).
-    FrameUpdate tick(calcu::machine::Machine& m, int debugLevel);
+    FrameUpdate tick(calcu::machine::Machine& m);
 
     /// Forget the indicator history (new machine).
     void reset();

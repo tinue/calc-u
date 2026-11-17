@@ -245,3 +245,10 @@ Column status: every criterion of the column passes: **Done**.
 - The TRACE position follows the PC-100C's switch after every call and is
   put into a PC-100C that an `attach` plugs into the running machine
   (D-27), not into one a build makes.
+
+## Calc-U-59, the fitted magnetic card (M-55, 2026-11-17)
+
+AC-23's clause on the fitted magnetic card passes with C59-7 AC-25:
+`c59_7_ac25_reset_power_cycle_cold_boot_keep_fitted_passing_card_taken_out`
+(the card stays fitted, a card in the reader is taken out as by Eject Card).
+The column stays Done.

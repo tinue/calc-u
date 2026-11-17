@@ -19,15 +19,13 @@
 // | Adapter               | Removed in                         |
 // |-----------------------|------------------------------------|
 // | TIMemoryAdapter       | M-59 (C59-9): its readers           |
-// | TIDebugPanelAdapter   | M-56 (C59-4)                       |
 //
-// The core types still reachable here (CpuFrame, DebugEvent, TIStepBoundary)
-// go with their adapters (design D-7). TICardReaderAdapter went in M-55
-// (C59-7): the card reader is a media place (core/TICardReaderPlace.hpp);
-// its libExecPC moved to TIDebugPanelAdapter. TIDebugTargetAdapter went in M-53
-// (LIB-10 59): the debugger reaches the core through the debug target
-// (core/TIDebugging.hpp) and the panel's reads moved to TIDebugPanelAdapter
-// (adapter L-E3, until M-56). TIPeripheralsAdapter went in M-25
+// TICardReaderAdapter went in M-55 (C59-7): the card reader is a media
+// place (core/TICardReaderPlace.hpp), libExecPC is c59.calculator-state's.
+// TIDebugTargetAdapter went in M-53 (LIB-10 59): the debugger reaches the
+// core through the debug target (core/TIDebugging.hpp). TIDebugPanelAdapter
+// went in M-56 (C59-4): the panel reads the debug target and the product
+// kinds of core/TIDebugKinds.hpp. TIPeripheralsAdapter went in M-25
 // (C59-6): the PC-100C and the module are peripherals in their places. The
 // machine holds no lock: its one caller is the app session's thread
 // (ADR 0009; since M-34 on every frontend).
@@ -37,7 +35,7 @@ class TIMachine;
 /// Program steps, registers and the partition. Since M-54 the app layer writes
 /// and reads memory through the product kinds c59.program-memory and
 /// c59.constant-memory (TIProductKinds.hpp; C59-2, C59-3); what is left here
-/// is read by the debug log and snapshots (until M-56) and tools/headless (until M-59), and the writes by the core tests
+/// is read by the debug log and snapshots and tools/headless (until M-59), and the writes by the core tests
 /// and the golden runs' replay of 2.3.0 (C59-2 design §5).
 class TIMemoryAdapter {
 public:
@@ -62,37 +60,6 @@ private:
     TIMachine& m_;
 };
 
-/// The debug panel's calls until C59-4 (M-56). Since M-53 also what the
-/// CALCULATOR and CPU tabs, the dumps and the overlay's entry read that the
-/// debug target does not give (LIB-10 adapter L-E3).
-class TIDebugPanelAdapter {
-public:
-    explicit TIDebugPanelAdapter(TIMachine& m) : m_(m) {}
-    std::uint16_t pc() const;
-    CpuFrame snapshotCPU() const;
-    /// The latched module byte address of the running module program (0xFFFF: none).
-    std::uint16_t libExecPC() const;
-    TIStepBoundary lastStepBoundary() const;
-    /// The newest `max` frames of the ring, oldest first; not consumed.
-    std::uint32_t readCpuFrames(CpuFrame* out, std::uint32_t max) const;
-    std::uint8_t readROMKeycode(int addr) const;
-    /// The CPU tab shows the frame ring (while it shows, while paused, while a start is armed).
-    void setPanelTrace(bool on);
-    /// The overlay's entry (AsmOverlay.cpp): to the next program byte, at most 50000 weighted cycles.
-    std::uint32_t stepUntilNextKeycode(std::uint32_t maxCycles = 50000);
-    void beginNextStep();
-    static std::string disassemble(std::uint16_t pc, std::uint16_t opcode);
-    static double decodeBCD(const std::uint8_t* nibbles16);
-    bool loadDebugOverlay(const std::uint16_t* data, std::size_t count);
-    void clearDebugOverlay();
-    bool runDebugOverlay(std::uint16_t startAddr, std::uint32_t maxSteps, std::uint32_t* outSteps);
-    void setDebugLevel(std::uint8_t level);
-    std::vector<DebugEvent> drainDebugEvents();
-
-private:
-    TIMachine& m_;
-};
-
 /// Typing support of the TI machines (LIB-5 design §3.4, D-3): a capability
 /// of the generic kind `typing-support`, `TMC0501/typing-support`, owner
 /// component TMC0501 (not an adapter). How often the ROM's keyboard-scan
@@ -112,6 +79,4 @@ std::array<std::uint16_t, 4> idleAndKeyDetectRange(const calcu::machine::ModelId
 
 // The accessors (design §3.4): nullptr if `m` is not a TI machine.
 TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
-TIDebugPanelAdapter* debugPanelOf(calcu::machine::Machine&);
 const TIMemoryAdapter* memoryOf(const calcu::machine::Machine&);
-const TIDebugPanelAdapter* debugPanelOf(const calcu::machine::Machine&);

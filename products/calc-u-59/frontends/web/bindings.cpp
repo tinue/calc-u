@@ -70,11 +70,15 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     parts->app = std::make_unique<cu59::TIAppPart>(std::move(setup));
     parts->web = std::make_unique<cu59::TIWebPart>(parts->settings);
     parts->web->bind(*parts->app);
+    // LIB-13 AC-8: several files of the preset picker's upload become one folder here.
+    parts->app->libraryParts().open().setup().uploadFolder = start.uploadsDir;
 
     calcu::sessions::AppSessionSetup s;
     s.clock = &calcu::web::wallTimeNow;
     s.hostTime = [] { return std::chrono::system_clock::now(); };
-    s.parts = {start.shellPart};
+    // LIB-4's ControlPart (D-13): the control state with C59-4's product
+    // entries (c59.asm-run, c59.trace, c59.calculator-tab; AC-25).
+    s.parts = {start.shellPart, &parts->app->libraryParts().controlPart()};
     for (calcu::sessions::SessionPart* p : parts->app->sessionParts()) s.parts.push_back(p);
     s.parts.push_back(parts->web.get());
     const std::string problem = parts->file.problem();

@@ -11,6 +11,8 @@
 #include <calcu59/app/KeyboardLayout.hpp>
 #include <calcu59/app/SessionThread.hpp>
 #include <calcu59/app/TIAppPart.hpp>
+#include <calcu59/app/DebugLog.hpp>
+#include <calcu59/app/TIDebugPart.hpp>
 #include <calcu59/app/KeyIds.hpp>
 #include "typing/TypingTopics.hpp"
 #if DEBUG && (TARGET_OS_OSX || TARGET_OS_SIMULATOR)
@@ -23,6 +25,8 @@
 #include "startup/StartupPart.hpp"
 #include "debugger/ButtonRule.hpp"
 #include "debugger/RunState.hpp"
+#include "control/ControlState.hpp"
+#include "opening/OpenRequest.hpp"
 #include "paper/PaperTopics.hpp"
 #include "media/MediaTopics.hpp"
 #include "roms/Bundle.hpp"
@@ -240,11 +244,14 @@ TIChange changeOf(const cs::TopicName& t) {
     if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic)
         return TIChangeRunState;
     if (t == calcu::debugger::kTraceTopic) return TIChangeTrace;
-    if (t == T::kDebugLive) return static_cast<TIChange>(TIChangeLive | TIChangeListing);
-    if (t == T::kDebugCpu) return TIChangeCpu;
-    if (t == T::kDebugHeatmap) return TIChangeHeatmap;
-    if (t == T::kDebugLog) return TIChangeLog;
-    if (t == T::kDebugAsm) return TIChangeAsm;
+    // The debug panel's product topics (C59-4 AC-25, M-56).
+    if (t == T::kCalculatorDebug) return TIChangeLive;
+    if (t == T::kProgramListing) return TIChangeListing;
+    if (t == T::kCpuDebug) return TIChangeCpu;
+    if (t == T::kHeatmap) return TIChangeHeatmap;
+    if (t == T::kAsmOverlay) return TIChangeAsm;
+    if (t == T::kDebugView) return TIChangeLog;   // the log level it carries
+    if (t == calcu::control::kControlStateTopic) return TIChangeControl;
     return static_cast<TIChange>(0);
 }
 
@@ -334,6 +341,17 @@ cs::ServiceAnswer answerService(const cs::ServiceAsk& ask) {
     return cs::ServiceAnswer{false, cs::Value(), "This frontend does not answer " + std::string(cs::serviceName(ask.service)) + "."};
 }
 
+// A product entry of the control state (C59-4 AC-25): {available, reason}.
+bool entryAvailable(const calcu::control::ControlState* c, const char* name, std::string* reason = nullptr) {
+    const auto* e = c ? c->productEntry(name) : nullptr;
+    if (!e || !e->value) return false;
+    const cs::Value v = e->value->toValue();
+    const cs::Value* a = v.find("available");
+    const cs::Value* why = v.find("reason");
+    if (reason && why && why->string()) *reason = *why->string();
+    return a && a->boolean() && *a->boolean();
+}
+
 } // namespace
 
 @implementation TIRomSet {
@@ -389,6 +407,11 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     std::vector<std::string> _paperLines;
     std::vector<TIPaperDot> _paperDots;
     double _paperReach;
+    // The LOG tab's view of LIB-3's `log` (C59-4 AC-9): the last 2000 lines.
+    cu59::RingLog _log;
+    std::string _logText;
+    // debug-view's count of requests already shown (AC-2).
+    std::uint64_t _viewRequests;
 }
 
 - (instancetype)initWithRoms:(TIRomSet *)roms start:(TISessionStart *)start delegate:(id<TIAppSessionDelegate>)delegate {
@@ -432,9 +455,13 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     return m ? m->place("card-reader") : nullptr;
 }
 - (const cu59::TICueCardState *)cue { return _mirror.stateOf<cu59::TICueCardState>(cu59::topics::kCueCard); }
-- (const cu59::TIDebugLiveState *)live { return _mirror.stateOf<cu59::TIDebugLiveState>(cu59::topics::kDebugLive); }
-- (const cu59::TIDebugLogState *)logState { return _mirror.stateOf<cu59::TIDebugLogState>(cu59::topics::kDebugLog); }
-- (const cu59::TIDebugAsmState *)asmState { return _mirror.stateOf<cu59::TIDebugAsmState>(cu59::topics::kDebugAsm); }
+- (const cu59::TICalculatorDebug *)live { return _mirror.stateOf<cu59::TICalculatorDebug>(cu59::topics::kCalculatorDebug); }
+- (const cu59::TIProgramListing *)listing { return _mirror.stateOf<cu59::TIProgramListing>(cu59::topics::kProgramListing); }
+- (const cu59::TIDebugView *)debugView { return _mirror.stateOf<cu59::TIDebugView>(cu59::topics::kDebugView); }
+- (const cu59::TIAsmOverlayState *)asmState { return _mirror.stateOf<cu59::TIAsmOverlayState>(cu59::topics::kAsmOverlay); }
+- (const calcu::control::ControlState *)controlState {
+    return _mirror.stateOf<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+}
 - (const cu59::TIModelState *)modelState { return _mirror.stateOf<cu59::TIModelState>(cu59::topics::kModel); }
 
 - (void)drain {
@@ -490,19 +517,31 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
                     }
                 continue;
             }
-            if (s->topic == cs::kLogTopic) {
+            if (s->topic == cs::kLogTopic) {   // C59-4 AC-9: the LOG tab's lines (a message may hold several)
+                bool any = false;
                 for (const auto& p : s->appended)
-                    if (const auto* l = cs::payloadAs<cs::LogLine>(p)) [d diagnostic:ns(l->text)];
-                continue;
-            }
-            if (s->topic == cu59::topics::kShowDebugPanel) {
-                for (const auto& p : s->appended)
-                    if (const auto* x = cs::payloadAs<cu59::TIShowDebugPanel>(p)) [d showDebugPanel:static_cast<NSInteger>(x->panel)];
+                    if (const auto* l = cs::payloadAs<cs::LogLine>(p)) {
+                        [d diagnostic:ns(l->text)];
+                        std::size_t from = 0;
+                        for (std::size_t at; (at = l->text.find('\n', from)) != std::string::npos; from = at + 1)
+                            _log.write(l->text.substr(from, at - from));
+                        _log.write(l->text.substr(from));
+                        any = true;
+                    }
+                if (any) {
+                    _logText = _log.displayText();
+                    changes = static_cast<TIChange>(changes | TIChangeLog);
+                }
                 continue;
             }
         }
         if (const auto* st = std::get_if<cs::StateMessage>(&m)) changes = static_cast<TIChange>(changes | changeOf(st->topic));
         _mirror.deliver(m);
+    }
+    // The tab a `debug-panel:` step asked for, each time debug-view's count grows (AC-2, EC-4).
+    if (const auto* v = [self debugView]; v && v->requests > _viewRequests) {
+        _viewRequests = v->requests;
+        [d showDebugPanel:static_cast<NSInteger>(v->view)];
     }
     if (changes) [d changed:changes];
 }
@@ -727,16 +766,27 @@ static const char* const kCardReaderPlace = "card-reader";
     [self send:calcu::presets::kLoadPresetCommand args:{{"content", text}, {"name", cpp(name)}}];
 }
 
-// ── Dropped files ────────────────────────────────────────────────────────────
+// ── Opening a file (LIB-13, M-56) ────────────────────────────────────────────
 
-- (BOOL)acceptsDroppedFile:(NSString *)fileName {
-    using Drop = cu59::DropAction;
-    const Drop a = cu59::dropActionFor(cpp(fileName), static_cast<cu59::Model>(self.model));
-    return a == Drop::LoadPreset || a == Drop::FitCard ? YES : NO;
+- (void)wouldOpenFile:(NSString *)fileName completion:(void (^)(BOOL))done {
+    _thread->ask(cs::Request{calcu::opening::kWouldTakeRequest, cs::Value::object({{"name", cpp(fileName)}})},
+                 [done](const cs::ReplyMessage& r) {
+                     const auto* w = cs::payloadAs<calcu::opening::WouldTake>(r.result);
+                     done(r.done && w && w->takes ? YES : NO);
+                 });
 }
-- (void)openDroppedFile:(NSData *)raw path:(NSString *)path fileName:(NSString *)fileName completion:(void (^)(BOOL))done {
-    [self send:cu59::commands::kOpenDropped args:argsWithBytes({{"path", cpp(path)}, {"name", cpp(fileName)}}, raw)
-         reply:flagReply(done)];
+- (void)openFile:(NSData *)raw path:(NSString *)path fileName:(NSString *)fileName way:(NSString *)way
+      completion:(void (^)(BOOL))done {
+    calcu::opening::OpenRequest q;
+    calcu::opening::OpenedFile f;
+    f.name = cpp(fileName);
+    if (path.length) f.path = cpp(path);
+    if (raw) f.bytes = bytes(raw);
+    q.files = {std::move(f)};
+    q.way = calcu::opening::wayNamed(cpp(way)).value_or(calcu::opening::Way::Drop);
+    cu59::SessionThread::ReplyHandler reply;
+    if (done) reply = [done](const cs::ReplyMessage& r) { done(r.done ? YES : NO); };
+    _thread->send(cs::Command{calcu::opening::kOpenCommand, q.toValue()}, std::move(reply));
 }
 
 // ── Debugger ─────────────────────────────────────────────────────────────────
@@ -753,6 +803,25 @@ static const char* const kCardReaderPlace = "card-reader";
 - (BOOL)scanLoopExitArmed { const auto* r = [self runControl]; return r && r->armed == calcu::debugger::kCpu; }
 - (TIButtonUse)buttonUseFor:(TIFreezeOwner)level {
     return buttonUseOf(calcu::debugger::buttonUse(levelOf(level), [self runControl]));
+}
+- (TIFreezeButtons)freezeButtonsFor:(TIFreezeOwner)level {
+    const cu59::FreezeButtons b = cu59::freezeButtons(levelOf(level), [self runControl]);
+    TIFreezeButtons t;
+    t.freeze = b.freeze;
+    t.freezeOnStart = b.freezeOnStart;
+    t.armed = b.armed;
+    return t;
+}
+- (BOOL)asmRunAvailable { return entryAvailable([self controlState], cu59::entries::kAsmRun) ? YES : NO; }
+- (BOOL)traceButtonAvailable { return entryAvailable([self controlState], cu59::entries::kTrace) ? YES : NO; }
+- (BOOL)calculatorTabAvailable {
+    const auto* c = [self controlState];
+    return !c || entryAvailable(c, cu59::entries::kCalculatorTab) ? YES : NO;   // before the first state: yes
+}
+- (NSString *)calculatorTabReason {
+    std::string why;
+    entryAvailable([self controlState], cu59::entries::kCalculatorTab, &why);
+    return ns(why);
 }
 + (TIButtonUse)buttonUseFor:(TIFreezeOwner)level hasState:(BOOL)hasState paused:(BOOL)paused owner:(TIFreezeOwner)owner {
     calcu::debugger::RunState s;
@@ -773,28 +842,34 @@ static const char* const kCardReaderPlace = "card-reader";
     const auto* l = [self live];
     return snapshotFrom(l ? l->live : cu59::LiveDebugSnapshot{});
 }
-- (NSArray<TIStepEntry *> *)programListing { const auto* l = [self live]; return l ? stepEntries(l->listing) : @[]; }
-- (NSInteger)programListingSource { const auto* l = [self live]; return l ? static_cast<NSInteger>(l->listingSource) : 0; }
-- (NSInteger)programListingCurrentIndex { const auto* l = [self live]; return l ? l->listingCurrentIndex : -1; }
+- (NSArray<TIStepEntry *> *)programListing { const auto* l = [self listing]; return l ? stepEntries(l->steps) : @[]; }
+- (NSInteger)programListingSource { const auto* l = [self listing]; return l ? static_cast<NSInteger>(l->source) : 0; }
+- (NSInteger)programListingCurrentIndex { const auto* l = [self listing]; return l ? l->currentIndex : -1; }
 - (NSArray<TIInspectorEntry *> *)cpuHistory {
-    const auto* c = _mirror.stateOf<cu59::TIDebugCpuState>(cu59::topics::kDebugCpu);
-    return c ? inspectorEntries(c->history) : @[];
+    const auto* c = _mirror.stateOf<cu59::TICpuDebug>(cu59::topics::kCpuDebug);
+    return c ? inspectorEntries(c->entries) : @[];
 }
 - (NSData *)heatmapCounts {
-    const auto* h = _mirror.stateOf<cu59::TIDebugHeatmapState>(cu59::topics::kDebugHeatmap);
-    if (!h) return [NSMutableData dataWithLength:0x1400 * sizeof(uint32_t)];
+    const auto* h = _mirror.stateOf<cu59::TIHeatmap>(cu59::topics::kHeatmap);
+    if (!h || h->counts.empty()) return [NSMutableData dataWithLength:0x1400 * sizeof(uint32_t)];
     return [NSData dataWithBytes:h->counts.data() length:h->counts.size() * sizeof(uint32_t)];
 }
-- (void)clearHeatmap { [self send:cu59::commands::kClearHeatmap]; }
+- (void)clearHeatmap { [self send:cu59::commands::kHeatmapReset]; }
 
-- (NSInteger)debugLevel { const auto* l = [self logState]; return l ? static_cast<NSInteger>(l->level) : 0; }
-- (void)cycleDebugLevel { [self send:cu59::commands::kCycleDebugLevel]; }
-- (NSString *)logText { const auto* l = [self logState]; return l ? ns(l->text) : @""; }
-- (void)clearLog { [self send:cu59::commands::kClearLog]; }
-- (void)dumpVars { [self send:cu59::commands::kDumpVars]; }
-- (void)dumpScom { [self send:cu59::commands::kDumpScom]; }
-- (void)dumpProg { [self send:cu59::commands::kDumpProg]; }
-- (void)dumpMemory { [self send:cu59::commands::kDumpMemory]; }
+- (NSInteger)debugLevel { const auto* v = [self debugView]; return v ? static_cast<NSInteger>(v->logLevel) : 0; }
+- (void)cycleDebugLevel {
+    const auto next = static_cast<cu59::DebugLevel>(([self debugLevel] + 1) % 3);
+    [self send:cu59::commands::kLogLevel args:{{"level", std::string(cu59::debugLevelName(next))}}];
+}
+- (NSString *)logText { return ns(_logText); }
+- (void)clearLog {
+    _log.clear();
+    _logText.clear();
+}
+- (void)dumpVars { [self send:cu59::commands::kDump args:{{"what", "vars"}}]; }
+- (void)dumpScom { [self send:cu59::commands::kDump args:{{"what", "scom"}}]; }
+- (void)dumpProg { [self send:cu59::commands::kDump args:{{"what", "prog"}}]; }
+- (void)dumpMemory { [self send:cu59::commands::kDump args:{{"what", "memory"}}]; }
 
 - (BOOL)manualTrace {
     const auto* t = _mirror.stateOf<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic);
@@ -811,13 +886,13 @@ static const char* const kCardReaderPlace = "card-reader";
 - (void)loadAsm:(NSString *)text fileName:(NSString *)fileName {
     std::vector<cs::Value::Member> a{{"name", cpp(fileName)}};
     if (text) a.push_back({"text", cpp(text)});
-    [self send:cu59::commands::kLoadAsm args:std::move(a)];
+    [self send:cu59::commands::kAsmLoad args:std::move(a)];
 }
-- (void)runAsm { [self send:cu59::commands::kRunAsm]; }
-- (void)clearAsm { [self send:cu59::commands::kClearAsm]; }
+- (void)runAsm { [self send:cu59::commands::kAsmRun]; }
+- (void)clearAsm { [self send:cu59::commands::kAsmClear]; }
 - (NSString *)asmFileName { const auto* a = [self asmState]; return a ? ns(a->fileName) : @"No file selected"; }
-- (NSInteger)asmWordCount { const auto* a = [self asmState]; return a ? a->wordCount : 0; }
+- (NSInteger)asmWordCount { const auto* a = [self asmState]; return a ? a->instructions : 0; }
 - (NSString *)asmStatus { const auto* a = [self asmState]; return a ? ns(a->status) : @""; }
-- (BOOL)asmActive { const auto* a = [self asmState]; return a && a->active; }
+- (BOOL)asmActive { const auto* a = [self asmState]; return a && a->running; }
 
 @end

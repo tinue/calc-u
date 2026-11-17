@@ -1,7 +1,10 @@
 #include "AppSettings.hpp"
 #include "EmulatorController.hpp"
 #include "MainWindow.hpp"
+#include "TIFileKinds.hpp"
+#include "opening/StartFile.hpp"
 #include <QApplication>
+#include <QFileInfo>
 #include <QFileOpenEvent>
 #include <QIcon>
 #include <QPalette>
@@ -26,7 +29,7 @@ protected:
     bool event(QEvent* e) override {
         if (e->type() == QEvent::FileOpen) {
             QString path = static_cast<QFileOpenEvent*>(e)->file();
-            if (window) window->openStateFile(path);
+            if (window) window->openFile(path, false);   // LIB-13 AC-14: Open With
             else pendingFile = path;
             return true;
         }
@@ -71,22 +74,29 @@ int main(int argc, char* argv[]) {
 
     // Developer option: --grab <file.png> [--after <ms>] saves a screenshot of the
     // window and quits (run with QT_QPA_PLATFORM=offscreen to check rendering
-    // without showing a window). Any other argument is a preset to open.
+    // without showing a window). The file named at the start (LIB-13 AC-14,
+    // D-18, ledger 59-47): the program's own options and their values taken
+    // out, the last argument that does not start with `-` and names an
+    // existing file, opened as what it is; the session keeps it until the
+    // start has ended (AC-7).
     QStringList args = QApplication::arguments();
     QString grabPath;
     int grabAfter = 3000;
-    QString stateFile;
     double probeSeconds = 0;
-    for (int i = 1; i < args.size(); ++i) {
-        if (args[i] == QLatin1String("--grab") && i + 1 < args.size()) grabPath = args[++i];
+    std::vector<std::string> all;
+    for (int i = 0; i < args.size(); ++i) {
+        all.push_back(args[i].toStdString());
+        if (args[i] == QLatin1String("--grab") && i + 1 < args.size()) grabPath = args[i + 1];
 #ifdef CALCU59_PACING_PROBE
-        else if (args[i] == QLatin1String("--pacing-probe") && i + 1 < args.size()) probeSeconds = args[++i].toDouble();
+        else if (args[i] == QLatin1String("--pacing-probe") && i + 1 < args.size()) probeSeconds = args[i + 1].toDouble();
 #endif
-        else if (args[i] == QLatin1String("--after") && i + 1 < args.size()) grabAfter = args[++i].toInt();
-        else stateFile = args[i];
+        else if (args[i] == QLatin1String("--after") && i + 1 < args.size()) grabAfter = args[i + 1].toInt();
     }
-    if (!stateFile.isEmpty()) window.openStateFile(stateFile);
-    else if (!app.pendingFile.isEmpty()) window.openStateFile(app.pendingFile);
+    const auto startFile = calcu::opening::startFile(cu59::programArguments(all), [](const std::string& f) {
+        return QFileInfo(QString::fromStdString(f)).isFile();
+    });
+    if (startFile) window.openFile(QString::fromStdString(*startFile), true);
+    else if (!app.pendingFile.isEmpty()) window.openFile(app.pendingFile, false);
     if (!grabPath.isEmpty()) {
         QTimer::singleShot(grabAfter, &window, [&window, grabPath] {
             window.grab().save(grabPath);

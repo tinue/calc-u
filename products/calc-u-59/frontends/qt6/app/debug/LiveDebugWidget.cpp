@@ -154,9 +154,9 @@ void LiveDebugWidget::refreshHeader() {
     m_title->setText(narrow ? QStringLiteral("DEBUG") : QStringLiteral("CALCULATOR DEBUG"));
     m_freezeOnStart->setText(narrow ? QStringLiteral("F.START") : QStringLiteral("FREEZE ON START"));
     m_run->setRunState(m_controller.runState());
-    const bool armed = m_controller.startArmed(calcu::debugger::kProgram);
-    m_freezeOnStart->setEnabled(!m_controller.isFrozen() && !armed);
-    m_armed->setEnabled(armed);
+    const cu59::FreezeButtons b = m_controller.freezeButtons(calcu::debugger::kProgram);   // C59-4 AC-5
+    m_freezeOnStart->setEnabled(b.freezeOnStart);
+    m_armed->setEnabled(b.armed);
     refresh();
 }
 

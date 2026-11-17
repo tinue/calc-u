@@ -113,7 +113,10 @@ final class ScreenshotTests: XCTestCase {
         attachScreenshot(app, name: "diag.ti59 — diagnostic complete")
     }
 
-    /// Assembly overlay screenshot — iPad mini (A17 Pro) landscape.
+    /// C59-4 AC-16 (AC-24's second scenario; ADR 0032), also the assembly
+    /// overlay screenshot — iPad mini (A17 Pro) landscape: an overlay is chosen
+    /// and run and the CPU tab shows it. test_stopwatch.asm is in the ASM
+    /// overlay format 2.0 (M-56).
     ///
     /// Sequence:
     ///   1. Switch to CPU tab (shows ASM overlay at the bottom)
@@ -123,7 +126,7 @@ final class ScreenshotTests: XCTestCase {
     ///   5. Wait 3.5 seconds
     ///   6. Tap R/S to stop the stopwatch
     ///   7. Capture screenshot showing elapsed time
-    func testScreenshotAssembly() throws {
+    func testC59_4_AC16AsmOverlay() throws {
         let app = launchForScreenshot(orientation: .landscapeLeft)
 
         // Step 1: switch to CPU tab
@@ -140,11 +143,21 @@ final class ScreenshotTests: XCTestCase {
         let asmCell = app.cells.containing(.staticText, identifier: "test_stopwatch.asm").firstMatch
         XCTAssertTrue(asmCell.waitForExistence(timeout: 5), "test_stopwatch.asm not found")
         asmCell.tap()
+        let fileLabel = app.staticTexts["asm-file"]
+        XCTAssertTrue(fileLabel.waitForExistence(timeout: 3), "the ASM OVERLAY box is not shown")
+        let loaded = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS 'test_stopwatch.asm'"),
+                                               object: fileLabel)
+        XCTAssertEqual(XCTWaiter.wait(for: [loaded], timeout: 5), .completed, "the overlay was not loaded")
 
         // Step 3: run the ASM overlay
         let runButton = app.buttons["btn-asm-run"]
         XCTAssertTrue(runButton.waitForExistence(timeout: 3), "btn-asm-run not found")
         runButton.tap()
+        // The CPU tab shows it: entered at 1800, and the CALCULATOR tab cannot be chosen (AC-18).
+        let entered = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label BEGINSWITH 'ASM entered at 0x1800'"),
+                                                object: app.staticTexts["asm-status"])
+        XCTAssertEqual(XCTWaiter.wait(for: [entered], timeout: 5), .completed, "the overlay was not entered")
+        XCTAssertFalse(app.buttons["btn-tab-calculator"].isEnabled, "CALCULATOR can be chosen while the overlay runs")
 
         // If a "ROM Load Error" alert appears, dismiss it then Freeze/Resume to
         // clear the bad state before continuing.

@@ -1,10 +1,9 @@
 #include "TIAppPart.hpp"
+#include "TIMagneticCardKind.hpp"
 #include "PacingProfiles.hpp"
 #include "Settings.hpp"
 #include "../core/TIAdapters.hpp"
 #include "TIDebuggerSetup.hpp"
-#include "TIMagneticCardKind.hpp"
-#include "KeyboardLayout.hpp"
 #include "TIPrinters.hpp"
 #include "TITyping.hpp"
 #include "../core/TIDebugging.hpp"
@@ -46,21 +45,6 @@ Value TIRunState::toValue() const {
     return Value::object({{"full-speed", fullSpeed},
                           {"keystrokes-playing", keystrokesPlaying}});
 }
-Value TIDebugLiveState::toValue() const {
-    return Value::object({{"enabled", enabled}, {"current-step", live.currentStep}});
-}
-Value TIDebugCpuState::toValue() const {
-    return Value::object({{"enabled", enabled}, {"entries", static_cast<int64_t>(history.size())}});
-}
-Value TIDebugHeatmapState::toValue() const { return Value::object({{"cells", static_cast<int64_t>(counts.size())}}); }
-Value TIDebugLogState::toValue() const {
-    return Value::object({{"level", static_cast<int>(level)}, {"text", text}});
-}
-Value TIDebugAsmState::toValue() const {
-    return Value::object({{"file", fileName}, {"words", wordCount}, {"status", status}, {"active", active}});
-}
-Value TIShowDebugPanel::toValue() const { return Value(static_cast<int>(panel)); }
-
 NoticeParts splitNotice(const std::string& sentence) {
     const auto at = sentence.find(": ");
     if (at == std::string::npos) return {"Calc-U-59", sentence};
@@ -74,7 +58,7 @@ namespace {
 std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
 
 // LIB-10 §12.6: the trace folder of the host, none on the Web (hand-over).
-TIDebuggerOptions debuggerOptions(const TIAppSetup& s, std::function<void(const std::string&)> showPanel) {
+TIDebuggerOptions debuggerOptions(const TIAppSetup& s, TIDebugPart& panel) {
     TIDebuggerOptions o;
     const TraceTarget t = s.trace;
     const std::function<bool()> available = s.traceAvailable;
@@ -90,8 +74,22 @@ TIDebuggerOptions debuggerOptions(const TIAppSetup& s, std::function<void(const 
     }
     if (t.maxBytes > 0) o.traceLimitMb = [mb = static_cast<long>(std::max<uint64_t>(1, t.maxBytes / 1'000'000))] { return mb; };
     o.handOver = t.dir.empty();
-    o.showPanel = [showPanel](sessions::SessionContext&, const std::string& view) { showPanel(view); };
+    o.showPanel = [&panel](sessions::SessionContext& c, const std::string& view) { panel.showView(c, view); };
     return o;
+}
+
+// C59-4 AC-12: TRACE can be used where the trace folder can be written, or
+// where the host keeps the traces (the Web).
+std::function<bool()> traceAvailable(const TIAppSetup& s) {
+    const TraceTarget t = s.trace;
+    const std::function<bool()> available = s.traceAvailable;
+    return [t, available] {
+        if (t.dir.empty()) return true;
+        if (available && !available()) return false;
+        std::error_code ec;
+        std::filesystem::create_directories(t.dir, ec);
+        return !ec;
+    };
 }
 
 // The host's file access of the save folder as the media part's (LIB-7 D-30;
@@ -128,7 +126,11 @@ TIAppPart::TIAppPart(TIAppSetup setup)
       }}),
       m_bundle(m_setup.examplesFolder.empty() ? nullptr
                                               : std::make_unique<presets::DirectoryPresetBundle>(pathOf(m_setup.examplesFolder))),
-      m_lib(librarySetup()) {}
+      m_debugPart(TIDebugSetup{m_setup.roms, traceAvailable(m_setup), false}),
+      m_fileKinds(m_debugPart),
+      m_lib(librarySetup()) {
+    m_debugPart.bindDebugger(m_lib.debugger());
+}
 
 calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     if (!m_setup.settings) {
@@ -160,9 +162,11 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
         return folder;
     };
     s.papers = tiPrinterPapers();
-    s.debugger = tiDebuggerSetup(m_levelRules, debuggerOptions(m_setup, [this](const std::string& v) { showDebugPanelNamed(v); }));
+    s.debugger = tiDebuggerSetup(m_levelRules, debuggerOptions(m_setup, m_debugPart));
     s.productName = "Calc-U-59";
-    s.presetExtensions = {".ti59", ".ti58", ".ti58c"};
+    s.presetExtensions = tiPresetExtensions();   // LIB-13 AC-11: no size limit
+    s.fileKinds = m_fileKinds.kinds();
+    s.controlRules = {&m_debugPart};   // C59-4 AC-25
     s.printers = {kPC100C};
     // LIB-7 59 (M-55): the magnetic card in the save folder, slot-1's modules.
     s.mediaKinds = {magneticCardKind()};
@@ -180,6 +184,7 @@ TIAppPart::~TIAppPart() {
 std::vector<sessions::SessionPart*> TIAppPart::sessionParts() {
     std::vector<sessions::SessionPart*> parts = m_lib.sessionParts();
     parts.push_back(&m_memoryPart);
+    parts.push_back(&m_debugPart);
     parts.push_back(this);
     return parts;
 }
@@ -210,12 +215,6 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     m_cue = &s.stateTopic(topics::kCueCard);
     m_printer = &s.stateTopic(topics::kPrinter);
     m_run = &s.stateTopic(topics::kRunState);
-    m_live = &s.stateTopic(topics::kDebugLive);
-    m_cpu = &s.stateTopic(topics::kDebugCpu);
-    m_heatmap = &s.stateTopic(topics::kDebugHeatmap);
-    m_log = &s.stateTopic(topics::kDebugLog);
-    m_asm = &s.stateTopic(topics::kDebugAsm);
-    m_panel = &s.streamTopic(topics::kShowDebugPanel, History::None);
 
     auto done = [](auto&& f) {
         return [f](const Value& a) -> CommandOutcome {
@@ -240,77 +239,9 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
         return Done{};
     });
     add(s, kTapCard, [&c, flag](const Value& a) { return flag(c.tapCard(realArg(a, "x"), realArg(a, "y"))); });
-    // Until LIB-13 59's `open` (M-56): a dropped preset goes to LIB-6's
-    // load-preset by its content (LIB-6 §11.2); a card is fitted.
-    add(s, kOpenDropped, [this, &c](const Value& a) -> CommandOutcome {
-        const std::string name = textArg(a, "name");
-        const auto bytes = bytesArg(a, "bytes");
-        switch (c.dropAction(name)) {
-        case DropAction::LoadPreset: {
-            if (!bytes) {
-                error("Preset load error", "Cannot read file.");
-                return Done{std::make_shared<TIFlag>(false)};
-            }
-            presets::PresetsPart* p = m_lib.presets();
-            if (!p || !m_ctx) return Done{std::make_shared<TIFlag>(false)};
-            const Value args = Value::object({{"content", std::string(bytes->begin(), bytes->end())}, {"name", name}});
-            CommandOutcome out = p->loadPreset(args, *m_ctx);
-            if (const auto* r = std::get_if<Refused>(&out)) {
-                if (m_ctx) m_ctx->notice(r->reason);
-                return Done{std::make_shared<TIFlag>(false)};
-            }
-            return out;
-        }
-        case DropAction::FitCard: return Done{std::make_shared<TIFlag>(c.fitDroppedCard(name, textArg(a, "path"), bytes))};
-        case DropAction::Ignore:
-        case DropAction::NotAccepted: break;
-        }
-        return Done{std::make_shared<TIFlag>(false)};
-    });
-    add(s, kLiveDebug, done([&c](const Value& a) { c.setLiveDebugEnabled(sessions::flagArg(a, "on")); }));
-    add(s, kCpuDebug, done([&c](const Value& a) { c.setCpuDebugEnabled(sessions::flagArg(a, "on")); }));
-    add(s, kClearHeatmap, done([&c](const Value&) { c.clearHeatmap(); }));
-    add(s, kCycleDebugLevel, done([&c](const Value&) { c.cycleDebugLevel(); }));
-    add(s, kClearLog, done([&c](const Value&) { c.clearLog(); }));
-    add(s, kDumpVars, done([&c](const Value&) { c.dumpVars(); }));
-    add(s, kDumpScom, done([&c](const Value&) { c.dumpScom(); }));
-    add(s, kDumpProg, done([&c](const Value&) { c.dumpProg(); }));
-    add(s, kDumpMemory, done([&c](const Value&) { c.dumpMemory(); }));
-    add(s, kLoadAsm, done([&c](const Value& a) {
-        const Value* t = a.find("text");
-        std::optional<std::string> text;
-        if (t && t->string()) text = *t->string();
-        c.loadAsm(text, textArg(a, "name"));
-    }));
-    add(s, kRunAsm, done([&c](const Value&) { c.runAsm(); }));
-    add(s, kClearAsm, done([&c](const Value&) { c.clearAsm(); }));
-    s.request(kDropAction, [&c](const Value& a, sessions::SessionContext&) {
-        sessions::ReplyMessage r;
-        r.done = true;
-        r.result = std::make_shared<TIDropAction>(c.dropAction(textArg(a, "name")));
-        return r;
-    });
-
     // The machine comes with LIB-18's `start`; the card wait is the media part's (LIB-17 AC-16).
     m_changes = ~0u;
     settle();
-}
-
-bool TIAppPart::fitDroppedCard(const std::string& name, const std::string& path,
-                               const std::optional<std::vector<uint8_t>>& bytes) {
-    calcu::media::MediaPart* media = m_lib.media();
-    if (!media || !m_ctx) return false;
-    Value::Object o{{"name", name}, {"place", "card-reader"}};
-    if (bytes) o.push_back({"bytes", Value(Value::Bytes(bytes->begin(), bytes->end()))});
-    if (!path.empty()) o.push_back({"path", path});
-    else o.push_back({"upload", true});   // a Web frontend: imported into the save folder (LIB-13 AC-4)
-    CommandOutcome out = media->openFile(Value(std::move(o)), *m_ctx);
-    if (const auto* r = std::get_if<Refused>(&out)) {
-        m_ctx->notice(r->reason);
-        return false;
-    }
-    refreshCueCard();
-    return true;
 }
 
 void TIAppPart::add(sessions::SessionSetup& s, const sessions::CommandName& name, Handler h) {
@@ -434,53 +365,6 @@ void TIAppPart::publish(uint32_t c) {
         p->keystrokesPlaying = k.keystrokesPlaying();
         m_run->set(std::move(p));
     }
-    if (c & (S::LiveChanged | S::ListingChanged)) {
-        auto p = make(std::make_shared<TIDebugLiveState>());
-        p->enabled = k.liveDebugEnabled();
-        p->live = k.debug().live();
-        p->listing = k.debug().listing();
-        p->listingSource = k.debug().listingSource();
-        p->listingCurrentIndex = k.debug().listingCurrentIndex();
-        m_live->set(std::move(p));
-    }
-    if (c & S::CpuChanged) {
-        auto p = make(std::make_shared<TIDebugCpuState>());
-        p->enabled = k.cpuDebugEnabled();
-        p->history = k.debug().cpuHistory();
-        m_cpu->set(std::move(p));
-    }
-    if (c & S::HeatmapChanged) {
-        auto p = make(std::make_shared<TIDebugHeatmapState>());
-        p->counts = k.debug().heatmapCounts();
-        m_heatmap->set(std::move(p));
-    }
-    if (c & S::LogChanged) {
-        auto p = make(std::make_shared<TIDebugLogState>());
-        p->level = k.debugLevel();
-        p->text = k.logText();
-        m_log->set(std::move(p));
-    }
-    if (c & S::AsmChanged) {
-        auto p = make(std::make_shared<TIDebugAsmState>());
-        p->fileName = k.asmFileName();
-        p->status = k.asmStatus();
-        p->wordCount = k.asmWordCount();
-        p->active = k.asmActive();
-        m_asm->set(std::move(p));
-    }
-}
-
-// The library's `debug-panel:` step (L-E4, until M-56): the overlay keeps
-// the CPU tab (C59-4 AC-2, LIB-10 D-26).
-void TIAppPart::showDebugPanel(DebugPanel panel) {
-    if (m_asmActive && panel == DebugPanel::Calculator) return;
-    if (m_panel) m_panel->append(std::make_shared<TIShowDebugPanel>(panel));
-}
-
-void TIAppPart::showDebugPanelNamed(const std::string& view) {
-    if (view == "calculator") showDebugPanel(DebugPanel::Calculator);
-    else if (view == "cpu") showDebugPanel(DebugPanel::Cpu);
-    else if (view == "log") showDebugPanel(DebugPanel::Log);
 }
 
 void TIAppPart::error(const std::string& title, const std::string& message) {
@@ -500,8 +384,10 @@ calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, paci
     s.clock = std::move(clock);
     s.hostTime = [] { return std::chrono::system_clock::now(); };
     std::vector<sessions::SessionPart*> lib = part->sessionParts();
-    // LIB-5's TypingPart first (LIB-3 AC-12: before the product's), then the host's own.
+    // LIB-5's TypingPart first (LIB-3 AC-12: before the product's), LIB-4's
+    // ControlPart (D-13; the product entries of C59-4 AC-25), then the host's own.
     s.parts.push_back(lib.front());
+    s.parts.push_back(&part->libraryParts().controlPart());
     for (sessions::SessionPart* p : before) s.parts.push_back(p);
     s.parts.insert(s.parts.end(), lib.begin() + 1, lib.end());
     for (sessions::SessionPart* p : after) s.parts.push_back(p);

@@ -11,12 +11,8 @@ bool LedFrame::operator==(const LedFrame& o) const {
            std::memcmp(dpLevel, o.dpLevel, sizeof dpLevel) == 0;
 }
 
-FrameUpdate FrameSampler::tick(calcu::machine::Machine& m, int debugLevel) {
+FrameUpdate FrameSampler::tick(calcu::machine::Machine& m) {
     FrameUpdate u;
-    if (debugLevel > 0) {
-        for (const auto& e : debugPanelOf(m)->drainDebugEvents())
-            if (e.level <= debugLevel) u.logLines.emplace_back(e.msg);
-    }
 
     u.display = m.readDisplay();
     // The poll's length: what ran since the previous tick. With nothing run

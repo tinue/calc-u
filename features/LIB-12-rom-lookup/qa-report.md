@@ -199,3 +199,15 @@ Other checks of the step: the Qt6 frontend builds and its bundle has
 | ID | Result | Test case |
 |---|---|---|
 | AC-7 | Pass | The harness `calcu` (LIB-11) ends at its start with the lookup's message, naming every missing or bad file: `ec1_missing_rom_ends_at_start_naming_files` (`library/harness/tests/run_tests.cpp`, `calcu_library_tests`; two files removed, both named); the CLI writes the message on standard error and exits 2 (`library/harness/cli/Cli.cpp`). With this, every criterion of the Library column passes (design D-1) |
+
+## Calc-U-59, `cuecards.txt` leaves the source repository (M-55, 2026-11-17)
+
+Design §10: `roms/solid-state/cuecards.txt` is deleted with its lines in
+`roms/fetch_roms.sh`, `roms/README.md`, `roms/.gitignore`,
+`tests/rom_missing_build.sh`, the Qt6 resource glob, the Web bundle and the
+Swift project; the cue cards come from the module files
+(`app/ModuleCueCards`). P10, the one-time check before the deletion: the 14
+module files' `cue-cards:` equal `cuecards.txt`'s 46 cards field by field,
+the other programs' cards are the stand-ins (C59-7's qa-report).
+`CalcU59RomMissingBuild` and the Web build run without the file. The column
+stays Done.

@@ -2,6 +2,7 @@
 #include "SessionRig.hpp"
 #include "../app/TIMagneticCardKind.hpp"
 #include "media/MediaPart.hpp"
+#include "opening/OpenPart.hpp"
 #include "media/MediaTopics.hpp"
 #include "startup/StartupPart.hpp"
 #include "typing/TypingTopics.hpp"
@@ -89,6 +90,23 @@ struct CardRig : SessionRig {
         if (!c) return std::nullopt;
         if (const auto* b = std::get_if<std::vector<std::uint8_t>>(&c->sides[static_cast<std::size_t>(side)])) return *b;
         return std::nullopt;
+    }
+    /// A file dropped on the calculator: LIB-13's `open` (a path: where it
+    /// lies; none: an upload, as the Web). True when the open was done.
+    bool drop(const std::string& name, const std::string& path, const std::optional<std::string>& bytes = std::nullopt) {
+        calcu::opening::OpenRequest q;
+        calcu::opening::OpenedFile f;
+        f.name = name;
+        if (!path.empty()) f.path = path;
+        if (bytes) f.bytes = std::vector<std::uint8_t>(bytes->begin(), bytes->end());
+        else if (!path.empty()) {
+            const auto t = readFile(path);
+            if (t) f.bytes = std::vector<std::uint8_t>(t->begin(), t->end());
+        }
+        q.files = {f};
+        q.way = calcu::opening::Way::Drop;
+        q.upload = path.empty();   // the Web: imported into the save folder (LIB-13 AC-4)
+        return operation(calcu::opening::kOpenCommand, q.toValue()).done;
     }
     int progStep(int s) { return int(mem(machine()).readProgramStep(s)); }
     double reg(int n) { return mem(machine()).readDataReg(n); }

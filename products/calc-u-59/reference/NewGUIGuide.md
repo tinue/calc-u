@@ -46,7 +46,11 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    TRACE), `c59.cue-card` (the cue card, its corner on show and lit), `c59.run-state` (full speed, playback),
    the library's `media` (the card reader `card-reader` and `slot-1`: what they
    hold, the pickers; send `media.choose`, `media.start-new`, `media.eject`),
-   `c59.debug.*`, …). Show `notices` as alerts. Offer `clipboard-image` and
+   …) and the debug panel's product topics (`calculator-debug`,
+   `program-listing`, `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view`;
+   `reference/DebugAPI.md`; the LOG tab keeps the last 2000 lines of the
+   `log` topic). Send every file the user hands over as LIB-13's `open`
+   (a drag asks `open-would-take`). Show `notices` as alerts. Offer `clipboard-image` and
    `clipboard-text` for Copy of the paper, and `keep-file` where a trace
    cannot go into a folder (LIB-10 AC-26).
 3. **Call it about 60 times a second** (`AppSession::call(now)`); redraw
@@ -72,8 +76,9 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    (with `litCardCorner` and `cardCornerGeometry` for the side being read),
    the component set's paper panel and run-control buttons (`library/qt6/`,
    `library/web/components/`; the paper's marks come from the
-   `paper PC-100C` topic), `DebugSnapshots`, `DebugText` and `RomHeatmap`
-   for the debugger.
+   `paper PC-100C` topic), `DebugSnapshots`, `DebugText`, `RomHeatmap`
+   (the heatmap's steps and colours), `RingLog` and `freezeButtons` for the
+   debugger.
 
 What stays per GUI: widgets and painting (glow, fonts), file dialogs and
 the host folders it passes to the library (the settings file and the save

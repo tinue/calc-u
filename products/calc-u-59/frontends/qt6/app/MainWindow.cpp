@@ -75,16 +75,20 @@ void MainWindow::buildMenus() {
     about->setMenuRole(QAction::AboutRole);
 }
 
+// LIB-13 AC-5: the dialog offers the preset extensions and all files and
+// hands the file to `open`; only a file dialog moves the folder it starts in (EC-7).
 void MainWindow::openPreset() {
     QString path = QFileDialog::getOpenFileName(this, QStringLiteral("Select a .ti59, .ti58, or .ti58c preset"),
                                                 AppSettings::openStartDir(AppSettings::OpenFolder::Presets),
                                                 QStringLiteral("Presets (*.ti59 *.ti58 *.ti58c);;All files (*)"));
     if (path.isEmpty()) return;
     AppSettings::rememberOpenFile(AppSettings::OpenFolder::Presets, path);
-    openStateFile(path);
+    m_controller.openFile(path, calcu::opening::Way::Dialog);
 }
 
-void MainWindow::openStateFile(const QString& path) { m_controller.loadPreset(path); }
+void MainWindow::openFile(const QString& path, bool atStart) {
+    m_controller.openFile(path, atStart ? calcu::opening::Way::Start : calcu::opening::Way::OpenWith);
+}
 
 // Arm Card (C59-7 AC-14): the saved cards of the media topic; the chosen one is fitted.
 void MainWindow::loadCard() {
@@ -149,15 +153,15 @@ void MainWindow::saveWindowState() {
     AppSettings::settings().setWindowState(w);
 }
 
+// LIB-13 AC-6: one file whose name the session would take; the drop goes
+// through all of `open` (a refusal is its notice, AC-15).
 void MainWindow::dragEnterEvent(QDragEnterEvent* e) {
-    using Drop = cu59::DropAction;
     const auto urls = e->mimeData()->urls();
-    if (urls.size() != 1) return;
-    const Drop action = m_controller.dropAction(urls.first().toLocalFile());
-    if (action == Drop::LoadPreset || action == Drop::FitCard) e->acceptProposedAction();
+    if (urls.size() != 1 || !urls.first().isLocalFile()) return;
+    if (m_controller.wouldTake(QFileInfo(urls.first().toLocalFile()).fileName())) e->acceptProposedAction();
 }
 
 void MainWindow::dropEvent(QDropEvent* e) {
     const auto urls = e->mimeData()->urls();
-    if (urls.size() == 1) m_controller.openDroppedFile(urls.first().toLocalFile());
+    if (urls.size() == 1) m_controller.openFile(urls.first().toLocalFile(), calcu::opening::Way::Drop);
 }

@@ -60,6 +60,10 @@ public:
                 sessions::CallId call = 0, StepTest until = {});  // G4, G5; D-16
     Result pauseOnStart(std::optional<LevelName>);                // G8; nullopt: off
     void pauseAtStart();                                          // G9
+    // An event outside an advance on which an armed start fires (Calc-U-59's
+    // ASM overlay entered at 1800, C59-4 AC-17): paused with the reason
+    // pause-on-start when `level` is armed and the machine runs; else false.
+    bool fireStart(const LevelName& level);
     void restarted(RestartKind);                                  // G10 (and G8, G9 at a restart)
     void sync();                                                  // G11 when the machine changed
 

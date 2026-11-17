@@ -566,7 +566,9 @@ TEST(c59_7_ac27_part_writes_and_reads_a_card) {
     CHECK(r.notices().empty());
 }
 
-TEST(c59_7_ac27_dropped_card_is_fitted_and_read_at_idle) {
+// LIB-13 AC-12 (M-56's cases on `.magnetcard.yaml` since M-55): a card file
+// opened (dropped) is fitted where it lies and read at idle; read, not written.
+TEST(lib13_ac12_card_fitted_where_it_lies_read_at_idle) {
     NEEDS_ROMS;
     CardRig r;
     writeFirst(r);
@@ -575,20 +577,22 @@ TEST(c59_7_ac27_dropped_card_is_fitted_and_read_at_idle) {
     elsewhere.write("dropped.magnetcard.yaml", card);
     CHECK(r.load(CardRig::preset("")).done);
     r.runFor(1s);
-    const auto reply = r.operation(commands::kOpenDropped, calcu::sessions::Value::object({{"name", "dropped.magnetcard.yaml"},
-                                                                                          {"path", elsewhere / "dropped.magnetcard.yaml"}}));
-    CHECK(reply.done);
+    CHECK(r.drop("dropped.magnetcard.yaml", elsewhere / "dropped.magnetcard.yaml"));
     CHECK(r.fitted() && !r.passing());   // not fed until a corner is tapped
     r.runFor(500ms);
     CHECK_EQ(r.progStep(1), 0);
     CHECK(r.feed(0).done);
+    r.runFor(16ms);
+    CHECK(r.part().litCardCorner() == 0);
     CHECK(r.untilPassed());
     r.runFor(1s);
     CHECK_EQ(r.progStep(1), 11);
-    CHECK_EQ(testroms::readFile(elsewhere / "dropped.magnetcard.yaml").value_or(""), card);   // read, not written
+    CHECK_EQ(testroms::readFile(elsewhere / "dropped.magnetcard.yaml").value_or(""), card);
+    CHECK(!r.hasCardFile("dropped"));   // nothing imported
 }
 
-TEST(c59_7_ac27_dropped_card_is_overwritten_after_write) {
+// LIB-13 AC-12, C59-7 AC-5: written back where it lies.
+TEST(lib13_ac12_card_fitted_where_it_lies_written_back) {
     NEEDS_ROMS;
     CardRig r;
     writeFirst(r);
@@ -596,35 +600,87 @@ TEST(c59_7_ac27_dropped_card_is_overwritten_after_write) {
     elsewhere.write("dropped.magnetcard.yaml", r.cardFile("First"));
     CHECK(r.load(CardRig::preset(kProgramB)).done);
     CHECK(r.keyWrite(1));
-    CHECK(r.operation(commands::kOpenDropped, calcu::sessions::Value::object({{"name", "dropped.magnetcard.yaml"},
-                                                                             {"path", elsewhere / "dropped.magnetcard.yaml"}})).done);
+    CHECK(r.drop("dropped.magnetcard.yaml", elsewhere / "dropped.magnetcard.yaml"));
     CHECK(r.feed(0).done);
     CHECK(r.untilPassed());
     const std::string after = testroms::readFile(elsewhere / "dropped.magnetcard.yaml").value_or("");
-    CHECK(after != r.cardFile("First"));   // written back where it lies (AC-5)
+    CHECK(after != r.cardFile("First"));
     CHECK(!r.hasCardFile("dropped"));
     CHECK(r.load(CardRig::preset("")).done);
     r.runFor(1s);
-    CHECK(r.operation(commands::kOpenDropped, calcu::sessions::Value::object({{"name", "dropped.magnetcard.yaml"},
-                                                                             {"path", elsewhere / "dropped.magnetcard.yaml"}})).done);
+    CHECK(r.drop("dropped.magnetcard.yaml", elsewhere / "dropped.magnetcard.yaml"));
     CHECK(r.feed(0).done);
     CHECK(r.untilPassed());
     r.runFor(1s);
     CHECK_EQ(r.progStep(1), 12);
+    // In a Web frontend (no path) it is imported and fitted (LIB-13 AC-4).
+    CHECK(r.drop("Uploaded.magnetcard.yaml", "", writeMagneticCardFile(TIMagneticCardData{}, "Uploaded", "", false, std::nullopt, "")));
+    CHECK(r.hasCardFile("Uploaded") && r.fitted() && r.fitted()->name == "Uploaded");
 }
 
-TEST(c59_7_ac27_dropped_card_is_ignored_without_a_reader) {
+// LIB-13 AC-12, LIB-7 AC-25: an opened card whose file is a template is never written.
+TEST(lib13_ac12_template_card_opened_never_written) {
     NEEDS_ROMS;
     CardRig r;
-    CHECK(r.part().dropAction("a.magnetcard.yaml") == DropAction::FitCard);
-    CHECK(r.part().dropAction("a.U59") == DropAction::NotAccepted);   // AC-4: no card
-    CHECK(r.part().dropAction("a.bin") == DropAction::NotAccepted);
-    CHECK(r.part().dropAction(".a.magnetcard.yaml") == DropAction::NotAccepted);
+    calcu::testing::TempFolder elsewhere("calcu59-dropped");
+    const std::string tpl = writeMagneticCardFile(TIMagneticCardData{}, "Tpl", "", true, std::nullopt, "");
+    elsewhere.write("tpl.magnetcard.yaml", tpl);
+    CHECK(r.load(CardRig::preset(kProgramA)).done);
+    CHECK(r.keyWrite(1));
+    CHECK(r.drop("tpl.magnetcard.yaml", elsewhere / "tpl.magnetcard.yaml"));
+    CHECK(r.fitted() && r.fitted()->isTemplate);
+    CHECK(r.feed(0).done);
+    CHECK(r.untilPassed());
+    CHECK_EQ(testroms::readFile(elsewhere / "tpl.magnetcard.yaml").value_or(""), tpl);
+    CHECK(r.fitted() && r.fitted()->unsaved);   // what was written stays with the fitted card
+}
+
+// LIB-13 AC-12: a card on a model without a reader is refused with a notice.
+TEST(lib13_ac12_refused_on_ti58_and_ti58c_with_notice) {
+    NEEDS_ROMS;
+    CardRig r;
+    calcu::testing::TempFolder elsewhere("calcu59-dropped");
+    elsewhere.write("c.magnetcard.yaml", writeMagneticCardFile(TIMagneticCardData{}, "c", "", false, std::nullopt, ""));
     for (const char* m : {"TI-58", "TI-58C"}) {
         CHECK(r.model(m).done);
-        CHECK(r.part().dropAction("a.magnetcard.yaml") == DropAction::Ignore);
-        CHECK(r.part().dropAction("a.ti59") == DropAction::LoadPreset);
+        const auto before = r.notices().size();
+        CHECK(!r.drop("c.magnetcard.yaml", elsewhere / "c.magnetcard.yaml") || r.notices().size() > before);
+        r.runFor(100ms);
+        CHECK(r.notices().size() > before);
+        CHECK(!r.fitted());
     }
+    // C59-7 AC-4: a .u59 or .bin of 2.3.0 is no card: refused as no file of the product.
+    CHECK(r.model("TI-59").done);
+    elsewhere.write("old.u59", "Calc-U-59 Card 2.0\nEND-CARD\n");
+    const auto before = r.notices().size();
+    r.drop("old.u59", elsewhere / "old.u59");
+    r.runFor(100ms);
+    CHECK(r.notices().size() > before && !r.fitted());
+}
+
+// LIB-13 EC-4, C59-7 AC-16: a card opened while one passes is refused, nothing imported.
+TEST(lib13_ec4_card_while_one_passes_refused_nothing_imported) {
+    NEEDS_ROMS;
+    CardRig r;
+    writeFirst(r);
+    const std::string card = r.cardFile("First");
+    calcu::testing::TempFolder elsewhere("calcu59-dropped");
+    elsewhere.write("one.magnetcard.yaml", card);
+    elsewhere.write("two.magnetcard.yaml", card);
+    CHECK(r.load(CardRig::preset(kProgramB)).done);
+    CHECK(r.drop("one.magnetcard.yaml", elsewhere / "one.magnetcard.yaml"));
+    CHECK(r.drop("two.magnetcard.yaml", elsewhere / "two.magnetcard.yaml"));   // takes the place of the one before
+    CHECK(r.fitted() && r.fitted()->path == elsewhere / "two.magnetcard.yaml");
+    CHECK(r.keyWrite(1));
+    CHECK(r.feed(0).done);
+    r.runFor(5ms);
+    CHECK(r.passing());
+    const auto before = r.notices().size();
+    r.drop("Three.magnetcard.yaml", "", card);   // an upload while one passes
+    r.runFor(16ms);
+    CHECK(r.notices().size() > before);
+    CHECK(!r.hasCardFile("Three") && !r.hasCardFile("First-1"));
+    CHECK(r.fitted() && r.fitted()->path == elsewhere / "two.magnetcard.yaml");
 }
 
 TEST(c59_7_ac27_fresh_card_writes_both_sides_into_one_file) {

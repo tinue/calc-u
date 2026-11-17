@@ -34,7 +34,8 @@ before M-49. The harness sends it from M-37 for every product (§7).
 Library (M-37), new folder `library/control/` of `calcu_library`,
 namespace `calcu::control` (LIB-1 §2a names it). It includes `machine`
 and `sessions` only. The line `control: machine, sessions` is added to
-LIB-1 §2a's dependency rule in the same step.
+LIB-1 §2a's dependency rule in the same step. Since release prep step 3
+also `peripherals` (the controls of AC-21, §11).
 
 | File | Holds |
 |---|---|
@@ -292,7 +293,8 @@ reason?}]`), `model`, `variants`, `variant`, `places` (`[{place:
 reason?}, fitting: [{id, name, plugged, variant?, variants, available,
 reason?}]}]`), `mediaPlaces` (`[{id, owner?: {place, peripheral},
 kind, passage: "pass-through" | "holding", sides, insert: {…}}]`),
-`panels` (`[{kind: "paper", owner?: {place, peripheral}}]`), `actions`
+`panels` (`[{kind: "paper", owner?: {place, peripheral}}]`), `controls`
+(`[{place, peripheral, id, form: "key" | "switch", on}]`, AC-21, §11), `actions`
 (`[{command, available, reason?}]`), `product` (`{name: value}` by each
 payload's `toValue`). `reason` is present only when `available` is
 false.
@@ -829,3 +831,50 @@ topics.
 ### 10.12 Questions for the user
 
 None that split the design.
+
+## 11. Release prep step 3: the controls of plugged-in peripherals (AC-21)
+
+The user's answer to Q-6 of the Part E review (2026-11-17,
+`docs/reviews/e-simplification.md` §10; `docs/reviews/release-prep-plan.md`
+§3): Calc-U-59's topic `c59.printer` goes; its `trace` is the PC-100C's
+control in the control state, `connected` its place (already in `places`
+and in the paper panel's owner).
+
+- **Payload.** `ControlState::controls`, after `panels`: one
+  `ControlEntry{place, peripheral, control}` per control, `control` the
+  peripheral's `peripherals::ControlInfo` (`id`, `form`, `on`; LIB-2
+  AC-14). `same` compares it; `toValue` writes `controls: [{place,
+  peripheral, id, form: "key" | "switch", on}]` (§3.6).
+- **Computation.** `Computation::controls` walks what is plugged in, in
+  the order of the place walk (`walked_`), and asks
+  `peripherals::controlsOf(const Machine&, PeripheralOwner)` (a const
+  overload beside the existing one). Components' controls are not listed:
+  no product has one. `control` includes `peripherals` from this step
+  (LIB-1 §2a).
+- **Sending.** Nothing new: a control that moves (`set-control`, a
+  preset's step, a core's own change) changes the computed state, which
+  is sent at the end of the call or command (AC-4).
+- **Readers.** The paper panels draw the owner's controls from it: Qt6
+  `EmulatorController::printerControls` → `PaperPanel::setControls`;
+  Web `Paper.jsx` filters `controls` by place `printer`; the Swift bridge
+  reads `TRACE` from it (`TIAppSession printerTrace`; the change bit
+  `printer` is raised by `control-state` too). The library's test product
+  (`library/web/tests/product`) keeps its own printer topic.
+- **Calc-U-59.** `c59.printer` (`TIPrinterState`) and its readers go;
+  `TIAppPart` keeps TRACE's position while the PC-100C is detached (C59-6
+  AC-6), unseen until the next attach puts it into the new PC-100C.
+  `c59.led` is renamed `c59.calc-indicator` (`TICalcIndicatorState`), same
+  payload: the frame there is the frame sampler's persistence model, not
+  the raw frame of the library's `display` topic.
+- **Tests (L13).** `control_state_tests.cpp`
+  `ac21_controls_of_plugged_peripherals_with_place_form_and_position`,
+  `control_part_tests.cpp` `ac21_moved_switch_sends_the_control_state_again`;
+  the key order in `control_state_value_round_trip`;
+  `library/shell/tests/inputs.txt` written anew (the `controls` key).
+  Calc-U-59: `session_tests.cpp` `lib3_ac29_…`, `lib3_ac32_…`,
+  `part_flows_tests.cpp` `lib8_ac29_…`, `web_part_tests.cpp`
+  `lib15_ac22_…`, `harness_tests.cpp` `lib11_ac14_…`; Qt6
+  `qt_frontend_tests.cpp` (TRACE through the panel, now from the control
+  state); Web `play-calculator.spec.js` LIB-8 AC-28.
+- **Ledger.** None of its own (developer-facing names; step 1's row 59-58
+  lists them).

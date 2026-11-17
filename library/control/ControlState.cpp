@@ -78,7 +78,8 @@ Value mediaPlaceValue(const MediaPlaceEntry& m) {
 
 bool ControlState::same(const ControlState& o) const {
     if (!(models == o.models && model == o.model && variants == o.variants && variant == o.variant &&
-          places == o.places && mediaPlaces == o.mediaPlaces && panels == o.panels && actions == o.actions))
+          places == o.places && mediaPlaces == o.mediaPlaces && panels == o.panels && controls == o.controls &&
+          actions == o.actions))
         return false;
     if (productEntries.size() != o.productEntries.size()) return false;
     for (std::size_t i = 0; i < productEntries.size(); ++i) {
@@ -117,6 +118,17 @@ Value ControlState::toValue() const {
         panelValues.push_back(Value(std::move(e)));
     }
     add(o, "panels", Value(std::move(panelValues)));
+    Value::Array cs;
+    for (const auto& c : controls) {
+        Value::Object e;
+        add(e, "place", machine::placeText(c.place));
+        add(e, "peripheral", c.peripheral.value);
+        add(e, "id", c.control.id.value);
+        add(e, "form", c.control.form == machine::ControlForm::Key ? "key" : "switch");
+        add(e, "on", c.control.on);
+        cs.push_back(Value(std::move(e)));
+    }
+    add(o, "controls", Value(std::move(cs)));
     Value::Array as;
     for (const auto& a : actions) {
         Value::Object e;

@@ -1,10 +1,12 @@
-// LIB-4 design L10, L11: the part in the app session (AC-4, AC-6, AC-8).
+// LIB-4 design L10, L11, L13: the part in the app session (AC-4, AC-6, AC-8,
+// AC-21).
 #include "TestControlRules.hpp"
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 #include "TestParts.hpp"
 #include "control/ControlPart.hpp"
 #include "control/ControlState.hpp"
+#include "peripherals/Controls.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <functional>
 #include <memory>
@@ -94,6 +96,30 @@ TEST(ac4_sent_only_when_it_differs) {
     c.rig->session->listen(late);
     CHECK_EQ(late.stateMessages(kControlStateTopic), 1);
     CHECK(late.state<ControlState>(kControlStateTopic)->equals(*c.state()));
+}
+
+TEST(ac21_moved_switch_sends_the_control_state_again) {
+    ControlRig c;
+    c.rig->build();
+    c.rig->m->attach(plug("printer", mt::kPrinter), mt::testCatalogue());
+    c.rig->call();
+    CHECK_EQ(c.sent(), 1);
+    const auto traceOn = [&] {
+        const ControlState* s = c.state();
+        if (!s) return false;
+        for (const auto& e : s->controls)
+            if (e.control.id == calcu::machine::ControlId{"trace"}) return e.control.on;
+        return false;
+    };
+    CHECK(!traceOn());
+    auto* ctl = calcu::peripherals::controlsCapability(
+        *c.rig->m, calcu::machine::PeripheralOwner{mt::kPrinter, at({"printer"})});
+    CHECK(ctl != nullptr);
+    if (!ctl) return;
+    ctl->set(calcu::machine::ControlId{"trace"}, true);
+    c.rig->call();   // AC-4: computed at the end of the call, and it differs
+    CHECK_EQ(c.sent(), 2);
+    CHECK(traceOn());
 }
 
 TEST(ac6_no_machine_no_control_state) {

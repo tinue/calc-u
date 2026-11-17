@@ -27,9 +27,8 @@ std::optional<std::string> readResource(const QString& path) {
     return f.readAll().toStdString();
 }
 
-const cu59::TILedState kNoLed{};
+const cu59::TICalcIndicatorState kNoLed{};
 const cu59::TICueCardState kNoCue{};
-const cu59::TIPrinterState kNoPrinter{};
 const cu59::TICalculatorDebug kNoLive{};
 const cu59::TIProgramListing kNoListing{};
 const cu59::TICpuDebug kNoCpu{};
@@ -110,13 +109,11 @@ void EmulatorController::onMessage(const cs::Message& m) {
 void EmulatorController::topicChanged(const QString& name) {
     namespace T = cu59::topics;
     const cs::TopicName t{name.toStdString()};
-    if (t == T::kLed) {
+    if (t == T::kCalcIndicator) {
         emit displayChanged();
     } else if (t == T::kCueCard) {
         emit cueCardChanged();
         emit cardStateChanged();
-    } else if (t == T::kPrinter) {
-        emit printerChanged();
     } else if (t == calcu::media::kMediaTopic) {   // the card reader (LIB-7 59)
         emit cardStateChanged();
     } else if (t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic) {
@@ -143,8 +140,10 @@ void EmulatorController::topicChanged(const QString& name) {
             emit modelChanged();
             emit cardStateChanged();
         }
-        if (printerConnected() != m_printerSeen) {
-            m_printerSeen = printerConnected();
+        // The PC-100C plugged in or out, a control of it moved (LIB-4 AC-21).
+        auto printer = std::make_pair(printerConnected(), printerControls());
+        if (printer != m_printerSeen) {
+            m_printerSeen = std::move(printer);
             emit printerChanged();
         }
         emit entriesChanged();
@@ -182,7 +181,20 @@ bool EmulatorController::printerConnected() const {
         if (f.plugged) return true;
     return false;
 }
-bool EmulatorController::printerTrace() const { return orNone(state<cu59::TIPrinterState>(cu59::topics::kPrinter), kNoPrinter).trace; }
+std::vector<calcu::peripherals::ControlInfo> EmulatorController::printerControls() const {
+    std::vector<calcu::peripherals::ControlInfo> out;
+    const auto* c = state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+    if (!c) return out;
+    const calcu::machine::PlacePath printer{{calcu::machine::PlaceName{"printer"}}};
+    for (const auto& e : c->controls)
+        if (e.place == printer) out.push_back(e.control);
+    return out;
+}
+bool EmulatorController::printerTrace() const {
+    for (const auto& c : printerControls())
+        if (c.id == calcu::machine::ControlId{"TRACE"}) return c.on;
+    return false;
+}
 cu59::LedStyle EmulatorController::ledStyle() const {
     const Value v = m_session->host().value(calcu::shell::kSettingsTopic);
     for (const auto& r : calcu::shell::read::elements(v, "rows"))
@@ -193,9 +205,9 @@ cu59::LedStyle EmulatorController::ledStyle() const {
 
 // ── Display ──────────────────────────────────────────────────────────────────
 
-const cu59::LedFrame& EmulatorController::display() const { return orNone(state<cu59::TILedState>(cu59::topics::kLed), kNoLed).led; }
+const cu59::LedFrame& EmulatorController::display() const { return orNone(state<cu59::TICalcIndicatorState>(cu59::topics::kCalcIndicator), kNoLed).led; }
 double EmulatorController::calcIndicatorOpacity() const {
-    return orNone(state<cu59::TILedState>(cu59::topics::kLed), kNoLed).calcIndicatorOpacity;
+    return orNone(state<cu59::TICalcIndicatorState>(cu59::topics::kCalcIndicator), kNoLed).calcIndicatorOpacity;
 }
 const std::optional<cu59::CueCardContent>& EmulatorController::cueCard() const {
     return orNone(state<cu59::TICueCardState>(cu59::topics::kCueCard), kNoCue).card;

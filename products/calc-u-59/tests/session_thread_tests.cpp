@@ -268,6 +268,6 @@ TEST(c59_5_ac4_ti59_on_the_session_thread) {
     std::vector<Delivery> got = t->drain();
     bool led = false;
     for (auto& d : got)
-        if (const auto* m = std::get_if<calcu::sessions::StateMessage>(&d.message)) led |= m->topic == topics::kLed;
+        if (const auto* m = std::get_if<calcu::sessions::StateMessage>(&d.message)) led |= m->topic == topics::kCalcIndicator;
     CHECK(led);
 }

@@ -66,25 +66,29 @@
 // panel is TIDebugPart's (C59-4, M-56), a part of the same session it owns;
 // the file kinds of LIB-13's `open` are TIFileKinds (M-56). Diagnostics are
 // log lines. The product topics below are set after each flow with what it
-// left; the session sends one when its value changed (LIB-3 AC-5).
+// left; the session sends one when its value changed (LIB-3 AC-5). The
+// PC-100C in `printer` and the positions of its controls are LIB-4's
+// control state (`places`, `controls`, AC-21; release prep 3).
 
 namespace cu59 {
 
 namespace topics {
 using calcu::sessions::TopicName;
-inline const TopicName kLed{"c59.led"};
+inline const TopicName kCalcIndicator{"c59.calc-indicator"};
 inline const TopicName kCueCard{"c59.cue-card"};
-inline const TopicName kPrinter{"c59.printer"};
 } // namespace topics
 
 // ── Payloads of the product topics, equal when their content is (LIB-3 AC-5).
 
-/// The display's LED frame and the C indicator (the frontends draw it).
-struct TILedState final : calcu::sessions::PayloadOf<TILedState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.led"};
+/// The display's LED frame and the C indicator (the frontends draw it). The
+/// frame is the frame sampler's persistence model (held glyph, smoothed
+/// levels), not the raw machine frame of the library's `display` topic, so it
+/// stays in this payload (release prep 3: `c59.led` renamed).
+struct TICalcIndicatorState final : calcu::sessions::PayloadOf<TICalcIndicatorState> {
+    static constexpr calcu::sessions::PayloadKind kKind{"c59.calc-indicator"};
     LedFrame led;
     double calcIndicatorOpacity = 0;
-    bool same(const TILedState& o) const { return led == o.led && calcIndicatorOpacity == o.calcIndicatorOpacity; }
+    bool same(const TICalcIndicatorState& o) const { return led == o.led && calcIndicatorOpacity == o.calcIndicatorOpacity; }
     calcu::sessions::Value toValue() const override;
 };
 /// The cue card to show (C59-2 AC-6, C59-7 AC-22): the module cue card of
@@ -97,16 +101,6 @@ struct TICueCardState final : calcu::sessions::PayloadOf<TICueCardState> {
     bool onShow = false;
     std::optional<int> litCorner;
     bool same(const TICueCardState& o) const { return card == o.card && onShow == o.onShow && litCorner == o.litCorner; }
-    calcu::sessions::Value toValue() const override;
-};
-/// The PC-100C in `printer` and TRACE's position (C59-6 AC-6): what the
-/// frontends draw the paper panel's controls with; the paper itself is the
-/// library's `paper PC-100C`.
-struct TIPrinterState final : calcu::sessions::PayloadOf<TIPrinterState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.printer"};
-    bool connected = true;
-    bool trace = false;
-    bool same(const TIPrinterState& o) const { return connected == o.connected && trace == o.trace; }
     calcu::sessions::Value toValue() const override;
 };
 /// The result of a command that answers yes or no (fit-card, tap-card, …).
@@ -326,9 +320,8 @@ private:
 
     using Clock = std::chrono::steady_clock;
 
-    calcu::sessions::StateTopic* m_led = nullptr;
+    calcu::sessions::StateTopic* m_calcIndicator = nullptr;
     calcu::sessions::StateTopic* m_cue = nullptr;
-    calcu::sessions::StateTopic* m_printer = nullptr;
 };
 
 /// The session of a native frontend (C59-5 D-12; LIB-6 D-40): the library's

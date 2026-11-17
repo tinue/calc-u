@@ -35,8 +35,9 @@ drawing rules: `reference/AppLayer.md`. Don't restate them here.
    `frontends/web/bindings.cpp`, since M-34). The app layer inside it is
    single-threaded: no thread, no wait, no lock (ADR 0009). Everything a
    frontend does is a command (`cu59::commands`, the Web's `c59.web.*`),
-   everything it gets a message (the product topics `c59.led`,
-   `c59.cue-card`, `c59.printer`, `app/TIAppPart.hpp`, compared by value:
+   everything it gets a message (the product topics `c59.calc-indicator`,
+   `c59.cue-card`, `app/TIAppPart.hpp`, compared by value; the PC-100C's
+   controls and TRACE are LIB-4's `control-state` `controls`:
    set them after a flow, the session sends what changed; the Web page's
    `c59.web.*`, `app/TIWebPart.hpp`, derived from those values). A command
    name has one owner: the session refuses a second declaration

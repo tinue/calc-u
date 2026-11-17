@@ -107,6 +107,13 @@ What the three status columns mean for this feature:
   what a product entry makes depend on the frontend (AC-18).
 - [ ] **AC-9** — Given the control state, then it can be read like any
   other state topic, also by the harness.
+- [ ] **AC-21** — Given a peripheral with controls (LIB-2 AC-14) is
+  plugged in, then the control state lists each of its controls, named
+  by the place and the peripheral that own it and its ID, with its form
+  (key or switch) and its position (a key down, a switch on), in the
+  order of the places of AC-1 and, for one peripheral, of its
+  descriptor; a peripheral that is not plugged in has none listed. A
+  control that moves changes the control state (AC-4).
 
 ### Calc-U-59
 - [ ] **AC-10** — Given Calc-U-59, then the control state lists the
@@ -260,3 +267,4 @@ What the three status columns mean for this feature:
 | The control state also lists the actions that start an operation (Reset, Cold boot, loading a preset or opening a file, inserting a medium), so that every frontend disables them by one rule | user, 2026-11-10, batch 3 gate; widens `frontend.md` FE-2 | 2026-11-10 |
 | The Calc-U-59 module picker offers the empty slot | user, 2026-11-10, batch 3 gate; ledger row 59-9 extended | 2026-11-10 |
 | With the full ROM set required at the start (LIB-12), no entry is ever unavailable for a missing ROM | user, 2026-11-10, batch 3 gate | 2026-11-10 |
+| The control state lists the controls of the plugged-in peripherals with their positions (AC-21), so that a frontend draws a peripheral's controls from it; Calc-U-59's topic `c59.printer` (the PC-100C plugged in, TRACE's position) goes, the PC-100C's place being in `places` already | user, 2026-11-17, Q-6 of `docs/reviews/e-simplification.md` §10 ("`c59.printer` goes: its `trace` is the PC-100C control in `control-state`"); `docs/reviews/release-prep-plan.md` §3 | 2026-11-17 |

@@ -77,10 +77,10 @@ Everything that crosses `postMessage` is a LIB-3 message in the library's
 JS form (commands, requests, replies, state and stream topics; LIB-15 AC-22).
 `app/TIWebPart` sends the `c59.web.*` topics, already in the form the page
 draws, each derived from a product topic's value when it changed (Part E
-simplification E-3): LED cells of `c59.led` (`ledCell`, as float32 bytes),
+simplification E-3): LED cells of `c59.calc-indicator` (`ledCell`, as float32 bytes),
 the cue card of `c59.cue-card` as a draw list laid out by `cueCardGeometry`
-and friends for the size the page reports. The page reads `c59.printer`
-(TRACE), the library's `run-state` (FREEZE ON START, ARMED), `busy` (the
+and friends for the size the page reports. The page reads the control
+state's `controls` (the PC-100C's PRINT, ADV, TRACE; LIB-4 AC-21), the library's `run-state` (FREEZE ON START, ARMED), `busy` (the
 display's full-speed hold, `data-full-speed`) and `held-keys` (the key drawn
 pressed) itself; `c59.web.printer` and `c59.web.run-state` went in E-3. The settings are
 LIB-14's `settings` topic and `set-setting` (the shell's dialog). The

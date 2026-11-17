@@ -59,7 +59,7 @@ void TIWebPart::bind(TIAppPart& app) { m_app = &app; }
 
 void TIWebPart::attach(sessions::SessionSetup& s) {
     // TIAppPart's topics (declared before: the part is behind it), drawn in the page's form.
-    m_led = &s.stateTopic(topics::kLed);
+    m_calcIndicator = &s.stateTopic(topics::kCalcIndicator);
     m_cueCard = &s.stateTopic(topics::kCueCard);
     m_display = &s.stateTopic(topics::kWebDisplay);
     m_cue = &s.stateTopic(topics::kWebCueCard);
@@ -171,7 +171,7 @@ void TIWebPart::afterCall(SessionContext&, calcu::pacing::WallTime) { drain(); }
 // The page's forms of the product topics whose value changed since they were
 // last drawn (and the cue card when the page's card size changed).
 void TIWebPart::drain() {
-    if (!m_app || !m_led) return;
+    if (!m_app || !m_calcIndicator) return;
     auto set = [](sessions::StateTopic* t, std::string_view kind, Value v) { t->set(sessions::valuePayload(kind, std::move(v))); };
     auto changed = [](const sessions::StateTopic& source, sessions::PayloadPtr& drawn) {
         const sessions::PayloadPtr& now = source.current();
@@ -180,10 +180,10 @@ void TIWebPart::drain() {
         return true;
     };
 
-    if (changed(*m_led, m_ledDrawn)) {
+    if (changed(*m_calcIndicator, m_calcIndicatorDrawn)) {
         // Per cell (0 = rightmost) its segment mask, brightness and decimal
         // point (0–1), flat: [segments, level, dp] × 12, as float32 bytes.
-        const auto& led = *sessions::payloadAs<TILedState>(m_ledDrawn);
+        const auto& led = *sessions::payloadAs<TICalcIndicatorState>(m_calcIndicatorDrawn);
         const LedFrame& d = led.led;
         float cells[36];
         for (int i = 0; i < 12; ++i) {

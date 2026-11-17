@@ -92,7 +92,8 @@ not named here adds a folder in the same pattern.
     LIB-2 and LIB-3 designs; settled at M-23, 2026-11-15);
   - `sessions`: `machine`, `pacing`;
   - `roms`: `machine`, `sessions` (the `roms-missing` topic);
-  - `control`: `machine`, `sessions` (LIB-4 design §2; M-37);
+  - `control`: `machine`, `sessions` (LIB-4 design §2; M-37),
+    `peripherals` (the controls of LIB-4 AC-21; release prep step 3);
   - `typing`: `machine`, `pacing`, `sessions` (LIB-5, M-36);
   - `presets`: `machine`, `formats`, `sessions`, `peripherals`, `typing`,
     `startup` (LIB-6 design D-1; M-38). Nothing includes it but `harness`

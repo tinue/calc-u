@@ -208,3 +208,18 @@ and printer members went (LIB-4 design §10.7, C59-8 §5).
 
 Ledger: 59-9 and 59-45 in effect for Swift from M-58. Column status:
 **Done**.
+
+### Release prep step 3 (2026-11-17, branch `rp3-topics`)
+
+The control state lists the controls of the plugged-in peripherals with
+their positions (`controls`, AC-21; design §11). Calc-U-59's topic
+`c59.printer` went: the Qt6 and Web paper panels draw the PC-100C's PRINT,
+ADV and TRACE from `controls`, the Swift bridge reads TRACE from it.
+`c59.led` is `c59.calc-indicator` (same payload).
+
+| AC | Result | Evidence |
+|---|---|---|
+| AC-21 | Pass | `control_state_tests.cpp` `ac21_controls_of_plugged_peripherals_with_place_form_and_position` (order, owner, form, position, value form, nested place, gone when unplugged), `control_part_tests.cpp` `ac21_moved_switch_sends_the_control_state_again`; Calc-U-59 `session_tests.cpp` `lib3_ac29_mirror_holds_every_change_flag` (TRACE through `set-control` moves the control state), `harness_tests.cpp` `lib11_ac14_entry_runs_ti_app_part` (`state control-state` lists the PC-100C's controls; `state c59.printer` and `state c59.led` refused); Qt6 `qt_frontend_tests.cpp` (TRACE through the panel); Web `play-calculator.spec.js` LIB-8 AC-28 |
+
+`library/shell/tests/inputs.txt` written anew (the `controls` key). Swift
+not built here (worktree); see the step's report.

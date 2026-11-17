@@ -13,6 +13,7 @@
 #include "../app/ModuleImage.hpp"
 #include "../app/TextUtil.hpp"
 #include "../core/PC100C.hpp"
+#include "control/ControlState.hpp"
 #include "peripherals/PeripheralsPart.hpp"
 #include <algorithm>
 #include <chrono>
@@ -422,9 +423,9 @@ TEST(lib13_ac16_card_on_the_ti59_and_preset_by_content) {
 
 // ── LIB-8's Calc-U-59 column in the app session (design §11.6, E8-6, E8-7) ──
 
-// AC-29: detached, the panel's owner is none (P-E1: `c59.printer` says
-// not connected) and the papers topic still lists the PC-100C's paper, empty
-// of nothing it had.
+// AC-29: detached, the panel's owner is none (the control state's paper
+// panel; release prep 3: `c59.printer` went) and the papers topic still lists
+// the PC-100C's paper, empty of nothing it had.
 TEST(lib8_ac29_detached_panel_owner_empty) {
     PartRig r;
     CHECK(r.attach("printer", "PC-100C").done);
@@ -432,8 +433,9 @@ TEST(lib8_ac29_detached_panel_owner_empty) {
     CHECK(r.runUntil([&] { return !r.printedText().empty(); }, 5000ms));
     CHECK(r.detach("printer").done);
     r.run(50ms);
-    const auto* printer = r.state<TIPrinterState>(topics::kPrinter);
-    CHECK(printer && !printer->connected);
+    const auto* control = r.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+    CHECK(control && control->panels.size() == 1 && !control->panels[0].owner);
+    CHECK(control && control->controls.empty());   // the PC-100C's PRINT, ADV, TRACE went with it
     const auto* papers = r.state<calcu::paper::PaperList>(calcu::paper::kPapersTopic);
     CHECK(papers && papers->papers.size() == 1 && papers->papers[0].owner == "PC-100C");
     CHECK_EQ(r.printedText().size(), std::size_t{1});   // kept while detached

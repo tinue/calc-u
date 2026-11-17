@@ -67,8 +67,9 @@ Everything that isn't drawing: `reference/AppLayer.md`.
    into Qt signals; it keeps the LOG tab's view of `log`. Notices, the log
    to the platform, "Loading…" are the shell's. The paper is the library's
    paper panel in the shell's panel area (owner from the control state;
-   `MainWindow::followPrinter` sets the PC-100C's PRINT, ADV and TRACE,
-   TRACE's position from `c59.printer`); FREEZE, STEP and RESUME are the
+   `MainWindow::followPrinter` sets the PC-100C's PRINT, ADV and TRACE with
+   their positions from the control state's `controls`,
+   `EmulatorController::printerControls`); FREEZE, STEP and RESUME are the
    library's run-control buttons of the levels `program` (CALCULATOR) and
    `cpu` (CPU), FREEZE ON START sends `pause-on-start`, TRACE sends
    `trace {button: true}` (LIB-10). The model, the module, the printer and

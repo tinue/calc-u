@@ -43,4 +43,11 @@ std::vector<ControlInfo> controlsOf(machine::Machine& m, const machine::Owner& o
     return c ? c->list() : std::vector<ControlInfo>{};
 }
 
+std::vector<ControlInfo> controlsOf(const machine::Machine& m, const machine::Owner& owner) {
+    for (const auto& e : m.capabilities(Controls::kKind))
+        if (e.owner == owner)
+            if (const Controls* c = machine::capabilityAs<Controls>(m, e.id)) return c->list();
+    return {};
+}
+
 } // namespace calcu::peripherals

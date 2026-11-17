@@ -361,7 +361,14 @@ TEST(lib11_ac14_entry_runs_ti_app_part) {
     // The model switch is LIB-18's on TIAppPart's machines; the part follows.
     CHECK_EQ(c("model TI-58C"), std::string("done\n"));
     CHECK(c("state control-state").find("\"model\":\"TI-58C\"") != std::string::npos);
-    CHECK(c("state c59.led").find("refused") == std::string::npos);
+    CHECK(c("state c59.calc-indicator").find("refused") == std::string::npos);
+    // Release prep 3: c59.led renamed, c59.printer gone (LIB-4 AC-21's `controls`).
+    CHECK(c("state c59.led").find("refused") != std::string::npos);
+    CHECK(c("state c59.printer").find("refused") != std::string::npos);
+    CHECK_EQ(c("attach printer PC-100C"), std::string("done\n"));
+    CHECK(c("state control-state").find("\"controls\":[{\"place\":\"printer\",\"peripheral\":\"PC-100C\"") !=
+          std::string::npos);
+    CHECK_EQ(c("detach printer"), std::string("done\n"));
     // No part is in the session twice: one reply per command.
     CHECK_EQ(c("attach printer PC-100C"), std::string("done\n"));
     CHECK_EQ(c("detach printer"), std::string("done\n"));

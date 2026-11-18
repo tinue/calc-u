@@ -3,11 +3,10 @@
 Tools of the source repository that belong to no one product. Each
 product's own tools are in `products/<product>/tools/`.
 
-## help: the help tool (LIB-16)
+## help: the help tool
 
 `tools/help` checks a product's help and builds its help asset
-(`features/LIB-16-help-content/`, ADR 0036). Python 3, standard library
-only; no install.
+(`docs/formats/help.md`). Python 3, standard library only; no install.
 
 ```sh
 tools/help check calc-u-1600                 # the checks, no asset

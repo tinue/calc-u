@@ -43,7 +43,7 @@ name) for the Qt app, the harness, the tests and the WebAssembly check.
   frontend's one thread. Long machine work (a boot, a preset, a typed
   program, a power cycle) is a resumable job (below), never a blocking
   loop with a yield hook. There is no threaded mode (Calc-U-59 2.3.0's app
-  layer had one); see Decisions.md.
+  layer had one).
 - **The app layer never decides where files live.** The frontend hands it the
   host's folders (`calcu::settings::HostDirs`: home, the settings base of its
   platform, on the Web the save folder) and the bundled-resources folders

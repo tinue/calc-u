@@ -197,7 +197,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   is off. On hardware both come from the sub-CPU and never stop. The
   calendar clock and the timers don't have this gap: they run in every
   state. `PC1600Machine::advanceTimer64()`
-- **Power**: modelled as on hardware (Decisions.md). The sub-CPU cuts power
+- **Power**: modelled as on hardware. The sub-CPU cuts power
   after the system-off command once the bus owner halts; the ON key, the
   wake-up timer (SWPON bit 1) and CI (SWPON bit 0) power on through a
   reset that reports the cause. The OFF key leaves FA08H = AAH (no
@@ -296,7 +296,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
 
 - **Controller busy time is fitted**: busy (status bit 7) holds until the
   4th edge of the 216.7 kHz LCD clock after each write (13.8–18.5 µs),
-  fitted to a real unit's scrolling-PRINT benchmark (Decisions.md) and
+  fitted to a real unit's scrolling-PRINT benchmark and
   inside the HD61102 datasheet's bound (9.2–27.7 µs). Datasheet details
   left out until the re-fit: see the timing item in `TODO.md`. `PC1600Display.hpp` (`kBusyClocks`)
 - **Unrecognised controller commands** are silently dropped.
@@ -461,7 +461,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
 
 ## Preset loader
 
-The library's reader (`library/presets/`, LIB-6) with the product's rules and keys (`app/SharpPresetRules`, `app/SharpPresetKeys`)
+The library's reader (`library/presets/`) with the product's rules and keys (`app/SharpPresetRules`, `app/SharpPresetKeys`)
 
 - **YAML-shaped, not YAML**: tabs, flow style and multiple documents are
-  rejected; 2-space indentation only (docs/background/Decisions.md).
+  rejected; 2-space indentation only.

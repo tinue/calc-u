@@ -94,8 +94,8 @@ builds the test build and tests it, then builds `--release`, checks it
   | `model` | A model's name (`PC-1500`, `PC-1500A`, `PC-1600`): start with it (read once, at mount); another value, an index too, is a notice |
   | `workerUrl` | Another worker entry (the app uses `app/engine-worker.js`) |
 
-  The family's shared props in their order (LIB-15 AC-16, AC-29,
-  `docs/contracts/frontend.md` FE-7); Calc-U-59's `CalcU59` takes the same.
+  The family's shared props in their order (`docs/formats/web-embed.md`
+  at the repository root); Calc-U-59's `CalcU59` takes the same.
 
 - **Prerender-safe.** Rendering has no side effects: the worker, fetches
   and listeners start in effects (`tests/prerender.spec.js`).

@@ -6,48 +6,26 @@ obligations.
 ## Known issues
 
 - **PC-1600 BASIC runs ~0.4-0.65% fast vs a real unit (MODE 0); cause open.**
-  Measured 2026-09-23 from audio recordings (BEEP markers, ms precision;
-  the recorder reads 0.22% slow, calibrated from the F-register whistle).
-  In dev-0.5.0 every BASIC program was ~0.65% short; today the pure
-  `FOR/NEXT` benchmarks are still 0.4-0.65% short, dampflok only 0.08%:
+  Measured from audio recordings (BEEP markers, ms precision; the recorder
+  reads 0.22% slow, calibrated from the F-register whistle):
 
-  | Program | Real | Emulator (dev-0.5.0) | Emulator (2026-09-26) | Emulator (2026-10-07) |
-  |---|---|---|---|---|
-  | A: `FOR I=1 TO 2000:NEXT I` | 6.275 s | 6.235 s (−0.65%) | 6.251 s (−0.38%) | 6.250 s (−0.39%) |
-  | B: 100 scrolling `PRINT`s | 5.894 s | 5.854 s (−0.68%) | 5.868 s (−0.44%) | 5.869 s (−0.43%) |
-  | C: A with sub-CPU interrupt masked (`OUT 53,&1F`) | 6.230 s | 6.189 s (−0.65%) | 6.191 s (−0.63%) | 6.190 s (−0.64%) |
-  | D: A with all interrupts masked (`OUT 53,0`) | 6.011 s | 5.974 s (−0.62%) | 5.974 s (−0.62%) | 5.974 s (−0.62%) |
-  | dampflok.bas, whistle 1→9 | 65.281 s | 64.843 s (−0.67%) | not re-run | 65.229 s (−0.08%) |
+  | Program | Real | Emulator |
+  |---|---|---|
+  | A: `FOR I=1 TO 2000:NEXT I` | 6.275 s | 6.250 s (−0.39%) |
+  | B: 100 scrolling `PRINT`s | 5.894 s | 5.869 s (−0.43%) |
+  | C: A with sub-CPU interrupt masked (`OUT 53,&1F`) | 6.230 s | 6.190 s (−0.64%) |
+  | D: A with all interrupts masked (`OUT 53,0`) | 6.011 s | 5.974 s (−0.62%) |
+  | dampflok.bas, whistle 1→9 | 65.281 s | 65.229 s (−0.08%) |
 
-  2026-10-07: dampflok is timed from the F-register whistle onsets (port
-  17H bit 6 rising, a probe in 0.8.x's gitignored `headless/beep/`, not
-  kept). The same probe on
-  the dev-0.5.0 tree gives 64.847 s, so it matches the audio method. Of
-  dampflok's move, 8858e75 (64 Hz timer under the LH5803) is only +10 ms
-  (65.219 s just before it); the rest came with the dev-0.6.0 sub-CPU work.
-  So a program with LH5803 calls, machine code and sound is now within
-  0.1%, while the pure `FOR/NEXT` benchmarks A-D are unchanged.
-
-  C and D still carry ~70 T (~19 µs) per `FOR/NEXT` pass, i.e. a fixed cost
-  per statement/pass rather than a percentage, with no sub-CPU involvement.
-  With the sub-CPU's 0.5 s event reported on every tick (below), A−C is
-  60 ms against the real 45 ms: the fitted sub-CPU response time is too
-  long (see the timing-model item).
-
-  **Found and fixed on the way** (dev-0.5.0):
-  - One wait per M1 cycle (f05e42e): BEEP pitch at two A values.
-  - Sub-CPU IOCS 25H fast-path probe (6d6318a): the BEEP repeat slips.
-  - Sub-CPU response time of 1.66 ms per command byte (64538ae): A−C.
-  - LCD busy until the 4th LCD-clock edge (c18411b): B.
-  - The ON key's live PB7 level (5011e2b).
-  - SRIRQ reports the 0.5 s event on every tick (dev-0.6.0, sub-CPU
-    rework), so every INT6 handler runs the 0.5 s housekeeping (battery
-    check, SRINP, APO countdown): A and B +15 ms.
+  So a program with LH5803 calls, machine code and sound is within 0.1%,
+  while the pure `FOR/NEXT` benchmarks A-D are not. C and D still carry
+  ~70 T (~19 µs) per `FOR/NEXT` pass, i.e. a fixed cost per statement/pass
+  rather than a percentage, with no sub-CPU involvement. A−C is 60 ms
+  against the real 45 ms: the fitted sub-CPU response time is too long
+  (see the timing-model item under "Code cleanup").
 
   **Ruled out**, all with interrupts off, emulator matching real within
-  ±0.1–0.2%. The test programs were in 0.8.x's gitignored
-  `headless/beep/bench/timing{,2,3,4,5}.bas` (not kept), and a probe computed
-  the emulator side:
+  ±0.1–0.2%:
   - Opcode fetches from RAM and from every ROM bank the interpreter uses
     (page A, page B banks 0/3, page C bank 6).
   - Data and operand reads from all those ROM banks; RAM reads and writes
@@ -57,47 +35,31 @@ obligations.
     instructions; `LDIR`, `RLD`/`RRD`, `DAA`, `ADC`/`SBC`, 16-bit adds,
     `EX`/`EXX`, `LD (nn)`, `INC`/`DEC (HL)`, ALU ops, JP/JR/RET cc.
   - An extra or unmodelled interrupt source: a NOP loop with EI and mask
-    00H matches (so the mask gates everything on hardware; D has no
-    interrupts at all yet is still slow), and with the normal mask it
-    matches too (the LH-5803 cause bit and all sub-CPU events enabled).
-    The 64 Hz and 0.5 s handler costs match (real A−D 264 ms vs 261 ms).
+    00H matches, and with the normal mask it matches too. The 64 Hz and
+    0.5 s handler costs match (real A−D 264 ms vs 261 ms).
   - How the program got into memory (typed vs binary-loaded: identical).
   - The other bundled ROM set: "old" is a further 0.65% faster.
+  - Work-area state the emulator never produces (F127H `ON TIME$` flag,
+    F1CFH/F1D0H BASIC-interrupt check, F88DH/F88EH TRON): the ROM shows
+    benchmark A takes the same path on both.
 
-  **Ruled out by the ROM (2026-09-27): work-area state the emulator never
-  produces.** The idea was that the real unit took a longer per-statement
-  path because of F127H/F88DH. The disassembly settles it:
-  - The statement loop (P0-B0 3AC0H) reads F127H only for b5 (`ALARM$`).
-    b6 (`ON TIME$`) is set by the default hook and cleared only by a
-    dispatched `ON TIME$ GOSUB` (3D40H) or a new timer write, so F127H=64
-    is a leftover flag with no per-statement cost.
-  - The BASIC-interrupt check costs extra only while F1CFH/F1D0H ≠ 0, and
-    `RUN` clears F1CFH–F1D4H (`RUNSET`, 1CA2H–1CA8H).
-  - F88DH is the TRON flag (0 = TROFF). F88EH=2 is TRONMODE, which `RUN`
-    writes every time (P1-B0 5803H).
-
-  So benchmark A takes the same path on both. Re-timing it on the real unit
-  with `ON TIME$` cleared would show nothing. Next: copy the FOR/NEXT
-  arithmetic routine into RAM and time it there.
+  Next: copy the FOR/NEXT arithmetic routine into RAM and time it there.
 
   MODE 1 (LH-5803) hasn't been re-measured since the host-pacing fix; the
   old "~7% fast" figure predates it.
 - **An empty slot in ME0 reads as a constant FFH; real hardware returns
-  the last byte on the data bus. To decide.** ME1 is settled (a782c7a,
-  Decisions.md "Unclaimed ME1 is not a mirror of ME0"): the PC-1600's
-  `LH5803SharedMemory::readME1` already returns the last bus byte. ME0
-  isn't: PC-1600 MODE 0, CE-163F in Slot 2:
-  `XPEEK&C5` returns 37 on a real unit and 255 in the emulator. In MODE 0
-  the Z-80 hands over with Port 31H = 06H (page C = bank 0, the empty
-  Slot 1) and `P_MAPPRG` leaves it there, so the mapping is right. The
-  LH5803's PEEK reads with `lda (u)` (rom1500 D997), opcode 25H = 37: the
-  floating bus still holds the opcode just fetched. Decide whether ME0
-  follows ME1 (last data-bus byte per CPU/bus, on both machines?) or keeps
-  FFH, and record the choice in Decisions.md. A change would reach every
-  open-bus read, e.g. the RAM-sizing probes and the empty-slot checks in
-  the tests.
+  the last byte on the data bus. To decide.** ME1 already returns the last
+  bus byte (`LH5803SharedMemory::readME1`). ME0 doesn't: PC-1600 MODE 0,
+  CE-163F in Slot 2: `XPEEK&C5` returns 37 on a real unit and 255 in the
+  emulator. In MODE 0 the Z-80 hands over with Port 31H = 06H (page C =
+  bank 0, the empty Slot 1) and `P_MAPPRG` leaves it there, so the mapping
+  is right. The LH5803's PEEK reads with `lda (u)` (rom1500 D997), opcode
+  25H = 37: the floating bus still holds the opcode just fetched. Decide
+  whether ME0 follows ME1 (last data-bus byte per CPU/bus, on both
+  machines?) or keeps FFH. A change would reach every open-bus read, e.g.
+  the RAM-sizing probes and the empty-slot checks in the tests.
 
-## PC-1600 LH-5803 / SC-7852 interface: still open
+## PC-1600 LH-5803 / SC-7852 interface
 
 Background: Ref/PC-1600/PC-1600-CPU-LH5803-Compat.md §2a and §6.1,
 docs/developer/PC1600-Core-Limitations.md (LH5803 section).
@@ -121,11 +83,11 @@ docs/developer/PC1600-Core-Limitations.md (LH5803 section).
   TERMINAL session. The real cost of the mirror, and what port 30H b0
   really switches (port 30H isn't modelled), are unknown.
 - **LH-5803 maskable interrupt not driven.** The IF/MSK registers exist
-  (ME1 F00BH/F00AH reach the SC-7852's ports 1BH/1AH since 8858e75), but
-  nothing drives the LH-5803's MI input from them, from the SC-7852's
-  LHMIO (pin 91) or from the PC-1500 peripheral IRQ (pin 80, "interrupt
-  to the CPU (Z-80, LH-5803)"), and the LH5801 core has no FFF8H vector
-  entry. Nothing found so far needs them; the CE-158 ROM polls its UART.
+  (ME1 F00BH/F00AH reach the SC-7852's ports 1BH/1AH), but nothing drives
+  the LH-5803's MI input from them, from the SC-7852's LHMIO (pin 91) or
+  from the PC-1500 peripheral IRQ (pin 80, "interrupt to the CPU (Z-80,
+  LH-5803)"), and the LH5801 core has no FFF8H vector entry. Nothing found
+  so far needs them; the CE-158 ROM polls its UART.
 - **Port 34H (P_LHMSK2) not modelled.** rom1500 writes it through ME1
   A034H, but writes are dropped and reads give FFH, like 30H. Model it
   together with the LH-5803 MI path.
@@ -146,33 +108,24 @@ docs/developer/PC1600-Core-Limitations.md (LH5803 section).
 
 - **RS-232C / SIO connector mux.** PRIME (the PRIM select) is tracked in
   `TC8576F::rs232Selected()`; both connectors still share the one
-  `SerialLink`, whose file is `calcu1600-rs232c.serial`. The split gives
-  SIO its own `calcu1600-sio.serial` (Decisions.md, "Serial port files are
-  named after their connector"), carrying data only while PRIME selects
+  `SerialLink`, whose file is `calcu1600-rs232c.serial`. Split: SIO gets
+  its own `calcu1600-sio.serial`, carrying data only while PRIME selects
   SIO; `calcu1600-rs232c.serial` then carries RS-232C only.
 - Capture the exact on-wire `SAVE"COM1:"` framing from a real ROM trace
-  (the harness: `c1600 serial rs232c capture`, with `trace`; the UART
-  probe went in M-51), and do one live round-trip against
-  SharpDataExchange over the PTY (`c1600 serial rs232c link`). The
-  `LOAD"COM1:"` direction was covered by the one-time loader matrix
-  (0.8.x's dev/loader-matrix/, gone in M-51, set 1, fed the `sde convert` byte
-  stream in-process).
+  (`c1600 serial rs232c capture`, with `trace`), and do one live
+  round-trip against SharpDataExchange over the PTY
+  (`c1600 serial rs232c link`).
 - Follow-on: a localhost-socket transport (`SocketSerialLink`) so
   `OUTSTAT 0-3` and buffer-full RTS become effective end-to-end, for
   serial-only tooling to bridge via `socat`.
 
-## PC-1600 loading: still open
-
-The loaders follow MODE and `TITLE` (docs/background/plans/Loader-Mode-Plan.md, done). Left:
+## PC-1600 loading
 
 - **The open questions of the load/save matrix**
-  ([Ref/PC-1600/PC-1600-Load-Save-Matrix.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-Load-Save-Matrix.md) §6), to be discussed
-  (the shared tokens are settled: identical by code, §6 item 2):
+  ([Ref/PC-1600/PC-1600-Load-Save-Matrix.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-Load-Save-Matrix.md) §6), to be discussed:
   `INPUT#-1` in MODE 1 through the CE-1600P (the ROM allows it,
   the TRM doesn't); `SAVE`/`LOAD "CAS:"` in MODE 1; CE-150/CE-158
-  `PRINT#`/`INPUT#` in MODE 0. (The CE-158's own `SETDEV` is reachable in
-  MODE 1: the native `SETDEV` passes non-`COM` devices on, see the loader
-  matrix's set 4 (gone in M-51, git history) and `test_pc1600_rom_mode1_printing`; Ref §6 item 5 still lists it.)
+  `PRINT#`/`INPUT#` in MODE 0.
 - **CE-158 on the PC-1600 (MODE 1): `SETDEV KI` + `INPUT` reads the
   keyboard, not the CE-158's UART** (`SETDEV PO` and `RINKEY$` work,
   `ce158_tests.cpp`). Trace where the PC-1600's `INPUT` picks its device
@@ -182,39 +135,34 @@ The loaders follow MODE and `TITLE` (docs/background/plans/Loader-Mode-Plan.md, 
   takes up to MEM + 1 (the end mark lands one byte past the user area, as
   on the PC-1500); the loader stops at MEM − 2, the native `LOAD` limit,
   so it refuses MEM − 1 and MEM. Decide whether a CE-158 file in MODE 1
-  gets `CLOAD`'s limit (dev/loader-matrix/README.md in the history before M-51).
+  gets `CLOAD`'s limit.
 
-## Expansion connectors: one model on both machines
+## Expansion connectors
 
-Done 2026-10-07 (docs/background/plans/Sixty-Pin-Connector-Plan.md, after the
-2026-09-26 groundwork in Expansion-Connectors-Plan.md): each plug is numbered by
-its real contacts. The 40-pin cards decode `PinState` (PC-1500: 2 = PU, 3 = PV, as
-measured). The 60-pin cards decode `SystemBusPins` (`Contact60`: PT 14, PU 15, PV 16,
-IORQ 26, MREQ 49, DME0 56, DME1/ELH̄ 58, ME1/IOE 59). There is one `SystemBus` per
-machine. On the PC-1600 both CPUs drive it (`PC1600BusDrive`), and every
-peripheral sits on it: CE-150, CE-158, CE-1600P/F, the host drive and bus ROMs.
-Decisions.md, "One 60-pin connector per machine".
+Each plug is numbered by its real contacts: 40-pin cards decode `PinState`,
+60-pin cards decode `SystemBusPins` (`Contact60`). There is one `SystemBus`
+per machine; on the PC-1600 both CPUs drive it (`PC1600BusDrive`).
 
 - **PC-1600 slot pin 2 (PVIN) reads low; a real unit ties it to VCC on
-  both slots (measured 2026-10-03).** `MemorySlotConnector` leaves it
-  deasserted. No bundled card decodes it, so nothing breaks today; drive
-  it high in the slot pin state.
+  both slots (measured).** `MemorySlotConnector` leaves it deasserted. No
+  bundled card decodes it, so nothing breaks today; drive it high in the
+  slot pin state.
 
 - **40-pin connector: model DME0 and ME1 cycles instead of the shortcut
   (low priority, research-enabling).** No real module is known to use ME1;
   the point is a hardware-faithful bus, so a hypothetical or modern module
   that ignores DME0 behaves as the real one would.
-  - **Hardware** (Decisions.md, "Unclaimed ME1 is not a mirror of ME0"; TRM
-    chip-select circuit): the mainboard's Y0 (0000-3FFF) and Y2 (8000-BFFF)
-    come from the TC40H139F half that is *not* ME-qualified, so they also
-    assert on ME1 cycles. The S strobes come from the '138 with G1 = ME0, so
-    they never assert in ME1. The 40-pin plug has no ME1 contact; its only
-    ME signal is pin 6 = DME0 (ME0 with WAIT timing, treat as ME0). A Y0/Y2
-    module is ME0-only if it gates on DME0, and answers in ME1 too if it
-    doesn't. Known modules: CE-151 (S strobes only); CE-155/CE-159 (Y0 chip
-    gates on DME0); CE-161 (schematic: on-module TC40H138FP with G1 = DME0,
-    G2A = Y0, A/B/C = AD11-13; G2B = power-up lock, RC from VCC, see
-    docs/background/CE-161-Program-Module.md); CE-163F (measured: ME0 only). Unknown: CE-1638, CE-502B.
+  - **Hardware** (TRM chip-select circuit): the mainboard's Y0 (0000-3FFF)
+    and Y2 (8000-BFFF) come from the TC40H139F half that is *not*
+    ME-qualified, so they also assert on ME1 cycles. The S strobes come
+    from the '138 with G1 = ME0, so they never assert in ME1. The 40-pin
+    plug has no ME1 contact; its only ME signal is pin 6 = DME0 (ME0 with
+    WAIT timing, treat as ME0). A Y0/Y2 module is ME0-only if it gates on
+    DME0, and answers in ME1 too if it doesn't. Known modules: CE-151 (S
+    strobes only); CE-155/CE-159 (Y0 chip gates on DME0); CE-161
+    (on-module TC40H138FP with G1 = DME0, G2A = Y0, A/B/C = AD11-13; G2B =
+    power-up lock, see docs/developer/CE-161-Program-Module.md); CE-163F
+    (measured: ME0 only). Unknown: CE-1638, CE-502B.
   - **Why it works today:** `PC1500Memory::readME1` / `writeME1` /
     `debugPeekME1` offer ME1 cycles to the 60-pin `SystemBus` only, never to
     the 40-pin `ExpansionConnector`. That equals "every 40-pin module gates
@@ -248,20 +196,19 @@ Decisions.md, "One 60-pin connector per machine".
        and note that in the files.
     6. Tests: PC-1500 + CE-161/CE-155: `PEEK#` in its window reads FFH;
        a test card without a DME0 term answers in ME1; PC-1600 Slot 1 +
-       CE-155 still loads its full 8 KB; the loader matrix and the CE-150 /
-       CE-158 demos unchanged.
+       CE-155 still loads its full 8 KB; the CE-150 / CE-158 demos
+       unchanged.
   - **Open assumption:** "asserted" on contact 6 means a memory cycle on both
     machines (DME0 / MREQ). The CE-155 working in a PC-1600 Slot 1 supports
     it; the polarity of the slot's MREQ contact isn't recorded in the
     research.
 
-- **Connector signals not emulated (besides DME0/MREQ above, PVIN above
-  and the "Still open" items below).** Checked 2026-10-10 against
-  Ref/Shared/Expansion-Connectors.md §2.1, §2.2, §4.0-4.3. Power, ground,
-  NC and the unused PB0/PB1/PC7 are left out; RD/WR, R/W and OD are
-  implicit in the read/write calls. None of these is used by a bundled
-  card or by the firmware paths we run, so nothing breaks today; each would
-  matter for a card that uses it.
+- **Connector signals not emulated (besides DME0/MREQ and PVIN above
+  and the hardware questions below).** Source: Ref/Shared/Expansion-Connectors.md
+  §2.1, §2.2, §4.0-4.3. Power, ground, NC and the unused PB0/PB1/PC7 are
+  left out; RD/WR, R/W and OD are implicit in the read/write calls. None
+  of these is used by a bundled card or by the firmware paths we run, so
+  nothing breaks today; each would matter for a card that uses it.
   - **INHIBIT / INH on the PC-1600** (60-pin 25, both slots 15). The
     PC-1500 honours it (`PC1500Memory::inhibitAsserted()`, from both
     connectors' `InhibitSource` cards); `PC1600Memory` never asks. On the
@@ -282,8 +229,8 @@ Decisions.md, "One 60-pin connector per machine".
     modelled. **Plan:** an interrupt-source interface like `InhibitSource`
     (level per card, OR'd on the chain); PC1500Machine feeds it to the
     LH5801's INT, PC1600Machine to the SC7852 interrupt logic as cause 1
-    (Decisions.md, "PC-1600 INT is a level"). Needs a card that uses it
-    (CE-158 receive interrupt, CE-1600P paper-feed key) to be worth it.
+    (PC-1600 INT is a level). Needs a card that uses it (CE-158 receive
+    interrupt, CE-1600P paper-feed key) to be worth it.
   - **WAIT lines.** PC-1500 60-pin 26 (WEX, external WAIT) and 28 (W1, WAIT
     condition input); PC-1600 60-pin 28 (WAIT). A card can't stretch a
     cycle; every card access takes the CPU's normal cycle. Only affects
@@ -300,7 +247,7 @@ Decisions.md, "One 60-pin connector per machine".
     the whole chip-select tree; while it is reset no select asserts. The
     emulator makes no bus accesses while off, so it is moot today.
 
-**Still open (hardware questions; the drive leaves these contacts inactive):**
+**Hardware questions (the drive leaves these contacts inactive):**
 - **Does the CE-1600P's I/O decode see LH5803 ME1 cycles?** While ELH̄ is
   asserted, IORQ carries the LH5803's ME1, so an access such as ME1 D070H
   puts 70H on A0-A7. The SC7852-side cards ignore every ELH̄ cycle. The
@@ -317,11 +264,7 @@ Decisions.md, "One 60-pin connector per machine".
 - The PU drive handover between the SC7852 and the LH5803 (one shared line)
   is not measured.
 
-## Cassette: still open
-
-CLOAD/CSAVE work on the PC-1500/1500A + CE-150 and the PC-1600 (MODE 0) +
-CE-1600P (docs/background/plans/Cassette-Tape-Plan.md; the one-time
-dev/tape-matrix/ in the history before M-51).
+## Cassette
 
 - **PC-1600 MODE 1: `CLOAD` of PC-1500 tapes through the CE-1600P.** The
   reader (`CM1500BIT`, bank 5 62BDH) writes F (17H) = 01H, resets the
@@ -337,17 +280,14 @@ dev/tape-matrix/ in the history before M-51).
   has its own small modulator in `PC1600Memory` (`m_fReg`, `m_sdo`, ports
   14H/17H), which would grow the divider or move onto `LH5811Serial`.
 - **CE-150 on a PC-1600 (MODE 1): no tape path.** The CE-150 ROM runs on
-  the LH5803 and drives ME1 F004H-F00FH, which since 8858e75 reach the
-  SC-7852's ports 14H-1FH. `attachCE150` connects no recorder, port 16H
-  (L, transmit) isn't handled, and CMTOUT comes only from OPC b7. Open:
-  whether the SC-7852 has a transmitter whose SDO reaches SD0' (pin 76:
+  the LH5803 and drives ME1 F004H-F00FH, which reach the SC-7852's ports
+  14H-1FH. `attachCE150` connects no recorder, port 16H (L, transmit)
+  isn't handled, and CMTOUT comes only from OPC b7. Open: whether the
+  SC-7852 has a transmitter whose SDO reaches SD0' (pin 76:
   `SD0 = OR(SD0', PC7')`, SD0' = "CE-150 cassette output"), and what
   drives CL1 (1AH b7) for reading.
-- **Real-hardware cross-check, remaining half:** `CLOAD` an emulator
-  `CSAVE` WAV on the real units (PC-1500 + CE-150, PC-1600 + CE-1600P).
-  The other half is done (2026-10-04): real `CSAVE` recordings of both
-  machines load in the emulator, and their timing set the recorder's 12 Hz
-  coupling and the LH5811 transmitter model (Decisions.md).
+- **Real-hardware cross-check:** `CLOAD` an emulator `CSAVE` WAV on the
+  real units (PC-1500 + CE-150, PC-1600 + CE-1600P).
 
 ## 1.0 announcement
 
@@ -380,25 +320,22 @@ that. Groundwork that needs indexing time can start before 1.0.
 - [ ] Short YouTube demo (e.g. PC-1600 plotting on the CE-1600P), linked
   from the posts.
 
-## App layer and web GUI: still open
+## Web client
 
-`core/`, the app layer `app/` and the frontends: docs/developer/App-Layer.md and
-Web-Client.md; the historic plans docs/background/plans/Shared-Layer-Plan.md,
-Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
+See docs/developer/App-Layer.md and Web-Client.md.
 
-- **Web client: the play page on calc-u.org/1600**, wiring the pinned
+- **The play page on calc-u.org/1600**, wiring the pinned
   `Calc-U-1600-web.zip` into calc-u-site like `59/` (fetch script, page,
   app link); it replaces the temporary preview at tinue.github.io/1600.
   Then a user-guide section for the web (README has a short one) and a
   parity table (Calc-U-59 style).
-- **Web client: check on a real iPad** -- touch, two-finger SHIFT + key,
-  install from Safari, persistence after closing the app, audio.
+- **Check on a real iPad**: touch, two-finger SHIFT + key, install from
+  Safari, persistence after closing the app, audio.
 
 ## Feature ideas
 
 - **PC-1500 RAM disk on a CE-1638 / CE-163F card**, software only (a
-  driver loaded once over the CE-158): idea, routes and open points in
-  docs/background/PC1500-Card-Disk-Idea.md.
+  driver loaded once over the CE-158).
 
 - **LCD text: the kana set.** No font that the parser reads has katakana
   yet, so they come out unparsed. On the PC-1500 they come from the second
@@ -422,24 +359,23 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
   (`PC1600SubCpu`, `PC1600Memory::updateBuzzerLine()`).
 - **Sub-CPU commands still unnamed** (IOCS 0CH–0FH, 1BH, 1FH, 26H, what
   1CH/1DH mean, the LH-5803's DCH): see [Ref/PC-1600/PC-1600-SubCPU-LU57813P.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-SubCPU-LU57813P.md) §8.
-  The ROM trace is done (2026-09-27): 1EH is the port-mode select
-  (F12CH b0 analog input, b1 external keyboard; `ON ADIN`, `KEYSTAT`),
-  16H/17H are the external keyboard, 1CH/1DH come from `SINIT`. The rest have
-  no caller in the system ROMs, so only real-unit tests can name them.
+  Known from the ROM: 1EH is the port-mode select (F12CH b0 analog input,
+  b1 external keyboard; `ON ADIN`, `KEYSTAT`), 16H/17H are the external
+  keyboard, 1CH/1DH come from `SINIT`. The rest have no caller in the
+  system ROMs, so only real-unit tests can name them.
 
 - CE-158 together with the CE-1600P. The real CE-1600P has its own
   connector at the back (like the CE-150), so both can be attached at
   once; today `PC1600Machine::attachCE1600P`/`attachCE158` detach each
-  other and the preset parser rejects the pair. Both now sit on the one
-  60-pin `SystemBus`. Blocked on the IO7N question in "Expansion connectors"
-  (User Guide says "not yet supported").
+  other and the preset parser rejects the pair. Both sit on the one
+  60-pin `SystemBus`. Blocked on the IO7N question in "Expansion
+  connectors" (User Guide says "not yet supported").
 - Allow viewing a memory module's or diskette's binary file contents in the
   INSPECTOR, without having to save them out first. Disk Areas / Dump ▾
-  already show where a RAM disk sits, its boot sector and its raw bytes
-  (docs/background/plans/Inspector-Panel-Plan.md); what is missing is the
-  directory and the files. For memory modules
-  this means the disk part (the RAM-disk filesystem), not the RAM-extension
-  part. For a floppy side, the vendored libsharpdx (0.3.5) already has
+  already show where a RAM disk sits, its boot sector and its raw bytes;
+  what is missing is the directory and the files. For memory modules this
+  means the disk part (the RAM-disk filesystem), not the RAM-extension
+  part. For a floppy side, the vendored libsharpdx already has
   `sde_disk_list` / `sde_disk_get`, which decode the directory and files
   (BASIC as a listing) from the in-memory image; nothing calls them yet.
   libsharpdx has no RAM-disk API, so modules need a decoder of their own.
@@ -451,14 +387,13 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
   works without `launch.json`; the build-task problem matchers resolve
   absolute paths; *Create Debug Project…* in a real folder, including the
   `launch.json` merge; Build & Load after an edit; the RENUM template
-  (breakpoint in `RENFIX`, `boot: debug` stops in `INIT`); the manual
-  checklist in docs/background/plans/DAP-Debugger-Plan.md ▸ Verification.
-  CLion: the recipe in help/07-debugger.md ▸ CLion is untried.
+  (breakpoint in `RENFIX`, `boot: debug` stops in `INIT`). CLion: the
+  recipe in help/07-debugger.md ▸ CLion is untried.
 - **BASIC-level debugger** (line breakpoints, step by statement,
   variables). Not started. First the ROM research (statement boundary,
   current line, variable/stack layout per interpreter, each confirmed by a
   probe), then a layer on the existing `DebugTarget`, one thin slice
-  first. How to plan it: docs/background/plans/BASIC-Debugger-Planning.md.
+  first.
 - **Create Debug Project…: templates for slot-module ROMs** (PC-1500
   module, PC-1600 S1/S2): a placeholder `.module.yaml`, a preset with
   `slot-N-file:`/`slot-N-rom:` and a hello-world `.asm`. Needs the correct
@@ -470,14 +405,13 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
 - **Pick up outside changes to an inserted floppy: a `dirty` key**
   *(pre-1.0: adds a key to the floppy format)*. Today an `sde put` while
   the disk is in the drive is overwritten at the next autosave; the rule
-  is "eject first" (`docs/formats/media.md` §2.3 at the repository root). Idea: a
-  new optional top-level key `dirty` (boolean) in `.floppy.yaml`. A tool
-  that writes the image (sde) sets `dirty: true`. The emulator checks the
-  inserted disk's file periodically; when it finds `dirty: true` it
-  unloads the floppy, writes the file back without the key, and loads it
-  again. It has to land before 1.0, because from 1.0 on the format only
-  changes compatibly (docs/background/Decisions.md, "From 1.0 on, the
-  previous format version keeps working"). Settled (2026-10-10):
+  is "eject first" (`docs/formats/media.md` §2.3 at the repository root).
+  Idea: a new optional top-level key `dirty` (boolean) in `.floppy.yaml`.
+  A tool that writes the image (sde) sets `dirty: true`. The emulator
+  checks the inserted disk's file periodically; when it finds
+  `dirty: true` it unloads the floppy, writes the file back without the
+  key, and loads it again. It has to land before 1.0, because from 1.0 on
+  the format only changes compatibly. Rules:
   - **Written only when dirty.** `dirty: true` or no key at all; a clean
     file never carries `dirty: false`. The reader accepts `false` as clean.
   - **`format-version` stays 1** (pre-1.0, no bump).
@@ -494,8 +428,8 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
   - Emulator: a cheap periodic check of the inserted disk (mtime first,
     then the header only, not the 1 MB of sector hex) and the
     unload/clear/reload of the floppy place (`core/Machine/SharpMediaPlaces`,
-    `FloppyPlace`, with LIB-7's media part), skipped while an autosave
-    is pending.
+    `FloppyPlace`, with the library's media part), skipped while an
+    autosave is pending.
   - SharpDataExchange (separate repo): `sde put`/`del` set `dirty: true`
     (and refuse a template), and libsharpdx's reader accepts the key.
 
@@ -505,7 +439,7 @@ Refactors and internal costs, not user-facing bugs. Take them when the
 area is next touched; entries marked *(behaviour/timing)* change what the
 emulator does and need a deliberate check. Entries with a **Before
 fixing** step need that analysis first. A fix that only moves the cost
-somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
+somewhere else doesn't count.
 
 - **Host drive: small leftovers in `HostDirectoryDrive.hpp`.** A wildcard
   `doRename` calls `findOne()` (a folder listing) per matching file; check
@@ -517,23 +451,23 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
   hand**; count with `decodeUtf8` (`core/Utf8.hpp`) so malformed bytes count
   the way the typer then types them.
 - **PC-1600 LCD / sub-CPU timing model** *(behaviour/timing)*.
-  `PC1600Display::kBusyClocks = 4` and the sub-CPU's 1.66 ms response
-  (now `PC1600SubCpu::kResponseMicros = 1632` plus the CPC's DSTB delay)
-  were both fitted to real-unit benchmarks on 2026-09-23 while the
-  BASIC-speed residual is still open (see the "PC-1600 BASIC runs
-  ~0.4-0.65% fast" known issue), so each may partly compensate for it.
+  `PC1600Display::kBusyClocks = 4` and the sub-CPU's response
+  (`PC1600SubCpu::kResponseMicros = 1632` plus the CPC's DSTB delay)
+  were both fitted to real-unit benchmarks while the BASIC-speed residual
+  is still open (see the "PC-1600 BASIC runs ~0.4-0.65% fast" known
+  issue), so each may partly compensate for it.
 
   **LCD half.** The HD61102 datasheet (Hitachi *LCD Controller/Driver LSI
   Data Book* U74, 1989, printed pp. 261–290; local copy
   `PC-1600/Hitachi_HD61102_1989.pdf`, HD61203 alongside) bounds the busy
   time at **1/fCLK ≤ T_BUSY ≤ 3/fCLK**, where fCLK is the φ1/φ2
-  frequency. Confirmed from the Service Manual's key circuit diagram
-  (printed p. 43): CK0 (CN1-40) drives the HD61203's CR pin with R and C
-  open (external clock), and M/S = VCC (master), FS = GND, DS1 = GND,
-  DS2 = VCC (1/64 duty). The HD61203 datasheet gives fosc = 215 kHz at
-  FS = GND and fosc = 2 × fφ, so fCLK = 108.3 kHz and the bound is
-  9.2–27.7 µs. The fit (busy until the 4th CK0 edge = 3–4 CK0 periods =
-  13.8–18.5 µs, ~2 φ cycles) is inside it.
+  frequency. From the Service Manual's key circuit diagram (printed p. 43):
+  CK0 (CN1-40) drives the HD61203's CR pin with R and C open (external
+  clock), and M/S = VCC (master), FS = GND, DS1 = GND, DS2 = VCC (1/64
+  duty). The HD61203 datasheet gives fosc = 215 kHz at FS = GND and
+  fosc = 2 × fφ, so fCLK = 108.3 kHz and the bound is 9.2–27.7 µs. The fit
+  (busy until the 4th CK0 edge = 3–4 CK0 periods = 13.8–18.5 µs, ~2 φ
+  cycles) is inside it.
 
   Datasheet behaviour left out because it moves the fit. The scroll/copy
   routine (bank 6 `8A2C`/`8A66`) reads 4 bytes and writes 4 per column, so
@@ -547,41 +481,28 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
     accepted). The ROM always polls, so only user ML that doesn't would
     notice.
 
-  **Sub-CPU half.** The 1.66 ms figure comes from the 0.5 s ISR's commands
-  but is applied to every sub-CPU command (clock, IOCS, the power-off
-  byte). It was fitted while SRIRQ's 0.5 s bit toggled, i.e. with the ISR
-  doing its full work (SRIRQ A2H, SRA0 A8H, SRINP A3H) only every other
-  tick. Now it does that every tick, and A−C comes out at 60 ms against
-  the real 45 ms, so the per-command time is too long. Of the total,
-  27.7 us is the CPC's own DSTB delay (now modelled from PR2/PR7); the
-  sub-CPU's share is `PC1600SubCpu::kResponseMicros` = 1632. Re-fit once;
-  consider a per-command response time. Verify with the scrolling-PRINT
-  benchmark.
-
-  **Order for the sub-CPU half:**
-  1. ~~The TC8576F datasheet check~~ — done (dev-0.6.0): PSR BUSY and
-     XBUSY are separate, the DSTB delay is modelled (27.7 us of the fit).
-  2. ~~The sub-CPU protocol spec~~ — done in the corpus
-     ([Ref/PC-1600/PC-1600-SubCPU-LU57813P.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-SubCPU-LU57813P.md)): the 0.5 s ISR sends A2H, A8H, A3H.
-  3. The residual itself. The `ON TIME$` hypothesis is ruled out by the
-     ROM (see the known issue); next is timing the FOR/NEXT routine from
-     RAM.
-  4. Then re-fit once, against A−C = 45 ms.
+  **Sub-CPU half.** The response time comes from the 0.5 s ISR's commands
+  (A2H, A8H, A3H) but is applied to every sub-CPU command (clock, IOCS,
+  the power-off byte). It was fitted while the ISR did its full work only
+  every other tick; now it does that every tick, and A−C comes out at
+  60 ms against the real 45 ms, so the per-command time is too long. Of
+  the total, 27.7 µs is the CPC's own DSTB delay (modelled from PR2/PR7);
+  the sub-CPU's share is `PC1600SubCpu::kResponseMicros`. First find the
+  BASIC-speed residual (the known issue), then re-fit once against
+  A−C = 45 ms; consider a per-command response time. Verify with the
+  scrolling-PRINT benchmark.
 - **The debugger may parse the project preset twice per session action.**
-  In 0.8.x, attach, restart and Build & Load called `effectiveConfig` →
-  `parsePresetFile`, then the load parsed the same file again by path,
-  each time re-reading every `program: file:`. One parse per clean start
-  is deliberate (docs/background/Decisions.md), two isn't. The classes
-  named went in M-46 and M-50: check whether `effectiveConfig`
-  (`app/dap/DapConfig`, on LIB-6's reader) and LIB-6's `load-preset` still
-  read it twice before fixing.
-- **Small leftovers from the 2026-09-30 simplify pass.** Take them when
-  the file is next touched:
-  - `app/SharpFileKinds.cpp` `programKindOf` (was `DropFile.cpp`
-    `classify`) and the preset's `program:` section (0.8.x's
-    `PresetFile.cpp`, now the product's preset keys; check) both sort `programfile::Kind` into BASIC / code: `isBasic(Kind)` /
-    `isCode(Kind)` next to `headerName()` in `ProgramFile.hpp` (the
-    headerless rules stay with the callers).
+  Attach, restart and Build & Load may parse the preset in
+  `effectiveConfig` (`app/dap/DapConfig`) and again in the library's
+  `load-preset`, each time re-reading every `program: file:`. One parse
+  per clean start is deliberate, two isn't. Check whether it still happens
+  before fixing.
+- **Small leftovers.** Take them when the file is next touched:
+  - `app/SharpFileKinds.cpp` `programKindOf` and the preset's `program:`
+    section (the product's preset keys) both sort `programfile::Kind` into
+    BASIC / code: add `isBasic(Kind)` / `isCode(Kind)` next to
+    `headerName()` in `ProgramFile.hpp` (the headerless rules stay with
+    the callers).
   - `extension.js`: `createDebugAdapterDescriptor` falls back to
     `setting('port') || 32168` although the resolver already filled
     `config.port`.
@@ -593,16 +514,15 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
   &C000 minus the card image's (bank) size. The ROM's module map (rom3b
   67B2-6892) instead takes the first of 8000H / A000H / B000H in Slot 1,
   8000H / A000H in Slot 2, where `MEMORYCHK` finds RAM, and always runs the
-  area to BFFFH (Decisions.md, "A PC-1600 module window starts at 8000H,
-  A000H or B000H"). Both give the same base for every real and bundled
+  area to BFFFH. Both give the same base for every real and bundled
   module (4 KB B000H, 8 KB A000H, 16/32 KB 8000H); they would differ only
   for a module that never existed (e.g. 12 KB at 9000H: ROM A000H, loader
   9000H). Odd banks (2nd half of a 32 KB module) are mapped at 8000H only
-  (`SMAPPAIR` 6898H). Low priority, no behaviour change for existing cards. Fix: probe
-  the three bases through the slot pins like the ROM (`pc1600LoadState`'s
-  `bankRamPages` already scans what the pins answer) and drop
-  `SlotGeometry::imageSize`/`bankSize`; the `windowContent(g) < 0x1000`
-  check becomes "no RAM at any base".
+  (`SMAPPAIR` 6898H). Low priority, no behaviour change for existing cards.
+  Fix: probe the three bases through the slot pins like the ROM
+  (`pc1600LoadState`'s `bankRamPages` already scans what the pins answer)
+  and drop `SlotGeometry::imageSize`/`bankSize`; the
+  `windowContent(g) < 0x1000` check becomes "no RAM at any base".
 - **The PC-1600 loaders route page C / page D themselves.**
   `PC1600BasicLoader.cpp` (`writeAt`) and `PC1600MachineCodeLoader.cpp`
   each pick slot bus vs. `debugWriteInternalRam(addr - 0xC000)` (the

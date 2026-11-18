@@ -85,7 +85,7 @@ With a program module:
 
 How the ROM recognizes a module, the header and the CE-161's `POKE` are
 in the
-[CE-161 program module notes](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/background/CE-161-Program-Module.md).
+[CE-161 program module notes](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/developer/CE-161-Program-Module.md).
 
 ## The floppy disk (PC-1600)
 

@@ -246,9 +246,6 @@ inside the package (the shared pin carries no D0 pulses, so neither die
 drives D0 there), which parts set the rate, the nominal rate, and what moves it
 between sessions (temperature, supply voltage, battery state).
 
-Earlier clock values and the explanations ruled out on the way: "Appendix:
-superseded models and measurements".
-
 `step()` returns a **cycle weight** — 4 for an IDLE instruction on the
 TI-59/58, otherwise 1 (`getStepWeight()`) — so callers can pace in real time.
 
@@ -1054,71 +1051,3 @@ debug events".
 | Constant memory | No | No | Yes (`ti58c.memory.yaml` through the kind `c59.constant-memory`; `TIConstantMemory` at build) |
 | Reset | RAM and partition kept (restored at the scan loop) | same | a power cycle; constant memory kept |
 | Step dispatch / module fetch | `0837` / `082F` | same | `082B` / `0823` |
-
----
-
-## Appendix: superseded models and measurements
-
-Kept for the record; none of this describes the current model.
-
-### TI-58C clock rate
-
-The emulator's TI-58C base clock went through these values:
-
-| Value | Basis | Replaced because |
-|---|---|---|
-| 400 kHz | a user's scope video, PHI read ≈ 200 kHz at 5 µs/div | readings at that time base ran ≈ 2.8% high; the same video's error blink gave ≈ 389.6 kHz |
-| 384 kHz | assumed: the TI-58's resonator part (datamath's TP0240 page lists the TI-58C with that chip) | the TI-58C has no clock chip or resonator at all |
-| 396 kHz | 2 × PHI1 197.8 kHz, one logic-analyser reading on unit B (4.4 V bench supply) | unit B's error blinks gave 394.3 kHz |
-| 394 kHz | unit B's error blinks, with and without the printer | current |
-
-Datamath's TMC0580 page says the TI-58C does not use the chip's oscillator;
-the board shows otherwise. Before the TMC0573 was identified as a BROM with
-PHI inputs, it was a candidate for the clock source.
-
-Notes that turned out to be single-session readings: unit B read the same
-PHI at 4.4 V and 4.1 V on one day, but its rate wanders ≈ 0.8% between
-sessions. The 0.3% between the 197.8 kHz analyser reading and the blinks
-was first put down to the probe loading the oscillator; it is the same
-session-to-session wander.
-
-### Explanations ruled out by the cycle count (TI-58C)
-
-A video of the block loop in "Accuracy", normalised to an error blink filmed
-20 minutes earlier, made the computing blocks look 0.45% slower than the
-emulator, with the `Pause` block matching. Candidates considered:
-
-- a different ROM path in the real chips;
-- extra cycles per RAM access (`MEMRD`/`MEMWR`), or a HOLD from the RAM
-  interface;
-- different `WAIT`/`KEY` behaviour, which the blink calibration would hide;
-- slower instruction fetches from one ROM chip (the blocks run 20–26% of
-  their instructions from the second DSCOM, 0A00–13FF, the blink none);
-- a clock that changes with load (LEDs lit, CPU computing).
-
-Counting PHI1 cycles between IDLE events gave the emulator's instruction
-counts exactly, ruling out the first four; the LED load moves the clock by
-only 68 ppm. The 0.45% was the clock's wander between the two sessions.
-Earlier comparisons of other owners' TI-58C videos (counter loops 1–2% slow
-after normalising to a blink) were made under older core models and with
-clocks from other sessions; they are not evidence of a core difference.
-
-### WAIT minimum (TI-59, TI-58, TI-58C)
-
-Before the printer line at D0 was modelled ("Printer line in the idle
-scan"), the extra idle time of a TI-59 on the PC-100C was put into `WAIT`:
-it could not release before its third execution (read from the HOLD
-pipeline in US 3,900,722). That fitted the printer-attached TI-59 but not
-the stand-alone one (0.449 s blink). A later variant made the minimum depend
-on the clock (2, later 1, below 400 kHz; 3 above) to fit the TI-58. Both were removed
-when the printer model explained all three variants with `WAIT` releasing
-at once.
-
-### Printer BUSY
-
-Until 2026-10-24 `PRT.GO` and `PRT.FEED` both held BUSY for 197.5 ms
-(from "40 ADV lines in 7.9 s"), converted to each model's clock: 2808
-cycles on the TI-59, 2370 on the TI-58, 2431 on the TI-58C. The ~120 ms
-per List line it lacked was thought to be serial character transfer. The
-recordings in "Printer (PC-100C)" replaced it: a printed line is longer, a
-feed (half of an ADV line) shorter, and both are fixed cycle counts.

@@ -2,8 +2,7 @@
 
 For people who build Calc-U-1600 from source or work on the emulator
 itself. Using the emulator (including writing PC-1500 / PC-1600 programs
-with its debugger) is covered by the help (below, "The help"). Why things are the way they are — design
-decisions, plans, handoffs — is in [../background/README.md](../background/README.md).
+with its debugger) is covered by the help (below, "The help").
 
 ## Build and test
 

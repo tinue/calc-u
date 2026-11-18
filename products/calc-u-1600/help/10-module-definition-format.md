@@ -321,7 +321,7 @@ bytes: |
 | File | Module | Shows |
 |---|---|---|
 | `ce151.module.yaml` | CE-151, 4 KB | Two bare-strobe `span` groups (`S1`, `S2`), one 2 KB chip each, no on-module decode (Service Manual schematic 5-3); PC-1500/1500A and PC-1600 Slot 1. |
-| `ce161.module.yaml` | CE-161, 16 KB | One bare `Y0` group spanning the whole 16 KB window; battery-backed with a `write-protect:` switch ([CE-161 program module](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/background/CE-161-Program-Module.md)); PC-1500/1500A and both PC-1600 slots. |
+| `ce161.module.yaml` | CE-161, 16 KB | One bare `Y0` group spanning the whole 16 KB window; battery-backed with a `write-protect:` switch ([CE-161 program module](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/developer/CE-161-Program-Module.md)); PC-1500/1500A and both PC-1600 slots. |
 | `ce155.module.yaml` | CE-155, 8 KB | one `address-bits` group (the on-module `AD11–AD13` decoder) OR'd with three bare-strobe `span` groups; an author-declared host list covering PC-1500 and PC-1600 Slot 1. |
 | `ce1600m.module.yaml` | CE-1600M, 32 KB | `PVOUT` folded into addressing as a half-select line — unbanked despite two physical halves; one Slot-1-terminology file declared for both PC-1600 slots (`RAM2` resolves to the pin-4 enable on both). |
 | `ce1601m.module.yaml` | CE-1601M, 64 KB | Trigger-based vertical banking — `trigger: { io-port: 0x28 }`, `source-domain: data` (the byte written by `OUT (28H)`); `bank-window` nesting the `PVOUT` half-select. |

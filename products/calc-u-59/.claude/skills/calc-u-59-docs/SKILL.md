@@ -41,8 +41,8 @@ This skill covers the user help (`help/`), the reference architecture docs (`ref
 
 ## The help (`help/`)
 
-The help has the family's ten chapters (LIB-16 AC-1,
-`features/LIB-16-help-content/`): a chapter has a shared part
+The help has the family's ten chapters (`docs/formats/help.md` at the
+repository root): a chapter has a shared part
 (`library/help/NN-*.md`, which names no product, model or peripheral of
 one product) and/or Calc-U-59's part (`help/NN-*.md`). It was converted
 once from calc-u-site's `59/Pages.jsx` at `acd629c` (M-60); from then on
@@ -60,8 +60,7 @@ once from calc-u-site's `59/Pages.jsx` at `acd629c` (M-60); from then on
   (`lib16_ac9_tutorial_presets_load` loads them); `help/images/` the
   pictures, each used by a file.
 - A user-visible change updates its chapter in the same step. Use the
-  glossary's terms (`docs/GLOSSARY.md`) and the visible names of
-  `docs/glossary-mapping.md`.
+  glossary's terms (`docs/GLOSSARY.md`).
 
 The website https://calc-u.org/59/ is the separate repository
 `calc-u-site` (`../calc-u-site`); it renders the help asset of a release
@@ -104,7 +103,6 @@ When updating these files, keep the provenance notice at the top intact — it s
 | `TODO.md` | Development task list |
 | `PRIVACY.md` | App Store privacy policy |
 | `THIRD-PARTY-NOTICES.md` | Qt6 (LGPLv3), web-client (React, Archivo) and ROM-image notices; shipped with the Windows and Linux packages |
-| `ideas/*.md` | Unimplemented design proposals and feasibility analyses (e.g. `KeypressLatch.md`, `Pico.md`, `CardRecovery.md`) — not current behavior, don't treat as authoritative |
 
 ---
 

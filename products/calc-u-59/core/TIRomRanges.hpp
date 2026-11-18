@@ -31,7 +31,7 @@ struct TIRomRanges {
     PcRange scanLoop;
     /// Full keyboard scan/detect cycle — release-gate spin (0x0627) through key
     /// acceptance (0x0661 CLR.IDLE; TI-58C 0x065A). See rom/TI59-commented.asm
-    /// (0x0620-0x0661) and ideas/KeypressLatch.md. Used wherever a held key or
+    /// (0x0620-0x0661). Used wherever a held key or
     /// full-speed racing must not outrun real scanning/debouncing time.
     PcRange idleAndKeyDetect;
     /// The card-reader wait of Write / INV Write (0x16B2–0x16B7: R/S aborts,

@@ -1,8 +1,7 @@
 # Test groups
 
-Every test of both products and its group (ADR 0031, Briefing §1.10,
-§7; done in M-13 of `docs/migration-plan.md`). The C++ tests of both
-products use one runner, `library/testing/TestHarness.hpp` (ADR 0038).
+Every test of both products and its group. The C++ tests of both
+products use one runner, `library/testing/TestHarness.hpp`.
 
 ## How the groups run
 
@@ -253,7 +252,7 @@ Frequent):
 | `CalcU59MacAttach` | `tests/mac_attach_check.sh <calcu>`: the Debug Mac app through Launch Services on port 59171; `calcu attach`; one minute in front (LIB-17 AC-19), 30 s covered by a grey window over every screen (`tests/mac_window.swift`; C59-5 AC-9), hidden and shown (AC-8, D-10) (C59-5 S6; M-33) | Checkpoint | about 2 min with the app built |
 | `CalcU59SwiftUnitTestsMac` | `xcodebuild test -testPlan UnitTests` on macOS (C59-5 S2's macOS services; M-33) | Checkpoint | 14 s of tests |
 | `CalcU59AppStoreScreenshots` | `bin/run-screenshots`: the App Store set (the iPhone Duo is opened flat by hand) | Checkpoint | not measured |
-| `CalcU59UITestsMac` | XCUITest plan `UIRegressionTests` on macOS | Checkpoint | not measured (needs a signed runner and the Accessibility permission, `docs/inventory/calc-u-59.md`) |
+| `CalcU59UITestsMac` | XCUITest plan `UIRegressionTests` on macOS | Checkpoint | not measured (needs a signed runner and the Accessibility permission) |
 
 `CalcU59Tests` by file (`products/calc-u-59/tests/`; every `TEST` is
 Frequent except where the table says otherwise):
@@ -391,8 +390,7 @@ needs ROMs that are missing reports `SKIP`):
 
 ## Not in a group
 
-Tools and one-time checks, not tests that run again (the inventories,
-`docs/inventory/calc-u-59.md` and `calc-u-1600.md`, "Tests"):
+Tools and one-time checks, not tests that run again:
 
 - The harness `calcu` itself (`library/harness/cli/`; LIB-11): a tool, tested
   through `calcu_test` and the product entries above.

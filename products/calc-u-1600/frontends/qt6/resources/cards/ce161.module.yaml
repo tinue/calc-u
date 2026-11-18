@@ -13,7 +13,7 @@
 # listable) -- the module then acts as a ROM program module. Workflow
 # (Instruction Manual): NEW 256, enter the program, run the fill program,
 # POKE the header, then Name & Save with "write-protect" ticked, OFF/ON,
-# NEW 0. Full analysis: docs/background/CE-161-Program-Module.md.
+# NEW 0. Full analysis: docs/developer/CE-161-Program-Module.md.
 #
 # Hosts: PC-1500/1500A natively; on the PC-1600 it fills the slot's
 # 8000-BFFF page (pin 4) in Slot 1, or Slot 2 (as a RAM disk).

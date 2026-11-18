@@ -1,6 +1,6 @@
 # Reference runs of the 57 Calc-U-59 examples at `v2.3.0`
 
-Recorded in M-9 (`docs/migration-plan.md`) by `tests/reference_runs_tests.cpp`
+Recorded from 2.3.0 by `tests/reference_runs_tests.cpp`
 with `CALCU59_REFERENCE_RECORD`, one `<folder>_<file>.txt` per example;
 `CalcU59ReferenceRuns` (Longer) compares the examples with them.
 

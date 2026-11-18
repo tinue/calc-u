@@ -118,8 +118,7 @@ goes down (LIB-14 D-9: a drag no longer moves the press to another key).
 ## Build
 
 ```bash
-frontends/web/build.sh          # → frontends/web/dist/ (gitignored): the test build
-frontends/web/build.sh --release  # the release build (the zip of a release): no test-only command
+frontends/web/build.sh          # → frontends/web/dist/ (gitignored): tested and zipped for a release
 frontends/web/run-tests.sh      # Playwright against dist/; build first
 ```
 
@@ -134,10 +133,8 @@ version in the repository's `.github/workflows/calc-u-59.yml`, job `web`),
    headers `SharedArrayBuffer` needs), with `-fwasm-exceptions` (app/
    reports file errors with exceptions), `MODULARIZE` as
    `createTI59CoreModule`, `FS` and `IDBFS` exported, the library's glue
-   (`calcu_web_glue`) linked; with `--release` the tree's option
-   `CALCU_WEB_TEST_AIDS` is OFF (LIB-15 AC-29; Calc-U-59 has no test-only
-   command left, so the engine is the same; a plain build sets it ON again),
-   and CI zips that dist/ after `tests/web_no_test_aids.sh` checked it;
+   (`calcu_web_glue`) linked; Calc-U-59 has no test-only command (LIB-15
+   AC-29), so CI zips the dist/ its tests ran against;
 2. copies the full set of ROM files (the 24 of `roms/fetch_roms.sh`, LIB-12
    AC-9; the module files hold the cue cards, C59-7 AC-23) from `roms/` to `dist/bundle/`, and the artwork (`ti59_base`,
    `ti58_base` and the three cue-card templates) from `frontends/swift/App/Assets.xcassets`

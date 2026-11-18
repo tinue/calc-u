@@ -23,9 +23,8 @@ import weakref
 from pathlib import Path
 from typing import Any, Optional
 
-from calcu_serve import Calcu, Refused
+from calcu_serve import TREES, Calcu, Refused, find_calcu
 
-REPO = Path(__file__).resolve().parents[3]
 TIMEOUT_SECONDS = 300
 
 
@@ -34,10 +33,11 @@ class MachineError(RuntimeError):
 
 
 def calcu_program() -> str:
-    """The `calcu` binary: $CALCU, else the build tree build/all of this checkout."""
-    program = os.environ.get("CALCU") or str(REPO / "build/all/library/harness/cli/calcu")
-    if not Path(program).is_file():
-        raise MachineError(f"no calcu at {program}; build the target calcu or set CALCU")
+    """The `calcu` binary: $CALCU, else a root build tree's (calcu_serve.find_calcu)."""
+    program = find_calcu()
+    if not program or not Path(program).is_file():
+        raise MachineError(f"no calcu at {program or 'build/{' + ','.join(TREES) + '}'}; "
+                           "build the target calcu or set CALCU")
     return program
 
 

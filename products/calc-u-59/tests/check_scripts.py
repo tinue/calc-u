@@ -25,7 +25,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 args = sys.argv[1:]
 calcu = args[args.index('--calcu') + 1]
-env = dict(os.environ, CALCU59_CALCU=calcu)
+env = dict(os.environ, CALCU=calcu)
 failed = False
 
 # coverage.py

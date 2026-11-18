@@ -10,7 +10,7 @@
 #   core-1600   calc-u-1600.yml `core-tests`
 #   qt-59       calc-u-59.yml `linux` up to the build (no AppImage)
 #   qt-1600     calc-u-1600.yml `linux` up to the build (no AppImage)
-#   web-59      calc-u-59.yml `web` up to the release dist/ and its check (web image only; no zip)
+#   web-59      calc-u-59.yml `web` up to its tests (web image only; no zip)
 #   web-1600    calc-u-1600.yml `web` up to the release dist/ and its check (web image only; no zip)
 #   help-59     calc-u-59.yml `help`: the help asset (no upload)
 #   help-1600   calc-u-1600.yml `help`: the help asset (no upload)
@@ -61,8 +61,7 @@ job() {
       emsdk 6.0.12 && cd products/calc-u-59 &&
       frontends/web/build.sh &&
       frontends/web/run-tests.sh --reporter=line &&
-      (cd /work/library/web && npm ci --no-audit --no-fund && tests/run-tests.sh --reporter=line) &&
-      frontends/web/build.sh --release && tests/web_no_test_aids.sh frontends/web/dist ;;
+      (cd /work/library/web && npm ci --no-audit --no-fund && tests/run-tests.sh --reporter=line) ;;
     web-1600)
       emsdk 6.0.13 && cd products/calc-u-1600 &&
       tools/build_wasm_check.sh &&

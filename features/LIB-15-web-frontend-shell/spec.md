@@ -229,9 +229,10 @@ Embedding interface
   `workerUrl`, then the product's own; `layout` is shared: Calc-U-59 takes
   `portrait` (its default), `wide` and `auto`, Calc-U-1600 has one layout
   and takes `auto` only (its default), and another value is ignored with a
-  console warning. Given a release build of a Web frontend (each
-  product's `frontends/web/build.sh --release`, the CMake option
-  `CALCU_WEB_TEST_AIDS` off; the release's Web zip), then its session
+  console warning. Given a release build of a Web frontend (Calc-U-1600's
+  `frontends/web/build.sh --release`, the CMake option
+  `CALCU_WEB_TEST_AIDS` off; Calc-U-59's plain `frontends/web/build.sh`,
+  which has no test-only command to leave out; the release's Web zip), then its session
   answers no test-only command: not Calc-U-1600's `c1600.upload` and
   `c1600.display-text` (a test build keeps them for the Playwright tests),
   and Calc-U-59's `c59.web.key-button-down`/`-up` are gone (`frontend.md`
@@ -315,3 +316,4 @@ Embedding interface
 | `preset` and `?preset=` take a bundled preset's path inside the bundle; an unlisted path is refused with a notice (AC-16) | user, 2026-11-13 (B-27 (c) of `docs/walkthroughs/presets.md` §5.2); a name tag can repeat across models and change, a path stays stable for links | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: `ti58c.memory.yaml` | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | Components `CalcU59` (was `PlayCalculator`) and `CalcU1600`; the shared props in the order `width`, `keyboard`, `layout`, `preset`, then `height`, `model`, `workerUrl`, then the product's own; `layout` becomes shared (Calc-U-1600: `auto` only, another value ignored with a console warning); test-only commands not in a release build's handle: `c59.web.key-button-*` deleted, `c1600.upload` and `c1600.display-text` only with the CMake option `CALCU_WEB_TEST_AIDS` (default ON; `build.sh --release` and the release packaging OFF); AC-29 (new), AC-19 amended | user, 2026-11-17 (Q-6 of `docs/reviews/e-simplification.md` §10, the `PlayCalculator` bullet); `docs/reviews/release-prep-plan.md` §4 (the option, the order, `layout` decided there); `frontend.md` FE-7 amended | 2026-11-17 |
+| Calc-U-59 has no `--release` Web build and no release check: `CALCU_WEB_TEST_AIDS` changes nothing in its engine, so the release zips the dist/ its tests ran against; the option and the check stay for Calc-U-1600 (AC-29 amended) | `docs/reviews/release-simplification.md` L-1 (a mechanism with no effect) | 2026-11-18 |

@@ -34,9 +34,9 @@ endif()
 # The Web engines' test-only commands (LIB-15 AC-29, release prep 4): the
 # Playwright tests' ways into a session that the page never sends
 # (Calc-U-1600's `c1600.upload`, `c1600.display-text`). On by default, as
-# for the test trees; each product's `frontends/web/build.sh --release` sets
+# for the test trees; Calc-U-1600's `frontends/web/build.sh --release` sets
 # it OFF in build/web (only the files that hold them are compiled again),
-# and the release packaging builds with `--release`.
+# and its release packaging builds with `--release`. Calc-U-59 has none.
 option(CALCU_WEB_TEST_AIDS "The Web engines' test-only commands (off in a release Web build)" ON)
 # LIB-2: a host link of a serial port is a pseudo-terminal on macOS and Linux
 # (PtyHostLink.cpp); elsewhere there is none (NoHostLink.cpp).

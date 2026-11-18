@@ -223,9 +223,10 @@ Options:
 product's own (Calc-U-59's `settings`). `layout` is shared: Calc-U-59
 takes `portrait` (its default), `wide` and `auto`; Calc-U-1600 has one
 layout and takes `auto` only (its default; another value is ignored with
-a console warning). A release's Web zip is a release build (each
-product's `frontends/web/build.sh --release`, the CMake option
-`CALCU_WEB_TEST_AIDS` off): the handle has no test-only command. LIB-15
+a console warning). A release's Web zip is a release build (Calc-U-1600's
+`frontends/web/build.sh --release`, the CMake option
+`CALCU_WEB_TEST_AIDS` off; Calc-U-59's plain `build.sh`, which has no
+test-only command): the handle has no test-only command. LIB-15
 AC-29; calc-u-site follows in M-62.
 
 ## Sessions, pacing and operations

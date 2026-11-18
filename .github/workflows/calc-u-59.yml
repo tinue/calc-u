@@ -60,9 +60,8 @@ jobs:
   web:
     # frontends/web/build.sh into frontends/web/dist/ (the engine is the
     # root project's calcu59_web target, built in build/web), the
-    # Playwright tests against it, then dist/ built again with --release (without the
-    # test-only commands, LIB-15 AC-29; only what CALCU_WEB_TEST_AIDS changes
-    # is compiled again), checked, and zipped (reference/WebClient.md).
+    # Playwright tests against it, and the same dist/ zipped (Calc-U-59 has no
+    # test-only command, LIB-15 AC-29; reference/WebClient.md).
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -102,10 +101,6 @@ jobs:
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium webkit
           tests/run-tests.sh --reporter=line
-      - name: Build the release dist/
-        run: |
-          frontends/web/build.sh --release
-          tests/web_no_test_aids.sh frontends/web/dist
       - name: Zip dist/
         run: |
           set -euo pipefail

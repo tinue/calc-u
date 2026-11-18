@@ -1,4 +1,4 @@
-// C59-2 TI preset content (design §6, T1–T6, T9, T11): the product kind
+// TI preset content: the product kind
 // "program memory", the sections partition:, program:, data:, cue-card:,
 // the upgraded examples and the bundle file. Read-time refusals through
 // presets::readPreset with TIPresetRules; what a section does through the
@@ -41,9 +41,9 @@ std::vector<std::string> body(const std::string& reply) {
 
 } // namespace
 
-// ── T1: the kind (AC-17) ────────────────────────────────────────────────────
+// ── The kind ────────────────────────────────────────────────────────────────
 
-TEST(c59_2_ac17_listed_on_every_model) {
+TEST(listed_on_every_model) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     for (const char* model : {"TI-59", "TI-58", "TI-58C"}) {
@@ -53,7 +53,7 @@ TEST(c59_2_ac17_listed_on_every_model) {
     }
 }
 
-TEST(c59_2_ac17_step_register_extra_partition_read_back) {
+TEST(step_register_extra_partition_read_back) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     for (const char* model : {"TI-59", "TI-58", "TI-58C"}) {
@@ -78,9 +78,9 @@ TEST(c59_2_ac17_step_register_extra_partition_read_back) {
     }
 }
 
-// ── T2: partition: (AC-2) ───────────────────────────────────────────────────
+// ── Partition: ──────────────────────────────────────────────────────────────
 
-TEST(c59_2_ac2_rounds_up_to_80_at_most_960) {
+TEST(rounds_up_to_80_at_most_960) {
     CHECK(std::get<int>(cu59::partitionSteps("100", 959)) == 160);   // 101 steps → 160
     CHECK(std::get<int>(cu59::partitionSteps("79", 959)) == 80);
     CHECK(std::get<int>(cu59::partitionSteps("959", 959)) == 960);
@@ -91,14 +91,14 @@ TEST(c59_2_ac2_rounds_up_to_80_at_most_960) {
     CHECK_EQ(c("c59 partition"), std::string("done 1\n159\n"));
 }
 
-TEST(c59_2_ac2_point_part_not_read) {
+TEST(point_part_not_read) {
     CHECK(std::get<int>(cu59::partitionSteps("479.59", 959)) == 480);
     CHECK(std::get<int>(cu59::partitionSteps("799.19", 959)) == 800);
     PresetRead r;
     CHECK_EQ(r.error(head() + "partition: 479.59\n"), std::string());
 }
 
-TEST(c59_2_ac2_none_keeps_rom_partition) {
+TEST(none_keeps_rom_partition) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     const std::pair<const char*, const char*> want[] = {{"TI-59", "479"}, {"TI-58", "239"}, {"TI-58C", "239"}};
@@ -108,7 +108,7 @@ TEST(c59_2_ac2_none_keeps_rom_partition) {
     }
 }
 
-TEST(c59_2_ac2_not_a_number_or_above_last_step_refused) {
+TEST(not_a_number_or_above_last_step_refused) {
     PresetRead r;
     CHECK(r.error(head() + "partition: abc\n").find("line 3") != std::string::npos);
     CHECK(r.error(head() + "partition: 960\n").find("beyond the last program step") != std::string::npos);
@@ -117,9 +117,9 @@ TEST(c59_2_ac2_not_a_number_or_above_last_step_refused) {
     CHECK(!r.error(head() + "partition: -1\n").empty());
 }
 
-// ── T3: program: (AC-1, AC-3, EC-1) ─────────────────────────────────────────
+// ── Program: ────────────────────────────────────────────────────────────────
 
-TEST(c59_2_ac3_compact_and_listing_notations) {
+TEST(compact_and_listing_notations) {
     const auto r = cu59::readKeycodes("76 11 42 29   # compact\n010 43 RCL\n011 00 00\n# ...\n110 42 STO\n92\n", 959);
     const auto* steps = std::get_if<std::vector<cu59::ProgramStep>>(&r);
     CHECK(steps != nullptr);
@@ -128,14 +128,14 @@ TEST(c59_2_ac3_compact_and_listing_notations) {
     CHECK(*steps == want);
 }
 
-TEST(c59_2_ac3_mnemonic_not_read_even_a_number) {
+TEST(mnemonic_not_read_even_a_number) {
     const auto r = cu59::readKeycodes("473 00 0\n474 05 5 7 9\n", 959);
     const auto* steps = std::get_if<std::vector<cu59::ProgramStep>>(&r);
     CHECK(steps && steps->size() == 2);
     if (steps) CHECK((*steps)[1].step == 474 && (*steps)[1].keycode == 5);
 }
 
-TEST(c59_2_ac3_one_digit_or_word_refused_with_line) {
+TEST(one_digit_or_word_refused_with_line) {
     PresetRead r;
     const std::string one = head() + "program:\n  keycodes: |\n    76 11\n    # a comment line\n    42 1\n";
     CHECK(r.error(one).find("line 7") != std::string::npos);   // the token's own line in the file
@@ -144,14 +144,14 @@ TEST(c59_2_ac3_one_digit_or_word_refused_with_line) {
     CHECK(r.error(word).find("LBL") != std::string::npos);
 }
 
-TEST(c59_2_ac3_step_beyond_last_refused) {
+TEST(preset_step_beyond_last_refused) {
     PresetRead r;
     CHECK(!r.error(head("TI-58") + "program:\n  keycodes: |\n    480 76 LBL\n", "t.ti58").empty());
     CHECK_EQ(r.error(head("TI-58") + "program:\n  keycodes: |\n    479 76 LBL\n", "t.ti58"), std::string());
     CHECK(!r.error(head() + "program:\n  keycodes: |\n    959 76\n    11\n").empty());   // compact past 959
 }
 
-TEST(c59_2_ac3_keystroke_program_file_read_by_same_rules) {
+TEST(keystroke_program_file_read_by_same_rules) {
     PresetRead r;
     r.write("loan.keystrokes.yaml", "format: ti-keystroke-program\nformat-version: 1\nprogram-name: Loan\n"
                                     "description: Monthly payment\nkeycodes: |\n  000 76 LBL\n  001 11 A\n  92\n");
@@ -162,7 +162,7 @@ TEST(c59_2_ac3_keystroke_program_file_read_by_same_rules) {
     CHECK(p && p->name == "Loan" && p->steps.size() == 2 && p->steps[1].step == 1 && p->steps[1].keycode == 92);
 }
 
-TEST(c59_2_ac3_file_breaking_its_format_refused) {
+TEST(file_breaking_its_format_refused) {
     PresetRead r;
     r.write("bad1.keystrokes.yaml", "format: ti-keystroke-program\nformat-version: 1\nkeycodes: |\n  76\n");   // no program-name
     r.write("bad2.keystrokes.yaml", "format: ti-keystroke-program\nformat-version: 2\nprogram-name: X\nkeycodes: |\n  76\n");
@@ -174,7 +174,7 @@ TEST(c59_2_ac3_file_breaking_its_format_refused) {
     CHECK(!r.error(head() + "program:\n  keycodes: |\n    76\n  file: x.keystrokes.yaml\n").empty());   // exactly one
 }
 
-TEST(c59_2_ac1_only_listed_steps_written) {
+TEST(only_listed_steps_written) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     const std::string text = head() + "program:\n  keycodes: |\n    11 12 13 14\nprogram:\n  keycodes: |\n    002 99\n";
@@ -182,7 +182,7 @@ TEST(c59_2_ac1_only_listed_steps_written) {
     CHECK_EQ(c("c59 program 000 count=5"), std::string("done 5\n000 11\n001 12\n002 99\n003 14\n004 00\n"));
 }
 
-TEST(c59_2_ec1_steps_beyond_partition_written) {
+TEST(steps_beyond_partition_written) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     const std::string text = head() + "partition: 159\nprogram:\n  keycodes: |\n    700 76 LBL\n";
@@ -190,30 +190,30 @@ TEST(c59_2_ec1_steps_beyond_partition_written) {
     CHECK_EQ(c("c59 program 700 count=1"), std::string("done 1\n700 76\n"));
 }
 
-// ── T4: data: (AC-4, EC-2, EC-3) ────────────────────────────────────────────
+// ── Data: ───────────────────────────────────────────────────────────────────
 
-TEST(c59_2_ac4_whole_number_digit_for_digit_cut_after_13) {
+TEST(whole_number_digit_for_digit_cut_after_13) {
     CHECK(nibbles("12345678901234567") == nibbles("1234567890123e4"));
     CHECK_EQ(cu59::registerText(nibbles("12345678901234567")), std::string("1.234567890123e16"));
     CHECK_EQ(cu59::registerText(nibbles("99999999999999")), std::string("9.999999999999e13"));   // cut, not rounded
     CHECK_EQ(cu59::registerText(nibbles("-42")), std::string("-4.2e1"));
 }
 
-TEST(c59_2_ac4_other_values_rounded_to_13) {
+TEST(other_values_rounded_to_13) {
     CHECK_EQ(cu59::registerText(nibbles("1.23456789012345")), std::string("1.234567890123e0"));
     CHECK_EQ(cu59::registerText(nibbles("2.99999999999999")), std::string("3e0"));
     CHECK_EQ(cu59::registerText(nibbles("-1.5e-3")), std::string("-1.5e-3"));
     CHECK_EQ(cu59::registerText(nibbles(".5")), std::string("5e-1"));
 }
 
-TEST(c59_2_ac4_no_number_refused) {
+TEST(no_number_refused) {
     PresetRead r;
     for (const char* v : {"abc", "1.2.3", "1e", "--1", "0x10", ""})
         CHECK(r.error(head() + "data:\n  05: " + std::string(v) + "\n").find("line 4") != std::string::npos);
-    CHECK(!r.error(head() + "data:\n  05: 1\n  05: 2\n").empty());   // D-6: a key twice
+    CHECK(!r.error(head() + "data:\n  05: 1\n  05: 2\n").empty());   // a key twice
 }
 
-TEST(c59_2_ac4_60_to_99_on_ti58_refused_h_off_ti58c_refused) {
+TEST(registers_60_to_99_on_ti58_refused_h_off_ti58c_refused) {
     PresetRead r;
     CHECK(!r.error(head("TI-58") + "data:\n  60: 1\n", "t.ti58").empty());
     CHECK_EQ(r.error(head("TI-58") + "data:\n  59: 1\n", "t.ti58"), std::string());
@@ -225,7 +225,7 @@ TEST(c59_2_ac4_60_to_99_on_ti58_refused_h_off_ti58c_refused) {
     CHECK(!r.error(head() + "data:\n  5: 1\n").empty());   // NN is two digits
 }
 
-TEST(c59_2_ac4_h00_to_h03_are_not_60_to_63) {
+TEST(h00_to_h03_are_not_60_to_63) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head("TI-58C") + "data:\n  H01: 7.77E22\n  59: 5\n", "t.ti58c"), std::string("done\n"));
@@ -236,7 +236,7 @@ TEST(c59_2_ac4_h00_to_h03_are_not_60_to_63) {
     CHECK_EQ(c("c59 data-registers H01 59"), std::string("done 2\nH01: 7.77e22\n59: 5e0\n"));
 }
 
-TEST(c59_2_ec2_data_before_partition_in_file_order) {
+TEST(data_before_partition_in_file_order) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     // Register 05 is written while the partition is the ROM's; then the
@@ -249,7 +249,7 @@ TEST(c59_2_ec2_data_before_partition_in_file_order) {
     CHECK(p && p->items.size() == 2 && p->items[0].item->logText().rfind("data:", 0) == 0);
 }
 
-TEST(c59_2_ec3_h_registers_written_after_cold_boot_else_as_startup_left) {
+TEST(h_registers_written_after_cold_boot_else_as_startup_left) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head("TI-58C") + "data:\n  00: 1\n", "a.ti58c"), std::string("done\n"));
@@ -263,9 +263,9 @@ TEST(c59_2_ec3_h_registers_written_after_cold_boot_else_as_startup_left) {
     CHECK(cu59::programMemoryOf(*c.machine())->readExtra(0) == nibbles("2.5"));
 }
 
-// ── T5: cue-card: (AC-5, AC-6, EC-4, EC-5) ──────────────────────────────────
+// ── Cue-card: ───────────────────────────────────────────────────────────────
 
-TEST(c59_2_ac5_keys_defaults_tokens_prime_any_case) {
+TEST(keys_defaults_tokens_prime_any_case) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     testroms::PartRig r;
     const std::string text = head() + "cue-card:\n  title: Loan \\to \\lambda\n  A: n\n  \"a'\": i\n  \"B′\": \\blank\n"
@@ -286,14 +286,14 @@ TEST(c59_2_ac5_keys_defaults_tokens_prime_any_case) {
     CHECK(card->template_ == cu59::CueCardTemplate::CueCard);   // always the plain card
 }
 
-TEST(c59_2_ac5_template_banks_id_refused) {
+TEST(template_banks_id_refused) {
     PresetRead r;
     for (const char* key : {"Template: MagnetCard", "Banks: 1,2", "id: ML-01", "Title: x", "bank: 1"})
         CHECK(r.error(head() + "cue-card:\n  title: T\n  " + std::string(key) + "\n").find("line 5") != std::string::npos);
     CHECK(!r.error(head() + "cue-card:\n  row-1-align: middle\n").empty());
 }
 
-TEST(c59_2_ac6_topic_says_fitted_card) {
+TEST(topic_says_fitted_card) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     testroms::PartRig r;
     CHECK(r.load(head() + "cue-card:\n  title: Sum 1..N\n  A: Sum\n").done);
@@ -302,7 +302,7 @@ TEST(c59_2_ac6_topic_says_fitted_card) {
     CHECK(s && s->card && s->card->title == "Sum 1..N");
 }
 
-TEST(c59_2_ac6_no_section_no_card) {
+TEST(no_section_no_card) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     testroms::PartRig r;
     CHECK(r.load(head() + "cue-card:\n  title: First\n").done);
@@ -311,7 +311,7 @@ TEST(c59_2_ac6_no_section_no_card) {
     CHECK(!r.part().ownCueCard().has_value());
 }
 
-TEST(c59_2_ec4_second_replaces_first) {
+TEST(second_replaces_first) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     testroms::PartRig r;
     CHECK(r.load(head() + "cue-card:\n  title: First\ncue-card:\n  title: Second\n").done);
@@ -319,18 +319,18 @@ TEST(c59_2_ec4_second_replaces_first) {
     CHECK(r.part().ownCueCard() && r.part().ownCueCard()->title == "Second");
 }
 
-TEST(c59_2_ec5_model_printer_card_unknown_keys) {
+TEST(model_printer_card_unknown_keys) {
     PresetRead r;
     for (const char* key : {"model: TI-58", "printer: PC-100C", "card: x"})
         CHECK(r.error(head() + "cue-card:\n  title: T\n  " + std::string(key) + "\n").find("no key") != std::string::npos);
 }
 
-// ── T6: sections in file order; today's tests (AC-1, AC-7, AC-16) ──────────
+// ── Sections in file order ──────────────────────────────────────────────────
 
-TEST(c59_2_ac1_first_stage_as_today) {
+TEST(first_stage_as_today) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     // sum.ti59's first stage (partition, program, cue card) and its keys give
-    // the RAM of its 2.3.0 reference run (the full comparison: AC-11).
+    // the RAM of its 2.3.0 reference run (the full comparison: reference_runs_tests.cpp).
     Calcu c;
     CHECK_EQ(c("preset examples/sum.ti59"), std::string("done\n"));
     c("wait");
@@ -356,7 +356,7 @@ TEST(c59_2_ac1_first_stage_as_today) {
     CHECK_EQ(compared, 120);
 }
 
-TEST(c59_2_ac7_sections_after_keys_are_reloads) {
+TEST(sections_after_keys_are_reloads) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     // The program counts R00 down from 5 (Lbl A … Dsz 0 …): a reload after
@@ -374,7 +374,7 @@ TEST(c59_2_ac7_sections_after_keys_are_reloads) {
     CHECK_EQ(c("c59 data-registers 00 01"), std::string("done 2\n00: 3e0\n01: 9e0\n"));
 }
 
-TEST(c59_2_ac16_apply_state_ti58_default_partition_and_limits) {
+TEST(apply_state_ti58_default_partition_and_limits) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head("TI-58") + "program:\n  keycodes: |\n    479 92\n", "t.ti58"), std::string("done\n"));
@@ -383,7 +383,7 @@ TEST(c59_2_ac16_apply_state_ti58_default_partition_and_limits) {
     CHECK(c("c59 program 480 count=1").rfind("refused", 0) == 0);
 }
 
-TEST(c59_2_ac16_reload_changes_only_the_listed_steps_and_registers) {
+TEST(reload_changes_only_the_listed_steps_and_registers) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head() + "program:\n  keycodes: |\n    11 12 13\ndata:\n  00: 1\n  02: 2\n"
@@ -393,7 +393,7 @@ TEST(c59_2_ac16_reload_changes_only_the_listed_steps_and_registers) {
     CHECK_EQ(c("c59 data-registers 00 02"), std::string("done 2\n00: 1e0\n02: 7e0\n"));
 }
 
-TEST(c59_2_ac16_data_registers_match_the_rom) {
+TEST(data_registers_match_the_rom) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     for (const char* model : {"TI-59", "TI-58", "TI-58C"}) {
@@ -408,10 +408,10 @@ TEST(c59_2_ac16_data_registers_match_the_rom) {
     }
 }
 
-// ── T9: the upgrade (AC-10, AC-15, EC-6) ────────────────────────────────────
+// ── The upgrade ─────────────────────────────────────────────────────────────
 
-TEST(c59_2_ac10_no_2_3_0_preset_left) {
-    // The four examples with magnetic cards since M-55 too (C59-7 AC-30).
+TEST(no_2_3_0_preset_left) {
+    // The four examples with magnetic cards too.
     int seen = 0;
     for (const auto& e : fs::recursive_directory_iterator("examples")) {
         const auto ext = e.path().extension().string();
@@ -428,7 +428,7 @@ TEST(c59_2_ac10_no_2_3_0_preset_left) {
     CHECK_EQ(seen, 57 + 3);   // the 57 examples and the three startup presets
 }
 
-TEST(c59_2_ac15_names_short_described_once_unique_per_model) {
+TEST(names_short_described_once_unique_per_model) {
     PresetRead r;
     calcu::presets::DirectoryPresetBundle bundle("examples");
     const std::vector<std::string> problems = calcu::presets::checkBundle(bundle, r.setup());
@@ -443,10 +443,10 @@ TEST(c59_2_ac15_names_short_described_once_unique_per_model) {
         CHECK(!e.description.empty());
         CHECK(seen.insert(e.model.value + "/" + e.name).second);
     }
-    CHECK_EQ(list.size(), std::size_t{13});   // three startup presets and ten examples (globe-print since M-55)
+    CHECK_EQ(list.size(), std::size_t{13});   // three startup presets and ten examples
 }
 
-TEST(c59_2_ec6_trace_quirk_keeps_extension_and_model) {
+TEST(trace_quirk_keeps_extension_and_model) {
     PresetRead r;
     std::ifstream in("examples/historic/trace-quirk.ti59");
     std::stringstream ss;
@@ -456,9 +456,9 @@ TEST(c59_2_ec6_trace_quirk_keeps_extension_and_model) {
     CHECK(p && p->model.value == "TI-58");
 }
 
-// ── T11: the bundle file (AC-13) ────────────────────────────────────────────
+// ── The bundle file ─────────────────────────────────────────────────────────
 
-TEST(c59_2_ac13_bundle_lists_three_startup_and_todays_examples_in_groups) {
+TEST(bundle_lists_three_startup_and_todays_examples_in_groups) {
     calcu::presets::DirectoryPresetBundle bundle("examples");
     const auto read = calcu::presets::readBundleFile(bundle);
     const auto* entries = std::get_if<std::vector<calcu::presets::BundleEntry>>(&read);
@@ -473,7 +473,8 @@ TEST(c59_2_ac13_bundle_lists_three_startup_and_todays_examples_in_groups) {
         "Printer pictures printer-interrupt.ti59", "Printer pictures picard.ti59", "Printer pictures switzerland.ti59",
         "Printer pictures globe-print.ti59"};
     CHECK(got == want);
-    // Each startup preset: the Master Library module, the PC-100C, nothing else (ADR 0021 as amended).
+    // Each startup preset: the Master Library module, the PC-100C, nothing else: a startup preset builds
+    // the machine from a cold boot; settings hold no hardware.
     PresetRead r;
     for (const char* f : {"startup/default-ti59.ti59", "startup/default-ti58.ti58", "startup/default-ti58c.ti58c"}) {
         const auto source = calcu::presets::bundleSource(bundle, f);

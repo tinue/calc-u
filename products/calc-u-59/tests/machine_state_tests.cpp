@@ -1,4 +1,4 @@
-// C59-9 AC-15 (design §6, T10; LIB-11 AC-24): the TI machines offer the
+// The TI machines offer the
 // machine state. Each case saves while a program runs, lets 2 s pass and
 // takes the replies (the display, the ticks, the paper, the whole state);
 // then restores in the same run, and in a second run set up the same way
@@ -60,7 +60,7 @@ std::vector<std::uint8_t> bytesOf(const std::string& path) {
 }
 
 // What the machine shows after `wait 2s`: the replies and the state then.
-// The paper is LIB-8's output, not machine state: the lines printed in the
+// The paper is the library's output, not machine state: the lines printed in the
 // 2 s are compared.
 std::string after2s(Run& r, const std::string& dir, const std::string& name, bool paper) {
     const std::string before = paper ? r("paper text") : std::string();
@@ -126,23 +126,23 @@ const char* kLoop = "c59 program 000 76 11 42 00 76 12 97 00 12 91";   // Lbl A 
 
 } // namespace
 
-TEST(c59_9_ac15_restore_continues_identically_ti59) {
+TEST(restore_continues_identically_ti59) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     restoresIdentically("ti59", {kLoop, "key 5 0 0 A", "wait 500ms"}, false);
 }
 
-TEST(c59_9_ac15_restore_continues_identically_ti58) {
+TEST(restore_continues_identically_ti58) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     restoresIdentically("ti58", {"model TI-58", kLoop, "key 5 0 0 A", "wait 500ms"}, false);
 }
 
-TEST(c59_9_ac15_restore_continues_identically_ti58c) {
+TEST(restore_continues_identically_ti58c) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    // The TI-58C's constant memory is its RAM (C59-3): a data register written before.
+    // The TI-58C's constant memory is its RAM: a data register written before.
     restoresIdentically("ti58c", {"model TI-58C", "c59 data-registers 07=3.25", kLoop, "key 5 0 0 A", "wait 500ms"}, false);
 }
 
-TEST(c59_9_ac15_with_printer_module_and_card_in_reader) {
+TEST(with_printer_module_and_card_in_reader) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     // A PC-100C printing in a loop (Lbl A Op 00 1 Prt GTO A), the ML module in slot-1.
     restoresIdentically("printer", {"attach printer PC-100C", "c59 program 000 76 11 69 00 01 99 61 11",
@@ -152,7 +152,7 @@ TEST(c59_9_ac15_with_printer_module_and_card_in_reader) {
                                  "wait 20ms"}, false);
 }
 
-TEST(c59_9_ac15_refused_for_other_peripherals) {
+TEST(refused_for_other_peripherals) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     const std::string dir = folder("other");
     Run r(dir);

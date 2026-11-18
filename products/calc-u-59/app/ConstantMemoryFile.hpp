@@ -8,8 +8,7 @@
 #include <variant>
 
 // The TI-58C's constant memory file `ti58c.memory.yaml`, constant memory
-// format 1 (docs/formats/media.md §4.1; C59-3 AC-4, EC-2, EC-3, EC-5, design
-// §3.2): `format: ti58c-constant-memory`, `format-version: 1`, an optional
+// format 1 (docs/formats/media.md §4.1): `format: ti58c-constant-memory`, `format-version: 1`, an optional
 // stand-alone `cue-card`, and `ram` with `encoding: register-hex` and the
 // raw registers R000–R063 that are not zero, H00–H03 as R060–R063, in
 // today's `Rnnn:` lines (app/Bcd.hpp). Read with the library's YAML reader.
@@ -24,7 +23,7 @@ struct ConstantMemoryContents {
     bool operator==(const ConstantMemoryContents&) const = default;
 };
 
-/// Why a file is not read: an older or newer format (EC-2), or a damaged one (EC-3).
+/// Why a file is not read: an older or newer format, or a damaged one.
 struct ConstantMemoryProblem {
     enum class Kind { Outdated, Newer, Damaged } kind = Kind::Damaged;
     std::string what;   // Damaged: "line <n>: <what>"

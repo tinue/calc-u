@@ -290,7 +290,7 @@ module program:
   normal mode. X, the data registers, the printout and the display were then
   compared. A second set of runs ended fast-mode programs in different ways
   to find the endings that hang. To reproduce both:
-  `python3 tools/fastmode_matrix.py` (on the harness since M-59).
+  `python3 tools/fastmode_matrix.py` (on the harness).
 - **Traces.** Where the results differed, instruction traces showed which of
   the seven places caused it.
 - **Sources.** Martin Neef, "Verdoppelung der Rechengeschwindigkeit beim

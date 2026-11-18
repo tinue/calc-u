@@ -105,12 +105,13 @@ bool sameValue(const RegisterNibbles& a, const RegisterNibbles& b) {
 }
 
 calcu::presets::IdleRule TIModelRules::idle() const {
-    // AC-36, AC-53, D-43: key readiness or the card wait of Write / INV
-    // Write, without a break for 100 ms of emulated time, asked every 1 ms.
+    // Key readiness or the card wait of Write / INV Write, without a break
+    // for 100 ms of emulated time, asked every 1 ms (short beside the 100 ms,
+    // so a break in the readiness of a running program is seen).
     calcu::presets::IdleRule r;
     r.readyNow = [](const calcu::machine::Machine& m) {
         if (m.isKeyReady()) return true;
-        // The card reader's media place says when the ROM waits for a card (C59-7 AC-9).
+        // The card reader's media place says when the ROM waits for a card.
         for (const auto& e : m.capabilities(calcu::media::MediaPlace::kKind))
             if (auto* p = calcu::machine::capabilityAs<calcu::media::MediaPlace>(m, e.id); p && p->waitsForMedium()) return true;
         return false;
@@ -129,7 +130,7 @@ std::optional<std::vector<std::uint8_t>> TIModelRules::screenshot(calcu::machine
 calcu::presets::ExpectReading TIModelRules::compare(calcu::machine::Machine& m, const calcu::machine::DisplayOutput& o,
                                                     const calcu::presets::ExpectText& e) {
     calcu::presets::ExpectReading r;
-    if (!anyLit(o)) {   // EC-7
+    if (!anyLit(o)) {   // a dark display
         r.displayOff = true;
         r.shows = "nothing (the display is dark)";
         return r;
@@ -155,7 +156,7 @@ Applies TIModelRules::applies(std::string_view k) const {
 
 calcu::presets::PlaceKeyRule TIModelRules::placeKey(const calcu::machine::PlaceName& place) const {
     calcu::presets::PlaceKeyRule r;
-    if (place == kTIModulePlace) {   // AC-35, D-42
+    if (place == kTIModulePlace) {   // a module by `name:` only
         r.bare = false;
         r.byFile = false;
         r.noFile = "A Solid State ROM module is named by name: in this release.";

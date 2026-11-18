@@ -6,8 +6,8 @@
 // Persistence of vision for the LED display. The real LEDs have no afterglow
 // worth modelling; what the eye sees is the multiplexed display integrated
 // over time. The machine reports per position how much of each 60 Hz poll it
-// was driven (DisplayOutput: a position's brightness and its decimal point's,
-// C59-1 AC-13); this turns that into a
+// was driven (DisplayOutput: a position's brightness and its decimal
+// point's); this turns that into a
 // brightness 0..1 per position, the product of two parts:
 //   • presence: a driven position is on at once — a steadily multiplexed
 //     display (duty ≈ 1, or ≥ kFullDuty while a few cycles of each pass run

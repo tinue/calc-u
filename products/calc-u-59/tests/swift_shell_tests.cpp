@@ -1,7 +1,7 @@
-// C59-8 (design §6, T1 to T6): the C++ side of what the Swift frontend
+// The C++ side of what the Swift frontend
 // draws. The bridge's TIShell computes the library's shell models with the
-// Swift frontend's traits over the topics of the real session (design §3.1);
-// these cases do the same over Calc-U-59's session with LIB-14's
+// Swift frontend's traits over the topics of the real session;
+// these cases do the same over Calc-U-59's session with the library's
 // SettingsPart in front, as the bridge builds it.
 #include "../app/TIShellProduct.hpp"
 #include "SessionRig.hpp"
@@ -27,7 +27,7 @@ namespace {
 bool roms() { return std::filesystem::exists("roms/TMC0571B.txt"); }
 const char* const kSkip = "the ROMs are not fetched (roms/fetch_roms.sh)";
 
-// The traits of design §3.1.
+// The Swift frontend's traits on the Mac (the defaults).
 shell::Traits macTraits() { return shell::Traits{}; }
 shell::Traits iosTraits() {
     shell::Traits t;
@@ -118,10 +118,10 @@ std::vector<shell::BarControl::Kind> kinds(const std::vector<shell::BarGroupMode
 
 } // namespace
 
-// T1, AC-18 (EC-6): File, Machine, Help in that order with their items, on
+// File, Machine, Help in that order with their items, on
 // macOS and in the iPad's menu bar; the card items on the TI-59 only;
 // an item that cannot be used is disabled, not left out.
-TEST(c59_8_ac18_menus_file_machine_help_in_order) {
+TEST(menus_file_machine_help_in_order) {
     SKIP_UNLESS(roms(), kSkip);
     for (const auto model : {cu59::Model::TI59, cu59::Model::TI58, cu59::Model::TI58C}) {
         SwiftRig s(model);
@@ -150,8 +150,8 @@ TEST(c59_8_ac18_menus_file_machine_help_in_order) {
     }
 }
 
-// T1, AC-1: the shortcuts and the items macOS puts in the application menu.
-TEST(c59_8_ac1_shortcuts_and_roles) {
+// The shortcuts and the items macOS puts in the application menu.
+TEST(shortcuts_and_roles) {
     SKIP_UNLESS(roms(), kSkip);
     SwiftRig s;
     const auto ms = shell::menus(s.inputs(), product(), macTraits());
@@ -170,16 +170,16 @@ TEST(c59_8_ac1_shortcuts_and_roles) {
     CHECK(settings && settings->role == R::Preferences);
     CHECK(quit && quit->role == R::Quit);
     CHECK(about && about->role == R::About);
-    // iOS: no About and no Quit (AC-11).
+    // iOS: no About and no Quit.
     const auto ios = shell::menus(s.inputs(), product(), iosTraits());
     CHECK(shell::findItem(ios, shell::actions::kAbout) == nullptr);
     CHECK(shell::findItem(ios, shell::actions::kQuit) == nullptr);
 }
 
-// T2, AC-3, AC-4, EC-3: the bar per model: the model picker first, the
+// The bar per model: the model picker first, the
 // picker of slot-1 with the 14 modules and None, the button PC-100C, the
 // card controls on the TI-59 only; on macOS no Reset and no Preset.
-TEST(c59_8_ac3_bar_per_model) {
+TEST(control_bar_per_model) {
     SKIP_UNLESS(roms(), kSkip);
     using K = shell::BarControl::Kind;
     for (const auto model : {cu59::Model::TI59, cu59::Model::TI58, cu59::Model::TI58C}) {
@@ -196,14 +196,14 @@ TEST(c59_8_ac3_bar_per_model) {
         const auto* printer = control(bar, K::PlaceButton, "printer");
         CHECK(printer && printer->label == "PC-100C");
         CHECK((control(bar, K::Media, "card-reader") != nullptr) == (model == cu59::Model::TI59));
-        CHECK(control(bar, K::Action) == nullptr);   // AC-4: Reset and Preset are menu items
+        CHECK(control(bar, K::Action) == nullptr);   // Reset and Preset are menu items
         CHECK(control(bar, K::More) == nullptr);
     }
 }
 
-// T3, AC-5: without a menu bar the bar keeps Reset, Preset and Settings,
+// Without a menu bar the bar keeps Reset, Preset and Settings,
 // and More holds Examples, Cold boot, Resume and the help.
-TEST(c59_8_ac5_more_holds_examples_cold_boot_resume_help) {
+TEST(more_holds_examples_cold_boot_resume_help) {
     SKIP_UNLESS(roms(), kSkip);
     using K = shell::BarControl::Kind;
     SwiftRig s;
@@ -220,8 +220,8 @@ TEST(c59_8_ac5_more_holds_examples_cold_boot_resume_help) {
     CHECK(ids(more2) == ids(more->choices));
 }
 
-// T3, AC-5: Cold boot is destructive there and asks first.
-TEST(c59_8_ac5_cold_boot_asks_first) {
+// Cold boot is destructive there and asks first.
+TEST(cold_boot_asks_first) {
     SKIP_UNLESS(roms(), kSkip);
     SwiftRig s;
     const auto more = shell::moreItems(shell::menus(s.inputs(), product(), iosTraits()), product());
@@ -235,9 +235,9 @@ TEST(c59_8_ac5_cold_boot_asks_first) {
     CHECK_EQ(cold->command.value, std::string("cold-boot"));
 }
 
-// T3, EC-1: the More items follow the control state: while an operation
-// runs the examples are disabled; Cold boot stays available (LIB-4 AC-3).
-TEST(c59_8_ec1_more_follows_the_control_state) {
+// The More items follow the control state: while an operation
+// runs the examples are disabled; Cold boot stays available.
+TEST(more_follows_the_control_state) {
     SKIP_UNLESS(roms(), kSkip);
     SwiftRig s;
     auto find = [](const std::vector<shell::MenuItem>& items, const std::string& id) -> const shell::MenuItem* {
@@ -272,9 +272,9 @@ TEST(c59_8_ec1_more_follows_the_control_state) {
     CHECK(exampleEnabled(more()));
 }
 
-// T5, AC-7: the settings dialog of macOS and of iOS, drawn from the
+// The settings dialog of macOS and of iOS, drawn from the
 // settings topic of SettingsPart (the iOS [window] row included).
-TEST(c59_8_ac7_settings_spec_macos_and_ios) {
+TEST(settings_spec_macos_and_ios) {
     SKIP_UNLESS(roms(), kSkip);
     SwiftRig s;
     const auto in = s.inputs();
@@ -294,7 +294,7 @@ TEST(c59_8_ac7_settings_spec_macos_and_ios) {
              std::string("General: Startup model Version 3.0.0 (test);Startup presets: TI-59 TI-58 TI-58C;"
                          "Display: Segment Style;Keyboard: Keyboard Feedback;Layout: Debug Page in Portrait;"
                          "Tracing: Save Location Maximum file size (MB);"));
-    // The rows' choices (S3, S4, S8): "Last used" first; the startup presets.
+    // The rows' choices: "Last used" first; the startup presets.
     const auto ios = shell::dialog(in.settings, in.presetList, cu59::settingsSpec(cu59::ShellFrontend::SwiftIOS, "v"));
     CHECK(!ios.empty() && !ios[0].rows.empty() && !ios[0].rows[0].choices.empty());
     if (!ios.empty() && !ios[0].rows.empty() && !ios[0].rows[0].choices.empty())
@@ -302,20 +302,20 @@ TEST(c59_8_ac7_settings_spec_macos_and_ios) {
     CHECK(ios.size() > 1 && !ios[1].rows.empty() && ios[1].rows[0].choices.size() >= 2);
     if (ios.size() > 1 && !ios[1].rows.empty() && !ios[1].rows[0].choices.empty())
         CHECK_EQ(ios[1].rows[0].choices[0].second, std::string("None"));
-    // AC-8: a change is written at once; the [window] row is set like any other.
+    // A change is written at once; the [window] row is set like any other.
     CHECK(s.r().send(shell::commands::kSetSetting,
                      Value::object({{"section", "window"}, {"key", "portrait-debug-page"}, {"value", "true"}})).done);
     CHECK_EQ(s.file.text("window", "portrait-debug-page"), std::string("true"));
     CHECK(s.r().send(shell::commands::kSetSetting,
                      Value::object({{"section", "display"}, {"key", "led-style"}, {"value", "classic"}})).done);
     CHECK_EQ(s.file.text("display", "led-style"), std::string("classic"));
-    // The Solid State Module row is gone (row 59-9): no setting holds it.
+    // The Solid State Module row is gone: no setting holds it.
     CHECK(describe(cu59::ShellFrontend::SwiftMac).find("Module") == std::string::npos);
 }
 
-// T6, AC-19: without a control state there is no bar and no Machine menu;
+// Without a control state there is no bar and no Machine menu;
 // Help stays.
-TEST(c59_8_ac19_no_bar_no_machine_menu_without_control_state) {
+TEST(no_bar_no_machine_menu_without_control_state) {
     shell::ShellInputs in;
     in.romsMissing = Value::object({{"text", "Calc-U-59 cannot start."}});
     for (const shell::Traits t : {macTraits(), iosTraits()}) {

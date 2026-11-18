@@ -8,14 +8,14 @@
     tools/coverage.py --variant TI58C build   # same for the TI-58C ROM
     --calcu PATH                         # the calcu program (tools/calcu59.py)
 
-Drives the harness (C59-9 AC-13, `calcu --product c59 serve`): each scenario
+Drives the harness (`calcu --product c59 serve`): each scenario
 starts from a cold boot (with or without the PC-100C, TRACE as the scenario
 says); its "setup" keys run unprofiled, then `profile on`, its "keys" (each
 typed with `key` and run until idle with `wait`) and a card it feeds, and
 `c59 coverage` reads the ROM words they reached. Boot is a scenario of its
 own ("boot", `profile on` then `cold-boot`, read with `c59 coverage all`).
 The key-detect range is left out of every other scenario (`c59 coverage`
-without `all`, C59-9 D-7), so common idle code doesn't swamp every
+without `all`), so common idle code doesn't swamp every
 scenario; 2.3.0's tool left out an instruction of that range only with the
 ROM's idle flag set, so a scenario's words differ from its by the release
 gate 0627-062A (reference/Harness.md).
@@ -178,7 +178,7 @@ SCENARIOS["pause_run"] = ([S("LRN","5","Pause","Pause","R/S","LRN","RST")], S("R
 SCENARIOS["write_card"] = ([S("LRN","5","+","3","=","LRN")], S("1", "Write"), {"card": ("write", "W")})
 # The card W is the one write_card wrote (bank 1: the program 5 + 3 =), P
 # the one write_card_prot wrote (the same bank, protected); both stay in
-# the run as in-file cards (LIB-7 `card { mem: … }`).
+# the run as in-file cards (a preset's `card: { mem: … }`, docs/formats/preset.md).
 SCENARIOS["read_card"] = ([], S(), {"card": ("read", "W")})
 SCENARIOS["lib_return"] = ([S("Pgm","0","2","5")], S("C"))
 SCENARIOS["op09_copy"] = ([S("0","Op","1","7","CLR","Pgm","0","2")], S("Op", "0", "9"))
@@ -214,7 +214,7 @@ SCENARIOS["prt_sci_err"] = ([], S("1",".","5","EE","3","+/-","Prt","1","/","0","
 SCENARIOS["trace_ind"] = ([S("5","STO","0","1")], S("RCL","Ind","0","1"), {"printer": True, "trace": True})
 
 
-# 2.3.0's key names that preset.md §8.1 spells otherwise (C59-9 OQ-1).
+# 2.3.0's key names that preset.md §8.1 spells otherwise.
 RENAMED = {"S+": ["sum+"], "StFlg": ["STF"], "IfFlg": ["IFF"], "mean": ["xbar"], "P>R": ["P/R"], "2ndCLR": ["2nd", "CLR"]}
 
 

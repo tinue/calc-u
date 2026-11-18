@@ -1,4 +1,4 @@
-"""The check of C59-2 AC-18 (design §6 T12; CTest CalcU59CalendarScripts,
+"""The check of the calendar scripts (CTest CalcU59CalendarScripts,
 Frequent): fastcal.py writes calendar-09 equal to the tracked
 examples/calendar/calendar-09-dispatch.ti59, and years.py finds the year in
 it, runs it through calcu for 2026 and its rows check (and equal Acosta's).

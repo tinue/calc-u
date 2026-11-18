@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <vector>
 
-// How the CPU tab draws the ROM heatmap (C59-4 AC-8): the grid, the steps of
+// How the CPU tab draws the ROM heatmap: the grid, the steps of
 // the counts and their colours. The counts are the core's (the product kind
 // c59.rom-heatmap), published by TIDebugPart at about 10 Hz.
 

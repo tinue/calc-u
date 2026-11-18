@@ -1,7 +1,6 @@
-// LIB-5 Calc-U-59 (design §6, T59-0 to T59-5): the library's typing on the
-// TI models: the profile (AC-20), held until sampled (TR, D-3, AC-25), the
-// keyboard map (AC-21), two keys (AC-23), on-screen keys (AC-24), the names
-// of `key` (AC-26) and today's key tests ported (AC-27).
+// The library's typing on the TI models: the profile, held until sampled,
+// the keyboard map, two keys, on-screen keys, the names of `key` and the
+// key sequence cases.
 #include "SessionRig.hpp"
 #include "TestHarness.hpp"
 #include "../app/KeyIds.hpp"
@@ -52,8 +51,8 @@ struct KeyLog final : calcu::typing::KeyObserver {
 
 struct TIRig : testroms::PartRig {
     KeyLog log;
-    // The PC-100C as 2.3.0's start had it (since M-54 the built-in default
-    // has none, LIB-18 AC-18): the print loops and Adv need it.
+    // The PC-100C (the built-in default has none): the print loops and Adv
+    // need it.
     explicit TIRig(Model m = Model::TI59) : PartRig(m) {
         attach("printer", "PC-100C");
         engine().setObserver(&log);
@@ -174,13 +173,13 @@ Tap tapRsOnPrintLoop(Model model, bool full, std::uint32_t samples, std::chrono:
 
 } // namespace
 
-// ── T59-0: the sample rule (§3.4, D-3) ──────────────────────────────────────
+// ── The sample rule ─────────────────────────────────────────────────────────
 
-TEST(lib5_tr_sample_rule_measurement) {
+TEST(sample_rule_measurement) {
     // The smallest samplesNeeded with which a tap of R/S stops `Lbl A Prt
     // GTO A` in each of four phases, on the three models, at regular and
-    // full speed. 0: the 100 ms minimum alone (FS 5: not always enough).
-    std::printf("T59-0  model    speed    samples  phase(ms)  stopped  held(ms)\n");
+    // full speed. 0: the 100 ms minimum alone (not always enough).
+    std::printf("sample rule  model    speed    samples  phase(ms)  stopped  held(ms)\n");
     const Model models[] = {Model::TI59, Model::TI58, Model::TI58C};
     bool chosenAlways = true;
     for (Model m : models)
@@ -188,19 +187,18 @@ TEST(lib5_tr_sample_rule_measurement) {
             for (std::uint32_t n : {0u, 1u, 2u})
                 for (auto phase : {0ms, 75ms, 150ms, 225ms}) {
                     const Tap t = tapRsOnPrintLoop(m, full, n, phase);
-                    std::printf("T59-0  %-7s  %-7s  %7u  %9lld  %-7s  %8.1f\n", info(m).displayName,
+                    std::printf("sample rule  %-7s  %-7s  %7u  %9lld  %-7s  %8.1f\n", info(m).displayName,
                                 full ? "full" : "regular", n, static_cast<long long>(phase.count()),
                                 t.stopped ? "yes" : "no", t.heldMs);
                     if (n == kTISamplesNeeded && !t.stopped) chosenAlways = false;
                 }
-    CHECK(chosenAlways);   // the chosen rule stops the loop in every phase (AC-25)
+    CHECK(chosenAlways);   // the chosen rule stops the loop in every phase
 }
 
-TEST(lib5_tr_idle_tap_stays_100ms_adv_as_without_the_rule) {
+TEST(idle_tap_stays_100ms_adv_as_without_the_rule) {
     // With the rule a key at the idle loop is held the 100 ms (it is read at
     // once) and gives one keycode; Adv (a key that repeats while held) feeds
-    // the lines of a 100 ms press: two, as without the rule (measured; the
-    // design's "one line" guessed low, 2.3.0's KeySequencer says "a couple").
+    // the lines of a 100 ms press: two, as without the rule (measured).
     TIRig r;
     CHECK(r.idleWait());
     r.down("5");
@@ -216,9 +214,9 @@ TEST(lib5_tr_idle_tap_stays_100ms_adv_as_without_the_rule) {
     CHECK(r.log.held(2) < r.minHold() + r.minHold() / 20);   // the . of 2nd . held 100 ms
 }
 
-// ── T59-1: the TI profile, sampled, pause (AC-20, AC-25) ────────────────────
+// ── The TI profile, sampled, pause ──────────────────────────────────────────
 
-TEST(lib5_ac20_ti_profile) {
+TEST(typing_ti_profile) {
     for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) {
         const auto& p = typingProfile(m);
         const auto rate = tiCatalogue().model(modelId(m))->tickRate;
@@ -227,20 +225,20 @@ TEST(lib5_ac20_ti_profile) {
         CHECK_EQ(p.typed.gap, Ticks{0});
         CHECK(p.queuedWaitsForReadiness && p.waitsForReadinessAfterRelease);
         CHECK(p.firstPressOfStep == calcu::typing::StartRule::AsQueued);
-        CHECK(!p.firstPressBound);   // EC-3: waits without limit
+        CHECK(!p.firstPressBound);   // waits without limit
         CHECK(p.holdUntilSampled && p.holdUntilSampled->samplesNeeded == kTISamplesNeeded);
-        CHECK(!p.charKeys && !p.enter);   // no characters, no `type` (AC-16, D-8)
+        CHECK(!p.charKeys && !p.enter);   // no characters, no `type`
         CHECK(typingProduct().profile(modelId(m)) == &p);
         CHECK(!typingProduct().typesText());
     }
 }
 
-TEST(lib5_ac20_freeze_inside_hold_key_up_on_frozen_machine) {
+TEST(freeze_inside_hold_key_up_on_frozen_machine) {
     TIRig r;
     CHECK(r.idleWait());
     r.down("5");
     r.runFor(30ms);
-    // A pause where the machine stands (as a pause-on-start firing): the run control's (LIB-10).
+    // A pause where the machine stands (as a pause-on-start firing): the run control's.
     r.part().levelRules()->landNextPauseAtOnce();
     r.part().debuggerPart().runControl().pause(calcu::debugger::kCpu);
     r.frame();
@@ -261,27 +259,27 @@ TEST(lib5_ac20_freeze_inside_hold_key_up_on_frozen_machine) {
     CHECK(r.log.keys().size() == 6 && r.log.keys()[2] == "2nd+" && r.log.keys()[4] == "A+");
 }
 
-TEST(lib5_ac25_rs_stops_running_program) {
+TEST(rs_stops_running_program) {
     for (const std::string* prog : {&kRunLoop, &kPauseLoop}) {
         TIRig r;
         CHECK(startProgram(r, *prog));
         r.runFor(500ms);
         CHECK(!r.ready());   // runs
         const Ticks t = r.ticks();
-        r.down("R/S");   // live: down at once, whatever readiness says (AC-2)
+        r.down("R/S");   // live: down at once, whatever readiness says
         CHECK(!r.log.events.empty() && r.log.events.back().key == "R/S" && r.log.events.back().tick == t);
         r.up("R/S");
         CHECK(r.until([&] { return r.ready(); }, 3s));   // the program stopped
     }
 }
 
-TEST(lib5_ac25_rs_stops_printing_loop_every_phase) {
+TEST(rs_stops_printing_loop_every_phase) {
     for (Model m : {Model::TI59, Model::TI58, Model::TI58C})
         for (bool full : {false, true})
             for (auto phase : {0ms, 75ms, 150ms, 225ms}) CHECK(tapRsOnPrintLoop(m, full, kTISamplesNeeded, phase).stopped);
 }
 
-TEST(lib5_ac25_gto_acted_on) {
+TEST(typing_gto_acted_on) {
     // At the prompt GTO A R/S runs the program from A (keyed live).
     TIRig r;
     r.load(programPreset(r, kRunLoop));
@@ -293,7 +291,7 @@ TEST(lib5_ac25_gto_acted_on) {
     }
     CHECK(!r.ready());   // runs
     // While it runs, GTO goes down at once and the ROM leaves the program
-    // running, as a raw press of GTO does (2.3.0's tap).
+    // running, as a raw press of GTO does.
     TIRig raw;
     CHECK(startProgram(raw, kRunLoop));
     raw.post(calcu::sessions::kKeyDownCommand, Value::object({{"key", "GTO"}}));
@@ -308,9 +306,9 @@ TEST(lib5_ac25_gto_acted_on) {
     CHECK_EQ(r.ready(), raw.ready());
 }
 
-// ── T59-2: the keyboard map (AC-21) ─────────────────────────────────────────
+// ── The keyboard map ────────────────────────────────────────────────────────
 
-TEST(lib5_ac21_the_26_bindings) {
+TEST(typing_the_26_bindings) {
     TIKeyboardMap map;
     using V = std::vector<std::string>;
     std::vector<std::string> bound;
@@ -350,17 +348,17 @@ TEST(lib5_ac21_the_26_bindings) {
     CHECK(ids(map.map(named(NamedKey::Tab))).empty());
 }
 
-TEST(lib5_ac21_letter_by_carried_letter) {
+TEST(letter_by_carried_letter) {
     TIKeyboardMap map;
     using V = std::vector<std::string>;
-    // OQ-2: the letter the key carries counts, not its position: the key at
+    // The letter the key carries counts, not its position: the key at
     // QWERTY's Q carries A on AZERTY.
     HostKeyEvent azertyA;
     azertyA.physical = "KeyQ";
     azertyA.carried = 'a';
     azertyA.produced = 'a';
     CHECK(ids(map.map(azertyA)) == V{"A"});
-    // Shift means 2nd: a sequence of two presses (AC-8).
+    // Shift means 2nd: a sequence of two presses.
     const auto shifted = map.map(letter('e', true));
     CHECK(shifted && !shifted->held && ids(shifted) == (V{"2nd", "E"}));
     CHECK(ids(map.map(letter('x', true))) == (V{"2nd", "\xC3\x97"}));
@@ -371,7 +369,7 @@ TEST(lib5_ac21_letter_by_carried_letter) {
     CHECK(ids(map.map(produced(U'ä'))).empty());   // a non-ASCII character
 }
 
-TEST(lib5_ac21_command_modifiers_map_nothing) {
+TEST(command_modifiers_map_nothing) {
     TIKeyboardMap map;
     for (int which = 0; which < 3; ++which) {
         HostKeyEvent a = letter('a');
@@ -385,7 +383,7 @@ TEST(lib5_ac21_command_modifiers_map_nothing) {
     }
 }
 
-TEST(lib5_ac22_host_key_reaches_the_machine_through_the_session) {
+TEST(host_key_reaches_the_machine_through_the_session) {
     TIRig r;
     CHECK(r.idleWait());
     r.host(produced('7', "Digit7"));
@@ -399,14 +397,14 @@ TEST(lib5_ac22_host_key_reaches_the_machine_through_the_session) {
     CHECK_EQ(testroms::displayText(r.machine()), std::string("7"));
 }
 
-// ── T59-4: two keys, names (AC-23, AC-26) ───────────────────────────────────
+// ── Two keys, names ─────────────────────────────────────────────────────────
 
-TEST(lib5_ac23_second_key_does_not_release_first) {
+TEST(second_key_does_not_release_first) {
     TIRig r;
     CHECK(r.idleWait());
     r.host(produced('7', "Digit7"));
     r.runFor(300ms);
-    r.host(produced('1', "Digit1"));   // held together: both down (row 59-13)
+    r.host(produced('1', "Digit1"));   // held together: both down
     CHECK(r.log.keys() == (std::vector<std::string>{"7+", "1+"}));
     CHECK(r.held() == (std::vector<KeyId>{KeyId{"7"}, KeyId{"1"}}));
     r.hostUp("Digit1");
@@ -430,7 +428,7 @@ TEST(lib5_ac23_second_key_does_not_release_first) {
     CHECK(s.log.held(1) <= typingProfile(Model::TI59).holdUntilSampled->maxHold + 512);
 }
 
-TEST(lib5_ac24_screen_key_through_the_engine_minimum_hold) {
+TEST(screen_key_through_the_engine_minimum_hold) {
     TIRig r;
     CHECK(r.idleWait());
     r.down("5");
@@ -440,10 +438,10 @@ TEST(lib5_ac24_screen_key_through_the_engine_minimum_hold) {
     CHECK(r.log.held(0) >= r.minHold());
     CHECK_EQ(testroms::displayText(r.machine()), std::string("5"));
     const auto bad = r.post(calcu::typing::kScreenKeyDown, Value::object({{"key", "Q"}, {"pointer", 1}}));
-    CHECK(r.reply(bad) && !r.reply(bad)->done);   // no such key (LIB-1 EC-2)
+    CHECK(r.reply(bad) && !r.reply(bad)->done);   // no such key
 }
 
-TEST(lib5_ac26_names_of_preset_md_8_1) {
+TEST(names_of_preset_md_8_1) {
     using V = std::vector<std::string>;
     // The 45 key IDs and their other spellings, any case.
     for (const auto& k : tiCatalogue().models().front().keys) {
@@ -467,7 +465,7 @@ TEST(lib5_ac26_names_of_preset_md_8_1) {
     CHECK(ids(tiKeyName("IxI")) == (V{"2nd", "\xC3\xB7"}));
     CHECK(ids(tiKeyName("x>=t")) == (V{"2nd", "4"}));
     CHECK(ids(tiKeyName("adv")) == (V{"2nd", "."}));
-    // §8.1.1: every printer name, the merged codes as key sequences; HIR none.
+    // Every printer name (preset.md §8.1.1), the merged codes as key sequences; HIR none.
     CHECK(ids(tiKeyName("PG*")) == (V{"2nd", "LRN", "2nd", "y\xCB\xA3"}));
     CHECK(ids(tiKeyName("RTN")) == (V{"INV", "SBR"}));
     CHECK(ids(tiKeyName("go*")) == (V{"GTO", "2nd", "y\xCB\xA3"}));
@@ -487,7 +485,7 @@ TEST(lib5_ac26_names_of_preset_md_8_1) {
     CHECK_EQ(testroms::displayText(r.machine()), std::string("4"));
 }
 
-TEST(lib5_ac26_2nd_before_second_function_once) {
+TEST(key_2nd_before_second_function_once) {
     using V = std::vector<std::string>;
     CHECK(ids(tiKeyNames({"2nd", "Pgm"})) == (V{"2nd", "LRN"}));
     CHECK(ids(tiKeyNames({"Pgm"})) == (V{"2nd", "LRN"}));
@@ -504,7 +502,7 @@ TEST(lib5_ac26_2nd_before_second_function_once) {
     CHECK(r.log.keys() == (std::vector<std::string>{"2nd+", "2nd-", "3+", "3-"}));
 }
 
-TEST(lib5_ac26_old_names_refused) {
+TEST(old_names_refused) {
     for (const char* n : {"2ndCLR", "P>R", "S+", "mean", "StFlg", "IfFlg", "ent", "nothing"}) CHECK(!tiKeyName(n));
     TIRig r;
     CHECK(r.idleWait());
@@ -512,26 +510,25 @@ TEST(lib5_ac26_old_names_refused) {
     CHECK(r.reply(c) && !r.reply(c)->done && r.reply(c)->reason == "Unknown key: S+.");
     CHECK(r.log.events.empty());   // nothing typed
     const auto t = r.post(calcu::typing::kType, Value::object({{"text", "1"}}));
-    CHECK(r.reply(t) && !r.reply(t)->done && r.reply(t)->reason == "Unknown command: type.");   // D-8
+    CHECK(r.reply(t) && !r.reply(t)->done && r.reply(t)->reason == "Unknown command: type.");   // the TI has no typing of text
 }
 
-// ── T59-5: today's key tests, with emulated time (AC-27) ────────────────────
+// ── Key sequences, with emulated time ───────────────────────────────────────
 
-TEST(lib5_ac27_sequence_key_waits_readiness_held_min) {
-    // shared_cooperative_tests.cpp:111-186 at the pin: a key of a sequence
-    // waits for key readiness and is held exactly the minimum.
+TEST(sequence_key_waits_readiness_held_min) {
+    // A key of a sequence waits for key readiness and is held exactly the minimum.
     TIRig r;
     CHECK(r.idleWait());
     r.host(letter('a', true));   // 2nd, A
     r.runFor(1s);
     CHECK(r.log.keys() == (std::vector<std::string>{"2nd+", "2nd-", "A+", "A-"}));
-    const Ticks inst = 128;   // one instruction at most (C59-1: 32 ticks, 128 in IDLE)
+    const Ticks inst = 128;   // one instruction at most (32 ticks, 128 in IDLE)
     for (std::size_t i = 0; i < 2; ++i) CHECK(r.log.held(i) >= r.minHold() && r.log.held(i) < r.minHold() + inst * 8);
     // The second waited for the machine to be ready after the first.
     CHECK(r.log.events.size() == 4 && r.log.events[2].tick > r.log.events[1].tick);
 }
 
-TEST(lib5_ac27_key_up_deferred) {
+TEST(typing_key_up_deferred) {
     TIRig r;
     CHECK(r.idleWait());
     r.host(produced('5', "Digit5"));
@@ -544,7 +541,7 @@ TEST(lib5_ac27_key_up_deferred) {
     CHECK(r.log.held(0) >= r.minHold());
 }
 
-TEST(lib5_ac27_shift_binding_two_presses_new_key_drops_second) {
+TEST(shift_binding_two_presses_new_key_drops_second) {
     TIRig r;
     CHECK(r.idleWait());
     r.host(letter('a', true));
@@ -555,8 +552,8 @@ TEST(lib5_ac27_shift_binding_two_presses_new_key_drops_second) {
     CHECK(r.log.keys() == (std::vector<std::string>{"2nd+", "2nd-", "5+", "5-"}));
 }
 
-TEST(lib5_ac27_map_rules) {
-    // shared_tables_tests.cpp:42-61 at the pin (keyboard_map_rules), on TIKeyboardMap.
+TEST(keyboard_map_rules) {
+    // The keyboard map's rules, on TIKeyboardMap.
     TIKeyboardMap map;
     using V = std::vector<std::string>;
     CHECK(ids(map.map(letter('a'))) == V{"A"});
@@ -581,15 +578,15 @@ TEST(lib5_ac27_map_rules) {
     CHECK(ids(map.map(umlaut)).empty());                           // non-ASCII letter
 }
 
-// ── EC-5 on the TI: reset, model switch ─────────────────────────────────────
+// ── Reset, model switch ─────────────────────────────────────────────────────
 
-TEST(lib5_ec5_reset_and_model_switch_release_held_keys) {
+TEST(reset_and_model_switch_release_held_keys) {
     TIRig r;
     CHECK(r.idleWait());
     r.host(produced('7', "Digit7"));
     CHECK_EQ(r.held().size(), std::size_t(1));
     r.post(calcu::startup::kResetCommand);
-    CHECK(r.log.keys() == (std::vector<std::string>{"7+", "7-"}));   // up at once (D-11)
+    CHECK(r.log.keys() == (std::vector<std::string>{"7+", "7-"}));   // up at once
     CHECK(r.held().empty());
     r.host(produced('8', "Digit8"));
     r.post(calcu::startup::kModelCommand, Value::object({{"name", "TI-58"}}));
@@ -602,7 +599,7 @@ TEST(lib5_ec5_reset_and_model_switch_release_held_keys) {
 
 
 
-// ── R-1: the exit check of M-36 (LIB-5 design §8; row 59-23) ────────────────
+// ── A key held 100 ms of emulated time: the same paper at every speed ───────
 
 namespace {
 std::string replaced(std::string text, const std::string& from, const std::string& to) {
@@ -621,8 +618,8 @@ std::vector<std::string> paperOf(const std::string& text) {
 }
 } // namespace
 
-TEST(lib5_exit_printer_timing_same_paper_at_regular_and_full_speed) {
-    // examples/debug/printer-timing.ti59 (format 2 since M-54) with every
+TEST(printer_timing_same_paper_at_regular_and_full_speed) {
+    // examples/debug/printer-timing.ti59 with every
     // speed step at regular speed, and at full speed: a key of a preset (Prt,
     // Adv) is held 100 ms of emulated time and until read at every speed, so
     // both give the same paper, and the paper of the file as it is (2.3.0's

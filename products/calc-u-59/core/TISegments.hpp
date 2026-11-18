@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <string_view>
 
-// The glyph rules of the TI display (C59-1 AC-13, AC-14, AC-15) and the turn
+// The glyph rules of the TI display and the turn
 // of a DisplaySnapshot into the machine's DisplayOutput. Every glyph comes from
 // this table, never from a font: no font reproduces the hardware's lit-segment
 // patterns (reference/NewGUIGuide.md).
@@ -56,7 +56,7 @@ inline constexpr int kTIDecimalPoint = 7;
 
 /// 12 positions, index 0 rightmost. Per position: lit A-G from segmentsFor,
 /// DP lit when driven; brightness = the position's normalised duty, DP's own
-/// brightness = its duty (C59-1 design D-4). The indicator `indicator` (C) is
+/// brightness = its duty. The indicator `indicator` (C) is
 /// on while driven, brightness = calcIndicator / 16. The display is always on.
 inline calcu::machine::DisplayOutput toDisplayOutput(const DisplaySnapshot& d, std::string_view indicator) {
     calcu::machine::SegmentFrame frame;

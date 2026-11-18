@@ -1,8 +1,7 @@
-// LIB-13's Calc-U-59 column (design §10.6, E13-1 to E13-7): Calc-U-59's file
+// Calc-U-59's file
 // kinds through the one command `open` (app/TIFileKinds), the keystroke
 // program opened into the running machine, the refused kinds, the ways in.
-// The magnetic card cases (AC-12, EC-4) are part_flows_tests.cpp's
-// lib13_ac12_* and lib13_ec4_* (the card files of today until M-55's medium).
+// The magnetic card cases are in part_flows_tests.cpp.
 
 #include "TestHarness.hpp"
 #include "SessionRig.hpp"
@@ -50,9 +49,9 @@ const std::string kPreset = "format-version: 2\nmodel: TI-59\n";
 
 } // namespace
 
-// ── E13-1: the product's data (AC-11) ────────────────────────────────────────
+// ── The product's data ───────────────────────────────────────────────────────
 
-TEST(lib13_ac11_preset_extensions_ti59_ti58_ti58c) {
+TEST(preset_extensions_ti59_ti58_ti58c) {
     CHECK(tiPresetExtensions() == (std::vector<std::string>{".ti59", ".ti58", ".ti58c"}));
     SessionRig r;
     CHECK(ready(r));
@@ -63,15 +62,15 @@ TEST(lib13_ac11_preset_extensions_ti59_ti58_ti58c) {
         CHECK_EQ(as(m), std::string("preset"));
         CHECK(ready(r));
     }
-    // Any other name with a top-level model: line is a preset too (AC-1 test 5).
+    // Any other name with a top-level model: line is a preset too.
     CHECK_EQ(as(open(r, "notes.txt", kPreset)), std::string("preset"));
 }
 
-TEST(lib13_ac11_one_medium_magnetic_card) {
-    // Since M-55 the magnetic card is LIB-7's one medium of Calc-U-59
+TEST(one_medium_magnetic_card) {
+    // The magnetic card is the one medium of Calc-U-59
     // (`.magnetcard.yaml`), opened by the library's MediaOpener; no product
     // file kind takes a card file, and 2.3.0's .u59 and .bin are no files of
-    // the product (C59-7 AC-4).
+    // the product.
     SessionRig r;
     CHECK(ready(r));
     const auto* media = &r.part().mediaPart();
@@ -83,13 +82,13 @@ TEST(lib13_ac11_one_medium_magnetic_card) {
     for (auto* k : kinds.kinds()) CHECK(!k->takesName("x.magnetcard.yaml") && !k->takesName("x.u59") && !k->takesName("x.bin"));
 }
 
-TEST(lib13_ac11_kinds_keystrokes_and_asm_in_order) {
+TEST(kinds_keystrokes_and_asm_in_order) {
     TIDebugPart debug(TIDebugSetup{});
     TIFileKinds kinds(debug);
     std::vector<std::string> names;
     for (auto* k : kinds.kinds()) names.emplace_back(k->name());
     CHECK(names == (std::vector<std::string>{"asm-overlay", "keystroke-program", "rom-module-file", "constant-memory-file"}));
-    // Each by its name alone (D-20): the drag is taken for every one.
+    // Each by its name alone: the drag is taken for every one.
     const auto k = kinds.kinds();
     CHECK(k[0]->takesName("x.asm") && !k[0]->takesName("x.asm.txt"));
     CHECK(k[1]->takesName("x.keystrokes.yaml") && !k[1]->takesName("x.yaml"));
@@ -97,9 +96,9 @@ TEST(lib13_ac11_kinds_keystrokes_and_asm_in_order) {
     CHECK(k[3]->takesName("ti58c.memory.yaml") && !k[3]->takesName("other.memory.yaml"));
 }
 
-// No limit on the size of a file by any way (AC-11, AC-10): a file of 4 MiB
+// No limit on the size of a file by any way: a file of 4 MiB
 // is read as what it is, never refused for its size.
-TEST(lib13_ac11_no_size_limit_any_way) {
+TEST(no_size_limit_any_way) {
     SessionRig r;
     CHECK(ready(r));
     std::string big = kKeystrokes;
@@ -111,9 +110,9 @@ TEST(lib13_ac11_no_size_limit_any_way) {
     }
 }
 
-// ── E13-3: the keystroke program and the refused kinds (AC-23) ───────────────
+// ── The keystroke program and the refused kinds ──────────────────────────────
 
-TEST(lib13_ac23_keystrokes_written_from_000_without_cold_boot) {
+TEST(keystrokes_written_from_000_without_cold_boot) {
     SessionRig r;
     CHECK(ready(r));
     const auto t = r.ticks();
@@ -130,7 +129,7 @@ TEST(lib13_ac23_keystrokes_written_from_000_without_cold_boot) {
     CHECK(r.machine().isKeyReady());
 }
 
-TEST(lib13_ac23_partition_registers_other_steps_stay) {
+TEST(partition_registers_other_steps_stay) {
     SessionRig r;
     CHECK(ready(r));
     ProgramMemory& pm = memory(r);
@@ -143,7 +142,7 @@ TEST(lib13_ac23_partition_registers_other_steps_stay) {
     CHECK_EQ(pm.partitionSteps(), partition);
     CHECK_EQ(int(pm.readStep(10)), 42);
     CHECK(pm.readRegister(3) == v);
-    // D-23: also into a paused machine, which stays paused.
+    // Also into a paused machine, which stays paused.
     auto& rc = r.part().debuggerPart().runControl();
     rc.pause(calcu::debugger::kCpu);
     CHECK(r.until([&] { return r.part().isFrozen(); }, 2s));
@@ -155,7 +154,7 @@ TEST(lib13_ac23_partition_registers_other_steps_stay) {
     rc.resume();
 }
 
-TEST(lib13_ac23_step_beyond_last_refused) {
+TEST(opened_step_beyond_last_refused) {
     SessionRig r(Model::TI58);
     CHECK(ready(r));
     const std::string past =
@@ -169,7 +168,7 @@ TEST(lib13_ac23_step_beyond_last_refused) {
     CHECK_EQ(r.notices().size(), std::size_t{1});
 }
 
-TEST(lib13_ac23_unreadable_refused) {
+TEST(unreadable_refused) {
     SessionRig r;
     CHECK(ready(r));
     const auto m = open(r, "gone.keystrokes.yaml", std::nullopt);
@@ -181,7 +180,7 @@ TEST(lib13_ac23_unreadable_refused) {
     CHECK_EQ(r.notices().size(), std::size_t{2});
 }
 
-TEST(lib13_ac23_rom_yaml_refused_by_id_only) {
+TEST(rom_yaml_refused_by_id_only) {
     SessionRig r;
     CHECK(ready(r));
     const auto m = open(r, "ML.rom.yaml", "anything\n");
@@ -191,7 +190,7 @@ TEST(lib13_ac23_rom_yaml_refused_by_id_only) {
     CHECK(!r.notices().empty() && r.notices().back() == m.reason);
 }
 
-TEST(lib13_ac23_constant_memory_file_refused) {
+TEST(constant_memory_file_refused) {
     SessionRig r;
     CHECK(ready(r));
     const auto m = open(r, "TI58C.Memory.yaml", "model: TI-58C\n");   // any case; a model: line does not make it a preset
@@ -199,9 +198,9 @@ TEST(lib13_ac23_constant_memory_file_refused) {
     CHECK_EQ(m.reason, std::string("TI58C.Memory.yaml was not opened: it is Calc-U-59's own constant memory file."));
 }
 
-// ── E13-4: .asm is C59-4's kind (AC-13) ──────────────────────────────────────
+// ── .asm is the debug panel's kind ───────────────────────────────────────────
 
-TEST(lib13_ac13_asm_is_c59_4s_kind) {
+TEST(asm_is_the_debug_panels_kind) {
     SessionRig r;
     CHECK(ready(r));
     const auto m = open(r, "c.asm", "Calc-U-59 ASM 2.0\nHEX:\n0A01\n");
@@ -209,12 +208,12 @@ TEST(lib13_ac13_asm_is_c59_4s_kind) {
     CHECK_EQ(as(m, "detail"), std::string("asm-overlay"));
 }
 
-// ── E13-5: the ways in (AC-14, EC-7) ─────────────────────────────────────────
+// ── The ways in ──────────────────────────────────────────────────────────────
 
-// D-18, ledger 59-47: the program's own options and their values are taken
+// The program's own options and their values are taken
 // out, then the library's rule: the last argument that does not start with
 // `-` and names an existing file.
-TEST(lib13_ac14_options_taken_out_before_the_rule) {
+TEST(options_taken_out_before_the_rule) {
     calcu::testing::TempFolder dir("calcu59-start");
     dir.write("shot.png", "x");
     dir.write("p.ti59", kPreset);
@@ -233,9 +232,9 @@ TEST(lib13_ac14_options_taken_out_before_the_rule) {
     CHECK(!startFile(programArguments({"calc-u-59", "--pacing-probe", p}), isFile));       // an option's value
 }
 
-// A file named at the start or opened with Open With is opened as what it is
-// (today it was always read as a preset).
-TEST(lib13_ac14_open_with_and_start_open_as_what_it_is) {
+// A file named at the start or opened with Open With is opened as what it
+// is, not always as a preset.
+TEST(open_with_and_start_open_as_what_it_is) {
     SessionRig r;
     CHECK(ready(r));
     for (Way w : {Way::OpenWith, Way::Start}) {
@@ -249,7 +248,7 @@ TEST(lib13_ac14_open_with_and_start_open_as_what_it_is) {
     }
 }
 
-TEST(lib13_ec7_open_by_any_way_keeps_dialog_folders) {
+TEST(open_by_any_way_keeps_dialog_folders) {
     SessionRig r;
     CHECK(ready(r));
     const std::string presets = settings::openFolderKind(settings::OpenFolder::Presets);
@@ -268,9 +267,9 @@ TEST(lib13_ec7_open_by_any_way_keeps_dialog_folders) {
     CHECK_EQ(calcu::settings::openStartFolder(r.settings, asmOverlays, "/home"), beforeAsm);
 }
 
-// ── E13-6: a refusal is a notice that names the file (AC-15) ─────────────────
+// ── A refusal is a notice that names the file ────────────────────────────────
 
-TEST(lib13_ac15_refusal_notice_names_the_file) {
+TEST(refusal_notice_names_the_file) {
     SessionRig r;
     CHECK(ready(r));
     const auto m = open(r, "readme.txt", "just some text\n");
@@ -280,18 +279,18 @@ TEST(lib13_ac15_refusal_notice_names_the_file) {
     CHECK(!r.notices().empty() && r.notices().back().find("readme.txt") != std::string::npos);
 }
 
-// ── E13-7: what today's tests checked (AC-16) ────────────────────────────────
+// ── Extensions and outdated files ────────────────────────────────────────────
 
-TEST(lib13_ac16_preset_by_extension_in_any_case) {
+TEST(preset_by_extension_in_any_case) {
     SessionRig r;
     CHECK(ready(r));
     CHECK_EQ(as(open(r, "P.TI59", kPreset)), std::string("preset"));
-    // An outdated preset is a preset by its extension, refused with LIB-6's hint (EC-1).
+    // An outdated preset is a preset by its extension, refused with the loader's hint.
     const auto old = open(r, "old.ti59", "Calc-U-59 2.0\nPROGRAM:\n");
     CHECK(!old.done && old.reason.find("format") != std::string::npos);
 }
 
-TEST(lib13_ac16_hidden_file_refused) {
+TEST(hidden_file_refused) {
     SessionRig r;
     CHECK(ready(r));
     const auto m = open(r, ".a.u59", "x");
@@ -301,7 +300,7 @@ TEST(lib13_ac16_hidden_file_refused) {
     CHECK(!p.done);
 }
 
-TEST(lib13_ac16_dropped_preset_loads_as_the_dialog) {
+TEST(dropped_preset_loads_as_the_dialog) {
     SessionRig r;
     CHECK(ready(r));
     const std::string text = "format-version: 2\nmodel: TI-58\nprogram:\n  keycodes: |\n    76 11\n";

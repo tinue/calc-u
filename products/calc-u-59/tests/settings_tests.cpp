@@ -1,4 +1,4 @@
-// app/Settings (LIB-9, Calc-U-59 column: AC-19 to AC-25, AC-34, AC-35):
+// app/Settings:
 // the product's declaration and typed calls over the library's settings file.
 
 #include "Files.hpp"
@@ -30,7 +30,7 @@ using cu59::Model;
 using calcu::testing::readText;
 using TempDir = calcu::testing::TempFolder;
 
-// Calc-U-59's settings over a file that is never read or written (AC-18).
+// Calc-U-59's settings over a file that is never read or written.
 struct TestSettings {
     cs::SettingsFile file = cs::SettingsFile::defaultsOnly(s59::settingsDecl());
     s59::Settings settings{file};
@@ -41,8 +41,8 @@ struct TestSettings {
 
 } // namespace
 
-// AC-19: the file is Calc-U-59.ini and holds these keys with these defaults.
-TEST(lib9_ac19_declaration) {
+// The file is Calc-U-59.ini and holds these keys with these defaults.
+TEST(settings_declaration) {
     const cs::ProductDecl& d = s59::settingsDecl();
     CHECK_EQ(d.productName, std::string("Calc-U-59"));
     for (const std::string& p : cs::checkDeclaration(d)) std::fprintf(stderr, "  %s\n", p.c_str());
@@ -73,7 +73,7 @@ TEST(lib9_ac19_declaration) {
                                           "window.x", "window.y", "window.width", "window.height",
                                           "window.calculator-width", "window.printer-width",
                                           "window.debug-width", "window.portrait-debug-page"}));
-    CHECK(d.find("folders", "other") == nullptr);  // D-1: removed, no dialog used it
+    CHECK(d.find("folders", "other") == nullptr);  // removed, no dialog used it
 
     // The accepted values.
     const auto accepts = [&](const char* sec, const char* key, const char* v) {
@@ -105,15 +105,15 @@ TEST(lib9_ac19_declaration) {
     CHECK_EQ(f.text("trace", "location"), std::string("icloud"));
     f.set("trace", "max-file-size-mb", "12");
     CHECK(f.integer("trace", "max-file-size-mb") == 12);
-    f.set("trace", "max-file-size-mb", "0");  // AC-11: a value (no minimum); the trace session takes it as 50
+    f.set("trace", "max-file-size-mb", "0");  // a value (no minimum); the trace session takes it as 50
     CHECK(f.integer("trace", "max-file-size-mb") == 0);
 
-    // EC-5: a value its key does not accept reads as the default and stays.
+    // A value its key does not accept reads as the default and stays.
     f.set("display", "led-style", "glowing");
     CHECK_EQ(f.text("display", "led-style"), std::string("modernized"));
     CHECK(f.raw("display", "led-style") == std::optional<std::string>("glowing"));
 
-    // [folders]: the folder last used, or a fixed one that picks don't change (D-2).
+    // [folders]: the folder last used, or a fixed one that picks don't change.
     const std::string home = "/home/u";
     const std::string presets = s59::openFolderKind(s59::OpenFolder::Presets);
     CHECK_EQ(cs::openStartFolder(f, presets, home), home);
@@ -131,8 +131,8 @@ TEST(lib9_ac19_declaration) {
     CHECK_EQ(f.text("folders", "asm-overlays"), std::string("/asm"));
 }
 
-// AC-20, EC-1: `last` without a model used before starts the TI-59.
-TEST(lib9_ac20_startup_last_without_last_model_is_ti59) {
+// `last` without a model used before starts the TI-59.
+TEST(startup_last_without_last_model_is_ti59) {
     TestSettings t;
     const auto startup = [&t] { return cs::startupModel(t.file); };
     CHECK(t.file.text("startup", "last-model").empty());
@@ -141,18 +141,18 @@ TEST(lib9_ac20_startup_last_without_last_model_is_ti59) {
     CHECK_EQ(startup(), std::string("TI-58"));
     t.file.set("startup", "model", "TI-58C");
     CHECK_EQ(startup(), std::string("TI-58C"));
-    t.file.set("startup", "model", "7");  // neither last nor a model: counts as last (AC-9)
+    t.file.set("startup", "model", "7");  // neither last nor a model: counts as last
     CHECK_EQ(startup(), std::string("TI-58"));
     t.file.set("startup", "model", "last");
-    t.file.set("startup", "last-model", "PC-1500");  // EC-1
+    t.file.set("startup", "last-model", "PC-1500");  // not a model of this product
     CHECK_EQ(startup(), std::string("TI-59"));
     CHECK(s59::modelNamed("TI-58C") == Model::TI58C && !s59::modelNamed("ti58c"));
     CHECK_EQ(std::string(s59::modelName(Model::TI58C)), std::string("TI-58C"));
 }
 
-// AC-21: the first start has every default and writes the file then, from
+// The first start has every default and writes the file then, from
 // nothing of a platform store (the source check is CTest CalcU59NoPlatformSettings).
-TEST(lib9_ac21_first_start_defaults_and_writes_file) {
+TEST(first_start_defaults_and_writes_file) {
     TempDir tmp("calcu59-lib9-ac21");
     cs::HostDirs dirs;
     dirs.frontend = cs::FrontendKind::Qt6;
@@ -174,7 +174,7 @@ TEST(lib9_ac21_first_start_defaults_and_writes_file) {
     CHECK(text.rfind("format-version = 1", 0) == 0);
     for (const cs::KeyDecl& k : d.keys)
         CHECK(text.find(k.defaultValue.empty() ? k.key + " =\n" : k.key + " = " + k.defaultValue) != std::string::npos);
-    // AC-6: a change survives a new start.
+    // A change survives a new start.
     {
         cs::SettingsFile f = cs::SettingsFile::open(d, path);
         CHECK(f.outcome() == cs::Outcome::Read);
@@ -182,31 +182,31 @@ TEST(lib9_ac21_first_start_defaults_and_writes_file) {
     }
     cs::SettingsFile again = cs::SettingsFile::open(d, path);
     CHECK_EQ(again.text("keyboard", "feedback"), std::string("haptic"));
-    // The Qt6 save folder is ~/Calc-U-59 unless [storage] save-folder names another (AC-13).
+    // The Qt6 save folder is ~/Calc-U-59 unless [storage] save-folder names another.
     cs::Paths paths(again, dirs);
     CHECK_EQ(paths.saveFolder(), dirs.home + "/Calc-U-59");
     CHECK(paths.traceFolder() == paths.saveFolder());
     CHECK_EQ(paths.saveFolderFile("ti58c.mem"), dirs.home + "/Calc-U-59/ti58c.mem");
 }
 
-// AC-22: no key holds the Solid State ROM module (or any hardware, AC-8).
-TEST(lib9_ac22_no_key_holds_a_module) {
+// No key holds the Solid State ROM module (or any hardware).
+TEST(no_key_holds_a_module) {
     for (const cs::KeyDecl& k : s59::settingsDecl().keys) {
         const std::string name = cs::lowerAscii(k.section + "." + k.key);
         CHECK(name.find("module") == std::string::npos);
         CHECK(name.find("solid") == std::string::npos);
         CHECK(name.find("printer.") == std::string::npos);
     }
-    // A key from 2.3.0's stores does not count, and is kept as an unknown key (AC-4).
+    // A key from 2.3.0's stores does not count, and is kept as an unknown key.
     TestSettings t;
     t.file.set("startup", "solid-state-module", "LE");
     CHECK(!s59::settingsDecl().find("startup", "solid-state-module"));
 }
 
-// AC-24, AC-34: Swift's trace location is Application Support (the default),
+// Swift's trace location is Application Support (the default),
 // iCloud (the save folder) or a chosen folder: the one the bookmark grants,
-// passed in, else [trace] folder, else Application Support (D-8).
-TEST(lib9_ac24_trace_location_app_support_icloud_folder) {
+// passed in, else [trace] folder, else Application Support.
+TEST(trace_location_app_support_icloud_folder) {
     TestSettings t;
     cs::HostDirs dirs;
     dirs.frontend = cs::FrontendKind::Swift;
@@ -218,7 +218,7 @@ TEST(lib9_ac24_trace_location_app_support_icloud_folder) {
         cs::Paths p(t.file, dirs);
         CHECK(p.traceFolder() == dirs.applicationSupport);
         CHECK(p.screenshotFolder() == dirs.saveFolder);
-        CHECK_EQ(p.saveFolder(), dirs.saveFolder);  // AC-14
+        CHECK_EQ(p.saveFolder(), dirs.saveFolder);
     }
     t.file.set("trace", "location", "icloud");
     CHECK(cs::Paths(t.file, dirs).traceFolder() == dirs.saveFolder);
@@ -226,16 +226,16 @@ TEST(lib9_ac24_trace_location_app_support_icloud_folder) {
     CHECK(cs::Paths(t.file, dirs).traceFolder() == dirs.applicationSupport);  // no folder chosen
     t.file.set("trace", "folder", "/Users/u/Traces");
     CHECK(cs::Paths(t.file, dirs).traceFolder() == std::optional<std::string>("/Users/u/Traces"));
-    dirs.chosenTraceFolder = [] { return std::string("/Volumes/Granted/Traces"); };  // the bookmark's folder (AC-34)
+    dirs.chosenTraceFolder = [] { return std::string("/Volumes/Granted/Traces"); };  // the bookmark's folder
     CHECK(cs::Paths(t.file, dirs).traceFolder() == std::optional<std::string>("/Volumes/Granted/Traces"));
-    // The save folder override is ignored outside Qt6 (AC-25).
+    // The save folder override is ignored outside Qt6.
     t.file.set("storage", "save-folder", "/elsewhere");
     CHECK_EQ(cs::Paths(t.file, dirs).saveFolder(), dirs.saveFolder);
 }
 
-// AC-25: one declaration for Swift, Qt6 and Web; a key a frontend has no use
+// One declaration for Swift, Qt6 and Web; a key a frontend has no use
 // for is kept in the file and ignored.
-TEST(lib9_ac25_one_declaration_for_every_frontend) {
+TEST(one_declaration_for_every_frontend) {
     TempDir tmp("calcu59-lib9-ac25");
     const cs::ProductDecl& d = s59::settingsDecl();
     const std::string path = tmp.str() + "/Calc-U-59/Calc-U-59.ini";
@@ -260,8 +260,8 @@ TEST(lib9_ac25_one_declaration_for_every_frontend) {
     CHECK(text.find("led-style = classic") != std::string::npos);
 }
 
-// AC-35: the Qt6 window's place, size and panel widths are plain numbers.
-TEST(lib9_ac35_window_numbers_round_trip) {
+// The Qt6 window's place, size and panel widths are plain numbers.
+TEST(window_numbers_round_trip) {
     TempDir tmp("calcu59-lib9-ac35");
     const std::string path = tmp.str() + "/Calc-U-59/Calc-U-59.ini";
     s59::WindowState w;

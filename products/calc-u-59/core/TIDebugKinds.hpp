@@ -7,22 +7,20 @@
 #include <type_traits>
 #include <vector>
 
-// Calc-U-59's product kinds of the debug panel (C59-4 design §2, §3.2 to
-// §3.5; capabilities.md, product kinds), all owned by the processor
-// (`TMC0501/c59.…`) on the TI-59, TI-58 and TI-58C. They replace the debug
-// panel adapter of C59-1 (TIDebugPanelAdapter, gone in M-56): what the
-// generic debug target (core/TIDebugging.hpp, LIB-10 AC-28) does not give.
-//  - `c59.asm-overlay` (AC-13): up to 2048 13-bit instructions over the ROM
+// Calc-U-59's product kinds of the debug panel, all owned by the processor
+// (`TMC0501/c59.…`) on the TI-59, TI-58 and TI-58C. They give what the
+// generic debug target (core/TIDebugging.hpp) does not give.
+//  - `c59.asm-overlay`: up to 2048 13-bit instructions over the ROM
 //    addresses 1800 to 1FFF, taken away again, entered at 1800 with COND set;
 //    it runs from a successful entry until a Reset, a Cold boot or clear().
-//    A Cold boot also takes the instructions away (AC-26).
-//  - `c59.rom-heatmap` (AC-8, D-4): while on, how often each ROM address
+//    A Cold boot also takes the instructions away.
+//  - `c59.rom-heatmap`: while on, how often each ROM address
 //    0000 to 13FF was carried out; one increment per instruction.
-//  - `c59.calculator-state` (AC-3, AC-4, AC-6, D-3): the frame latched at the
+//  - `c59.calculator-state`: the frame latched at the
 //    last program step boundary, the bytes of the ROM's own programs, the
 //    processor frame now and the frame ring the CPU tab shows (its frames
 //    hold what the target names no register for: Sout, the display state).
-//  - `c59.machine-log` (AC-11): the machine's own log lines at their level
+//  - `c59.machine-log`: the machine's own log lines at their level
 //    (1 info, 2 debug) and the level set (0 off).
 // Read and called between two advances, on the session's thread.
 
@@ -44,7 +42,7 @@ public:
         std::uint32_t instructions = 0;
     };
     /// To the next program step boundary (at most 50000 weighted cycles),
-    /// then on at 1800 with COND set, within `maxInstructions` (AC-17).
+    /// then on at 1800 with COND set, within `maxInstructions`.
     virtual Entry enter(std::uint32_t maxInstructions) = 0;
     virtual bool running() const = 0;
 };
@@ -68,7 +66,7 @@ public:
 
     virtual std::uint16_t pc() const = 0;
     virtual CpuFrame snapshotCPU() const = 0;
-    /// The latched module byte address of the running module program (0xFFFF: none; M-55, was the card reader adapter's).
+    /// The latched module byte address of the running module program (0xFFFF: none).
     virtual std::uint16_t libExecPC() const = 0;
     virtual TIStepBoundary lastStepBoundary() const = 0;
     /// A byte of the ROM's own programs, 0 to 383.

@@ -15,11 +15,11 @@
 #include <thread>
 #include <vector>
 
-// The Swift frontend's session thread (C59-5 AC-4 to AC-6, AC-8; design
-// §3.1, D-7, D-11): one thread of its own builds, calls and destroys the app
-// session, about 60 times a second; the frontend's thread only posts and
-// drains. A host adapter at the ADR 0009 boundary (LIB-1 design §2a): the one
-// place in the app layer with a thread and locks. Never built by the Web.
+// The Swift frontend's session thread: one thread of its own builds, calls
+// and destroys the app session, about 60 times a second; the frontend's
+// thread only posts and drains. A host adapter above the core, which holds no
+// lock and starts no thread: the one place in the app layer with a thread
+// and locks. Never built by the Web.
 //
 // The two queues (the Mailbox): posts in, one FIFO; messages out to the
 // frontend, one FIFO, filled only by this thread. The wake runs once per
@@ -52,7 +52,7 @@ public:
     /// own); runs on the thread.
     using Factory = std::function<std::unique_ptr<sessions::AppSession>()>;
     using ReplyHandler = std::function<void(const sessions::ReplyMessage&)>;
-    static constexpr std::chrono::microseconds kPeriod{16'667};          // AC-4
+    static constexpr std::chrono::microseconds kPeriod{16'667};
     static constexpr std::chrono::milliseconds kMaxBehind{100};
 
     /// `wake`: called on this thread when the frontend's queue goes from empty
@@ -63,13 +63,13 @@ public:
     SessionThread(const SessionThread&) = delete;
     SessionThread& operator=(const SessionThread&) = delete;
 
-    // ── Any thread; each returns at once (AC-5) and keeps its order (AC-6).
+    // ── Any thread; each returns at once and keeps its order.
     void send(sessions::Command, ReplyHandler onReply = {});
     void ask(sessions::Request, ReplyHandler onReply = {});
     void answer(sessions::CallId, sessions::ServiceAnswer);
     /// A job on the session thread (tests; the host's own adapters).
     void post(std::function<void(sessions::AppSession&)> job);
-    /// AC-8: the suspend command is carried out, then the thread stops calling.
+    /// The suspend command is carried out, then the thread stops calling.
     void suspendCalls();
     /// Calling again, then the continue command.
     void continueCalls();
@@ -78,9 +78,9 @@ public:
     /// The frontend's thread: everything that arrived, in order.
     std::vector<Delivery> drain();
 
-    /// Debug builds (C59-5 AC-10, EC-1): harness attach on 127.0.0.1:port for
+    /// Debug builds: harness attach on 127.0.0.1:port for
     /// `product`, its commands on the session's library parts (`parts`, asked
-    /// on the session thread; LIB-14 D-27). Waits for the thread. Returns the
+    /// on the session thread). Waits for the thread. Returns the
     /// problem, empty when open.
     std::string openAttach(calcu::harness::HarnessProduct& product, std::uint16_t port,
                            std::function<calcu::parts::LibraryParts&()> parts);

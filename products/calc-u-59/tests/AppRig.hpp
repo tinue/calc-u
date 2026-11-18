@@ -17,11 +17,11 @@
 #include <memory>
 #include <string>
 
-// The app session as a native frontend hosts it, for the M-54 tests of
-// LIB-18 59 and C59-3 (tests/machine_control_tests.cpp,
+// The app session as a native frontend hosts it, for the machine control
+// and constant memory tests (tests/machine_control_tests.cpp,
 // tests/constant_memory_tests.cpp): the settings set up before the start
 // (`configure`), a save folder with a file access the test can make fail, a wall
-// clock of the test's own (1 ms per reading), and LIB-18's `start` sent once
+// clock of the test's own (1 ms per reading), and the library's `start` sent once
 // after the rig listens (its notices are seen). Unlike SessionRig it can be made again on the same save
 // folder, which a "quit and start again" needs.
 
@@ -29,7 +29,7 @@ namespace apprig {
 
 using Value = calcu::sessions::Value;
 
-/// The save folder in memory; `failWrites` makes every write fail (C59-3 EC-4).
+/// The save folder in memory; `failWrites` makes every write fail.
 struct Files final : calcu::media::FileAccess {
     mutable std::map<std::string, std::string> files;
     mutable std::map<std::string, int> writes;
@@ -72,7 +72,7 @@ struct Rig {
         app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u, {}, {},
                                    /*start=*/false);
         me = session().listen(fe, {});
-        send(calcu::sessions::kStartCommand);   // LIB-18's start, once, as a host sends it
+        send(calcu::sessions::kStartCommand);   // the library's start, once, as a host sends it
     }
     ~Rig() {
         if (app.session) session().close();

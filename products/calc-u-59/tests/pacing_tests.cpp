@@ -1,4 +1,4 @@
-// LIB-17's Calc-U-59 column (design §6, P59-1 to P59-3): the TI machines on
+// The TI machines on
 // the library's pacer, through the app session as the frontends host it.
 
 #include "TestHarness.hpp"
@@ -31,7 +31,7 @@ void program(SessionRig& r, const std::string& keycodes) {
 }
 
 // A part with one command: a stretch at full speed whose operation reports
-// "not waiting" (a preset's `wait:` with a duration, LIB-6 AC-20).
+// "not waiting" (a preset's `wait:` with a duration).
 struct FastWaitPart final : SessionPart {
     void attach(SessionSetup& s) override {
         s.command(CommandName{"test.fast-wait"}, [](const Value&, SessionContext&) -> CommandOutcome {
@@ -48,7 +48,7 @@ struct FastWaitPart final : SessionPart {
 
 } // namespace
 
-TEST(lib17_ac15_pacing_profiles_ti) {
+TEST(pacing_profiles_ti) {
     for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) {
         const auto p = pacingProfile(m);
         CHECK(p.slice == std::optional<std::chrono::microseconds>(20ms));
@@ -56,14 +56,14 @@ TEST(lib17_ac15_pacing_profiles_ti) {
         CHECK(p.fullSpeedPacedWhileWaiting);
     }
     // The session hands it to the pacer with the machine: a 20 ms slice at the
-    // model's rate (9,100 / 7,680 / 7,880 ticks a slice, design R3) keeps time.
+    // model's rate (9,100 / 7,680 / 7,880 ticks a slice) keeps time.
     SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     const double rate = rateOver(r, 2s);
     CHECK(rate > 0.99 && rate < 1.01);
 }
 
-TEST(lib17_ac16_full_speed_paced_at_key_readiness) {
+TEST(full_speed_paced_at_key_readiness) {
     SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     r.send(kSpeedCommand, Value::object({{"full", true}}));
@@ -71,7 +71,7 @@ TEST(lib17_ac16_full_speed_paced_at_key_readiness) {
     CHECK(rate > 0.95 && rate < 1.05);   // idle: the pace of regular speed
 }
 
-TEST(lib17_ac16_full_speed_races_a_computation) {
+TEST(full_speed_races_a_computation) {
     SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     program(r, "76 11 61 00 00");   // Lbl A GTO 000: computes forever
@@ -83,7 +83,7 @@ TEST(lib17_ac16_full_speed_races_a_computation) {
     CHECK(full > 2.0 * regular);
 }
 
-TEST(lib17_ac16_printer_wait_is_not_waiting) {
+TEST(printer_wait_is_not_waiting) {
     SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     program(r, "76 11 01 99 61 00 02");   // Lbl A 1 Prt GTO 002: prints forever
@@ -95,7 +95,7 @@ TEST(lib17_ac16_printer_wait_is_not_waiting) {
     CHECK(!r.printedText().empty());
 }
 
-TEST(lib17_ac16_card_wait_is_waiting) {
+TEST(card_wait_is_waiting) {
     SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     program(r, "76 11 04 96 91");   // Lbl A 4 Write R/S: waits for a card
@@ -107,7 +107,7 @@ TEST(lib17_ac16_card_wait_is_waiting) {
     CHECK(rate > 0.95 && rate < 1.05);
 }
 
-TEST(lib17_ac16_preset_wait_at_full_speed_on_idle_is_not_paced) {
+TEST(preset_wait_at_full_speed_on_idle_is_not_paced) {
     FastWaitPart fast;
     SessionRig r(Model::TI59, {}, {&fast});
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
@@ -119,9 +119,8 @@ TEST(lib17_ac16_preset_wait_at_full_speed_on_idle_is_not_paced) {
     CHECK(wall < 0.5);   // one emulated second, not paced
 }
 
-// AC-17 (port of cooperative_runner_batch_ends_do_not_lock_onto_a_loop): the
-// TI-58's error blink seen at 50 slice ends takes more than one PC.
-TEST(lib17_ac17_ti58_error_blink_pc_varies_over_50_slice_ends) {
+// The TI-58's error blink seen at 50 slice ends takes more than one PC.
+TEST(ti58_error_blink_pc_varies_over_50_slice_ends) {
     SessionRig r(Model::TI58);
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     r.tap(92);   // 0

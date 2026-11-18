@@ -80,12 +80,12 @@ std::vector<ControlDescriptor> PC100C::controlDescriptors() {
 PC100C::PC100C(const std::vector<calcu::machine::SwitchPosition>& switches)
     : m_controls(controlDescriptors(), [this](const ControlId& id, bool on) { onControl(id, on); }) {
     for (auto& s : m_buf) s = " ";
-    m_controls.restore(switches);   // no reaction: TRACE starts where it was (LIB-2 D-3)
+    m_controls.restore(switches);   // no reaction: TRACE starts where it was
     m_trace = m_controls.on(kTrace);
 }
 
 void PC100C::onControl(const ControlId& id, bool on) {
-    // The keys and the switch close KP/KN at their strobe (AC-5).
+    // The keys and the switch close KP/KN at their strobe.
     auto line = [&](unsigned bit) { m_d12 = static_cast<std::uint8_t>(on ? (m_d12 | bit) : (m_d12 & ~bit)); };
     if (id == kPrint) line(1u << 2);
     else if (id == kAdv) line(1u << 0);
@@ -94,7 +94,7 @@ void PC100C::onControl(const ControlId& id, bool on) {
 
 std::uint8_t PC100C::keyLines(PrinterPad pad) const {
     switch (pad) {
-    case PrinterPad::D0: return 1u << 2;   // KP at D0: a printer is present (AC-2)
+    case PrinterPad::D0: return 1u << 2;   // KP at D0: a printer is present
     case PrinterPad::D12: return m_d12;
     case PrinterPad::D15: return m_trace ? (1u << 2) : 0;
     }
@@ -166,7 +166,7 @@ void PC100C::word(PrinterWord w, std::uint16_t kr) {
             }
             m_hasPending = true;
             m_pendingTop = m_standing;
-            emitTextLine(std::move(line), calcu::paper::Position{0, m_standing});   // AC-25, D-21
+            emitTextLine(std::move(line), calcu::paper::Position{0, m_standing});
             m_busy = kLineInstructions;
         }
         break;
@@ -177,7 +177,7 @@ void PC100C::word(PrinterWord w, std::uint16_t kr) {
         flushPendingIfActive();
         emitTextLine(std::string(), calcu::paper::Position{0, m_standing});
         feedTo(m_standing + pc100cpaper::kFeed);
-        if (m_recordCodes) m_codeLines.emplace_back();   // zero codes, rowCount 7 (as 2.3.0)
+        if (m_recordCodes) m_codeLines.emplace_back();   // zero codes, rowCount 7
         m_busy = kFeedInstructions;
         break;
     }
@@ -199,7 +199,7 @@ void PC100C::flushPendingCodeLine(std::uint32_t elapsed) {
     m_pending.partialColumns = static_cast<uint8_t>(cols);
     m_pending.partialHeat = static_cast<uint8_t>(std::min<uint32_t>(255, heat));
     m_hasPending = false;
-    // AC-25, AC-26: the dots of the rows printed, then the paper they take.
+    // The dots of the rows printed, then the paper they take.
     for (const auto& d : pc100cpaper::lineDots(m_pending.codes, m_pending.rowCount, m_pending.partialColumns,
                                           m_pending.partialHeat, m_pendingTop))
         emitDot(d.at, d.darkness);

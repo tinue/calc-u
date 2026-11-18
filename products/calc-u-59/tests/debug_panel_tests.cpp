@@ -1,11 +1,7 @@
-// C59-4 (design §6): Calc-U-59's debug panel below the frontends: the
-// product topics and entries (AC-1, AC-25), `debug-panel:` (AC-2, EC-4), the
-// CALCULATOR tab (AC-3, AC-4), the buttons (AC-5, AC-7, EC-3), the CPU tab
-// (AC-6), the heatmap (AC-8), the LOG tab (AC-9 to AC-12), the ASM overlay's
-// kind, box, Run and life (AC-13, AC-16 to AC-18, AC-26, EC-1, EC-2), its
-// file kind (AC-19, EC-5) and what 2.3.0's tests checked (AC-23; the cases
-// of shared_debug_tests.cpp:184-287 and part_flows_tests.cpp:229, moved
-// here). The format is asm_overlay_tests.cpp; the harness harness_tests.cpp.
+// Calc-U-59's debug panel below the frontends: the product topics and
+// entries, `debug-panel:`, the CALCULATOR tab, the buttons, the CPU tab, the
+// heatmap, the LOG tab, the ASM overlay's kind, box, Run and life, its file
+// kind and the earlier debug panel cases. The format is asm_overlay_tests.cpp; the harness harness_tests.cpp.
 
 #include "TestHarness.hpp"
 #include "SessionRig.hpp"
@@ -97,9 +93,9 @@ calcu::sessions::ReplyMessage open(SessionRig& r, const std::string& name, const
 
 } // namespace
 
-// ── T1: the topics (AC-1, AC-25) ─────────────────────────────────────────────
+// ── The topics ───────────────────────────────────────────────────────────────
 
-TEST(c59_4_ac25_six_product_topics_read_by_state) {
+TEST(six_product_topics_read_by_state) {
     SessionRig r;
     CHECK(ready(r));
     for (const auto* t : {&topics::kCalculatorDebug, &topics::kProgramListing, &topics::kCpuDebug, &topics::kHeatmap,
@@ -112,13 +108,13 @@ TEST(c59_4_ac25_six_product_topics_read_by_state) {
     CHECK(topic<TIDebugView>(r, topics::kDebugView)->logLevel == DebugLevel::Off);
 }
 
-TEST(c59_4_ac25_entries_asm_run_and_calculator_tab_with_reasons) {
+TEST(entries_asm_run_and_calculator_tab_with_reasons) {
     SessionRig r;
     CHECK(ready(r));
     r.frame();
     CHECK(!available(r, entries::kAsmRun));
     CHECK_EQ(reason(r, entries::kAsmRun), std::string(kNoAsmOverlay));
-    CHECK(entry(r, "c59.trace") == nullptr);   // TRACE can always be pressed (L-2 of the release simplification)
+    CHECK(entry(r, "c59.trace") == nullptr);   // TRACE can always be pressed
     CHECK(available(r, entries::kCalculatorTab));
     CHECK(asmLoad(r, kCounter).done);
     r.frame();
@@ -129,7 +125,7 @@ TEST(c59_4_ac25_entries_asm_run_and_calculator_tab_with_reasons) {
     CHECK_EQ(reason(r, entries::kCalculatorTab), std::string(kAsmOverlayRuns));
 }
 
-TEST(c59_4_ac25_cpu_and_calculator_computed_while_shown) {
+TEST(cpu_and_calculator_computed_while_shown) {
     SessionRig r;
     CHECK(ready(r));
     program(r, kLoop);
@@ -148,7 +144,7 @@ TEST(c59_4_ac25_cpu_and_calculator_computed_while_shown) {
     CHECK(cpu && !cpu->entries.empty() && cpu->entries.size() <= 32);
 }
 
-TEST(c59_4_ac1_panel_fed_by_product_and_generic_topics) {
+TEST(panel_fed_by_product_and_generic_topics) {
     SessionRig r;
     CHECK(ready(r));
     r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
@@ -160,9 +156,9 @@ TEST(c59_4_ac1_panel_fed_by_product_and_generic_topics) {
     r.send(calcu::debugger::kTraceCommand, Value::object({{"off", true}}));
 }
 
-// ── T2: debug-panel: (AC-2, EC-4) ────────────────────────────────────────────
+// ── Debug-panel: ─────────────────────────────────────────────────────────────
 
-TEST(c59_4_ac2_view_shown) {
+TEST(debug_view_shown) {
     SessionRig r;
     CHECK(ready(r));
     r.debug().showView(r.session().context(), "cpu");
@@ -173,12 +169,12 @@ TEST(c59_4_ac2_view_shown) {
     CHECK(r.panels().back() == DebugPanel::Log);
 }
 
-TEST(c59_4_ac2_calculator_passed_over_while_overlay_runs) {
+TEST(calculator_passed_over_while_overlay_runs) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kCounter).done && r.send(commands::kAsmRun).done);
     r.frame();
-    CHECK(r.panels().back() == DebugPanel::Cpu);   // AC-18: the CPU tab while it runs
+    CHECK(r.panels().back() == DebugPanel::Cpu);   // the CPU tab while it runs
     const auto n = topic<TIDebugView>(r, topics::kDebugView)->requests;
     r.debug().showView(r.session().context(), "calculator");
     r.frame();
@@ -186,9 +182,9 @@ TEST(c59_4_ac2_calculator_passed_over_while_overlay_runs) {
     CHECK(r.notices().empty());
 }
 
-// EC-4: a frontend that does not show the panel keeps the last view; one
+// A frontend that does not show the panel keeps the last view; one
 // that starts to listen later gets it too (a state topic).
-TEST(c59_4_ec4_view_kept_until_shown) {
+TEST(view_kept_until_shown) {
     SessionRig r;
     CHECK(ready(r));
     r.debug().showView(r.session().context(), "log");
@@ -199,9 +195,9 @@ TEST(c59_4_ec4_view_kept_until_shown) {
     CHECK(v && v->view == DebugPanel::Log && v->requests == 1);
 }
 
-// ── T3: the CALCULATOR tab (AC-3, AC-4, AC-23) ───────────────────────────────
+// ── The CALCULATOR tab ───────────────────────────────────────────────────────
 
-TEST(c59_4_ac3_shows_registers_partition_steps_flags_source_scom_returns) {
+TEST(shows_registers_partition_steps_flags_source_scom_returns) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     // LBL A, STO 12, RCL 12, GTO 01 23, R/S
@@ -238,7 +234,7 @@ TEST(c59_4_ac3_shows_registers_partition_steps_flags_source_scom_returns) {
     CHECK(buildLiveSnapshot(*m, lib, romCache, calcViewState(*m)).snap == s);
 }
 
-TEST(c59_4_ac3_ti58c_shows_h00_to_h03) {
+TEST(ti58c_shows_h00_to_h03) {
     auto m = testroms::makeMachine(Model::TI58C);
     testroms::runToScanLoop(*m, Model::TI58C);
     auto* pm = calcu::machine::first<ProgramMemory>(*m);
@@ -254,9 +250,9 @@ TEST(c59_4_ac3_ti58c_shows_h00_to_h03) {
     CHECK(h02);
 }
 
-// Through the debug target (LIB-10 AC-28): the data registers and SCOM the
+// Through the debug target: the data registers and SCOM the
 // tab shows are what the target's spaces hold.
-TEST(c59_4_ac3_read_through_the_target) {
+TEST(read_through_the_target) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     auto reg = encodeBcd(std::string_view("2.5"));
@@ -272,7 +268,7 @@ TEST(c59_4_ac3_read_through_the_target) {
     CHECK(!s.nonZeroRegs.empty() && s.nonZeroRegs[0].value == 2.5);
 }
 
-TEST(c59_4_ac4_listing_while_paused_memory_rom_module) {
+TEST(listing_while_paused_memory_rom_module) {
     SessionRig r;
     CHECK(ready(r));
     program(r, kLoop);
@@ -292,7 +288,7 @@ TEST(c59_4_ac4_listing_while_paused_memory_rom_module) {
     CHECK(programSourceLabel(ProgramSource::SolidState, 0).size() > 0);
 }
 
-TEST(c59_4_ac4_current_step_marked) {
+TEST(current_step_marked) {
     SessionRig r;
     CHECK(ready(r));
     program(r, kLoop);
@@ -310,9 +306,9 @@ TEST(c59_4_ac4_current_step_marked) {
     rc(r).resume();
 }
 
-// ── T4: the buttons (AC-5, AC-7, EC-3) ───────────────────────────────────────
+// ── The buttons ──────────────────────────────────────────────────────────────
 
-TEST(c59_4_ac5_freeze_on_start_arms_then_armed_disarms) {
+TEST(freeze_on_start_arms_then_armed_disarms) {
     SessionRig r;
     CHECK(ready(r));
     r.send(calcu::debugger::kPauseOnStartCommand, Value::object({{"level", "program"}}));
@@ -328,7 +324,7 @@ TEST(c59_4_ac5_freeze_on_start_arms_then_armed_disarms) {
     CHECK(freezeButtons(kProgram, s).freeze && freezeButtons(kProgram, s).freezeOnStart);
 }
 
-TEST(c59_4_ac5_freeze_and_start_only_while_running_and_not_armed) {
+TEST(freeze_and_start_only_while_running_and_not_armed) {
     RunState s;
     CHECK(freezeButtons(kProgram, &s) == (FreezeButtons{true, true, false}));
     s.paused = true;
@@ -342,7 +338,7 @@ TEST(c59_4_ac5_freeze_and_start_only_while_running_and_not_armed) {
     CHECK(freezeButtons(kProgram, nullptr) == FreezeButtons{});
 }
 
-TEST(c59_4_ac7_cpu_tab_buttons_for_cpu) {
+TEST(cpu_tab_buttons_for_cpu) {
     SessionRig r;
     CHECK(ready(r));
     r.send(calcu::debugger::kPauseCommand, Value::object({{"level", "cpu"}}));
@@ -354,9 +350,9 @@ TEST(c59_4_ac7_cpu_tab_buttons_for_cpu) {
     r.send(calcu::debugger::kResumeCommand);
 }
 
-// EC-3: STEP of the tab whose level does not own the pause cannot be used; a
-// preset's `step:` of that level is carried out all the same (LIB-10 AC-45).
-TEST(c59_4_ec3_step_of_the_other_level_cannot_be_used_preset_step_is_carried_out) {
+// STEP of the tab whose level does not own the pause cannot be used; a
+// preset's `step:` of that level is carried out all the same.
+TEST(step_of_the_other_level_cannot_be_used_preset_step_is_carried_out) {
     SessionRig r;
     CHECK(ready(r));
     program(r, kLoop);
@@ -372,9 +368,9 @@ TEST(c59_4_ec3_step_of_the_other_level_cannot_be_used_preset_step_is_carried_out
     r.send(calcu::debugger::kResumeCommand);
 }
 
-// ── T5: the CPU tab (AC-6) ───────────────────────────────────────────────────
+// ── The CPU tab ──────────────────────────────────────────────────────────────
 
-TEST(c59_4_ac6_newest_32_running_up_to_1024_and_next_paused) {
+TEST(newest_32_running_up_to_1024_and_next_paused) {
     SessionRig r;
     CHECK(ready(r));
     r.send(commands::kShowCpuDebug, Value::object({{"on", true}}));
@@ -392,9 +388,9 @@ TEST(c59_4_ac6_newest_32_running_up_to_1024_and_next_paused) {
     r.send(calcu::debugger::kResumeCommand);
 }
 
-// ── T6: the heatmap (AC-8) ───────────────────────────────────────────────────
+// ── The heatmap ──────────────────────────────────────────────────────────────
 
-TEST(c59_4_ac8_counts_each_rom_address_once) {
+TEST(counts_each_rom_address_once) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     auto* h = calcu::machine::first<RomHeatmapCounter>(*m);
@@ -416,7 +412,7 @@ TEST(c59_4_ac8_counts_each_rom_address_once) {
     CHECK_EQ(heatStep(1), 1);
 }
 
-TEST(c59_4_ac8_reset_by_command_reset_and_model_switch) {
+TEST(reset_by_command_reset_and_model_switch) {
     SessionRig r;
     CHECK(ready(r));
     r.send(commands::kShowCpuDebug, Value::object({{"on", true}}));
@@ -444,17 +440,17 @@ TEST(c59_4_ac8_reset_by_command_reset_and_model_switch) {
     CHECK(h && h->on());        // and counts while the tab shows
 }
 
-TEST(c59_4_ac8_apart_from_the_profile) {
+TEST(apart_from_the_profile) {
     SessionRig r;
     CHECK(ready(r));
     r.send(commands::kShowCpuDebug, Value::object({{"on", true}}));
     r.runFor(100ms);
-    CHECK(!rc(r).profile().on());   // the harness's profile is LIB-10's, not switched by the tab
+    CHECK(!rc(r).profile().on());   // the harness's profile is the library's, not switched by the tab
 }
 
-// ── T7: the LOG tab (AC-9 to AC-12) ──────────────────────────────────────────
+// ── The LOG tab ──────────────────────────────────────────────────────────────
 
-TEST(c59_4_ac9_last_2000_lines_in_pages) {
+TEST(last_2000_lines_in_pages) {
     RingLog log;
     CHECK_EQ(RingLog::kCapacity, 2000);
     CHECK_EQ(log.displayText(), std::string());
@@ -473,7 +469,7 @@ TEST(c59_4_ac9_last_2000_lines_in_pages) {
     CHECK(log.displayText().find("p\nq") != std::string::npos);
 }
 
-TEST(c59_4_ac9_clear_empties_the_view_not_the_log) {
+TEST(clear_empties_the_view_not_the_log) {
     SessionRig r;
     CHECK(ready(r));
     r.send(commands::kDump, Value::object({{"what", "vars"}}));
@@ -486,7 +482,7 @@ TEST(c59_4_ac9_clear_empties_the_view_not_the_log) {
     CHECK(logged(r, "── Vars"));   // the session's log is untouched
 }
 
-TEST(c59_4_ac10_dumps_in_todays_layout) {
+TEST(dumps_in_todays_layout) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     auto v = encodeBcd(std::string_view("42"));
@@ -512,7 +508,7 @@ TEST(c59_4_ac10_dumps_in_todays_layout) {
     CHECK(!r.send(commands::kDump, Value::object({{"what", "nothing"}})).done);
 }
 
-TEST(c59_4_ac11_levels_off_info_debug) {
+TEST(levels_off_info_debug) {
     SessionRig r;
     CHECK(ready(r));
     for (const char* l : {"info", "debug", "off"}) {
@@ -524,7 +520,7 @@ TEST(c59_4_ac11_levels_off_info_debug) {
     CHECK(!r.send(commands::kLogLevel, Value::object({{"level", "loud"}})).done);
 }
 
-TEST(c59_4_ac11_debug_logs_each_register_and_memory_write) {
+TEST(debug_logs_each_register_and_memory_write) {
     SessionRig r;
     CHECK(ready(r));
     const std::size_t before = logTexts(r).size();
@@ -538,7 +534,7 @@ TEST(c59_4_ac11_debug_logs_each_register_and_memory_write) {
     r.send(commands::kLogLevel, Value::object({{"level", "off"}}));
 }
 
-TEST(c59_4_ac11_product_lines_at_every_level) {
+TEST(product_lines_at_every_level) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(r.reset().done);   // level off
@@ -549,7 +545,7 @@ TEST(c59_4_ac11_product_lines_at_every_level) {
     CHECK(logged(r, "── Prog"));
 }
 
-TEST(c59_4_ac12_trace_button_starts_and_ends_the_button_trace) {
+TEST(trace_button_starts_and_ends_the_button_trace) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}})).done);
@@ -561,7 +557,7 @@ TEST(c59_4_ac12_trace_button_starts_and_ends_the_button_trace) {
     CHECK(!r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);
 }
 
-TEST(c59_4_ac12_shows_a_trace_whoever_started_it) {
+TEST(shows_a_trace_whoever_started_it) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(r.step("trace", "mine.trace").done);   // a preset's step, not the button
@@ -570,11 +566,10 @@ TEST(c59_4_ac12_shows_a_trace_whoever_started_it) {
     r.send(calcu::debugger::kTraceCommand, Value::object({{"off", true}}));
 }
 
-// LIB-10 AC-53 (row 59-62; user, 2026-11-17, Q-2 of
-// docs/reviews/e-simplification.md): the trace folder and the limit as the
+// The trace folder and the limit as the
 // settings say at each trace start, not as they were when the session was
 // made.
-TEST(lib10_ac53_trace_folder_changed_after_the_start_is_the_next_traces) {
+TEST(trace_folder_changed_after_the_start_is_the_next_traces) {
     calcu::testing::TempFolder home{"calcu59-home"};
     testroms::RigOptions o;
     o.qt6Home = home.str();
@@ -595,7 +590,7 @@ TEST(lib10_ac53_trace_folder_changed_after_the_start_is_the_next_traces) {
     CHECK(!std::filesystem::exists(a / "two.bin"));
 }
 
-TEST(lib10_ac53_trace_limit_changed_after_the_start_is_the_next_traces) {
+TEST(trace_limit_changed_after_the_start_is_the_next_traces) {
     calcu::testing::TempFolder home{"calcu59-home"};
     testroms::RigOptions o;
     o.qt6Home = home.str();
@@ -615,9 +610,9 @@ TEST(lib10_ac53_trace_limit_changed_after_the_start_is_the_next_traces) {
     CHECK(noticed);
 }
 
-// C59-4 AC-12 as amended (row 59-62): where the trace folder cannot be
-// written, TRACE's start is refused with LIB-10 AC-53's sentence.
-TEST(c59_4_ac12_trace_refused_where_the_folder_cannot_be_written) {
+// Where the trace folder cannot be written, TRACE's start is refused with
+// "The trace folder cannot be written: <reason>."
+TEST(trace_refused_where_the_folder_cannot_be_written) {
     testroms::RigOptions o;
     o.traceFolder = "/dev/null/no";
     SessionRig r(o);
@@ -630,9 +625,9 @@ TEST(c59_4_ac12_trace_refused_where_the_folder_cannot_be_written) {
     CHECK(!r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);
 }
 
-// ── T8: the overlay kind (AC-13) ─────────────────────────────────────────────
+// ── The overlay kind ─────────────────────────────────────────────────────────
 
-TEST(c59_4_ac13_up_to_2048_over_1800_to_1fff) {
+TEST(up_to_2048_over_1800_to_1fff) {
     for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
         auto m = testroms::makeMachine(model);
         auto* o = calcu::machine::first<AsmOverlay>(*m);
@@ -646,7 +641,7 @@ TEST(c59_4_ac13_up_to_2048_over_1800_to_1fff) {
     }
 }
 
-TEST(c59_4_ac13_taken_away) {
+TEST(asm_overlay_taken_away) {
     auto m = testroms::makeMachine(Model::TI59);
     auto* o = calcu::machine::first<AsmOverlay>(*m);
     const auto before = m->debugging()->target(0).peek(0, 0x1800, {}).value;
@@ -656,7 +651,7 @@ TEST(c59_4_ac13_taken_away) {
     CHECK_EQ(m->debugging()->target(0).peek(0, 0x1800, {}).value, before);
 }
 
-TEST(c59_4_ac13_entered_at_1800) {
+TEST(asm_overlay_entered_at_1800) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     auto* o = calcu::machine::first<AsmOverlay>(*m);
@@ -666,9 +661,9 @@ TEST(c59_4_ac13_entered_at_1800) {
     CHECK(e.entered && o->running());
 }
 
-// ── T10: the box (AC-16, EC-1, EC-2) ─────────────────────────────────────────
+// ── The box ──────────────────────────────────────────────────────────────────
 
-TEST(c59_4_ac16_select_file_loads_at_once) {
+TEST(select_file_loads_at_once) {
     SessionRig r;
     CHECK(ready(r));
     const auto reply = asmLoad(r, kOverlay, "two.asm");
@@ -681,7 +676,7 @@ TEST(c59_4_ac16_select_file_loads_at_once) {
     CHECK(!asmLoad(r, std::nullopt, "gone.asm").done);   // unreadable
 }
 
-TEST(c59_4_ac16_run_only_with_instructions) {
+TEST(run_only_with_instructions) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(!r.send(commands::kAsmRun).done);
@@ -693,7 +688,7 @@ TEST(c59_4_ac16_run_only_with_instructions) {
     CHECK(asmState(r)->status.rfind("ASM entered at 0x1800 (", 0) == 0);
 }
 
-TEST(c59_4_ac16_clear_resets_when_running) {
+TEST(clear_resets_when_running) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kCounter).done && r.send(commands::kAsmRun).done);
@@ -706,7 +701,7 @@ TEST(c59_4_ac16_clear_resets_when_running) {
     CHECK(ready(r));
 }
 
-TEST(c59_4_ec1_run_without_instructions_status) {
+TEST(run_without_instructions_status) {
     SessionRig r;
     CHECK(ready(r));
     const auto t = r.ticks();
@@ -719,7 +714,7 @@ TEST(c59_4_ec1_run_without_instructions_status) {
     CHECK(r.ticks() >= t);
 }
 
-TEST(c59_4_ec2_refused_file_keeps_loaded) {
+TEST(refused_file_keeps_loaded) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kOverlay, "good.asm").done);
@@ -731,9 +726,9 @@ TEST(c59_4_ec2_refused_file_keeps_loaded) {
     CHECK_EQ(r.notices().size(), std::size_t{1});   // the refusal is a notice
 }
 
-// ── T11: Run (AC-17) ─────────────────────────────────────────────────────────
+// ── Run ──────────────────────────────────────────────────────────────────────
 
-TEST(c59_4_ac17_enters_at_1800_with_cond) {
+TEST(enters_at_1800_with_cond) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, *testroms::readFile("examples/assembly/DPT.asm"), "DPT.asm").done);
@@ -745,7 +740,7 @@ TEST(c59_4_ac17_enters_at_1800_with_cond) {
     CHECK(pc >= 0x1800 && pc < 0x180E);   // DPT's loop: entered with COND, it stays in it
 }
 
-TEST(c59_4_ac17_fails_after_8192_with_status_and_notice) {
+TEST(fails_after_8192_with_status_and_notice) {
     // An overlay whose entry never reaches 1800: a branch at the entry is not
     // taken by the core's entry; an instruction stream that never stops at a
     // program step boundary is not needed: the entry gives up after 8192.
@@ -760,7 +755,7 @@ TEST(c59_4_ac17_fails_after_8192_with_status_and_notice) {
     CHECK(s.rfind("ASM entry failed after ", 0) == 0);
 }
 
-TEST(c59_4_ac17_armed_cpu_start_pauses_at_1800) {
+TEST(armed_cpu_start_pauses_at_1800) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kCounter).done);
@@ -774,7 +769,7 @@ TEST(c59_4_ac17_armed_cpu_start_pauses_at_1800) {
     r.send(calcu::debugger::kResumeCommand);
 }
 
-TEST(c59_4_ac17_while_paused_not_while_operation) {
+TEST(while_paused_not_while_operation) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kCounter).done);
@@ -795,9 +790,9 @@ TEST(c59_4_ac17_while_paused_not_while_operation) {
     CHECK(!reply.done);
 }
 
-// ── T12: the overlay's life (AC-18, AC-26) ───────────────────────────────────
+// ── The overlay's life ───────────────────────────────────────────────────────
 
-TEST(c59_4_ac18_calculator_tab_closed_cpu_shown) {
+TEST(calculator_tab_closed_cpu_shown) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kCounter).done && r.send(commands::kAsmRun).done);
@@ -806,7 +801,7 @@ TEST(c59_4_ac18_calculator_tab_closed_cpu_shown) {
     CHECK(!available(r, entries::kCalculatorTab));
 }
 
-TEST(c59_4_ac18_freeze_step_resume_inside_the_overlay_it_still_runs) {
+TEST(freeze_step_resume_inside_the_overlay_it_still_runs) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kCounter).done && r.send(commands::kAsmRun).done);
@@ -821,11 +816,11 @@ TEST(c59_4_ac18_freeze_step_resume_inside_the_overlay_it_still_runs) {
     r.send(calcu::debugger::kResumeCommand);
     r.runFor(50ms);
     r.frame();
-    CHECK(asmState(r)->running);   // a FREEZE does not end its run (OQ-5)
+    CHECK(asmState(r)->running);   // a FREEZE does not end its run
     CHECK(!available(r, entries::kCalculatorTab));
 }
 
-TEST(c59_4_ac18_reset_ends_run_keeps_instructions_run_again) {
+TEST(reset_ends_run_keeps_instructions_run_again) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kCounter).done && r.send(commands::kAsmRun).done);
@@ -840,7 +835,7 @@ TEST(c59_4_ac18_reset_ends_run_keeps_instructions_run_again) {
     CHECK(asmState(r)->running);
 }
 
-TEST(c59_4_ac26_cold_boot_removes) {
+TEST(cold_boot_removes) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kCounter).done && r.send(commands::kAsmRun).done);
@@ -852,9 +847,8 @@ TEST(c59_4_ac26_cold_boot_removes) {
     CHECK(!r.send(commands::kAsmRun).done);   // nothing to run
 }
 
-// Replaces part_flows_tests.cpp's part_asm_overlay: today an overlay outlived
-// a model switch and a preset.
-TEST(c59_4_ac26_new_machine_by_preset_and_model_switch_removes) {
+// A new machine, by a preset or a model switch, removes the overlay.
+TEST(new_machine_by_preset_and_model_switch_removes) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kCounter).done);
@@ -873,9 +867,9 @@ TEST(c59_4_ac26_new_machine_by_preset_and_model_switch_removes) {
     CHECK_EQ(calcu::machine::first<AsmOverlay>(r.machine())->loaded(), std::size_t{0});
 }
 
-// ── T13: opening (AC-19, EC-5) ───────────────────────────────────────────────
+// ── Opening ──────────────────────────────────────────────────────────────────
 
-TEST(c59_4_ac19_asm_opened_as_by_select_file) {
+TEST(asm_opened_as_by_select_file) {
     SessionRig r;
     CHECK(ready(r));
     for (auto way : {calcu::opening::Way::Drop, calcu::opening::Way::Start, calcu::opening::Way::Harness}) {
@@ -893,7 +887,7 @@ TEST(c59_4_ac19_asm_opened_as_by_select_file) {
     CHECK_EQ(r.notices().size(), std::size_t{1});   // one notice, the open part's
 }
 
-TEST(c59_4_ec5_opened_before_first_machine_kept) {
+TEST(opened_before_first_machine_kept) {
     testroms::RigOptions o;
     o.start = false;   // no machine yet
     SessionRig r(o);
@@ -915,9 +909,9 @@ TEST(c59_4_ec5_opened_before_first_machine_kept) {
     CHECK_EQ(calcu::machine::first<AsmOverlay>(r.machine())->loaded(), std::size_t{6});
 }
 
-// ── T15: every frontend (AC-21): the labels and short forms the panels draw ──
+// ── Every frontend: the labels and short forms the panels draw ───────────────
 
-TEST(c59_4_ac21_labels_and_short_forms) {
+TEST(labels_and_short_forms) {
     CHECK_EQ(debugPanelFontSize(300), 9);
     CHECK_EQ(std::string(debugPanelName(DebugPanel::Calculator)), std::string("calculator"));
     CHECK_EQ(std::string(debugPanelName(DebugPanel::Cpu)), std::string("cpu"));

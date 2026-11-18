@@ -8,8 +8,8 @@ func num(_ d: Double) -> String { String(format: "%.17g", d) }
 func hex(_ b: [UInt8]) -> String { b.map { String(format: "%X", $0) }.joined() }
 
 var out = ""
-// The CARD records of 2.3.0's card files went in M-55 (C59-7 TR: magnetic
-// card format 3), the STATE records of its state files in M-54 (C59-2 §2).
+// No CARD records of 2.3.0's card files (magnetic cards are card format 3
+// now) and no STATE records of its state files: neither file is read any more.
 
 // BCD encoders over literals (text path) and doubles (Double path).
 let literals = ["0", "-0", "00", "1", "-1", "7", "10", "99", "100", "3641003032", "1234567890123", "12345678901234567",

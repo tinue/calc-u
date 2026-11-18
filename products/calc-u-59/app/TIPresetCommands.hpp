@@ -1,11 +1,10 @@
 #pragma once
 #include "sessions/SessionPart.hpp"
 
-// The product commands of C59-2 AC-9 (design §3.4, D-9): what the sections
+// The product commands of the program memory: what the sections
 // `partition:`, `program:` and `data:` do, and their reads, through the
 // product kind `c59.program-memory`. A part of its own, so that the app
-// session (TIAppPart's parts) and the harness entry (until M-59 it makes its
-// own library parts) both have it:
+// session (TIAppPart's parts) and the harness entry both have it:
 //
 // | command         | arguments                                   | reply (Done's result, kind `c59.lines`) |
 // |-----------------|---------------------------------------------|----------------------------------------|

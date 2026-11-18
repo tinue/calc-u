@@ -9,9 +9,9 @@
 #include <chrono>
 #include <string>
 
-// Calc-U-59's magnetic cards on the app session (C59-7 T5 to T10; LIB-7 59
-// E2 to E6): SessionRig with its own save folder, plain files (the cards are
-// the library's media part, LIB-7 §11), and the card reader's commands as a
+// Calc-U-59's magnetic cards on the app session: SessionRig with its own save
+// folder, plain files (the cards are the library's media part), and the card
+// reader's commands as a
 // frontend sends them: media.choose (Arm Card), media.start-new (Arm Fresh
 // Card), media.feed, media.eject, c59.tap-card.
 
@@ -23,7 +23,7 @@ struct CardRig : SessionRig {
 
     explicit CardRig(cu59::Model model = cu59::Model::TI59) : SessionRig(model) {}
 
-    /// A preset of format 2 by its content (LIB-6's load-preset).
+    /// A preset of format 2 by its content (the library's load-preset).
     ReplyMessage load(const std::string& text, const std::string& name = "test.ti59",
                       std::chrono::milliseconds limit = std::chrono::minutes(30)) {
         const auto id = post(calcu::presets::kLoadPresetCommand, Value::object({{"content", text}, {"name", name}}));
@@ -91,7 +91,7 @@ struct CardRig : SessionRig {
         if (const auto* b = std::get_if<std::vector<std::uint8_t>>(&c->sides[static_cast<std::size_t>(side)])) return *b;
         return std::nullopt;
     }
-    /// A file dropped on the calculator: LIB-13's `open` (a path: where it
+    /// A file dropped on the calculator: the library's `open` (a path: where it
     /// lies; none: an upload, as the Web). True when the open was done.
     bool drop(const std::string& name, const std::string& path, const std::optional<std::string>& bytes = std::nullopt) {
         calcu::opening::OpenRequest q;
@@ -105,7 +105,7 @@ struct CardRig : SessionRig {
         }
         q.files = {f};
         q.way = calcu::opening::Way::Drop;
-        q.upload = path.empty();   // the Web: imported into the save folder (LIB-13 AC-4)
+        q.upload = path.empty();   // the Web: imported into the save folder
         return operation(calcu::opening::kOpenCommand, q.toValue()).done;
     }
     int progStep(int s) { return int(mem(machine()).readProgramStep(s)); }

@@ -8,7 +8,7 @@ enum : uint8_t {
     kSessionStart = 0x01,
     kTraceEvent   = 0x02,
     kSessionEnd   = 0x03,
-    kUserEvent    = 0x04,  // key and card records: no longer written (LIB-10 AC-33)
+    kUserEvent    = 0x04,  // key and card records: never written
     kTraceGap     = 0x05,  // payload: u32 count of lost frames
 };
 

@@ -405,7 +405,7 @@ _SECTIONS: dict[int, str] = _ROM_META["59"]["sections"]
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def _calc_roms_dir() -> Path:
-    """Return the roms/ directory (the dumps lie flat in it since M-24; LIB-12 D-7)."""
+    """Return the roms/ directory (the dumps lie flat in it)."""
     return ROOT / "roms"
 
 

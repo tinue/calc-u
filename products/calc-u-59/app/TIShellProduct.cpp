@@ -17,7 +17,7 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
     p.version = std::move(version);
     p.build = std::move(build);
     p.helpUrl = kHelpUrl;
-    // D-42: today's Qt6 and Swift texts, one for every frontend, "presets"
+    // The Qt6 and Swift texts, one for every frontend, "presets"
     // for "preset state files".
     p.aboutLines = {"Calc-U-59 Calculator Emulation",
                     "Cycle-accurate TI-59, TI-58, and TI-58C emulation with magnetic cards, paper tape printer, "
@@ -26,7 +26,7 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
                     {"Support", "https://github.com/tinue/Calc-U-59/issues"},
                     {"Privacy", "https://github.com/tinue/Calc-U-59/blob/main/PRIVACY.md"}};
     p.presetFilter = "Presets (*.ti59 *.ti58 *.ti58c)";
-    // AC-26: neither Copy Screen nor Paste Text, so no Edit menu.
+    // Neither Copy Screen nor Paste Text, so no Edit menu.
     p.moduleSlotPinOuts = {"module-slot"};
     for (const auto& [id, label] : {std::pair{kItemArmCard, "Arm Card…"}, std::pair{kItemArmFreshCard, "Arm Fresh Card…"}}) {
         shell::ProductItem i;
@@ -42,7 +42,7 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
 
 namespace {
 
-// C59-8 AC-7, design §3.4 (D-6, D-7): today's rows and labels of the Swift
+// The rows and labels of the Swift
 // settings (frontends/swift/App/Views/SettingsView.swift at 7bdd51c).
 shell::DialogSpec swiftSpec(bool mac, const std::string& versionLine) {
     using W = shell::DialogRow::Widget;
@@ -57,7 +57,7 @@ shell::DialogSpec swiftSpec(bool mac, const std::string& versionLine) {
         shell::DialogRow feedback{W::Choice, "keyboard", "feedback", "Keyboard Feedback"};
         feedback.choices = {{"off", "Off"}, {"haptic", "Haptic"}, {"click", "Click Sound"}};
         spec.sections.push_back({"Keyboard", {feedback}});
-        // D-6: the values true and false, drawn as a Toggle.
+        // The values true and false, drawn as a Toggle.
         shell::DialogRow page{W::Choice, "window", "portrait-debug-page", "Debug Page in Portrait"};
         page.choices = {{"true", "On"}, {"false", "Off"}};
         spec.sections.push_back({"Layout", {page}});

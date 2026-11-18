@@ -17,8 +17,7 @@
 #include <string>
 #include <vector>
 
-// Calc-U-59 on the library's app session as a frontend hosts it (LIB-3 59,
-// C59-5; M-34: what SessionController's tests drove through a FakePlatform):
+// Calc-U-59 on the library's app session as a frontend hosts it:
 // the product's session (makeAppSession), the library's test frontend
 // (topic mirror and the raw messages, library/testing/), a folder of the
 // rig's own for the save folder and the traces, and a wall clock of the
@@ -29,9 +28,9 @@ namespace testroms {
 
 namespace fs = std::filesystem;
 
-/// The host's places of a rig (LIB-9, FrontendKind::Given): the save folder,
+/// The host's places of a rig (FrontendKind::Given): the save folder,
 /// the screenshots in it, the traces in `traces` (empty: none, the Web's
-/// hand-over, LIB-10 AC-26). The limit is the settings' (50 MiB by default).
+/// hand-over). The limit is the settings' (50 MiB by default).
 inline std::unique_ptr<calcu::settings::Paths> rigPaths(const calcu::settings::SettingsFile& settings,
                                                         const std::string& save, const std::string& traces) {
     calcu::settings::HostDirs dirs;
@@ -42,8 +41,8 @@ inline std::unique_ptr<calcu::settings::Paths> rigPaths(const calcu::settings::S
     return std::make_unique<calcu::settings::Paths>(settings, dirs);
 }
 
-/// What a frontend hands the part (C59-5 D-12): the ROM set, the cue cards,
-/// the settings (`[startup] model`: `model`, LIB-18 AC-17), the bundled
+/// What a frontend hands the part: the ROM set, the cue cards,
+/// the settings (`[startup] model`: `model`), the bundled
 /// examples and the places (`paths`: rigPaths of the save folder).
 inline cu59::TIAppSetup appSetup(calcu::settings::SettingsFile& settings, cu59::Model model,
                                  const calcu::settings::Paths& paths) {
@@ -82,12 +81,12 @@ struct RigOptions {
     std::shared_ptr<const calcu::media::FileAccess> files;   ///< null: plain files in the rig's folder
     std::string saveFolder;                              ///< empty: the rig's folder
     fs::path traceFolder;                                ///< empty: the rig's folder
-    bool noTraceFolder = false;                          ///< the Web: none, traces handed over (LIB-10 AC-26)
+    bool noTraceFolder = false;                          ///< the Web: none, traces handed over
     int traceMaxMb = 0;                                  ///< [trace] max-file-size-mb; 0: the default
     std::string qt6Home;                                 ///< set: the Qt6 places of this home ([trace] folder, else the save folder there)
     calcu::settings::SettingsFile* settings = nullptr;   ///< null: the rig's own (defaults, in memory)
     std::string examplesFolder;                          ///< empty: examples/
-    bool start = true;                                   ///< makeAppSession sends LIB-18's start (the Web's page sends its own)
+    bool start = true;                                   ///< makeAppSession sends the library's start (the Web's page sends its own)
 };
 
 struct SessionRig {
@@ -119,7 +118,7 @@ struct SessionRig {
         app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u,
                                    std::move(o.before), std::move(o.after), o.start);
         me = session().listen(fe, std::move(o.services));
-        // LIB-18's start (makeAppSession sent it): until the machine is ready for keys.
+        // The library's start (makeAppSession sent it): until the machine is ready for keys.
         if (o.start) until([this] { return session().machineSession().machine() && !session().context().busy(); });
     }
     explicit SessionRig(cu59::Model model = cu59::Model::TI59, calcu::sessions::HostServices services = {},
@@ -141,8 +140,8 @@ struct SessionRig {
         if (const auto* r = reply(id)) return *r;
         return calcu::sessions::ReplyMessage{id, false, "no reply yet", nullptr};
     }
-    /// A command that may start an operation (LIB-18's model, reset, attach,
-    /// …; LIB-6's run-step): sent, then host calls until its reply came, at
+    /// A command that may start an operation (model, reset, attach, …;
+    /// run-step): sent, then host calls until its reply came, at
     /// most `limit` of wall time.
     calcu::sessions::ReplyMessage operation(const calcu::sessions::CommandName& name, Value args = Value::object({}),
                                             std::chrono::milliseconds limit = std::chrono::minutes(2)) {
@@ -151,12 +150,12 @@ struct SessionRig {
         if (const auto* r = reply(id)) return *r;
         return calcu::sessions::ReplyMessage{id, false, "no reply", nullptr};
     }
-    /// One preset step on the running machine (LIB-6's run-step): `step("key", "1 2nd Prt")`.
+    /// One preset step on the running machine (run-step): `step("key", "1 2nd Prt")`.
     calcu::sessions::ReplyMessage step(const std::string& verb, const std::string& value = {},
                                        std::chrono::milliseconds limit = std::chrono::minutes(2)) {
         return operation(calcu::presets::kRunStepCommand, Value::object({{"verb", verb}, {"value", value}}), limit);
     }
-    /// LIB-18's commands (LIB-18 §11.2: the library's start, model, resets, attach, detach).
+    /// The library's startup commands: start, model, resets, attach, detach.
     calcu::sessions::ReplyMessage model(const std::string& name) {
         return operation(calcu::startup::kModelCommand, Value::object({{"name", name}}));
     }
@@ -190,7 +189,7 @@ struct SessionRig {
                     if (const auto* x = calcu::sessions::payloadAs<calcu::sessions::Notice>(n)) out.push_back(x->sentence);
         return out;
     }
-    /// The tabs `debug-panel:` asked for (the topic c59.debug-view, C59-4 AC-2), in order.
+    /// The tabs `debug-panel:` asked for (the topic c59.debug-view), in order.
     std::vector<cu59::DebugPanel> panels() const {
         std::vector<cu59::DebugPanel> out;
         std::uint64_t seen = 0;
@@ -202,7 +201,7 @@ struct SessionRig {
                 }
         return out;
     }
-    /// The debug panel's part (C59-4).
+    /// The debug panel's part.
     cu59::TIDebugPart& debug() { return part().debugPart(); }
     /// Every state topic sent from position `from` of the log on, in order.
     std::vector<calcu::sessions::TopicName> stateSets(std::size_t from = 0) const {
@@ -213,7 +212,7 @@ struct SessionRig {
     }
 
     /// A key tapped as the on-screen keyboard does (the library's
-    /// screen-key-down / -up, LIB-5; 100 ms held at least).
+    /// screen-key-down / -up; 100 ms held at least).
     void tap(int code) {
         const std::string key = cu59::keyIdAt(static_cast<uint8_t>(code)).value_or(calcu::machine::KeyId{}).value;
         post(calcu::typing::kScreenKeyDown, Value::object({{"key", key}, {"pointer", 1}}));
@@ -221,7 +220,7 @@ struct SessionRig {
         post(calcu::typing::kScreenKeyUp, Value::object({{"key", key}, {"pointer", 1}}));
         runFor(std::chrono::milliseconds(150));
     }
-    /// The PC-100C's paper as the PaperPart keeps it (LIB-8; empty paper: none).
+    /// The PC-100C's paper as the PaperPart keeps it (empty paper: none).
     const calcu::paper::Paper* pc100cPaper() const {
         for (const auto& [owner, paper] : app.part->paperPart().papers())
             if (owner == "PC-100C") return paper;
@@ -260,7 +259,7 @@ struct PartRig : SessionRig {
     template <class F> bool runUntil(F cond, std::chrono::milliseconds limit = std::chrono::seconds(20)) {
         return until(cond, limit);
     }
-    /// A preset as a frontend loads one by its content (LIB-6's
+    /// A preset as a frontend loads one by its content (the library's
     /// `load-preset {content, name}`); the reply of the command (refused at
     /// once with the first error, else when the preset has been carried out).
     calcu::sessions::ReplyMessage load(const std::string& text, const std::string& name = "test.ti59") {

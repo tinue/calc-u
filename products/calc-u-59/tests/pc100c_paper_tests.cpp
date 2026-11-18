@@ -1,8 +1,7 @@
-// LIB-8's Calc-U-59 column (design §11.4, §11.6: E8-1 to E8-4): the PC-100C
-// gives its paper through the paper output kind. The description (AC-24), a
-// printed line and a feed (AC-25), lines cut short (AC-26) and Copy's picture
-// (AC-27), on the real ROMs, and the reference picture moved from the
-// library in M-53 (tests/fixtures/paper/pc100c.png, pc100c.marks: the
+// The PC-100C gives its paper through the paper output kind. The
+// description, a printed line and a feed, lines cut short and Copy's
+// picture, on the real ROMs, and the reference picture
+// (tests/fixtures/paper/pc100c.png, pc100c.marks: the
 // converter's reply of diag.ti59).
 
 #include "TestHarness.hpp"
@@ -58,9 +57,9 @@ const Paper& paperOf(calcu::machine::Machine& m) { return testroms::paperTap(m).
 
 } // namespace
 
-// E8-1, AC-24: dots, a text layer, 430/1000 mm, 129.07 units, the whole width
+// Dots, a text layer, 430/1000 mm, 129.07 units, the whole width
 // printable, 21 greys; the capability conforms on every model.
-TEST(lib8_ac24_pc100c_states_its_paper) {
+TEST(pc100c_states_its_paper) {
     const PaperDescription& d = pc100cpaper::description();
     CHECK(d.unit == (Millimetres{430, 1000}));
     CHECK_EQ(d.width, Coord{1'290'700});
@@ -80,8 +79,8 @@ TEST(lib8_ac24_pc100c_states_its_paper) {
     }
 }
 
-// E8-2, AC-25: a line gives its 20 positions at (0, top) and the font's dots.
-TEST(lib8_ac25_line_gives_20_positions_and_font_dots) {
+// A line gives its 20 positions at (0, top) and the font's dots.
+TEST(line_gives_20_positions_and_font_dots) {
     auto m = printing();
     prt(*m, Model::TI59, 7);
     const Paper& p = paperOf(*m);
@@ -97,7 +96,7 @@ TEST(lib8_ac25_line_gives_20_positions_and_font_dots) {
     CHECK(p.marks() == want);
 }
 
-TEST(lib8_ac25_complete_line_takes_10_18) {
+TEST(complete_line_takes_10_18) {
     auto m = printing();
     prt(*m, Model::TI59, 1);
     prt(*m, Model::TI59, 2);
@@ -108,7 +107,7 @@ TEST(lib8_ac25_complete_line_takes_10_18) {
     CHECK_EQ(p.reach().to, Coord{2 * 101'800});
 }
 
-TEST(lib8_ac25_feed_takes_7_09_and_an_empty_line) {
+TEST(feed_takes_7_09_and_an_empty_line) {
     auto m = printing();
     // ADV pressed and released: the ROM's Adv issues two PRT.FEEDs.
     testroms::printerControl(*m, PC100C::kAdv, true);
@@ -122,7 +121,7 @@ TEST(lib8_ac25_feed_takes_7_09_and_an_empty_line) {
     CHECK_EQ(p.reach().to, static_cast<Coord>(p.text().size()) * 70'900);
 }
 
-TEST(lib8_ac25_adv_gives_two_feeds) {
+TEST(adv_gives_two_feeds) {
     auto m = printing();
     testroms::tap(*m, Model::TI59, k2nd);
     testroms::tap(*m, Model::TI59, kAdvKey);   // 2nd Adv, once
@@ -134,7 +133,7 @@ TEST(lib8_ac25_adv_gives_two_feeds) {
 
 // The characters of every code (all 64, x̄ as two code points) through the
 // placement: each code's dots are its font's.
-TEST(lib8_ac25_characters_of_today_for_every_code) {
+TEST(characters_of_today_for_every_code) {
     CHECK_EQ(std::string(pc100cpaper::kCharacters[55]), std::string("x\xCC\x84"));   // x̄
     std::set<std::string> distinct;
     for (int c = 0; c < 64; ++c) {
@@ -149,9 +148,9 @@ TEST(lib8_ac25_characters_of_today_for_every_code) {
     CHECK_EQ(distinct.size(), std::size_t{64});
 }
 
-// E8-3, AC-26: a line cut short gives the rows and columns that fired, the
+// A line cut short gives the rows and columns that fired, the
 // faint one with its darkness, and takes only the paper of its rows.
-TEST(lib8_ac26_cut_short_rows_and_columns_with_their_darkness) {
+TEST(cut_short_rows_and_columns_with_their_darkness) {
     std::array<std::uint8_t, 20> codes{};
     codes.fill(11);   // "A": row 3 is 0x1F, every column inked
     const auto dots = pc100cpaper::lineDots(codes, 3, 2, 5, 0);   // 3 rows, 2 columns of row 3 (the last after 5 cycles)
@@ -173,14 +172,14 @@ TEST(lib8_ac26_cut_short_rows_and_columns_with_their_darkness) {
     CHECK(faint);
 }
 
-TEST(lib8_ac26_takes_only_the_paper_of_its_rows) {
+TEST(takes_only_the_paper_of_its_rows) {
     CHECK_EQ(pc100cpaper::lineHeight(4, 2), Coord{5 * kPerUnit});
     CHECK_EQ(pc100cpaper::lineHeight(4, 0), Coord{4 * kPerUnit});
     CHECK_EQ(pc100cpaper::lineHeight(7, 0), Coord{101'800});
 }
 
-// E8-4, AC-27: Copy's picture is at 600 dpi, about 1311 pixels wide.
-TEST(lib8_ac27_copy_is_600_dpi_about_1311_pixels_wide) {
+// Copy's picture is at 600 dpi, about 1311 pixels wide.
+TEST(copy_is_600_dpi_about_1311_pixels_wide) {
     auto m = printing();
     prt(*m, Model::TI59, 3);
     const PictureSize s = pictureSize(paperOf(*m));
@@ -188,14 +187,14 @@ TEST(lib8_ac27_copy_is_600_dpi_about_1311_pixels_wide) {
     CHECK_EQ(s.dotsPerInch, 600.0);
 }
 
-// The reference picture of the PC-100C (moved from the library in M-53, on
-// the product's description; byte for byte).
-TEST(lib8_ac16_reference_picture_of_the_pc100c) {
+// The reference picture of the PC-100C (on the product's description; byte
+// for byte).
+TEST(reference_picture_of_the_pc100c) {
     std::string error;
     const auto read = readMarksReply(fixtureLines("pc100c.marks"), &error);
     CHECK_EQ(error, std::string());
     if (!read) return;
-    CHECK(marksReply(read->reach, read->marks) == fixtureLines("pc100c.marks"));   // AC-39: read and written unchanged
+    CHECK(marksReply(read->reach, read->marks) == fixtureLines("pc100c.marks"));   // read and written unchanged
     // The marks on a paper of the product's description, as the library's test put them.
     Paper paper(pc100cpaper::description());
     for (const Mark& mk : read->marks) {

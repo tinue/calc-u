@@ -34,7 +34,7 @@ cs::ProductDecl makeDecl() {
     cs::ProductDecl d;
     d.productName = "Calc-U-59";
     d.models = {"TI-59", "TI-58", "TI-58C"};
-    d.fallbackModel = "TI-59";  // AC-20
+    d.fallbackModel = "TI-59";
     d.keys.push_back(cs::family::startupModel());
     d.keys.push_back(cs::family::startupLastModel());
     for (const std::string& m : d.models) d.keys.push_back(cs::family::presetFor(m));

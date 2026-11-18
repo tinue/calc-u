@@ -1,20 +1,20 @@
 #!/bin/sh
-# The Debug Mac app with harness attach (C59-5 S6: AC-8, AC-9, AC-10; LIB-17
-# AC-19 for Swift macOS, design P59-5). Checkpoint (CTest CalcU59MacAttach):
+# The Debug Mac app with harness attach, and the pacing of Swift on macOS.
+# Checkpoint (CTest CalcU59MacAttach):
 # it shows the app and, for 30 s, a grey window over every screen.
 #
 #   tests/mac_attach_check.sh <calcu> [<app>]
 #
 # <calcu>: the harness (build/tests/library/harness/cli/calcu). <app>: the
 # Debug Calc-U-59.app (else built with xcodebuild into build/xcode). The app
-# runs with a settings file of its own (--settings-file, C59-8 AC-21) on port 59171.
-#   1. `calcu attach` works (AC-10): `ticks` is answered.
-#   2. AC-19: one minute of wall time, emulated time grows by one minute
-#      within AC-1's bound (the TI-59's 20 ms slice), one host call (a
+# runs with a settings file of its own (--settings-file) on port 59171.
+#   1. `calcu attach` works: `ticks` is answered.
+#   2. One minute of wall time, emulated time grows by one minute
+#      within the pacer's bound (the TI-59's 20 ms slice), one host call (a
 #      reading is made between two calls) and half of each round trip.
-#   3. AC-9: the window covered for 30 s: emulated time keeps wall time,
+#   3. The window covered for 30 s: emulated time keeps wall time,
 #      within the same bound.
-#   4. AC-8 (D-10): hidden for 5 s, then shown: whether a command is refused
+#   4. Hidden for 5 s, then shown: whether a command is refused
 #      while hidden (macOS reported the background) is recorded; after it is
 #      shown, emulated time passes again.
 set -u
@@ -90,11 +90,11 @@ try:
         time.sleep(0.5)
     check(bool(lines) and lines[0] == "done 2", f"calcu attach --port {PORT}: ticks answered ({lines[:1]})")
     time.sleep(1)
-    keeps(60, "AC-19, one minute in front")
+    keeps(60, "one minute in front")
 
     cover = subprocess.Popen(["swift", window, "cover", "34"])
     time.sleep(3)   # the cover is up
-    keeps(30, "AC-9, the window covered for 30 s")
+    keeps(30, "the window covered for 30 s")
     cover.wait()
 
     subprocess.run(["swift", window, "hide", str(pid)], check=False)
@@ -105,7 +105,7 @@ try:
     time.sleep(3)
     subprocess.run(["swift", window, "unhide", str(pid)], check=False)
     time.sleep(2)
-    keeps(2, "AC-8, shown again: emulated time passes")
+    keeps(2, "shown again: emulated time passes")
 finally:
     subprocess.run(["kill", str(pid)], check=False)
 print("FAILED: " + "; ".join(failures) if failures else "all passed")

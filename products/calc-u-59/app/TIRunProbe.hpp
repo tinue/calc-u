@@ -2,9 +2,9 @@
 #include "machine/Machine.hpp"
 #include <cstdint>
 
-// The run facts the timing commands of C59-9 read between two advances
-// (design §3.2): through the product kind c59.calculator-state (the
-// processor frame and the SCOM), no machine class (C59-1 AC-17).
+// The run facts the timing commands under `c59` read between two advances:
+// through the product kind c59.calculator-state (the processor frame and
+// the SCOM), no machine class.
 
 namespace cu59 {
 
@@ -22,7 +22,7 @@ struct RunNote {
 /// The note of the machine now; a machine that is not a TI gives the empty note.
 RunNote noteRun(calcu::machine::Machine&);
 
-/// Idle as LIB-6 AC-36 says: key readiness, no program, the printer not busy.
+/// Idle as the preset rules say: key readiness, no program, the printer not busy.
 bool runIdle(calcu::machine::Machine&);
 
 } // namespace cu59

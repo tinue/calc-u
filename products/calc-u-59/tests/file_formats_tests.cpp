@@ -1,9 +1,7 @@
 // app/ file formats against the Swift originals (tests/golden/formats.txt,
 // produced by tools/goldens/formats_main.swift): cue cards, BCD encoders,
 // register lines and math tokens. Also round trips for the constant memory
-// file (C59-3). The state files of 2.3.0 and their records went in M-54
-// (C59-2 TR; LIB-6 §11), the card files of 2.3.0 and their `CARD` records in
-// M-55 (C59-7 TR; magnetic card format 3: magnetic_card_tests.cpp).
+// file. The magnetic card format is in magnetic_card_tests.cpp.
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
@@ -110,10 +108,10 @@ std::vector<uint8_t> testBank(int bank) {
 }
 }  // namespace
 
-// C59-3 AC-14 (design T7; was constant_memory_round_trip): the content
+// The content
 // survives a round trip through constant memory format 1; zero registers are
 // left out; a register above R063 or a short line refuses the file.
-TEST(c59_3_ac14_round_trip_zero_registers_left_out) {
+TEST(round_trip_zero_registers_left_out) {
     ConstantMemoryContents c;
     for (std::size_t i = 0; i < 16; ++i) c.ram[5][i] = static_cast<uint8_t>(i % 10);
     for (std::size_t i = 0; i < 16; ++i) c.ram[63][i] = 9;
@@ -139,8 +137,8 @@ TEST(c59_3_ac14_round_trip_zero_registers_left_out) {
 
 
 TEST(module_rom_file_names) {
-    // The module list and the cue cards come from the module files (C59-6
-    // AC-8; C59-7 AC-23, magnetic_card_tests.cpp).
+    // The module list and the cue cards come from the module files
+    // (magnetic_card_tests.cpp).
     CHECK(moduleRomFile("ML") == std::optional<std::string>("ML.rom.yaml"));
     CHECK(moduleRomFile("RP") == std::optional<std::string>("RP.rom.yaml"));
     CHECK(!moduleRomFile("XX").has_value());

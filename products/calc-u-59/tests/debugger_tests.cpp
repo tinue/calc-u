@@ -1,11 +1,8 @@
-// LIB-10's Calc-U-59 column (design §12.5, §12.8: E10-2 to E10-5, E10-8):
-// every pause, step and pause-on-start of a TI machine goes through the
+// Every pause, step and pause-on-start of a TI machine goes through the
 // library's run control with the levels `cpu` and `program`
 // (app/TILevelRules); a breakpoint set through the session pauses the app
-// session (AC-31); the KEYSTROKES directives of a 2.3.0 preset are the run
-// control's commands (adapter L-E1, AC-32). Ports 2.3.0's freeze tests
-// (shared_runtime_tests.cpp: FreezeController, the EmulatorSession's queued
-// steps) onto the run control.
+// session; a preset's debugger steps are the run control's commands. The
+// freeze cases (pauses, queued steps) run on the run control.
 
 #include "TestHarness.hpp"
 #include "SessionRig.hpp"
@@ -48,9 +45,9 @@ constexpr std::uint32_t kActive = 1u << timarks::kMarkWeightShift;
 
 } // namespace
 
-// ── E10-2: levels (AC-29) ─────────────────────────────────────────────────
+// ── Levels ────────────────────────────────────────────────────────────────
 
-TEST(lib10_ac29_pause_lands_at_the_next_boundary) {
+TEST(pause_lands_at_the_next_boundary) {
     SessionRig r;
     CHECK(ready(r));
     program(r, kLoop);
@@ -62,7 +59,7 @@ TEST(lib10_ac29_pause_lands_at_the_next_boundary) {
     CHECK(panel(r).lastStepBoundary().count > 0 && panel(r).lastStepBoundary().cpu.pc == panel(r).pc());
 }
 
-TEST(lib10_ac29_waiting_for_a_key_lands_after_50000) {
+TEST(waiting_for_a_key_lands_after_50000) {
     SessionRig r;
     CHECK(ready(r));
     r.runFor(200ms);
@@ -74,7 +71,7 @@ TEST(lib10_ac29_waiting_for_a_key_lands_after_50000) {
     CHECK(r.machine().isKeyReady());
 }
 
-TEST(lib10_ac29_in_an_overlay_lands_after_50000) {
+TEST(in_an_overlay_lands_after_50000) {
     // An ASM overlay has no program step boundaries: only the count lands it.
     TILevelRules rules;
     auto m = testroms::makeMachine(Model::TI59);
@@ -89,7 +86,7 @@ TEST(lib10_ac29_in_an_overlay_lands_after_50000) {
     CHECK(rules.pauseLandsAfter(kProgram, event(timarks::kMarkBoundary | kActive)));   // a boundary lands at once
 }
 
-TEST(lib10_ac29_program_step_is_one_program_byte_as_sst) {
+TEST(program_step_is_one_program_byte_as_sst) {
     SessionRig r;
     CHECK(ready(r));
     program(r, kLoop);
@@ -110,7 +107,7 @@ TEST(lib10_ac29_program_step_is_one_program_byte_as_sst) {
     CHECK_EQ(panel(r).lastStepBoundary().count, count + 3);
 }
 
-TEST(lib10_ac29_program_step_through_rom_and_module_programs) {
+TEST(program_step_through_rom_and_module_programs) {
     SessionRig r;
     CHECK(ready(r));
     for (int k : {21, 31, 92, 82, 71}) r.tap(k);   // 2nd Pgm 01 SBR: the Master Library's program 01
@@ -127,7 +124,7 @@ TEST(lib10_ac29_program_step_through_rom_and_module_programs) {
     }
 }
 
-TEST(lib10_ac29_cpu_step_repeats_a_hold_up_to_32) {
+TEST(cpu_step_repeats_a_hold_up_to_32) {
     TILevelRules rules;
     CHECK_EQ(rules.cpuStepRepeats(), 32);
     SessionRig r;
@@ -146,9 +143,9 @@ TEST(lib10_ac29_cpu_step_repeats_a_hold_up_to_32) {
     }
 }
 
-// ── E10-3: pause-on-start (AC-30) ─────────────────────────────────────────
+// ── Pause-on-start ────────────────────────────────────────────────────────
 
-TEST(lib10_ac30_program_fires_at_the_next_boundary) {
+TEST(program_fires_at_the_next_boundary) {
     SessionRig r;
     CHECK(ready(r));
     program(r, kLoop);
@@ -162,8 +159,7 @@ TEST(lib10_ac30_program_fires_at_the_next_boundary) {
     CHECK_EQ(panel(r).lastStepBoundary().cpu.pc, panel(r).pc());
 }
 
-// (was freeze_on_scan_loop_exit_fires_on_key)
-TEST(lib10_ac30_cpu_fires_leaving_key_readiness) {
+TEST(cpu_fires_leaving_key_readiness) {
     SessionRig r;
     CHECK(ready(r));
     rc(r).pauseOnStart(kCpu);
@@ -177,12 +173,12 @@ TEST(lib10_ac30_cpu_fires_leaving_key_readiness) {
     CHECK(!r.machine().isKeyReady());
 }
 
-// Row 59-34 (Q-1): a `cpu` start fires at the ROM's start-up after a Reset
-// and a Cold boot on every model (the session case is part_flows_tests.cpp's
-// lib10_ac30_part_cpu_freeze_on_start_sees_reset_and_clean_reset); here the
+// A `cpu` start fires at the ROM's start-up after a Reset
+// and a Cold boot on every model (the session case is in
+// part_flows_tests.cpp); here the
 // rule: 0000 next while it was not 0000 at arming, and what was seen stays
 // when the run control arms again at the restart.
-TEST(lib10_ac30_cpu_fires_at_0000_after_reset_and_cold_boot) {
+TEST(cpu_fires_at_0000_after_reset_and_cold_boot) {
     for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
         SessionRig r(model);
         CHECK(ready(r));
@@ -207,8 +203,7 @@ TEST(lib10_ac30_cpu_fires_at_0000_after_reset_and_cold_boot) {
     CHECK(rules.startFiresAfter(kCpu, event(kActive, 0x10, 0x0000), *m));
 }
 
-// (was freeze_on_pc_change_and_mutual_exclusion)
-TEST(lib10_ac30_arming_one_disarms_the_other) {
+TEST(arming_one_disarms_the_other) {
     SessionRig r;
     CHECK(ready(r));
     rc(r).pauseOnStart(kCpu);
@@ -219,14 +214,13 @@ TEST(lib10_ac30_arming_one_disarms_the_other) {
     rc(r).pauseOnStart(std::nullopt);
     CHECK(!r.part().runState().armed);
     rc(r).pauseOnStart(kProgram);
-    rc(r).pause(kCpu);   // a pause disarms it (AC-9)
+    rc(r).pause(kCpu);   // a pause disarms it
     CHECK(!r.part().runState().armed);
 }
 
 // The TI-58's idle pass detours through the card veto: it is part of the
-// scan loop, so a `cpu` start waits for a key (was
-// ti58_card_veto_is_part_of_the_scan_loop).
-TEST(lib10_ac30_ti58_card_veto_is_part_of_the_scan_loop) {
+// scan loop, so a `cpu` start waits for a key.
+TEST(ti58_card_veto_is_part_of_the_scan_loop) {
     auto m = testroms::makeMachine(Model::TI58);
     CHECK(testroms::runToScanLoop(*m, Model::TI58));
     bool sawVeto = false, left = false;
@@ -246,14 +240,13 @@ TEST(lib10_ac30_ti58_card_veto_is_part_of_the_scan_loop) {
     CHECK(r.until([&] { return paused(r); }, 2s));
 }
 
-// The start lands on the same instruction as 2.3.0's run loop, which ran one
-// instruction at a time and asked FreezeController after each (was
-// c59_1_runbatch_stops_at_freeze_inside_advance).
-TEST(lib10_ac35_c59_1_runbatch_stops_at_freeze_inside_advance) {
+// The start lands on the same instruction as a run loop that runs one
+// instruction at a time and asks after each whether to stop.
+TEST(runbatch_stops_at_freeze_inside_advance) {
     auto stepped = testroms::makeMachine(Model::TI59), batched = testroms::makeMachine(Model::TI59);
     for (auto* m : {stepped.get(), batched.get()}) testroms::runToScanLoop(*m, Model::TI59);
     const auto loop = romRanges(MachineVariant::TI59).scanLoop;
-    // 2.3.0's rule, one instruction at a time.
+    // That rule, one instruction at a time.
     bool seen = false;
     const uint16_t armedAt = testroms::dbg(*stepped).pc();
     testroms::press(*stepped, 83);
@@ -285,9 +278,9 @@ TEST(lib10_ac35_c59_1_runbatch_stops_at_freeze_inside_advance) {
     CHECK_EQ(testroms::dbg(*batched).pc(), testroms::dbg(*stepped).pc());
 }
 
-// ── E10-4: breakpoints (AC-31) ────────────────────────────────────────────
+// ── Breakpoints ───────────────────────────────────────────────────────────
 
-TEST(lib10_ac31_app_session_pauses_at_a_breakpoint) {
+TEST(app_session_pauses_at_a_breakpoint) {
     SessionRig r;
     CHECK(ready(r));
     const auto at = r.machine().debugging()->target(0).nextAddress();   // in the scan loop: hit soon
@@ -304,9 +297,8 @@ TEST(lib10_ac31_app_session_pauses_at_a_breakpoint) {
     CHECK(r.until([&] { return paused(r); }, 2s));
 }
 
-// ── E10-5: the debugger steps of a preset (AC-32; since M-54 LIB-6's
-// loader with LIB-10's steps, which replaced the KEYSTROKES directives of
-// 2.3.0 and their adapter L-E1) ────────────────────────────────────────────
+// ── The debugger steps of a preset (the library's loader with the run
+// control's steps) ──────────────────────────────────────────────────────────
 
 namespace {
 void load(SessionRig& r, const std::string& keys) {
@@ -315,7 +307,7 @@ void load(SessionRig& r, const std::string& keys) {
 }
 } // namespace
 
-TEST(lib10_ac32_freeze_calculator_is_pause_program) {
+TEST(freeze_calculator_is_pause_program) {
     SessionRig r;
     CHECK(ready(r));
     load(r, "  - key: 2\n  - pause: program\n");   // idle: it lands after 50000 weights
@@ -323,7 +315,7 @@ TEST(lib10_ac32_freeze_calculator_is_pause_program) {
     CHECK(r.part().runState().owner == kProgram);
 }
 
-TEST(lib10_ac32_freeze_cpu_is_pause_cpu) {
+TEST(freeze_cpu_is_pause_cpu) {
     SessionRig r;
     CHECK(ready(r));
     load(r, "  - pause: cpu\n");
@@ -331,7 +323,7 @@ TEST(lib10_ac32_freeze_cpu_is_pause_cpu) {
     CHECK(r.part().runState().owner == kCpu);
 }
 
-TEST(lib10_ac32_freeze_on_start_is_pause_on_start) {
+TEST(freeze_on_start_is_pause_on_start) {
     SessionRig r;
     CHECK(ready(r));
     load(r, "  - pause-on-start: cpu\n");
@@ -342,7 +334,7 @@ TEST(lib10_ac32_freeze_on_start_is_pause_on_start) {
     CHECK(r.until([&] { return !r.part().runState().armed && !r.busy(); }, 5s));
 }
 
-TEST(lib10_ac32_step_and_resume) {
+TEST(freeze_step_and_resume) {
     SessionRig r;
     CHECK(ready(r));
     load(r, "  - key: 2\n  - pause: program\n  - step: { level: program, count: 3 }\n");
@@ -350,20 +342,20 @@ TEST(lib10_ac32_step_and_resume) {
     CHECK(r.part().runState().reason == RunState::Reason::Step);
     r.post(calcu::presets::kRunStepCommand, Value::object({{"verb", "resume"}, {"value", ""}}));
     CHECK(r.until([&] { return !paused(r) && !r.busy(); }, 5s));
-    // A step while running is no effect, with a line of the log (LIB-10 OQ-4).
+    // A step while running is no effect, with a line of the log.
     r.post(calcu::presets::kRunStepCommand, Value::object({{"verb", "step"}, {"value", "{ level: cpu }"}}));
     CHECK(r.until([&] { return !r.busy(); }, 5s));
     r.runFor(100ms);
     CHECK(!paused(r));
 }
 
-TEST(lib10_ac32_debug_panel_calculator_cpu_log) {
+TEST(debug_panel_calculator_cpu_log) {
     SessionRig r;
     CHECK(ready(r));
     load(r, "  - debug-panel: calculator\n  - debug-panel: cpu\n  - debug-panel: log\n");
     CHECK(r.until([&] { return !r.busy(); }, 5s));
     r.runFor(20ms);
-    // The product topic c59.debug-view (C59-4 AC-2, M-56): a state topic, so the
+    // The product topic c59.debug-view: a state topic, so the
     // three tabs asked in one call arrive as the last one, counted three times.
     CHECK(!r.panels().empty() && r.panels().back() == DebugPanel::Log);
     CHECK(r.state<TIDebugView>(topics::kDebugView) && r.state<TIDebugView>(topics::kDebugView)->requests == 3);
@@ -372,11 +364,11 @@ TEST(lib10_ac32_debug_panel_calculator_cpu_log) {
     CHECK(r.panels().back() == DebugPanel::Log);
 }
 
-// ── E10-8: what 2.3.0's tests checked of the freeze (AC-35) ────────────────
+// ── The freeze through the session ────────────────────────────────────────────
 
 // A pause waits for its landing; its reply comes then (was
 // session_queued_steps_run_after_the_host_call).
-TEST(lib10_ac35_session_queued_steps_run_after_the_host_call) {
+TEST(session_queued_steps_run_after_the_host_call) {
     SessionRig r;
     CHECK(ready(r));
     program(r, kLoop);
@@ -389,8 +381,7 @@ TEST(lib10_ac35_session_queued_steps_run_after_the_host_call) {
     CHECK(paused(r));
 }
 
-// (was session_freeze_fires_through_listener)
-TEST(lib10_ac35_session_freeze_fires_through_listener) {
+TEST(session_freeze_fires_through_listener) {
     SessionRig r;
     CHECK(ready(r));
     r.send(calcu::debugger::kPauseOnStartCommand, Value::object({{"level", "cpu"}}));
@@ -407,8 +398,7 @@ TEST(lib10_ac35_session_freeze_fires_through_listener) {
     CHECK_EQ(testroms::hw(r.machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
 }
 
-// (was session_steps_only_when_frozen_and_arms_exclude)
-TEST(lib10_ac35_session_steps_only_when_frozen_and_arms_exclude) {
+TEST(session_steps_only_when_frozen_and_arms_exclude) {
     SessionRig r;
     CHECK(ready(r));
     const auto refused = rc(r).step(kProgram, 1, std::nullopt, calcu::debugger::StepKind::In);
@@ -421,7 +411,7 @@ TEST(lib10_ac35_session_steps_only_when_frozen_and_arms_exclude) {
     CHECK(r.part().runState().owner == kProgram && !r.part().runState().armed);
     rc(r).step(kCpu, 1, std::nullopt, calcu::debugger::StepKind::In);
     CHECK(r.until([&] { return paused(r); }, 2s));
-    CHECK(r.part().runState().owner == kCpu);   // the step's level takes the pause over (AC-45)
+    CHECK(r.part().runState().owner == kCpu);   // the step's level takes the pause over
     rc(r).resume();
     r.frame();
     CHECK(!paused(r));

@@ -54,7 +54,7 @@ harness::Reply linesReply(const sessions::ReplyMessage& r) {
     return doneReply(std::move(v), out);
 }
 
-// ── C59-2 AC-9 (design §3.4): `c59 partition|program|registers`, sent as
+// ── `c59 partition|program|registers`, sent as
 // the product commands of ProgramMemoryPart.
 
 void addProgramMemoryCommands(harness::CommandRegistry& r) {
@@ -104,7 +104,7 @@ void addProgramMemoryCommands(harness::CommandRegistry& r) {
     }, "data-registers <NN>=<value>... | data-registers <NN>...  write data registers (H00-H03 on the TI-58C) or read them");
 }
 
-// ── C59-4 AC-22 (design §3.10): the debug panel's commands; no preset steps.
+// ── The debug panel's commands; no preset steps.
 
 void addDebugPanelCommands(harness::CommandRegistry& r) {
     r.addProduct("c59", "asm", [](CommandContext& c) -> Reply {
@@ -150,10 +150,10 @@ void addDebugPanelCommands(harness::CommandRegistry& r) {
     }, "heatmap reset  set the ROM heatmap's counts to zero");
 }
 
-// ── C59-9 (design §3) ─────────────────────────────────────────────────────
+// ── The functions of the earlier tools ──────────────────────────────────────
 
 constexpr const char* kNoMachine = "There is no machine.";
-constexpr Ticks kInstruction = 32;   // ticks of one instruction outside the idle state (LIB-11 AC-17)
+constexpr Ticks kInstruction = 32;   // ticks of one instruction outside the idle state
 
 machine::Machine* machineOf(CommandContext& c) { return c.host.session().machineSession().machine(); }
 
@@ -222,7 +222,7 @@ Reply settled(CommandContext& c, Reply r) {
     return r;
 }
 
-// ── `c59 coverage [all]` (AC-2; §3.1) ──
+// ── `c59 coverage [all]` ──
 
 Reply coverageCmd(CommandContext& c) {
     const auto w = words(c.line.argText);
@@ -265,7 +265,7 @@ Reply coverageCmd(CommandContext& c) {
     return doneReply(std::move(v), std::move(lines));
 }
 
-// ── `c59 line-times [limit=<d>]` (AC-3, AC-4, EC-2, EC-6; §3.3) ──
+// ── `c59 line-times [limit=<d>]` ──
 
 struct GapSummary {
     std::uint64_t n = 0;
@@ -286,7 +286,7 @@ Reply lineTimesCmd(CommandContext& c) {
     std::string error;
     const auto limit = limitOf(words(c.line.argText), 4000, rate, &error);
     if (!limit) return refusedReply(error);
-    const Ticks slice = 200 * kInstruction;   // D-1: today's tool's sampling
+    const Ticks slice = 200 * kInstruction;   // release 2.3.0's tool's sampling
     const Ticks quietNeeded = static_cast<Ticks>(15) * rate;
     const Ticks t0 = m->tickCount();
     std::size_t seen = paperLines(c).size();
@@ -348,7 +348,7 @@ Reply lineTimesCmd(CommandContext& c) {
     harness::Value fv, ov;
     summary("feeds", feeds, fv);
     summary("lines", other, ov);
-    // AC-4: the least time the printer needs, from measurements on a PC-100A (C59-6 AC-4).
+    // The least time the printer needs, from measurements on a PC-100A.
     const Ticks floor = (other.n * PC100C::kLineInstructions + feeds.n * PC100C::kFeedInstructions) * kInstruction;
     lines.push_back("printer floor: " + secondsText(floor, rate));
     lines.push_back(std::string("limit: ") + (limited ? "yes" : "no"));
@@ -361,7 +361,7 @@ Reply lineTimesCmd(CommandContext& c) {
     return settled(c, doneReply(std::move(v), std::move(lines)));
 }
 
-// ── `c59 run-time <key>...` (AC-5; §3.3) ──
+// ── `c59 run-time <key>...` ──
 
 Reply runTimeCmd(CommandContext& c) {
     const auto keys = words(c.line.argText);
@@ -369,7 +369,7 @@ Reply runTimeCmd(CommandContext& c) {
     machine::Machine* m = machineOf(c);
     if (!m) return refusedReply(kNoMachine);
     const std::uint32_t rate = rateOf(*m);
-    const Ticks slice = 100 * kInstruction;   // D-1: today's tool's sampling
+    const Ticks slice = 100 * kInstruction;   // release 2.3.0's tool's sampling
     const Ticks limit = static_cast<Ticks>(4000) * rate;
     const Ticks settleTicks = rate / 4;          // stopped for a quarter second, not a short gap
     std::vector<std::string> lines;
@@ -416,7 +416,7 @@ Reply runTimeCmd(CommandContext& c) {
         e.set("seconds", harness::secondsOf(time, rate));
         e.set("finished", finished);
         list.push(std::move(e));
-        if (!finished) break;   // AC-5: the command ends there, done
+        if (!finished) break;   // the command ends there, done
     }
     m = machineOf(c);
     lines.push_back("total " + secondsText(total, m ? rateOf(*m) : rate));
@@ -426,7 +426,7 @@ Reply runTimeCmd(CommandContext& c) {
     return settled(c, doneReply(std::move(v), std::move(lines)));
 }
 
-// ── `c59 hot-steps [limit=<d>]` (AC-6, EC-6; §3.3, D-2, D-6) ──
+// ── `c59 hot-steps [limit=<d>]` ──
 
 Reply hotStepsCmd(CommandContext& c) {
     machine::Machine* m = machineOf(c);
@@ -485,7 +485,7 @@ Reply hotStepsCmd(CommandContext& c) {
     return settled(c, doneReply(std::move(v), std::move(lines)));
 }
 
-// ── `c59 step-trace <from> <to>` (AC-7; §3.3) ──
+// ── `c59 step-trace <from> <to>` ──
 
 Reply stepTraceCmd(CommandContext& c) {
     const auto w = words(c.line.argText);
@@ -527,7 +527,7 @@ Reply stepTraceCmd(CommandContext& c) {
     return settled(c, doneReply(std::move(v), line.empty() ? std::vector<std::string>{} : std::vector<std::string>{line}));
 }
 
-// ── `c59 step-cost <keycode>...` (AC-8, EC-3; §3.3, D-3) ──
+// ── `c59 step-cost <keycode>...` ──
 
 // stepcost.py of 2.3.0 (`:18-19`): the SST method of fast mode and GTO 008 R/S,
 // as matrix codes (row × 10 + column).
@@ -637,7 +637,7 @@ Reply stepCostCmd(CommandContext& c) {
     return settled(c, doneReply(std::move(v), std::move(lines)));
 }
 
-// ── `c59 keycodes list|disassemble|assemble` (AC-9, AC-10, AC-14; §3.4-§3.6) ──
+// ── `c59 keycodes list|disassemble|assemble` ──
 
 std::optional<int> stepWord(const std::string& w) {
     if (w.size() < 3 || w.size() > 4 || w.find_first_not_of("0123456789") != std::string::npos) return std::nullopt;
@@ -693,7 +693,7 @@ Reply keycodesCmd(CommandContext& c) {
             return refusedReply("The last step is three digits, from the first to " + three(pm->lastStep()) + ": " + w[2] + ".");
         last = *l;
     }
-    if (!last) {   // D-4: the last step that is not 00, within the partition
+    if (!last) {   // the last step that is not 00, within the partition
         std::vector<std::uint8_t> program(steps.begin(), steps.begin() + std::max(0, std::min(partitionLast, pm->lastStep()) + 1));
         last = lastUsedStep(program, first);
     }

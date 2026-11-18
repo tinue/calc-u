@@ -7,8 +7,8 @@
 // enum and its ModelId and the RAM layout of the presets. Shared by the
 // Swift app (via Bridge/) and the Qt6 app; see reference/AppLayer.md.
 // The tick rate, key readiness and the ROM address ranges come from the
-// machine (calcu::machine::Machine, C59-1); the ROM files from the
-// descriptor's ROM entries through the ROM lookup (LIB-12, app/ProductRoms).
+// machine (calcu::machine::Machine); the ROM files from the
+// descriptor's ROM entries through the ROM lookup (app/ProductRoms).
 
 namespace cu59 {
 

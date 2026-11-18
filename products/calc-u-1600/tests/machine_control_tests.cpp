@@ -1,9 +1,8 @@
-// LIB-18, the Calc-U-1600 column (design §10.6, P16-1 to P16-5): the start,
+// The start,
 // the built-in default, the model and variant switches, a module, the
 // peripherals and the host drive, the CE-1600P's ROM, Reset and Cold boot,
 // a machine that is off -- on the library's StartupPart in Calc-U-1600's app
-// session (app/tests/SessionFixture.hpp). Also C1600-4 AC-8's clause on the
-// app: a module with a slot ROM is never saved. SKIP without roms/.
+// session (app/tests/SessionFixture.hpp). Also, on the app: a module with a slot ROM is never saved. SKIP without roms/.
 #include "../app/tests/SessionFixture.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
 #include "Loaders.hpp"
@@ -54,9 +53,9 @@ void type(SessionFixture& f, const std::string& line) {
 
 } // namespace
 
-// ── P16-1: the start, the built-in default (AC-25, AC-26) ───────────────
+// ── The start, the built-in default ──────────────────────────────────────
 
-TEST(lib18_ac25_no_settings_pc1500a_new0_check) {
+TEST(no_settings_pc1500a_new0_check) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start());
@@ -64,7 +63,7 @@ TEST(lib18_ac25_no_settings_pc1500a_new0_check) {
     CHECK(screenHas(f, "NEW0?"));
 }
 
-TEST(lib18_ac26_builtin_default_variant_and_nothing_plugged) {
+TEST(builtin_default_variant_and_nothing_plugged) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         SessionFixture f;
@@ -76,10 +75,10 @@ TEST(lib18_ac26_builtin_default_variant_and_nothing_plugged) {
     }
 }
 
-TEST(lib18_ac26_version1_startup_preset_gives_default_and_notice) {
+TEST(version1_startup_preset_gives_default_and_notice) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
-    // A startup preset of format 1 (row 1600-1): the built-in default and EC-1's notice.
+    // A startup preset of format 1: the built-in default and a notice.
     const fs::path v1 = f.root / "startup-v1.pc1600";
     std::ofstream(v1) << "format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nfloppy: Formatted\nslot-1: CE-1600M\n";
     f.settings.file().set("preset", "PC-1600", v1.generic_string());
@@ -91,9 +90,9 @@ TEST(lib18_ac26_version1_startup_preset_gives_default_and_notice) {
           n.back().find("upgraded by hand to preset format 2") != std::string::npos);
 }
 
-// ── P16-2: model and variant (AC-27, AC-28) ─────────────────────────────
+// ── Model and variant ────────────────────────────────────────────────────
 
-TEST(lib18_ac27_model_switch_keeps_no_module_or_peripheral) {
+TEST(model_switch_keeps_no_module_or_peripheral) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -106,7 +105,7 @@ TEST(lib18_ac27_model_switch_keeps_no_module_or_peripheral) {
     CHECK(f.held("slot-1") == nullptr);
 }
 
-TEST(lib18_ac27_ce1600p_rom_choice_back_to_new) {
+TEST(ce1600p_rom_choice_back_to_new) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -116,7 +115,7 @@ TEST(lib18_ac27_ce1600p_rom_choice_back_to_new) {
     CHECK(f.part().ce1600pVariant() == "New");
 }
 
-TEST(lib18_ac28_variant_switch_replugs_printer_interface_host_drive_modules) {
+TEST(variant_switch_replugs_printer_interface_host_drive_modules) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -135,7 +134,7 @@ TEST(lib18_ac28_variant_switch_replugs_printer_interface_host_drive_modules) {
     CHECK(f.held("slot-2") && f.held("slot-2")->name == "Disk RAM" && f.held("slot-2")->instance());
 }
 
-TEST(lib18_ac28_disk_in_drive_again_same_side) {
+TEST(disk_in_drive_again_same_side) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -151,7 +150,7 @@ TEST(lib18_ac28_disk_in_drive_again_same_side) {
     CHECK(side() == 1);
     CHECK(f.held("floppy") && f.held("floppy")->name == "Formatted");
 }
-TEST(lib18_ac28_no_startup_preset_loaded) {
+TEST(no_startup_preset_loaded) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     f.settings.file().set("preset", "PC-1500", "examples:startup/default-pc1500.pc1500");
@@ -159,26 +158,26 @@ TEST(lib18_ac28_no_startup_preset_loaded) {
     CHECK(plugged(f, "CE-150"));   // the startup preset's
     CHECK(f.detach("CE-150"));
     CHECK(f.variant("A03"));
-    CHECK(!plugged(f, "CE-150"));   // no startup preset at a variant switch (AC-7)
+    CHECK(!plugged(f, "CE-150"));   // no startup preset at a variant switch
     CHECK(plugged(f, "CE-163F"));    // what was plugged in goes along
 }
 
-// ── P16-3: module, peripherals, host drive, a machine that is off (AC-29, AC-30, AC-33) ──
+// ── Module, peripherals, host drive, a machine that is off ───────────────
 
-TEST(lib18_ac29_module_replace_power_cycle_memory_kept_new0_check) {
+TEST(module_replace_power_cycle_memory_kept_new0_check) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
     CHECK(f.choose("slot-1", "CE-155").done);
     CHECK(f.part().slotModuleName(1) == "CE-155");
-    CHECK(screenHas(f, "NEW0?"));   // the ROM's check after the power cycle (row 1600-4)
+    CHECK(screenHas(f, "NEW0?"));   // the ROM's check after the power cycle
     CHECK(f.choose("slot-1", "CE-151").done);   // a replace
     CHECK(f.part().slotModuleName(1) == "CE-151");
     CHECK(f.choose("slot-1", "").done);
     CHECK(f.part().slotModuleName(1).empty());
 }
 
-TEST(lib18_ac30_printer_ce158_attach_detach_power_cycle_memory_kept) {
+TEST(printer_ce158_attach_detach_power_cycle_memory_kept) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -194,7 +193,7 @@ TEST(lib18_ac30_printer_ce158_attach_detach_power_cycle_memory_kept) {
     CHECK(screenHas(f, "4711"));
 }
 
-TEST(lib18_ac30_host_drive_mount_unmount_power_cycle) {
+TEST(host_drive_mount_unmount_power_cycle) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -209,7 +208,7 @@ TEST(lib18_ac30_host_drive_mount_unmount_power_cycle) {
     CHECK(!f.part().hostDriveAttached());
 }
 
-TEST(lib18_ac33_off_machine_change_nothing_follows_found_on_switch_on) {
+TEST(off_machine_change_nothing_follows_found_on_switch_on) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
@@ -231,9 +230,9 @@ TEST(lib18_ac33_off_machine_change_nothing_follows_found_on_switch_on) {
     CHECK(d && d->on);
 }
 
-// ── P16-4: the CE-1600P's ROM (AC-31) ───────────────────────────────────
+// ── The CE-1600P's ROM ───────────────────────────────────────────────────
 
-TEST(lib18_ac31_plugged_is_replace_by_other_variant) {
+TEST(plugged_is_replace_by_other_variant) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -247,7 +246,7 @@ TEST(lib18_ac31_plugged_is_replace_by_other_variant) {
     CHECK(f.part().ce1600pVariant() == "Old");
 }
 
-TEST(lib18_ac31_unplugged_choice_holds_for_next_attach) {
+TEST(unplugged_choice_holds_for_next_attach) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -259,9 +258,9 @@ TEST(lib18_ac31_unplugged_choice_holds_for_next_attach) {
     CHECK(f.part().ce1600pVariant() == "Old");
 }
 
-// ── P16-5: Reset, Cold boot (AC-32, AC-16; row 1600-9) ──────────────────
+// ── Reset, Cold boot ─────────────────────────────────────────────────────
 
-TEST(lib18_ac32_reset_keeps_memory) {
+TEST(session_reset_keeps_memory) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -271,7 +270,7 @@ TEST(lib18_ac32_reset_keeps_memory) {
     CHECK(screenHas(f, "815"));
 }
 
-TEST(lib18_ac32_cold_boot_empties_memory_ce151_ce155_battery_module_kept) {
+TEST(cold_boot_empties_memory_ce151_ce155_battery_module_kept) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -280,8 +279,8 @@ TEST(lib18_ac32_cold_boot_empties_memory_ce151_ce155_battery_module_kept) {
     type(f, "PRINT B");
     CHECK(f.screen().find("815") == std::string::npos);   // the memory emptied
     // The command is Machine::coldBoot(): a RAM module without a battery
-    // forgets, a battery-backed one keeps (C1600-1 AC-6, row 1600-16; the
-    // contents: sharp_machine_tests.cpp, c1600_1_ac6_cold_boot_*). The
+    // forgets, a battery-backed one keeps (the contents:
+    // sharp_machine_tests.cpp, cold_boot_*). The
     // module stays in its slot.
     for (const char* name : {"CE-151", "CE-1600M"}) {
         CHECK(f.choose("slot-1", name).done);
@@ -290,7 +289,7 @@ TEST(lib18_ac32_cold_boot_empties_memory_ce151_ce155_battery_module_kept) {
     }
 }
 
-TEST(ledger_1600_9_reset_and_model_switch_stop_a_preset) {
+TEST(reset_and_model_switch_stop_a_preset) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     for (const int how : {0, 1}) {
         SessionFixture f;
@@ -308,9 +307,9 @@ TEST(ledger_1600_9_reset_and_model_switch_stop_a_preset) {
     }
 }
 
-// ── C1600-4 AC-8 on the app: a module with a slot ROM is never saved ────
+// ── On the app: a module with a slot ROM is never saved ──────────────────
 
-TEST(c1600_4_ac8_module_with_slot_rom_never_saved) {
+TEST(module_with_slot_rom_never_saved) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500"));
@@ -320,7 +319,7 @@ TEST(c1600_4_ac8_module_with_slot_rom_never_saved) {
     std::ofstream(preset) << "format-version: 2\nmodel: PC-1500\nslot-1: { name: CE-502B }\nslot-1-rom: { file: build/rom.bin }\n";
     CHECK(f.loadPreset(preset.generic_string()).done);
     CHECK(f.part().slotModuleName(1) == "CE-502B");
-    CHECK(f.held("slot-1") == nullptr);   // never a medium (LIB-7 §10.5)
+    CHECK(f.held("slot-1") == nullptr);   // never a medium
     const auto r = f.nameAndSave("slot-1", "Copy");
     CHECK(!r.done && r.reason.find("no medium") != std::string::npos);
 }

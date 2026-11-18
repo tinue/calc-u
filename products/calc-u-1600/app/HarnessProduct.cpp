@@ -27,7 +27,7 @@
 #include "harness/attach/LocalStream.hpp"
 #endif
 
-// The product folder (design §8, O-2), set by CMake.
+// The product folder, set by CMake.
 #ifndef CALCU1600_DIR
 #define CALCU1600_DIR "."
 #endif
@@ -41,10 +41,10 @@ using namespace calcu;
 const std::string kDir = CALCU1600_DIR;
 const std::string kModules = kDir + "/frontends/qt6/resources/cards";
 
-// ---- C1600-3 AC-22 (design §3.5): `serve --dap <port>` ----
+// ---- `serve --dap <port>` ----
 //
 // The DAP server of the harness's session (SharpAppPart's DapPart) on
-// attach's one-client listener (LocalStream; D-3: built where attach is).
+// attach's one-client listener (LocalStream; built where attach is).
 // What the stream's I/O thread gets is posted into the serve loop and handed
 // to the part there. The add-on exists before a run; it reaches the part of
 // the run it is started in.
@@ -69,19 +69,19 @@ public:
         const std::string text(value);
         long port = -1;
         if (!text.empty() && text.size() <= 6 && text.find_first_not_of("0123456789") == std::string::npos) port = std::stol(text);
-        if (std::optional<std::string> refused = part_->setRunPort(port)) return *refused;   // EC-1
+        if (std::optional<std::string> refused = part_->setRunPort(port)) return *refused;
         loop_ = std::move(loop);
         part_->setTransport(this);
         if (!part_->status().client && part_->status().status.rfind("Listening", 0) != 0) {
             const std::string why = part_->status().status;
             part_->setTransport(nullptr);
-            return why;   // "Port <port> not available: <why>" (AC-2)
+            return why;   // "Port <port> not available: <why>"
         }
         return std::nullopt;
 #else
         (void)value;
         (void)loop;
-        return std::string("The DAP server is not in this build.");   // D-3
+        return std::string("The DAP server is not in this build.");   // no attach in this build
 #endif
     }
     bool wantsTime() const override { return part_ && part_->wantsTime(); }
@@ -161,13 +161,13 @@ public:
     std::string_view version() const override { return CALCU1600_VERSION; }   // APP_VERSION of the Qt build (CMake)
     const settings::ProductDecl& settingsDecl() const override { return cu1600::settingsDecl(); }
 
-    // D-11: the app layer of this run, on its settings and folders (LIB-11
-    // AC-8: the save and output folders as the run passes them, the run's own
-    // home); its one ROM lookup (LIB-12) is the run's.
+    // The app layer of this run, on its settings and folders (the save and
+    // output folders as the run passes them, the run's own home); its one ROM
+    // lookup is the run's.
     roms::LookupResult prepare(harness::RunSetup& r) override {
         endRun();
         settings_ = std::make_unique<Settings>(r.settings());
-        // AC-20: the bundled files where the source tree has them.
+        // The bundled files where the source tree has them.
         BundleDirs bundle;
         bundle.bundledResources = kModules;
         bundle.bundledExamples = kDir + "/examples";
@@ -176,9 +176,9 @@ public:
         bundle.hostDriveRom = kDir + "/firmware/pc1600-hostdrive";
         paths_ = std::make_unique<AppPaths>(*settings_, r.hostDirs(), bundle);
         SharpAppPartOptions o;
-        o.canMountHostFolder = true;   // C1600-5 AC-11 (LIB-4 Part D, D-12)
+        o.canMountHostFolder = true;
         o.hosting = sessions::Hosting::VirtualTime;
-        o.serialLinksOnRequest = true;   // C1600-5 AC-9
+        o.serialLinksOnRequest = true;
         part_ = std::make_unique<SharpAppPart>(*settings_, *paths_, std::move(o));
         SharpAppPart* part = part_.get();
         serial_ = std::make_unique<SerialScriptsPart>([part](const std::string& port) {
@@ -190,7 +190,7 @@ public:
     calcu::parts::LibraryParts& libraryParts() override { return part_->libraryParts(); }
 
     // The app layer's parts (the library's among them), then the display
-    // text and the serial ports' scripts (Part D, D.3).
+    // text and the serial ports' scripts.
     std::vector<sessions::SessionPart*> sessionParts(const std::vector<sessions::SessionPart*>& host) override {
         return part_->sessionParts(host, {&lcd_, serial_.get()});
     }
@@ -201,7 +201,7 @@ public:
 
     std::vector<harness::ServeAddOn*> serveAddOns() override { return {&dapAddOn_}; }
 
-    // C1600-2 AC-21, C1600-5: the product's commands under its word (LIB-11 AC-13).
+    // The product's commands under its word.
     void addCommands(harness::CommandRegistry& r) override {
         SharpHarnessParts parts;
         parts.app = [this] { return part_.get(); };

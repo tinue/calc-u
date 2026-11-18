@@ -32,15 +32,12 @@ namespace calcu::settings {
 class SettingsFile;
 }
 
-// One DAP session (C1600-3 design §3.4, §3.6): the client's requests of
-// AC-11 and AC-17 on the library's debugger (LIB-10) and the DAP's layer of
-// app/dap/, the set-up of AC-4 to AC-7 as operations of the app session
-// (D-1; DapSetup.cpp), and the events of AC-16. From
-// frontends/qt6/app/debug/DapSession.cpp and DebugController.cpp of 0.8.1,
-// with calcu::sessions::Value for QJsonObject. No Qt type; it names no
-// machine class (TR).
+// One DAP session: the client's requests on the library's debugger and the
+// DAP's layer of app/dap/, the set-up as operations of the app session
+// (DapSetup.cpp), and the events. On calcu::sessions::Value; no Qt type;
+// it names no machine class.
 //
-// Identifiers handed to the client (as today):
+// Identifiers handed to the client:
 //   thread ids   the debug targets in the machine's order, from 1
 //   frame ids    thread * 1000 + index: 0 = now, 1..20 = history
 //   variables    frame id * 4 + 1 registers / 2 flags / 3 banks
@@ -49,9 +46,9 @@ class SettingsFile;
 
 namespace cu1600::dap {
 
-// What the server reaches the machine through (§3.3): the library's parts
+// What the server reaches the machine through: the library's parts
 // and the product's settings, from SharpAppPart's library parts (the
-// harness's run builds a SharpAppPart of its own, LIB-11 D-6).
+// harness's run builds a SharpAppPart of its own).
 struct DapDeps {
     calcu::debugger::DebuggerPart* debugger = nullptr;
     calcu::typing::TypingPart* typing = nullptr;
@@ -76,15 +73,15 @@ public:
     // A message of the client (requests only; anything else is passed over).
     void handle(const Value& message);
     // After every host call and every message: output lines, a new machine
-    // told once no operation runs, and a pause told as `stopped` (AC-16).
+    // told once no operation runs, and a pause told as `stopped`.
     void poll();
     void machineChanged();
     // An operation ended or was stopped: ours answers its request.
     void operationEnded();
-    // AC-10: the session's breakpoints and watches go, a paused machine
+    // The session's breakpoints and watches go, a paused machine
     // resumes. Once.
     void end();
-    // Settings ▸ Debugger ▸ Disconnect: the client is told first (AC-16).
+    // Settings ▸ Debugger ▸ Disconnect: the client is told first.
     void toldToGo();
     void output(const std::string& text, const std::string& category = "console");
     // Its client is gone and another came: nothing more is sent.
@@ -126,23 +123,23 @@ private:
     void evaluate(const Value& args, Body* body, std::string* error);
     void displayText(Body* body, std::string* error);
 
-    // ── Requests answered at the end of an operation (DapSetup.cpp, D-1) ──
+    // ── Requests answered at the end of an operation (DapSetup.cpp) ───────
     // attach/launch, restart, c1600/load, c1600/reset: false when it
     // is refused before anything starts (`error`).
     bool startOperation(const Value& request, std::string* error);
     calcu::sessions::Task<calcu::sessions::OperationResult> runRequest(calcu::sessions::OperationContext&, Value request);
-    // S1 to S8 with `config`; false with `error`.
+    // The set-up with `config`; false with `error`.
     calcu::sessions::Task<bool> setUp(calcu::sessions::OperationContext&, Value config, std::string* error);
-    // S7: Build & Load of `program`; the reply's body into `body` (may be null).
+    // Build & Load of `program`; the reply's body into `body` (may be null).
     calcu::sessions::Task<bool> buildAndLoad(calcu::sessions::OperationContext&, Value program, bool inSetup, Body* body,
                                              std::string* error);
-    // S7's clean start: from the configuration's preset, else the model's
-    // startup preset (EC-4), else a Cold boot to key readiness.
+    // Build & Load's clean start: from the configuration's preset, else the
+    // model's startup preset, else a Cold boot to key readiness.
     calcu::sessions::Task<bool> cleanStart(calcu::sessions::OperationContext&, std::string* how, std::string* error);
-    // S4: Reset or Cold boot without the run to key readiness, standing at
-    // the reset vector (D-2).
+    // Reset or Cold boot without the run to key readiness, standing at
+    // the reset vector.
     bool resetBare(bool coldBoot, std::string* error);
-    // S8: pause cpu, landed between two instructions.
+    // Pause cpu, landed between two instructions.
     calcu::sessions::Task<void> pauseNow(calcu::sessions::OperationContext&);
     void bindStatic(const Value& item, bool isListing);
 
@@ -186,13 +183,13 @@ private:
     Value launchArgs_;     // the client's attach arguments, for restart
     Value attachConfig_;   // effectiveConfig() of them
 
-    // Events (AC-16).
+    // Events.
     bool lastPaused_ = false;
     bool entryPending_ = false;
     bool replacedPending_ = false;
     std::uint64_t seenGeneration_ = 0;   // the machine the session knows (the set-up's own builds are known)
 
-    // The operation of a request (D-1).
+    // The operation of a request.
     bool opRunning_ = false;
     std::optional<Value> pendingRequest_;
     bool tellStopAtEnd_ = false;   // the end leaves a pause to be told (entry)

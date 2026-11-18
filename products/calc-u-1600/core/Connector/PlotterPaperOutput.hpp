@@ -10,12 +10,12 @@
 #include <variant>
 #include <vector>
 
-// ── The plotters' paper output (LIB-8 design §10.3, §10.4; spec AC-32 to AC-34) ──
+// ── The plotters' paper output ──────────────────────────────────────────
 //
 // The CE-150 and the CE-1600P offer the library's generic kind
 // `paper-output`: pen strokes in four colours on a roll, no text layer. Each
-// card owns one beside its AlpsPlotterMechanism, made and gone with the card
-// (D-16), and hands it to the mechanism as its PenListener. The paper itself
+// card owns one beside its AlpsPlotterMechanism, made and gone with the card,
+// and hands it to the mechanism as its PenListener. The paper itself
 // lives in the session (calcu::paper::PaperPart); this only turns the
 // mechanism's pen calls into marks.
 //
@@ -24,13 +24,13 @@
 // x = printableLeft + penX, y = yBase + penY (in ten-thousandths of a unit).
 // A reset of the mechanism keeps the paper where it stands: the open stroke
 // is closed and yBase takes the old penY, so the next plot goes on below
-// what was drawn (D-11; ledger 1600-34).
+// what was drawn, as real ink stays on the paper.
 
 namespace sharp {
 
-// AC-32: 56 mm of which 42.75 mm drawn on (CE-150), 210 mm of which 190 mm
+// 56 mm of which 42.75 mm drawn on (CE-150), 210 mm of which 190 mm
 // (CE-1600P), the margins split evenly; a stroke of one point (25.4/72 mm);
-// pictures at 1200 dots per inch (AC-35).
+// pictures at 1200 dots per inch.
 inline calcu::paper::PaperDescription plotterPaperDescription(calcu::paper::Coord width, calcu::paper::Coord left,
                                                               calcu::paper::Coord printable) {
     calcu::paper::PaperDescription d;
@@ -51,7 +51,7 @@ inline calcu::paper::PaperDescription ce1600pPaperDescription() {
     return plotterPaperDescription(21'221'053, 1'010'526, 19'200'000);
 }
 
-// AC-34: black, blue, dark green, red, in AlpsPlotterMechanism::PenColor's order.
+// Black, blue, dark green, red, in AlpsPlotterMechanism::PenColor's order.
 inline constexpr std::array<calcu::paper::Rgb, 4> kPenColours{
     {{0, 0, 0}, {0, 0, 255}, {0, 128, 0}, {255, 0, 0}}};
 
@@ -88,8 +88,8 @@ public:
         m_penY = 0;
     }
 
-    /// The machine state (C1600-5 AC-13): where the pen stands on the
-    /// paper. The paper itself is the session's (LIB-8).
+    /// The machine state: where the pen stands on the
+    /// paper. The paper itself is the session's.
     template <class Io>
     void stateIo(Io& io) {
         io(m_yBase)(m_penY)(m_down);

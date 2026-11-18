@@ -19,7 +19,7 @@
 // over the record headers, not a copy of the whole program.
 //
 // Re-typing a line identical to the stored one changes nothing and is
-// reported as not stored -- same as before this check existed.
+// reported as not stored.
 
 namespace basic {
 

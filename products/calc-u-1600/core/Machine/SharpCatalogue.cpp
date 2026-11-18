@@ -15,14 +15,14 @@ namespace sharp {
 
 namespace {
 
-// The place bus-rom takes any number of bus ROMs (C1600-4 D-6).
+// The place bus-rom takes any number of bus ROMs.
 constexpr int kBusRomsAtOnce = 1000;
 
 RomEntry rom(const char* file, std::uint64_t bytes, const char* md5) {
     return RomEntry{file, RomEncoding::Binary, bytes, ContentUnit::Bytes, md5};
 }
 
-// The fetch list of roms/fetch_roms.sh (LIB-12 AC-12).
+// The fetch list of roms/fetch_roms.sh.
 std::vector<RomEntry> pc1600Roms(bool old) {
     if (old)
         return {rom("PC1600-P0-B0-old.bin", 16384, "5afcc22134e106bfd63b899febe9df7c"),
@@ -48,7 +48,7 @@ DisplayDescriptor display(bool pc1600) {
     d.geometry = DotMatrixGeometry{156, pc1600 ? 32 : 7, std::nullopt};
     for (std::size_t i = 0; i < StatusLine::kCount; ++i) {
         const std::string name = kStatusSymbolNames[i];
-        // S, ROMAJI, CTRL and BATT are the PC-1600's only (C1600-1 AC-13).
+        // S, ROMAJI, CTRL and BATT are the PC-1600's only.
         if (!pc1600 && (name == "S" || name == "ROMAJI" || name == "CTRL" || name == "BATT")) continue;
         d.indicators.push_back({name, false});
     }
@@ -57,7 +57,7 @@ DisplayDescriptor display(bool pc1600) {
 
 PinOutDescriptor contactLevel(const char* id, Takes takes) {
     // Every Sharp pin-out is contact level and a power cycle follows a
-    // change on it (LIB-2 AC-28; behaviour change 1600-4).
+    // change on it.
     return {PinOutId{id}, PinOutLevel::ContactLevel, takes, AfterChange::PowerCycle};
 }
 
@@ -73,7 +73,7 @@ MachineDescriptor pc1500Descriptor(bool pc1500a) {
                       pc1500Variant("A04", "8ebec8b0ef358645df14807c31df7d06")};
     }
     d.defaultVariant = VariantId{"A04"};
-    d.tickRate = kPC1500CpuHz;   // one LH5801 cycle (C1600-1 AC-1)
+    d.tickRate = kPC1500CpuHz;   // one LH5801 cycle
     d.display = display(false);
     d.hasSound = true;
     for (const auto& k : pc1500KeyIds()) d.keys.push_back({KeyId{k}, {}});
@@ -83,7 +83,7 @@ MachineDescriptor pc1500Descriptor(bool pc1500a) {
                 {PlaceName{kPrinter}, ConnectorId{"60-pin"}, PinOutId{kPC1500PrinterPinOut}, 1},
                 {PlaceName{kInterface}, ConnectorId{"60-pin"}, PinOutId{kPC1500InterfacePinOut}, 1},
                 {PlaceName{kBusRomPlace}, ConnectorId{"60-pin"}, PinOutId{kPC1500BusPinOut}, kBusRomsAtOnce}};
-    // Depth as the machine is built (machine.md, fit table, "Depth today").
+    // Depth as the machine is built.
     const ComponentId memory{"memory"};
     d.components = {{ComponentId{"LH5801"}, "LH5801 CPU", Depth::Separate, std::nullopt},
                     {ComponentId{kRtcComponent}, "uPD1990AC real-time clock", Depth::Separate, std::nullopt},
@@ -93,7 +93,7 @@ MachineDescriptor pc1500Descriptor(bool pc1500a) {
                     {ComponentId{"lcd"}, "LCD and its RAM", Depth::Functional, std::nullopt},
                     {ComponentId{"buzzer"}, "piezo buzzer", Depth::Functional, std::nullopt}};
     // A battery-backed module is a medium in its slot, but the slot is no media
-    // place of the descriptor: the module is a peripheral there (LIB-7 D-1, D-22).
+    // place of the descriptor: the module is a peripheral there.
     d.debugTargets = {DebugTargetId{"LH5801"}};
     return d;
 }
@@ -104,7 +104,7 @@ MachineDescriptor pc1600Descriptor() {
     d.family = ModelFamilyId{kSharpFamily};
     d.variants = {{VariantId{"New"}, pc1600Roms(false)}, {VariantId{"Old"}, pc1600Roms(true)}};
     d.defaultVariant = VariantId{"New"};
-    d.tickRate = kPC1600TStateHz;   // one SC7852 T-state; the LH5803 counts in them too (AC-1)
+    d.tickRate = kPC1600TStateHz;   // one SC7852 T-state; the LH5803 counts in them too
     d.display = display(true);
     d.hasSound = true;
     for (const auto& k : pc1600KeyIds()) d.keys.push_back({KeyId{k}, {}});
@@ -164,7 +164,7 @@ std::vector<PeripheralDescriptor> peripherals() {
                           rom("PC1600-P1-B5-CE1600P-OR-F-old.bin", 16384, "33f3ef7207eac06587cc4c6d70c6cbd0")}}};
     ce1600p.defaultVariant = VariantId{"New"};
     ce1600p.fits = {PinOutId{kPC1600PrinterPinOut}};
-    // The CE-1600F is described with it, as today (P-3; LIB-1 AC-39).
+    // The CE-1600F is described with it.
     ce1600p.mediaPlaces = {{MediaPlaceId{"cassette-recorder"}, "cassette", MediaPassage::Holding, {}},
                            {MediaPlaceId{"floppy"}, "floppy-disk", MediaPassage::Holding, {0, 1}}};
     const ComponentId plotter{"plotter"};
@@ -174,12 +174,11 @@ std::vector<PeripheralDescriptor> peripherals() {
     PeripheralDescriptor hostDrive;
     hostDrive.id = PeripheralId{kHostDrive};
     hostDrive.name = "host drive";
-    // Calc-U-1600's own ROM (firmware/pc1600-hostdrive/), always bundled
-    // (roms.md Q-1).
+    // Calc-U-1600's own ROM (firmware/pc1600-hostdrive/), always bundled.
     hostDrive.roms = {rom("PC1600-P1-B7-HOSTDRIVE.bin", 16384, "2aa388667706bf9bf5a707dc7b36416d")};
     hostDrive.fits = {PinOutId{kPC1600HostDrivePinOut}};
 
-    // C1600-4 AC-10, D-5: no ROM entry of its own; its bytes come with the
+    // No ROM entry of its own; its bytes come with the
     // request (BusRomRequest), so only a preset can plug one in.
     PeripheralDescriptor busRom;
     busRom.id = PeripheralId{kBusRom};
@@ -210,7 +209,7 @@ PeripheralDescriptor moduleDescriptor(const MemoryCardDefinition& def) {
     bool writeProtect = false;
     for (const Region& r : def.regions)
         for (std::uint32_t b = 0; b < r.banking.bankCount; ++b) writeProtect = writeProtect || r.contentForBank(b).hasWriteProtect;
-    if (writeProtect) d.controls = {{ControlId{"write-protect"}, ControlForm::Switch}};   // LIB-2 D-9
+    if (writeProtect) d.controls = {{ControlId{"write-protect"}, ControlForm::Switch}};
     d.productData = std::make_shared<ModuleDefinitionData>(def);
     return d;
 }

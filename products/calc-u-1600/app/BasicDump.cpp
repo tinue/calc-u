@@ -74,7 +74,7 @@ BasicDump basicDump(const sharp::LoaderMemory& mem) {
             to = static_cast<std::uint32_t>(end) + 16;
         }
     }
-    // EC-4: the rows only when the start lies before the end.
+    // The rows only when the start lies before the end.
     for (std::uint32_t a = from; from < to && a <= to && a <= 0xFFFF; a += 16) {
         BasicRow row;
         row.address = static_cast<std::uint16_t>(a);

@@ -1,5 +1,4 @@
-// LIB-8, the Calc-U-1600 column in the app session (design §10.6, P16-5 and
-// P16-6): the papers of the two plotters in SharpAppPart's PaperPart, kept
+// The paper in the Calc-U-1600 app session: the papers of the two plotters in SharpAppPart's PaperPart, kept
 // through what changes the machine, and the plotters' Copy.
 
 #include <algorithm>
@@ -43,9 +42,9 @@ void plot(SessionFixture& f, const std::string& line, double seconds) {
     f.runFor(seconds);
 }
 
-// ── P16-6, AC-36 ─────────────────────────────────────────────────────────
+// ── The papers topic, and the papers kept ────────────────────────────────
 
-TEST(lib8_ac36_papers_topic_lists_both_plotters_without_any_plugged) {
+TEST(papers_topic_lists_both_plotters_without_any_plugged) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
@@ -58,7 +57,7 @@ TEST(lib8_ac36_papers_topic_lists_both_plotters_without_any_plugged) {
     CHECK(s && s->panels.size() == 1 && !s->panels[0].owner);   // the panel shows no name without a plotter
 }
 
-TEST(lib8_ac36_ce150_paper_kept_through_detach_rom_module_and_model_switch) {
+TEST(ce150_paper_kept_through_detach_rom_module_and_model_switch) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500"));
@@ -94,7 +93,7 @@ TEST(lib8_ac36_ce150_paper_kept_through_detach_rom_module_and_model_switch) {
     CHECK(least >= first.to);
 }
 
-TEST(lib8_ac36_ce1600p_paper_kept_through_detach_and_its_rom_variant) {
+TEST(ce1600p_paper_kept_through_detach_and_its_rom_variant) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -118,9 +117,9 @@ TEST(lib8_ac36_ce1600p_paper_kept_through_detach_and_its_rom_variant) {
     CHECK_EQ(points(f, "CE-150"), std::size_t{0});
 }
 
-// P-A2 (A-3): a preset the user loads starts the paper of the plotter it
-// plugs in empty; again on format 2 in M-46.
-TEST(lib8_ac36_user_preset_naming_a_plotter_starts_it_empty) {
+// A preset the user loads starts the paper of the plotter it plugs in
+// empty.
+TEST(user_preset_naming_a_plotter_starts_it_empty) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
@@ -143,9 +142,9 @@ TEST(lib8_ac36_user_preset_naming_a_plotter_starts_it_empty) {
     CHECK(after < drawn);   // only the preset's own printout
 }
 
-// ── P16-5, AC-35 ─────────────────────────────────────────────────────────
+// ── Copy ─────────────────────────────────────────────────────────────────
 
-TEST(lib8_ac35_copy_of_a_plotter_is_1200_dpi) {
+TEST(copy_of_a_plotter_is_1200_dpi) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -159,7 +158,7 @@ TEST(lib8_ac35_copy_of_a_plotter_is_1200_dpi) {
     CHECK(s.dotsPerInch == 1200.0);
 }
 
-TEST(lib8_ac35_long_roll_lowered_by_ac17) {
+TEST(long_roll_lowered_never_cropped) {
     // A CE-150 roll longer than 16000 pixels at 1200 dots per inch (339 mm):
     // the picture is lowered, never cropped.
     sharp::PlotterPaperOutput out(sharp::ce150PaperDescription());

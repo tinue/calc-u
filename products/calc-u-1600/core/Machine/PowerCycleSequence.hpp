@@ -3,18 +3,17 @@
 #include <cstdint>
 
 // The power cycle of a Sharp machine as a sequence over the advances that
-// follow (C1600-1 design §3.3; AC-6, AC-7): today's MachineSession sequence
-// (0.8.1 `app/MachineSession.cpp:244-257`), moved into the core. No clock,
-// no thread: SharpMachine::advance() runs it in chunks that end on its
-// phase changes, and each phase is one run of the core, as today's job ran
-// one `job::run` per phase.
+// follow: the sequence of 0.8.1's MachineSession
+// (`app/MachineSession.cpp:244-257`), in the core. No clock, no thread:
+// SharpMachine::advance() runs it in chunks that end on its phase changes,
+// and each phase is one run of the core.
 //
 //   1. `off` down for kKeyHoldFrames frames, then released;
 //   2. up to kPowerOffTimeoutFrames frames, one at a time, until the machine
 //      is off (checked before each frame);
-//   3. the off point: the changes that wait for it are made (D-2);
+//   3. the off point: the changes that wait for it are made;
 //   4. `on` down for kKeyHoldFrames frames, then released.
-// Running to the prompt is the caller's (LIB-18).
+// Running to the prompt is the caller's.
 
 namespace sharp {
 
@@ -35,7 +34,7 @@ public:
         virtual void atOffPoint() = 0;
     };
 
-    // frame = tick rate / 60, as today (`clockHz() / 60` truncated).
+    // frame = tick rate / 60 (`clockHz() / 60` truncated).
     void start(std::uint64_t frame, Actions& a) {
         m_frame = frame;
         m_phase = Phase::OffHeld;
@@ -81,7 +80,7 @@ public:
         m_remaining = 0;
     }
 
-    /// The machine state (C1600-5 AC-13, StateRecords.hpp).
+    /// The machine state (StateRecords.hpp).
     template <class Io>
     void stateIo(Io& io) {
         io(m_phase)(m_frame)(m_remaining)(m_frames);

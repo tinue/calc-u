@@ -8,7 +8,7 @@ class LoaderMemory;
 }
 
 // Writes a machine-language block into the PC-1500/1500A at `addr` through
-// the loader memory access (C1600-2 AC-10, AC-14): all or nothing -- a byte
+// the loader memory access: all or nothing -- a byte
 // of the range that is not RAM (ROM, open bus, a module that drops it)
 // writes nothing and `error` says where.
 bool loadPC1500MachineCode(sharp::LoaderMemory& memory, uint32_t addr, const uint8_t* data, size_t len,

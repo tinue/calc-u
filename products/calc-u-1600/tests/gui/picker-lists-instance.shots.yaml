@@ -1,15 +1,15 @@
-# LIB-7 AC-8 (Calc-U-1600 AC-45; design §10.6 P8; ADR 0032): after a module
+# After a module
 # template was saved under a name (Name & Save), the picker of that slot
 # lists it among the instances -- after the templates and a separator, before
 # the modules that are not media. The run's save folder starts empty, so the
 # instance is made first. A check scenario
-# (CalcU1600Shots.lib7-ac8-picker-lists-instance, Longer); format:
+# (CalcU1600Shots.picker-lists-instance, Longer); format:
 # docs/developer/screenshots/README.md.
-out: ../../build/shots-check/lib7-ac8
+out: ../../build/shots-check/picker-lists-instance
 window: 1430x1000
 
 shots:
-  - name: lib7-ac8
+  - name: picker-lists-instance
     preset: ../../docs/developer/screenshots/presets/pc1600-ready.pc1600
     steps:
       - select: media-picker-slot-1 = CE-1600M
@@ -21,7 +21,7 @@ shots:
       - select: media-picker-slot-1 = CE-1600M
       - run: 2
       - open: media-picker-slot-1
-      - capture: { target: control-bar, file: lib7-ac8-picker.png, padding: 4 }
+      - capture: { target: control-bar, file: picker-lists-instance-picker.png, padding: 4 }
       - close
       - select: media-picker-slot-1 = My programs
-    capture: { target: control-bar, file: lib7-ac8-instance.png, padding: 4 }
+    capture: { target: control-bar, file: picker-lists-instance-instance.png, padding: 4 }

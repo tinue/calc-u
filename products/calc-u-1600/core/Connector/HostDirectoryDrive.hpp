@@ -250,10 +250,10 @@ public:
         date = static_cast<uint16_t>((6 << 9) | ((tm.tm_mon + 1) << 5) | tm.tm_mday);
     }
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// The machine state (Machine/StateRecords.hpp): the
     /// open handles (the directory below the folder, the searches under
     /// way), each host file by its path below the folder. The folder is the
-    /// host's, not the state's (LIB-11 AC-24).
+    /// host's, not the state's.
     template <class Io>
     void stateIo(Io& io) {
         io(m_cwd)(m_listDirectories);

@@ -9,7 +9,7 @@
 #include "settings/SettingsFile.hpp"
 
 // Calc-U-1600's settings for a test: the product's declaration over a
-// settings file that is never read or written (LIB-9 AC-18), so a test
+// settings file that is never read or written, so a test
 // touches nothing of the user's. Not copyable: Settings holds the file.
 struct TestSettings {
     calcu::settings::SettingsFile file = calcu::settings::SettingsFile::defaultsOnly(cu1600::settingsDecl());
@@ -30,7 +30,7 @@ inline calcu::settings::HostDirs testHostDirs(const std::string& home) {
 }
 
 // The full ROM set is in roms/ (the product directory): through the one
-// lookup (LIB-12), looked up once; the tests that boot a machine skip without it.
+// lookup, looked up once; the tests that boot a machine skip without it.
 inline bool fullRomSetPresent() {
     static const bool ok = sharp::lookUpRoms(calcu::roms::DirectoryBundle("roms")).ok();
     return ok;

@@ -1,5 +1,4 @@
-# The VS Code templates filled in as the extension fills them (LIB-6 design
-# §10.6 P8, AC-51; C1600-3 AC-19): every `{{name}}` becomes the target's
+# The VS Code templates filled in as the extension fills them: every `{{name}}` becomes the target's
 # default name (vscode/calcu1600-debug/scaffold.js: `rom` for a bus ROM
 # template, `main` otherwise; the rule of scaffold.js:58). The file a filled
 # preset reads when it is checked (the bus ROM, the program) is written

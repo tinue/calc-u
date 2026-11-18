@@ -72,7 +72,7 @@ machine::Machine* machineOf(CommandContext& c) { return c.host.session().context
 Reply noMachine() { return refusedReply(sessions::kNoMachine); }
 Reply notInThisRun() { return refusedReply("This command needs a run of calcu; it is not offered through attach."); }
 
-// ── C1600-2 AC-21 (design §3.7): the loaders ─────────────────────────────
+// ── The loaders ─────────────────────────────────────────────────────────
 
 // The file and its options: `<file> [<n>] [address=<a>] [length=<l>] [cpu=<name>] [run]`.
 struct LoaderArgs {
@@ -221,7 +221,7 @@ Reply loadCodeCmd(CommandContext& c) {
     return doneReply(std::move(v), std::move(lines));
 }
 
-// ── C1600-5 AC-2, AC-3, EC-4 (§3.1): dump-basic ───────────────────────────
+// ── dump-basic ──────────────────────────────────────────────────────────
 
 Reply dumpBasicCmd(CommandContext& c) {
     if (!c.line.argText.empty()) return refusedReply("usage: c1600 dump-basic");
@@ -255,7 +255,7 @@ Reply dumpBasicCmd(CommandContext& c) {
     return doneReply(std::move(v), std::move(d.lines));
 }
 
-// ── C1600-5 AC-4 (§3.2, D-2): inspect ─────────────────────────────────────
+// ── inspect ─────────────────────────────────────────────────────────────
 
 constexpr inspect::View kViews[] = {
     inspect::View::Pointers,      inspect::View::Inventory,     inspect::View::Z80View,     inspect::View::LhView,
@@ -283,10 +283,10 @@ Reply inspectCmd(CommandContext& c) {
     return doneReply(std::move(arr), std::move(lines));
 }
 
-// ── C1600-5 AC-5, AC-6, EC-2, EC-6 (§3.3, D-1): cassette ─────────────────
+// ── cassette ────────────────────────────────────────────────────────────
 
 // The recording of `cassette record <path>`: the tape's sound alone, as a WAV
-// at the path (D-1; 0.8.1's --tape-out); no cassette definition.
+// at the path; no cassette definition.
 class RecordingCodec final : public media::MediumCodec {
 public:
     media::ReadOutcome read(const std::string&, const Companion&) const override {
@@ -335,7 +335,7 @@ Reply cassetteCmd(CommandContext& c, const SharpHarnessParts& parts) {
     if (!m) return noMachine();
     if (!w.empty() && w[0] == "status" && w.size() == 1) {
         const sharp::TapeDeckAccess* deck = calcu::machine::first<sharp::TapeDeckAccess>(*m);
-        if (!deck) return refusedReply("The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.");   // EC-2
+        if (!deck) return refusedReply("The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.");
         const TapeDeck::Status s = deck->status();
         const char* mode = s.mode == TapeDeck::Mode::Play ? "playing" : s.mode == TapeDeck::Mode::Record ? "recording" : "empty";
         std::vector<std::string> lines;
@@ -351,7 +351,7 @@ Reply cassetteCmd(CommandContext& c, const SharpHarnessParts& parts) {
         return doneReply(std::move(v), std::move(lines));
     }
     if (w.size() != 2 || w[0] != "record") return refusedReply("usage: c1600 cassette record <file.wav> | cassette status");
-    if (!hasCassette(*m)) return refusedReply("The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.");   // EC-2
+    if (!hasCassette(*m)) return refusedReply("The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.");
     SharpAppPart* app = parts.app ? parts.app() : nullptr;
     if (!app) return notInThisRun();
     std::error_code ec;
@@ -360,10 +360,10 @@ Reply cassetteCmd(CommandContext& c, const SharpHarnessParts& parts) {
     b.kind = &recordingKind();
     b.name = calcu::files::fromPathNative(target.filename());
     b.origin = media::Origin::Saved;
-    b.isTemplate = false;   // an instance: written each time the motor stops and at eject (AC-5)
+    b.isTemplate = false;   // an instance: written each time the motor stops and at eject
     b.path = calcu::files::fromPathNative(target);
-    // A tape in the cassette is written as LIB-7 says and taken out first;
-    // a new, empty tape records (AC-5).
+    // A tape in the cassette is written as the media part writes it and
+    // taken out first; a new, empty tape records.
     sessions::SessionContext& ctx = c.host.session().context();
     app->mediaPart().eject(ctx, "cassette");
     const media::Content blank = std::make_shared<sharp::TapeContent>(wavMono16Bytes({}, TapeDeck::kRecordSampleRate));
@@ -371,7 +371,7 @@ Reply cassetteCmd(CommandContext& c, const SharpHarnessParts& parts) {
     return doneReply();
 }
 
-// ── C1600-5 AC-7 to AC-9, EC-3 (§3.4, D-4): serial ───────────────────────
+// ── serial ──────────────────────────────────────────────────────────────
 
 const char* linkFile(const std::string& port) {
     return port == "ce158" ? "calcu1600-ce158.serial" : "calcu1600-rs232c.serial";
@@ -382,7 +382,7 @@ void addText(std::vector<std::string>& lines, const std::string& title, const st
     const std::string text = printableBytes(bytes.data(), bytes.size());
     if (text.empty()) return;
     std::size_t from = 0;
-    for (;;) {   // one reply line per line of the text (AC-8: a line end stands as it is)
+    for (;;) {   // one reply line per line of the text (a line end stands as it is)
         const std::size_t nl = text.find('\n', from);
         lines.push_back("| " + text.substr(from, nl == std::string::npos ? std::string::npos : nl - from));
         if (nl == std::string::npos || nl + 1 == text.size()) break;
@@ -399,7 +399,7 @@ Reply serialCmd(CommandContext& c, const SharpHarnessParts& parts) {
     if (!serial || !app || !serial->attached()) return notInThisRun();
     const std::string& port = w[0];
     const std::string& what = w[1];
-    // EC-3: the port of the running machine, or none; nothing waits for a later machine.
+    // The port of the running machine, or none; nothing waits for a later machine.
     if (!serial->port(port))
         return refusedReply(port == "ce158" ? "The machine has no CE-158." : "The machine has no RS-232C port: only the PC-1600 has one.");
     const bool linked = app->serialLinked(linkFile(port));
@@ -456,24 +456,24 @@ Reply serialCmd(CommandContext& c, const SharpHarnessParts& parts) {
     return refusedReply(usage);
 }
 
-// ── C1600-5 AC-11, EC-5 (§3.5): host-drive ───────────────────────────────
+// ── host-drive ──────────────────────────────────────────────────────────
 
 Reply hostDriveCmd(CommandContext& c) {
     const std::string arg = c.line.argText;
     if (arg.empty()) return refusedReply("usage: c1600 host-drive <folder> | off");
     machine::Machine* m = machineOf(c);
     if (!m) return noMachine();
-    if (m->descriptor().model.value != sharp::kPC1600) return refusedReply("The host drive is a PC-1600 peripheral.");   // EC-5
+    if (m->descriptor().model.value != sharp::kPC1600) return refusedReply("The host drive is a PC-1600 peripheral.");
     std::string dir;
     if (arg != "off") {
         std::error_code ec;
-        if (!fs::is_directory(calcu::files::toPath(arg), ec)) return refusedReply("The path " + arg + " is no folder.");   // EC-5
+        if (!fs::is_directory(calcu::files::toPath(arg), ec)) return refusedReply("The path " + arg + " is no folder.");
         dir = calcu::files::fromPathNative(fs::absolute(calcu::files::toPath(arg), ec));
     }
     return harness::fromSessionReply(c.host.command(sessions::Command{commands::kMountHostDrive, sessions::Value::object({{"dir", dir}})}));
 }
 
-// ── C1600-5 AC-12 (§3.6, D-5): call ──────────────────────────────────────
+// ── call ────────────────────────────────────────────────────────────────
 
 std::vector<std::string> registerLines(CommandContext& c, const std::string& target, harness::Value& out) {
     std::vector<std::string> lines;
@@ -528,7 +528,7 @@ Reply callCmd(CommandContext& c) {
     const machine::TickRate rate = m->descriptor().tickRate;
     const machine::Ticks before = m->tickCount();
     const machine::Ticks within = harness::ticksFor(timeoutUs, rate);
-    // LIB-10's step-out: until the routine the target is in has returned.
+    // The debugger's step-out: until the routine the target is in has returned.
     sessions::Value::Object args{{"level", "cpu"}, {"count", 1}, {"kind", "out"}, {"target", target}};
     const sessions::ReplyMessage r =
         c.host.command(sessions::Command{debugger::kStepCommand, sessions::Value(std::move(args))}, "timeout", within);

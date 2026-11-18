@@ -1,8 +1,7 @@
-// C1600-2 machine code (AC-8 to AC-12, AC-23; design T5 to T7): the one
-// plan (core/MachineCodeFile's planLoad through sharp::loaders::planCode),
+// Machine code: the one plan (core/MachineCodeFile's planLoad through sharp::loaders::planCode),
 // the writers on the loader memory access (PC1500MachineCodeLoader,
 // PC1600MachineCodeLoader), the reply (advice, the work-area warning) and
-// hex-address parsing. Ported from 0.8.1's machine_code_file_tests.cpp.
+// hex-address parsing.
 
 #include <cstdint>
 #include <cstdio>
@@ -179,10 +178,10 @@ TEST(test_read_headerless) {
     CHECK(f.payload == kCode);
 }
 
-// ── AC-8: the refusals, row by row, in the table's order ────────────────
+// ── The refusals, in the order they are checked ────────────────────────
 
-// Row 1: not machine code (a BASIC file with the hint), or a damaged header.
-TEST(c1600_2_ac8_row1_not_code_basic_hint) {
+// Refusal 1: not machine code (a BASIC file with the hint), or a damaged header.
+TEST(refused_not_code_basic_hint) {
     CHECK(plan(Target::PC1500, machinecode::readFile(ce158File(kCode, 0, 0, 0x40)), {}).error.find("Load BASIC Program") != std::string::npos);
     CHECK(plan(Target::PC1600, machinecode::readFile(pc1600File(kCode, 0, 0, 0x21)), kStock).error.find("Load BASIC Program") != std::string::npos);
     const std::string bas = "10 PRINT \"HI\"\n20 END\n";
@@ -195,8 +194,8 @@ TEST(c1600_2_ac8_row1_not_code_basic_hint) {
     CHECK(plan(Target::PC1500, machinecode::readFile(ce158File(kCode, 0x40C5, 0, 'Z')), {}).error.find("no complete header") != std::string::npos);
 }
 
-// Row 2: the header's length disagrees; both numbers; a length by hand takes it.
-TEST(c1600_2_ac8_row2_length_mismatch_both_numbers) {
+// Refusal 2: the header's length disagrees; both numbers; a length by hand takes it.
+TEST(refused_length_mismatch_both_numbers) {
     auto longer = ce158File(kCode, 0x40C5, 0);
     longer.push_back(0xAA);
     const File f = machinecode::readFile(longer);
@@ -214,8 +213,8 @@ TEST(c1600_2_ac8_row2_length_mismatch_both_numbers) {
     CHECK(t.error.find(std::to_string(kCode.size() - 1)) != std::string::npos);
 }
 
-// Row 3: which machine or mode takes it.
-TEST(c1600_2_ac8_row3_machine_or_mode) {
+// Refusal 3: which machine or mode takes it.
+TEST(refused_names_machine_or_mode) {
     const File ce158 = machinecode::readFile(ce158File(kCode, 0x40C5, 0));
     CHECK(plan(Target::PC1600, ce158, kStock).error.find("MODE 1") != std::string::npos);
     const Plan m1 = plan(Target::PC1600, ce158, state(kStockAreas, true));
@@ -228,16 +227,16 @@ TEST(c1600_2_ac8_row3_machine_or_mode) {
     CHECK(z.error.empty() && z.cpu == Cpu::Z80 && z.busAddr == 0xC0C5);
 }
 
-// Row 4: no code after the header, or a length of 0 by hand.
-TEST(c1600_2_ac8_row4_no_code) {
+// Refusal 4: no code after the header, or a length of 0 by hand.
+TEST(refused_file_without_code) {
     const File headerOnly = machinecode::readFile(ce158File({0x00}, 0x40C5, 0));
     CHECK(plan(Target::PC1500, headerOnly, {}, length(0)).error == "The file contains no code.");
     CHECK(plan(Target::PC1500, machinecode::readFile(kCode), {}, length(0)).e == LoadError::Empty);
 }
 
-// Row 5: headerless without an address; the PC-1600 proposes the start of
+// Refusal 5: headerless without an address; the PC-1600 proposes the start of
 // the selected program area, in the MODE's address space.
-TEST(c1600_2_ac8_row5_headerless_needs_address) {
+TEST(refused_headerless_needs_address) {
     const File f = machinecode::readFile(kCode);
     const Plan p1500 = plan(Target::PC1500, f, {});
     CHECK(p1500.needsAddress && p1500.defaultAddr == 0);
@@ -256,14 +255,14 @@ TEST(c1600_2_ac8_row5_headerless_needs_address) {
     CHECK(s.find("address") != std::string::npos && s.find("&C0C5") != std::string::npos);
 }
 
-// Row 6: a length by hand that the file does not hold; both numbers.
-TEST(c1600_2_ac8_row6_length_exceeds) {
+// Refusal 6: a length by hand that the file does not hold; both numbers.
+TEST(refused_length_exceeds_file) {
     const Plan p = plan(Target::PC1500, machinecode::readFile(ce158File(kCode, 0x40C5, 0)), {}, length(99));
     CHECK(p.e == LoadError::LengthExceeds && p.error.find("99") != std::string::npos && p.error.find("5") != std::string::npos);
 }
 
-// Row 7: a PC-1600 header's bank: 0-3 only, &8000-&BFFF there, RAM in it.
-TEST(c1600_2_ac8_row7_header_bank_and_range) {
+// Refusal 7: a PC-1600 header's bank: 0-3 only, &8000-&BFFF there, RAM in it.
+TEST(refused_header_bank_and_range) {
     PC1600State ram = kSlot1First;
     ram.bankRamPages = {~uint64_t{0}, ~uint64_t{0}, ~uint64_t{0}, ~uint64_t{0}};
     CHECK(plan(Target::PC1600, machinecode::readFile(pc1600File(kCode, 0x0580C5, 0)), ram).error.find("banks 0-3") != std::string::npos);
@@ -275,15 +274,15 @@ TEST(c1600_2_ac8_row7_header_bank_and_range) {
     CHECK(p.error.find("bank 3") != std::string::npos && p.error.find("no RAM") != std::string::npos);
 }
 
-// Row 8: past &FFFF.
-TEST(c1600_2_ac8_row8_past_ffff) {
+// Refusal 8: past &FFFF.
+TEST(refused_code_past_ffff) {
     const Plan p = plan(Target::PC1500, machinecode::readFile(ce158File(kCode, 0xFFFE, 0)), {});
     CHECK(p.e == LoadError::PastEnd && p.error.find("runs past &FFFF") != std::string::npos && p.error.find("&FFFE") != std::string::npos);
     CHECK(plan(Target::PC1600, machinecode::readFile(kCode), kStock, at(0xFFFE)).e == LoadError::PastEnd);
 }
 
-// Row 9: LH5803 code outside &0000-&7FFF.
-TEST(c1600_2_ac8_row9_lh5803_range) {
+// Refusal 9: LH5803 code outside &0000-&7FFF.
+TEST(refused_lh5803_range) {
     LoadOptions o = at(0x7FFE);
     o.hasCpu = true;
     o.cpu = Cpu::LH5803;
@@ -291,8 +290,8 @@ TEST(c1600_2_ac8_row9_lh5803_range) {
     CHECK(p.e == LoadError::LhRange && p.error.find("&0000-&7FFF") != std::string::npos);
 }
 
-// Row 10: ROM, or a module not part of the selected program area: where code can go.
-TEST(c1600_2_ac8_row10_rom_or_module_where_instead) {
+// Refusal 10: ROM, or a module not part of the selected program area: where code can go.
+TEST(refused_rom_or_module_where_instead) {
     const Plan rom = plan(Target::PC1600, machinecode::readFile(pc1600File(kCode, 0x7000, 0)), kSlot1First);
     CHECK(rom.e == LoadError::NoSlot && rom.error.find("ROM") != std::string::npos && rom.error.find("from &") != std::string::npos);
     const Plan module = plan(Target::PC1600, machinecode::readFile(pc1600File(kCode, 0x80C5, 0)), kStock);
@@ -302,30 +301,30 @@ TEST(c1600_2_ac8_row10_rom_or_module_where_instead) {
                 state({{1, 0xA000, 0xBFFF, 0}, {0, 0xC000, 0xEFFF, 0}})).error.empty());
 }
 
-// A file that meets two rows is refused by the earlier one.
-TEST(c1600_2_ac8_rows_checked_in_order) {
-    // Row 2 before row 3: a PC-1600 file with a wrong length on a PC-1500.
+// A file that meets two refusals is refused by the earlier one.
+TEST(rows_checked_in_order) {
+    // Refusal 2 before refusal 3: a PC-1600 file with a wrong length on a PC-1500.
     auto longer = pc1600File(kCode, 0xC0C5, 0);
     longer.push_back(0);
     CHECK(plan(Target::PC1500, machinecode::readFile(longer), {}).e == LoadError::BadFile);
-    // Row 3 before row 4: a CE-158 file of no code on a PC-1600 in MODE 0.
+    // Refusal 3 before refusal 4: a CE-158 file of no code on a PC-1600 in MODE 0.
     CHECK(plan(Target::PC1600, machinecode::readFile(ce158File(kCode, 0x40C5, 0)), kStock, length(0)).e == LoadError::HeaderMismatch);
-    // Row 4 before row 5: headerless, no address, length 0.
+    // Refusal 4 before refusal 5: headerless, no address, length 0.
     CHECK(plan(Target::PC1500, machinecode::readFile(kCode), {}, length(0)).e == LoadError::Empty);
-    // Row 5 before row 6: headerless, no address, a length too long.
+    // Refusal 5 before refusal 6: headerless, no address, a length too long.
     CHECK(plan(Target::PC1500, machinecode::readFile(kCode), {}, length(99)).e == LoadError::NeedsAddress);
-    // Row 8 before row 9: LH5803 code that also runs past &FFFF.
+    // Refusal 8 before refusal 9: LH5803 code that also runs past &FFFF.
     LoadOptions lh = at(0xFFFE);
     lh.hasCpu = true;
     lh.cpu = Cpu::LH5803;
     CHECK(plan(Target::PC1600, machinecode::readFile(kCode), kStock, lh).e == LoadError::PastEnd);
-    // Row 8 before row 10: in a module that is not selected, and past &FFFF.
+    // Refusal 8 before refusal 10: in a module that is not selected, and past &FFFF.
     CHECK(plan(Target::PC1600, machinecode::readFile(std::vector<uint8_t>(0x8000, 0)), kStock, at(0x9000)).e == LoadError::PastEnd);
 }
 
 // The menu, a preset, the debugger and the harness plan with planCode: the
 // same plan for the same file, request and machine.
-TEST(c1600_2_ac8_same_plan_menu_preset_debugger_harness) {
+TEST(same_plan_menu_preset_debugger_harness) {
     PC1600Machine m;
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROMs not found in roms/");
     sharp::PC1600LoaderMemory mem(m);
@@ -339,22 +338,22 @@ TEST(c1600_2_ac8_same_plan_menu_preset_debugger_harness) {
     CHECK(a.plan.busAddr == b.busAddr && a.plan.slot == b.slot && a.plan.bank == b.bank && a.plan.len == b.len);
 }
 
-// ── AC-23: where it goes ─────────────────────────────────────────────────
+// ── Where it goes ────────────────────────────────────────────────────────
 
-TEST(c1600_2_ac23_address_by_hand_else_header) {
+TEST(address_by_hand_else_header) {
     const File f = machinecode::readFile(pc1600File(kCode, 0xC0C5, 0));
     CHECK(plan(Target::PC1600, f, kStock).addr == 0xC0C5);
     CHECK(plan(Target::PC1600, f, kStock, at(0xC200)).addr == 0xC200);
     CHECK(plan(Target::PC1500, machinecode::readFile(kCode), {}, at(0x7C01)).addr == 0x7C01);
 }
 
-TEST(c1600_2_ac23_length_by_hand_else_payload) {
+TEST(length_by_hand_else_payload) {
     const File f = machinecode::readFile(ce158File(kCode, 0x40C5, 0));
     CHECK(plan(Target::PC1500, f, {}).len == kCode.size());
     CHECK(plan(Target::PC1500, f, {}, length(3)).len == 3);
 }
 
-TEST(c1600_2_ac23_bank_from_header_or_area) {
+TEST(bank_from_header_or_area) {
     // Bank 0 is "no bank given": S0's first module run decides.
     const File noBank = machinecode::readFile(pc1600File(kCode, 0x0080C5, 0));
     Plan p = plan(Target::PC1600, noBank, kSlot2First);
@@ -382,14 +381,14 @@ TEST(c1600_2_ac23_bank_from_header_or_area) {
     CHECK(p.error.empty() && p.slot == Slot::S1);
 }
 
-TEST(c1600_2_ac23_headerless_no_bank) {
+TEST(headerless_no_bank) {
     const Plan p = plan(Target::PC1600, machinecode::readFile(kCode), kSlot2First, at(0x80C5));
     CHECK(p.error.empty() && p.slot == Slot::S2 && p.bank == 2);   // the area's bank, not one of the file
 }
 
-// ── AC-9: the processor ──────────────────────────────────────────────────
+// ── The processor ────────────────────────────────────────────────────────
 
-TEST(c1600_2_ac9_cpu_by_header_caller_mode) {
+TEST(cpu_by_header_caller_mode) {
     CHECK(plan(Target::PC1600, machinecode::readFile(pc1600File(kCode, 0xC0C5, 0)), state(kStockAreas, true)).cpu == Cpu::Z80);
     CHECK(plan(Target::PC1600, machinecode::readFile(ce158File(kCode, 0x40C5, 0)), state(kStockAreas, true)).cpu == Cpu::LH5803);
     LoadOptions o = at(0x1000);
@@ -403,7 +402,7 @@ TEST(c1600_2_ac9_cpu_by_header_caller_mode) {
     CHECK(plan(Target::PC1600, machinecode::readFile(kCode), kStock, at(0x40C5)).e == LoadError::NoSlot);   // Z-80 &40C5 is ROM
 }
 
-TEST(c1600_2_ac9_addresses_in_cpu_space) {
+TEST(addresses_in_cpu_space) {
     // In MODE 1 a refusal names the address as typed, in the LH5803 view.
     const Plan p = plan(Target::PC1600, machinecode::readFile(ce158File(kCode, 0x00C5, 0)), state(kStockAreas, true));
     CHECK(p.error.find("LH5803 &C5") != std::string::npos && p.error.find("&40C5") != std::string::npos);
@@ -412,9 +411,9 @@ TEST(c1600_2_ac9_addresses_in_cpu_space) {
     CHECK(w.find("LH5803 &7000") != std::string::npos && w.find("7C01") != std::string::npos);
 }
 
-// ── AC-10: the write ─────────────────────────────────────────────────────
+// ── The write ────────────────────────────────────────────────────────────
 
-TEST(c1600_2_ac10_written_any_bank_switched_in) {
+TEST(written_any_bank_switched_in) {
     PC1600Machine m;
     sharp::PC1600LoaderMemory mem(m);
     std::string err;
@@ -439,7 +438,7 @@ TEST(c1600_2_ac10_written_any_bank_switched_in) {
     CHECK(!loadPC1600MachineCode(mem, 0, 0xBFFF, kCode.data(), kCode.size(), &err, 0));
 }
 
-TEST(c1600_2_ac10_not_ram_nothing_written_pc1500) {
+TEST(not_ram_nothing_written_pc1500) {
     PC1500Machine m;
     SKIP_UNLESS(m.loadROMFile("roms/PC-1500_A04.ROM"), "roms/PC-1500_A04.ROM not found");
     sharp::PC1500LoaderMemory mem(m);
@@ -461,11 +460,11 @@ TEST(c1600_2_ac10_not_ram_nothing_written_pc1500) {
     const uint8_t before0 = m.memory().peek(start), before1 = m.memory().peek(static_cast<uint16_t>(start + 1));
     CHECK(!loadPC1500MachineCode(mem, start, kCode.data(), kCode.size(), &err));
     CHECK(err.find("not RAM") != std::string::npos);
-    CHECK(m.memory().peek(start) == before0 && m.memory().peek(static_cast<uint16_t>(start + 1)) == before1);   // OQ-2
+    CHECK(m.memory().peek(start) == before0 && m.memory().peek(static_cast<uint16_t>(start + 1)) == before1);   // nothing written
     CHECK(!loadPC1500MachineCode(mem, 0xFFFE, kCode.data(), kCode.size(), &err));
 }
 
-TEST(c1600_2_ac10_not_ram_nothing_written_pc1600) {
+TEST(not_ram_nothing_written_pc1600) {
     PC1600Machine m;
     m.memory().attachSlot1Card(plainRamCard(0x2000));   // 8 KB: RAM at $A000-$BFFF of bank 0 only
     sharp::PC1600LoaderMemory mem(m);
@@ -475,7 +474,7 @@ TEST(c1600_2_ac10_not_ram_nothing_written_pc1600) {
     CHECK(m.debugSlotImage(1) == before);
 }
 
-TEST(c1600_2_ac10_crossing_bfff_both_checked) {
+TEST(crossing_bfff_both_checked) {
     PC1600Machine m;
     m.memory().attachSlot1Card(plainRamCard(0x8000));
     sharp::PC1600LoaderMemory mem(m);
@@ -492,11 +491,11 @@ TEST(c1600_2_ac10_crossing_bfff_both_checked) {
     CHECK(bare.debugPeek(0xC000) == c000);
 }
 
-// ── AC-11, AC-12: the reply ──────────────────────────────────────────────
+// ── The reply ────────────────────────────────────────────────────────────
 
 // The parts: the range, (PC-1600) the area and bank, NEW with its note, the
 // starting command with its note, warnings.
-TEST(c1600_2_ac11_parts_of_reply) {
+TEST(code_load_reply_parts) {
     PC1600Machine m;
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROMs not found in roms/");
     auto r = loadertest::loadCode(m, pc1600File(kCode, 0xC0C5, 0));
@@ -522,8 +521,8 @@ TEST(c1600_2_ac11_parts_of_reply) {
     }
 }
 
-// Row 1: PC-1500 inside BASIC's memory, NEW &e; (MODE 1 with S0 below).
-TEST(c1600_2_ac11_new_pc1500_inside_basic) {
+// NEW case 1: PC-1500 inside BASIC's memory, NEW &e; (MODE 1 with S0 below).
+TEST(new_pc1500_inside_basic) {
     auto a = machinecode::advice(Target::PC1500, Slot::S0, 0, 0x40C5, 0x20, 0, 0x4000, 0x5800, {}, Cpu::Z80);
     CHECK(a.newCommand == "NEW &40E5");
     // Inside the reserve: no NEW helps.
@@ -537,20 +536,20 @@ TEST(c1600_2_ac11_new_pc1500_inside_basic) {
     CHECK(a.newCommand == "NEW &4105");
 }
 
-// Row 2: PC-1500 outside BASIC's memory: none needed.
-TEST(c1600_2_ac11_new_pc1500_outside_none_needed) {
+// NEW case 2: PC-1500 outside BASIC's memory: none needed.
+TEST(new_pc1500_outside_none_needed) {
     const auto a = machinecode::advice(Target::PC1500, Slot::S0, 0, 0x7C01, 0x10, 0, 0x4000, 0x5800, {}, Cpu::Z80);
     CHECK(a.newCommand.empty() && a.newNote.find("no NEW is needed") != std::string::npos);
 }
 
-// Row 3: the selected S1 / S2: NEW "Sn:",&size.
-TEST(c1600_2_ac11_new_selected_s1_s2) {
+// NEW case 3: the selected S1 / S2: NEW "Sn:",&size.
+TEST(new_selected_s1_s2) {
     const auto a = machinecode::advice(Target::PC1600, Slot::S1, 0, 0x80C5, 0x40, 0, 0, 0, state(kStockAreas, false, 1), Cpu::Z80);
     CHECK(a.newCommand == "NEW \"S1:\",&105");
 }
 
-// Row 4: MODE 0, the first part of S0: NEW "S0:",&size, a note on the bytes below.
-TEST(c1600_2_ac11_new_s0_first_part_with_note) {
+// NEW case 4: MODE 0, the first part of S0: NEW "S0:",&size, a note on the bytes below.
+TEST(new_s0_first_part_with_note) {
     auto a = machinecode::advice(Target::PC1600, Slot::S0, 0, 0xC0C5, 0x100, 0, 0, 0, kStock, Cpu::Z80);
     CHECK(a.newCommand == "NEW \"S0:\",&1C5" && a.newNote.find("Warning") == std::string::npos);
     a = machinecode::advice(Target::PC1600, Slot::S0, 0, 0xC200, 0x10, 0, 0, 0, kStock, Cpu::Z80);
@@ -561,8 +560,8 @@ TEST(c1600_2_ac11_new_s0_first_part_with_note) {
     CHECK(a.newCommand == "NEW \"S0:\",&105");
 }
 
-// Row 5: a later part of S0, or above the area in internal RAM: a warning.
-TEST(c1600_2_ac11_new_later_part_or_above_warning) {
+// NEW case 5: a later part of S0, or above the area in internal RAM: a warning.
+TEST(new_later_part_or_above_warning) {
     auto a = machinecode::advice(Target::PC1600, Slot::S0, 0, 0xC0C5, 0x40, 0, 0, 0, kSlot1First, Cpu::Z80);
     CHECK(a.newCommand.empty() && a.newNote.find("overwrite") != std::string::npos);
     PC1600State low = kStock;
@@ -571,13 +570,13 @@ TEST(c1600_2_ac11_new_later_part_or_above_warning) {
     CHECK(a.newCommand.empty() && a.newNote.find("overwrite") != std::string::npos);
 }
 
-// Row 6: elsewhere: BASIC does not use this memory.
-TEST(c1600_2_ac11_new_elsewhere_not_used) {
+// NEW case 6: elsewhere: BASIC does not use this memory.
+TEST(new_elsewhere_not_used) {
     const auto a = machinecode::advice(Target::PC1600, Slot::S2, 2, 0x80C5, 0x40, 0, 0, 0, kSlot1First, Cpu::Z80);
     CHECK(a.newCommand.empty() && a.newNote.find("doesn't use") != std::string::npos);
 }
 
-TEST(c1600_2_ac11_call_forms_call_callbank_xcall) {
+TEST(call_forms_call_callbank_xcall) {
     PC1600State ram = kSlot1First;
     CHECK(machinecode::advice(Target::PC1500, Slot::S0, 0, 0x40C5, 0x20, 0, 0x4000, 0x5800, {}, Cpu::Z80).callCommand == "CALL &40C5");
     CHECK(machinecode::advice(Target::PC1600, Slot::S0, 0, 0xC0C5, 0x40, 0, 0, 0, kStock, Cpu::Z80).callCommand == "CALL &C0C5");
@@ -586,14 +585,14 @@ TEST(c1600_2_ac11_call_forms_call_callbank_xcall) {
     CHECK(machinecode::advice(Target::PC1600, Slot::S0, 0, 0x40C5, 0x40, 0, 0, 0, state(kStockAreas, true), Cpu::LH5803).callCommand == "XCALL &40C5");
 }
 
-TEST(c1600_2_ac11_start_address_header_else_first_byte) {
+TEST(start_address_header_else_first_byte) {
     auto a = machinecode::advice(Target::PC1500, Slot::S0, 0, 0x4010, 0x20, 0x4012, 0x4000, 0x5800, {}, Cpu::Z80);
     CHECK(a.callCommand == "CALL &4012" && a.callNote.find("auto-run") != std::string::npos);
     a = machinecode::advice(Target::PC1500, Slot::S0, 0, 0x40C5, 0x20, 0, 0x4000, 0x5800, {}, Cpu::Z80);
     CHECK(a.callCommand == "CALL &40C5" && a.callNote.find("first byte") != std::string::npos);
 }
 
-TEST(c1600_2_ac12_work_area_warning_loaded) {
+TEST(work_area_warning_loaded) {
     PC1600Machine m;
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROMs not found in roms/");
     auto r = loadertest::loadCode(m, pc1600File(kCode, 0xFF3A, 0xFF3A));

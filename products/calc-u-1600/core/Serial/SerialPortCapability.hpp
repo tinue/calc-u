@@ -5,13 +5,13 @@
 #include "SerialLink.hpp"
 #include "peripherals/SerialPort.hpp"
 
-// A serial port of a Sharp machine as the library's serial port kind
-// (LIB-2 design §2, §4; AC-17, AC-33): the core's SerialLink, the UART's
+// A serial port of a Sharp machine as the library's serial port kind:
+// the core's SerialLink, the UART's
 // peer (the PC-1600's TC8576F, the CE-158's UART), over two queues
 // (calcu::peripherals::SerialPortQueues). No host, no thread, no lock: a
 // host link (calcu::peripherals::HostLinks) moves the bytes between two
 // advances. The port counts as used from the UART's first poll, send or
-// status call, as the former LazySerialLink opened its terminal (LIB-2 D-5).
+// status call.
 class SerialPortCapability final : public SerialLink {
 public:
     calcu::peripherals::SerialPortQueues& port() { return m_queues; }
@@ -44,10 +44,10 @@ public:
         m_queues.machineSetsLine(l);
     }
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// The machine state (Machine/StateRecords.hpp): the
     /// line settings the machine has set, the peer's lines, whether the
     /// port was used. The bytes in the queues are on their way to or from
-    /// the host and stay with it, as a serial port file does (LIB-11 AC-24).
+    /// the host and stay with it, as a serial port file does.
     template <class Io>
     void stateIo(Io& io) {
         calcu::peripherals::LineSettings l = m_queues.lineSettings();

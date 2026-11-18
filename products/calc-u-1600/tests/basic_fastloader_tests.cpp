@@ -116,7 +116,7 @@ void runEquivalenceCase(const char* label, const std::string& src) {
     CHECK(fast == want);
 }
 
-TEST(c1600_2_ac4_same_memory_as_typed_pc1500) {
+TEST(same_memory_as_typed_pc1500) {
     runEquivalenceCase("small", "10 PRINT \"AB\"\n20 GOTO 10\n");
 }
 
@@ -131,7 +131,7 @@ TEST(test_equivalence_rem_and_data) {
                        "70 END\n");
 }
 
-TEST(c1600_2_ac5_pc1500_refuses_pc1600_file) {
+TEST(pc1500_refuses_pc1600_file) {
     PC1500Machine m;
     SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     // Minimal PC-1600 header (FF 10 00 00, type 0x21) + a one-line payload.
@@ -154,7 +154,7 @@ TEST(c1600_2_ac5_pc1500_refuses_pc1600_file) {
 // live BASPRG_ST value a `NEW &nnnn` might leave behind -- the loader has no
 // notion of "the" expected NEW0 target, only of "is the current pointer
 // plausible."
-TEST(c1600_2_ec3_new0_check_hint_to_run_new) {
+TEST(new0_check_hint_to_run_new) {
     std::vector<uint8_t> payload;
     uint16_t st = 0, end = 0;
     uint8_t marker = 0;
@@ -170,7 +170,7 @@ TEST(c1600_2_ec3_new0_check_hint_to_run_new) {
 // A live BASPRG_END that doesn't sit at/after BASPRG_ST (corrupted or
 // otherwise implausible) must be rejected too -- it's the pointer the
 // loader relies on to know how much of the resident program to erase.
-TEST(c1600_2_ac6_refused_names_pointer_pc1500) {
+TEST(refused_names_pointer_pc1500) {
     PC1500Machine m;
     SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     primeNew0(m);
@@ -247,9 +247,9 @@ TEST(test_bbin_file_equals_listing) {
     CHECK(fromBbin == fromListing);
 }
 
-// AC-6: the program goes where BASIC's program starts (BASPRG_ST), and a
+// The program goes where BASIC's program starts (BASPRG_ST), and a
 // program that does not fit is refused with the room, writing nothing.
-TEST(c1600_2_ac6_pc1500_program_start) {
+TEST(pc1500_program_start) {
     PC1500Machine m;
     SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     primeNew0(m);
@@ -259,7 +259,7 @@ TEST(c1600_2_ac6_pc1500_program_start) {
     CHECK(r.ok && r.baseAddr == st);
 }
 
-TEST(c1600_2_ac6_refused_room_nothing_written_pc1500) {
+TEST(refused_room_nothing_written_pc1500) {
     PC1500Machine m;
     SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     primeNew0(m);
@@ -272,8 +272,8 @@ TEST(c1600_2_ac6_refused_room_nothing_written_pc1500) {
     CHECK(readRange(m, st, static_cast<uint16_t>(st + 64)) == before);
 }
 
-// AC-4: no reset, no NEW: the machine goes on where it was.
-TEST(c1600_2_ac4_nothing_else_changes_pc1500) {
+// No reset, no NEW: the machine goes on where it was.
+TEST(nothing_else_changes_pc1500) {
     PC1500Machine m;
     SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     primeNew0(m);
@@ -285,8 +285,8 @@ TEST(c1600_2_ac4_nothing_else_changes_pc1500) {
     CHECK(m.memory().peek(0x7863) == ramSt && m.memory().peek(0x7864) == ramEnd);
 }
 
-// EC-5: machine code given to the BASIC loader: the hint to load it as machine code.
-TEST(c1600_2_ec5_code_to_basic_loader_hint) {
+// Machine code given to the BASIC loader: the hint to load it as machine code.
+TEST(code_to_basic_loader_hint) {
     PC1500Machine m;
     SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     primeNew0(m);

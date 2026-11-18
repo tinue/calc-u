@@ -2,11 +2,9 @@
 #include <string>
 #include <vector>
 
-// The key IDs of the Sharp machines (C1600-1 AC-9, AC-10, AC-11; LIB-1
-// design §3.5 "keys"). The machine takes exactly these: no other spelling
-// (`ent`, upper case, `break`), which presets and the harness resolve
-// (LIB-5 AC-41, OQ-5). `on` is a key ID like the others, though the core
-// wires it to the ON/BREAK line and not to the key matrix (AC-11).
+// The key IDs of the Sharp machines. The machine takes exactly these: no
+// other spelling (`ent`, upper case, `break`), which presets and the
+// harness resolve. `on` is a key ID like the others, though the core wires it to the ON/BREAK line and not to the key matrix.
 
 namespace sharp {
 

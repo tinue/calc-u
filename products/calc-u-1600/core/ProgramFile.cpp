@@ -129,7 +129,7 @@ std::string refusal(const ProgramFile& f, Wanted wanted) {
     }
     const char* what = code ? "code" : "program";
     if (f.lengthMismatch) {
-        // AC-8: both numbers. A truncated file's header says more than follows.
+        // Both numbers. A truncated file's header says more than follows.
         if (f.headerPayloadLen != f.payload.size())
             return "The " + header + " header says " + std::to_string(f.headerPayloadLen) + " bytes of " + what +
                    ", but " + std::to_string(f.payload.size()) + " follow it.";

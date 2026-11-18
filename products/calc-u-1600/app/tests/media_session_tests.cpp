@@ -1,10 +1,9 @@
-// LIB-7, the Calc-U-1600 column (design §10.6 P2-P4, P7): the modules, the
+// The modules, the
 // floppy disk and the tapes as media of the library's media part on the
 // product's app session -- the pickers of the topic `media`, `media.choose`,
 // `media.turn`, Name & Save, autosave -- against the real ROMs and the
-// bundled cards and disks, in a throwaway bundle and save folder. Ported
-// from 0.8.1's bay tests (`lib7_ac44_<old name>`) with AC-38's and AC-40's
-// changes. SKIP without ROMs.
+// bundled cards and disks, in a throwaway bundle and save folder. SKIP
+// without ROMs.
 
 #include <algorithm>
 #include <cstdio>
@@ -79,9 +78,9 @@ std::string fileText(const fs::path& p) {
 
 using G = media::PickerEntry::Group;
 
-// ── P7: today's module bay test, ported (AC-38, AC-40, AC-44) ───────────
+// ── The module bay ──────────────────────────────────────────────────────
 
-TEST(lib7_ac44_test_module_bay) {
+TEST(module_bay_on_the_app_session) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-media-session-test");
     CHECK(f.start("PC-1600"));
@@ -100,7 +99,7 @@ TEST(lib7_ac44_test_module_bay) {
     CHECK(f.nameAndSave("slot-1", "My RAM").done);
     CHECK(fs::exists(fs::path(f.saveFolder()) / "My RAM.module.yaml"));
     CHECK(f.held("slot-1") && f.held("slot-1")->name == "My RAM" && f.held("slot-1")->instance());
-    CHECK(f.mediaPlace("slot-1") && !f.mediaPlace("slot-1")->nameAndSave);   // EC-9: autosaved now
+    CHECK(f.mediaPlace("slot-1") && !f.mediaPlace("slot-1")->nameAndSave);   // autosaved now
     CHECK(has(labels(f, "slot-1", G::Instance), "My RAM"));
     CHECK(!f.nameAndSave("slot-1", "Other").done);
 
@@ -113,9 +112,9 @@ TEST(lib7_ac44_test_module_bay) {
     CHECK(f.held("slot-1") == nullptr);
 }
 
-// ── P2: module slots (AC-38) ────────────────────────────────────────────
+// ── Module slots ────────────────────────────────────────────────────────
 
-TEST(lib7_ac38_picker_fits_the_slot_in_ac8_order) {
+TEST(picker_lists_what_fits_the_slot_in_order) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-media-session-test");
     CHECK(f.start("PC-1600"));
@@ -147,22 +146,23 @@ TEST(lib7_ac38_picker_fits_the_slot_in_ac8_order) {
     }
 }
 
-TEST(lib7_ac38_choose_is_replace_power_cycle_memory_kept) {
+TEST(choose_is_replace_power_cycle_memory_kept) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-media-session-test");
     CHECK(f.start("PC-1600"));
     CHECK(f.choose("slot-1", "CE-1600M").done);
     f.runFor(0.5);
     const auto ticks = f.part().machine()->tickCount();
-    CHECK(f.choose("slot-1", "CE-161").done);   // a replace (LIB-18 AC-29)
+    CHECK(f.choose("slot-1", "CE-161").done);   // a replace
     CHECK(f.part().slotModuleName(1) == "CE-161");
     CHECK(f.part().machine()->tickCount() > ticks);   // its power cycle ran
     f.runFor(0.5);
-    // The memory kept: the ROM asks NEW0? (its check after the power cycle; row 1600-4).
+    // The memory is kept through the power cycle: the ROM finds it changed
+    // and asks NEW0?, as on the real device.
     CHECK(f.screen().find("NEW0?") != std::string::npos);
 }
 
-TEST(lib7_ac38_other_slot_and_disk_untouched) {
+TEST(other_slot_and_disk_untouched) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-media-session-test");
     CHECK(f.start("PC-1600"));
@@ -175,16 +175,16 @@ TEST(lib7_ac38_other_slot_and_disk_untouched) {
     int banks = 0;
     const std::vector<std::uint8_t> before = f.part().debugSlotCardImage(2, &banks);
     CHECK(f.choose("slot-1", "CE-161").done);
-    // The same card, not read again (row 1600-13): its RAM as it was.
+    // The same card, not read again: its RAM as it was.
     CHECK(f.part().slotModuleName(2) == "CE-1601M");
     CHECK(!before.empty() && f.part().debugSlotCardImage(2, &banks) == before);
     CHECK(diskImage(f) == disk && f.held("floppy") && f.held("floppy")->name == "Formatted");
     CHECK(f.held("floppy") && f.held("floppy")->unsaved);   // what the template held is not lost
 }
 
-// ── P7, P3: today's floppy bay test, ported (AC-39, AC-44) ──────────────
+// ── The floppy bay ──────────────────────────────────────────────────────
 
-TEST(lib7_ac44_test_floppy_bay) {
+TEST(floppy_bay_on_the_app_session) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-media-session-test");
     CHECK(f.start("PC-1600"));
@@ -219,7 +219,7 @@ TEST(lib7_ac44_test_floppy_bay) {
     CHECK(fs::exists(saved));
 }
 
-TEST(lib7_ac39_turn_is_eject_and_insert_other_side) {
+TEST(turn_is_eject_and_insert_other_side) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-media-session-test");
     CHECK(f.start("PC-1600"));
@@ -236,8 +236,8 @@ TEST(lib7_ac39_turn_is_eject_and_insert_other_side) {
     CHECK(p && p->side() == 0);
 }
 
-// The lamp: green while the drive's motor runs (AC-39) -- `DSKF"X:"` spins it.
-TEST(lib7_ac39_lamp_while_motor_runs) {
+// The lamp: green while the drive's motor runs -- `DSKF"X:"` spins it.
+TEST(lamp_while_motor_runs) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-media-session-test");
     CHECK(f.start("PC-1600"));
@@ -256,7 +256,7 @@ TEST(lib7_ac39_lamp_while_motor_runs) {
     CHECK(f.part().floppyMotorOn() == lamp());
 }
 
-TEST(lib7_ac39_name_and_save_for_a_template_disk) {
+TEST(name_and_save_for_a_template_disk) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-media-session-test");
     CHECK(f.start("PC-1600"));
@@ -271,9 +271,9 @@ TEST(lib7_ac39_name_and_save_for_a_template_disk) {
     CHECK(has(labels(f, "floppy", G::Instance), "Mine"));
 }
 
-// ── P4: Name & Save (AC-40, row 1600-5) ─────────────────────────────────
+// ── Name & Save ─────────────────────────────────────────────────────────
 
-TEST(lib7_ac40_instance_name_replaced_after_asking) {
+TEST(instance_name_replaced_after_asking) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-media-session-test");
     CHECK(f.start("PC-1600"));
@@ -286,15 +286,15 @@ TEST(lib7_ac40_instance_name_replaced_after_asking) {
     CHECK(!asked.done && asked.reason.rfind("asks:", 0) == 0);
     CHECK(f.nameAndSave("slot-2", "work", false, /*confirmed=*/true).done);
     CHECK(f.held("slot-2") && f.held("slot-2")->name == "work");
-    CHECK(fs::exists(fs::path(f.saveFolder()) / "Work.module.yaml"));   // its file kept (D-4)
+    CHECK(fs::exists(fs::path(f.saveFolder()) / "Work.module.yaml"));   // its file kept
     CHECK(!fs::exists(fs::path(f.saveFolder()) / "work.module.yaml") || fs::equivalent(fs::path(f.saveFolder()) / "work.module.yaml",
                                                                              fs::path(f.saveFolder()) / "Work.module.yaml"));
-    // An instance in another place now: refused (AC-17 row 4).
+    // An instance in another place now: refused.
     CHECK(f.choose("slot-1", "CE-1600M").done);
     CHECK(!f.nameAndSave("slot-1", "work", false, true).done);
 }
 
-TEST(lib7_ac40_name_with_slash_or_colon_refused) {
+TEST(name_with_slash_or_colon_refused) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-media-session-test");
     CHECK(f.start("PC-1600"));

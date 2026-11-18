@@ -59,7 +59,7 @@ struct Addressing {
 enum class ContentKind { Regular, Flash, Rom };
 
 // A JEDEC-style unlock/program/erase protocol for a Flash content range --
-// "chip/firmware properties, not something the loader infers" (spec §5), so
+// "chip/firmware properties, not something the loader infers" (Format §4), so
 // every field is required at parse time, no defaults. Modeled on the
 // CE-163F's flash chip (Qt6/resources/cards/ce163f.module.yaml and
 // SoftwareDefinedCard::flashWrite() document every field).
@@ -116,7 +116,7 @@ struct Banking {
     Addressing bankWindow;
 };
 
-// One `by-bank:` entry (spec §5's split-content note): the content for
+// One `by-bank:` entry (Format §4, split content): the content for
 // banks [loBank, hiBank] (inclusive) of a banked region.
 struct BankContentRange {
     uint32_t loBank = 0;
@@ -133,7 +133,7 @@ struct Region {
     Banking banking;        // bankCount/bankSize set for unbanked regions too (1 x capacity)
     uint32_t capacity = 0;  // total bytes; banked = bankCount * bankSize
 
-    // `initial-content` (spec §5a / Format.md §6), already resolved to a
+    // `initial-content` (Format §6), already resolved to a
     // full bank-size (or `capacity`, unbanked) byte buffer per referenced
     // bank -- gaps a block didn't cover are pre-filled with that bank's
     // `contentForBank(bank).powerUpFill`. Unbanked regions use key 0.
@@ -508,7 +508,7 @@ inline bool parseAddressing(const calcu::formats::YamlNode& node, CardHost term,
 }
 
 // Parses `protocol:` for `content: { kind: flash, ... }` -- every field a
-// "chip/firmware property" per spec §5, so none of it is inferred/defaulted.
+// "chip/firmware property" (Format §4), so none of it is inferred/defaulted.
 inline bool parseFlashProtocol(const calcu::formats::YamlNode& node, FlashProtocol* out, std::string* error) {
     if (!node.isMap() ||
         !node.requireOnlyKeys({"unlock-sequence", "byte-program-command", "erase-setup-command",
@@ -820,8 +820,8 @@ inline bool parseBankRangeToken(const std::string& s, uint32_t* lo, uint32_t* hi
 }
 
 // Dispatches a region's `content:` node: either the single-kind form
-// (handled by parseContent) or a `by-bank:` list (spec §5's split-content
-// note) -- `bankCount` is 0 for an unbanked region, where by-bank is a
+// (handled by parseContent) or a `by-bank:` list (Format §4, split
+// content) -- `bankCount` is 0 for an unbanked region, where by-bank is a
 // hard error (there is only ever one "bank").
 inline bool parseContentSpec(const calcu::formats::YamlNode& node, uint32_t bankCount, RegionContent* singleOut,
                              std::vector<BankContentRange>* byBankOut, std::string* error) {
@@ -894,7 +894,7 @@ inline int hexBytePair(const std::string& tok) {
 }
 
 // `encoding: hex` -- whitespace/newlines ignored, a flat stream of hex byte
-// pairs (Format.md §6). Used as-is, at the block's `offset`; bytes it
+// pairs (Format §6). Used as-is, at the block's `offset`; bytes it
 // doesn't cover keep the bank's power-up-fill.
 inline bool parsePlainHex(const std::string& text, std::vector<uint8_t>* out, std::string* error) {
     std::string tok;
@@ -918,7 +918,7 @@ inline bool parsePlainHex(const std::string& text, std::vector<uint8_t>* out, st
     return true;
 }
 
-// `encoding: base64` (Format.md §6) -- standard alphabet, '=' padding
+// `encoding: base64` (Format §6) -- standard alphabet, '=' padding
 // optional/ignored on decode.
 inline bool parseBase64(const std::string& text, std::vector<uint8_t>* out, std::string* error) {
     auto decodeChar = [](unsigned char c) -> int {
@@ -1063,7 +1063,7 @@ inline bool parseAddressedHex(const std::string& text, uint32_t blockLength,
     return true;
 }
 
-// `initial-content` (spec §5a, Format.md §6): resolves each referenced
+// `initial-content` (Format §6): resolves each referenced
 // bank (unbanked regions use key 0) into a full bank-size/`capacity`-length
 // byte buffer, starting from that bank's power-up-fill and overlaying each
 // block's bytes at its offset.
@@ -1322,7 +1322,7 @@ inline bool parseRegion(const calcu::formats::YamlNode& node, CardHost term, Reg
     }
 
     // A ROM range has no power-up state of its own: `initial-content` blocks
-    // must cover every byte of it (spec §5a). `fill:` doesn't count.
+    // must cover every byte of it (Format §6). `fill:` doesn't count.
     const uint32_t bankSize = out->banking.bankSize;
     for (uint32_t b = 0; b < out->banking.bankCount; ++b) {
         if (out->contentForBank(b).kind != ContentKind::Rom) continue;

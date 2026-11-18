@@ -4,11 +4,11 @@
 #include "machine/Machine.hpp"
 #include "sessions/Operation.hpp"
 
-// ── The tests' machine jobs (was core/Job.hpp, the adapter JobForward) ──
+// ── The tests' machine jobs ────────────────────────────────────────────
 //
 // The old typers (PC1500BasicTyper, PC1600BasicTyper, BootRun.hpp) are the
-// tests' support, not the core's: the golden runs' and C1600-2 AC-7's
-// reference typer. `namespace job` names calcu::sessions' Task, Job and
+// tests' support, not the core's: the reference typer of the golden runs
+// and of `type-basic`. `namespace job` names calcu::sessions' Task, Job and
 // runToCompletion, so a job of theirs runs as the library's run requests --
 // the same thread-local hand-off, never split.
 //
@@ -31,7 +31,7 @@ calcu::sessions::detail::RunAwaiter run(Machine& machine, std::uint64_t cycles) 
     return calcu::sessions::request([&machine, cycles] { return machine.runCycles(cycles); });
 }
 
-// The same on the machine interface (C1600-1 design §2): `machine.advance(ticks)`.
+// The same on the machine interface: `machine.advance(ticks)`.
 inline calcu::sessions::detail::RunAwaiter run(calcu::machine::Machine& machine, std::uint64_t ticks) {
     return calcu::sessions::request([&machine, ticks] { return machine.advance(ticks); });
 }

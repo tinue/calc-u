@@ -11,7 +11,7 @@
 // Minimal RIFF/WAVE writer for PiezoSampler and TapeDeck output (mono,
 // 16-bit PCM) -- used by the headless CLIs' --wav flag to capture buzzer
 // audio for offline inspection, and for cassette recordings. The bytes of
-// such a file: what the tape codec writes as a tape's sound (LIB-7, M-47).
+// such a file: what the tape codec writes as a tape's sound.
 inline std::vector<uint8_t> wavMono16Bytes(const std::vector<int16_t>& samples, int sampleRate) {
     std::vector<uint8_t> out;
     out.reserve(44 + samples.size() * 2);

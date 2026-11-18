@@ -185,7 +185,7 @@ public:
         return WriteResult::ignored();
     }
 
-    // C1600-5 AC-13: the disk with its side, the head, the controller.
+    // The machine state: the disk with its side, the head, the controller.
     void saveState(sharp::StateWriter& w) const override { const_cast<CE1600FCard*>(this)->stateIo(w); }
     void restoreState(sharp::StateReader& r) override { stateIo(r); }
     template <class Io>

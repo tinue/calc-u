@@ -14,8 +14,7 @@ namespace sharp {
 class SharpDebugTarget;
 }
 
-// The DAP's view of the machine's debug targets (C1600-3 design §3.6;
-// LIB-10 design §10.3, D-15; built in M-45, kept by M-50): threads, their
+// The DAP's view of the machine's debug targets: threads, their
 // registers by name with their halves and flags, banks, memory, decoding and
 // history, over the library's machine::Debugging and Calc-U-1600's
 // SharpDebugTarget (core/Debug/SharpDebugging). No Qt type.

@@ -58,8 +58,8 @@ File readFile(const std::vector<uint8_t>& bytes) {
     using programfile::Kind;
     const programfile::ProgramFile pf = programfile::classify(bytes);
     File f;
-    // One sentence per case (C1600-2 AC-25): the classifier's. An empty file
-    // is refused as empty (EC-1).
+    // One sentence per case: the classifier's. An empty file
+    // is refused as empty.
     f.error = programfile::refusal(pf, programfile::Wanted::Code);
     if (pf.kind == Kind::CodeLH5801 || pf.kind == Kind::CodeZ80) {
         f.header = pf.kind == Kind::CodeZ80 ? File::Header::PC1600 : File::Header::CE158;
@@ -210,8 +210,9 @@ bool pc1600BankTarget(uint32_t addr, size_t len, int bank, const PC1600State& st
 }  // namespace
 
 LoadPlan planLoad(const File& file, const LoadOptions& o, const PC1600State& state) {
-    // C1600-2 AC-8: the refusals in the order of the spec's table, each
-    // before anything is written; AC-23 where the code goes; AC-9 the CPU.
+    // The refusals in a fixed order (a file that meets two is refused by
+    // the earlier one), each before anything is written; where the code
+    // goes; the CPU.
     LoadPlan p;
     auto refuse = [&p](LoadError e, std::string detail = {}) {
         p.error = e;
@@ -226,7 +227,7 @@ LoadPlan planLoad(const File& file, const LoadOptions& o, const PC1600State& sta
     // Row 3: which machine or mode takes it.
     const std::string mismatch = headerMismatch(o.target, file, state.mode1);
     if (!mismatch.empty()) return refuse(LoadError::HeaderMismatch, mismatch);
-    // AC-9 -- the CPU: the header's, else the caller's, else the MODE's.
+    // The CPU: the header's, else the caller's, else the MODE's.
     if (pc1600) {
         if (file.header == File::Header::PC1600) p.cpu = Cpu::Z80;
         else if (file.header == File::Header::CE158) p.cpu = Cpu::LH5803;
@@ -246,7 +247,7 @@ LoadPlan planLoad(const File& file, const LoadOptions& o, const PC1600State& sta
         p.len = o.length;
         return refuse(LoadError::LengthExceeds);
     }
-    // AC-23: the address by hand, else the header's; the length by hand,
+    // The address by hand, else the header's; the length by hand,
     // else the bytes after the header.
     p.addr = o.hasAddress ? o.address : file.loadAddr;
     p.len = o.hasLength ? o.length : file.payload.size();

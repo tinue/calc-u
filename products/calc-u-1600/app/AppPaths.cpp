@@ -72,7 +72,7 @@ std::string AppPaths::cassetteDir() const {
 
 
 std::string AppPaths::traceDir() const {
-    // The Web has no trace folder (LIB-9 AC-17; LIB-10 D-10: a trace fails there).
+    // The Web has no trace folder (a trace fails there).
     if (const auto dir = m_paths.traceFolder()) return *dir;
     return {};
 }

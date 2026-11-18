@@ -35,7 +35,7 @@ namespace {
 
 PlacePath placeOf(const char* place) { return PlacePath{{PlaceName{place}}}; }
 
-// Which serial port gets which serial port file (LIB-2 AC-33): the PC-1600's
+// Which serial port gets which serial port file: the PC-1600's
 // RS-232C at once, the CE-158's when it is first used.
 std::optional<calcu::peripherals::HostLinkRule> serialFileFor(const CapabilityEntry& e) {
     if (const auto* c = std::get_if<ComponentOwner>(&e.owner); c && c->component.value == sharp::kRs232cComponent)
@@ -52,7 +52,7 @@ std::optional<std::string> folderOrNone(const std::string& dir) {
 
 
 // The catalogue with the module definitions: the bundled ones and the ROM
-// modules of the set (the CE-502B; LIB-12 AC-14).
+// modules of the set (the CE-502B).
 calcu::machine::Catalogue catalogueOf(const AppPaths& paths, const calcu::roms::RomSet* roms) {
     calcu::machine::Catalogue c = sharp::sharpCatalogue();
     sharp::addModuleDefinitions(c, paths.bundledModulesDir());
@@ -86,7 +86,7 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOpti
       m_controlRules(SharpControlRules::Inputs{options.canMountHostFolder, [this] { return ce1600pVariant(); }}),
       m_lib(librarySetup()) {
 #ifndef __EMSCRIPTEN__
-    // C1600-3 (design §3.3): the DAP server on the library's parts.
+    // The DAP server on the library's parts.
     dap::DapDeps deps;
     deps.debugger = &m_lib.debugger();
     deps.typing = &m_lib.typing();
@@ -109,7 +109,7 @@ calcu::parts::LibraryPartsSetup SharpAppPart::librarySetup() {
     s.hostLinks = [this](const CapabilityEntry& e) -> std::optional<calcu::peripherals::HostLinkRule> {
         std::optional<calcu::peripherals::HostLinkRule> rule = serialFileFor(e);
         if (!rule || !m_options.serialLinksOnRequest) return rule;
-        // C1600-5 AC-9: only a file asked for, made at once.
+        // Only a file asked for, made at once.
         if (std::find(m_requestedLinks.begin(), m_requestedLinks.end(), rule->fileName) == m_requestedLinks.end())
             return std::nullopt;
         rule->openAtOnce = true;
@@ -120,13 +120,13 @@ calcu::parts::LibraryPartsSetup SharpAppPart::librarySetup() {
     s.bundle = &m_bundle;
     s.papers = sharpPrinterPapers();
     s.debugger = sharpDebuggerSetup();
-    // LIB-7 (§10.2): the bundled templates beside the module definitions.
+    // The bundled templates beside the module definitions.
     s.mediaKinds = mediaKinds(m_paths.bundledModulesDir(), m_catalogue);
     s.moduleListing = moduleListing();
-    // LIB-13 (Part D, D3).
+    // The open part's product data.
     s.productName = "Calc-U-1600";
     s.presetExtensions = presetExtensions();
-    s.fileKinds = {&m_basicKind, &m_codeKind};   // AC-17: BASIC first
+    s.fileKinds = {&m_basicKind, &m_codeKind};   // BASIC first
     s.openLimits = openLimits();
     s.uploadFolder = m_options.uploadFolder;
     s.controlRules = sharpControlSetup(m_controlRules);
@@ -137,11 +137,10 @@ SharpAppPart::~SharpAppPart() = default;
 
 std::vector<sessions::SessionPart*> SharpAppPart::sessionParts(std::vector<sessions::SessionPart*> host,
                                                               std::vector<sessions::SessionPart*> after) {
-    // The loaders before the open part (its file kinds use them); C1600-3:
+    // The loaders before the open part (its file kinds use them);
     // the DAP server after the debugger (it reads the run control after the
     // debugger's own machineChanged). The host calls AppSession::close()
-    // before it ends the session: the media part writes what is pending
-    // (AC-13).
+    // before it ends the session: the media part writes what is pending.
     calcu::parts::SessionSlots slots;
     slots.host = std::move(host);
     slots.fileKinds = {&m_loaderPart};
@@ -169,7 +168,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
 
     m_lampsTopic = &setup.stateTopic(topics::kLamps);
     m_serialTopic = &setup.stateTopic(topics::kSerialLinks);
-    // LIB-13 D4.2: a program file opened by a way with a window.
+    // A program file opened by a way with a window.
     sessions::StreamTopic* opened = &setup.streamTopic(topics::kProgramOpened, sessions::History::None);
     m_basicKind.setTopic(opened);
     m_codeKind.setTopic(opened);
@@ -181,7 +180,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
     namespace c = commands;
     const char* busy = sessions::kAnotherOperationRuns;
 
-    // AC-30: the host drive with its folder (a second folder: a replace), or none.
+    // The host drive with its folder (a second folder: a replace), or none.
     setup.command(c::kMountHostDrive, [this, busy](const Value& args, SessionContext& s) -> CommandOutcome {
         if (s.busy()) return Refused{busy};
         Machine* m = machine();
@@ -200,7 +199,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         if (auto refused = machineControl().check(*m, ch)) return Refused{refused->reason};
         return change(std::move(ch));
     });
-    // AC-31, D-21: the CE-1600P's ROM: a replace by the other variant, or the
+    // The CE-1600P's ROM: a replace by the other variant, or the
     // choice for the next attach.
     setup.command(c::kCE1600PVariant, [this, busy](const Value& args, SessionContext& s) -> CommandOutcome {
         if (s.busy()) return Refused{busy};
@@ -219,7 +218,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         ch.request = machineControl().requestFor(ch.place, PeripheralId{sharp::kCE1600P}, VariantId{v});
         if (auto refused = machineControl().check(*m, ch)) return Refused{refused->reason};
         // The disk and the cassette stay in the new CE-1600P, the disk with the
-        // same side up (AC-31, as today).
+        // same side up.
         struct Held {
             std::string word;
             calcu::media::Binding binding;
@@ -270,7 +269,7 @@ void SharpAppPart::followNewMachine() {
     const startup::BuildOrigin origin = built ? built->origin : startup::BuildOrigin::Start;
     switch (origin) {
         case startup::BuildOrigin::VariantSwitch:
-            // AC-28: the plugs and the media went along (the media part, S-7a).
+            // The plugs and the media went along (the media part).
             return;
         case startup::BuildOrigin::Preset:
         case startup::BuildOrigin::StartupPreset:
@@ -278,7 +277,7 @@ void SharpAppPart::followNewMachine() {
             return;
         case startup::BuildOrigin::Start:
         case startup::BuildOrigin::ModelSwitch:
-            // AC-27: nothing of the old machine is kept.
+            // Nothing of the old machine is kept.
             m_ce1600pChoice = "New";
             return;
     }
@@ -422,8 +421,7 @@ std::string SharpAppPart::slotModuleName(int slot) const {
 // ---- Cassette recorder and CE-1600F ----
 
 bool SharpAppPart::tapeInterfaceAttached() const {
-    // The cassette of a CE-150 or a CE-1600P, on every model (C1600-1 AC-16,
-    // LIB-7 OQ-9).
+    // The cassette of a CE-150 or a CE-1600P, on every model.
     const std::string printer = pluggedAt(sharp::kPrinter);
     return printer == sharp::kCE150 || printer == sharp::kCE1600P;
 }

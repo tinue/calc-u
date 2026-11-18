@@ -7,12 +7,12 @@
 #include "../Serial/SerialPortCapability.hpp"
 #include "PC1600Machine.hpp"
 
-// A PC-1600 behind the machine interface (C1600-1 design §3.2). It owns the
+// A PC-1600 behind the machine interface. It owns the
 // core's PC1600Machine; above the core it is a calcu::machine::Machine.
 // Ticks are SC7852 T-states at 3,580,000 per second; the LH5803 and
-// everything else are counted in them (AC-1). An advance runs whole steps
-// of whichever CPU has the bus (AC-2), and steps of 256 while the machine
-// is switched off (EC-2). Built by SharpMachineBuilder.
+// everything else are counted in them. An advance runs whole steps
+// of whichever CPU has the bus, and steps of 256 while the machine
+// is switched off. Built by SharpMachineBuilder.
 class PC1600InterfaceMachine final : public sharp::SharpMachine {
 public:
     PC1600InterfaceMachine(const calcu::machine::MachineDescriptor&, const calcu::machine::VariantId&);
@@ -50,8 +50,8 @@ private:
     struct Kinds;
 
     std::unique_ptr<PC1600Machine> m_core;
-    SerialPortCapability m_rs232c;      // the TC8576F's peer (component rs232c, LIB-2 D-11)
+    SerialPortCapability m_rs232c;      // the TC8576F's peer (component rs232c)
     SerialPortCapability m_ce158Port;   // the CE-158's UART peer; kept across detach and attach
     std::unique_ptr<Kinds> m_kinds;
-    std::unique_ptr<sharp::SharpDebugging> m_debugging;   // LIB-10: after the core, gone before it
+    std::unique_ptr<sharp::SharpDebugging> m_debugging;   // the debugger: after the core, gone before it
 };

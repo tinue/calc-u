@@ -19,7 +19,7 @@ calcu::debugger::RunControl::Result step(calcu::debugger::RunControl& control, c
     debug::SourceLocation from;
     if (kind == StepKind::Instruction || !line || !locate(targets, map, thread, &from))
         return control.step(calcu::debugger::kCpu, 1, target, lib);
-    // D-16: on while the thread is on the same source line; a step that
+    // With a source line: on while the thread is on the same source line; a step that
     // leaves the source shows the disassembly there.
     const debug::SourceMap* m = &map;
     calcu::debugger::StepTest sameLine = [m, thread, from](const calcu::machine::DebugTarget& t) {

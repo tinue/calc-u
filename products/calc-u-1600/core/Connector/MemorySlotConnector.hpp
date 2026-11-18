@@ -175,7 +175,9 @@ private:
             // of the SC7852's LHS strobes. They select 2KB blocks of bank 0
             // only, remapped by Port 3CH b6 (TRM SC7852 pins 46-48), and
             // reach the connector in reverse order: pin 16 = LHS3, pin 18 =
-            // LHS1 (measured, docs/background/Decisions.md).
+            // LHS1: the only order that fits measurements on a real PC-1600
+            // (a CE-155, and one with pins 4 and 18 taped off, a CE-151);
+            // pin 16 = LHS1 would put the CE-151 at A800-B7FF.
             //   b6=0 (boot probe 1AH, CE-151): 16 B800, 17 B000, 18 A800
             //   b6=1 (boot probe 5BH, CE-155): 16 A000, 17 A800, 18 B000
             // A CE-151 (S1+S2) thus tiles B000-BFFF; a CE-155 tiles

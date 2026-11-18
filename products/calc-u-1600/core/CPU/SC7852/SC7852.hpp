@@ -134,7 +134,7 @@ public:
     void setIY(uint16_t v) { IY = v; }
     void setSP(uint16_t v) { SP = v; }
     void setPC(uint16_t v) { PC = v; }
-    /// A call from the current state as CALL makes it (C1600-5 AC-12): PC
+    /// A call from the current state as CALL makes it: PC
     /// pushed, PC = `address`; the routine's RET comes back here.
     void callRoutine(uint16_t address) { pushWord(PC); PC = address; }
 
@@ -202,7 +202,7 @@ public:
     /// Data breakpoints; see LH5801::setWatches(). Not owned.
     void setWatches(WatchSet* watches) { m_watches = watches; }
     /// The value the CPU last wrote to I/O port `port` since it was built, or
-    /// -1 (LIB-10 AC-52: the debugger's `io-written` view). No effect.
+    /// -1 (the debugger's `io-written` view). No effect.
     int ioWritten(uint8_t port) const { return m_ioWritten[port] > 0xFF ? -1 : m_ioWritten[port]; }
 
     /// The debugger's always-on history of the last retired instructions
@@ -211,7 +211,7 @@ public:
     using History = HistoryRing<Z80HistoryFrame, 32>;
     const History& history() const { return m_history; }
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// The machine state (Machine/StateRecords.hpp): the
     /// registers, the interrupt state and what each port was written. The
     /// debugger's own (breakpoints, history, trace) is not the machine's.
     template <class Io>

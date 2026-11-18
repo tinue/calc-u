@@ -219,7 +219,7 @@ public:
     uint8_t interruptMask() const { return m_irqMask; }
     bool passwordSet() const { return m_password[0] != 0; }
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    /// The machine state (Machine/StateRecords.hpp).
     template <class Io>
     void stateIo(Io& io) {
         io(m_param)(m_paramLen)(m_result)(m_resultLen)(m_resultPos)(m_prefix)(m_password)(m_answer)(m_answerPending);

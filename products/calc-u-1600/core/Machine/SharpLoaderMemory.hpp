@@ -4,10 +4,9 @@
 class PC1500Machine;
 class PC1600Machine;
 
-// The loader memory access (C1600-2 AC-14, design §3.1) over the core's
-// machine classes: the objects the interface machines list as their
-// `c1600.loader-memory` kind, and the ones the format-1 preset runner makes
-// over its core until M-46. Stateless wrappers; this header names the
+// The loader memory access over the core's machine classes: the objects
+// the interface machines list as their `c1600.loader-memory` kind.
+// Stateless wrappers; this header names the
 // classes only by declaration.
 
 namespace sharp {

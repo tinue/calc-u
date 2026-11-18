@@ -51,7 +51,7 @@ bool effectiveConfig(const Value& args, const calcu::presets::ReadSetup& read, c
         *out = args;
         return true;
     }
-    // C1600-4 AC-12, §3.4: the block as the library's reader keeps it.
+    // The block as the library's reader keeps it.
     const std::string path = debug::absolutePath(project);
     const auto block = debugBlockOf(path, read, bundle);
     if (const auto* why = std::get_if<std::string>(&block)) {

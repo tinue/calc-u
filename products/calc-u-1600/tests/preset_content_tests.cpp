@@ -1,8 +1,7 @@
-// C1600-4 (design §6, T1 to T7, T9): Calc-U-1600's keys and sections of the
-// preset format on the library's reader and engine -- `program:`,
-// `host-drive:`, `slot-N-rom:`, `bus-rom:`, `debug:` -- their errors, the
-// cases of today's tests (AC-19), the upgraded presets (AC-15) and the
-// bundle file (AC-17, AC-18). Read checks run the product's rules on
+// Calc-U-1600's keys and sections of the preset format on the library's
+// reader and engine -- `program:`, `host-drive:`, `slot-N-rom:`, `bus-rom:`,
+// `debug:` -- their errors, the cases of the old preset tests, the upgraded
+// presets and the bundle file. Read checks run the product's rules on
 // presets::readPreset; loads run the product's harness entry in emulated
 // time. ROM-gated cases SKIP without roms/.
 #include "../app/SharpDebugBlock.hpp"
@@ -42,7 +41,7 @@ bool has(const std::string& text, const std::string& part) {
     return found;
 }
 
-// A PC-1600 machine-code file with its header (C1600-2 AC-2): MACHINE,
+// A PC-1600 machine-code file with its header: MACHINE,
 // the declared length, the load and auto-run addresses.
 std::string pc1600Code(const std::vector<std::uint8_t>& payload, std::uint32_t load, std::uint32_t autorun) {
     std::string f(16, '\0');
@@ -73,9 +72,9 @@ std::uint8_t peekZ80(HarnessPreset& h, std::uint32_t address) {
 
 } // namespace
 
-// ── T1: `program:` read (AC-1, AC-2, AC-5, EC-1, EC-2, EC-5) ────────────
+// ── `program:` read ───────────────────────────────────────────────────────
 
-TEST(c1600_4_ac1_fields_once_one_of_file_text) {
+TEST(fields_once_one_of_file_text) {
     PresetReadRig r;
     r.write("p.bas", "10 PRINT 1\n");
     CHECK(r.ok(kPc1600 + "program:\n  file: p.bas\n"));
@@ -85,13 +84,13 @@ TEST(c1600_4_ac1_fields_once_one_of_file_text) {
     CHECK(has(r.error(kPc1600 + "program:\n  file: p.bas\n  file: p.bas\n"), "Duplicate key 'file'"));
 }
 
-TEST(c1600_4_ac1_text_not_with_typed_address_length) {
+TEST(text_not_with_typed_address_length) {
     PresetReadRig r;
     for (const char* f : {"typed: true", "address: &C000", "length: 4"})
         CHECK(has(r.error(kPc1600 + "program:\n  " + f + "\n  text: |\n    10 A=1\n"), "go with file:"));
 }
 
-TEST(c1600_4_ac1_sections_in_file_order_any_number) {
+TEST(sections_in_file_order_any_number) {
     PresetReadRig r;
     r.write("a.bas", "10 PRINT 1\n");
     const auto plan = r.read(kPc1600 + "keys:\n  - key: mode\nprogram:\n  file: a.bas\nkeys:\n  - key: mode\n"
@@ -104,7 +103,7 @@ TEST(c1600_4_ac1_sections_in_file_order_any_number) {
     }
 }
 
-TEST(c1600_4_ac2_kind_told_at_read_field_it_does_not_take_refused) {
+TEST(kind_told_at_read_field_it_does_not_take_refused) {
     PresetReadRig r;
     r.write("p.bas", "10 PRINT 1\n");
     r.write("c.bin", pc1600Code({0xC9}, 0xD000, 0));
@@ -114,7 +113,7 @@ TEST(c1600_4_ac2_kind_told_at_read_field_it_does_not_take_refused) {
     CHECK(r.ok(kPc1600 + "program:\n  file: c.bin\n  length: 1\n"));
 }
 
-TEST(c1600_4_ac2_unreadable_empty_not_a_program_refused) {
+TEST(unreadable_empty_not_a_program_refused) {
     PresetReadRig r;
     r.write("empty.bas", "");
     r.write("note.txt", "Just some words here, nothing to run.\n");
@@ -123,17 +122,17 @@ TEST(c1600_4_ac2_unreadable_empty_not_a_program_refused) {
     CHECK(has(r.error(kPc1600 + "program:\n  file: note.txt\n"), "not a program"));
 }
 
-TEST(c1600_4_ac2_tape_definition_is_not_a_program_file) {
+TEST(tape_definition_is_not_a_program_file) {
     PresetReadRig r;
     r.write("t.cassette.yaml", "format: tape\nformat-version: 1\ncassette-name: T\n");
     CHECK(has(r.error(kPc1600 + "program:\n  file: t.cassette.yaml\n"), "not a program"));
 }
 
-TEST(c1600_4_ac5_blank_and_hash_lines_left_out_space_hash_typed) {
+TEST(blank_and_hash_lines_left_out_space_hash_typed) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     CHECK(h.ok());
-    // PC-1500A: in program mode after its cold start (C-7, AC-4).
+    // PC-1500A: in program mode after its cold start.
     CHECK(h.loadIdle(kPc1500a + "keys:\n  - key: cl\n  - type: NEW0\n"
                                 "program:\n  text: |\n    # a comment line\n\n    10 A$=\"X # Y\"\n\n    # another\n"
                                 "    20 PRINT A$\n",
@@ -143,19 +142,19 @@ TEST(c1600_4_ac5_blank_and_hash_lines_left_out_space_hash_typed) {
     CHECK(has(h.line("display-text"), "10:A$=\"X # Y\""));
 }
 
-TEST(c1600_4_ec1_text_without_lines_refused) {
+TEST(text_without_lines_refused) {
     PresetReadRig r;
     CHECK(has(r.error(kPc1600 + "program:\n  text: |\n"), "text: needs the lines"));
     CHECK(has(r.error(kPc1600 + "program:\n  text: |\n    # only a comment\n"), "text: needs the lines"));
 }
 
-TEST(c1600_4_ec2_no_block_or_unknown_field_refused) {
+TEST(no_block_or_unknown_field_refused) {
     PresetReadRig r;
     CHECK(has(r.error(kPc1600 + "program:\n"), "program: is a block"));
     CHECK(has(r.error(kPc1600 + "program:\n  slot: 1\n  text: |\n    10 A=1\n"), "program: has no field slot"));
 }
 
-TEST(c1600_4_ec5_relative_path_without_folder_refused) {
+TEST(relative_path_without_folder_refused) {
     PresetReadRig r;
     const auto plan = r.readContent(kPc1600 + "program:\n  file: hanoi.bas\n");
     const auto* e = std::get_if<calcu::presets::ReadError>(&plan);
@@ -165,9 +164,9 @@ TEST(c1600_4_ec5_relative_path_without_folder_refused) {
     CHECK(e2 && has(e2->message, "handed over without its folder"));
 }
 
-// ── T2: `program:` carried out (AC-3, AC-4, EC-3) ───────────────────────
+// ── `program:` carried out ────────────────────────────────────────────────
 
-TEST(c1600_4_ac3_basic_listing_tokenized_loaded) {
+TEST(basic_listing_tokenized_loaded) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     std::ifstream in("tests/fixtures/basic/lissajou-1600.bbin", std::ios::binary);
@@ -179,7 +178,7 @@ TEST(c1600_4_ac3_basic_listing_tokenized_loaded) {
     CHECK(has(h.line("display-text"), "10"));
 }
 
-TEST(c1600_4_ac3_typed_true_typed_in) {
+TEST(typed_true_typed_in) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     h.write("p.bas", "10 PRINT 4712\n");
@@ -187,7 +186,7 @@ TEST(c1600_4_ac3_typed_true_typed_in) {
     CHECK(has(h.line("display-text"), "4712"));
 }
 
-TEST(c1600_4_ac3_machine_code_at_address_and_started) {
+TEST(machine_code_at_address_and_started) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     // LD A,&5A; LD (&D3F0),A; RET -- started by its header's auto-run address.
@@ -201,7 +200,7 @@ TEST(c1600_4_ac3_machine_code_at_address_and_started) {
     CHECK_EQ(int(peekZ80(h, 0xD101)), 0x22);
 }
 
-TEST(c1600_4_ac3_loader_failure_fails_preset_with_reason) {
+TEST(loader_failure_fails_preset_with_reason) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     h.write("raw.bin", std::string("\x11\x22\x33", 3));   // headerless, no address
@@ -211,14 +210,14 @@ TEST(c1600_4_ac3_loader_failure_fails_preset_with_reason) {
     CHECK(has(r, "raw.bin: "));
 }
 
-TEST(c1600_4_ac4_text_typed_in_program_mode) {
+TEST(text_typed_in_program_mode) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     CHECK(h.loadIdle(kPc1600 + "keys:\n  - key: mode\nprogram:\n  text: |\n    10 PRINT 4713\nkeys:\n  - key: mode\n  - type: RUN\n"));
     CHECK(has(h.line("display-text"), "4713"));
 }
 
-TEST(c1600_4_ac4_not_in_program_mode_fails_naming_lines) {
+TEST(not_in_program_mode_fails_naming_lines) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     // The PC-1600 starts in RUN mode (C-7): the lines are not stored.
@@ -227,7 +226,7 @@ TEST(c1600_4_ac4_not_in_program_mode_fails_naming_lines) {
     CHECK(has(r, "program line was stored"));
 }
 
-TEST(c1600_4_ec3_second_section_after_first_finished) {
+TEST(second_section_after_first_finished) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     // The first section's code runs a while (a loop of 65536 rounds) and
@@ -239,20 +238,20 @@ TEST(c1600_4_ec3_second_section_after_first_finished) {
     CHECK(has(h.line("display-text"), "119"));
 }
 
-TEST(c1600_4_ec3_code_not_returned_fails_at_timeout) {
+TEST(code_not_returned_fails_at_timeout) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     // DI; JR $ -- with the interrupts off: the timer interrupt's key scan
-    // would count as key readiness (C1600-1 AC-21).
+    // would count as key readiness.
     h.write("loop.bin", pc1600Code({0xF3, 0x18, 0xFE}, 0xD300, 0xD300));
     const std::string r = h.load(kPc1600 + "timeout: 1\nprogram:\n  file: loop.bin\nkeys:\n  - key: cl\n");
     CHECK(has(r, "refused: "));
     CHECK(has(r, "timeout:"));
 }
 
-// ── T3: `host-drive:` (AC-6, AC-7) ──────────────────────────────────────
+// ── `host-drive:` ─────────────────────────────────────────────────────────
 
-TEST(c1600_4_ac6_folder_shown_as_s3) {
+TEST(folder_shown_as_s3) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     fs::create_directories(h.folder.path() / "shared");
@@ -262,7 +261,7 @@ TEST(c1600_4_ac6_folder_shown_as_s3) {
     CHECK(has(h.line("capabilities"), "place host-drive host-drive"));
 }
 
-TEST(c1600_4_ac6_missing_folder_or_not_pc1600_refused_at_read) {
+TEST(missing_folder_or_not_pc1600_refused_at_read) {
     PresetReadRig r;
     CHECK(has(r.error(kPc1600 + "host-drive: { folder: nowhere }\n"), "does not exist"));
     fs::create_directories(r.folder.path() / "shared");
@@ -271,15 +270,15 @@ TEST(c1600_4_ac6_missing_folder_or_not_pc1600_refused_at_read) {
     CHECK(has(r.error(kPc1600 + "host-drive: shared\n"), "host-drive: is { folder: <path> }"));
 }
 
-TEST(c1600_4_ac7_refused_where_frontend_mounts_no_folder) {
+TEST(refused_where_frontend_mounts_no_folder) {
     PresetReadRig r(cu1600::SharpKeywordSetup{[] { return false; }});
     fs::create_directories(r.folder.path() / "shared");
     CHECK(has(r.error(kPc1600 + "host-drive: { folder: shared }\n"), "The host drive is not available in this frontend."));
 }
 
-// ── T4: ROM images, bus ROMs (AC-8 to AC-10, EC-6) ──────────────────────
+// ── ROM images, bus ROMs ──────────────────────────────────────────────────
 
-TEST(c1600_4_ac8_slot_rom_bytes_read_at_every_load) {
+TEST(slot_rom_bytes_read_at_every_load) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     const std::string preset = "format-version: 2\nmodel: PC-1500\nslot-1: { name: CE-502B }\nslot-1-rom: { file: build/rom.bin }\n";
@@ -295,7 +294,7 @@ TEST(c1600_4_ac8_slot_rom_bytes_read_at_every_load) {
     }
 }
 
-TEST(c1600_4_ac8_no_module_twice_unreadable_wrong_size_refused) {
+TEST(no_module_twice_unreadable_wrong_size_refused) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     PresetReadRig r;
     if (auto set = testRomSet()) sharp::addModuleDefinitions(r.catalogue, *set);
@@ -313,7 +312,7 @@ TEST(c1600_4_ac8_no_module_twice_unreadable_wrong_size_refused) {
     CHECK(has(r.error(head + "slot-2-rom: { file: rom.bin }\n", "t.pc1500"), "not available on the PC-1500"));
 }
 
-TEST(c1600_4_ac9_forms_and_ranges) {
+TEST(forms_and_ranges) {
     PresetReadRig r;
     r.write("b.bin", std::string(0x100, '\x5A'));
     r.write("big.bin", std::string(0x4001, '\0'));
@@ -331,18 +330,18 @@ TEST(c1600_4_ac9_forms_and_ranges) {
     CHECK(has(r.error(kPc1600 + "bus-rom: b.bin\n"), "bus-rom: is a list"));
 }
 
-TEST(c1600_4_ac9_twice_refused) {
+TEST(bus_rom_given_twice_refused) {
     PresetReadRig r;
     r.write("b.bin", std::string(0x10, '\0'));
     CHECK(has(r.error(kPc1600 + "bus-rom:\n  - { file: b.bin, bank: 7 }\nbus-rom:\n  - { file: b.bin, bank: 6 }\n"),
               "bus-rom: is given twice"));
 }
 
-// LIB-6 D-33 (Part D simplification P-6): the header keys' peripherals come
+// The header keys' peripherals come
 // after the places in the machine plan, the host drive before the bus ROMs
 // whatever their order in the file, the bus ROMs in list order; a slot ROM
 // is the content of its module's request.
-TEST(c1600_4_ac10_header_peripherals_in_plan_order) {
+TEST(header_peripherals_in_plan_order) {
     PresetReadRig r;
     r.write("shared/x.txt", "");
     r.write("a.bin", std::string(0x10, '\x01'));
@@ -363,12 +362,12 @@ TEST(c1600_4_ac10_header_peripherals_in_plan_order) {
     }
 }
 
-TEST(c1600_4_ac10_later_rom_found_first_and_before_peripheral) {
+TEST(later_rom_found_first_and_before_peripheral) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     // PC-1600 with the host drive, whose ROM is the system bus's bank 7,
     // and two bus ROMs in bank 7: the later one is found first, and before
-    // the host drive's (C1600-4 AC-10).
+    // the host drive's.
     fs::create_directories(h.folder.path() / "shared");
     h.write("first.bin", std::string(0x10, '\x11'));
     h.write("second.bin", std::string(0x10, '\x22'));
@@ -377,7 +376,7 @@ TEST(c1600_4_ac10_later_rom_found_first_and_before_peripheral) {
     CHECK(has(h.line("peek SC7852 memory &4000 1 bank=7"), "0x22"));   // page B
 }
 
-TEST(c1600_4_ac10_listed_in_plugged_no_control) {
+TEST(listed_in_plugged_no_control) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     h.write("b.bin", std::string(0x10, '\x11'));
@@ -388,21 +387,21 @@ TEST(c1600_4_ac10_listed_in_plugged_no_control) {
     CHECK(caps.find("bus-rom/controls") == std::string::npos);
 }
 
-TEST(c1600_4_ac10_attach_command_refused) {
+TEST(attach_command_refused) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     CHECK(has(h.line("attach bus-rom bus-rom"), "A bus ROM is plugged in by a preset only."));
 }
 
-TEST(c1600_4_ec6_bank_on_pc1500_refused) {
+TEST(bank_on_pc1500_refused) {
     PresetReadRig r;
     r.write("b.bin", std::string(0x10, '\0'));
     CHECK(has(r.error(kPc1500a + "bus-rom:\n  - { file: b.bin, bank: 7 }\n", "t.pc1500a"), "takes address:, not bank:"));
 }
 
-// ── T5: `debug:` (AC-11, AC-12, AC-20, EC-4) ────────────────────────────
+// ── `debug:` ──────────────────────────────────────────────────────────────
 
-TEST(c1600_4_ac11_keys_values_paths_from_preset_folder) {
+TEST(keys_values_paths_from_preset_folder) {
     PresetReadRig r;
     const auto plan = r.read(kPc1600 +
                              "debug:\n  reset: allReset\n  stopOnEntry: true\n  command: CALL &C0C5\n"
@@ -424,7 +423,7 @@ TEST(c1600_4_ac11_keys_values_paths_from_preset_folder) {
     CHECK(first == (r.folder.path() / "rom/b7.lst").generic_string());
 }
 
-TEST(c1600_4_ac11_unknown_key_wrong_value_refused) {
+TEST(unknown_key_wrong_value_refused) {
     PresetReadRig r;
     CHECK(has(r.error(kPc1600 + "debug:\n  colour: red\n"), "debug: unknown key colour"));
     CHECK(has(r.error(kPc1600 + "debug:\n  reset: sometimes\n"), "debug: reset is one of none, reset, allReset"));
@@ -435,7 +434,7 @@ TEST(c1600_4_ac11_unknown_key_wrong_value_refused) {
     CHECK(has(r.error(kPc1600 + "debug: yes\n"), "debug: takes a block of settings"));
 }
 
-TEST(c1600_4_ac12_load_does_nothing_with_block) {
+TEST(load_does_nothing_with_block) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     CHECK(h.loadIdle(kPc1600 + "debug:\n  command: CALL &C0C5\n  stopOnEntry: true\n"));
@@ -445,7 +444,7 @@ TEST(c1600_4_ac12_load_does_nothing_with_block) {
     CHECK(h.machine() && h.machine()->tickCount() > before);   // not stopped on entry
 }
 
-TEST(c1600_4_ac12_debug_block_of_for_the_debugger) {
+TEST(debug_block_of_for_the_debugger) {
     PresetReadRig r;
     const fs::path p = r.write("proj.pc1600", kPc1600 + "debug:\n  program:\n    bin: a.bin\n");
     const auto b = cu1600::debugBlockOf(p.generic_string(), r.setup(), nullptr);
@@ -459,25 +458,25 @@ TEST(c1600_4_ac12_debug_block_of_for_the_debugger) {
     CHECK(std::holds_alternative<std::string>(cu1600::debugBlockOf(bad.generic_string(), r.setup(), nullptr)));
 }
 
-TEST(c1600_4_ac20_blocks_by_the_file_syntax) {
+TEST(blocks_by_the_file_syntax) {
     PresetReadRig r;
     r.write("b.bin", std::string(0x10, '\0'));
-    // Every block form of today's tests: block maps, flow maps, flow lists,
+    // Every block form the old tests used: block maps, flow maps, flow lists,
     // comments, quoted text, hex numbers in each notation.
     CHECK(r.ok(kPc1600 + "debug:   # the project\n  listings: [a.lst, \"b c.lst\"]\n  symbols:\n    - { path: s.sym, cpu: lh5803, me: 1 }\n"
                          "  program: { bin: x.bin, address: 0xC0C5, entry: $C0C5 }\n"
                          "bus-rom:\n  - file: b.bin   # comment\n    address: $8000\n"));
 }
 
-TEST(c1600_4_ec4_mistake_refused_without_debugger) {
+TEST(mistake_refused_without_debugger) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;
     CHECK(has(h.load(kPc1600 + "debug:\n  after: later\n"), "refused: "));
 }
 
-// ── T6: errors (AC-14) and today's cases (AC-19) ────────────────────────
+// ── Errors, and the old tests' cases ──────────────────────────────────────
 
-TEST(c1600_4_ac14_line_key_and_expected_debug_and_bus_rom_prefixed) {
+TEST(line_key_and_expected_debug_and_bus_rom_prefixed) {
     PresetReadRig r;
     r.write("b.bin", std::string(0x10, '\0'));
     const std::string a = r.error(kPc1600 + "\n\ndebug:\n  reset: sometimes\n");
@@ -488,13 +487,13 @@ TEST(c1600_4_ac14_line_key_and_expected_debug_and_bus_rom_prefixed) {
     CHECK(has(c, ", line 4: program: address: is a number"));
 }
 
-TEST(c1600_4_ac19_test_slot_rom_keys) {
+TEST(test_slot_rom_keys) {
     PresetReadRig r;
     CHECK(has(r.error(kPc1600 + "slot-1-rom: build/x.bin\n"), "slot-1-rom: is { file: <path> }"));
     CHECK(has(r.error(kPc1600 + "slot-1-rom: { folder: x }\n"), "slot-1-rom: is { file: <path> }"));
 }
 
-TEST(c1600_4_ac19_test_preset_parser_program_address_forms) {
+TEST(test_preset_parser_program_address_forms) {
     PresetReadRig r;
     r.write("c.bin", std::string(4, '\x11'));
     for (const char* a : {"&C000", "0xC000", "$C000", "49152"}) CHECK(r.ok(kPc1600 + "program:\n  file: c.bin\n  address: " + a + "\n"));
@@ -502,7 +501,7 @@ TEST(c1600_4_ac19_test_preset_parser_program_address_forms) {
     CHECK(has(r.error(kPc1600 + "program:\n  file: c.bin\n  address: C000\n"), "address: is a number"));
 }
 
-TEST(c1600_4_ac19_test_program_kind_follows_the_file) {
+TEST(test_program_kind_follows_the_file) {
     PresetReadRig r;
     std::ifstream in("tests/fixtures/basic/lissajou-1600.bbin", std::ios::binary);
     r.write("l.bbin", std::string(std::istreambuf_iterator<char>(in), {}));
@@ -510,38 +509,37 @@ TEST(c1600_4_ac19_test_program_kind_follows_the_file) {
     CHECK(has(r.error(kPc1600 + "program:\n  file: l.bbin\n  typed: true\n"), "is tokenized BASIC"));
 }
 
-TEST(c1600_4_ac19_test_preset_parser_sequential_keys_and_program_blocks) {
+TEST(test_preset_parser_sequential_keys_and_program_blocks) {
     PresetReadRig r;
     const auto plan = r.read(kPc1600 + "keys:\n  - key: mode\nprogram:\n  text: |\n    10 A=1\nkeys:\n  - type: RUN\n");
     const auto* p = std::get_if<calcu::presets::LoadPlan>(&plan);
     CHECK(p && p->items.size() == 3);
 }
 
-TEST(c1600_4_ac19_test_parser_bus_rom_forms) {
+TEST(test_parser_bus_rom_forms) {
     PresetReadRig r;
     r.write("x.bin", std::string(8, '\0'));
     CHECK(r.ok(kPc1500a + "bus-rom:\n  - file: x.bin\n    address: &8800\n    pv: 0\n", "t.pc1500a"));
     CHECK(has(r.error(kPc1500a + "bus-rom:\n  - file: x.bin\n    bank: 7\n", "t.pc1500a"), "takes address:"));
 }
 
-TEST(c1600_4_ac19_test_debug_block_numbers_follow_the_preset_rule) {
+TEST(test_debug_block_numbers_follow_the_preset_rule) {
     PresetReadRig r;
     for (const char* n : {"&C0C5", "0xC0C5", "$C0C5", "49349"})
         CHECK(r.ok(kPc1600 + "debug:\n  program:\n    bin: a.bin\n    address: " + n + "\n"));
     CHECK(has(r.error(kPc1600 + "debug:\n  program:\n    bin: a.bin\n    address: &10000\n"), "a number up to &FFFF"));
 }
 
-TEST(c1600_4_ac19_test_parser_rejects_cross_model_fields) {
+TEST(test_parser_rejects_cross_model_fields) {
     PresetReadRig r;
     CHECK(has(r.error(kPc1500a + "slot-2: { name: CE-1600M }\n", "t.pc1500a"), "slot-2 is not available on the PC-1500A"));
     CHECK(has(r.error(kPc1500a + "printer: CE-1600P\n", "t.pc1500a"), "does not fit"));
 }
 
-// ── T7: the upgrade (AC-15) ─────────────────────────────────────────────
+// ── The upgrade ───────────────────────────────────────────────────────────
 
-TEST(c1600_4_ac15_no_version_1_left) {
-    // Every preset of the source repository in format 2: since M-47 also the
-    // six that waited for LIB-7's media (C1600-4 design §1), without exceptions.
+TEST(no_version_1_left) {
+    // Every preset of the source repository in format 2, without exceptions.
     const std::set<std::string> waiting = {};
     int found = 0;
     for (const char* root : {"examples", "tests/fixtures", "dev", "docs", "vscode"})
@@ -560,9 +558,9 @@ TEST(c1600_4_ac15_no_version_1_left) {
     CHECK(found > 50);
 }
 
-// ── T9: the bundle file, the names (AC-17, AC-18) ───────────────────────
+// ── The bundle file, the names ────────────────────────────────────────────
 
-TEST(c1600_4_ac17_bundle_lists_todays_entries) {
+TEST(bundle_lists_todays_entries) {
     calcu::presets::DirectoryPresetBundle bundle("examples");
     const auto read = calcu::presets::readBundleFile(bundle);
     const auto* entries = std::get_if<std::vector<calcu::presets::BundleEntry>>(&read);
@@ -570,7 +568,7 @@ TEST(c1600_4_ac17_bundle_lists_todays_entries) {
     if (!entries) return;
     std::vector<std::string> got;
     for (const auto& e : *entries) got.push_back((e.startup ? "startup " : e.group + " ") + e.preset);
-    // examples/bundled.yaml:12-31 of 0.8.1, startup/default-pc1600 since M-47.
+    // examples/bundled.yaml:12-31 of 0.8.1, plus startup/default-pc1600.
     const std::vector<std::string> want = {"startup startup/default-pc1500.pc1500",
                                            "startup startup/default-pc1500a.pc1500a",
                                            "startup startup/default-pc1600.pc1600",
@@ -587,7 +585,7 @@ TEST(c1600_4_ac17_bundle_lists_todays_entries) {
         if (e.preset == "basic/hanoi.pc1600") CHECK(e.files == std::vector<std::string>{"basic/hanoi.bas"});
 }
 
-TEST(c1600_4_ac18_names_short_described_once_unique_per_model) {
+TEST(names_short_described_once_unique_per_model) {
     PresetReadRig r;
     if (auto set = testRomSet()) sharp::addModuleDefinitions(r.catalogue, *set);
     calcu::presets::DirectoryPresetBundle bundle("examples");

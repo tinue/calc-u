@@ -69,7 +69,7 @@ std::string stopReason(calcu::debugger::RunState::Reason r, bool entry, bool ent
     case R::Step: return "step";
     case R::Entry: return "entry";
     case R::Pause:
-    case R::PauseOnStart: return entry ? "entry" : "pause";   // D-7
+    case R::PauseOnStart: return entry ? "entry" : "pause";   // DAP has no reason of its own for a pause-on-start
     }
     return "pause";
 }
@@ -264,7 +264,7 @@ bool DapSession::wantsTime() const {
     return opRunning_ || !runControl().paused();
 }
 
-// ── Events (AC-9, AC-16) ──────────────────────────────────────────────────
+// ── Events ────────────────────────────────────────────────────────────────
 
 void DapSession::machineChanged() {
     if (!active_ || ended_) return;
@@ -332,7 +332,7 @@ void DapSession::initialize(Body* body, std::string* error) {
         *error = "No machine is running";
         return;
     }
-    // AC-4: a session starts on a paused machine.
+    // A session starts on a paused machine.
     map_.clear();
     breakpoints_.clear();
     active_ = true;
@@ -553,7 +553,7 @@ void DapSession::setVariable(const Value& args, Body* body, std::string* error) 
     if (!ready(error)) return;
     const int ref = static_cast<int>(intOf(args, "variablesReference"));
     const int frameId = ref / 4;
-    if (frameIndex(frameId) != 0) {   // EC-6
+    if (frameIndex(frameId) != 0) {
         *error = "Only the live frame's registers can be changed";
         return;
     }
@@ -861,7 +861,7 @@ void DapSession::evaluate(const Value& args, Body* body, std::string* error) {
 }
 
 // The display as text, as the harness's `display-text` replies with --json
-// (LIB-11 AC-10, AC-19; harness/DisplayText.hpp): {on, rows, indicators:
+// (harness/DisplayText.hpp): {on, rows, indicators:
 // [{name, brightness}], notText}, written by the harness's own serialiser.
 // Needs no DAP session, only a machine.
 void DapSession::displayText(Body* body, std::string* error) {

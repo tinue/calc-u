@@ -84,7 +84,7 @@ public:
     /// Throws away everything buffered (fast-forward, model switch).
     void discard() { m_head = 0; m_count = 0; }
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    /// The machine state (Machine/StateRecords.hpp).
     template <class Io>
     void stateIo(Io& io) {
         io(m_level)(m_edges)(m_phase)(m_area)(m_hpPrevIn)(m_hpPrevOut);

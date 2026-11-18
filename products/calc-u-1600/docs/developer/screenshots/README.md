@@ -208,15 +208,16 @@ Two macOS details:
 ## Check scenarios
 
 `tests/gui/*.shots.yaml` are scenarios that check what the GUI does: the
-paper panel and its plotter name (`lib8-ac36`, `lib8-ac38`), "Paused
-(debugger)" in the title and Machine ▸ Resume (`lib10-ac41`), a tap of the
-host's Shift (`lib5-ac33`), a bundled example loaded by its bundle path
-(`lib6-ac54`), a saved module template and its picker
-(`lib7-ac8-…`, `lib7-ac16-…`), and the DAP status line and Disconnect in
-Settings (`c1600-3-ac18`). They run as the CTests `CalcU1600Shots.<name>`
-(Longer) with the guide's scenarios, through attach like the guide's,
-write their pictures into the build tree, and use `expect-panel`,
-`expect-title` and `command`.
+paper panel and its plotter name (`paper-panel-kept-through-detach`,
+`plotter-example-paper-panel`), "Paused (debugger)" in the title and
+Machine ▸ Resume (`paused-title-and-resume`), a tap of the host's Shift
+(`shift-tap-types-second-legend`), a bundled example loaded by its bundle
+path (`example-by-bundle-path`), a saved module template and its picker
+(`picker-lists-instance`, `module-template-saved`), and the DAP status
+line and Disconnect in Settings (`debugger-settings-disconnect`). They run
+as the CTests `CalcU1600Shots.<name>` (Longer) with the guide's scenarios,
+through attach like the guide's, write their pictures into the build tree,
+and use `expect-panel`, `expect-title` and `command`.
 
 ## Presets
 

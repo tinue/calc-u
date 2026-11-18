@@ -216,8 +216,8 @@ TEST(test_boot_with_ce155_in_slot1_is_stable) {
     if (!ce155) return;
     m.attachSlot1Card(std::move(ce155));
     m.allReset();
-    // Past the boot sequence -- the CLIs' (until M-51) bar for
-    // "converges to a stable PC set" (~2M T-states).
+    // Past the boot sequence: about 2M T-states, after which the PC
+    // settles into a stable set.
     m.runCycles(PC1600Machine::kTStateHz * 2);
 
     // The machine is alive: stepping a bit more doesn't fault.

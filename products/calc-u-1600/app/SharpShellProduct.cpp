@@ -27,14 +27,14 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
                     "See LICENSE, NOTICE and THIRD-PARTY-NOTICES.md, shipped alongside this app, for licensing details."};
     p.variantLabels = {{sharp::kPC1500, "ROM Revision"}, {sharp::kPC1600, "ROM Version"}, {sharp::kCE1600P, "CE-1600P ROM"}};
     p.presetFilter = "Presets (*.pc1500 *.pc1500a *.pc1600)";
-    // AC-41: Copy Screen is each frontend's own act; this placeholder says
-    // that the product has the item (LIB-14 D-37), so the page's form of it
+    // Copy Screen is each frontend's own act; this placeholder says
+    // that the product has the item, so the page's form of it
     // (`c1600.shell-product`) stays as it was.
     p.copyScreen = [] {};
     p.pasteText = true;
     p.moduleSlotPinOuts = {sharp::kPC1500SlotPinOut, sharp::kPC1600Slot1PinOut, sharp::kPC1600Slot2PinOut};
-    // AC-9: the host drive needs a folder (File ▸ Host Drive…); a bus
-    // ROM is plugged in by a preset only (C1600-4 D-5).
+    // The host drive needs a folder (File ▸ Host Drive…); a bus
+    // ROM is plugged in by a preset only.
     p.placesWithoutControl = {sharp::kHostDrivePlace, sharp::kBusRomPlace};
     auto item = [](shell::MenuGroup g, const char* id, const char* label, const char* entry = "") {
         shell::ProductItem i;
@@ -59,7 +59,7 @@ shell::DialogSpec settingsSpec(bool qt6, bool serialPorts) {
     shell::DialogSpec spec = shell::familySections(settingsDecl(), qt6 ? std::vector<std::string>{} : webKeys);
     for (auto& s : spec.sections) {
         if (s.title != "Folders") continue;
-        // D-26: today's labels, "Samples" renamed; "Presets", "BASIC" (LIB-14 decision log 2026-11-18).
+        // Calc-U-1600's labels of the folder rows; the Samples folder is the Presets folder.
         for (auto& r : s.rows) {
             if (r.key == openFolderKind(OpenFolder::Samples)) r.label = "Presets folder";
             else if (r.key == openFolderKind(OpenFolder::Basic)) r.label = "BASIC folder";
@@ -147,7 +147,7 @@ Value faceplateMapValue(const calcu::machine::ModelId& model) {
                                     {"p16MatrixTop", kP16MatrixTop},
                                     {"p16MatrixBottom", kP16MatrixBottom},
                                     {"indicators", Value(std::move(slots))}});
-    // The art's size around the shell's form of the hit map (D-31).
+    // The art's size around the shell's form of the hit map.
     Value::Object out{{"model", Value(model.value)}, {"width", Value(l.imageWidth)}, {"height", Value(l.imageHeight)}};
     const Value hitMap = shell::toValue(faceplateHitMap(model));
     for (const auto& member : *hitMap.members()) out.push_back(member);

@@ -49,7 +49,7 @@ struct PC1600InterfaceMachine::Kinds {
         }
         PC1600Machine& m;
     } inspector;
-    // LIB-5 AC-35: typing support, prompt readiness and the SHIFT and KBII latches.
+    // Typing support, prompt readiness and the SHIFT and KBII latches.
     struct Support final : calcu::typing::TypingSupport {
         explicit Support(PC1600Machine& m) : m(m) {}
         std::optional<bool> promptReady() const override { return pc1600AtBasicPrompt(m); }
@@ -111,7 +111,7 @@ struct PC1600InterfaceMachine::Kinds {
         void setFolder(const std::string& f) override { m.setHostDriveDirectory(calcu::files::toPath(f)); }
         PC1600Machine& m;
     } hostDrive;
-    // C1600-5 AC-12: CALL on the Z-80, SJP on the LH5803.
+    // A routine call: CALL on the Z-80, SJP on the LH5803.
     struct Call final : sharp::RoutineCall {
         explicit Call(PC1600Machine& m) : m(m) {}
         bool call(const std::string& target, std::uint16_t address) override {
@@ -136,10 +136,9 @@ PC1600InterfaceMachine::~PC1600InterfaceMachine() = default;
 Capability* PC1600InterfaceMachine::capability(const CapabilityId& id) {
     Capability* c = SharpMachine::capability(id);
     // The TC8576F gets its peer when the serial port is first taken, as a
-    // host link does right after a build (today's session attached its PTY
-    // there, before the cold boot). Until then the UART runs standalone, as
-    // the bare core of the golden runs did. The peer's DCD is off until a
-    // program opens the serial port file, as with today's PTY.
+    // host link does right after a build, before the cold boot. Until then
+    // the UART runs standalone, as the bare core of the golden runs did. The
+    // peer's DCD is off until a program opens the serial port file.
     if (c == &m_rs232c.port() && !m_core->serialLink()) {
         m_rs232c.port().setPeerLines(calcu::peripherals::PeerLines{true, true, false, false});
         m_core->setSerialLink(&m_rs232c);
@@ -159,7 +158,7 @@ DisplayOutput PC1600InterfaceMachine::readDisplay() {
         for (int col = 0; col < PC1600Display::kWidth; ++col)
             dots[static_cast<std::size_t>(row) * PC1600Display::kWidth + col] = snap.pixels[row][col] ? 1 : 0;
     // The display is on while CK0 runs and the system has power: the sub-CPU
-    // cutting power leaves CK0 as it was (C1600-1 AC-3).
+    // cutting power leaves CK0 as it was.
     const bool on = snap.clockEnabled && !m_core->isPoweredOff();
     return sharp::displayOutput(descriptor(), on, PC1600Display::kWidth, PC1600Display::kHeight,
                                 std::move(dots), snap.statusLine);
@@ -173,8 +172,8 @@ ExpansionCard* PC1600InterfaceMachine::moduleIn(const PlaceName& p) {
 
 std::optional<std::string> PC1600InterfaceMachine::modelRefusal(const PeripheralRequest& req,
                                                                 const std::optional<PeripheralId>& replacing) const {
-    // The CE-1600P and the CE-158 cannot be used together (LIB-2 AC-29,
-    // D-6, D-7; today the core removed the other one without a word).
+    // The CE-1600P and the CE-158 cannot be used together: refused, rather
+    // than the core removing the other one without a word.
     const char* other = req.peripheral.value == sharp::kCE1600P ? sharp::kCE158
                         : req.peripheral.value == sharp::kCE158 ? sharp::kCE1600P
                                                                  : nullptr;
@@ -194,7 +193,7 @@ void PC1600InterfaceMachine::corePlug(const PeripheralRequest& req, const Periph
         else m_core->attachSlot2Card(std::move(card));
         return;
     }
-    if (const auto* b = dynamic_cast<const sharp::BusRomRequest*>(req.content.get())) {   // C1600-4 AC-10
+    if (const auto* b = dynamic_cast<const sharp::BusRomRequest*>(req.content.get())) {
         if (b->bank >= 0)
             m_core->attachBusRom(std::make_unique<PC1600BusRomCard>(b->bytes, static_cast<std::uint8_t>(b->bank), b->name));
         else
@@ -234,19 +233,19 @@ void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     out.push_back(byComponent("SC7852", k.support));
     out.push_back(byComponent("SC7852", k.trace));
     out.push_back(byComponent("SC7852", k.call));
-    out.push_back(byComponent("SC7852", stateCapability()));   // C1600-5 AC-13
+    out.push_back(byComponent("SC7852", stateCapability()));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     out.push_back(byComponent(sharp::kRs232cComponent, m_rs232c.port()));
     if (const PlugEntry* e = at(sharp::kPrinter)) {
-        // LIB-8: the plotter's paper output, once its card is on the bus.
+        // The plotter's paper output, once its card is on the bus.
         if (e->peripheral.value == sharp::kCE150) {
             if (calcu::paper::PaperOutput* paper = m_core->ce150PaperOutput()) out.push_back(byPeripheral(*e, *paper));
         } else if (e->peripheral.value == sharp::kCE1600P) {
             if (calcu::paper::PaperOutput* paper = m_core->ce1600pPaperOutput()) out.push_back(byPeripheral(*e, *paper));
             out.push_back(byPeripheral(*e, k.floppy));
-            out.push_back(byPeripheral(*e, k.drive, "floppy"));   // LIB-7: the CE-1600F's media place
+            out.push_back(byPeripheral(*e, k.drive, "floppy"));   // the CE-1600F's media place
         }
-        // LIB-7: the cassette of either interface (C1600-1 AC-16).
+        // The cassette of either interface.
         if (e->peripheral.value == sharp::kCE150 || e->peripheral.value == sharp::kCE1600P) {
             out.push_back(byPeripheral(*e, k.cassette, "cassette-recorder"));
             out.push_back(byPeripheral(*e, k.tape));
@@ -259,7 +258,7 @@ void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     if (const PlugEntry* e = at(sharp::kHostDrivePlace)) out.push_back(byPeripheral(*e, k.hostDrive));
 }
 
-// ---- The machine state (C1600-5 AC-13) ----
+// ---- The machine state ----
 
 template <class Io>
 void PC1600InterfaceMachine::interfaceStateIo(Io& io) {

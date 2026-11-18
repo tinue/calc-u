@@ -16,11 +16,11 @@ namespace cu1600 {
 // host talks to it through a calcu::sessions::Listener and makes the host
 // call from its own timer. Single-threaded.
 //
-// The host's side (HostSessionSetup): its settings for LIB-14's SettingsPart
+// The host's side (HostSessionSetup): its settings for the shell's SettingsPart
 // (Qt6), its own parts, the clock (default: the steady clock), the host time
 // (default: the system clock), the hosting; `owned` is the part's.
 struct SharpSessionOptions : calcu::shell::HostSessionSetup {
-    bool canMountHostFolder = true;   // LIB-4 AC-18: a browser cannot
+    bool canMountHostFolder = true;   // a browser cannot
 };
 
 calcu::sessions::ProductSession<SharpAppPart> makeSharpSession(Settings& settings, AppPaths& paths,

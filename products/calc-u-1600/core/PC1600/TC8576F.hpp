@@ -94,7 +94,7 @@ public:
     /// 21H write the strobe reaches the sub-CPU's KI.
     int dstbDelayTStates() const;
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    /// The machine state (Machine/StateRecords.hpp).
     template <class Io>
     void stateIo(Io& io) {
         io(m_txFifo)(m_serialAccum)(m_charTStates)(m_pr)(m_par)(m_resetHeld)(m_txEnable)(m_dtr)(m_rxEnable)(m_sendBreak)(m_rts);

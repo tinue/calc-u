@@ -53,7 +53,7 @@ BasicProgramSource tokenize(const std::vector<uint8_t>& bytes, TransferModel mod
 BasicProgramSource readBasicProgram(const std::vector<uint8_t>& bytes, TransferModel listingModel) {
     using programfile::Kind;
     const programfile::ProgramFile pf = programfile::classify(bytes);
-    // One sentence per case (C1600-2 AC-25): the classifier's.
+    // One sentence per case: the classifier's.
     if (const std::string why = programfile::refusal(pf, programfile::Wanted::Basic); !why.empty()) return fail(why);
     if (pf.kind == Kind::BasicListing) return tokenize(bytes, listingModel);
     BasicProgramSource s;

@@ -1,9 +1,5 @@
-// The Sharp pacing profiles (LIB-17 AC-20) and the sink side of the sound
-// (SoundFeed). 0.8.1's Pacer tests (test_absolute_deadline,
-// test_stall_and_restart) moved to the library's pacer tests in M-31
-// (library/pacing/tests/pacer_tests.cpp: call_slice_keeps_wall_time_at_60_hz,
-// lag_over_limit_dropped_whole, start_afresh_no_lag_nothing_to_wait,
-// new_machine_new_rate_and_profile).
+// The Sharp pacing profiles and the sink side of the sound (SoundFeed).
+// The pacer itself is tested in library/pacing/tests/pacer_tests.cpp.
 
 #include <cstdio>
 #include <string>
@@ -15,9 +11,9 @@
 
 namespace {
 
-// LIB-17 AC-20: the PC-1500, PC-1500A and PC-1600 each have a profile whose
+// The PC-1500, PC-1500A and PC-1600 each have a profile whose
 // slice is the call, with no jitter, and full speed never paced.
-TEST(lib17_ac20_pacing_profiles_sharp) {
+TEST(pacing_profiles_sharp) {
     for (calcu::machine::ModelId m : {calcu::machine::ModelId{"PC-1500"}, calcu::machine::ModelId{"PC-1500A"}, calcu::machine::ModelId{"PC-1600"}}) {
         const calcu::pacing::PacingProfile p = cu1600::pacingProfile(m);
         CHECK(!p.slice.has_value());
@@ -47,7 +43,7 @@ struct FakeSink : cu1600::AudioSink {
     bool ranDry() const override { return false; }
 };
 
-// The session decides what is heard (LIB-3 design §3.6); the sink side
+// The session decides what is heard; the sink side
 // opens on SoundStart at its rate, plays what it is given, keeps what the
 // device has no room for up to a cap, and closes on SoundStop.
 TEST(test_sound_feed) {

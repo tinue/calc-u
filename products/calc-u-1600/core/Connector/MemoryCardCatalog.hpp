@@ -9,7 +9,7 @@
 
 namespace sharp {
 // core/Machine/SharpRoms.hpp: a file of the ROM full set (the CE-502B's
-// definition) is read by the ROM lookup only (LIB-12 AC-14, I-2).
+// definition) is read by the ROM lookup only.
 bool isFullSetFile(std::string_view fileName);
 }  // namespace sharp
 

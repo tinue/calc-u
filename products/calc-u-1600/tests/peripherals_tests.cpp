@@ -1,6 +1,7 @@
-// LIB-2 AC-28 to AC-31, AC-34 and the M-26 part of AC-32, the Calc-U-1600
-// column (LIB-2 design §6 P5-P9, P11). AC-33 and the clock set by the
-// session (P10, P11's third case) go through the product's machine session
+// The Calc-U-1600 peripherals on the machine interface: the places' pin-out
+// rules, the combinations refused, the CE-158's link, the CE-161's switch
+// and the real-time clocks. The serial links and the clock set by the
+// session go through the product's machine session
 // (app/tests/serial_links_tests.cpp).
 
 #include <algorithm>
@@ -28,7 +29,7 @@ const PinOutDescriptor* pinOutOf(const MachineDescriptor& d, const PlaceDescript
 
 } // namespace
 
-TEST(lib2_ac28_slots_one_chain_contact_level_power_cycle) {
+TEST(slots_one_chain_contact_level_power_cycle) {
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         const MachineDescriptor& d = *sharp::sharpCatalogue().model(ModelId{model});
         for (const PlaceDescriptor& p : d.places) {
@@ -37,7 +38,7 @@ TEST(lib2_ac28_slots_one_chain_contact_level_power_cycle) {
             if (!po) continue;
             const bool slot = p.name.value.rfind("slot-", 0) == 0;
             CHECK(po->takes == (slot ? Takes::One : Takes::Chain));
-            CHECK_EQ(p.takesAtOnce, p.name.value == "bus-rom" ? 1000 : 1);   // any number of bus ROMs (C1600-4 D-6)
+            CHECK_EQ(p.takesAtOnce, p.name.value == "bus-rom" ? 1000 : 1);   // any number of bus ROMs
             CHECK(po->level == PinOutLevel::ContactLevel);
             CHECK(po->after == AfterChange::PowerCycle);
         }
@@ -56,7 +57,7 @@ TEST(lib2_ac28_slots_one_chain_contact_level_power_cycle) {
         const ChangeResult s = m->attach(moduleRequest("CE-161", "slot-1"), c);
         CHECK(!s.refused && s.follows == AfterChange::PowerCycle);
         CHECK(m->detach(place("interface"), PeripheralId{"CE-158"}, c).follows == AfterChange::PowerCycle);
-        // Switched off: nothing follows (LIB-2 AC-4), the change is made at once.
+        // Switched off: nothing follows, the change is made at once.
         m->keyDown(KeyId{"off"});
         m->advance(frameTicks(*m) * 4);
         m->keyUp(KeyId{"off"});
@@ -66,7 +67,7 @@ TEST(lib2_ac28_slots_one_chain_contact_level_power_cycle) {
     }
 }
 
-TEST(lib2_ac29_second_printer_refused) {
+TEST(second_printer_refused) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     auto m = buildSharp(c, "PC-1600");
@@ -85,7 +86,7 @@ TEST(lib2_ac29_second_printer_refused) {
     CHECK(sharp::pc1600Of(*n)->ce150Attached() && !sharp::pc1600Of(*n)->ce1600pAttached());
 }
 
-TEST(lib2_ac29_ce1600p_ce158_refused_both_ways) {
+TEST(ce1600p_ce158_refused_both_ways) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     const std::string why = "The CE-1600P and the CE-158 cannot be used together.";
@@ -107,7 +108,7 @@ TEST(lib2_ac29_ce1600p_ce158_refused_both_ways) {
     }
 }
 
-TEST(lib2_ac30_ce150_and_ce158_together) {
+TEST(ce150_and_ce158_together) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
@@ -166,7 +167,7 @@ std::vector<double> ce158SendTimes(const char* model) {
 
 } // namespace
 
-TEST(lib2_ac31_ce158_same_emulated_time_pc1500_pc1600) {
+TEST(ce158_same_emulated_time_pc1500_pc1600) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const std::vector<double> a = ce158SendTimes("PC-1500A");
     const std::vector<double> b = ce158SendTimes("PC-1600");
@@ -183,7 +184,7 @@ TEST(lib2_ac31_ce158_same_emulated_time_pc1500_pc1600) {
     CHECK(std::abs((a[10] - a[0]) - (b[10] - b[0])) <= 0.0006);
 }
 
-TEST(lib2_ac32_ce161_switch_blocks_writes) {
+TEST(ce161_switch_blocks_writes) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue c = catalogueWithModules();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
@@ -211,7 +212,7 @@ TEST(lib2_ac32_ce161_switch_blocks_writes) {
     }
 }
 
-TEST(lib2_ac34_rtc_on_three_models) {
+TEST(rtc_on_three_models) {
     const Catalogue& c = sharp::sharpCatalogue();
     int built = 0;
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
@@ -227,12 +228,12 @@ TEST(lib2_ac34_rtc_on_three_models) {
         pp::RealTimeClock* clock = capabilityAs<pp::RealTimeClock>(*m, entries[0].id);
         CHECK(clock != nullptr);
         if (!clock) continue;
-        // The kept fields only (LIB-2 AC-21): no year on either chip.
+        // The kept fields only: no year on either chip.
         clock->set(pp::ClockFields{2026, 11, 15, 0, 8, 9, 10});
         const pp::ClockFields f = clock->read();
         CHECK(!f.year.has_value());
         CHECK(f.month == 11 && f.day == 15 && f.hour == 8 && f.minute == 9 && f.second == 10);
-        // setClocksFromHost reaches it (AC-23).
+        // setClocksFromHost reaches it.
         pp::setClocksFromHost(*m, pp::HostDateTime{2027, 3, 4, 4, 5, 6, 7, 0});
         const pp::ClockFields g = clock->read();
         CHECK(g.month == 3 && g.day == 4 && g.hour == 5 && g.minute == 6 && g.second == 7);
@@ -240,7 +241,7 @@ TEST(lib2_ac34_rtc_on_three_models) {
     SKIP_UNLESS(built > 0, "Sharp ROMs missing");
 }
 
-TEST(lib2_ac34_clock_runs_on_emulated_time) {
+TEST(clock_runs_on_emulated_time) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
@@ -252,7 +253,7 @@ TEST(lib2_ac34_clock_runs_on_emulated_time) {
         m->advance(secondsTicks(*m, 5.0));
         const pp::ClockFields f = clock->read();
         CHECK(f.minute == 20 && f.second && *f.second >= 34 && *f.second <= 36);
-        // While the machine is off, too (C1600-1 AC-3).
+        // While the machine is off, too.
         m->keyDown(KeyId{"off"});
         m->advance(frameTicks(*m) * 4);
         m->keyUp(KeyId{"off"});

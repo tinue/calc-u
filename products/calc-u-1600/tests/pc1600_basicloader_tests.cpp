@@ -88,7 +88,7 @@ uint16_t runAndReadVarPtr(PC1600Machine& m) {
 // program area into the module window. The fast loader must scatter the
 // tokenised image into the module's backing store byte-for-byte the way
 // the keystroke typer's stored program looks, and the result must RUN.
-TEST(c1600_2_ac6_s0_parts_in_table_order_line_not_split) {
+TEST(s0_parts_in_table_order_line_not_split) {
     const char* src = "10 A=42\n20 B=A+1\n30 END\n";
 
     // Oracle: type the program with the module fitted; read the stored
@@ -191,7 +191,7 @@ TEST(test_reload_over_shorter_program_clears_tail_stock) {
 
 // A live BASPRG_END that doesn't sit at/after BASPRG_ST must be rejected --
 // the loader relies on it to know how much of the resident program to erase.
-TEST(c1600_2_ac6_refused_names_pointer_or_room_nothing_written) {
+TEST(refused_names_pointer_or_room_nothing_written) {
     PC1600Machine m;
     SKIP_UNLESS(bootIntoProNew0(m), "PC-1600 ROM set not found");
     uint16_t st = be16(m, 0xF865);
@@ -398,7 +398,7 @@ void checkTypedVsFast(const char* label, size_t slot1Ram, size_t slot2Ram, const
     CHECK(m.memory().peek(0xFF80) == 77);
 }
 
-TEST(c1600_2_ac4_same_memory_as_typed_pc1600) {
+TEST(same_memory_as_typed_pc1600) {
     const std::vector<uint8_t> shortPayload = programPayload(kShortProgram);
     SKIP_UNLESS(!shortPayload.empty(), "PC-1600 ROM set not found");
     const std::vector<uint8_t> longPayload = programPayload(kLongProgram);
@@ -440,7 +440,7 @@ bool bootMode(PC1600Machine& m, bool mode1) {
 // A listing is tokenized with the table of the current MODE: CALL is the
 // PC-1600's Z-80 CALL (F282H) in MODE 0 and the PC-1500's CALL (F18AH, which
 // the PC-1600 lists as XCALL) in MODE 1.
-TEST(c1600_2_ac5_listing_tokenized_per_model_and_mode) {
+TEST(listing_tokenized_per_model_and_mode) {
     const std::string path = writeTempListing("pc1600_mode_call.bas", "10 CALL &4000\n");
     for (bool mode1 : {false, true}) {
         PC1600Machine m;
@@ -455,7 +455,7 @@ TEST(c1600_2_ac5_listing_tokenized_per_model_and_mode) {
 }
 
 // Text the PC-1500 can't hold is refused in MODE 1, and nothing is written.
-TEST(c1600_2_ac5_mode1_non_ascii_refused) {
+TEST(mode1_non_ascii_refused) {
     const std::string path = writeTempListing("pc1600_mode_umlaut.bas", "10 PRINT \"\xC3\xA4\xC3\xB6\xC3\xBC\"\n");
     {
         PC1600Machine m;
@@ -476,7 +476,7 @@ TEST(c1600_2_ac5_mode1_non_ascii_refused) {
 }
 
 // A CE-158 (PC-1500) transfer file: refused in MODE 0, loaded in MODE 1.
-TEST(c1600_2_ac5_tokenized_file_per_machine_and_mode) {
+TEST(tokenized_file_per_machine_and_mode) {
     std::vector<uint8_t> payload = {0x00, 0x0A, 0x03, 0xF1, 0x8E, 0x0D};
     std::vector<uint8_t> f(27, 0x00);
     f[0] = 0x01; f[1] = 0x40; f[2] = 'C'; f[3] = 'O'; f[4] = 'M';
@@ -531,8 +531,8 @@ TEST(test_mode_and_title_queries) {
     CHECK(!m.mode1());
 }
 
-// AC-4: no reset, no NEW, MODE and the selected program area as before.
-TEST(c1600_2_ac4_nothing_else_changes_mode_area_kept) {
+// No reset, no NEW, MODE and the selected program area as before.
+TEST(nothing_else_changes_mode_area_kept) {
     for (bool mode1 : {false, true}) {
         PC1600Machine m;
         if (!bootMode(m, mode1)) return;
@@ -544,9 +544,9 @@ TEST(c1600_2_ac4_nothing_else_changes_mode_area_kept) {
     }
 }
 
-// AC-6: S1 / S2 in a memory module; a selected slot without a program
+// S1 / S2 in a memory module; a selected slot without a program
 // module is refused, naming the area, and nothing is written.
-TEST(c1600_2_ac6_s1_s2_in_module) {
+TEST(basic_load_into_s1_s2_module) {
     PC1600Machine m;
     if (!prepare(m, 0, 0x8000, {"NEW0", "INIT\"S2:\",\"P\"", "TITLE\"S2:\""})) return;
     CHECK(m.programAreaTitle() == 2);
@@ -557,7 +557,7 @@ TEST(c1600_2_ac6_s1_s2_in_module) {
     CHECK(r.baseAddr >= 0x8000 && r.baseAddr < 0xC000);   // in the slot window
 }
 
-TEST(c1600_2_ac6_slot_without_program_module_refused) {
+TEST(slot_without_program_module_refused) {
     PC1600Machine m;
     if (!bootIntoProNew0(m)) return;
     const uint8_t s1 = 1;
@@ -573,8 +573,8 @@ TEST(c1600_2_ac6_slot_without_program_module_refused) {
     CHECK(same);
 }
 
-// EC-3: no program area set up: the hint to run NEW first.
-TEST(c1600_2_ec3_uninitialised_pointer_hint_pc1600) {
+// No program area set up: the hint to run NEW first.
+TEST(uninitialised_pointer_hint_pc1600) {
     PC1600Machine m;
     if (!bootIntoProNew0(m)) return;
     const uint8_t bad[2] = {0xFF, 0xFF};

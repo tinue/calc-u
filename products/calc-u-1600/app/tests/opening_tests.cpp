@@ -1,10 +1,8 @@
-// LIB-13, the Calc-U-1600 column (design Part D, D6 T16-1 to T16-6):
-// opening a file on the product's app session -- its preset extensions,
+// Opening a file on the product's app session -- its preset extensions,
 // media suffixes and the two program kinds (app/SharpFileKinds) in the
 // library's open part, what follows for a program file, media, the limits,
-// the start argument and the dialog folders; and today's cases of telling a
-// dropped file (the old test_drop_targets of tests/program_file_tests.cpp),
-// through the product's open part. The classification cases build the
+// the start argument and the dialog folders; and the cases of telling a
+// dropped file by its content, through the product's open part. The classification cases build the
 // session but start no machine; the others start one (real ROMs, SKIP
 // without them).
 
@@ -145,7 +143,7 @@ OpenedFile onDisk(const fs::path& p) {
     return OpenedFile{p.filename().generic_string(), fs::absolute(p).generic_string(), std::move(b)};
 }
 
-// What the product's open part takes the file for (AC-1's tests in order):
+// What the product's open part takes the file for:
 // "refused", "preset", "medium", or the file kind's name.
 std::string takenAs(SessionFixture& f, const OpenedFile& file, Way way = Way::Drop) {
     const opening::Classified c = opening::classify(file, way, f.part().openPart().setup());
@@ -205,15 +203,15 @@ std::string fileText(const fs::path& p) {
     return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
 }
 
-// ---- T16-1: the product's data, the two kinds (AC-17) ----
+// ---- The product's data, the two kinds ----
 
-TEST(lib13_ac17_preset_extensions_media_suffixes) {
+TEST(preset_extensions_media_suffixes) {
     Built b;
     const opening::OpenSetup& s = b.f.part().openPart().setup();
     CHECK_EQ(s.productName, std::string("Calc-U-1600"));
     CHECK(s.presets && s.presets->extensions() == std::vector<std::string>({".pc1500", ".pc1500a", ".pc1600"}));
     CHECK(s.media && s.media->suffixes() == std::vector<std::string>({".module.yaml", ".floppy.yaml", ".cassette.yaml"}));
-    // A preset by its extension in any case, whatever it holds (EC-1).
+    // A preset by its extension in any case, whatever it holds.
     CHECK_EQ(takenAs(b.f, text("10 PRINT 1\n"), "Hanoi.PC1500A"), std::string("preset"));
     CHECK_EQ(takenAs(b.f, Bytes{}, "x.pc1600"), std::string("preset"));
     CHECK_EQ(takenAs(b.f, text("anything"), "Mine.FLOPPY.yaml"), std::string("medium"));
@@ -221,28 +219,28 @@ TEST(lib13_ac17_preset_extensions_media_suffixes) {
     CHECK_EQ(takenAs(b.f, text("anything"), "x.cassette.yaml"), std::string("medium"));
 }
 
-TEST(lib13_ac17_kinds_asked_basic_then_code) {
+TEST(kinds_asked_basic_then_code) {
     Built b;
     const opening::OpenSetup& s = b.f.part().openPart().setup();
     CHECK(s.kinds.size() == 2);
     CHECK(s.kinds.size() == 2 && s.kinds[0]->name() == "basic-program" && s.kinds[1]->name() == "machine-code-program");
 }
 
-TEST(lib13_ac17_listing_and_tokenized_are_basic) {
+TEST(listing_and_tokenized_are_basic) {
     Built b;
     CHECK_EQ(takenAs(b.f, text("10 PRINT \"HI\"\n20 END\n")), std::string("basic-program"));
     CHECK_EQ(takenAs(b.f, ce158(basicPayload(), 0x40)), std::string("basic-program"));
     CHECK_EQ(takenAs(b.f, pc1600(basicPayload(), 0x21)), std::string("basic-program"));
 }
 
-TEST(lib13_ac17_headered_code_is_code) {
+TEST(headered_code_is_code) {
     Built b;
     CHECK_EQ(takenAs(b.f, ce158(kCode, 0x42, 0x40C5)), std::string("machine-code-program"));
     CHECK_EQ(takenAs(b.f, pc1600(kCode, 0x10, 0xC0C5)), std::string("machine-code-program"));
     CHECK_EQ(takenAs(b.f, pc1600(kCode, 0x10, 0xC0C5), "x.dat"), std::string("machine-code-program"));   // a header needs no name
 }
 
-TEST(lib13_ac17_headerless_code_only_with_bin) {
+TEST(headerless_code_only_with_bin) {
     Built b;
     CHECK_EQ(takenAs(b.f, z80Code(), "code.bin"), std::string("machine-code-program"));
     CHECK_EQ(takenAs(b.f, z80Code(), "CODE.BIN"), std::string("machine-code-program"));
@@ -251,27 +249,27 @@ TEST(lib13_ac17_headerless_code_only_with_bin) {
     CHECK_EQ(takenAs(b.f, kCode, "short.bin"), std::string("refused"));   // too short to look like code
 }
 
-TEST(lib13_ac17_rom_is_not_code) {
+TEST(rom_is_not_code) {
     Built b;
     CHECK_EQ(takenAs(b.f, z80Code(), "CODE.ROM"), std::string("refused"));
     CHECK_EQ(takenAs(b.f, z80Code(), "code.rom"), std::string("refused"));
     CHECK_EQ(takenAs(b.f, pc1600(kCode, 0x10, 0xC0C5), "code.rom"), std::string("machine-code-program"));   // by its header
 }
 
-TEST(lib13_ac17_wav_goes_to_first_files_kind) {
+TEST(wav_goes_to_first_files_kind) {
     Built b;
     const Bytes wav = fileBytes("tests/fixtures/tape/pc1500_tape.wav");
     SKIP_UNLESS(!wav.empty(), "tests/fixtures/tape/pc1500_tape.wav missing");
     CHECK_EQ(takenAs(b.f, wav, "tape.wav"), std::string("basic-program"));
     CHECK_EQ(takenAs(b.f, doubledTape(wav), "two.wav"), std::string("basic-program"));
-    // The file-kind request names each file's kind, for the flow (AC-18).
+    // The file-kind request names each file's kind, for the flow.
     const sessions::ReplyMessage r =
         b.f.listener.ask(cu1600::requests::kFileKind, sessions::Value::object({{"bytes", sessions::Value(doubledTape(wav))}}));
     const auto* k = sessions::payloadAs<cu1600::FileKindReply>(r.result);
     CHECK(k && k->tapeKinds == std::vector<std::string>({"basic-pc1500", "basic-pc1500"}));
 }
 
-TEST(lib13_ac17_unreadable_wav_goes_to_basic_loader_which_says_why) {
+TEST(unreadable_wav_goes_to_basic_loader_which_says_why) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1500A"));
@@ -282,7 +280,7 @@ TEST(lib13_ac17_unreadable_wav_goes_to_basic_loader_which_says_why) {
     CHECK(contains(f.notices(), "x.wav: "));
 }
 
-TEST(lib13_ac17_empty_and_other_taken_by_neither) {
+TEST(empty_and_other_taken_by_neither) {
     Built b;
     CHECK_EQ(takenAs(b.f, Bytes{}), std::string("refused"));
     CHECK_EQ(takenAs(b.f, pseudoRandom(4096, 7), "data.bin"), std::string("refused"));
@@ -291,9 +289,9 @@ TEST(lib13_ac17_empty_and_other_taken_by_neither) {
     CHECK_EQ(takenAs(b.f, text("model: PC-1600\n"), "x.bin"), std::string("preset"));
 }
 
-// ---- T16-2: what follows (AC-18) ----
+// ---- What follows ----
 
-TEST(lib13_ac18_gui_way_sends_program_opened_topic) {
+TEST(gui_way_sends_program_opened_topic) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1600"));
@@ -319,12 +317,12 @@ TEST(lib13_ac18_gui_way_sends_program_opened_topic) {
     CHECK(opened.size() == 1 && opened[0]->kind == "machine-code-program");
 }
 
-TEST(lib13_ac18_kept_file_also_sends_topic) {
+TEST(kept_file_also_sends_topic) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     f.settings.setStartupModelPreference("PC-1500A");
     f.open();
-    // Before the start (no machine): kept (AC-7), as Open With at a cold launch.
+    // Before the start (no machine): kept, as Open With at a cold launch.
     opening::OpenRequest req;
     req.files = {named("prog.bas", text("10 PRINT 1\n"))};
     req.way = Way::OpenWith;
@@ -338,9 +336,9 @@ TEST(lib13_ac18_kept_file_also_sends_topic) {
     CHECK(opened.size() == 1 && opened[0]->name == "prog.bas");
 }
 
-// ---- T16-3: media (AC-19, EC-2) ----
+// ---- Media ----
 
-TEST(lib13_ac19_disk_used_where_it_lies_written_back) {
+TEST(disk_used_where_it_lies_written_back) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1600"));
@@ -372,7 +370,7 @@ TEST(lib13_ac19_disk_used_where_it_lies_written_back) {
     CHECK(fileText(where) != disk);
 }
 
-TEST(lib13_ec2_disk_without_drive_refused_with_notice) {
+TEST(disk_without_drive_refused_with_notice) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1600"));
@@ -384,7 +382,7 @@ TEST(lib13_ec2_disk_without_drive_refused_with_notice) {
     CHECK(f.held("floppy") == nullptr);
 }
 
-TEST(lib13_ac19_upload_disk_imported_then_inserted) {
+TEST(upload_disk_imported_then_inserted) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1600"));
@@ -408,7 +406,7 @@ TEST(lib13_ac19_upload_disk_imported_then_inserted) {
     CHECK(imported);
 }
 
-TEST(lib13_ac19_module_one_place_plugged_pc1500_two_places_refused_pc1600) {
+TEST(module_one_place_plugged_pc1500_two_places_refused_pc1600) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1500A"));
@@ -425,7 +423,7 @@ TEST(lib13_ac19_module_one_place_plugged_pc1500_two_places_refused_pc1600) {
     CHECK(contains(f.notices(), "fits more than one place"));
 }
 
-TEST(lib13_ac19_tape_definition_into_cassette_wav_is_never_a_tape) {
+TEST(tape_definition_into_cassette_wav_is_never_a_tape) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1500A"));
@@ -442,9 +440,9 @@ TEST(lib13_ac19_tape_definition_into_cassette_wav_is_never_a_tape) {
     }
 }
 
-// ---- T16-4: limits (AC-20) ----
+// ---- Limits ----
 
-TEST(lib13_ac20_over_1mib_refused_drop_openwith_start_not_dialog_harness) {
+TEST(over_1mib_refused_drop_openwith_start_not_dialog_harness) {
     Built b;
     Bytes big = text("10 PRINT 1\n");
     big.resize(cu1600::kMaxOpenBytes + 1, ' ');
@@ -459,10 +457,10 @@ TEST(lib13_ac20_over_1mib_refused_drop_openwith_start_not_dialog_harness) {
     CHECK_EQ(takenAs(b.f, named("ok.bas", exact), Way::Drop), std::string("basic-program"));
 }
 
-// ---- T16-5: the ways in (AC-21, EC-7; startFile's case is the library's,
+// ---- The ways in (startFile's case is the library's,
 // library/opening/tests/start_file_tests.cpp) ----
 
-TEST(lib13_ec7_open_by_any_way_keeps_dialog_folders) {
+TEST(open_by_any_way_keeps_dialog_folders) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1500A"));
@@ -483,12 +481,12 @@ TEST(lib13_ec7_open_by_any_way_keeps_dialog_folders) {
     CHECK_EQ(f.settings.file().text("folders", openFolderKind(OpenFolder::Assembly)), std::string("/before/code"));
 }
 
-// ---- T16-6: today's tests of telling a dropped file (AC-22) ----
+// ---- Telling a dropped file by its content ----
 
-TEST(lib13_ac22_drop_targets) {
+TEST(dropped_file_kinds_by_content) {
     Built b;
     auto& f = b.f;
-    // Presets, by their top-level `model:` line (the library's test 5).
+    // Presets, by their top-level `model:` line.
     CHECK_EQ(takenAs(f, text("# Hanoi\nmodel: PC-1600\nkeys:\n  - key: mode\n")), std::string("preset"));
     CHECK_EQ(takenAs(f, text("model: PC-1500:A04\n")), std::string("preset"));
     CHECK_EQ(takenAs(f, text("\xEF\xBB\xBFmodel: PC-1500\n")), std::string("preset"));   // BOM
@@ -510,17 +508,17 @@ TEST(lib13_ac22_drop_targets) {
     }
 
     // Machine code: headered, or headerless that looks like code in a .bin
-    // (today also .rom, which goes: AC-17).
+    // (not in a .rom, which is refused unless a header says otherwise).
     CHECK_EQ(takenAs(f, ce158(kCode, 0x42, 0x40C5)), std::string("machine-code-program"));
     CHECK_EQ(takenAs(f, pc1600(kCode, 0x10, 0xC0C5)), std::string("machine-code-program"));
     CHECK_EQ(takenAs(f, z80Code()), std::string("machine-code-program"));
-    CHECK_EQ(takenAs(f, z80Code(), "CODE.ROM"), std::string("refused"));   // changed by AC-17
+    CHECK_EQ(takenAs(f, z80Code(), "CODE.ROM"), std::string("refused"));
     CHECK_EQ(takenAs(f, z80Code(), "code.jpg"), std::string("refused"));
     CHECK_EQ(takenAs(f, z80Code(), "code"), std::string("refused"));
     CHECK_EQ(takenAs(f, pc1600(kCode, 0x10, 0xC0C5), "x.dat"), std::string("machine-code-program"));
     CHECK_EQ(takenAs(f, text("model: PC-1600\n"), "x.bin"), std::string("preset"));
 
-    // Everything else is refused (today: ignored without a word).
+    // Everything else is refused.
     CHECK_EQ(takenAs(f, Bytes{}), std::string("refused"));
     CHECK_EQ(takenAs(f, kCode), std::string("refused"));
     CHECK_EQ(takenAs(f, pseudoRandom(4096, 7)), std::string("refused"));

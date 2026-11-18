@@ -4,11 +4,10 @@
 #   calcu_core    core/ -- the hardware (CPUs, machines, cards, loaders)
 #   calcu_shared  app/  -- the app layer: everything above the core that
 #                 isn't drawing (docs/developer/App-Layer.md); links
-#                 calcu_core (the target keeps the app layer's old name,
-#                 Part D simplification)
+#                 calcu_core (the target keeps the app layer's old name)
 #
 # Included once, by the product's CMakeLists.txt (a subdirectory of the
-# repository's root CMake project, ADR 0003).
+# repository's root CMake project).
 #
 # The source lists are globbed: every core/**/*.cpp and every app/**/*.cpp
 # except app/tests/.
@@ -90,7 +89,7 @@ if(MSVC)
 endif()
 target_link_libraries(calcu_core PUBLIC calcu_sharpdx)
 # The library (the root project's calcu_library): the machine interface,
-# the settings file (LIB-9). Products do not configure on their own.
+# the settings file. Products do not configure on their own.
 target_link_libraries(calcu_core PUBLIC calcu_library)
 calcu_debug_o1(calcu_core)
 
@@ -101,16 +100,16 @@ calcu_debug_o1(calcu_core)
 # and each other as "app/...".
 file(GLOB_RECURSE CALCU_SHARED_SOURCES CONFIGURE_DEPENDS ${CALCU_SHARED_ROOT}/*.cpp)
 list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "^${CALCU_SHARED_ROOT}/tests/")
-# The harness product entry (LIB-11, M-28) is a target of its own:
+# The harness product entry is a target of its own:
 # calcu1600_harness in CMakeLists.txt, not in the Qt6 and Web builds.
 list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "/app/HarnessProduct\\.cpp$")
-# The DAP's layer (C1600-3 §3.1): every tree but Emscripten -- the Web has
+# The DAP's layer: every tree but Emscripten -- the Web has
 # no debugger client.
 if(EMSCRIPTEN)
   list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "/app/dap/")
 endif()
 add_library(calcu_shared STATIC ${CALCU_SHARED_SOURCES})
-# The Web page's test-only commands (library/CMakeLists.txt; LIB-15 AC-29):
+# The Web page's test-only commands (library/CMakeLists.txt):
 # a definition of the one file that holds them, so that switching the
 # option compiles only it again.
 if(CALCU_WEB_TEST_AIDS)

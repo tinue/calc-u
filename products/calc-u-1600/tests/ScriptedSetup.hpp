@@ -9,11 +9,11 @@
 #include "TestHarness.hpp"
 
 // The steps a version 1 preset took on an old machine class, for the core
-// tests that set a card up this way (M-46: the version 1 loaders are gone;
-// these tests are about the card, not the preset): the boot to the prompt,
-// `NEW0? :CHECK` answered with CL (as the loader did, LIB-6 AC-46), typed
-// lines, a typed program through the old typer (the reference typer of
-// C1600-2), and the wait for the interpreter.
+// tests that set a card up this way (the version 1 loaders are gone; these
+// tests are about the card, not the preset): the boot to the prompt,
+// `NEW0? :CHECK` answered with CL (as the loader did), typed lines, a typed
+// program through the old typer (the reference typer of the BASIC loader
+// tests), and the wait for the interpreter.
 
 namespace scripted {
 

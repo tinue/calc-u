@@ -8,16 +8,15 @@
 #include "machine/Catalogue.hpp"
 #include "startup/ProductMachines.hpp"
 
-// ── SharpProductMachines: what Calc-U-1600 hands LIB-18 ─────────────────
+// ── SharpProductMachines: what Calc-U-1600 hands the machine control ────
 //
-// LIB-18 design §10.2, §10.3 (spec AC-25 to AC-28): the catalogue with the
+// The catalogue with the
 // module definitions, the builder, the built-in default of each model (its
 // default variant, nothing plugged in), the Sharp pacing profile, the sound
 // rate, the readiness bounds (7 s for the PC-1500 and PC-1500A, 27 s for the
-// PC-1600), the host drive's ROM (bundled outside the ROM set, roms.md Q-1)
+// PC-1600), the host drive's ROM (bundled outside the ROM set)
 // and what a variant switch carries over: each plug's place, peripheral and
-// variant, the host drive's folder and, until M-47, a module's card from the
-// module bay (adapter "bays on machineChanged", LIB-6 §10.5).
+// variant and the host drive's folder.
 
 namespace cu1600 {
 

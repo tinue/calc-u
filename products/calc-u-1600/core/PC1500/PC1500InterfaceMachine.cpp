@@ -18,7 +18,7 @@ PC1500Variant modelOf(const MachineDescriptor& d) {
 
 } // namespace
 
-// The capability objects, each over the core (C1600-1 §3.6; design §5).
+// The capability objects, each over the core.
 struct PC1500InterfaceMachine::Kinds {
     explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), printerPort(m), call(m) {}
 
@@ -34,7 +34,7 @@ struct PC1500InterfaceMachine::Kinds {
         }
         PC1500Machine& m;
     } inspector;
-    // LIB-5 AC-35: typing support, prompt readiness (no latches, no sample count).
+    // Typing support, prompt readiness (no latches, no sample count).
     struct Support final : calcu::typing::TypingSupport {
         explicit Support(PC1500Machine& m) : m(m) {}
         std::optional<bool> promptReady() const override { return pc1500AtBasicPrompt(m); }
@@ -72,7 +72,7 @@ struct PC1500InterfaceMachine::Kinds {
         std::vector<std::uint8_t> drain() override { return m.drainCE158ParallelOutput(); }
         PC1500Machine& m;
     } printerPort;
-    // C1600-5 AC-12: SJP on the LH5801.
+    // A routine call: SJP on the LH5801.
     struct Call final : sharp::RoutineCall {
         explicit Call(PC1500Machine& m) : m(m) {}
         bool call(const std::string& target, std::uint16_t address) override {
@@ -117,7 +117,7 @@ void PC1500InterfaceMachine::corePlug(const PeripheralRequest& req, const Periph
         if (auto card = sharp::moduleCardOf(req, d)) m_core->attachExpansionCard(std::move(card));
         return;
     }
-    if (const auto* b = dynamic_cast<const sharp::BusRomRequest*>(req.content.get())) {   // C1600-4 AC-10
+    if (const auto* b = dynamic_cast<const sharp::BusRomRequest*>(req.content.get())) {
         m_core->attachBusRom(std::make_unique<BusRomCard>(b->bytes, b->address, b->me1, b->pv, b->pu, b->name));
         return;
     }
@@ -141,12 +141,12 @@ void PC1500InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     out.push_back(byComponent("LH5801", k.support));
     out.push_back(byComponent("LH5801", k.trace));
     out.push_back(byComponent("LH5801", k.call));
-    out.push_back(byComponent("LH5801", stateCapability()));   // C1600-5 AC-13
+    out.push_back(byComponent("LH5801", stateCapability()));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     if (const PlugEntry* e = at(sharp::kPrinter); e && e->peripheral.value == sharp::kCE150) {
-        // LIB-8: the plotter's paper output, once its card is on the bus.
+        // The plotter's paper output, once its card is on the bus.
         if (calcu::paper::PaperOutput* paper = m_core->ce150PaperOutput()) out.push_back(byPeripheral(*e, *paper));
-        out.push_back(byPeripheral(*e, k.cassette, "cassette-recorder"));   // LIB-7: the CE-150's cassette (C1600-1 AC-16)
+        out.push_back(byPeripheral(*e, k.cassette, "cassette-recorder"));   // the CE-150's cassette
         out.push_back(byPeripheral(*e, k.tape));
     }
     if (const PlugEntry* e = at(sharp::kInterface)) {
@@ -155,7 +155,7 @@ void PC1500InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     }
 }
 
-// ---- The machine state (C1600-5 AC-13) ----
+// ---- The machine state ----
 
 template <class Io>
 void PC1500InterfaceMachine::interfaceStateIo(Io& io) {

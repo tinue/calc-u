@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-// A minimal reader of the TRACE.bin format, version 3 (LIB-10 AC-42), for
+// A minimal reader of the TRACE.bin format, version 3, for
 // the tests: what records a file holds. Constants MUST match
 // core/PC1500/PC1500TraceFile.cpp (and tools/read_trace.py).
 

@@ -1,14 +1,14 @@
-# LIB-6 AC-54 (design §10.6 P9; ADR 0032): a bundled example is loaded by
+# A bundled example is loaded by
 # its bundle path (`load-preset {ref: examples:…}`, as File ▸ Examples does)
 # and its result shows: the CE-1600P's paper with the four rectangles. A
-# check scenario (CalcU1600Shots.lib6-ac54, Longer); format:
+# check scenario (CalcU1600Shots.example-by-bundle-path, Longer); format:
 # docs/developer/screenshots/README.md.
-out: ../../build/shots-check/lib6-ac54
+out: ../../build/shots-check/example-by-bundle-path
 window: 1430x1280
 
 shots:
-  - name: lib6-ac54
+  - name: example-by-bundle-path
     preset: examples:plotter/rectangles-1600.pc1600
     steps:
       - expect-panel: { name: paper-panel, title: CE-1600P, empty: false }
-      - capture: { target: lcd-image, file: lib6-ac54-lcd.png }
+      - capture: { target: lcd-image, file: example-by-bundle-path-lcd.png }

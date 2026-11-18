@@ -13,8 +13,8 @@
 namespace sharp {
 
 // A plotter's paper back in the mechanism's raw steps, one point per place,
-// `newStroke` on each stroke's first: the form of today's summaries (the
-// golden runs' `paper` lines, CALCU_PAPER_OUT of v0.8.1's CLIs; LIB-8 §10.7).
+// `newStroke` on each stroke's first: the form of the golden runs' `paper`
+// lines (written by v0.8.1's CLIs through CALCU_PAPER_OUT).
 struct RawPlotPoint {
     std::int32_t x = 0, y = 0;
     std::uint8_t color = 0, newStroke = 0;

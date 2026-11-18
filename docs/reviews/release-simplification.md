@@ -1,7 +1,7 @@
 # Release prep: the simplification pass before the first releases
 
-Status: survey (2026-11-18). §1–§5 were written before any code edit; §6
-onwards report the result.
+Status: done (2026-11-18). §1–§5 were written and committed (`15140dd`)
+before any code edit; §6 onwards report the result.
 
 Range: `cac66d1` (the Part E simplification report) to `64bcd67` (the end of
 the release prep). The `simplified` tag did not exist, so the range starts at
@@ -119,3 +119,110 @@ so the glossary and contracts name the final state.
 None: no answer splits the design. Every decision above follows the spec,
 today's behaviour or the simpler structure; the breaking ones are allowed
 by the user's rule and get ledger rows.
+
+## 6. Changes made
+
+Each group: one implementing agent in a worktree, build and Frequent on
+the branch; merged `--no-ff` by me; on `main` Frequent, then the group's
+gate. "All" is `git diff --shortstat` of the merge; "code" leaves out
+Markdown and pictures.
+
+| Group | Merge | Changes | All | Code |
+|---|---|---|---|---|
+| R-3 | `8d5f00c` | L-1: Calc-U-59's `--release`, `web_no_test_aids.sh`, CTest `CalcU59WebNoTestAids`, its CI steps gone (its Web zip is the tested `dist/`); Calc-U-1600 keeps option and check. L-9: one `find_calcu()` in `calcu_serve.py` (`$CALCU`, then `build/tests`, `build/all`, `build/tools`) for `calcu_machine` and `calcu59.py`; `CALCU59_CALCU` → `CALCU` | +69 −102 | +48 −82 |
+| R-1 | `915cf3c` | L-2: `c59.trace` entry and its four readers gone. L-3: `ControlState::controlsAt`, the frontends on the constants, the non-const `controlsOf` gone. L-4: `placesAtStart` gone, Calc-U-59 reads its places when used (`TIFileAccess` takes the save folder per use); test `lib14_ac11_save_folder_changed_after_the_start_is_used_at_once`; ledger 59-66. L-5: `HostDirs::iCloudAvailable` beside `chosenTraceFolder`; `traceAvailable` (two setups) and `traceFolderOf`'s parameter gone, also `Settings::traceLocation()`. V-11: `c59.show-calculator-debug` | +308 −198 | +209 −166 |
+| R-2 | `ad48991` | L-7: `kCassetteKind`, `kCassetteFileSuffix`, `CassetteDefinition`, `CassetteCodec`; one `kModuleFileSuffix`; CMake `MODULE_FILES`/`CASSETTE_FILES`; `cassette-new`. L-8: "Module YAML", `c1600.module-yaml`, `ModuleYamlDump`, "Module dump:", the Web note "cassettes"; help ch. 9 says "module". L-10: one `pickWavFile` per frontend. V-3: "Host Drive…", `c1600.host-drive`. V-9: "Presets folder", "BASIC folder". V-12: `c1600.ce1600p-variant`, `c1600.code-plan`. D-4: the outdated notice names the User Guide's headings (pinned by tests). D-12: `"` in a cassette or disk name refused. Ledger 1600-54, 59-67 | +336 −283 | +243 −199 |
+| R-5 | `1f9c4ec` | L-6: `library/media/Header` (`headerText`, `quotedScalar`) writes the header of the magnetic card, constant memory, cassette and floppy; one `saved` rule (when a time is given). Bytes of every written file unchanged | +101 −29 | +101 −29 |
+| R-4 | `6bd4c6f` | V-5: harness `set-control` (was `switch`). V-6: "key ID" texts. V-7: `sync-clock:`. V-4: DAP `c1600/display-text` on the harness's serialiser (`displayTextNow`). V-13: Calc-U-1600 `model` by name only; one `bundlePathOf` in `embed.js`, `preset` with or without `examples:`. L-11: `embedProps(props, {name, layouts, layout})` warns for both products. Ledger 1600-55, 59-67 | +313 −202 | +227 −135 |
+| R-6 | `38aef7f` | Glossary: nine entries (Place word, Battery-backed module, Cassette recording, Data register, Machine state, Project preset, Calc indicator, Control, Profile), Place, ROM lookup, Debug panel, Pause, Kind corrected. Formats README, preset.md, modules.md; contracts settings, capabilities, media, harness, help, frontend (keep-file `kind`), peripherals; help D-2, D-7, D-9, D-13, D-14; help check C10 (source paths and `M-<n>` refused; LIB-16 AC-18); the last two "key name" texts; L-12 comments | +250 −69 | +66 −6 |
+
+Total since the end of the release prep (`64bcd67`):
++1 490 −875 (all), +828 −605 in `library/` and `products/` without
+Markdown and pictures.
+
+## 7. Candidates rejected
+
+| Candidate | Reason |
+|---|---|
+| A library script for both no-test-aids checks | Only Calc-U-1600 has test aids after L-1 |
+| `BatteryCardInstance` on the media header helper | It splices a template's text in place; a fresh header reorders lines (a byte change of saved module files) |
+| One helper for the readers' accepted header keys | No clear saving |
+| Merging `calcu59.Run` into `calcu_machine.Session` | Different jobs (plain-text runs with preset text and paper helpers vs a queued, refusal-checking session) |
+| Deleting the tests that assert old names are refused | Cheap guards against a rename coming back |
+| A Qt drop event filter in place of the three one-line overrides | No lines saved |
+| `format:` required in module definitions | The CE-502B file is MD5-checked at every ROM lookup; changing it means a second checksum |
+| `[window] printer-width` → `paper-width`, 59 prop `settings` → `settingsMenu`, VS Code `c1600.port` → `dapPort`, `disk-name` → `floppy-name`, `.rom.yaml`, `state-save`/`state-restore`, `c59.debug-view`, `c1600.tape-deck`, `led-style` label | Settings files and media already in users' hands, conventions of their host (VS Code), or internal names with an exact meaning; no rule of the spec asks for them |
+| The magnetic card's `format:` read in any case | C59-7 AC-3 and its test require it; documented as the exception |
+| `tapeFiles`/`tapeKinds` in `FileKindReply` | Internal field naming the files in a WAV; low value |
+
+## 8. Findings
+
+- F-1: `1600/tests/reference/v0.8.1-examples/startup_default-pc1600.pc1600.log:51`
+  logs `syncclock:`; a re-run of that reference set by hand would log
+  `sync-clock:` (V-7). Not changed (reference); no test compares it.
+- F-2: the local CI web jobs fail under heavy load (load average up to 71
+  while agents built): web-59 15 of 160 once, web-59 and web-1600 one test
+  each once; all green on the re-run with the machine quiet.
+- F-3: the help no longer says where a user gets a bundled module template
+  file (the link into `frontends/` went, D-14); Saved Media… exports only the
+  user's own media. For the user: ship the templates in the examples zip
+  (M-61) or name them in the help?
+- F-4: `c1600/display-text` has no `cursor {row, col}` (the harness's reply
+  has none; the cell under the cursor is read as its character).
+- F-5: the cassette pictures of help ch. 9 still show "Tape name:"/"Tape:"
+  (D-1): retake at M-64.
+- F-6: LIB-16 AC-18 (help check C10) is a new criterion from D-14, not a
+  user ruling: for the user's review.
+- F-7: a Calc-U-1600 Web `?model=` with an unknown name starts with the last
+  model used, not the default (seen by R-4's test; unchanged behaviour).
+
+## 9. Checks at the end
+
+- Frequent on `38aef7f`: 51 of 51.
+- Local Linux CI after every merge: every job green (base, help, web-59,
+  web-1600), the web jobs after a re-run where F-2 hit.
+- Swift (main checkout, `bin/simulators reset` by CTest): macOS build,
+  `CalcU59SwiftUnitTests`, `CalcU59UIRegression` after R-1+R-2;
+  `CalcU59SwiftUnitTests` again after R-4+R-5: all pass.
+- Qt: `calcu_qt6_tests`, `calcu_qt6_scenarios`, `CalcU59QtTests`,
+  `CalcU1600QtTests` pass.
+- `CalcU1600DapSmoke`, `CalcU1600DapSmokeQt`, `CalcU1600MachineDriver` pass.
+- GitHub CI on `38aef7f`: Calc-U-1600 44253179658, Calc-U-59 44253183060,
+  both green.
+- Longer (`build/groups`, both `dist/` built first, `caffeinate -d`): 33 of
+  36; the three failures are `CalcU1600Shots.01/02/05` (Screen Recording and
+  Automation permissions of the launching app; run them from iTerm2).
+- Golden replays equal; no golden-run reference or `tests/reference/*` file
+  changed (`git diff cac66d1 -- '*/golden-runs/*.golden' '*/tests/reference/*'`
+  is empty).
+
+## 10. Line counts
+
+Same method as the C1, D and E reports (`.cpp .hpp .h .swift .js .jsx .mm
+.py CMakeLists.txt .cmake`, tracked, without `node_modules`, `dist`,
+`build`, `vendor`).
+
+| | Range start (`cac66d1`) | Release prep end (`64bcd67`) | Now (`38aef7f`) |
+|---|---|---|---|
+| `library/` | 66 975 | 67 494 | 67 710 |
+| `library/` without tests | 36 656 | 36 935 | 37 016 |
+| Calc-U-1600 `app/` (without tests) | 9 811 | 9 837 | 9 851 |
+| Calc-U-1600 `app/tests` | 2 614 | 2 632 | 2 633 |
+| Calc-U-1600 `core/` | 30 203 | 30 223 | 30 215 |
+| Calc-U-1600 `tests/` | 30 227 | 30 338 | 30 378 |
+| Calc-U-1600 Qt6 frontend | 6 391 | 6 478 | 6 478 |
+| Calc-U-1600 Web frontend | 2 538 | 2 594 | 2 591 |
+| Calc-U-59 `app/` | 10 709 | 10 659 | 10 642 |
+| Calc-U-59 `core/` | 6 524 | 6 524 | 6 524 |
+| Calc-U-59 `tests/` | 14 703 | 14 854 | 14 873 |
+| Calc-U-59 Qt6 frontend | 4 336 | 4 384 | 4 384 |
+| Calc-U-59 Swift frontend | 9 899 | 9 947 | 9 940 |
+| Calc-U-59 Web frontend | 3 202 | 3 246 | 3 261 |
+
+This pass is about names and rules more than size: three concepts went
+(the always-open trace gate, the places of the start, Calc-U-59's
+test-aids build), two inputs found one home (the Swift trace callbacks, the
+media header), and every public name now has one spelling in the code, the
+documents and the glossary. The library grew by 81 lines outside its tests
+(the header helper, `controlsAt`, `bundlePathOf`, the layout check); the
+products' app layers and frontends are within a few dozen lines of before.

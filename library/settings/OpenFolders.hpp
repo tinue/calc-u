@@ -3,10 +3,10 @@
 #include <string>
 #include <string_view>
 
-// The folder a file dialog starts in, per kind of file (LIB-9 AC-29 and
-// Calc-U-59's [folders]; design D-2): one key per kind in [folders]. Its
-// value is the folder last used, updated on every pick, or `fixed:<folder>`
-// for a folder set in the settings dialog, which picks do not change.
+// The folder a file dialog starts in, per kind of file: one key per kind in
+// [folders]. Its value is the folder last used, updated on every pick, or
+// `fixed:<folder>` for a folder set in the settings dialog, which picks do
+// not change.
 
 namespace calcu::settings {
 
@@ -21,7 +21,7 @@ std::string fixedOpenFolder(const SettingsFile& settings, std::string_view kind)
 SettingsFile::WriteResult rememberOpenFolder(SettingsFile& settings, std::string_view kind,
                                              const std::string& folder);
 // Sets a fixed folder. An empty one goes back to "the folder last used",
-// which starts where the fixed folder was (one key holds both, D-2; the
+// which starts where the fixed folder was (one key holds both; the
 // folders picked meanwhile are not kept).
 SettingsFile::WriteResult setFixedOpenFolder(SettingsFile& settings, std::string_view kind,
                                              const std::string& folder);

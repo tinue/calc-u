@@ -1,16 +1,16 @@
-// LIB-5 AC-14, AC-15, AC-17: the parts that use a preset, which close the
-// Library column of LIB-5 with LIB-6's loader (LIB-5 design D-1; M-38).
+// Typing through the preset loader: the first press after `skip-wait:`, key
+// names checked when read, and when a key step finishes.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 
 using namespace calcu::presets;
 using namespace calcu::presets::test;
 
-TEST(lib5_ac14_first_press_after_skip_wait_at_once) {
+TEST(first_press_after_skip_wait_at_once) {
     RigOptions o;
     o.program = 300'000;   // 3 s: the machine is not ready meanwhile
     Rig r(o);
-    // The rig's profiles wait for key readiness before a press (AC-14's rule) ...
+    // The rig's profiles wait for key readiness before a press ...
     CHECK(r.done(r.load(header() + "keys:\n  - key: 1\n  - skip-wait:\n  - key: 2\n  - key: 0\n")));
     const auto one = r.downs("1"), two = r.downs("2");
     CHECK(one.size() == 1 && two.size() == 1);
@@ -24,7 +24,7 @@ TEST(lib5_ac14_first_press_after_skip_wait_at_once) {
     CHECK(r.downs("2")[0] >= r.downs("1")[0] + 300'000);
 }
 
-TEST(lib5_ac15_key_name_refused_when_read_before_build) {
+TEST(key_name_refused_when_read_before_build) {
     Rig r;
     mt::TestMachine* before = r.machine();
     const int builds = r.machines.builder_.inner.builds;
@@ -34,12 +34,12 @@ TEST(lib5_ac15_key_name_refused_when_read_before_build) {
     CHECK(r.machine() == before);   // before anything is built
     CHECK_EQ(r.machines.builder_.inner.builds, builds);
     CHECK(r.downs("2").empty());
-    // Other spellings of the descriptor (LIB-1 D-2) are names too.
+    // Other spellings of the descriptor are names too.
     CHECK(r.done(r.load(header() + "keys:\n  - key: CLEAR 2\n")));
     CHECK_EQ(r.downs("clr").size(), std::size_t(1));
 }
 
-TEST(lib5_ac17_key_step_finishes_at_idle_command_at_key_up) {
+TEST(key_step_finishes_at_idle_command_at_key_up) {
     RigOptions o;
     o.program = 100'000;
     Rig r(o);

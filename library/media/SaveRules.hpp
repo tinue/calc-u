@@ -5,9 +5,8 @@
 #include <optional>
 #include <string>
 
-// The save rules (LIB-7 design §3.5; spec AC-17, AC-30, AC-31, EC-4;
-// media.md MD-3, I-3, I-4): one set for Name & Save, `saveas` and the
-// harness; the import and the delete of the saved media.
+// The save rules (docs/formats/media.md): one set for Name & Save, `saveas`
+// and the harness; the import and the delete of the saved media.
 
 namespace calcu::media {
 
@@ -18,8 +17,8 @@ struct SaveRequest {
     SaveBy by = SaveBy::NameAndSave;
     std::string target;                   // the name, or the file path (`file:`)
     bool byFile = false;
-    bool replaceConfirmed = false;        // Name & Save: the user was asked (AC-17 row 5)
-    std::optional<std::string> from;      // the place word whose medium is saved (row 4)
+    bool replaceConfirmed = false;        // Name & Save: the user was asked
+    std::optional<std::string> from;      // the place word whose medium is saved
 };
 
 struct Plan {
@@ -33,7 +32,7 @@ using InPlace = std::function<std::optional<std::string>(const std::string& path
 
 Plan planSave(const SaveRequest&, const Shelf&, const InPlace&);
 
-// AC-30: a file imported by its file name and bytes; the plan's path is in
+// A file imported by its file name and bytes; the plan's path is in
 // the kind's folder.
 struct ImportPlan {
     Plan plan;
@@ -42,10 +41,11 @@ struct ImportPlan {
 };
 ImportPlan planImport(const std::string& fileName, const std::string& bytes, const MediumCodec::Companion&, const Shelf&);
 
-// AC-31, EC-4 (the shelf read again first by the caller): Write deletes.
+// The shelf is read again first by the caller. Write deletes.
 Plan planDelete(const KindDecl&, const std::string& name, bool confirmed, const Shelf&, const InPlace&);
 
-// The sentence a refusal starts with when the frontend asks the user (D-6).
+// The sentence a refusal starts with when the frontend asks the user; the
+// frontend asks and sends the same command again with `confirmed: true`.
 inline constexpr const char* kAsks = "asks: ";
 
 } // namespace calcu::media

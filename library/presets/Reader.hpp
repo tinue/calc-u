@@ -17,10 +17,9 @@
 #include <variant>
 #include <vector>
 
-// Reading a preset: all or nothing (LIB-6 design §3.2, D-2, D-3; spec AC-1
-// to AC-9, AC-30, AC-58, AC-59, AC-62, EC-1, EC-5, EC-8). The reader turns a
-// file into a LoadPlan of checked items; the engine carries out only a plan.
-// It builds nothing and touches no session.
+// Reading a preset: all or nothing. The reader turns a file into a LoadPlan
+// of checked items; the engine carries out only a plan. It builds nothing and
+// touches no session.
 
 namespace calcu::presets {
 
@@ -30,20 +29,20 @@ struct ReadError {
 };
 
 struct HeaderInfo {
-    std::string presetName;   // `preset-name`, else the file stem (AC-2)
+    std::string presetName;   // `preset-name`, else the file stem
     bool nameWritten = false;
     std::string description;
-    std::int64_t timeoutSeconds = 3600;   // AC-57
+    std::int64_t timeoutSeconds = 3600;   // `timeout:`
 };
 
 struct PlaceRequest {
-    machine::PeripheralRequest request;   // ROMs filled at the build (LIB-18)
+    machine::PeripheralRequest request;   // ROMs filled at the build (startup)
     int line = 0;
 };
 
 struct PlannedItem {
     std::unique_ptr<Item> item;
-    bool skipWaitAfter = false;   // a `skip-wait:` follows (AC-58)
+    bool skipWaitAfter = false;   // a `skip-wait:` follows
 };
 
 struct LoadPlan {
@@ -51,15 +50,15 @@ struct LoadPlan {
     machine::ModelId model;
     std::optional<machine::VariantId> variant;
     int modelLine = 0;
-    std::vector<PlaceRequest> places;   // AC-3, AC-10
+    std::vector<PlaceRequest> places;   // the place keys
     HeaderInfo header;
     std::map<std::string, std::shared_ptr<const ProductValue>> productHeader;   // a product's header keys
-    // What a product's header keys plug in (C1600-4: host-drive, bus-rom;
-    // ReadContext::addPeripheral), after the places in the machine plan.
+    // What a product's header keys plug in (Calc-U-1600's host-drive,
+    // bus-rom; ReadContext::addPeripheral), after the places in the machine plan.
     std::vector<machine::PeripheralRequest> headerPeripherals;
-    std::vector<PlannedItem> items;      // sections and steps in file order (AC-14)
-    bool letItFinish = false;            // AC-59
-    ModelRules* rules = nullptr;         // the model's (AC-53)
+    std::vector<PlannedItem> items;      // sections and steps in file order
+    bool letItFinish = false;            // `let-it-finish:`
+    ModelRules* rules = nullptr;         // the model's
 };
 
 // What the reader reads with.
@@ -67,7 +66,7 @@ struct ReadSetup {
     const Vocabulary& vocabulary;
     ProductRules& rules;
     const machine::Catalogue& catalogue;
-    const typing::TypingProduct* typing = nullptr;   // LIB-5: the profile per model (`key`, `type`)
+    const typing::TypingProduct* typing = nullptr;   // typing's profile per model (`key`, `type`)
 };
 
 // What a keyword's reader sees.
@@ -82,22 +81,22 @@ public:
     bool typesText() const { return setup_.typing && setup_.typing->typesText(); }
     // What the header names (run-step: what the running machine has).
     bool plugged(const machine::PlaceName&, const machine::PeripheralId&) const;
-    // A file the preset names; the error is reported at `line` (AC-7, OQ-2, EC-5).
+    // A file the preset names; the error is reported at `line`.
     std::optional<std::vector<std::uint8_t>> readFile(std::string_view path, int line);
     const PresetSource& source() const { return source_; }
     void keep(std::string key, std::shared_ptr<const ProductValue>);
-    // What was kept under `key` in this read so far, or nullptr (LIB-7: the
+    // What was kept under `key` in this read so far, or nullptr (media: the
     // in-file media a header key and the steps of one preset share).
     std::shared_ptr<const ProductValue> kept(const std::string& key) const {
         const auto it = kept_.find(key);
         return it == kept_.end() ? nullptr : it->second;
     }
     void error(int line, std::string message);   // collected; the lowest line wins
-    // A header key's own peripheral (D-33; C1600-4 host-drive, bus-rom): a
+    // A header key's own peripheral (Calc-U-1600's host-drive, bus-rom): a
     // request of the machine plan after the place keys', in the order of the
     // model's places, those of one place in the order added.
     void addPeripheral(machine::PeripheralRequest);
-    // The content of what a place key plugs into `place` (D-33; C1600-4
+    // The content of what a place key plugs into `place` (Calc-U-1600's
     // slot-N-rom), unless its reference gave one; set once the header is read.
     void setContentAt(const machine::PlaceName&, std::shared_ptr<const machine::ProductData>);
 
@@ -124,7 +123,7 @@ private:
 
 std::variant<LoadPlan, ReadError> readPreset(const PresetSource&, const ReadSetup&);
 
-// AC-32: only the header keys `format-version`, `model`, `preset-name` and
+// Only the header keys `format-version`, `model`, `preset-name` and
 // `description`; no file the preset names is read.
 struct PresetHeader {
     machine::ModelId model;
@@ -133,14 +132,14 @@ struct PresetHeader {
 std::variant<PresetHeader, ReadError> readHeader(const PresetSource&, const ProductRules&, const machine::Catalogue&);
 
 // One step read against a running machine (run-step, the harness commands
-// of the steps; §3.8): nullptr with the error.
+// of the steps): nullptr with the error.
 std::unique_ptr<Item> readStep(std::string_view verb, const formats::YamlNode& value, const ReadSetup&,
                                machine::Machine&, std::string* error);
 
 // The message of an error at `line` of the preset `name`.
 std::string errorText(const std::string& name, int line, const std::string& what);
 // The library's one ASCII lower case (machine/Names.hpp), under the name
-// library/debugger still uses (Part D simplification P-6).
+// library/debugger still uses.
 using machine::lowerAscii;
 
 } // namespace calcu::presets

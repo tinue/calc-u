@@ -1,5 +1,5 @@
-// LIB-4 design L1, L4 to L6, L13: the payload, the lists, what a model lacks
-// and the controls of what is plugged in (AC-1, AC-5, AC-21, EC-1, EC-3, EC-4).
+// The control state: the payload, the lists, what a model lacks and the
+// controls of what is plugged in.
 #include "TestControlRules.hpp"
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
@@ -43,7 +43,7 @@ bool contains(const std::string& text, const std::string& part) { return text.fi
 
 } // namespace
 
-// ── L1: the payload ─────────────────────────────────────────────────────
+// ── The payload ─────────────────────────────────────────────────────────
 
 TEST(control_state_value_round_trip) {
     auto m = seg({plug("printer", mt::kPrinter)});
@@ -51,7 +51,7 @@ TEST(control_state_value_round_trip) {
     rules.refuse(ActionKey{kOpenAction});
     const ControlState s = computeControlState(*m, testSetup({&rules}), false);
     const std::string t = toText(s.toValue());
-    // One object, keys in the order of the fields (design §3.6).
+    // One object, keys in the order of the fields.
     const char* keys[] = {"\"models\":", "\"model\":", "\"variants\":", "\"variant\":", "\"places\":",
                           "\"mediaPlaces\":", "\"panels\":", "\"controls\":", "\"actions\":", "\"product\":"};
     std::size_t last = 0;
@@ -95,9 +95,9 @@ TEST(same_compares_product_entries_by_equals) {
     CHECK(!a.same(b));
 }
 
-// ── L4: the lists (AC-1, EC-1) ──────────────────────────────────────────
+// ── The lists ───────────────────────────────────────────────────────────
 
-TEST(ac1_models_and_running_model) {
+TEST(control_state_models_and_running_model) {
     const ControlState s = computeControlState(*dot(), testSetup(), false);
     CHECK_EQ(s.models.size(), std::size_t(2));
     CHECK(s.models[0].id == mt::kSeg && s.models[1].id == mt::kDot);   // the catalogue's order
@@ -105,7 +105,7 @@ TEST(ac1_models_and_running_model) {
     for (const auto& e : s.models) CHECK(e.available == kYes);
 }
 
-TEST(ac1_variants_of_running_model) {
+TEST(control_state_variants_of_running_model) {
     const ControlState d = computeControlState(*dot(VariantId{"V2"}), testSetup(), false);
     CHECK_EQ(d.variants.size(), std::size_t(2));
     CHECK(d.variants[0].id == VariantId{"V1"} && d.variants[1].id == VariantId{"V2"});
@@ -116,7 +116,7 @@ TEST(ac1_variants_of_running_model) {
     CHECK(!s.variant);
 }
 
-TEST(ac1_places_fitting_and_plugged_with_variant) {
+TEST(control_state_places_fitting_and_plugged_with_variant) {
     auto m = seg({plug("slot-1", mt::kModule, VariantId{"8k"}), plug("printer", mt::kPrinter)});
     const ControlState s = computeControlState(*m, testSetup(), false);
     CHECK(placeTexts(s) == (std::vector<std::string>{"slot-1", "printer", "aux"}));
@@ -137,7 +137,7 @@ TEST(ac1_places_fitting_and_plugged_with_variant) {
     CHECK(free && !free->plugged && free->variant == std::optional<VariantId>(VariantId{"4k"}));   // an attach's default
 }
 
-TEST(ac1_nested_place_after_its_peripheral) {
+TEST(control_state_nested_place_after_its_peripheral) {
     auto m = dotWithHubAndPrinter();
     const ControlState s = computeControlState(*m, testSetup(), false);
     CHECK(placeTexts(s) == (std::vector<std::string>{"a", "a/jack", "b", "card-1", "card-2"}));
@@ -152,13 +152,13 @@ TEST(ac1_nested_place_after_its_peripheral) {
           (std::vector<std::string>{"a", "b", "card-1", "card-2"}));
 }
 
-TEST(ac1_empty_place_is_a_choice) {
+TEST(control_state_empty_place_is_a_choice) {
     auto m = seg({plug("printer", mt::kPrinter)});
     const ControlState s = computeControlState(*m, testSetup(), false);
-    for (const auto& p : s.places) CHECK(p.empty == kYes);   // empty and full places alike (D-4)
+    for (const auto& p : s.places) CHECK(p.empty == kYes);   // empty and full places alike
 }
 
-TEST(ac1_media_places_owner_kind_passage_sides) {
+TEST(control_state_media_places_owner_kind_passage_sides) {
     const ControlState s = computeControlState(*seg(), testSetup(), false);
     CHECK_EQ(s.mediaPlaces.size(), std::size_t(1));
     const MediaPlaceEntry* r = s.mediaPlace(MediaPlaceId{"reader"});
@@ -170,7 +170,7 @@ TEST(ac1_media_places_owner_kind_passage_sides) {
     CHECK(drive && drive->passage == calcu::machine::MediaPassage::Holding && drive->sides == (std::vector<int>{0}));
 }
 
-TEST(ac1_paper_panel_owned_by_plugged_printer_or_none) {
+TEST(control_state_paper_panel_owned_by_plugged_printer_or_none) {
     const ControlState bare = computeControlState(*seg(), testSetup(), false);
     CHECK_EQ(bare.panels.size(), std::size_t(1));   // always, in a product with printers
     CHECK(bare.panels[0].kind == kPaperPanel && !bare.panels[0].owner && !bare.panels[0].ownerPlace);
@@ -183,18 +183,18 @@ TEST(ac1_paper_panel_owned_by_plugged_printer_or_none) {
     CHECK(nested.panels.size() == 1 && nested.panels[0].ownerPlace == std::optional<PlacePath>(at({"a", "jack"})));
 }
 
-TEST(ac1_actions_in_order) {
+TEST(control_state_actions_in_order) {
     const ControlState s = computeControlState(*seg(), testSetup(), false);
     CHECK_EQ(s.actions.size(), std::size_t(4));
     if (s.actions.size() != 4) return;
     CHECK(s.actions[0].command == kResetAction && s.actions[1].command == kColdBootAction);
     CHECK(s.actions[2].command == kLoadPresetAction && s.actions[3].command == kOpenAction);
-    // Named as the commands are (LIB-18).
+    // Named as the commands are.
     CHECK(kResetAction == calcu::startup::kResetCommand && kColdBootAction == calcu::startup::kColdBootCommand);
     for (const auto& a : s.actions) CHECK(a.available == kYes);
 }
 
-TEST(ac1_entries_in_descriptor_order) {
+TEST(control_state_entries_in_descriptor_order) {
     auto m = dot(std::nullopt, {plug("b", mt::kUart), plug("a", mt::kHub)});
     const ControlState s = computeControlState(*m, testSetup(), false);
     // Places by the descriptor, not by the order of plugging.
@@ -205,7 +205,7 @@ TEST(ac1_entries_in_descriptor_order) {
     CHECK(s.mediaPlaces.size() == 2 && s.mediaPlaces[0].id.value == "drive" && s.mediaPlaces[1].id.value == "hub-disk");
 }
 
-TEST(ec1_plugged_peripheral_says_plugged) {
+TEST(control_state_plugged_peripheral_says_plugged) {
     auto m = dot(std::nullopt, {plug("card-2", mt::kModule)});
     const ControlState s = computeControlState(*m, testSetup(), false);
     const PlaceEntry* c1 = s.place(at({"card-1"}));
@@ -218,9 +218,9 @@ TEST(ec1_plugged_peripheral_says_plugged) {
         for (const auto& c : p.fitting) CHECK_EQ(c.plugged, p.path == at({"card-2"}));
 }
 
-// ── L5: what a model lacks (AC-5) ───────────────────────────────────────
+// ── What a model lacks ──────────────────────────────────────────────────
 
-TEST(ac5_place_media_place_panel_absent_where_model_lacks_them) {
+TEST(control_state_place_media_place_panel_absent_where_model_lacks_them) {
     const ControlState s = computeControlState(*seg(), testSetup(), false);
     const ControlState d = computeControlState(*dot(), testSetup(), false);
     for (const char* p : {"a", "b", "card-1", "card-2"}) CHECK(!s.place(at({p})));
@@ -240,9 +240,9 @@ TEST(ac5_place_media_place_panel_absent_where_model_lacks_them) {
     CHECK(!contains(toText(s.toValue()), "card-1") && !contains(toText(s.toValue()), "drive"));
 }
 
-// ── L6: later definitions, a peripheral's media (EC-3, EC-4) ────────────
+// ── Later definitions, a peripheral's media ─────────────────────────────
 
-TEST(ec3_module_added_to_catalogue_listed_next_time) {
+TEST(control_state_module_added_to_catalogue_listed_next_time) {
     calcu::machine::Catalogue cat = mt::makeTestCatalogue();
     auto m = seg();
     const ControlSetup setup = testSetup({}, &cat);
@@ -259,7 +259,7 @@ TEST(ec3_module_added_to_catalogue_listed_next_time) {
     CHECK(slot && choice(*slot, PeripheralId{"test-module-2"})->available == kYes);
 }
 
-TEST(ec4_peripheral_media_place_owned_by_peripheral_no_place_for_it) {
+TEST(control_state_peripheral_media_place_owned_by_peripheral_no_place_for_it) {
     auto m = dot(std::nullopt, {plug("a", mt::kHub)});
     const ControlState s = computeControlState(*m, testSetup(), false);
     const MediaPlaceEntry* disk = s.mediaPlace(MediaPlaceId{"hub-disk"}, at({"a"}));
@@ -273,9 +273,9 @@ TEST(ec4_peripheral_media_place_owned_by_peripheral_no_place_for_it) {
                       "\"passage\":\"holding\""));
 }
 
-// ── L13: the controls of what is plugged in (AC-21) ─────────────────────
+// ── The controls of what is plugged in ──────────────────────────────────
 
-TEST(ac21_controls_of_plugged_peripherals_with_place_form_and_position) {
+TEST(control_state_controls_of_plugged_peripherals_with_place_form_and_position) {
     using calcu::machine::ControlForm;
     using calcu::machine::ControlId;
     // Nothing with controls plugged in: none listed (a module has none).
@@ -317,9 +317,9 @@ TEST(ac21_controls_of_plugged_peripherals_with_place_form_and_position) {
     CHECK(computeControlState(*m, testSetup(), false).controls.empty());
 }
 
-// The controls of one place (AC-21), as the frontends draw a peripheral's
+// The controls of one place, as the frontends draw a peripheral's
 // pane: the plugged peripheral's, in their order; none elsewhere.
-TEST(ac21_controls_at_a_place) {
+TEST(control_state_controls_at_a_place) {
     using calcu::machine::ControlId;
     auto m = seg({plug("slot-1", mt::kModule), plug("printer", mt::kPrinter)});
     const calcu::machine::Owner owner = calcu::machine::PeripheralOwner{mt::kPrinter, at({"printer"})};

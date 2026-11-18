@@ -11,11 +11,11 @@
 #include <string_view>
 #include <vector>
 
-// ROM files made for the tests (LIB-12 design §2, §6): a temporary folder
+// ROM files made for the tests: a temporary folder
 // with a file for every entry of the test catalogue (library/machine/tests/
 // TestMachines: binary entries, and the text entry test-dot-font.txt of 64
 // rows), a test text reader, and catalogues with one file that two entries
-// need (EC-1) and with two entries of one name that differ.
+// need and with two entries of one name that differ.
 
 namespace calcu::roms::test {
 
@@ -26,7 +26,7 @@ using namespace calcu::machine::test;
 using calcu::testing::TempFolder;
 
 // The text reader of the tests: a row is a non-empty line; a line ending
-// in \n, \r\n or \r is one line (EC-2). A line "bad" cannot be read.
+// in \n, \r\n or \r is one line. A line "bad" cannot be read.
 class TestTextReader : public ProductRomReader {
 public:
     Decoded decode(const RomEntry&, std::span<const std::uint8_t> bytes) const override {
@@ -44,7 +44,7 @@ public:
         endLine();
         return d;
     }
-    // A product check over the whole set, for AC-3: optional, off by default.
+    // A product check over the whole set: optional, off by default.
     std::vector<FileProblem> checkSet(const RomSet& set) const override {
         ++checkSetCalls;
         if (!rejectSet) return {};
@@ -70,7 +70,7 @@ inline void writeFullSet(const TempFolder& folder, const FullSet& set, char fill
     }
 }
 
-// The test catalogue plus a peripheral that needs test-module-8k.rom too (EC-1).
+// The test catalogue plus a peripheral that needs test-module-8k.rom too.
 inline Catalogue catalogueWithSharedFile() {
     Catalogue c = makeTestCatalogue();
     PeripheralDescriptor twin;

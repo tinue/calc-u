@@ -1,11 +1,11 @@
-// LIB-12 AC-2: the bundled files, read by exact name (design §6, T3).
+// The bundled files, read by exact name.
 #include "TestHarness.hpp"
 #include "TestRomFiles.hpp"
 
 using namespace calcu::roms;
 using namespace calcu::roms::test;
 
-TEST(ac2_file_of_exactly_that_name_is_read) {
+TEST(bundle_file_of_exactly_that_name_is_read) {
     TempFolder folder;
     folder.write("CE-150.ROM", std::string("\x01\x02\x03", 3));
     folder.write("other.bin", "zz");
@@ -19,7 +19,7 @@ TEST(ac2_file_of_exactly_that_name_is_read) {
     CHECK_EQ(bundle.where(), folder.path().string());
 }
 
-TEST(ac2_name_differing_in_case_is_missing) {
+TEST(bundle_name_differing_in_case_is_missing) {
     TempFolder folder;
     folder.write("ce-150.rom", "abc");
     DirectoryBundle bundle(folder.path());
@@ -28,7 +28,7 @@ TEST(ac2_name_differing_in_case_is_missing) {
     CHECK(bundle.read("ce-150.rom").has_value());
 }
 
-TEST(ac2_subfolders_are_not_searched) {
+TEST(bundle_subfolders_are_not_searched) {
     TempFolder folder;
     fs::create_directories(folder.path() / "calculator");
     folder.write("calculator/TMC0582.txt", "rom");

@@ -1,13 +1,12 @@
 # calcu_add_preset_check(<name> PRODUCT <word> FILES <glob>… [EXCLUDE <file name>…] [FILL <script>])
 #
-# LIB-6 design §2, D-20 (spec AC-34, AC-43, AC-51): one CTest entry,
-# calcu_preset_check.<name> (Frequent), that runs `calcu --product <word>
-# check-preset` over the files: the run fails when a file fails. FILES are
-# globs relative to the calling directory; EXCLUDE names files by their
-# file name (the presets that wait for a later feature, by name); FILL is a
-# CMake script run as `cmake -DIN=<file> -DOUT=<file> -P <script>` on each
-# file first, which writes the file with its placeholders filled in (the VS
-# Code templates of Calc-U-1600, C1600-3 AC-19). The product `test` is
+# One CTest entry, calcu_preset_check.<name> (Frequent), that runs `calcu
+# --product <word> check-preset` over the files: the run fails when a file
+# fails. FILES are globs relative to the calling directory; EXCLUDE names
+# files by their file name (the presets that wait for a later feature, by
+# name); FILL is a CMake script run as `cmake -DIN=<file> -DOUT=<file> -P
+# <script>` on each file first, which writes the file with its placeholders
+# filled in (the VS Code templates of Calc-U-1600). The product `test` is
 # `calcu_test`, every other `calcu`.
 set(CALCU_PRESETS_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "")
 

@@ -1,4 +1,4 @@
-// LIB-6 L4: building the machine (AC-10, AC-52, AC-55, EC-2, EC-10).
+// Building the machine of a preset.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 
@@ -16,7 +16,7 @@ bool pluggedAt(mt::TestMachine* m, const char* place, const machine::PeripheralI
 }
 } // namespace
 
-TEST(ac10_one_machine_from_cold_boot_with_its_places) {
+TEST(one_machine_from_cold_boot_with_its_places) {
     Rig r;
     CHECK(r.done(r.load(header() + "keys:\n  - key: 2 3\n")));   // the machine before has pressed keys
     const int builds = r.machines.builder_.inner.builds;
@@ -31,13 +31,13 @@ TEST(ac10_one_machine_from_cold_boot_with_its_places) {
     CHECK(pluggedAt(r.machine(), "card-1", mt::kModule, machine::VariantId{"8k"}));
     CHECK_EQ(r.machine()->presses(), std::uint64_t(0));   // its memory from a cold boot
     const auto& last = r.startupPart->control().lastBuild();
-    CHECK(last && last->origin == calcu::startup::BuildOrigin::Preset);   // D-24
+    CHECK(last && last->origin == calcu::startup::BuildOrigin::Preset);   // a user's load, not the startup's
     // The model's default variant when none is named.
     CHECK(r.done(r.load(header("test-dot"))));
     CHECK(r.machine()->variant() == machine::VariantId{"V1"} || !r.machine()->variant());
 }
 
-TEST(ac10_old_machine_gone_items_start_at_key_readiness) {
+TEST(old_machine_gone_items_start_at_key_readiness) {
     RigOptions o;
     o.startUp = 2'000;   // the new machine's start-up
     Rig r(o);
@@ -49,7 +49,7 @@ TEST(ac10_old_machine_gone_items_start_at_key_readiness) {
     CHECK(d.size() == 1 && d[0] >= 2'000);   // the first step at key readiness
 }
 
-TEST(ac52_machine_refusal_reason_and_key_line_old_machine_kept) {
+TEST(machine_refusal_reason_and_key_line_old_machine_kept) {
     Rig r;
     mt::TestMachine* before = r.machine();
     // The builder refuses the printer and the UART together: no place named.
@@ -75,7 +75,7 @@ TEST(ac52_machine_refusal_reason_and_key_line_old_machine_kept) {
     CHECK(hasLine({g.reason(e)}, "t.test-seg, line 4: test-ghost is not a known peripheral."));
 }
 
-TEST(ac55_build_only_ends_without_items_or_readiness) {
+TEST(build_only_ends_without_items_or_readiness) {
     RigOptions o;
     o.startUp = mt::TestStartUp::kNever;   // never ready: build only does not wait for it
     Rig r(o);
@@ -88,7 +88,7 @@ TEST(ac55_build_only_ends_without_items_or_readiness) {
     CHECK_EQ(r.rules.seg.afterBuilds, 0);
 }
 
-TEST(ec2_header_only_ends_at_key_readiness) {
+TEST(header_only_ends_at_key_readiness) {
     RigOptions o;
     o.startUp = 3'000;
     Rig r(o);
@@ -98,7 +98,7 @@ TEST(ec2_header_only_ends_at_key_readiness) {
     CHECK(r.ticks() >= 3'000 && r.ticks() < 3'000 + 2'000);   // one run piece at most
 }
 
-TEST(ec10_no_key_readiness_fails_before_any_item) {
+TEST(no_key_readiness_fails_before_any_item) {
     RigOptions o;
     o.startUp = mt::TestStartUp::kNever;
     Rig r(o);
@@ -107,5 +107,5 @@ TEST(ec10_no_key_readiness_fails_before_any_item) {
     CHECK(hasLine({r.reason(c)}, "t.test-seg, line 2: The test-seg did not report key readiness after it was built."));
     CHECK(r.machine()->keyEvents().empty());   // no step was carried out
     CHECK_EQ(r.rules.seg.afterBuilds, 0);
-    CHECK(r.ticks() >= 100'000);   // LIB-18 EC-7: the bound of 1 s
+    CHECK(r.ticks() >= 100'000);   // the bound of 1 s for key readiness
 }

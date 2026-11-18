@@ -125,7 +125,7 @@ TEST(lib9_ac28_dap_port_outside_range_is_32168) {
 // AC-29: the four kinds of folder and their keys in [folders] (the rule --
 // a fixed folder, else the one last used -- is the library's:
 // library/settings/tests/startup_tests.cpp,
-// ac29_open_folder_fixed_else_last_used_else_home).
+// open_folder_fixed_else_last_used_else_home).
 TEST(lib9_ac29_folders_four_kinds) {
     const std::pair<OpenFolder, const char*> kinds[] = {{OpenFolder::Samples, "presets"},
                                                          {OpenFolder::Basic, "basic-programs"},

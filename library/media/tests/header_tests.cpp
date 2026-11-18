@@ -1,7 +1,7 @@
 #include "TestHarness.hpp"
 #include "media/Header.hpp"
 
-// Release simplification L-6: the header every medium's file starts with
+// The header every medium's file starts with
 // (docs/formats/media.md), in its documented order.
 
 using namespace calcu::media;

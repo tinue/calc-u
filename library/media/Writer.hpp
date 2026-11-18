@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-// Writing a medium (LIB-7 design §2, rule A7; spec EC-1, TR "a file that is
-// written holds either the old or the new content"): the codec's files, each
-// through settings::writeFileAtomically, the kind's folder made first.
+// Writing a medium: the codec's files, each through
+// settings::writeFileAtomically (a file that is written holds either the old
+// or the new content), the kind's folder made first.
 
 namespace calcu::media {
 

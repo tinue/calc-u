@@ -9,8 +9,8 @@ namespace {
 
 std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
 
-// LIB-6 AC-25: the folder for screenshots (the places'), made when a step
-// needs it; none where there is none (the Web: a download, LIB-9 AC-17).
+// The folder for screenshots (the places'), made when a step needs it; none
+// where there is none (the Web: a download).
 std::function<std::optional<std::string>()> screenshotFolderOf(const settings::Paths& places) {
     return [&places]() -> std::optional<std::string> {
         std::optional<std::string> folder = places.screenshotFolder();
@@ -21,10 +21,9 @@ std::function<std::optional<std::string>()> screenshotFolderOf(const settings::P
     };
 }
 
-// LIB-10 AC-53: the trace folder and its limit from the host's places and
-// settings, read at each trace start, the folder made and written once
-// (Paths::ensure), for every product (user, 2026-11-17, Q-2 of
-// docs/reviews/e-simplification.md).
+// The trace folder and its limit from the host's places and settings, read
+// at each trace start, the folder made and written once (Paths::ensure),
+// for every product.
 debugger::DebuggerSetup withTraces(debugger::DebuggerSetup d, const LibraryPartsSetup& s) {
     const settings::SettingsFile* file = s.settings;
     d.trace.folder = debugger::traceFolderOf(*s.paths);

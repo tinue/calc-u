@@ -6,15 +6,14 @@
 #include <string>
 #include <vector>
 
-// What a product adds to the lookup (LIB-12 design §3.2; AC-1, AC-3, AC-8,
-// EC-2): the reader of its text ROM files and the checks of its full set
+// What a product adds to the lookup: the reader of its text ROM files and the checks of its full set
 // beyond the amount of each file. Binary files need no reader.
 
 namespace calcu::roms {
 
 class RomSet;
 
-// What is wrong with one file of the full set (§3.5). Defined here because
+// What is wrong with one file of the full set. Defined here because
 // a product's checkSet() reports in it.
 enum class Problem { Missing, WrongAmount, Unreadable, ProductCheck, Catalogue };
 struct FileProblem {
@@ -32,7 +31,7 @@ public:
         std::string error;          // set: the reader cannot read it
     };
     // Text entries only. The bytes are the file as bundled; line endings are
-    // the reader's business (EC-2).
+    // the reader's business.
     virtual Decoded decode(const machine::RomEntry&, std::span<const std::uint8_t> bytes) const = 0;
     // The product's added checks; run only when every file passed its own.
     virtual std::vector<FileProblem> checkSet(const RomSet&) const { return {}; }

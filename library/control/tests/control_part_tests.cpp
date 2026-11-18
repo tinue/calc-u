@@ -1,5 +1,4 @@
-// LIB-4 design L10, L11, L13: the part in the app session (AC-4, AC-6, AC-8,
-// AC-21).
+// The control part in the app session.
 #include "TestControlRules.hpp"
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
@@ -51,9 +50,9 @@ calcu::sessions::Task<calcu::sessions::OperationResult> attachUartThenRun(calcu:
 
 } // namespace
 
-// ── L10: the part (AC-4, AC-6) ──────────────────────────────────────────
+// ── The part ────────────────────────────────────────────────────────────
 
-TEST(ac4_computed_at_end_of_call_and_command) {
+TEST(control_part_computed_at_end_of_call_and_command) {
     ControlRig c;
     c.rig->build();
     c.rig->call();   // the end of a host call
@@ -76,7 +75,7 @@ TEST(ac4_computed_at_end_of_call_and_command) {
     CHECK(c.plugged("slot-1", mt::kModule));
 }
 
-TEST(ac4_sent_only_when_it_differs) {
+TEST(control_part_sent_only_when_it_differs) {
     ControlRig c;
     c.rig->build();
     c.rig->call();
@@ -91,14 +90,14 @@ TEST(ac4_sent_only_when_it_differs) {
     CHECK_EQ(c.sent(), 2);
     c.rig->callWhileBusy();
     CHECK_EQ(c.sent(), 3);
-    // A late listener gets it, as any state topic (LIB-3 AC-6).
+    // A late listener gets it, as any state topic.
     st::TestFrontend late;
     c.rig->session->listen(late);
     CHECK_EQ(late.stateMessages(kControlStateTopic), 1);
     CHECK(late.state<ControlState>(kControlStateTopic)->equals(*c.state()));
 }
 
-TEST(ac21_moved_switch_sends_the_control_state_again) {
+TEST(control_part_moved_switch_sends_the_control_state_again) {
     ControlRig c;
     c.rig->build();
     c.rig->m->attach(plug("printer", mt::kPrinter), mt::testCatalogue());
@@ -117,13 +116,13 @@ TEST(ac21_moved_switch_sends_the_control_state_again) {
     CHECK(ctl != nullptr);
     if (!ctl) return;
     ctl->set(calcu::machine::ControlId{"trace"}, true);
-    c.rig->call();   // AC-4: computed at the end of the call, and it differs
+    c.rig->call();   // computed at the end of the call, and it differs
     CHECK_EQ(c.sent(), 2);
     CHECK(traceOn());
 }
 
-TEST(ac6_no_machine_no_control_state) {
-    ControlRig c;   // no machine is built: a product that could not start (LIB-12 AC-5)
+TEST(control_part_no_machine_no_control_state) {
+    ControlRig c;   // no machine is built: a product that could not start (ROMs missing)
     for (int i = 0; i < 3; ++i) c.rig->call();
     c.rig->send("tp.set", Value::object({{"value", 1}}));
     c.rig->ask("tp.echo", Value::object({{"value", 1}}));
@@ -139,9 +138,9 @@ TEST(ac6_no_machine_no_control_state) {
           calcu::sessions::toText(reply->result->toValue()).find("control-state") != std::string::npos);
 }
 
-// ── L11: two frontends (AC-8) ───────────────────────────────────────────
+// ── Two frontends ───────────────────────────────────────────────────────
 
-TEST(ac8_two_sessions_same_machine_same_control_state) {
+TEST(control_part_two_sessions_same_machine_same_control_state) {
     TestControlRules rules;   // the same product in both
     ControlRig one({&rules}), two({&rules});
     one.rig->part.operation = two.rig->part.operation = [](calcu::sessions::OperationContext& c) {

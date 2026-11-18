@@ -25,73 +25,71 @@
 #include <vector>
 
 // The library's session parts of a product's app session, built and wired
-// in one place (docs/reviews/d-simplification.md, P-2; Part E, E-1): every
-// app layer (Calc-U-1600's SharpAppPart, Calc-U-59's TIAppPart), the
-// harness's products and the library's test rigs get them from here instead
-// of putting them together themselves.
+// in one place: every app layer (Calc-U-1600's SharpAppPart, Calc-U-59's
+// TIAppPart), the harness's products and the library's test rigs get them
+// from here instead of putting them together themselves.
 //
-// What it wires: LIB-18's machine control is made first and handed to every
+// What it wires: the machine control is made first and handed to every
 // part that builds or reads a build (presets, startup, paper, media); the
-// steps of paper, debugger and media go into LIB-6's vocabulary; LIB-13's
+// steps of paper, debugger and media go into the presets' vocabulary;
 // `open` takes the presets and media parts. Every part is made: a product
 // without printers has an inert PaperPart, one without kinds of medium an
-// inert MediaPart. The host passes its LIB-9 places (`paths`) and LIB-12's
-// lookup (`roms`); from them come the trace folder and limit of the
-// debugger (LIB-10), the folder for screenshots (LIB-6 AC-25), the save and
-// cassette folders of the media (LIB-7), `~/` of a preset, and LIB-12's
-// topic `roms-missing` (StartupPart publishes it). Every place is read when
-// it is used, so a change in Settings applies at once (LIB-14 AC-11).
+// inert MediaPart. The host passes its places (`paths`) and the ROM lookup
+// (`roms`); from them come the trace folder and limit of the debugger, the
+// folder for screenshots, the save and cassette folders of the media, `~/`
+// of a preset, and the topic `roms-missing` (StartupPart publishes it).
+// Every place is read when it is used, so a change in Settings applies at
+// once.
 //
-// The order of the parts in the session (their designs' rules, in one
-// place; sessionParts()): LIB-4's ControlPart first, before the host's own
-// parts (LIB-4 D-13); then LIB-5's TypingPart, LIB-2's PeripheralsPart
-// before StartupPart (the clocks at a build, LIB-18 §3.5), LIB-6's
-// PresetsPart before StartupPart (LIB-6 §3.8), StartupPart, LIB-7's
-// MediaPart after it (LIB-7 §3.7), the product's parts the file kinds use,
-// LIB-13's OpenPart after them, LIB-8's PaperPart, LIB-10's DebuggerPart;
-// then the product's own parts and the host's parts behind them.
+// The order of the parts in the session (sessionParts()): ControlPart
+// first, before the host's own parts (the library adds it, so every
+// session builder and the harness have one); then TypingPart,
+// PeripheralsPart before StartupPart (the clocks at a build), PresetsPart
+// before StartupPart, StartupPart, MediaPart after it, the product's parts
+// the file kinds use, OpenPart after them, PaperPart, DebuggerPart; then
+// the product's own parts and the host's parts behind them.
 // Single-threaded, on the session's thread.
 
 namespace calcu::parts {
 
 struct LibraryPartsSetup {
-    // Always: the product's machines (LIB-18; their catalogue is the
-    // session's), settings and places (LIB-9; both outlive the parts) and the
-    // ROM lookup (LIB-12: without the full set the start is refused, AC-5).
+    // Always: the product's machines (their catalogue is the session's),
+    // settings and places (both outlive the parts) and the ROM lookup
+    // (without the full set the start is refused).
     startup::ProductMachines* machines = nullptr;
     settings::SettingsFile* settings = nullptr;
     const settings::Paths* paths = nullptr;
     roms::LookupResult roms;
 
-    // LIB-5: the product's typing.
+    // The product's typing.
     const typing::TypingProduct* typing = nullptr;
     sessions::Hosting hosting = sessions::Hosting::Paced;
-    // LIB-2: which serial port gets a serial port file, and their folder.
+    // Which serial port gets a serial port file, and their folder.
     peripherals::HostLinkRules hostLinks;
     std::optional<std::string> serialLinkFolder;
-    // LIB-6: the product's preset rules and bundled presets.
+    // The product's preset rules and bundled presets.
     presets::ProductRules* presetRules = nullptr;
     const presets::PresetBundle* bundle = nullptr;
-    // LIB-8: the papers of the product's printers; LIB-4: these printers may
-    // own the paper panel.
+    // The papers of the product's printers; these printers may own the
+    // paper panel.
     std::vector<paper::PrinterPaper> papers;
-    // LIB-10: the product's debugger; its trace folder and limit come from
+    // The product's debugger; its trace folder and limit come from
     // `paths` and `settings` ([trace] max-file-size-mb).
     debugger::DebuggerSetup debugger;
-    // LIB-7: the product's kinds of medium.
+    // The product's kinds of medium.
     std::vector<media::KindDecl> mediaKinds;
     media::ModuleListing moduleListing;
-    std::shared_ptr<const media::FileAccess> mediaFiles;   // null: plain (D-30)
-    // LIB-13: `open` (the product's name for its sentences, preset
+    std::shared_ptr<const media::FileAccess> mediaFiles;   // null: plain (Swift: coordinated iCloud access)
+    // `open` (the product's name for its sentences, preset
     // extensions, file kinds in the order they are asked, limits per way).
     std::string productName;
     std::vector<std::string> presetExtensions;
     std::vector<opening::FileKind*> fileKinds;
     std::map<opening::Way, std::uint64_t> openLimits;
-    // LIB-13 AC-8: where several files become one folder (the Web hosts'
+    // Where several files become one folder (the Web hosts'
     // uploads folder); none: several files are opened one by one.
     std::optional<std::string> uploadFolder;
-    // LIB-4: the product's rules.
+    // The product's control rules.
     std::vector<const control::ControlRules*> controlRules;
 };
 

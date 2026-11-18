@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
-// The two seams of Openers.hpp over the library's parts (LIB-13 design
-// §3.4, O-1): LIB-6's `load-preset` ({ref} from its folder, {content, name}
-// as its content) and LIB-7's media part (its reads of opened files and the
+// The two seams of Openers.hpp over the library's parts: the presets part's
+// `load-preset` ({ref} from its folder, {content, name} as its content) and
+// the media part (its reads of opened files and the
 // command `media.open-file`). Only this file depends on their form.
 
 namespace calcu::presets {

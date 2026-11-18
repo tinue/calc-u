@@ -1,5 +1,5 @@
-// LIB-12 AC-6: the ROM set builds every model, variant and peripheral as far
-// as ROMs go, and no file is read after the lookup (design §6, T6).
+// The ROM set builds every model, variant and peripheral as far as ROMs go,
+// and no file is read after the lookup.
 #include "TestHarness.hpp"
 #include "TestRomFiles.hpp"
 
@@ -16,7 +16,7 @@ std::shared_ptr<const RomSet> lookedUp(const TempFolder& folder, const FullSet& 
 }
 } // namespace
 
-TEST(ac6_images_for_every_model_variant_peripheral) {
+TEST(rom_set_images_for_every_model_variant_peripheral) {
     const Catalogue& cat = testCatalogue();
     const FullSet full = fullSet(cat);
     TempFolder folder;
@@ -45,7 +45,7 @@ TEST(ac6_images_for_every_model_variant_peripheral) {
     CHECK(set->bytes("not-in-the-set.rom") == nullptr);
 }
 
-TEST(ac6_build_from_set_never_misses_a_rom) {
+TEST(rom_set_build_never_misses_a_rom) {
     const Catalogue& cat = testCatalogue();
     TempFolder folder;
     auto set = lookedUp(folder, fullSet(cat));
@@ -80,7 +80,7 @@ TEST(ac6_build_from_set_never_misses_a_rom) {
     }
 }
 
-TEST(ac6_no_file_read_after_lookup) {
+TEST(rom_set_no_file_read_after_lookup) {
     const Catalogue& cat = testCatalogue();
     std::shared_ptr<const RomSet> set;
     {

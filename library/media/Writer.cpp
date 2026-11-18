@@ -26,7 +26,7 @@ WriteResult writeFiles(const KindDecl& k, const std::vector<FileOut>& files, con
         out.problem = "Nothing to write.";
         return out;
     }
-    // EC-1: the kind's folder is made when it is the target's.
+    // The kind's folder is made when it is the target's.
     const std::string folder = shelf.folderOf(k);
     if (shelf.paths() && !folder.empty() && folderOfPath(path) == folder) {
         const auto ensured = shelf.paths()->ensure(k.folder);

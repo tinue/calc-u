@@ -3,11 +3,11 @@
 #include <string>
 #include <string_view>
 
-// The value of a preset step or of a harness command (LIB-11 design §3.2,
-// D-3; AC-22): a scalar, a flow mapping or a flow sequence by
-// docs/formats/README.md §1, on one line. `floppy { name: Disk2, side: 1 }`
-// as a command takes the text after its name; the step `- floppy: { … }`
-// the text after its colon; both read it here.
+// The value of a preset step or of a harness command: a scalar, a flow
+// mapping or a flow sequence by docs/formats/README.md §1, on one line.
+// `floppy { name: Disk2, side: 1 }` as a command takes the text after its
+// name; the step `- floppy: { … }` the text after its colon; both read it
+// here.
 
 namespace calcu::formats {
 

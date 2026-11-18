@@ -22,7 +22,7 @@ std::optional<fs::path> homePath(std::string_view path, const std::string& home)
     return files::toPath(home) / files::toPath(path.substr(2));
 }
 
-// The text of the bytes: BOM dropped, UTF-8 checked (EC-1, D-28).
+// The text of the bytes: BOM dropped, UTF-8 checked.
 std::optional<std::string> decoded(const std::vector<std::uint8_t>& bytes, const std::string& name, std::string* why) {
     std::string t(bytes.begin(), bytes.end());
     if (t.size() >= 3 && static_cast<unsigned char>(t[0]) == 0xEF && static_cast<unsigned char>(t[1]) == 0xBB &&
@@ -83,7 +83,7 @@ public:
     std::variant<std::vector<std::uint8_t>, std::string> readNamed(std::string_view path) const override {
         std::optional<fs::path> p = homePath(path, home_);
         if (!p && files::toPath(path).is_absolute()) p = files::toPath(path);
-        if (!p)   // EC-5
+        if (!p)   // content without a folder
             return "The preset " + name_ + " was handed over without its folder, so the file " + std::string(path) +
                    " it names cannot be read.";
         if (auto b = readFile(*p)) return *b;
@@ -125,7 +125,7 @@ public:
     }
 
 private:
-    // A file a bundled preset names, relative to the preset (design §3.1).
+    // A file a bundled preset names, relative to the preset.
     std::optional<std::string> inside(std::string_view path) const {
         const std::size_t slash = path_.rfind('/');
         const std::string folder = slash == std::string::npos ? std::string() : path_.substr(0, slash + 1);

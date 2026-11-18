@@ -28,12 +28,12 @@ bool isBundledPath(const Shelf& shelf, const KindDecl& k, const std::string& pat
     return !k.bundledFolder.empty() && folderOfPath(path) == k.bundledFolder;
 }
 
-// AC-4 and row 6: the file the name gives, or the first free numbered one
+// The file the name gives, or the first free numbered one
 // when that file holds another medium, cannot be read or is outdated.
 std::string targetFor(const Shelf& shelf, const KindDecl& k, const std::string& name, const ShelfEntry* replacing) {
     const std::string folder = shelf.folderOf(k);
     const std::string own = fileNameFor(name, k);
-    if (replacing) return replacing->path;   // D-4: it keeps its file
+    if (replacing) return replacing->path;   // a replaced instance keeps its file
     if (!shelf.fileTaken(k, own)) return joinFile(folder, own);
     return joinFile(folder, numberedFileName(name, k, [&](const std::string& f) { return shelf.fileTaken(k, f); }));
 }
@@ -43,7 +43,7 @@ std::string targetFor(const Shelf& shelf, const KindDecl& k, const std::string& 
 Plan planSave(const SaveRequest& r, const Shelf& shelf, const InPlace& inPlace) {
     const KindDecl& k = *r.kind;
     const bool live = r.by != SaveBy::SaveasTemplate;
-    if (r.byFile) {   // AC-17: the file: form writes exactly the file it names
+    if (r.byFile) {   // the file: form writes exactly the file it names
         const std::string file = baseName(r.target);
         if (!hasSuffix(file, k)) return refused("The file " + file + " does not end in " + k.suffix + ".");
         if (isBundledPath(shelf, k, r.target)) return refused("The bundled " + k.label + " file " + file + " is never written.");
@@ -59,17 +59,17 @@ Plan planSave(const SaveRequest& r, const Shelf& shelf, const InPlace& inPlace) 
         return p;
     }
     const NameCheck n = checkName(r.target);
-    if (!n.refusal.empty()) return refused(n.refusal);   // row 1
+    if (!n.refusal.empty()) return refused(n.refusal);   // a name that is refused
     const std::string& name = n.name;
     const ShelfEntry* same = nullptr;
     for (const ShelfEntry* e : shelf.entries(k)) {
         if (!sameName(e->name, name)) continue;
-        if (e->origin == Origin::Bundled || e->origin == Origin::Implicit)   // row 2
+        if (e->origin == Origin::Bundled || e->origin == Origin::Implicit)   // a bundled or implicit template's name
             return refused(inQuotes(name) + " is the name of a bundled " + k.label + ".");
     }
     same = shelf.find(k, name);
-    if (same && same->outdatedHint) same = nullptr;   // row 6 below: a numbered file
-    if (same && same->isTemplate) {   // row 3
+    if (same && same->outdatedHint) same = nullptr;   // an outdated file: a numbered file below
+    if (same && same->isTemplate) {   // a user template's name
         if (r.by != SaveBy::SaveasTemplate) return refused(inQuotes(name) + " is the name of a template.");
         Plan p;
         p.verdict = Plan::Verdict::Write;
@@ -80,9 +80,9 @@ Plan planSave(const SaveRequest& r, const Shelf& shelf, const InPlace& inPlace) 
     }
     if (same) {   // an instance
         const std::optional<std::string> at = inPlace ? inPlace(same->path) : std::nullopt;
-        if (at && (!r.from || *at != *r.from))   // row 4
+        if (at && (!r.from || *at != *r.from))   // an instance in another place
             return refused("The " + k.label + " " + inQuotes(same->name) + " is in " + *at + " now.");
-        switch (r.by) {   // row 5
+        switch (r.by) {   // an instance: asked, replaced or refused
         case SaveBy::SaveasTemplate: return refused(inQuotes(name) + " is the name of an instance.");
         case SaveBy::NameAndSave:
             if (!r.replaceConfirmed) {
@@ -103,7 +103,7 @@ Plan planSave(const SaveRequest& r, const Shelf& shelf, const InPlace& inPlace) 
         p.replaces = true;
         return p;
     }
-    Plan p;   // a new file (AC-4; row 6)
+    Plan p;   // a new file
     p.verdict = Plan::Verdict::Write;
     p.name = name;
     p.path = targetFor(shelf, k, name, nullptr);
@@ -155,7 +155,7 @@ Plan planDelete(const KindDecl& k, const std::string& name, bool confirmed, cons
             e = x;
             if (foldName(x->fileName) == foldName(fileNameFor(name, k))) break;
         }
-    if (!e) return refused("The " + k.label + " " + inQuotes(name) + " is no longer there.");   // EC-4
+    if (!e) return refused("The " + k.label + " " + inQuotes(name) + " is no longer there.");
     if (const auto at = inPlace ? inPlace(e->path) : std::nullopt)
         return refused("The " + k.label + " " + inQuotes(e->name) + " is in " + *at + " now.");
     Plan p;

@@ -1,7 +1,6 @@
-// LIB-13 L1, L6, L7, L10, L11 (design §6): the request, the reply (AC-3), a
-// medium (AC-4, EC-2, EC-4, EC-6), the file kept for later (AC-7), several
-// files (AC-8, EC-3); with the stand-ins of TestOpeners.hpp. L12 and L13
-// (through the real parts of LIB-6 and LIB-7, EC-7) are in real_parts_tests.cpp.
+// The open part: the request, the reply, a medium, the file kept for later,
+// several files; with the stand-ins of TestOpeners.hpp. Opening through the
+// real presets and media parts is in real_parts_tests.cpp.
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
 #include "TestOpeners.hpp"
@@ -23,7 +22,7 @@ bool isAs(const OpenReply* o, OpenedAs as, const std::string& detail = "") {
 }
 } // namespace
 
-// ── L1 ──
+// ── The request ──
 
 TEST(open_request_value_round_trip) {
     OpenRequest r;
@@ -46,9 +45,9 @@ TEST(open_request_value_round_trip) {
     CHECK(o.toValue() == Value::object({{"as", "medium"}, {"file", "w.tdisk.yaml"}, {"detail", "drive"}}));
 }
 
-// ── L6: the reply (AC-3) ──
+// ── The reply ──
 
-TEST(ac3_reply_says_preset_medium_kind) {
+TEST(open_reply_says_preset_medium_kind) {
     calcu::testing::TempFolder dir("calcu-open");
     dir.write("game.tseg", "model: test-dot\n");
     OpenRig r;
@@ -69,7 +68,7 @@ TEST(ac3_reply_says_preset_medium_kind) {
     CHECK(b && b->done && isAs(r.replyOf(b), OpenedAs::FileKind, "test.blob"));
 }
 
-TEST(ac3_reply_says_kept) {
+TEST(open_reply_says_kept) {
     OpenRig r;
     r.rig.build();
     r.rig.part.operation = runningFor(200'000);
@@ -80,7 +79,7 @@ TEST(ac3_reply_says_kept) {
     CHECK(r.replyOf(k) && r.replyOf(k)->toValue().find("as")->string() && *r.replyOf(k)->toValue().find("as")->string() == "kept");
 }
 
-TEST(ac3_reply_says_why_refused) {
+TEST(open_reply_says_why_refused) {
     OpenRig r;
     r.rig.build();
     const auto* a = r.opened(file("photo.jpg", "x"));
@@ -90,9 +89,9 @@ TEST(ac3_reply_says_why_refused) {
     CHECK(hasText(r.notices(), "x.bin is a blob this product does not take."));
 }
 
-// ── L7: a medium (AC-4) ──
+// ── A medium ──
 
-TEST(ac4_medium_checked_first_hint_passed_on) {
+TEST(open_medium_checked_first_hint_passed_on) {
     OpenRig r;
     r.rig.build(mt::kDot);
     const auto* a = r.opened(file("old.tdisk.yaml", "outdated", "/m/old.tdisk.yaml"));
@@ -103,7 +102,7 @@ TEST(ac4_medium_checked_first_hint_passed_on) {
     CHECK(up && !up->done && r.media.imports == 0);
 }
 
-TEST(ac4_used_where_it_lies) {
+TEST(open_medium_used_where_it_lies) {
     OpenRig r;
     r.rig.build(mt::kDot);
     const auto* a = r.opened(file("w.tdisk.yaml", "content", "/m/w.tdisk.yaml"));
@@ -113,14 +112,14 @@ TEST(ac4_used_where_it_lies) {
     CHECK(r.media.imports == 0);   // nothing copied
 }
 
-TEST(ac4_template_not_written) {
+TEST(open_template_not_written) {
     OpenRig r;
     r.rig.build(mt::kDot);
     CHECK(r.opened(file("blank.tdisk.yaml", "template: true", "/m/blank.tdisk.yaml"))->done);
     CHECK(r.media.uses.size() == 1 && !r.media.uses[0].writtenBack);
 }
 
-TEST(ac4_holding_place_inserted_after_eject) {
+TEST(open_holding_place_inserted_after_eject) {
     OpenRig r;
     r.rig.build(mt::kDot);
     CHECK(r.opened(file("one.tdisk.yaml", "1", "/m/one.tdisk.yaml"))->done);
@@ -129,7 +128,7 @@ TEST(ac4_holding_place_inserted_after_eject) {
     CHECK(r.media.held["drive"] == "two.tdisk.yaml");
 }
 
-TEST(ac4_module_one_slot_plugged) {
+TEST(open_module_one_slot_plugged) {
     OpenRig r;
     r.rig.build(mt::kSeg);
     const CallId c = r.open(file("m.tmod.yaml", "x", "/m/m.tmod.yaml"));
@@ -139,7 +138,7 @@ TEST(ac4_module_one_slot_plugged) {
     CHECK(a && a->done && isAs(r.replyOf(a), OpenedAs::Medium, "slot-1"));
 }
 
-TEST(ac4_module_two_slots_refused) {
+TEST(open_module_two_slots_refused) {
     OpenRig r;
     r.rig.build(mt::kDot);
     const auto* a = r.opened(file("m.tmod.yaml", "x", "/m/m.tmod.yaml"));
@@ -148,7 +147,7 @@ TEST(ac4_module_two_slots_refused) {
     CHECK(r.media.uses.empty());
 }
 
-TEST(ac4_no_place_now_refused_says_where) {
+TEST(open_no_place_now_refused_says_where) {
     OpenRig r;
     r.rig.build(mt::kDot);
     const auto* a = r.opened(file("c.tcard.yaml", "x", "/m/c.tcard.yaml"));
@@ -157,7 +156,7 @@ TEST(ac4_no_place_now_refused_says_where) {
     CHECK(r.media.uses.empty() && r.media.imports == 0);
 }
 
-TEST(ac4_upload_imported_then_placed) {
+TEST(open_upload_imported_then_placed) {
     OpenRig r;
     r.rig.build(mt::kDot);
     const auto* a = r.opened(file("w.tdisk.yaml", "x", "/uploads/w.tdisk.yaml"), Way::Drop, true);
@@ -165,7 +164,7 @@ TEST(ac4_upload_imported_then_placed) {
     CHECK(r.media.imports == 1 && r.media.uses.size() == 1 && r.media.uses[0].how == "imported" && r.media.uses[0].place == "drive");
 }
 
-TEST(ac4_upload_name_taken_asks_then_replace) {
+TEST(open_upload_name_taken_asks_then_replace) {
     OpenRig r;
     r.rig.build(mt::kDot);
     r.media.saved.insert("w.tdisk.yaml");
@@ -177,7 +176,7 @@ TEST(ac4_upload_name_taken_asks_then_replace) {
     CHECK(yes && yes->done && r.media.imports == 1 && r.media.held["drive"] == "w.tdisk.yaml");
 }
 
-TEST(ec2_no_drive_refused_in_place_imported_as_upload) {
+TEST(no_drive_refused_in_place_imported_as_upload) {
     OpenRig r;
     r.rig.build(mt::kDot);
     r.media.noDrive = true;
@@ -187,10 +186,10 @@ TEST(ec2_no_drive_refused_in_place_imported_as_upload) {
     const auto* up = r.opened(file("w.tdisk.yaml", "x"), Way::Drop, true);
     CHECK(up && up->done && isAs(r.replyOf(up), OpenedAs::Medium, "imported"));
     CHECK(r.media.imports == 1 && r.media.uses.size() == 1 && r.media.uses[0].place.empty());
-    CHECK(hasText(r.notices(), "has no place for w.tdisk.yaml now"));   // D-8: in the save folder, and told so
+    CHECK(hasText(r.notices(), "has no place for w.tdisk.yaml now"));   // in the save folder, and told so
 }
 
-TEST(ec4_place_passing_medium_refuses_nothing_imported) {
+TEST(place_passing_medium_refuses_nothing_imported) {
     OpenRig r;
     r.rig.build(mt::kSeg);
     r.media.passing.insert("reader");
@@ -200,7 +199,7 @@ TEST(ec4_place_passing_medium_refuses_nothing_imported) {
     CHECK(r.media.imports == 0 && r.media.uses.empty());
 }
 
-TEST(ec6_no_answer_nothing_imported_nothing_placed) {
+TEST(no_answer_nothing_imported_nothing_placed) {
     OpenRig r;
     r.rig.build(mt::kDot);
     r.media.saved.insert("w.tdisk.yaml");
@@ -211,9 +210,9 @@ TEST(ec6_no_answer_nothing_imported_nothing_placed) {
     CHECK(r.media.imports == 0 && r.media.uses.empty() && r.media.held.empty());
 }
 
-// ── L10: kept for later (AC-7) ──
+// ── Kept for later ──
 
-TEST(ac7_kept_while_operation_runs_opened_when_free) {
+TEST(kept_while_operation_runs_opened_when_free) {
     OpenRig r;
     r.rig.build();
     r.rig.part.operation = runningFor(200'000);
@@ -230,7 +229,7 @@ TEST(ac7_kept_while_operation_runs_opened_when_free) {
     CHECK(!r.rig.session->busy());
 }
 
-TEST(ac7_kept_before_machine_built) {
+TEST(kept_before_machine_built) {
     OpenRig r;   // no machine yet: the start has not finished
     const CallId c = r.open(file("p.lst", "x"));
     CHECK(isAs(r.replyOf(r.rig.fe.reply(c)), OpenedAs::Kept));
@@ -243,7 +242,7 @@ TEST(ac7_kept_before_machine_built) {
     CHECK(r.listing.opened.size() == 1);   // once
 }
 
-TEST(ac7_second_replaces_first) {
+TEST(second_kept_file_replaces_first) {
     OpenRig r;
     r.rig.build();
     r.rig.part.operation = runningFor(200'000);
@@ -252,14 +251,14 @@ TEST(ac7_second_replaces_first) {
     r.open(file("first.lst", "x"));
     const CallId second = r.open(file("second.lst", "x"));
     CHECK(isAs(r.replyOf(r.rig.fe.reply(second)), OpenedAs::Kept));
-    CHECK(hasText(logLines(r), "first.lst"));   // D-6: a log line, no notice
+    CHECK(hasText(logLines(r), "first.lst"));   // a log line, no notice
     CHECK(r.notices().empty());
     r.rig.callWhileBusy();
     r.rig.call();
     CHECK(r.listing.opened == std::vector<std::string>{"second.lst"});
 }
 
-TEST(ac7_kept_file_refused_later_is_a_notice) {
+TEST(kept_file_refused_later_is_a_notice) {
     OpenRig r;
     r.rig.build();
     r.rig.part.operation = runningFor(200'000);
@@ -271,9 +270,9 @@ TEST(ac7_kept_file_refused_later_is_a_notice) {
     CHECK_EQ(r.rig.fe.replies(c), 1);   // no second reply
 }
 
-// ── L11: several files (AC-8, EC-3) ──
+// ── Several files ──
 
-TEST(ac8_several_files_one_folder_preset_found_by_path) {
+TEST(several_files_one_folder_preset_found_by_path) {
     calcu::testing::TempFolder up("calcu-uploads");
     OpenRig r([&](OpenSetup& s) { s.uploadFolder = up.str(); });
     r.rig.build(mt::kDot);
@@ -293,7 +292,7 @@ TEST(ac8_several_files_one_folder_preset_found_by_path) {
     CHECK(p.parent_path().filename().string().rfind("open-", 0) == 0);
 }
 
-TEST(ac8_first_preset_by_name) {
+TEST(several_files_first_preset_by_name) {
     calcu::testing::TempFolder up("calcu-uploads");
     OpenRig r([&](OpenSetup& s) { s.uploadFolder = up.str(); });
     r.rig.build(mt::kDot);
@@ -311,7 +310,7 @@ TEST(ac8_first_preset_by_name) {
     CHECK(r.presets.files.size() == 2 && std::filesystem::path(r.presets.files[1]).filename() == "m.txt");
 }
 
-TEST(ac8_no_preset_first_file_alone) {
+TEST(several_files_no_preset_first_file_alone) {
     calcu::testing::TempFolder up("calcu-uploads");
     OpenRig r([&](OpenSetup& s) { s.uploadFolder = up.str(); });
     r.rig.build();
@@ -323,7 +322,7 @@ TEST(ac8_no_preset_first_file_alone) {
     r.rig.callWhileBusy();
     CHECK(r.listing.opened == std::vector<std::string>{"q.lst"});   // the first as handed over
     CHECK(r.rig.fe.reply(c) && r.rig.fe.reply(c)->done);
-    // Without an upload folder (D-7): only the first, alone.
+    // Without an upload folder: only the first, alone.
     OpenRig plain;
     plain.rig.build();
     const CallId d = plain.open(OpenRequest{{file("a.tseg", "model: test-seg\n"), file("b.lst", "x")}, Way::Dialog, true, false});
@@ -332,7 +331,7 @@ TEST(ac8_no_preset_first_file_alone) {
     CHECK(plain.rig.fe.reply(d) && plain.rig.fe.reply(d)->done);
 }
 
-TEST(ec3_preset_alone_as_content_refused_when_it_names_files) {
+TEST(preset_alone_as_content_refused_when_it_names_files) {
     OpenRig r;
     r.rig.build();
     const auto* a = r.opened(file("game.tseg", "model: test-seg\nfile: data.tdisk.yaml\n"), Way::Drop, true);

@@ -1,4 +1,4 @@
-// LIB-6 L2: header keys and places (AC-2 to AC-5, AC-8, AC-9).
+// Header keys and places.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 
@@ -16,7 +16,7 @@ bool pluggedAt(mt::TestMachine* m, const char* place, const machine::PeripheralI
 }
 } // namespace
 
-TEST(ac2_header_keys_and_defaults) {
+TEST(header_keys_and_defaults) {
     Reading rd;
     const auto a = rd.read(header(), "hanoi.test-seg");
     const LoadPlan* p = planOf(a);
@@ -36,7 +36,7 @@ TEST(ac2_header_keys_and_defaults) {
     CHECK(hasLine({rd.error(header() + "timeout: 1.5\n")}, "timeout: is a whole number"));
 }
 
-TEST(ac2_preset_name_at_most_18_written_stem_any_length) {
+TEST(preset_name_at_most_18_written_stem_any_length) {
     Reading rd;
     CHECK(planOf(rd.read(header() + "preset-name: abcdefghijklmnopqr\n")) != nullptr);   // 18
     CHECK(planOf(rd.read(header() + "preset-name: \xC3\xA9" "bcdefghijklmnopqr\n")) != nullptr);   // 18 code points
@@ -46,17 +46,17 @@ TEST(ac2_preset_name_at_most_18_written_stem_any_length) {
     CHECK(planOf(longStem) && planOf(longStem)->header.presetName == "a-file-name-of-thirty-chars");
 }
 
-TEST(ac2_place_keys_from_the_descriptor) {
+TEST(place_keys_from_the_descriptor) {
     Reading rd;
     const auto seg = rd.read(header() + "slot-1: test-module\nprinter: test-printer\n");
     CHECK(planOf(seg) && planOf(seg)->places.size() == 2);
     const auto dot = rd.read(header("test-dot") + "a: test-hub\ncard-1: test-module\n");
     CHECK(planOf(dot) && planOf(dot)->places.size() == 2);
-    // A place of the other model is no key here (AC-62).
+    // A place of the other model is no key here.
     CHECK_EQ(rd.error(header() + "card-1: test-module\n"), std::string("t.test-seg, line 3: card-1 is not available on the test-seg."));
 }
 
-TEST(ac3_peripheral_fits_place_with_variant) {
+TEST(peripheral_fits_place_with_variant) {
     Reading rd;
     const auto r = rd.read(header() + "slot-1: test-module:8k\n");
     CHECK(planOf(r) && planOf(r)->places[0].request.variant == machine::VariantId{"8k"});
@@ -66,7 +66,7 @@ TEST(ac3_peripheral_fits_place_with_variant) {
              std::string("t.test-seg, line 3: The Test module has no variant 16k; its variants are 4k, 8k."));
 }
 
-TEST(ac3_module_by_name_reference) {
+TEST(module_by_name_reference) {
     Reading rd;
     const auto r = rd.read(header() + "slot-1: { name: TEST-MODULE }\n");
     CHECK(planOf(r) && planOf(r)->places[0].request.peripheral == mt::kModule);
@@ -74,23 +74,23 @@ TEST(ac3_module_by_name_reference) {
     CHECK(hasLine({rd.error(header() + "slot-1: test-module\n")}, "slot-1: takes a reference"));
 }
 
-TEST(ac3_module_by_file_refused_without_a_resolver) {
+TEST(module_by_file_refused_without_a_resolver) {
     Reading rd;
     CHECK_EQ(rd.error(header() + "slot-1: { file: cards/m.module.yaml }\n"),
              std::string("t.test-seg, line 3: slot-1: a reference by file: is not read by this release; use name:."));
 }
 
-TEST(ac3_place_not_named_is_empty) {
+TEST(place_not_named_is_empty) {
     Rig r;
     CHECK(r.done(r.load(header() + "printer: test-printer\nslot-1: test-module\n")));
     CHECK(pluggedAt(r.machine(), "printer", mt::kPrinter));
     CHECK(r.done(r.load(header() + "slot-1: test-module\n")));
-    CHECK(!pluggedAt(r.machine(), "printer", mt::kPrinter));   // ADR 0016: none
+    CHECK(!pluggedAt(r.machine(), "printer", mt::kPrinter));   // a preset always cold boots: none
     CHECK(pluggedAt(r.machine(), "slot-1", mt::kModule));
     CHECK_EQ(r.machine()->plugged().byPlace.size(), std::size_t(1));
 }
 
-TEST(ac4_keys_repeats_in_file_order) {
+TEST(keys_repeats_in_file_order) {
     Rig r;
     const CallId c = r.load(header() + "keys:\n  - key: 2\n  - key: 3\nkeys:\n  - key: 2 3\n");
     CHECK(r.done(c));
@@ -100,7 +100,7 @@ TEST(ac4_keys_repeats_in_file_order) {
     CHECK_EQ(order, std::string("2323"));
 }
 
-TEST(ac5_model_from_model_key_not_extension) {
+TEST(model_from_model_key_not_extension) {
     Reading rd;
     const auto r = rd.read(header("test-seg"), "looks-like-dot.test-dot");
     CHECK(planOf(r) && planOf(r)->model == mt::kSeg);
@@ -108,7 +108,7 @@ TEST(ac5_model_from_model_key_not_extension) {
     CHECK(planOf(t) && planOf(t)->model == mt::kDot);
 }
 
-TEST(ac8_missing_or_old_version_refused_as_outdated) {
+TEST(missing_or_old_version_refused_as_outdated) {
     Reading rd;
     const std::string want =
         "t.test-seg: The file was written for an earlier release of Calc-U-Test and must be upgraded by hand to "
@@ -120,14 +120,14 @@ TEST(ac8_missing_or_old_version_refused_as_outdated) {
     CHECK_EQ(rd.error("MODEL: TI-59\nKEYSTROKES:\n"), want);   // a 2.3.0 state file
 }
 
-TEST(ac8_newer_version_refused) {
+TEST(newer_version_refused) {
     Reading rd;
     CHECK_EQ(rd.error("format-version: 3\nmodel: test-seg\nnew-key: 1\n"),
              std::string("t.test-seg, line 1: The file was written by a newer release of Calc-U-Test (preset format "
                          "3); this release reads preset format 2."));
 }
 
-TEST(ac9_unknown_model_lists_the_models) {
+TEST(unknown_model_lists_the_models) {
     Reading rd;
     CHECK_EQ(rd.error("format-version: 2\nmodel: PC-1600\n"),
              std::string("t.test-seg, line 2: There is no model PC-1600 in Calc-U-Test; its models are test-seg and "

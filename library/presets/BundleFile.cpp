@@ -119,7 +119,7 @@ std::vector<PresetListEntry> presetList(const PresetBundle& bundle, const Produc
     for (const BundleEntry& b : std::get<std::vector<BundleEntry>>(entries)) {
         const auto source = bundleSource(bundle, b.preset);
         auto h = readHeader(*source, rules, catalogue);
-        if (auto* e = std::get_if<ReadError>(&h)) {   // EC-9
+        if (auto* e = std::get_if<ReadError>(&h)) {   // left out, with its sentence
             if (left) left->push_back("The preset list leaves out " + source->name() + ": " + e->message);
             continue;
         }
@@ -155,7 +155,7 @@ std::vector<std::string> checkBundle(const PresetBundle& bundle, const ReadSetup
         }
         for (const std::string& named : source.named) {
             const std::string inBundle = named.rfind("examples:", 0) == 0 ? named.substr(9) : named;
-            // bundle.md §3: or a bundled medium or module of the product (LIB-7).
+            // bundle.md §3: or a bundled medium or module of the product.
             if (std::find(b.files.begin(), b.files.end(), inBundle) == b.files.end() &&
                 !setup.vocabulary.isBundledMedium(named))
                 problems.push_back("examples:" + b.preset + " names " + named + ", which is not listed with it.");

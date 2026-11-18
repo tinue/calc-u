@@ -1,7 +1,7 @@
 #include "MediaFixture.hpp"
 #include "TestHarness.hpp"
 
-// LIB-7 L5 (design §6): the pickers and choosing (AC-8, AC-9, AC-10).
+// The pickers and choosing.
 
 using namespace calcu;
 using namespace calcu::media;
@@ -48,7 +48,7 @@ std::vector<std::string> labels(const PlaceState* p) {
 
 } // namespace
 
-TEST(ac8_order_empty_templates_instances_modules) {
+TEST(picker_order_empty_templates_instances_modules) {
     MediaFixture f(slotFixture());
     const std::vector<std::string> want = {"empty:",
                                            "bundled-template:Alpha",
@@ -62,7 +62,7 @@ TEST(ac8_order_empty_templates_instances_modules) {
     CHECK(labels(f.place("slot-1")) == want);
 }
 
-TEST(ac8_tooltip_is_description) {
+TEST(picker_tooltip_is_description) {
     MediaFixture f(slotFixture());
     for (const auto& e : f.place("slot-1")->picker) {
         if (e.label == "Mine") CHECK(e.tooltip == std::optional<std::string>("My own template"));
@@ -70,7 +70,7 @@ TEST(ac8_tooltip_is_description) {
     }
 }
 
-TEST(ac8_listing_label_and_sort_key) {
+TEST(picker_listing_label_and_sort_key) {
     FixtureOptions o = slotFixture();
     // As Calc-U-59's modules: the description as the label, no tooltip, by menu-sort.
     o.listing.label = [](const machine::PeripheralDescriptor& d) { return "Described " + d.name; };
@@ -82,7 +82,7 @@ TEST(ac8_listing_label_and_sort_key) {
     CHECK(!f.place("slot-1")->picker[7].tooltip);
 }
 
-TEST(ac9_outdated_entry_disabled_with_hint) {
+TEST(outdated_entry_disabled_with_hint) {
     MediaFixture f(onDot());
     const PlaceState* p = f.place("disk");
     const auto it = std::find_if(p->picker.begin(), p->picker.end(), [](const PickerEntry& e) { return e.label == "Old"; });
@@ -95,7 +95,7 @@ TEST(ac9_outdated_entry_disabled_with_hint) {
     CHECK(!f.ok("media.choose", choose("disk", "saved:Old.testdisk.yaml")) || !f.place("disk")->holds);
 }
 
-TEST(ac9_outdated_logged_once_per_start) {
+TEST(outdated_logged_once_per_start) {
     MediaFixture f(onDot());
     const auto lines = f.logLines();
     CHECK(std::count_if(lines.begin(), lines.end(), [](const std::string& l) {
@@ -105,7 +105,7 @@ TEST(ac9_outdated_logged_once_per_start) {
     CHECK(!hasLine(f.logLines(), "Old.testdisk.yaml"));
 }
 
-TEST(ac10_old_medium_written_first) {
+TEST(choose_writes_old_medium_first) {
     MediaFixture f(onDot());
     CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
     f.drive()->write("unsaved yet");
@@ -116,7 +116,7 @@ TEST(ac10_old_medium_written_first) {
     CHECK_EQ(f.drive()->bytes(), std::string("o"));
 }
 
-TEST(ac10_holding_place_new_medium_in_at_once) {
+TEST(holding_place_new_medium_in_at_once) {
     MediaFixture f(onDot());
     const auto generation = f.session->machineSession().generation();
     const auto ticks = f.machine()->tickCount();
@@ -126,20 +126,20 @@ TEST(ac10_holding_place_new_medium_in_at_once) {
     CHECK(f.session->machineSession().generation() == generation && f.machine()->tickCount() == ticks);
 }
 
-TEST(ac10_module_slot_is_a_replace_by_lib18) {
+TEST(module_slot_choice_is_a_replace_by_machine_control) {
     MediaFixture f(slotFixture());
     CHECK(f.done(f.load(header() + "slot-1: test-module\n")));
     const int unplugs = f.machine()->unplugCalls;
     CHECK(f.ok("media.choose", choose("slot-1", "saved:b.testmodule.yaml")));
     CHECK(f.module() && f.module()->bytes() == "b");
     CHECK_EQ(f.machine()->unplugCalls, unplugs + 1);   // one replace
-    CHECK(f.machine()->operationsTold(startup::test::at({"slot-1"})) == 1);   // the power cycle of the slot (LIB-18 AC-21, AC-29)
+    CHECK(f.machine()->operationsTold(startup::test::at({"slot-1"})) == 1);   // the power cycle of the slot
     CHECK(f.machine()->isKeyReady());
     const PlaceState* p = f.place("slot-1");
     CHECK(p->holds && p->holds->name == "B" && !p->holds->isTemplate);
 }
 
-TEST(ac10_unreadable_leaves_place_empty_with_notice) {
+TEST(unreadable_choice_leaves_place_empty_with_notice) {
     MediaFixture f(onDot());
     CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
     f.writeSaved("Other.testdisk.yaml", "garbage\n");   // after the picker was filled
@@ -149,10 +149,10 @@ TEST(ac10_unreadable_leaves_place_empty_with_notice) {
     CHECK(hasLine(n, "The test disk “Other” cannot be read: It is not a test-disk file."));
 }
 
-// LIB-7 §11 E3 (M-55; AC-8, AC-47): a module slot that no kind of medium
+// A module slot that no kind of medium
 // fits, named by the listing, has a picker: the empty slot and the modules,
 // by the listing's order; choosing one replaces the module.
-TEST(ac8_slot_without_media_listed_by_the_listing) {
+TEST(picker_slot_without_media_listed_by_the_listing) {
     FixtureOptions o;
     o.listing.moduleSlots = {machine::PlaceName{"a"}};
     o.listing.label = [](const machine::PeripheralDescriptor& d) { return "Listed " + d.id.value; };

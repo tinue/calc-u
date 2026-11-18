@@ -28,7 +28,7 @@ startup::MachinePlan machinePlan(const LoadPlan& p) {
     plan.model = p.model;
     plan.variant = p.variant;
     for (const auto& r : p.places) plan.peripherals.push_back(r.request);
-    plan.peripherals.insert(plan.peripherals.end(), p.headerPeripherals.begin(), p.headerPeripherals.end());   // D-33
+    plan.peripherals.insert(plan.peripherals.end(), p.headerPeripherals.begin(), p.headerPeripherals.end());   // after the places
     return plan;
 }
 
@@ -67,29 +67,29 @@ Task<LoadOutcome> carryOut(sessions::OperationContext& op, std::shared_ptr<const
         return LoadOutcome{LoadOutcome::Kind::Failed, message};
     };
 
-    // 1. The build (AC-10, AC-16, AC-52): at the operation's full speed.
+    // 1. The build: at the operation's full speed.
     if (!deps.control) co_return LoadOutcome{LoadOutcome::Kind::NotBuilt, errorText(name, 0, "No machine can be built.")};
     const auto refused = deps.control->build(
         s, machinePlan(*plan), opts.startup ? startup::BuildOrigin::StartupPreset : startup::BuildOrigin::Preset);
-    if (refused)   // nothing changed (LIB-18 §3.4)
+    if (refused)   // nothing changed
         co_return LoadOutcome{LoadOutcome::Kind::NotBuilt, errorText(name, lineOfPlace(*plan, refused->place), refused->reason)};
-    s.log("Preset " + name + ": " + withVariant(plan->model.value, plan->variant));   // AC-18
+    s.log("Preset " + name + ": " + withVariant(plan->model.value, plan->variant));
     for (const auto& r : plan->places)
         s.log("  " + machine::placeText(r.request.place) + ": " + withVariant(r.request.peripheral.value, r.request.variant));
-    run.elapsed() = ElapsedBase{s.machineSession().generation(), std::nullopt};   // D-10: from tick 0
-    if (opts.buildOnly) {   // AC-55: over at once, without waiting for key readiness
+    run.elapsed() = ElapsedBase{s.machineSession().generation(), std::nullopt};   // from tick 0
+    if (opts.buildOnly) {   // over at once, without waiting for key readiness
         s.log("Preset " + name + " built only.");
         co_return LoadOutcome{};
     }
     const bool ready = co_await deps.control->untilKeyReady(op);
-    if (!ready)   // EC-10: no item runs
+    if (!ready)   // no item runs
         co_return stopped(plan->modelLine, "The " + plan->model.value + " did not report key readiness after it was built.");
 
-    // 2. What the product does after the build (AC-46, AC-53).
+    // 2. What the product does after the build.
     const ItemResult after = co_await rules.afterBuild(run);
     if (!after.ok) co_return stopped(plan->modelLine, after.reason);
 
-    // 3. The items in file order (AC-14), each waited for (AC-56).
+    // 3. The items in file order, each waited for.
     const machine::Machine* m = s.machine();
     const machine::TickRate rate = m ? m->descriptor().tickRate : 1;
     const Ticks bound = static_cast<Ticks>(plan->header.timeoutSeconds) * rate;
@@ -99,7 +99,7 @@ Task<LoadOutcome> carryOut(sessions::OperationContext& op, std::shared_ptr<const
         const PlannedItem& entry = plan->items[i];
         Item& item = *entry.item;
         const bool last = i + 1 == plan->items.size();
-        if (item.needsRunningMachine()) {   // AC-19: it waits while the machine is paused
+        if (item.needsRunningMachine()) {   // it waits while the machine is paused
             const bool runs = co_await run.untilRunning();
             if (!runs) co_return stopped(item.line, "The machine is paused.");
         }
@@ -107,19 +107,19 @@ Task<LoadOutcome> carryOut(sessions::OperationContext& op, std::shared_ptr<const
         run.setDeadline(bound);
         run.setNotWaitedFor(last && !plan->letItFinish);
         const ItemResult res = co_await item.carryOut(run);
-        if (!res.ok) {   // AC-17: the machine stays as it is
+        if (!res.ok) {   // the machine stays as it is
             s.log("  line " + std::to_string(item.line) + " " + item.logText() + ": failed: " + res.reason);
             co_return stopped(item.line, res.reason);
         }
         s.log("  line " + std::to_string(item.line) + " " + item.logText() + ": done");
         atOnce = entry.skipWaitAfter;
         if (last) {
-            if (!plan->letItFinish) break;   // AC-60: not waited for
+            if (!plan->letItFinish) break;   // not waited for
         } else if (entry.skipWaitAfter || item.after() != After::Idle) {
-            continue;   // AC-58; an item that has finished when carried out
+            continue;   // `skip-wait:`, or an item that has finished when carried out
         }
-        // The implicit wait (AC-56), bounded by timeout: (AC-57); after the
-        // last item only with let-it-finish:, without a bound (AC-59).
+        // The implicit wait, bounded by timeout:; after the last item only
+        // with let-it-finish:, without a bound.
         const std::optional<Ticks> limit = last ? std::nullopt : std::optional<Ticks>(bound);
         const IdleOutcome w = co_await watch.wait(op, limit);
         if (w.noMachine) co_return stopped(item.line, sessions::kNoMachine);
@@ -133,7 +133,7 @@ Task<LoadOutcome> carryOut(sessions::OperationContext& op, std::shared_ptr<const
         const IdleOutcome w = co_await watch.wait(op, std::nullopt);
         if (!w.idle) co_return stopped(plan->modelLine, w.paused ? "The machine is paused." : sessions::kNoMachine);
     }
-    s.log("Preset " + name + " carried out to its end.");   // AC-18
+    s.log("Preset " + name + " carried out to its end.");
     co_return LoadOutcome{};
 }
 

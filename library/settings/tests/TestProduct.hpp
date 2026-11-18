@@ -10,10 +10,9 @@
 #include <utility>
 #include <vector>
 
-// A product declared for the settings tests (LIB-9 design §2): `Test-Product`,
-// models `Model-A` and `Model-B`, fallback `Model-B`, the family keys and one
-// key of each other kind; the temporary folder and the file helpers of
-// library/testing/.
+// A product declared for the settings tests: `Test-Product`, models `Model-A`
+// and `Model-B`, fallback `Model-B`, the family keys and one key of each
+// other kind; the temporary folder and the file helpers of library/testing/.
 
 namespace calcu::settings::test {
 

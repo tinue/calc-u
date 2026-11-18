@@ -8,7 +8,7 @@
 #include <variant>
 #include <vector>
 
-// The full set (LIB-12 design §3.3; AC-4, EC-1): every ROM file that any
+// The full set: every ROM file that any
 // model, variant or peripheral of a product's catalogue needs, each once,
 // with who needs it.
 

@@ -5,10 +5,9 @@
 #include <optional>
 #include <string>
 
-// The one place of the settings file on each platform (LIB-9 AC-2; design
-// D-5): a pure function of what the caller passes. The library reads no
-// environment variable and calls no platform API; the frontend hands in a
-// lookup and the folders it found.
+// The one place of the settings file on each platform: a pure function of
+// what the caller passes. The library reads no environment variable and calls
+// no platform API; the frontend hands in a lookup and the folders it found.
 
 namespace calcu::settings {
 

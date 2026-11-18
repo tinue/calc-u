@@ -1,4 +1,4 @@
-// LIB-6 L12: the preset list from the bundle file (AC-31 to AC-33, EC-9).
+// The preset list from the bundle file.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 #include <filesystem>
@@ -18,7 +18,7 @@ std::vector<PresetListEntry> listOf(Rig& r) {
 const char* const kHead = "format: example-bundle\nformat-version: 1\n";
 } // namespace
 
-TEST(ac31_bundle_order_groups_startup_files) {
+TEST(bundle_order_groups_startup_files) {
     const DirectoryPresetBundle b(kBundle);
     const auto read = readBundleFile(b);
     const auto* entries = std::get_if<std::vector<BundleEntry>>(&read);
@@ -36,7 +36,7 @@ TEST(ac31_bundle_order_groups_startup_files) {
     CHECK(hasLine({std::get<ReadError>(readBundleFile(DirectoryPresetBundle(t.path()))).message}, "Unknown key extra."));
 }
 
-TEST(ac31_check_bundle_finds_missing_and_unlisted_files) {
+TEST(check_bundle_finds_missing_and_unlisted_files) {
     Reading rd;
     CHECK(checkBundle(DirectoryPresetBundle(kBundle), rd.setup()).empty());
     calcu::testing::TempFolder t("calcu-bundle");
@@ -59,7 +59,7 @@ TEST(ac31_check_bundle_finds_missing_and_unlisted_files) {
     CHECK(hasLine(checkBundle(DirectoryPresetBundle(t.path()), rd.setup()), "leaves the bundle"));
 }
 
-TEST(ac32_entries_with_bundle_path_model_name_description_kind_group) {
+TEST(entries_with_bundle_path_model_name_description_kind_group) {
     const DirectoryPresetBundle b(kBundle);
     RigOptions o;
     o.bundle = &b;
@@ -79,7 +79,7 @@ TEST(ac32_entries_with_bundle_path_model_name_description_kind_group) {
     CHECK(v.find("entries") && v.find("entries")->elements()->size() == 5);
 }
 
-TEST(ac32_header_only_entry_naming_missing_file_listed) {
+TEST(header_only_entry_naming_missing_file_listed) {
     calcu::testing::TempFolder t("calcu-bundle");
     t.write("a.test-seg", header() + "preset-name: Needs a file\ntest-memory: { at: 0, file: gone.bin }\n");
     t.write("bundle.yaml", std::string(kHead) + "startup: []\ngroups:\n  - group: G\n    examples:\n"
@@ -92,7 +92,7 @@ TEST(ac32_header_only_entry_naming_missing_file_listed) {
     CHECK(l.size() == 1 && l[0].name == "Needs a file");
 }
 
-TEST(ac33_bundle_path_in_load_and_startup_setting) {
+TEST(bundle_path_in_load_and_startup_setting) {
     const DirectoryPresetBundle b(kBundle);
     RigOptions o;
     o.bundle = &b;
@@ -114,7 +114,7 @@ TEST(ac33_bundle_path_in_load_and_startup_setting) {
     CHECK(!r.done(out));
 }
 
-TEST(ec9_missing_entry_left_out_and_logged) {
+TEST(missing_entry_left_out_and_logged) {
     calcu::testing::TempFolder t("calcu-bundle");
     t.write("good.test-seg", header());
     t.write("old.test-seg", "model: test-seg\n");   // its header cannot be read
@@ -132,7 +132,7 @@ TEST(ec9_missing_entry_left_out_and_logged) {
     const auto log = r.logLines();
     CHECK(hasLine(log, "The preset list leaves out examples:gone.test-seg: There is no bundled preset"));
     CHECK(hasLine(log, "The preset list leaves out examples:old.test-seg: "));
-    // The suite's check fails on it (AC-43, AC-51).
+    // The suite's check fails on it.
     Reading rd;
     CHECK(!checkBundle(b, rd.setup()).empty());
 }

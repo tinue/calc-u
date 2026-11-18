@@ -4,9 +4,8 @@
 #include <string>
 #include <vector>
 
-// The file named when a desktop program is started (LIB-13 AC-21 for
-// Calc-U-1600, AC-14 asks the same of Calc-U-59; OQ-2; Part D, D4.4, D-14):
-// the last argument after the program's own name that names an existing
+// The file named when a desktop program is started (both products): the
+// last argument after the program's own name that names an existing
 // file. Options, their values and words that name no file are passed over
 // (the system or an IDE may add some: `-NSDocumentRevisionsDebugMode YES`).
 // Toolkit-free, so the tests reach it; the frontend opens it with

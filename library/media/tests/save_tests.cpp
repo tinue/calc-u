@@ -1,8 +1,7 @@
 #include "MediaFixture.hpp"
 #include "TestHarness.hpp"
 
-// LIB-7 L7 (design §6): Name & Save and the save rules (AC-16 to AC-20,
-// EC-7, EC-9).
+// Name & Save and the save rules.
 
 using namespace calcu;
 using namespace calcu::media;
@@ -42,21 +41,21 @@ Value nameAndSave(const std::string& place, const std::string& name, bool confir
 
 } // namespace
 
-TEST(ac16_offered_for_template_that_can_change) {
+TEST(name_and_save_offered_for_template_that_can_change) {
     MediaFixture f(dot());
     CHECK(f.ok("media.choose", choose("disk", "bundled:Formatted.testdisk.yaml")));
     CHECK(f.place("disk")->nameAndSave);
     CHECK(f.ok("media.choose", choose("disk", "saved:Tpl.testdisk.yaml")));
     CHECK(f.place("disk")->nameAndSave);
     CHECK(f.ok("media.choose", choose("disk", "saved:Free.testdisk.yaml")));
-    CHECK(!f.place("disk")->nameAndSave);   // EC-9
+    CHECK(!f.place("disk")->nameAndSave);   // an instance
     MediaFixture m(seg());
     m.saveFile("Locked.testmodule.yaml", moduleFile("Locked", "l", true, true));
     CHECK(m.done(m.load(header() + "slot-1: { name: Locked }\n")));
-    CHECK(!m.place("slot-1")->nameAndSave);   // D-18: its switch is on, its content cannot change
+    CHECK(!m.place("slot-1")->nameAndSave);   // its switch is on, its content cannot change
 }
 
-TEST(ac16_asks_write_protect_only_when_switch_off) {
+TEST(name_and_save_asks_write_protect_only_when_switch_off) {
     MediaFixture f(seg());
     CHECK(f.done(f.load(header() + "slot-1: { name: Blank }\n")));
     CHECK(f.place("slot-1")->nameAndSave && f.place("slot-1")->askWriteProtect);
@@ -65,7 +64,7 @@ TEST(ac16_asks_write_protect_only_when_switch_off) {
     CHECK(d.place("disk")->nameAndSave && !d.place("disk")->askWriteProtect);   // no switch
 }
 
-TEST(ac17_rules_table) {
+TEST(save_rules_table) {
     MediaFixture f(dot());
     CHECK(f.ok("attach", Value::object({{"place", "a"}, {"peripheral", "test-hub"}})));
     CHECK(f.ok("media.choose", choose("hub-disk", "saved:Busy.testdisk.yaml")));
@@ -85,16 +84,16 @@ TEST(ac17_rules_table) {
     using V = Plan::Verdict;
     const SaveBy all[] = {SaveBy::NameAndSave, SaveBy::SaveasLive, SaveBy::SaveasTemplate};
     for (SaveBy by : all) {
-        CHECK(plan(by, "a/b").verdict == V::Refused);                                            // row 1
-        CHECK(plan(by, "formatted").verdict == V::Refused);                                      // row 2
-        CHECK(plan(by, "Busy").verdict == V::Refused);                                           // row 4
-        CHECK(plan(by, "Broken").verdict == V::Write && plan(by, "Broken").path == f.saveRoot / "Broken-1.testdisk.yaml");   // row 6
+        CHECK(plan(by, "a/b").verdict == V::Refused);                                            // a refused name
+        CHECK(plan(by, "formatted").verdict == V::Refused);                                      // a bundled name
+        CHECK(plan(by, "Busy").verdict == V::Refused);                                           // in another place
+        CHECK(plan(by, "Broken").verdict == V::Write && plan(by, "Broken").path == f.saveRoot / "Broken-1.testdisk.yaml");   // numbered
         CHECK(plan(by, "Old").verdict == V::Write && plan(by, "Old").path == f.saveRoot / "Old-1.testdisk.yaml");
     }
-    CHECK(plan(SaveBy::NameAndSave, "Tpl").verdict == V::Refused);   // row 3
+    CHECK(plan(SaveBy::NameAndSave, "Tpl").verdict == V::Refused);   // a user template's name
     CHECK(plan(SaveBy::SaveasLive, "Tpl").verdict == V::Refused);
     CHECK(plan(SaveBy::SaveasTemplate, "Tpl").verdict == V::Write && plan(SaveBy::SaveasTemplate, "Tpl").path == f.saveRoot / "Tpl.testdisk.yaml");
-    CHECK(plan(SaveBy::NameAndSave, "free").verdict == V::Ask);       // row 5
+    CHECK(plan(SaveBy::NameAndSave, "free").verdict == V::Ask);       // an instance's name
     CHECK(plan(SaveBy::NameAndSave, "free", true).verdict == V::Write);
     CHECK(plan(SaveBy::SaveasLive, "free").verdict == V::Write && plan(SaveBy::SaveasLive, "free").path == f.saveRoot / "Free.testdisk.yaml");
     CHECK(plan(SaveBy::SaveasTemplate, "free").verdict == V::Refused);
@@ -103,7 +102,7 @@ TEST(ac17_rules_table) {
     CHECK_EQ(plan(SaveBy::NameAndSave, "Busy").refusal, std::string("The test disk “Busy” is in hub-disk now."));
 }
 
-TEST(ac17_file_form_writes_that_file) {
+TEST(saveas_file_form_writes_that_file) {
     MediaFixture f(dot());
     CHECK(f.ok("media.choose", choose("disk", "bundled:Formatted.testdisk.yaml")));
     const std::string target = f.presetsDir / "out/Work Copy.testdisk.yaml";
@@ -114,7 +113,7 @@ TEST(ac17_file_form_writes_that_file) {
     CHECK(!f.done(f.step("saveas", "{ place: disk, as: live, file: " + (f.presetsDir / "x.txt") + " }")));
 }
 
-TEST(ac17_file_form_refused_for_bundled_and_user_template) {
+TEST(saveas_file_form_refused_for_bundled_and_user_template) {
     MediaFixture f(dot());
     CHECK(f.ok("media.choose", choose("disk", "bundled:Formatted.testdisk.yaml")));
     const CallId b = f.step("saveas", "{ place: disk, as: template, file: " + (f.bundled / "disks/Formatted.testdisk.yaml") + " }");
@@ -126,19 +125,19 @@ TEST(ac17_file_form_refused_for_bundled_and_user_template) {
     CHECK_EQ(field(f.saved("Tpl.testdisk.yaml"), "template"), std::string("true"));
 }
 
-TEST(ac17_name_and_save_asks_before_replacing) {
+TEST(name_and_save_asks_before_replacing) {
     MediaFixture f(dot());
     CHECK(f.ok("media.choose", choose("disk", "bundled:Formatted.testdisk.yaml")));
     const CallId c = f.send("media.name-and-save", nameAndSave("disk", "Free"));
     CHECK(!f.done(c) && f.reason(c) == "asks: A test disk named “Free” exists. Replace it?");
-    CHECK(f.notices().empty());   // D-6: no notice, nothing changed
+    CHECK(f.notices().empty());   // no notice, nothing changed
     CHECK_EQ(field(f.saved("Free.testdisk.yaml"), "content"), std::string("free"));
     CHECK(f.ok("media.name-and-save", nameAndSave("disk", "FREE", true)));
     CHECK_EQ(field(f.saved("Free.testdisk.yaml"), "content"), std::string("f"));
-    CHECK_EQ(field(f.saved("Free.testdisk.yaml"), "name"), std::string("FREE"));   // D-4: its file, the new spelling
+    CHECK_EQ(field(f.saved("Free.testdisk.yaml"), "name"), std::string("FREE"));   // its file, the new spelling
 }
 
-TEST(ac18_place_holds_saved_medium_no_power_cycle) {
+TEST(place_holds_saved_medium_no_power_cycle) {
     MediaFixture f(dot());
     CHECK(f.ok("media.choose", choose("disk", "bundled:Formatted.testdisk.yaml")));
     f.drive()->write("work");
@@ -150,7 +149,7 @@ TEST(ac18_place_holds_saved_medium_no_power_cycle) {
     CHECK_EQ(f.drive()->bytes(), std::string("work"));
 }
 
-TEST(ac18_live_autosaved_template_not) {
+TEST(saved_live_autosaved_template_not) {
     MediaFixture f(dot());
     CHECK(f.ok("media.choose", choose("disk", "bundled:Formatted.testdisk.yaml")));
     CHECK(f.done(f.step("saveas", "{ place: disk, as: live, name: Live }")));
@@ -164,7 +163,7 @@ TEST(ac18_live_autosaved_template_not) {
     CHECK(f.place("disk")->holds->isTemplate);
 }
 
-TEST(ac19_protect_in_file_at_once_and_power_cycle) {
+TEST(protect_in_file_at_once_and_power_cycle) {
     MediaFixture f(seg());
     CHECK(f.done(f.load(header() + "slot-1: { name: Blank }\n")));
     CHECK(f.module()->write("rom data"));
@@ -178,7 +177,7 @@ TEST(ac19_protect_in_file_at_once_and_power_cycle) {
     CHECK(f.place("slot-1")->holds->writeProtected);
 }
 
-TEST(ac19_no_command_switches_it_off) {
+TEST(no_command_switches_write_protect_off) {
     MediaFixture f(seg());
     CHECK(f.done(f.load(header() + "slot-1: { name: Blank }\n")));
     CHECK(f.ok("media.name-and-save", nameAndSave("slot-1", "Locked", false, true)));
@@ -188,7 +187,7 @@ TEST(ac19_no_command_switches_it_off) {
     CHECK(f.place("slot-1")->holds->writeProtected && !f.place("slot-1")->nameAndSave);
 }
 
-TEST(ac20_started_name_asked_first_file_at_first_write) {
+TEST(started_name_asked_first_file_at_first_write) {
     MediaFixture f(dot());
     const Value start = Value::object({{"place", "disk"}, {"template", "bundled:Formatted.testdisk.yaml"}, {"name", "Free"}});
     const CallId c = f.send("media.start-new", start);
@@ -202,7 +201,7 @@ TEST(ac20_started_name_asked_first_file_at_first_write) {
     CHECK_EQ(field(f.saved("Free.testdisk.yaml"), "content"), std::string("first write"));
     CHECK_EQ(field(calcu::testing::readText(f.bundled.path() / "disks/Formatted.testdisk.yaml"), "content"), std::string("f"));
     // On a pass-through place the started medium is fitted: the card a user
-    // feeds (Fit Fresh Card, C59-7 AC-15), side 0 then side 1, and it stays fitted.
+    // feeds (Fit Fresh Card), side 0 then side 1, and it stays fitted.
     MediaFixture s;
     CHECK(s.ok("media.start-new", Value::object({{"place", "reader"}, {"template", "implicit:Fresh"}, {"name", "Recorded"}})));
     CHECK(s.place("reader")->holds && s.place("reader")->holds->name == "Recorded" && !s.reader()->side());
@@ -219,7 +218,7 @@ TEST(ac20_started_name_asked_first_file_at_first_write) {
     CHECK_EQ(field(s.saved("Recorded.testcard.yaml"), "content"), std::string("both sides"));
 }
 
-TEST(ec7_saveas_protected_without_switch_fails) {
+TEST(saveas_protected_without_switch_fails) {
     MediaFixture f(dot());
     const CallId c = f.load(header("test-dot") + "keys:\n  - test-disk: { name: Formatted }\n"
                             "  - saveas: { place: disk, as: live, protected: true, name: P }\n");
@@ -227,7 +226,7 @@ TEST(ec7_saveas_protected_without_switch_fails) {
     CHECK(!f.exists("P.testdisk.yaml"));
 }
 
-TEST(ec9_name_and_save_not_for_instance) {
+TEST(name_and_save_not_for_instance) {
     MediaFixture f(dot());
     CHECK(f.ok("media.choose", choose("disk", "saved:Free.testdisk.yaml")));
     const CallId c = f.send("media.name-and-save", nameAndSave("disk", "Other"));
@@ -235,8 +234,8 @@ TEST(ec9_name_and_save_not_for_instance) {
     CHECK(!f.exists("Other.testdisk.yaml"));
 }
 
-// LIB-7 §11 E1 (M-55; D-31): a kind words the replace question itself (C59-7 AC-15).
-TEST(ac17_kind_replace_question_words) {
+// A kind words the replace question itself (the magnetic card).
+TEST(kind_words_replace_question) {
     FixtureOptions o;
     o.prepare = [](auto& s, auto&) { s.write("Taken.testcard.yaml", card("Taken", "t").text()); };
     o.kinds = [](std::vector<KindDecl>& ks) {
@@ -254,8 +253,8 @@ TEST(ac17_kind_replace_question_words) {
     CHECK_EQ(d.reason(e), std::string("asks: A test disk named “Free” exists. Replace it?"));
 }
 
-// LIB-7 §11 E1 (M-55; D-28): a kind without Name & Save never offers it (C59-7 AC-13, AC-20).
-TEST(ac16_kind_without_name_and_save_never_offers_it) {
+// A kind without Name & Save never offers it (the magnetic card).
+TEST(kind_without_name_and_save_never_offers_it) {
     FixtureOptions o;
     o.kinds = [](std::vector<KindDecl>& ks) {
         for (KindDecl& k : ks)

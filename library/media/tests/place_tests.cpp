@@ -3,9 +3,8 @@
 #include "media/Conformance.hpp"
 #include "sessions/MachineSession.hpp"
 
-// LIB-7 L3 (design §6): the media kind (AC-6), LIB-1's conformance check
-// of the media places (LIB-1 D-1, AC-40), and a pass-through place's fitted
-// medium (AC-26's media.arm and media.feed; C59-7 AC-10 to AC-16).
+// The media kind, the conformance check of the media places, and a
+// pass-through place's fitted medium (media.arm and media.feed).
 
 using namespace calcu;
 using namespace calcu::media;
@@ -19,7 +18,7 @@ FixtureOptions onDot() {
 }
 } // namespace
 
-TEST(ac6_place_states_kind_passage_sides) {
+TEST(media_place_states_kind_passage_sides) {
     MediaFixture seg;
     const PlaceState* reader = seg.place("reader");
     CHECK(reader && reader->kind == "test-card" && reader->passThrough && (reader->sides == std::vector<int>{0, 1}));
@@ -30,7 +29,7 @@ TEST(ac6_place_states_kind_passage_sides) {
     CHECK(dot.place("drive") && dot.place("hub-disk"));   // two of the kind: by their IDs
 }
 
-TEST(ac6_insert_eject_side_content_revision) {
+TEST(media_place_insert_eject_side_content_revision) {
     MediaFixture f(onDot());
     MediaPlace& p = *f.drive();
     CHECK(!p.side() && !p.content());
@@ -44,7 +43,7 @@ TEST(ac6_insert_eject_side_content_revision) {
     CHECK(!p.insert(std::make_shared<mt::TestModuleDefinition>("other"), 0).ok);   // not the kind's content: a refusal
 }
 
-TEST(ac6_waits_for_medium) {
+TEST(media_place_waits_for_medium) {
     MediaFixture f;
     f.ok("media.refresh");
     CHECK(!f.place("reader")->waits);
@@ -52,10 +51,10 @@ TEST(ac6_waits_for_medium) {
     f.ok("media.refresh");
     CHECK(f.place("reader")->waits);
     CHECK(f.media->waitsForMedium(*f.machine()));
-    CHECK(f.session->machineSession().waitsForInput());   // LIB-3 AC-22
+    CHECK(f.session->machineSession().waitsForInput());
 }
 
-TEST(ac6_write_protect_where_the_medium_has_one) {
+TEST(write_protect_where_the_medium_has_one) {
     MediaFixture f;
     f.saveFile("Bank.testmodule.yaml", moduleFile("Bank", "m", true));
     CHECK(f.done(f.load(header() + "slot-1: { name: Bank }\n")));
@@ -68,7 +67,7 @@ TEST(ac6_write_protect_where_the_medium_has_one) {
     CHECK(!d.drive()->writeProtected());   // a disk has no switch
 }
 
-TEST(ac40_media_place_capability_per_media_place) {
+TEST(media_place_capability_per_media_place) {
     MediaFixture f(onDot());
     CHECK(f.ok("attach", Value::object({{"place", "a"}, {"peripheral", "test-hub"}})));
     CHECK(checkMediaPlaces(*f.machine(), mt::mediaTestCatalogue()).empty());
@@ -78,8 +77,8 @@ TEST(ac40_media_place_capability_per_media_place) {
     CHECK(lines.size() == 1 && lines[0] == "media place: reader of the machine has no capability");
 }
 
-// ── A pass-through place: the binding is the fitted medium (AC-26's
-// media.arm and media.feed; C59-7 AC-10 to AC-16) ──
+// ── A pass-through place: the binding is the fitted medium (media.arm and
+// media.feed) ──
 
 namespace {
 FixtureOptions withCards() {
@@ -108,12 +107,12 @@ std::optional<std::int64_t> passingValue(MediaFixture& f) {
 }
 } // namespace
 
-TEST(ac26_fitted_card_fed_by_each_side_stays_fitted) {
+TEST(fitted_card_fed_by_each_side_stays_fitted) {
     MediaFixture f(withCards());
     CHECK(f.ok("media.arm", at("saved:Prog.testcard.yaml")));
     CHECK(f.place("reader")->holds && f.place("reader")->holds->name == "Prog" && !f.place("reader")->passing);
     CHECK(!f.reader()->side() && f.reader()->inserts == 0);   // fitting changes nothing in the machine
-    for (int s : {0, 1, 0}) {   // C59-7 AC-12: either corner, again and again
+    for (int s : {0, 1, 0}) {   // either corner, again and again
         CHECK(f.ok("media.feed", side(s)));
         CHECK(f.reader()->side() == std::optional<int>(s) && f.place("reader")->passing == std::optional<int>(s));
         CHECK(f.place("reader")->holds->side == std::optional<int>(s));
@@ -126,12 +125,12 @@ TEST(ac26_fitted_card_fed_by_each_side_stays_fitted) {
     CHECK(!f.ok("media.feed", side(2)));   // the place's sides only
 }
 
-TEST(ac26_nothing_fitted_or_fed_while_a_card_passes) {
+TEST(nothing_fitted_or_fed_while_a_card_passes) {
     MediaFixture f(withCards());
     CHECK(f.ok("media.arm", at("saved:Prog.testcard.yaml")));
     CHECK(f.ok("media.feed", side(1)));
     const std::string passing = "A test card is passing through reader now.";
-    CHECK_EQ(f.refusal("media.arm", at("saved:Other.testcard.yaml")), passing);   // C59-7 AC-16
+    CHECK_EQ(f.refusal("media.arm", at("saved:Other.testcard.yaml")), passing);
     CHECK_EQ(f.refusal("media.choose", at("saved:Other.testcard.yaml")), passing);
     CHECK_EQ(f.refusal("media.start-new", Value::object({{"place", "reader"}, {"template", "implicit:Fresh"}, {"name", "New"}})),
              passing);
@@ -144,11 +143,11 @@ TEST(ac26_nothing_fitted_or_fed_while_a_card_passes) {
     CHECK_EQ(e.refusal("media.feed", side(0)), std::string("Nothing is fitted for reader."));
 }
 
-TEST(ac26_eject_takes_passing_card_out_still_fitted) {
+TEST(eject_takes_passing_card_out_still_fitted) {
     MediaFixture f(withCards());
     CHECK(f.ok("media.arm", at("saved:Prog.testcard.yaml")));
     CHECK(f.ok("media.feed", side(0)));
-    CHECK(f.ok("media.eject", Value::object({{"place", "reader"}})));   // C59-7 AC-10, AC-25: out of the reader
+    CHECK(f.ok("media.eject", Value::object({{"place", "reader"}})));   // out of the reader
     CHECK(!f.reader()->side() && f.place("reader")->holds && f.place("reader")->holds->name == "Prog");
     CHECK(f.ok("media.feed", side(1)));   // still fitted: fed again
     pass(f);
@@ -156,11 +155,11 @@ TEST(ac26_eject_takes_passing_card_out_still_fitted) {
     CHECK(!f.place("reader")->holds);
 }
 
-TEST(ac26_choose_fits_does_not_feed) {
+TEST(choose_fits_does_not_feed) {
     MediaFixture f(withCards());
     CHECK(f.ok("media.choose", at("saved:Prog.testcard.yaml")));
     CHECK(f.place("reader")->holds && f.place("reader")->holds->name == "Prog");
     CHECK(!f.reader()->side() && f.reader()->inserts == 0);
-    CHECK(f.ok("media.choose", at("saved:Other.testcard.yaml")));   // C59-7 AC-16: it takes the place of the other
+    CHECK(f.ok("media.choose", at("saved:Other.testcard.yaml")));   // it takes the place of the other
     CHECK(f.place("reader")->holds->name == "Other" && f.reader()->inserts == 0);
 }

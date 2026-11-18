@@ -386,10 +386,12 @@ TEST(lib5_ac41_break_alias_ent_refused) {
         CHECK_EQ(one("ent"), std::string("refused"));   // OQ-6
         CHECK_EQ(one("x"), std::string("x"));
         CHECK_EQ(one("nokey"), std::string("refused"));
-        // LIB-6 AC-44 (M-46): the PC-1600's ctrl, kbii and bs are no names
-        // (preset.md §5.1); `key-down` still presses them.
-        CHECK_EQ(one("kbii"), std::string("refused"));
-        CHECK_EQ(one("ctrl"), std::string("refused"));
+        // Every key ID of the model (LIB-6 AC-44, user 2026-11-18): the
+        // PC-1600's ctrl, kbii and bs; the PC-1500s have none of them.
+        const bool pc1600 = m == kPC1600;
+        CHECK_EQ(one("kbii"), std::string(pc1600 ? "kbii" : "refused"));
+        CHECK_EQ(one("CTRL"), std::string(pc1600 ? "ctrl" : "refused"));
+        CHECK_EQ(one("bs"), std::string(pc1600 ? "bs" : "refused"));
         CHECK_EQ(one("rcl"), std::string("rcl"));
     }
 }

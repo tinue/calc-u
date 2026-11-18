@@ -94,6 +94,11 @@ def test_step_rejects_line_break(tmp_path):
 # The harness commands behind wishes 1-4 and 12 of the requirements (calcu_machine.Session).
 
 
+def test_bs_is_a_key(tmp_path):
+    machine = Machine(tmp_path).key("cl").key("a b").key("bs")
+    assert machine.lcd[0].rstrip() == "A"
+
+
 def test_not_expect_raises(tmp_path):
     with pytest.raises(MachineError, match="= 42"):
         Machine(tmp_path).type(PRINT_42).not_expect("= 42").run()

@@ -87,10 +87,25 @@ TEST(lib6_ac44_floppy_and_tape_not_header_keys) {
     CHECK(has(r.error(k1600 + "cassette: { file: t.cassette.yaml }\n"), "Unknown key cassette."));
 }
 
-TEST(lib6_ac44_ctrl_kbii_bs_refused_in_key) {
+TEST(lib6_ac44_ctrl_kbii_bs_pressable_in_key) {
     PresetReadRig r;
-    for (const char* k : {"ctrl", "kbii", "bs"}) CHECK(!r.error(k1600 + "keys:\n  - key: " + k + "\n").empty());
+    // Every key ID of the model (user, 2026-11-18): the PC-1600's ctrl, kbii
+    // and bs too; the PC-1500A has none of them (C1600-1 EC-1).
+    for (const char* k : {"ctrl", "kbii", "bs", "CTRL"}) CHECK(r.ok(k1600 + "keys:\n  - key: " + k + "\n"));
+    for (const char* k : {"ctrl", "kbii", "bs"}) CHECK(!r.error(k1500a + "keys:\n  - key: " + k + "\n", "t.pc1500a").empty());
     CHECK(r.ok(k1600 + "keys:\n  - key: shift up up\n"));
+}
+
+TEST(lib6_ac44_bs_ctrl_kbii_act_on_the_pc1600) {
+    SKIP_UNLESS(roms(), "no ROMs in roms/");
+    HarnessPreset h;
+    // BS deletes the character before the cursor.
+    CHECK(done(h.load(k1600 + "keys:\n  - key: cl\n  - key: a b\n  - expect: AB\n  - key: bs\n  - not-expect: AB\n")));
+    // CTRL and KBII latch: each turns its indicator on (KBII's is `S`).
+    CHECK(done(h.load(k1600 + "keys:\n  - key: cl\n  - key: ctrl\n")));
+    CHECK(has(h.line("display-text"), "CTRL"));
+    CHECK(done(h.load(k1600 + "keys:\n  - key: cl\n  - key: kbii\n")));
+    CHECK(has(h.line("display-text"), "indicators: S "));
 }
 
 // ── P2: idle (AC-45, AC-53) ─────────────────────────────────────────────

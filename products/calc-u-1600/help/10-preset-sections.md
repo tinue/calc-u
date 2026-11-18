@@ -55,8 +55,8 @@ available on these models.
 
 **Key IDs:** a single letter, digit, or `+ - * / = ( ) .`; `enter`,
 `space`, `cl`, `mode`, `shift`, `def`, `sml`, `rcl`, `rsv`, `off`, `up`,
-`down`, `left`, `right`, `f1`–`f6`, and `on` (or `break`). `ctrl`, `kbii`
-and `bs` (PC-1600) can't be pressed from a preset.
+`down`, `left`, `right`, `f1`–`f6`, and `on` (or `break`); on the PC-1600
+also `ctrl`, `kbii` and `bs`.
 
 ## slot-N-rom
 

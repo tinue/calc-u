@@ -55,5 +55,4 @@ image = machine.card(2)
 - `lcd` gives all four rows, empty ones included.
 - Module files need `format-version: 1` (required since 0.8.0).
 - Serial port tests: `command("c1600 serial rs232c feed <file>")`, `… capture <file>`, `… report`.
-  The PC-1600 keys `bs` and `ctrl` can't be pressed by name; use
-  `command("key-down bs")`, `wait(0.1)`, `command("key-up bs")`.
+- Every key can be pressed by name, the PC-1600's `bs`, `ctrl` and `kbii` too: `key("bs")`.

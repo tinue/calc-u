@@ -1,5 +1,5 @@
 #!/bin/bash
-# M-4 / first step 13: reference runs of the 32 Calc-U-1600 examples with the
+# Reference runs of the 32 Calc-U-1600 examples with the
 # CLIs of v0.8.1 (= b4ea8c8 + docs). Each run in a fresh copy of examples/.
 set -u
 SRC=$1; OUT=$2

@@ -24,18 +24,18 @@ Per example `<folder>_<file>`:
 
 - `.paper` (the 14 examples with a plotter): the paper as plot points,
   one per line (`x y color newStroke`) after a header per plotter. Added
-  on 2026-11-14 (M-8) from the code as imported (the 0.8.1 code in
+  from the code as imported (the 0.8.1 code in
   `products/calc-u-1600`), before any core change, with the imported CLIs
   and `CALCU_PAPER_OUT=<file>` (added to them for this,
   `tools/CliCommon.hpp`), each example again in a fresh copy of
-  `examples/`. They are turned into `paper` replies once (LIB-8 AC-39).
+  `examples/`. They are turned into `paper` replies once.
 - `.<plotter>.paper-marks` (`CE-150` or `CE-1600P`, one per plotter block
   of each `.paper` file): the plot as the reply of the harness command
-  `paper marks` (LIB-8 AC-23, AC-39), written once on 2026-11-15 (M-39) by
+  `paper marks`, written once by
   `tests/paper_replies_tests.cpp` with `CALCU1600_PAPER_REPLIES=1`: a pen
   stroke from each point with `newStroke` 1, in the pen's colour, its
   positions moved by the plotter's left margin (66.9474 or 101.0526 units
   of 190/1920 mm); the reach is the range of the points' y (the files hold
-  no feeds, LIB-8 design D-14). The Frequent case of that file checks that
-  they equal what the converter gives; C1600-4 AC-16 (M-46) compares new
-  runs with them.
+  no feeds). The Frequent case of that file checks that
+  they equal what the converter gives; `CalcU1600ExampleReferences`
+  compares new runs with them.

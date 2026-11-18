@@ -1,7 +1,8 @@
 # Calc-U file formats
 
-One specification of the preset and media formats of Calc-U-59 and
-Calc-U-1600. It says **what** each file holds and means, including the
+The formal specifications of Calc-U-59 and Calc-U-1600: the preset and
+media formats, and the interfaces between the products and the tools,
+frontends and pages that use them. They say **what** each file holds and means, including the
 runtime behaviour that is part of that meaning (speed, waiting). It does
 not say how a product implements a format, or whether it implements every
 part of it: which keywords a product's loader carries out is decided per
@@ -19,6 +20,15 @@ Terms follow `docs/GLOSSARY.md`.
 | [modules.md](modules.md) | The modules: module definition (memory module) and Solid State ROM module |
 | [cue-card.md](cue-card.md) | The cue card block, shared by presets, magnetic cards, Solid State ROM modules and the constant memory file |
 | [bundle.md](bundle.md) | The bundle file: what a product bundles from `examples/` and how the bundled presets are shown |
+| [opening.md](opening.md) | How a file handed to a product is classified: the order of the checks, the file kinds, the refusals |
+| [help.md](help.md) | The help sources, their manifests, the help asset `<Product>-help.zip` and its `toc.json`, the help tool |
+| [web-embed.md](web-embed.md) | The Web frontend for pages that embed it: `calc.js`, the components and props, `MANIFEST.json`, the worker messages, storage and mounts |
+| [harness.md](harness.md) | The harness `calcu`: replies, JSON, options, exit codes, the common commands, serve and attach |
+| [session-protocol.md](session-protocol.md) | The messages between a session and its listeners: kinds, order, the library's topics, commands and requests |
+
+The product commands of the harness and the DAP server are specified next
+to their code: `products/calc-u-59/reference/Harness.md`,
+`products/calc-u-1600/docs/developer/Harness.md` and `DAP.md`.
 
 ## Formats at a glance
 

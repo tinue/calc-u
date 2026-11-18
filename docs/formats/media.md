@@ -31,7 +31,10 @@ is stored:
 - The magnetic card has one template, the **fresh** card (§1). It is
   always there and has no file.
 - A medium is addressed by its name tag or by its file
-  ([README.md §3](README.md#3-addressing-a-resource)).
+  ([README.md §3](README.md#3-addressing-a-resource)). A `name:`
+  reference finds bundled media first, then the save folder. Of two
+  files in the save folder with the same name tag, the one whose file
+  name the name gives wins, else the first by file name.
 - **Every file a product writes for a medium** starts with a comment
   line that names the product and the kind (`# Calc-U-59 magnetic card`,
   `# Calc-U-1600 CE-1600F floppy disk image`, `# Calc-U-1600 cassette`,
@@ -151,7 +154,10 @@ card, from the implicit template.
 A disk for the PC-1600's CE-1600F drive, with two sides, 0 and 1, used
 one at a time. The file holds the raw bytes of both sides and nothing
 else. It knows nothing about files: the filesystem inside a side is
-Sharp's, which the CE-1600P ROM reads as on real hardware.
+Sharp's, which the CE-1600P ROM reads as on real hardware. The
+filesystem inside a side is described in the research repository:
+[PC-1600-Filesystem.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-Filesystem.md) §5 and
+[PC-1600-Peripherals-Hardware.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-Peripherals-Hardware.md) §2.
 
 ### 2.1 Keys
 
@@ -178,6 +184,9 @@ sides:
       $0000: 00...
 ```
 
+Side 1 of the example is unformatted; side 0 has just been through
+`INIT`.
+
 | Key | Required | Value |
 |---|---|---|
 | `format` | yes | `ce1600f-floppy` |
@@ -185,11 +194,16 @@ sides:
 | `disk-name` | yes | The name tag; non-empty. Writers double-quote it, so it must not contain `"` or a newline |
 | `description` | no | One line, the picker's tooltip. Written double-quoted, or single-quoted when it holds a `"`. Name & Save and autosave keep it |
 | `template` | no | `true`: a template. Written only by a preset's `saveas:` as a template; Name & Save never writes it |
-| `saved` | no | ISO-8601 UTC time of the last write. Informational |
+| `saved` | no | ISO-8601 UTC time of the last write, `YYYY-MM-DDTHH:MM:SSZ`. Informational |
 | `sides` | yes | Exactly the keys `0` and `1` |
 | `sides.0`, `sides.1` | yes | Exactly `encoding` and `bytes` |
 | `…encoding` | yes | `addressed-hex` |
-| `…bytes` | yes | Covers exactly `0x10000` bytes |
+| `…bytes` | yes | A `\|` block scalar in `addressed-hex` covering exactly `0x10000` bytes |
+
+A file of version 1 is listed as outdated, with a hint, and is not
+used. To upgrade it by hand, set `format-version: 2` and rename the
+keys `a:` and `b:` under `sides:` to `0:` and `1:`; the bytes stay as
+they are ([preset.md §9.4](preset.md#94-calc-u-1600-floppy-disk-version-1)).
 
 ### 2.2 Sides and byte order
 
@@ -211,10 +225,14 @@ sides:
   `sides`. Indent 2 spaces per level; `addressed-hex` in its canonical
   form ([README.md §1.1](README.md#11-byte-blocks)).
 - `saved` is set on every write; the file is always rewritten whole.
-- A product may keep an inserted disk in memory and rewrite the file
-  after the machine writes to it. A change another tool makes to the file
-  while the disk is inserted can then be lost; the disk is ejected before
-  its file is edited.
+- Calc-U-1600 keeps an inserted disk in memory and rewrites the whole
+  file about half a second after the PC-1600 writes to it (under the
+  harness: at the end of the command). A change another tool makes to
+  the file while the disk is inserted is lost at the next such write:
+  eject the disk (or quit the product) before editing its file, and
+  insert it again afterwards.
+- The reader and writer of Calc-U-1600:
+  `products/calc-u-1600/core/Connector/FloppyImageFile.hpp`.
 
 ---
 

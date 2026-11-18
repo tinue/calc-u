@@ -1,4 +1,4 @@
-"""LIB-16 L1: the asset and its toc.json (AC-6)."""
+"""The asset and its toc.json."""
 
 import json
 import unittest
@@ -14,7 +14,7 @@ class AssetTests(HelpTestCase):
         self.assertPasses(run)
         return out / "Demo-Product-help.zip"
 
-    def test_ac6_zip_holds_files_pictures_downloads_toc(self):
+    def test_zip_holds_files_pictures_downloads_toc(self):
         with zipfile.ZipFile(self.build()) as z:
             names = z.namelist()
         self.assertEqual(names[0], "toc.json")
@@ -24,23 +24,11 @@ class AssetTests(HelpTestCase):
         self.assertNotIn("product/help.yaml", names)
         self.assertNotIn("product/settings-keys.txt", names)
 
-    def test_ac17_follows_line_kept_in_the_source_left_out_of_the_asset(self):
-        source = (self.root / "library/help/02-getting-started.md").read_text(encoding="utf-8")
-        self.assertTrue(source.startswith("<!-- follows:"))
-        with zipfile.ZipFile(self.build()) as z:
-            shared = [n for n in z.namelist() if n.startswith("shared/") and n.endswith(".md")]
-            self.assertTrue(shared)
-            for name in shared:
-                text = z.read(name).decode("utf-8")
-                self.assertNotIn("follows:", text, name)
-                self.assertFalse(text.startswith("\n"), name)
-            self.assertTrue(z.read("shared/02-getting-started.md").decode("utf-8").startswith("# "))
-
-    def test_ac6_toc_lists_chapters_files_shared_product_version(self):
+    def test_toc_lists_chapters_files_shared_product_version(self):
         with zipfile.ZipFile(self.build()) as z:
             toc = json.loads(z.read("toc.json"))
         self.assertEqual(toc["product"], "Demo-Product")
-        self.assertEqual(toc["version"], "1.2.3")  # from release.yaml's cmake file (D-9)
+        self.assertEqual(toc["version"], "1.2.3")  # from release.yaml's cmake file
         self.assertEqual(toc["format-version"], 1)
         self.assertEqual([c["number"] for c in toc["chapters"]], list(range(1, 11)))
         two = toc["chapters"][1]
@@ -50,11 +38,11 @@ class AssetTests(HelpTestCase):
         nine = toc["chapters"][8]["files"]
         self.assertEqual([f["path"] for f in nine], ["product/09-product-topics.md", "product/09-models.md"])
 
-    def test_ac6_version_option_wins(self):
+    def test_version_option_wins(self):
         with zipfile.ZipFile(self.build("--version", "9.9.9")) as z:
             self.assertEqual(json.loads(z.read("toc.json"))["version"], "9.9.9")
 
-    def test_d9_version_of_the_xcode_preset(self):
+    def test_version_of_the_xcode_preset(self):
         # As ReleaseIt reads it: the first MARKETING_VERSION is the app's; the
         # test targets after it sit at 1.0.
         self.write(self.root / "products/demo/release.yaml",
@@ -66,7 +54,7 @@ class AssetTests(HelpTestCase):
         with zipfile.ZipFile(self.build()) as z:
             self.assertEqual(json.loads(z.read("toc.json"))["version"], "2.4.0")
 
-    def test_d9_version_of_the_cargo_and_regex_presets_and_an_unknown_one(self):
+    def test_version_of_the_cargo_and_regex_presets_and_an_unknown_one(self):
         release = self.root / "products/demo/release.yaml"
         self.write(release, "version:\n  preset: cargo\n")
         self.write(self.root / "products/demo/Cargo.toml", '[package]\nname = "demo"\nversion = "0.3.1"\n')
@@ -81,17 +69,17 @@ class AssetTests(HelpTestCase):
         self.assertEqual(run.status, 1)
         self.assertIn("the version preset 'gradle' is not one ReleaseIt has", run.err)
 
-    def test_ac6_two_builds_same_bytes(self):
+    def test_two_builds_same_bytes(self):
         first = self.build().read_bytes()
         second = self.build().read_bytes()
         self.assertEqual(first, second)
 
-    def test_ac6_product_by_name_or_short_form(self):
+    def test_product_by_name_or_short_form(self):
         for name in ("Demo-Product", "demo-product", "77", "demo"):
             self.assertPasses(self.tool("check", name))
         self.assertEqual(self.tool("check", "nothing").status, 2)
 
-    def test_ac6_check_writes_no_asset(self):
+    def test_check_writes_no_asset(self):
         self.assertPasses(self.tool("check", "demo"))
         self.assertFalse((self.root / "build").exists())
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-# The one CMake project of the repository (ADR 0003): the library, the
+# The one CMake project of the repository: the library, the
 # cores, app layers, tests, tools and Qt6 frontends of every product. Local
 # builds, IDEs, the harness and CI configure this file; the product
 # directories are its subdirectories and do not configure on their own.
@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.21)
 #   cmake -S . -B build/all -G Ninja                         # everything, Qt6 when found
 #   cmake -S . -B build/tests -G Ninja -DCALCU_FRONTEND_QT=OFF  # cores and tests, no Qt
 #   ctest --test-dir build/tests/products/calc-u-59          # one product's tests
-#   ctest --test-dir build/tests -L frequent                 # one test group (ADR 0031)
+#   ctest --test-dir build/tests -L frequent                 # one test group
 #   emcmake cmake -S . -B build/web -G Ninja -DCMAKE_BUILD_TYPE=Release  # the Web engines
 #
 # Options:
@@ -17,14 +17,14 @@ cmake_minimum_required(VERSION 3.21)
 #   CALCU_FRONTEND_QT   the Qt6 desktop apps; without it nothing needs Qt
 #   CALCU_TESTS         the products' test suites; the release packaging in
 #                       CI turns them off (build/release, the Qt6 apps only)
-#   CALCU_TESTS_LONGER      also the Longer group's tests (ADR 0031): Playwright,
+#   CALCU_TESTS_LONGER      also the Longer group's tests: Playwright,
 #                           the WASM smoke, XCUITest, screenshot scenarios, DAP
 #   CALCU_TESTS_CHECKPOINT  also the Checkpoint group's tests: the screenshot
 #                           sets and the ten-minute pacing runs
 #   CALCU_TESTS_DEBUG   the cores and test programs at -O0 in a Debug tree
 #                       (else -O1: calcu_debug_o1 below), for stepping through
 #
-# Test groups (ADR 0031): every CTest entry carries the label frequent,
+# Test groups: every CTest entry carries the label frequent,
 # longer or checkpoint. Without the two options a tree has only the
 # Frequent group, so a plain ctest is the Frequent run. docs/test-groups.md
 # lists every test and its group.
@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.21)
 # Under the Emscripten toolchain (emcmake) each product defines only its
 # Web engine (calcu59_web, calcu_web) and Calc-U-1600's wasm_smoke check;
 # frontends/web/build.sh of each product builds it in build/web and puts
-# dist/ together. The Swift frontend's XCFramework (ADR 0013):
+# dist/ together. The Swift frontend's XCFramework:
 # products/calc-u-59/frontends/swift/build_xcframework.sh configures this
 # file for macOS, iOS and the iOS simulator in build/xcframework-59; the
 # Xcode project runs it before every build.
@@ -53,8 +53,8 @@ option(CALCU_PRODUCT_59 "Build Calc-U-59" ON)
 option(CALCU_PRODUCT_1600 "Build Calc-U-1600" ON)
 option(CALCU_FRONTEND_QT "Build the Qt6 desktop apps" ON)
 option(CALCU_TESTS "Build the products' test suites" ON)
-option(CALCU_TESTS_LONGER "Also register the Longer group's tests (ADR 0031)" OFF)
-option(CALCU_TESTS_CHECKPOINT "Also register the Checkpoint group's tests (ADR 0031)" OFF)
+option(CALCU_TESTS_LONGER "Also register the Longer group's tests" OFF)
+option(CALCU_TESTS_CHECKPOINT "Also register the Checkpoint group's tests" OFF)
 
 option(CALCU_TESTS_DEBUG "Build the cores and the test programs at -O0 in Debug, for stepping through" OFF)
 
@@ -63,7 +63,7 @@ enable_testing()
 
 # calcu_add_test(<name> <group> COMMAND <command…> [WORKING_DIRECTORY <dir>]
 #                [PROPERTIES <property> <value> …])
-# A CTest entry in its test group (ADR 0031): <group> is frequent, longer
+# A CTest entry in its test group: <group> is frequent, longer
 # or checkpoint, and becomes its label; a Longer or Checkpoint entry is
 # registered only with CALCU_TESTS_LONGER / CALCU_TESTS_CHECKPOINT. It runs
 # in the calling directory's source folder (the product directory) unless
@@ -84,9 +84,9 @@ function(calcu_add_test name group)
 endfunction()
 
 # calcu_add_help_tests(<prefix> <product>): <prefix>HelpCheck and
-# <prefix>HelpBuild, Frequent (LIB-16): tools/help checks the product's help
-# and builds its asset into the calling directory's tree (help/; the test
-# suite builds the asset, AC-8). Registered when Python 3 is found.
+# <prefix>HelpBuild, Frequent: tools/help checks the product's help and
+# builds its asset into the calling directory's tree (help/), so the test
+# suite builds the asset too. Registered when Python 3 is found.
 function(calcu_add_help_tests prefix product)
   if(Python3_FOUND)
     set(help ${Python3_EXECUTABLE} -I -B ${CMAKE_SOURCE_DIR}/tools/help)

@@ -1,5 +1,3 @@
-<!-- follows: LIB-7, LIB-13 -->
-
 # Media
 
 A **medium** holds your data and can be named and saved: a memory

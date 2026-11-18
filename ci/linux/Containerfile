@@ -1,5 +1,5 @@
 # The Linux jobs of .github/workflows/calc-u-59.yml and calc-u-1600.yml
-# in a container, to run before dispatching CI (ADR 0039; ci/linux/run.sh).
+# in a container, to run before dispatching CI (ci/linux/run.sh).
 # Ubuntu 24.04 as on the runners: GCC 13.3, Qt 6.4 from apt.
 #
 # Mirrors, and changes with:

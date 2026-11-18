@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""The help tool (LIB-16 AC-6; design §2.1).
+"""The help tool (docs/formats/help.md).
 
   tools/help check <product>                         the checks, no asset
   tools/help build <product> [--version V] [--out D] the checks, then <Product>-help.zip
 
 <product> is the product's name or short form, any case (Calc-U-1600,
 calc-u-1600, 1600). Failures name the file and the line; warnings (the
-glossary's "Avoid" words, AC-5) leave the exit status alone. Exit status:
+glossary's "Avoid" words) leave the exit status alone. Exit status:
 0 without failures, 1 with, 2 for a usage error. Python 3, standard
 library only.
 """
@@ -21,7 +21,7 @@ from helptool import asset, checks, manifest  # noqa: E402
 
 
 def main(argv):
-    parser = argparse.ArgumentParser(prog="tools/help", description="Builds and checks a product's help (LIB-16).")
+    parser = argparse.ArgumentParser(prog="tools/help", description="Builds and checks a product's help.")
     parser.add_argument("command", choices=["build", "check"])
     parser.add_argument("product")
     parser.add_argument("--version", help="the asset's version (default: the product's, as ReleaseIt reads it)")

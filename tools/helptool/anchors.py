@@ -1,10 +1,11 @@
-"""The anchor of a Markdown heading by GitHub's rule (LIB-16 AC-15, design §3.4).
+"""The anchor of a Markdown heading by GitHub's rule (docs/formats/help.md §1.5).
 
 The heading's text without Markdown marks, lower case; every character
 that is not a letter, a digit, a space, a hyphen or an underscore
 removed; each space a hyphen. A second heading with the same anchor in
 one file gets `-1`, a third `-2`. The cases are
-library/help/anchor_cases.txt, which LIB-19's renderer tests against too.
+library/help/anchor_cases.txt, which the help site's renderer tests
+against too.
 """
 
 import re

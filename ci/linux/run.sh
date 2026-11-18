@@ -1,6 +1,6 @@
 #!/bin/sh
 # Runs the Linux jobs of both CI workflows locally in Podman, natively on
-# arm64, before dispatching CI (ADR 0039). GCC 13 on Ubuntu 24.04 as on the
+# arm64, before dispatching CI. GCC 13 on Ubuntu 24.04 as on the
 # runners; x86_64, Windows, macOS packaging and the AppImages stay CI-only.
 #
 #   ci/linux/run.sh                 library core-59 core-1600 qt-59 qt-1600 help-59 help-1600
@@ -68,7 +68,7 @@ ignored() {
 # The copy compares contents (--checksum) and gives a copied file the time
 # of the copy (--no-times): with the source's times a file changed after an
 # earlier run's build could look older than its object, and ninja would keep
-# the stale object (2026-11-16: a link error and a crash of CoreTests that a
+# the stale object (seen once: a link error and a crash of CoreTests that a
 # fresh volume did not have).
 # run_in <target> <job>...: the copy, then the jobs, in that target's image.
 # A web job gets its own build/web per product, since each product's

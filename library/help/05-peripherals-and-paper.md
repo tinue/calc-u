@@ -1,5 +1,3 @@
-<!-- follows: LIB-2, LIB-8 -->
-
 # Peripherals and paper
 
 A **peripheral** is hardware you plug into the machine: a printer, a

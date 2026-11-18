@@ -1,7 +1,7 @@
-# Headings and their anchors by GitHub's rule (LIB-16 AC-15, design §3.4):
+# Headings and their anchors by GitHub's rule (docs/formats/help.md §1.5):
 # one heading, a tab, its anchor. A blank line starts a new file, so a
 # repeated heading counts within its group. tools/helptool's tests and
-# LIB-19's renderer (calc-u-site) test against this list.
+# the help site's renderer (calc-u-site) test against this list.
 
 Getting started	getting-started
 Name & Save	name--save

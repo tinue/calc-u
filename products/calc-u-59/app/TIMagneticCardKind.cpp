@@ -6,6 +6,7 @@
 #include "formats/Flow.hpp"
 #include "formats/Yaml.hpp"
 #include "machine/Names.hpp"
+#include "media/Header.hpp"
 #include <cstdio>
 #include <sstream>
 
@@ -26,8 +27,6 @@ std::string hex2(unsigned v) {
     std::snprintf(b, sizeof b, "0x%02X", v & 0xFFu);
     return b;
 }
-
-std::string quoted(const std::string& v) { return v.find('"') == std::string::npos ? "\"" + v + "\"" : "'" + v + "'"; }
 
 // A byte value written `0x1C` (or a decimal number), any case (README.md §1, §4).
 std::optional<int> byteValue(const std::string& t) {
@@ -226,10 +225,8 @@ public:
 
 std::string writeMagneticCardFile(const TIMagneticCardData& card, const std::string& name, const std::string& description,
                                   bool isTemplate, const std::optional<CueCardContent>& cueCard, const std::string& savedAt) {
-    std::string out = "# Calc-U-59 magnetic card\nformat: ti59-magnetic-card\nformat-version: 3\ncard-name: " + quoted(name) + "\n";
-    if (!description.empty()) out += "description: " + quoted(description) + "\n";
-    if (isTemplate) out += "template: true\n";
-    if (!savedAt.empty()) out += "saved: " + savedAt + "\n";
+    std::string out = calcu::media::headerText(
+        {"Calc-U-59 magnetic card", "ti59-magnetic-card", 3, "card-name", name, description, isTemplate, savedAt});
     CueCardContent cue;
     if (cueCard) cue = *cueCard;
     else cue.title = name;   // media.md §1.4: a card saved without a cue card

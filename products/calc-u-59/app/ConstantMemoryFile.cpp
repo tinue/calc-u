@@ -4,6 +4,7 @@
 #include "Keycodes.hpp"
 #include "formats/Flow.hpp"
 #include "formats/Yaml.hpp"
+#include "media/Header.hpp"
 #include <cstdio>
 #include <sstream>
 
@@ -86,8 +87,11 @@ std::variant<ConstantMemoryContents, ConstantMemoryProblem> readConstantMemoryFi
 }
 
 std::string writeConstantMemoryFile(const ConstantMemoryContents& c, const std::string& savedAt) {
-    std::string out = "# Calc-U-59 TI-58C constant memory\nformat: ti58c-constant-memory\nformat-version: 1\n";
-    if (!savedAt.empty()) out += "saved: " + savedAt + "\n";
+    calcu::media::Header header;
+    header.comment = "Calc-U-59 TI-58C constant memory";
+    header.format = "ti58c-constant-memory";
+    header.savedAt = savedAt;
+    std::string out = calcu::media::headerText(header);
     if (c.cueCard) out += "cue-card:\n" + writeStandAloneCueCard(*c.cueCard, 2);
     out += "ram:\n  encoding: register-hex\n";
     std::string rows;

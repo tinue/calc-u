@@ -4,8 +4,7 @@
 
 class QApplication;
 
-// The measurement of the products' `--pacing-probe <s>` (LIB-17 AC-19,
-// AC-22; LIB-14 design §10.7; Part E simplification E-4): an attach client
+// The measurement of the products' `--pacing-probe <s>`: an attach client
 // in the app's own process (AttachLineClient). Once the start is over (the
 // bare `wait`), `ticks` through attach, `s` seconds of wall time, `ticks`
 // again. What is printed, the bound and the exit code are the product's

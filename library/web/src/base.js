@@ -1,5 +1,4 @@
-// The directory calc.js was loaded from (LIB-15 spec AC-13; both products'
-// src/engine.js today): the worker, its WASM, the bundled files and the
+// The directory calc.js was loaded from: the worker, its WASM, the bundled files and the
 // artwork sit beside it, wherever dist/ is hosted. Captured while the
 // script runs (document.currentScript is null afterwards); without one -- a
 // server-side prerender -- relative to the page, which a render never uses.

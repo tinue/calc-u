@@ -59,7 +59,7 @@ void paintMarks(QPainter& p, const PaperDescription& d, const std::vector<Mark>&
             hi = std::max(hi, q.y);
         }
         if (hi + h < viewTop || lo - h > viewBottom) continue;
-        // D-12: the scaled width, at least one point.
+        // The scaled width, at least one point.
         QPen pen(QColor(st.colour.r, st.colour.g, st.colour.b));
         pen.setWidthF(std::max(1.0, static_cast<double>(d.strokeWidth) * s.pointsPerCoord));
         pen.setCapStyle(Qt::RoundCap);

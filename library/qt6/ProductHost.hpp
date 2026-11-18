@@ -9,14 +9,13 @@
 #include "sessions/HostServices.hpp"
 #include "sessions/LibraryTopics.hpp"
 
-// A Qt6 frontend's product session and the SessionHost over it (Part E
-// simplification E-2): the common half of the products' controllers. Made
-// from the product's session (shell::makeHostSession, with LIB-14's
-// SettingsPart); start() starts the host's timer, then sends LIB-18's
-// `start`; the end stops the timer and closes the session (the parts' last
-// duties: what a medium still has to write, LIB-7 AC-13; LIB-3 `closing`)
-// before the host and the session go, so no message goes out after it. On
-// the GUI thread.
+// A Qt6 frontend's product session and the SessionHost over it: the common
+// half of the products' controllers. Made from the product's session
+// (shell::makeHostSession, with the shell's SettingsPart); start() starts the
+// host's timer, then sends `start`; the end stops the timer and closes the
+// session (the parts' closing(): what a medium still has to write) before the
+// host and the session go, so no message goes out after it. On the GUI
+// thread.
 
 namespace calcu::qt6 {
 
@@ -46,7 +45,7 @@ public:
         host_->send(sessions::kStartCommand);
     }
 
-    // A request, answered at once (requests do not wait, LIB-3); an empty
+    // A request, answered at once (requests do not wait); an empty
     // reply if none came.
     sessions::ReplyMessage ask(const sessions::RequestName& name, sessions::Value args = {}) {
         auto got = std::make_shared<std::optional<sessions::ReplyMessage>>();

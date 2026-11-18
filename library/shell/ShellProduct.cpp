@@ -40,7 +40,7 @@ std::vector<std::string> checkShellProduct(const ShellProduct& p, const std::vec
     for (const auto& cs : controlStates)
         for (auto& problem : checkShellProduct(p, cs))
             if (std::find(problems.begin(), problems.end(), problem) == problems.end()) problems.push_back(std::move(problem));
-    for (const auto& item : p.items) {   // M17: a media place no model lists
+    for (const auto& item : p.items) {   // a media place no model lists
         if (item.mediaPlace.empty()) continue;
         bool listed = false;
         for (const auto& cs : controlStates)

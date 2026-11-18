@@ -8,12 +8,11 @@
 
 class QWidget;
 
-// The pointer on a product's faceplate (LIB-14 design §3.7, §3.8; spec AC-24,
-// AC-43, EC-8): an event filter on the faceplate widget that hands mouse and
-// touch to PointerTracker and sends what follows (screen-key-down/up,
-// speed). Key events are not touched, so the window's shortcuts reach their
-// actions first (AC-4). The product draws pressed keys from live input
-// (H6).
+// The pointer on a product's faceplate: an event filter on the faceplate
+// widget that hands mouse and touch to PointerTracker and sends what follows
+// (screen-key-down/up, speed). Key events are not touched, so the window's
+// shortcuts reach their actions first. The product draws pressed keys from
+// live input.
 
 namespace calcu::qt6 {
 
@@ -25,11 +24,10 @@ public:
     static constexpr std::int64_t kMousePointer = 0;   // touch points: their ID + 1
 
     FaceplateInput(QWidget& faceplate, SessionHost&, shell::HitMap, std::function<double()> scale);
-    // LIB-14 Part E (design §10.3.4, D-44): the hit map's (0, 0) in the
-    // widget (none: the widget's corner), and a press the product takes
-    // first, in hit-map units: that press is not consumed (the filter
-    // returns false), and the moves and the release of that pointer pass
-    // through to the product's widget as well.
+    // The hit map's (0, 0) in the widget (none: the widget's corner), and a
+    // press the product takes first, in hit-map units: that press is not
+    // consumed (the filter returns false), and the moves and the release of
+    // that pointer pass through to the product's widget as well.
     FaceplateInput(QWidget& faceplate, SessionHost&, shell::HitMap, std::function<double()> scale,
                    std::function<QPointF()> origin, std::function<bool(double x, double y)> productFirst);
     void releaseAll();   // a model switch, the window losing focus

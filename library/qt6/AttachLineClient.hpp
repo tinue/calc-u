@@ -11,10 +11,9 @@ class QTcpSocket;
 
 namespace calcu::qt6 {
 
-// A line client of harness attach (LIB-14 AC-44, D.6; since M-57 the Qt6
-// component set's, for both products' in-process clients: Calc-U-1600's
-// screenshot scenarios and both pacing probes) on 127.0.0.1, in the
-// app's own process: the serve protocol of LIB-11 §3.9 -- one command per
+// A line client of harness attach (for both products' in-process clients:
+// Calc-U-1600's screenshot scenarios and both pacing probes) on 127.0.0.1,
+// in the app's own process: the harness's serve protocol -- one command per
 // line, one reply per command (`done`, `done <n>` and n lines,
 // `refused: <reason>`); the attach's message lines are skipped. Asynchronous
 // on the GUI thread's event loop, so the app's host calls go on while a

@@ -1,5 +1,5 @@
-// LIB-14 L6 (design §6): Help and About in the model (spec AC-20, AC-21);
-// the drawn dialog, the log and EC-6 are the Qt6 cases of
+// Help and About in the model; the drawn dialog, the log and a help address
+// that cannot be opened are the Qt6 cases of
 // library/qt6/tests/shell_widgets_tests.cpp.
 #include "TestHarness.hpp"
 #include "TestShellPart.hpp"
@@ -11,7 +11,7 @@ using namespace calcu;
 using namespace calcu::shell;
 namespace st = calcu::shell::test;
 
-TEST(ac20_help_opens_product_address) {
+TEST(help_opens_product_address) {
     const auto p = st::product();
     const auto ms = menus(st::inputs(), p, Traits{});
     const MenuItem* help = findItem(ms, actions::kHelp);
@@ -19,11 +19,11 @@ TEST(ac20_help_opens_product_address) {
     CHECK_EQ(help->label, std::string("Test-Product Help"));
     CHECK(help->command.value.empty());   // a shell action: it opens p.helpUrl
     CHECK_EQ(p.helpUrl, std::string("https://calc-u.org/test/"));
-    // Help works also when the product could not start (AC-19).
+    // Help works also when the product could not start.
     CHECK(findItem(menus(ShellInputs{}, p, Traits{}), actions::kHelp) != nullptr);
 }
 
-TEST(ac21_about_shows_product_texts) {
+TEST(about_shows_product_texts) {
     auto p = st::product();
     AboutModel a = about(p);
     CHECK_EQ(a.title, std::string("About Test-Product"));

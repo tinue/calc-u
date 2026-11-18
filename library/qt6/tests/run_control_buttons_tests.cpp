@@ -1,8 +1,7 @@
-// LIB-10 L16 (design §6, §3.10): the run-control buttons of the Qt6
-// component set on the offscreen platform (AC-18): the rule's table, and a
-// real app session with LIB-10's DebuggerPart on test-seg with the test
-// processor (TestDebugParts.hpp) through a listener, as a frontend hosts
-// them.
+// The run-control buttons of the Qt6 component set on the offscreen platform:
+// the rule's table, and a real app session with the debugger's DebuggerPart
+// on test-seg with the test processor (TestDebugParts.hpp) through a
+// listener, as a frontend hosts them.
 #include "ButtonCases.hpp"
 #include "TestDebugParts.hpp"
 #include "TestHarness.hpp"
@@ -63,7 +62,7 @@ void wait(int ms) {
 
 } // namespace
 
-TEST(ac18_qt6_buttons_follow_run_state_and_send_commands) {
+TEST(qt6_run_control_buttons_follow_run_state_and_send_commands) {
     // The rule's table (the same cases as the C++ rule and the React component).
     for (const auto& c : readButtonCases().cases) {
         RunControlButtons w(c.level);

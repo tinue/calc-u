@@ -1,13 +1,13 @@
-// ShellModal -- the one modal frame of the React set (LIB-14 design §2.3):
+// ShellModal -- the one modal frame of the React set:
 // a dialog over the component, which takes the pointer while it is open
-// (a notice must be closed before the window can be used again, AC-17); and
+// (a notice must be closed before the window can be used again); and
 // ShellDialogs, which shows the settings dialog, About, the notice and
-// "Loading…" of useCalcuShell (§3.10).
+// "Loading…" of useCalcuShell.
 //
 //   <ShellModal name="settings-dialog" title="Settings" onClose={fn}>…</ShellModal>
 //   <ShellDialogs shell={s} savedMedia={Component?} />
 //
-// savedMedia: LIB-7's saved media dialog (CalcuSavedMediaDialog), shown for
+// savedMedia: the library's saved media dialog (CalcuSavedMediaDialog), shown for
 // File ▸ Saved Media… with {shell: s.shell, onClose}.
 
 function ShellModal({ name, title, onClose, children, buttons }) {

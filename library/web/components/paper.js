@@ -1,7 +1,7 @@
-// The page side of paper output (LIB-8 design §2, §3.5, §3.7): the papers of
+// The page side of paper output: the papers of
 // a product from its topics, kept whole on the page, and the drawing of
 // marks on a canvas. Classic script in the closure of a product's calc.js
-// (LIB-14 D-17: every top-level name starts with calcu / Calcu); no React
+// (every top-level name starts with calcu / Calcu); no React
 // here, so that a test could load it alone.
 //
 //   calcuPaperStore(shell) → the store of one shell (made once per shell):
@@ -15,13 +15,13 @@
 //     whose origin is the paper's left edge at y = top; `scale` is context
 //     units per Coord. A dot is a disc of its diameter in the grey of its
 //     darkness; a stroke a polyline of its width (at least one unit of the
-//     context, D-12) with round ends and joins, in its colour.
+//     context) with round ends and joins, in its colour.
 //
 // Coordinates arrive as integers in ten-thousandths of the printer's unit
 // (paper/PaperTopics.hpp). A paper's marks are kept as the topic sends them:
 // a run of dots as one flat array [x, y, darkness, …], a stroke as
 // {colour, path: [x, y, …]}; a message whose first mark continues a stroke
-// appends its positions to the last stroke (AC-6).
+// appends its positions to the last stroke.
 
 const CALCU_PAPER_STORES = typeof WeakMap !== "undefined" ? new WeakMap() : null;
 

@@ -12,15 +12,15 @@
 #include "settings/SettingsFile.hpp"
 #include "shell/HostSession.hpp"
 
-// LIB-9 on a Qt6 host (Part E simplification E-2): the host's folders and
+// Settings and paths on a Qt6 host: the host's folders and
 // the product's settings file, written once for both products. Home is
 // QDir::homePath(); the settings base comes from settings::settingsBaseFor
-// with the platform's environment (AC-2), on macOS from the folder the
+// with the platform's environment, on macOS from the folder the
 // product passes (empty: ~/Library/Application Support). A run of its own
-// (tests, screenshot runs) names its folders before the first use (AC-18).
-// The settings file is opened once, at the first use (AC-5, AC-6); a file
-// that cannot be read goes to the log as "Settings: <problem>" (EC-6) and
-// the app runs on the defaults. The places of LIB-9 are over it. Each
+// (tests, screenshot runs) names its folders before the first use.
+// The settings file is opened once, at the first use; a file that cannot
+// be read goes to the log as "Settings: <problem>" and the app runs on the
+// defaults. The library's settings places are over it. Each
 // product keeps one HostFolders for its run (its AppPaths); on the GUI
 // thread.
 

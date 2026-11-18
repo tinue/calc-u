@@ -11,15 +11,15 @@ PanelArea::PanelArea(SessionHost& host, QWidget* parent) : QWidget(parent), host
     setObjectName(shell::names::kPanelArea);
     layout_ = new QHBoxLayout(this);
     layout_->setContentsMargins(0, 0, 0, 0);
-    // LIB-8's paper panel, its commands through the host.
+    // The library's paper panel, its commands through the host.
     factories_["paper"] = [this](QWidget* p) -> QWidget* {
         auto* panel = new PaperPanel(p);
         panel->setSender([this](const sessions::CommandName& n, sessions::Value a) { host_.send(n, std::move(a)); });
         return panel;
     };
-    // The paper panel is there from the start (LIB-8 AC-12, LIB-14 AC-23), so
-    // it takes the paper topics from the listen on (the host hands them on
-    // after the event loop's next turn).
+    // The paper panel is there from the start, so it takes the paper topics
+    // from the listen on (the host hands them on after the event loop's next
+    // turn).
     QWidget* paper = factories_["paper"](this);
     panels_["paper"] = paper;
     layout_->addWidget(paper, 1);
@@ -47,7 +47,7 @@ QWidget* PanelArea::panel(const std::string& kind) const {
 void PanelArea::set(const std::vector<shell::Panel>& panels) {
     for (const auto& p : panels) {
         QWidget* w = panel(p.kind);
-        if (!w) {   // made once, kept (EC-5: the other panels keep their content)
+        if (!w) {   // made once, kept (the other panels keep their content)
             auto f = factories_.find(p.kind);
             if (f == factories_.end() || !f->second) continue;
             w = f->second(this);
@@ -55,7 +55,7 @@ void PanelArea::set(const std::vector<shell::Panel>& panels) {
             panels_[p.kind] = w;
             layout_->addWidget(w, 1);
         }
-        if (auto* paper = qobject_cast<PaperPanel*>(w)) {   // B6: always, with or without an owner
+        if (auto* paper = qobject_cast<PaperPanel*>(w)) {   // always, with or without an owner
             paper->setOwner(p.owner.empty() ? std::nullopt : std::optional<machine::PeripheralId>(machine::PeripheralId{p.owner}));
         }
         w->show();

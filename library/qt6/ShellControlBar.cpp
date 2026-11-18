@@ -58,7 +58,7 @@ QComboBox* ShellControlBar::picker(const std::vector<MenuItem>& choices, QWidget
         box->addItem(QString::fromStdString(c.label), QString::fromStdString(c.id));
         if (model) {
             QStandardItem* item = model->item(static_cast<int>(i));
-            item->setEnabled(c.enabled);   // AC-5: disabled with the reason
+            item->setEnabled(c.enabled);   // disabled with the reason
             if (!c.reason.empty()) item->setData(QString::fromStdString(c.reason), Qt::ToolTipRole);
         }
         if (c.checked) current = static_cast<int>(i);
@@ -79,7 +79,7 @@ QWidget* ShellControlBar::build(const BarControl& c, QWidget* parent) {
         box->setObjectName(shell::names::kBarModel);
         return box;
     }
-    case BarControl::Kind::SlotPicker: {   // B1: LIB-7's picker, "n:" before it
+    case BarControl::Kind::SlotPicker: {   // the library's module picker, "n:" before it
         auto* w = new QWidget(parent);
         w->setObjectName(QString::fromStdString(shell::names::barSlot(c.id)));
         auto* l = new QHBoxLayout(w);
@@ -88,7 +88,7 @@ QWidget* ShellControlBar::build(const BarControl& c, QWidget* parent) {
         l->addWidget(slotFactory_ ? slotFactory_(c.entry, w) : picker(c.choices, w));
         return w;
     }
-    case BarControl::Kind::PlaceButton: {   // B3: pressed while plugged in
+    case BarControl::Kind::PlaceButton: {   // pressed while plugged in
         auto* b = new QToolButton(parent);
         b->setObjectName(QString::fromStdString(shell::names::barPlace(c.id)));
         b->setText(QString::fromStdString(c.label));
@@ -105,7 +105,7 @@ QWidget* ShellControlBar::build(const BarControl& c, QWidget* parent) {
         box->setObjectName(QString::fromStdString(shell::names::barPlace(c.id)));
         return box;
     }
-    case BarControl::Kind::Media: {   // B1: the owner's controls, by medium kind
+    case BarControl::Kind::Media: {   // the owner's controls, by medium kind
         auto it = mediaFactories_.find(c.mediumKind);
         if (it == mediaFactories_.end() || !it->second) return nullptr;
         QWidget* w = it->second(c.entry, parent);
@@ -113,7 +113,7 @@ QWidget* ShellControlBar::build(const BarControl& c, QWidget* parent) {
         return w;
     }
     case BarControl::Kind::Action:
-    case BarControl::Kind::More:   // D-35: no Qt6 frontend is without a menu bar
+    case BarControl::Kind::More:   // no Qt6 frontend is without a menu bar
         return nullptr;
     }
     return nullptr;
@@ -160,7 +160,7 @@ void ShellControlBar::layoutGroup(shell::BarGroup group) {
         order.push_back(w);
         productsAfter(id);
     }
-    for (const auto& p : productWidgets_[g]) {   // B2: after "" or a control that is not there: at the end
+    for (const auto& p : productWidgets_[g]) {   // after "" or a control that is not there: at the end
         bool placed = std::find(order.begin(), order.end(), p.widget) != order.end();
         if (!placed) order.push_back(p.widget);
     }
@@ -168,13 +168,13 @@ void ShellControlBar::layoutGroup(shell::BarGroup group) {
     for (QWidget* w : order) {
         l->addWidget(w);
         // A product's control keeps the visibility its product gives it
-        // (AC-42: shown from its own product entry); the shell's are shown.
+        // (shown from its own product entry); the shell's are shown.
         const bool product = std::any_of(productWidgets_[g].begin(), productWidgets_[g].end(),
                                          [w](const Product& p) { return p.widget == w; });
         if (!product) w->show();
         any = any || !w->isHidden();
     }
-    groups_[g]->setVisible(any);   // B4: no gap
+    groups_[g]->setVisible(any);   // no gap
     groups_[g]->updateGeometry();             // the bar makes room for what came
 }
 

@@ -11,13 +11,13 @@
 class QTimer;
 class QToolButton;
 
-// The run-control buttons of the Qt6 component set (LIB-10 design §3.10,
-// D-9; spec AC-18; debugger.md DB-6): pause, step and resume for one level,
-// fed from the session's `run-state` topic (deliver() or setRunState()) and
-// sending `pause {level}`, `step {level, count: 1}` and `resume` through the
-// sender. Which button can be used is debugger::buttonUse(); step fires on
-// press and every 250 ms while held, until release or until step cannot be
-// used. The labels and the place are the product's.
+// The run-control buttons of the Qt6 component set: pause, step and resume
+// for one level, fed from the session's `run-state` topic (deliver() or
+// setRunState()) and sending `pause {level}`, `step {level, count: 1}` and
+// `resume` through the sender. Which button can be used is
+// debugger::buttonUse(); step fires on press and every 250 ms while held,
+// until release or until step cannot be used. The labels and the place are
+// the product's.
 //
 // Object names: run-control-pause, run-control-step, run-control-resume.
 

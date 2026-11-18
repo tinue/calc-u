@@ -1,10 +1,9 @@
-// ShellMoreMenu -- the More button of a window without a menu bar (LIB-14
-// design §10.3.1, M14 to M16, B8, B9; spec AC-29; C59-8 AC-5): the button
+// ShellMoreMenu -- the More button of a window without a menu bar: the button
 // (⋯, its label unless `compact`) opens a popup of the menu bar's items
 // (ShellMenuItems) anchored to it, kept inside the client's width; an item
 // with `confirm` asks first in a ShellModal with the item's label and
-// Cancel (M15). The items are the bar model's `choices`, computed again at
-// every change of an input (M16). Names: bar-more, more-menu,
+// Cancel. The items are the bar model's `choices`, computed again at
+// every change of an input. Names: bar-more, more-menu,
 // more-item-<id>, more-confirm, more-confirm-yes, more-confirm-no.
 //
 //   <ShellMoreMenu shell={s} items={control.choices} label="More" compact={bool} />
@@ -22,8 +21,7 @@ function ShellMoreMenu({ shell, items, label, compact }) {
     return () => document.removeEventListener("pointerdown", away);
   }, [open]);
   // The popup opens below (or above) the button, its right edge at the button's, and
-  // stays inside the client (the narrowest portrait is 280 px, design
-  // §10.12). Fixed to the viewport, so that neither it nor the question's
+  // stays inside the client (the narrowest portrait is 280 px). Fixed to the viewport, so that neither it nor the question's
   // modal is held by the bar's box.
   React.useLayoutEffect(() => {
     if (!open || !ref.current) { setPlace(null); return; }

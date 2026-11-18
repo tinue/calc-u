@@ -1,9 +1,9 @@
-// ShellPanelArea -- the area for panels of the React set (LIB-14 design §3.4
-// B6, §3.10; spec AC-23, EC-5): each panel the control state lists, drawn by
-// the component given for its kind (LIB-8's CalcuPaperPanel for "paper" by
+// ShellPanelArea -- the area for panels of the React set: each panel the
+// control state lists, drawn by the component given for its kind
+// (CalcuPaperPanel for "paper" by
 // default, with the owner of the control state), always, with or without an
 // owner; the product's own panels follow as children. Where the area is and
-// how panels share it is the product's layout (ADR 0023). Name: panel-area.
+// how panels share it is the product's layout. Name: panel-area.
 //
 //   <ShellPanelArea shell={s} panels={{paper: Component?}}>{product panels}</ShellPanelArea>
 //

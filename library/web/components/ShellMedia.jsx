@@ -1,12 +1,12 @@
-// LIB-7's media components placed in the shell (Part E simplification E-5;
-// LIB-7 AC-31, AC-47, LIB-4 AC-20): what both products' pages wrote each.
+// The library's media components placed in the shell, for both products'
+// pages.
 //
 //   <ShellDialogs shell={s} savedMedia={ShellSavedMedia} />
 //     File ▸ Saved Media…: the library's list (CalcuSavedMediaDialog) in the
 //     shell's modal (data-calcu="saved-media")
 //   <ShellControlBar slotPicker={Component} />, where the component draws
 //   <ShellSlotPicker shell={s} entry={entry} label={text?} nameAndSave={fn?} icon={element?} />
-//     LIB-7's module picker of a slot (the shell's slot picker, B1),
+//     the library's module picker of a slot (the shell's slot picker),
 //     disabled with the place's reason while it cannot be used (`empty`);
 //     `label` names the fieldset; with `nameAndSave(word)` a Name & Save
 //     button (`icon` its glyph; data-calcu="name-and-save-<place>"), usable

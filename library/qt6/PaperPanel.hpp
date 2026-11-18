@@ -18,16 +18,14 @@ class QTimer;
 class QToolButton;
 class QHBoxLayout;
 
-// The paper panel of the Qt6 component set (LIB-8 design §3.7; spec AC-12 to
-// AC-15, AC-19, AC-20). Built from the session's topics only; it names no
-// printer (capabilities.md I-1):
+// The paper panel of the Qt6 component set. Built from the session's topics
+// only; it names no printer:
 // - deliver(): the `papers` state, the `paper <owner>` streams (every paper
 //   is kept here; the one shown follows the owner) and `paper-copies`;
-// - setOwner(): the printer plugged in, from LIB-4's control state (A-4),
-//   handed in by the shell, or none; setControls(): its controls (LIB-2
-//   AC-14) with their state;
+// - setOwner(): the printer plugged in, from the control state, handed
+//   in by the shell, or none; setControls(): its controls with their state;
 // - setSender(): where its commands go: `paper.copy {owner}`, `paper.cut
-//   {owner, copy: true}`, `set-control {peripheral, control, on}` (A-7).
+//   {owner, copy: true}`, `set-control {peripheral, control, on}`.
 // The header shows the owner's name, the view control (with a text layer),
 // the owner's controls, Copy and Cut; below it the paper, scrolled with the
 // wheel or by touch without a scroll bar, or the text in a fixed-width font.
@@ -44,8 +42,8 @@ class PaperPanel : public QWidget {
     Q_OBJECT
 public:
     using Sender = std::function<void(const sessions::CommandName&, sessions::Value)>;
-    static constexpr int kToastMilliseconds = 1800;   // AC-20
-    static constexpr int kFollowPoints = 64;          // AC-13
+    static constexpr int kToastMilliseconds = 1800;
+    static constexpr int kFollowPoints = 64;
     static constexpr int kBlankPoints = 8;            // above and below the paper
 
     explicit PaperPanel(QWidget* parent = nullptr);
@@ -101,7 +99,7 @@ private:
 };
 
 // The scrolling paper: the whole width scaled to the viewport's width; only
-// the marks in view are drawn (AC-12, AC-13).
+// the marks in view are drawn.
 class PaperView : public QAbstractScrollArea {
     Q_OBJECT
 public:

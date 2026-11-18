@@ -21,7 +21,7 @@ using sessions::CommandName;
 using sessions::Value;
 
 namespace {
-const CommandName kSetControl{"set-control"};   // LIB-2's PeripheralsPart (LIB-6 D-16)
+const CommandName kSetControl{"set-control"};   // the peripherals' PeripheralsPart
 const std::string kStreamPrefix = "paper ";
 } // namespace
 
@@ -125,7 +125,7 @@ void PaperPanel::showText(bool on) {
     const Shown* s = shown();
     const bool text = on && s && s->description.textLayer;
     stack_->setCurrentWidget(text ? static_cast<QWidget*>(text_) : view_);
-    // AC-14: the control shows the view that is on.
+    // The control shows the view that is on.
     viewToggle_->blockSignals(true);
     viewToggle_->setChecked(text);
     viewToggle_->blockSignals(false);
@@ -203,7 +203,7 @@ void PaperPanel::setControls(std::vector<peripherals::ControlInfo> controls) {
                                  [](const auto& a, const auto& b) { return a.id == b.id && a.form == b.form; });
     controls_ = std::move(controls);
     if (!same) rebuildControls();
-    // The state of each control: a key down while held, a switch at its position (AC-15).
+    // The state of each control: a key down while held, a switch at its position.
     for (const auto& c : controls_) {
         auto* b = controlsBox_->findChild<QToolButton*>(QString::fromStdString("paper-control-" + c.id.value));
         if (!b) continue;
@@ -240,10 +240,10 @@ void PaperPanel::rebuildControls() {
 
 void PaperPanel::refresh() {
     const Shown* s = shown();
-    ownerLabel_->setText(QString::fromStdString(ownerName()));   // AC-12: no name without an owner
+    ownerLabel_->setText(QString::fromStdString(ownerName()));   // no name without an owner
     viewToggle_->setVisible(s && s->description.textLayer);
     controlsBox_->setVisible(owner_.has_value());
-    const bool enabled = s && !s->empty();   // AC-12, AC-19
+    const bool enabled = s && !s->empty();
     copy_->setEnabled(enabled);
     cut_->setEnabled(enabled);
     view_->setPaper(s);
@@ -280,7 +280,7 @@ void PaperPanel::toast(const QString& sentence) {
 
 PaperView::PaperView(QWidget* parent) : QAbstractScrollArea(parent) {
     setObjectName(QStringLiteral("paper-view"));
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);   // AC-13: no scroll bar
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);   // no scroll bar
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setFrameShape(QFrame::NoFrame);
     viewport()->setAutoFillBackground(false);
@@ -307,7 +307,7 @@ void PaperView::resizeEvent(QResizeEvent* e) {
     updateRange(true);
 }
 
-// AC-13: the view follows the newest marks while it is at the end or no more
+// The view follows the newest marks while it is at the end or no more
 // than 64 points from it; scrolled further back, it stays.
 void PaperView::updateRange(bool follow) {
     QScrollBar* bar = verticalScrollBar();

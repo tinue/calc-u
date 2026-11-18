@@ -29,7 +29,7 @@ sessions::Value wouldTakeArgs(const QString& path) {
 }
 
 bool wouldTake(SessionHost& host, const QString& path) {
-    bool takes = false;   // requests are answered at once (LIB-3)
+    bool takes = false;   // requests are answered at once
     host.ask(opening::kWouldTakeRequest, wouldTakeArgs(path), [&takes](const sessions::ReplyMessage& r) {
         const auto* w = sessions::payloadAs<opening::WouldTake>(r.result);
         takes = w && w->takes;
@@ -42,7 +42,7 @@ opening::OpenRequest openRequest(const QString& path, opening::Way way,
     const QFileInfo info(path);
     opening::OpenedFile file;
     file.name = info.fileName().toStdString();
-    file.path = info.absoluteFilePath().toStdString();   // UTF-8: a preset is loaded from its folder (LIB-6 AC-42)
+    file.path = info.absoluteFilePath().toStdString();   // UTF-8: a preset is loaded from its folder
     QFile f(path);
     if (info.isFile() && f.open(QIODevice::ReadOnly)) {
         const auto limit = limits.find(way);

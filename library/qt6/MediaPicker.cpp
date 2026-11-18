@@ -34,8 +34,8 @@ void MediaPicker::setPlace(const media::PlaceState& p) {
         }
     }
     // A medium the place holds that no entry lists (a file opened from
-    // where it lies, LIB-13 AC-19; a tape started under a name before its
-    // first write, LIB-7 AC-20): shown as what the place holds, not a choice.
+    // where it lies; a tape started under a name before its first write):
+    // shown as what the place holds, not a choice.
     if (!listed) {
         addItem(QString::fromStdString(p.holds->name));
         ids_.push_back(std::string());

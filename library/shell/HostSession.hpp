@@ -17,23 +17,22 @@
 #include <utility>
 #include <vector>
 
-// A host's side of a product's app session, written once (Part E
-// simplification E-2, docs/reviews/e-simplification.md S-1): what every
+// A host's side of a product's app session, written once: what every
 // frontend host (Qt6, the Web engine, the Swift bridge) and the products'
 // own session factories put around the product's part. HostSettings opens
-// the product's settings file at the host's place (LIB-9 AC-5, AC-6) and
-// keeps the places over it; makeHostSession() makes LIB-14's SettingsPart
+// the product's settings file at the host's place and
+// keeps the places over it; makeHostSession() makes the shell's SettingsPart
 // over them, puts it after the host's own parts in the product's
 // sessionParts() (the one order of parts::LibraryParts), lets the session
-// own what the host made, writes "Settings: <problem>" into LIB-3's log
-// where the host says so and sends LIB-18's `start` where the host says so.
+// own what the host made, writes "Settings: <problem>" into the session's log
+// where the host says so and sends the startup's `start` where the host says so.
 // Single-threaded: on the session's thread.
 
 namespace calcu::shell {
 
-// LIB-9: the product's settings file, read once from `filePath` (default:
-// settingsFilePath(decl, dirs), AC-2), and the host's places over it. A file
-// that cannot be read is in problem() (EC-6); the host logs it.
+// The product's settings file, read once from `filePath` (default:
+// settingsFilePath(decl, dirs)), and the host's places over it. A file
+// that cannot be read is in problem(); the host logs it.
 class HostSettings {
 public:
     HostSettings(const settings::ProductDecl& decl, settings::HostDirs dirs,
@@ -52,7 +51,7 @@ private:
 };
 
 struct HostSessionSetup {
-    // LIB-14's SettingsPart over the host's settings; null: none (a test's
+    // The shell's SettingsPart over the host's settings; null: none (a test's
     // session without the shell's dialog).
     HostSettings* settings = nullptr;
     std::function<void(std::string_view section, std::string_view key)> settingsChanged;   // SettingsPartSetup::changed
@@ -70,11 +69,11 @@ struct HostSessionSetup {
     // places, the Web part): the session owns it and lets it go first, after
     // SettingsPart (AppSessionSetup::owned).
     std::shared_ptr<void> owned;
-    // The Web engine: "Settings: <problem>" into LIB-3's log once the session
+    // The Web engine: "Settings: <problem>" into the session's log once the session
     // is made (the Qt6 hosts write it to their own log when they open the
     // file; the Swift bridge hands it to the app).
     bool logSettingsProblem = false;
-    // LIB-18's `start`, sent once when the session is made (the Swift bridge,
+    // The startup's `start`, sent once when the session is made (the Swift bridge,
     // the tests); the Qt6 hosts send it after their timer starts, the Web page
     // itself.
     bool start = false;

@@ -4,12 +4,10 @@
 #include <optional>
 #include <string>
 
-// Notices and questions (LIB-14 design §3.6, rules N1 to N4, D-7; spec
-// AC-17, EC-2): shown one after the other in the order they came, none lost.
+// Notices and questions: shown one after the other in the order they came, none lost.
 // A refusal of a command the shell sent is shown like a notice unless it
 // repeats the last notice, says "Stopped." (an operation the user stopped)
-// or is a question (`asks:`, LIB-7 D-6, LIB-13
-// D-4), which is shown with Yes and No; Yes sends the same command again
+// or is a question (`asks:`, from media and opening), which is shown with Yes and No; Yes sends the same command again
 // with `confirmed: true`. Mirrored in shellModel.js (calcuShellNotices).
 
 namespace calcu::shell {
@@ -36,7 +34,7 @@ public:
 
 private:
     std::deque<Shown> queue_;
-    std::string last_;   // the last notice (D-7)
+    std::string last_;   // the last notice
 };
 
 } // namespace calcu::shell

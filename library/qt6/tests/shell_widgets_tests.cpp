@@ -1,7 +1,7 @@
-// LIB-14 L7 (design §6): the Qt6 shell's widgets on the test window
-// (QT_QPA_PLATFORM=offscreen): the drawing of the models of L1 to L6 (spec
-// AC-1 to AC-21, AC-23, AC-24, AC-43; EC-2, EC-4, EC-6), on an app session
-// with TestShellPart and SettingsPart, no code of a product (AC-22).
+// The Qt6 shell's widgets on the test window (QT_QPA_PLATFORM=offscreen):
+// the drawing of the shell's models (menus, bar, settings, "Loading…",
+// notices, the pointer), on an app session with TestShellPart and
+// SettingsPart, no code of a product.
 #include "TestHarness.hpp"
 #include "TestWindow.hpp"
 #include "qt6/PanelArea.hpp"
@@ -70,7 +70,7 @@ void captureInfo(QtMsgType t, const QMessageLogContext& c, const QString& m) {
 
 } // namespace
 
-TEST(ac1_menus_and_items_on_widgets) {
+TEST(menus_and_items_on_widgets) {
     TestWindow w;
     QStringList menus;
     for (QAction* a : w.window.menuBar()->actions()) menus << a->text();
@@ -99,7 +99,7 @@ TEST(ac1_menus_and_items_on_widgets) {
     CHECK_EQ(arg(&w.part.last("load-preset")->args, "ref"), w.home.str() + "/mine.test");
 }
 
-TEST(ac2_model_and_variant_menus_on_widgets) {
+TEST(model_and_variant_menus_on_widgets) {
     TestWindow w;
     CHECK(w.action("model-Model-A")->isChecked());
     CHECK(!w.action("model-Model-B")->isChecked());
@@ -113,7 +113,7 @@ TEST(ac2_model_and_variant_menus_on_widgets) {
     CHECK(w.action("model-Model-B")->isChecked());   // the part published Model-B's control state
 }
 
-TEST(ac3_peripherals_on_widgets) {
+TEST(peripherals_on_widgets) {
     TestWindow w;
     w.action("peripheral-printer-test-dotter")->trigger();
     w.settle();
@@ -124,10 +124,10 @@ TEST(ac3_peripherals_on_widgets) {
     w.action("peripheral-aux-test-plotter")->trigger();
     w.settle();
     CHECK_EQ(arg(&w.part.last("detach")->args, "place"), std::string("aux"));
-    CHECK(w.action("peripheral-host-drive-drive") == nullptr);   // AC-9: no entry for the host drive
+    CHECK(w.action("peripheral-host-drive-drive") == nullptr);   // no entry for the host drive
 }
 
-TEST(ac4_shortcuts_on_widgets) {
+TEST(shortcuts_on_widgets) {
     TestWindow w;
     CHECK(w.action("load-preset")->shortcut() == QKeySequence(Qt::CTRL | Qt::Key_O));
     CHECK(w.action("reset")->shortcut() == QKeySequence(Qt::CTRL | Qt::Key_R));
@@ -149,7 +149,7 @@ TEST(ac4_shortcuts_on_widgets) {
 #endif
 }
 
-TEST(ac5_disabled_with_reason_on_widgets) {
+TEST(disabled_with_reason_on_widgets) {
     TestWindow w;
     auto cs = shell::test::controlState();
     cs.models[1].available = shell::test::unavailable("Model-B needs a module.");
@@ -169,12 +169,12 @@ TEST(ac5_disabled_with_reason_on_widgets) {
     auto* button = w.find<QToolButton>(names::barPlace("printer"));
     CHECK(!button->isEnabled());
     CHECK(button->toolTip() == QStringLiteral("TD-20 does not fit now."));
-    // A product item follows its product entry (AC-7).
+    // A product item follows its product entry.
     CHECK(!w.action("disk-thing")->isEnabled());
     CHECK(w.action("disk-thing")->toolTip() == QStringLiteral("No disk drive."));
 }
 
-TEST(ac6_roles_on_widgets) {
+TEST(roles_on_widgets) {
     TestWindow w;
     CHECK(w.action("settings")->menuRole() == QAction::PreferencesRole);
     CHECK(w.action("about")->menuRole() == QAction::AboutRole);
@@ -183,7 +183,7 @@ TEST(ac6_roles_on_widgets) {
         CHECK(w.action(id)->menuRole() == QAction::NoRole);
 }
 
-TEST(ac7_product_item_on_widgets) {
+TEST(product_item_on_widgets) {
     TestWindow w;
     CHECK(w.action("load-program") != nullptr);
     CHECK(w.action("mount-drive") != nullptr);
@@ -194,7 +194,7 @@ TEST(ac7_product_item_on_widgets) {
     CHECK(w.part.sent.empty());   // it sends nothing itself
 }
 
-TEST(ac8_bar_on_widgets) {
+TEST(bar_on_widgets) {
     TestWindow w;
     w.shell->registerMediaControls("test-card", [](const Value& entry, QWidget* parent) -> QWidget* {
         return new QLabel(QString::fromStdString("card " + shell::read::text(entry, "id")), parent);
@@ -205,7 +205,7 @@ TEST(ac8_bar_on_widgets) {
     auto* slot1 = w.find<QWidget>(names::barSlot("slot-1"));
     CHECK(slot1 != nullptr);
     CHECK(slot1->findChild<QLabel*>() && slot1->findChild<QLabel*>()->text() == QStringLiteral("1:"));
-    CHECK(slot1->findChild<QComboBox*>() != nullptr);   // without LIB-7's picker: the fallback
+    CHECK(slot1->findChild<QComboBox*>() != nullptr);   // without the media picker: the fallback
     CHECK(w.find<QToolButton>(names::barPlace("printer"))->text() == QStringLiteral("TD-20"));
     auto* aux = w.find<QComboBox>(names::barPlace("aux"));
     CHECK(aux && aux->count() == 3 && aux->itemText(0) == QStringLiteral("None"));
@@ -218,7 +218,7 @@ TEST(ac8_bar_on_widgets) {
     CHECK(x(w.find<QWidget>(names::barSlot("slot-2"))) < x(w.find<QWidget>(names::barPlace("printer"))));
     CHECK(x(w.find<QWidget>(names::barPlace("printer"))) < x(aux));
     CHECK(x(aux) < x(w.find<QWidget>(names::barMedia("card"))));
-    // AC-42: a product control in the group it names.
+    // A product control in the group it names.
     auto* extra = new QToolButton();
     extra->setObjectName(QStringLiteral("tp-disk"));
     extra->setText(QStringLiteral("Disk"));
@@ -232,7 +232,7 @@ TEST(ac8_bar_on_widgets) {
     CHECK_EQ(arg(&w.part.last("model")->args, "name"), std::string("Model-B"));
 }
 
-TEST(ac9_button_attaches_and_detaches_on_widgets) {
+TEST(button_attaches_and_detaches_on_widgets) {
     TestWindow w;
     auto* b = w.find<QToolButton>(names::barPlace("printer"));
     CHECK(b->isCheckable() && !b->isChecked());
@@ -253,7 +253,7 @@ TEST(ac9_button_attaches_and_detaches_on_widgets) {
     CHECK_EQ(arg(&w.part.last("attach")->args, "peripheral"), std::string("test-dotter-2"));
 }
 
-TEST(ac10_no_control_no_gap_on_widgets) {
+TEST(no_control_no_gap_on_widgets) {
     TestWindow w;
     w.part.publish("control-state", shell::test::controlValue("Model-B"));
     w.step();
@@ -266,7 +266,7 @@ TEST(ac10_no_control_no_gap_on_widgets) {
     CHECK_EQ(visibleGroups, 2);   // the model picker and the printer
 }
 
-TEST(ac11_settings_dialog_on_widgets) {
+TEST(settings_dialog_on_widgets) {
     TestWindow w;
     w.action("settings")->trigger();
     w.settle();
@@ -289,7 +289,7 @@ TEST(ac11_settings_dialog_on_widgets) {
     CHECK(!d->isVisible());
 }
 
-TEST(ac12_startup_preset_row_on_widgets) {
+TEST(startup_preset_row_on_widgets) {
     TestWindow w;
     w.shell->openSettings();
     w.step();
@@ -305,10 +305,10 @@ TEST(ac12_startup_preset_row_on_widgets) {
     CHECK_EQ(w.fileAsks.size(), std::size_t{1});
     CHECK_EQ(w.file.text("preset", "Model-A"), w.home.str() + "/own.test");
     row = d->findChild<QComboBox*>(QString::fromStdString(names::setting("preset", "Model-A")));
-    CHECK(row->currentText() == QStringLiteral("~/own.test"));   // EC-3: shown as set
+    CHECK(row->currentText() == QStringLiteral("~/own.test"));   // shown as set
 }
 
-TEST(ac13_folder_row_on_widgets) {
+TEST(folder_row_on_widgets) {
     TestWindow w;
     w.shell->openSettings();
     w.step();
@@ -329,7 +329,7 @@ TEST(ac13_folder_row_on_widgets) {
     CHECK(!reset->isEnabled());
 }
 
-TEST(ac14_settings_while_operation_runs_on_widgets) {
+TEST(settings_while_operation_runs_on_widgets) {
     TestWindow w;
     w.command("tsp.op");
     CHECK(w.session->busy());
@@ -343,7 +343,7 @@ TEST(ac14_settings_while_operation_runs_on_widgets) {
     CHECK(w.session->busy());
 }
 
-TEST(ac15_loading_after_500_ms_on_widgets) {
+TEST(loading_after_500_ms_on_widgets) {
     TestWindow w;
     w.command("tsp.op");
     w.runFor(300);
@@ -353,7 +353,7 @@ TEST(ac15_loading_after_500_ms_on_widgets) {
     auto* loading = w.find<QWidget>(names::kLoading);
     CHECK(loading && loading->findChild<QLabel*>()->text() == QStringLiteral("Loading…"));
     CHECK(loading->findChildren<QPushButton*>().isEmpty());   // no button to cancel
-    CHECK(loading->parentWidget() == w.faceplate);            // on the faceplate (L2)
+    CHECK(loading->parentWidget() == w.faceplate);            // on the faceplate
     CHECK(loading->y() >= static_cast<int>(15 * w.scale));     // below the display
     w.command("reset");
     w.step(2);
@@ -361,7 +361,7 @@ TEST(ac15_loading_after_500_ms_on_widgets) {
     CHECK(!w.shell->loadingShown());
 }
 
-TEST(ac16_loading_blocks_nothing) {
+TEST(loading_blocks_nothing) {
     TestWindow w;
     w.command("tsp.op");
     w.runFor(700);
@@ -377,7 +377,7 @@ TEST(ac16_loading_blocks_nothing) {
     release(w.faceplate, QPoint(100, 100));
     w.settle();
     CHECK_EQ(w.part.count("screen-key-down"), 1);
-    w.action("reset")->trigger();   // Reset stops the operation (LIB-18 AC-16)
+    w.action("reset")->trigger();   // Reset stops the operation
     w.step(2);
     CHECK_EQ(w.part.count("reset"), 1);
     CHECK(!w.session->busy());
@@ -385,7 +385,7 @@ TEST(ac16_loading_blocks_nothing) {
     CHECK(noticeBox(w) == nullptr);   // the stopped operation is no notice
 }
 
-TEST(ac17_notices_one_after_the_other_on_widgets) {
+TEST(notices_one_after_the_other_on_widgets) {
     TestWindow w;
     w.command("tsp.notice", Value::object({{"text", "The first went wrong."}}));
     w.command("tsp.notice", Value::object({{"text", "The second went wrong."}}));
@@ -409,7 +409,7 @@ TEST(ac17_notices_one_after_the_other_on_widgets) {
     CHECK(noticeBox(w) && noticeBox(w)->text() == QStringLiteral("That cannot be done now."));
 }
 
-TEST(ac17_question_yes_resends_confirmed) {
+TEST(notice_question_yes_resends_confirmed) {
     TestWindow w;
     w.shell->sendChecked(sessions::CommandName{"tsp.confirm"}, Value::object({{"name", "A"}}));
     w.settle();
@@ -423,7 +423,7 @@ TEST(ac17_question_yes_resends_confirmed) {
     CHECK(noticeBox(w) == nullptr);
 }
 
-TEST(ec2_notice_over_loading_on_widgets) {
+TEST(notice_over_loading_on_widgets) {
     TestWindow w;
     w.command("tsp.op");
     w.runFor(700);
@@ -438,7 +438,7 @@ TEST(ec2_notice_over_loading_on_widgets) {
     CHECK(w.session->busy());
 }
 
-TEST(ac18_log_to_platform_no_view) {
+TEST(log_to_platform_no_view) {
     TestWindow w;
     infoLines.clear();
     previousHandler = qInstallMessageHandler(captureInfo);
@@ -449,7 +449,7 @@ TEST(ac18_log_to_platform_no_view) {
     CHECK(w.window.findChild<QWidget*>(QStringLiteral("log")) == nullptr);   // no view of its own
 }
 
-TEST(ac19_roms_missing_no_bar_no_machine_menu) {
+TEST(roms_missing_no_bar_no_machine_menu) {
     TestWindow w(false);
     w.part.publish("roms-missing", Value::object({{"text", "The ROM files of Model-A are missing."}}));
     w.step();
@@ -465,7 +465,7 @@ TEST(ac19_roms_missing_no_bar_no_machine_menu) {
     CHECK(w.find<QWidget>(names::kAboutDialog) && w.find<QWidget>(names::kAboutDialog)->isVisible());
 }
 
-TEST(ac20_help_opens_product_address_on_widgets) {
+TEST(help_opens_product_address_on_widgets) {
     TestWindow w;
     w.action("help")->trigger();
     w.settle();
@@ -473,7 +473,7 @@ TEST(ac20_help_opens_product_address_on_widgets) {
     CHECK(w.opened[0] == QUrl(QStringLiteral("https://calc-u.org/test/")));
 }
 
-TEST(ec6_help_failure_changes_nothing) {
+TEST(help_failure_changes_nothing) {
     TestWindow w;
     w.openSucceeds = false;
     const auto sent = w.part.sent.size();
@@ -485,7 +485,7 @@ TEST(ec6_help_failure_changes_nothing) {
     CHECK(!w.session->busy());
 }
 
-TEST(ac21_about_dialog_on_widgets) {
+TEST(about_dialog_on_widgets) {
     TestWindow w;
     w.action("about")->trigger();
     w.settle();
@@ -502,7 +502,7 @@ TEST(ac21_about_dialog_on_widgets) {
     CHECK(buttons && buttons->buttons().size() == 1);
 }
 
-TEST(ac23_paper_panel_always_on_widgets) {
+TEST(paper_panel_always_on_widgets) {
     TestWindow w;
     auto* area = w.find<qt6::PanelArea>(names::kPanelArea);
     CHECK(area != nullptr);
@@ -510,7 +510,7 @@ TEST(ac23_paper_panel_always_on_widgets) {
     CHECK(paper && paper->isVisible());
     w.command("tsp.plug", Value::object({{"place", "printer"}, {"peripheral", "test-dotter"}}));
     w.step();
-    CHECK(area->panel("paper") == paper);   // EC-5: the same panel, its content kept
+    CHECK(area->panel("paper") == paper);   // the same panel, its content kept
     w.part.publish("control-state", shell::test::controlValue());
     w.step();
     CHECK(area->panel("paper") == paper && paper->isVisible());
@@ -520,7 +520,7 @@ TEST(ac23_paper_panel_always_on_widgets) {
     CHECK(own->parentWidget() == area);
 }
 
-TEST(ac24_mouse_and_touch_on_test_faceplate) {
+TEST(mouse_and_touch_on_test_faceplate) {
     TestWindow w;
     // Key 2 is at 20..30 × 20..30 hit-map units; at scale 4 that is 80..120.
     click(w.faceplate, QPoint(100, 100));
@@ -536,7 +536,7 @@ TEST(ac24_mouse_and_touch_on_test_faceplate) {
     release(w.faceplate, QPoint(43, 100));
     w.settle();
     CHECK_EQ(arg(&w.part.last("screen-key-down")->args, "key"), std::string("1"));
-    // EC-8: no key at the down, nothing on the move onto one.
+    // No key at the down, nothing on the move onto one.
     const int downs = w.part.count("screen-key-down");
     click(w.faceplate, QPoint(60, 100));
     QMouseEvent move(QEvent::MouseMove, QPointF(100, 100), w.faceplate->mapToGlobal(QPointF(100, 100)), Qt::NoButton,
@@ -557,7 +557,7 @@ TEST(ac24_mouse_and_touch_on_test_faceplate) {
 #endif
 }
 
-TEST(ac43_display_hold_on_widgets) {
+TEST(display_hold_on_widgets) {
     TestWindow w;
     auto speed = [&] { return shell::read::text(w.host->value(sessions::kBusyTopic), "speed"); };
     CHECK_EQ(speed(), std::string("regular"));
@@ -570,7 +570,7 @@ TEST(ac43_display_hold_on_widgets) {
     CHECK_EQ(speed(), std::string("regular"));
 }
 
-TEST(ec4_model_switch_changes_menus_in_place) {
+TEST(model_switch_changes_menus_in_place) {
     TestWindow w;
     QMenu* machine = w.find<QMenu>("menu-machine");
     CHECK(w.action("peripheral-aux-test-plotter") != nullptr);
@@ -582,10 +582,10 @@ TEST(ec4_model_switch_changes_menus_in_place) {
     CHECK(w.window.isVisible());
 }
 
-// LIB-7 AC-29 (M-42): the media items of File are the Web frontend's (LIB-14
-// AC-35); the Qt6 shell has no saved media list (LIB-7 OQ-4), so its File
-// menu has neither item, also when the product has kinds of medium.
-TEST(lib7_ac29_qt6_file_menu_without_media_items) {
+// The media items of File (Import, Saved Media) are the Web frontend's; the
+// Qt6 shell has no saved media list, so its File menu has neither item, also
+// when the product has kinds of medium.
+TEST(qt6_file_menu_without_media_items) {
     TestWindow w;
     w.part.publish("media", shell::test::mediaWithKind());
     w.settle();
@@ -597,7 +597,7 @@ TEST(lib7_ac29_qt6_file_menu_without_media_items) {
                                                "item-mount-drive", "-", "item-settings", "item-quit"}));
 }
 
-// ── Part E (design §10.3.4, §10.3.5; L14) ──
+// ── The faceplate's geometry and the About icon ──
 
 namespace {
 

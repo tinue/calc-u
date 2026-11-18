@@ -1,5 +1,4 @@
-// LIB-14 L4 (design §6): LoadingRule and NoticeQueue, rules L1, N1 to N4,
-// D-7 (spec AC-15, AC-17, EC-1, EC-2, EC-7), on library/testing/'s scripted
+// LoadingRule and NoticeQueue, on library/testing/'s scripted
 // wall clock. Mirrored in shell_model.test.js.
 #include "ScriptedClock.hpp"
 #include "TestHarness.hpp"
@@ -13,7 +12,7 @@ using namespace calcu::shell;
 using namespace std::chrono_literals;
 using sessions::Value;
 
-TEST(ac15_loading_after_500_ms_at_full_speed) {
+TEST(loading_after_500_ms_at_full_speed) {
     testing::ScriptedClock clock;
     LoadingRule rule;
     rule.busy(true, true, clock.now);
@@ -33,13 +32,13 @@ TEST(ac15_loading_after_500_ms_at_full_speed) {
     CHECK(rule.shown(clock.now));
     rule.busy(false, false, clock.now);
     CHECK(!rule.shown(clock.now));
-    // Full speed outside an operation (the display held, AC-43) is no operation.
+    // Full speed outside an operation (the display held) is no operation.
     rule.busy(false, true, clock.now);
     clock.now += 1s;
     CHECK(!rule.shown(clock.now));
 }
 
-TEST(ec1_short_operation_shows_nothing) {
+TEST(loading_short_operation_shows_nothing) {
     testing::ScriptedClock clock;
     LoadingRule rule;
     rule.busy(true, true, clock.now);
@@ -50,7 +49,7 @@ TEST(ec1_short_operation_shows_nothing) {
     CHECK(!rule.shown(clock.now));
 }
 
-TEST(ec7_back_to_full_speed_counts_again) {
+TEST(loading_back_to_full_speed_counts_again) {
     testing::ScriptedClock clock;
     LoadingRule rule;
     rule.busy(true, true, clock.now);
@@ -65,7 +64,7 @@ TEST(ec7_back_to_full_speed_counts_again) {
     CHECK(rule.shown(clock.now));
 }
 
-TEST(ac17_notices_one_after_the_other) {
+TEST(notices_one_after_the_other) {
     NoticeQueue q;
     CHECK(q.current() == nullptr);
     q.push("The first went wrong.");
@@ -83,7 +82,7 @@ TEST(ac17_notices_one_after_the_other) {
     CHECK(q.current() == nullptr);
 }
 
-TEST(ec2_notice_over_loading) {
+TEST(notice_over_loading) {
     testing::ScriptedClock clock;
     LoadingRule rule;
     NoticeQueue q;
@@ -101,7 +100,7 @@ TEST(ec2_notice_over_loading) {
 TEST(refusal_equal_to_last_notice_not_repeated) {
     NoticeQueue q;
     q.push("The disk is full.");
-    q.refusal("The disk is full.");   // the reply repeats the notice (D-7)
+    q.refusal("The disk is full.");   // the reply repeats the notice
     CHECK_EQ(q.waiting(), std::size_t{1});
     q.refusal("Another operation is running.");
     CHECK_EQ(q.waiting(), std::size_t{2});

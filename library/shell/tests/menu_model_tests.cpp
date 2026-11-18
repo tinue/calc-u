@@ -1,5 +1,4 @@
-// LIB-14 L1 (design §6): the menu model, rules M1 to M12 (spec AC-1 to AC-7,
-// AC-19, EC-4; LIB-7 AC-29). Mirrored case by case in
+// The menu model. Mirrored case by case in
 // library/web/tests/shell_model.test.js.
 #include "TestHarness.hpp"
 #include "TestShellPart.hpp"
@@ -35,7 +34,7 @@ std::string join(const std::vector<std::string>& xs) {
 
 } // namespace
 
-TEST(ac1_menus_and_items_in_order) {
+TEST(menus_and_items_in_order) {
     auto p = st::product();
     p.copyScreen = [] {};
     p.pasteText = true;
@@ -61,7 +60,7 @@ TEST(ac1_menus_and_items_in_order) {
     CHECK(one->args == Value::object({{"ref", "examples:games/one.test"}}));
 }
 
-TEST(ac1_item_without_function_and_empty_menu_left_out) {
+TEST(item_without_function_and_empty_menu_left_out) {
     auto in = st::inputs();
     in.presetList = Value();   // no examples: no Examples ▸
     auto cs = st::controlState();
@@ -80,7 +79,7 @@ TEST(ac1_item_without_function_and_empty_menu_left_out) {
     CHECK_EQ(join(ids(findMenu(menus(in, p, kQt), "help")->items)), std::string("about"));
 }
 
-TEST(ac2_model_menu_marks_running_and_sends_model) {
+TEST(model_menu_marks_running_and_sends_model) {
     const auto ms = menus(st::inputs(), st::product(), kQt);
     const MenuItem* model = findItem(ms, "model");
     CHECK_EQ(join(ids(model->children)), std::string("model-Model-A model-Model-B"));
@@ -93,7 +92,7 @@ TEST(ac2_model_menu_marks_running_and_sends_model) {
     CHECK(b->args == Value::object({{"name", "Model-B"}}));
 }
 
-TEST(ac2_variant_submenus_for_model_and_peripheral) {
+TEST(variant_submenus_for_model_and_peripheral) {
     auto cs = st::controlState();
     st::plug(cs, "aux", "test-plotter");
     const auto ms = menus(st::inputs(cs.toValue()), st::product(), kQt);
@@ -116,11 +115,11 @@ TEST(ac2_variant_submenus_for_model_and_peripheral) {
     CHECK(findItem(menus(st::inputs(st::controlValue("Model-B")), st::product(), kQt), "variants-model") == nullptr);
 }
 
-TEST(ac3_peripherals_attach_replace_and_detach) {
+TEST(peripherals_menu_attach_replace_and_detach) {
     auto cs = st::controlState();
     st::plug(cs, "aux", "test-plotter");
     const auto ms = menus(st::inputs(cs.toValue()), st::product(), kQt);
-    // Not the module slots (their picker is LIB-7's), not the host drive (AC-9).
+    // Not the module slots (their picker is the media components'), not the host drive.
     CHECK_EQ(join(ids(findItem(ms, "peripherals")->children)),
              std::string("peripheral-printer-test-dotter - peripheral-aux-test-plotter peripheral-aux-test-dotter-2"));
     const MenuItem* td20 = findItem(ms, "peripheral-printer-test-dotter");
@@ -136,7 +135,7 @@ TEST(ac3_peripherals_attach_replace_and_detach) {
     CHECK(td21->args == Value::object({{"place", "aux"}, {"peripheral", "test-dotter-2"}}));
 }
 
-TEST(ac4_shortcuts_qt_and_none_on_web) {
+TEST(menu_shortcuts_qt_and_none_on_web) {
     auto p = st::product();
     p.copyScreen = [] {};
     p.pasteText = true;
@@ -154,7 +153,7 @@ TEST(ac4_shortcuts_qt_and_none_on_web) {
         CHECK(findItem(web, id)->shortcut == MenuItem::Shortcut::None);
 }
 
-TEST(ac5_unavailable_disabled_with_reason) {
+TEST(menu_unavailable_disabled_with_reason) {
     auto cs = st::controlState();
     cs.models[1].available = st::unavailable("Model-B needs a module.");
     cs.actions[0].available = st::unavailable("Reset is not possible now.");
@@ -169,19 +168,19 @@ TEST(ac5_unavailable_disabled_with_reason) {
     CHECK_EQ(findItem(ms, "peripheral-printer-test-dotter")->reason, std::string("TD-20 does not fit now."));
     CHECK(findItem(ms, "cold-boot")->enabled);
     CHECK(findItem(ms, "cold-boot")->reason.empty());
-    // Resume can be used while the machine is paused (LIB-10 AC-6).
+    // Resume can be used while the machine is paused.
     CHECK(!findItem(ms, "resume")->enabled);
     auto in = st::inputs(cs.toValue());
     in.runState = Value::object({{"paused", true}});
     CHECK(findItem(menus(in, st::product(), kQt), "resume")->enabled);
 }
 
-TEST(ac6_roles_and_no_quit_on_web) {
+TEST(menu_roles_and_no_quit_on_web) {
     const auto qt = menus(st::inputs(), st::product(), kQt);
     CHECK(findItem(qt, "settings")->role == MenuItem::Role::Preferences);
     CHECK(findItem(qt, "about")->role == MenuItem::Role::About);
     CHECK(findItem(qt, "quit")->role == MenuItem::Role::Quit);
-    int others = 0;   // M12: every other item has no role
+    int others = 0;   // every other item has no role
     for (const char* id : {"load-preset", "examples", "load-program", "model", "reset", "cold-boot", "resume", "help"})
         others += findItem(qt, id)->role == MenuItem::Role::None ? 1 : 0;
     CHECK_EQ(others, 8);
@@ -190,7 +189,7 @@ TEST(ac6_roles_and_no_quit_on_web) {
     CHECK(findItem(web, "settings") != nullptr);
 }
 
-TEST(ac7_product_item_in_its_group) {
+TEST(product_item_in_its_group) {
     auto p = st::product();
     p.items.push_back(ProductItem{MenuGroup::FileOpen, "open-thing", "Open Thing…", "", {}});
     p.items.push_back(ProductItem{MenuGroup::FileEnd, "end-thing", "End Thing", "", {}});
@@ -201,7 +200,7 @@ TEST(ac7_product_item_in_its_group) {
              std::string("load-preset examples open-thing - load-program - mount-drive - end-thing settings quit"));
     CHECK_EQ(join(ids(findMenu(ms, "edit")->items)), std::string("copy-log"));
     CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help tips about"));
-    // Shown and disabled like the shell's own, from its product entry (M9).
+    // Shown and disabled like the shell's own, from its product entry.
     const MenuItem* disk = findItem(ms, "disk-thing");
     CHECK(!disk->enabled);
     CHECK_EQ(disk->reason, std::string("No disk drive."));
@@ -222,7 +221,7 @@ TEST(media_items_where_saved_media_and_kinds) {
     CHECK(findItem(menus(in, st::product(), kWeb), "import-media") == nullptr);   // no kinds of medium
 }
 
-TEST(ac19_no_machine_menu_without_control_state) {
+TEST(no_machine_menu_without_control_state) {
     ShellInputs in;   // the product could not start
     in.romsMissing = Value::object({{"text", "ROM files are missing."}});
     const auto ms = menus(in, st::product(), kQt);
@@ -231,7 +230,7 @@ TEST(ac19_no_machine_menu_without_control_state) {
     CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help about"));
 }
 
-TEST(ec4_model_switch_changes_entries) {
+TEST(model_switch_changes_menu_entries) {
     const auto a = menus(st::inputs(st::controlValue("Model-A")), st::product(), kQt);
     const auto b = menus(st::inputs(st::controlValue("Model-B")), st::product(), kQt);
     CHECK(findItem(a, "model-Model-A")->checked);
@@ -250,7 +249,7 @@ TEST(check_shell_product_reports_missing_labels) {
     CHECK_EQ(problems.size(), std::size_t{2});
 }
 
-// ── Part E (design §10.3.1): a window without a menu bar, rules M13 to M18 ──
+// ── A window without a menu bar ──
 
 namespace {
 
@@ -262,12 +261,12 @@ Traits portrait() {
 
 } // namespace
 
-TEST(more_items_are_the_items_without_a_control) {   // M13, M14
+TEST(more_items_are_the_items_without_a_control) {
     auto in = st::inputs();
     in.media = st::mediaWithKind();
     auto p = st::product();
     const auto ms = menus(in, p, portrait());
-    // M13: the menus are still computed.
+    // The menus are still computed.
     CHECK_EQ(join(menuIds(ms)), std::string("file machine help"));
     CHECK_EQ(join(ids(moreItems(ms, p))),
              std::string("examples - load-program - import-media saved-media mount-drive - variants-model - cold-boot resume disk-thing - help about"));
@@ -280,7 +279,7 @@ TEST(more_items_are_the_items_without_a_control) {   // M13, M14
              std::string("examples - import-media saved-media - variants-model - cold-boot resume disk-thing - help about"));
 }
 
-TEST(more_cold_boot_asks_first) {   // M15
+TEST(more_cold_boot_asks_first) {
     const auto p = st::product();
     const auto ms = menus(st::inputs(), p, portrait());
     const auto more = moreItems(ms, p);
@@ -298,7 +297,7 @@ TEST(more_cold_boot_asks_first) {   // M15
         if (i.id != "cold-boot") CHECK(i.confirm.empty());
 }
 
-TEST(more_follows_availability) {   // M16
+TEST(more_follows_availability) {
     auto cs = st::controlState();
     for (auto& a : cs.actions)
         if (a.command == control::kColdBootAction) a.available = st::unavailable("An operation runs.");
@@ -322,7 +321,7 @@ TEST(more_follows_availability) {   // M16
     CHECK(byId("resume")->enabled);
 }
 
-TEST(media_place_item_only_with_its_media_place) {   // M17 (LIB-4 AC-12)
+TEST(media_place_item_only_with_its_media_place) {
     auto p = st::product();
     ProductItem fit{MenuGroup::FileMedia, "arm-card", "Arm Card…", "", {}};
     fit.mediaPlace = "card";
@@ -347,7 +346,7 @@ TEST(media_place_item_only_with_its_media_place) {   // M17 (LIB-4 AC-12)
     CHECK_EQ(problems.size(), std::size_t{1});
 }
 
-TEST(no_settings_item_without_settings) {   // M18; Traits::about
+TEST(no_settings_item_without_settings) {   // and Traits::about
     Traits t = kWeb;
     t.settings = false;
     auto ms = menus(st::inputs(), st::product(), t);

@@ -1,9 +1,8 @@
-// CalcuSavedMediaDialog (LIB-7 design §2, D-7, D-13; spec AC-31, EC-4, OQ-4):
-// see MediaPicker.jsx, which is loaded before it and holds the helpers.
+// CalcuSavedMediaDialog: see MediaPicker.jsx, which is loaded before it and holds the helpers.
 
 function CalcuSavedMediaDialog({ media, send, ask, onClose }) {
   const [problem, setProblem] = React.useState("");
-  React.useEffect(() => {   // AC-7: the folders read again when the list opens
+  React.useEffect(() => {   // the folders read again when the list opens
     if (send) send("media.refresh", {});
   }, []);
   const kinds = (media && media.kinds) || [];

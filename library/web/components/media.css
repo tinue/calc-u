@@ -1,5 +1,5 @@
-/* The media components of the React component set (LIB-7 design §2, D-7):
-   every selector inside .calcu-client (LIB-15 AC-17). */
+/* The media components of the React component set: every selector inside
+   .calcu-client (build/dist.js checks it). */
 .calcu-client .calcu-media-picker { max-width: 16em; }
 .calcu-client .calcu-media-dialog {
   display: flex;

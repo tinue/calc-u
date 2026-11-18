@@ -1,5 +1,5 @@
 // ShellRomsMissing -- in place of the faceplate when the product could not
-// start (LIB-14 spec AC-19; LIB-12 AC-5): the text of the `roms-missing`
+// start (its ROMs are missing): the text of the `roms-missing`
 // topic. The product shows it where its faceplate would be; the shell then
 // shows no control bar and no Machine menu. Name: roms-missing.
 //

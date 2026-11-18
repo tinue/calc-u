@@ -8,10 +8,10 @@
 #include <vector>
 
 // The picker of a module slot or a holding media place in the Qt6 component
-// set (LIB-7 design §2, §3.9, D-7; spec AC-8, AC-9): one control-bar picker
-// drawn from the place's entries in the topic `media`, as they are; no rule
-// lives here (LIB-4 TR). An entry shows its label and its description as its
-// tooltip; an entry that cannot be chosen (outdated, AC-9; not now) is shown
+// set: one control-bar picker drawn from the place's entries in the topic
+// `media`, as they are; no rule lives here (the control state has them). An
+// entry shows its label and its description as its tooltip; an entry that
+// cannot be chosen (outdated; not now) is shown
 // disabled, marked "(outdated)" when it has the outdated hint, with the hint
 // as its tooltip. The entry of what the place holds is the current one.
 // Choosing an entry sends `media.choose {place, entry}`.

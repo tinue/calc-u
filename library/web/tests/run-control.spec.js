@@ -3,16 +3,16 @@ const fs = require('fs');
 const path = require('path');
 const { open, send } = require('./helpers');
 
-// LIB-10 L12, L16 (design §6, §3.10): the run-control buttons of the React
+// The run-control buttons of the React
 // component set, CalcuRunControlButtons, on the test product's session with
-// LIB-10's DebuggerPart and the test processor (AC-18); an ended trace
-// handed over as a download (AC-26). Chromium and WebKit.
+// the library's DebuggerPart and the test processor; an ended trace
+// handed over as a download. Chromium and WebKit.
 
 const CASES = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'debugger', 'tests', 'button_cases.json'), 'utf8'));
 const el = (page, name) => page.locator(`[data-calcu="${name}"]`);
 const runState = (page) => page.evaluate(() => window.calcuTestShells[0].getState().topics['run-state']);
 
-test('ac18 react buttons follow the run state', async ({ page }) => {
+test('react buttons follow the run state', async ({ page }) => {
   await open(page, 'Test-A', 'width=480&height=900');
   // The rule's table, the same as the C++ rule's and the Qt6 widget's.
   for (const c of CASES.cases) {
@@ -57,7 +57,7 @@ test('ac18 react buttons follow the run state', async ({ page }) => {
   await expect(el(page, 'run-control-pause')).toBeEnabled();
 });
 
-test('ac26 an ended trace is a download', async ({ page }) => {
+test('an ended trace is a download', async ({ page }) => {
   await open(page, 'Test-A', 'width=480&height=900');
   expect((await send(page, 'trace', { file: 'web.bin' })).done).toBe(true);
   await expect.poll(async () => {

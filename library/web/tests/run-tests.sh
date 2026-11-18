@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Runs the shell's Playwright tests (LIB-15 design §6; CTest
+# Runs the shell's Playwright tests (CTest
 # LibraryWebPlaywright, Longer) against the test product's dist/ folders in
 # build/web/library/web/test-dist/, building them first
 # (tests/product/build.sh). Two HTTP servers (tools/serve.py): one serves
-# test-dist/ at its root, the other only under /anything/calc/ (AC-13).
+# test-dist/ at its root, the other only under /anything/calc/.
 # Arguments go to `playwright test`.
 set -euo pipefail
 

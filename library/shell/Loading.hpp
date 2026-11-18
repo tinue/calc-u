@@ -3,7 +3,7 @@
 #include <chrono>
 #include <optional>
 
-// "Loading…" (LIB-14 design §3.6, rule L1; spec AC-15, EC-1, EC-7): shown
+// "Loading…": shown
 // when an operation has run at full speed for 500 ms of wall time without a
 // break; hidden at once when it ends or goes on at regular speed; the next
 // stretch at full speed counts from its start. Wall time comes from the

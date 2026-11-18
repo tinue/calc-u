@@ -1,10 +1,9 @@
-// The persistent file system, worker side (LIB-15 design §3.3; spec AC-5 to
-// AC-8, EC-1 to EC-3). One IDBFS mount per product (its database is named
-// after the mount point, so two products on one origin never share one,
-// AC-7), written by one copy only (Web Locks, AC-8), never written over when
-// it could not be read (EC-2).
+// The persistent file system, worker side. One IDBFS mount per product (its
+// database is named after the mount point, so two products on one origin
+// never share one), written by one copy only (Web Locks), never written over
+// when it could not be read.
 //
-//   kept         the lock is held, or there is no lock API (EC-1), and the
+//   kept         the lock is held, or there is no lock API, and the
 //                read succeeded: every write, rename and delete is kept
 //   second-copy  another copy holds the lock: read once, kept in memory
 //   unreadable   the read failed: in memory, nothing goes to the store
@@ -13,10 +12,9 @@
 //
 // The automatic persistence is IDBFS's autoPersist, with the library's own
 // queue in place of IDBFS.queuePersist: it is shut until the read succeeded
-// in mode `kept` (the toggle of design §3.3), and it reports a refused write.
+// in mode `kept`, and it reports a refused write.
 
-// Whether IndexedDB opens at all (EC-3; design D-3: private mode as such
-// cannot be told).
+// Whether IndexedDB opens at all (private mode as such cannot be told).
 function calcuCanOpenIndexedDb(name) {
   return new Promise((resolve) => {
     try {
@@ -32,8 +30,7 @@ function calcuCanOpenIndexedDb(name) {
 }
 
 // Whether this copy may write: it holds the lock for the rest of its life,
-// or there is no lock API (plain HTTP, EC-1). Calc-U-1600 today
-// (calc-engine-worker.js:116-124).
+// or there is no lock API (plain HTTP).
 function calcuAcquireStorageLock(name) {
   if (!(self.navigator && navigator.locks && navigator.locks.request)) return Promise.resolve(true);
   return new Promise((resolve) => {

@@ -10,7 +10,7 @@ namespace calcu::qt6 {
 
 ShellLoading::ShellLoading(QWidget* over) : QWidget(over) {
     setObjectName(shell::names::kLoading);
-    setAttribute(Qt::WA_TransparentForMouseEvents);   // takes no input (AC-16)
+    setAttribute(Qt::WA_TransparentForMouseEvents);   // takes no input
     setFocusPolicy(Qt::NoFocus);
     setAutoFillBackground(true);
     auto* l = new QHBoxLayout(this);

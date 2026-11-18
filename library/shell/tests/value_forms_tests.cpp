@@ -1,4 +1,4 @@
-// LIB-14 D-32, D-31: the shell's data in the Value forms the Web page reads
+// The shell's data in the Value forms the Web page reads
 // (shell/ValueForms; library/web/components/shellModel.js).
 #include "TestHarness.hpp"
 #include "sessions/Value.hpp"
@@ -7,7 +7,7 @@
 using namespace calcu;
 using sessions::Value;
 
-TEST(lib14_d32_shell_product_value_form) {
+TEST(shell_product_value_form) {
     shell::ShellProduct p;
     p.name = "Test-Product";
     p.version = "1.0";   // not in the form: the page has its own
@@ -16,7 +16,7 @@ TEST(lib14_d32_shell_product_value_form) {
     p.aboutLines = {"one", "two"};
     p.variantLabels = {{"B", "Rev B"}, {"A", "Rev A"}};
     p.presetFilter = "Presets (*.tp)";
-    p.copyScreen = [] {};   // D-37: the form says whether there is the item
+    p.copyScreen = [] {};   // the form says whether there is the item
     p.pasteText = true;
     p.moduleSlotPinOuts = {"module"};
     p.placesWithoutControl = {"host-drive"};
@@ -42,9 +42,9 @@ TEST(lib14_d32_shell_product_value_form) {
     CHECK_EQ(sessions::toText(shell::toValue(p)), sessions::toText(want));
 }
 
-// Part E (design §10.3.3): the About links when there are, Copy Screen as
+// The About links when there are, Copy Screen as
 // the product has it, an item's onBar and mediaPlace when set; a dialog
-// row's labelled choices (S8).
+// row's labelled choices.
 TEST(shell_product_form_has_links_and_copy_screen_flag) {
     shell::ShellProduct p;
     p.name = "Calc-U-Test";
@@ -83,7 +83,7 @@ TEST(shell_product_form_has_links_and_copy_screen_flag) {
     CHECK(rows[1].find("choices") == nullptr);
 }
 
-TEST(lib14_d32_menu_group_names) {
+TEST(menu_group_value_names) {
     CHECK_EQ(std::string(shell::menuGroupName(shell::MenuGroup::FileOpen)), std::string("FileOpen"));
     CHECK_EQ(std::string(shell::menuGroupName(shell::MenuGroup::FileKinds)), std::string("FileKinds"));
     CHECK_EQ(std::string(shell::menuGroupName(shell::MenuGroup::FileEnd)), std::string("FileEnd"));
@@ -92,7 +92,7 @@ TEST(lib14_d32_menu_group_names) {
     CHECK_EQ(std::string(shell::menuGroupName(shell::MenuGroup::Help)), std::string("Help"));
 }
 
-TEST(lib14_d32_dialog_spec_value_form) {
+TEST(dialog_spec_value_form) {
     using W = shell::DialogRow::Widget;
     shell::DialogSpec spec;
     spec.sections.push_back({"General", {{W::StartupModel, "startup", "model", "Model"}, {W::Text, "s", "k", "Text"}}});
@@ -116,7 +116,7 @@ TEST(lib14_d32_dialog_spec_value_form) {
     CHECK(widgets == (std::vector<std::string>{"startup-preset", "folder", "integer", "choice", "note"}));
 }
 
-TEST(lib14_d31_hit_map_value_form) {
+TEST(hit_map_value_form) {
     shell::HitMap m;
     m.keys.push_back({machine::KeyId{"a"}, shell::Rect{1, 2, 3, 4}});
     m.keys.push_back({machine::KeyId{"b"}, shell::Rect{5, 6, 7, 8}});

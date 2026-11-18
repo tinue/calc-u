@@ -1,4 +1,4 @@
-"""The test server of a Web frontend's dist/ (LIB-15 design §2; spec AC-13).
+"""The test server of a Web frontend's dist/, at its root or under a sub-path.
 
     python3 serve.py <dir> <port> [<prefix>]
 

@@ -3,12 +3,12 @@ const path = require('path');
 const { DIST } = require('./helpers');
 const { prerender } = require('./dist-helpers');
 
-// LIB-15 T15 (design §6; both products' prerender.spec.js today): a host
+// A host
 // site may render the component on a server, in a sandbox whose fetch()
 // and Worker throw. Rendering has no side effects -- those belong in
 // effects, which a static render never runs (dist-helpers.js prerender).
 
-test('ac18 renders on a server without fetch or worker', async () => {
+test('renders on a server without fetch or worker', async () => {
   const ctx = prerender(path.join(DIST, 'Test-A', 'calc.js'));
 
   expect(Object.keys(ctx).filter((k) => /^(createShell|embedProps|useShell|useTopic|CALC_BASE|CALCU_SENTENCES)$/.test(k)),

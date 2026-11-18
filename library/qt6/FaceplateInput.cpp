@@ -40,7 +40,7 @@ bool FaceplateInput::eventFilter(QObject* o, QEvent* e) {
     case QEvent::MouseButtonDblClick: {
         auto* m = static_cast<QMouseEvent*>(e);
         if (m->button() != Qt::LeftButton) return false;
-        if (productTakes(m->position())) {   // D-44: the product's widget gets it
+        if (productTakes(m->position())) {   // the product's widget gets it
             mousePassing_ = true;
             return false;
         }

@@ -8,13 +8,12 @@
 class QVBoxLayout;
 class QWidget;
 
-// The settings dialog of the Qt6 shell (LIB-14 design §3.5, §3.8
-// "Dialogs", D-18; spec AC-11 to AC-14, EC-3): titled "Settings", a group
-// per section of the dialog model, one widget per row named
+// The settings dialog of the Qt6 shell: titled "Settings", a group per
+// section of the dialog model, one widget per row named
 // `setting-<section>-<key>`, Close as its only button. A change is sent as
-// `set-setting` at once (S2); the dialog follows the `settings` topic (S6),
-// in place while its rows stay the same. Window-modal through open(); the
-// busy topic holds nothing back (S7, AC-14).
+// `set-setting` at once; the dialog follows the `settings` topic, in place
+// while its rows stay the same. Window-modal through open(); the busy topic
+// holds nothing back.
 
 namespace calcu::qt6 {
 

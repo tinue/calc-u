@@ -1,9 +1,9 @@
-// Host keys to the typing engine (LIB-5 AC-7, AC-10, EC-1, the family's
-// rule; the Qt6 twin is library/qt6/HostKeys): a browser key event as the
+// Host keys to the typing engine (the family's rule; the Qt6 twin is
+// library/qt6/HostKeys): a browser key event as the
 // command `host-key-down`, and the keys a page holds down, so each key-up
 // pairs with its key-down and a focus loss lifts them all. Nothing is mapped
 // here: the product's keyboard map in the session decides what a key types.
-// The page keeps its product's own keys (a SHIFT tap, LIB-5 AC-33) and
+// The page keeps its product's own keys (a SHIFT tap) and
 // which events are the browser's. No React, no DOM: loadable by
 // `node --test` (library/web/tests/host_keys.test.js).
 
@@ -16,8 +16,7 @@ const CALCU_HOST_NAMED_KEYS = {
 };
 const CALCU_HOST_IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
 
-// The arguments of `host-key-down` for a browser key event (LIB-5 AC-7,
-// AC-29): which key, which modifiers, the one character it produced (0: none
+// The arguments of `host-key-down` for a browser key event: which key, which modifiers, the one character it produced (0: none
 // or more), and for a letter the letter the key carries.
 function calcuHostKeyEvent(e, isMac = CALCU_HOST_IS_MAC) {
   const chars = [...(e.key || "")];
@@ -36,9 +35,9 @@ function calcuHostKeyEvent(e, isMac = CALCU_HOST_IS_MAC) {
 // these return.
 //   down(e): the arguments of `host-key-down`, or null while the key is held already
 //   up(e):   the arguments of `host-key-up` ({physical}) for a held key, or null
-//            (the engine keeps a quick tap down long enough to be scanned, LIB-5 AC-1)
-//   focusLost(): whether a key was held (then the page sends `focus-lost`,
-//            LIB-5 AC-10); forgets them all
+//            (the engine keeps a quick tap down long enough to be scanned)
+//   focusLost(): whether a key was held (then the page sends `focus-lost`);
+//            forgets them all
 function calcuHostKeys(isMac = CALCU_HOST_IS_MAC) {
   const held = new Set();
   return {

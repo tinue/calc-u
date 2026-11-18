@@ -11,7 +11,7 @@ ShellNotices::ShellNotices(QWidget* window) : QObject(window), window_(window) {
 void ShellNotices::show(const shell::NoticeQueue::Shown& shown, std::function<void(bool)> done) {
     auto* box = new QMessageBox(window_);
     box->setObjectName(shell::names::kNotice);
-    box->setWindowTitle(QString());   // a notice is a whole sentence: no title (OQ-4)
+    box->setWindowTitle(QString());   // a notice is a whole sentence: no title
     box->setText(QString::fromStdString(shown.text));
     box->setIcon(shown.question ? QMessageBox::Question : QMessageBox::NoIcon);
     box->setWindowModality(Qt::WindowModal);
@@ -29,7 +29,7 @@ void ShellNotices::show(const shell::NoticeQueue::Shown& shown, std::function<vo
         if (done) done(yes);
     });
     box_ = box;
-    box->open();   // no nested loop (N1)
+    box->open();   // no nested loop
 }
 
 } // namespace calcu::qt6

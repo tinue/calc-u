@@ -1,7 +1,7 @@
-// LIB-14 L1 to L6 (design §6): library/web/components/shellModel.js under
+// library/web/components/shellModel.js under
 // `node --test` (CTest LibraryWebNodeTests, Frequent), the mirror of the C++
 // model tests in library/shell/tests/ case by case, under the same names.
-// The inputs are those the C++ tests build from LIB-4's and LIB-6's payloads
+// The inputs are those the C++ tests build from the control-state and preset-list payloads
 // (library/shell/tests/inputs.txt), and the hit cases are the C++ ones
 // (library/shell/tests/hit_cases.txt).
 const test = require("node:test");
@@ -40,8 +40,8 @@ const ids = (items) => items.map((i) => (i.kind === "separator" ? "-" : i.id)).j
 const menu = (ms, id) => ms.find((x) => x.id === id);
 const find = m.calcuShellFindItem;
 
-// L1: the menus.
-test("ac1_menus_and_items_in_order", () => {
+// The menus.
+test("menus_and_items_in_order", () => {
   const p = product();
   p.copyScreen = () => {};
   p.pasteText = true;
@@ -60,7 +60,7 @@ test("ac1_menus_and_items_in_order", () => {
   assert.deepEqual(one.args, { ref: "examples:games/one.test" });
 });
 
-test("ac1_item_without_function_and_empty_menu_left_out", () => {
+test("item_without_function_and_empty_menu_left_out", () => {
   const i = inputs(clone(INPUTS.noColdBoot));
   i.presetList = null;
   const p = product();
@@ -75,7 +75,7 @@ test("ac1_item_without_function_and_empty_menu_left_out", () => {
   assert.equal(ids(menu(m.calcuShellMenus(i, p, QT), "help").items), "about");
 });
 
-test("ac2_model_menu_marks_running_and_sends_model", () => {
+test("model_menu_marks_running_and_sends_model", () => {
   const ms = m.calcuShellMenus(inputs(), product(), QT);
   assert.equal(ids(find(ms, "model").children), "model-Model-A model-Model-B");
   const a = find(ms, "model-Model-A");
@@ -86,7 +86,7 @@ test("ac2_model_menu_marks_running_and_sends_model", () => {
   assert.deepEqual(b.args, { name: "Model-B" });
 });
 
-test("ac2_variant_submenus_for_model_and_peripheral", () => {
+test("variant_submenus_for_model_and_peripheral", () => {
   const ms = m.calcuShellMenus(inputs(clone(INPUTS.auxPlotter)), product(), QT);
   const vm = find(ms, "variants-model");
   assert.equal(vm.label, "Revision");
@@ -102,7 +102,7 @@ test("ac2_variant_submenus_for_model_and_peripheral", () => {
   assert.equal(find(m.calcuShellMenus(inputs(clone(INPUTS.modelB)), product(), QT), "variants-model"), null);
 });
 
-test("ac3_peripherals_attach_replace_and_detach", () => {
+test("peripherals_menu_attach_replace_and_detach", () => {
   const ms = m.calcuShellMenus(inputs(clone(INPUTS.auxPlotter)), product(), QT);
   assert.equal(ids(find(ms, "peripherals").children),
     "peripheral-printer-test-dotter - peripheral-aux-test-plotter peripheral-aux-test-dotter-2");
@@ -116,7 +116,7 @@ test("ac3_peripherals_attach_replace_and_detach", () => {
   assert.deepEqual(find(ms, "peripheral-aux-test-dotter-2").args, { place: "aux", peripheral: "test-dotter-2" });
 });
 
-test("ac4_shortcuts_qt_and_none_on_web", () => {
+test("menu_shortcuts_qt_and_none_on_web", () => {
   const p = product();
   p.copyScreen = () => {};
   p.pasteText = true;
@@ -134,7 +134,7 @@ test("ac4_shortcuts_qt_and_none_on_web", () => {
     assert.equal(find(web, id).shortcut, "none");
 });
 
-test("ac5_unavailable_disabled_with_reason", () => {
+test("menu_unavailable_disabled_with_reason", () => {
   const i = inputs(clone(INPUTS.unavailable));
   const ms = m.calcuShellMenus(i, product(), QT);
   assert.equal(find(ms, "model-Model-B").enabled, false);
@@ -147,7 +147,7 @@ test("ac5_unavailable_disabled_with_reason", () => {
   assert.ok(find(m.calcuShellMenus(i, product(), QT), "resume").enabled);
 });
 
-test("ac6_roles_and_no_quit_on_web", () => {
+test("menu_roles_and_no_quit_on_web", () => {
   const qt = m.calcuShellMenus(inputs(), product(), QT);
   assert.equal(find(qt, "settings").role, "preferences");
   assert.equal(find(qt, "about").role, "about");
@@ -159,7 +159,7 @@ test("ac6_roles_and_no_quit_on_web", () => {
   assert.ok(find(web, "settings"));
 });
 
-test("ac7_product_item_in_its_group", () => {
+test("product_item_in_its_group", () => {
   const p = product();
   p.items.push({ group: "FileOpen", id: "open-thing", label: "Open Thing…", entry: "" });
   p.items.push({ group: "FileEnd", id: "end-thing", label: "End Thing", entry: "" });
@@ -185,7 +185,7 @@ test("media_items_where_saved_media_and_kinds", () => {
   assert.equal(find(m.calcuShellMenus(i, product(), WEB), "import-media"), null);
 });
 
-test("ac19_no_machine_menu_without_control_state", () => {
+test("no_machine_menu_without_control_state", () => {
   const i = inputs(null);
   i.romsMissing = { text: "ROM files are missing." };
   const ms = m.calcuShellMenus(i, product(), QT);
@@ -194,7 +194,7 @@ test("ac19_no_machine_menu_without_control_state", () => {
   assert.equal(ids(menu(ms, "help").items), "help about");
 });
 
-test("ec4_model_switch_changes_entries", () => {
+test("model_switch_changes_menu_entries", () => {
   const a = m.calcuShellMenus(inputs(clone(INPUTS.modelA)), product(), QT);
   const b = m.calcuShellMenus(inputs(clone(INPUTS.modelB)), product(), QT);
   assert.ok(find(a, "model-Model-A").checked);
@@ -204,11 +204,11 @@ test("ec4_model_switch_changes_entries", () => {
   assert.equal(ids(find(b, "peripherals").children), "peripheral-printer-test-dotter");
 });
 
-// L2: the bar and the panels.
+// The bar and the panels.
 const describeBar = (groups) => groups.map((g) => `[${g.controls.map((c) => c.id).join(" ")}]`).join("");
 const control = (groups, id) => groups.flatMap((g) => g.controls).find((c) => c.id === id) || null;
 
-test("ac8_groups_and_order", () => {
+test("bar_groups_and_order", () => {
   const b = m.calcuShellBar(inputs(), product());
   assert.equal(describeBar(b), "[model][slot-1 slot-2][printer aux][card][]");
   assert.deepEqual(b.map((g) => g.group), ["AfterModel", "Slots", "Places", "Media", "End"]);
@@ -216,14 +216,14 @@ test("ac8_groups_and_order", () => {
   assert.equal(control(b, "card").mediumKind, "test-card");
 });
 
-test("ac8_slot_numbers_with_two_slots", () => {
+test("bar_slot_numbers_with_two_slots", () => {
   const b = m.calcuShellBar(inputs(), product());
   assert.equal(control(b, "slot-1").label, "1:");
   assert.equal(control(b, "slot-2").label, "2:");
   assert.equal(control(m.calcuShellBar(inputs(clone(INPUTS.oneSlot)), product()), "slot-1").label, "");
 });
 
-test("ac9_button_for_one_picker_for_several", () => {
+test("place_button_for_one_picker_for_several", () => {
   const b = m.calcuShellBar(inputs(), product());
   assert.equal(control(b, "printer").kind, "button");
   assert.equal(control(b, "printer").label, "TD-20");
@@ -231,7 +231,7 @@ test("ac9_button_for_one_picker_for_several", () => {
   assert.deepEqual(control(b, "aux").choices.map((c) => c.label), ["None", "TP-4", "TD-21"]);
 });
 
-test("ac9_button_attaches_and_detaches", () => {
+test("place_button_attaches_and_detaches", () => {
   const off = control(m.calcuShellBar(inputs(), product()), "printer");
   assert.equal(off.choices[0].command, "attach");
   const on = control(m.calcuShellBar(inputs(clone(INPUTS.printerDotter)), product()), "printer");
@@ -242,40 +242,40 @@ test("ac9_button_attaches_and_detaches", () => {
   assert.ok(aux.choices[1].checked);
 });
 
-test("ac9_place_needing_more_has_no_control", () => {
+test("place_needing_more_has_no_control", () => {
   assert.equal(control(m.calcuShellBar(inputs(), product()), "host-drive"), null);
   const p = product();
   p.placesWithoutControl = [];
   assert.ok(control(m.calcuShellBar(inputs(), p), "host-drive"));
 });
 
-test("ac10_no_entry_no_gap", () => {
+test("bar_no_entry_no_gap", () => {
   assert.equal(describeBar(m.calcuShellBar(inputs(clone(INPUTS.modelB)), product())), "[model][][printer][][]");
 });
 
-test("ac23_paper_panel_always_with_or_without_owner", () => {
+test("paper_panel_always_with_or_without_owner", () => {
   assert.deepEqual(m.calcuShellPanels(inputs()), [{ kind: "paper", owner: "", ownerPlace: "" }]);
   assert.deepEqual(m.calcuShellPanels(inputs(clone(INPUTS.printerDotter))), [{ kind: "paper", owner: "test-dotter", ownerPlace: "printer" }]);
 });
 
-test("ac42_shell_reads_no_product_entry", () => {
+test("shell_reads_no_product_entry", () => {
   const cs = clone(INPUTS.modelA);
   const before = describeBar(m.calcuShellBar(inputs(cs), product()));
   cs.product = { "tp.extra": { show: true, available: false }, "tp.disk": { available: true } };
   assert.equal(describeBar(m.calcuShellBar(inputs(cs), product())), before);
 });
 
-test("ec5_printer_change_moves_paper_owner", () => {
+test("printer_change_moves_paper_owner", () => {
   assert.equal(m.calcuShellPanels(inputs(clone(INPUTS.printerDotter)))[0].owner, "test-dotter");
   assert.equal(m.calcuShellPanels(inputs(clone(INPUTS.modelA)))[0].owner, "");
 });
 
-test("b7_no_bar_without_control_state", () => {
+test("no_bar_without_control_state", () => {
   assert.deepEqual(m.calcuShellBar(inputs(null), product()), []);
   assert.deepEqual(m.calcuShellPanels(inputs(null)), []);
 });
 
-// L3: the dialog model, on a `settings` topic as SettingsPart writes it.
+// The dialog model, on a `settings` topic as SettingsPart writes it.
 function settings(over) {
   const row = (section, key, kind, value, def, extra) => Object.assign({ section, key, kind, value, default: def, choices: [],
     inUse: value, isDefault: value === def }, extra || {});
@@ -294,7 +294,7 @@ function settings(over) {
 }
 const shownRow = (ss, key) => ss.flatMap((s) => s.rows).find((r) => `${r.row.section}.${r.row.key}` === key) || null;
 
-test("ac11_sections_shown_for_keys_present", () => {
+test("settings_sections_shown_for_keys_present", () => {
   const s = settings();
   const spec = m.calcuShellFamilySections(s.rows);
   const all = m.calcuShellDialog(s, INPUTS.presetList, spec);
@@ -309,14 +309,14 @@ test("ac11_sections_shown_for_keys_present", () => {
   assert.deepEqual(web.map((x) => x.title), ["General", "Startup presets", "Tracing"]);
 });
 
-test("ac12_startup_preset_choices", () => {
+test("startup_preset_choices", () => {
   const s = settings();
   const a = shownRow(m.calcuShellDialog(s, INPUTS.presetList, m.calcuShellFamilySections(s.rows)), "preset.Model-A");
   assert.deepEqual(a.choices, [["", "None"], ["examples:startup/a.test", "Start A — The A start"], ["examples:startup/a2.test", "Start A2"]]);
   assert.equal(a.row.label, "Model-A");
 });
 
-test("ac13_folder_row_home_change_reset", () => {
+test("folder_row_home_change_reset", () => {
   let s = settings();
   let save = shownRow(m.calcuShellDialog(s, null, m.calcuShellFamilySections(s.rows)), "storage.save-folder");
   assert.equal(save.shown, "~/Test-Product");
@@ -327,7 +327,7 @@ test("ac13_folder_row_home_change_reset", () => {
   assert.equal(save.resettable, true);
 });
 
-test("ec3_missing_startup_preset_still_shown", () => {
+test("missing_startup_preset_still_shown", () => {
   const s = settings({ "preset.Model-A": { value: "/home/u/gone/start.test", isDefault: false } });
   const a = shownRow(m.calcuShellDialog(s, INPUTS.presetList, m.calcuShellFamilySections(s.rows)), "preset.Model-A");
   assert.deepEqual(a.choices[a.choices.length - 1], ["/home/u/gone/start.test", "~/gone/start.test"]);
@@ -340,8 +340,8 @@ test("with_tilde_only_for_home_and_below", () => {
   assert.equal(m.calcuShellWithTilde("/tmp/a", ""), "/tmp/a");
 });
 
-// L4: "Loading…" and the notices.
-test("ac15_loading_after_500_ms_at_full_speed", () => {
+// "Loading…" and the notices.
+test("loading_after_500_ms_at_full_speed", () => {
   const r = m.calcuShellLoading();
   r.busy(true, true, 1000);
   assert.equal(r.shown(1000), false);
@@ -360,7 +360,7 @@ test("ac15_loading_after_500_ms_at_full_speed", () => {
   assert.equal(r.shown(3100), false);
 });
 
-test("ec1_short_operation_shows_nothing", () => {
+test("loading_short_operation_shows_nothing", () => {
   const r = m.calcuShellLoading();
   r.busy(true, true, 0);
   assert.equal(r.shown(450), false);
@@ -368,7 +368,7 @@ test("ec1_short_operation_shows_nothing", () => {
   assert.equal(r.shown(550), false);
 });
 
-test("ec7_back_to_full_speed_counts_again", () => {
+test("loading_back_to_full_speed_counts_again", () => {
   const r = m.calcuShellLoading();
   r.busy(true, true, 0);
   r.busy(true, false, 400);
@@ -377,7 +377,7 @@ test("ec7_back_to_full_speed_counts_again", () => {
   assert.equal(r.shown(950), true);
 });
 
-test("ac17_notices_one_after_the_other", () => {
+test("notices_one_after_the_other", () => {
   const q = m.calcuShellNotices();
   assert.equal(q.current(), null);
   q.push("The first went wrong.");
@@ -392,7 +392,7 @@ test("ac17_notices_one_after_the_other", () => {
   assert.equal(q.current(), null);
 });
 
-test("ec2_notice_over_loading", () => {
+test("notice_over_loading", () => {
   const r = m.calcuShellLoading();
   const q = m.calcuShellNotices();
   r.busy(true, true, 0);
@@ -425,13 +425,13 @@ test("asks_refusal_is_a_question_yes_resends_confirmed", () => {
   assert.equal(q.current(), null);
 });
 
-// L5: the hit rule, the same cases as the C++ test.
+// The hit rule, the same cases as the C++ test.
 function hitMap() {
   return { keys: [["1", { x: 0, y: 20, w: 10, h: 10 }], ["2", { x: 20, y: 20, w: 10, h: 10 }], ["3", { x: 40, y: 20, w: 10, h: 10 }]],
     display: { x: 0, y: 0, w: 50, h: 15 }, distance: 4 };
 }
 
-test("ac24_hit_cases", () => {
+test("hit_rule_cases_of_the_file", () => {
   let map = null;
   let cases = 0;
   for (const line of fs.readFileSync(path.join(FIXTURES, "hit_cases.txt"), "utf8").split("\n")) {
@@ -454,7 +454,7 @@ test("ac24_hit_cases", () => {
 
 const describeOut = (out) => out.map((c) => `${c.name} ${JSON.stringify(c.args)}`).join(" ");
 
-test("ac24_several_pointers_hold_keys", () => {
+test("several_pointers_hold_keys", () => {
   const t = m.calcuShellPointer(hitMap(), 1);
   assert.equal(describeOut(t.down(1, 5, 25)), 'screen-key-down {"key":"1","pointer":1}');
   assert.equal(describeOut(t.down(2, 25, 25)), 'screen-key-down {"key":"2","pointer":2}');
@@ -467,7 +467,7 @@ test("ac24_several_pointers_hold_keys", () => {
   assert.equal(describeOut(big.down(7, 50, 50)), 'screen-key-down {"key":"2","pointer":7}');
 });
 
-test("ac43_display_hold_full_speed_until_up_or_leave", () => {
+test("display_hold_full_speed_until_up_or_leave", () => {
   const t = m.calcuShellPointer(hitMap(), 1);
   assert.equal(describeOut(t.down(1, 10, 5)), 'speed {"full":true}');
   assert.equal(describeOut(t.move(1, 20, 6)), "");
@@ -482,22 +482,22 @@ test("ac43_display_hold_full_speed_until_up_or_leave", () => {
   assert.equal(describeOut(t.up(4)), 'speed {"full":false}');
 });
 
-test("ec8_no_key_at_down_nothing_on_move", () => {
+test("no_key_at_down_nothing_on_move", () => {
   const t = m.calcuShellPointer(hitMap(), 1);
   assert.equal(describeOut(t.down(1, 15, 40)), "");
   assert.equal(describeOut(t.move(1, 5, 25)), "");
   assert.equal(describeOut(t.up(1)), "");
 });
 
-// L6: Help and About.
-test("ac20_help_opens_product_address", () => {
+// Help and About.
+test("help_opens_product_address", () => {
   const ms = m.calcuShellMenus(inputs(), product(), WEB);
   assert.equal(find(ms, "help").label, "Test-Product Help");
   assert.equal(find(ms, "help").command, "");
   assert.ok(find(m.calcuShellMenus(inputs(null), product(), WEB), "help"));
 });
 
-test("ac21_about_shows_product_texts", () => {
+test("about_shows_product_texts", () => {
   const p = product();
   const a = m.calcuShellAbout(p);
   assert.equal(a.title, "About Test-Product");
@@ -510,8 +510,7 @@ test("ac21_about_shows_product_texts", () => {
   assert.equal(m.calcuShellAbout(p).version, "Version 1.2.3");
 });
 
-// Part E (design §10.3.1, §10.3.2): a window without a menu bar (M13 to
-// M18, B8) and labelled choices (S8); the C++ cases of the same names in
+// A window without a menu bar and labelled choices; the C++ cases of the same names in
 // menu_model_tests.cpp, bar_model_tests.cpp, settings_dialog_tests.cpp.
 const PORTRAIT = Object.assign({}, WEB, { menuBar: false });
 const withAction = (cs, command, available) => {

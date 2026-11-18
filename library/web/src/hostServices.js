@@ -1,16 +1,16 @@
-// The page's host services (LIB-15 design §3.1, §9 N4; spec AC-4, AC-9):
+// The page's host services:
 // what a Web frontend states to its session when it starts to listen, and
 // the one answer to each ask. No folder picker, no haptics.
 //
 //   file-picker      {accept, multiple} → [{name, bytes}] (the glue writes
 //                    them to /uploads and gives the session the paths);
 //                    nothing picked: not given, "cancelled"
-//   keep-file        {name, bytes, mediaType, kind?}: a download (AC-9);
-//                    kind "trace" for an ended trace (LIB-10 AC-26)
+//   keep-file        {name, bytes, mediaType, kind?}: a download;
+//                    kind "trace" for an ended trace
 //   open-url         {url}: a new tab
 //   clipboard-text   {text}: copied; without text: the clipboard's text, {text}
-//   clipboard-image  {bytes}: PNG bytes copied (as before LIB-8);
-//                    {bytes, text, name, dotsPerInch} (LIB-8 D-9, AC-21): one
+//   clipboard-image  {bytes}: PNG bytes copied;
+//                    {bytes, text, name, dotsPerInch}: one
 //                    clipboard entry with the picture and, with `text`, the
 //                    text. When the page armed the clipboard in the user's
 //                    gesture (armClipboard), the entry written then is
@@ -23,7 +23,6 @@
 const CALCU_WEB_SERVICES = ["audio-sink", "clipboard-text", "clipboard-image", "file-picker", "keep-file", "open-url"];
 
 // <input type=file> once; resolves with the picked Files ([] if cancelled).
-// From Calc-U-1600 src/CalcU1600.jsx:19-38.
 function calcuPickFiles(accept, multiple) {
   return new Promise((resolve) => {
     const input = document.createElement("input");
@@ -57,7 +56,7 @@ function calcuDownload(name, bytes, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// LIB-8 D-9: the clipboard written inside the user's gesture (a click on
+// The clipboard written inside the user's gesture (a click on
 // Copy or Cut), with promises the clipboard-image answer resolves, because
 // the picture is made in the worker and its ask reaches the page after the
 // gesture (WebKit allows a write only within one). {text}: whether a text
@@ -102,7 +101,7 @@ function armClipboard({ text = false } = {}) {
   return armed;
 }
 
-// LIB-8 clipboard-image with text, name, dotsPerInch (D-9, AC-21).
+// clipboard-image with text, name, dotsPerInch.
 async function calcuCopyPicture(a, given, refused) {
   const pngBlob = new Blob([a.bytes || new Uint8Array(0)], { type: "image/png" });
   const hasText = typeof a.text === "string";

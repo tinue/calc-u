@@ -1,9 +1,9 @@
 #pragma once
 #include <string>
 
-// The stable names of the shell's widgets and elements (LIB-14 design
-// §3.10, D-21): Qt `objectName`, Web `data-calcu`. The scenarios of AC-25
-// and Calc-U-1600's shot scenarios (M-49, AC-44) find widgets by them.
+// The stable names of the shell's widgets and elements: Qt `objectName`,
+// Web `data-calcu`. The shell's GUI scenarios and Calc-U-1600's shot
+// scenarios find widgets by them.
 
 namespace calcu::shell::names {
 
@@ -28,8 +28,8 @@ inline const char* const kNoticeNo = "notice-no";
 inline const char* const kAboutDialog = "about-dialog";
 inline const char* const kPanelArea = "panel-area";
 inline const char* const kRomsMissing = "roms-missing";
-// B9 (a window without a menu bar): the bar's actions, the More button and
-// the items of its menu; the storage banner of the React set (§10.3.5).
+// A window without a menu bar: the bar's actions, the More button and
+// the items of its menu; the storage banner of the React set.
 inline std::string barAction(const std::string& id) { return "bar-action-" + id; }   // bar-action-reset, -load-preset, -settings
 inline const char* const kBarMore = "bar-more";
 inline std::string moreItem(const std::string& id) { return "more-item-" + id; }

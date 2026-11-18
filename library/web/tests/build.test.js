@@ -1,4 +1,4 @@
-// LIB-15 T13 (design §6): library/web/build/dist.js under `node --test`
+// library/web/build/dist.js under `node --test`
 // (CTest LibraryWebNodeTests, Frequent). Needs only Node: each test puts a
 // small dist/ together in a temporary folder.
 const test = require("node:test");
@@ -21,7 +21,7 @@ function tempDist() {
   return { dir, put };
 }
 
-test("ac14 manifest fields and hashes", () => {
+test("manifest fields and hashes", () => {
   const { dir, put } = tempDist();
   put("calc.js", "x");
   put("bundle/rom.bin", "rom");
@@ -40,7 +40,7 @@ test("ac14 manifest fields and hashes", () => {
   assert.equal(written.files["bundle/rom.bin"], crypto.createHash("sha256").update("rom").digest("hex"));
 });
 
-test("ac15 one global, nothing else", () => {
+test("one global, nothing else", () => {
   const { dir, put } = tempDist();
   put("Product.jsx",
     "const helper = 1;\nfunction Product(props) { return <div className=\"calcu-client\">{helper}</div>; }\n" +
@@ -61,7 +61,7 @@ test("ac15 one global, nothing else", () => {
     assert.ok(text.includes(name), `calc.js holds ${name}`);
 });
 
-test("ac17 scope check finds an unscoped selector", () => {
+test("scope check finds an unscoped selector", () => {
   const css = `
     /* a comment { not a rule } */
     .calcu-client { color: red; }

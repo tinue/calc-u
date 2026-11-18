@@ -39,7 +39,7 @@ NameAndSaveDialog::NameAndSaveDialog(QWidget* parent)
 void NameAndSaveDialog::setPlace(const media::PlaceState& p) {
     place_ = p.place;
     protect_->setChecked(false);
-    protect_->setVisible(p.askWriteProtect);   // AC-16: only for a switch still off
+    protect_->setVisible(p.askWriteProtect);   // only for a switch still off
     name_->clear();
 }
 
@@ -58,7 +58,7 @@ sessions::Value NameAndSaveDialog::args(bool confirmed) const {
 
 std::string NameAndSaveDialog::submit() {
     if (!sender_) return "Nothing receives the save.";
-    // D-6: the question, then the same command confirmed (AskedSend).
+    // An `asks:` refusal: the question, then the same command confirmed (AskedSend).
     const AskedSend r = sendAsking(
         [this](bool confirmed) { return sender_(media::kNameAndSaveCommand, args(confirmed)); },
         [this](const QString& question) {

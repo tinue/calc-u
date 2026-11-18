@@ -1,5 +1,4 @@
-// A product page's glue to its session (Part E simplification E-5; LIB-14
-// D-32, D-31, LIB-13): what both products' pages wrote each.
+// A product page's glue to its session, the same for both products' pages.
 //
 //   useShellProduct(shell, {request, args, fallback, version, build,
 //                   copyScreen, presetAccept, openFiles, acts}) → {product, ready}
@@ -13,16 +12,15 @@
 //     act from `acts` by its id. copyScreen, openFiles and acts are read
 //     when used, so they may be new closures at each render.
 //   useFaceplateMaps(shell, request, model) → {[model]: map}
-//     the faceplate maps, one `request` {model} per model (D-31)
+//     the faceplate maps, one `request` {model} per model
 //   calcuOpenFiles(send, files, way) → the reply, or null without files
-//     LIB-13's `open {files: [{name, bytes}], way, upload: true}` (several
-//     files are one folder in /uploads, AC-8); `send` is the page's sender
+//     the session's `open {files: [{name, bytes}], way, upload: true}` (several
+//     files are one folder in /uploads); `send` is the page's sender
 //     (the shell's, or useCalcuShell's sendChecked to show a refusal)
 //   calcuFileDrop(open) → {onDragOver, onDrop}
 //     a drop of files: `open(files, "drop")` (null: none yet) for a drop
 //     of exactly one file; a drop of more is ignored, and no drop reaches
-//     the browser (LIB-13 AC-25, one rule for both products: user,
-//     2026-11-17, Q-4 of docs/reviews/e-simplification.md)
+//     the browser (one rule for both products)
 
 function useShellProduct(shell, options) {
   const start = useShellState(shell, (st) => st.start);

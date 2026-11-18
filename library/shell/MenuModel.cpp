@@ -28,20 +28,20 @@ MenuItem submenu(std::string id, std::string label, std::vector<MenuItem> childr
     return i;
 }
 
-void applyAvailability(MenuItem& i, const Availability& a) {   // M9 (AC-5)
+void applyAvailability(MenuItem& i, const Availability& a) {
     i.enabled = a.now;
     i.reason = a.now ? std::string() : a.reason;
 }
 
 // The control state's action entry, or nullptr: an item without one does
-// not appear (AC-1).
+// not appear.
 const Value* actionEntry(const Value& cs, const std::string& command) {
     for (const auto& a : read::elements(cs, "actions"))
         if (read::text(a, "command") == command) return &a;
     return nullptr;
 }
 
-// Groups with a separator between those that have items (M1).
+// Groups with a separator between those that have items.
 void appendGroup(std::vector<MenuItem>& into, std::vector<MenuItem> group) {
     if (group.empty()) return;
     if (!into.empty()) into.push_back(separator());
@@ -50,21 +50,21 @@ void appendGroup(std::vector<MenuItem>& into, std::vector<MenuItem> group) {
 
 std::vector<MenuItem> productItems(const ShellInputs& in, const ShellProduct& p, MenuGroup g) {
     std::vector<MenuItem> out;
-    // M10: without a control state the product could not start; only its
+    // Without a control state the product could not start; only its
     // Help items stay.
     if (!in.started() && g != MenuGroup::Help) return out;
     const Value* entries = in.controlState.find("product");
     for (const auto& item : p.items) {
         if (item.group != g) continue;
         MenuItem i = action(item.id, item.label);
-        if (!item.mediaPlace.empty()) {   // M17: only with its media place, as its `insert`
+        if (!item.mediaPlace.empty()) {   // only with its media place, as its `insert`
             const Value* place = nullptr;
             for (const auto& m : read::elements(in.controlState, "mediaPlaces"))
                 if (read::text(m, "id") == item.mediaPlace) place = &m;
             if (!place) continue;
             applyAvailability(i, availabilityOf(*place, "insert"));
         }
-        if (!item.entry.empty() && i.enabled) {   // M9: a product item follows its product entry
+        if (!item.entry.empty() && i.enabled) {   // a product item follows its product entry
             const Value* e = entries ? entries->find(item.entry) : nullptr;
             applyAvailability(i, e ? availabilityOf(*e) : Availability{false, ""});
         }
@@ -91,12 +91,12 @@ std::vector<MenuItem> variantItems(const Value& variants, const std::string& run
 
 std::string variantLabel(const ShellProduct& p, const std::string& id) {
     auto it = p.variantLabels.find(id);
-    return it != p.variantLabels.end() ? it->second : "Variant";   // a missing label: checkShellProduct (D-13)
+    return it != p.variantLabels.end() ? it->second : "Variant";   // a missing label: checkShellProduct reports it
 }
 
 std::vector<MenuItem> fileMenu(const ShellInputs& in, const ShellProduct& p, Traits t) {
     std::vector<MenuItem> items;
-    // FileOpen: Load Preset…, Examples ▸ (M2).
+    // FileOpen: Load Preset…, Examples ▸.
     std::vector<MenuItem> open;
     if (const Value* lp = in.started() ? actionEntry(in.controlState, actions::kLoadPreset) : nullptr) {
         const Availability a = availabilityOf(*lp);
@@ -136,7 +136,7 @@ std::vector<MenuItem> fileMenu(const ShellInputs& in, const ShellProduct& p, Tra
     appendGroup(items, std::move(open));
     appendGroup(items, productItems(in, p, MenuGroup::FileKinds));
     // FileMedia: Import Media…, Saved Media… where the frontend has the list
-    // and the product has kinds of medium (M2; LIB-7 AC-29).
+    // and the product has kinds of medium.
     std::vector<MenuItem> media;
     if (t.savedMedia && !read::elements(in.media, "kinds").empty()) {
         MenuItem import = action("import-media", "Import Media…");
@@ -147,7 +147,7 @@ std::vector<MenuItem> fileMenu(const ShellInputs& in, const ShellProduct& p, Tra
     for (auto& i : productItems(in, p, MenuGroup::FileMedia)) media.push_back(std::move(i));
     appendGroup(items, std::move(media));
     std::vector<MenuItem> end = productItems(in, p, MenuGroup::FileEnd);
-    if (t.settings) {   // M18
+    if (t.settings) {
         MenuItem settings = action(actions::kSettings, "Settings…");
         settings.role = MenuItem::Role::Preferences;
         settings.shortcut = t.shortcuts ? MenuItem::Shortcut::Preferences : MenuItem::Shortcut::None;
@@ -163,9 +163,9 @@ std::vector<MenuItem> fileMenu(const ShellInputs& in, const ShellProduct& p, Tra
     return items;
 }
 
-std::vector<MenuItem> editMenu(const ShellInputs& in, const ShellProduct& p, Traits t) {   // M3
+std::vector<MenuItem> editMenu(const ShellInputs& in, const ShellProduct& p, Traits t) {
     std::vector<MenuItem> items;
-    if (!in.started()) return items;   // M10: nothing to copy or paste into
+    if (!in.started()) return items;   // not started: nothing to copy or paste into
     if (p.copyScreen) {
         MenuItem c = action(actions::kCopyScreen, "Copy Screen");
         c.shortcut = t.shortcuts ? MenuItem::Shortcut::Copy : MenuItem::Shortcut::None;
@@ -184,10 +184,10 @@ std::vector<MenuItem> machineMenu(const ShellInputs& in, const ShellProduct& p, 
     std::vector<MenuItem> items;
     const Value& cs = in.controlState;
     std::vector<MenuItem> choose;
-    // M4: Model ▸.
+    // Model ▸.
     std::vector<MenuItem> models = modelItems(cs);
     if (!models.empty()) choose.push_back(submenu("model", "Model", std::move(models)));
-    // M5: a submenu for the running model's variants and for each plugged-in
+    // A submenu for the running model's variants and for each plugged-in
     // peripheral's.
     const std::string model = read::text(cs, "model");
     if (const Value* vs = cs.find("variants"); vs && vs->elements() && vs->elements()->size() > 1) {
@@ -206,13 +206,13 @@ std::vector<MenuItem> machineMenu(const ShellInputs& in, const ShellProduct& p, 
             const std::string id = read::text(f, "id");
             const std::string owner = where + "-" + id;
             auto list = variantItems(*vs, read::text(f, "variant"), owner, [&](MenuItem& i, const std::string& v) {
-                i.command = commands::kAttach;   // the replace (LIB-18 §3.5, LIB-2 AC-35)
+                i.command = commands::kAttach;   // attaching to a plugged place replaces what is there
                 i.args = Value::object({{"place", where}, {"peripheral", id}, {"variant", v}});
             });
             choose.push_back(submenu("variants-" + owner, variantLabel(p, id), std::move(list)));
         }
     }
-    // M6: Peripherals ▸, one flat list, place after place (D-10).
+    // Peripherals ▸, one flat list, place after place.
     std::vector<MenuItem> peripherals;
     for (const auto& place : read::elements(cs, "places")) {
         const PlaceKind k = placeKind(place, p);
@@ -224,7 +224,7 @@ std::vector<MenuItem> machineMenu(const ShellInputs& in, const ShellProduct& p, 
     }
     if (!peripherals.empty()) choose.push_back(submenu("peripherals", "Peripherals", std::move(peripherals)));
     appendGroup(items, std::move(choose));
-    // M7: Reset, Cold boot, Resume; then the product's.
+    // Reset, Cold boot, Resume; then the product's.
     std::vector<MenuItem> run;
     auto commandItem = [&](const char* command, const char* label, MenuItem::Shortcut s) {
         const Value* e = actionEntry(cs, command);
@@ -246,7 +246,7 @@ std::vector<MenuItem> machineMenu(const ShellInputs& in, const ShellProduct& p, 
     return items;
 }
 
-std::vector<MenuItem> helpMenu(const ShellInputs& in, const ShellProduct& p, Traits t) {   // M8
+std::vector<MenuItem> helpMenu(const ShellInputs& in, const ShellProduct& p, Traits t) {
     std::vector<MenuItem> items;
     if (!p.helpUrl.empty()) items.push_back(action(actions::kHelp, p.name + " Help"));
     for (auto& i : productItems(in, p, MenuGroup::Help)) items.push_back(std::move(i));
@@ -290,7 +290,7 @@ PlaceKind placeKind(const sessions::Value& place, const ShellProduct& p) {
     if (p.moduleSlotPinOuts.count(read::text(place, "pinOut"))) return PlaceKind::ModuleSlot;
     if (p.placesWithoutControl.count(read::text(place, "place"))) return PlaceKind::NoControl;
     const auto n = read::elements(place, "fitting").size();
-    if (n == 0) return PlaceKind::NoControl;   // B4: nothing fits, nothing to show
+    if (n == 0) return PlaceKind::NoControl;   // nothing fits, nothing to show
     return n == 1 ? PlaceKind::Button : PlaceKind::Picker;
 }
 
@@ -300,7 +300,7 @@ std::vector<MenuItem> placeChoices(const sessions::Value& place, bool withNone) 
     bool anyPlugged = false;
     for (const auto& f : read::elements(place, "fitting")) anyPlugged = anyPlugged || read::flag(f, "plugged");
     if (withNone) {
-        MenuItem none = action("peripheral-" + where + "-none", "None");   // D-11
+        MenuItem none = action("peripheral-" + where + "-none", "None");
         none.checkable = true;
         none.checked = !anyPlugged;
         if (anyPlugged) {
@@ -333,16 +333,16 @@ std::vector<MenuItem> placeChoices(const sessions::Value& place, bool withNone) 
 std::vector<Menu> menus(const ShellInputs& in, const ShellProduct& p, Traits t) {
     std::vector<Menu> out;
     auto add = [&](const char* id, const char* label, std::vector<MenuItem> items) {
-        if (!items.empty()) out.push_back(Menu{id, label, std::move(items)});   // M1
+        if (!items.empty()) out.push_back(Menu{id, label, std::move(items)});   // a menu without items is left out
     };
     add("file", "File", fileMenu(in, p, t));
     add("edit", "Edit", editMenu(in, p, t));
-    if (in.started()) add("machine", "Machine", machineMenu(in, p, t));   // M10 (AC-19)
+    if (in.started()) add("machine", "Machine", machineMenu(in, p, t));   // not started: no Machine menu
     add("help", "Help", helpMenu(in, p, t));
     return out;
 }
 
-std::vector<MenuItem> moreItems(const std::vector<Menu>& ms, const ShellProduct& p) {   // M14, M15
+std::vector<MenuItem> moreItems(const std::vector<Menu>& ms, const ShellProduct& p) {
     auto onBar = [&](const MenuItem& i) {
         if (i.id == actions::kLoadPreset || i.id == actions::kSettings || i.id == actions::kQuit || i.id == "reset" ||
             i.id == "model" || i.id == "peripherals")

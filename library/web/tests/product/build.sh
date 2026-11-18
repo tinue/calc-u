@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Builds the product made for the shell's tests (LIB-15 design §2, T1): its
+# Builds the product made for the shell's tests: its
 # engine, CMake target calcu_web_test_product of the repository's root
-# project in build/web (as the products' Web engines, M-12), then four
+# project in build/web (as the products' Web engines), then four
 # dist/ folders in build/web/library/web/test-dist/:
 #
 #   Test-A/    product Test-A, release 1.0.0
-#   Test-B/    product Test-B, release 1.0.0 (AC-7: two products, one origin)
-#   Test-A-2/  product Test-A, release 2.0.0 (AC-11: a newer release)
-#   Test-M/    product Test-M, release 1.0.0 (LIB-7 media.spec.js: the
-#              session hosts LIB-7's MediaPart)
+#   Test-B/    product Test-B, release 1.0.0 (two products, one origin)
+#   Test-A-2/  product Test-A, release 2.0.0 (a newer release)
+#   Test-M/    product Test-M, release 1.0.0 (media.spec.js: the
+#              session hosts the library's MediaPart)
 #
 # Needs emcmake/cmake (Homebrew `emscripten` or an activated emsdk), ninja
 # and node.

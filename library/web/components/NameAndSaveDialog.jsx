@@ -1,5 +1,4 @@
-// CalcuNameAndSaveDialog (LIB-7 design §2, D-6, D-7; spec AC-16, AC-17, AC-19):
-// see MediaPicker.jsx, which is loaded before it and holds the helpers.
+// CalcuNameAndSaveDialog: see MediaPicker.jsx, which is loaded before it and holds the helpers.
 
 function CalcuNameAndSaveDialog({ place, prompt, send, ask, onClose }) {
   const [name, setName] = React.useState("");

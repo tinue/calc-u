@@ -2,9 +2,8 @@ const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const { open, send, request, files } = require('./helpers');
 
-// LIB-7 L11 (design §2, §6, D-7; spec AC-8, AC-9, AC-16, AC-29, AC-31): the
-// media components of the React set drawn in the test product Test-M
-// (src/CalcUTest.jsx with shell=1), whose session hosts LIB-7's MediaPart
+// The media components of the React set drawn in the test product Test-M
+// (src/CalcUTest.jsx with shell=1), whose session hosts the library's MediaPart
 // with the test kinds of library/media/tests/TestKinds.hpp on the page's
 // save folder; Chromium and WebKit. test-dot's holding place is `disk`
 // (test-disk, `.testdisk.yaml`).
@@ -38,7 +37,7 @@ async function importByMenu(page, name, text) {
   await chooser.setFiles({ name, mimeType: 'application/x-yaml', buffer: Buffer.from(text) });
 }
 
-test('ac29 file menu has import and saved media', async ({ page }) => {
+test('file menu has import and saved media', async ({ page }) => {
   await start(page);
   await el(page, 'menu-file').click();
   await expect(el(page, 'item-import-media')).toHaveText(/Import Media…/);   // the product has kinds of medium
@@ -52,7 +51,7 @@ test('ac29 file menu has import and saved media', async ({ page }) => {
   await expect(el(page, 'media-saved-test-disk-Work')).toBeVisible();
 });
 
-test('ac29 media in persistent file system after reload', async ({ page }) => {
+test('media in persistent file system after reload', async ({ page }) => {
   await start(page);
   await importByMenu(page, 'Kept.testdisk.yaml', disk('Kept', 'k'));
   await expect.poll(() => names(page)).toContain('Kept');
@@ -63,7 +62,7 @@ test('ac29 media in persistent file system after reload', async ({ page }) => {
   expect(await files(page)).toContain('Kept.testdisk.yaml');
 });
 
-test('ac8 picker lists the saved instance', async ({ page }) => {
+test('picker lists the saved instance', async ({ page }) => {
   await start(page);
   await saved(page, 'Mine.testdisk.yaml', disk('Mine', 'm'));
   const picker = el(page, 'media-picker-disk');
@@ -77,7 +76,7 @@ test('ac8 picker lists the saved instance', async ({ page }) => {
   }).toBe('Mine');
 });
 
-test('ac9 outdated entry disabled with hint', async ({ page }) => {
+test('outdated entry disabled with hint', async ({ page }) => {
   await start(page);
   await saved(page, 'Old.testdisk.yaml', disk('Old', 'o', 'version-1'));
   const option = el(page, 'media-picker-disk').locator('option', { hasText: 'Old (outdated)' });
@@ -86,7 +85,7 @@ test('ac9 outdated entry disabled with hint', async ({ page }) => {
   expect(await option.getAttribute('title')).toContain('outdated');
 });
 
-test('ac16 name and save asks the name', async ({ page }) => {
+test('name and save asks the name', async ({ page }) => {
   await start(page);
   await saved(page, 'Blank.testdisk.yaml', disk('Blank', 'b', 'template'));
   await el(page, 'media-picker-disk').selectOption({ label: 'Blank' });
@@ -103,7 +102,7 @@ test('ac16 name and save asks the name', async ({ page }) => {
   }).toBe('Named');
 });
 
-test('ac31 saved media lists downloads deletes after asking', async ({ page }) => {
+test('saved media lists downloads deletes after asking', async ({ page }) => {
   await start(page);
   await saved(page, 'Mine.testdisk.yaml', disk('Mine', 'm'));
   await saved(page, 'Blank.testdisk.yaml', disk('Blank', 'b', 'template'));
@@ -116,7 +115,7 @@ test('ac31 saved media lists downloads deletes after asking', async ({ page }) =
   expect(download.suggestedFilename()).toBe('Mine.testdisk.yaml');
   expect(fs.readFileSync(await download.path(), 'utf8')).toContain('content: m');
   let asked = '';
-  page.once('dialog', (d) => { asked = d.message(); d.accept(); });   // OQ-4: asked first
+  page.once('dialog', (d) => { asked = d.message(); d.accept(); });   // asked first
   await mine.locator('[data-calcu="media-delete"]').click();
   await expect(mine).toHaveCount(0);
   expect(asked).toContain('Mine');

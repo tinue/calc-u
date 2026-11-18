@@ -93,7 +93,7 @@ void Shell::setFaceplate(QWidget* faceplate, shell::HitMap map, FaceplateGeometr
     delete faceplateInput_;
     faceplateInput_ = faceplate ? new FaceplateInput(*faceplate, host_, std::move(map), scale_, origin_, std::move(g.productFirst))
                                 : nullptr;
-    delete loadingView_;   // the overlay goes onto the faceplate, below its display (L2)
+    delete loadingView_;   // the overlay goes onto the faceplate, below its display
     loadingView_ = new ShellLoading(faceplate ? faceplate : &window_);
     refresh(QString());
 }
@@ -137,12 +137,12 @@ void Shell::askPresetList() {
 
 void Shell::message(const sessions::Message& m) {
     if (const auto* s = std::get_if<sessions::StreamMessage>(&m)) {
-        if (s->topic == sessions::kNoticesTopic) {   // AC-17: each, in order
+        if (s->topic == sessions::kNoticesTopic) {   // each, in order
             for (const auto& p : s->appended)
                 if (p) noticeQueue_.push(shell::read::text(p->toValue(), "sentence"));
             if (!s->appended.empty()) QTimer::singleShot(0, this, [this] { showNotice(); });
         }
-        if (s->topic == sessions::kLogTopic && options_.logToPlatform)   // G1 (AC-18): no view of its own
+        if (s->topic == sessions::kLogTopic && options_.logToPlatform)   // no view of its own
             for (const auto& p : s->appended)
                 if (p) qInfo().noquote() << q(shell::read::text(p->toValue(), "text"));
     }
@@ -187,7 +187,7 @@ void Shell::refresh(const QString&) {
     menus_ = shell::menus(inputs_, product_, options_.traits);
     menuBar_->set(menus_);
     bar_->set(shell::bar(inputs_, product_, options_.traits));
-    bar_->setVisible(inputs_.started());   // B7 (AC-19)
+    bar_->setVisible(inputs_.started());   // no bar before the start (ROMs missing)
     panels_->set(shell::panels(inputs_));
     const bool missing = !inputs_.started() && !inputs_.romsMissing.isNull();
     static_cast<RomsMissingView*>(romsMissing_)->setMessage(q(shell::read::text(inputs_.romsMissing, "text")));
@@ -200,7 +200,7 @@ void Shell::sendChecked(const sessions::CommandName& name, sessions::Value args)
     sessions::Command sent{name, args};
     host_.send(name, std::move(args), [this, sent](const sessions::ReplyMessage& r) {
         if (r.done) return;
-        noticeQueue_.refusal(r.reason, sent);   // D-7, N4
+        noticeQueue_.refusal(r.reason, sent);   // a notice, or a question for `asks:`
         QTimer::singleShot(0, this, [this] { showNotice(); });
     });
 }
@@ -232,7 +232,7 @@ void Shell::choose(const shell::MenuItem& item) {
     } else if (item.id == a::kPasteText) {
         sendChecked(shell::commands::kPaste, sessions::Value::object({{"text", choosers_.clipboardText().toStdString()}}));
     } else {
-        for (const auto& p : product_.items)   // AC-7: the product's own item
+        for (const auto& p : product_.items)   // the product's own item
             if (p.id == item.id && p.act) p.act();
     }
 }
@@ -241,7 +241,7 @@ void Shell::openSettings() {
     if (!settings_) settings_ = new ShellSettingsDialog(*this, &window_);
     askPresetList();   // the startup presets as the preset list has them now
     settings_->refresh();
-    settings_->open();   // window-modal, no nested loop (D-18)
+    settings_->open();   // window-modal, no nested loop
 }
 
 void Shell::openAbout() {
@@ -252,7 +252,7 @@ void Shell::openAbout() {
 
 void Shell::openHelp() {
     if (product_.helpUrl.empty()) return;
-    (void)choosers_.openUrl(QUrl(q(product_.helpUrl)));   // EC-6: whatever happens, nothing else does
+    (void)choosers_.openUrl(QUrl(q(product_.helpUrl)));   // whatever happens, nothing else does
 }
 
 QString Shell::startFolder(const std::string& kind) const {

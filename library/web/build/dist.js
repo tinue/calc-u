@@ -1,5 +1,5 @@
-// The parts of a Web frontend's build that every product shares (LIB-15
-// design §3.5; spec AC-13 to AC-15, AC-17), used by each product's build.js
+// The parts of a Web frontend's build that every product shares, used by
+// each product's build.js
 // after the engine and the product's files are in dist/. Node, no npm
 // dependencies: the JSX is compiled with the vendored Babel run in Node.
 //
@@ -9,26 +9,25 @@
 //                                build.js and the test product's call
 //   releaseVersion(productDir)   the version release.yaml names (ReleaseIt's rule)
 //   compileCalcJs({vendor, librarySources, productSources, replace, out})
-//                                one closure, one global (AC-15)
+//                                one closure, one global
 //   compileApp({vendor, component, props, installSentence, out})
-//                                dist/app/app.js from library/web/app/app.jsx (AC-12)
+//                                dist/app/app.js from library/web/app/app.jsx
 //   copyAppFiles(dist)           app/sw.js, app/engine-worker.js, audio-worklet.js
 //   writeLibraryWorker(dist)     src/sentences.js + storage.js + worker.js →
-//                                dist/library-worker.js (design §3.2)
-//   writeFilesList(dist, {bundle, presets})   dist/files.json (spec OQ-6)
-//   stampServiceWorker(dist, {id, core})       app/sw.js: id, list, hash (AC-10, AC-11)
-//   writeManifest(dist, {name, version, commit})   MANIFEST.json (AC-14)
-//   checkScopedCss(cssText) → [selectors outside .calcu-client] (AC-17)
+//                                dist/library-worker.js
+//   writeFilesList(dist, {bundle, presets})   dist/files.json
+//   stampServiceWorker(dist, {id, core})       app/sw.js: id, list, hash
+//   writeManifest(dist, {name, version, commit})   MANIFEST.json
+//   checkScopedCss(cssText) → [selectors outside .calcu-client]
 //   VENDOR                       library/web/vendor/: React 18, ReactDOM (shipped in
 //                                a dist/vendor/), Babel (build only), ReactDOMServer
 //                                (tests only); one copy for every product
 //   LIBRARY_SOURCES              the page side, in load order
-//   COMPONENT_SOURCES            the React component set (library/web/components/,
-//                                LIB-14 D-16, D-17; LIB-8 D-1), in load order after
-//                                LIBRARY_SOURCES; not in compileCalcJs's default: a
-//                                product takes it in its column step (librarySources:
-//                                [...LIBRARY_SOURCES, ...COMPONENT_SOURCES]). M-40, M-41
-//                                and M-43 add their components to it
+//   COMPONENT_SOURCES            the React component set (library/web/components/),
+//                                in load order after LIBRARY_SOURCES; not in
+//                                compileCalcJs's default: a product takes it in its
+//                                column step (librarySources:
+//                                [...LIBRARY_SOURCES, ...COMPONENT_SOURCES])
 //   COMPONENT_CSS                the component set's stylesheets (scoped under
 //                                .calcu-client), appended to a product's calc.css with it
 
@@ -44,14 +43,14 @@ const LIBRARY_SOURCES = ["base.js", "canvas.js", "sentences.js", "audio.js", "ho
   .map((n) => path.join(WEB, "src", n));
 const COMPONENT_SOURCES = ["paper.js", "PaperPanel.jsx", "RunControlButtons.jsx", "MediaPicker.jsx", "NameAndSaveDialog.jsx", "SavedMediaDialog.jsx"].map((n) => path.join(WEB, "components", n));
 const COMPONENT_CSS = ["paper.css", "media.css"].map((n) => path.join(WEB, "components", n));
-// LIB-14 (M-43): the shell, its models first (design §2.3).
+// The shell, its models first.
 COMPONENT_SOURCES.push(...["shellModel.js", "useShell.jsx", "ShellModal.jsx", "ShellMenuBar.jsx", "ShellControlBar.jsx",
   "ShellSettings.jsx", "ShellAbout.jsx", "ShellNotice.jsx", "ShellLoading.jsx", "ShellPanelArea.jsx",
   "useShellFaceplate.jsx", "ShellRomsMissing.jsx", "ShellMoreMenu.jsx", "ShellStorageBanner.jsx"].map((n) => path.join(WEB, "components", n)));
 COMPONENT_CSS.push(path.join(WEB, "components", "shell.css"));
-// LIB-5 AC-7, AC-10: host keys to `host-key-down` and the keys held down.
+// Host keys to `host-key-down` and the keys held down.
 COMPONENT_SOURCES.push(path.join(WEB, "components", "hostKeys.js"));
-// Part E simplification E-5: the product glue of a page and LIB-7's media in
+// The product glue of a page and the library's media in
 // the shell (the shell product, the faceplate maps, open and drop, Saved
 // Media, the slot picker).
 COMPONENT_SOURCES.push(...["useShellProduct.jsx", "ShellMedia.jsx"].map((n) => path.join(WEB, "components", n)));
@@ -98,7 +97,7 @@ function applyReplace(text, replace) {
 }
 
 // One closure: nothing of the library or the product reaches the host
-// page's globals but the component the product sets on window (AC-15).
+// page's globals but the component the product sets on window.
 function compileCalcJs({ vendor, librarySources = LIBRARY_SOURCES, productSources, replace, banner, out }) {
   const parts = [...librarySources, ...productSources].map((f) =>
     `/* === ${path.basename(f)} === */\n` + compileSource(vendor, f, applyReplace(read(f), replace)));
@@ -183,7 +182,7 @@ function gitCommit(dir) {
   }
 }
 
-// The same fields in every product (AC-14): name, version, commit, and the
+// The same fields in every product: name, version, commit, and the
 // sha256 of every file of dist/ by its path.
 function writeManifest(dist, { name, version, commit }) {
   const files = {};
@@ -196,7 +195,7 @@ function writeManifest(dist, { name, version, commit }) {
   return manifest;
 }
 
-// The selectors of a stylesheet that are not inside .calcu-client (AC-17).
+// The selectors of a stylesheet that are not inside .calcu-client.
 // At-rules: @media and @supports blocks are looked into; @font-face and
 // @keyframes hold no selectors. A selector list is checked per selector.
 function checkScopedCss(cssText) {
@@ -248,7 +247,7 @@ function releaseVersion(productDir) {
 }
 
 // examples/bundle.yaml and exactly the files it lists, each `{ file: … }`,
-// into dist/presets/ (LIB-6 AC-31: the engine's bundled examples).
+// into dist/presets/ (the engine's bundled examples).
 function copyPresets(dist, bundleFile) {
   const examples = path.dirname(bundleFile);
   const presets = [...new Set([...read(bundleFile).matchAll(/\{\s*file:\s*([^\s}]+)\s*\}/g)].map((m) => m[1]))];
@@ -263,16 +262,16 @@ function copyPresets(dist, bundleFile) {
 }
 
 // A product's build, after its engine and its static files are in dist/:
-// calc.css (the product's stylesheet and the component set's, AC-17),
-// calc.js (one closure: the library, the component set and `sources`,
-// AC-15), app/app.js with `component` (AC-12), the library's app files and
+// calc.css (the product's stylesheet and the component set's, every
+// selector scoped), calc.js (one closure: the library, the component set and
+// `sources`), app/app.js with `component`, the library's app files and
 // worker, the presets of `bundle` (a bundle.yaml; none without it),
-// files.json, the service worker stamped with `swId` and `core` (AC-10,
-// AC-11) and MANIFEST.json `name` (AC-14). Returns what it wrote.
+// files.json, the service worker stamped with `swId` and `core` and
+// MANIFEST.json `name`. Returns what it wrote.
 function buildProduct({ dist, name, version, css, sources, replace, banner, component, props, installSentence, bundle, swId, core }) {
   const cssText = [css, ...COMPONENT_CSS].map(read).join("\n");
   const outside = checkScopedCss(cssText);
-  if (outside.length) throw new Error(`calc.css: selectors outside .calcu-client (LIB-15 AC-17): ${outside.join(", ")}`);
+  if (outside.length) throw new Error(`calc.css: selectors outside .calcu-client: ${outside.join(", ")}`);
   fs.writeFileSync(path.join(dist, "calc.css"), cssText);
   compileCalcJs({
     vendor: VENDOR,

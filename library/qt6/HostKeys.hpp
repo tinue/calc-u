@@ -9,13 +9,13 @@
 
 class QKeyEvent;
 
-// A Qt key event as the library's typing engine takes it (LIB-5 AC-7, the
+// A Qt key event as the library's typing engine takes it (the
 // family's rule): which key (`physical`, `named`), which modifiers by what
 // the user pressed, the character the layout produced and, for a letter,
 // the letter the key carries. Nothing is mapped here: the product's
 // keyboard map in the session decides what the key types. HostKeys keeps
 // which physical keys are down, so each key-up goes to the session as
-// `host-key-up {physical}` and a focus loss (LIB-5 AC-10) forgets them.
+// `host-key-up {physical}` and a focus loss forgets them.
 
 namespace calcu::qt6 {
 

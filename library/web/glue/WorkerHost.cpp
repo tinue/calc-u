@@ -57,7 +57,7 @@ struct StorageState final : s::PayloadOf<StorageState> {
 
 } // namespace
 
-// The shell's topics (design §9 N2): declared in the session like any
+// The shell's topics: declared in the session like any
 // feature's; the storage sentence also goes once into the notices.
 class WorkerHost::ShellPart final : public s::SessionPart {
 public:
@@ -135,7 +135,7 @@ void WorkerHost::receive(val message) {
     }
     if (!listener_.listening()) return;
     if (kind == "command" || kind == "request") {
-        // One reply per call (LIB-3 AC-8, AC-13), at once or at the operation's end.
+        // One reply per call, at once or at the operation's end.
         auto reply = [this, pageCall](const s::ReplyMessage& r) { post(r, pageCall); };
         if (kind == "command") listener_.send(s::CommandName{text(message, "name")}, fromJs(message["args"]), reply);
         else listener_.ask(s::RequestName{text(message, "name")}, fromJs(message["args"]), reply);
@@ -167,7 +167,7 @@ void WorkerHost::receive(val message) {
 }
 
 // The picked files' bytes go to the uploads folder; the session gets their
-// paths (design §3.1, §9 N4).
+// paths.
 void WorkerHost::answerFilePicker(s::CallId ask, val message) {
     s::ServiceAnswer a;
     a.given = message["done"].isTrue();

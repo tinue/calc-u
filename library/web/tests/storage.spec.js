@@ -1,13 +1,13 @@
 const { test, expect, chromium } = require('@playwright/test');
 const { SENTENCES, open, send, request, files } = require('./helpers');
 
-// LIB-15 T6-T9 (design §6): the persistent file system in IndexedDB, one
+// The persistent file system in IndexedDB, one
 // store per product, one writer, and the storage modes. Every test has a
 // browser context of its own, so a store of its own.
 
 const settingsPath = '/persist-test-a/settings/Test-A/Test-A.ini';
 
-test('ac5 settings and save folder survive close and open', async ({ page, context }) => {
+test('settings and save folder survive close and open', async ({ page, context }) => {
   await open(page);
   expect((await send(page, 'tp.write', { name: 'card.txt', text: 'hello' })).done).toBe(true);
   expect((await send(page, 'tp.set-model', { model: 'test-dot' })).done).toBe(true);
@@ -25,7 +25,7 @@ test('ac5 settings and save folder survive close and open', async ({ page, conte
   await expect(again.locator('.calcu-client')).toHaveAttribute('data-storage', 'kept');
 });
 
-test('ac6 write rename delete found after one second', async ({ page }) => {
+test('write rename delete found after one second', async ({ page }) => {
   await open(page);
   await send(page, 'tp.write', { name: 'a.txt', text: 'a' });
   await send(page, 'tp.write', { name: 'b.txt', text: 'b' });
@@ -44,7 +44,7 @@ test('ac6 write rename delete found after one second', async ({ page }) => {
   expect((await request(page, 'tp.read', { name: 'c.txt' })).value.text).toBe('changed');
 });
 
-test('ac7 Test-A and Test-B on one origin see only their own', async ({ page, context }) => {
+test('Test-A and Test-B on one origin see only their own', async ({ page, context }) => {
   await open(page, 'Test-A');
   await send(page, 'tp.write', { name: 'only-a.txt', text: 'a' });
   await page.waitForTimeout(1000);
@@ -65,7 +65,7 @@ test('ac7 Test-A and Test-B on one origin see only their own', async ({ page, co
   expect(await files(b2)).toEqual(['only-b.txt']);
 });
 
-test('ac8 second tab works in memory and says so', async ({ page, context }) => {
+test('second tab works in memory and says so', async ({ page, context }) => {
   await open(page);
   await expect(page.locator('.calcu-client')).toHaveAttribute('data-storage', 'kept');
   await send(page, 'tp.write', { name: 'first.txt', text: '1' });
@@ -94,7 +94,7 @@ test('ac8 second tab works in memory and says so', async ({ page, context }) => 
   expect(await files(third)).toEqual(['first.txt']);
 });
 
-test('ac8 twice on one page', async ({ page }) => {
+test('twice on one page', async ({ page }) => {
   await page.goto('Test-A/index.html?twice=1');
   const clients = page.locator('.calcu-client');
   await expect(clients).toHaveCount(2);
@@ -106,7 +106,7 @@ test('ac8 twice on one page', async ({ page }) => {
     .toHaveText(SENTENCES.secondCopy('Test-A'));
 });
 
-test('ec1 plain http every copy writes', async ({ baseURL }, testInfo) => {
+test('plain http every copy writes', async ({ baseURL }, testInfo) => {
   test.skip(testInfo.project.name !== 'root', 'Chromium at the root only: a host name mapped to the test server');
   const port = new URL(baseURL).port;
   const browser = await chromium.launch({ args: ['--host-resolver-rules=MAP calcu.test 127.0.0.1'] });
@@ -131,7 +131,7 @@ test('ec1 plain http every copy writes', async ({ baseURL }, testInfo) => {
   }
 });
 
-test('ec2 unreadable store is not written over', async ({ page, context }) => {
+test('unreadable store is not written over', async ({ page, context }) => {
   await open(page);
   await send(page, 'tp.write', { name: 'keep.txt', text: 'kept' });
   await page.waitForTimeout(1000);
@@ -153,7 +153,7 @@ test('ec2 unreadable store is not written over', async ({ page, context }) => {
   expect((await request(again, 'tp.settings')).value.model).not.toBe('test-dot');
 });
 
-test('ec3 no store works in memory and says so', async ({ page }) => {
+test('no store works in memory and says so', async ({ page }) => {
   await open(page, 'Test-A', 'worker=tests/unavailable-worker.js');
   await expect(page.locator('.calcu-client')).toHaveAttribute('data-storage', 'unavailable');
   await expect(page.locator('.calcu-test-banner')).toHaveText(SENTENCES.unavailable('Test-A'));

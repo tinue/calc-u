@@ -1,6 +1,6 @@
 # Scripted screenshots
 
-The pictures of the help (LIB-16 AC-12; [help/](../../../help/), its
+The pictures of the help ([help/](../../../help/), its
 pictures in `help/images/`) are generated, not hand-made. There is one
 scenario per help chapter that has pictures, in [guide/](guide/), named
 after the chapter (`02-getting-started`, `04-media`, `05-peripherals`,
@@ -39,9 +39,9 @@ That makes the same scenarios usable as a GUI smoke test.
 (`CALCU_ATTACH`: a POSIX tree with the tests, as `tools/run_qt.sh 1600`
 at the repository root makes it); release builds and Windows have neither.
 
-**A client of harness attach** (LIB-14 AC-44). The app opens harness
+**A client of harness attach.** The app opens harness
 attach on a port the system picks and the runner talks to it as a line
-client (`library/qt6/AttachLineClient`, LIB-11's serve protocol): every
+client (`library/qt6/AttachLineClient`, the harness's serve protocol): every
 step that loads a preset, lets time pass, presses keys or types is the
 harness's `preset`, `wait`, `key`, `type`, `reset`, `cold-boot` (and
 `expect`, `pause`, `resume`), so the runner never steps the machine
@@ -103,7 +103,7 @@ captures the whole window. More captures can go in `steps:` as
 | Step | What it does |
 |---|---|
 | `preset: <file>` | Load a preset: attach's `preset` with a file path, or with a bundled example's path `examples:<path>`; the next step follows when it is loaded. |
-| `reset` / `cold-boot` | Machine ▸ Reset / Cold boot: attach's `reset`, `cold-boot` (`reset: all` was renamed `cold-boot` in M-49). |
+| `reset` / `cold-boot` | Machine ▸ Reset / Cold boot: attach's `reset`, `cold-boot`. |
 | `key: <name>` | Tap a calculator key: attach's `key`. Key names are the preset `key:` names. |
 | `hold-key: <name>` | Press a key and keep it down: a pointer down on the faceplate at the key's centre (the shell's live input), then attach's `wait 100ms`. The faceplate shows the press highlight. |
 | `release` | Let go of the held key. |
@@ -123,10 +123,10 @@ captures the whole window. More captures can go in `steps:` as
 | `capture: …` | Write an image; see below. |
 | `expect-panel: { name, title, empty }` | Check a paper panel (by objectName): shown, with that title (the plotter's name; `""` none), empty or not; the shot fails otherwise. For the check scenarios in `tests/gui/`. |
 | `expect-title: <text>` | Check the window's title. |
-| `expect-widget: { name, text, enabled }` | Check a label or button (by objectName): its text, and whether it can be used; the shot fails otherwise (C1600-3 AC-18). |
-| `dap-client: <port>\|disconnect` | A DAP client of this process connects to 127.0.0.1:`<port>` (the app started with `--dap <port>`), or goes (C1600-3 AC-18). |
+| `expect-widget: { name, text, enabled }` | Check a label or button (by objectName): its text, and whether it can be used; the shot fails otherwise. |
+| `dap-client: <port>\|disconnect` | A DAP client of this process connects to 127.0.0.1:`<port>` (the app started with `--dap <port>`), or goes. |
 | `command: <name>` | A harness command through attach (`pause`, `resume`). |
-| `host-key-down: <key>` / `host-key-up: <key>` | A key of the host's keyboard goes down / up, as the window gets it from the keyboard: `shift` or one character (sent with Shift while `shift` is down). No settle follows, so a down and an up in a row are a tap. For LIB-5 AC-33's check scenario. |
+| `host-key-down: <key>` / `host-key-up: <key>` | A key of the host's keyboard goes down / up, as the window gets it from the keyboard: `shift` or one character (sent with Shift while `shift` is down). No settle follows, so a down and an up in a row are a tap. For the Shift-tap check scenario. |
 | `expect-lcd: <text>` / `expect-no-lcd: <text>` | Attach's `expect` / `not-expect`: the text is in one row of the LCD, or in none; the shot fails otherwise. |
 
 A dialog opened by `action:` or `click:` stays open and scriptable: the
@@ -143,7 +143,7 @@ open when a shot ends is closed automatically, and a held key is released.
   - `dialog`: the open dialog.
   - `plot`: the plugged-in plotter's whole paper at physical size (up to
     1200 DPI), as Copy puts it on the clipboard: the session's
-    `paper.picture` (LIB-8).
+    `paper.picture`.
   - `lcd-image`: the LCD dot matrix at physical size, as Edit ▸ Copy Screen
     puts it on the clipboard. (`lcd` is the on-screen LCD widget.)
   - `screen-region`: `method: system` only; see below.
@@ -207,14 +207,16 @@ Two macOS details:
 
 ## Check scenarios
 
-`tests/gui/*.shots.yaml` are scenarios that check what the acceptance
-criteria of the GUI say (ADR 0032): LIB-8 AC-36 (`lib8-ac36`), AC-38
-(`lib8-ac38`), LIB-10 AC-41 (`lib10-ac41`). They run as the CTests
-`CalcU1600Shots.<name>` (Longer) with the guide's scenarios, write their
-pictures into the build tree, and use `expect-panel`, `expect-title` and
-`command`. Since M-49 they run through attach like the guide's; LIB-5
-AC-33 (`lib5-ac33`), LIB-6 AC-54 (`lib6-ac54`) and LIB-7 AC-8, AC-16 are
-checked the same way.
+`tests/gui/*.shots.yaml` are scenarios that check what the GUI does: the
+paper panel and its plotter name (`lib8-ac36`, `lib8-ac38`), "Paused
+(debugger)" in the title and Machine ▸ Resume (`lib10-ac41`), a tap of the
+host's Shift (`lib5-ac33`), a bundled example loaded by its bundle path
+(`lib6-ac54`), a saved module template and its picker
+(`lib7-ac8-…`, `lib7-ac16-…`), and the DAP status line and Disconnect in
+Settings (`c1600-3-ac18`). They run as the CTests `CalcU1600Shots.<name>`
+(Longer) with the guide's scenarios, through attach like the guide's,
+write their pictures into the build tree, and use `expect-panel`,
+`expect-title` and `command`.
 
 ## Presets
 

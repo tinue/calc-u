@@ -104,7 +104,7 @@ void FaceplateWidget::paintEvent(QPaintEvent*) {
         painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter.drawPixmap(toQRect(m_fitted.art), m_pixmap);
     }
-    // The keys live input holds (LIB-5 AC-19): a translucent white overlay
+    // The keys live input holds: a translucent white overlay
     // on each one's own area.
     if (!m_layout) return;
     for (const std::string& k : shownKeys()) {

@@ -17,7 +17,7 @@ the server speaks it is [DAP.md](DAP.md).
   while the DAP session has the machine running (no wall clock): a
   scenario that pauses by a breakpoint repeats exactly, one that pauses by
   hand does not.
-- **Run control:** the library's (LIB-10, `library/debugger/`): the
+- **Run control:** the library's (`library/debugger/`): the
   `DebuggerPart` among `SharpAppPart`'s parts is the machine session's gate
   whether or not a client is attached. Pause, step and resume come from
   the DAP, the harness (`calcu --product c1600`), Machine ▸ Resume and the
@@ -28,10 +28,10 @@ the server speaks it is [DAP.md](DAP.md).
 - **The set-up waits for `configurationDone`:** `attach` leaves the machine
   paused; a program started with `after: call` (or `stopOnEntry`) in the
   set-up runs only from `configurationDone`, so the client's breakpoints
-  are set first (ledger 1600-20).
+  are set first.
 - **Traces:** the library's trace session (`trace` command, the
   INSPECTOR's TRACE button as `trace {button: true}`, a preset's
-  `trace:` step through LIB-6's preset engine) writes the core's
+  `trace:` step through the library's preset engine) writes the core's
   records (`c1600.trace-records`, `app/SharpTraceRecorder`) into the trace
   folder, limits every trace to `[trace] max-file-size-mb` MiB and says so
   in a notice. The Web has no trace folder: a trace fails there.
@@ -60,11 +60,11 @@ the server speaks it is [DAP.md](DAP.md).
   - `Listing/`: the `listingFormats()` table is the extension point for TASM or library listings later;
   - `SourceMap`;
   - `ProgramLoader`: Build & Load's rules (the address, the entry, the range a listing
-    binds to); it places the bytes with C1600-2's machine-code loader (`core/Loaders`).
+    binds to); it places the bytes with the product's machine-code loader (`core/Loaders`).
 - **`app/`:** `SharpDebuggerSetup` (the `DebuggerPart`'s set-up: `cpu` only, the
   trace session, no run-control steps on the Sharp models), `SharpTraceRecorder`,
   `SharpSymbolReaders` (sdas, zasm, `.SYMBOLS:` for `symbols`).
-- **`app/dap/`** (C1600-3, namespace `cu1600::dap`; no Qt, every native tree, not
+- **`app/dap/`** (namespace `cu1600::dap`; no Qt, every native tree, not
   Emscripten):
   - `DapPart`: the server, a session part after the `DebuggerPart`: listening by
     `[debug] dap-enabled`/`dap-port` or the run's port (`c1600.dap-port`), the status
@@ -100,7 +100,7 @@ the server speaks it is [DAP.md](DAP.md).
 - **Arming:** the library's rule G1: breakpoints and watches are checked
   only while no operation runs (`Checks`). A boot, a preset or a load is an
   operation and never parks on a breakpoint; those loops would hang.
-- **Queueing:** the server's own rule (AC-8): a message that arrives while
+- **Queueing:** the server's own rule: a message that arrives while
   an operation of the session runs (any: the startup preset, a menu's
   load, the DAP's own set-up) waits, and the held ones are answered in
   their order when it ends (`DapPart::operationEnded`). No nested event

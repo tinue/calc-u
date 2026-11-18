@@ -1,6 +1,6 @@
-# CalcU1600ShotsThroughAttach (LIB-14 Part D, D.8 Q12; spec AC-44): the
-# screenshot runner steps the machine through harness attach only. Fails if
-# ShotRunner.cpp names one of the ways it used to step it itself.
+# CalcU1600ShotsThroughAttach: the screenshot runner steps the machine
+# through harness attach only. Fails if ShotRunner.cpp names one of the ways
+# it used to step it itself.
 #   cmake -DSOURCE=<ShotRunner.cpp> -P check_shots_through_attach.cmake
 if(NOT DEFINED SOURCE)
   message(FATAL_ERROR "SOURCE is not set")

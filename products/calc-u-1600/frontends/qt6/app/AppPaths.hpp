@@ -12,7 +12,7 @@
 // side) live. Bundled resources ship as loose files next to the executable
 // (not Qt's .qrc embedding, since Core's scanMemoryCardDirectory() and
 // the ROM lookup read a real filesystem directory). The places the app
-// writes to come from the library (calcu::settings::Paths, LIB-9): the
+// writes to come from the library (calcu::settings::Paths): the
 // save folder defaults to ~/Calc-U-1600 on every platform (not
 // QStandardPaths::AppDataLocation, no iCloud); the settings file,
 // Calc-U-1600.ini, is in the platform's settings folder (Application
@@ -21,15 +21,15 @@
 namespace AppPaths {
 
 // The host folders and the settings file of this run (the Qt6 component
-// set's, LIB-9; the settings base on macOS: macApplicationSupportFolder()):
+// set's; the settings base on macOS: macApplicationSupportFolder()):
 // the file is opened at the first use, a problem goes to the log as
-// "Settings: <problem>"; places() for LIB-14's SettingsPart.
+// "Settings: <problem>"; places() for the library's SettingsPart.
 calcu::qt6::HostFolders& folders();
 
 // Folders of its own for this run instead of the platform's (screenshot
 // runs, `--shots`, main.cpp: a throwaway home and settings base, so the
 // user's settings and saved cards/disks neither show in the pictures nor
-// change; LIB-9 AC-18). Call before anything reads a setting or a path.
+// change). Call before anything reads a setting or a path.
 void useHostDirs(const calcu::settings::HostDirs& dirs);
 // The tests (CalcU1600QtTests): the bundled folders of their own, before the first use.
 void useBundleDirs(const cu1600::BundleDirs& dirs);
@@ -54,7 +54,7 @@ QString instanceDir();
 
 // Cassettes: [storage] cassette-folder if
 // non-empty, else "Cassettes" inside instanceDir(); created on demand. A tape's
-// definition and its sound lie there (LIB-7 AC-42; LIB-9 AC-16).
+// definition and its sound lie there.
 QString cassetteDir();
 
 // cu1600::AppPaths::traceDir() / serialLinkDir(): the Settings override,

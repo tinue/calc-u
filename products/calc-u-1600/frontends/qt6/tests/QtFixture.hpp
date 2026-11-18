@@ -13,7 +13,7 @@
 class QAction;
 class QWidget;
 
-// The fixture of CalcU1600QtTests (LIB-14 Part D, D.8): the real window of
+// The fixture of CalcU1600QtTests: the real window of
 // Calc-U-1600, put together from the shell, over the product's session on
 // the real ROMs, on the real clock, offscreen. Once per process: a temporary
 // home and settings folder (nothing of the user's is read or written) and a

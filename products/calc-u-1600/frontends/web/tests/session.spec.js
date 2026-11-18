@@ -1,8 +1,9 @@
 const { test, expect } = require('@playwright/test');
 
-// The Calc-U-1600 Web frontend on the library's shell and app session
-// (M-31): LIB-15 AC-24 to AC-27, LIB-3 AC-36, LIB-17 AC-22 (the last only
-// with CALCU1600_WEB_PACING=1: a minute of wall time, Checkpoint).
+// The Calc-U-1600 Web frontend on the library's shell and app session: the
+// component's props, settings and media storage, sound, the protocol, a
+// hidden tab, and pacing (the last only with CALCU1600_WEB_PACING=1: a
+// minute of wall time, Checkpoint).
 
 // Records what crosses postMessage between the page and the worker.
 async function recordMessages(page) {
@@ -40,16 +41,15 @@ async function typedEnter(page) {
   await page.keyboard.press('Enter');
 }
 
-test('ac24 CalcU1600 takes the AC-16 props, the model by its name', async ({ page }) => {
+test('CalcU1600 takes the shared component props, the model by its name', async ({ page }) => {
   await gotoReady(page, '?model=PC-1500');
   await expect.poll(async () => ((await h.topic(page, 'control-state')) || {}).model).toBe('PC-1500');
   await expect(page.locator('.calcu-face[data-model="PC-1500"]')).toHaveCount(1);
 });
 
-// LIB-15 AC-29 (release prep 4): `layout` is a shared prop; Calc-U-1600 has
-// one layout and takes "auto" only (its default); another value is ignored
-// with a console warning (ledger 1600-52).
-test('ac29 layout auto only, another value ignored with a warning', async ({ page }) => {
+// `layout` is a shared prop; Calc-U-1600 has one layout and takes "auto"
+// only (its default); another value is ignored with a console warning.
+test('layout auto only, another value ignored with a warning', async ({ page }) => {
   const warnings = [];
   page.on('console', (m) => { if (m.type() === 'warning') warnings.push(m.text()); });
   await gotoReady(page);
@@ -67,11 +67,11 @@ test('ac29 layout auto only, another value ignored with a warning', async ({ pag
     ['CalcU1600: layout "wide" is not one of its layouts ("auto"); it is ignored.']);
 });
 
-test('ac25 settings in Calc-U-1600.ini, media in the save folder of 0.8.x', async ({ page }) => {
+test('settings in Calc-U-1600.ini, media in the save folder of 0.8.x', async ({ page }) => {
   await gotoReady(page, '?model=PC-1600');
   expect((await send(page, 'set-setting', { section: 'startup', key: 'model', value: 'PC-1600' })).done).toBe(true);
   await notBusy(page);
-  expect((await send(page, 'media.choose', { place: 'slot-1', entry: 'bundled:ce1600m.module.yaml' })).done).toBe(true);   // LIB-7 (M-47)
+  expect((await send(page, 'media.choose', { place: 'slot-1', entry: 'bundled:ce1600m.module.yaml' })).done).toBe(true);
   await notBusy(page);
   expect((await send(page, 'media.name-and-save', { place: 'slot-1', name: 'Kept' })).done).toBe(true);
   // The persistent file system is IndexedDB "/persist", as 0.8.x's.
@@ -94,7 +94,7 @@ test('ac25 settings in Calc-U-1600.ini, media in the save folder of 0.8.x', asyn
   expect(await setting(page, 'startup', 'model')).toBe('PC-1600');
 });
 
-test('ac26 buzzer samples at regular speed, none at full speed or in an operation', async ({ page }) => {
+test('buzzer samples at regular speed, none at full speed or in an operation', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page, '?model=PC-1600');
   const sounds = () => page.evaluate(() => window.__calcuReceived.filter((m) => m && m.kind === 'sound').length);
@@ -127,24 +127,24 @@ test('ac26 buzzer samples at regular speed, none at full speed or in an operatio
   expect(during).toBe(0);
 });
 
-// LIB-6 AC-49: a preset's log lines are in the engine's log stream.
-test('lib6_ac49 preset log in the log stream', async ({ page }) => {
+// A preset's log lines are in the engine's log stream.
+test('preset log in the log stream', async ({ page }) => {
   await gotoReady(page);
   await send(page, 'load-preset', { ref: 'examples:basic/hanoi.pc1600' });
   await expect.poll(async () => (await log(page)).join('\n'), { timeout: 45000 })
     .toContain('Preset examples:basic/hanoi.pc1600 carried out to its end.');
 });
 
-// A preset handed over as a file the page uploaded (LIB-6 AC-54: the files
-// it names go beside it).
+// A preset handed over as a file the page uploaded (the files it names go
+// beside it).
 async function uploadPreset(page, name, text) {
   const r = await page.evaluate(([n, t]) => document.querySelector('.calcu-client').calcuShell
     .send('c1600.upload', { name: n, bytes: new TextEncoder().encode(t) }), [name, text]);
   return r.value;
 }
 
-// LIB-6 AC-54: an uploaded preset is loaded; its result shows.
-test('lib6_ac54 uploaded preset is loaded', async ({ page }) => {
+// An uploaded preset is loaded; its result shows.
+test('uploaded preset is loaded', async ({ page }) => {
   await gotoReady(page);
   await notBusy(page);
   const path = await uploadPreset(page, 'mine.pc1600',
@@ -155,8 +155,8 @@ test('lib6_ac54 uploaded preset is loaded', async ({ page }) => {
   await notBusy(page);
 });
 
-// LIB-10 AC-40 (EC-8; the format 2 clause, M-46): `trace:` fails in the Web frontend.
-test('lib10_ac40 trace step fails on the web', async ({ page }) => {
+// `trace:` fails in the Web frontend.
+test('trace step fails on the web', async ({ page }) => {
   await gotoReady(page);
   await notBusy(page);
   const path = await uploadPreset(page, 'web.pc1600',
@@ -166,7 +166,7 @@ test('lib10_ac40 trace step fails on the web', async ({ page }) => {
   expect(r.reason).toMatch(/line 4: .*trace/i);
 });
 
-test('ac27 no message of the old protocol', async ({ page }) => {
+test('no message of the old protocol', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page);
   await h.ask(page, 'preset-list');
@@ -180,7 +180,7 @@ test('ac27 no message of the old protocol', async ({ page }) => {
   expect(sent).toContain('listen');
 });
 
-test('lib3_ac36 hidden tab suspends, shown continues', async ({ page }) => {
+test('hidden tab suspends, shown continues', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page);
   const seconds = async () => (await ticks(page)).seconds;
@@ -201,7 +201,7 @@ test('lib3_ac36 hidden tab suspends, shown continues', async ({ page }) => {
   expect(names).toEqual(expect.arrayContaining(['suspend', 'continue']));
 });
 
-test('lib17_ac22 a PC-1600 keeps one minute', async ({ page }) => {
+test('a PC-1600 keeps one minute', async ({ page }) => {
   test.skip(!process.env.CALCU1600_WEB_PACING, 'Checkpoint: set CALCU1600_WEB_PACING=1');
   test.setTimeout(150000);
   await gotoReady(page, '?model=PC-1600');
@@ -213,5 +213,5 @@ test('lib17_ac22 a PC-1600 keeps one minute', async ({ page }) => {
   const wall = (Date.now() - w0) / 1000;
   const emulated = t1.seconds - t0.seconds;
   console.log(`  pacing (Web): wall ${wall.toFixed(3)} s, emulated ${emulated.toFixed(3)} s`);
-  expect(Math.abs(emulated - wall)).toBeLessThan(0.05);   // the bound of AC-1 plus the page's round trip
+  expect(Math.abs(emulated - wall)).toBeLessThan(0.05);   // the pacer's bound (one slice) plus the page's round trip
 });

@@ -1,7 +1,5 @@
-// CalcU1600QtTests (LIB-14 Part D, D.8; LIB-4 Part D, D.6; C1600-2 AC-15;
-// LIB-13 AC-18, AC-19, AC-21): the Qt6 window of Calc-U-1600 put together
-// from the shell, on the real ROMs, offscreen. Each case carries the
-// scenario ID of LIB-14 AC-25 in its name; the Web cases of the same IDs
+// CalcU1600QtTests: the Qt6 window of Calc-U-1600 put together from the
+// shell, on the real ROMs, offscreen. The Web cases of the same scenarios
 // are in frontends/web/tests/shell.spec.js.
 #include "QtFixture.hpp"
 #include "TestHarness.hpp"
@@ -146,9 +144,9 @@ std::string barPlaceText(Fixture& f, const char* place) {
 
 } // namespace
 
-// ── Q2: the menus (AC-34; AC-1, AC-4, AC-6 for this product) ───────────
+// ── The menus ───────────────────────────────────────────────────────────
 
-TEST(lib14_ac34_qt_menus_in_family_order) {
+TEST(qt_menus_in_family_order) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1500");
     CHECK(checkList("menus", menuTitles(f.w().menuBar()), {"File", "Edit", "Machine", "Help"}));
@@ -164,7 +162,7 @@ TEST(lib14_ac34_qt_menus_in_family_order) {
     // Host Drive… is the PC-1600's (its product entry); Resume while paused.
     CHECK(f.action(cu1600::kItemHostDrive) && !f.action(cu1600::kItemHostDrive)->isEnabled());
     CHECK(f.action("resume") && !f.action("resume")->isEnabled());
-    // AC-6: the platform's places.
+    // The platform's places.
     CHECK(f.action("settings")->menuRole() == QAction::PreferencesRole);
     CHECK(f.action("about")->menuRole() == QAction::AboutRole);
     CHECK(f.action("quit")->menuRole() == QAction::QuitRole);
@@ -186,7 +184,7 @@ TEST(lib14_ac34_qt_menus_in_family_order) {
     CHECK(checkList("PC-1500A submenus", machineSubmenus(f), {"Model ▸", "Peripherals ▸"}));
 }
 
-TEST(lib14_ac34_copy_log_selection_while_inspector_text_selected) {
+TEST(copy_log_selection_while_inspector_text_selected) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     QAction* copy = f.action("copy-screen");
@@ -207,7 +205,7 @@ TEST(lib14_ac34_copy_log_selection_while_inspector_text_selected) {
     CHECK(text(copy) == "Copy Screen");
 }
 
-TEST(lib14_ac34_shortcuts_ctrl_o_r_shift_r) {
+TEST(shortcuts_ctrl_o_r_shift_r) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1600");
     CHECK(f.action("load-preset")->shortcut() == QKeySequence(Qt::CTRL | Qt::Key_O));
@@ -223,9 +221,9 @@ TEST(lib14_ac34_shortcuts_ctrl_o_r_shift_r) {
     }, 5000));
 }
 
-// ── Q4: the bar per model (AC-36; AC-8 to AC-10; LIB-4 AC-19) ──────────
+// ── The bar per model ───────────────────────────────────────────────────
 
-TEST(lib14_ac36_bar_pc1500_pc1500a) {
+TEST(bar_pc1500_pc1500a) {
     SKIP_UNLESS_WINDOW();
     for (const char* model : {"PC-1500", "PC-1500A"}) {
         Fixture f(model);
@@ -247,7 +245,7 @@ TEST(lib14_ac36_bar_pc1500_pc1500a) {
     }
 }
 
-TEST(lib14_ac36_bar_pc1600) {
+TEST(bar_pc1600) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1600");
     auto* slot1 = f.find<QWidget>(names::barSlot("slot-1"));
@@ -271,9 +269,9 @@ TEST(lib14_ac36_bar_pc1600) {
     CHECK(f.waitFor([&] { return f.find<QWidget>("media-picker-cassette") != nullptr; }, 5000));
 }
 
-// ── Q5: the settings (AC-37; AC-11 to AC-13) ───────────────────────────
+// ── The settings ────────────────────────────────────────────────────────
 
-TEST(lib14_ac37_settings_sections_and_rows) {
+TEST(settings_sections_and_rows) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     f.action("settings")->trigger();
@@ -303,11 +301,11 @@ TEST(lib14_ac37_settings_sections_and_rows) {
     CHECK(d->findChild<QLabel*>("serial-status-rs232c") && d->findChild<QLabel*>("serial-status-ce158"));
 #endif
     CHECK(d->findChild<QLabel*>("debug-status") != nullptr);
-    // A change is written at once (S2): the startup model by its name.
+    // A change is written at once: the startup model by its name.
     auto* model = d->findChild<QComboBox*>(QString::fromStdString(names::setting("startup", "model")));
     CHECK(model != nullptr);
     if (model) {
-        CHECK(model->findData(QStringLiteral("PC-1500")) >= 0);   // by the model's name (ledger 1600-35)
+        CHECK(model->findData(QStringLiteral("PC-1500")) >= 0);   // by the model's name, not its ROM
         model->activated(model->findData(QStringLiteral("PC-1600")));
         f.run(50);
         CHECK(AppSettings::startupModelPreference() == QStringLiteral("PC-1600"));
@@ -315,9 +313,9 @@ TEST(lib14_ac37_settings_sections_and_rows) {
     d->close();
 }
 
-// ── Q6: "Loading…" and notices (AC-38; AC-15 to AC-17; LIB-4 AC-20) ───
+// ── "Loading…" and notices ──────────────────────────────────────────────
 
-TEST(lib14_ac38_loading_after_500_ms_blocks_nothing) {
+TEST(loading_after_500_ms_blocks_nothing) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1600");
     // A preset that runs at full speed for long (DiskWorks boots its disk).
@@ -332,15 +330,15 @@ TEST(lib14_ac38_loading_after_500_ms_blocks_nothing) {
     // Nothing blocked: the model picker, Reset and Cold boot can be used.
     CHECK(f.find<QComboBox>(names::kBarModel)->isEnabled());
     CHECK(f.action("reset")->isEnabled() && f.action("cold-boot")->isEnabled());
-    // LIB-4 AC-20: the peripherals' and the variants' choices are not.
+    // The peripherals' and the variants' choices are not.
     CHECK(!f.action("variant-model-Old")->isEnabled());
-    f.action("reset")->trigger();   // ends the operation (LIB-18 AC-16)
+    f.action("reset")->trigger();   // ends the operation
     CHECK(f.waitFor([&] { return !f.busy(); }, 10000));
     f.run(50);
     CHECK(!f.w().shell().loadingShown());
 }
 
-TEST(lib4_ac20_qt_controls_disabled_while_loading) {
+TEST(qt_controls_disabled_while_loading) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1600");
     f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-1600P"}}));
@@ -358,7 +356,7 @@ TEST(lib4_ac20_qt_controls_disabled_while_loading) {
     CHECK(f.waitFor([&] { return !f.busy(); }, 10000));
 }
 
-TEST(lib14_ac38_notice_without_title) {
+TEST(notice_without_title) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     f.w().shell().sendChecked(calcu::sessions::CommandName{"load-preset"}, Value::object({{"ref", "/no/such/preset.pc1500"}}));
@@ -370,16 +368,16 @@ TEST(lib14_ac38_notice_without_title) {
     f.run(50);
 }
 
-// ── Q7: Help and About (AC-39) ─────────────────────────────────────────
+// ── Help and About ──────────────────────────────────────────────────────
 
-TEST(lib14_ac39_help_opens_calc_u_org_1600) {
+TEST(help_opens_calc_u_org_1600) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     f.action("help")->trigger();
     CHECK(f.opened.size() == 1 && f.opened[0] == QUrl(QStringLiteral("https://calc-u.org/1600/")));
 }
 
-TEST(lib14_ac39_about_as_today) {
+TEST(about_shows_name_version_and_summary) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     f.action("about")->trigger();
@@ -396,9 +394,9 @@ TEST(lib14_ac39_about_as_today) {
     d->close();
 }
 
-// ── Q8: the layout (AC-40) ─────────────────────────────────────────────
+// ── The layout ──────────────────────────────────────────────────────────
 
-TEST(lib14_ac40_layout_faceplate_bar_panel_row) {
+TEST(layout_faceplate_bar_panel_row) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     QWidget* face = f.w().faceplate();
@@ -416,9 +414,9 @@ TEST(lib14_ac40_layout_faceplate_bar_panel_row) {
     if (paper) CHECK(paper->x() < ce158->x());
 }
 
-// ── Q9: Copy Screen (AC-41) ────────────────────────────────────────────
+// ── Copy Screen ─────────────────────────────────────────────────────────
 
-TEST(lib14_ac41_copy_screen_picture_and_text) {
+TEST(copy_screen_picture_and_text) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1600");
     f.command("type", Value::object({{"text", "PRINT 815"}}));
@@ -431,7 +429,7 @@ TEST(lib14_ac41_copy_screen_picture_and_text) {
     CHECK(f.clipboardText.contains(QStringLiteral("815")));
 }
 
-// ── Q10: the faceplate's input (AC-24, AC-43) ──────────────────────────
+// ── The faceplate's input ───────────────────────────────────────────────
 
 namespace {
 void click(QWidget* w, QPoint at, bool down) {
@@ -448,7 +446,7 @@ std::vector<std::string> held(Fixture& f) {
 }
 } // namespace
 
-TEST(lib14_ac24_key_under_pointer_pc1500_pc1600) {
+TEST(key_under_pointer_pc1500_pc1600) {
     SKIP_UNLESS_WINDOW();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
         Fixture f(model);
@@ -460,8 +458,8 @@ TEST(lib14_ac24_key_under_pointer_pc1500_pc1600) {
         CHECK(f.waitFor([&] { return held(f) == std::vector<std::string>{"enter"}; }, 1000));
         click(face, e, false);
         CHECK(f.waitFor([&] { return held(f).empty(); }, 1000));
-        // A point in the gap below a key, within the distance: that key
-        // (ledger 1600-37).
+        // A point in the gap below a key, within the distance (24 pixels):
+        // that key, as a touch on the Web.
         const calcu::shell::HitMap map = cu1600::faceplateHitMap(calcu::machine::ModelId{model});
         const double s = face->artScale();
         for (const auto& [id, r] : map.keys) {
@@ -475,7 +473,7 @@ TEST(lib14_ac24_key_under_pointer_pc1500_pc1600) {
 // The art letterboxed in a faceplate wider than it: a click on a key still
 // holds that key (the hit map starts at the art's corner, not the widget's;
 // a click on SML held SPACE before).
-TEST(lib14_ac24_key_under_pointer_art_letterboxed) {
+TEST(key_under_pointer_art_letterboxed) {
     SKIP_UNLESS_WINDOW();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
         Fixture f(model);
@@ -492,9 +490,9 @@ TEST(lib14_ac24_key_under_pointer_art_letterboxed) {
     }
 }
 
-// A tap of the host's SHIFT (LIB-5 AC-33) is down and up at once, too short
+// A tap of the host's SHIFT is down and up at once, too short
 // for the held keys: the faceplate flashes the SHIFT key instead.
-TEST(lib5_ac33_shift_tap_flashes_the_key) {
+TEST(shift_tap_flashes_the_key) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1600");
     FaceplateWidget* face = f.w().faceplate();
@@ -511,7 +509,7 @@ TEST(lib5_ac33_shift_tap_flashes_the_key) {
     CHECK(f.waitFor([&] { return !shows(); }, 1000));
 }
 
-TEST(lib14_ac43_display_hold_full_speed) {
+TEST(display_hold_full_speed) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     FaceplateWidget* face = f.w().faceplate();
@@ -522,10 +520,10 @@ TEST(lib14_ac43_display_hold_full_speed) {
     CHECK(f.waitFor([&] { return calcu::shell::read::text(f.w().host().value(calcu::sessions::kBusyTopic), "speed") == "regular"; }, 1000));
 }
 
-// ── Q12: the shot runner on attach (AC-44) ─────────────────────────────
+// ── The shot runner on attach ───────────────────────────────────────────
 
 #ifdef CALCU_ATTACH
-TEST(lib14_ac44_scenario_through_attach) {
+TEST(shot_scenario_through_attach) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     auto product = cu1600::makeHarnessProduct();
@@ -567,9 +565,9 @@ TEST(lib14_ac44_scenario_through_attach) {
 }
 #endif
 
-// ── Q13: ROMs missing (AC-19 for this product) ─────────────────────────
+// ── ROMs missing ────────────────────────────────────────────────────────
 
-TEST(lib14_ac19_roms_missing_in_window) {
+TEST(roms_missing_in_window) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SKIP_UNLESS(romsMissingRun(), "run by CalcU1600QtTests.romsMissing");
     Fixture f("PC-1600", /*started=*/false);
@@ -586,12 +584,12 @@ TEST(lib14_ac19_roms_missing_in_window) {
     CHECK(f.find<QDialog>(names::kAboutDialog) && f.find<QDialog>(names::kAboutDialog)->isVisible());
     f.action("help")->trigger();
     CHECK(f.opened.size() == 1);
-    CHECK(f.w().isVisible());   // the app runs on (ledger 1600-36)
+    CHECK(f.w().isVisible());   // the app runs on, the text in place of the calculator
 }
 
-// ── Q15: C1600-2 AC-15, the two File items ─────────────────────────────
+// ── The two File items ──────────────────────────────────────────────────
 
-TEST(c1600_2_ac15_file_items_and_filters) {
+TEST(file_items_and_filters) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     f.action(cu1600::kItemLoadBasic)->trigger();
@@ -610,13 +608,13 @@ TEST(c1600_2_ac15_file_items_and_filters) {
     CHECK(f.fileStarts.back().endsWith(QStringLiteral("examples/basic")));
 }
 
-// ── LIB-13 AC-18, AC-19, AC-21 (the Qt6 hand checks, user 2026-11-16) ──
+// ── Opening files: drop, Open With, the Dock, a file name at the start ──
 
 namespace {
 const QString kExample = QString::fromStdString(std::string(CALCU1600_DIR) + "/examples/basic/hanoi.pc1600");
 } // namespace
 
-TEST(lib13_ac19_drop_onto_window_opens_preset) {
+TEST(drop_onto_window_opens_preset) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1500A");
     QMimeData mime;
@@ -630,7 +628,7 @@ TEST(lib13_ac19_drop_onto_window_opens_preset) {
     f.waitIdle();
 }
 
-TEST(lib13_ac21_open_with_and_dock_drop_open_preset) {
+TEST(open_with_and_dock_drop_open_preset) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1500A");
     // The Dock icon and Finder's Open With reach the app as QFileOpenEvent.
@@ -644,7 +642,7 @@ TEST(lib13_ac21_open_with_and_dock_drop_open_preset) {
     f.waitIdle();
 }
 
-TEST(lib13_ac21_open_with_bin_runs_the_machine_code_flow) {
+TEST(open_with_bin_runs_the_machine_code_flow) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1600");
     const std::string bin = std::string(CALCU1600_DIR) + "/examples/machine-code/CALCULAT.BIN";
@@ -657,7 +655,7 @@ TEST(lib13_ac21_open_with_bin_runs_the_machine_code_flow) {
     CHECK(QApplication::activeModalWidget() == nullptr);
 }
 
-TEST(lib13_ac21_start_with_a_file_name) {
+TEST(start_with_a_file_name) {
     SKIP_UNLESS_WINDOW();
     // main.cpp: the last argument that names a file, opened as the start's.
     const std::vector<std::string> args{"Calc-U-1600", "-NSDocumentRevisionsDebugMode", "YES", kExample.toStdString()};
@@ -669,7 +667,7 @@ TEST(lib13_ac21_start_with_a_file_name) {
     f.waitIdle();
 }
 
-// ── C1600-2 AC-20: the two Qt6 scenarios (AC-16, AC-18) ────────────────
+// ── The loaders' questions: which program, which address ────────────────
 
 namespace {
 
@@ -715,7 +713,7 @@ std::vector<char> doubledTape(const std::vector<char>& wav) {
 
 } // namespace
 
-TEST(c1600_2_ac16_qt_wav_with_several_programs_asks_which_one) {
+TEST(qt_wav_with_several_programs_asks_which_one) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1500A");
     QTemporaryDir dir;
@@ -735,7 +733,7 @@ TEST(c1600_2_ac16_qt_wav_with_several_programs_asks_which_one) {
     CHECK_EQ(items, 2);
 }
 
-TEST(c1600_2_ac18_qt_headerless_code_asks_the_address) {
+TEST(qt_headerless_code_asks_the_address) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1500A");
     QTemporaryDir dir;
@@ -758,7 +756,7 @@ TEST(c1600_2_ac18_qt_headerless_code_asks_the_address) {
     if (!addressField) std::fprintf(stderr, "  dialog: %s\n", qPrintable(title));
 }
 
-TEST(lib13_ac19_drop_disk_file_used_where_it_lies) {
+TEST(drop_disk_file_used_where_it_lies) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1600");
     f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-1600P"}}));

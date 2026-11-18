@@ -1,5 +1,4 @@
-# LIB-3 AC-34 and the Qt6 half of AC-36 (design §6 P16-1, P16-3): the
-# product has no session class of its own, the Qt6 frontend hosts the
+# The product has no session class of its own, the Qt6 frontend hosts the
 # library's app session, and it never sends suspend (it keeps running in the
 # background). Run from the product folder: cmake -P tools/check_no_own_session.cmake
 # (CTest CalcU1600NoOwnSession, Frequent).
@@ -28,7 +27,7 @@ foreach(f IN LISTS qt_sources)
   if(inc)
     set(hosts TRUE)
   endif()
-  # ... and never suspends it (AC-36: no suspend command, no setSuspended).
+  # ... and never suspends it (no suspend command, no setSuspended).
   file(STRINGS "${f}" sus REGEX "kSuspendCommand|\"suspend\"|setSuspended")
   if(sus)
     list(APPEND failures "${f}: sends suspend: ${sus}")

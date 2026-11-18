@@ -30,13 +30,13 @@ class QWidget;
 // step is already scheduled, so the script carries on inside that nested
 // loop -- captures the dialog, then closes it.
 //
-// The machine is a client's of harness attach (LIB-14 AC-44, D.6): the
+// The machine is a client's of harness attach: the
 // steps that load a preset, let time pass, press keys and type go to the
 // app's own attach endpoint as the harness's `preset`, `wait`, `key`,
 // `type`, `reset`, `cold-boot` (AttachLineClient); the runner never steps
 // the machine itself, so the app runs on its own clock and the captures are
 // taken after `wait-idle` (the bare `wait`) where a shot asks for it. UI
-// steps (the shell's widgets by their object names, LIB-14 §3.10; a
+// steps (the shell's widgets by their object names; a
 // pointer on the faceplate for `hold-key:`) stay widget steps.
 class ShotRunner : public QObject {
     Q_OBJECT
@@ -60,7 +60,7 @@ signals:
 
 private:
     MainWindow* m_window;
-    QPointer<QTcpSocket> m_dapClient;   // `dap-client: <port>` (C1600-3 AC-18)
+    QPointer<QTcpSocket> m_dapClient;   // `dap-client: <port>`
     std::uint16_t m_attachPort = 0;
     AttachLineClient* m_client = nullptr;
     // A machine step's command went to attach: the next step waits for its reply.

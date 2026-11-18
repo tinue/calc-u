@@ -139,7 +139,7 @@ The register model follows Toshiba's TC8576AF data sheet
   file open. Until the first pump the RS-232C port reports DCD off (as the
   PTY did before a program opened it); the CE-158's port starts with all
   inputs on, as its standalone UART did in the golden runs. Non-POSIX build: there is no host link;
-  the bytes the machine sends are dropped (LIB-2 EC-5).
+  the bytes the machine sends are dropped.
 - **Still open** (see `docs/developer/PC1600-Serial-Port.md` and `TODO.md`): an
   end-to-end round-trip against real SharpDataExchange and the follow-on
   localhost-socket transport.
@@ -175,7 +175,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
 - **Clock is never read from the host clock inside Core** — kept
   deterministic for tests; whoever builds the machine or ends an operation
   sets it through the real-time clock capability (component `rtc`;
-  `calcu::peripherals::setClocksFromHost`, LIB-2 AC-23). The sub-CPU keeps
+  `calcu::peripherals::setClocksFromHost`). The sub-CPU keeps
   no year and no weekday, so the capability reads month, day, hour, minute
   and second only. The
   emulated clock is paced off emulated time, so a seeded time drifts if the
@@ -218,7 +218,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   `waitForKeyboardScanLoopJob`); the frames are counted from the build,
   not from the call, so it can turn true a frame apart from that job.
 - **One CE-150/CE-1600P, no CE-1600P with CE-158**: refused at the attach
-  with a sentence (LIB-2 AC-29); the core's own attach still drops the
+  with a sentence; the core's own attach still drops the
   other one, which the refusal now never lets happen.
 - **No auto-power-off suppression / GUI affordance**: the ROM-level
   `KEYWK3` (F07BH) APO-suppress bit is not driven from Core, and there is
@@ -447,7 +447,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   latch, two-sided media, real motor-startup/access timing. CE-1600F
   attaches as a union with CE-1600P (there is no separate floppy
   attach/detach); persistence is a versioned `<name>.floppy.yaml`
-  (`Connector/FloppyImageFile.hpp`, version 2) through LIB-7's media part (`app/SharpMediaKinds`, the media place in `core/Machine/SharpMediaPlaces`; M-47).
+  (`Connector/FloppyImageFile.hpp`, version 2) through the library's media part (`app/SharpMediaKinds`, the media place in `core/Machine/SharpMediaPlaces`).
 - **Not modeled**: GCR (4/5) encoding (sector bytes are stored decoded,
   per the Service Manual's own note that this only matters at the
   flux/bitstream level), the FDU-250's solenoid/cam seek mechanics,

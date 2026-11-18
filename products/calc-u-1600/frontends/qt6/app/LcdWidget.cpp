@@ -34,7 +34,7 @@ const QColor kInk = toQColor(kInkRgb);
 
 LcdWidget::LcdWidget(QWidget* parent) : QWidget(parent) {
     setAutoFillBackground(false);
-    setAttribute(Qt::WA_TransparentForMouseEvents);   // the faceplate's pointer (AC-43)
+    setAttribute(Qt::WA_TransparentForMouseEvents);   // the faceplate's pointer
 }
 
 void LcdWidget::setModel(const calcu::machine::ModelId& model) {

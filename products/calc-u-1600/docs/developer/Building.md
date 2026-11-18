@@ -5,7 +5,7 @@ building the Qt6 desktop app on macOS, Linux, and Windows. For how to
 *use* the emulator once it's built, see [the help](../../help/).
 
 Everything here is derived from the project's own recipes — the
-repository's root [`CMakeLists.txt`](../../../../CMakeLists.txt) (ADR 0003),
+repository's root [`CMakeLists.txt`](../../../../CMakeLists.txt),
 this product's [`CMakeLists.txt`](../../CMakeLists.txt) and
 [`frontends/qt6/CMakeLists.txt`](../../frontends/qt6/CMakeLists.txt), and
 the CI workflow
@@ -19,9 +19,7 @@ please open an issue or PR.
 All C++ builds go through the root CMake project, configured from the
 repository root (`-S ../..` from this directory). Its options choose what
 is built: `CALCU_PRODUCT_59`, `CALCU_PRODUCT_1600` and `CALCU_FRONTEND_QT`
-(all ON by default). This directory does not configure on its own, except
-under Emscripten until the Web frontends move to the root (M-12 of the
-migration plan). The commands below run from this directory and put their
+(all ON by default). This directory does not configure on its own. The commands below run from this directory and put their
 trees under the repository's `build/`.
 
 ## Prerequisites
@@ -78,16 +76,16 @@ each checked against its md5. The build bundles every file of it with
 the app (the Qt6 bundle's resources folder, the Web `dist/bundle/`).
 
 Skipping this step, or a file missing from `roms/`, doesn't fail the
-build (LIB-12 design D-5), but the built product doesn't start a machine:
+build, but the built product doesn't start a machine:
 at its start one ROM lookup (`sharp::lookUpRoms`, `core/Machine/SharpRoms`;
 the library's `calcu::roms::lookUp`) checks every file of the full set by
 its size, and if one is missing or bad, the Qt6 app shows a dialog naming
 each such file and exits, the Web client shows the same text instead of
 the calculator, and the harness `calcu` ends at its start with exit status
-2 naming the files (LIB-11 EC-1). No ROM set is used in place of another (the 0.8.x fallback from a
-missing Old ROM set to the New one is gone, LIB-12 AC-13). Only the
-host-drive ROM (`firmware/pc1600-hostdrive/`, our own) is bundled and read
-outside the lookup (`roms.md` Q-1).
+2 naming the files. No ROM set is used in place of another (a missing Old
+ROM set does not fall back to the New one). Only the host-drive ROM
+(`firmware/pc1600-hostdrive/`, our own) is bundled and read outside the
+lookup.
 
 On Linux/Windows, fetch `libsharpdx` too (see above):
 
@@ -189,7 +187,7 @@ configurations committed in the repository's `.run/`:
 |---|---|---|
 | `Calc-U-1600` | `CalcU1600Qt` | The Qt6 GUI app |
 | `CoreTests` | `CoreTests` | Headless test suite, also runnable via CTest |
-| `calcu-1600` | `calcu` | The harness, `calcu --product c1600 serve`: one command per line on standard input (LIB-11; the product's section Harness of `CLAUDE.md`). It replaced `pc1500_cli`, `pc1600_cli` and the three probes in M-51: every function of the CLIs is a `calcu` command (LIB-11 AC-18) |
+| `calcu-1600` | `calcu` | The harness, `calcu --product c1600 serve`: one command per line on standard input (the product's section Harness of `CLAUDE.md`). Every function of the old CLIs `pc1500_cli` and `pc1600_cli` and of the three probes is a `calcu` command |
 
 All of them run and debug interactively (breakpoints, variable
 inspection, stepping) — which is the main thing this build adds over
@@ -225,7 +223,7 @@ An argument is a filter for the five runner programs:
 each of them. Needs CMake, Ninja and zlib (`zlib1g-dev` on Ubuntu; macOS has it).
 
 The tests use the repository's one C++ test runner,
-`library/testing/TestHarness.hpp` (ADR 0038): each file registers its
+`library/testing/TestHarness.hpp`: each file registers its
 tests with `TEST(name)` and checks with `CHECK` / `CHECK_EQ`; a test that
 needs the ROMs starts with `SKIP_UNLESS(...)`, which reports it as skipped
 when they are missing. The runner's `main()` (target `calcu_test_runner`)
@@ -258,7 +256,7 @@ cmake --build ../../build/debug --target CoreTests
 
 ### Test groups
 
-Every CTest entry carries a group label (ADR 0031): `frequent` (on every
+Every CTest entry carries a group label ([docs/test-groups.md](../../../../docs/test-groups.md)): `frequent` (on every
 change, ≤ 60 s: `CoreTests`, `calcu_preset_check.CalcU1600Presets`,
 `calcu_preset_check.CalcU1600Templates`, `CalcU1600DapTests`), `longer` (before
 merging into `main`, ≤ 10 min: Playwright, the WebAssembly check, the

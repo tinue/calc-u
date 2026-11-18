@@ -2,8 +2,8 @@
 // is the library's `display` topic ({on, frame: {width, height, dots},
 // indicators: [{name, on}]}); where each indicator goes and the colours are
 // the `lcd` part of the request `c1600.faceplate-map` (app/LcdLayout: the
-// same table the Qt6 LCD draws with, LIB-14 D-31). Drawing only. The
-// plotters' paper is the library's paper panel (LIB-8); sizeCanvas and
+// same table the Qt6 LCD draws with). Drawing only. The
+// plotters' paper is the library's paper panel; sizeCanvas and
 // calcImage are the library's (library/web/src/canvas.js).
 
 const MONO_FONT = '"SF Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace';

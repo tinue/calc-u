@@ -142,7 +142,7 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
     if (verb == QLatin1String("preset")) {
         out->kind = K::Preset;
         if (!needText(&out->text)) return false;
-        // A bundle path (`examples:…`, LIB-6 AC-33) goes to `load-preset` as
+        // A bundle path (`examples:…`) goes to `load-preset` as
         // it is; a file is taken from the scenario's folder.
         if (out->text.startsWith(QLatin1String("examples:"))) return true;
         out->text = QDir::cleanPath(baseDir.absoluteFilePath(out->text));
@@ -151,7 +151,7 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
             return false;
         }
     } else if (verb == QLatin1String("reset") || verb == QLatin1String("cold-boot")) {
-        // `reset: all` is `cold-boot` since M-49 (LIB-14 D.6).
+        // `reset: all` is read as `cold-boot`.
         out->kind = K::Reset;
         if (!noValue()) return false;
         out->number = verb == QLatin1String("cold-boot") ? 1 : 0;
@@ -224,7 +224,7 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
         if (!needText(&out->text)) return false;
     } else if (verb == QLatin1String("expect-panel")) {
         // `expect-panel: { name: paper, title: CE-1600P, empty: false }` (a
-        // check scenario, LIB-8 AC-36, AC-38): fails the shot otherwise.
+        // check scenario): fails the shot otherwise.
         out->kind = K::ExpectPanel;
         out->number = -1;
         if (!hasValue || !value->isMap()) {
@@ -259,7 +259,7 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
         if (!hasTitle) out->text2 = QStringLiteral("\x01");   // no title asked for
     } else if (verb == QLatin1String("expect-widget")) {
         // `expect-widget: { name: debug-status, text: "Listening on …", enabled: true }`
-        // (C1600-3 AC-18): a label's or a button's text, and whether it can be used.
+        //: a label's or a button's text, and whether it can be used.
         out->kind = K::ExpectWidget;
         out->number = -1;
         out->text2 = QStringLiteral("\x01");
@@ -290,7 +290,7 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
             return false;
         }
     } else if (verb == QLatin1String("dap-client")) {
-        // `dap-client: <port>` / `disconnect` (C1600-3 AC-18).
+        // `dap-client: <port>` / `disconnect`.
         out->kind = K::DapClient;
         if (!needText(&out->text)) return false;
         bool port = false;
@@ -304,12 +304,12 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
         if (!needText(&out->text)) return false;
     } else if (verb == QLatin1String("command")) {
         // `- command: pause`: a session command, as the harness would send it
-        // (until the scenarios are an attach client, M-49).
+        // (until the scenarios are an attach client).
         out->kind = K::Command;
         if (!needText(&out->text)) return false;
     } else if (verb == QLatin1String("host-key-down") || verb == QLatin1String("host-key-up")) {
         // `- host-key-down: shift`: a key of the host's keyboard, as the
-        // window gets it (LIB-5 AC-33); `shift` or one character.
+        // window gets it; `shift` or one character.
         out->kind = verb == QLatin1String("host-key-down") ? K::HostKeyDown : K::HostKeyUp;
         if (!needText(&out->text)) return false;
         if (out->text != QLatin1String("shift") && out->text.size() != 1) {

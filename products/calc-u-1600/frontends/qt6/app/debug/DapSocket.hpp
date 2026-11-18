@@ -15,9 +15,9 @@ namespace cu1600::dap {
 class DapPart;
 }
 
-// The Qt6 frontend's socket for the DAP server (C1600-3 design §3.2, §4):
+// The Qt6 frontend's socket for the DAP server:
 // a QTcpServer on 127.0.0.1 only, one client; a second one gets the
-// sentence it is given and is closed (AC-3). What arrives goes to the
+// sentence it is given and is closed. What arrives goes to the
 // part on the GUI thread, which is the session's. It decides nothing.
 class DapSocket final : public QObject, public cu1600::dap::DapTransport {
     Q_OBJECT

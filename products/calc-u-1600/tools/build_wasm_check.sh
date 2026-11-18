@@ -9,7 +9,7 @@
 # tools/build_sharpdx_wasm.sh). ROMs in roms/ (roms/fetch_roms.sh) for the
 # smoke run; without them it builds and skips.
 #
-# Builds in build/web of the repository's root CMake project (ADR 0003),
+# Builds in build/web of the repository's root CMake project,
 # the tree frontends/web/build.sh uses too.
 set -e
 cd "$(dirname "$0")/.."

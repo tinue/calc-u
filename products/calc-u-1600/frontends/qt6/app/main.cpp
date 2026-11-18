@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 #ifdef __APPLE__
     macDisableWindowRestoration(); // see MacAppSupport.h: the restore prompt deadlocks the startup preset
     macDisablePressAndHold();      // see MacAppSupport.h: held letters stay held keys
-    macKeepTimersPrecise();        // see MacAppSupport.h: real-time pace in the background (row 1600-28)
+    macKeepTimersPrecise();        // see MacAppSupport.h: real-time pace in the background
 #endif
     QApplication app(argc, argv);
     calcu::qt6::FileOpenFilter fileOpen;
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
                                        QStringLiteral("port"));
     parser.addOption(dapOption);
 #ifdef CALCU_ATTACH
-    // LIB-14 AC-44 (D.6): development and test builds offer harness attach
+    // Development and test builds offer harness attach
     // (`--attach-port N`, else 59059; 0: the system picks); the screenshot
     // scenarios and the pacing probe are its clients in this process.
     // Scripted screenshots (docs/developer/screenshots/README.md): play a
@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
     // arguments macOS or an IDE add (`-NSDocumentRevisionsDebugMode YES`).
     const bool parsed = parser.parse(QCoreApplication::arguments());
 
-    // C1600-3 AC-2, EC-1: --dap <port> for this run; a port out of range is
+    // --dap <port> for this run; a port out of range is
     // said on standard error and in a notice, and the server is off.
     std::optional<long> dapPort;
     if (parser.isSet(dapOption)) {
@@ -115,8 +115,7 @@ int main(int argc, char** argv) {
 #endif
         window.start();
         fileOpen.setHandler([&window](const QString& path) { window.openFile(path, calcu::opening::Way::OpenWith); });
-        // LIB-13 AC-21 (OQ-2, D-14): the last argument that names a file is
-        // opened; the session keeps it until the start is over (AC-7).
+        // The last argument that names a file is opened; the session keeps it until the start is over.
         if (const auto start = calcu::qt6::startFile(QCoreApplication::arguments()))
             window.openFile(*start, calcu::opening::Way::Start);
         const int result = app.exec();
@@ -131,7 +130,7 @@ int main(int argc, char** argv) {
     }
     // A throwaway home and settings folder: the user's own settings
     // (startup presets, last model, folders) and saved media must not show
-    // up in the images, and the run must not change them (LIB-9 AC-18).
+    // up in the images, and the run must not change them.
     QTemporaryDir isolated;
     if (!isolated.isValid()) {
         std::fprintf(stderr, "[shots] could not create a temporary directory\n");
@@ -142,7 +141,7 @@ int main(int argc, char** argv) {
     shotDirs.home = isolated.filePath(QStringLiteral("home")).toStdString();
     shotDirs.settingsBase = isolated.filePath(QStringLiteral("settings")).toStdString();
     AppPaths::useHostDirs(shotDirs);
-    if (probe) AppSettings::setStartupModelPreference(QStringLiteral("PC-1600"));   // LIB-17 AC-22: a PC-1600
+    if (probe) AppSettings::setStartupModelPreference(QStringLiteral("PC-1600"));   // the probe runs on a PC-1600
 
     ShotScenario scenario;
     QString error;
@@ -155,7 +154,7 @@ int main(int argc, char** argv) {
     QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
 
     MainWindow window;
-    applyDapPort(window.controller());   // C1600-3 AC-18's scenario: a server to attach a client to
+    applyDapPort(window.controller());   // a server to attach a client to (the Debugger check scenario)
     // Attach on a port the system picks, for the client in this process.
     std::unique_ptr<calcu::harness::HarnessProduct> attachProduct = cu1600::makeHarnessProduct();
     const std::string problem = window.host().openAttach(

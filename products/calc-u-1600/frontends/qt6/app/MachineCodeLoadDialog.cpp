@@ -52,7 +52,7 @@ MachineCodeLoadDialog::MachineCodeLoadDialog(QWidget* parent, Ask ask,
 QString MachineCodeLoadDialog::address() const { return m_addressField->text(); }
 
 void MachineCodeLoadDialog::refresh() {
-    // The plan with the typed address (C1600-2 AC-18): its refusal, or where
+    // The plan with the typed address: its refusal, or where
     // the code would go; an empty field asks again, saying nothing.
     const std::string text = m_addressField->text().toStdString();
     calcu::sessions::Value::Object o = *m_args.members();

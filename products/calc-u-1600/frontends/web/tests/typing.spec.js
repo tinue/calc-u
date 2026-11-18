@@ -2,11 +2,11 @@ const { test, expect } = require('@playwright/test');
 const h = require('./helpers');
 const { gotoReady, screen, pickModel, busy, c } = h;
 
-// LIB-5 in the Web client (design §6, T16-4, T16-6): the page sends the
+// Typing in the Web client: the page sends the
 // library's typing commands (host-key-down/up, screen-key-down/up, paste,
 // focus-lost); the product's keyboard map and profiles in the engine decide.
 
-// AC-33: Shift tapped alone within 400 ms is one press of the machine's
+// Shift tapped alone within 400 ms is one press of the machine's
 // SHIFT: the next key is its second legend (SHIFT + 1 is ' on the PC-1600).
 test('a SHIFT tap is one SHIFT press', async ({ page }) => {
   await gotoReady(page, '?model=PC-1600');
@@ -20,7 +20,7 @@ test('a SHIFT tap is one SHIFT press', async ({ page }) => {
   await expect.poll(() => screen(page), { timeout: 10000 }).toMatch(/'/);
 });
 
-// A host key the engine maps: typed through the keyboard map (AC-29).
+// A host key the engine maps: typed through the keyboard map.
 test('host keys type through the product keyboard map', async ({ page }) => {
   await gotoReady(page, '?model=PC-1600');
   await pickModel(page, 'PC-1600');
@@ -29,7 +29,7 @@ test('host keys type through the product keyboard map', async ({ page }) => {
   await expect.poll(() => screen(page), { timeout: 20000 }).toMatch(/42/);
 });
 
-// AC-36 (row 1600-9): keys during an operation are dropped and not pressed
+// Keys during an operation are dropped and not pressed
 // after it.
 test('keys during a load are dropped', async ({ page }) => {
   await gotoReady(page, '?model=PC-1600');

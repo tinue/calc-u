@@ -57,7 +57,7 @@ struct ShotStep {
         HostKeyUp,    // text = the same: its key release
         ExpectLcd,    // text = text in one row of the LCD, number = 1 shown / 0 not
         ExpectWidget, // text = objectName, text2 = its text ("\x01": any), number = 1 enabled / 0 not / -1 either
-        DapClient,    // text = a port / "disconnect": a DAP client of this process (C1600-3 AC-18)
+        DapClient,    // text = a port / "disconnect": a DAP client of this process
     };
     Kind kind = Kind::Settle;
     QString text;

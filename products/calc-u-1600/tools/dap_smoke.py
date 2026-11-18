@@ -379,7 +379,7 @@ def bus_rom_run(port):
 
 
 def renum_template_run(port):
-    """The PC-1500 ROM extension template: RENUM, stopped in, and run (C1600-3 AC-19).
+    """The PC-1500 ROM extension template: RENUM, stopped in, and run.
 
     The ROM is the template built once with sdaslh5801 as the extension
     builds it (extension.js, assembleCommand) and kept as a fixture,
@@ -535,7 +535,7 @@ def display_text_run(port):
 
 
 def vscode_session(port):
-    """M-50's exit check, "VS Code debugs a program as before": the requests in
+    """VS Code debugs a program: the requests in
     the order VS Code sends them for a launch configuration of the extension
     (initialize, launch, setBreakpoints, setFunctionBreakpoints,
     setExceptionBreakpoints, configurationDone; threads, stackTrace, scopes,
@@ -593,16 +593,15 @@ def vscode_session(port):
 
 
 def named(scenario, failures):
-    prefix = "m50_exit_" if scenario == "vscode_session" else "c1600_3_ac20_"
-    print(f"{prefix}{scenario}: " + ("passed" if failures == 0 else f"{failures} failed"))
+    print(f"dap_{scenario}: " + ("passed" if failures == 0 else f"{failures} failed"))
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--port", type=int, default=32168)
     ap.add_argument("--app", help="start this app binary with --dap <port> and quit it afterwards")
-    ap.add_argument("--harness", help="start the harness `calcu --product c1600 serve --dap <port>` (C1600-3 AC-20, "
-                                      "AC-22) and quit it afterwards")
+    ap.add_argument("--harness", help="start the harness `calcu --product c1600 serve --dap <port>` "
+                                      "and quit it afterwards")
     args = ap.parse_args()
 
     proc = None
@@ -682,7 +681,7 @@ def main():
         dap.sock.close()
 
         named("main", check.failures)
-        # Each scenario under its test name (C1600-3 AC-20, design T14).
+        # Each scenario under its own test name.
         for scenario in (program_run, pc1600_run, project_run, bus_rom_run, renum_template_run, rom_run, reset_run,
                          lh5803_run, display_text_run, vscode_session):
             before = check.failures

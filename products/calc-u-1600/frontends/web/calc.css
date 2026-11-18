@@ -138,7 +138,7 @@
 .calcu-client .calcu-menu-separator { height: 1px; margin: 5px 8px; background: var(--calcu-menu-border); }
 .calcu-client .calcu-menu-heading { padding: 4px 8px 2px 20px; font-size: 11px; font-weight: 600; opacity: 0.55; }
 
-.calcu-client .calcu-shell-storage-banner { border-bottom: 1px solid #e6d27a; }   /* the shell's (M-57) */
+.calcu-client .calcu-shell-storage-banner { border-bottom: 1px solid #e6d27a; }   /* the shell's */
 
 /* ── Faceplate ────────────────────────────────────────────────────── */
 .calcu-client .calcu-face-row { flex: none; display: flex; justify-content: center; }
@@ -366,7 +366,7 @@
 
 /* NamedCombo (Dialogs.jsx): a combo button with a menu of long labels. */
 
-/* ── The shell of the React set in this page (LIB-14 Part D, M-49) ──── */
+/* ── The shell of the React set in this page ─────────────────────────── */
 /* The menu bar is as tall as the layout counts it (MENU_HEIGHT). */
 .calcu-client .calcu-shell-menubar { flex: none; height: 26px; align-items: center; padding: 0 4px; }
 @media (pointer: coarse) {

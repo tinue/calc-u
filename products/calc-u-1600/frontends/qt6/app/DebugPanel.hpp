@@ -78,7 +78,7 @@ private:
     void refreshDebugDisplay();
 
     // ── TRACE ─────────────────────────────────────────────────────────
-    // The library's trace session runs the capture (LIB-10 §10.7): this
+    // The library's trace session runs the capture: this
     // panel only starts and stops it through the `trace` command. Whether
     // one runs is the `trace` topic (MachineController::traceActive());
     // m_traceShownActive is what the button shows, so the next frame

@@ -34,7 +34,7 @@ void DapSocket::close() {
 
 void DapSocket::onNewConnection() {
     while (QTcpSocket* socket = m_server->nextPendingConnection()) {
-        if (m_client) {   // one client at a time: the newcomer is told why (AC-3)
+        if (m_client) {   // one client at a time: the newcomer is told why
             socket->write(m_busy.data(), static_cast<qint64>(m_busy.size()));
             socket->disconnectFromHost();
             connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);

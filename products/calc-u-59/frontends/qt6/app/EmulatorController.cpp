@@ -1,8 +1,10 @@
 #include "EmulatorController.hpp"
 #include "AppPaths.hpp"
 #include "KeyIds.hpp"
+#include "PC100C.hpp"
 #include "ProductRoms.hpp"
 #include "QtResourceBundle.hpp"
+#include "TICatalogue.hpp"
 #include "TIMagneticCardKind.hpp"
 #include "control/ControlState.hpp"
 #include "debugger/RunState.hpp"
@@ -173,26 +175,25 @@ std::string EmulatorController::modelId() const {
     const auto* c = state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
     return c ? c->model.value : std::string();
 }
+namespace {
+const calcu::machine::PlacePath kPrinterPath{{::kTIPrinterPlace}};
+} // namespace
+
 bool EmulatorController::printerConnected() const {
     const auto* c = state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
-    const auto* p = c ? c->place(calcu::machine::PlacePath{{calcu::machine::PlaceName{"printer"}}}) : nullptr;
+    const auto* p = c ? c->place(kPrinterPath) : nullptr;
     if (!p) return false;
     for (const auto& f : p->fitting)
         if (f.plugged) return true;
     return false;
 }
 std::vector<calcu::peripherals::ControlInfo> EmulatorController::printerControls() const {
-    std::vector<calcu::peripherals::ControlInfo> out;
     const auto* c = state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
-    if (!c) return out;
-    const calcu::machine::PlacePath printer{{calcu::machine::PlaceName{"printer"}}};
-    for (const auto& e : c->controls)
-        if (e.place == printer) out.push_back(e.control);
-    return out;
+    return c ? c->controlsAt(kPrinterPath) : std::vector<calcu::peripherals::ControlInfo>{};
 }
 bool EmulatorController::printerTrace() const {
     for (const auto& c : printerControls())
-        if (c.id == calcu::machine::ControlId{"TRACE"}) return c.on;
+        if (c.id == ::PC100C::kTrace) return c.on;
     return false;
 }
 cu59::LedStyle EmulatorController::ledStyle() const {
@@ -271,7 +272,7 @@ std::optional<int> EmulatorController::litCardCorner() const {
 
 // ── Debugger ─────────────────────────────────────────────────────────────────
 
-void EmulatorController::setLiveDebugEnabled(bool on) { send(cu59::commands::kLiveDebug, Value::object({{"on", on}})); }
+void EmulatorController::setLiveDebugEnabled(bool on) { send(cu59::commands::kShowCalculatorDebug, Value::object({{"on", on}})); }
 void EmulatorController::setCpuDebugEnabled(bool on) { send(cu59::commands::kShowCpuDebug, Value::object({{"on", on}})); }
 const calcu::debugger::RunState* EmulatorController::runState() const {
     return state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);

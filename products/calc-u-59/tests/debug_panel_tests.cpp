@@ -112,13 +112,13 @@ TEST(c59_4_ac25_six_product_topics_read_by_state) {
     CHECK(topic<TIDebugView>(r, topics::kDebugView)->logLevel == DebugLevel::Off);
 }
 
-TEST(c59_4_ac25_entries_asm_run_trace_calculator_tab_with_reasons) {
+TEST(c59_4_ac25_entries_asm_run_and_calculator_tab_with_reasons) {
     SessionRig r;
     CHECK(ready(r));
     r.frame();
     CHECK(!available(r, entries::kAsmRun));
     CHECK_EQ(reason(r, entries::kAsmRun), std::string(kNoAsmOverlay));
-    CHECK(available(r, entries::kTrace));   // the rig's trace folder can be written
+    CHECK(entry(r, "c59.trace") == nullptr);   // TRACE can always be pressed (L-2 of the release simplification)
     CHECK(available(r, entries::kCalculatorTab));
     CHECK(asmLoad(r, kCounter).done);
     r.frame();
@@ -127,14 +127,6 @@ TEST(c59_4_ac25_entries_asm_run_trace_calculator_tab_with_reasons) {
     r.frame();
     CHECK(!available(r, entries::kCalculatorTab));
     CHECK_EQ(reason(r, entries::kCalculatorTab), std::string(kAsmOverlayRuns));
-    // No folder to write traces to: TRACE can still be pressed; the start
-    // is refused (LIB-10 AC-53, row 59-62).
-    testroms::RigOptions o;
-    o.traceFolder = "/dev/null/no";
-    SessionRig w(o);
-    CHECK(ready(w));
-    w.frame();
-    CHECK(available(w, entries::kTrace));
 }
 
 TEST(c59_4_ac25_cpu_and_calculator_computed_while_shown) {
@@ -146,7 +138,7 @@ TEST(c59_4_ac25_cpu_and_calculator_computed_while_shown) {
     r.tap(11);   // A: the program runs
     r.runFor(200ms);
     CHECK(r.fe.mirror.state(topics::kCalculatorDebug) && *r.fe.mirror.state(topics::kCalculatorDebug) == first);   // not shown: not computed
-    r.send(commands::kLiveDebug, Value::object({{"on", true}}));
+    r.send(commands::kShowCalculatorDebug, Value::object({{"on", true}}));
     r.runFor(200ms);
     CHECK(topic<TICalculatorDebug>(r, topics::kCalculatorDebug)->live.currentStep >= 0);
     CHECK(topic<TICpuDebug>(r, topics::kCpuDebug)->entries.empty());   // the CPU tab not shown
@@ -284,7 +276,7 @@ TEST(c59_4_ac4_listing_while_paused_memory_rom_module) {
     SessionRig r;
     CHECK(ready(r));
     program(r, kLoop);
-    r.send(commands::kLiveDebug, Value::object({{"on", true}}));
+    r.send(commands::kShowCalculatorDebug, Value::object({{"on", true}}));
     r.tap(11);
     rc(r).pause(kProgram);
     CHECK(r.until([&] { return paused(r); }, 2s));
@@ -304,7 +296,7 @@ TEST(c59_4_ac4_current_step_marked) {
     SessionRig r;
     CHECK(ready(r));
     program(r, kLoop);
-    r.send(commands::kLiveDebug, Value::object({{"on", true}}));
+    r.send(commands::kShowCalculatorDebug, Value::object({{"on", true}}));
     r.tap(11);
     rc(r).pause(kProgram);
     CHECK(r.until([&] { return paused(r); }, 2s));
@@ -631,18 +623,11 @@ TEST(c59_4_ac12_trace_refused_where_the_folder_cannot_be_written) {
     SessionRig r(o);
     CHECK(ready(r));
     r.frame();
-    CHECK(available(r, entries::kTrace));
     const auto t = r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
     CHECK(!t.done);
     CHECK(t.reason.rfind("The trace folder cannot be written: cannot create the folder /dev/null/no", 0) == 0);
     CHECK(!t.reason.empty() && t.reason.back() == '.');
     CHECK(!r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);
-    testroms::RigOptions web;
-    web.noTraceFolder = true;   // the Web keeps its traces (LIB-10 AC-26)
-    SessionRig w(web);
-    CHECK(ready(w));
-    w.frame();
-    CHECK(available(w, entries::kTrace));
 }
 
 // ── T8: the overlay kind (AC-13) ─────────────────────────────────────────────

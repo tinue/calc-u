@@ -137,10 +137,9 @@ class EmulatorViewModel {
     var asmWordCount: Int = 0
     var asmStatusMessage: String = "Load a hex opcode file and press Run."
     var asmOverlayActive: Bool = false
-    // The product entries of the control state (C59-4 AC-25): Run, TRACE and
-    // the CALCULATOR tab, each as the session says.
+    // The product entries of the control state (C59-4 AC-25): Run and the
+    // CALCULATOR tab, each as the session says.
     private(set) var canRunASM: Bool = false
-    private(set) var traceButtonAvailable: Bool = true
     private(set) var calculatorTabAvailable: Bool = true
 
     // ── Live debug panels ────────────────────────────────────────────────────
@@ -717,7 +716,6 @@ class EmulatorViewModel {
         if c.contains(.trace), cIndicatorDebug != controller.manualTrace { cIndicatorDebug = controller.manualTrace }
         if c.contains(.control) || c.contains(.asm) {
             if canRunASM != controller.asmRunAvailable { canRunASM = controller.asmRunAvailable }
-            if traceButtonAvailable != controller.traceButtonAvailable { traceButtonAvailable = controller.traceButtonAvailable }
             if calculatorTabAvailable != controller.calculatorTabAvailable { calculatorTabAvailable = controller.calculatorTabAvailable }
         }
     }

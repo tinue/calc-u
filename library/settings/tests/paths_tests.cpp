@@ -293,6 +293,38 @@ TEST(ac17_swift_screenshots_save_folder_traces_by_location) {
     CHECK(Paths(odd, s).traceFolder() == std::optional<std::string>("/app-support"));
 }
 
+// AC-24 with LIB-10 AC-53: on Swift iOS the iCloud trace location is asked
+// at each trace start (the host's callback, beside the bookmark's); while it
+// cannot be used the trace folder is refused, nothing is made. Another
+// location does not ask it.
+TEST(ac24_swift_icloud_trace_location_asked_at_each_ensure) {
+    TempDir dir;
+    HostDirs s;
+    s.frontend = FrontendKind::Swift;
+    s.home = dir / "home";
+    s.saveFolder = dir / "icloud";
+    s.applicationSupport = dir / "app-support";
+    bool signedIn = false;
+    int asked = 0;
+    s.iCloudAvailable = [&signedIn, &asked] { ++asked; return signedIn; };
+    const std::string ini = dir / "c/Test-Product.ini";
+    const SettingsFile icloud = withValues(ini, "[trace]\nlocation = icloud\n");
+    const Paths p(icloud, s);
+    const Paths::Ensured no = p.ensure(Folder::Traces);
+    CHECK(!no.ok && no.problem == "the trace location is not available" && no.path == dir / "icloud");
+    CHECK(!exists(dir / "icloud"));
+    CHECK(p.ensure(Folder::Save).ok);   // only the traces ask it
+    signedIn = true;
+    CHECK(p.ensure(Folder::Traces).ok);
+    CHECK_EQ(asked, 2);
+    const SettingsFile support = withValues(ini, "[trace]\nlocation = app-support\n");
+    signedIn = false;
+    CHECK(Paths(support, s).ensure(Folder::Traces).ok);
+    CHECK_EQ(asked, 2);
+    s.iCloudAvailable = nullptr;   // unset: always
+    CHECK(Paths(icloud, s).ensure(Folder::Traces).ok);
+}
+
 TEST(ac17_web_has_no_trace_or_screenshot_folder) {
     HostDirs w;
     w.frontend = FrontendKind::Web;

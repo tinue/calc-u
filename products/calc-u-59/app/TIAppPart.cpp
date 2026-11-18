@@ -57,7 +57,7 @@ TIDebuggerOptions debuggerOptions(TIDebugPart& panel) {
 
 TIAppPart::TIAppPart(TIAppSetup setup)
     : m_setup(std::move(setup)),
-      m_files(m_setup.paths->saveFolder(), m_setup.files),
+      m_files([paths = m_setup.paths] { return paths->saveFolder(); }, m_setup.files),
       m_keeper(
           m_files, [this](std::string sentence) { if (m_ctx) m_ctx->notice(std::move(sentence)); },
           [this] { return m_ctx ? calcu::media::isoTime(m_ctx->hostTime()) : std::string(); }),
@@ -81,8 +81,6 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     s.settings = m_setup.settings;
     s.paths = m_setup.paths;
     s.roms = m_setup.roms;
-    s.traceAvailable = m_setup.traceAvailable;
-    s.placesAtStart = true;   // the media's and screenshots' places as before Part E (LIB-6 E-1); traces: LIB-10 AC-53
     s.uploadFolder = m_setup.uploadFolder;
     s.typing = &typingProduct();
     s.hosting = m_setup.hosting;

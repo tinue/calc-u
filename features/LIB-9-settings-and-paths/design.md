@@ -492,3 +492,28 @@ and every value are unchanged; production reads them where they are used
 (`Paths`, `settings::startupModel`, `settings/OpenFolders`, LIB-14's
 `SettingsPart`, the DAP part), and the products' settings tests read them
 through `SettingsFile` and those calls.
+
+## Release simplification R-1 (2026-11-18, branch `rs1-59-places`)
+
+`docs/reviews/release-simplification.md` §1 L-4, L-5.
+
+- **One rule for the places (L-4).** `LibraryPartsSetup::placesAtStart` and
+  the second `Paths` it made (`LibraryParts::startPlaces_`) are gone:
+  Calc-U-59 reads its places when they are used, as Calc-U-1600 does, so a
+  save folder or the folder for screenshots changed in Settings is used by
+  the next save at once (LIB-14 AC-11; ledger row 59-66). Its
+  `TIFileAccess` (the constant memory file) takes the save folder as a
+  function over the host's `Paths` instead of the path of the start. Test:
+  Calc-U-59 `ti_presets_tests.cpp`
+  `lib14_ac11_save_folder_changed_after_the_start_is_used_at_once` (a card,
+  a screenshot and `ti58c.memory.yaml` in the new folder).
+- **The iCloud gate beside the bookmark (L-5).** `HostDirs::iCloudAvailable`
+  (Swift iOS: signed in) is asked by `Paths::ensure(Folder::Traces)` where
+  `[trace] location = icloud`; while it says no the trace folder is refused
+  with the sentence of before ("the trace location is not available"),
+  nothing made. `LibraryPartsSetup::traceAvailable`,
+  `TIAppSetup::traceAvailable` and the `available` parameter of
+  `debugger::traceFolderOf` are gone; Calc-U-59's `Settings::traceLocation()`
+  and `TraceLocation`, read by that gate only, went with them. Tests:
+  `paths_tests.cpp` `ac24_swift_icloud_trace_location_asked_at_each_ensure`,
+  `trace_tests.cpp` `ac53_trace_folder_read_at_each_trace_start`.

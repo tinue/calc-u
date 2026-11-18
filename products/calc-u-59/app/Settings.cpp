@@ -101,13 +101,6 @@ const char* openFolderKind(OpenFolder folder) {
     return "presets";
 }
 
-TraceLocation Settings::traceLocation() const {
-    const std::string v = m_file.text("trace", "location");
-    if (v == "icloud") return TraceLocation::ICloud;
-    if (v == "folder") return TraceLocation::Folder;
-    return TraceLocation::AppSupport;
-}
-
 WindowState Settings::windowState() const {
     WindowState w;
     w.x = number(m_file, "x");

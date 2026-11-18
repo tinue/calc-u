@@ -24,25 +24,12 @@ std::function<std::optional<std::string>()> screenshotFolderOf(const settings::P
 // LIB-10 AC-53: the trace folder and its limit from the host's places and
 // settings, read at each trace start, the folder made and written once
 // (Paths::ensure), for every product (user, 2026-11-17, Q-2 of
-// docs/reviews/e-simplification.md); `placesAtStart` does not apply to them.
+// docs/reviews/e-simplification.md).
 debugger::DebuggerSetup withTraces(debugger::DebuggerSetup d, const LibraryPartsSetup& s) {
     const settings::SettingsFile* file = s.settings;
-    d.trace.folder = debugger::traceFolderOf(*s.paths, s.traceAvailable);
+    d.trace.folder = debugger::traceFolderOf(*s.paths);
     d.trace.limitMb = [file] { return static_cast<long>(file->integer("trace", "max-file-size-mb")); };
     return d;
-}
-
-// With `placesAtStart`: the host's places as they are now, every folder as
-// given (the save and tape folders of the media, the screenshots; not the
-// traces, AC-53).
-std::unique_ptr<settings::Paths> placesAtStart(const LibraryPartsSetup& s) {
-    if (!s.placesAtStart) return nullptr;
-    settings::HostDirs dirs;
-    dirs.frontend = settings::FrontendKind::Given;
-    dirs.home = s.paths->hostDirs().home;
-    dirs.saveFolder = s.paths->saveFolder();
-    dirs.screenshotFolder = s.paths->screenshotFolder().value_or(std::string());
-    return std::make_unique<settings::Paths>(*s.settings, dirs);
 }
 
 std::vector<machine::PeripheralId> printersOf(const std::vector<paper::PrinterPaper>& papers) {
@@ -54,9 +41,9 @@ std::vector<machine::PeripheralId> printersOf(const std::vector<paper::PrinterPa
 } // namespace
 
 LibraryParts::LibraryParts(LibraryPartsSetup s)
-    : setup_(std::move(s)), startPlaces_(placesAtStart(setup_)), machineControl_(*setup_.machines, setup_.roms.set) {
+    : setup_(std::move(s)), machineControl_(*setup_.machines, setup_.roms.set) {
     const machine::Catalogue& catalogue = setup_.machines->catalogue();
-    const settings::Paths& places = startPlaces_ ? *startPlaces_ : *setup_.paths;
+    const settings::Paths& places = *setup_.paths;
     typing_ = std::make_unique<typing::TypingPart>(*setup_.typing, setup_.hosting);
     peripherals_ = std::make_unique<peripherals::PeripheralsPart>(setup_.hostLinks, setup_.serialLinkFolder);
     presets_ = std::make_unique<presets::PresetsPart>(

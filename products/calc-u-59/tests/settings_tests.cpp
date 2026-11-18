@@ -95,14 +95,14 @@ TEST(lib9_ac19_declaration) {
     CHECK(f.integer("trace", "max-file-size-mb") == 50);
     CHECK_EQ(f.text("display", "led-style"), std::string("modernized"));
     CHECK_EQ(f.text("keyboard", "feedback"), std::string("off"));
-    CHECK(t.settings.traceLocation() == s59::TraceLocation::AppSupport);
+    CHECK_EQ(f.text("trace", "location"), std::string("app-support"));
     CHECK(f.text("storage", "save-folder").empty() && f.text("trace", "folder").empty());
     for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) CHECK(cs::startupPreset(f, s59::modelName(m)).empty());
     CHECK(!f.boolean("window", "portrait-debug-page"));
     f.set("trace", "location", "folder");
-    CHECK(t.settings.traceLocation() == s59::TraceLocation::Folder);
+    CHECK_EQ(f.text("trace", "location"), std::string("folder"));
     f.set("trace", "location", "icloud");
-    CHECK(t.settings.traceLocation() == s59::TraceLocation::ICloud);
+    CHECK_EQ(f.text("trace", "location"), std::string("icloud"));
     f.set("trace", "max-file-size-mb", "12");
     CHECK(f.integer("trace", "max-file-size-mb") == 12);
     f.set("trace", "max-file-size-mb", "0");  // AC-11: a value (no minimum); the trace session takes it as 50

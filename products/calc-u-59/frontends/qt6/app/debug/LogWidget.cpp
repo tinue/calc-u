@@ -61,7 +61,6 @@ LogWidget::LogWidget(EmulatorController& controller, QWidget* parent) : QWidget(
 
     connect(&m_controller, &EmulatorController::logChanged, this, &LogWidget::refresh);
     connect(&m_controller, &EmulatorController::traceChanged, this, &LogWidget::refresh);
-    connect(&m_controller, &EmulatorController::entriesChanged, this, &LogWidget::refresh);
     refresh();
 }
 
@@ -72,8 +71,8 @@ void LogWidget::refresh() {
     }
     m_clear->setEnabled(!m_controller.logText().isEmpty());
     m_trace->setText(m_controller.traceRunning() ? QStringLiteral("TRACE ●") : QStringLiteral("TRACE ○"));
-    // C59-4 AC-12, AC-25: the product entry c59.trace (a trace folder that can be written).
-    m_trace->setEnabled(m_controller.traceRunning() || m_controller.entryAvailable(cu59::entries::kTrace));
+    // C59-4 AC-12: TRACE can always be pressed; a trace folder that cannot be
+    // written refuses the start (LIB-10 AC-53).
     m_trace->setStyleSheet(m_controller.traceRunning() ? QStringLiteral("QPushButton { color: orange; }") : QString());
     const char* levels[3] = {"LOG ○", "LOG ●", "LOG ●"};
     int level = static_cast<int>(m_controller.debugLevel());

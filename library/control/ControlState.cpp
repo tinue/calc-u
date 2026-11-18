@@ -149,6 +149,13 @@ const PlaceEntry* ControlState::place(const machine::PlacePath& path) const {
     return nullptr;
 }
 
+std::vector<peripherals::ControlInfo> ControlState::controlsAt(const machine::PlacePath& path) const {
+    std::vector<peripherals::ControlInfo> out;
+    for (const auto& c : controls)
+        if (c.place == path) out.push_back(c.control);
+    return out;
+}
+
 const ActionEntry* ControlState::action(const sessions::CommandName& c) const {
     for (const auto& a : actions)
         if (a.command == c) return &a;

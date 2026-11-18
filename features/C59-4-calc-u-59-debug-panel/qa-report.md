@@ -92,7 +92,7 @@ runs". CI was not dispatched (plan §1).
 | AC-22 | Pass | `harness_tests.cpp`: `c59_4_ac22_asm_load_run_clear`, `_dump_replies_lines`, `_log_level`, `_heatmap_reset`, `_no_preset_steps_for_them` |
 | AC-23 | Pass | the cases of 2.3.0's `shared_debug_tests.cpp:184-287` named in AC-3, AC-8, AC-9, AC-10, AC-14; `asm_overlay_parser` without its two lenient cases (now refused, AC-15 rows); `asm_overlay_runs` as `c59_4_ac13_entered_at_1800` |
 | AC-24 | Pass (Web; Qt6 since M-57; Swift: `testC59_4_AC5…` passes on the iPhone simulator, R/S through attach since M-58; `testC59_4_AC16AsmOverlay` is in the Screenshots plan, not run) | Qt6 `CalcU59QtTests` `c59_4_ac5_qt6_freeze_step_resume_on_the_calculator_tab`, `c59_4_ac16_qt6_overlay_chosen_run_cpu_tab_shows_it` (Select File through the shell's file chooser, Run, "ASM entered at 0x1800", the CPU history at 18xx; M-57); Web `C59-4 AC-5 …`, `C59-4 AC-16 …`; Swift `DebugPanelTests.testC59_4_AC5CalculatorFreezeStepResume`, `ScreenshotTests.testC59_4_AC16AsmOverlay` (Screenshots plan) |
-| AC-25 | Pass | `c59_4_ac25_six_product_topics_read_by_state`, `_entries_asm_run_trace_calculator_tab_with_reasons`, `_cpu_and_calculator_computed_while_shown`; `harness_tests.cpp` `c59_4_ac22_heatmap_reset` (`state calculator-debug`, `state cpu-debug`) |
+| AC-25 | Pass | `c59_4_ac25_six_product_topics_read_by_state`, `_entries_asm_run_and_calculator_tab_with_reasons` (no entry for TRACE, L-2 of the release simplification), `_cpu_and_calculator_computed_while_shown`; `harness_tests.cpp` `c59_4_ac22_heatmap_reset` (`state calculator-debug`, `state cpu-debug`) |
 | AC-26 | Pass | `c59_4_ac26_cold_boot_removes`, `_new_machine_by_preset_and_model_switch_removes` (replaces `part_flows_tests.cpp` `part_asm_overlay`) |
 | EC-1 | Pass | `c59_4_ec1_run_without_instructions_status` |
 | EC-2 | Pass | `c59_4_ec2_refused_file_keeps_loaded` |
@@ -184,4 +184,4 @@ debug examples (`debug_*`, `screentest_test_cdebug`) are the same.
 
 | ID | Result | Test case |
 |---|---|---|
-| AC-12 (as amended) | Pass (C++, Web) | `c59_4_ac12_trace_refused_where_the_folder_cannot_be_written`, `c59_4_ac25_entries_asm_run_trace_calculator_tab_with_reasons` (TRACE available with a folder that cannot be written); Web `play-calculator.spec.js` "LIB-6 AC-25 a preset screenshot is offered as a download, not listed as a trace" (the LOG tab lists traces only) |
+| AC-12 (as amended) | Pass (C++, Web) | `c59_4_ac12_trace_refused_where_the_folder_cannot_be_written` (TRACE always enabled: the control state has no entry for it, `c59_4_ac25_entries_asm_run_and_calculator_tab_with_reasons`); Web `play-calculator.spec.js` "LIB-6 AC-25 a preset screenshot is offered as a download, not listed as a trace" (the LOG tab lists traces only) |

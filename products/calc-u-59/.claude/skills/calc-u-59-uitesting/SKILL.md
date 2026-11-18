@@ -203,7 +203,7 @@ The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug pa
 | `btn-cpu-freeze-on-start` | Button | "FREEZE ON START" in CPU tab (`CPUInspectorView`) |
 | `btn-cpu-step` | Button | "STEP" in CPU tab (`CPUInspectorView`); tap to single-step, hold to auto-step. The CPU tab's ARMED has no identifier |
 | `btn-step` | Button | "STEP" in CALCULATOR tab (`LiveDebugView`); tap to step one program step, hold to auto-step (C59-4 AC-24) |
-| `btn-trace` | Button | "TRACE" in LOG tab; disabled when the control state's `c59.trace` says no (it is always available since release prep step 5: a folder that cannot be written refuses the start) |
+| `btn-trace` | Button | "TRACE" in LOG tab; always enabled (a folder that cannot be written refuses the start) |
 | `asm-file`, `asm-words`, `asm-status` | StaticText | The ASM OVERLAY box's file name, count and status ("ASM entered at 0x1800 (n step(s)).") |
 | `btn-asm-select` | Button | "Select File" in ASM overlay (`ASMDebugContent` in `DebugView`); opens `.asm` file picker |
 | `btn-asm-run` | Button | "Run" in ASM overlay; disabled until a file is loaded (`vm.canRunASM`: the control state's `c59.asm-run`) |

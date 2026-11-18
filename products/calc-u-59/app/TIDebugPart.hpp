@@ -37,8 +37,10 @@
 // own lines (the product kind c59.machine-log) go there at their level, the
 // dumps at every level. The run state and the trace are LIB-10's.
 //
-// It is also LIB-4 control rules (AC-25): the product entries c59.asm-run,
-// c59.trace and c59.calculator-tab, each {available, reason}.
+// It is also LIB-4 control rules (AC-25): the product entries c59.asm-run
+// and c59.calculator-tab, each {available, reason}. TRACE can always be
+// pressed; a trace folder that cannot be written refuses the start (LIB-10
+// AC-53).
 // Single-threaded, on the session's thread.
 
 namespace cu59 {
@@ -64,7 +66,7 @@ inline const TopicName kDebugView{"c59.debug-view"};
 
 namespace commands {
 using calcu::sessions::CommandName;
-inline const CommandName kLiveDebug{"c59.live-debug"};         // {on}: the CALCULATOR tab is shown
+inline const CommandName kShowCalculatorDebug{"c59.show-calculator-debug"}; // {on}: the CALCULATOR tab is shown
 inline const CommandName kShowCpuDebug{"c59.show-cpu-debug"};   // {on}: the CPU tab is shown (the heatmap counts, from zero)
 inline const CommandName kHeatmapReset{"c59.heatmap-reset"};   // AC-8
 inline const CommandName kLogLevel{"c59.log-level"};           // {level: off|info|debug} (AC-11)
@@ -77,7 +79,6 @@ inline const CommandName kAsmClear{"c59.asm-clear"};
 /// The product entries of the control state (AC-25): {available, reason?}.
 namespace entries {
 inline constexpr const char* kAsmRun = "c59.asm-run";
-inline constexpr const char* kTrace = "c59.trace";
 inline constexpr const char* kCalculatorTab = "c59.calculator-tab";
 } // namespace entries
 

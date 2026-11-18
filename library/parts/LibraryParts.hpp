@@ -38,8 +38,9 @@
 // inert MediaPart. The host passes its LIB-9 places (`paths`) and LIB-12's
 // lookup (`roms`); from them come the trace folder and limit of the
 // debugger (LIB-10), the folder for screenshots (LIB-6 AC-25), the save and
-// tape folders of the media (LIB-7), `~/` of a preset, and LIB-12's topic
-// `roms-missing` (StartupPart publishes it).
+// cassette folders of the media (LIB-7), `~/` of a preset, and LIB-12's
+// topic `roms-missing` (StartupPart publishes it). Every place is read when
+// it is used, so a change in Settings applies at once (LIB-14 AC-11).
 //
 // The order of the parts in the session (their designs' rules, in one
 // place; sessionParts()): LIB-4's ControlPart first, before the host's own
@@ -61,15 +62,6 @@ struct LibraryPartsSetup {
     settings::SettingsFile* settings = nullptr;
     const settings::Paths* paths = nullptr;
     roms::LookupResult roms;
-    // Whether the trace folder can be used now, asked at each trace start
-    // (the Swift frontend's iCloud, LIB-9 AC-24); null: always.
-    std::function<bool()> traceAvailable;
-    // Calc-U-59 (its behaviour before Part E): the places as they are when
-    // the parts are made (the save and tape folders of the media, the folder
-    // for screenshots); false: each read when used (Calc-U-1600). The trace
-    // folder and limit are read at each trace start either way (LIB-10
-    // AC-53).
-    bool placesAtStart = false;
 
     // LIB-5: the product's typing.
     const typing::TypingProduct* typing = nullptr;
@@ -145,7 +137,6 @@ public:
 
 private:
     LibraryPartsSetup setup_;
-    std::unique_ptr<settings::Paths> startPlaces_;   // placesAtStart
     startup::MachineControl machineControl_;
     std::unique_ptr<typing::TypingPart> typing_;
     std::unique_ptr<peripherals::PeripheralsPart> peripherals_;

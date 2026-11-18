@@ -196,10 +196,17 @@ TEST(ac53_trace_folder_read_at_each_trace_start) {
     file.set("trace", "folder", "/dev/null/no");
     const auto bad = folder();
     CHECK(bad && !bad->ok && !bad->problem.empty() && bad->problem.back() != '.');
-    // Not available now (the Swift frontend's iCloud): asked at each call too.
+    // Not available now (the Swift frontend's iCloud, the places' callback):
+    // asked at each call too.
     bool available = false;
-    const auto gated = traceFolderOf(paths, [&available] { return available; });
-    file.set("trace", "folder", a);
+    st::HostDirs swift;
+    swift.frontend = st::FrontendKind::Swift;
+    swift.home = dir.str();
+    swift.saveFolder = a;
+    swift.iCloudAvailable = [&available] { return available; };
+    file.set("trace", "location", "icloud");
+    const st::Paths swiftPaths(file, swift);
+    const auto gated = traceFolderOf(swiftPaths);
     CHECK(gated() && !gated()->ok && gated()->problem == "the trace location is not available");
     available = true;
     CHECK(gated() && gated()->ok);

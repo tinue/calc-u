@@ -1396,3 +1396,11 @@ KeepFile (D-13), a download as on Calc-U-1600's page.
 gone; the page lists in its LOG tab only what is handed over with `kind:
 trace`. Test: Calc-U-59 `play-calculator.spec.js` "LIB-6 AC-25 a preset
 screenshot is offered as a download, not listed as a trace".
+
+## Release simplification R-1 (2026-11-18, branch `rs1-59-places`)
+
+`docs/reviews/release-simplification.md` §1 L-4. The folder for screenshots
+is the host's places' for every product, read when a `screenshot:` step
+needs it: Calc-U-59 no longer keeps the folder of its start
+(`LibraryPartsSetup::placesAtStart` is gone; LIB-9 design, same section;
+ledger row 59-66).

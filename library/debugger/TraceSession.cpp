@@ -34,12 +34,9 @@ void TraceFile::close() {
     if (!memory_ && out_.is_open()) out_.close();
 }
 
-std::function<std::optional<settings::Paths::Ensured>()> traceFolderOf(const settings::Paths& paths,
-                                                                        std::function<bool()> available) {
-    return [&paths, available]() -> std::optional<settings::Paths::Ensured> {
-        const std::optional<std::string> folder = paths.folder(settings::Folder::Traces);
-        if (!folder) return std::nullopt;
-        if (available && !available()) return settings::Paths::Ensured{false, *folder, "the trace location is not available"};
+std::function<std::optional<settings::Paths::Ensured>()> traceFolderOf(const settings::Paths& paths) {
+    return [&paths]() -> std::optional<settings::Paths::Ensured> {
+        if (!paths.folder(settings::Folder::Traces)) return std::nullopt;
         return paths.ensure(settings::Folder::Traces);
     };
 }

@@ -8,8 +8,10 @@
 // run-control buttons for the level `program` (CALCULATOR) and `cpu` (CPU),
 // on the library's `run-state` (LIB-10 AC-34, M-53), which FREEZE ON START
 // and ARMED read too (Part E simplification E-3); TRACE is the trace
-// session's button. Run, TRACE and the CALCULATOR tab follow the control
-// state's product entries c59.asm-run, c59.trace and c59.calculator-tab.
+// session's button, which can always be pressed (a trace folder that cannot
+// be written refuses the start, LIB-10 AC-53). Run and the CALCULATOR tab
+// follow the control state's product entries c59.asm-run and
+// c59.calculator-tab.
 // Since M-57 it reads the topics through the library's shell (useTopic) and
 // sends the commands by name (the page's context C59_PAGE, src/page.jsx).
 
@@ -260,7 +262,6 @@ function LogTab() {
   const log = { lines: page.log.lines, level: view ? view.logLevel : "off" };
   const trace = useTopic(shell, "trace") || NO_TRACE;
   const traces = useTraces(page.traces);
-  const entries = useEntries(shell);
   const ref = React.useRef(null);
   const text = React.useMemo(() => log.lines.join("\n"), [log.lines]);
   React.useLayoutEffect(() => { ref.current.scrollTop = ref.current.scrollHeight; }, [text]);
@@ -286,7 +287,6 @@ function LogTab() {
           <button type="button" className="calcu-pill" aria-pressed={trace.running}
             title="Write every executed instruction to the binary trace file (downloaded when switched off)"
             style={trace.running ? { color: "orange" } : undefined}
-            disabled={!trace.running && !usable(entries, "c59.trace")}
             onClick={() => shell.send("trace", trace.running ? { off: true } : { button: true })}>{trace.running ? "TRACE ●" : "TRACE ○"}</button>
           <button type="button" className="calcu-pill" title="Core log level: off / info / debug"
             style={level ? { color: level === 1 ? "orange" : "#ff3b30" } : undefined}
@@ -327,13 +327,13 @@ function Debugger() {
 
   React.useEffect(() => {
     if (!shell || !data) return undefined;
-    shell.send("c59.live-debug", { on: shown === 0 });
+    shell.send("c59.show-calculator-debug", { on: shown === 0 });
     shell.send("c59.show-cpu-debug", { on: shown === 1 });
     return undefined;
   }, [shell, data, shown]);
   React.useEffect(() => () => {
     if (!shell) return;
-    shell.send("c59.live-debug", { on: false });
+    shell.send("c59.show-calculator-debug", { on: false });
     shell.send("c59.show-cpu-debug", { on: false });
   }, [shell]);
 

@@ -75,8 +75,8 @@ The panel
   | `c59.debug-view` | the tab a `debug-panel:` step asked for last |
 
   and these product entries in the control state (LIB-4 AC-14): whether
-  Run can be used, whether TRACE can be used, and whether the CALCULATOR
-  tab can be chosen, each with its reason. It is shown in Qt6 and in
+  Run can be used and whether the CALCULATOR tab can be chosen, each with
+  its reason (TRACE can always be pressed, AC-12). It is shown in Qt6 and in
   the Swift frontend where the layout has room for it, and in the Web
   frontend in the wide layout (LIB-14 AC-33; C59-8 AC-15).
 - [ ] **AC-2** — Given the step `debug-panel:` with `calculator`, `cpu`
@@ -320,3 +320,4 @@ Every frontend, and the checks
 | The overlays' comments and `examples/assembly/README.md` are upgraded with them (AC-20) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |
 | AC-12 amended: TRACE can always be pressed; where the trace folder cannot be written the start is refused with LIB-10 AC-53's sentence (the entry `c59.trace` is always available; design §3.9). The Web tab lists only traces | user, 2026-11-17, Q-2 of `docs/reviews/e-simplification.md` and Q-1; ledger rows 59-62, 59-63 | 2026-11-17 |
 | Release prep step 1: the product topics of AC-25 carry the product word: `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view`; the command that tells the part the CPU tab is shown is `c59.show-cpu-debug` (was `c59.cpu-debug`, now the topic's name); AC-22's commands are under `c59`. Names only | user, 2026-11-17 (`docs/reviews/e-simplification.md` §10 Q-6): one word per product everywhere; `docs/reviews/release-prep-plan.md` §1; ledger row 59-58 | 2026-11-17 |
+| AC-25 edited in place: the product entry for TRACE (`c59.trace`) is gone; it was always available since AC-12's amendment, so TRACE is always enabled and no frontend reads an entry for it; the command that tells the part the CALCULATOR tab is shown is `c59.show-calculator-debug` (was `c59.live-debug`), the pattern of `c59.show-cpu-debug`. No user-visible change | L-2 and V-11 of `docs/reviews/release-simplification.md` (user's rules, 2026-11-18: details by the simpler structure); group R-1 | 2026-11-18 |

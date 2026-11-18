@@ -1,4 +1,4 @@
-// LIB-6 L7: the log of a load (AC-18). The wording is not part of the
+// The log of a load. The wording is not part of the
 // contract but the line of `elapsed-time: report`.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
@@ -6,7 +6,7 @@
 using namespace calcu::presets;
 using namespace calcu::presets::test;
 
-TEST(ac18_log_lines_file_machine_peripherals_items_end) {
+TEST(log_lines_file_machine_peripherals_items_end) {
     Rig r;
     r.logLines();
     const CallId c = r.load("format-version: 2\nmodel: test-seg\nprinter: test-printer\nslot-1: test-module:8k\n"
@@ -27,7 +27,7 @@ TEST(ac18_log_lines_file_machine_peripherals_items_end) {
     CHECK_EQ(log.back(), "Preset " + path + " carried out to its end.");
 }
 
-TEST(ac18_failure_line_holds_the_error) {
+TEST(failure_line_holds_the_error) {
     Rig r;
     r.logLines();
     const CallId c = r.load(header() + "keys:\n  - key: 2\n  - expect: 7\n  - key: 3\n");

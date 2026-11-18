@@ -24,14 +24,14 @@
 #include <string>
 #include <vector>
 
-// The window of the media tests (LIB-7 design §2, §6): an app session with
-// PeripheralsPart, PresetsPart (LIB-6), StartupPart (LIB-18), ControlPart
-// (LIB-4) and MediaPart, in that order; the media test catalogue (the test
-// machines with their media places and test-memory-module); the kinds of
-// TestKinds.hpp with a bundled folder for disks and modules; a save folder
-// of the test's own; LIB-3's test frontend; LIB-18's test settings. In
-// virtual time unless a case says Paced (host calls of 16 ms on the scripted
-// clock). The preset header key `test-cards:` defines in-file test cards:
+// The window of the media tests: an app session with PeripheralsPart,
+// PresetsPart, StartupPart, ControlPart and MediaPart, in that order; the
+// media test catalogue (the test machines with their media places and
+// test-memory-module); the kinds of TestKinds.hpp with a bundled folder for
+// disks and modules; a save folder of the test's own; the sessions' test
+// frontend; the startup's test settings. In virtual time unless a case says
+// Paced (host calls of 16 ms on the scripted clock). The preset header key
+// `test-cards:` defines in-file test cards:
 //   test-cards:
 //     - { name: A, content: abc }
 
@@ -78,14 +78,14 @@ struct FixtureOptions {
     std::function<void(startup::MachinePlan&)> defaults;   // the built-in default machine
     std::function<void(calcu::testing::TempFolder& save, calcu::testing::TempFolder& bundled)> prepare;   // before the start
     sessions::HostServices services;
-    bool saveFolderMissing = false;   // EC-1: the save folder is not made before
+    bool saveFolderMissing = false;   // the save folder is not made before
     ModuleListing listing;
-    // LIB-13 (M-42): the settings file the session reads (empty: defaults
+    // The settings file the session reads (empty: defaults
     // only), and parts after MediaPart, made once the fixture's parts are.
     std::string settingsIni;
     std::function<std::vector<sessions::SessionPart*>(MediaFixture&)> moreParts;
-    // LIB-7 §11 (M-55): the kinds changed before the part is made (the
-    // library additions of Calc-U-59), and the host's file access.
+    // The kinds changed before the part is made (what Calc-U-59's magnetic
+    // card needs), and the host's file access.
     std::function<void(std::vector<KindDecl>&)> kinds;
     std::shared_ptr<const FileAccess> files;
 };
@@ -100,7 +100,7 @@ public:
             o.settingsIni.empty() ? settings::SettingsFile::defaultsOnly(startup::test::testDecl())
                                   : settings::SettingsFile::open(startup::test::testDecl(), o.settingsIni));
         settings::HostDirs dirs;
-        dirs.frontend = settings::FrontendKind::Given;   // the save folder as passed (LIB-9 AC-18)
+        dirs.frontend = settings::FrontendKind::Given;   // the save folder as passed
         dirs.home = saveRoot / "home";
         dirs.settingsBase = saveRoot / "settings";
         dirs.saveFolder = saveFolder;

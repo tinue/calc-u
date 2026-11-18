@@ -72,7 +72,7 @@ void ReadContext::completePlan(LoadPlan& plan) {
 
 std::optional<ReadError> ReadContext::firstError() const {
     if (errors_.empty()) return std::nullopt;
-    // D-3: the lowest line; the file as a whole (line 0) first; the first given among equals.
+    // The lowest line; the file as a whole (line 0) first; the first given among equals.
     const ReadError* best = &errors_.front();
     for (const auto& e : errors_)
         if (e.line < best->line) best = &e;
@@ -81,7 +81,7 @@ std::optional<ReadError> ReadContext::firstError() const {
 
 namespace {
 
-// ── The file split at its top-level items (D-3) ──────────────────────────
+// ── The file split at its top-level items ────────────────────────────────
 
 struct Chunk {
     int line = 0;
@@ -180,7 +180,7 @@ template <class D> std::string variantList(const D& d) {
 
 std::string nameOf(const machine::PeripheralDescriptor& d) { return d.name.empty() ? d.id.value : d.name; }
 
-// What a keyword that the rules do not apply refuses with (AC-62).
+// What a keyword that the rules do not apply refuses with.
 bool applies(ReadContext& ctx, std::string_view keyword, int line) {
     switch (ctx.rules().applies(keyword)) {
     case Applies::Yes: return true;
@@ -201,7 +201,7 @@ bool isPlaceOfAnotherModel(const machine::Catalogue& cat, const std::string& key
     return false;
 }
 
-// A place key (AC-2, AC-3; D-22).
+// A place key.
 std::optional<PlaceRequest> readPlace(const std::string& key, const YamlNode& v, int line, ReadContext& ctx) {
     const machine::PlaceName place{key};
     const PlaceKeyRule rule = ctx.rules().placeKey(place);
@@ -226,7 +226,7 @@ std::optional<PlaceRequest> readPlace(const std::string& key, const YamlNode& v,
             ctx.error(line, rule.noFile.empty() ? key + ": does not take a reference by file:." : rule.noFile);
             return std::nullopt;
         }
-        // LIB-7 (M-41): a module that is a medium, by its name tag or its file.
+        // A module that is a medium, by its name tag or its file.
         if (const PlaceResolver& resolve = ctx.vocabulary().placeResolver()) {
             PlaceResolution res = resolve(place, v, line, ctx);
             if (res.how == PlaceResolution::How::Error) return std::nullopt;
@@ -238,7 +238,7 @@ std::optional<PlaceRequest> readPlace(const std::string& key, const YamlNode& v,
                 return r;
             }
         }
-        if (file) {   // D-22: without LIB-7's resolver
+        if (file) {   // without the media resolver
             ctx.error(line, key + ": a reference by file: is not read by this release; use name:.");
             return std::nullopt;
         }
@@ -288,7 +288,7 @@ std::unique_ptr<Item> readOneStep(const std::string& verb, const YamlNode& value
                                   ReadContext& ctx) {
     const StepDef* def = vocab.step(verb);
     if (!def) {
-        ctx.error(line, "Unknown step " + verb + ".");   // AC-30
+        ctx.error(line, "Unknown step " + verb + ".");
         return nullptr;
     }
     if (!applies(ctx, verb, line)) return nullptr;
@@ -319,7 +319,7 @@ std::unique_ptr<Item> readOneStep(const std::string& verb, const YamlNode& value
 }
 
 void readSteps(const YamlNode& list, int line, const Vocabulary& vocab, ReadContext& ctx, std::vector<Entry>& out) {
-    if (list.isNull() || (list.isSeq() && list.seq.empty())) {   // EC-8
+    if (list.isNull() || (list.isSeq() && list.seq.empty())) {   // an empty step list
         ctx.error(line, "keys: has no steps.");
         return;
     }
@@ -352,7 +352,7 @@ const char* const kLibraryHeaderKeys[] = {"preset-name", "description", "timeout
 std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const ReadSetup& setup) {
     const std::string name = source.name();
     const std::optional<std::string> text = source.text();
-    if (!text) return ReadError{0, source.readError()};   // EC-1
+    if (!text) return ReadError{0, source.readError()};   // cannot be read, or not UTF-8
     std::vector<Chunk> chunks = splitChunks(*text, setup.vocabulary.rawVerbs());
     auto find = [&](const char* key) -> Chunk* {
         for (auto& c : chunks)
@@ -365,7 +365,7 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
         if (c.syntax && (c.firstLine.rfind("format-version:", 0) == 0 || c.firstLine.rfind("model:", 0) == 0))
             return ReadError{c.syntax->line, errorText(name, c.syntax->line, c.syntax->message)};
 
-    // 1. format-version before every other key (README §2; AC-8).
+    // 1. format-version before every other key (formats README §2).
     Chunk* fv = find("format-version");
     std::optional<std::int64_t> version;
     if (fv && fv->value.isScalar()) version = formats::parseNumber(scalarText(fv->value));
@@ -381,7 +381,7 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
                                                  " (preset format " + std::to_string(*version) +
                                                  "); this release reads preset format 2.")};
 
-    // 2. model (AC-9): nothing else can be checked without it.
+    // 2. model: nothing else can be checked without it.
     Chunk* mc = find("model");
     if (!mc) return ReadError{0, errorText(name, 0, "model: is required; the models are " + modelList(setup.catalogue) + ".")};
     const std::string written = mc->value.isScalar() ? scalarText(mc->value) : std::string();
@@ -416,7 +416,7 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
         return std::nullopt;
     });
 
-    // 3. The header keys, wherever they stand (AC-2, AC-14); each once.
+    // 3. The header keys, wherever they stand; each once.
     std::set<std::string> seen{"format-version", "model"};
     auto once = [&](const Chunk& c) {
         if (seen.insert(c.key).second) return true;
@@ -437,25 +437,25 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
             if (c.key == "preset-name") {
                 const std::string n = c.value.isScalar() ? scalarText(c.value) : std::string();
                 if (n.empty()) ctx.error(c.line, "preset-name: needs a name.");
-                else if (codePoints(n) > 18) ctx.error(c.line, "preset-name: has at most 18 characters.");   // D-12
+                else if (codePoints(n) > 18) ctx.error(c.line, "preset-name: has at most 18 characters.");   // Unicode code points
                 else {
                     plan.header.presetName = n;
                     plan.header.nameWritten = true;
                 }
-            } else if (c.key == "description") {   // D-26: one line
+            } else if (c.key == "description") {   // one line
                 const std::size_t col = c.firstLine.find(':');
                 const std::string form = col == std::string::npos ? std::string() : c.firstLine.substr(col + 1);
                 if (!c.value.isScalar() || form.find('|') == form.find_first_not_of(' '))
                     ctx.error(c.line, "description: is one line.");
                 else plan.header.description = scalarText(c.value);
-            } else if (c.key == "timeout") {   // D-11
+            } else if (c.key == "timeout") {
                 const auto t = c.value.isScalar() ? formats::parseNumber(scalarText(c.value)) : std::nullopt;
                 if (!t || *t < 1) ctx.error(c.line, "timeout: is a whole number of seconds, at least 1.");
                 else plan.header.timeoutSeconds = *t;
             }
             continue;
         }
-        // D-31: the vocabulary first, so a product's header key may stand
+        // The vocabulary first, so a product's header key may stand
         // under a place's name (Calc-U-1600's `host-drive:`).
         if (const HeaderKeyDef* h = setup.vocabulary.header(c.key)) {
             if (!once(c) || !applies(ctx, c.key, c.line)) continue;
@@ -468,15 +468,15 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
             continue;
         }
         if (c.key == kKeysSection || setup.vocabulary.section(c.key)) continue;   // below
-        if (isPlaceOfAnotherModel(setup.catalogue, c.key)) {   // AC-62
+        if (isPlaceOfAnotherModel(setup.catalogue, c.key)) {
             ctx.error(c.line, c.key + " is not available on the " + desc->model.value + ".");
             continue;
         }
-        ctx.error(c.line, "Unknown key " + c.key + ".");   // AC-30
+        ctx.error(c.line, "Unknown key " + c.key + ".");
     }
-    if (!ctx.firstError()) ctx.rules().checkHeader(plan, ctx);   // D-32
+    if (!ctx.firstError()) ctx.rules().checkHeader(plan, ctx);   // pairs of keys, at the later one
 
-    // 4. The sections and steps in file order (AC-4, AC-14, AC-15).
+    // 4. The sections and steps in file order.
     std::vector<Entry> entries;
     for (const Chunk& c : chunks) {
         if (c.syntax) continue;
@@ -491,7 +491,7 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
         }
     }
 
-    // 5. The markers (AC-58, AC-59).
+    // 5. The markers (skip-wait:, let-it-finish:).
     for (std::size_t i = 0; i < entries.size(); ++i) {
         Entry& e = entries[i];
         const bool first = i == 0, last = i + 1 == entries.size();
@@ -549,13 +549,13 @@ std::variant<PresetHeader, ReadError> readHeader(const PresetSource& source, con
 
 std::unique_ptr<Item> readStep(std::string_view verb, const YamlNode& value, const ReadSetup& setup,
                                machine::Machine& m, std::string* error) {
-    // The running machine in place of a header (§3.8).
+    // The running machine in place of a header.
     struct NoSource final : PresetSource {
         std::string name() const override { return "The step"; }
         std::string stem() const override { return {}; }
         std::optional<std::string> text() const override { return std::string(); }
         std::string readError() const override { return {}; }
-        // LIB-7 (M-41; LIB-11 AC-22): a file a step's reference names
+        // A file a step's reference names
         // (`floppy { file: … }`), absolute or relative to the current folder.
         std::variant<std::vector<std::uint8_t>, std::string> readNamed(std::string_view p) const override {
             if (auto bytes = files::readBytes(files::toPath(p))) return std::move(*bytes);

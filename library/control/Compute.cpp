@@ -10,8 +10,8 @@
 #include <utility>
 #include <vector>
 
-// LIB-4 design §3.4. Every list in the order of the descriptors; every
-// availability by the order of AC-2 (Compute.hpp).
+// Every list in the order of the descriptors; every availability by the
+// order of Compute.hpp.
 
 namespace calcu::control {
 
@@ -41,8 +41,8 @@ public:
     }
 
 private:
-    // Rules 1 and 2 of AC-2; `inherited` is the reason of a refused place
-    // (D-5). std::nullopt: neither applies.
+    // Rules 1 and 2 (Compute.hpp); `inherited` is the reason of a refused
+    // place. std::nullopt: neither applies.
     std::optional<Availability> before(const EntryKey& key, bool endsOperation,
                                        const std::optional<std::string>& inherited = std::nullopt) const {
         if (runs_ && !endsOperation) return Availability{false, sessions::kAnotherOperationRuns};
@@ -80,9 +80,10 @@ private:
         return out;
     }
 
-    // The request the control state asks with (§3.2): the place, the
-    // peripheral, the variant, and ROM images that carry the file names of
-    // the variant's entries and no bytes (D-2).
+    // The request the control state asks with: the place, the peripheral,
+    // the variant, and ROM images that carry the file names of the
+    // variant's entries and no bytes (the full ROM set is there before any
+    // machine is built, so no entry is refused for a ROM).
     machine::PeripheralRequest request(const PlacePath& path, const machine::PeripheralDescriptor& d,
                                        const std::optional<VariantId>& variant) const {
         machine::PeripheralRequest r;
@@ -124,7 +125,7 @@ private:
             VariantChoice vc{v.id, {}};
             if (auto a = before(ChoiceKey{path, d.id, v.id}, false, placeReason)) vc.available = *a;
             else if (!(c.plugged && running == v.id)) vc.available = machineSays(path, place, d, v.id, c.plugged);
-            c.variants.push_back(std::move(vc));   // the choice in force follows rules 1 and 2 only (D-7)
+            c.variants.push_back(std::move(vc));   // the choice in force follows rules 1 and 2 only
         }
         if (auto a = before(ChoiceKey{path, d.id, std::nullopt}, false, placeReason)) c.available = *a;
         else if (!c.plugged) c.available = machineSays(path, place, d, running, false);   // a detach: never refused
@@ -134,7 +135,7 @@ private:
     void placeWalk(const PlacePath& path, const machine::PeripheralId* host, ControlState& out) {
         const machine::PlaceName& name = path.steps.back();
         const auto info = host ? cat_.place(*host, name) : cat_.place(m_.model(), name);
-        if (!info || !info->place) return;   // a place nobody has (AC-5)
+        if (!info || !info->place) return;   // a place nobody has
         PlaceEntry e;
         e.path = path;
         e.connector = info->place->connector;
@@ -146,7 +147,7 @@ private:
             if (const machine::PeripheralDescriptor* d = cat_.peripheral(id))
                 e.fitting.push_back(choiceFor(path, *info->place, *d, placeReason));
         out.places.push_back(std::move(e));
-        // The places of what is plugged in here follow at once, depth first (LIB-2 AC-9).
+        // The places of what is plugged in here follow at once, depth first.
         for (const machine::PlugEntry* p : at(path)) {
             walked_.push_back(p);
             if (const machine::PeripheralDescriptor* d = cat_.peripheral(p->peripheral))
@@ -166,12 +167,12 @@ private:
             out.mediaPlaces.push_back(std::move(e));
         };
         for (const auto& d : m_.descriptor().mediaPlaces) add(d, {}, std::nullopt);
-        for (const machine::PlugEntry* p : walked_)   // in the order of the place walk (EC-4)
+        for (const machine::PlugEntry* p : walked_)   // in the order of the place walk
             if (const machine::PeripheralDescriptor* d = cat_.peripheral(p->peripheral))
                 for (const auto& mp : d->mediaPlaces) add(mp, p->place, p->peripheral);
     }
 
-    // D-3: one paper panel when a printer of the product's list fits a place
+    // One paper panel when a printer of the product's list fits a place
     // the machine lists; owned by the first plugged-in printer of the walk.
     void panels(ControlState& out) const {
         auto isPrinter = [&](const PeripheralId& id) {
@@ -191,8 +192,8 @@ private:
         out.panels.push_back(std::move(panel));
     }
 
-    // AC-21: the controls of each plugged-in peripheral, in the order of the
-    // place walk, each owner's in its descriptor's order (LIB-2 AC-14).
+    // The controls of each plugged-in peripheral, in the order of the place
+    // walk, each owner's in its descriptor's order.
     void controls(ControlState& out) const {
         for (const machine::PlugEntry* p : walked_)
             for (const auto& c : peripherals::controlsOf(m_, machine::PeripheralOwner{p->peripheral, p->place}))
@@ -201,7 +202,7 @@ private:
 
     void actions(ControlState& out) const {
         for (const auto* c : {&kResetAction, &kColdBootAction, &kLoadPresetAction, &kOpenAction}) {
-            const bool ends = *c == kResetAction || *c == kColdBootAction;   // LIB-18 AC-16
+            const bool ends = *c == kResetAction || *c == kColdBootAction;   // they end the operation
             out.actions.push_back(ActionEntry{*c, ruled(ActionKey{*c}, ends)});
         }
     }

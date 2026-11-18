@@ -1,6 +1,4 @@
-// The YAML-subset reader of the own file formats (library/formats/Yaml.hpp;
-// LIB-12 design D-4): the cases Calc-U-1600's tests/memory_card_tests.cpp
-// had for it, moved with the reader in M-24 (support, no AC).
+// The YAML-subset reader of the own file formats (library/formats/Yaml.hpp).
 #include "TestHarness.hpp"
 #include "formats/Number.hpp"
 #include "formats/Yaml.hpp"
@@ -108,7 +106,7 @@ TEST(test_yaml_format_version_required_and_checked) {
     CHECK(!requireFormatVersion(bare, 1, "module", &err) && err == "missing 'format-version'");
 }
 
-// LIB-6 D-4: the options of a preset; the default reader is unchanged.
+// The options of a preset; the default reader is unchanged.
 TEST(test_yaml_options_raw_step_verbs_and_repeated_top_level_keys) {
     YamlNode n;
     std::string err;

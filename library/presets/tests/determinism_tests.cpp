@@ -1,4 +1,4 @@
-// LIB-6 L11: determinism and the elapsed time of a quick user (AC-11, AC-64).
+// Determinism and the elapsed time of a quick user.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 
@@ -35,7 +35,7 @@ long long millisOf(const std::string& l) {
 }
 } // namespace
 
-TEST(ac11_same_preset_twice_same_memory_display_ticks_log) {
+TEST(same_preset_twice_same_memory_display_ticks_log) {
     RigOptions o;
     o.program = 25'000;
     Rig r(o);
@@ -61,9 +61,9 @@ TEST(ac11_same_preset_twice_same_memory_display_ticks_log) {
     CHECK(a.memory == b.memory && a.display == b.display && a.ticks == b.ticks && a.log == b.log);
 }
 
-TEST(ac64_elapsed_is_compute_holds_gaps_waits) {
+TEST(elapsed_is_compute_holds_gaps_waits) {
     // test-seg: a program of P ticks after key 1; holds of 1000 ticks and gaps
-    // of 500 (the typing profile); idle after 200 ticks of readiness (D-9).
+    // of 500 (the typing profile); idle after 200 ticks of readiness.
     constexpr Ticks kP = 30'000, kHold = 1'000, kGap = 500, kStretch = 200, kWait = 1'000;
     const std::string text = header() + "keys:\n  - elapsed-time: start\n  - key: 1\n  - wait: 10ms\n  - key: 2\n"
                                         "  - elapsed-time: report\n";
@@ -83,7 +83,7 @@ TEST(ac64_elapsed_is_compute_holds_gaps_waits) {
     CHECK_EQ(oneGo, paced);   // the host's speed does not change it
     const long long ms = millisOf(oneGo);
     // compute (the program) + the holds + the wait; no more than a gap per
-    // press and one idle stretch per waited item (D-9) on top.
+    // press and one idle stretch per waited item on top.
     const long long low = static_cast<long long>((kP + kHold + kWait + kHold) / 100);
     const long long high = static_cast<long long>((kP + 2 * (kHold + kGap) + kWait + 2 * kStretch + 100) / 100);
     CHECK(ms >= low);

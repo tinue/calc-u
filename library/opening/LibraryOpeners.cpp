@@ -22,7 +22,7 @@ Value fileArgs(const OpenedFile& f) {
 }
 } // namespace
 
-// ── LIB-6 ──
+// ── Presets ──
 
 PresetsOpener::PresetsOpener(presets::PresetsPart& p, std::vector<std::string> extensions) : part_(&p) {
     for (auto& e : extensions) extensions_.push_back(lowerAscii(e));
@@ -36,7 +36,7 @@ sessions::CommandOutcome PresetsOpener::loadContent(const OpenedFile& f, session
     return part_->loadPreset(Value::object({{"content", text(f)}, {"name", fileNameOf(f)}}), c);
 }
 
-// ── LIB-7 ──
+// ── Media ──
 
 MediaOpener::MediaOpener(media::MediaPart& m) : part_(&m) {}
 

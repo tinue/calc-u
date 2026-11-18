@@ -14,22 +14,22 @@
 #include <string>
 #include <vector>
 
-// The product rules and keywords built for the tests (LIB-6 design §6):
+// The product rules and keywords built for the tests:
 //   idle      test-seg: key ready for 2 ms, asked every 0.1 ms (10 ticks);
 //             test-dot: key ready for 20 frames, asked every frame.
 //   after the build: counted; a test may give a step of its own (a pause).
-//   picture   the display output as bytes (no PNG in M-38, D-13).
-//   compare   the text of LIB-11's test product's display rule.
+//   picture   the display output as bytes (no PNG).
+//   compare   the text of the harness test product's display rule.
 //   markers   sync-clock is for test-dot only; printer-trace for test-seg
 //             only; test-undefined is [undefined] everywhere.
-// Keywords added as a product adds its own (AC-29):
+// Keywords added as a product adds its own:
 //   test-header:   a header key with a block { level: <number>, note: <text>, flag: <bool> }
 //   test-memory:   a section: { at: <number>, bytes: | <hex> } or
 //                  { at: <number>, file: <path> } into test.memory
-//   test-panel:    a frontend step (AC-63): shown where the rules have a panel
+//   test-panel:    a frontend step: shown where the rules have a panel
 //   printer-trace: on|off: the test printer's `trace` switch; needs the
-//                  printer (AC-34, AC-40, AC-65)
-//   test-undefined: a step the format has not defined yet (AC-62)
+//                  printer
+//   test-undefined: a step the format has not defined yet
 
 namespace calcu::presets::test {
 
@@ -191,7 +191,7 @@ public:
                                    } else if (k == "flag") {
                                        if (!x.asBool(&h->flag, &e)) ctx.error(at, "flag: is true or false.");
                                    } else {
-                                       ctx.error(at, "Unknown key " + k + " in test-header:.");   // AC-1: every level
+                                       ctx.error(at, "Unknown key " + k + " in test-header:.");   // every level
                                    }
                                }
                                ctx.keep("test-header", h);
@@ -242,7 +242,7 @@ public:
             TestPresetRules* rules;
             std::string name;
             Task<ItemResult> carryOut(RunContext&) override {
-                if (rules->panel) rules->shown.push_back(name);   // AC-63: else passed over
+                if (rules->panel) rules->shown.push_back(name);   // else passed over
                 co_return ItemResult{};
             }
             After after() const override { return After::TakenEffect; }
@@ -279,7 +279,7 @@ public:
                               ctx.error(n.line, "printer-trace: takes on or off.");
                               return nullptr;
                           }
-                          if (!ctx.plugged(machine::PlaceName{"printer"}, mt::kPrinter)) {   // AC-40's form
+                          if (!ctx.plugged(machine::PlaceName{"printer"}, mt::kPrinter)) {
                               ctx.error(n.line, "printer-trace: needs printer: test-printer.");
                               return nullptr;
                           }

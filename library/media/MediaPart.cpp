@@ -26,7 +26,7 @@ using sessions::Value;
 
 namespace {
 
-constexpr pacing::WallTime kAutosaveDelay = std::chrono::milliseconds(500);   // AC-11
+constexpr pacing::WallTime kAutosaveDelay = std::chrono::milliseconds(500);   // a change is written at most this late
 
 std::string inQuotes(const std::string& s) { return "“" + s + "”"; }
 
@@ -67,7 +67,7 @@ MediaPart::MediaPart(MediaSetup s)
     : shelf_(s.kinds, s.paths, std::move(s.files)), listing_(std::move(s.listing)), catalogue_(s.catalogue), control_(s.control) {
     startup::MachineControl* c = control_;
     if (!c) return;
-    // S-7a: a variant switch carries a module medium's content over.
+    // A variant switch carries a module medium's content over.
     c->addCarry([this](machine::PeripheralRequest& r, const machine::PlugEntry& e, Machine& m) {
         for (const Place& p : places_) {
             if (!p.slot || p.path != e.place) continue;
@@ -90,7 +90,7 @@ MediaPart::MediaPart(MediaSetup s)
 void MediaPart::attach(sessions::SessionSetup& s) {
     topic_ = &s.stateTopic(kMediaTopic);
     s.context().machineSession().addWaitProbe(*this);
-    refreshShelf(&s.context());   // AC-9, EC-3: the lines of the first scan at the start
+    refreshShelf(&s.context());   // the lines of the first scan at the start
 
     s.command(kRefreshCommand, [this](const Value&, SessionContext& c) -> CommandOutcome {
         refreshShelf(&c);
@@ -139,10 +139,10 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         sync(c);
         const auto it = bindings_.find(word);
         if (!place(word) || it == bindings_.end()) return Refused{"There is no medium in " + word + "."};
-        if (it->second.instance())   // EC-9
+        if (it->second.instance())
             return Refused{"The " + labelled(it->second) + " is saved already; Name & Save is for a medium that is not."};
         if (it->second.writeProtected) return Refused{"The " + labelled(it->second) + " is write-protected."};
-        if (!it->second.kind->offersNameAndSave)   // D-28
+        if (!it->second.kind->offersNameAndSave)
             return Refused{"A " + it->second.kind->label + " is not saved by Name & Save."};
         if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
         SaveRequest r;
@@ -171,14 +171,14 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         q.from = word;
         const Plan plan = planSave(q, shelf_, [this](const std::string& path) { return inPlace(path); });
         if (plan.verdict != Plan::Verdict::Write) return Refused{plan.refusal};
-        Binding b = r.binding;   // AC-20: Name & Save done up front
+        Binding b = r.binding;   // Name & Save done up front
         b.name = plan.name;
         b.path = plan.path;
         b.isTemplate = false;
         b.origin = Origin::Saved;
         b.started = true;
         b.unsaved = true;
-        if (p->passThrough) {   // fitted, for the user to feed (C59-7 AC-15)
+        if (p->passThrough) {   // fitted, for the user to feed
             if (auto e = arm(c, word, std::move(b), std::move(r.content))) return Refused{*e};
             return done();
         }
@@ -235,7 +235,7 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         const auto files = exportFiles(*k, sessions::textArg(a, "name"), &reason);
         if (!files) return Refused{reason};
         if (!c.hostOffers(sessions::HostService::KeepFile)) return Refused{"Nobody keeps a file here."};
-        for (const FileOut& f : *files)   // D-13: the medium's file first
+        for (const FileOut& f : *files)   // the medium's file first
             c.askHost(sessions::HostService::KeepFile,
                       Value::object({{"name", f.relativePath},
                                      {"bytes", Value::Bytes(f.bytes.begin(), f.bytes.end())},
@@ -253,7 +253,7 @@ void MediaPart::attach(sessions::SessionSetup& s) {
 }
 
 void MediaPart::beforeCall(SessionContext&, pacing::WallTime now) {
-    callStart_ = lastCall_;   // D-5: a change is dated at the start of the call that shows it
+    callStart_ = lastCall_;   // a change is dated at the start of the call that shows it
     gap_ = now - lastCall_;
     lastCall_ = now;
 }
@@ -265,7 +265,7 @@ void MediaPart::afterCall(SessionContext& c, pacing::WallTime now) {
 
 void MediaPart::beforeFlush(SessionContext& c) {
     sync(c);
-    autosave(c, c.virtualTime(), lastCall_);   // A2: in virtual time at the end of every command
+    autosave(c, c.virtualTime(), lastCall_);   // in virtual time: at the end of every command
     updateTopic(c);
 }
 
@@ -273,7 +273,7 @@ void MediaPart::beforeOperation(SessionContext& c) { flushAll(c); }
 
 void MediaPart::beforeMachineChange(SessionContext& c) {
     flushAll(c);
-    // S-7a: what the media places hold, for a variant switch.
+    // What the media places hold, for a variant switch.
     Machine* m = c.machine();
     carried_.clear();
     if (!m) return;
@@ -297,8 +297,8 @@ void MediaPart::operationEnded(SessionContext& c) {
     pendingSlot_.clear();
 }
 
-void MediaPart::suspending(SessionContext& c) { flushAll(c); }   // EC-8
-void MediaPart::closing(SessionContext& c) { flushAll(c); }      // AC-13: quit
+void MediaPart::suspending(SessionContext& c) { flushAll(c); }
+void MediaPart::closing(SessionContext& c) { flushAll(c); }   // quit
 
 bool MediaPart::waitsForMedium(const Machine& m) const {
     for (const auto& e : m.capabilities(MediaPlace::kKind))
@@ -360,7 +360,7 @@ void MediaPart::computePlaces(const Machine& m) {
             break;
         }
     }
-    // AC-47: a module slot that no kind of medium fits (Calc-U-59's slot-1).
+    // A module slot that no kind of medium fits (Calc-U-59's slot-1).
     for (const machine::PlaceName& name : listing_.moduleSlots) {
         if (!m.descriptor().place(name) || place(name.value)) continue;
         Place p;
@@ -453,14 +453,14 @@ void MediaPart::newMachine(SessionContext& c) {
     if (gen == generation_) return;
     generation_ = gen;
     const auto origin = control_ && control_->lastBuild() ? std::optional(control_->lastBuild()->origin) : std::nullopt;
-    // AC-27: a fitted medium that never passed through, unless a variant
-    // switch carries it over (S-7a). `places_` are still the old machine's.
+    // A fitted medium that never passed through is logged, unless a variant
+    // switch carries it over. `places_` are still the old machine's.
     if (!origin || *origin != startup::BuildOrigin::VariantSwitch)
         for (const auto& [word, b] : bindings_)
             if (const Place* p = place(word); p && p->passThrough && !b.passed)
                 c.log("The " + labelled(b) + " was armed and never fed.");
     passed_.clear();
-    // D-10: in-file media go at a load and at a model switch.
+    // In-file media go at a load and at a model switch.
     if (origin && *origin != startup::BuildOrigin::VariantSwitch) {
         inFile_.clear();
         inFileSerial_ = 0;
@@ -468,7 +468,7 @@ void MediaPart::newMachine(SessionContext& c) {
     bindings_.clear();   // the new machine holds nothing yet
     fromPlan_ = true;
     if (Machine* m = c.machine()) computePlaces(*m);
-    // S-7a, LIB-18 AC-7: a variant switch puts the media back.
+    // A variant switch puts the media back.
     if (origin && *origin == startup::BuildOrigin::VariantSwitch) {
         for (auto& [word, b] : carried_) {
             const Place* p = place(word);
@@ -521,7 +521,7 @@ void MediaPart::bindSlots(SessionContext& c) {
                 for (const auto& [w, b] : registry_)
                     if (w.lock() == r.content) found = b;
             }
-        if (!found) {   // a module of the catalogue: a bundled template of the kind (D-9)
+        if (!found) {   // a module of the catalogue: a bundled template of the kind
             Binding b;
             b.kind = p.kind;
             const machine::PeripheralDescriptor* d = catalogue_ ? catalogue_->peripheral(*plugged) : nullptr;
@@ -544,10 +544,10 @@ void MediaPart::bindSlots(SessionContext& c) {
     fromPlan_ = false;
 }
 
-// ── Autosave (A1 to A9) ─────────────────────────────────────────────────
+// ── Autosave ────────────────────────────────────────────────────────────
 
 bool MediaPart::write(SessionContext& c, const Place*, Binding& b, Content content, std::uint64_t revision) {
-    if (!b.instance()) return false;   // A6
+    if (!b.instance()) return false;   // a template is never written
     MediumCodec::Write w;
     w.name = b.name;
     w.fileStem = stemOf(baseName(b.path), *b.kind);
@@ -557,7 +557,7 @@ bool MediaPart::write(SessionContext& c, const Place*, Binding& b, Content conte
     w.source = b.source;
     w.savedAt = isoTime(c.hostTime());
     WriteResult r;
-    if (b.kind->rereadBeforeWrite && !b.started) {   // D-27: what the file holds now
+    if (b.kind->rereadBeforeWrite && !b.started) {   // what the file holds now
         const FileAccess::Read now = shelf_.files().read(b.path);
         if (now.unreadable) r.problem = "the file cannot be read.";
         else w.source = now.bytes;
@@ -565,7 +565,7 @@ bool MediaPart::write(SessionContext& c, const Place*, Binding& b, Content conte
     if (r.problem.empty()) r = writeMedium(*b.kind, w, b.path, shelf_);
     b.written = revision;
     b.pending = false;
-    if (!r.ok) {   // A8, AC-14
+    if (!r.ok) {   // one notice until a write succeeds
         if (!b.failed) c.notice("The " + labelled(b) + " could not be saved: " + r.problem);
         b.failed = true;
         return false;
@@ -574,13 +574,13 @@ bool MediaPart::write(SessionContext& c, const Place*, Binding& b, Content conte
     b.unsaved = false;
     b.started = false;
     b.source = r.bytes;
-    c.log("Saved " + labelled(b) + ".");   // A9, AC-25: kind and name tag, never the path
+    c.log("Saved " + labelled(b) + ".");   // kind and name tag, never the path
     refreshShelf(&c);
     return true;
 }
 
 void MediaPart::changed(SessionContext& c, const Place& p, Binding& b, std::uint64_t revision, Content content) {
-    if (!b.instance()) {   // A6: what the machine wrote lives in the place
+    if (!b.instance()) {   // a template: what the machine wrote lives in the place
         b.unsaved = true;
         b.written = revision;
         return;
@@ -598,10 +598,10 @@ void MediaPart::givenBack(SessionContext& c, const Place& p, Binding& b) {
     b.passed = true;
     if (g->content) b.content = g->content;   // the fitted medium as it came back: the next feed inserts it
     if (!g->written) return;
-    if (!b.inFile.empty())   // writes stay in the store (A6, AC-15)
+    if (!b.inFile.empty())   // writes stay in the store
         for (InFileItem& i : inFile_)
             if (i.kind == b.kind->id && i.name == b.inFile) i.content = b.content;
-    changed(c, p, b, cap->revision(), b.content);   // A3, AC-12
+    changed(c, p, b, cap->revision(), b.content);   // given back: written at once
 }
 
 void MediaPart::autosave(SessionContext& c, bool atOnce, pacing::WallTime now) {
@@ -621,14 +621,14 @@ void MediaPart::autosave(SessionContext& c, bool atOnce, pacing::WallTime now) {
         Binding& b = it->second;
         const std::uint64_t rev = revisionOf(*m, p);
         MediaPlace* cap = placeCap(*m, p);
-        const bool now4 = cap && cap->takeWriteNow();   // A4
+        const bool now4 = cap && cap->takeWriteNow();   // written at once (a tape whose motor stopped)
         if (rev == b.written && !now4) continue;
         if (!b.instance()) {
             changed(c, p, b, rev, nullptr);
             continue;
         }
         if (cap && cap->writesWhenAsked() && !atOnce && !now4) continue;   // only at its moments (a tape)
-        if (!b.pending) {   // A1, D-5
+        if (!b.pending) {   // dated at the start of the call that showed it
             b.pending = true;
             b.dated = callStart_;
         }
@@ -651,7 +651,7 @@ void MediaPart::flush(SessionContext& c, const std::string& word) {
     if (rev != b.written) changed(c, *p, b, rev, contentOf(*m, *p, b));
 }
 
-void MediaPart::flushAll(SessionContext& c) {   // A5
+void MediaPart::flushAll(SessionContext& c) {   // the writes that do not wait
     sync(c);
     std::vector<std::string> words;
     for (const auto& [w, b] : bindings_) words.push_back(w);
@@ -678,7 +678,7 @@ const Binding* MediaPart::bindingOf(const std::string& word) const {
 }
 
 std::optional<std::string> MediaPart::insert(SessionContext& c, const std::string& word, Binding b, Content content, int side) {
-    flush(c, word);   // AC-13, EC-5
+    flush(c, word);   // the old medium written first
     const Place* p = place(word);
     Machine* m = c.machine();
     if (!p || !m) return noPlace(word);
@@ -687,7 +687,7 @@ std::optional<std::string> MediaPart::insert(SessionContext& c, const std::strin
     if (!cap) return noPlace(word);
     if (!p->sides.empty() && std::find(p->sides.begin(), p->sides.end(), side) == p->sides.end())
         return "The " + p->kind->label + " has no side " + std::to_string(side) + ".";
-    if (p->passThrough) {   // fitted, then fed (a `card:` step; C59-7 AC-17)
+    if (p->passThrough) {   // fitted, then fed (a `card:` step)
         if (auto e = arm(c, word, std::move(b), std::move(content))) return e;
         return feed(c, word, side);
     }
@@ -705,16 +705,16 @@ std::optional<std::string> MediaPart::insert(SessionContext& c, const std::strin
 }
 
 void MediaPart::eject(SessionContext& c, const std::string& word) {
-    flush(c, word);   // AC-13
+    flush(c, word);   // written first
     const Place* p = place(word);
     Machine* m = c.machine();
     if (!p || !m) return;
     MediaPlace* cap = placeCap(*m, *p);
     if (cap && cap->side()) {
         cap->eject();
-        if (p->passThrough) return;   // out of the reader, still fitted (C59-7 AC-10, AC-25)
+        if (p->passThrough) return;   // out of the reader, still fitted
     }
-    bindings_.erase(word);   // EC-6: an empty place stays empty
+    bindings_.erase(word);   // an empty place stays empty
 }
 
 std::optional<std::string> MediaPart::passingNow(const Machine& m, const Place& p) const {
@@ -724,13 +724,13 @@ std::optional<std::string> MediaPart::passingNow(const Machine& m, const Place& 
 }
 
 std::optional<std::string> MediaPart::arm(SessionContext& c, const std::string& word, Binding b, Content content) {
-    flush(c, word);   // A3: what the medium fitted before gave back
+    flush(c, word);   // what the medium fitted before gave back
     const Place* p = place(word);
     Machine* m = c.machine();
     if (!p || !p->passThrough) return "A medium is armed only for a pass-through place.";
     MediaPlace* cap = m ? placeCap(*m, *p) : nullptr;
     if (!cap) return noPlace(word);
-    if (auto why = passingNow(*m, *p)) return why;   // C59-7 AC-16
+    if (auto why = passingNow(*m, *p)) return why;
     b.content = std::move(content);
     b.side.reset();
     b.passed = false;
@@ -738,12 +738,12 @@ std::optional<std::string> MediaPart::arm(SessionContext& c, const std::string& 
     b.pending = false;
     b.written = cap->revision();
     passed_.erase(word);
-    bindings_[word] = std::move(b);   // in the place of the one fitted before (C59-7 AC-16)
+    bindings_[word] = std::move(b);   // in the place of the one fitted before
     return std::nullopt;
 }
 
 std::optional<std::string> MediaPart::feed(SessionContext& c, const std::string& word, int side) {
-    flush(c, word);   // A3: what the last pass gave back first
+    flush(c, word);   // what the last pass gave back first
     const Place* p = place(word);
     Machine* m = c.machine();
     if (!p || !p->passThrough) return "A medium is fed only into a pass-through place.";
@@ -761,7 +761,7 @@ std::optional<std::string> MediaPart::feed(SessionContext& c, const std::string&
     b.side = side;
     b.written = cap->revision();
     b.pending = false;
-    return std::nullopt;   // it stays fitted (C59-7 AC-12)
+    return std::nullopt;   // it stays fitted
 }
 
 bool MediaPart::takePassed(SessionContext& c, const std::string& word) {
@@ -781,7 +781,7 @@ bool MediaPart::passing(SessionContext& c, const std::string& word) {
     return cap && cap->side().has_value();
 }
 
-// ── Saving (AC-16 to AC-19) ─────────────────────────────────────────────
+// ── Saving ──────────────────────────────────────────────────────────────
 
 MediaPart::SaveResult MediaPart::save(SessionContext& c, const std::string& word, SaveRequest r, bool protect) {
     SaveResult out;
@@ -794,7 +794,7 @@ MediaPart::SaveResult MediaPart::save(SessionContext& c, const std::string& word
         return out;
     }
     Binding& b = it->second;
-    if (protect && !b.hasWriteProtect) {   // EC-7
+    if (protect && !b.hasWriteProtect) {
         out.reason = "The " + b.kind->label + " has no write-protect switch.";
         return out;
     }
@@ -824,14 +824,14 @@ MediaPart::SaveResult MediaPart::save(SessionContext& c, const std::string& word
     b.name = plan.name;
     b.path = plan.path;
     b.origin = Origin::Saved;
-    b.isTemplate = r.by == SaveBy::SaveasTemplate;   // AC-18
+    b.isTemplate = r.by == SaveBy::SaveasTemplate;
     b.unsaved = false;
     b.started = false;
     b.pending = false;
     b.failed = false;
     b.source = res.bytes;
     b.written = revisionOf(*m, *p);
-    if (!b.isTemplate && !oldInFile.empty()) {   // AC-15: that instance from then on
+    if (!b.isTemplate && !oldInFile.empty()) {   // that instance from then on
         for (InFileItem& i : inFile_)
             if (i.kind == b.kind->id && i.name == oldInFile) {
                 i.instance = plan.path;
@@ -840,7 +840,7 @@ MediaPart::SaveResult MediaPart::save(SessionContext& c, const std::string& word
         b.inFile.clear();
     }
     c.log("Saved " + labelled(b) + ".");
-    if (protect) {   // AC-19
+    if (protect) {
         b.writeProtected = true;
         if (p->slot) {
             if (const auto plugged = pluggedAt(*m, *p))
@@ -860,7 +860,7 @@ MediaPart::SaveResult MediaPart::saveInFile(SessionContext& c, const KindDecl& k
                                             bool protect) {
     SaveResult out;
     flushAll(c);
-    if (protect) {   // EC-7
+    if (protect) {
         out.reason = "The " + k.label + " has no write-protect switch.";
         return out;
     }
@@ -883,7 +883,7 @@ MediaPart::SaveResult MediaPart::saveInFile(SessionContext& c, const KindDecl& k
         return out;
     }
     c.log("Saved " + k.label + " " + inQuotes(plan.name) + ".");
-    if (r.by != SaveBy::SaveasTemplate) {   // AC-15: `as: live` binds it
+    if (r.by != SaveBy::SaveasTemplate) {   // `as: live` binds it
         for (InFileItem& i : inFile_)
             if (i.kind == k.id && i.name == name) {
                 i.instance = plan.path;
@@ -914,7 +914,7 @@ Task<bool> MediaPart::powerCycle(OperationContext& op) {
     co_return true;
 }
 
-// ── In-file media (AC-22, D-10) ─────────────────────────────────────────
+// ── In-file media ───────────────────────────────────────────────────────
 
 void MediaPart::adoptInFile(SessionContext& c, const InFileDefs& defs) {
     sync(c);
@@ -928,7 +928,7 @@ Content MediaPart::inFileContent(const KindDecl& k, const std::string& name) {
     for (const InFileItem& i : inFile_)
         if (i.kind == k.id && i.name == name) return i.content;
     Content fresh = !k.implicitTemplates.empty() && k.implicitTemplates.front().make ? k.implicitTemplates.front().make() : nullptr;
-    inFile_.push_back(InFileItem{k.id, name, fresh, std::nullopt, {}});   // AC-23: a fresh in-file medium
+    inFile_.push_back(InFileItem{k.id, name, fresh, std::nullopt, {}});   // a fresh in-file medium
     return fresh;
 }
 
@@ -938,7 +938,7 @@ std::optional<std::string> MediaPart::inFileInstance(const KindDecl& k, const st
     return std::nullopt;
 }
 
-// ── Import, export, delete (AC-30, AC-31, EC-4) ─────────────────────────
+// ── Import, export, delete ──────────────────────────────────────────────
 
 MediaPart::Outcome MediaPart::importBytes(SessionContext& c, const std::string& fileName, const std::string& bytes,
                                           const MediumCodec::Companion& companion, bool replaceConfirmed) {
@@ -946,7 +946,7 @@ MediaPart::Outcome MediaPart::importBytes(SessionContext& c, const std::string& 
     refreshShelf(&c);
     ImportPlan ip = planImport(fileName, bytes, companion, shelf_);
     if (ip.plan.verdict != Plan::Verdict::Write) {
-        // An upload of a medium whose name a saved one has (LIB-13 D-8): replaced when confirmed.
+        // An upload of a medium whose name a saved one has: replaced when confirmed.
         const KindDecl* k = ip.kind;
         const ShelfEntry* same = k && ip.info.content ? shelf_.find(*k, nameOf(ip.info, fileName, *k)) : nullptr;
         if (!replaceConfirmed || !same || same->origin != Origin::Saved) {
@@ -993,7 +993,7 @@ std::optional<std::vector<FileOut>> MediaPart::exportFiles(const KindDecl& k, co
 
 MediaPart::Outcome MediaPart::remove(SessionContext& c, const KindDecl& k, const std::string& name, bool confirmed) {
     Outcome out;
-    refreshShelf(&c);   // EC-4: read again first
+    refreshShelf(&c);   // read again first
     const Plan plan = planDelete(k, name, confirmed, shelf_, [this](const std::string& path) { return inPlace(path); });
     if (plan.verdict != Plan::Verdict::Write) {
         out.reason = plan.refusal;
@@ -1015,7 +1015,7 @@ MediaPart::Outcome MediaPart::remove(SessionContext& c, const KindDecl& k, const
     return out;
 }
 
-// ── Opened files (AC-1; LIB-13 AC-4) ────────────────────────────────────
+// ── Opened files ────────────────────────────────────────────────────────
 
 MediaPart::OpenedMedium MediaPart::readOpened(std::string_view name, const std::string& bytes,
                                               const std::string& path) const {
@@ -1083,7 +1083,7 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
     Binding b;
     Content content;
     MediumInfo info;
-    if (sessions::flagArg(a, "upload")) {   // AC-30: a Web frontend imports it first
+    if (sessions::flagArg(a, "upload")) {   // a Web frontend imports it first
         refreshShelf(&c);
         const ReadOutcome r = k.codec->read(bytes, {});
         const ShelfEntry* same = shelf_.find(k, nameOf(r.info, fileName, k));
@@ -1095,7 +1095,7 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
         if (!e) return Refused{"The " + k.label + " was imported but cannot be read back."};
         b = bindingFor(*e);
         info = e->info;
-    } else {   // AC-1: used and written where it lies
+    } else {   // used and written where it lies
         const ReadOutcome r = k.codec->read(bytes, path.empty() ? MediumCodec::Companion{} : companionsBeside(path));
         info = r.info;
         b.kind = &k;
@@ -1111,7 +1111,7 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
     }
     content = info.content;
     const std::string word = sessions::textArg(a, "place");
-    if (word.empty()) return done();   // LIB-13 D-8: only imported
+    if (word.empty()) return done();   // no place: only imported
     sync(c);
     const Place* p = place(word);
     if (!p) return Refused{noPlace(word)};
@@ -1123,7 +1123,7 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
         b.peripheral = req->peripheral.value;
         return changeSlot(c, *p, std::move(req), std::move(b));
     }
-    if (p->passThrough) {   // fitted, not fed (LIB-13 AC-4, AC-12; C59-7 AC-11)
+    if (p->passThrough) {   // fitted, not fed
         if (auto e = arm(c, word, std::move(b), std::move(content))) return Refused{*e};
         return done();
     }
@@ -1131,11 +1131,11 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
     return done();
 }
 
-// ── Choosing (AC-8, AC-10) ──────────────────────────────────────────────
+// ── Choosing ────────────────────────────────────────────────────────────
 
 MediaPart::Resolved MediaPart::resolveEntry(const Place& p, const std::string& entry) const {
     Resolved out;
-    static const KindDecl kNone;   // a slot that no kind of medium fits (AC-47)
+    static const KindDecl kNone;   // a slot that no kind of medium fits
     const KindDecl& k = p.kind ? *p.kind : kNone;
     const std::size_t colon = entry.find(':');
     const std::string what = entry.substr(0, colon), rest = colon == std::string::npos ? std::string() : entry.substr(colon + 1);
@@ -1157,7 +1157,7 @@ MediaPart::Resolved MediaPart::resolveEntry(const Place& p, const std::string& e
                 out.refusal = "The " + k.label + " " + inQuotes(e->name) + " is outdated: " + *e->outdatedHint;
                 return out;
             }
-            std::string bytes;   // AC-10: read again when it is chosen
+            std::string bytes;   // read again when it is chosen
             const auto r = shelf_.readFile(k, e->path, &bytes);
             if (!r || r->status != ReadOutcome::Status::Read) {
                 out.refusal = "The " + k.label + " " + inQuotes(e->name) + " cannot be read" +
@@ -1205,14 +1205,14 @@ CommandOutcome MediaPart::changeSlot(SessionContext& c, const Place& p, std::opt
     startup::PlugChange ch;
     ch.place = p.path;
     if (!req) {
-        if (!plugged) return done();   // EC-6
+        if (!plugged) return done();   // an empty slot stays empty
         ch.kind = startup::PlugChange::Kind::Detach;
     } else {
         ch.kind = plugged ? startup::PlugChange::Kind::Replace : startup::PlugChange::Kind::Attach;
         ch.request = std::move(*req);
         ch.request.place = p.path;
     }
-    if (auto refused = control_->check(*m, ch)) return Refused{refused->reason};   // LIB-18 AC-12
+    if (auto refused = control_->check(*m, ch)) return Refused{refused->reason};
     if (b && ch.kind != startup::PlugChange::Kind::Detach) pendingSlot_[p.word] = *b;
     else pendingSlot_.erase(p.word);
     startup::MachineControl* control = control_;
@@ -1224,9 +1224,9 @@ CommandOutcome MediaPart::choose(SessionContext& c, const std::string& word, con
     const Place* p = place(word);
     if (!p) return Refused{noPlace(word)};
     if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
-    if (Machine* m = c.machine(); m && !entry.empty())   // C59-7 AC-16: nothing is fitted while a medium passes
+    if (Machine* m = c.machine(); m && !entry.empty())   // nothing is fitted while a medium passes
         if (auto why = passingNow(*m, *p)) return Refused{*why};
-    flush(c, word);   // AC-10: what the old medium has to save first
+    flush(c, word);   // what the old medium has to save first
     p = place(word);
     if (!p) return Refused{noPlace(word)};
     if (entry.empty()) {
@@ -1237,7 +1237,7 @@ CommandOutcome MediaPart::choose(SessionContext& c, const std::string& word, con
     Resolved r = resolveEntry(*p, entry);
     if (r.refusal) {
         if (r.refusal->rfind("There is no entry", 0) == 0) return Refused{*r.refusal};
-        if (!p->slot) eject(c, word);   // AC-10: the place is empty and a notice says why
+        if (!p->slot) eject(c, word);   // the place is empty and a notice says why
         c.notice(*r.refusal);
         if (p->slot) return Refused{*r.refusal};
         return done();
@@ -1247,7 +1247,7 @@ CommandOutcome MediaPart::choose(SessionContext& c, const std::string& word, con
         if (r.binding.kind) b = r.binding;
         return changeSlot(c, *p, std::move(r.module), std::move(b));
     }
-    if (p->passThrough) {   // fitted, not fed (C59-7 AC-14)
+    if (p->passThrough) {   // fitted, not fed
         if (auto e = arm(c, word, std::move(r.binding), std::move(r.content))) c.notice(*e);
         return done();
     }
@@ -1258,12 +1258,12 @@ CommandOutcome MediaPart::choose(SessionContext& c, const std::string& word, con
     return done();
 }
 
-// ── The topic (AC-7, AC-8, AC-9) ────────────────────────────────────────
+// ── The topic ───────────────────────────────────────────────────────────
 
 std::vector<PickerEntry> MediaPart::picker(SessionContext& c, const Place& p) const {
     std::vector<PickerEntry> empty, bundled, user, instances, modules;
     empty.push_back(PickerEntry{PickerEntry::Group::Empty, "", "", std::nullopt, true, std::nullopt});
-    static const KindDecl kNone;   // a slot that no kind of medium fits (AC-47): no shelf entries
+    static const KindDecl kNone;   // a slot that no kind of medium fits: no shelf entries
     const KindDecl& k = p.kind ? *p.kind : kNone;
     auto tip = [](const std::string& d) { return d.empty() ? std::nullopt : std::optional<std::string>(d); };
     Machine* atMachine = c.machine();
@@ -1271,7 +1271,7 @@ std::vector<PickerEntry> MediaPart::picker(SessionContext& c, const Place& p) co
         p.slot && atMachine ? atMachine->descriptor().place(p.path.steps.front()) : nullptr;
     std::vector<std::string> shelfNames;   // a catalogue module of that name is the same template
     for (const ShelfEntry* e : p.kind ? shelf_.entries(k) : std::vector<const ShelfEntry*>{}) {
-        // A module slot lists the media that fit it (AC-8; Calc-U-1600 AC-38).
+        // A module slot lists the media that fit it.
         if (slotPlace && k.fitsPinOut && !e->outdatedHint && !k.fitsPinOut(e->info, slotPlace->pinOut)) continue;
         shelfNames.push_back(foldName(e->name));
         PickerEntry x;
@@ -1291,7 +1291,7 @@ std::vector<PickerEntry> MediaPart::picker(SessionContext& c, const Place& p) co
             x.id = "saved:" + e->fileName;
             break;
         }
-        if (e->outdatedHint) {   // AC-9
+        if (e->outdatedHint) {   // outdated: cannot be chosen
             x.canChoose = false;
             x.hint = e->outdatedHint;
         }
@@ -1318,7 +1318,7 @@ std::vector<PickerEntry> MediaPart::picker(SessionContext& c, const Place& p) co
                     others.push_back(d);
                 }
             }
-            // D-9: the listing's order, equal keys in the catalogue's order.
+            // The listing's order, equal keys in the catalogue's order.
             std::stable_sort(others.begin(), others.end(), [&](const auto* a, const auto* b) {
                 if (listing_.sortKey) return listing_.sortKey(*a) < listing_.sortKey(*b);
                 return foldName(a->name) < foldName(b->name);
@@ -1340,7 +1340,7 @@ std::vector<PickerEntry> MediaPart::picker(SessionContext& c, const Place& p) co
     byName(instances);
     std::vector<PickerEntry> out = empty;
     for (auto* v : {&bundled, &user, &instances, &modules}) out.insert(out.end(), v->begin(), v->end());
-    if (c.busy())   // LIB-4 AC-3: nothing is chosen while an operation runs
+    if (c.busy())   // nothing is chosen while an operation runs
         for (PickerEntry& e : out)
             if (e.canChoose) {
                 e.canChoose = false;
@@ -1365,7 +1365,7 @@ std::shared_ptr<const MediaState> MediaPart::state(SessionContext& c) {
                     i.inPlace = word;
             (e->isTemplate ? ks.templates : ks.instances).push_back(std::move(i));
         }
-        for (const auto& [word, b] : bindings_)   // D-14: an opened medium while it is in a place
+        for (const auto& [word, b] : bindings_)   // an opened medium while it is in a place
             if (b.origin == Origin::Opened && b.kind->id == k.id)
                 (b.isTemplate ? ks.templates : ks.instances)
                     .push_back(KindState::Item{b.name, b.description, baseName(b.path), Origin::Opened, b.isTemplate, false, word});
@@ -1385,7 +1385,7 @@ std::shared_ptr<const MediaState> MediaPart::state(SessionContext& c) {
         if (it != bindings_.end()) {
             const Binding& b = it->second;
             ps.holds = PlaceState::Held{b.name, p.passThrough ? ps.passing : b.side, b.isTemplate, b.unsaved, b.writeProtected};
-            ps.nameAndSave = b.kind->offersNameAndSave && !b.instance() && !b.writeProtected;   // AC-16, EC-9, D-18, D-28
+            ps.nameAndSave = b.kind->offersNameAndSave && !b.instance() && !b.writeProtected;   // a medium whose switch is on cannot change
             ps.askWriteProtect = ps.nameAndSave && b.hasWriteProtect;
         } else if (p.slot && m) {
             if (const auto plugged = pluggedAt(*m, p)) {   // a module that is not a medium

@@ -1,5 +1,5 @@
-// LIB-4 design L7 to L9: availability and its order, while an operation
-// runs, a product's rules (AC-2, AC-3, AC-7, EC-5).
+// Availability in the control state: its order, while an operation runs, a
+// product's rules.
 #include "TestControlRules.hpp"
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
@@ -33,15 +33,15 @@ const Availability kBusy = no(kAnotherOperationRuns);
 
 } // namespace
 
-// ── L7: availability and its order (AC-2, EC-5) ─────────────────────────
+// ── Availability and its order ──────────────────────────────────────────
 
-TEST(ac2_machine_reason_for_peripheral) {
+TEST(availability_machine_reason_for_peripheral) {
     // The machine's rule: the test printer and the test UART are not used together.
     auto m = mt::buildTestMachine(mt::kSeg, std::nullopt, {plug("printer", mt::kPrinter)});
     const ControlState s = computeControlState(*m, testSetup(), false);
     CHECK(choiceAt(s, "aux", mt::kUart).available == no(mt::kTogether));
     CHECK(choiceAt(s, "aux", mt::kModule).available == kYes);
-    // The same answer the machine gives an attach (LIB-2 AC-6).
+    // The same answer the machine gives an attach.
     const auto refusal = m->canAttach(plug("aux", mt::kUart), mt::testCatalogue());
     CHECK(refusal && refusal->reason == choiceAt(s, "aux", mt::kUart).available.reason);
     // A place on a Takes::One connector: the other place holds the module.
@@ -50,7 +50,7 @@ TEST(ac2_machine_reason_for_peripheral) {
     CHECK(choiceAt(ds, "card-2", mt::kModule).available == no("card-1 already holds the Test module."));
 }
 
-TEST(ac2_full_place_asked_as_replace) {
+TEST(availability_full_place_asked_as_replace) {
     auto m = mt::buildTestMachine(mt::kSeg, std::nullopt, {plug("printer", mt::kPrinter)});
     const ControlState s = computeControlState(*m, testSetup(), false);
     // canAttach would say "printer already holds the Test printer."; a replace is asked.
@@ -59,7 +59,7 @@ TEST(ac2_full_place_asked_as_replace) {
     CHECK(m->canAttach(plug("printer", mt::kModule), mt::testCatalogue()).has_value());
 }
 
-TEST(ac2_variant_of_plugged_peripheral) {
+TEST(availability_variant_of_plugged_peripheral) {
     auto m = mt::buildTestMachine(mt::kSeg, std::nullopt, {plug("slot-1", mt::kModule)});
     const ControlState s = computeControlState(*m, testSetup(), false);
     const PeripheralChoice& mod = choiceAt(s, "slot-1", mt::kModule);
@@ -67,7 +67,7 @@ TEST(ac2_variant_of_plugged_peripheral) {
     CHECK(mod.available == kYes);   // its detach
     // The second module variant in a full slot: a replace, available.
     CHECK(variantOf(mod, "8k") && variantOf(mod, "8k")->available == kYes);
-    CHECK(variantOf(mod, "4k") && variantOf(mod, "4k")->available == kYes);   // the one in force (D-7)
+    CHECK(variantOf(mod, "4k") && variantOf(mod, "4k")->available == kYes);   // the one in force
     // A variant entry has its own key: a product's rule refuses 8k alone.
     TestControlRules rules;
     rules.refuse(ChoiceKey{at({"slot-1"}), mt::kModule, VariantId{"8k"}});
@@ -78,8 +78,8 @@ TEST(ac2_variant_of_plugged_peripheral) {
     CHECK(mod2.available == kYes);
 }
 
-TEST(ac2_no_entry_refused_for_rom) {
-    // The check request carries the ROM file names, no bytes (D-2): no entry
+TEST(availability_no_entry_refused_for_rom) {
+    // The check request carries the ROM file names, no bytes: no entry
     // with ROM entries is refused for a ROM.
     for (const auto& model : {mt::kSeg, mt::kDot}) {
         auto m = mt::buildTestMachine(model);
@@ -96,7 +96,7 @@ TEST(ac2_no_entry_refused_for_rom) {
     CHECK(mod.available == kYes && variantOf(mod, "8k")->available == kYes);
 }
 
-TEST(ec5_operation_before_product_before_machine) {
+TEST(availability_operation_before_product_before_machine) {
     auto m = mt::buildTestMachine(mt::kSeg, std::nullopt, {plug("printer", mt::kPrinter)});
     TestControlRules rules;
     rules.refuse(ChoiceKey{at({"aux"}), mt::kUart, std::nullopt});
@@ -114,9 +114,9 @@ TEST(ec5_operation_before_product_before_machine) {
           no("The second says no."));
 }
 
-// ── L8: while an operation runs (AC-3) ──────────────────────────────────
+// ── While an operation runs ─────────────────────────────────────────────
 
-TEST(ac3_choices_and_actions_refused_while_operation_runs) {
+TEST(availability_choices_and_actions_refused_while_operation_runs) {
     auto m = mt::buildTestMachine(mt::kDot, std::nullopt, {plug("a", mt::kHub)});
     TestControlRules rules;
     const ControlState s = computeControlState(*m, testSetup({&rules}), true);
@@ -136,7 +136,7 @@ TEST(ac3_choices_and_actions_refused_while_operation_runs) {
     for (const auto& e : s.models) CHECK(e.available == kYes);
 }
 
-TEST(ac3_models_reset_cold_boot_stay_available) {
+TEST(availability_models_reset_cold_boot_stay_available) {
     auto m = mt::buildTestMachine(mt::kSeg);
     const ControlState s = computeControlState(*m, testSetup(), true);
     for (const auto& e : s.models) CHECK(e.available == kYes);
@@ -154,7 +154,7 @@ calcu::sessions::Task<calcu::sessions::OperationResult> attachPrinterThenRun(cal
 }
 } // namespace
 
-TEST(ac3_recomputed_from_machine_after_operation) {
+TEST(availability_recomputed_from_machine_after_operation) {
     ControlPart control(testSetup());
     calcu::sessions::test::RigOptions o;
     o.extraParts = {&control};
@@ -178,9 +178,9 @@ TEST(ac3_recomputed_from_machine_after_operation) {
     CHECK(choiceAt(*after, "aux", mt::kUart).available == no(mt::kTogether));   // the machine as it now is
 }
 
-// ── L9: a product's rules (AC-7) ────────────────────────────────────────
+// ── A product's rules ───────────────────────────────────────────────────
 
-TEST(ac7_product_entry_carried_unread) {
+TEST(availability_product_entry_carried_unread) {
     auto m = mt::buildTestMachine(mt::kSeg);
     TestControlRules rules;
     const ControlState s = computeControlState(*m, testSetup({&rules}), false);
@@ -192,7 +192,7 @@ TEST(ac7_product_entry_carried_unread) {
     CHECK(computeControlState(*m, testSetup({&rules}), false).productEntries.empty());
 }
 
-TEST(ac7_product_refuses_generic_entry_with_its_reason) {
+TEST(availability_product_refuses_generic_entry_with_its_reason) {
     auto m = mt::buildTestMachine(mt::kDot);
     TestControlRules rules;
     rules.refuse(ModelKey{mt::kSeg});
@@ -211,7 +211,7 @@ TEST(ac7_product_refuses_generic_entry_with_its_reason) {
     CHECK(s.place(at({"a"}))->empty == kYes);
 }
 
-TEST(ac7_refused_place_passes_reason_to_its_choices) {
+TEST(availability_refused_place_passes_reason_to_its_choices) {
     auto m = mt::buildTestMachine(mt::kSeg, std::nullopt, {plug("slot-1", mt::kModule)});
     TestControlRules rules;
     rules.refuse(PlaceKey{at({"slot-1"})}, "This frontend cannot use the slot.");
@@ -225,7 +225,7 @@ TEST(ac7_refused_place_passes_reason_to_its_choices) {
         for (const auto& v : c.variants) CHECK(v.available == why);
     }
     CHECK(s.place(at({"printer"}))->available == kYes);
-    // While an operation runs, that comes first for the choices (EC-5).
+    // While an operation runs, that comes first for the choices.
     const ControlState busy = computeControlState(*m, testSetup({&rules}), true);
     CHECK(busy.place(at({"slot-1"}))->empty == kBusy);
     CHECK(busy.place(at({"slot-1"}))->available == why);

@@ -5,8 +5,8 @@
 #include <filesystem>
 #include <map>
 
-// LIB-9 AC-2, AC-12–18, AC-33 (paths), EC-2, EC-3, EC-4, EC-8, EC-9;
-// design §6, T-7 to T-11. Every platform's places are checked on every host:
+// The settings file's place and every folder a product uses, per platform.
+// Every platform's places are checked on every host:
 // the functions are pure and take what the caller passes.
 
 using namespace calcu::settings;
@@ -41,7 +41,7 @@ SettingsFile withValues(const std::string& iniPath, const std::string& body) {
 }
 } // namespace
 
-TEST(ac2_settings_place_macos_ios) {
+TEST(settings_place_macos_ios) {
     const EnvLookup none = envOf({});
     // The Application Support folder the frontend found: inside the sandbox container ...
     const std::string sandboxed = "/Users/u/Library/Containers/app.id/Data/Library/Application Support";
@@ -59,7 +59,7 @@ TEST(ac2_settings_place_macos_ios) {
              std::string("/Users/u/Library/Application Support"));
 }
 
-TEST(ac2_settings_place_windows_appdata) {
+TEST(settings_place_windows_appdata) {
     const std::string base =
         settingsBaseFor(HostOs::Windows, envOf({{"APPDATA", "C:\\Users\\u\\AppData\\Roaming"}}), "C:\\Users\\u", "");
     CHECK_EQ(base, std::string("C:\\Users\\u\\AppData\\Roaming"));
@@ -71,7 +71,7 @@ TEST(ac2_settings_place_windows_appdata) {
              std::string("C:\\Users\\u\\AppData\\Roaming"));
 }
 
-TEST(ac2_settings_place_linux_xdg_and_fallback) {
+TEST(settings_place_linux_xdg_and_fallback) {
     CHECK_EQ(settingsBaseFor(HostOs::Linux, envOf({{"XDG_CONFIG_HOME", "/home/u/conf"}}), "/home/u", ""),
              std::string("/home/u/conf"));
     CHECK_EQ(settingsBaseFor(HostOs::Linux, envOf({}), "/home/u", ""), std::string("/home/u/.config"));
@@ -81,7 +81,7 @@ TEST(ac2_settings_place_linux_xdg_and_fallback) {
     CHECK_EQ(settingsFilePath(named("Calc-U-1600"), d), std::string("/home/u/.config/Calc-U-1600/Calc-U-1600.ini"));
 }
 
-TEST(ac2_settings_place_web) {
+TEST(settings_place_web) {
     const std::string base = settingsBaseFor(HostOs::Web, envOf({{"HOME", "/home/web_user"}}), "/home/web_user",
                                              "/persist/settings");
     CHECK_EQ(base, std::string("/persist/settings"));
@@ -92,7 +92,7 @@ TEST(ac2_settings_place_web) {
     CHECK_EQ(settingsFilePath(named("Calc-U-1600"), d), std::string("/persist/settings/Calc-U-1600/Calc-U-1600.ini"));
 }
 
-TEST(ac2_product_name_as_written) {
+TEST(settings_place_product_name_as_written) {
     // The same spelling on every platform, also on Linux (not lower-cased).
     for (const char* product : {"Calc-U-59", "Calc-U-1600"}) {
         const std::string p = product;
@@ -104,7 +104,7 @@ TEST(ac2_product_name_as_written) {
     CHECK_EQ(joinPath("C:/a", "b"), std::string("C:/a/b"));
 }
 
-TEST(ec4_two_settings_bases_two_files) {
+TEST(two_settings_bases_two_files) {
     // The Swift app (sandboxed) and a Qt6 build of the same product on one Mac.
     HostDirs swift;
     swift.frontend = FrontendKind::Swift;
@@ -122,7 +122,7 @@ TEST(ec4_two_settings_bases_two_files) {
     CHECK_EQ(SettingsFile::open(testProduct(), b).text("test", "style"), std::string("one"));
 }
 
-TEST(ac12_every_place_from_the_passed_dirs) {
+TEST(every_place_from_the_passed_dirs) {
     TempDir dir;
     HostDirs d = qt6(dir / "home", dir / "config");
     const SettingsFile f = SettingsFile::open(testProduct(), settingsFilePath(testProduct(), d));
@@ -150,7 +150,7 @@ TEST(ac12_every_place_from_the_passed_dirs) {
     CHECK(Paths(sf, s).traceFolder() == std::optional<std::string>("/app-support"));
 }
 
-TEST(ac13_qt6_save_folder_home_product_or_override) {
+TEST(qt6_save_folder_home_product_or_override) {
     TempDir dir;
     const std::string ini = dir / "cfg/Test-Product/Test-Product.ini";
     const HostDirs d = qt6("/home/u");
@@ -161,13 +161,13 @@ TEST(ac13_qt6_save_folder_home_product_or_override) {
     CHECK_EQ(Paths(tilde, d).saveFolder(), std::string("/home/u/elsewhere"));
 }
 
-TEST(ac33_paths_absolute_tilde_is_home) {
+TEST(paths_absolute_tilde_is_home) {
     CHECK_EQ(expandHome("~", "/home/u"), std::string("/home/u"));
     CHECK_EQ(expandHome("~/a/b", "/home/u"), std::string("/home/u/a/b"));
     CHECK_EQ(expandHome("/abs/~x", "/home/u"), std::string("/abs/~x"));
     CHECK_EQ(expandHome("~other/x", "/home/u"), std::string("~other/x"));  // only `~` and `~/`
     CHECK_EQ(expandHome("~\\x", "C:\\Users\\u"), std::string("C:\\Users\\u\\x"));
-    // A relative path is not accepted: the setting has its default (EC-5).
+    // A relative path is not accepted: the setting has its default.
     TempDir dir;
     const std::string ini = dir / "cfg/Test-Product/Test-Product.ini";
     const SettingsFile rel = withValues(ini, "[storage]\nsave-folder = data/mine\n");
@@ -180,7 +180,7 @@ TEST(ac33_paths_absolute_tilde_is_home) {
     CHECK_EQ(Paths(win, qt6("C:\\Users\\u")).saveFolder(), std::string("D:\\Calc"));
 }
 
-TEST(ac14_swift_save_folder_is_passed_folder) {
+TEST(swift_save_folder_is_passed_folder) {
     HostDirs s;
     s.frontend = FrontendKind::Swift;
     s.home = "/Users/u";
@@ -193,7 +193,7 @@ TEST(ac14_swift_save_folder_is_passed_folder) {
     CHECK_EQ(Paths(f, s).saveFolderFile("ti58c.memory.yaml"), s.saveFolder + "/ti58c.memory.yaml");
 }
 
-TEST(ec2_swift_save_folder_follows_each_start) {
+TEST(swift_save_folder_follows_each_start) {
     const SettingsFile f = SettingsFile::defaultsOnly(testProduct());
     HostDirs s;
     s.frontend = FrontendKind::Swift;
@@ -205,7 +205,7 @@ TEST(ec2_swift_save_folder_follows_each_start) {
     CHECK_EQ(Paths(f, s).cassetteFolder(), std::string("/local/Documents/Cassettes"));
 }
 
-TEST(ac15_web_save_folder_inside_passed_fs) {
+TEST(web_save_folder_inside_passed_fs) {
     HostDirs w;
     w.frontend = FrontendKind::Web;
     w.home = "/home/web_user";
@@ -219,7 +219,7 @@ TEST(ac15_web_save_folder_inside_passed_fs) {
     CHECK_EQ(p.cassetteFolder(), std::string("/persist/Test-Product/Cassettes"));
 }
 
-TEST(ac16_files_at_root_tapes_in_Tapes) {
+TEST(files_at_root_tapes_in_Tapes) {
     const SettingsFile f = SettingsFile::defaultsOnly(testProduct());
     const Paths p(f, qt6("/home/u"));
     CHECK_EQ(p.saveFolderFile("ti58c.memory.yaml"), std::string("/home/u/Test-Product/ti58c.memory.yaml"));
@@ -227,21 +227,21 @@ TEST(ac16_files_at_root_tapes_in_Tapes) {
     CHECK_EQ(p.cassetteFolder(), std::string("/home/u/Test-Product/Cassettes"));
 }
 
-TEST(ac16_tape_override) {
+TEST(tape_folder_override) {
     TempDir dir;
     const SettingsFile f = withValues(dir / "c/Test-Product.ini", "[storage]\ncassette-folder = /tapes/here\n");
     CHECK_EQ(Paths(f, qt6("/home/u")).cassetteFolder(), std::string("/tapes/here"));
     CHECK_EQ(Paths(f, qt6("/home/u")).saveFolder(), std::string("/home/u/Test-Product"));
 }
 
-TEST(ec3_override_save_folder_keeps_Tapes_inside) {
+TEST(override_save_folder_keeps_Tapes_inside) {
     TempDir dir;
     const SettingsFile f =
         withValues(dir / "c/Test-Product.ini", "[storage]\nsave-folder = /data/mine\ncassette-folder =\n");
     CHECK_EQ(Paths(f, qt6("/home/u")).cassetteFolder(), std::string("/data/mine/Cassettes"));
 }
 
-TEST(ac17_qt6_traces_screenshots_links_default_to_save_folder) {
+TEST(qt6_traces_screenshots_links_default_to_save_folder) {
     TempDir dir;
     const std::string ini = dir / "c/Test-Product.ini";
     const SettingsFile plain = withValues(ini, "");
@@ -259,7 +259,7 @@ TEST(ac17_qt6_traces_screenshots_links_default_to_save_folder) {
     CHECK(Paths(loc, qt6("/home/u")).traceFolder() == std::optional<std::string>("/home/u/Test-Product"));
 }
 
-TEST(ac17_swift_screenshots_save_folder_traces_by_location) {
+TEST(swift_screenshots_save_folder_traces_by_location) {
     HostDirs s;
     s.frontend = FrontendKind::Swift;
     s.home = "/Users/u";
@@ -273,15 +273,15 @@ TEST(ac17_swift_screenshots_save_folder_traces_by_location) {
     CHECK(!Paths(def, s).serialLinkFolder());
     const SettingsFile icloud = withValues(ini, "[trace]\nlocation = icloud\n");
     CHECK(Paths(icloud, s).traceFolder() == std::optional<std::string>("/icloud/Documents"));
-    // With `folder`: the folder the bookmark grants, passed in (AC-34) ...
+    // With `folder`: the folder the bookmark grants, passed in ...
     const SettingsFile folder = withValues(ini, "[trace]\nlocation = folder\nfolder = /plain/path\n");
     std::string granted = "/granted";
     s.chosenTraceFolder = [&granted] { return granted; };
     const Paths asked(folder, s);
     CHECK(asked.traceFolder() == std::optional<std::string>("/granted"));
-    granted = "/granted-later";   // asked each time (LIB-10 AC-53)
+    granted = "/granted-later";   // asked each time
     CHECK(asked.traceFolder() == std::optional<std::string>("/granted-later"));
-    // ... without a usable grant, the plain path of [trace] folder, then Application Support (D-8).
+    // ... without a usable grant, the plain path of [trace] folder, then Application Support.
     granted.clear();
     CHECK(asked.traceFolder() == std::optional<std::string>("/plain/path"));
     s.chosenTraceFolder = nullptr;
@@ -293,11 +293,10 @@ TEST(ac17_swift_screenshots_save_folder_traces_by_location) {
     CHECK(Paths(odd, s).traceFolder() == std::optional<std::string>("/app-support"));
 }
 
-// AC-24 with LIB-10 AC-53: on Swift iOS the iCloud trace location is asked
-// at each trace start (the host's callback, beside the bookmark's); while it
-// cannot be used the trace folder is refused, nothing is made. Another
-// location does not ask it.
-TEST(ac24_swift_icloud_trace_location_asked_at_each_ensure) {
+// On Swift iOS the iCloud trace location is asked at each trace start (the
+// host's callback, beside the bookmark's); while it cannot be used the trace
+// folder is refused, nothing is made. Another location does not ask it.
+TEST(swift_icloud_trace_location_asked_at_each_ensure) {
     TempDir dir;
     HostDirs s;
     s.frontend = FrontendKind::Swift;
@@ -325,7 +324,7 @@ TEST(ac24_swift_icloud_trace_location_asked_at_each_ensure) {
     CHECK(Paths(icloud, s).ensure(Folder::Traces).ok);
 }
 
-TEST(ac17_web_has_no_trace_or_screenshot_folder) {
+TEST(web_has_no_trace_or_screenshot_folder) {
     HostDirs w;
     w.frontend = FrontendKind::Web;
     w.settingsBase = "/persist/settings";
@@ -340,7 +339,7 @@ TEST(ac17_web_has_no_trace_or_screenshot_folder) {
     CHECK(!e.ok && !e.problem.empty());
 }
 
-TEST(ec8_missing_folder_created_on_first_write) {
+TEST(missing_folder_created_on_first_write) {
     TempDir dir;
     const HostDirs d = qt6(dir / "home", dir / "cfg");
     const SettingsFile f = SettingsFile::defaultsOnly(testProduct());
@@ -363,7 +362,7 @@ TEST(ec8_missing_folder_created_on_first_write) {
     CHECK_EQ(entries, std::size_t{2});  // Cassettes and kept.txt
 }
 
-TEST(ec9_unusable_override_reported_no_fallback) {
+TEST(unusable_folder_override_reported_no_fallback) {
     TempDir dir;
     writeText(dir / "a-file", "not a folder");
     const std::string ini = dir / "cfg/Test-Product/Test-Product.ini";
@@ -380,7 +379,7 @@ TEST(ec9_unusable_override_reported_no_fallback) {
     CHECK_EQ(p.saveFolder(), dir / "a-file/save");
 }
 
-TEST(ac18_own_host_dirs_touch_nothing_else) {
+TEST(own_host_dirs_touch_nothing_else) {
     // The "user's" home with a settings file and a save folder of its own.
     TempDir user;
     const std::string userIni = user / "config/Test-Product/Test-Product.ini";

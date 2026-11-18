@@ -5,9 +5,9 @@
 #include <string_view>
 
 // A duration of a preset step or a harness command (docs/formats/preset.md
-// §5.3; LIB-11 AC-12, EC-2): a number with a unit, `2s`, `1.5s`, `500ms`.
+// §5.3): a number with a unit, `2s`, `1.5s`, `500ms`.
 // The unit is required. Exact, in whole microseconds: no floating point, so
-// two runs agree (LIB-11 AC-6).
+// two runs agree.
 
 namespace calcu::formats {
 

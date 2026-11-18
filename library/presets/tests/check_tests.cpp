@@ -1,5 +1,5 @@
-// LIB-6 L3: the check before anything is built (AC-6, AC-7, AC-30, AC-62,
-// EC-5), and the bad fixtures, one per class of error.
+// The check before anything is built, and the bad fixtures, one per class
+// of error.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 #include <filesystem>
@@ -7,7 +7,7 @@
 using namespace calcu::presets;
 using namespace calcu::presets::test;
 
-TEST(ac6_first_error_in_file_order_with_line) {
+TEST(first_error_in_file_order_with_line) {
     Reading rd;
     CHECK_EQ(rd.error(header() +
                       "printer: test-printer\n"
@@ -21,7 +21,7 @@ TEST(ac6_first_error_in_file_order_with_line) {
              std::string("t.test-seg, line 4: 9 is not a key of the test-seg."));
 }
 
-TEST(ac6_syntax_error_after_semantic_error_reports_the_earlier) {
+TEST(syntax_error_after_semantic_error_reports_the_earlier) {
     Reading rd;
     CHECK_EQ(rd.error(header() + "colour: red\nkeys:\n  - key: 1\nprinter: { name: test-printer\n"),
              std::string("t.test-seg, line 3: Unknown key colour."));
@@ -29,7 +29,7 @@ TEST(ac6_syntax_error_after_semantic_error_reports_the_earlier) {
                   "t.test-seg, line 3: Unterminated flow mapping."));
 }
 
-TEST(ac6_refused_load_leaves_machine_untouched_reply_and_notice) {
+TEST(refused_load_leaves_machine_untouched_reply_and_notice) {
     Rig r;
     CHECK(r.done(r.load(header() + "printer: test-printer\nkeys:\n  - key: 2\n")));
     r.notices();
@@ -46,11 +46,11 @@ TEST(ac6_refused_load_leaves_machine_untouched_reply_and_notice) {
     CHECK(r.machine() == before);
     CHECK_EQ(r.ticks(), ticks);
     CHECK_EQ(r.machines.builder_.inner.builds, builds);
-    // Never busy (D-6): no busy state but the one there was.
+    // Never busy (read before the operation starts): no busy state but the one there was.
     CHECK_EQ(r.fe.stateMessages(calcu::sessions::kBusyTopic, mark), 0);
 }
 
-TEST(ac7_keys_text_places_and_files_checked_before_build) {
+TEST(keys_text_places_and_files_checked_before_build) {
     Rig r;
     const int builds = r.machines.builder_.inner.builds;
     struct Case {
@@ -72,7 +72,7 @@ TEST(ac7_keys_text_places_and_files_checked_before_build) {
     CHECK_EQ(r.machines.builder_.inner.builds, builds);
 }
 
-TEST(ac30_unknown_section_or_step_refused) {
+TEST(unknown_section_or_step_refused) {
     Reading rd;
     // A section of another product is unknown here.
     CHECK_EQ(rd.error(header() + "partition: 479\n"), std::string("t.test-seg, line 3: Unknown key partition."));
@@ -80,7 +80,7 @@ TEST(ac30_unknown_section_or_step_refused) {
     CHECK_EQ(rd.error(header() + "key: 1\n"), std::string("t.test-seg, line 3: Unknown key key."));   // a step outside keys:
 }
 
-TEST(ac62_keyword_not_for_model_refused) {
+TEST(keyword_not_for_model_refused) {
     Reading rd;
     CHECK_EQ(rd.error(header() + "keys:\n  - sync-clock:\n"),
              std::string("t.test-seg, line 4: sync-clock is not available on the test-seg."));
@@ -90,13 +90,13 @@ TEST(ac62_keyword_not_for_model_refused) {
              std::string("t.test-seg, line 3: printer is not available on the test-dot."));
 }
 
-TEST(ac62_undefined_keyword_refused) {
+TEST(undefined_keyword_refused) {
     Reading rd;
     CHECK_EQ(rd.error(header() + "keys:\n  - test-undefined:\n"),
              std::string("t.test-seg, line 4: test-undefined is not defined yet for the test-seg by the preset format."));
 }
 
-TEST(ec5_content_without_folder_naming_relative_file_refused) {
+TEST(content_without_folder_naming_relative_file_refused) {
     Rig r;
     r.folder.write("data.bin", "\x01");
     const std::string text = header() + "test-memory: { at: 0, file: data.bin }\n";
@@ -113,7 +113,7 @@ TEST(ec5_content_without_folder_naming_relative_file_refused) {
 
 // The bad fixtures: each names the error it gives in its first line,
 // `# error: <part of the message>`.
-TEST(ac6_bad_fixtures_each_refused_with_its_error) {
+TEST(bad_fixtures_each_refused_with_its_error) {
     namespace fs = std::filesystem;
     Reading rd;
     int n = 0;

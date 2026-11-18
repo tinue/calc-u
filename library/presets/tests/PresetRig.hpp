@@ -20,14 +20,14 @@
 #include <string>
 #include <vector>
 
-// The window of the preset tests (LIB-6 design §6): an app session with
-// PeripheralsPart, PresetsPart, StartupPart (LIB-18) and TypingPart (LIB-5),
-// in that order; the test machines of LIB-1 with the program of D-25 on
-// test-seg; the rules and keywords of TestPresetRules.hpp; LIB-3's test
-// frontend; LIB-18's test settings. In virtual time unless a case says Paced
-// (the session tests' scripted clock, 1 ms per reading, host calls of 16 ms).
+// The window of the preset tests: an app session with PeripheralsPart,
+// PresetsPart, StartupPart and TypingPart, in that order; the machine area's
+// test machines with a program on test-seg the tests can start and stop; the
+// rules and keywords of TestPresetRules.hpp; the sessions' test frontend; the
+// startup area's test settings. In virtual time unless a case says Paced (the
+// session tests' scripted clock, 1 ms per reading, host calls of 16 ms).
 //
-// Typing profiles (LIB-5): test-seg 10 ms down, 5 ms up, presses wait for
+// Typing profiles: test-seg 10 ms down, 5 ms up, presses wait for
 // key readiness (polled every 10 ticks), the characters 0-3, `clr` as ENTER;
 // test-dot the same in its ticks, the characters a-c, `on` as ENTER.
 
@@ -61,9 +61,9 @@ public:
     typing::TypingProfile seg, dot;
 };
 
-// The builder of the rig: the test builder, then the program of D-25 on
-// test-seg, a start-up of its own, and the product rule of the test printer
-// and the test UART refused together (LIB-2 AC-29's library form).
+// The builder of the rig: the test builder, then the program on test-seg, a
+// start-up of its own, and the product rule of the test printer and the
+// test UART refused together.
 struct RigBuilder final : machine::MachineBuilder {
     mt::TestBuilder inner;
     Ticks program = 50'000;   // 0.5 s on test-seg
@@ -106,7 +106,7 @@ struct RigOptions {
     sessions::HostServices services;
     const PresetBundle* bundle = nullptr;
     bool screenshots = true;               // a folder for screenshots
-    const machine::Catalogue* readCatalogue = nullptr;   // the reader's, when it differs (AC-52)
+    const machine::Catalogue* readCatalogue = nullptr;   // the reader's, when it differs
     bool start = true;
 };
 

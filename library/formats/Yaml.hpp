@@ -8,10 +8,9 @@
 
 // ── Minimal YAML-subset reader ─────────────────────────────────────────
 //
-// Moved from Calc-U-1600's core/Yaml.hpp into the library (LIB-12 design
-// D-4, M-24): the reader of the own file formats of both products
-// (docs/formats/; Calc-U-1600's memory modules (code: MemoryCardDefinition), floppies and presets,
-// Calc-U-59's Solid State ROM modules). Header only, namespace
+// The reader of the own file formats of both products (docs/formats/;
+// Calc-U-1600's memory modules (code: MemoryCardDefinition), floppies and
+// presets, Calc-U-59's Solid State ROM modules). Header only, namespace
 // calcu::formats. NOT general YAML. Supported:
 //   * indent-based block mappings (`key: value`, or `key:` + nested block)
 //   * `- ` block sequences; an item is a scalar, a flow collection, or a
@@ -26,7 +25,7 @@
 // keys, flow scalars spanning lines. Tabs are rejected, as in PresetFile.
 //
 // Error convention: `bool` return + `std::string* error` (1-based line
-// number where possible), never exceptions (LIB-1 design §2a).
+// number where possible), never exceptions.
 
 namespace calcu::formats {
 
@@ -38,7 +37,7 @@ struct YamlNode {
     std::vector<std::pair<std::string, YamlNode>> map;  // ordered
     int line = 0;                                       // 1-based, for errors
     // A raw value (YamlOptions::rawStepVerbs): `scalar` is the text after
-    // the colon as written, quotes and `#` included (LIB-6 D-4).
+    // the colon as written, quotes and `#` included.
     bool rawLine = false;
 
     bool isNull() const { return type == Type::Null; }
@@ -65,7 +64,7 @@ struct YamlNode {
 
 bool parseYaml(const std::string& text, YamlNode* out, std::string* error);
 
-// Options of a format that needs them (LIB-6 D-4; the default is the reader
+// Options of a format that needs them (a preset; the default is the reader
 // above, for every other format).
 struct YamlOptions {
     // A top-level key may repeat (a preset's sections); the map keeps each.

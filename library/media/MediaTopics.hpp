@@ -7,11 +7,12 @@
 #include <string>
 #include <vector>
 
-// The topic `media` and the commands (LIB-7 design §3.6; spec AC-7, AC-8,
-// AC-9, AC-16, AC-20, AC-29 to AC-31): the media of the product by kind, and
+// The topic `media` and the commands: the media of the product by kind, and
 // per place what it holds, whether the machine waits for a medium, whether
-// Name & Save can be used, and its picker in the order of AC-8. A frontend
-// draws them as they are; no rule lives in it.
+// Name & Save can be used, and its picker in its order (the empty place; the
+// templates, bundled before the user's; the instances; in a module slot the
+// modules that are not media). A frontend draws them as they are; no rule
+// lives in it.
 
 namespace calcu::media {
 
@@ -33,15 +34,15 @@ inline const sessions::CommandName kDeleteCommand{"media.delete"};            //
 struct PickerEntry {
     enum class Group { Empty, BundledTemplate, UserTemplate, Instance, Module } group = Group::Empty;
     std::string id;                         // what `media.choose` takes back
-    std::string label;                      // the name; a module that is not a medium: the listing's label (AC-8)
+    std::string label;                      // the name; a module that is not a medium: the listing's label
     std::optional<std::string> tooltip;     // the description
-    bool canChoose = true;                  // false: outdated (AC-9) or not now
+    bool canChoose = true;                  // false: outdated or not now
     std::optional<std::string> hint;        // the outdated hint, or why not now
     bool operator==(const PickerEntry&) const = default;
 };
 
 struct PlaceState {
-    std::string place;                      // the place word (§3.3)
+    std::string place;                      // the place word
     std::string kind;
     bool slot = false;                      // a module slot
     bool passThrough = false;
@@ -52,14 +53,14 @@ struct PlaceState {
         bool isTemplate = false, unsaved = false, writeProtected = false;
         bool operator==(const Held&) const = default;
     };
-    // unsaved: a template written to (AC-15) or a started name not yet written (AC-20).
-    // A pass-through place: the fitted medium (C59-7 AC-11), `side` the one passing now.
+    // unsaved: a template written to or a started name not yet written.
+    // A pass-through place: the fitted medium, `side` the one passing now.
     std::optional<Held> holds;
-    std::optional<int> passing;             // a pass-through place: the side passing through now (C59-7 AC-12, AC-13)
+    std::optional<int> passing;             // a pass-through place: the side passing through now
     bool waits = false;                     // the machine waits for a medium now
-    bool nameAndSave = false;               // AC-16, EC-9
-    bool askWriteProtect = false;           // AC-16: the medium has a switch still off
-    std::vector<PickerEntry> picker;        // AC-8 order
+    bool nameAndSave = false;
+    bool askWriteProtect = false;           // the medium has a switch still off
+    std::vector<PickerEntry> picker;        // in the picker's order
     bool operator==(const PlaceState&) const = default;
 };
 
@@ -72,7 +73,7 @@ struct KindState {
         std::optional<std::string> inPlace;
         bool operator==(const Item&) const = default;
     };
-    std::vector<Item> templates, instances;   // AC-7; the saved media list reads the Saved items (AC-31)
+    std::vector<Item> templates, instances;   // the saved media list reads the Saved items
     bool operator==(const KindState&) const = default;
 };
 

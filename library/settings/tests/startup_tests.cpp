@@ -3,8 +3,8 @@
 #include "settings/OpenFolders.hpp"
 #include "settings/Startup.hpp"
 
-// LIB-9 AC-9, AC-10, EC-1, and the library part of AC-29 (open folders);
-// design §6, T-12, T-13. AC-11 (the trace size) is in settings_file_tests.cpp.
+// The startup model and preset, and the folders file dialogs start in. The
+// trace size is in settings_file_tests.cpp.
 
 using namespace calcu::settings;
 using namespace calcu::settings::test;
@@ -17,7 +17,7 @@ SettingsFile withValues(const TempDir& dir, const std::string& body) {
 }
 } // namespace
 
-TEST(ac9_model_last_or_name_else_last) {
+TEST(startup_model_last_or_name_else_last) {
     TempDir dir;
     // The default is `last`.
     CHECK_EQ(SettingsFile::defaultsOnly(testProduct()).text("startup", "model"), std::string("last"));
@@ -36,14 +36,14 @@ TEST(ac9_model_last_or_name_else_last) {
     CHECK_EQ(startupModel(SettingsFile::defaultsOnly(testProduct())), std::string("Model-B"));
 }
 
-TEST(ec1_last_model_not_a_model_gives_fallback) {
+TEST(last_model_not_a_model_gives_fallback) {
     TempDir dir;
     for (const char* v : {"PC-1500A", "Model-C", "model-a", "3"})
         CHECK_EQ(startupModel(withValues(dir, std::string("[startup]\nmodel = last\nlast-model = ") + v + "\n")),
                  std::string("Model-B"));
 }
 
-TEST(ac10_preset_per_model_empty_means_none) {
+TEST(startup_preset_per_model_empty_means_none) {
     TempDir dir;
     const SettingsFile f =
         withValues(dir, "[preset]\nModel-A = examples/hello.preset.yaml\nModel-B =\n");
@@ -56,7 +56,7 @@ TEST(ac10_preset_per_model_empty_means_none) {
     CHECK(testProduct().find("PRESET", "model-a"));
 }
 
-TEST(ac29_open_folder_fixed_else_last_used_else_home) {
+TEST(open_folder_fixed_else_last_used_else_home) {
     TempDir dir;
     SettingsFile f = withValues(dir, "");
     // Nothing set: the home folder.

@@ -1,5 +1,5 @@
-// LIB-13 L3 to L5 (design §6): the order of the tests of AC-1, the preset by
-// its content (AC-2), the limits per way in (AC-10); EC-1, EC-5.
+// Classifying a file: the order of its tests (Classify.hpp), the preset by
+// its content, the limits per way in; an outdated preset, an unreadable file.
 #include "TestHarness.hpp"
 #include "TestOpeners.hpp"
 
@@ -18,7 +18,7 @@ struct Setup {
 };
 } // namespace
 
-TEST(ac1_unreadable_large_hidden_refused_first) {
+TEST(unreadable_large_hidden_refused_first) {
     Setup c;
     c.s.maxBytes[Way::Drop] = 8;
     // 1a: the host could not read it, whatever its name.
@@ -35,20 +35,20 @@ TEST(ac1_unreadable_large_hidden_refused_first) {
     CHECK_EQ(h.refusal, std::string(".game.tseg is a hidden file and is not opened."));
 }
 
-TEST(ac1_preset_extension_before_medium_and_kinds) {
+TEST(preset_extension_before_medium_and_kinds) {
     Setup c;
     // A name that would be a medium and a kind as well: the preset extension is asked first.
     CHECK(c(file("x.tdisk.yaml.tseg", "BLOB")).what == What::Preset);
     CHECK(c(file("game.tdot", "nothing like a preset")).what == What::Preset);
 }
 
-TEST(ac1_medium_suffix_before_kinds) {
+TEST(medium_suffix_before_kinds) {
     Setup c;
     CHECK(c(file("work.tdisk.yaml", "BLOB model: x\n")).what == What::Medium);   // content of a blob: still a medium
     CHECK(c(file("card.tcard.yaml", "model: test-seg\n")).what == What::Medium);  // a model line: still a medium
 }
 
-TEST(ac1_kinds_in_product_order) {
+TEST(file_kinds_in_product_order) {
     Setup c;
     const Classified both = c(file("both.lst", "BLOB"));   // both kinds take it: the first in the product's order
     CHECK(both.what == What::Kind && both.kind == &c.listing);
@@ -59,14 +59,14 @@ TEST(ac1_kinds_in_product_order) {
     CHECK(swapped.what == What::Kind && swapped.kind == &c.blob);
 }
 
-TEST(ac1_model_line_after_kinds) {
+TEST(model_line_after_file_kinds) {
     Setup c;
     CHECK(c(file("notes.txt", "# a preset\nmodel: test-seg\n")).what == What::Preset);   // test 5
     const Classified k = c(file("prog.lst", "model: test-seg\n"));                        // a kind first
     CHECK(k.what == What::Kind && k.kind == &c.listing);
 }
 
-TEST(ac1_nothing_refused_with_notice_naming_file) {
+TEST(unknown_file_refused_with_notice_naming_it) {
     Setup c;
     const Classified n = c(file("photo.jpg", "\xff\xd8\xff"));
     CHECK(n.what == What::Refused);
@@ -79,7 +79,7 @@ TEST(ac1_nothing_refused_with_notice_naming_file) {
     CHECK(notices.size() == 1 && notices[0] == "Test-Product cannot open photo.jpg.");
 }
 
-TEST(ac1_names_compared_without_case) {
+TEST(open_names_compared_without_case) {
     Setup c;
     CHECK(c(file("GAME.TSEG", "x")).what == What::Preset);
     CHECK(c(file("Work.TDisk.YAML", "x")).what == What::Medium);
@@ -87,7 +87,7 @@ TEST(ac1_names_compared_without_case) {
     CHECK(k.what == What::Kind && k.kind == &c.listing);
 }
 
-TEST(ec1_outdated_preset_extension_is_preset_refused_with_hint) {
+TEST(outdated_preset_extension_is_preset_refused_with_hint) {
     Setup c;
     CHECK(c(file("old.tseg", "format-version: 1\noutdated\n")).what == What::Preset);   // not tried as anything else
     OpenRig r;
@@ -99,7 +99,7 @@ TEST(ec1_outdated_preset_extension_is_preset_refused_with_hint) {
     CHECK(r.listing.opened.empty() && r.blob.opened.empty() && r.media.reads == 0);
 }
 
-TEST(ec5_unreadable_file_refused_notice_names_it) {
+TEST(unreadable_file_refused_notice_names_it) {
     OpenRig r;
     r.rig.build();
     const auto* reply = r.opened(OpenedFile{"lost.lst", "/gone/lost.lst", std::nullopt});
@@ -108,9 +108,9 @@ TEST(ec5_unreadable_file_refused_notice_names_it) {
     CHECK(r.listing.opened.empty());
 }
 
-// ── AC-2 (the cases of Calc-U-1600 tests/program_file_tests.cpp:198-208) ──
+// ── A preset by its model line ──
 
-TEST(ac2_model_line_in_first_column) {
+TEST(preset_by_model_line_in_first_column) {
     CHECK(looksLikePreset(bytesOf("# Hanoi\nmodel: PC-1600\nkeys:\n  - key: mode\n")));
     CHECK(looksLikePreset(bytesOf("model: PC-1500:A04\n")));
     CHECK(looksLikePreset(bytesOf("# \xE2\x80\x93" "empty\xE2\x80\x93\r\nmodel: PC-1600\r\n")));   // '–', CRLF
@@ -118,12 +118,12 @@ TEST(ac2_model_line_in_first_column) {
     CHECK(!looksLikePreset(bytesOf("models: x\nmodel")));
 }
 
-TEST(ac2_indented_or_commented_model_not_a_preset) {
+TEST(indented_or_commented_model_not_a_preset) {
     CHECK(!looksLikePreset(bytesOf("keys:\n  model: PC-1600\n")));
     CHECK(!looksLikePreset(bytesOf("# model: PC-1600\nkeys:\n")));
 }
 
-TEST(ac2_zero_byte_or_bad_utf8_not_a_preset) {
+TEST(zero_byte_or_bad_utf8_not_a_preset) {
     std::vector<std::uint8_t> nul = bytesOf("model: PC-1600\n");
     nul.push_back(0);
     CHECK(!looksLikePreset(nul));
@@ -131,13 +131,13 @@ TEST(ac2_zero_byte_or_bad_utf8_not_a_preset) {
     CHECK(!looksLikePreset(bytesOf("model: \xC3\n")));   // a cut sequence
 }
 
-TEST(ac2_bom_allowed) {
+TEST(preset_by_model_line_bom_allowed) {
     CHECK(looksLikePreset(bytesOf("\xEF\xBB\xBFmodel: PC-1500\n")));
 }
 
-// ── AC-10 ──
+// ── The limits per way in ──
 
-TEST(ac10_limit_per_way_in) {
+TEST(open_limit_per_way_in) {
     Setup c;
     c.s.maxBytes[Way::Drop] = 1024 * 1024;
     c.s.maxBytes[Way::OpenWith] = 1024 * 1024;
@@ -153,7 +153,7 @@ TEST(ac10_limit_per_way_in) {
     CHECK(hasText(r.notices(), "larger than 64 KiB"));
 }
 
-TEST(ac10_way_without_limit_takes_any_size) {
+TEST(way_without_limit_takes_any_size) {
     Setup c;
     c.s.maxBytes[Way::Drop] = 10;
     const std::string big(4096, 'x');

@@ -1,7 +1,7 @@
 #include "MediaFixture.hpp"
 #include "TestHarness.hpp"
 
-// LIB-7 L4 (design §6): the topic `media` (AC-7).
+// The topic `media`.
 
 using namespace calcu;
 using namespace calcu::media;
@@ -21,7 +21,7 @@ FixtureOptions onDot() {
 Value choose(const std::string& place, const std::string& entry) { return Value::object({{"place", place}, {"entry", entry}}); }
 } // namespace
 
-TEST(ac7_kinds_templates_instances_with_place) {
+TEST(media_topic_kinds_templates_instances_with_place) {
     MediaFixture f(onDot());
     const MediaState* s = f.state();
     CHECK(s && s->kinds.size() == 3);
@@ -39,7 +39,7 @@ TEST(ac7_kinds_templates_instances_with_place) {
     CHECK(!disks->instances[0].inPlace && disks->templates[0].inPlace == std::optional<std::string>("disk"));
 }
 
-TEST(ac7_place_holds_and_waits) {
+TEST(media_topic_place_holds_and_waits) {
     MediaFixture f(onDot());
     CHECK(!f.place("disk")->holds);
     CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
@@ -51,7 +51,7 @@ TEST(ac7_place_holds_and_waits) {
     CHECK(f.place("disk")->waits);
 }
 
-TEST(ac7_reread_after_own_write_and_on_refresh) {
+TEST(media_topic_reread_after_own_write_and_on_refresh) {
     MediaFixture f(onDot());
     CHECK(f.ok("media.choose", choose("disk", "bundled:Formatted.testdisk.yaml")));
     CHECK(f.ok("media.name-and-save", Value::object({{"place", "disk"}, {"name", "Fresh copy"}})));
@@ -61,7 +61,7 @@ TEST(ac7_reread_after_own_write_and_on_refresh) {
                       [](const KindState::Item& i) { return i.name == "Fresh copy" && i.inPlace == std::optional<std::string>("disk"); }));
 }
 
-TEST(ac7_outside_change_not_seen_until_refresh) {
+TEST(media_topic_outside_change_not_seen_until_refresh) {
     MediaFixture f(onDot());
     f.saveFile("Later.testdisk.yaml", disk("Later", "l"));
     f.call();

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# Self-test of library/settings/check_platform_stores.sh (LIB-9 design §6,
-# T-14; CTest LibraryPlatformStoreCheck): on a tree it builds itself, the
-# check passes on clean sources and on allowed uses, and fails on every
-# store it looks for.
+# Self-test of library/settings/check_platform_stores.sh (CTest
+# LibraryPlatformStoreCheck): on a tree it builds itself, the check passes on
+# clean sources and on allowed uses, and fails on every store it looks for.
 set -euo pipefail
 
 check="$(cd "$(dirname "$0")/.." && pwd)/check_platform_stores.sh"
@@ -41,7 +40,7 @@ done
 # the allowed file, does not.
 rm -rf "$work/allowed" && mkdir -p "$work/allowed/swift" "$work/allowed/web"
 echo 'UserDefaults.standard.data(forKey: "traceCustomPathBookmark")' > "$work/allowed/swift/AppSettings.swift"
-printf '# the bookmark is a grant, not a setting (AC-34)\nswift/AppSettings.swift: traceCustomPathBookmark\n' \
+printf '# the bookmark is a grant, not a setting\nswift/AppSettings.swift: traceCustomPathBookmark\n' \
   > "$work/allow.txt"
 expect 0 "allowed use" "$work/allowed" "$work/allow.txt"
 echo 'UserDefaults.standard.set(1, forKey: "ledFontStyle")' >> "$work/allowed/swift/AppSettings.swift"

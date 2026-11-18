@@ -2,11 +2,9 @@
 #include <cstdint>
 #include <vector>
 
-// The library's one PNG writer (LIB-8 design §2, formats/Png): RGB, 8 bits a
-// channel, written band by band so that a large picture never needs its
-// whole buffer (D-7), with a pHYs chunk for its resolution. Deflate as in
-// Calc-U-1600's first PNG writer (its core/Display/PngWriter.hpp, gone): one fixed-Huffman block whose
-// only matches are runs at distance 1 and at one scanline, each scanline
+// The library's one PNG writer: RGB, 8 bits a channel, written band by band
+// so that a large picture never needs its whole buffer, with a pHYs chunk
+// for its resolution. Deflate: one fixed-Huffman block whose only matches are runs at distance 1 and at one scanline, each scanline
 // with filter None; extended from grey to RGB. Dependency-free and
 // deterministic: the same pixels give the same bytes everywhere.
 

@@ -13,7 +13,7 @@ IniDocument defaultDocument(const ProductDecl& product) {
     return r.doc ? std::move(*r.doc) : IniDocument{};
 }
 
-// Read when the parsed file has the current version, else why not (AC-7).
+// Read when the parsed file has the current version, else why not.
 Outcome versionOutcome(const IniDocument& doc) {
     const auto v = doc.get("", kFormatVersionKey);
     if (!v) return Outcome::NoVersion;
@@ -67,7 +67,7 @@ SettingsFile SettingsFile::open(const ProductDecl& product, std::string path) {
             f.problem_ = f.path_ + " cannot be read; the settings have their defaults and are not saved in this run";
             return f;
         }
-        // The first start (AC-5): written at once, with every key at its default.
+        // The first start: written at once, with every key at its default.
         f.outcome_ = Outcome::Created;
         f.writable_ = true;
         const FileWrite w = writeFileAtomically(f.path_, f.doc_.text());
@@ -129,8 +129,8 @@ SettingsFile::WriteResult SettingsFile::set(std::string_view section, std::strin
     return writePending();
 }
 
-// Merge on write (EC-10, D-3): the file on disk takes this run's pending
-// changes and keeps everything else, also another instance's keys.
+// Merge on write: the file on disk takes this run's pending changes and keeps
+// everything else, also another instance's keys.
 SettingsFile::WriteResult SettingsFile::writePending() {
     IniDocument disk = doc_;  // the file is gone: write it whole
     if (const std::optional<std::string> bytes = readWholeFile(path_)) {

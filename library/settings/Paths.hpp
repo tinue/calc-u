@@ -5,27 +5,27 @@
 #include <string>
 #include <string_view>
 
-// Every place a product uses (LIB-9 AC-12–17, EC-3, EC-8, EC-9; design
-// §3), from the host directories the caller passes and the settings. No
-// frontend and no other feature works out one of these places itself.
+// Every place a product uses, from the host directories the caller passes and
+// the settings. No frontend and no other feature works out one of these
+// places itself.
 //
-//   settings file  <settingsBase>/<Product>/<Product>.ini (AC-2)
-//   save folder    Qt6: [storage] save-folder, else <home>/<Product> (AC-13);
-//                  Swift, Web, Given: the folder passed (AC-14, AC-15)
-//   cassettes      [storage] cassette-folder, else Cassettes/ in the save folder (AC-16, EC-3)
+//   settings file  <settingsBase>/<Product>/<Product>.ini
+//   save folder    Qt6: [storage] save-folder, else <home>/<Product>;
+//                  Swift, Web, Given: the folder passed
+//   cassettes      [storage] cassette-folder, else Cassettes/ in the save folder
 //   traces         Qt6: [trace] folder, else the save folder; Swift: by
-//                  [trace] location (AC-24); Web: none, a download (AC-17);
+//                  [trace] location; Web: none, a download;
 //                  Given: the folder passed
-//   screenshots    the save folder; Web: none, a download (AC-17); Given:
+//   screenshots    the save folder; Web: none, a download; Given:
 //                  the folder passed
 //   serial links   Qt6: [serial] link-folder, else the save folder; else none
-//   files          at the save folder's root (`ti58c.memory.yaml`, AC-16)
+//   files          at the save folder's root (`ti58c.memory.yaml`)
 
 namespace calcu::settings {
 
 enum class Folder { Save, Cassettes, Traces, Screenshots, SerialLinks };
 
-// A path value with a leading `~` expanded against `home` (AC-33).
+// A path value with a leading `~` expanded against `home`.
 std::string expandHome(std::string_view value, const std::string& home);
 
 class Paths {
@@ -44,10 +44,10 @@ public:
 
     struct Ensured { bool ok = false; std::string path, problem; };
     // Makes sure the folder exists and can be written, creating it when
-    // missing (EC-8). A folder that cannot be created or written is
-    // reported, and no other folder is used instead (EC-9). The traces on
+    // missing. A folder that cannot be created or written is
+    // reported, and no other folder is used instead. The traces on
     // Swift with [trace] location = icloud: refused while the host's
-    // iCloudAvailable says no (AC-24).
+    // iCloudAvailable says no.
     Ensured ensure(Folder which) const;
 
     const HostDirs& hostDirs() const { return dirs_; }

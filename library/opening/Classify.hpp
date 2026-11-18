@@ -7,8 +7,11 @@
 #include <string_view>
 #include <vector>
 
-// The tests of AC-1 in their order (LIB-13 design §3.2; spec AC-1, AC-2,
-// AC-6, AC-10, EC-1, EC-5). Names are compared in lower case (ASCII).
+// What a file is opened as, by tests in their order: 1a not readable,
+// 1b larger than the way's limit, 1c a hidden file (all three refused);
+// 2 a preset by its extension, 3 a medium by its suffix, 4 the first of the
+// product's file kinds that takes it, 5 a preset by its content; 6 refused.
+// Names are compared in lower case (ASCII).
 
 namespace calcu::opening {
 
@@ -24,20 +27,20 @@ struct Classified {
 
 Classified classify(const OpenedFile&, Way, const OpenSetup&);
 
-// AC-2 (Calc-U-1600 core/DropFile.cpp:20-37): UTF-8 without a zero byte,
+// Test 5: UTF-8 without a zero byte,
 // after an optional byte-order mark, with a line that starts with `model:`
 // in the first column.
 bool looksLikePreset(const std::vector<std::uint8_t>& bytes);
 
-// AC-6: whether a drag of one file of that name (and size, when the
+// Whether a drag of one file of that name (and size, when the
 // frontend knows it) would be taken: tests 1b (against the drop's limit),
 // 1c, 2 and 3, or a kind's name.
 bool wouldTake(std::string_view name, std::optional<std::uint64_t> size, const OpenSetup&);
 
 // Helpers the part shares.
-using machine::lowerAscii;   // the library's one ASCII lower case (machine/Names.hpp; E-7)
+using machine::lowerAscii;   // the library's one ASCII lower case (machine/Names.hpp)
 std::string fileNameOf(const OpenedFile&);   // the name, else the last part of the path
 bool endsWith(std::string_view lowerName, std::string_view lowerSuffix);
-std::string sizeText(std::uint64_t bytes);   // "1 MiB", "64 KiB", "100 bytes" (D-5)
+std::string sizeText(std::uint64_t bytes);   // "1 MiB", "64 KiB", "100 bytes"
 
 } // namespace calcu::opening

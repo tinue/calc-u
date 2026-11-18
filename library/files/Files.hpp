@@ -8,9 +8,8 @@
 #include <string_view>
 #include <vector>
 
-// Paths as UTF-8 text and whole files read at once (Part E simplification
-// E-7; LIB-1 design §2a, the area `files`: the standard library only, any
-// area may include it).
+// Paths as UTF-8 text and whole files read at once (the area `files`: the
+// standard library only, any area may include it).
 //
 // The library and the products keep every path as a UTF-8 std::string (what
 // QString::toStdString and a browser give). std::filesystem::path(std::string)

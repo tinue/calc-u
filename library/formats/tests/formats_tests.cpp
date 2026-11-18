@@ -1,5 +1,5 @@
-// LIB-11 design T2: the step values and durations of calcu::formats, which
-// the harness commands and the preset steps share (AC-12, AC-22, EC-2).
+// The step values and durations of calcu::formats, which the harness
+// commands and the preset steps share.
 #include "TestHarness.hpp"
 #include "formats/Duration.hpp"
 #include "formats/Flow.hpp"
@@ -7,7 +7,7 @@
 
 using namespace calcu::formats;
 
-TEST(ac12_wait_takes_the_steps_duration_forms) {
+TEST(wait_takes_the_steps_duration_forms) {
     std::string err;
     CHECK(parseDuration("2s", &err) == std::optional<std::int64_t>(2'000'000));
     CHECK(parseDuration("1.5s", &err) == std::optional<std::int64_t>(1'500'000));
@@ -19,7 +19,7 @@ TEST(ac12_wait_takes_the_steps_duration_forms) {
     CHECK(!parseDuration("s", &err));
 }
 
-TEST(ec2_duration_without_unit_is_refused) {
+TEST(duration_without_unit_is_refused) {
     std::string err;
     CHECK(!parseDuration("2", &err));
     CHECK(err.find("unit") != std::string::npos);
@@ -28,7 +28,7 @@ TEST(ec2_duration_without_unit_is_refused) {
     CHECK(!parseDuration("", &err));
 }
 
-TEST(ac22_flow_mapping_as_in_a_preset) {
+TEST(flow_mapping_as_in_a_preset) {
     YamlNode n;
     std::string err;
     CHECK(parseValue("{ name: Disk2, side: 1 }", &n, &err));

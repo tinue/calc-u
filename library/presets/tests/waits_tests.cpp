@@ -1,5 +1,4 @@
-// LIB-6 L6, L7: order and waits, failure (AC-14, AC-15, AC-17, AC-56 to
-// AC-60).
+// Order and waits, failure.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 
@@ -20,7 +19,7 @@ Rig rigWith(Ticks program, Hosting h = Hosting::VirtualTime) {
 }
 } // namespace
 
-TEST(ac14_sections_in_file_order_header_anywhere) {
+TEST(sections_in_file_order_header_anywhere) {
     Rig r;
     const CallId c = r.load(header() +
                             "test-memory: { at: 0, bytes: 01 }\n"
@@ -40,7 +39,7 @@ TEST(ac14_sections_in_file_order_header_anywhere) {
     CHECK_EQ(order, std::string("3 5 6 8 "));
 }
 
-TEST(ac15_section_finished_when_written) {
+TEST(section_finished_when_written) {
     Rig r = rigWith(50'000);
     // The section after a key starts when the key's program has ended, and
     // has finished when it is written: the next key goes down at once then.
@@ -53,7 +52,7 @@ TEST(ac15_section_finished_when_written) {
     CHECK(two[0] <= one[0] + 50'000 + kStretch + 100);   // no wait after the section
 }
 
-TEST(ac56_key_finishes_when_the_program_stops) {
+TEST(key_finishes_when_the_program_stops) {
     Rig r = rigWith(80'000);
     CHECK(r.done(r.load(header() + "keys:\n  - key: 1\n  - key: 2\n")));
     const auto one = r.downs("1"), two = r.downs("2");
@@ -62,7 +61,7 @@ TEST(ac56_key_finishes_when_the_program_stops) {
     CHECK(two[0] <= one[0] + 80'000 + kStretch + 50);
 }
 
-TEST(ac56_wait_runs_at_the_speed_in_force) {
+TEST(wait_runs_at_the_speed_in_force) {
     // Paced: 300 ms of emulated time at regular speed take about 300 ms of
     // host calls; at full speed far fewer.
     auto calls = [](bool regular) {
@@ -78,18 +77,18 @@ TEST(ac56_wait_runs_at_the_speed_in_force) {
     CHECK(full <= 5);
 }
 
-TEST(ac57_timeout_fails_the_item_at_both_speeds) {
+TEST(timeout_fails_the_item_at_both_speeds) {
     for (const char* speed : {"  - full-speed:\n", "  - regular-speed:\n"}) {
         Rig r = rigWith(200'000);   // 2 s
         const CallId c = r.load(header() + "timeout: 1\nkeys:\n" + speed + "  - key: 1\n  - key: 2\n");
         CHECK(!r.done(c));
         CHECK(hasLine({r.reason(c)}, "t.test-seg, line 6: The key: 1 has not finished after 1 s of emulated time"));
         CHECK(r.downs("2").empty());
-        CHECK(r.machine()->programRuns());   // the machine as it is (AC-17)
+        CHECK(r.machine()->programRuns());   // the machine as it is
     }
 }
 
-TEST(ac57_last_item_and_let_it_finish_not_bounded) {
+TEST(last_item_and_let_it_finish_not_bounded) {
     Rig r = rigWith(200'000);
     CHECK(r.done(r.load(header() + "timeout: 1\nkeys:\n  - key: 1\n")));   // the last item is not waited for
     CHECK(r.done(r.load(header() + "timeout: 1\nkeys:\n  - key: 1\n  - let-it-finish:\n")));
@@ -97,7 +96,7 @@ TEST(ac57_last_item_and_let_it_finish_not_bounded) {
     CHECK(r.ticks() >= r.downs("1")[0] + 200'000);
 }
 
-TEST(ac58_skip_wait_next_starts_first_press_at_once) {
+TEST(skip_wait_next_starts_first_press_at_once) {
     Rig r = rigWith(500'000);
     CHECK(r.done(r.load(header() + "keys:\n  - key: 1\n  - skip-wait:\n  - key: 0\n  - key: 2\n")));
     const auto one = r.downs("1"), zero = r.downs("0"), two = r.downs("2");
@@ -107,7 +106,7 @@ TEST(ac58_skip_wait_next_starts_first_press_at_once) {
     CHECK(two[0] < one[0] + 10'000);
 }
 
-TEST(ac58_skip_wait_first_or_last_refused) {
+TEST(skip_wait_first_or_last_refused) {
     Reading rd;
     CHECK(hasLine({rd.error(header() + "keys:\n  - skip-wait:\n  - key: 1\n")},
                   "line 4: skip-wait: cannot be the first or the last item."));
@@ -117,14 +116,14 @@ TEST(ac58_skip_wait_first_or_last_refused) {
     CHECK(rd.error(header() + "keys:\n  - key: 1\n  - skip-wait:\nkeys:\n  - key: 2\n").empty());
 }
 
-TEST(ac59_let_it_finish_last_waits_until_idle) {
+TEST(let_it_finish_last_waits_until_idle) {
     Rig r = rigWith(150'000);
     CHECK(r.done(r.load(header() + "keys:\n  - key: 1\n  - let-it-finish:\n")));
     CHECK(r.machine()->isKeyReady());
     CHECK(r.ticks() >= r.downs("1")[0] + 150'000 + kStretch);
 }
 
-TEST(ac59_let_it_finish_elsewhere_refused) {
+TEST(let_it_finish_elsewhere_refused) {
     Reading rd;
     CHECK(hasLine({rd.error(header() + "keys:\n  - let-it-finish:\n  - key: 1\n")},
                   "line 4: let-it-finish: can only be the last item."));
@@ -132,7 +131,7 @@ TEST(ac59_let_it_finish_elsewhere_refused) {
                   "line 5: let-it-finish: can only be the last item."));
 }
 
-TEST(ac60_last_item_not_waited_for_regular_speed_after) {
+TEST(last_item_not_waited_for_regular_speed_after) {
     Rig r = rigWith(150'000);
     r.send("speed", Value::object({{"full", true}}));   // whatever ran before the load
     CHECK(r.busy()->speed == Speed::Full);
@@ -140,13 +139,13 @@ TEST(ac60_last_item_not_waited_for_regular_speed_after) {
     CHECK(r.machine()->programRuns());   // what it started runs on
     CHECK(r.ticks() < r.downs("1")[0] + 150'000);
     CHECK(r.busy()->speed == Speed::Regular && !r.busy()->operationRuns);
-    // A failure ends at regular speed too (D-19).
+    // A failure ends at regular speed too.
     r.send("speed", Value::object({{"full", true}}));
     CHECK(!r.done(r.load(header() + "keys:\n  - key: 2\n  - expect: 9\n")));
     CHECK(r.busy()->speed == Speed::Regular);
 }
 
-TEST(ac17_failure_stops_machine_as_is_reply_notice_line) {
+TEST(failure_stops_machine_as_is_reply_notice_line) {
     Rig r;
     r.notices();
     const CallId c = r.load(header() + "keys:\n  - key: 2\n  - expect: /^9/\n  - key: 3\n");

@@ -1,6 +1,6 @@
-// LIB-6 L8: a paused machine (AC-19). The pause comes from the test rules'
-// step after the build (MachineSession::setPaused, LIB-10's place); the
-// debugger steps themselves are LIB-10's (M-40).
+// A paused machine. The pause comes from the test rules' step after the
+// build (MachineSession::setPaused, the debugger's place); the debugger
+// steps themselves are the debugger's.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 
@@ -25,7 +25,7 @@ void pauseAfterBuild(Rig& r) {
 bool paused(Rig& r) { return r.session->machineSession().paused(); }
 } // namespace
 
-TEST(ac19_key_waits_until_running_frontend_step_goes_on) {
+TEST(key_waits_until_running_frontend_step_goes_on) {
     Rig r(opts(Hosting::Paced));
     r.rules.panel = true;
     pauseAfterBuild(r);
@@ -41,7 +41,7 @@ TEST(ac19_key_waits_until_running_frontend_step_goes_on) {
     CHECK_EQ(r.downs("2").size(), std::size_t(1));
 }
 
-TEST(ac19_wait_passes_in_host_time_while_paused) {
+TEST(wait_passes_in_host_time_while_paused) {
     Rig r(opts(Hosting::Paced));
     r.rules.panel = true;
     pauseAfterBuild(r);
@@ -59,7 +59,7 @@ TEST(ac19_wait_passes_in_host_time_while_paused) {
     CHECK(paused(r));             // it ends with the machine still paused
 }
 
-TEST(ac19_wait_ends_at_once_in_virtual_time) {
+TEST(wait_ends_at_once_in_virtual_time) {
     Rig r(opts(Hosting::VirtualTime));
     r.rules.panel = true;
     pauseAfterBuild(r);
@@ -70,7 +70,7 @@ TEST(ac19_wait_ends_at_once_in_virtual_time) {
     CHECK(paused(r));
 }
 
-TEST(ac19_implicit_wait_and_timeout_stand_still_while_paused) {
+TEST(implicit_wait_and_timeout_stand_still_while_paused) {
     Rig r(opts(Hosting::Paced, 50'000));   // 0.5 s
     r.rules.panel = true;
     const CallId c = r.load(header() + "timeout: 1\nkeys:\n  - regular-speed:\n  - key: 1\n  - test-panel: x\n");
@@ -89,7 +89,7 @@ TEST(ac19_implicit_wait_and_timeout_stand_still_while_paused) {
     CHECK(r.rules.shown == std::vector<std::string>{"x"});
 }
 
-TEST(ac19_preset_that_ends_paused_stays_paused) {
+TEST(preset_that_ends_paused_stays_paused) {
     Rig r(opts(Hosting::VirtualTime));
     r.rules.panel = true;
     pauseAfterBuild(r);

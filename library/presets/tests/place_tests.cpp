@@ -1,5 +1,4 @@
-// LIB-6 L10: the place for other features and products; the product's rules
-// (AC-29, AC-53, AC-65).
+// The place for other areas and products; the product's rules.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 
@@ -17,7 +16,7 @@ bool traceOn(mt::TestMachine* m) {
 }
 } // namespace
 
-TEST(ac29_header_key_section_step_of_a_product_read_checked_carried_out) {
+TEST(header_key_section_step_of_a_product_read_checked_carried_out) {
     Reading rd;
     const auto read = rd.read(header() + "printer: test-printer\ntest-header:\n  level: 7\n  note: product's own\n");
     const LoadPlan* p = std::get_if<LoadPlan>(&read);
@@ -34,7 +33,7 @@ TEST(ac29_header_key_section_step_of_a_product_read_checked_carried_out) {
     CHECK(r.machine()->memory()->bytes[2] == 0xC0 && r.machine()->memory()->bytes[3] == 0xDE);
 }
 
-TEST(ac29_their_errors_with_line) {
+TEST(product_keyword_errors_with_line) {
     Reading rd;
     CHECK_EQ(rd.error(header() + "test-header:\n  level: high\n"), std::string("t.test-seg, line 4: level: is a number."));
     CHECK_EQ(rd.error(header() + "test-memory:\n  at: 0\n  bytes: |\n    0G\n"),
@@ -45,7 +44,7 @@ TEST(ac29_their_errors_with_line) {
              std::string("t.test-seg, line 5: printer-trace: takes on or off."));
 }
 
-TEST(ac53_idle_after_build_picture_from_the_rules) {
+TEST(idle_after_build_picture_from_the_rules) {
     Rig r;
     const int before = r.rules.seg.idleAsked;
     CHECK(r.done(r.load(header() + "keys:\n  - key: 2\n  - screenshot: a.png\n  - key: 3\n")));
@@ -66,7 +65,7 @@ TEST(ac53_idle_after_build_picture_from_the_rules) {
     CHECK(r.downs("2").empty());
 }
 
-TEST(ac65_absent_keyword_default_nothing_carried_over) {
+TEST(absent_keyword_default_nothing_carried_over) {
     Rig r;
     CHECK(r.done(r.load(header() + "printer: test-printer\ntest-memory: { at: 0, bytes: FF }\nkeys:\n"
                                    "  - printer-trace: on\n  - key: 2\n")));

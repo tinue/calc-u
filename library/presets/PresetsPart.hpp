@@ -17,13 +17,12 @@
 #include <string>
 #include <vector>
 
-// LIB-6's session part (design §3.8; spec AC-6, AC-12, AC-32, AC-34, AC-55):
-// the loader of preset format 2 in the app session, and LIB-18's
-// startup::PresetLoader. It goes before StartupPart in the session's parts;
-// LIB-5's TypingPart may come after it.
+// The presets' session part: the loader of preset format 2 in the app
+// session, and the startup area's startup::PresetLoader. It goes before
+// StartupPart in the session's parts; typing's TypingPart may come after it.
 //
 // Commands: `load-preset {ref | content, name; buildOnly?}` (an operation;
-// refused at once with the first error, AC-6), `run-step {verb, value}` (one
+// refused at once with the first error), `run-step {verb, value}` (one
 // step on the running machine: a step that needs no running machine and has
 // finished when it took effect is done at once, with its result; the others
 // are an operation), `wait-idle` (an operation: until idle, at most an hour
@@ -42,14 +41,14 @@ inline const sessions::RequestName kPresetListRequest{"preset-list"};
 struct PresetsSetup {
     const machine::Catalogue* catalogue = nullptr;
     ProductRules* rules = nullptr;
-    startup::MachineControl* control = nullptr;   // LIB-18's machine control
-    typing::TypingPart* typing = nullptr;         // LIB-5's part: its engine and TypingProduct
-    const PresetBundle* bundle = nullptr;         // the product's bundled presets (AC-33)
+    startup::MachineControl* control = nullptr;   // startup's machine control
+    typing::TypingPart* typing = nullptr;         // typing's part: its engine and TypingProduct
+    const PresetBundle* bundle = nullptr;         // the product's bundled presets
     std::string home;                             // `~/` (README §3)
-    std::function<std::optional<std::string>()> screenshotFolder;   // LIB-9's Paths::screenshotFolder(); the harness: the run's
+    std::function<std::optional<std::string>()> screenshotFolder;   // settings' Paths::screenshotFolder(); the harness: the run's
 };
 
-// The reply of `preset-list` (AC-32).
+// The reply of `preset-list`.
 struct PresetListReply final : sessions::PayloadOf<PresetListReply> {
     static constexpr sessions::PayloadKind kKind{"preset-list"};
     std::vector<PresetListEntry> entries;
@@ -63,26 +62,26 @@ inline constexpr std::string_view kStepResultKind = "preset-step";
 class PresetsPart final : public sessions::SessionPart, public startup::PresetLoader {
 public:
     explicit PresetsPart(PresetsSetup);
-    // Library keywords, then the product's; a later feature adds its own
+    // Library keywords, then the product's; another area adds its own
     // before the session is built.
     Vocabulary& vocabulary() { return vocabulary_; }
     ReadSetup readSetup() const;
 
     void attach(sessions::SessionSetup&) override;
     // The command `load-preset` without its notice: a read error is the
-    // refusal only (LIB-13's opener sends the notice; LIB-13 design §3.4).
+    // refusal only (opening's opener sends the notice).
     sessions::CommandOutcome loadPreset(const sessions::Value& args, sessions::SessionContext&);
-    // The load of `ref` inside another part's operation (C1600-3 design
-    // §3.4: the DAP's set-up and clean start), read and carried out as
-    // `load-preset {ref, buildOnly}` does; with `forModel`, a preset for
-    // another model is not loaded. Its failure is the result, no notice.
+    // The load of `ref` inside another part's operation (Calc-U-1600's DAP:
+    // its set-up and clean start), read and carried out as `load-preset {ref,
+    // buildOnly}` does; with `forModel`, a preset for another model is not
+    // loaded. Its failure is the result, no notice.
     sessions::Task<sessions::OperationResult> loadWithin(sessions::OperationContext&, std::string ref, bool buildOnly,
                                                          std::optional<machine::ModelId> forModel);
-    void operationEnded(sessions::SessionContext&) override;   // AC-22, AC-60: regular speed at the end
+    void operationEnded(sessions::SessionContext&) override;   // regular speed at the end
 
-    // startup::PresetLoader (LIB-18 §3.3): a read error, an outdated file,
-    // another model than forModel or a refused build: CannotLoad, nothing
-    // built; a failure while it is carried out: FailedWhileRunning.
+    // startup::PresetLoader: a read error, an outdated file, another model
+    // than forModel or a refused build: CannotLoad, nothing built; a failure
+    // while it is carried out: FailedWhileRunning.
     sessions::Task<startup::PresetLoad> load(std::string ref, std::optional<machine::ModelId> forModel,
                                              startup::MachineControl&, sessions::OperationContext&) override;
 

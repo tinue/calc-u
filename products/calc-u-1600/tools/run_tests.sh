@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds and runs Calc-U-1600's Frequent tests from the repository's root
-# CMake project (ADR 0003) without the Qt apps, in the repository's
+# CMake project without the Qt apps, in the repository's
 # build/tests tree (Debug: core and tests at -O1).
 #
 #   tools/run_tests.sh            every Frequent CTest entry of the product
@@ -10,8 +10,7 @@
 #                                 every runner program of the product
 #
 # The tests run from the product directory (they load roms/ via relative
-# paths). Since D P-10 the tests are several programs, not CoreTests alone
-# (review E F-8).
+# paths). The tests are several programs, not CoreTests alone.
 set -e
 cd "$(dirname "$0")/.."
 REPO="$(cd ../.. && pwd)"

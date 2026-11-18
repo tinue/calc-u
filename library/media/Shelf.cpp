@@ -80,7 +80,7 @@ std::vector<std::string> Shelf::reread() {
             std::string bytes;
             const auto r = readFile(k, path, &bytes);
             if (r && r->status == ReadOutcome::Status::NotMedium) return;   // no medium of the kind
-            if (!r || r->status == ReadOutcome::Status::Unreadable) {   // EC-3
+            if (!r || r->status == ReadOutcome::Status::Unreadable) {
                 lines.push_back("The " + k.label + " file " + file + " cannot be read" +
                                 (r && !r->problem.empty() ? ": " + r->problem : std::string(".")));
                 return;
@@ -94,10 +94,10 @@ std::vector<std::string> Shelf::reread() {
             e.bytes = std::move(bytes);
             e.name = nameOf(r->info, file, k);
             e.description = r->info.description;
-            e.isTemplate = origin == Origin::Bundled || r->info.isTemplate;   // AC-1: bundled files are templates
+            e.isTemplate = origin == Origin::Bundled || r->info.isTemplate;   // bundled files are templates
             e.hasWriteProtect = r->info.hasWriteProtect;
             e.writeProtected = r->info.writeProtected;
-            if (r->status == ReadOutcome::Status::Outdated) {   // AC-9
+            if (r->status == ReadOutcome::Status::Outdated) {
                 e.outdatedHint = outdatedHint(k, r->info.formatVersion);
                 lines.push_back("The " + k.label + " file " + file + " is outdated: " + *e.outdatedHint);
             }
@@ -124,7 +124,7 @@ std::vector<std::string> Shelf::reread() {
             entry(folder, f, Origin::Saved);
             if (entries_.size() == before) continue;
             const ShelfEntry& e = entries_.back();
-            // D-8: a saved file with a bundled or implicit template's name is not listed.
+            // A saved file with a bundled or implicit template's name is not listed.
             const bool clash = std::any_of(entries_.begin(), entries_.end() - 1, [&](const ShelfEntry& o) {
                 return o.kind == &k && (o.origin == Origin::Bundled || o.origin == Origin::Implicit) &&
                        sameName(o.name, e.name);
@@ -138,7 +138,7 @@ std::vector<std::string> Shelf::reread() {
     }
     const bool first = !scanned_;
     scanned_ = true;
-    return first ? lines : std::vector<std::string>{};   // D-12
+    return first ? lines : std::vector<std::string>{};   // logged at the first scan only
 }
 
 std::vector<const ShelfEntry*> Shelf::entries(const KindDecl& k) const {
@@ -157,7 +157,7 @@ const ShelfEntry* Shelf::find(const KindDecl& k, std::string_view name) const {
     }
     for (const ShelfEntry& e : entries_) {
         if (e.kind->id != k.id || !sameName(e.name, name) || e.origin != Origin::Saved) continue;
-        if (foldName(e.fileName) == own) return &e;   // OQ-1: the file the name gives
+        if (foldName(e.fileName) == own) return &e;   // the file the name gives
         if (!firstSaved) firstSaved = &e;             // else the first by file name
     }
     return firstSaved;

@@ -1,5 +1,4 @@
-// LIB-6 L5: a load is one operation (AC-12, AC-13, AC-16, AC-61, EC-3,
-// EC-4, EC-6).
+// A load is one operation.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 
@@ -18,16 +17,16 @@ RigOptions paced(Ticks program = 50'000) {
 constexpr Ticks kForever = 1'000'000'000'000ULL;
 } // namespace
 
-TEST(ac12_busy_live_input_dropped_second_load_refused) {
+TEST(busy_live_input_dropped_second_load_refused) {
     Rig r(paced());
     const CallId c = r.load(header() + "keys:\n  - regular-speed:\n  - key: 1\n  - key: 2\n");
     CHECK(r.busy()->operationRuns);
     for (int i = 0; i < 5; ++i) r.call();
     CHECK(r.session->busy());
-    // Live input is dropped (LIB-5 AC-18) ...
+    // Live input is dropped ...
     r.send("screen-key-down", Value::object({{"key", "3"}, {"pointer", 1}}));
     r.send("screen-key-up", Value::object({{"key", "3"}, {"pointer", 1}}));
-    // ... and another load refused (LIB-3 AC-16).
+    // ... and another load refused.
     const CallId second = r.load(header() + "keys:\n  - key: 3\n", "second.test-seg");
     CHECK(!r.done(second));
     CHECK_EQ(r.reason(second), std::string("Another operation is running."));
@@ -38,7 +37,7 @@ TEST(ac12_busy_live_input_dropped_second_load_refused) {
     CHECK(!r.busy()->operationRuns);
 }
 
-TEST(ac12_reset_cold_boot_switch_end_it_without_error) {
+TEST(reset_cold_boot_switch_end_it_without_error) {
     for (const char* command : {"reset", "cold-boot", "model"}) {
         Rig r(paced(kForever));
         const CallId c = r.load(header() + "keys:\n  - key: 1\n  - let-it-finish:\n");
@@ -55,7 +54,7 @@ TEST(ac12_reset_cold_boot_switch_end_it_without_error) {
     }
 }
 
-TEST(ac13_in_parts_paced_equals_one_go_harness) {
+TEST(in_parts_paced_equals_one_go_harness) {
     const std::string text = header() +
                              "test-memory: { at: 0, bytes: 0A }\n"
                              "keys:\n"
@@ -108,7 +107,7 @@ TEST(ac13_in_parts_paced_equals_one_go_harness) {
     CHECK(hasLine(oneGo.log, "Elapsed: "));
 }
 
-TEST(ac16_full_speed_while_built_and_carried_out) {
+TEST(full_speed_while_built_and_carried_out) {
     Rig r(paced(200'000));   // a program of 2 s
     const CallId c = r.load(header() + "keys:\n  - key: 1\n  - key: 2\n");
     int calls = 0;
@@ -123,11 +122,11 @@ TEST(ac16_full_speed_while_built_and_carried_out) {
     CHECK(calls < 60);   // 2 s of emulated time in less than 1 s of host calls
 }
 
-TEST(ac61_speed_command_changes_nothing_while_it_runs) {
+TEST(speed_command_changes_nothing_while_it_runs) {
     Rig r(paced(50'000));   // 0.5 s at regular speed
     const CallId c = r.load(header() + "keys:\n  - regular-speed:\n  - key: 1\n  - key: 2\n");
     r.call();
-    r.send("speed", Value::object({{"full", true}}));   // the frontend's gesture (LIB-17)
+    r.send("speed", Value::object({{"full", true}}));   // the frontend's gesture
     int calls = 0;
     bool allRegular = true;
     while (r.session->busy() && calls < 10'000) {
@@ -140,7 +139,7 @@ TEST(ac61_speed_command_changes_nothing_while_it_runs) {
     CHECK(calls >= 25);   // paced: half a second of 16 ms calls
 }
 
-TEST(ec3_stopped_reply_machine_as_the_command_leaves_it) {
+TEST(stopped_reply_machine_as_the_command_leaves_it) {
     Rig r(paced(kForever));
     const CallId c = r.load(header() + "keys:\n  - key: 1\n  - key: 2\n");
     for (int i = 0; i < 5; ++i) r.call();
@@ -155,7 +154,7 @@ TEST(ec3_stopped_reply_machine_as_the_command_leaves_it) {
     CHECK(r.downs("2").empty());
 }
 
-TEST(ec4_let_it_finish_without_limit_ended_by_reset) {
+TEST(let_it_finish_without_limit_ended_by_reset) {
     Rig r(paced(kForever));
     const CallId c = r.load(header() + "timeout: 1\nkeys:\n  - key: 1\n  - let-it-finish:\n");
     for (int i = 0; i < 300; ++i) r.call();   // far beyond the timeout in emulated time
@@ -165,7 +164,7 @@ TEST(ec4_let_it_finish_without_limit_ended_by_reset) {
     CHECK_EQ(r.reason(c), std::string("Stopped."));
 }
 
-TEST(ec6_suspended_makes_no_progress) {
+TEST(suspended_makes_no_progress) {
     Rig r(paced(100'000));
     const CallId c = r.load(header() + "keys:\n  - regular-speed:\n  - key: 1\n  - key: 2\n");
     for (int i = 0; i < 3; ++i) r.call();

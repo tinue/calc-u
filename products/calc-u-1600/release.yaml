@@ -7,7 +7,7 @@
 # the artifacts and publishes them. The Windows installer is unsigned.
 
 name: Calc-U-1600
-# One of the products of tinue/calc-u (ADR 0027-0029): prefixed tags, releases
+# One of the products of tinue/calc-u: prefixed tags, releases
 # from main, never GitHub's "Latest".
 tag_prefix: calc-u-1600-
 branching: trunk
@@ -27,7 +27,7 @@ release:
     will run — GitHub Releases doesn't preserve file permissions on uploaded
     assets. Run `chmod +x Calc-U-1600-*.AppImage` once after downloading, then
     launch it directly.
-  # No examples zip (ledger 1600-21): the help explains how to get every
+  # No examples zip: the help explains how to get every
   # example from the source repository.
 
 build:
@@ -40,9 +40,9 @@ build:
       - { artifact: Calc-U-1600-windows-x86_64, file: Calc-U-1600-Setup.exe,    as: Calc-U-1600-windows-x86_64.exe }
       - { artifact: Calc-U-1600-windows-arm64,  file: Calc-U-1600-Setup-arm64.exe, as: Calc-U-1600-windows-arm64.exe }
       # The web client's dist/ (frontends/web/build.sh --release: without the
-      # test-only commands, LIB-15 AC-29): embed it in a page or install it as an app.
+      # test-only commands): embed it in a page or install it as an app.
       - { artifact: Calc-U-1600-web,            file: "Calc-U-1600-web-*.zip",  as: Calc-U-1600-web.zip }
-      # The help (LIB-16): the Markdown chapters, their pictures and toc.json
+      # The help: the Markdown chapters, their pictures and toc.json
       # (tools/help build calc-u-1600); calc-u.org/1600/ renders it.
       - { artifact: Calc-U-1600-help,           file: Calc-U-1600-help.zip,     as: Calc-U-1600-help.zip }
 

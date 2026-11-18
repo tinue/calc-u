@@ -21,11 +21,11 @@ using sessions::Value;
 
 namespace {
 
-constexpr std::string_view kAsks = "asks: ";   // LIB-7 D-6: a question, not a refusal
+constexpr std::string_view kAsks = "asks: ";   // media's question, not a refusal
 
 bool asks(const std::string& reason) { return reason.rfind(kAsks, 0) == 0; }
 
-// The operation an opener started, its result the reply of AC-3 (§3.6).
+// The operation an opener started, its result the open reply.
 sessions::Task<sessions::OperationResult> withReply(sessions::OperationContext& c, sessions::Operation inner,
                                                     std::shared_ptr<const OpenReply> r) {
     sessions::OperationResult res = co_await inner(c);
@@ -33,8 +33,8 @@ sessions::Task<sessions::OperationResult> withReply(sessions::OperationContext& 
     co_return res;
 }
 
-// AC-1: a refusal is a notice that names the file and says why; LIB-7's
-// question (AC-4, D-4) is no notice.
+// A refusal is a notice that names the file and says why; media's
+// question (replace the medium of that name?) is no notice.
 CommandOutcome finish(CommandOutcome o, OpenReply reply, SessionContext& c) {
     auto r = std::make_shared<const OpenReply>(std::move(reply));
     if (std::holds_alternative<Done>(o)) return Done{std::move(r)};
@@ -80,7 +80,7 @@ void OpenPart::attach(sessions::SessionSetup& s) {
         std::string why;
         auto req = OpenRequest::fromValue(a, &why);
         if (!req) return Refused{why};
-        if (c.busy() || !c.machine()) {   // AC-7: kept, the second in place of the first
+        if (c.busy() || !c.machine()) {   // kept, the second in place of the first
             if (kept_)
                 c.log("The file " + fileNameOf(kept_->files.front()) + " kept to be opened is replaced by " +
                       fileNameOf(req->files.front()) + ".");
@@ -122,7 +122,7 @@ CommandOutcome OpenPart::openOne(const OpenedFile& f, const OpenRequest& req, Se
     case Classified::What::Refused: return refuse(c, k.refusal);
     case Classified::What::Preset: {
         // From its folder where the host can write it; an upload, or a file
-        // without a path, as its content (LIB-6 EC-5; EC-3).
+        // without a path, as its content.
         CommandOutcome o = f.path && !req.upload ? setup_.presets->loadFile(*f.path, c) : setup_.presets->loadContent(f, c);
         return finish(std::move(o), OpenReply(OpenedAs::Preset, name), c);
     }
@@ -133,12 +133,13 @@ CommandOutcome OpenPart::openOne(const OpenedFile& f, const OpenRequest& req, Se
     return refuse(c, setup_.productName + " cannot open " + name + ".");
 }
 
-// AC-4 in the order of design §3.5, 4.
+// A medium: read and checked, its one place now, then used where it lies
+// or (an upload) imported into the save folder.
 CommandOutcome OpenPart::openMedium(const OpenedFile& f, const OpenRequest& req, SessionContext& c) {
     MediaOpening& m = *setup_.media;
     const std::string name = fileNameOf(f);
     const MediumFile mf = m.read(f);
-    if (mf.refusal) return refuse(c, *mf.refusal);   // LIB-7 AC-9's hint
+    if (mf.refusal) return refuse(c, *mf.refusal);   // with media's hint
     const machine::Machine& mc = *c.machine();
     const std::vector<std::string> places = m.placesFor(mf, f, mc);
     if (places.size() > 1)
@@ -147,21 +148,22 @@ CommandOutcome OpenPart::openMedium(const OpenedFile& f, const OpenRequest& req,
         const auto where = m.placesInCatalogue(mf);
         std::string sentence = "The " + mc.descriptor().model.value + " has no place for " + name + " now";
         sentence += where.empty() ? "." : "; a " + mf.kindName + " goes into " + joinedOr(where) + ".";
-        if (!req.upload) return refuse(c, sentence);   // not copied (D-8)
-        CommandOutcome o = m.importAndUse(f, std::nullopt, req.confirmed, c);   // EC-2: imported for its picker
+        if (!req.upload) return refuse(c, sentence);   // not copied
+        CommandOutcome o = m.importAndUse(f, std::nullopt, req.confirmed, c);   // imported, waits for its picker
         if (std::holds_alternative<Refused>(o)) return finish(std::move(o), OpenReply(OpenedAs::Medium, name), c);
         c.notice(sentence);
         return finish(std::move(o), OpenReply(OpenedAs::Medium, name, "imported"), c);
     }
     const std::string& place = places.front();
-    if (auto r = m.refusesNow(place, mc)) return refuse(c, *r);   // EC-4: nothing imported
+    if (auto r = m.refusesNow(place, mc)) return refuse(c, *r);   // nothing imported
     OpenReply reply(OpenedAs::Medium, name, place);
     if (req.upload) return finish(m.importAndUse(f, place, req.confirmed, c), std::move(reply), c);
     return finish(m.useWhereItLies(f, place, c), std::move(reply), c);
 }
 
-// AC-8 (D-7): several files from a Web file dialog are one folder; the
-// preset among them is opened by its path there.
+// Several files from a Web file dialog are one folder; the preset among
+// them is opened by its path there. Without an upload folder only the first
+// file is opened, alone.
 CommandOutcome OpenPart::openSeveral(const OpenRequest& req, SessionContext& c) {
     if (!setup_.uploadFolder || !setup_.presets) return openOne(req.files.front(), req, c);
     namespace fs = std::filesystem;

@@ -1,8 +1,7 @@
-// LIB-13 L12, L13 (design §6): opening through the real parts of LIB-6 and
-// LIB-7 (LibraryOpeners), on LIB-7's media fixture (the media test catalogue,
-// the test kinds, a save folder of the test's own), AC-4's pass-through place
-// among them; EC-7, the folder of a file dialog, on a session with a settings
-// file.
+// Opening through the real presets and media parts (LibraryOpeners), on the
+// media tests' fixture (the media test catalogue, the test kinds, a save
+// folder of the test's own), a pass-through place among them; the folder of
+// a file dialog, on a session with a settings file.
 #include "MediaFixture.hpp"
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
@@ -64,11 +63,11 @@ const OpenReply* replyOf(const calcu::sessions::ReplyMessage* r) {
 
 } // namespace
 
-TEST(open_preset_through_lib6_part) {
+TEST(open_preset_through_presets_part) {
     RealOpen r("test-seg");
     calcu::testing::TempFolder dir("calcu-open-presets");
     dir.write("Game.Test-Dot", header("test-dot"));
-    const auto* a = r.opened(r.onDisk(dir, "Game.Test-Dot"));   // the extension in any case (AC-1)
+    const auto* a = r.opened(r.onDisk(dir, "Game.Test-Dot"));   // the extension in any case
     CHECK(a && a->done && replyOf(a) && replyOf(a)->as == OpenedAs::Preset);
     CHECK(r.fixture.machine() && r.fixture.machine()->descriptor().model.value == "test-dot");
     // A preset by its model line, without a preset extension (test 5), as an upload: its content.
@@ -76,7 +75,7 @@ TEST(open_preset_through_lib6_part) {
     const auto* b = r.opened(OpenedFile{"notes.txt", "/uploads/notes.txt", std::vector<std::uint8_t>(text.begin(), text.end())},
                              Way::Drop, true);
     CHECK(b && b->done && r.fixture.machine()->descriptor().model.value == "test-seg");
-    // EC-1 through LIB-6: an outdated preset is refused with its hint, one notice.
+    // Through the presets part: an outdated preset is refused with its hint, one notice.
     r.fixture.notices();
     dir.write("old.test-seg", "format-version: 1\nmodel: test-seg\n");
     const auto* c = r.opened(r.onDisk(dir, "old.test-seg"));
@@ -86,7 +85,7 @@ TEST(open_preset_through_lib6_part) {
     CHECK(!n.empty() && n[0] == (c ? c->reason : std::string()));
 }
 
-TEST(open_medium_through_lib7_part) {
+TEST(open_medium_through_media_part) {
     RealOpen r("test-dot");
     calcu::testing::TempFolder outside("calcu-open-outside");
     outside.write("Away.testdisk.yaml", disk("Away", "a").text());
@@ -108,7 +107,7 @@ TEST(open_medium_through_lib7_part) {
     outside.write("C.testcard.yaml", card("C", "c").text());
     const auto* c = r.opened(r.onDisk(outside, "C.testcard.yaml"));
     CHECK(c && !c->done && c->reason.find("The test-dot has no place for C.testcard.yaml now; a test card goes into") == 0);
-    // An outdated medium: LIB-7's hint.
+    // An outdated medium: media's hint.
     TestFile old = disk("Old", "o");
     old.version = 1;
     outside.write("Old.testdisk.yaml", old.text());
@@ -116,8 +115,8 @@ TEST(open_medium_through_lib7_part) {
     CHECK(d && !d->done && d->reason.find("is outdated") != std::string::npos);
 }
 
-TEST(ac4_pass_through_follows_product) {
-    // A medium for a pass-through place is fitted (AC-4, AC-12; C59-7 AC-11),
+TEST(open_pass_through_follows_product) {
+    // A medium for a pass-through place is fitted (as a TI magnetic card is),
     // used where it lies, fed by a side and written back there.
     RealOpen r("test-seg");
     calcu::testing::TempFolder outside("calcu-open-outside");
@@ -135,7 +134,7 @@ TEST(ac4_pass_through_follows_product) {
                  "pass " + std::to_string(side));
     }
     CHECK(!r.fixture.exists("Away.testcard.yaml"));   // not copied
-    // EC-4: while a card passes, nothing else is opened into the reader.
+    // While a card passes, nothing else is opened into the reader.
     CHECK(r.fixture.ok("media.feed", Value::object({{"place", "reader"}, {"side", 0}})));
     const auto* b = r.opened(r.onDisk(outside, "Next.testcard.yaml"));
     CHECK(b && !b->done && b->reason == "A test card is passing through reader now.");
@@ -146,7 +145,7 @@ TEST(ac4_pass_through_follows_product) {
     CHECK(r.fixture.place("reader")->holds && r.fixture.place("reader")->holds->name == "Next");
 }
 
-TEST(ec7_no_way_in_changes_open_folders) {
+TEST(no_way_in_changes_open_folders) {
     calcu::testing::TempFolder home("calcu-open-settings");
     const std::string ini = "[folders]\npreset = /some/where\ntest-disk = fixed:/disks\n";
     home.write("settings.ini", ini);

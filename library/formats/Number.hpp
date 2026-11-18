@@ -3,7 +3,7 @@
 #include <optional>
 #include <string_view>
 
-// A number of the file formats (docs/formats/README.md §1; LIB-6 D-4): `&`,
+// A number of the file formats (docs/formats/README.md §1): `&`,
 // `0x` or `$` makes it hex, without one it is decimal; a leading `-` for a
 // decimal. The whole value is the number: anything after it is an error.
 // The module definition keeps YamlNode::asInt (decimal or `0x` only).

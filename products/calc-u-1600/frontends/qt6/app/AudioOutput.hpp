@@ -8,7 +8,7 @@ class QAudioSink;
 class QIODevice;
 
 // The host's default audio output as a cu1600::AudioSink (a QAudioSink):
-// the app session decides what is heard (LIB-3 AC-20, AC-37) and
+// the app session decides what is heard and
 // MachineController's SoundFeed (app/AudioSink.hpp) writes it.
 // Must outlive the session.
 class AudioOutput : public QObject, private cu1600::AudioSink {

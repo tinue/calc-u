@@ -41,7 +41,7 @@ public:
         }
         r.info.formatVersion = std::atoi(f["format-version"].c_str());
         r.info.name = f["name"];
-        if (f["medium"] == "no") {   // a file of the suffix that is no medium of the kind (M-47)
+        if (f["medium"] == "no") {   // a file of the suffix that is no medium of the kind
             r.status = ReadOutcome::Status::NotMedium;
             return r;
         }
@@ -87,7 +87,7 @@ public:
         t.name = w.name;
         t.isTemplate = w.asTemplate;
         if (module_) t.writeProtect = w.writeProtected.value_or(false);
-        if (w.source) {   // the description is kept (Calc-U-1600 AC-41's form)
+        if (w.source) {   // the description is kept (as Calc-U-1600's codecs do)
             bool ok = true;
             auto f = fields(*w.source, &ok);
             if (ok) t.description = f["description"];
@@ -150,7 +150,7 @@ std::vector<KindDecl> testKinds(const TestKindFolders& folders) {
     disk.id = "test-disk";
     disk.label = "test disk";
     disk.suffix = ".testdisk.yaml";
-    disk.companionSuffixes = {".dat"};   // its companion files (M-49: Import Media… takes them along)
+    disk.companionSuffixes = {".dat"};   // its companion files (Import Media… takes them along)
     disk.bundledFolder = folders.disks;
     disk.codec = &codec("test-disk");
     disk.formatName = "The test disk format";

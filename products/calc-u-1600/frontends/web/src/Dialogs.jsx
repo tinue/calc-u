@@ -1,6 +1,6 @@
-// The product's own dialogs (LIB-14 Part D, D.4): those of C1600-2's flows
-// (the machine-code start address and its result, "Load which one?"), the
-// name prompts and questions of the media flows, LIB-7's Name & Save, and a
+// The product's own dialogs: those of the program-file flows (the
+// machine-code start address and its result, "Load which one?"), the
+// name prompts and questions of the media flows, the media's Name & Save, and a
 // notice as the shell's for what a flow refuses. Settings, About, the
 // shell's notices and "Loading…" are the React set's (ShellDialogs). Each is
 // shown through useDialogs()'s ask(), which resolves with the answer (null:
@@ -30,7 +30,7 @@ function Modal({ title, children, buttons, onCancel, className, name }) {
 }
 
 // A notice of the product's own flows (a file that cannot be read, a
-// refused plan): as the shell's notice (LIB-14 AC-17, AC-38): the sentence
+// refused plan): as the shell's notice: the sentence
 // as it is, no title, OK.
 function NoticeDialog({ text, done }) {
   return (
@@ -101,7 +101,7 @@ function ChoiceDialog({ title, text, options, done }) {
   );
 }
 
-// Load Machine Code's start address (C1600-2 AC-18; Qt6/app/MachineCodeLoadDialog):
+// Load Machine Code's start address (as Qt6/app/MachineCodeLoadDialog):
 // each keystroke asks the session's plan (`c1600.code-plan`) with the text;
 // Load is enabled only while it holds. Done with the text, or null.
 function AddressDialog({ shell, plan, bytes, index, done }) {
@@ -161,8 +161,7 @@ function LoadedDialog({ result, done }) {
   );
 }
 
-// Name & Save (LIB-7 AC-16, AC-40; design D-25): the library's dialog with
-// today's prompt ("Instance name:" with the write-protect switch where the
+// Name & Save: the library's dialog with the prompt ("Instance name:" with the write-protect switch where the
 // module has one still off, "Disk name:", "Cassette name:"); a name an instance
 // has asks before it is replaced.
 function NameAndSaveDialog({ shell, place, prompt, done }) {

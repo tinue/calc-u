@@ -1,5 +1,5 @@
-// LIB-6 L15: LIB-18's start with the real loader (LIB-18 AC-4, EC-1, EC-6;
-// support cases): PresetsPart is the startup::PresetLoader.
+// The start-up with the real loader: PresetsPart is the
+// startup::PresetLoader.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 

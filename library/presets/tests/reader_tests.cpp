@@ -1,6 +1,5 @@
-// LIB-6 L1: the syntax of docs/formats/README.md §1 for the whole file, the
-// files a preset names, unreadable files and empty step lists (AC-1, EC-1,
-// EC-8).
+// The syntax of docs/formats/README.md §1 for the whole file, the files a
+// preset names, unreadable files and empty step lists.
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 
@@ -20,7 +19,7 @@ const TestHeader* testHeader(const LoadPlan& p) {
 }
 } // namespace
 
-TEST(ac1_block_and_flow_forms_of_readme_section_1) {
+TEST(block_and_flow_forms_of_readme_section_1) {
     Reading rd;
     const auto r = rd.read(header() +
                            "test-header:\n"
@@ -58,7 +57,7 @@ TEST(ac1_block_and_flow_forms_of_readme_section_1) {
     CHECK_EQ(p->items[2].item->logText(), std::string("full-speed"));
 }
 
-TEST(ac1_quotes_without_escapes) {
+TEST(quotes_without_escapes) {
     Reading rd;
     const auto a = rd.read(header() + "preset-name: \"a \\ b\"\n");
     CHECK(planOf(a) && planOf(a)->header.presetName == "a \\ b");   // no escape processing
@@ -68,7 +67,7 @@ TEST(ac1_quotes_without_escapes) {
     CHECK(planOf(c) && planOf(c)->header.presetName == "x # y");
 }
 
-TEST(ac1_block_scalar_skips_blank_and_hash_lines) {
+TEST(block_scalar_skips_blank_and_hash_lines) {
     Reading rd;
     const auto r = rd.read(header() +
                            "test-memory:\n"
@@ -81,7 +80,7 @@ TEST(ac1_block_scalar_skips_blank_and_hash_lines) {
     CHECK(planOf(r) && planOf(r)->items[0].item->logText() == "test-memory: 3 bytes");
 }
 
-TEST(ac1_hash_without_space_is_text) {
+TEST(hash_without_space_is_text) {
     Reading rd;
     const auto a = rd.read(header() + "preset-name: a#b\n");
     CHECK(planOf(a) && planOf(a)->header.presetName == "a#b");
@@ -89,7 +88,7 @@ TEST(ac1_hash_without_space_is_text) {
     CHECK(planOf(b) && planOf(b)->header.presetName == "a");
 }
 
-TEST(ac1_raw_values_of_type_expect_not_expect) {
+TEST(raw_values_of_type_expect_not_expect) {
     Reading rd;
     const auto r = rd.read(header() +
                            "keys:\n"
@@ -106,13 +105,13 @@ TEST(ac1_raw_values_of_type_expect_not_expect) {
     CHECK(hasLine({messageOf(t)}, "No key types the character \"#\""));
 }
 
-TEST(ac1_tab_anywhere_refused) {
+TEST(tab_anywhere_refused) {
     Reading rd;
     CHECK(hasLine({rd.error(header() + "# a comment\twith a tab\n")}, "t.test-seg, line 3: Tab character"));
     CHECK(hasLine({rd.error(header() + "keys:\n  - key:\t1\n")}, "line 4: Tab character"));
 }
 
-TEST(ac1_unknown_key_refused_at_every_level) {
+TEST(unknown_key_refused_at_every_level) {
     Reading rd;
     CHECK_EQ(rd.error(header() + "colour: red\n"), std::string("t.test-seg, line 3: Unknown key colour."));
     CHECK_EQ(rd.error(header() + "test-header:\n  level: 1\n  size: 2\n"),
@@ -121,7 +120,7 @@ TEST(ac1_unknown_key_refused_at_every_level) {
     CHECK(hasLine({rd.error(header() + "printer: { name: test-printer, side: 1 }\n")}, "exactly one of name: and file:"));
 }
 
-TEST(ac1_hex_forms_and_booleans) {
+TEST(hex_forms_and_booleans) {
     for (const char* at : {"&10", "0x10", "$10", "16"}) {
         Rig r;
         const CallId c = r.load(header() + "test-memory: { at: " + at + ", bytes: AB }\n");
@@ -135,7 +134,7 @@ TEST(ac1_hex_forms_and_booleans) {
     CHECK(hasLine({rd.error(header() + "test-memory: { at: 1G, bytes: AB }\n")}, "at: is a number."));
 }
 
-TEST(ac1_paths_from_preset_folder_and_home) {
+TEST(paths_from_preset_folder_and_home) {
     Rig r;
     r.folder.write("sub/data.bin", std::string("\x11\x22", 2));
     r.folder.write("home/mine.bin", std::string("\x33", 1));
@@ -149,7 +148,7 @@ TEST(ac1_paths_from_preset_folder_and_home) {
     CHECK(m[0] == 0x11 && m[1] == 0x22 && m[2] == 0x33);
 }
 
-TEST(ac1_names_any_case_hyphen_required) {
+TEST(names_any_case_hyphen_required) {
     Reading rd;
     const auto a = rd.read("format-version: 2\nmodel: TEST-SEG\nprinter: TEST-Printer\nslot-1: Test-Module:8K\n");
     CHECK(planOf(a) && planOf(a)->model == mt::kSeg);
@@ -160,7 +159,7 @@ TEST(ac1_names_any_case_hyphen_required) {
     CHECK(hasLine({rd.error(header() + "printer: testprinter\n")}, "There is no peripheral testprinter."));
 }
 
-TEST(ac1_header_key_once_sections_repeat) {
+TEST(header_key_once_sections_repeat) {
     Reading rd;
     CHECK_EQ(rd.error(header() + "preset-name: A\ndescription: one\npreset-name: B\n"),
              std::string("t.test-seg, line 5: preset-name: is given twice; a header key appears once."));
@@ -175,13 +174,13 @@ TEST(ac1_header_key_once_sections_repeat) {
     }
 }
 
-TEST(ec1_unreadable_or_not_utf8_names_the_file) {
+TEST(unreadable_or_not_utf8_names_the_file) {
     Reading rd;
     const auto gone = rd.readFile("/nonexistent-folder/gone.test-seg");
     CHECK_EQ(messageOf(gone), std::string("The file /nonexistent-folder/gone.test-seg cannot be read."));
     const auto bad = rd.read(header() + "preset-name: \xC3\x28\n", "latin.test-seg");
     CHECK_EQ(messageOf(bad), std::string("The file latin.test-seg is not UTF-8 text."));
-    // A byte-order mark at the start is dropped (D-28).
+    // A byte-order mark at the start is dropped (editors on Windows write one).
     CHECK(planOf(rd.read("\xEF\xBB\xBF" + header())) != nullptr);
     // In the session: refused with a notice that names the file.
     Rig r;
@@ -190,7 +189,7 @@ TEST(ec1_unreadable_or_not_utf8_names_the_file) {
     CHECK(hasLine(r.notices(), "none.test-seg cannot be read"));
 }
 
-TEST(ec8_empty_step_list_refused) {
+TEST(empty_step_list_refused) {
     Reading rd;
     CHECK_EQ(rd.error(header() + "keys:\n"), std::string("t.test-seg, line 3: keys: has no steps."));
     CHECK_EQ(rd.error(header() + "keys: []\n"), std::string("t.test-seg, line 3: keys: has no steps."));

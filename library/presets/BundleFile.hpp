@@ -8,10 +8,9 @@
 #include <variant>
 #include <vector>
 
-// The preset list (LIB-6 design §3.7, D-21; spec AC-31 to AC-33, EC-9): the
-// product's bundle file `bundle.yaml` at the root of its bundled presets
-// (docs/formats/bundle.md), read with the same YAML. The order of the file
-// is the order of the list.
+// The preset list: the product's bundle file `bundle.yaml` at the root of its
+// bundled presets (docs/formats/bundle.md), read with the same YAML. The
+// order of the file is the order of the list.
 
 namespace calcu::presets {
 
@@ -37,9 +36,9 @@ struct PresetListEntry {
     std::vector<std::string> files;
 };
 
-// AC-32: the entries with only the header keys of each preset read; an entry
+// The entries with only the header keys of each preset read; an entry
 // whose preset is missing or whose header cannot be read is left out, and
-// its sentence goes to `left` (EC-9).
+// its sentence goes to `left`.
 std::vector<PresetListEntry> presetList(const PresetBundle&, const ProductRules&, const machine::Catalogue&,
                                         std::vector<std::string>* left);
 

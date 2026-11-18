@@ -7,24 +7,23 @@
 #include <utility>
 #include <vector>
 
-// A product's settings file (LIB-9 AC-3, AC-5–7, EC-5–7, EC-10; design §3).
-// Read once, when the product starts; never read again while it runs
-// (AC-6). Each change is written through at once, atomically (EC-7), and
-// merged into the file on disk so that another instance's keys survive
-// (EC-10, D-3). A file that cannot be read, has no version or another
-// version is left untouched for the whole run, and the product starts with
-// the defaults (AC-7, EC-6, D-4). Not thread-safe: one thread owns it.
-// The ProductDecl must outlive the SettingsFile.
+// A product's settings file. Read once, when the product starts; never read
+// again while it runs. Each change is written through at once, atomically,
+// and merged into the file on disk so that another instance's keys survive. A
+// file that cannot be read, has no version or another version is left
+// untouched for the whole run, and the product starts with the defaults. Not
+// thread-safe: one thread owns it. The ProductDecl must outlive the
+// SettingsFile.
 
 namespace calcu::settings {
 
 enum class Outcome {
     Read,          // the file was read
-    Created,       // there was none; it was written with every key at its default (AC-5)
-    Unreadable,    // not INI (EC-6): defaults, nothing written
-    NoVersion,     // no `format-version` (AC-7): defaults, nothing written
-    OtherVersion,  // another format version (AC-7, ADR 0037): defaults, nothing written
-    DefaultsOnly,  // no file at all: nothing read or written (AC-18)
+    Created,       // there was none; it was written with every key at its default
+    Unreadable,    // not INI: defaults, nothing written
+    NoVersion,     // no `format-version`: defaults, nothing written
+    OtherVersion,  // another format version: defaults, nothing written
+    DefaultsOnly,  // no file at all: nothing read or written
 };
 
 class SettingsFile {
@@ -42,7 +41,7 @@ public:
     bool writable() const { return writable_; }
 
     // The value as the product uses it: the declared default when the key
-    // is missing or its value is not accepted (AC-3, EC-5). An undeclared
+    // is missing or its value is not accepted. An undeclared
     // key gives its text, or empty.
     std::string text(std::string_view section, std::string_view key) const;
     bool boolean(std::string_view section, std::string_view key) const;
@@ -58,7 +57,7 @@ public:
     WriteResult set(std::string_view section, std::string_view key, std::string_view value);
 
     // The text of a new file: `format-version`, then every declared key at
-    // its default in declaration order, a `# help` line above each (AC-5).
+    // its default in declaration order, a `# help` line above each.
     static std::string defaultText(const ProductDecl& product);
 
 private:

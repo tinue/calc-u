@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-// A product's rules for the LIB-4 tests (design §6): one product entry
+// A product's rules for the control tests: one product entry
 // (`test.entry`, a value payload holding the running model) and refusals of
 // named entries with the product's own reason. Plus the helpers the control
 // tests share.

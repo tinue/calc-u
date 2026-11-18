@@ -1,7 +1,6 @@
-// This feature's keywords (LIB-6 design §3.5; spec AC-4, AC-20 to AC-28,
-// AC-66): `keys:` is the reader's; here the steps key, type, wait,
-// regular-speed, full-speed, elapsed-time, expect, not-expect, screenshot
-// and sync-clock.
+// The library's keywords: `keys:` is the reader's; here the steps key, type,
+// wait, regular-speed, full-speed, elapsed-time, expect, not-expect,
+// screenshot and sync-clock.
 #include "files/Files.hpp"
 #include "formats/Duration.hpp"
 #include "formats/Flow.hpp"
@@ -28,13 +27,13 @@ using sessions::Task;
 
 namespace {
 
-// The value of a raw step (`type`, `expect`, `not-expect`; D-4) as written,
+// The value of a raw step (`type`, `expect`, `not-expect`) as written,
 // quotes and `#` included; from a command (not raw), formats::scalarText.
 std::string rawOrScalarText(const YamlNode& n) { return n.rawLine ? n.scalar : formats::scalarText(n); }
 
 ItemResult failed(std::string why) { return ItemResult{false, std::move(why), {}}; }
 
-// ── key, type (LIB-5's; AC-28) ───────────────────────────────────────────
+// ── key, type (typing's) ─────────────────────────────────────────────────
 
 std::vector<std::string> words(const std::string& s) {
     std::vector<std::string> out;
@@ -76,7 +75,7 @@ std::unique_ptr<Item> readKey(const YamlNode& v, ReadContext& ctx) {
         ctx.error(v.line, "key: needs one or more key IDs.");
         return nullptr;
     }
-    // LIB-5 AC-15: found when the preset is read
+    // A key that cannot be pressed is found when the preset is read
     auto presses = typing::pressesOfNames(ctx.typingProfile(), ctx.model(), names);
     if (const auto* no = std::get_if<typing::KeyNamesRefused>(&presses)) {
         ctx.error(v.line, no->together ? "The keys " + written + " cannot be pressed on the " + ctx.model().model.value + "."
@@ -106,7 +105,7 @@ private:
 
 std::unique_ptr<Item> readType(const YamlNode& v, ReadContext& ctx) {
     const typing::TypingProfile* p = ctx.typingProfile();
-    if (!ctx.typesText() || !p || !p->charKeys || !p->enter) {   // LIB-5 AC-16; AC-40
+    if (!ctx.typesText() || !p || !p->charKeys || !p->enter) {
         ctx.error(v.line, "type: is not available on the " + ctx.model().model.value + ".");
         return nullptr;
     }
@@ -133,12 +132,12 @@ public:
     Task<ItemResult> carryOut(RunContext& run) override {
         machine::Machine* m = run.machine();
         if (!m) co_return failed(sessions::kNoMachine);
-        if (run.session().machineSession().paused()) {   // AC-19: the host's time, the machine still paused
+        if (run.session().machineSession().paused()) {   // the host's time, the machine still paused
             co_await run.op().hostWait(std::chrono::microseconds(us_));
             co_return ItemResult{};
         }
         const bool full = run.op().speed() == pacing::Speed::Full;
-        if (full) run.op().setReportsWaiting(false);   // LIB-17 AC-16: as fast as the host allows
+        if (full) run.op().setReportsWaiting(false);   // as fast as the host allows
         co_await run.op().run(ticksOfMicros(us_, m->descriptor().tickRate));
         if (full) run.op().setReportsWaiting(true);
         co_return ItemResult{};
@@ -155,7 +154,7 @@ private:
 std::unique_ptr<Item> readWait(const YamlNode& v, ReadContext& ctx) {
     std::string error;
     const std::string w = formats::scalarText(v);
-    const auto us = formats::parseDuration(w, &error);   // AC-20: a unit
+    const auto us = formats::parseDuration(w, &error);   // with a unit
     if (!us) {
         ctx.error(v.line, error);
         return nullptr;
@@ -167,7 +166,7 @@ class SpeedItem final : public Item {
 public:
     explicit SpeedItem(pacing::Speed s) : speed_(s) {}
     Task<ItemResult> carryOut(RunContext& run) override {
-        run.op().setSpeed(speed_);   // AC-22
+        run.op().setSpeed(speed_);
         co_return ItemResult{};
     }
     After after() const override { return After::TakenEffect; }
@@ -192,11 +191,11 @@ public:
             base = ElapsedBase{gen, m->tickCount()};
             co_return ItemResult{};
         }
-        // D-10: from tick 0 of the machine, unless a start was taken on it.
+        // From tick 0 of the machine, unless a start was taken on it.
         const Ticks from = base.generation == gen && base.tick && *base.tick <= m->tickCount() ? *base.tick : 0;
         const Ticks since = m->tickCount() - from;
         const std::string text = "Elapsed: " + elapsedText(since, m->descriptor().tickRate);
-        run.log(text);   // AC-23
+        run.log(text);
         co_return ItemResult{true, {}, text};
     }
     After after() const override { return After::TakenEffect; }
@@ -224,13 +223,13 @@ public:
         if (!m) co_return failed(sessions::kNoMachine);
         const machine::DisplayOutput d = run.display();
         const ExpectReading r = run.rules().compare(*m, d, text_);
-        if (negate_) {   // AC-66; D-14: a display that is off shows nothing
+        if (negate_) {   // a display that is off shows nothing: passes
             if (!r.found) co_return ItemResult{};
             co_return failed("Not expected: " + text_.written + "; the display shows " + r.shows + ".");
         }
-        if (r.displayOff) co_return failed("Expected " + text_.written + ", but the display is off.");   // EC-7
+        if (r.displayOff) co_return failed("Expected " + text_.written + ", but the display is off.");
         if (r.found) co_return ItemResult{};
-        co_return failed("Expected " + text_.written + "; the display shows " + r.shows + ".");   // AC-24
+        co_return failed("Expected " + text_.written + "; the display shows " + r.shows + ".");
     }
     After after() const override { return After::TakenEffect; }
     bool needsRunningMachine() const override { return false; }
@@ -249,7 +248,7 @@ std::function<std::unique_ptr<Item>(const YamlNode&, ReadContext&)> readExpect(b
             return nullptr;
         }
         ExpectText t = std::get<ExpectText>(std::move(parsed));
-        if (auto why = ctx.rules().checkExpect(t, negate ? "not-expect:" : "expect:")) {   // AC-68
+        if (auto why = ctx.rules().checkExpect(t, negate ? "not-expect:" : "expect:")) {
             ctx.error(v.line, *why);
             return nullptr;
         }
@@ -266,7 +265,7 @@ public:
         if (!m) co_return failed(sessions::kNoMachine);
         const auto png = run.rules().screenshot(*m, run.display());
         if (!png) co_return failed("There is no picture of the display.");
-        if (const auto folder = run.screenshotFolder()) {   // AC-25: the folder for screenshots
+        if (const auto folder = run.screenshotFolder()) {   // the folder for screenshots
             const std::filesystem::path p = files::toPath(*folder) / files::toPath(name_);
             std::ofstream out(p, std::ios::binary | std::ios::trunc);
             out.write(reinterpret_cast<const char*>(png->data()), static_cast<std::streamsize>(png->size()));
@@ -276,7 +275,7 @@ public:
         sessions::SessionContext& s = run.session();
         if (!s.hostOffers(sessions::HostService::KeepFile))
             co_return failed("There is no folder for screenshots.");
-        // The Web: the picture handed to the user to keep (D-13).
+        // The Web: the picture handed to the user to keep.
         s.askHost(sessions::HostService::KeepFile,
                   sessions::Value::object({{"name", name_}, {"bytes", sessions::Value(*png)}}), nullptr);
         co_return ItemResult{};
@@ -304,7 +303,7 @@ public:
         machine::Machine* m = run.machine();
         if (!m) co_return failed(sessions::kNoMachine);
         const peripherals::HostDateTime t = peripherals::hostDateTime(run.session().hostTime());
-        peripherals::setClocksFromHost(*m, t);   // AC-27
+        peripherals::setClocksFromHost(*m, t);
         char buf[64];
         std::snprintf(buf, sizeof buf, "Clock set to %04d-%02d-%02d %02d:%02d:%02d.", t.year, t.month, t.day, t.hour,
                       t.minute, t.second);

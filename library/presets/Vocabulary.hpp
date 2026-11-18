@@ -9,21 +9,20 @@
 #include <string_view>
 #include <vector>
 
-// The vocabulary of the preset format (LIB-6 design §3.3; spec AC-29,
-// AC-30): the header keys, sections and steps the running program knows.
-// This feature registers its own (addLibraryKeywords, LibraryKeywords.cpp);
-// a product adds its own through ProductRules::addKeywords; a later feature
-// in its step (LIB-7 media steps, LIB-8 `cut-paper`, LIB-10 the debugger
-// steps). Every keyword is read by the same YAML, checked with the rest
-// before anything is built, carried out in file order, and gives its errors
-// with the line (AC-29). No block is handed over as raw lines (AC-1).
+// The vocabulary of the preset format: the header keys, sections and steps
+// the running program knows. The presets register their own
+// (addLibraryKeywords, LibraryKeywords.cpp); a product adds its own through
+// ProductRules::addKeywords; other areas add theirs (the media steps, paper's
+// `cut-paper`, the debugger steps). Every keyword is read by the same YAML,
+// checked with the rest before anything is built, carried out in file order,
+// and gives its errors with the line. No block is handed over as raw lines.
 
 namespace calcu::presets {
 
 class ReadContext;
 class RunContext;
 
-// AC-56: what "finished" means for an item. Idle: `key`, `type` (the
+// What "finished" means for an item. Idle: `key`, `type` (the
 // implicit wait follows). Own: its carryOut includes its finish (a section,
 // `card:`). TakenEffect: every other step.
 enum class After { Idle, TakenEffect, Own };
@@ -33,11 +32,11 @@ class Item {
 public:
     virtual ~Item() = default;
     int line = 0;
-    // Until the item has been carried out (AC-58: its keys pressed, ENTER typed).
+    // Until the item has been carried out (its keys pressed, ENTER typed).
     virtual sessions::Task<ItemResult> carryOut(RunContext&) = 0;
     virtual After after() const = 0;
-    virtual bool needsRunningMachine() const = 0;   // AC-19: key, type, card, a section that writes memory
-    virtual std::string logText() const = 0;        // AC-18
+    virtual bool needsRunningMachine() const = 0;   // waits while paused: key, type, card, a section that writes memory
+    virtual std::string logText() const = 0;        // its line in the log
 };
 
 // A product's header key value kept for its owner (`debug:`, `bus-rom:`).
@@ -60,20 +59,19 @@ struct StepDef {
     enum class Value { None, Scalar, Raw, Any } value = Value::None;   // `- full-speed:`, `- wait: 2s`, `- expect: …`, `- floppy: {…}`
     // nullptr with an error given through ReadContext::error.
     std::function<std::unique_ptr<Item>(const formats::YamlNode&, ReadContext&)> read;
-    bool command = true;     // also a harness command of the same name (§3.9)
-    bool frontend = false;   // AC-63: never fails; passed over where nobody has the panel
+    bool command = true;     // also a harness command of the same name
+    bool frontend = false;   // never fails; passed over where nobody has the panel
 };
 
-// The library's step-list section (AC-4).
+// The library's step-list section.
 inline constexpr const char* kKeysSection = "keys";
 inline constexpr const char* kSkipWait = "skip-wait";
 inline constexpr const char* kLetItFinish = "let-it-finish";
 
-// LIB-7 (M-41; LIB-6 AC-3, D-22): the owner of media resolves a place key's
-// reference `{ name: }` or `{ file: }` (a module that is a medium, by its
-// name tag or its file). NotMine: the reader goes on as without a resolver
-// (a `name:` is then a peripheral ID); Error: it gave the error through
-// ReadContext::error.
+// The owner of media resolves a place key's reference `{ name: }` or
+// `{ file: }` (a module that is a medium, by its name tag or its file).
+// NotMine: the reader goes on as without a resolver (a `name:` is then a
+// peripheral ID); Error: it gave the error through ReadContext::error.
 struct PlaceResolution {
     enum class How { NotMine, Done, Error } how = How::NotMine;
     machine::PeripheralRequest request;   // Done: the place is set by the reader
@@ -95,9 +93,9 @@ public:
     const std::vector<std::string>& duplicates() const { return duplicates_; }
     // The verbs whose value is raw (YamlOptions::rawStepVerbs).
     std::vector<std::string> rawVerbs() const;
-    // LIB-7 (M-41): the resolver of place references, and whether a file a
-    // preset names is one of the product's bundled media (checkBundle,
-    // bundle.md §3). Unset: none.
+    // The resolver of place references, and whether a file a preset names is
+    // one of the product's bundled media (checkBundle, bundle.md §3). Unset:
+    // none.
     void setPlaceResolver(PlaceResolver r) { placeResolver_ = std::move(r); }
     const PlaceResolver& placeResolver() const { return placeResolver_; }
     void setBundledMedium(std::function<bool(std::string_view named)> f) { bundledMedium_ = std::move(f); }
@@ -113,7 +111,7 @@ private:
     std::function<bool(std::string_view)> bundledMedium_;
 };
 
-// This feature's keywords (§3.5): the header keys format-version, model,
+// The library's keywords: the header keys format-version, model,
 // preset-name, description and timeout are the reader's own; here `keys`
 // and the steps key, type, wait, regular-speed, full-speed, elapsed-time,
 // expect, not-expect, screenshot and sync-clock.

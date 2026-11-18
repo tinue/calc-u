@@ -1,5 +1,4 @@
-// LIB-12 AC-1, AC-4, EC-1 (library half): ROM entries and the full set
-// (design §6, T2, T4).
+// ROM entries and the full set.
 #include "TestHarness.hpp"
 #include "TestRomFiles.hpp"
 #include <algorithm>
@@ -20,7 +19,7 @@ bool isHex32(const std::string& s) {
 }
 } // namespace
 
-TEST(ac1_entry_states_bundle_name_encoding_amount_unit_md5) {
+TEST(rom_entry_states_bundle_name_encoding_amount_unit_md5) {
     const FullSet set = fullSet(testCatalogue());
     CHECK(!set.files.empty());
     bool sawText = false, sawBinary = false;
@@ -42,7 +41,7 @@ TEST(ac1_entry_states_bundle_name_encoding_amount_unit_md5) {
     CHECK(sawBinary);
 }
 
-TEST(ac4_full_set_has_every_model_variant_and_peripheral_file) {
+TEST(full_set_has_every_model_variant_and_peripheral_file) {
     const FullSet set = fullSet(testCatalogue());
     std::vector<std::string> names;
     for (const auto& f : set.files) names.push_back(f.entry.fileName);
@@ -54,7 +53,7 @@ TEST(ac4_full_set_has_every_model_variant_and_peripheral_file) {
     CHECK(entryOf(set, "test-seg.rom")->neededBy == (std::vector<NeededBy>{{kSeg, std::nullopt}}));
     CHECK(entryOf(set, "test-module-4k.rom")->neededBy == (std::vector<NeededBy>{{kModule, VariantId{"4k"}}}));
     CHECK_EQ(describe(entryOf(set, "test-dot-v2.rom")->neededBy.front()), std::string("test-dot (variant V2)"));
-    // Entries outside the catalogue (Calc-U-59's adapter A-2) join the set.
+    // Entries outside the catalogue (as Calc-U-1600's CE-502B) join the set.
     const FullSetEntry extra{RomEntry{"extra.rom", RomEncoding::Binary, 16, ContentUnit::Bytes,
                                       "0123456789abcdef0123456789abcdef"},
                              {NeededBy{PeripheralId{"x"}, std::nullopt}}};
@@ -63,7 +62,7 @@ TEST(ac4_full_set_has_every_model_variant_and_peripheral_file) {
     CHECK_EQ(withExtra.files.back().entry.fileName, std::string("extra.rom"));
 }
 
-TEST(ec1_file_of_two_entries_is_in_the_set_once_with_both) {
+TEST(fullset_file_of_two_entries_is_in_the_set_once_with_both) {
     const FullSet set = fullSet(catalogueWithSharedFile());
     CHECK_EQ(std::count_if(set.files.begin(), set.files.end(),
                            [](const FullSetEntry& f) { return f.entry.fileName == "test-module-8k.rom"; }),

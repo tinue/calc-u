@@ -2,7 +2,7 @@
 #include "settings/IniDocument.hpp"
 #include <string>
 
-// LIB-9 AC-33 (the grammar), AC-4 (lossless write-back); design §6, T-1, T-2.
+// The INI grammar and the lossless write-back.
 
 using namespace calcu::settings;
 
@@ -14,7 +14,7 @@ IniDocument parsed(std::string_view text) {
 }
 } // namespace
 
-TEST(ac33_grammar_comments_both_line_endings) {
+TEST(ini_grammar_comments_both_line_endings) {
     const IniDocument doc = parsed(
         "# a comment\n"
         "; another comment\r\n"
@@ -35,7 +35,7 @@ TEST(ac33_grammar_comments_both_line_endings) {
     CHECK(!doc.get("three", "a"));
 }
 
-TEST(ac33_value_is_rest_of_line_trimmed) {
+TEST(ini_value_is_rest_of_line_trimmed) {
     const IniDocument doc = parsed(
         "[s]\n"
         "a =   spaced value \t \n"
@@ -52,7 +52,7 @@ TEST(ac33_value_is_rest_of_line_trimmed) {
     CHECK(doc.get("s", "indented") == std::optional<std::string>("v"));
 }
 
-TEST(ac33_names_case_insensitive) {
+TEST(ini_names_case_insensitive) {
     IniDocument doc = parsed("[Startup]\nModel = Model-A\n");
     CHECK(doc.get("startup", "model") == std::optional<std::string>("Model-A"));
     CHECK(doc.get("STARTUP", "MODEL") == std::optional<std::string>("Model-A"));
@@ -63,7 +63,7 @@ TEST(ac33_names_case_insensitive) {
     CHECK_EQ(doc.text(), std::string("[Startup]\nModel = Model-B\n"));
 }
 
-TEST(ac33_last_duplicate_wins) {
+TEST(ini_last_duplicate_wins) {
     IniDocument doc = parsed("[s]\nk = 1\n[t]\nx = 0\n[S]\nK = 2\n");
     CHECK(doc.get("s", "k") == std::optional<std::string>("2"));
     // A change goes to the line that counts.
@@ -72,7 +72,7 @@ TEST(ac33_last_duplicate_wins) {
     CHECK(doc.get("s", "k") == std::optional<std::string>("3"));
 }
 
-TEST(ac33_bom_or_bad_utf8_is_unreadable) {
+TEST(ini_bom_or_bad_utf8_is_unreadable) {
     CHECK(!IniDocument::parse("\xEF\xBB\xBF[s]\nk = v\n").doc);
     const ParseResult bad = IniDocument::parse("[s]\nk = \xC3\x28\n");
     CHECK(!bad.doc);
@@ -82,7 +82,7 @@ TEST(ac33_bom_or_bad_utf8_is_unreadable) {
     // Good UTF-8 is read as it is.
     const ParseResult good = IniDocument::parse("[s]\nk = Zürich ✓\n");
     CHECK(good.doc && good.doc->get("s", "k") == std::optional<std::string>("Zürich ✓"));
-    // A line that is neither a comment, a section nor a key (D-10).
+    // A line that is neither a comment, a section nor a key.
     const ParseResult noKey = IniDocument::parse("[s]\nk = v\njust words\n");
     CHECK(!noKey.doc);
     CHECK_EQ(noKey.line, 3);
@@ -90,7 +90,7 @@ TEST(ac33_bom_or_bad_utf8_is_unreadable) {
     CHECK(!IniDocument::parse("[s\nk = v\n").doc);
 }
 
-TEST(ac4_unknown_keys_sections_comments_order_survive_set) {
+TEST(ini_unknown_keys_sections_comments_order_survive_set) {
     const std::string before =
         "# my notes\n"
         "format-version = 1\n"
@@ -138,7 +138,7 @@ TEST(ac4_unknown_keys_sections_comments_order_survive_set) {
     CHECK_EQ(doc3.text(), std::string("# c\nformat-version = 1\n[a]\nx = 1\n"));
 }
 
-TEST(ac4_unchanged_document_round_trips_bytes) {
+TEST(ini_unchanged_document_round_trips_bytes) {
     const std::string texts[] = {
         "",
         "[s]\nk = v\n",

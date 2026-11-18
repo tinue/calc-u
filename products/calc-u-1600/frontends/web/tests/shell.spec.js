@@ -2,11 +2,10 @@ const { test, expect } = require('@playwright/test');
 const h = require('./helpers');
 const { c } = h;
 
-// LIB-14 Calc-U-1600 (design Part D, D.8: Q3 to Q10, Q15; LIB-4 T16-6): the
-// Web page put together from the React set's shell, found by the shell's
-// names (library/shell/ObjectNames.hpp). Chromium and WebKit
-// (playwright.config.js: shell-chromium, shell-webkit). The scenario IDs of
-// AC-25 are those of the Qt6 cases (CalcU1600QtTests).
+// The Calc-U-1600 Web page put together from the React set's shell, found
+// by the shell's names (library/shell/ObjectNames.hpp). Chromium and WebKit
+// (playwright.config.js: shell-chromium, shell-webkit). The Qt6 window's
+// cases are CalcU1600QtTests.
 
 test.describe.configure({ timeout: 90000 });
 
@@ -20,18 +19,18 @@ async function items(page, menuId) {
   return ids;
 }
 
-test('lib14_ac35 the web menus', async ({ page }) => {
+test('the web menus', async ({ page }) => {
   await h.gotoReady(page);
   const menus = await page.locator(`${c('menu-bar')} > div > button`).allTextContents();
   expect(menus).toEqual(['File', 'Edit', 'Machine', 'Help']);
-  // Load Preset… and Examples ▸ are two items; the program files (C1600-2);
-  // the media items of LIB-7; Settings…; no Host Drive…, Unmount, Quit.
+  // Load Preset… and Examples ▸ are two items; the program files; the
+  // media items; Settings…; no Host Drive…, Unmount, Quit.
   expect(await items(page, 'file')).toEqual(['load-preset', 'examples', 'load-basic-program', 'load-machine-code',
     'import-media', 'saved-media', 'settings']);
   expect(await items(page, 'edit')).toEqual(['copy-screen', 'paste-text']);
   expect(await items(page, 'machine')).toEqual(['model', 'peripherals', 'reset', 'cold-boot', 'resume']);
   expect(await items(page, 'help')).toEqual(['help', 'about']);
-  // The model's variants on the PC-1500 and the PC-1600 (AC-34's labels).
+  // The model's variants on the PC-1500 and the PC-1600 (the variant menu's labels).
   await h.pickModel(page, 'PC-1600');
   await page.locator(c('menu-machine')).click();
   await expect(page.locator(c('item-variants-model'))).toContainText('ROM Version');
@@ -41,9 +40,9 @@ test('lib14_ac35 the web menus', async ({ page }) => {
   await expect(page.locator(c('item-variants-model'))).toContainText('ROM Revision');
 });
 
-// AC-4, D-30 (ledger 1600-35): the page binds no shortcut to a menu item; the
+// The page binds no shortcut to a menu item; the
 // keys stay the browser's.
-test('lib14_ac35 no shortcut is bound', async ({ page }) => {
+test('no shortcut is bound', async ({ page }) => {
   await h.gotoReady(page);
   await h.notBusy(page);
   await page.evaluate(() => {
@@ -66,7 +65,7 @@ test('lib14_ac35 no shortcut is bound', async ({ page }) => {
   await expect(page.locator(c('settings-dialog'))).toHaveCount(0);
 });
 
-test('lib14_ac36 the bar per model', async ({ page }) => {
+test('the control bar per model', async ({ page }) => {
   await page.setViewportSize(TALL);
   await h.gotoReady(page);
   // PC-1500A: the model picker, slot-1 without a number, the buttons CE-150
@@ -96,11 +95,11 @@ test('lib14_ac36 the bar per model', async ({ page }) => {
   await page.locator(c('bar-place-printer')).selectOption({ label: 'CE-1600P' });
   await expect.poll(() => fieldsetDisabled('bar-disk'), { timeout: 30000 }).toBe(false);
   await expect(page.locator(c('bar-media-cassette-recorder'))).toBeVisible();
-  // The CE-158 beside the CE-1600P: refused, with the machine's reason (AC-5).
+  // The CE-158 beside the CE-1600P: refused, with the machine's reason.
   await expect(page.locator(c('bar-place-interface'))).toHaveAttribute('aria-disabled', 'true');
 });
 
-test('lib14_ac37 the web settings', async ({ page }) => {
+test('the web settings', async ({ page }) => {
   await h.gotoReady(page);
   await h.menu(page, 'file', 'settings');
   const dialog = page.locator(c('settings-dialog'));
@@ -111,7 +110,7 @@ test('lib14_ac37 the web settings', async ({ page }) => {
     expect(text).toContain(t);
   await expect(dialog.locator(c('setting-storage-saved-media'))).toContainText("kept in this browser's storage");
   for (const none of ['Trace folder', 'Save folder', 'Serial ports', 'Debugger', 'folder']) expect(text).not.toContain(none);
-  // A startup preset by its description; the model by its name (ledger 1600-35).
+  // A startup preset by its description; the model by its name.
   const row = dialog.locator(c('setting-preset-PC-1500A'));
   await row.selectOption({ label: 'CE-150 + CE-163F — PC-1500A with the CE-150 plotter and a CE-163F' }).catch(async () => {
     const labels = await row.locator('option').allTextContents();
@@ -123,7 +122,7 @@ test('lib14_ac37 the web settings', async ({ page }) => {
     const v = (s, k) => (rows.find((r) => r.section === s && r.key === k) || {}).value;
     return [v('startup', 'model'), v('preset', 'PC-1500A')];
   }).toEqual(['PC-1600', 'examples:startup/default-pc1500a.pc1500a']);
-  // LIB-9 AC-32: kept in Calc-U-1600.ini over a reload.
+  // Kept in Calc-U-1600.ini over a reload.
   await page.reload();
   await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator('.calcu-face[data-model="PC-1600"]')).toHaveCount(1, { timeout: 30000 });
@@ -131,7 +130,7 @@ test('lib14_ac37 the web settings', async ({ page }) => {
   expect(keys.filter((k) => k.startsWith('calcu1600/'))).toEqual([]);
 });
 
-test('lib14_ac39 help and about', async ({ page }) => {
+test('help and about', async ({ page }) => {
   await page.addInitScript(() => { window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; });
   await h.gotoReady(page);
   await h.menu(page, 'help', 'help');
@@ -145,7 +144,7 @@ test('lib14_ac39 help and about', async ({ page }) => {
   await expect(about).toHaveCount(0);
 });
 
-test('lib14_ac40 panels only with room', async ({ page }) => {
+test('panels only with room', async ({ page }) => {
   // A tall window: the faceplate, the bar, then the INSPECTOR and the paper.
   await page.setViewportSize(TALL);
   await h.gotoReady(page);
@@ -164,7 +163,7 @@ test('lib14_ac40 panels only with room', async ({ page }) => {
   await expect(page.locator(c('panel-area'))).toHaveCount(0);
 });
 
-test('lib14_ac41 copy screen', async ({ page }) => {
+test('copy screen', async ({ page }) => {
   await page.addInitScript(() => {
     window.__copied = null;
     const clip = navigator.clipboard || {};
@@ -185,9 +184,9 @@ test('lib14_ac41 copy screen', async ({ page }) => {
   expect(copied['text/plain']).toBeGreaterThan(0);
 });
 
-// AC-24 (ledger 1600-37): a mouse click in the gap below a key, within 24
+// A mouse click in the gap below a key, within 24
 // pixels, presses that key; the shell's rule, the product's hit map.
-test('lib14_ac24 a key under the pointer', async ({ page }) => {
+test('a key under the pointer', async ({ page }) => {
   await page.setViewportSize(TALL);
   await h.gotoReady(page, '?model=PC-1600');
   await h.notBusy(page);
@@ -202,10 +201,10 @@ test('lib14_ac24 a key under the pointer', async ({ page }) => {
   await h.waitForScreen(page, /5/);
 });
 
-// LIB-4 AC-20 (T16-6): while a preset loads, the peripheral buttons and
+// While a preset loads, the peripheral buttons and
 // pickers, the disk picker and the tape controls are disabled; the model
 // picker is not.
-test('lib4_ac20 peripheral buttons, disk picker and tape controls disabled while loading', async ({ page }) => {
+test('peripheral buttons, disk picker and tape controls disabled while loading', async ({ page }) => {
   await page.setViewportSize(TALL);
   await h.gotoReady(page, '?model=PC-1600');
   await h.notBusy(page);
@@ -236,8 +235,8 @@ test('lib4_ac20 peripheral buttons, disk picker and tape controls disabled while
   }
 });
 
-// C1600-2 AC-15: the two items in File and the files they offer.
-test('c1600_2_ac15 the file items', async ({ page }) => {
+// The two program-file items in File and the files they offer.
+test('the program file items', async ({ page }) => {
   await h.gotoReady(page);
   await page.locator(c('menu-file')).click();
   await expect(page.locator(c('item-load-basic-program'))).toHaveText(/Load BASIC Program…/);

@@ -6,7 +6,7 @@
 #include <string_view>
 #include <vector>
 
-// The product's bundled files (LIB-12 design §3.1; AC-2, EC-3). A Bundle
+// The product's bundled files. A Bundle
 // knows no ROM name: only lookUp() asks it for files, by exact name. A
 // frontend makes the Bundle of its packaging (a folder, Qt resources, the
 // Emscripten file system) and hands it to its product's lookUpRoms().
@@ -24,7 +24,7 @@ public:
 
 // One folder, no subfolders. read() lists the folder and compares the names
 // byte for byte, so on a case-insensitive file system "ce-150.rom" is not
-// found for "CE-150.ROM" (AC-2 "exactly that name").
+// found for "CE-150.ROM".
 class DirectoryBundle final : public Bundle {
 public:
     explicit DirectoryBundle(std::filesystem::path folder);

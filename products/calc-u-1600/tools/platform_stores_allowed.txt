@@ -1,5 +1,5 @@
-# Uses of a platform store in frontends/ that are not settings (LIB-9
-# AC-31; library/settings/check_platform_stores.sh, CTest
+# Uses of a platform store in frontends/ that are not settings
+# (library/settings/check_platform_stores.sh, CTest
 # CalcU1600NoPlatformSettings). One entry per line: `<path under
 # frontends/>: <text of the line>`.
 
@@ -9,5 +9,5 @@
 qt6/app/MacAppSupport.mm: registerDefaults:@{@"ApplePersistenceIgnoreState" : @YES}
 qt6/app/MacAppSupport.mm: registerDefaults:@{@"ApplePressAndHoldEnabled" : @NO}
 
-# The Playwright test that checks that no setting is in localStorage (AC-31).
+# The Playwright test that checks that no setting is in localStorage.
 web/tests/shell.spec.js: Object.keys(window.localStorage)

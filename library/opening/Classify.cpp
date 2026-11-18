@@ -111,7 +111,7 @@ Classified classify(const OpenedFile& f, Way way, const OpenSetup& s) {
         out.refusal = name + " is a hidden file and is not opened.";
         return out;
     }
-    if (s.presets && hasAny(lower, s.presets->extensions())) {   // 2: whatever it holds (EC-1)
+    if (s.presets && hasAny(lower, s.presets->extensions())) {   // 2: whatever it holds
         out.what = Classified::What::Preset;
         return out;
     }

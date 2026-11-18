@@ -1,8 +1,8 @@
 #include "MediaFixture.hpp"
 #include "TestHarness.hpp"
 
-// LIB-7 L10 (design §6): the saved media and import (AC-30, AC-31, EC-4), and
-// a medium opened from elsewhere (AC-1; the command LIB-13 uses, D-14).
+// The saved media and import, and a medium opened from elsewhere (the command
+// the media opener uses).
 
 using namespace calcu;
 using namespace calcu::media;
@@ -37,7 +37,7 @@ std::vector<sessions::ServiceAsk> asks(const sessions::test::TestFrontend& fe) {
 
 } // namespace
 
-TEST(ac30_import_current_medium_under_inner_name) {
+TEST(import_current_medium_under_inner_name) {
     MediaFixture f(dot());
     calcu::testing::TempFolder outside("calcu-media-outside");
     const std::string text = disk("Imported", "i").text();
@@ -52,7 +52,7 @@ TEST(ac30_import_current_medium_under_inner_name) {
     CHECK(e && e->isTemplate);   // as the template it says it is
 }
 
-TEST(ac30_import_refused_name_taken_outdated_unreadable) {
+TEST(import_refused_name_taken_outdated_unreadable) {
     MediaFixture f(dot());
     calcu::testing::TempFolder outside("calcu-media-outside");
     outside.write("a.testdisk.yaml", disk("formatted", "x").text());
@@ -71,7 +71,7 @@ TEST(ac30_import_refused_name_taken_outdated_unreadable) {
     CHECK(!f.exists("a.testdisk.yaml") && f.saved("Work.testdisk.yaml").find("WORK") == std::string::npos);
 }
 
-TEST(ac30_import_with_companion_file) {
+TEST(import_with_companion_file) {
     MediaFixture f(dot());
     calcu::testing::TempFolder outside("calcu-media-outside");
     TestFile t = disk("Tape", "head");
@@ -85,7 +85,7 @@ TEST(ac30_import_with_companion_file) {
     CHECK_EQ(f.drive()->bytes(), std::string("head+wave"));
 }
 
-TEST(ac31_list_by_kind_and_name_marks_template_and_in_place) {
+TEST(saved_media_list_by_kind_and_name_marks_template_and_in_place) {
     MediaFixture f(dot());
     CHECK(f.ok("media.choose", Value::object({{"place", "disk"}, {"entry", "saved:Work.testdisk.yaml"}})));
     const KindState* k = f.state()->kindState("test-disk");
@@ -98,7 +98,7 @@ TEST(ac31_list_by_kind_and_name_marks_template_and_in_place) {
     CHECK_EQ(k->label, std::string("test disk"));
 }
 
-TEST(ac31_export_hands_files_to_keep_file) {
+TEST(export_hands_files_to_keep_file) {
     sessions::HostServices s;
     s.offered = {sessions::HostService::KeepFile};
     MediaFixture f(dot(s));
@@ -111,14 +111,14 @@ TEST(ac31_export_hands_files_to_keep_file) {
     CHECK(a.size() == 2);
     if (a.size() != 2) return;
     CHECK(a[0].service == sessions::HostService::KeepFile && *a[0].args.find("name")->string() == "Tape.testdisk.yaml");
-    CHECK(*a[1].args.find("name")->string() == "Tape.dat");   // D-13: its own file first
+    CHECK(*a[1].args.find("name")->string() == "Tape.dat");   // its own file first
     const auto* bytes = a[1].args.find("bytes")->bytes();
     CHECK(bytes && std::string(bytes->begin(), bytes->end()) == "wave");
     MediaFixture none(dot());
     CHECK_EQ(none.refusal("media.export", Value::object({{"kind", "test-disk"}, {"name", "Work"}})), std::string("Nobody keeps a file here."));
 }
 
-TEST(ac31_delete_asks_then_deletes_not_in_place) {
+TEST(delete_asks_then_deletes_not_in_place) {
     MediaFixture f(dot());
     const Value del = Value::object({{"kind", "test-disk"}, {"name", "Mine"}});
     CHECK_EQ(f.refusal("media.delete", del), std::string("asks: Delete the test disk “Mine”?"));
@@ -133,14 +133,14 @@ TEST(ac31_delete_asks_then_deletes_not_in_place) {
               .find("is no longer there") != std::string::npos);   // a bundled medium is not a saved one
 }
 
-TEST(ec4_second_delete_no_longer_there) {
+TEST(second_delete_no_longer_there) {
     MediaFixture f(dot());
     const Value del = Value::object({{"kind", "test-disk"}, {"name", "Mine"}, {"confirmed", true}});
     CHECK(f.ok("media.delete", del));
     CHECK_EQ(f.refusal("media.delete", del), std::string("The test disk “Mine” is no longer there."));
 }
 
-TEST(ac30_import_through_the_file_picker) {
+TEST(import_through_the_file_picker) {
     sessions::HostServices s;
     s.offered = {sessions::HostService::FilePicker};
     MediaFixture f(dot(s));
@@ -158,9 +158,9 @@ TEST(ac30_import_through_the_file_picker) {
     CHECK(f.exists("Picked.testdisk.yaml"));
 }
 
-// AC-30, AC-43 (M-49): a companion picked with its medium is read beside it,
+// A companion picked with its medium is read beside it,
 // not imported on its own; picked alone it is refused as before.
-TEST(ac30_file_picker_takes_a_companion_along) {
+TEST(import_file_picker_takes_a_companion_along) {
     sessions::HostServices s;
     s.offered = {sessions::HostService::FilePicker};
     MediaFixture f(dot(s));
@@ -188,7 +188,7 @@ TEST(ac30_file_picker_takes_a_companion_along) {
     CHECK(n.size() == before + 1 && n.back() == "The file sound.dat is not a medium of this product.");
 }
 
-TEST(ac1_opened_file_written_where_it_lies) {
+TEST(opened_medium_written_where_it_lies) {
     MediaFixture f(dot());
     calcu::testing::TempFolder outside("calcu-media-outside");
     outside.write("Away.testdisk.yaml", disk("Away", "a").text());
@@ -201,7 +201,7 @@ TEST(ac1_opened_file_written_where_it_lies) {
     f.ok("media.refresh");
     CHECK_EQ(field(calcu::testing::readText(outside.path() / "Away.testdisk.yaml"), "content"), std::string("written back"));
     CHECK(!f.exists("Away.testdisk.yaml"));   // not copied into the save folder
-    // A Web frontend cannot write it back: it is imported first (AC-30), and asked before a name is replaced.
+    // A Web frontend cannot write it back: it is imported first, and asked before a name is replaced.
     const std::string bytes = disk("Work", "uploaded").text();
     const Value up = Value::object({{"name", "Work.testdisk.yaml"}, {"bytes", Value::Bytes(bytes.begin(), bytes.end())}, {"upload", true}, {"place", "disk"}});
     CHECK(f.refusal("media.open-file", up).rfind("asks: ", 0) == 0);
@@ -209,7 +209,7 @@ TEST(ac1_opened_file_written_where_it_lies) {
                                                  {"upload", true}, {"place", "disk"}, {"confirmed", true}})));
     CHECK_EQ(field(f.saved("Work.testdisk.yaml"), "content"), std::string("uploaded"));
     CHECK(f.place("disk")->holds->name == "Work");
-    // The reads LIB-13 decides the place with.
+    // The reads the opening decides the place with.
     const auto o = f.media->readOpened("x.testdisk.yaml", bytes);
     CHECK(!o.refusal && o.kind && o.kind->id == "test-disk" && !o.isModule);
     CHECK((f.media->placesFor(o, *f.machine()) == std::vector<std::string>{"disk"}));

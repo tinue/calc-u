@@ -66,9 +66,9 @@ void MediaPlaceControl::nameAndSave(const QString& prompt) {
     if (!p) return;
     calcu::qt6::NameAndSaveDialog dialog(window());
     dialog.setPlace(*p);
-    dialog.setPrompt(prompt);   // LIB-7 AC-40: "Instance name:" or "Disk name:"
+    dialog.setPrompt(prompt);   // "Instance name:" or "Disk name:"
     dialog.setSender([this](const sessions::CommandName& name, sessions::Value args) -> std::string {
-        // The save with the switch on is an operation (its power cycle, AC-19).
+        // The save with the switch on is an operation (its power cycle).
         const sessions::ReplyMessage r = m_controller.sendAndWait(name, std::move(args));
         return r.done ? std::string() : r.reason;
     });
@@ -116,7 +116,7 @@ DiskControl::DiskControl(MachineController& c, QWidget* parent) : MediaPlaceCont
 
 void DiskControl::refresh() {
     MediaPlaceControl::refresh();
-    // The product entry (LIB-4 AC-17, LIB-14 AC-42, D-29).
+    // The product entry.
     const auto* cs = m_controller.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
     const calcu::control::ProductEntry* e = cs ? cs->productEntry(cu1600::kDiskControlsEntry) : nullptr;
     const sessions::Value v = e && e->value ? e->value->toValue() : sessions::Value();
@@ -169,8 +169,8 @@ void TapeControl::refreshLamps() {
     m_counter->setToolTip(QString::fromStdString(lamps.tapeName));
 }
 
-// Save: a new tape to record onto (CSAVE), named first (LIB-7 AC-20, D-24:
-// `media.start-new` on the empty tape). A tape of that name: asked before it
+// Save: a new tape to record onto (CSAVE), named first (`media.start-new`
+// on the empty tape). A tape of that name: asked before it
 // is replaced.
 void TapeControl::saveTape() {
     bool ok = false;

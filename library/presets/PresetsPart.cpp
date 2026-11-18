@@ -52,7 +52,7 @@ EngineDeps& PresetsPart::deps() {
 }
 
 std::unique_ptr<PresetSource> PresetsPart::sourceOf(const Value& args) const {
-    if (const Value* content = args.find("content"); content && content->string()) {   // EC-5, AC-42
+    if (const Value* content = args.find("content"); content && content->string()) {   // content without a folder
         std::string name = sessions::textArg(args, "name");
         if (name.empty()) name = "the preset";
         return contentSource(*content->string(), std::move(name), setup_.home);
@@ -119,7 +119,7 @@ Task<OperationResult> waitIdle(OperationContext& op, IdleRule rule) {
     const machine::Machine* m = op.session().machine();
     if (!m) co_return OperationResult{false, sessions::kNoMachine};
     const machine::Ticks hour = static_cast<machine::Ticks>(m->descriptor().tickRate) * 3600;
-    const IdleOutcome w = co_await IdleWatch(std::move(rule)).wait(op, hour);   // AC-34
+    const IdleOutcome w = co_await IdleWatch(std::move(rule)).wait(op, hour);
     if (w.noMachine) co_return OperationResult{false, sessions::kNoMachine};
     if (w.paused) co_return OperationResult{false, "The machine is paused."};
     co_return OperationResult{};
@@ -145,14 +145,16 @@ void PresetsPart::attach(sessions::SessionSetup& s) {
     for (const auto& d : vocabulary_.duplicates())
         s.context().log("The preset keyword " + d + " was added twice; the second is not used.");
 
-    // AC-6, D-6: read and checked whole before the operation starts.
+    // Read and checked whole before the operation starts, after the busy
+    // check: a refused preset never shows busy.
     s.command(kLoadPresetCommand, [this](const Value& args, SessionContext& c) -> CommandOutcome {
         CommandOutcome o = loadPreset(args, c);
         if (auto* r = std::get_if<Refused>(&o); r && readRefusal_) c.notice(r->reason);
         return o;
     });
 
-    // One step against the running machine (the harness commands, D-15).
+    // One step against the running machine (the harness commands: a command
+    // and a step have one reader and one meaning).
     s.command(kRunStepCommand, [this](const Value& args, SessionContext& c) -> CommandOutcome {
         if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
         machine::Machine* m = c.machine();
@@ -207,7 +209,7 @@ void PresetsPart::attach(sessions::SessionSetup& s) {
         std::vector<std::string> left;
         auto reply = std::make_shared<PresetListReply>();
         reply->entries = presetList(*setup_.bundle, *setup_.rules, *setup_.catalogue, &left);
-        for (auto& l : left) c.log(std::move(l));   // EC-9
+        for (auto& l : left) c.log(std::move(l));   // the entries left out
         return sessions::replyGiven(std::move(reply));
     });
 }
@@ -215,7 +217,7 @@ void PresetsPart::attach(sessions::SessionSetup& s) {
 void PresetsPart::operationEnded(SessionContext& c) {
     if (!regularDue_) return;
     regularDue_ = false;
-    c.setCommandedSpeed(pacing::Speed::Regular);   // AC-22, AC-60, D-19
+    c.setCommandedSpeed(pacing::Speed::Regular);   // also after a failure
 }
 
 } // namespace calcu::presets

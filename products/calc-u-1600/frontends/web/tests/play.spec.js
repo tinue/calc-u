@@ -6,7 +6,7 @@ const { c, gotoReady, screen, waitForScreen, pickModel, menu, notBusy, shown } =
 
 // The web client end to end through the real WASM engine, on dist/index.html
 // (CalcU1600 with the physical keyboard), put together from the React set's
-// shell (M-49): elements by the shell's names. URLs are relative to the
+// shell: elements by the shell's names. URLs are relative to the
 // project's baseURL -- the server root or a sub-path (playwright.config.js).
 // The display is read as text through the session (`c1600.display-text`), not
 // from pixels. The shell's own cases: shell.spec.js.
@@ -39,7 +39,7 @@ test('boots, and each model comes up', async ({ page }) => {
   await expect(page.locator(c('notice'))).toHaveCount(0);
 });
 
-// LIB-15 AC-16 (V-13, ledger 1600-55): ?model= by the model's name only (an
+// ?model= by the model's name only (an
 // index is no model); ?preset= a path of the bundle with or without `examples:`.
 test('?model= and ?preset= start with them', async ({ page }) => {
   await gotoReady(page, '?model=PC-1600');
@@ -60,7 +60,7 @@ test('?model= and ?preset= start with them', async ({ page }) => {
   }
 });
 
-// Settings > Startup presets (LIB-18 §10.4; the startup presets of
+// Settings > Startup presets (the startup presets of
 // examples/bundle.yaml), each shown with its name and description; the
 // Examples ▸ menu does not offer them.
 test('a startup preset is picked by its name and description', async ({ page }) => {
@@ -197,9 +197,9 @@ test('the control bar follows the model: peripherals, floppy, tape', async ({ pa
   await expect(page.locator(c('item-peripheral-printer-CE-1600P'))).toHaveAttribute('aria-checked', 'true');
 });
 
-// LIB-8 AC-38 (ADR 0032): a plotter example is loaded, and the paper panel
+// A plotter example is loaded, and the paper panel
 // appears under the plotter's name with marks on it.
-test('lib8_ac38 plotter example shows the paper panel with marks', async ({ page }) => {
+test('plotter example shows the paper panel with marks', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
   await example(page, 'examples:plotter/rectangles-1600.pc1600');
@@ -207,9 +207,9 @@ test('lib8_ac38 plotter example shows the paper panel with marks', async ({ page
   await expect(page.locator('[data-panel=paper] [data-calcu=paper-owner]')).toHaveText('CE-1600P');
 });
 
-// LIB-6 AC-54 (ADR 0032): a bundled example is loaded by its bundle path,
+// A bundled example is loaded by its bundle path,
 // and its result shows.
-test('lib6_ac54 bundled example loads and its result shows', async ({ page }) => {
+test('bundled example loads and its result shows', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
   await example(page, 'examples:basic/hanoi.pc1600');
@@ -218,8 +218,8 @@ test('lib6_ac54 bundled example loads and its result shows', async ({ page }) =>
   await expect(page.locator(c('notice'))).toHaveCount(0);
 });
 
-// LIB-18 AC-32 (design §10.6 P16-7): Machine ▸ Cold boot (was "Reset All").
-test('lib18_ac32 cold boot menu item', async ({ page }) => {
+// Machine ▸ Cold boot.
+test('cold boot menu item', async ({ page }) => {
   await gotoReady(page);
   await waitForScreen(page, /NEW0\?/);
   await page.keyboard.press('Escape');
@@ -228,9 +228,9 @@ test('lib18_ac32 cold boot menu item', async ({ page }) => {
   await waitForScreen(page, /NEW0\?/);
 });
 
-// LIB-8 AC-36: the paper panel is always shown, named while a plotter is
+// The paper panel is always shown, named while a plotter is
 // plugged in; a detach keeps the paper.
-test('lib8_ac36 paper panel always shown, named while a plotter is plugged in', async ({ page }) => {
+test('paper panel always shown, named while a plotter is plugged in', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
   const panel = page.locator('[data-panel=paper]');
@@ -245,7 +245,7 @@ test('lib8_ac36 paper panel always shown, named while a plotter is plugged in', 
   await expect(panel.locator('[data-calcu=paper-owner]')).toHaveText('');
 });
 
-// ── LIB-7 (M-47): the media of the topic `media` on the control bar ──────
+// ── The media of the topic `media` on the control bar ────────────────────
 
 const PRODUCT = path.join(__dirname, '..', '..', '..');
 const CARDS = path.join(PRODUCT, 'frontends', 'qt6', 'resources', 'cards');
@@ -270,12 +270,12 @@ async function saveModule(page, template, name) {
   await expect.poll(() => shown(slot1(page)), { timeout: 30000 }).toBe(name);
 }
 
-test('lib7_ac44 Name & Save can write-protect a CE-161, and only a card with the switch', async ({ page }) => {
+test('Name & Save can write-protect a CE-161, and only a card with the switch', async ({ page }) => {
   await gotoReady(page);
   await slot1(page).selectOption({ label: 'CE-161' });
   await expect(saveSlot1(page)).toBeEnabled({ timeout: 30000 });
   await saveSlot1(page).click();
-  await expect(nameAndSave(page)).toContainText('Instance name:');   // today's prompt (AC-40, D-25)
+  await expect(nameAndSave(page)).toContainText('Instance name:');
   const box = nameAndSave(page).locator('[data-calcu=media-protect]');
   await expect(box).toHaveCount(1);
   await expect(nameAndSave(page)).toContainText("Write-protect (switch to read-only, can't be undone)");
@@ -294,9 +294,9 @@ test('lib7_ac44 Name & Save can write-protect a CE-161, and only a card with the
   await expect(nameAndSave(page)).toHaveCount(0);
 });
 
-// AC-45 (ADR 0032): a module template is saved under a name and is an
+// A module template is saved under a name and is an
 // instance afterwards (no Name & Save for it any more) ...
-test('lib7_ac16 module template saved under a name is an instance', async ({ page }) => {
+test('module template saved under a name is an instance', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
   await saveModule(page, 'CE-1600M', `Work ${Date.now()}`);
@@ -304,12 +304,12 @@ test('lib7_ac16 module template saved under a name is an instance', async ({ pag
 });
 
 // ... and the picker of that slot then lists it among the instances.
-test('lib7_ac8 picker lists it among the instances', async ({ page }) => {
+test('the slot picker lists a saved module among the instances', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
   const name = `Listed ${Date.now()}`;
   await saveModule(page, 'CE-1600M', name);
-  // The order of AC-8: the empty slot, the templates, the instances, the
+  // The picker's order: the empty slot, the templates, the instances, the
   // modules that are not media.
   const labels = await slot1(page).locator('option').allTextContents();
   expect(labels[0]).toBe('(empty)');
@@ -318,7 +318,7 @@ test('lib7_ac8 picker lists it among the instances', async ({ page }) => {
   await expect(page.locator(c('media-picker-slot-2')).locator('option', { hasText: name })).toHaveCount(1);
 });
 
-test('lib7_ac44 Name & Save keeps a card across a reload', async ({ page }) => {
+test('Name & Save keeps a card across a reload', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
   const name = `Work ${Date.now()}`;
@@ -331,9 +331,9 @@ test('lib7_ac44 Name & Save keeps a card across a reload', async ({ page }) => {
   await expect(slot1(page).locator('option', { hasText: name })).toHaveCount(1, { timeout: 30000 });
 });
 
-// AC-43: the saved media list is today's: by kind and name, a template
+// The saved media list: by kind and name, a template
 // and a medium in a place marked; one in a place cannot be deleted.
-test('lib7_ac43 saved media list', async ({ page }) => {
+test('saved media list', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
   const name = `Kept ${Date.now()}`;
@@ -351,8 +351,8 @@ test('lib7_ac43 saved media list', async ({ page }) => {
   await expect(page.locator(c('saved-media'))).toHaveCount(0);
 });
 
-// AC-43, OQ-4: a delete asks first; no keeps it.
-test('lib7_ac43 delete asks first', async ({ page }) => {
+// A delete asks first; no keeps it.
+test('saved media delete asks first', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
   const name = `Gone ${Date.now()}`;
@@ -373,10 +373,10 @@ test('lib7_ac43 delete asks first', async ({ page }) => {
   await expect(row).toHaveCount(0);
 });
 
-// AC-43: Import Media… (the library's `media.import`: the host's file
+// Import Media… (the library's `media.import`: the host's file
 // picker) takes module files, disk files and a cassette definition with its
 // WAV, chosen together.
-test('lib7_ac43 import card disk and tape with wav', async ({ page }) => {
+test('import card disk and tape with wav', async ({ page }) => {
   await gotoReady(page);
   const stamp = Date.now();
   const files = [
@@ -400,8 +400,8 @@ test('lib7_ac43 import card disk and tape with wav', async ({ page }) => {
   await expect(page.locator(c('media-picker-cassette')).locator('option', { hasText: `Tape ${stamp}` })).toHaveCount(1, { timeout: 30000 });
 });
 
-// AC-39: the side button shows the side up, 0 or 1, and turns the disk over.
-test('lib7_ac44 the disk side button turns the disk over', async ({ page }) => {
+// The side button shows the side up, 0 or 1, and turns the disk over.
+test('the disk side button turns the disk over', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
@@ -414,8 +414,8 @@ test('lib7_ac44 the disk side button turns the disk over', async ({ page }) => {
   expect(await shown(page.locator(c('media-picker-floppy')))).toBe('Formatted');
 });
 
-// The record button: a name first, a new tape on the empty template (AC-20, D-24).
-test('lib7_ac44 a new tape is recorded under its name', async ({ page }) => {
+// The record button: a name first, a new tape on the empty template.
+test('a new tape is recorded under its name', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
   await page.locator(c('bar-place-printer')).click();
@@ -428,7 +428,7 @@ test('lib7_ac44 a new tape is recorded under its name', async ({ page }) => {
   await expect(page.locator('[data-lamp=tape]')).toContainText('●');
 });
 
-test('C1600-2 AC-18 headerless code asks the address, then NEW and CALL', async ({ page }) => {
+test('headerless code asks the address, then NEW and CALL', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
   const chooser = page.waitForEvent('filechooser');
@@ -461,7 +461,7 @@ function doubledTape() {
   return doubled;
 }
 
-test('C1600-2 AC-16 a WAV with several programs asks which one', async ({ page }) => {
+test('a WAV with several programs asks which one', async ({ page }) => {
   await gotoReady(page);
   const chooser = page.waitForEvent('filechooser');
   await menu(page, 'file', 'load-basic-program');
@@ -473,7 +473,7 @@ test('C1600-2 AC-16 a WAV with several programs asks which one', async ({ page }
   await expect(dialog).toHaveCount(0);
 });
 
-test('C1600-2 AC-17 a BASIC program is loaded, a refusal is a notice', async ({ page }) => {
+test('a BASIC program is loaded, a refusal is a notice', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
   let chooser = page.waitForEvent('filechooser');
@@ -485,7 +485,7 @@ test('C1600-2 AC-17 a BASIC program is loaded, a refusal is a notice', async ({ 
   await page.keyboard.press('Enter');
   await waitForScreen(page, /42/);
   // Machine code given to the BASIC loader: refused, as a notice without a
-  // title (EC-5; LIB-14 AC-38).
+  // title.
   chooser = page.waitForEvent('filechooser');
   await menu(page, 'file', 'load-basic-program');
   await (await chooser).setFiles(path.join(FIXTURES, 'rtn4.bin'));
@@ -494,7 +494,7 @@ test('C1600-2 AC-17 a BASIC program is loaded, a refusal is a notice', async ({ 
   await expect(notice.locator('.calcu-shell-modal-title')).toHaveCount(0);
 });
 
-test('C1600-2 AC-19 the loaded dialog and the CALL in the input line, not started', async ({ page }) => {
+test('the loaded dialog and the CALL in the input line, not started', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
   // A PC-1600 header: Z-80 RET at &C100, no address to start at.
@@ -522,8 +522,8 @@ test('the inspector shows the pointers and the module dump', async ({ page }) =>
   await expect(page.locator('.calcu-inspector-output')).toContainText('Module dump');
 });
 
-// LIB-14 D-39 (M-57, ledger 1600-48): the shell's storage banner with the
-// library's sentence (LIB-15 AC-8), not Calc-U-1600's own.
+// The shell's storage banner with the library's sentence, not
+// Calc-U-1600's own.
 test('a second tab says its changes are not saved', async ({ page, context }) => {
   await gotoReady(page);
   await expect(page.locator('[data-calcu="storage-banner"]')).toHaveCount(0);
@@ -539,10 +539,10 @@ test('the installed app shell starts', async ({ page }) => {
   await expect(page.locator(c('menu-bar'))).toBeVisible();
 });
 
-// LIB-10 AC-40 (design §10.10, D16-6; D-19): the run control in the Web page
+// The run control in the Web page
 // without a debugger -- the page has no harness, so the session commands
 // pause and resume go from the page.
-test('lib10_ac40 run control pauses and resumes the web machine', async ({ page }) => {
+test('run control pauses and resumes the web machine', async ({ page }) => {
   await gotoReady(page);
   const paused = async () => !!((await h.topic(page, 'run-state')) || {}).paused;
   const ticks = async () => (await h.ask(page, 'ticks')).value.ticks;
@@ -556,9 +556,9 @@ test('lib10_ac40 run control pauses and resumes the web machine', async ({ page 
   await expect.poll(ticks, { timeout: 10000 }).toBeGreaterThan(t0);
 });
 
-// LIB-10 AC-41: Machine ▸ Resume runs a paused machine again, and can be
+// Machine ▸ Resume runs a paused machine again, and can be
 // used only while it is paused.
-test('lib10_ac41 machine resume', async ({ page }) => {
+test('Machine Resume runs a paused machine', async ({ page }) => {
   await gotoReady(page);
   const paused = async () => !!((await h.topic(page, 'run-state')) || {}).paused;
   await page.locator(c('menu-machine')).click();
@@ -570,7 +570,7 @@ test('lib10_ac41 machine resume', async ({ page }) => {
   await expect.poll(paused, { timeout: 10000 }).toBe(false);
 });
 
-// ---- LIB-13, the Calc-U-1600 column (design Part D, D6): opening a file ----
+// ---- Opening a file ----
 
 // A file dropped on the client, as the browser hands it over.
 async function dropFile(page, name, buffer) {
@@ -582,7 +582,7 @@ async function dropFile(page, name, buffer) {
   }, [name, [...buffer]]);
 }
 
-test('LIB-13 AC-18 a dropped WAV with several programs asks which one, then loads by its kind', async ({ page }) => {
+test('a dropped WAV with several programs asks which one, then loads by its kind', async ({ page }) => {
   await gotoReady(page);
   await notBusy(page);
   await dropFile(page, 'two.wav', doubledTape());
@@ -595,7 +595,7 @@ test('LIB-13 AC-18 a dropped WAV with several programs asks which one, then load
   await expect(page.locator('[data-dialog=machinecode]')).toHaveCount(0);
 });
 
-test('LIB-13 AC-18 a dropped headerless .bin asks the address', async ({ page }) => {
+test('a dropped headerless .bin asks the address', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
   // SharpDataExchange's Z-80 sample, eight times: headerless code by its look.
@@ -605,12 +605,12 @@ test('LIB-13 AC-18 a dropped headerless .bin asks the address', async ({ page })
   const dialog = page.locator('[data-dialog=machinecode]');
   await expect(dialog.locator('input')).toHaveValue('&C0C5', { timeout: 30000 });
   await dialog.getByRole('button', { name: 'Cancel' }).click();
-  // Named .rom it is nothing the product opens (AC-17): a notice.
+  // Named .rom it is nothing the product opens: a notice.
   await dropFile(page, 'loop.rom', code);
   await expect(page.locator(c('notice'))).toContainText('Calc-U-1600 cannot open loop.rom.', { timeout: 30000 });
 });
 
-test('LIB-13 AC-19 a dropped disk file is imported and inserted', async ({ page }) => {
+test('a dropped disk file is imported and inserted', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
   await page.locator(c('bar-place-printer')).selectOption({ label: 'CE-1600P' });
@@ -621,16 +621,16 @@ test('LIB-13 AC-19 a dropped disk file is imported and inserted', async ({ page 
   await expect(page.locator(c('notice'))).toHaveCount(0);
 });
 
-test('LIB-13 AC-20 a dropped file over 1 MiB is refused with a notice', async ({ page }) => {
+test('a dropped file over 1 MiB is refused with a notice', async ({ page }) => {
   await gotoReady(page);
   await notBusy(page);
   await dropFile(page, 'big.bas', Buffer.alloc((1 << 20) + 1, 0x20));
   await expect(page.locator(c('notice'))).toContainText('big.bas is larger than 1 MiB', { timeout: 30000 });
 });
 
-// LIB-13 AC-8: File ▸ Load Preset… takes several files; the preset among
+// File ▸ Load Preset… takes several files; the preset among
 // them is opened with the files it names beside it.
-test('LIB-13 AC-8 Load Preset opens the preset among its files', async ({ page }) => {
+test('Load Preset opens the preset among its files', async ({ page }) => {
   await gotoReady(page);
   await notBusy(page);
   const chooser = page.waitForEvent('filechooser');

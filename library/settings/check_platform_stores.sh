@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Source check used by both products (LIB-9 design §2, T-14; for AC-21,
-# AC-31, AC-34): no platform store for settings in a product's frontends.
-# Lists every use of QSettings, UserDefaults (also NSUserDefaults and
-# @AppStorage) and localStorage in the source files under <tree>, except
-# those an allow-list names, and fails when one is left.
+# Source check used by both products: no platform store for settings in a
+# product's frontends. Lists every use of QSettings, UserDefaults (also
+# NSUserDefaults and @AppStorage) and localStorage in the source files under
+# <tree>, except those an allow-list names, and fails when one is left.
 #
 #   check_platform_stores.sh <tree> [<allow-list>]
 #
@@ -58,7 +57,7 @@ done < <(grep -rnE 'QSettings|UserDefaults|@AppStorage|localStorage' "$tree" \
            --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build --exclude-dir=vendor || true)
 
 if [ "$found" -ne 0 ]; then
-  echo "settings belong in the product's settings file (LIB-9); allow a use that is not a setting in the allow-list" >&2
+  echo "settings belong in the product's settings file; allow a use that is not a setting in the allow-list" >&2
   exit 1
 fi
 echo "no platform store for settings under $tree"

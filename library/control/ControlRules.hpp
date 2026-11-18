@@ -8,9 +8,8 @@
 #include <variant>
 #include <vector>
 
-// What a product's app layer adds to the control state or refuses in it
-// (LIB-4 design §3.3; spec AC-7; frontend.md FE-6). The library asks these
-// and never reads what they give back.
+// What a product's app layer adds to the control state or refuses in it.
+// The library asks these and never reads what they give back.
 
 namespace calcu::control {
 
@@ -22,7 +21,7 @@ struct VariantKey {   // a variant of the running model
     machine::VariantId id;
     bool operator==(const VariantKey&) const = default;
 };
-struct PlaceKey {   // the place as a whole: its reason passes to all its choices (D-5)
+struct PlaceKey {   // the place as a whole: its reason passes to all its choices
     machine::PlacePath path;
     bool operator==(const PlaceKey&) const = default;
 };

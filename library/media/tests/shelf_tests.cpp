@@ -2,7 +2,7 @@
 #include "TestHarness.hpp"
 #include "media/Names.hpp"
 
-// LIB-7 L2 (design §6): kinds and the shelf (AC-1, AC-5, AC-46, EC-3).
+// Kinds and the shelf.
 
 using namespace calcu;
 using namespace calcu::media;
@@ -25,7 +25,7 @@ const KindDecl& kindOf(MediaFixture& f, const char* id) { return *f.media->kind(
 
 } // namespace
 
-TEST(ac1_bundled_is_template_and_never_written) {
+TEST(bundled_medium_is_template_and_never_written) {
     MediaFixture f(onDot([](auto&, auto& b) { b.write("disks/Formatted.testdisk.yaml", disk("Formatted", "empty").text()); }));
     const std::string before = calcu::testing::readText(f.bundled.path() / "disks/Formatted.testdisk.yaml");
     const ShelfEntry* e = f.media->shelf().find(kindOf(f, "test-disk"), "Formatted");
@@ -37,7 +37,7 @@ TEST(ac1_bundled_is_template_and_never_written) {
     CHECK(f.place("disk")->holds && f.place("disk")->holds->unsaved);
 }
 
-TEST(ac1_user_template_by_its_file) {
+TEST(user_template_by_its_file) {
     MediaFixture f(onDot([](auto& s, auto&) { s.write("Mine.testdisk.yaml", disk("Mine", "t", true).text()); }));
     const std::string before = f.saved("Mine.testdisk.yaml");
     const ShelfEntry* e = f.media->shelf().find(kindOf(f, "test-disk"), "Mine");
@@ -45,10 +45,10 @@ TEST(ac1_user_template_by_its_file) {
     CHECK(f.ok("media.choose", choose("disk", "saved:Mine.testdisk.yaml")));
     f.drive()->write("changed");
     f.ok("media.refresh");
-    CHECK_EQ(f.saved("Mine.testdisk.yaml"), before);   // only a save as a template writes it (AC-17)
+    CHECK_EQ(f.saved("Mine.testdisk.yaml"), before);   // only a save as a template writes it
 }
 
-TEST(ac1_instance_in_save_folder) {
+TEST(instance_in_save_folder) {
     MediaFixture f(onDot([](auto& s, auto&) { s.write("Work.testdisk.yaml", disk("Work", "a").text()); }));
     const ShelfEntry* e = f.media->shelf().find(kindOf(f, "test-disk"), "Work");
     CHECK(e && !e->isTemplate);
@@ -58,7 +58,7 @@ TEST(ac1_instance_in_save_folder) {
     CHECK_EQ(field(f.saved("Work.testdisk.yaml"), "content"), std::string("b"));
 }
 
-TEST(ac5_bundled_first_then_save_folder) {
+TEST(shelf_bundled_first_then_save_folder) {
     MediaFixture f(onDot([](auto& s, auto& b) {
         b.write("disks/Shared.testdisk.yaml", disk("Shared", "bundled").text());
         s.write("Own.testdisk.yaml", disk("Own", "saved").text());
@@ -71,7 +71,7 @@ TEST(ac5_bundled_first_then_save_folder) {
     CHECK_EQ(f.drive()->bytes(), std::string("bundled"));
 }
 
-TEST(ac5_two_files_one_name_both_listed_and_found_by_rule) {
+TEST(two_files_one_name_both_listed_and_found_by_rule) {
     MediaFixture f(onDot([](auto& s, auto&) {
         s.write("a.testdisk.yaml", disk("Twin", "a").text());
         s.write("Twin.testdisk.yaml", disk("Twin", "own").text());
@@ -82,14 +82,14 @@ TEST(ac5_two_files_one_name_both_listed_and_found_by_rule) {
     CHECK(k && k->instances.size() == 4);   // both are listed
     CHECK_EQ(f.media->shelf().find(kindOf(f, "test-disk"), "Twin")->fileName, std::string("Twin.testdisk.yaml"));
     CHECK_EQ(f.media->shelf().find(kindOf(f, "test-disk"), "Pair")->fileName, std::string("b.testdisk.yaml"));
-    // A save by that name replaces the one the rule finds (OQ-1).
+    // A save by that name replaces the one the rule finds.
     CHECK(f.done(f.load(header("test-dot") + "keys:\n  - test-disk: { name: Pair }\n"
                         "  - saveas: { place: disk, as: live, name: Twin }\n")));
     CHECK_EQ(field(f.saved("Twin.testdisk.yaml"), "content"), std::string("b"));
     CHECK_EQ(field(f.saved("a.testdisk.yaml"), "content"), std::string("a"));
 }
 
-TEST(ac5_saved_file_with_bundled_name_not_listed_and_logged) {
+TEST(saved_file_with_bundled_name_not_listed_and_logged) {
     MediaFixture f(onDot([](auto& s, auto& b) {
         b.write("disks/Formatted.testdisk.yaml", disk("Formatted", "bundled").text());
         s.write("copy.testdisk.yaml", disk("formatted", "copy").text());
@@ -99,7 +99,7 @@ TEST(ac5_saved_file_with_bundled_name_not_listed_and_logged) {
     CHECK(hasLine(f.logLines(), "copy.testdisk.yaml carries the name of a bundled test disk"));
 }
 
-TEST(ac5_module_slot_one_list_of_names) {
+TEST(module_slot_one_list_of_names) {
     MediaFixture f(FixtureOptions{});
     f.saveFile("Bank.testmodule.yaml", moduleFile("Bank", "m"));
     CHECK(f.ok("media.refresh"));
@@ -117,7 +117,7 @@ TEST(ac5_module_slot_one_list_of_names) {
     CHECK(!f.module() && f.machine()->plugged().byPlace.size() == 1);
 }
 
-TEST(ac46_codec_gives_all_the_library_knows) {
+TEST(codec_gives_all_the_library_knows) {
     MediaFixture f(FixtureOptions{});
     TestFile t = moduleFile("Info", "abc+def", true, true);
     t.description = "Described";
@@ -137,7 +137,7 @@ TEST(ac46_codec_gives_all_the_library_knows) {
     CHECK_EQ(contentOf(e->info.content), std::string("abc+def"));
 }
 
-TEST(ac46_content_handed_through_unread) {
+TEST(content_handed_through_unread) {
     MediaFixture f(onDot([](auto& s, auto&) { s.write("Work.testdisk.yaml", disk("Work", "payload").text()); }));
     CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
     const auto* c = dynamic_cast<const mt::TestMediumContent*>(f.drive()->content().get());
@@ -147,9 +147,9 @@ TEST(ac46_content_handed_through_unread) {
     CHECK_EQ(field(f.saved("Work.testdisk.yaml"), "content"), std::string("new"));
 }
 
-// M-47: a file of the kind's suffix that is no medium of it (Calc-U-1600:
+// A file of the kind's suffix that is no medium of it (Calc-U-1600:
 // a module definition without a battery) is neither listed nor logged.
-TEST(ec3_not_a_medium_neither_listed_nor_logged) {
+TEST(not_a_medium_neither_listed_nor_logged) {
     MediaFixture f(onDot([](auto& s, auto&) {
         s.write("Plain.testdisk.yaml", "format: test-disk\nformat-version: 2\nname: Plain\nmedium: no\ncontent: x\n");
         s.write("Good.testdisk.yaml", disk("Good", "g").text());
@@ -159,7 +159,7 @@ TEST(ec3_not_a_medium_neither_listed_nor_logged) {
     CHECK(!hasLine(f.logLines(), "Plain.testdisk.yaml"));
 }
 
-TEST(ec3_unreadable_not_listed_one_log_line_per_start) {
+TEST(unreadable_medium_not_listed_one_log_line_per_start) {
     MediaFixture f(onDot([](auto& s, auto&) {
         s.write("Broken.testdisk.yaml", "this is no medium\n");
         s.write("Good.testdisk.yaml", disk("Good", "g").text());
@@ -169,11 +169,11 @@ TEST(ec3_unreadable_not_listed_one_log_line_per_start) {
     const auto lines = f.logLines();
     CHECK(hasLine(lines, "The test disk file Broken.testdisk.yaml cannot be read: It is not a test-disk file."));
     CHECK(f.ok("media.refresh"));
-    CHECK(!hasLine(f.logLines(), "Broken.testdisk.yaml"));   // D-12: once per start
+    CHECK(!hasLine(f.logLines(), "Broken.testdisk.yaml"));   // once per start
 }
 
 namespace {
-// A host's file access that records what goes through it (D-30).
+// A host's file access that records what goes through it.
 struct RecordingAccess final : FileAccess {
     mutable std::vector<std::string> calls;
     std::vector<std::string> list(const std::string& folder) const override {
@@ -191,9 +191,9 @@ struct RecordingAccess final : FileAccess {
 };
 } // namespace
 
-// LIB-7 §11 E1 (M-55; D-30): the shelf and the writer go through the file
+// The shelf and the writer go through the file
 // access the host hands the part (Calc-U-59's coordinated iCloud access).
-TEST(ac1_shelf_and_writer_through_the_hosts_file_access) {
+TEST(shelf_and_writer_through_the_hosts_file_access) {
     auto access = std::make_shared<RecordingAccess>();
     FixtureOptions o = onDot([](auto& s, auto&) { s.write("Work.testdisk.yaml", disk("Work", "a").text()); });
     o.files = access;

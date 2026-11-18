@@ -1,5 +1,4 @@
-// LIB-12 AC-3, AC-5, AC-7 (the text), EC-1, EC-2 (library halves): the
-// lookup's checks and its message (design §6, T5, T6).
+// The ROM lookup's checks and its message.
 #include "TestHarness.hpp"
 #include "TestRomFiles.hpp"
 
@@ -16,7 +15,7 @@ struct Fixture {
 };
 } // namespace
 
-TEST(ac3_binary_checked_by_byte_size) {
+TEST(lookup_binary_checked_by_byte_size) {
     Fixture f;
     CHECK(f.look().ok());
     f.folder.write("test-seg.rom", std::string(2047, 'x'));
@@ -29,7 +28,7 @@ TEST(ac3_binary_checked_by_byte_size) {
     CHECK(!f.look().ok());
 }
 
-TEST(ac3_text_checked_by_reader_amount) {
+TEST(lookup_text_checked_by_reader_amount) {
     Fixture f;
     f.folder.write("test-dot-font.txt", fontText("\n", 63));
     auto r = f.look();
@@ -53,7 +52,7 @@ TEST(ac3_text_checked_by_reader_amount) {
     CHECK(problemOf(r.missing, "test-dot-font.txt"));
 }
 
-TEST(ac3_product_set_checks_run_after_file_checks) {
+TEST(lookup_product_set_checks_run_after_file_checks) {
     Fixture f;
     f.reader.rejectSet = true;
     f.folder.remove("test-seg.rom");
@@ -71,7 +70,7 @@ TEST(ac3_product_set_checks_run_after_file_checks) {
     CHECK(f.look().ok());
 }
 
-TEST(ac3_md5_is_not_checked_at_start) {
+TEST(lookup_md5_is_not_checked_at_start) {
     Fixture f;
     // Right amount, other bytes: the md5 differs, and the start passes (fetch_roms.sh checks it).
     f.folder.write("test-seg.rom", std::string(2048, 'y'));
@@ -81,7 +80,7 @@ TEST(ac3_md5_is_not_checked_at_start) {
     CHECK_EQ(int(r.set->bytes("test-seg.rom")->front()), int('y'));
 }
 
-TEST(ac5_every_missing_or_bad_file_named_and_no_set) {
+TEST(lookup_every_missing_or_bad_file_named_and_no_set) {
     Fixture f;
     f.folder.remove("test-seg.rom");
     f.folder.remove("test-module-8k.rom");
@@ -102,7 +101,7 @@ TEST(ac5_every_missing_or_bad_file_named_and_no_set) {
     CHECK(text.find("test-dot-v2.rom") == std::string::npos);   // a good file is not named
 }
 
-TEST(ac5_message_says_full_set_needed_and_offers_nothing_else) {
+TEST(lookup_message_says_full_set_needed_and_offers_nothing_else) {
     Fixture f;
     f.folder.remove("test-dot-font.txt");
     const std::string text = describe(f.look().missing);
@@ -116,8 +115,8 @@ TEST(ac5_message_says_full_set_needed_and_offers_nothing_else) {
         CHECK(text.find(other) == std::string::npos);
 }
 
-TEST(ac7_harness_text_names_the_files) {
-    // The text the harness ends with (LIB-11 EC-1, M-28): describe() names every file.
+TEST(lookup_harness_text_names_the_files) {
+    // The text the harness ends with: describe() names every file.
     Fixture f;
     f.folder.remove("test-module-4k.rom");
     f.folder.remove("test-module-8k.rom");
@@ -127,7 +126,7 @@ TEST(ac7_harness_text_names_the_files) {
     CHECK(text.find("test-module-8k.rom: missing; needed by test-module (variant 8k)") != std::string::npos);
 }
 
-TEST(ec1_file_of_two_entries_is_named_once_in_the_message) {
+TEST(lookup_file_of_two_entries_is_named_once_in_the_message) {
     const FullSet set = fullSet(catalogueWithSharedFile());
     TempFolder folder;
     writeFullSet(folder, set);
@@ -140,7 +139,7 @@ TEST(ec1_file_of_two_entries_is_named_once_in_the_message) {
     CHECK(text.find("needed by test-module (variant 8k), test-twin") != std::string::npos);
 }
 
-TEST(ec2_text_with_other_line_endings_checked_alike) {
+TEST(lookup_text_with_other_line_endings_checked_alike) {
     Fixture f;
     for (const char* eol : {"\n", "\r\n", "\r"}) {
         f.folder.write("test-dot-font.txt", fontText(eol));

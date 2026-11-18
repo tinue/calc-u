@@ -1,9 +1,9 @@
 #pragma once
 #include <string>
 
-// The header every medium's file starts with (docs/formats/media.md; release
-// simplification L-6): one writer for the lines in their documented order.
-// Standard library only, so a product's core may write it too.
+// The header every medium's file starts with (docs/formats/media.md): one
+// writer for the lines in their documented order. Standard library only, so
+// a product's core may write it too.
 
 namespace calcu::media {
 

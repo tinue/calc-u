@@ -1,9 +1,8 @@
-// The product's panels in the shell's panel area (LIB-14 AC-23, AC-40,
-// AC-42), as in the desktop app: the INSPECTOR (Qt6/app/DebugPanel, without
+// The product's panels in the shell's panel area, as in the desktop app: the INSPECTOR (Qt6/app/DebugPanel, without
 // TRACE/LOG) always, and the CE-158 printer output (Ce158PrinterWidget)
 // while the product entry `c1600.ce158-printer-panel` says so, in the same
 // chrome: a header strip, the output, a button bar with pill buttons. The
-// plotters' paper is the library's paper panel (CalcuPaperPanel, LIB-8),
+// plotters' paper is the library's paper panel (CalcuPaperPanel),
 // which the shell's area draws from the control state's panel entry.
 
 function Panel({ title, className, children, buttons, panel, empty }) {
@@ -40,7 +39,7 @@ function PillMenu({ label, entries }) {
 
 const INSPECTOR_MAX_ENTRIES = 200;
 
-// `shell`: LIB-15's shell; the views are the product's requests
+// `shell`: the React set's shell; the views are the product's requests
 // `c1600.inspector-menu`, `c1600.inspector-view`, `c1600.module-yaml`.
 function Inspector({ shell }) {
   const [entries, setEntries] = React.useState([]);
@@ -83,7 +82,7 @@ function Inspector({ shell }) {
   );
 }
 
-// The library's paper panel in the product's chrome (LIB-8 AC-36): always
+// The library's paper panel in the product's chrome: always
 // there, named after the plotter the control state's panel entry names.
 function PaperDock({ shell, owner }) {
   const papers = useCalcuPaper(shell);

@@ -13,19 +13,19 @@
 #include <string>
 #include <vector>
 
-// The stand-ins of the opening tests (LIB-13 design §6): LIB-6 and LIB-7 as
-// they look to the open part, recording what they are asked; two file kinds
-// built for the tests; the rig: LIB-3's test session with the open part.
+// The stand-ins of the opening tests: presets and media as they look to the
+// open part, recording what they are asked; two file kinds built for the
+// tests; the rig: the sessions' test session with the open part.
 //
 //   presets   `.tseg`, `.tdot`; a preset whose text holds `outdated` is
 //             refused with a hint, one loaded as its content that holds
-//             `file:` is refused because it names other files (EC-3); the
+//             `file:` is refused because it names other files; the
 //             others start an operation of 100 ticks.
 //   media     `.tcard.yaml` (the pass-through `reader` of test-seg),
 //             `.tdisk.yaml` (the holding `drive` of test-dot, unless
 //             `noDrive`), `.tmod.yaml` (a module: `slot-1` of test-seg, two
 //             slots `card-1`, `card-2` on test-dot). Text with `outdated`:
-//             refused with LIB-7's hint; with `template`: a template.
+//             refused with media's hint; with `template`: a template.
 //             `passing` holds the places passing a medium through now.
 //             An import is refused with `asks:` when its name is saved
 //             already and the request is not confirmed.
@@ -184,7 +184,7 @@ inline OpenSetup standInSetup(TestPresets& p, TestMedia& m, ListingKind& l, Blob
     return s;
 }
 
-// LIB-3's test session with the open part over the stand-ins.
+// The sessions' test session with the open part over the stand-ins.
 struct OpenRig {
     explicit OpenRig(std::function<void(OpenSetup&)> adjust = {}, Hosting hosting = Hosting::Paced)
         : part(makeSetup(adjust)), rig(RigOptions{hosting, {}, TestFrontend::Delivery::AtOnce, {&part}}) {}

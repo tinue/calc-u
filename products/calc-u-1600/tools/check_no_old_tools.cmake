@@ -1,9 +1,8 @@
-# LIB-11 Part D, D.6 H4 (M-51; plan M-51 "Green after": no old CLI and no
-# adapter of Calc-U-1600 left): today's tools are gone with their files,
-# targets and IDE run configurations, the probes' instrumentation
-# (PC1600_POWER_PROBE) is out of core/, and the adapters' header
-# core/Machine/LegacyCalls.hpp is gone. Their functions are `calcu`
-# commands (LIB-11 AC-18). Run from products/calc-u-1600 with
+# No old CLI and no adapter of Calc-U-1600 is left: the old tools are gone
+# with their files, targets and IDE run configurations, the probes'
+# instrumentation (PC1600_POWER_PROBE) is out of core/, and the adapters'
+# header core/Machine/LegacyCalls.hpp is gone. Their functions are `calcu`
+# commands. Run from products/calc-u-1600 with
 # `cmake -P tools/check_no_old_tools.cmake` (CTest CalcU1600NoOldTools).
 
 set(gone
@@ -18,7 +17,7 @@ set(gone
 set(status 0)
 foreach(f ${gone})
   if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/../${f})
-    message("${f} is still there (M-51 removed it).")
+    message("${f} is still there (the old tools are removed).")
     set(status 1)
   endif()
 endforeach()
@@ -49,5 +48,5 @@ foreach(f ${sources})
 endforeach()
 
 if(status)
-  message(FATAL_ERROR "Old tools or adapters of Calc-U-1600 are left (LIB-11 Part D, D.5, D.7).")
+  message(FATAL_ERROR "Old tools or adapters of Calc-U-1600 are left.")
 endif()

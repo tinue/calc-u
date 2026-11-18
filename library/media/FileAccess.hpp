@@ -4,11 +4,11 @@
 #include <string>
 #include <vector>
 
-// How the media part reads and writes the save folder (LIB-7 design §11.2,
-// D-30; C59-5 D-6): the shelf lists and reads through it, the writer writes
-// through it. A host may hand its own (the Swift frontend of Calc-U-59: the
-// coordinated access to its iCloud folder); the default is the plain one:
-// std::filesystem and settings::writeFileAtomically.
+// How the media part reads and writes the save folder: the shelf lists and
+// reads through it, the writer writes through it. A host may hand its own
+// (the Swift frontend of Calc-U-59: the coordinated access to its iCloud
+// folder); the default is the plain one: std::filesystem and
+// settings::writeFileAtomically.
 
 namespace calcu::media {
 

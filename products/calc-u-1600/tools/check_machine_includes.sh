@@ -1,6 +1,6 @@
 #!/bin/sh
-# C1600-1, Technical Requirements ("No model above the machine"; design
-# T13, D-9): nothing above the core includes or names a machine class.
+# No model above the machine: nothing above the core includes or names a
+# machine class.
 # Outside core/ (app/, frontends/, tools/, dev/; tests/ and docs/ are not
 # checked) no file
 #   1. includes PC1500Machine.hpp or PC1600Machine.hpp, or a core header that

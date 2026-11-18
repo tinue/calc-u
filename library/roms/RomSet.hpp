@@ -9,7 +9,7 @@
 #include <string_view>
 #include <vector>
 
-// The ROM set (LIB-12 design §3.4; AC-6): every file of the full set, read
+// The ROM set: every file of the full set, read
 // once at the start and held in memory. Made only by lookUp(); immutable,
 // so the app session shares it as std::shared_ptr<const RomSet> without a
 // lock. No file is read while the product runs.

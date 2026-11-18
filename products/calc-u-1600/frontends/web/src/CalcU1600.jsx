@@ -1,17 +1,17 @@
 // CalcU1600 -- the web client, and the one global calc.js exposes
 // (docs/developer/Web-Client.md has the props). Put together from the React
-// set's shell (LIB-14 Part D, D.4): the shell's menu bar, the faceplate
+// set's shell: the shell's menu bar, the faceplate
 // scaled to the width with the shell's pointer (useShellFaceplate), the
 // shell's control bar with the product's disk controls (product entry
-// `c1600.disk-controls`, AC-42) and the cassette controls (LIB-7), and the
+// `c1600.disk-controls`) and the cassette controls, and the
 // shell's area for panels with the paper panel, the INSPECTOR and the
 // CE-158's printer panel; the shell's settings, About, notices and
-// "Loading…". The session is LIB-15's (useShell); everything sent is a
+// "Loading…". The session is the React set's (useShell); everything sent is a
 // library command or one of the product's (`c1600.*`), nothing decided here.
 // The page owns the physical keyboard while focused, the drop, and the
-// dialog-led flows of C1600-2 (Load BASIC Program…, Load Machine Code…).
-// It binds no shortcut to a menu item (AC-4, D-30): those keys are the
-// browser's; the paste event still types (LIB-5).
+// dialog-led flows of the program files (Load BASIC Program…, Load Machine
+// Code…). It binds no shortcut to a menu item: those keys are the
+// browser's; the paste event still types.
 //
 // Test hook: the root element's `calcuShell` is the shell (createShell).
 
@@ -59,7 +59,7 @@ function SaveIcon() {
 // bar get the page's actions through this context.
 const C1600Bar = React.createContext(null);
 
-// LIB-7's module picker of a slot (the library's ShellSlotPicker), with its
+// The module picker of a slot (the library's ShellSlotPicker), with its
 // Name & Save button.
 function SlotControls(props) {
   const bar = React.useContext(C1600Bar);
@@ -72,8 +72,8 @@ function tapeCounter(lamps) {
   return `${lamps.tapeMode === "play" ? "▶" : "●"} ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-// The cassette's controls (LIB-7 AC-42; the shell's media control of the
-// kind `cassette`, B1): the tape picker, a new tape to record onto, Name &
+// The cassette's controls (the shell's media control of the kind
+// `cassette`): the tape picker, a new tape to record onto, Name &
 // Save, the counter with the motor (`c1600.lamps`).
 function TapeControls({ shell, entry }) {
   const bar = React.useContext(C1600Bar);
@@ -100,10 +100,10 @@ function TapeControls({ shell, entry }) {
   );
 }
 
-// The CE-1600F's disk controls (LIB-14 AC-36, AC-42; LIB-4 AC-17, D-29):
+// The CE-1600F's disk controls:
 // shown on every PC-1600 by the product entry `c1600.disk-controls`, usable
 // only while the CE-1600P is plugged in (its reason the tooltip) and no
-// operation runs (the media place's insert, LIB-4 AC-20).
+// operation runs (the media place's insert).
 function DiskControls({ s }) {
   const bar = React.useContext(C1600Bar);
   const cs = s.inputs.controlState;
@@ -136,7 +136,7 @@ function DiskControls({ s }) {
 
 const C1600_MEDIA_CONTROLS = { cassette: TapeControls };
 
-// The paper panel is placed by the product's layout (AC-40: the INSPECTOR,
+// The paper panel is placed by the product's layout (the INSPECTOR,
 // the paper, the CE-158's printer, in this order; only with room), so the
 // shell's area draws none of its own.
 const C1600_PANELS = { paper: () => null };
@@ -145,7 +145,7 @@ const C1600_PANELS = { paper: () => null };
 // the product's yet.
 const C1600_NO_PRODUCT = { name: "Calc-U-1600", items: [], variantLabels: {}, moduleSlotPinOuts: [], placesWithoutControl: [] };
 
-// The props (LIB-15 AC-16, AC-24, AC-29): the shared ones of embedProps
+// The props: the shared ones of embedProps
 // (width, keyboard, layout, preset, height, model, workerUrl). One layout:
 // `layout` takes "auto" only (the default); embedProps ignores another value
 // with a console warning. `model` is the model's name (PC-1600); `preset` a
@@ -175,18 +175,16 @@ function CalcU1600(props) {
   const sendChecked = (name, args) => (sRef.current ? sRef.current.sendChecked(name, args) : Promise.resolve({ done: false }));
   const send = (name, args) => (shell ? shell.send(name, args || null) : Promise.resolve({ done: false, reason: "" }));
 
-  // LIB-13: a drop and Load Preset… are the session's `open`: it decides
-  // what the files are (several are one folder in /uploads, its preset
-  // opened, AC-8), keeps them while busy (AC-7), refuses with a notice and
-  // asks before a medium of the same name is replaced (AC-4: the shell's
-  // question). A program file comes back as the stream c1600.program-opened.
+  // A drop and Load Preset… are the session's `open`: it decides what the
+  // files are (several are one folder in /uploads, its preset opened),
+  // keeps them while busy, refuses with a notice and asks before a medium
+  // of the same name is replaced (the shell's question). A program file comes back as the stream c1600.program-opened.
   const openFiles = (files, way) => calcuOpenFiles(sendChecked, files, way);
 
-  // Load BASIC Program / Load Machine Code on a file (C1600-2 AC-16 to
-  // AC-19): the session's file kind, the WAV's choice, then the load.
+  // Load BASIC Program / Load Machine Code on a file: the session's file kind, the WAV's choice, then the load.
   // `index`: the file of a WAV already chosen (from 1); otherwise asked when
   // it holds several.
-  // C1600-2 AC-16: the file of a WAV that holds several (from 1); 0 when
+  // The file of a WAV that holds several (from 1); 0 when
   // there is nothing to choose, null when the user cancels.
   const pickWavFile = async (title, name, tapeFiles) => {
     if (!tapeFiles || tapeFiles.length <= 1) return 0;
@@ -216,7 +214,7 @@ function CalcU1600(props) {
     const r = await sendChecked("c1600.load-code", { name, bytes, file: index, address });
     if (!r.done) return;
     await dialogs.ask("loaded", { result: r.value });
-    // Type the proposed CALL, ready to run: the user presses ENTER (AC-19).
+    // Type the proposed CALL, ready to run: the user presses ENTER.
     send("paste", { text: r.value.callCommand });
   };
   const pickProgram = async (kind) => {
@@ -224,11 +222,11 @@ function CalcU1600(props) {
     if (f) openProgram(kind, f.name, await fileBytes(f));
   };
 
-  // LIB-13 AC-18 (D4.2): a program file the session opened runs the flow
+  // A program file the session opened runs the flow
   // of Load BASIC Program… or Load Machine Code… without its file dialog.
   // A WAV with several files asks which one; the file chosen goes to the
   // flow of its own kind. One flow at a time: one that comes meanwhile is
-  // dropped with a log line (design D8).
+  // dropped with a log line.
   const programsSeen = React.useRef(0);
   React.useEffect(() => {
     if (programs.length < programsSeen.current) programsSeen.current = 0;
@@ -253,8 +251,8 @@ function CalcU1600(props) {
     copyImageOrDownload("screen.png", { "image/png": image.then(grayPng), "text/plain": image.then((i) => i.text) });
   };
 
-  // The product's shell data (D-32) with the page's acts. Load Preset…: the
-  // picked files through LIB-13's `open` (AC-8: a preset with the files it
+  // The product's shell data with the page's acts. Load Preset…: the
+  // picked files through the session's `open` (a preset with the files it
   // names, as one folder).
   const { product, ready: productReady } = useShellProduct(shell, {
     request: "c1600.shell-product", fallback: C1600_NO_PRODUCT, version: CalcU1600.version, build: "web",
@@ -268,11 +266,11 @@ function CalcU1600(props) {
   const busy = !!(s.inputs.busy && s.inputs.busy.operationRuns);
   const model = (cs && cs.model) || modelProp || DEFAULT_MODEL;
 
-  // The faceplate maps, one request per model (D-31).
+  // The faceplate maps, one request per model.
   const maps = useFaceplateMaps(shell, "c1600.faceplate-map", model);
 
   // Ready once the start (an operation: the model, then its preset) is
-  // over: keys pressed while an operation runs are dropped (ledger 1600-9).
+  // over: keys pressed while an operation runs are dropped.
   const [started, setStarted] = React.useState(false);
   React.useEffect(() => { if (!started && s.started && s.inputs.busy && !busy) setStarted(true); }, [s.started, busy, s.inputs.busy]);
   const ready = start === "running" && started && !!maps[model] && productReady;
@@ -311,19 +309,19 @@ function CalcU1600(props) {
     if (e.target.tagName === "BUTTON" && !e.target.closest(".calcu-modal, .calcu-shell-modal")) reclaimFocus();
   };
 
-  // ── Media flows (LIB-7) ─────────────────────────────────────────────
+  // ── Media flows ─────────────────────────────────────────────────────
   const bar = {
     send,
     lamps,
-    // Name & Save of a module, a disk or a tape (LIB-7 AC-16, AC-40; D-25).
+    // Name & Save of a module, a disk or a tape.
     nameAndSave: async (word) => {
       const place = calcuMediaPlace(s.inputs.media, word);
       if (!place) return;
       const prompt = word === "floppy" ? "Disk name:" : word === "cassette" ? "Cassette name:" : "Instance name:";
       await dialogs.ask("nameAndSave", { shell, place, prompt });
     },
-    // The record button: a new tape under a name, on the empty tape (LIB-7
-    // AC-20, D-24): the name first, asked before an instance is replaced
+    // The record button: a new tape under a name, on the empty tape: the
+    // name first, asked before an instance is replaced
     // (the shell's question); its files at the first motor stop.
     recordTape: async () => {
       const place = calcuMediaPlace(s.inputs.media, "cassette");
@@ -337,14 +335,14 @@ function CalcU1600(props) {
 
   // ── Keyboard (MainWindow::keyPressEvent / keyReleaseEvent) ──────────
   const releaseHeldKeys = () => {
-    if (hostKeys.current.focusLost() && shell) send("focus-lost");   // LIB-5 AC-10: every held key comes up
+    if (hostKeys.current.focusLost() && shell) send("focus-lost");   // every held key comes up
     shiftTap.current = null;
   };
   const onKeyDown = (e) => {
     if (!keyboard || !shell || !s.started || modalOpen) return;
     shell.unlockAudio();
     // A key with ⌘ (Ctrl elsewhere) is the browser's: no menu item has a
-    // shortcut here (AC-4, D-30); ⌘V / Ctrl+V comes as the paste event.
+    // shortcut here; ⌘V / Ctrl+V comes as the paste event.
     if (IS_MAC ? e.metaKey : e.ctrlKey && !e.altKey) { shiftTap.current = null; return; }
     if (e.repeat) { e.preventDefault(); return; }
     if (e.key === "Shift") { shiftTap.current = performance.now(); return; }
@@ -353,7 +351,7 @@ function CalcU1600(props) {
     // Function keys past F6 and the like stay the browser's.
     if (/^F([7-9]|1\d)$/.test(e.key)) return;
     e.preventDefault();
-    const down = hostKeys.current.down(e);   // LIB-5 AC-7, AC-29; none while held
+    const down = hostKeys.current.down(e);   // through the keyboard map; none while held
     if (down) send("host-key-down", down);
   };
   const onKeyUp = (e) => {
@@ -361,20 +359,20 @@ function CalcU1600(props) {
     if (e.key === "Shift") {
       const tapped = shiftTap.current !== null && performance.now() - shiftTap.current <= SHIFT_TAP_MS;
       shiftTap.current = null;
-      // LIB-5 AC-33: a SHIFT tap is one press of the machine's shift key
-      // (the wall-time rule stays here, D-12; the engine holds it its minimum).
+      // A SHIFT tap is one press of the machine's shift key (the wall-time
+      // rule stays here; the engine holds it its minimum).
       if (tapped) {
         send("screen-key-down", { key: "shift", pointer: SHIFT_TAP_POINTER });
         send("screen-key-up", { key: "shift", pointer: SHIFT_TAP_POINTER });
         setShiftFlash((n) => n + 1);   // too short for the held keys to show
       }
     }
-    // The engine keeps a quick tap down long enough to be scanned (LIB-5 AC-1).
+    // The engine keeps a quick tap down long enough to be scanned.
     const up = hostKeys.current.up(e);
     if (up) send("host-key-up", up);
   };
 
-  // ── Layout (AC-40) ──────────────────────────────────────────────────
+  // ── Layout ──────────────────────────────────────────────────────────
   const [measured, setMeasured] = React.useState({ w: width || 0, h: height || 0 });
   React.useEffect(() => {
     if (width && height) { setMeasured({ w: width, h: height }); return undefined; }
@@ -395,7 +393,7 @@ function CalcU1600(props) {
   const panelRoom = faceRoom - W / aspect >= PANEL_MIN;
   const paperOwner = (s.panels.find((p) => p.kind === "paper") || {}).owner || "";
   const printerEntry = cs && cs.product ? cs.product["c1600.ce158-printer-panel"] : null;
-  // LIB-8 AC-36: the paper panel with or without a plotter. Where only one
+  // The paper panel with or without a plotter. Where only one
   // panel fits (a narrow window), it gives way to the inspector while no
   // plotter is plugged in, as the panels give way today.
   const showPaper = panelRoom && (W >= INSPECTOR_MIN_WIDTH || !!paperOwner);
@@ -421,7 +419,7 @@ function CalcU1600(props) {
       }}
       {...calcuFileDrop(shell ? openFiles : null)}>
       <ShellMenuBar shell={s} />
-      {/* LIB-14 D-39 (M-57, ledger 1600-48): the library's storage sentence. */}
+      {/* The library's storage sentence. */}
       <ShellStorageBanner shell={shell} />
       <div className="calcu-face-row">
         {romsMissing && <ShellRomsMissing shell={s} />}

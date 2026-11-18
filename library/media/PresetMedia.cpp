@@ -43,7 +43,7 @@ std::set<int> sidesOf(const machine::Catalogue& cat, const KindDecl& k) {
     return out;
 }
 
-// A reference (docs/formats/README.md §3; AC-21): a mapping with exactly one
+// A reference (docs/formats/README.md §3): a mapping with exactly one
 // of name:, file: and (where the kind has in-file media) mem:, plus side:
 // where the places have sides.
 struct Reference {
@@ -55,7 +55,7 @@ struct Reference {
 std::optional<Reference> readReference(const std::string& verb, const YamlNode& v, ReadContext& ctx, const KindDecl& k,
                                        bool withSide) {
     const int line = v.line;
-    if (!v.isMap()) {   // AC-21: a bare value is an error
+    if (!v.isMap()) {   // a bare value is an error
         ctx.error(line, verb + ": takes a reference, as in { name: <name> } or { file: <path> }.");
         return std::nullopt;
     }
@@ -90,7 +90,7 @@ std::optional<Reference> readReference(const std::string& verb, const YamlNode& 
     return r;
 }
 
-// AC-23: a medium by name or file, resolved when the preset is read.
+// A medium by name or file, resolved when the preset is read.
 struct Found {
     Binding binding;
     Content content;
@@ -145,7 +145,7 @@ std::optional<Found> resolveByFile(MediaPart& part, const KindDecl& k, const std
     bd.kind = &k;
     bd.name = nameOf(r.info, file, k);
     bd.description = r.info.description;
-    // AC-25: the file decides; a bundled file is a template (AC-1).
+    // The file decides; a bundled file is a template.
     const bool bundled = resolved.rfind("examples:", 0) == 0 ||
                          (!k.bundledFolder.empty() && folderOfPath(resolved) == k.bundledFolder);
     bd.isTemplate = r.info.isTemplate || bundled;
@@ -172,7 +172,7 @@ public:
         sessions::SessionContext& s = run.session();
         Binding b;
         Content content;
-        if (ref_.by == Reference::By::Mem) {   // AC-22: an in-file medium of this load
+        if (ref_.by == Reference::By::Mem) {   // an in-file medium of this load
             if (run.plan() && set_) part_.adoptInFile(s, set_->defs);
             content = part_.inFileContent(kind_, ref_.value);
             b.kind = &kind_;
@@ -193,7 +193,7 @@ public:
         } else {
             b = found_->binding;
             content = found_->content;
-            // Read again: what the file holds now (AC-25, a preset run again).
+            // Read again: what the file holds now (a preset run again).
             if (!b.path.empty() && b.instance())
                 if (const auto bytes = part_.shelf().files().read(b.path).bytes) {
                     const ReadOutcome r = kind_.codec->read(*bytes, companionsBeside(b.path));
@@ -205,19 +205,19 @@ public:
         }
         const auto word = part_.placeOfKind(s, kind_);
         if (!word) co_return failed("There is no place for a " + kind_.label + " now.");
-        if (does_ == Does::Arm) {   // fitted for the user to feed (C59-7 AC-17)
+        if (does_ == Does::Arm) {   // fitted for the user to feed
             if (auto r = part_.arm(s, *word, std::move(b), std::move(content))) co_return failed(*r);
             co_return ItemResult{};
         }
         if (auto r = part_.insert(s, *word, std::move(b), std::move(content), ref_.side)) co_return failed(*r);
-        if (!kind_.words.insertNeedsTime || run.notWaitedFor()) co_return ItemResult{};   // C59-7 AC-17: last, not waited for
+        if (!kind_.words.insertNeedsTime || run.notWaitedFor()) co_return ItemResult{};   // last, not waited for
         // A pass-through place: fitted and fed; until the medium has passed (and
-        // stays fitted), within timeout: (AC-26; LIB-6 AC-57).
+        // stays fitted), within `timeout:`.
         machine::Machine* m = s.machine();
         if (!m) co_return failed(sessions::kNoMachine);
         const machine::TickRate rate = m->descriptor().tickRate;
         const machine::Ticks start = m->tickCount();
-        // timeout: (LIB-6 AC-57); on its own (run-step) at most an hour, as LIB-6's waits.
+        // `timeout:`; on its own (run-step) at most an hour, as the presets' waits.
         const machine::Ticks limit = run.deadline().value_or(static_cast<machine::Ticks>(rate) * 3600);
         while (!part_.takePassed(s, *word)) {
             m = s.machine();
@@ -232,7 +232,7 @@ public:
         return does_ == Does::Insert && kind_.words.insertNeedsTime ? After::Own : After::TakenEffect;
     }
     bool needsRunningMachine() const override { return does_ == Does::Insert && kind_.words.insertNeedsTime; }
-    std::string logText() const override { return verb_ + ": " + kind_.label + " " + inQuotes(logName()); }   // AC-25
+    std::string logText() const override { return verb_ + ": " + kind_.label + " " + inQuotes(logName()); }
 
 private:
     std::string logName() const { return ref_.by == Reference::By::Mem || !found_ ? ref_.value : found_->binding.name; }
@@ -245,7 +245,7 @@ private:
     std::shared_ptr<const InFileSet> set_;
 };
 
-// LIB-6 AC-47 (M-47): a medium step needs a place of its kind -- the
+// A medium step needs a place of its kind -- the
 // model's own, or one of a peripheral the header (or the running machine)
 // plugs in; else the error names the peripherals that have one.
 bool placeFor(const KindDecl& k, const std::string& verb, int line, ReadContext& ctx) {
@@ -282,7 +282,7 @@ std::unique_ptr<Item> readMedium(MediumItem::Does does, MediaPart& part, const K
     switch (ref->by) {
     case Reference::By::Name: found = resolveByName(part, k, ref->value, v.line, ctx, verb); break;
     case Reference::By::File: found = resolveByFile(part, k, ref->value, v.line, ctx, verb); break;
-    case Reference::By::Mem: set = inFileSetOf(ctx); break;   // AC-23: a name not defined is fresh
+    case Reference::By::Mem: set = inFileSetOf(ctx); break;   // a name not defined is fresh
     }
     if (ref->by != Reference::By::Mem && !found) return nullptr;
     return std::make_unique<MediumItem>(does, part, k, verb, std::move(*ref), std::move(found), std::move(set));
@@ -295,7 +295,7 @@ public:
     EjectItem(MediaPart& p, std::string w) : part_(p), word_(std::move(w)) {}
     Task<ItemResult> carryOut(RunContext& run) override {
         if (!part_.hasPlace(run.session(), word_)) co_return failed("There is no place " + word_ + " now.");
-        part_.eject(run.session(), word_);   // EC-6: an empty place, nothing
+        part_.eject(run.session(), word_);   // an empty place: nothing
         co_return ItemResult{};
     }
     After after() const override { return After::TakenEffect; }
@@ -325,8 +325,8 @@ public:
             if (!part_.hasPlace(s, place_)) co_return failed("There is no place " + place_ + " now.");
             r = part_.save(s, place_, request_, protect_);
         }
-        if (!r.ok) co_return failed(r.reason);   // LIB-6 AC-17
-        if (r.powerCycle) co_await part_.powerCycle(run.op());   // AC-19
+        if (!r.ok) co_return failed(r.reason);
+        if (r.powerCycle) co_await part_.powerCycle(run.op());   // the protect switch was set
         co_return ItemResult{};
     }
     After after() const override { return After::TakenEffect; }
@@ -402,7 +402,7 @@ std::unique_ptr<Item> readSaveas(MediaPart& part, const YamlNode& v, ReadContext
     return std::make_unique<SaveasItem>(part, place, inFileKind, inFile, std::move(r), protect, std::move(set));
 }
 
-// ── Slot keys (LIB-6 AC-3; AC-21, AC-23, AC-24) ─────────────────────────
+// ── Slot keys ───────────────────────────────────────────────────────────
 
 const KindDecl* moduleKindFor(MediaPart& part, const ReadContext& ctx, const machine::PlaceName& place) {
     const auto info = ctx.catalogue().place(ctx.model().model, place);
@@ -424,7 +424,7 @@ presets::PlaceResolution resolvePlace(MediaPart& part, const machine::PlaceName&
     std::optional<Found> found;
     if (const YamlNode* n = v.find("name")) {
         part.refreshShelf(nullptr);
-        // AC-5: one list of names; a module of the catalogue is the reader's.
+        // One list of names; a module of the catalogue is the reader's.
         const ShelfEntry* e = nullptr;
         for (const KindDecl& x : part.kinds())
             if (!e && x.heldBy == HeldBy::ModuleSlot) e = part.shelf().find(x, text(*n));
@@ -458,7 +458,7 @@ presets::PlaceResolution resolvePlace(MediaPart& part, const machine::PlaceName&
     }
     req->place = at;
     found->binding.peripheral = req->peripheral.value;
-    part.registerModule(req->content, found->binding);   // S-4: bound after the build (AC-24)
+    part.registerModule(req->content, found->binding);   // bound after the build
     return presets::PlaceResolution{How::Done, std::move(*req)};
 }
 
@@ -489,7 +489,8 @@ void addMediaToPresets(presets::Vocabulary& v, MediaPart& part) {
                                    },
                                    true, false});
     }
-    // D-20: eject: and saveas: are the library's.
+    // eject: and saveas: are the library's; the insert and arm steps each
+    // kind's.
     v.add(presets::StepDef{"eject", presets::StepDef::Value::Scalar,
                            [p](const YamlNode& n, ReadContext& c) -> std::unique_ptr<Item> {
                                const std::string word = text(n);

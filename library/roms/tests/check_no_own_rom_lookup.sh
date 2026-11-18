@@ -1,6 +1,6 @@
 #!/bin/sh
-# LIB-12 AC-2 (design §6, T7): "no other part of a product looks for a ROM
-# file". Fails when a product source outside the allowed files
+# No other part of a product looks for a ROM file. Fails when a product
+# source outside the allowed files
 #   - uses the old ROM loading APIs (directoryReader, ResourceReader,
 #     TIResourceReader, BundledRoms, loadRom, loadModule from a file), or
 #   - opens a file (ifstream, fopen, QFile, forResource:, fetch) on a line
@@ -9,9 +9,11 @@
 #
 # Usage: check_no_own_rom_lookup.sh <product-dir> [allowed-path ...]
 #   allowed-path: relative to <product-dir>; a file that may do it (the
-#   product's lookUpRoms() and its catalogue data, a frontend's Bundle, the
-#   one listed exception of D-6). tests/ and documentation are not checked.
-# CTest CalcU59NoOwnRomLookup (M-24), CalcU1600NoOwnRomLookup (M-27).
+#   product's lookUpRoms() and its catalogue data, a frontend's Bundle, and
+#   the file that reads the host drive's ROM, a bundled file Calc-U-1600
+#   reads outside the lookup).
+#   tests/ and documentation are not checked.
+# CTest CalcU59NoOwnRomLookup, CalcU1600NoOwnRomLookup.
 set -eu
 [ $# -ge 1 ] || { echo "usage: $0 <product-dir> [allowed-path ...]" >&2; exit 2; }
 cd "$1"
@@ -50,7 +52,7 @@ if [ -n "$all" ]; then
 fi
 
 if [ -n "$hits" ]; then
-  echo "a ROM file is looked for outside the ROM lookup (LIB-12 AC-2):"
+  echo "a ROM file is looked for outside the ROM lookup:"
   printf '%s\n' "$hits"
   exit 1
 fi

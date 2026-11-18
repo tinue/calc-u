@@ -6,8 +6,8 @@
 #include <filesystem>
 #include <set>
 
-// LIB-9 AC-1, AC-3, AC-4, AC-5, AC-6, AC-7, AC-8, AC-11, AC-18, AC-33
-// (booleans), EC-5, EC-6, EC-7, EC-10; design §6, T-3 to T-6, T-11.
+// The settings file: the declaration, defaults, the first start, versions,
+// unreadable files, writing through and merging, the booleans.
 
 using namespace calcu::settings;
 using namespace calcu::settings::test;
@@ -18,7 +18,7 @@ const std::string kVersioned = "format-version = 1\n";
 std::string iniPath(const TempDir& dir) { return dir / "Test-Product/Test-Product.ini"; }
 } // namespace
 
-TEST(ac1_declaration_names_kebab_case) {
+TEST(settings_declaration_names_kebab_case) {
     CHECK(checkDeclaration(testProduct()).empty());
     CHECK(isKebabCase("max-file-size-mb") && isKebabCase("startup") && isKebabCase("a1"));
     CHECK(!isKebabCase("maxFileSize") && !isKebabCase("max_file") && !isKebabCase("-a") &&
@@ -38,7 +38,7 @@ TEST(ac1_declaration_names_kebab_case) {
     CHECK(text.find("\nModel-A = \n") != std::string::npos || text.find("\nModel-A =\n") != std::string::npos);
 }
 
-TEST(ac3_missing_key_has_default) {
+TEST(settings_missing_key_has_default) {
     TempDir dir;
     writeText(iniPath(dir), kVersioned + "[test]\nname = mine\n");
     const SettingsFile f = SettingsFile::open(testProduct(), iniPath(dir));
@@ -55,7 +55,7 @@ TEST(ac3_missing_key_has_default) {
     CHECK_EQ(f.text("other", "thing"), std::string(""));
 }
 
-TEST(ac33_booleans_true_false) {
+TEST(settings_booleans_true_false) {
     TempDir dir;
     writeText(iniPath(dir), kVersioned + "[test]\nflag = true\n");
     CHECK_EQ(SettingsFile::open(testProduct(), iniPath(dir)).boolean("test", "flag"), true);
@@ -65,7 +65,7 @@ TEST(ac33_booleans_true_false) {
     }
 }
 
-TEST(ec5_bad_value_reads_default_and_stays_in_file) {
+TEST(settings_bad_value_reads_default_and_stays_in_file) {
     TempDir dir;
     const std::string original = kVersioned +
                                  "[test]\nport = many\nstyle = three\nflag = maybe\n"
@@ -75,7 +75,7 @@ TEST(ec5_bad_value_reads_default_and_stays_in_file) {
     CHECK_EQ(f.integer("test", "port"), 32168L);
     CHECK_EQ(f.text("test", "style"), std::string("one"));
     CHECK_EQ(f.boolean("test", "flag"), false);
-    CHECK_EQ(f.text("trace", "folder"), std::string(""));  // a path is absolute (AC-33)
+    CHECK_EQ(f.text("trace", "folder"), std::string(""));  // a path is absolute
     CHECK_EQ(f.integer("window", "width"), 900L);
     CHECK(f.raw("test", "style") == std::optional<std::string>("three"));
     // Outside the range is not accepted either.
@@ -94,10 +94,10 @@ TEST(ec5_bad_value_reads_default_and_stays_in_file) {
     CHECK_EQ(g.text("test", "style"), std::string("two"));
 }
 
-// AC-11: missing or not a number is the default 50; zero and negatives are
-// values of the key (no minimum, release prep step 5d), which the trace
-// session takes as 50 (LIB-10, debugger/tests/trace_tests.cpp).
-TEST(ac11_trace_size_missing_zero_negative_is_50) {
+// The trace size: missing or not a number is the default 50; zero and
+// negatives are values of the key (no minimum), which the trace session takes
+// as 50 (debugger/tests/trace_tests.cpp).
+TEST(trace_size_missing_zero_negative_is_50) {
     TempDir dir;
     writeText(iniPath(dir), kVersioned);
     CHECK_EQ(SettingsFile::open(testProduct(), iniPath(dir)).integer("trace", "max-file-size-mb"), 50L);
@@ -113,9 +113,9 @@ TEST(ac11_trace_size_missing_zero_negative_is_50) {
     CHECK_EQ(family::traceMaxFileSizeMb().help, std::string("The largest trace file in MiB; zero or less: 50."));
 }
 
-TEST(ac8_declaration_holds_no_hardware) {
-    // The family keys live in the sections of `settings.md` ST-4 and hold
-    // preferences, the startup model and presets, folders and window state.
+TEST(settings_declaration_holds_no_hardware) {
+    // The family keys live in these sections and hold preferences, the
+    // startup model and presets, folders and window state.
     const std::set<std::string> st4 = {"startup", "preset", "storage", "trace", "serial",
                                        "folders", "window", "debug", "display", "keyboard"};
     for (const KeyDecl& k : testProduct().keys)
@@ -126,7 +126,7 @@ TEST(ac8_declaration_holds_no_hardware) {
             CHECK(k.key.find(word) == std::string::npos && k.section.find(word) == std::string::npos);
 }
 
-TEST(ac5_first_start_writes_version_and_every_key) {
+TEST(settings_first_start_writes_version_and_every_key) {
     TempDir dir;
     CHECK(!exists(iniPath(dir)));
     const SettingsFile f = SettingsFile::open(testProduct(), iniPath(dir));
@@ -151,7 +151,7 @@ TEST(ac5_first_start_writes_version_and_every_key) {
     CHECK(SettingsFile::open(testProduct(), iniPath(dir)).outcome() == Outcome::Read);
 }
 
-TEST(ac7_no_version_line_starts_with_defaults_and_says_so) {
+TEST(settings_no_version_line_starts_with_defaults_and_says_so) {
     TempDir dir;
     const std::string noVersion = "[test]\nname = mine\n";
     writeText(iniPath(dir), noVersion);
@@ -160,12 +160,12 @@ TEST(ac7_no_version_line_starts_with_defaults_and_says_so) {
     CHECK(!f.problem().empty());
     CHECK(!f.writable());
     CHECK_EQ(f.text("test", "name"), std::string("plain"));  // the default, not read
-    // Not read and not written in this run (D-4); a change lasts until quit.
+    // Not read and not written in this run; a change lasts until quit.
     const SettingsFile::WriteResult w = f.set("test", "name", "new");
     CHECK(!w.ok && !w.problem.empty());
     CHECK_EQ(f.text("test", "name"), std::string("new"));
     CHECK_EQ(readText(iniPath(dir)), noVersion);
-    // Another version is not read either (ADR 0037).
+    // Another version is not read either.
     const std::string v2 = "format-version = 2\n[test]\nname = mine\n";
     writeText(iniPath(dir), v2);
     SettingsFile g = SettingsFile::open(testProduct(), iniPath(dir));
@@ -179,7 +179,7 @@ TEST(ac7_no_version_line_starts_with_defaults_and_says_so) {
     CHECK(SettingsFile::open(testProduct(), iniPath(dir)).outcome() == Outcome::NoVersion);
 }
 
-TEST(ec6_unreadable_file_untouched_defaults_logged) {
+TEST(settings_unreadable_file_untouched_defaults_logged) {
     TempDir dir;
     const std::string broken = kVersioned + "[test]\nname = mine\nthis is not ini\n";
     writeText(iniPath(dir), broken);
@@ -199,7 +199,7 @@ TEST(ec6_unreadable_file_untouched_defaults_logged) {
     CHECK_EQ(readText(iniPath(dir)), bom);
 }
 
-TEST(ac4_settings_file_keeps_unknown_keys_on_write) {
+TEST(settings_file_keeps_unknown_keys_on_write) {
     TempDir dir;
     const std::string hand = kVersioned +
                              "# my notes\n[startup]\nmodel = Model-A\nmine = kept\n\n"
@@ -212,7 +212,7 @@ TEST(ac4_settings_file_keeps_unknown_keys_on_write) {
                                          "[my-section]\nanything = goes\n");
 }
 
-TEST(ac6_change_survives_reopen) {
+TEST(settings_change_survives_reopen) {
     TempDir dir;
     {
         SettingsFile f = SettingsFile::open(testProduct(), iniPath(dir));
@@ -225,7 +225,7 @@ TEST(ac6_change_survives_reopen) {
     CHECK_EQ(g.integer("trace", "max-file-size-mb"), 12L);
 }
 
-TEST(ac6_file_not_reread_while_running) {
+TEST(settings_file_not_reread_while_running) {
     TempDir dir;
     writeText(iniPath(dir), kVersioned + "[test]\nname = first\n");
     SettingsFile f = SettingsFile::open(testProduct(), iniPath(dir));
@@ -237,7 +237,7 @@ TEST(ac6_file_not_reread_while_running) {
     CHECK_EQ(readText(iniPath(dir)), kVersioned + "[test]\nname = edited\nstyle = two\n");
 }
 
-TEST(ec7_interrupted_write_leaves_old_or_new) {
+TEST(settings_interrupted_write_leaves_old_or_new) {
     TempDir dir;
     const std::string old = kVersioned + "[test]\nname = old\n";
     writeText(iniPath(dir), old);
@@ -259,7 +259,7 @@ TEST(ec7_interrupted_write_leaves_old_or_new) {
     CHECK_EQ(readText(iniPath(dir)), kVersioned + "[test]\nname = new\nstyle = two\n");
 }
 
-TEST(ec10_two_writers_last_wins_unknown_keys_kept) {
+TEST(settings_two_writers_last_wins_unknown_keys_kept) {
     TempDir dir;
     writeText(iniPath(dir), kVersioned + "[test]\nname = start\n");
     SettingsFile a = SettingsFile::open(testProduct(), iniPath(dir));
@@ -281,11 +281,11 @@ TEST(ec10_two_writers_last_wins_unknown_keys_kept) {
     CHECK_EQ(c.text("test", "name"), std::string("from-b"));
     CHECK_EQ(c.text("test", "newer"), std::string("from-b"));
     CHECK_EQ(c.boolean("test", "flag"), true);
-    // A does not see B's values while it runs (AC-6).
+    // A does not see B's values while it runs.
     CHECK_EQ(a.text("test", "style"), std::string("one"));
 }
 
-TEST(ac18_defaults_only_reads_and_writes_nothing) {
+TEST(settings_defaults_only_reads_and_writes_nothing) {
     SettingsFile f = SettingsFile::defaultsOnly(testProduct());
     CHECK(f.outcome() == Outcome::DefaultsOnly);
     CHECK(f.path().empty());

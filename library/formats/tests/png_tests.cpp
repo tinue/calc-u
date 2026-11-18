@@ -1,4 +1,4 @@
-// LIB-8 T5 (design §2, §6): the library's PNG writer: RGB, band by band,
+// The library's PNG writer: RGB, band by band,
 // with pHYs. Read back by a small inflate of the one block kind it writes.
 #include "TestHarness.hpp"
 #include "formats/Png.hpp"

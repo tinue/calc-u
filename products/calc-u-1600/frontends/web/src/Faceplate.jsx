@@ -1,10 +1,10 @@
 // The calculator face, as Qt6/app/FaceplateWidget + LcdWidget: the model's
 // artwork scaled to `width` (aspect kept), the LCD painted over its
 // rectangle from the library's `display` topic, a translucent white flash on
-// each key live input holds (the topic `held-keys`, LIB-5 AC-19; its
-// button, calc.css). The pointer is the React set's (useShellFaceplate,
-// LIB-14 AC-24, AC-43): the key under it by the shell's one rule with the
-// hit map of `c1600.faceplate-map` (24 px around a key, D-8), several
+// each key live input holds (the topic `held-keys`; its
+// button, calc.css). The pointer is the React set's (useShellFaceplate):
+// the key under it by the shell's one rule with the
+// hit map of `c1600.faceplate-map` (24 px around a key), several
 // pointers, holding the LCD runs at full speed.
 //
 // Key rectangles and the LCD rectangle are app/KeyLayout's, in art pixels.
@@ -53,7 +53,7 @@ function Faceplate({ shell, model, map, width, shiftFlash }) {
   const faceRef = React.useRef(null);
   const [loaded, setLoaded] = React.useState(0);
   const held = useTopic(shell, "held-keys");
-  // A host SHIFT tap (LIB-5 AC-33) is down and up at once, too short for the
+  // A host SHIFT tap is down and up at once, too short for the
   // held keys: `shiftFlash` counts the taps, each drawn pressed for a moment.
   const [flashing, setFlashing] = React.useState(false);
   React.useEffect(() => {
@@ -65,7 +65,7 @@ function Faceplate({ shell, model, map, width, shiftFlash }) {
   const heldLive = (held && held.live) || [];
   const live = flashing && !heldLive.includes("shift") ? [...heldLive, "shift"] : heldLive;
   const hitMap = React.useMemo(() => hitMapOf(layout), [layout]);
-  // The shell's productFirst hook (LIB-14 D-44) notes where the pointer went
+  // The shell's productFirst hook notes where the pointer went
   // down, in art pixels, and never takes the press: a held key with several
   // rectangles (the PC-1600's two SHIFT keys, one machine key) is drawn on
   // the one pressed, else on the first (app/KeyLayout's heldKeyIndex).

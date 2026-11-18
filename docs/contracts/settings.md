@@ -34,7 +34,7 @@ folder).
   preset (ADR 0021), plus window and dialog state the frontends need
   (ST-4).
 - The library resolves every path a product uses (settings file, save
-  folder, tapes, traces, serial links, `ti58c.memory.yaml`) from what the frontend
+  folder, cassettes, traces, serial links, `ti58c.memory.yaml`) from what the frontend
   passes (Calc-U-1600's rule: the frontend passes the host's directories,
   the library decides nothing about the platform).
 
@@ -83,7 +83,8 @@ Options:
   platform, no lookup hierarchy yet (Briefing §1.2 allows it later):
   macOS and iOS: the app's Application Support folder (inside the
   sandbox for the Swift app); Windows: `%APPDATA%\<Product>\`; Linux:
-  `$XDG_CONFIG_HOME/<product>/` (default `~/.config/<product>/`); web:
+  `$XDG_CONFIG_HOME/<Product>/` (default `~/.config/<Product>/`; the
+  product's name as written, `Calc-U-1600`, as on every platform); web:
   the persistent file system of the page (ST-4). File name
   `<Product>.ini`.
 - (b) In the save folder (`~/Calc-U-1600/Calc-U-1600.ini`): easy to find,
@@ -102,8 +103,8 @@ Options:
   persistent IndexedDB for both products (answers `media.md` Q-3:
   Calc-U-59's web save folder stops being per page session). An override
   in the settings on desktop Qt (`storage` section). Layout: instances
-  and `ti58c.memory.yaml` at the root (answers `media.md` Q-2), tapes in
-  `Tapes/`; traces and screenshots, and the serial links (Calc-U-1600),
+  and `ti58c.memory.yaml` at the root (answers `media.md` Q-2), cassettes
+  in `Cassettes/` (`[storage] cassette-folder` names another); traces and screenshots, and the serial links (Calc-U-1600),
   default to the save folder on Qt and keep the Swift trace setting
   (Application Support, iCloud, custom).
 - (b) One rule for every platform (`~/<Product>`): impossible in the
@@ -118,7 +119,7 @@ Options:
   kebab-case like the preset format, values in glossary terms rather
   than numbers: `[startup] model = last | TI-59 | …`, `[preset]
   TI-59 = <path>` (the startup preset per model), `[storage] save-folder =`,
-  `cassette-folder =`, `[trace] folder =`, `max-file-size-mb = 50`, `[debug]
+  `cassette-folder =`, `[trace] folder =`, `max-file-size-mb = 50` (zero or less: 50), `[debug]
   dap-enabled =`, `dap-port =` (Calc-U-1600), `[serial] link-folder =`,
   `[display] led-style = modernized | classic` and `[keyboard] feedback =
   off | haptic | click` (Calc-U-59), `[window]` and `[folders]` for
@@ -153,3 +154,4 @@ per product, not per model.)
 | 2026-11-10 | ST-3 | Save folder: iCloud Documents with local fallback (Swift), `~/<Product>` with an override (Qt), persistent IndexedDB (web, both products). Instances and `ti58c.mem` at the root, tapes in `Tapes/`; traces, screenshots and serial links default to the save folder on Qt; Swift keeps its trace location setting. |
 | 2026-11-10 | ST-4 | INI sections from Calc-U-1600's groups, kebab-case names, glossary values; app-written state in `[window]` and `[folders]`; on the web the INI is a file in IDBFS. |
 | 2026-11-11 | ST-4 (completed, user, 2026-11-11) | The app-written keys are `[startup] last-model`, the keys of `[folders]` (one for each kind of file a product opens) and those of `[window]` (plain numbers; `portrait-debug-page` for the Swift frontend). The Swift trace location is `[trace] location = app-support | icloud | folder`; a Web frontend offers a finished trace as a download. |
+| 2026-11-18 | ST-2, ST-3, ST-4 (corrected, release simplification R-6, D-3) | The code as it stands: the settings folder is `<Product>` as the product's name is written on every platform (`~/.config/Calc-U-1600/` on Linux); cassettes lie in `Cassettes/` in the save folder unless `[storage] cassette-folder` names another (was `Tapes/`); `[trace] max-file-size-mb` takes zero or less as 50. The ST-3 row's `Tapes/` stands for its date. |

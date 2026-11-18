@@ -54,7 +54,7 @@ private:
 };
 
 // The first commands of AC-9 and the commands of AC-23 and AC-24: wait,
-// key-down, key-up, lcd, display, state, capabilities, ticks, audio,
+// key-down, key-up, display-text, display, state, capabilities, ticks, audio,
 // state-save, state-restore, quit.
 void addFirstCommands(CommandRegistry&);
 // LIB-5: key, type (TypingCommands.cpp); called by addFirstCommands.

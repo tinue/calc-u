@@ -97,7 +97,7 @@ four independent dimensions; none can be inferred from another:
 | `definition-terminology` | yes | One of the same four. The vocabulary every `chip-select` / `signal` / `line` name in the file is resolved against. Must be in `compatible-hosts` |
 | `regions` | yes | A list of one or more regions (§1.3) |
 | `battery` | no | `true` for battery-backed hardware. A battery-backed template offers Name & Save, which makes it a medium |
-| `template` | no | `true`: a template, never written. Absent or `false`: an instance, autosaved in place. Never written into a saved instance |
+| `template` | no | `true`: a template, never written. Absent or `false`: an instance, autosaved in place. Name & Save and autosave never write it; a preset's `saveas: { as: template }` writes `template: true` (after `module-name`) |
 | `saved` | no | ISO-8601 UTC time of the last write, `YYYY-MM-DDTHH:MM:SSZ`. Written into every saved instance (after `module-name`, or its `template`). Informational |
 | `notes` | no | Free text, ignored by the loader |
 
@@ -269,9 +269,12 @@ initial-content:
 - A saved instance starts with the comment line
   `# Calc-U-1600 memory module instance -- generated from "<template>".`
   (`template` in place of `instance` for one a preset saves as a
-  template) and `# created: <time>`; the rest of its template's text,
-  comments included, is kept. The writer sets `format: memory-module`
-  and `saved` on every write.
+  template) and `# created: <time>`. At the first save the rest of its
+  template's text, comments included, is kept below these two lines; at
+  every later save the comment lines at the top of the file are
+  replaced by the two lines again (the `created` time kept), and the
+  comments further down are kept. The writer sets `format:
+  memory-module` and `saved` on every write.
 - Instance: every write to the module is saved back into its file.
 - `slot-N: { name: X }` finds the definition whose `module-name` is X;
   `slot-N: { file: … }` names the file. How a name is found (bundled

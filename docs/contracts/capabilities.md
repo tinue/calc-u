@@ -65,9 +65,9 @@ Sources: `docs/inventory/calc-u-59.md` and `calc-u-1600.md`
 
 | Kind | Offers | Used by the library for |
 |---|---|---|
-| **Media place** | whether it is pass-through or holding; its sides and the current side; insert (content in) and eject (content out); a change counter for autosave; write protection where the medium has it; "waits for a medium" where the ROM does (TI card reader) | pickers, Name & Save and autosave (`media.md`); `card:`, `arm:` (TI-59); `floppy:`, `tape:`, `eject:` (Sharp) (`docs/formats/preset.md` §5.2) |
+| **Media place** | whether it is pass-through or holding; its sides and the current side; insert (content in) and eject (content out); a change counter for autosave; write protection where the medium has it; "waits for a medium" where the ROM does (TI card reader) | pickers, Name & Save and autosave (`media.md`); `card:`, `arm:` (TI-59); `floppy:`, `cassette:`, `eject:` (Sharp); `saveas:` (both) (`docs/formats/preset.md` §5.2) |
 | **Paper output** (C-2) | the paper's width; an append-only stream of **marks** on the paper (dots, or pen strokes with their colour); a **text layer** where the printer knows which characters it printed (each line's characters and their place on the paper); cut and clear | the paper panel (ADR 0023), `cut-paper:`, Copy (the image always, the text when there is a text layer), harness printout |
-| **Controls** | the keys and switches of a peripheral or component that are not machine keys (M-3), each with an ID and its state | `- printer-trace:` (`docs/formats/preset.md` §5.5), the harness command `set-control` (LIB-6 AC-34), the buttons a panel shows |
+| **Controls** | the keys and switches of a peripheral or component that are not machine keys (M-3), each with an ID and its state; the control state lists them in `controls` (`{place, peripheral, id, form, on}`, LIB-4 AC-21) | `- printer-trace:` (`docs/formats/preset.md` §5.5), the harness command `set-control` (LIB-6 AC-34), the buttons a panel shows |
 | **Typing support** | key readiness, command-prompt readiness, latch states, each where the model has it (`typing.md`, T-2) | the typing engine; pacing (`frontend.md`, sessions and pacing) |
 | **Serial port** | bytes in and out, line settings as far as the model has them | the host link (a pseudo-terminal, ADR 0009), harness serial commands |
 | **Real-time clock** | reading and setting the clock | `sync-clock:`, seeding from the host at build time |
@@ -186,7 +186,7 @@ Options:
   Calc-U-1600 product kind is open.
 - Q-2 (answered 2026-11-10, batch 6 gate: product code behind LIB-7
   AC-46): Where the readers and writers of the media file formats sit
-  (magnetic card format 3, `.card.yaml`, `.floppy.yaml`):
+  (magnetic card format 3, `.module.yaml`, `.floppy.yaml`):
   the machine takes no files, so content crosses the media place in a
   form still to be named.
 - Q-3 (phase 4b): The built-in default machine of the TI-58 and TI-58C
@@ -206,3 +206,4 @@ Options:
 | 2026-11-10 | C-2 (amended, user, 2026-11-10, batch 6 gate) | The paper panel is always shown. Each type of printer keeps one paper for the run of the product; it is back when the printer is attached again, also on another model. A preset the user loads starts with empty paper. |
 | 2026-11-13 | C-3 (amended, user, 2026-11-13) | A TI-58C a preset or a startup preset built never writes the constant memory file (`ti58c.memory.yaml`); only one built from the file keeps it up to date; a Cold boot of that machine empties it (`docs/formats/media.md` §4; C59-3 AC-10). |
 | 2026-11-13 | Alignment after the Q&A round | Media steps `card:`, `arm:`, `floppy:`, `tape:`, `eject:` and the step `printer-trace:` in the kinds table; sides 0/1; a CE-150 has a cassette on every model; a Cold boot zeroes the memory before the processor starts, then the ROM's start-up runs (B-28); Q-1 and Q-2 marked answered. |
+| 2026-11-18 | Release simplification R-6 (D-5) | The media steps of the kinds table are `cassette:` (was `tape:`) and `saveas:`; Q-2 names `.module.yaml` (was `.card.yaml`); the Controls kind reaches the frontends as the control state's `controls`. The 2026-11-13 row stands for its date. |

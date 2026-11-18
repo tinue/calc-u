@@ -11,9 +11,10 @@ why. Every key of the file is in
 
 ## Making your own module
 
-- **Start from an example:** copy the closest bundled definition from
-  [frontends/qt6/resources/cards/](https://github.com/tinue/calc-u/tree/main/products/calc-u-1600/frontends/qt6/resources/cards)
-  in the source repository. `ce155.module.yaml` is a simple one;
+- **Start from an example:** copy the closest of the bundled templates,
+  which the source repository keeps with the product
+  ([Worked examples](10-module-definition-format.md#7-worked-examples)
+  lists them). `ce155.module.yaml` is a simple one;
   `ce1638.module.yaml` and `ce1601m.module.yaml` are banked. The fictional
   [pc1500-maxed-out.module.yaml](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/examples/memory/memory-cards/pc1500-maxed-out.module.yaml)
   shows every PC-1500 expansion pin in use, and its preset plugs it in with

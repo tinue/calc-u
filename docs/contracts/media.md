@@ -188,8 +188,9 @@ Options:
 
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
 |---|---|---|---|---|---|
-| Media places (PR-8) | card reader, pass-through, sides 0/1 (TI-59 only) | module slot (battery-backed modules), cassette (CE-150) | 2 module slots, floppy (CE-1600F; holding, sides 0/1), cassette (CE-1600P, CE-150) | cassette (CE-126P, CE-124) | RAM card slot (CE-201M, CE-202M: battery-backed), cassette |
-| Templates | the fresh card (implicit, no file) | bundled modules | bundled modules and disks (Blank, Formatted) | — | — |
+| Media places (PR-8) | card reader, pass-through, sides 0/1 (TI-59 only) | module slot (battery-backed modules), cassette recorder (CE-150) | 2 module slots, floppy drive (CE-1600F; holding, sides 0/1), cassette recorder (CE-1600P, CE-150) | cassette (CE-126P, CE-124) | RAM card slot (CE-201M, CE-202M: battery-backed), cassette |
+| Place IDs; place words (glossary) | `card-reader`; `card-reader` | `slot-1`, `cassette-recorder`; `slot-1`, `cassette` | `slot-1`, `slot-2`, `floppy`, `cassette-recorder`; `slot-1`, `slot-2`, `floppy`, `cassette` | — | — |
+| Templates | the fresh card (implicit, no file) | bundled modules, the empty cassette | bundled modules, disks (Blank, Formatted), the empty cassette | — | — |
 | Instance files | `.magnetcard.yaml` (format 3) | `.module.yaml`, `.cassette.yaml` | `.module.yaml`, `.floppy.yaml` (version 2), `.cassette.yaml` | — | — |
 | Name (MD-2) | in the file (new card version) | in the file | in the file | — | — |
 | Preset-defined media | `magnetic-cards:` (in-file cards; today `CARD: mem:`) | — | — | — | — |
@@ -211,7 +212,7 @@ Options:
 - Q-1 (answered 2026-11-10; superseded 2026-11-13, user: a tape is a
   medium by `docs/formats/media.md` §3, a definition with its WAV,
   templates, Name & Save, one bundled empty tape): cassette tapes keep their own rules (fixed role,
-  written at each motor stop into `Tapes/`); WAV is an external format.
+  written at each motor stop into `Tapes/`, now `Cassettes/`); WAV is an external format.
   Background: today fixed-role (play or record) and written at
   each motor stop into the tapes folder; whether a recorded tape is an
   instance with Name & Save like the other media, or keeps its own rules,
@@ -238,3 +239,4 @@ Options:
 | 2026-11-13 | MD-1, I-2, I-3 (superseded, user, 2026-11-13) | A medium's own file decides: `template: true` is never written; any other medium file is an instance, written in place, also when a preset names it by path; no copy at a first write; no instance takes a bundled template's name. The earlier rule was an error of the spec; Calc-U-1600 works so today (`docs/formats/media.md`). |
 | 2026-11-13 | Q-1 (superseded, user, 2026-11-13) | A cassette tape is a medium: a `.tape.yaml` definition with its WAV, templates and instances, Name & Save, `position`; one bundled template, the empty tape (`docs/formats/media.md` §3). |
 | 2026-11-13 | Alignment after the Q&A round | Magnetic card format 3 is YAML (`.magnetcard.yaml`, `card-name`, sides 0/1; `docs/formats/media.md` §1), superseding the 3.0 text layout; floppy disks are version 2 with sides 0/1; in-file media are the TI-59's `magnetic-cards:` only; the media steps of `docs/formats/preset.md` §5.2 replace fit, insert and `medium:` sections. |
+| 2026-11-18 | Fit table (release simplification R-6, D-6) | The cassette's media place is the cassette recorder, ID `cassette-recorder`, named `cassette` in presets and the media commands (its place word, glossary); cassettes lie in `Cassettes/` (`settings.md` ST-3); the fit table lists the place IDs and words and the bundled empty cassette. The rows above stand for their dates. |

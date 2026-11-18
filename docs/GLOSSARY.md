@@ -94,6 +94,15 @@ written and starts with a module header. The CE-502B is one; a CE-161
 becomes one with its write-protect switch set.
 _Avoid_: ROM card
 
+**Battery-backed module**:
+A memory module whose module definition says `battery: true`, such as
+the CE-161: its RAM keeps its contents, so the product keeps it as a
+medium (the kind `battery-backed-module`). Its template offers Name &
+Save; an instance saves itself into its `.module.yaml` after each change
+(`docs/formats/modules.md` §1). It is installed in a module slot, not
+inserted.
+_Avoid_: battery card, battery-card save
+
 **Write-protect switch**:
 The switch on a memory module that blocks every write to its RAM; on the
 CE-161 the manual calls it the "Exclusive Readout Area Set Switch".
@@ -146,6 +155,14 @@ The medium of the cassette recorder of a CE-150 or CE-1600P, stored as a
 sound the recorder plays or records; the tape counter counts it.
 _Avoid_: tape image, WAV (for this), cassette tape (as the name of the file)
 
+**Cassette recording**:
+A sound file (`.wav`) that the harness records from the cassette
+recorder with `c1600 cassette record <path>`: what the machine saves is
+written to it each time the motor stops and at the eject (C1600-5 AC-5).
+Its kind is `cassette-recording`, which is only written, never read; a
+cassette for use in the frontends is a cassette definition.
+_Avoid_: tape recording
+
 **Host drive**:
 A PC-1600 drive (S3:) that the emulator backs with a folder on the
 computer. It has no real counterpart.
@@ -159,6 +176,13 @@ _Avoid_: continuous memory, permanent memory
 
 **Partition**:
 The TI-58/59's split of its RAM between program steps and data registers.
+
+**Data register**:
+One of the TI-58/58C/59's numbered memories for a number, 00–99, that
+`STO` and `RCL` reach; the partition says how many there are. A preset
+writes them with `data:` (`docs/formats/preset.md` §4.2), the harness
+reads and writes them with `c59 data-registers`. Not a CPU register,
+which the debugger shows (`registers`).
 
 ## Code structure
 
@@ -250,6 +274,12 @@ _Avoid_: sample, demo
 
 **Bundled preset**:
 A preset the bundle file lists: a startup preset or an example.
+
+**Project preset**:
+The preset a DAP launch configuration names with `project`: its `debug:`
+block is the base of the configuration and it is the preset the session
+loads unless the configuration names another (C1600-3 AC-5,
+`docs/formats/preset.md` §3.4).
 
 **Startup preset**:
 The preset a machine is built from when the product starts or the model is
@@ -358,7 +388,9 @@ machine.
 _Avoid_: insert (for this)
 
 **Save folder**:
-The folder where a product keeps its instances and other user files.
+The folder where a product keeps its instances and other user files
+(the setting `[storage] save-folder`; `storage` is the section's key,
+not a term).
 _Avoid_: battery-card saves, save directory, storage
 
 ## Input
@@ -397,8 +429,10 @@ Stopping, stepping and breakpoints on a running machine, wherever its user
 interface sits: in the frontend or in an editor through DAP.
 
 **Debug panel**:
-The view of a machine's state inside a frontend.
-_Avoid_: inspector, debug view
+The view of a machine's state inside a frontend. Calc-U-1600's debug
+panel keeps its label INSPECTOR (C1600-5), and its texts are **views**
+(below); the word is that panel's name, not a general term.
+_Avoid_: inspector, debug view (as general terms)
 
 **Trace**:
 A recorded per-instruction log of a CPU, saved as a **trace file**.
@@ -406,7 +440,23 @@ _Avoid_: log (for this), trace dump
 
 **Pause**:
 The debugger stopping a running machine; **Resume** lets it run on.
+Calc-U-59's debug panel keeps the labels FREEZE and RESUME of 2.3.0
+(C59-4), the one exception.
 _Avoid_: freeze, halt, break
+
+**Profile**:
+The debugger counting how often each address of each debug target is
+carried out, while it is on (`profile on|off`, the command `profile`);
+its report (`profile report`, the request `profile-report`) lists the
+most frequent addresses (LIB-10 AC-20). Calc-U-59's coverage is read
+from it. Calc-U-59's debug panel's heatmap is a count of its own.
+
+**Machine state**:
+The full state of a machine in an internal form, which the harness
+writes with `state-save <file>` and continues from with `state-restore
+<file>`; a restore is refused for another version or machine
+configuration (LIB-11 AC-24). It is neither a preset nor a medium.
+_Avoid_: snapshot, state file (the 2.3.0 word for a preset)
 
 **ASM overlay**:
 Hand-assembled TI-59 CPU code that the debugger loads into an extra ROM
@@ -469,9 +519,11 @@ _Avoid_: model info, machine info
 
 **Place**:
 A named position on a machine or peripheral where the user puts a
-peripheral or a medium, as the control bar and the presets name it:
-`slot-1`, `printer`, `interface`, `card-reader`, `floppy`,
-`cassette-recorder`. Several places can share one connector.
+peripheral or a medium, named by its ID in the control state and the
+header keys of presets: `slot-1`, `printer`, `interface`, `card-reader`,
+`floppy`, `cassette-recorder`. Presets' steps and the media commands
+name a media place by its **place word**. Several places can share one
+connector.
 _Avoid_: bay, slot (for this), port
 
 **Media place**:
@@ -482,6 +534,14 @@ CE-1600P. It is
 TI-59 card reader) or **holding** (keeps it until it is ejected).
 _Avoid_: bay, drive (for the general term)
 
+**Place word**:
+The word preset steps (`eject:`, `saveas: { place: }`) and the media
+commands use for a media place: the eject word of its kind where only
+one place of the machine holds that kind (`cassette` for the cassette
+recorder, `floppy` for the floppy drive), else the place's ID
+(`card-reader`, `slot-1`) (`library/media/MediaPart.cpp`, LIB-7 AC-21).
+A preset step never names `cassette-recorder`, the place's ID.
+
 **Key ID**:
 The stable name of a key, listed in the machine descriptor.
 _Avoid_: key name, matrix code, key code (for this)
@@ -491,6 +551,12 @@ The form of a machine's display output: a **segment display** (positions
 of named segments) or a **dot-matrix display** (dots, optionally in
 character cells). An **indicator** is a named symbol of either kind
 outside its positions or dots, such as a status-line symbol.
+
+**Calc indicator**:
+The TI-58/58C/59's C indicator: segments A, F, E, D of the leftmost
+display position, driven from the CPU's flags with a brightness of its
+own. The topic `c59.calc-indicator` carries it with the display's LED
+frame (was `c59.led`).
 
 **Generic kind**:
 A kind of capability that the library defines and handles the same way
@@ -534,6 +600,13 @@ What the controls around the machine offer right now: models, variants,
 places and what fits them, media places, panels, and the controls of the
 plugged-in peripherals with their positions.
 
+**Control**:
+A switch or key of a peripheral that is not a key of the machine, such
+as the PC-100C's TRACE, PRINT and ADV. The control state lists them in
+`controls` (`{place, peripheral, id, form, on}`); the command
+`set-control` (the harness's `set-control <peripheral> <control>
+on|off`) sets one. A machine has no controls of its own.
+
 **Control bar**:
 The bar below the calculator that holds the machine's hardware: the
 model, then one picker per module slot and media place.
@@ -565,8 +638,9 @@ What one debugger step means: `cpu` (one instruction) on every machine,
 `program` (one program step) where a product declares it.
 
 **ROM lookup**:
-The library part that finds each ROM image a machine needs: bundled
-first, then the user's **ROM folder**.
+The library part that finds each ROM image a machine needs among the
+ROMs bundled with the product. ADR 0035 leaves room for a second source,
+a **ROM folder** the user chooses; none exists yet.
 
 **ROM repository**:
 A repository that holds ROM dumps, from which a product fetches them at
@@ -657,9 +731,11 @@ The picture of the calculator with its display and its on-screen keys.
 What says which area of a faceplate is which key.
 
 **Kind** (of medium):
-What one sort of media place takes: a magnetic card, a floppy disk, a
-battery-backed module, a cassette. Each kind has its file suffix
-and its format.
+What one sort of media place takes: a magnetic card (`magnetic-card`),
+a floppy disk (`floppy-disk`), a battery-backed module
+(`battery-backed-module`), a cassette (`cassette`). Each kind has its
+file suffix and its format. The harness's cassette recording
+(`cassette-recording`) is a kind that is only written.
 
 **Saved media**:
 The media in the save folder and the cassette folder, and the list of them
@@ -779,3 +855,4 @@ in; a slice is not called a frame.
 | 2026-11-17 | "Cassette" names the medium everywhere (the kind, the preset step and eject word, `format: cassette`, `.cassette.yaml`, `cassette-name`, the cassette folder); its place is the `cassette-recorder` (CE-125 manual: "microcassette recorder", PC-1403 manual: "cassette recorder"); the entry "Cassette tape" became **Cassette**, "Place" and "Media place" name the cassette recorder; the module definition is `.module.yaml` | user, 2026-11-17 (Part E review Q-5, Q-6; release prep step 2) |
 | 2026-11-17 | **Control state** also holds the controls of the plugged-in peripherals with their positions (LIB-4 AC-21) | user, 2026-11-17 (Part E review Q-6; release prep step 3) |
 | 2026-11-17 | New entry **Product word**: `c59`, `c1600` (future `c1403`) for the harness's product commands, `--product`, the DAP requests and the VS Code debug type, and as the dotted prefix of product topics, commands and requests | user, 2026-11-17 (Part E review Q-6; release prep step 1) |
+| 2026-11-18 | New entries **Place word**, **Battery-backed module**, **Cassette recording**, **Data register**, **Machine state**, **Project preset**, **Calc indicator**, **Control**, **Profile**. **Place** corrected: presets' steps and the media commands name a media place by its place word (`cassette`, `floppy`), not by its ID `cassette-recorder` (LIB-7 AC-21). **ROM lookup**: the ROMs bundled with the product only; no user ROM folder exists (ADR 0035 allows one). **Debug panel** and **Pause** name their exceptions, the INSPECTOR of Calc-U-1600 and the FREEZE/RESUME labels of Calc-U-59's 2.3.0; **Kind** lists the kind IDs; **Save folder** names `[storage] save-folder` | release simplification R-6 (V-1, V-10, V-14; `docs/reviews/release-simplification.md`) |

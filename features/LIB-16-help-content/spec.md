@@ -119,6 +119,13 @@ The asset
 - [ ] **AC-17** — Given the help tool builds an asset, then a shared
   part's `<!-- follows: -->` line (AC-3, check C6) is not in it, and the
   source keeps it.
+- [ ] **AC-18** — Given a help file names a path into the source code
+  (`frontends/`, `core/`, `app/`, `library/`, or a product's
+  `frontends/`, `core/`, `app/`) in its text, in a code span or in a
+  link into the source repository, or a milestone of the migration
+  (`M-<n>`), then the help tool fails and says where. The repository's
+  documents, examples and tools, a product's folder and links between
+  help files may be named.
 - [ ] **AC-8** — Given the release of a product is built, then the help
   tool builds the help asset of that version, and the asset is among the
   release's files; the test suite builds both products' assets
@@ -254,3 +261,4 @@ The asset
 | M-60, design turned out otherwise: `reference/StateFileFormat.md` (design 13.2, D-18) was deleted in M-54 (C59-2: its content is `docs/formats/preset.md` and `cue-card.md`), so there is nothing to move with `git mv`; `help/10-preset-sections.md` is written new from `docs/formats/`, and the code comments that named the old file point at `preset.md` §8.1 | the file no longer existed at M-60 | 2026-11-17 |
 | M-60, design made precise: the pictures of AC-16 that show the control bar or the menus (`app-screenshot.png`, `ipad-13-2752x2064.png`, `iphone-duo-2852x2006.png`, `ipad-2752x2064-asm.png`) are moved as they are for now and stay to be taken anew by hand, with the two new ones (the macOS menus, the iPhone's More menu), from the main checkout's Swift app; AC-16 stays open until then (M-64 at the latest) | pictures by hand need the Swift app on macOS and a simulator from the main checkout, not a worktree (design 13.11) | 2026-11-17 |
 | AC-17: the asset leaves out the shared parts' `<!-- follows: -->` lines; the source keeps them and the check still requires them | user, 2026-11-17 (Q-6 of `docs/reviews/e-simplification.md` §10; release prep step 6c) | 2026-11-17 |
+| AC-18: the shipped help names no source path and no milestone; check C10 | release simplification D-14 (`docs/reviews/release-simplification.md` §4; user's rules of 2026-11-18): Calc-U-1600's help linked into `frontends/qt6/resources/cards` | 2026-11-18 |

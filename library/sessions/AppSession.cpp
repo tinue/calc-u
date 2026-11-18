@@ -247,7 +247,7 @@ void AppSession::Impl::registerLibraryCommands() {
     auto key = [this](bool down) {
         return [this, down](const Value& args, SessionContext&) -> CommandOutcome {
             const Value* k = args.find("key");
-            if (!k || !k->string()) return Refused{"The key command needs key: <name>."};
+            if (!k || !k->string()) return Refused{"The key command needs key: <key ID>."};
             machine::Machine* m = ms.machine();
             if (!m) return Refused{kNoMachine};
             const machine::KeyId id{*k->string()};

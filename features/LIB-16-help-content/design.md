@@ -169,6 +169,7 @@ the exit status (0 without failures, 1 with, 2 for a usage error).
 | C7 | every key of `settings-keys.txt` is written as `` `[section] key` `` in chapter 8: the family's in the shared part, the product's in the product part | fails | AC-14 |
 | C8 | every word that `docs/GLOSSARY.md` lists after `_Avoid_:` (the words before a parenthesis) is listed where it stands | warns | AC-5 |
 | C9 | a `chapter:<n>` link resolves (§3.2) | fails | EC-3 |
+| C10 | no prose or code span names a path into the source code (`frontends/`, `core/`, `app/`, `library/`, a product's `frontends/`, `core/` or `app/`, standing on its own, not the tail of a URL or a relative link), no link leads into those folders of the source repository, and no text names a milestone `M-<n>` | fails | AC-18 |
 
 **The settings keys (C7).** The tool cannot read the C++ declaration,
 so a Frequent test of the product writes it out:
@@ -322,6 +323,7 @@ the CTest entries of §2.1.
 | L6 | Glossary words | AC-5 | `test_ac5_avoid_words_listed_as_warnings_exit_zero` (C8, a `GLOSSARY.md` fixture) |
 | L7 | Markdown and pictures | AC-4 | `test_ac4_non_markdown_source_fails`, `test_ac4_mermaid_block_allowed_in_shared_part` |
 | L8 | `chapter:` links | EC-3 | `test_ec3_chapter_link_resolves_to_product_part`, `test_ec3_chapter_link_without_product_part_fails` |
+| L11 | No source paths, no milestones | AC-18 | `test_checks.py`: `test_ac18_source_path_fails`, `test_ac18_milestone_fails`, `test_ac18_what_a_user_gets_passes` (C10); `CalcU59HelpCheck`, `CalcU1600HelpCheck` pass |
 | L9 | The shared parts written | AC-1, AC-2, AC-3, EC-3 | `CalcU1600HelpCheck` passes with them (the shared parts are checked within a product's help) |
 | L10 | The release | AC-8 | `CalcU1600HelpBuild` (the test suite builds the asset); `.github/workflows/calc-u-1600.yml`: a job `help` (ubuntu, Python 3) runs `tools/help build calc-u-1600` and uploads the artifact `Calc-U-1600-help`; `release.yaml` gets `{ artifact: Calc-U-1600-help, file: Calc-U-1600-help.zip, as: Calc-U-1600-help.zip }`; one CI dispatch at the merge. Calc-U-59's asset in the suite: M-60 (§10) |
 | P1 | Calc-U-1600's product parts | AC-11 | `CalcU1600HelpCheck`; the qa-report's table of AC-11, row by row: where each section of today went |
@@ -329,8 +331,8 @@ the CTest entries of §2.1.
 | P3 | Reference chapter | AC-13 | `CalcU1600HelpCheck`; the qa-report lists each format of AC-13 with its file and version |
 | P4 | Product names | AC-2 | `CoreTests`: `lib16_ac2_help_names_cover_the_catalogue` |
 
-Coverage: Library AC-1 to AC-8, AC-14, AC-15 and EC-1 to EC-3 in L1 to
-L10 (AC-8's Calc-U-59 half in M-60); Calc-U-1600 AC-11 to AC-13 in P1 to
+Coverage: Library AC-1 to AC-8, AC-14, AC-15, AC-18 and EC-1 to EC-3 in
+L1 to L11 (AC-8's Calc-U-59 half in M-60); Calc-U-1600 AC-11 to AC-13 in P1 to
 P3.
 
 ## 7. Tools and agent knowledge (changed in the same step)

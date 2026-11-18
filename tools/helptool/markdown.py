@@ -27,6 +27,7 @@ class Document:
         self.links = []         # Link
         self.fences = []        # (line, info string)
         self.prose = []         # (line, text without code): the words a reader reads
+        self.code_spans = []    # (line, text of an inline code span)
         self._parse()
 
     def anchors(self):
@@ -65,6 +66,8 @@ class Document:
             h = _HEADING.match(visible)
             if h:
                 self.headings.append((number, h.group(2), slugger.anchor(h.group(2))))
+            for cm in _CODE_SPAN.finditer(visible):
+                self.code_spans.append((number, cm.group(2)))
             no_code = _CODE_SPAN.sub(" ", visible)
             for lm in _LINK.finditer(no_code):
                 self.links.append(Link(number, lm.group(3), lm.group(1) == "!", lm.group(2)))

@@ -10,17 +10,16 @@ is written, in its current version, `format-version: 1`.
 ## 0. The file
 
 - **YAML**, UTF-8, one module per file, extension `.module.yaml` (a
-  `.card.yaml` of Calc-U-1600 0.8 is not read: rename it and add
-  `format: memory-module`). A
+  `.card.yaml` of Calc-U-1600 0.8 is not read: rename it to
+  `.module.yaml`; `format: memory-module` may be added). A
   definition is written and reviewed by hand, so it has comments (`#`
   starts one anywhere).
 - Integers are decimal (`8192`) or hex with `0x` (`0x2000`); hex is usual
   for addresses and byte values.
 - An unknown key is an error, not ignored: a misspelled key must not load
   silently.
-- The bundled modules are in the product
-  ([frontends/qt6/resources/cards](https://github.com/tinue/calc-u/tree/main/products/calc-u-1600/frontends/qt6/resources/cards));
-  your own definitions and saved instances lie in the save folder, where
+- The bundled modules are the bundled templates that come with the
+  product ([§7](#7-worked-examples) lists them); your own definitions and saved instances lie in the save folder, where
   the module pickers list them with the bundled ones.
 
 ---
@@ -37,7 +36,7 @@ is written, in its current version, `format-version: 1`.
 | `definition-terminology` | yes | Exactly one of the same four identifiers. Names the pin-name vocabulary every `chip-select` / `signal` / `line` field in the file is resolved against, once, at parse time. Must appear in `compatible-hosts`. |
 | `regions` | yes | List of one or more region maps (§2). |
 | `battery` | no | `true` for battery-backed hardware. A battery-backed template offers Name & Save, which makes the module a medium ([Media files](10-media-files.md#battery-backed-module)). |
-| `template` | no | `true` marks a read-only **template** (§8): the product never writes the file, wherever it lies. Absent or `false` = an instance, autosaved in place. Never written into a saved instance. |
+| `template` | no | `true` marks a read-only **template** (§8): the product never writes the file, wherever it lies. Absent or `false` = an instance, autosaved in place. Name & Save and autosave never write it; a preset's `saveas: { as: template }` writes `template: true`. |
 | `saved` | no | The time of the last write (UTC, ISO 8601), written into every saved instance; for information. |
 | `notes` | no | Free text; ignored by the loader. |
 

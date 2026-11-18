@@ -59,8 +59,8 @@ No other place is searched. The rules of the file are in the
 
 ## The family's keys
 
-Every product of the family has these keys, with these meanings and
-defaults. A key a frontend has no use for is kept in the file and
+These are the family's keys, with their meanings and defaults; the
+product's part of this chapter lists which of them the product has. A key a frontend has no use for is kept in the file and
 ignored. Keys marked "written by the product" are kept up to date by the
 product itself.
 

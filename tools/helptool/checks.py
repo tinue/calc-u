@@ -12,6 +12,12 @@ _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 FOLLOWS = re.compile(r"^<!--\s*follows:\s*(.*?)\s*-->$")
 _AVOID = re.compile(r"^_Avoid_:\s*(.*)$")
 _TERM = re.compile(r"^\*\*([^*]+)\*\*:?\s*$")
+# C10 (AC-18): a path into the source code, standing on its own (not the
+# tail of a URL or of a relative link: those are checked as link targets).
+_SOURCE_DIRS = r"(?:frontends|core|app|library|products/[\w.-]+/(?:frontends|core|app))/"
+_SOURCE_PATH = re.compile(r"(?<![\w./:-])" + _SOURCE_DIRS)
+_REPO_URL = re.compile(r"^https://github\.com/tinue/calc-u/(?:tree|blob|raw)/[^/]+/(.*)$")
+_MILESTONE = re.compile(r"(?<![\w-])M-\d+(?![\w-])")
 
 
 class Report:
@@ -81,6 +87,7 @@ def run(help_, report):
         _c2_links(help_, report, path, doc, known, docs, used_pictures, shared)
         if shared:
             _c5_shared_words(help_, report, path, doc)
+        _c10_no_source(report, path, doc)
     _c6_follows(help_, report)
     _c3_c4_files(help_, report, known, used_pictures)
     _c7_settings(help_, report, docs)
@@ -201,6 +208,24 @@ def _c5_shared_words(help_, report, path, doc):
         for word, pattern in patterns:
             if pattern.search(text):
                 report.fail(path, number, f"a shared part names {word!r}, a word of one product (AC-2)")
+
+
+def _c10_no_source(report, path, doc):
+    """AC-18: the shipped help names no file of the source code and no
+    milestone of the migration. The repository's documents, examples,
+    tools and the help itself may be named."""
+    for number, text in doc.prose + doc.code_spans:
+        m = _SOURCE_PATH.search(text)
+        if m:
+            report.fail(path, number, f"names the source path {m.group(0)!r}: the help names what a user"
+                                      " gets, not where it lies in the source (AC-18)")
+        m = _MILESTONE.search(text)
+        if m:
+            report.fail(path, number, f"names the milestone {m.group(0)!r} of the migration (AC-18)")
+    for link in doc.links:
+        m = _REPO_URL.match(link.target)
+        if m and re.match(_SOURCE_DIRS, m.group(1)):
+            report.fail(path, link.line, f"{link.target}: links into the source code (AC-18)")
 
 
 def _c6_follows(help_, report):

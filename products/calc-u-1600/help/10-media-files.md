@@ -25,8 +25,8 @@ Common to all three:
   ([Settings](08-settings.md)).
 - A floppy disk written by Calc-U-1600 0.8 (version 1) is refused with a
   hint until you update it by hand: set `format-version: 2` and rename
-  the sides `a:` and `b:` to `0:` and `1:`. Module definitions of 0.8 are
-  read as they are.
+  the sides `a:` and `b:` to `0:` and `1:`. Module definitions of 0.8
+  (`.card.yaml`) are not read; rename them to `.module.yaml`.
 - A name with a character a file name cannot hold (`/`, `:`) is refused.
 
 ## Battery-backed module

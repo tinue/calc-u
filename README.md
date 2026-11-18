@@ -12,7 +12,7 @@ library, and each is released on its own.
 | Peripherals and media | PC-100C printer, magnetic cards, Solid State ROM modules, the TI-58C's constant memory | CE-150 and CE-1600P printer/plotters, CE-158 serial interface, memory modules, CE-1600F floppy disks, cassettes, a host-folder drive |
 | Platforms | macOS, iPhone and iPad (Swift), Windows and Linux (Qt6), the browser (WebAssembly) | macOS, Windows and Linux (Qt6), the browser (WebAssembly) |
 | Debugger | Calculator and CPU level, traces, ASM overlays | CPU level for the LH5801/LH5803 and Z-80, DAP for VS Code |
-| User guide | <https://calc-u.org/59/> | <https://calc-u.org/1600/> |
+| User guide | <https://calc-u.org/59/> | <https://calc-u.org/1600/> (being built) |
 | Source | [`products/calc-u-59/`](products/calc-u-59/) | [`products/calc-u-1600/`](products/calc-u-1600/) |
 | Releases | tags `calc-u-59-v…` | tags `calc-u-1600-v…` |
 
@@ -83,7 +83,7 @@ product's developer documents say how to build its frontends:
   both products into this repository are on the branch
   [`history`](https://github.com/tinue/calc-u/tree/history); the full
   snapshot at that point is the tag `history-phases-0-6`. The products'
-  earlier history is in their archived repositories,
+  earlier history is in their own repositories,
   [tinue/Calc-U-59](https://github.com/tinue/Calc-U-59) and
   [tinue/Calc-U-1600](https://github.com/tinue/Calc-U-1600).
 

@@ -6,8 +6,7 @@ part of the source repository. Every distribution that bundles examples
 (the Qt6, Swift and Web frontends) is built from it, and bundles exactly
 what it lists: nothing else from `examples/` comes along. The examples
 folder as a whole is not a release file; the documentation explains how
-to get every example from the source repository (user, 2026-11-13, B-27
-of `docs/walkthroughs/presets.md`).
+to get every example from the source repository.
 
 The bundle is a selection. Examples that are not listed stay in the
 source repository only.

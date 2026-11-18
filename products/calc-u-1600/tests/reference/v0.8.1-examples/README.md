@@ -1,9 +1,8 @@
 # Reference runs of the 32 Calc-U-1600 examples at `v0.8.1`
 
-First step 13 of `docs/walkthroughs/first-steps.md` (step M-4 of
-`docs/migration-plan.md`), recorded on 2026-11-14 before any file was
-upgraded and before any core code was touched. They are compared with the
-upgraded presets at the idle machine after the load (C1600-4 AC-16).
+Recorded before any file was upgraded and before any core code was
+touched. They are compared with the upgraded presets at the idle machine
+after the load.
 
 Made with the CLIs of Calc-U-1600 `v0.8.1` (tree `1c36e0f`, the pin
 `b4ea8c8` plus a docs-only delta), built by `tools/build_cli.sh` and

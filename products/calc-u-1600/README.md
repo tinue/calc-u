@@ -95,7 +95,7 @@ programs to and from the calculator. The help's
 ## License
 
 Copyright (C) 2026 Martin Erzberger. Calc-U-1600 is free software,
-licensed under the [GNU General Public License, version 3](LICENSE)
+licensed under the [GNU General Public License, version 3](../../LICENSE)
 (GPLv3); see [NOTICE](NOTICE) for the full copyright notice.
 
 It's built on [Qt6](https://www.qt.io/), used under the LGPLv3 -- see

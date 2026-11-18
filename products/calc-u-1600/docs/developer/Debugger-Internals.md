@@ -1,9 +1,8 @@
 # Debugger — internals
 
 How the DAP debugger is built, and the rules its code relies on. The user
-manual is [help/07-debugger.md](../../help/07-debugger.md); the design history is in
-[../background/plans/DAP-Debugger-Plan.md](../background/plans/DAP-Debugger-Plan.md)
-and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugger-Use-Cases-Plan.md).
+manual is [help/07-debugger.md](../../help/07-debugger.md); the DAP protocol as
+the server speaks it is [DAP.md](DAP.md).
 
 ## Behaviour not in the manual
 

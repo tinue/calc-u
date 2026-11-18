@@ -103,7 +103,7 @@ Look for:
   relative links and section references that no longer resolve.
 
 Fix them in place. A contradiction you cannot settle from code goes in the
-report as **open**. `ideas/` holds proposals and is out of scope.
+report as **open**.
 
 ## 5. Changelog
 

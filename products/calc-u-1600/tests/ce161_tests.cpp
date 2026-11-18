@@ -78,7 +78,7 @@ TEST(test_ce161_hosts) {
 }
 
 // The Instruction Manual's "exclusive readout" procedure against the real
-// A04 ROM (docs/background/CE-161-Program-Module.md): NEW 256 puts BASIC at
+// A04 ROM (docs/developer/CE-161-Program-Module.md): NEW 256 puts BASIC at
 // &0100, the program ends in FF padding plus `65279 END` at &3FF9, the
 // header POKE marks &0000 as a module. With the switch on, the power-on
 // scan (RESET_9, E098) finds page &00 not writable and takes the header:

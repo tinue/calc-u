@@ -289,8 +289,8 @@ multiplication.
 ### Injection timing
 
 `key[]` is a wire level, not an event; the ROM accepts a key only when two
-scans one display sweep apart see it, and drops a shorter press as bounce
-(`ideas/KeypressLatch.md`). Every frontend goes through the library's typing
+scans one display sweep apart see it, and drops a shorter press as bounce.
+Every frontend goes through the library's typing
 engine with the TI profile (`app/TITyping.hpp`; LIB-5 AC-20):
 
 - A press is held at least 100 ms of emulated time, and until the ROM's key

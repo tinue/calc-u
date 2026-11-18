@@ -205,8 +205,8 @@ the file names under `wasm/`, `bundle/`, `img/` and `presets/` and `files.json` 
 | `settings` | `true` | Offer Settings… (the File menu, the portrait bar's Settings button and the More menu; LIB-14 AC-29) |
 
 The props are the family's shared ones in their order (`width`, `keyboard`,
-`layout`, `preset`, then `height`, `model`, `workerUrl`; LIB-15 AC-16,
-AC-29, `docs/contracts/frontend.md` FE-7), then Calc-U-59's own
+`layout`, `preset`, then `height`, `model`, `workerUrl`;
+`docs/formats/web-embed.md` at the repository root), then Calc-U-59's own
 `settings`. `model`, `preset` and `workerUrl` are read once, at mount (LIB-15 EC-5).
 2.3.0's `module` prop is gone (LIB-15 AC-19): a host page that wants
 another module names a preset that sets it.

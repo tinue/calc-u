@@ -417,7 +417,7 @@ yet.
 
 A PC-1500 *BASIC* program module (header, reserve area, program, &FF fill,
 closing `65279 END` line) follows Sharp's layout in
-[CE-161-Program-Module.md](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/background/CE-161-Program-Module.md#program-modules-in-general);
+[CE-161-Program-Module.md](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/developer/CE-161-Program-Module.md#program-modules-in-general);
 the system ROM finds it by its &55 header at power-on.
 
 ---

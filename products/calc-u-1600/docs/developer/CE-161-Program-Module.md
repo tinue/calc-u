@@ -6,7 +6,7 @@ write-protect switch. It contains no ROM and doesn't remap anything. Its
 page it can't write to and that starts with a module header, and from then
 on treats it as a program module. This page explains how that works and
 what the manual's `POKE` does. The emulator models it as `write-protect:`
-in [ce161.card.yaml](../../Qt6/resources/cards/ce161.card.yaml).
+in [ce161.module.yaml](../../frontends/qt6/resources/cards/ce161.module.yaml).
 
 Sources: CE-161 Instruction Manual (pp. 14–27, 37), CE-161 Service Manual
 (schematic, p. 3), and the annotated A04 system ROM disassembly, whose
@@ -177,7 +177,7 @@ program &00C5, RAM &4000–&47FF, `NEW 0` → &4000).
 The research repository has the same as a reference section:
 [Ref/PC-1500/Memory-Architecture/PC-1500-Address-Decoding.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1500/Memory-Architecture/PC-1500-Address-Decoding.md)
 §5.6. The user-level version, with `MEM` figures for the PC-1500 and PC-1500A,
-is in the [User Guide](../User-Guide.md#program-modules-on-the-pc-1500-where-basic-and-the-reserve-keys-go).
+is in the help, [Program modules on the PC-1500](../../help/04-media.md#program-modules-on-the-pc-1500).
 
 ## Module program and RAM program as one
 
@@ -217,7 +217,7 @@ program can't be run without the fill program.
 
 - `write-protect: protected|unprotected` on regular content is the
   switch; the position is part of the card file. While protected, every
-  write is refused, host pokes included ([Decisions.md](Decisions.md)).
+  write is refused, host pokes included.
 - Name & Save of the template offers "Write-protect"; presets use
   `saveas: live protected slot-1:<name>`. The live card is protected at
   once; the ROM sees it at the next OFF/ON, as in the manual.

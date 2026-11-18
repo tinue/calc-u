@@ -670,7 +670,7 @@ authentic speed for the span that matters.
   buttons only for each model's own peripherals (CE-150 + CE-158 on a
   PC-1500/1500A, CE-1600P on a PC-1600); Machine ▸ Peripherals has all of
   them. The tape counter doubles as the motor lamp (green while it runs).
-- **Mount Directory is in the File menu**, not on the control bar, at the
+- **Host Drive… (was Mount Directory) is in the File menu**, not on the control bar, at the
   user's request. Like the hardware pickers, it isn't saved across launches.
 - **The app registers `ApplePersistenceIgnoreState = YES`**
   (`frontends/qt6/app/MacAppSupport.mm`). Without it, the macOS "reopen windows?" prompt
@@ -793,8 +793,8 @@ authentic speed for the span that matters.
 - **The UI's rules are the app layer's, also the small ones.** Which peripheral a
   model offers and what excludes what (the control state, `app/SharpControlRules`), the multi-file
   tape choice and the Load Machine Code plan, hints and advice
-  (`c1600.plan-code`, `app/SharpLoaderPart`), a model pick with its default preset
-  (`pickModelJob()`), the Card YAML dump: each was Qt code once and moved
+  (`c1600.code-plan`, `app/SharpLoaderPart`), a model pick with its default preset
+  (`pickModelJob()`), the Module YAML dump (was Card YAML): each was Qt code once and moved
   when the web client needed it. Opening a file is the session's `open`
   (LIB-13): it decides what the file is and keeps one that comes while
   busy; only the dialogs of the program flows stay per frontend.

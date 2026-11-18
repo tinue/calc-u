@@ -77,7 +77,7 @@ and the RENUM template. The calling convention for keyword *functions*
 there comes from that analysis and isn't checked against the ROM.
 
 **MEP rev3, (c) spellbound, 2024.** The host-directory drive (**File ▸
-Mount Directory…**) is based on the MEP rev3 (Modular Extension Platform)
+Host Drive…**) is based on the MEP rev3 (Modular Extension Platform)
 with its USB memory-stick application, a 60-pin bus module for the
 PC-1600. The MEP provided:
 

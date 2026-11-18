@@ -17,7 +17,7 @@
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "ScriptedSetup.hpp"
-#include "../core/Connector/MemoryCardCatalog.hpp"  // kCardFileSuffix
+#include "../core/Connector/MemoryCardCatalog.hpp"  // kModuleFileSuffix
 #include "../core/Connector/SoftwareDefinedCard.hpp"
 #include <sstream>
 #include "TestRoms.hpp"
@@ -79,7 +79,7 @@ bool preset1600(PC1600Machine& m, const std::string& yaml) {
             std::string path = "frontends/qt6/resources/cards/", err;
             for (char c : line.substr(key.size()))
                 if (c != '-') path += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-            path += kCardFileSuffix;
+            path += kModuleFileSuffix;
             auto card = makeSoftwareDefinedCard(path, slot == 1 ? CardHost::PC1600Slot1 : CardHost::PC1600Slot2, &err);
             if (!card) {
                 std::fprintf(stderr, "FAIL card: %s\n", err.c_str());

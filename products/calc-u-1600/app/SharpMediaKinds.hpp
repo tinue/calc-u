@@ -19,11 +19,11 @@ namespace cu1600 {
 
 inline constexpr const char* kModuleKind = "battery-backed-module";
 inline constexpr const char* kFloppyKind = "floppy-disk";
-inline constexpr const char* kTapeKind = "cassette";
-inline constexpr const char* kTapeFileSuffix = ".cassette.yaml";
+inline constexpr const char* kCassetteKind = "cassette";
+inline constexpr const char* kCassetteFileSuffix = ".cassette.yaml";
 
 // The three kinds. `bundledDir` holds the bundled templates (the module
-// definitions, `blank` and `formatted` disks, the `empty` tape);
+// definitions, `blank` and `formatted` disks, the `empty` cassette);
 // `catalogue` gets the descriptor of a saved module the first time one is
 // plugged in (a module request names a peripheral of the catalogue).
 std::vector<calcu::media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::machine::Catalogue& catalogue);

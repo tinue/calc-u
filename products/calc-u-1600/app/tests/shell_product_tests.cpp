@@ -30,7 +30,7 @@ TEST(lib14_ac34_shell_product_complete) {
     }
     std::vector<std::string> items;
     for (const auto& i : p.items) items.push_back(i.label);
-    CHECK(items == (std::vector<std::string>{"Load BASIC Program…", "Load Machine Code…", "Mount Directory…", "Unmount"}));
+    CHECK(items == (std::vector<std::string>{"Load BASIC Program…", "Load Machine Code…", "Host Drive…", "Unmount"}));
     CHECK(cu1600::shellProduct("1.0", "", false).items.size() == 2);   // AC-35: no host folders on the Web
 }
 

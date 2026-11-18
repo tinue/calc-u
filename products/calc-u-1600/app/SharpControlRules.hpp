@@ -21,7 +21,7 @@ namespace cu1600 {
 inline constexpr const char* kDiskControlsEntry = "c1600.disk-controls";              // {shown, available, reason}
 inline constexpr const char* kCe158PrinterPanelEntry = "c1600.ce158-printer-panel";   // {shown}
 inline constexpr const char* kHostDriveFolderEntry = "c1600.host-drive-folder";       // {folder ("" none), available, reason}: Unmount
-inline constexpr const char* kMountDirectoryEntry = "c1600.mount-directory";          // {available, reason}: Mount Directory…
+inline constexpr const char* kHostDriveEntry = "c1600.host-drive";                   // {available, reason}: Host Drive…
 inline constexpr const char* kCe1600pNextVariantEntry = "c1600.ce1600p-next-variant"; // {variant}, while unplugged
 
 inline constexpr const char* kNoHostFolderHere = "A host folder cannot be mounted here.";

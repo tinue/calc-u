@@ -212,7 +212,7 @@ void SharpLoaderPart::attach(calcu::sessions::SessionSetup& setup) {
         }};
     });
 
-    setup.request(q::kPlanCode, [busy](const Value& a, SessionContext& ctx) {
+    setup.request(q::kCodePlan, [busy](const Value& a, SessionContext& ctx) {
         if (ctx.busy()) return calcu::sessions::replyRefused(busy);
         if (!ctx.machine()) return calcu::sessions::replyRefused(calcu::sessions::kNoMachine);
         auto img = imageOf(a);

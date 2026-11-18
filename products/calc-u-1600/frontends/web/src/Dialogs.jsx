@@ -102,14 +102,14 @@ function ChoiceDialog({ title, text, options, done }) {
 }
 
 // Load Machine Code's start address (C1600-2 AC-18; Qt6/app/MachineCodeLoadDialog):
-// each keystroke asks the session's plan (`c1600.plan-code`) with the text;
+// each keystroke asks the session's plan (`c1600.code-plan`) with the text;
 // Load is enabled only while it holds. Done with the text, or null.
 function AddressDialog({ shell, plan, bytes, index, done }) {
   const [text, setText] = React.useState(plan.proposed || "");
   const [check, setCheck] = React.useState({ valid: false, hint: "" });
   React.useEffect(() => {
     let live = true;
-    shell.request("c1600.plan-code", { bytes, file: index || 0, address: text }).then((r) => {
+    shell.request("c1600.code-plan", { bytes, file: index || 0, address: text }).then((r) => {
       if (!live) return;
       const p = r.done ? r.value : { refusal: r.reason };
       if (p.needsAddress) setCheck({ valid: false, hint: "" });

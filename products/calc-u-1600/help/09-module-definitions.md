@@ -31,7 +31,7 @@ why. Every key of the file is in
 
 1. Prepare it with a preset (see
    [examples/setup/](https://github.com/tinue/calc-u/tree/main/products/calc-u-1600/examples/setup)).
-2. Click **Card YAML** in the INSPECTOR ([Debugger](07-debugger.md#the-inspector)).
+2. Click **Module YAML** in the INSPECTOR ([Debugger](07-debugger.md#the-inspector)).
 3. Paste the printed block into the module definition.
 
 If you only want to reuse one prepared module, Name & Save it instead and
@@ -46,8 +46,7 @@ examples among the [examples](https://github.com/tinue/calc-u/tree/main/products
 Every field exists because some documented mechanism of the PC-1500/PC-1600
 expansion connector or bank switching needs it to be expressible; §9
 cross-checks that row by row against the Technical Reference Manual and the
-project's own ROM traces. In this part, "card" is the module a definition
-describes.
+project's own ROM traces.
 
 ### 1. Design principle: the loader connects pins; terminology is an authoring convenience with no other meaning
 
@@ -77,7 +76,7 @@ numbered terminology instead, at the cost of being harder for a person
 to write and review.
 
 **Every host's expansion connector is physically the same 40-pin port**
-([Ref/Shared/Software-Defined-Memory-Extension.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Shared/Software-Defined-Memory-Extension.md) §4) — a card built for one model
+([Ref/Shared/Software-Defined-Memory-Extension.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Shared/Software-Defined-Memory-Extension.md) §4) — a module built for one model
 physically fits the slot of every other model listed here. Nothing about
 the file format needs to model a plug that won't fit; the load-time gate
 is not a connector/electrical simulation, it's a much simpler thing.
@@ -92,27 +91,27 @@ which hosts to sell it for.
 
 A pin the file references that happens to be NC on one of its declared-
 compatible hosts is not an error and not a reason to decline loading — it
-is simply a sub-region of the card that never asserts on that host, the
+is simply a sub-region of the module that never asserts on that host, the
 same way a real hardware module would behave if plugged into a slot
 missing one of the traces it expects. Two concrete cases:
 
-- A card built to max out the PC-1500A (`Y0` + `S3`+`S4`+`S5`, i.e. pins
+- A module built to max out the PC-1500A (`Y0` + `S3`+`S4`+`S5`, i.e. pins
   4/16/17/18, never referencing pin 5) can freely declare PC-1500
   compatible too — on a PC-1500, those same four pins are `Y0`/`S1`/`S2`/
   `S3`, giving the identical 22KB, fully live; nothing is dormant in this
   particular case at all.
-- A card built to max out the PC-1500 (adding pin 5 / `S4` to reach
+- A module built to max out the PC-1500 (adding pin 5 / `S4` to reach
   24KB) can just as freely declare PC-1500A compatible — the pin-5-driven
   2KB slice simply stays dormant there (pin 5 is NC on PC-1500A), while
-  the rest of the card behaves normally, giving the same 22KB the
+  the rest of the module behaves normally, giving the same 22KB the
   PC-1500A-only variant would. This is a legitimate, author-approved
   product, not something the loader treats as broken.
 
-An author who wants a card's behavior to be uniform (never dormant) on
+An author who wants a module's behavior to be uniform (never dormant) on
 every host it declares compatible can still choose to write it that way
 — by simply never referencing a pin that's NC anywhere on that list — but
 nothing about the file format or the loader forces that choice; a
-partially-dormant card on some of its declared hosts is equally valid.
+partially-dormant module on some of its declared hosts is equally valid.
 
 This also settles what "the module never knows which host it's plugged
 into" means in practice: the loaded region's addressing/latch
@@ -127,7 +126,7 @@ Where the author's judgment call matters most is a region using **direct
 memory-range match** (§4), which decodes a raw address window with no
 host-provided chip-select at all: the same numeric address range can mean
 something different (or already be claimed by other hardware) on
-different hosts, with no pin on the card to point to either way. The
+different hosts, with no pin on the module to point to either way. The
 mechanism for declaring compatibility is identical to the chip-select
 case above — the author lists the hosts, the loader checks the host
 being loaded is on that list — but getting the list right for this kind
@@ -142,11 +141,11 @@ address map, since there's no signal name to anchor the decision to.
   (e.g. "CE-155 8KB Memory Module", "16-bank CE-163-alike").
 - **Compatible host list** — subset of `{PC-1500, PC-1500A, PC-1600 Slot 1,
   PC-1600 Slot 2}`, chosen by the author. This is the loader's sole
-  compatibility check: it declines to load a card into a host that isn't
+  compatibility check: it declines to load a module into a host that isn't
   on this list, and imposes no further test on a host that is (§1) — no
-  pin-existence check, no signal-role check. A card is not restricted to
+  pin-existence check, no signal-role check. A module is not restricted to
   the one host whose vocabulary wrote it; declaring several hosts
-  compatible, including ones where part of the card ends up dormant
+  compatible, including ones where part of the module ends up dormant
   because a referenced pin is NC there, is an ordinary, valid choice
   (§1).
 - **Definition terminology** — exactly one of the same four host
@@ -154,26 +153,26 @@ address map, since there's no signal name to anchor the decision to.
   file uses. Must appear in the compatible-host list (a file's own
   terminology host trivially belongs on its own compatible-host list),
   but the list is not limited to that one entry.
-- **Load behavior on insert/change** — loading a card resets the
+- **Load behavior on insert/change** — loading a module resets the
   calculator; not itself a per-file field, but worth stating here as an
   invariant the loader guarantees regardless of what the file declares
-  (no card can opt out of the reset).
-- **`battery`** *(optional bool, default `false`)* — marks the card as
+  (no module can opt out of the reset).
+- **`battery`** *(optional bool, default `false`)* — marks the module as
   battery-backed real hardware (CE-163 and its derivatives, CE-1600M,
   CE-1601M, CE-1638). Has no effect on region/content parsing; it only
-  gates the app's name-and-save persistence flow — a battery-backed card,
+  gates the app's name-and-save persistence flow — a battery-backed module,
   once attached, can be named and saved as a standalone, independently
   persisted instance file (itself a complete `.module.yaml`, generated by
-  splicing a live dump of the card's own backing store into the original
+  splicing a live dump of the module's own backing store into the original
   template's source text)
   that keeps its contents durably up to date across reloads and app
-  restarts. A card without `battery: true` stays purely volatile.
+  restarts. A module without `battery: true` stays purely volatile.
 
 ---
 
 ### 3. Dimension model
 
-A card is a list of one or more **memory regions**. Every region is fully
+A module is a list of one or more **memory regions**. Every region is fully
 described by four **independent dimensions**. Independent means: each is
 specified once, in its own place, and none of the other three can be
 inferred from it — a region's addressing doesn't tell you its content
@@ -195,7 +194,7 @@ pin 18 sampling `A0` (CE-163) or on `OUT (28H)` sampling `D0`–`D2`
 would just be asking the same fact twice. **Vertical/Horizontal remain in
 this document as descriptive terminology** — they're the words this
 project's other docs and Sharp's own manuals use, and they're useful
-shorthand when talking *about* a card's mechanism — but they are not
+shorthand when talking *about* a module's mechanism — but they are not
 fields a definition file needs to fill in; the file only ever needs to
 say Trigger-based or Line-based, plus the signal(s) and domain. §6 below
 covers both confirmed banked families (both trigger-based, differing only
@@ -281,7 +280,7 @@ This same sub-model is reused, unmodified, in two other places:
   (read/write vs. wired read-only) and, separately, an optional
   **write-protect switch** (CE-161: a switch in the RAMs' R/W line; CE-159
   likewise) — not the same thing as being wired read-only. The switch
-  position is part of the card file (§8).
+  position is part of the module definition (§8).
 - **ROM** — bytes supplied by an explicit **byte-content section carried
   inside the definition file itself** (§5a), not by a separate
   preload/image file; never written by the running calculator, under any
@@ -415,7 +414,7 @@ outside this spec's scope, and changes nothing here.
 
 - **Unbanked** (D3) — one copy of the content behind the addressing spec,
   no selection needed. This is CE-155, CE-161, CE-159, CE-160, the
-  non-banked "maxed out" cards, and — despite Sharp's own module having
+  non-banked "maxed out" modules, and — despite Sharp's own module having
   two physical banks — CE-1600M/CE-1620M, because that pair's two-bank
   selection is entirely inside the *host's* native address remapping
   (Port 31H/PU/PT) and never appears as a distinct signal on the module's
@@ -549,19 +548,19 @@ region or bank-range at load time:
 - A **ROM or Flash** range (§5) has no meaningful power-up state of its
   own — any fixed content comes from the definition file's own
   byte-content section (§5a), keyed per bank-range for a banked region so
-  a multi-bank card's banks don't collide or load out of order. There is
+  a multi-bank module's banks don't collide or load out of order. There is
   no external preset/image file to name. **ROM** must carry this content;
   **Flash** carries it only as the range's *initial* array, and only if
   the file declares one (otherwise the Flash range starts erased, all
   `0xFF`). The running calculator can subsequently overwrite a Flash range
-  via the runtime program/erase protocol (§5); reloading the card always
+  via the runtime program/erase protocol (§5); reloading the module always
   resets it back to that initial content (or to erased if none was
   declared), the same way it resets a Regular range to its own default
   (above) and a ROM range to its definition-file bytes — a load is a full
-  reset of the card regardless of content kind.
+  reset of the module regardless of content kind.
 - A Regular range's write-protect switch (§5, e.g. CE-161) is part of
-  the card's saved state: the file records the position, a load starts
-  from it, and saving the card with the switch on writes `protected`.
+  the module's saved state: the file records the position, a load starts
+  from it, and saving the module with the switch on writes `protected`.
 
 ---
 
@@ -604,7 +603,7 @@ Three structural points this table confirms rather than just illustrates:
    one banked region, or nests Flash inside CE-1601M/*superRAM*-style
    sub-banked territory — those remain unexercised but expressible,
    because D2/D3/D4 being genuinely independent dimensions is what makes
-   future hypothetical or modern-recreation cards (an R/W-plus-ROM-bank
+   future hypothetical or modern-recreation modules (an R/W-plus-ROM-bank
    cartridge, say) expressible without a spec change.
 3. **The "maxed out" row is one definition covering both hosts, with one
    host running it partially dormant** — compatibility is an author
@@ -612,8 +611,8 @@ Three structural points this table confirms rather than just illustrates:
    can declare both PC-1500 and PC-1500A compatible: it reaches the true
    24KB ceiling on PC-1500, and on PC-1500A the pin-5-driven 2KB slice
    simply never asserts (pin 5 is NC there), leaving the same 22KB a
-   PC-1500A-targeted card would offer on its own. An author who instead
-   wants a card that behaves identically (no dormant slice) on every host
+   PC-1500A-targeted module would offer on its own. An author who instead
+   wants a module that behaves identically (no dormant slice) on every host
    it declares compatible can still write one that never references pin
    5 at all — nothing in the mechanism forces either choice, both are
    valid (§1).

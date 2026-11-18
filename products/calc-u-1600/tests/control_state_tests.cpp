@@ -156,7 +156,7 @@ TEST(lib4_ac16_ac17_pc1600_fields_ce1600p_variants_and_next_variant) {
     const control::PeripheralChoice* p = printer ? control::choice(*printer, machine::PeripheralId{"CE-1600P"}) : nullptr;
     CHECK(p && ids(p->variants) == (std::vector<std::string>{"New", "Old"}));
     CHECK(text(product(*s, cu1600::kCe1600pNextVariantEntry), "variant") == "New");
-    CHECK(f.ok(cu1600::commands::kCE1600PRom, Value::object({{"version", "old"}})));
+    CHECK(f.ok(cu1600::commands::kCE1600PVariant, Value::object({{"version", "old"}})));
     s = stateOf(f);
     CHECK(text(product(*s, cu1600::kCe1600pNextVariantEntry), "variant") == "Old");
     // Plugged: the running variant, the disk controls usable, the floppy
@@ -179,7 +179,7 @@ TEST(lib4_ac16_ac17_pc1600_fields_ce1600p_variants_and_next_variant) {
     // The host drive's folder (hostDriveDir) and File ▸ Unmount.
     CHECK(text(product(*s, cu1600::kHostDriveFolderEntry), "folder").empty());
     CHECK(!flag(product(*s, cu1600::kHostDriveFolderEntry), "available"));
-    CHECK(flag(product(*s, cu1600::kMountDirectoryEntry), "available"));
+    CHECK(flag(product(*s, cu1600::kHostDriveEntry), "available"));
     const std::string dir = (f.root / "drive").generic_string();
     std::filesystem::create_directories(f.root / "drive");
     CHECK(f.ok(cu1600::commands::kMountHostDrive, Value::object({{"dir", dir}})));
@@ -206,12 +206,12 @@ TEST(lib4_ac18_host_drive_refused_where_no_folder_can_be_mounted) {
     CHECK(pa && pa->available.now);
     CHECK(pb && !pb->available.now && pb->available.reason == cu1600::kNoHostFolderHere);
     CHECK(pb && !pb->empty.now && pb->fitting.size() == 1 && !pb->fitting[0].available.now);
-    // Everything else the same; the product entry of Mount Directory… follows.
+    // Everything else the same; the product entry of Host Drive… follows.
     CHECK(a->models == b->models && a->variants == b->variants && a->mediaPlaces == b->mediaPlaces &&
           a->panels == b->panels && a->actions == b->actions);
     for (std::size_t i = 0; i < a->places.size() && i < b->places.size(); ++i)
         if (a->places[i].path != path("host-drive")) CHECK(a->places[i] == b->places[i]);
-    CHECK(!flag(product(*b, cu1600::kMountDirectoryEntry), "available"));
+    CHECK(!flag(product(*b, cu1600::kHostDriveEntry), "available"));
 }
 
 // T16-6 (AC-20, AC-3): while a preset loads, the variants, the places'

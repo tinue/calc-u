@@ -111,7 +111,7 @@ TEST(lib8_ac36_ce1600p_paper_kept_through_detach_and_its_rom_variant) {
             if (now[i].x != drawn[i].x || now[i].y != drawn[i].y || now[i].color != drawn[i].color) return false;
         return true;
     };
-    CHECK(f.ok(c::kCE1600PRom, Value::object({{"version", "old"}})));   // its ROM variant
+    CHECK(f.ok(c::kCE1600PVariant, Value::object({{"version", "old"}})));   // its ROM variant
     CHECK(kept());
     CHECK(f.toggle("CE-1600P"));   // a detach
     CHECK(kept());

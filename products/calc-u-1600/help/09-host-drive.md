@@ -1,6 +1,6 @@
 # A folder as a drive (PC-1600)
 
-**File ▸ Mount Directory…** makes a folder on your computer a PC-1600
+**File ▸ Host Drive…** makes a folder on your computer a PC-1600
 drive, `S3:`. It is also `Y:` when no CE-1600P or CE-1600F is attached.
 BASIC uses it like a RAM-disk drive, and the files are ordinary files in the
 folder, stored byte for byte. The menu item is there on the PC-1600 only,
@@ -79,12 +79,12 @@ letters, digits and ``` `@#$%^&()-_{}' ```.
 
 ## Mounting a folder
 
-- **Mount Directory…** (PC-1600 only) plugs the drive in with a power
+- **Host Drive…** (PC-1600 only) plugs the drive in with a power
   cycle, as attaching any peripheral does, because the ROM only finds
   modules at power-on; the memory is kept. The dialog starts in
   **File ▸ Settings… ▸ Folders ▸ Host drive folder** (`[folders] host-drive`):
   the folder last mounted by default, or a fixed folder.
-- **Mount Directory… again** while a folder is mounted replaces the drive's
+- **Host Drive… again** while a folder is mounted replaces the drive's
   folder, with a power cycle as well.
 - **File ▸ Unmount "<folder>"** unplugs the drive, with a power cycle.
 - The mount survives a change of ROM variant but not a model switch, and is

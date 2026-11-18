@@ -20,8 +20,8 @@ namespace cu1600 {
 // The ids of the product's items (object names `item-<id>`).
 inline constexpr const char* kItemLoadBasic = "load-basic-program";
 inline constexpr const char* kItemLoadCode = "load-machine-code";
-inline constexpr const char* kItemMountDirectory = "mount-directory";
-inline constexpr const char* kItemUnmountDirectory = "unmount-directory";
+inline constexpr const char* kItemHostDrive = "host-drive";
+inline constexpr const char* kItemUnmountHostDrive = "unmount-host-drive";
 
 
 inline constexpr const char* kHelpUrl = "https://calc-u.org/1600/";
@@ -29,7 +29,7 @@ inline constexpr const char* kHelpUrl = "https://calc-u.org/1600/";
 // logical pixels.
 inline constexpr double kFaceplateHitDistance = 24;
 
-// `withHostFolders`: the Qt6 frontend's FileMedia items (Mount Directory…,
+// `withHostFolders`: the Qt6 frontend's FileMedia items (Host Drive…,
 // Unmount); the Web has none (AC-35).
 calcu::shell::ShellProduct shellProduct(std::string version, std::string build, bool withHostFolders);
 
@@ -43,7 +43,7 @@ calcu::shell::HitMap faceplateHitMap(const calcu::machine::ModelId&);
 // presets and Storage with the sentence on where saved media are kept.
 calcu::shell::DialogSpec settingsSpec(bool qt6, bool serialPorts);
 inline constexpr const char* kSavedMediaNote =
-    "Saved media (modules, disks and tapes) are kept in this browser's storage for this page.";
+    "Saved media (modules, disks and cassettes) are kept in this browser's storage for this page.";
 
 // The page's form of the faceplate (the reply of `c1600.faceplate-map`):
 // {model, width, height, then the library's form of the hit map (distance,

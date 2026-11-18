@@ -27,7 +27,7 @@ function product() {
     copyScreen: null, pasteText: false, moduleSlotPinOuts: ["module"], placesWithoutControl: ["host-drive"],
     items: [
       { group: "FileKinds", id: "load-program", label: "Load Program…", entry: "" },
-      { group: "FileMedia", id: "mount-drive", label: "Mount Directory…", entry: "" },
+      { group: "FileMedia", id: "mount-drive", label: "Host Drive…", entry: "" },
       { group: "MachineEnd", id: "disk-thing", label: "Disk Thing", entry: "tp.disk" },
     ],
   };

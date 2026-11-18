@@ -98,8 +98,8 @@ All under `products/calc-u-1600/` unless named.
 
 | File | Change |
 |---|---|
-| `frontends/qt6/app/MainWindow.cpp:175-182, 390-488` | the two menu flows send `c1600.file-kind`, `c1600.plan-code`, `c1600.load-basic`, `c1600.load-code` through the controller and show the replies; no `shared::MachineCodeLoad`, no call on the part (§3.9). `loadBasicProgramFile`, `loadMachineCodeFile` keep their names (the drop calls them until M-48) |
-| `frontends/qt6/app/MachineCodeLoadDialog.hpp/.cpp` | takes the plan reply and asks `c1600.plan-code` with the typed address on each change (AC-18) |
+| `frontends/qt6/app/MainWindow.cpp:175-182, 390-488` | the two menu flows send `c1600.file-kind`, `c1600.code-plan`, `c1600.load-basic`, `c1600.load-code` through the controller and show the replies; no `shared::MachineCodeLoad`, no call on the part (§3.9). `loadBasicProgramFile`, `loadMachineCodeFile` keep their names (the drop calls them until M-48) |
+| `frontends/qt6/app/MachineCodeLoadDialog.hpp/.cpp` | takes the plan reply and asks `c1600.code-plan` with the typed address on each change (AC-18) |
 | `frontends/web/src/CalcU1600.jsx:150-172` | `openProgram` on the same commands |
 | `frontends/web/src/Dialogs.jsx:99-150` | `AddressDialog` asks `planCode` per keystroke; `LoadedDialog` shows the reply's parts |
 | `frontends/web/src/engine.js:64-71` | the engine's messages `fileKind`, `loadBasic`, `planCode`, `loadCode` instead of `openProgram`, `loadBasic`, `planMachineCode`, `checkAddress`, `loadMachineCode` |
@@ -312,7 +312,7 @@ runner keeps its `waitUntilBasicIdle` with its hour
 | `c1600.file-kind` | request | `{bytes}` | `FileKindReply` (§3.2): kind, words, header, `looksLike`, `tapeFiles` |
 | `c1600.load-basic` | command, at once | `{bytes, name, file?}` | done, or refused with the sentence |
 | `c1600.type-basic` | command, operation | `{bytes, name}` | done, or failed with the lines not stored |
-| `c1600.plan-code` | request | `{bytes, file?, address?, length?, cpu?}` | `CodePlanReply`: `refusal?`, `needsAddress`, `proposed` (AC-8's row "headerless"), `length`, `cpu` with its note, `where` (the place the code would go, or the warning) |
+| `c1600.code-plan` | request | `{bytes, file?, address?, length?, cpu?}` | `CodePlanReply`: `refusal?`, `needsAddress`, `proposed` (AC-8's row "headerless"), `length`, `cpu` with its note, `where` (the place the code would go, or the warning) |
 | `c1600.load-code` | command; an operation with `run` | `{bytes, name, file?, address?, length?, cpu?, run?}` | `CodeLoadedReply` (§3.5), or refused with the sentence |
 
 - `file` chooses a file of a WAV (1-based); without it the first
@@ -378,10 +378,10 @@ the notice.
 
 Load Machine Code… (AC-15, AC-16, AC-18, AC-19): `.bin`, `.wav` and all
 files, starting in the Assembly folder. File kind, WAV choice as above,
-then `c1600.plan-code`. A refusal is the notice. Headerless code opens
+then `c1600.code-plan`. A refusal is the notice. Headerless code opens
 the address dialog (Qt6 `MachineCodeLoadDialog`, Web `AddressDialog`):
 the proposed address, the length, the processor note; each change of the
-text sends `c1600.plan-code` with the address, shows `where` or the
+text sends `c1600.code-plan` with the address, shows `where` or the
 refusal, and enables Load only while the plan holds. Load sends
 `c1600.load-code` without `run`; the reply is shown in "Machine Code
 Loaded" under "Keep BASIC from overwriting it:" and "Start it:"
@@ -419,7 +419,7 @@ never sends `run`.
 |---|---|
 | `sharp::legacy::loadBasicProgram`, `loadMachineCode`, `machineCodeLoadState`, `userRam` (`core/Machine/LegacyCalls.hpp:35-42`, `.cpp:20-45`) | `sharp::loaders` on the kind (§3) |
 | two plans: `machinecode::plan` (menu) and `planLoad` (preset, debugger) | `planCode` = `planLoad` (TR "one plan") |
-| `app/MachineCodeLoad.*` on `const SharpAppPart&` (the Qt6 frontend calls it on the part from its own thread, `MainWindow.cpp:440, 459`) | `c1600.plan-code`, `c1600.load-code` replies |
+| `app/MachineCodeLoad.*` on `const SharpAppPart&` (the Qt6 frontend calls it on the part from its own thread, `MainWindow.cpp:440, 459`) | `c1600.code-plan`, `c1600.load-code` replies |
 | `c1600.load-basic {bytes, path}`, `c1600.load-machine-code {bytes, addr, slot, bank}` (`app/SharpAppPart.cpp:283-299`): the frontend gives slot and bank | the frontend gives the file and what the user typed; the plan decides slot and bank |
 | the Web page's stateful commands (`app/SharpWebPart.cpp:190-233`) | the part's stateless ones |
 | three wordings of a refusal | one (§3.8, row 1600-15) |
@@ -490,7 +490,7 @@ their users (§3.10); `tools/check_presets.sh` is not affected.
 | `products/calc-u-1600/docs/developer/README.md` | where the loaders live (`core/Loaders`, `app/SharpLoaderPart`) (plan M-44) |
 | `products/calc-u-1600/docs/developer/Shared-Architecture.md:75` | the row `MachineCodeLoad` becomes `SharpLoaderPart` |
 | `products/calc-u-1600/docs/developer/Web-Client.md` | the page's loader messages (§2, engine) |
-| `docs/glossary-mapping.md` | a row "Plan": `machinecode::plan`, `MachineCodeLoad` → `sharp::loaders::planCode`, `c1600.plan-code`; a row "Program file kind": `programfile::classify` → `sharp::loaders::fileKind` |
+| `docs/glossary-mapping.md` | a row "Plan": `machinecode::plan`, `MachineCodeLoad` → `sharp::loaders::planCode`, `c1600.code-plan`; a row "Program file kind": `programfile::classify` → `sharp::loaders::fileKind` |
 | `docs/test-groups.md` | the new and ported files of §6 in the Calc-U-1600 table |
 | memory `calc-u-1600/project_fast_basic_binary_loader.md` | its "Code:" lines (`loadBasicProgram(machine, bytes)`, `loadBasicProgramFile(machine, path)`) name `sharp::loaders::loadBasic` on the kind |
 | memory `calc-u-1600/project_pc1600_native_basic_and_preset_program.md` | `typeBasicProgramText` → `sharp::loaders::typeProgram` over the typing engine |

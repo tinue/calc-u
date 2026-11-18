@@ -154,15 +154,15 @@ TEST(lib14_ac34_qt_menus_in_family_order) {
     CHECK(checkList("menus", menuTitles(f.w().menuBar()), {"File", "Edit", "Machine", "Help"}));
     CHECK(checkList("File", labels(f.find<QMenu>(names::menu("file"))),
                     {"Load Preset…", "Examples ▸", "-", "Load BASIC Program…", "Load Machine Code…", "-",
-                     "Mount Directory…", "Unmount", "-", "Settings…", "Quit"}));
+                     "Host Drive…", "Unmount", "-", "Settings…", "Quit"}));
     CHECK(checkList("Edit", labels(f.find<QMenu>(names::menu("edit"))), {"Copy Screen", "Paste Text"}));
     CHECK(checkList("Machine", labels(f.find<QMenu>(names::menu("machine"))),
                     {"Model ▸", "ROM Revision ▸", "Peripherals ▸", "-", "Reset", "Cold boot", "Resume"}));
     CHECK(checkList("Help", labels(f.find<QMenu>(names::menu("help"))), {"Calc-U-1600 Help", "About Calc-U-1600…"}));
     CHECK(checkList("ROM Revision", labels(f.find<QMenu>(names::item("variants-model"))), {"A01", "A03", "A04"}));
     CHECK(checkList("Peripherals", labels(f.find<QMenu>(names::item("peripherals"))), {"CE-150", "-", "CE-158"}));
-    // Mount Directory… is the PC-1600's (its product entry); Resume while paused.
-    CHECK(f.action(cu1600::kItemMountDirectory) && !f.action(cu1600::kItemMountDirectory)->isEnabled());
+    // Host Drive… is the PC-1600's (its product entry); Resume while paused.
+    CHECK(f.action(cu1600::kItemHostDrive) && !f.action(cu1600::kItemHostDrive)->isEnabled());
     CHECK(f.action("resume") && !f.action("resume")->isEnabled());
     // AC-6: the platform's places.
     CHECK(f.action("settings")->menuRole() == QAction::PreferencesRole);
@@ -172,8 +172,8 @@ TEST(lib14_ac34_qt_menus_in_family_order) {
     f.command("model", Value::object({{"name", "PC-1600"}}));
     f.run(100);
     CHECK(checkList("PC-1600 submenus", machineSubmenus(f), {"Model ▸", "ROM Version ▸", "Peripherals ▸"}));
-    CHECK(f.action(cu1600::kItemMountDirectory)->isEnabled());
-    CHECK(!f.action(cu1600::kItemUnmountDirectory)->isEnabled());
+    CHECK(f.action(cu1600::kItemHostDrive)->isEnabled());
+    CHECK(!f.action(cu1600::kItemUnmountHostDrive)->isEnabled());
     f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-1600P"}}));
     f.run(100);
     CHECK(checkList("PC-1600 + CE-1600P", machineSubmenus(f),
@@ -290,7 +290,7 @@ TEST(lib14_ac37_settings_sections_and_rows) {
     std::vector<std::string> want{"General: Startup model",
                                   "Startup presets: PC-1500 PC-1500A PC-1600",
                                   "Storage: Save folder Cassettes",
-                                  "Folders: Examples folder Basic folder Assembly folder Host drive folder",
+                                  "Folders: Presets folder BASIC folder Assembly folder Host drive folder",
                                   "Tracing: Trace folder Maximum file size (MB)"};
 #ifndef Q_OS_WIN
     want.push_back("Serial ports: Link folder");

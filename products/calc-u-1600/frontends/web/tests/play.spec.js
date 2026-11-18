@@ -412,7 +412,7 @@ test('lib7_ac44 a new tape is recorded under its name', async ({ page }) => {
   await gotoReady(page);
   await page.locator(c('bar-place-printer')).click();
   await expect(page.locator(c('media-picker-cassette'))).toBeVisible({ timeout: 30000 });
-  await page.locator(c('tape-new')).click();
+  await page.locator(c('cassette-new')).click();
   const name = `Rec ${Date.now()}`;
   await page.locator('[data-dialog=prompt] input[type=text]').fill(name);
   await page.locator('[data-dialog=prompt] button', { hasText: 'OK' }).click();
@@ -505,13 +505,13 @@ test('C1600-2 AC-19 the loaded dialog and the CALL in the input line, not starte
   expect(await screen(page)).toMatch(/CALL &C100/);   // in the input line, not started
 });
 
-test('the inspector shows the pointers and the card dump', async ({ page }) => {
+test('the inspector shows the pointers and the module dump', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
   await page.locator('[data-panel=inspector] button', { hasText: 'Pointers' }).click();
   await expect(page.locator('.calcu-inspector-output')).toContainText('RAM_ST');
-  await page.locator('[data-panel=inspector] button', { hasText: 'Card YAML' }).click();
-  await expect(page.locator('.calcu-inspector-output')).toContainText('Module card dump');
+  await page.locator('[data-panel=inspector] button', { hasText: 'Module YAML' }).click();
+  await expect(page.locator('.calcu-inspector-output')).toContainText('Module dump');
 });
 
 // LIB-14 D-39 (M-57, ledger 1600-48): the shell's storage banner with the

@@ -1203,7 +1203,7 @@ TEST(lib7_ac48_card_yaml_not_read) {
     std::ofstream(dirFolder.str() + "/ce155.card.yaml") << kCe155Yaml;
     std::string err;
     CHECK(scanMemoryCardDirectory(dirFolder.str(), &err).empty());
-    CHECK_EQ(std::string(kCardFileSuffix), std::string(".module.yaml"));
+    CHECK_EQ(std::string(kModuleFileSuffix), std::string(".module.yaml"));
 }
 
 TEST(test_catalog_scan_missing_dir) {

@@ -176,12 +176,12 @@ set_target_properties(CalcU1600Qt PROPERTIES OUTPUT_NAME "Calc-U-1600")
 # LIB-12) read a real filesystem directory, so these must be real files on
 # disk) ----
 set(CARD_RESOURCES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources/cards)
-file(GLOB CARD_YAML_FILES ${CARD_RESOURCES_SRC_DIR}/*.module.yaml)
+file(GLOB MODULE_FILES ${CARD_RESOURCES_SRC_DIR}/*.module.yaml)
 # Bundled CE-1600F floppy disks (*.floppy.yaml, Connector/FloppyImageFile.hpp)
 # -- listed in the disk picker ahead of the user's saved ones.
 file(GLOB FLOPPY_FILES ${CARD_RESOURCES_SRC_DIR}/*.floppy.yaml)
 # The bundled cassette template "Empty" (*.cassette.yaml with its sound, LIB-7 AC-42, D-23).
-file(GLOB TAPE_FILES ${CARD_RESOURCES_SRC_DIR}/*.cassette.yaml ${CARD_RESOURCES_SRC_DIR}/*.wav)
+file(GLOB CASSETTE_FILES ${CARD_RESOURCES_SRC_DIR}/*.cassette.yaml ${CARD_RESOURCES_SRC_DIR}/*.wav)
 set(ROM_RESOURCES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../roms)
 # The ROM full set as roms/fetch_roms.sh fetches it: the dumps and the
 # CE-502B's module definition (LIB-12 AC-12, AC-14).
@@ -191,7 +191,7 @@ file(GLOB BUNDLED_ROM_FILES ${ROM_RESOURCES_SRC_DIR}/*.ROM ${ROM_RESOURCES_SRC_D
 # (roms/ holds only the gitignored original dumps).
 list(APPEND BUNDLED_ROM_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/pc1600-hostdrive/PC1600-P1-B7-HOSTDRIVE.bin)
-set(BUNDLED_RESOURCE_FILES ${CARD_YAML_FILES} ${FLOPPY_FILES} ${TAPE_FILES} ${BUNDLED_ROM_FILES})
+set(BUNDLED_RESOURCE_FILES ${MODULE_FILES} ${FLOPPY_FILES} ${CASSETTE_FILES} ${BUNDLED_ROM_FILES})
 
 if(APPLE)
   # Inside the .app bundle: Contents/Resources -- AppPaths::

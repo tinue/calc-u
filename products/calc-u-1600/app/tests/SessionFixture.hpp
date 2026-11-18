@@ -94,7 +94,7 @@ struct SessionFixture {
             if (const auto* r = std::get_if<sessions::ReplyMessage>(&m)) replies[r->call] = *r;
         };
         sessions::HostServices offered = services;
-        if (hostDirectories) offered.offered.insert(sessions::HostService::FolderPicker);   // File ▸ Mount Directory
+        if (hostDirectories) offered.offered.insert(sessions::HostService::FolderPicker);   // File ▸ Host Drive…
         listener.listen(*app.session, std::move(offered));
     }
 

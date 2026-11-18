@@ -23,7 +23,7 @@ namespace cu1600 {
 // - the stream topic `c1600.printer` (the CE-158's printer output);
 // - the requests `c1600.shell-product` (SharpShellProduct, D-32),
 //   `c1600.faceplate-map {model}` (the hit map, the LCD's layout; D-31),
-//   `c1600.inspector-menu`, `c1600.inspector-view`, `c1600.card-yaml`,
+//   `c1600.inspector-menu`, `c1600.inspector-view`, `c1600.module-yaml`,
 //   `c1600.screen-image`;
 // - test aids, only with the CMake option CALCU_WEB_TEST_AIDS (on, but off
 //   in a release Web build, `frontends/web/build.sh --release`; LIB-15

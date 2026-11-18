@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 
+#include "../Connector/MemoryCardCatalog.hpp"
 #include "../FileIO.hpp"
 #include "../SharpRomReader.hpp"
 #include "Machine/SharpCatalogue.hpp"
@@ -13,11 +14,9 @@ namespace sharp {
 
 namespace {
 
-constexpr std::string_view kCardSuffix = ".module.yaml";
-
 bool isModuleFile(const std::string& name) {
-    return name.size() > kCardSuffix.size() &&
-           name.compare(name.size() - kCardSuffix.size(), kCardSuffix.size(), kCardSuffix) == 0;
+    const std::string_view suffix = kModuleFileSuffix;
+    return name.size() > suffix.size() && name.ends_with(suffix);
 }
 
 const RomEntry& hostDriveEntry() {

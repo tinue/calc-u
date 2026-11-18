@@ -17,7 +17,7 @@ class MachineController;
 
 // INSPECTOR: the docked machine inspector -- a header, a scrolling
 // monospaced output log, and a two-row button bar (Pointers, the Memory ▾
-// and Dump ▾ menus, Card YAML, Clear; then the TRACE / LOG pills). The
+// and Dump ▾ menus, Module YAML, Clear; then the TRACE / LOG pills). The
 // views themselves are built in Core (Core/Debug/Inspect, via
 // MachineController::inspectorView()); stepping and breakpoints are the
 // debugger's (help/07-debugger.md), not this panel's. Always visible under the
@@ -61,7 +61,7 @@ private:
     QPushButton* m_pointersButton = nullptr;
     QPushButton* m_memoryButton = nullptr; // Memory ▾
     QPushButton* m_dumpButton = nullptr;   // Dump ▾
-    QPushButton* m_cardButton = nullptr;
+    QPushButton* m_moduleYamlButton = nullptr;
     QPushButton* m_clearButton = nullptr;
     QToolButton* m_traceButton = nullptr;
     QToolButton* m_logButton = nullptr;
@@ -92,10 +92,10 @@ private:
     void toggleDebugLevel();
     void updateLogButtonAppearance();
 
-    // ── Inspector views and Card YAML ─────────────────────────────────
+    // ── Inspector views and Module YAML ───────────────────────────────
     void fillMenu(QMenu* menu, bool dumps);
     void showView(inspect::View view);
-    void debugDumpModuleCardAsYaml();
+    void debugDumpModuleAsYaml();
     void clearDebug();
 
     QIcon dotIcon(const QColor& color) const;

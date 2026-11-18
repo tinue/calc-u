@@ -329,7 +329,7 @@ The shell and what goes into it
 
 - [ ] **AC-34** — Given the Qt6 frontend, then its menus are those of
   today in the order of AC-1: File with Load Preset…, Examples ▸, Load
-  BASIC Program…, Load Machine Code…, Mount Directory… and Unmount,
+  BASIC Program…, Load Machine Code…, Host Drive… and Unmount,
   Settings… and Quit; Edit with Copy Screen (Copy Log Selection while
   text of the INSPECTOR is selected) and Paste Text; Machine with
   Model ▸, ROM Revision ▸ on the PC-1500, ROM Version ▸ and CE-1600P
@@ -340,7 +340,7 @@ The shell and what goes into it
   AC-41) and the Help item are new
   (`Qt6/app/MainWindow.cpp:858-1018`).
 - [ ] **AC-35** — Given the Web frontend, then its menus are the same
-  without Mount Directory…, Unmount and Quit, and with the media items
+  without Host Drive…, Unmount and Quit, and with the media items
   of LIB-7 (today "Import Card, Disk or Tape…", "Saved Media…"). Load
   Preset… and Examples ▸ are two items as in Qt6; today the examples are
   inside "Load Preset ▸" (`Web/src/CalcU1600.jsx:243-298`).
@@ -363,7 +363,7 @@ The shell and what goes into it
   presets (today "Default presets") with the rows PC-1500, PC-1500A and
   PC-1600; Storage with Save folder (today "Battery-card saves") and
   Cassettes (Qt6), and in the Web frontend the sentence that says where
-  saved media are kept; Folders with the examples folder (today
+  saved media are kept; Folders with the presets folder (today
   "Samples folder") and the BASIC, assembly and host drive folders
   (Qt6); Tracing with Trace folder and Maximum file size (Qt6); Serial
   ports with the link folder, and below it two lines that show where
@@ -517,3 +517,4 @@ The shell and what goes into it
 | The magnetic card items of C59-7 (AC-26) read "Arm Card…" and "Arm Fresh Card…" (today "Fit Card…", "Fit Fresh Card…"); behaviour change 59-50 | C59-7 decision log 2026-11-16; `docs/glossary-mapping.md` row "Arm"; user, 2026-11-16 (Q-3 of `docs/reviews/e-designs.md`, with the approval of the Part E designs) | 2026-11-16 |
 | AC-11's "a change is applied at once" holds for Tracing in both products: the trace folder and the maximum size are read at each trace start (LIB-10 AC-53); Calc-U-59 used the ones of its start until the next start | user, 2026-11-17, Q-2 of `docs/reviews/e-simplification.md`; ledger row 59-62 | 2026-11-17 |
 | The Storage row of the cassette folder is "Cassettes" and the bar's controls are the cassette controls (AC-36, AC-37 edited in place; was "Tapes") | user, 2026-11-17 (Part E review Q-6); behaviour change 1600-51 | 2026-11-17 |
+| Calc-U-1600's labels: the File item is "Host Drive…" with the product entry `c1600.host-drive` (AC-34, AC-35 edited in place; was "Mount Directory…", `c1600.mount-directory`); Folders read "Presets folder" and "BASIC folder" (AC-37 edited in place; was "Examples folder", "Basic folder"); the Web's Storage sentence says "modules, disks and cassettes" (was "tapes") | the glossary's Host drive avoids "mounted directory"; a label names its key (`[folders] presets`) and BASIC is spelt so; `docs/reviews/release-simplification.md` V-3, V-9, L-8; behaviour change 1600-54 | 2026-11-18 |

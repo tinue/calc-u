@@ -33,7 +33,7 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
     p.copyScreen = [] {};
     p.pasteText = true;
     p.moduleSlotPinOuts = {sharp::kPC1500SlotPinOut, sharp::kPC1600Slot1PinOut, sharp::kPC1600Slot2PinOut};
-    // AC-9: the host drive needs a folder (File ▸ Mount Directory…); a bus
+    // AC-9: the host drive needs a folder (File ▸ Host Drive…); a bus
     // ROM is plugged in by a preset only (C1600-4 D-5).
     p.placesWithoutControl = {sharp::kHostDrivePlace, sharp::kBusRomPlace};
     auto item = [](shell::MenuGroup g, const char* id, const char* label, const char* entry = "") {
@@ -47,8 +47,8 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
     p.items.push_back(item(shell::MenuGroup::FileKinds, kItemLoadBasic, "Load BASIC Program…"));
     p.items.push_back(item(shell::MenuGroup::FileKinds, kItemLoadCode, "Load Machine Code…"));
     if (withHostFolders) {
-        p.items.push_back(item(shell::MenuGroup::FileMedia, kItemMountDirectory, "Mount Directory…", kMountDirectoryEntry));
-        p.items.push_back(item(shell::MenuGroup::FileMedia, kItemUnmountDirectory, "Unmount", kHostDriveFolderEntry));
+        p.items.push_back(item(shell::MenuGroup::FileMedia, kItemHostDrive, "Host Drive…", kHostDriveEntry));
+        p.items.push_back(item(shell::MenuGroup::FileMedia, kItemUnmountHostDrive, "Unmount", kHostDriveFolderEntry));
     }
     return p;
 }
@@ -59,10 +59,10 @@ shell::DialogSpec settingsSpec(bool qt6, bool serialPorts) {
     shell::DialogSpec spec = shell::familySections(settingsDecl(), qt6 ? std::vector<std::string>{} : webKeys);
     for (auto& s : spec.sections) {
         if (s.title != "Folders") continue;
-        // D-26: today's labels, "Samples" renamed.
+        // D-26: today's labels, "Samples" renamed; "Presets", "BASIC" (LIB-14 decision log 2026-11-18).
         for (auto& r : s.rows) {
-            if (r.key == openFolderKind(OpenFolder::Samples)) r.label = "Examples folder";
-            else if (r.key == openFolderKind(OpenFolder::Basic)) r.label = "Basic folder";
+            if (r.key == openFolderKind(OpenFolder::Samples)) r.label = "Presets folder";
+            else if (r.key == openFolderKind(OpenFolder::Basic)) r.label = "BASIC folder";
             else if (r.key == openFolderKind(OpenFolder::Assembly)) r.label = "Assembly folder";
             else if (r.key == openFolderKind(OpenFolder::HostDrive)) r.label = "Host drive folder";
         }

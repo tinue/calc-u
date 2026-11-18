@@ -34,6 +34,14 @@ ReadOutcome unreadable(std::string problem) {
     return r;
 }
 
+// docs/formats/media.md: a name is written double-quoted as it is, so it
+// has no '"' and no line end (as the magnetic card's, Calc-U-59).
+bool writableName(const std::string& name, const char* what, std::string& problem) {
+    if (name.find('"') == std::string::npos && name.find('\n') == std::string::npos) return true;
+    problem = std::string("A ") + what + " name has no \" and no line end.";
+    return false;
+}
+
 std::string yamlQuoted(const std::string& s) {
     const char q = s.find('"') == std::string::npos ? '"' : '\'';
     return std::string(1, q) + s + q;
@@ -162,6 +170,7 @@ public:
             problem = "It is not a floppy disk.";
             return {};
         }
+        if (!writableName(w.name, "disk", problem)) return {};
         std::string description;   // AC-41: kept
         if (w.source)
             if (const auto h = floppyHeader(*w.source)) description = h->description;
@@ -171,11 +180,11 @@ public:
 
 // ── Cassette (`.cassette.yaml`, version 1, with its WAV; AC-42) ──────────────
 
-struct TapeDefinition {
+struct CassetteDefinition {
     std::string name, description, audio;
     bool isTemplate = false;
 };
-std::optional<TapeDefinition> tapeDefinition(const std::string& text, std::string* error) {
+std::optional<CassetteDefinition> cassetteDefinition(const std::string& text, std::string* error) {
     calcu::formats::YamlNode root;
     if (!calcu::formats::parseYaml(text, &root, error)) return std::nullopt;
     std::string format;
@@ -187,7 +196,7 @@ std::optional<TapeDefinition> tapeDefinition(const std::string& text, std::strin
     if (!calcu::formats::requireFormatVersion(root, 1, "cassette definition", error)) return std::nullopt;
     if (!root.requireOnlyKeys({"format", "format-version", "cassette-name", "description", "template", "saved", "audio", "position"}, error))
         return std::nullopt;
-    TapeDefinition t;
+    CassetteDefinition t;
     const auto* n = root.find("cassette-name");
     if (!n || !n->asString(&t.name, error) || t.name.empty()) {
         *error = "missing 'cassette-name'";
@@ -211,11 +220,11 @@ std::optional<TapeDefinition> tapeDefinition(const std::string& text, std::strin
     return t;
 }
 
-class TapeCodec final : public MediumCodec {
+class CassetteCodec final : public MediumCodec {
 public:
     ReadOutcome read(const std::string& bytes, const Companion& companion) const override {
         std::string error;
-        const auto t = tapeDefinition(bytes, &error);
+        const auto t = cassetteDefinition(bytes, &error);
         if (!t) return unreadable(error);
         const auto wav = companion ? companion(t->audio) : std::nullopt;
         if (!wav) return unreadable("its sound file " + t->audio + " is missing");
@@ -239,12 +248,13 @@ public:
             problem = "It is not a cassette.";
             return {};
         }
+        if (!writableName(w.name, "cassette", problem)) return {};
         // D-26: a definition written again keeps its sound file's path; a
         // copy (Name & Save) gets its WAV beside it, named after its file.
         std::string description, audio = w.fileStem + ".wav";
         if (w.source) {
             std::string error;
-            if (const auto t = tapeDefinition(*w.source, &error)) {
+            if (const auto t = cassetteDefinition(*w.source, &error)) {
                 description = t->description;
                 if (t->name == w.name) audio = t->audio;
             }
@@ -269,7 +279,7 @@ const MemoryCardDefinition* definitionOf(const calcu::machine::PeripheralDescrip
 
 std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::machine::Catalogue& catalogue) {
     static const FloppyCodec floppyCodec;
-    static const TapeCodec tapeCodec;
+    static const CassetteCodec cassetteCodec;
     // One card codec per bundled folder (a test's own, the product's).
     static std::vector<std::unique_ptr<CardCodec>> cardCodecs;
     cardCodecs.push_back(std::make_unique<CardCodec>(bundledDir));
@@ -277,11 +287,11 @@ std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::ma
     media::KindDecl module;
     module.id = kModuleKind;
     module.label = "memory module";
-    module.suffix = kCardFileSuffix;
+    module.suffix = kModuleFileSuffix;
     module.bundledFolder = bundledDir;
     module.codec = cardCodecs.back().get();
     module.formatName = "The module definition format";
-    module.describedAt = "the module definition format";
+    module.describedAt = "the User Guide, \"Module definition format\"";
     module.currentVersion = static_cast<int>(kCardFormatVersion);
     module.heldBy = media::HeldBy::ModuleSlot;
     module.isMedium = [](const calcu::machine::PeripheralDescriptor& d) {
@@ -323,24 +333,24 @@ std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::ma
     floppy.bundledFolder = bundledDir;
     floppy.codec = &floppyCodec;
     floppy.formatName = "The floppy disk format";
-    floppy.describedAt = "the User Guide, \"Floppy disks\" (sides 0: and 1: in place of a: and b:)";
+    floppy.describedAt = "the User Guide, \"Media files\", \"Floppy disk\" (sides 0: and 1: in place of a: and b:)";
     floppy.currentVersion = static_cast<int>(kFloppyFormatVersion);
     floppy.words = media::PresetWords{"floppy", "", "floppy", "", false};
 
-    media::KindDecl tape;
-    tape.id = kTapeKind;
-    tape.label = "cassette";
-    tape.suffix = kTapeFileSuffix;
-    tape.companionSuffixes = {".wav"};   // its sound, beside it (LIB-7 AC-43)
-    tape.folder = calcu::settings::Folder::Cassettes;
-    tape.bundledFolder = bundledDir;
-    tape.codec = &tapeCodec;
-    tape.formatName = "The cassette definition format";
-    tape.describedAt = "the User Guide, \"Cassettes\"";
-    tape.currentVersion = 1;
-    tape.words = media::PresetWords{"cassette", "", "cassette", "", false};
+    media::KindDecl cassette;
+    cassette.id = kCassetteKind;
+    cassette.label = "cassette";
+    cassette.suffix = kCassetteFileSuffix;
+    cassette.companionSuffixes = {".wav"};   // its sound, beside it (LIB-7 AC-43)
+    cassette.folder = calcu::settings::Folder::Cassettes;
+    cassette.bundledFolder = bundledDir;
+    cassette.codec = &cassetteCodec;
+    cassette.formatName = "The cassette definition format";
+    cassette.describedAt = "the User Guide, \"Media files\", \"Cassette definition\"";
+    cassette.currentVersion = 1;
+    cassette.words = media::PresetWords{"cassette", "", "cassette", "", false};
 
-    return {module, floppy, tape};
+    return {module, floppy, cassette};
 }
 
 media::ModuleListing moduleListing() {

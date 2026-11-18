@@ -1,6 +1,5 @@
-// LIB-4 Calc-U-59 column (design §10.6, T59-1 to T59-5, T59-7; spec AC-10 to
-// AC-14): the control state of the app session as the frontends draw it,
-// on the real ROMs (M-57).
+// The control state of the app session as the frontends draw it, on the
+// real ROMs.
 #include "../app/HarnessProduct.hpp"
 #include "AppRig.hpp"
 #include "TestHarness.hpp"
@@ -35,7 +34,7 @@ std::vector<std::string> fittingIds(const c::PlaceEntry& p) {
 
 } // namespace
 
-TEST(lib4_ac10_models_ti59_ti58_ti58c_without_variants) {
+TEST(models_ti59_ti58_ti58c_without_variants) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r;
     const auto* cs = state(r);
@@ -51,7 +50,7 @@ TEST(lib4_ac10_models_ti59_ti58_ti58c_without_variants) {
         for (const auto& f : p.fitting) CHECK(f.variants.empty());
 }
 
-TEST(lib4_ac11_slot_1_lists_14_modules_and_the_empty_slot) {
+TEST(slot_1_lists_14_modules_and_the_empty_slot) {
     SKIP_UNLESS(roms(), kSkip);
     for (const char* model : {"TI-59", "TI-58", "TI-58C"}) {
         Rig r(model);
@@ -60,13 +59,13 @@ TEST(lib4_ac11_slot_1_lists_14_modules_and_the_empty_slot) {
         if (!slot) continue;
         CHECK_EQ(slot->pinOut.value, std::string("module-slot"));
         CHECK_EQ(slot->fitting.size(), std::size_t{14});
-        CHECK(slot->empty.now);   // the empty slot can be chosen (OQ-5)
+        CHECK(slot->empty.now);   // the empty slot can be chosen
         const auto* ml = c::choice(*slot, m::PeripheralId{"ML"});
-        CHECK(ml && ml->plugged);   // the start: the Master Library (row 59-10)
+        CHECK(ml && ml->plugged);   // the start: the Master Library
     }
 }
 
-TEST(lib4_ac11_printer_lists_pc100c_and_the_empty_place) {
+TEST(printer_lists_pc100c_and_the_empty_place) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r;
     const auto* printer = place(r, "printer");
@@ -80,7 +79,7 @@ TEST(lib4_ac11_printer_lists_pc100c_and_the_empty_place) {
     CHECK(!c::choice(*place(r, "printer"), m::PeripheralId{"PC-100C"})->plugged);
 }
 
-TEST(lib4_ac11_choices_refused_while_a_preset_loads) {   // AC-3 for these entries; row 59-45
+TEST(choices_refused_while_a_preset_loads) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r;
     // A preset that keeps the session busy: a program that runs for a while.
@@ -102,7 +101,7 @@ TEST(lib4_ac11_choices_refused_while_a_preset_loads) {   // AC-3 for these entri
     CHECK(c::choice(*place(r, "slot-1"), m::PeripheralId{"RE"})->available.now);
 }
 
-TEST(lib4_ac12_card_reader_on_the_ti59_only) {
+TEST(card_reader_on_the_ti59_only) {
     SKIP_UNLESS(roms(), kSkip);
     for (const char* model : {"TI-59", "TI-58", "TI-58C"}) {
         Rig r(model);
@@ -124,7 +123,7 @@ TEST(lib4_ac12_card_reader_on_the_ti59_only) {
     }
 }
 
-TEST(lib4_ac13_paper_panel_owned_by_pc100c_or_none) {
+TEST(paper_panel_owned_by_pc100c_or_none) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r;
     auto paper = [&]() -> const c::PanelEntry* {
@@ -144,7 +143,7 @@ TEST(lib4_ac13_paper_panel_owned_by_pc100c_or_none) {
     CHECK(paper() && !paper()->owner);
 }
 
-TEST(lib4_ac14_debug_panel_entries_carried) {
+TEST(debug_panel_entries_carried) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r;
     const auto* cs = state(r);
@@ -161,9 +160,9 @@ TEST(lib4_ac14_debug_panel_entries_carried) {
     CHECK(v.find("product") && v.find("product")->find("c59.asm-run"));
 }
 
-// T59-7: the harness reads the control state with the paper panel and the
-// card reader (LIB-4 AC-9 for this product).
-TEST(lib4_harness_state_control_state_has_paper_panel_and_card_reader) {
+// The harness reads the control state with the paper panel and the card
+// reader.
+TEST(harness_state_control_state_has_paper_panel_and_card_reader) {
     SKIP_UNLESS(roms(), kSkip);
     auto product = cu59::makeHarnessProduct();
     std::string error;

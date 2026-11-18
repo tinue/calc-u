@@ -4,7 +4,7 @@
 namespace {
 
 // ASCII versions of app/TextUtil.hpp's helpers (the dumps are ASCII; their md5
-// values are known, LIB-12 AC-9).
+// values are known).
 std::vector<std::string_view> splitLines(std::string_view text) {
     std::vector<std::string_view> out;
     size_t start = 0;

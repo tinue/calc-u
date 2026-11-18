@@ -6,15 +6,13 @@
 #include <cstdint>
 #include <optional>
 
-// What was left of core/TIAdapters.hpp once the adapters of C59-1 were gone
-// (LIB-11 design §11.2, D-17; M-59): the typing support of the TI machines
-// and the model's key-detect range. Neither is an adapter. The memory
-// adapter's readers moved onto the product kind c59.program-memory
-// (TIProductKinds.hpp) and the core tests onto TIMachineTesting (M-59).
+// The typing support of the TI machines and the model's key-detect range.
+// The memory readers are the product kind c59.program-memory
+// (TIProductKinds.hpp); the core tests use TIMachineTesting.
 
 class TIMachine;
 
-/// Typing support of the TI machines (LIB-5 design §3.4, D-3): a capability
+/// Typing support of the TI machines: a capability
 /// of the generic kind `typing-support`, `TMC0501/typing-support`, owner
 /// component TMC0501. How often the ROM's keyboard-scan instruction found a
 /// key pressed; no prompt readiness, no latches.
@@ -29,5 +27,5 @@ private:
 
 /// The full keyboard scan/detect cycle of a model: {lo, hi, extraLo, extraHi}
 /// (extra empty when lo > hi): the addresses `c59 coverage` leaves out
-/// without `all` (C59-9 D-7), the run probe's idle loop, and the tests.
+/// without `all`, the run probe's idle loop, and the tests.
 std::array<std::uint16_t, 4> idleAndKeyDetectRange(const calcu::machine::ModelId&);

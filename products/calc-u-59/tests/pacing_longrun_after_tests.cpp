@@ -1,8 +1,7 @@
-// The "after" long-run pacing tests of LIB-17 AC-18 (design §6, P59-4): the
-// library's pacer, through the app session as every frontend hosts it (M-33;
-// the Web since M-34). The rate of emulated time against wall time is
-// compared with 2.3.0's, measured by the "before" test of first step 14 (on
-// 2.3.0's batches, CooperativePacing; the test went with them in M-34): up to
+// The "after" long-run pacing tests: the library's pacer, through the app
+// session as every frontend hosts it. The rate of emulated time against wall
+// time is compared with 2.3.0's, measured by a "before" test on 2.3.0's
+// batches (CooperativePacing, since removed): up to
 // 0.3 % passes, 0.3 % to 1 % is printed for the user, above 1 % fails.
 //
 // Scripted (Frequent): an hour per model on a clock this test supplies, the
@@ -33,7 +32,7 @@ double oldRate(Model model) {
     return static_cast<int32_t>(exact) / exact;
 }
 
-// AC-1's bound: one 20 ms slice, its jitter of half a slice, the spread of
+// The pacer's bound: one 20 ms slice, its jitter of half a slice, the spread of
 // the calls (as the "before" test's).
 constexpr double kBoundSeconds = 0.035;
 
@@ -48,7 +47,7 @@ calcu::sessions::ProductSession<TIAppPart> session(Model model, calcu::pacing::W
 
 } // namespace
 
-TEST(lib17_ac18_pacing_longrun_scripted_ti) {
+TEST(pacing_longrun_scripted_ti) {
     for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
         WallTime now{std::chrono::hours(2)};
         auto app = session(model, [&] { return now; });
@@ -94,7 +93,7 @@ TEST(lib17_ac18_pacing_longrun_scripted_ti) {
     }
 }
 
-TEST(lib17_ac18_pacing_longrun_real_clock_ti) {
+TEST(pacing_longrun_real_clock_ti) {
     const char* env = std::getenv("CALCU59_PACING_LONGRUN");
     if (!env) return;  // the checkpoint group sets it (600)
     const double seconds = std::atof(env);

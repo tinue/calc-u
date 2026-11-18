@@ -5,10 +5,10 @@
 #include <optional>
 
 // Matrix codes (row × 10 + column, row 1–9 top to bottom, column 1–5 left to
-// right: the codes 2.3.0 state files used in KEYSTROKES, now the positions of
+// right: the codes release 2.3.0's state files used in KEYSTROKES, now the positions of
 // docs/formats/preset.md §8.1 "Position") and the machine's key IDs. Matrix
 // codes are product data, not a core type; the key matrix itself stays in the
-// core (C59-1 AC-10, design §3.3). The descriptor lists the keys in row order,
+// core. The descriptor lists the keys in row order,
 // so the key of code r×10+c is its key (r−1)×5 + (c−1).
 
 namespace cu59 {

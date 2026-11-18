@@ -1,8 +1,6 @@
-// LIB-1, Calc-U-59 column (LIB-1 design §1; C59-1 design T2, T13; C59-6
-// design T1, T11): the catalogue's three descriptors (AC-26 to AC-31), its
-// peripherals (AC-32, M-25) and a running machine of each model against its
-// descriptor, without peripherals and with the PC-100C and a module (AC-33;
-// the media place clause passes in M-55, LIB-1 D-1).
+// The catalogue's three descriptors, its peripherals and a running machine of
+// each model against its descriptor, without peripherals and with the
+// PC-100C and a module (media places included).
 
 #include "TestHarness.hpp"
 #include "harness/MachineState.hpp"
@@ -32,7 +30,7 @@ const ComponentDescriptor* component(const MachineDescriptor& d, const char* id)
 
 } // namespace
 
-TEST(lib1_ac26_models_and_tick_rates) {
+TEST(descriptor_models_and_tick_rates) {
     const auto& models = tiCatalogue().models();
     CHECK_EQ(models.size(), size_t{3});
     for (const char* m : kModels) {
@@ -46,7 +44,7 @@ TEST(lib1_ac26_models_and_tick_rates) {
     CHECK_EQ(model("TI-58C").tickRate, TickRate{394'000});
 }
 
-TEST(lib1_ac27_segment_display_and_no_sound) {
+TEST(descriptor_segment_display_and_no_sound) {
     for (const char* m : kModels) {
         const auto& d = model(m);
         const auto* g = std::get_if<SegmentGeometry>(&d.display.geometry);
@@ -66,7 +64,7 @@ TEST(lib1_ac27_segment_display_and_no_sound) {
     }
 }
 
-TEST(lib1_ac28_rom_entries_per_model) {
+TEST(descriptor_rom_entries_per_model) {
     for (const char* m : kModels) {
         const auto& d = model(m);
         std::vector<std::string> files;
@@ -83,7 +81,7 @@ TEST(lib1_ac28_rom_entries_per_model) {
     }
 }
 
-TEST(lib1_ac29_keys_connectors_places_debug_target) {
+TEST(descriptor_keys_connectors_places_debug_target) {
     for (const char* m : kModels) {
         const auto& d = model(m);
         CHECK_EQ(d.keys.size(), size_t{45});
@@ -111,7 +109,7 @@ TEST(lib1_ac29_keys_connectors_places_debug_target) {
     }
 }
 
-TEST(lib1_ac30_card_reader_on_ti59_only) {
+TEST(descriptor_card_reader_on_ti59_only) {
     const auto& ti59 = model("TI-59");
     CHECK_EQ(ti59.mediaPlaces.size(), size_t{1});
     if (!ti59.mediaPlaces.empty()) {
@@ -124,15 +122,15 @@ TEST(lib1_ac30_card_reader_on_ti59_only) {
     CHECK(model("TI-58C").mediaPlaces.empty());
 }
 
-TEST(lib1_ac31_components_and_depth) {
+TEST(descriptor_components_and_depth) {
     for (const char* m : kModels) {
         const auto& d = model(m);
         const auto* cpu = component(d, "TMC0501");
         CHECK(cpu && cpu->depth == Depth::Separate);
         const auto* scom = component(d, "SCOM");
         CHECK(scom && scom->depth == Depth::Folded && scom->foldedInto && scom->foldedInto->value == "TMC0501");
-        // Since C59-6 the module and the printer are peripherals, no longer
-        // folded into TMC0501 (machine.md fit table; ADR 0011).
+        // The module and the printer are peripherals behind functional
+        // connectors (module-slot, printer-connector), not folded into TMC0501.
         for (const char* gone : {"CROM", "printer-interface"}) CHECK(component(d, gone) == nullptr);
         for (const char* separate : {"ROM", "RAM"}) {
             const auto* c = component(d, separate);
@@ -148,8 +146,8 @@ TEST(lib1_ac31_components_and_depth) {
     }
 }
 
-// LIB-7 §11 E8 (M-55): with the card reader's media place capability.
-TEST(lib1_ac33_machine_conforms_without_peripherals) {
+// With the card reader's media place capability.
+TEST(machine_conforms_to_descriptor_without_peripherals) {
     for (const char* m : kModels) {
         auto machine = cu59::buildMachine(*cu59::modelFrom(ModelId{m}), *testroms::romSet(),
                                           cu59::MachinePeripherals{std::nullopt, false, false});
@@ -159,11 +157,9 @@ TEST(lib1_ac33_machine_conforms_without_peripherals) {
         CHECK(machine->model().value == m);
         CHECK(machine->descriptor().tickRate == model(m).tickRate);
         CHECK(machine->plugged().byPlace.empty());
-        // Typing support (LIB-5 §3.4), the trace records (LIB-10 D-24), the
-        // program memory (C59-2 AC-17), the library program (C59-7 AC-21), on
-        // the TI-58C the constant memory (C59-3 AC-1), the debug panel's four
-        // kinds (C59-4), on the TI-59 the card reader's media place (C59-7
-        // AC-6; LIB-1 AC-33, D-1, M-55), the machine state (C59-9 AC-15).
+        // Typing support, the trace records, the program memory, the library
+        // program, on the TI-58C the constant memory, the debug panel's four
+        // kinds, on the TI-59 the card reader's media place, the machine state.
         const std::size_t own = std::string(m) == "TI-58" ? 9 : 10;
         CHECK_EQ(machine->capabilities().size(), own);
         const auto media = calcu::media::checkMediaPlaces(*machine, tiCatalogue());
@@ -175,7 +171,7 @@ TEST(lib1_ac33_machine_conforms_without_peripherals) {
     }
 }
 
-TEST(lib1_ac32_pc100c_and_14_modules) {
+TEST(descriptor_pc100c_and_14_modules) {
     const auto& c = tiCatalogue();
     CHECK_EQ(c.peripherals().size(), size_t{15});
     const auto* p = c.peripheral(kPC100C);
@@ -188,7 +184,7 @@ TEST(lib1_ac32_pc100c_and_14_modules) {
         CHECK(ids == (std::vector<std::string>{"PRINT:key", "ADV:key", "TRACE:switch"}));
         CHECK(!p->components.empty() && p->components[0].depth == Depth::Functional);
     }
-    // Its paper: the capability of the kind paper-output while it is plugged in (LIB-8 AC-24).
+    // Its paper: the capability of the kind paper-output while it is plugged in.
     auto with = cu59::buildMachine(cu59::Model::TI59, *testroms::romSet(), cu59::MachinePeripherals{std::nullopt, true, false});
     CHECK_EQ(with->capabilities(calcu::paper::PaperOutput::kKind).size(), size_t{1});
     for (const auto& m : tiModules()) {
@@ -207,7 +203,7 @@ TEST(lib1_ac32_pc100c_and_14_modules) {
     }
 }
 
-TEST(lib1_ac33_machine_conforms_with_printer_and_module) {
+TEST(machine_conforms_to_descriptor_with_printer_and_module) {
     for (const char* m : kModels) {
         for (bool with : {true, false}) {
             const cu59::MachinePeripherals places{with ? std::optional<std::string>("ML") : std::nullopt, with, false};
@@ -216,10 +212,9 @@ TEST(lib1_ac33_machine_conforms_with_printer_and_module) {
             for (const auto& d : diffs) std::printf("  %s: %s\n", m, d.c_str());
             CHECK(diffs.empty());
             CHECK_EQ(machine->plugged().byPlace.size(), size_t{with ? 2u : 0u});
-            // + typing support (LIB-5), trace records (LIB-10), program memory (C59-2),
-            // library program (C59-7), constant memory (C59-3, TI-58C), card reader (C59-7, TI-59),
-            // the debug panel's asm-overlay, rom-heatmap, calculator-state, machine-log (C59-4),
-            // the machine state (C59-9 AC-15)
+            // + typing support, trace records, program memory, library program,
+            // constant memory (TI-58C), card reader (TI-59), the debug panel's
+            // asm-overlay, rom-heatmap, calculator-state, machine-log, the machine state
             const std::size_t own = std::string(m) == "TI-58" ? 9 : 10;
             CHECK_EQ(machine->capabilities().size(), (with ? 2u : 0u) + own);
             CHECK(calcu::media::checkMediaPlaces(*machine, tiCatalogue()).empty());
@@ -251,7 +246,7 @@ TEST(lib1_ac33_machine_conforms_with_printer_and_module) {
                     CHECK(c && c->component.value == "TMC0501" && e.id.value == "TMC0501/c59.library-program");
                     continue;
                 }
-                if (e.kind == calcu::media::MediaPlace::kKind) {   // LIB-1 AC-33: the card reader's
+                if (e.kind == calcu::media::MediaPlace::kKind) {   // the card reader's
                     const auto* c = std::get_if<ComponentOwner>(&e.owner);
                     CHECK(c && c->component.value == "card-reader" && std::string(m) == "TI-59");
                     continue;

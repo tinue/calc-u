@@ -614,7 +614,7 @@ suppression circuit is modelled per strobe (`suppressedMask`). While it is
 active and the digit is 0, nibbles 2 and 4 stay dark and nibble 5 shows a minus
 instead of the degree sign; a leftmost 0 stays dark with any nibble. Normal
 displays use neither: these rules come from the pictures of a real TI-59 in
-`c59_1_ac5_control_nibble_glyphs` (`tests/core_tests.cpp`). A strobe that
+`control_nibble_glyphs` (`tests/core_tests.cpp`). A strobe that
 shows a glyph latches it and adds the instruction's weight to the position's
 driven time; the decimal point of the position `R5` names is driven the same
 way. Nothing is driven in RUN mode, so the display goes dark while the

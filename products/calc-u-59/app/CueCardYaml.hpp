@@ -5,9 +5,9 @@
 #include <optional>
 #include <string>
 
-// The stand-alone cue card block of docs/formats/cue-card.md §3, §4 (C59-2
-// AC-5, EC-5, design §3.3, D-7): a preset's `cue-card:` section and the
-// `cue-card` of the constant memory file (C59-3 AC-4). The keys `title`,
+// The stand-alone cue card block of docs/formats/cue-card.md §3, §4: a
+// preset's `cue-card:` section and the `cue-card` of the constant memory
+// file. The keys `title`,
 // `row-1`, `row-2`, `row-2-r`, the three alignments, `style`,
 // `pencil-color`, the labels `A`–`E` and `A'`–`E'` (`A′` accepted, any case);
 // any other key (`id`, `Template`, `Banks`, `model`, …) is refused. A

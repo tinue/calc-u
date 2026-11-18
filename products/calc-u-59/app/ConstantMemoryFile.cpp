@@ -31,7 +31,7 @@ std::variant<ConstantMemoryContents, ConstantMemoryProblem> readConstantMemoryFi
     YamlNode root;
     std::string error;
     if (!calcu::formats::parseYaml(std::string(text), &root, &error)) {
-        // A file that is no format of this release at all (2.3.0's text) is outdated.
+        // A file that is no format of this release at all (the plain text of release 2.3.0) is outdated.
         if (text.find("format-version") == std::string_view::npos) return ConstantMemoryProblem{ConstantMemoryProblem::Kind::Outdated, {}};
         return damaged(0, error);
     }
@@ -64,7 +64,7 @@ std::variant<ConstantMemoryContents, ConstantMemoryProblem> readConstantMemoryFi
     if (!encoding || calcu::formats::scalarText(*encoding) != "register-hex")
         return damaged(encoding ? encoding->line : ram->line, "ram: encoding: must be register-hex");
     const YamlNode* bytes = ram->find("bytes");
-    if (!bytes) return out;   // EC-5: no register lines
+    if (!bytes) return out;   // no register lines
     if (!bytes->isScalar()) return damaged(bytes->line, "ram: bytes: is a block (bytes: |)");
     std::istringstream in(bytes->scalar);
     const std::vector<int> lines = blockLineNumbers(text, bytes->line, 10'000);

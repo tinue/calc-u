@@ -12,32 +12,31 @@
 
 // ── TIWebPart: what Calc-U-59's Web page draws, as session messages ──────────
 //
-// The Web frontend on the library's shell (LIB-15 59, M-34; spec AC-19 to
-// AC-22): what 2.3.0's WebController posted and offered (frontends/web/
-// bindings.cpp at the pin) are product topics, commands and requests of the
-// app session, in the page's own form -- the page only draws them, as
+// The Web frontend on the library's shell: what the page draws are product
+// topics, commands and requests of the app session, in the page's own form
+// -- the page only draws them, as
 // Calc-U-1600's SharpWebPart does for its page:
 // - state topics `c59.web.*`, each derived from the value of a product topic
-//   and refreshed when that value changed (Part E simplification E-3):
+//   and refreshed when that value changed:
 //   display (the LED cells of `c59.calc-indicator`), cue-card (a draw list
 //   of `c59.cue-card` at the page's card size), debug-font; the page reads
 //   the control state's `controls` (TRACE), the library's `run-state` (FREEZE ON START),
 //   `busy` (the speed) and `held-keys` (the key drawn pressed) itself; the
-//   debug panel's data are TIDebugPart's product topics (C59-4 AC-25), whose
-//   values are the page's forms (M-56);
-// - the command `start` (LIB-15 N3: {model, preset}); commands `c59.web.*` for
-//   the sizes the page draws at (the page's key grid sends the library's
-//   screen-key-down/-up, LIB-5; release prep 4) (a dropped file is LIB-13's `open`, M-56); every other command
+//   debug panel's data are TIDebugPart's product topics, whose values are
+//   the page's forms;
+// - the command `start` ({model, preset}); commands `c59.web.*` for the sizes
+//   the page draws at (the page's key grid sends the library's
+//   screen-key-down/-up; a dropped file is the library's `open`); every other command
 //   is TIAppPart's (`c59.*`);
-// - the cards are the library's `media` topic and `media.*` commands (LIB-7 59, M-55);
-//   adapter W59-1 (WebPageData.hpp): `c59.static-data`, `c59.led-geometry`,
-//   `c59.mobile-rules`.
+// - the cards are the library's `media` topic and `media.*` commands;
+// - requests for the drawing material: `c59.led-geometry`, `c59.mobile-rules`
+//   (WebPageData.hpp), `c59.faceplate-map`, `c59.heatmap-grid`.
 // It lives in the app layer so that it builds and is tested natively; the Web
 // engine (frontends/web/bindings.cpp) only adds it to the session. Settings:
-// Calc-U-59.ini in the persistent file system (LIB-9 AC-23); cards (the media part) and
-// ti58c.mem: TIAppPart's TIFileAccess on the save folder there (design §4,
-// D-9). Traces: LIB-10's trace session, handed over with KeepFile when one
-// ends (AC-26; the MEMFS /traces of LIB-9 A-3 went in M-53).
+// Calc-U-59.ini in the persistent file system; cards (the media part) and
+// the constant memory file: TIAppPart's TIFileAccess on the save folder
+// there. Traces: the library's trace session, handed over with KeepFile when
+// one ends.
 
 namespace cu59 {
 
@@ -50,7 +49,7 @@ inline const calcu::sessions::TopicName kWebDebugFont{"c59.web.debug-font"};
 class TIWebPart final : public calcu::sessions::SessionPart {
 public:
     /// `presetsDir`: the bundled presets (/presets). Traces are the library's,
-    /// handed over with KeepFile when they end (LIB-10 AC-26; M-53).
+    /// handed over with KeepFile when they end.
     TIWebPart();
     ~TIWebPart();
 

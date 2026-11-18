@@ -9,11 +9,10 @@
 #include <utility>
 #include <vector>
 
-// The product-internal form of the machine state of the TI models (C59-9
-// AC-15, design §3.7; the form Calc-U-1600's core/Machine/StateRecords.hpp
+// The product-internal form of the machine state of the TI models (the form Calc-U-1600's core/Machine/StateRecords.hpp
 // has, kept in each product): tagged, length-prefixed records, little-endian, one record
 // per part of the core, in the machine's order. The form is not
-// documented outside this file (LIB-11 AC-24); the library writes the
+// documented outside this file; the library writes the
 // header in front of it and refuses a file of another configuration.
 //
 // A record is a four-character tag, a 32-bit length and the fields. Each

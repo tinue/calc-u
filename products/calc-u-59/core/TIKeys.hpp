@@ -3,7 +3,7 @@
 #include <span>
 #include <string_view>
 
-// The 45 keys of the TI-58/58C/59 (C59-1 AC-9, AC-10): key ID, the other
+// The 45 keys of the TI-58/58C/59: key ID, the other
 // spellings of docs/formats/preset.md §8.1, and the key's row (1-9, top to
 // bottom) and column (1-5, left to right). Row r, column c is the key that
 // the matrix code r × 10 + c names in 2.3.0's state files. Core-internal: above the

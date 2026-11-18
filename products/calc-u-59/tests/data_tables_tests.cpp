@@ -1,5 +1,5 @@
 // app/ data tables: key names (against the Swift golden) (the keyboard
-// map's rules moved to typing_tests.cpp, lib5_ac27_map_rules),
+// map's rules are in typing_tests.cpp),
 // 7-segment patterns, printer font, key layout and model info.
 
 #include "TestHarness.hpp"
@@ -64,9 +64,8 @@ TEST(seven_segment_decode) {
     CHECK_EQ(ledCell(11, eight, 0, 0).segments, 0);                // dark: zero-suppressed
 }
 
-// LIB-8 AC-30: the shape of the font (was printer_font_shape; the font is
-// the core's since M-53).
-TEST(lib8_ac30_font_shape) {
+// The shape of the PC-100C's font (the core's table).
+TEST(pc100c_font_shape) {
     CHECK_EQ(pc100cpaper::kFont[0][3], 0x00);   // space
     CHECK_EQ(pc100cpaper::kFont[1][0], 0x0E);   // 0
     CHECK_EQ(pc100cpaper::kFont[63][6], 0x1F);  // Sigma
@@ -94,10 +93,10 @@ TEST(model_info) {
     CHECK(!t.idleAndKeyDetect.contains(0x0661));
 }
 
-// LIB-8 AC-30: the heights of a feed, a complete and a cut-short line, and
-// the dot rules of a line cut short (was printer_strip_geometry; on the
-// core's paper since M-53: the heights are what the paper's reach grows by).
-TEST(lib8_ac30_feed_complete_and_cut_short_heights) {
+// The heights of a feed, a complete and a cut-short line, and
+// the dot rules of a line cut short, on the core's paper: the heights are
+// what the paper's reach grows by.
+TEST(feed_complete_and_cut_short_heights) {
     namespace P = pc100cpaper;
     using calcu::paper::kPerUnit;
     CHECK_EQ(P::kFeed, 70'900);   // 7.09 units

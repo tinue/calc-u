@@ -175,7 +175,7 @@ bool scalar(const YamlNode& root, const char* key, std::string& out, std::string
 
 TIModuleFile readModuleFile(std::string_view text, std::string& error) {
     error.clear();
-    // \r\n and \r become \n (LIB-12 EC-2), before the YAML reader sees the text.
+    // \r\n and \r become \n, before the YAML reader sees the text.
     std::string normalised;
     normalised.reserve(text.size());
     for (size_t i = 0; i < text.size(); ++i) {

@@ -1,8 +1,7 @@
-// C59-9 (design §6, T1 to T9): the product commands of Calc-U-59 under
+// The product commands of Calc-U-59 under
 // `c59`, each on a `calcu` run (harness::Server) with a program small
 // enough that its reply is written out here. The numbers were compared with
-// today's tools on the same program before they went (M-59; the qa-report
-// names each difference).
+// the earlier tools on the same program before they were retired.
 #include "../app/HarnessProduct.hpp"
 #include "../app/TIMnemonics.hpp"
 #include "../app/TITyping.hpp"
@@ -64,9 +63,9 @@ const char* kLoopProgram = "c59 program 000 76 11 42 00 76 12 97 00 12 91";    /
 
 } // namespace
 
-// ── T1: AC-1 ──
+// ── The commands under c59 ───────────────────────────────────────────────────
 
-TEST(c59_9_ac1_commands_under_c59_on_ti59_ti58_ti58c) {
+TEST(commands_under_c59_on_ti59_ti58_ti58c) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r);
@@ -86,9 +85,9 @@ TEST(c59_9_ac1_commands_under_c59_on_ti59_ti58_ti58c) {
     CHECK_EQ(r("ti59 partition"), std::string("refused: unknown command ti59\n"));   // the old word (release prep step 1)
 }
 
-// ── T2: AC-2 ──
+// ── c59 coverage ─────────────────────────────────────────────────────────────
 
-TEST(c59_9_ac2_refused_without_profile) {
+TEST(refused_without_profile) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -99,16 +98,16 @@ TEST(c59_9_ac2_refused_without_profile) {
     CHECK_EQ(r("c59 coverage most"), std::string("refused: usage: c59 coverage [all]\n"));
 }
 
-TEST(c59_9_ac2_addresses_of_one_key_in_order_without_key_readiness) {
+TEST(addresses_of_one_key_in_order_without_key_readiness) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
     r("profile on");
     r("key 5");
-    // tools/headless/coverage.py's scenario of the 5 key at the base of M-59,
+    // The retired tools/headless/coverage.py's scenario of the 5 key,
     // without 0627-062A: the old rule left out an instruction of the
     // key-detect range only with the idle flag set; the profile keeps no
-    // flag, so the whole range 0627-0660 is left out (D-7; qa-report).
+    // flag, so the whole range 0627-0660 is left out.
     const std::string want =
         "done 9\n"
         "0037 0167 0168 0169 016A 016B 016C 016D 016E 02E2 02E3 02E4 02E5 02E6 02E7 02E8\n"
@@ -123,7 +122,7 @@ TEST(c59_9_ac2_addresses_of_one_key_in_order_without_key_readiness) {
     CHECK_EQ(r("c59 coverage"), want);
 }
 
-TEST(c59_9_ac2_all_includes_key_readiness) {
+TEST(all_includes_key_readiness) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -143,9 +142,9 @@ TEST(c59_9_ac2_all_includes_key_readiness) {
     CHECK(js.find(",\"of\":6144}") != std::string::npos);
 }
 
-// ── T3: AC-3, AC-4, EC-2, EC-6 ──
+// ── c59 line-times ───────────────────────────────────────────────────────────
 
-TEST(c59_9_ac3_lines_gaps_summary_floor) {
+TEST(lines_gaps_summary_floor) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -167,7 +166,7 @@ TEST(c59_9_ac3_lines_gaps_summary_floor) {
                                                "limit: no\n"));
 }
 
-TEST(c59_9_ac3_limit_ends_it) {
+TEST(print_limit_ends_it) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -184,7 +183,7 @@ TEST(c59_9_ac3_limit_ends_it) {
     CHECK_EQ(r("c59 line-times limit=x"), std::string("refused: A duration needs a unit, as in 2s, 1.5s or 500ms: x.\n"));
 }
 
-TEST(c59_9_ac4_floor_4165_per_line_1370_per_feed) {
+TEST(floor_4165_per_line_1370_per_feed) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -199,7 +198,7 @@ TEST(c59_9_ac4_floor_4165_per_line_1370_per_feed) {
     CHECK_EQ(seconds, std::string("1.071472527"));
 }
 
-TEST(c59_9_ec2_nothing_printed_after_15_s_idle) {
+TEST(nothing_printed_after_15_s_idle) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -209,16 +208,16 @@ TEST(c59_9_ec2_nothing_printed_after_15_s_idle) {
     CHECK(t.size() == 2 && t[1].rfind("seconds: 15.0", 0) == 0);
 }
 
-TEST(c59_9_ec6_line_times_refused_without_printer) {
+TEST(line_times_refused_without_printer) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
     CHECK_EQ(r("c59 line-times"), std::string("refused: There is no PC-100C: attach printer PC-100C first.\n"));
 }
 
-// ── T4: AC-5 ──
+// ── c59 run-time ─────────────────────────────────────────────────────────────
 
-TEST(c59_9_ac5_time_per_key_and_total) {
+TEST(time_per_key_and_total) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -232,7 +231,7 @@ TEST(c59_9_ac5_time_per_key_and_total) {
     CHECK_EQ(r("c59 run-time Q"), std::string("refused: Unknown key: Q.\n"));
 }
 
-TEST(c59_9_ac5_not_finished_after_4000_s_marked_done) {
+TEST(not_finished_after_4000_s_marked_done) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -240,9 +239,9 @@ TEST(c59_9_ac5_not_finished_after_4000_s_marked_done) {
     CHECK_EQ(r("c59 run-time A 5"), std::string("done 2\nA 4000.001547252 not finished\ntotal 4000.001547252\n"));
 }
 
-// ── T5: AC-6, AC-7, EC-6 ──
+// ── c59 step-trace, c59 hot-steps ────────────────────────────────────────────
 
-TEST(c59_9_ac6_shares_sources_and_top_steps) {
+TEST(shares_sources_and_top_steps) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -268,7 +267,7 @@ TEST(c59_9_ac6_shares_sources_and_top_steps) {
                                                        "002: 79.5%\n003: 11.5%\n004: 8.8%\n"));
 }
 
-TEST(c59_9_ec6_printer_shares_zero_without_printer) {
+TEST(printer_shares_zero_without_printer) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -278,7 +277,7 @@ TEST(c59_9_ec6_printer_shares_zero_without_printer) {
     CHECK(l.size() >= 3 && l[1] == "printer busy 0.0%" && l[2] == "printer wait 0.0%");
 }
 
-TEST(c59_9_ac7_steps_between_two_times_folded) {
+TEST(steps_between_two_times_folded) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -288,42 +287,42 @@ TEST(c59_9_ac7_steps_between_two_times_folded) {
     CHECK_EQ(r("c59 step-trace 120ms 100ms"), std::string("refused: The second time must come after the first.\n"));
 }
 
-// ── T6: AC-8, EC-3 ──
+// ── c59 step-cost ────────────────────────────────────────────────────────────
 
-TEST(c59_9_ac8_cost_of_rcl_in_fast_and_normal_mode) {
+TEST(cost_of_rcl_in_fast_and_normal_mode) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
     r("attach printer PC-100C");
-    // tools/agentic/stepcost.py "43 22" at the base of M-59 (a fresh TI-59
+    // The retired tools/agentic/stepcost.py "43 22" (a fresh TI-59
     // with a PC-100C for each run): fast 580, normal 1332 instructions
-    // (41 / 94 ms). Here on the session's machine (qa-report).
+    // (41 / 94 ms). Here on the session's machine.
     CHECK_EQ(r("c59 step-cost 43 22"), std::string("done 3\nfast 584 instructions 41 ms\nnormal 1333 instructions 94 ms\nprinter: yes\n"));
     CHECK_EQ(r("c59 step-cost"), std::string("refused: usage: c59 step-cost <keycode> [<keycode> ...] (e.g. c59 step-cost 43 22)\n"));
     CHECK_EQ(r("c59 step-cost 4"), std::string("refused: A keycode is two digits, 00 to 99: 4.\n"));
 }
 
-TEST(c59_9_ac8_leaves_the_machine_changed) {
+TEST(leaves_the_machine_changed) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
     r("c59 step-cost 68");
     // The last run's program (the sequence once, without it: 91 00 00 00 00 00 00 86 25 81)
-    // and the registers of 2.3.0's tool stay.
+    // and the registers stay.
     CHECK_EQ(r("c59 program 000 count=10"), std::string("done 10\n000 91\n001 00\n002 00\n003 00\n004 00\n005 00\n006 00\n007 86\n008 25\n009 81\n"));
     CHECK_EQ(r("c59 data-registers 00 22"), std::string("done 2\n00: 1e1\n22: 9.899e1\n"));
 }
 
-TEST(c59_9_ec3_endless_sequence_fails_after_300_s) {
+TEST(endless_sequence_fails_after_300_s) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
     CHECK_EQ(r("c59 step-cost 61 00 08"), std::string("refused: The program still runs after 300 s: a jump that loops back?\n"));
 }
 
-// ── T7: AC-9, EC-4 ──
+// ── c59 keycodes list ────────────────────────────────────────────────────────
 
-TEST(c59_9_ac9_listing_as_list_prints_it) {
+TEST(listing_as_list_prints_it) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -349,7 +348,7 @@ TEST(c59_9_ac9_listing_as_list_prints_it) {
     CHECK_EQ(listed.empty() ? std::string() : listed[43], std::string("043 43 43"));   // STO's operand
 }
 
-TEST(c59_9_ac9_listing_pasted_into_a_preset_loads_the_same_program) {
+TEST(listing_pasted_into_a_preset_loads_the_same_program) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -364,23 +363,23 @@ TEST(c59_9_ac9_listing_pasted_into_a_preset_loads_the_same_program) {
     CHECK_EQ(r("c59 program 000 count=18"), before);
 }
 
-TEST(c59_9_ec4_empty_program_no_lines) {
+TEST(empty_program_no_lines) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
     CHECK_EQ(r("c59 keycodes list"), std::string("done\n"));
     CHECK_EQ(r("c59 keycodes disassemble"), std::string("done\n"));
-    CHECK_EQ(r("c59 keycodes list 010 011"), std::string("done 2\n010 00 0\n011 00 0\n"));   // D-4: a range is listed whole
+    CHECK_EQ(r("c59 keycodes list 010 011"), std::string("done 2\n010 00 0\n011 00 0\n"));   // a range is listed whole
     CHECK_EQ(r("c59 keycodes list 960"), std::string("refused: A step is three digits, 000 to 959: 960.\n"));
 }
 
-// ── T8: AC-10, AC-11, AC-14 ──
+// ── c59 keycodes: assembly and disassembly ───────────────────────────────────
 
-TEST(c59_9_ac14_assembly_lines_as_the_spec_example) {
+TEST(assembly_lines_of_an_example_program) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
-    // AC-14's example, then a merged code (D-5), INV SBR not merged, RTN, 2nd CLR.
+    // An example program, then a merged code, INV SBR not merged, RTN, 2nd CLR.
     r("c59 program 000 76 11 42 05 61 01 23 97 40 03 11 72 05 22 71 92 20 87 01 15");
     CHECK_EQ(r("c59 keycodes disassemble"), std::string("done 10\n"
                                                          "000  Lbl A\n002  STO 05\n004  GTO 123\n007  Dsz Ind 03 A\n"
@@ -392,7 +391,7 @@ TEST(c59_9_ac14_assembly_lines_as_the_spec_example) {
     CHECK_EQ(j("c59 keycodes disassemble"), std::string("{\"done\":true,\"result\":{\"lines\":[{\"step\":0,\"text\":\"000  Lbl A\"}]},\"reason\":null}\n"));
 }
 
-TEST(c59_9_ac10_round_trip) {
+TEST(program_round_trip) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -410,7 +409,7 @@ TEST(c59_9_ac10_round_trip) {
     CHECK_EQ(join(lines(r("c59 keycodes disassemble"))), join(assembly));
 }
 
-TEST(c59_9_ac10_refused_unknown_mnemonic_missing_operand_beyond_last_step_nothing_written) {
+TEST(refused_unknown_mnemonic_missing_operand_beyond_last_step_nothing_written) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -430,7 +429,7 @@ TEST(c59_9_ac10_refused_unknown_mnemonic_missing_operand_beyond_last_step_nothin
     CHECK_EQ(refused("bad7.asm59", "480  1\n"), std::string("refused: Line 1: Beyond the last step, 479.\n"));
 }
 
-TEST(c59_9_ac10_program_reads_the_same_memory) {
+TEST(program_reads_the_same_memory) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;
@@ -441,10 +440,10 @@ TEST(c59_9_ac10_program_reads_the_same_memory) {
     CHECK_EQ(join(lines(r("c59 keycodes disassemble 020"))), std::string("020  Lbl C\n"));
 }
 
-TEST(c59_9_ac11_every_mnemonic_is_a_key_name) {
+TEST(every_mnemonic_is_a_key_name) {
     // Each keycode's mnemonic is pressed by `key` as that keycode's keys, and
     // the assembler reads it back to the keycode (with an operand where it
-    // takes one); 26, 27 and HIR (82) have no key (spec decision log).
+    // takes one); 26, 27 and HIR (82) have no key.
     for (int k = 0; k < 100; ++k) {
         const std::string m = cu59::assemblyMnemonic(static_cast<std::uint8_t>(k));
         if (k == 26 || k == 27 || k == 82) {
@@ -465,9 +464,9 @@ TEST(c59_9_ac11_every_mnemonic_is_a_key_name) {
     }
 }
 
-// ── T9: EC-5 ──
+// ── The TI-58C ───────────────────────────────────────────────────────────────
 
-TEST(c59_9_ec5_ti58c_instructions_are_ticks_over_32) {
+TEST(ti58c_instructions_are_ticks_over_32) {
     SKIP_UNLESS(romsThere(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     if (!r) return;

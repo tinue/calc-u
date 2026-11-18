@@ -1,8 +1,8 @@
-// TIWebPart (LIB-15 59, M-34): what the Web page draws, built and tested
-// natively as the Web engine (frontends/web/bindings.cpp) builds the session:
-// the shell's start (N3: the model by its name, a bundled preset by its path;
-// EC-4), the settings in Calc-U-59.ini (LIB-9 AC-23), cards in the save
-// folder, a dropped file, and the topics the page reads (AC-22).
+// TIWebPart: what the Web page draws, built and tested natively as the Web
+// engine (frontends/web/bindings.cpp) builds the session: the shell's start
+// (the model by its name, a bundled preset by its path; unknown ones), the
+// settings in Calc-U-59.ini, cards in the save folder, a dropped file, and
+// the topics the page reads.
 
 #include "TestHarness.hpp"
 #include "../app/TIMagneticCardKind.hpp"
@@ -47,7 +47,7 @@ struct WebPieces {
         file = std::make_unique<calcu::settings::SettingsFile>(calcu::settings::SettingsFile::open(
             settings::settingsDecl(), calcu::settings::settingsFilePath(settings::settingsDecl(), dirs)));
         paths = std::make_unique<calcu::settings::Paths>(*file, dirs);
-        calcu::shell::SettingsPartSetup ss;   // LIB-14's settings dialog (M-57)
+        calcu::shell::SettingsPartSetup ss;   // the shell's settings dialog
         ss.file = file.get();
         ss.paths = paths.get();
         settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
@@ -63,7 +63,7 @@ struct WebRig : WebPieces, testroms::SessionRig {
                                           .saveFolder = dirs.saveFolder, .noTraceFolder = true, .settings = file.get(),
                                           .examplesFolder = (webFolder.path() / "presets").string(), .start = false}) {
         web->bind(part());
-        if (started) {   // the page's start (LIB-18's, LIB-15 N3)
+        if (started) {   // the page's start (the library's start)
             post(CommandName{"start"}, Value::object({}));
             until([this] { return session().machineSession().machine() && !busy(); });
         }
@@ -86,9 +86,9 @@ struct WebRig : WebPieces, testroms::SessionRig {
 
 } // namespace
 
-// LIB-15 AC-16 (LIB-6 §11.6 P11): the page's start is LIB-18's `start
-// {model, preset}`, the model by its name and the preset by its bundle path.
-TEST(lib15_ac16_start_takes_the_model_by_name_and_a_bundled_preset) {
+// The page's start is the library's `start {model, preset}`, the model by
+// its name and the preset by its bundle path.
+TEST(web_start_takes_the_model_by_name_and_a_bundled_preset) {
     {
         WebRig r(false);
         r.send("start", Value::object({{"model", "TI-58C"}, {"preset", ""}}));
@@ -103,9 +103,9 @@ TEST(lib15_ac16_start_takes_the_model_by_name_and_a_bundled_preset) {
     CHECK(r.notices().empty());
 }
 
-// LIB-15 EC-4: a model or a preset the product does not have is a notice;
+// A model or a preset the product does not have is a notice;
 // the start goes on with the startup model's built-in default.
-TEST(lib15_ec4_unknown_model_and_preset_are_notices) {
+TEST(web_unknown_model_and_preset_are_notices) {
     WebRig r(false);
     r.send("start", Value::object({{"model", "TI-99"}, {"preset", "examples:../one.ti59"}}));
     r.run(2s);
@@ -117,9 +117,9 @@ TEST(lib15_ec4_unknown_model_and_preset_are_notices) {
     }
 }
 
-// LIB-9 AC-23 (since M-57 through LIB-14's SettingsPart, the shell's
-// dialog): a change is written into Calc-U-59.ini at once.
-TEST(lib9_ac23_web_settings_in_the_ini_file) {
+// Through the shell's SettingsPart (its dialog): a change is written into
+// Calc-U-59.ini at once.
+TEST(web_settings_in_the_ini_file) {
     WebRig r;
     r.send("set-setting", Value::object({{"section", "startup"}, {"key", "model"}, {"value", "TI-58C"}}));
     r.send("set-setting", Value::object({{"section", "trace"}, {"key", "max-file-size-mb"}, {"value", 7}}));
@@ -133,8 +133,8 @@ TEST(lib9_ac23_web_settings_in_the_ini_file) {
     CHECK(r.fe.mirror.state(TopicName{"settings"}) != nullptr);
 }
 
-// LIB-14 §10.5 (D-32): the product's shell data for the page, per layout.
-TEST(lib14_web_shell_product_per_layout) {
+// The product's shell data for the page, per layout.
+TEST(web_shell_product_per_layout) {
     WebRig r;
     const Value wide = r.ask("c59.shell-product", Value::object({{"layout", "wide"}, {"version", "3.0.0"}}));
     const Value* product = wide.find("product");
@@ -152,9 +152,9 @@ TEST(lib14_web_shell_product_per_layout) {
     CHECK(portrait.find("max-file-size-mb") == std::string::npos);
 }
 
-// D-41: the faceplate of a model, the key rectangles and the card corners;
+// The faceplate of a model, the key rectangles and the card corners;
 // the heatmap grid.
-TEST(lib14_web_faceplate_map_and_heatmap_grid) {
+TEST(web_faceplate_map_and_heatmap_grid) {
     WebRig r;
     const Value m = r.ask("c59.faceplate-map", Value::object({{"model", "TI-59"}}));
     CHECK(m.find("map") && m.find("map")->find("keys")->elements()->size() == 45);
@@ -167,16 +167,16 @@ TEST(lib14_web_faceplate_map_and_heatmap_grid) {
     CHECK(h.find("colors") && h.find("colors")->elements()->size() == 6);
 }
 
-// LIB-15 AC-20 (M-55, LIB-7 59): the cards are the library's media of the
-// persistent save folder; a dropped card file is imported into it and fitted.
-TEST(lib15_ac20_cards_are_files_of_the_save_folder) {
+// The cards are the library's media of the persistent save folder; a
+// dropped card file is imported into it and fitted.
+TEST(web_cards_are_files_of_the_save_folder) {
     WebRig r;
     r.run(1s);
     r.send("media.start-new", Value::object({{"place", "card-reader"}, {"template", "implicit:Fresh card"}, {"name", "Mine"}}));
     CHECK(r.part().cardFitted());
     auto card = std::make_shared<TIMagneticCardData>();
     const std::string text = writeMagneticCardFile(*card, "Dropped", "", false, std::nullopt, "");
-    auto upload = [&](const std::string& name) {   // the page's drop: LIB-13's open, an upload (M-56)
+    auto upload = [&](const std::string& name) {   // the page's drop: the library's open, an upload
         calcu::opening::OpenRequest q;
         calcu::opening::OpenedFile f;
         f.name = name;
@@ -191,33 +191,33 @@ TEST(lib15_ac20_cards_are_files_of_the_save_folder) {
     const auto* media = r.part().mediaPart().bindingOf("card-reader");
     CHECK(media && media->name == "Dropped");
     upload("old.u59");
-    CHECK(!fs::exists(fs::path(r.part().files().saveFolder()) / "old.u59"));   // C59-7 AC-4: no card
+    CHECK(!fs::exists(fs::path(r.part().files().saveFolder()) / "old.u59"));   // a 2.3.0 card file (.u59) is ignored
 }
 
-TEST(lib15_ac22_the_page_topics_are_there) {
+TEST(web_the_page_topics_are_there) {
     WebRig r;
     r.run(1s);
     for (const auto* t : {&topics::kWebDisplay, &topics::kWebCueCard, &calcu::control::kControlStateTopic, &calcu::media::kMediaTopic,
                           &topics::kDebugView, &calcu::debugger::kRunStateTopic, &calcu::typing::kHeldKeysTopic,
                           &kBusyTopic})
         CHECK(r.fe.mirror.state(*t) != nullptr);
-    // E-3: the page reads run-state, busy and held-keys itself; the PC-100C
-    // and its TRACE from the control state (release prep 3: c59.printer went).
+    // The page reads run-state, busy and held-keys itself; the PC-100C
+    // and its TRACE from the control state (no c59.printer topic).
     CHECK(r.fe.mirror.state(TopicName{"c59.web.printer"}) == nullptr);
     CHECK(r.fe.mirror.state(TopicName{"c59.printer"}) == nullptr);
     CHECK(r.fe.mirror.state(TopicName{"c59.web.run-state"}) == nullptr);
-    CHECK(r.fe.mirror.state(TopicName{"control-state"}) != nullptr);   // the model and the module (M-57)
-    CHECK(r.fe.mirror.state(TopicName{"c59.web.model"}) == nullptr);   // gone (LIB-4 §10.7)
+    CHECK(r.fe.mirror.state(TopicName{"control-state"}) != nullptr);   // the model and the module
+    CHECK(r.fe.mirror.state(TopicName{"c59.web.model"}) == nullptr);   // none: the control state has the model
     const Value display = r.state(topics::kWebDisplay);
     CHECK(display.bytes() && display.bytes()->size() == 36 * sizeof(float));
 }
 
-// LIB-5 (AC-21, AC-24, AC-10): the page's key grid and the host keys go
+// The page's key grid and the host keys go
 // through the library's typing; the key the page draws pressed is the one
 // live input holds (the library's held-keys, its last `live` key). The key
-// grid sends the library's screen-key-down/-up (CalculatorFace.jsx); the
-// test-only `c59.web.key-button-*` went (release prep 4, LIB-15 AC-29).
-TEST(lib5_ac24_web_keys_through_the_typing_engine) {
+// grid sends the library's screen-key-down/-up (CalculatorFace.jsx); there
+// is no test-only `c59.web.key-button-*`.
+TEST(web_keys_through_the_typing_engine) {
     WebRig r;
     r.run(1s);
     auto held = [&] {
@@ -245,7 +245,7 @@ TEST(lib5_ac24_web_keys_through_the_typing_engine) {
     e.produced = 'a';
     r.send("host-key-down", calcu::typing::toValue(e));
     CHECK_EQ(held(), std::string("A"));
-    r.send("focus-lost");   // LIB-5 AC-10: released after its minimum
+    r.send("focus-lost");   // released after its minimum
     r.run(300ms);
     CHECK_EQ(held(), std::string());
     CHECK(r.part().typing().engine().down().empty());

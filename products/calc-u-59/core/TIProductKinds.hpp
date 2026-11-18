@@ -4,16 +4,15 @@
 #include <cstdint>
 #include <optional>
 
-// Calc-U-59's product kinds of memory (capabilities.md, product kinds; C-3):
-//  - `c59.program-memory` (C59-2 AC-17, design §3.2), capability
+// Calc-U-59's product kinds of memory:
+//  - `c59.program-memory`, capability
 //    `RAM/c59.program-memory` on the TI-59, TI-58 and TI-58C: program steps,
 //    data registers, the TI-58C's H00–H03, the partition and the raw RAM
 //    registers, read and written between two advances;
-//  - `c59.constant-memory` (C59-3 AC-1, design §3.1), capability
+//  - `c59.constant-memory`, capability
 //    `RAM/c59.constant-memory` on the TI-58C only: the 64 raw registers of
 //    its constant memory and a counter that changes with them.
-// Declared in the core (the product's core holds its kinds, LIB-1 design
-// §2a; the app reaches them through calcu::machine::Capability only); where a
+// Declared in the core (the product's core holds its kinds; the app reaches them through calcu::machine::Capability only); where a
 // step, a register and the partition lie in the RAM stays the core's.
 
 namespace cu59 {
@@ -55,7 +54,7 @@ public:
     virtual std::uint64_t changeCount() const = 0;
 };
 
-/// `c59.library-program` (C59-7 AC-21, design §3.6), capability
+/// `c59.library-program`, capability
 /// `TMC0501/c59.library-program` on every TI model: the number of the library
 /// program of the Solid State ROM module that is selected now (`Pgm nn`), or
 /// none, from the calculator's own registers.

@@ -1,10 +1,10 @@
-// LIB-16, Calc-U-59 column (design §13.9: P59-2, P59-5, P59-6): what the
+// What the
 // help tool cannot read itself. The settings keys the product declares
 // reach `tools/help` through help/settings-keys.txt, which this test
 // compares with settingsDecl() (CALCU59_HELP_KEYS=1 writes it anew); the
 // words a shared part may not use (help/help.yaml's `names:`) cover the
 // catalogue; the six presets of the preset tutorial load (help/downloads/).
-// In CalcU59Tests (design D-13).
+// In CalcU59Tests.
 
 #include <cstdio>
 #include <cstdlib>
@@ -62,7 +62,7 @@ std::string keysFileText() {
     const FamilyKeys family = familyKeys();
     std::ostringstream out;
     out << "# The settings keys Calc-U-59 declares (app/Settings.cpp, settingsDecl()),\n"
-           "# for tools/help's check C7 (LIB-16 AC-14): each `[section] key` is described\n"
+           "# for tools/help's settings check: each `[section] key` is described\n"
            "# in chapter 8, the family's in library/help/08-settings.md, the product's in\n"
            "# help/08-settings.md. Written by CalcU59Tests with CALCU59_HELP_KEYS=1.\n";
     std::set<std::string> generalDone;
@@ -104,7 +104,7 @@ std::set<std::string> manifestNames() {
 
 } // namespace
 
-TEST(lib16_ac14_settings_keys_file_matches_declaration) {
+TEST(settings_keys_file_matches_declaration) {
     const std::string want = keysFileText();
     if (const char* write = std::getenv("CALCU59_HELP_KEYS"); write && std::string(write) == "1") {
         std::ofstream(kKeysFile, std::ios::binary) << want;
@@ -114,7 +114,7 @@ TEST(lib16_ac14_settings_keys_file_matches_declaration) {
     CHECK(have == want);
 }
 
-TEST(lib16_ac14_every_declared_key_is_in_the_keys_file) {
+TEST(every_declared_key_is_in_the_keys_file) {
     const std::string text = keysFileText();
     for (const cs::KeyDecl& d : cu59::settings::settingsDecl().keys) {
         const std::string name = "[" + d.section + "] " + d.key;
@@ -125,7 +125,7 @@ TEST(lib16_ac14_every_declared_key_is_in_the_keys_file) {
     CHECK(text.find("family [preset] <model>\nproduct [preset] TI-59\n") != std::string::npos);
 }
 
-TEST(lib16_ac2_help_names_cover_the_catalogue) {
+TEST(help_names_cover_the_catalogue) {
     const std::set<std::string> names = manifestNames();
     CHECK(names.count("Calc-U-59") == 1);
     CHECK(names.count("TMC0501") == 1);
@@ -143,12 +143,12 @@ TEST(lib16_ac2_help_names_cover_the_catalogue) {
     }
 }
 
-// P59-2 (AC-9, D-15): the six presets of the preset tutorial, as help/downloads/
+// The six presets of the preset tutorial, as help/downloads/
 // offers them, load on their model without a refusal, and what the
 // tutorial's text says the calculator shows after a step holds: 5 A gives
 // 15 (step 4 on), RCL 29 gives 3.000000000004 (step 5 on), and the finished
 // file ends with the fraction 4e-12 after subtracting 3.
-TEST(lib16_ac9_tutorial_presets_load) {
+TEST(tutorial_presets_load) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     const char* files[] = {"tutorial-1-setup.ti59",   "tutorial-2-partition.ti59", "tutorial-3-cuecard.ti59",
                            "tutorial-4-program.ti59", "tutorial-5-registers.ti59", "tutorial.ti59"};

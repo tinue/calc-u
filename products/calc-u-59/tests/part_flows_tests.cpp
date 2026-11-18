@@ -1,9 +1,8 @@
 // The product's flows in cu59::TIAppPart on the library's app session: model
-// switches, presets, freezes, the ASM overlay, the places of C59-6, cards
-// and cue cards. Ported in M-34 from 2.3.0's SessionController tests; since
-// M-54 on the library's commands (LIB-18: model, reset, cold-boot, attach,
-// detach; LIB-6: load-preset {content}, run-step) and presets of format 2.
-// The card cases moved to card_flows_tests.cpp in M-55 (C59-7 T9, AC-27).
+// switches, presets, freezes, the ASM overlay, the printer and module places,
+// cards and cue cards, on the library's commands (model, reset, cold-boot,
+// attach, detach; load-preset {content}, run-step) and presets of format 2.
+// The card cases are in card_flows_tests.cpp.
 
 #include "TestHarness.hpp"
 #include "SessionRig.hpp"
@@ -32,7 +31,7 @@ bool waitForScanLoop(PartRig& r) {
     return r.runUntil([&] { return !r.busy() && r.part().emulator()->access().machine().isKeyReady(); }, 3000ms);
 }
 
-// The run control of the part's session (LIB-10).
+// The run control of the part's session.
 calcu::debugger::RunControl& rc(PartRig& r) { return r.part().debuggerPart().runControl(); }
 using calcu::debugger::kCpu;
 using calcu::debugger::kProgram;
@@ -43,21 +42,21 @@ std::string preset(const std::string& body, const std::string& model = "TI-59", 
     return "format-version: 2\nmodel: " + model + "\nslot-1: { name: ML }\n" + (printer ? "printer: PC-100C\n" : "") + body;
 }
 
-// A file dropped on the calculator: LIB-13's `open {way: drop}` (M-56);
+// A file dropped on the calculator: the library's `open {way: drop}`;
 // true when it was opened.
 bool drop(PartRig& r, const std::optional<std::string>& content, const std::string& path, const std::string& name) {
     calcu::opening::OpenRequest q;
     calcu::opening::OpenedFile f;
     f.name = name;
-    if (!path.empty()) f.path = path;   // none: as its content (LIB-6 EC-5)
+    if (!path.empty()) f.path = path;   // none: as its content
     if (content) f.bytes = std::vector<std::uint8_t>(content->begin(), content->end());
     q.files = {f};
     q.way = calcu::opening::Way::Drop;
     return r.operation(calcu::opening::kOpenCommand, q.toValue()).done;
 }
 
-// Keys at regular speed through LIB-5's `key` command (a user's keys, as
-// 2.3.0's KEYSTROKES pressed them at regular speed; LIB-6's run-step runs at
+// Keys at regular speed through the library's `key` command (a user's keys,
+// pressed at regular speed; the preset's run-step runs at
 // full speed); the reply comes when the last key is up.
 bool keys(PartRig& r, std::initializer_list<const char*> names) {
     using calcu::sessions::Value;
@@ -72,9 +71,8 @@ int step(PartRig& r, int s) { return int(testroms::mem(r.part().emulator()->mach
 
 } // namespace
 
-// LIB-18 AC-24 (design P59-3): a preset that names another model builds it;
-// `[startup] last-model` follows (AC-9).
-TEST(lib18_ac24_preset_for_another_model_builds_it_last_model_follows) {
+// A preset that names another model builds it; `[startup] last-model` follows.
+TEST(preset_for_another_model_builds_it_last_model_follows) {
     PartRig r;
     auto& c = r.part();
     const auto reply = r.load(preset("data:\n  05: 3.25\n", "TI-58"));
@@ -86,10 +84,9 @@ TEST(lib18_ac24_preset_for_another_model_builds_it_last_model_follows) {
     CHECK(r.errors().empty());
 }
 
-// LIB-6 AC-38 (design P3; was part_reports_parse_errors_and_partition_errors):
-// any error refuses the file whole, with its first error and its line; the
+// Any error refuses the file whole, with its first error and its line; the
 // machine stays as it was.
-TEST(lib6_ac38_first_error_refuses_the_file_machine_untouched) {
+TEST(first_error_refuses_the_file_machine_untouched) {
     PartRig r(Model::TI58);
     auto& c = r.part();
     const auto ticksBefore = r.ticks();
@@ -100,7 +97,7 @@ TEST(lib6_ac38_first_error_refuses_the_file_machine_untouched) {
     CHECK(c.model() == Model::TI58 && r.ticks() >= ticksBefore);
     reply = r.load("\xff\xfe");
     CHECK(!reply.done && reply.reason.find("UTF-8") != std::string::npos);
-    reply = r.load("PARTITION: 479\n");   // 2.3.0: outdated, with the hint (row 59-1)
+    reply = r.load("PARTITION: 479\n");   // a 2.3.0 file: outdated, with the hint
     CHECK(!reply.done && reply.reason.find("Calc-U-59") != std::string::npos);
 }
 
@@ -115,9 +112,9 @@ TEST(part_load_while_frozen_ends_running_without_tracing) {
     CHECK_EQ(testroms::hw(c.emulator()->access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
 }
 
-// LIB-10 AC-35 (G11): a new machine disarms pause-on-start. LIB-18 AC-20: a
-// model switch builds the built-in default (Master Library, no printer).
-TEST(lib10_ac35_part_model_switch_keeps_log_resets_freeze) {
+// A new machine disarms pause-on-start. A model switch builds the built-in
+// default (Master Library, no printer).
+TEST(part_model_switch_keeps_log_resets_freeze) {
     PartRig r;
     auto& c = r.part();
     CHECK(r.attach("printer", "PC-100C").done);
@@ -131,7 +128,7 @@ TEST(lib10_ac35_part_model_switch_keeps_log_resets_freeze) {
     CHECK_EQ(c.emulator()->access().machine().plugged().byPlace.size(), size_t{1});   // the module only
     r.run(20ms);
     CHECK(!c.runState().armed && !c.isFrozen());
-    bool dumped = false;   // the dump is in LIB-3's log (C59-4 AC-10), which the switch keeps
+    bool dumped = false;   // the dump is in the session's log, which the switch keeps
     for (const auto& m : r.fe.log)
         if (const auto* l = std::get_if<calcu::sessions::StreamMessage>(&m); l && l->topic == calcu::sessions::kLogTopic)
             for (const auto& p : l->appended)
@@ -157,13 +154,11 @@ TEST(part_reset_keeps_the_memory_and_clean_reset_clears_it) {
 }
 
 // 2.3.0 ran a plain Reset's reset routine with the run loop stopped, so only a
-// clean reset could be frozen at its first instruction. Since C59-1 (AC-6) both
-// return at once and the ROM's start-up runs in the run loop, so an armed
-// FREEZE ON START fires on either (ledger row 59-34; LIB-10 Q-1, user
-// 2026-11-16: it replaces AC-30's Reset clause for Calc-U-59). Since M-53 the
-// run control's pause-on-start cpu (TILevelRules); since M-54 LIB-18's
-// `reset` and `cold-boot`.
-TEST(lib10_ac30_part_cpu_freeze_on_start_sees_reset_and_clean_reset) {
+// clean reset could be frozen at its first instruction. Now both return at
+// once and the ROM's start-up runs in the run loop, so an armed FREEZE ON
+// START (the run control's pause-on-start cpu, TILevelRules) fires on either
+// the library's `reset` or `cold-boot`.
+TEST(part_cpu_freeze_on_start_sees_reset_and_clean_reset) {
     PartRig r;
     auto& c = r.part();
     CHECK(waitForScanLoop(r));
@@ -184,11 +179,11 @@ TEST(part_bad_module_changes_nothing) {
     auto& c = r.part();
     CHECK(!r.attach("slot-1", "ZZ").done);
     CHECK_EQ(c.moduleID(), std::string("ML"));
-    CHECK(r.errors().empty());   // a refusal, no notice (LIB-12 AC-10)
+    CHECK(r.errors().empty());   // a refusal, no notice
 }
 
-// LIB-10 AC-35: a resume before the pause landed: no pause, no frozen view.
-TEST(lib10_ac35_part_resume_before_the_frozen_view_drops_it) {
+// A resume before the pause landed: no pause, no frozen view.
+TEST(part_resume_before_the_frozen_view_drops_it) {
     PartRig r;
     auto& c = r.part();
     rc(r).pause(kCpu);
@@ -213,10 +208,10 @@ TEST(part_pause_of_a_replaced_machine_is_dropped) {
     CHECK(r.debug().model().cpuHistory().empty());
 }
 
-// ── C59-6 (design T7, T10) and LIB-18 AC-21: the app session's part of the places ──
+// ── The app session's part of the printer and module places ─────────────────
 
 namespace {
-// TRACE on, as the paper panel sends it (LIB-2's set-control; Part E simplification E-3).
+// TRACE on, as the paper panel sends it (the library's set-control).
 calcu::sessions::Value traceOnArgs() {
     return calcu::sessions::Value::object({{"peripheral", "PC-100C"}, {"control", "TRACE"}, {"on", true}});
 }
@@ -231,34 +226,32 @@ std::optional<bool> traceSwitch(TIAppPart& c) {
 }
 } // namespace
 
-// C59-6 AC-12 (row 59-64; user, 2026-11-17, Q-3 of
-// docs/reviews/e-simplification.md): without a PC-100C plugged in, LIB-2's
-// set-control for one of its controls is refused.
-TEST(c59_6_ac12_set_control_without_a_pc100c_refused) {
+// Without a PC-100C plugged in, the library's set-control for one of its
+// controls is refused.
+TEST(set_control_without_a_pc100c_refused) {
     PartRig r;
-    CHECK(!traceSwitch(r.part()));   // the built-in default has no printer (row 59-10)
+    CHECK(!traceSwitch(r.part()));   // the built-in default has no printer
     const auto reply = r.send(calcu::peripherals::kSetControlCommand, traceOnArgs());
     CHECK(!reply.done);
     CHECK_EQ(reply.reason, std::string("No PC-100C is plugged in."));
     CHECK(!r.part().printerTrace());
 }
 
-// LIB-18 AC-21, AC-23 (design P59-4, D-27; was c59_6_ac6_trace_kept_by_app_session):
 // TRACE keeps its position through Reset, Cold boot, a model switch and a
 // detach; an attach puts it into the new PC-100C.
-TEST(lib18_ac21_trace_kept_through_detach_and_attach) {
+TEST(trace_kept_through_detach_and_attach) {
     PartRig r;
     auto& c = r.part();
     CHECK(r.attach("printer", "PC-100C").done);
     CHECK(!c.printerTrace());                       // off when the product starts
     CHECK(traceSwitch(c) == std::optional<bool>(false));
-    CHECK(r.send(calcu::peripherals::kSetControlCommand, traceOnArgs()).done);   // LIB-2 (E-3)
+    CHECK(r.send(calcu::peripherals::kSetControlCommand, traceOnArgs()).done);
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
     CHECK(r.reset().done);
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
     CHECK(r.coldBoot().done);
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
-    CHECK(r.model("TI-58C").done);                 // a new machine, without a printer (AC-18)
+    CHECK(r.model("TI-58C").done);                 // a new machine, without a printer
     CHECK(c.printerTrace() && !traceSwitch(c));
     CHECK(r.attach("printer", "PC-100C").done);     // the remembered position goes into it
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
@@ -271,13 +264,12 @@ TEST(lib18_ac21_trace_kept_through_detach_and_attach) {
     CHECK(!again.part().printerTrace());
 }
 
-// C59-6 AC-6, row 59-25 (was c59_6_ac6_state_file_sets_trace_off_unless_it_sets_it):
-// a preset's build has TRACE off unless it says `printer-trace: on`.
-TEST(c59_6_ac6_preset_sets_trace_off_unless_printer_trace_on) {
+// A preset's build has TRACE off unless it says `printer-trace: on`.
+TEST(preset_sets_trace_off_unless_printer_trace_on) {
     PartRig r;
     auto& c = r.part();
     CHECK(r.attach("printer", "PC-100C").done);
-    CHECK(r.send(calcu::peripherals::kSetControlCommand, traceOnArgs()).done);   // LIB-2 (E-3)
+    CHECK(r.send(calcu::peripherals::kSetControlCommand, traceOnArgs()).done);
     CHECK(c.printerTrace());
     CHECK(r.load(preset("data:\n  01: 1\n")).done);
     r.run(20ms);
@@ -287,10 +279,10 @@ TEST(c59_6_ac6_preset_sets_trace_off_unless_printer_trace_on) {
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
 }
 
-// LIB-8 AC-29 (C59-6 AC-1): the PC-100C's paper stays the PaperPart's while
+// The PC-100C's paper stays the PaperPart's while
 // it is detached, and it is back, printed on below, when it is attached
 // again on another model.
-TEST(lib8_ac29_paper_back_on_attach_on_any_model) {
+TEST(paper_back_on_attach_on_any_model) {
     PartRig r;
     auto& c = r.part();
     CHECK(r.attach("printer", "PC-100C").done);
@@ -322,9 +314,9 @@ TEST(lib8_ac29_paper_back_on_attach_on_any_model) {
     CHECK_EQ(text[1].at.y, pc100cpaper::kLine);   // printed on below the first line
 }
 
-// C59-6 AC-11, row 59-11 (LIB-18 AC-21, design P59-4): a module change and
-// the printer power-cycle the machine, now through `attach` and `detach`.
-TEST(c59_6_ac11_change_module_power_cycles) {
+// A module change and the printer power-cycle the machine, through `attach`
+// and `detach`.
+TEST(change_module_power_cycles) {
     PartRig r;
     auto& c = r.part();
     CHECK(r.attach("printer", "PC-100C").done);
@@ -354,15 +346,15 @@ TEST(c59_6_ac11_change_module_power_cycles) {
 
 // ── Presets, cards, cue cards ────────────────────────────────────────────────
 
-// C59-2 AC-7 (was part_plays_a_preset): a preset's keys and its elapsed time.
-TEST(c59_2_ac7_preset_plays_its_keys) {
+// A preset's keys and its elapsed time.
+TEST(part_preset_plays_its_keys) {
     PartRig r;
     const auto reply = r.load(preset("keys:\n  - regular-speed:\n  - key: CLR 2 + 3 =\n  - elapsed-time: start\n"
                                      "  - wait: 50ms\n  - elapsed-time: report\n"));
     CHECK(reply.done);
     r.run(500ms);
     CHECK_EQ(testroms::displayText(r.part().emulator()->machine()), std::string("5"));
-    bool elapsed = false;   // elapsed-time report: a line of the session's log (LIB-6 AC-23)
+    bool elapsed = false;   // elapsed-time report: a line of the session's log
     for (const auto& m : r.fe.log)
         if (const auto* s = std::get_if<calcu::sessions::StreamMessage>(&m); s && s->topic == calcu::sessions::kLogTopic)
             for (const auto& p : s->appended)
@@ -372,9 +364,8 @@ TEST(c59_2_ac7_preset_plays_its_keys) {
     CHECK(r.errors().empty());
 }
 
-// C59-2 AC-7 (was part_reload_keeps_the_program): sections after keys change
-// only what they list.
-TEST(c59_2_ac7_reload_keeps_the_program) {
+// Sections after keys change only what they list.
+TEST(part_reload_keeps_the_program) {
     PartRig r;
     CHECK(r.load(preset("program:\n  keycodes: |\n    85 01\nkeys:\n  - key: CLR\ndata:\n  05: 3.25\n")).done);
     CHECK_EQ(step(r, 1), 1);
@@ -390,9 +381,8 @@ TEST(part_shows_the_library_program_card) {
     if (r.part().cueCard()) CHECK_EQ(r.part().cueCard()->id, std::string("ML-01"));
 }
 
-// C59-2 AC-7 (was part_reload_after_the_first_run): the second stage uses the
-// first one's register and fits its cue card.
-TEST(c59_2_ac7_reload_after_the_first_run) {
+// The second stage uses the first one's register and fits its cue card.
+TEST(part_reload_after_the_first_run) {
     PartRig r;
     CHECK(r.load(preset("program:\n  keycodes: |\n    76 11 01 02 03 42 08 91\n"   // Lbl A 123 STO 08 R/S
                         "keys:\n  - key: A\n"
@@ -407,9 +397,8 @@ TEST(c59_2_ac7_reload_after_the_first_run) {
     CHECK(r.errors().empty());
 }
 
-// LIB-6 §11.2 (until LIB-13 59's `open`, M-56): a dropped preset is LIB-6's
-// load-preset by its content.
-TEST(lib13_ac16_card_on_the_ti59_and_preset_by_content) {
+// A dropped preset is loaded by its content (the library's load-preset).
+TEST(dropped_preset_loads_by_its_content) {
     PartRig r;
     CHECK(drop(r, preset("program:\n  keycodes: |\n    76 11\nkeys:\n  - key: CLR\n", "TI-58"), "", "p.ti58"));
     CHECK(r.runUntil([&] { return !r.busy(); }));
@@ -421,12 +410,11 @@ TEST(lib13_ac16_card_on_the_ti59_and_preset_by_content) {
 }
 
 
-// ── LIB-8's Calc-U-59 column in the app session (design §11.6, E8-6, E8-7) ──
+// ── The PC-100C's paper in the app session ─────────────────────────────────
 
-// AC-29: detached, the panel's owner is none (the control state's paper
-// panel; release prep 3: `c59.printer` went) and the papers topic still lists
-// the PC-100C's paper, empty of nothing it had.
-TEST(lib8_ac29_detached_panel_owner_empty) {
+// Detached, the panel's owner is none (the control state's paper panel) and
+// the papers topic still lists the PC-100C's paper, empty of nothing it had.
+TEST(detached_paper_panel_owner_empty) {
     PartRig r;
     CHECK(r.attach("printer", "PC-100C").done);
     CHECK(r.step("key", "1 2nd Prt").done);
@@ -439,14 +427,13 @@ TEST(lib8_ac29_detached_panel_owner_empty) {
     const auto* papers = r.state<calcu::paper::PaperList>(calcu::paper::kPapersTopic);
     CHECK(papers && papers->papers.size() == 1 && papers->papers[0].owner == "PC-100C");
     CHECK_EQ(r.printedText().size(), std::size_t{1});   // kept while detached
-    // Without a name the paper commands mean the printer plugged in: none (EC-8).
+    // Without a name the paper commands mean the printer plugged in: none.
     const auto reply = r.send(calcu::paper::kPaperCutCommand, calcu::sessions::Value::object({{"copy", false}}));
     CHECK(!reply.done && reply.reason == calcu::paper::kNoPrinterPlugged);
 }
 
-// AC-8, LIB-6 AC-41: a user's load of a preset that names the printer starts
-// with empty paper.
-TEST(lib8_ac8_preset_naming_printer_starts_empty) {
+// A user's load of a preset that names the printer starts with empty paper.
+TEST(preset_naming_printer_starts_empty) {
     PartRig r;
     CHECK(r.attach("printer", "PC-100C").done);
     CHECK(r.step("key", "1 2nd Prt").done);
@@ -457,8 +444,8 @@ TEST(lib8_ac8_preset_naming_printer_starts_empty) {
     CHECK(r.pc100cPaper()->empty());
 }
 
-// AC-22: the step cut-paper: cuts the paper of the printer plugged in, without a copy.
-TEST(lib8_ac22_preset_cut_paper) {
+// The step cut-paper: cuts the paper of the printer plugged in, without a copy.
+TEST(preset_cut_paper) {
     PartRig r;
     CHECK(r.load(preset("keys:\n  - regular-speed:\n  - key: 1 2nd Prt\n  - cut-paper:\n  - key: 2 2nd Prt\n"
                         "  - let-it-finish:\n")).done);

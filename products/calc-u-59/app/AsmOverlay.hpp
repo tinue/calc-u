@@ -5,8 +5,8 @@
 #include <variant>
 #include <vector>
 
-// The ASM overlay format, version 2.0 (C59-4 AC-14, AC-15; ADR 0037;
-// behaviour change 59-1; examples/assembly/README.md): hand-assembled TMC0501
+// The ASM overlay format, version 2.0 (examples/assembly/README.md):
+// hand-assembled TMC0501
 // code put over the ROM at 1800 to 1FFF (the product kind c59.asm-overlay).
 //
 //   Calc-U-59 ASM 2.0          ← exactly, the first line
@@ -24,7 +24,7 @@ namespace cu59 {
 
 inline constexpr std::string_view kAsmOverlayFirstLine = "Calc-U-59 ASM 2.0";
 
-/// The instructions, or the sentence of the refusal (C59-4 design §3.7, D-5),
+/// The instructions, or the sentence of the refusal,
 /// which names the file by `name`.
 std::variant<std::vector<std::uint16_t>, std::string> readAsmOverlay(std::string_view name, std::string_view text);
 

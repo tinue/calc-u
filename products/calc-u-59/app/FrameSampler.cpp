@@ -17,7 +17,7 @@ FrameUpdate FrameSampler::tick(calcu::machine::Machine& m) {
     u.display = m.readDisplay();
     // The poll's length: what ran since the previous tick. With nothing run
     // since, the core repeats its last snapshot, and the poll counts as long
-    // as the previous one (as 2.3.0's pollTicks did).
+    // as the previous one.
     const calcu::machine::Ticks now = m.tickCount();
     if (now != m_lastTicks) m_lastSeconds = static_cast<double>(now - m_lastTicks) / m.descriptor().tickRate;
     m_lastTicks = now;

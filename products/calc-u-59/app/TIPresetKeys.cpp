@@ -99,7 +99,7 @@ int lineOf(const YamlNode& n, int fallback) { return n.line ? n.line : fallback;
 
 ItemResult noMemory() { return ItemResult{false, "The machine has no program memory.", {}}; }
 
-// ── partition: (AC-2) ───────────────────────────────────────────────────
+// ── partition: ──────────────────────────────────────────────────────────
 class PartitionItem final : public Item {
 public:
     int steps = 0;
@@ -130,7 +130,7 @@ std::unique_ptr<Item> readPartition(const YamlNode& n, ReadContext& ctx) {
     return item;
 }
 
-// ── program: (AC-1, AC-3, EC-1) ─────────────────────────────────────────
+// ── program: ────────────────────────────────────────────────────────────
 class ProgramItem final : public Item {
 public:
     std::vector<ProgramStep> steps;
@@ -204,7 +204,7 @@ std::unique_ptr<Item> readProgram(const YamlNode& n, ReadContext& ctx) {
     return item;
 }
 
-// ── data: (AC-4, EC-2, EC-3) ────────────────────────────────────────────
+// ── data: ───────────────────────────────────────────────────────────────
 class DataItem final : public Item {
 public:
     struct Entry {
@@ -245,7 +245,7 @@ std::unique_ptr<Item> readData(const YamlNode& n, ReadContext& ctx) {
             continue;
         }
         const DataKey dk = std::get<DataKey>(key);
-        if (!seen.emplace(std::make_pair(dk.extra, dk.index), line).second) {   // D-6
+        if (!seen.emplace(std::make_pair(dk.extra, dk.index), line).second) {   // a register given twice
             ctx.error(line, "data: " + k + " is given twice.");
             ok = false;
             continue;
@@ -262,7 +262,7 @@ std::unique_ptr<Item> readData(const YamlNode& n, ReadContext& ctx) {
     return item;
 }
 
-// ── cue-card: (AC-5, AC-6, EC-4, EC-5) ──────────────────────────────────
+// ── cue-card: ───────────────────────────────────────────────────────────
 class CueCardItem final : public Item {
 public:
     CueCardContent card;
@@ -276,7 +276,7 @@ public:
     std::string logText() const override { return "cue-card: " + card.title; }
 };
 
-// ── printer-trace: (LIB-6 AC-40) ────────────────────────────────────────
+// ── printer-trace: ──────────────────────────────────────────────────────
 class PrinterTraceItem final : public Item {
 public:
     bool on = false;
@@ -297,7 +297,7 @@ public:
 } // namespace
 
 void addTIKeywords(calcu::presets::Vocabulary& v, const TIKeywordSetup& setup) {
-    addMagneticCardsKey(v);   // C59-7 AC-18 (the TI-59's in-file cards)
+    addMagneticCardsKey(v);   // the TI-59's in-file cards
     v.add(calcu::presets::SectionDef{"partition", readPartition});
     v.add(calcu::presets::SectionDef{"program", readProgram});
     v.add(calcu::presets::SectionDef{"data", readData});

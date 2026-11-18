@@ -74,14 +74,12 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
         };
     };
 
-    // LIB-15 N3, AC-16: the start is LIB-18's `start {model, preset}` (the
-    // model by its name, the preset as a bundle path `examples:<path>`;
-    // LIB-18 §11.2, LIB-6 §11.2): the page sends it.
+    // The start is the library's `start {model, preset}` (the model by its
+    // name, the preset as a bundle path `examples:<path>`): the page sends it.
 
     // The page's own key grid (the portrait layout's buttons) and the host
     // keys are the library's typing commands (screen-key-down/-up,
-    // host-key-down/-up; LIB-5 AC-24), which the page sends itself; the
-    // test-only key-button commands went (release prep 4, LIB-15 AC-29).
+    // host-key-down/-up), which the page sends itself.
     // The sizes the page draws at.
     cmd("c59.web.cue-card-size", done([this](const Value& a) {
         m_cardW = realArg(a, "width");
@@ -96,8 +94,8 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     auto req = [&s](const char* name, std::function<ReplyMessage(const Value&)> f) {
         s.request(sessions::RequestName{name}, [f = std::move(f)](const Value& a, SessionContext&) { return f(a); });
     };
-    // LIB-14 §10.5, D-32: the product's data for the React set's shell, the
-    // settings dialog of the layout (AC-30), from TIShellProduct; the page
+    // The product's data for the React set's shell, the settings dialog of
+    // the layout, from TIShellProduct; the page
     // adds its acts and its version.
     req("c59.shell-product", [](const Value& a) {
         const std::string version = textArg(a, "version");
@@ -106,7 +104,7 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
                       Value::object({{"product", calcu::shell::toValue(shellProduct(version, ""))},
                                      {"settingsSpec", calcu::shell::toValue(settingsSpec(f, "Version " + version))}}));
     });
-    // D-41: the faceplate of a model: the hit map (base image pixels), the
+    // The faceplate of a model: the hit map (base image pixels), the
     // card area and the canvas (faceplateMapValue), and what the page draws
     // with: each key's own rectangle by key ID (the pressed key, the key
     // buttons) and the card's two corners (fractions of the card).
@@ -134,8 +132,7 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
         o.push_back({"cardCorners", Value(std::move(corners))});
         return answer("c59.faceplate-map", Value(std::move(o)));
     });
-    // The ROM heatmap's grid and colours (the debug panel's CPU tab; until
-    // M-57 part of `c59.static-data`).
+    // The ROM heatmap's grid and colours (the debug panel's CPU tab).
     req("c59.heatmap-grid", [](const Value&) {
         Value::Array colors;   // [r, g, b] per heat step
         for (int i = 0; i < 6; ++i)

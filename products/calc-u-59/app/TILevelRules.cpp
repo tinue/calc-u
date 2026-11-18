@@ -29,7 +29,7 @@ void TILevelRules::startArmed(const LevelName& level, calcu::machine::Machine& m
     const std::uint64_t at = d ? d->target(0).nextAddress() : 0;
     // The run control arms again at a Reset or Cold boot, where the processor
     // stands at 0000: what was seen before stays, so that the start-up fires
-    // a `cpu` start as 2.3.0's FreezeController did (row 59-34).
+    // a `cpu` start, also after a Reset, not only after a Cold boot.
     if (m_armed && *m_armed == level && at == 0) return;
     m_armed = level;
     m_seenLoop = false;

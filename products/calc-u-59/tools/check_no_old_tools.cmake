@@ -1,8 +1,7 @@
-# LIB-11 Part E (design §11.6 H4; plan M-59 "Green after": no old tool and no
-# adapter of Calc-U-59 left): tools/headless/ and tools/agentic/ are gone,
-# with the target ti59headless and its library variable TI59HEADLESS_LIB,
-# and no file is named for adapters (core/TIAdapters.* went, D-17). Their
-# functions are `calcu --product c59` commands (LIB-11 AC-14, C59-9 §4); the
+# No old tool and no adapter of Calc-U-59 is left: tools/headless/ and
+# tools/agentic/ stay gone, with the target ti59headless and its library
+# variable TI59HEADLESS_LIB, and no file is named for adapters
+# (core/TIAdapters.*). Their functions are `calcu --product c59` commands; the
 # scripts that stay are tools/coverage.py, tools/fastmode_matrix.py and
 # tools/calendar/. Run from products/calc-u-59 with
 # `cmake -P tools/check_no_old_tools.cmake` (CTest CalcU59NoOldTools).
@@ -12,7 +11,7 @@ set(gone tools/headless tools/agentic core/TIAdapters.hpp core/TIAdapters.cpp te
 set(status 0)
 foreach(f ${gone})
   if(EXISTS ${here}/${f})
-    message("${f} is still there (M-59 removed it).")
+    message("${f} is still there (it was removed).")
     set(status 1)
   endif()
 endforeach()
@@ -33,5 +32,5 @@ foreach(f ${sources})
 endforeach()
 
 if(status)
-  message(FATAL_ERROR "Old tools or adapters of Calc-U-59 are left (LIB-11 §11.5, §11.6 H4).")
+  message(FATAL_ERROR "Old tools or adapters of Calc-U-59 are left.")
 endif()

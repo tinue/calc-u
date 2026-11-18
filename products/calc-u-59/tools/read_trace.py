@@ -40,7 +40,7 @@ Flags:
                            both: dark yellow). Works with any filter combination.
     --labels <file>        ROM labels inline, from a label table (rom/TI59-labels.asm,
                            rom/TI58C-labels.asm: lines "ADDR  NAME ..."), as
-                           2.3.0's tools/headless/ti59.py showed them (C59-9 D-9).
+                           2.3.0's tools/headless/ti59.py showed them.
     --changes              One line per instruction, "PC OPCODE dDIGIT [c0] mnemonic
                            changes…": only the registers the instruction changed
                            (A-E, IO, fA, fB, KR, SR, EXT, R5), as ti59.py printed

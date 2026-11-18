@@ -1,7 +1,7 @@
 #include "TIDebugKindsImpl.hpp"
 #include "TIMachine.hpp"
 
-// ── c59.asm-overlay (C59-4 AC-13, AC-17, AC-18, AC-26) ──────────────────────
+// ── c59.asm-overlay ──────────────────────
 
 bool TIAsmOverlay::load(const std::vector<std::uint16_t>& words) {
     if (words.size() > kMaxInstructions) return false;
@@ -34,7 +34,7 @@ TIAsmOverlay::Entry TIAsmOverlay::enter(std::uint32_t maxInstructions) {
     return e;
 }
 
-// ── c59.calculator-state (AC-3, AC-4, AC-6; D-3) ────────────────────────────
+// ── c59.calculator-state ────────────────────────────
 
 std::uint16_t TICalculatorState::pc() const { return m_.m_hw.pc(); }
 CpuFrame TICalculatorState::snapshotCPU() const { return m_.m_hw.snapshotCPU(); }
@@ -49,7 +49,7 @@ void TICalculatorState::setFrameRing(bool on) {
     m_.applyTraceFlags();
 }
 
-// ── c59.machine-log (AC-11) ──────────────────────────────────────────────────
+// ── c59.machine-log ──────────────────────────────────────────────────
 
 void TIMachineLog::setLevel(int level) {
     m_level = level < 0 ? 0 : level > 2 ? 2 : level;

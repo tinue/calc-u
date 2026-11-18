@@ -6,9 +6,8 @@
 #include <vector>
 
 // Decoding of the plaintext ROM dumps (Datamath museum format: header block,
-// a "---" separator line, then address-prefixed data rows), moved into the
-// core from app/RomLoader.cpp: the library hands raw ROM bytes, the core
-// decodes (LIB-1 design D-4). Failures are return values (LIB-1 §2a).
+// a "---" separator line, then address-prefixed data rows): the library hands raw ROM bytes, the core
+// decodes. Failures are return values, never exceptions.
 
 /// The decoded ROM set of one model: the 6144-word instruction image and the
 /// 64 constant rows as a flat 64×16-byte buffer.

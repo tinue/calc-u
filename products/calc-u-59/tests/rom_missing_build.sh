@@ -1,13 +1,12 @@
 #!/bin/sh
-# LIB-12, Technical Requirements (design §6, P6; D-5): "a build of each
-# product with one ROM file taken away". The ROM folder is copied without
+# A build of the product with one ROM file taken away. The ROM folder is copied without
 # one file (default TMC0583.txt; another as $1), the web client's dist/ is
 # built from it, and neither starts with it:
 #   - the harness `calcu` (CALCU, CTest hands the tree's) on that folder
-#     (CALCU59_ROMS_DIR) ends with exit 2 and names the file (AC-7);
+#     (CALCU59_ROMS_DIR) ends with exit 2 and names the file;
 #   - the web client shows the lookup's text naming it and no calculator
-#     (AC-5, AC-10; Playwright, tests/rom-missing.spec.js).
-# The build itself succeeds (D-5). Run from products/calc-u-59 (CTest
+#     (Playwright, tests/rom-missing.spec.js).
+# The build itself succeeds. Run from products/calc-u-59 (CTest
 # CalcU59RomMissingBuild, Longer); needs emcmake, node and Playwright.
 set -eu
 cd "$(dirname "$0")/.."

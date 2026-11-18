@@ -2,10 +2,9 @@
 #include "MachineVariant.hpp"
 #include <cstdint>
 
-// ROM address ranges the machine keys off (C59-1 AC-18; was
-// app/MachineModelInfo.hpp at 2.3.0). Core-internal: above the core, key
+// ROM address ranges the machine keys off. Core-internal: above the core, key
 // readiness is Machine::isKeyReady(), the idle/key-detect range is
-// idleAndKeyDetectRange() (TITypingSupport.hpp) and the card wait is TICardReaderPlace::waitsForMedium (C59-7).
+// idleAndKeyDetectRange() (TITypingSupport.hpp) and the card wait is TICardReaderPlace::waitsForMedium.
 
 /// Inclusive ROM address range, with an optional second span.
 struct PcRange {

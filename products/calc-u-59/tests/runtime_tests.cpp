@@ -1,9 +1,7 @@
 // app/ runtime: C-indicator smoothing, the display as the eye sees it and
 // a live session with KEYSTROKES playback. The armed freezes, the queued
-// steps and the trace consumers went with the freeze in M-53: they are the
-// run control's, debugger_tests.cpp (LIB-10 59). 2.3.0's
-// batch rules (Pacing.hpp: cycle-weighted batches, the sleep rule) went with
-// CooperativePacing in M-34; the library's pacer has its own tests (LIB-17).
+// steps and the trace consumers are the run control's (debugger_tests.cpp);
+// the library's pacer has its own tests.
 
 #include "SessionRig.hpp"
 #include "TestHarness.hpp"
@@ -38,7 +36,7 @@ TEST(calc_indicator_blink_changes_abruptly) {
     CHECK(std::fabs(s.updateCalcIndicator(1.0f) - 0.65) < 1e-9);  // and back at once
 }
 
-// ── Display: persistence of vision (app/DisplayPov) ──
+// ── Display: persistence of vision (app/DisplayPov) ───
 
 TEST(display_pov_channel_hold_and_fade) {
     const double frame = 1.0 / 60;

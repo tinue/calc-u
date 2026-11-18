@@ -30,8 +30,8 @@ SEL="${1:-all}"
 GEN_ARGS=()
 want keynames && gen keynames keynames_main.swift 66537d3 App/TI59KeyNames.swift
 
-# No inputs: the STATE records of 2.3.0's state files went in M-54 (C59-2
-# §2), the CARD records of its card files in M-55 (C59-7 TR).
+# No inputs: the STATE records of 2.3.0's state files and the CARD records
+# of its card files are not dumped (neither file is read any more).
 GEN_ARGS=()
 want formats && gen formats formats_main.swift 66537d3 \
     App/StateFileLoader.swift App/CueCardContent.swift App/RegisterLineHelpers.swift App/MachineModel.swift

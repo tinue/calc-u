@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <vector>
 
-// The product kinds of TIDebugKinds.hpp on a TIMachine (C59-4). Members of
+// The product kinds of TIDebugKinds.hpp on a TIMachine. Members of
 // TIMachine; it lists them in capabilities().
 
 class TIMachine;

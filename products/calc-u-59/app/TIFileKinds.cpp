@@ -44,7 +44,7 @@ std::optional<std::string> textOf(const OpenedFile& f) {
     return std::string(f.bytes->begin(), f.bytes->end());
 }
 
-// C59-4 AC-19: an .asm file is an ASM overlay, read as by Select File.
+// An .asm file is an ASM overlay, read as by Select File.
 class AsmOverlayKind final : public FileKind {
 public:
     explicit AsmOverlayKind(TIDebugPart& d) : m_debug(d) {}
@@ -60,9 +60,9 @@ private:
     TIDebugPart& m_debug;
 };
 
-// LIB-13 AC-23: written into the running machine from step 000, as a
-// preset's `program:` writes it, without a cold boot; the partition, the
-// data registers and the steps it does not list stay (D-23: also paused).
+// Written into the running machine from step 000, as a preset's `program:`
+// writes it, without a cold boot; the partition, the data registers and the
+// steps it does not list stay (also while paused).
 class KeystrokesKind final : public FileKind {
 public:
     std::string_view name() const override { return "keystroke-program"; }
@@ -80,7 +80,7 @@ public:
     }
 };
 
-// LIB-13 AC-23, D-17: refused with a sentence of their own.
+// Refused with a sentence of their own.
 class RefusedKind final : public FileKind {
 public:
     RefusedKind(std::string_view name, std::function<bool(std::string_view)> rule, std::string why)

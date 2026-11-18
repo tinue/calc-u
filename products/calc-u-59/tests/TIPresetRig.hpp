@@ -17,7 +17,7 @@
 #include <string>
 #include <variant>
 
-// The rigs of the M-54 tests (C59-2, LIB-6 59, LIB-18 59, C59-3): a preset
+// The rigs of the preset, machine control and constant memory tests: a preset
 // read with TIPresetRules (no machine), and Calc-U-59's harness entry in
 // virtual time (`calcu --product c59` in-process, as tests/harness_tests.cpp).
 
@@ -29,7 +29,7 @@ struct PresetRead {
     calcu::testing::TempFolder folder{"calcu59-preset-read"};
     cu59::TIPresetRules rules;
     calcu::presets::Vocabulary vocabulary;
-    // The card steps (C59-7, M-55): the library's media part with the one kind.
+    // The card steps: the library's media part with the one kind.
     calcu::media::MediaPart media{calcu::media::MediaSetup{{cu59::magneticCardKind()}}};
     PresetRead() {
         calcu::presets::addLibraryKeywords(vocabulary);

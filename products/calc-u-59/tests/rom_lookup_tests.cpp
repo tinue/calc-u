@@ -1,7 +1,6 @@
-// LIB-12, the Calc-U-59 column (design §6, P1-P4): the TI reader and the
-// checks of AC-8, the full set and fetch list of AC-9, the module files of
-// AC-14, the start without the full set (AC-5, AC-10) and no ROM read while
-// running (AC-6); EC-2.
+// The ROM lookup of Calc-U-59: the TI reader and its checks, the full set
+// and the fetch list, the module files, the start without the full set and
+// no ROM read while running.
 #include "Md5.hpp"
 #include "Files.hpp"
 #include "TestHarness.hpp"
@@ -32,8 +31,8 @@ namespace {
 
 namespace fs = std::filesystem;
 
-// LIB-12 AC-9, copied from the spec's table.
-const std::vector<std::pair<std::string, std::string>> kAc9 = {
+// The full set: each file with its md5.
+const std::vector<std::pair<std::string, std::string>> kFullSet = {
     {"TMC0582.txt", "c1cb6d40e063aae1ba7b851b11b1c18a"},  {"TMC0583.txt", "2341a8e484c31ff24a16e70c14c1b3a3"},
     {"TMC0571B.txt", "599050d2b1c1900e64b56c089338d32e"}, {"TMC0582-CONST-K.txt", "bf4fb6005177ffdec8f8ceee7e7e16d6"},
     {"TMC0583-CONST-K.txt", "81724f14b2827410650f032ef352b1aa"}, {"CD2400.txt", "638c4d0c8359e00cf1f600884f43b789"},
@@ -50,8 +49,8 @@ const std::vector<std::pair<std::string, std::string>> kAc9 = {
 
 // The md5 of each module's 5000-byte image as Calc-U-59 2.3.0 decoded it from
 // roms/solid-state/TMC05xx.txt (parseModuleTxt), computed on 2026-11-15 from
-// the dumps of TI-59-ROM dumps/modules/ (90cd4a7), the files of fetch_roms.sh
-// before M-24.
+// the dumps of TI-59-ROM dumps/modules/ (90cd4a7), the files fetch_roms.sh
+// fetched then.
 const std::map<std::string, std::string> kImages230 = {
     {"ML", "c2424949bcc52a0fac60345d33a07cde"}, {"ST", "bb7a258e79b60854fd759073b748fdce"},
     {"RE", "681f7bcf7c7be69037c3f382d265c349"}, {"SY", "e6014c604a7b40710d7f5e4a0aa5eba3"},
@@ -95,9 +94,9 @@ std::string withLineEndings(const std::string& text, const std::string& eol) {
 
 } // namespace
 
-// ── P1: the reader (AC-1, AC-8, EC-2) ───────────────────────────────────────
+// ── The reader ──────────────────────────────────────────────────────────────
 
-TEST(lib12_ac1_ti_entries_have_the_form) {
+TEST(ti_entries_have_the_form) {
     const auto& set = cu59::fullRomSet();
     CHECK(set.catalogueErrors.empty());
     for (const auto& f : set.files) {
@@ -113,7 +112,7 @@ TEST(lib12_ac1_ti_entries_have_the_form) {
     }
 }
 
-TEST(lib12_ac8_amounts_per_file_and_per_model) {
+TEST(amounts_per_file_and_per_model) {
     const std::map<std::string, std::uint64_t> want = {
         {"TMC0582.txt", 2560}, {"TMC0583.txt", 2560}, {"TMC0571B.txt", 1024}, {"CD2400.txt", 2560},
         {"CD2401.txt", 2560},  {"TMC0573.txt", 1024}, {"TMC0582-CONST-K.txt", 32}, {"TMC0583-CONST-K.txt", 32},
@@ -128,7 +127,7 @@ TEST(lib12_ac8_amounts_per_file_and_per_model) {
         CHECK(d.error.empty());
         CHECK_EQ(d.amount, f.entry.decodedAmount);
         auto it = want.find(f.entry.fileName);
-        CHECK_EQ(d.amount, it == want.end() ? std::uint64_t{5000} : it->second);   // a module file: 5000 bytes (D-3)
+        CHECK_EQ(d.amount, it == want.end() ? std::uint64_t{5000} : it->second);   // a module file: 5000 bytes
     }
     for (const auto& m : tiCatalogue().models()) {
         std::uint64_t words = 0, rows = 0;
@@ -139,7 +138,7 @@ TEST(lib12_ac8_amounts_per_file_and_per_model) {
     CHECK(reader.checkSet(*set).empty());
 }
 
-TEST(lib12_ac8_ti59_first_and_last_word) {
+TEST(ti59_first_and_last_word) {
     auto set = testroms::romSet();
     std::string error;
     auto first = decodeRomText(textOf(*set->bytes("TMC0582.txt")), error);
@@ -149,7 +148,7 @@ TEST(lib12_ac8_ti59_first_and_last_word) {
     CHECK(!last.empty() && last.back() == 0x1987);
 }
 
-TEST(lib12_ac8_wrong_sentinel_is_bad) {
+TEST(wrong_sentinel_is_bad) {
     TempDir dir;
     dir.copyFrom("roms");
     std::string text = readText(dir.path() / "TMC0571B.txt");
@@ -167,7 +166,7 @@ TEST(lib12_ac8_wrong_sentinel_is_bad) {
     CHECK(describe(r.missing).find("needed by TI-59, TI-58") != std::string::npos);
 }
 
-TEST(lib12_ac8_module_without_data_is_bad) {
+TEST(module_without_data_is_bad) {
     TempDir dir;
     dir.copyFrom("roms");
     std::string text = readText(dir.path() / "ST.rom.yaml");
@@ -191,7 +190,7 @@ TEST(lib12_ac8_module_without_data_is_bad) {
     CHECK(problemOf(r.missing, "CD2401.txt") && problemOf(r.missing, "CD2401.txt")->problem == Problem::WrongAmount);
 }
 
-TEST(lib12_ec2_crlf_and_cr_dumps_check_alike) {
+TEST(crlf_and_cr_dumps_check_alike) {
     auto lf = testroms::romSet();
     for (const char* eol : {"\r\n", "\r"}) {
         TempDir dir;
@@ -214,22 +213,22 @@ TEST(lib12_ec2_crlf_and_cr_dumps_check_alike) {
     }
 }
 
-// ── P2: the full set and the fetch list (AC-9, AC-4) ────────────────────────
+// ── The full set and the fetch list ─────────────────────────────────────────
 
-TEST(lib12_ac9_full_set_is_the_24_files_with_their_md5) {
+TEST(full_set_is_the_24_files_with_their_md5) {
     const auto& set = cu59::fullRomSet();
     CHECK_EQ(set.files.size(), size_t{24});
     std::vector<std::pair<std::string, std::string>> got;
     for (const auto& f : set.files) got.emplace_back(f.entry.fileName, f.entry.md5);
-    auto want = kAc9;
+    auto want = kFullSet;
     std::sort(got.begin(), got.end());
     std::sort(want.begin(), want.end());
     CHECK(got == want);
     // The fetched files are the ones of the table (fetch_roms.sh checked them).
-    for (const auto& [name, md5] : kAc9) CHECK_EQ(testroms::md5Hex(*testroms::romSet()->bytes(name)), md5);
+    for (const auto& [name, md5] : kFullSet) CHECK_EQ(testroms::md5Hex(*testroms::romSet()->bytes(name)), md5);
 }
 
-TEST(lib12_ac9_fetch_script_has_the_same_names_and_md5) {
+TEST(fetch_script_has_the_same_names_and_md5) {
     const std::string script = readText("roms/fetch_roms.sh");
     CHECK(!script.empty());
     std::vector<std::pair<std::string, std::string>> fetched;
@@ -242,7 +241,7 @@ TEST(lib12_ac9_fetch_script_has_the_same_names_and_md5) {
         if (std::regex_search(line, m, dump)) fetched.emplace_back(m[1], m[2]);
         else if (std::regex_search(line, m, module)) fetched.emplace_back(std::string(m[1]) + ".rom.yaml", m[2]);
     }
-    auto want = kAc9;
+    auto want = kFullSet;
     std::sort(fetched.begin(), fetched.end());
     std::sort(want.begin(), want.end());
     CHECK_EQ(fetched.size(), size_t{24});
@@ -251,7 +250,7 @@ TEST(lib12_ac9_fetch_script_has_the_same_names_and_md5) {
     CHECK(script.find("calculator/") == std::string::npos);         // flat roms/
 }
 
-TEST(lib12_ac4_every_model_and_module_needs_only_set_files) {
+TEST(every_model_and_module_needs_only_set_files) {
     auto set = testroms::romSet();
     const auto names = set->fileNames();
     CHECK_EQ(names.size(), size_t{24});
@@ -268,9 +267,9 @@ TEST(lib12_ac4_every_model_and_module_needs_only_set_files) {
     CHECK(!cu59::moduleRomFile("ZZ"));
 }
 
-// ── P3: the module files (AC-14) ────────────────────────────────────────────
+// ── The module files ────────────────────────────────────────────────────────
 
-TEST(lib12_ac14_module_rom_from_rom_yaml) {
+TEST(module_rom_from_rom_yaml) {
     auto set = testroms::romSet();
     for (const auto& id : moduleIds()) {
         const auto* b = set->bytes(id + ".rom.yaml");
@@ -287,7 +286,7 @@ TEST(lib12_ac14_module_rom_from_rom_yaml) {
     }
 }
 
-TEST(lib12_ac14_module_images_equal_the_2_3_0_dumps) {
+TEST(module_images_equal_the_2_3_0_dumps) {
     auto set = testroms::romSet();
     for (const auto& [id, md5] : kImages230) {
         auto image = cu59::moduleImage(*set, id + ".rom.yaml");
@@ -296,7 +295,7 @@ TEST(lib12_ac14_module_images_equal_the_2_3_0_dumps) {
     }
 }
 
-TEST(lib12_ac14_unknown_format_version_is_bad) {
+TEST(unknown_format_version_is_bad) {
     TempDir dir;
     dir.copyFrom("roms");
     std::string text = readText(dir.path() / "SE.rom.yaml");
@@ -315,13 +314,12 @@ TEST(lib12_ac14_unknown_format_version_is_bad) {
     CHECK(problemOf(r.missing, "RP.rom.yaml") && problemOf(r.missing, "RP.rom.yaml")->detail.find("module-name") != std::string::npos);
 }
 
-// ── P4: the start (AC-5, AC-6, AC-10) ───────────────────────────────────────
+// ── The start ───────────────────────────────────────────────────────────────
 
 // A host's start (Qt6, Swift, the Web's makeWebAppSession): the lookup over
-// its bundle, and the app session only with the full set (2.3.0's
-// SessionController::create did both until M-34).
+// its bundle, and the app session only with the full set.
 namespace {
-// Host calls until no operation runs and there is a machine (LIB-18's start,
+// Host calls until no operation runs and there is a machine (the library's start,
 // model, attach are operations).
 void settle(calcu::sessions::AppSession& s) {
     calcu::pacing::WallTime now = std::chrono::hours(2);
@@ -350,12 +348,12 @@ std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> startFrom(const 
     s.roms = roms;
     auto t = std::make_shared<calcu::pacing::WallTime>(std::chrono::hours(1));
     auto app = cu59::makeAppSession(std::move(s), [t] { return *t += std::chrono::milliseconds(1); }, 59u);
-    settle(*app.session);   // LIB-18's start
+    settle(*app.session);   // the library's start
     return app;
 }
 } // namespace
 
-TEST(lib12_ac10_missing_file_no_machine_and_files_named) {
+TEST(missing_file_no_machine_and_files_named) {
     TempDir dir;
     dir.copyFrom("roms");
     fs::remove(dir.path() / "TMC0583.txt");
@@ -373,7 +371,7 @@ TEST(lib12_ac10_missing_file_no_machine_and_files_named) {
     CHECK(text.find(dir.path().string()) != std::string::npos);
 }
 
-TEST(lib12_ac10_bad_file_no_machine) {
+TEST(bad_file_no_machine) {
     TempDir dir;
     dir.copyFrom("roms");
     std::string text = readText(dir.path() / "CD2400-CONST-K.txt");
@@ -390,7 +388,7 @@ TEST(lib12_ac10_bad_file_no_machine) {
     CHECK(none.empty());
 }
 
-TEST(lib12_ac6_model_and_module_changes_read_no_file) {
+TEST(model_and_module_changes_read_no_file) {
     std::vector<std::string> missing;
     std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> app;
     {

@@ -1,5 +1,5 @@
 #!/bin/sh
-# LIB-13 AC-14 (design §10.6, E13-5; D-19; CTest CalcU59OpenWithTypes): the
+# CTest CalcU59OpenWithTypes: the
 # file types the Qt6 app is opened with by the file manager are today's three
 # preset extensions, on macOS (Info.plist), Windows (the installer) and Linux
 # (the desktop entry), and no other. Run from the product directory (CTest does).

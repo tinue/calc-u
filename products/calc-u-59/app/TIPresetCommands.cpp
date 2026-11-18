@@ -83,7 +83,7 @@ void ProgramMemoryPart::attach(calcu::sessions::SessionSetup& setup) {
         if (s.busy()) return Refused{busy};
         const std::string codes = calcu::sessions::textArg(args, "keycodes");
         if (codes.empty()) return Refused{"usage: c59 program [<step>] <keycode>… | c59 program <step> count=<n>"};
-        // The compact notation's rules from the step (AC-9).
+        // The compact notation's rules from the step.
         for (char c : codes)
             if (c == '\n' || c == '#') return Refused{"The keycodes are two-digit numbers on one line."};
         auto r = readKeycodes(codes, pm->lastStep() - *step);

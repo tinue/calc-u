@@ -1,4 +1,4 @@
-// LIB-18's Calc-U-59 column (design §11.6, P59-1 to P59-5): the start, the
+// The start, the
 // built-in default, the model switch, the module and the printer, Reset and
 // Cold boot as the library's commands on app/TIProductMachines, in the app
 // session as a native frontend hosts it (tests/AppRig.hpp).
@@ -16,7 +16,7 @@ using apprig::Value;
 namespace st = calcu::startup;
 
 namespace {
-// TRACE on, as the paper panel sends it (LIB-2's set-control; Part E simplification E-3).
+// TRACE on, as the paper panel sends it (the library's set-control).
 calcu::sessions::Value traceOnArgs() {
     return calcu::sessions::Value::object({{"peripheral", "PC-100C"}, {"control", "TRACE"}, {"on", true}});
 }
@@ -32,16 +32,16 @@ bool traceOn(calcu::machine::Machine& m) {
 }
 } // namespace
 
-// ── P59-1: start, built-in default (AC-17, AC-18) ───────────────────────────
+// ── Start, built-in default ─────────────────────────────────────────────────
 
-TEST(lib18_ac17_no_settings_ti59) {
+TEST(no_settings_ti59) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("");   // no [startup] model
     CHECK(r.machine() && r.machine()->model().value == "TI-59");
-    CHECK_EQ(r.settings.text("startup", "last-model"), std::string("TI-59"));   // StartupPart writes it (AC-9)
+    CHECK_EQ(r.settings.text("startup", "last-model"), std::string("TI-59"));   // StartupPart writes it
 }
 
-TEST(lib18_ac18_builtin_default_ml_no_printer) {
+TEST(builtin_default_ml_no_printer) {
     SKIP_UNLESS(roms(), kSkip);
     for (const char* m : {"TI-59", "TI-58", "TI-58C"}) {
         Rig r(m);
@@ -53,7 +53,7 @@ TEST(lib18_ac18_builtin_default_ml_no_printer) {
     }
 }
 
-TEST(lib18_ac18_2_3_0_startup_preset_gives_default_and_notice) {
+TEST(startup_preset_of_2_3_0_gives_default_and_notice) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59", std::make_shared<apprig::Files>(), [](calcu::settings::SettingsFile& s) {
         s.set("preset", "TI-59", "tests/fixtures/v2.3.0/globe-print.ti59");   // as 2.3.0 shipped it
@@ -65,19 +65,19 @@ TEST(lib18_ac18_2_3_0_startup_preset_gives_default_and_notice) {
     CHECK(noticed);
 }
 
-TEST(lib18_ac18_startup_preset_builds_its_machine) {
+TEST(startup_preset_builds_its_machine) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-58", std::make_shared<apprig::Files>(), [](calcu::settings::SettingsFile& s) {
-        s.set("preset", "TI-58", "examples:startup/default-ti58.ti58");   // the bundled startup preset (C59-2 AC-13)
+        s.set("preset", "TI-58", "examples:startup/default-ti58.ti58");   // the bundled startup preset
     });
     CHECK_EQ(r.machine()->model().value, std::string("TI-58"));
     CHECK_EQ(r.plugged("printer"), std::string("PC-100C"));
     CHECK(r.part().printerConnected());
 }
 
-// ── P59-2: constant memory at a build (AC-19) ───────────────────────────────
+// ── Constant memory at a build ──────────────────────────────────────────────
 
-TEST(lib18_ac19_ti58c_without_startup_preset_gets_the_file_at_start_and_switch) {
+TEST(ti58c_without_startup_preset_gets_the_file_at_start_and_switch) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<apprig::Files>();
     files->files[apprig::kMemoryPath] =
@@ -92,7 +92,7 @@ TEST(lib18_ac19_ti58c_without_startup_preset_gets_the_file_at_start_and_switch) 
     CHECK(r.memory().readRaw(59) == *cu59::parseDecimal("42"));
 }
 
-TEST(lib18_ac19_ti58c_from_preset_cold_booted) {
+TEST(ti58c_from_preset_cold_booted) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<apprig::Files>();
     files->files[apprig::kMemoryPath] =
@@ -103,9 +103,9 @@ TEST(lib18_ac19_ti58c_from_preset_cold_booted) {
     CHECK(r.memory().readRaw(59) != *cu59::parseDecimal("42"));
 }
 
-// ── P59-3: model switch (AC-20, AC-24) ──────────────────────────────────────
+// ── Model switch ────────────────────────────────────────────────────────────
 
-TEST(lib18_ac20_switch_carries_no_module_no_printer) {
+TEST(switch_carries_no_module_no_printer) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
     CHECK(r.send(st::kAttachCommand, attach("printer", "PC-100C")).done);
@@ -117,7 +117,7 @@ TEST(lib18_ac20_switch_carries_no_module_no_printer) {
     CHECK(r.part().model() == cu59::Model::TI58);
 }
 
-TEST(lib18_ac20_log_and_debug_settings_stay) {
+TEST(log_and_debug_settings_stay) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
     r.part().debugPart().setLogLevel(cu59::DebugLevel::Info);
@@ -128,7 +128,7 @@ TEST(lib18_ac20_log_and_debug_settings_stay) {
     CHECK(r.part().hasMachine());
 }
 
-TEST(lib18_ac24_last_model_follows_a_preset_build) {
+TEST(last_model_follows_a_preset_build) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
     CHECK(r.load(head("TI-58") + "data:\n  00: 1\n", "x.ti58").done);
@@ -137,54 +137,54 @@ TEST(lib18_ac24_last_model_follows_a_preset_build) {
     CHECK_EQ(r.settings.text("startup", "last-model"), std::string("TI-58"));
 }
 
-// ── P59-4: module and printer (AC-21) ───────────────────────────────────────
+// ── Module and printer ──────────────────────────────────────────────────────
 
-TEST(lib18_ac21_module_attach_detach_power_cycle_ti59_loses_ti58c_keeps) {
+TEST(module_attach_detach_power_cycle_ti59_loses_ti58c_keeps) {
     SKIP_UNLESS(roms(), kSkip);
     for (const char* m : {"TI-59", "TI-58C"}) {
         Rig r(m);
         r.memory().writeRegister(5, *cu59::parseDecimal("7"));
         const cu59::RegisterNibbles before = r.memory().readRegister(5);
-        CHECK(r.send(st::kAttachCommand, attach("slot-1", "ST")).done);   // a replace of ML (LIB-18 D-15)
+        CHECK(r.send(st::kAttachCommand, attach("slot-1", "ST")).done);   // a replace of ML
         CHECK_EQ(r.plugged("slot-1"), std::string("ST"));
         CHECK_EQ(r.part().moduleID(), std::string("ST"));
         const bool kept = r.memory().readRegister(5) == before;
-        CHECK(kept == (std::string(m) == "TI-58C"));   // row 59-11
+        CHECK(kept == (std::string(m) == "TI-58C"));   // a power cycle: only the TI-58C keeps its memory
         CHECK(r.send(st::kDetachCommand, detach("slot-1")).done);
         CHECK_EQ(r.plugged("slot-1"), std::string());
         CHECK_EQ(r.part().moduleID(), std::string());
     }
 }
 
-TEST(lib18_ac21_printer_attach_detach_power_cycle) {
+TEST(printer_attach_detach_power_cycle) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
     r.memory().writeRegister(5, *cu59::parseDecimal("7"));
     CHECK(r.send(st::kAttachCommand, attach("printer", "PC-100C")).done);
     CHECK(r.part().printerConnected());
-    CHECK(r.memory().readRegister(5) != *cu59::parseDecimal("7"));   // the power cycle (row 59-11)
+    CHECK(r.memory().readRegister(5) != *cu59::parseDecimal("7"));   // the power cycle
     CHECK(r.send(st::kDetachCommand, detach("printer")).done);
     CHECK(!r.part().printerConnected());
 }
 
-TEST(lib18_ac21_trace_set_again_in_the_attached_pc100c) {
+TEST(trace_set_again_in_the_attached_pc100c) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
     CHECK(r.send(st::kAttachCommand, attach("printer", "PC-100C")).done);
     CHECK(!r.part().printerTrace());
-    CHECK(r.send(calcu::peripherals::kSetControlCommand, traceOnArgs()).done);   // LIB-2 (E-3)
+    CHECK(r.send(calcu::peripherals::kSetControlCommand, traceOnArgs()).done);
     CHECK(traceOn(*r.machine()));
     CHECK(r.send(st::kDetachCommand, detach("printer")).done);
-    CHECK(r.part().printerTrace());   // the app session keeps it (C59-6 AC-6, row 59-25)
+    CHECK(r.part().printerTrace());   // the app session keeps it
     CHECK(r.send(st::kAttachCommand, attach("printer", "PC-100C")).done);
     r.runFor(std::chrono::milliseconds(50));
-    CHECK(traceOn(*r.machine()));      // set again in the new PC-100C (D-27)
+    CHECK(traceOn(*r.machine()));      // set again in the new PC-100C
     CHECK(r.part().printerTrace());
 }
 
-// ── P59-5: Reset, Cold boot (AC-22, AC-23, AC-16) ───────────────────────────
+// ── Reset, Cold boot ────────────────────────────────────────────────────────
 
-TEST(lib18_ac22_reset_keeps_program_and_data_ti58c_power_cycle) {
+TEST(reset_keeps_program_and_data_ti58c_power_cycle) {
     SKIP_UNLESS(roms(), kSkip);
     for (const char* m : {"TI-59", "TI-58", "TI-58C"}) {
         Rig r(m);
@@ -197,7 +197,7 @@ TEST(lib18_ac22_reset_keeps_program_and_data_ti58c_power_cycle) {
     }
 }
 
-TEST(lib18_ac22_cold_boot_empties_all_constant_memory_too) {
+TEST(cold_boot_empties_all_constant_memory_too) {
     SKIP_UNLESS(roms(), kSkip);
     for (const char* m : {"TI-59", "TI-58C"}) {
         Rig r(m);
@@ -209,7 +209,7 @@ TEST(lib18_ac22_cold_boot_empties_all_constant_memory_too) {
     }
 }
 
-TEST(lib18_ac23_paper_module_printer_trace_own_card_kept) {
+TEST(paper_module_printer_trace_own_card_kept) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
     CHECK(r.load(head() + "slot-1: { name: ST }\nprinter: PC-100C\ncue-card:\n  title: Mine\nkeys:\n  - printer-trace: on\n  - key: 5 Prt\n").done);
@@ -220,12 +220,12 @@ TEST(lib18_ac23_paper_module_printer_trace_own_card_kept) {
         CHECK_EQ(r.plugged("slot-1"), std::string("ST"));
         CHECK_EQ(r.plugged("printer"), std::string("PC-100C"));
         CHECK(traceOn(*r.machine()));
-        CHECK(r.part().ownCueCard() && r.part().ownCueCard()->title == "Mine");   // row 59-17
+        CHECK(r.part().ownCueCard() && r.part().ownCueCard()->title == "Mine");   // the fitted cue card stays
         CHECK_EQ(r.part().paperPart().papers().size(), paperBefore);
     }
 }
 
-TEST(lib18_ac23_power_cycle_keeps_own_card) {
+TEST(power_cycle_keeps_own_card) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
     CHECK(r.load(head() + "slot-1: { name: ML }\ncue-card:\n  title: Mine\n").done);
@@ -233,7 +233,7 @@ TEST(lib18_ac23_power_cycle_keeps_own_card) {
     CHECK(r.part().ownCueCard() && r.part().ownCueCard()->title == "Mine");
 }
 
-TEST(ledger_59_39_reset_and_model_switch_stop_a_preset) {
+TEST(reset_and_model_switch_stop_a_preset) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
     const std::string loop = head() + "program:\n  keycodes: |\n    76 11 61 00 00\nkeys:\n  - regular-speed:\n  - key: A\n  - let-it-finish:\n";
@@ -241,10 +241,10 @@ TEST(ledger_59_39_reset_and_model_switch_stop_a_preset) {
                                                                      Value::object({{"content", loop}, {"name", "l.ti59"}})});
     r.runFor(std::chrono::milliseconds(500));
     CHECK(r.session().context().busy());
-    CHECK(r.send(st::kResetCommand).done);   // ends the preset at once, without an error (AC-16)
+    CHECK(r.send(st::kResetCommand).done);   // ends the preset at once, without an error
     CHECK(r.fe.reply(id) != nullptr);
     CHECK(!r.session().context().busy());
-    // A module change while busy is refused (D-7).
+    // A module change while busy is refused.
     const auto id2 = r.session().send(r.me, calcu::sessions::Command{calcu::presets::kLoadPresetCommand,
                                                                       Value::object({{"content", loop}, {"name", "l.ti59"}})});
     r.runFor(std::chrono::milliseconds(500));

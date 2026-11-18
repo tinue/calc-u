@@ -1,7 +1,7 @@
 import XCTest
 
-/// C59-7 AC-28 in the Swift frontend (ADR 0032: the scenario IDs of the
-/// spec, as the Web's `C59-7 AC-15` and `C59-7 AC-12`): a fresh card armed
+/// The magnetic card scenarios in the Swift frontend (the same as the Web
+/// client's): a fresh card armed
 /// through the bar, written by a program and listed by Arm Card; a card
 /// armed and read when its corner is pressed. The presets go in through
 /// attach (`open`), the keys of a program too; the card controls, the
@@ -50,7 +50,7 @@ final class CardScenarioTests: XCTestCase {
         waitIdle(harness)
     }
 
-    /// The fitted card's top right corner: side 1 (C59-7 AC-12; the card's
+    /// The fitted card's top right corner: side 1 (the card's
     /// place and corners of app/KeyboardLayout.hpp).
     private func pressCorner(_ app: XCUIApplication) {
         element(app, "faceplate").coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.121)).press(forDuration: 0.1)
@@ -67,7 +67,7 @@ final class CardScenarioTests: XCTestCase {
         field.tap()
         field.typeText(name)
         let arm = app.buttons["card-arm"]
-        if !arm.waitForExistence(timeout: 3) { print("[C59-7] \(app.debugDescription)") }
+        if !arm.waitForExistence(timeout: 3) { print("[cards] \(app.debugDescription)") }
         arm.tap()
         XCTAssertTrue(field.waitForNonExistence(timeout: 5), "the dialog stayed")
         XCTAssertEqual(element(app, "bar-media-card-reader").label, "Arm Card", "fed before the corner was pressed")
@@ -86,25 +86,25 @@ final class CardScenarioTests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed, "Arm Card cannot be used")
         arm.tap()
         let cancel = app.buttons["card-cancel"]
-        if !cancel.waitForExistence(timeout: 5) { print("[C59-7] \(app.debugDescription)") }
+        if !cancel.waitForExistence(timeout: 5) { print("[cards] \(app.debugDescription)") }
         let found = app.buttons[name].exists || app.staticTexts[name].exists
         cancel.tap()
         return found
     }
 
-    /// C59-7 AC-15's scenario: a fresh card armed, written by a program,
+    /// A fresh card armed, written by a program,
     /// listed by Arm Card; its cue card has its name.
-    func test_c59_7_ac15_fresh_card_written_and_listed() throws {
+    func test_fresh_card_written_and_listed() throws {
         let (app, harness) = launch()
         let name = "prog\(Int.random(in: 1000...9999))"
         try writeFreshCard(app, harness, name: name)
         XCTAssertTrue(listed(app, name), "Arm Card does not list \(name)")
-        attachScreenshot(app, name: "C59-7 AC-15 — written and listed")
+        attachScreenshot(app, name: "Fresh card — written and listed")
         app.terminate()
     }
 
-    /// C59-7 AC-12's scenario: a card armed and read when its corner is pressed.
-    func test_c59_7_ac12_card_read_by_its_corner() throws {
+    /// A card armed and read when its corner is pressed.
+    func test_card_read_by_its_corner() throws {
         let (app, harness) = launch()
         let name = "read\(Int.random(in: 1000...9999))"
         try writeFreshCard(app, harness, name: name)

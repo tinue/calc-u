@@ -2,8 +2,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-// The library's shell models for the Swift frontend (C59-8 design §3.1, D-1,
-// D-2): the menus, the More button's items, the control bar, the settings
+// The library's shell models for the Swift frontend: the menus, the More button's items, the control bar, the settings
 // dialog, "Loading…", the notice queue and the pointer rule on the
 // faceplate, computed by library/shell/ from the last Value of each input
 // topic of the session (control-state, busy, run-state, settings, media, the
@@ -28,7 +27,7 @@ typedef NS_ENUM(NSInteger, TIMenuRole) {
     TIMenuRoleQuit,
 };
 
-/// LIB-14 AC-4: Load Preset… ⌘O, Reset ⌘R, Cold boot ⇧⌘R, …
+/// The shortcuts: Load Preset… ⌘O, Reset ⌘R, Cold boot ⇧⌘R, …
 typedef NS_ENUM(NSInteger, TIMenuShortcut) {
     TIMenuShortcutNone,
     TIMenuShortcutLoadPreset,
@@ -48,10 +47,10 @@ typedef NS_ENUM(NSInteger, TIMenuShortcut) {
 @property (nonatomic, readonly) BOOL enabled;
 @property (nonatomic, readonly) BOOL checkable;
 @property (nonatomic, readonly) BOOL checked;
-@property (nonatomic, readonly, copy) NSString *reason;   ///< why it cannot be used now (AC-6)
+@property (nonatomic, readonly, copy) NSString *reason;   ///< why it cannot be used now
 @property (nonatomic, readonly) TIMenuRole role;
 @property (nonatomic, readonly) TIMenuShortcut shortcut;
-/// A question asked before it is carried out (Cold boot behind More, M15), "" for none.
+/// A question asked before it is carried out (Cold boot behind More), "" for none.
 @property (nonatomic, readonly, copy) NSString *confirm;
 @property (nonatomic, readonly) BOOL destructive;
 @property (nonatomic, readonly, copy) NSArray<TIMenuItem *> *children;
@@ -85,7 +84,7 @@ typedef NS_ENUM(NSInteger, TIBarGroup) {
     TIBarGroupEnd,
 };
 
-/// A control of the bar (calcu::shell::BarControl, B1 to B9).
+/// A control of the bar (calcu::shell::BarControl).
 @interface TIBarControl : NSObject
 @property (nonatomic, readonly) TIBarControlKind kind;
 @property (nonatomic, readonly) TIBarGroup group;
@@ -95,7 +94,7 @@ typedef NS_ENUM(NSInteger, TIBarGroup) {
 /// A picker: its entries (the running one checked); a button: its one choice; More: its items.
 @property (nonatomic, readonly, copy) NSArray<TIMenuItem *> *choices;
 @property (nonatomic, readonly, copy) NSString *mediumKind;
-/// An action: the menu item it carries out (B8).
+/// An action: the menu item it carries out.
 @property (nonatomic, readonly, nullable) TIMenuItem *item;
 @end
 
@@ -122,7 +121,7 @@ typedef NS_ENUM(NSInteger, TIDialogWidget) {
 @property (nonatomic, readonly) BOOL resettable;
 @property (nonatomic, readonly, nullable) NSNumber *minimum;
 @property (nonatomic, readonly, nullable) NSNumber *maximum;
-/// D-6: a choice of `true` and `false`, drawn as a Toggle.
+/// A choice of `true` and `false`, drawn as a Toggle.
 @property (nonatomic, readonly) BOOL isToggle;
 @end
 
@@ -143,44 +142,44 @@ extern NSString *const TIShellActionQuit;
 - (instancetype)init NS_UNAVAILABLE;
 
 /// The models with the traits of a window with a menu bar (macOS) or
-/// without one (iOS, iPadOS; design §3.1). Set by platform; the tests flip it.
+/// without one (iOS, iPadOS). Set by platform; the tests flip it.
 @property (nonatomic) BOOL withMenuBar;
 
-/// A control state came (AC-19 is the opposite).
+/// A control state came (before it, the bar is empty).
 @property (nonatomic, readonly) BOOL started;
-/// LIB-14 AC-1, AC-18: File, Machine, Help with their items.
+/// File, Machine, Help with their items.
 @property (nonatomic, readonly) NSArray<TIMenu *> *menus;
-/// AC-5: the items of the More button (M14, M15).
+/// The items of the More button.
 @property (nonatomic, readonly) NSArray<TIMenuItem *> *moreItems;
-/// AC-3, AC-5: the bar, group by group, left to right.
+/// The bar, group by group, left to right.
 @property (nonatomic, readonly) NSArray<TIBarControl *> *bar;
-/// AC-7: the sections and rows of the settings, with their values now.
+/// The sections and rows of the settings, with their values now.
 @property (nonatomic, readonly) NSArray<TIDialogSection *> *settingsDialog;
 /// The running model (the control state's `model`), "" before the start.
 @property (nonatomic, readonly) NSString *modelID;
-/// The paper panel's owner (LIB-8 AC-12: B6), "" while none is attached.
+/// The paper panel's owner (the paper panel shows its paper), "" while none is attached.
 @property (nonatomic, readonly) NSString *paperOwner;
 /// A setting's value now (the `settings` topic), "" when it has none.
 - (NSString *)settingValueInSection:(NSString *)section key:(NSString *)key NS_SWIFT_NAME(setting(_:_:));
-/// AC-8: a setting changed, applied and written at once (`set-setting`); nil: its default.
+/// A setting changed, applied and written at once (`set-setting`); nil: its default.
 - (void)setSetting:(NSString *)section key:(NSString *)key value:(nullable NSString *)value
     NS_SWIFT_NAME(setSetting(_:_:value:));
 
 /// The item by id, depth first, in the menus or the More items.
 - (nullable TIMenuItem *)itemWithID:(NSString *)itemID NS_SWIFT_NAME(item(_:));
-/// Carries out an item: its command is sent (a refusal becomes a notice,
-/// LIB-14 D-7) and nil comes back; a shell action or a product item comes
+/// Carries out an item: its command is sent (a refusal becomes a notice)
+/// and nil comes back; a shell action or a product item comes
 /// back as its id for the frontend (a file dialog, the settings, the help).
 - (nullable NSString *)choose:(TIMenuItem *)item;
 
-/// "Loading…" (AC-9, LIB-14 L1): shown now; when to look again (seconds
+/// "Loading…": shown now; when to look again (seconds
 /// from now, negative: no need).
 @property (nonatomic, readonly) BOOL loadingShown;
 @property (nonatomic, readonly) double loadingDueIn;
 
-/// AC-10: the notice shown now, nil when none; each in turn.
+/// The notice shown now, nil when none; each in turn.
 @property (nonatomic, readonly, nullable) NSString *currentNotice;
-/// The notice shown is a question (Yes, No; LIB-14 N2).
+/// The notice shown is a question (Yes, No).
 @property (nonatomic, readonly) BOOL currentNoticeIsQuestion;
 /// OK (or No): the next one follows.
 - (void)closeNotice;
@@ -189,7 +188,7 @@ extern NSString *const TIShellActionQuit;
 /// A sentence of the frontend's own (a refusal it got as a reply), queued like a notice.
 - (void)pushNotice:(NSString *)sentence;
 
-/// The pointer on the faceplate (D-9: the library's PointerTracker over
+/// The pointer on the faceplate (the library's PointerTracker over
 /// cu59::faceplateHitMap); x, y in points of the faceplate as shown, `scale`
 /// its points per pixel of the base image. YES when a key went down now
 /// (the frontend's key feedback).
@@ -203,7 +202,7 @@ extern NSString *const TIShellActionQuit;
 /// The key a pointer holds now (row × 5 + col), -1 for none.
 @property (nonatomic, readonly) NSInteger pointerKey;
 
-/// D-8: the About texts and links of every frontend (TIShellProduct).
+/// The About texts and links of every frontend (TIShellProduct).
 @property (class, nonatomic, readonly) NSArray<NSString *> *aboutLines;
 @property (class, nonatomic, readonly) NSArray<NSArray<NSString *> *> *aboutLinks;   ///< [label, address]
 @property (class, nonatomic, readonly) NSString *helpURL;

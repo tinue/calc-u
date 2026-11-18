@@ -1,8 +1,8 @@
 const { test, expect } = require('@playwright/test');
 const { gotoReady } = require('./helpers');
 
-// The Calc-U-59 Web frontend on the library's shell and app session (M-34):
-// LIB-15 AC-19, AC-22, EC-4 for this product; LIB-3 AC-31 (the Web part).
+// The Calc-U-59 Web frontend on the library's shell and app session: the
+// props, the messages, unknown names, and suspending a hidden page.
 
 test.describe.configure({ timeout: 30000 });
 
@@ -25,14 +25,14 @@ async function recordMessages(page) {
   });
 }
 
-// Since M-57 the page talks to the library's shell itself (src/engine.js
-// went): the root element's `calcuShell`.
+// The page talks to the library's shell itself: the root element's
+// `calcuShell`.
 const request = (page, name, args) =>
   page.evaluate(([n, a]) => document.querySelector('.calcu-client').calcuShell.request(n, a).then((r) => r.value), [name, args || null]);
 const el = (page, name) => page.locator(`[data-calcu="${name}"]`);
 
-test('ac19 CalcU59 props, layout and settings, no module', async ({ page }) => {
-  // model by its name (AC-16).
+test('CalcU59 props, layout and settings, no module', async ({ page }) => {
+  // model by its name.
   await gotoReady(page, 'layout=wide&model=TI-58C');
   await expect(el(page, 'bar-model')).toHaveValue('2');
   // A second CalcU59 without keyboard, with 2.3.0's module prop and
@@ -49,9 +49,9 @@ test('ac19 CalcU59 props, layout and settings, no module', async ({ page }) => {
   await expect(second.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
   await expect(second).toHaveAttribute('tabindex', '0');           // keyboard on
   await expect(second).toHaveAttribute('data-layout', 'portrait');  // layout
-  // settings={false}: no Settings button and no Settings… behind More (LIB-14 AC-29, M18).
+  // settings={false}: no Settings button and no Settings… behind More.
   await expect(second.locator('[data-calcu="bar-action-settings"]')).toHaveCount(0);
-  // The second copy on the page keeps nothing it saves: its notice first (LIB-15 AC-8).
+  // The second copy on the page keeps nothing it saves: its notice first.
   await expect(second.locator('[data-calcu="notice"]')).toBeVisible();
   await second.locator('[data-calcu="notice-ok"]').click();
   await second.locator('[data-calcu="bar-more"]').click();
@@ -66,29 +66,28 @@ test('ac19 CalcU59 props, layout and settings, no module', async ({ page }) => {
   })).toBe('ML');
 });
 
-// LIB-15 AC-29 (release prep 4): the component is CalcU59, the one global
-// of calc.js; 2.3.0's PlayCalculator is gone (ledger 59-60). The shared
-// props are AC-16's with layout among them; `portraitWidth` moved along.
-test('ac29 CalcU59 is the component, PlayCalculator is gone', async ({ page }) => {
+// The component is CalcU59, the one global of calc.js; 2.3.0's
+// PlayCalculator is gone. The shared props have layout among them;
+// `portraitWidth` moved along.
+test('CalcU59 is the component, PlayCalculator is gone', async ({ page }) => {
   await gotoReady(page, 'layout=portrait');
   expect(await page.evaluate(() => [typeof window.CalcU59, typeof window.PlayCalculator,
     typeof (window.CalcU59 && window.CalcU59.portraitWidth)])).toEqual(['function', 'undefined', 'function']);
   await expect(page.locator('.calcu-client')).toHaveAttribute('data-layout', 'portrait');
 });
 
-// LIB-15 AC-16 (LIB-6 §11.6 P11): the `preset` prop is a path of
-// bundle.yaml, with or without `examples:`, which the page hands LIB-18's
-// start as its bundle path.
-test('lib15_ac16 preset prop takes a path of bundle.yaml', async ({ page }) => {
+// The `preset` prop is a path of bundle.yaml, with or without `examples:`,
+// which the page hands the session's start as its bundle path.
+test('preset prop takes a path of bundle.yaml', async ({ page }) => {
   for (const preset of ['sum.ti59', 'examples:sum.ti59']) {
     await gotoReady(page, `layout=wide&preset=${preset}`);
     await expect(page.locator('.cuecard')).toHaveAttribute('aria-label', /Sum 1\.\.N/, { timeout: 10000 });
   }
 });
 
-// LIB-15 AC-29 (L-11, ledger 59-67): a layout that is not one of Calc-U-59's
+// A layout that is not one of Calc-U-59's
 // is ignored with a console warning, and the default, portrait, is drawn.
-test('ac29 an unknown layout is ignored with a warning', async ({ page }) => {
+test('an unknown layout is ignored with a warning', async ({ page }) => {
   const warnings = [];
   page.on('console', (m) => { if (m.type() === 'warning') warnings.push(m.text()); });
   await gotoReady(page, 'layout=wide');
@@ -103,15 +102,15 @@ test('ac29 an unknown layout is ignored with a warning', async ({ page }) => {
     ['CalcU59: layout "tall" is not one of its layouts ("portrait", "wide", "auto"); it is ignored.']);
 });
 
-test('ec4 an unknown model or preset gives a notice and starts without it', async ({ page }) => {
+test('an unknown model or preset gives a notice and starts without it', async ({ page }) => {
   await gotoReady(page, 'layout=wide&model=TI-99');
-  await expect(el(page, 'notice')).toContainText('There is no model "TI-99"');   // the shell's notice (LIB-14 AC-31)
+  await expect(el(page, 'notice')).toContainText('There is no model "TI-99"');   // the shell's notice
   await expect(el(page, 'bar-model')).toHaveValue('0');
   await gotoReady(page, 'layout=wide&preset=nothing.ti59');
   await expect(el(page, 'notice')).toContainText('could not be loaded');
 });
 
-test('ac22 no message of the old protocol', async ({ page }) => {
+test('no message of the old protocol', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page);
   await page.getByRole('button', { name: '5', exact: true }).click();
@@ -123,12 +122,12 @@ test('ac22 no message of the old protocol', async ({ page }) => {
   for (const k of sent) expect(['listen', 'command', 'request', 'answer']).toContain(k);
   for (const k of received) expect(['state', 'stream', 'reply', 'ask', 'sound-start', 'sound', 'sound-stop']).toContain(k);
   expect(sent).toContain('listen');
-  // 2.3.0's own types are gone (calc-engine-worker.js at the pin).
+  // 2.3.0's own message types (its calc-engine-worker.js) are gone.
   const types = await page.evaluate(() => [...window.__calcuSent, ...window.__calcuReceived].map((m) => m && m.type).filter(Boolean));
   expect(types).toEqual([]);
 });
 
-test('lib3_ac31 hidden page suspends, shown continues', async ({ page }) => {
+test('hidden page suspends, shown continues', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page);
   const seconds = async () => (await request(page, 'ticks')).seconds;

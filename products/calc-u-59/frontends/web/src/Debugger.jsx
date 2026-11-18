@@ -1,18 +1,18 @@
 // The debugger panel, wide layout only (Qt6/app/debug/, App/Views/DebugView):
-// tabs CALCULATOR / CPU / LOG (C59-4). Only the visible tab's snapshots are
+// tabs CALCULATOR / CPU / LOG. Only the visible tab's snapshots are
 // built (setLiveDebugEnabled / setCpuDebugEnabled follow it). It draws the
-// product topics of the debug part (app/TIDebugPart, M-56): c59.calculator-debug,
+// product topics of the debug part (app/TIDebugPart): c59.calculator-debug,
 // c59.program-listing, c59.cpu-debug, c59.heatmap, c59.asm-overlay and c59.debug-view, whose
 // values are already the rows formatted by app/DebugText; the LOG tab is
-// LIB-3's `log`. FREEZE, STEP and RESUME of each tab are the component set's
+// the session's `log`. FREEZE, STEP and RESUME of each tab are the component set's
 // run-control buttons for the level `program` (CALCULATOR) and `cpu` (CPU),
-// on the library's `run-state` (LIB-10 AC-34, M-53), which FREEZE ON START
-// and ARMED read too (Part E simplification E-3); TRACE is the trace
+// on the library's `run-state`, which FREEZE ON START
+// and ARMED read too; TRACE is the trace
 // session's button, which can always be pressed (a trace folder that cannot
-// be written refuses the start, LIB-10 AC-53). Run and the CALCULATOR tab
+// be written refuses the start). Run and the CALCULATOR tab
 // follow the control state's product entries c59.asm-run and
 // c59.calculator-tab.
-// Since M-57 it reads the topics through the library's shell (useTopic) and
+// It reads the topics through the library's shell (useTopic) and
 // sends the commands by name (the page's context C59_PAGE, src/page.jsx).
 
 const NO_ASM = { fileName: "", words: 0, status: "", active: false };
@@ -43,7 +43,7 @@ const Gap = () => <span>{"   "}</span>;
 
 const RUN_CONTROL_LABELS = { pause: "FREEZE", step: "STEP", resume: "RESUME" };
 
-/// A product entry of the control state: usable unless it says not (C59-4 AC-25).
+/// A product entry of the control state: usable unless it says not.
 const usable = (entries, name) => !entries || !entries[name] || entries[name].available !== false;
 
 /// FREEZE / STEP / RESUME (the run-control buttons of the tab's level) and
@@ -82,7 +82,7 @@ function LiveDebug({ font, narrow }) {
   const s = useTopic(shell, "c59.calculator-debug") || null;
   const listing = useTopic(shell, "c59.program-listing") || null;
   const frozen = useRun(shell).frozen;
-  // Paused: the whole listing of the program that runs (C59-4 AC-4); else the window.
+  // Paused: the whole listing of the program that runs; else the window.
   const full = frozen && listing && listing.steps.length > 0;
   const steps = s ? (full ? listing.steps : s.steps) : [];
   const highlight = full ? listing.stepHighlight : s && s.stepHighlight;
@@ -265,7 +265,7 @@ function LogTab() {
   const ref = React.useRef(null);
   const text = React.useMemo(() => log.lines.join("\n"), [log.lines]);
   React.useLayoutEffect(() => { ref.current.scrollTop = ref.current.scrollHeight; }, [text]);
-  // The level of the machine's own lines (C59-4 AC-11): off → info → debug → off.
+  // The level of the machine's own lines: off → info → debug → off.
   const LEVELS = ["off", "info", "debug"];
   const level = Math.max(0, LEVELS.indexOf(log.level));
   const labels = ["LOG ○", "LOG ●", "LOG ●"];
@@ -323,7 +323,7 @@ function Debugger() {
   const [tab, setTab] = React.useState(panelRequest.panel);
   React.useEffect(() => { if (panelRequest.n) setTab(panelRequest.panel); }, [panelRequest.n]);
   const rootRef = React.useRef(null);
-  const shown = calculatorClosed && tab === 0 ? 1 : tab;  // the overlay runs on the CPU tab (AC-18)
+  const shown = calculatorClosed && tab === 0 ? 1 : tab;  // the overlay runs on the CPU tab
 
   React.useEffect(() => {
     if (!shell || !data) return undefined;

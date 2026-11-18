@@ -1,10 +1,9 @@
 const { test, expect } = require('@playwright/test');
 const { gotoReady: gotoReadyPage } = require('./helpers');
 
-// LIB-14 Calc-U-59 column (design §10.9, Q3 to Q11, Web; M-57): the page put
-// together from the React set's shell, on the real engine. Each case carries
-// the scenario ID of its Qt6 twin (frontends/qt6/tests/, CalcU59QtTests;
-// ADR 0032). Elements are found by their data-calcu names (LIB-14 §3.10, B9).
+// The page put together from the React set's shell, on the real engine.
+// Each case has a twin among the Qt6 window's tests (frontends/qt6/tests/,
+// CalcU59QtTests). Elements are found by their data-calcu names.
 
 test.describe.configure({ timeout: 45000 });
 
@@ -38,13 +37,13 @@ async function menuIds(page, prefix, scope) {
   return all.map((n) => n.slice(prefix.length));
 }
 
-// Q3 (AC-27; AC-8 to AC-10): the bar per model.
-test('lib14_ac27 the bar per model', async ({ page }) => {
+// The bar per model.
+test('the bar per model', async ({ page }) => {
   await gotoReady(page);
   const model = el(page, 'bar-model');
   await expect(model.locator('option')).toHaveText(['TI-59', 'TI-58', 'TI-58C']);
   await expect(model).toHaveValue('0');
-  // The picker of slot-1: the empty slot and the 14 Solid State ROM modules (row 59-9).
+  // The picker of slot-1: the empty slot and the 14 Solid State ROM modules.
   const slot = el(page, 'media-picker-slot-1');
   await expect(slot.locator('option')).toHaveCount(15);
   await expect(slot.locator('option:checked')).toHaveText(/Master Library/);
@@ -54,7 +53,7 @@ test('lib14_ac27 the bar per model', async ({ page }) => {
   await expect(printer).toHaveAttribute('aria-pressed', 'false');
   await printer.click();
   await expect(printer).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
-  // The card controls on the TI-59 only (LIB-4 AC-12).
+  // The card controls on the TI-59 only.
   await expect(el(page, 'bar-media-card-reader')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Arm Card', exact: true })).toBeVisible();
   await model.selectOption({ label: 'TI-58' });
@@ -65,15 +64,15 @@ test('lib14_ac27 the bar per model', async ({ page }) => {
   await expect(el(page, 'bar-place-printer')).toBeVisible();
 });
 
-// Q4 (AC-28; AC-1, AC-6 for this product): the wide layout's menus.
-test('lib14_ac28 the wide layout has the menus and no reset preset or settings on the bar', async ({ page }) => {
+// The wide layout's menus.
+test('the wide layout has the menus and no reset preset or settings on the bar', async ({ page }) => {
   await recordCommands(page);
   await gotoReady(page);
   const titles = await page.locator('[data-calcu^="menu-"]:not([data-calcu="menu-bar"])').allTextContents();
-  expect(titles).toEqual(['File', 'Machine', 'Help']);   // no Edit (AC-26)
+  expect(titles).toEqual(['File', 'Machine', 'Help']);   // no Edit
   await el(page, 'menu-file').click();
   await expect.poll(() => menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(
-    ['load-preset', 'examples', 'import-media', 'saved-media', 'arm-card', 'arm-fresh-card', 'settings']);   // no Quit (AC-6)
+    ['load-preset', 'examples', 'import-media', 'saved-media', 'arm-card', 'arm-fresh-card', 'settings']);   // no Quit
   await expect(el(page, 'item-load-preset')).toHaveText(/Load Preset…/);
   await el(page, 'menu-machine').click();
   await expect.poll(() => menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(['model', 'peripherals', 'reset', 'cold-boot', 'resume']);
@@ -81,7 +80,7 @@ test('lib14_ac28 the wide layout has the menus and no reset preset or settings o
   // The bar has none of Reset, Preset, Settings, More; Cold boot is the menu item.
   for (const n of ['bar-action-reset', 'bar-action-load-preset', 'bar-action-settings', 'bar-more']) await expect(el(page, n)).toHaveCount(0);
   await el(page, 'item-cold-boot').click();
-  await expect(el(page, 'more-confirm')).toHaveCount(0);   // the menu item asks nothing (M15 is the More menu's)
+  await expect(el(page, 'more-confirm')).toHaveCount(0);   // the menu item asks nothing (the More menu's asks first)
   await expect.poll(() => commands(page)).toContain('cold-boot');
   await el(page, 'menu-help').click();
   await expect.poll(() => menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(['help', 'about']);
@@ -89,8 +88,8 @@ test('lib14_ac28 the wide layout has the menus and no reset preset or settings o
   await expect(el(page, 'item-about')).toHaveText(/About Calc-U-59/);
 });
 
-// Q5 (AC-29): the portrait layout.
-test('lib14_ac29 portrait bar keeps reset preset settings and more', async ({ page }) => {
+// The portrait layout.
+test('portrait bar keeps reset preset settings and more', async ({ page }) => {
   await gotoReady(page, 'layout=portrait');
   await expect(el(page, 'menu-bar')).toHaveCount(0);
   const bar = el(page, 'control-bar');
@@ -101,16 +100,16 @@ test('lib14_ac29 portrait bar keeps reset preset settings and more', async ({ pa
   await expect(el(page, 'settings-dialog')).toBeVisible();
 });
 
-test('lib14_ac29 more holds examples cold boot resume and help', async ({ page }) => {
+test('more holds examples cold boot resume and help', async ({ page }) => {
   await page.setViewportSize({ width: 280, height: 700 });
   await gotoReady(page, 'layout=portrait');
   await el(page, 'bar-more').click();
   const menu = el(page, 'more-menu');
   await expect(menu).toBeVisible();
   await expect.poll(() => menuIds(page, 'more-item-', menu)).toEqual(
-    ['examples', 'import-media', 'saved-media', 'cold-boot', 'resume', 'help', 'about']);   // D-36
+    ['examples', 'import-media', 'saved-media', 'cold-boot', 'resume', 'help', 'about']);
   await expect(el(page, 'more-item-resume')).toHaveAttribute('aria-disabled', 'true');
-  // Inside the client at the narrowest portrait (design §10.12).
+  // Inside the client at the narrowest portrait.
   const client = await page.locator('.calcu-client').boundingBox();
   const box = await menu.boundingBox();
   expect(box.x).toBeGreaterThanOrEqual(client.x - 0.5);
@@ -122,7 +121,7 @@ test('lib14_ac29 more holds examples cold boot resume and help', async ({ page }
   await expect(page.locator('.cuecard')).toHaveAttribute('aria-label', /Sum 1\.\.N/, { timeout: 5000 });
 });
 
-test('lib14_ac29 cold boot asks first', async ({ page }) => {
+test('cold boot asks first', async ({ page }) => {
   await recordCommands(page);
   await gotoReady(page, 'layout=portrait');
   await el(page, 'bar-more').click();
@@ -140,7 +139,7 @@ test('lib14_ac29 cold boot asks first', async ({ page }) => {
   await expect.poll(() => commands(page)).toContain('cold-boot');
 });
 
-test('lib14_ac29 no long press for clean', async ({ page }) => {
+test('no long press for clean', async ({ page }) => {
   await recordCommands(page);
   await gotoReady(page, 'layout=portrait');
   const reset = el(page, 'bar-action-reset');
@@ -153,7 +152,7 @@ test('lib14_ac29 no long press for clean', async ({ page }) => {
   await expect(reset).toHaveText('↺');   // the icon alone (compact), never "Clean"
 });
 
-test('lib14_ac29 settings prop off', async ({ page }) => {
+test('settings prop off', async ({ page }) => {
   await page.goto('./?layout=wide');
   await page.evaluate(() => {
     document.getElementById('root').remove();
@@ -164,7 +163,7 @@ test('lib14_ac29 settings prop off', async ({ page }) => {
   });
   const second = page.locator('#second .calcu-client');
   await expect(second.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
-  await expect(second.locator('[data-calcu="bar-action-settings"]')).toHaveCount(0);   // M18
+  await expect(second.locator('[data-calcu="bar-action-settings"]')).toHaveCount(0);
   await expect(second.locator('[data-calcu="bar-action-reset"]')).toBeVisible();
   await page.waitForTimeout(500);
   if (await second.locator('[data-calcu="notice"]').count()) await second.locator('[data-calcu="notice-ok"]').click();   // a second copy's storage notice
@@ -173,11 +172,11 @@ test('lib14_ac29 settings prop off', async ({ page }) => {
   await expect(second.locator('[data-calcu="more-item-about"]')).toBeVisible();
 });
 
-// Q6 (AC-30; AC-11 to AC-13): the settings per layout.
+// The settings per layout.
 async function sections(page) {
   return page.locator('[data-calcu="settings-dialog"] legend').allTextContents();
 }
-test('lib14_ac30 the web settings per layout', async ({ page }) => {
+test('the web settings per layout', async ({ page }) => {
   await gotoReady(page);
   await el(page, 'menu-file').click();
   await el(page, 'item-settings').click();
@@ -192,7 +191,7 @@ test('lib14_ac30 the web settings per layout', async ({ page }) => {
     await expect(el(page, `setting-preset-${m}`).locator('option').first()).toHaveText('None');
   }
   await expect(el(page, 'setting-trace-max-file-size-mb')).toBeVisible();
-  await expect(dialog).not.toContainText('Solid State Module');   // row 59-9
+  await expect(dialog).not.toContainText('Solid State Module');
   await expect(dialog).not.toContainText('Keyboard Feedback');    // not in the wide layout
   await expect(dialog.getByRole('button')).toHaveText(['Close']);   // the only button
   // A change is written at once (no Done).
@@ -208,8 +207,8 @@ test('lib14_ac30 the web settings per layout', async ({ page }) => {
   await expect(el(page, 'setting-trace-max-file-size-mb')).toHaveCount(0);
 });
 
-// Q7 (AC-31; AC-15 to AC-17).
-test('lib14_ac31 loading and the notice dialog', async ({ page }) => {
+// "Loading…" and the notice dialog.
+test('loading and the notice dialog', async ({ page }) => {
   await gotoReady(page);
   const chooser = page.waitForEvent('filechooser');
   await el(page, 'menu-file').click();
@@ -220,8 +219,8 @@ test('lib14_ac31 loading and the notice dialog', async ({ page }) => {
   await page.waitForTimeout(250);
   await expect(el(page, 'loading')).toHaveCount(0);   // not before 500 ms
   await expect(el(page, 'loading')).toBeVisible({ timeout: 3000 });
-  // It blocks nothing: the model picker and the menus can be used (AC-16),
-  // and Cold boot stops what runs (LIB-18 AC-16).
+  // It blocks nothing: the model picker and the menus can be used,
+  // and Cold boot stops what runs.
   await expect(el(page, 'bar-model')).toBeEnabled();
   await el(page, 'menu-machine').click();
   await expect(el(page, 'item-reset')).toBeVisible();
@@ -239,8 +238,8 @@ test('lib14_ac31 loading and the notice dialog', async ({ page }) => {
   await expect(page.locator('.calcu-status')).toHaveCount(0);   // no status line any more
 });
 
-// Q8 (AC-32; AC-20, AC-21).
-test('lib14_ac32 help and about in the help menu and not in the settings', async ({ page }) => {
+// Help and About.
+test('help and about in the help menu and not in the settings', async ({ page }) => {
   await page.addInitScript(() => {
     window.__opened = [];
     window.open = (url) => { window.__opened.push(url); return null; };
@@ -266,27 +265,27 @@ test('lib14_ac32 help and about in the help menu and not in the settings', async
   await expect(el(page, 'settings-dialog')).not.toContainText('About');
 });
 
-// Q9 (AC-33): the layouts, one picture each (AC-25).
-test('lib14_ac33 the layouts portrait wide and auto', async ({ page }, testInfo) => {
+// The layouts, one picture each.
+test('the layouts portrait wide and auto', async ({ page }, testInfo) => {
   await gotoReady(page, 'layout=wide');
   await expect(page.locator('[data-layout=wide] .calcu-calc')).toBeVisible();
   await expect(page.locator('[data-panel=paper]')).toBeVisible();
   await expect(page.locator('[data-panel=debug]')).toBeVisible();
   await expect(page.locator('.calcu-splitter')).toHaveCount(1);
-  await page.locator('.calcu-client').screenshot({ path: testInfo.outputPath('lib14_ac33-wide.png') });
+  await page.locator('.calcu-client').screenshot({ path: testInfo.outputPath('layout-wide.png') });
   await gotoReady(page, 'layout=portrait');
   await expect(page.locator('[data-layout=portrait]')).toBeVisible();
   await expect(page.locator('[data-panel=debug]')).toHaveCount(0);
-  await page.locator('.calcu-client').screenshot({ path: testInfo.outputPath('lib14_ac33-portrait.png') });
+  await page.locator('.calcu-client').screenshot({ path: testInfo.outputPath('layout-portrait.png') });
   await page.setViewportSize({ width: 440, height: 956 });
   await page.goto('app/');
   await expect(page.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
   await expect(page.locator('[data-layout=portrait]')).toBeVisible();   // auto: paged on a phone
-  await page.screenshot({ path: testInfo.outputPath('lib14_ac33-auto.png') });
+  await page.screenshot({ path: testInfo.outputPath('layout-auto.png') });
 });
 
-// Q10 (AC-24, AC-43 for this product): a key under the pointer.
-test('lib14_ac24 a key under the pointer', async ({ page }) => {
+// A key under the pointer.
+test('a key under the pointer', async ({ page }) => {
   await gotoReady(page);
   const key = (label) => page.getByRole('button', { name: label, exact: true });
   const r = await key('5').boundingBox();
@@ -311,8 +310,8 @@ test('lib14_ac24 a key under the pointer', async ({ page }) => {
   await page.mouse.up();
 });
 
-// LIB-7 AC-36's File-menu clause (D-29; M-57): Import Media… and Saved Media…
-test('lib7_ac36 file menu has import and saved media', async ({ page }) => {
+// Import Media… and Saved Media… in the File menu.
+test('file menu has import and saved media', async ({ page }) => {
   await gotoReady(page);
   await el(page, 'menu-file').click();
   await expect(el(page, 'item-import-media')).toHaveText(/Import Media…/);
@@ -320,7 +319,7 @@ test('lib7_ac36 file menu has import and saved media', async ({ page }) => {
   await el(page, 'item-saved-media').click();
   await expect(el(page, 'saved-media')).toBeVisible();
   await page.keyboard.press('Escape');
-  // Portrait: behind the More button (D-36).
+  // Portrait: behind the More button.
   await gotoReady(page, 'layout=portrait');
   await el(page, 'bar-more').click();
   await expect(el(page, 'more-item-import-media')).toBeVisible();

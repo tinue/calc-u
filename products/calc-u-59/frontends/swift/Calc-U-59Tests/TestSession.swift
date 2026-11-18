@@ -23,8 +23,8 @@ final class TestSession {
         let roms = try XCTUnwrap(TIRomSet.lookUp(inFolder: resources, leavingOut: nil, missing: &missing),
                                  "no ROM set in the host app: \(String(describing: missing))", file: file, line: line)
         let start = TISessionStart()
-        // A new settings file at its defaults: LIB-18's start builds a TI-59
-        // with the Master Library module and no printer (LIB-18 AC-17, AC-18).
+        // A new settings file at its defaults: the library's start builds a
+        // TI-59 with the Master Library module and no printer.
         start.settingsBase = folder.path
         start.settingsFile = folder.appendingPathComponent("Calc-U-59.ini").path
         start.saveFolder = folder.path
@@ -40,8 +40,8 @@ final class TestSession {
     /// The batches' changes so far.
     var changes: TIChange { delegate.changes }
 
-    /// The bridge holds its delegate weakly; it keeps the notices (LIB-13
-    /// AC-15), the rest is not what these tests look at.
+    /// The bridge holds its delegate weakly; it keeps the notices,
+    /// the rest is not what these tests look at.
     private final class Forward: NSObject, TIAppSessionDelegate {
         weak var session: TIAppSession?
         var notices: [String] = []

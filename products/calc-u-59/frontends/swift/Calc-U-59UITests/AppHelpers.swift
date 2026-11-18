@@ -2,7 +2,7 @@ import XCTest
 
 // MARK: - App launch helpers
 //
-// C59-8 AC-21 (design §3.9): the app has no aid for its tests. A test hands
+// The app has no aid for its tests. A test hands
 // the app a settings file of its own with `--settings-file` (Debug builds
 // only), so it neither reads nor changes the simulator's settings, and
 // reaches the session through harness attach (`--attach-port`): the module
@@ -10,13 +10,13 @@ import XCTest
 // `key-down`/`key-up`, and the end of a load started with a tap is the reply
 // to the bare `wait`, after the busy topic said an operation runs.
 
-/// The port of a launch's harness attach: one per simulator (first step 4).
+/// The port of a launch's harness attach: one per simulator.
 let uiTestAttachPort: UInt16 = 59162
 
 extension XCTestCase {
 
     /// A settings file for one launch, with these values ("section.key=value"),
-    /// at a path the app under test reads (first check of M-58: the runner
+    /// at a path the app under test reads (the runner
     /// writes it, the simulator's app reads it by path). On macOS the app is
     /// sandboxed: the file goes into its container's temporary folder, and
     /// the app is given its name, which it takes in that folder.
@@ -55,7 +55,7 @@ extension XCTestCase {
         return app
     }
 
-    /// The launched app's session through harness attach (C59-5 S3).
+    /// The launched app's session through harness attach.
     func attachHarness(port: UInt16 = uiTestAttachPort) -> HarnessClient {
         let harness = HarnessClient()
         XCTAssertTrue(harness.connect(port: port), "no harness attach on 127.0.0.1:\(port)")
@@ -78,12 +78,12 @@ extension XCTestCase {
     }
 
     /// Waits for the end of an operation started with a tap, on the busy
-    /// topic received as a stream (C59-8 AC-21): it says that one runs, then
+    /// topic received as a stream: it says that one runs, then
     /// that none does; then the reply to the bare `wait` (until idle). The
     /// bare `wait` alone is refused while an operation runs ("Another
     /// operation is running."), so the stream comes first. A preset that
     /// ends paused (`pause:`, or `pause-on-start:` fired by what its last key
-    /// starts) stays paused (preset.md §5.6); a paused machine is never idle,
+    /// starts) stays paused (docs/formats/preset.md §5.6); a paused machine is never idle,
     /// so the bare `wait` would wait until it is resumed (§6.2): for
     /// `endsPaused` the run-state topic is read until it says paused.
     func waitForOperation(_ harness: HarnessClient, timeout: TimeInterval, endsPaused: Bool = false) {

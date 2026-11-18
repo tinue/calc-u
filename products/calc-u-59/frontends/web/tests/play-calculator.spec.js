@@ -47,7 +47,7 @@ async function keyRect(page, label) {
   return page.getByRole('button', { name: label, exact: true }).boundingBox();
 }
 
-// Since M-57 the shell's (LIB-14 59): elements by their data-calcu names.
+// The shell's elements by their data-calcu names.
 const el = (page, name) => page.locator(`[data-calcu="${name}"]`);
 
 /// A File menu item (wide: the menu bar; portrait: behind the More button).
@@ -89,8 +89,8 @@ const PROGRAM_123_WRITE = PROGRAM_123 + 'keys:\n  - regular-speed:\n  - key: CLR
 // A fresh machine: no program.
 const FRESH = preset('partition: 479\n');
 
-// The PC-100C attached (the built-in default has no printer, row 59-10) by
-// the bar's button "PC-100C" (LIB-14 AC-27).
+// The PC-100C attached (the built-in default has no printer) by
+// the bar's button "PC-100C".
 async function connectPrinter(page) {
   const toggle = el(page, 'bar-place-printer');
   if ((await toggle.getAttribute('aria-pressed')) !== 'true') await toggle.click();
@@ -131,7 +131,7 @@ test('a press just outside a key hits it (widened hit test)', async ({ page }) =
   expect(await settledLed(page)).toBe(seven);
 });
 
-// Since M-57 the faceplate's pointer is the shell's (LIB-14 AC-24, D-9): the
+// The faceplate's pointer is the shell's: the
 // key is the one under the pointer when it went down; a drag keeps it.
 test('a drag keeps the key pressed where the pointer went down', async ({ page }) => {
   await gotoReady(page);
@@ -202,7 +202,7 @@ test('Shift+A sends 2nd before A', async ({ page }) => {
   await expect(page.getByRole('button', { name: '2nd', exact: true })).toHaveAttribute('aria-pressed', 'true', { timeout: 300 });
 });
 
-test('a letter counts by the letter the key carries, not its position (LIB-5 AC-21, OQ-2)', async ({ page }) => {
+test('a letter counts by the letter the key carries, not its position', async ({ page }) => {
   await gotoReady(page);
   await page.locator('.calcu-device').focus();
   // AZERTY: the key at QWERTY's Q carries A.
@@ -216,7 +216,7 @@ test('a letter counts by the letter the key carries, not its position (LIB-5 AC-
   await expect(page.getByRole('button', { name: 'A', exact: true })).toHaveAttribute('aria-pressed', 'false', { timeout: 500 });
 });
 
-test('a held host key stays down until let go; two keys held together are both down (LIB-5 AC-4, AC-23)', async ({ page }) => {
+test('a held host key stays down until let go; two keys held together are both down', async ({ page }) => {
   await gotoReady(page);
   await page.locator('.calcu-device').focus();
   await page.keyboard.down('7');
@@ -230,7 +230,7 @@ test('a held host key stays down until let go; two keys held together are both d
   await expect(page.getByRole('button', { name: '7', exact: true })).toHaveAttribute('aria-pressed', 'false', { timeout: 300 });
 });
 
-test('a click shorter than the debounce still types the key (LIB-5 AC-24)', async ({ page }) => {
+test('a click shorter than the debounce still types the key', async ({ page }) => {
   await gotoReady(page);
   const five = await showing(page, ['5']);
   await pressKey(page, 'CLR');
@@ -266,11 +266,10 @@ test('Settings: the startup model is kept', async ({ page }) => {
   await expect(modelPicker(page)).toHaveValue('1');
 });
 
-// LIB-9 AC-21, AC-25 (design T-28): the settings are Calc-U-59.ini, since
-// M-34 a file of the persistent file system (LIB-9 AC-23; storage.spec.js
-// reads it there); 2.3.0's entries in the page's storage are not read, and a reload
+// The settings are Calc-U-59.ini, a file of the persistent file system
+// (storage.spec.js reads it there); 2.3.0's entries in the page's storage are not read, and a reload
 // keeps a change.
-test('lib9_ac21_settings_in_the_ini_file_survive_a_reload', async ({ page }) => {
+test('settings_in_the_ini_file_survive_a_reload', async ({ page }) => {
   await page.goto('./?layout=wide');
   await page.evaluate(() => {
     window.localStorage.clear();
@@ -280,21 +279,21 @@ test('lib9_ac21_settings_in_the_ini_file_survive_a_reload', async ({ page }) => 
   await gotoReady(page);
   await expect(modelPicker(page)).toHaveValue('0');   // the defaults: TI-59
   await setSetting(page, 'startup', 'model', 'TI-58C');
-  await page.waitForTimeout(1000);   // kept within a second (LIB-15 AC-6)
+  await page.waitForTimeout(1000);   // kept within a second
   await gotoReady(page);
   await expect(modelPicker(page)).toHaveValue('2');
 });
 
 // ── Presets ──────────────────────────────────────────────────────────────
 
-// LIB-6 AC-42 (and C59-2 AC-6): a bundled example, loaded by its bundle path, fits its cue card.
-test('lib6_ac42 bundled example sum shows its cue card', async ({ page }) => {
+// A bundled example, loaded by its bundle path, fits its cue card.
+test('bundled example sum shows its cue card', async ({ page }) => {
   await gotoReady(page);
-  await fileItem(page, 'examples', 'examples-Programs', 'example-examples:sum.ti59');   // File ▸ Examples ▸ (C59-2)
+  await fileItem(page, 'examples', 'examples-Programs', 'example-examples:sum.ti59');   // File ▸ Examples ▸
   await expect(page.locator('.cuecard')).toHaveAttribute('aria-label', /Sum 1\.\.N/, { timeout: 5000 });
 });
 
-test('lib6_ac42 uploaded preset by its content', async ({ page }) => {
+test('uploaded preset fits the cue card of its content', async ({ page }) => {
   await gotoReady(page);
   const expected = await showing(page, ['1', '2', '3']);
   await uploadPreset(page, PROGRAM_123);
@@ -302,7 +301,7 @@ test('lib6_ac42 uploaded preset by its content', async ({ page }) => {
   expect(await settledLed(page)).toBe(expected);
 });
 
-test('LIB-13 AC-16 a dropped preset loads like one from the dialog', async ({ page }) => {
+test('a dropped preset loads like one from the dialog', async ({ page }) => {
   await gotoReady(page);
   const expected = await showing(page, ['1', '2', '3']);
   await pressKey(page, 'CLR');
@@ -312,7 +311,7 @@ test('LIB-13 AC-16 a dropped preset loads like one from the dialog', async ({ pa
   expect(await settledLed(page)).toBe(expected);
 });
 
-// ── Magnetic cards (C59-7, LIB-7 59: the library's media part, M-55) ────
+// ── Magnetic cards (the library's media part) ───────────────────────────
 
 async function dropFile(page, name, text) {
   await dropFiles(page, [[name, text]]);
@@ -359,7 +358,7 @@ async function listedCards(page) {
   return names;
 }
 
-/// A card file imported through File ▸ Import Media… (LIB-7 AC-30, AC-36; M-57).
+/// A card file imported through File ▸ Import Media….
 async function importCard(page, fileName, text) {
   const chooser = page.waitForEvent('filechooser');
   await fileItem(page, 'import-media');
@@ -367,9 +366,9 @@ async function importCard(page, fileName, text) {
   await page.waitForTimeout(500);
 }
 
-// C59-7 AC-13: two "Crd" buttons, Arm Card and Arm Fresh Card, while no card
+// Two "Crd" buttons, Arm Card and Arm Fresh Card, while no card
 // passes; Eject Card in their place while one does.
-test('c59_7_ac13 buttons', async ({ page }) => {
+test('card buttons arm card arm fresh card and eject', async ({ page }) => {
   await gotoReady(page);
   await expect(page.getByRole('button', ARM)).toHaveText(/Crd/);
   await expect(page.getByRole('button', ARM_FRESH)).toHaveText(/Crd/);
@@ -385,8 +384,8 @@ test('c59_7_ac13 buttons', async ({ page }) => {
   await expect(page.getByRole('button', ARM)).toBeVisible();
 });
 
-// C59-7 AC-14: Arm Card lists the saved cards by name; "No cards found" when none.
-test('c59_7_ac14 arm card lists the saved cards', async ({ page }) => {
+// Arm Card lists the saved cards by name; "No cards found" when none.
+test('arm card lists the saved cards', async ({ page }) => {
   await gotoReady(page);
   await page.getByRole('button', ARM).click();
   await expect(page.getByRole('list', { name: 'Saved cards' })).toContainText('No cards found');
@@ -396,9 +395,9 @@ test('c59_7_ac14 arm card lists the saved cards', async ({ page }) => {
   expect(await listedCards(page)).toEqual(['Alpha', 'Beta']);   // by the names inside, by name
 });
 
-// C59-7 AC-28, scenario C59-7 AC-15: a fresh card armed, written by a program,
+// A fresh card armed, written by a program,
 // listed by Arm Card; an existing name asks first; its cue card has its name.
-test('C59-7 AC-15', async ({ page }) => {
+test('a fresh card is written and listed and an existing name asks first', async ({ page }) => {
   await gotoReady(page);
   await writeFreshCard(page, 'prog');
   expect(await listedCards(page)).toEqual(['prog']);
@@ -414,8 +413,8 @@ test('C59-7 AC-15', async ({ page }) => {
   expect(await listedCards(page)).toEqual(['prog']);   // nothing written before the first write
 });
 
-// C59-7 AC-28, scenario C59-7 AC-12: a card armed and read when a corner is pressed.
-test('C59-7 AC-12', async ({ page }) => {
+// A card armed and read when a corner is pressed.
+test('an armed card is read when a corner is pressed', async ({ page }) => {
   await gotoReady(page);
   await uploadPreset(page, PROGRAM_123);
   await pressKey(page, 'A');
@@ -433,8 +432,8 @@ test('C59-7 AC-12', async ({ page }) => {
   expect(await settledLed(page)).toBe(expected);
 });
 
-// C59-7 AC-26 (row 59-6): the cards are kept from one visit to the next.
-test('c59_7_ac26 cards kept from one visit to the next', async ({ page }) => {
+// The cards are kept from one visit to the next.
+test('cards kept from one visit to the next', async ({ page }) => {
   await gotoReady(page);
   await writeFreshCard(page, 'kept');
   await page.waitForTimeout(1500);   // the persistent file system is synced
@@ -443,15 +442,15 @@ test('c59_7_ac26 cards kept from one visit to the next', async ({ page }) => {
   expect(await listedCards(page)).toEqual(['kept']);
 });
 
-// LIB-7 AC-36: the import of a card file (File ▸ Import Media… since M-57).
-test('lib7_ac36 import a card file', async ({ page }) => {
+// The import of a card file (File ▸ Import Media…).
+test('import a card file', async ({ page }) => {
   await gotoReady(page);
   await importCard(page, 'Imported.magnetcard.yaml', cardFile('Imported'));
   expect(await listedCards(page)).toEqual(['Imported']);
 });
 
-// LIB-7 AC-36, AC-31: Saved Media… lists the cards, downloads one, deletes one after asking.
-test('lib7_ac36 saved media lists downloads deletes after asking', async ({ page }) => {
+// Saved Media… lists the cards, downloads one, deletes one after asking.
+test('saved media lists downloads deletes after asking', async ({ page }) => {
   await gotoReady(page);
   await importCard(page, 'Gone.magnetcard.yaml', cardFile('Gone'));
   await fileItem(page, 'saved-media');
@@ -467,8 +466,8 @@ test('lib7_ac36 saved media lists downloads deletes after asking', async ({ page
   expect(await listedCards(page)).toEqual([]);
 });
 
-// LIB-7 AC-36 (row 59-43): no download per card and no upload in the card picker.
-test('lib7_ac36 no per card download or upload in the card picker', async ({ page }) => {
+// No download per card and no upload in the card picker.
+test('no per card download or upload in the card picker', async ({ page }) => {
   await gotoReady(page);
   await importCard(page, 'One.magnetcard.yaml', cardFile('One'));
   for (const which of [ARM, ARM_FRESH]) {
@@ -477,14 +476,14 @@ test('lib7_ac36 no per card download or upload in the card picker', async ({ pag
     await expect(dialog.locator('input[type=file]')).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: /Download/ })).toHaveCount(0);
     await expect(dialog).not.toContainText('Cards last for this page session');
-    // Since M-57 the import and the saved media are File menu items (LIB-7 D-29).
+    // The import and the saved media are File menu items.
     await expect(dialog.getByRole('button', { name: 'Import…' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Cancel' }).click();
   }
 });
 
-// LIB-13 AC-12 (on `.magnetcard.yaml` since M-55): imported into the save folder, fitted, read on a corner.
-test('LIB-13 AC-12 a dropped card is imported and fitted', async ({ page }) => {
+// A dropped `.magnetcard.yaml`: imported into the save folder, fitted, read on a corner.
+test('a dropped card is imported and fitted', async ({ page }) => {
   await gotoReady(page);
   await uploadPreset(page, PROGRAM_123);
   await pressKey(page, 'A');
@@ -507,31 +506,31 @@ test('LIB-13 AC-12 a dropped card is imported and fitted', async ({ page }) => {
   await pressKey(page, 'CLR');
   await pressKey(page, 'A');
   expect(await settledLed(page)).toBe(expected);
-  expect(await listedCards(page)).toEqual(['dropped', 'prog']);   // imported into the save folder (LIB-13 AC-4)
+  expect(await listedCards(page)).toEqual(['dropped', 'prog']);   // imported into the save folder
 });
 
-// A TI-58 has no card reader: refused with a notice (today nothing was said).
-test('LIB-13 AC-12 a card dropped on the TI-58 is refused with a notice', async ({ page }) => {
+// A TI-58 has no card reader: refused with a notice.
+test('a card dropped on the TI-58 is refused with a notice', async ({ page }) => {
   await gotoReady(page);
   await modelPicker(page).selectOption({ label: 'TI-58' });
   await page.waitForTimeout(600);
   await dropFile(page, 'dropped.magnetcard.yaml', cardFile('dropped'));
-  await expect(el(page, 'notice')).toContainText('dropped.magnetcard.yaml');   // the notice dialog (LIB-14 AC-31)
+  await expect(el(page, 'notice')).toContainText('dropped.magnetcard.yaml');   // the notice dialog
   await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0);
 });
 
-test('LIB-13 AC-15 a dropped file that is nothing Calc-U-59 opens is refused with a notice', async ({ page }) => {
+test('a dropped file that is nothing Calc-U-59 opens is refused with a notice', async ({ page }) => {
   await gotoReady(page);
   await dropFile(page, 'notes.txt', 'hello');
   await expect(el(page, 'notice')).toContainText('Calc-U-59 cannot open notes.txt.');
   await el(page, 'notice-ok').click();
-  await dropFile(page, 'old.u59', 'Calc-U-59 Card 2.0\n');   // C59-7 AC-4: a 2.3.0 card is no card
+  await dropFile(page, 'old.u59', 'Calc-U-59 Card 2.0\n');   // a 2.3.0 card is no card
   await expect(el(page, 'notice')).toContainText('Calc-U-59 cannot open old.u59.');
 });
 
-// LIB-13 AC-25 (row 59-61): a drop of exactly one file is opened; a drop of
-// two is ignored (Calc-U-59 opened the first one before).
-test('LIB-13 AC-25 a drop of two files is ignored', async ({ page }) => {
+// A drop of exactly one file is opened; a drop of
+// two is ignored.
+test('a drop of two files is ignored', async ({ page }) => {
   await gotoReady(page);
   await dropFiles(page, [['notes.txt', 'hello'], ['other.txt', 'world']]);
   await page.waitForTimeout(800);
@@ -542,8 +541,8 @@ test('LIB-13 AC-25 a drop of two files is ignored', async ({ page }) => {
 
 // ── Printer ──────────────────────────────────────────────────────────────
 
-// The PC-100C's paper in the component set's paper panel (M-53; ADR 0032).
-test('LIB-8 AC-31 the PC-100C prints a number, the text view shows it, Cut empties the paper and is disabled', async ({ page }) => {
+// The PC-100C's paper in the component set's paper panel.
+test('the PC-100C prints a number, the text view shows it, Cut empties the paper and is disabled', async ({ page }) => {
   await gotoReady(page);
   const printer = page.locator('[data-panel=paper]');
   await connectPrinter(page);
@@ -559,7 +558,7 @@ test('LIB-8 AC-31 the PC-100C prints a number, the text view shows it, Cut empti
   await expect(printer.locator('[data-calcu=paper-text]')).toHaveText('');
 });
 
-test('LIB-8 AC-28 PRINT and ADV are held, TRACE is a switch, the view control shows the view that is on', async ({ page }) => {
+test('PRINT and ADV are held, TRACE is a switch, the view control shows the view that is on', async ({ page }) => {
   await gotoReady(page);
   const printer = page.locator('[data-panel=paper]');
   const control = (id) => printer.locator(`[data-calcu=paper-control-${id}]`);
@@ -583,13 +582,13 @@ test('LIB-8 AC-28 PRINT and ADV are held, TRACE is a switch, the view control sh
   await expect(control('TRACE')).toHaveAttribute('aria-pressed', 'true');
   await control('TRACE').click();
   await expect(control('TRACE')).toHaveAttribute('aria-pressed', 'false');
-  // The view control names the view that is on (row 59-46).
+  // The view control names the view that is on.
   const view = printer.locator('[data-calcu=paper-view]');
   await expect(view).toHaveText('Marks');
   await view.click();
   await expect(view).toHaveText('Text');
   await expect(printer.locator('[data-calcu=paper-text]')).toBeVisible();
-  // Detached: the panel shows an empty paper without a name (AC-29).
+  // Detached: the panel shows an empty paper without a name.
   await el(page, 'bar-place-printer').click();
   await expect(printer.locator('[data-calcu=paper-owner]')).toHaveText('');
   await expect(control('PRINT')).toHaveCount(0);
@@ -628,7 +627,7 @@ test('portrait: the chevron switches to the printer page and back', async ({ pag
 
 // ── Debugger (wide) ──────────────────────────────────────────────────────
 
-test('C59-4 AC-5 FREEZE, STEP and RESUME on the CALCULATOR tab', async ({ page }) => {
+test('FREEZE, STEP and RESUME on the CALCULATOR tab', async ({ page }) => {
   await gotoReady(page);
   // Lbl A 1 2 3 R/S, run with A: FREEZE lands on a program step.
   await uploadPreset(page, preset('program:\n  keycodes: |\n    76 11 01 02 03 85 01 95 61 00 02\n'));
@@ -648,11 +647,11 @@ test('C59-4 AC-5 FREEZE, STEP and RESUME on the CALCULATOR tab', async ({ page }
   await expect(debug.getByRole('button', { name: 'RESUME' })).toBeDisabled();
 });
 
-// The ASM overlay (C59-4 AC-16, AC-18): chosen with Select File, run, and the
+// The ASM overlay: chosen with Select File, run, and the
 // CPU tab shows it running; the CALCULATOR tab cannot be chosen meanwhile.
 const SIMPLE_COUNT = 'Calc-U-59 ASM 2.0\nPROGRAM:\n; a counter\nHEX:\n01D8 01DB 0D00 0A37 1805 1007\n';
 
-test('C59-4 AC-16 an overlay is chosen and run and the CPU tab shows it', async ({ page }) => {
+test('an overlay is chosen and run and the CPU tab shows it', async ({ page }) => {
   await gotoReady(page);
   const debug = page.locator('[data-panel=debug]');
   await debug.getByRole('tab', { name: 'CPU', exact: true }).click();
@@ -677,7 +676,7 @@ test('C59-4 AC-16 an overlay is chosen and run and the CPU tab shows it', async 
   await expect(debug.getByRole('tab', { name: 'CALCULATOR', exact: true })).toBeEnabled({ timeout: 5000 });
 });
 
-test('C59-4 AC-21 the three tabs, labels and short forms', async ({ page }) => {
+test('the three debugger tabs, labels and short forms', async ({ page }) => {
   await gotoReady(page);
   const debug = page.locator('[data-panel=debug]');
   for (const name of ['CALCULATOR', 'CPU', 'LOG']) await expect(debug.getByRole('tab', { name, exact: true })).toBeVisible();
@@ -685,7 +684,7 @@ test('C59-4 AC-21 the three tabs, labels and short forms', async ({ page }) => {
   await expect(debug.locator('.calcu-debug-title')).toHaveText(/^(CALCULATOR DEBUG|DEBUG)$/);
   await expect(debug.getByRole('button', { name: /^(FREEZE ON START|F\.START)$/ })).toBeVisible();
   await expect(debug.getByRole('button', { name: 'ARMED' })).toBeVisible();
-  // FREEZE ON START arms, ARMED disarms (AC-5).
+  // FREEZE ON START arms, ARMED disarms.
   await debug.getByRole('button', { name: /^(FREEZE ON START|F\.START)$/ }).click();
   await expect(debug.getByRole('button', { name: 'ARMED' })).toBeEnabled({ timeout: 5000 });
   await debug.getByRole('button', { name: 'ARMED' }).click();
@@ -709,7 +708,7 @@ test('C59-4 AC-21 the three tabs, labels and short forms', async ({ page }) => {
   await expect(debug.getByLabel('Debug log')).toHaveValue('');
 });
 
-test('LIB-10 AC-34 FREEZE STEP RESUME of both tabs follow the run state', async ({ page }) => {
+test('FREEZE STEP RESUME of both tabs follow the run state', async ({ page }) => {
   await gotoReady(page);
   const debug = page.locator('[data-panel=debug]');
   const tab = (name) => debug.getByRole('tab', { name, exact: true });
@@ -741,7 +740,7 @@ test('LIB-10 AC-34 FREEZE STEP RESUME of both tabs follow the run state', async 
   }
 });
 
-test('LIB-10 AC-26 a trace is downloaded when switched off', async ({ page }) => {
+test('a trace is downloaded when switched off', async ({ page }) => {
   await gotoReady(page);
   const debug = page.locator('[data-panel=debug]');
   await debug.getByRole('tab', { name: 'LOG' }).click();
@@ -754,9 +753,9 @@ test('LIB-10 AC-26 a trace is downloaded when switched off', async ({ page }) =>
   expect((await (await d.createReadStream()).toArray()).reduce((n, b) => n + b.length, 0)).toBeGreaterThan(1000);
 });
 
-// LIB-6 AC-25, LIB-9 AC-17 (row 59-63): a preset's screenshot is a download,
+// A preset's screenshot is a download,
 // as Calc-U-1600's; the LOG tab lists only traces.
-test('LIB-6 AC-25 a preset screenshot is offered as a download, not listed as a trace', async ({ page }) => {
+test('a preset screenshot is offered as a download, not listed as a trace', async ({ page }) => {
   await gotoReady(page);
   const debug = page.locator('[data-panel=debug]');
   await debug.getByRole('tab', { name: 'LOG' }).click();
@@ -786,7 +785,7 @@ test('the standalone app follows the window as it rotates', async ({ page }) => 
   expect((await page.locator('.calcu-device').boundingBox()).width).toBeLessThanOrEqual(832);
   await expect(page.locator('[data-panel=debug]')).toHaveCount(0);
   await expect(page.locator('.calcu-key')).toHaveCount(45);
-  // Everything stays inside the short window, the menus in the menu bar (LIB-14 AC-29).
+  // Everything stays inside the short window, the menus in the menu bar.
   const bar = await page.locator('.calcu-bar').boundingBox();
   expect(bar.y + bar.height).toBeLessThanOrEqual(419);
   await expect(el(page, 'menu-bar')).toBeVisible();
@@ -840,7 +839,7 @@ test('the installed app loads any module and any preset offline', async ({ page,
   await expect(page.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
   await context.setOffline(true);
 
-  // The module picker of the bar (row 59-9).
+  // The module picker of the bar.
   const modules = el(page, 'media-picker-slot-1');
   await modules.selectOption({ label: 'Applied Statistics' });
   await page.waitForTimeout(1000);

@@ -21,7 +21,7 @@ enum AppInfo {
         "\(marketingVersion) (\(buildNumber))"
     }
 
-    // C59-8 D-8: the About texts and links of every frontend (app/TIShellProduct).
+    // The About texts and links of every frontend (app/TIShellProduct).
     static var subtitle: String { TIShell.aboutLines.first ?? "" }
     static var aboutSummary: String { TIShell.aboutLines.dropFirst().joined(separator: "\n") }
     static var aboutLinks: [(title: String, url: String)] {

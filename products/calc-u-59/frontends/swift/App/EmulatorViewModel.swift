@@ -4,9 +4,9 @@ import SwiftUI
 import AudioToolbox
 
 /// Which debug panel owns the current freeze: the level of the library's run
-/// control (LIB-10 59): CPU is `cpu`, CALCULATOR `program`. RESUME and STEP
+/// control: CPU is `cpu`, CALCULATOR `program`. RESUME and STEP
 /// are only enabled in the owning panel (the run-control buttons' rule,
-/// calcu::debugger::buttonUse, AC-18).
+/// calcu::debugger::buttonUse).
 enum FreezePanel { case cpu, calculator }
 
 /// Selected tab in the debug panel. Stored on EmulatorViewModel so the
@@ -57,7 +57,7 @@ enum ProgramSource: Equatable {
 }
 /// The SwiftUI face of Calc-U-59's app session (the Qt app's is
 /// frontends/qt6/app/EmulatorController): the session runs on a thread of its
-/// own behind Bridge/TIAppSession (C59-5 AC-4); this view model sends commands
+/// own behind Bridge/TIAppSession; this view model sends commands
 /// and copies the messages of each batch into observable properties. It never
 /// runs the machine. Everything that isn't UI state lives in app/ — see
 /// CLAUDE.md § "Frontend Parity".
@@ -70,22 +70,22 @@ class EmulatorViewModel {
     var dpLevels:        [UInt8] = Array(repeating: 0, count: 12)  // decimal point brightness per position
     var calcIndicatorOpacity: Double = 0.0
 
-    // ── The family structure (C59-8): the library's shell models through
-    // Bridge/TIShell, copied at each change of their inputs (TIChangeShell).
-    // No view decides what the machine offers (frontend.md FE-2).
+    // ── The library's shell models through Bridge/TIShell, copied at each
+    // change of their inputs (TIChangeShell). No view decides what the
+    // machine offers.
     /// The running model, the control state's ID ("TI-59"); the art is chosen by it.
     private(set) var modelID: String = ""
-    /// A control state came (AC-19: without one, no bar and no Machine menu).
+    /// A control state came (without one, no bar and no Machine menu).
     private(set) var started: Bool = false
     private(set) var menus: [TIMenu] = []
     private(set) var moreItems: [TIMenuItem] = []
     private(set) var barControls: [TIBarControl] = []
     private(set) var settingsSections: [TIDialogSection] = []
-    /// The paper panel's owner (LIB-8 AC-12, EC-5), "" while no printer is attached.
+    /// The paper panel's owner, "" while no printer is attached.
     private(set) var paperOwner: String = ""
-    /// "Loading…" (AC-9).
+    /// "Loading…" is shown.
     private(set) var loadingShown: Bool = false
-    /// The notice shown now (AC-10), each in turn; a question has Yes and No.
+    /// The notice shown now, each in turn; a question has Yes and No.
     private(set) var currentNotice: String? = nil
     private(set) var noticeIsQuestion: Bool = false
     // The settings the views draw with, from the `settings` topic.
@@ -96,11 +96,11 @@ class EmulatorViewModel {
     /// settings (iOS sheet): each request moves the serial.
     private(set) var presetDialogSerial: Int = 0
     private(set) var settingsSerial: Int = 0
-    /// The settings sheet is open (iOS): a notice shows over it (EC-2).
+    /// The settings sheet is open (iOS): a notice shows over it.
     var settingsSheetShown: Bool = false
 
     // ── Printer state ────────────────────────────────────────────────────────
-    // The PC-100C's paper: the library's `paper PC-100C` (C59-8 AC-12, the
+    // The PC-100C's paper: the library's `paper PC-100C` (the
     // paper panel): its text lines and its dots, in the unit.
     var printerLines: [String] = []
     /// The dots by band of `paperBandUnits` down the paper (a dot near a band's
@@ -115,7 +115,7 @@ class EmulatorViewModel {
         }
     }
     var printerClearID: Int = 0   // incremented on cut to reset Text identity and drop selection
-    /// The outcome of the last Copy (LIB-8 AC-20): "Copied to clipboard" or "Copy failed".
+    /// The outcome of the last Copy: "Copied to clipboard" or "Copy failed".
     var paperCopyMessage: String? = nil
     var paperCopySerial: Int = 0
     var printerTrace: Bool = false
@@ -132,12 +132,12 @@ class EmulatorViewModel {
     var debugTab: DebugTab = .live   // persists tab selection across iPhone navigation
     var debugLevel: DebugLevel = .off
     var debugClearID: Int = 0              // incremented on clear to reset Text identity
-    var debugDisplayText: String = ""      // LOG pane text: the bridge's view of LIB-3's `log` (C59-4 AC-9)
+    var debugDisplayText: String = ""      // LOG pane text: the bridge's view of the library's `log`
     var asmFileName: String = "No file selected"
     var asmWordCount: Int = 0
     var asmStatusMessage: String = "Load a hex opcode file and press Run."
     var asmOverlayActive: Bool = false
-    // The product entries of the control state (C59-4 AC-25): Run and the
+    // The product entries of the control state: Run and the
     // CALCULATOR tab, each as the session says.
     private(set) var canRunASM: Bool = false
     private(set) var calculatorTabAvailable: Bool = true
@@ -164,10 +164,10 @@ class EmulatorViewModel {
     var pendingCPUScanLoopFreeze: Bool = false {
         didSet { if !pendingCPUScanLoopFreeze && session?.scanLoopExitArmed == true { session?.pause(onStart: .none) } }
     }
-    /// FREEZE, STEP, RESUME of each tab, by the library's rule (LIB-10 AC-18, AC-34).
+    /// FREEZE, STEP, RESUME of each tab, by the library's rule.
     private(set) var calculatorButtons = TIButtonUse(pause: false, step: false, resume: false)
     private(set) var cpuButtons = TIButtonUse(pause: false, step: false, resume: false)
-    /// FREEZE and FREEZE ON START of each tab (C59-4 AC-5, AC-7: cu59::freezeButtons).
+    /// FREEZE and FREEZE ON START of each tab (cu59::freezeButtons).
     private(set) var calculatorFreeze = TIFreezeButtons(freeze: false, freezeOnStart: false, armed: false)
     private(set) var cpuFreeze = TIFreezeButtons(freeze: false, freezeOnStart: false, armed: false)
 
@@ -191,7 +191,7 @@ class EmulatorViewModel {
     /// ROM heatmap (5 120 code addresses 0x0000–0x13FF), published at ~10 Hz.
     var romHitCount: [UInt32] = Array(repeating: 0, count: 0x1400)
 
-    // ── Card reader state (the library's `media` topic, C59-7, M-55) ─────────
+    // ── Card reader state (the library's `media` topic) ──────────────────────
     enum CardState: Equatable {
         case noCard      // No side in the reader
         case swiping     // A side is passing through; I/O in progress
@@ -200,7 +200,7 @@ class EmulatorViewModel {
     var cardPickerMode: CardPickerView.Mode? = nil
     /// The fitted card's name, nil when none.
     var fittedCardName: String?
-    /// The saved cards, as Arm Card lists them (AC-14).
+    /// The saved cards, as Arm Card lists them.
     var savedCards: [TISavedCard] = []
     #if os(macOS)
     /// The dropped card in the reader, whose security scope is still open.
@@ -218,14 +218,14 @@ class EmulatorViewModel {
 
     // ── The calculator (the app session via Bridge/TIAppSession)
     @ObservationIgnored private lazy var platform = SessionDelegate(self)
-    /// The ROM files, looked up once at the start (LIB-12). nil: a file of the
+    /// The ROM files, looked up once at the start. nil: a file of the
     /// full set is missing or bad, and `romsMissingText` says which; then no
     /// controller is made and the window shows the text in place of the
-    /// calculator (AC-10; C59-8 AC-19: with the Help item).
+    /// calculator (with the Help item).
     @ObservationIgnored private let romSet: TIRomSet?
     private(set) var romsMissingText: String? = nil
     @ObservationIgnored private var session: TIAppSession?
-    /// The shell's models over the session (C59-8 §3.1).
+    /// The shell's models over the session.
     @ObservationIgnored private(set) var shell: TIShell?
     @ObservationIgnored private var loadingCheck: DispatchWorkItem?
     /// The session, made once the save folder is resolved (start()).
@@ -246,8 +246,8 @@ class EmulatorViewModel {
         }
         // .latencyCritical: without it macOS coalesces the session thread's
         // timers while the window is covered, the waits overshoot past the
-        // pacer's lag limit and the machine falls behind (C59-5 AC-9, S6:
-        // 17 s of 30 in M-33 before this option).
+        // pacer's lag limit and the machine falls behind (measured without
+        // it: 17 s behind in 30 s of a covered window).
         appNapActivityToken = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiated, .idleSystemSleepDisabled, .latencyCritical],
             reason: "TI-59 CPU emulation must keep running at real-time pace in the background"
@@ -256,7 +256,7 @@ class EmulatorViewModel {
     }
 
     /// The session, once the save folder is resolved off the main thread (iCloud);
-    /// its LIB-18 `start` builds the startup model of the settings (with its
+    /// its `start` builds the startup model of the settings (with its
     /// startup preset, or the built-in default).
     func start() async {
         guard let romSet, session == nil else { return }
@@ -271,19 +271,19 @@ class EmulatorViewModel {
         start.settingsFile = AppSettings.launchSettingsFile
         start.examplesFolder = Bundle.main.url(forResource: "examples", withExtension: nil)?.path ?? ""
         start.saveFolder = CardStorage.directoryURL.path
-        // Asked at each trace start, on the session thread (LIB-10 AC-53).
+        // Asked at each trace start, on the session thread.
         start.chosenTraceFolder = { @Sendable in AppSettings.chosenTraceFolder() }
         let made = TIAppSession(roms: romSet, start: start, delegate: platform)
         session = made
         shell = made.shell
         if let problem = made.settingsProblem { print("[Settings] \(problem)") }
         #if DEBUG && (os(macOS) || targetEnvironment(simulator))
-        // Harness attach (C59-5 AC-10): `calcu attach`, the port of --attach-port, else 59059.
+        // Harness attach: `calcu attach`, the port of --attach-port, else 59059.
         session?.openAttach(withArguments: ProcessInfo.processInfo.arguments)
         #endif
     }
 
-    /// The app goes to the background (C59-5 AC-8): suspend is carried out —
+    /// The app goes to the background: suspend is carried out —
     /// the TI-58C's memory written — and the session thread stops calling; a
     /// debug freeze survives. On iOS inside a background task until then.
     func suspendForBackground() {
@@ -301,13 +301,13 @@ class EmulatorViewModel {
     }
 
     // MARK: - Keys
-    // Keys go through the session: the library's typing (LIB-5) holds them in
+    // Keys go through the session: the library's typing holds them in
     // emulated time, waits for the machine, and the product's keyboard map
     // (app/TITyping) decides what a host key presses.
 
-    /// A pointer on the faceplate (LIB-14 AC-24, AC-43; C59-8 D-9): the
-    /// library's rule finds the key (at least 100 ms of emulated time down,
-    /// LIB-5 AC-24) or the display (full speed while it is held). (x, y) in
+    /// A pointer on the faceplate: the
+    /// library's rule finds the key (at least 100 ms of emulated time down)
+    /// or the display (full speed while it is held). (x, y) in
     /// points of the faceplate, `scale` its points per pixel of the base
     /// image. True when a key went down (the key feedback).
     @discardableResult
@@ -345,7 +345,7 @@ class EmulatorViewModel {
     @ObservationIgnored private let haptic = UIImpactFeedbackGenerator(style: .rigid)
     #endif
 
-    /// A menu item of the shell by id (C59-7's card items, for the bar's card controls).
+    /// A menu item of the shell by id (the card items, for the bar's card controls).
     func menuItem(_ id: String) -> TIMenuItem? {
         func find(_ items: [TIMenuItem]) -> TIMenuItem? {
             for i in items {
@@ -374,21 +374,21 @@ class EmulatorViewModel {
     }
     func hostKeyUp(physical: String) { session?.hostKeyUpPhysical(physical) }
     /// The calculator view lost the focus or went away: every key held comes
-    /// up, after its minimum hold (LIB-5 AC-10).
+    /// up, after its minimum hold.
     func keyboardRelease() { session?.focusLost() }
 
     // MARK: - Printer
 
-    // The PC-100C's controls through the library's `set-control` (LIB-8 P-E2).
+    // The PC-100C's controls through the library's `set-control`.
     func pressPrinterPrint(_ pressed: Bool) { session?.setPrinterControl("PRINT", on: pressed) }
     func pressPrinterAdv(_ pressed: Bool) { session?.setPrinterControl("ADV", on: pressed) }
     func togglePrinterTrace() { session?.setPrinterControl("TRACE", on: !printerTrace) }
-    /// Copy and Cut are the session's (LIB-8 AC-16, AC-18): the picture is the
+    /// Copy and Cut are the session's: the picture is the
     /// library's, the clipboard entry the bridge's.
     func copyPaper() { session?.copyPaper() }
     func cutPaper() { session?.cutPaper() }
 
-    // MARK: - The shell (C59-8)
+    // MARK: - The shell
 
     /// Carries out a menu item, a More item or a bar control's item: its
     /// command goes to the session (a refusal is a notice); a shell action or
@@ -398,7 +398,7 @@ class EmulatorViewModel {
         perform(action)
     }
 
-    /// A shell action by id (`TIShellAction…`) or C59-7's card items.
+    /// A shell action by id (`TIShellAction…`) or the card items.
     func perform(_ action: String) {
         switch action {
         case TIShellActionLoadPreset: presetDialogSerial &+= 1
@@ -418,7 +418,7 @@ class EmulatorViewModel {
         }
     }
 
-    /// Help ▸ "Calc-U-59 Help" (AC-2, LIB-14 AC-32): the help in the browser.
+    /// Help ▸ "Calc-U-59 Help": the help in the browser.
     func openHelp() {
         guard let url = URL(string: TIShell.helpURL) else { return }
         #if os(macOS)
@@ -428,12 +428,12 @@ class EmulatorViewModel {
         #endif
     }
 
-    /// A setting changed, applied and written at once (AC-8); nil: its default.
+    /// A setting changed, applied and written at once; nil: its default.
     func setSetting(_ section: String, _ key: String, _ value: String?) {
         shell?.setSetting(section, key, value: value)
     }
 
-    /// The notice alert's buttons (AC-10): OK, or Yes and No for a question.
+    /// The notice alert's buttons: OK, or Yes and No for a question.
     func closeNotice() {
         shell?.closeNotice()
         syncNotices()
@@ -451,7 +451,7 @@ class EmulatorViewModel {
     }
 
     /// Copies the shell's models (TIChangeShell); they change at most with
-    /// the control state, not at 60 Hz (design §8).
+    /// the control state, not at 60 Hz.
     private func syncShell() {
         guard let shell else { return }
         if started != shell.started { started = shell.started }
@@ -473,7 +473,7 @@ class EmulatorViewModel {
         syncLoading()
     }
 
-    /// "Loading…" after 500 ms of an operation at full speed (LIB-14 L1): a
+    /// "Loading…" after 500 ms of an operation at full speed: a
     /// look again when the rule says it is due.
     private func syncLoading() {
         guard let shell else { return }
@@ -486,7 +486,7 @@ class EmulatorViewModel {
         DispatchQueue.main.asyncAfter(deadline: .now() + due + 0.01, execute: check)
     }
 
-    /// The trace folder the user chose (macOS): `[trace] folder` and its bookmark (LIB-9 AC-34).
+    /// The trace folder the user chose (macOS): `[trace] folder` and its bookmark.
     func chooseTraceFolder(_ url: URL) {
         AppSettings.keepTraceFolderBookmark(url)
         setSetting("trace", "folder", url.path)
@@ -498,13 +498,13 @@ class EmulatorViewModel {
         if cardState == .swiping { ejectCard() }
     }
 
-    /// Arm Card (AC-14): a saved card fitted for the user to feed.
+    /// Arm Card: a saved card fitted for the user to feed.
     func armCard(_ card: TISavedCard) {
         releaseDroppedCardScope()
         session?.armCard(card)
     }
 
-    /// Arm Fresh Card (AC-15): `asked` gets the replace question, or nil once it is fitted.
+    /// Arm Fresh Card: `asked` gets the replace question, or nil once it is fitted.
     func armFreshCard(name: String, confirmed: Bool, asked: @escaping (String?) -> Void) {
         session?.armFreshCard(name, confirmed: confirmed) { [weak self] question, refusal in
             if let question { asked(question); return }
@@ -528,7 +528,7 @@ class EmulatorViewModel {
 
     // MARK: - Debugger
 
-    // The run control (LIB-10 59): FREEZE is `pause`, STEP `step`, RESUME
+    // The run control: FREEZE is `pause`, STEP `step`, RESUME
     // `resume` of the tab's level; FREEZE ON START `pause-on-start`.
     func freeze(from panel: FreezePanel) { session?.pause(panel == .cpu ? .cpu : .calculator) }
     func resume() { session?.resume() }
@@ -546,7 +546,7 @@ class EmulatorViewModel {
 
     func toggleDebug() { session?.cycleDebugLevel() }
 
-    /// Empties the LOG tab's view, not the log (C59-4 AC-9).
+    /// Empties the LOG tab's view, not the log.
     func clearDebug() {
         session?.clearLog()
         if !debugDisplayText.isEmpty { debugDisplayText = "" }
@@ -568,19 +568,19 @@ class EmulatorViewModel {
     func runASMOverlay() { session?.runAsm() }
     func clearASMOverlay() { session?.clearAsm() }
 
-    // MARK: - Opening files (LIB-13: the session's `open`, M-56)
+    // MARK: - Opening files (the session's `open`)
 
-    /// The Preset button's file dialog (LIB-13 AC-5, D-21): any file, opened
+    /// The Preset button's file dialog: any file, opened
     /// as what it is (a preset, an ASM overlay, a keystroke program, a card);
-    /// its content goes over (D-41: the picked file is readable only inside
-    /// its security scope). A refusal is the session's notice (AC-15).
+    /// its content goes over (the picked file is readable only inside
+    /// its security scope). A refusal is the session's notice.
     func loadPreset(_ url: URL) { open(url, way: "dialog") }
 
     #if os(macOS)
-    /// A file dropped on the window (LIB-13 AC-1): `open {way: drop}`; the
+    /// A file dropped on the window: `open {way: drop}`; the
     /// session finds out what it is. SwiftUI's drop tells the file's name only
     /// at the drop, so any one file is taken and a name the session does not
-    /// take gets its notice there (LIB-13 design §10.9; the bridge's
+    /// take gets its notice there (the bridge's
     /// `wouldOpenFile`, `open-would-take`, is there for a drag that can tell).
     /// A card can be anywhere on disk and is written back while it is
     /// fitted, so its security scope stays open until it is replaced or gone.
@@ -594,7 +594,7 @@ class EmulatorViewModel {
     private func open(_ url: URL, way: String) {
         let scoped = url.startAccessingSecurityScopedResource()
         // The security scope of an opened card stays open until the reply and
-        // the card state say it is fitted (C59-5 design §3.4).
+        // the card state say it is fitted.
         session?.openFile(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent, way: way) { [weak self] opened in
             guard let self else { return }
             #if os(macOS)
@@ -744,8 +744,8 @@ class EmulatorViewModel {
 
 /// TIAppSessionDelegate needs an NSObject; @Observable classes can't be one.
 /// All calls arrive on the main thread. The card and constant-memory files are
-/// the session's own (LIB-3 AC-30), read and written by the bridge through
-/// NSFileCoordinator in the save folder (C59-5 D-6).
+/// the session's own, read and written by the bridge through
+/// NSFileCoordinator in the save folder.
 final class SessionDelegate: NSObject, TIAppSessionDelegate {
     weak var target: EmulatorViewModel?
     init(_ target: EmulatorViewModel) { self.target = target }

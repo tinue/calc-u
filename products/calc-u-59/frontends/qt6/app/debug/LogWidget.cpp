@@ -48,7 +48,7 @@ LogWidget::LogWidget(EmulatorController& controller, QWidget* parent) : QWidget(
     auto* row2 = new QHBoxLayout;
     m_trace = new QPushButton(bar);
     m_trace->setToolTip(QStringLiteral("Write every executed instruction to the binary trace file"));
-    // LIB-10: the library's trace session, the button's file (trace {button: true}).
+    // The library's trace session, the button's file (trace {button: true}).
     connect(m_trace, &QPushButton::clicked, this, [this] { m_controller.setTrace(!m_controller.traceRunning()); });
     m_level = new QPushButton(bar);
     m_level->setToolTip(QStringLiteral("Core log level: off / info / debug"));
@@ -71,8 +71,8 @@ void LogWidget::refresh() {
     }
     m_clear->setEnabled(!m_controller.logText().isEmpty());
     m_trace->setText(m_controller.traceRunning() ? QStringLiteral("TRACE ●") : QStringLiteral("TRACE ○"));
-    // C59-4 AC-12: TRACE can always be pressed; a trace folder that cannot be
-    // written refuses the start (LIB-10 AC-53).
+    // TRACE can always be pressed; a trace folder that cannot be
+    // written refuses the start.
     m_trace->setStyleSheet(m_controller.traceRunning() ? QStringLiteral("QPushButton { color: orange; }") : QString());
     const char* levels[3] = {"LOG ○", "LOG ●", "LOG ●"};
     int level = static_cast<int>(m_controller.debugLevel());

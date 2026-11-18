@@ -28,7 +28,7 @@ final class LayoutTests: XCTestCase {
     }
     #endif
 
-    // MARK: - ROM files missing (LIB-12 AC-10, design D-8)
+    // MARK: - ROM files missing
 
     /// A file of the full set missing (the DEBUG-only launch variable
     /// CALCU59_ROM_LEAVE_OUT leaves it out of the lookup): the window shows the
@@ -47,7 +47,7 @@ final class LayoutTests: XCTestCase {
         XCTAssertTrue(text.label.contains("TMC0583.txt: missing"), "the text does not name the file: \(text.label)")
         XCTAssertTrue(text.label.contains("The full set of ROM files is needed"))
         XCTAssertFalse(app.buttons["btn-reset"].exists, "the calculator is shown")
-        // C59-8 AC-19: no bar; Help still works.
+        // No bar; Help still works.
         XCTAssertFalse(app.descendants(matching: .any)["bar-model"].exists, "a control bar without the ROMs")
         XCTAssertTrue(app.buttons["item-help"].exists, "no help without the ROMs")
     }
@@ -55,7 +55,7 @@ final class LayoutTests: XCTestCase {
     // MARK: - Button visibility
 
     /// The Reset button must be visible and hittable in the control bar; on
-    /// macOS Reset and Load Preset… are in the menus (C59-8 AC-4, AC-17).
+    /// macOS Reset and Load Preset… are in the menus.
     @MainActor
     func testResetButtonVisible() throws {
         #if os(macOS)

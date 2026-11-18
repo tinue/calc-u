@@ -1,8 +1,8 @@
 import XCTest
 
-/// C59-5 AC-8 on the Swift side of the bridge: suspend is carried out, then
+/// On the Swift side of the bridge: suspend is carried out, then
 /// the session thread stops calling; continue makes it call again. (The app's
-/// own scene phases are S4, `AttachTests.testBackgroundSuspendsAndContinues`.)
+/// own scene phases are `AttachTests.testBackgroundSuspendsAndContinues`.)
 final class SuspendTests: XCTestCase {
 
     func testSuspendStopsCallsContinueCallsAgain() throws {

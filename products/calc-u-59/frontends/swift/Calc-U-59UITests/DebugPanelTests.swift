@@ -1,10 +1,9 @@
 import XCTest
 
-/// C59-4's GUI scenarios in the Swift frontend (design §6, T15, T18; spec
-/// AC-21, AC-24; ADR 0032: the scenario IDs of the spec). The panel is drawn
-/// from the session's product topics (M-56); these drive it as a user does.
-/// The overlay's scenario (C59-4 AC-16) needs an `.asm` file on the device and
-/// is ScreenshotTests.testC59_4_AC16AsmOverlay.
+/// The debug panel's GUI scenarios in the Swift frontend. The panel is drawn
+/// from the session's product topics; these drive it as a user does.
+/// The overlay's scenario needs an `.asm` file on the device and
+/// is ScreenshotTests.testAsmOverlay.
 #if !os(macOS)
 final class DebugPanelTests: XCTestCase {
 
@@ -41,10 +40,10 @@ final class DebugPanelTests: XCTestCase {
                        "\(what) is \(enabled ? "not " : "")enabled")
     }
 
-    /// C59-4 AC-5 (AC-24's first scenario): FREEZE, STEP and RESUME on the
+    /// FREEZE, STEP and RESUME on the
     /// CALCULATOR tab, the run-control buttons of the level `program`.
     @MainActor
-    func testC59_4_AC5CalculatorFreezeStepResume() throws {
+    func testCalculatorFreezeStepResume() throws {
         let app = launchWithDebugPanel()
         app.buttons["btn-tab-calculator"].tap()
 
@@ -56,7 +55,7 @@ final class DebugPanelTests: XCTestCase {
 
         // R/S runs the (empty) program memory from step 000, so program steps
         // pass and the pause and STEP land on one (as the Web scenario runs A).
-        // R/S into the machine through attach (C59-8 AC-21: key-down, key-up).
+        // R/S into the machine through attach (key-down, key-up).
         XCTAssertEqual(harness.command("key-down R/S").first, "done")
         XCTAssertEqual(harness.command("wait 150ms").first, "done 2")
         XCTAssertEqual(harness.command("key-up R/S").first, "done")
@@ -67,17 +66,17 @@ final class DebugPanelTests: XCTestCase {
 
         step.press(forDuration: 0.1)   // one program step; the machine stays paused
         waitEnabled(resume, true, "RESUME after STEP")
-        attachScreenshot(app, name: "C59-4 AC-5 — paused after STEP")
+        attachScreenshot(app, name: "CALCULATOR tab — paused after STEP")
 
         resume.tap()
         waitEnabled(freeze, true, "FREEZE after RESUME")
         waitEnabled(step, false, "STEP after RESUME")
     }
 
-    /// C59-4 AC-21: the three tabs, their labels, and the short forms where
+    /// The three tabs, their labels, and the short forms where
     /// the panel is narrow ("F.START", "DEBUG").
     @MainActor
-    func testC59_4_AC21TabsAndLabels() throws {
+    func testTabsAndLabels() throws {
         let app = launchWithDebugPanel()
         for (id, label) in [("btn-tab-calculator", "CALCULATOR"), ("btn-tab-cpu", "CPU"), ("btn-tab-log", "LOG")] {
             let tab = app.buttons[id]
@@ -93,13 +92,13 @@ final class DebugPanelTests: XCTestCase {
         app.buttons["btn-tab-cpu"].tap()
         XCTAssertTrue(app.buttons["btn-cpu-step"].waitForExistence(timeout: 3), "the CPU tab did not open")
         XCTAssertTrue(app.buttons["btn-asm-run"].exists, "the ASM OVERLAY box is not on the CPU tab")
-        XCTAssertFalse(app.buttons["btn-asm-run"].isEnabled, "Run without an overlay loaded (C59-4 EC-1)")
+        XCTAssertFalse(app.buttons["btn-asm-run"].isEnabled, "Run without an overlay loaded")
         app.buttons["btn-tab-log"].tap()
         for label in ["SCOM", "Memory", "Prog", "Vars"] {
             XCTAssertTrue(app.buttons[label].waitForExistence(timeout: 3), "the LOG tab has no \(label)")
         }
         XCTAssertTrue(app.buttons["btn-trace"].exists, "the LOG tab has no TRACE")
-        attachScreenshot(app, name: "C59-4 AC-21 — LOG tab")
+        attachScreenshot(app, name: "Debug panel — LOG tab")
     }
 }
 #endif

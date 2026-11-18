@@ -32,22 +32,22 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
 
 1. **Host one app session** on one thread of yours: look the ROM files up
    once (`cu59::lookUpRoms` over a `calcu::roms::Bundle` of the ROM files of
-   `roms/` as your packaging holds them, LIB-12) and make the session with
+   `roms/` as your packaging holds them) and make the session with
    `cu59::makeAppSession` (`app/TIAppPart.hpp`): the ROM lookup's result,
-   the settings file (the startup model, LIB-9), your `calcu::settings::Paths`
+   the settings file (the startup model), your `calcu::settings::Paths`
    (the save folder: cards, `ti58c.memory.yaml`; the trace folder, the
    screenshots, `~/`) and the bundled `examples/`; `makeAppSession` sends
-   LIB-18's `start`. Its second form takes a `calcu::shell::HostSessionSetup`
+   the library's `start`. Its second form takes a `calcu::shell::HostSessionSetup`
    (`shell/HostSession.hpp`: your `calcu::shell::HostSettings`, the settings
-   file and places opened for you, for LIB-14's `SettingsPart`; your own
+   file and places opened for you, for the library's `SettingsPart`; your own
    parts, the clock, whether to send `start`). Without the full set the session runs without a
-   machine and LIB-18's StartupPart publishes `roms-missing {text}`,
-   which the shell shows in place of the faceplate (LIB-14 AC-19).
-   Put the window together from LIB-14's shell (the Qt6 component set's
+   machine and the library's StartupPart publishes `roms-missing {text}`,
+   which the shell shows in place of the faceplate.
+   Put the window together from the library's shell (the Qt6 component set's
    `calcu::qt6::Shell` over a `SessionHost`, the React set's
-   `useCalcuShell`; Swift natively since M-58: `Bridge/TIShell` computes the
+   `useCalcuShell`; Swift natively: `Bridge/TIShell` computes the
    library's models in C++ and SwiftUI draws them, the pattern for a
-   toolkit without a component set of its own, C59-8) with Calc-U-59's data from
+   toolkit without a component set of its own) with Calc-U-59's data from
    `app/TIShellProduct` (`shellProduct`, `settingsSpec`, `faceplateHitMap`):
    the menus, the control bar (the model picker, the module slot's picker,
    the "PC-100C" button, the card controls; where there is no menu bar,
@@ -57,10 +57,10 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    into one frontend.
 2. **Listen to it** (`AppSession::listen`) with the host services you offer;
    keep a `calcu::sessions::TopicMirror` of what it sends: the library's
-   topics (among them LIB-4's `control-state`, from which every control
+   topics (among them `control-state`, from which every control
    about the machine is drawn, the PC-100C's PRINT, ADV and TRACE with their
-   positions among them (`controls`), LIB-8's `papers`, `paper <owner>`,
-   `paper-copies` and LIB-10's `run-state`, `trace`) and the product's
+   positions among them (`controls`), `papers`, `paper <owner>`,
+   `paper-copies`, `run-state` and `trace`) and the product's
    `c59.*` topics (`c59.calc-indicator` (the LED frame and the C indicator),
    `c59.cue-card` (the cue card, its corner on show and lit); full speed is the library's `speed` command and `busy` topic,
    the library's `media` (the card reader `card-reader` and `slot-1`: what they
@@ -68,14 +68,14 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    …) and the debug panel's product topics (`c59.calculator-debug`,
    `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `asm-overlay`, `c59.debug-view`;
    `reference/DebugAPI.md`; the LOG tab keeps the last 2000 lines of the
-   `log` topic). Send every file the user hands over as LIB-13's `open`
+   `log` topic). Send every file the user hands over as the library's `open`
    (a drag asks `open-would-take`). Show `notices` as alerts. Offer `clipboard-image` and
    `clipboard-text` for Copy of the paper, and `keep-file` where a trace
-   cannot go into a folder (LIB-10 AC-26).
+   cannot go into a folder.
 3. **Call it about 60 times a second** (`AppSession::call(now)`); redraw
    only the topics that came.
-4. **Forward input**: keys as the library's typing commands (LIB-5,
-   `library/typing/TypingTopics.hpp`): `screen-key-down`/`screen-key-up`
+4. **Forward input**: keys as the library's typing commands
+   (`library/typing/TypingTopics.hpp`): `screen-key-down`/`screen-key-up`
    `{key, pointer}` for an on-screen key (hit test with `KeyboardLayout`,
    key ID with `keyIdAt(matrixCode(...))`; `PointerTracker` turns pointer
    moves into presses, releases and full speed), `host-key-down` with what
@@ -112,7 +112,7 @@ on that side (`frontends/web/bindings.cpp`: the factory of the app
 session, with `app/TIWebPart` for what the page draws):
 
 - **No threads?** None are needed: the session runs on the one thread that
-  calls it (the Web hosts it in a Web Worker, LIB-15; the library's
+  calls it (the Web hosts it in a Web Worker; the library's
   `calcu::web::WorkerHost` translates its messages to the page).
 - **Asynchronous files?** The ROM lookup reads every file once, at the
   start, synchronously. Fetch the full set (`cu59::fullRomSet()`) before

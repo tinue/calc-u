@@ -292,8 +292,8 @@ struct CPUInspectorView: View {
     // MARK: - Header
 
     private func cpuHeader(baseFontSize: CGFloat) -> some View {
-        // FREEZE, STEP, RESUME: the run-control buttons of `cpu` (LIB-10 AC-18, AC-34).
-        // FREEZE and FREEZE ON START: cu59::freezeButtons (C59-4 AC-7).
+        // FREEZE, STEP, RESUME: the run-control buttons of `cpu`.
+        // FREEZE and FREEZE ON START: cu59::freezeButtons.
         let use = vm.buttons(for: .cpu)
         let freeze = vm.freezeButtons(for: .cpu)
         let freezeEnabled = freeze.freeze

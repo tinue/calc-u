@@ -1,6 +1,6 @@
 import XCTest
 
-/// C59-8 through the real bridge (design §6, T1, T4, T7; Longer,
+/// The shell models through the real bridge (Longer,
 /// CalcU59SwiftUnitTests): TIShell computes the library's shell models over
 /// a second session of the app's (TestSession) as the window draws them.
 final class ShellBridgeTests: XCTestCase {
@@ -12,8 +12,8 @@ final class ShellBridgeTests: XCTestCase {
         return t
     }
 
-    /// T1, AC-18: File, Machine and Help, in that order, with their items.
-    func test_c59_8_ac18_menus_through_the_bridge() throws {
+    /// File, Machine and Help, in that order, with their items.
+    func test_menus_through_the_bridge() throws {
         let t = try started()
         for withMenuBar in [true, false] {
             t.session.shell.withMenuBar = withMenuBar
@@ -23,10 +23,10 @@ final class ShellBridgeTests: XCTestCase {
             XCTAssertEqual(menus.dropFirst().first?.items.filter { $0.kind != .separator }.map(\.itemID),
                            ["model", "peripherals", "reset", "cold-boot", "resume"])
             XCTAssertEqual(menus.last?.items.first?.label, "Calc-U-59 Help")
-            // The TI-59 has the card items (C59-7).
+            // The TI-59 has the card items.
             XCTAssertNotNil(t.session.shell.item("arm-card"))
         }
-        // Without a menu bar: Reset, Preset, Settings on the bar, the rest behind More (AC-5).
+        // Without a menu bar: Reset, Preset, Settings on the bar, the rest behind More.
         t.session.shell.withMenuBar = false
         let bar = t.session.shell.bar
         XCTAssertEqual(bar.first?.kind, .action)
@@ -34,11 +34,11 @@ final class ShellBridgeTests: XCTestCase {
         let more = bar.first { $0.kind == .more }
         XCTAssertEqual(more?.choices.filter { $0.kind != .separator }.map(\.itemID), ["examples", "cold-boot", "resume", "help"])
         t.session.shell.withMenuBar = true
-        XCTAssertEqual(t.session.shell.bar.first?.kind, .modelPicker)   // AC-3: the model first
+        XCTAssertEqual(t.session.shell.bar.first?.kind, .modelPicker)   // the model first
     }
 
-    /// T4, AC-6: an entry that is not available now is disabled, with its reason.
-    func test_c59_8_ac6_disabled_with_reason() throws {
+    /// An entry that is not available now is disabled, with its reason.
+    func test_disabled_with_reason() throws {
         let t = try started()
         let resume = try XCTUnwrap(t.session.shell.item("resume"))
         XCTAssertFalse(resume.enabled, "Resume while running")
@@ -48,10 +48,10 @@ final class ShellBridgeTests: XCTestCase {
         XCTAssertTrue(reset.enabled)
     }
 
-    /// T7, AC-12 (LIB-14 AC-24, D-9): the key under the pointer is the
+    /// The key under the pointer is the
     /// library's rule on the faceplate's hit map: each key's centre presses
     /// that key; the display holds no key.
-    func test_c59_8_ac12_hit_rule_matches_the_library() throws {
+    func test_hit_rule_matches_the_library() throws {
         let t = try started()
         let shell = t.session.shell
         let width: Double = 400, scale = width / Double(TISharedTables.canvasWidthPixels)
@@ -73,16 +73,16 @@ final class ShellBridgeTests: XCTestCase {
         shell.pointerUp(1)
     }
 
-    /// D-8: the macOS About panel shows the texts and links of every frontend.
-    func test_c59_8_d8_about_texts_are_the_products() {
+    /// The macOS About panel shows the texts and links of every frontend.
+    func test_about_texts_are_the_products() {
         XCTAssertEqual(TIShell.aboutLines.first, "Calc-U-59 Calculator Emulation")
         XCTAssertEqual(TIShell.aboutLinks.map { $0.first ?? "" }, ["GitHub", "Support", "Privacy"])
         XCTAssertEqual(TIShell.helpURL, "https://calc-u.org/59/")
     }
 
-    /// T5, AC-7, AC-8: the rows of this system's settings; a change is
+    /// The rows of this system's settings; a change is
     /// written at once and comes back in the settings topic.
-    func test_c59_8_ac7_settings_rows_and_a_change() throws {
+    func test_settings_rows_and_a_change() throws {
         let t = try started()
         XCTAssertTrue(TestSession.until(5) { !t.session.shell.settingsDialog.isEmpty })
         let titles = t.session.shell.settingsDialog.map(\.title)
@@ -98,9 +98,9 @@ final class ShellBridgeTests: XCTestCase {
         XCTAssertTrue(text.contains("led-style = classic"), text)
     }
 
-    /// T7, AC-13: Copy of the paper: on macOS two entries, the picture
+    /// Copy of the paper: on macOS two entries, the picture
     /// first; on iOS one entry with both.
-    func test_c59_8_ac13_copy_forms() throws {
+    func test_paper_copy_forms() throws {
         let t = try started()
         // The PC-100C into its place (the bar's button), then a feed.
         let printer = try XCTUnwrap(t.session.shell.bar.first { $0.kind == .placeButton && $0.controlID == "printer" })
@@ -132,9 +132,9 @@ final class ShellBridgeTests: XCTestCase {
         #endif
     }
 
-    /// T6, AC-9 (LIB-14 L1): "Loading…" while an operation runs at full
+    /// "Loading…" while an operation runs at full
     /// speed for more than half a second, gone when it ends.
-    func test_c59_8_ac9_loading_during_a_long_load() throws {
+    func test_loading_during_a_long_load() throws {
         let t = try started()
         t.session.loadPresetContent(Data("format-version: 2\nmodel: TI-59\nprogram:\n  keycodes: |\n    76 11 09 09 09 09 42 00 76 12 97 00 12 91\nkeys:\n  - full-speed:\n  - key: A\n  - wait: 3000s\n".utf8),
                                     name: "long.ti59")
@@ -143,9 +143,9 @@ final class ShellBridgeTests: XCTestCase {
     }
 
     #if os(macOS)
-    /// LIB-5 AC-22 (Swift on macOS): a host key reaches the machine through
+    /// Swift on macOS: a host key reaches the machine through
     /// the session's typing; the key it presses is held (`held-keys`).
-    func test_lib5_ac22_host_key_reaches_the_machine() throws {
+    func test_host_key_reaches_the_machine() throws {
         let t = try started()
         TestSession.run(0.5)
         t.session.hostKeyDownPhysical("1", named: "", produced: 0x31, carried: 0, shift: false, control: false,
@@ -156,9 +156,9 @@ final class ShellBridgeTests: XCTestCase {
     }
     #endif
 
-    /// LIB-5 AC-24 (Swift): an on-screen key goes through the typing engine,
+    /// An on-screen key goes through the typing engine,
     /// its minimum hold included: a press let go at once still holds the key.
-    func test_lib5_ac24_screen_key_minimum_hold() throws {
+    func test_screen_key_minimum_hold() throws {
         let t = try started()
         TestSession.run(0.5)
         let width = 400.0, height = width / Double(TISharedTables.canvasAspect)

@@ -1,12 +1,12 @@
-// The PC-100C's pane (LIB-8 59, M-53; Qt6: the splitter's second pane): the
+// The PC-100C's pane (Qt6: the splitter's second pane): the
 // component set's paper panel (CalcuPaperPanel, library/web/components/),
 // which draws the library's `paper PC-100C` from its marks. The panel is
-// always there (LIB-4 AC-13); its owner is the control state's (the
-// PC-100C while it is plugged into `printer`, else none). Since M-57 the
+// always there; its owner is the control state's (the
+// PC-100C while it is plugged into `printer`, else none). The
 // PC-100C is attached and detached by the button "PC-100C" on the shell's
-// control bar (LIB-14 AC-27), not by a toggle in the pane. Its controls are
+// control bar, not by a toggle in the pane. Its controls are
 // the PC-100C's PRINT and ADV (keys) and TRACE (a switch), with their
-// positions, as the control state lists them (`controls`, LIB-4 AC-21).
+// positions, as the control state lists them (`controls`).
 // Copy and Cut are the panel's: the session's paper.copy / paper.cut through
 // the page's clipboard service.
 

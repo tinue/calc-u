@@ -36,15 +36,15 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
     m_calculator = new CalculatorPanel(*m_controller, m_splitter);
     m_keyboard = m_calculator->keyboard();
 
-    // LIB-14: the shell over the session host, with Calc-U-59's data and the
-    // Qt6 frontend's settings dialog (AC-30).
+    // The shell over the session host, with Calc-U-59's data and the
+    // Qt6 frontend's settings dialog.
     m_shell = new calcu::qt6::Shell(*this, host(), product(),
                                     cu59::settingsSpec(cu59::ShellFrontend::Qt6,
                                                        std::string("Version ") + APP_VERSION + " (" + APP_BUILD_ID + ")"));
     m_calculator->setShellWidgets(m_shell->controlBar(), m_shell->romsMissingView());
 
-    // The paper panel in the shell's panel area (AC-23, AC-33), the
-    // splitter's second column as today.
+    // The paper panel in the shell's panel area, the splitter's second
+    // column.
     calcu::qt6::PanelArea* panels = m_shell->panelArea();
     panels->setParent(m_splitter);
     panels->setAutoFillBackground(true);
@@ -62,15 +62,14 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
     m_splitter->setStretchFactor(1, 0);
     m_splitter->setStretchFactor(2, 1);  // the debug panel absorbs extra width
 
-    // The pointer on the faceplate (AC-24, AC-43): the hit map in base-image
-    // pixels at the canvas's scale and corner; a tap on the fitted card is
-    // the product's (D-44).
+    // The pointer on the faceplate: the hit map in base-image pixels at the
+    // canvas's scale and corner; a tap on the fitted card is the product's.
     m_shell->setFaceplate(m_keyboard, cu59::faceplateHitMap(calcu::machine::ModelId{"TI-59"}),
                           calcu::qt6::Shell::FaceplateGeometry{[this] { return m_keyboard->scale(); },
                                                                [this] { return m_keyboard->origin(); },
                                                                [this](double x, double y) { return m_keyboard->cardTakes(x, y); }});
-    // LIB-7's slot picker (AC-47: the modules by description in menu-sort
-    // order and the empty slot) and C59-7's card controls (AC-13).
+    // The library's slot picker (the modules by description in menu-sort
+    // order and the empty slot) and the magnetic card controls.
     m_shell->registerSlotPicker([this](const calcu::sessions::Value& entry, QWidget* p) -> QWidget* {
         auto* picker = new calcu::qt6::MediaPicker(p);
         const std::string place = calcu::shell::read::text(entry, "place");
@@ -124,9 +123,9 @@ calcu::shell::ShellProduct MainWindow::product() {
     return p;
 }
 
-// The PC-100C's controls on the paper panel while it owns it (LIB-8 AC-28):
+// The PC-100C's controls on the paper panel while it owns it:
 // PRINT and ADV keys, TRACE a switch at its position, as the control state
-// lists them (LIB-4 AC-21).
+// lists them.
 void MainWindow::followPrinter() {
     auto* paper = qobject_cast<calcu::qt6::PaperPanel*>(m_shell->panelArea()->panel("paper"));
     if (!paper) return;
@@ -137,14 +136,14 @@ void MainWindow::openFile(const QString& path, calcu::opening::Way way) {
     calcu::qt6::openFile(*this, host(), path, way, m_controller->app().libraryParts().open().setup().maxBytes);
 }
 
-// Arm Card (C59-7 AC-14): the saved cards of the media topic; the chosen one is fitted.
+// Arm Card: the saved cards of the media topic; the chosen one is fitted.
 void MainWindow::armCard() {
     if (!m_controller->cardReader() || m_controller->cardPassing()) return;
     CardPickerDialog dialog(CardPickerDialog::Mode::Arm, m_controller->savedCards(), AppPaths::saveDir(), this);
     if (dialog.exec() == QDialog::Accepted) m_controller->armCard(dialog.selectedEntry());
 }
 
-// Arm Fresh Card (AC-15): a name, then the replace question the session asks.
+// Arm Fresh Card: a name, then the replace question the session asks.
 void MainWindow::armFreshCard() {
     if (!m_controller->cardReader() || m_controller->cardPassing()) return;
     CardPickerDialog dialog(CardPickerDialog::Mode::ArmFresh, m_controller->savedCards(), AppPaths::saveDir(), this);
@@ -169,7 +168,7 @@ void MainWindow::closeEvent(QCloseEvent* e) {
     QMainWindow::closeEvent(e);
 }
 
-// [window] as plain numbers (LIB-9 AC-35, design D-7): the normal geometry
+// [window] as plain numbers: the normal geometry
 // (a maximised window comes back at its last normal size) and the widths
 // of the three panels.
 void MainWindow::restoreWindowState() {
@@ -198,9 +197,9 @@ void MainWindow::saveWindowState() {
     AppSettings::settings().setWindowState(w);
 }
 
-// LIB-13 AC-6: one file the session would take, by its name and size (no
-// limit here, AC-11); the drop is accepted and goes through all of `open`
-// after the drop handler (AC-24; a refusal is its notice, AC-15).
+// One file the session would take, by its name and size (no limit here);
+// the drop is accepted and goes through all of `open` after the drop
+// handler (a refusal is its notice).
 void MainWindow::dragEnterEvent(QDragEnterEvent* e) { calcu::qt6::dragEnter(e, host()); }
 
 void MainWindow::dragMoveEvent(QDragMoveEvent* e) { calcu::qt6::dragMove(e); }

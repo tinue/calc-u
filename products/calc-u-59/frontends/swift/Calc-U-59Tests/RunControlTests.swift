@@ -1,8 +1,8 @@
 import XCTest
 
-/// LIB-10 AC-34 in Swift (design §12.8, E10-7; D-27): FREEZE, STEP and RESUME
+/// In Swift: FREEZE, STEP and RESUME
 /// of the CALCULATOR (`program`) and CPU (`cpu`) tabs follow the run-control
-/// buttons' rule of the library (calcu::debugger::buttonUse, AC-18), through
+/// buttons' rule of the library (calcu::debugger::buttonUse), through
 /// the bridge, over the rows of library/debugger/tests/button_cases.json.
 final class RunControlTests: XCTestCase {
 
@@ -16,7 +16,7 @@ final class RunControlTests: XCTestCase {
     }
     private struct Table: Decodable { let repeatMs: Int; let cases: [Case] }
 
-    /// The table's rows as the library's file holds them (2026-11-16). The
+    /// The table's rows as the library's file holds them. The
     /// test reads the file itself when the sandboxed test host can reach the
     /// source tree, and checks that this copy is still the same.
     private static let rows: [Case] = [
@@ -47,7 +47,7 @@ final class RunControlTests: XCTestCase {
         }
     }
 
-    func testLib10AC34ButtonsFollowTheRule() throws {
+    func testButtonsFollowTheRule() throws {
         check(Self.rows)
         // The library's table, where the host can read it.
         let file = URL(fileURLWithPath: #filePath)

@@ -4,8 +4,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /// Swift face of the app/ data tables (7-segment
-/// patterns, canvas/key layout, matrix codes; the printer font went to the
-/// core with M-53: the paper comes as dots). Type
+/// patterns, canvas/key layout, matrix codes; the paper comes as dots from
+/// the core). Type
 /// translation only — the tables and rules live in app/.
 @interface TISharedTables : NSObject
 

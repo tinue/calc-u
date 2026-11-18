@@ -67,7 +67,7 @@ void AsmOverlayBox::refresh() {
     m_file->setText(QStringLiteral("File: ") + m_controller.asmFileName());
     m_words->setText(QStringLiteral("Words: %1").arg(m_controller.asmWordCount()));
     m_status->setText(m_controller.asmStatus());
-    // C59-4 AC-25: the product entry c59.asm-run (instructions loaded, no operation running).
+    // The product entry c59.asm-run (instructions loaded, no operation running).
     m_run->setEnabled(m_controller.entryAvailable(cu59::entries::kAsmRun));
     m_run->setToolTip(m_controller.entryReason(cu59::entries::kAsmRun));
 }

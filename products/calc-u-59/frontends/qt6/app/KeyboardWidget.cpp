@@ -80,7 +80,7 @@ void KeyboardWidget::paintEvent(QPaintEvent* e) {
     if (const auto& card = m_controller.cueCard(); card && e->rect().intersects(cardRect.toAlignedRect()))
         CueCardRenderer::paint(p, cardRect, *card, m_controller.litCardCorner());
 
-    // The pressed key (live input's, LIB-5 AC-19: the pointer's or the
+    // The pressed key (live input's: the pointer's or the
     // physical keyboard's): black out the key and draw its artwork shifted
     // 3 px down-right.
     const int pk = m_controller.keyboardHeldKey();
@@ -106,13 +106,13 @@ void KeyboardWidget::mousePressEvent(QMouseEvent* e) {
 }
 
 void KeyboardWidget::keyPressEvent(QKeyEvent* e) {
-    if (e->isAutoRepeat()) return;   // the host's repeat: ignored (LIB-5 AC-4)
+    if (e->isAutoRepeat()) return;   // the host's repeat: ignored
     const auto k = m_hostKeys.press(*e);
     if (!k) {
         QWidget::keyPressEvent(e);
         return;
     }
-    m_controller.hostKeyDown(*k);   // the TI keyboard map refuses a command chord (D-40)
+    m_controller.hostKeyDown(*k);   // the TI keyboard map refuses a command chord
 }
 
 void KeyboardWidget::keyReleaseEvent(QKeyEvent* e) {
@@ -127,7 +127,7 @@ void KeyboardWidget::keyReleaseEvent(QKeyEvent* e) {
 
 void KeyboardWidget::focusOutEvent(QFocusEvent* e) {
     m_hostKeys.clear();
-    m_controller.focusLost();   // every key held comes up, after its minimum (AC-10)
+    m_controller.focusLost();   // every key held comes up, after its minimum
     QWidget::focusOutEvent(e);
 }
 

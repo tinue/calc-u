@@ -30,7 +30,7 @@ private:
 
     EmulatorController& m_controller;
     QLabel* m_title;
-    calcu::qt6::RunControlButtons* m_run;   ///< FREEZE, STEP, RESUME (LIB-10 AC-34)
+    calcu::qt6::RunControlButtons* m_run;   ///< FREEZE, STEP, RESUME
     QToolButton* m_freezeOnStart;
     QToolButton* m_armed;
     QListWidget* m_list;

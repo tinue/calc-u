@@ -1,19 +1,19 @@
 const { test, expect } = require('@playwright/test');
 
-// LIB-17 AC-19 (design P59-5) for the Web frontend: a TI-59 runs at regular
+// The pacing check for the Web frontend: a TI-59 runs at regular
 // speed for one minute of wall time and its emulated time grows by one
-// minute, within the bound of AC-1. Checkpoint (D-5): skipped unless
+// minute, within the pacer's bound. Checkpoint: skipped unless
 // CALCU59_WEB_PACING=1 (CTest CalcU59WebPacing:
 // `CALCU59_WEB_PACING=1 run-tests.sh tests/pacing.spec.js --project root`).
-// Emulated time is the session's `ticks` request (LIB-3 AC-39) through the
-// page's engine (since M-34 the Web runs on the library's session and pacer);
+// Emulated time is the session's `ticks` request through the
+// page's engine (the Web runs on the library's session and pacer);
 // wall time is the test's own clock, the middle of each read, and half the
 // round trip of each read is added to the bound.
 
 test.skip(!process.env.CALCU59_WEB_PACING, 'Checkpoint: CALCU59_WEB_PACING=1');
 test.describe.configure({ timeout: 120000 });
 
-// The bound of AC-1 (one 20 ms slice, LIB-17 AC-15 for the TI-59) plus one
+// The pacer's bound (one 20 ms slice for the TI-59) plus one
 // period of the worker's 60 Hz tick (a read comes between two ticks).
 const BOUND = 0.020 + 1 / 60;
 
@@ -37,7 +37,7 @@ test('a TI-59 keeps one minute', async ({ page }, testInfo) => {
   const bound = BOUND + (a.roundTrip + b.roundTrip) / 2;
   const note = `wall ${wall.toFixed(4)} s, emulated ${emulated.toFixed(4)} s, ` +
     `difference ${(emulated - wall).toFixed(4)} s, bound ${bound.toFixed(4)} s`;
-  console.log(`[AC-19] ${note}`);
-  testInfo.annotations.push({ type: 'AC-19', description: note });
+  console.log(`[pacing] ${note}`);
+  testInfo.annotations.push({ type: 'pacing', description: note });
   expect(Math.abs(emulated - wall), note).toBeLessThanOrEqual(bound);
 });

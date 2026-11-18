@@ -1,9 +1,8 @@
 import Foundation
 
-/// A line client for harness attach (C59-5 AC-10 to AC-12; LIB-11 design
-/// §3.9): the test runner runs in the same simulator as the app and reaches
+/// A line client for harness attach (docs/formats/harness.md): the test runner runs in the same simulator as the app and reaches
 /// its session on 127.0.0.1:<port>, the port the test hands the app with
-/// `--attach-port` (one port per simulator, first step 4).
+/// `--attach-port` (one port per simulator).
 final class HarnessClient {
     private var fd: Int32 = -1
     private var buffer = Data()

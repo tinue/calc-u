@@ -1,8 +1,7 @@
-// CalcU59QtTests (M-53, M-55; on the shell's window since M-57): the Qt6
-// frontend's paper panel and run-control buttons, the card controls and the
-// Arm Card dialog, on the real window (tests/QtFixture), the session on the
-// real ROMs, offscreen on the real clock. LIB-8 E8-8 (AC-28) and E8-9
-// (AC-31), LIB-10 E10-7 (AC-34); C59-7 T10 (AC-13, AC-14; LIB-7 §11 E4: AC-33).
+// CalcU59QtTests: the Qt6 frontend's paper panel and run-control buttons,
+// the card controls and the Arm Card dialog, on the real window
+// (tests/QtFixture), the session on the real ROMs, offscreen on the real
+// clock.
 
 #include "TestHarness.hpp"
 #include "QtFixture.hpp"
@@ -40,7 +39,7 @@ calcu::qt6::PaperPanel* paperOf(Fixture& f) {
 }
 
 // The PC-100C attached with the bar's button, at key readiness again (the
-// power cycle the attach brings, row 59-11).
+// power cycle the attach brings).
 bool withPrinter(Fixture& f) {
     auto* button = f.find<QToolButton>(names::barPlace("printer"));
     if (!button) return false;
@@ -60,10 +59,10 @@ void tap(Fixture& f, const char* key) {
 
 } // namespace
 
-// LIB-8 AC-28: the paper panel in the window's panel area: the PC-100C owns
+// The paper panel in the window's panel area: the PC-100C owns
 // it, PRINT and ADV are held buttons, TRACE a switch, the view control
-// there; detached with the bar's button: no owner (AC-29).
-TEST(lib8_ac28_qt6_print_adv_held_trace_switch_view_control) {
+// there; detached with the bar's button: no owner.
+TEST(paper_panel_print_adv_held_trace_switch_view_control) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     Fixture f;
     CHECK(withPrinter(f));
@@ -91,9 +90,9 @@ TEST(lib8_ac28_qt6_print_adv_held_trace_switch_view_control) {
     CHECK(f.waitFor([&] { return panel->ownerName().empty(); }, 2000));
 }
 
-// LIB-8 AC-31: the PC-100C prints a number, the text view shows it, Cut
+// The PC-100C prints a number, the text view shows it, Cut
 // empties the paper and can no longer be used.
-TEST(lib8_ac31_qt6_print_text_cut) {
+TEST(paper_print_text_cut) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     Fixture f;
     CHECK(withPrinter(f));
@@ -121,9 +120,9 @@ TEST(lib8_ac31_qt6_print_text_cut) {
     f.command("detach", Value::object({{"place", "printer"}}));
 }
 
-// LIB-10 AC-34: FREEZE, STEP and RESUME of the CALCULATOR tab (program) and
+// FREEZE, STEP and RESUME of the CALCULATOR tab (program) and
 // the CPU tab (cpu) are the run-control buttons and follow the run state.
-TEST(lib10_ac34_qt6_calculator_and_cpu_buttons_follow_run_state) {
+TEST(calculator_and_cpu_buttons_follow_run_state) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     Fixture f;
     LiveDebugWidget calculator(f.c());
@@ -169,10 +168,10 @@ void writeFile(const QString& path, const std::string& text) {
 
 } // namespace
 
-// C59-7 AC-13: on the shell's bar (the media place's controls), two "Crd"
+// On the shell's bar (the media place's controls), two "Crd"
 // buttons, Arm Card and Arm Fresh Card, while no card passes; Eject Card
-// while one does; on the TI-58 none at all (LIB-4 AC-12).
-TEST(c59_7_ac13_buttons_and_eject_by_card_state) {
+// while one does; on the TI-58 none at all.
+TEST(card_buttons_and_eject_by_card_state) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     Fixture f;
     QWidget* bar = f.find<QWidget>(names::kControlBar);
@@ -194,13 +193,12 @@ TEST(c59_7_ac13_buttons_and_eject_by_card_state) {
     CHECK(f.waitFor([&] { return controls() == nullptr; }, 3000));
 }
 
-// C59-7 AC-14; LIB-7 AC-33 (E4, `lib7_ac33_qt6_cards_in_lib9_save_folder`):
-// the saved cards of the LIB-9 save folder by name, an outdated one disabled
+// Arm Card's dialog: the saved cards of the save folder by name, an outdated one disabled
 // with its hint, "No cards found" when none; a 2.3.0 card is not listed.
-TEST(c59_7_ac14_dialog_lists_saved_cards_outdated_disabled_none_found) {
+TEST(arm_card_dialog_lists_saved_cards_outdated_disabled_none_found) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     const QString folder = AppPaths::saveDir();
-    CHECK(QDir(folder).dirName() == QStringLiteral("Calc-U-59"));   // LIB-9 AC-13: ~/Calc-U-59 (the test HOME)
+    CHECK(QDir(folder).dirName() == QStringLiteral("Calc-U-59"));   // ~/Calc-U-59 (the test HOME)
     QDir(folder).removeRecursively();
     QDir().mkpath(folder);
     {
@@ -212,7 +210,7 @@ TEST(c59_7_ac14_dialog_lists_saved_cards_outdated_disabled_none_found) {
     writeFile(folder + QStringLiteral("/Mine.magnetcard.yaml"),
               cu59::writeMagneticCardFile(cu59::TIMagneticCardData{}, "My Card", "", false, std::nullopt, ""));
     writeFile(folder + QStringLiteral("/Old.magnetcard.yaml"), "format: ti59-magnetic-card\nformat-version: 2\ncard-name: Old\n");
-    writeFile(folder + QStringLiteral("/card.U59"), "Calc-U-59 Card 2.0\nEND-CARD\n");   // C59-7 AC-4: not listed
+    writeFile(folder + QStringLiteral("/card.U59"), "Calc-U-59 Card 2.0\nEND-CARD\n");   // an old card file: not listed
     Fixture f;
     f.c().sendCommand(calcu::media::kRefreshCommand, Value::object({}));
     f.run(100);

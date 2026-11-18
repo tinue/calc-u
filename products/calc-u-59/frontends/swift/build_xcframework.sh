@@ -1,17 +1,17 @@
 #!/bin/sh
-# Builds CalcU59.xcframework (ADR 0013, C59-5 AC-1): the library, the
+# Builds CalcU59.xcframework: the library, the
 # Calc-U-59 core and the Calc-U-59 app layer from the repository's root
 # CMake project, as one static library per platform -- macOS (arm64,
 # x86_64), iOS devices (arm64), the iOS simulator (arm64, x86_64) -- with
 # their headers under calcu59/core/ and calcu59/app/, and the library's
-# (library/**/*.hpp) under their area folders, machine/Machine.hpp (LIB-1
-# design §2a; from M-19, C59-1).
+# (library/**/*.hpp) under their area folders, machine/Machine.hpp
+# among them.
 #
 #   frontends/swift/build_xcframework.sh [Debug|Release]   # default Release
 #
 # The Xcode project runs it as the target CalcU59Core, which the app
 # depends on, so every Xcode build builds the XCFramework from the current
-# sources first (C59-5 AC-2); run by hand it does the same. Output:
+# sources first; run by hand it does the same. Output:
 # build/xcframework-59/CalcU59.xcframework at the repository root, built
 # in build/xcframework-59/<configuration>/<platform>/. Needs CMake and
 # Ninja (Homebrew).
@@ -49,7 +49,7 @@ slice() {  # slice <name> <attach ON|OFF> <cmake args...>
   cmake -S "$REPO" -B "$tree" -G Ninja -DCMAKE_BUILD_TYPE="$CONFIG" \
     -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF -DCALCU_FRONTEND_QT=OFF -DCALCU_ATTACH="$attach" "$@" >/dev/null
   targets="calcu59_shared calcu59_core calcu_library"
-  # Harness attach (C59-5 AC-10, AC-13): the attached harness needs the
+  # Harness attach: the attached harness needs the
   # product's harness entry (its display rule); only in the slices with attach.
   [ "$attach" = ON ] && targets="$targets calcu59_harness"
   cmake --build "$tree" --target $targets
@@ -68,7 +68,7 @@ slice() {  # slice <name> <attach ON|OFF> <cmake args...>
 }
 
 # Attach exactly in Debug for macOS and the simulator, never for a device or
-# in Release (C59-5 AC-10, AC-13; design §3.3).
+# in Release.
 DEV_ATTACH=OFF
 [ "$CONFIG" = Debug ] && DEV_ATTACH=ON
 slice macos "$DEV_ATTACH" -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=15.6

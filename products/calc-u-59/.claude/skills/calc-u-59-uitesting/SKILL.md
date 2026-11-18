@@ -15,16 +15,16 @@ This skill covers all work inside `frontends/swift/Calc-U-59UITests/`.
 | File | Purpose |
 |------|---------|
 | `AppHelpers.swift` | Shared helpers: `launchApp(settings:arguments:)`, `launchApp(orientation:settings:arguments:)` (a settings file of the launch's own, `--settings-file`, and attach on port 59162), `writeSettingsFile(_:)`, `attachHarness()`, `waitIdle(_:)`, `waitForOperation(_:timeout:endsPaused:)` (the busy topic says one runs, then the reply to the bare `wait`), `navigateToOnMyIPhone(_:targetFile:)`, `loadPreset(_:file:idleTimeout:harness:endsPaused:)` (Preset button → picker → wait through attach; `endsPaused` for a preset that ends paused, which is never idle: the `run-state` topic is read instead of the bare `wait`, which would wait until resumed), `attachScreenshot()` |
-| `FamilyStructureTests.swift` | C59-8 AC-16: the family's scenarios under the IDs that own them (`test_lib14_ac1_the_menus`, `…ac4…`, `…ac6…`, `…ac8_the_bar`, `…ac11_the_settings`, `…ac15_loading`, `…ac17_a_notice`, `…ac20_help`, `…ac24_a_key_under_the_pointer`, `test_lib6_ac42_an_example`, `test_lib8_ac31_the_printer`, `test_c59_8_ac15_one_picture_per_layout`) and C59-8's own (`ac5`, `ac21` the settings file read by path, `ec2`, `ec3`, `ec4`); iOS in `UIRegressionTests`, macOS branches for `CalcU59UITestsMac` |
+| `FamilyStructureTests.swift` | The family's scenarios, shared with the Qt and Web tests (`test_the_menus`, `test_command_r_resets`, `test_application_menu`, `test_the_bar`, `test_the_settings`, `test_loading_sign_during_a_long_load`, `test_notices_one_after_the_other`, `test_help`, `test_a_key_under_the_pointer`, `test_an_example`, `test_the_printer`, `test_one_picture_per_layout`) and the Swift frontend's own (`test_more_cold_boot_asks_first`, `test_settings_file_by_path`, `test_notice_over_the_settings_sheet`, `test_no_card_controls_on_the_ti58`, `test_iphone_portrait_reaches_every_control`); iOS in `UIRegressionTests`, macOS branches for `CalcU59UITestsMac` |
 | `LayoutTests.swift` | Button visibility, label-wrapping, portrait/landscape screenshots |
 | `FilePickerTests.swift` | File picker opens; reopens after cancel (regression for iPad popover dismiss bug) |
-| `PresetLoadTests.swift` | End-to-end load of `test_diag.ti59` via the file picker, its end through attach (C59-8 AC-17) |
-| `CardScenarioTests.swift` | C59-7 AC-28's scenarios (M-58): `test_c59_7_ac15_fresh_card_written_and_listed`, `test_c59_7_ac12_card_read_by_its_corner` (the bar's card controls, the dialog's `card-name`, `card-arm`, `card-cancel`, the corner pressed on the faceplate at 0.9, 0.121) |
-| `ScreenshotTests.swift` | App Store screenshot capture (driven by `bin/run-screenshots`); writes PNGs to the dir named in `/tmp/calc-u-59-screenshot-dir`. Its settings in a settings file, the module (LE) and R/S through attach. The runner names each test in full and fails a shot that writes no PNG. Its overlay shot is C59-4 AC-24's scenario `testC59_4_AC16AsmOverlay` (`test_stopwatch.asm`, ASM format 2.0, from `1-Testfiles`) |
-| `DebugPanelTests.swift` | C59-4 AC-24/AC-21 scenarios (M-56): `testC59_4_AC5CalculatorFreezeStepResume` (FREEZE, `btn-step`, RESUME on the CALCULATOR tab; R/S through attach), `testC59_4_AC21TabsAndLabels`; in `UIRegressionTests`, iOS |
-| `HarnessClient.swift` | A line client for harness attach: `connect(port:)`, `command(_:)` (message lines skipped), `closedByPeer()` (C59-5) |
-| `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `display-text`, `wait` on the app's clock, `quit` (C59-5 S3); Home and back, a command refused while suspended (S4); a press on `led-display` for full speed while a program runs, then a touch on R/S of the faceplate (S5). In `UIRegressionTests`; S4, S5 iOS only |
-| `PacingTests.swift` | LIB-17 AC-19: a TI-59 keeps one minute, `ticks` over attach on port 59161. Checkpoint: only in the plan `PacingCheckpoint`, skipped by `UIRegressionTests` |
+| `PresetLoadTests.swift` | End-to-end load of `test_diag.ti59` via the file picker, its end through attach |
+| `CardScenarioTests.swift` | The magnetic card scenarios: `test_fresh_card_written_and_listed`, `test_card_read_by_its_corner` (the bar's card controls, the dialog's `card-name`, `card-arm`, `card-cancel`, the corner pressed on the faceplate at 0.9, 0.121) |
+| `ScreenshotTests.swift` | App Store screenshot capture (driven by `bin/run-screenshots`); writes PNGs to the dir named in `/tmp/calc-u-59-screenshot-dir`. Its settings in a settings file, the module (LE) and R/S through attach. The runner names each test in full and fails a shot that writes no PNG. Its overlay shot is the debug panel's scenario `testAsmOverlay` (`test_stopwatch.asm`, ASM format 2.0, from `1-Testfiles`) |
+| `DebugPanelTests.swift` | The debug panel's scenarios: `testCalculatorFreezeStepResume` (FREEZE, `btn-step`, RESUME on the CALCULATOR tab; R/S through attach), `testTabsAndLabels`; in `UIRegressionTests`, iOS |
+| `HarnessClient.swift` | A line client for harness attach: `connect(port:)`, `command(_:)` (message lines skipped), `closedByPeer()` |
+| `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `display-text`, `wait` on the app's clock, `quit`; Home and back, a command refused while suspended; a press on `led-display` for full speed while a program runs, then a touch on R/S of the faceplate. In `UIRegressionTests`; the last two iOS only |
+| `PacingTests.swift` | A TI-59 keeps one minute, `ticks` over attach on port 59161. Checkpoint: only in the test plan `PacingCheckpoint`, skipped by `UIRegressionTests` |
 | `Calc_U_59UITestsLaunchTests.swift` | Default launch test (auto-generated, rarely edited) |
 | `UIRegressionTests.xctestplan` | Local regression test plan (no CI job runs XCUITests) |
 | `Screenshots.xctestplan` | Test plan for the screenshot run (`bin/run-screenshots`) |
@@ -33,7 +33,7 @@ This skill covers all work inside `frontends/swift/Calc-U-59UITests/`.
 The Swift unit tests are a target of their own, `Calc-U-59Tests/` (plan
 `UnitTests`, hosted by the app with `--settings-file unit-tests.ini`): a second session through
 the real bridge (`TestSession.swift`), the bridge's Debug-only test hooks
-(`rawKeyDown:completion:` and `rawKeyUp:completion:` (LIB-3's raw key-down/key-up, no typing), `offeredHostServices:`, `emulatedTime:`,
+(`rawKeyDown:completion:` and `rawKeyUp:completion:` (the session's raw key-down/key-up, no typing), `offeredHostServices:`, `emulatedTime:`,
 `hostCallCount`); `ShellBridgeTests` checks `TIShell` (the menus, the bar
 without a menu bar, a disabled item's reason, the hit rule, the settings
 rows and a change, Copy's pasteboard forms, "Loading…").
@@ -42,12 +42,12 @@ rows and a change, Copy's pasteboard forms, "Loading…").
 
 The file-picker, preset and orientation tests are `#if !os(macOS)` guarded; `LayoutTests` also has macOS branches.
 
-**No test aids; attach and a settings file (C59-8 AC-21).** The app has no
+**No test aids; attach and a settings file.** The app has no
 `--UITesting`, no hidden R/S button and no `keystroke-playback-status`
 (CTest `CalcU59NoTestAids`). A test launches through the helpers, which
 write a settings file of the launch's own (`writeSettingsFile`, the
 runner's temporary folder; the simulator's app reads it by path — checked
-by `test_c59_8_ac21_settings_file_by_path`; on macOS the file goes into the
+by `test_settings_file_by_path`; on macOS the file goes into the
 app's container `tmp/` and the app gets its name) and pass `--settings-file`
 and `--attach-port`. A test that needs the session (a load's end, the
 display as text, emulated time, the module) attaches: the runner, in the
@@ -72,7 +72,7 @@ terminal. Use a simulator from `bin/simulators status` (the configured set in
 Reset the simulator first, as the CTest entries and `bin/run-screenshots` do:
 `bin/simulators reset` puts back the example presets and deletes what the app
 saved (its cards and `ti58c.memory.yaml` in the app's Documents folder), so a
-run never sees the cards of earlier runs (review E F-4: Arm Card's list grew
+run never sees the cards of earlier runs (otherwise Arm Card's list grew
 past the screen and a card test stopped finding its card):
 
 ```bash
@@ -152,19 +152,19 @@ override class func tearDown() {
 
 ## Preset Prerequisites
 
-Screenshot tests that load `.ti59` files require those files to be present on the simulator's local storage. Run `bin/simulators setup` once before running tests — it ensures the target simulators from `bin/simulators.yaml` exist and installs presets into each one: an explicit list of files from `examples/` goes to the storage root, and everything from `examples/screentest/` goes into a `1-Testfiles/` folder (sorted first by name) in the simulator's "On My iPhone/iPad" storage. It also boots each new simulator once and launches the Files app, which is what initialises the AppGroup storage in the first place. `bin/simulators status` reports whether a machine is fully provisioned; `bin/simulators` alone prints the full command reference. `setup` leaves the files of a simulator already provisioned as they are: after a change to `examples/screentest/` (M-54 upgraded them to format 2) run `bin/simulators files` (or `bin/simulators reset`, which also deletes the app's saved cards; `status` shows how many there are), or a test loads the old file and gets the session's refusal instead of a load (found in M-58).
+Screenshot tests that load `.ti59` files require those files to be present on the simulator's local storage. Run `bin/simulators setup` once before running tests — it ensures the target simulators from `bin/simulators.yaml` exist and installs presets into each one: an explicit list of files from `examples/` goes to the storage root, and everything from `examples/screentest/` goes into a `1-Testfiles/` folder (sorted first by name) in the simulator's "On My iPhone/iPad" storage. It also boots each new simulator once and launches the Files app, which is what initialises the AppGroup storage in the first place. `bin/simulators status` reports whether a machine is fully provisioned; `bin/simulators` alone prints the full command reference. `setup` leaves the files of a simulator already provisioned as they are: after a change to `examples/screentest/` run `bin/simulators files` (or `bin/simulators reset`, which also deletes the app's saved cards; `status` shows how many there are), or a test loads the old file and gets the session's refusal instead of a load.
 
 ---
 
 ## Testing the debug panel (CALCULATOR/CPU/LOG tabs) — prefer iPad
 
-Since M-53 (LIB-10) FREEZE, STEP and RESUME are the library's run control:
+FREEZE, STEP and RESUME are the library's run control:
 a FREEZE lands at the next program step boundary (CALCULATOR) or within
 50000 weighted instructions while the calculator waits for a key, inside
 the same host call, so the button states follow the `run-state` topic
 (`calcu::debugger::buttonUse`); TRACE starts the library's trace session
 (one at a time; the file `CALCU59_TRACE.bin` and its siblings by model,
-with no key or card records). Since M-56 (C59-4) the panel draws the
+with no key or card records). The panel draws the
 session's product topics; Run, TRACE and the CALCULATOR tab follow the
 control state's entries (the tab is disabled while an overlay runs).
 The CALCULATOR tab's STEP is `btn-step`.
@@ -202,7 +202,7 @@ The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug pa
 | `btn-tab-log` | Button | LOG tab in debug panel (`DebugView`) |
 | `btn-cpu-freeze-on-start` | Button | "FREEZE ON START" in CPU tab (`CPUInspectorView`) |
 | `btn-cpu-step` | Button | "STEP" in CPU tab (`CPUInspectorView`); tap to single-step, hold to auto-step. The CPU tab's ARMED has no identifier |
-| `btn-step` | Button | "STEP" in CALCULATOR tab (`LiveDebugView`); tap to step one program step, hold to auto-step (C59-4 AC-24) |
+| `btn-step` | Button | "STEP" in CALCULATOR tab (`LiveDebugView`); tap to step one program step, hold to auto-step |
 | `btn-trace` | Button | "TRACE" in LOG tab; always enabled (a folder that cannot be written refuses the start) |
 | `asm-file`, `asm-words`, `asm-status` | StaticText | The ASM OVERLAY box's file name, count and status ("ASM entered at 0x1800 (n step(s)).") |
 | `btn-asm-select` | Button | "Select File" in ASM overlay (`ASMDebugContent` in `DebugView`); opens `.asm` file picker |
@@ -264,10 +264,10 @@ print(app.debugDescription)
 
 ## Verifying a Successful Preset Load
 
-A preset is LIB-6's `load-preset` (one operation of the session). Wait for
+A preset is the library's `load-preset` (one operation of the session). Wait for
 its end through attach (`waitForOperation`: the busy topic, then the reply
 to the bare `wait`), then check what it leaves: `display-text` through attach, or
-the `cue-card` element's label (`FamilyStructureTests.test_lib6_ac42_an_example`).
+the `cue-card` element's label (`FamilyStructureTests.test_an_example`).
 
 ---
 

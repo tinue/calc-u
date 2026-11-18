@@ -1,9 +1,9 @@
-// CalcU59QtTests, the window (LIB-14 design §10.9 Q2 to Q12, M-57): the Qt6
-// window of Calc-U-59 put together from the shell, on the real ROMs,
-// offscreen. Each case carries the scenario ID of LIB-14 AC-25 in its name;
-// the Web cases of the same IDs are in frontends/web/tests/shell.spec.js.
-// Also LIB-6 AC-42 (Qt6), C59-4 AC-24 (Qt6: the scenarios C59-4 AC-5 and
-// AC-16), C59-2 AC-6 (Qt6), LIB-4 AC-12 and AC-15 (the drawing).
+// CalcU59QtTests, the window: the Qt6 window of Calc-U-59 put together from
+// the shell, on the real ROMs, offscreen: the menus, the bar, settings,
+// notices, Help and About, the layout, the faceplate's input, magnetic
+// cards, ROMs missing, the bundled examples, drop and Open With, the debug
+// panel and attach. The Web cases of the same scenarios are in
+// frontends/web/tests/shell.spec.js.
 #include "TestHarness.hpp"
 #include "QtFixture.hpp"
 #include "AppPaths.hpp"
@@ -132,9 +132,9 @@ std::vector<QString> barButtonTexts(Fixture& f) {
 
 } // namespace
 
-// ── Q2: the menus (AC-26; AC-1, AC-4, AC-6 for this product) ───────────
+// ── The menus ─────────────────────────────────────────────────────────────
 
-TEST(lib14_ac26_qt_menus_in_family_order) {
+TEST(menus_in_family_order) {
     SKIP_UNLESS_WINDOW();
     Fixture f("TI-59");
     CHECK(checkList("menus", menuTitles(f.w().menuBar()), {"File", "Machine", "Help"}));   // no Edit
@@ -147,14 +147,14 @@ TEST(lib14_ac26_qt_menus_in_family_order) {
     // The module slot is the bar's picker (M6): Peripherals ▸ has the PC-100C only.
     CHECK(checkList("Peripherals", labels(f.find<QMenu>(names::item("peripherals"))), {"PC-100C"}));
     CHECK(f.action("resume") && !f.action("resume")->isEnabled());
-    // The card items exist on the TI-59 only (LIB-4 AC-12).
+    // The card items exist on the TI-59 only.
     f.command("model", Value::object({{"name", "TI-58"}}));
     f.run(200);
     CHECK(checkList("File TI-58", labels(f.find<QMenu>(names::menu("file"))),
                     {"Load Preset…", "Examples ▸", "-", "Settings…", "Quit"}));
 }
 
-TEST(lib14_ac26_shortcuts_ctrl_o_r_shift_r) {
+TEST(shortcuts_ctrl_o_r_shift_r) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     CHECK(f.action("load-preset")->shortcut() == QKeySequence(Qt::CTRL | Qt::Key_O));
@@ -166,7 +166,7 @@ TEST(lib14_ac26_shortcuts_ctrl_o_r_shift_r) {
     CHECK(f.fileFilters.size() == 1 && f.fileFilters[0] == QStringLiteral("Presets (*.ti59 *.ti58 *.ti58c)"));
 }
 
-TEST(lib14_ac26_roles_settings_about_quit) {
+TEST(menu_roles_settings_about_quit) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     CHECK(f.action("settings")->menuRole() == QAction::PreferencesRole);
@@ -175,16 +175,16 @@ TEST(lib14_ac26_roles_settings_about_quit) {
     CHECK(text(f.action("load-preset")) == QStringLiteral("Load Preset…"));   // was "Open Preset…"
 }
 
-// ── Q3: the bar (AC-27; AC-8 to AC-10; LIB-4 AC-11, AC-12, AC-15) ──────
+// ── The control bar ───────────────────────────────────────────────────────
 
-TEST(lib14_ac27_bar_per_model) {
+TEST(control_bar_per_model) {
     SKIP_UNLESS_WINDOW();
     Fixture f("TI-59");
     auto* model = f.find<QComboBox>(names::kBarModel);
     CHECK(model != nullptr);
     if (!model) return;
     CHECK(model->count() == 3 && model->itemText(0) == QStringLiteral("TI-59") && model->currentText() == QStringLiteral("TI-59"));
-    // The picker of slot-1: the 14 modules and the empty slot (LIB-7 AC-47).
+    // The picker of slot-1: the 14 modules and the empty slot.
     auto* slot = f.find<QWidget>(names::barSlot("slot-1"));
     auto* picker = slot ? slot->findChild<calcu::qt6::MediaPicker*>() : nullptr;
     CHECK(picker != nullptr);
@@ -215,9 +215,9 @@ TEST(lib14_ac27_bar_per_model) {
     CHECK(f.find<QWidget>(names::barSlot("slot-1")) != nullptr);
 }
 
-// ── Q4: buttons gone where there is a menu bar (AC-28) ─────────────────
+// ── Buttons gone where there is a menu bar ────────────────────────────────
 
-TEST(lib14_ac28_no_reset_preset_settings_on_the_bar) {
+TEST(no_reset_preset_settings_on_the_bar) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     for (const QString& t : barButtonTexts(f)) {
@@ -227,7 +227,7 @@ TEST(lib14_ac28_no_reset_preset_settings_on_the_bar) {
     CHECK(!barButtonTexts(f).empty());   // the bar is there, with the PC-100C and the cards
 }
 
-TEST(lib14_ac28_cold_boot_is_the_menu_item) {
+TEST(cold_boot_is_the_menu_item) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     const std::vector<QString> before = barButtonTexts(f);
@@ -241,9 +241,9 @@ TEST(lib14_ac28_cold_boot_is_the_menu_item) {
     CHECK(barButtonTexts(f) == before);
 }
 
-// ── Q6: settings (AC-30; AC-11 to AC-13) ───────────────────────────────
+// ── Settings ──────────────────────────────────────────────────────────────
 
-TEST(lib14_ac30_settings_sections_and_rows) {
+TEST(settings_sections_and_rows) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     f.action("settings")->trigger();
@@ -260,7 +260,7 @@ TEST(lib14_ac30_settings_sections_and_rows) {
              {"storage", "save-folder"}, {"folders", "presets"}, {"trace", "folder"}, {"trace", "max-file-size-mb"},
              {"display", "led-style"}})
         CHECK(d->findChild<QWidget*>(QString::fromStdString(names::setting(section, key))) != nullptr);
-    // No Solid State Module row (row 59-9), no row for the other [folders] kinds (D-43).
+    // No Solid State Module row (the module is chosen on the bar), no row for the other [folders] kinds.
     for (QWidget* w : d->findChildren<QWidget*>()) {
         CHECK(!w->objectName().contains(QStringLiteral("module")));
         CHECK(!w->objectName().contains(QStringLiteral("asm-overlays")));
@@ -283,9 +283,9 @@ TEST(lib14_ac30_settings_sections_and_rows) {
     d->close();
 }
 
-// ── Q7: "Loading…" and notices (AC-31; AC-15 to AC-17) ─────────────────
+// ── "Loading…" and notices ────────────────────────────────────────────────
 
-TEST(lib14_ac31_loading_after_500_ms_blocks_nothing) {
+TEST(loading_after_500_ms_blocks_nothing) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     // A preset that keeps an operation at full speed for a while: a program
@@ -304,13 +304,13 @@ TEST(lib14_ac31_loading_after_500_ms_blocks_nothing) {
     // Nothing blocked: the model picker, Reset and Cold boot can be used.
     CHECK(f.find<QComboBox>(names::kBarModel)->isEnabled());
     CHECK(f.action("reset")->isEnabled() && f.action("cold-boot")->isEnabled());
-    f.action("reset")->trigger();   // ends the operation (LIB-18 AC-16)
+    f.action("reset")->trigger();   // ends the operation
     CHECK(f.waitFor([&] { return !f.busy(); }, 10000));
     f.run(50);
     CHECK(!f.w().shell().loadingShown());
 }
 
-TEST(lib14_ac31_notice_without_title) {
+TEST(notice_without_title) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     f.w().shell().sendChecked(calcu::sessions::CommandName{"load-preset"}, Value::object({{"ref", "/no/such/preset.ti59"}}));
@@ -322,16 +322,16 @@ TEST(lib14_ac31_notice_without_title) {
     f.run(50);
 }
 
-// ── Q8: Help and About (AC-32) ─────────────────────────────────────────
+// ── Help and About ────────────────────────────────────────────────────────
 
-TEST(lib14_ac32_help_opens_calc_u_org_59) {
+TEST(help_opens_calc_u_org_59) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     f.action("help")->trigger();
     CHECK(f.opened.size() == 1 && f.opened[0] == QUrl(QStringLiteral("https://calc-u.org/59/")));
 }
 
-TEST(lib14_ac32_about_icon_name_version_summary_links) {
+TEST(about_icon_name_version_summary_links) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     QPixmap pix(32, 32);
@@ -359,9 +359,9 @@ TEST(lib14_ac32_about_icon_name_version_summary_links) {
     QApplication::setWindowIcon(before);
 }
 
-// ── Q9: the layout (AC-33; one picture of the window, AC-25) ───────────
+// ── The layout (and one picture of the window) ────────────────────────────
 
-TEST(lib14_ac33_three_columns_with_dividers) {
+TEST(three_columns_with_dividers) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     QSplitter* s = f.w().splitter();
@@ -371,7 +371,7 @@ TEST(lib14_ac33_three_columns_with_dividers) {
     CHECK(s->widget(1) == f.w().shell().panelArea());
     CHECK(s->widget(2)->objectName() == QStringLiteral("debugpanel"));
     QWidget* paper = f.w().shell().panelArea()->panel("paper");
-    CHECK(paper && paper->isVisible());   // the paper panel always (AC-23)
+    CHECK(paper && paper->isVisible());   // the paper panel always
     // The bar below the faceplate.
     QWidget* bar = f.find<QWidget>(names::kControlBar);
     CHECK(bar && f.w().keyboard()->geometry().bottom() <= bar->geometry().top());
@@ -380,15 +380,15 @@ TEST(lib14_ac33_three_columns_with_dividers) {
     s->setSizes({sizes[0] + 40, sizes[1], sizes[2] - 40});
     f.run(50);
     CHECK(s->sizes()[0] != sizes[0]);
-    // The picture of the window (AC-25), into the test's output folder.
+    // The picture of the window, into the test's output folder.
     const QString out = QStringLiteral(CALCU59_QT_TEST_OUT);
     QDir().mkpath(out);
-    CHECK(f.w().grab().save(out + QStringLiteral("/lib14_ac33_calc-u-59-qt6.png")));
+    CHECK(f.w().grab().save(out + QStringLiteral("/calc-u-59-qt6.png")));
 }
 
-// ── Q10: the faceplate's input (AC-24, AC-43 for this product) ─────────
+// ── The faceplate's input ─────────────────────────────────────────────────
 
-TEST(lib14_ac24_key_under_pointer_ti59_ti58) {
+TEST(key_under_pointer_ti59_ti58) {
     SKIP_UNLESS_WINDOW();
     for (const char* model : {"TI-59", "TI-58"}) {
         Fixture f(model);
@@ -419,9 +419,9 @@ TEST(lib14_ac24_key_under_pointer_ti59_ti58) {
     }
 }
 
-// A press on the fitted card's corner feeds it (C59-7 AC-12, D-44; the
+// A press on the fitted card's corner feeds it (the
 // product takes it first), and a key of the top row is still a key.
-TEST(lib14_ac24_press_on_the_fitted_card_feeds_it) {
+TEST(press_on_the_fitted_card_feeds_it) {
     SKIP_UNLESS_WINDOW();
     Fixture f("TI-59");
     KeyboardWidget* k = f.w().keyboard();
@@ -444,7 +444,7 @@ TEST(lib14_ac24_press_on_the_fitted_card_feeds_it) {
     f.run(200);
 }
 
-// ── C59-7 AC-28 (Qt6; M-58): the scenarios C59-7 AC-15 and C59-7 AC-12 ──
+// ── Magnetic cards: a fresh card written, a card read by its corner ───────
 
 namespace {
 
@@ -454,7 +454,7 @@ std::string program123Write() {
     return std::string(kCardHead) + "program:\n  keycodes: |\n    76 11 01 02 03 91\nkeys:\n  - regular-speed:\n  - key: CLR 1 Write\n";
 }
 
-// A press on the fitted card's left top corner: side 0 (C59-7 AC-12).
+// A press on the fitted card's left top corner: side 0.
 void pressCardCorner(Fixture& f) {
     KeyboardWidget* k = f.w().keyboard();
     const QPointF corner = onFaceplate(k, (cu59::kCardRect.x + cu59::kCardRect.w * 0.05) * cu59::kCanvasWidth,
@@ -486,14 +486,14 @@ std::optional<std::string> savedEntry(Fixture& f, const std::string& name) {
 
 } // namespace
 
-TEST(c59_7_ac15_qt6_fresh_card_written_and_listed) {
+TEST(fresh_card_written_and_listed) {
     SKIP_UNLESS_WINDOW();
     Fixture f("TI-59");
     CHECK(writeFreshCard(f, QStringLiteral("QtProg")));
     CHECK(savedEntry(f, "QtProg").has_value());   // Arm Card lists it by its name
 }
 
-TEST(c59_7_ac12_qt6_card_read_by_its_corner) {
+TEST(card_read_by_its_corner) {
     SKIP_UNLESS_WINDOW();
     Fixture f("TI-59");
     CHECK(writeFreshCard(f, QStringLiteral("QtRead")));
@@ -522,7 +522,7 @@ TEST(c59_7_ac12_qt6_card_read_by_its_corner) {
     if (listing.find("000 76") == std::string::npos) std::fprintf(stderr, "  program: %s\n", listing.c_str());
 }
 
-TEST(lib14_ac43_display_hold_full_speed) {
+TEST(display_hold_full_speed) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     KeyboardWidget* k = f.w().keyboard();
@@ -533,9 +533,9 @@ TEST(lib14_ac43_display_hold_full_speed) {
     CHECK(f.waitFor([&] { return speed(f) == "regular"; }, 1000));
 }
 
-// ── Q11: ROMs missing (AC-19 for this product; row 59-54) ──────────────
+// ── ROMs missing: the window opens and names the missing files ────────────
 
-TEST(lib14_ac19_roms_missing_in_window) {
+TEST(roms_missing_in_window) {
     SKIP_UNLESS_WINDOW();
     QtResourceBundle::hideForTests("TMC0583.txt");
     {
@@ -559,9 +559,9 @@ TEST(lib14_ac19_roms_missing_in_window) {
     QtResourceBundle::hideForTests("");
 }
 
-// ── LIB-6 AC-42 (Qt6); C59-2 AC-6 (Qt6): a bundled example from Examples ▸ ──
+// ── A bundled example from Examples ▸ ─────────────────────────────────────
 
-TEST(lib6_ac42_qt6_bundled_example_sum_shows_its_cue_card) {
+TEST(bundled_example_sum_shows_its_cue_card) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     QAction* sum = nullptr;
@@ -577,7 +577,7 @@ TEST(lib6_ac42_qt6_bundled_example_sum_shows_its_cue_card) {
     f.waitIdle();
 }
 
-// ── LIB-13 AC-24 (Qt6; row 59-61): a drop and Open With, as Calc-U-1600's ──
+// ── A drop and Open With, as Calc-U-1600's ────────────────────────────────
 
 namespace {
 const QString kSum = QStringLiteral(CALCU59_DIR "/examples/sum.ti59");
@@ -587,7 +587,7 @@ bool sumCueCard(Fixture& f) {
 }
 } // namespace
 
-TEST(lib13_ac24_qt6_drop_accepted_and_opened_after_the_drop) {
+TEST(drop_accepted_and_opened_after_the_drop) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     QMimeData mime;
@@ -604,7 +604,7 @@ TEST(lib13_ac24_qt6_drop_accepted_and_opened_after_the_drop) {
     f.waitIdle();
 }
 
-TEST(lib13_ac24_qt6_open_with_opens_the_preset) {
+TEST(open_with_opens_the_preset) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     // The Dock icon and Finder's Open With reach the app as QFileOpenEvent.
@@ -618,15 +618,15 @@ TEST(lib13_ac24_qt6_open_with_opens_the_preset) {
     f.waitIdle();
 }
 
-// ── C59-4 AC-24 (Qt6): the scenarios C59-4 AC-5 and C59-4 AC-16 ────────
+// ── The debug panel: FREEZE/STEP/RESUME, an ASM overlay run ──────────────
 
-TEST(c59_4_ac5_qt6_freeze_step_resume_on_the_calculator_tab) {
+TEST(freeze_step_resume_on_the_calculator_tab) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     // Lbl A 1 2 3 R/S, run with A: FREEZE lands on a program step.
     f.command("load-preset",
               Value::object({{"content", "format-version: 2\nmodel: TI-59\nprogram:\n  keycodes: |\n    76 11 01 02 03 85 01 95 61 00 02\n"},
-                             {"name", "ac5.ti59"}}));
+                             {"name", "freeze.ti59"}}));
     f.waitIdle();
     f.command("screen-key-down", Value::object({{"key", "A"}, {"pointer", 9}}));
     f.run(150);
@@ -656,7 +656,7 @@ TEST(c59_4_ac5_qt6_freeze_step_resume_on_the_calculator_tab) {
     CHECK(f.waitFor([&] { return !f.c().isFrozen() && !resume->isEnabled(); }, 5000));
 }
 
-TEST(c59_4_ac16_qt6_overlay_chosen_run_cpu_tab_shows_it) {
+TEST(asm_overlay_chosen_run_cpu_tab_shows_it) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     QTemporaryDir dir;
@@ -693,7 +693,7 @@ TEST(c59_4_ac16_qt6_overlay_chosen_run_cpu_tab_shows_it) {
     f.run(100);
 }
 
-// ── Q12: Qt6 attach (LIB-17 §5; design §10.7) ──────────────────────────
+// ── Qt6 attach ────────────────────────────────────────────────────────────
 
 #ifdef CALCU_ATTACH
 TEST(qt_attach_drives_calc_u_59) {

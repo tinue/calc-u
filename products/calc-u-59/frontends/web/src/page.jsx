@@ -1,18 +1,17 @@
-// What the page's components share (M-57, LIB-14 59): the library's shell
-// (LIB-15's useShell, its topics through useTopic) and the few things the
-// page keeps itself. There is no translation layer any more (src/engine.js
-// went in M-57): a component sends the library's commands and the
+// What the page's components share: the library's shell (its useShell,
+// its topics through useTopic) and the few things the page keeps itself.
+// There is no translation layer: a component sends the library's commands and the
 // product's (`c59.*`) by name and reads the topics as the session sends them.
 //
 //   createC59Traces() → {services, list, subscribe, download}
 //       the page's host services for useShell (the library's, with the
-//       traces the session hands over with keep-file kept: LIB-10 AC-26,
-//       D-25, the LOG tab lists them; the worker keeps no copy). Every
+//       traces the session hands over with keep-file kept: the LOG tab
+//       lists them; the worker keeps no copy). Every
 //       keep-file is a download; only those of kind "trace" are listed (a
-//       preset's screenshot and an exported medium are not: row 59-63)
+//       preset's screenshot and an exported medium are not)
 //   C59_PAGE        the context: {shell, s (useCalcuShell), traces, log}
-//   useLogView(shell) → {lines, clear}: the LOG tab's view of LIB-3's `log`,
-//       its last 2000 lines (C59-4 AC-9); clear empties this view only
+//   useLogView(shell) → {lines, clear}: the LOG tab's view of the session's
+//       `log`, its last 2000 lines; clear empties this view only
 
 const PRODUCT = "Calc-U-59";
 const C59_PAGE = React.createContext(null);

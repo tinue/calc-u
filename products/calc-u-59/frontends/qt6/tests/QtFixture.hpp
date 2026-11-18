@@ -10,7 +10,7 @@
 
 class QAction;
 
-// The fixture of CalcU59QtTests (LIB-14 design §10.9, M-57; as Calc-U-1600's
+// The fixture of CalcU59QtTests (as Calc-U-1600's
 // QtFixture): the real window of Calc-U-59, put together from the shell,
 // over the product's session on the ROMs compiled in as the app has them, on
 // the real clock, offscreen, with the HOME CTest gives it (no settings of the

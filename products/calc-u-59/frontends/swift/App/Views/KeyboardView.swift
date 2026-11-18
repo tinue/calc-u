@@ -21,7 +21,7 @@ struct KeyboardView: View {
     private static let cardEdge = Color(red: 0x0A/255.0, green: 0x08/255.0, blue: 0x06/255.0)
     private static let maroon = Color(red: 0x1C/255.0, green: 0x06/255.0, blue: 0x06/255.0)
 
-    /// The art by the control state's model (LIB-4 AC-15: no copy of the model facts).
+    /// The art by the control state's model (no copy of the model facts).
     private var canvasImageName: String { viewModel.modelID == "TI-59" || viewModel.modelID.isEmpty ? "ti59_base" : "ti58_base" }
 
     @State private var pointerIsDown = false
@@ -54,7 +54,7 @@ struct KeyboardView: View {
                 CueCardView(content: viewModel.cueCardContent, litCorner: viewModel.litCardCorner)
                     .frame(width: cardW, height: cardH)
                     .position(x: cardW / 2, y: cardY + cardH / 2)
-                    // C59-8 AC-20: the cue card the product topic names, in its template.
+                    // The cue card the product topic names, in its template.
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(viewModel.cueCardContent?.title ?? "")
                     .accessibilityValue(viewModel.cueCardContent?.template.rawValue ?? "")
@@ -81,9 +81,8 @@ struct KeyboardView: View {
                 // regardless of real touch duration — see UIKitTouchTracker's doc
                 // comment). Track touches via raw UIKit there instead; macOS mouse
                 // input is unaffected and keeps the DragGesture it always used.
-                // The library's pointer rule (LIB-14 AC-24, AC-43; C59-8 D-9):
-                // the key under the pointer, the display for full speed; the
-                // card's corners first (C59-7).
+                // The library's pointer rule: the key under the pointer, the
+                // display for full speed; the card's corners first.
                 let scale = w / Self.canvasPixels
                 let handleChanged: (CGPoint) -> Void = { location in
                     // Touching the calculator claims physical-keyboard
@@ -157,7 +156,7 @@ struct KeyboardView: View {
                         .allowsHitTesting(false)
                 }
 
-                // ── "Loading…" (C59-8 AC-9): a small sign below the display;
+                // ── "Loading…": a small sign below the display;
                 // it takes no touches, so the keys under it can be used.
                 if viewModel.loadingShown {
                     HStack(spacing: 6) {
@@ -228,7 +227,7 @@ private struct PhysicalKeyboardModifier: ViewModifier {
 
     /// The host key event of a key press, or nil for a key the calculator
     /// does not claim (a command chord, a key with no character or name).
-    /// The mapping lives in app/TITyping (the library's typing, LIB-5); this
+    /// The mapping lives in app/TITyping (the library's typing); this
     /// only translates SwiftUI's KeyPress into the library's form.
     private struct HostKey {
         let physical: String, named: String
@@ -246,7 +245,7 @@ private struct PhysicalKeyboardModifier: ViewModifier {
         else if keyPress.key == .return { named = "return" }
         else if key == "\u{3}" { named = "enter" }   // the number pad's Enter
         let produced = keyPress.characters.unicodeScalars.count == 1 ? keyPress.characters.unicodeScalars.first!.value : 0
-        // The letter the key carries on the user's layout (AC-21, OQ-2).
+        // The letter the key carries on the user's layout.
         let carried: UInt32 = key.isLetter && key.isASCII ? (key.lowercased().unicodeScalars.first?.value ?? 0) : 0
         if named.isEmpty && produced == 0 && carried == 0 { return nil }
         return HostKey(physical: String(key).lowercased(), named: named, produced: produced, carried: carried,
@@ -260,12 +259,12 @@ private struct PhysicalKeyboardModifier: ViewModifier {
             .focused(focus)
             .onAppear { focus.wrappedValue = true }
             .onChange(of: isFocused) { _, focused in
-                // Every key held comes up, after its minimum hold (AC-10).
+                // Every key held comes up, after its minimum hold.
                 if !focused { viewModel.keyboardRelease() }
             }
             // Subscribing to .down and .up only — the host's auto-repeat
             // arrives as .repeat and is dropped here (the engine ignores it
-            // too, LIB-5 AC-4).
+            // too).
             .onKeyPress(phases: [.down, .up]) { keyPress in
                 guard let k = hostKey(for: keyPress) else { return .ignored }
                 switch keyPress.phase {

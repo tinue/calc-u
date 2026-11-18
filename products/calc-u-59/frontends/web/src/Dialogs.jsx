@@ -1,11 +1,10 @@
 // The calculator's own dialogs, drawn inside the client (an embedding page
-// has no window of ours to open): the card dialogs of C59-7 (Qt6/app/
+// has no window of ours to open): the card dialogs (Qt6: app/
 // CardPickerDialog, on the library's media topic), opened by the product
 // items Arm Card… and Arm Fresh Card… (File menu, or the bar's card
-// controls). Since M-57 the preset picker, Settings and About are the
-// shell's (LIB-14 59): Load Preset… and Examples ▸, ShellSettings,
-// ShellAbout; File ▸ Saved Media… (LIB-7 AC-31, AC-36) is the library's
-// ShellSavedMedia since Part E simplification E-5.
+// controls). The preset picker, Settings and About are the shell's: Load
+// Preset… and Examples ▸, ShellSettings, ShellAbout; File ▸ Saved Media…
+// is the library's ShellSavedMedia.
 
 function Dialog({ title, onClose, children, footer }) {
   React.useEffect(() => {
@@ -33,15 +32,14 @@ function readFileInput(e, as) {
 }
 
 // ── Cards ───────────────────────────────────────────────────────────────────
-// The library's media part (LIB-7 59, C59-7 AC-14, AC-15): Arm Card lists the
+// The library's media part: Arm Card lists the
 // saved cards of the save folder by the names inside them (an outdated one
 // cannot be chosen, its hint the tooltip) and fits the one chosen
 // (`media.choose`); Arm Fresh Card asks the name and fits a fresh card of it
 // (`media.start-new`), asking first when a card of that name is saved. The
-// cards are files of the persistent save folder (LIB-15 AC-20): Import Media…
-// and Saved Media… (LIB-7 AC-30, AC-31, AC-36) are the shell's File menu items
-// since M-57 (LIB-7 D-29; behind the More button in portrait, D-36), no
-// longer buttons of this dialog.
+// cards are files of the persistent save folder: Import Media… and Saved
+// Media… are the shell's File menu items (behind the More button in
+// portrait), not buttons of this dialog.
 
 function CardPicker({ shell, mode, onClose }) {
   const reader = cardReaderOf(useTopic(shell, "media"));
@@ -50,7 +48,7 @@ function CardPicker({ shell, mode, onClose }) {
   const [asking, setAsking] = React.useState(null);
   const [problem, setProblem] = React.useState("");
   const fresh = mode === "fresh";
-  // D-10: the saved cards only; the fresh card is Arm Fresh Card's way in.
+  // The saved cards only; the fresh card is Arm Fresh Card's way in.
   const saved = (reader ? reader.picker : []).filter((e) => e.id.startsWith("saved:"));
 
   const arm = (entry) => { shell.send("media.choose", { place: "card-reader", entry }); onClose(); };

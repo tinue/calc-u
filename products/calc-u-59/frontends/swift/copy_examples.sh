@@ -1,6 +1,6 @@
 #!/bin/sh
-# The bundled example presets of the Swift app (C59-2 AC-13, AC-14; LIB-6
-# AC-31): examples/bundle.yaml and exactly the files it lists, each
+# The bundled example presets of the Swift app:
+# examples/bundle.yaml and exactly the files it lists, each
 # `{ file: ... }`, into <repository>/build/bundle-59/examples, which the app
 # target bundles as the folder `examples` (its Resources). The phase "Build
 # CalcU59.xcframework" calls it; the Qt6 and Web builds take the same list

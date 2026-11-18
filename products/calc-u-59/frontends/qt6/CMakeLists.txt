@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.21)
 # Calc-U-59 Qt6 desktop app. Built as part of the repository's root CMake
-# project (ADR 0003; the root's tools/run_qt.sh, the local development build on
+# project (the root's tools/run_qt.sh, the local development build on
 # macOS; the release packaging for Windows and Linux in CI,
 # .github/workflows/calc-u-59.yml, in build/release). It does not configure
 # on its own. The Mac Qt build is never shipped: on macOS the Swift app
 # (Calc-U-59.xcodeproj) is the product.
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  message(FATAL_ERROR "frontends/qt6 is part of the root CMake project (ADR 0003): "
+  message(FATAL_ERROR "frontends/qt6 is part of the root CMake project: "
                       "configure the repository root, e.g. cmake -S ../../../.. -B ../../../../build/all")
 endif()
 #
@@ -22,7 +22,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC OFF)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
-if(CALCU_ATTACH)   # calcu_qt6 links Qt Network for its attach line client (M-57)
+if(CALCU_ATTACH)   # calcu_qt6 links Qt Network for its attach line client
   find_package(Qt6 REQUIRED COMPONENTS Network)
 endif()
 qt_standard_project_setup()
@@ -84,7 +84,7 @@ set(CORE_SOURCES
   ${CORE_ROOT}/ModuleFile.cpp
 )
 
-# The app's own sources but main.cpp: also CalcU59QtTests' (M-53).
+# The app's own sources but main.cpp: also CalcU59QtTests'.
 set(CALCU59_QT_SOURCES
   app/MainWindow.cpp
   app/EmulatorController.cpp
@@ -115,10 +115,10 @@ qt_add_executable(CalcU59Qt
 calcu_qt6_moc_compat(CalcU59Qt)
 
 # ---- Shared assets, one source, no copies: the ROM files of roms/ (the 24
-# of the full set, fetched by roms/fetch_roms.sh; LIB-12 AC-9; the module
-# files hold the cue cards since M-55) and the calculator and cue-card
-# artwork from the Swift app's asset catalog. The app finds the ROMs through
-# QtResourceBundle and the lookup (LIB-12 D-2) ----
+# of the full set, fetched by roms/fetch_roms.sh; the module files hold the
+# cue cards) and the calculator and cue-card artwork from the Swift app's
+# asset catalog. The app finds the ROMs through QtResourceBundle and the
+# lookup ----
 file(GLOB ROM_TXT ${REPO_ROOT}/roms/*.txt ${REPO_ROOT}/roms/*.rom.yaml)
 foreach(f ${ROM_TXT})
   get_filename_component(name ${f} NAME)
@@ -137,16 +137,16 @@ qt_add_resources(CalcU59Qt "artwork" PREFIX "/img" FILES ${ARTWORK})
 set(CALCU59_QT_ARTWORK ${ARTWORK})
 
 target_include_directories(CalcU59Qt PRIVATE ${CORE_ROOT} ${SHARED_ROOT} app ${CMAKE_CURRENT_BINARY_DIR}/generated)
-# The machine interface (C59-1; LIB-1 §2a): the core implements calcu::machine.
+# The machine interface: the core implements calcu::machine.
 target_link_libraries(CalcU59Qt PRIVATE Qt6::Widgets calcu_library)
-# The Qt6 component set (LIB-8, LIB-10; M-53): the paper panel, the
-# run-control buttons and the clipboard service.
+# The Qt6 component set: the paper panel, the run-control buttons and the
+# clipboard service.
 target_link_libraries(CalcU59Qt PRIVATE calcu_qt6)
-# LIB-14 design §10.7 (M-57): harness attach in development and test builds
+# Harness attach in development and test builds
 # (CALCU_ATTACH: POSIX trees with the tests; `--attach-port N`, else 59059),
 # with the harness's product entry (app/HarnessProduct) that the attached
 # harness runs, and its client in the same process, the pacing probe
-# (`--pacing-probe <s>`, LIB-17 AC-19, design §5, P59-5). The release
+# (`--pacing-probe <s>`). The release
 # packaging (build/release) and Windows have neither. Checkpoint:
 # CalcU59QtPacingProbe, one minute offscreen with a temporary HOME (no
 # settings of the user's).
@@ -186,7 +186,7 @@ endif()
 
 set_target_properties(CalcU59Qt PROPERTIES OUTPUT_NAME "Calc-U-59")
 
-# ---- Bundled example presets (C59-2 AC-13, AC-14; LIB-6 AC-31): the bundle
+# ---- Bundled example presets: the bundle
 # file examples/bundle.yaml and exactly the files it lists, each `{ file: … }`,
 # under Resources/examples in the macOS bundle, else resources/examples beside
 # the program (AppPaths::bundledExamplesDir(); the preset list and the bundle
@@ -227,7 +227,7 @@ if(NOT APPLE)
   install(FILES ${EXAMPLES_SRC_DIR}/bundle.yaml DESTINATION bin/resources/examples)
 endif()
 
-# CalcU59QtTests (M-53; LIB-8 E8-8, E8-9; LIB-10 E10-7): the app's widgets
+# CalcU59QtTests: the app's widgets
 # on its EmulatorController, the session on the real ROMs (compiled in as
 # the app has them), offscreen, with a HOME of its own (no settings of the
 # user's are touched); the repository's one runner with a QApplication
@@ -244,7 +244,7 @@ if(CALCU_TESTS)
                              ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/testing)
   target_link_libraries(CalcU59QtTests PRIVATE Qt6::Widgets calcu_library calcu_qt6 calcu_warnings)
   target_compile_definitions(CalcU59QtTests PRIVATE CALCU59_DIR="${REPO_ROOT}" CALCU59_QT_TEST_OUT="${CMAKE_CURRENT_BINARY_DIR}/test-pictures")
-  if(CALCU_ATTACH)   # Q12: the attach host in the test window (`qt_attach_drives_calc_u_59`)
+  if(CALCU_ATTACH)   # the attach host in the test window (`qt_attach_drives_calc_u_59`)
     target_sources(CalcU59QtTests PRIVATE ${SHARED_ROOT}/HarnessProduct.cpp)
   endif()
   set(QT_TEST_HOME ${CMAKE_CURRENT_BINARY_DIR}/qt-tests-home)

@@ -3,13 +3,13 @@ import SwiftUI
 import AppKit
 #endif
 
-/// The settings (C59-8 AC-7, AC-8; design §3.4): macOS's settings window of
+/// The settings: macOS's settings window of
 /// the app, iOS's sheet whose one button is Done. The sections and rows are
-/// the library's dialog model (`TIShell.settingsDialog`: LIB-14 S1 to S8 over
+/// the library's dialog model (`TIShell.settingsDialog` over
 /// `cu59::settingsSpec`, the values of the `settings` topic, the startup
 /// presets of the preset list); a change is `set-setting`, applied and
 /// written at once. A notice that comes while the sheet is open shows over
-/// it (EC-2).
+/// it.
 struct SettingsView: View {
     @Environment(EmulatorViewModel.self) var viewModel
     #if !os(macOS)
@@ -82,7 +82,7 @@ struct SettingsView: View {
                 .accessibilityIdentifier(id)
             }
         case .folder:
-            // The trace folder of `[trace] location = folder` (macOS, LIB-9 AC-34).
+            // The trace folder of `[trace] location = folder` (macOS).
             if row.section != "trace" || traceLocation == "folder" {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -137,7 +137,7 @@ struct SettingsView: View {
         panel.allowsMultipleSelection = false
         panel.message = "Choose a folder for CALCU59_TRACE.bin"
         if panel.runModal() == .OK, let url = panel.url {
-            viewModel.chooseTraceFolder(url)   // [trace] folder, and the security-scoped bookmark (AC-34)
+            viewModel.chooseTraceFolder(url)   // [trace] folder, and the security-scoped bookmark
             authRefresh = UUID()
         }
         #endif
@@ -145,7 +145,7 @@ struct SettingsView: View {
 }
 
 extension View {
-    /// AC-10: a notice is an alert whose only text is the notice, with OK
+    /// A notice is an alert whose only text is the notice, with OK
     /// (a question: Yes and No); the next follows when it is closed.
     func noticeAlert(_ viewModel: EmulatorViewModel, when shown: Bool = true) -> some View {
         modifier(NoticeAlert(viewModel: viewModel, shown: shown))

@@ -2,7 +2,7 @@
 ; .github/workflows/calc-u-59.yml after windeployqt has staged frontends/qt6/dist.
 ; /DAPP_ARCH=arm64 builds the ARM64 installer; the default is x64.
 ; The version comes from the CMake build: the root project's build/release
-; tree (ADR 0003), generated/Version.iss of the Qt6 app's directory in it,
+; tree, generated/Version.iss of the Qt6 app's directory in it,
 ; itself from the Xcode project's MARKETING_VERSION.
 
 #ifndef APP_ARCH

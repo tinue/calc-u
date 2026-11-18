@@ -11,12 +11,12 @@ class EmulatorController;
 
 // The calculator canvas, the faceplate: base artwork (2064×4075) with the LED
 // display and cue card painted over it, the pressed-key effect drawn from
-// live input (`held-keys`, LIB-5 AC-19), and the physical keyboard as the
+// live input (`held-keys`), and the physical keyboard as the
 // library's host keys (calcu::qt6::HostKeys; the product's keyboard map,
-// app/TITyping, decides; LIB-5 AC-7, D-40). The pointer on it is the shell's
-// (LIB-14 AC-24, AC-43; Shell::setFaceplate with the hit map of
+// app/TITyping, decides). The pointer on it is the shell's
+// (Shell::setFaceplate with the hit map of
 // app/TIShellProduct, scale() and origin() below); a press on a fitted card
-// on show is the product's (cardTakes(), C59-7's card tap; D-44). The
+// on show is the product's (cardTakes(), the card tap). The
 // counterpart of App/Views/KeyboardView.swift.
 class KeyboardWidget : public QWidget {
     Q_OBJECT
@@ -33,7 +33,7 @@ public:
     double scale() const;
     QPointF origin() const { return canvasRect().topLeft(); }
     /// A press at (x, y) in base-image pixels that the product takes first: on
-    /// the card window while a fitted card is on show (C59-7 AC-12, D-12).
+    /// the card window while a fitted card is on show.
     bool cardTakes(double x, double y) const;
 
 protected:

@@ -1,10 +1,8 @@
-# What Calc-U-59 bundles from examples/ (docs/formats/bundle.md; C59-2
-# AC-13, AC-14): the three startup presets, and the examples the Web
-# frontend offered in 2.3.0, in today's order within the groups of C59-2
-# OQ-3 (fastmode-sst last of "Programs", behaviour change 59-26). Every
-# distribution (Qt6, Swift, Web) bundles exactly the files listed here.
-# globe-print.ti59, the fourth printer picture, came back with the magnetic
-# cards of C59-7 (M-55): the Web offers ten examples, as 2.3.0 did.
+# What Calc-U-59 bundles from examples/ (docs/formats/bundle.md): the three
+# startup presets, and the examples the Web frontend offered in 2.3.0, in
+# today's order within their groups (fastmode-sst last of "Programs"). Every
+# distribution (Qt6, Swift, Web) bundles exactly the files listed here. The
+# Web offers ten examples, as 2.3.0 did.
 
 format: example-bundle
 format-version: 1

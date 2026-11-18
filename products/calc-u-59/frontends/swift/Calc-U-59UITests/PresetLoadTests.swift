@@ -26,8 +26,8 @@ final class PresetLoadTests: XCTestCase {
 
     // MARK: - Tests
 
-    /// C59-8 AC-17: a preset loaded through the file picker runs. The load's
-    /// end is the reply to the bare `wait` through attach (AC-21); the
+    /// A preset loaded through the file picker runs. The load's
+    /// end is the reply to the bare `wait` through attach; the
     /// diagnostic shows its result on the display.
     @MainActor
     func testLoadDiagPreset() throws {

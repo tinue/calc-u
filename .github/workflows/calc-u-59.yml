@@ -63,12 +63,30 @@ jobs:
     # Playwright tests against it, and the same dist/ zipped (Calc-U-59 has no
     # test-only command to leave out of a release; reference/WebClient.md).
     runs-on: ubuntu-24.04
+    # Microsoft's Playwright image: Chromium, WebKit and their system
+    # libraries are in it (/ms-playwright), so no `playwright install
+    # --with-deps`. Its tag is the Playwright version the three
+    # package-lock.json files lock (tools/check_playwright_version.sh).
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+    # In a container, run steps default to sh; bash as on the runner. A job's
+    # defaults replace the workflow's, so the product directory again.
+    defaults:
+      run:
+        shell: bash
+        working-directory: products/calc-u-59
     steps:
       - uses: actions/checkout@v5
+      # The checkout belongs to another user than the container's root; without
+      # this git refuses it and dist/MANIFEST.json's commit is "unknown".
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      # The image lacks these: unzip for setup-emsdk's download, xz for
+      # emsdk's archives, zip for the release zip. Root in the container.
       - name: Install build tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build
+          apt-get update
+          apt-get install -y --no-install-recommends cmake ninja-build zip unzip xz-utils
       - name: Install emsdk
         uses: mymindstorm/setup-emsdk@v16
         with:
@@ -85,21 +103,17 @@ jobs:
         run: frontends/web/build.sh
       - name: Install Playwright
         working-directory: products/calc-u-59/frontends/web
-        run: |
-          npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium webkit
+        run: npm ci --no-audit --no-fund
       - name: Test
         run: frontends/web/run-tests.sh
       # The library's Web frontend shell: its test product,
       # built in the same build/web with this workflow's Emscripten, and its
-      # Playwright tests in Chromium and WebKit (library/web/package-lock.json
-      # pins its own Playwright; its browsers are installed when they differ).
+      # Playwright tests in Chromium and WebKit, the container's browsers.
       - name: Test the library's Web frontend shell
         working-directory: library/web
         shell: bash
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium webkit
           tests/run-tests.sh --reporter=line
       - name: Zip dist/
         run: |

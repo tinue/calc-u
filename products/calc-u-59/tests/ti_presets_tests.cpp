@@ -195,7 +195,7 @@ TEST(lib6_ac39_user_keys_dropped_second_load_refused) {
 TEST(lib6_ac40_type_and_syncclock_refused_when_read) {
     PresetRead r;
     CHECK(!r.error(head() + "keys:\n  - type: 12\n").empty());
-    CHECK(!r.error(head() + "keys:\n  - syncclock:\n").empty());
+    CHECK(!r.error(head() + "keys:\n  - sync-clock:\n").empty());
     cu59::TIPresetRules rules;
     CHECK(rules.forModel(calcu::machine::ModelId{"TI-59"}).applies("type") == calcu::presets::Applies::NotForThisModel);
     CHECK(rules.forModel(calcu::machine::ModelId{"TI-58"}).applies("card") == calcu::presets::Applies::NotForThisModel);

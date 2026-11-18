@@ -88,10 +88,10 @@ builds the test build and tests it, then builds `--release`, checks it
   |---|---|
   | `width` | The client's width in CSS pixels (default: its parent's) |
   | `keyboard` | Take the physical keyboard while focused (default true) |
-  | `layout` | `"auto"`, the only one and the default; another value is ignored with a console warning |
-  | `preset` | A bundled preset to load at start, by its path in `bundle.yaml` (`plotter/lissajou-1600.pc1600`; started as `examples:<path>`) |
+  | `layout` | `"auto"`, the only one and the default; another value is ignored with a console warning (the library's `embedProps`) |
+  | `preset` | A bundled preset to load at start, by its path in `bundle.yaml`, with or without `examples:` (`plotter/lissajou-1600.pc1600`; started as `examples:<path>`) |
   | `height` | The client's height in CSS pixels (default: its parent's) |
-  | `model` | A model's name (`PC-1500`, `PC-1500A`, `PC-1600`; 0-2 still taken): start with it (read once, at mount) |
+  | `model` | A model's name (`PC-1500`, `PC-1500A`, `PC-1600`): start with it (read once, at mount); another value, an index too, is a notice |
   | `workerUrl` | Another worker entry (the app uses `app/engine-worker.js`) |
 
   The family's shared props in their order (LIB-15 AC-16, AC-29,

@@ -139,19 +139,19 @@ TEST(ac34_printer_trace_refused_without_printer) {
     CHECK(!controlOn(run.machine(), "trace"));
 }
 
-TEST(ac34_switch_sets_a_control) {
+TEST(ac34_set_control_sets_a_control) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
     CHECK_EQ(run.line("attach printer test-printer"), std::string("done\n"));
-    CHECK_EQ(run.line("switch test-printer online on"), std::string("done\n"));
+    CHECK_EQ(run.line("set-control test-printer online on"), std::string("done\n"));
     CHECK(controlOn(run.machine(), "online"));
-    CHECK_EQ(run.line("switch TEST-PRINTER feed on"), std::string("done\n"));   // a key: pressed
+    CHECK_EQ(run.line("set-control TEST-PRINTER feed on"), std::string("done\n"));   // a key: pressed
     CHECK(controlOn(run.machine(), "feed"));
-    CHECK_EQ(run.line("switch test-printer feed off"), std::string("done\n"));
+    CHECK_EQ(run.line("set-control test-printer feed off"), std::string("done\n"));
     CHECK(!controlOn(run.machine(), "feed"));
-    CHECK_EQ(run.line("switch test-printer lid on"), std::string("refused: The test-printer has no control lid.\n"));
-    CHECK(startsWith(run.line("switch test-printer online"), "refused: usage: switch"));
+    CHECK_EQ(run.line("set-control test-printer lid on"), std::string("refused: The test-printer has no control lid.\n"));
+    CHECK(startsWith(run.line("set-control test-printer online"), "refused: usage: set-control"));
 }
 
 TEST(ac34_syncclock_takes_the_run_clock) {
@@ -163,9 +163,9 @@ TEST(ac34_syncclock_takes_the_run_clock) {
     if (!run.server) return;
     CHECK_EQ(run.line("model test-dot"), std::string("done\n"));
     run.line("wait 2s");
-    CHECK_EQ(run.line("syncclock"), std::string("done\n"));
+    CHECK_EQ(run.line("sync-clock"), std::string("done\n"));
     const auto f = run.machine().clock()->read();
     CHECK(f.month == 5 && f.day == 6 && f.hour == 7 && f.minute == 8 && f.second == 9);
     TestRun seg;
-    CHECK_EQ(seg.line("syncclock"), std::string("refused: syncclock is not available on the test-seg.\n"));
+    CHECK_EQ(seg.line("sync-clock"), std::string("refused: sync-clock is not available on the test-seg.\n"));
 }

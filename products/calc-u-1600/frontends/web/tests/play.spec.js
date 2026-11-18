@@ -39,17 +39,25 @@ test('boots, and each model comes up', async ({ page }) => {
   await expect(page.locator(c('notice'))).toHaveCount(0);
 });
 
+// LIB-15 AC-16 (V-13, ledger 1600-55): ?model= by the model's name only (an
+// index is no model); ?preset= a path of the bundle with or without `examples:`.
 test('?model= and ?preset= start with them', async ({ page }) => {
-  await gotoReady(page, '?model=2');
+  await gotoReady(page, '?model=PC-1600');
   await expect(page.locator('.calcu-face[data-model="PC-1600"]')).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator(c('notice'))).toHaveCount(0);
-  await gotoReady(page, '?model=0');
+  await gotoReady(page, '?model=PC-1500');
   await expect(page.locator('.calcu-face[data-model="PC-1500"]')).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator(c('notice'))).toHaveCount(0);
+  await gotoReady(page, '?model=2');
+  await expect(page.locator(c('notice'))).toContainText('There is no model "2"');
+  // started as without it: the last used model
+  await expect(page.locator('.calcu-face[data-model="PC-1500"]')).toHaveCount(1, { timeout: 30000 });
   await page.setViewportSize(TALL);
-  await gotoReady(page, '?preset=plotter/rectangles-1600.pc1600');
-  await expect(page.locator('[data-panel=paper][data-empty=false]')).toHaveCount(1, { timeout: 45000 });
-  await expect(page.locator(c('notice'))).toHaveCount(0);
+  for (const preset of ['plotter/rectangles-1600.pc1600', 'examples:plotter/rectangles-1600.pc1600']) {
+    await gotoReady(page, `?preset=${preset}`);
+    await expect(page.locator('[data-panel=paper][data-empty=false]')).toHaveCount(1, { timeout: 45000 });
+    await expect(page.locator(c('notice'))).toHaveCount(0);
+  }
 });
 
 // Settings > Startup presets (LIB-18 §10.4; the startup presets of

@@ -4,8 +4,6 @@
 // went in M-57): a component sends the library's commands and the
 // product's (`c59.*`) by name and reads the topics as the session sends them.
 //
-//   bundlePathOf(preset)  the preset prop as its bundle path `examples:<path>`
-//       (LIB-15 N3) for LIB-18's `start {model, preset}`
 //   createC59Traces() → {services, list, subscribe, download}
 //       the page's host services for useShell (the library's, with the
 //       traces the session hands over with keep-file kept: LIB-10 AC-26,
@@ -19,12 +17,6 @@
 const PRODUCT = "Calc-U-59";
 const C59_PAGE = React.createContext(null);
 const C59_LOG_KEEP = 2000;
-
-// "sum.ti59" → "examples:sum.ti59" (a path of bundle.yaml as its bundle path); empty stays empty.
-function bundlePathOf(preset) {
-  if (!preset) return "";
-  return preset.startsWith("examples:") ? preset : `examples:${preset}`;
-}
 
 function createC59Traces() {
   const kept = new Map();

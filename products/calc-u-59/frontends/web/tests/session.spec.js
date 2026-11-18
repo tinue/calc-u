@@ -77,10 +77,30 @@ test('ac29 CalcU59 is the component, PlayCalculator is gone', async ({ page }) =
 });
 
 // LIB-15 AC-16 (LIB-6 §11.6 P11): the `preset` prop is a path of
-// bundle.yaml, which the page hands LIB-18's start as its bundle path.
+// bundle.yaml, with or without `examples:`, which the page hands LIB-18's
+// start as its bundle path.
 test('lib15_ac16 preset prop takes a path of bundle.yaml', async ({ page }) => {
-  await gotoReady(page, 'layout=wide&preset=sum.ti59');
-  await expect(page.locator('.cuecard')).toHaveAttribute('aria-label', /Sum 1\.\.N/, { timeout: 10000 });
+  for (const preset of ['sum.ti59', 'examples:sum.ti59']) {
+    await gotoReady(page, `layout=wide&preset=${preset}`);
+    await expect(page.locator('.cuecard')).toHaveAttribute('aria-label', /Sum 1\.\.N/, { timeout: 10000 });
+  }
+});
+
+// LIB-15 AC-29 (L-11, ledger 59-67): a layout that is not one of Calc-U-59's
+// is ignored with a console warning, and the default, portrait, is drawn.
+test('ac29 an unknown layout is ignored with a warning', async ({ page }) => {
+  const warnings = [];
+  page.on('console', (m) => { if (m.type() === 'warning') warnings.push(m.text()); });
+  await gotoReady(page, 'layout=wide');
+  await page.evaluate(() => {
+    const div = document.createElement('div');
+    div.id = 'layout-tall';
+    document.body.appendChild(div);
+    ReactDOM.createRoot(div).render(React.createElement(CalcU59, { layout: 'tall', width: 400, height: 700 }));
+  });
+  await expect(page.locator('#layout-tall .calcu-client')).toHaveAttribute('data-layout', 'portrait', { timeout: 10000 });
+  await expect.poll(() => warnings.filter((w) => /layout/.test(w))).toEqual(
+    ['CalcU59: layout "tall" is not one of its layouts ("portrait", "wide", "auto"); it is ignored.']);
 });
 
 test('ec4 an unknown model or preset gives a notice and starts without it', async ({ page }) => {

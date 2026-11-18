@@ -257,7 +257,7 @@ Carrying it out
   until the machine has been resumed and is idle; the `timeout:` does
   not run meanwhile, since no emulated time passes (`preset.md` §6.3).
   Of this feature's steps, the speed steps, `elapsed-time`, `expect`,
-  `screenshot` and `syncclock` need no running machine. A `wait:` with
+  `screenshot` and `sync-clock` need no running machine. A `wait:` with
   a duration passes in the host's time while the machine is paused and
   ends with the machine still paused, as `Wait:` does in 2.3.0; in the
   harness, which has no wall clock, it ends at once (user, 2026-11-11;
@@ -366,7 +366,7 @@ The steps of this feature
   when it is read: the format has no such step. A peripheral's switch is
   set by a step of its own, which its owner adds (AC-29): the PC-100C's
   TRACE switch by `printer-trace: on|off` (AC-40; `preset.md` §5.5).
-- [ ] **AC-27** — Given the step `syncclock:`, which takes no value, on
+- [ ] **AC-27** — Given the step `sync-clock:`, which takes no value, on
   a Sharp model, then every real-time clock of the machine is handed the
   host's date and time as at a build (LIB-2 AC-23; in the harness, the
   date and time of LIB-11 AC-21), and the log gets the
@@ -469,8 +469,8 @@ Harness
   | `not-expect <text>` | AC-66 | done, or refused with what the display shows |
   | `screenshot <file name>` | AC-25, written under that name to the run's folder for screenshots (LIB-11 AC-8) | done, or refused |
   | `printer-trace on\|off` | AC-40 | done, or refused without a PC-100C |
-  | `switch <peripheral> <control> on\|off` | harness only: sets a switch through the controls capability (LIB-2 AC-16); the preset step is the peripheral's own (AC-26) | done, or refused for an unknown control |
-  | `syncclock` | AC-27 | done |
+  | `set-control <peripheral> <control> on\|off` | harness only: sets a switch through the controls capability (LIB-2 AC-16); the preset step is the peripheral's own (AC-26) | done, or refused for an unknown control |
+  | `sync-clock` | AC-27 | done |
 
   (Calc-U-1600 `tools/pc1600_cli.cpp:97-99, 243-258`; LIB-11 AC-14,
   AC-18.)
@@ -806,3 +806,4 @@ Harness
 | `expect:` and `not-expect:` take a regular expression written between slashes on the Sharp models; the TI models refuse it (AC-67, AC-68) | user, 2026-11-14 (regular expression instead of a whole-word option) | 2026-11-14 |
 | Calc-U-59's Web follows AC-25 and D-13: a preset's `screenshot:` is handed over with KeepFile as a download (it was written into the browser's save folder); `LibraryPartsSetup::screenshotFolder` is gone | user, 2026-11-17, Q-1 of `docs/reviews/e-simplification.md`; ledger row 59-63 | 2026-11-17 |
 | The step that inserts a cassette is `cassette:` (was `tape:`; the ACs edited in place) | user, 2026-11-17 (Part E review Q-6); LIB-7 AC-26; behaviour change 1600-51 | 2026-11-17 |
+| Release simplification R-4: the harness command `switch <peripheral> <control> on\|off` is `set-control`, the name of the session command it sends; the step `syncclock:` is `sync-clock:` (and so its harness command), as `docs/formats/README.md` §1 spells keywords; AC-27, AC-34 and the text edited in place | `docs/reviews/release-simplification.md` V-5, V-7; ledgers 59-67, 1600-55 | 2026-11-18 |

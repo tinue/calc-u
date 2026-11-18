@@ -124,7 +124,7 @@ private:
     void readMemory(const Value& args, Body* body, std::string* error);
     void writeMemory(const Value& args, Body* body, std::string* error);
     void evaluate(const Value& args, Body* body, std::string* error);
-    void screen(Body* body, std::string* error);
+    void displayText(Body* body, std::string* error);
 
     // ── Requests answered at the end of an operation (DapSetup.cpp, D-1) ──
     // attach/launch, restart, c1600/load, c1600/reset: false when it

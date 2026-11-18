@@ -1,7 +1,7 @@
 // This feature's keywords (LIB-6 design §3.5; spec AC-4, AC-20 to AC-28,
 // AC-66): `keys:` is the reader's; here the steps key, type, wait,
 // regular-speed, full-speed, elapsed-time, expect, not-expect, screenshot
-// and syncclock.
+// and sync-clock.
 #include "files/Files.hpp"
 #include "formats/Duration.hpp"
 #include "formats/Flow.hpp"
@@ -178,7 +178,7 @@ private:
     pacing::Speed speed_;
 };
 
-// ── elapsed-time, expect, not-expect, screenshot, syncclock ─────────────
+// ── elapsed-time, expect, not-expect, screenshot, sync-clock ─────────────
 
 class ElapsedItem final : public Item {
 public:
@@ -313,7 +313,7 @@ public:
     }
     After after() const override { return After::TakenEffect; }
     bool needsRunningMachine() const override { return false; }
-    std::string logText() const override { return "syncclock"; }
+    std::string logText() const override { return "sync-clock"; }
 };
 
 } // namespace
@@ -336,7 +336,7 @@ void addLibraryKeywords(Vocabulary& v) {
     v.add(StepDef{"expect", StepDef::Value::Raw, readExpect(false), true, false});
     v.add(StepDef{"not-expect", StepDef::Value::Raw, readExpect(true), true, false});
     v.add(StepDef{"screenshot", StepDef::Value::Scalar, readScreenshot, true, false});
-    v.add(StepDef{"syncclock", StepDef::Value::None,
+    v.add(StepDef{"sync-clock", StepDef::Value::None,
                   [](const YamlNode&, ReadContext&) -> std::unique_ptr<Item> { return std::make_unique<SyncClockItem>(); },
                   true, false});
 }

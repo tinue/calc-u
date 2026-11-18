@@ -2,10 +2,17 @@
 // design §3.1; spec AC-16, EC-4, EC-5). React 18 is a global of the host
 // page (AC-15).
 //
-//   embedProps(props) → {width, keyboard (default true), layout, preset,
-//                        height, model, workerUrl, rest}: the shared props
-//                        in their order (AC-16, AC-29), then the product's
-//                        own in rest; layout has the product's default
+//   embedProps(props, {name, layouts, layout}) → {width, keyboard (default
+//                        true), layout, preset, height, model, workerUrl,
+//                        rest}: the shared props in their order (AC-16,
+//                        AC-29), then the product's own in rest; layout is
+//                        one of the product's layouts, else its default (a
+//                        value not among them is ignored with a console
+//                        warning naming the component `name`)
+//   bundlePathOf(preset) the preset prop as its bundle path: "sum.ti59" and
+//                        "examples:sum.ti59" both give "examples:sum.ti59"
+//                        (AC-16; LIB-18's `start {model, preset}`); empty
+//                        stays empty
 //   useFillParent(ref, {width, height}) → {width, height}: the props when
 //                        both are given, else the size of ref's parent
 //   useShell(product, embedded, services) → the shell (null until the effect
@@ -20,9 +27,24 @@
 // embedProps only names and defaults the props; whether a model or a
 // preset names something is the session's start (EC-4).
 
-function embedProps(props) {
+const CALCU_LAYOUT_WARNED = new Set();
+
+function embedProps(props, product) {
   const { width, keyboard = true, layout, preset, height, model, workerUrl, ...rest } = props || {};
-  return { width, keyboard: keyboard !== false, layout, preset, height, model, workerUrl, rest };
+  const { name, layouts, layout: byDefault } = product;
+  let taken = byDefault;
+  if (layout !== undefined && layouts.includes(layout)) taken = layout;
+  else if (layout !== undefined && !CALCU_LAYOUT_WARNED.has(`${name} ${layout}`)) {
+    CALCU_LAYOUT_WARNED.add(`${name} ${layout}`);   // once, not at every render
+    console.warn(`${name}: layout ${JSON.stringify(layout)} is not one of its layouts ` +
+      `(${layouts.map((l) => JSON.stringify(l)).join(", ")}); it is ignored.`);
+  }
+  return { width, keyboard: keyboard !== false, layout: taken, preset, height, model, workerUrl, rest };
+}
+
+function bundlePathOf(preset) {
+  if (!preset) return "";
+  return preset.startsWith("examples:") ? preset : `examples:${preset}`;
 }
 
 function useFillParent(ref, { width, height }) {

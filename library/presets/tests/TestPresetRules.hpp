@@ -20,7 +20,7 @@
 //   after the build: counted; a test may give a step of its own (a pause).
 //   picture   the display output as bytes (no PNG in M-38, D-13).
 //   compare   the text of LIB-11's test product's display rule.
-//   markers   syncclock is for test-dot only; printer-trace for test-seg
+//   markers   sync-clock is for test-dot only; printer-trace for test-seg
 //             only; test-undefined is [undefined] everywhere.
 // Keywords added as a product adds its own (AC-29):
 //   test-header:   a header key with a block { level: <number>, note: <text>, flag: <bool> }
@@ -88,7 +88,7 @@ public:
         } else {
             rule.stretch = machine::Seconds(0.002);
             rule.sample = 10;
-            marks["syncclock"] = Applies::NotForThisModel;
+            marks["sync-clock"] = Applies::NotForThisModel;
         }
         marks["test-undefined"] = Applies::Undefined;
     }

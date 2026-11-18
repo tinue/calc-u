@@ -23,7 +23,6 @@ const INSPECTOR_MIN_WIDTH = 700; // narrower: the inspector only when no other p
 const SHIFT_TAP_MS = 400;
 const SHIFT_TAP_POINTER = 1000;   // the screen press a SHIFT tap is sent as (no pointer of the faceplate)
 const IS_MAC = CALCU_HOST_IS_MAC;
-const MODEL_IDS = ["PC-1500", "PC-1500A", "PC-1600"];
 const DEFAULT_MODEL = "PC-1500A";
 
 // A grey image (Copy Screen) as a PNG Blob.
@@ -148,22 +147,14 @@ const C1600_NO_PRODUCT = { name: "Calc-U-1600", items: [], variantLabels: {}, mo
 
 // The props (LIB-15 AC-16, AC-24, AC-29): the shared ones of embedProps
 // (width, keyboard, layout, preset, height, model, workerUrl). One layout:
-// `layout` takes "auto" only (the default); another value is ignored with a
-// console warning.
-const C1600_LAYOUTS = ["auto"];
-
+// `layout` takes "auto" only (the default); embedProps ignores another value
+// with a console warning. `model` is the model's name (PC-1600); `preset` a
+// path of the bundle, with or without `examples:`.
 function CalcU1600(props) {
-  const embedded = embedProps(props);
-  const { width, height, keyboard, layout } = embedded;
-  React.useEffect(() => {
-    if (layout !== undefined && !C1600_LAYOUTS.includes(layout))
-      console.warn(`CalcU1600: layout ${JSON.stringify(layout)} is not one of its layouts ("auto"); it is ignored.`);
-  }, [layout]);
-  // ?model= takes the model's index or its name; ?preset= a path under presets/.
-  const modelProp = embedded.model === undefined || embedded.model === null || embedded.model === "" ? ""
-    : Number.isInteger(Number(embedded.model)) ? (MODEL_IDS[Number(embedded.model)] || "") : String(embedded.model);
-  const shell = useShell("Calc-U-1600", { ...embedded, model: modelProp,
-    preset: embedded.preset ? `examples:${embedded.preset}` : "" });
+  const embedded = embedProps(props, { name: "CalcU1600", layouts: ["auto"], layout: "auto" });
+  const { width, height, keyboard } = embedded;
+  const modelProp = embedded.model ? String(embedded.model) : "";
+  const shell = useShell("Calc-U-1600", { ...embedded, model: modelProp, preset: bundlePathOf(embedded.preset) });
   const rootRef = React.useRef(null);
   const hostKeys = React.useRef(null);        // the host keys held (the library's calcuHostKeys)
   if (!hostKeys.current) hostKeys.current = calcuHostKeys();

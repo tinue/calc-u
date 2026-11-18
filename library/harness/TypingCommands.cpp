@@ -18,7 +18,7 @@ Reply fromSessionReply(const sessions::ReplyMessage& r) {
 }
 
 Reply keyCmd(CommandContext& c) {
-    if (c.line.argText.empty()) return refusedReply("usage: key <name> [<name> ...]");
+    if (c.line.argText.empty()) return refusedReply("usage: key <key ID> ...");
     sessions::Value::Array names;
     std::string word;
     for (char ch : c.line.argText + " ") {
@@ -41,7 +41,7 @@ Reply typeCmd(CommandContext& c) {
 } // namespace
 
 void addTypingCommands(CommandRegistry& r) {
-    r.add("key", keyCmd, "key <name> [<name> ...]  press the keys in turn; replies when the last is up");
+    r.add("key", keyCmd, "key <key ID> ...         press the keys in turn; replies when the last is up");
     r.add("type", typeCmd, "type <text>              type the text and ENTER (Sharp); replies when ENTER is up");
 }
 

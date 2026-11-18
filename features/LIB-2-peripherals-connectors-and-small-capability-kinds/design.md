@@ -40,7 +40,7 @@ only in Part D (plan §5.1).
     LIB-7 1600 in **M-47** (LIB-7 AC-19). The column is Done there.
 - Not here: the attach and detach commands and running the power cycle as
   an operation (LIB-18, M-35/M-46/M-54), "available now" in the control
-  state (LIB-4), `syncclock` and `switch` (LIB-6), media places (LIB-7),
+  state (LIB-4), `sync-clock` and `set-control` (LIB-6), media places (LIB-7),
   harness serial commands (a Calc-U-1600 product command, LIB-11/H-2).
 
 ## 2. Modules and files
@@ -370,7 +370,7 @@ implementation left.
 | Write-protect | `MachineSession::setSlotWriteProtected` (`:571-576`), used by `app/ModuleBay.cpp` | `Controls::set(write-protect)` | M-47 (LIB-7 1600, LIB-7 AC-19) |
 | Product-held host links | `MachineSession` members `m_serialLink`, `m_ce158SerialLink`, `wireNewMachine`, `refreshSerialLinkDirectory`, `serialLinkStatus`, `ce158SerialLinkStatus` (`app/MachineSession.hpp:268-275, 372-380`) | one `calcu::peripherals::HostLinks`, pumped after each `runActive` slice | M-31 (the library app session holds it, LIB-3 1600) |
 | Clock seeding | `MachineSession::seedClockFromHost` (`:223-225`), called by `app/AppSession.cpp:71, 88` and `frontends/qt6/app/EmulationPacer.cpp:29` | `setClocksFromHost(machine, hostDateTime(source()))` | M-31 (the library session does it at build and at the end of every operation) |
-| `syncclock` step | `core/Preset/PresetRunner.hpp:177` (`syncClock()`), and `PC1500PresetLoader`/`PC1600PresetLoader` | `setClocksFromHost` | M-46 (LIB-6 1600) |
+| `sync-clock` step | `core/Preset/PresetRunner.hpp:177` (`syncClock()`), and `PC1500PresetLoader`/`PC1600PresetLoader` | `setClocksFromHost` | M-46 (LIB-6 1600) |
 
 No adapter is added in M-23.
 

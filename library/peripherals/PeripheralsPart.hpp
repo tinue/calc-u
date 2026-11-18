@@ -14,7 +14,7 @@
 // - The command `set-control {peripheral, place?, control, on}` (LIB-6
 //   D-16): a switch of a plugged peripheral set, or a key of it pressed
 //   (`on: true`) or released, through the controls capability (AC-16); the
-//   harness's `switch` and LIB-8's paper panel send it.
+//   harness's `set-control` and LIB-8's paper panel send it.
 // A product without serial ports passes no rules.
 
 namespace calcu::peripherals {

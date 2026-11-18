@@ -66,8 +66,8 @@ appears there, a pseudo-terminal that any serial program can open.
 - Media places, the content of a peripheral that holds memory, and
   saving a switch position with it (owner: LIB-7); paper output (LIB-8);
   typing support (LIB-5); debug targets (LIB-10).
-- The step `syncclock` and the harness commands `switch` and
-  `syncclock` (owner: LIB-6, which builds on this feature); the step
+- The step `sync-clock` and the harness commands `set-control` and
+  `sync-clock` (owner: LIB-6, which builds on this feature); the step
   `printer-trace` (owner: LIB-6 AC-40, C59-6); harness commands for a serial
   port (`harness.md` H-2: a Calc-U-1600 product command; see the open
   point in `features/INDEX.md`).
@@ -351,3 +351,4 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | In the harness the real-time clock gets the date and time of LIB-11 AC-21, by default a fixed instant (AC-23) | user, 2026-11-13 (B-20 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: the step `printer-trace` and the harness command `switch` (Out of Scope) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | `set-control` for a peripheral that is not plugged in is refused with "No <peripheral> is plugged in."; Calc-U-59 accepts it for the PC-100C (C59-6 AC-12) | user, 2026-11-17, Q-3 of `docs/reviews/e-simplification.md`; ledger row 59-64 | 2026-11-17 |
+| Release simplification R-4: the harness commands named in Out of Scope are `set-control` (was `switch`) and `sync-clock` (was `syncclock`), as LIB-6 names them | `docs/reviews/release-simplification.md` V-5, V-7 | 2026-11-18 |

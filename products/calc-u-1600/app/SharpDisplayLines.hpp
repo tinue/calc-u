@@ -19,5 +19,9 @@ calcu::harness::DisplayText displayLines(const calcu::machine::DisplayOutput&, c
                                          const calcu::harness::GlyphFont&);
 // With the font of the machine's ROM.
 calcu::harness::DisplayText displayLines(calcu::machine::Machine&, const calcu::machine::DisplayOutput&);
+// As the harness's `display-text` reads it (app/LcdTextPart): with the font
+// of the machine's ROM and the cell under the cursor the ROM reports read as
+// the character it saved there. The DAP's `c1600/display-text` (C1600-3 AC-17).
+calcu::harness::DisplayText displayTextNow(calcu::machine::Machine&, const calcu::machine::DisplayOutput&);
 
 } // namespace cu1600

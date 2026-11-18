@@ -5,7 +5,7 @@ Connects to a running app (started with `--dap <port>`, or with the debug
 server enabled in Settings) or to the harness, attaches, and drives the requests VS Code
 uses: threads, pause, stackTrace/scopes/variables, disassemble, readMemory,
 evaluate, instruction and data breakpoints, stepping, continue, disconnect,
-and the c1600/screen text read-out.
+and the c1600/display-text read-out.
 
 Stdlib only:  uv run tools/dap_smoke.py [--port 32168] [--app PATH | --harness PATH]
 With --app the script starts the app itself (with --dap), with --harness
@@ -510,8 +510,9 @@ def reset_run(port):
     dap.sock.close()
 
 
-def screen_run(port):
-    """c1600/screen: the LCD as text, after a typed PRINT MEM."""
+def display_text_run(port):
+    """c1600/display-text: the LCD as text, after a typed PRINT MEM (the keys
+    of the harness's `display-text`)."""
     print("Screen run:")
     dap = Dap(port)
     dap.request("initialize", adapterID="c1600")
@@ -522,13 +523,13 @@ def screen_run(port):
     screen = {}
     deadline = time.time() + 15
     while time.time() < deadline:
-        screen = dap.request("c1600/screen")
+        screen = dap.request("c1600/display-text")
         if any("11834" in row for row in screen.get("rows", [])):
             break
         time.sleep(0.25)
     check(any("11834" in row for row in screen.get("rows", [])), f"screen rows: {screen.get('rows')}")
-    check(screen.get("unparsed") == 0 and screen.get("poweredOn") is True,
-          f"unparsed {screen.get('unparsed')}, status {screen.get('status')}")
+    check(screen.get("notText") == 0 and screen.get("on") is True,
+          f"notText {screen.get('notText')}, indicators {screen.get('indicators')}")
     dap.request("disconnect")
     dap.sock.close()
 
@@ -683,7 +684,7 @@ def main():
         named("main", check.failures)
         # Each scenario under its test name (C1600-3 AC-20, design T14).
         for scenario in (program_run, pc1600_run, project_run, bus_rom_run, renum_template_run, rom_run, reset_run,
-                         lh5803_run, screen_run, vscode_session):
+                         lh5803_run, display_text_run, vscode_session):
             before = check.failures
             scenario(args.port)
             named(scenario.__name__, check.failures - before)

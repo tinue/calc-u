@@ -53,4 +53,4 @@ keys:
   - type: PRINT"Memory:  ";M;"           Diskette:";X;"           Slot2:   ";S
   - key: enter
 # Sync clock again
-  - syncclock:
+  - sync-clock:

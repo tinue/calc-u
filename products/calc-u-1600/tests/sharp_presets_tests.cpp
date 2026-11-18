@@ -320,7 +320,7 @@ TEST(lib6_ac50_test_wait_step_value) {
 TEST(lib6_ac50_test_syncclock_step) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     HarnessPreset h;   // the harness's host clock: 2000-01-01 00:00:00 (LIB-11 AC-21)
-    CHECK(h.loadIdle(k1500a + "keys:\n  - wait: 30s\n  - syncclock:\n", "t.pc1500a"));
+    CHECK(h.loadIdle(k1500a + "keys:\n  - wait: 30s\n  - sync-clock:\n", "t.pc1500a"));
     calcu::machine::Machine* m = h.machine();
     auto* clock = m ? calcu::machine::first<calcu::peripherals::RealTimeClock>(*m) : nullptr;
     CHECK(clock != nullptr);

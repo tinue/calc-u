@@ -45,9 +45,15 @@
   …), settings (`c1600.port`, `c1600.zasmPath`, …) and problem matchers
   (`$c1600-sdas`, `$c1600-zasm`): re-create a project's `launch.json` and
   `tasks.json`, or edit them, and rename the settings. The debug server's
-  own requests are `c1600/load`, `c1600/reset`, `c1600/screen`,
-  `c1600/quit`. The harness is `calcu --product c1600`, its product
-  commands `c1600 …` (were `pc1600 …`), and `lcd` is `display-text`.
+  own requests are `c1600/load`, `c1600/reset`, `c1600/display-text`,
+  `c1600/quit`; `c1600/display-text` answers with the keys of the
+  harness's `display-text` (`on`, `rows`, `indicators`, `notText`). The
+  harness is `calcu --product c1600`, its product commands `c1600 …` (were
+  `pc1600 …`), and `lcd` is `display-text`; its `switch` is `set-control`.
+- **Presets:** the clock step is `- sync-clock:` (was `- syncclock:`).
+- **Web embedding:** `model` (and `?model=`) takes the model's name only,
+  not its number; `preset` (and `?preset=`) takes a bundled path with or
+  without `examples:`.
 
 ## [0.8.1] - 2026-11-14
 

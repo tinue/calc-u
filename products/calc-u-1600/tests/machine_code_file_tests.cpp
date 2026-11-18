@@ -460,7 +460,7 @@ TEST(not_ram_nothing_written_pc1500) {
     const uint8_t before0 = m.memory().peek(start), before1 = m.memory().peek(static_cast<uint16_t>(start + 1));
     CHECK(!loadPC1500MachineCode(mem, start, kCode.data(), kCode.size(), &err));
     CHECK(err.find("not RAM") != std::string::npos);
-    CHECK(m.memory().peek(start) == before0 && m.memory().peek(static_cast<uint16_t>(start + 1)) == before1);   // OQ-2
+    CHECK(m.memory().peek(start) == before0 && m.memory().peek(static_cast<uint16_t>(start + 1)) == before1);   // nothing written
     CHECK(!loadPC1500MachineCode(mem, 0xFFFE, kCode.data(), kCode.size(), &err));
 }
 

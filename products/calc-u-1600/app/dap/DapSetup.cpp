@@ -335,7 +335,7 @@ Task<bool> DapSession::buildAndLoad(OperationContext& op, Value d, bool inSetup,
             req.entrySymbol = s;
         }
     }
-    const std::string after = textOf(d, "after", "none");   // OQ-2: none by default
+    const std::string after = textOf(d, "after", "none");   // none by default
     // A clean machine first, unless the load says otherwise.
     if (boolOf(d, "cleanStart", true)) {
         std::string how, why;

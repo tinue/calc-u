@@ -206,7 +206,7 @@ std::optional<CassetteDefinition> cassetteDefinition(const std::string& text, st
         *error = "'audio' must be { file: <sound file> }";
         return std::nullopt;
     }
-    if (const auto* p = root.find("position")) {   // reserved: 0 (OQ-9)
+    if (const auto* p = root.find("position")) {   // reserved: 0
         long pos = -1;
         if (!p->asInt(&pos, error) || pos != 0) {
             *error = "'position' is reserved and must be 0";

@@ -182,7 +182,7 @@ TEST(test_media_library) {
     CHECK(!media.remove(ctx, kindOf(f, cu1600::kModuleKind), "Work", true).ok);   // in slot 1
 
     CHECK(f.choose("slot-1", "").done);
-    CHECK(media.remove(ctx, kindOf(f, cu1600::kModuleKind), "Work", false).reason.rfind("asks:", 0) == 0);   // OQ-4
+    CHECK(media.remove(ctx, kindOf(f, cu1600::kModuleKind), "Work", false).reason.rfind("asks:", 0) == 0);   // asks first
     CHECK(media.remove(ctx, kindOf(f, cu1600::kModuleKind), "Work", true).ok);
     CHECK(findItem(*f.media(), "Work") == nullptr);
     CHECK(media.importBytes(ctx, "Work.module.yaml", bytes, {}).ok);

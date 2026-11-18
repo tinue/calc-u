@@ -1,4 +1,4 @@
-"""The help asset `<Product>-help.zip` and its toc.json (LIB-16 AC-6; design §3.3)."""
+"""The help asset `<Product>-help.zip` and its toc.json (docs/formats/help.md)."""
 
 import json
 import os
@@ -34,7 +34,7 @@ def _relative(from_file, to_file):
 
 
 def rewritten(help_, path, text):
-    """The text of a help file with its relative links rewritten to the asset's places (AC-15, D-4)."""
+    """The text of a help file with its relative links rewritten to the asset's places."""
     own = asset_path(help_, path)
 
     def rewrite(target):
@@ -47,25 +47,7 @@ def rewritten(help_, path, text):
         new = own.name if dest == own else _relative(own, dest)
         return new + (f"#{r.anchor}" if r.anchor else "")
 
-    return markdown.rewrite_links(without_follows(text), rewrite)
-
-
-def without_follows(text):
-    """The text without its `<!-- follows: -->` line and the blank lines after it (AC-17).
-
-    The line is for the check (C6, AC-3); a reader of the asset has no use for it.
-    """
-    lines = text.splitlines(keepends=True)
-    for i, line in enumerate(lines):
-        if not line.strip():
-            continue
-        if not checks.FOLLOWS.match(line.strip()):
-            return text
-        rest = lines[i + 1:]
-        while rest and not rest[0].strip():
-            rest = rest[1:]
-        return "".join(lines[:i] + rest)
-    return text
+    return markdown.rewrite_links(text, rewrite)
 
 
 def build(help_, version, out_dir, used_pictures):

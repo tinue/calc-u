@@ -1,4 +1,4 @@
-"""A YAML reader for the subset the help manifests use (LIB-16 design §3.1).
+"""A YAML reader for the subset the help manifests use.
 
 Block mappings and block sequences by indentation, flow sequences
 `[a, b]` and flow mappings `{ k: v }` on one line, plain and quoted

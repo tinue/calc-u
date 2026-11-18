@@ -1,6 +1,6 @@
 name: Calc-U-1600
 
-# Calc-U-1600 lives in products/calc-u-1600/ (ADR 0002, 0004); every run step
+# Calc-U-1600 lives in products/calc-u-1600/; every run step
 # works there (defaults below).
 
 # Builds the Qt6 app (see docs/developer/Building.md) on Linux x86_64,
@@ -44,14 +44,14 @@ defaults:
     working-directory: products/calc-u-1600
 
 env:
-  # The packaging jobs' tree of the root CMake project (ADR 0003; the Qt6
+  # The packaging jobs' tree of the root CMake project (the Qt6
   # app without the tests) and the Qt6 app's directory in it, relative to
   # the product directory.
   RELEASE_BUILD: ../../build/release
   QT_BUILD: ../../build/release/products/calc-u-1600/frontends/qt6
 
 jobs:
-  # The repository's root CMake project (ADR 0003) with Calc-U-1600 only and
+  # The repository's root CMake project with Calc-U-1600 only and
   # without Qt: the harness `calcu` (with the product's entry) and the test
   # programs on top of the calcu_core / calcu_shared libraries from
   # cmake/CalcU.cmake; the help's checks (tools/help, Python 3 of the
@@ -98,17 +98,17 @@ jobs:
         run: ctest --test-dir ../../build/tests --output-on-failure
 
   library:
-    # The library alone (LIB-1 AC-24), shared with calc-u-59.yml.
+    # The library alone, shared with calc-u-59.yml.
     uses: ./.github/workflows/library.yml
 
   # Core + Shared built for WebAssembly with Emscripten, and a node smoke
   # test running presets cooperatively through the library's app session (no
   # threads, no blocking) -- keeps the frontend-neutral layers portable to
-  # a web GUI. Both build in build/web of the root CMake project (ADR 0003).
+  # a web GUI. Both build in build/web of the root CMake project.
   # Then the web client itself (frontends/web/build.sh), its Playwright
   # tests in Chromium and WebKit (frontends/web/run-tests.sh), then dist/
-  # built again with --release (without c1600.upload and c1600.display-text,
-  # LIB-15 AC-29; only SharpWebPart.cpp is compiled again), checked, and
+  # built again with --release (without the test-only commands c1600.upload
+  # and c1600.display-text; only SharpWebPart.cpp is compiled again), checked, and
   # zipped as the Calc-U-1600-web artifact (release.yaml attaches it). libsharpdx-wasm.a
   # is committed (tools/build_sharpdx_wasm.sh), so no Rust toolchain is
   # needed here. Same Emscripten as it was built with: Rust's
@@ -153,7 +153,7 @@ jobs:
         shell: bash
         run: frontends/web/run-tests.sh --reporter=line
 
-      # The library's Web frontend shell (LIB-15 design D-8): its test product,
+      # The library's Web frontend shell: its test product,
       # built in the same build/web with this workflow's Emscripten, and its
       # Playwright tests in Chromium and WebKit (library/web/package-lock.json
       # pins its own Playwright; its browsers are installed when they differ).
@@ -183,7 +183,7 @@ jobs:
           name: Calc-U-1600-web
           path: products/calc-u-1600/Calc-U-1600-web-*.zip
 
-  # The help asset Calc-U-1600-help.zip (LIB-16 AC-6, AC-8): tools/help
+  # The help asset Calc-U-1600-help.zip: tools/help
   # (Python 3, standard library only; the runner's python3) checks the help
   # (library/help/ and help/) and builds the zip with the version of
   # frontends/qt6/CMakeLists.txt; release.yaml attaches it.

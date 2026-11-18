@@ -1,5 +1,3 @@
-<!-- follows: LIB-14, LIB-5 -->
-
 # Getting started
 
 The window has a [control bar](#the-control-bar).

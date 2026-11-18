@@ -79,7 +79,7 @@ says otherwise. The exception is the preset's `debug:` block
 configuration they mirror.
 Keys are matched exactly, and so are `format:` values
 (`format: memory-module`), except that the magnetic card file reads its
-`format:` in any case (C59-7 AC-3). Other fixed values are written in
+`format:` in any case. Other fixed values are written in
 lower case; presets, cue cards and the magnetic card file read them in
 any case (`Center` is `center`), Calc-U-1600's media files and the
 module definition only as written.
@@ -135,9 +135,9 @@ Every format has these keys at the top level:
   is no reason for a new version.
 - When a new version of a format becomes available, a release reads the
   previous version and silently upgrades the file in place to the
-  current one (ADR 0037). The first release of each product from the
+  current one. The first release of each product from the
   source repository is the one exception: it reads only the current
-  version, and older files are upgraded by hand (ADR 0037, Scope).
+  version, and older files are upgraded by hand.
 - A preset without `preset-name` is named by its file stem (`hanoi` for
   `hanoi.pc1600`). A `preset-name` is short (18 characters at most) and
   differs from the other presets of the same model. These two rules

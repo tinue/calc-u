@@ -1,5 +1,3 @@
-<!-- follows: LIB-6, LIB-9 -->
-
 # Reference
 
 The rules every product of the family shares: the preset format, the

@@ -1,4 +1,4 @@
-# Calc-U-59 (products/calc-u-59/, ADR 0002, 0004): Qt6 builds for Windows
+# Calc-U-59 (products/calc-u-59/): Qt6 builds for Windows
 # and Linux, the web client (frontends/web/), plus the C++ test suite. Every
 # run step works in the product directory.
 #
@@ -7,11 +7,11 @@
 # job on purpose: on the Mac the Swift app (built locally) is the product, and
 # the Mac Qt build is for development only (tools/run_qt.sh 59).
 #
-# ROMs are not in this repository (ADR 0034): every job fetches them with
+# ROMs are not in this repository: every job fetches them with
 # roms/fetch_roms.sh from tinue/TI-59-ROM and checks their md5; the Qt build
 # compiles them in as resources.
 #
-# Every build configures the repository's root CMake project (ADR 0003):
+# Every build configures the repository's root CMake project:
 # build/tests (core-tests), build/web (frontends/web/build.sh, under
 # Emscripten) and build/release (the Qt6 app for packaging, without tests).
 
@@ -32,8 +32,8 @@ env:
 
 jobs:
   core-tests:
-    # core/ + app/ + tests from the repository's root CMake project (ADR
-    # 0003) with Calc-U-59 only, without Qt.
+    # core/ + app/ + tests from the repository's root CMake project with
+    # Calc-U-59 only, without Qt.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -54,14 +54,14 @@ jobs:
         run: ctest --test-dir ../../build/tests --output-on-failure
 
   library:
-    # The library alone (LIB-1 AC-24), shared with calc-u-1600.yml.
+    # The library alone, shared with calc-u-1600.yml.
     uses: ./.github/workflows/library.yml
 
   web:
     # frontends/web/build.sh into frontends/web/dist/ (the engine is the
     # root project's calcu59_web target, built in build/web), the
     # Playwright tests against it, and the same dist/ zipped (Calc-U-59 has no
-    # test-only command, LIB-15 AC-29; reference/WebClient.md).
+    # test-only command to leave out of a release; reference/WebClient.md).
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -90,7 +90,7 @@ jobs:
           npx playwright install --with-deps chromium webkit
       - name: Test
         run: frontends/web/run-tests.sh
-      # The library's Web frontend shell (LIB-15 design D-8): its test product,
+      # The library's Web frontend shell: its test product,
       # built in the same build/web with this workflow's Emscripten, and its
       # Playwright tests in Chromium and WebKit (library/web/package-lock.json
       # pins its own Playwright; its browsers are installed when they differ).
@@ -140,7 +140,7 @@ jobs:
           -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
       - name: Build
         run: cmake --build $RELEASE_BUILD --target CalcU59Qt calcu
-      - name: Run calcu (LIB-11 AC-15)
+      - name: Run calcu (the harness CLI with Calc-U-59)
         run: cmake -DCALCU=$RELEASE_BUILD/library/harness/cli/calcu -P tests/calcu_runs.cmake
       - name: Build AppImage
         env:
@@ -234,7 +234,7 @@ jobs:
           -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
       - name: Build
         run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU59Qt calcu
-      - name: Run calcu (LIB-11 AC-15)
+      - name: Run calcu (the harness CLI with Calc-U-59)
         run: cmake "-DCALCU=${{ env.RELEASE_BUILD }}/library/harness/cli/calcu.exe" -P tests/calcu_runs.cmake
       - name: Stage the app folder
         shell: pwsh
@@ -257,7 +257,7 @@ jobs:
           path: products/calc-u-59/${{ matrix.installer }}
           if-no-files-found: error
 
-  # The help asset Calc-U-59-help.zip (LIB-16 AC-6, AC-8): tools/help
+  # The help asset Calc-U-59-help.zip: tools/help
   # (Python 3, standard library only; the runner's python3) checks the help
   # (library/help/ and help/) and builds the zip with the version of the
   # Xcode project's MARKETING_VERSION; release.yaml attaches it.

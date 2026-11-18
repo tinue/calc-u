@@ -1,5 +1,3 @@
-<!-- follows: LIB-6 -->
-
 # Presets
 
 A **preset** is a text file that sets up a machine: the model, what is

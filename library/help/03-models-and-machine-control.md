@@ -1,5 +1,3 @@
-<!-- follows: LIB-18, LIB-12 -->
-
 # Models and machine control
 
 A product runs one machine at a time: one model, in one variant, with

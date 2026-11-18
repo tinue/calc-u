@@ -1,5 +1,3 @@
-<!-- follows: LIB-9 -->
-
 # Settings
 
 Settings are your preferences for a product: the model it starts with,

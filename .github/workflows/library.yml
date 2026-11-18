@@ -1,11 +1,11 @@
-# The library alone, without the code of either product (LIB-1 AC-24;
-# LIB-1 design D-5): calcu_library and calcu_library_tests from the
-# repository's root CMake project.
+# The library alone, without the code of either product: calcu_library and
+# calcu_library_tests from the repository's root CMake project, which
+# shows that the library builds and passes its tests without a product.
 #
-# Both product workflows (calc-u-59.yml, calc-u-1600.yml; ADR 0004) call it
+# Both product workflows (calc-u-59.yml, calc-u-1600.yml) call it
 # as their `library` job, so a release run of either product still runs the
 # library's tests. It can also be dispatched on its own to check a change to
-# the library alone (ADR 0004's "small library workflow").
+# the library alone.
 
 name: Library
 

@@ -16,6 +16,7 @@
 #include "Machine/SharpMediaPlaces.hpp"
 #include "files/Files.hpp"
 #include "formats/Yaml.hpp"
+#include "media/Header.hpp"
 
 namespace cu1600 {
 
@@ -40,11 +41,6 @@ bool writableName(const std::string& name, const char* what, std::string& proble
     if (name.find('"') == std::string::npos && name.find('\n') == std::string::npos) return true;
     problem = std::string("A ") + what + " name has no \" and no line end.";
     return false;
-}
-
-std::string yamlQuoted(const std::string& s) {
-    const char q = s.find('"') == std::string::npos ? '"' : '\'';
-    return std::string(1, q) + s + q;
 }
 
 // ── Battery-backed module (`.module.yaml`, version 1; AC-37, AC-41) ───────
@@ -259,12 +255,9 @@ public:
                 if (t->name == w.name) audio = t->audio;
             }
         }
-        std::string text = "# Calc-U-1600 cassette\nformat: cassette\nformat-version: 1\n";
-        text += "cassette-name: \"" + w.name + "\"\n";
-        if (!description.empty()) text += "description: " + yamlQuoted(description) + "\n";
-        if (w.asTemplate) text += "template: true\n";
-        if (!w.savedAt.empty()) text += "saved: " + w.savedAt + "\n";
-        text += "audio: { file: " + yamlQuoted(audio) + " }\nposition: 0\n";
+        std::string text = media::headerText(
+            {"Calc-U-1600 cassette", "cassette", 1, "cassette-name", w.name, description, w.asTemplate, w.savedAt});
+        text += "audio: { file: " + media::quotedScalar(audio) + " }\nposition: 0\n";
         return {FileOut{"", text}, FileOut{audio, std::string(tape->wav.begin(), tape->wav.end())}};
     }
 };

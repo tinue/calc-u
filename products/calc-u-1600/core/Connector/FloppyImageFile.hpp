@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "formats/Yaml.hpp"
+#include "media/Header.hpp"
 #include "BatteryCardInstance.hpp"   // formatAddressedHexLines
 #include "CE1600FCard.hpp"
 #include "MemoryCardDefinition.hpp"  // mcd_detail::parseAddressedHex
@@ -106,16 +107,8 @@ inline std::string formatFloppyFile(const std::string& diskName, const std::vect
                                     const std::string& saved) {
     std::string out;
     out.reserve(4096);
-    out += "# Calc-U-1600 CE-1600F floppy disk image\n";
-    out += std::string("format: ") + floppy_detail::kFormatTag + "\n";
-    out += "format-version: " + std::to_string(kFloppyFormatVersion) + "\n";
-    out += "disk-name: \"" + diskName + "\"\n";
-    if (!description.empty()) {
-        const char quote = description.find('"') == std::string::npos ? '"' : '\'';
-        out += std::string("description: ") + quote + description + quote + "\n";
-    }
-    if (asTemplate) out += "template: true\n";
-    out += "saved: " + saved + "\n";
+    out += calcu::media::headerText({"Calc-U-1600 CE-1600F floppy disk image", floppy_detail::kFormatTag,
+                                     kFloppyFormatVersion, "disk-name", diskName, description, asTemplate, saved});
     out += "sides:\n";
     for (size_t side = 0; side < 2; ++side) {
         const auto first = image.begin() + static_cast<std::ptrdiff_t>(side * CE1600FCard::kSideSize);

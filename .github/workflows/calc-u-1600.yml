@@ -130,6 +130,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # The checkout belongs to another user than the container's root; without
+      # this git refuses it and dist/MANIFEST.json's commit is "unknown".
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       # The image lacks these: unzip for setup-emsdk's download, xz for
       # emsdk's archives, zip for the release zip. Root in the container.
       - name: Install build tools

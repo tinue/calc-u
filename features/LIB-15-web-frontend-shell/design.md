@@ -419,7 +419,7 @@ the criterion.
 | T20 | Calc-U-59 on the shell | AC-19, AC-22 | `P59/play-calculator.spec.js`: `ac19 CalcU59 props, layout and settings, no module` (named `ac19 PlayCalculator …` until release prep 4), `ac22 no message of the old protocol`; Longer |
 | T21 | 59 persistent file system | AC-20 (settings part; `ti58c.mem` through `TIFileAccess`), LIB-9 AC-23 | `P59/storage.spec.js`: `ac20 settings survive a page load`, `lib9_ac23 no calcu59 key read or written`, and line 181's constant-memory test kept; Longer. Cards: C59-7's tests in M-55; `ti58c.memory.yaml`: C59-3's in M-54 |
 | T22 | 59 one writer, suspend | AC-21, LIB-3 AC-31 | `P59/storage.spec.js`: `ac21 a second tab says it cannot save`; `P59/play-calculator.spec.js`: `lib3_ac31 hidden page suspends`; Longer |
-| T24 | the family's embedding (release prep 4) | AC-29 | `L/embed_props.test.js`: `lib15_ac29_shared_props_in_their_order`, `lib15_ac29_layout_has_no_library_default`; Frequent (`LibraryWebNodeTests`). `P59/session.spec.js`: `ac29 CalcU59 is the component, PlayCalculator is gone`; `P16/session.spec.js`: `ac29 layout auto only, another value ignored with a warning`; Longer. `59/tests/web_part_tests.cpp` `lib5_ac24_…` (the key-button commands answer as unknown); Frequent. CTest `CalcU59WebNoTestAids`, `CalcU1600WebNoTestAids` (`tests/web_no_test_aids.sh`: a `--release` dist/ holds none of the names); Longer, and on the zipped dist/ in CI |
+| T24 | the family's embedding (release prep 4) | AC-29 | `L/embed_props.test.js`: `lib15_ac29_shared_props_in_their_order`, `lib15_ac29_layout_has_no_library_default`; Frequent (`LibraryWebNodeTests`). `P59/session.spec.js`: `ac29 CalcU59 is the component, PlayCalculator is gone`; `P16/session.spec.js`: `ac29 layout auto only, another value ignored with a warning`; Longer. `59/tests/web_part_tests.cpp` `lib5_ac24_…` (the key-button commands answer as unknown); Frequent. CTest `CalcU1600WebNoTestAids` (`tests/web_no_test_aids.sh`: a `--release` dist/ holds none of the names); Longer, and on the zipped dist/ in CI (Calc-U-59's `CalcU59WebNoTestAids` went with L-1 of the release simplification: no name left to find) |
 | T23 | 59 regression | AC-23 | `play-calculator.spec.js:71` (both layouts), `:471-491` (example offline), `offline.spec.js:47` (Chromium, WebKit), `prerender.spec.js:33`, kept with new hooks; Longer |
 
 Every criterion assigned to the C1 steps (AC-1–28, EC-1–5: 33) is in at
@@ -607,10 +607,12 @@ default ON) gives `SharpWebPart.cpp` alone the definition of the same name
 (`set_source_files_properties` in `products/calc-u-1600/cmake/CalcU.cmake`),
 so a switch recompiles that file and relinks the engine; `c1600.upload` and
 `c1600.display-text` are registered only with it. Calc-U-59's
-`c59.web.key-button-*` were used by no page and are deleted. Each
+`c59.web.key-button-*` were used by no page and are deleted. Calc-U-1600's
 `frontends/web/build.sh --release` configures `build/web` with the option
 OFF (and a plain `build.sh` with it ON again, when the cached value
 differs). CI and `ci/linux/jobs.sh` test the test build, then build the
 `--release` dist/, check it (`tests/web_no_test_aids.sh <dist>`) and zip
-that one.
+that one. The option changes nothing in Calc-U-59, so its `build.sh` has no
+`--release` and no check, and its CI zips the dist/ the tests ran against
+(release simplification L-1, 2026-11-18).
 

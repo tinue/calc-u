@@ -127,7 +127,6 @@ Never edit the calculator there — that copy is generated.
 
 ```bash
 frontends/web/build.sh                       # → frontends/web/dist/ (~15 s; engine: CMake target calcu59_web in ../../build/web)
-frontends/web/build.sh --release             # the release dist/ (CALCU_WEB_TEST_AIDS off; CI zips it after tests/web_no_test_aids.sh)
 frontends/web/run-tests.sh                   # all tests, at / and under /anything/calc/
 frontends/web/run-tests.sh -g "cue card"     # extra args go to playwright test
 python3 -m http.server 8000 -d frontends/web/dist   # look at it: http://localhost:8000/

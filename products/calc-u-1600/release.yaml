@@ -27,8 +27,8 @@ release:
     will run — GitHub Releases doesn't preserve file permissions on uploaded
     assets. Run `chmod +x Calc-U-1600-*.AppImage` once after downloading, then
     launch it directly.
-  extra_assets:
-    - { zip: examples/, as: Calc-U-1600-examples.zip }
+  # No examples zip (ledger 1600-21): the help explains how to get every
+  # example from the source repository.
 
 build:
   - kind: github-dispatch

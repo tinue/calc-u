@@ -1,6 +1,35 @@
 # Changelog
 
-## Unreleased
+## [0.9.0] - work in progress
+
+### New
+
+- **The help is the user guide.** The family's ten chapters, with the
+  parts Calc-U-1600 shares with Calc-U-59 written once, replace the
+  User Guide, Debugger, keyboard mapping, host drive, keyword module and
+  memory module documents of `docs/`. The memory module definition
+  documents are now "Module definitions" (chapter 9) and "Module
+  definition format" (chapter 10). The help describes the menus and
+  commands of this release; each release carries it as
+  `Calc-U-1600-help.zip`, which calc-u.org/1600 shows.
+- **Pause and Resume in both versions.** The run control can pause the
+  machine in the desktop and the Web version, Machine ▸ Resume continues
+  it, and the title "Paused (debugger)" shows whoever paused it.
+- **A new plotter example:** Examples ▸ Plotter ▸ "Rectangles 4 pens"
+  (`plotter/rectangles-1600.pc1600`) draws four nested rectangles on the
+  CE-1600P, one in each colour. The help's paper and overview pictures
+  show it instead of the Lissajous figure.
+- **The harness `calcu --product c1600` replaces the command-line
+  tools.** `pc1500_cli`, `pc1600_cli`, the probes `pc1600_plotter_probe`,
+  `pc1600_power_probe` and `pc1600_uart_probe`, their build scripts and
+  the one-time checks `dev/tape-matrix/` and `dev/loader-matrix/` are
+  gone. Their functions are harness commands (`preset`, `wait`,
+  `display-text`, `screenshot`, `audio`, `peek`, `registers`, `history`,
+  `profile`, `eject`, and under `c1600` `dump-basic`, `inspect`,
+  `cassette record|status`, `serial`, `host-drive`, `call`); the bare
+  ROM-file mode of `pc1500_cli`, the probes and the matrices have no
+  successor. A serial port gets a pseudo-terminal only when `link` asks
+  for one (was `--ce158-pty`). For developers only.
 
 ### Changed
 
@@ -11,35 +40,174 @@
   `slot-1: { name: CE-1600M }`; `slot-1-rom: x.bin` is
   `slot-1-rom: { file: x.bin }`; `host-drive: dir` is
   `host-drive: { folder: dir }`; `- wait: 2` is `- wait: 2s` (a unit is
-  required); `- key: ent` is `- key: enter`.
-- **Waiting in presets.** The bare `- wait:` is gone: every item but the
-  last waits until the machine is idle, at most `timeout:` (a header key,
-  default 3600 s of emulated time). `- let-it-finish:` as the last item
-  waits for it; `- skip-wait:` drops the wait after the item before it.
-  `expect:` checks once the item before has finished (after `type: RUN`,
-  when the program has ended). A preset always ends at regular speed.
-- **New in presets:** `not-expect:`, and regular expressions `/…/` for
-  `expect:` and `not-expect:`. `screenshot:` writes Copy Screen's picture
-  into the save folder (in the Web version, a download).
-- **Not in presets:** the keys `ctrl`, `kbii` and `bs` can't be pressed.
-  Disks and module files (`floppy:`, `slot-N: { file: … }`, `saveas:`)
-  come with the media update and are not available in this build.
-- **Renamed:** Machine ▸ Reset All is **Cold boot** (⇧⌘R / Ctrl-Shift-R);
-  Settings ▸ Default presets is **Startup presets** (one per model, loaded
-  when the model starts or is switched to; one that can't be loaded gives
-  the built-in default machine and a notice).
-- **Bundled examples:** the desktop and Web versions bundle exactly the
-  files `examples/bundle.yaml` lists, not whole folders.
+  required); `- key: ent` is `- key: enter`; the clock step is
+  `- sync-clock:` (was `- syncclock:`, now refused as an unknown
+  keyword). `- key:` takes several key IDs. A floppy disk is inserted by
+  `- floppy:` (sides 0 and 1), a cassette by `- cassette:`, and
+  `- eject:` empties either; `- cut-paper:` is new.
+- **Floppy disks are version 2.** Their sides are 0 and 1 (were A and
+  B), in presets, in the disk file and on screen. A disk saved with
+  0.8.x is refused with the hint until you upgrade it by hand: rename
+  `a:` and `b:` to `0:` and `1:`.
 - **Module definitions are `.module.yaml`** with `format: memory-module`;
   a `.card.yaml` is not read (rename it and add the line). The bundled
   and example modules and the CE-502B's file in `roms/`
   (`CE-502B.module.yaml`, fetched by `roms/fetch_roms.sh`) are renamed. A
-  saved module carries `saved:` with the time of the write.
-- **Cassettes:** a cassette is a `.cassette.yaml` with `format: cassette`
-  and `cassette-name:` (a `.tape.yaml` is not read); the preset step is
-  `cassette:` and `eject: cassette`; the folder is `Cassettes` in the save
-  folder (`[storage] cassette-folder`); the control bar and its dialogs
-  say "Cassette".
+  module saved by Name & Save or autosave carries `saved:` with the time
+  of the write and the comment line `# Calc-U-1600 memory module
+  instance …`.
+- **Cassettes:** a cassette is a cassette definition (`.cassette.yaml`
+  with `format: cassette` and `cassette-name:`) that names its WAV; a
+  `.tape.yaml` is not read. A cassette has a name and a description, can
+  be a template and gets Name & Save, and each one written carries
+  `saved:`. The picker offers the empty cassette and the saved ones; a
+  WAV in the old tape folder is not listed until it is wrapped in a
+  cassette definition, and a dropped or opened WAV is loaded as a
+  program. The preset step is `cassette:` and `eject: cassette`; the
+  folder is `Cassettes` in the save folder (`[storage] cassette-folder`);
+  the control bar and its dialogs say "Cassette" ("Cassette:", "Save
+  Cassette", "Cassette name:"). The cassette picker and the tape counter
+  show whenever a CE-150 or a CE-1600P is plugged in, also a CE-150 on
+  the PC-1600, and the cassette is taken out when its interface is
+  detached.
+- **Settings start at their defaults** (the INI file
+  `Calc-U-1600.ini`); those of 0.8.x are not carried over. The startup
+  model is chosen by the model's name ("PC-1500", was "PC-1500 (ROM
+  A04)"). A folder picked in a file dialog while a fixed folder is set
+  for that kind is no longer remembered.
+- **Outdated files** show in their picker as a disabled entry with a
+  hint (they were left out silently). The notice names the User Guide's
+  page and heading, such as "Media files", "Floppy disk" (sides 0: and
+  1: in place of a: and b:), "Media files", "Cassette definition", or
+  "Module definition format".
+- **Waiting in presets.** The bare `- wait:` is gone: every item but the
+  last waits until the machine is idle, at most `timeout:` (a header key,
+  default 3600 s of emulated time); an item past it fails.
+  `- let-it-finish:` as the last item waits for it; `- skip-wait:` drops
+  the wait after the item before it. `expect:` checks once the item
+  before has finished (after `type: RUN`, when the program has ended). On
+  the PC-1600 an item also waits while the CE-1600F's motor runs, so a
+  disk command such as `SAVE"X:…"` is done before the next item starts. A
+  typed `program:` goes through the typing engine and waits for the
+  prompt after each line: the stored program is the same, a load may
+  take longer. A preset always ends at regular speed.
+- **New in presets:** `not-expect:`, and regular expressions `/…/` for
+  `expect:` and `not-expect:`. `screenshot:` writes Copy Screen's picture
+  into the save folder (in the Web version, a download).
+- **Not in presets:** the keys `ctrl`, `kbii` and `bs` can't be pressed
+  (in the harness's `key` on the PC-1600 neither), and the debugger steps
+  are not available on the Sharp models.
+- **A preset is checked before the machine is given up.** A missing
+  module or disk, a host drive folder that does not exist, a ROM image
+  that does not fit, a key that is none and a character without a key
+  refuse the preset and leave the running machine alone. A preset opened
+  without its folder is refused when it names a file.
+- **Renamed:** Machine ▸ Reset All is **Cold boot** (⇧⌘R / Ctrl-Shift-R
+  in the desktop version, no shortcut on the Web); Settings ▸ Default
+  presets is **Startup presets** (one per model, loaded when the model
+  starts or is switched to; one that can't be loaded gives the built-in
+  default machine and a notice); "Startup device" is **Startup model**;
+  "Battery-card saves:" is **Save folder:**; Settings ▸ Folders reads
+  **Presets folder** and **BASIC folder** (were "Examples folder" and
+  "Basic folder"); File ▸ Mount Directory… is **Host Drive…** (its
+  dialog "Host Drive (S3:)"); the INSPECTOR's "Card YAML" is **Module
+  YAML**, and its lines begin "Module dump:". The help says "memory
+  module" and "module definition" for "memory card" and "custom memory
+  cards".
+- **Menus and the control bar follow the family structure.** Settings…
+  is in File, Help has a help item, and the Web version has an Examples
+  menu of its own; File ▸ Load Preset… is Ctrl+O (⌘O) in the desktop
+  version. On the PC-1600's bar a printer picker (none, CE-150,
+  CE-1600P) replaces the CE-1600P button and the CE-158 has a button; on
+  the PC-1500 and PC-1500A the bar has the buttons CE-150 and CE-158. The
+  desktop bar shows the cassette controls before the disk controls.
+  Machine ▸ CE-1600P ROM ▸ is shown only while the CE-1600P is plugged
+  in, and the menus and the bar attach it with the New ROM. On the Web
+  the page binds no shortcut to a menu item: ⌘R / Ctrl+R, ⌘⇧R, ⌘, and ⌘C
+  are the browser's again; pasting still types.
+- **Notices and loading.** A notice has no title; a control that cannot
+  be used is disabled and says why. While something loads, the controls
+  that would start another operation are disabled, and "Loading…" shows
+  over the faceplate without a title and blocks nothing (was a modal
+  dialog and a wait cursor). While an operation runs the desktop window
+  repaints, the paper and the control bar follow the preset, and a
+  second operation is refused with "Another operation is running.".
+- **Keys.** A held host key stays down until it is released, for every
+  key, so the ROM's own auto-repeat works; the PC-1500's fixed key
+  cadence is gone. Every press is held at least 4 frames (was 2), and
+  `ent` is no longer a key name. Keys pressed while a preset, a load, a
+  reset or a power cycle runs are dropped, and Reset, Cold boot and a
+  model switch stop what runs. A mouse click in the gap between two
+  keys, within 24 pixels of a key, presses that key, and the desktop
+  faceplate also takes touch.
+- **Modules and peripherals.** Choosing a module power-cycles the
+  machine; the memory is kept, and the ROM asks to set BASIC up again
+  (`NEW0? :CHECK`), as on the real device. A Cold boot also empties a
+  RAM module without a battery of its own (CE-151, CE-155). Saving a
+  CE-161 with the write-protect switch set power-cycles the machine, as
+  plugging in a module does. File ▸ Host Drive… while a folder is
+  mounted replaces the host drive with a power cycle; the memory is
+  kept. The CE-1600P and the CE-158 cannot be attached together ("The
+  CE-1600P and the CE-158 cannot be used together.", in presets and the
+  harness too). Detaching the CE-1600P takes the disk out of the
+  CE-1600F; its ROM switch keeps the disk, the same side up, and the
+  cassette.
+- **Media.** A module slot's picker lists the empty slot ("(empty)",
+  was "–empty–"), the battery-backed modules (bundled templates, your
+  templates, the saved instances), then the CE-151, the CE-155 and the
+  ROM modules, each where it fits the slot. A module change leaves the
+  other slot and the disk alone. Name & Save asks before it replaces an
+  instance of that name (it used to refuse the name). Two media names
+  that differ only in upper and lower case are one name; a name with a
+  character a file name cannot hold is refused (`/` and `:` were turned
+  into `-`).
+  A failed autosave is reported with a notice, and a saved file that
+  cannot be read, or that carries a bundled template's name, is named in
+  the log at each start.
+- **Opening files.** File ▸ Load Preset… (Web: Upload Preset…) and a
+  drop open a file as what it is: a BASIC or machine-code program goes
+  to its loader, a module, disk or cassette file into its place. A disk
+  file can be dropped and is used where it lies (Web: imported); a
+  module file is plugged in when it is clear where it goes. A file named
+  at the start of the program is opened. A cassette WAV with several
+  files asks which one, and a machine-code file on it goes to the
+  machine-code flow. `.rom` is no longer a machine-code file name. A file
+  over 1 MiB and a file the product cannot open are refused with a
+  notice, and a drop no longer changes the folder a file dialog starts
+  in. Load Machine Code…'s address dialog says where the code goes for
+  every address, in the internal RAM too.
+- **The paper panel is always shown,** empty and without a name while
+  no plotter is plugged in (in the Web version's narrow window it gives
+  way to the INSPECTOR then). The CE-150 and the CE-1600P keep their
+  paper until Cut, a preset that names them, or the end of the program,
+  through detaching, a ROM, module or model switch. A paper feed without
+  a mark shows as blank paper, the plotter's Copy picture loses the white
+  above and below the plot, and "Copied to clipboard" is shown after
+  Copy.
+- **Traces:** the size limit holds for a preset's trace too, counts MiB,
+  and a notice says when it ends a trace. Zero or less means 50 MiB. A
+  trace folder that cannot be written refuses the start with "The trace
+  folder cannot be written: …".
+- **Pacing:** after a stall the machine no longer catches up for up to
+  0.1 s, and an operation runs in parts of 14 ms instead of 10 ms, so
+  loading is slightly faster.
+- **A missing ROM file** no longer ends the desktop app: the window
+  opens and shows which files are missing in place of the calculator,
+  and Help and About work. On the Web the same text stands there,
+  without the title "Calc-U-1600 stopped".
+- **Bundled examples:** the desktop and Web versions bundle exactly the
+  files `examples/bundle.yaml` lists, not whole folders, so nine examples
+  outside the list no longer start with `?preset=` on the Web. The
+  release no longer has `Calc-U-1600-examples.zip`; the help explains
+  how to get every example from the source repository.
+- **Web version:** a new release takes over at the next start, not
+  while a page or the installed app is open. Import Media… is one file
+  picker for `.module.yaml`, `.floppy.yaml`, `.cassette.yaml` and a
+  cassette's `.wav`; every change is written when the tab is hidden, and
+  deleting a saved medium asks first. The storage banner says which case
+  holds (another tab, unreadable, unavailable), and the second tab's
+  sentence is also a notice; Settings ▸ Storage says "Saved media
+  (modules, disks and cassettes) …".
 - **The product word is `c1600`.** The VS Code extension's debug type is
   `c1600` (was `calcu1600`), and so are its commands (`c1600.buildAndLoad`,
   …), settings (`c1600.port`, `c1600.zasmPath`, …) and problem matchers
@@ -49,11 +217,37 @@
   `c1600/quit`; `c1600/display-text` answers with the keys of the
   harness's `display-text` (`on`, `rows`, `indicators`, `notText`). The
   harness is `calcu --product c1600`, its product commands `c1600 …` (were
-  `pc1600 …`), and `lcd` is `display-text`; its `switch` is `set-control`.
-- **Presets:** the clock step is `- sync-clock:` (was `- syncclock:`).
-- **Web embedding:** `model` (and `?model=`) takes the model's name only,
-  not its number; `preset` (and `?preset=`) takes a bundled path with or
-  without `examples:`.
+  `pc1600 …`), and `lcd` is `display-text`; its `switch` is `set-control`,
+  and `key` without a key replies "refused: usage: key <key ID> ...".
+- **Debugging:** a program started with `after: call` runs only after
+  the client's breakpoints are set, so a breakpoint near the entry is
+  not missed. `--dap` with a port outside 1024 to 65535 is reported, and
+  the server does not listen in that run. The harness serves a debugger
+  too (`calcu --product c1600 serve --dap <port>`). The VS Code
+  extension's `program.after` names `none` as its default.
+- **Web embedding:** `CalcU1600` takes the shared prop `layout`, only
+  `"auto"` (another value is ignored with a console warning); the props
+  are `width`, `keyboard`, `layout`, `preset`, `height`, `model`,
+  `workerUrl`. `model` (and `?model=`) takes the model's name only, not
+  its number; `preset` (and `?preset=`) takes a bundled path with or
+  without `examples:`. The release's `Calc-U-1600-web.zip` is a release
+  build without the Web tests' commands.
+
+### Fixed
+
+- **macOS: the desktop app keeps real-time pace in the background.** It
+  holds an activity against App Nap, so a machine whose window is not in
+  front no longer falls behind.
+- **After a Reset or a Cold boot a plotter goes on below what it drew**,
+  where the paper stands, instead of starting again at the top over the
+  earlier plot.
+- **A PC-1500 machine-code load that meets a byte that is not RAM
+  writes nothing**, instead of writing the rest and then failing; an
+  empty file is refused as empty by every loader.
+- **A cassette or disk name with a `"` or a line end** is refused when it
+  is written; it used to be written, and the file could not be read
+  again.
+- **Web: `?preset=examples:…`** finds the preset; the prefix was doubled.
 
 ## [0.8.1] - 2026-11-14
 

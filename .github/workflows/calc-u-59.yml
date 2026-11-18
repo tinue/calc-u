@@ -69,6 +69,10 @@ jobs:
     # package-lock.json files lock (tools/check_playwright_version.sh).
     container:
       image: mcr.microsoft.com/playwright:v1.65.0-noble
+    # In a container, run steps default to sh; bash as on the runner.
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v5
       # The image lacks these: unzip for setup-emsdk's download, xz for

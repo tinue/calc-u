@@ -470,7 +470,7 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
 - **Pick up outside changes to an inserted floppy: a `dirty` key**
   *(pre-1.0: adds a key to the floppy format)*. Today an `sde put` while
   the disk is in the drive is overwritten at the next autosave; the rule
-  is "eject first" (`docs/developer/Floppy-Image-Format.md` §8). Idea: a
+  is "eject first" (`docs/formats/media.md` §2.3 at the repository root). Idea: a
   new optional top-level key `dirty` (boolean) in `.floppy.yaml`. A tool
   that writes the image (sde) sets `dirty: true`. The emulator checks the
   inserted disk's file periodically; when it finds `dirty: true` it
@@ -490,7 +490,7 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
   Work:
   - Format: `dirty` in `floppy_detail::parseCatalogEntry`'s key list (with
     the template check) and `formatFloppyFile`, the canonical key order
-    and the key table in Floppy-Image-Format.md.
+    and the key table in `docs/formats/media.md` §2.1.
   - Emulator: a cheap periodic check of the inserted disk (mtime first,
     then the header only, not the 1 MB of sector hex) and the
     unload/clear/reload of the floppy place (`core/Machine/SharpMediaPlaces`,

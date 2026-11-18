@@ -71,8 +71,10 @@ cite it as `Ref/<path>`, a path inside that repository, e.g.
 
 ## File formats
 
-- [Floppy-Image-Format.md](Floppy-Image-Format.md) — the `*.floppy.yaml`
-  CE-1600F diskette format, for other tools that read or write it.
+- The `*.floppy.yaml` CE-1600F diskette format, for other tools that read
+  or write it: [docs/formats/media.md §2](../../../../docs/formats/media.md#2-floppy-disk).
+- The harness commands: [Harness.md](Harness.md); the DAP server:
+  [DAP.md](DAP.md).
 - Memory modules (`*.module.yaml`) are user-level:
   [09-module-definitions.md](../../help/09-module-definitions.md) and
   [10-module-definition-format.md](../../help/10-module-definition-format.md).

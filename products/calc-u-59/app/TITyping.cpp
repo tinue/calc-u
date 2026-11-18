@@ -80,10 +80,10 @@ calcu::typing::TypingProfile makeProfile(Model m) {
     p.holdUntilSampled = calcu::typing::SampleRule{kTISamplesNeeded, calcu::typing::ticksOf(kTIMaxHoldSeconds, rate)};
     p.name = tiKeyName;
     p.names = tiKeyNames;
-    return p;   // no characters, no ENTER: no `type` (AC-16, D-8)
+    return p;   // no characters, no ENTER: no `type`
 }
 
-// AC-21: the character → key ID of 2.3.0's 26 bindings (KeyboardMap.cpp).
+// The character → key ID of the 26 bindings of release 2.3.0's KeyboardMap.cpp.
 std::optional<KeyId> binding(char32_t c) {
     switch (c) {
     case 'a': return KeyId{"A"};
@@ -140,7 +140,7 @@ std::optional<std::vector<Press>> tiKeyNames(const std::vector<std::string>& nam
     for (std::size_t i = 0; i < names.size(); ++i) {
         auto p = tiKeyName(names[i]);
         if (!p) return std::nullopt;
-        // `2nd Pgm` is `Pgm`: a written 2nd before a second function once (AC-26).
+        // `2nd Pgm` is `Pgm`: a written 2nd before a second function once.
         if (p->size() == 1 && p->front().key == k2nd && i + 1 < names.size()) {
             const auto next = tiKeyName(names[i + 1]);
             if (next && next->size() > 1 && next->front().key == k2nd) continue;
@@ -152,11 +152,11 @@ std::optional<std::vector<Press>> tiKeyNames(const std::vector<std::string>& nam
 
 std::optional<Mapped> TIKeyboardMap::map(const calcu::typing::HostKeyEvent& e) const {
     using calcu::typing::NamedKey;
-    // Command, Control, Option (and the Windows key, as 2.3.0's Qt app): never the calculator's.
+    // Command, Control, Option (and the Windows key): never the calculator's.
     if (e.mods.command || e.mods.control || e.mods.alt || e.mods.meta) return std::nullopt;
     if (e.named == NamedKey::Escape) return Mapped{{Press{KeyId{"CLR"}}}, true};
     if (e.named == NamedKey::Return || e.named == NamedKey::Enter) return Mapped{{Press{KeyId{"="}}}, true};
-    if (e.carried) {   // a letter key: the letter it carries (OQ-2); Shift is 2nd
+    if (e.carried) {   // a letter key: the letter it carries; Shift is 2nd
         char32_t c = e.carried;
         if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
         const auto k = (c >= 'a' && c <= 'z') ? binding(c) : std::nullopt;

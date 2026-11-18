@@ -1,6 +1,5 @@
-"""Calc-U-59 through the harness `calcu` (LIB-11), for the scripts that stay
-(C59-9 §4, AC-13; LIB-11 design D-16): tools/coverage.py,
-tools/fastmode_matrix.py and the calendar scripts in tools/calendar/. One
+"""Calc-U-59 through the harness `calcu`, for the scripts that stay:
+tools/coverage.py, tools/fastmode_matrix.py and the calendar scripts in tools/calendar/. One
 `calcu --product c59 serve` per Run, in emulated time only; reference/Harness.md
 has the commands and the recipes.
 
@@ -10,7 +9,7 @@ else the repository's build/tests, build/all or build/tools tree), else
 build/tools configured (Release, no Qt) and built on first use. Scratch
 files go to tools/build/ (ignored).
 
-Timing: `c59 run-time` and `c59 line-times` (C59-9 AC-3, AC-5) time on the
+Timing: `c59 run-time` and `c59 line-times` time on the
 calculator's own clock: a key's run time from its press until the display
 is lit again and no program runs (memory run_time_measurement); line times
 from the command, after the last key is up."""
@@ -148,7 +147,7 @@ def run_preset(path, steps=None, program=None):
 
 def line_times(path, steps=None, limit=4000, program=None):
     """[(seconds after the last key, line)] of `c59 line-times`; stops 15 s
-    after the last printed line once the machine is idle (C59-9 AC-3)."""
+    after the last printed line once the machine is idle."""
     run, last = play_until_last(path, steps, program)
     try:
         run.step('key', last)

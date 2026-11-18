@@ -7,11 +7,11 @@
 
 // The records of Calc-U-59's binary trace file, format version 2
 // (reference/DebugAPI.md; tools/read_trace.py reads it): a 16-byte file
-// header, then records of [type u8][length u16 LE][payload]. Since M-53 an
-// encoder into a byte buffer only (LIB-10 design §12.3): the library's
+// header, then records of [type u8][length u16 LE][payload]. An encoder
+// into a byte buffer only: the library's
 // trace session writes the file and keeps its size limit, and
 // TITraceRecorder says what goes in. The key and card records are never
-// written (LIB-10 AC-33).
+// written.
 
 namespace cu59 {
 

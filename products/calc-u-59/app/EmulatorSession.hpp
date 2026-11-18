@@ -14,11 +14,10 @@
 
 // The runtime around one running calculator that every frontend shares: the
 // 60 Hz frame sampler and the PC-100C's controls (the debug panel's reads
-// are TIDebugPart's since M-56). Since M-54 (LIB-18 §11.3, D-26) it neither builds nor owns
-// the machine: LIB-18's machine control builds it and the library's machine
-// session holds it; cu59::TIAppPart makes a new EmulatorSession around each
+// are TIDebugPart's). It neither builds nor owns the machine: the library's
+// machine control builds it and the library's machine session holds it; cu59::TIAppPart makes a new EmulatorSession around each
 // new machine (machineChanged). It runs on the session's one thread
-// (ADR 0009). See reference/AppLayer.md.
+// (the core holds no lock and starts no thread). See reference/AppLayer.md.
 
 namespace cu59 {
 
@@ -45,7 +44,7 @@ public:
     bool printerPlugged() const;
 
     /// The switch's position; nullopt without a PC-100C (it is set through
-    /// LIB-2's set-control, C59-6 AC-5).
+    /// the library's set-control).
     std::optional<bool> printerSwitch(const calcu::machine::ControlId& id) const;
 
     // ── Frames ───────────────────────────────────────────────────────────────

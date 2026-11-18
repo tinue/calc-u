@@ -5,18 +5,18 @@
 #include <optional>
 #include <string>
 
-// Calc-U-59's debugger set-up (LIB-10 design §12.3; spec AC-28 to AC-33):
+// Calc-U-59's debugger set-up:
 // the library's DebuggerPart with
 // - the levels `cpu` and `program` of TILevelRules (owned by the caller);
 // - the trace session on TITraceRecorder: the trace folder where the host
 //   has one (Qt6, Swift, the harness), none on the Web, where a trace is kept
-//   in memory and handed over with KeepFile when it ends (`handOver`,
-//   AC-26, LIB-10 D-10); [trace] max-file-size-mb MiB for every trace (the
+//   in memory and handed over with KeepFile when it ends (`handOver`);
+//   [trace] max-file-size-mb MiB for every trace (the
 //   folder and the limit are set by parts::LibraryParts from the host's
 //   places);
 // - the run-control steps on every model; the panel views `calculator`,
-//   `cpu` and `log`, shown through `showPanel` (adapter L-E4, until M-56);
-// - no symbol readers (D-5: the TI has none).
+//   `cpu` and `log`, shown through `showPanel`;
+// - no symbol readers (the TI has no symbols).
 
 namespace cu59 {
 

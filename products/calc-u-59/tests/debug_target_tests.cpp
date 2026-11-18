@@ -1,4 +1,4 @@
-// LIB-10 AC-28 (design §12.4, E10-1): a TI machine has one debug target,
+// A TI machine has one debug target,
 // TMC0501, with the registers of the processor frame, the spaces rom, ram,
 // scom and program, a history and decoding, and no watches or stepping over
 // and out (core/TIDebugging.hpp).
@@ -20,7 +20,7 @@ std::vector<std::string> names(const TargetInfo& t) {
 }
 } // namespace
 
-TEST(lib10_ac28_one_target_tmc0501_on_every_model) {
+TEST(one_target_tmc0501_on_every_model) {
     for (Model model : kModels) {
         auto m = testroms::makeMachine(model);
         Debugging* d = m->debugging();
@@ -32,7 +32,7 @@ TEST(lib10_ac28_one_target_tmc0501_on_every_model) {
     }
 }
 
-TEST(lib10_ac28_registers_of_the_processor_frame) {
+TEST(registers_of_the_processor_frame) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     const DebugTarget& t = m->debugging()->target(0);
@@ -48,7 +48,7 @@ TEST(lib10_ac28_registers_of_the_processor_frame) {
     CHECK_EQ(t.nextAddress(), std::uint64_t{testroms::dbg(*m).pc()});
 }
 
-TEST(lib10_ac28_spaces_rom_ram_scom_program) {
+TEST(spaces_rom_ram_scom_program) {
     for (Model model : kModels) {
         auto m = testroms::makeMachine(model);
         const TargetInfo& i = m->debugging()->target(0).info();
@@ -64,7 +64,7 @@ TEST(lib10_ac28_spaces_rom_ram_scom_program) {
     }
 }
 
-TEST(lib10_ac28_ram_and_program_written_rom_scom_refused) {
+TEST(ram_and_program_written_rom_scom_refused) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     DebugTarget& t = m->debugging()->target(0);
@@ -82,7 +82,7 @@ TEST(lib10_ac28_ram_and_program_written_rom_scom_refused) {
     CHECK(t.peek(1, 1000, {}).kind == CellRead::Unreadable);
 }
 
-TEST(lib10_ac28_history_and_decoding_no_watches_no_over_out) {
+TEST(history_and_decoding_no_watches_no_over_out) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     DebugTarget& t = m->debugging()->target(0);
@@ -109,7 +109,7 @@ TEST(lib10_ac28_history_and_decoding_no_watches_no_over_out) {
     CHECK(t.retired() > 0);
 }
 
-TEST(lib10_ac28_conformance_on_every_model) {
+TEST(conformance_on_every_model) {
     for (Model model : kModels) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);

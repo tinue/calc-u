@@ -1,6 +1,5 @@
-// LIB-6's Calc-U-59 column (design §11.6, P1–P6, P10): the TI rules of the
-// library's preset loader (app/TIPresetRules), and LIB-5's "in a preset"
-// clauses (design §10.6). Read-time cases through presets::readPreset with
+// The TI rules of the library's preset loader (app/TIPresetRules), and
+// typing in a preset. Read-time cases through presets::readPreset with
 // TIPresetRules; run cases through the harness entry in virtual time or the
 // app session (SessionRig).
 
@@ -36,9 +35,9 @@ std::string fileText(const fs::path& p) {
 
 } // namespace
 
-// ── P1: models, places (AC-35, AC-37) ───────────────────────────────────────
+// ── Models, places ──────────────────────────────────────────────────────────
 
-TEST(lib6_ac35_extensions_models_any_case_no_variant) {
+TEST(extensions_models_any_case_no_variant) {
     PresetRead r;
     for (const char* m : {"TI-59", "ti-58", "Ti-58c"}) CHECK_EQ(r.error(head(m) + "data:\n  00: 1\n"), std::string());
     CHECK(!r.error(head("TI-59:A") + "data:\n  00: 1\n").empty());   // no variant
@@ -46,7 +45,7 @@ TEST(lib6_ac35_extensions_models_any_case_no_variant) {
     CHECK(!r.error("format-version: 2\ndata:\n  00: 1\n").empty());   // the model only from model:
 }
 
-TEST(lib6_ac35_slot1_by_name_only_file_refused_with_notice) {
+TEST(slot1_by_name_only_file_refused_with_notice) {
     PresetRead r;
     CHECK_EQ(r.error(head() + "slot-1: { name: ML }\n"), std::string());
     CHECK(r.error(head() + "slot-1: { file: ml.rom.yaml }\n").find("A Solid State ROM module is named by name: in this release.") !=
@@ -55,14 +54,14 @@ TEST(lib6_ac35_slot1_by_name_only_file_refused_with_notice) {
     CHECK(!r.error(head() + "slot-1: { name: XX }\n").empty());
 }
 
-TEST(lib6_ac35_printer_pc100c) {
+TEST(preset_printer_pc100c) {
     PresetRead r;
     CHECK_EQ(r.error(head() + "printer: PC-100C\n"), std::string());
     CHECK_EQ(r.error(head("TI-58C") + "printer: pc-100c\n", "t.ti58c"), std::string());
     CHECK(!r.error(head() + "printer: CE-150\n").empty());
 }
 
-TEST(lib6_ac37_no_slot1_no_printer_means_none) {
+TEST(no_slot1_no_printer_means_none) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head() + "data:\n  00: 1\n"), std::string("done\n"));
@@ -74,9 +73,9 @@ TEST(lib6_ac37_no_slot1_no_printer_means_none) {
     CHECK(c("capabilities").find("place printer PC-100C") != std::string::npos);
 }
 
-// ── P2: idle (AC-36, AC-53) ─────────────────────────────────────────────────
+// ── Idle ────────────────────────────────────────────────────────────────────
 
-TEST(lib6_ac53_ti_idle_rule_values) {
+TEST(ti_idle_rule_values) {
     cu59::TIPresetRules rules;
     for (const char* m : {"TI-59", "TI-58", "TI-58C"}) {
         const calcu::presets::IdleRule r = rules.forModel(calcu::machine::ModelId{m}).idle();
@@ -87,7 +86,7 @@ TEST(lib6_ac53_ti_idle_rule_values) {
     }
 }
 
-TEST(lib6_ac36_running_program_not_idle_each_model_with_and_without_printer) {
+TEST(running_program_not_idle_each_model_with_and_without_printer) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     // A loop of about two seconds (999 Dsz): the next item starts only after it.
     const std::string program = "program:\n  keycodes: |\n    76 11 09 09 09 42 00 97 00 00 07 25 91\n";
@@ -104,7 +103,7 @@ TEST(lib6_ac36_running_program_not_idle_each_model_with_and_without_printer) {
         }
 }
 
-TEST(lib6_ac36_idle_after_100ms_of_key_readiness) {
+TEST(idle_after_100ms_of_key_readiness) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head() + "keys:\n  - elapsed-time: start\n  - key: 5\n  - elapsed-time: report\n"), std::string("done\n"));
@@ -115,7 +114,7 @@ TEST(lib6_ac36_idle_after_100ms_of_key_readiness) {
     if (at != std::string::npos) CHECK(std::stoi(t.substr(at + 5, 3)) >= 200);
 }
 
-TEST(lib6_ac36_card_wait_after_write_is_idle) {
+TEST(card_wait_after_write_is_idle) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     // `1 2nd Write` makes the TI-59 wait for a card: the item finishes (idle), the next one runs.
@@ -125,11 +124,11 @@ TEST(lib6_ac36_card_wait_after_write_is_idle) {
     CHECK(!c.machine()->isKeyReady());
 }
 
-// ── P3: outdated, all or nothing (AC-38) ────────────────────────────────────
+// ── Outdated, all or nothing ────────────────────────────────────────────────
 
-TEST(lib6_ac38_2_3_0_file_refused_as_outdated_with_hint) {
+TEST(file_of_2_3_0_refused_as_outdated_with_hint) {
     PresetRead r;
-    // An example as 2.3.0 shipped it (kept as a fixture since M-55 upgraded the example).
+    // An example as 2.3.0 shipped it (kept as a fixture; the example itself is upgraded).
     const std::string old = fileText("tests/fixtures/v2.3.0/globe-print.ti59");
     const std::string e = r.error(old, "globe-print.ti59");
     CHECK(e.find("Calc-U-59") != std::string::npos);
@@ -138,24 +137,24 @@ TEST(lib6_ac38_2_3_0_file_refused_as_outdated_with_hint) {
     CHECK(tiny.find("the preset format in the User Guide") != std::string::npos);
 }
 
-TEST(lib6_ac38_any_error_refuses_whole_machine_untouched) {
+TEST(any_error_refuses_whole_machine_untouched) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     c("c59 data-registers 00=42");
     const std::string reply = c.preset(head("TI-58") + "data:\n  00: 1\n  70: 2\n", "t.ti58");
     CHECK(reply.rfind("refused: ", 0) == 0);
-    CHECK(reply.find("line 5") != std::string::npos);   // the first error only, with its line (row 59-42)
+    CHECK(reply.find("line 5") != std::string::npos);   // the first error only, with its line
     CHECK_EQ(c.machine()->model().value, std::string("TI-59"));   // nothing built
     CHECK_EQ(c("c59 data-registers 00"), std::string("done 1\n00: 4.2e1\n"));
 }
 
-// ── P4: speed, input (AC-39) ────────────────────────────────────────────────
+// ── Speed, input ────────────────────────────────────────────────────────────
 
-TEST(lib6_ac39_full_speed_unless_regular_speed_first) {
+TEST(full_speed_unless_regular_speed_first) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     // A loop of 168 s of emulated time (999 Dsz). Paced on the rig's wall
     // clock: at full speed the preset is over long before 168 s of wall time;
-    // with `- regular-speed:` first it takes them (LIB-6 AC-16; row 59-5).
+    // with `- regular-speed:` first it takes them.
     const std::string loop = "program:\n  keycodes: |\n    76 11 09 09 09 42 00 97 00 00 07 91\n";
     auto wallFor = [&](const std::string& keys) {
         testroms::PartRig r;
@@ -173,7 +172,7 @@ TEST(lib6_ac39_full_speed_unless_regular_speed_first) {
     CHECK(regular > 160);
 }
 
-TEST(lib6_ac39_user_keys_dropped_second_load_refused) {
+TEST(user_keys_dropped_second_load_refused) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     testroms::PartRig r;
     const std::string loop = "program:\n  keycodes: |\n    76 11 09 09 42 00 97 00 00 07 91\n";
@@ -184,15 +183,15 @@ TEST(lib6_ac39_user_keys_dropped_second_load_refused) {
     const auto second = r.send(calcu::presets::kLoadPresetCommand, calcu::sessions::Value::object({{"content", head()}, {"name", "x.ti59"}}));
     CHECK(!second.done);
     CHECK_EQ(second.reason, std::string(calcu::sessions::kAnotherOperationRuns));
-    r.tap(82);   // a user key while the preset runs: dropped (row 59-5)
+    r.tap(82);   // a user key while the preset runs: dropped
     r.until([&] { return r.reply(id) != nullptr; }, std::chrono::seconds(60));
     r.runFor(std::chrono::milliseconds(300));
     CHECK(r.reply(id) && r.reply(id)->done);
 }
 
-// ── P5: the TI steps (AC-40, AC-68, AC-24, AC-25, AC-66, EC-7) ──────────────
+// ── The TI steps ────────────────────────────────────────────────────────────
 
-TEST(lib6_ac40_type_and_syncclock_refused_when_read) {
+TEST(type_and_syncclock_refused_when_read) {
     PresetRead r;
     CHECK(!r.error(head() + "keys:\n  - type: 12\n").empty());
     CHECK(!r.error(head() + "keys:\n  - sync-clock:\n").empty());
@@ -202,7 +201,7 @@ TEST(lib6_ac40_type_and_syncclock_refused_when_read) {
     CHECK(!r.error(head() + "bus-rom: x\n").empty());   // a Sharp key: unknown
 }
 
-TEST(lib6_ac40_printer_trace_sets_trace_refused_without_pc100c) {
+TEST(printer_trace_sets_trace_refused_without_pc100c) {
     PresetRead r;
     CHECK(r.error(head() + "keys:\n  - printer-trace: on\n").find("printer: PC-100C") != std::string::npos);
     CHECK(!r.error(head() + "printer: PC-100C\nkeys:\n  - printer-trace: maybe\n").empty());
@@ -216,7 +215,7 @@ TEST(lib6_ac40_printer_trace_sets_trace_refused_without_pc100c) {
             if (i.id.value == "TRACE") CHECK(i.on);
 }
 
-TEST(lib6_ac40_elapsed_counts_emulated_time) {
+TEST(elapsed_counts_emulated_time) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head() + "keys:\n  - elapsed-time: start\n  - wait: 2s\n  - elapsed-time: report\n"), std::string("done\n"));
@@ -224,7 +223,7 @@ TEST(lib6_ac40_elapsed_counts_emulated_time) {
     CHECK(t.find("0:02.") != std::string::npos);
 }
 
-TEST(lib6_ac40_screenshot_is_the_classic_segment_picture) {
+TEST(screenshot_is_the_classic_segment_picture) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head() + "keys:\n  - key: 1 2 3 4 5 6 7 8 9 . 5 +/-\n  - screenshot: shot.png\n"), std::string("done\n"));
@@ -232,8 +231,8 @@ TEST(lib6_ac40_screenshot_is_the_classic_segment_picture) {
     CHECK(fs::exists(shot));
     const std::string got = fileText(shot);
     CHECK(got.rfind("\x89PNG", 0) == 0);
-    // The reference picture (D-39), made by this code in M-54 and reviewed by
-    // the user at the E/F boundary: CALCU59_DISPLAY_PICTURE=1 writes it.
+    // The reference picture, made by this code and checked by eye:
+    // CALCU59_DISPLAY_PICTURE=1 writes it.
     const fs::path ref = "tests/reference/display/ti59-123456789.5-.png";
     if (std::getenv("CALCU59_DISPLAY_PICTURE")) {
         fs::create_directories(ref.parent_path());
@@ -245,7 +244,7 @@ TEST(lib6_ac40_screenshot_is_the_classic_segment_picture) {
     CHECK(cu59::displayPicture(c.machine()->readDisplay()) == std::vector<std::uint8_t>(got.begin(), got.end()));
 }
 
-TEST(lib6_ac40_expect_pi_13_digits_passes_10_digits_fails) {
+TEST(expect_pi_13_digits_passes_10_digits_fails) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head() + "keys:\n  - key: π\n  - expect: 3.14159265359\n  - not-expect: 3.141592654\n"),
@@ -256,7 +255,7 @@ TEST(lib6_ac40_expect_pi_13_digits_passes_10_digits_fails) {
     CHECK(c("expect 3.141592654").rfind("refused: ", 0) == 0);
 }
 
-TEST(lib6_ac40_expect_any_display_format_and_blinking) {
+TEST(expect_any_display_format_and_blinking) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     // Fix 2 shows 3.14; X is still π in 13 digits.
@@ -273,7 +272,7 @@ TEST(lib6_ac40_expect_any_display_format_and_blinking) {
     CHECK(c("expect 9.9999999e99").rfind("refused", 0) == 0);   // not the display's 8 digits
 }
 
-TEST(lib6_ac40_not_expect_by_the_same_comparison) {
+TEST(not_expect_by_the_same_comparison) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     c("key 2 x^2");
@@ -283,19 +282,19 @@ TEST(lib6_ac40_not_expect_by_the_same_comparison) {
     CHECK(c("not-expect 4.0").rfind("refused: ", 0) == 0);
 }
 
-TEST(lib6_ac40_expect_not_a_number_refused_when_read) {
+TEST(expect_not_a_number_refused_when_read) {
     PresetRead r;
     CHECK(r.error(head() + "keys:\n  - expect: Error\n").find("A TI model compares expect: with a number.") != std::string::npos);
     CHECK(r.error(head() + "keys:\n  - not-expect: 1,5\n").find("line 4") != std::string::npos);
     CHECK_EQ(r.error(head() + "keys:\n  - expect: -1.5e-3\n"), std::string());
 }
 
-TEST(lib6_ac68_regex_refused_when_read) {
+TEST(regex_refused_when_read) {
     PresetRead r;
     CHECK(r.error(head() + "keys:\n  - expect: /3\\.14/\n").find("a regular expression is not taken") != std::string::npos);
 }
 
-TEST(lib6_ac25_screenshot_into_save_folder) {
+TEST(screenshot_into_save_folder) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     calcu::testing::TempFolder folder{"calcu59-shots"};
     testroms::RigOptions o;
@@ -313,11 +312,10 @@ TEST(lib6_ac25_screenshot_into_save_folder) {
     CHECK(!read.error(head() + "keys:\n  - screenshot: a/b.png\n").empty());   // no path separator
 }
 
-// LIB-14 AC-11 (ledger row 59-66; L-4 of docs/reviews/release-simplification.md):
-// a save folder changed in Settings after the start is used by the next
+// A save folder changed in Settings after the start is used by the next
 // save at once, as in Calc-U-1600: the cards, the screenshots and the
 // constant memory file of the TI-58C.
-TEST(lib14_ac11_save_folder_changed_after_the_start_is_used_at_once) {
+TEST(save_folder_changed_after_the_start_is_used_at_once) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     calcu::testing::TempFolder home{"calcu59-places"};
     testroms::RigOptions o;
@@ -344,7 +342,7 @@ TEST(lib14_ac11_save_folder_changed_after_the_start_is_used_at_once) {
     CHECK(!fs::exists(home.path() / "Calc-U-59" / "seven.png"));
 }
 
-TEST(lib6_ec7_expect_display_off_fails) {
+TEST(expect_display_off_fails) {
     cu59::TIPresetRules rules;
     calcu::machine::DisplayOutput dark;   // nothing lit
     dark.on = true;
@@ -363,22 +361,22 @@ TEST(lib6_ec7_expect_display_off_fails) {
     CHECK(!reading.found);
 }
 
-// ── P6: paper at a load (AC-41) ─────────────────────────────────────────────
+// ── Paper at a load ─────────────────────────────────────────────────────────
 
-TEST(lib6_ac41_user_load_empties_paper_startup_preset_keeps_it) {
+TEST(user_load_empties_paper_startup_preset_keeps_it) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     testroms::PartRig r;
     CHECK(r.load(head() + "printer: PC-100C\nkeys:\n  - key: 5 Prt\n").done);
     r.runFor(std::chrono::seconds(2));
     CHECK(!r.printedText().empty());
-    CHECK(r.load(head() + "printer: PC-100C\nkeys:\n  - key: 7\n").done);   // a user's load: the paper is emptied (LIB-8 AC-8)
+    CHECK(r.load(head() + "printer: PC-100C\nkeys:\n  - key: 7\n").done);   // a user's load: the paper is emptied
     r.runFor(std::chrono::milliseconds(200));
     CHECK(r.printedText().empty());
 }
 
-// ── P10: typing in a preset (LIB-5 AC-17, AC-26) ────────────────────────────
+// ── Typing in a preset ──────────────────────────────────────────────────────
 
-TEST(lib5_ac17_in_a_preset_key_finishes_at_idle) {
+TEST(in_a_preset_key_finishes_at_idle) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     // A loop of seconds (99 Dsz): `- key: 5 A` finishes after its run; the next item sees its result.
@@ -387,7 +385,7 @@ TEST(lib5_ac17_in_a_preset_key_finishes_at_idle) {
     CHECK_EQ(c.preset(text), std::string("done\n"));
 }
 
-TEST(lib5_ac26_names_of_8_1_in_a_preset) {
+TEST(names_of_8_1_in_a_preset) {
     PresetRead r;
     // The key IDs and their other spellings, and every printer name of a
     // keycode (preset.md §8.1, §8.1.1), each in a `key:` step.
@@ -412,7 +410,7 @@ TEST(lib5_ac26_names_of_8_1_in_a_preset) {
     CHECK(!r.error(head() + "keys:\n  - key: HIR\n").empty());
 }
 
-TEST(lib5_ac26_2nd_before_second_function_once_in_a_preset) {
+TEST(key_2nd_before_second_function_once_in_a_preset) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     Calcu c;
     CHECK_EQ(c.preset(head() + "keys:\n  - key: 2nd π\n  - expect: 3.14159265359\n"), std::string("done\n"));
@@ -420,7 +418,7 @@ TEST(lib5_ac26_2nd_before_second_function_once_in_a_preset) {
              std::string("done\n"));
 }
 
-TEST(lib5_ac26_old_names_refused_when_read) {
+TEST(old_names_refused_when_read) {
     PresetRead r;
     for (const char* old : {"2ndCLR", "P>R", "S+", "mean", "StFlg", "IfFlg"}) {
         const std::string e = r.error(head() + "keys:\n  - key: " + std::string(old) + "\n");

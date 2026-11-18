@@ -21,7 +21,7 @@ const calcu::machine::ModelId kTI59{"TI-59"};
 std::string text(const YamlNode& n) { return calcu::formats::scalarText(n); }
 int lineOf(const YamlNode& n, int fallback) { return n.line ? n.line : fallback; }
 
-// A side of an item (AC-18): the definition, or nullopt with the error given.
+// A side of an item: the definition, or nullopt with the error given.
 std::optional<TICardSideDef> readSide(const YamlNode& n, const std::string& name, const std::string& side, ReadContext& ctx) {
     const std::string where = "magnetic-cards: " + name + " side " + side + ": ";
     const int at = n.line;

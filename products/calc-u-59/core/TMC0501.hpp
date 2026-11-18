@@ -84,10 +84,10 @@ enum : uint16_t {
 
 // ── Connectors ────────────────────────────────────────────────────────────────
 //
-// What the TI machine wires to the CPU (C59-6 design §4): the printer
+// What the TI machine wires to the CPU: the printer
 // connector with the digit its D0 pad is on (0 on the TI-59 and TI-58, 10 on
 // the TI-58C), and the module slot. nullptr: nothing plugged in. The CPU holds
-// no printer state and no module image (C59-6, Technical Requirements).
+// no printer state and no module image.
 struct TiConnectors {
     PrinterPinOut* printer = nullptr;
     uint8_t d0Digit = 0;
@@ -162,7 +162,7 @@ public:
     /// The key matrix byte of digit slot `col` (bit = K-line); for tests.
     uint8_t keyLines(int col) const { return (col >= 0 && col < 16) ? key[col] : 0; }
     /// How many keyboard-scan instructions found the key at K-line `row`,
-    /// digit slot `col` pressed (the kmask match; LIB-5 §3.4, D-3). It only
+    /// digit slot `col` pressed (the kmask match). It only
     /// grows; it changes nothing the machine does.
     uint64_t keySamples(int row, int col) const {
         return (col >= 0 && col < 16 && row >= 0 && row < 8) ? m_keySamples[static_cast<size_t>(col * 8 + row)] : 0;
@@ -299,7 +299,7 @@ public:
         return static_cast<uint8_t>((tens * 10) + units);
     }
 
-    /// The processor's machine state (C59-9 AC-15, design §3.7): every
+    /// The processor's machine state: every
     /// register, the SCOM, the flags, the program counter, the card buffers,
     /// the display and key matrix state and the step latch; not the
     /// debugger's (breakpoints, the frame ring, the log) nor the connectors.
@@ -419,8 +419,8 @@ private:
     // ── Display state ─────────────────────────────────────────────────
     // Per-digit live buffers: updated during each digit's strobe phase when IDLE.
     // takeDisplay() reports the duty since its previous call and restarts the window.
-    // Written by postOperation(), read by takeDisplay(). The core holds no lock
-    // (ADR 0009): the caller serialises every call (C59-1 design §3.1).
+    // Written by postOperation(), read by takeDisplay(). The core holds no lock:
+    // the caller serialises every call.
     uint8_t  m_digitSegmentsA[12]{};  // A[2..13] → m_digitSegmentsA[0..11] per strobe
     uint8_t  m_digitSegmentsB[12]{};  // B[2..13] → m_digitSegmentsB[0..11] per strobe
     uint32_t m_digitLitTicks[12]{};   // Weighted cycles each position was driven since the last takeDisplay().

@@ -55,9 +55,9 @@ once from calc-u-site's `59/Pages.jsx` at `acd629c` (M-60); from then on
 - `help/settings-keys.txt` is written by `CalcU59Tests`
   (`CALCU59_HELP_KEYS=1 CalcU59Tests lib16`) from `settingsDecl()`; every
   key needs its line in chapter 8. `help.yaml`'s `names:` must cover
-  `tiCatalogue()` (`lib16_ac2_help_names_cover_the_catalogue`).
+  `tiCatalogue()` (`help_names_cover_the_catalogue`).
 - `help/downloads/` holds the preset tutorial's six presets
-  (`lib16_ac9_tutorial_presets_load` loads them); `help/images/` the
+  (`tutorial_presets_load` loads them); `help/images/` the
   pictures, each used by a file.
 - A user-visible change updates its chapter in the same step. Use the
   glossary's terms (`docs/GLOSSARY.md`).

@@ -8,7 +8,7 @@ namespace cu59 {
 std::shared_ptr<const calcu::machine::ProductData> ConstantMemoryKeeper::contentForBuild() {
     m_fileCard.reset();
     m_written.reset();
-    auto content = std::make_shared<TIConstantMemory>();   // zeroed (EC-1)
+    auto content = std::make_shared<TIConstantMemory>();   // zeroed
     bool unreadable = false;
     const std::optional<std::string> text = m_files.readConstantMemory(&unreadable);
     if (text) {
@@ -21,13 +21,13 @@ std::shared_ptr<const calcu::machine::ProductData> ConstantMemoryKeeper::content
             m_written = *c;
         } else {
             const ConstantMemoryProblem& p = std::get<ConstantMemoryProblem>(r);
-            if (p.kind == ConstantMemoryProblem::Kind::Damaged)   // EC-3
+            if (p.kind == ConstantMemoryProblem::Kind::Damaged)
                 m_notice("The constant memory file " + std::string(kConstantMemoryFileName) + " cannot be read (" + p.what +
                          "); the TI-58C starts with zeroed memory.");
             else if (p.kind == ConstantMemoryProblem::Kind::Newer)
                 m_notice("The constant memory file " + std::string(kConstantMemoryFileName) +
                          " was written by a newer release; it is replaced at the first change.");
-            else   // EC-2, D-6
+            else   // outdated or newer
                 m_notice("The constant memory file " + std::string(kConstantMemoryFileName) +
                          " is outdated; it is replaced at the first change. Its format is described in the User Guide, "
                          "chapter Formats.");
@@ -64,7 +64,7 @@ void ConstantMemoryKeeper::write(const ConstantMemoryContents& c) {
         m_written = c;
         return;
     }
-    if (!m_failNoticed) {   // EC-4, D-8: once per app session; the next change tries again
+    if (!m_failNoticed) {   // once per app session; the next change tries again
         m_failNoticed = true;
         m_notice("The constant memory could not be saved to " + std::string(kConstantMemoryFileName) + ".");
     }

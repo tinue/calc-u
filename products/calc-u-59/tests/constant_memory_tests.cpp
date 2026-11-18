@@ -1,4 +1,4 @@
-// C59-3 TI-58C constant memory (design §6, T1–T7): the product kind
+// The TI-58C's constant memory: the product kind
 // `c59.constant-memory`, the file ti58c.memory.yaml (constant memory format
 // 1), when the memory comes back and when the file is written, in the app
 // session as a native frontend hosts it (tests/AppRig.hpp; the save folder
@@ -37,9 +37,9 @@ std::optional<cu59::ConstantMemoryContents> written(Files& f) {
 }
 } // namespace
 
-// ── T1: the kind (AC-1) ─────────────────────────────────────────────────────
+// ── The kind ────────────────────────────────────────────────────────────────
 
-TEST(c59_3_ac1_listed_on_ti58c_only) {
+TEST(listed_on_ti58c_only) {
     SKIP_UNLESS(roms(), kSkip);
     for (const char* m : {"TI-59", "TI-58", "TI-58C"}) {
         Rig r(m);
@@ -48,7 +48,7 @@ TEST(c59_3_ac1_listed_on_ti58c_only) {
     }
 }
 
-TEST(c59_3_ac1_counter_changes_with_content_only) {
+TEST(counter_changes_with_content_only) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-58C");
     cu59::ConstantMemory* k = cu59::constantMemoryOf(*r.machine());
@@ -62,9 +62,9 @@ TEST(c59_3_ac1_counter_changes_with_content_only) {
     CHECK(k->content()[static_cast<std::size_t>(59 - 5)] == num("7"));   // R05 is raw 54 at 60 registers
 }
 
-// ── T2: back as a switched-on TI-58C (AC-2) ─────────────────────────────────
+// ── Back as a switched-on TI-58C ────────────────────────────────────────────
 
-TEST(c59_3_ac2_partition_and_display_format_come_back) {
+TEST(partition_and_display_format_come_back) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     {
@@ -74,16 +74,16 @@ TEST(c59_3_ac2_partition_and_display_format_come_back) {
         r.runFor(std::chrono::milliseconds(800));
         CHECK_EQ(r.memory().partitionSteps(), 320);
         CHECK_EQ(testroms::displayText(*r.machine()), std::string("000"));   // 0.00 (the text has no points)
-    }   // the product quits (AC-6: written at once)
+    }   // the product quits (written at once)
     CHECK(written(*files).has_value());
-    Rig r("TI-58C", files);   // started again: the memory is in place before the processor (row 59-15)
+    Rig r("TI-58C", files);   // started again: the memory is in place before the processor
     CHECK_EQ(r.memory().partitionSteps(), 320);
     r.keys({"7", "+", "0", "="});
     r.runFor(std::chrono::milliseconds(300));
     CHECK_EQ(testroms::displayText(*r.machine()), std::string("700"));   // 7.00: Fix 2 came back
 }
 
-TEST(c59_3_ac2_memory_in_place_before_the_processor) {
+TEST(memory_in_place_before_the_processor) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5");
@@ -92,10 +92,10 @@ TEST(c59_3_ac2_memory_in_place_before_the_processor) {
     CHECK(r.part().constantMemory().fromFile());
 }
 
-// ── T3: the file (AC-3, AC-4, EC-2, EC-3, EC-5) ─────────────────────────────
+// ── The file ────────────────────────────────────────────────────────────────
 
-// LIB-7 AC-49 (ledger 59-59): the file's comment line and `saved:`.
-TEST(lib7_ac49_constant_memory_comment_and_saved) {
+// The file's comment line and `saved:`.
+TEST(constant_memory_comment_and_saved) {
     cu59::ConstantMemoryContents c;
     c.ram[0] = num("25");
     const std::string text = cu59::writeConstantMemoryFile(c, "2026-11-17T10:00:00Z");
@@ -108,13 +108,13 @@ TEST(lib7_ac49_constant_memory_comment_and_saved) {
     files->files[kMemoryPath] = fileWith(55, "3.5");
     Rig r("TI-58C", files);
     r.memory().writeRegister(5, num("7"));
-    r.runFor(std::chrono::milliseconds(700));   // AC-5: written
+    r.runFor(std::chrono::milliseconds(700));   // written
     const std::string& saved = files->files[kMemoryPath];
     CHECK(saved.rfind("# Calc-U-59 TI-58C constant memory\n", 0) == 0);
     CHECK(saved.find("\nsaved: 20") != std::string::npos);
 }
 
-TEST(c59_3_ac3_file_at_root_of_save_folder_not_a_medium) {
+TEST(file_at_root_of_save_folder_not_a_medium) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     Rig r("TI-58C", files);
@@ -124,7 +124,7 @@ TEST(c59_3_ac3_file_at_root_of_save_folder_not_a_medium) {
     CHECK_EQ(cu59::TIFileAccess::kConstantMemoryFile, std::string("ti58c.memory.yaml"));
 }
 
-TEST(c59_3_ac4_format_1_r000_to_r063_h_as_r060_r063) {
+TEST(format_1_r000_to_r063_h_as_r060_r063) {
     cu59::ConstantMemoryContents c;
     c.ram[0] = num("25");
     c.ram[60] = num("1");   // H00
@@ -141,12 +141,12 @@ TEST(c59_3_ac4_format_1_r000_to_r063_h_as_r060_r063) {
     CHECK(std::holds_alternative<cu59::ConstantMemoryContents>(back) && std::get<cu59::ConstantMemoryContents>(back) == c);
 }
 
-TEST(c59_3_ac4_own_card_stored_module_card_not) {
+TEST(own_card_stored_module_card_not) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5", "cue-card:\n  title: Loan\n  A: n\n");
     Rig r("TI-58C", files);
-    CHECK(r.part().ownCueCard() && r.part().ownCueCard()->title == "Loan");   // AC-7: fitted again
+    CHECK(r.part().ownCueCard() && r.part().ownCueCard()->title == "Loan");   // fitted again
     r.keys({"2nd", "LRN", "0", "1"});   // Pgm 01: the module's cue card shows over the own card
     r.memory().writeRegister(5, num("9"));
     r.runFor(std::chrono::milliseconds(1500));
@@ -154,14 +154,14 @@ TEST(c59_3_ac4_own_card_stored_module_card_not) {
     CHECK(w && w->cueCard && w->cueCard->title == "Loan");   // the own card, not the module's
 }
 
-TEST(c59_3_ac4_register_above_r063_refused) {
+TEST(register_above_r063_refused) {
     const auto r = cu59::readConstantMemoryFile(
         "format: ti58c-constant-memory\nformat-version: 1\nram:\n  encoding: register-hex\n  bytes: |\n    R064: 00 00 00 00 00 00 00 01\n");
     const auto* p = std::get_if<cu59::ConstantMemoryProblem>(&r);
     CHECK(p && p->kind == cu59::ConstantMemoryProblem::Kind::Damaged && p->what.find("line 6") != std::string::npos);
 }
 
-TEST(c59_3_ec2_outdated_or_no_version_not_read_notice) {
+TEST(outdated_or_no_version_not_read_notice) {
     SKIP_UNLESS(roms(), kSkip);
     for (const char* text : {"format: ti58c-constant-memory\nram:\n  encoding: register-hex\n",
                              "format: ti58c-constant-memory\nformat-version: 0\nram:\n  encoding: register-hex\n",
@@ -179,7 +179,7 @@ TEST(c59_3_ec2_outdated_or_no_version_not_read_notice) {
     }
 }
 
-TEST(c59_3_ec2_ti58c_mem_ignored_without_notice) {
+TEST(ti58c_mem_ignored_without_notice) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files["save/ti58c.mem"] = "── Registers (raw values) ──\nR055: 00 00 00 00 00 00 00 35\n";
@@ -191,7 +191,7 @@ TEST(c59_3_ec2_ti58c_mem_ignored_without_notice) {
     CHECK_EQ(files->writes["save/ti58c.mem"], 0);   // not changed
 }
 
-TEST(c59_3_ec3_damaged_line_nothing_used_notice) {
+TEST(damaged_line_nothing_used_notice) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = "format: ti58c-constant-memory\nformat-version: 1\nram:\n  encoding: register-hex\n  bytes: |\n"
@@ -203,14 +203,14 @@ TEST(c59_3_ec3_damaged_line_nothing_used_notice) {
     CHECK(noticed);
 }
 
-TEST(c59_3_ec5_no_register_lines_valid) {
+TEST(no_register_lines_valid) {
     const auto r = cu59::readConstantMemoryFile("format: ti58c-constant-memory\nformat-version: 1\nram:\n  encoding: register-hex\n");
     CHECK(std::holds_alternative<cu59::ConstantMemoryContents>(r));
 }
 
-// ── T4: writing (AC-5, AC-6, EC-4) ──────────────────────────────────────────
+// ── Writing ─────────────────────────────────────────────────────────────────
 
-TEST(c59_3_ac5_written_within_half_a_second_wall_time) {
+TEST(written_within_half_a_second_wall_time) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     Rig r("TI-58C", files);
@@ -222,7 +222,7 @@ TEST(c59_3_ac5_written_within_half_a_second_wall_time) {
     CHECK(written(*files) && written(*files)->ram[54] == num("7"));
 }
 
-TEST(c59_3_ac5_not_written_without_change) {
+TEST(not_written_without_change) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     Rig r("TI-58C", files);
@@ -232,7 +232,7 @@ TEST(c59_3_ac5_not_written_without_change) {
     CHECK_EQ(files->writes[kMemoryPath], before);
 }
 
-TEST(c59_3_ac6_written_at_once_before_replace_on_suspend_on_quit) {
+TEST(written_at_once_before_replace_on_suspend_on_quit) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     {
@@ -246,13 +246,13 @@ TEST(c59_3_ac6_written_at_once_before_replace_on_suspend_on_quit) {
         CHECK(r.send(st::kModelCommand, Value::object({{"name", "TI-59"}})).done);   // before it is replaced
         CHECK(written(*files) && written(*files)->ram[54] == num("2"));
         CHECK(r.send(st::kModelCommand, Value::object({{"name", "TI-58C"}})).done);
-        CHECK(r.memory().readRaw(54) == num("2"));   // AC-14: away and back keeps it
+        CHECK(r.memory().readRaw(54) == num("2"));   // away and back keeps it
         r.memory().writeRegister(5, num("3"));
     }   // quit
     CHECK(written(*files) && written(*files)->ram[54] == num("3"));
 }
 
-TEST(c59_3_ec4_failed_write_notice_once_next_change_retries) {
+TEST(failed_write_notice_once_next_change_retries) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->failWrites = true;
@@ -271,9 +271,9 @@ TEST(c59_3_ec4_failed_write_notice_once_next_change_retries) {
     CHECK(written(*files) && written(*files)->ram[54] == num("3"));
 }
 
-// ── T5: when it comes back (AC-7, AC-8, EC-1, EC-6, EC-7) ───────────────────
+// ── When it comes back ──────────────────────────────────────────────────────
 
-TEST(c59_3_ac7_start_and_model_switch_get_the_file) {
+TEST(start_and_model_switch_get_the_file) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5");
@@ -286,7 +286,7 @@ TEST(c59_3_ac7_start_and_model_switch_get_the_file) {
     CHECK(r.memory().readRaw(55) == num("3.5"));
 }
 
-TEST(c59_3_ac7_cue_card_of_the_file_fitted_again) {
+TEST(cue_card_of_the_file_fitted_again) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5", "cue-card:\n  title: Loan\n");
@@ -296,7 +296,7 @@ TEST(c59_3_ac7_cue_card_of_the_file_fitted_again) {
     CHECK(s && s->card && s->card->title == "Loan");
 }
 
-TEST(c59_3_ac8_preset_or_startup_preset_zeroed_preset_card) {
+TEST(preset_or_startup_preset_zeroed_preset_card) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5", "cue-card:\n  title: Loan\n");
@@ -311,7 +311,7 @@ TEST(c59_3_ac8_preset_or_startup_preset_zeroed_preset_card) {
     CHECK(!s.part().constantMemory().fromFile());
 }
 
-TEST(c59_3_ec1_no_file_zeroed_written_at_first_change) {
+TEST(no_file_zeroed_written_at_first_change) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     Rig r("TI-58C", files);
@@ -322,7 +322,7 @@ TEST(c59_3_ec1_no_file_zeroed_written_at_first_change) {
     CHECK(written(*files).has_value());
 }
 
-TEST(c59_3_ec6_startup_preset_not_loadable_gets_the_file) {
+TEST(startup_preset_not_loadable_gets_the_file) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5");
@@ -331,22 +331,22 @@ TEST(c59_3_ec6_startup_preset_not_loadable_gets_the_file) {
     CHECK(r.part().constantMemory().fromFile());
 }
 
-TEST(c59_3_ec7_failed_preset_writes_nothing) {
+TEST(failed_preset_writes_nothing) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5");
     Rig r("TI-58C", files);
     const auto reply = r.load(head() + "data:\n  00: 1\nkeys:\n  - key: 1\n  - expect: 2\n", "f.ti58c");
     CHECK(!reply.done);   // failed while carried out
-    const int before = files->writes[kMemoryPath];   // the machine from the file was written before it was replaced (AC-6)
+    const int before = files->writes[kMemoryPath];   // the machine from the file was written before it was replaced
     r.memory().writeRegister(5, num("9"));
     r.runFor(std::chrono::seconds(1));
     CHECK_EQ(files->writes[kMemoryPath], before);
 }
 
-// ── T6: Reset, Cold boot, other models (AC-9 to AC-12) ──────────────────────
+// ── Reset, Cold boot, other models ──────────────────────────────────────────
 
-TEST(c59_3_ac9_cold_boot_zeroes_then_startup) {
+TEST(cold_boot_zeroes_then_startup) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5");
@@ -355,7 +355,7 @@ TEST(c59_3_ac9_cold_boot_zeroes_then_startup) {
     CHECK(r.memory().readRaw(55) != num("3.5"));
 }
 
-TEST(c59_3_ac10_preset_machine_never_writes) {
+TEST(preset_machine_never_writes) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5");
@@ -372,7 +372,7 @@ TEST(c59_3_ac10_preset_machine_never_writes) {
     CHECK(written(*files) && written(*files)->ram[55] == num("3.5"));
 }
 
-TEST(c59_3_ac10_cold_boot_of_file_machine_file_follows_card_kept) {
+TEST(cold_boot_of_file_machine_file_follows_card_kept) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5", "cue-card:\n  title: Loan\n");
@@ -384,7 +384,7 @@ TEST(c59_3_ac10_cold_boot_of_file_machine_file_follows_card_kept) {
     CHECK(w && w->cueCard && w->cueCard->title == "Loan");
 }
 
-TEST(c59_3_ac11_reset_power_cycle_memory_and_card_stay_file_not_read) {
+TEST(reset_power_cycle_memory_and_card_stay_file_not_read) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5", "cue-card:\n  title: Loan\n");
@@ -399,7 +399,7 @@ TEST(c59_3_ac11_reset_power_cycle_memory_and_card_stay_file_not_read) {
     CHECK(r.part().ownCueCard() && r.part().ownCueCard()->title == "Loan");
 }
 
-TEST(c59_3_ac12_ti59_ti58_neither_read_nor_write) {
+TEST(ti59_ti58_neither_read_nor_write) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     files->files[kMemoryPath] = fileWith(55, "3.5");
@@ -412,9 +412,9 @@ TEST(c59_3_ac12_ti59_ti58_neither_read_nor_write) {
     CHECK_EQ(files->writes[kMemoryPath], 0);
 }
 
-// ── T7: frontends, today's tests (AC-13, AC-14) ─────────────────────────────
+// ── Frontends, model switch ─────────────────────────────────────────────────
 
-TEST(c59_3_ac14_model_switch_away_and_back_keeps_memory) {
+TEST(model_switch_away_and_back_keeps_memory) {
     SKIP_UNLESS(roms(), kSkip);
     auto files = std::make_shared<Files>();
     Rig r("TI-58C", files);
@@ -424,10 +424,10 @@ TEST(c59_3_ac14_model_switch_away_and_back_keeps_memory) {
     CHECK(r.memory().readRegister(5) == num("6.5"));
 }
 
-TEST(c59_3_ac13_the_host_folder_is_the_one_written) {
+TEST(the_host_folder_is_the_one_written) {
     SKIP_UNLESS(roms(), kSkip);
     // Each host passes TIAppSetup::saveFolder and its file access (Qt6: plain
-    // files in LIB-9's save folder; Swift: the bridge's coordinated I/O; the
+    // files in the settings' save folder; Swift: the bridge's coordinated I/O; the
     // Web: the persistent file system): the file goes where the host says.
     auto files = std::make_shared<Files>();
     Rig r("TI-58C", files);

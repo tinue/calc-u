@@ -4,12 +4,12 @@
 #include <cstdint>
 #include <vector>
 
-// The product kind `c59.trace-records` (LIB-10 design §12.3, §12.6, D-24):
+// The product kind `c59.trace-records`:
 // the processor frames of the TMC0501 for a trace, owner TMC0501, capability
 // ID `TMC0501/c59.trace-records`. begin() turns the core's frame recording
 // on (the ring starts afresh), take() hands over what ran since the last
 // call, end() turns it off again. What the file holds is the app's
-// (app/TITraceRecorder, ADR 0037); the library's trace session writes it.
+// (app/TITraceRecorder); the library's trace session writes it.
 
 class TraceRecords : public calcu::machine::Capability {
 public:

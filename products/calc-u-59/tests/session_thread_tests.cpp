@@ -1,4 +1,4 @@
-// The Swift frontend's session thread (C59-5 design §6, H1 to H3): the
+// The Swift frontend's session thread: the
 // library's session with a part made for the test, whose calls take as long
 // as it wants, on the real clock.
 
@@ -106,8 +106,8 @@ template <class F> bool waitFor(F f, std::chrono::milliseconds t = 3000ms) {
 
 } // namespace
 
-// H1 (AC-6): posts from two threads reach the session in each poster's order.
-TEST(c59_5_ac6_posts_reach_the_session_in_order) {
+// Posts from two threads reach the session in each poster's order.
+TEST(posts_reach_the_session_in_order) {
     Shared s;
     auto t = thread(s);
     auto poster = [&](const char* who) {
@@ -131,8 +131,8 @@ TEST(c59_5_ac6_posts_reach_the_session_in_order) {
     CHECK(na == 500 && nb == 500);
 }
 
-// H1 (AC-6): the frontend drains the messages in order, with one wake a batch.
-TEST(c59_5_ac6_messages_drained_in_order_one_wake_per_batch) {
+// The frontend drains the messages in order, with one wake a batch.
+TEST(messages_drained_in_order_one_wake_per_batch) {
     Shared s;
     std::atomic<int> wakes{0};
     auto t = thread(s, &wakes);
@@ -153,8 +153,8 @@ TEST(c59_5_ac6_messages_drained_in_order_one_wake_per_batch) {
     CHECK(wakes.load() <= 100);   // a wake only when the queue was empty
 }
 
-// H1 (AC-5): a post returns at once while a call runs.
-TEST(c59_5_ac5_post_returns_while_a_call_runs) {
+// A post returns at once while a call runs.
+TEST(post_returns_while_a_call_runs) {
     Shared s;
     auto t = thread(s);
     s.slowCalls = 3;
@@ -164,8 +164,8 @@ TEST(c59_5_ac5_post_returns_while_a_call_runs) {
     CHECK(Clock::now() - t0 < 1ms);
 }
 
-// H2 (AC-4): about 60 calls a second.
-TEST(c59_5_ac4_about_60_calls_a_second) {
+// About 60 calls a second.
+TEST(about_60_calls_a_second) {
     Shared s;
     auto t = thread(s);
     std::this_thread::sleep_for(100ms);
@@ -176,8 +176,8 @@ TEST(c59_5_ac4_about_60_calls_a_second) {
     CHECK(n >= 57 && n <= 63);
 }
 
-// H2 (AC-4): built, called and destroyed on one thread that is not the test's.
-TEST(c59_5_ac4_session_built_called_destroyed_on_one_thread) {
+// Built, called and destroyed on one thread that is not the test's.
+TEST(session_built_called_destroyed_on_one_thread) {
     Shared s;
     {
         auto t = thread(s);
@@ -189,8 +189,8 @@ TEST(c59_5_ac4_session_built_called_destroyed_on_one_thread) {
     CHECK(s.threads.count(std::this_thread::get_id()) == 0);
 }
 
-// H2 (AC-5): a command sent during a slow call is carried out when it is over (FS 3).
-TEST(c59_5_ac5_command_during_slow_call_applied_after_it) {
+// A command sent during a slow call is carried out when it is over.
+TEST(command_during_slow_call_applied_after_it) {
     Shared s;
     auto t = thread(s);
     std::this_thread::sleep_for(50ms);
@@ -207,8 +207,8 @@ TEST(c59_5_ac5_command_during_slow_call_applied_after_it) {
     s.slowCalls = 0;
 }
 
-// H2: more than 100 ms behind, the thread rebases and does not run calls back to back.
-TEST(c59_5_ac4_behind_more_than_100_ms_rebases) {
+// More than 100 ms behind, the thread rebases and does not run calls back to back.
+TEST(behind_more_than_100_ms_rebases) {
     Shared s;
     auto t = thread(s);
     std::this_thread::sleep_for(50ms);
@@ -220,8 +220,8 @@ TEST(c59_5_ac4_behind_more_than_100_ms_rebases) {
     CHECK(n <= 8);   // about 6, not a burst of 24
 }
 
-// H3 (AC-8): suspended, no calls, commands still carried out.
-TEST(c59_5_ac8_suspended_no_calls_commands_still_carried_out) {
+// Suspended, no calls, commands still carried out.
+TEST(suspended_no_calls_commands_still_carried_out) {
     Shared s;
     auto t = thread(s);
     t->suspendCalls();
@@ -234,8 +234,8 @@ TEST(c59_5_ac8_suspended_no_calls_commands_still_carried_out) {
     CHECK(s.commands.size() >= 2 && s.commands[0] == "suspend" && s.commands.back() == "while-suspended");
 }
 
-// H3 (AC-8): continue calls again, and the session got continue.
-TEST(c59_5_ac8_continue_calls_again_and_session_got_continue) {
+// Continue calls again, and the session got continue.
+TEST(continue_calls_again_and_session_got_continue) {
     Shared s;
     auto t = thread(s);
     t->suspendCalls();
@@ -252,7 +252,7 @@ TEST(c59_5_ac8_continue_calls_again_and_session_got_continue) {
 }
 
 // The real session on the thread: Calc-U-59 runs, and a key reaches it.
-TEST(c59_5_ac4_ti59_on_the_session_thread) {
+TEST(ti59_on_the_session_thread) {
     calcu::testing::TempFolder folder;
     static calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(settings::settingsDecl());
     static std::unique_ptr<calcu::settings::Paths> paths;

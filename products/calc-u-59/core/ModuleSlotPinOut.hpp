@@ -1,8 +1,7 @@
 #pragma once
 #include <cstdint>
 
-// The module slot's functional pin-out (C59-6 design §3.2; spec, Technical
-// Requirements). Signals: VGG, VDD, instruction words, calculating status,
+// The module slot's functional pin-out. Signals: VGG, VDD, instruction words, calculating status,
 // external access, Φ2, Φ1, common. The module drives EXT on the words that
 // read; the address register is the module's, as on the TMC0540
 // (https://www.datamath.org/Chips/TMC0540.htm). An empty slot is no object:

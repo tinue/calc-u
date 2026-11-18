@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-// MD5 (RFC 1321) for the ROM tests (LIB-12 AC-9, AC-14): the hex digest of
+// MD5 (RFC 1321) for the ROM tests: the hex digest of
 // a byte string, as `md5 -q` prints it. Test code only; the product never
-// checks an md5 (AC-3).
+// checks an md5.
 
 namespace testroms {
 

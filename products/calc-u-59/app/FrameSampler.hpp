@@ -8,7 +8,7 @@
 #include <vector>
 
 // What the UI picks up from the machine on each 60 Hz frame (the paper is
-// LIB-8's PaperPart since M-53):
+// the library's PaperPart):
 // core log messages and the display —
 // each position's last glyph with its brightness as the eye sees it
 // (DisplayPov) — plus the smoothed "C" (calculating) indicator.
@@ -25,7 +25,7 @@ struct LedFrame {
 };
 
 struct FrameUpdate {
-    calcu::machine::DisplayOutput display;  ///< the machine's display output (C59-1 AC-13)
+    calcu::machine::DisplayOutput display;  ///< the machine's display output
     LedFrame led;
     double calcIndicatorOpacity = 0;      ///< 0–1, see FrameSampler
 };
@@ -34,7 +34,7 @@ class FrameSampler {
 public:
     /// The poll covers the emulated time since the previous tick (tick
     /// count difference over the tick rate). The only reader of the machine's
-    /// display output (C59-1 OQ-7).
+    /// display output.
     FrameUpdate tick(calcu::machine::Machine& m);
 
     /// Forget the indicator history (new machine).

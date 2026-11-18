@@ -15,4 +15,4 @@ inline bool hasLargeMemory(MachineVariant v) { return v == MachineVariant::TI59;
 
 // The tick rates (455,000 / 384,000 / 394,000 per second) are descriptor
 // data: TICatalogue.cpp. Core-internal: nothing above the core names a
-// MachineVariant (C59-1 design §4).
+// MachineVariant.

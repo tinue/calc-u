@@ -1,5 +1,4 @@
-// The tests of tests/core_tests.cpp at 2.3.0, through the machine interface
-// (C59-1 AC-5; design T9): every model boots to key readiness, keys reach the
+// The core through the machine interface: every model boots to key readiness, keys reach the
 // firmware, the glyphs, blink periods and duty hold, and the TI-58C RAM, card
 // reader, printer and breakpoint paths respond (the last through the adapters).
 
@@ -24,7 +23,7 @@ constexpr int kKey0 = 92, kRecip = 35;
 
 TEST(rom_sentinels_and_sizes) {
     // The five files per model decode into 6144 words and 64 constant rows
-    // inside the core (LIB-1 D-4); a TI-59 image with a wrong sentinel is refused.
+    // inside the core; a TI-59 image with a wrong sentinel is refused.
     for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) {
         auto images = romSet()->imagesFor(*tiCatalogue().model(cu59::modelId(m)), std::nullopt);
         CHECK_EQ(images.size(), size_t{5});
@@ -45,9 +44,8 @@ TEST(rom_sentinels_and_sizes) {
 }
 
 TEST(rom_missing_file_throws) {
-    // Since M-24 (LIB-12 AC-5) a missing file is found by the lookup at the
-    // start: there is no ROM set, so no machine can be built (name kept from
-    // 2.3.0, C59-1 AC-5).
+    // A missing file is found by the lookup at the start: there is no ROM
+    // set, so no machine can be built.
     testroms::TempDir dir;
     auto r = cu59::lookUpRoms(calcu::roms::DirectoryBundle(dir.path()));
     CHECK(!r.ok());
@@ -61,7 +59,7 @@ TEST(module_master_library_parses) {
     if (lib) CHECK(lib->size() > 4000 && lib->size() <= 5000);
 }
 
-TEST(c59_1_ac5_boot_reaches_key_readiness_all_models) {
+TEST(boot_reaches_key_readiness_all_models) {
     for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
         auto m = testroms::makeMachine(model);
         CHECK(testroms::runToScanLoop(*m, model));
@@ -69,7 +67,7 @@ TEST(c59_1_ac5_boot_reaches_key_readiness_all_models) {
     }
 }
 
-TEST(c59_1_ac5_two_plus_three_equals_five) {
+TEST(two_plus_three_equals_five) {
     for (Model model : {Model::TI59, Model::TI58C}) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
@@ -84,7 +82,7 @@ TEST(c59_1_ac5_two_plus_three_equals_five) {
 // without the dark positions, with o for the degree sign. They fix the rules for
 // nibbles 2, 4 and 5, which depend on the zero suppression, and for a leftmost
 // zero (the fourth picture, nibble 9).
-TEST(c59_1_ac5_control_nibble_glyphs) {
+TEST(control_nibble_glyphs) {
     const Model model = Model::TI59;
     auto m = testroms::makeMachine(model);
     testroms::runToScanLoop(*m, model);
@@ -114,7 +112,7 @@ TEST(c59_1_ac5_control_nibble_glyphs) {
 // re-lights the display once per lit pass; a lit phase starts at the first one
 // after a dark phase (≥ 2000 ticks without it).
 static double errorBlinkPeriod(Model model, bool printer) {
-    auto m = testroms::makeMachine(model, printer);   // the PC-100C in its place or not (C59-6 AC-2)
+    auto m = testroms::makeMachine(model, printer);   // the PC-100C in its place or not
     testroms::runToScanLoop(*m, model);
     for (int k : {kKey0, kRecip}) testroms::tap(*m, model, k);
     std::vector<uint64_t> litStarts;
@@ -134,7 +132,7 @@ static double errorBlinkPeriod(Model model, bool printer) {
 // The error blink of a real TI-59 (0 1/x), filmed next to a stopwatch on the
 // PC-100C: 0.899 s per period; stand-alone, 0.449 s. The printer's KP line at
 // D0 sends every idle pass through the confirmation scan (0x0659–0x0660).
-TEST(c59_1_ac5_error_blink_period_ti59) {
+TEST(error_blink_period_ti59) {
     double period = errorBlinkPeriod(Model::TI59, true);
     CHECK(period > 0.899 * 0.98 && period < 0.899 * 1.02);
     period = errorBlinkPeriod(Model::TI59, false);
@@ -145,7 +143,7 @@ TEST(c59_1_ac5_error_blink_period_ti59) {
 // stand-alone, 1.2122 s on the PC-100C. Every idle pass detours through the
 // TI-58's card veto (digit 7, the 0x0459 card poll); with the printer also
 // through the KP·D0 confirmation scan. Emulated: 0.681 s and 1.215 s.
-TEST(c59_1_ac5_error_blink_period_ti58) {
+TEST(error_blink_period_ti58) {
     double period = errorBlinkPeriod(Model::TI58, false);
     CHECK(period > 0.6801 * 0.99 && period < 0.6801 * 1.01);
     period = errorBlinkPeriod(Model::TI58, true);
@@ -186,7 +184,7 @@ static double ti58cErrorBlinkTicks(bool printer) {
 // printer, unlike the TI-59 and TI-58). At its clock that is 11,177 and 8,803
 // instructions. (Another unit blinks 0.896 s
 // stand-alone, as at 400 kHz.)
-TEST(c59_1_ac5_error_blink_period_ti58c) {
+TEST(error_blink_period_ti58c) {
     const double unitHz = 389400.0 / 32;
     double measured = 0.9185 * unitHz;
     double ticks = ti58cErrorBlinkTicks(false);
@@ -198,7 +196,7 @@ TEST(c59_1_ac5_error_blink_period_ti58c) {
 
 // readDisplay() reports how long each position was driven: a steady IDLE display
 // reads 1.0 for lit positions and 0 for suppressed ones, a computing CPU 0.
-TEST(c59_1_ac5_display_duty_normalised) {
+TEST(display_duty_normalised) {
     for (Model model : {Model::TI59, Model::TI58C}) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
@@ -219,7 +217,7 @@ TEST(c59_1_ac5_display_duty_normalised) {
     }
 }
 
-TEST(c59_1_ac5_ti58c_keeps_memory) {
+TEST(ti58c_keeps_memory) {
     auto m = testroms::makeMachine(Model::TI58C);
     testroms::runToScanLoop(*m, Model::TI58C);
     std::vector<uint8_t> a(1920), b(1920);
@@ -237,7 +235,7 @@ TEST(c59_1_ac5_ti58c_keeps_memory) {
 // The fast-mode entry of CHIP 10/1980 (Neef): LRN in the module falls into the
 // reset routine, whose RAM.OP op 2 clears the whole RAM. Checked on a real TI-59:
 // program and registers gone, t still there.
-TEST(c59_1_ac5_start_up_clears_memory_except_ti58c) {
+TEST(start_up_clears_memory_except_ti58c) {
     for (Model model : {Model::TI59, Model::TI58}) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
@@ -255,13 +253,13 @@ TEST(c59_1_ac5_start_up_clears_memory_except_ti58c) {
     }
 }
 
-TEST(c59_1_ac5_start_up_clears_memory_except_ti58c_power_cycle) {
+TEST(start_up_clears_memory_except_ti58c_power_cycle) {
     for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
         auto eleven = cu59::encodeBcd("11");
         mem(*m).writeRAMReg(5, eleven.data());
-        m->powerCycle();   // 2.3.0's core reset
+        m->powerCycle();
         testroms::runToScanLoop(*m, model);
         uint8_t reg[16];
         mem(*m).copyRAMReg(5, reg);
@@ -280,10 +278,9 @@ TEST(card_insert_and_eject) {
     CHECK_EQ(card(*m).cardMode(), 0);
 }
 
-// LIB-8 AC-30 (C59-6 AC-5): PRINT held down prints the display, on the text
-// layer and as the dots of its characters (was printer_print_key_emits_line,
-// then c59_6_ac5_print_key_prints_display).
-TEST(lib8_ac30_print_gives_a_line) {
+// PRINT held down prints the display, on the text layer and as the dots of
+// its characters.
+TEST(print_gives_a_line) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     testroms::tap(*m, Model::TI59, kKey2);
@@ -336,10 +333,9 @@ static PC100C::CodeLine sweepLine(int k, std::vector<calcu::paper::Mark>* marks 
     return lines.empty() ? PC100C::CodeLine{} : lines[0];
 }
 
-// LIB-8 AC-30 (C59-6 AC-4): a line cut short by the printer interrupt has
-// the rows of the scan of a real printout, and its marks only those rows
-// (was printer_interrupt_partial_rows, then c59_6_ac4_printer_interrupt_partial_rows).
-TEST(lib8_ac30_interrupt_rows_against_the_scan) {
+// A line cut short by the printer interrupt has
+// the rows of the scan of a real printout, and its marks only those rows.
+TEST(interrupt_rows_against_the_scan) {
     struct Case { int k, rows, columns; };
     for (Case c : {Case{21, 4, 0}, {22, 4, 1}, {26, 4, 2}, {30, 4, 3}, {36, 4, 4}, {39, 4, 4},
                    {40, 4, 5}, {60, 5, 1}, {63, 5, 2}, {69, 5, 3}}) {

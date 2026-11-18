@@ -1,20 +1,18 @@
-// Golden runs of the TI core (first step 2 of docs/walkthroughs/first-steps.md,
-// M-8 of docs/migration-plan.md): scripts of calls on the machine, recorded
+// Golden runs of the TI core: scripts of calls on the machine, recorded
 // from the code as imported (Calc-U-59 2.3.0), before the core was changed.
-// A run that differs later is a finding, not a new reference (C59-1, C59-6,
-// Technical Requirements).
+// A run that differs later is a finding, not a new reference.
 //
-// Since M-19 they replay through the machine interface (C59-1 AC-4; design
-// §8, D-3): build(), advance(), keyDown/keyUp with the key IDs of AC-9,
-// reset/powerCycle/coldBoot, readDisplay(), plus the adapters for what the
-// interface does not have yet (card, RAM, partition, PC). Since M-25 (C59-6
-// design §8) the module and the PC-100C are peripherals in their places:
+// They replay through the machine interface: build(), advance(),
+// keyDown/keyUp with the TI key IDs, reset/powerCycle/coldBoot,
+// readDisplay(), plus the test calls for what the interface does not have
+// (card, RAM, partition, PC). The module and the PC-100C are peripherals in
+// their places:
 // `module` and `printer` before the first command go into the build request
 // (no power cycle is added), `trace`, `paper` and `print` are the PC-100C's
-// controls. Since M-53 (LIB-8) the `print` lines are the text layer of a
+// controls. The `print` lines are the text layer of a
 // calcu::paper::Paper bound to its `printer/paper-output` capability
 // (testroms::paperTap), and the `dots` lines its code lines
-// (TIMachineTesting::printedCodeLines, adapter P-E3); both as before.
+// (TIMachineTesting::printedCodeLines); both as recorded.
 //
 // Each tests/golden-runs/<name>.run is a script; <name>.golden is what the
 // core did. A golden "display" line holds 2.3.0's control and digit nibbles;
@@ -46,15 +44,15 @@
 // (sampled over the next 30 ms of emulated time) and what was printed; at the
 // end the RAM and the partition.
 //
-// Expected differences, which are not findings (design §8, D-3): after an
+// Expected differences, which are not findings: after an
 // app-reset on the TI-59/58, `t` is compared as the difference to the
 // app-reset line, because Reset now ends at key readiness instead of 2.3.0's
-// 300,000 instructions (C59-1 AC-6), and that line's own `t` is not compared;
+// 300,000 instructions, and that line's own `t` is not compared;
 // the two *-reset-partition runs are compared up to their app-reset line
-// (behaviour change 59-22: Reset keeps the partition; machine_tests.cpp checks it).
+// (Reset now keeps the partition; machine_tests.cpp checks it).
 // In ti59-fill-reset-coldboot the program counter after its app-reset is not
 // compared either: the scan loop is reached at another point of its cycle, while
-// the display, the RAM and the partition still match 2.3.0 (user, 2026-11-14).
+// the display, the RAM and the partition still match 2.3.0.
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
@@ -74,8 +72,8 @@ using calcu::machine::KeyId;
 using testroms::dbg;
 using testroms::mem;
 
-// The scripts' key names (2.3.0's tools/headless/ti59.py names) to the key IDs
-// of C59-1 AC-9; the replay's own table (design §8).
+// The scripts' key names (2.3.0's tools/headless/ti59.py names) to the TI key
+// IDs; the replay's own table.
 const std::map<std::string, std::string>& keyIds() {
     static const std::map<std::string, std::string> k = {
         {"A", "A"}, {"B", "B"}, {"C", "C"}, {"D", "D"}, {"E", "E"},
@@ -172,7 +170,7 @@ struct Run {
         if (module != "none") places.module = module;
         places.printer = printer;
         m = cu59::buildMachine(model, *testroms::romSet(), places);
-        testroms::freshMachine(*m);   // the PC-100C's code lines kept from the build (P-E3)
+        testroms::freshMachine(*m);   // the PC-100C's code lines kept from the build
         operation();
     }
 
@@ -238,7 +236,7 @@ struct Run {
         else if (cmd == "app-poweron") {
             m->powerCycle();
             operation();
-            // 2.3.0's StateApplier::powerOn (gone in M-54), as it was recorded: on
+            // 2.3.0's StateApplier::powerOn, as it was recorded: on
             // the TI-58C the ROM's start-up for 300,000 instructions, then the RAM.
             if (cu59::info(model).hasConstantMemory) {
                 testroms::runInstructions(*m, 300'000);
@@ -304,7 +302,7 @@ bool parseT(const std::string& l, long& t, std::string& pc) {
     return true;
 }
 
-// The golden against the replay under the rules of design §8 / D-3. Returns
+// The golden against the replay under the rules of the header comment. Returns
 // the first difference ("" when none).
 std::string compare(const std::string& name, const std::string& golden, const std::string& got) {
     const auto want = lines(golden), have = lines(got);
@@ -344,7 +342,7 @@ std::string compare(const std::string& name, const std::string& golden, const st
 
 } // namespace
 
-TEST(c59_1_ac4_golden_runs_through_the_machine_interface) {
+TEST(golden_runs_through_the_machine_interface) {
     const fs::path dir = "tests/golden-runs";
     const bool recording = std::getenv("CALCU59_GOLDEN_RECORD") != nullptr;
     std::vector<fs::path> scripts;
@@ -369,14 +367,14 @@ TEST(c59_1_ac4_golden_runs_through_the_machine_interface) {
     }
 }
 
-// LIB-10 AC-33 (design §12.9, E10-6): before the core was touched, M-53
-// recorded on 2.3.0's path (TraceWriter, the frame ring drained every 256
+// Before the core was touched, a trace was recorded on 2.3.0's path
+// (TraceWriter, the frame ring drained every 256
 // instructions) a TI-59 running ti59-calculation.run with the trace on from
 // its first 256 instructions. It is kept as its length and MD5 with the
 // SESSION_START's wall-clock seconds zeroed (5.5 MB; no key or card record
 // was in it: the script presses keys on the machine, not through typing).
 // The trace recorder's file of the same run must equal it byte for byte.
-TEST(lib10_ac33_bytes_equal_the_recorded_reference) {
+TEST(trace_bytes_equal_the_recorded_reference) {
     constexpr std::size_t kLength = 5'570'343;
     const std::string kMd5 = "921b0aeb81afd89a74ff695f69803509";
     std::unique_ptr<calcu::debugger::TraceRecorder> rec;

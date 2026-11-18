@@ -12,9 +12,9 @@ namespace cu59 {
 
 namespace {
 
-// The key IDs of preset.md §8.1 by keycode (AC-11): a key at position
+// The key IDs of preset.md §8.1 by keycode: a key at position
 // row × 10 + column, its second function at row × 10 + column + 5 (column 5:
-// the next ten's 0), the digits 00-09, the merged codes as key and Ind (D-5).
+// the next ten's 0), the digits 00-09, the merged codes as key and Ind.
 // Empty: no key name (26, 27, 82), written otherwise (assemblyMnemonic).
 const char* const kIds[100] = {
     "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
@@ -49,7 +49,7 @@ std::string pressesText(const std::vector<calcu::typing::Press>& p) {
     return s;
 }
 
-// The keycode of each `key` press sequence of the table (AC-11): a name is
+// The keycode of each `key` press sequence of the table: a name is
 // read by what `key` presses for it.
 const std::map<std::string, std::uint8_t>& keycodeOfPresses() {
     static const std::map<std::string, std::uint8_t> t = [] {
@@ -67,9 +67,9 @@ const std::map<std::string, std::uint8_t>& keycodeOfPresses() {
 }
 
 // The name the PC-100C's List prints for a keycode: app/KeyNames' names, but
-// for × (65), which the printer prints `x` and the debug panel's table of
-// 2.3.0 names `|x|`, keycode 50's name (tests/golden/keynames.txt keeps
-// that table; qa-report, finding).
+// for × (65), which the printer prints `x` and release 2.3.0's debug panel
+// table names `|x|`, keycode 50's name (tests/golden/keynames.txt keeps
+// that table).
 std::string printedName(std::uint8_t k) { return k == 65 ? std::string("x") : mnemonic(k); }
 
 } // namespace

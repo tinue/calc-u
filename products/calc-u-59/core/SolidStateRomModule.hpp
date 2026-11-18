@@ -3,12 +3,11 @@
 #include <cstddef>
 #include <cstdint>
 
-// A Solid State ROM module as a peripheral in the place `slot-1` (C59-6
-// design §3.4; AC-8 to AC-10). A core object like the PC-100C: TIMachine's
+// A Solid State ROM module as a peripheral in the place `slot-1`. A core object like the PC-100C: TIMachine's
 // plug() and unplug() own it. Its ROM (at most 5000 bytes, the rest zero)
 // comes in with the attach, decoded from the module file the request
-// carries; it reads no file (LIB-2 AC-11). Moved out of TMC0501 in M-25:
-// the image, the address register and its digit read position.
+// carries; it reads no file. It
+// holds the image, the address register and its digit read position.
 
 class SolidStateRomModule final : public ModuleSlotPinOut {
 public:
@@ -19,11 +18,11 @@ public:
     std::uint16_t address() const override { return m_addr; }
     std::uint8_t addressReadPos() const override { return m_readPos; }
 
-    /// A reset, power cycle or cold boot of the machine (LIB-2 AC-10): the
+    /// A reset, power cycle or cold boot of the machine: the
     /// address register and its read position clear.
     void operation();
 
-    /// The address latches (C59-9 AC-15); the image comes from the ROM set.
+    /// The address latches; the image comes from the ROM set.
     template <class Io>
     void stateIo(Io& io) {
         io.begin("MOD ");

@@ -24,7 +24,7 @@
 
 // Test fixtures: look up roms/ in the working directory (the product directory
 // under CTest) and build a machine the way the apps do, through the machine
-// interface (C59-1). Instruction counts stay exact: one advance(1) runs one
+// interface. Instruction counts stay exact: one advance(1) runs one
 // instruction.
 
 namespace testroms {
@@ -43,7 +43,7 @@ inline std::optional<std::string> readFile(const std::string& path) {
 using TempDir = calcu::testing::TempFolder;
 
 /// The ROM set of roms/ (fetch_roms.sh), through the lookup as the apps get
-/// it (LIB-12): looked up once per test program. A missing or bad file ends
+/// it: looked up once per test program. A missing or bad file ends
 /// the program with the lookup's message.
 inline std::shared_ptr<const calcu::roms::RomSet> romSet() {
     static const std::shared_ptr<const calcu::roms::RomSet> set = [] {
@@ -57,12 +57,11 @@ inline std::shared_ptr<const calcu::roms::RomSet> romSet() {
     return set;
 }
 
-// The core's memory calls of a TI machine, for the tests only (the memory
-// adapter of C59-1 went in M-59; TIMachineTesting).
+// The core's memory calls of a TI machine, for the tests only
+// (TIMachineTesting).
 inline TI59Machine& mem(Machine& m) { return TIMachineTesting::hardware(static_cast<TIMachine&>(m)); }
 inline void runInstructions(Machine& m, std::uint32_t n) { TIMachineTesting::runInstructions(static_cast<TIMachine&>(m), n); }
-/// The panel's reads of the core: the product kind c59.calculator-state (C59-4 D-3; the
-/// debug panel adapter went in M-56).
+/// The panel's reads of the core: the product kind c59.calculator-state.
 inline cu59::CalculatorState& dbg(Machine& m) { return *calcu::machine::first<cu59::CalculatorState>(m); }
 /// To the next program step boundary (at most 50000 weighted cycles), as STEP did
 /// (TIMachineTesting; the overlay's entry does it in the core).
@@ -71,7 +70,7 @@ inline void stepToBoundary(Machine& m) { TIMachineTesting::stepToBoundary(static
 inline TI59Machine& hw(Machine& m) { return TIMachineTesting::hardware(static_cast<TIMachine&>(m)); }
 /// The core's card reader (insertCard, cardEject, isCardPresent, cardMode, …).
 inline TI59Machine& card(Machine& m) { return hw(m); }
-/// The TI-59's card reader as a media place (C59-7); nullptr on a TI-58/58C.
+/// The TI-59's card reader as a media place; nullptr on a TI-58/58C.
 inline calcu::media::MediaPlace* cardPlace(Machine& m) {
     return calcu::machine::capabilityAs<calcu::media::MediaPlace>(m, calcu::machine::CapabilityId{"card-reader/media-place"});
 }
@@ -85,19 +84,19 @@ inline double instructionHz(cu59::Model model) {
 inline void freshMachine(Machine& m);
 
 /// Build a machine with ROM and constants, the Master Library and the
-/// PC-100C attached at the build, as 2.3.0's apps started (C59-6).
+/// PC-100C attached at the build.
 inline std::unique_ptr<Machine> makeMachine(cu59::Model model, bool printer = true) {
     auto m = cu59::buildMachine(model, *romSet(), cu59::MachinePeripherals{std::string("ML"), printer, false});
     freshMachine(*m);
     return m;
 }
 
-// The PC-100C and the module through their places and capabilities (C59-6).
+// The PC-100C and the module through their places and capabilities.
 inline calcu::paper::PaperOutput* paper(Machine& m) {
     return calcu::machine::capabilityAs<calcu::paper::PaperOutput>(m, calcu::machine::CapabilityId{"printer/paper-output"});
 }
 /// A paper of the PC-100C's description per machine, bound to its paper
-/// output whenever a new one is there (LIB-8 AC-24): what the tests read the
+/// output whenever a new one is there: what the tests read the
 /// printout from, as the PaperPart does in the app session.
 struct PaperTap {
     calcu::paper::Paper paper{pc100cpaper::description()};
@@ -118,7 +117,7 @@ inline PaperTap& paperTap(Machine& m) {
     return t;
 }
 /// A machine just built: a fresh paper tap (a machine at the address of one
-/// gone gets none of its paper), and the PC-100C's code lines kept (P-E3).
+/// gone gets none of its paper), and the PC-100C's code lines kept.
 inline void freshMachine(Machine& m) {
     paperTaps().erase(&m);
     TIMachineTesting::printedCodeLines(static_cast<TIMachine&>(m));
@@ -134,7 +133,7 @@ inline std::vector<std::string> printedLines(Machine& m) {
     t.linesTaken = t.paper.text().size();
     return out;
 }
-/// The code lines the PC-100C ended since the last call (P-E3).
+/// The code lines the PC-100C ended since the last call.
 inline std::vector<PC100C::CodeLine> printedCodeLines(Machine& m) {
     return TIMachineTesting::printedCodeLines(static_cast<TIMachine&>(m));
 }
@@ -162,7 +161,7 @@ inline std::string moduleIn(const Machine& m) {
 }
 
 /// Called after every 256 instructions of run() and at its end, when set
-/// (a trace drained while a script runs, LIB-10 AC-33).
+/// (a trace drained while a script runs).
 inline std::function<void(Machine&)>& afterRun() {
     static std::function<void(Machine&)> hook;
     return hook;

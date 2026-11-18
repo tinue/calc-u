@@ -73,13 +73,13 @@ void TMC0501::wire(const TiConnectors& c) {
 }
 
 void TMC0501::printerWord(PrinterWord w) {
-    if (!m_c.printer) return;   // no printer: the word reaches nothing (C59-6 AC-7)
+    if (!m_c.printer) return;   // no printer: the word reaches nothing
     m_c.printer->word(w, KR);
     syncBusy();
 }
 
 uint16_t TMC0501::moduleWord(ModuleWord w) {
-    return m_c.module ? m_c.module->word(w, KR) : 0;   // an empty slot drives nothing (AC-10)
+    return m_c.module ? m_c.module->word(w, KR) : 0;   // an empty slot drives nothing
 }
 
 void TMC0501::reset() {
@@ -112,8 +112,8 @@ void TMC0501::reset() {
     m_cardPtr         = 0;
     m_cardMode        = 0;
     m_lastWrittenBank = -1;
-    // The PC-100C and the module are told of the operation by the machine
-    // (LIB-2 AC-10); their state is theirs.
+    // The PC-100C and the module are told of the operation by the machine;
+    // their state is theirs.
 }
 
 void TMC0501::loadConstants(const uint8_t* data, size_t count) {
@@ -394,7 +394,7 @@ int TMC0501::step() {
     // One relaxed atomic load per step; falls through at zero cost when disabled.
     const uint32_t tf = m_traceFlags;
 
-    // ── Φ1 on the printer connector: its busy count (C59-6 AC-4) ──────
+    // ── Φ1 on the printer connector: its busy count ──────
     // Once per instruction, IDLE or not, before the pre-execution phase.
     if (m_c.printer) {
         m_c.printer->instructionCycle();
@@ -517,7 +517,7 @@ int TMC0501::step() {
             (((opcode & 0x07u) | ((opcode >> 1) & 0x78u)) ^ 0x7Fu) & keyRow(digit));
         // Reject simultaneous multi-key presses (hardware limitation)
         if (kmask & (kmask - 1u)) kmask = 0;
-        if (kmask) {   // LIB-5 D-3: the ROM read this key now
+        if (kmask) {   // the ROM read this key now: a key sample
             uint8_t b = 0;
             for (uint8_t m = kmask; !(m & 1u); m = static_cast<uint8_t>(m >> 1)) ++b;
             ++m_keySamples[static_cast<size_t>((digit & 0x0Fu) * 8u + b)];

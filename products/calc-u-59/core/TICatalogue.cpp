@@ -10,7 +10,7 @@ using namespace calcu::machine;
 
 namespace {
 
-// Tick rates (machine.md M-1, fit table): the resonator period. TI-59 455 kHz,
+// Tick rates: the resonator period. TI-59 455 kHz,
 // TI-58 384 kHz, ±1% ceramic resonators (TP0240 clock chip,
 // http://www.datamath.org/Chips/TP0240.htm; the service manual names 455 kHz
 // and allows the TI-58 a 384 kHz part, "the preferred part"). The TI-58C has
@@ -21,10 +21,10 @@ namespace {
 // clock, from its error blinks; the emulator matches that unit's instruction
 // counts exactly, but its rate wanders ~0.8% between sessions and other units
 // run at PHI 194.7-200 kHz. One instruction is 32 ticks (÷ 2 two-phase ÷ 16
-// digit-serial), 128 in the ROM's IDLE state on the TI-59 and TI-58 (C59-1 AC-1).
+// digit-serial), 128 in the ROM's IDLE state on the TI-59 and TI-58.
 constexpr TickRate kTI59Rate = 455'000, kTI58Rate = 384'000, kTI58CRate = 394'000;
 
-// The ROM files of roms/fetch_roms.sh (LIB-12 AC-9): the three instruction
+// The ROM files of roms/fetch_roms.sh: the three instruction
 // chips in the order they are concatenated, then the two constant files.
 std::vector<RomEntry> romEntries(bool ti58c) {
     auto text = [](const char* name, std::uint64_t amount, ContentUnit unit, const char* md5) {
@@ -61,7 +61,7 @@ MachineDescriptor descriptor(const char* model, TickRate rate, bool ti59, bool t
         d.keys.push_back(std::move(kd));
     }
     // Functional pin-outs, one peripheral each; a change is followed by a
-    // power cycle (LIB-2 AC-24; ledger row 59-11; C59-6 owns the peripherals).
+    // power cycle.
     d.connectors = {
         {ConnectorId{"module-slot"}, "8 contacts",
          {{PinOutId{"module-slot"}, PinOutLevel::Functional, Takes::One, AfterChange::PowerCycle}}},
@@ -70,11 +70,10 @@ MachineDescriptor descriptor(const char* model, TickRate rate, bool ti59, bool t
     };
     d.places = {{PlaceName{"slot-1"}, ConnectorId{"module-slot"}, PinOutId{"module-slot"}, 1},
                 {PlaceName{"printer"}, ConnectorId{"printer-connector"}, PinOutId{"printer-connector"}, 1}};
-    // Depth as the machine is built (machine.md fit table, "Depth today";
-    // ADR 0011, 0012; reference/CoreArchitecture.md § Component Overview).
-    // Since C59-6 (M-25) the module (with its address register) and the
-    // printer are peripherals behind the two functional connectors, no longer
-    // folded into TMC0501; their components are in their descriptors.
+    // Depth as the machine is built (reference/CoreArchitecture.md
+    // § Component Overview). The module (with its address register) and the
+    // printer are peripherals behind the two functional connectors, not part
+    // of TMC0501; their components are in their descriptors.
     const ComponentId cpu{"TMC0501"};
     d.components = {
         {cpu, "TMC0501 processor", Depth::Separate, std::nullopt},
@@ -93,9 +92,9 @@ MachineDescriptor descriptor(const char* model, TickRate rate, bool ti59, bool t
     return d;
 }
 
-// The PC-100C (C59-6 AC-5; LIB-1 AC-32): fits the printer connector, the
+// The PC-100C: fits the printer connector, the
 // keys PRINT and ADV and the switch TRACE, no ROM. Its paper is the
-// capability `printer/paper-output` (LIB-8 AC-24) while it is plugged in.
+// capability `printer/paper-output` while it is plugged in.
 PeripheralDescriptor pc100c() {
     PeripheralDescriptor p;
     p.id = kPC100C;
@@ -106,8 +105,8 @@ PeripheralDescriptor pc100c() {
     return p;
 }
 
-// A Solid State ROM module (C59-6 AC-8; LIB-1 AC-32): fits the module slot,
-// its ROM file `<ID>.rom.yaml` (LIB-12 AC-9, AC-14), named by its
+// A Solid State ROM module: fits the module slot,
+// its ROM file `<ID>.rom.yaml`, named by its
 // description.
 PeripheralDescriptor module(const TIModuleInfo& m) {
     PeripheralDescriptor p;
@@ -122,8 +121,8 @@ PeripheralDescriptor module(const TIModuleInfo& m) {
 } // namespace
 
 const std::vector<TIModuleInfo>& tiModules() {
-    // C59-6 AC-8; the md5 values of the module files of TI-59-ROM modules/
-    // (90cd4a7), as roms/fetch_roms.sh fetches and checks them (LIB-12 AC-9).
+    // The md5 values of the module files of TI-59-ROM modules/
+    // (90cd4a7), as roms/fetch_roms.sh fetches and checks them.
     static const std::vector<TIModuleInfo> m = {
         {"ML", "Master Library", "TMC0541", "ab6db47478041bb1bd1b50b3114b8949"},
         {"ST", "Applied Statistics", "TMC0542", "6e7e4045c9e31720dba5fbee0ace248a"},
@@ -179,7 +178,7 @@ BuildResult TIMachineBuilder::build(const BuildRequest& request, const Catalogue
     auto content = std::dynamic_pointer_cast<const TIConstantMemory>(request.content);
     auto machine = std::make_unique<TIMachine>(*d, v, decoded, v == MachineVariant::TI58C ? content : nullptr);
     // The peripherals of the request, attached at the build: the build is the
-    // start, so no power cycle follows (C59-6 design §4).
+    // start, so no power cycle follows.
     for (const auto& p : request.peripherals)
         if (auto r = machine->attach(p, catalogue); r.refused) return {nullptr, {}, r.refused->reason};
     return {std::move(machine), {}, {}};

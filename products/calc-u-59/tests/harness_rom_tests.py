@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""LIB-12 AC-7, AC-10 for the harness (design §6, P5; tools/headless/ti59.py's
-until M-59): `calcu --product c59` on a ROM folder without one file of the full
+"""The harness without a ROM file: `calcu --product c59` on a ROM folder without one file of the full
 set (CALCU59_ROMS_DIR) ends with exit status 2 and an error that names it,
 and on the full set starts as before. Run from products/calc-u-59 with
 CALCU set to the program (CTest CalcU59HarnessRomMissing, Frequent)."""

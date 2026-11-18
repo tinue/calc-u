@@ -3,8 +3,7 @@
 #include <cstdint>
 #include <optional>
 
-// The product kinds of TIProductKinds.hpp on a TIMachine (C59-2 AC-17,
-// C59-3 AC-1). Members of TIMachine; it lists them in capabilities().
+// The product kinds of TIProductKinds.hpp on a TIMachine. Members of TIMachine; it lists them in capabilities().
 
 class TIMachine;
 
@@ -30,7 +29,7 @@ private:
     TIMachine& m_;
 };
 
-// D-1 (C59-3 design): the counter changes when R000–R063 differ from what
+// The counter changes when R000–R063 differ from what
 // was seen at the last read. It is computed when asked (between two
 // advances), not on the RAM write path, so the advances carry no cost.
 class TIConstantMemoryCapability final : public cu59::ConstantMemory {
@@ -45,7 +44,7 @@ private:
     mutable std::uint64_t count_ = 0;
 };
 
-// C59-7 AC-21: SCOM register 9's digits 4 and 3; none for 0.
+// SCOM register 9's digits 4 and 3; none for 0.
 class TILibraryProgram final : public cu59::LibraryProgram {
 public:
     explicit TILibraryProgram(TIMachine& m) : m_(m) {}

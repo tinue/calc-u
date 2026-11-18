@@ -1,7 +1,7 @@
 #!/bin/sh
-# LIB-4 AC-15 (design §10.6 T59-6, D-19): the Qt6, Web and Swift frontends
+# The Qt6, Web and Swift frontends
 # draw the model, the module, the printer and the card controls from the
-# control state (M-57; Swift M-58, C59-8); no file of theirs reads the model
+# control state; no file of theirs reads the model
 # facts or the interim topics: hasCardReader, cu59::info(, c59.model,
 # c59.web.model, allModules, MachineModel (the Swift copy of the model facts).
 # Run from products/calc-u-59. Exit 1 with the lines found.
@@ -12,7 +12,7 @@ found=$(grep -rnE 'hasCardReader|cu59::info\(|c59\.model|c59\.web\.model|allModu
 [ -e frontends/swift/App/MachineModel.swift ] && found="$found
 frontends/swift/App/MachineModel.swift exists"
 if [ -n "$found" ]; then
-    echo "A frontend decides from the model facts or an interim topic (LIB-4 AC-15):"
+    echo "A frontend decides from the model facts or an interim topic:"
     echo "$found"
     exit 1
 fi

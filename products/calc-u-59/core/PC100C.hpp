@@ -9,33 +9,32 @@
 #include <string>
 #include <vector>
 
-// The PC-100C print cradle as a peripheral in the place `printer` (C59-6
-// design §3.3; AC-1 to AC-6, EC-2). A core object: TIMachine's plug() and
+// The PC-100C print cradle as a peripheral in the place `printer`. A core
+// object: TIMachine's plug() and
 // unplug() own it, and it sees only the signals of the printer connector
-// (PrinterPinOut). Moved out of TMC0501 in M-25: the character tables, the
-// 20-slot buffer, the ready gate, the busy count and the pending code line.
+// (PrinterPinOut): the character tables, the 20-slot buffer, the ready
+// gate, the busy count and the pending code line.
 //
 // Timings: every measurement was made on a PC-100A, not on a PC-100C; no
-// difference between the two is expected (user, 2026-11-11; spec AC-4;
-// reference/CoreArchitecture.md, "Printer (PC-100C)").
+// difference between the two is expected
+// (reference/CoreArchitecture.md, "Printer (PC-100C)").
 //
-// Its paper is LIB-8's paper output kind (M-53; LIB-8 design §11.4): PRT.GO
+// Its paper is the library's paper output kind: PRT.GO
 // puts the line's 20 characters on the text layer at once, at the y where
 // the paper stands; when the line ends (the busy count runs out, a cut, a
 // feed, an operation or a detach) its dots go down and the paper is fed
 // (pc100cpaper::lineDots, lineHeight); a feed gives an empty text line and
 // 7.09 units of paper. The code lines (the 20 codes and how far the head
 // got) are kept only for the golden runs and the headless tool, while
-// recordCodeLines is on (adapter P-E3).
+// recordCodeLines is on.
 
 class PC100C final : public PrinterPinOut, public calcu::paper::PaperOutputBase {
 public:
-    /// A printed line as the head left it (P-E3; was PrinterCodeLine above
-    /// the core, C59-1 D-7). rowCount is 7 for a complete line; 0–6 when the
+    /// A printed line as the head left it. rowCount is 7 for a complete line; 0–6 when the
     /// print was cut short (a PRT.GO while busy, an operation, a detach).
     /// The head fires a row one dot column at a time, right to left, so a cut
     /// can also leave the rightmost partialColumns columns of the next row.
-    /// A feed records a line of zero codes (rowCount 7, as 2.3.0).
+    /// A feed records a line of zero codes (rowCount 7).
     struct CodeLine {
         std::array<std::uint8_t, 20> codes{};
         std::uint8_t rowCount{7};        ///< dot rows started in full (0–7)
@@ -44,7 +43,7 @@ public:
     };
 
     /// Busy after PRT.GO (a printed line) and PRT.FEED (half a line; the
-    /// ROM's Adv issues two), in instructions of the machine (AC-4).
+    /// ROM's Adv issues two), in instructions of the machine.
     static constexpr std::uint32_t kLineInstructions = 4165;
     static constexpr std::uint32_t kFeedInstructions = 1370;
     /// A printed line is 7 dot-row strokes from PRT.GO on; each fires the 5
@@ -56,11 +55,11 @@ public:
     static constexpr std::uint32_t kRowStart = 18;
     static constexpr std::uint32_t kColumnInstructions = 64;
 
-    /// The controls of the descriptor: PRINT and ADV keys, TRACE switch (AC-5).
+    /// The controls of the descriptor: PRINT and ADV keys, TRACE switch.
     static std::vector<calcu::machine::ControlDescriptor> controlDescriptors();
     static inline const calcu::machine::ControlId kPrint{"PRINT"}, kAdv{"ADV"}, kTrace{"TRACE"};
 
-    /// `switches`: TRACE's position (LIB-2 D-3; the app session keeps it, AC-6).
+    /// `switches`: TRACE's position (the app session keeps it).
     explicit PC100C(const std::vector<calcu::machine::SwitchPosition>& switches);
     PC100C(const PC100C&) = delete;
     PC100C& operator=(const PC100C&) = delete;
@@ -71,27 +70,27 @@ public:
     bool busy() const override { return m_busy > 0; }
     std::uint8_t keyLines(PrinterPad) const override;
 
-    // PaperOutput (AC-24)
+    // PaperOutput
     const calcu::paper::PaperDescription& description() const override { return pc100cpaper::description(); }
     calcu::paper::Coord standing() const override { return m_standing; }
 
-    /// Before a detach (EC-7): a line being printed ends where the head is,
+    /// Before a detach: a line being printed ends where the head is,
     /// so its rows go onto the paper before the printer goes.
     void endLineHere() { flushPendingIfActive(); }
-    /// P-E3: keep the code lines from now on, and take those kept.
+    /// Keep the code lines from now on, and take those kept.
     void recordCodeLines(bool on) { m_recordCodes = on; }
     std::vector<CodeLine> takeCodeLines() { return std::move(m_codeLines); }
 
-    /// A reset, power cycle or cold boot of the machine (LIB-2 AC-10): the
+    /// A reset, power cycle or cold boot of the machine: the
     /// buffer and the ready gate clear, a line in progress ends at its count,
-    /// PRINT and ADV are released (2.3.0 wiped the key matrix). TRACE stays.
+    /// PRINT and ADV are released. TRACE stays.
     void operation();
     /// The content of the character buffer, not yet printed (debug view).
     std::string bufferContent() const;
     calcu::peripherals::ControlTable& controls() { return m_controls; }
 
-    /// The mechanism and its line buffers (C59-9 AC-15); the paper itself is
-    /// LIB-8's output, not machine state.
+    /// The mechanism and its line buffers; the paper itself is
+    /// the paper output's, not machine state.
     template <class Io>
     void stateIo(Io& io) {
         io.begin("PRN ");

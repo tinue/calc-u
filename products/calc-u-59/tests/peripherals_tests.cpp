@@ -1,9 +1,8 @@
-// C59-6: the PC-100C and the module slot as functional connectors (design
-// §6, T1 to T9), with LIB-2's Calc-U-59 column (AC-24 to AC-27; LIB-2 design
-// P1 to P4). Machine-level tests through the places and the capabilities;
+// The PC-100C and the module slot as functional connectors, as the library's
+// peripherals. Machine-level tests through the places and the capabilities;
 // the golden runs (golden_runs_tests.cpp) guard the printed lines, the
 // module runs and the empty slot, the app session's part is in
-// shared_controller_tests.cpp.
+// machine_control_tests.cpp.
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
@@ -75,9 +74,9 @@ double ti59BlinkPeriod(Machine& m) {
 
 } // namespace
 
-// ── T1: places, pin-outs, the 14 modules ───────────────────────────────────
+// ── Places, pin-outs, the 14 modules ───────────────────────────────────────
 
-TEST(lib2_ac24_places_functional_power_cycle_follows) {
+TEST(places_functional_power_cycle_follows) {
     for (const auto& d : tiCatalogue().models()) {
         for (const char* place : {"slot-1", "printer"}) {
             const auto info = tiCatalogue().place(d.model, PlaceName{place});
@@ -101,8 +100,8 @@ TEST(lib2_ac24_places_functional_power_cycle_follows) {
     CHECK(m->detach(kSlotPlace, PeripheralId{"ML"}, tiCatalogue()).follows == AfterChange::PowerCycle);
 }
 
-TEST(c59_6_ac8_fourteen_modules_by_id_description_menu_sort) {
-    // The spec's table: ID, description, ROM chip.
+TEST(fourteen_modules_by_id_description_menu_sort) {
+    // The module table: ID, description, ROM chip.
     const std::vector<std::array<const char*, 3>> table = {
         {"ML", "Master Library", "TMC0541"}, {"ST", "Applied Statistics", "TMC0542"},
         {"RE", "Investment", "TMC0543"}, {"SY", "Surveying", "TMC0544"},
@@ -130,7 +129,7 @@ TEST(c59_6_ac8_fourteen_modules_by_id_description_menu_sort) {
     }
     CHECK(!isTIModule("ZZ") && !isTIModule("PC-100C"));
     // The list the picker shows: from the module files, by `menu-sort`, ties
-    // in the catalogue's order (ST before RE, design D-4).
+    // in the catalogue's order (ST before RE).
     const auto all = cu59::allModuleMetadata(*romSet());
     std::vector<std::string> ids;
     for (const auto& m : all) ids.push_back(m.id);
@@ -149,9 +148,9 @@ TEST(c59_6_ac8_fourteen_modules_by_id_description_menu_sort) {
         }
 }
 
-// ── T2: the module out of TMC0501; the empty slot ──────────────────────────
+// ── The module out of TMC0501; the empty slot ──────────────────────────────
 
-TEST(lib2_ac25_second_module_refused_until_detached) {
+TEST(second_module_refused_until_detached) {
     auto m = build(Model::TI59, std::string("ML"), false);
     auto r = m->attach(cu59::moduleRequest("LE", *romSet()), tiCatalogue());
     CHECK(r.refused.has_value());
@@ -162,7 +161,7 @@ TEST(lib2_ac25_second_module_refused_until_detached) {
     CHECK_EQ(moduleIn(*m), std::string("LE"));
 }
 
-TEST(lib2_ac25_empty_slot_machine_runs) {
+TEST(empty_slot_machine_runs) {
     for (Model model : kModels) {
         auto m = build(model, std::nullopt, false);
         CHECK(m->plugged().byPlace.empty());
@@ -172,7 +171,7 @@ TEST(lib2_ac25_empty_slot_machine_runs) {
     }
 }
 
-TEST(c59_6_ac10_empty_slot_runs_and_blinks_on_pgm_01) {
+TEST(empty_slot_runs_and_blinks_on_pgm_01) {
     // The ROM finds no module: 2nd Pgm 01 SBR = blinks as for an error, as
     // 2nd Pgm 30 does with the Master Library (user, from the real machine).
     for (Model model : kModels) {
@@ -192,7 +191,7 @@ TEST(c59_6_ac10_empty_slot_runs_and_blinks_on_pgm_01) {
     CHECK_EQ(litChanges(*ok, Model::TI59, 100), 0);
 }
 
-TEST(c59_6_ac9_module_program_runs_from_the_slot) {
+TEST(module_program_runs_from_the_slot) {
     // ML-02 is not needed: the Leisure Library's and the Master Library's
     // golden runs (ti59-module-le, ti59-module-ml) check display, memory and
     // printed lines; here the module bytes reach the ROM through the slot:
@@ -204,9 +203,9 @@ TEST(c59_6_ac9_module_program_runs_from_the_slot) {
     CHECK(card(*m).libExecPC() != 0xFFFF && card(*m).libExecPC() < SolidStateRomModule::kBytes);
 }
 
-// ── T3: a module without its ROM ──────────────────────────────────────────
+// ── A module without its ROM ──────────────────────────────────────────────
 
-TEST(c59_6_ec1_module_without_rom_refused_file_named) {
+TEST(module_without_rom_refused_file_named) {
     auto m = build(Model::TI59, std::nullopt, false);
     PeripheralRequest req = cu59::moduleRequest("SY", *romSet());
     req.roms.clear();   // the file not handed in
@@ -221,9 +220,9 @@ TEST(c59_6_ec1_module_without_rom_refused_file_named) {
     CHECK(r.follows == AfterChange::Nothing);
 }
 
-// ── T4: the PC-100C out of TMC0501; its pads ──────────────────────────────
+// ── The PC-100C out of TMC0501; its pads ──────────────────────────────────
 
-TEST(c59_6_ac2_rom_finds_the_printer_as_on_the_real_device) {
+TEST(rom_finds_the_printer_as_on_the_real_device) {
     // The ROM prints only when it finds the printer line (D0 on the TI-59
     // and TI-58, D10 on the TI-58C): 2nd Prt prints a line with the PC-100C
     // and nothing without it.
@@ -246,7 +245,7 @@ TEST(c59_6_ac2_rom_finds_the_printer_as_on_the_real_device) {
     CHECK(pOff > 0.449 * 0.98 && pOff < 0.449 * 1.02);
 }
 
-TEST(c59_6_ac4_busy_counts_instructions_idle_once) {
+TEST(busy_counts_instructions_idle_once) {
     // The PC-100C alone: busy for exactly 4165 instructions after a line,
     // 1370 after a feed, one count per instruction cycle.
     PC100C p({});
@@ -297,7 +296,7 @@ TEST(c59_6_ac4_busy_counts_instructions_idle_once) {
     CHECK(end - start >= Ticks{(4165 - 1) * 32});
 }
 
-TEST(c59_6_ec3_ti58c_key_readiness_with_and_without_printer) {
+TEST(ti58c_key_readiness_with_and_without_printer) {
     // The TI-58C ROM rescans the keys with a printer; key readiness is
     // reached and holds in the scan loop either way, and after a print.
     for (bool printer : {false, true}) {
@@ -316,9 +315,9 @@ TEST(c59_6_ec3_ti58c_key_readiness_with_and_without_printer) {
     }
 }
 
-// ── T5: the PC-100C attached and detached, its capabilities ────────────────
+// ── The PC-100C attached and detached, its capabilities ────────────────────
 
-TEST(c59_6_ac1_printer_plugged_and_removed) {
+TEST(printer_plugged_and_removed) {
     for (Model model : kModels) {
         auto m = build(model, std::string("ML"), false);
         CHECK(!hasCapability(*m, calcu::paper::PaperOutput::kKind) && !hasCapability(*m, calcu::peripherals::Controls::kKind));
@@ -343,7 +342,7 @@ TEST(c59_6_ac1_printer_plugged_and_removed) {
     }
 }
 
-TEST(lib2_ac26_pc100c_print_adv_trace) {
+TEST(pc100c_print_adv_trace) {
     auto m = build(Model::TI59, std::string("ML"), true);
     const auto entries = m->capabilities(calcu::peripherals::Controls::kKind);
     CHECK_EQ(entries.size(), size_t{1});
@@ -360,12 +359,12 @@ TEST(lib2_ac26_pc100c_print_adv_trace) {
     CHECK(c->set(ControlId{"PRINT"}, true) == calcu::peripherals::ControlCall::WrongForm);
     CHECK(c->press(ControlId{"TRACE"}) == calcu::peripherals::ControlCall::WrongForm);
     CHECK(c->press(ControlId{"PAPER"}) == calcu::peripherals::ControlCall::UnknownControl);
-    // The descriptor's controls are these (LIB-1 AC-32).
+    // The descriptor's controls are these.
     const auto* d = tiCatalogue().peripheral(kPC100C);
     CHECK(d && d->controls.size() == 3);
 }
 
-TEST(lib2_ac26_no_pc100c_no_controls) {
+TEST(no_pc100c_no_controls) {
     for (Model model : kModels) {
         auto m = build(model, std::string("ML"), false);
         CHECK(m->capabilities(calcu::peripherals::Controls::kKind).empty());
@@ -374,7 +373,7 @@ TEST(lib2_ac26_no_pc100c_no_controls) {
     }
 }
 
-TEST(lib2_ac27_no_serial_port_no_clock) {
+TEST(no_serial_port_no_clock) {
     for (Model model : kModels)
         for (bool printer : {false, true}) {
             auto m = build(model, std::string("ML"), printer);
@@ -385,9 +384,9 @@ TEST(lib2_ac27_no_serial_port_no_clock) {
         for (const auto& c : d.components) CHECK(c.id.value != "rtc" && c.id.value != "serial-port");
 }
 
-// ── T6: the controls ──────────────────────────────────────────────────────
+// ── The controls ──────────────────────────────────────────────────────────
 
-TEST(c59_6_ac5_adv_feeds_while_held) {
+TEST(adv_feeds_while_held) {
     auto feeds = [](double seconds) {
         auto m = build(Model::TI59, std::string("ML"), true);
         runToScanLoop(*m, Model::TI59);
@@ -404,7 +403,7 @@ TEST(c59_6_ac5_adv_feeds_while_held) {
     CHECK(longHold > shortHold + 4);
 }
 
-TEST(c59_6_ac5_trace_prints_while_on) {
+TEST(trace_prints_while_on) {
     auto m = build(Model::TI59, std::string("ML"), true);
     runToScanLoop(*m, Model::TI59);
     printerControl(*m, PC100C::kTrace, true);
@@ -418,11 +417,11 @@ TEST(c59_6_ac5_trace_prints_while_on) {
     CHECK(printedLines(*m).empty());
 }
 
-// ── T7: TRACE belongs to the PC-100C ──────────────────────────────────────
+// ── TRACE belongs to the PC-100C ──────────────────────────────────────────
 
-TEST(c59_6_ac6_trace_survives_reset_power_cycle_cold_boot) {
+TEST(trace_survives_reset_power_cycle_cold_boot) {
     for (Model model : kModels) {
-        auto m = build(model, std::string("ML"), true, true);   // TRACE from the request (LIB-2 D-3)
+        auto m = build(model, std::string("ML"), true, true);   // TRACE from the request
         auto traceOn = [&] {
             auto* c = printerControls(*m);
             if (!c) return false;
@@ -438,7 +437,7 @@ TEST(c59_6_ac6_trace_survives_reset_power_cycle_cold_boot) {
         CHECK(traceOn());
         m->coldBoot();
         CHECK(traceOn());
-        // PRINT is released by the operation, as 2.3.0's key-matrix wipe did.
+        // PRINT is released by the operation.
         for (const auto& i : printerControls(*m)->list())
             if (i.id == PC100C::kPrint) CHECK(!i.on);
         CHECK(runToScanLoop(*m, model));
@@ -448,12 +447,11 @@ TEST(c59_6_ac6_trace_survives_reset_power_cycle_cold_boot) {
     }
 }
 
-// ── T8: a detach in the middle of a line ──────────────────────────────────
+// ── A detach in the middle of a line ──────────────────────────────────────
 
-// LIB-8 EC-7 (C59-6 EC-2): the rows printed before a detach in the middle of
-// a line stay on its paper; the rest of the line is not printed (was
-// c59_6_ec2_detach_mid_line_keeps_rows_then_power_cycle).
-TEST(lib8_ec7_detach_mid_line_keeps_rows) {
+// The rows printed before a detach in the middle of
+// a line stay on its paper; the rest of the line is not printed.
+TEST(detach_mid_line_keeps_rows) {
     auto m = build(Model::TI59, std::string("ML"), true);
     runToScanLoop(*m, Model::TI59);
     printedLines(*m);   // the tap bound from here on
@@ -490,9 +488,9 @@ TEST(lib8_ec7_detach_mid_line_keeps_rows) {
     CHECK(paper(*m) == nullptr);
 }
 
-// ── T9: a change and the power cycle ──────────────────────────────────────
+// ── A change and the power cycle ──────────────────────────────────────────
 
-TEST(c59_6_ac11_module_change_then_power_cycle_like_fresh_build) {
+TEST(module_change_then_power_cycle_like_fresh_build) {
     // ML → LE in one replace, then the power cycle: the ROM finds LE, and
     // 2nd Pgm 01 SBR = shows and prints what a machine built with LE does.
     auto play = [](Machine& m) {
@@ -515,7 +513,7 @@ TEST(c59_6_ac11_module_change_then_power_cycle_like_fresh_build) {
     CHECK(play(*ml) != b);   // the two modules differ in program 01
 }
 
-TEST(c59_6_ac11_printer_attach_detach_then_rom_finds_it) {
+TEST(printer_attach_detach_then_rom_finds_it) {
     auto m = build(Model::TI59, std::string("ML"), false);
     double p = ti59BlinkPeriod(*m);
     CHECK(p > 0.449 * 0.98 && p < 0.449 * 1.02);

@@ -1,7 +1,7 @@
-// C59-7 T1 to T4 (design §6): magnetic card format 3 read and written by the
-// kind's codec (AC-2 to AC-5, AC-29, EC-3, EC-5), the content of a card and
-// the bank an in-file side builds (AC-1, AC-19), the module cue cards from
-// the module files (AC-22, AC-23).
+// Magnetic card format 3 read and written by the
+// kind's codec, the content of a card and
+// the bank an in-file side builds, the module cue cards from
+// the module files.
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
@@ -76,17 +76,17 @@ RegisterNibbles value(const char* text) { return *parseDecimal(text); }
 
 } // namespace
 
-// ── T1 Codec, read ───────────────────────────────────────────────────────────
+// ── Codec, read ──────────────────────────────────────────────────────────────
 
-// LIB-7 AC-49 (ledger 59-59): the card file's comment line and `saved:`.
-TEST(lib7_ac49_magnetic_card_comment_and_saved) {
+// The card file's comment line and `saved:`.
+TEST(magnetic_card_comment_and_saved) {
     const std::string text = fileOf(*card(bank(1, 0x12), std::nullopt), "Mine");
     CHECK(text.rfind("# Calc-U-59 magnetic card\nformat: ti59-magnetic-card\n", 0) == 0);
     CHECK(text.find("\nsaved: 2026-11-16T10:00:00Z\n") != std::string::npos);
     CHECK(read(text).status == ReadOutcome::Status::Read);
 }
 
-TEST(c59_7_ac2_reads_format_3_both_sides_and_one_side) {
+TEST(reads_format_3_both_sides_and_one_side) {
     const auto both = card(bank(1, 0x12), bank(2, 0x34, false));
     CueCardContent cue;
     cue.title = "My Program";
@@ -113,7 +113,7 @@ TEST(c59_7_ac2_reads_format_3_both_sides_and_one_side) {
     CHECK(fresh.status == ReadOutcome::Status::Read);
 }
 
-TEST(c59_7_ac3_refused_whole_missing_side_key_rows_unknown_key_cue_card_key) {
+TEST(refused_whole_missing_side_key_rows_unknown_key_cue_card_key) {
     const std::string good = fileOf(*card(bank(1, 0x12), std::nullopt));
     CHECK(read(good).status == ReadOutcome::Status::Read);
     const auto unreadable = [](const std::string& t) { return read(t).status == ReadOutcome::Status::Unreadable; };
@@ -129,7 +129,7 @@ TEST(c59_7_ac3_refused_whole_missing_side_key_rows_unknown_key_cue_card_key) {
     CHECK(r.problem.find("checksum") != std::string::npos);   // one sentence why
 }
 
-TEST(c59_7_ac3_keys_exact_fixed_values_any_case) {
+TEST(keys_exact_fixed_values_any_case) {
     const std::string good = fileOf(*card(bank(1, 0x12), std::nullopt));
     CHECK(read(replaced(good, "data-type: program", "data-type: PROGRAM")).status == ReadOutcome::Status::Read);
     CHECK(read(replaced(good, "encoding: register-hex", "encoding: Register-Hex")).status == ReadOutcome::Status::Read);
@@ -139,20 +139,20 @@ TEST(c59_7_ac3_keys_exact_fixed_values_any_case) {
     CHECK(read(replaced(good, "card-name:", "Card-Name:")).status == ReadOutcome::Status::Unreadable);
 }
 
-TEST(c59_7_ac4_older_version_outdated_with_hint) {
+TEST(older_version_outdated_with_hint) {
     const std::string good = fileOf(*card(bank(1, 0x12), std::nullopt));
     const ReadOutcome r = read(replaced(good, "format-version: 3", "format-version: 2"));
     CHECK(r.status == ReadOutcome::Status::Outdated);
     CHECK_EQ(r.info.formatVersion, 2);
     const std::string hint = calcu::media::Shelf::outdatedHint(magneticCardKind(), 2);
-    // Ledger 59-67: the notice names the User Guide's page and heading.
+    // The notice names the User Guide's page and heading.
     CHECK_EQ(hint, std::string("Magnetic card format version 2 is outdated: the current version is 3, described in the "
                                "User Guide, \"Media files\", \"Magnetic card\"."));
     CHECK(read(replaced(good, "format-version: 3", "format-version: 4")).status == ReadOutcome::Status::Unreadable);
-    CHECK(read("Calc-U-59 Card 2.0\nSIDE: 1\nEND-CARD\n").status == ReadOutcome::Status::Unreadable);   // EC-3 / LIB-7 EC-3
+    CHECK(read("Calc-U-59 Card 2.0\nSIDE: 1\nEND-CARD\n").status == ReadOutcome::Status::Unreadable);
 }
 
-TEST(c59_7_ac4_u59_and_bin_not_listed_not_read_not_changed) {
+TEST(u59_and_bin_not_listed_not_read_not_changed) {
     const auto& k = magneticCardKind();
     CHECK_EQ(k.suffix, std::string(".magnetcard.yaml"));
     calcu::testing::TempFolder folder("calcu59-cards");
@@ -175,7 +175,7 @@ TEST(c59_7_ac4_u59_and_bin_not_listed_not_read_not_changed) {
     CHECK_EQ(testroms::readFile(folder / "old.u59").value_or(""), std::string("Calc-U-59 Card 2.0\nEND-CARD\n"));
 }
 
-TEST(c59_7_ac29_info_name_description_template_no_switch) {
+TEST(info_name_description_template_no_switch) {
     const std::string t = fileOf(*card(bank(1, 0x12), std::nullopt), "Tpl", "A template", true);
     const ReadOutcome r = read(t);
     CHECK(r.status == ReadOutcome::Status::Read);
@@ -183,11 +183,11 @@ TEST(c59_7_ac29_info_name_description_template_no_switch) {
     CHECK(!r.info.hasWriteProtect && !r.info.writeProtected);
     CHECK(r.info.formatVersion == 3);
     const auto& k = magneticCardKind();
-    CHECK(k.implicitTemplates.size() == 1 && k.implicitTemplates[0].name == "Fresh card");   // D-10: no file
+    CHECK(k.implicitTemplates.size() == 1 && k.implicitTemplates[0].name == "Fresh card");   // no file
     CHECK(k.words.insertStep == "card" && k.words.armStep == "arm" && k.words.inFileKey == "card" && k.words.ejectWord.empty());
 }
 
-TEST(c59_7_ec5_bom_or_not_utf8_unreadable) {
+TEST(bom_or_not_utf8_unreadable) {
     const std::string good = fileOf(*card(bank(1, 0x12), std::nullopt));
     const ReadOutcome bom = read("\xEF\xBB\xBF" + good);
     CHECK(bom.status == ReadOutcome::Status::Unreadable && bom.problem.find("UTF-8") != std::string::npos);
@@ -196,7 +196,7 @@ TEST(c59_7_ec5_bom_or_not_utf8_unreadable) {
     CHECK(latin.problem.find("size") == std::string::npos);
 }
 
-// ── T2 Codec, write ──────────────────────────────────────────────────────────
+// ── Codec, write ─────────────────────────────────────────────────────────────
 
 namespace {
 std::string write(const MediumCodec::Write& w) {
@@ -206,7 +206,7 @@ std::string write(const MediumCodec::Write& w) {
 }
 } // namespace
 
-TEST(c59_7_ac5_written_whole_in_key_order_only_written_side) {
+TEST(written_whole_in_key_order_only_written_side) {
     CueCardContent cue;
     cue.title = "Kept title";
     const std::string source = fileOf(*card(bank(1, 0x11), bank(2, 0x22)), "Shared", "kept", false, cue);
@@ -231,7 +231,7 @@ TEST(c59_7_ac5_written_whole_in_key_order_only_written_side) {
     CHECK(std::is_sorted(at.begin(), at.end()));
 }
 
-TEST(c59_7_ac5_saved_set_comments_dropped) {
+TEST(saved_set_comments_dropped) {
     const std::string source = "# a comment\n" + fileOf(*card(bank(1, 0x11), std::nullopt));
     CHECK(read(source).status == ReadOutcome::Status::Read);   // comments are allowed
     auto c = card(bank(1, 0x55), std::nullopt);
@@ -246,9 +246,9 @@ TEST(c59_7_ac5_saved_set_comments_dropped) {
     CHECK(out.find("# a comment") == std::string::npos);
 }
 
-TEST(c59_7_ac5_template_never_written) {
+TEST(template_never_written) {
     // The kind's template is never handed to the codec: the library writes an
-    // instance only (LIB-7 A6, AC-15); here, the fresh card started by a name.
+    // instance only; here, the fresh card started by a name.
     calcu::testing::TempFolder folder("calcu59-template");
     const auto fresh = magneticCardKind().implicitTemplates[0].make();
     const auto c = magneticCardOf(fresh);
@@ -264,10 +264,10 @@ TEST(c59_7_ac5_template_never_written) {
     CHECK(sideOf(read(out), 0) == bank(1, 0x66));
 }
 
-TEST(c59_7_ac5_opened_card_written_back_where_it_lies) {
-    // C59-7 AC-5: an opened card's binding path is its own file; the library
-    // writes there (LIB-7 AC-1); the codec keeps its keys (above). Checked
-    // through the session in card_flows_tests.cpp (c59_7_ac27_dropped_card_*).
+TEST(opened_card_written_back_where_it_lies) {
+    // An opened card's binding path is its own file; the library
+    // writes there; the codec keeps its keys (above). Checked
+    // through the session in card_flows_tests.cpp (the dropped card cases).
     auto c = card(bank(1, 0x10), std::nullopt);
     c->lastWritten = 0;
     MediumCodec::Write w;
@@ -278,7 +278,7 @@ TEST(c59_7_ac5_opened_card_written_back_where_it_lies) {
     CHECK(r.info.description == "elsewhere" && sideOf(r, 0) == bank(1, 0x10) && sideOf(r, 1) == bank(3, 0x30));
 }
 
-TEST(c59_7_ec3_other_side_kept_as_the_file_holds_it) {
+TEST(other_side_kept_as_the_file_holds_it) {
     // Fitted with side 1 fresh; another device wrote side 1 since; side 0 written here.
     auto fitted = card(bank(1, 0x01), std::nullopt);
     fitted->sides[0] = bank(1, 0x02);
@@ -286,7 +286,7 @@ TEST(c59_7_ec3_other_side_kept_as_the_file_holds_it) {
     MediumCodec::Write w;
     w.name = "Two";
     w.content = fitted;
-    w.source = fileOf(*card(bank(1, 0x01), bank(2, 0x77)), "Two");   // the file now (re-read, D-3)
+    w.source = fileOf(*card(bank(1, 0x01), bank(2, 0x77)), "Two");   // the file now (re-read)
     const ReadOutcome r = read(write(w));
     CHECK(sideOf(r, 0) == bank(1, 0x02));
     CHECK(sideOf(r, 1) == bank(2, 0x77));
@@ -295,9 +295,9 @@ TEST(c59_7_ec3_other_side_kept_as_the_file_holds_it) {
     CHECK(write(w).rfind("ERROR ", 0) == 0);
 }
 
-// ── T3 Content, bank builder ─────────────────────────────────────────────────
+// ── Content, bank builder ────────────────────────────────────────────────────
 
-TEST(c59_7_ac1_side_holds_any_bank_either_side) {
+TEST(side_holds_any_bank_either_side) {
     auto c = card(bank(4, 0x01), bank(4, 0x02));   // both sides the same bank
     CHECK(sideBank(c->sides[0]) == 4 && sideBank(c->sides[1]) == 4);
     TICardSideDef def;
@@ -311,7 +311,7 @@ TEST(c59_7_ac1_side_holds_any_bank_either_side) {
     CHECK_EQ(kCardBankBytes, std::size_t{246});
 }
 
-TEST(c59_7_ac19_built_bank_is_the_roms_bank) {
+TEST(built_bank_is_the_roms_bank) {
     // The fixtures were written by the TI-59 ROM (n Write, read back with the
     // headless reader): a data bank and a protected program bank.
     TICardSideDef data;
@@ -325,7 +325,7 @@ TEST(c59_7_ac19_built_bank_is_the_roms_bank) {
     CHECK(buildCardBank(program, 60) == hexFixture("bank1-protected.hex"));
 }
 
-TEST(c59_7_ac19_partition_of_the_item_or_the_calculators) {
+TEST(partition_of_the_item_or_the_calculators) {
     TICardSideDef p;
     p.bank = 1;
     p.steps = {{0, 1}};
@@ -340,9 +340,9 @@ TEST(c59_7_ac19_partition_of_the_item_or_the_calculators) {
     CHECK(stepInBank(480, 3) && !stepInBank(479, 3) && firstStepOfBank(2) == 240);
 }
 
-// ── T4 Module cue cards ──────────────────────────────────────────────────────
+// ── Module cue cards ─────────────────────────────────────────────────────────
 
-TEST(c59_7_ac23_ml_25_and_le_21_preprinted) {
+TEST(ml_25_and_le_21_preprinted) {
     SKIP_UNLESS(testroms::romSet() != nullptr, "the ROMs are not fetched (roms/fetch_roms.sh)");
     for (const auto& m : allModuleMetadata(*testroms::romSet())) {
         const auto cards = moduleCueCards(*testroms::romSet(), m.id);
@@ -360,7 +360,7 @@ TEST(c59_7_ac23_ml_25_and_le_21_preprinted) {
     CHECK(ml.count(2) && ml.at(2).labels[3] == kCueCardInvisibleMarker && ml.at(2).labels[1] == "→ A⁻¹");
 }
 
-TEST(c59_7_ac23_every_program_of_every_module_has_a_card) {
+TEST(every_program_of_every_module_has_a_card) {
     SKIP_UNLESS(testroms::romSet() != nullptr, "the ROMs are not fetched (roms/fetch_roms.sh)");
     for (const auto& m : tiModules()) {
         // The number of programs: the module's ROM header (app/ModuleImage.hpp).
@@ -381,7 +381,7 @@ TEST(c59_7_ac23_every_program_of_every_module_has_a_card) {
     }
 }
 
-TEST(c59_7_ac22_no_stand_in_made_at_run_time) {
+TEST(no_stand_in_made_at_run_time) {
     // A module file without `cue-cards:` gives none: nothing is made up.
     const auto* ml = testroms::romSet() ? testroms::romSet()->bytes("ML.rom.yaml") : nullptr;
     SKIP_UNLESS(ml != nullptr, "the ROMs are not fetched (roms/fetch_roms.sh)");

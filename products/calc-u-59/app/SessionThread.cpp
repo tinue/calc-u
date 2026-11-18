@@ -137,9 +137,9 @@ std::string SessionThread::openAttach([[maybe_unused]] calcu::harness::HarnessPr
 
 void SessionThread::run(Factory factory) {
 #if defined(__APPLE__)
-    pthread_set_qos_class_self_np(QOS_CLASS_USER_INITIATED, 0);   // D-7
+    pthread_set_qos_class_self_np(QOS_CLASS_USER_INITIATED, 0);
 #endif
-    std::unique_ptr<sessions::AppSession> session = factory();   // built on this thread (AC-4)
+    std::unique_ptr<sessions::AppSession> session = factory();   // built on this thread
     // The frontend's listener: a message goes into the staged batch, which
     // the thread publishes after each job and each host call.
     sessions::Listener listener;
@@ -150,8 +150,8 @@ void SessionThread::run(Factory factory) {
     auto t0 = Clock::now();
     std::int64_t n = 0;   // signed: a duration of an unsigned count would be unsigned too
     for (;;) {
-        // Every post, in order (AC-6); commands are carried out on arrival,
-        // also while suspended (design §3.3).
+        // Every post, in order; commands are carried out on arrival,
+        // also while suspended.
         for (;;) {
             Job job;
             {
@@ -167,7 +167,7 @@ void SessionThread::run(Factory factory) {
         const auto now = Clock::now();
         auto next = t0 + (n + 1) * kPeriod;
         if (!suspended_ && now >= next) {
-            session->call(clock_());   // one host call (AC-4)
+            session->call(clock_());   // one host call
             ++calls_;
 #ifdef CALCU_ATTACH
             if (attach_ && attach_->harness) attach_->harness->afterHostCall();

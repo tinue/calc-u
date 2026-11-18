@@ -6,9 +6,9 @@
 #include <cstdint>
 #include <vector>
 
-// The core-internal facade over CPU, ROM and RAM (C59-1 design §3.1): only
+// The core-internal facade over CPU, ROM and RAM: only
 // TIMachine, its capabilities and the tests (TIMachineTesting) use it. It holds no lock and
-// starts no thread (ADR 0009); the caller serialises every call.
+// starts no thread; the caller serialises every call.
 class TI59Machine {
 public:
     explicit TI59Machine(MachineVariant variant);
@@ -87,7 +87,7 @@ public:
     int  cardMode()         const;  ///< 0=none, 1=read, 2=write
 
     // ── Connectors ───────────────────────────────────────────────────────────
-    /// The PC-100C and the module, as TIMachine plugs them (C59-6).
+    /// The PC-100C and the module, as TIMachine plugs them.
     void wire(const TiConnectors& c) { m_cpu.wire(c); }
 
     // ── Trace / debug API ─────────────────────────────────────────────────────
@@ -151,7 +151,7 @@ public:
 
     /// Read a ROM keycode at address 0–383.
     uint8_t readROMKeycode(int addr) const;
-    /// A 13-bit word of the ROM (with the overlay range) as the CPU reads it (LIB-10 AC-28).
+    /// A 13-bit word of the ROM (with the overlay range) as the CPU reads it.
     uint16_t readROMWord(uint16_t addr) const;
 
     /// Capture a snapshot of all CPU registers at the current instant.
@@ -170,7 +170,7 @@ public:
 
     MachineVariant variant() const { return m_variant; }
 
-    /// The processor and the RAM (C59-9 AC-15; the ROM comes from the ROM set).
+    /// The processor and the RAM (the ROM comes from the ROM set).
     template <class Io>
     void stateIo(Io& io) {
         m_ram.stateIo(io);

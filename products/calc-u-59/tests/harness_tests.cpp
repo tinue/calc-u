@@ -1,7 +1,6 @@
-// The exit check of M-28 (LIB-11 design §6, T14) and the Calc-U-59 column
-// (§11.6, M-59): `calcu` drives a TI-59
-// headless, through the library's app session with TIAppPart; LIB-11 AC-14
-// to AC-17 at the end.
+// `calcu` drives a TI-59 headless, through the library's app session with
+// TIAppPart; at the end, the functions of 2.3.0's tools, `display-text` and
+// the emulated time through `calcu`.
 #include "../app/HarnessProduct.hpp"
 #include "TestHarness.hpp"
 #include "harness/Run.hpp"
@@ -36,12 +35,11 @@ TEST(harness_drives_a_ti59) {
     CHECK_EQ(reply("display-text"), std::string("done 2\n          7 \nindicators:\n"));
     const std::string t = reply("ticks");
     CHECK(t.rfind("done 2\nticks: ", 0) == 0 && t.find("seconds: 2.6") != std::string::npos);
-    CHECK_EQ(reply("audio x.wav"), std::string("refused: This machine has no sound.\n"));   // EC-6 on a TI
+    CHECK_EQ(reply("audio x.wav"), std::string("refused: This machine has no sound.\n"));   // a TI has no sound
     server->finish();
 }
 
-// LIB-18 design P59 (LIB-11 AC-2 through a product): the harness switches
-// the model with LIB-18's `model`.
+// The harness switches the model with the library's `model`.
 TEST(harness_switches_to_a_ti58) {
     SKIP_UNLESS(std::filesystem::exists("roms/TMC0571B.txt"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     auto product = cu59::makeHarnessProduct();
@@ -55,7 +53,7 @@ TEST(harness_switches_to_a_ti58) {
     auto reply = [&](const std::string& l) { return server->line(l).text; };
     CHECK_EQ(reply("model TI-58"), std::string("done\n"));
     CHECK(reply("display-text").rfind("done 2\n          0 \nindicators:", 0) == 0);   // ready for keys
-    CHECK(reply("capabilities").find("place printer empty\n") != std::string::npos);   // the built-in default (LIB-18 AC-18)
+    CHECK(reply("capabilities").find("place printer empty\n") != std::string::npos);   // the built-in default
     const auto* m = server->host().session().context().machine();
     CHECK(m && m->model().value == "TI-58");
     CHECK_EQ(reply("model ti-59"), std::string("done\n"));
@@ -63,10 +61,10 @@ TEST(harness_switches_to_a_ti58) {
     server->finish();
 }
 
-// LIB-5 (design §6, L12 on a TI; AC-15, AC-16, AC-17, AC-26; D-8): `key`
-// presses the names of preset.md §8.1 as the app types them and replies when
+// `key` presses the names of docs/formats/preset.md §8.1 as the app types
+// them and replies when
 // the last key is up; a TI model has no `type`.
-TEST(lib5_harness_key_on_a_ti59) {
+TEST(harness_key_on_a_ti59) {
     SKIP_UNLESS(std::filesystem::exists("roms/TMC0571B.txt"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     auto product = cu59::makeHarnessProduct();
     std::string error;
@@ -77,17 +75,16 @@ TEST(lib5_harness_key_on_a_ti59) {
     CHECK_EQ(reply("key 2 x^2"), std::string("done\n"));
     reply("wait 300ms");
     CHECK_EQ(reply("display-text"), std::string("done 2\n          4. \nindicators:\n"));   // a result: x² of 2
-    CHECK_EQ(reply("key 1 S+"), std::string("refused: Unknown key: S+.\n"));   // AC-26: an old name; nothing typed
+    CHECK_EQ(reply("key 1 S+"), std::string("refused: Unknown key: S+.\n"));   // an old name; nothing typed
     CHECK_EQ(reply("key CLR 2nd pi"), std::string("done\n"));                  // 2nd before a second function: once
     reply("wait 300ms");
     CHECK(reply("display-text").find("3.14159265") != std::string::npos);
-    CHECK_EQ(reply("type 12"), std::string("refused: Unknown command: type.\n"));   // D-8
+    CHECK_EQ(reply("type 12"), std::string("refused: Unknown command: type.\n"));   // a TI model has no `type`
     server->finish();
 }
 
-// LIB-8 AC-23 (design §11.6, E8-7): the harness's `paper` commands on the
-// PC-100C's paper since M-53.
-TEST(lib8_ac23_harness_paper_text_of_the_pc100c) {
+// The harness's `paper` commands on the PC-100C's paper.
+TEST(harness_paper_text_of_the_pc100c) {
     SKIP_UNLESS(std::filesystem::exists("roms/TMC0571B.txt"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     auto product = cu59::makeHarnessProduct();
     std::string error;
@@ -95,8 +92,8 @@ TEST(lib8_ac23_harness_paper_text_of_the_pc100c) {
     CHECK(server != nullptr);
     if (!server) return;
     auto reply = [&](const std::string& l) { return server->line(l).text; };
-    CHECK_EQ(reply("attach printer PC-100C"), std::string("done\n"));   // the built-in default has none (LIB-18 AC-18)
-    CHECK_EQ(reply("paper text"), std::string("done\n"));   // empty paper (EC-2)
+    CHECK_EQ(reply("attach printer PC-100C"), std::string("done\n"));   // the built-in default has none
+    CHECK_EQ(reply("paper text"), std::string("done\n"));   // empty paper
     reply("key 7");
     reply("key 2nd Prt");
     reply("wait 1s");
@@ -105,7 +102,7 @@ TEST(lib8_ac23_harness_paper_text_of_the_pc100c) {
     server->finish();
 }
 
-TEST(lib8_ac23_harness_paper_marks_and_png) {
+TEST(harness_paper_marks_and_png) {
     SKIP_UNLESS(std::filesystem::exists("roms/TMC0571B.txt"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     auto product = cu59::makeHarnessProduct();
     std::string error;
@@ -130,8 +127,8 @@ TEST(lib8_ac23_harness_paper_marks_and_png) {
     server->finish();
 }
 
-// LIB-10 AC-31 (E10-4): a breakpoint set through the harness pauses a TI.
-TEST(lib10_ac31_harness_breakpoint_pauses_the_ti) {
+// A breakpoint set through the harness pauses a TI.
+TEST(harness_breakpoint_pauses_the_ti) {
     SKIP_UNLESS(std::filesystem::exists("roms/TMC0571B.txt"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     auto product = cu59::makeHarnessProduct();
     std::string error;
@@ -160,8 +157,7 @@ TEST(lib10_ac31_harness_breakpoint_pauses_the_ti) {
     server->finish();
 }
 
-// LIB-18 design P59-6 (AC-18; D-17 of the harness is gone): the harness
-// starts the built-in default, the TI-59 with the Master Library module and
+// The harness starts the built-in default, the TI-59 with the Master Library module and
 // no printer.
 TEST(harness_starts_with_ml_and_no_printer) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
@@ -172,8 +168,8 @@ TEST(harness_starts_with_ml_and_no_printer) {
     CHECK_EQ(c.machine()->model().value, std::string("TI-59"));
 }
 
-// C59-2 AC-9 (design §3.4, T8): `c59 partition`, `c59 program`, `c59 data-registers`.
-TEST(c59_2_ac9_partition_program_registers_write_and_read) {
+// `c59 partition`, `c59 program`, `c59 data-registers`.
+TEST(harness_partition_program_registers_write_and_read) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     CHECK_EQ(c("c59 partition"), std::string("done 1\n479\n"));
@@ -190,7 +186,7 @@ TEST(c59_2_ac9_partition_program_registers_write_and_read) {
     CHECK_EQ(c("c59 data-registers H02"), std::string("done 1\nH02: 7e0\n"));
 }
 
-TEST(c59_2_ac9_refused_where_the_section_refuses) {
+TEST(harness_memory_commands_refused_where_the_section_refuses) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     CHECK(c("c59 partition 960").rfind("refused: partition: 960 is beyond", 0) == 0);
@@ -205,18 +201,17 @@ TEST(c59_2_ac9_refused_where_the_section_refuses) {
     CHECK(c("c59 partition 480").rfind("refused: ", 0) == 0);
 }
 
-TEST(c59_2_ac9_count_reads_keycodes) {
+TEST(harness_program_count_reads_keycodes) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
-    CHECK_EQ(c("c59 program 010 05"), std::string("done\n"));   // a bare token is a keycode (Q-2)
+    CHECK_EQ(c("c59 program 010 05"), std::string("done\n"));   // a bare token is a keycode
     CHECK_EQ(c("c59 program 010 count=1"), std::string("done 1\n010 05\n"));
     CHECK(c("c59 program 010 count=0").rfind("refused: ", 0) == 0);
     CHECK(c("c59 program 010 count=1 05").rfind("refused: ", 0) == 0);
 }
 
-// LIB-6 design §11.6 P12 (AC-34): a preset, the bare wait, expect and
-// screenshot through `calcu --product c59`.
-TEST(lib6_ac34_preset_wait_expect_screenshot_on_ti59) {
+// A preset, the bare wait, expect and screenshot through `calcu --product c59`.
+TEST(harness_preset_wait_expect_screenshot_on_ti59) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     CHECK_EQ(c("preset examples:sum.ti59"), std::string("done\n"));
@@ -230,7 +225,7 @@ TEST(lib6_ac34_preset_wait_expect_screenshot_on_ti59) {
     CHECK(c("preset-list").find("Sum of N numbers") != std::string::npos);
 }
 
-TEST(lib6_ac34_printer_trace_on_off) {
+TEST(harness_printer_trace_on_off) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     CHECK(c("printer-trace on").rfind("refused: ", 0) == 0);   // no PC-100C
@@ -239,9 +234,9 @@ TEST(lib6_ac34_printer_trace_on_off) {
     CHECK_EQ(c("printer-trace off"), std::string("done\n"));
 }
 
-// ── C59-4 AC-22 (design §3.10, T16) and LIB-13 AC-9 on Calc-U-59 ─────────────
+// ── The debug panel's commands and `open` on Calc-U-59 ───────────────────────
 
-TEST(c59_4_ac22_asm_load_run_clear) {
+TEST(harness_asm_load_run_clear) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     CHECK_EQ(c("c59 asm run"), std::string("refused: No ASM overlay loaded.\n"));
@@ -255,7 +250,7 @@ TEST(c59_4_ac22_asm_load_run_clear) {
     CHECK(c("c59 asm").rfind("refused: usage:", 0) == 0);
 }
 
-TEST(c59_4_ac22_dump_replies_lines) {
+TEST(harness_dump_replies_lines) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     CHECK(c("c59 dump scom").rfind("done 17\n── SCOM ──\nS00 ", 0) == 0);
@@ -265,7 +260,7 @@ TEST(c59_4_ac22_dump_replies_lines) {
     CHECK(c("c59 dump all").rfind("refused: ", 0) == 0);
 }
 
-TEST(c59_4_ac22_log_level) {
+TEST(harness_log_level) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     CHECK_EQ(c("c59 log-level debug"), std::string("done\n"));
@@ -274,19 +269,19 @@ TEST(c59_4_ac22_log_level) {
     CHECK(c("c59 log-level loud").rfind("refused: ", 0) == 0);
 }
 
-TEST(c59_4_ac22_heatmap_reset) {
+TEST(harness_heatmap_reset) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     CHECK_EQ(c("c59 heatmap reset"), std::string("done\n"));
     CHECK(c("c59 heatmap").rfind("refused: ", 0) == 0);
-    // The CALCULATOR and CPU tabs are read with `state` (AC-25, design §3.1).
+    // The CALCULATOR and CPU tabs are read with `state`.
     c("wait 200ms");
     CHECK(c("state c59.calculator-debug").find("partition") != std::string::npos);
     CHECK(c("state c59.cpu-debug").rfind("done", 0) == 0);
 }
 
 // They are commands only: a preset has no steps for them.
-TEST(c59_4_ac22_no_preset_steps_for_them) {
+TEST(harness_debug_commands_have_no_preset_steps) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     calcu::testing::TempFolder dir("calcu59-steps");
@@ -297,8 +292,8 @@ TEST(c59_4_ac22_no_preset_steps_for_them) {
     }
 }
 
-// LIB-13 AC-9 (§10.3): `open <path>` takes every Calc-U-59 file.
-TEST(lib13_ac9_open_takes_every_calc_u_59_file) {
+// `open <path>` takes every Calc-U-59 file.
+TEST(harness_open_takes_every_calc_u_59_file) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     calcu::testing::TempFolder dir("calcu59-open");
@@ -313,7 +308,7 @@ TEST(lib13_ac9_open_takes_every_calc_u_59_file) {
     CHECK(c("open " + (dir.path() / "ML.rom.yaml").string()).rfind("refused: ML.rom.yaml was not opened: ", 0) == 0);
 }
 
-// ── LIB-11, the Calc-U-59 column (design §11.6; M-59) ──
+// ── The harness entry of Calc-U-59 ──
 
 namespace {
 
@@ -347,22 +342,22 @@ std::uint64_t ticksOf(tirig::Calcu& c) {
 
 } // namespace
 
-// H1 (§11.3): the entry runs the app layer, TIAppPart, as the frontends host it.
-TEST(lib11_ac14_entry_runs_ti_app_part) {
+// The entry runs the app layer, TIAppPart, as the frontends host it.
+TEST(harness_entry_runs_ti_app_part) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     CHECK(c);
     if (!c) return;
-    // TIAppPart's topic, LIB-7's media, LIB-4's control state, C59-2's command.
+    // TIAppPart's topic, the library's media and control state, a c59 command.
     CHECK(done(c("state c59.cue-card")));
     CHECK(c("state media").find("\"place\":\"card-reader\"") != std::string::npos);
     CHECK(c("state control-state").find("\"model\":\"TI-59\"") != std::string::npos);
     CHECK_EQ(c("c59 partition"), std::string("done 1\n479\n"));
-    // The model switch is LIB-18's on TIAppPart's machines; the part follows.
+    // The model switch is the library's on TIAppPart's machines; the part follows.
     CHECK_EQ(c("model TI-58C"), std::string("done\n"));
     CHECK(c("state control-state").find("\"model\":\"TI-58C\"") != std::string::npos);
     CHECK(c("state c59.calc-indicator").find("refused") == std::string::npos);
-    // Release prep 3: c59.led renamed, c59.printer gone (LIB-4 AC-21's `controls`).
+    // No c59.led (now c59.calc-indicator), no c59.printer (the control state's `controls`).
     CHECK(c("state c59.led").find("refused") != std::string::npos);
     CHECK(c("state c59.printer").find("refused") != std::string::npos);
     CHECK_EQ(c("attach printer PC-100C"), std::string("done\n"));
@@ -374,8 +369,8 @@ TEST(lib11_ac14_entry_runs_ti_app_part) {
     CHECK_EQ(c("detach printer"), std::string("done\n"));
 }
 
-// H2 (§11.4, D-15): `display-text` reads each position by the segment table.
-TEST(lib11_ac16_every_segment_pattern_gives_its_character) {
+// `display-text` reads each position by the segment table.
+TEST(display_text_every_segment_pattern_gives_its_character) {
     auto position = [](std::uint8_t bits, bool point, float brightness) {
         calcu::machine::SegmentPosition p;
         p.lit.assign(8, false);
@@ -397,7 +392,7 @@ TEST(lib11_ac16_every_segment_pattern_gives_its_character) {
     }
 }
 
-TEST(lib11_ac16_lcd_twelve_positions_with_points) {
+TEST(display_text_lcd_twelve_positions_with_points) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     if (!c) return;
@@ -409,7 +404,7 @@ TEST(lib11_ac16_lcd_twelve_positions_with_points) {
     CHECK_EQ(c("display-text"), std::string("done 2\n 1234567890 \nindicators:\n"));
 }
 
-TEST(lib11_ac16_indicator_c_line_and_brightness_in_json) {
+TEST(display_text_indicator_c_line_and_brightness_in_json) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     for (bool json : {false, true}) {
         calcu::harness::RunOptions o;
@@ -427,9 +422,9 @@ TEST(lib11_ac16_indicator_c_line_and_brightness_in_json) {
     }
 }
 
-// H3 (§11.4): an instruction in the ROM's idle state weighs four on the
-// TI-59 and TI-58, one on the TI-58C; ticks ÷ 32 are today's instructions.
-TEST(lib11_ac17_idle_instruction_weighs_four_on_ti59_and_ti58) {
+// An instruction in the ROM's idle state weighs four on the
+// TI-59 and TI-58, one on the TI-58C; ticks ÷ 32 are the instructions as 2.3.0's tools counted them.
+TEST(idle_instruction_weighs_four_on_ti59_and_ti58) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     for (const char* model : {"TI-59", "TI-58"}) {
         tirig::Calcu c;
@@ -447,7 +442,7 @@ TEST(lib11_ac17_idle_instruction_weighs_four_on_ti59_and_ti58) {
     }
 }
 
-TEST(lib11_ac17_ti58c_instruction_weighs_one) {
+TEST(ti58c_instruction_weighs_one) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
     if (!c) return;
@@ -462,9 +457,9 @@ TEST(lib11_ac17_ti58c_instruction_weighs_one) {
     CHECK(n * 32 <= ticks + 32 && ticks <= n * 32 + 32);
 }
 
-// H4, the exit check of M-59: every function of LIB-11 AC-14's table (C59-9
-// design §4, one block per row) through `calcu`.
-TEST(lib11_ac14_every_function_of_the_table) {
+// Every function of Calc-U-59 2.3.0's tools (one block per function)
+// through `calcu`.
+TEST(harness_every_function_of_the_old_tools) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder dir("calcu59-ac14");
     calcu::harness::RunOptions o;
@@ -483,7 +478,7 @@ TEST(lib11_ac14_every_function_of_the_table) {
                         [&](const std::string& s) { out.push_back(s); });
         CHECK(out.size() == 2 && out[1].find("indicators:") != std::string::npos);
     }
-    // the ROMs missing, named (LIB-11 EC-1; the start itself: CalcU59RomMissingBuild)
+    // the ROMs missing, named (the start itself: CalcU59RomMissingBuild)
     {
         const auto r = cu59::lookUpRoms(calcu::roms::DirectoryBundle((dir.path() / "none").string()));
         CHECK(!r.set && calcu::roms::describe(r.missing).find("TMC0571B.txt") != std::string::npos);
@@ -517,7 +512,7 @@ TEST(lib11_ac14_every_function_of_the_table) {
     CHECK(done(c("pause")));
     CHECK(done(c("step { level: cpu, count: 10 }")));
     CHECK(done(c("resume")));
-    // the emulated time (ticks ÷ 32 are today's instructions)
+    // the emulated time (ticks ÷ 32 are the instructions as 2.3.0's tools counted them)
     CHECK(c("ticks").find("seconds: ") != std::string::npos);
     // a record per instruction; the power-on trace (read with tools/read_trace.py, CalcU59TraceReader)
     CHECK(done(c("trace k.trace")));

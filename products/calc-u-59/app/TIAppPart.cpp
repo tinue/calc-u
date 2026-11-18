@@ -44,7 +44,7 @@ Value TICueCardState::toValue() const {
 namespace {
 
 
-// LIB-10 §12.6: the debug panel shows the views; the trace folder and its
+// The debug panel shows the views; the trace folder and its
 // limit are LibraryParts' (the host's places), none on the Web (hand-over).
 TIDebuggerOptions debuggerOptions(TIDebugPart& panel) {
     TIDebuggerOptions o;
@@ -72,7 +72,7 @@ TIAppPart::TIAppPart(TIAppSetup setup)
       m_fileKinds(m_debugPart),
       m_lib(librarySetup()) {
     m_debugPart.bindDebugger(&m_lib.debugger());
-    m_machines.setKeptTrace([this] { return m_printerTrace; });   // C59-6 AC-6: into an attached PC-100C
+    m_machines.setKeptTrace([this] { return m_printerTrace; });   // TRACE's position goes into an attached PC-100C
 }
 
 calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
@@ -86,15 +86,15 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     s.hosting = m_setup.hosting;
     s.presetRules = &m_rules;
     s.bundle = m_bundle.get();
-    s.papers = tiPrinterPapers();   // LIB-4: the PC-100C owns the paper panel
+    s.papers = tiPrinterPapers();   // the PC-100C owns the paper panel
     s.debugger = tiDebuggerSetup(m_levelRules, debuggerOptions(m_debugPart));
     s.productName = "Calc-U-59";
-    s.presetExtensions = tiPresetExtensions();   // LIB-13 AC-11: no size limit
+    s.presetExtensions = tiPresetExtensions();   // no size limit
     s.fileKinds = m_fileKinds.kinds();
-    s.controlRules = {&m_debugPart};   // C59-4 AC-25
-    // LIB-7 59 (M-55): the magnetic card in the save folder, slot-1's modules.
+    s.controlRules = {&m_debugPart};   // the debug panel's product entries of the control state
+    // The magnetic card in the save folder, slot-1's modules.
     s.mediaKinds = {magneticCardKind()};
-    s.mediaFiles = m_files.files();   // the host's (C59-5 D-6), else the plain one
+    s.mediaFiles = m_files.files();   // the host's, else the plain one
     s.moduleListing = tiModuleListing(m_setup.roms.set);
     return s;
 }
@@ -127,11 +127,11 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     m_ms = &m_ctx->machineSession();
     m_calcIndicator = &s.stateTopic(topics::kCalcIndicator);
     m_cue = &s.stateTopic(topics::kCueCard);
-    // C59-7 D-12: a tap on the fitted card.
+    // A tap on the fitted card.
     add(s, commands::kTapCard, [this](const Value& a) -> CommandOutcome {
         return Done{std::make_shared<TIFlag>(tapCard(sessions::realArg(a, "x"), sessions::realArg(a, "y")))};
     });
-    // The machine comes with LIB-18's `start`; the card wait is the media part's (LIB-17 AC-16).
+    // The machine comes with the library's `start`; the card wait is the media part's.
     settle();
 }
 
@@ -153,24 +153,24 @@ void TIAppPart::afterCall(sessions::SessionContext& ctx, pacing::WallTime now) {
     m_ctx = &ctx;
     frame(steadyTimeOf(now));
     followPlugs(false);
-    m_keeper.afterCall(machine(), m_userCueCard, now);   // C59-3 AC-5
+    m_keeper.afterCall(machine(), m_userCueCard, now);   // at the latest half a second after a change
     settle();
 }
 
 void TIAppPart::suspending(sessions::SessionContext& ctx) {
     m_ctx = &ctx;
-    m_keeper.writeNow(machine(), m_userCueCard);   // C59-3 AC-6
+    m_keeper.writeNow(machine(), m_userCueCard);   // at once
     settle();
 }
 
 void TIAppPart::closing(sessions::SessionContext& ctx) {
     m_ctx = &ctx;
-    m_keeper.writeNow(machine(), m_userCueCard);   // C59-3 AC-6
+    m_keeper.writeNow(machine(), m_userCueCard);   // at once
 }
 
 void TIAppPart::beforeMachineChange(sessions::SessionContext& ctx) {
     m_ctx = &ctx;
-    m_keeper.writeNow(machine(), m_userCueCard);   // C59-3 AC-6: before it is replaced
+    m_keeper.writeNow(machine(), m_userCueCard);   // at once, before it is replaced
 }
 
 void TIAppPart::machineChanged(sessions::SessionContext& ctx) {
@@ -186,15 +186,15 @@ void TIAppPart::operationEnded(sessions::SessionContext& ctx) {
     // An operation run in one go (Hosting::VirtualTime, the harness) ends
     // before the session follows a machine it replaced: follow it first.
     machineChanged(ctx);
-    followPlugs(false);   // an attach or a detach (LIB-18 AC-21)
+    followPlugs(false);   // an attach or a detach
     settle();
 }
 
 void TIAppPart::beforeFlush(sessions::SessionContext& ctx) {
     m_ctx = &ctx;
-    // A switch set by LIB-2's set-control (TRACE, C59-6 AC-6), on the machine followed.
+    // A switch set by the library's set-control (TRACE), on the machine followed.
     if (m_ms && m_ms->generation() == m_seenGeneration) followPlugs(false);
-    refreshCueCard();   // a card fitted or fed by a library command (C59-7 AC-22)
+    refreshCueCard();   // a card fitted or fed by a library command
     settle();
 }
 
@@ -239,8 +239,8 @@ calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, paci
 calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, shell::HostSessionSetup host) {
     auto part = std::make_shared<TIAppPart>(std::move(setup));
     TIAppPart& p = *part;
-    // The one order (parts::LibraryParts): LIB-4's ControlPart (D-13; the
-    // product entries of C59-4 AC-25), the host's own and SettingsPart, the
+    // The one order (parts::LibraryParts): the library's ControlPart (with
+    // the debug panel's product entries), the host's own and SettingsPart, the
     // library's, the product's, the host's behind them.
     host.owned = std::move(part);
     return shell::makeHostSession(p, std::move(host));

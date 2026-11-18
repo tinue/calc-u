@@ -2,7 +2,7 @@
 #include "paper/PaperPart.hpp"
 #include <vector>
 
-// Calc-U-59's printers with a paper (LIB-8 design §11.3): the PC-100C with
+// Calc-U-59's printers with a paper: the PC-100C with
 // its description (core/PC100CPaper.hpp). The app session's PaperPart and
 // the harness's take it.
 

@@ -88,7 +88,7 @@ FreezeButtons freezeButtons(const debugger::LevelName& level, const debugger::Ru
     return b;
 }
 
-// ── The payloads' values: the forms the Web page draws (D-7) ────────────────
+// ── The payloads' values: the forms the Web page draws ─────────────────────
 
 Value TICalculatorDebug::toValue() const {
     const LiveDebugSnapshot& s = live;
@@ -304,7 +304,7 @@ void TIDebugPart::afterCall(sessions::SessionContext& c, pacing::WallTime now) {
         m_cpuDirty = m_cpuDirty || u.cpu;
         if (u.diagnostic) c.log(*u.diagnostic);
     }
-    // The machine's own lines, at their level (AC-11): one log message per call.
+    // The machine's own lines, at their level: one log message per call.
     if (auto* log = calcu::machine::first<MachineLog>(*m)) {
         std::vector<std::string> lines;
         for (auto& l : log->take()) lines.push_back(std::move(l.text));
@@ -328,9 +328,9 @@ void TIDebugPart::machineRestarted(sessions::SessionContext& c, sessions::Restar
     m_ctx = &c;
     machine::Machine* m = machine();
     if (!m) return;
-    if (auto* h = calcu::machine::first<RomHeatmapCounter>(*m)) h->reset();   // AC-8: a Reset zeroes the counts
+    if (auto* h = calcu::machine::first<RomHeatmapCounter>(*m)) h->reset();   // a Reset zeroes the counts
     m_heatDirty = true;
-    if (r == sessions::Restart::ColdBoot && m_asm.instructions > 0) {   // AC-26
+    if (r == sessions::Restart::ColdBoot && m_asm.instructions > 0) {   // a cold boot removes the overlay
         m_asm.fileName = kNoFile;
         m_asm.instructions = 0;
         m_asm.status = "ASM overlay removed by the Cold boot.";
@@ -364,7 +364,7 @@ void TIDebugPart::follow() {
     machine::Machine* m = machine();
     if (!m || !m_ctx) return;
     // A new machine (a start, a preset, a model switch): the overlay is
-    // removed with the old one (AC-26), the counts start at zero.
+    // removed with the old one, the counts start at zero.
     if (m_ctx->machineSession().generation() != m_generation) {
         m_generation = m_ctx->machineSession().generation();
         m_debug.attach({});
@@ -388,7 +388,7 @@ void TIDebugPart::follow() {
     }
 
     debugger::RunControl* rc = runControl();
-    if (rc) rc->sync();   // a new machine first (G11): a pause of the old one is not shown on it
+    if (rc) rc->sync();   // a new machine first: a pause of the old one is not shown on it
     const debugger::RunState now = rc ? rc->state() : debugger::RunState{};
     const bool isPaused = rc && rc->paused();
     if (auto* cs = calcu::machine::first<CalculatorState>(*m))   // the CPU tab's ring: shown, paused or a start armed
@@ -465,7 +465,7 @@ void TIDebugPart::showView(sessions::SessionContext& c, const std::string& view)
     m_ctx = &c;
     const auto p = debugPanelNamed(view);
     if (!p) return;
-    if (*p == DebugPanel::Calculator && overlayRunning()) return;   // AC-2: passed over without a word
+    if (*p == DebugPanel::Calculator && overlayRunning()) return;   // passed over without a word
     m_view.view = *p;
     ++m_view.requests;
     if (m_viewTopic) m_viewTopic->set(std::make_shared<TIDebugView>(m_view));
@@ -488,7 +488,7 @@ void TIDebugPart::setCpuShown(bool on) {
     if (!m) return;
     if (auto* h = calcu::machine::first<RomHeatmapCounter>(*m)) {
         h->setOn(on || m_setup.alwaysShown);
-        // The heatmap shows what ran since the tab came into view (AC-8); a
+        // The heatmap shows what ran since the tab came into view; a
         // paused machine's heatmap is kept.
         if (on && !paused()) h->reset();
     }
@@ -518,7 +518,7 @@ std::vector<std::string> TIDebugPart::dump(std::string_view what) {
                                      : what == "prog"   ? dumpProg(*m)
                                      : what == "vars"   ? dumpVars(*m)
                                                         : std::vector<std::string>{};
-    if (!lines.empty() && m_ctx) m_ctx->log(joined(lines));   // AC-11: at every level
+    if (!lines.empty() && m_ctx) m_ctx->log(joined(lines));   // at every level
     return lines;
 }
 
@@ -537,7 +537,7 @@ std::optional<std::string> TIDebugPart::loadAsm(const std::string& name, const s
     if (refusal.empty() && !o) refusal = sessions::kNoMachine;
     if (refusal.empty() && !o->load(words))
         refusal = name + " holds " + std::to_string(words.size()) + " instructions; at most 2048 fit from 1800 to 1FFF.";
-    if (!refusal.empty()) {   // EC-2: what was loaded before stays
+    if (!refusal.empty()) {   // what was loaded before stays
         if (notice && m_ctx) m_ctx->notice(refusal);
         setStatus(refusal);
         return refusal;
@@ -552,14 +552,14 @@ std::optional<std::string> TIDebugPart::loadAsm(const std::string& name, const s
 std::optional<std::string> TIDebugPart::runAsm() {
     machine::Machine* m = machine();
     AsmOverlay* o = m ? calcu::machine::first<AsmOverlay>(*m) : nullptr;
-    if (!o || o->loaded() == 0) {   // EC-1
+    if (!o || o->loaded() == 0) {   // nothing loaded
         setStatus(kNoAsmOverlay);
         return std::string(kNoAsmOverlay);
     }
     if (m_ctx && m_ctx->busy()) return std::string(sessions::kAnotherOperationRuns);
     debugger::RunControl* rc = runControl();
     const bool armedCpu = rc && rc->state().armed == debugger::kCpu;
-    if (rc && !rc->running()) rc->resume();   // Run while paused (AC-17): it goes on in the overlay
+    if (rc && !rc->running()) rc->resume();   // Run while paused: it goes on in the overlay
     const AsmOverlay::Entry e = o->enter(8192);
     if (!e.entered) {
         const std::string s = "ASM entry failed after " + std::to_string(e.instructions) + " step(s).";
@@ -569,11 +569,11 @@ std::optional<std::string> TIDebugPart::runAsm() {
     }
     m_asm.running = true;
     setStatus("ASM entered at 0x1800 (" + std::to_string(e.instructions) + " step(s)).");
-    // AC-18: the panel shows the CPU tab while the overlay runs.
+    // The panel shows the CPU tab while the overlay runs.
     m_view.view = DebugPanel::Cpu;
     ++m_view.requests;
     if (m_viewTopic) m_viewTopic->set(std::make_shared<TIDebugView>(m_view));
-    if (armedCpu && rc) rc->fireStart(debugger::kCpu);   // AC-17: paused at 1800, the reason pause-on-start
+    if (armedCpu && rc) rc->fireStart(debugger::kCpu);   // paused at 1800, the reason pause-on-start
     m_cpuDirty = m_liveDirty = true;
     return std::nullopt;
 }
@@ -586,7 +586,7 @@ void TIDebugPart::clearAsm() {
     m_asm.instructions = 0;
     m_asm.running = false;
     setStatus("ASM overlay cleared.");
-    // A running overlay would now carry out the empty range: reset the machine (AC-16).
+    // A running overlay would now carry out the empty range: reset the machine.
     if (wasRunning && m) {
         if (auto* rc = runControl(); rc && !rc->running()) rc->resume();
         m->reset();
@@ -594,7 +594,7 @@ void TIDebugPart::clearAsm() {
     }
 }
 
-// ── The product entries (AC-25) ──────────────────────────────────────────────
+// ── The product entries ──────────────────────────────────────────────────────
 
 void TIDebugPart::productEntries(const machine::Machine& m, std::vector<control::ProductEntry>& out) const {
     auto entry = [&out](const char* name, bool available, const char* reason) {

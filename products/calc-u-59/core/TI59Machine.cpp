@@ -35,7 +35,7 @@ void TI59Machine::reset() {
     m_cpu.reset();
     m_cpu.pressKey(4, cardSwitchCol());  // restore card-absent state after key[] wipe
     // The PC-100C's lines (presence, PRINT, ADV, TRACE) come from the PC-100C
-    // itself through the connector (C59-6), so they need no re-application.
+    // itself through the connector, so they need no re-application.
 }
 
 uint32_t TI59Machine::step() {

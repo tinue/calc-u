@@ -8,7 +8,7 @@ sets t to the row-end threshold and falls into the header code. A 13th
 record holds the address of the end of the run, so there is no month
 counter. February enters the second row copy after its own copy of the
 header code. Usage: fastcal.py out.ti59   (e.g. examples/calendar/calendar-09-dispatch.ti59);
-the file is a preset of format 2 (C59-2 AC-18)."""
+the file is a preset of format 2."""
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -161,7 +161,7 @@ def program():
 
 HEADER = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calendar-09-header.txt')).read()
 
-# The keys a load presses (C59-2 AC-18): the year, A, then the fast-mode
+# The keys a load presses: the year, A, then the fast-mode
 # entry by SST; the elapsed time of the run is logged (elapsed-time:).
 KEYS = """keys:
   - full-speed:

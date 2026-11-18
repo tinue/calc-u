@@ -46,8 +46,8 @@ struct LoadResult {
     std::vector<std::string> warnings;
 };
 
-/// Plans and writes through the loaders of C1600-2 (sharp::loaders::planCode,
-/// loadCode; design §3.10). Verifies the bound listing against memory right
+/// Plans and writes through the machine-code loaders (sharp::loaders::planCode,
+/// loadCode). Verifies the bound listing against memory right
 /// away (`match` and `peek`: the debug targets' bank state and
 /// side-effect-free reads, by thread).
 LoadResult loadProgram(calcu::machine::Machine& machine, const LoadRequest& request, SourceMap& map,

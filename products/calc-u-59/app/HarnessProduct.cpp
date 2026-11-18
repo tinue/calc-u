@@ -32,11 +32,11 @@
 #include <iterator>
 #include <memory>
 
-// The ROM folder the product's tests use (design §8, O-2), set by CMake.
+// The ROM folder the product's tests use, set by CMake.
 #ifndef CALCU59_ROM_DIR
 #define CALCU59_ROM_DIR "roms"
 #endif
-// The bundled presets (examples/bundle.yaml; LIB-6 AC-31, AC-33), set by CMake.
+// The bundled presets (examples/bundle.yaml), set by CMake.
 #ifndef CALCU59_EXAMPLES_DIR
 #define CALCU59_EXAMPLES_DIR "examples"
 #endif
@@ -55,8 +55,7 @@ public:
 
     const calcu::settings::ProductDecl& settingsDecl() const override { return cu59::settings::settingsDecl(); }
 
-    // LIB-11 §11.3 (Part D simplification §9, as Calc-U-1600's since M-51):
-    // the run's app layer is TIAppPart, as the frontends host it, on the
+    // As in Calc-U-1600's harness entry: the run's app layer is TIAppPart, as the frontends host it, on the
     // run's settings and places (the save folder as the run passes it, the
     // traces and screenshots into the output folder), typing in emulated time
     // (Hosting::VirtualTime), the ROM set of the source tree's roms/ (or the
@@ -84,7 +83,7 @@ public:
         return part_->sessionParts(host);
     }
     void addCommands(harness::CommandRegistry& r) override {
-        addTIHarnessCommands(r);   // C59-2, C59-4, C59-9 (app/TIHarnessCommands)
+        addTIHarnessCommands(r);   // app/TIHarnessCommands
     }
 
     harness::DisplayText readDisplay(const machine::DisplayOutput& o, const machine::MachineDescriptor& d) override {

@@ -46,7 +46,7 @@ std::string fileNameOf(const std::string& path) {
     return slash == std::string::npos ? path : path.substr(slash + 1);
 }
 
-// A key given twice inside one block (AC-1: "A field given twice refuses").
+// A key given twice inside one block is refused.
 bool twice(const YamlNode& block, ReadContext& ctx, const std::string& owner, int line) {
     std::set<std::string> seen;
     bool found = false;
@@ -58,7 +58,7 @@ bool twice(const YamlNode& block, ReadContext& ctx, const std::string& owner, in
     return found;
 }
 
-// ---- program: (AC-1 to AC-5) ----
+// ---- program: ----
 
 enum class ProgramWay { LoadBasic, TypeIn, Code };
 
@@ -86,7 +86,7 @@ public:
                 run.log("  program: " + code.summary);
                 if (!code.headerStart) co_return ItemResult{};
                 // Auto-run (preset.md §4.1): the starting command; the
-                // implicit wait lets the code return (EC-3, LIB-6 AC-57).
+                // implicit wait lets the code return.
                 calcu::typing::TypingEngine* engine = run.typing();
                 if (!engine) co_return failed("This product types no keys.");
                 const std::string command = code.advice.callCommand;
@@ -101,7 +101,7 @@ public:
                 if (!engine) co_return failed("This product types no keys.");
                 const BasicTypeResult r = co_await sharp::loaders::typeProgram(run.op(), *engine, *m, listing);
                 if (r.ok) co_return ItemResult{};
-                // AC-4: no line stored, or the lines that were not.
+                // No line stored, or the lines that were not.
                 std::string reason = r.error;
                 if (!r.rejectedLines.empty()) {
                     reason += ":";
@@ -126,7 +126,7 @@ private:
     static ItemResult failed(std::string why) { return ItemResult{false, std::move(why), {}}; }
 };
 
-// AC-5: the lines of a block scalar as LIB-6 AC-1 takes them: empty lines
+// The lines of a block scalar as the preset reader takes them: empty lines
 // and lines that start with `#` left out; the rest typed as it is.
 std::string programLines(const std::string& block) {
     std::istringstream in(block);
@@ -142,7 +142,7 @@ std::string programLines(const std::string& block) {
 
 std::unique_ptr<Item> readProgram(const YamlNode& n, ReadContext& ctx) {
     const int at = n.line;
-    if (!n.isMap() || n.map.empty()) {   // EC-2
+    if (!n.isMap() || n.map.empty()) {
         ctx.error(at, "program: is a block with file: or text:.");
         return nullptr;
     }
@@ -154,7 +154,7 @@ std::unique_ptr<Item> readProgram(const YamlNode& n, ReadContext& ctx) {
     const YamlNode* length = n.find("length");
     bool ok = true;
     for (const auto& [k, v] : n.map)
-        if (k != "file" && k != "text" && k != "typed" && k != "address" && k != "length") {   // EC-2
+        if (k != "file" && k != "text" && k != "typed" && k != "address" && k != "length") {
             ctx.error(lineOf(v, at), "program: has no field " + k + "; its fields are file, text, typed, address and length.");
             ok = false;
         }
@@ -170,7 +170,7 @@ std::unique_ptr<Item> readProgram(const YamlNode& n, ReadContext& ctx) {
             return nullptr;
         }
         const std::string lines = textNode->isScalar() ? programLines(textNode->scalar) : std::string();
-        if (lines.empty()) {   // EC-1
+        if (lines.empty()) {
             ctx.error(lineOf(*textNode, at), "program: text: needs the lines of a BASIC program below it.");
             return nullptr;
         }
@@ -178,7 +178,7 @@ std::unique_ptr<Item> readProgram(const YamlNode& n, ReadContext& ctx) {
         item->listing = lines;
         return item;
     }
-    // file: (AC-2): read and its kind told now.
+    // file: is read and its kind told now.
     const int fileLine = lineOf(*file, at);
     const std::string path = file->isScalar() ? text(*file) : std::string();
     if (path.empty()) {
@@ -210,7 +210,7 @@ std::unique_ptr<Item> readProgram(const YamlNode& n, ReadContext& ctx) {
         }
         item->request.length = static_cast<std::size_t>(*l);
     }
-    auto bytes = ctx.readFile(path, fileLine);   // EC-5: without a folder a relative path is refused
+    auto bytes = ctx.readFile(path, fileLine);   // without a folder a relative path is refused
     if (!bytes) return nullptr;
     const std::string name = fileNameOf(path);
     item->name = path;
@@ -261,7 +261,7 @@ std::unique_ptr<Item> readProgram(const YamlNode& n, ReadContext& ctx) {
     return item;
 }
 
-// ---- host-drive: (AC-6, AC-7) ----
+// ---- host-drive: ----
 
 // `{ <key>: <text> }` with only that key; the text, or nullopt with the error.
 std::optional<std::string> referenceOf(const YamlNode& n, int line, const char* owner, const char* key, ReadContext& ctx) {
@@ -277,7 +277,7 @@ std::optional<std::string> referenceOf(const YamlNode& n, int line, const char* 
     return t;
 }
 
-// ---- slot-N-rom: (AC-8) ----
+// ---- slot-N-rom: ----
 
 struct SlotRomValue final : calcu::presets::ProductValue {
     std::string slot;   // slot-1, slot-2
@@ -286,7 +286,7 @@ struct SlotRomValue final : calcu::presets::ProductValue {
     int line = 0;
 };
 
-// ---- bus-rom: (AC-9, AC-10) ----
+// ---- bus-rom: ----
 
 void readBusRoms(const YamlNode& n, int line, ReadContext& ctx) {
     const bool pc1600 = ctx.model().model.value == sharp::kPC1600;
@@ -330,7 +330,7 @@ void readBusRoms(const YamlNode& n, int line, ReadContext& ctx) {
         sharp::BusRomRequest rom;
         std::size_t room = 0;
         if (hasBank) {
-            if (!pc1600) {   // EC-6
+            if (!pc1600) {
                 fail(lineOf(*item.find("bank"), at), "the " + ctx.model().model.value + " takes address:, not bank: (a bank is the PC-1600's).");
                 continue;
             }
@@ -379,7 +379,7 @@ void readBusRoms(const YamlNode& n, int line, ReadContext& ctx) {
         roms.push_back(std::move(rom));
     }
     if (!ok) return;
-    for (sharp::BusRomRequest& rom : roms) {   // D-33: after the places, in list order
+    for (sharp::BusRomRequest& rom : roms) {   // after the places, in list order
         calcu::machine::PeripheralRequest r;
         r.place = calcu::machine::PlacePath{{calcu::machine::PlaceName{sharp::kBusRomPlace}}};
         r.peripheral = calcu::machine::PeripheralId{sharp::kBusRom};
@@ -399,23 +399,23 @@ void addSharpKeywords(calcu::presets::Vocabulary& v, const SharpKeywordSetup& se
         [hostFolders](const YamlNode& n, int line, ReadContext& ctx) {
             const auto folder = referenceOf(n, line, kHostDriveKey, "folder", ctx);
             if (!folder) return;
-            if (hostFolders && !hostFolders()) {   // AC-7
+            if (hostFolders && !hostFolders()) {
                 ctx.error(line, "The host drive is not available in this frontend.");
                 return;
             }
             const std::string resolved = ctx.source().resolvedName(*folder);
             const std::filesystem::path p = calcu::files::toPath(resolved);
-            if (!p.is_absolute()) {   // EC-5
+            if (!p.is_absolute()) {
                 ctx.error(line, "The preset " + ctx.source().name() + " was handed over without its folder, so the folder " +
                                     *folder + " it names cannot be used.");
                 return;
             }
             std::error_code ec;
-            if (!std::filesystem::is_directory(p, ec)) {   // AC-6, row 1600-11
+            if (!std::filesystem::is_directory(p, ec)) {
                 ctx.error(line, "host-drive: the folder " + resolved + " does not exist.");
                 return;
             }
-            calcu::machine::PeripheralRequest r;   // D-33
+            calcu::machine::PeripheralRequest r;
             r.place = calcu::machine::PlacePath{{calcu::machine::PlaceName{sharp::kHostDrivePlace}}};
             r.peripheral = calcu::machine::PeripheralId{sharp::kHostDrive};
             r.content = std::make_shared<sharp::HostDriveRequest>(resolved);
@@ -436,7 +436,7 @@ void addSharpKeywords(calcu::presets::Vocabulary& v, const SharpKeywordSetup& se
                 value->path = *path;
                 value->bytes = std::move(*bytes);
                 value->line = line;
-                ctx.setContentAt(calcu::machine::PlaceName{slot}, std::make_shared<sharp::SlotRomRequest>(value->bytes));   // D-33
+                ctx.setContentAt(calcu::machine::PlaceName{slot}, std::make_shared<sharp::SlotRomRequest>(value->bytes));
                 ctx.keep(key, value);   // checkSharpHeader's
             }});
     }

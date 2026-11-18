@@ -73,8 +73,7 @@ public:
     AlpsPlotterMechanism&       mechanism() { return m_mechanism; }
     const AlpsPlotterMechanism& mechanism() const { return m_mechanism; }
 
-    // The paper output (LIB-8, design §10.3): made and gone with the card
-    // (D-16), the mechanism's pen listener.
+    // The paper output: made and gone with the card, the mechanism's pen listener.
     CE1600PCard() { m_mechanism.setListener(&m_paperOutput); }
     CE1600PCard(const CE1600PCard&) = delete;
     CE1600PCard& operator=(const CE1600PCard&) = delete;
@@ -154,7 +153,7 @@ public:
         if (m_recorder) m_recorder->advance(tstates);
     }
 
-    // C1600-5 AC-13: port 82H, the relay, the mechanism.
+    // The machine state: port 82H, the relay, the mechanism.
     void saveState(sharp::StateWriter& w) const override { const_cast<CE1600PCard*>(this)->stateIo(w); }
     void restoreState(sharp::StateReader& r) override { stateIo(r); }
     template <class Io>

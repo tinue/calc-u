@@ -1,20 +1,20 @@
-// LIB-8 AC-39 (design §4.1, T12): the printouts of the reference runs of
-// 2.3.0 (tests/reference/v2.3.0-examples/, M-9) turned once into the replies
-// of `paper text` and `paper marks`, which C59-2 AC-11 (M-54) compares new
-// runs with. CALCU59_PAPER_REPLIES=1 writes the reply files next to the
+// The printouts of the reference runs of
+// 2.3.0 (tests/reference/v2.3.0-examples/) turned once into the replies
+// of `paper text` and `paper marks`, which reference_runs_tests.cpp compares
+// new runs with. CALCU59_PAPER_REPLIES=1 writes the reply files next to the
 // references; the Frequent case checks that the committed files equal what
 // the converter gives, so a change to the converter is seen.
 //
-// The rule (AC-25; the placement of 2.3.0's frontends/qt6/app/PrinterWidget.cpp:
+// The rule (the placement of 2.3.0's frontends/qt6/app/PrinterWidget.cpp:
 // 52-62): per printed line, the text between the bars is a text line at
 // (0, top). An empty line is a feed: 7.09 units, no mark. Any other line is
 // split into the 20 strings of the PC-100C's table (longest match), each
 // mapped to its code and drawn in the 5 × 7 font (core/PC100CPaper.hpp,
-// pc100cpaper::lineDots, the core's placement since M-53): the dot of column c, row r of character i at
+// pc100cpaper::lineDots, the core's placement): the dot of column c, row r of character i at
 // (i × 6.53 + c + 0.5, top + r + 0.5), full darkness (20 heating cycles);
 // the line takes 10.18 units. The reach is 0 to the sum of the heights.
 // The three printer-interrupt examples print lines cut short whose rows the
-// M-9 files do not hold: they get a `.paper-text` only (D-13).
+// 2.3.0 reference files do not hold: they get a `.paper-text` only.
 #include "TestHarness.hpp"
 #include "../core/PC100CPaper.hpp"
 #include "paper/Replies.hpp"
@@ -35,7 +35,7 @@ namespace {
 
 const fs::path kDir = "tests/reference/v2.3.0-examples";
 
-// The PC-100C's characters by code: the core's own table (M-53, LIB-8 D-22).
+// The PC-100C's characters by code: the core's own table.
 const char* const* const kCodes = pc100cpaper::kCharacters;
 
 const std::set<std::string> kCutShort = {"debug_printer-interrupt-bits", "debug_printer-interrupt-sweep",
@@ -129,7 +129,7 @@ std::string readAll(const fs::path& p) {
 
 } // namespace
 
-TEST(lib8_ac39_ti_printouts_turned_into_paper_replies) {
+TEST(ti_printouts_turned_into_paper_replies) {
     SKIP_UNLESS(fs::is_directory(kDir), "the reference runs are not here");
     const bool write = std::getenv("CALCU59_PAPER_REPLIES") && std::string(std::getenv("CALCU59_PAPER_REPLIES")) == "1";
     std::set<std::string> expected;

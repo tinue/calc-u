@@ -1,5 +1,5 @@
-// The keyboard map of Calc-U-1600 (app/SharpTyping, LIB-5 AC-29, AC-37):
-// 0.8.1's HostKeyMap rules, now cu1600::SharpKeyboardMap per model.
+// The keyboard map of Calc-U-1600 (app/SharpTyping): the host keys' rules,
+// cu1600::SharpKeyboardMap per model.
 
 #include <cstdio>
 
@@ -27,14 +27,14 @@ std::optional<Mapped> resolve(NamedKey key, Modifiers mods, char32_t typed, bool
     return cu1600::keyboardMapOf(ModelId{pc1600 ? sharp::kPC1600 : sharp::kPC1500A})->map(e);
 }
 
-// One key held (AC-31), or shift then the key (AC-8).
+// One key held, or shift then the key.
 bool is(const std::optional<Mapped>& r, const char* key, bool shifted = false) {
     if (!r) return false;
     if (shifted) return !r->held && r->presses.size() == 2 && r->presses[0].key.value == "shift" && r->presses[1].key.value == key;
     return r->held && r->presses.size() == 1 && r->presses[0].key.value == key;
 }
 
-TEST(lib5_ac29_named_keys_and_shift_forms_per_model) {
+TEST(named_keys_and_shift_forms_per_model) {
     for (bool mac : {false, true}) {
         CHECK(is(resolve(NamedKey::Backspace, {}, 0, false, mac), "left"));
         CHECK(is(resolve(NamedKey::Backspace, {}, 0, true, mac), "bs"));
@@ -78,7 +78,7 @@ TEST(test_characters) {
     CHECK(resolve(NamedKey::None, {}, U'é', false, true) == std::nullopt);
 }
 
-TEST(lib5_ac29_command_modifiers_nothing_altgr_types) {
+TEST(command_modifiers_nothing_altgr_types) {
     Modifiers cmd; cmd.command = true;
     Modifiers ctrl; ctrl.control = true;
     Modifiers alt; alt.alt = true;

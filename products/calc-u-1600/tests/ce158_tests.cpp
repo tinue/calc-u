@@ -288,7 +288,7 @@ const char* kCe158Rom = "roms/CE-158.ROM";
 
 
 bool haveRoms(const char* test) {
-    if (testRomSet()) return true;   // the one lookup (LIB-12)
+    if (testRomSet()) return true;   // the one ROM lookup
     (void)test;
     testharness::skip((std::string("run from the repo root (needs ") + kSysRom + ", " + kCe150Rom + ", " + kCe158Rom + ")").c_str());
     return false;
@@ -301,7 +301,7 @@ std::string text(const std::vector<uint8_t>& bytes) { return std::string(bytes.b
 TEST(test_rom_lprint_centronics_with_ce150_chained) {
     if (!haveRoms(__func__)) return;
     // What the preset of 0.8.1 did (PC-1500A, CE-150, CE-158): typed on
-    // the old class (M-46).
+    // the old class.
     PC1500Machine machine(PC1500Variant::PC1500A);
     std::string err;
     CHECK(presetroms::loadPC1500Rom(machine, "A04", testPresetRoms(), &err));
@@ -405,7 +405,7 @@ TEST(test_pc1600_ce158_and_ce1600p_exclusive) {
     CHECK(m.ce1600pAttached() && !m.ce158Attached());
     CHECK(m.attachCE158(rom.data(), rom.size()));
     CHECK(m.ce158Attached() && !m.ce1600pAttached());
-    // The preset side of the rule (LIB-6 AC-47): sharp_presets_tests.cpp.
+    // The preset side of the rule: sharp_presets_tests.cpp.
 }
 
 bool havePC1600Roms(const char* test) {
@@ -416,7 +416,7 @@ bool havePC1600Roms(const char* test) {
 }
 
 // A PC-1600 with the CE-158, NEW, MODE1, `program` typed, RUN: what the
-// preset of 0.8.1 did, typed on the old class (M-46).
+// preset of 0.8.1 did, typed on the old class.
 bool runPC1600Program(PC1600Machine& machine, const std::string& program) {
     std::string err;
     if (!presetroms::attachCE158(machine, testPresetRoms(), &err)) return false;

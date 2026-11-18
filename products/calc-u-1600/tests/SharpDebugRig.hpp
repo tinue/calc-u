@@ -11,7 +11,7 @@
 #include "sessions/AppSession.hpp"
 #include "sessions/MachineSession.hpp"
 
-// LIB-10 1600 (design §10.10): a library app session in virtual time with
+// A library app session in virtual time with
 // only the DebuggerPart of Calc-U-1600 (app/SharpDebuggerSetup) around a
 // Sharp machine the test builds -- a PC-1500A without ROM for the memtest
 // fixture, or one from the ROM set. The run control is the gate of every

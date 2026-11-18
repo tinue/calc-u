@@ -6,7 +6,7 @@
 
 #include "sessions/Value.hpp"
 
-// JSON text to and from calcu::sessions::Value (C1600-3 design §3.1, D-4):
+// JSON text to and from calcu::sessions::Value:
 // the DAP's messages. A number without a fraction or an exponent is an
 // integer, any other a double; objects keep their members in order. The
 // DAP is the only user; a second one moves this to library/formats/.

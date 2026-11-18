@@ -15,7 +15,7 @@
 // ROM loading for the ROM-gated tests. Run from the product folder
 // (CoreTests' working directory): the images live in roms/. Every ROM a
 // test needs comes from the ROM set of roms/, looked up once through the
-// library's lookup (LIB-12) as the app does; the helpers return null /
+// library's lookup as the app does; the helpers return null /
 // false when a file of the full set is missing, so a test can print SKIP
 // instead of failing.
 
@@ -36,7 +36,7 @@ inline const std::shared_ptr<const calcu::roms::RomSet>& testRomSet() {
 }
 
 // What the preset loaders get in the tests: the set, and the host drive's
-// own ROM from firmware/pc1600-hostdrive/ (roms.md Q-1).
+// own ROM from firmware/pc1600-hostdrive/ (it is not in the ROM set).
 inline const PresetRoms& testPresetRoms() {
     static const PresetRoms roms = [] {
         PresetRoms r{testRomSet(), nullptr};

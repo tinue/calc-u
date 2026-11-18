@@ -16,7 +16,7 @@ states and reports whether the calculator hangs in the redisplay loop
 
 Results: rom/fastmode.md; ROM side: rom/TI59-ROM-Guide.md § "Fast mode".
 
-Drives the harness (C59-9 AC-13, `calcu --product c59 serve`, tools/calcu59.py):
+Drives the harness (`calcu --product c59 serve`, tools/calcu59.py):
 a cold boot with a PC-100C for each run, the program by `c59 program`, the
 registers by `c59 data-registers`, the keys by `key-down`/`key-up` (as matrix
 codes), the run watched with `registers TMC0501` and `peek TMC0501 scom`,

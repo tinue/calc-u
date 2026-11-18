@@ -1,0 +1,14 @@
+# A plotter example is loaded,
+# and the paper panel appears under the plotter's name with marks on it. A
+# check scenario (CalcU1600Shots.plotter-example-paper-panel, Longer); format:
+# docs/developer/screenshots/README.md.
+out: ../../build/shots-check/plotter-example-paper-panel
+window: 1430x1280
+
+shots:
+  - name: plotter-example-paper-panel
+    preset: ../../examples/plotter/rectangles-1600.pc1600
+    steps:
+      - expect-panel: { name: paper-panel, title: CE-1600P, empty: false }
+      - capture: { target: paper-panel, file: plotter-example-paper-panel-paper.png }
+      - capture: { target: plot, file: plotter-example-paper-panel-copy.png }

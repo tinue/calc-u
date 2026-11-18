@@ -4,7 +4,7 @@
 #include "../Machine/StateRecords.hpp"
 #include "ExpansionCard.hpp"
 
-// One card's record of the machine state (C1600-5 AC-13): whether a card
+// One card's record of the machine state: whether a card
 // is there, then its own fields (CardBase::saveState). A state saved with
 // a card where this machine has none, or the other way round, is refused.
 

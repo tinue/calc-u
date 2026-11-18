@@ -58,7 +58,7 @@ std::optional<std::vector<uint8_t>> moduleImage(const calcu::roms::RomSet& roms,
     if (!bytes) return std::nullopt;
     std::string error;
     TIModuleFile m = readModuleFile({reinterpret_cast<const char*>(bytes->data()), bytes->size()}, error);
-    if (!error.empty()) return std::nullopt;   // not reachable: the lookup read it (AC-6)
+    if (!error.empty()) return std::nullopt;   // not reachable: the lookup read it
     return std::move(m.rom);
 }
 

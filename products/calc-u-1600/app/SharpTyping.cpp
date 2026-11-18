@@ -39,9 +39,9 @@ std::vector<Press> pressesOf(const std::string& base, bool shift) {
     return out;
 }
 
-// AC-30, AC-34: an accented character on the PC-1600 is KBII, [SHIFT,] its
+// An accented character on the PC-1600 is KBII, [SHIFT,] its
 // key, KBII, by the latches of the moment (kbiiSequence); the closing KBII
-// must finish (AC-9). With KBII latched it is left out (an empty list).
+// must finish, even when live input drops the rest. With KBII latched it is left out (an empty list).
 std::vector<Press> kbiiPresses(const std::string& base, bool shift, const TypingSupport* s) {
     KeyLatches l;
     if (s) {
@@ -74,9 +74,9 @@ std::optional<std::vector<Press>> pc1600Char(char32_t c, const TypingSupport* s)
     return pressesOf(base, shift);
 }
 
-// AC-41: the model's key IDs in any case, `break` for `on`; nothing else
+// The model's key IDs in any case, `break` for `on`; nothing else
 // (`ent` is no longer a name). Every key ID is a name, the PC-1600's
-// `ctrl`, `kbii` and `bs` too (LIB-6 AC-44, user 2026-11-18).
+// `ctrl`, `kbii` and `bs` too.
 std::function<std::optional<std::vector<Press>>(std::string_view)> namesOf(const std::vector<std::string>& ids) {
     return [&ids](std::string_view n) -> std::optional<std::vector<Press>> {
         const std::string w = calcu::machine::lowerAscii(n);
@@ -91,23 +91,23 @@ TypingProfile sharpProfile(const char* model) {
     const bool pc1600 = std::string(model) == sharp::kPC1600;
     const auto rate = sharp::sharpCatalogue().model(ModelId{model})->tickRate;
     // A frame as the cores and the preset typers count it: rate / 60 whole
-    // ticks (kPC1500CyclesPerFrame), so a press is the 4 + 4 frames of today.
+    // ticks (kPC1500CyclesPerFrame), so a press is 4 + 4 frames.
     const auto frame = [rate](int n) -> Ticks { return static_cast<Ticks>(n) * (rate / 60); };
     TypingProfile p;
-    p.minHold = frame(4);   // D-10
+    p.minHold = frame(4);   // every press, live input too
     p.typed = calcu::typing::Cadence{frame(4), frame(4)};
-    p.readinessPoll = frame(1);   // D-7
+    p.readinessPoll = frame(1);   // a waiting press looks again each frame
     p.enter = KeyId{"enter"};
     if (pc1600) {
         const Ticks six = frame(6);
         p.extraGapAfter = [six](const KeyId& k) -> Ticks { return k.value == "shift" || k.value == "kbii" ? six : 0; };
-        p.queuedWaitsForReadiness = false;   // D-6
-        p.firstPressOfStep = calcu::typing::StartRule::KeyReadiness;   // AC-14 (C1600-1 AC-21)
+        p.queuedWaitsForReadiness = false;   // queued presses follow the cadence only, as the PC-1600's paste feeder did
+        p.firstPressOfStep = calcu::typing::StartRule::KeyReadiness;
         p.firstPressBound = calcu::typing::ticksOf(15.0, rate);
         p.charKeys = pc1600Char;
         p.name = namesOf(sharp::pc1600KeyIds());
     } else {
-        p.queuedWaitsForReadiness = true;   // AC-31, row 1600-8
+        p.queuedWaitsForReadiness = true;   // the ROM's WAIT_4_KB: key readiness is &7B0E bit 0 clear
         p.charKeys = pc1500Char;
         p.name = namesOf(sharp::pc1500KeyIds());
     }
@@ -143,7 +143,7 @@ const TypingProfile* typingProfile(const ModelId& m) {
 }
 
 std::optional<Mapped> SharpKeyboardMap::map(const HostKeyEvent& e) const {
-    // Command modifiers never type (AC-29): Command or Control on a Mac;
+    // Command modifiers never type: Command or Control on a Mac;
     // Control, Alt or the Windows key elsewhere, but Control+Alt (AltGr).
     const auto& mods = e.mods;
     if (mods.macHost) {

@@ -36,7 +36,7 @@ std::optional<std::string> moduleRomFile(std::string_view moduleID) {
     return std::string(moduleID) + ".rom.yaml";
 }
 
-// LIB-7 AC-47, C59-6 AC-8: the modules of slot-1 by their module files'
+// The modules of slot-1 by their module files'
 // `description`, no tooltip, in `menu-sort` order.
 calcu::media::ModuleListing tiModuleListing(const std::shared_ptr<const calcu::roms::RomSet>& roms) {
     auto meta = std::make_shared<std::map<std::string, ModuleMetadata>>();

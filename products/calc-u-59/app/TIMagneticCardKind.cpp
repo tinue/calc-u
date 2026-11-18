@@ -107,7 +107,7 @@ public:
             out.problem = why;
             return out;
         };
-        // EC-5: a mark for the byte order, or bytes that are not UTF-8.
+        // A mark for the byte order, or bytes that are not UTF-8.
         if (bytes.rfind("\xEF\xBB\xBF", 0) == 0 || !isValidUtf8(bytes)) return unreadable("It is not a text file in UTF-8.");
         YamlNode root;
         std::string error;
@@ -127,7 +127,7 @@ public:
             ver = 0;
         }
         if (ver <= 0) return unreadable("Its format-version is no number.");
-        if (ver < kMagneticCardFormatVersion) {   // LIB-7 AC-9
+        if (ver < kMagneticCardFormatVersion) {   // outdated
             out.status = ReadOutcome::Status::Outdated;
             out.info.formatVersion = ver;
             if (const YamlNode* n = root.find("card-name")) out.info.name = text(*n);
@@ -177,7 +177,7 @@ public:
         out.info.description = label->description;
         out.info.isTemplate = label->isTemplate;
         out.info.formatVersion = ver;
-        out.info.hasWriteProtect = false;   // AC-29: a bank's protection is the calculator's
+        out.info.hasWriteProtect = false;   // a bank's protection is the calculator's
         out.info.content = card;
         return out;
     }
@@ -195,7 +195,7 @@ public:
             description = l->description;
             cue = l->cueCard;
         }
-        if (w.source) {   // AC-5, EC-3: the file as it is, only the written side replaced
+        if (w.source) {   // the file as it is, only the written side replaced
             const ReadOutcome r = read(*w.source, {});
             if (r.status != ReadOutcome::Status::Read) {
                 problem = "Its file cannot be read" + (r.problem.empty() ? std::string(".") : ": " + r.problem);
@@ -293,8 +293,8 @@ const calcu::media::KindDecl& magneticCardKind() {
         k.words.armStep = "arm";
         k.words.inFileKey = "card";
         k.words.insertNeedsTime = true;
-        k.rereadBeforeWrite = true;   // D-3
-        k.offersNameAndSave = false;  // D-5
+        k.rereadBeforeWrite = true;   // the side not written stays as the file holds it
+        k.offersNameAndSave = false;  // an in-file card is saved only by `saveas:`
         k.replaceQuestion = "Replace card “{name}”? Its first write replaces both sides and the cue card.";
         return k;
     }();

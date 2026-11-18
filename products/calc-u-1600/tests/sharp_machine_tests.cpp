@@ -1,6 +1,6 @@
-// C1600-1 AC-1 to AC-21 and EC-1 to EC-3 (design §6, T2-T8): the Sharp
-// machines through the machine interface. AC-4 is the golden replay
-// (golden_runs_tests.cpp), AC-5 the core tests as they are.
+// The Sharp machines through the machine interface: emulated time,
+// operations, keys, key readiness, display and sound, places and
+// capabilities. The golden replay is golden_runs_tests.cpp.
 
 #include <algorithm>
 #include <set>
@@ -55,9 +55,9 @@ bool switchOff(Machine& m) {
 
 } // namespace
 
-// ---- T2: emulated time ----
+// ---- Emulated time ----
 
-TEST(c1600_1_ac1_tick_is_cpu_cycle_or_t_state) {
+TEST(tick_is_cpu_cycle_or_t_state) {
     const Catalogue& c = sharp::sharpCatalogue();
     CHECK_EQ(c.model(ModelId{"PC-1500"})->tickRate, PC1500Machine::kCpuHz);
     CHECK_EQ(c.model(ModelId{"PC-1500A"})->tickRate, TickRate{1'300'000});
@@ -77,7 +77,7 @@ TEST(c1600_1_ac1_tick_is_cpu_cycle_or_t_state) {
     }
 }
 
-TEST(c1600_1_ac2_whole_instructions_of_the_bus_owner) {
+TEST(whole_instructions_of_the_bus_owner) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
@@ -111,14 +111,14 @@ TEST(c1600_1_ac2_whole_instructions_of_the_bus_owner) {
                               !sharp::pc1600Of(*m)->isPoweredOff();
                  ++rep) {
                 const Ticks ran = m->advance(3);
-                // The step that switches the system off is one off slice (EC-2).
+                // The step that switches the system off is one off slice.
                 CHECK(ran >= 3 && (ran - 3 < 64 || (sharp::pc1600Of(*m)->isPoweredOff() && ran <= 256)));
             }
         }
     }
 }
 
-TEST(c1600_1_ac3_off_machine_counts_ticks_clock_runs_display_off) {
+TEST(off_machine_counts_ticks_clock_runs_display_off) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
@@ -139,7 +139,7 @@ TEST(c1600_1_ac3_off_machine_counts_ticks_clock_runs_display_off) {
     }
 }
 
-TEST(c1600_1_ec2_off_steps_256_on_1600_tick_by_tick_on_1500) {
+TEST(off_steps_256_on_1600_tick_by_tick_on_1500) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     auto p16 = bootedSharp(c, "PC-1600");
@@ -155,9 +155,9 @@ TEST(c1600_1_ec2_off_steps_256_on_1600_tick_by_tick_on_1500) {
     for (Ticks n : {Ticks{1}, Ticks{2}, Ticks{100}, Ticks{12345}}) CHECK_EQ(p15->advance(n), n);
 }
 
-// ---- T3: operations ----
+// ---- Operations ----
 
-TEST(c1600_1_ac6_reset_keeps_memory) {
+TEST(machine_reset_keeps_memory) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
@@ -171,7 +171,7 @@ TEST(c1600_1_ac6_reset_keeps_memory) {
     }
 }
 
-TEST(c1600_1_ac6_power_cycle_keeps_all_memory) {
+TEST(power_cycle_keeps_all_memory) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
@@ -187,7 +187,7 @@ TEST(c1600_1_ac6_power_cycle_keeps_all_memory) {
     }
 }
 
-TEST(c1600_1_ac6_cold_boot_empties_memory_and_ce151_ce155) {
+TEST(cold_boot_empties_memory_and_ce151_ce155) {
     SKIP_UNLESS(haveAll() && haveModelRoms("PC-1500"), "Sharp ROMs missing");
     const Catalogue c = catalogueWithModules();
     struct Case { const char* model; const char* module; };
@@ -214,7 +214,7 @@ TEST(c1600_1_ac6_cold_boot_empties_memory_and_ce151_ce155) {
     }
 }
 
-TEST(c1600_1_ac6_cold_boot_keeps_battery_module) {
+TEST(cold_boot_keeps_battery_module) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue c = catalogueWithModules();
     struct Case { const char* model; const char* module; };
@@ -229,7 +229,7 @@ TEST(c1600_1_ac6_cold_boot_keeps_battery_module) {
     }
 }
 
-TEST(c1600_1_ac6_operations_end_at_key_readiness) {
+TEST(operations_end_at_key_readiness) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
@@ -253,14 +253,14 @@ TEST(c1600_1_ac6_operations_end_at_key_readiness) {
     }
 }
 
-TEST(c1600_1_ac7_off_key_then_on_runs_again) {
+TEST(off_key_then_on_runs_again) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
         auto m = bootedSharp(c, model);
         CHECK(switchOff(*m));
         m->advance(secondsTicks(*m, 1));
-        CHECK(!m->readDisplay().on);   // AC-3 holds until `on`
+        CHECK(!m->readDisplay().on);   // stays off until `on`
         CHECK(!m->isKeyReady());
         m->keyDown(KeyId{"on"});
         m->advance(frameTicks(*m) * 4);
@@ -270,7 +270,7 @@ TEST(c1600_1_ac7_off_key_then_on_runs_again) {
     }
 }
 
-TEST(c1600_1_ac8_rtc_after_reset_and_cold_boot) {
+TEST(rtc_after_reset_and_cold_boot) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     const pp::ClockFields set{2026, 11, 15, std::nullopt, 13, 14, 15};
@@ -289,9 +289,8 @@ TEST(c1600_1_ac8_rtc_after_reset_and_cold_boot) {
     const pp::ClockFields r16 = clockOf(*p16)->read();
     CHECK(r16.month == 11 && r16.day == 15 && r16.hour == 13 && r16.minute == 14);
     // A cold boot lets the ROM clear it. The core keeps a seed from the host
-    // through the first boot after it (PC1600Machine::seedClock's guard), as
-    // today, so the clock set above survives one boot; the next cold boot
-    // clears it (qa-report: question on AC-8).
+    // through the first boot after it (PC1600Machine::seedClock's guard), so
+    // the clock set above survives one boot; the next cold boot clears it.
     p16->coldBoot();
     sharptest::bootRun(*p16);
     p16->coldBoot();
@@ -300,9 +299,9 @@ TEST(c1600_1_ac8_rtc_after_reset_and_cold_boot) {
     CHECK(cold.month == 1 && cold.day == 1 && cold.hour == 0 && cold.minute == 0);
 }
 
-// ---- T4: keys ----
+// ---- Keys ----
 
-TEST(c1600_1_ac9_pc1500_has_65_key_ids) {
+TEST(pc1500_has_65_key_ids) {
     for (const char* model : {"PC-1500", "PC-1500A"}) {
         const MachineDescriptor& d = *sharp::sharpCatalogue().model(ModelId{model});
         CHECK_EQ(d.keys.size(), std::size_t{65});
@@ -320,7 +319,7 @@ TEST(c1600_1_ac9_pc1500_has_65_key_ids) {
     }
 }
 
-TEST(c1600_1_ac10_pc1600_has_68_key_ids) {
+TEST(pc1600_has_68_key_ids) {
     const MachineDescriptor& d = *sharp::sharpCatalogue().model(ModelId{"PC-1600"});
     CHECK_EQ(d.keys.size(), std::size_t{68});
     std::set<std::string> ids;
@@ -331,7 +330,7 @@ TEST(c1600_1_ac10_pc1600_has_68_key_ids) {
         if (id != "on") CHECK(PC1600Keyboard::keyFromName(id) != PC1600Keyboard::Key::Unknown);
 }
 
-TEST(c1600_1_ac11_on_switches_on_and_breaks) {
+TEST(on_switches_on_and_breaks) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
@@ -346,7 +345,7 @@ TEST(c1600_1_ac11_on_switches_on_and_breaks) {
         runProgram(*m, "10 goto 10");
         m->advance(secondsTicks(*m, 0.5));
         // The PC-1500's key wait is not where a running program is; the
-        // PC-1600's readiness (design D-3) also counts a frame in which a
+        // PC-1600's readiness also counts a frame in which a
         // running program reads the key matrix.
         if (!p16) CHECK(!m->isKeyReady());
         m->keyDown(KeyId{"on"});
@@ -356,7 +355,7 @@ TEST(c1600_1_ac11_on_switches_on_and_breaks) {
         const std::string s = screen(*m);
         CHECK(s.find("BREAK") != std::string::npos);
         if (s.find("BREAK") == std::string::npos) std::fprintf(stderr, "  %s screen:\n%s\n", model, s.c_str());
-        // On a machine that is off it switches it on (AC-7).
+        // On a machine that is off it switches it on.
         CHECK(switchOff(*m));
         m->keyDown(KeyId{"on"});
         m->advance(frameTicks(*m) * 4);
@@ -365,7 +364,7 @@ TEST(c1600_1_ac11_on_switches_on_and_breaks) {
     }
 }
 
-TEST(c1600_1_ac12_two_keys_and_on_down_together) {
+TEST(two_keys_and_on_down_together) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     {
@@ -420,7 +419,7 @@ TEST(c1600_1_ac12_two_keys_and_on_down_together) {
     }
 }
 
-TEST(c1600_1_ec1_unknown_key_refused) {
+TEST(unknown_key_refused) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     auto m = buildSharp(c, "PC-1500A");
@@ -436,9 +435,9 @@ TEST(c1600_1_ec1_unknown_key_refused) {
     p16->keyUp(KeyId{"kbii"});
 }
 
-// ---- T5: key readiness ----
+// ---- Key readiness ----
 
-TEST(c1600_1_ac21_pc1500_ready_in_wait_4_kb_with_7b0e_bit0_clear) {
+TEST(pc1500_ready_in_wait_4_kb_with_7b0e_bit0_clear) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     auto m = bootedSharp(sharp::sharpCatalogue(), "PC-1500A");
     CHECK(runUntilKeyReady(*m));
@@ -455,7 +454,7 @@ TEST(c1600_1_ac21_pc1500_ready_in_wait_4_kb_with_7b0e_bit0_clear) {
     }
 }
 
-TEST(c1600_1_ac21_pc1500_not_ready_while_bit0_set_or_running) {
+TEST(pc1500_not_ready_while_bit0_set_or_running) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     auto m = bootedSharp(sharp::sharpCatalogue(), "PC-1500A");
     CHECK(runUntilKeyReady(*m));
@@ -475,7 +474,7 @@ TEST(c1600_1_ac21_pc1500_not_ready_while_bit0_set_or_running) {
     CHECK_EQ(ready, 0);
 }
 
-TEST(c1600_1_ac21_pc1600_ready_after_15_ready_frames) {
+TEST(pc1600_ready_after_15_ready_frames) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     bool ok = false;
@@ -508,9 +507,9 @@ TEST(c1600_1_ac21_pc1600_ready_after_15_ready_frames) {
     CHECK(!m->isKeyReady());
 }
 
-// ---- T6: display and sound ----
+// ---- Display and sound ----
 
-TEST(c1600_1_ac13_dots_and_indicator_names_per_model) {
+TEST(dots_and_indicator_names_per_model) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     const std::vector<std::string> p15 = {"BUSY", "SHIFT", "SMALL", "KANA", "DE", "G", "RAD",
@@ -536,10 +535,10 @@ TEST(c1600_1_ac13_dots_and_indicator_names_per_model) {
     }
 }
 
-TEST(c1600_1_ac14_buzzer_48000_mono_same_at_any_slicing) {
+TEST(buzzer_48000_mono_same_at_any_slicing) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
-    {   // Another rate is refused at build (design D-6).
+    {   // Another rate is refused at build.
         BuildRequest req{ModelId{"PC-1600"}, std::nullopt, {}, {}, 44100, nullptr};
         std::string error;
         CHECK(modelImages(c, req.model, std::nullopt, &req.roms, &error));
@@ -588,9 +587,9 @@ TEST(c1600_1_ac14_buzzer_48000_mono_same_at_any_slicing) {
     }
 }
 
-// ---- T7: places ----
+// ---- Places ----
 
-TEST(c1600_1_ac15_each_peripheral_only_through_places) {
+TEST(each_peripheral_only_through_places) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue c = catalogueWithModules();
     struct Case { const char* model; const char* id; const char* where; const char* wrong; };
@@ -622,7 +621,7 @@ TEST(c1600_1_ac15_each_peripheral_only_through_places) {
     }
 }
 
-TEST(c1600_1_ac17_first_peripheral_that_answers_wins_in_attach_order) {
+TEST(first_peripheral_that_answers_wins_in_attach_order) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     for (bool ce150First : {true, false}) {
@@ -645,7 +644,7 @@ TEST(c1600_1_ac17_first_peripheral_that_answers_wins_in_attach_order) {
     }
 }
 
-TEST(c1600_1_ac18_ce1600p_variant_keeps_memory_and_disk_side) {
+TEST(ce1600p_variant_keeps_memory_and_disk_side) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     bool ok = false;
@@ -655,7 +654,7 @@ TEST(c1600_1_ac18_ce1600p_variant_keeps_memory_and_disk_side) {
     FloppyFile disk;
     std::string err;
     CHECK(parseFloppyFile(calcu::testing::readText(std::string(cardsDir()) + "/formatted.floppy.yaml"), &disk, &err));
-    auto floppyPlace = [&]() -> calcu::media::MediaPlace* {   // LIB-7: the CE-1600F's media place
+    auto floppyPlace = [&]() -> calcu::media::MediaPlace* {   // the CE-1600F's media place
         for (const auto& e : m->capabilities(calcu::media::MediaPlace::kKind))
             if (auto* p = calcu::machine::capabilityAs<calcu::media::MediaPlace>(*m, e.id); p && p->id().value == "floppy")
                 return p;
@@ -672,7 +671,7 @@ TEST(c1600_1_ac18_ce1600p_variant_keeps_memory_and_disk_side) {
 
     // The variant change: one replace, then its power cycle. The disk goes
     // into the new drive at the off point, the same side up, as the session
-    // does it (swapCE1600PRom today).
+    // does it.
     const std::vector<std::uint8_t> image = imageOf(drive);
     const int side = drive ? drive->side().value_or(0) : 0;
     const ChangeResult r = m->replace(PeripheralId{"CE-1600P"}, request(c, "CE-1600P", "printer", VariantId{"Old"}, &ok), c);
@@ -680,7 +679,7 @@ TEST(c1600_1_ac18_ce1600p_variant_keeps_memory_and_disk_side) {
     CHECK(r.follows == AfterChange::PowerCycle);
     const Plugged now = m->plugged();
         const PlugEntry* e = pluggedAt(now, "printer");
-    CHECK(e && e->variant && e->variant->value == "Old");   // shows at once (D-2)
+    CHECK(e && e->variant && e->variant->value == "Old");   // shows at once
     sharp::sharpOf(*m)->atOffPoint([&] {
         if (auto* d = floppyPlace()) d->insert(std::make_shared<sharp::FloppyContent>(image), side);
     });
@@ -693,7 +692,7 @@ TEST(c1600_1_ac18_ce1600p_variant_keeps_memory_and_disk_side) {
     CHECK_EQ(m->plugged().byPlace.size(), std::size_t{1});
 }
 
-TEST(c1600_1_ec3_ce1601m_in_slot1_refused) {
+TEST(ce1601m_in_slot1_refused) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue c = catalogueWithModules();
     auto m = buildSharp(c, "PC-1600");
@@ -705,9 +704,9 @@ TEST(c1600_1_ec3_ce1601m_in_slot1_refused) {
     CHECK(!m->attach(moduleRequest("CE-1601M", "slot-2"), c).refused);
 }
 
-// ---- T8: capabilities ----
+// ---- Capabilities ----
 
-TEST(c1600_1_ac16_ce150_cassette_listed_on_pc1500) {
+TEST(ce150_cassette_listed_on_pc1500) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     const PeripheralDescriptor* ce150 = c.peripheral(PeripheralId{"CE-150"});
@@ -718,11 +717,11 @@ TEST(c1600_1_ac16_ce150_cassette_listed_on_pc1500) {
         const Plugged now = m->plugged();
         const PlugEntry* e = pluggedAt(now, "printer");
         CHECK(e && e->peripheral.value == "CE-150");
-        // The media place capability of the cassette is LIB-7's (M-47, LIB-1 D-1).
+        // The cassette's media place capability is the media library's.
     }
 }
 
-TEST(c1600_1_ac19_product_kinds_with_owners) {
+TEST(product_kinds_with_owners) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     auto ownerIs = [](const CapabilityEntry& e, const char* comp) {
@@ -754,7 +753,7 @@ TEST(c1600_1_ac19_product_kinds_with_owners) {
     CHECK(folder && folder->folder() == "/tmp");
     folder->setFolder("/var");
     CHECK(folder->folder() == "/var");
-    // Capability IDs are the same for machines built alike (LIB-1 AC-21).
+    // Capability IDs are the same for machines built alike.
     auto again = buildSharp(c, "PC-1600", std::nullopt, {hostDriveRequest(c, "/tmp")});
     std::vector<std::string> a, b;
     for (const auto& e : m->capabilities()) a.push_back(e.id.value);
@@ -762,7 +761,7 @@ TEST(c1600_1_ac19_product_kinds_with_owners) {
     CHECK(a == b);
 }
 
-TEST(c1600_1_ac20_display_on_slots_cassette_one_way_on_every_model) {
+TEST(display_on_slots_cassette_one_way_on_every_model) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue c = catalogueWithModules();
     for (const char* model : {"PC-1500A", "PC-1600"}) {
@@ -774,7 +773,7 @@ TEST(c1600_1_ac20_display_on_slots_cassette_one_way_on_every_model) {
         const PlugEntry* e = pluggedAt(now, "slot-1");   // the module in a slot: plugged()
         CHECK(e && e->peripheral.value == "CE-161");
         CHECK(sharptest::moduleIn(*m, 1) != nullptr);
-        // The cassette is the CE-150's or CE-1600P's media place (LIB-7, M-47): none without one.
+        // The cassette is the CE-150's or CE-1600P's media place: none without one.
         CHECK(calcu::machine::first<sharp::TapeDeckAccess>(*m) == nullptr);
     }
 }

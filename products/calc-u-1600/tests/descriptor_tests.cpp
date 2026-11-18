@@ -1,5 +1,4 @@
-// LIB-1 AC-34 to AC-41, the Calc-U-1600 column (LIB-1 design §6 P4, P5;
-// C1600-1 design T1, T9): the catalogue and the running machines against it.
+// The catalogue of Calc-U-1600 and the running machines against it.
 
 #include <algorithm>
 #include <set>
@@ -41,7 +40,7 @@ bool hasComponent(const MachineDescriptor& d, const char* id, Depth depth) {
 
 } // namespace
 
-TEST(lib1_ac34_models_variants_rates) {
+TEST(models_variants_rates) {
     const Catalogue& c = sharp::sharpCatalogue();
     CHECK_EQ(c.models().size(), std::size_t{3});
     const MachineDescriptor& p15 = model("PC-1500");
@@ -59,7 +58,7 @@ TEST(lib1_ac34_models_variants_rates) {
     CHECK(p15.family == p16.family);
 }
 
-TEST(lib1_ac35_dot_matrix_indicators_sound) {
+TEST(dot_matrix_indicators_sound) {
     for (const char* id : {"PC-1500", "PC-1500A", "PC-1600"}) {
         const MachineDescriptor& d = model(id);
         const bool p16 = std::string(id) == "PC-1600";
@@ -73,7 +72,7 @@ TEST(lib1_ac35_dot_matrix_indicators_sound) {
     }
 }
 
-TEST(lib1_ac36_connectors_pinouts_places_debug_targets) {
+TEST(connectors_pinouts_places_debug_targets) {
     for (const char* id : {"PC-1500", "PC-1500A"}) {
         const MachineDescriptor& d = model(id);
         const PinOutDescriptor* slot = pinOutOf(d, "slot-1");
@@ -81,7 +80,7 @@ TEST(lib1_ac36_connectors_pinouts_places_debug_targets) {
         CHECK(slot && slot->id.value == "PC-1500 memory slot");
         CHECK(d.place(PlaceName{"slot-1"}) && d.place(PlaceName{"slot-1"})->takesAtOnce == 1);
         CHECK(d.connector(ConnectorId{"40-pin"}) != nullptr);
-        // One pin-out per 60-pin place (LIB-4 D-11), each a chain: the places share
+        // One pin-out per 60-pin place, each a chain: the places share
         // the one bus connector, one peripheral each (takesAtOnce 1).
         for (const char* p : {"printer", "interface"}) {
             const PinOutDescriptor* bus = pinOutOf(d, p);
@@ -92,7 +91,7 @@ TEST(lib1_ac36_connectors_pinouts_places_debug_targets) {
         CHECK(pinOutOf(d, "bus-rom") && pinOutOf(d, "bus-rom")->takes == Takes::Chain);
         CHECK(d.place(PlaceName{"slot-2"}) == nullptr);
         CHECK(d.place(PlaceName{"host-drive"}) == nullptr);
-        CHECK_EQ(d.places.size(), std::size_t{4});   // and bus-rom (C1600-4 AC-10)
+        CHECK_EQ(d.places.size(), std::size_t{4});   // and bus-rom
         CHECK(d.place(PlaceName{"bus-rom"}) && d.place(PlaceName{"bus-rom"})->connector.value == "60-pin");
         CHECK(d.debugTargets == (std::vector<DebugTargetId>{DebugTargetId{"LH5801"}}));
     }
@@ -108,17 +107,17 @@ TEST(lib1_ac36_connectors_pinouts_places_debug_targets) {
         CHECK(d.place(PlaceName{p})->connector.value == "60-pin");
     }
     CHECK(pinOutOf(d, "bus-rom") && pinOutOf(d, "bus-rom")->takes == Takes::Chain);
-    CHECK_EQ(d.places.size(), std::size_t{6});   // and bus-rom (C1600-4 AC-10)
+    CHECK_EQ(d.places.size(), std::size_t{6});   // and bus-rom
     CHECK(d.place(PlaceName{"bus-rom"}) && d.place(PlaceName{"bus-rom"})->connector.value == "60-pin");
     CHECK(d.connector(ConnectorId{"rs232c"}) != nullptr);
     CHECK(d.debugTargets == (std::vector<DebugTargetId>{DebugTargetId{"SC7852"}, DebugTargetId{"LH5803"}}));
 }
 
-TEST(lib1_ac37_module_slots_and_components) {
+TEST(module_slots_and_components) {
     for (const char* id : {"PC-1500", "PC-1500A", "PC-1600"}) {
         const MachineDescriptor& d = model(id);
         // Each module slot takes battery-backed modules, a kind of medium
-        // held by a module slot (LIB-7 D-1, D-22): the module is a
+        // held by a module slot: the module is a
         // peripheral there, so the slot is no media place of the descriptor.
         bool slots = false;
         for (const auto& p : d.places) {
@@ -132,7 +131,7 @@ TEST(lib1_ac37_module_slots_and_components) {
         for (const auto& c : d.components)
             if (c.depth == Depth::Folded) CHECK(c.foldedInto.has_value());
     }
-    // The battery-backed modules are media of that kind (LIB-7 AC-37).
+    // The battery-backed modules are media of that kind.
     const Catalogue c = catalogueWithModules();
     calcu::machine::Catalogue copy = c;
     const auto kinds = cu1600::mediaKinds("frontends/qt6/resources/cards", copy);
@@ -142,7 +141,7 @@ TEST(lib1_ac37_module_slots_and_components) {
         CHECK(module->isMedium(*c.peripheral(PeripheralId{"CE-1600M"})));
         CHECK(!module->isMedium(*c.peripheral(PeripheralId{"CE-151"})));
     }
-    // machine.md, fit table, "Depth today".
+    // The components of each model and how deeply each is emulated.
     const MachineDescriptor& p15 = model("PC-1500");
     CHECK(hasComponent(p15, "LH5801", Depth::Separate) && hasComponent(p15, "keyboard", Depth::Separate));
     CHECK(hasComponent(p15, "LH5811", Depth::Folded) && hasComponent(p15, "lcd", Depth::Functional));
@@ -152,8 +151,8 @@ TEST(lib1_ac37_module_slots_and_components) {
     CHECK(hasComponent(p16, "LR38041", Depth::Folded) && hasComponent(p16, "rs232c", Depth::Separate));
 }
 
-TEST(lib1_ac38_rom_entries_per_variant) {
-    // LIB-12 AC-12: the fetch list of roms/fetch_roms.sh, file names and md5.
+TEST(rom_entries_per_variant) {
+    // The fetch list of roms/fetch_roms.sh, file names and md5.
     const MachineDescriptor& p15 = model("PC-1500");
     CHECK(p15.romsFor(VariantId{"A01"}).at(0).fileName == "PC-1500_A01.ROM");
     CHECK(p15.romsFor(VariantId{"A01"}).at(0).md5 == "fbc55a9a8743e619b7709721ff5bcbff");
@@ -173,16 +172,15 @@ TEST(lib1_ac38_rom_entries_per_variant) {
     }
     CHECK(p16.romsFor(VariantId{"New"}).at(0).md5 == "404bf6f2df489e09649167078acd9a25");
     CHECK(p16.romsFor(VariantId{"Old"}).at(5).md5 == "6005b6420bd5e191e81a1562f3242ec9");
-    // The bundled files match the descriptor's md5 is LIB-12's check (M-27).
 }
 
-TEST(lib1_ac39_peripheral_descriptors) {
+TEST(peripheral_descriptors) {
     SKIP_UNLESS(std::filesystem::exists(std::string(cardsDir()) + "/ce161.module.yaml"), "module definitions missing");
     const Catalogue c = catalogueWithModules();
     auto p = [&](const char* id) { return c.peripheral(PeripheralId{id}); };
     for (const char* m : {"CE-151", "CE-155", "CE-161", "CE-1638", "CE-163F", "CE-1600M", "CE-1601M", "superRAM"})
         CHECK(p(m) != nullptr);
-    const bool ce502b = testRomSet() != nullptr;   // from the ROM set (LIB-12 AC-14)
+    const bool ce502b = testRomSet() != nullptr;   // from the ROM set
     if (ce502b) CHECK(p("CE-502B") != nullptr);
     CHECK_EQ(c.peripherals().size(), std::size_t(ce502b ? 14 : 13));   // 4, the bus ROM + the nine modules
 
@@ -220,7 +218,7 @@ TEST(lib1_ac39_peripheral_descriptors) {
     CHECK(c.place(ModelId{"PC-1600"}, PlaceName{"host-drive"}).has_value());
 }
 
-TEST(lib1_ac41_module_fit_table) {
+TEST(module_fit_table) {
     SKIP_UNLESS(testRomSet() != nullptr, "no ROM set in roms/ (the CE-502B is fetched)");
     const Catalogue c = catalogueWithModules();
     struct Row { const char* module; bool p15, s1, s2; };
@@ -239,7 +237,7 @@ TEST(lib1_ac41_module_fit_table) {
     }
 }
 
-TEST(lib1_ac40_machines_conform) {
+TEST(machines_conform) {
     const Catalogue c = catalogueWithModules();
     struct Case { const char* model; std::vector<std::string> variants; };
     const Case cases[] = {{"PC-1500", {"A01", "A03", "A04"}}, {"PC-1500A", {"A04"}}, {"PC-1600", {"New", "Old"}}};
@@ -255,7 +253,7 @@ TEST(lib1_ac40_machines_conform) {
             CHECK(diff.empty());
         }
     SKIP_UNLESS(built > 0, "no Sharp ROM");
-    // With each peripheral of AC-39 plugged in where it fits.
+    // With each peripheral above plugged in where it fits.
     struct Plug { const char* model; std::vector<PeripheralRequest> peripherals; };
     std::vector<Plug> plugs;
     plugs.push_back({"PC-1500A", {request(c, "CE-150", "printer"), request(c, "CE-158", "interface"), moduleRequest("CE-161", "slot-1")}});
@@ -281,15 +279,15 @@ TEST(lib1_ac40_machines_conform) {
         for (const auto& d : diff) std::fprintf(stderr, "  %s: %s\n", pl.model, d.c_str());
         CHECK(diff.empty());
     }
-    // The media place clause (M-47, LIB-1 D-1): one MediaPlace per media place
-    // of the descriptors, checked in lib1_ac40_one_media_place_capability_per_media_place.
+    // The media places: one MediaPlace per media place
+    // of the descriptors, checked in one_media_place_capability_per_media_place.
 }
 
-// LIB-1 AC-40's media place clause (LIB-7 design §10.6 P10, D-1):
+// The media places:
 // media::checkMediaPlaces on each model, bare and with each peripheral
 // that has media places (the CE-150's cassette; the CE-1600P's cassette
 // and floppy drive); a battery-backed module in a slot is a module medium.
-TEST(lib1_ac40_one_media_place_capability_per_media_place) {
+TEST(one_media_place_capability_per_media_place) {
     const Catalogue c = catalogueWithModules();
     struct Plug { const char* model; std::vector<PeripheralRequest> peripherals; std::size_t places; };
     std::vector<Plug> plugs;

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds a product's Qt6 app (Release, Ninja) from the root CMake project
-# (ADR 0003) into build/app-<n>, the other product off (configured the
+# into build/app-<n>, the other product off (configured the
 # first time only), and starts it: on macOS the .app through `open`, else
 # the binary. The local development build; on macOS the Qt app is never
 # shipped, Windows and Linux packages come from CI.

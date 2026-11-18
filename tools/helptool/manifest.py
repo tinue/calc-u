@@ -1,5 +1,4 @@
-"""The manifests of a product's help (LIB-16 design §3.1) and the contract
-they are checked against (AC-1, AC-3)."""
+"""The manifests of a product's help (docs/formats/help.md §1)."""
 
 import re
 from pathlib import Path
@@ -8,7 +7,7 @@ from . import yamlsubset
 
 SHARED_DIR = Path("library/help")
 PICTURE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
-# Files of the help folders that are no part of the asset (C3).
+# Files of the help folders that are no part of the asset.
 ASIDE = {"help.yaml", "anchor_cases.txt", "settings-keys.txt"}
 
 
@@ -17,8 +16,8 @@ class HelpError(Exception):
 
 
 class Chapter:
-    def __init__(self, number, title, parts, follows):
-        self.number, self.title, self.parts, self.follows = number, title, tuple(parts), tuple(follows)
+    def __init__(self, number, title, parts):
+        self.number, self.title, self.parts = number, title, tuple(parts)
         self.shared = []    # Paths (absolute) of the shared files, in manifest order
         self.product = []   # Paths (absolute) of the product files, in manifest order
 
@@ -40,13 +39,13 @@ class Help:
         self.shared_manifest = shared_data
         self.product_manifest = data
         self.chapters = []
-        # AC-1, AC-3: the chapters, their parts and the specs a shared part
-        # follows are library/help/help.yaml's, in its order.
+        # The chapters and their parts are library/help/help.yaml's, in its
+        # order.
         product_chapters = data.get("chapters") or {}
         for c in shared_data.get("chapters") or []:
             if not isinstance(c, dict):
                 continue
-            chapter = Chapter(c.get("number"), c.get("title"), c.get("parts") or (), c.get("follows") or ())
+            chapter = Chapter(c.get("number"), c.get("title"), c.get("parts") or ())
             chapter.shared = [self.shared_dir / f for f in c.get("shared") or []]
             chapter.product = [product_dir / f for f in product_chapters.get(chapter.number) or []]
             self.chapters.append(chapter)
@@ -61,7 +60,7 @@ class Help:
                 yield c, f, False
 
     def version(self):
-        """The product's version as ReleaseIt reads it (design D-9): the
+        """The product's version as ReleaseIt reads it: the
         first match of its preset's pattern in the `version:` file."""
         if not self.version_from:
             raise HelpError(f"{self.product_dir / 'help.yaml'}: no version-from")

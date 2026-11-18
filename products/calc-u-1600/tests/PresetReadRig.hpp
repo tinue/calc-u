@@ -18,8 +18,8 @@
 #include "presets/Vocabulary.hpp"
 
 // Reading a preset with Calc-U-1600's rules and the library's reader, as
-// the product's PresetsPart does (LIB-6 §10.6, C1600-4 §6), without a
-// machine: for the criteria checked when a preset is read. The preset's
+// the product's PresetsPart does, without a machine: for what is checked
+// when a preset is read. The preset's
 // text and the files it names go into a temporary folder.
 
 namespace presettest {
@@ -29,7 +29,7 @@ struct PresetReadRig {
     calcu::machine::Catalogue catalogue = sharp::sharpCatalogue();
     cu1600::SharpPresetRules rules;
     calcu::presets::Vocabulary vocabulary;
-    std::unique_ptr<calcu::media::MediaPart> media;   // LIB-7: the media steps and the slot keys (M-47)
+    std::unique_ptr<calcu::media::MediaPart> media;   // the media steps and the slot keys
 
     explicit PresetReadRig(cu1600::SharpKeywordSetup setup = {}) : rules(std::move(setup)) {
         sharp::addModuleDefinitions(catalogue, "frontends/qt6/resources/cards");
@@ -58,7 +58,7 @@ struct PresetReadRig {
         const auto source = calcu::presets::folderSource(write(name, text), {});
         return calcu::presets::readPreset(*source, setup());
     }
-    // Without its folder (LIB-6 EC-5).
+    // Without its folder.
     std::variant<calcu::presets::LoadPlan, calcu::presets::ReadError> readContent(const std::string& text) {
         const auto source = calcu::presets::contentSource(text, "dropped.pc1600", {});
         return calcu::presets::readPreset(*source, setup());

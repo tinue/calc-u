@@ -52,15 +52,14 @@ BuildResult SharpMachineBuilder::build(const BuildRequest& req, const Catalogue&
     }
     // The bus ROMs after everything else, in list order: each goes in front
     // of the chain, so a later one is found before an earlier one and before
-    // a peripheral's ROM at the same place (C1600-4 AC-10, D-6).
+    // a peripheral's ROM at the same place.
     for (const bool busRoms : {false, true})
         for (const PeripheralRequest& p : req.peripherals) {
             if ((p.peripheral.value == kBusRom) != busRoms) continue;
             const ChangeResult r = machine->attach(p, catalogue);
             if (r.refused) return {nullptr, r.refused->missingRoms, r.refused->reason};
         }
-    // LIB-1 AC-42, LIB-18 D-3/D-23: a new machine is left as a cold boot
-    // leaves it (the adapter SharpBuildColdBoot goes, M-46).
+    // A new machine is left as a cold boot leaves it.
     machine->coldBoot();
     return {std::move(machine), {}, {}};
 }

@@ -1,5 +1,5 @@
-// LIB-3's Calc-U-59 column (design §6, P59-2 to P59-5): Calc-U-59 on the
-// library's app session, driven as a frontend drives it (AppSessionRig.hpp).
+// Calc-U-59 on the library's app session, driven as a frontend drives it
+// (SessionRig.hpp).
 
 #include "TestHarness.hpp"
 #include "../app/TIMagneticCardKind.hpp"
@@ -38,14 +38,14 @@ bool hasLog(SessionRig& r, const std::string& line) {
 std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
     const PayloadPtr* p = r.fe.mirror.state(t);
     if (!p || !*p) return 0;
-    // The product topics are sent when their value changed (LIB-3 AC-5): a
-    // new payload is a new value. The debug panel's topics (C59-4 AC-25): a serial, or a count of sets.
+    // The product topics are sent when their value changed: a new payload
+    // is a new value. The debug panel's topics: a serial, or a count of sets.
     if (const auto* x = payloadAs<TICpuDebug>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIHeatmap>(*p)) return x->serial;
     return reinterpret_cast<std::uintptr_t>(p->get());
 }
 
-// The control state's model and what is plugged into `place` (LIB-4).
+// The control state's model and what is plugged into `place`.
 Value controlValue(SessionRig& r) {
     const auto* c = r.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
     return c ? c->toValue() : Value();
@@ -69,7 +69,7 @@ std::string pluggedIn(SessionRig& r, const std::string& place) {
     }
     return {};
 }
-// A control's position in the control state's `controls` (LIB-4 AC-21).
+// A control's position in the control state's `controls`.
 bool controlOn(SessionRig& r, const std::string& place, const std::string& id) {
     const Value v = controlValue(r);
     const Value* cs = v.find("controls");
@@ -86,19 +86,19 @@ bool controlOn(SessionRig& r, const std::string& place, const std::string& id) {
 
 } // namespace
 
-// AC-29: what the fourteen change flags announced is in the mirror; each
+// What the fourteen change flags announced is in the mirror; each
 // flag's action moves its topic on.
-TEST(lib3_ac29_mirror_holds_every_change_flag) {
+TEST(mirror_holds_every_change_flag) {
     SessionRig r;
     for (const auto* t : {&calcu::control::kControlStateTopic, &topics::kCalcIndicator, &topics::kCueCard, &calcu::media::kMediaTopic,
                           &topics::kCalculatorDebug, &topics::kCpuDebug,
                           &topics::kHeatmap, &topics::kAsmOverlay, &topics::kDebugView})
         CHECK(r.fe.mirror.state(*t) != nullptr);
-    // Release prep 3: c59.led is c59.calc-indicator; c59.printer went (the
-    // PC-100C's place and its TRACE are the control state's, LIB-4 AC-21).
+    // No c59.led (the indicator is c59.calc-indicator) and no c59.printer (the
+    // PC-100C's place and its TRACE are the control state's).
     CHECK(r.fe.mirror.state(TopicName{"c59.led"}) == nullptr);
     CHECK(r.fe.mirror.state(TopicName{"c59.printer"}) == nullptr);
-    // The model and the module: LIB-4's control state (C59-8: c59.model went).
+    // The model and the module: the library's control state (no c59.model).
     CHECK_EQ(controlModel(r), std::string("TI-59"));
     CHECK_EQ(pluggedIn(r, "slot-1"), std::string("ML"));
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
@@ -116,7 +116,7 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
     CHECK(moves(topics::kCalcIndicator, [&] { r.tap(83); }));   // 5
     r.model("TI-59");
     r.runFor(100ms);
-    {   // CardChanged: the library's `media` topic (M-55, LIB-7 59); CueCardChanged: the card on show
+    {   // CardChanged: the library's `media` topic; CueCardChanged: the card on show
         const PayloadPtr before = *r.fe.mirror.state(calcu::media::kMediaTopic);
         CHECK(moves(topics::kCueCard, [&] {
             r.send(calcu::media::kStartNewCommand,
@@ -127,9 +127,8 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
         CHECK(media && media->place("card-reader") && media->place("card-reader")->holds);
         CHECK(r.state<TICueCardState>(topics::kCueCard)->onShow);
     }
-    // PrinterChanged: the PC-100C attached, TRACE through LIB-2's set-control
-    // (the paper panel's; Part E simplification E-3), both in the control
-    // state (release prep 3; LIB-4 AC-21)
+    // PrinterChanged: the PC-100C attached, TRACE through the library's
+    // set-control (the paper panel's), both in the control state
     CHECK(moves(calcu::control::kControlStateTopic, [&] {
         r.send(calcu::startup::kAttachCommand, Value::object({{"place", "printer"}, {"peripheral", "PC-100C"}}));
     }));
@@ -140,18 +139,17 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
         r.send(calcu::peripherals::kSetControlCommand, Value::object({{"peripheral", "PC-100C"}, {"control", "TRACE"}, {"on", true}}));
     }));
     CHECK(controlOn(r, "printer", "TRACE"));
-    // RunStateChanged: the library's `speed` and `busy` (c59.full-speed and the
-    // interim topic c59.run-state went in M-59, c59.web.run-state in E-3).
+    // RunStateChanged: the library's `speed` and `busy`.
     r.send(calcu::sessions::kSpeedCommand, Value::object({{"full", true}}));
     CHECK(r.state<BusyState>(kBusyTopic)->speed == calcu::pacing::Speed::Full);
     r.send(calcu::sessions::kSpeedCommand, Value::object({{"full", false}}));
     CHECK(r.state<BusyState>(kBusyTopic)->speed == calcu::pacing::Speed::Regular);
-    // What the debug panel shows: its product topics since M-56 (C59-4 AC-25).
+    // What the debug panel shows: its product topics.
     CHECK(moves(topics::kCpuDebug, [&] { r.send(commands::kShowCpuDebug, Value::object({{"on", true}})); }));
     CHECK(moves(topics::kHeatmap, [&] { r.send(commands::kHeatmapReset); }));
     CHECK(moves(topics::kAsmOverlay, [&] { r.send(commands::kAsmRun); }));   // "No ASM overlay loaded."
     CHECK(moves(topics::kDebugView, [&] { r.send(commands::kLogLevel, Value::object({{"level", "info"}})); }));
-    // The trace and the pause are the library's topics since M-53 (LIB-10).
+    // The trace and the pause are the library's topics.
     r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
     CHECK(r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);
     r.send(calcu::debugger::kTraceCommand, Value::object({{"off", true}}));
@@ -160,11 +158,11 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
     CHECK(r.state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic)->paused);
 }
 
-// AC-30: an error is a notice, a diagnostic a line of the log.
-TEST(lib3_ac30_error_is_notice_diagnostic_is_log) {
+// An error is a notice, a diagnostic a line of the log.
+TEST(error_is_notice_diagnostic_is_log) {
     SessionRig r;
     // An error of the part's flows: the constant memory file of the TI-58C
-    // built is outdated (C59-3 EC-2).
+    // built is outdated.
     std::ofstream(r.folder.path() / TIFileAccess::kConstantMemoryFile) << "format: ti58c-constant-memory\nram:\n  encoding: register-hex\n";
     r.model("TI-58C");
     r.frame();
@@ -174,16 +172,16 @@ TEST(lib3_ac30_error_is_notice_diagnostic_is_log) {
     CHECK(hasLog(r, "a developer line"));
 }
 
-// AC-30: the card and constant-memory files are the session's, in the save
+// The card and constant-memory files are the session's, in the save
 // folder, without a frontend.
-TEST(lib3_ac30_card_and_constant_memory_files_without_frontend) {
-    SessionRig r(Model::TI58C);   // built from the file (C59-3 AC-7): it writes it at the first change
+TEST(card_and_constant_memory_files_without_frontend) {
+    SessionRig r(Model::TI58C);   // built from the file: it writes it at the first change
     r.runFor(1s);
     const auto mem = r.folder.path() / TIFileAccess::kConstantMemoryFile;
     CHECK_EQ(std::string(TIFileAccess::kConstantMemoryFile), std::string("ti58c.memory.yaml"));
     CHECK(testroms::fs::exists(mem));
     CHECK_EQ(r.part().files().savePath("x"), (r.folder.path() / "x").string());
-    // The cards: the library's media part on the same save folder (M-55).
+    // The cards: the library's media part on the same save folder.
     SessionRig c;
     const std::string text = writeMagneticCardFile(TIMagneticCardData{}, "x", "", false, std::nullopt, "");
     const auto imported = c.part().mediaPart().importBytes(c.session().context(), "x.magnetcard.yaml", text, {});
@@ -191,25 +189,25 @@ TEST(lib3_ac30_card_and_constant_memory_files_without_frontend) {
     CHECK(testroms::fs::exists(c.folder.path() / "x.magnetcard.yaml"));
 }
 
-// AC-30: the module ID is no longer saved (row 59-9).
-TEST(lib3_ac30_module_id_not_saved) {
+// The module ID is not saved.
+TEST(module_id_not_saved) {
     SessionRig r;
     CHECK(r.attach("slot-1", "LE").done);
     CHECK_EQ(pluggedIn(r, "slot-1"), std::string("LE"));
     CHECK(testroms::fs::is_empty(r.folder.path()));   // nothing written for it
 }
 
-// AC-30: the step debug-panel: is a product message.
-TEST(lib3_ac30_show_debug_panel_is_product_message) {
+// The step debug-panel: is a product message.
+TEST(show_debug_panel_is_product_message) {
     SessionRig r;
     r.post(calcu::presets::kLoadPresetCommand,
            Value::object({{"content", "format-version: 2\nmodel: TI-59\nkeys:\n  - debug-panel: cpu\n"}, {"name", "p.ti59"}}));
     CHECK(r.until([&] { return !r.panels().empty(); }));
-    CHECK(!r.panels().empty() && r.panels()[0] == DebugPanel::Cpu);   // the product topic c59.debug-view (C59-4 AC-2)
+    CHECK(!r.panels().empty() && r.panels()[0] == DebugPanel::Cpu);   // the product topic c59.debug-view
 }
 
-// AC-32: a preset runs as an operation: busy says so, a second is refused.
-TEST(lib3_ac32_preset_load_is_busy_and_refuses_second) {
+// A preset runs as an operation: busy says so, a second is refused.
+TEST(preset_load_is_busy_and_refuses_second) {
     SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     const CallId id = r.post(calcu::presets::kLoadPresetCommand,
@@ -228,9 +226,9 @@ TEST(lib3_ac32_preset_load_is_busy_and_refuses_second) {
     CHECK_EQ(testroms::displayText(r.machine()), std::string("2"));   // 1 + 1 =
 }
 
-// AC-32: connecting or disconnecting the printer (a power cycle) is an
-// operation: LIB-18's attach and detach (row 59-39).
-TEST(lib3_ac32_printer_attach_is_operation) {
+// Connecting or disconnecting the printer (a power cycle) is an
+// operation: the library's attach and detach.
+TEST(printer_attach_is_operation) {
     SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     const CallId id = r.post(calcu::startup::kAttachCommand, Value::object({{"place", "printer"}, {"peripheral", "PC-100C"}}));
@@ -242,8 +240,8 @@ TEST(lib3_ac32_printer_attach_is_operation) {
     CHECK(r.machine().isKeyReady());
 }
 
-// AC-32: the display and the paper keep updating while a preset runs.
-TEST(lib3_ac32_updates_during_preset) {
+// The display and the paper keep updating while a preset runs.
+TEST(display_and_paper_update_during_preset) {
     SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     const CallId id = r.post(calcu::presets::kLoadPresetCommand,
@@ -252,7 +250,7 @@ TEST(lib3_ac32_updates_during_preset) {
                                             {"name", "p.ti59"}}));
     int ledSetsWhileBusy = 0, paperWhileBusy = 0;
     std::uint64_t led = serialOf(r, topics::kCalcIndicator);
-    // The paper: the library's stream `paper PC-100C` (LIB-8, M-53).
+    // The paper: the library's stream `paper PC-100C`.
     auto paperMessages = [&] {
         int n = 0;
         for (const auto& m : r.fe.log)
@@ -270,9 +268,9 @@ TEST(lib3_ac32_updates_during_preset) {
     CHECK(paperWhileBusy > 0);
 }
 
-// AC-33: no machine has sound, and none is asked for even of a frontend
+// No machine has sound, and none is asked for even of a frontend
 // that offers an audio sink.
-TEST(lib3_ac33_no_sound_messages_and_no_sink_stated) {
+TEST(no_sound_messages_and_no_sink_stated) {
     HostServices services;
     services.offered = {HostService::AudioSink};
     SessionRig r(Model::TI59, services);
@@ -286,9 +284,9 @@ TEST(lib3_ac33_no_sound_messages_and_no_sink_stated) {
     }
 }
 
-// C59-5 AC-8, C59-3 AC-6: suspend writes the TI-58C's memory at once and runs
-// nothing; continue runs again.
-TEST(c59_5_ac8_suspend_persists_and_stops_continue_runs) {
+// Suspend writes the TI-58C's memory at once and runs nothing; continue
+// runs again.
+TEST(suspend_persists_and_stops_continue_runs) {
     SessionRig r(Model::TI58C);
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     r.runFor(1s);   // the first change written

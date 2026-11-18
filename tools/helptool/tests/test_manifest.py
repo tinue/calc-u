@@ -1,4 +1,4 @@
-"""LIB-16 L1: the manifests (AC-1); the manifest subset of YAML."""
+"""The manifests and the manifest subset of YAML."""
 
 import unittest
 
@@ -7,7 +7,7 @@ from helptool.tests.support import REPO, HelpTestCase
 
 
 class ManifestTests(HelpTestCase):
-    def test_ac1_ten_chapters_in_order_with_their_parts(self):
+    def test_ten_chapters_in_order_with_their_parts(self):
         help_ = manifest.load(self.root, "demo")
         self.assertEqual([c.number for c in help_.chapters], list(range(1, 11)))
         self.assertEqual([c.title for c in help_.chapters],
@@ -21,35 +21,35 @@ class ManifestTests(HelpTestCase):
             self.assertEqual(parts[n], ("shared", "product"))
         self.assertPasses(self.tool("check", "demo"))
 
-    def test_ac1_ac3_the_repository_manifest_has_the_ten_chapters(self):
+    def test_the_repository_manifest_has_the_ten_chapters(self):
         # library/help/help.yaml is the tool's one list of the chapters; here
-        # it is held against AC-1's table and AC-3's specs.
+        # it is held against the table of docs/formats/help.md.
         help_ = manifest.load(REPO, "calc-u-1600")
         s, p, sp = ("shared",), ("product",), ("shared", "product")
-        self.assertEqual([(c.number, c.title, c.parts, c.follows) for c in help_.chapters], [
-            (1, "Introduction", p, ()),
-            (2, "Getting started", sp, ("LIB-14", "LIB-5")),
-            (3, "Models and machine control", s, ("LIB-18", "LIB-12")),
-            (4, "Media", sp, ("LIB-7", "LIB-13")),
-            (5, "Peripherals and paper", sp, ("LIB-2", "LIB-8")),
-            (6, "Presets", sp, ("LIB-6",)),
-            (7, "Debugger", sp, ("LIB-10",)),
-            (8, "Settings", sp, ("LIB-9",)),
-            (9, "Product topics", p, ()),
-            (10, "Reference", sp, ("LIB-6", "LIB-9")),
+        self.assertEqual([(c.number, c.title, c.parts) for c in help_.chapters], [
+            (1, "Introduction", p),
+            (2, "Getting started", sp),
+            (3, "Models and machine control", s),
+            (4, "Media", sp),
+            (5, "Peripherals and paper", sp),
+            (6, "Presets", sp),
+            (7, "Debugger", sp),
+            (8, "Settings", sp),
+            (9, "Product topics", p),
+            (10, "Reference", sp),
         ])
 
-    def test_ac1_a_chapter_out_of_order_or_with_other_parts_fails(self):
+    def test_a_chapter_out_of_order_or_with_other_parts_fails(self):
         self.replace(self.shared / "help.yaml", "number: 4, title: Media, parts: [shared, product]",
                      "number: 4, title: Media, parts: [shared, extra]")
         self.assertFailsWith(self.tool("check", "demo"), "chapter 4 has the parts ['shared', 'extra']")
         self.replace(self.shared / "help.yaml", "number: 4,", "number: 12,")
         self.assertFailsWith(self.tool("check", "demo"), "the chapters are not in order")
 
-    def test_ac1_a_product_part_of_a_shared_only_chapter_fails(self):
+    def test_a_product_part_of_a_shared_only_chapter_fails(self):
         self.write(self.product / "03-models.md", "# Models\n")
         self.replace(self.product / "help.yaml", "  8: [08-settings.md]", "  3: [03-models.md]\n  8: [08-settings.md]")
-        self.assertFailsWith(self.tool("check", "demo"), "chapter 3 (Models and machine control) has no product part by AC-1")
+        self.assertFailsWith(self.tool("check", "demo"), "chapter 3 (Models and machine control) has no product part by library/help/help.yaml")
 
     def test_yaml_subset_refuses_what_it_does_not_read(self):
         with self.assertRaises(yamlsubset.YamlError) as e:

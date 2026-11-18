@@ -16,10 +16,10 @@
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
 
-// Sharp machines built through the machine interface for the M-26 tests
+// Sharp machines built through the machine interface for the tests
 // (sharp_machine_tests, descriptor_tests, peripherals_tests). Run from
 // products/calc-u-1600 (CoreTests' working directory). The ROM images come
-// from the ROM set of roms/ (testRomSet(), LIB-12); a helper returns null /
+// from the ROM set of roms/ (testRomSet()); a helper returns null /
 // false when a file of the full set is missing, so a test can SKIP.
 
 namespace sharptest {
@@ -41,7 +41,7 @@ inline bool modelImages(const Catalogue& cat, const ModelId& model, const std::o
     return true;
 }
 // The images of a peripheral's variant: from the test ROM set, the host
-// drive's from firmware/pc1600-hostdrive/ (roms.md Q-1).
+// drive's from firmware/pc1600-hostdrive/ (it is not in the ROM set).
 inline bool peripheralImages(const Catalogue& cat, const PeripheralId& id, const std::optional<VariantId>& v,
                              std::vector<RomImage>* out, std::string* error) {
     const PeripheralDescriptor* d = cat.peripheral(id);
@@ -67,7 +67,7 @@ inline bool peripheralImages(const Catalogue& cat, const PeripheralId& id, const
 }
 
 // The catalogue with the bundled module definitions added: the folder's,
-// and the ROM set's (the CE-502B, LIB-12 AC-14).
+// and the ROM set's (the CE-502B).
 inline Catalogue catalogueWithModules() {
     Catalogue c = sharp::sharpCatalogue();
     sharp::addModuleDefinitions(c, cardsDir());
@@ -216,7 +216,7 @@ inline void runProgram(Machine& m, const std::string& line) {
 inline sharp::LoaderMemory& memoryOf(Machine& m) { return *calcu::machine::first<sharp::LoaderMemory>(m); }
 
 // The card in a module slot (from 1) as plugged() shows it, or nullptr (the
-// PC-1500 has one slot). Was sharp::legacy::moduleIn until M-51.
+// PC-1500 has one slot).
 inline const ExpansionCard* moduleIn(Machine& m, int slot) {
     if (slot == 2 && sharp::pc1500Of(m)) return nullptr;
     sharp::SharpMachine* s = sharp::sharpOf(m);

@@ -134,7 +134,7 @@ public:
     /// like the ROM's own symbol writer (bank 6 8220H).
     void mirrorPc1500StatusSet(int set, uint8_t value);
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): both
+    /// The machine state (Machine/StateRecords.hpp): both
     /// controllers with their RAM, the LCD clock, the status symbols.
     template <class Io>
     void stateIo(Io& io) {

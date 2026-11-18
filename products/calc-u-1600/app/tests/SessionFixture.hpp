@@ -1,6 +1,6 @@
 #pragma once
-// A test frontend for Calc-U-1600 on the library's app session (LIB-3
-// AC-29's kind): the product's session (makeSharpSession), a scripted wall
+// A test frontend for Calc-U-1600 on the library's app session: the
+// product's session (makeSharpSession), a scripted wall
 // clock, a Listener that keeps the topics, the replies by call, and helpers
 // that run a command to its end one host call at a time. ROMs and the bundled cards are
 // copied into a temporary bundle folder of the fixture's own (library/testing/
@@ -64,7 +64,7 @@ struct SessionFixture {
         for (const auto& dir : {fs::path("roms"), fs::path("frontends/qt6/resources/cards")})
             for (const auto& f : fs::directory_iterator(dir))
                 if (f.is_regular_file()) fs::copy_file(f.path(), bundle / f.path().filename());
-        // The host drive's own ROM, bundled beside the set (roms.md Q-1).
+        // The host drive's own ROM, bundled beside the set.
         const fs::path hostDrive = "firmware/pc1600-hostdrive/PC1600-P1-B7-HOSTDRIVE.bin";
         if (fs::exists(hostDrive)) fs::copy_file(hostDrive, bundle / hostDrive.filename());
         paths = std::make_unique<cu1600::AppPaths>(
@@ -87,7 +87,7 @@ struct SessionFixture {
             const auto t = fixedTime;
             o.hostTime = [t] { return t; };
         }
-        o.canMountHostFolder = hostDirectories;   // LIB-4 AC-18
+        o.canMountHostFolder = hostDirectories;
         app = cu1600::makeSharpSession(settings, *paths, std::move(o));
         listener.onMessage = [this](const sessions::Message& m) {
             messages.push_back(m);
@@ -140,7 +140,7 @@ struct SessionFixture {
         if (!app.session) open();
         return ok(cu1600::commands::kStart);
     }
-    // ---- LIB-18's machine control and LIB-6's load, as the frontends send them ----
+    // ---- The machine control and the preset load, as the frontends send them ----
     bool model(const char* name) { return ok(calcu::startup::kModelCommand, sessions::Value::object({{"name", name}})); }
     bool variant(const char* name) { return ok(calcu::startup::kVariantCommand, sessions::Value::object({{"name", name}})); }
     bool reset() { return ok(calcu::startup::kResetCommand); }
@@ -168,7 +168,7 @@ struct SessionFixture {
             for (const auto& e : m->plugged().byPlace) in = in || e.peripheral.value == peripheral;
         return in ? detach(peripheral) : attach(peripheral);
     }
-    // ---- LIB-7's media: the topic `media` and its commands, as the control bar sends them ----
+    // ---- The media: the topic `media` and its commands, as the control bar sends them ----
     std::shared_ptr<const calcu::media::MediaState> media() { return part().mediaPart().state(session().context()); }
     const calcu::media::PlaceState* mediaPlace(const std::string& place) {
         static std::shared_ptr<const calcu::media::MediaState> kept;   // the state the pointer is into
@@ -215,7 +215,7 @@ struct SessionFixture {
         }
         return part().typingPart().engine().idle();
     }
-    // ---- Typing (LIB-5): the typing part's commands, as a frontend sends them ----
+    // ---- Typing: the typing part's commands, as a frontend sends them ----
     sessions::CallId screenDown(const std::string& key, int pointer = 0) {
         return send(calcu::typing::kScreenKeyDown, sessions::Value::object({{"key", key}, {"pointer", pointer}}));
     }

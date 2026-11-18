@@ -60,7 +60,7 @@ struct DebugEvent {
 //
 // The CPU state at the last step boundary or idle entry, with the module fetch
 // latch of that moment and a count of boundaries (0 = none since reset). Read
-// through the product kind c59.calculator-state (C59-4 D-3).
+// through the product kind c59.calculator-state.
 
 struct TIStepBoundary {
     CpuFrame cpu;

@@ -1,4 +1,4 @@
-"""What the checks need of a Markdown file (LIB-16 design §2.1): headings,
+"""What the checks need of a Markdown file: headings,
 links, pictures and fenced blocks. No renderer."""
 
 import re
@@ -47,7 +47,7 @@ class Document:
                 fence = m.group(1)
                 self.fences.append((number, m.group(2)))
                 continue
-            # HTML comments are not prose (the `follows:` line among them).
+            # HTML comments are not prose.
             visible = line
             if in_comment:
                 end = visible.find("-->")

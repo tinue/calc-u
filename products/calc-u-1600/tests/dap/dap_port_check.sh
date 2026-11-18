@@ -1,5 +1,5 @@
 #!/bin/sh
-# C1600-3 EC-1, D-6 (design T13): the harness with `serve --dap` and a port
+# The harness with `serve --dap` and a port
 # outside 1024 to 65535 says so and ends with exit status 2; the server does
 # not listen. Run from the product directory with CALCU set to the harness.
 set -u

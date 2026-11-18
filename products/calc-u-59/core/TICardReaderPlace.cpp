@@ -21,7 +21,7 @@ calcu::media::MediaPlace::Inserted TICardReaderPlace::insert(calcu::media::Conte
     const TIMagneticCardData::Side& s = card->sides[static_cast<std::size_t>(which)];
     if (const auto* b = std::get_if<std::vector<std::uint8_t>>(&s)) bytes = *b;
     else if (const auto* def = std::get_if<cu59::TICardSideDef>(&s)) bytes = cu59::buildCardBank(*def, m_.m_hw.partitionProgramRegs());
-    // EC-2: a fresh side gives the ROM zeroes.
+    // A fresh side gives the ROM zeroes.
     m_.m_hw.insertCard(bytes.empty() ? nullptr : bytes.data(), bytes.size());
     m_content = std::move(c);
     m_side = which;
@@ -37,7 +37,7 @@ void TICardReaderPlace::takeOut() {
     m_side.reset();
     GivenBack back;
     back.content = m_content;
-    if (written.size() == cu59::kCardBankBytes) {   // D-8: a whole bank
+    if (written.size() == cu59::kCardBankBytes) {   // a whole bank
         auto card = std::make_shared<TIMagneticCardData>();
         if (const auto old = cardOf(m_content)) *card = *old;
         card->sides[static_cast<std::size_t>(passed)] = std::move(written);

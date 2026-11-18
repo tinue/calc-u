@@ -1,7 +1,6 @@
-// LIB-11 Part D, D.6 (H1 to H3; M-51): the harness's Calc-U-1600 entry
-// built through app/SharpAppPart (AC-20), `display-text` with the cursor cell
-// (AC-19), and every function of the tools of the pin through `calcu`
-// (AC-18, the exit check of M-51).
+// The harness's Calc-U-1600 entry built through app/SharpAppPart,
+// `display-text` with the cursor cell, and every function of v0.8.1's
+// command-line tools (pc1500_cli, pc1600_cli) through `calcu`.
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -33,11 +32,11 @@ std::string firstRow(const std::string& lcd) {
 
 } // namespace
 
-// ── H1: AC-20 ────────────────────────────────────────────────────────────
+// ── The entry ────────────────────────────────────────────────────────────
 
 // The run is the app session with the product's app layer, as the
 // frontends host it: its topics and commands are there.
-TEST(lib11_ac20_entry_runs_sharp_app_part) {
+TEST(entry_runs_sharp_app_part) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -45,23 +44,23 @@ TEST(lib11_ac20_entry_runs_sharp_app_part) {
     // SharpAppPart's own topics (c1600.lamps, c1600.serial-links) ...
     CHECK_EQ(r.line("state c1600.serial-links"), std::string("done 1\n{\"rs232c\":\"\",\"ce158\":\"\",\"moves\":0}\n"));
     CHECK(starts(r.line("state c1600.lamps"), "done 1\n{\"floppyMotor\":false"));
-    // ... LIB-4's control state with the product's rules (the paper panel of
-    // the plotters among the places' peripherals) and LIB-7's media.
+    // ... the control state with the product's rules (the paper panel of
+    // the plotters among the places' peripherals) and the media.
     const std::string control = r.line("state control-state");
     CHECK(starts(control, "done 1\n{\"models\":[{\"id\":\"PC-1500\""));
     CHECK(has(control, "\"model\":\"PC-1500A\""));
     CHECK(starts(r.line("state media"), "done 1\n{\"kinds\":[{\"kind\":\"battery-backed-module\""));
-    // SharpAppPart's commands: the host drive with its folder (C1600-5 AC-11).
-    calcu::testing::TempFolder folder("lib11-ac20");
+    // SharpAppPart's commands: the host drive with its folder.
+    calcu::testing::TempFolder folder("harness-entry-host-drive");
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
     CHECK_EQ(r.line("c1600 host-drive " + folder.str()), std::string("done\n"));
     CHECK(has(r.line("capabilities"), "place host-drive host-drive\n"));
 }
 
-// AC-20: the ROMs of roms/ through sharp::lookUpRoms and the module
+// The ROMs of roms/ through sharp::lookUpRoms and the module
 // definitions where the Qt6 frontend has them (frontends/qt6/resources/
 // cards/), with the ROM set's CE-502B.
-TEST(lib11_ac20_roms_and_module_definitions_as_the_frontends) {
+TEST(roms_and_module_definitions_as_the_frontends) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -70,15 +69,15 @@ TEST(lib11_ac20_roms_and_module_definitions_as_the_frontends) {
     for (const char* bundled : {"\"CE-1600M\"", "\"CE-1601M\"", "\"CE-161\"", "\"CE-1638\"", "\"CE-163F\"", "\"superRAM\"",
                                 "\"Formatted\"", "\"Blank\"", "\"Empty\""})
         CHECK(has(media, bundled));
-    CHECK(has(media, "\"module:CE-502B\""));   // the ROM set's module (LIB-12 AC-14)
+    CHECK(has(media, "\"module:CE-502B\""));   // the ROM set's module
     CHECK(has(media, "\"module:CE-151\"") && has(media, "\"module:CE-155\""));
     CHECK_EQ(r.line("attach slot-1 CE-502B"), std::string("done\n"));
     CHECK(has(r.line("capabilities"), "place slot-1 CE-502B\n"));
 }
 
-// ── H2: AC-19 ────────────────────────────────────────────────────────────
+// ── The display as text ──────────────────────────────────────────────────
 
-TEST(lib11_ac19_lcd_rows_indicators_not_text_off) {
+TEST(lcd_rows_indicators_not_text_off) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -99,7 +98,7 @@ TEST(lib11_ac19_lcd_rows_indicators_not_text_off) {
 // While the ROM reports the cursor, `display-text` gives ABC whatever phase of the
 // blink the display shows; when it does not, `display-text` reads the display as it
 // is. Sampled every 20 ms for a second.
-TEST(lib11_ac19_cursor_cell_read_as_text) {
+TEST(cursor_cell_read_as_text) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     for (const char* model : {"PC-1500A", "PC-1600"}) {
         Run r;
@@ -133,14 +132,13 @@ TEST(lib11_ac19_cursor_cell_read_as_text) {
     }
 }
 
-// ── H3: AC-18, the exit check of M-51 ───────────────────────────────────
+// ── The functions of v0.8.1's command-line tools ────────────────────────
 
-// One block per row of the table of AC-18 (LIB-11 design D.5): each function
-// of `pc1500_cli` and `pc1600_cli` at the pin through `calcu`, on the model
-// the row needs, with its reply.
-TEST(lib11_ac18_every_function_of_the_table) {
+// One block per function of v0.8.1's `pc1500_cli` and `pc1600_cli` through
+// `calcu`, on the model it needs, with its reply.
+TEST(every_function_of_the_table) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::testing::TempFolder out("lib11-ac18-out"), save("lib11-ac18-save");
+    calcu::testing::TempFolder out("harness-cli-functions-out"), save("harness-cli-functions-save");
     calcu::harness::RunOptions o;
     o.outputFolder = out.str();
     o.saveFolder = save.str();
@@ -148,36 +146,36 @@ TEST(lib11_ac18_every_function_of_the_table) {
     CHECK(r.ok());
     if (!r.ok()) return;
 
-    // --preset <file>: build a machine from a preset and run it (LIB-6).
+    // --preset <file>: build a machine from a preset and run it.
     CHECK_EQ(r.line("preset examples:basic/hanoi.pc1600"), std::string("done\n"));
     CHECK(starts(r.line("wait"), "done "));
     CHECK_EQ(r.line("expect Hanoy Towers"), std::string("done\n"));
-    // --check-preset <file>…, tools/check_presets.sh: presets read and checked (LIB-6).
+    // --check-preset <file>…, tools/check_presets.sh: presets read and checked.
     CHECK(starts(r.line("check-preset examples/basic/hanoi.pc1600 examples/interfaces/ce158_demo.pc1500a"), "done"));
-    // --rom, --ce1600p-rom: the variants (LIB-18).
+    // --rom, --ce1600p-rom: the variants.
     CHECK_EQ(r.line("variant Old"), std::string("done\n"));
     CHECK_EQ(r.line("attach printer CE-1600P:old"), std::string("done\n"));
     CHECK(has(r.line("capabilities"), "place printer CE-1600P:Old\n"));
-    // --run-after <ticks>, the run for a number of ticks: emulated time (LIB-11).
+    // --run-after <ticks>, the run for a number of ticks: emulated time.
     CHECK(starts(r.line("wait 1s"), "done 2\nticks: "));
-    // --lcd-text: the display as text (AC-10, AC-19).
+    // --lcd-text: the display as text.
     CHECK(has(r.line("display-text"), "\nindicators: "));
-    // --lcd-png: the display as an image, Copy Screen's (LIB-6).
+    // --lcd-png: the display as an image, Copy Screen's.
     CHECK_EQ(r.line("screenshot shot.png"), std::string("done\n"));
     CHECK(fs::exists(out.path() / "shot.png"));
-    // --wav <file>: the buzzer of the run as a WAV (LIB-11 `audio`).
+    // --wav <file>: the buzzer of the run as a WAV (`audio`).
     CHECK_EQ(r.line("audio " + (out.path() / "buzz.wav").string()), std::string("done\n"));
     r.line("key cl");
     r.line("type BEEP 1");
     r.line("wait 1s");
-    // --dump-mem <address>,<length>: memory as a hex dump (LIB-10).
+    // --dump-mem <address>,<length>: memory as a hex dump.
     CHECK(starts(r.line("peek SC7852 memory 0xF865 2"), "done 2\n0xf865: 0x"));
-    // --inspect <view>: an INSPECTOR view (C1600-5).
+    // --inspect <view>: an INSPECTOR view.
     CHECK(starts(r.line("c1600 inspect pointers"), "done "));
-    // --dump-basic: the BASIC pointers and the program area (C1600-5).
+    // --dump-basic: the BASIC pointers and the program area.
     CHECK(has(r.line("c1600 dump-basic"), "\nBASPRG_ST  $F865 = $"));
     // The summary after a run: registers, the last instructions, where the
-    // program counter spent its time (LIB-10).
+    // program counter spent its time.
     r.line("pause");
     CHECK(has(r.line("registers SC7852"), "\npc = 0x"));
     CHECK(starts(r.line("history SC7852 4"), "done "));
@@ -186,21 +184,21 @@ TEST(lib11_ac18_every_function_of_the_table) {
     r.line("wait 100ms");
     CHECK(starts(r.line("profile report 3"), "done "));
     CHECK_EQ(r.line("profile off"), std::string("done\n"));
-    // --tape-in, --tape-out: a cassette played and recorded (LIB-7; C1600-5).
+    // --tape-in, --tape-out: a cassette played and recorded.
     CHECK_EQ(r.line("c1600 cassette record " + (out.path() / "tape.wav").string()), std::string("done\n"));
     CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
     CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
     CHECK_EQ(r.line("cassette { name: Empty }"), std::string("done\n"));   // the bundled blank tape
     CHECK(starts(r.line("c1600 cassette status"), "done 2\ncassette: recording "));
     // --save-dir, --modules-dir: the save folder; the bundled module
-    // definitions (LIB-11 AC-8, LIB-7).
+    // definitions.
     CHECK_EQ(r.line("saveas { place: cassette, as: live, name: Mine }"), std::string("done\n"));
     CHECK(fs::exists(save.path() / "Cassettes" / "Mine.cassette.yaml"));
     CHECK(has(r.line("media"), "\"CE-1600M\""));
 
     // --ce158-pty, --ce158-rx, --ce158-rx-hold, --ce158-tx: the CE-158's
-    // serial port (C1600-5).
-    calcu::testing::TempFolder dir("lib11-ac18-ce158");
+    // serial port.
+    calcu::testing::TempFolder dir("harness-cli-functions-ce158");
     { std::ofstream(dir.path() / "in.txt", std::ios::binary) << "HELLO\r"; }
     CHECK_EQ(r.line("model PC-1500A"), std::string("done\n"));
     CHECK_EQ(r.line("attach interface CE-158"), std::string("done\n"));

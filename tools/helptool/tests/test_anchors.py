@@ -1,4 +1,4 @@
-"""LIB-16 L2: anchors by GitHub's rule (AC-15), against library/help/anchor_cases.txt."""
+"""Anchors by GitHub's rule, against library/help/anchor_cases.txt."""
 
 import unittest
 
@@ -25,7 +25,7 @@ def cases():
 
 
 class AnchorTests(unittest.TestCase):
-    def test_ac15_every_line_of_anchor_cases(self):
+    def test_every_line_of_anchor_cases(self):
         groups = cases()
         self.assertGreater(sum(len(g) for g in groups), 10)
         for group in groups:

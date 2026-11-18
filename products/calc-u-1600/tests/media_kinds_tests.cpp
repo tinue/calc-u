@@ -1,5 +1,4 @@
-// LIB-7, the Calc-U-1600 column (design §10.6 P1, P5): the three kinds of
-// medium and their codecs (app/SharpMediaKinds; AC-37, AC-41, AC-42) and
+// The three kinds of medium and their codecs (app/SharpMediaKinds) and
 // the tapes through the harness (the media part on the run's save folder).
 // The files are read and written through the codecs, as the library does.
 
@@ -60,9 +59,9 @@ std::string writeOne(const media::KindDecl& k, const media::MediumCodec::Write& 
     return files.empty() ? std::string() : files.front().bytes;
 }
 
-// ── P1: the codecs (AC-37, AC-41) ───────────────────────────────────────
+// ── The codecs ───────────────────────────────────────────────────────────
 
-TEST(lib7_ac37_three_kinds_suffixes_versions_name_keys) {
+TEST(three_kinds_suffixes_versions_name_keys) {
     const Kinds k;
     CHECK_EQ(k.kinds.size(), std::size_t{3});
     CHECK_EQ(k[cu1600::kModuleKind].suffix, std::string(".module.yaml"));
@@ -85,7 +84,7 @@ TEST(lib7_ac37_three_kinds_suffixes_versions_name_keys) {
     CHECK(t.status == ReadOutcome::Status::Read && t.info.name == "Empty" && t.info.isTemplate);
 }
 
-TEST(lib7_ac37_floppy_v2_sides_0_1_v1_outdated_with_hint) {
+TEST(floppy_v2_sides_0_1_v1_outdated_with_hint) {
     const Kinds k;
     const media::KindDecl& floppy = k[cu1600::kFloppyKind];
     std::vector<std::uint8_t> image(CE1600FCard::kImageSize, 0);
@@ -113,7 +112,7 @@ TEST(lib7_ac37_floppy_v2_sides_0_1_v1_outdated_with_hint) {
     CHECK(floppy.codec->read(mixed, {}).status == ReadOutcome::Status::Unreadable);
 }
 
-TEST(lib7_ac37_card_v1_read_and_written) {
+TEST(card_v1_read_and_written) {
     const Kinds k;
     const media::KindDecl& module = k[cu1600::kModuleKind];
     const std::string source = text(fs::path(kCards) / "ce1600m.module.yaml");
@@ -128,14 +127,14 @@ TEST(lib7_ac37_card_v1_read_and_written) {
     const std::string saved = writeOne(module, w);
     const ReadOutcome again = module.codec->read(saved, {});
     CHECK(again.status == ReadOutcome::Status::Read && again.info.name == "Mine" && !again.info.isTemplate);
-    CHECK(saved.find("\nsaved: 2026-11-16T10:00:00Z\n") != std::string::npos);   // ledger 1600-51
+    CHECK(saved.find("\nsaved: 2026-11-16T10:00:00Z\n") != std::string::npos);
     CHECK(saved.find("\nformat: memory-module\nformat-version: 1\n") != std::string::npos);
     CHECK(saved.rfind("# Calc-U-1600 memory module instance -- generated from ", 0) == 0);
-    // A definition without a battery is a module, not a medium (D-9).
+    // A definition without a battery is a module, not a medium.
     CHECK(module.codec->read(text(fs::path(kCards) / "ce151.module.yaml"), {}).status == ReadOutcome::Status::NotMedium);
 }
 
-TEST(lib7_ac41_card_file_kept_but_content_name_template_mark) {
+TEST(card_file_kept_but_content_name_template_mark) {
     const Kinds k;
     const media::KindDecl& module = k[cu1600::kModuleKind];
     const std::string source = text(fs::path(kCards) / "ce1600m.module.yaml");
@@ -166,7 +165,7 @@ TEST(lib7_ac41_card_file_kept_but_content_name_template_mark) {
     CHECK(writeOne(module, w).find("template: true") != std::string::npos);
 }
 
-TEST(lib7_ac41_disk_written_whole_description_kept) {
+TEST(disk_written_whole_description_kept) {
     const Kinds k;
     const media::KindDecl& floppy = k[cu1600::kFloppyKind];
     const std::string source = text(fs::path(kCards) / "formatted.floppy.yaml");
@@ -187,9 +186,9 @@ TEST(lib7_ac41_disk_written_whole_description_kept) {
     CHECK(a && b && a->image == b->image);
 }
 
-// AC-9 (ledger 1600-54): the outdated-file notice names the User Guide's
+// The outdated-file notice names the User Guide's
 // page and heading where each format is described.
-TEST(lib7_ac9_outdated_notice_names_the_user_guide) {
+TEST(outdated_notice_names_the_user_guide) {
     const Kinds k;
     CHECK_EQ(media::Shelf::outdatedHint(k[cu1600::kModuleKind], 0),
              std::string("The module definition format version 0 is outdated: the current version is 1, described in the "
@@ -202,10 +201,10 @@ TEST(lib7_ac9_outdated_notice_names_the_user_guide) {
                          "User Guide, \"Media files\", \"Cassette definition\"."));
 }
 
-// AC-41 (ledger 1600-54): a cassette or disk name with a '"' or a line end
+// A cassette or disk name with a '"' or a line end
 // would make the file unreadable; the writer refuses it, as the magnetic
 // card's does.
-TEST(lib7_ac41_cassette_and_disk_name_without_quote) {
+TEST(cassette_and_disk_name_without_quote) {
     const Kinds k;
     media::MediumCodec::Write w;
     w.fileStem = "Bad";
@@ -222,9 +221,9 @@ TEST(lib7_ac41_cassette_and_disk_name_without_quote) {
     }
 }
 
-// ── P5: tapes (AC-42) ───────────────────────────────────────────────────
+// ── Tapes ────────────────────────────────────────────────────────────────
 
-TEST(lib7_ac42_definition_with_wav_is_a_medium) {
+TEST(definition_with_wav_is_a_medium) {
     const Kinds k;
     const media::KindDecl& tape = k[cu1600::kCassetteKind];
     calcu::testing::TempFolder tmp("calcu1600-tape-codec");
@@ -241,7 +240,7 @@ TEST(lib7_ac42_definition_with_wav_is_a_medium) {
     CHECK(r.info.companions.size() == 1 && r.info.companions[0] == "sounds/games.wav");
     const auto* c = dynamic_cast<const sharp::TapeContent*>(r.info.content.get());
     CHECK(c && c->wav == wav);
-    // Written back in place: the same sound file (D-26); a copy: beside it.
+    // Written back in place: the same sound file; a copy: beside it.
     media::MediumCodec::Write w;
     w.name = "Games";
     w.fileStem = "Games";
@@ -265,8 +264,8 @@ TEST(lib7_ac42_definition_with_wav_is_a_medium) {
     CHECK(lost.status == ReadOutcome::Status::Unreadable && lost.problem.find("none.wav") != std::string::npos);
 }
 
-// AC-42 (ledger 1600-51): the old cassette names are not read.
-TEST(lib7_ac42_old_format_cassette_tape_refused) {
+// The old cassette names are not read.
+TEST(old_format_cassette_tape_refused) {
     const Kinds k;
     const media::KindDecl& tape = k[cu1600::kCassetteKind];
     const ReadOutcome r =
@@ -277,9 +276,9 @@ TEST(lib7_ac42_old_format_cassette_tape_refused) {
     CHECK_EQ(tape.words.insertStep, std::string("cassette"));
 }
 
-// AC-48: `format: memory-module` -- written always, read when there, another
+// `format: memory-module` -- written always, read when there, another
 // value refused, a file without it (the CE-502B's) still read.
-TEST(lib7_ac48_module_definition_format_key) {
+TEST(module_definition_format_key) {
     const Kinds k;
     const media::KindDecl& module = k[cu1600::kModuleKind];
     const std::string source = text(fs::path(kCards) / "ce1600m.module.yaml");
@@ -304,9 +303,9 @@ TEST(lib7_ac48_module_definition_format_key) {
     CHECK(writeOne(module, w).find("\nformat: memory-module\nformat-version: 1\n") != std::string::npos);
 }
 
-// AC-49: every medium's file starts with its comment line and carries
+// Every medium's file starts with its comment line and carries
 // `saved:`, the time of the write.
-TEST(lib7_ac49_cassette_comment_and_saved) {
+TEST(cassette_comment_and_saved) {
     const Kinds k;
     const media::KindDecl& tape = k[cu1600::kCassetteKind];
     media::MediumCodec::Write w;
@@ -332,7 +331,7 @@ TEST(lib7_ac49_cassette_comment_and_saved) {
 
 // The cassette place: a blank tape records, the sound stays in the place
 // and is written when the motor stops (takeWriteNow) -- the deck's part.
-TEST(lib7_ac42_cassette_place_blank_records_tape_with_sound_plays) {
+TEST(cassette_place_blank_records_tape_with_sound_plays) {
     TapeDeck deck(1'000'000.0);
     sharp::CassettePlace place(deck);
     CHECK(place.writesWhenAsked());
@@ -360,8 +359,8 @@ TEST(lib7_ac42_cassette_place_blank_records_tape_with_sound_plays) {
 // Through the harness: the empty tape, a recording kept in the place,
 // Name & Save (`saveas`) writing the definition and the WAV side by side,
 // a WAV alone not a tape, a hand-written definition around an existing
-// WAV, `cassette:` and `eject: cassette` (AC-42; LIB-7 AC-26).
-TEST(lib7_ac42_tape_flow_through_the_harness) {
+// WAV, `cassette:` and `eject: cassette`.
+TEST(tape_flow_through_the_harness) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     presettest::HarnessPreset h;
     CHECK(h.ok());
@@ -393,13 +392,13 @@ TEST(lib7_ac42_tape_flow_through_the_harness) {
     CHECK(h.line("saveas { place: cassette, as: live, name: Rec }").rfind("done", 0) == 0);
     m = h.line("media");
     CHECK(m.find("\"Rec.cassette.yaml\"") != std::string::npos);
-    // Its files: the definition and, beside it, its WAV (D-13: exported as they lie).
+    // Its files: the definition and, beside it, its WAV (exported as they lie).
     const fs::path out = h.folder.path() / "out" / "Rec.cassette.yaml";
     fs::create_directories(out.parent_path());
     CHECK(h.line("media export cassette Rec " + out.generic_string()).rfind("done", 0) == 0);
     CHECK(text(out).find("audio: { file: \"Rec.wav\" }") != std::string::npos);
     CHECK(fs::exists(out.parent_path() / "Rec.wav") && fs::file_size(out.parent_path() / "Rec.wav") > 10u * 96000u);
-    // A WAV on its own in the tape folder is no tape (row 1600-18).
+    // A WAV on its own in the tape folder is no tape.
     CHECK(m.find(".wav\"") == std::string::npos);
     // The saved tape plays back what was recorded.
     CHECK(h.line("eject cassette").rfind("done", 0) == 0);

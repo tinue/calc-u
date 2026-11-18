@@ -1,5 +1,3 @@
-<!-- follows: LIB-10 -->
-
 # Debugger
 
 The debugger stops a running machine, lets you step through it, and

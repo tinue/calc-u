@@ -7,19 +7,17 @@
 #include <optional>
 #include <string>
 
-// Calc-U-59's one kind of medium, the magnetic card (C59-7 design §3.3;
-// spec AC-2 to AC-5, AC-29, EC-3, EC-5; LIB-7 AC-32, design §11): the
-// KindDecl `magnetic-card` and its codec for magnetic card format 3
+// Calc-U-59's one kind of medium, the magnetic card: the KindDecl
+// `magnetic-card` and its codec for magnetic card format 3
 // (`.magnetcard.yaml`, docs/formats/media.md §1). The content is a
 // TIMagneticCardData (core/TIMagneticCard.hpp) whose label is a TICardLabel.
-// Outdated: a format version below 3 (LIB-7 AC-9). A `.u59` or `.bin` card of
-// 2.3.0 is not of the kind's suffix: nothing lists, reads or changes it
-// (AC-4, D-13).
+// Outdated: a format version below 3. A `.u59` or `.bin` card of release
+// 2.3.0 is not of the kind's suffix: nothing lists, reads or changes it.
 
 namespace cu59 {
 
 /// The card's name, description and cue card, carried through a pass by the
-/// core unread (D-1).
+/// core unread, so the card given back keeps them.
 struct TICardLabel final : calcu::machine::ProductData {
     std::string name, description;
     std::optional<CueCardContent> cueCard;
@@ -38,8 +36,8 @@ std::shared_ptr<const TIMagneticCardData> magneticCardOf(const calcu::media::Con
 /// Its label, or nullptr.
 const TICardLabel* cardLabelOf(const TIMagneticCardData&);
 
-/// The cue card a fitted card shows (AC-11): its own, or a plain card titled
-/// with `name` (row 59-27); a magnetic card's frame, the banks of its sides
+/// The cue card a fitted card shows: its own, or a plain card titled
+/// with `name`, never the preset's `cue-card:`; a magnetic card's frame, the banks of its sides
 /// in the corners.
 CueCardContent fittedCardCue(const TIMagneticCardData* card, const std::string& name);
 

@@ -122,7 +122,7 @@ public:
     std::string takeLastError() { return std::exchange(m_lastError, std::string()); }
 
     /// True once after the motor stopped on a recording that grew: the
-    /// moment its sound is written (the cassette's media place, LIB-7 D-11).
+    /// moment its sound is written (the cassette's media place).
     bool takeStopped() { return std::exchange(m_stopped, false); }
 
     Mode mode() const { return m_mode; }
@@ -172,7 +172,7 @@ public:
     }
     bool atEnd() const { return m_mode == Mode::Play && sampleIndex() >= m_levels.size(); }
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// The machine state (Machine/StateRecords.hpp): the
     /// tape with its sound and position, the motor, a recording under way.
     /// The path a recording goes to is kept as it was given.
     template <class Io>

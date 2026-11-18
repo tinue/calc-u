@@ -6,12 +6,12 @@
 #include <string>
 #include <vector>
 
-// The debug panel's data, for TIDebugPart's topics (C59-4 §3.1): the
+// The debug panel's data, for TIDebugPart's topics: the
 // CALCULATOR tab's snapshot and program listing and the CPU tab's
 // instruction history. Rebuilt at frame rate while running (only for tabs
 // shown) and once per pause / step while paused. On the session's thread;
 // reads the machine between two advances. The heatmap is the core's count
-// (c59.rom-heatmap) and the log LIB-3's `log` topic since M-56.
+// (c59.rom-heatmap) and the log the library's `log` topic.
 
 namespace cu59 {
 
@@ -57,7 +57,7 @@ public:
     const LiveDebugSnapshot& live() const { return m_live; }
     /// The whole program of the source at the last freeze (the frozen PROGRAM STEPS view).
     const std::vector<StepEntry>& listing() const { return m_listing; }
-    /// The machine runs again: no listing (C59-4 AC-4). True: it had one.
+    /// The machine runs again: no listing. True: it had one.
     bool clearListing() {
         const bool had = !m_listing.empty();
         m_listing.clear();

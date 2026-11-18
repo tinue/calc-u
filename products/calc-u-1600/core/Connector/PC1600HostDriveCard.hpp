@@ -95,7 +95,7 @@ public:
         return WriteResult::taken();
     }
 
-    // C1600-5 AC-13: the request under way and the drive's open handles,
+    // The machine state: the request under way and the drive's open handles,
     // not its folder.
     void saveState(sharp::StateWriter& w) const override { const_cast<PC1600HostDriveCard*>(this)->stateIo(w); }
     void restoreState(sharp::StateReader& r) override { stateIo(r); }

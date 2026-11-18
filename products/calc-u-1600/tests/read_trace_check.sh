@@ -1,6 +1,5 @@
 #!/bin/sh
-# LIB-10 AC-42 (design §10.10, D16-8; the CTest CalcU1600ReadTrace): the
-# harness writes a short PC-1600 trace through the library's trace session,
+# The CTest CalcU1600ReadTrace: the harness writes a short PC-1600 trace through the library's trace session,
 # and tools/read_trace.py -- a script, unchanged -- reads it: both CPUs'
 # records, the session's start and end. Run from products/calc-u-1600 with
 # CALCU set to the harness program.

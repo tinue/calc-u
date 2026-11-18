@@ -1,4 +1,4 @@
-// C1600-2 AC-14 (design §3.1, T1): the product kind "loader memory access"
+// The product kind "loader memory access"
 // (c1600.loader-memory) on every Sharp model, through the machine interface.
 
 #include <cstdint>
@@ -15,7 +15,7 @@ using sharp::LoaderMemory;
 
 bool haveAll() { return haveModelRoms("PC-1500") && haveModelRoms("PC-1500A") && haveModelRoms("PC-1600"); }
 
-TEST(c1600_2_ac14_listed_by_every_sharp_model) {
+TEST(listed_by_every_sharp_model) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
@@ -24,13 +24,13 @@ TEST(c1600_2_ac14_listed_by_every_sharp_model) {
         if (!m) continue;
         const auto e = m->capabilities(LoaderMemory::kKind);
         CHECK_EQ(e.size(), std::size_t{1});
-        // Owned by the machine itself (its main CPU, C1600-1 D-1).
+        // Owned by the machine itself (its main CPU).
         if (!e.empty()) CHECK(std::holds_alternative<calcu::machine::ComponentOwner>(e[0].owner));
         CHECK(calcu::machine::first<LoaderMemory>(*m) != nullptr);
     }
 }
 
-TEST(c1600_2_ac14_peek_without_effect) {
+TEST(peek_without_effect) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     for (const char* model : {"PC-1500A", "PC-1600"}) {
         auto m = bootedSharp(sharp::sharpCatalogue(), model);
@@ -47,7 +47,7 @@ TEST(c1600_2_ac14_peek_without_effect) {
     }
 }
 
-TEST(c1600_2_ac14_peek_lh5803_view_pc1600) {
+TEST(peek_lh5803_view_pc1600) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     auto m = bootedSharp(sharp::sharpCatalogue(), "PC-1600");
     CHECK(m != nullptr);
@@ -60,7 +60,7 @@ TEST(c1600_2_ac14_peek_lh5803_view_pc1600) {
     CHECK(mem.peek(0xE123) == 0x5A);
 }
 
-TEST(c1600_2_ac14_mode_and_area_pc1600) {
+TEST(mode_and_area_pc1600) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     auto p = bootedSharp(sharp::sharpCatalogue(), "PC-1500A");
     CHECK(p && memoryOf(*p).mode() == LoaderMemory::Mode::None && memoryOf(*p).programArea() == 0);
@@ -75,7 +75,7 @@ TEST(c1600_2_ac14_mode_and_area_pc1600) {
     CHECK(memoryOf(*m).mode() == LoaderMemory::Mode::Mode1);
 }
 
-TEST(c1600_2_ac14_write_built_in_and_slot_any_bank_switched_in) {
+TEST(write_built_in_and_slot_any_bank_switched_in) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue c = catalogueWithModules();
     auto m = bootedSharp(c, "PC-1600", {moduleRequest("CE-1600M", "slot-1")});
@@ -101,7 +101,7 @@ TEST(c1600_2_ac14_write_built_in_and_slot_any_bank_switched_in) {
     CHECK(!memoryOf(*p).writeSlot(0, 0x8000, pattern, 4).stored);
 }
 
-TEST(c1600_2_ac14_slot_ram_and_module_size_banks) {
+TEST(slot_ram_and_module_size_banks) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue c = catalogueWithModules();
     auto m = bootedSharp(c, "PC-1600", {moduleRequest("CE-1600M", "slot-1")});
@@ -115,7 +115,7 @@ TEST(c1600_2_ac14_slot_ram_and_module_size_banks) {
     CHECK(!mem.slotRam(2, 0x8000, 1) && !mem.slotRam(3, 0x8000, 1));
 }
 
-TEST(c1600_2_ac14_write_not_stored_says_so_writes_nothing) {
+TEST(write_not_stored_says_so_writes_nothing) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     auto p = bootedSharp(sharp::sharpCatalogue(), "PC-1500A");
     CHECK(p != nullptr);

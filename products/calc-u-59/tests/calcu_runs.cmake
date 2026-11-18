@@ -1,30 +1,30 @@
-# LIB-11 AC-15 (design §11.4, §11.6 H5): `calcu` with Calc-U-59 runs, as a
+# `calcu` with Calc-U-59 runs, as a
 # process of its own, in the form of library/harness/tests/cli/cli_cases.cmake:
 #   cmake -DCALCU=<the calcu program> -P tests/calcu_runs.cmake
 # from products/calc-u-59 (the ROMs in roms/). The CTest CalcU59CalcuRuns
 # (Frequent) and every desktop job of .github/workflows/calc-u-59.yml run it.
-# Case lib11_ac15_calcu_runs_calc_u_59: `wait 1s then display-text`, exit status 0 and
+# Case calcu_runs_calc_u_59: `wait 1s then display-text`, exit status 0 and
 # the display of the TI-59 at key readiness.
 
 if(NOT CALCU)
-  message(FATAL_ERROR "lib11_ac15_calcu_runs_calc_u_59: -DCALCU=<program> is needed")
+  message(FATAL_ERROR "calcu_runs_calc_u_59: -DCALCU=<program> is needed")
 endif()
 execute_process(COMMAND ${CALCU} --product c59 wait 1s then display-text
                 OUTPUT_VARIABLE out ERROR_VARIABLE err RESULT_VARIABLE status)
 if(NOT status EQUAL 0)
-  message(FATAL_ERROR "lib11_ac15_calcu_runs_calc_u_59: status ${status}: ${err}")
+  message(FATAL_ERROR "calcu_runs_calc_u_59: status ${status}: ${err}")
 endif()
 string(REPLACE "\r\n" "\n" out "${out}")
 if(NOT out MATCHES "^done 2\nticks: [0-9]+\nseconds: 1\\.[0-9]+\ndone 2\n          0 \nindicators:")
-  message(FATAL_ERROR "lib11_ac15_calcu_runs_calc_u_59: replied: ${out}")
+  message(FATAL_ERROR "calcu_runs_calc_u_59: replied: ${out}")
 endif()
-message(STATUS "lib11_ac15_calcu_runs_calc_u_59: ok")
+message(STATUS "calcu_runs_calc_u_59: ok")
 
-# The product word (glossary "Product word"; LIB-11 AC-1): `c59`; the old short
-# form `59` is no product any more (release prep step 1).
+# The product word (glossary "Product word"): `c59`; the old short
+# form `59` is no product any more.
 execute_process(COMMAND ${CALCU} --product 59 ticks
                 OUTPUT_VARIABLE out ERROR_VARIABLE err RESULT_VARIABLE status)
 if(NOT status EQUAL 2)
-  message(FATAL_ERROR "lib11_ac1_product_word_c59: --product 59 gave status ${status}: ${out}${err}")
+  message(FATAL_ERROR "product_word_c59: --product 59 gave status ${status}: ${out}${err}")
 endif()
-message(STATUS "lib11_ac1_product_word_c59: ok")
+message(STATUS "product_word_c59: ok")

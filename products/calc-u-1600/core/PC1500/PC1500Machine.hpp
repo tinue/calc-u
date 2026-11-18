@@ -29,9 +29,9 @@
 // The ON key isn't in the named-key vocabulary: it is wired to the CPU's
 // BFI power-on latch, not the matrix (setOnKeyPressed()).
 //
-// Threading (ADR 0009): single-threaded, no lock. Everything above the
-// core reaches it through PC1500InterfaceMachine (calcu::machine::Machine,
-// C1600-1); this class stays the core's own, for the core and its tests.
+// Threading: single-threaded, no lock. Everything above the
+// core reaches it through PC1500InterfaceMachine (calcu::machine::Machine);
+// this class stays the core's own, for the core and its tests.
 class PC1500Machine {
 public:
     /// LH5801 cycles per second -- the unit runCycles() counts (PC1500Clocks.hpp).
@@ -107,10 +107,10 @@ public:
 
     /// LH5801 cycles consumed since the machine was built (step() and
     /// runCycles() alike, halted and powered-off time included); no reset
-    /// clears it. The tick count of the machine interface (C1600-1 AC-1).
+    /// clears it. The tick count of the machine interface.
     uint64_t elapsedCycles() const { return m_elapsedCycles; }
 
-    /// Key readiness (C1600-1 AC-21; first step 15): the CPU is in the
+    /// Key readiness: the CPU is in the
     /// ROM's key wait WAIT_4_KB (E243-E33D) with bit 0 of CURS_CTRL (7B0E)
     /// clear, and not powered off.
     bool keyReady() const {
@@ -173,7 +173,7 @@ public:
     void detachCE150();
     bool ce150Attached() const { return m_ce150Card != nullptr; }
     /// Direct access, like cpu()/memory(); above the core the plotter's
-    /// paper is the card's paper-output capability (LIB-8).
+    /// paper is the card's paper-output capability.
     Ce150Card* ce150Card() { return m_ce150Card.get(); }
     /// The CE-150's paper output, nullptr while it is not plugged in.
     sharp::PlotterPaperOutput* ce150PaperOutput();
@@ -238,7 +238,7 @@ public:
     // captured entirely inside the Core: step()/runCycles() drain the ring
     // into them themselves. Don't mix the two APIs on one machine.
 
-    // The app's trace (LIB-10 §10.7, the c1600.trace-records kind): the same
+    // The app's trace (the c1600.trace-records kind): the same
     // records, kept in a buffer until the library's trace session takes
     // them (whole records, at most a budget). endTraceRecord() drains what is
     // left and writes SESSION_END; endTraceRecords() turns recording off.
@@ -248,7 +248,7 @@ public:
     }
     void endTraceRecord();
     void endTraceRecords();
-    // ── Machine state (C1600-5 AC-13, Machine/StateRecords.hpp) ─────────
+    // ── Machine state (Machine/StateRecords.hpp) ─────────
     /// The core's records: the CPU(s), the memory with its chips, the
     /// emulated time, the cassette deck, every card. Saving only reads; a
     /// restore that fails leaves the reader's error (the caller puts the
@@ -296,7 +296,7 @@ private:
     static constexpr uint32_t kTraceDrainInterval = 256;
     CpuFrame m_traceDrainBuf[kTraceDrainBufFrames];
     /// Bodies of the public detach calls (the name is from when the class
-    /// had a lock; it has none since M-26, ADR 0009).
+    /// had a lock; it has none).
     void detachCE150Locked();
     void detachCE158Locked();
 

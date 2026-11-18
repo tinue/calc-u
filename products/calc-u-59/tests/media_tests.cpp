@@ -1,5 +1,4 @@
-// LIB-7's Calc-U-59 column (design §11.6, E2 to E6; spec AC-32 to AC-35,
-// AC-47): the one kind and the one place, slot-1's picker of modules, the
+// The media of Calc-U-59: the one kind and the one place, slot-1's picker of modules, the
 // names of cards in the save folder, the write when a card is given back,
 // and `card:` / `arm:` in presets and the harness. On the app session with a
 // save folder of the test's own (tests/CardRig.hpp).
@@ -28,8 +27,7 @@ std::string cardText(const std::string& name, bool isTemplate = false) {
 }
 } // namespace
 
-// E2 (AC-32)
-TEST(lib7_ac32_one_kind_one_place_pass_through_sides_0_1) {
+TEST(one_kind_one_place_pass_through_sides_0_1) {
     NEEDS_ROMS;
     CardRig r;
     const auto* m = r.media();
@@ -45,7 +43,7 @@ TEST(lib7_ac32_one_kind_one_place_pass_through_sides_0_1) {
     CHECK_EQ(places, 1);
 }
 
-TEST(lib7_ac32_no_bundled_cards_fresh_card_template_without_file) {
+TEST(no_bundled_cards_fresh_card_template_without_file) {
     NEEDS_ROMS;
     CardRig r;
     const auto* k = r.media()->kindState("magnetic-card");
@@ -54,8 +52,7 @@ TEST(lib7_ac32_no_bundled_cards_fresh_card_template_without_file) {
     CHECK(magneticCardKind().bundledFolder.empty());
 }
 
-// E3 (AC-47)
-TEST(lib7_ac47_slot_picker_empty_and_14_modules_by_menu_sort_description_label) {
+TEST(slot_picker_empty_and_14_modules_by_menu_sort_description_label) {
     NEEDS_ROMS;
     CardRig r;
     for (const char* model : {"TI-59", "TI-58", "TI-58C"}) {
@@ -79,7 +76,7 @@ TEST(lib7_ac47_slot_picker_empty_and_14_modules_by_menu_sort_description_label) 
     }
 }
 
-TEST(lib7_ac47_choose_replaces_and_power_cycles) {
+TEST(choose_replaces_and_power_cycles) {
     NEEDS_ROMS;
     CardRig r;
     CHECK(r.step("key", "5").done);
@@ -88,14 +85,14 @@ TEST(lib7_ac47_choose_replaces_and_power_cycles) {
     CHECK(chosen.done);
     CHECK(r.untilKeyReady());
     CHECK_EQ(r.part().moduleID(), std::string("LE"));
-    CHECK_EQ(testroms::displayText(r.machine()), std::string("0"));   // the power cycle (LIB-18 AC-21)
+    CHECK_EQ(testroms::displayText(r.machine()), std::string("0"));   // the power cycle
     CHECK(r.operation(calcu::media::kChooseCommand, calcu::sessions::Value::object({{"place", "slot-1"}, {"entry", ""}})).done);
     CHECK(r.untilKeyReady());
     CHECK(r.part().moduleID().empty());   // the empty entry: a detach
 }
 
-// E4 (AC-33): AC-1 to AC-5 for cards in the save folder.
-TEST(lib7_ac33_names_and_collisions_for_cards) {
+// The names of cards in the save folder.
+TEST(names_and_collisions_for_cards) {
     NEEDS_ROMS;
     CardRig r;
     r.writeCardFile("Prog", cardText("My Program"));        // the name inside, not the file's
@@ -106,21 +103,20 @@ TEST(lib7_ac33_names_and_collisions_for_cards) {
     for (const auto& i : k->instances) prog = prog || (i.name == "My Program" && i.fileName == "Prog.magnetcard.yaml");
     for (const auto& i : k->templates) tpl = tpl || (i.name == "My Template" && i.fileName == "Tpl.magnetcard.yaml");
     CHECK(prog && tpl);
-    // AC-3, AC-4: a new card's file is named after its name; a taken file name gets -1.
+    // A new card's file is named after its name; a taken file name gets -1.
     r.writeCardFile("Mine", "not a card");
     r.send(calcu::media::kRefreshCommand);
     CHECK(r.load(CardRig::preset(kProgramA + "keys:\n  - key: 1 Write\n  - card: { mem: M }\n"
                                  "  - saveas: { card: M, as: live, name: Mine }\n")).done);
     CHECK(testroms::fs::exists(r.folder.path() / "Mine-1.magnetcard.yaml"));
     CHECK_EQ(r.cardFile("Mine"), std::string("not a card"));
-    // AC-5: one list of names, in any case.
+    // One list of names, in any case.
     const auto again = r.load(CardRig::preset(kProgramA + "keys:\n  - key: 1 Write\n  - card: { mem: M }\n"
                                               "  - saveas: { card: M, as: template, name: MY PROGRAM }\n"));
     CHECK(!again.done && again.reason.find("name of an instance") != std::string::npos);
 }
 
-// E5 (AC-34)
-TEST(lib7_ac34_instance_written_when_given_back) {
+TEST(instance_written_when_given_back) {
     NEEDS_ROMS;
     CardRig r;
     r.writeCardFile("Prog", cardText("Prog"));
@@ -135,11 +131,11 @@ TEST(lib7_ac34_instance_written_when_given_back) {
     CHECK(r.untilPassed());
     const std::string after = r.cardFile("Prog");
     CHECK(after != before && after.find("saved: ") != std::string::npos);
-    CHECK(CardRig::sideOf(after, 0) == CardRig::sideOf(before, 0));   // C59-7: the other side kept
+    CHECK(CardRig::sideOf(after, 0) == CardRig::sideOf(before, 0));   // the other side kept
     CHECK(r.logged("Saved magnetic card “Prog”."));
 }
 
-TEST(lib7_ac34_read_pass_writes_nothing) {
+TEST(read_pass_writes_nothing) {
     NEEDS_ROMS;
     CardRig r;
     r.writeCardFile("Prog", cardText("Prog"));
@@ -155,8 +151,7 @@ TEST(lib7_ac34_read_pass_writes_nothing) {
     CHECK(!r.logged("Saved magnetic card"));
 }
 
-// E6 (AC-35)
-TEST(lib7_ac35_card_and_arm_by_name_file_mem) {
+TEST(card_and_arm_by_name_file_mem) {
     NEEDS_ROMS;
     CardRig r;
     r.writeCardFile("Named", cardText("By Name"));
@@ -171,17 +166,17 @@ TEST(lib7_ac35_card_and_arm_by_name_file_mem) {
     CHECK(!r.load(CardRig::preset("keys:\n  - arm: { mem: In, side: 1 }\n")).done);   // arm: has no side
 }
 
-TEST(lib7_ac35_missing_name_or_file_refuses) {
+TEST(missing_name_or_file_refuses) {
     NEEDS_ROMS;
     CardRig r;
     const auto byName = r.load(CardRig::preset("keys:\n  - card: { name: Ghost }\n"));
     CHECK(!byName.done && byName.reason.find("there is no magnetic card “Ghost”") != std::string::npos);
     const auto byFile = r.load(CardRig::preset("keys:\n  - card: { file: ghost.magnetcard.yaml }\n"));
     CHECK(!byFile.done);
-    CHECK(!r.hasCardFile("Ghost") && !r.hasCardFile("ghost"));   // no blank card saved under it (row 59-49)
+    CHECK(!r.hasCardFile("Ghost") && !r.hasCardFile("ghost"));   // no blank card saved under it
 }
 
-TEST(lib7_ac35_undefined_mem_fresh) {
+TEST(undefined_mem_fresh) {
     NEEDS_ROMS;
     CardRig r;
     CHECK(r.load(CardRig::preset("keys:\n  - arm: { mem: Nobody }\n")).done);
@@ -190,7 +185,7 @@ TEST(lib7_ac35_undefined_mem_fresh) {
     CHECK(r.logged("Nobody"));
 }
 
-TEST(lib7_ac35_card_file_written_in_place_unless_template) {
+TEST(card_file_written_in_place_unless_template) {
     NEEDS_ROMS;
     CardRig r;
     r.writeCardFile("Live", cardText("Live"));
@@ -203,7 +198,7 @@ TEST(lib7_ac35_card_file_written_in_place_unless_template) {
     CHECK_EQ(r.cardFile("Tpl"), tpl);   // a template is never written
 }
 
-TEST(lib7_ac35_harness_card_mem_side_and_saveas_card) {
+TEST(harness_card_mem_side_and_saveas_card) {
     NEEDS_ROMS;
     auto product = makeHarnessProduct();
     calcu::testing::TempFolder save("calcu59-harness-media");
@@ -215,7 +210,7 @@ TEST(lib7_ac35_harness_card_mem_side_and_saveas_card) {
     if (!server) return;
     CHECK_EQ(server->line("c59 program 76 11 01 02 03 91").text, std::string("done\n"));
     CHECK_EQ(server->line("key 2 Write").text, std::string("done\n"));
-    CHECK_EQ(server->line("card { mem: X, side: 0 }").text, std::string("done\n"));   // LIB-11 AC-22
+    CHECK_EQ(server->line("card { mem: X, side: 0 }").text, std::string("done\n"));
     CHECK_EQ(server->line("saveas { card: X, as: live, name: Kept }").text, std::string("done\n"));
     const auto text = testroms::readFile((save.path() / "Kept.magnetcard.yaml").string()).value_or("");
     const auto side = CardRig::sideOf(text, 0);

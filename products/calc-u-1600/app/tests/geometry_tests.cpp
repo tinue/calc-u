@@ -1,5 +1,5 @@
 // app/KeyLayout/FaceplateLayout (the plotter paper's cases are
-// tests/plotter_paper_tests.cpp's lib8_ac37_ cases since M-45).
+// in tests/plotter_paper_tests.cpp).
 
 #include <cmath>
 #include <cstdio>

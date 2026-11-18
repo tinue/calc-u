@@ -62,7 +62,7 @@ bool enabled1600(const PC1600Machine& m, inspect::View v) {
 
 /// Sets a PC-1600 up as the version 1 preset `yaml` did -- its `slot-N:`
 /// modules, then its `- key:` and `- type:` steps -- on the old class with
-/// the typer (M-46: the version 1 loader is gone; these tests are about the
+/// the typer (these tests are about the
 /// views). False (test skipped) without the ROM images.
 bool preset1600(PC1600Machine& m, const std::string& yaml) {
     if (!loadPC1600Roms(m)) {

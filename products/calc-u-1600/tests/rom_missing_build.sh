@@ -1,12 +1,11 @@
 #!/bin/sh
-# LIB-12, Technical Requirements (design §6, Q5; D-5): "a build of each
-# product with one ROM file taken away". The ROM folder is copied without
+# A build of the product with one ROM file taken away. The ROM folder is copied without
 # one file (default PC1600-P1-B3-old.bin; another as $1), the web client's
 # dist/ is built from it, and it starts without the full set: the page
-# shows the lookup's text naming the file and no calculator (AC-5, AC-13;
-# Playwright, frontends/web/tests/rom-missing.spec.js). The build itself
-# succeeds (D-5). The CLIs' side is tests/cli_rom_tests.sh (Frequent); the
-# Qt6 app is checked by hand (D-8, qa-report.md). Run from
+# shows the lookup's text naming the file and no calculator (Playwright,
+# frontends/web/tests/rom-missing.spec.js). The build itself succeeds: a
+# missing ROM is found when the calculator starts, not when it is built.
+# The Qt6 app is checked by hand. Run from
 # products/calc-u-1600 (CTest CalcU1600RomMissingBuild, Longer); needs
 # emcmake, node and Playwright.
 set -eu

@@ -3,8 +3,7 @@
 #include <cstdint>
 #include <optional>
 
-// The levels of the TI machines (LIB-10 design §12.5; spec AC-29, AC-30;
-// D-22): `cpu` and `program`. The rules read InstructionEvent::marks of
+// The levels of the TI machines: `cpu` and `program`. The rules read InstructionEvent::marks of
 // core/TIDebugging.hpp (step boundary, scan loop, weight) and never call
 // the machine during an advance.
 //
@@ -18,13 +17,12 @@
 // - Pause-on-start `program` fires at the next boundary; `cpu` fires on the
 //   first instruction after which the scan-loop mark is clear, once it was
 //   seen set since arming, or when the next address is 0000 while it was
-//   not 0000 at arming (2.3.0's FreezeController). No start fires at a
+//   not 0000 at arming. No start fires at a
 //   restart itself: the ROM's start-up after a Reset or a Cold boot runs in
-//   the advances that follow, where the 0000 rule fires (ledger row 59-34).
+//   the advances that follow, where the 0000 rule fires.
 //
 // landNextPauseAtOnce(): the next pause lands where the machine stands,
-// without a step (the ASM overlay's entry with CPU FREEZE ON START armed,
-// C59-4, until M-56).
+// without a step (the ASM overlay's entry with CPU FREEZE ON START armed).
 
 namespace cu59 {
 

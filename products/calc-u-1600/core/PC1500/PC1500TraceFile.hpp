@@ -26,8 +26,8 @@
 // independent internal mutex, so draining both every tick can't deadlock
 // against anything.
 //
-// It keeps the bytes of whole records until take() hands them on (LIB-10
-// §10.7: the c1600.trace-records kind); the library's trace session writes,
+// It keeps the bytes of whole records until take() hands them on (the
+// c1600.trace-records kind); the library's trace session writes,
 // limits and ends the file.
 //
 // Not thread-safe. `PC1500Machine` only ever touches its instance from

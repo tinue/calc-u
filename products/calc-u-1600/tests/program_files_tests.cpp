@@ -1,8 +1,7 @@
-// C1600-2 what a file is (AC-1, AC-2, AC-3, EC-1, EC-2, EC-4; design T2):
-// sharp::loaders::fileKind and image over the one classifier
+// What a file is: sharp::loaders::fileKind and image over the one classifier
 // (core/ProgramFile, SharpDataExchange's rules), and the empty and damaged
 // files every loader refuses the same way. The classifier's own cases stay
-// in program_file_tests.cpp (with the drop's, until M-48).
+// in program_file_tests.cpp.
 
 #include <cstdint>
 #include <fstream>
@@ -93,7 +92,7 @@ std::vector<uint8_t> silentWav() {
     return w;
 }
 
-TEST(c1600_2_ac1_every_kind_by_content_not_name) {
+TEST(every_kind_by_content_not_name) {
     CHECK(fileKind({}).kind == Kind::Empty);
     CHECK(fileKind(text("10 PRINT \"HI\"\n20 END\n")).kind == Kind::BasicListing);
     CHECK(fileKind(ce158(kBasic, 0x40)).kind == Kind::BasicPC1500);
@@ -104,19 +103,19 @@ TEST(c1600_2_ac1_every_kind_by_content_not_name) {
     // fileKind takes the bytes alone: there is no name to go by.
 }
 
-TEST(c1600_2_ac1_headerless_looks_like_lh5801_or_z80) {
+TEST(headerless_looks_like_lh5801_or_z80) {
     const sharp::loaders::FileKind z = fileKind(z80Code());
     CHECK(z.kind == Kind::Headerless && z.looksLike && *z.looksLike == machinecode::Cpu::Z80);
     CHECK(!fileKind(kCode).looksLike);   // too short to guess
     CHECK(!fileKind(pc1600(z80Code(), 0x10, 0xC0C5)).looksLike);   // a header: no guess
 }
 
-TEST(c1600_2_ac1_other_with_words) {
+TEST(other_with_words) {
     const sharp::loaders::FileKind t = fileKind(text("Just some notes,\nnot a program.\n"));
     CHECK(t.kind == Kind::Other && t.words == "plain text");
 }
 
-TEST(c1600_2_ac2_ce158_header_fields) {
+TEST(ce158_header_fields) {
     const sharp::loaders::FileKind k = fileKind(ce158(kCode, 0x42, 0x40C5, 0x40C7));
     CHECK(k.header.has_value());
     if (!k.header) return;
@@ -126,7 +125,7 @@ TEST(c1600_2_ac2_ce158_header_fields) {
     CHECK(k.header->start && *k.header->start == 0x40C7);
 }
 
-TEST(c1600_2_ac2_pc1600_header_fields_with_bank) {
+TEST(pc1600_header_fields_with_bank) {
     const sharp::loaders::FileKind k = fileKind(pc1600(kCode, 0x10, 0x02'8100, 0x02'8105));
     CHECK(k.header.has_value());
     if (!k.header) return;
@@ -135,7 +134,7 @@ TEST(c1600_2_ac2_pc1600_header_fields_with_bank) {
     CHECK(k.header->start && (*k.header->start & 0xFFFF) == 0x8105);
 }
 
-TEST(c1600_2_ac2_start_zero_or_ffff_none) {
+TEST(start_zero_or_ffff_none) {
     for (uint16_t s : {uint16_t{0}, uint16_t{0xFFFF}}) {
         const auto k = fileKind(ce158(kCode, 0x42, 0x40C5, s));
         CHECK(k.header && !k.header->start);
@@ -144,7 +143,7 @@ TEST(c1600_2_ac2_start_zero_or_ffff_none) {
     }
 }
 
-TEST(c1600_2_ac3_wav_files_in_tape_order_with_names) {
+TEST(wav_files_in_tape_order_with_names) {
     const std::vector<uint8_t> wav = loadertest::fileBytes("tests/fixtures/tape/pc1500_tape.wav");
     SKIP_UNLESS(!wav.empty(), "tests/fixtures/tape/pc1500_tape.wav missing");
     const sharp::loaders::FileKind one = fileKind(wav);
@@ -162,14 +161,14 @@ TEST(c1600_2_ac3_wav_files_in_tape_order_with_names) {
     CHECK(!sharp::loaders::image(two, 3, &why).has_value() && why.find("2 files") != std::string::npos);
 }
 
-TEST(c1600_2_ac3_wav_none_readable_is_other_with_words) {
+TEST(wav_none_readable_is_other_with_words) {
     const sharp::loaders::FileKind k = fileKind(silentWav());
     CHECK(k.kind == Kind::Other && k.tapeFiles.empty());
     CHECK(k.words.find("a cassette recording without a file that can be read") != std::string::npos);
 }
 
 // Every loader asks the classifier first: the same sentence from each.
-TEST(c1600_2_ec1_empty_refused_as_empty_by_every_loader) {
+TEST(empty_refused_as_empty_by_every_loader) {
     PC1500Machine m;
     SKIP_UNLESS(m.loadROMFile("roms/PC-1500_A04.ROM"), "roms/PC-1500_A04.ROM not found");
     sharp::PC1500LoaderMemory mem(m);
@@ -182,7 +181,7 @@ TEST(c1600_2_ec1_empty_refused_as_empty_by_every_loader) {
     CHECK(std::holds_alternative<std::string>(withAddress) && std::get<std::string>(withAddress) == "The file is empty.");
 }
 
-TEST(c1600_2_ec2_partial_header_refused_saying_so) {
+TEST(partial_header_refused_saying_so) {
     auto cut = ce158(kCode, 0x42);
     cut.resize(20);
     const sharp::loaders::FileKind k = fileKind(cut);
@@ -196,7 +195,7 @@ TEST(c1600_2_ec2_partial_header_refused_saying_so) {
     CHECK(std::holds_alternative<std::string>(code) && std::get<std::string>(code) == sentence);
 }
 
-TEST(c1600_2_ec4_wav_first_file_by_default) {
+TEST(wav_first_file_by_default) {
     const std::vector<uint8_t> wav = loadertest::fileBytes("tests/fixtures/tape/pc1500_tape.wav");
     SKIP_UNLESS(!wav.empty(), "tests/fixtures/tape/pc1500_tape.wav missing");
     const std::vector<uint8_t> two = doubledTape(wav);

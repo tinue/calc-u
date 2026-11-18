@@ -115,7 +115,7 @@ bool TIDebugTarget::poke(std::size_t space, std::uint64_t a, std::uint64_t value
         if (a >= static_cast<std::uint64_t>(m_.m_hw.ramRegCount()) * 8 || value > 99) return false;
         m_.m_hw.writeProgramStep(static_cast<int>(a), static_cast<std::uint8_t>(value));
         return true;
-    default: return false;   // rom and scom refuse a write (D-21)
+    default: return false;   // rom and scom refuse a write
     }
 }
 
@@ -149,7 +149,7 @@ void TIDebugTarget::setBreakpoints(std::vector<std::uint64_t> addresses) {
 void TIDebugging::setChecks(const Checks& c) {
     m_checks = c;
     if (m_checks.breakpoints && m_target.breakpoints().empty()) m_checks.breakpoints = false;
-    m_.m_checksTrace = active();   // the history of what ran while checked (AC-28)
+    m_.m_checksTrace = active();   // the history of what ran while checked
     m_.applyTraceFlags();
 }
 

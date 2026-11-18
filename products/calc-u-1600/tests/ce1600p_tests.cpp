@@ -13,7 +13,7 @@
 
 namespace {
 
-// LIB-8 AC-37: the mechanism with its paper output and a paper connected to
+// The mechanism with its paper output and a paper connected to
 // it, as the session connects one (the paper is no longer the mechanism's).
 struct Plotted {
     AlpsPlotterMechanism m;
@@ -54,7 +54,7 @@ int stepRing(void (AlpsPlotterMechanism::*write)(uint8_t), AlpsPlotterMechanism&
     return pos;
 }
 
-TEST(lib8_ac37_stepper_steps_become_places) {
+TEST(stepper_steps_become_places) {
     AlpsPlotterMechanism x;
     CHECK(x.penX() == 0);
     x.writeMotorX(0x9); // Stepper already starts at phase 9 (ring position 0); no move
@@ -71,7 +71,7 @@ TEST(lib8_ac37_stepper_steps_become_places) {
 // relocating the tracked motor phase, so deltaFor() has no row for 0xF and
 // the step immediately after a brake must land exactly where it would have
 // without the brake in between.
-TEST(lib8_ac37_brake_write_does_not_eat_the_next_step) {
+TEST(brake_write_does_not_eat_the_next_step) {
     AlpsPlotterMechanism x;
     x.writeMotorX(0x9); // anchor at ring position 0
     x.writeMotorX(0xf); // brake/hold -- must not move, must not relocate currentPhase
@@ -83,7 +83,7 @@ TEST(lib8_ac37_brake_write_does_not_eat_the_next_step) {
 // Y and Z apply the opposite sign to the same phase table as X (see
 // AlpsPlotterMechanism::stepXY()/stepZ()'s comments): a +1 step in X's own
 // convention moves Y/Z by -1 instead.
-TEST(lib8_ac37_y_applies_inverted_sign_from_x) {
+TEST(y_applies_inverted_sign_from_x) {
     AlpsPlotterMechanism m;
     m.writeMotorY(0x9); // establish, ring position 0
     stepRing(&AlpsPlotterMechanism::writeMotorY, m, 0, -5); // X-convention -5 -> Y +5
@@ -96,7 +96,7 @@ TEST(lib8_ac37_y_applies_inverted_sign_from_x) {
 // crossing 6 (already up, no-op) then landing on 0, which must fire the
 // false->true pen-down edge and start a stroke; a subsequent X move while
 // down must extend it; returning to 6 must end it.
-TEST(lib8_ac37_a_stroke_per_pen_down) {
+TEST(a_stroke_per_pen_down) {
     Plotted p;
     AlpsPlotterMechanism& m = p.m;
     CHECK(!m.penDown());
@@ -128,10 +128,10 @@ TEST(lib8_ac37_a_stroke_per_pen_down) {
     CHECK(p.last().path.size() == 2);
 }
 
-// LIB-8 AC-37: the CE-1600P's turret turns to the next colour after 8
+// The CE-1600P's turret turns to the next colour after 8
 // arrivals at Z = 50, each armed on the way past Z = 20; the next stroke
 // is in that colour.
-TEST(lib8_ac37_ce1600p_colour_turret) {
+TEST(ce1600p_colour_turret) {
     Plotted p;
     AlpsPlotterMechanism& m = p.m;
     m.writeMotorZ(0x9);
@@ -156,7 +156,7 @@ TEST(lib8_ac37_ce1600p_colour_turret) {
 // silently reporting penZ==0 already, which would suppress the down edge
 // and, on the real CE-1600P TEST diagnostic, leave the black rectangle
 // (drawn first, right after power-on) empty while the others still draw.
-TEST(lib8_ac37_first_pen_down_from_rest_fires_immediately) {
+TEST(first_pen_down_from_rest_fires_immediately) {
     Plotted p;
     AlpsPlotterMechanism& m = p.m;
     CHECK(!m.penDown());

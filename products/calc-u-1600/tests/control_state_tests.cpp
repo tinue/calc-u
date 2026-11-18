@@ -1,7 +1,6 @@
-// LIB-4 Calc-U-1600 (M-49; design Part D, D.6): the control state of the
-// product's session, from the library's ControlPart with app/SharpControlRules
-// and the catalogue's one pin-out per 60-pin place (D-11). The drawing of it
-// is LIB-14 1600's (CalcU1600QtTests, shell.spec.js).
+// The control state of the product's session, from the library's
+// ControlPart with app/SharpControlRules and the catalogue's one pin-out per
+// 60-pin place. The shell draws it (CalcU1600QtTests, shell.spec.js).
 
 #include <algorithm>
 #include <string>
@@ -71,9 +70,9 @@ bool plugged(const control::ControlState& s, const char* place, const char* peri
 
 } // namespace
 
-// T16-1 (O-2, D-11): each 60-pin place lists exactly what fits it, from the
+// Each 60-pin place lists exactly what fits it, from the
 // catalogue alone; the bus-rom place keeps the chain.
-TEST(lib4_ac17_each_60_pin_place_lists_only_what_fits) {
+TEST(each_60_pin_place_lists_only_what_fits) {
     const machine::Catalogue& c = sharp::sharpCatalogue();
     auto fits = [&](const char* model, const char* place) {
         std::vector<std::string> out;
@@ -95,16 +94,15 @@ TEST(lib4_ac17_each_60_pin_place_lists_only_what_fits) {
     CHECK(fits("PC-1600", "bus-rom") == (V{"bus-rom"}));
 }
 
-// T16-2, T16-3, T16-4: one session per model; the fields of today's control
-// state as AC-17's table has them.
-TEST(lib4_ac16_ac17_pc1500_models_variants_and_fields) {
+// One session per model; the fields of the control state.
+TEST(pc1500_models_variants_and_fields) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500"));
     const control::ControlState* s = stateOf(f);
     CHECK(s != nullptr);
     if (!s) return;
-    // AC-16: the models, the running one's variants and which runs.
+    // The models, the running one's variants and which runs.
     std::vector<std::string> models;
     for (const auto& m : s->models) models.push_back(m.id.value);
     CHECK(models == (std::vector<std::string>{"PC-1500", "PC-1500A", "PC-1600"}));
@@ -125,18 +123,18 @@ TEST(lib4_ac16_ac17_pc1500_models_variants_and_fields) {
     CHECK(f.attach("CE-150"));
     CHECK(f.attach("CE-158"));
     s = stateOf(f);
-    CHECK(plugged(*s, "printer", "CE-150") && plugged(*s, "interface", "CE-158"));   // EC-1
+    CHECK(plugged(*s, "printer", "CE-150") && plugged(*s, "interface", "CE-158"));
     CHECK(s->panels.size() == 1 && s->panels[0].owner && s->panels[0].owner->value == "CE-150");
     CHECK(s->mediaPlaces.size() == 1 && s->mediaPlaces[0].id.value == "cassette-recorder" && s->mediaPlaces[0].owner &&
           s->mediaPlaces[0].owner->value == "CE-150");
     CHECK(flag(product(*s, cu1600::kCe158PrinterPanelEntry), "shown"));
-    // AC-16 on the PC-1500A: its one variant.
+    // The PC-1500A: its one variant.
     CHECK(f.model("PC-1500A"));
     s = stateOf(f);
     CHECK(ids(s->variants) == (std::vector<std::string>{"A04"}));
 }
 
-TEST(lib4_ac16_ac17_pc1600_fields_ce1600p_variants_and_next_variant) {
+TEST(pc1600_fields_ce1600p_variants_and_next_variant) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -172,7 +170,7 @@ TEST(lib4_ac16_ac17_pc1600_fields_ce1600p_variants_and_next_variant) {
     for (const auto& m : s->mediaPlaces) media.push_back(m.id.value + "@" + (m.owner ? m.owner->value : ""));
     CHECK(media == (std::vector<std::string>{"cassette-recorder@CE-1600P", "floppy@CE-1600P"}));
     CHECK(s->panels.size() == 1 && s->panels[0].owner && s->panels[0].owner->value == "CE-1600P");
-    // The CE-158 beside the CE-1600P is refused by the machine (ledger 1600-22).
+    // The CE-158 beside the CE-1600P is refused by the machine.
     const control::PlaceEntry* iface = s->place(path("interface"));
     const control::PeripheralChoice* ce158 = iface ? control::choice(*iface, machine::PeripheralId{"CE-158"}) : nullptr;
     CHECK(ce158 && !ce158->available.now && !ce158->available.reason.empty());
@@ -189,9 +187,9 @@ TEST(lib4_ac16_ac17_pc1600_fields_ce1600p_variants_and_next_variant) {
     CHECK(flag(product(*s, cu1600::kHostDriveFolderEntry), "available"));
 }
 
-// T16-4 (AC-18, D-12): two sessions on the same machine, one that cannot
+// Two sessions on the same machine, one that cannot
 // mount a folder: the place host-drive and its choices differ, nothing else.
-TEST(lib4_ac18_host_drive_refused_where_no_folder_can_be_mounted) {
+TEST(host_drive_refused_where_no_folder_can_be_mounted) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture qt("calcu-control-qt"), web("calcu-control-web");
     web.hostDirectories = false;
@@ -214,9 +212,9 @@ TEST(lib4_ac18_host_drive_refused_where_no_folder_can_be_mounted) {
     CHECK(!flag(product(*b, cu1600::kHostDriveEntry), "available"));
 }
 
-// T16-6 (AC-20, AC-3): while a preset loads, the variants, the places'
+// While a preset loads, the variants, the places'
 // choices and the inserts are refused; the models, Reset and Cold boot not.
-TEST(lib4_ac20_operation_refuses_model_variant_and_place_choices) {
+TEST(operation_refuses_model_variant_and_place_choices) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));

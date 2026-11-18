@@ -56,7 +56,7 @@ LoadResult loadProgram(calcu::machine::Machine& machine, const LoadRequest& req,
     if (file.lengthMismatch) request.length = file.payload.size();
     if (pc1600) request.cpu = req.thread == 2 ? machinecode::Cpu::LH5803 : machinecode::Cpu::Z80;
     const sharp::loaders::CodePlan planned = sharp::loaders::planCode(*memory, bytes, request);
-    if (planned.needsAddress()) {   // C1600-3 EC-3: C1600-2's refusal, with the hint
+    if (planned.needsAddress()) {   // the loader's refusal, with the hint
         r.error = sharp::loaders::refusal(req.bin, planned.refusal) + " Give \"address\", or a \"listing\" whose lowest "
                                                                      "line with bytes is where it goes.";
         return r;

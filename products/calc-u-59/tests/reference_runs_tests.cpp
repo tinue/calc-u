@@ -1,6 +1,5 @@
-// C59-2 AC-11 (design §6 T10, §8, D-16, D-17): every example's version 2
-// file against the reference run of its 2.3.0 file
-// (tests/reference/v2.3.0-examples/, recorded in M-9 by 2.3.0's session
+// Every example's version 2 file against the reference run of its 2.3.0
+// file (tests/reference/v2.3.0-examples/, recorded by 2.3.0's session
 // code before any file was upgraded or core code touched).
 //
 // Each example goes through the harness entry in virtual time (`calcu
@@ -8,12 +7,12 @@
 // the machine is idle or paused, at most an hour of emulated time). Then
 // compared: the display (`display:` of the record), the partition
 // (`partition:`), the raw RAM, 120 registers of 16 nibbles (`--- ram`:
-// program steps, data registers and H00–H03 at once, D-16), and the paper
+// program steps, data registers and H00–H03 at once), and the paper
 // (`paper text`, `paper marks` against `.paper-text`, `.paper-marks`; an
-// example without a `.paper-text` prints nothing). Not compared (AC-11, row
-// 59-23, LIB-6 AC-64): tick counts, `Elapsed:` lines, the log, the
-// `playback:` line. `historic/life.ti59` never stops: it is only loaded
-// without a failure. The four examples with magnetic cards (C59-7 AC-30, M-55)
+// example without a `.paper-text` prints nothing). Not compared (a key is
+// now held 100 ms of emulated time, not of wall time): tick counts,
+// `Elapsed:` lines, the log, the `playback:` line. `historic/life.ti59` never stops: it is only loaded
+// without a failure. The four examples with magnetic cards
 // also compare the banks of their in-file cards (`--- in-file cards`, from
 // the media part's store) and of the card files they write (`--- cards
 // written`, the sides of the run's save folder's `.magnetcard.yaml`); every
@@ -55,20 +54,20 @@ const std::string kNeverStops = "historic/life.ti59";
 // reference): example → what differs and why.
 const std::map<std::string, std::string> kFindings = {
     {"debug/example-brief.ti59",
-     "C59-2 AC-10's correction of line 16 (`002 11. A` → `002 11 A`): the M-9 record was made from the "
-     "uncorrected file (2.3.0 skipped the step), so step 002 holds 11 and the label A runs; design §8"},
+     "the version 2 upgrade's correction of line 16 (`002 11. A` → `002 11 A`): the record was made from the "
+     "uncorrected file (2.3.0 skipped the step), so step 002 holds 11 and the label A runs"},
     // The printed pictures: their `paper text` is the record's, line for line;
-    // their `.paper-marks` (M-39, LIB-8 AC-39) were drawn from those text lines,
+    // their `.paper-marks` were drawn from those text lines,
     // one character row per line, but these programs print with the printer
     // interrupt or plot rows, so the paper's dots and reach are not text rows
-    // (as the three of LIB-8 D-13 that have no `.paper-marks`).
+    // (as the three printer-interrupt examples that have no `.paper-marks`).
     {"historic/fast-grafik-3d-plot.ti59", "paper marks of a plot, not of text lines (the text is the record's)"},
     {"historic/printer-quirks.ti59", "paper marks of printer-interrupt rows, not of text lines (the text is the record's)"},
     {"historic/texas-print.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
     {"screentest/test_texas.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
     {"picard.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
-    {"globe-print.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's; M-55)"},
-    // M-55 (C59-7 AC-30): 2.3.0 recorded 2.7 s after its playback ended,
+    {"globe-print.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
+    // 2.3.0 recorded 2.7 s after its playback ended,
     // while the program was still printing the table at fast mode (one line
     // on paper, the display dark); the bare `wait` now runs to idle, so the
     // whole table is printed and the display shows 0. The card reads before
@@ -77,7 +76,7 @@ const std::map<std::string, std::string> kFindings = {
      "the 2.3.0 record was taken while the table was still printing (2.7 s after the playback); the run now ends at idle"},
     {"switzerland.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
     // A screen test that ends paused in the error blink: `wait: 400ms` now
-    // counts emulated time (LIB-6 AC-20) and the pause lands by LIB-10's rules,
+    // counts emulated time and the pause lands by the debugger's rules,
     // so the display is caught at another phase of the blink; RAM, partition
     // and paper are the record's.
     {"screentest/test_58_glyphs.ti58", "the display at the pause is another phase of the blink (RAM and partition are the record's)"},
@@ -232,7 +231,7 @@ Run run(const fs::path& file, const Record& want) {
     }
     if (file.generic_string().find(kNeverStops) == std::string::npos) server->line("wait");
     calcu::machine::Machine* m = server->host().session().context().machine();
-    // C59-7 AC-30: the in-file cards the record names, and the cards written.
+    // The in-file cards the record names, and the cards written.
     if (calcu::media::MediaPart* media = &product->libraryParts().media()) {
         const auto& kind = cu59::magneticCardKind();
         for (const auto& [name, bank] : want.inFile) {
@@ -279,7 +278,7 @@ std::string firstDifference(const std::vector<std::string>& want, const std::vec
 
 } // namespace
 
-TEST(c59_2_ac11_reference_runs_of_the_examples) {
+TEST(reference_runs_of_the_examples) {
     if (!std::getenv("CALCU59_REFERENCE_COMPARE")) return;   // slow: Longer (CalcU59ReferenceRuns)
     SKIP_UNLESS(fs::exists("roms/TMC0571B.txt"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     const char* folder = std::getenv("CALCU59_REFERENCE_EXAMPLES");
@@ -289,7 +288,7 @@ TEST(c59_2_ac11_reference_runs_of_the_examples) {
     for (const auto& e : fs::recursive_directory_iterator(examples)) {
         const auto ext = e.path().extension().string();
         const std::string rel = fs::relative(e.path(), examples).generic_string();
-        // The startup presets (C59-2 AC-13) are new in version 2: no reference.
+        // The startup presets are new in version 2: no reference.
         if ((ext == ".ti59" || ext == ".ti58" || ext == ".ti58c") && rel.rfind("startup/", 0) != 0) all.push_back(rel);
     }
     std::sort(all.begin(), all.end());

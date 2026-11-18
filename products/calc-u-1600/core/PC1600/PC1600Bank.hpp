@@ -165,7 +165,7 @@ public:
         m_slot2MapChangeSeq = 0;
     }
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    /// The machine state (Machine/StateRecords.hpp).
     template <class Io>
     void stateIo(Io& io) {
         io(m_port31)(m_port28)(m_port3c)(m_port3d)(m_port3cSeq)(m_slot1MapChangeSeq)(m_slot2MapChangeSeq);

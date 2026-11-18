@@ -6,9 +6,9 @@
 #include "sessions/Operation.hpp"
 #include "typing/TypingEngine.hpp"
 
-// ── Typing a BASIC listing in (C1600-2 AC-7; design §3.4) ───────────────
+// ── Typing a BASIC listing in ────────────────────────────────────────────
 //
-// Inside an operation, through the typing engine (LIB-5 AC-16, AC-28): each
+// Inside an operation, through the typing engine: each
 // line of the listing, an empty line left out, is typed through the ROM's
 // editor with ENTER; then the loader waits until the machine reports prompt
 // readiness (at most 12 s of emulated time) and until the end of the
@@ -17,7 +17,7 @@
 // (basic::LineStoreCheck, read through the loader memory access). On the
 // PC-1600 a line of more than 79 characters is not typed and counts as not
 // stored. The whole listing is checked for keys first: a character without
-// a key refuses the command before anything is typed (D-6). The loader never
+// a key refuses the command before anything is typed. The loader never
 // presses MODE: the machine must be in program mode. It reads no machine
 // class.
 

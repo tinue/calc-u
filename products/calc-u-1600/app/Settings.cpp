@@ -12,7 +12,7 @@ cs::ProductDecl makeDecl() {
     cs::ProductDecl d;
     d.productName = "Calc-U-1600";
     d.models = {"PC-1500", "PC-1500A", "PC-1600"};
-    d.fallbackModel = "PC-1500A";  // AC-27
+    d.fallbackModel = "PC-1500A";
     d.keys.push_back(cs::family::startupModel());
     d.keys.push_back(cs::family::startupLastModel());
     for (const std::string& m : d.models) d.keys.push_back(cs::family::presetFor(m));
@@ -33,7 +33,7 @@ cs::ProductDecl makeDecl() {
     dapPort.key = "dap-port";
     dapPort.kind = cs::ValueKind::Integer;
     dapPort.defaultValue = std::to_string(Settings::kDefaultDapPort);
-    dapPort.min = 1024;  // AC-28
+    dapPort.min = 1024;
     dapPort.max = 65535;
     dapPort.help = "The port of the debug server, 1024 to 65535; else 32168.";
     d.keys.push_back(dapPort);

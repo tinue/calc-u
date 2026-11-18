@@ -10,8 +10,8 @@ class PC1500Machine;
 
 // ── Keystroke-injection primitives for scripted PC-1500 input ───────────
 //
-// The tests' support (the golden runs' and C1600-2 AC-7's reference typer;
-// was core/PC1500/). Its old users, as written below, are gone.
+// The tests' support (the reference typer of the golden runs and of
+// `type-basic`). Its old users, as written below, are gone.
 //
 // Shared by BASIC program loading (typeBasicProgramText) and preset
 // script steps (PC1500PresetLoader's key:/type: handling) -- both drive

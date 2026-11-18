@@ -27,7 +27,7 @@ using Nibbles16 = std::array<uint8_t, 16>;
 Nibbles16 encodeBcd(std::string_view text);
 
 /// A decimal literal as a preset's `data:` and `expect:` take it
-/// (docs/formats/preset.md §4.2; C59-2 AC-4, D-44): `[-]digits[.digits]` or
+/// (docs/formats/preset.md §4.2): `[-]digits[.digits]` or
 /// `[-].digits`, with an optional exponent `e|E[±]digits`. Its register: a
 /// whole number digit for digit, cut after the 13th significant digit, any
 /// other value rounded to 13 digits (encodeBcd); nullopt for no number.

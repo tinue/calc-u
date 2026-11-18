@@ -697,7 +697,7 @@ PC1600DisplaySnapshot PC1600Machine::displaySnapshot() const {
     return snap;
 }
 
-// ── Machine state (C1600-5 AC-13) ────────────────────────────────────────
+// ── Machine state ────────────────────────────────────────
 
 template <class Io>
 void PC1600Machine::stateIo(Io& io) {

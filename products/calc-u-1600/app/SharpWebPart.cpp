@@ -52,9 +52,9 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
         setup.request(sessions::RequestName{name}, std::move(h));
     };
 
-    // ── The shell (LIB-14 Part D) ───────────────────────────────────────
-    // The product's data for the React set's shell (D-32) and the
-    // faceplate's hit map and LCD layout (D-31), from the tables Qt6 uses.
+    // ── The shell ───────────────────────────────────────────────────────
+    // The product's data for the React set's shell and the
+    // faceplate's hit map and LCD layout, from the tables Qt6 uses.
     req("c1600.shell-product", [this](const Value&, SessionContext&) {
         return sessions::replyGiven(
             sessions::valuePayload("c1600.shell-product", Value::object({{"product", calcu::shell::toValue(shellProduct(m_version, "", false))},
@@ -68,12 +68,12 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
 
     // ── Opening files ───────────────────────────────────────────────────
     // A drop, Upload Preset… and Import Media… go through the library
-    // (LIB-13's `open` with the uploads folder for several files, LIB-7's
+    // (`open` with the uploads folder for several files,
     // `media.import`); the page sends no `c1600.upload`. It writes one file
     // into the uploads folder and replies its path; the Web tests hand a
-    // preset over with it (`session.spec.js`; LIB-13, LIB-7 and C1600-2's
-    // designs keep it). A test aid: only with CALCU_WEB_TEST_AIDS, so a
-    // release Web build (`build.sh --release`) has none (LIB-15 AC-29).
+    // preset over with it (`session.spec.js`). A test aid: only with
+    // CALCU_WEB_TEST_AIDS, so a release Web build (`build.sh --release`)
+    // has none.
 #ifdef CALCU_WEB_TEST_AIDS
     cmd("c1600.upload", [this](const Value& a, SessionContext&) -> CommandOutcome {
         const std::string path = m_uploadsDir + "/" + calcu::files::fromPath(calcu::files::toPath(textArg(a, "name")).filename());
@@ -87,7 +87,7 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     });
 #endif
     // Load BASIC Program / Load Machine Code: the page sends the loaders'
-    // own commands (app/SharpLoaderPart, C1600-2 design §3.7).
+    // own commands (app/SharpLoaderPart).
 
     // ── Inspector ───────────────────────────────────────────────────────
     req("c1600.inspector-menu", [this](const Value& a, SessionContext&) {
@@ -107,7 +107,7 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
         return sessions::replyGiven(sessions::valuePayload("c1600.module-yaml", strings(moduleYamlDump(m_app))));
     });
 
-    // ── Copy Screen (LIB-14 AC-41) ──────────────────────────────────────
+    // ── Copy Screen ─────────────────────────────────────────────────────
     req("c1600.screen-image", [this](const Value&, SessionContext& c) {
         const calcu::machine::DisplayOutput* d = c.display();
         if (!d) return sessions::replyRefused("No machine is running.");

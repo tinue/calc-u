@@ -51,9 +51,9 @@ struct PC1600DisplaySnapshot {
 // (architecturally guaranteed, not configurable -- see
 // Ref/PC-1600/PC-1600-Machine-Overview.md §6).
 //
-// Threading (ADR 0009): single-threaded, no lock. Everything above the
-// core reaches it through PC1600InterfaceMachine (calcu::machine::Machine,
-// C1600-1); this class stays the core's own, for the core and its tests.
+// Threading: single-threaded, no lock. Everything above the
+// core reaches it through PC1600InterfaceMachine (calcu::machine::Machine);
+// this class stays the core's own, for the core and its tests.
 class PC1600Machine {
 public:
     PC1600Machine();
@@ -121,7 +121,7 @@ public:
     /// apart.
     uint64_t runCycles(uint64_t maxCycles);
 
-    // ── Machine state (C1600-5 AC-13, Machine/StateRecords.hpp) ─────────
+    // ── Machine state (Machine/StateRecords.hpp) ─────────
     /// The core's records: the SC7852 and the LH5803, the bank selection,
     /// the memory with its chips, the bus arbiter, the timers, the emulated
     /// time, the cassette deck, the modules and every card. Saving only
@@ -345,10 +345,10 @@ public:
 
     /// T-states consumed since the machine was built (both CPUs and the
     /// switched-off time alike); no reset clears it. The tick count of the
-    /// machine interface (C1600-1 AC-1).
+    /// machine interface.
     uint64_t elapsedTStates() const { return m_elapsedTStates; }
 
-    /// Key readiness (C1600-1 AC-21, design D-3): the last
+    /// Key readiness: the last
     /// kReadyFramesNeeded whole 60 Hz frames (counted from the build) were
     /// each ready as waitForKeyboardScanLoopJob() decides it -- CK0 on, and
     /// the SC7852 in the BASIC command loop or the key matrix read in the
@@ -481,7 +481,7 @@ public:
     // The trace records capture a full instruction trace entirely inside
     // the Core -- step() drains both rings into them.
 
-    // The app's trace (LIB-10 §10.7, the c1600.trace-records kind): the same
+    // The app's trace (the c1600.trace-records kind): the same
     // records, kept in a buffer until the library's trace session takes
     // them (whole records, at most a budget). endTraceRecord() drains what is
     // left and writes SESSION_END; endTraceRecords() turns recording off.
@@ -498,7 +498,7 @@ private:
 
 
     /// Bodies of the public detach calls (the *Locked names are from when
-    /// the class had a lock; it has none since M-26, ADR 0009).
+    /// the class had a lock; it has none).
     void detachCE1600PLocked();
     void detachHostDriveLocked();
     void detachCE150Locked();

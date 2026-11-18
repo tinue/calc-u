@@ -3,9 +3,9 @@
 #include "pacing/PacingProfile.hpp"
 #include <chrono>
 
-// The pacing profiles of the TI machines (LIB-17 AC-15; design §4): a fixed
-// slice of 20 ms, jittered slice ends (ODD59-5, the TI-58's error blink), and
-// full speed paced while the machine waits for input (ODD59-6). The same for
+// The pacing profiles of the TI machines: a fixed slice of 20 ms, jittered
+// slice ends (for the TI-58's error blink), and full speed paced while the
+// machine waits for input. The same for
 // the TI-59, TI-58 and TI-58C; the slice in ticks follows the model's rate.
 
 namespace cu59 {

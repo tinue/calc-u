@@ -31,7 +31,7 @@ public:
         records_->take(out, kAll);
         records_->end();
     }
-    std::string buttonFileName() const override { return "TRACE.bin"; }   // AC-23
+    std::string buttonFileName() const override { return "TRACE.bin"; }
     void machineGone() override { records_ = nullptr; }
 
 private:

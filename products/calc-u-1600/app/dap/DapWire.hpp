@@ -3,11 +3,10 @@
 #include <string>
 #include <string_view>
 
-// The DAP's base protocol (C1600-3 design §3.1): each message is a
+// The DAP's base protocol: each message is a
 // `Content-Length: n` header, an empty line, and n bytes of JSON. A reader
 // takes the bytes as they arrive, in any pieces, and gives whole message
-// bodies; a header without a length is dropped, as today
-// (frontends/qt6/app/debug/DapServer.cpp of 0.8.1).
+// bodies; a header without a length is dropped.
 
 namespace cu1600::dap {
 

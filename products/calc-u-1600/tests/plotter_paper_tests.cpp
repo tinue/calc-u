@@ -1,7 +1,6 @@
-// LIB-8, the Calc-U-1600 column (design §10.6, P16-1 to P16-4, the ported
-// cases of P16-3 that were shared_geometry_tests.cpp; the plotters' reference
-// pictures of T5): the CE-150 and the CE-1600P on the library's paper output
-// kind.
+// The CE-150 and the CE-1600P on the library's paper output kind: their
+// papers, strokes, colours, the panel's geometry and the plotters'
+// reference pictures.
 
 #include <cmath>
 #include <cstdlib>
@@ -87,13 +86,13 @@ void checkPlotterDescription(const calcu::paper::PaperDescription& d, double wid
     CHECK(std::fabs(millimetres(d, d.width) - widthMm) < 0.001);
     CHECK(std::fabs(millimetres(d, d.printableWidth) - drawnMm) < 0.001);
     const calcu::paper::Coord right = d.width - d.printableLeft - d.printableWidth;
-    CHECK(std::llabs(right - d.printableLeft) <= 1);   // the margins split evenly (rounded once, D-3)
+    CHECK(std::llabs(right - d.printableLeft) <= 1);   // the margins split evenly (rounded once)
     CHECK_EQ(d.pictureDotsPerInch, 1200);
 }
 
-// ── P16-1, AC-32 ─────────────────────────────────────────────────────────
+// ── The papers ───────────────────────────────────────────────────────────
 
-TEST(lib8_ac32_ce150_states_its_paper_on_every_model) {
+TEST(ce150_states_its_paper_on_every_model) {
     checkPlotterDescription(sharp::ce150PaperDescription(), 56.0, 42.75);
     const Catalogue c = sharp::sharpCatalogue();
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
@@ -106,7 +105,7 @@ TEST(lib8_ac32_ce150_states_its_paper_on_every_model) {
     }
 }
 
-TEST(lib8_ac32_ce1600p_states_its_paper) {
+TEST(ce1600p_states_its_paper) {
     checkPlotterDescription(sharp::ce1600pPaperDescription(), 210.0, 190.0);
     const Catalogue c = sharp::sharpCatalogue();
     bool ok = false;
@@ -117,9 +116,9 @@ TEST(lib8_ac32_ce1600p_states_its_paper) {
     CHECK(!problem);
 }
 
-// ── P16-2, AC-33 ─────────────────────────────────────────────────────────
+// ── Strokes and feeds ────────────────────────────────────────────────────
 
-TEST(lib8_ac33_pen_down_move_up_one_stroke_in_the_pen_colour) {
+TEST(pen_down_move_up_one_stroke_in_the_pen_colour) {
     CE1600PCard p;
     Ce150Card c;
     for (int which = 0; which < 2; ++which) {
@@ -144,7 +143,7 @@ TEST(lib8_ac33_pen_down_move_up_one_stroke_in_the_pen_colour) {
     }
 }
 
-TEST(lib8_ac33_move_with_pen_up_and_feed_give_no_mark) {
+TEST(move_with_pen_up_and_feed_give_no_mark) {
     CE1600PCard p;
     Connected con(p.paperOutput());
     Mechanism m(p.mechanism());
@@ -154,7 +153,7 @@ TEST(lib8_ac33_move_with_pen_up_and_feed_give_no_mark) {
     CHECK(con.paper.marks().empty());
 }
 
-TEST(lib8_ac33_feed_without_mark_grows_the_reach) {
+TEST(feed_without_mark_grows_the_reach) {
     Ce150Card c;
     Connected con(c.paperOutput());
     Mechanism m(c.mechanism());
@@ -162,14 +161,14 @@ TEST(lib8_ac33_feed_without_mark_grows_the_reach) {
     CHECK(con.paper.marks().empty());
     CHECK(!con.paper.empty());
     // The reach runs from the first place fed to (one half step) to the last
-    // (the library's rule, AC-4: what a feed touched).
+    // (the library's rule: what a feed touched).
     CHECK(con.paper.reach() == (calcu::paper::Reach{1 * kPerUnit, 8 * kPerUnit}));
     CHECK_EQ(c.paperOutput().standing(), 8 * kPerUnit);
 }
 
-// ── P16-4, AC-34 ─────────────────────────────────────────────────────────
+// ── The pen colours ──────────────────────────────────────────────────────
 
-TEST(lib8_ac34_four_pen_colours) {
+TEST(four_pen_colours) {
     sharp::PlotterPaperOutput out(sharp::ce1600pPaperDescription());
     calcu::paper::Paper paper(out.description());
     paper.bind(&out);
@@ -185,9 +184,9 @@ TEST(lib8_ac34_four_pen_colours) {
     paper.bind(nullptr);
 }
 
-// ── P16-3, AC-37: the cases of shared_geometry_tests.cpp ─────────────────
+// ── The panel's geometry ─────────────────────────────────────────────────
 
-TEST(lib8_ac37_places_map_to_the_panel) {
+TEST(places_map_to_the_panel) {
     sharp::PlotterPaperOutput out(sharp::ce1600pPaperDescription());
     calcu::paper::Paper paper(out.description());
     paper.bind(&out);
@@ -202,7 +201,7 @@ TEST(lib8_ac37_places_map_to_the_panel) {
     paper.bind(nullptr);
 }
 
-TEST(lib8_ac37_strokes_split_by_colour) {
+TEST(strokes_split_by_colour) {
     sharp::PlotterPaperOutput out(sharp::ce150PaperDescription());
     calcu::paper::Paper paper(out.description());
     paper.bind(&out);
@@ -227,7 +226,7 @@ TEST(lib8_ac37_strokes_split_by_colour) {
     paper.bind(nullptr);
 }
 
-TEST(lib8_ac37_copied_picture_size) {
+TEST(copied_picture_size) {
     sharp::PlotterPaperOutput out(sharp::ce1600pPaperDescription());
     calcu::paper::Paper paper(out.description());
     paper.bind(&out);
@@ -237,7 +236,7 @@ TEST(lib8_ac37_copied_picture_size) {
     const calcu::paper::PictureSize s = calcu::paper::pictureSize(paper);
     CHECK_EQ(s.width, 9921);   // 210 mm at 1200 dots per inch
     CHECK(std::fabs(s.dotsPerInch - 1200.0) < 1e-9);
-    // A very long roll is lowered below 1200 dots per inch (AC-17).
+    // A very long roll is lowered below 1200 dots per inch.
     out.penDown(Colour::Black, 0, 200000);
     out.penUp();
     const calcu::paper::PictureSize big = calcu::paper::pictureSize(paper);
@@ -247,11 +246,11 @@ TEST(lib8_ac37_copied_picture_size) {
     paper.bind(nullptr);
 }
 
-// ── LIB-8 AC-16 (design §6 T5): the plotters' reference pictures ─────────
+// ── The plotters' reference pictures ─────────────────────────────────────
 //
 // A `paper marks` reply drawn again on the product's description and its
-// picture compared byte for byte with a reference (D-7). The CE-150's reply
-// is the reference run's of plotter_ce150_demo (AC-39); the CE-1600P's is
+// picture compared byte for byte with a reference. The CE-150's reply
+// is the reference run's of plotter_ce150_demo; the CE-1600P's is
 // the part of plotter_ascii's within 140 units (tests/fixtures/paper/), so
 // that its picture stays small. CALCU_PAPER_PICTURES=1 writes the pictures
 // anew.
@@ -301,7 +300,7 @@ void checkReferencePicture(const calcu::paper::PaperDescription& d, const std::s
     const auto read = calcu::paper::readMarksReply(lines, &error);
     CHECK_EQ(error, std::string());
     if (!read) return;
-    CHECK(calcu::paper::marksReply(read->reach, read->marks) == lines);   // the reply form is fixed (AC-39)
+    CHECK(calcu::paper::marksReply(read->reach, read->marks) == lines);   // the reply form is fixed
     Replay out(d);
     calcu::paper::Paper paper(d);
     paper.bind(&out);
@@ -321,12 +320,12 @@ void checkReferencePicture(const calcu::paper::PaperDescription& d, const std::s
                             picture.c_str());
 }
 
-TEST(lib8_ac16_reference_pictures_of_the_plotters) {
+TEST(reference_pictures_of_the_plotters) {
     checkReferencePicture(sharp::ce150PaperDescription(),
                           "tests/reference/v0.8.1-examples/plotter_ce150_demo.pc1500a.CE-150.paper-marks",
                           "tests/fixtures/paper/ce150.png", 2646);   // 56 mm at 1200 dpi
     checkReferencePicture(sharp::ce1600pPaperDescription(), "tests/fixtures/paper/ce1600p.marks",
-                          "tests/fixtures/paper/ce1600p.png", 9921);   // AC-35: a short CE-1600P paper at 1200 dpi
+                          "tests/fixtures/paper/ce1600p.png", 9921);   // a short CE-1600P paper at 1200 dpi
 }
 
 } // namespace

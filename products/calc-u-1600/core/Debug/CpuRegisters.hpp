@@ -12,9 +12,8 @@ struct Z80HistoryFrame;
 // Register tables of the two CPU families: the display list, name lookup
 // (incl. 8-bit halves and flags) and history-frame conversion, and the
 // types the disassembler, the expressions, the source map and the DAP's
-// layer share (LIB-10 design §10.3: moved here from the old
-// core/Debug/DebugTarget.hpp when the debugger became the library's
-// machine::DebugTarget, core/Debug/SharpDebugging). Names are lower case.
+// layer share (the debug targets are the library's machine::DebugTarget,
+// core/Debug/SharpDebugging). Names are lower case.
 
 namespace debug {
 

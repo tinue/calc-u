@@ -205,7 +205,7 @@ public:
     bool pu() const { return m_pu; }
     bool pv() const { return m_pv; }
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// The machine state (Machine/StateRecords.hpp): the
     /// RAMs, the LH5811 with its serial block, the real-time clock and the
     /// piezo sampler. The cards on the connectors are the machine's records.
     template <class Io>
@@ -332,7 +332,7 @@ private:
 
     // True if any card on either connector is pulling INHIBIT low --
     // suppresses the system ROM (see resolve()'s ROM branch). With nothing
-    // attached, always false (today's unconditional ROM behavior).
+    // attached, always false (the ROM answers unconditionally).
     bool inhibitAsserted() const;
 
     static bool isIoChipAddress(uint16_t addr) { return (addr & 0xF000) == 0xF000; }

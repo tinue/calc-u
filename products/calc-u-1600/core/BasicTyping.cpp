@@ -83,7 +83,7 @@ calcu::sessions::Task<BasicTypeResult> typeProgram(calcu::sessions::OperationCon
         co_return result;
     }
     const std::vector<std::string> lines = linesOf(listing);
-    // D-6: every character of the listing has a key, or nothing is typed.
+    // Every character of the listing has a key, or nothing is typed.
     for (const std::string& line : lines)
         for (char32_t c : calcu::typing::decodeUtf8(line))
             if (!profile->charKeys(c, nullptr)) {

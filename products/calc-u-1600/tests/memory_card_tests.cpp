@@ -837,7 +837,7 @@ TEST(test_flash_sector_and_chip_erase) {
     CHECK(read(0x00) == 0xFF);
 
     // Chip erase clears every flash bank in the region, not just the
-    // current one (spec §5: "clears the whole Flash content-range").
+    // current one ("clears the whole Flash content-range").
     selectBank(2);
     programByte(0x00, 0x00);
     selectBank(3);
@@ -1197,8 +1197,8 @@ TEST(test_catalog_scan_lists_and_sorts) {
     CHECK(err.find("broken.module.yaml") != std::string::npos);  // reported, not fatal
 }
 
-// LIB-7 AC-48 (ledger 1600-1): a `.card.yaml` is not read.
-TEST(lib7_ac48_card_yaml_not_read) {
+// A `.card.yaml` is not read.
+TEST(card_yaml_not_read) {
     const calcu::testing::TempFolder dirFolder("calcu1600-old-cards");
     std::ofstream(dirFolder.str() + "/ce155.card.yaml") << kCe155Yaml;
     std::string err;

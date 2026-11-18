@@ -18,9 +18,9 @@
 // The real memtest program (fixtures/listings/sdas-lh5801/memtest_stock.bin,
 // ENTRY 0x40C5) and its sdas listing on a PC-1500A with no ROM, in a session
 // with Calc-U-1600's DebuggerPart, driven through the DAP's layer
-// (app/dap/: DapBreakpoints, DapStepping, DapTargets) -- today's run-control
+// (app/dap/: DapBreakpoints, DapStepping, DapTargets) -- the run-control
 // cases (0.8.1's Core/tests/run_control_tests.cpp) on the library's run
-// control (LIB-10 AC-44; C1600-3 AC-12, AC-14, AC-23). A small harness calls it:
+// control. A small harness calls it:
 //
 //   4600  sjp 0x40C5      ; BE 40 C5
 //   4603  bch 0x4603      ; 9E 02  -- parks here when memtest returns

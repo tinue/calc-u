@@ -1,4 +1,4 @@
-// LIB-16 (design §3.5, L5, P4): what the help tool cannot read itself.
+// What the help tool cannot read itself.
 // The settings keys the product declares reach `tools/help` through
 // help/settings-keys.txt, which this test compares with settingsDecl()
 // (CALCU1600_HELP_KEYS=1 writes it anew); the words a shared part may not
@@ -64,7 +64,7 @@ std::string keysFileText() {
     const FamilyKeys family = familyKeys();
     std::ostringstream out;
     out << "# The settings keys Calc-U-1600 declares (app/Settings.cpp, settingsDecl()),\n"
-           "# for tools/help's check C7 (LIB-16 AC-14): each `[section] key` is described\n"
+           "# for tools/help's check: each `[section] key` is described\n"
            "# in chapter 8, the family's in library/help/08-settings.md, the product's in\n"
            "# help/08-settings.md. Written by CalcU1600HelpTests with CALCU1600_HELP_KEYS=1.\n";
     std::set<std::string> generalDone;
@@ -106,7 +106,7 @@ std::set<std::string> manifestNames() {
 
 } // namespace
 
-TEST(lib16_ac14_settings_keys_file_matches_declaration) {
+TEST(settings_keys_file_matches_declaration) {
     const std::string want = keysFileText();
     if (const char* write = std::getenv("CALCU1600_HELP_KEYS"); write && std::string(write) == "1") {
         std::ofstream(kKeysFile, std::ios::binary) << want;
@@ -116,7 +116,7 @@ TEST(lib16_ac14_settings_keys_file_matches_declaration) {
     CHECK(have == want);
 }
 
-TEST(lib16_ac14_every_declared_key_is_in_the_keys_file) {
+TEST(every_declared_key_is_in_the_keys_file) {
     // Every key of the declaration shows up: by its name, or by its
     // section's general form and its name as a product line.
     const std::string text = keysFileText();
@@ -129,13 +129,13 @@ TEST(lib16_ac14_every_declared_key_is_in_the_keys_file) {
     CHECK(text.find("family [preset] <model>\nproduct [preset] PC-1500\n") != std::string::npos);
 }
 
-TEST(lib16_ac2_help_names_cover_the_catalogue) {
+TEST(help_names_cover_the_catalogue) {
     const std::set<std::string> names = manifestNames();
     CHECK(names.count("Calc-U-1600") == 1);
     calcu::machine::Catalogue catalogue = sharp::sharpCatalogue();
     sharp::addModuleDefinitions(catalogue, "frontends/qt6/resources/cards");
     const auto roms = sharp::lookUpRoms(calcu::roms::DirectoryBundle("roms")).set;
-    if (roms) sharp::addModuleDefinitions(catalogue, *roms);  // the CE-502B (LIB-12 AC-14)
+    if (roms) sharp::addModuleDefinitions(catalogue, *roms);  // the CE-502B
     for (const auto& m : catalogue.models()) {
         if (!names.count(m.model.value)) std::printf("help.yaml names: lacks the model %s\n", m.model.value.c_str());
         CHECK(names.count(m.model.value) == 1);

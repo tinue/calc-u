@@ -1,4 +1,4 @@
-"""The checks of a product's help (LIB-16 design §3.5, C1 to C9)."""
+"""The checks of a product's help (docs/formats/help.md)."""
 
 import os
 import re
@@ -9,10 +9,9 @@ from . import markdown
 from .manifest import ASIDE, PICTURE_SUFFIXES
 
 _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
-FOLLOWS = re.compile(r"^<!--\s*follows:\s*(.*?)\s*-->$")
 _AVOID = re.compile(r"^_Avoid_:\s*(.*)$")
 _TERM = re.compile(r"^\*\*([^*]+)\*\*:?\s*$")
-# C10 (AC-18): a path into the source code, standing on its own (not the
+# A path into the source code, standing on its own (not the
 # tail of a URL or of a relative link: those are checked as link targets).
 _SOURCE_DIRS = r"(?:frontends|core|app|library|products/[\w.-]+/(?:frontends|core|app))/"
 _SOURCE_PATH = re.compile(r"(?<![\w./:-])" + _SOURCE_DIRS)
@@ -49,7 +48,8 @@ class Resolved:
 
 
 def resolve(help_, source, target):
-    """Resolves a link target of `source` (AC-15, EC-2, EC-3; design §3.2)."""
+    """Resolves a link target of `source`: a relative path, `chapter:<n>`
+    (the first product file of chapter n) or a target with a scheme."""
     if target.startswith("chapter:"):
         rest = target[len("chapter:"):]
         number, _, anchor = rest.partition("#")
@@ -79,25 +79,24 @@ def _docs(help_):
 def run(help_, report):
     """Runs every check; returns the parsed documents for the build."""
     known = {path for _, path, _ in help_.files()}
-    _c1_chapters(help_, report)
+    _check_chapters(help_, report)
     docs = _docs(help_)
     used_pictures = set()
     for path, doc in docs.items():
         shared = help_.shared_dir in path.parents
-        _c2_links(help_, report, path, doc, known, docs, used_pictures, shared)
+        _check_links(help_, report, path, doc, known, docs, used_pictures, shared)
         if shared:
-            _c5_shared_words(help_, report, path, doc)
-        _c10_no_source(report, path, doc)
-    _c6_follows(help_, report)
-    _c3_c4_files(help_, report, known, used_pictures)
-    _c7_settings(help_, report, docs)
-    _c8_glossary(help_, report, docs)
+            _check_shared_words(help_, report, path, doc)
+        _check_no_source(report, path, doc)
+    _check_files(help_, report, known, used_pictures)
+    _check_settings(help_, report, docs)
+    _check_glossary(help_, report, docs)
     return docs, used_pictures
 
 
-def _c1_chapters(help_, report):
+def _check_chapters(help_, report):
     shared_path = help_.shared_dir / "help.yaml"
-    # AC-1's chapters are the shared manifest's: numbered 1 to n in order.
+    # The chapters are the shared manifest's: numbered 1 to n in order.
     order = [c.number for c in help_.chapters]
     if not all(isinstance(n, int) for n in order) or order != sorted(order) or len(order) != len(set(order)):
         report.fail(shared_path, 0, f"the chapters are not in order: {order}")
@@ -112,21 +111,21 @@ def _c1_chapters(help_, report):
                                         " not shared, product or both")
     product_path = help_.product_dir / "help.yaml"
     for n in help_.extra_product_chapters:
-        report.fail(product_path, 0, f"chapter {n} is not one of library/help/help.yaml's (AC-1)")
+        report.fail(product_path, 0, f"chapter {n} is not one of library/help/help.yaml's")
     for chapter in help_.chapters:
         if "shared" in chapter.parts and not chapter.shared:
             report.fail(shared_path, 0, f"chapter {chapter.number} ({chapter.title}) has no shared part")
         if "shared" not in chapter.parts and chapter.shared:
-            report.fail(shared_path, 0, f"chapter {chapter.number} ({chapter.title}) has no shared part by AC-1")
+            report.fail(shared_path, 0, f"chapter {chapter.number} ({chapter.title}) has no shared part by library/help/help.yaml")
         if "product" in chapter.parts and "shared" not in chapter.parts and not chapter.product:
             report.fail(product_path, 0, f"chapter {chapter.number} ({chapter.title}) has no product part")
         if "product" not in chapter.parts and chapter.product:
-            report.fail(product_path, 0, f"chapter {chapter.number} ({chapter.title}) has no product part by AC-1"
-                                         " (what differs by model goes to chapter 9, EC-3)")
+            report.fail(product_path, 0, f"chapter {chapter.number} ({chapter.title}) has no product part by library/help/help.yaml"
+                                         " (what differs by model goes to chapter 9)")
         for f in chapter.shared + chapter.product:
             where = shared_path if f in chapter.shared else product_path
             if f.suffix != ".md":
-                report.fail(where, 0, f"{f.name}: a help file is Markdown (.md) (AC-4)")
+                report.fail(where, 0, f"{f.name}: a help file is Markdown (.md)")
             elif not f.is_file():
                 report.fail(where, 0, f"{f.name}: not found (chapter {chapter.number})")
     for d in help_.downloads:
@@ -134,7 +133,7 @@ def _c1_chapters(help_, report):
             report.fail(product_path, 0, f"{d.name}: download not found")
 
 
-def _c2_links(help_, report, path, doc, known, docs, used_pictures, shared):
+def _check_links(help_, report, path, doc, known, docs, used_pictures, shared):
     for link in doc.links:
         target = link.target
         if not target:
@@ -147,11 +146,11 @@ def _c2_links(help_, report, path, doc, known, docs, used_pictures, shared):
         if r.kind == "external":
             continue
         if r.kind == "chapter-missing":
-            report.fail(path, link.line, f"{target}: the product has no part of that chapter (EC-3)")
+            report.fail(path, link.line, f"{target}: the product has no part of that chapter")
             continue
         if link.picture:
             if shared:
-                report.fail(path, link.line, f"{target}: a shared part has no picture, only Mermaid diagrams (AC-2)")
+                report.fail(path, link.line, f"{target}: a shared part has no picture, only Mermaid diagrams")
             if r.path.suffix.lower() not in PICTURE_SUFFIXES or not r.path.is_file():
                 report.fail(path, link.line, f"{target}: the picture leads nowhere")
                 continue
@@ -161,7 +160,7 @@ def _c2_links(help_, report, path, doc, known, docs, used_pictures, shared):
             used_pictures.add(r.path)
             continue
         if shared and not target.startswith("chapter:") and help_.product_dir in r.path.parents:
-            report.fail(path, link.line, f"{target}: a shared part names no product file; it links with chapter:<n> (AC-2, EC-3)")
+            report.fail(path, link.line, f"{target}: a shared part names no product file; it links with chapter:<n>")
             continue
         if r.path.suffix.lower() in PICTURE_SUFFIXES:
             if r.path.is_file() and _inside(r.path, help_):
@@ -182,7 +181,7 @@ def _inside(path, help_):
     return help_.shared_dir in path.parents or help_.product_dir in path.parents
 
 
-def _c3_c4_files(help_, report, known, used_pictures):
+def _check_files(help_, report, known, used_pictures):
     listed = set(known) | set(help_.downloads)
     for folder in (help_.shared_dir, help_.product_dir):
         for f in sorted(folder.rglob("*")):
@@ -192,56 +191,41 @@ def _c3_c4_files(help_, report, known, used_pictures):
                 continue
             if f.suffix.lower() in PICTURE_SUFFIXES:
                 if f not in used_pictures:
-                    report.fail(f, 0, "a picture that no help file uses (AC-7)")
+                    report.fail(f, 0, "a picture that no help file uses")
                 continue
             if f not in listed:
-                report.fail(f, 0, "not in the table of contents: list it in a manifest (AC-7)")
+                report.fail(f, 0, "not in the table of contents: list it in a manifest")
 
 
 def _word_pattern(word):
     return re.compile(r"(?<![A-Za-z0-9-])" + re.escape(word) + r"(?![A-Za-z0-9])")
 
 
-def _c5_shared_words(help_, report, path, doc):
+def _check_shared_words(help_, report, path, doc):
     patterns = [(w, _word_pattern(w)) for w in help_.all_names]
     for number, text in enumerate(doc.lines, 1):
         for word, pattern in patterns:
             if pattern.search(text):
-                report.fail(path, number, f"a shared part names {word!r}, a word of one product (AC-2)")
+                report.fail(path, number, f"a shared part names {word!r}, a word of one product")
 
 
-def _c10_no_source(report, path, doc):
-    """AC-18: the shipped help names no file of the source code and no
-    milestone of the migration. The repository's documents, examples,
+def _check_no_source(report, path, doc):
+    """The shipped help names no file of the source code and no
+    milestone (`M-<n>`). The repository's documents, examples,
     tools and the help itself may be named."""
     for number, text in doc.prose + doc.code_spans:
         m = _SOURCE_PATH.search(text)
         if m:
             report.fail(path, number, f"names the source path {m.group(0)!r}: the help names what a user"
-                                      " gets, not where it lies in the source (AC-18)")
+                                      " gets, not where it lies in the source")
         m = _MILESTONE.search(text)
         if m:
-            report.fail(path, number, f"names the milestone {m.group(0)!r} of the migration (AC-18)")
+            report.fail(path, number, f"names the milestone {m.group(0)!r}: the help describes the product, not its"
+                                      " development")
     for link in doc.links:
         m = _REPO_URL.match(link.target)
         if m and re.match(_SOURCE_DIRS, m.group(1)):
-            report.fail(path, link.line, f"{link.target}: links into the source code (AC-18)")
-
-
-def _c6_follows(help_, report):
-    for chapter in help_.chapters:
-        for f in chapter.shared:
-            if not f.is_file():
-                continue
-            first = next((l.strip() for l in f.read_text(encoding="utf-8").splitlines() if l.strip()), "")
-            m = FOLLOWS.match(first)
-            want = ", ".join(chapter.follows)
-            if not m:
-                report.fail(f, 1, f"a shared part starts with <!-- follows: {want} --> (AC-3)")
-                continue
-            given = [s.strip() for s in m.group(1).split(",") if s.strip()]
-            if set(given) != set(chapter.follows):
-                report.fail(f, 1, f"follows {', '.join(given)}; chapter {chapter.number} follows {want} (AC-3)")
+            report.fail(path, link.line, f"{link.target}: links into the source code")
 
 
 def settings_keys(help_):
@@ -259,11 +243,11 @@ def settings_keys(help_):
     return keys
 
 
-def _c7_settings(help_, report, docs):
+def _check_settings(help_, report, docs):
     keys = settings_keys(help_)
     path = help_.product_dir / "settings-keys.txt"
     if keys is None:
-        report.fail(path, 0, "not found: the product's settings keys (AC-14; a product test writes it)")
+        report.fail(path, 0, "not found: the product's settings keys (a product test writes it)")
         return
     chapter = help_.chapters[7]
     texts = {
@@ -276,7 +260,7 @@ def _c7_settings(help_, report, docs):
             continue
         if f"`{key}`" not in texts[side]:
             part = "shared" if side == "family" else "product"
-            report.fail(path, number, f"`{key}` is not described in the {part} part of chapter 8 (AC-14)")
+            report.fail(path, number, f"`{key}` is not described in the {part} part of chapter 8")
 
 
 def avoid_words(glossary_path):
@@ -300,11 +284,11 @@ def avoid_words(glossary_path):
     return sorted(w for w in words if w.lower() not in terms)
 
 
-def _c8_glossary(help_, report, docs):
+def _check_glossary(help_, report, docs):
     words = avoid_words(help_.root / "docs" / "GLOSSARY.md")
     patterns = [(w, re.compile(r"(?<![\w-])" + re.escape(w) + r"(?![\w-])", re.IGNORECASE)) for w in words]
     for path, doc in docs.items():
         for number, text in doc.prose:
             for word, pattern in patterns:
                 if pattern.search(text):
-                    report.warn(path, number, f"{word!r}: the glossary says to avoid it (AC-5)")
+                    report.warn(path, number, f"{word!r}: the glossary says to avoid it")

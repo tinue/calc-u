@@ -13,7 +13,7 @@
 // behind one small table (listingFormats()); each entry recognises its
 // assembler's listing and turns it into this model, so adding a format --
 // a disassembled ROM listing, a library's -- means adding one parser and
-// nothing else. Supported today: sdas (sdaslh5801 / sdasz80 .lst and the
+// nothing else. Supported: sdas (sdaslh5801 / sdasz80 .lst and the
 // linker's relocated .rst) and zasm .lst.
 //
 // Neither assembler names the file of an included line in its listing, so

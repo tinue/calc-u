@@ -5,12 +5,11 @@
 #include "support/PC1600BasicTyper.hpp"
 #include "machine/Machine.hpp"
 
-// 0.8.1's boot run, kept for the tests (LIB-18 design §10.8, D-24): a power
-// cycle under way runs to its end, a phase at a time, then the model's boot
-// run to the prompt (runBootToPromptJob of both typers). The app and the
-// harness run to key readiness instead (LIB-18 AC-13); the golden runs keep
-// this run so that they measure the cores and not LIB-18's readiness wait.
-// Was sharp::legacy::runToPrompt until M-46.
+// The old typers' boot run, kept for the tests: a power cycle under way
+// runs to its end, a phase at a time, then the model's boot run to the
+// prompt (runBootToPromptJob of both typers). The app and the harness run
+// to key readiness instead; the golden runs keep this run so that they
+// measure the cores and not the readiness wait.
 
 namespace sharptest {
 

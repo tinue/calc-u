@@ -58,8 +58,8 @@ std::variant<std::vector<std::uint8_t>, std::string> imageOf(const Value& a) {
     return std::move(*img);
 }
 
-// What the caller gives by hand (design §3.7); the reason when the address
-// is no hex address (today's hint).
+// What the caller gives by hand; the reason when the address
+// is no hex address (the hint).
 std::variant<sharp::loaders::CodeRequest, std::string> requestOf(const Value& a) {
     sharp::loaders::CodeRequest r;
     const std::string text = calcu::sessions::textArg(a, "address");
@@ -198,7 +198,7 @@ void SharpLoaderPart::attach(calcu::sessions::SessionSetup& setup) {
         const std::vector<std::uint8_t> bytes = bytesOf(a);
         const sharp::loaders::FileKind k = sharp::loaders::fileKind(bytes);
         // A listing, or text the classifier calls plain (a line without a
-        // number is still typed, and then not stored: AC-7).
+        // number is still typed, and then not stored).
         const bool text = k.kind == programfile::Kind::BasicListing ||
                           (k.kind == programfile::Kind::Other && k.words == "plain text");
         if (!text) {
@@ -219,7 +219,7 @@ void SharpLoaderPart::attach(calcu::sessions::SessionSetup& setup) {
         if (auto* why = std::get_if<std::string>(&img)) return calcu::sessions::replyRefused(*why);
         auto req = requestOf(a);
         if (auto* why = std::get_if<std::string>(&req)) {
-            // The text is no address: the plan without one, refused with today's hint.
+            // The text is no address: the plan without one, refused with the hint.
             sharp::loaders::CodePlan p = sharp::loaders::planCode(*ctx.machine(), std::get<0>(img), {});
             auto r = planReply(p);
             r->refusal = *why;
@@ -243,7 +243,7 @@ void SharpLoaderPart::attach(calcu::sessions::SessionSetup& setup) {
         if (auto* why = std::get_if<std::string>(&loaded)) return Refused{sharp::loaders::refusal(name, *why)};
         const sharp::loaders::CodeLoaded& code = std::get<sharp::loaders::CodeLoaded>(loaded);
         auto reply = loadedReply(code);
-        // AC-13: `run` starts code whose header names an address to start
+        // `run` starts code whose header names an address to start
         // at; without one nothing is started.
         if (!calcu::sessions::flagArg(a, "run") || !code.headerStart) return Done{std::move(reply)};
         const std::string command = code.advice.callCommand;
@@ -282,7 +282,7 @@ calcu::sessions::Task<OperationResult> SharpLoaderPart::startOperation(SharpLoad
     const calcu::typing::TypeResult t = co_await calcu::typing::typeTextAndWait(ctx, self->m_typing.engine(), command,
                                                                                /*enter=*/true, o);
     if (!t.done) co_return OperationResult{false, t.reason};
-    // D-4: idle is prompt readiness held for 20 frames in a row; D-5: at
+    // Idle is prompt readiness held for 20 frames in a row; waited for at
     // most the bound (an hour), then done all the same with a log line.
     const calcu::machine::TickRate rate = m->descriptor().tickRate;
     const calcu::machine::Ticks frame = OperationContext::runPiece(rate);

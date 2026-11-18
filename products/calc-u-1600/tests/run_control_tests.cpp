@@ -1,8 +1,8 @@
-// LIB-10 AC-44 (design §10.10, D16-10): today's run-control cases without
+// The run-control cases without
 // source lines on the library's run control -- step over a call, a data
 // breakpoint, a pause -- driven with the memtest fixture through the DAP's
 // layer (MemtestRig.hpp). The cases with source lines, conditions, hit
-// counts and log messages are dap_layer_tests.cpp's (C1600-3 AC-23).
+// counts and log messages are dap_layer_tests.cpp's.
 
 #include <cstdint>
 #include <cstdio>
@@ -16,7 +16,7 @@ namespace {
 using Reason = calcu::debugger::RunState::Reason;
 using cu1600::dap::StepKind;
 
-TEST(lib10_ac44_step_over_a_call) {
+TEST(step_over_a_call) {
     memtest::Rig r;
     if (!r.ok) { std::printf("  SKIP: memtest fixture missing\n"); return; }
     // At the harness: step over `sjp 0x40C5` runs all of memtest.
@@ -33,7 +33,7 @@ TEST(lib10_ac44_step_over_a_call) {
     CHECK(r.reasonIs(Reason::Breakpoint) && r.pc() == 0x40CE);
 }
 
-TEST(lib10_ac44_data_breakpoint_and_pause) {
+TEST(data_breakpoint_and_pause) {
     memtest::Rig r;
     if (!r.ok) return;
     cu1600::dap::DataBreakpointSpec w;

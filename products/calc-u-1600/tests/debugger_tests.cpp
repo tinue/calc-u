@@ -1,8 +1,6 @@
-// LIB-10, the Calc-U-1600 column (design §10.10, D16-4, D16-5, D16-6 in
-// the session, D16-8, D16-9): the library's run control and trace session on
-// the Sharp machines -- the advance with checks (AC-39, AC-5), the level
-// `cpu` and pause-on-start (AC-38), the run control without a debugger
-// (AC-40), the trace format and its limit (AC-42, AC-43, AC-23).
+// The library's run control and trace session on the Sharp machines -- the
+// advance with checks, the level `cpu` and pause-on-start, the run control
+// without a debugger, the trace format and its limit.
 
 #include <algorithm>
 #include <chrono>
@@ -54,9 +52,9 @@ std::unique_ptr<calcu::machine::Machine> handOverMachine() {
 
 bool reasonIs(const RunState& s, RunState::Reason r) { return s.paused && s.reason && *s.reason == r; }
 
-// ── D16-4: the advance with checks (AC-39, AC-5) ─────────────────────────
+// ── The advance with checks ──────────────────────────────────────────────
 
-TEST(lib10_ac39_step_of_one_target_other_runs_with_the_bus) {
+TEST(step_of_one_target_other_runs_with_the_bus) {
     sharpdebugtest::Rig rig(handOverMachine());
     rig.rc().pause(dbg::kCpu);
     calcu::machine::Debugging& d = rig.debugging();
@@ -70,7 +68,7 @@ TEST(lib10_ac39_step_of_one_target_other_runs_with_the_bus) {
     CHECK(d.target(0).retired() >= z0 + 2);    // the Z-80 ran meanwhile: OUT, HALT
 }
 
-TEST(lib10_ac39_only_the_target_about_to_run_passes_its_breakpoint) {
+TEST(only_the_target_about_to_run_passes_its_breakpoint) {
     sharpdebugtest::Rig rig(handOverMachine());
     calcu::machine::Debugging& d = rig.debugging();
     // Both stand on a breakpoint: the Z-80 at 0000 (about to run), the
@@ -88,7 +86,7 @@ TEST(lib10_ac39_only_the_target_about_to_run_passes_its_breakpoint) {
     CHECK(d.target(1).nextAddress() == 0xC000 && d.target(1).retired() == l0);   // its first instruction, not a later pass
 }
 
-TEST(lib10_checks_off_take_the_old_path) {
+TEST(checks_off_take_the_old_path) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     const calcu::machine::Catalogue cat = sharp::sharpCatalogue();
     auto plain = sharptest::buildSharp(cat, "PC-1600");
@@ -116,9 +114,9 @@ TEST(lib10_checks_off_take_the_old_path) {
     CHECK_EQ(a.retired(), b.retired());
 }
 
-// ── D16-5: the level `cpu`, pause-on-start (AC-38) ───────────────────────
+// ── The level `cpu`, pause-on-start ──────────────────────────────────────
 
-TEST(lib10_ac38_cpu_only_pause_lands_before_the_next_instruction) {
+TEST(cpu_only_pause_lands_before_the_next_instruction) {
     sharpdebugtest::Rig rig(handOverMachine());
     const std::uint64_t r0 = rig.debugging().target(0).retired();
     const auto r = rig.rc().pause(dbg::kCpu);
@@ -128,7 +126,7 @@ TEST(lib10_ac38_cpu_only_pause_lands_before_the_next_instruction) {
     CHECK_EQ(rig.debugging().target(0).retired(), r0);
 }
 
-TEST(lib10_ac38_program_level_refused) {
+TEST(program_level_refused) {
     sharpdebugtest::Rig rig(handOverMachine());
     const auto r = rig.rc().pause(dbg::LevelName{"program"});
     CHECK(!r.ok && r.reason == "The machine has no level program.");
@@ -143,8 +141,7 @@ void pauseOnStartFires(const char* model) {
     const auto* armed = f.state<RunState>(dbg::kRunStateTopic);
     CHECK(armed && armed->armed && !armed->paused);
     // A command that keeps the processor from the keys: a FOR loop on the
-    // PC-1500 and PC-1500A, a long BEEP on the PC-1600 (its key readiness:
-    // C1600-1 AC-21, D-3).
+    // PC-1500 and PC-1500A, a long BEEP on the PC-1600 (its key readiness).
     f.typeLine(std::string(model) == "PC-1600" ? "BEEP 1,40,500" : "FOR I=1 TO 200:NEXT I");
     for (int i = 0; i < 600; ++i) {
         const auto* s = f.state<RunState>(dbg::kRunStateTopic);
@@ -156,22 +153,22 @@ void pauseOnStartFires(const char* model) {
     CHECK(f.ok(dbg::kResumeCommand));
 }
 
-TEST(lib10_ac38_pause_on_start_fires_leaving_key_readiness_pc1500) {
+TEST(pause_on_start_fires_leaving_key_readiness_pc1500) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     pauseOnStartFires("PC-1500");
 }
-TEST(lib10_ac38_pause_on_start_fires_leaving_key_readiness_pc1500a) {
+TEST(pause_on_start_fires_leaving_key_readiness_pc1500a) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     pauseOnStartFires("PC-1500A");
 }
-TEST(lib10_ac38_pause_on_start_fires_leaving_key_readiness_pc1600) {
+TEST(pause_on_start_fires_leaving_key_readiness_pc1600) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     pauseOnStartFires("PC-1600");
 }
 
-// ── D16-6: the run control without a debugger (AC-40) ────────────────────
+// ── The run control without a debugger ───────────────────────────────────
 
-TEST(lib10_ac40_run_control_without_a_debugger) {
+TEST(run_control_without_a_debugger) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;   // the Qt6 frontend's session: SharpAppPart, no DAP client
     CHECK(f.start("PC-1600"));
@@ -190,7 +187,7 @@ TEST(lib10_ac40_run_control_without_a_debugger) {
     CHECK(f.part().machine()->tickCount() > ticks);
 }
 
-// ── D16-8: the trace format (AC-42, AC-23) ───────────────────────────────
+// ── The trace format ─────────────────────────────────────────────────────
 
 fs::path writePreset(SessionFixture& f, const std::string& name, const std::string& text) {
     const fs::path p = f.root / name;
@@ -217,21 +214,21 @@ void checkWellFormed(const tracetest::TraceSummary& s) {
     CHECK(s.allEventPayloads25 && s.allZ80Payloads29 && !s.truncated);
 }
 
-TEST(lib10_ac42_trace_step_produces_wellformed_file) {
+TEST(trace_step_produces_wellformed_file) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     const auto s = sessionTrace("PC-1500A", "  - trace: t.bin\n  - wait: 0.3s\n  - trace: off\n", "t.bin");
     checkWellFormed(s);
     CHECK(s.traceEventCount > 0);
 }
 
-TEST(lib10_ac42_trace_step_left_open_is_closed_at_the_end) {
+TEST(trace_step_left_open_is_closed_at_the_end) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     const auto s = sessionTrace("PC-1500A", "  - trace: t2.bin\n  - wait: 0.2s\n", "t2.bin");
     checkWellFormed(s);
     CHECK(s.traceEventCount > 0);
 }
 
-TEST(lib10_ac42_z80_frame_shares_one_file_with_lh5801_frame) {
+TEST(z80_frame_shares_one_file_with_lh5801_frame) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     // A PC-1600 with the CE-150 in MODE 1: the LH5803 drives the plotter.
     const auto s = sessionTrace("PC-1600\nprinter: CE-150",
@@ -242,14 +239,14 @@ TEST(lib10_ac42_z80_frame_shares_one_file_with_lh5801_frame) {
     CHECK(s.traceEventCount > 0);   // the LH5803's frames in the same file
 }
 
-TEST(lib10_ac42_pc1600_trace_step_produces_wellformed_file) {
+TEST(pc1600_trace_step_produces_wellformed_file) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     const auto s = sessionTrace("PC-1600", "  - trace: t4.bin\n  - wait: 0.3s\n  - trace: off\n", "t4.bin");
     checkWellFormed(s);
     CHECK(s.z80EventCount > 0);
 }
 
-TEST(lib10_ac42_pc1600_left_open_is_closed) {
+TEST(pc1600_left_open_is_closed) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     const auto s = sessionTrace("PC-1600", "  - trace: t5.bin\n  - wait: 0.2s\n", "t5.bin");
     checkWellFormed(s);
@@ -287,13 +284,13 @@ void checkReference(const char* model, int frames, const char* reference) {
     CHECK_EQ(diffs, std::size_t(0));
 }
 
-TEST(lib10_ac42_bytes_equal_the_recorded_reference) {
+TEST(bytes_equal_the_recorded_reference) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     checkReference("PC-1600", 29, "tests/golden-runs/pc1600-basic.trace");
     checkReference("PC-1500A", 120, "tests/golden-runs/pc1500a-basic.trace");
 }
 
-TEST(lib10_ac23_button_trace_is_trace_bin) {
+TEST(button_trace_is_trace_bin) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
@@ -309,9 +306,9 @@ TEST(lib10_ac23_button_trace_is_trace_bin) {
     CHECK(s.traceEventCount > 0);
 }
 
-// ── AC-53 (row 1600-53): the trace folder at each trace start, the refusal ──
+// ── The trace folder at each trace start, the refusal ────────────────────
 
-TEST(lib10_ac53_trace_folder_changed_after_the_start_is_the_next_traces) {
+TEST(trace_folder_changed_after_the_start_is_the_next_traces) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     const fs::path a = f.root / "traces-a", b = f.root / "traces-b";
@@ -330,7 +327,7 @@ TEST(lib10_ac53_trace_folder_changed_after_the_start_is_the_next_traces) {
     CHECK(!fs::exists(a / "two.bin"));
 }
 
-TEST(lib10_ac53_trace_refused_with_one_sentence_where_the_folder_cannot_be_written) {
+TEST(trace_refused_with_one_sentence_where_the_folder_cannot_be_written) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
@@ -343,7 +340,7 @@ TEST(lib10_ac53_trace_refused_with_one_sentence_where_the_folder_cannot_be_writt
     CHECK(!r.reason.empty() && r.reason.back() == '.' && r.reason.find("..") == std::string::npos);
 }
 
-// ── D16-9: the size limit (AC-43, AC-24) ─────────────────────────────────
+// ── The size limit ───────────────────────────────────────────────────────
 
 bool limitNotice(SessionFixture& f) {
     const auto notices = f.notices();
@@ -352,7 +349,7 @@ bool limitNotice(SessionFixture& f) {
     return false;
 }
 
-TEST(lib10_ac43_preset_trace_ends_at_the_limit_with_a_notice) {
+TEST(preset_trace_ends_at_the_limit_with_a_notice) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     f.settings.file().set("trace", "max-file-size-mb", "1");
@@ -361,12 +358,12 @@ TEST(lib10_ac43_preset_trace_ends_at_the_limit_with_a_notice) {
     CHECK(f.ok(calcu::presets::kLoadPresetCommand, Value::object({{"ref", preset.generic_string()}})));
     const std::string path = f.paths->traceDir() + "/long.bin";
     CHECK(fs::exists(path) && fs::file_size(path) <= 1024 * 1024);
-    CHECK(fs::exists(path) && fs::file_size(path) > 1000 * 1000);   // MiB, not 1'000'000 bytes (ledger 1600-14)
+    CHECK(fs::exists(path) && fs::file_size(path) > 1000 * 1000);   // MiB, not 1'000'000 bytes
     checkWellFormed(tracetest::readTrace(path));
     CHECK(limitNotice(f));
 }
 
-TEST(lib10_ac43_button_trace_ends_at_the_limit_with_a_notice) {
+TEST(button_trace_ends_at_the_limit_with_a_notice) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     f.settings.file().set("trace", "max-file-size-mb", "1");
@@ -387,10 +384,10 @@ TEST(lib10_ac43_button_trace_ends_at_the_limit_with_a_notice) {
 }
 
 
-// R-1 (LIB-10 design §10.11; Longer, CalcU1600DebuggerSpeed): a PC-1600 at
-// full speed with a breakpoint set that is never reached, against the same
-// run without one; the numbers are for the qa-report.
-TEST(lib10_speed_pc1600_full_speed_with_a_breakpoint) {
+// Longer (CalcU1600DebuggerSpeed): a PC-1600 at full speed with a
+// breakpoint set that is never reached, against the same run without one;
+// the numbers are printed.
+TEST(speed_pc1600_full_speed_with_a_breakpoint) {
     if (!std::getenv("CALCU1600_SPEED")) return;
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     auto measure = [](bool breakpoint) {

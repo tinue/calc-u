@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-// The generic kind `machine-state` (LIB-11 AC-24) on the TI-59, TI-58 and
-// TI-58C (C59-9 AC-15, design §3.7): capability `TMC0501/machine-state`.
+// The generic kind `machine-state` on the TI-59, TI-58 and
+// TI-58C: capability `TMC0501/machine-state`.
 // The form is the product's (core/TIStateRecords.hpp), one record per part
 // in the machine's order: the machine (its tick count, a pending Reset
 // restore, what is plugged), the RAM, the TMC0501, the PC-100C and the

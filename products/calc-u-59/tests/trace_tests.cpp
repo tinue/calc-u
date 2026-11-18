@@ -1,9 +1,8 @@
-// LIB-10 AC-33 (design §12.6, E10-6): a trace of a TI machine in today's
+// A trace of a TI machine in the trace
 // format, version 2, without key and card records, whoever starts it; one
-// trace session of the library. Ports shared_trace_tests.cpp (2.3.0's
-// TraceWriter): trace_writer_records writes build/trace-test.bin, which the
+// trace session of the library. trace_writer_records writes build/trace-test.bin, which the
 // CTest CalcU59TraceReader reads with tools/read_trace.py. The byte-for-byte
-// comparison with the reference recorded before M-53 is in
+// comparison with the recorded reference is in
 // golden_runs_tests.cpp (it plays a golden-run script).
 
 #include "TestHarness.hpp"
@@ -53,7 +52,7 @@ constexpr uint64_t kAll = std::numeric_limits<uint64_t>::max();
 } // namespace
 
 // The header with TI59, version 2 and the model; written for read_trace.py.
-TEST(lib10_ac33_header_ti59_version_2_and_model) {
+TEST(header_ti59_version_2_and_model) {
     auto m = testroms::makeMachine(Model::TI58C);
     auto rec = makeTITraceRecorder(*m);
     CHECK(rec != nullptr);
@@ -79,7 +78,7 @@ TEST(lib10_ac33_header_ti59_version_2_and_model) {
 }
 
 // Session start and end, an instruction, and a gap where the ring dropped frames.
-TEST(lib10_ac33_records_session_instruction_gap) {
+TEST(records_session_instruction_gap) {
     auto m = testroms::makeMachine(Model::TI59);
     auto rec = makeTITraceRecorder(*m);
     std::vector<uint8_t> out;
@@ -105,8 +104,8 @@ TEST(lib10_ac33_records_session_instruction_gap) {
 }
 
 // No key and no card record, also for a trace with keys and a card (the
-// button's, through the session; 2.3.0's manual trace wrote both).
-TEST(lib10_ac33_no_key_or_card_records) {
+// button's, through the session).
+TEST(no_key_or_card_records) {
     testroms::SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
@@ -123,8 +122,8 @@ TEST(lib10_ac33_no_key_or_card_records) {
     for (uint8_t t : rec.types) CHECK(t != 0x04);
 }
 
-// The button's file is named after the model (AC-23).
-TEST(lib10_ac33_button_names_by_model) {
+// The button's file is named after the model.
+TEST(button_names_by_model) {
     for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
         auto m = testroms::makeMachine(model);
         auto rec = makeTITraceRecorder(*m);
@@ -136,8 +135,8 @@ TEST(lib10_ac33_button_names_by_model) {
     CHECK_EQ(TraceWriter::baseFileName(Model::TI58C), std::string("CALCU58C_TRACE.bin"));
 }
 
-// The size limit ends every trace with the library's notice (ledger 59-19).
-TEST(lib10_ac33_limit_ends_with_a_notice) {
+// The size limit ends every trace with the library's notice, also a preset's trace.
+TEST(limit_ends_with_a_notice) {
     testroms::SessionRig r(testroms::RigOptions{.traceMaxMb = 1});   // 1 MiB for the library
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     r.send(calcu::debugger::kTraceCommand, Value::object({{"file", "limit.bin"}}));
@@ -152,9 +151,9 @@ TEST(lib10_ac33_limit_ends_with_a_notice) {
     CHECK(records(bytes).whole && records(bytes).types.back() == 0x03);
 }
 
-// The exit check of M-53: a trace of a preset and the button's are one
-// session, one trace at a time (OQ-3, ledger 59-19).
-TEST(lib10_ac33_exit_check_preset_and_button_traces_are_one_session) {
+// A trace of a preset and the button's are one session, one trace at a
+// time.
+TEST(preset_and_button_traces_are_one_session) {
     testroms::SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
@@ -168,6 +167,6 @@ TEST(lib10_ac33_exit_check_preset_and_button_traces_are_one_session) {
     }, 5s));
     CHECK(records(readBytes(r.folder.path() / "CALCU59_TRACE.bin")).types.back() == 0x03);   // the button's ended first
     CHECK(r.until([&] { return !r.busy(); }, 10s));
-    CHECK(!r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);   // ends with its preset (T3)
+    CHECK(!r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);   // ends with its preset
     CHECK(records(readBytes(r.folder.path() / "preset.bin")).whole);
 }

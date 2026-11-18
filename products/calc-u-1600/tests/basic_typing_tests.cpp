@@ -1,4 +1,4 @@
-// C1600-2 AC-7 (design §3.4, T4): typing a listing in through the typing
+// Typing a listing in through the typing
 // engine (sharp::loaders::typeProgram), as the session command
 // `c1600.type-basic` and as a preset's typed `program:` -- in a session with
 // the typing part and the loader part (SessionFixture), virtual time.
@@ -80,7 +80,7 @@ bool indicator(SessionFixture& f, const char* name) {
 const char* const kProgram = "10 A=1\n20 PRINT A\n30 DATA 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20\n40 END\n";
 
 // The old typer's memory on a core machine of the same model, the oracle
-// (design T4: the memory equals the old typer's).
+// (the memory equals the old typer's).
 std::vector<std::uint8_t> oldTyperBytes1500(const std::string& text) {
     PC1500Machine m(PC1500Variant::PC1500A);
     if (!m.loadROMFile("roms/PC-1500_A04.ROM")) return {};
@@ -114,7 +114,7 @@ std::vector<std::uint8_t> oldTyperBytes1600(const std::string& text) {
     return out;
 }
 
-TEST(c1600_2_ac7_lines_typed_with_enter_by_engine_pc1500) {
+TEST(lines_typed_with_enter_by_engine_pc1500) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(ready(f, "PC-1500A"));
@@ -125,7 +125,7 @@ TEST(c1600_2_ac7_lines_typed_with_enter_by_engine_pc1500) {
     CHECK(!typed.empty() && typed[1] == 10);   // the first record is line 10
 }
 
-TEST(c1600_2_ac7_lines_typed_with_enter_by_engine_pc1600) {
+TEST(lines_typed_with_enter_by_engine_pc1600) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(ready(f, "PC-1600"));
@@ -135,7 +135,7 @@ TEST(c1600_2_ac7_lines_typed_with_enter_by_engine_pc1600) {
     CHECK(!programBytes(memory(f)).empty());
 }
 
-TEST(c1600_2_ac7_memory_equals_old_typer) {
+TEST(memory_equals_old_typer) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     for (const char* model : {"PC-1500A", "PC-1600"}) {
         SessionFixture f;
@@ -148,7 +148,7 @@ TEST(c1600_2_ac7_memory_equals_old_typer) {
     }
 }
 
-TEST(c1600_2_ac7_empty_line_left_out) {
+TEST(empty_line_left_out) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(ready(f, "PC-1500A"));
@@ -156,7 +156,7 @@ TEST(c1600_2_ac7_empty_line_left_out) {
     CHECK(r.done);   // an empty line typed would be "not stored"
 }
 
-TEST(c1600_2_ac7_char_without_key_refuses_before_typing) {
+TEST(char_without_key_refuses_before_typing) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(ready(f, "PC-1500A"));
@@ -168,7 +168,7 @@ TEST(c1600_2_ac7_char_without_key_refuses_before_typing) {
 
 // Long lines in a row: each is stored before the next is typed (the wait
 // for prompt readiness, then for the end of the program to stay put).
-TEST(c1600_2_ac7_waits_prompt_then_end_stable) {
+TEST(waits_prompt_then_end_stable) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(ready(f, "PC-1500A"));
@@ -180,7 +180,7 @@ TEST(c1600_2_ac7_waits_prompt_then_end_stable) {
     if (!r.done) std::fprintf(stderr, "  %s\n", r.reason.c_str());
 }
 
-TEST(c1600_2_ac7_line_over_79_not_typed_pc1600) {
+TEST(line_over_79_not_typed_pc1600) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(ready(f, "PC-1600"));
@@ -190,7 +190,7 @@ TEST(c1600_2_ac7_line_over_79_not_typed_pc1600) {
     CHECK(r.reason.find(longLine) != std::string::npos);
 }
 
-TEST(c1600_2_ac7_names_lines_not_stored) {
+TEST(names_lines_not_stored) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(ready(f, "PC-1500A"));
@@ -200,7 +200,7 @@ TEST(c1600_2_ac7_names_lines_not_stored) {
     CHECK(r.reason.find("\"A=2\"") != std::string::npos);
 }
 
-TEST(c1600_2_ac7_no_line_stored_fails_with_pro_hint) {
+TEST(no_line_stored_fails_with_pro_hint) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));   // RUN mode after the start: lines are commands
@@ -210,7 +210,7 @@ TEST(c1600_2_ac7_no_line_stored_fails_with_pro_hint) {
           r.reason.find("PRO mode") != std::string::npos);
 }
 
-TEST(c1600_2_ac7_mode_not_pressed) {
+TEST(mode_not_pressed) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -222,8 +222,8 @@ TEST(c1600_2_ac7_mode_not_pressed) {
 }
 
 // A preset's typed `program:` goes through the same typer, inside the
-// preset's operation (design §3.10, §11).
-TEST(c1600_2_ac7_preset_typed_program_through_engine) {
+// preset's operation.
+TEST(preset_typed_program_through_engine) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));

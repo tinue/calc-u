@@ -1,19 +1,18 @@
-// C59-1: the TI-59, TI-58 and TI-58C behind the machine interface (design §6,
-// T2-T8). AC-4 is golden_runs_tests.cpp, AC-5 core_tests.cpp, AC-17 the CTest
-// CalcU59CoreSeam.
+// The TI-59, TI-58 and TI-58C behind the machine interface. The golden runs
+// are golden_runs_tests.cpp, the core's own cases core_tests.cpp, the seam the
+// CTest CalcU59CoreSeam.
 //
-// T1, the expected values that cannot come from the golden runs, recorded
-// from the code as imported (Calc-U-59 2.3.0 at v2.3.0, before any core
-// change):
-// - AC-1: TMC0501::getStepWeight (core/TMC0501.cpp:283-285 at v2.3.0) is 4 in
+// The expected values that cannot come from the golden runs, recorded from
+// the code of Calc-U-59 2.3.0 before any core change:
+// - Ticks: TMC0501::getStepWeight (core/TMC0501.cpp:283-285 at v2.3.0) is 4 in
 //   the IDLE state and 1 otherwise, never 4 on the TI-58C; one instruction is
 //   32 ticks, so 32 and 128.
-// - AC-6/AC-19, first step 7 (golden runs ti59-reset-partition and
+// - Partition (golden runs ti59-reset-partition and
 //   ti58-reset-partition): the ROM's default partition is 479.59 on the TI-59
 //   (60 program registers) and 239.29 on the TI-58 (30); "4 Op 17" makes the
-//   TI-59 639.39 (80), "2 Op 17" the TI-58 319.19 (40). 2.3.0's Reset put the
-//   default back (row 59-22).
-// - AC-6 constant memory, first step 11: a TI-58C at "2 Op 17" (319.19, 40)
+//   TI-59 639.39 (80), "2 Op 17" the TI-58 319.19 (40). A Reset keeps the
+//   partition (2.3.0's put the default back).
+// - Constant memory: a TI-58C at "2 Op 17" (319.19, 40)
 //   and Fix 2.
 
 #include "TestHarness.hpp"
@@ -74,9 +73,9 @@ bool keyMatrixClear(Machine& m) {
 
 } // namespace
 
-// ── T2: keys in the descriptor ──────────────────────────────────────────────
+// ── Keys in the descriptor ──────────────────────────────────────────────────
 
-TEST(c59_1_ac9_45_key_ids_by_row_with_spellings) {
+TEST(the_45_key_ids_by_row_with_spellings) {
     const std::vector<std::vector<std::string>> rows = {
         {"A", "B", "C", "D", "E"},     {"2nd", "INV", "lnx", "CE", "CLR"}, {"LRN", "x⇄t", "x²", "√x", "1/x"},
         {"SST", "STO", "RCL", "SUM", "yˣ"}, {"BST", "EE", "(", ")", "÷"}, {"GTO", "7", "8", "9", "×"},
@@ -97,14 +96,14 @@ TEST(c59_1_ac9_45_key_ids_by_row_with_spellings) {
         CHECK(spellings("yˣ") == (std::vector<std::string>{"Yˣ", "y^x"}));
         CHECK(spellings("÷") == (std::vector<std::string>{"/"}));
         CHECK(spellings("×") == (std::vector<std::string>{"x", "*"}));
-        for (const auto& k : keys) {   // x2 (2.3.0's ti59.py) goes
+        for (const auto& k : keys) {   // no key is x2
             CHECK(k.id.value != "x2");
             CHECK(std::find(k.otherSpellings.begin(), k.otherSpellings.end(), "x2") == k.otherSpellings.end());
         }
     }
 }
 
-TEST(c59_1_ac12_no_printer_keys) {
+TEST(machine_no_printer_keys) {
     for (Model model : kModels) {
         auto m = cu59::buildMachine(model, *romSet());
         for (const char* k : {"PRINT", "ADV", "TRACE"}) {
@@ -114,9 +113,9 @@ TEST(c59_1_ac12_no_printer_keys) {
     }
 }
 
-// ── T3: emulated time, build ────────────────────────────────────────────────
+// ── Emulated time, build ────────────────────────────────────────────────────
 
-TEST(c59_1_ac1_instruction_ticks_per_model) {
+TEST(instruction_ticks_per_model) {
     for (Model model : kModels) {
         auto m = makeMachine(model);
         CHECK_EQ(m->advance(1), Ticks{32});   // the start-up: active
@@ -133,7 +132,7 @@ TEST(c59_1_ac1_instruction_ticks_per_model) {
     }
 }
 
-TEST(c59_1_ac2_overshoot_below_one_instruction) {
+TEST(overshoot_below_one_instruction) {
     auto m = makeMachine(Model::TI59);
     std::vector<Ticks> ns;
     for (Ticks n = 1; n <= 10'000; ++n) ns.push_back(n);
@@ -148,7 +147,7 @@ TEST(c59_1_ac2_overshoot_below_one_instruction) {
     CHECK_EQ(m->advance(0), Ticks{0});
 }
 
-TEST(c59_1_ac3_tick_count_goes_on_across_operations) {
+TEST(tick_count_goes_on_across_operations) {
     for (Model model : kModels) {
         auto m = makeMachine(model);
         CHECK_EQ(m->tickCount(), Ticks{0});
@@ -164,7 +163,7 @@ TEST(c59_1_ac3_tick_count_goes_on_across_operations) {
     }
 }
 
-TEST(c59_1_ec1_idle_advance_by_32_runs_one_of_128) {
+TEST(idle_advance_by_32_runs_one_of_128) {
     for (Model model : {Model::TI59, Model::TI58}) {
         auto m = makeMachine(model);
         runToScanLoop(*m, model);
@@ -178,7 +177,7 @@ TEST(c59_1_ec1_idle_advance_by_32_runs_one_of_128) {
     }
 }
 
-TEST(c59_1_ac7_new_machine_equals_cold_booted) {
+TEST(new_machine_equals_cold_booted) {
     for (Model model : kModels) {
         auto fresh = makeMachine(model);
         auto used = makeMachine(model);
@@ -197,9 +196,9 @@ TEST(c59_1_ac7_new_machine_equals_cold_booted) {
     }
 }
 
-// ── T4: Reset, power cycle, cold boot ───────────────────────────────────────
+// ── Reset, power cycle, cold boot ───────────────────────────────────────────
 
-TEST(c59_1_ac6_reset_keeps_ram_and_partition_ti59_ti58) {
+TEST(reset_keeps_ram_and_partition_ti59_ti58) {
     for (Model model : {Model::TI59, Model::TI58}) {
         auto m = makeMachine(model);
         runToScanLoop(*m, model);
@@ -221,7 +220,7 @@ TEST(c59_1_ac6_reset_keeps_ram_and_partition_ti59_ti58) {
     }
 }
 
-TEST(c59_1_ac6_reset_equals_power_cycle_ti58c) {
+TEST(reset_equals_power_cycle_ti58c) {
     auto a = makeMachine(Model::TI58C), b = makeMachine(Model::TI58C);
     for (Machine* m : {a.get(), b.get()}) {
         runToScanLoop(*m, Model::TI58C);
@@ -236,7 +235,7 @@ TEST(c59_1_ac6_reset_equals_power_cycle_ti58c) {
     CHECK_EQ(dbg(*a).pc(), dbg(*b).pc());
 }
 
-TEST(c59_1_ac6_power_cycle_loses_memory_ti59_ti58) {
+TEST(power_cycle_loses_memory_ti59_ti58) {
     for (Model model : {Model::TI59, Model::TI58}) {
         auto m = makeMachine(model);
         runToScanLoop(*m, model);
@@ -251,7 +250,7 @@ TEST(c59_1_ac6_power_cycle_loses_memory_ti59_ti58) {
     }
 }
 
-TEST(c59_1_ac6_power_cycle_keeps_constant_memory_ti58c) {
+TEST(power_cycle_keeps_constant_memory_ti58c) {
     auto m = makeMachine(Model::TI58C);
     runToScanLoop(*m, Model::TI58C);
     keys(*m, Model::TI58C, {72, 82, kSto, 92, 73});   // 41 STO 05
@@ -269,7 +268,7 @@ TEST(c59_1_ac6_power_cycle_keeps_constant_memory_ti58c) {
     CHECK_EQ(displayText(*m), std::string("41"));
 }
 
-TEST(c59_1_ac6_cold_boot_from_zeroed_memory) {
+TEST(cold_boot_from_zeroed_memory) {
     for (Model model : kModels) {
         auto m = makeMachine(model);
         runToScanLoop(*m, model);
@@ -287,9 +286,9 @@ TEST(c59_1_ac6_cold_boot_from_zeroed_memory) {
     }
 }
 
-TEST(c59_1_ac6_constant_memory_in_place_before_start_up) {
-    // First step 11: partition 319.19 and Fix 2 come back on a TI-58C built
-    // with its constant memory (C59-3 AC-2 hands it from M-54).
+TEST(constant_memory_in_place_before_start_up) {
+    // Partition 319.19 and Fix 2 come back on a TI-58C built with its
+    // constant memory.
     auto a = makeMachine(Model::TI58C);
     runToScanLoop(*a, Model::TI58C);
     keys(*a, Model::TI58C, {83, k2nd, kOp, 82, 62, kClr, k2nd, kFix, 83});   // 2 Op 17 (319.19), CLR, Fix 2
@@ -309,7 +308,7 @@ TEST(c59_1_ac6_constant_memory_in_place_before_start_up) {
     CHECK_EQ(displayText(*a), std::string("033"));
 }
 
-TEST(c59_1_ac8_no_key_down_and_switched_on_display_after_each_operation) {
+TEST(no_key_down_and_switched_on_display_after_each_operation) {
     for (Model model : kModels) {
         auto m = makeMachine(model);
         runToScanLoop(*m, model);
@@ -326,7 +325,7 @@ TEST(c59_1_ac8_no_key_down_and_switched_on_display_after_each_operation) {
     }
 }
 
-TEST(c59_1_ac19_restored_before_key_readiness) {
+TEST(restored_before_key_readiness) {
     for (Model model : {Model::TI59, Model::TI58}) {
         auto m = makeMachine(model);
         runToScanLoop(*m, model);
@@ -349,9 +348,9 @@ TEST(c59_1_ac19_restored_before_key_readiness) {
     }
 }
 
-// ── T5: key readiness ───────────────────────────────────────────────────────
+// ── Key readiness ───────────────────────────────────────────────────────────
 
-TEST(c59_1_ac18_key_ready_in_scan_loop_each_model_with_and_without_printer) {
+TEST(key_ready_in_scan_loop_each_model_with_and_without_printer) {
     for (Model model : kModels) {
         for (bool printer : {false, true}) {
             auto m = makeMachine(model, printer);
@@ -367,8 +366,8 @@ TEST(c59_1_ac18_key_ready_in_scan_loop_each_model_with_and_without_printer) {
     }
 }
 
-TEST(c59_1_ac18_not_key_ready_while_a_program_runs) {
-    // Lbl A GTO A; with Pause; with Prt (printer on): first step 5's cases.
+TEST(not_key_ready_while_a_program_runs) {
+    // Lbl A GTO A; with Pause; with Prt (printer on).
     const std::vector<std::vector<uint8_t>> programs = {{76, 11, 61, 11}, {76, 11, 66, 61, 11}, {76, 11, 99, 61, 11}};
     for (Model model : kModels) {
         for (size_t p = 0; p < programs.size(); ++p) {
@@ -389,9 +388,9 @@ TEST(c59_1_ac18_not_key_ready_while_a_program_runs) {
     }
 }
 
-// ── T6: keys ────────────────────────────────────────────────────────────────
+// ── Keys ────────────────────────────────────────────────────────────────────
 
-TEST(c59_1_ac10_each_key_id_presses_its_row_and_column) {
+TEST(each_key_id_presses_its_row_and_column) {
     auto m = makeMachine(Model::TI59);
     runToScanLoop(*m, Model::TI59);
     for (const auto& k : tiCatalogue().model(cu59::modelId(Model::TI59))->keys) {
@@ -410,7 +409,7 @@ TEST(c59_1_ac10_each_key_id_presses_its_row_and_column) {
     }
 }
 
-TEST(c59_1_ac11_two_keys_down_both_in_the_matrix) {
+TEST(two_keys_down_both_in_the_matrix) {
     auto m = makeMachine(Model::TI59);
     runToScanLoop(*m, Model::TI59);
     m->keyDown(KeyId{"2"});
@@ -422,13 +421,13 @@ TEST(c59_1_ac11_two_keys_down_both_in_the_matrix) {
     CHECK_EQ(TIMachineTesting::keyLines(ti(*m), 8) & 0b1101110, (1 << kTIKeyLineBits[3]) | (1 << kTIKeyLineBits[4]));
 }
 
-TEST(c59_1_ec3_unknown_key_refused_state_unchanged) {
+TEST(unknown_key_refused_state_unchanged) {
     auto m = makeMachine(Model::TI59);
     runToScanLoop(*m, Model::TI59);
     std::vector<uint8_t> lines;
     for (int c = 0; c < 16; ++c) lines.push_back(TIMachineTesting::keyLines(ti(*m), c));
     const Ticks t = m->tickCount();
-    for (const char* k : {"x2", "PRINT", "", "x<>t", "sqrt"}) {   // other spellings are not IDs (LIB-1 D-2)
+    for (const char* k : {"x2", "PRINT", "", "x<>t", "sqrt"}) {   // other spellings are not IDs
         CHECK(m->keyDown(KeyId{k}) == KeyCall::UnknownKey);
         CHECK(m->keyUp(KeyId{k}) == KeyCall::UnknownKey);
     }
@@ -436,9 +435,9 @@ TEST(c59_1_ec3_unknown_key_refused_state_unchanged) {
     CHECK_EQ(m->tickCount(), t);
 }
 
-// ── T7: display output ──────────────────────────────────────────────────────
+// ── Display output ──────────────────────────────────────────────────────────
 
-TEST(c59_1_ac13_twelve_positions_rightmost_first_segments_and_brightness) {
+TEST(twelve_positions_rightmost_first_segments_and_brightness) {
     auto m = makeMachine(Model::TI59);
     runToScanLoop(*m, Model::TI59);
     keys(*m, Model::TI59, {82, 83, 84});   // 123
@@ -476,7 +475,7 @@ TEST(c59_1_ac13_twelve_positions_rightmost_first_segments_and_brightness) {
     CHECK_EQ(dps, 1);
 }
 
-TEST(c59_1_ac14_digit_minus_degree_quote_apostrophe_blank_and_zero_suppression) {
+TEST(digit_minus_degree_quote_apostrophe_blank_and_zero_suppression) {
     for (int d = 0; d < 10; ++d)
         for (uint8_t ctrl : {0, 1, 8, 9}) CHECK_EQ(segmentsFor(static_cast<uint8_t>(d), ctrl, false), kDigitSegments[d]);
     CHECK_EQ(segmentsFor(0, 6, false), kSegmentsMinus);
@@ -502,7 +501,7 @@ TEST(c59_1_ac14_digit_minus_degree_quote_apostrophe_blank_and_zero_suppression) 
     CHECK_EQ(text, std::string("-23"));
 }
 
-TEST(c59_1_ac15_c_indicator_apart_from_leftmost_position) {
+TEST(c_indicator_apart_from_leftmost_position) {
     auto m = makeMachine(Model::TI59);
     runToScanLoop(*m, Model::TI59);
     // Waiting for a key: the number, C off.
@@ -544,7 +543,7 @@ TEST(c59_1_ac15_c_indicator_apart_from_leftmost_position) {
     CHECK(together);
 }
 
-TEST(c59_1_ac16_no_sound_display_always_on) {
+TEST(no_sound_display_always_on) {
     for (Model model : kModels) {
         auto m = makeMachine(model);
         int16_t buf[64];
@@ -559,7 +558,7 @@ TEST(c59_1_ac16_no_sound_display_always_on) {
     }
 }
 
-TEST(c59_1_ec2_two_reads_without_advance_are_equal) {
+TEST(two_reads_without_advance_are_equal) {
     auto m = makeMachine(Model::TI59);
     runToScanLoop(*m, Model::TI59);
     keys(*m, Model::TI59, {83, 84});
@@ -574,9 +573,9 @@ TEST(c59_1_ec2_two_reads_without_advance_are_equal) {
     CHECK(a.indicators[0].on == b.indicators[0].on && a.indicators[0].brightness == b.indicators[0].brightness);
 }
 
-// ── T8: the card switch on the readerless models ────────────────────────────
+// ── The card switch on the readerless models ────────────────────────────────
 
-TEST(c59_1_ec4_ti58_ti58c_find_their_card_switch_line) {
+TEST(ti58_ti58c_find_their_card_switch_line) {
     for (Model model : {Model::TI58, Model::TI58C}) {
         auto m = makeMachine(model);
         for (int op = 0; op < 4; ++op) {
@@ -588,7 +587,7 @@ TEST(c59_1_ec4_ti58_ti58c_find_their_card_switch_line) {
                 m->advance(1);
                 veto = dbg(*m).pc() >= kCardVetoLo && dbg(*m).pc() <= kCardVetoHi;
             }
-            CHECK(veto);   // the idle pass goes through the card veto, as today
+            CHECK(veto);   // the idle pass goes through the card veto
         }
     }
 }

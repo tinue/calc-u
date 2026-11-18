@@ -25,7 +25,7 @@ The calculator dumps are byte for byte the files Calc-U-59 2.3.0 had in
 dumps (`roms/solid-state/TMC05xx.txt`, which are the same as TI-59-ROM
 `dumps/modules/`) and from `roms/solid-state/cuecards.txt` (LIB-12 AC-14);
 their ROM images are byte for byte the 2.3.0 ones (test
-`lib12_ac14_module_images_equal_the_2_3_0_dumps`). Since M-24 the product
+`module_images_equal_the_2_3_0_dumps`). Since M-24 the product
 reads the module ROMs from them; the 2.3.0 dumps are no longer fetched.
 
 2.3.0's `solid-state/cuecards.txt` left the source repository in M-55

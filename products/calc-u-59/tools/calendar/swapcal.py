@@ -127,7 +127,7 @@ def program():
 
 
 def write_ti59(path):
-    """A preset of format 2 (docs/formats/preset.md; M-54)."""
+    """A preset of format 2 (docs/formats/preset.md)."""
     code, labels = program()
     regs = registers()
     out = ['format-version: 2', 'model: TI-59', 'slot-1: { name: ML }', 'printer: PC-100C', '',

@@ -1,17 +1,16 @@
-// The long-run pacing tests of LIB-17 (Technical Requirements; AC-21), the
-// "after" test: Calc-U-1600 on the library's pacer through the library's app
-// session (M-31). The "before" test ran on 0.8.1's pacer in M-10 (first step
-// 14 of docs/walkthroughs/first-steps.md); its measured drift -- the PC-1600
+// The long-run pacing tests: Calc-U-1600 on the library's pacer through the
+// library's app session. The same test on 0.8.1's pacer measured a drift --
+// the PC-1600
 // 0.0037 % fast while on and 0.21 % fast once switched off, the PC-1500A
 // 12.7 ms over an hour, because 0.8.1 dropped the overshoot of each advance
-// -- is the expected difference to this one (LIB-17 decision log).
+// -- which is the expected difference to this one.
 //
 // Scripted (Frequent group): a wall clock this test supplies, calls about 60
 // times a second with ±4 ms jitter, an oversleep now and then and one stall;
-// the machine is switched off by its OFF key half way (design D-4).
+// the machine is switched off by its OFF key half way.
 // CALCU1600_PACING_SCRIPTED_SECONDS sets the wall time per model (default
 // below). After every call, emulated time (ticks at the machine's nominal
-// clock) must match wall time within the bound of AC-1, and over each
+// clock) must match wall time within kBoundSeconds, and over each
 // stretch between stalls it may differ by no more than 100 ppm.
 //
 // Real clock (Checkpoint group): CALCU1600_PACING_LONGRUN=<seconds> runs the
@@ -32,10 +31,10 @@ namespace {
 namespace sessions = calcu::sessions;
 using sessionfixture::SessionFixture;
 
-// The bound of AC-1 for a profile whose slice is the call: the last
+// The bound for a profile whose slice is the call: the last
 // instruction's overshoot, well under a millisecond; 2 ms leaves room.
 constexpr double kBoundSeconds = 0.002;
-constexpr double kPpm = 100e-6;   // AC-21: a crystal's tolerance
+constexpr double kPpm = 100e-6;   // a crystal's tolerance
 constexpr double kDefaultScriptedSeconds = 120;
 
 std::uint64_t ticksNow(SessionFixture& f) { return f.part().machine()->tickCount(); }
@@ -70,7 +69,7 @@ void test_scripted(const char* model) {
     for (long call = 1; call <= calls; ++call) {
         double step = 1000.0 / 60 + (rnd() - 0.5) * 8;   // ±4 ms jitter
         if (call % 900 == 0) step += 50;                 // an oversleep (under the lag limit)
-        if (call == stallAt) {                           // a 5 s stall: the lag is dropped whole (AC-4)
+        if (call == stallAt) {                           // a 5 s stall: the lag is dropped whole
             closeStretch();
             t0 = ticksNow(f);   // the call that drops the lag runs one slice from the new origin
             f.call(5000);
@@ -136,13 +135,13 @@ void test_real_clock(const char* model) {
 
 // Scripted: Frequent group. Real clock: Checkpoint group, only with
 // CALCU1600_PACING_LONGRUN set.
-TEST(lib17_ac21_pacing_longrun_scripted_pc1500a) {
+TEST(pacing_longrun_scripted_pc1500a) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     test_scripted("PC-1500A");
 }
-TEST(lib17_ac21_pacing_longrun_scripted_pc1600) {
+TEST(pacing_longrun_scripted_pc1600) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     test_scripted("PC-1600");
 }
-TEST(lib17_ac21_pacing_longrun_real_clock_pc1500a) { test_real_clock("PC-1500A"); }
-TEST(lib17_ac21_pacing_longrun_real_clock_pc1600) { test_real_clock("PC-1600"); }
+TEST(pacing_longrun_real_clock_pc1500a) { test_real_clock("PC-1500A"); }
+TEST(pacing_longrun_real_clock_pc1600) { test_real_clock("PC-1600"); }

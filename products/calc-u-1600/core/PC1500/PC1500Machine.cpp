@@ -190,8 +190,7 @@ uint64_t PC1500Machine::runCycles(uint64_t maxCycles) {
                 // before even reaching it, matching the real cut CPU
                 // clock), but the uPD1990AC RTC chip and the host key
                 // queue both sit outside the CPU and must keep advancing
-                // regardless (design doc: "the RTC keeps advancing while
-                // powered off").
+                // regardless: the RTC keeps advancing while powered off.
                 advancePeripherals(LH5801::kHaltTickCycles);
                 consumed += static_cast<uint64_t>(LH5801::kHaltTickCycles);
                 continue;
@@ -281,7 +280,7 @@ PC1500Display PC1500Machine::display() const {
     return PC1500Display(m_memory);
 }
 
-// ── Machine state (C1600-5 AC-13) ────────────────────────────────────────
+// ── Machine state ────────────────────────────────────────
 
 template <class Io>
 void PC1500Machine::stateIo(Io& io) {

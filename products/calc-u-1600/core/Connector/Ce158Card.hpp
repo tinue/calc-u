@@ -239,7 +239,7 @@ public:
         return WriteResult::ignored();
     }
 
-    // C1600-5 AC-13: the LH5811, the UART, the printer port's bytes.
+    // The machine state: the LH5811, the UART, the printer port's bytes.
     void saveState(sharp::StateWriter& w) const override { const_cast<Ce158Card*>(this)->stateIo(w); }
     void restoreState(sharp::StateReader& r) override { stateIo(r); }
     template <class Io>
@@ -323,8 +323,8 @@ private:
 
     void updateCharCycles() {
         int baud = decodeBaud();
-        // The speed the ROM set, for the serial port's line settings (LIB-2
-        // AC-17; C1600-5 AC-7's report and feed). The word length is not
+        // The speed the ROM set, for the serial port's line settings (its
+        // report and feed). The word length is not
         // known here: it stays empty.
         if (baud != 0 && baud != m_notifiedBaud && m_link) {
             m_notifiedBaud = baud;

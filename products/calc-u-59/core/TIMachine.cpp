@@ -20,16 +20,16 @@ TIMachine::TIMachine(const MachineDescriptor& d, MachineVariant v, const TIRoms&
     const std::vector<std::uint8_t> zero(kRamBytes, 0);
     m_hw.deserialiseRAM(content ? content->ram.data() : zero.data());
     m_hw.reset();
-    if (!d.mediaPlaces.empty()) m_cardReader = std::make_unique<TICardReaderPlace>(*this);   // the TI-59 (C59-7 AC-6)
+    if (!d.mediaPlaces.empty()) m_cardReader = std::make_unique<TICardReaderPlace>(*this);   // the TI-59
 }
 
 std::uint32_t TIMachine::stepOne() {
-    m_heatmap.count(m_hw.pc());   // C59-4 AC-8: once per instruction, while on
+    m_heatmap.count(m_hw.pc());   // once per instruction, while on
     const std::uint32_t r = m_hw.step();
     ++m_retired;
     if (m_restore && m_ranges.scanLoop.contains(m_hw.pc())) {
-        // AC-19: the ROM's start-up is over; the RAM and the partition go back
-        // before key readiness is reported (D-5).
+        // The ROM's start-up is over; the RAM and the partition go back
+        // before key readiness is reported.
         m_hw.deserialiseRAM(m_restore->ram.data());
         m_hw.setPartitionProgramRegs(m_restore->partitionProgramRegs);
         m_restore.reset();
@@ -43,8 +43,8 @@ Ticks TIMachine::advance(Ticks atLeast) {
         while (tickCount() - start < atLeast) stepOne();
         return tickCount() - start;
     }
-    // LIB-10 §3.2, §12.4: a breakpoint stops before the instruction at its
-    // address (passed once after a pause there, AC-10); the observer is asked
+    // A breakpoint stops before the instruction at its
+    // address (passed once after a pause there); the observer is asked
     // after every instruction with the marks of timarks::kMark....
     const Checks& c = m_debugging.m_checks;
     const auto& bps = m_debugging.m_target.breakpoints();
@@ -70,7 +70,7 @@ Ticks TIMachine::advance(Ticks atLeast) {
                    (m_ranges.scanLoop.contains(next) ? timarks::kMarkScanLoop : 0u) |
                    ((r & TI59Machine::kWeightMask) << timarks::kMarkWeightShift);
         if (c.observer->stopAfter(ev)) {
-            m_hw.beginNextStep();   // §12.4: the next step's state is what is read while paused
+            m_hw.beginNextStep();   // the next step's state is what is read while paused
             m_debugging.m_stop = DebugStop{};
             break;
         }
@@ -87,14 +87,14 @@ Ticks TIMachine::tickCount() const { return m_ticksBeforeReset + kTicksPerWeight
 
 void TIMachine::cpuReset() {
     m_ticksBeforeReset = tickCount();
-    if (m_cardReader) m_cardReader->beforeCpuReset();   // C59-7 AC-25: a card in the reader is taken out
-    m_asmOverlay.m_running = false;   // C59-4 AC-18: a Reset ends the overlay's run
-    m_hw.reset();   // clears the key matrix (AC-8), re-presses the card switch (EC-4)
+    if (m_cardReader) m_cardReader->beforeCpuReset();   // a card in the reader is taken out
+    m_asmOverlay.m_running = false;   // a Reset ends the overlay's run
+    m_hw.reset();   // clears the key matrix, re-presses the card switch
     if (m_printer) m_printer->operation();
     if (m_module) m_module->operation();
 }
 
-// ── Places (C59-6) ───────────────────────────────────────────────────────────
+// ── Places ───────────────────────────────────────────────────────────
 
 namespace {
 const PlacePath kPrinterPath{{kTIPrinterPlace}};
@@ -124,8 +124,8 @@ void TIMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, TickR
         m_printer = std::make_unique<PC100C>(req.switches);
         m_printer->recordCodeLines(m_recordCodeLines);
     } else {
-        // The module file as bundled (LIB-12 C-1): the attach checked that it
-        // is there (rule 5), the lookup that it reads (LIB-12 AC-6).
+        // The module file as bundled: the attach checked that it
+        // is there (rule 5 of library/machine/Attach.cpp), the lookup that it reads.
         std::vector<std::uint8_t> rom;
         for (const auto& image : req.roms) {
             std::string error;
@@ -141,7 +141,7 @@ void TIMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, TickR
 
 void TIMachine::unplug(const PlacePath& place, const PeripheralId&) {
     if (place == kPrinterPath) {
-        if (m_printer) m_printer->endLineHere();   // LIB-8 EC-7: the rows printed go onto the paper first
+        if (m_printer) m_printer->endLineHere();   // the rows printed go onto the paper first
         m_printer.reset();
     } else {
         m_module.reset();
@@ -225,7 +225,7 @@ void TIMachine::powerCycle() {
 
 void TIMachine::coldBoot() {
     m_restore.reset();
-    m_asmOverlay.clear();   // C59-4 AC-26: a Cold boot removes the overlay
+    m_asmOverlay.clear();   // a Cold boot removes the overlay
     const std::vector<std::uint8_t> zero(kRamBytes, 0);
     m_hw.deserialiseRAM(zero.data());
     cpuReset();

@@ -52,7 +52,7 @@ size_t totalBytes(const debug::Listing& l) {
     return n;
 }
 
-TEST(c1600_3_ac23_sdas_lh5801_memtest) {
+TEST(sdas_lh5801_memtest) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadListing(kDir + "sdas-lh5801/memtest.rst", &l, &error));
@@ -84,7 +84,7 @@ TEST(c1600_3_ac23_sdas_lh5801_memtest) {
 
 // sdaslh5801 prints addresses and equates of 8000H and up with eight digits
 // (FFFF8000) and shifts the rest of the line: a ROM extension's listing.
-TEST(c1600_3_ac23_sdas_lh5801_high_addresses) {
+TEST(sdas_lh5801_high_addresses) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadListing(kDir + "sdas-lh5801/busrom.rst", &l, &error));
@@ -110,7 +110,7 @@ TEST(c1600_3_ac23_sdas_lh5801_high_addresses) {
     CHECK(same);
 }
 
-TEST(c1600_3_ac23_sdas_include_and_wrapped_data) {
+TEST(sdas_include_and_wrapped_data) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadListing(kDir + "sdas-lh5801/include_main.lst", &l, &error));
@@ -126,7 +126,7 @@ TEST(c1600_3_ac23_sdas_include_and_wrapped_data) {
     CHECK(l.symbols.count("HELPER") && l.symbols.at("HELPER") == 0x40C8);
 }
 
-TEST(c1600_3_ac23_sdas_z80_relocated) {
+TEST(sdas_z80_relocated) {
     debug::Listing rst, lst;
     std::string error;
     CHECK(debug::loadListing(kDir + "sdas-z80/blink.rst", &rst, &error));
@@ -146,7 +146,7 @@ TEST(c1600_3_ac23_sdas_z80_relocated) {
     CHECK(lineAt(lst, 0x0000) && lineAt(lst, 0x0000)->line == 8);
 }
 
-TEST(c1600_3_ac23_zasm_include_and_wrapped_data) {
+TEST(zasm_include_and_wrapped_data) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadListing(kDir + "zasm/include_main.lst", &l, &error));
@@ -165,7 +165,7 @@ TEST(c1600_3_ac23_zasm_include_and_wrapped_data) {
     CHECK(l.symbols.count("helper") && l.symbols.at("helper") == 0xC0C8);
 }
 
-TEST(c1600_3_ac23_zasm_rom_dumper_against_its_symbol_table) {
+TEST(zasm_rom_dumper_against_its_symbol_table) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadListing(kDir + "zasm/pc1600-rom-dumper.lst", &l, &error));
@@ -204,7 +204,7 @@ TEST(c1600_3_ac23_zasm_rom_dumper_against_its_symbol_table) {
     CHECK(agreed == compared);
 }
 
-TEST(c1600_3_ac23_symbols_file) {
+TEST(listing_symbols_file) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadSymbolFile(kDir + "symbols.sym", &l, &error));
@@ -213,7 +213,7 @@ TEST(c1600_3_ac23_symbols_file) {
     CHECK(!debug::loadSymbolFile(kDir + "sdas-lh5801/memtest.asm", &l, &error));
 }
 
-TEST(c1600_3_ac23_include_target) {
+TEST(listing_include_target) {
     CHECK(debug::includeTarget("\t.include \"lib/math.asm\"") == "lib/math.asm");
     CHECK(debug::includeTarget("#include \"a.inc\" ; x") == "a.inc");
     CHECK(debug::includeTarget("  include 'b.s'") == "b.s");
@@ -223,7 +223,7 @@ TEST(c1600_3_ac23_include_target) {
 
 // ── SourceMap ─────────────────────────────────────────────────────────────
 
-TEST(c1600_3_ac23_source_map) {
+TEST(listing_source_map) {
     debug::Listing memtest;
     std::string error;
     CHECK(debug::loadListing(kDir + "sdas-lh5801/memtest.rst", &memtest, &error));
@@ -292,7 +292,7 @@ TEST(c1600_3_ac23_source_map) {
     CHECK(loads.bindings().size() == 2);
 }
 
-TEST(c1600_3_ac23_symbols_per_binding) {
+TEST(symbols_per_binding) {
     // Symbols carry the thread and bank key of the binding that defines
     // them; a stale binding's symbols don't count.
     auto reader = [](const std::string& path, std::vector<std::string>* lines) {

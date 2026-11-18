@@ -24,7 +24,7 @@
 // class reproduces that stepper simulation exactly (same phase table, same
 // Z-position thresholds) rather than inventing a higher-level vector
 // protocol, and tells a PenListener what the pen does (down, moved, up,
-// the paper fed): the paper itself is the library's (LIB-8; the card's
+// the paper fed): the paper itself is the library's (the card's
 // PlotterPaperOutput turns these calls into marks).
 class AlpsPlotterMechanism {
 public:
@@ -33,7 +33,7 @@ public:
     struct Point { int x = 0; int y = 0; };
 
     // What the pen does, in the mechanism's raw steps, called as it
-    // happens (LIB-8 design §10.4): the pen put down at a place, moved
+    // happens: the pen put down at a place, moved
     // while down, lifted; the paper fed to a new Y (called before penY()
     // moves, with the pen up or down); reanchored() before reset() sets the
     // steppers back to 0, so the listener can keep the paper where it stands.
@@ -129,7 +129,7 @@ public:
     /// phase the tests anchor on, pen up, colour Black, all turret state
     /// cleared. The paper is not touched -- a chip reset is not a fresh
     /// sheet, and real ink stays put: the listener is told first
-    /// (reanchored()) and goes on below what was drawn (LIB-8 D-11).
+    /// (reanchored()) and goes on below what was drawn.
     void reset() {
         if (m_listener) m_listener->reanchored();
         m_motorX = Stepper{};
@@ -165,7 +165,7 @@ public:
         return out;
     }
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// The machine state (Machine/StateRecords.hpp): the
     /// motors, the pen and its colour turret. The event log is the tools'.
     template <class Io>
     void stateIo(Io& io) {

@@ -5,8 +5,7 @@
 #include "machine/Catalogue.hpp"
 #include "media/Kind.hpp"
 
-// Calc-U-1600's kinds of medium (LIB-7 design §10.3; spec AC-37, AC-41,
-// AC-42, AC-46): the battery-backed module (`.module.yaml`, version 1, held by
+// Calc-U-1600's kinds of medium: the battery-backed module (`.module.yaml`, version 1, held by
 // a module slot), the floppy disk (`.floppy.yaml`, version 2, the CE-1600F's
 // place `floppy`, sides 0 and 1) and the cassette (`.cassette.yaml`,
 // version 1, with its WAV, in the cassette folder; the place word `cassette`).
@@ -28,7 +27,7 @@ inline constexpr const char* kCassetteFileSuffix = ".cassette.yaml";
 // plugged in (a module request names a peripheral of the catalogue).
 std::vector<calcu::media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::machine::Catalogue& catalogue);
 
-// The modules that are not media in a slot's picker (AC-8): the module's
+// The modules that are not media in a slot's picker: the module's
 // name, its description as the tooltip, in the catalogue's order.
 calcu::media::ModuleListing moduleListing();
 

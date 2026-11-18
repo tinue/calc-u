@@ -27,8 +27,7 @@ public:
 
 // ── SoundFeed: the session's sound messages into an AudioSink ───────────
 //
-// What is heard is the app session's decision (LIB-3 AC-20, AC-37, design
-// §3.6, D-5): it sends SoundStart on the first sound after silence (then
+// What is heard is the app session's decision: it sends SoundStart on the first sound after silence (then
 // 40 ms of priming silence), SoundSamples at regular speed only, and
 // SoundStop after a second of silence. The sink side keeps the carry-over:
 // samples the sink had no room for wait for the next message, up to a

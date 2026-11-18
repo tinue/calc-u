@@ -113,8 +113,7 @@ class CardBase {
 public:
     virtual ~CardBase() = default;
 
-    /// The card's part of the machine state (C1600-5 AC-13,
-    /// Machine/StateRecords.hpp): its RAM, registers and mechanism. A card
+    /// The card's part of the machine state (Machine/StateRecords.hpp): its RAM, registers and mechanism. A card
     /// without state writes nothing; the ROM is not state.
     virtual void saveState(sharp::StateWriter&) const {}
     virtual void restoreState(sharp::StateReader&) {}
@@ -172,9 +171,9 @@ public:
     virtual bool writeProtected() const { return false; }
     virtual void setWriteProtected(bool /*protect*/) {}
 
-    /// The machine lost power for good (a Cold boot, C1600-1 AC-6): a module
+    /// The machine lost power for good (a Cold boot): a module
     /// without a battery of its own forgets its RAM, as the real device
-    /// would (behaviour change 1600-16). Default: nothing.
+    /// would. Default: nothing.
     virtual void powerLoss() {}
 };
 

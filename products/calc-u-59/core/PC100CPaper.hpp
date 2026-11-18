@@ -4,13 +4,11 @@
 #include <cstdint>
 #include <vector>
 
-// The PC-100C's paper (LIB-8 design §11.3, §11.4; spec AC-24 to AC-27; D-20,
-// D-22): its description, the 5 × 7 font of 64 characters, the character of
+// The PC-100C's paper: its description, the 5 × 7 font of 64 characters, the character of
 // each 6-bit code, the dot rules of a line cut short and the placement of a
 // line's dots on the paper. The core gives marks (the machine draws nothing),
-// so it holds them; the converter of AC-39 (tests/paper_replies_tests.cpp)
-// uses the same copy. Moved from app/PrinterFont.hpp and core/PC100C.cpp in
-// M-53.
+// so it holds them; the converter of the paper replies
+// (tests/paper_replies_tests.cpp) uses the same copy.
 //
 // Geometry, from a measured print head, in dot pitches (the unit): total
 // span (first → last dot centre) 55 mm; a 5-dot character 1.9 mm (4 units);
@@ -48,8 +46,8 @@ extern const char* const kCharacters[64];
 /// The 5 × 7 font, by code: each row a mask, bit 4 the leftmost column.
 extern const std::uint8_t kFont[64][7];
 
-/// AC-24: the unit 430/1000 mm, 129.07 units wide and all of it printable
-/// (D-20), dots 0.76 units across, the greys of 0 to 20 heating cycles,
+/// The unit 430/1000 mm, 129.07 units wide and all of it printable,
+/// dots 0.76 units across, the greys of 0 to 20 heating cycles,
 /// pictures at 600 dpi, a text layer.
 const calcu::paper::PaperDescription& description();
 
@@ -84,8 +82,8 @@ constexpr std::uint8_t faintColumns(int rowCount, int partialColumns, int partia
 /// at 15–19, full from 20.
 double inkAlpha(int heat);
 
-/// AC-25, AC-26: the dots of a printed line whose top stands at `top`, in
-/// the order of the converter of AC-39 (character by character, then row,
+/// The dots of a printed line whose top stands at `top`, in
+/// the order of the paper replies' converter (character by character, then row,
 /// then column): the dot of column c, row r of character i at
 /// (i × 6.53 + c + 0.5, top + r + 0.5); the columns `inkedColumns` gives
 /// at darkness 20, the faint one at darkness min(partialHeat, 20).

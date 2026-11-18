@@ -6,9 +6,8 @@
 #include "machine/Descriptor.hpp"
 #include "machine/Display.hpp"
 
-// The dot matrix and status line of a Sharp display as display output
-// (C1600-1 AC-13, AC-3; LIB-1 AC-16, AC-17, AC-43). The indicator names are
-// the descriptor's, from kStatusSymbolNames (core/Display/StatusLine.hpp). A
+// The dot matrix and status line of a Sharp display as display output.
+// The indicator names are the descriptor's, from kStatusSymbolNames (core/Display/StatusLine.hpp). A
 // display that is off shows nothing: no dot, no indicator.
 
 namespace sharp {

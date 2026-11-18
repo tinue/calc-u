@@ -9,10 +9,9 @@
 #include <utility>
 #include <vector>
 
-// The product-internal form of the machine state (C1600-5 AC-13, design
-// §3.7, D-6): tagged, length-prefixed records, little-endian, one record
+// The product-internal form of the machine state: tagged, length-prefixed records, little-endian, one record
 // per part of the core, in the machine's order. The form is not
-// documented outside this file (LIB-11 AC-24); the library writes the
+// documented outside this file; the library writes the
 // header in front of it and refuses a file of another configuration.
 //
 // A record is a four-character tag, a 32-bit length and the fields. Each

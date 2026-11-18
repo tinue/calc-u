@@ -7,11 +7,10 @@
 #include "PC1500Machine.hpp"
 #include "peripherals/RealTimeClock.hpp"
 
-// A PC-1500 or PC-1500A behind the machine interface (C1600-1 design
-// §3.2). It owns the core's PC1500Machine, which keeps its name, its tests
+// A PC-1500 or PC-1500A behind the machine interface. It owns the core's PC1500Machine, which keeps its name, its tests
 // and its callers inside the core; above the core it is a
-// calcu::machine::Machine. Ticks are LH5801 cycles at 1,300,000 per second
-// (AC-1). Built by SharpMachineBuilder.
+// calcu::machine::Machine. Ticks are LH5801 cycles at 1,300,000 per second.
+// Built by SharpMachineBuilder.
 class PC1500InterfaceMachine final : public sharp::SharpMachine {
 public:
     PC1500InterfaceMachine(const calcu::machine::MachineDescriptor&, const calcu::machine::VariantId&);
@@ -44,9 +43,9 @@ private:
     struct Kinds;   // the capability objects (PC1500InterfaceMachine.cpp)
 
     std::unique_ptr<PC1500Machine> m_core;
-    SerialPortCapability m_ce158Port;   // the CE-158's UART peer; kept across detach and attach, as today
+    SerialPortCapability m_ce158Port;   // the CE-158's UART peer; kept across detach and attach
     std::unique_ptr<Kinds> m_kinds;
-    std::unique_ptr<sharp::SharpDebugging> m_debugging;   // LIB-10: after the core, gone before it
+    std::unique_ptr<sharp::SharpDebugging> m_debugging;   // the debugger: after the core, gone before it
 
 public:
     ~PC1500InterfaceMachine() override;

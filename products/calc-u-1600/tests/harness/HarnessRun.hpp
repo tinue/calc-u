@@ -1,6 +1,6 @@
 #pragma once
-// One `calcu --product c1600` run for the tests of tests/harness/ (C1600-5
-// design §6; LIB-11 Part D, D.6): the product's harness entry and a server
+// One `calcu --product c1600` run for the tests of tests/harness/: the
+// product's harness entry and a server
 // started on it, the replies as `calcu serve` writes them.
 #include <filesystem>
 #include <memory>

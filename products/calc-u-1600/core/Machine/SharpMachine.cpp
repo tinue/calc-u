@@ -26,10 +26,10 @@ const std::vector<std::uint8_t>* romImageOf(const PeripheralRequest& req, const 
 
 std::unique_ptr<ExpansionCard> moduleCardOf(const PeripheralRequest& req, const PeripheralDescriptor& d) {
     if (auto* m = dynamic_cast<const ModuleCard*>(req.content.get()); m && m->card) return std::move(m->card);
-    if (auto* m = dynamic_cast<const ModuleContent*>(req.content.get()))   // a module medium (LIB-7)
+    if (auto* m = dynamic_cast<const ModuleContent*>(req.content.get()))   // a module medium
         return std::make_unique<SoftwareDefinedCard>(m->definition);
     if (auto* def = dynamic_cast<const ModuleDefinitionData*>(d.productData.get())) {
-        if (auto* rom = dynamic_cast<const SlotRomRequest*>(req.content.get())) {   // C1600-4 AC-8
+        if (auto* rom = dynamic_cast<const SlotRomRequest*>(req.content.get())) {
             MemoryCardDefinition withRom = def->definition;
             std::string error;
             if (!replaceRomContent(&withRom, rom->bytes, &error)) return nullptr;   // the reader checked the size
@@ -42,7 +42,7 @@ std::unique_ptr<ExpansionCard> moduleCardOf(const PeripheralRequest& req, const 
 
 // ---- Emulated time and the power cycle ----
 
-// LIB-10 §10.5: with all checks off the core's own path, as before.
+// With all checks off, the core's own path.
 Ticks SharpMachine::runChecked(Ticks n) {
     SharpDebugging* d = sharpDebugging();
     if (d && d->checking()) return d->run(n);
@@ -75,7 +75,7 @@ void SharpMachine::powerCycle() {
     if (m_sequence.active()) return;
     if (!running()) {
         // Off already (or never started): the change is made and the
-        // machine stays as it is, as today (design D-4).
+        // machine stays as it is.
         makeWaitingChanges();
         return;
     }
@@ -91,7 +91,7 @@ void SharpMachine::reset() {
 void SharpMachine::coldBoot() {
     m_sequence.cancel(*this);
     makeWaitingChanges();
-    // A module without a battery of its own forgets its RAM (AC-6, 1600-16).
+    // A module without a battery of its own forgets its RAM.
     for (const PlugEntry& e : m_plugged)
         if (e.place.steps.size() == 1 && isSlot(e.place.steps[0]))
             if (ExpansionCard* card = moduleIn(e.place.steps[0])) card->powerLoss();
@@ -158,7 +158,7 @@ const PlugEntry* SharpMachine::at(const char* place) const {
 
 std::optional<std::string> SharpMachine::productRefusal(const PeripheralRequest& req,
                                                         const std::optional<PeripheralId>& replacing) const {
-    if (req.peripheral.value == kBusRom) {   // C1600-4 D-5
+    if (req.peripheral.value == kBusRom) {
         const auto* rom = dynamic_cast<const BusRomRequest*>(req.content.get());
         if (!rom) return std::string("A bus ROM is plugged in by a preset only.");
         if (rom->bank >= 0 && m_descriptor.model.value != kPC1600)
@@ -168,7 +168,7 @@ std::optional<std::string> SharpMachine::productRefusal(const PeripheralRequest&
 }
 
 AfterChange SharpMachine::followsNow(const PinOutDescriptor& p) const {
-    return running() ? p.after : AfterChange::Nothing;   // switched off: nothing (LIB-2 AC-4)
+    return running() ? p.after : AfterChange::Nothing;   // switched off: nothing
 }
 
 void SharpMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, TickRate) {
@@ -264,7 +264,7 @@ void SharpMachine::offerCommon(std::vector<Offered>& offered) {
         const PlaceName& place = e.place.steps.at(0);
         if (auto* t = switchesAt(place)) offered.push_back(byPeripheral(e, *t));
         SlotModuleMedium* medium = place.value == kSlot1 ? &m_slotMedia[0] : place.value == kSlot2 ? &m_slotMedia[1] : nullptr;
-        if (medium && medium->present()) offered.push_back(byPeripheral(e, *medium));   // LIB-7 D-1
+        if (medium && medium->present()) offered.push_back(byPeripheral(e, *medium));   // a module medium
     }
 }
 
@@ -287,7 +287,7 @@ Capability* SharpMachine::capability(const CapabilityId& id) {
     return nullptr;
 }
 
-// ---- The machine state (C1600-5 AC-13) ----
+// ---- The machine state ----
 
 template <class Io>
 void SharpMachine::stateIo(Io& io) {

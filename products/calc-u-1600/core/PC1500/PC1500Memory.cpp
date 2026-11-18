@@ -223,7 +223,7 @@ uint8_t PC1500Memory::readME1(uint16_t addr) {
     // Nothing else answers in ME1: the RAMs, the display RAM and the ROM
     // decode ME0 only (TRM chip-select table: "S0-S7, V2, V3 are applicable
     // only for the ME0 area"), and a real PC-1500A reads 255 there --
-    // PEEK# &111, &7C02 and &C000 (2026-10-10, docs/background/Decisions.md).
+    // PEEK# &111, &7C02 and &C000 (measured). ME1 is no mirror of ME0.
     return 0xFF;
 }
 

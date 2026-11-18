@@ -1,7 +1,6 @@
-// LIB-14 Calc-U-59 column Q1 (design §10.6, §10.9): what Calc-U-59 gives
-// the shell, checked against each model's control state; the help address,
-// the About texts and links (AC-32); the settings dialog per frontend and
-// layout (AC-30); the faceplate's hit map (AC-24); ROMs missing (AC-19).
+// What Calc-U-59 gives the shell, checked against each model's control
+// state; the help address, the About texts and links; the settings dialog
+// per frontend and layout; the faceplate's hit map; ROMs missing.
 #include "../app/KeyIds.hpp"
 #include "../app/KeyboardLayout.hpp"
 #include "../app/TIShellProduct.hpp"
@@ -35,7 +34,7 @@ std::string describe(const shell::DialogSpec& spec) {
 
 } // namespace
 
-TEST(lib14_ac26_shell_product_complete) {
+TEST(shell_product_complete) {
     SKIP_UNLESS(roms(), kSkip);
     const shell::ShellProduct p = cu59::shellProduct("3.0.0", "test");
     std::vector<Value> states;
@@ -45,7 +44,7 @@ TEST(lib14_ac26_shell_product_complete) {
         CHECK(cs != nullptr);
         if (!cs) continue;
         states.push_back(cs->toValue());
-        // AC-26: no Edit menu; the card items on the TI-59 only (LIB-4 AC-12).
+        // No Edit menu; the card items on the TI-59 only.
         shell::ShellInputs in;
         in.controlState = cs->toValue();
         const auto ms = shell::menus(in, p, shell::Traits{});
@@ -63,7 +62,7 @@ TEST(lib14_ac26_shell_product_complete) {
     CHECK(p.variantLabels.empty());
 }
 
-TEST(lib14_ac32_help_address_about_texts_and_links) {
+TEST(help_address_about_texts_and_links) {
     const shell::ShellProduct p = cu59::shellProduct("3.0.0", "abc123");
     CHECK_EQ(p.helpUrl, std::string("https://calc-u.org/59/"));
     const shell::AboutModel a = shell::about(p);
@@ -82,7 +81,7 @@ TEST(lib14_ac32_help_address_about_texts_and_links) {
     CHECK(!*v.find("copyScreen")->boolean());
 }
 
-TEST(lib14_ac30_settings_spec_per_frontend_and_layout) {
+TEST(settings_spec_per_frontend_and_layout) {
     using F = cu59::ShellFrontend;
     CHECK_EQ(describe(cu59::settingsSpec(F::Qt6, "Version 3.0.0 (x)")),
              std::string("General: Startup model Version 3.0.0 (x);Startup presets: TI-59 TI-58 TI-58C;Storage: Save folder;"
@@ -92,14 +91,14 @@ TEST(lib14_ac30_settings_spec_per_frontend_and_layout) {
                          "Tracing: Maximum file size (MB);"));
     CHECK_EQ(describe(cu59::settingsSpec(F::WebPortrait, "Version 3.0.0")),
              std::string("General: Startup model Version 3.0.0;Startup presets: TI-59 TI-58 TI-58C;Keyboard: Keyboard Feedback;"));
-    // The labelled choices (S8): the Web offers Off and Click Sound of the three values.
+    // The labelled choices: the Web offers Off and Click Sound of the three values.
     const auto qt = cu59::settingsSpec(F::Qt6, "");
     CHECK(qt.sections.back().rows[0].choices ==
           (std::vector<std::pair<std::string, std::string>>{{"modernized", "Modernized"}, {"classic", "Classic"}}));
     const auto portrait = cu59::settingsSpec(F::WebPortrait, "");
     CHECK(portrait.sections.back().rows[0].choices ==
           (std::vector<std::pair<std::string, std::string>>{{"off", "Off"}, {"click", "Click Sound"}}));
-    // No Solid State Module row (row 59-9); the [folders] kind asm-overlays gets none (D-43).
+    // No Solid State Module row; the [folders] kind asm-overlays gets none.
     for (const auto& s : qt.sections)
         for (const auto& r : s.rows) {
             CHECK(r.key != "module");
@@ -107,7 +106,7 @@ TEST(lib14_ac30_settings_spec_per_frontend_and_layout) {
         }
 }
 
-TEST(lib14_ac24_faceplate_hit_map) {
+TEST(faceplate_hit_map) {
     const shell::HitMap map = cu59::faceplateHitMap(calcu::machine::ModelId{"TI-59"});
     CHECK_EQ(map.keys.size(), std::size_t{45});
     CHECK_EQ(map.distance, 0.0);
@@ -129,13 +128,13 @@ TEST(lib14_ac24_faceplate_hit_map) {
     // A point in a gap between two columns is no key (distance 0).
     const double gapX = (cu59::kKeyRects[0][0].x + cu59::kKeyRects[0][0].w * 1.3) * cu59::kCanvasWidth;
     CHECK(!shell::keyAt(map, 1.0, gapX, midY).has_value());
-    // The display: a press there commands full speed (AC-43).
+    // The display: a press there commands full speed.
     CHECK(shell::onDisplay(map, 1.0, cu59::kCanvasWidth / 2, (cu59::kDisplayRect.y + 0.01) * cu59::kCanvasHeight));
     const Value v = cu59::faceplateMapValue(calcu::machine::ModelId{"TI-58"});
     CHECK(v.find("map") && v.find("card") && v.find("canvas"));
 }
 
-TEST(lib14_ac19_roms_missing_topic_without_a_machine) {
+TEST(roms_missing_topic_without_a_machine) {
     calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(cu59::settings::settingsDecl());
     calcu::pacing::WallTime now{std::chrono::hours(1)};
     const auto paths = testroms::rigPaths(settings, "save", "");

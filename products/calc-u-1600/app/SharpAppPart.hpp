@@ -60,25 +60,24 @@ struct OpResult {
     static OpResult fail(std::string why) { return OpResult{false, std::move(why)}; }
 };
 
-// What differs by frontend (LIB-4 AC-18, D-12): a browser cannot mount a
+// What differs by frontend: a browser cannot mount a
 // host folder.
 struct SharpAppPartOptions {
     bool canMountHostFolder = true;
-    // The harness (LIB-11 D-6): typing in emulated time, no serial port file
-    // unless asked for (requestSerialLink; C1600-5 AC-9).
+    // The harness: typing in emulated time, no serial port file
+    // unless asked for (requestSerialLink).
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
     bool serialLinksOnRequest = false;
-    // The Web: where several files of Upload Preset… become one folder
-    // (LIB-13 AC-8); unset: none.
+    // The Web: where several files of Upload Preset… become one folder;
+    // unset: none.
     std::optional<std::string> uploadFolder;
 };
 
 // ── SharpAppPart: Calc-U-1600's app layer in the library's app session ───
 //
-// The library's app session (LIB-3) holds the machine session, the pacer,
+// The library's app session holds the machine session, the pacer,
 // the operations, busy, sound and the messages. This part brings the
-// library's parts Calc-U-1600 uses and what only Calc-U-1600 has (LIB-3
-// design §2, §4; docs/contracts/README.md L-1):
+// library's parts Calc-U-1600 uses and what only Calc-U-1600 has:
 // - the library's parts (parts::LibraryParts, which builds, wires and
 //   orders them) on Calc-U-1600's data: the typing profiles and maps
 //   (app/SharpTyping), the serial port files, the preset rules
@@ -87,14 +86,14 @@ struct SharpAppPartOptions {
 //   debugger (app/SharpDebuggerSetup), the kinds of medium
 //   (app/SharpMediaKinds), the file kinds (app/SharpFileKinds), the rules of
 //   the control state (app/SharpControlRules); among them, before the open
-//   part, the loaders' part (C1600-2), and after them the DAP server
-//   (C1600-3) and this part;
+//   part, the loaders' part, and after them the DAP server
+//   and this part;
 // - the product's commands that need its own data, each one
-//   MachineControl::change (LIB-18 D-22):
+//   MachineControl::change:
 //   `c1600.mount-host-drive`, `c1600.ce1600p-variant` (SharpTopics.hpp);
 // - the product's topics (`c1600.lamps`, `c1600.serial-links`).
 //
-// The host builds it, hands sessionParts() (every part, LIB-4's ControlPart
+// The host builds it, hands sessionParts() (every part, the ControlPart
 // first, its own among them) to its AppSessionSetup (and the part to
 // AppSessionSetup::owned), then sends
 // `start`. Single-threaded: on
@@ -114,43 +113,43 @@ public:
 
     Settings& settings() { return m_settings; }
     AppPaths& paths() { return m_paths; }
-    // LIB-7: the media (modules, disks, cassettes): the topic `media`, the
+    // The media (modules, disks, cassettes): the topic `media`, the
     // commands `media.*`, autosave (app/SharpMediaKinds for the formats).
     calcu::media::MediaPart& mediaPart() { return m_lib.media(); }
     SharpLoaderPart& loaderPart() { return m_loaderPart; }
-    // LIB-13: `open`, `open-would-take` (a Web host's upload folder:
+    // The open part: `open`, `open-would-take` (a Web host's upload folder:
     // SharpAppPartOptions::uploadFolder).
     calcu::opening::OpenPart& openPart() { return m_lib.open(); }
-    // The typing part (LIB-5): frontends send its commands (host-key-down,
+    // The typing part: frontends send its commands (host-key-down,
     // screen-key-down, paste, ...); the debugger's auto-start types its line
     // through the engine directly (not a user key, so not dropped while busy).
     calcu::typing::TypingPart& typingPart() { return m_lib.typing(); }
-    // The papers of the two plotters (LIB-8): kept from the start of the
+    // The papers of the two plotters: kept from the start of the
     // session to its end, whatever machine runs.
     calcu::paper::PaperPart& paperPart() { return m_lib.paper(); }
-    // The library's debugger (LIB-10): the run control, the trace session,
+    // The library's debugger: the run control, the trace session,
     // the topics run-state and trace. The DAP's layer (app/dap/) works on it.
     calcu::debugger::DebuggerPart& debuggerPart() { return m_lib.debugger(); }
-    // LIB-6: the preset loader (load-preset, check-preset, preset-list).
+    // The preset loader (load-preset, check-preset, preset-list).
     calcu::presets::PresetsPart& presetsPart() { return m_lib.presets(); }
     const calcu::presets::PresetBundle& presetBundle() const { return m_bundle; }
     SharpPresetRules& presetRules() { return m_rules; }
-    // C1600-3: the DAP server (app/dap/DapPart); nullptr in a Web build,
-    // which has none (AC-1). The host hands it its socket (setTransport).
+    // The DAP server (app/dap/DapPart); nullptr in a Web build,
+    // which has none. The host hands it its socket (setTransport).
     dap::DapPart* dapPart() { return m_dap.get(); }
-    // LIB-18: the machine control (builds, plug changes).
+    // The machine control (builds, plug changes).
     calcu::startup::MachineControl& machineControl() { return m_lib.control(); }
-    // The library's parts (the harness takes them from the app layer, LIB-11 D-6).
+    // The library's parts (the harness takes them from the app layer).
     calcu::parts::LibraryParts& libraryParts() { return m_lib; }
     calcu::peripherals::PeripheralsPart& peripheralsPart() { return m_lib.peripherals(); }
     SharpProductMachines& productMachines() { return m_machines; }
-    // C1600-5 AC-7, AC-9: with serialLinksOnRequest, the serial port file of
+    // With serialLinksOnRequest, the serial port file of
     // `fileName` ("calcu1600-ce158.serial", "calcu1600-rs232c.serial") is made
     // from now on; its path, or empty where the host has no pseudo-terminals.
     std::string requestSerialLink(const std::string& fileName);
     bool serialLinked(const std::string& fileName) const;
 
-    // The place host-drive can be used (AC-18, D-12): not in a browser.
+    // The place host-drive can be used: not in a browser.
     bool canMountHostFolder() const { return m_options.canMountHostFolder; }
 
     // ---- SessionPart ----
@@ -166,12 +165,12 @@ public:
     calcu::machine::ModelId model() const;
     bool isPC1600() const { return model().value == sharp::kPC1600; }
     // The CE-1600P's variant ("New", "Old"): the plugged one's, else the
-    // choice kept for the next attach (LIB-18 AC-31, D-21).
+    // choice kept for the next attach.
     std::string ce1600pVariant() const;
     double clockHz() const;
     const calcu::machine::Catalogue& catalogue() const { return m_catalogue; }
     const std::shared_ptr<const calcu::roms::RomSet>& romSet() const { return m_found.set; }
-    // The one lookup at the start (LIB-12).
+    // The one lookup at the start.
     const calcu::roms::LookupResult& romLookup() const { return m_found; }
 
     // The LCD as text and as a screen image, from a display output of the
@@ -204,13 +203,13 @@ public:
 
     // ---- Cassette recorder and CE-1600F (the media: mediaPart()) ----
     bool tapeInterfaceAttached() const;
-    TapeDeck::Status tapeStatus() const;   // the counter (AC-42)
-    bool floppyMotorOn() const;            // the drive's lamp (AC-39)
+    TapeDeck::Status tapeStatus() const;   // the counter
+    bool floppyMotorOn() const;            // the drive's lamp
 
 private:
     using CommandOutcome = calcu::sessions::CommandOutcome;
     calcu::parts::LibraryPartsSetup librarySetup();   // the constructor's, on the members before m_lib
-    // A plug change of a product command as an operation (LIB-18 D-22).
+    // A plug change of a product command as an operation.
     CommandOutcome change(calcu::startup::PlugChange ch, std::function<void()> after = {});
     void refreshTopics();
     void notice(const std::string& sentence);
@@ -225,16 +224,16 @@ private:
 
     SharpAppPartOptions m_options;
     std::string m_lastModel;   // the model of the last build (followNewMachine)
-    // AC-31, D-21: the CE-1600P's ROM chosen while none is plugged in, until
+    // The CE-1600P's ROM chosen while none is plugged in, until
     // the product quits or the model is switched.
     std::string m_ce1600pChoice = "New";
 
-    // The one lookup, at the start (LIB-12 AC-4, AC-13): the whole full set
-    // or nothing. The host drive's ROM is bundled beside it (roms.md Q-1).
+    // The one lookup, at the start: the whole full set
+    // or nothing. The host drive's ROM is bundled beside it.
     calcu::roms::LookupResult m_found;
     std::shared_ptr<const std::vector<std::uint8_t>> m_hostDriveRom;
     // The catalogue with the module definitions (the bundled ones and the
-    // set's CE-502B; LIB-12 AC-14).
+    // set's CE-502B).
     calcu::machine::Catalogue m_catalogue;
 
     calcu::sessions::SessionContext* m_ctx = nullptr;
@@ -250,9 +249,9 @@ private:
     MachineCodeKind m_codeKind;
     SharpControlRules m_controlRules;
     calcu::parts::LibraryParts m_lib;
-    // C1600-2: the loaders' commands (app/SharpLoaderPart).
+    // The loaders' commands (app/SharpLoaderPart).
     SharpLoaderPart m_loaderPart{m_lib.typing()};
-    // C1600-3: the DAP server, after the debugger among the parts; not in
+    // The DAP server, after the debugger among the parts; not in
     // an Emscripten build.
     std::shared_ptr<dap::DapPart> m_dap;   // shared: no complete type where Emscripten leaves it out
 

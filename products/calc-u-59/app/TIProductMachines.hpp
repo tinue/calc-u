@@ -4,14 +4,14 @@
 #include <functional>
 #include <memory>
 
-// What Calc-U-59 hands LIB-18 (LIB-18 design §11.2, §11.3; spec AC-17 to
-// AC-19, D-25): the TI catalogue and builder, the built-in default of each
-// model (the Master Library module in `slot-1`, no printer: ADR 0021, row
-// 59-10), the TI pacing profile, no sound (LIB-3 AC-33), the readiness bound
-// of 25 s (D-30). A TI-58C's built-in default carries its constant memory as
-// build content (AC-19; C59-3 AC-7: ConstantMemoryKeeper::contentForBuild).
-// A PC-100C attached gets TRACE at the position the app session keeps
-// (C59-6 AC-6: through a detach and attach, like the real switch; TIAppPart).
+// What Calc-U-59 hands the library's machine control and startup: the TI
+// catalogue and builder, the built-in default of each model (the Master
+// Library module in `slot-1`, no printer, as the TI-59 came out of the box),
+// the TI pacing profile, no sound, the readiness bound of 25 s. A TI-58C's
+// built-in default carries its constant memory as build content
+// (ConstantMemoryKeeper::contentForBuild). A PC-100C attached gets TRACE at
+// the position the app session keeps (through a detach and attach, like the
+// real switch; TIAppPart).
 // The app layer and the harness entry use the same class.
 
 namespace cu59 {
@@ -31,7 +31,7 @@ public:
         return calcu::machine::Seconds(25.0);
     }
     void setConstantMemory(ContentForBuild f) { m_constantMemory = std::move(f); }
-    /// C59-6 AC-6: TRACE's kept position, put into a PC-100C attached; unset: off.
+    /// TRACE's kept position, put into a PC-100C attached; unset: off.
     void setKeptTrace(std::function<bool()> f) { m_keptTrace = std::move(f); }
     void attaching(calcu::machine::PeripheralRequest& request) override;
 
@@ -41,7 +41,7 @@ private:
     std::function<bool()> m_keptTrace;
 };
 
-/// The module the built-in default puts into `slot-1` (ADR 0021).
+/// The module the built-in default puts into `slot-1`.
 inline constexpr const char* kDefaultModule = "ML";
 
 } // namespace cu59

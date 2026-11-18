@@ -4,7 +4,7 @@
 #include <functional>
 #include <memory>
 
-// Calc-U-59's trace recorder (LIB-10 design §12.6; spec AC-33, D-24): the
+// Calc-U-59's trace recorder: the
 // processor frames of the c59.trace-records kind as the records of today's
 // trace file, version 2 (app/TraceWriter): the header with `TI59` and the
 // model, SESSION_START, one TRACE_EVENT per instruction, TRACE_GAP for

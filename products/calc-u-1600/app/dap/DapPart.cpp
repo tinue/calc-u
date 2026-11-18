@@ -19,7 +19,7 @@ void DapPart::attach(calcu::sessions::SessionSetup& setup) {
     topic_ = &setup.stateTopic(kDapTopic);
     publish();
 
-    // Settings ▸ Debugger ▸ Disconnect (AC-10, AC-18): the client is told
+    // Settings ▸ Debugger ▸ Disconnect: the client is told
     // `terminated`, then dropped; the machine runs on.
     setup.command(kDapDisconnectCommand, [this](const Value&, SessionContext&) -> CommandOutcome {
         if (!client_ || !session_) return Refused{kNoClient};
@@ -33,7 +33,7 @@ void DapPart::attach(calcu::sessions::SessionSetup& setup) {
         return Done{};
     });
 
-    // --dap <port> for this run (AC-2, EC-1, D-6): a port out of range is a
+    // --dap <port> for this run: a port out of range is a
     // notice too, and the server is off for the run.
     setup.command(kDapPortCommand, [this](const Value& args, SessionContext& c) -> CommandOutcome {
         const std::optional<std::string> refused = setRunPort(static_cast<long>(calcu::sessions::integerArg(args, "port")));
@@ -125,7 +125,7 @@ void DapPart::take(DapInput in) {
     if (!ctx_) return;
     switch (in.kind) {
     case DapInput::Kind::Connected: {
-        if (session_ && session_->operationRuns()) {   // EC-5: the old request is finished first
+        if (session_ && session_->operationRuns()) {   // the old request is finished first
             session_->detach();
             retired_ = std::move(session_);
         } else if (session_) {
@@ -167,7 +167,7 @@ void DapPart::take(DapInput in) {
     }
 }
 
-// AC-8: a message that arrives while an operation runs waits; the held ones
+// A message that arrives while an operation runs waits; the held ones
 // are answered in the order of arrival when it is over, until one starts an
 // operation again.
 void DapPart::drain() {
@@ -193,7 +193,7 @@ void DapPart::drain() {
 
 void DapPart::endSession() {
     if (!session_) return;
-    if (session_->operationRuns()) {   // EC-5: its request is finished first
+    if (session_->operationRuns()) {   // its request is finished first
         endPending_ = true;
         return;
     }
@@ -210,7 +210,7 @@ void DapPart::finishEnd() {
 bool DapPart::wantsTime() const { return (session_ && session_->wantsTime()) || !held_.empty(); }
 
 void DapPart::afterCall(SessionContext&, calcu::pacing::WallTime) {
-    refreshListening();   // the settings may have changed (AC-2)
+    refreshListening();   // the settings may have changed
     if (session_) session_->poll();
     if (!held_.empty()) drain();
 }

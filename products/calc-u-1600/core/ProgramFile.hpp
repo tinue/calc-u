@@ -13,7 +13,7 @@
 // machinecode::readFile() and basic::readBasicProgram(). Header layouts:
 // Ref/Shared/Data-Formats/Binary-Exchange-Formats.md §2 / §3.
 //
-// No CPU guessing (docs/background/plans/Loader-Mode-Plan.md, principle 3):
+// No CPU guessing:
 // the library's raw-lh5801 / raw-z80 guess for headerless code never picks
 // the CPU -- all of them are Headerless, and the MODE (or the debugger's
 // `cpu`) decides.
@@ -81,8 +81,8 @@ std::string describe(const std::string& token);
 /// What a loader wants of a file.
 enum class Wanted { Basic, Code };
 
-/// The one sentence that refuses `f` for a loader that wants `wanted`
-/// (C1600-2 AC-25, EC-1, EC-2, EC-5; design §3.8), or "" when `f` is such a
+/// The one sentence that refuses `f` for a loader that wants `wanted`,
+/// or "" when `f` is such a
 /// file and sound. Every loader asks it first: an empty file is refused as
 /// empty by each. Machine code: a header whose length disagrees with the
 /// bytes is refused here too (the caller may accept it when a length is

@@ -298,7 +298,7 @@ std::vector<BreakpointStatus> DapBreakpoints::reresolve(const SourceMap& map) {
     return changed;
 }
 
-// ── Arming (LIB-10 AC-10 to AC-12, AC-47) ────────────────────────────────
+// ── Arming ────────────────────────────────────────────────────────────────
 
 void DapBreakpoints::apply(calcu::debugger::BreakpointTable& table, const DapTargets& targets, SymbolLookup symbols) {
     table.remove(kDapSetter);

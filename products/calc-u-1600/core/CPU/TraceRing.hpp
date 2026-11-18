@@ -7,7 +7,7 @@
 // Fixed-size instruction-trace ring shared by the CPU cores. The CPU
 // push()es one frame per traced instruction; a consumer (the debug panel,
 // a CLI) drain()s them in order or peek()s the most recent without
-// consuming. Single-threaded, like the machine (ADR 0009). N must be a
+// consuming. Single-threaded, like the machine. N must be a
 // power of two.
 template <typename Frame, uint32_t N>
 class TraceRing {

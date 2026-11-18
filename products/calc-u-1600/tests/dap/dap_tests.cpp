@@ -1,9 +1,9 @@
-// C1600-3 (design §6, T3 to T12): the DAP server of app/dap/ -- its JSON and
+// The DAP server of app/dap/ -- its JSON and
 // framing, the part (listening, status, held messages, ending) and the
 // session (set-up, Build & Load, requests, events) -- driven through a test
 // transport (bytes in and out, on the test's thread) in a session of
 // app/tests/SessionFixture.hpp, one host call at a time. The ten scenarios of
-// tools/dap_smoke.py run against the harness as CalcU1600DapSmoke (AC-20).
+// tools/dap_smoke.py run against the harness as CalcU1600DapSmoke.
 // A program of its own (CalcU1600DapTests), so that CoreTests' Frequent budget
 // stays as it is.
 
@@ -179,7 +179,7 @@ bool started(SessionFixture& fx, const char* model = "PC-1500A") {
     return fx.part().machine() != nullptr;
 }
 
-// ── T3: JSON and framing ─────────────────────────────────────────────────
+// ── JSON and framing ─────────────────────────────────────────────────────
 
 TEST(dap_json_round_trip) {
     const std::string text = R"({"seq":3,"type":"request","arguments":{"n":-12,"x":1.5,"b":true,"z":null,"a":[1,"t\n\"é"]}})";
@@ -204,13 +204,13 @@ TEST(dap_wire_frames_across_reads) {
     CHECK(!r.next());
 }
 
-// ── T4: listening, second client, status (AC-2, AC-3, AC-21, EC-1) ───────
+// ── Listening, second client, status ─────────────────────────────────────
 
-TEST(c1600_3_ac2_listens_on_127_0_0_1_by_setting_or_run_port) {
+TEST(listens_on_127_0_0_1_by_setting_or_run_port) {
     SessionFixture fx;
     fx.open();
     cu1600::dap::DapPart* part = fx.part().dapPart();
-    CHECK(part != nullptr);   // AC-1: in the app layer of a native host
+    CHECK(part != nullptr);   // in the app layer of a native host
     if (!part) return;
     TestTransport t;
     part->setTransport(&t);
@@ -227,7 +227,7 @@ TEST(c1600_3_ac2_listens_on_127_0_0_1_by_setting_or_run_port) {
     part->setTransport(nullptr);
 }
 
-TEST(c1600_3_ac2_port_taken_status_says_so) {
+TEST(port_taken_status_says_so) {
     SessionFixture fx;
     fx.open();
     TestTransport t;
@@ -238,7 +238,7 @@ TEST(c1600_3_ac2_port_taken_status_says_so) {
     fx.part().dapPart()->setTransport(nullptr);
 }
 
-TEST(c1600_3_ac3_second_client_told_and_closed) {
+TEST(second_client_told_and_closed) {
     SessionFixture fx;
     fx.open();
     Client c(fx);
@@ -251,7 +251,7 @@ TEST(c1600_3_ac3_second_client_told_and_closed) {
     CHECK(body && body->find("\"event\":\"output\"") != std::string::npos);
 }
 
-TEST(c1600_3_ac21_status_texts_on_the_topic) {
+TEST(status_texts_on_the_topic) {
     SessionFixture fx;
     fx.open();
     Client c(fx);
@@ -271,7 +271,7 @@ TEST(c1600_3_ac21_status_texts_on_the_topic) {
     CHECK_EQ(status(), std::string("Listening on 127.0.0.1:32168"));
 }
 
-TEST(c1600_3_ec1_port_out_of_range_not_listening) {
+TEST(port_out_of_range_not_listening) {
     SessionFixture fx;
     fx.open();
     TestTransport t;
@@ -289,9 +289,9 @@ TEST(c1600_3_ec1_port_out_of_range_not_listening) {
     fx.part().dapPart()->setTransport(nullptr);
 }
 
-// ── T5: the start of a DAP session (AC-4, AC-5, EC-2) ────────────────────
+// ── The start of a DAP session ───────────────────────────────────────────
 
-TEST(c1600_3_ac4_initialize_pauses_configuration_done_resumes) {
+TEST(initialize_pauses_configuration_done_resumes) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -308,7 +308,7 @@ TEST(c1600_3_ac4_initialize_pauses_configuration_done_resumes) {
     CHECK_EQ(c.count("stopped"), 0);   // neither pause is told
 }
 
-TEST(c1600_3_ac4_stop_on_entry_stays_paused_entry) {
+TEST(stop_on_entry_stays_paused_entry) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -321,7 +321,7 @@ TEST(c1600_3_ac4_stop_on_entry_stays_paused_entry) {
     CHECK(c.rc().paused());
 }
 
-TEST(c1600_3_ac5_project_block_is_the_base_keys_win) {
+TEST(project_block_is_the_base_keys_win) {
     SessionFixture fx;
     fx.open();
     const fs::path project = fx.root / "debug.pc1500";
@@ -354,7 +354,7 @@ TEST(c1600_3_ac5_project_block_is_the_base_keys_win) {
     CHECK_EQ(cu1600::dap::textOf(config, "preset"), std::string("other.pc1500"));
 }
 
-TEST(c1600_3_ac5_unknown_key_passed_over_numbers_by_preset_rule_bare_hex_refused) {
+TEST(unknown_key_passed_over_numbers_by_preset_rule_bare_hex_refused) {
     std::string error;
     CHECK(cu1600::dap::checkAttach(obj({{"vscodeKey", Value("x")}, {"stopOnEntry", Value(true)}}),
                                    debug::attach::kBlockKeys, &error));
@@ -368,7 +368,7 @@ TEST(c1600_3_ac5_unknown_key_passed_over_numbers_by_preset_rule_bare_hex_refused
     CHECK(error.rfind("Bad \"address\": ", 0) == 0);
 }
 
-TEST(c1600_3_ec2_bad_key_refused_with_reason) {
+TEST(bad_key_refused_with_reason) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -383,9 +383,9 @@ TEST(c1600_3_ec2_bad_key_refused_with_reason) {
     CHECK(c.refusal("restart", obj({{"arguments", obj({{"reset", Value("sometimes")}})}})).rfind("Bad \"reset\"", 0) == 0);
 }
 
-// ── T6, T7: the set-up and Build & Load (AC-6, AC-7, AC-24, AC-25, EC-3, EC-4) ─
+// ── The set-up and Build & Load ──────────────────────────────────────────
 
-TEST(c1600_3_ac6_boot_debug_with_program_refused) {
+TEST(boot_debug_with_program_refused) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -396,7 +396,7 @@ TEST(c1600_3_ac6_boot_debug_with_program_refused) {
     CHECK(c.refusal("attach", obj({{"boot", Value("debug")}, {"command", Value("RUN")}})).find("\"boot\"") != std::string::npos);
 }
 
-TEST(c1600_3_ac6_preset_loaded_then_paused_command_typed_when_running) {
+TEST(preset_loaded_then_paused_command_typed_when_running) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -413,7 +413,7 @@ TEST(c1600_3_ac6_preset_loaded_then_paused_command_typed_when_running) {
     CHECK(fx.screen().find("42") != std::string::npos);
 }
 
-TEST(c1600_3_ac6_reset_stops_at_the_reset_vector_ac24_over_when_it_stops) {
+TEST(reset_stops_at_the_reset_vector_over_when_it_stops) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -427,25 +427,25 @@ TEST(c1600_3_ac6_reset_stops_at_the_reset_vector_ac24_over_when_it_stops) {
     const Value* frames = st.find("stackFrames");
     CHECK(frames && frames->elements() &&
           cu1600::dap::textOf(frames->elements()->front(), "instructionPointerReference") == "0xE000");
-    // AC-24: then stepping and breakpoints work normally.
+    // Then stepping and breakpoints work normally.
     c.request("stepIn", obj({{"threadId", Value(1)}, {"granularity", Value("instruction")}}));
     CHECK(c.event("stopped").has_value());
 }
 
-TEST(c1600_3_ac6_listings_bound_to_their_cpu_with_qualifier_ec7_told) {
+TEST(listings_bound_to_their_cpu_with_qualifier_told) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
     Client c(fx);
     c.begin();
     // memtest's listing on a machine that does not hold memtest: bound, and
-    // the client told how many lines differ (AC-13, EC-7).
+    // the client told how many lines differ.
     c.request("attach", obj({{"listings", Value(Value::Array{obj({{"path", Value(fs::absolute(kMemtestRst).string())},
                                                                    {"cpu", Value("lh5801")}})})}}));
     CHECK(c.said("lines don't match memory"));
 }
 
-TEST(c1600_3_ac7_build_and_load_entry_and_call_in_setup_waits_for_configuration_done) {
+TEST(build_and_load_entry_and_call_in_setup_waits_for_configuration_done) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -460,14 +460,14 @@ TEST(c1600_3_ac7_build_and_load_entry_and_call_in_setup_waits_for_configuration_
     const Value* list = bps.find("breakpoints");
     CHECK(list && list->elements() && cu1600::dap::boolOf(list->elements()->front(), "verified"));
     fx.runFor(1);
-    CHECK_EQ(c.count("stopped"), 0);   // ledger 1600-20: nothing runs before configurationDone
+    CHECK_EQ(c.count("stopped"), 0);   // nothing runs before configurationDone, so no breakpoint near the entry is missed
     c.request("configurationDone");
     const auto stop = c.event("stopped");
     CHECK(stop && cu1600::dap::textOf(*stop, "reason") == "breakpoint");   // the breakpoint at the entry is not missed
     CHECK_EQ(lineOfTop(c), 74);
 }
 
-TEST(c1600_3_ac7_entry_rules_and_ec3_headerless_without_address) {
+TEST(entry_rules_and_headerless_without_address) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -486,12 +486,12 @@ TEST(c1600_3_ac7_entry_rules_and_ec3_headerless_without_address) {
     b = c.request("c1600/load", obj({{"bin", Value(bin)}, {"entry", Value(0x40D0)}, {"address", Value("&40C5")},
                                          {"cleanStart", Value(false)}}));
     CHECK_EQ(cu1600::dap::textOf(b, "entry"), std::string("0x40D0"));
-    // EC-3: headerless, no address, no listing.
+    // Headerless, no address, no listing.
     const std::string why = c.refusal("c1600/load", obj({{"bin", Value(bin)}, {"cleanStart", Value(false)}}));
     CHECK(why.find("needs an address") != std::string::npos && why.find("listing") != std::string::npos);
 }
 
-TEST(c1600_3_ec4_startup_preset_for_another_model_refused) {
+TEST(startup_preset_for_another_model_refused) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -503,7 +503,7 @@ TEST(c1600_3_ec4_startup_preset_for_another_model_refused) {
     CHECK(why.rfind("Clean start failed: ", 0) == 0 && why.find("PC-1600") != std::string::npos);
 }
 
-TEST(c1600_3_ac25_rom_project_load_redoes_the_setup) {
+TEST(rom_project_load_redoes_the_setup) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -519,9 +519,9 @@ TEST(c1600_3_ac25_rom_project_load_redoes_the_setup) {
     CHECK(stop && cu1600::dap::textOf(*stop, "reason") == "entry");
 }
 
-// ── T8: held messages, ending (AC-8, AC-10, EC-5) ─────────────────────────
+// ── Held messages, ending ────────────────────────────────────────────────
 
-TEST(c1600_3_ac8_messages_held_during_an_operation_answered_in_order) {
+TEST(messages_held_during_an_operation_answered_in_order) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -545,7 +545,7 @@ TEST(c1600_3_ac8_messages_held_during_an_operation_answered_in_order) {
     }
 }
 
-TEST(c1600_3_ac10_disconnect_closed_socket_and_dialog_end_the_session) {
+TEST(disconnect_closed_socket_and_dialog_end_the_session) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -582,7 +582,7 @@ TEST(c1600_3_ac10_disconnect_closed_socket_and_dialog_end_the_session) {
     CHECK_EQ(fx.run(cu1600::dap::kDapDisconnectCommand).reason, std::string(cu1600::dap::kNoClient));
 }
 
-TEST(c1600_3_ec5_request_finished_before_the_end) {
+TEST(request_finished_before_the_end) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -598,9 +598,9 @@ TEST(c1600_3_ec5_request_finished_before_the_end) {
     CHECK(!c.rc().paused());   // then the session ended
 }
 
-// ── T9: a new machine (AC-9) ─────────────────────────────────────────────
+// ── A new machine ────────────────────────────────────────────────────────
 
-TEST(c1600_3_ac9_model_switch_keeps_the_session_invalidated_and_line) {
+TEST(model_switch_keeps_the_session_invalidated_and_line) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -617,9 +617,9 @@ TEST(c1600_3_ac9_model_switch_keeps_the_session_invalidated_and_line) {
     CHECK(list && list->elements() && list->elements()->size() == 2);   // the session goes on with the PC-1600
 }
 
-// ── T10: requests (AC-11, AC-15, EC-6) ───────────────────────────────────
+// ── Requests ─────────────────────────────────────────────────────────────
 
-TEST(c1600_3_ac11_requests_memory_references_unsupported_ec6_ac15) {
+TEST(requests_memory_references_unsupported) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx, "PC-1600"));
@@ -660,9 +660,9 @@ TEST(c1600_3_ac11_requests_memory_references_unsupported_ec6_ac15) {
     const Value* ins = dis.find("instructions");
     CHECK(ins && ins->elements() && ins->elements()->size() == 4);
     CHECK_EQ(cu1600::dap::textOf(c.request("evaluate", obj({{"expression", Value("2+3*4")}})), "result"), std::string("0x0E (14)"));
-    // AC-15: an error names what is wrong.
+    // An error names what is wrong.
     CHECK(c.refusal("evaluate", obj({{"expression", Value("nosuch + 1")}})).find("nosuch") != std::string::npos);
-    // EC-6: only the registers of now can be changed.
+    // Only the registers of now can be changed.
     c.request("stepIn", obj({{"threadId", Value(1)}, {"granularity", Value("instruction")}}));
     CHECK(c.event("stopped").has_value());
     CHECK(c.refusal("setVariable", obj({{"variablesReference", Value(1001 * 4 + 1)}, {"name", Value("A")}, {"value", Value("1")}}))
@@ -673,9 +673,9 @@ TEST(c1600_3_ac11_requests_memory_references_unsupported_ec6_ac15) {
     (void)scopes;
 }
 
-// ── T11: events (AC-16) ──────────────────────────────────────────────────
+// ── Events ───────────────────────────────────────────────────────────────
 
-TEST(c1600_3_ac16_stopped_once_with_reason_ids_and_pause_from_elsewhere) {
+TEST(stopped_once_with_reason_ids_and_pause_from_elsewhere) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -702,9 +702,9 @@ TEST(c1600_3_ac16_stopped_once_with_reason_ids_and_pause_from_elsewhere) {
     CHECK(ids && ids->elements() && cu1600::dap::intOf(Value::object({{"x", ids->elements()->front()}}), "x") == id);
 }
 
-// ── T12: the server's own requests (AC-17) ───────────────────────────────
+// ── The server's own requests ────────────────────────────────────────────
 
-TEST(c1600_3_ac17_reset_display_text_quit) {
+TEST(reset_display_text_quit) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
@@ -719,7 +719,7 @@ TEST(c1600_3_ac17_reset_display_text_quit) {
     CHECK(cu1600::dap::isArray(text.find("indicators")));
     CHECK(cu1600::dap::intOf(text, "notText", -1) >= 0);
     CHECK(!text.find("poweredOn") && !text.find("unparsed") && !text.find("status"));
-    CHECK_EQ(c.refusal("c1600/screen"), std::string("Unsupported request 'c1600/screen'"));   // the old name is gone
+    CHECK_EQ(c.refusal("c1600/screen"), std::string("Unsupported request 'c1600/screen'"));   // `c1600/screen` is no request
     c.request("initialize");
     c.request("attach");
     c.request("configurationDone");

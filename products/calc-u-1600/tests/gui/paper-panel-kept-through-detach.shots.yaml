@@ -1,18 +1,18 @@
-# LIB-8 AC-36 (design §10.6, P16-6; ADR 0032): the paper panel is always
+# The paper panel is always
 # shown, with the plotter's name while one is plugged in, and the CE-150's
-# paper is kept through a detach. A check scenario (CalcU1600Shots.lib8-ac36,
+# paper is kept through a detach. A check scenario (CalcU1600Shots.paper-panel-kept-through-detach,
 # Longer); format: docs/developer/screenshots/README.md.
-out: ../../build/shots-check/lib8-ac36
+out: ../../build/shots-check/paper-panel-kept-through-detach
 window: 1430x1280
 
 shots:
-  - name: lib8-ac36
+  - name: paper-panel-kept-through-detach
     steps:
       # The start: a PC-1500A without a plotter, the panel there and unnamed.
       - expect-panel: { name: paper-panel, title: "", empty: true }
       - action: Machine > Peripherals > CE-150
       - settle: 300
-      # The attach replies when the machine is ready for keys (LIB-18): by
+      # The attach replies when the machine is ready for keys: by
       # then the CE-150's power-on has fed the paper, so it is not empty.
       - expect-panel: { name: paper-panel, title: CE-150 }
       - key: cl
@@ -27,4 +27,4 @@ shots:
       - action: Machine > Peripherals > CE-150
       - settle: 300
       - expect-panel: { name: paper-panel, title: CE-150, empty: false }
-      - capture: { target: paper-panel, file: lib8-ac36-paper.png }
+      - capture: { target: paper-panel, file: paper-panel-kept-through-detach-paper.png }

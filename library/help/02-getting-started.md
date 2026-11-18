@@ -1,5 +1,3 @@
-<!-- follows: LIB-14, LIB-5 -->
-
 # Getting started
 
 Every product of the Calc-U family has the same window: the faceplate of

@@ -12,8 +12,8 @@
 #include "machine/Machine.hpp"
 
 // A preset of format 2 loaded through Calc-U-1600's harness entry (the
-// library's loader in emulated time; LIB-6 §10.6), for the core tests that
-// set a machine up by a preset (M-46: in place of the version 1 loaders).
+// library's loader in emulated time), for the core tests that set a
+// machine up by a preset.
 // The preset's text goes into a temporary folder with the files a test
 // adds; `load()` sends `preset <file>` and returns the reply.
 

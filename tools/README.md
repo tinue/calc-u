@@ -11,7 +11,7 @@ product's own tools are in `products/<product>/tools/`.
 ```sh
 tools/help check calc-u-1600                 # the checks, no asset
 tools/help build calc-u-1600                 # the checks, then build/help/Calc-U-1600-help.zip
-tools/help check calc-u-59                   # Calc-U-59's help (M-60)
+tools/help check calc-u-59                   # Calc-U-59's help
 tools/help build 59 --version 3.0.0 --out /tmp/help
 ```
 
@@ -20,9 +20,8 @@ The product is named by its name or short form, any case (`Calc-U-1600`,
 `<Product>HelpCheck` and `<Product>HelpBuild` run them in Frequent. The help's sources:
 
 - `library/help/`: the shared parts, one file per chapter that has one;
-  `help.yaml` lists the ten chapters (LIB-16 AC-1), their parts, their
-  shared files and the specs each shared part follows (AC-3), the tool's
-  one list of them;
+  `help.yaml` lists the ten chapters, their parts and their shared
+  files, the tool's one list of them;
   `anchor_cases.txt` the headings and anchors by GitHub's rule.
 - `products/<product>/help/`: the product parts; `help.yaml` lists them per
   chapter, with the product's name, its version source (`version-from:`,
@@ -36,9 +35,9 @@ A failure names the file and the line; the exit status is 0 without
 failures, 1 with, 2 for a usage error. The checks: the ten chapters with
 their parts; every relative link, anchor and picture leads somewhere;
 every help file is in a manifest and every picture used; no shared part
-names a product word or has a picture (Mermaid is fine), and each starts
-with `<!-- follows: <specs> -->`; every settings key is described in
-chapter 8; `chapter:<n>` links (a shared part's way to the product's part
+names a product word or has a picture (Mermaid is fine); no help file
+names a source path or a milestone (`M-<n>`); every settings key is
+described in chapter 8; `chapter:<n>` links (a shared part's way to the product's part
 of chapter n) resolve. The words the glossary lists under "Avoid" are
 warnings (`--quiet-warnings` counts them only).
 

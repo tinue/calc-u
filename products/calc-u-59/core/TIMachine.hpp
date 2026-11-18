@@ -16,22 +16,22 @@
 #include <optional>
 #include <vector>
 
-// A TI-59, TI-58 or TI-58C behind the machine interface (C59-1; design §3.1).
+// A TI-59, TI-58 or TI-58C behind the machine interface.
 // The only class above the core is calcu::machine::Machine: build one with
 // calcu::machine::build(tiCatalogue(), TIMachineBuilder, request). It owns the
 // core-internal TI59Machine, the tick count that goes on across every
 // operation, the Reset restore of the TI-59/58, the peripherals plugged into
-// its places `printer` (the PC-100C) and `slot-1` (a Solid State ROM module;
-// C59-6), and its capabilities (the product kinds, the debug target, the
+// its places `printer` (the PC-100C) and `slot-1` (a Solid State ROM module),
+// and its capabilities (the product kinds, the debug target, the
 // typing support). It holds no lock and starts no
-// thread (ADR 0009).
+// thread.
 //
 // Ticks: one instruction is 32 ticks, 128 in the ROM's IDLE state on the
 // TI-59 and TI-58 (TMC0501's step weight × 32).
 
 class TIMachine final : public calcu::machine::Machine {
 public:
-    /// Build order (C59-1 AC-6, AC-7): the model with its defaults and zeroed
+    /// Build order: the model with its defaults and zeroed
     /// memory; then `content` into the RAM (a TI-58C); then the processor
     /// reset, so the ROM's start-up runs in the advances that follow.
     TIMachine(const calcu::machine::MachineDescriptor&, MachineVariant, const TIRoms& roms,
@@ -50,20 +50,20 @@ public:
     calcu::machine::DisplayOutput readDisplay() override;
     std::size_t takeSound(std::span<std::int16_t>) override { return 0; }
     calcu::machine::Plugged plugged() const override;
-    /// Always `TMC0501/typing-support` (LIB-5 §3.4),
-    /// `TMC0501/c59.trace-records` (LIB-10 D-24) and `RAM/c59.program-memory`
-    /// (C59-2 AC-17); on the TI-58C `RAM/c59.constant-memory` (C59-3 AC-1); with the PC-100C:
+    /// Always `TMC0501/typing-support`,
+    /// `TMC0501/c59.trace-records` and `RAM/c59.program-memory`;
+    /// on the TI-58C `RAM/c59.constant-memory`; with the PC-100C:
     /// the debug panel's kinds `TMC0501/c59.asm-overlay`, `TMC0501/c59.rom-heatmap`,
-    /// `TMC0501/c59.calculator-state`, `TMC0501/c59.machine-log` (C59-4);
+    /// `TMC0501/c59.calculator-state`, `TMC0501/c59.machine-log`;
     /// `printer/controls` (PRINT, ADV, TRACE) and
-    /// `printer/paper-output` (C59-6 AC-1, AC-5; LIB-2 AC-26; LIB-8 AC-24); always
-    /// `TMC0501/c59.library-program` (C59-7 AC-21); on the TI-59 the card
-    /// reader's media place `card-reader/media-place` (C59-7 AC-6; LIB-1 D-1).
+    /// `printer/paper-output`; always
+    /// `TMC0501/c59.library-program`; on the TI-59 the card
+    /// reader's media place `card-reader/media-place`.
     std::vector<calcu::machine::CapabilityEntry> capabilities() const override;
     calcu::machine::Capability* capability(const calcu::machine::CapabilityId&) override;
     using calcu::machine::Machine::capability;
     std::vector<calcu::machine::DebugTargetId> debugTargets() const override { return m_descriptor.debugTargets; }
-    /// LIB-10 AC-28: the one target TMC0501 (core/TIDebugging.hpp).
+    /// The one target TMC0501 (core/TIDebugging.hpp).
     calcu::machine::Debugging* debugging() override { return &m_debugging; }
 
     /// The PC-100C's character buffer, not yet printed (debug view; empty
@@ -71,9 +71,10 @@ public:
     std::string printerBufferContent() const { return m_printer ? m_printer->bufferContent() : std::string(); }
 
 protected:
-    // LIB-2 design §3.1: the PC-100C into `printer`, a module into `slot-1`.
-    // What follows is the pin-out's power cycle (LIB-2 AC-24), which the
-    // caller runs; a second module is refused by the library's rule 6 (AC-25).
+    // The PC-100C into `printer`, a module into `slot-1`.
+    // What follows is the pin-out's power cycle, which the
+    // caller runs; a second module is refused by the library's attach
+    // (rule 6, library/machine/Attach.cpp).
     void plug(calcu::machine::PeripheralRequest, const calcu::machine::PeripheralDescriptor&,
               calcu::machine::TickRate hostRate) override;
     void unplug(const calcu::machine::PlacePath&, const calcu::machine::PeripheralId&) override;
@@ -93,7 +94,7 @@ private:
     friend struct TIMachineTesting;
     friend class TIMachineState;
 
-    /// C59-9 AC-15 (core/TIMachineState.cpp): the records of the machine's
+    /// The machine state (core/TIMachineState.cpp): the records of the machine's
     /// parts, both ways; a refused restore puts the state from before back.
     template <class Io>
     void stateIo(Io& io);
@@ -103,7 +104,7 @@ private:
     /// One instruction; then the pending Reset restore. Every path that runs an instruction goes through here.
     std::uint32_t stepOne();
     /// The processor reset (TI59Machine::reset), with the tick count carried;
-    /// the peripherals are told of it (LIB-2 AC-10).
+    /// the peripherals are told of it.
     void cpuReset();
     /// The connectors to the CPU: the TI-58C has the printer's D0 pad on digit 10.
     void rewire();
@@ -121,26 +122,26 @@ private:
     const TIRomRanges m_ranges;
     TI59Machine m_hw;
     calcu::machine::Ticks m_ticksBeforeReset = 0;
-    std::optional<SavedMemory> m_restore;   ///< AC-19: RAM and partition until key readiness
+    std::optional<SavedMemory> m_restore;   ///< RAM and partition until key readiness
     std::uint64_t m_retired = 0;          ///< instructions carried out (DebugTarget::retired)
     bool m_panelTrace = false;            ///< the debug panel wants the frame ring (c59.calculator-state)
     bool m_recordTrace = false;           ///< a trace runs (c59.trace-records)
     bool m_checksTrace = false;           ///< the run control's checks are set
 
     std::unique_ptr<PC100C> m_printer;
-    bool m_recordCodeLines = false;   ///< P-E3: the PC-100C keeps its code lines (TIMachineTesting)
+    bool m_recordCodeLines = false;   ///< the PC-100C keeps its code lines (TIMachineTesting)
     std::unique_ptr<SolidStateRomModule> m_module;
     calcu::machine::PeripheralId m_moduleId;
-    std::unique_ptr<TICardReaderPlace> m_cardReader;   ///< C59-7 AC-6 (TI-59)
-    TIAsmOverlay m_asmOverlay{*this};          ///< C59-4 AC-13
-    TIRomHeatmap m_heatmap{*this};             ///< C59-4 AC-8
-    TICalculatorState m_calculatorState{*this};   ///< C59-4 AC-3, AC-6
-    TIMachineLog m_machineLog{*this};          ///< C59-4 AC-11
+    std::unique_ptr<TICardReaderPlace> m_cardReader;   ///< the TI-59 only
+    TIAsmOverlay m_asmOverlay{*this};
+    TIRomHeatmap m_heatmap{*this};
+    TICalculatorState m_calculatorState{*this};
+    TIMachineLog m_machineLog{*this};
     TIDebugging m_debugging{*this};
     TITraceRecords m_traceRecords{*this};
     TITypingSupport m_typing{*this};
-    TIProgramMemory m_programMemory{*this};          ///< C59-2 AC-17
-    TIConstantMemoryCapability m_constantMemory{*this};   ///< C59-3 AC-1 (TI-58C)
-    TILibraryProgram m_libraryProgram{*this};             ///< C59-7 AC-21
-    TIMachineState m_machineState{*this};                 ///< C59-9 AC-15 (LIB-11 AC-24)
+    TIProgramMemory m_programMemory{*this};
+    TIConstantMemoryCapability m_constantMemory{*this};   ///< TI-58C
+    TILibraryProgram m_libraryProgram{*this};
+    TIMachineState m_machineState{*this};
 };

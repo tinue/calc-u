@@ -1,8 +1,7 @@
-// C1600-2 the loaders' session part (app/SharpLoaderPart; design §3.6-§3.8,
-// T8 to T11): loading with a start (AC-13), at once or as an operation and
-// refused while one runs (AC-24, EC-6), one sentence per case for the menu,
-// the harness and a preset (AC-25), and the cases of 0.8.1's app session
-// tests (AC-22: the WAV's choice, the address checked as typed).
+// The loaders' session part (app/SharpLoaderPart): loading with a start, at
+// once or as an operation and refused while one runs, one sentence per case
+// for the menu, the harness and a preset, and the app session's cases (the
+// WAV's choice, the address checked as typed).
 
 #include <algorithm>
 #include <cstdint>
@@ -85,9 +84,9 @@ std::vector<std::string> logLines(SessionFixture& f) {
     return out;
 }
 
-// ---- AC-13 ----
+// ---- Loading with a start ----
 
-TEST(c1600_2_ac13_run_types_start_and_waits_idle) {
+TEST(run_types_start_and_waits_idle) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -106,7 +105,7 @@ TEST(c1600_2_ac13_run_types_start_and_waits_idle) {
     CHECK(f.screen().find("CALL &C100") != std::string::npos);
 }
 
-TEST(c1600_2_ac13_without_start_address_nothing_started) {
+TEST(without_start_address_nothing_started) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -119,7 +118,7 @@ TEST(c1600_2_ac13_without_start_address_nothing_started) {
     CHECK(loaded && !loaded->started);
 }
 
-TEST(c1600_2_ac13_bound_reached_done_with_log_line) {
+TEST(bound_reached_done_with_log_line) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -137,9 +136,9 @@ TEST(c1600_2_ac13_bound_reached_done_with_log_line) {
     CHECK(said);
 }
 
-// ---- AC-24, EC-6 ----
+// ---- At once or as an operation; refused while one runs ----
 
-TEST(c1600_2_ac24_load_at_once_not_operations) {
+TEST(load_at_once_not_operations) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -152,7 +151,7 @@ TEST(c1600_2_ac24_load_at_once_not_operations) {
     CHECK(r && r->done && !f.busy());
 }
 
-TEST(c1600_2_ac24_type_and_run_are_operations) {
+TEST(type_and_run_are_operations) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -163,7 +162,7 @@ TEST(c1600_2_ac24_type_and_run_are_operations) {
     CHECK(!f.busy());
 }
 
-TEST(c1600_2_ac24_refused_while_another_runs) {
+TEST(refused_while_another_runs) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -182,11 +181,11 @@ TEST(c1600_2_ac24_refused_while_another_runs) {
     for (int i = 0; i < 6000 && f.busy(); ++i) f.call();
 }
 
-// EC-6: the menu (the commands the frontends send) and the harness (the same
+// The menu (the commands the frontends send) and the harness (the same
 // commands through its host; it runs an operation to its end inside one
 // command, so it meets a running operation only when one was started
 // outside it, as above) are refused while an operation runs.
-TEST(c1600_2_ec6_menu_and_harness_refused_while_busy) {
+TEST(menu_and_harness_refused_while_busy) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -199,11 +198,11 @@ TEST(c1600_2_ec6_menu_and_harness_refused_while_busy) {
     for (int i = 0; i < 6000 && f.busy(); ++i) f.call();
 }
 
-// ---- AC-25 ----
+// ---- One sentence per case for the menu, the harness and a preset ----
 
 // The same case through the menu's command, the harness and a format-1
 // preset: the same sentence; the preset puts its section before it.
-TEST(c1600_2_ac25_same_sentence_menu_harness_preset) {
+TEST(same_sentence_menu_harness_preset) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
@@ -232,7 +231,7 @@ TEST(c1600_2_ac25_same_sentence_menu_harness_preset) {
         std::ofstream out(preset);
         out << "format-version: 2\nmodel: PC-1500A\nprogram:\n  file: " << path << "\n";
     }
-    // C1600-4 AC-3: the preset fails at its section's line with the loader's reason.
+    // The preset fails at its section's line with the loader's reason.
     const sessions::ReplyMessage r = f.run(calcu::presets::kLoadPresetCommand, Value::object({{"ref", preset.generic_string()}}));
     CHECK(!r.done);
     const std::string want = preset.generic_string() + ", line 3: " + sentence;
@@ -240,9 +239,9 @@ TEST(c1600_2_ac25_same_sentence_menu_harness_preset) {
     if (r.reason != want) std::fprintf(stderr, "  preset: %s\n  menu:   %s\n", r.reason.c_str(), sentence.c_str());
 }
 
-// ---- AC-22: 0.8.1's app session cases ----
+// ---- The WAV's choice, the address checked as typed ----
 
-TEST(c1600_2_ac22_one_wav_one_image) {
+TEST(one_wav_one_image) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
@@ -255,7 +254,7 @@ TEST(c1600_2_ac22_one_wav_one_image) {
     CHECK(p && p->kind == "headerless" && p->tapeFiles.empty());
 }
 
-TEST(c1600_2_ac22_two_files_listed) {
+TEST(two_files_listed) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
@@ -265,7 +264,7 @@ TEST(c1600_2_ac22_two_files_listed) {
     CHECK(k && k->tapeFiles.size() == 2 && k->tapeFiles[0].rfind("TAPEFIX", 0) == 0);
 }
 
-TEST(c1600_2_ac22_address_checked_as_typed) {
+TEST(address_checked_as_typed) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));

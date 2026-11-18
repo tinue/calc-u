@@ -1,9 +1,8 @@
 #include "PC100CPaper.hpp"
 #include <cmath>
 
-// The PC-100C's paper (PC100CPaper.hpp). The font and the dot rules moved
-// here from app/PrinterFont.hpp, the character table from core/PC100C.cpp
-// (M-53, LIB-8 design D-22).
+// The PC-100C's paper (PC100CPaper.hpp): the font, the character table and
+// the dot rules.
 
 namespace pc100cpaper {
 
@@ -95,14 +94,14 @@ const calcu::paper::PaperDescription& description() {
     static const calcu::paper::PaperDescription d = [] {
         calcu::paper::PaperDescription p;
         p.unit = calcu::paper::Millimetres{430, 1000};
-        p.width = kWidth;   // 129.07 units (AC-24)
+        p.width = kWidth;   // 129.07 units
         p.printableLeft = 0;
-        p.printableWidth = kWidth;   // D-20: the whole width
+        p.printableWidth = kWidth;   // the whole width
         p.form = calcu::paper::MarkForm::Dots;
         p.dotDiameter = 7'600;   // 0.38 of the pitch as radius
         for (int heat = 0; heat <= kFullInkCycles; ++heat)
             p.darknessGreys.push_back(static_cast<std::uint8_t>(std::lround(255.0 * (1.0 - inkAlpha(heat)))));
-        p.pictureDotsPerInch = 600;   // AC-27
+        p.pictureDotsPerInch = 600;
         p.textLayer = true;
         return p;
     }();

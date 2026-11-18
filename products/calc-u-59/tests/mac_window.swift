@@ -1,7 +1,7 @@
-// What tests/mac_attach_check.sh does to the Mac app's window (C59-5 S6):
+// What tests/mac_attach_check.sh does to the Mac app's window:
 //   swift tests/mac_window.swift cover <seconds>   a window over every screen
 //                                                  for that long (the app's
-//                                                  window is covered, AC-9)
+//                                                  window is covered)
 //   swift tests/mac_window.swift hide <pid>        hides the app (Cmd-H)
 //   swift tests/mac_window.swift unhide <pid>      shows it again
 import AppKit

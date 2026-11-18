@@ -110,12 +110,12 @@ public:
     void seedFromHost(int year, int month, int day, int hour, int minute, int second, int dow,
                       int millisecond = 0);
 
-    /// The live calendar as plain decimals (the real-time clock capability,
-    /// LIB-2 AC-21): month 1-12, dow 0-6 (Sunday=0). The chip keeps no year.
+    /// The live calendar as plain decimals (the real-time clock
+    /// capability): month 1-12, dow 0-6 (Sunday=0). The chip keeps no year.
     struct Fields { int month, day, dow, hour, minute, second; };
     Fields fields() const;
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    /// The machine state (Machine/StateRecords.hpp).
     template <class Io>
     void stateIo(Io& io) {
         io(mode_)(prevStb_)(prevClk_)(dataIn_)(shiftRegister_);

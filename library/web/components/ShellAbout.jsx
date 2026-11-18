@@ -1,5 +1,4 @@
-// ShellAbout -- the About dialog of the React set (LIB-14 design §3.10;
-// spec AC-21): the product's name, its version and build, the texts and
+// ShellAbout -- the About dialog of the React set: the product's name, its version and build, the texts and
 // links the product gives, one button to close it. Name: about-dialog.
 
 function ShellAbout({ shell }) {

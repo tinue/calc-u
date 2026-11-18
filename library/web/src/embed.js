@@ -1,31 +1,29 @@
-// The embedding props and the hooks a product's component uses (LIB-15
-// design §3.1; spec AC-16, EC-4, EC-5). React 18 is a global of the host
-// page (AC-15).
+// The embedding props and the hooks a product's component uses. React 18 is
+// a global of the host page.
 //
 //   embedProps(props, {name, layouts, layout}) → {width, keyboard (default
 //                        true), layout, preset, height, model, workerUrl,
-//                        rest}: the shared props in their order (AC-16,
-//                        AC-29), then the product's own in rest; layout is
+//                        rest}: the shared props in their order, then the
+//                        product's own in rest; layout is
 //                        one of the product's layouts, else its default (a
 //                        value not among them is ignored with a console
 //                        warning naming the component `name`)
 //   bundlePathOf(preset) the preset prop as its bundle path: "sum.ti59" and
 //                        "examples:sum.ti59" both give "examples:sum.ti59"
-//                        (AC-16; LIB-18's `start {model, preset}`); empty
+//                        (as the session's `start {model, preset}` takes it); empty
 //                        stays empty
 //   useFillParent(ref, {width, height}) → {width, height}: the props when
 //                        both are given, else the size of ref's parent
 //   useShell(product, embedded, services) → the shell (null until the effect
-//                        ran); model, preset and workerUrl are read once (EC-5),
+//                        ran); model, preset and workerUrl are read once,
 //                        and so are the host services (createShell's
-//                        `services`; default the page's, calcuWebHostServices;
-//                        Part E simplification E-5)
+//                        `services`; default the page's, calcuWebHostServices)
 //   useShellState(shell, select)   a slice of the shell's state
 //   useTopic(shell, name, select)  the last state of a topic
 //   useStream(shell, name)         what a stream topic appended since its last reset
 //
 // embedProps only names and defaults the props; whether a model or a
-// preset names something is the session's start (EC-4).
+// preset names something is the session's start.
 
 const CALCU_LAYOUT_WARNED = new Set();
 

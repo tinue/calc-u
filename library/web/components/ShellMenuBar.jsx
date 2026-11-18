@@ -1,14 +1,13 @@
-// ShellMenuBar -- the menu bar of the React set (LIB-14 design §3.3, §3.10;
-// spec AC-1 to AC-7, EC-4): the menus of useCalcuShell's model, a menu
+// ShellMenuBar -- the menu bar of the React set: the menus of useCalcuShell's model, a menu
 // opened by a click, submenus beside their item. A Web frontend binds no
-// shortcut (AC-4) and has no Quit (AC-6). A disabled item carries the
-// reason as its `title` and `aria-disabled` (AC-5). Elements are named by
-// `data-calcu` (§3.10): menu-<id>, item-<id>.
+// shortcut and has no Quit. A disabled item carries the
+// reason as its `title` and `aria-disabled`. Elements are named by
+// `data-calcu`: menu-<id>, item-<id>.
 //
 //   <ShellMenuBar shell={s} />
 
 // `prefix`: the items' names ("item-"; the More menu's "more-item-");
-// `onChoose`: in place of s.choose (the More menu asks first, M15).
+// `onChoose`: in place of s.choose (the More menu asks first).
 function ShellMenuItems({ s, items, onDone, prefix = "item-", onChoose }) {
   const [sub, setSub] = React.useState(null);
   return (

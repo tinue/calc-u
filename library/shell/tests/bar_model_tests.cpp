@@ -1,5 +1,4 @@
-// LIB-14 L2 (design §6): the bar and panel models, rules B1 to B7 (spec AC-8
-// to AC-10, AC-23, AC-42, EC-5). Mirrored in shell_model.test.js.
+// The bar and panel models. Mirrored in shell_model.test.js.
 #include "TestHarness.hpp"
 #include "TestShellPart.hpp"
 #include "shell/BarModel.hpp"
@@ -36,7 +35,7 @@ const BarControl* controlOf(const std::vector<BarGroupModel>& groups, const std:
 
 } // namespace
 
-TEST(ac8_groups_and_order) {
+TEST(bar_groups_and_order) {
     const auto b = bar(st::inputs(), st::product());
     // The model picker; the module slots; the other places; the media places; the product's end.
     CHECK_EQ(describe(b), std::string("[model][slot-1 slot-2][printer aux][card][]"));
@@ -56,12 +55,12 @@ TEST(ac8_groups_and_order) {
     CHECK_EQ(read::text(card->entry, "id"), std::string("card"));
 }
 
-TEST(ac8_slot_numbers_with_two_slots) {
+TEST(bar_slot_numbers_with_two_slots) {
     const auto b = bar(st::inputs(), st::product());
     CHECK_EQ(controlOf(b, "slot-1")->label, std::string("1:"));
     CHECK_EQ(controlOf(b, "slot-2")->label, std::string("2:"));
     CHECK(controlOf(b, "slot-1")->kind == BarControl::Kind::SlotPicker);
-    CHECK_EQ(read::text(controlOf(b, "slot-1")->entry, "place"), std::string("slot-1"));   // LIB-7's picker reads it
+    CHECK_EQ(read::text(controlOf(b, "slot-1")->entry, "place"), std::string("slot-1"));   // the media components' picker reads it
     // One slot: no number.
     auto cs = st::controlState();
     cs.places.erase(cs.places.begin() + 1);
@@ -69,7 +68,7 @@ TEST(ac8_slot_numbers_with_two_slots) {
     CHECK_EQ(controlOf(one, "slot-1")->label, std::string(""));
 }
 
-TEST(ac9_button_for_one_picker_for_several) {
+TEST(place_button_for_one_picker_for_several) {
     const auto b = bar(st::inputs(), st::product());
     const BarControl* printer = controlOf(b, "printer");
     CHECK(printer->kind == BarControl::Kind::PlaceButton);
@@ -79,12 +78,12 @@ TEST(ac9_button_for_one_picker_for_several) {
     CHECK(aux->kind == BarControl::Kind::PlacePicker);
     std::string labels;
     for (const auto& c : aux->choices) labels += c.label + ";";
-    CHECK_EQ(labels, std::string("None;TP-4;TD-21;"));   // D-11: the empty place first
+    CHECK_EQ(labels, std::string("None;TP-4;TD-21;"));   // the empty place first
     CHECK(aux->choices[0].checked);
     CHECK_EQ(aux->choices[1].command.value, std::string("attach"));
 }
 
-TEST(ac9_button_attaches_and_detaches) {
+TEST(place_button_attaches_and_detaches) {
     auto cs = st::controlState();
     const auto before = bar(st::inputs(cs.toValue()), st::product());
     const BarControl* off = controlOf(before, "printer");
@@ -105,7 +104,7 @@ TEST(ac9_button_attaches_and_detaches) {
     CHECK(aux->choices[1].checked);
 }
 
-TEST(ac9_place_needing_more_has_no_control) {
+TEST(place_needing_more_has_no_control) {
     const auto b = bar(st::inputs(), st::product());
     CHECK(controlOf(b, "host-drive") == nullptr);
     auto p = st::product();
@@ -113,14 +112,14 @@ TEST(ac9_place_needing_more_has_no_control) {
     CHECK(controlOf(bar(st::inputs(), p), "host-drive") != nullptr);
 }
 
-TEST(ac10_no_entry_no_gap) {
+TEST(bar_no_entry_no_gap) {
     const auto b = bar(st::inputs(st::controlValue("Model-B")), st::product());
     CHECK_EQ(describe(b), std::string("[model][][printer][][]"));   // empty groups: a component shows nothing
     CHECK(controlOf(b, "slot-1") == nullptr);
     CHECK(controlOf(b, "card") == nullptr);
 }
 
-TEST(ac23_paper_panel_always_with_or_without_owner) {
+TEST(paper_panel_always_with_or_without_owner) {
     auto cs = st::controlState();
     auto ps = panels(st::inputs(cs.toValue()));
     CHECK_EQ(ps.size(), std::size_t{1});
@@ -133,7 +132,7 @@ TEST(ac23_paper_panel_always_with_or_without_owner) {
     CHECK_EQ(ps[0].ownerPlace, std::string("printer"));
 }
 
-TEST(ac42_shell_reads_no_product_entry) {
+TEST(shell_reads_no_product_entry) {
     auto cs = st::controlState();
     const auto before = describe(bar(st::inputs(cs.toValue()), st::product()));
     cs.productEntries.push_back(control::ProductEntry{
@@ -145,7 +144,7 @@ TEST(ac42_shell_reads_no_product_entry) {
         for (const auto& c : g.controls) CHECK(c.id.rfind("tp.", 0) != 0);
 }
 
-TEST(ec5_printer_change_moves_paper_owner) {
+TEST(printer_change_moves_paper_owner) {
     auto cs = st::controlState();
     st::plug(cs, "printer", "test-dotter");
     const auto plugged = panels(st::inputs(cs.toValue()));
@@ -155,12 +154,12 @@ TEST(ec5_printer_change_moves_paper_owner) {
     CHECK_EQ(removed[0].owner, std::string(""));
 }
 
-TEST(b7_no_bar_without_control_state) {
+TEST(no_bar_without_control_state) {
     CHECK(bar(ShellInputs{}, st::product()).empty());
     CHECK(panels(ShellInputs{}).empty());
 }
 
-// Part E (design §10.3.1), B8: a window without a menu bar.
+// A window without a menu bar.
 TEST(bar_without_menu_bar_keeps_reset_preset_settings_and_more) {
     Traits t{false, false, true};
     t.menuBar = false;
@@ -182,16 +181,16 @@ TEST(bar_without_menu_bar_keeps_reset_preset_settings_and_more) {
     const BarControl* more = controlOf(b, "more");
     CHECK(more->kind == BarControl::Kind::More);
     CHECK_EQ(more->choices.size(), moreItems(menus(in, p, t), p).size());
-    // Each action follows its menu item (M9).
+    // Each action follows its menu item.
     auto cs = st::controlState();
     for (auto& a : cs.actions)
         if (a.command == control::kResetAction) a.available = st::unavailable("An operation runs.");
     const auto b2 = bar(st::inputs(cs.toValue()), p, t);
     CHECK(!controlOf(b2, "reset")->item.enabled);
     CHECK_EQ(controlOf(b2, "reset")->item.reason, std::string("An operation runs."));
-    // M18: no Settings button without settings.
+    // No Settings button without settings.
     t.settings = false;
     CHECK(controlOf(bar(in, p, t), "settings") == nullptr);
-    // With a menu bar: no Start group, no action, no More (B1 to B7).
+    // With a menu bar: no Start group, no action, no More.
     CHECK_EQ(describe(bar(in, p, Traits{})), std::string("[model][slot-1 slot-2][printer aux][card][]"));
 }

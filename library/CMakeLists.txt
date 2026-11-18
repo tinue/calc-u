@@ -1,6 +1,6 @@
-# The library (ADR 0002): code used by more than one product. One static
+# The library: code used by more than one product. One static
 # library, calcu_library, with one folder per area (library/<area>/,
-# namespace calcu::<area>; LIB-1 design §2a). Includes are rooted at
+# namespace calcu::<area>). Includes are rooted at
 # library/: #include "machine/Machine.hpp". The products link calcu_library.
 # The C++ areas, once: their sources, their tests (<area>/tests/*.cpp) and the
 # tests' include folders all come from this list. (web/ is the Web shell's,
@@ -11,10 +11,10 @@ foreach(area ${CALCU_LIBRARY_AREAS})
   file(GLOB area_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${area}/*.cpp)
   list(APPEND CALCU_LIBRARY_SOURCES ${area_sources})
 endforeach()
-# C59-5: harness attach (library/harness/attach/). attachPort() is always in
+# Harness attach (library/harness/attach/). attachPort() is always in
 # (the client `calcu attach` uses it); the endpoint and the attached harness
-# only with CALCU_ATTACH: POSIX, never Emscripten, never for an iOS device
-# (C59-5 AC-13). On by default in a tree with the tests on macOS and Linux,
+# only with CALCU_ATTACH: POSIX, never Emscripten, never for an iOS device.
+# On by default in a tree with the tests on macOS and Linux,
 # so the attach tests run in Frequent and in CI; the Swift XCFramework sets
 # it per slice (frontends/swift/build_xcframework.sh: Debug macOS and the
 # simulator only).
@@ -25,20 +25,20 @@ if((APPLE OR UNIX) AND NOT EMSCRIPTEN AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" A
 else()
   set(CALCU_ATTACH_DEFAULT OFF)
 endif()
-option(CALCU_ATTACH "Harness attach in calcu_library (C59-5; POSIX, development builds)" ${CALCU_ATTACH_DEFAULT})
+option(CALCU_ATTACH "Harness attach in calcu_library (POSIX, development builds)" ${CALCU_ATTACH_DEFAULT})
 if(CALCU_ATTACH)
   list(APPEND CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/LocalStream.cpp
                                     ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/AttachEndpoint.cpp
                                     ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/AttachedHarness.cpp)
 endif()
-# The Web engines' test-only commands (LIB-15 AC-29, release prep 4): the
+# The Web engines' test-only commands: the
 # Playwright tests' ways into a session that the page never sends
 # (Calc-U-1600's `c1600.upload`, `c1600.display-text`). On by default, as
 # for the test trees; Calc-U-1600's `frontends/web/build.sh --release` sets
 # it OFF in build/web (only the files that hold them are compiled again),
 # and its release packaging builds with `--release`. Calc-U-59 has none.
 option(CALCU_WEB_TEST_AIDS "The Web engines' test-only commands (off in a release Web build)" ON)
-# LIB-2: a host link of a serial port is a pseudo-terminal on macOS and Linux
+# A host link of a serial port is a pseudo-terminal on macOS and Linux
 # (PtyHostLink.cpp); elsewhere there is none (NoHostLink.cpp).
 if((APPLE OR UNIX) AND NOT EMSCRIPTEN)
   set(CALCU_HAS_PTY ON)
@@ -48,7 +48,7 @@ else()
   list(REMOVE_ITEM CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/PtyHostLink.cpp)
 endif()
 add_library(calcu_library STATIC ${CALCU_LIBRARY_SOURCES})
-# LIB-8 §3.3 (D-7): the paper picture gives the same pixels on every
+# The paper picture gives the same pixels on every
 # platform; no fused multiply-add (MSVC's /fp:precise, its default, keeps
 # them apart already).
 if(NOT MSVC)
@@ -62,18 +62,17 @@ target_include_directories(calcu_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if(CALCU_ATTACH)
   target_compile_definitions(calcu_library PUBLIC CALCU_ATTACH=1)
 endif()
-target_compile_features(calcu_library PUBLIC cxx_std_20)  # ADR 0005
+target_compile_features(calcu_library PUBLIC cxx_std_20)
 target_link_libraries(calcu_library PRIVATE calcu_warnings)
 if(EMSCRIPTEN)
-  # One build/web tree serves both Web engines with native wasm exceptions
-  # (LIB-1 design §2a, D-6).
+  # One build/web tree serves both Web engines with native wasm exceptions.
   target_compile_options(calcu_library PRIVATE -fwasm-exceptions)
 endif()
 
-# LIB-6: calcu_add_preset_check() for the suite checks of presets (AC-43, AC-51).
+# calcu_add_preset_check() for the suite checks of presets.
 include(${CMAKE_CURRENT_SOURCE_DIR}/presets/PresetChecks.cmake)
 
-# The one C++ test runner (ADR 0038): testing/TestHarness.hpp (TEST, CHECK,
+# The one C++ test runner: testing/TestHarness.hpp (TEST, CHECK,
 # CHECK_EQ, SKIP_UNLESS) and the main() that runs every registered TEST. A
 # test program links calcu_test_runner.
 if(CALCU_TESTS AND NOT EMSCRIPTEN)
@@ -97,7 +96,7 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   target_include_directories(calcu_test_machines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/testing)
 
   # The library's own tests (Frequent; docs/test-groups.md): machines built
-  # for the tests, never product code (LIB-1 AC-24). Sources:
+  # for the tests, never product code. Sources:
   # library/<area>/tests/*.cpp.
   set(CALCU_LIBRARY_TEST_SOURCES "")
   foreach(area ${CALCU_LIBRARY_AREAS})
@@ -114,13 +113,13 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   list(REMOVE_ITEM CALCU_LIBRARY_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/pty_tests.cpp)
   add_executable(calcu_library_tests ${CALCU_LIBRARY_TEST_SOURCES})
   target_link_libraries(calcu_library_tests PRIVATE calcu_test_machines calcu_test_runner calcu_warnings)
-  # LIB-6: the fixtures of the preset tests.
+  # The fixtures of the preset tests.
   target_compile_definitions(calcu_library_tests PRIVATE CALCU_PRESET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/presets/tests/fixtures"
                                                      CALCU_PAPER_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/paper/tests/fixtures"
                                                      CALCU_SHELL_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/shell/tests")
   calcu_add_test(calcu_library_tests frequent COMMAND calcu_library_tests WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-  # LIB-2 T8: the host links on real pseudo-terminals (Frequent; macOS and
+  # The host links on real pseudo-terminals (Frequent; macOS and
   # Linux only), a program of their own so that they can move to Longer.
   if(CALCU_HAS_PTY)
     add_executable(calcu_library_pty_tests ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/pty_tests.cpp)
@@ -128,13 +127,13 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
     calcu_add_test(calcu_library_pty_tests frequent COMMAND calcu_library_pty_tests WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endif()
 
-  # LIB-6 L14: the suite check of presets with calcu_test (Frequent): the
+  # The suite check of presets with calcu_test (Frequent): the
   # good fixtures and a template filled in by a fill script.
   calcu_add_preset_check(LibraryPresetFixtures PRODUCT test
                          FILES presets/tests/fixtures/good/* presets/tests/fixtures/fill/*.in
                          FILL presets/tests/fixtures/fill.cmake)
 
-  # LIB-16 (design §6): the help tool's unittest cases (tools/help,
+  # The help tool's unittest cases (tools/help,
   # tools/helptool/tests/, on the fixture help trees), Frequent.
   if(Python3_FOUND)
     calcu_add_test(LibraryHelpTool frequent
@@ -142,13 +141,13 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tools)
   endif()
 
-  # LIB-9 T-14: the self-test of the platform-store source check the
+  # The self-test of the platform-store source check the
   # products run over their frontends (Frequent).
   if(NOT WIN32)
     calcu_add_test(LibraryPlatformStoreCheck frequent
                    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/settings/tests/check_platform_stores_test.sh
                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-    # LIB-14 L11: no product code in the shell and the component sets (AC-22).
+    # No product code in the shell and the component sets.
     calcu_add_test(LibraryShellNoProduct frequent COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/qt6/tests/check_no_product_code.sh)
   endif()
 endif()
@@ -156,11 +155,11 @@ endif()
 # calcu_product_source_checks(PREFIX <CalcU59> ROM_ALLOW <path>…): the source
 # checks every product runs over its own tree with the library's scripts
 # (Frequent; docs/test-groups.md). <PREFIX>NoOwnRomLookup: no source looks for
-# a ROM file outside the lookup but the files ROM_ALLOW names (LIB-12 AC-2;
-# library/roms/tests/check_no_own_rom_lookup.sh, design T7).
+# a ROM file outside the lookup but the files ROM_ALLOW names
+# (library/roms/tests/check_no_own_rom_lookup.sh).
 # <PREFIX>NoPlatformSettings: no frontend keeps a setting in a platform store
-# (UserDefaults, @AppStorage, QSettings, localStorage; LIB-9 AC-21, AC-31,
-# AC-34; allow-list tools/platform_stores_allowed.txt). Needs bash: not on
+# (UserDefaults, @AppStorage, QSettings, localStorage;
+# allow-list tools/platform_stores_allowed.txt). Needs bash: not on
 # Windows, like the library's own check.
 set(CALCU_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 function(calcu_product_source_checks)
@@ -174,13 +173,13 @@ function(calcu_product_source_checks)
   endif()
 endfunction()
 
-# LIB-15: the Web frontend shell (library/web/).
+# The Web frontend shell (library/web/).
 add_subdirectory(web)
-# LIB-8 D-1, LIB-14 D-16: the Qt6 component set (library/qt6/, target
+# The Qt6 component set (library/qt6/, target
 # calcu_qt6), only with the Qt6 frontends; its CMakeLists.txt finds Qt.
 if(CALCU_FRONTEND_QT AND NOT EMSCRIPTEN AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
   add_subdirectory(qt6)
 endif()
-# LIB-11: the harness `calcu` and its test form `calcu_test`
+# The harness `calcu` and its test form `calcu_test`
 # (library/harness/cli/), and calcu_harness_add_product() for the products.
 add_subdirectory(harness/cli)

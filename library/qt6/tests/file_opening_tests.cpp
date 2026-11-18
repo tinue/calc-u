@@ -1,6 +1,5 @@
-// Part E simplification E-4: LIB-13 on a Qt6 host (library/qt6/FileOpening;
-// the window's rule of AC-24 since release prep step 5)
-// and LIB-7 D-6's round trip (library/qt6/AskedSend), without a window.
+// Opening files on a Qt6 host (library/qt6/FileOpening, with the window's
+// rule) and the `asks:` round trip (library/qt6/AskedSend), without a window.
 #include "TestHarness.hpp"
 #include "qt6/AskedSend.hpp"
 #include "qt6/FileOpening.hpp"
@@ -32,7 +31,7 @@ QString writeFile(const QTemporaryDir& dir, const QString& name, int bytes) {
 
 } // namespace
 
-TEST(lib13_ac6_qt_dragged_file_is_one_local_file) {
+TEST(qt_dragged_file_is_one_local_file) {
     QMimeData one;
     one.setUrls({QUrl::fromLocalFile(QStringLiteral("/tmp/a.ti59"))});
     CHECK_EQ(qt6::draggedFile(&one).toStdString(), std::string("/tmp/a.ti59"));
@@ -48,7 +47,7 @@ TEST(lib13_ac6_qt_dragged_file_is_one_local_file) {
     CHECK(qt6::draggedFile(nullptr).isEmpty());
 }
 
-TEST(lib13_ac6_qt_would_take_asks_by_name_and_size) {
+TEST(qt_would_take_asks_by_name_and_size) {
     QTemporaryDir dir;
     const QString path = writeFile(dir, QStringLiteral("game.tseg"), 7);
     const sessions::Value a = qt6::wouldTakeArgs(path);
@@ -56,7 +55,7 @@ TEST(lib13_ac6_qt_would_take_asks_by_name_and_size) {
     CHECK(a.find("size") && *a.find("size")->integer() == 7);
 }
 
-TEST(lib13_ac20_qt_read_up_to_the_ways_limit) {
+TEST(qt_read_up_to_the_ways_limit) {
     QTemporaryDir dir;
     const QString path = writeFile(dir, QStringLiteral("big.bin"), 20);
     const std::map<Way, std::uint64_t> limits{{Way::Drop, 10}, {Way::OpenWith, 10}, {Way::Start, 10}};
@@ -69,16 +68,16 @@ TEST(lib13_ac20_qt_read_up_to_the_ways_limit) {
     const opening::OpenRequest dialog = qt6::openRequest(path, Way::Dialog, limits);
     CHECK(dialog.files[0].bytes && dialog.files[0].bytes->size() == 20);   // the dialogs have no limit
     const opening::OpenRequest none = qt6::openRequest(path, Way::Drop, {});
-    CHECK(none.files[0].bytes && none.files[0].bytes->size() == 20);   // a product without a limit (AC-11)
+    CHECK(none.files[0].bytes && none.files[0].bytes->size() == 20);   // a product without a limit
 }
 
-TEST(lib13_ec5_qt_unreadable_file_has_no_bytes) {
+TEST(qt_unreadable_file_has_no_bytes) {
     QTemporaryDir dir;
     CHECK(!qt6::openRequest(dir.filePath(QStringLiteral("missing.ti59")), Way::OpenWith, {}).files[0].bytes);
     CHECK(!qt6::openRequest(dir.path(), Way::Drop, {}).files[0].bytes);   // a folder is no file
 }
 
-TEST(lib13_ac21_qt_start_file_is_last_existing_file) {
+TEST(qt_start_file_is_last_existing_file) {
     QTemporaryDir dir;
     const QString path = writeFile(dir, QStringLiteral("p.ti59"), 1);
     const auto start = qt6::startFile(QStringList{QStringLiteral("app"), path, QStringLiteral("-NSDocumentRevisionsDebugMode"),
@@ -87,7 +86,7 @@ TEST(lib13_ac21_qt_start_file_is_last_existing_file) {
     CHECK(!qt6::startFile(QStringList{QStringLiteral("app"), dir.filePath(QStringLiteral("none.ti59"))}));
 }
 
-TEST(lib13_ac21_qt_file_open_events_kept_until_the_handler) {
+TEST(qt_file_open_events_kept_until_the_handler) {
     qt6::FileOpenFilter filter;
     QObject target;
     target.installEventFilter(&filter);
@@ -106,10 +105,9 @@ TEST(lib13_ac21_qt_file_open_events_kept_until_the_handler) {
     CHECK_EQ(opened.size(), std::size_t(3));
 }
 
-// AC-24 (user, 2026-11-17, Q-4 of docs/reviews/e-simplification.md): the
-// drop's proposed action is accepted and the file is opened after the drop
-// handler returned; a drop of two files is not taken.
-TEST(lib13_ac24_qt_drop_accepted_and_opened_after_the_handler) {
+// The drop's proposed action is accepted and the file is opened after the
+// drop handler returned; a drop of two files is not taken.
+TEST(qt_drop_accepted_and_opened_after_the_handler) {
     QObject context;
     std::vector<std::string> opened;
     const auto open = [&opened](const QString& p) { opened.push_back(p.toStdString()); };
@@ -133,9 +131,9 @@ TEST(lib13_ac24_qt_drop_accepted_and_opened_after_the_handler) {
     CHECK_EQ(opened.size(), std::size_t(1));
 }
 
-// AC-24: a drop and Open With bring the window to the front; the file named
+// A drop and Open With bring the window to the front; the file named
 // at the start does not.
-TEST(lib13_ac24_qt_window_raised_for_every_way_but_the_start) {
+TEST(qt_window_raised_for_every_way_but_the_start) {
     QWidget window, other;
     window.show();
     other.show();
@@ -155,7 +153,7 @@ TEST(lib13_ac24_qt_window_raised_for_every_way_but_the_start) {
     CHECK(QApplication::activeWindow() == &window);
 }
 
-TEST(lib7_d6_qt_asked_send_round_trip) {
+TEST(qt_asked_send_round_trip) {
     std::vector<bool> sent;
     std::vector<std::string> asked;
     // Done at once: no question.
@@ -182,5 +180,5 @@ TEST(lib7_d6_qt_asked_send_round_trip) {
                         [&](const QString& q) { asked.push_back(q.toStdString()); return true; });
     CHECK(!r.done && !r.declined && r.refusal == "The place is busy.");
     CHECK(asked.empty());
-    CHECK(!qt6::askedQuestion("asks:"));   // without the space: no question of D-6
+    CHECK(!qt6::askedQuestion("asks:"));   // without the space: no question
 }

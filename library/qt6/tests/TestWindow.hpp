@@ -17,14 +17,14 @@
 class QAction;
 class QWidget;
 
-// The test window of the Qt6 shell (LIB-14 design §2.2, §6 L7, L10; spec
-// AC-22): an app session with TestShellPart (the control state, preset list
-// and product built for the tests) and SettingsPart over LIB-9's test
-// declaration, the test machine test-seg, hosted by a SessionHost on a
-// scripted wall clock (1 ms a reading), and a QMainWindow put together from
-// the shell with a plain faceplate widget of 50 × 30 hit-map units at
-// scale 4. No code of a product. The file and folder dialogs, the browser
-// and the clipboard are replaced by recorders.
+// The test window of the Qt6 shell: an app session with TestShellPart (the
+// control state, preset list and product built for the tests) and
+// SettingsPart over the settings' test declaration, the test machine
+// test-seg, hosted by a SessionHost on a scripted wall clock (1 ms a
+// reading), and a QMainWindow put together from the shell with a plain
+// faceplate widget of 50 × 30 hit-map units at scale 4. No code of a product.
+// The file and folder dialogs, the browser and the clipboard are replaced by
+// recorders.
 
 namespace calcu::qt6::test {
 

@@ -1,22 +1,21 @@
-// CalcuPaperPanel -- the paper panel of the React component set (LIB-8
-// design §3.7; spec AC-12 to AC-15, AC-19 to AC-21). It draws any paper from
-// its marks and names no printer (capabilities.md I-1); the shell places it
-// in its area for panels (LIB-14 AC-23, M-43).
+// CalcuPaperPanel -- the paper panel of the React component set. It draws
+// any paper from its marks and names no printer; the shell places it in its
+// area for panels.
 //
 //   <CalcuPaperPanel shell={shell} owner={peripheralId | null}
 //                    controls={[{id, form: "key" | "switch", on}]} send={fn?} />
 //
-// owner: the printer plugged in, from the control state (A-4); controls:
-// that printer's controls (LIB-2 AC-14); send(command, args) defaults to
+// owner: the printer plugged in, from the control state; controls:
+// that printer's controls; send(command, args) defaults to
 // shell.send. Copy and Cut arm the clipboard inside the click (armClipboard,
-// hostServices.js; D-9) and send `paper.copy` / `paper.cut {copy: true}`.
+// hostServices.js) and send `paper.copy` / `paper.cut {copy: true}`.
 // Elements carry data-calcu names for the tests: paper-panel, paper-owner,
 // paper-view, paper-copy, paper-cut, paper-toast, paper-text,
 // paper-control-<id>, paper-scroll, paper-canvas.
 
-const CALCU_PAPER_FOLLOW = 64;      // AC-13: points from the end within which the view follows
+const CALCU_PAPER_FOLLOW = 64;      // points from the end within which the view follows
 const CALCU_PAPER_BLANK = 8;        // blank above and below the paper
-const CALCU_PAPER_TOAST_MS = 1800;  // AC-20
+const CALCU_PAPER_TOAST_MS = 1800;  // how long "Copied to clipboard" shows
 
 function useCalcuPaper(shell) {
   const store = calcuPaperStore(shell);
@@ -90,13 +89,13 @@ function CalcuPaperPanel({ shell, owner, controls, send }) {
     return () => o.disconnect();
   }, [showText]);
 
-  // The whole width of the paper scaled to the panel (AC-12).
+  // The whole width of the paper scaled to the panel.
   const scale = description && description.width > 0 && size.width > 0 ? size.width / description.width : 0;
   const reach = paper.reach || [0, 0];
   const contentHeight = scale > 0 && !paper.empty
     ? Math.ceil((reach[1] - reach[0]) * scale) + 2 * CALCU_PAPER_BLANK : 0;
 
-  // AC-13: follow the newest marks when the view was at the end of the paper
+  // Follow the newest marks when the view was at the end of the paper
   // as it was before it grew, or within 64 points of it; stay otherwise.
   // Measured here from the live scroll position, not from the last scroll
   // event, which may still be on its way.
@@ -136,7 +135,7 @@ function CalcuPaperPanel({ shell, owner, controls, send }) {
     calcuPaintMarks(ctx, description, paper.marks, scale, top, top + h / scale);
   });
 
-  // AC-20: the outcome of a Copy or Cut, in the panel, for 1.8 s.
+  // The outcome of a Copy or Cut, in the panel, for 1.8 s.
   const [toast, setToast] = React.useState(null);
   const copy = state.copy;
   React.useEffect(() => {
@@ -147,7 +146,7 @@ function CalcuPaperPanel({ shell, owner, controls, send }) {
   }, [copy && copy.seq]);
 
   const copyOrCut = (command, args) => {
-    armClipboard({ text: textLayer });   // in the gesture (D-9)
+    armClipboard({ text: textLayer });   // in the gesture (hostServices.js armClipboard)
     Promise.resolve(sendTo(command, args)).then((r) => {
       if (!r || !r.done) calcuDisarmClipboard();
     });

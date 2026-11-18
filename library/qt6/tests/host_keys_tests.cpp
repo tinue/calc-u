@@ -1,4 +1,4 @@
-// LIB-5 AC-7, AC-10, EC-1 (the family's rule): a Qt key event as the typing
+// The family's rule: a Qt key event as the typing
 // engine's `host-key-down`, and the keys a window holds down (HostKeys).
 #include "TestHarness.hpp"
 #include "qt6/HostKeys.hpp"
@@ -17,7 +17,7 @@ QKeyEvent key(QEvent::Type type, int k, Qt::KeyboardModifiers mods, const QStrin
 
 } // namespace
 
-TEST(lib5_ac7_qt_key_event_produced_and_carried) {
+TEST(qt_key_event_produced_and_carried) {
     const auto e = calcu::qt6::hostKeyEvent(Qt::Key_A, Qt::ShiftModifier, QStringLiteral("A"), 0, "30");
     CHECK_EQ(e.physical, std::string("30"));
     CHECK(e.named == NamedKey::None);
@@ -32,13 +32,13 @@ TEST(lib5_ac7_qt_key_event_produced_and_carried) {
     CHECK(none.named == NamedKey::F1 && none.produced == 0);
 }
 
-TEST(lib5_ac7_qt_command_modifier) {
+TEST(qt_command_modifier) {
     CHECK(!calcu::qt6::commandModifier(Qt::NoModifier));
     CHECK(!calcu::qt6::commandModifier(Qt::ShiftModifier));
     CHECK(calcu::qt6::commandModifier(Qt::ControlModifier));
 }
 
-TEST(lib5_ec1_qt_host_keys_pair_down_and_up) {
+TEST(qt_host_keys_pair_down_and_up) {
     HostKeys keys;
     const QKeyEvent down = key(QEvent::KeyPress, Qt::Key_A, Qt::NoModifier, QStringLiteral("a"), 30);
     const auto d = keys.press(down);
@@ -55,7 +55,7 @@ TEST(lib5_ec1_qt_host_keys_pair_down_and_up) {
     CHECK(!keys.release(key(QEvent::KeyRelease, Qt::Key_Control, Qt::NoModifier, QString(), 29)));
 }
 
-TEST(lib5_ac10_qt_host_keys_forgotten_on_focus_lost) {
+TEST(qt_host_keys_forgotten_on_focus_lost) {
     HostKeys keys;
     CHECK(keys.press(key(QEvent::KeyPress, Qt::Key_B, Qt::NoModifier, QStringLiteral("b"), 48)));
     keys.clear();

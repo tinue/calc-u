@@ -28,7 +28,7 @@ RunControlButtons::RunControlButtons(debugger::LevelName level, Labels labels, Q
     connect(resume_, &QToolButton::clicked, this, [this] {
         if (use_.resume) send(debugger::kResumeCommand, {});
     });
-    // Step: on press, then every 250 ms while held (AC-18).
+    // Step: on press, then every 250 ms while held.
     connect(step_, &QToolButton::pressed, this, [this] {
         repeat_->start();   // first: the button stays usable while the step runs
         stepOnce();

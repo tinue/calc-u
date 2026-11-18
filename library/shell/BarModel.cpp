@@ -4,7 +4,7 @@ namespace calcu::shell {
 
 namespace {
 
-// B8: an Action that follows its menu item (M9), under the bar's label.
+// An Action that follows its menu item, under the bar's label.
 void addAction(std::vector<BarControl>& into, const std::vector<Menu>& ms, const char* id, const char* label) {
     const MenuItem* i = findItem(ms, id);
     if (!i) return;
@@ -20,11 +20,11 @@ void addAction(std::vector<BarControl>& into, const std::vector<Menu>& ms, const
 
 std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Traits t) {
     std::vector<BarGroupModel> out;
-    if (!in.started()) return out;   // B7 (AC-19)
+    if (!in.started()) return out;   // no control state: no bar
     const sessions::Value& cs = in.controlState;
     std::vector<Menu> ms;
     BarGroupModel start{BarGroup::Start, {}};
-    if (!t.menuBar) {   // B8
+    if (!t.menuBar) {   // a window without a menu bar
         ms = menus(in, p, t);
         addAction(start.controls, ms, "reset", "Reset");
     }
@@ -46,14 +46,14 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Tra
         c.id = read::text(place, "place");
         c.entry = place;
         switch (placeKind(place, p)) {
-        case PlaceKind::ModuleSlot:   // B1: LIB-7's picker, "n:" with more than one slot
+        case PlaceKind::ModuleSlot:   // the media components' picker, "n:" with more than one slot
             c.kind = BarControl::Kind::SlotPicker;
             ++slot;
             if (slotCount > 1) c.label = std::to_string(slot) + ":";
             c.choices = placeChoices(place, true);
             slots.controls.push_back(std::move(c));
             break;
-        case PlaceKind::Button: {   // B3: one fits
+        case PlaceKind::Button: {   // one fits
             c.kind = BarControl::Kind::PlaceButton;
             const auto& f = read::elements(place, "fitting").front();
             c.label = read::text(f, "name");
@@ -62,16 +62,16 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Tra
             places.controls.push_back(std::move(c));
             break;
         }
-        case PlaceKind::Picker:   // B3: several fit
+        case PlaceKind::Picker:   // several fit
             c.kind = BarControl::Kind::PlacePicker;
             c.choices = placeChoices(place, true);
             places.controls.push_back(std::move(c));
             break;
-        case PlaceKind::NoControl:   // B3, B4: no control, no gap
+        case PlaceKind::NoControl:   // no control, no gap
             break;
         }
     }
-    for (const auto& m : read::elements(cs, "mediaPlaces")) {   // B1: the owner's controls
+    for (const auto& m : read::elements(cs, "mediaPlaces")) {   // the owner's controls
         BarControl c;
         c.kind = BarControl::Kind::Media;
         c.id = read::text(m, "id");
@@ -80,7 +80,7 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Tra
         media.controls.push_back(std::move(c));
     }
     BarGroupModel end{BarGroup::End, {}};
-    if (!t.menuBar) {   // B8
+    if (!t.menuBar) {   // a window without a menu bar
         addAction(end.controls, ms, actions::kLoadPreset, "Preset");
         addAction(end.controls, ms, actions::kSettings, "Settings");
         BarControl more;

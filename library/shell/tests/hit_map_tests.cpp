@@ -1,5 +1,4 @@
-// LIB-14 L5 (design §6): the hit rule and PointerTracker, rules H1 to H6
-// (spec AC-24, AC-43, EC-8). `ac24_hit_cases` reads every line of
+// The hit rule and PointerTracker. `hit_rule_cases_of_the_file` reads every line of
 // hit_cases.txt, which shell_model.test.js reads as well.
 #include "TestHarness.hpp"
 #include "TestShellPart.hpp"
@@ -27,7 +26,7 @@ std::string describe(const PointerTracker::Out& o) {
 
 } // namespace
 
-TEST(ac24_hit_cases) {
+TEST(hit_rule_cases_of_the_file) {
     std::ifstream in(std::string(CALCU_SHELL_FIXTURES) + "/hit_cases.txt");
     CHECK(in.good());
     HitMap map;
@@ -64,13 +63,13 @@ TEST(ac24_hit_cases) {
     CHECK(cases >= 25);
 }
 
-TEST(ac24_several_pointers_hold_keys) {
+TEST(several_pointers_hold_keys) {
     PointerTracker t(st::hitMap());
     // Key 1 at (5, 25), key 2 at (25, 25), in hit-map units at scale 1.
     CHECK_EQ(describe(t.down(1, 5, 25)), std::string("screen-key-down {\"key\":\"1\",\"pointer\":1}"));
     CHECK_EQ(describe(t.down(2, 25, 25)), std::string("screen-key-down {\"key\":\"2\",\"pointer\":2}"));
     CHECK_EQ(describe(t.down(3, 6, 26)), std::string("screen-key-down {\"key\":\"1\",\"pointer\":3}"));   // two hold key 1
-    CHECK_EQ(describe(t.move(1, 45, 25)), std::string(""));   // D-9: a move changes no key
+    CHECK_EQ(describe(t.move(1, 45, 25)), std::string(""));   // a move changes no key
     CHECK_EQ(describe(t.up(1)), std::string("screen-key-up {\"key\":\"1\",\"pointer\":1}"));
     CHECK_EQ(describe(t.up(1)), std::string(""));   // once
     auto rest = t.releaseAll();   // the window loses focus
@@ -81,7 +80,7 @@ TEST(ac24_several_pointers_hold_keys) {
     CHECK_EQ(describe(big.down(7, 50, 50)), std::string("screen-key-down {\"key\":\"2\",\"pointer\":7}"));
 }
 
-TEST(ac43_display_hold_full_speed_until_up_or_leave) {
+TEST(display_hold_full_speed_until_up_or_leave) {
     PointerTracker t(st::hitMap());
     CHECK_EQ(describe(t.down(1, 10, 5)), std::string("speed {\"full\":true}"));
     CHECK_EQ(describe(t.move(1, 20, 6)), std::string(""));   // still on the display
@@ -98,7 +97,7 @@ TEST(ac43_display_hold_full_speed_until_up_or_leave) {
     CHECK_EQ(describe(t.up(4)), std::string("speed {\"full\":false}"));
 }
 
-TEST(ec8_no_key_at_down_nothing_on_move) {
+TEST(no_key_at_down_nothing_on_move) {
     PointerTracker t(st::hitMap());
     CHECK_EQ(describe(t.down(1, 15, 40)), std::string(""));   // below the keys, out of reach
     CHECK_EQ(describe(t.move(1, 5, 25)), std::string(""));    // onto key 1: still nothing

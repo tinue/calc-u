@@ -135,7 +135,7 @@ sessions::CommandOutcome SettingsPart::set(const Value& args, sessions::SessionC
         if (!t) return sessions::Refused{"The value for [" + d->section + "] " + d->key + " must be text."};
         text = *t;
     } else if (d->section != "folders") {
-        text = d->defaultValue;   // null: the default (S5)
+        text = d->defaultValue;   // null: the default
     }
     settings::SettingsFile::WriteResult w;
     if (d->section == "folders") {
@@ -145,7 +145,7 @@ sessions::CommandOutcome SettingsPart::set(const Value& args, sessions::SessionC
             return sessions::Refused{"\"" + text + "\" is not a value for [" + d->section + "] " + d->key + "."};
         w = f.set(d->section, d->key, text);
     }
-    if (!w.ok)   // D-19: kept for this run, and the user is told
+    if (!w.ok)   // kept for this run, and the user is told
         c.notice("The setting holds until you quit; it was " + w.problem + ".");
     if (setup_.changed) setup_.changed(d->section, d->key);
     topic_->set(sessions::valuePayload("settings", state()));

@@ -1,35 +1,35 @@
 // CalcUTest -- the component of the product made for the shell's tests
-// (LIB-15 design §2, T1), and the one global its calc.js defines. It shows
+// and the one global its calc.js defines. It shows
 // what the tests read: the start state, the storage mode and its sentence,
 // the notices, the machine, the save folder's files and the host services'
 // answers, all as text and data- attributes. `window.calcuTestShells` holds
 // each mounted component's shell, for the tests to send commands and
-// requests (the products' hooks stay per product, spec Out of Scope).
-// From LIB-8 (M-39): the paper panel of the React component set, with its
+// requests (the products' hooks stay per product).
+// The paper panel of the React component set, with its
 // owner and controls from `tp.printer`, and buttons that attach and detach
 // the test printers TD-20 and TP-4 and press a machine key.
-// From LIB-10 (M-40): the run-control buttons of the React component set
+// The run-control buttons of the React component set
 // for the level `cpu`, with labels of the product's.
-// From LIB-14 (M-43): with the prop `shell` (host page: shell=1) the
-// component is put together from the React set's shell instead (AC-22):
+// With the prop `shell` (host page: shell=1) the
+// component is put together from the React set's shell instead:
 // the menu bar, a plain faceplate of 50 x 30 hit-map units at scale 4, the
 // control bar with a media control for `test-card` and a product control,
 // the area for panels with the paper panel, and the dialogs; the topics come
 // from library/shell/tests/TestShellPart.hpp. `window.calcuTestActs` counts
 // the product item `load-program`.
-// From LIB-7 (M-42): in the product Test-M, whose session hosts LIB-7's
+// In the product Test-M, whose session hosts the library's
 // MediaPart, the media control of the bar is the React set's media
 // components over the topic `media`: a CalcuMediaPicker per place, with a
 // Name & Save button (CalcuNameAndSaveDialog) where the place offers it;
 // File ▸ Saved Media… shows CalcuSavedMediaDialog.
-// From LIB-14 Part E (M-57): with the prop `faceOrigin` (host page:
+// With the prop `faceOrigin` (host page:
 // origin=N) the hit map's (0, 0) is N logical pixels into the faceplate, and
 // a press at hit-map x ≥ 60 is the product's (`window.calcuTestProductPresses`
-// counts them; design §10.3.4); the storage banner above the menu bar.
+// counts them); the storage banner above the menu bar.
 
 const CALCU_PRODUCT = "__CALCU_PRODUCT__";
 
-// The JS form of TestShellPart.hpp's product() (LIB-14 §3.2).
+// The JS form of TestShellPart.hpp's product().
 const CALCU_TEST_SHELL_PRODUCT = {
   name: "Test-Product", version: "1.2.3", build: "abc123", helpUrl: "https://calc-u.org/test/",
   aboutLabel: "", aboutLines: ["A product made for the tests.", "No code of a product."],
@@ -54,7 +54,7 @@ function CalcUTestCard({ entry }) {
 }
 const CALCU_TEST_MEDIA = { "test-card": CalcUTestCard };
 
-// LIB-7 (Test-M): every place of the topic `media`, whatever the scripted
+// Test-M: every place of the topic `media`, whatever the scripted
 // control state names.
 function CalcUTestMediaPlaces({ shell }) {
   const [naming, setNaming] = React.useState(null);
@@ -188,5 +188,5 @@ function CalcUTest(props) {
 }
 
 CalcUTest.version = "__CALC_VERSION__";
-CalcUTest.buttonUse = calcuButtonUse;   // LIB-10: the buttons' rule, for the table of run-control.spec.js
+CalcUTest.buttonUse = calcuButtonUse;   // the buttons' rule, for the table of run-control.spec.js
 if (typeof window !== "undefined") window.CalcUTest = CalcUTest;

@@ -14,26 +14,25 @@
 #include <utility>
 #include <vector>
 
-// The Web Worker's host of one app session (LIB-15 design §3.2, §3.6; spec
-// AC-1, AC-2, AC-4): it builds the session through the product's factory,
+// The Web Worker's host of one app session: it builds the session through the product's factory,
 // listens to it with the services the page states, passes the page's
 // messages in and the session's out, and makes the host call. It only
-// translates (frontend.md I-3; ADR 0014): it reads no topic and decides no
-// rule. Single-threaded, as the worker is (ADR 0009).
+// translates: it reads no topic and decides no rule. Single-threaded, as the
+// worker is.
 
 namespace calcu::web {
 
-// The persistent file system's mode (design §3.3), from storage.js.
+// The persistent file system's mode, from storage.js.
 enum class StorageMode { Kept, SecondCopy, Unreadable, Unavailable };
 const char* storageModeName(StorageMode);
 
 inline const sessions::TopicName kStartTopic{"web.start"};       // {state: "running" | "failed", failure}
 inline const sessions::TopicName kStorageTopic{"web.storage"};   // {mode, sentence}
 
-// What the worker passes in (design §3.2).
+// What the worker passes in.
 struct WebStart {
     std::string product;                 // as the glossary writes it: "Calc-U-1600"
-    settings::HostDirs dirs;             // FrontendKind::Web, settingsBase, saveFolder (§3.3)
+    settings::HostDirs dirs;             // FrontendKind::Web, settingsBase, saveFolder
     std::string bundleDir = "/bundle", presetsDir = "/presets", uploadsDir = "/uploads";
     StorageMode storage = StorageMode::Kept;
     std::string storageSentence;         // sentences.js; empty when kept

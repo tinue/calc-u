@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# LIB-14 L11 (design §6; spec AC-22, Technical Requirements; ADR 0023,
-# frontend.md I-4): the shell's rules and both component sets hold no code of
-# a product: no include from products/ and no model, peripheral or product
-# name in the code of library/shell, library/qt6 and library/web/components.
+# The shell's rules and both component sets hold no code of a product: no
+# include from products/ and no model, peripheral or product name in the
+# code of library/shell, library/qt6 and library/web/components.
 # Comments may name the products they were taken from; code may not. CTest
 # LibraryShellNoProduct (Frequent; not on Windows).
 #
@@ -34,7 +33,7 @@ done < <(find "$LIB/shell" "$LIB/qt6" "$LIB/web/components" -type f \
            \( -name '*.cpp' -o -name '*.hpp' -o -name '*.js' -o -name '*.jsx' -o -name '*.css' -o -name '*.txt' \) -print0)
 
 if [ "$found" -ne 0 ]; then
-  echo "error: product code in the shell or a component set (LIB-14 AC-22)." >&2
+  echo "error: product code in the shell or a component set." >&2
   exit 1
 fi
 echo "No product code in library/shell, library/qt6, library/web/components."

@@ -1,10 +1,9 @@
-// The audio sink on the page side (LIB-15 design §2, §3.6; from Calc-U-1600
-// src/engine.js:52-93): the session sends sound-start {value: rate}, then
+// The audio sink on the page side: the session sends sound-start {value: rate}, then
 // sound {value: Int16Array} as the emulation makes it, and sound-stop. An
 // AudioWorklet (audio-worklet.js, beside calc.js) plays it from a ring
 // buffer. Browsers start audio only from a user gesture, so the context is
 // made on the first key or click (unlock()); until then the samples are
-// dropped. What is heard is the session's decision (LIB-3 AC-20); this only
+// dropped. What is heard is the session's decision; this only
 // plays what comes.
 function calcuCreateAudio() {
   let context = null;

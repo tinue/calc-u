@@ -1,6 +1,6 @@
-// LIB-7 L11 (design §6, D-7): the media components of the Qt6 component set,
-// without a window, on the offscreen platform: the picker drawn from a place
-// of the topic `media` (AC-8, AC-9) and the Name & Save dialog (AC-16; D-6).
+// The media components of the Qt6 component set, without a window, on the
+// offscreen platform: the picker drawn from a place of the topic `media` and
+// the Name & Save dialog.
 #include "TestHarness.hpp"
 #include "media/MediaTopics.hpp"
 #include "qt6/MediaPicker.hpp"
@@ -35,7 +35,7 @@ PlaceState slot() {
 
 } // namespace
 
-TEST(ac8_picker_draws_entries) {
+TEST(media_picker_draws_entries) {
     qt6::MediaPicker picker;
     std::vector<std::pair<std::string, std::string>> sent;
     picker.setSender([&](const sessions::CommandName& n, sessions::Value v) {
@@ -56,7 +56,7 @@ TEST(ac8_picker_draws_entries) {
     CHECK_EQ(sent.back().second, std::string(""));   // the empty place
 }
 
-TEST(ac9_outdated_entry_disabled_with_hint_tooltip) {
+TEST(media_picker_outdated_entry_disabled_with_hint_tooltip) {
     qt6::MediaPicker picker;
     int sent = 0;
     picker.setSender([&](const sessions::CommandName&, sessions::Value) { ++sent; });
@@ -68,7 +68,7 @@ TEST(ac9_outdated_entry_disabled_with_hint_tooltip) {
     CHECK_EQ(sent, 0);   // it cannot be chosen
 }
 
-TEST(ac16_name_and_save_dialog_asks_name_and_switch) {
+TEST(name_and_save_dialog_asks_name_and_switch) {
     qt6::NameAndSaveDialog dialog;
     PlaceState p = slot();
     p.nameAndSave = true;
@@ -81,7 +81,7 @@ TEST(ac16_name_and_save_dialog_asks_name_and_switch) {
     dialog.setPlace(p);
     CHECK(!dialog.asksWriteProtect());
 
-    // OK sends name-and-save; an `asks:` reply is a question (D-6), yes sends it again confirmed.
+    // OK sends name-and-save; an `asks:` reply is a question, yes sends it again confirmed.
     std::vector<std::string> sent;
     dialog.setSender([&](const sessions::CommandName& n, sessions::Value v) -> std::string {
         sent.push_back(n.value + " " + sessions::toText(v));
@@ -101,11 +101,11 @@ TEST(ac16_name_and_save_dialog_asks_name_and_switch) {
     CHECK(dialog.result() == QDialog::Accepted);
 }
 
-// Calc-U-1600 AC-40 (LIB-7 design §10.6 P4, D-25): the product's two Name & Save
-// dialogs are this one with today's prompts -- "Instance name:" for a module,
-// with the switch "Write-protect (switch to read-only, can't be undone)" where
-// the module has one still off, and "Disk name:" for a floppy disk.
-TEST(lib7_ac40_qt6_prompts_instance_and_disk_name) {
+// Calc-U-1600's two Name & Save dialogs are this one with its prompts --
+// "Instance name:" for a module, with the switch "Write-protect (switch to
+// read-only, can't be undone)" where the module has one still off, and "Disk
+// name:" for a floppy disk.
+TEST(name_and_save_dialog_prompts_instance_and_disk_name) {
     qt6::NameAndSaveDialog module;
     PlaceState p = slot();
     p.nameAndSave = true;

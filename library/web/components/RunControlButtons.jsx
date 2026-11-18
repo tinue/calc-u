@@ -1,5 +1,5 @@
 // CalcuRunControlButtons -- the run-control buttons of the React component
-// set (LIB-10 design §3.10, D-9; spec AC-18; debugger.md DB-6): pause, step
+// set: pause, step
 // and resume for one level, fed from the session's `run-state` topic, the
 // same rule as the C++ ButtonRule (library/debugger/ButtonRule.hpp) and the
 // Qt6 widget; the table of its cases is library/debugger/tests/button_cases.json.

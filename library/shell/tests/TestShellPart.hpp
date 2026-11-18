@@ -17,15 +17,15 @@
 #include <string>
 #include <vector>
 
-// What the shell's tests are drawn from (LIB-14 design §2.1, §6; spec AC-22):
+// What the shell's tests are drawn from:
 // a control state, a preset list and a product built for the tests, without
 // code of a product, and TestShellPart, a session part that publishes
-// scripted Values on the topics of §3.1 (control-state, run-state,
+// scripted Values on the topics the shell reads (control-state, run-state,
 // roms-missing, media), answers `preset-list` and records the commands the
 // shell sends. Header only: the library's tests, calcu_qt6_tests and the Web
 // test product use it alike. The inputs are built from the owners' payload
-// types where they exist (LIB-4's ControlState, LIB-6's PresetListReply), so
-// that a change of their toValue() fails a shell test (design §8).
+// types where they exist (the control state's ControlState, presets'
+// PresetListReply), so that a change of their toValue() fails a shell test.
 
 namespace calcu::shell::test {
 
@@ -164,11 +164,11 @@ public:
         Value args;
     };
     // withRunControl = false: no scripted `run-state` topic and no `resume`
-    // command, for a session that hosts LIB-10's DebuggerPart (the Web test
+    // command, for a session that hosts the debugger's DebuggerPart (the Web test
     // product).
     // withMedia = false: no scripted `media` topic and no `media.import`,
-    // for a session that hosts LIB-7's MediaPart (the Web test product
-    // Test-M, LIB-7 media.spec.js).
+    // for a session that hosts the media area's MediaPart (the Web test
+    // product Test-M, media.spec.js).
     explicit TestShellPart(bool withControlState = true, bool withRunControl = true, bool withMedia = true)
         : runControl_(withRunControl), media_(withMedia) {
         if (withControlState) values_[std::string("control-state")] = controlValue();
@@ -205,7 +205,7 @@ public:
                 return sessions::Done{};
             });
         }
-        // Reset and Cold boot end a running operation (LIB-18 AC-16).
+        // Reset and Cold boot end a running operation.
         for (const char* n : {"reset", "cold-boot"}) {
             const std::string name = n;
             s.command(
@@ -216,7 +216,7 @@ public:
                 },
                 true);
         }
-        // An operation at full speed until a Reset (AC-15, AC-16).
+        // An operation at full speed until a Reset.
         s.command(sessions::CommandName{"tsp.op"}, [this](const Value& a, sessions::SessionContext&) -> sessions::CommandOutcome {
             sent.push_back({"tsp.op", a});
             const auto ticks = static_cast<m::Ticks>(read::integer(a, "ticks", 1'000'000'000'000));

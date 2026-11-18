@@ -9,13 +9,13 @@ void NoticeQueue::push(std::string sentence) {
 }
 
 void NoticeQueue::refusal(std::string reason, sessions::Command sent) {
-    if (reason.rfind(kAsksPrefix, 0) == 0) {   // N4
+    if (reason.rfind(kAsksPrefix, 0) == 0) {   // a question with Yes and No
         std::string question = reason.substr(std::char_traits<char>::length(kAsksPrefix));
         while (!question.empty() && question.front() == ' ') question.erase(question.begin());
         queue_.push_back(Shown{std::move(question), true, std::move(sent)});
         return;
     }
-    // D-7; a stopped operation is the user's own doing (Reset, a model switch).
+    // A stopped operation is the user's own doing (Reset, a model switch).
     if (reason.empty() || reason == last_ || reason == sessions::kStopped) return;
     push(std::move(reason));
 }

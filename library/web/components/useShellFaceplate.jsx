@@ -1,16 +1,16 @@
-// useShellFaceplate -- the pointer on a product's faceplate element (LIB-14
-// design §3.7, §3.10; spec AC-24, AC-43, EC-8): pointerdown, move, up and
+// useShellFaceplate -- the pointer on a product's faceplate element:
+// pointerdown, move, up and
 // cancel through calcuShellPointer, with pointer capture, sending
-// screen-key-down/up {key, pointer} (LIB-5) and speed {full} (LIB-3). The
+// screen-key-down/up {key, pointer} and speed {full}. The
 // hit map is the product's, in its own units; `scale` gives the logical
 // pixels per unit as shown now (default: the element's width over the hit
-// map's `width`). The product draws pressed keys from live input (H6).
+// map's `width`). The product draws pressed keys from live input; the shell draws none.
 //
 //   useShellFaceplate(shell, hitMap, faceplateRef, scale?)
 //   useShellFaceplate(shell, hitMap, faceplateRef, {scale, origin, productFirst})
 //
-// shell: LIB-15's shell (createShell); hitMap: {keys: [[key, {x, y, w, h}]],
-// display, distance, width}. Part E (design §10.3.4, D-44): `origin` (a
+// shell: the Web shell (src/shell.js createShell); hitMap: {keys: [[key, {x, y, w, h}]],
+// display, distance, width}. `origin` (a
 // point {x, y} or a function giving it) is the hit map's (0, 0) in the
 // element, in logical pixels; `productFirst(x, y)` gets a press in hit-map
 // units first, and a press it takes (true) is not the faceplate's: its

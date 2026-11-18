@@ -1,9 +1,9 @@
-// The library's Web Worker (LIB-15 design §3.2; spec AC-1 to AC-3): loads
+// The library's Web Worker: loads
 // the product's WASM, writes every file of files.json into the file system,
 // opens the persistent file system (storage.js), builds the product's
 // WorkerHost and calls it about 60 times a second. Everything it passes is a
-// LIB-3 message in the JS form of design §3.6; the start failure is the
-// state topic `web.start` in the same shape (design §9 D-1, N2).
+// session message in its JS form (glue/MessageCodec.hpp); the start failure
+// is the state topic `web.start` in the same shape.
 //
 // A product's calc-engine-worker.js names the product, then loads this file:
 //
@@ -68,8 +68,7 @@
   }
 
   // A message from the page: to the host; suspend and continue also stop and
-  // start the calls, the command first (AC-2; Calc-U-59 today calls
-  // suspend() before it stops, calc-engine-worker.js:118).
+  // start the calls, the command first.
   function handle(m) {
     if (!host) return;
     try {

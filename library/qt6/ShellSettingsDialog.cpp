@@ -24,7 +24,7 @@ using Widget = DialogRow::Widget;
 
 QString q(const std::string& s) { return QString::fromStdString(s); }
 
-const QString kChoose = QStringLiteral("Choose…");   // S4: Qt6 only
+const QString kChoose = QStringLiteral("Choose…");   // Qt6 only
 
 std::string structureOf(const std::vector<shell::ShownSection>& ss) {
     std::string s;
@@ -45,13 +45,13 @@ std::string structureOf(const std::vector<shell::ShownSection>& ss) {
 ShellSettingsDialog::ShellSettingsDialog(Shell& shell, QWidget* parent) : QDialog(parent), shell_(shell) {
     setObjectName(shell::names::kSettingsDialog);
     setWindowTitle(QString::fromUtf8(shell::kSettingsTitle));
-    setWindowModality(Qt::WindowModal);   // D-18
+    setWindowModality(Qt::WindowModal);   // fine: set-setting starts no operation
     auto* layout = new QVBoxLayout(this);
     content_ = new QWidget(this);
     contentLayout_ = new QVBoxLayout(content_);
     contentLayout_->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(content_);
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);   // S1: the only button
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);   // the only button
     buttons->setObjectName(shell::names::kSettingsClose);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     layout->addWidget(buttons);
@@ -97,7 +97,7 @@ QWidget* ShellSettingsDialog::rowWidget(const shell::ShownRow& r, QWidget* paren
         });
         return box;
     }
-    case Widget::Folder: {   // S5: the folder in use, Change…, Reset
+    case Widget::Folder: {   // the folder in use, Change…, Reset
         auto* w = new QWidget(parent);
         w->setObjectName(name);
         auto* l = new QHBoxLayout(w);
@@ -155,7 +155,7 @@ void ShellSettingsDialog::rebuild() {
     contentLayout_ = new QVBoxLayout(content_);
     contentLayout_->setContentsMargins(0, 0, 0, 0);
     static_cast<QVBoxLayout*>(layout())->insertWidget(0, content_);
-    for (const auto& sec : shown_) {   // S1: a section without a row is not in the model
+    for (const auto& sec : shown_) {   // a section without a row is not in the model
         auto* box = new QGroupBox(q(sec.title), content_);
         auto* form = new QFormLayout(box);
         for (const auto& r : sec.rows) {

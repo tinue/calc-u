@@ -1,26 +1,26 @@
-// The page side of a Web frontend (LIB-15 design §3.1; spec AC-1 to AC-4,
-// AC-9, EC-5): starts the worker, keeps the last state of each state topic
+// The page side of a Web frontend: starts the worker, keeps the last state of each state topic
 // and what each stream topic appended, sends suspend and continue on
 // visibilitychange, answers the host services and keeps the start state.
-// Created in an effect only, never during a render (AC-18).
+// Created in an effect only, never during a render (a server-side render
+// starts no worker).
 //
 //   createShell({product, workerUrl, start: {model, preset}, services}) → {
 //     getState(), subscribe(listener),         for useShellState() / useTopic()
-//     send(command, args) → Promise<{done, reason, value}>,   a LIB-3 command
-//     request(name, args) → Promise<{done, reason, value}>,   a LIB-3 request
+//     send(command, args) → Promise<{done, reason, value}>,   a session command
+//     request(name, args) → Promise<{done, reason, value}>,   a session request
 //     frames,                                  the display topic, outside React
 //     listenStream(listener) → unsubscribe,    every stream message as it comes,
 //                                              {topic, reset, value: [item, ...]}
 //                                              (a component that keeps more than
-//                                              CALCU_STREAM_KEEP items: LIB-8's paper)
+//                                              CALCU_STREAM_KEEP items: the paper)
 //     unlockAudio(), destroy(),
 //   }
 //   state: {start: "starting" | "running" | "failed", failure,
 //           topics: {name → last state}, streams: {name → appended since the last reset}}
 //
-// Everything that crosses postMessage is a LIB-3 message in the JS form of
-// design §3.6 (worker/glue/MessageCodec.hpp); the start parameters go in the
-// first command, `start` (design §9 D-1, N3).
+// Everything that crosses postMessage is a session message in its JS form
+// (glue/MessageCodec.hpp); the start parameters go in the first command,
+// `start`.
 
 const CALCU_STREAM_KEEP = 500;   // items kept per stream topic
 const CALCU_NO_SHELL_STATE = { start: "starting", failure: "", topics: {}, streams: {} };
@@ -118,7 +118,7 @@ function createShell({ product, workerUrl, start, services }) {
         default: break;
       }
     };
-    // AC-3: a script that cannot be fetched or throws, a message that cannot be read.
+    // A script that cannot be fetched or throws, a message that cannot be read.
     worker.onerror = (e) => {
       if (e && e.preventDefault) e.preventDefault();
       failWith((e && e.message) || "the worker could not be started");
@@ -128,7 +128,7 @@ function createShell({ product, workerUrl, start, services }) {
     call("command", "start", { model: (start && start.model) || "", preset: (start && start.preset) || "" });
   }
 
-  // AC-2: hidden → suspend, shown → continue.
+  // Hidden → suspend, shown → continue.
   const onVisibility = () => post({ kind: "command", name: document.hidden ? "suspend" : "continue", args: null, call: 0 });
   if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisibility);
 

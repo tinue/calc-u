@@ -1,7 +1,6 @@
-// LIB-14 L8 (design §6, §3.9; AC-44, built here and used in M-49): harness
-// attach hosted by the Qt6 SessionHost on the GUI thread, with LIB-11's
-// test product (library/harness/tests/TestProduct.*) on test-seg (100,000
-// ticks a second) and a line client on 127.0.0.1. Built only with
+// Harness attach hosted by the Qt6 SessionHost on the GUI thread, with the
+// harness's test product (library/harness/tests/TestProduct.*) on test-seg
+// (100,000 ticks a second) and a line client on 127.0.0.1. Built only with
 // CALCU_ATTACH (POSIX trees with the tests; qt6/CMakeLists.txt).
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
@@ -185,11 +184,10 @@ TEST(qt_attach_host_bind_fails_logs_and_runs) {
     CHECK(logged);
 }
 
-// LIB-14 D-27 (M-49): the serve form's commands through the Qt6 host: `key`
-// and `type` reply when their keys are up on the app's clock, the startup
-// commands and the preset steps are there, on the session's library parts
-// (Calc-U-1600's scenarios load presets, its CalcU1600QtTests
-// lib14_ac44_scenario_through_attach).
+// The serve form's commands through the Qt6 host: `key` and `type` reply
+// when their keys are up on the app's clock, the startup commands and the
+// preset steps are there, on the session's library parts (Calc-U-1600's
+// screenshot scenarios load presets through attach).
 TEST(qt_attach_host_preset_key_type) {
     QtApp app;
     CHECK(app.host->openAttach(app.product, 0, app.product.libraryParts()).empty());
@@ -202,9 +200,9 @@ TEST(qt_attach_host_preset_key_type) {
         if (r.empty() || r[0] != "done") std::fprintf(stderr, "  %s: %s\n", line, r.empty() ? "-" : r[0].c_str());
         CHECK(!r.empty() && r[0] == "done");
     }
-    // The preset commands and LIB-18's are the session's (the test product's
-    // parts outside a run, as a frontend's): a bundled preset that is not
-    // there is refused by LIB-6's part with its reason.
+    // The preset commands and the startup commands are the session's (the
+    // test product's parts outside a run, as a frontend's): a bundled preset
+    // that is not there is refused by the presets' part with its reason.
     c.send("preset examples:none.test");
     r = c.reply();
     CHECK(!r.empty() && r[0].rfind("refused: ", 0) == 0 && r[0].find("format 2 yet") == std::string::npos);

@@ -29,7 +29,7 @@ QAction::MenuRole role(MenuItem::Role r) {
     case MenuItem::Role::Quit: return QAction::QuitRole;
     case MenuItem::Role::None: break;
     }
-    return QAction::NoRole;   // M12: Qt's heuristic moves nothing else
+    return QAction::NoRole;   // Qt's heuristic moves nothing else
 }
 
 } // namespace
@@ -55,7 +55,7 @@ ShellMenus::ShellMenus(QMenuBar& bar, Shell& shell) : QObject(&bar), bar_(bar), 
 void ShellMenus::set(const std::vector<shell::Menu>& model) {
     std::vector<std::string> order;
     for (const auto& m : model) order.push_back(m.id);
-    if (order != order_) {   // a menu came or went (AC-19): the bar anew
+    if (order != order_) {   // a menu came or went: the bar anew
         bar_.clear();
         for (auto& [id, m] : menus_) delete m;
         menus_.clear();
@@ -70,7 +70,7 @@ void ShellMenus::set(const std::vector<shell::Menu>& model) {
     }
     for (const auto& m : model) {
         const std::string text = describe(m.items);
-        if (shown_[m.id] == text) continue;   // EC-4: only what changed
+        if (shown_[m.id] == text) continue;   // only what changed
         QMenu* menu = menus_[m.id];
         for (QMenu* sub : menu->findChildren<QMenu*>(QString(), Qt::FindDirectChildrenOnly)) delete sub;
         menu->clear();
@@ -81,7 +81,7 @@ void ShellMenus::set(const std::vector<shell::Menu>& model) {
 }
 
 void ShellMenus::fill(QMenu& menu, const std::vector<MenuItem>& items) {
-    menu.setToolTipsVisible(true);   // AC-5
+    menu.setToolTipsVisible(true);   // a disabled item's reason
     for (const auto& item : items) {
         const QString name = QString::fromStdString(shell::names::item(item.id));
         if (item.kind == MenuItem::Kind::Separator) {
@@ -106,7 +106,7 @@ void ShellMenus::fill(QMenu& menu, const std::vector<MenuItem>& items) {
         if (!item.reason.empty()) a->setToolTip(QString::fromStdString(item.reason));
         if (item.shortcut != MenuItem::Shortcut::None) {
             a->setShortcut(keySequence(item.shortcut));
-            a->setShortcutContext(Qt::WindowShortcut);   // before the focused widget's keyPressEvent (AC-4)
+            a->setShortcutContext(Qt::WindowShortcut);   // before the focused widget's keyPressEvent
         }
         connect(a, &QAction::triggered, this, [this, item] { shell_.choose(item); });
     }

@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <title>CalcUTest host page</title>
-<!-- A host page as calc-u-site writes one (LIB-15 AC-15): React 18 as a
+<!-- A host page as calc-u-site writes one: React 18 as a
      global, calc.css, calc.js as a classic script, the component mounted.
-     Its own styles are the host's (AC-17). Query: model, preset, width,
+     Its own styles are the host's. Query: model, preset, width,
      height, keyboard=0, worker (a workerUrl), twice=1 (two components on
-     one page, AC-8), fill=1 (a parent of 400 x 300 and no size props),
-     shell=1 (the component put together from LIB-14's shell). -->
+     one page), fill=1 (a parent of 400 x 300 and no size props),
+     shell=1 (the component put together from the library's shell), origin=N (the hit map's origin
+     inside the faceplate). -->
 <style>
   body { margin: 8px; font-family: Georgia, serif; color: rgb(1, 2, 3); }
   button { color: rgb(4, 5, 6); }
@@ -34,7 +35,7 @@
   if (q.get("keyboard") === "0") base.keyboard = false;
   if (q.has("worker")) base.workerUrl = new URL(q.get("worker"), location.href).href;
   if (q.get("shell") === "1") base.shell = true;
-  if (q.has("origin")) base.faceOrigin = Number(q.get("origin"));   // LIB-14 §10.3.4
+  if (q.has("origin")) base.faceOrigin = Number(q.get("origin"));
   const fill = q.get("fill") === "1";
   if (!fill && !("width" in base)) { base.width = 480; base.height = 320; }
   const root = ReactDOM.createRoot(document.getElementById("root"));

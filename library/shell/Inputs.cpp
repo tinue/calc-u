@@ -31,7 +31,7 @@ const sessions::Value::Array& elements(const sessions::Value& v, std::string_vie
 
 Availability availabilityOf(const sessions::Value& entry, std::string_view key) {
     const sessions::Value* holder = &entry;
-    // LIB-4 writes `available`/`reason` on the entry, or an object
+    // The control state writes `available`/`reason` on the entry, or an object
     // {available, reason} under its own key (`empty`, `insert`).
     if (key != "available") {
         const sessions::Value* sub = entry.find(key);

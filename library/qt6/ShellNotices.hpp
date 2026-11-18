@@ -7,8 +7,7 @@
 
 class QWidget;
 
-// The notice dialog of the Qt6 shell (LIB-14 design §3.6 N1 to N4; spec
-// AC-17, EC-2): a notice as it is, without a title, with OK; a question
+// The notice dialog of the Qt6 shell: a notice as it is, without a title, with OK; a question
 // (`asks:`) with Yes and No. Window-modal through QMessageBox::open(), with
 // no nested event loop, so the session goes on being called behind it.
 // Object names `notice`, `notice-ok`, `notice-yes`, `notice-no`.

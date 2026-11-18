@@ -1,8 +1,7 @@
-// LIB-8 T13, T14 (design §6): the paper panel of the Qt6 component set and
-// its clipboard service, on the offscreen platform, driven by a real app
-// session with LIB-8's PaperPart and the test printers TD-20 (test-seg
-// `printer`, online) and TP-4 (`aux`) through a listener, as a frontend
-// hosts them (AC-12 to AC-16, AC-18 to AC-20).
+// The paper panel of the Qt6 component set and its clipboard service, on
+// the offscreen platform, driven by a real app session with the paper's
+// PaperPart and the test printers TD-20 (test-seg `printer`, online) and
+// TP-4 (`aux`) through a listener, as a frontend hosts them.
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 #include "TestProductMachines.hpp"
@@ -49,7 +48,7 @@ void settle() {
 struct PanelRig {
     peripherals::PeripheralsPart peripherals;
     startup::test::TestProductMachines machines;
-    startup::MachineControl control{machines, nullptr};   // no build: no preset's origin (A-3)
+    startup::MachineControl control{machines, nullptr};   // no build: no preset's origin
     paper::PaperPart paperPart{mt::paperTestCatalogue(),
                                {paper::PrinterPaper{mt::kDotter, mt::td20Description()},
                                 paper::PrinterPaper{mt::kPlotter, mt::tp4Description()}},
@@ -138,7 +137,7 @@ QPoint pointOf(PanelRig& r, const paper::Paper& p, paper::Position at) {
 
 } // namespace
 
-TEST(ac12_owner_name_whole_width_marks_at_their_position) {
+TEST(paper_owner_name_whole_width_marks_at_their_position) {
     PanelRig r;
     r.build();
     r.press("1");   // TD-20 prints a line; TP-4 draws a stroke in colour 1 (blue)
@@ -173,7 +172,7 @@ TEST(ac12_owner_name_whole_width_marks_at_their_position) {
     CHECK(atStroke.blue() > 150 && atStroke.red() < 150);
 }
 
-TEST(ac12_no_owner_empty_paper_no_name_copy_cut_disabled) {
+TEST(paper_no_owner_no_name_copy_cut_disabled) {
     PanelRig r;
     r.build();
     r.press("1");
@@ -194,7 +193,7 @@ TEST(ac12_no_owner_empty_paper_no_name_copy_cut_disabled) {
     CHECK(r.child<QToolButton>("paper-copy")->isEnabled());
 }
 
-TEST(ac13_follows_within_64_points_stays_when_scrolled_back) {
+TEST(paper_follows_within_64_points_stays_when_scrolled_back) {
     PanelRig r;
     r.build();
     r.own(mt::kDotter, kPrinterPlace);
@@ -220,7 +219,7 @@ TEST(ac13_follows_within_64_points_stays_when_scrolled_back) {
     CHECK_EQ(view->scrollPosition(), view->scrollEnd());
 }
 
-TEST(ac13_no_scroll_bar) {
+TEST(paper_has_no_scroll_bar) {
     PanelRig r;
     r.build();
     r.own(mt::kDotter, kPrinterPlace);
@@ -232,7 +231,7 @@ TEST(ac13_no_scroll_bar) {
     CHECK(view->scrollEnd() > 0);   // there is something to scroll
 }
 
-TEST(ac14_view_control_shows_view_on_text_selectable_fixed_width) {
+TEST(paper_view_control_shows_view_on_text_selectable_fixed_width) {
     PanelRig r;
     r.build();
     r.press("1");
@@ -265,7 +264,7 @@ TEST(ac14_view_control_shows_view_on_text_selectable_fixed_width) {
     CHECK(!r.panel.showsText());
 }
 
-TEST(ac15_key_down_while_held_switch_shows_position) {
+TEST(paper_controls_key_down_while_held_switch_shows_position) {
     PanelRig r;
     r.build();
     r.own(mt::kDotter, kPrinterPlace);
@@ -298,7 +297,7 @@ TEST(ac15_key_down_while_held_switch_shows_position) {
     CHECK(!online->isChecked());
 }
 
-TEST(ac16_copy_puts_image_and_text_on_clipboard) {
+TEST(paper_copy_puts_image_and_text_on_clipboard) {
     PanelRig r;
     r.build();
     r.press("1");
@@ -341,7 +340,7 @@ TEST(ac16_copy_puts_image_and_text_on_clipboard) {
     CHECK(read.given && read.result.find("text") && *read.result.find("text")->string() == "abc");
 }
 
-TEST(ac18_cut_empties_and_disables) {
+TEST(paper_cut_empties_and_disables) {
     PanelRig r;
     r.build();
     r.press("1");
@@ -364,7 +363,7 @@ TEST(ac18_cut_empties_and_disables) {
     CHECK(!cut->isEnabled());
 }
 
-TEST(ac19_empty_paper_copy_cut_disabled) {
+TEST(paper_empty_copy_cut_disabled) {
     PanelRig r;
     r.build();
     r.own(mt::kDotter, kPrinterPlace);
@@ -376,7 +375,7 @@ TEST(ac19_empty_paper_copy_cut_disabled) {
     CHECK(r.child<QToolButton>("paper-cut")->isEnabled());
 }
 
-TEST(ac20_toast_for_1_8_seconds) {
+TEST(paper_toast_for_1_8_seconds) {
     PanelRig r;
     r.build();
     r.press("1");
@@ -405,10 +404,10 @@ TEST(ac20_toast_for_1_8_seconds) {
 }
 
 #ifdef Q_OS_MACOS
-// LIB-8 design §10.6, P16-9 (AC-35, the platform part; D-17): on macOS the
-// picture goes through Cocoa with its physical size, which Qt's clipboard
-// loses. On a pasteboard of the test's own, not the user's clipboard.
-TEST(ac16_mac_clipboard_keeps_physical_size) {
+// On macOS the picture goes through Cocoa with its physical size, which Qt's
+// clipboard loses. On a pasteboard of the test's own, not the user's
+// clipboard.
+TEST(paper_mac_clipboard_keeps_physical_size) {
     QImage image(9921, 120, QImage::Format_RGB32);   // a CE-1600P paper, 210 mm at 1200 dpi
     image.fill(Qt::white);
     const char* board = "calcu.qt6.tests.mac-clipboard";

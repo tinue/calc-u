@@ -1,19 +1,18 @@
 // useCalcuShell -- the shell's state for a product component of the React
-// set (LIB-14 design §2.3, §3.10): the models of shellModel.js drawn from the
-// topics, and the senders. (The design's `useShell`: that name is LIB-15's
-// hook that creates the shell, src/embed.js, so this one carries the set's
-// prefix, D-17.)
+// set: the models of shellModel.js drawn from the topics, and the senders.
+// (Not `useShell`: that name is the hook that creates the shell, src/embed.js,
+// so this one carries the set's prefix.)
 //
 //   const s = useCalcuShell(shell, product, {hasQuit: false, shortcuts: false, savedMedia: true});
-//   (Part E, design §10.3.1: traits also `menuBar` (false: no menu bar, the
-//   bar has Reset, Preset, Settings and More, B8), `settings`, `about`.)
+//   (traits also `menuBar` (false: no menu bar, the bar has Reset, Preset,
+//   Settings and More), `settings`, `about`.)
 //   s.menus, s.bar, s.panels, s.dialog (the settings rows), s.loading, s.notice,
 //   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" | null)
 //   s.choose(item), s.setSetting(section, key, value), s.closeNotice(yes), s.close()
 //
 // `product` is the JS form of ShellProduct (shellModel.js); `product.loadPreset`
 // (optional) replaces the shell's Load Preset… (a product that opens the picked
-// files through LIB-13's `open`); `product.settingsSpec`
+// files through the session's `open`); `product.settingsSpec`
 // (optional) is the dialog's spec, else the family sections of the rows the
 // `settings` topic has; `product.keysShown` limits them.
 
@@ -48,7 +47,7 @@ function useCalcuShell(shell, product, traits) {
   }, [shell]);
   React.useEffect(() => { if (started === "running") askPresets(); }, [started, askPresets]);
 
-  // AC-17: each notice, in order; none lost.
+  // Each notice, in order; none lost.
   React.useEffect(() => {
     if (!shell || !shell.listenStream) return undefined;
     return shell.listenStream((m) => {
@@ -58,7 +57,7 @@ function useCalcuShell(shell, product, traits) {
     });
   }, [shell, rerender]);
 
-  // L1: the rule on the page's clock; a timer looks again when it is due.
+  // "Loading…": the rule on the page's clock; a timer looks again when it is due.
   const runs = !!(busy && busy.operationRuns);
   const full = !!(busy && busy.speed === "full");
   React.useEffect(() => {
@@ -74,7 +73,7 @@ function useCalcuShell(shell, product, traits) {
     romsMissing: romsMissing || null, settings: settings || null, media: media || null };
   const menus = React.useMemo(() => calcuShellMenus(inputs, product, t),
     [controlState, presetList, runState, media, product, traitsKey]);
-  // M16: the bar's actions and the More items follow the same inputs as the menus.
+  // The bar's actions and the More items follow the same inputs as the menus.
   const bar = React.useMemo(() => calcuShellBar(inputs, product, t),
     [controlState, presetList, runState, media, product, traitsKey]);
   const panels = React.useMemo(() => calcuShellPanels(inputs), [controlState]);
@@ -85,13 +84,13 @@ function useCalcuShell(shell, product, traits) {
     if (!shell) return Promise.resolve({ done: false });
     return shell.send(name, args).then((r) => {
       if (!r.done) {
-        notices.current.refusal(r.reason, { name, args });   // D-7, N4
+        notices.current.refusal(r.reason, { name, args });   // a refusal is a notice, or a question for "asks:"
         rerender();
       }
       return r;
     });
   };
-  const loadPreset = () => {   // the page has no files of its own: the preset's text (LIB-6 `content`)
+  const loadPreset = () => {   // the page has no files of its own: the preset's text (`content`)
     calcuPickFiles(product.presetAccept || "", false).then(async (files) => {
       if (!files.length) return;
       const text = await files[0].text();
@@ -102,17 +101,17 @@ function useCalcuShell(shell, product, traits) {
     if (!item || item.enabled === false) return;
     if (item.command) { sendChecked(item.command, item.args); return; }
     const a = CALCU_SHELL_ACTIONS;
-    if (item.id === a.loadPreset) (product.loadPreset || loadPreset)();   // a product may open the files itself (LIB-13)
+    if (item.id === a.loadPreset) (product.loadPreset || loadPreset)();   // a product may open the files itself
     else if (item.id === a.settings) { askPresets(); setOpen("settings"); }
     else if (item.id === a.about) setOpen("about");
     else if (item.id === a.savedMedia) setOpen("saved-media");
-    else if (item.id === a.help) calcuWebHostServices().answer("open-url", { url: product.helpUrl });   // EC-6: its result is ignored
+    else if (item.id === a.help) calcuWebHostServices().answer("open-url", { url: product.helpUrl });   // its result is ignored
     else if (item.id === a.copyScreen) { if (product.copyScreen) product.copyScreen(); }
     else if (item.id === a.pasteText) {
       const read = typeof navigator !== "undefined" && navigator.clipboard ? navigator.clipboard.readText() : Promise.resolve("");
       read.then((text) => sendChecked("paste", { text }), () => {});
     } else {
-      const own = (product.items || []).find((p) => p.id === item.id);   // AC-7
+      const own = (product.items || []).find((p) => p.id === item.id);   // a product item acts
       if (own && own.act) own.act();
     }
   };

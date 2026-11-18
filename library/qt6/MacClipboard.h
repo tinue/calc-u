@@ -2,9 +2,8 @@
 #include <QImage>
 #include <QString>
 
-// The Qt6 component set's macOS clipboard path (LIB-8 design §10.11, D-17):
-// ClipboardService puts a paper's picture through it, and a product's own
-// Copy of the screen may too. Moved from Calc-U-1600's Qt6 frontend in M-45.
+// The Qt6 component set's macOS clipboard path: ClipboardService puts a
+// paper's picture through it, and a product's own Copy of the screen may too.
 #ifdef Q_OS_MACOS
 namespace calcu::qt6 {
 // Writes `source` to the general pasteboard as an NSImage sized to

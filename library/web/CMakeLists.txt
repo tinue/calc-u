@@ -1,9 +1,9 @@
-# LIB-15 Web frontend shell (design §2): JavaScript in src/, app/, build/;
+# The Web frontend shell: JavaScript in src/, app/, build/;
 # the C++ glue in glue/ (namespace calcu::web); the tests in tests/.
 #
 # Under Emscripten: calcu_web_glue, an INTERFACE target whose sources each
-# product's Web engine compiles with its own flags (LIB-1 design §2a, the one
-# exception to the one library target; LIB-15 design §3.6), and the product
+# product's Web engine compiles with its own flags (the one exception to the
+# one library target), and the product
 # made for the tests, calcu_web_test_product (tests/product/build.sh puts it
 # into build/web/library/web/test-dist/).
 # Natively: the CTest entries LibraryWebNodeTests (Frequent, node --test) and,
@@ -19,7 +19,7 @@ if(EMSCRIPTEN)
   # calcu_web_engine(<target> SOURCES <file>… OUTPUT <name> EXPORT <factory>
   #                  ENVIRONMENT <env> [LINK <option>…]): a Web engine for the
   # library's worker: the sources with the glue, native wasm exceptions (one
-  # build/web tree holds every engine; LIB-1 design §2a, D-6), embind, IDBFS
+  # build/web tree holds every engine), embind, IDBFS
   # for the persistent file system (mounted by the worker), a modularised
   # <name>.js whose factory is <factory>, a growing memory. No -pthread: a
   # static host can't be relied on to send the headers SharedArrayBuffer
@@ -58,9 +58,9 @@ if(CALCU_TESTS)
   if(CALCU_NODE)
     calcu_add_test(LibraryWebNodeTests frequent
                    COMMAND ${CALCU_NODE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/build.test.js
-                           ${CMAKE_CURRENT_SOURCE_DIR}/tests/shell_model.test.js    # LIB-14: the shell's models
-                           ${CMAKE_CURRENT_SOURCE_DIR}/tests/host_keys.test.js      # LIB-5: host keys
-                           ${CMAKE_CURRENT_SOURCE_DIR}/tests/embed_props.test.js    # LIB-15 AC-29: the shared props
+                           ${CMAKE_CURRENT_SOURCE_DIR}/tests/shell_model.test.js    # the shell's models
+                           ${CMAKE_CURRENT_SOURCE_DIR}/tests/host_keys.test.js      # host keys
+                           ${CMAKE_CURRENT_SOURCE_DIR}/tests/embed_props.test.js    # the shared props
                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endif()
   if(NOT WIN32)

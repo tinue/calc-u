@@ -1,5 +1,5 @@
-// LIB-14 L3 (design §6): SettingsPart (the `settings` topic, `set-setting`)
-// and the dialog model, rules S1 to S7 (spec AC-11 to AC-14, EC-3), on LIB-9's
+// SettingsPart (the `settings` topic, `set-setting`) and the dialog model,
+// on the settings area's
 // test product declaration (library/settings/tests/TestProduct.hpp) and an
 // app session in virtual time. The model part is mirrored in
 // shell_model.test.js.
@@ -48,7 +48,7 @@ struct Rig {
     std::vector<std::string> changed;
 
     // Not writable: a file without a format version, which is left untouched
-    // for the whole run (LIB-9 AC-7).
+    // for the whole run.
     explicit Rig(bool writable = true, std::vector<std::string> alsoShown = {}) : file(openFile(home, writable)) {
         sett::HostDirs dirs;
         dirs.home = home.str();
@@ -109,7 +109,7 @@ std::string titles(const std::vector<ShownSection>& ss) {
 
 } // namespace
 
-TEST(ac11_sections_shown_for_keys_present) {
+TEST(settings_sections_shown_for_keys_present) {
     Rig r;
     CHECK_EQ(std::string(kSettingsTitle), std::string("Settings"));
     const auto all = shown(r);
@@ -125,7 +125,7 @@ TEST(ac11_sections_shown_for_keys_present) {
     // A frontend with fewer keys (the Web: no folders) shows fewer sections.
     const auto web = shown(r, {"startup.model", "preset.Model-A", "preset.Model-B", "trace.max-file-size-mb"});
     CHECK_EQ(titles(web), std::string("General|Startup presets|Tracing"));
-    // S3: Startup model offers "Last used" and the product's models.
+    // Startup model offers "Last used" and the product's models.
     auto sm = find(all, "startup.model");
     CHECK_EQ(sm->choices.size(), std::size_t{3});
     CHECK_EQ(sm->choices[0].second, std::string("Last used"));
@@ -138,7 +138,7 @@ TEST(ac11_sections_shown_for_keys_present) {
     CHECK_EQ(withProduct.back().rows[0].choices.size(), std::size_t{2});
 }
 
-// C59-8 AC-7 (M-58): a frontend that shows a [window] key (Calc-U-59's
+// A frontend that shows a [window] key (Calc-U-59's
 // Swift frontend on iOS) names it; it is then in the topic and set like any
 // other; the rest of [window] stays out.
 TEST(also_shown_key_in_topic_and_set) {
@@ -153,13 +153,13 @@ TEST(also_shown_key_in_topic_and_set) {
     CHECK_EQ(r.rowText("window", "width", "value"), std::string("1000"));
 }
 
-TEST(ac11_change_written_at_once) {
+TEST(settings_change_written_at_once) {
     Rig r;
     const auto call = r.set("startup", "model", "Model-A");
     CHECK(r.fe.reply(call) && r.fe.reply(call)->done);
-    // Written through at once (LIB-9 AC-6), nothing waits for Close (S2).
+    // Written through at once, nothing waits for Close.
     CHECK(sett::test::readText(r.file.path()).find("model = Model-A") != std::string::npos);
-    CHECK_EQ(r.rowText("startup", "model", "value"), std::string("Model-A"));   // S6
+    CHECK_EQ(r.rowText("startup", "model", "value"), std::string("Model-A"));
     CHECK_EQ(r.changed.size(), std::size_t{1});
     CHECK_EQ(r.changed[0], std::string("startup.model"));
     // A value the key does not accept is refused with the reason.
@@ -170,13 +170,13 @@ TEST(ac11_change_written_at_once) {
     const auto n = r.set("trace", "max-file-size-mb", Value(20));
     CHECK(r.fe.reply(n)->done);
     CHECK_EQ(r.file.integer("trace", "max-file-size-mb"), 20L);
-    // A change from elsewhere shows at once (S6).
+    // A change from elsewhere shows at once.
     r.file.set("startup", "model", "Model-B");
     r.session->call(pacing::WallTime{0});
     CHECK_EQ(r.rowText("startup", "model", "value"), std::string("Model-B"));
 }
 
-TEST(ac12_startup_preset_choices) {
+TEST(startup_preset_choices) {
     Rig r;
     auto a = find(shown(r), "preset.Model-A");
     std::string labels;
@@ -194,7 +194,7 @@ TEST(ac12_startup_preset_choices) {
     CHECK_EQ(b->choices.back().second, std::string("~/mine.test"));
 }
 
-TEST(ac13_folder_row_home_change_reset) {
+TEST(folder_row_home_change_reset) {
     Rig r;
     auto save = find(shown(r), "storage.save-folder");
     CHECK_EQ(save->shown, std::string("~/Test-Product"));   // the default in use, with ~ for home
@@ -222,17 +222,17 @@ TEST(ac13_folder_row_home_change_reset) {
     CHECK(!find(shown(r), "folders.programs")->resettable);
 }
 
-TEST(ac14_set_setting_while_operation_runs) {
+TEST(set_setting_while_operation_runs) {
     Rig r;
     r.session->send(r.id, {sessions::CommandName{"tsp.op"}, Value::object({{"ticks", 1'000'000}})});
     CHECK(r.session->busy());
     const auto call = r.set("startup", "model", "Model-B");
-    CHECK(r.fe.reply(call) && r.fe.reply(call)->done);   // S7: not held back
+    CHECK(r.fe.reply(call) && r.fe.reply(call)->done);   // not held back
     CHECK(r.session->busy());   // and it starts nothing, stops nothing
     CHECK_EQ(r.rowText("startup", "model", "value"), std::string("Model-B"));
 }
 
-TEST(ec3_missing_startup_preset_still_shown) {
+TEST(missing_startup_preset_still_shown) {
     Rig r;
     const std::string gone = r.home.str() + "/gone/start.test";
     r.set("preset", "Model-A", gone);
@@ -249,11 +249,11 @@ TEST(set_setting_unwritable_gives_notice) {
     const auto notices = r.fe.noticeSentences();
     CHECK_EQ(notices.size(), std::size_t{1});
     CHECK(notices[0].find("not saved") != std::string::npos);
-    CHECK_EQ(r.file.text("startup", "model"), std::string("Model-A"));   // kept for this run (D-19)
+    CHECK_EQ(r.file.text("startup", "model"), std::string("Model-A"));   // kept for this run
     CHECK_EQ(r.rowText("startup", "model", "value"), std::string("Model-A"));
 }
 
-// Part E (design §10.3.2), S8: a choice row with labels.
+// A choice row with labels.
 namespace {
 
 DialogSpec styleSpec() {

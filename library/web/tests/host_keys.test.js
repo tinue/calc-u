@@ -1,4 +1,4 @@
-// LIB-5 AC-7, AC-10, EC-1: library/web/components/hostKeys.js under
+// Host keys: library/web/components/hostKeys.js under
 // `node --test` (CTest LibraryWebNodeTests, Frequent); the Qt6 twin's cases
 // are library/qt6/tests/host_keys_tests.cpp.
 const test = require("node:test");
@@ -7,7 +7,7 @@ const k = require("../components/hostKeys.js");
 
 const ev = (code, key, extra) => ({ code, key, shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, ...extra });
 
-test("lib5_ac7_web_key_event_produced_and_carried", () => {
+test("web_key_event_produced_and_carried", () => {
   assert.deepEqual(k.calcuHostKeyEvent(ev("KeyA", "A", { shiftKey: true }), false), {
     physical: "KeyA", named: "", produced: 65, carried: 97, shift: true, alt: false, "mac-host": false,
     command: false, control: false, meta: false,
@@ -22,7 +22,7 @@ test("lib5_ac7_web_key_event_produced_and_carried", () => {
   assert.equal(k.calcuHostKeyEvent(ev("Enter", "Enter"), false).named, "return");
 });
 
-test("lib5_ac7_web_modifiers_by_what_was_pressed", () => {
+test("web_modifiers_by_what_was_pressed", () => {
   const mac = k.calcuHostKeyEvent(ev("KeyC", "c", { metaKey: true, ctrlKey: true }), true);
   assert.equal(mac.command, true);
   assert.equal(mac.control, true);
@@ -33,7 +33,7 @@ test("lib5_ac7_web_modifiers_by_what_was_pressed", () => {
   assert.equal(pc.meta, true);
 });
 
-test("lib5_ec1_web_host_keys_pair_down_and_up", () => {
+test("web_host_keys_pair_down_and_up", () => {
   const keys = k.calcuHostKeys(false);
   assert.equal(keys.down(ev("KeyA", "a")).physical, "KeyA");
   assert.equal(keys.down(ev("KeyA", "a")), null);   // held already
@@ -41,7 +41,7 @@ test("lib5_ec1_web_host_keys_pair_down_and_up", () => {
   assert.equal(keys.up(ev("KeyA", "a")), null);     // once
 });
 
-test("lib5_ac10_web_host_keys_forgotten_on_focus_lost", () => {
+test("web_host_keys_forgotten_on_focus_lost", () => {
   const keys = k.calcuHostKeys(false);
   assert.equal(keys.focusLost(), false);
   keys.down(ev("KeyB", "b"));

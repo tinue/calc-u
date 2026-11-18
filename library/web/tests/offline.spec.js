@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const path = require('path');
 const { DIST, send, request, files, serveDist, stop } = require('./helpers');
 
-// LIB-15 T10, T11 (design §6): the installed app page, in Chromium and in
+// The installed app page, in Chromium and in
 // WebKit (an iPad's installed app). Each test brings its own server of one
 // dist/ below /calc/, no-store, so that only the service worker can answer
 // once it is gone.
@@ -19,7 +19,7 @@ async function installed(page, server) {
   return appUrl;
 }
 
-test('ac10 installed app starts and runs with the server gone', async ({ page, context }) => {
+test('installed app starts and runs with the server gone', async ({ page, context }) => {
   test.setTimeout(120000);
   const server = await serveDist(path.join(DIST, 'Test-A'));
   const appUrl = await installed(page, server);
@@ -44,7 +44,7 @@ test('ac10 installed app starts and runs with the server gone', async ({ page, c
   await expect(app.locator('.calcu-test-failed')).toHaveCount(0);
 });
 
-test('ac11 the new release from the next start, all files, old cache gone, store untouched', async ({ page, context }) => {
+test('the new release from the next start, all files, old cache gone, store untouched', async ({ page, context }) => {
   test.setTimeout(120000);
   const server = await serveDist(path.join(DIST, 'Test-A'));
   try {
@@ -81,7 +81,7 @@ test('ac11 the new release from the next start, all files, old cache gone, store
   }
 });
 
-test('ac12 install button, iOS hint', async ({ page, browser, browserName }) => {
+test('install button, iOS hint', async ({ page, browser, browserName }) => {
   const server = await serveDist(path.join(DIST, 'Test-A'));
   try {
     const appUrl = `http://localhost:${server.address().port}/calc/app/`;

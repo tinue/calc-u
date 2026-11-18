@@ -1,6 +1,6 @@
-// The inputs of the JS mirror (LIB-14 design §6, §8 "Value form as the
-// contract"): library/shell/tests/inputs.txt holds the Values that
-// TestShellPart.hpp builds from LIB-4's ControlState and LIB-6's
+// The inputs of the JS mirror (the Value form is the contract):
+// library/shell/tests/inputs.txt holds the Values that
+// TestShellPart.hpp builds from the control state's ControlState and presets'
 // PresetListReply, one per line as `<name> <json>`, for
 // library/web/tests/shell_model.test.js. This case fails when a payload's
 // toValue() changes, so both model sets keep reading the same form.

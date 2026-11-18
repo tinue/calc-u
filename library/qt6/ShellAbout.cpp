@@ -14,8 +14,7 @@ ShellAbout::ShellAbout(const shell::ShellProduct& product, QWidget* parent) : QD
     setWindowTitle(QString::fromStdString(a.title));
     setWindowModality(Qt::WindowModal);
     auto* l = new QVBoxLayout(this);
-    // Part E (design §10.3.5, D-38): the application's window icon above the
-    // name, when it has one.
+    // The application's window icon above the name, when it has one.
     if (const QIcon icon = QApplication::windowIcon(); !icon.isNull()) {
         auto* picture = new QLabel(this);
         picture->setObjectName(QStringLiteral("about-icon"));

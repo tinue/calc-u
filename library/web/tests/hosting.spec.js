@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const { open, send, request } = require('./helpers');
 
-// LIB-15 T2-T5 (design §6): the session in a Web Worker, its host calls,
+// The session in a Web Worker, its host calls,
 // suspend and continue, a start that fails, the host services.
 
 const PAGE_TO_WORKER = ['listen', 'command', 'request', 'answer'];
@@ -35,7 +35,7 @@ function setHidden(page, hidden) {
   }, hidden);
 }
 
-test('ac1 the session runs in a worker and the page gets only LIB-3 messages', async ({ page }) => {
+test('the session runs in a worker and the page gets only session-protocol messages', async ({ page }) => {
   await page.addInitScript(recordMessages);
   await open(page);
   expect(page.workers().length).toBeGreaterThanOrEqual(1);
@@ -49,7 +49,7 @@ test('ac1 the session runs in a worker and the page gets only LIB-3 messages', a
   expect(received.filter((k) => !WORKER_TO_PAGE.includes(k))).toEqual([]);
 });
 
-test('ac1 about 60 host calls a second', async ({ page }) => {
+test('about 60 host calls a second', async ({ page }) => {
   await open(page);
   const t0 = Date.now();
   const c0 = await callsNow(page);
@@ -60,7 +60,7 @@ test('ac1 about 60 host calls a second', async ({ page }) => {
   expect(rate).toBeLessThan(75);
 });
 
-test('ac2 hidden stops the calls, shown continues them', async ({ page }) => {
+test('hidden stops the calls, shown continues them', async ({ page }) => {
   await open(page);
   await setHidden(page, true);
   await page.waitForTimeout(200);
@@ -72,7 +72,7 @@ test('ac2 hidden stops the calls, shown continues them', async ({ page }) => {
   expect(await callsNow(page)).toBeGreaterThan(c0 + 10);
 });
 
-test('ac3 a missing bundled file', async ({ page, context }) => {
+test('a missing bundled file', async ({ page, context }) => {
   await context.route('**/bundle/demo.txt', (route) => route.fulfill({ status: 404, body: '' }));
   await open(page, 'Test-A', '', 'failed');
   const alert = page.locator('.calcu-test-failed');
@@ -81,20 +81,20 @@ test('ac3 a missing bundled file', async ({ page, context }) => {
   await expect(page.locator('.calcu-test-status')).toHaveCount(0);
 });
 
-test('ac3 a broken wasm', async ({ page, context }) => {
+test('a broken wasm', async ({ page, context }) => {
   await context.route('**/wasm/calcutest-core.wasm',
     (route) => route.fulfill({ status: 200, contentType: 'application/wasm', body: 'not a wasm module' }));
   await open(page, 'Test-A', '', 'failed');
   await expect(page.locator('.calcu-test-failed')).toContainText('calcutest-core.wasm did not start');
 });
 
-test('ac3 a worker script error', async ({ page }) => {
+test('a worker script error', async ({ page }) => {
   await open(page, 'Test-A', 'worker=tests/broken-worker.js', 'failed');
   await expect(page.locator('.calcu-test-failed')).toContainText('Test-A could not start');
   await expect(page.locator('.calcu-test-status')).toHaveCount(0);
 });
 
-test('ac4 states its services and no folder picker', async ({ page }) => {
+test('states its services and no folder picker', async ({ page }) => {
   await open(page);
   const reply = await request(page, 'tp.services');
   expect(reply.value.services.sort()).toEqual(
@@ -102,7 +102,7 @@ test('ac4 states its services and no folder picker', async ({ page }) => {
   expect(reply.value.services).not.toContain('folder-picker');
 });
 
-test('ac9 a handed file is a download', async ({ page }) => {
+test('a handed file is a download', async ({ page }) => {
   await open(page);
   const [download] = await Promise.all([
     page.waitForEvent('download'),
@@ -116,7 +116,7 @@ test('ac9 a handed file is a download', async ({ page }) => {
   await expect(page.locator('.calcu-test-answers')).toContainText('"service":"keep-file","given":true');
 });
 
-test('ac4 file picker, clipboard text, open url answered once', async ({ page, context, browserName }) => {
+test('file picker, clipboard text, open url answered once', async ({ page, context, browserName }) => {
   await open(page);
   const answers = () => page.evaluate(() => window.calcuTestShells[0].getState().streams['tp.answers'] || []);
 

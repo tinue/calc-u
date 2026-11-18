@@ -7,10 +7,10 @@
 #include <string>
 #include <string_view>
 
-// The JS form of LIB-3's messages (LIB-15 design §3.6, §9 N1): a Message as
+// The JS form of the session's messages: a Message as
 // a plain object for postMessage, and the arguments the page sends back. The
 // codec translates every payload through Payload::toValue() without reading
-// it (frontend.md I-3; ADR 0014).
+// it: a frontend only translates.
 //
 //   worker → page  {kind: "state", topic, value}
 //                  {kind: "stream", topic, reset, value: [item, ...]}
@@ -23,7 +23,7 @@
 //                  {kind: "answer", call, done, reason, value}
 //                  {kind: "listen", args: {services: [name, ...]}}
 //
-// Bytes are Uint8Array (N5); their buffers are added to `transfer`, so a
+// Bytes are Uint8Array; their buffers are added to `transfer`, so a
 // frame crosses to the page without a copy.
 
 namespace calcu::web {

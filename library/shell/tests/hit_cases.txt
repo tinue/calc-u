@@ -1,5 +1,4 @@
-# The cases of the hit rule (LIB-14 spec AC-24, EC-8; design §3.7, H1 to H3,
-# D-8), read by library/shell/tests/hit_map_tests.cpp and
+# The cases of the hit rule (shell/HitMap.hpp), read by library/shell/tests/hit_map_tests.cpp and
 # library/web/tests/shell_model.test.js alike.
 #
 #   map <distance> <key>:<x>,<y>,<w>,<h> ...   a hit map, keys in its order

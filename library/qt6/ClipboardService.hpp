@@ -7,12 +7,11 @@
 class QClipboard;
 class QMimeData;
 
-// The clipboard host services of a Qt6 frontend (LIB-8 design §2, §3.6;
-// spec AC-16; LIB-3 AC-26, AC-27): answers `clipboard-image` ({bytes, text?,
-// name, dotsPerInch}: one clipboard entry with the picture, its resolution
-// set on the image, and the text when there is one) and `clipboard-text`
-// ({text}: copied; without text: the clipboard's text, {text}). From M-43
-// LIB-14's SessionHost asks it through its service handler.
+// The clipboard host services of a Qt6 frontend: answers `clipboard-image`
+// ({bytes, text?, name, dotsPerInch}: one clipboard entry with the picture,
+// its resolution set on the image, and the text when there is one) and
+// `clipboard-text` ({text}: copied; without text: the clipboard's text,
+// {text}). The shell's SessionHost asks it through its service handler.
 
 namespace calcu::qt6 {
 
@@ -27,7 +26,7 @@ public:
     // The answer to an ask of a service it handles; any other: not given.
     sessions::ServiceAnswer answer(const sessions::ServiceAsk&);
 
-    // The seam (design §8): the entry an ask of `clipboard-image` puts on the
+    // The seam for the tests: the entry an ask of `clipboard-image` puts on the
     // clipboard, or nullptr with `problem` set. The caller owns it.
     static QMimeData* imageEntry(const sessions::Value& args, QString* problem = nullptr);
     // Where the entries go instead of the clipboard (the tests); it takes the

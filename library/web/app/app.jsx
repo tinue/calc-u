@@ -1,5 +1,4 @@
-// The installed app page (LIB-15 design §3.4; spec AC-12; from both
-// products' app/app.jsx): the product's component (../calc.js) filling the
+// The installed app page: the product's component (../calc.js) filling the
 // viewport less the safe-area padding, with an install button where the
 // browser allows it and a hint on iOS. library/web/build/dist.js compileApp()
 // puts in the product's component, its own props and its install sentence.

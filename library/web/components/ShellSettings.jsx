@@ -1,9 +1,8 @@
-// ShellSettings -- the settings dialog of the React set (LIB-14 design §3.5,
-// §3.10; spec AC-11 to AC-14, EC-3): titled "Settings", a section per group
-// of the dialog model, a change sent as `set-setting` at once (S2), Close as
-// the only button. It follows the `settings` topic (S6) and is held back by
-// nothing (S7). Folder rows show the folder in use with "Reset" (a Web
-// frontend has no folder picker, LIB-15). Names: settings-dialog,
+// ShellSettings -- the settings dialog of the React set: titled "Settings",
+// a section per group of the dialog model, a change sent as `set-setting` at
+// once, Close as the only button. It follows the `settings` topic and is
+// held back by nothing. Folder rows show the folder in use with "Reset" (a
+// Web frontend has no folder picker). Names: settings-dialog,
 // setting-<section>-<key>, settings-close.
 
 function ShellSettingRow({ s, row }) {

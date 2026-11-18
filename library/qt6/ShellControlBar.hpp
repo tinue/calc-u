@@ -10,13 +10,12 @@
 class QComboBox;
 class QHBoxLayout;
 
-// The control bar of the Qt6 shell (LIB-14 design §3.4, §3.8 "Bar"; spec
-// AC-8 to AC-10, AC-42): one container per group, left to right; QComboBox
-// pickers whose disabled items carry the reason as their tooltip;
-// checkable QToolButtons for the one-peripheral places (B3); LIB-7's module
+// The control bar of the Qt6 shell: one container per group, left to right;
+// QComboBox pickers whose disabled items carry the reason as their tooltip;
+// checkable QToolButtons for the one-peripheral places; the library's module
 // picker and the media owners' controls from registered factories; the
-// product's own controls in the group it names (B2). A group without a
-// control is hidden: no gap (B4).
+// product's own controls in the group it names. A group without a control
+// is hidden: no gap.
 
 namespace calcu::qt6 {
 

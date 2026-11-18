@@ -1,5 +1,4 @@
-// The service worker of a product's installed app (LIB-15 design §3.4; spec
-// AC-10, AC-11), scope: dist/app/. Precaches the app page and everything the
+// The service worker of a product's installed app, scope: dist/app/. Precaches the app page and everything the
 // product needs offline -- its code and WASM, the files of files.json (the
 // ROMs, the bundled presets and media) and its images -- so the installed
 // app starts and runs every model without a network.
@@ -9,7 +8,7 @@
 // a hash of the files. The scope is part of the cache's name: the origin
 // may be shared with the host site or another product.
 //
-// A new release (AC-11, design D-2): the first install takes over at once;
+// A new release: the first install takes over at once;
 // a later one waits until no window of the app is open, so a running app
 // never mixes the files of two releases. Its activate removes the older
 // caches of this app; the fetch handler answers from this release's cache

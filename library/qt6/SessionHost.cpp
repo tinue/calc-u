@@ -16,7 +16,7 @@
 namespace calcu::qt6 {
 
 #ifdef CALCU_ATTACH
-// The attach host (§3.9): what the endpoint's I/O thread posts is handed to
+// The attach host: what the endpoint's I/O thread posts is handed to
 // the attached harness on the GUI thread through the event loop.
 struct SessionHost::Attach final : harness::AttachInbox {
     SessionHost* host = nullptr;
@@ -103,7 +103,7 @@ void SessionHost::flushHeld() {
 }
 
 void SessionHost::dispatch(const sessions::Message& m) {
-    // The session's asks: the clipboard (LIB-8's ClipboardService) and
+    // The session's asks: the clipboard (ClipboardService) and
     // open-url (QDesktopServices); anything else is not given.
     if (const auto* a = std::get_if<sessions::ServiceAsk>(&m)) defaultService(*a);
     for (const auto& h : handlers_) h(m);
@@ -138,11 +138,11 @@ std::string SessionHost::openAttach(harness::HarnessProduct& product, std::uint1
     a->host = this;
     a->endpoint = std::make_unique<harness::AttachEndpoint>(*a, port);
     const auto opened = a->endpoint->open();
-    if (!opened.ok) {   // FS 4, C59-5 EC-1: the app runs on
+    if (!opened.ok) {   // the app runs on without attach
         session_.context().log("Attach is not available on port " + std::to_string(port) + ": " + opened.problem + ".");
         return opened.problem;
     }
-    // Qt6 sends no suspend (LIB-3 AC-36): calls are never suspended.
+    // Qt6 sends no suspend: calls are never suspended.
     a->harness = std::make_unique<harness::AttachedHarness>(session_, product, *a->endpoint, [] { return false; }, parts);
     attach_ = std::move(a);
     return {};

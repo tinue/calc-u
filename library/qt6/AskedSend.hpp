@@ -4,12 +4,11 @@
 #include <optional>
 #include <string>
 
-// The `asks:` round trip of a Qt6 host (LIB-7 D-6, D-31; Part E
-// simplification E-4): a command that starts or saves a named medium may
-// answer with the refusal "asks: <question>" (a medium of that name exists).
-// The host asks the user the question with its own dialog and, on yes,
-// sends the same command again with `confirmed: true`. Used by the Name &
-// Save dialog and the products' "a new medium of a name" controls.
+// The `asks:` round trip of a Qt6 host: a command that starts or saves a
+// named medium may answer with the refusal "asks: <question>" (a medium of
+// that name exists). The host asks the user the question with its own dialog
+// and, on yes, sends the same command again with `confirmed: true`. Used by
+// the Name & Save dialog and the products' "a new medium of a name" controls.
 
 namespace calcu::qt6 {
 

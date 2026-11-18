@@ -2,8 +2,7 @@
 #include "web/glue/WorkerHost.hpp"
 #include <emscripten/bind.h>
 
-// The embind registration a product's bindings.cpp makes (LIB-15 design
-// §3.6): one class, named as the worker config's `host`, built from the
+// The embind registration a product's bindings.cpp makes: one class, named as the worker config's `host`, built from the
 // start object the library worker passes, with the three calls the worker
 // makes. All that is left in a product's bindings.cpp:
 //

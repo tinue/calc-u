@@ -1,5 +1,4 @@
-// The canvas helpers both products' painters use (Part E simplification
-// E-5; were each product's painters.js, the same jobs):
+// The canvas helpers both products' painters use:
 //
 //   sizeCanvas(canvas, width, height) → its 2D context: a canvas of `width`
 //       × `height` CSS pixels at the screen's resolution, its context scaled

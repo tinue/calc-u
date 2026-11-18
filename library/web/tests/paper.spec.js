@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const { open, send } = require('./helpers');
 
-// LIB-8 T15 (design §6): the paper panel of the React component set,
+// The paper panel of the React component set,
 // CalcuPaperPanel, in the test product with the test printers TD-20 (dots
 // and a text layer, unit 1/2 mm, 40 units wide) and TP-4 (pen strokes, unit
 // 1/10 mm, 600 units wide); Chromium and WebKit.
@@ -36,7 +36,7 @@ async function pixelAt(page, width, x, y) {
 // The canvas alpha: 0 is nothing drawn.
 const dark = (p) => p[3] > 128 && p[0] < 128;
 
-test('ac12 owner name and marks at their position', async ({ page, context, browserName }) => {
+test('owner name and marks at their position', async ({ page, context, browserName }) => {
   await start(page, context, browserName);
   expect((await attachTd20(page)).done).toBe(true);
   expect((await press(page)).done).toBe(true);
@@ -58,7 +58,7 @@ test('ac12 owner name and marks at their position', async ({ page, context, brow
   }).toBe(true);
 });
 
-test('ac12 no owner no name copy and cut disabled', async ({ page, context, browserName }) => {
+test('no owner no name copy and cut disabled', async ({ page, context, browserName }) => {
   await start(page, context, browserName);
   await expect(el(page, 'paper-owner')).toHaveText('');
   await expect(el(page, 'paper-copy')).toBeDisabled();
@@ -73,7 +73,7 @@ test('ac12 no owner no name copy and cut disabled', async ({ page, context, brow
   await expect(el(page, 'paper-cut')).toBeDisabled();
 });
 
-test('ac13 follows near the end stays when scrolled back', async ({ page, context, browserName }) => {
+test('follows near the end stays when scrolled back', async ({ page, context, browserName }) => {
   await start(page, context, browserName);
   await attachTd20(page);
   const scroller = el(page, 'paper-scroll');
@@ -99,7 +99,7 @@ test('ac13 follows near the end stays when scrolled back', async ({ page, contex
   await expect.poll(async () => { const m = await metrics(); return m.height - (m.top + m.view); }).toBeLessThanOrEqual(1);
 });
 
-test('ac14 view control shows the view that is on', async ({ page, context, browserName }) => {
+test('view control shows the view that is on', async ({ page, context, browserName }) => {
   await start(page, context, browserName);
   await attachTd20(page);
   await press(page);
@@ -133,7 +133,7 @@ test('ac14 view control shows the view that is on', async ({ page, context, brow
   await expect(view).toHaveCount(0);
 });
 
-test('ac15 printer controls held and switched', async ({ page, context, browserName }) => {
+test('printer controls held and switched', async ({ page, context, browserName }) => {
   await start(page, context, browserName);
   await attachTd20(page);
   const online = el(page, 'paper-control-online');
@@ -158,7 +158,7 @@ test('ac15 printer controls held and switched', async ({ page, context, browserN
   await expect(el(page, 'paper-copy')).toBeEnabled();
 });
 
-test('ac19 empty paper copy and cut disabled', async ({ page, context, browserName }) => {
+test('empty paper copy and cut disabled', async ({ page, context, browserName }) => {
   await start(page, context, browserName);
   await attachTd20(page);
   await expect(el(page, 'paper-owner')).toHaveText('TD-20');
@@ -190,7 +190,7 @@ function spyClipboard() {
   };
 }
 
-test('ac20 copied to clipboard for 1.8 seconds', async ({ page, context, browserName }) => {
+test('copied to clipboard for 1.8 seconds', async ({ page, context, browserName }) => {
   await start(page, context, browserName);
   await page.evaluate(spyClipboard);
   await attachTd20(page);
@@ -221,7 +221,7 @@ test('ac20 copied to clipboard for 1.8 seconds', async ({ page, context, browser
   await download;
 });
 
-test('ac21 picture refused text alone copied', async ({ page, context, browserName }) => {
+test('picture refused text alone copied', async ({ page, context, browserName }) => {
   await start(page, context, browserName);
   await page.evaluate(() => {
     window.__texts = [];
@@ -237,7 +237,7 @@ test('ac21 picture refused text alone copied', async ({ page, context, browserNa
   expect(await page.evaluate(() => window.__texts)).toEqual(['KEY 1   \nKEY 2   ']);
 });
 
-test('ac21 picture refused offered as download', async ({ page, context, browserName }) => {
+test('picture refused offered as download', async ({ page, context, browserName }) => {
   await start(page, context, browserName);
   await page.evaluate(() => {
     navigator.clipboard.write = () => Promise.reject(new DOMException('no pictures', 'NotAllowedError'));

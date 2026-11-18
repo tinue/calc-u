@@ -3,8 +3,8 @@
 #include <cstring>
 #include <QtGlobal>
 
-// The runner of calcu_qt6_tests: the repository's one runner (ADR 0038,
-// library/testing/TestMain.cpp) with a QApplication around it, on the
+// The runner of calcu_qt6_tests: the repository's one runner
+// (library/testing/TestMain.cpp) with a QApplication around it, on the
 // platform the environment names (CTest: QT_QPA_PLATFORM=offscreen). An
 // optional argument filters by substring of the test name.
 

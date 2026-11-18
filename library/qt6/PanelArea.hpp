@@ -9,12 +9,11 @@
 
 class QBoxLayout;
 
-// The area for panels of the Qt6 shell (LIB-14 design §3.4 B6, §3.8
-// "Panels"; spec AC-23, EC-5): the panels the control state lists, each made
-// once by its factory (LIB-8's paper panel by default) and kept, so that a
-// change of owner keeps their content; a product puts its own panels into
-// the same area (addPanel). A QWidget with a box layout the product may
-// replace (its splitter, Calc-U-59's AC-33). Object name `panel-area`.
+// The area for panels of the Qt6 shell: the panels the control state lists,
+// each made once by its factory (the library's paper panel by default) and
+// kept, so that a change of owner keeps their content; a product puts its
+// own panels into the same area (addPanel). A QWidget with a box layout the
+// product may replace (Calc-U-59's splitter). Object name `panel-area`.
 
 namespace calcu::qt6 {
 
@@ -28,7 +27,7 @@ public:
 
     void set(const std::vector<shell::Panel>&);
     void registerPanel(std::string kind, Factory);
-    void addPanel(QWidget*);   // a product's panel, from its own product entry (AC-23, AC-42)
+    void addPanel(QWidget*);   // a product's panel, from its own product entry
     QWidget* panel(const std::string& kind) const;
     void deliver(const sessions::Message&);   // to the panels that read topics (the paper panel)
 

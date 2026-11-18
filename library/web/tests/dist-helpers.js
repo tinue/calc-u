@@ -1,6 +1,6 @@
 // What every Web frontend's Playwright tests share about a built dist/: a
 // server of its own for the offline tests, and the server-side render of
-// its calc.js (LIB-15 AC-18). Node only, no @playwright/test: a product's
+// its calc.js. Node only, no @playwright/test: a product's
 // tests require this file and run on their own copy of Playwright.
 const fs = require('fs');
 const http = require('http');
@@ -16,7 +16,7 @@ const TYPES = {
 
 // A server of one dist/ below `prefix`, no-store (with setOffline() the HTTP
 // cache would still answer what the service worker doesn't, and hide a file
-// it fails to serve). server.dir can be changed while it runs (AC-11).
+// it fails to serve). server.dir can be changed while it runs (a new release).
 function serveDist(dir, prefix = '/calc/') {
   const server = http.createServer((req, res) => {
     let url = decodeURIComponent(req.url.split('?')[0]);

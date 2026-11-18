@@ -47,7 +47,7 @@ ServiceAnswer ClipboardService::answer(const ServiceAsk& ask) {
         QMimeData* m = imageEntry(ask.args, &problem);
         if (!m) return ServiceAnswer{false, Value(), problem.toStdString()};
 #ifdef Q_OS_MACOS
-        // D-17: Cocoa keeps the physical size that Qt's clipboard drops. Only
+        // Cocoa keeps the physical size that Qt's clipboard drops. Only
         // on the Cocoa platform (the offscreen one of the tests keeps its own
         // clipboard) and not for a sink of the tests.
         const double dpi = realArg(ask.args, "dotsPerInch", 0);

@@ -22,12 +22,11 @@ class QMainWindow;
 class QTimer;
 class QWidget;
 
-// The shell of the Qt6 component set (LIB-14 design §3.8; spec AC-1 to AC-23,
-// AC-42, AC-43): puts the menu bar, the control bar, the settings and About
-// dialogs, the notices, "Loading…", the area for panels and the pointer on
-// the faceplate on a product's QMainWindow, drawn from the session's topics
-// through a SessionHost. It names no model and no product (ADR 0023): all
-// of that is in the ShellProduct. The product places controlBar(),
+// The shell of the Qt6 component set: puts the menu bar, the control bar,
+// the settings and About dialogs, the notices, "Loading…", the area for
+// panels and the pointer on the faceplate on a product's QMainWindow, drawn
+// from the session's topics through a SessionHost. It names no model and no
+// product: all of that is in the ShellProduct. The product places controlBar(),
 // panelArea() and romsMissingView() in its own layout.
 
 namespace calcu::qt6 {
@@ -42,7 +41,7 @@ class ShellNotices;
 class ShellSettingsDialog;
 
 struct ShellOptions {
-    bool logToPlatform = true;   // G1: each line of the log to qInfo() (AC-18)
+    bool logToPlatform = true;   // each line of the log to qInfo()
     shell::Traits traits{true, true, false};
     shell::InputNames names{};
 };
@@ -52,7 +51,7 @@ struct ShellChoosers {
     // A file to open (Load Preset…, "Choose…"): empty when cancelled.
     std::function<QString(QWidget* parent, const QString& title, const QString& start, const QString& filter)> file;
     std::function<QString(QWidget* parent, const QString& title, const QString& start)> folder;   // "Change…"
-    std::function<bool(const QUrl&)> openUrl;   // Help; its result is ignored (EC-6)
+    std::function<bool(const QUrl&)> openUrl;   // Help; its result is ignored
     std::function<QString()> clipboardText;     // Paste Text
 };
 
@@ -64,21 +63,21 @@ public:
 
     QWidget* controlBar();            // the product places it below its faceplate
     PanelArea* panelArea();           // the product places it in its layout
-    QWidget* romsMissingView();       // shown by the shell in place of the faceplate (AC-19)
-    void setFaceplate(QWidget*, shell::HitMap, std::function<double()> scale);   // AC-24, AC-43
-    // Part E (design §10.3.4, D-44): a faceplate drawn at an origin in its
-    // widget, with presses the product takes first (C59-7's card tap).
+    QWidget* romsMissingView();       // shown by the shell in place of the faceplate
+    void setFaceplate(QWidget*, shell::HitMap, std::function<double()> scale);
+    // A faceplate drawn at an origin in its widget, with presses the product
+    // takes first (the TI card reader's tap).
     struct FaceplateGeometry {
         std::function<double()> scale;                          // logical pixels per hit-map unit
         std::function<QPointF()> origin = {};                   // the hit map's (0, 0) in the widget; none: (0, 0)
         std::function<bool(double x, double y)> productFirst = {};   // a press the product takes, in hit-map units
     };
     void setFaceplate(QWidget*, shell::HitMap, FaceplateGeometry);
-    void addBarControl(shell::BarGroup, std::string after, QWidget*);           // AC-42
+    void addBarControl(shell::BarGroup, std::string after, QWidget*);
     using Factory = std::function<QWidget*(const sessions::Value& entry, QWidget* parent)>;
-    void registerMediaControls(std::string mediumKind, Factory);   // LIB-7's kinds; C59-7's card
-    void registerSlotPicker(Factory);                              // LIB-7's module picker
-    void registerPanel(std::string kind, std::function<QWidget*(QWidget* parent)>);   // LIB-8's paper panel by default
+    void registerMediaControls(std::string mediumKind, Factory);   // the library's medium kinds; the TI card
+    void registerSlotPicker(Factory);                              // the library's module picker
+    void registerPanel(std::string kind, std::function<QWidget*(QWidget* parent)>);   // the library's paper panel by default
     void setChoosers(ShellChoosers);
 
     // What the shell shows now (the tests, the scenarios).
@@ -92,16 +91,15 @@ public:
     QMainWindow& window() { return window_; }
 
     // An item of a menu or a picker chosen: its command, or the shell's
-    // action, or the product's (AC-7).
+    // action, or the product's.
     void choose(const shell::MenuItem&);
-    // A command the shell sends: its refusal becomes a notice or a question
-    // (D-7, N4).
+    // A command the shell sends: its refusal becomes a notice or a question.
     void sendChecked(const sessions::CommandName&, sessions::Value args);
     void openSettings();
     void openAbout();
     void loadPreset();
     void openHelp();
-    // The start folder of a file dialog of `kind` ([folders], LIB-9 AC-29).
+    // The start folder of a file dialog of `kind` (settings section [folders]).
     QString startFolder(const std::string& kind) const;
     void rememberFolder(const std::string& kind, const QString& file);
     const ShellChoosers& choosers() const { return choosers_; }

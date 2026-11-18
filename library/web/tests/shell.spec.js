@@ -1,12 +1,12 @@
 const { test, expect } = require('@playwright/test');
 const { open, send, request, SENTENCES } = require('./helpers');
 
-// LIB-14 L9 (design §6; spec AC-22, AC-25): the React set's shell in the
+// The React set's shell in the
 // test product (src/CalcUTest.jsx with shell=1), drawn from the topics of
 // library/shell/tests/TestShellPart.hpp and the library's SettingsPart, no
-// code of a product; Chromium and WebKit. The scenarios of AC-25 carry the
-// IDs of the Qt6 ones (library/qt6/tests/shell_scenarios.cpp); elements are
-// found by their data-calcu names (§3.10).
+// code of a product; Chromium and WebKit. The GUI scenarios are those of
+// the Qt6 set (library/qt6/tests/shell_scenarios.cpp); elements are
+// found by their data-calcu names.
 
 const el = (page, name) => page.locator(`[data-calcu="${name}"]`);
 const sent = async (page, command) => {
@@ -32,7 +32,7 @@ async function pointerAt(page, x, y) {
   return [box.x + x * 4, box.y + y * 4];
 }
 
-test('ac1 the menus', async ({ page }) => {
+test('the menus', async ({ page }) => {
   await start(page);
   const titles = await page.locator('[data-calcu^="menu-"]:not([data-calcu="menu-bar"])').allTextContents();
   expect(titles).toEqual(['File', 'Edit', 'Machine', 'Help']);   // Edit: the test product has Paste Text
@@ -46,8 +46,8 @@ test('ac1 the menus', async ({ page }) => {
   await expect.poll(async () => (await sent(page, 'model')).length).toBe(1);
   await el(page, 'menu-machine').click();
   await el(page, 'item-model').click();
-  await expect(el(page, 'item-model-Model-B')).toHaveAttribute('aria-checked', 'true');   // EC-4
-  // AC-5: a product item disabled with its entry's reason; AC-7: a product item acts.
+  await expect(el(page, 'item-model-Model-B')).toHaveAttribute('aria-checked', 'true');   // a model switch changes the entries
+  // A product item disabled with its entry's reason; a product item acts.
   await page.mouse.click(5, 5);
   await el(page, 'menu-machine').click();
   await expect(el(page, 'item-disk-thing')).toHaveAttribute('aria-disabled', 'true');
@@ -57,7 +57,7 @@ test('ac1 the menus', async ({ page }) => {
   expect(await page.evaluate(() => window.calcuTestActs)).toBe(1);
 });
 
-test('ac4 no shortcut is bound', async ({ page }) => {
+test('no shortcut is bound', async ({ page }) => {
   await start(page);
   const prevented = await page.evaluate(() => {
     const root = document.querySelector('.calcu-client');
@@ -72,34 +72,34 @@ test('ac4 no shortcut is bound', async ({ page }) => {
   expect(await sent(page, 'cold-boot')).toEqual([]);
 });
 
-test('ac6 no quit', async ({ page }) => {
+test('no quit', async ({ page }) => {
   await start(page);
   await el(page, 'menu-file').click();
   await expect(el(page, 'item-settings')).toBeVisible();
   await expect(el(page, 'item-quit')).toHaveCount(0);
 });
 
-test('ac8 the bar', async ({ page }) => {
+test('the bar', async ({ page }) => {
   await start(page);
   const names = await el(page, 'control-bar').locator('[data-calcu]').evaluateAll((xs) => xs.map((x) => x.dataset.calcu));
   const order = ['bar-model', 'bar-slot-slot-1', 'bar-slot-slot-2', 'bar-place-printer', 'bar-place-aux', 'tp-disk', 'bar-media-card']
     .map((n) => names.indexOf(n));
   expect(order.every((i) => i >= 0)).toBe(true);
-  expect([...order].sort((a, b) => a - b)).toEqual(order);   // left to right (AC-8); the product's control in its group (AC-42)
-  expect(names).not.toContain('bar-place-host-drive');      // AC-9
+  expect([...order].sort((a, b) => a - b)).toEqual(order);   // left to right; the product's control in its group
+  expect(names).not.toContain('bar-place-host-drive');      // a place needing more has no control
   await expect(el(page, 'bar-slot-slot-1')).toContainText('1:');
   await expect(el(page, 'bar-place-printer')).toHaveText('TD-20');
-  await el(page, 'bar-place-printer').click();   // AC-9: the button attaches
+  await el(page, 'bar-place-printer').click();   // the button attaches
   await expect.poll(async () => (await sent(page, 'attach')).map((x) => x.args.peripheral)).toEqual(['test-dotter']);
   await el(page, 'bar-place-aux').selectOption({ label: 'TD-21' });
   await expect.poll(async () => (await sent(page, 'attach')).length).toBe(2);
-  // AC-10: Model-B has no slots and no media place: no gap.
+  // Model-B has no slots and no media place: no gap.
   await el(page, 'bar-model').selectOption({ label: 'Model-B' });
   await expect(el(page, 'bar-slot-slot-1')).toHaveCount(0);
   await expect(el(page, 'bar-group-Slots')).toHaveCount(0);
 });
 
-test('ac11 the settings dialog', async ({ page }) => {
+test('the settings dialog', async ({ page }) => {
   await start(page);
   await chooseItem(page, 'file', 'settings');
   const d = el(page, 'settings-dialog');
@@ -117,7 +117,7 @@ test('ac11 the settings dialog', async ({ page }) => {
   await expect(d).toHaveCount(0);
 });
 
-test('ac15 loading', async ({ page }) => {
+test('loading shows after 500 ms and goes on reset', async ({ page }) => {
   await start(page);
   await startOperation(page);
   await expect(el(page, 'loading')).toHaveCount(0);   // not before 500 ms
@@ -128,7 +128,7 @@ test('ac15 loading', async ({ page }) => {
   await expect(el(page, 'loading')).toHaveCount(0);
 });
 
-test('ac16 the bar works while loading', async ({ page }) => {
+test('the bar works while loading', async ({ page }) => {
   await start(page);
   await startOperation(page);
   await expect(el(page, 'loading')).toBeVisible({ timeout: 5000 });
@@ -140,7 +140,7 @@ test('ac16 the bar works while loading', async ({ page }) => {
   await expect(el(page, 'notice')).toHaveCount(0);   // the stopped operation is no notice
 });
 
-test('ac17 a notice', async ({ page }) => {
+test('a notice', async ({ page }) => {
   await start(page);
   await send(page, 'tsp.notice', { text: 'The first went wrong.' });
   await send(page, 'tsp.notice', { text: 'The second went wrong.' });
@@ -151,7 +151,7 @@ test('ac17 a notice', async ({ page }) => {
   await el(page, 'notice-ok').click();
   await expect(el(page, 'notice')).toHaveCount(0);
   // A refusal of a command the shell sent is a notice; `asks:` is a question,
-  // and Yes sends the command again with confirmed (N4).
+  // and Yes sends the command again with confirmed.
   await page.evaluate(() => window.calcuTestShellModel.sendChecked('tsp.refuse', { reason: 'That cannot be done now.' }));
   await expect(el(page, 'notice')).toContainText('That cannot be done now.');
   await el(page, 'notice-ok').click();
@@ -162,7 +162,7 @@ test('ac17 a notice', async ({ page }) => {
   await expect(el(page, 'notice')).toHaveCount(0);
 });
 
-test('ac19 roms missing', async ({ page }) => {
+test('roms missing', async ({ page }) => {
   await start(page);
   await send(page, 'tsp.publish', { topic: 'roms-missing', value: { text: 'The ROM files of Model-A are missing.' } });
   await send(page, 'tsp.publish', { topic: 'control-state', value: null });
@@ -175,14 +175,14 @@ test('ac19 roms missing', async ({ page }) => {
   await expect(el(page, 'about-version')).toHaveText('Version 1.2.3 (abc123)');
 });
 
-test('ac20 help opens', async ({ page }) => {
+test('help opens', async ({ page }) => {
   await start(page);
   await page.evaluate(() => { window.calcuOpened = []; window.open = (url) => { window.calcuOpened.push(url); return null; }; });
   await chooseItem(page, 'help', 'help');
   await expect.poll(() => page.evaluate(() => window.calcuOpened)).toEqual(['https://calc-u.org/test/']);
 });
 
-test('ac22 the shell without product code', async ({ page }) => {
+test('the shell without product code', async ({ page }) => {
   await start(page);
   for (const name of ['menu-bar', 'control-bar', 'panel-area', 'paper-panel']) await expect(el(page, name)).toHaveCount(1);
   // The component set's part of calc.js (from its first file to the product's) names no product.
@@ -192,16 +192,16 @@ test('ac22 the shell without product code', async ({ page }) => {
   for (const name of ['TI-59', 'TI-58', 'PC-1500', 'PC-1600', 'Calc-U-59', 'Calc-U-1600']) expect(set).not.toContain(name);
 });
 
-test('ac24 a key under the pointer', async ({ page }) => {
+test('a key under the pointer', async ({ page }) => {
   await start(page);
   const [x, y] = await pointerAt(page, 25, 25);
   await page.mouse.move(x, y);
   await page.mouse.down();
   await expect.poll(async () => (await sent(page, 'screen-key-down')).map((s) => s.args.key)).toEqual(['2']);
-  await page.mouse.move(x + 80, y);   // a drag changes no key (D-9)
+  await page.mouse.move(x + 80, y);   // a drag changes no key
   await page.mouse.up();
   await expect.poll(async () => (await sent(page, 'screen-key-up')).map((s) => s.args.key)).toEqual(['2']);
-  // EC-8: down where no key is, then onto a key: nothing.
+  // Down where no key is, then onto a key: nothing.
   const [nx, ny] = await pointerAt(page, 15, 40);
   await page.mouse.move(nx, ny);
   await page.mouse.down();
@@ -211,7 +211,7 @@ test('ac24 a key under the pointer', async ({ page }) => {
   expect((await sent(page, 'screen-key-down')).length).toBe(1);
 });
 
-test('ac43 holding the display', async ({ page }) => {
+test('holding the display', async ({ page }) => {
   await start(page);
   const [x, y] = await pointerAt(page, 10, 5);
   await page.mouse.move(x, y);
@@ -222,7 +222,7 @@ test('ac43 holding the display', async ({ page }) => {
   await expect.poll(async () => (await topic(page, 'busy')).speed).toBe('regular');
 });
 
-// Part E L14 (design §10.3.4, D-44): the hit map's origin inside the
+// The hit map's origin inside the
 // faceplate element, and a press the product takes first passes by.
 test('faceplate origin and a press the product takes', async ({ page }) => {
   await open(page, 'Test-A', 'shell=1&width=900&height=900&origin=40');
@@ -252,7 +252,7 @@ test('faceplate origin and a press the product takes', async ({ page }) => {
   expect((await sent(page, 'screen-key-up')).length).toBe(2);
 });
 
-// Part E L15 (design §10.3.5, D-39; ledger 1600-48): the storage banner is
+// The storage banner is
 // the library's sentence while what is saved is not kept.
 test("storage banner shows the library's sentence while not kept", async ({ page, context }) => {
   await open(page, 'Test-A', 'shell=1&width=900&height=900');
@@ -264,7 +264,7 @@ test("storage banner shows the library's sentence while not kept", async ({ page
   await second.close();
 });
 
-test('ac29 file menu has import and saved media', async ({ page }) => {
+test('file menu has import and saved media', async ({ page }) => {
   await start(page);
   await el(page, 'menu-file').click();
   await expect(el(page, 'item-import-media')).toHaveCount(0);   // no kinds of medium

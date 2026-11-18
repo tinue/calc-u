@@ -9,7 +9,7 @@ namespace {
 
 Rect scaled(const Rect& r, double s) { return Rect{r.x * s, r.y * s, r.w * s, r.h * s}; }
 
-bool inside(const Rect& r, double px, double py) {   // edges included (D-8)
+bool inside(const Rect& r, double px, double py) {   // edges included
     return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
 }
 
@@ -28,18 +28,18 @@ sessions::Command speed(bool full) { return sessions::Command{commands::kSpeed, 
 } // namespace
 
 std::optional<machine::KeyId> keyAt(const HitMap& map, double scale, double px, double py) {
-    for (const auto& [key, r] : map.keys)   // H1
+    for (const auto& [key, r] : map.keys)   // inside an area, the first
         if (inside(scaled(r, scale), px, py)) return key;
     std::optional<machine::KeyId> best;
     double bestDistance = 0;
-    for (const auto& [key, r] : map.keys) {   // H2
+    for (const auto& [key, r] : map.keys) {   // else the nearest within the distance
         const double d = distanceTo(scaled(r, scale), px, py);
         if (d <= map.distance && (!best || d < bestDistance)) {
             best = key;
             bestDistance = d;
         }
     }
-    return best;   // H3
+    return best;   // else none
 }
 
 bool onDisplay(const HitMap& map, double scale, double px, double py) {
@@ -58,7 +58,7 @@ int PointerTracker::onDisplayCount() const {
 void PointerTracker::endDisplay(std::int64_t, Held& h, Out& out) {
     if (!h.display) return;
     h.display = false;
-    if (onDisplayCount() == 0) out.commands.push_back(speed(false));   // H5
+    if (onDisplayCount() == 0) out.commands.push_back(speed(false));
 }
 
 PointerTracker::Out PointerTracker::down(std::int64_t pointer, double px, double py) {
@@ -69,15 +69,15 @@ PointerTracker::Out PointerTracker::down(std::int64_t pointer, double px, double
     }
     Held h;
     const double s = scale();
-    if (onDisplay(map_, s, px, py)) {   // H5
+    if (onDisplay(map_, s, px, py)) {   // the display: full speed
         const bool first = onDisplayCount() == 0;
         h.display = true;
         if (first) out.commands.push_back(speed(true));
-    } else if (auto k = keyAt(map_, s, px, py)) {   // H4
+    } else if (auto k = keyAt(map_, s, px, py)) {
         h.key = k;
         out.commands.push_back(keyCommand(commands::kScreenKeyDown, *k, pointer));
     }
-    held_[pointer] = h;   // EC-8: no key, nothing held, also when it moves onto one
+    held_[pointer] = h;   // no key, nothing held, also when it moves onto one
     return out;
 }
 
@@ -85,7 +85,7 @@ PointerTracker::Out PointerTracker::move(std::int64_t pointer, double px, double
     Out out;
     auto it = held_.find(pointer);
     if (it == held_.end()) return out;
-    // D-9: a move changes no key; H5: leaving the display ends full speed.
+    // A move changes no key; leaving the display ends full speed.
     if (it->second.display && !onDisplay(map_, scale(), px, py)) endDisplay(pointer, it->second, out);
     return out;
 }

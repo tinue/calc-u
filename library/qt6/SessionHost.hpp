@@ -23,15 +23,14 @@ namespace calcu::harness {
 class HarnessProduct;
 }
 
-// The host of an app session in a Qt6 frontend (LIB-14 design §3.8, §3.9,
-// D-4, D-5): on the GUI thread, a 60 Hz timer with one host call per tick, a
-// listener over the session's topics, commands and requests with their
-// reply handlers, the host-service asks and, in builds with CALCU_ATTACH,
-// harness attach (C59-5's AttachEndpoint and AttachedHarness, unchanged).
+// The host of an app session in a Qt6 frontend: on the GUI thread, a 60 Hz
+// timer with one host call per tick, a listener over the session's topics,
+// commands and requests with their reply handlers, the host-service asks and, in builds with CALCU_ATTACH,
+// harness attach (the library's AttachEndpoint and AttachedHarness).
 //
 // Messages that arrive during a host call are handed on after it returns,
 // so a handler may send again (a sink does not call back into the session
-// from deliver(), LIB-3 §3.2).
+// from deliver()).
 
 namespace calcu::qt6 {
 
@@ -64,16 +63,16 @@ public:
     sessions::AppSession& session() { return session_; }
     pacing::WallTime now() const { return clock_(); }
 
-    // Builds with CALCU_ATTACH only (§3.9). Returns the problem; empty when
+    // Builds with CALCU_ATTACH only. Returns the problem; empty when
     // open. A port that cannot be bound gives a line in the session's log,
     // "Attach is not available on port N: <problem>.", and the app runs on.
     // `parts`: the library's parts of the session, which the attached
-    // commands use (LIB-14 D-27).
+    // commands use.
     std::string openAttach(harness::HarnessProduct&, std::uint16_t port, parts::LibraryParts& parts);
     std::uint16_t attachPort() const;   // the bound port (port 0: the one the system picked)
     bool attachOpen() const;
     // `--attach-port N` (0: the system picks, for an in-process client),
-    // else 59059 (C59-5).
+    // else 59059.
     static std::uint16_t attachPortFrom(const QStringList& arguments);
 
 signals:

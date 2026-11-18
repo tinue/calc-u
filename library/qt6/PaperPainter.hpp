@@ -3,12 +3,12 @@
 #include <QPainter>
 #include <vector>
 
-// Draws the marks of a paper on screen (LIB-8 design §3.7; spec AC-12,
-// AC-34): a dot as a disc of its scaled diameter in the grey of its
-// darkness, a pen stroke in its colour at its scaled width but at least one
-// point, with round ends and joins. Only the marks between `viewTop` and
-// `viewBottom` (paper y, in Coord) are drawn. The panel uses it; the picture
-// of Copy is the library's own (paper/Picture.hpp).
+// Draws the marks of a paper on screen: a dot as a disc of its scaled
+// diameter in the grey of its darkness, a pen stroke in its colour at its
+// scaled width but at least one point, with round ends and joins. Only the
+// marks between `viewTop` and `viewBottom` (paper y, in Coord) are drawn. The
+// panel uses it; the picture of Copy is the library's own
+// (paper/Picture.hpp).
 
 namespace calcu::qt6 {
 

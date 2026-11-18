@@ -1,49 +1,49 @@
-// The product made for the shell's tests (LIB-15 design §2, T1): LIB-1's
-// test machines, LIB-3's sessions and LIB-9's settings file behind the
-// library's Web glue. Product names carry the prefix "tp.". Built once and
-// shipped under two product names (Test-A, Test-B; AC-7) and in two
-// releases (AC-11); the worker config names the product.
+// The product made for the Web shell's tests: the library's test machines,
+// its sessions and its settings file behind the library's Web glue. Product
+// names carry the prefix "tp.". Built once and shipped under two product
+// names (Test-A, Test-B) and in two releases; the worker config names the
+// product.
 //
 //   start            {model, preset}: the model by name (test-seg,
 //                    test-dot), or a bundled preset's path in /presets whose
 //                    first line is `model: <name>`; a name or a path that
 //                    names nothing gives a notice and the start goes on as
-//                    without it (spec AC-16, EC-4). Without a model: the
+//                    without it. Without a model: the
 //                    settings' [startup] model, else test-seg.
 //   tp.machine       state: {model, preset}
 //   tp.files         state: {files: [...]}, the save folder's files
-//   tp.write         {name, text}: a file in the save folder (AC-5, AC-6)
+//   tp.write         {name, text}: a file in the save folder
 //   tp.rename        {from, to};  tp.delete {name}
-//   tp.set-model     {model}: the settings' [startup] model (AC-5)
+//   tp.set-model     {model}: the settings' [startup] model
 //   tp.ask           {service, args}: asks a host service by name; the
-//                    answer goes to tp.answers (AC-4, AC-9)
+//                    answer goes to tp.answers
 //   tp.answers       stream: {service, given, value, reason}
-//   tp.calls         request: {calls}, the host calls made (AC-1, AC-2)
+//   tp.calls         request: {calls}, the host calls made
 //   tp.read          request {name}: {text}, a save-folder file
-//   tp.services      request: {services: [...]}, what the page stated (AC-4)
+//   tp.services      request: {services: [...]}, what the page stated
 //   tp.settings      request: {model, outcome, path}
-//   tp.bundle        request {name}: {text}, a file in /bundle (AC-11)
-// From LIB-8 (M-39): the machines come from LIB-1's paper test catalogue,
-// with LIB-2's peripherals part (set-control) and LIB-8's paper part for the
-// test printers TD-20 and TP-4.
+//   tp.bundle        request {name}: {text}, a file in /bundle
+// The machines come from the library's paper test catalogue, with the
+// peripherals part (set-control) and the paper part for the test printers
+// TD-20 and TP-4.
 //   tp.attach        {place, peripheral, online?}: plugs a peripheral in
 //                    (online: TD-20's switch `online` on at the plug)
 //   tp.detach        {place}: takes out what is plugged in there
 //   tp.press         {key}: the machine key down and up again
 //   tp.printer       state: {owner, name, controls: [{id, form, on}]}, the
 //                    printer plugged in first (owner null when none)
-// From LIB-10 (M-40): the machines carry the test processor
-// (machine/tests/TestCpu.hpp) and the session LIB-10's DebuggerPart with
-// `cpu` only, a trace format of the tests and no trace folder: an ended
-// trace is handed over with keep-file, a download (AC-26).
-// From LIB-14 (M-43): the shell's test part (library/shell/tests/
+// The machines carry the test processor (machine/tests/TestCpu.hpp) and the
+// session the library's DebuggerPart with `cpu` only, a trace format of the
+// tests and no trace folder: an ended trace is handed over with keep-file, a
+// download.
+// The shell's test part (library/shell/tests/
 // TestShellPart.hpp: a scripted control state, run state, roms-missing and
 // media, the preset list made for the tests, the shell's commands recorded,
 // `tsp.op`, `tsp.notice`, `tsp.publish`, `tsp.plug`) and the library's
 // SettingsPart over this product's settings, with [preset] keys per model and
 // [trace] max-file-size-mb.
-// From LIB-7 (M-42, LIB-7 media.spec.js): the product named Test-M also
-// hosts LIB-7's MediaPart with the test kinds (library/media/tests/
+// For media.spec.js the product named Test-M also hosts the library's
+// MediaPart with the test kinds (library/media/tests/
 // TestKinds.hpp: test-card in test-seg's `reader`, test-disk in test-dot's
 // `drive`, test-module) on the save folder, its machines offering their media
 // places; its TestShellPart scripts no `media` topic then.
@@ -98,7 +98,7 @@ std::optional<std::string> readText(const std::string& path) {
     return out.str();
 }
 
-// LIB-10: the trace format of the tests ("TTRC", 0x01, 3 bytes per
+// The trace format of the tests ("TTRC", 0x01, 3 bytes per
 // instruction, 0x03), as library/debugger/tests/TestDebugParts.hpp has it.
 class TraceOfTests final : public calcu::debugger::TraceRecorder {
 public:
@@ -135,7 +135,7 @@ calcu::debugger::DebuggerSetup debuggerSetup() {
         auto* tm = dynamic_cast<mt::TestMachine*>(&m);
         return tm && tm->cpu() ? std::make_unique<TraceOfTests>(*tm) : nullptr;
     };
-    d.trace.handOver = true;   // no folder: kept in memory and downloaded (D-10)
+    d.trace.handOver = true;   // no folder: kept in memory and downloaded
     return d;
 }
 
@@ -181,7 +181,7 @@ public:
     explicit TestProductPart(const WebStart& w, bool media = false)
         : start_(w), media_(media), decl_(declFor(w.product)),
           settings_(st::SettingsFile::defaultsOnly(decl_)), paths_(settings_, w.dirs) {
-        // Only a store that is kept is written (design §3.3); a second copy
+        // Only a store that is kept is written; a second copy
         // works in memory and so on: the settings are read from it but the
         // file system is not written over.
         settings_ = st::SettingsFile::open(decl_, paths_.settingsFile());
@@ -303,7 +303,7 @@ public:
         publishPrinter(c);
     }
 
-    // LIB-14: the library's SettingsPart reads and writes them.
+    // The library's SettingsPart reads and writes them.
     st::SettingsFile& settingsFile() { return settings_; }
     const st::Paths& paths() const { return paths_; }
 
@@ -312,7 +312,7 @@ private:
         std::string model = textArg(a, "model");
         const std::string preset = textArg(a, "preset");
         std::string loaded;
-        if (!model.empty() && !decl_.isModel(model)) {   // EC-4
+        if (!model.empty() && !decl_.isModel(model)) {   // an unknown model: a notice, the start goes on
             c.notice("There is no model " + model + ".");
             model.clear();
         }
@@ -321,7 +321,7 @@ private:
                                                                   : std::nullopt;
             const std::string prefix = "model: ";
             if (!t || t->rfind(prefix, 0) != 0) {
-                c.notice("There is no bundled preset " + preset + ".");   // AC-16, EC-4
+                c.notice("There is no bundled preset " + preset + ".");
             } else {
                 std::string m = t->substr(prefix.size());
                 m.erase(std::find_if(m.begin(), m.end(), [](char ch) { return ch == '\n' || ch == '\r'; }), m.end());
@@ -336,12 +336,12 @@ private:
             model = decl_.isModel(fromSettings) ? fromSettings : decl_.fallbackModel;
         }
         mt::TestBuilder builder;
-        builder.media = media_;   // LIB-7: the media places, in Test-M
+        builder.media = media_;   // the media places, in Test-M
         const auto& cat = mt::paperTestCatalogue();
         auto built = cm::build(cat, builder, mt::requestFor(cat, cm::ModelId{model}));
         auto m = std::move(built.machine);
         if (!m) return s::Refused{"The machine could not be built."};
-        // LIB-10: the test processor; a loop of nop; ld a, #5; st a, [0x30]; jmp 0.
+        // The test processor; a loop of nop; ld a, #5; st a, [0x30]; jmp 0.
         static_cast<mt::TestMachine&>(*m).enableCpu(mt::TestProgram({0x00, 0x01, 0x05, 0x03, 0x30, 0x06, 0x00}));
         c.machineSession().setMachine(std::move(m), calcu::pacing::PacingProfile{}, 8000);
         machine_->set(std::make_shared<Machine>(model, loaded));
@@ -386,11 +386,11 @@ private:
     std::int64_t calls_ = 0;
 };
 
-// The parts the session owns: LIB-2's peripherals part, LIB-8's paper part
+// The parts the session owns: the peripherals part, the paper part
 // with the two test printers, the product's part.
 bool hostsMedia(const WebStart& w) { return w.product == "Test-M"; }
 
-// LIB-18's machine control for the paper part only: the product part builds
+// The library's machine control for the paper part only: the product part builds
 // its machines itself (above), so this one builds none.
 class NoMachines final : public calcu::startup::ProductMachines {
 public:
@@ -412,7 +412,7 @@ struct Parts {
                 control),
           product(w, hostsMedia(w)), debugger(debuggerSetup()), settings(settingsSetup(product)),
           shellPart(true, false, !hostsMedia(w)) {
-        if (hostsMedia(w)) {   // LIB-7 (M-42)
+        if (hostsMedia(w)) {
             calcu::media::MediaSetup ms;
             ms.kinds = calcu::media::test::testKinds();
             ms.paths = &product.paths();
@@ -422,19 +422,19 @@ struct Parts {
     }
     calcu::peripherals::PeripheralsPart peripherals;
     NoMachines machines;
-    calcu::startup::MachineControl control;   // builds nothing: no preset's origin for the paper (LIB-8 A-3)
+    calcu::startup::MachineControl control;   // builds nothing: no preset's origin for the paper
     calcu::paper::PaperPart paper;
     TestProductPart product;
-    calcu::debugger::DebuggerPart debugger;   // LIB-10
+    calcu::debugger::DebuggerPart debugger;
     static calcu::shell::SettingsPartSetup settingsSetup(TestProductPart& p) {
         calcu::shell::SettingsPartSetup s;
         s.file = &p.settingsFile();
         s.paths = &p.paths();
         return s;
     }
-    calcu::shell::SettingsPart settings;          // LIB-14
-    calcu::shell::test::TestShellPart shellPart;   // LIB-14; run control: the DebuggerPart's
-    std::unique_ptr<calcu::media::MediaPart> media;   // LIB-7, in Test-M
+    calcu::shell::SettingsPart settings;
+    calcu::shell::test::TestShellPart shellPart;   // run control: the DebuggerPart's
+    std::unique_ptr<calcu::media::MediaPart> media;   // in Test-M
 };
 
 std::unique_ptr<s::AppSession> makeTestSession(const WebStart& w) {

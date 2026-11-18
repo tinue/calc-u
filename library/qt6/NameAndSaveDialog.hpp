@@ -11,13 +11,12 @@ class QDialogButtonBox;
 class QLabel;
 class QLineEdit;
 
-// The Name & Save dialog of the Qt6 component set (LIB-7 design §2, §3.6,
-// D-6, D-7; spec AC-16, AC-17, AC-19): it asks for the name only, and for the
-// write-protect switch where the place's medium has one that is still off
-// (PlaceState::askWriteProtect). The product sets its prompt ("Instance
-// name:", "Disk name:"; Calc-U-1600 AC-40). On OK it sends
+// The Name & Save dialog of the Qt6 component set: it asks for the name
+// only, and for the write-protect switch where the place's medium has one
+// that is still off (PlaceState::askWriteProtect). The product sets its
+// prompt ("Instance name:", "Disk name:"). On OK it sends
 // `media.name-and-save {place, name, protect}`; a refusal that starts with
-// "asks: " is a question (D-6): the dialog shows it and, on yes, sends the
+// "asks: " is a question: the dialog shows it and, on yes, sends the
 // same command again with `confirmed: true`.
 //
 // Object names: media-name-and-save, media-name, media-protect,

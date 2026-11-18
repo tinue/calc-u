@@ -80,11 +80,11 @@ std::vector<ShownSection> dialog(const Value& settings, const Value& presetList,
                 if (const Value* m = r->find("max"); m && m->integer()) s.max = *m->integer();
             }
             switch (row.widget) {
-            case Widget::StartupModel:   // S3
+            case Widget::StartupModel:
                 for (const auto& c : read::elements(*r, "choices"))
                     if (c.string()) s.choices.emplace_back(*c.string(), *c.string() == "last" ? "Last used" : *c.string());
                 break;
-            case Widget::StartupPreset: {   // S4 (AC-12, EC-3)
+            case Widget::StartupPreset: {
                 s.choices.emplace_back("", "None");
                 bool listed = s.value.empty();
                 for (const auto& e : read::elements(presetList, "entries")) {
@@ -98,11 +98,11 @@ std::vector<ShownSection> dialog(const Value& settings, const Value& presetList,
                 if (!listed) s.choices.emplace_back(s.value, withTilde(s.value, home));
                 break;
             }
-            case Widget::Folder:   // S5 (AC-13)
+            case Widget::Folder:
                 s.shown = withTilde(read::text(*r, "inUse"), home);
                 break;
             case Widget::Choice:
-                if (!row.choices.empty()) {   // S8: exactly these; a value not among them as written
+                if (!row.choices.empty()) {   // exactly these; a value not among them as written
                     s.choices = row.choices;
                     bool listed = false;
                     for (const auto& c : row.choices) listed = listed || c.first == s.value;

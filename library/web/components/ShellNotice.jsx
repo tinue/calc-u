@@ -1,5 +1,4 @@
-// ShellNotice -- a notice or a question of the React set (LIB-14 design
-// §3.6 N1 to N4; spec AC-17, EC-2): the sentence as it is, no title, OK; a
+// ShellNotice -- a notice or a question of the React set: the sentence as it is, no title, OK; a
 // question (`asks:`) with Yes and No. Modal: it must be closed before the
 // component can be used again, while the machine and a running operation go
 // on behind it. Names: notice, notice-ok, notice-yes, notice-no.

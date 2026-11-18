@@ -1,4 +1,4 @@
-// LIB-15 AC-29 (release prep 4): the shared props of every product's
+// The shared props of every product's
 // component, named by library/web/src/embed.js's embedProps, under
 // `node --test` (CTest LibraryWebNodeTests, Frequent). The file is run as
 // the page runs it, a classic script; embedProps is its global.
@@ -12,7 +12,7 @@ const ctx = vm.createContext({});
 vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", "embed.js"), "utf8"), ctx);
 const { embedProps } = ctx;
 
-// The product's layouts (L-11, release simplification R-4): embedProps checks
+// The product's layouts: embedProps checks
 // `layout` against them; another value is ignored with a console warning
 // that names the component, and the product's default is used.
 const C59 = { name: "CalcU59", layouts: ["portrait", "wide", "auto"], layout: "portrait" };
@@ -23,7 +23,7 @@ function withWarnings(run) {
   try { return { result: run(), warnings }; } finally { delete ctx.console; }
 }
 
-test("lib15_ac29_shared_props_in_their_order", () => {
+test("shared_props_in_their_order", () => {
   const e = embedProps({ height: 2, workerUrl: "w.js", model: "TI-59", preset: "sum.ti59", layout: "wide",
     keyboard: false, width: 1, settings: false }, C59);
   assert.deepEqual(Object.keys(e), ["width", "keyboard", "layout", "preset", "height", "model", "workerUrl", "rest"]);
@@ -38,9 +38,9 @@ test("lib15_ac29_shared_props_in_their_order", () => {
   assert.deepEqual(Object.keys(e.rest), ["settings"]);
 });
 
-test("lib15_ac29_no_layout_is_the_products_default", () => {
+test("no_layout_is_the_products_default", () => {
   // Each product defaults it (Calc-U-59 "portrait", Calc-U-1600 "auto");
-  // keyboard stays on by default (AC-16).
+  // keyboard stays on by default.
   const { result: e, warnings } = withWarnings(() => embedProps({}, C59));
   assert.equal(e.layout, "portrait");
   assert.equal(e.keyboard, true);
@@ -49,13 +49,13 @@ test("lib15_ac29_no_layout_is_the_products_default", () => {
   assert.deepEqual(warnings, []);
 });
 
-test("lib15_ac29_layout_of_the_products_layouts_is_taken", () => {
+test("layout_of_the_products_layouts_is_taken", () => {
   const { result, warnings } = withWarnings(() => embedProps({ layout: "auto" }, C59));
   assert.equal(result.layout, "auto");
   assert.deepEqual(warnings, []);
 });
 
-test("lib15_ac29_unknown_layout_warns_and_is_ignored", () => {
+test("unknown_layout_warns_and_is_ignored", () => {
   const c1600 = withWarnings(() => embedProps({ layout: "wide" }, C1600));
   assert.equal(c1600.result.layout, "auto");
   assert.deepEqual(c1600.warnings, ['CalcU1600: layout "wide" is not one of its layouts ("auto"); it is ignored.']);
@@ -65,9 +65,9 @@ test("lib15_ac29_unknown_layout_warns_and_is_ignored", () => {
     ['CalcU59: layout "tall" is not one of its layouts ("portrait", "wide", "auto"); it is ignored.']);
 });
 
-// V-13 (R-4): `preset` and ?preset= take a path of the bundle with or
+// `preset` and ?preset= take a path of the bundle with or
 // without the prefix `examples:`; the session's start gets the bundle path.
-test("lib15_ac16_preset_with_or_without_examples_prefix", () => {
+test("preset_with_or_without_examples_prefix", () => {
   assert.equal(ctx.bundlePathOf("sum.ti59"), "examples:sum.ti59");
   assert.equal(ctx.bundlePathOf("examples:plotter/globus.pc1600"), "examples:plotter/globus.pc1600");
   assert.equal(ctx.bundlePathOf(""), "");

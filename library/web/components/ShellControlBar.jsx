@@ -1,12 +1,11 @@
-// ShellControlBar -- the control bar of the React set (LIB-14 design §3.4,
-// §3.10; spec AC-8 to AC-10, AC-42): the groups of useCalcuShell's bar
+// ShellControlBar -- the control bar of the React set: the groups of useCalcuShell's bar
 // model left to right; pickers with the empty place as "None"; a button for
-// a place one peripheral fits; LIB-7's module picker and the media owners'
+// a place one peripheral fits; the library's module picker and the media owners'
 // controls as the product hands them in; the product's own controls in the
-// group it names (it reads its own product entries, AC-42). A group
-// without a control takes no room (B4). Names (§3.10): control-bar,
+// group it names (it reads its own product entries). A group
+// without a control takes no room. Names: control-bar,
 // bar-model, bar-slot-<place>, bar-place-<place>, bar-media-<media place>.
-// Part E (design §10.3.1, B8, B9): in a window without a menu bar the bar
+// In a window without a menu bar the bar
 // also holds Actions (Reset in Start; Preset, Settings in End), each a
 // button with the set's icon and its label unless `compact`
 // (bar-action-<id>), and the More button (bar-more, ShellMoreMenu).
@@ -32,7 +31,7 @@ function ShellPicker({ name, choices, onChoose }) {
   );
 }
 
-// The set's icons of the bar's actions (design §10.3.1).
+// The set's icons of the bar's actions.
 const CALCU_SHELL_ACTION_ICONS = { reset: "↺", "load-preset": "▤", settings: "⚙", more: "⋯" };
 
 function ShellActionButton({ s, control, compact }) {
@@ -51,7 +50,7 @@ function ShellActionButton({ s, control, compact }) {
 
 function ShellControlBar({ shell, slotPicker, mediaControls, extra, compact }) {
   const s = shell;
-  if (!s.started) return null;   // B7 (AC-19)
+  if (!s.started) return null;   // no control state: no bar
   const Slot = slotPicker;
   const render = (c) => {
     switch (c.kind) {
@@ -95,7 +94,7 @@ function ShellControlBar({ shell, slotPicker, mediaControls, extra, compact }) {
       {s.bar.map((g) => {
         const own = (extra && extra[g.group]) || [];
         const shown = g.controls.map(render).filter(Boolean);
-        if (!shown.length && !own.length) return null;   // B4: no gap
+        if (!shown.length && !own.length) return null;   // no entry, no control, no gap
         return (
           <span key={g.group} className="calcu-shell-bar-group" data-calcu={`bar-group-${g.group}`}>
             {shown}

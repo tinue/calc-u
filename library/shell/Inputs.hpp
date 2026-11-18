@@ -6,35 +6,36 @@
 #include <string_view>
 #include <vector>
 
-// What the shell draws from (LIB-14 design §3.1, D-2): the topics and
-// replies of other features in their Value form, so that the shell depends
-// on no C++ type of LIB-4, LIB-6, LIB-7, LIB-10 or LIB-12, and the C++ and
+// What the shell draws from: the topics and replies of other library
+// areas in their Value form, so that the shell depends on no C++ type of
+// control, presets, media, debugger or roms, and the C++ and
 // the JS models take the same input. Each is the last Value that came, Null
 // while none did.
 
 namespace calcu::shell {
 
 struct ShellInputs {
-    sessions::Value controlState;   // LIB-4 `control-state`
-    sessions::Value busy;           // LIB-3 `busy`: {operationRuns, speed}
-    sessions::Value presetList;     // LIB-6 `preset-list` reply: {entries: [...]}
-    sessions::Value runState;       // LIB-10 `run-state`: {paused, ...}
-    sessions::Value romsMissing;    // LIB-12 `roms-missing`: {text}
-    sessions::Value settings;       // this feature's `settings` (SettingsPart)
-    sessions::Value media;          // LIB-7 `media`: {kinds, places}
-    // A control state came: AC-19 is the opposite.
+    sessions::Value controlState;   // control's `control-state`
+    sessions::Value busy;           // sessions' `busy`: {operationRuns, speed}
+    sessions::Value presetList;     // presets' `preset-list` reply: {entries: [...]}
+    sessions::Value runState;       // debugger's `run-state`: {paused, ...}
+    sessions::Value romsMissing;    // roms' `roms-missing`: {text}
+    sessions::Value settings;       // the shell's `settings` (SettingsPart)
+    sessions::Value media;          // media's `media`: {kinds, places}
+    // A control state came. None comes when the product could not start:
+    // then no control bar and no Machine menu, only the ROM message.
     bool started() const { return !controlState.isNull(); }
 };
 
-// The owners' names (LIB-4, LIB-10, LIB-12, LIB-14, LIB-7, LIB-6; D-24).
+// The owners' names (control, debugger, roms, shell, media, presets).
 struct InputNames {
     sessions::TopicName controlState{"control-state"}, busy{"busy"}, runState{"run-state"},
         romsMissing{"roms-missing"}, settings{"settings"}, media{"media"};
     sessions::RequestName presetList{"preset-list"};
 };
 
-// The command names the shell sends (D-24): LIB-18, LIB-6, LIB-10, LIB-5,
-// LIB-7, LIB-3, this feature's SettingsPart.
+// The command names the shell sends: machine control and startup, presets,
+// debugger, typing, media, sessions, the shell's SettingsPart.
 namespace commands {
 inline const sessions::CommandName kModel{"model"};
 inline const sessions::CommandName kVariant{"variant"};
@@ -62,7 +63,7 @@ std::int64_t integer(const sessions::Value& v, std::string_view key, std::int64_
 const sessions::Value::Array& elements(const sessions::Value& v, std::string_view key);
 } // namespace read
 
-// An entry's availability as LIB-4 writes it: `available` (true when
+// An entry's availability as the control state writes it: `available` (true when
 // missing) and `reason`.
 struct Availability {
     bool now = true;

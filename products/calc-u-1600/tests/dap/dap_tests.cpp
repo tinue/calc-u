@@ -704,17 +704,22 @@ TEST(c1600_3_ac16_stopped_once_with_reason_ids_and_pause_from_elsewhere) {
 
 // ── T12: the server's own requests (AC-17) ───────────────────────────────
 
-TEST(c1600_3_ac17_reset_screen_quit) {
+TEST(c1600_3_ac17_reset_display_text_quit) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;
     CHECK(started(fx));
     Client c(fx);
     c.connect();
     fx.runFor(0.5);
-    // c1600/screen without a DAP session (no initialize).
-    const Value screen = c.request("c1600/screen");
-    const Value* rows = screen.find("rows");
-    CHECK(rows && rows->elements() && !rows->elements()->empty() && cu1600::dap::boolOf(screen, "poweredOn"));
+    // c1600/display-text without a DAP session (no initialize): the keys and
+    // value forms of the harness's `display-text` (on, rows, indicators, notText).
+    const Value text = c.request("c1600/display-text");
+    const Value* rows = text.find("rows");
+    CHECK(rows && rows->elements() && !rows->elements()->empty() && cu1600::dap::boolOf(text, "on"));
+    CHECK(cu1600::dap::isArray(text.find("indicators")));
+    CHECK(cu1600::dap::intOf(text, "notText", -1) >= 0);
+    CHECK(!text.find("poweredOn") && !text.find("unparsed") && !text.find("status"));
+    CHECK_EQ(c.refusal("c1600/screen"), std::string("Unsupported request 'c1600/screen'"));   // the old name is gone
     c.request("initialize");
     c.request("attach");
     c.request("configurationDone");

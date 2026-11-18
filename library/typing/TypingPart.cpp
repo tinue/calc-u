@@ -112,7 +112,7 @@ void TypingPart::attach(sessions::SessionSetup& s) {
     s.command(kKey, always([this](const Value& a) -> CommandOutcome {
                   if (!engine_.machine()) return Refused{sessions::kNoMachine};
                   const std::vector<std::string> names = namesOf(a);
-                  if (names.empty()) return Refused{"The key command needs names: one or more key names."};
+                  if (names.empty()) return Refused{"The key command needs one or more key IDs."};
                   // AC-15: refused, nothing typed
                   auto presses = pressesOfNames(engine_.profile(), engine_.machine()->descriptor(), names);
                   if (const auto* no = std::get_if<KeyNamesRefused>(&presses)) return Refused{"Unknown key: " + no->name + "."};

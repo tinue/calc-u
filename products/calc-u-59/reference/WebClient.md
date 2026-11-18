@@ -197,8 +197,8 @@ the file names under `wasm/`, `bundle/`, `img/` and `presets/` and `files.json` 
 |---|---|---|
 | `width` | the parent's width | CSS px the client may take. Wide: the calculator artwork takes 40 % (at most 420 px without `height`, never below 400 px), the printer 220–320 px, the debugger the rest (at least 220 px) |
 | `keyboard` | `true` | The calculator is focusable and takes the physical keyboard while focused (`AppLayer.md` § "Physical Keyboard Mapping"); `false` turns it off (LIB-15 AC-16) |
-| `layout` | `"portrait"` | `"wide"` (calculator, printer, debugger side by side), `"portrait"` (calculator and printer pages) or `"auto"` (by the window's size, the PWA's choice: needs `width` and `height`) |
-| `preset` | none | Start with this bundled preset, by its path in `presets/` (`"sum.ti59"`); a path that is not there is a notice |
+| `layout` | `"portrait"` | `"wide"` (calculator, printer, debugger side by side), `"portrait"` (calculator and printer pages) or `"auto"` (by the window's size, the PWA's choice: needs `width` and `height`); another value is ignored with a console warning |
+| `preset` | none | Start with this bundled preset, by its path in `bundle.yaml`, with or without `examples:` (`"sum.ti59"`, `"examples:sum.ti59"`); a path that is not there is a notice |
 | `height` | from the width | CSS px. Without it the height follows the artwork's aspect plus the 50 px bar; with it the artwork fits inside (the PWA passes `#root`'s content box) |
 | `model` | stored setting | Start with this model, by its name: `"TI-59"`, `"TI-58"` or `"TI-58C"`; another name is a notice and the client starts as without it |
 | `workerUrl` | `calc-engine-worker.js` beside `calc.js` | Start the engine through this script. The PWA's, for its service worker; a host leaves it out |

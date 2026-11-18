@@ -148,7 +148,7 @@ std::optional<std::string> TIModelRules::checkExpect(const calcu::presets::Expec
 }
 
 Applies TIModelRules::applies(std::string_view k) const {
-    if (k == "type" || k == "syncclock") return Applies::NotForThisModel;
+    if (k == "type" || k == "sync-clock") return Applies::NotForThisModel;
     if (m_model != "TI-59" && (k == "magnetic-cards" || k == "card" || k == "arm")) return Applies::NotForThisModel;
     return Applies::Yes;
 }

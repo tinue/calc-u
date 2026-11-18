@@ -127,7 +127,9 @@ createShell({
 // state: { start: "starting" | "running" | "failed", failure, topics: {name → last state},
 //          streams: {name → appended since the last reset marker} }
 
-embedProps(props) → { width, height, keyboard /*default true*/, model, preset, workerUrl, rest }
+embedProps(props, {name, layouts, layout}) → { width, keyboard /*default true*/, layout, preset, height, model, workerUrl, rest }
+//   layout: one of the product's layouts, else its default (another value: a console warning, R-4)
+bundlePathOf(preset)   // "sum.ti59" and "examples:sum.ti59" → "examples:sum.ti59" (AC-16, R-4)
 useFillParent(ref, {width, height}) → {width, height}   // without both: the parent's size (AC-16)
 useTopic(shell, name, select)
 ```

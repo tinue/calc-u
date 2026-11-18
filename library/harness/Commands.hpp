@@ -66,8 +66,8 @@ void addTypingCommands(CommandRegistry&);
 void addStartupCommands(CommandRegistry&);
 
 // LIB-6 AC-34 (design §3.9): preset, check-preset, preset-list, full-speed,
-// regular-speed, switch, and every step of the vocabulary with
-// StepDef::command (elapsed-time, expect, not-expect, screenshot, syncclock,
+// regular-speed, set-control, and every step of the vocabulary with
+// StepDef::command (elapsed-time, expect, not-expect, screenshot, sync-clock,
 // a product's printer-trace; LIB-7's media steps from M-41), each sent as
 // `run-step`. The bare `wait` is FirstCommands.cpp's.
 // Null: for the usage text (--help), the steps every product has.

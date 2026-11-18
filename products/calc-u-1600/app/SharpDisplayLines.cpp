@@ -1,6 +1,8 @@
 #include "app/SharpDisplayLines.hpp"
 
 #include <cstdio>
+#include <optional>
+#include <variant>
 
 #include "Display/DisplayOutputText.hpp"
 
@@ -43,6 +45,16 @@ calcu::harness::DisplayText displayLines(const calcu::machine::DisplayOutput& o,
 
 calcu::harness::DisplayText displayLines(calcu::machine::Machine& m, const calcu::machine::DisplayOutput& o) {
     return displayLines(o, m.descriptor(), glyphFontOf(sharpLcdFont(m)));
+}
+
+calcu::harness::DisplayText displayTextNow(calcu::machine::Machine& m, const calcu::machine::DisplayOutput& o) {
+    const LcdFont font = sharpLcdFont(m);
+    const auto* f = std::get_if<calcu::machine::DotMatrixFrame>(&o.frame);
+    const std::optional<LcdCursor> cursor = lcdCursorOf(m);
+    if (!f || !cursor || !o.on) return displayLines(o, m.descriptor(), glyphFontOf(font));
+    calcu::machine::DisplayOutput uncovered = o;
+    uncovered.frame = uncoverCursor(*f, font, *cursor);
+    return displayLines(uncovered, m.descriptor(), glyphFontOf(font));
 }
 
 } // namespace cu1600

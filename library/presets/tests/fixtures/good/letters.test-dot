@@ -5,5 +5,5 @@ a: test-hub
 keys:
   - type: abc
   - wait: 1.5s
-  - syncclock:
+  - sync-clock:
   - screenshot: letters.png

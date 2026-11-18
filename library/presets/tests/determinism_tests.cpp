@@ -39,7 +39,7 @@ TEST(ac11_same_preset_twice_same_memory_display_ticks_log) {
     RigOptions o;
     o.program = 25'000;
     Rig r(o);
-    const std::string text = header("test-dot") + "a: test-hub\nkeys:\n  - type: abc\n  - syncclock:\n  - wait: 50ms\n"
+    const std::string text = header("test-dot") + "a: test-hub\nkeys:\n  - type: abc\n  - sync-clock:\n  - wait: 50ms\n"
                                                   "  - key: b\n  - elapsed-time: report\n";
     r.logLines();
     CHECK(r.done(r.load(text)));

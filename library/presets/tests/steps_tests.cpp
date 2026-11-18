@@ -192,7 +192,7 @@ TEST(ac26_switch_step_refused) {
 TEST(ac27_syncclock_sets_every_clock_and_logs) {
     Rig r;
     r.logLines();
-    CHECK(r.done(r.load(header("test-dot") + "keys:\n  - wait: 2s\n  - syncclock:\n")));
+    CHECK(r.done(r.load(header("test-dot") + "keys:\n  - wait: 2s\n  - sync-clock:\n")));
     CHECK(r.machine()->clock()->setCalls >= 2);   // at the build and by the step
     const auto host = calcu::peripherals::hostDateTime(r.session->context().hostTime());
     const auto f = r.machine()->clock()->read();
@@ -202,9 +202,9 @@ TEST(ac27_syncclock_sets_every_clock_and_logs) {
 
 TEST(ac27_syncclock_refused_where_not_applies) {
     Reading rd;
-    CHECK_EQ(rd.error(header() + "keys:\n  - syncclock:\n"),
-             std::string("t.test-seg, line 4: syncclock is not available on the test-seg."));
-    CHECK(hasLine({rd.error(header("test-dot") + "keys:\n  - syncclock: now\n")}, "syncclock: takes no value."));
+    CHECK_EQ(rd.error(header() + "keys:\n  - sync-clock:\n"),
+             std::string("t.test-seg, line 4: sync-clock is not available on the test-seg."));
+    CHECK(hasLine({rd.error(header("test-dot") + "keys:\n  - sync-clock: now\n")}, "sync-clock: takes no value."));
 }
 
 TEST(ac28_key_and_type_finish_at_idle) {

@@ -62,7 +62,7 @@ TEST(ac7_keys_text_places_and_files_checked_before_build) {
         {header() + "aux: test-module:2k\n", "line 3: The Test module has no variant 2k"},
         {header() + "test-memory: { at: 0, file: missing.bin }\n", "line 3: The file "},
         {header() + "keys:\n  - key: 1\n  - printer-trace: on\n", "line 5: printer-trace: needs printer: test-printer."},
-        {header("test-dot") + "keys:\n  - syncclock:\n  - type: abd\n", "line 5: No key types the character \"d\""},
+        {header("test-dot") + "keys:\n  - sync-clock:\n  - type: abd\n", "line 5: No key types the character \"d\""},
     };
     for (const Case& k : cases) {
         const CallId c = r.load(k.text);
@@ -82,8 +82,8 @@ TEST(ac30_unknown_section_or_step_refused) {
 
 TEST(ac62_keyword_not_for_model_refused) {
     Reading rd;
-    CHECK_EQ(rd.error(header() + "keys:\n  - syncclock:\n"),
-             std::string("t.test-seg, line 4: syncclock is not available on the test-seg."));
+    CHECK_EQ(rd.error(header() + "keys:\n  - sync-clock:\n"),
+             std::string("t.test-seg, line 4: sync-clock is not available on the test-seg."));
     CHECK_EQ(rd.error(header("test-dot") + "a: test-printer\nkeys:\n  - printer-trace: on\n"),
              std::string("t.test-seg, line 5: printer-trace is not available on the test-dot."));
     CHECK_EQ(rd.error(header("test-dot") + "printer: test-printer\n"),

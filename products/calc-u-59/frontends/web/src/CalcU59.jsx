@@ -210,11 +210,13 @@ const C59_NO_PRODUCT = { name: "Calc-U-59", items: [], variantLabels: {}, module
 
 // The props (LIB-15 AC-16, AC-19, AC-29): the embedding interface's width,
 // keyboard (on by default), layout ("portrait", the default, "wide" or
-// "auto"), preset (a bundled preset's path), height, model (by its name) and
-// workerUrl, and the product's own settings. model and preset are read
-// once, at mount (EC-5).
+// "auto"; embedProps ignores another value with a console warning), preset
+// (a bundled preset's path, with or without `examples:`), height, model (by
+// its name) and workerUrl, and the product's own settings. model and preset
+// are read once, at mount (EC-5).
 function CalcU59(props) {
-  const { width, keyboard, layout = "portrait", preset, height, model: modelProp, workerUrl, rest } = embedProps(props);
+  const { width, keyboard, layout, preset, height, model: modelProp, workerUrl, rest } =
+    embedProps(props, { name: "CalcU59", layouts: ["portrait", "wide", "auto"], layout: "portrait" });
   const { settings = true } = rest;
   // The traces the session hands over (the LOG tab), kept by the page's host services.
   const traces = React.useRef(null);

@@ -8,8 +8,8 @@
 
 #include "Debug/CpuRegisters.hpp"
 #include "Debug/Listing/Listing.hpp"
-#include "Display/DisplayOutputText.hpp"
-#include "Display/LcdText.hpp"
+#include "app/SharpDisplayLines.hpp"
+#include "harness/DisplayText.hpp"
 #include "debugger/DebuggerPart.hpp"
 #include "debugger/RunControl.hpp"
 #include "debugger/RunState.hpp"
@@ -186,7 +186,7 @@ void DapSession::handle(const Value& request) {
     else if (command == "readMemory") readMemory(args, &body, &error);
     else if (command == "writeMemory") writeMemory(args, &body, &error);
     else if (command == "evaluate") evaluate(args, &body, &error);
-    else if (command == "c1600/screen") screen(&body, &error);
+    else if (command == "c1600/display-text") displayText(&body, &error);
     else if (command == "c1600/quit") end();
     else error = "Unsupported request '" + command + "'";
     respond(request, error.empty(), std::move(body), error);
@@ -860,25 +860,20 @@ void DapSession::evaluate(const Value& args, Body* body, std::string* error) {
     if (address) body->push_back({"memoryReference", Value(memoryReference(std::max(1, frameThread(frameId)), std::uint16_t(r.value)))});
 }
 
-// The LCD as text (core/Display/LcdText.hpp): {rows, status, unparsed,
-// poweredOn, cursor?: {row, col}}. Needs no DAP session, only a machine.
-void DapSession::screen(Body* body, std::string* error) {
+// The display as text, as the harness's `display-text` replies with --json
+// (LIB-11 AC-10, AC-19; harness/DisplayText.hpp): {on, rows, indicators:
+// [{name, brightness}], notText}, written by the harness's own serialiser.
+// Needs no DAP session, only a machine.
+void DapSession::displayText(Body* body, std::string* error) {
     calcu::machine::Machine* m = ctx_.machine();
     const calcu::machine::DisplayOutput* d = ctx_.display();
     if (!m || !d) {
         *error = "No machine is running";
         return;
     }
-    const LcdText screen = displayText(*m, *d);
-    Value::Array rows, status;
-    for (const std::string& row : screen.rows) rows.push_back(Value(row));
-    for (const std::string& s : screen.status) status.push_back(Value(s));
-    body->push_back({"rows", Value(std::move(rows))});
-    body->push_back({"status", Value(std::move(status))});
-    body->push_back({"unparsed", Value(screen.unparsed)});
-    body->push_back({"poweredOn", Value(screen.poweredOn)});
-    if (screen.cursorRow >= 0)
-        body->push_back({"cursor", Value::object({{"row", Value(screen.cursorRow)}, {"col", Value(screen.cursorCol)}})});
+    const std::string json = calcu::harness::writeJson(calcu::harness::displayTextValue(displayTextNow(*m, *d)));
+    const std::optional<Value> v = parseJson(json);
+    if (v) *body = membersOf(*v);
 }
 
 } // namespace cu1600::dap

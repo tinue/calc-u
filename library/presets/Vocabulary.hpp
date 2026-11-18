@@ -116,7 +116,7 @@ private:
 // This feature's keywords (§3.5): the header keys format-version, model,
 // preset-name, description and timeout are the reader's own; here `keys`
 // and the steps key, type, wait, regular-speed, full-speed, elapsed-time,
-// expect, not-expect, screenshot and syncclock.
+// expect, not-expect, screenshot and sync-clock.
 void addLibraryKeywords(Vocabulary&);
 
 } // namespace calcu::presets

@@ -38,7 +38,7 @@ Both may appear any number of times, and are carried out in file order.
 ## Steps
 
 `key:`, `type:`, `wait:`, `skip-wait:`, `let-it-finish:`, `full-speed:`,
-`regular-speed:`, `expect:`, `not-expect:`, `screenshot:`, `syncclock:`,
+`regular-speed:`, `expect:`, `not-expect:`, `screenshot:`, `sync-clock:`,
 `trace:`, `elapsed-time:`, `cut-paper:`, and the media steps `floppy:`,
 `cassette:`, `eject:`, `saveas:` ([Presets](06-presets.md#media-steps)). The
 debugger steps `pause:`, `pause-on-start:`, `step:` and `resume:` are not
@@ -51,7 +51,7 @@ available on these models.
 | `eject:` | `floppy` or `cassette` |
 | `saveas:` | `place:` (`slot-1`, `slot-2`, `floppy`, `cassette`), `as:` (`live` or `template`), `protected: true` (CE-161 only), and `name:` or `file:` |
 | `expect:`, `not-expect:` | text in one line of the display; `\\` for a backslash, `\xHH` for a character outside ASCII; `/…/` a regular expression |
-| `syncclock:` | sets the computer's clock from your computer's |
+| `sync-clock:` | sets the computer's clock from your computer's |
 
 **Key IDs:** a single letter, digit, or `+ - * / = ( ) .`; `enter`,
 `space`, `cl`, `mode`, `shift`, `def`, `sml`, `rcl`, `rsv`, `off`, `up`,

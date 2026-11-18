@@ -178,7 +178,7 @@ What it answers
   | `next`, `stepIn`, `stepOut` | AC-12 |
   | `setBreakpoints`, `setFunctionBreakpoints`, `setInstructionBreakpoints`, `dataBreakpointInfo`, `setDataBreakpoints`, `setExceptionBreakpoints` | AC-14; the last answers with nothing |
   | `restart` | AC-6 again with the configuration it brings, `reset: none` taken as `reset` |
-  | `c1600/load`, `c1600/reset`, `c1600/screen`, `c1600/quit` | AC-17 |
+  | `c1600/load`, `c1600/reset`, `c1600/display-text`, `c1600/quit` | AC-17 |
 
   Any other request is answered "Unsupported request".
 - [ ] **AC-12** — Given `next`, `stepIn` or `stepOut`, then the named
@@ -235,8 +235,10 @@ What it answers
   starting command;
   `c1600/reset` does a Reset, or with `kind: allReset` a Cold boot,
   paused before the first instruction unless `stop` is false;
-  `c1600/screen` answers with the display as text (LIB-11 AC-19),
-  also without a DAP session;
+  `c1600/display-text` answers with the display as text (LIB-11 AC-19),
+  with the keys and value forms of the harness's `display-text` (`on`,
+  `rows`, `indicators` as `{name, brightness}`, `notText`), also
+  without a DAP session;
   `c1600/quit` ends the DAP session and the program
   (`Qt6/app/debug/DapSession.cpp:125-131, 496-540`).
 
@@ -309,7 +311,7 @@ Checks
 - The server reaches the machine only through LIB-10, C1600-2 and the
   app session; it names no machine class.
 - The names of the server's own requests carry the product word as
-  their prefix, `c1600/` (`c1600/load`, `c1600/reset`, `c1600/screen`,
+  their prefix, `c1600/` (`c1600/load`, `c1600/reset`, `c1600/display-text`,
   `c1600/quit`); the extension's debug type is `c1600` too.
 
 ## Open Questions
@@ -355,3 +357,4 @@ Checks
 | M-50: the server's cases are a test program of their own (`CalcU1600DapTests`, Frequent), and the ten scenarios against the harness (`CalcU1600DapSmoke`) are Longer | `CoreTests` holds the Frequent budget alone; the scenarios take 17 s with their pauses by hand (design D-5) | 2026-11-16 |
 | M-50: the harness hands a product its run's preset part, machine control and settings (`HarnessProduct::runParts`); a serve add-on posts tasks into the serve loop; the typing engine takes a new machine's paused state from the session | The set-up is an operation that a harness run carries out in one go (design D-1); the design's interfaces did not reach those parts (qa-report, Deviations) | 2026-11-16 |
 | Release prep step 1: the server's own requests are `c1600/load`, `/reset`, `/screen`, `/quit` (were `calcu1600/…`); the VS Code debug type, commands, settings and problem matchers say `c1600` (the extension's folder, package name and publisher `calcu1600-debug`/`calcu1600` stay: its identity). Technical Requirements edited; no AC changes but names | user, 2026-11-17 (`docs/reviews/e-simplification.md` §10 Q-6): one word per product everywhere | 2026-11-17 |
+| Release simplification R-4: `c1600/screen` is `c1600/display-text`, answered with the harness's `display-text` keys and value forms (`on`, `rows`, `indicators`, `notText`; were `rows`, `status`, `unparsed`, `poweredOn`, `cursor`); AC-17 and the Technical Requirements edited in place | `docs/reviews/release-simplification.md` V-4: two names and two shapes for one reading; ledger 1600-55 | 2026-11-18 |

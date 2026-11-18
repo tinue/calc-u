@@ -230,8 +230,8 @@ runs one block per row. Paths are under `tools/` at `7bdd51c`.
 | `--printer`, `h_printer` (`:173-177`) | with or without printer | `attach printer PC-100C`, `detach printer` | LIB-18 |
 | `h_reset` (`:160`) | a power cycle | `power-cycle`; `reset`, `cold-boot` | LIB-18 |
 | `h_key_down`, `h_key_up` (`:163-170`) | press and release a key by name | `key-down`, `key-up` | LIB-11 |
-| `Machine.key`, `keys`, `SECOND` (`ti59.py:257-273, 55-66`) | type keys by name, second functions included | `key <name>…` | LIB-5 |
-| `h_trace_sw`, `h_printer_print`, `h_printer_adv` (`:178-180`) | the PC-100C's TRACE, PRINT and ADV | `switch <printer> TRACE on|off`, `switch <printer> PRINT on|off`, `… ADV …` (the PC-100C's controls) | LIB-6 (`switch`), C59-6 AC-5 |
+| `Machine.key`, `keys`, `SECOND` (`ti59.py:257-273, 55-66`) | type keys by name, second functions included | `key <key ID>…` | LIB-5 |
+| `h_trace_sw`, `h_printer_print`, `h_printer_adv` (`:178-180`) | the PC-100C's TRACE, PRINT and ADV | `set-control <printer> TRACE on|off`, `set-control <printer> PRINT on|off`, `… ADV …` (the PC-100C's controls) | LIB-6 (`set-control`), C59-6 AC-5 |
 | `h_stepn`, `run_until_idle` (`:183-186`; `ti59.py:275-287`) | let instructions pass; run until idle | `wait <duration>` (whole instructions, LIB-11 AC-9); `wait` without a duration (until idle, LIB-6 AC-34); `step { level: cpu, count: n }` on a paused machine for an exact count | LIB-11, LIB-6, LIB-10 |
 | `h_elapsed` (`:190`), `INSTR_PER_SEC` | the emulated time, in weighted instructions | `ticks` (ticks ÷ 32 are today's instructions, LIB-11 AC-17) | LIB-11 |
 | `h_record`, `Machine.record`, `format` (`:194-203`; `ti59.py:215-239, 352-389`) | a record per instruction with the registers it changed; the idle loop folded; ROM labels inline | `trace <file>`, the keys, `trace off`, then `read_trace.py --clean-heavy --skip-repeating --labels rom/TI59-labels.asm --changes <file>` (D-9) | LIB-10 (`trace`); `read_trace.py` stays (LIB-10 AC-33, AC-42) |

@@ -107,7 +107,7 @@ How it runs
   AC-18), for an agent that has to look at them or at its files
   afterwards.
 - [ ] **AC-21** — Given a run that hands a real-time clock the host's
-  date and time (a build, the end of an operation, `syncclock:`; LIB-2
+  date and time (a build, the end of an operation, `sync-clock:`; LIB-2
   AC-23, LIB-6 AC-27), then without an option it hands a fixed instant,
   the same in every run, so that AC-6 holds; an option names a date and
   time to hand instead, or asks for the host's date and time, and with

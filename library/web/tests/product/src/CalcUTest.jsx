@@ -116,7 +116,7 @@ function CalcUTestShell({ shell, faceOrigin }) {
 }
 
 function CalcUTest(props) {
-  const embedded = embedProps(props);
+  const embedded = embedProps(props, { name: "CalcUTest", layouts: ["auto"], layout: "auto" });
   const ref = React.useRef(null);
   const size = useFillParent(ref, embedded);
   const shell = useShell(CALCU_PRODUCT, embedded);

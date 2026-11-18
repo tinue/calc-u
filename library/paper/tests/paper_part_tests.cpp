@@ -140,8 +140,8 @@ TEST(ac7_same_commands_same_ticks_same_marks) {
     for (auto& r : replies) {
         PaperRun run;
         if (!run.server) return;
-        for (const char* l : {"attach printer test-dotter", "attach aux test-plotter", "switch test-dotter online on",
-                              "key 1", "key-down 2", "wait 3ms", "key-up 2", "switch test-plotter back on",
+        for (const char* l : {"attach printer test-dotter", "attach aux test-plotter", "set-control test-dotter online on",
+                              "key 1", "key-down 2", "wait 3ms", "key-up 2", "set-control test-plotter back on",
                               "key 3 0", "wait 100ms"})
             run.line(l);
         for (const char* l : {"paper marks TD-20", "paper marks TP-4", "paper text TD-20"}) r.push_back(run.line(l));

@@ -79,8 +79,8 @@ Changed in other areas in M-38:
 | `library/formats/Yaml.hpp` | `YamlOptions{bool repeatTopLevelKeys; std::vector<std::string> rawStepVerbs;}` and an overload `parseYaml(text, out, error, options)`; the default keeps today's behaviour for every other format. `YamlNode::rawLine` for a raw value (D-4) |
 | `library/formats/Number.hpp/.cpp` (new) | `parseNumber`: `&`, `0x`, `$` hex, else decimal; the whole value (README §1). `YamlNode::asInt` stays as it is (the module definition takes `0x` only) |
 | `library/sessions/Operation.hpp/.cpp`, `AppSession.cpp` | `OperationContext::hostWait(WallDuration)`: an awaitable that ends when the session's wall clock has passed it; at once in `Hosting::VirtualTime` (AC-19; D-17) |
-| `library/peripherals/PeripheralsPart.*` | the command `set-control {owner, control, on}` through the controls capability (LIB-2 AC-16): a switch set, a key pressed (`on: true`) or released; for the harness `switch` (AC-34; D-16) and LIB-8's paper panel (M-39) |
-| `library/harness/PresetCommands.cpp` (new), `Commands.hpp` | `addPresetCommands(CommandRegistry&)`: `preset`, `check-preset`, `preset-list`, `full-speed`, `regular-speed`, `elapsed-time`, `expect`, `not-expect`, `screenshot`, `syncclock`, `switch`, and every other step with `command = true` (a product's `printer-trace`; LIB-7's media steps from M-41) (§3.9) |
+| `library/peripherals/PeripheralsPart.*` | the command `set-control {owner, control, on}` through the controls capability (LIB-2 AC-16): a switch set, a key pressed (`on: true`) or released; for the harness `set-control` (AC-34; D-16) and LIB-8's paper panel (M-39) |
+| `library/harness/PresetCommands.cpp` (new), `Commands.hpp` | `addPresetCommands(CommandRegistry&)`: `preset`, `check-preset`, `preset-list`, `full-speed`, `regular-speed`, `elapsed-time`, `expect`, `not-expect`, `screenshot`, `sync-clock`, `set-control`, and every other step with `command = true` (a product's `printer-trace`; LIB-7's media steps from M-41) (§3.9) |
 | `library/harness/FirstCommands.cpp` | `wait` without a duration sends `wait-idle` (AC-34; LIB-11 AC-12) |
 | `library/harness/Product.hpp` | `virtual presets::ProductRules* presetRules() { return nullptr; }`, `virtual const presets::PresetBundle* presetBundle() const { return nullptr; }` |
 | `library/harness/HarnessHost.cpp`, `Run.cpp` | a `PresetsPart` in the session's parts when the product has rules, before `StartupPart`, with the run's folder for screenshots (LIB-11 AC-8), and handed to LIB-18 as `StartupSetup::loader` (LIB-18 D-9: none until M-38) |
@@ -296,14 +296,14 @@ public:
 | `elapsed-time:` | step, scalar `start` / `report` | the two words | baseline = tick count; report logs `Elapsed: m:ss.mmm` (AC-23; D-10) | TakenEffect |
 | `expect:`, `not-expect:` | step, raw | not empty; `parseExpectText`; a text `ModelRules::checkExpect` refuses is refused with its sentence (AC-68) | `ModelRules::compare`; fails with the text and `shows`; EC-7 | TakenEffect |
 | `screenshot:` | step, scalar | not empty, no `/` or `\` | the product's picture into the folder, or `KeepFile` (AC-25; D-13) | TakenEffect |
-| `syncclock:` | step, none | `applies()` | `peripherals::setClocksFromHost(machine, hostDateTime(session.hostTime()))`; logs the time set (AC-27) | TakenEffect |
+| `sync-clock:` | step, none | `applies()` | `peripherals::setClocksFromHost(machine, hostDateTime(session.hostTime()))`; logs the time set (AC-27) | TakenEffect |
 | `switch:` | — | not registered: unknown (AC-26) | — | — |
 
 `elapsed-time: report` counts from the last `start`, else from tick 0
 of the machine the preset built (D-10). The minutes count on beyond 59.
 
 `StepDef::command` (§3.9): `elapsed-time`, `expect`, `not-expect`,
-`screenshot` and `syncclock` are `true`; `key` and `type` (LIB-5's own
+`screenshot` and `sync-clock` are `true`; `key` and `type` (LIB-5's own
 harness commands, M-36), `wait`, `regular-speed` and `full-speed`
 (harness commands of their own, §3.9) are `false`. Later features set it
 as their designs say: LIB-8's `cut-paper` and LIB-10's steps `false`,
@@ -453,11 +453,11 @@ public:
 | `preset-list` | `preset-list`, one line per entry |
 | `wait` (no duration) | `wait-idle` |
 | `full-speed`, `regular-speed` | LIB-3's `speed {full}` |
-| `elapsed-time start\|report`, `expect <text>`, `not-expect <text>`, `screenshot <name>`, `syncclock`, and each other step with `command = true` (a product's, a later feature's) | `run-step {verb, value}`; the value is `argText` (LIB-11 §3.2) |
-| `switch <peripheral> <control> on\|off` | `set-control` of LIB-2's part (D-16) |
+| `elapsed-time start\|report`, `expect <text>`, `not-expect <text>`, `screenshot <name>`, `sync-clock`, and each other step with `command = true` (a product's, a later feature's) | `run-step {verb, value}`; the value is `argText` (LIB-11 §3.2) |
+| `set-control <peripheral> <control> on\|off` | `set-control` of LIB-2's part (D-16) |
 
 The screenshot folder of a run is `RunSetup::screenshotFolder()`
-(LIB-11 AC-8). `syncclock` takes the run's clock (LIB-11 AC-21). `key`
+(LIB-11 AC-8). `sync-clock` takes the run's clock (LIB-11 AC-21). `key`
 and `type` stay LIB-5's commands (M-36).
 
 ### 3.10 Seams of LIB-18 and LIB-5
@@ -512,7 +512,7 @@ plug in (designed with C1600-4 and C59-2):
 | Calc-U-1600 (M-46) | `core/Preset/PresetFile.*` (`parsePresetFile`, `readPresetHeader`, `kPresetFormatVersion` 1), `PresetRunner.*`, `PresetRoms.*`, `PresetMedia.hpp`, `PresetBusRomLoader.hpp`, `PresetDebugBlock.hpp`, `core/PC1500/PC1500PresetLoader.*`, `core/PC1600/PC1600PresetLoader.*`, `SharpAppPart::loadPresetJob` | `shared::SharpPresetRules : ProductRules` in `app/SharpPresetRules.*`: idle by AC-45, `cl` after the build by AC-46, the Copy Screen picture (AC-48, today `core/Display/LcdScreenshot`), the line comparison with `\\`, `\xHH` and the regex (AC-48, AC-67); C1600-4's keys and sections through `addKeywords`. `SharpAppPart` constructs `PresetsPart`; the readers of version 1 go |
 | Calc-U-1600 | `app/PresetCatalog.*`, `examples/bundled.yaml` | `examples/bundle.yaml`, `preset-list`; `presetNameProblems` into `library/presets/` |
 | Calc-U-1600 | `tools/pc1500_cli.cpp`, `tools/pc1600_cli.cpp` (`--check-preset`), `tools/check_presets.sh`, CTest `CalcU1600CheckPresets` | the CLIs load through the library's loader; `calcu_add_preset_check(CalcU1600Presets …)` over the files of AC-51 with the VS Code templates filled by the extension's rule (C1600-3 AC-19), the three waiting presets excluded by name; the script and the old entry go |
-| Calc-U-59 (M-54) | `app/StateFile.*`, `app/StateApplier.*`, `TIAppPart::loadStateFile`, `applyState`, `presetOperation`, `TIPresetOperation`, the `STATE` records of `tests/golden/formats.txt` | `cu59::TIPresetRules : ProductRules` in `app/TIPresetRules.*`: idle by AC-36 (100 ms ready, or a card wait), the segment picture (OQ-3), the X register comparison (AC-40), `checkExpect` taking a number only, `slot-1` by `name:` only (AC-35), `type` and `syncclock` not for the TI; C59-2's sections and `printer-trace` through `addKeywords`. `TIAppPart` constructs `PresetsPart` |
+| Calc-U-59 (M-54) | `app/StateFile.*`, `app/StateApplier.*`, `TIAppPart::loadStateFile`, `applyState`, `presetOperation`, `TIPresetOperation`, the `STATE` records of `tests/golden/formats.txt` | `cu59::TIPresetRules : ProductRules` in `app/TIPresetRules.*`: idle by AC-36 (100 ms ready, or a card wait), the segment picture (OQ-3), the X register comparison (AC-40), `checkExpect` taking a number only, `slot-1` by `name:` only (AC-35), `type` and `sync-clock` not for the TI; C59-2's sections and `printer-trace` through `addKeywords`. `TIAppPart` constructs `PresetsPart` |
 | Calc-U-59 | `frontends/web/presets.json` (read by `frontends/web/build.js`) | `examples/bundle.yaml` in all three frontends |
 | Calc-U-59 | `tools/headless/capi.cpp`, `tools/agentic/ti59file.py` | loads through `calcu`; `ti59file.py` goes (plan M-54); `calcu_add_preset_check(CalcU59Presets …)` over the shipped presets (AC-43); a Checkpoint entry over calc-u-site's hosted presets, named in the release checklist (M-64) |
 
@@ -562,7 +562,7 @@ Every case is Frequent. Fixtures in `library/presets/tests/fixtures/`.
 | L10 | The place for others; product rules | AC-29, AC-53, AC-65 | `place_tests.cpp`: `ac29_header_key_section_step_of_a_product_read_checked_carried_out`, `ac29_their_errors_with_line`, `ac53_idle_after_build_picture_from_the_rules`, `ac65_absent_keyword_default_nothing_carried_over` (a test printer's `trace` switch on before, off after a preset that names the printer) |
 | L11 | Determinism, elapsed time | AC-11, AC-64 | `determinism_tests.cpp`: `ac11_same_preset_twice_same_memory_display_ticks_log`, `ac64_elapsed_is_compute_holds_gaps_waits` (bound: D-9) |
 | L12 | Preset list | AC-31, AC-32, AC-33, EC-9 | `list_tests.cpp`: `ac31_bundle_order_groups_startup_files`, `ac31_check_bundle_finds_missing_and_unlisted_files`, `ac32_entries_with_bundle_path_model_name_description_kind_group`, `ac32_header_only_entry_naming_missing_file_listed`, `ac33_bundle_path_in_load_and_startup_setting`, `ec9_missing_entry_left_out_and_logged` |
-| L13 | Harness commands | AC-34 | `library/harness/tests/preset_commands_tests.cpp`: `ac34_preset_done_or_refused_with_line`, `ac34_check_preset_one_line_per_file_run_fails`, `ac34_preset_list`, `ac34_wait_until_idle_reports_time_and_hour`, `ac34_full_and_regular_speed`, `ac34_elapsed_time`, `ac34_expect_and_not_expect_refused_with_display`, `ac34_screenshot_into_the_run_folder`, `ac34_printer_trace_refused_without_printer` (test product step), `ac34_switch_sets_a_control`, `ac34_syncclock_takes_the_run_clock`; `cli_cases.cmake`: `calcu_cli.ac34_check_preset_exit_status` |
+| L13 | Harness commands | AC-34 | `library/harness/tests/preset_commands_tests.cpp`: `ac34_preset_done_or_refused_with_line`, `ac34_check_preset_one_line_per_file_run_fails`, `ac34_preset_list`, `ac34_wait_until_idle_reports_time_and_hour`, `ac34_full_and_regular_speed`, `ac34_elapsed_time`, `ac34_expect_and_not_expect_refused_with_display`, `ac34_screenshot_into_the_run_folder`, `ac34_printer_trace_refused_without_printer` (test product step), `ac34_set_control_sets_a_control`, `ac34_syncclock_takes_the_run_clock`; `cli_cases.cmake`: `calcu_cli.ac34_check_preset_exit_status` |
 | L14 | The suite check | (AC-43, AC-51 mechanism) | `calcu_add_preset_check(LibraryPresetFixtures PRODUCT test FILES tests/fixtures/good/*)`: CTest `calcu_preset_check.LibraryPresetFixtures`, Frequent; a support check, its ACs pass in M-46 and M-54 |
 | L15 | LIB-18's start with the real loader | (LIB-18 AC-4, EC-1, EC-6) | `startup_tests.cpp`: `startup_preset_built_by_the_loader`, `startup_preset_outdated_gives_default_and_notice`, `startup_preset_failing_while_run_keeps_machine`; support cases |
 
@@ -662,7 +662,7 @@ M-54 (plan §1). Agent knowledge per step:
 - **D-15 (one vocabulary).** The harness commands of the steps go
   through `run-step`, so a command and a step have one reader and one
   meaning; `full-speed`/`regular-speed` are LIB-3's `speed`.
-- **D-16 (`switch` command).** In LIB-2's `PeripheralsPart`
+- **D-16 (`set-control` command; `switch` until R-4).** In LIB-2's `PeripheralsPart`
   (`set-control {owner, control, on}`), next to the controls it uses. It
   sets a switch and presses or releases a key, so LIB-8's paper panel
   (M-39) sends the same command for the printer's controls.
@@ -1125,7 +1125,7 @@ class TIPresetRules final : public calcu::presets::ProductRules { /* a TIModelRu
 - **AC-39.** The library's AC-16, AC-12 and AC-61: full speed unless a
   `regular-speed:` comes first; live input dropped; a second load
   refused.
-- **AC-40.** `applies("type")` and `applies("syncclock")` are
+- **AC-40.** `applies("type")` and `applies("sync-clock")` are
   `NotForThisModel` ([1600]); `printer-trace:` is C59-2's step;
   `elapsed-time:` the library's; `screenshot` is `displayPicture` (D-39);
   `compare` reads X, the value in the display register, in its 13 digits
@@ -1147,7 +1147,7 @@ class TIPresetRules final : public calcu::presets::ProductRules { /* a TIModelRu
   `parseDecimal` ("A TI model compares expect: with a number."), each
   with the step's line (D-45).
 - **AC-62 markers.** `applies` gives `NotForThisModel` for `type` and
-  `syncclock` on every TI model and for `magnetic-cards`, `card`, `arm`
+  `sync-clock` on every TI model and for `magnetic-cards`, `card`, `arm`
   on the TI-58 and TI-58C (registered from M-55); `Undefined` for none
   (`preset.md` §7 marks `data` undefined only on the Sharp models). The
   Sharp keys (`slot-2`, `host-drive`, `bus-rom`, `debug`, …) are not

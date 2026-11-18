@@ -38,7 +38,7 @@ itself passes there:
 | AC-9 `wait` ends at once while the debugger has the machine paused (LIB-10 AC-21) | M-40 |
 | AC-11 the topics of other features and of a product | each feature's step. M-28 tests with the test product's own topic |
 | AC-12 `wait` without a duration | M-38 (LIB-6 AC-34) |
-| AC-21 `syncclock:` | M-38 |
+| AC-21 `sync-clock:` | M-38 |
 | AC-22 the real mapping commands (`floppy`, `card`, `saveas`) | M-41 (LIB-7). M-28 tests with a test product command |
 
 Later steps of this feature, not designed here:

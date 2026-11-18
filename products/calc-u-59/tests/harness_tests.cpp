@@ -505,12 +505,12 @@ TEST(lib11_ac14_every_function_of_the_table) {
     c("wait 300ms");
     CHECK(c("display-text").find("3.14159265") != std::string::npos);
     // the PC-100C's TRACE, PRINT and ADV
-    CHECK_EQ(c("switch PC-100C TRACE on"), std::string("done\n"));
-    CHECK_EQ(c("switch PC-100C TRACE off"), std::string("done\n"));
-    CHECK_EQ(c("switch PC-100C PRINT on"), std::string("done\n"));
-    CHECK_EQ(c("switch PC-100C PRINT off"), std::string("done\n"));
-    CHECK_EQ(c("switch PC-100C ADV on"), std::string("done\n"));
-    CHECK_EQ(c("switch PC-100C ADV off"), std::string("done\n"));
+    CHECK_EQ(c("set-control PC-100C TRACE on"), std::string("done\n"));
+    CHECK_EQ(c("set-control PC-100C TRACE off"), std::string("done\n"));
+    CHECK_EQ(c("set-control PC-100C PRINT on"), std::string("done\n"));
+    CHECK_EQ(c("set-control PC-100C PRINT off"), std::string("done\n"));
+    CHECK_EQ(c("set-control PC-100C ADV on"), std::string("done\n"));
+    CHECK_EQ(c("set-control PC-100C ADV off"), std::string("done\n"));
     // let instructions pass; until idle; an exact count on a paused machine
     CHECK(done(c("wait 500ms")));
     CHECK(c("wait").find("hour reached: no") != std::string::npos);

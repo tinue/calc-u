@@ -132,7 +132,7 @@ and [DiskWorks.pc1600](https://github.com/tinue/calc-u/blob/main/products/calc-u
 |---|---|
 | `- expect: 11834` | Stops the preset with an error unless one line of the display contains that text. A backslash is written `\\`, a character outside ASCII `\xHH` (its code); between slashes (`/ERROR 1\b/`) the text is a regular expression |
 | `- screenshot: shot.png` | Saves the LCD's picture, as Copy Screen does, in the save folder; in the browser it is a download |
-| `- syncclock:` | Sets the computer's clock from your computer's. Put it last: a preset runs at full speed, so the clock runs ahead |
+| `- sync-clock:` | Sets the computer's clock from your computer's. Put it last: a preset runs at full speed, so the clock runs ahead |
 | `- trace: run.bin` / `- trace: off` | Starts or stops a CPU trace ([Debugger](07-debugger.md)) |
 | `- cut-paper:` | Cuts the paper of the plotter that is plugged in |
 

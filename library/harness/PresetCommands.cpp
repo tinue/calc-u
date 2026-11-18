@@ -72,10 +72,10 @@ Handler speedCmd(bool full) {
     };
 }
 
-Reply switchCmd(CommandContext& c) {
+Reply setControlCmd(CommandContext& c) {
     const auto w = words(c.line.argText);
     if (w.size() != 3 || (w[2] != "on" && w[2] != "off"))
-        return refusedReply("usage: switch <peripheral> <control> on|off");
+        return refusedReply("usage: set-control <peripheral> <control> on|off");
     sessions::Value a = sessions::Value::object({{"peripheral", w[0]}, {"control", w[1]}, {"on", w[2] == "on"}});
     return fromSessionReply(c.host.command(sessions::Command{peripherals::kSetControlCommand, std::move(a)}));
 }
@@ -118,7 +118,8 @@ void addPresetCommands(CommandRegistry& r, const presets::Vocabulary* v) {
     r.add("preset-list", presetListCmd, "preset-list              the bundled presets");
     r.add("full-speed", speedCmd(true), "full-speed               the machine at full speed");
     r.add("regular-speed", speedCmd(false), "regular-speed            the machine at regular speed");
-    r.add("switch", switchCmd, "switch <peripheral> <control> on|off  a switch set, or a key pressed or let up");
+    r.add("set-control", setControlCmd,
+          "set-control <peripheral> <control> on|off  a switch set, or a key pressed or let up");
     if (v) {
         for (const auto& d : v->steps())
             if (d.command && !r.isCommand(d.verb)) r.add(d.verb, stepCmd(d.verb), usageOf(d));
@@ -130,7 +131,7 @@ void addPresetCommands(CommandRegistry& r, const presets::Vocabulary* v) {
         {"expect", "expect <text>            refused unless the display shows the text"},
         {"not-expect", "not-expect <text>        refused if the display shows the text"},
         {"screenshot", "screenshot <file name>   a picture of the display into the output folder"},
-        {"syncclock", "syncclock                the real-time clocks set from the run's clock"}};
+        {"sync-clock", "sync-clock               the real-time clocks set from the run's clock"}};
     for (const auto& [verb, usage] : fixed)
         if (!r.isCommand(verb)) r.add(verb, stepCmd(verb), usage);
 }

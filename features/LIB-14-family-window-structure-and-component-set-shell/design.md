@@ -914,7 +914,7 @@ UI steps through the widgets found by their object names:
 |---|---|---|
 | `preset: <file>` | `loadPresetForShots` (`:234`) | `preset <path>` |
 | `reset`, `reset: all` | `resetForShots` (`:239`) | `reset`, `cold-boot`; `reset: all` is renamed `cold-boot` in the scenarios |
-| `key: <name>` | a faceplate press and `runFor` (`:245-250`) | `key <name>` |
+| `key: <name>` | a faceplate press and `runFor` (`:245-250`) | `key <key ID>` |
 | `hold-key: <name>`, `release` | a faceplate press and a frozen run (`:222-253`) | a pointer down and up on the faceplate at the key's centre in the hit map (a UI step: the shell's live input), with `wait 100ms` after the press (D-33) |
 | `type: <text>` | `pasteText`, ENTER and a run (`:255-265`) | `type <text>` |
 | `run: <seconds>` | `pacer()->runFor` (`:267`) | `wait <seconds>s` |

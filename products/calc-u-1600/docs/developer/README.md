@@ -57,7 +57,7 @@ decisions, plans, handoffs — is in [../background/README.md](../background/REA
   built: transport, run control, where the code is, design rules.
 - [LCD-Text.md](LCD-Text.md) — reading the display as text: the ROM fonts,
   the cursor, the encoding, and where to use it (the harness's `display-text`,
-  `expect:`, `c1600/screen`).
+  `expect:`, `c1600/display-text`).
 
 ## Sources
 

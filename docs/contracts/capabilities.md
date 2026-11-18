@@ -26,7 +26,7 @@ interface:
 | Paper | printer lines and code lines (`printerLines`, `PrinterCodeLine`, `lineDots`): rows of dots and text; cut | plot points (`ce1600pPlotPoints`, `ce1600pPlotRevision`, `Shared/PlotterPaper`, `PaperKind`): pen strokes in colours; clear, cut; CE-158 printer port: bytes as sent (Save…, Clear) |
 | Controls on a peripheral | PRINT, ADV, TRACE of the PC-100C (K-line signals) | write-protect switch of the CE-161 (`hasWriteProtectSwitch`, `setWriteProtected`) |
 | Serial | — | `setSerialLink`; PC-1600 RS-232C and CE-158 as host pseudo-terminals |
-| Clock | — | real-time clock at the emulated rate, seeded from the host; preset `syncclock:` |
+| Clock | — | real-time clock at the emulated rate, seeded from the host; preset `sync-clock:` |
 | Typing | scan-loop ranges (`MachineModelInfo`) | command-loop windows, key-matrix reads, SHIFT and KBII latches |
 | Power | no off | `isPoweredOff`, `isDisplayOn` |
 | Memory access for loaders | RAM written directly by `StateApplier` (program steps, registers, partition) | `memory()` for the BASIC and machine-code loaders |
@@ -67,10 +67,10 @@ Sources: `docs/inventory/calc-u-59.md` and `calc-u-1600.md`
 |---|---|---|
 | **Media place** | whether it is pass-through or holding; its sides and the current side; insert (content in) and eject (content out); a change counter for autosave; write protection where the medium has it; "waits for a medium" where the ROM does (TI card reader) | pickers, Name & Save and autosave (`media.md`); `card:`, `arm:` (TI-59); `floppy:`, `tape:`, `eject:` (Sharp) (`docs/formats/preset.md` §5.2) |
 | **Paper output** (C-2) | the paper's width; an append-only stream of **marks** on the paper (dots, or pen strokes with their colour); a **text layer** where the printer knows which characters it printed (each line's characters and their place on the paper); cut and clear | the paper panel (ADR 0023), `cut-paper:`, Copy (the image always, the text when there is a text layer), harness printout |
-| **Controls** | the keys and switches of a peripheral or component that are not machine keys (M-3), each with an ID and its state | `- printer-trace:` (`docs/formats/preset.md` §5.5), the harness command `switch` (LIB-6 AC-34), the buttons a panel shows |
+| **Controls** | the keys and switches of a peripheral or component that are not machine keys (M-3), each with an ID and its state | `- printer-trace:` (`docs/formats/preset.md` §5.5), the harness command `set-control` (LIB-6 AC-34), the buttons a panel shows |
 | **Typing support** | key readiness, command-prompt readiness, latch states, each where the model has it (`typing.md`, T-2) | the typing engine; pacing (`frontend.md`, sessions and pacing) |
 | **Serial port** | bytes in and out, line settings as far as the model has them | the host link (a pseudo-terminal, ADR 0009), harness serial commands |
-| **Real-time clock** | reading and setting the clock | `syncclock:`, seeding from the host at build time |
+| **Real-time clock** | reading and setting the clock | `sync-clock:`, seeding from the host at build time |
 
 The serial port and the real-time clock are generic by ADR 0007 although
 one product has them today; the library does for them only what the rows

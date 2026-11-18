@@ -15,7 +15,7 @@ Status: approved by the user at the Part C2/D boundary (2026-11-16)
   attach in the Qt6 frontend). The plan names only M-45 and M-46 (§10).
 - The spec has AC-1 to AC-25 (AC-24 and AC-25 stand after AC-7) and EC-1
   to EC-7. All pass in M-50.
-- Clauses that name other features: AC-17's `c1600/screen` gives the
+- Clauses that name other features: AC-17's `c1600/display-text` (was `c1600/screen`, R-4) gives the
   display as text by LIB-11 AC-19's rule. The product's reader
   (`core/Display/LcdText`) exists today and the harness's `display-text` uses it;
   the LIB-11 1600 column (M-51) only adds its tests. AC-19's `check-preset`
@@ -254,7 +254,7 @@ public:
 | `setBreakpoints`, `setFunctionBreakpoints`, `setInstructionBreakpoints`, `dataBreakpointInfo`, `setDataBreakpoints` | `DapBreakpoints` (§3.7) |
 | `setExceptionBreakpoints` | answered with nothing |
 | `restart`, `c1600/load`, `c1600/reset` | §3.4 |
-| `c1600/screen` | the display as text by the product's reader, also without a DAP session |
+| `c1600/display-text` | the display as text as the harness's `display-text` reads it (`displayTextNow`, `app/SharpDisplayLines`), in its JSON form (`displayTextValue`), also without a DAP session |
 | `c1600/quit` | §3.5, `DapTransport::quitProgram` |
 
 Any other request: "Unsupported request '<name>'" (today's text).
@@ -342,7 +342,7 @@ before the code of each task.
 | T11 | Events | AC-16 | `c1600_3_ac16_stopped_once_with_reason_ids_all_threads`, `c1600_3_ac16_pause_from_harness_told`, `c1600_3_ac16_line_step_and_setup_pauses_not_told`, `c1600_3_ac16_memory_breakpoint_invalidated_terminated_events`; Frequent |
 | T12 | Own requests | AC-17 | `c1600_3_ac17_load_answers_range_entry_command`, `c1600_3_ac17_reset_and_all_reset_stop_unless_stop_false`, `c1600_3_ac17_screen_without_a_session`, `c1600_3_ac17_quit_ends_session_and_program`; Frequent |
 | T13 | The harness | AC-1, AC-22 | `library/harness/tests/serve_addon_tests.cpp`: `serve_addon_events_and_time_while_wanted`, `serve_addon_cannot_start_exit_2` (`calcu_library_tests`, Frequent); `harness_tests.cpp`: `c1600_3_ac22_client_attaches_without_a_window`, `c1600_3_ac22_running_machine_passes_emulated_time`; Frequent |
-| T14 | The ten scenarios | AC-20, AC-19 | CTest `CalcU1600DapSmoke`: `tools/dap_smoke.py --harness $<TARGET_FILE:calcu>`, the ten scenarios (`main`, `program_run`, `pc1600_run`, `project_run`, `bus_rom_run`, `renum_template_run`, `rom_run`, `reset_run`, `lh5803_run`, `screen_run`), each named `c1600_3_ac20_<scenario>` in its output; group by the budget (D-5). `c1600_3_ac19_templates_filled_and_checked` (the four templates as `scaffold.js` fills them, `check-preset`); Frequent |
+| T14 | The ten scenarios | AC-20, AC-19 | CTest `CalcU1600DapSmoke`: `tools/dap_smoke.py --harness $<TARGET_FILE:calcu>`, the ten scenarios (`main`, `program_run`, `pc1600_run`, `project_run`, `bus_rom_run`, `renum_template_run`, `rom_run`, `reset_run`, `lh5803_run`, `display_text_run`), each named `c1600_3_ac20_<scenario>` in its output; group by the budget (D-5). `c1600_3_ac19_templates_filled_and_checked` (the four templates as `scaffold.js` fills them, `check-preset`); Frequent |
 | T15 | Qt6 | AC-1, AC-18 | CTest `CalcU1600DapSmokeQt` (`--app`, every scenario against the Qt app; Longer); `CalcU1600Shots.c1600-3-ac18` (the Debugger section: status line, Disconnect usable only with a client; Longer) |
 
 Coverage: AC-1 to AC-25, 25 of 25; EC-1 to EC-7, 7 of 7.
@@ -376,7 +376,7 @@ Coverage: AC-1 to AC-25, 25 of 25; EC-1 to EC-7, 7 of 7.
   checks run against `calcu serve --dap`, no app to launch; the rule
   stays for `--app`); `project_shared_layer_wasm.md` ("DAP move open" is
   done). `feedback_lcd_text_before_images.md` keeps
-  `c1600/screen`.
+  `c1600/screen` (`c1600/display-text` since R-4).
 - No skill: Calc-U-1600 has none.
 
 ## 8. Golden runs, reference runs and risks

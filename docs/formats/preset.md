@@ -450,7 +450,7 @@ Their meaning is the subject of [§6](#6-speed-and-waiting).
 | `screenshot: <file name>` | [both] | Save an image of the display into the product's folder for screenshots, where the GUI saves its screenshots (the save folder). No path separator |
 | `trace: <file name>` / `trace: off` | [both] | Start a trace into that file in the trace folder, or stop it. No path separator. A new `trace:` closes the previous one; `trace: off` with no trace open has no effect. An open trace is closed when the preset ends |
 | `elapsed-time: start` / `elapsed-time: report` | [both] | Take the emulated time as the baseline; log the emulated time since the baseline (or since the start of the preset) as `m:ss.mmm` |
-| `syncclock:` | [1600] | Set the machine's clock from the host's |
+| `sync-clock:` | [1600] | Set the machine's clock from the host's |
 
 - `expect:` checks after the step before has finished: after
   `- type: RUN`, when the program has ended.
@@ -595,7 +595,7 @@ then fails, and so ends the preset ([README.md §4](README.md#4-errors)).
 - **Adv** on the PC-100C repeats while held, counted in CPU steps, not
   in real time. At full speed one press feeds many lines; a preset puts
   `regular-speed:` before it.
-- **`syncclock:`** belongs last: the clock runs ahead while the preset
+- **`sync-clock:`** belongs last: the clock runs ahead while the preset
   runs at full speed.
 - **`elapsed-time:`** measures emulated time; the speed doesn't change
   it.
@@ -617,7 +617,7 @@ then fails, and so ends the preset ([README.md §4](README.md#4-errors)).
 | `data` | ✓ | ✓ | ✓, with H00–H03 | undefined | undefined | undefined |
 | `partition`, `cue-card` | ✓ | ✓ | ✓ | | | |
 | `keys`, `key`, speed steps, `wait`, `skip-wait`, `let-it-finish`, `expect`, `screenshot`, `trace`, `elapsed-time`, `cut-paper`, `not-expect` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `type`, `syncclock` | | | | ✓ | ✓ | ✓ |
+| `type`, `sync-clock` | | | | ✓ | ✓ | ✓ |
 | `card`, `arm` | ✓ | | | | | |
 | `saveas` | `card` | | | `slot-1` | `slot-1` | `slot-1`, `slot-2`, `floppy` |
 | `printer-trace`, `debug-panel` | ✓ | ✓ | ✓ | | | |
@@ -771,6 +771,7 @@ For converting files written for the products before this specification.
 | `- saveas: template slot-2:file:C.card.yaml` | `- saveas: { place: slot-2, as: template, file: C.card.yaml }` |
 | `- expect:` right after `- type: RUN` checks at once | checks when the program has ended |
 | full speed throughout; afterwards the user's earlier speed | full speed unless `regular-speed:`; afterwards regular speed |
+| `- syncclock:` | `- sync-clock:` |
 
 ### 9.3 Calc-U-59 card files, cue cards, constant memory, modules
 
@@ -889,6 +890,6 @@ program:
   file: hanoi.bas
 keys:
   - key: mode
-  - syncclock:
+  - sync-clock:
   - type: RUN                  # the last item: the game runs at regular speed
 ```

@@ -42,8 +42,8 @@ TEST(ac3_each_line_and_each_feed_in_the_text_layer) {
     CHECK_EQ(run.line("attach printer test-dotter"), std::string("done\n"));
     run.online();
     run.press("1");
-    run.line("switch test-dotter feed on");
-    run.line("switch test-dotter feed off");
+    run.line("set-control test-dotter feed on");
+    run.line("set-control test-dotter feed off");
     run.press("2");
     const Paper& p = run.paperOf("TD-20");
     CHECK_EQ(p.text().size(), std::size_t(3));
@@ -79,8 +79,8 @@ TEST(ac4_reach_from_least_to_greatest_mark_or_feed) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach aux test-plotter");
-    run.line("switch test-plotter feed on");
-    run.line("switch test-plotter back on");
+    run.line("set-control test-plotter feed on");
+    run.line("set-control test-plotter back on");
     CHECK_EQ(run.marks("TP-4"), (std::vector<std::string>{"reach -10 20"}));
 }
 

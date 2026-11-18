@@ -248,7 +248,7 @@ def fresh(r: Run, printer: bool, trace: bool):
         r.cmd("detach printer")
     r.cmd("cold-boot")
     if printer:
-        r.cmd("switch PC-100C TRACE " + ("on" if trace else "off"))
+        r.cmd("set-control PC-100C TRACE " + ("on" if trace else "off"))
         r.cmd("cut-paper")
 
 

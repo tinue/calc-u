@@ -71,7 +71,7 @@ Master Library module, no printer (LIB-18 AC-18), at key readiness.
   `--json` gives one object `{"done","result","reason"}` per reply. From
   Python: `library/harness/python/calcu_serve.py`.
 - First commands: `wait <2s|500ms>`, `key-down`/`key-up <key ID>` (raw),
-  `key <name> …` (LIB-5: each pressed in turn as the app types it, 100 ms
+  `key <key ID> …` (LIB-5: each pressed in turn as the app types it, 100 ms
   and until the ROM read it; the names of `docs/formats/preset.md` §8.1,
   `2nd Pgm`, `x^2`, `RTN`; replies when the last key is up; no `type` on a
   TI model), `display-text`,

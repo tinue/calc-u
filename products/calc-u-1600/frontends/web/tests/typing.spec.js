@@ -9,7 +9,7 @@ const { gotoReady, screen, pickModel, busy, c } = h;
 // AC-33: Shift tapped alone within 400 ms is one press of the machine's
 // SHIFT: the next key is its second legend (SHIFT + 1 is ' on the PC-1600).
 test('a SHIFT tap is one SHIFT press', async ({ page }) => {
-  await gotoReady(page, '?model=2');
+  await gotoReady(page, '?model=PC-1600');
   expect(await page.evaluate(() => !!document.querySelector('.calcu-client').calcuShell)).toBe(true);
   await pickModel(page, 'PC-1600');
   await expect.poll(() => screen(page), { timeout: 20000 }).toMatch(/>/);
@@ -22,7 +22,7 @@ test('a SHIFT tap is one SHIFT press', async ({ page }) => {
 
 // A host key the engine maps: typed through the keyboard map (AC-29).
 test('host keys type through the product keyboard map', async ({ page }) => {
-  await gotoReady(page, '?model=2');
+  await gotoReady(page, '?model=PC-1600');
   await pickModel(page, 'PC-1600');
   await page.keyboard.type('PRINT 6*7', { delay: 60 });
   await page.keyboard.press('Enter');
@@ -32,7 +32,7 @@ test('host keys type through the product keyboard map', async ({ page }) => {
 // AC-36 (row 1600-9): keys during an operation are dropped and not pressed
 // after it.
 test('keys during a load are dropped', async ({ page }) => {
-  await gotoReady(page, '?model=2');
+  await gotoReady(page, '?model=PC-1600');
   await pickModel(page, 'PC-1600');
   // The keys go in at the moment the session says busy (a poll from the
   // test can miss a short operation): host-key-down/up of '7' three times.

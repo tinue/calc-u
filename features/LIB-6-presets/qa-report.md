@@ -257,7 +257,7 @@ Tests: `tests/sharp_presets_tests.cpp`, the `lib6_` cases of
 
 | ID | Result | Test case |
 |---|---|---|
-| AC-44 | Pass | `lib6_ac44_extensions_models_variants_any_case`, `lib6_ac44_place_keys_per_model`, `lib6_ac44_floppy_and_tape_not_header_keys`, `lib6_ac44_plotter_key_unknown`, `lib6_ac44_ctrl_kbii_bs_refused_in_key` |
+| AC-44 | Pass | `lib6_ac44_extensions_models_variants_any_case`, `lib6_ac44_place_keys_per_model`, `lib6_ac44_floppy_and_tape_not_header_keys`, `lib6_ac44_plotter_key_unknown`, `lib6_ac44_ctrl_kbii_bs_pressable_in_key`, `lib6_ac44_bs_ctrl_kbii_act_on_the_pc1600` (2026-11-18: the three keys pressable) |
 | AC-45 | Pass (with a finding) | `lib6_ac45_idle_at_prompt_input_and_reserve` (the prompt, `INPUT`, the RESERVE mode, MODE 1), `lib6_ac45_running_program_not_idle` (PC-1500A; on the PC-1600 machine code with the interrupts off) |
 | AC-46 | Pass | `lib6_ac46_cl_at_new0_check_at_most_five_pc1500a`, `lib6_ac46_pc1600_presses_nothing` |
 | AC-47 | Pass (the `floppy:` clause since M-47) | `lib6_ac47_ce1600p_on_pc1500_refused`, `lib6_ac47_ce158_with_ce1600p_names_both`, `lib6_ac47_slot2_on_pc1500_not_available`; M-47: `lib6_ac47_floppy_without_ce1600p_refused` (`floppy:` on a PC-1600 without the CE-1600P and `tape:` without a CE-150 or CE-1600P refused at read with the peripherals that have the place; `floppy:` on a PC-1500 not available) |

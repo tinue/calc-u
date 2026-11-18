@@ -141,8 +141,8 @@ available on the Sharp models.
 
 **Key IDs for `key:`:** a single letter, digit, or `+ - * / = ( ) .`;
 `enter`, `space`, `cl`, `mode`, `shift`, `def`, `sml`, `rcl`, `rsv`,
-`off`, `up`, `down`, `left`, `right`, `f1`–`f6`, and `on` (or `break`).
-The PC-1600's `ctrl`, `kbii` and `bs` can't be pressed from a preset.
+`off`, `up`, `down`, `left`, `right`, `f1`–`f6`, and `on` (or `break`);
+on the PC-1600 also `ctrl`, `kbii` and `bs`.
 
 ## The examples
 

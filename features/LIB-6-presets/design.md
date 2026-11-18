@@ -819,8 +819,9 @@ class SharpPresetRules final : public calcu::presets::ProductRules { /* a SharpM
   the model comes from `model:` only (AC-5). The place keys `slot-1`,
   `slot-2`, `printer`, `interface` are the descriptors' (C1600-1);
   `host-drive` is C1600-4's header key (D-31). `plotter:` is no keyword:
-  "Unknown key plotter." (row 1600-3). `ctrl`, `kbii` and `bs` are
-  refused by the typing profile's `name` (LIB-5 AC-41, `app/SharpTyping.cpp`).
+  "Unknown key plotter." (row 1600-3). Every key ID is a name of the
+  typing profile's `name` (LIB-5 AC-41, `app/SharpTyping.cpp`), the
+  PC-1600's `ctrl`, `kbii` and `bs` too (decision log 2026-11-18).
 - **AC-45, AC-53 idle.** `readyNow` is `Machine::isKeyReady()`;
   `stretch` 20 frames and `sample` one frame, frames as the cores count
   them (`kPC1500CyclesPerFrame`; LIB-5 qa-report, deviations). First
@@ -880,7 +881,7 @@ product's harness entry in virtual time, or `presets::readPreset` with
 
 | Task | What | ACs | Test (file: cases, group) |
 |---|---|---|---|
-| P1 | Models, places, keys | AC-44 | `sharp_presets_tests.cpp`: `lib6_ac44_extensions_models_variants_any_case`, `lib6_ac44_place_keys_per_model`, `lib6_ac44_plotter_key_unknown`, `lib6_ac44_floppy_and_tape_not_header_keys`, `lib6_ac44_ctrl_kbii_bs_refused_in_key` |
+| P1 | Models, places, keys | AC-44 | `sharp_presets_tests.cpp`: `lib6_ac44_extensions_models_variants_any_case`, `lib6_ac44_place_keys_per_model`, `lib6_ac44_plotter_key_unknown`, `lib6_ac44_floppy_and_tape_not_header_keys`, `lib6_ac44_ctrl_kbii_bs_pressable_in_key`, `lib6_ac44_bs_ctrl_kbii_act_on_the_pc1600` |
 | P2 | Idle | AC-45, AC-53 | `lib6_ac45_idle_at_prompt_input_and_reserve`, `lib6_ac45_running_program_not_idle`, `lib6_ac53_sharp_idle_rule_values` |
 | P3 | After the build | AC-46 | `lib6_ac46_cl_at_new0_check_at_most_five_pc1500a`, `lib6_ac46_pc1600_presses_nothing` |
 | P4 | Hardware together | AC-47 | `lib6_ac47_ce1600p_on_pc1500_refused`, `lib6_ac47_ce158_with_ce1600p_names_both`, `lib6_ac47_slot2_on_pc1500_not_available` (the `floppy:` clause: LIB-7 §10.6, M-47) |

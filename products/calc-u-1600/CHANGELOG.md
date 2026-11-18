@@ -94,9 +94,8 @@
 - **New in presets:** `not-expect:`, and regular expressions `/…/` for
   `expect:` and `not-expect:`. `screenshot:` writes Copy Screen's picture
   into the save folder (in the Web version, a download).
-- **Not in presets:** the keys `ctrl`, `kbii` and `bs` can't be pressed
-  (in the harness's `key` on the PC-1600 neither), and the debugger steps
-  are not available on the Sharp models.
+- **Not in presets:** the debugger steps are not available on the Sharp
+  models.
 - **A preset is checked before the machine is given up.** A missing
   module or disk, a host drive folder that does not exist, a ROM image
   that does not fit, a key that is none and a character without a key

@@ -353,8 +353,6 @@ keys:
   are still separate presses.
 - A word that is not a key ID is an error. On the TI models a two-digit
   number such as `12` is an error; `1 2` is two digit keys.
-- The PC-1600 keys `ctrl`, `kbii` and `bs` can't be pressed from a
-  preset.
 
 ### 5.2 Media
 
@@ -718,7 +716,7 @@ ASCII spellings of the printer names with characters outside ASCII:
 - a single letter, digit, or `+ - * / = ( ) .`;
 - `enter`, `space`, `cl`, `mode`, `shift`, `def`, `sml`, `rcl`, `rsv`,
   `off`, `up`, `down`, `left`, `right`, `f1`–`f6`, and `on` (or `break`).
-- `ctrl`, `kbii` and `bs` (PC-1600) can't be pressed from a preset.
+- on the PC-1600 also `ctrl`, `kbii` and `bs`.
 
 ## 9. From version 1
 

@@ -75,15 +75,12 @@ std::optional<std::vector<Press>> pc1600Char(char32_t c, const TypingSupport* s)
 }
 
 // AC-41: the model's key IDs in any case, `break` for `on`; nothing else
-// (`ent` is no longer a name). LIB-6 AC-44 (preset.md §5.1, §8.2): the
-// PC-1600's `ctrl`, `kbii` and `bs` cannot be pressed by name (a preset's
-// `key:`, the harness's `key`).
-std::function<std::optional<std::vector<Press>>(std::string_view)> namesOf(const std::vector<std::string>& ids,
-                                                                          bool pc1600) {
-    return [&ids, pc1600](std::string_view n) -> std::optional<std::vector<Press>> {
+// (`ent` is no longer a name). Every key ID is a name, the PC-1600's
+// `ctrl`, `kbii` and `bs` too (LIB-6 AC-44, user 2026-11-18).
+std::function<std::optional<std::vector<Press>>(std::string_view)> namesOf(const std::vector<std::string>& ids) {
+    return [&ids](std::string_view n) -> std::optional<std::vector<Press>> {
         const std::string w = calcu::machine::lowerAscii(n);
         if (w == "break") return std::vector<Press>{Press{KeyId{sharp::kOnKeyId}}};
-        if (pc1600 && (w == "ctrl" || w == "kbii" || w == "bs")) return std::nullopt;
         for (const std::string& k : ids)
             if (k == w) return std::vector<Press>{Press{KeyId{k}}};
         return std::nullopt;
@@ -108,11 +105,11 @@ TypingProfile sharpProfile(const char* model) {
         p.firstPressOfStep = calcu::typing::StartRule::KeyReadiness;   // AC-14 (C1600-1 AC-21)
         p.firstPressBound = calcu::typing::ticksOf(15.0, rate);
         p.charKeys = pc1600Char;
-        p.name = namesOf(sharp::pc1600KeyIds(), true);
+        p.name = namesOf(sharp::pc1600KeyIds());
     } else {
         p.queuedWaitsForReadiness = true;   // AC-31, row 1600-8
         p.charKeys = pc1500Char;
-        p.name = namesOf(sharp::pc1500KeyIds(), false);
+        p.name = namesOf(sharp::pc1500KeyIds());
     }
     return p;
 }

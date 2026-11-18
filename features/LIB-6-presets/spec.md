@@ -563,8 +563,9 @@ Harness
   (`Core/Preset/PresetFile.cpp:745-946`; `presets.md` PR-11); a floppy
   disk and a cassette are not header keys but the steps `floppy:`
   and `cassette:` (`preset.md` §5.2; LIB-7). The key `plotter:` is
-  gone (behaviour change 1600-3). The keys `ctrl`, `kbii` and `bs` are
-  refused in a `key:` step (`preset.md` §5.1).
+  gone (behaviour change 1600-3). Every key ID of the model (C1600-1
+  AC-9, AC-10) can be pressed in a `key:` step, `ctrl`, `kbii` and `bs`
+  on the PC-1600 included (`preset.md` §8.2).
 - [ ] **AC-45** — Given a Sharp machine, then it is idle when it waits
   for a key from the user: it reports key readiness (C1600-1 AC-21: the
   ROM in its command loop or reading the key matrix for a key) for 20
@@ -807,3 +808,4 @@ Harness
 | Calc-U-59's Web follows AC-25 and D-13: a preset's `screenshot:` is handed over with KeepFile as a download (it was written into the browser's save folder); `LibraryPartsSetup::screenshotFolder` is gone | user, 2026-11-17, Q-1 of `docs/reviews/e-simplification.md`; ledger row 59-63 | 2026-11-17 |
 | The step that inserts a cassette is `cassette:` (was `tape:`; the ACs edited in place) | user, 2026-11-17 (Part E review Q-6); LIB-7 AC-26; behaviour change 1600-51 | 2026-11-17 |
 | Release simplification R-4: the harness command `switch <peripheral> <control> on\|off` is `set-control`, the name of the session command it sends; the step `syncclock:` is `sync-clock:` (and so its harness command), as `docs/formats/README.md` §1 spells keywords; AC-27, AC-34 and the text edited in place | `docs/reviews/release-simplification.md` V-5, V-7; ledgers 59-67, 1600-55 | 2026-11-18 |
+| `ctrl`, `kbii` and `bs` can be pressed by name in a `key:` step and the harness's `key` on the PC-1600 (AC-44 edited in place; they were refused since M-46) | user, 2026-11-18 (an oversight; wish 10 of `docs/reviews/test-framework-analysis.md`); ledger 1600-56 | 2026-11-18 |

@@ -21,7 +21,7 @@
 namespace sessions = calcu::sessions;
 
 MachineController::MachineController(QObject* parent) : QObject(parent) {
-    // LIB-14: the settings dialog reads and writes the product's file
+    // The settings dialog reads and writes the product's file
     // through the session; a change the product applies at once.
     cu1600::SharpSessionOptions options;
     options.settings = &AppPaths::folders().settings();
@@ -42,7 +42,7 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
             m_longestGapMs = std::max(m_longestGapMs, std::chrono::duration<double, std::milli>(t - m_lastCall).count());
         m_lastCall = t;
     });
-    // C1600-3: the DAP server's socket; the part listens when the settings
+    // The DAP server's socket; the part listens when the settings
     // or --dap say so.
     if (cu1600::dap::DapPart* dap = app().dapPart()) m_dapSocket = std::make_unique<DapSocket>(*dap);
 }
@@ -51,8 +51,8 @@ MachineController::~MachineController() {
     // The DAP's socket goes first: no message reaches the part after it.
     if (m_dapSocket && app().dapPart()) app().dapPart()->setTransport(nullptr);
     m_dapSocket.reset();
-    // The product quits: what a medium still has to save is written (LIB-7
-    // AC-13; the parts' `closing`, LIB-3). No message goes out after it.
+    // The product quits: what a medium still has to save is written (the
+    // parts' `closing`). No message goes out after it.
     m_session.reset();
 }
 
@@ -148,7 +148,7 @@ void MachineController::onMessage(const sessions::Message& m) {
         return;
     }
     if (m_sound && !std::holds_alternative<sessions::ReplyMessage>(m) && !std::holds_alternative<sessions::ServiceAsk>(m))
-        m_sound->deliver(m);   // SoundStart, SoundSamples, SoundStop (LIB-3 AC-20, AC-37)
+        m_sound->deliver(m);   // SoundStart, SoundSamples, SoundStop
 }
 
 const calcu::machine::DisplayOutput* MachineController::display() const {

@@ -51,7 +51,7 @@ std::optional<cu1600::BundleDirs>& chosenBundleDirs() {
 } // namespace
 
 calcu::qt6::HostFolders& folders() {
-    // LIB-9 AC-2: on macOS the settings base is the app's Application Support
+    // On macOS the settings base is the app's Application Support
     // folder as macOS gives it (inside the container of a sandboxed app).
     static calcu::qt6::HostFolders f(cu1600::settingsDecl(),
 #if defined(Q_OS_MACOS)

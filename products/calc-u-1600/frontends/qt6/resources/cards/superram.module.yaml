@@ -19,7 +19,7 @@
 #
 #   * HALF-SELECT within the current 32 KB bank -- PVOUT (pin 5), the
 #     host's Port 31H b4, picks the low or high 16 KB. Same nested
-#     sub-range the CE-1601M carries in its bank-window (spec §4 / §9):
+#     sub-range the CE-1601M carries in its bank-window:
 #     "selected bank AND PVOUT level", one level deeper than a plain
 #     region.
 #

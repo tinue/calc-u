@@ -13,8 +13,8 @@ calculator alone in landscape. The calculator comes first: the faceplate is as l
 allows, and the panels (inspector, paper, printer) appear only when
 the faceplate spans the full width and leaves at least 220 px below it --
 in portrait and in tall windows, not on a phone in landscape or in a wide,
-short window. The paper panel is the library's (`CalcuPaperPanel`, LIB-8)
-and is always there, named after the plotter plugged in (LIB-8 AC-36).
+short window. The paper panel is the library's (`CalcuPaperPanel`)
+and is always there, named after the plotter plugged in.
 Narrower than 700 px, the inspector gives way to the printer, or to the
 paper while a plotter is plugged in.
 
@@ -23,18 +23,22 @@ flowchart LR
     Page["Page (main thread)<br/>React: menu bar, faceplate, LCD canvas,<br/>control bar, panels, dialogs"]
     Worker["library worker (Web Worker)<br/>WorkerHost: the library's app session<br/>with SharpAppPart and SharpWebPart, 60 Hz host call"]
     FS["Emscripten FS<br/>/bundle /presets /uploads<br/>/persist = IndexedDB (IDBFS)"]
-    Page -- "LIB-3 command / request / answer" --> Worker
-    Worker -- "LIB-3 state, stream, reply,<br/>ask, sound messages" --> Page
+    Page -- "command / request / answer" --> Worker
+    Worker -- "state, stream, reply,<br/>ask, sound messages" --> Page
     Worker --- FS
 ```
+
+The messages are the session protocol's
+([`docs/formats/session-protocol.md`](../../../../docs/formats/session-protocol.md)
+at the repository root).
 
 ## Layout of `frontends/web/`
 
 | File | What it is |
 |---|---|
-| `bindings.cpp` | The product's factory of the library's app session (`CALCU_WEB_PRODUCT(CalcU1600Host, …)`): LIB-14's `SettingsPart`, LIB-4's `ControlPart` (no host folder in a browser and the uploads folder of LIB-13 AC-8, `SharpAppPartOptions`), `SharpAppPart`, `SharpWebPart` (app layer) and the session; the library's `WorkerHost` translates its messages |
+| `bindings.cpp` | The product's factory of the library's app session (`CALCU_WEB_PRODUCT(CalcU1600Host, …)`): the library's `SettingsPart` and `ControlPart` (no host folder in a browser and the uploads folder for Upload Preset…'s files, `SharpAppPartOptions`), `SharpAppPart`, `SharpWebPart` (app layer) and the session; the library's `WorkerHost` translates its messages |
 | `calc-engine-worker.js` | The product's entry to the library's worker (`library/web/src/worker.js`, `dist/library-worker.js`): name, wasm, mount `/persist`, lock `calcu1600-storage` |
-| `src/CalcU1600.jsx` | The page, put together from the React set's shell (LIB-14 1600, M-49): `useCalcuShell` over the library's `useShell()`, `ShellMenuBar`, `ShellControlBar` (the slot picker `ShellSlotPicker` with Name & Save, the disk controls in its `extra`), the shell's dialogs (Saved Media… `ShellSavedMedia`), notices, "Loading…" and "ROMs missing"; the product's data from the request `c1600.shell-product` through the library's `useShellProduct` (`app/SharpShellProduct`: items, labels, the settings spec), the faceplate's hit map and LCD layout from `c1600.faceplate-map {model}` through `useFaceplateMaps`; Load Preset… and the drop through `calcuOpenFiles` and `calcuFileDrop` (a drop of exactly one file, LIB-13 AC-25); the page's glue is the library's since Part E (E-5: `library/web/components/useShellProduct.jsx`, `ShellMedia.jsx`; `calcImage`, `sizeCanvas` in `library/web/src/canvas.js`). The loaders (C1600-2): `c1600.file-kind`, `c1600.load-basic`, `c1600.code-plan` (asked again per keystroke in the address dialog), `c1600.load-code`, each carrying the file's bytes (`app/SharpLoaderPart`); `engine.js`, `MenuBar.jsx`, `ControlBar.jsx` are gone |
+| `src/CalcU1600.jsx` | The page, put together from the React set's shell: `useCalcuShell` over the library's `useShell()`, `ShellMenuBar`, `ShellControlBar` (the slot picker `ShellSlotPicker` with Name & Save, the disk controls in its `extra`), the shell's dialogs (Saved Media… `ShellSavedMedia`), notices, "Loading…" and "ROMs missing"; the product's data from the request `c1600.shell-product` through the library's `useShellProduct` (`app/SharpShellProduct`: items, labels, the settings spec), the faceplate's hit map and LCD layout from `c1600.faceplate-map {model}` through `useFaceplateMaps`; Load Preset… and the drop through `calcuOpenFiles` and `calcuFileDrop` (a drop of exactly one file); the page's glue is the library's (`library/web/components/useShellProduct.jsx`, `ShellMedia.jsx`; `calcImage`, `sizeCanvas` in `library/web/src/canvas.js`). The loaders: `c1600.file-kind`, `c1600.load-basic`, `c1600.code-plan` (asked again per keystroke in the address dialog), `c1600.load-code`, each carrying the file's bytes (`app/SharpLoaderPart`) |
 | `src/*.jsx`, `src/*.js` | The client, compiled with the library's page side (`library/web/src/`) into one `dist/calc.js` (one global, `CalcU1600`) |
 | `calc.css` | Styles, all under `.calcu-client`, light and dark |
 | `app/` | The installable app's page, manifest and stylesheet; its app page, service worker and worker entry are the library's (`library/web/app/`) |
@@ -69,7 +73,7 @@ library's `library/web/tools/serve.py`; the offline and prerender tests use
 CMake option `CALCU_WEB_TEST_AIDS` ON in `build/web`: the session answers
 the Web tests' `c1600.upload` and `c1600.display-text`); `build.sh
 --release` the release build, without them (the option OFF; only
-`app/SharpWebPart.cpp` is compiled again; LIB-15 AC-29). CI's `web` job
+`app/SharpWebPart.cpp` is compiled again). CI's `web` job
 builds the test build and tests it, then builds `--release`, checks it
 (`tests/web_no_test_aids.sh frontends/web/dist`) and uploads that one as
 `Calc-U-1600-web-<version>.zip`; a release attaches it as
@@ -112,8 +116,8 @@ builds the test build and tests it, then builds `--release`, checks it
   `.calcu-key[aria-label=<key>]`, `[data-panel=inspector|paper|printer]`
   (`data-empty`; the paper panel's own names are `[data-calcu=paper-owner]`,
   `paper-copy`, `paper-cut`, … of `library/web/components/PaperPanel.jsx`),
-  `[data-dialog=...]`. `pause` and `resume` are the library's run control
-  (LIB-10); the title follows the `run-state` topic.
+  `[data-dialog=...]`. `pause` and `resume` are the library's run control;
+  the title follows the `run-state` topic.
 - **Same origin.** The worker and the service worker must come from the
   page's origin.
 
@@ -131,10 +135,10 @@ builds the test build and tests it, then builds `--release`, checks it
   A tab that doesn't get it reads the storage once, keeps its changes in
   memory and shows a banner and the library's notice (`web.storage`).
 - Hidden, the page sends the session `suspend` and the worker stops
-  calling it; shown again, `continue` (LIB-3 AC-36).
+  calling it; shown again, `continue`.
 - File ▸ Import Media… / Saved Media… reach the save folder through the
   library's media part (`media.import`, `media.export`, `media.delete`; the
-  dialog is the library's `CalcuSavedMediaDialog` in `ShellSavedMedia`, LIB-7 AC-43).
+  dialog is the library's `CalcuSavedMediaDialog` in `ShellSavedMedia`).
 
 ## What the web client leaves out
 
@@ -163,15 +167,15 @@ Things that are only in the Qt app, or that a browser can't do:
   `screen-key-down` / `screen-key-up`.
 - **Clipboard.** ⌘/Ctrl+C copies the screen; ⌘/Ctrl+V pastes text (the
   browser's paste event).
-- **Drag and drop.** One file, sent as the session's `open` (LIB-13, way
-  `drop`, an upload): the session refuses a file over 1 MiB, decides what
+- **Drag and drop.** One file, sent as the session's `open` (way `drop`, an
+  upload): the session refuses a file over 1 MiB, decides what
   it is, imports a medium first and keeps a file that comes while busy; a
   program file comes back as the topic `c1600.program-opened` and runs the
   flow of Load BASIC Program… or Load Machine Code…. Upload Preset… sends
   its files the same way (way `dialog`; several are one folder in
-  `/uploads`, AC-8).
+  `/uploads`, the preset among them opened).
 - **Audio.** The AudioContext starts on the first key or click (a browser
-  rule); the session sends the sound at regular speed only (LIB-3 AC-37),
+  rule); the session sends the sound at regular speed only,
   and the library's `audio.js` plays it through its AudioWorklet.
 - **Keys during an operation** (a preset, a reset, a model switch) are
-  dropped (behaviour change 1600-9).
+  dropped, not pressed after it.

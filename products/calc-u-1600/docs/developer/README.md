@@ -11,7 +11,7 @@ with its debugger) is covered by the help (below, "The help").
 - [roms/README.md](../../roms/README.md) — where each ROM image comes from
   and its checksum; `roms/fetch_roms.sh` downloads them: the full set (21
   dumps and the CE-502B's module definition) that the one ROM lookup checks
-  at every start (LIB-12; Building.md, "Get the ROMs").
+  at every start (Building.md, "Get the ROMs").
 - [Cloud-Sessions.md](Cloud-Sessions.md) — how the repository is set up for
   Claude Code cloud sessions; [CLAUDE.md](../../CLAUDE.md) holds the project
   instructions for Claude Code.
@@ -25,7 +25,7 @@ with its debugger) is covered by the help (below, "The help").
 
 | Folder | What's in it |
 |---|---|
-| `core/` | The emulator, free of Qt: CPUs, machines, connectors and cards, loaders, the debugger's targets, views and listings (`core/Debug/`); `tests/` holds the test suite (presets are the library's, LIB-6; the resumable jobs the library's operations, LIB-3). The program loaders (C1600-2) are `core/Loaders` (what a file is, BASIC, the one machine-code plan, its write and reply, one sentence per refusal) and `core/BasicTyping` (typing a listing in through the typing engine), on the loader memory access kind (`c1600.loader-memory`, `core/Machine/SharpLoaderMemory`); `core/ProgramFile` and `core/MachineCodeFile` hold the classifier and the plan |
+| `core/` | The emulator, free of Qt: CPUs, machines, connectors and cards, loaders, the debugger's targets, views and listings (`core/Debug/`); `tests/` holds the test suite (presets are the library's; the resumable jobs the library's operations). The program loaders are `core/Loaders` (what a file is, BASIC, the one machine-code plan, its write and reply, one sentence per refusal) and `core/BasicTyping` (typing a listing in through the typing engine), on the loader memory access kind (`c1600.loader-memory`, `core/Machine/SharpLoaderMemory`); `core/ProgramFile` and `core/MachineCodeFile` hold the classifier and the plan |
 | `app/` | The app logic every frontend shares, free of Qt: the live machine and its operations, the media kinds of the library's media part, pacing, settings, paths, layouts ([App-Layer.md](App-Layer.md)); the loaders' commands in `app/SharpLoaderPart` (`c1600.file-kind`, `load-basic`, `type-basic`, `code-plan`, `load-code`; the harness's `pc1600 …`); `app/tests/` |
 | `frontends/web/` | The web client: WASM bindings, worker, React UI, installable app, Playwright tests ([Web-Client.md](Web-Client.md)) |
 | `frontends/qt6/` | The desktop app (`frontends/qt6/app/`) and its bundled resources: cards, faceplates, platform files (`frontends/qt6/resources/`) |
@@ -83,14 +83,14 @@ cite it as `Ref/<path>`, a path inside that repository, e.g.
 
 ## The help
 
-The user guide is the help (LIB-16, ADR 0036; on the web at
+The user guide is the help (on the web at
 <https://calc-u.org/1600/>), Markdown in the source repository:
 
 - [help/](../../help/) holds Calc-U-1600's product parts, chapter by
   chapter (`help/help.yaml` lists them), with their pictures in
   `help/images/`; the family's shared parts are in
   [library/help/](../../../../library/help/) at the repository root.
-  The ten chapters are the family's (LIB-16 AC-1); developer documents
+  The ten chapters are the family's; developer documents
   stay here in `docs/developer/` and are not help.
 - `tools/help check calc-u-1600` (at the repository root) checks it: the
   chapters, every link and anchor, every picture used, no product word in

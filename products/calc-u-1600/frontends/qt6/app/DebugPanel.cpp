@@ -238,8 +238,8 @@ void DebugPanel::clearDebug() {
 // ── TRACE ─────────────────────────────────────────────────────────────
 
 // The button sends `trace {button: true}` (the library names the file
-// TRACE.bin, AC-23) and `trace {off: true}`; the library's trace session
-// limits and ends it, with its notice (LIB-10 AC-24, AC-43).
+// TRACE.bin) and `trace {off: true}`; the library's trace session
+// limits and ends it, with its notice.
 void DebugPanel::setTraceEnabled(bool enabled) {
     if (m_controller->traceActive() == enabled) return;
     m_controller->send(calcu::debugger::kTraceCommand,

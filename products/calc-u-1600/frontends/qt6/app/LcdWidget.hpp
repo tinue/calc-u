@@ -7,7 +7,7 @@
 #include "machine/Ids.hpp"
 
 // Dot-matrix LCD + status-indicator renderer of the `display` topic's output
-// (LIB-14 Part D, D-28: no frame type of its own). PC-1500/1500A: an
+// (no frame type of its own). PC-1500/1500A: an
 // indicator bar above the dot matrix, both sized off the panel's own height.
 // PC-1600: a fixed-legend status strip above a 156x32 graphics area, both
 // positioned as fractions of the panel's own width/height (app/LcdLayout).
@@ -15,7 +15,7 @@
 // last image.
 //
 // It takes no mouse input: the pointer on the display (full speed while
-// held, LIB-14 AC-43) is the shell's FaceplateInput on the faceplate.
+// held) is the shell's FaceplateInput on the faceplate.
 class LcdWidget : public QWidget {
     Q_OBJECT
 public:

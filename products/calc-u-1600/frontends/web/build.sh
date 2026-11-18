@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the web client into frontends/web/dist/ (gitignored): the WASM engine (core/ +
 # app/ + frontends/web/bindings.cpp, CMake target calcu_web of the repository's
-# root project, ADR 0003, built in build/web), the files it loads
+# root project, built in build/web), the files it loads
 # (ROMs, bundled cards and disks, the curated presets), the faceplates, the
 # client script and stylesheet, the installable app (app/) and a demo page.
 # docs/developer/Web-Client.md is the contract for what dist/ contains.
@@ -9,7 +9,7 @@
 # Needs emcmake/cmake (Homebrew `emscripten` or an activated emsdk; CI pins
 # the version), ninja, node, and ROMs in roms/ (roms/fetch_roms.sh).
 # --release: without the test-only commands (the CMake option
-# CALCU_WEB_TEST_AIDS off in build/web; LIB-15 AC-29), as the release's zip
+# CALCU_WEB_TEST_AIDS off in build/web), as the release's zip
 # is built; without it the test build the Playwright tests drive. Switching
 # compiles only the files the option changes again.
 set -euo pipefail
@@ -50,13 +50,13 @@ mkdir -p "$DIST/wasm" "$DIST/bundle" "$DIST/img" "$DIST/app" "$DIST/vendor"
 
 cp "$BUILD/products/calc-u-1600/calcu1600-core.js" "$BUILD/products/calc-u-1600/calcu1600-core.wasm" "$DIST/wasm/"
 # What the engine reads as bundled resources (AppPaths::bundledResourcesDir):
-# the ROM full set (the dumps and the CE-502B's module definition; LIB-12
-# AC-12, AC-14) and the bundled card and disk templates. The host-drive ROM
+# the ROM full set (the dumps and the CE-502B's module definition) and the
+# bundled card and disk templates. The host-drive ROM
 # stays out: the web has no host drive. CALCU1600_ROMS_DIR: another ROM
 # folder (tests/rom_missing_build.sh).
 ROMS="${CALCU1600_ROMS_DIR:-$REPO/roms}"
 find "$ROMS" -maxdepth 1 -type f \( -iname '*.bin' -o -iname '*.rom' -o -name '*.module.yaml' \) -exec cp {} "$DIST/bundle/" \;
-cp "$REPO"/frontends/qt6/resources/cards/*.yaml "$REPO"/frontends/qt6/resources/cards/*.wav "$DIST/bundle/"   # the empty tape's sound too (LIB-7 D-23)
+cp "$REPO"/frontends/qt6/resources/cards/*.yaml "$REPO"/frontends/qt6/resources/cards/*.wav "$DIST/bundle/"   # the empty tape's sound too
 
 cp "$REPO"/frontends/qt6/resources/faceplates/*.png "$DIST/img/"
 cp "$REPO/frontends/qt6/resources/linux/calc-u-1600.png" "$DIST/img/icon.png"

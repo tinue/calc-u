@@ -14,10 +14,9 @@ class LcdWidget;
 
 // Faceplate art + embedded LCD: a resizable widget that keeps the body
 // art's aspect ratio (heightForWidth) and lets its child LcdWidget track
-// every resize. The pointer on it is the shell's (LIB-14 AC-24, AC-43:
-// Shell::setFaceplate with the hit map of app/SharpShellProduct and
-// artScale()); it draws the keys live input holds pressed (LIB-5 AC-19,
-// the `held-keys` topic).
+// every resize. The pointer on it is the shell's (Shell::setFaceplate with the hit map of app/SharpShellProduct and
+// artScale()); it draws the keys live input holds pressed (the
+// `held-keys` topic).
 class FaceplateWidget : public QWidget {
     Q_OBJECT
 public:
@@ -26,7 +25,7 @@ public:
     void setModel(const calcu::machine::ModelId& model);
     void setHeldKeys(std::vector<std::string> keys);
     // Draws `name` pressed for a moment: a press too short to show in the
-    // held keys (the host's SHIFT tap, LIB-5 AC-33, is down and up at once).
+    // held keys (the host's SHIFT tap is down and up at once).
     void flashKey(const std::string& name);
     // The keys drawn pressed now: the held ones and the flashed ones.
     std::vector<std::string> shownKeys() const;
@@ -44,7 +43,7 @@ public:
     // The centre of the key `name` in widget pixels; (-1, -1) if the model
     // has no such key (the scenarios' `hold-key:`).
     QPoint keyCentre(const QString& name) const;
-    // The shell's productFirst hook (LIB-14 D-44): notes where the pointer
+    // The shell's productFirst hook: notes where the pointer
     // went down, in art pixels, so a held key that has several rectangles
     // (the PC-1600's two SHIFT keys) is drawn on the one pressed. Never
     // takes the press.

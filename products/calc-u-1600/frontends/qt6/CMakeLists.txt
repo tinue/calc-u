@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.21)
 # The Calc-U-1600 Qt6 app, a subdirectory of the product in the repository's
-# root CMake project (ADR 0003; the release packaging in CI builds it in
+# root CMake project (the release packaging in CI builds it in
 # build/release). It does not configure on its own.
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  message(FATAL_ERROR "frontends/qt6 is part of the root CMake project (ADR 0003): "
+  message(FATAL_ERROR "frontends/qt6 is part of the root CMake project: "
                       "configure the repository root, e.g. cmake -S ../../../.. -B ../../../../build/all")
 endif()
 # The minimum macOS for the .app is the root project's
@@ -12,7 +12,7 @@ endif()
 # tools/refresh_sharpdx.sh. C++20 and Homebrew's Qt prefix are the root's too.
 if(APPLE)
   # MacAppSupport.mm and MacShotSupport.mm need Objective-C++ (the paper's
-  # clipboard path is the Qt6 component set's qt6/MacClipboard.mm since M-45).
+  # clipboard path is the Qt6 component set's qt6/MacClipboard.mm).
   project(CalcU1600Qt CXX OBJCXX)
 else()
   project(CalcU1600Qt CXX)
@@ -115,10 +115,10 @@ endif()
 
 target_include_directories(CalcU1600Qt PRIVATE app ${CMAKE_CURRENT_BINARY_DIR}/generated)
 target_link_libraries(CalcU1600Qt PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Network)
-# LIB-14 AC-44 (D.6): harness attach in development and test builds
-# (CALCU_ATTACH: POSIX trees with the tests), and its clients in the same
-# process: the screenshot scenarios (`--shots`) and the pacing probe
-# (`--pacing-probe <s>`, LIB-17 §5). Release builds and Windows have neither.
+# Harness attach in development and test builds (CALCU_ATTACH: POSIX trees
+# with the tests), and its clients in the same process: the screenshot
+# scenarios (`--shots`) and the pacing probe (`--pacing-probe <s>`).
+# Release builds and Windows have neither.
 if(CALCU_ATTACH)
   target_sources(CalcU1600Qt PRIVATE
     app/screenshots/ShotScenario.cpp
@@ -172,19 +172,19 @@ endif()
 set_target_properties(CalcU1600Qt PROPERTIES OUTPUT_NAME "Calc-U-1600")
 
 # ---- Memory-card resource files, and bundled ROMs (loose, NOT .qrc --
-# Core's scanMemoryCardDirectory() and the ROM lookup (DirectoryBundle,
-# LIB-12) read a real filesystem directory, so these must be real files on
+# Core's scanMemoryCardDirectory() and the ROM lookup (DirectoryBundle)
+# read a real filesystem directory, so these must be real files on
 # disk) ----
 set(CARD_RESOURCES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources/cards)
 file(GLOB MODULE_FILES ${CARD_RESOURCES_SRC_DIR}/*.module.yaml)
 # Bundled CE-1600F floppy disks (*.floppy.yaml, Connector/FloppyImageFile.hpp)
 # -- listed in the disk picker ahead of the user's saved ones.
 file(GLOB FLOPPY_FILES ${CARD_RESOURCES_SRC_DIR}/*.floppy.yaml)
-# The bundled cassette template "Empty" (*.cassette.yaml with its sound, LIB-7 AC-42, D-23).
+# The bundled cassette template "Empty" (*.cassette.yaml with its sound).
 file(GLOB CASSETTE_FILES ${CARD_RESOURCES_SRC_DIR}/*.cassette.yaml ${CARD_RESOURCES_SRC_DIR}/*.wav)
 set(ROM_RESOURCES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../roms)
 # The ROM full set as roms/fetch_roms.sh fetches it: the dumps and the
-# CE-502B's module definition (LIB-12 AC-12, AC-14).
+# CE-502B's module definition.
 file(GLOB BUNDLED_ROM_FILES ${ROM_RESOURCES_SRC_DIR}/*.ROM ${ROM_RESOURCES_SRC_DIR}/*.bin
      ${ROM_RESOURCES_SRC_DIR}/*.module.yaml)
 # Calc-U-1600's own PC-1600 host-directory drive ROM: tracked in the repo
@@ -214,7 +214,7 @@ else()
   install(FILES ${BUNDLED_RESOURCE_FILES} DESTINATION resources)
 endif()
 
-# ---- Bundled example presets (C1600-4 AC-17, LIB-6 AC-31; row 1600-21):
+# ---- Bundled example presets:
 # the bundle file examples/bundle.yaml and exactly the files it lists, each
 # `{ file: … }` (the presets and their files), loose under Resources/examples
 # (AppPaths::bundledExamplesDir(); the preset list reads them). The Web build
@@ -282,12 +282,12 @@ else()
   install(FILES ${LICENSE_FILES} DESTINATION licenses)
 endif()
 
-# LIB-14 Part D (D.8): CalcU1600QtTests, the window put together from the
-# shell, its session on the real ROMs (a bundle folder of the tests' own),
-# offscreen; the repository's one runner with a QApplication
+# CalcU1600QtTests, the window put together from the shell, its session on
+# the real ROMs (a bundle folder of the tests' own), offscreen; the
+# repository's one runner with a QApplication
 # (library/qt6/tests/QtTestMain.cpp). Longer: on the real clock it takes
-# about 25 s (the design's Frequent did not fit the budget, M-49 qa-report);
-# its ROMs-missing case and the attach check are Frequent.
+# about 25 s, too long for the Frequent budget; its ROMs-missing case and
+# the attach check are Frequent.
 if(CALCU_TESTS)
   find_package(Qt6 QUIET COMPONENTS Test)
   file(GLOB CALCU1600_QT_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*_tests.cpp)
@@ -318,13 +318,13 @@ if(CALCU_TESTS)
   calcu_add_test(CalcU1600QtTests longer COMMAND CalcU1600QtTests
                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../..
                  PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
-  # AC-19: a ROM folder without one file, in a process of its own (the
-  # bundle folder is chosen once per process).
+  # A ROM folder without one file, in a process of its own (the bundle
+  # folder is chosen once per process).
   calcu_add_test(CalcU1600QtTests.romsMissing frequent
-                 COMMAND ${CMAKE_COMMAND} -E env CALCU1600_QT_ROMS_MISSING=1 $<TARGET_FILE:CalcU1600QtTests> lib14_ac19
+                 COMMAND ${CMAKE_COMMAND} -E env CALCU1600_QT_ROMS_MISSING=1 $<TARGET_FILE:CalcU1600QtTests> roms_missing_in_window
                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../..
                  PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
-  # D.8 Q12: the shot runner steps the machine through attach only.
+  # The shot runner steps the machine through attach only.
   calcu_add_test(CalcU1600ShotsThroughAttach frequent
                  COMMAND ${CMAKE_COMMAND} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/app/screenshots/ShotRunner.cpp
                          -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_shots_through_attach.cmake)

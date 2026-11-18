@@ -1,13 +1,12 @@
-// The Calc-U-1600 Web engine (LIB-15 design §3.6, §4; M-31): the product's
+// The Calc-U-1600 Web engine: the product's
 // factory of the library's app session for the library's Web Worker host.
 // All the rest is the library's (library/web/glue/: WorkerHost translates
 // the session's messages to the page and back; shell/HostSession: the
-// settings file, LIB-14's SettingsPart, the order) and the app layer's
+// settings file, the library's SettingsPart, the order) and the app layer's
 // (SharpAppPart: the machine, the operations; SharpWebPart: what only the
 // page asks for). The page is put together from the React set's shell
-// (LIB-14 Part D), so the session also has LIB-4's ControlPart (with the
-// product's rules: no host folder in a browser, AC-18) and LIB-14's
-// SettingsPart. Built by frontends/web/build.sh (CMake target calcu_web)
+// so the session also has the library's ControlPart (with the product's
+// rules: no host folder in a browser) and its SettingsPart. Built by frontends/web/build.sh (CMake target calcu_web)
 // into dist/wasm/.
 
 #include <memory>
@@ -40,7 +39,7 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
                                                       cu1600::BundleDirs{start.bundleDir, start.presetsDir});
     cu1600::SharpAppPartOptions options;
     options.canMountHostFolder = false;
-    options.uploadFolder = start.uploadsDir;   // LIB-13 AC-8: several files of Upload Preset…
+    options.uploadFolder = start.uploadsDir;   // several files of Upload Preset…
     parts->part = std::make_unique<cu1600::SharpAppPart>(parts->typed, *parts->paths, std::move(options));
     parts->web = std::make_unique<cu1600::SharpWebPart>(*parts->part, start.uploadsDir);
 

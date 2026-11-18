@@ -1,7 +1,7 @@
-// What the Calc-U-1600 Web tests share (M-49: the page on the React set's
+// What the Calc-U-1600 Web tests share (the page on the React set's
 // shell). Elements are found by the shell's names (library/shell/
 // ObjectNames.hpp: data-calcu); the session through the test hook, the
-// root element's `calcuShell` (LIB-15's createShell): its commands,
+// root element's `calcuShell` (the React set's createShell): its commands,
 // requests and topics.
 const { expect } = require('@playwright/test');
 
@@ -44,8 +44,7 @@ async function pickModel(page, model) {
   const index = await picker.locator('option').evaluateAll((os, m) => os.findIndex((o) => o.textContent === m), model);
   await picker.selectOption(String(index));
   await expect(page.locator(`.calcu-face[data-model="${model}"]`)).toHaveCount(1, { timeout: 30000 });
-  // The model switch is an operation; keys typed while it runs are dropped
-  // (ledger 1600-9).
+  // The model switch is an operation; keys typed while it runs are dropped.
   await expect.poll(async () => ((await topic(page, 'control-state')) || {}).model, { timeout: 30000 }).toBe(model);
   await notBusy(page);
 }

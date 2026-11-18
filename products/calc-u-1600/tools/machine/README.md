@@ -1,6 +1,6 @@
 # pytest driver for the PC-1600
 
-A test machine for pytest suites, on `calcu serve` (LIB-11). It took over the driver of an external
+A test machine for pytest suites, on `calcu serve`. It took over the driver of an external
 test package written for Calc-U-1600 0.7.0 (`pc1600_cli` and generated presets); the test cases'
 API stays.
 

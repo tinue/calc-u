@@ -76,7 +76,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     m_controller = std::make_unique<MachineController>(this);
 
-    // AC-40: the faceplate, below it the bar, below it the panel row.
+    // The layout: the faceplate, below it the bar, below it the panel row.
     auto* central = new QWidget(this);
     m_faceplate = new FaceplateWidget(central);
     m_faceplate->setObjectName(QStringLiteral("faceplate"));
@@ -85,7 +85,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     bool serialPorts = true;
 #ifdef Q_OS_WIN
-    serialPorts = false;   // no host links on Windows (AC-37)
+    serialPorts = false;   // no host links on Windows
 #endif
     m_shell = new calcu::qt6::Shell(*this, host(), product(), cu1600::settingsSpec(true, serialPorts));
     auto* layout = new QVBoxLayout(central);
@@ -100,7 +100,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     calcu::qt6::PanelArea* panels = m_shell->panelArea();
     panels->setParent(central);
     layout->addWidget(panels, 1);
-    // The INSPECTOR always, first, at 2:1 to the paper panel (AC-40); the
+    // The INSPECTOR always, first, at 2:1 to the paper panel; the
     // CE-158's printer panel last, while its product entry says so.
     m_inspector = new DebugPanel(m_controller.get(), panels);
     m_inspector->setObjectName(QStringLiteral("debugpanel"));
@@ -110,11 +110,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_ce158Printer->hide();
     if (auto* box = qobject_cast<QBoxLayout*>(panels->layout())) box->addWidget(m_ce158Printer, 1);
 
-    // The pointer on the faceplate (AC-24, AC-43): the hit map in the art's
+    // The pointer on the faceplate: the hit map in the art's
     // pixels, at the art's scale as shown.
     m_shell->setFaceplate(m_faceplate, cu1600::faceplateHitMap(calcu::machine::ModelId{"PC-1500A"}), faceplateGeometry());
-    // LIB-7's controls on the bar: the module slots and the cassette by the
-    // family rule; the disk controls are the product's (D-29).
+    // The library's media controls on the bar: the module slots and the cassette by the
+    // family rule; the disk controls are the product's.
     m_shell->registerSlotPicker([this](const calcu::sessions::Value& entry, QWidget* p) -> QWidget* {
         return new SlotControl(*m_controller, calcu::shell::read::text(entry, "place"), p);
     });
@@ -132,7 +132,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         if (auto* d = m_shell->settingsDialog(); d && d->isVisible()) refreshSerialStatus();
     });
     connect(m_inspector, &DebugPanel::outputSelectionChanged, this, [this] { applyCopyLabel(); });
-    // LIB-10 AC-41: a paused machine shows in the title bar, whoever paused it.
+    // A paused machine shows in the title bar, whoever paused it.
     connect(m_controller.get(), &MachineController::runStateChanged, this, [this] {
         setWindowTitle(m_controller->machinePaused() ? tr("Calc-U-1600 — Paused (debugger)") : tr("Calc-U-1600"));
     });
@@ -173,7 +173,7 @@ void MainWindow::start() { m_controller->start(); }
 void MainWindow::closeEvent(QCloseEvent* event) {
     AppSettings::setWindowSize(size());
     // What a medium still has to save is written when the session closes
-    // (MachineController's destructor: AppSession::close(), LIB-7 AC-13).
+    // (MachineController's destructor: AppSession::close()).
     QMainWindow::closeEvent(event);
 }
 
@@ -204,7 +204,7 @@ void MainWindow::onTopic(const QString& topic) {
 }
 
 // The control state: the faceplate's art and hit map, the CE-158's printer
-// panel and the Unmount item's text from the product entries (AC-42).
+// panel and the Unmount item's text from the product entries.
 // The art's scale and its origin in the widget (the art is letterboxed: in a
 // widget wider than the art, a hit map from the widget's corner put every
 // press several keys to the right), and every press noted by the faceplate
@@ -230,7 +230,7 @@ void MainWindow::followControlState() {
 }
 
 // Edit ▸ Copy Screen reads "Copy Log Selection" while text of the INSPECTOR
-// is selected (AC-34); File ▸ Unmount names the folder mounted.
+// is selected; File ▸ Unmount names the folder mounted.
 void MainWindow::applyCopyLabel() {
     if (!m_inspector) return;
     const QString copyName = QString::fromStdString(calcu::shell::names::item(calcu::shell::actions::kCopyScreen));
@@ -246,7 +246,7 @@ void MainWindow::applyCopyLabel() {
 }
 
 // The two status lines of Serial ports (not settings) and the debug server's
-// status with Disconnect (C1600-3's place beside Debugger), added to the
+// status with Disconnect (in the Debugger section), added to the
 // shell's dialog while it is open.
 void MainWindow::refreshSerialStatus() {
     calcu::qt6::ShellSettingsDialog* d = m_shell->settingsDialog();
@@ -273,7 +273,7 @@ void MainWindow::refreshSerialStatus() {
             if (QLabel* l = line("serial-status-rs232c", tr("PC-1600 RS-232C:")); l->text() != rsText) l->setText(rsText);
             if (QLabel* l = line("serial-status-ce158", tr("CE-158 port:")); l->text() != ceText) l->setText(ceText);
         } else if (box->title() == QLatin1String("Debugger")) {
-            // C1600-3 AC-18, AC-21: the topic c1600.dap and its command.
+            // The topic c1600.dap and its command.
             QLabel* status = line("debug-status", tr("Status:"));
             const QString text = m_controller->dapStatus();
             if (status->text() != text) status->setText(text);
@@ -292,8 +292,8 @@ void MainWindow::refreshSerialStatus() {
 
 // The picture of the display at its physical size, plus the screen as
 // readable text (LcdText::plainText()) when any of it is text -- a text
-// editor pastes the text, an image app the dots (AC-41). While text of the
-// INSPECTOR is selected: that text (Copy Log Selection, AC-34).
+// editor pastes the text, an image app the dots. While text of the
+// INSPECTOR is selected: that text (Copy Log Selection).
 void MainWindow::copyScreen() {
     const QString selection = m_inspector ? m_inspector->selectedOutputText() : QString();
     if (!selection.isEmpty()) {
@@ -356,7 +356,7 @@ void MainWindow::unmountHostDirectory() {
 }
 
 // File ▸ Load BASIC Program… / Load Machine Code…: the file dialog starts in
-// Settings' folder of its kind ([folders], LIB-9 AC-29), which remembers it.
+// Settings' folder of its kind ([folders]), which remembers it.
 void MainWindow::chooseProgram(bool code) {
     const QString title = code ? tr("Load Machine Code") : tr("Load BASIC Program");
     const std::string kind = code ? "machine-code" : "basic-programs";
@@ -388,7 +388,7 @@ std::optional<calcu::sessions::Value::Object> MainWindow::programArgs(const QStr
         args.push_back({"file", sessions::Value(*chosen)});
         return args;
     }
-    // C1600-2 AC-16: a WAV with several files asks which one.
+    // A WAV with several files asks which one.
     const sessions::ReplyMessage kind = m_controller->ask(
         cu1600::requests::kFileKind, sessions::Value::object({{"bytes", args.front().value}}));
     const std::optional<int> file = pickWavFile(title, name, sessions::payloadAs<cu1600::FileKindReply>(kind.result));
@@ -421,8 +421,8 @@ void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, s
     const QString title = tr("Load Machine Code");
     std::optional<sessions::Value::Object> args = programArgs(name, bytes, title, file);
     if (!args) return;
-    // The one plan (C1600-2 AC-8): a refusal is the notice; headerless code
-    // asks the address (AC-18).
+    // The one plan: a refusal is the notice; headerless code
+    // asks the address.
     const sessions::ReplyMessage planned = m_controller->ask(cu1600::requests::kCodePlan, sessions::Value(*args));
     const auto* plan = sessions::payloadAs<cu1600::CodePlanReply>(planned.result);
     if (!planned.done || !plan) {
@@ -465,7 +465,7 @@ void MainWindow::showMachineCodeLoaded(const cu1600::CodeLoadedReply& loaded) {
     box.setTextInteractionFlags(Qt::TextSelectableByMouse);
     box.exec();
 
-    // Type the proposed CALL, ready to run: the user presses ENTER (AC-19).
+    // Type the proposed CALL, ready to run: the user presses ENTER.
     m_controller->pasteText(loaded.callCommand);
 }
 
@@ -488,7 +488,7 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
     disarmShiftTap();
 
     // The host key as Qt reports it; the product's keyboard map in the
-    // session decides what it types (LIB-5 AC-7, AC-29). A bare modifier
+    // session decides what it types. A bare modifier
     // (the Cmd of a second Cmd-V, Cmd-Tab) is no key: it does not stop a
     // paste.
     const auto down = m_hostKeys.press(*event);
@@ -508,8 +508,8 @@ void MainWindow::inputMethodEvent(QInputMethodEvent* event) {
     // The preedit (a pending ¨) isn't shown -- the calculator shows nothing
     // until the letter either. The committed text goes to the session, which
     // types each character as a press of the minimum hold by the keyboard
-    // map; one with no key is dropped (a bare ¨ after dead key + Space, ...;
-    // LIB-5 EC-4).
+    // map; one with no key is dropped (a bare ¨ after dead key + Space,
+    // ...).
     disarmShiftTap();
     if (!event->commitString().isEmpty()) m_controller->hostText(event->commitString().toStdString());
     event->accept();
@@ -544,8 +544,8 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event) {
         const bool tapped = m_shiftTapArmed && m_shiftTapClock.elapsed() <= kShiftTapMaxMs;
         disarmShiftTap();
         if (tapped) {
-            // AC-33: one press of the machine's shift key (the wall-time
-            // rule stays here, D-12); the engine holds it its minimum.
+            // One press of the machine's shift key (the tap is measured in
+            // wall time, here); the engine holds it its minimum.
             m_controller->pressKey("shift");
             m_controller->releaseKey("shift");
             m_faceplate->flashKey("shift");   // too short for the held keys to show
@@ -569,7 +569,7 @@ void MainWindow::changeEvent(QEvent* event) {
 }
 
 void MainWindow::releaseHeldKeys() {
-    if (m_controller) m_controller->focusLost();   // LIB-5 AC-10: every held key comes up, what waits goes (none while the window is torn down)
+    if (m_controller) m_controller->focusLost();   // every held key comes up, what waits goes (none while the window is torn down)
     m_hostKeys.clear();
     disarmShiftTap(); // the Shift release may land elsewhere
 }
@@ -594,11 +594,11 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
     return QMainWindow::eventFilter(watched, event);
 }
 
-// ── Drag and drop, opening a file (LIB-13) ─────────────────────────────
+// ── Drag and drop, opening a file ──────────────────────────────────────
 
-// AC-6, D4.3: one file, of a name and size the session would take; the
-// drop itself goes through all of AC-1, accepted and opened after the drop
-// handler (AC-24, library/qt6/FileOpening). More than one file is not taken.
+// One file, of a name and size the session would take; the drop itself
+// goes through all of the session's checks, accepted and opened after the
+// drop handler (library/qt6/FileOpening). More than one file is not taken.
 void MainWindow::dragEnterEvent(QDragEnterEvent* event) { calcu::qt6::dragEnter(event, host()); }
 
 void MainWindow::dragMoveEvent(QDragMoveEvent* event) { calcu::qt6::dragMove(event); }
@@ -608,9 +608,9 @@ void MainWindow::dropEvent(QDropEvent* event) {
 }
 
 void MainWindow::openFile(const QString& path, calcu::opening::Way way) {
-    // The window raised for every way but the start (AC-24); read up to the
-    // way's limit (AC-20: 1 MiB but for the file dialogs); a refusal is the
-    // session's notice already (AC-1).
+    // The window raised for every way but the start; read up to the
+    // way's limit (1 MiB but for the file dialogs); a refusal is the
+    // session's notice already.
     calcu::qt6::openFile(*this, host(), path, way, m_controller->app().libraryParts().open().setup().maxBytes);
 }
 
@@ -623,8 +623,8 @@ void MainWindow::onProgramOpened(const QString& name, const QByteArray& bytes, c
     m_programFlow = true;
     bool code = kind == QStringLiteral("machine-code-program");
     std::optional<int> chosen;
-    // C1600-2 AC-16: a WAV with several files asks which one; the file
-    // chosen goes to the flow of its own kind (LIB-13 AC-18).
+    // A WAV with several files asks which one; the file
+    // chosen goes to the flow of its own kind.
     const sessions::ReplyMessage r = m_controller->ask(
         cu1600::requests::kFileKind,
         sessions::Value::object({{"bytes", sessions::Value(sessions::Value::Bytes(bytes.begin(), bytes.end()))}}));

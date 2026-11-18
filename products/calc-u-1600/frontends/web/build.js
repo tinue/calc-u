@@ -2,9 +2,9 @@
 //
 // The JavaScript half of frontends/web/build.sh, run after the engine and the
 // static files are in dist/: the library's product build
-// (library/web/build/dist.js buildProduct; LIB-15 design §3.5) with the
+// (library/web/build/dist.js buildProduct) with the
 // product's data: calc.js from src/*.jsx, app/app.js with CalcU1600, the
-// presets of examples/bundle.yaml (C1600-4 AC-17, LIB-6 AC-31), the service
+// presets of examples/bundle.yaml, the service
 // worker's precached core and MANIFEST.json. The version is release.yaml's
 // (the Qt app's APP_VERSION).
 

@@ -1,7 +1,6 @@
 #!/bin/sh
-# LIB-13 AC-21 (design Part D, T16-5; CTest CalcU1600OpenWithTypes): the
-# file types Finder's Open With offers for the Qt6 app on macOS. The three
-# preset extensions are the product's own (Owner); `.bas`, `.bbin` and `.bin`
+# CTest CalcU1600OpenWithTypes: the file types Finder's Open With offers
+# for the Qt6 app on macOS. The three preset extensions are the product's own (Owner); `.bas`, `.bbin` and `.bin`
 # are Alternate; `.rom` is no name of a program file and is not listed.
 # Run from the product directory (CTest does).
 set -e

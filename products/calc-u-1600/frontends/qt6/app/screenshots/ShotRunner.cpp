@@ -48,7 +48,7 @@ constexpr int kNativeMenuSettleMs = 500;
 constexpr int kNativeMenuCloseMs = 300;
 // Before the first step: the window must be exposed and laid out.
 constexpr int kStartupDelayMs = 800;
-// `hold-key:`: emulated time after the press (D-33) and after the release.
+// `hold-key:`: emulated time after the press and after the release.
 constexpr const char* kHoldWait = "wait 100ms";
 constexpr const char* kReleaseWait = "wait 200ms";
 
@@ -104,7 +104,7 @@ void ShotRunner::machineStep(const QString& line, int at, std::function<void(con
     });
 }
 
-// The pointer on the faceplate (a UI step: the shell's live input, D-33).
+// The pointer on the faceplate (a UI step: the shell's live input).
 void ShotRunner::pointer(bool down, const QPoint& at) {
     FaceplateWidget* f = m_window->faceplate();
     if (!f || down == m_pointerDown) return;
@@ -439,7 +439,7 @@ bool ShotRunner::runStep(const ShotStep& step, int* delayMs, std::function<void(
         // dialog's exec(), and the code after it may open another dialog.
         // A dialog with an OK button is accepted by clicking it, as a user
         // does: the library's Name & Save dialog saves on its button box's
-        // `accepted` (LIB-7), not on QDialog::accept().
+        // `accepted`, not on QDialog::accept().
         QPushButton* ok = nullptr;
         if (auto* box = dialog->findChild<QDialogButtonBox*>()) ok = box->button(QDialogButtonBox::Ok);
         if (ok) *deferred = [ok] { ok->click(); };
@@ -450,7 +450,7 @@ bool ShotRunner::runStep(const ShotStep& step, int* delayMs, std::function<void(
     case K::Capture:
         return capture(step.capture, error);
     case K::ExpectPanel: {
-        // The check scenarios (LIB-8 AC-36, AC-38): the panel shown, with
+        // The check scenarios: the panel shown, with
         // the title asked for, empty or not.
         QWidget* w = findWidget(step.text, error);
         if (!w) return false;
@@ -513,7 +513,7 @@ bool ShotRunner::runStep(const ShotStep& step, int* delayMs, std::function<void(
         sendHostKey(step.text, step.kind == K::HostKeyDown);
         QCoreApplication::processEvents();
         return true;
-    case K::ExpectLcd:   // the harness's `expect` / `not-expect` (LIB-6 AC-34)
+    case K::ExpectLcd:   // the harness's `expect` / `not-expect`
         machineStep((step.number == 1 ? QStringLiteral("expect ") : QStringLiteral("not-expect ")) + step.text, step.line);
         return true;
     case K::ExpectTitle:
@@ -784,8 +784,8 @@ bool ShotRunner::capture(const ShotCaptureSpec& spec, QString* error) {
             break;
         }
         case Target::Plot: {
-            // The picture of the plotter's paper, as Copy makes it (LIB-8
-            // AC-16, AC-35): the session's `paper.picture`.
+            // The picture of the plotter's paper, as Copy makes it: the
+            // session's `paper.picture`.
             calcu::sessions::ReplyMessage r;
             m_window->host().ask(calcu::paper::kPaperPictureRequest, {},
                                  [&r](const calcu::sessions::ReplyMessage& got) { r = got; });

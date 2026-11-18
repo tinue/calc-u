@@ -2,7 +2,7 @@
 // built with Emscripten, run under node from the product folder (NODERAWFS,
 // so roms/ and the bundled cards are read straight from disk). Starts the
 // library's app session with Calc-U-1600's part in virtual-time hosting
-// (LIB-3 design §7; the operations run in one go) and runs presets through
+// (the operations run in one go) and runs presets through
 // its commands, then types through the input queue, and checks the LCD.
 // Exit 0 = pass; 2 = no ROMs (skip).
 
@@ -77,7 +77,7 @@ int main() {
             std::printf("%s %s\n%s\n", ok && seen ? "ok  " : "FAIL", c.preset, lcd.c_str());
             if (!ok || !seen) ++failures;
         }
-        // Typing through the library's typing engine (LIB-5), in emulated time.
+        // Typing through the library's typing engine, in emulated time.
         part.typingPart().engine().typeText("PRINT 6*7", true, false, calcu::typing::Origin::Typed);
         app.session->advanceUnpaced(static_cast<calcu::machine::Ticks>(4.0 * part.clockHz()));
         const bool typed = screen(host, part).find("42") != std::string::npos;

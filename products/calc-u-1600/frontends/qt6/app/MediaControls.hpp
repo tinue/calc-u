@@ -10,15 +10,15 @@ namespace calcu::qt6 {
 class MediaPicker;
 }
 
-// Calc-U-1600's media controls on the shell's bar (LIB-14 Part D, D.3; LIB-7
-// AC-38 to AC-42): each draws one place of LIB-7's topic `media` with the
+// Calc-U-1600's media controls on the shell's bar: each draws one place of
+// the library's topic `media` with the
 // library's MediaPicker and refreshes itself when the topic changes.
 //
 // - SlotControl: a module slot's picker and Name & Save (the shell's slot
 //   factory, Shell::registerSlotPicker).
 // - DiskControl: the CE-1600F's picker, the side and Name & Save, with the
 //   drive's lamp; on every PC-1600's bar, usable while the CE-1600P is
-//   plugged in (the product entry `c1600.disk-controls`, D-29), so a
+//   plugged in (the product entry `c1600.disk-controls`), so a
 //   product control of the group Media, not the shell's media control.
 // - TapeControl: the cassette's picker, Save (a new tape to record onto)
 //   and the counter (`c1600.lamps`); the shell's media factory of the kind

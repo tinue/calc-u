@@ -15,6 +15,5 @@ only `examples/`). User-facing demos and learning material belong in
 
 The one-time checks `loader-matrix/` (the fast loaders against the ROM's
 serial loads) and `tape-matrix/` (cassette `CLOAD`/`CSAVE` against Pocket
-Tools) went in M-51 with the CLIs they ran on (user, 2026-11-13 and
-2026-11-16); C1600-2's tests keep the loaders, LIB-7's and C1600-5's the
-cassette.
+Tools) are gone with the CLIs they ran on; the product's tests cover the
+loaders and the cassette.

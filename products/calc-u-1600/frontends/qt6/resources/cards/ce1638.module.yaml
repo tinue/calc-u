@@ -23,7 +23,7 @@
 # size in as expected. Use *Slot 2*, where pins 16-18 carry the dormant
 # K0-K2 lines, so the strobe never fires and the module presents bank 0 as
 # a plain unbanked 16K, sized correctly by the boot ROM. Declared
-# compatible with both slots anyway (spec §1: compatible-hosts is a pin/
+# compatible with both slots anyway (compatible-hosts is a pin/
 # electrical-compatibility list, not a "works well" guarantee) -- see
 # docs/developer/PC1600-Core-Limitations.md ("CE-1638 / CE-163F only work
 # in Slot 2 on a PC-1600") for the full writeup.

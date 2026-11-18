@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerates the help's pictures (help/images/, LIB-16 AC-12) by playing
+# Regenerates the help's pictures (help/images/) by playing
 # the scenarios in docs/developer/screenshots/guide/ (one per help chapter)
 # against the Qt app through harness attach -- see
 # docs/developer/screenshots/README.md. Builds the app first if needed.

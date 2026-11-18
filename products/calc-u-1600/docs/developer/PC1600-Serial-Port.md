@@ -20,7 +20,7 @@ there is no enable switch, matching the real hardware's built-in port. The
 machine's side is the library's serial port kind: `core/Serial/SerialPortCapability`
 is the TC8576F's `SerialLink` over `calcu::peripherals::SerialPortQueues`
 (component `rs232c`), with no thread and no host. The host side is a host
-link: LIB-2's session part (`calcu::peripherals::PeripheralsPart` in the
+link: the library's peripherals session part (`calcu::peripherals::PeripheralsPart` in the
 library's app session) holds one `calcu::peripherals::HostLinks`, whose
 rule gives the RS-232C port `calcu1600-rs232c.serial` at once and the CE-158
 `calcu1600-ce158.serial` when it is first used; its `PtyHostLink`
@@ -87,8 +87,7 @@ recommends those settings:
 
 ## Headless
 
-The harness drives the port without a window (C1600-5 AC-7; the UART
-probe of the pin went in M-51): on a PC-1600 (`model PC-1600`, or a preset
+The harness drives the port without a window: on a PC-1600 (`model PC-1600`, or a preset
 such as `examples:interfaces/setcom1600.pc1600`),
 
 - `c1600 serial rs232c feed <file> [hold=<n>]` — the file's bytes are what

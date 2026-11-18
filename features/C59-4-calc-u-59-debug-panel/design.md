@@ -121,7 +121,7 @@ computed below the frontends (TR; `frontend.md` FE-6).
   reads them with `state` (D-1).
 - **What is computed when.** `c59.calculator-debug` and `c59.cpu-debug` are
   computed only while a frontend shows that tab, as today
-  (`c59.live-debug`, `c59.show-cpu-debug` stay as the commands that say so,
+  (`c59.show-calculator-debug`, `c59.show-cpu-debug` stay as the commands that say so,
   `app/TIAppPart.hpp:227-228`); the harness's `state` computes them once
   on demand. `c59.program-listing` is built when the run state turns paused,
   and emptied when it runs (AC-4). The rates of today stay: the frame's 60
@@ -201,7 +201,7 @@ so no ring is read twice.
   text can be copied, and its clear button empties the tab's view only.
 - **TRACE (AC-12).** The button sends LIB-10's `trace {button: true}` and
   `trace {off: true}`; it shows the `trace` topic, whoever started the
-  trace; the product entry `trace` says whether it can be used (§3.9). In
+  trace; it can always be pressed (§3.9). In
   the Web the tab lists the traces that ended (LIB-10 §12, D-25).
 
 ### 3.6 The buttons of the CALCULATOR and CPU tabs (AC-5, AC-7, EC-3)
@@ -279,8 +279,12 @@ by the rules of AC-14. The refusals of AC-15, one sentence each (D-5):
 | Entry | Can be used | Reason when not |
 |---|---|---|
 | `asm-run` | instructions are loaded and no operation runs | "No ASM overlay loaded." / LIB-4's busy reason |
-| `trace` | always (since release prep step 5c: the start is refused instead, LIB-10 AC-53; AC-12 as amended) | none |
 | `calculator-tab` | no overlay runs | "An ASM overlay runs." |
+
+TRACE has no entry (release simplification L-2, 2026-11-18): since release
+prep step 5c it was always available, the start being refused instead
+(LIB-10 AC-53; AC-12 as amended), so the entry `c59.trace` and its readers
+in the three frontends are gone.
 
 ### 3.10 The harness commands (AC-22)
 

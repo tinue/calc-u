@@ -316,3 +316,26 @@ TEST(ac21_controls_of_plugged_peripherals_with_place_form_and_position) {
     CHECK(!m->detach(at({"printer"}), mt::kPrinter, mt::testCatalogue()).refused);
     CHECK(computeControlState(*m, testSetup(), false).controls.empty());
 }
+
+// The controls of one place (AC-21), as the frontends draw a peripheral's
+// pane: the plugged peripheral's, in their order; none elsewhere.
+TEST(ac21_controls_at_a_place) {
+    using calcu::machine::ControlId;
+    auto m = seg({plug("slot-1", mt::kModule), plug("printer", mt::kPrinter)});
+    const calcu::machine::Owner owner = calcu::machine::PeripheralOwner{mt::kPrinter, at({"printer"})};
+    calcu::peripherals::Controls* c = calcu::peripherals::controlsCapability(*m, owner);
+    CHECK(c != nullptr);
+    if (!c) return;
+    c->set(ControlId{"trace"}, true);
+    const ControlState s = computeControlState(*m, testSetup(), false);
+    const auto printer = s.controlsAt(at({"printer"}));
+    CHECK_EQ(printer.size(), std::size_t(3));
+    if (printer.size() != 3) return;
+    CHECK(printer[0].id == ControlId{"online"} && printer[1].id == ControlId{"feed"} && printer[2].id == ControlId{"trace"});
+    CHECK(!printer[0].on && printer[2].on);
+    CHECK(s.controlsAt(at({"slot-1"})).empty());   // a module has none
+    CHECK(s.controlsAt(at({"nowhere"})).empty());
+    const ControlState nested = computeControlState(*dotWithHubAndPrinter(), testSetup(), false);
+    CHECK_EQ(nested.controlsAt(at({"a", "jack"})).size(), std::size_t(3));
+    CHECK(nested.controlsAt(at({"a"})).empty());   // the hub has none
+}

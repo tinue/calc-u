@@ -147,21 +147,19 @@ private struct StaticDebugContent: View {
                     HStack(spacing: 4) {
                         Text("TRACE")
                         Circle()
-                            .fill(vm.traceButtonAvailable
-                                ? (vm.cIndicatorDebug ? Color.orange : Color.gray.opacity(0.4))
-                                : Color.red.opacity(0.5))
+                            .fill(vm.cIndicatorDebug ? Color.orange : Color.gray.opacity(0.4))
                             .frame(width: 8, height: 8)
                     }
                     .font(.caption.bold())
-                    .foregroundStyle(vm.traceButtonAvailable ? .white : .white.opacity(0.5))
+                    .foregroundStyle(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color(white: vm.traceButtonAvailable ? 0.25 : 0.15))
+                    .background(Color(white: 0.25))
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
-                // The product entry c59.trace (C59-4 AC-12, AC-25).
-                .disabled(!vm.traceButtonAvailable)
+                // TRACE can always be pressed; a trace folder that cannot be
+                // written refuses the start (C59-4 AC-12, LIB-10 AC-53).
                 .accessibilityIdentifier("btn-trace")
 
                 Button { vm.toggleDebug() } label: {

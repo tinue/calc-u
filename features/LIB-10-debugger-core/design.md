@@ -1580,3 +1580,12 @@ Tests: `ac53_trace_folder_read_at_each_trace_start`,
 `c59_4_ac12_trace_refused_where_the_folder_cannot_be_written`; Calc-U-1600
 `lib10_ac53_trace_folder_changed_after_the_start_is_the_next_traces`,
 `lib10_ac53_trace_refused_with_one_sentence_where_the_folder_cannot_be_written`.
+
+## Release simplification R-1 (2026-11-18, branch `rs1-59-places`)
+
+`docs/reviews/release-simplification.md` §1 L-2, L-5. `traceFolderOf(paths)`
+has no `available` parameter: the Swift frontend's iCloud gate is the
+places' (`HostDirs::iCloudAvailable`, answered in `Paths::ensure`; LIB-9
+design, same section), the refusal's reason unchanged. Calc-U-59's product
+entry `c59.trace` is gone (it was always available since step 5c; C59-4
+decision log 2026-11-18).

@@ -120,7 +120,7 @@ public:
         return cu59::freezeButtons(level, runState());
     }
     /// A product entry of the control state (C59-4 AC-25): c59.asm-run,
-    /// c59.trace, c59.calculator-tab; true while there is none yet.
+    /// c59.calculator-tab; true while there is none yet.
     bool entryAvailable(const char* name) const;
     QString entryReason(const char* name) const;
 

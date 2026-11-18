@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// topics of C59-4 AC-25 (live: c59.calculator-debug, listing: c59.program-listing,
 /// cpu: c59.cpu-debug, c59.heatmap, asm: c59.asm-overlay, log: LIB-3's `log` and
 /// c59.debug-view's level) and LIB-4's `control-state` (control: the product
-/// entries c59.asm-run, c59.trace, c59.calculator-tab)).
+/// entries c59.asm-run, c59.calculator-tab)).
 typedef NS_OPTIONS(uint32_t, TIChange) {
     TIChangeDisplay   NS_SWIFT_NAME(display)   = 1u << 1,
     TIChangeCueCard   NS_SWIFT_NAME(cueCard)   = 1u << 2,
@@ -314,10 +314,9 @@ typedef struct {
 - (TIButtonUse)buttonUseFor:(TIRunLevel)level NS_SWIFT_NAME(buttonUse(for:));
 /// FREEZE and FREEZE ON START of a tab (C59-4 AC-5, AC-7).
 - (TIFreezeButtons)freezeButtonsFor:(TIRunLevel)level NS_SWIFT_NAME(freezeButtons(for:));
-// The product entries of the control state (C59-4 AC-25): whether Run, TRACE
-// and the CALCULATOR tab can be used, and why not.
+// The product entries of the control state (C59-4 AC-25): whether Run and
+// the CALCULATOR tab can be used, and why not.
 @property (nonatomic, readonly) BOOL asmRunAvailable;
-@property (nonatomic, readonly) BOOL traceButtonAvailable;
 @property (nonatomic, readonly) BOOL calculatorTabAvailable;
 @property (nonatomic, readonly) NSString *calculatorTabReason;
 /// The rule itself, for a run state given by its fields (the unit tests).

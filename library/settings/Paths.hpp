@@ -45,7 +45,9 @@ public:
     struct Ensured { bool ok = false; std::string path, problem; };
     // Makes sure the folder exists and can be written, creating it when
     // missing (EC-8). A folder that cannot be created or written is
-    // reported, and no other folder is used instead (EC-9).
+    // reported, and no other folder is used instead (EC-9). The traces on
+    // Swift with [trace] location = icloud: refused while the host's
+    // iCloudAvailable says no (AC-24).
     Ensured ensure(Folder which) const;
 
     const HostDirs& hostDirs() const { return dirs_; }

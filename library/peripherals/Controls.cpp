@@ -38,11 +38,6 @@ Controls* controlsCapability(machine::Machine& m, const machine::Owner& owner) {
     return nullptr;
 }
 
-std::vector<ControlInfo> controlsOf(machine::Machine& m, const machine::Owner& owner) {
-    Controls* c = controlsCapability(m, owner);
-    return c ? c->list() : std::vector<ControlInfo>{};
-}
-
 std::vector<ControlInfo> controlsOf(const machine::Machine& m, const machine::Owner& owner) {
     for (const auto& e : m.capabilities(Controls::kKind))
         if (e.owner == owner)

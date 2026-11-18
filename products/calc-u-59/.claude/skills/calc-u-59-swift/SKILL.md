@@ -22,11 +22,12 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`,
   `c59.asm-overlay`, `c59.debug-view` (app/TIDebugPart.hpp), which the bridge
   mirrors; the LOG tab is the bridge's `cu59::RingLog` of LIB-3's `log`
-  (Clear empties the view only); the buttons send `c59.live-debug`,
+  (Clear empties the view only); the buttons send `c59.show-calculator-debug`,
   `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`,
-  `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`. Run, TRACE and the
+  `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`. Run and the
   CALCULATOR tab follow the `control-state` entries `c59.asm-run`,
-  `c59.trace`, `c59.calculator-tab`; FREEZE and FREEZE ON START
+  `c59.calculator-tab`; TRACE can always be pressed (a trace folder that
+  cannot be written refuses the start); FREEZE and FREEZE ON START
   `cu59::freezeButtons` (`freezeButtonsFor:`). The tab a `debug-panel:` step
   asks for arrives as `showDebugPanel:` when c59.debug-view's `requests` grows.
 - Opening a file (LIB-13, M-56): the macOS drop and the Preset button's
@@ -62,7 +63,9 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   hands the file to the session thread (the trace folder is the places',
   read at each trace start, LIB-10 AC-53: `TISessionStart.chosenTraceFolder`
   is a block the session thread calls for the bookmark's folder,
-  `AppSettings.chosenTraceFolder()`, nonisolated), where LIB-14's `SettingsPart` (made
+  `AppSettings.chosenTraceFolder()`, nonisolated; on iOS
+  `HostDirs::iCloudAvailable` beside it refuses the iCloud location while
+  signed out), where LIB-14's `SettingsPart` (made
   by `makeAppSession`'s `calcu::shell::HostSessionSetup`) (with `alsoShown` `window.portrait-debug-page`) and
   LIB-18's start read and write it; views read the values through
   `TIShell.setting(_:_:)` and change one with `setSetting` (`set-setting`).

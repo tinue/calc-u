@@ -75,10 +75,9 @@ struct TraceSetup {
 
 // The trace folder of a product's Paths, for TraceSetup::folder: the places
 // and settings as they are at each call (AC-53), the folder made and written
-// once (Paths::ensure); while `available` says no (the Swift frontend's
-// iCloud, LIB-9 AC-24), it is reported as not available.
-std::function<std::optional<settings::Paths::Ensured>()> traceFolderOf(const settings::Paths&,
-                                                                        std::function<bool()> available = {});
+// once (Paths::ensure, which also asks the Swift frontend's iCloud, LIB-9
+// AC-24).
+std::function<std::optional<settings::Paths::Ensured>()> traceFolderOf(const settings::Paths&);
 
 class TraceSession {
 public:

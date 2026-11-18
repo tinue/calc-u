@@ -7,7 +7,9 @@
 #else
 #import <UIKit/UIKit.h>
 #endif
+#include <calcu59/core/PC100C.hpp>
 #include <calcu59/core/PC100CPaper.hpp>
+#include <calcu59/core/TICatalogue.hpp>
 #include <calcu59/app/ProductRoms.hpp>
 #include <calcu59/app/KeyboardLayout.hpp>
 #include <calcu59/app/SessionThread.hpp>
@@ -443,6 +445,11 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
             dirs.chosenTraceFolder = [chosen] {
                 @autoreleasepool { return cpp(chosen()); }
             };
+        // iOS: the iCloud trace location only while signed in, asked at each
+        // trace start beside the bookmark (LIB-9 AC-24, LIB-10 AC-53).
+#if !TARGET_OS_OSX
+        dirs.iCloudAvailable = [] { return NSFileManager.defaultManager.ubiquityIdentityToken != nil; };
+#endif
         const auto& decl = cu59::settings::settingsDecl();
         std::optional<std::string> path;
         if (start.settingsFile) path = cpp(start.settingsFile);
@@ -464,14 +471,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         setup.files = std::make_shared<CoordinatedFiles>(delegate);
         // Where traces go is the places' by [trace] location (LIB-9 AC-24),
         // read at each trace start with the folder made and written once
-        // (LIB-10 AC-53); iOS: iCloud only while signed in.
-#if !TARGET_OS_OSX
-        setup.traceAvailable = [file] {
-            const cu59::settings::Settings typed(*file);
-            return !(typed.traceLocation() == cu59::settings::TraceLocation::ICloud &&
-                     NSFileManager.defaultManager.ubiquityIdentityToken == nil);
-        };
-#endif
+        // (LIB-10 AC-53); iOS: iCloud only while signed in (dirs, above).
         // C59-5 AC-7 (the session asks none of them yet).
         const cs::HostServices services = statedServices();
         __weak TIAppSession* weakSelf = self;
@@ -787,9 +787,8 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (BOOL)printerTrace {
     const auto* c = [self controlState];
     if (!c) return NO;
-    const calcu::machine::PlacePath printer{{calcu::machine::PlaceName{"printer"}}};
-    for (const auto& e : c->controls)
-        if (e.place == printer && e.control.id == calcu::machine::ControlId{"TRACE"}) return e.control.on ? YES : NO;
+    for (const auto& i : c->controlsAt(calcu::machine::PlacePath{{::kTIPrinterPlace}}))
+        if (i.id == ::PC100C::kTrace) return i.on ? YES : NO;
     return NO;
 }
 - (void)setPrinterControl:(NSString *)control on:(BOOL)on {
@@ -874,7 +873,7 @@ static const char* const kCardReaderPlace = "card-reader";
 
 // ── Debugger ─────────────────────────────────────────────────────────────────
 
-- (void)setLiveDebugEnabled:(BOOL)on { [self send:cu59::commands::kLiveDebug args:{{"on", on == YES}}]; }
+- (void)setLiveDebugEnabled:(BOOL)on { [self send:cu59::commands::kShowCalculatorDebug args:{{"on", on == YES}}]; }
 - (void)setCpuDebugEnabled:(BOOL)on { [self send:cu59::commands::kShowCpuDebug args:{{"on", on == YES}}]; }
 - (BOOL)frozen { const auto* r = [self runControl]; return r && r->paused; }
 - (TIRunLevel)pausedLevel {
@@ -896,7 +895,6 @@ static const char* const kCardReaderPlace = "card-reader";
     return t;
 }
 - (BOOL)asmRunAvailable { return entryAvailable([self controlState], cu59::entries::kAsmRun) ? YES : NO; }
-- (BOOL)traceButtonAvailable { return entryAvailable([self controlState], cu59::entries::kTrace) ? YES : NO; }
 - (BOOL)calculatorTabAvailable {
     const auto* c = [self controlState];
     return !c || entryAvailable(c, cu59::entries::kCalculatorTab) ? YES : NO;   // before the first state: yes

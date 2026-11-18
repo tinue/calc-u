@@ -91,6 +91,9 @@ std::optional<std::string> Paths::folder(Folder which) const {
 Paths::Ensured Paths::ensure(Folder which) const {
     const std::optional<std::string> where = folder(which);
     if (!where || where->empty()) return {false, {}, "this frontend has no such folder"};
+    if (which == Folder::Traces && dirs_.frontend == FrontendKind::Swift && dirs_.iCloudAvailable &&
+        settings_->text("trace", "location") == "icloud" && !dirs_.iCloudAvailable())
+        return {false, *where, "the trace location is not available"};
     const fs::path p = files::toPath(*where);
     std::error_code ec;
     fs::create_directories(p, ec);

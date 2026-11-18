@@ -66,9 +66,8 @@ private:
     OnChange onChange_;
 };
 
-// The controls an owner has in the machine now; empty if it has none.
-std::vector<ControlInfo> controlsOf(machine::Machine&, const machine::Owner&);
-// The same for a reader of a const machine (LIB-4 AC-21).
+// The controls an owner has in the machine now; empty if it has none
+// (LIB-4 AC-21 reads them from a const machine).
 std::vector<ControlInfo> controlsOf(const machine::Machine&, const machine::Owner&);
 // The controls capability of an owner, or nullptr.
 Controls* controlsCapability(machine::Machine&, const machine::Owner&);

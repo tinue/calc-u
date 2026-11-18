@@ -11,11 +11,12 @@
 // the page's clipboard service.
 
 const NO_CONTROLS = [];
+const PRINTER_PLACE = "printer";   // kTIPrinterPlace (core/TICatalogue.hpp)
 
 // `owner`: the paper panel's owner of the control state ("PC-100C" or "").
 function PaperPane({ shell, owner }) {
   const all = useTopic(shell, "control-state", (cs) => (cs && cs.controls) || NO_CONTROLS);
-  const controls = all.filter((c) => c.place === "printer").map(({ id, form, on }) => ({ id, form, on }));
+  const controls = all.filter((c) => c.place === PRINTER_PLACE).map(({ id, form, on }) => ({ id, form, on }));
   return (
     <div className="calcu-printer" data-panel="paper">
       <CalcuPaperPanel shell={shell} owner={owner || null} controls={controls} />

@@ -150,11 +150,12 @@ TEST(lib4_ac14_debug_panel_entries_carried) {
     const auto* cs = state(r);
     CHECK(cs != nullptr);
     if (!cs) return;
-    for (const char* name : {"c59.asm-run", "c59.trace", "c59.calculator-tab"}) {
+    for (const char* name : {"c59.asm-run", "c59.calculator-tab"}) {
         const auto* e = cs->productEntry(name);
         CHECK(e != nullptr);
         CHECK(e && e->value && e->value->toValue().find("available") != nullptr);
     }
+    CHECK(cs->productEntry("c59.trace") == nullptr);   // TRACE can always be pressed
     // In the payload's Value form under `product`, as the frontends read it.
     const Value v = cs->toValue();
     CHECK(v.find("product") && v.find("product")->find("c59.asm-run"));

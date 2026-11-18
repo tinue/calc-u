@@ -173,7 +173,7 @@ landscape on a large screen) — its column in
   `settings::startupModel`, `settings/OpenFolders`, LIB-14's
   `SettingsPart`), and live in `Calc-U-59.ini`. `Settings` keeps typed
   calls only for what a frontend reads itself (the Qt6 window state,
-  `frontends/qt6/app/AppSettings.hpp`; the Swift trace location). The Swift
+  `frontends/qt6/app/AppSettings.hpp`). The Swift
   frontend's file is the session's (LIB-14's `SettingsPart`, read through
   `Bridge/TIShell`; C59-8 D-3); no frontend keeps a setting in UserDefaults, QSettings or
   `localStorage` (CTest `CalcU59NoPlatformSettings`, allow-list

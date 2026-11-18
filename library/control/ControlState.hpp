@@ -133,6 +133,9 @@ struct ControlState final : sessions::PayloadOf<ControlState> {
 
     // Lookups for translators and tests; nullptr when not listed.
     const PlaceEntry* place(const machine::PlacePath&) const;
+    // The controls of the peripheral plugged into a place (AC-21), in the
+    // order of `controls`; empty when none is plugged in or it has none.
+    std::vector<peripherals::ControlInfo> controlsAt(const machine::PlacePath&) const;
     const ActionEntry* action(const sessions::CommandName&) const;
     const MediaPlaceEntry* mediaPlace(const machine::MediaPlaceId&, const machine::PlacePath& ownerPlace = {}) const;
     const ProductEntry* productEntry(const std::string& name) const;

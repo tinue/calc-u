@@ -180,7 +180,7 @@ in `CalcU59QtTests` and the Web's `shell.spec.js`.
 | AC-11 | Pass | `lib4_ac11_slot_1_lists_14_modules_and_the_empty_slot` (each model; ML plugged at the start), `lib4_ac11_printer_lists_pc100c_and_the_empty_place` (attach and detach), `lib4_ac11_choices_refused_while_a_preset_loads` (the empty slot and a module disabled with a reason while a preset runs, available after; row 59-45) |
 | AC-12 | Pass | `lib4_ac12_card_reader_on_the_ti59_only` (kind `magnetic-card`, pass-through, sides 0 and 1, the machine's own); the drawing: `CalcU59QtTests` `lib14_ac27_bar_per_model`, `c59_7_ac13_…` (no card controls on the TI-58), `lib14_ac26_qt_menus_in_family_order` (no card items on the TI-58); Web `lib14_ac27 the bar per model` |
 | AC-13 | Pass | `lib4_ac13_paper_panel_owned_by_pc100c_or_none` (attach, model switch, detach) |
-| AC-14 | Pass | `lib4_ac14_debug_panel_entries_carried` (`c59.asm-run`, `c59.trace`, `c59.calculator-tab` with `available`, under `product`) |
+| AC-14 | Pass | `lib4_ac14_debug_panel_entries_carried` (`c59.asm-run`, `c59.calculator-tab` with `available`, under `product`; `c59.trace` gone, release simplification L-2) |
 | AC-15 | Pass for Qt6 and the Web; Swift in M-58 | `CalcU59FrontendsDrawControlState` (no file of the Qt6 and Web frontends reads `hasCardReader`, `cu59::info(`, `c59.model`, `c59.web.model` or `allModules`); the drawing cases above. `App/MachineModel.swift` goes with C59-8 |
 | AC-9 (this product) | Pass | `lib4_harness_state_control_state_has_paper_panel_and_card_reader` (`state control-state` through `calcu`) |
 
@@ -219,7 +219,7 @@ ADV and TRACE from `controls`, the Swift bridge reads TRACE from it.
 
 | AC | Result | Evidence |
 |---|---|---|
-| AC-21 | Pass | `control_state_tests.cpp` `ac21_controls_of_plugged_peripherals_with_place_form_and_position` (order, owner, form, position, value form, nested place, gone when unplugged), `control_part_tests.cpp` `ac21_moved_switch_sends_the_control_state_again`; Calc-U-59 `session_tests.cpp` `lib3_ac29_mirror_holds_every_change_flag` (TRACE through `set-control` moves the control state), `harness_tests.cpp` `lib11_ac14_entry_runs_ti_app_part` (`state control-state` lists the PC-100C's controls; `state c59.printer` and `state c59.led` refused); Qt6 `qt_frontend_tests.cpp` (TRACE through the panel); Web `play-calculator.spec.js` LIB-8 AC-28 |
+| AC-21 | Pass | `control_state_tests.cpp` `ac21_controls_of_plugged_peripherals_with_place_form_and_position` (order, owner, form, position, value form, nested place, gone when unplugged), `ac21_controls_at_a_place` (`ControlState::controlsAt`, the lookup the three frontends of Calc-U-59 use for the PC-100C's controls), `control_part_tests.cpp` `ac21_moved_switch_sends_the_control_state_again`; Calc-U-59 `session_tests.cpp` `lib3_ac29_mirror_holds_every_change_flag` (TRACE through `set-control` moves the control state), `harness_tests.cpp` `lib11_ac14_entry_runs_ti_app_part` (`state control-state` lists the PC-100C's controls; `state c59.printer` and `state c59.led` refused); Qt6 `qt_frontend_tests.cpp` (TRACE through the panel); Web `play-calculator.spec.js` LIB-8 AC-28 |
 
 `library/shell/tests/inputs.txt` written anew (the `controls` key). Swift
 not built here (worktree); see the step's report.

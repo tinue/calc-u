@@ -9,6 +9,7 @@
 #include "SessionRig.hpp"
 #include "../app/Bcd.hpp"
 #include "../app/TIDisplayPicture.hpp"
+#include "../app/TIMagneticCardKind.hpp"
 #include "../app/TIPresetKeys.hpp"
 #include "../app/KeyNames.hpp"
 #include "presets/Expect.hpp"
@@ -310,6 +311,37 @@ TEST(lib6_ac25_screenshot_into_save_folder) {
     CHECK(fs::exists(folder.path() / "seven.png"));
     PresetRead read;
     CHECK(!read.error(head() + "keys:\n  - screenshot: a/b.png\n").empty());   // no path separator
+}
+
+// LIB-14 AC-11 (ledger row 59-66; L-4 of docs/reviews/release-simplification.md):
+// a save folder changed in Settings after the start is used by the next
+// save at once, as in Calc-U-1600: the cards, the screenshots and the
+// constant memory file of the TI-58C.
+TEST(lib14_ac11_save_folder_changed_after_the_start_is_used_at_once) {
+    SKIP_UNLESS(tirig::haveRoms(), kSkip);
+    calcu::testing::TempFolder home{"calcu59-places"};
+    testroms::RigOptions o;
+    o.qt6Home = home.str();
+    o.model = cu59::Model::TI58C;
+    testroms::SessionRig s(o);
+    const fs::path later = home.path() / "later";
+    s.settings.set("storage", "save-folder", later.string());
+    // A card.
+    const std::string card = cu59::writeMagneticCardFile(cu59::TIMagneticCardData{}, "x", "", false, std::nullopt, "");
+    CHECK(s.part().mediaPart().importBytes(s.session().context(), "x.magnetcard.yaml", card, {}).ok);
+    CHECK(fs::exists(later / "x.magnetcard.yaml"));
+    // A screenshot.
+    const auto id = s.post(calcu::presets::kLoadPresetCommand,
+                           calcu::sessions::Value::object({{"content", head("TI-58C") + "keys:\n  - key: 7\n  - screenshot: seven.png\n"},
+                                                           {"name", "s.ti58c"}}));
+    s.until([&] { return s.reply(id) != nullptr; });
+    CHECK(s.reply(id) && s.reply(id)->done);
+    CHECK(fs::exists(later / "seven.png"));
+    // The constant memory file, at its next write.
+    s.runFor(std::chrono::seconds(1));
+    CHECK(fs::exists(later / cu59::TIFileAccess::kConstantMemoryFile));
+    CHECK(!fs::exists(home.path() / "Calc-U-59" / "x.magnetcard.yaml"));
+    CHECK(!fs::exists(home.path() / "Calc-U-59" / "seven.png"));
 }
 
 TEST(lib6_ec7_expect_display_off_fails) {

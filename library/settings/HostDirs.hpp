@@ -24,6 +24,10 @@ struct HostDirs {
     // the trace folder is (at each trace start, LIB-10 AC-53: the sandbox's
     // grant is the frontend's); unset or empty: none.
     std::function<std::string()> chosenTraceFolder;
+    // Swift iOS: whether iCloud can be used now (signed in), asked at each
+    // trace start where [trace] location = icloud (AC-24; LIB-10 AC-53):
+    // while it says no, ensure(Folder::Traces) refuses; unset: always.
+    std::function<bool()> iCloudAvailable;
     std::string traceFolder;         // Given: the trace folder; empty: none
     std::string screenshotFolder;    // Given: the screenshot folder; empty: none
 };

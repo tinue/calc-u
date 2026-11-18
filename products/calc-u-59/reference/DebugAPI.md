@@ -19,7 +19,7 @@ and draw the same topics (C59-4 AC-25, M-56):
 
 | Topic (state) | Payload (`app/TIDebugPart.hpp`) | Carries |
 |---|---|---|
-| `c59.calculator-debug` | `TICalculatorDebug` | the CALCULATOR tab's snapshot (computed while a frontend shows the tab: `c59.live-debug {on}`) |
+| `c59.calculator-debug` | `TICalculatorDebug` | the CALCULATOR tab's snapshot (computed while a frontend shows the tab: `c59.show-calculator-debug {on}`) |
 | `c59.program-listing` | `TIProgramListing` | the whole listing of the program that runs, its source and current index; empty while the machine runs |
 | `c59.cpu-debug` | `TICpuDebug` | the CPU tab's instructions (while shown, `c59.show-cpu-debug {on}`, or paused) |
 | `c59.heatmap` | `TIHeatmap` | the counts of 0000 to 13FF, about 10 Hz |
@@ -28,8 +28,9 @@ and draw the same topics (C59-4 AC-25, M-56):
 
 A payload's value (`toValue`) is the form the Web page draws; the harness
 reads it with `state <topic>`. The control state (LIB-4) carries the
-product entries `c59.asm-run`, `c59.trace`, `c59.calculator-tab`, each
-`{available, reason}`. The commands: `c59.live-debug {on}`,
+product entries `c59.asm-run`, `c59.calculator-tab`, each
+`{available, reason}` (TRACE can always be pressed: a trace folder that
+cannot be written refuses the start, LIB-10 AC-53). The commands: `c59.show-calculator-debug {on}`,
 `c59.show-cpu-debug {on}`, `c59.heatmap-reset`, `c59.log-level {level:
 off|info|debug}`, `c59.dump {what: scom|memory|prog|vars}` (replies with the
 lines), `c59.asm-load {name, text}`, `c59.asm-run`, `c59.asm-clear`; the
@@ -99,7 +100,7 @@ through the bridge), with the labels FREEZE, STEP and RESUME (C59-4).
 | CALCULATOR FREEZE ON START / ARMED | `pause-on-start {level: program}` / `{off: true}` |
 | CPU FREEZE ON START / ARMED | `pause-on-start {level: cpu}` / `{off: true}` |
 | TRACE | `trace {button: true}` / `{off: true}` |
-| `setLiveDebugEnabled` / `setCpuDebugEnabled` | `c59.live-debug` / `c59.show-cpu-debug` |
+| `setLiveDebugEnabled` / `setCpuDebugEnabled` | `c59.show-calculator-debug` / `c59.show-cpu-debug` |
 
 ### The run state (`run-state`, `calcu::debugger::RunState`)
 

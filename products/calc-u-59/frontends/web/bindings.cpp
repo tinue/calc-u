@@ -70,7 +70,7 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     parts->web->bind(*parts->app);
 
     // The one order (parts::LibraryParts): LIB-4's ControlPart (D-13: the
-    // control state with C59-4's product entries c59.asm-run, c59.trace,
+    // control state with C59-4's product entries c59.asm-run and
     // c59.calculator-tab; AC-25), the shell's part and SettingsPart, the
     // library's and the product's, the Web part last.
     calcu::shell::HostSessionSetup host;

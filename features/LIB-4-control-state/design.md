@@ -878,3 +878,13 @@ and in the paper panel's owner).
   state); Web `play-calculator.spec.js` LIB-8 AC-28.
 - **Ledger.** None of its own (developer-facing names; step 1's row 59-58
   lists them).
+
+## Release simplification R-1 (2026-11-18, branch `rs1-59-places`)
+
+`docs/reviews/release-simplification.md` §1 L-3. `ControlState::controlsAt(place)`
+beside `place()`: the controls of the peripheral plugged into a place, in
+the order of `controls` (AC-21). Calc-U-59's three frontends draw the
+PC-100C's controls with it and the constants `kTIPrinterPlace` and
+`PC100C::kTrace` (the Web page's `PRINTER_PLACE`), instead of hand-written
+place and control strings. `peripherals::controlsOf` keeps its const form
+only. Test: `control_state_tests.cpp` `ac21_controls_at_a_place`.

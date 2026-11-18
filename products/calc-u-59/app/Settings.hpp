@@ -29,8 +29,6 @@ const calcu::settings::ProductDecl& settingsDecl();
 const char* modelName(Model model);
 std::optional<Model> modelNamed(std::string_view name);
 
-enum class TraceLocation { AppSupport, ICloud, Folder };  // [trace] location (Swift, AC-24)
-
 // The folders a file dialog starts in, one key each in [folders] (AC-19):
 //   Presets     -- "Load Preset…": presets
 //   AsmOverlays -- the debugger's ASM overlay picker: asm-overlays
@@ -60,11 +58,8 @@ public:
     // settings::startupPreset), the places by LIB-9's Paths, [trace]
     // max-file-size-mb by LIB-10's trace, [folders] by the shell's dialogs
     // (settings/OpenFolders), the rows of the settings dialog by LIB-14's
-    // SettingsPart.
-
-    // [trace] location (the Swift frontend: whether iCloud traces can be
-    // used, C59-4 AC-12).
-    TraceLocation traceLocation() const;
+    // SettingsPart; [trace] location by Paths too (the Swift frontend's
+    // iCloud gate is HostDirs::iCloudAvailable).
 
     // [window] (Qt6, AC-35).
     WindowState windowState() const;

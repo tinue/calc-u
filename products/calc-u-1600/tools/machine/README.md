@@ -17,7 +17,7 @@ API stays.
 Needs Python 3, pytest and a built `calcu` (`cmake --build build/all --target calcu`).
 
 ```sh
-export CALCU=/path/to/build/all/library/harness/cli/calcu   # default: build/all of this checkout
+export CALCU=/path/to/build/all/library/harness/cli/calcu   # default: build/tests, build/all or build/tools of this checkout (calcu_serve.find_calcu)
 uv run --no-project --with pytest==8.3.5 --with pytest-xdist==3.6.1 pytest -n auto products/calc-u-1600/tools/machine
 ```
 

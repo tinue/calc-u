@@ -5,10 +5,10 @@ tools/fastmode_matrix.py and the calendar scripts in tools/calendar/. One
 has the commands and the recipes.
 
 The calcu program: --calcu PATH on a script's command line, else the
-environment variable CALCU59_CALCU, else build/tests/library/harness/cli/calcu
-of the repository, else build/tools/library/harness/cli/calcu, configured
-(Release, no Qt) and built on first use. Scratch files go to tools/build/
-(ignored).
+library's finder (calcu_serve.find_calcu: the environment variable CALCU,
+else the repository's build/tests, build/all or build/tools tree), else
+build/tools configured (Release, no Qt) and built on first use. Scratch
+files go to tools/build/ (ignored).
 
 Timing: `c59 run-time` and `c59 line-times` (C59-9 AC-3, AC-5) time on the
 calculator's own clock: a key's run time from its press until the display
@@ -24,22 +24,19 @@ ROOT = os.path.dirname(HERE)                               # products/calc-u-59
 REPO = os.path.dirname(os.path.dirname(ROOT))
 BUILD = os.path.join(HERE, 'build')
 sys.path.insert(0, os.path.join(REPO, 'library', 'harness', 'python'))
-from calcu_serve import Calcu  # noqa: E402
+from calcu_serve import Calcu, find_calcu  # noqa: E402
 
 
 def calcu_path(argv=None):
-    """The calcu program: --calcu PATH in argv (removed from it), CALCU59_CALCU, or a root tree's."""
+    """The calcu program: --calcu PATH in argv (removed from it), find_calcu(), or build/tools built."""
     if argv is not None and '--calcu' in argv:
         i = argv.index('--calcu')
         path = argv[i + 1]
         del argv[i:i + 2]
         return path
-    if os.environ.get('CALCU59_CALCU'):
-        return os.environ['CALCU59_CALCU']
-    for tree in ('tests', 'tools'):
-        p = os.path.join(REPO, 'build', tree, 'library', 'harness', 'cli', 'calcu')
-        if os.path.exists(p) or os.path.exists(p + '.exe'):
-            return p
+    found = find_calcu()
+    if found:
+        return found
     tree = os.path.join(REPO, 'build', 'tools')
     if not os.path.exists(os.path.join(tree, 'CMakeCache.txt')):
         subprocess.run(['cmake', '-S', REPO, '-B', tree, '-G', 'Ninja', '-DCMAKE_BUILD_TYPE=Release',

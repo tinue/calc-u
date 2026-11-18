@@ -12,16 +12,37 @@ keys "done", "result" and "reason"; with json=False it is a dict with
 "done", "lines" (the result lines) and "reason". A refused command raises
 Refused unless check=False. With a timeout (seconds of wall clock, for
 the whole reply), a reply that does not come in time ends the program and
-raises TimeoutError. Standard library only.
+raises TimeoutError. find_calcu() finds the program. Standard library only.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import queue
 import subprocess
 import threading
+from pathlib import Path
 from typing import Any, Optional, Sequence
+
+REPO = Path(__file__).resolve().parents[3]
+# The root build trees that hold `calcu`, in the order they are looked in:
+# build/tests (the Frequent tree, CLAUDE.md), build/all (everything),
+# build/tools (Calc-U-59's scripts build it on first use, tools/calcu59.py).
+TREES = ("tests", "all", "tools")
+
+
+def find_calcu() -> Optional[str]:
+    """The `calcu` program: $CALCU (as given), else the first root build tree
+    of TREES that holds it, else None."""
+    if os.environ.get("CALCU"):
+        return os.environ["CALCU"]
+    for tree in TREES:
+        program = REPO / "build" / tree / "library" / "harness" / "cli" / "calcu"
+        for candidate in (program, program.with_suffix(".exe")):
+            if candidate.is_file():
+                return str(candidate)
+    return None
 
 
 class Refused(Exception):

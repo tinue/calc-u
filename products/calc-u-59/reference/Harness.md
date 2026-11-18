@@ -20,8 +20,9 @@ frontends host it) in emulated time only, so two runs give the same replies.
 - `calcu --product c59 serve`: one command per line, one reply per line; from
   Python `library/harness/python/calcu_serve.py`, or `tools/calcu59.py`
   (`Run`, `split_preset`, `play_until_last`, `run_preset`, `line_times`),
-  which the scripts below use. `--calcu PATH`, `CALCU59_CALCU`, else the
-  `build/tests` tree's, else `build/tools` built on first use.
+  which the scripts below use. `--calcu PATH`, `CALCU`, else the
+  `build/tests`, `build/all` or `build/tools` tree's (the library's
+  `calcu_serve.find_calcu`), else `build/tools` built on first use.
 - `calcu --help` lists every command; the IDE run configuration is
   `.run/calcu-59.run.xml` (repository root).
 

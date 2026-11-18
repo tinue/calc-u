@@ -5,10 +5,9 @@
 #include <variant>
 #include <vector>
 
-// Display output in display kinds (LIB-1 design §3.6; machine.md M-2). No
-// pixel format, glyph, colour or power state (AC-18, AC-43). Brightness is
-// the duty the core measures, from 0 to 1; what the eye sees is decided
-// above the machine.
+// Display output in display kinds. No pixel format, glyph, colour or power
+// state. Brightness is the duty the core measures, from 0 to 1; what the
+// eye sees is worked out above the machine.
 
 namespace calcu::machine {
 
@@ -20,12 +19,12 @@ struct SegmentPosition {
 struct SegmentFrame   { std::vector<SegmentPosition> positions; };   // order: the product's
 struct DotMatrixFrame { int width = 0, height = 0; std::vector<std::uint8_t> dots; };  // row-major, 0 or 1; cells from the descriptor
 struct IndicatorOutput {
-    std::string name;        // a copy: a payload holds no pointer into a machine (LIB-3 design §3.1)
+    std::string name;        // a copy: a payload holds no pointer into a machine
     bool on;
     std::optional<float> brightness;
 };
 struct DisplayOutput {
-    bool on = true;          // a display that is off shows nothing (AC-43)
+    bool on = true;          // a display that is off shows nothing
     std::variant<SegmentFrame, DotMatrixFrame> frame;
     std::vector<IndicatorOutput> indicators;
 };

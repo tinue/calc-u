@@ -1,4 +1,4 @@
-// LIB-18 design L7: while an operation runs (AC-16; D-6, D-7). The running
+// While an operation runs. The running
 // operation is the sessions' test part's `tp.op`, or a startup preset of the
 // stand-in loader that runs long.
 #include "TestHarness.hpp"
@@ -27,7 +27,7 @@ CallId runLong(Rig& r) {
 }
 } // namespace
 
-TEST(ac16_reset_cold_boot_model_stop_running_operation_first) {
+TEST(reset_cold_boot_model_stop_running_operation_first) {
     const std::pair<const char*, Value> commands[] = {
         {"reset", Value()},
         {"cold-boot", Value()},
@@ -46,8 +46,8 @@ TEST(ac16_reset_cold_boot_model_stop_running_operation_first) {
     }
 }
 
-TEST(ac16_stopped_command_replied_stopped) {
-    // A startup preset that runs long (OQ-1: Reset is how the user stops it).
+TEST(stopped_command_replied_stopped) {
+    // A startup preset that runs long (Reset is how the user stops it).
     TestPresetLoader loader;
     TestPresetLoader::Preset p;
     p.plan = MachinePlan{mt::kSeg, std::nullopt, {}, nullptr};
@@ -69,13 +69,13 @@ TEST(ac16_stopped_command_replied_stopped) {
     CHECK(r.notices().empty());   // a stop is not a failure
 }
 
-TEST(ac16_other_commands_refused_while_running) {
+TEST(other_commands_refused_while_running) {
     Rig r(paced());
     const CallId op = runLong(r);
     const std::pair<const char*, Value> commands[] = {
         {"variant", Value::object({{"name", "V1"}})},
         {"attach", Value::object({{"place", "aux"}, {"peripheral", "test-uart"}})},
-        {"detach", Value::object({{"place", "aux"}})},   // would be Done (D-7)
+        {"detach", Value::object({{"place", "aux"}})},   // would be Done
         {"power-cycle", Value()},
         {"start", Value()},
     };
@@ -88,7 +88,7 @@ TEST(ac16_other_commands_refused_while_running) {
     CHECK_EQ(r.product.builds(), 1);
 }
 
-TEST(ac16_model_to_running_model_leaves_operation_running) {   // D-6
+TEST(model_to_running_model_leaves_operation_running) {
     Rig r(paced());
     const CallId op = runLong(r);
     const CallId c = r.send("model", Value::object({{"name", "test-seg"}}));

@@ -1,5 +1,4 @@
-// LIB-18 design L6: Reset, Cold boot, power cycle; readiness (AC-13, AC-14,
-// EC-3, EC-7; D-4, D-5).
+// Reset, Cold boot, power cycle; the run to key readiness.
 #include "TestHarness.hpp"
 #include "TestHook.hpp"
 #include "TestProductMachines.hpp"
@@ -17,7 +16,7 @@ void press(Rig& r, const char* key) {
 }
 } // namespace
 
-TEST(ac13_reset_cold_boot_power_cycle_are_operations_over_at_key_readiness) {
+TEST(reset_cold_boot_power_cycle_are_operations_over_at_key_readiness) {
     RigOptions o;
     o.hosting = Hosting::Paced;
     Rig r(o);
@@ -43,7 +42,7 @@ TEST(ac13_reset_cold_boot_power_cycle_are_operations_over_at_key_readiness) {
     CHECK_EQ(v.machine()->presses(), std::uint64_t{0});
 }
 
-TEST(ac13_plugs_stay) {   // LIB-2 AC-10
+TEST(plugs_stay) {
     Rig r;   // the printer in `printer`
     for (const char* name : kRestarts) CHECK(r.done(r.send(name)));
     TestMachine* m = r.machine();
@@ -52,7 +51,7 @@ TEST(ac13_plugs_stay) {   // LIB-2 AC-10
     CHECK_EQ(r.product.builds(), 1);
 }
 
-TEST(ac13_clock_given_host_time_at_end) {   // LIB-2 AC-23
+TEST(clock_given_host_time_at_end) {
     RigOptions o;
     o.settings = "[startup]\nmodel = test-dot\n";
     Rig r(o);
@@ -63,7 +62,7 @@ TEST(ac13_clock_given_host_time_at_end) {   // LIB-2 AC-23
     }
 }
 
-TEST(ac14_text_and_held_keys_dropped) {   // LIB-5 EC-5
+TEST(text_and_held_keys_dropped) {
     TestHook hook;
     RigOptions o;
     o.hook = &hook;
@@ -83,7 +82,7 @@ TEST(ac14_text_and_held_keys_dropped) {   // LIB-5 EC-5
     CHECK_EQ(hook.drops, drops + 1);
 }
 
-TEST(ec3_ready_at_a_prompt_ends_the_wait) {   // C1600-1 AC-21
+TEST(ready_at_a_prompt_ends_the_wait) {
     RigOptions o;
     // A start-up that ends at a prompt after 5000 ticks: ready there.
     o.prepare = [](TestProductMachines& p) { p.defaults[mt::kSeg].content = std::make_shared<mt::TestStartUp>(5'000); };
@@ -95,14 +94,14 @@ TEST(ec3_ready_at_a_prompt_ends_the_wait) {   // C1600-1 AC-21
     CHECK(r.logLines().empty());
 }
 
-TEST(ec7_never_ready_ends_after_bound_with_log_line_machine_left) {
+TEST(never_ready_ends_after_bound_with_log_line_machine_left) {
     RigOptions o;
     o.prepare = [](TestProductMachines& p) {
         p.defaults[mt::kSeg].content = std::make_shared<mt::TestStartUp>(mt::TestStartUp::kNever);
         p.bounds[mt::kSeg] = calcu::machine::Seconds(0.01);   // 1000 ticks
     };
     Rig r(o);
-    CHECK(r.done(r.startCall));   // the operation ends as done (D-5)
+    CHECK(r.done(r.startCall));   // the operation ends as done
     TestMachine* m = r.machine();
     CHECK(m && !m->isKeyReady());   // left as it is
     const Ticks piece = calcu::sessions::OperationContext::runPiece(mt::kSegRate);

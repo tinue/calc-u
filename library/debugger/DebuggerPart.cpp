@@ -111,7 +111,7 @@ Value cellValue(std::uint64_t address, const machine::CellRead& c) {
 }
 
 // The bank and vertical bank of a peek or poke into `bank`; the reason when
-// they are refused (AC-49: the range lies inside one bank window that has them).
+// they are refused (the range lies inside one bank window that has them).
 std::optional<std::string> bankOf(const Value& a, const machine::SpaceInfo& space, std::uint64_t address,
                                   std::uint64_t count, machine::BankSelect* bank) {
     if (auto b = numberOf(a.find("bank"))) bank->bank = static_cast<std::uint32_t>(*b);
@@ -147,12 +147,12 @@ void DebuggerPart::machineRestarted(SessionContext&, sessions::Restart r) {
 }
 
 void DebuggerPart::operationEnded(SessionContext& c) {
-    if (trace_.running() && trace_.ofOperation()) trace_.end(c, TraceSession::Ending::OperationEnded);   // T3
+    if (trace_.running() && trace_.ofOperation()) trace_.end(c, TraceSession::Ending::OperationEnded);
 }
 
 std::optional<std::uint64_t> DebuggerPart::addressOf(const Value* v, const DebugTargetId& target, std::string* error) const {
     if (auto n = numberOf(v)) return n;
-    if (v && v->string()) {   // AC-51: a name of the target's symbols
+    if (v && v->string()) {   // a name of the target's symbols
         if (const SymbolTable* t = symbols(target))
             if (auto a = t->address(*v->string())) return a;
         *error = "There is no symbol " + *v->string() + " for " + target.value + ".";
@@ -171,7 +171,7 @@ void DebuggerPart::attach(sessions::SessionSetup& s) {
     addRequests(s);
 }
 
-// ── Commands (§3.6) ──────────────────────────────────────────────────────
+// ── Commands ─────────────────────────────────────────────────────────────
 
 void DebuggerPart::addCommands(sessions::SessionSetup& s) {
     RunControl& rc = control_;
@@ -257,7 +257,7 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
         if (setter.empty()) setter = kHarnessSetter;
         std::optional<BreakpointId> id;
         if (const Value* v = a.find("id"); v && v->integer()) id = static_cast<BreakpointId>(*v->integer());
-        rc.table().remove(setter, id);   // only the setter's own (AC-47)
+        rc.table().remove(setter, id);   // only the setter's own
         if (machine::Machine* m = c.machine(); m && m->debugging()) rc.table().apply(*m->debugging());
         return Done{};
     };
@@ -321,7 +321,7 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
         const Value* vs = a.find("values");
         if (!vs || !vs->elements() || vs->elements()->empty()) return Refused{"poke needs values."};
         const std::uint64_t count = vs->elements()->size();
-        if (*address >= space.size || count > space.size - *address)   // EC-9
+        if (*address >= space.size || count > space.size - *address)
             return Refused{"The address is outside the space " + space.name + "."};
         machine::BankSelect bank;
         if (auto why = bankOf(a, space, *address, count, &bank)) return Refused{*why};
@@ -388,7 +388,7 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
     });
 }
 
-// ── Requests (§3.6) ──────────────────────────────────────────────────────
+// ── Requests ─────────────────────────────────────────────────────────────
 
 void DebuggerPart::addRequests(sessions::SessionSetup& s) {
     RunControl& rc = control_;
@@ -445,7 +445,7 @@ void DebuggerPart::addRequests(sessions::SessionSetup& s) {
         if (!address) return sessions::replyRefused(why);
         const std::uint64_t count = numberOf(a.find("count")).value_or(1);
         if (count == 0) return sessions::replyRefused("peek needs a count of at least 1.");
-        if (*address >= space.size || count > space.size - *address)   // EC-9
+        if (*address >= space.size || count > space.size - *address)
             return sessions::replyRefused("The address is outside the space " + space.name + ".");
         machine::BankSelect bank;
         if (auto why = bankOf(a, space, *address, count, &bank)) return sessions::replyRefused(*why);
@@ -537,7 +537,7 @@ void DebuggerPart::addRequests(sessions::SessionSetup& s) {
     s.request(kWatchesRequest, list(true));
     s.request(kProfileReportRequest, [this, &rc](const Value& a, SessionContext& c) {
         if (auto r = rc.refusal()) return sessions::replyRefused(*r);
-        const std::int64_t n = sessions::integerArg(a, "count", 20);   // D-7
+        const std::int64_t n = sessions::integerArg(a, "count", 20);
         machine::Debugging* d = c.machine()->debugging();
         Value::Array out;
         for (const auto& e : rc.profile().top(static_cast<std::size_t>(std::max<std::int64_t>(0, n)))) {

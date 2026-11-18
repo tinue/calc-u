@@ -2,9 +2,8 @@
 #include "machine/Machine.hpp"
 #include <algorithm>
 
-// The generic rules of an attach (LIB-2 design §3.1). Everything a
-// peripheral needs comes in with the request; nothing here reads a file
-// (AC-11).
+// The generic rules of an attach. Everything a
+// peripheral needs comes in with the request; nothing here reads a file.
 
 namespace calcu::machine {
 
@@ -32,7 +31,7 @@ const PlugEntry* entryAt(const Plugged& plugged, const PlacePath& place, const P
 }
 
 // The place a path names: on the machine for one step, on the peripheral
-// plugged in at the path's prefix otherwise (AC-9).
+// plugged in at the path's prefix otherwise.
 std::optional<PlaceInfo> placeAt(const Machine& m, const Plugged& plugged, const PlacePath& path,
                                  const Catalogue& cat) {
     if (path.steps.empty()) return std::nullopt;
@@ -86,13 +85,13 @@ std::optional<Refusal> Machine::check(const PeripheralRequest& req, const Catalo
     const PeripheralDescriptor* d = cat.peripheral(req.peripheral);
     if (!d) return refusal(req.peripheral.value + " is not a known peripheral.");
     const std::string name = d->name.empty() ? d->id.value : d->name;
-    // 3. It fits the place's pin-out (EC-1).
+    // 3. It fits the place's pin-out.
     if (!d->fitsPinOut(place->place->pinOut)) return refusal("The " + name + " does not fit " + where + ".");
     // 4. The variant belongs to it.
     std::optional<VariantId> variant = req.variant;
     if (!resolveVariant(*d, variant))
         return refusal("The " + name + " has no variant " + (req.variant ? req.variant->value : std::string()) + ".");
-    // 5. Every ROM entry of the variant has an image (EC-4).
+    // 5. Every ROM entry of the variant has an image.
     std::vector<std::string> missing;
     for (const auto& e : d->romsFor(variant))
         if (std::none_of(req.roms.begin(), req.roms.end(), [&](const RomImage& i) { return i.fileName == e.fileName; }))
@@ -104,8 +103,8 @@ std::optional<Refusal> Machine::check(const PeripheralRequest& req, const Catalo
                            " missing.",
                        std::move(missing)};
     }
-    // 6. Room in the place, and on a Takes::One connector in no other place
-    // (AC-3, AC-7). The peripheral a replace takes out does not count.
+    // 6. Room in the place, and on a Takes::One connector in no other place.
+    // The peripheral a replace takes out does not count.
     const PlugEntry* first = nullptr;
     int held = 0;
     for (const auto& e : now.byPlace) {
@@ -125,7 +124,7 @@ std::optional<Refusal> Machine::check(const PeripheralRequest& req, const Catalo
                 return refusal(placeText(e.place) + " already holds the " + nameOf(cat, e.peripheral) + ".");
         }
     }
-    // 7. The product's rules (AC-29).
+    // 7. The product's rules.
     if (auto why = productRefusal(req, replacing)) return refusal(std::move(*why));
     return std::nullopt;
 }
@@ -146,7 +145,7 @@ ChangeResult Machine::attach(PeripheralRequest req, const Catalogue& cat) {
 
 ChangeResult Machine::detach(const PlacePath& place, const PeripheralId& id, const Catalogue& cat) {
     const Plugged now = plugged();
-    if (!entryAt(now, place, &id)) return ChangeResult{};   // EC-2
+    if (!entryAt(now, place, &id)) return ChangeResult{};   // nothing there: nothing changes
     const auto info = placeAt(*this, now, place, cat);
     unplug(place, id);
     return ChangeResult{std::nullopt, info ? followsNow(*info->pinOut) : AfterChange::Nothing};
@@ -167,7 +166,7 @@ ChangeResult Machine::replace(const PeripheralId& old, PeripheralRequest req, co
     resolveVariant(d, req.variant);
     unplug(req.place, old);
     plug(std::move(req), d, descriptor().tickRate);
-    return ChangeResult{std::nullopt, followsNow(pinOut)};   // asked once (AC-35)
+    return ChangeResult{std::nullopt, followsNow(pinOut)};   // asked once
 }
 
 std::optional<std::string> Machine::productRefusal(const PeripheralRequest&, const std::optional<PeripheralId>&) const {

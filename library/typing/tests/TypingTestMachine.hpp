@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-// `test-type` (LIB-5 design §2, §6, L1): LIB-1's test-seg (100 kHz,
+// `test-type`: the machine tests' test-seg (100 kHz,
 // instructions of 3 and 5 ticks) with the keys typing needs, a key readiness
 // the test scripts, the key log with tick counts (TestMachine::keyEvents),
 // and typing support with two latches (`shift`, `kbii`) and a sample count:

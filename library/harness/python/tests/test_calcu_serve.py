@@ -1,4 +1,4 @@
-"""The Python helper against `calcu_test` (LIB-11 design T15; no AC).
+"""The Python helper against `calcu_test`.
 
     python -I test_calcu_serve.py <calcu_test>
 """
@@ -20,7 +20,7 @@ def main() -> int:
             failures.append(what)
 
     with Calcu(program, "test") as c:
-        # The run starts at key readiness: one run piece of 1667 ticks (LIB-18 D-4).
+        # The run starts at key readiness: one run piece of 1667 ticks.
         check(c.send("ticks")["result"] == {"ticks": 1667, "seconds": 0.01667}, "ticks at the start")
         waited = c.send("wait 1ms")["result"]
         check(waited["ticks"] >= 100, "wait 1ms at 100 kHz: %r" % waited)

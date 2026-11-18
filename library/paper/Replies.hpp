@@ -5,17 +5,17 @@
 #include <string_view>
 #include <vector>
 
-// The text forms of `paper text` and `paper marks` (LIB-8 design §3.4; spec
-// AC-23, AC-39, EC-2). The reference runs of the products are compared over
-// them (AC-39, OQ-4), so the form is fixed: a change is a finding.
+// The text forms of `paper text` and `paper marks`. The reference runs of
+// the products are compared over them, so the form is fixed: a change is a
+// finding.
 //
 //   paper text    one line per text line, as printed
 //   paper marks   `reach <from> <to>`, then one line per mark, in the order
 //                 made: `dot <x> <y> <darkness>` or
-//                 `stroke #rrggbb <x>,<y> <x>,<y> …` (D-4)
+//                 `stroke #rrggbb <x>,<y> <x>,<y> …`
 //
 // A number is Coord / 10000 with at most four decimals, no trailing zeros
-// and no point for a whole number (D-3): 7, 6.53, -2, 66.9474.
+// and no point for a whole number: 7, 6.53, -2, 66.9474.
 
 namespace calcu::paper {
 

@@ -1,5 +1,5 @@
-// LIB-10 L13 (design §6): the preset steps of AC-19 on LIB-6's step place;
-// with them LIB-6 AC-19's debugger steps and AC-63's `debug-panel:`.
+// The debugger's preset steps on the presets' step place, `debug-panel:`
+// among them.
 #include "DebugRig.hpp"
 #include "TestHarness.hpp"
 #include <filesystem>
@@ -15,7 +15,7 @@ std::string keys(const std::string& items, const std::string& model = "test-seg"
 }
 } // namespace
 
-TEST(ac19_each_step_does_what_its_ac_says) {
+TEST(each_step_does_what_its_ac_says) {
     DebugRig r;
     const CallId l = r.load(keys("  - trace: s.bin\n"
                                  "  - pause: program\n"
@@ -34,7 +34,7 @@ TEST(ac19_each_step_does_what_its_ac_says) {
     CHECK(r.shownViews == std::vector<std::string>{"cpu"});   // the frontend was told
     CHECK(!r.paused());
     CHECK(r.runState()->armed == kCpu);
-    CHECK(!r.traceState()->running);   // ended with its preset (AC-22)
+    CHECK(!r.traceState()->running);   // ended with its preset
     CHECK(std::filesystem::exists(std::filesystem::path(r.traces / "s.bin")));
     // pause-on-start: off; a pause that the preset leaves.
     CHECK(r.done(r.load(keys("  - pause-on-start: off\n  - pause: cpu\n"))));
@@ -42,7 +42,7 @@ TEST(ac19_each_step_does_what_its_ac_says) {
     CHECK(r.paused() && r.runState()->owner == kCpu);
 }
 
-TEST(ac19_level_view_count_out_of_range_refused_at_read) {
+TEST(level_view_count_out_of_range_refused_at_read) {
     DebugRig r;
     const std::pair<const char*, const char*> cases[] = {
         {"  - pause: basic\n", "pause: takes a level"},
@@ -64,15 +64,15 @@ TEST(ac19_level_view_count_out_of_range_refused_at_read) {
     CHECK(r.done(r.load(keys("  - step: { level: cpu, count: 100000 }\n  - step:\n"))));   // in range; 1 without
 }
 
-TEST(ac19_step_not_paused_logs_and_goes_on) {
+TEST(step_not_paused_logs_and_goes_on) {
     DebugRig r;
     const CallId l = r.load(keys("  - step: { level: cpu, count: 5 }\n  - wait: 1ms\n"));
     CHECK(r.done(l));
-    CHECK(pt::hasLine(r.logLines(), "step: ignored, the machine is not paused"));   // OQ-4
+    CHECK(pt::hasLine(r.logLines(), "step: ignored, the machine is not paused"));
     CHECK(!r.paused());
 }
 
-TEST(ac19_undefined_steps_refused_for_a_model) {
+TEST(undefined_steps_refused_for_a_model) {
     DebugRig r;   // test-dot stands for a Sharp model: the run-control steps and debug-panel: are [undefined]
     for (const char* item : {"  - pause: cpu\n", "  - resume:\n", "  - step:\n", "  - pause-on-start: cpu\n",
                              "  - debug-panel: cpu\n"}) {
@@ -82,16 +82,16 @@ TEST(ac19_undefined_steps_refused_for_a_model) {
     }
 }
 
-TEST(ac19_trace_defined_for_every_model) {
+TEST(trace_defined_for_every_model) {
     DebugRig r;
     const CallId l = r.load(keys("  - trace: d.bin\n  - wait: 1ms\n", "test-dot"), "t.test-dot");
     CHECK(r.done(l));
     CHECK(std::filesystem::exists(std::filesystem::path(r.traces / "d.bin")));
 }
 
-TEST(ac19_no_step_waits_for_a_running_machine) {
+TEST(no_step_waits_for_a_running_machine) {
     // In virtual time a step that waited for the machine to run would fail
-    // with "The machine is paused." (LIB-6 AC-19): every one is carried out
+    // with "The machine is paused.": every one is carried out
     // on the paused machine.
     DebugRig r;
     const CallId l = r.load(keys("  - pause: cpu\n"
@@ -106,7 +106,7 @@ TEST(ac19_no_step_waits_for_a_running_machine) {
         const presets::StepDef* d = r.presetsPart->vocabulary().step(verb);
         CHECK(d != nullptr);
         if (!d) continue;
-        CHECK(!d->command);   // the harness has commands of its own (§3.9)
+        CHECK(!d->command);   // the harness has commands of its own
         formats::YamlNode v;
         v.type = formats::YamlNode::Type::Scalar;
         v.scalar = std::string(verb) == "trace" ? "x.bin" : "cpu";
@@ -121,10 +121,10 @@ TEST(ac19_no_step_waits_for_a_running_machine) {
     }
 }
 
-TEST(ac19_debug_panel_is_a_frontend_step) {
+TEST(debug_panel_is_a_frontend_step) {
     DebugRig r;
     const presets::StepDef* d = r.presetsPart->vocabulary().step("debug-panel");
-    CHECK(d && d->frontend);   // LIB-6 AC-63: never fails
+    CHECK(d && d->frontend);   // never fails
     r.debugger.runControl();
     // Where nobody has the panel it is passed over.
     DebuggerSetup bare;

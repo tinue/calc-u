@@ -54,15 +54,15 @@ void PaperPart::attach(SessionSetup& s) {
     papersTopic_->set(list);
     copiesTopic_ = &s.streamTopic(kPaperCopiesTopic, History::None);
 
-    // AC-16: the picture and the text to the clipboard.
+    // Copy: the picture and the text to the clipboard.
     s.command(kPaperCopyCommand, [this](const sessions::Value& a, SessionContext& c) -> CommandOutcome {
         sync(c);
         const Found f = find(c, ownerArg(a));
         if (!f.paper) return Refused{f.refusal};
         return copy(c, *entryOf(f.paper), false);
     });
-    // AC-18: copied, then cut, also when the copy did not succeed; AC-22:
-    // without a copy (`copy: false`), also an empty paper.
+    // Cut: copied, then cut, also when the copy did not succeed; the step
+    // cut-paper: without a copy (`copy: false`), also an empty paper.
     s.command(kPaperCutCommand, [this](const sessions::Value& a, SessionContext& c) -> CommandOutcome {
         sync(c);
         const Found f = find(c, ownerArg(a));
@@ -73,7 +73,7 @@ void PaperPart::attach(SessionSetup& s) {
         publish();
         return Done{};
     });
-    // AC-23: the replies of `paper text` and `paper marks`.
+    // The replies of `paper text` and `paper marks`.
     s.request(kPaperTextRequest, [this](const sessions::Value& a, SessionContext& c) {
         sync(c);
         const Found f = find(c, ownerArg(a));
@@ -128,7 +128,7 @@ void PaperPart::bindAll(SessionContext& c) {
         // A new machine: the capabilities of the old one are gone.
         generation_ = gen;
         for (auto& e : entries_) e.paper->release();
-        // A-3: a user's preset load starts with empty paper for the printers it names.
+        // A user's preset load starts with empty paper for the printers it names.
         if (m && control_.lastBuild() && control_.lastBuild()->origin == startup::BuildOrigin::Preset)
             for (const auto& r : control_.lastBuild()->plan.peripherals)
                 if (Entry* e = entryOf(r.peripheral)) e->paper->cut();
@@ -143,7 +143,7 @@ void PaperPart::bindAll(SessionContext& c) {
             const auto* owner = std::get_if<machine::PeripheralOwner>(&cap.owner);
             Entry* e = owner ? entryOf(owner->peripheral) : nullptr;
             const std::size_t i = e ? static_cast<std::size_t>(e - entries_.data()) : 0;
-            if (!e || found[i]) {   // D-10
+            if (!e || found[i]) {   // not declared, or a second of its type: logged once, left unbound
                 if (logged_.insert(cap.id.value).second)
                     c.log("Paper output " + cap.id.value + (e ? " is a second printer of its type" : " is not a printer of the product") +
                           "; it is not shown.");
@@ -226,7 +226,7 @@ void PaperPart::cutPlugged(SessionContext& c) {
 }
 
 // The picture is made before the ask; a cut follows the ask, whatever the
-// answer (AC-18). Without a listener that offers the clipboard, a copy is
+// answer. Without a listener that offers the clipboard, a copy is
 // refused and a cut is done.
 CommandOutcome PaperPart::copy(SessionContext& c, Entry& e, bool cutAfter) {
     Paper& p = *e.paper;

@@ -1,6 +1,5 @@
-// LIB-18's harness commands (LIB-18 design §3.6; spec AC-15, OQ-5): at the
-// top level, each sent as the session command of LIB-18 (StartupPart) with
-// the reply of its operation, run in one go (LIB-11 AC-7).
+// The startup harness commands: at the top level, each sent as the session
+// command of the StartupPart with the reply of its operation, run in one go.
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
 #include "startup/StartupPart.hpp"

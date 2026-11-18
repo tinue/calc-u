@@ -1,5 +1,5 @@
-// LIB-2 T7: HostLinks with an injected link factory, on every platform
-// (EC-5; the rules of design §3.5 that AC-18 to AC-20 build on). The real
+// HostLinks with an injected link factory, on every platform: the rules
+// the real host links build on. The real
 // pseudo-terminals: pty_tests.cpp.
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
@@ -42,7 +42,7 @@ HostLinkRules uartRule(bool openAtOnce) {
 }
 } // namespace
 
-TEST(ec5_without_pty_machine_runs_and_bytes_go_nowhere) {
+TEST(without_pty_machine_runs_and_bytes_go_nowhere) {
     int made = 0;
     HostLinks links(uartRule(true), std::string("/nowhere"), [&](const std::optional<std::string>&, const std::string&) {
         ++made;

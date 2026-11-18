@@ -1,4 +1,4 @@
-// LIB-6 L13: the harness commands of AC-34, on the harness's test product
+// The preset harness commands, on the harness's test product
 // (its preset rules: library/presets/tests/TestPresetRules.hpp).
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
@@ -25,7 +25,7 @@ bool controlOn(mt::TestMachine& m, const char* control) {
 }
 } // namespace
 
-TEST(ac34_preset_done_or_refused_with_line) {
+TEST(preset_done_or_refused_with_line) {
     calcu::testing::TempFolder t("calcu-harness-presets");
     t.write("good.test-seg", kHeader + "printer: test-printer\nkeys:\n  - key: 2 3\n");
     t.write("bad.test-seg", kHeader + "keys:\n  - key: 9\n");
@@ -40,7 +40,7 @@ TEST(ac34_preset_done_or_refused_with_line) {
     CHECK(startsWith(run.line("preset"), "refused: usage: preset"));
 }
 
-TEST(ac34_check_preset_one_line_per_file_run_fails) {
+TEST(check_preset_one_line_per_file_run_fails) {
     calcu::testing::TempFolder t("calcu-harness-presets");
     t.write("a.test-seg", kHeader);
     t.write("b.test-seg", kHeader + "colour: red\n");
@@ -57,7 +57,7 @@ TEST(ac34_check_preset_one_line_per_file_run_fails) {
     CHECK_EQ(run.machine().presses(), std::uint64_t(0));   // nothing built, nothing carried out
 }
 
-TEST(ac34_preset_list) {
+TEST(preset_list) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -66,7 +66,7 @@ TEST(ac34_preset_list) {
                                                   "examples:basic/two.test-seg | test-seg | example (Basic) | Two | Presses 2\n"));
 }
 
-TEST(ac34_wait_until_idle_reports_time_and_hour) {
+TEST(wait_until_idle_reports_time_and_hour) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -82,7 +82,7 @@ TEST(ac34_wait_until_idle_reports_time_and_hour) {
     CHECK(h.find("hour reached: yes\n") != std::string::npos);
 }
 
-TEST(ac34_full_and_regular_speed) {
+TEST(full_and_regular_speed) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -93,7 +93,7 @@ TEST(ac34_full_and_regular_speed) {
     CHECK(ctx.commandedSpeed() == calcu::pacing::Speed::Regular);
 }
 
-TEST(ac34_elapsed_time) {
+TEST(elapsed_time) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -103,7 +103,7 @@ TEST(ac34_elapsed_time) {
     CHECK(startsWith(run.line("elapsed-time later"), "refused: elapsed-time: takes start or report."));
 }
 
-TEST(ac34_expect_and_not_expect_refused_with_display) {
+TEST(expect_and_not_expect_refused_with_display) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -115,7 +115,7 @@ TEST(ac34_expect_and_not_expect_refused_with_display) {
     CHECK_EQ(run.line("not-expect 01"), std::string("refused: Not expected: 01; the display shows 010.\n"));
 }
 
-TEST(ac34_screenshot_into_the_run_folder) {
+TEST(screenshot_into_the_run_folder) {
     calcu::testing::TempFolder out("calcu-harness-shots");
     RunOptions o;
     o.outputFolder = out.str();
@@ -127,7 +127,7 @@ TEST(ac34_screenshot_into_the_run_folder) {
     CHECK(startsWith(run.line("screenshot ../a.png"), "refused: screenshot: takes a file name without a folder."));
 }
 
-TEST(ac34_printer_trace_refused_without_printer) {
+TEST(printer_trace_refused_without_printer) {
     TestRun run;   // the start's machine: test-seg without a printer
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -139,7 +139,7 @@ TEST(ac34_printer_trace_refused_without_printer) {
     CHECK(!controlOn(run.machine(), "trace"));
 }
 
-TEST(ac34_set_control_sets_a_control) {
+TEST(set_control_sets_a_control) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -154,7 +154,7 @@ TEST(ac34_set_control_sets_a_control) {
     CHECK(startsWith(run.line("set-control test-printer online"), "refused: usage: set-control"));
 }
 
-TEST(ac34_syncclock_takes_the_run_clock) {
+TEST(syncclock_takes_the_run_clock) {
     RunOptions o;
     o.clock = ClockMode::Given;
     o.given = LocalDateTime{2024, 5, 6, 7, 8, 9};

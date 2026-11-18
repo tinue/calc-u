@@ -3,12 +3,12 @@
 #include <type_traits>
 #include <variant>
 
-// LIB-1 AC-15, AC-16, AC-17, AC-18, AC-43 (design §6, T9).
+// Display output in display kinds: segments, dots, indicators, display off.
 
 using namespace calcu::machine;
 using namespace calcu::machine::test;
 
-TEST(ac15_segments_and_brightness_per_position_and_dp) {
+TEST(segments_and_brightness_per_position_and_dp) {
     auto m = buildTestMachine(kSeg);
     CHECK(m != nullptr);
     if (!m) return;
@@ -38,7 +38,7 @@ TEST(ac15_segments_and_brightness_per_position_and_dp) {
     CHECK(!f2.positions[0].lit[7] && f2.positions[0].segmentBrightness[7] == 0.0f);
 }
 
-TEST(ac16_dots_of_descriptor_size_in_cells) {
+TEST(dots_of_descriptor_size_in_cells) {
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
     if (!m) return;
@@ -55,7 +55,7 @@ TEST(ac16_dots_of_descriptor_size_in_cells) {
     CHECK_EQ(f->dots[0 * 12 + 4], std::uint8_t{0});
 }
 
-TEST(ac17_indicators_by_name_with_state) {
+TEST(indicators_by_name_with_state) {
     auto seg = buildTestMachine(kSeg);
     auto dot = buildTestMachine(kDot);
     CHECK(seg && dot);
@@ -84,7 +84,7 @@ TEST(ac17_indicators_by_name_with_state) {
     CHECK(o.indicators[0].on && o.indicators[0].brightness == 1.0f);
 }
 
-TEST(ac18_output_has_no_host_pixels_glyphs_colours) {
+TEST(output_has_no_host_pixels_glyphs_colours) {
     // The shape of the types: segments are flags and duties, dots are 0 or 1
     // in the descriptor's own geometry, indicators are names with a state.
     // No member carries a host pixel format, a glyph style or a colour (and
@@ -105,7 +105,7 @@ TEST(ac18_output_has_no_host_pixels_glyphs_colours) {
     CHECK_EQ(other, 0);
 }
 
-TEST(ac43_display_off_shows_nothing) {
+TEST(display_off_shows_nothing) {
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
     if (!m) return;

@@ -4,7 +4,7 @@
 #include <variant>
 #include <vector>
 
-// Replies of the harness (LIB-11 design §3.1; spec AC-4, AC-5, AC-6).
+// Replies of the harness.
 //
 // Plain (the default): the first line is `done`, `done <n>` followed by n
 // result lines, or `refused: <reason>`. Because of the count a reader never
@@ -13,7 +13,7 @@
 // `result` and `reason`, the same for every command; `result` is null when
 // the command reads nothing, `reason` null when it was done.
 // No double reaches the output: seconds and brightness are Decimals, so two
-// runs agree byte for byte (AC-6).
+// runs agree byte for byte.
 
 namespace calcu::harness {
 
@@ -88,7 +88,7 @@ struct Reply {
     Value result;                      // null: the command reads nothing
     std::string reason;                // one line; empty when done
     std::vector<std::string> lines;    // the plain form of `result`, written by the command
-    // Written as done, but the run ends as failed (LIB-6 AC-34: check-preset).
+    // Written as done, but the run ends as failed (check-preset).
     bool failsRun = false;
 };
 

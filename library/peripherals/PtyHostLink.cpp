@@ -1,6 +1,4 @@
-// The pseudo-terminal behind a serial port file (LIB-2 design §3.5): today's
-// Calc-U-1600 PtySerialLink (products/calc-u-1600/core/Serial/) moved into
-// the library. Compiled only where CALCU_HAS_PTY is set (macOS, Linux);
+// The pseudo-terminal behind a serial port file. Compiled only where CALCU_HAS_PTY is set (macOS, Linux);
 // NoHostLink.cpp elsewhere.
 //
 // Two I/O threads own the master side: a reader draining it into an RX ring
@@ -209,7 +207,7 @@ std::unique_ptr<HostLink> openHostLink(const std::optional<std::string>& folder,
     if (fl >= 0) ::fcntl(master, F_SETFL, fl | O_NONBLOCK);
     // A raw line discipline (no echo, no CR/LF or parity changes) as the
     // default; a program that opens the file sets its own settings on top,
-    // and the bytes pass as they are (AC-18). Set on the master so that the
+    // and the bytes pass as they are. Set on the master so that the
     // file is not opened and closed once (which the DCD guess would misread).
     termios t;
     if (::tcgetattr(master, &t) == 0) {

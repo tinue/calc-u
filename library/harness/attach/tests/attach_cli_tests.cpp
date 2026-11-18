@@ -1,4 +1,4 @@
-// `calcu attach` (C59-5 design §6, A6): the client against an endpoint whose
+// `calcu attach`: the client against an endpoint whose
 // inbox answers in the test (a stand-in for the app).
 
 #include "TestHarness.hpp"
@@ -59,7 +59,7 @@ std::function<std::optional<std::string>()> input(std::vector<std::string> lines
 
 } // namespace
 
-TEST(c59_5_ac10_calcu_attach_relays_lines) {
+TEST(calcu_attach_relays_lines) {
     EchoApp app;
     CHECK(app.endpoint.open().ok);
     const std::string port = std::to_string(app.endpoint.port());
@@ -67,7 +67,7 @@ TEST(c59_5_ac10_calcu_attach_relays_lines) {
     const int status = runAttach({"--port", port}, input({"ticks", "display-text"}), [&](const std::string& s) { out += s; },
                                  [&](const std::string& s) { err += s; });
     CHECK_EQ(status, 0);
-    CHECK_EQ(out, std::string("done 1\nticks\ndone 1\ndisplay-text\n"));   // message lines dropped (D-1)
+    CHECK_EQ(out, std::string("done 1\nticks\ndone 1\ndisplay-text\n"));   // message lines dropped without --messages
     out.clear();
     app.waitDetached(1);
     CHECK_EQ(runAttach({"--port", port, "--messages"}, input({"ticks"}), [&](const std::string& s) { out += s; },
@@ -80,10 +80,10 @@ TEST(c59_5_ac10_calcu_attach_relays_lines) {
               [&](const std::string& s) { err += s; });
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     std::lock_guard<std::mutex> lock(app.m);
-    CHECK(std::find(app.lines.begin(), app.lines.end(), "json on") != app.lines.end());   // D-2
+    CHECK(std::find(app.lines.begin(), app.lines.end(), "json on") != app.lines.end());   // --json sends `json on` first
 }
 
-TEST(c59_5_ac11_options_that_do_not_apply_are_refused) {
+TEST(options_that_do_not_apply_are_refused) {
     for (const char* o : {"--product", "--settings", "--save-folder", "--output-folder"}) {
         std::string out, err;
         const int status = runAttach({o, "x"}, input({}), [&](const std::string& s) { out += s; },

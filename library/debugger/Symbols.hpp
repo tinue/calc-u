@@ -7,10 +7,9 @@
 #include <string_view>
 #include <vector>
 
-// Symbols of an assembler the product supports (LIB-10 design §2, D-5; spec
-// AC-51): a product names its readers (Calc-U-1600's listings, M-45); the
-// library's tests use a table of their own (TestDebugParts.hpp). Loaded by
-// the command `symbols <file> [<target>]`, a name then stands wherever an
+// Symbols of an assembler the product supports: a product names its readers
+// (Calc-U-1600's listings); the library's tests use a table of their own
+// (TestDebugParts.hpp). Loaded by the command `symbols <file> [<target>]`, a name then stands wherever an
 // address of that target is taken, and `history` and `disassemble` show
 // `name` or `name+offset`.
 

@@ -9,10 +9,9 @@
 #include <utility>
 #include <vector>
 
-// The test processor of LIB-10 (design §6, "The test machines"; LIB-1
-// AC-24), switched on by the build option TestProgram: an 8-bit accumulator
-// processor behind test-seg's target `test-cpu` and test-dot's `main` and
-// `inner`, which share the bus by turns (one instruction each). Library tests
+// The test processor of the debugger tests, switched on by the build option
+// TestProgram: an 8-bit accumulator processor behind test-seg's target
+// `test-cpu` and test-dot's `main` and `inner`, which share the bus by turns (one instruction each). Library tests
 // use it, never product code.
 //
 // Registers: a, x (8 bits), pc (16 bits, read-only), sp (16 bits), z (1 bit).
@@ -34,7 +33,7 @@
 // Spaces: `memory` (256 cells of 8 bits; 0x80-0xbf banked: 4 banks, bank 3
 // with 2 vertical banks; 0xf0-0xff ROM, writes refused), `io` (16 cells: 0-7
 // write-only, 8-15 a device whose reading would disturb it, so unreadable)
-// and `io-written` (AC-48). Qualifier field `bank` (0..3), decoding, a
+// and `io-written`. Qualifier field `bank` (0..3), decoding, a
 // history of 8, watches, step over and out (callDepth: 0x10000 - sp).
 // Layout: the program at 0x00, its data at 0x30, the inner target's program
 // at 0x50 (its stack below 0x70), the main stack below 0x80.

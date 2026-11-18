@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-// The generic kind machine state (LIB-11 design T18; spec AC-24): the full
+// The generic kind machine state: the full
 // state of a machine and its plugged peripherals in a form internal to the
 // product and not documented. The library carries the bytes without reading
 // them; the harness writes a header before them (product, version, model,

@@ -1,4 +1,4 @@
-// LIB-3 L13: the audio policy (AC-20, EC-5).
+// The audio policy.
 #include "TestHarness.hpp"
 #include "TestParts.hpp"
 #include <algorithm>
@@ -25,7 +25,7 @@ RigOptions withSink() {
 }
 } // namespace
 
-TEST(ac20_sink_told_rate_and_gets_regular_speed_sound) {
+TEST(sink_told_rate_and_gets_regular_speed_sound) {
     Rig r(withSink());
     r.build(mt::kDot, 8000);
     for (int i = 0; i < 5; ++i) r.call();
@@ -44,7 +44,7 @@ TEST(ac20_sink_told_rate_and_gets_regular_speed_sound) {
     CHECK_EQ(r.fe.count<SoundStop>(), 0);
 }
 
-TEST(ac20_full_speed_and_operation_sound_thrown_away) {
+TEST(full_speed_and_operation_sound_thrown_away) {
     Rig r(withSink());
     r.build(mt::kDot, 8000);
     r.call();
@@ -66,7 +66,7 @@ TEST(ac20_full_speed_and_operation_sound_thrown_away) {
     CHECK(got <= madeFor(r.ticks() - t0, 8000) + 1);
 }
 
-TEST(ac20_no_sink_thrown_away) {
+TEST(no_sink_thrown_away) {
     Rig r;   // the frontend states no audio sink
     r.build(mt::kDot, 8000);
     for (int i = 0; i < 3; ++i) r.call();
@@ -75,7 +75,7 @@ TEST(ac20_no_sink_thrown_away) {
     CHECK_EQ(r.m->takeSound(buf), std::size_t(0));   // drained all the same
 }
 
-TEST(ac20_recorder_gets_all) {
+TEST(recorder_gets_all) {
     RigOptions o;
     o.services.recordsSound = true;   // the harness's `audio <file>`
     Rig r(o);
@@ -95,7 +95,7 @@ TEST(ac20_recorder_gets_all) {
     CHECK_EQ(samplesIn(r.fe), madeFor(r.ticks(), 8000));   // every sample, whatever the speed
 }
 
-TEST(ec5_session_states_machine_rate_whatever_device) {
+TEST(session_states_machine_rate_whatever_device) {
     // The sink is told the machine's rate; matching a device of another rate
     // is the frontend's (Web/audio-worklet.js today).
     for (int rate : {8000, 11025, 48000}) {

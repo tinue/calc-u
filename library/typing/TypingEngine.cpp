@@ -83,7 +83,7 @@ void TypingEngine::bind(sessions::MachineSession& ms, std::function<void()> resy
 }
 
 void TypingEngine::setMachine(machine::Machine* m, const TypingProfile* p, const KeyboardMap* k) {
-    // E12: the keys of the old machine went with it; nothing waits.
+    // The keys of the old machine went with it; nothing waits.
     queue_.clear();
     down_.clear();
     gapUntil_ = 0;
@@ -97,7 +97,7 @@ void TypingEngine::setMachine(machine::Machine* m, const TypingProfile* p, const
     // A new machine runs unless the session says otherwise now: the paused
     // state of the old one (told at the last host call) is not carried over,
     // which matters inside an operation in virtual time, where no host call
-    // comes between the build and the keys (C1600-3: the DAP's clean start).
+    // comes between the build and the keys (the DAP's clean start).
     paused_ = ms_ && m ? ms_->paused() : false;
     for (Token t : open) finish(t, TypeResult{false, kStartedOver});
     heldChanged();
@@ -162,8 +162,8 @@ bool TypingEngine::idle() const { return down_.empty() && queue_.empty() && !set
 
 // ── Rules ───────────────────────────────────────────────────────────────
 
-// E1: no earlier than its hold (at least the minimum), and on a TI profile
-// not before the ROM has read it (§3.4), at most maxHold.
+// No earlier than its hold (at least the minimum), and on a TI profile not
+// before the ROM has read it, at most maxHold.
 bool TypingEngine::releaseDue(const Down& d, Ticks now) const {
     if (!d.releaseAsked || paused_ || !profile_) return false;
     if (now < d.at + effHold(d.hold)) return false;
@@ -177,11 +177,11 @@ bool TypingEngine::releaseDue(const Down& d, Ticks now) const {
     return true;
 }
 
-// What the next press waits for (E2, E3, E6): the gap after a release; for
+// What the next press waits for: the gap after a release; for
 // a live key, an engine press down (a press of a sequence, of text, of a
 // command) or a key in its minimum hold after the user let go; for any other
 // press, any key the engine holds down (it never overlaps keys the user did
-// not hold together, AC-5).
+// not hold together).
 bool TypingEngine::blocked(Ticks now, bool forLive) const {
     if (now < gapUntil_ && !(forLive && paused_)) return true;   // paused: the gap passes in host time too
     if (!forLive) return !down_.empty();
@@ -212,15 +212,15 @@ void TypingEngine::requestRelease(Down& d) {
     d.wallDue = wall_ + pacing::wallTimeOf(end > t ? end - t : 0, machine_->descriptor().tickRate);
 }
 
-// E3: the front of the queue starts when nothing blocks it, the machine
+// The front of the queue starts when nothing blocks it, the machine
 // runs (a live key excepted), and it is ready where the profile says. True
 // when something changed (a character expanded, a press started).
 bool TypingEngine::startFront(Ticks now) {
     if (queue_.empty()) return false;
     Item& f = queue_.front();
     if (blocked(now, f.liveSingle)) return false;
-    if (!f.liveSingle && paused_) return false;   // AC-20: waits for the machine to run
-    if (f.isChar) {   // E13: decided now, with the latches of now
+    if (!f.liveSingle && paused_) return false;   // waits for the machine to run
+    if (f.isChar) {   // decided now, with the latches of now
         const Item base = f;
         queue_.pop_front();
         std::optional<std::vector<Press>> keys;
@@ -262,8 +262,8 @@ bool TypingEngine::startFront(Ticks now) {
     return true;
 }
 
-// Whether the press, not blocked, still needs key readiness to start (E3,
-// AC-14): a live key never; the first press of a step by its rule (and its
+// Whether the press, not blocked, still needs key readiness to start: a
+// live key never; the first press of a step by its rule (and its
 // bound); any other by queuedWaitsForReadiness.
 bool TypingEngine::waitsForReadiness(const Item& f, Ticks now) const {
     if (f.liveSingle || f.isChar) return false;
@@ -273,13 +273,13 @@ bool TypingEngine::waitsForReadiness(const Item& f, Ticks now) const {
         if (r == StartRule::AtOnce) ready = false;
         else if (r == StartRule::KeyReadiness) ready = true;
     }
-    if (ready && f.boundAt && now >= *f.boundAt) ready = false;   // AC-14: all the same
+    if (ready && f.boundAt && now >= *f.boundAt) ready = false;   // the bound passed: all the same
     return ready;
 }
 
 // Something waits for the machine (readiness, a key read, readiness again):
 // the engine looks again every readinessPoll ticks from the tick it last
-// acted at, so where the host cut its slices does not matter (E14).
+// acted at, so where the host cut its slices does not matter.
 bool TypingEngine::polling(Ticks now) const {
     if (paused_) return false;
     if (settling_) return true;
@@ -314,7 +314,7 @@ void TypingEngine::runOnce(Ticks now) {
     }
 }
 
-// E4, E10: what waits goes, but the presses that must finish; live keys
+// What waits goes, but the presses that must finish; live keys
 // that wait stay unless the focus went.
 void TypingEngine::dropWaiting(const char* reason, bool keepLiveSingles) {
     std::vector<Token> dropped;
@@ -334,8 +334,8 @@ void TypingEngine::dropWaiting(const char* reason, bool keepLiveSingles) {
 
 void TypingEngine::liveDown(const KeyId& key, const std::string& holder) {
     const Ticks t = now();
-    dropWaiting(kStoppedByKey, true);   // E4
-    // EC-6: another holder of a key the user still holds.
+    dropWaiting(kStoppedByKey, true);
+    // Another holder of a key the user still holds.
     for (Down& d : down_)
         if (d.key == key && d.liveSingle && !d.releaseAsked) {
             if (!has(d.holders, holder)) d.holders.push_back(holder);
@@ -351,22 +351,22 @@ void TypingEngine::liveDown(const KeyId& key, const std::string& holder) {
     it.origin = Origin::Live;
     it.liveSingle = true;
     it.holders = {holder};
-    queue_.push_back(std::move(it));   // E2: at once when nothing blocks, else right after
+    queue_.push_back(std::move(it));   // at once when nothing blocks, else right after
     run(t);
 }
 
 void TypingEngine::liveUp(const std::string& holder) {
     const Ticks t = now();
     for (Down& d : down_)
-        if (removeHolder(d.holders, holder)) {   // E5
+        if (removeHolder(d.holders, holder)) {   // down until its last holder lets go
             if (d.holders.empty()) requestRelease(d);
             heldChanged();
             run(t);
             return;
         }
     for (Item& it : queue_)
-        if (it.liveSingle && removeHolder(it.holders, holder)) return;   // AC-4: one press of the minimum
-    // E8: a key-up that holds nothing does nothing.
+        if (it.liveSingle && removeHolder(it.holders, holder)) return;   // one press of the minimum
+    // A key-up that holds nothing does nothing.
 }
 
 void TypingEngine::queueLiveSequence(const std::vector<Press>& presses) {
@@ -379,14 +379,14 @@ void TypingEngine::queueLiveSequence(const std::vector<Press>& presses) {
 }
 
 void TypingEngine::hostKeyDown(const HostKeyEvent& e) {
-    if (e.autoRepeat || !current() || !map_) return;   // AC-4
+    if (e.autoRepeat || !current() || !map_) return;   // the host's repeat is ignored
     const std::optional<Mapped> m = map_->map(e);
-    if (!m || m->presses.empty()) return;   // E9, EC-2
+    if (!m || m->presses.empty()) return;   // no key: nothing typed, nothing waits
     if (m->held && m->presses.size() == 1) {
         liveDown(m->presses.front().key, hostHolder(e.physical));
         return;
     }
-    dropWaiting(kStoppedByKey, true);   // E4, E7
+    dropWaiting(kStoppedByKey, true);
     queueLiveSequence(m->presses);
     run(now());
 }
@@ -399,7 +399,7 @@ void TypingEngine::hostKeyUp(const std::string& physical) {
 void TypingEngine::hostText(std::u32string_view text) {
     if (!current() || !map_ || text.empty()) return;
     dropWaiting(kStoppedByKey, true);
-    for (char32_t c : text) {   // EC-4: each a press of the minimum hold
+    for (char32_t c : text) {   // each a press of the minimum hold
         HostKeyEvent e;
         e.produced = c;
         const std::optional<Mapped> m = map_->map(e);
@@ -427,7 +427,7 @@ void TypingEngine::screenKeyUp(const KeyId&, std::uint32_t pointer) {
     liveUp(screenHolder(pointer));
 }
 
-void TypingEngine::focusLost() {   // E10, OQ-3
+void TypingEngine::focusLost() {   // keys keep their minimum hold, so no press is too short for the ROM
     if (!current()) return;
     for (Down& d : down_)
         if (!d.holders.empty()) {
@@ -472,7 +472,7 @@ Queued TypingEngine::typeText(std::string_view utf8, bool enter, bool refuseUnkn
     const std::u32string text = decodeUtf8(utf8);
     if (refuseUnknown)
         for (char32_t c : text)
-            if (!profile_->charKeys(c, nullptr)) {   // D-14: the same answer whatever is latched
+            if (!profile_->charKeys(c, nullptr)) {   // the same answer whatever is latched
                 const std::string shown =
                     c < 0x20 || c == 0x7F ? "U+" + std::to_string(static_cast<std::uint32_t>(c)) : encodeUtf8(c);
                 return Queued{0, "No key types the character \"" + shown + "\"."};
@@ -514,7 +514,7 @@ Queued TypingEngine::typeText(std::string_view utf8, bool enter, bool refuseUnkn
 
 void TypingEngine::paste(std::string_view utf8) {
     if (!current() || !profile_->charKeys) return;
-    const std::string_view line = utf8.substr(0, utf8.find_first_of("\r\n"));   // AC-12: the first line
+    const std::string_view line = utf8.substr(0, utf8.find_first_of("\r\n"));   // the first line
     for (char32_t c : decodeUtf8(line)) {
         if (c < 0x20 || c == 0x7F) continue;
         if (!profile_->charKeys(c, nullptr)) continue;   // left out
@@ -522,7 +522,7 @@ void TypingEngine::paste(std::string_view utf8) {
         it.isChar = true;
         it.ch = c;
         it.origin = Origin::Typed;
-        queue_.push_back(std::move(it));   // AC-34: after what is typed
+        queue_.push_back(std::move(it));   // after what is typed
     }
     run(now());
 }
@@ -532,7 +532,7 @@ void TypingEngine::paste(std::string_view utf8) {
 void TypingEngine::drop() {
     if (!current()) return;
     const Ticks t = now();
-    // E12, D-11: up at once, without the minimum: the machine starts over.
+    // Up at once, without the minimum: the machine starts over.
     for (const Down& d : down_) {
         machine_->keyUp(d.key);
         if (observer_) observer_->keyChanged(d.key, false, t);

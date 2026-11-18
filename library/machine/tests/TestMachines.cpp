@@ -122,7 +122,7 @@ std::vector<PeripheralDescriptor> peripherals() {
                                           {PinOutDescriptor{PinOutId{"test.jack"}, PinOutLevel::Functional,
                                                             Takes::Chain, AfterChange::Nothing}}}};
     hub.places = {PlaceDescriptor{PlaceName{"jack"}, ConnectorId{"jack"}, PinOutId{"test.jack"}, 2}};
-    hub.mediaPlaces = {MediaPlaceDescriptor{MediaPlaceId{"hub-disk"}, "test-disk", MediaPassage::Holding, {0}}};   // LIB-4 EC-4
+    hub.mediaPlaces = {MediaPlaceDescriptor{MediaPlaceId{"hub-disk"}, "test-disk", MediaPassage::Holding, {0}}};
 
     PeripheralDescriptor uart;
     uart.id = kUart;
@@ -151,7 +151,7 @@ const Catalogue& testCatalogue() {
     return c;
 }
 
-// ── LIB-8: the test printers ──────────────────────────────────────────────
+// ── The test printers ────────────────────────────────────────────────────
 
 paper::PaperDescription td20Description() {
     paper::PaperDescription d;
@@ -214,7 +214,7 @@ Catalogue makeMediaTestCatalogue() {
     mm.fits = {PinOutId{"test.slot"}, PinOutId{"test.card"}};
     mm.controls = {ControlDescriptor{media::kWriteProtect, ControlForm::Switch}};
     ps.push_back(mm);
-    PeripheralDescriptor rom;   // a second module that is not a medium (AC-8: the listing order)
+    PeripheralDescriptor rom;   // a second module that is not a medium (for the listing order)
     rom.id = kRomModule;
     rom.name = "Test ROM module";
     rom.fits = {PinOutId{"test.slot"}};
@@ -227,7 +227,7 @@ const Catalogue& mediaTestCatalogue() {
     return c;
 }
 
-// ── LIB-7: media places and the memory module ─────────────────────────────
+// ── Media places and the memory module ───────────────────────────────────
 
 media::MediaPlace::Inserted TestMediaPlace::insert(media::Content c, int side) {
     if (refuse) return Inserted{false, *refuse};
@@ -403,7 +403,7 @@ void TestPaperPrinter::detaching() {
         emitPenUp();
         return;
     }
-    // EC-7: the row under the head, faint; the line ends there.
+    // The row under the head, faint; the line ends there.
     dotRow(0);
     emitFedTo(standing_ + paper::units(step_ + 1));
     standing_ += paper::units(step_ + 1);
@@ -437,13 +437,13 @@ BuildResult TestBuilder::build(const BuildRequest& req, const Catalogue& cat) {
     const MachineDescriptor* d = cat.model(req.model);
     if (!d) return BuildResult{nullptr, {}, "unknown model"};
     auto m = std::make_unique<TestMachine>(*d, req.variant, req.soundRate);
-    if (media) m->enableMedia();   // LIB-7
+    if (media) m->enableMedia();
     if (auto s = std::dynamic_pointer_cast<const TestStartUp>(req.content)) m->setStartUp(s->ticks);
     if (auto t = std::dynamic_pointer_cast<const TestSegTiming>(req.content); t && req.model == kSeg)
         m->setTiming(std::move(t));
     if (auto p = std::dynamic_pointer_cast<const TestSegProgram>(req.content); p && req.model == kSeg)
         m->setProgram(p->length);
-    if (auto p = std::dynamic_pointer_cast<const TestProgram>(req.content)) m->enableCpu(*p);   // LIB-10
+    if (auto p = std::dynamic_pointer_cast<const TestProgram>(req.content)) m->enableCpu(*p);
     std::vector<PlaceName> taken;
     for (const auto& p : req.peripherals) {
         if (p.place.steps.size() != 1) return BuildResult{nullptr, {}, "no such place"};
@@ -522,7 +522,7 @@ Ticks TestMachine::advance(Ticks atLeast) {
     const bool printer = hasPrinter();
     Ticks ran = 0;
     while (ran < atLeast) {
-        if (cpu_ && !cpu_->before()) break;   // LIB-10: a breakpoint stops before the instruction
+        if (cpu_ && !cpu_->before()) break;   // a breakpoint stops before the instruction
         const Ticks len = isDot() ? 4 : timing_ ? timing_->instructionLength : (generic_.instructions % 2 == 0 ? 3 : 5);
         ran += len;
         ++generic_.instructions;
@@ -532,7 +532,7 @@ Ticks TestMachine::advance(Ticks atLeast) {
             innerCycles_ += innerRest_ / 8;
             innerRest_ %= 8;
         }
-        if (cpu_) {   // LIB-10: the observer sees the machine as it is after each instruction
+        if (cpu_) {   // the observer sees the machine as it is after each instruction
             ticks_ += len;
             sinceStart_ += len;
             programLeft_ -= std::min(programLeft_, len);
@@ -546,8 +546,8 @@ Ticks TestMachine::advance(Ticks atLeast) {
     }
     for (auto& p : plugs_) {
         if (p->uart) p->uart->advance(ran);
-        if (p->printer) p->printer->advance(ran);   // LIB-8
-        if (p->place) p->place->advance(ran);       // LIB-7
+        if (p->printer) p->printer->advance(ran);
+        if (p->place) p->place->advance(ran);
     }
     for (auto& p : places_) p->advance(ran);
     if (clock_) clock_->advance(ran);
@@ -600,12 +600,12 @@ KeyCall TestMachine::keyDown(const KeyId& k) {
     ++presses_;
     if (k == KeyId{"off"}) displayOn_ = false;
     if (k == KeyId{"on"}) displayOn_ = true;
-    if (programLength_ && k == KeyId{"1"}) programLeft_ = programLength_;   // LIB-6: the program starts
+    if (programLength_ && k == KeyId{"1"}) programLeft_ = programLength_;   // the program starts
     if (programLength_ && k == KeyId{"0"}) programLeft_ = 0;                // and is stopped
     const auto at = std::find_if(desc_.keys.begin(), desc_.keys.end(), [&](const KeyDescriptor& d) { return d.id == k; });
     const auto index = static_cast<std::size_t>(at - desc_.keys.begin());
     for (auto& p : plugs_)
-        if (p->printer) p->printer->key(k, index);   // LIB-8
+        if (p->printer) p->printer->key(k, index);
     return KeyCall::Done;
 }
 
@@ -702,7 +702,7 @@ std::vector<TestMachine::CapRef> TestMachine::capRefs() const {
         out.push_back(CapRef{CapabilityEntry{peripherals::RealTimeClock::kKind, CapabilityId{"rtc/real-time-clock"},
                                              ComponentOwner{ComponentId{"rtc"}}},
                              clock_.get()});
-    for (const auto& p : places_)   // LIB-7
+    for (const auto& p : places_)
         out.push_back(CapRef{CapabilityEntry{media::MediaPlace::kKind,
                                              CapabilityId{p->id().value + "/" + std::string(media::MediaPlace::kKind.value)},
                                              ComponentOwner{cpu}},
@@ -752,7 +752,7 @@ Capability* TestMachine::capability(const CapabilityId& id) {
     return nullptr;
 }
 
-// --- LIB-2: plugging in -------------------------------------------------------
+// --- Plugging in --------------------------------------------------------------
 
 void TestMachine::plugAtBuild(const PeripheralRequest& req, const Catalogue& cat) {
     if (const PeripheralDescriptor* d = cat.peripheral(req.peripheral)) plug(req, *d, desc_.tickRate);
@@ -769,14 +769,14 @@ void TestMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, Tic
         PlugState* state = st.get();
         st->controls = std::make_unique<peripherals::ControlTable>(d.controls, [this, at, state](const ControlId& id, bool on) {
             controlEvents_.push_back(ControlEvent{at, id, on, ticks_});
-            if (state->printer) state->printer->control(id, on);   // LIB-8
+            if (state->printer) state->printer->control(id, on);
         });
         st->controls->restore(req.switches);
     }
     if (d.id == kDotter || d.id == kPlotter)
         st->printer = std::make_unique<TestPaperPrinter>(d.id == kPlotter, st->controls.get());
     if (d.id == kUart) st->uart = std::make_unique<TestUart>(hostRate);
-    if (media_ && !d.mediaPlaces.empty()) st->place = std::make_unique<TestMediaPlace>(d.mediaPlaces.front());   // LIB-7
+    if (media_ && !d.mediaPlaces.empty()) st->place = std::make_unique<TestMediaPlace>(d.mediaPlaces.front());
     if (d.id == kMemoryModule) st->module = std::make_unique<TestModuleMedium>(req.content, st->controls.get());
     plugs_.push_back(std::move(st));
 }
@@ -786,11 +786,11 @@ void TestMachine::unplug(const PlacePath& place, const PeripheralId& id) {
     const bool there = std::any_of(plugs_.begin(), plugs_.end(),
                                    [&](const auto& s) { return s->entry.place == place && s->entry.peripheral == id; });
     if (!there) return;
-    // The peripheral, and every one on a place it offers (EC-3).
+    // The peripheral, and every one on a place it offers.
     auto below = [&](const PlacePath& p) {
         return p.steps.size() > place.steps.size() && std::equal(place.steps.begin(), place.steps.end(), p.steps.begin());
     };
-    for (auto& s : plugs_)   // LIB-8 EC-7: a printer ends its line before it goes
+    for (auto& s : plugs_)   // a printer ends its line before it goes
         if (s->printer && ((s->entry.place == place && s->entry.peripheral == id) || below(s->entry.place)))
             s->printer->detaching();
     plugs_.erase(std::remove_if(plugs_.begin(), plugs_.end(),
@@ -870,7 +870,7 @@ std::uint64_t TestMachine::operationsTold(const PlacePath& place) const {
     return s ? s->operations : 0;
 }
 
-// --- LIB-11: the machine state ------------------------------------------------
+// --- The machine state -------------------------------------------------------
 
 namespace {
 void put(std::vector<std::uint8_t>& out, std::uint64_t v) {

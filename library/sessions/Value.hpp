@@ -8,7 +8,7 @@
 #include <variant>
 #include <vector>
 
-// A JSON-like value (LIB-3 design §3.1): the arguments of commands and
+// A JSON-like value: the arguments of commands and
 // requests, and what a translating host (the Swift bridge, the Web bindings,
 // the harness) makes of a payload with Payload::toValue(). Objects keep their
 // members in the order they were given.

@@ -1,11 +1,11 @@
-// LIB-5 design §6, L7: the keyboard map and sequences (AC-7, AC-8; EC-2).
+// The keyboard map and sequences.
 #include "TestHarness.hpp"
 #include "TypingRig.hpp"
 
 using namespace calcu::typing;
 using namespace calcu::typing::test;
 
-TEST(ac7_frontend_event_mapped_by_model_map) {
+TEST(frontend_event_mapped_by_model_map) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -37,7 +37,7 @@ TEST(ac7_frontend_event_mapped_by_model_map) {
         CHECK(namedKeyOf(namedKeyName(static_cast<NamedKey>(k))) == static_cast<NamedKey>(k));
 }
 
-TEST(ac8_sequence_presses_key_up_does_nothing) {
+TEST(sequence_presses_key_up_does_nothing) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -54,7 +54,7 @@ TEST(ac8_sequence_presses_key_up_does_nothing) {
     CHECK(r.held().empty());
 }
 
-TEST(ec2_unmapped_types_nothing) {
+TEST(unmapped_types_nothing) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();

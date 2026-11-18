@@ -45,7 +45,7 @@ std::variant<BreakpointId, std::string> BreakpointTable::addWatch(Setter setter,
     if (range.space >= info.spaces.size()) return "The target " + target.value + " has no such space.";
     const machine::SpaceInfo& sp = info.spaces[range.space];
     if (sp.writtenView) return "The view " + sp.name + " cannot be watched.";
-    if (range.count == 0 || range.first >= sp.size || range.count > sp.size - range.first)   // EC-3
+    if (range.count == 0 || range.first >= sp.size || range.count > sp.size - range.first)
         return "The range runs past the end of the space " + sp.name + ".";
     if (!range.read && !range.write) return "A watch needs read, write or both.";
     watches_.push_back(Watch{++next_, std::move(setter), target, range, std::move(test)});

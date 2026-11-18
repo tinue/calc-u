@@ -76,7 +76,7 @@ struct TestProduct::Part final : SessionPart {
     }
 };
 
-// LIB-5: typing on the test machines.
+// Typing on the test machines.
 struct TestProduct::Typing final : typing::TypingProduct {
     typing::TypingProfile seg, dot;
     Typing() : seg(profileFor(machine::test::kSegRate, '3', "clr")), dot(profileFor(machine::test::kDotRate, 'c', "on")) {}
@@ -100,9 +100,9 @@ struct TestProduct::Typing final : typing::TypingProduct {
     bool typesText() const override { return true; }
 };
 
-// LIB-10: the debugger with the test rules; its trace folder and limit are
+// The debugger with the test rules; its trace folder and limit are
 // the run's (Run.cpp). test-dot stands for a model without the run-control
-// steps (the Sharp models, AC-19).
+// steps (as the Sharp models).
 struct TestProduct::Debug {
     debugger::test::TestLevelRules rules;
     debugger::test::TestSymbols symbols;
@@ -136,7 +136,7 @@ TestProduct::TestProduct()
     : part_(std::make_unique<Part>()), typing_(std::make_unique<Typing>()), debug_(std::make_unique<Debug>()),
       presetRules_(std::make_unique<presets::test::TestPresetRules>()) {
     roms::test::writeFullSet(roms_, roms::fullSet(catalogue()));
-    // LIB-6: the bundled presets of the test product.
+    // The bundled presets of the test product.
     presetFolder_.write("bundle.yaml", "format: example-bundle\nformat-version: 1\n"
                                        "startup:\n  - preset: { file: startup/seg.test-seg }\n"
                                        "groups:\n  - group: Basic\n    examples:\n"
@@ -164,13 +164,13 @@ parts::LibraryPartsSetup TestProduct::partsSetup(settings::SettingsFile& file, c
     s.typing = typing_.get();
     s.presetRules = presetRules_.get();
     s.bundle = bundle_.get();
-    // LIB-8: the test printers TD-20 and TP-4.
+    // The test printers TD-20 and TP-4.
     s.papers = {{machine::test::kDotter, machine::test::td20Description()},
                 {machine::test::kPlotter, machine::test::tp4Description()}};
     s.debugger = debug_->setup();
     s.mediaKinds = mediaKinds();
     s.productName = std::string(name());
-    s.presetExtensions = {".test-seg", ".test-dot"};   // LIB-13: the bundled presets'
+    s.presetExtensions = {".test-seg", ".test-dot"};   // the bundled presets'
     return s;
 }
 
@@ -185,7 +185,7 @@ TestProduct::~TestProduct() = default;
 
 const settings::ProductDecl& TestProduct::settingsDecl() const {
     // One declaration per product, as SettingsFile keeps a pointer to it; its
-    // fallback model is the one the tests start with (LIB-11 AC-2).
+    // fallback model is the one the tests start with.
     decl_.productName = "Calc-U-Test";
     decl_.models = {"test-seg", "test-dot"};
     decl_.fallbackModel = startModel ? startModel->value : "test-seg";
@@ -211,7 +211,7 @@ roms::LookupResult TestProduct::lookUpRoms() const { return lookUp(); }
 std::vector<media::KindDecl> TestProduct::mediaKinds() {
     if (!media) return {};
     builder_.inner.media = true;   // the machines offer their media places
-    // The bundled media are always there (LIB-7 AC-28): a disk template.
+    // The bundled media are always there: a disk template.
     mediaFolder_.write("disks/Formatted.testdisk.yaml", "format: test-disk\nformat-version: 2\nname: Formatted\ncontent: \n");
     return media::test::testKinds(media::test::TestKindFolders{mediaFolder_ / "disks", "", ""});
 }
@@ -220,7 +220,7 @@ BuildResult TestProduct::Builder::build(const BuildRequest& req, const Catalogue
     BuildResult r = inner.build(req, cat);
     if (r.machine && req.model == machine::test::kSeg)
         static_cast<machine::test::TestMachine&>(*r.machine).offerState(true);
-    if (r.machine) {   // LIB-10
+    if (r.machine) {   // the test processor for the debugger
         machine::test::TestProgram p = debugger::test::defaultProgram();
         p.bare = bare;
         static_cast<machine::test::TestMachine&>(*r.machine).enableCpu(p);

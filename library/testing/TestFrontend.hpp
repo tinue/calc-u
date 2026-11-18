@@ -6,9 +6,8 @@
 #include <string>
 #include <vector>
 
-// The test frontend (LIB-3 design §2, §6; in library/testing/ for the
-// library's tests and both products'): a TopicMirror, the raw message
-// log and two delivery modes, at once (the caller's thread) and through a
+// The test frontend (in library/testing/ for the library's tests and both
+// products'): a TopicMirror, the raw message log and two delivery modes, at once (the caller's thread) and through a
 // queue (another thread, a Web Worker), pumped by the test.
 
 namespace calcu::sessions::test {

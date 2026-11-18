@@ -1,5 +1,4 @@
-// LIB-11 design T3, T4: replies, lines, the one-shot form, the registry
-// (AC-2, AC-4, AC-5, AC-13, AC-22).
+// Replies, lines, the one-shot form, the registry.
 #include "TestHarness.hpp"
 #include "TestProduct.hpp"
 #include "harness/Commands.hpp"
@@ -21,9 +20,9 @@ CommandRegistry registryOf(TestProduct& p) {
 const CommandLine* lineOf(const std::variant<CommandLine, std::string>& v) { return std::get_if<CommandLine>(&v); }
 } // namespace
 
-// ── Replies (T3) ────────────────────────────────────────────────────────
+// ── Replies ─────────────────────────────────────────────────────────────
 
-TEST(ac4_plain_reply_is_lines) {
+TEST(plain_reply_is_lines) {
     CHECK_EQ(writePlain(doneReply()), std::string("done\n"));
     CHECK_EQ(writePlain(doneReply(Value(1), {"a", "b"})), std::string("done 2\na\nb\n"));
     CHECK_EQ(writePlain(refusedReply("Not now.")), std::string("refused: Not now.\n"));
@@ -32,7 +31,7 @@ TEST(ac4_plain_reply_is_lines) {
     CHECK_EQ(writePlain(refusedReply("a\nb")), std::string("refused: a b\n"));
 }
 
-TEST(ac4_json_reply_has_the_three_keys_for_every_command) {
+TEST(json_reply_has_the_three_keys_for_every_command) {
     CHECK_EQ(writeJson(doneReply()), std::string("{\"done\":true,\"result\":null,\"reason\":null}\n"));
     CHECK_EQ(writeJson(refusedReply("No.")), std::string("{\"done\":false,\"result\":null,\"reason\":\"No.\"}\n"));
     Value v = Value::object();
@@ -57,7 +56,7 @@ TEST(ac4_json_reply_has_the_three_keys_for_every_command) {
     }
 }
 
-TEST(ac5_refusal_carries_the_reason) {
+TEST(refusal_carries_the_reason) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -66,9 +65,9 @@ TEST(ac5_refusal_carries_the_reason) {
     CHECK_EQ(run.line("audio sound.wav"), std::string("refused: This machine has no sound.\n"));
 }
 
-// ── Lines and the registry (T4) ─────────────────────────────────────────
+// ── Lines and the registry ──────────────────────────────────────────────
 
-TEST(ac2_commands_part_on_then) {
+TEST(commands_part_on_then) {
     const std::vector<std::string> words = {"wait", "2s", "then", "display-text", "then", "test", "mapping", "{", "a:", "1", "}"};
     const auto lines = splitOneShot(words);
     CHECK_EQ(lines.size(), std::size_t{3});
@@ -81,7 +80,7 @@ TEST(ac2_commands_part_on_then) {
     CHECK(splitOneShot(one) == std::vector<std::string>{"ticks"});
 }
 
-TEST(ac5_line_that_is_no_command_is_refused) {
+TEST(line_that_is_no_command_is_refused) {
     TestProduct p;
     const CommandRegistry r = registryOf(p);
     auto v = parseLine("jump 3", r);
@@ -109,7 +108,7 @@ TEST(ac5_line_that_is_no_command_is_refused) {
     }
 }
 
-TEST(ac13_product_command_under_product_word) {
+TEST(product_command_under_product_word) {
     TestProduct p;
     const CommandRegistry r = registryOf(p);
     auto v = parseLine("test count", r);
@@ -119,7 +118,7 @@ TEST(ac13_product_command_under_product_word) {
     CHECK(std::holds_alternative<std::string>(parseLine("count", r)));
 }
 
-TEST(ac13_common_command_at_top_level) {
+TEST(common_command_at_top_level) {
     TestProduct p;
     const CommandRegistry r = registryOf(p);
     for (const char* c : {"wait", "key-down", "key-up", "display-text", "display", "state", "capabilities", "ticks", "audio",
@@ -130,10 +129,10 @@ TEST(ac13_common_command_at_top_level) {
     // The product-specific part of a common command comes from the product:
     // `display-text` of the test product reads its segments by the product's rule.
     TestRun run;
-    CHECK(run.server && run.line("display-text").rfind("done 2\n010\n", 0) == 0);   // 1667 ticks after the start (LIB-18)
+    CHECK(run.server && run.line("display-text").rfind("done 2\n010\n", 0) == 0);   // 1667 ticks after the start
 }
 
-TEST(ac22_step_becomes_command_by_dropping_dash_and_colon) {
+TEST(step_becomes_command_by_dropping_dash_and_colon) {
     TestProduct p;
     const CommandRegistry r = registryOf(p);
     // The step `- test mapping: { a: 1, b: x }` becomes this line.

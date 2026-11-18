@@ -19,7 +19,7 @@ std::string usageText(const std::vector<std::unique_ptr<HarnessProduct>>& produc
     std::string s =
         "usage: calcu --product <name> [options] <command> [then <command> ...]\n"
         "       calcu --product <name> [options] serve\n"
-        "       calcu attach [--port N] [--json] [--messages]   (a running app's session, C59-5)\n"
+        "       calcu attach [--port N] [--json] [--messages]   (a running app's session)\n"
         "options:\n"
         "  --product <name>          the product, by name or product word (c59, c1600), any case\n"
         "  --json                    each reply as one JSON object on one line\n"
@@ -35,7 +35,7 @@ std::string usageText(const std::vector<std::unique_ptr<HarnessProduct>>& produc
     addPresetCommands(reg, nullptr);
     for (const auto& p : products) p->addCommands(reg);
     for (const auto& u : reg.usage()) s += "  " + u + "\n";
-    // C1600-3 §3.5: the products' options of `serve`.
+    // The products' options of `serve`.
     std::string addOns;
     for (const auto& p : products)
         for (ServeAddOn* a : p->serveAddOns())
@@ -53,11 +53,11 @@ int run(const std::vector<std::string>& args, const Io& io, std::vector<std::uni
     RunOptions options;
     std::optional<std::string> productName;
     std::vector<std::string> words;
-    std::vector<std::pair<std::string, std::string>> addOnOptions;   // a product's options of serve (C1600-3)
+    std::vector<std::pair<std::string, std::string>> addOnOptions;   // a product's options of serve
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string& a = args[i];
         // The commands start: everything after belongs to them; options may
-        // follow `serve` (`serve --dap <port>`, C1600-3).
+        // follow `serve` (`serve --dap <port>`).
         const bool afterServe = words.size() == 1 && words[0] == "serve" && a.rfind("--", 0) == 0;
         if (!words.empty() && !afterServe) {
             words.push_back(a);
@@ -110,7 +110,7 @@ int run(const std::vector<std::string>& args, const Io& io, std::vector<std::uni
             words.push_back(a);
         }
     }
-    // EC-4, D-5: no product, or none of this build.
+    // No product, or none of this build (also in a build with one product).
     if (!productName) {
         io.err("calcu needs --product.\n" + productList(products));
         return 2;
@@ -141,7 +141,7 @@ int run(const std::vector<std::string>& args, const Io& io, std::vector<std::uni
         wanted.emplace_back(found, v);
     }
     std::string error;
-    std::unique_ptr<Server> server = Server::start(*product, options, &error);   // EC-1
+    std::unique_ptr<Server> server = Server::start(*product, options, &error);   // ROM full set missing: no start
     if (!server) {
         io.err(error + (error.empty() || error.back() == '\n' ? "" : "\n"));
         return 2;
@@ -151,7 +151,7 @@ int run(const std::vector<std::string>& args, const Io& io, std::vector<std::uni
         for (const auto& [addOn, v] : wanted) {
             if (std::optional<std::string> refused = addOn->start(v, server->host().session(), server->serveLoop())) {
                 for (ServeAddOn* a : started) a->stop();
-                io.err(*refused + "\n");   // C1600-3 EC-1, D-6: it cannot start
+                io.err(*refused + "\n");   // it cannot start
                 return 2;
             }
             started.push_back(addOn);

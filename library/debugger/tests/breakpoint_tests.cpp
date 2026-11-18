@@ -1,6 +1,4 @@
-// LIB-10 L7, L8 (design §6): breakpoints and watches (AC-10 to AC-12,
-// AC-47, EC-3, EC-4); ports of Calc-U-1600 debug_target_tests.cpp:111-193,
-// 269-301, 464 onto the test processor.
+// Breakpoints and watches, on the test processor.
 #include "DebugRig.hpp"
 #include "TestHarness.hpp"
 
@@ -19,9 +17,9 @@ BreakpointId idOf(const Value& v) { return static_cast<BreakpointId>(*v.find("id
 
 } // namespace
 
-// ── L7 ───────────────────────────────────────────────────────────────────
+// ── Breakpoints ──────────────────────────────────────────────────────────
 
-TEST(ac10_pauses_before_instruction) {
+TEST(pauses_before_instruction) {
     DebugRig r;
     r.breakAt(0x12);
     r.advance(10'000);
@@ -32,7 +30,7 @@ TEST(ac10_pauses_before_instruction) {
     CHECK(r.runState()->reason == RunState::Reason::Breakpoint && r.runState()->owner == kCpu);
 }
 
-TEST(ac10_qualifier_narrows) {
+TEST(qualifier_narrows) {
     DebugRig r;
     const CallId a = r.send("break", Value::object({{"setter", "harness"}, {"target", "test-cpu"}, {"address", 0x12},
                                                     {"qualifier", Value::object({{"bank", "3"}})}}));
@@ -50,7 +48,7 @@ TEST(ac10_qualifier_narrows) {
     CHECK(!r.done(bad));
 }
 
-TEST(ac10_resume_and_step_pass_it_once) {
+TEST(resume_and_step_pass_it_once) {
     DebugRig r;
     r.breakAt(0x12);
     r.advance(10'000);
@@ -66,7 +64,7 @@ TEST(ac10_resume_and_step_pass_it_once) {
     CHECK_EQ(r.pc(), std::uint64_t(0x14));
 }
 
-TEST(ac10_two_targets_only_the_one_to_run_passes) {
+TEST(two_targets_only_the_one_to_run_passes) {
     DebugOptions o;
     o.model = "test-dot";
     DebugRig r(o);
@@ -85,7 +83,7 @@ TEST(ac10_two_targets_only_the_one_to_run_passes) {
     CHECK(r.runState()->target == d->target(other).info().name);
 }
 
-TEST(ac12_test_says_go_on) {
+TEST(test_says_go_on) {
     DebugRig r;
     calcu::machine::Debugging& d = *r.machine()->debugging();
     int asked = 0;
@@ -100,7 +98,7 @@ TEST(ac12_test_says_go_on) {
     CHECK(r.target().retired() >= retired + 18);
 }
 
-TEST(ac47_ids_owners_remove_only_own) {
+TEST(ids_owners_remove_only_own) {
     DebugRig r;
     const BreakpointId h = idOf(r.breakAt(0x12, "test-cpu", "harness"));
     const BreakpointId p = idOf(r.breakAt(0x10, "test-cpu", "dap"));
@@ -124,7 +122,7 @@ TEST(ac47_ids_owners_remove_only_own) {
     CHECK(list.done && list.result->toValue().find("entries")->elements()->size() == 1);
 }
 
-TEST(ac47_hit_names_ids_and_owners) {
+TEST(hit_names_ids_and_owners) {
     DebugRig r;
     const BreakpointId h = idOf(r.breakAt(0x12, "test-cpu", "harness"));
     const BreakpointId p = idOf(r.breakAt(0x12, "test-cpu", "dap"));
@@ -135,9 +133,9 @@ TEST(ac47_hit_names_ids_and_owners) {
     CHECK(s->hits[1].id == p && s->hits[1].setter == "dap");
 }
 
-// ── L8 ───────────────────────────────────────────────────────────────────
+// ── Watches ──────────────────────────────────────────────────────────────
 
-TEST(ac11_read_write_both_pause_after_instruction) {
+TEST(read_write_both_pause_after_instruction) {
     {
         DebugRig r;
         CHECK(r.done(r.send("watch", watchArgs(0x30, 1, "write"))));
@@ -163,14 +161,14 @@ TEST(ac11_read_write_both_pause_after_instruction) {
     }
 }
 
-TEST(ac11_fetch_is_no_access) {
+TEST(fetch_is_no_access) {
     DebugRig r;
     r.send("watch", watchArgs(0x00, 0x20, "read"));   // the whole program's code
     CHECK(r.advance(10'000) >= 10'000);
     CHECK(!r.paused());
 }
 
-TEST(ac11_refused_without_offer) {
+TEST(watch_refused_without_offer) {
     DebugOptions o;
     calcu::machine::test::TestProgram p = defaultProgram();
     p.bare = true;
@@ -180,7 +178,7 @@ TEST(ac11_refused_without_offer) {
     CHECK_EQ(r.reason(c), std::string("The target test-cpu offers no watches."));
 }
 
-TEST(ec3_past_end_of_space_refused) {
+TEST(past_end_of_space_refused) {
     DebugRig r;
     const CallId c = r.send("watch", watchArgs(0xff, 2, "write"));
     CHECK(!r.done(c));
@@ -188,7 +186,7 @@ TEST(ec3_past_end_of_space_refused) {
     CHECK(r.done(r.send("watch", watchArgs(0xff, 1, "write"))));
 }
 
-TEST(ec4_several_hits_pause_once_lowest_address_named) {
+TEST(several_hits_pause_once_lowest_address_named) {
     // ld a, #1; st2 a, [0x40]; jmp 0
     DebugOptions o;
     o.program = calcu::machine::test::TestProgram({cpu::kLdA, 1, cpu::kSt2, 0x40, cpu::kJmp, 0x00});

@@ -1,7 +1,6 @@
-// LIB-10 L14, L15 (design §6, §3.9): the debugger's harness commands on the
+// The debugger's harness commands on the
 // test product, whose machines carry the test processor (TestCpu.hpp, the
-// program of TestDebugParts.hpp) and whose session holds a DebuggerPart
-// (AC-20, AC-21, AC-50, AC-51; EC-9).
+// program of TestDebugParts.hpp) and whose session holds a DebuggerPart.
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
 #include "TestProduct.hpp"
@@ -29,7 +28,7 @@ bool runTo(TestRun& run, std::uint64_t address) {
 
 } // namespace
 
-TEST(ac20_targets_registers_set_register) {
+TEST(targets_registers_set_register) {
     TestRun run;
     const std::string t = run.line("targets");
     CHECK(has(t, "test-cpu\n  registers: a/8 x/8 pc/16 (read-only) sp/16 z/1\n"));
@@ -50,7 +49,7 @@ TEST(ac20_targets_registers_set_register) {
     CHECK(has(run.line("registers nothing"), "refused: The machine has no debug target nothing."));
 }
 
-TEST(ac20_peek_poke_marks_unreadable_refuses_at_first) {
+TEST(peek_poke_marks_unreadable_refuses_at_first) {
     TestRun run;
     run.line("pause");
     CHECK_EQ(run.line("poke test-cpu memory 0x40 1 2 $3"), std::string("done\n"));
@@ -60,11 +59,11 @@ TEST(ac20_peek_poke_marks_unreadable_refuses_at_first) {
     // Refused at the first cell that cannot be written; a refused poke changes nothing.
     CHECK_EQ(run.line("poke test-cpu memory 0xee 9 9 9"), std::string("refused: The cell 0xf0 of memory cannot be written.\n"));
     CHECK_EQ(run.line("peek test-cpu memory 0xee 2"), std::string("done 2\n0xee: 0x00\n0xef: 0x00\n"));
-    // EC-9: outside the space.
+    // Outside the space.
     CHECK(has(run.line("peek test-cpu memory 0x100"), "refused: The address is outside the space memory."));
     CHECK(has(run.line("peek test-cpu memory 0xff 2"), "refused: The address is outside the space memory."));
     CHECK(has(run.line("poke test-cpu io 16 1"), "refused: The address is outside the space io."));
-    // AC-49 through the commands: a bank by name, a range across banks refused.
+    // Through the commands: a bank by name, a range across banks refused.
     CHECK_EQ(run.line("peek test-cpu memory 0x80 1 bank=3 vbank=1"), std::string("done 1\n0x80: 0x50\n"));
     CHECK(done(run.line("poke test-cpu memory 0x81 0x66 bank=2")));
     CHECK_EQ(run.line("peek test-cpu memory 0x81 1 bank=2"), std::string("done 1\n0x81: 0x66\n"));
@@ -73,12 +72,12 @@ TEST(ac20_peek_poke_marks_unreadable_refuses_at_first) {
     CHECK(has(run.line("peek test-cpu memory 0x80 1 bank=4"), "refused: The space memory has no bank 4."));
 }
 
-TEST(ac20_break_watch_on_off_list_own_only) {
+TEST(break_watch_on_off_list_own_only) {
     TestRun run;
     CHECK_EQ(run.line("break test-cpu 0x12"), std::string("done 1\nbreakpoint 1\n"));
     CHECK_EQ(run.line("break test-cpu 0x10 bank=0"), std::string("done 1\nbreakpoint 2\n"));
     CHECK(has(run.line("break test-cpu 0x10 colour=red"), "refused: The target test-cpu has no qualifier field colour."));
-    // A debugger beside the harness sets its own (AC-47).
+    // A debugger beside the harness sets its own.
     auto& host = run.server->host();
     host.command(calcu::sessions::Command{calcu::sessions::CommandName{"break"},
                                           calcu::sessions::Value::object({{"setter", "dap"}, {"target", "test-cpu"}, {"address", 0x14}})});
@@ -98,7 +97,7 @@ TEST(ac20_break_watch_on_off_list_own_only) {
     CHECK_EQ(run.line("watch list"), std::string("done\n"));
 }
 
-TEST(ac20_history_disassemble_with_text) {
+TEST(history_disassemble_with_text) {
     TestRun run;
     run.line("pause");
     CHECK_EQ(run.line("disassemble test-cpu 0 4"),
@@ -112,7 +111,7 @@ TEST(ac20_history_disassemble_with_text) {
     CHECK(has(h, "0x10  ld a, [0x30]"));
 }
 
-TEST(ac20_profile_counts_and_report) {
+TEST(profile_counts_and_report) {
     TestRun run;
     CHECK(done(run.line("profile on")));
     run.line("wait 10ms");   // 1000 ticks: 250 instructions, 25 rounds of the loop of 10
@@ -125,7 +124,7 @@ TEST(ac20_profile_counts_and_report) {
     CHECK(has(run.line("profile sideways"), "refused: usage: profile on|off|report [<count>]"));
 }
 
-TEST(ac20_step_over_out_refused_without_offer) {
+TEST(step_over_out_refused_without_offer) {
     TestRun run;
     run.product.setBareCpu(true);
     CHECK(done(run.line("model test-dot")));
@@ -144,19 +143,19 @@ TEST(ac20_step_over_out_refused_without_offer) {
     CHECK(has(over, "paused, owner cpu, reason step, target test-cpu"));
 }
 
-TEST(ac20_pause_at_start) {
+TEST(pause_at_start) {
     TestRun run;
     CHECK(done(run.line("pause-at-start")));
     CHECK(has(run.line("state run-state"), "\"pauseAtStart\":true"));
     const std::string reset = run.line("reset");
-    CHECK(has(reset, "refused: The operation did not finish."));   // D-8: held before its first instruction
+    CHECK(has(reset, "refused: The operation did not finish."));   // held before its first instruction
     CHECK(has(run.line("state run-state"), "\"reason\":\"entry\""));
     CHECK_EQ(run.line("registers"), run.line("registers"));
     CHECK(has(run.line("registers"), "pc = 0x0000"));
     CHECK(has(run.line("resume"), "running"));
 }
 
-TEST(ac20_state_run_state_and_trace) {
+TEST(state_run_state_and_trace) {
     TestRun run;
     CHECK(has(run.line("state run-state"), "\"paused\":false"));
     CHECK(has(run.line("state trace"), "{\"running\":false,\"file\":\"\"}"));
@@ -165,7 +164,7 @@ TEST(ac20_state_run_state_and_trace) {
     run.line("wait 1ms");
     CHECK(done(run.line("trace off")));
     const auto path = std::filesystem::path(run.server->host().setup().traceFolder()) / "t.bin";
-    CHECK(std::filesystem::exists(path));   // in the run's folder (LIB-11 AC-8)
+    CHECK(std::filesystem::exists(path));   // in the run's folder
     CHECK(std::filesystem::file_size(path) > 6);
     CHECK(has(run.line("trace a/b.bin"), "refused: trace: takes a file name without a folder, or off."));
     CHECK(has(run.line("pause"), "done 1\npaused, owner cpu, reason pause, target test-cpu\n"));
@@ -175,7 +174,7 @@ TEST(ac20_state_run_state_and_trace) {
     CHECK(has(run.line("pause-on-start off"), "done"));
 }
 
-TEST(ac20_step_not_paused_refused) {
+TEST(step_not_paused_refused) {
     TestRun run;
     CHECK_EQ(run.line("step"), std::string("refused: The machine is not paused.\n"));
     CHECK(has(run.line("step 0"), "refused"));
@@ -186,7 +185,7 @@ TEST(ac20_step_not_paused_refused) {
     CHECK(has(run.line("pause basic"), "refused: The machine has no level basic."));
 }
 
-TEST(ac21_wait_ends_at_pause_gives_time_and_state) {
+TEST(wait_ends_at_pause_gives_time_and_state) {
     TestRun run;
     run.line("break test-cpu 0x12");
     const std::string w = run.line("wait 1s");
@@ -195,15 +194,15 @@ TEST(ac21_wait_ends_at_pause_gives_time_and_state) {
     CHECK(has(w, "run state: paused, owner cpu, reason breakpoint\n"));
 }
 
-TEST(ac21_wait_while_paused_ends_at_once) {
+TEST(wait_while_paused_ends_at_once) {
     TestRun run;
     run.line("pause");
     CHECK_EQ(run.line("wait 2s"), std::string("done 3\nticks: 0\nseconds: 0.000000000\nrun state: paused, owner cpu, reason pause\n"));
 }
 
-// ── L15 ──────────────────────────────────────────────────────────────────
+// ── File output, expectations and symbol names ──────────────────────────
 
-TEST(ac50_peek_into_file_gives_count) {
+TEST(peek_into_file_gives_count) {
     TestRun run;
     run.line("pause");
     run.line("poke test-cpu memory 0x40 0xde 0xad");
@@ -214,7 +213,7 @@ TEST(ac50_peek_into_file_gives_count) {
     CHECK_EQ(bytes, std::string("\xde\xad\x00\x00", 4));
 }
 
-TEST(ac50_expect_register_refused_with_value) {
+TEST(expect_register_refused_with_value) {
     TestRun run;
     run.line("pause");
     run.line("set-register test-cpu a 0x21");
@@ -223,7 +222,7 @@ TEST(ac50_expect_register_refused_with_value) {
     CHECK_EQ(run.line("expect-register test-cpu a 0x22"), std::string("refused: The register a is 0x21.\n"));
 }
 
-TEST(ac50_expect_memory_refused_at_first_difference) {
+TEST(expect_memory_refused_at_first_difference) {
     TestRun run;
     run.line("pause");
     run.line("poke test-cpu memory 0x40 1 2 3");
@@ -233,7 +232,7 @@ TEST(ac50_expect_memory_refused_at_first_difference) {
     CHECK_EQ(run.line("expect-memory test-cpu io 8 0"), std::string("refused: The cell 0x8 of io is unreadable.\n"));
 }
 
-TEST(ac51_symbol_names_as_addresses_and_in_output) {
+TEST(symbol_names_as_addresses_and_in_output) {
     TestRun run;
     calcu::testing::TempFolder f("calcu-symbols");
     f.write("prog.sym", "start = 0\nroutine = 0x10\nstore = 0x30\n");
@@ -252,7 +251,7 @@ TEST(ac51_symbol_names_as_addresses_and_in_output) {
     CHECK(has(run.line("history 4"), "0x05 <start+0x5>  call 0x10"));
 }
 
-TEST(ac51_unknown_name_refused) {
+TEST(unknown_name_refused) {
     TestRun run;
     calcu::testing::TempFolder f("calcu-symbols");
     f.write("prog.sym", "routine = 0x10\n");

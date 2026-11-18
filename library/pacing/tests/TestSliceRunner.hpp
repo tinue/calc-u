@@ -6,7 +6,7 @@
 #include <functional>
 #include <vector>
 
-// A stand-in for the machine session (LIB-17 design §6): it runs each slice
+// A stand-in for the machine session: it runs each slice
 // on a machine built for the tests and moves a wall clock supplied by the
 // test by the host time a slice takes. Scripts say per slice whether the
 // machine waits for input and whether the slice stops early.
@@ -47,7 +47,7 @@ public:
     TestMachine* machine;
     ScriptedClock* clock;
     WallTime costPerSlice{0};           // host time of every slice
-    double hostSlowdown = 0;            // host time per emulated time of a slice (EC-6)
+    double hostSlowdown = 0;            // host time per emulated time of a slice (a host too slow)
     std::function<bool(int)> waits;     // by slice index: the machine waits for input
     std::function<bool(int)> stops;     // by slice index: the slice stopped early
     std::vector<SliceRecord> slices;

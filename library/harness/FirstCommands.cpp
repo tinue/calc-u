@@ -1,5 +1,5 @@
-// The first commands (LIB-11 design §3.3; spec AC-9 to AC-12, AC-23, AC-24;
-// EC-2, EC-5 to EC-7).
+// The first commands: wait, key-down, key-up, display-text, display, state,
+// capabilities, ticks, audio, state-save, state-restore, quit.
 #include "files/Files.hpp"
 #include "formats/Duration.hpp"
 #include "harness/Commands.hpp"
@@ -25,7 +25,7 @@ namespace {
 
 Reply needs(const char* usage) { return refusedReply(std::string("usage: ") + usage); }
 
-// The key as the `key` step resolves it (D-9): the key ID, then the ID in
+// The key as the `key` step resolves it: the key ID, then the ID in
 // any case, then one of its other spellings in any case. An unknown key
 // is passed as written, and the session refuses it.
 std::string resolveKey(const machine::MachineDescriptor* d, const std::string& written) {
@@ -39,7 +39,7 @@ std::string ownerText(const machine::Owner& o) {
     return "peripheral:" + p.peripheral.value + "@" + machine::placeText(p.place);
 }
 
-// LIB-6 AC-34: `wait` without a duration waits until the machine is idle,
+// `wait` without a duration waits until the machine is idle,
 // at most an hour of emulated time (the counterpart of a preset's implicit wait).
 Reply waitIdle(CommandContext& c) {
     const machine::MachineDescriptor* d = c.host.descriptor();
@@ -61,12 +61,12 @@ Reply waitCmd(CommandContext& c) {
     if (c.line.argText.empty()) return waitIdle(c);
     std::string error;
     const auto us = formats::parseDuration(c.line.argText, &error);
-    if (!us) return refusedReply(error);   // EC-2
+    if (!us) return refusedReply(error);
     const machine::MachineDescriptor* d = c.host.descriptor();
     if (!d) return refusedReply(kNoMachine);
     const machine::Ticks ran = c.host.advance(ticksFor(*us, d->tickRate));
     Reply reply = timeReply(ran, d->tickRate);
-    // LIB-10 AC-21: a wait ends where the machine pauses, or at once on a
+    // A wait ends where the machine pauses, or at once on a
     // paused machine; then the reply gives the run state too.
     if (auto t = c.host.readTopic("run-state"); t && t->state) {
         const sessions::Value v = t->state->toValue();
@@ -106,7 +106,7 @@ Reply displayCmd(CommandContext& c) {
 Reply stateCmd(CommandContext& c) {
     if (c.line.argText.empty()) return needs("state <topic>");
     auto t = c.host.readTopic(c.line.argText);
-    if (!t) return refusedReply("There is no topic " + c.line.argText + ".");   // EC-5
+    if (!t) return refusedReply("There is no topic " + c.line.argText + ".");
     Value v = Value::object();
     v.set("topic", t->topic);
     std::vector<std::string> lines;
@@ -183,7 +183,7 @@ Reply audioCmd(CommandContext& c) {
     if (c.line.argText.empty()) return needs("audio <file>");
     const machine::MachineDescriptor* d = c.host.descriptor();
     if (!d) return refusedReply(kNoMachine);
-    if (!d->hasSound) return refusedReply("This machine has no sound.");   // EC-6
+    if (!d->hasSound) return refusedReply("This machine has no sound.");
     return c.host.record(c.line.argText);
 }
 

@@ -1,4 +1,4 @@
-// LIB-3 L1: the value tree of command arguments and translated payloads.
+// The value tree of command arguments and translated payloads.
 #include "TestHarness.hpp"
 #include "sessions/Value.hpp"
 #include <cstdint>

@@ -1,5 +1,4 @@
-// LIB-8 T4, T12 (design §6): the replies of `paper text` and `paper marks`
-// (AC-23, EC-2) and their reading back (AC-39).
+// The replies of `paper text` and `paper marks` and their reading back.
 #include "PaperTestKit.hpp"
 #include "TestHarness.hpp"
 
@@ -7,7 +6,7 @@ using namespace calcu::paper;
 using namespace calcu::paper::test;
 namespace mt = calcu::machine::test;
 
-TEST(ac23_numbers_whole_without_point_else_four_decimals) {
+TEST(numbers_whole_without_point_else_four_decimals) {
     CHECK_EQ(numberText(units(7)), std::string("7"));
     CHECK_EQ(numberText(65'300), std::string("6.53"));
     CHECK_EQ(numberText(units(-2)), std::string("-2"));
@@ -22,7 +21,7 @@ TEST(ac23_numbers_whole_without_point_else_four_decimals) {
     CHECK(!parseNumberText("abc"));
 }
 
-TEST(ac23_marks_reply_reach_then_dots_and_strokes) {
+TEST(marks_reply_reach_then_dots_and_strokes) {
     FakePrinter pr(mt::tp4Description());
     Paper p(mt::tp4Description());
     p.bind(&pr);
@@ -34,7 +33,7 @@ TEST(ac23_marks_reply_reach_then_dots_and_strokes) {
     CHECK_EQ(marksReply(p), (std::vector<std::string>{"reach -3 9", "dot 1.5 2 1", "stroke #008000 100,-3 110.25,2"}));
 }
 
-TEST(ac23_text_reply_one_line_per_text_line) {
+TEST(text_reply_one_line_per_text_line) {
     FakePrinter pr(mt::td20Description());
     Paper p(mt::td20Description());
     p.bind(&pr);
@@ -44,7 +43,7 @@ TEST(ac23_text_reply_one_line_per_text_line) {
     CHECK_EQ(textReply(p), (std::vector<std::string>{"  1.5   ", "", "x̄"}));
 }
 
-TEST(ec2_empty_paper_replies_reach_0_0_and_no_lines) {
+TEST(empty_paper_replies_reach_0_0_and_no_lines) {
     Paper p(mt::td20Description());
     CHECK(textReply(p).empty());
     CHECK_EQ(marksReply(p), (std::vector<std::string>{"reach 0 0"}));
@@ -54,7 +53,7 @@ TEST(ec2_empty_paper_replies_reach_0_0_and_no_lines) {
     CHECK_EQ(run.line("paper marks TD-20"), std::string("done 1\nreach 0 0\n"));
 }
 
-TEST(ac39_marks_reply_read_and_written_unchanged) {
+TEST(marks_reply_read_and_written_unchanged) {
     // Dots and strokes; the products' own files are read back in their tests
     // (Calc-U-59's pc100c_paper_tests.cpp, Calc-U-1600's plotter_paper_tests.cpp).
     const std::vector<std::string> dots{"reach 0 38.54", "dot 1.5 17.68 20", "dot 2.5 17.68 20", "dot 127.57 37.54 7"};
@@ -66,7 +65,7 @@ TEST(ac39_marks_reply_read_and_written_unchanged) {
         const auto read = readMarksReply(lines, &error);
         CHECK_EQ(error, std::string());
         if (!read) continue;
-        CHECK(marksReply(read->reach, read->marks) == lines);   // the form is fixed (OQ-4)
+        CHECK(marksReply(read->reach, read->marks) == lines);   // the form is fixed
     }
     std::string error;
     CHECK(!readMarksReply({"reach 0 0", "dot 1 2"}, &error));

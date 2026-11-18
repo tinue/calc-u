@@ -1,4 +1,4 @@
-// LIB-2 T6: the serial port kind and SerialPortQueues (AC-17, EC-7).
+// The serial port kind and SerialPortQueues.
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 #include "peripherals/SerialPort.hpp"
@@ -9,7 +9,7 @@ using namespace calcu::machine;
 using namespace calcu::machine::test;
 using namespace calcu::peripherals;
 
-TEST(ac17_bytes_out_and_in_in_order) {
+TEST(bytes_out_and_in_in_order) {
     // Through the capability of a machine: what the test UART sends comes out
     // oldest first; what is put in reaches it in order.
     auto m = buildTestMachine(kDot, std::nullopt, {peripheralAt(testCatalogue(), "a", kUart)});
@@ -35,7 +35,7 @@ TEST(ac17_bytes_out_and_in_in_order) {
     CHECK(port->used());
 }
 
-TEST(ac17_line_settings_as_set) {
+TEST(line_settings_as_set) {
     SerialPortQueues q;
     CHECK(q.lineSettings() == LineSettings{});   // nothing set: nothing reported
     CHECK(!q.used());
@@ -49,7 +49,7 @@ TEST(ac17_line_settings_as_set) {
     CHECK(q.used());
 }
 
-TEST(ac17_receive_limit_leaves_rest_with_caller) {
+TEST(receive_limit_leaves_rest_with_caller) {
     SerialPortQueues q;
     std::vector<std::uint8_t> big(SerialPortQueues::kReceiveLimit + 100, 0x55);
     CHECK_EQ(q.putReceived(big), SerialPortQueues::kReceiveLimit);
@@ -59,7 +59,7 @@ TEST(ac17_receive_limit_leaves_rest_with_caller) {
     CHECK_EQ(q.putReceived(big), std::size_t{1});
 }
 
-TEST(ec7_sending_never_waits) {
+TEST(sending_never_waits) {
     SerialPortQueues q;
     const auto t0 = std::chrono::steady_clock::now();
     for (int i = 0; i < 1'000'000; ++i) q.machineSends(static_cast<std::uint8_t>(i));   // nobody takes them

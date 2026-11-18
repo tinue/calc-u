@@ -1,5 +1,4 @@
-// LIB-8 T3 (design §6): the paper: marks, text, reach, cut (AC-2 to AC-5,
-// EC-1), with a printer the test drives call by call and with the test
+// The paper: marks, text, reach, cut, with a printer the test drives call by call and with the test
 // printers in a session.
 #include "PaperTestKit.hpp"
 #include "TestHarness.hpp"
@@ -12,7 +11,7 @@ namespace {
 const Rgb kBlue{0, 0, 255};
 }
 
-TEST(ac2_marks_in_order_never_changed) {
+TEST(marks_in_order_never_changed) {
     FakePrinter pr(mt::tp4Description());
     Paper p(mt::tp4Description());
     p.bind(&pr);
@@ -36,7 +35,7 @@ TEST(ac2_marks_in_order_never_changed) {
     CHECK_EQ(p.marks().size(), std::size_t(3));
 }
 
-TEST(ac3_each_line_and_each_feed_in_the_text_layer) {
+TEST(each_line_and_each_feed_in_the_text_layer) {
     PaperRun run;
     if (!run.server) return;
     CHECK_EQ(run.line("attach printer test-dotter"), std::string("done\n"));
@@ -59,7 +58,7 @@ TEST(ac3_each_line_and_each_feed_in_the_text_layer) {
     CHECK_EQ(q.text().at(0).text, std::string("x̄ ∑ π"));
 }
 
-TEST(ac4_reach_from_least_to_greatest_mark_or_feed) {
+TEST(reach_from_least_to_greatest_mark_or_feed) {
     FakePrinter pr(mt::tp4Description());
     Paper p(mt::tp4Description());
     p.bind(&pr);
@@ -84,7 +83,7 @@ TEST(ac4_reach_from_least_to_greatest_mark_or_feed) {
     CHECK_EQ(run.marks("TP-4"), (std::vector<std::string>{"reach -10 20"}));
 }
 
-TEST(ac5_cut_empties_and_next_print_starts_a_new_paper) {
+TEST(cut_empties_and_next_print_starts_a_new_paper) {
     FakePrinter pr(mt::td20Description());
     Paper p(mt::td20Description());
     p.bind(&pr);
@@ -101,7 +100,7 @@ TEST(ac5_cut_empties_and_next_print_starts_a_new_paper) {
     CHECK(std::get<Dot>(p.marks().at(0)).at == (Position{u(3), u(1)}));
 }
 
-TEST(ec1_cut_while_printing_puts_later_marks_on_the_new_paper) {
+TEST(cut_while_printing_puts_later_marks_on_the_new_paper) {
     // TD-20 in a line: rows after the cut are on the new paper.
     {
         PaperRun run;

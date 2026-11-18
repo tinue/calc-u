@@ -1,9 +1,9 @@
-// The paper commands (LIB-8 design §2, §3.5; spec AC-23, EC-2, EC-6, EC-8):
+// The paper commands:
 // `cut-paper` and `paper text`, `paper marks`, `paper png <path>`,
 // `paper copy`, `paper cut`, each with an owner's name as its last value;
 // without it the printer that is plugged in. Each is the session command or
-// request of LIB-8's PaperPart; a product without printers has none of them
-// (EC-2: no paper topic) and they are refused. The paper topic itself is read
+// request of the PaperPart; a product without printers has none of them
+// (no paper topic) and they are refused. The paper topic itself is read
 // with `state paper <owner>`.
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
@@ -60,7 +60,7 @@ Reply writePng(CommandContext& c, const std::string& path, const sessions::Value
     const sessions::Value* bytes = v.find("bytes");
     if (!bytes || !bytes->bytes()) return refusedReply("The session gave no picture.");
     std::ofstream out(path, std::ios::binary | std::ios::trunc);
-    if (!out) return refusedReply("Cannot write " + path + ": " + std::strerror(errno) + ".");   // EC-6
+    if (!out) return refusedReply("Cannot write " + path + ": " + std::strerror(errno) + ".");
     out.write(reinterpret_cast<const char*>(bytes->bytes()->data()), static_cast<std::streamsize>(bytes->bytes()->size()));
     out.close();
     if (!out) return refusedReply("Cannot write " + path + ".");

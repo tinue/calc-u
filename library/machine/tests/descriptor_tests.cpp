@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <variant>
 
-// LIB-1 AC-1, AC-2, AC-3, AC-4, AC-14, EC-6 (design §6, T3).
+// The catalogue and its descriptors, without a machine and without ROM files.
 
 using namespace calcu::machine;
 using namespace calcu::machine::test;
@@ -15,7 +15,7 @@ bool hasId(const std::vector<PeripheralId>& v, const PeripheralId& id) {
 }
 } // namespace
 
-TEST(ac1_catalogue_gives_descriptors_without_machine_or_rom) {
+TEST(catalogue_gives_descriptors_without_machine_or_rom) {
     // No machine is built and no ROM file exists for the test models.
     const Catalogue cat = makeTestCatalogue();
     CHECK_EQ(cat.models().size(), std::size_t{2});
@@ -28,7 +28,7 @@ TEST(ac1_catalogue_gives_descriptors_without_machine_or_rom) {
     CHECK(dot && dot->variants.size() == 2 && dot->variants[0].id == VariantId{"V1"});
 }
 
-TEST(ac2_machine_descriptor_states_every_part) {
+TEST(machine_descriptor_states_every_part) {
     const Catalogue& cat = testCatalogue();
     const MachineDescriptor& seg = *cat.model(kSeg);
     CHECK(seg.family == ModelFamilyId{"test-family"});
@@ -87,9 +87,9 @@ TEST(ac2_machine_descriptor_states_every_part) {
     CHECK(dot.mediaPlaces.size() == 1 && dot.mediaPlaces[0].passage == MediaPassage::Holding);
 }
 
-TEST(ac3_peripheral_descriptor_and_one_added_later) {
+TEST(peripheral_descriptor_and_one_added_later) {
     Catalogue cat = makeTestCatalogue();
-    CHECK_EQ(cat.peripherals().size(), std::size_t{4});   // with LIB-2's hub and UART
+    CHECK_EQ(cat.peripherals().size(), std::size_t{4});   // with the test hub and UART
     const PeripheralDescriptor* printer = cat.peripheral(kPrinter);
     const PeripheralDescriptor* module = cat.peripheral(kModule);
     CHECK(printer && printer->name == "Test printer" && printer->variants.empty() && printer->roms.empty());
@@ -115,7 +115,7 @@ TEST(ac3_peripheral_descriptor_and_one_added_later) {
     CHECK(info && hasId(info->fitting, PeripheralId{"test-module-later"}));
 }
 
-TEST(ac4_place_gives_connector_and_fitting_peripherals) {
+TEST(place_gives_connector_and_fitting_peripherals) {
     const Catalogue& cat = testCatalogue();
     auto slot = cat.place(kSeg, PlaceName{"slot-1"});
     CHECK(slot.has_value());
@@ -133,7 +133,7 @@ TEST(ac4_place_gives_connector_and_fitting_peripherals) {
     CHECK(!cat.place(ModelId{"no-such-model"}, PlaceName{"slot-1"}).has_value());
 }
 
-TEST(ac14_peripheral_controls_are_not_machine_keys) {
+TEST(peripheral_controls_are_not_machine_keys) {
     const Catalogue& cat = testCatalogue();
     const PeripheralDescriptor* printer = cat.peripheral(kPrinter);
     CHECK(printer && printer->controls[0].id == ControlId{"online"});
@@ -148,7 +148,7 @@ TEST(ac14_peripheral_controls_are_not_machine_keys) {
     CHECK(m && m->keyDown(KeyId{"online"}) == KeyCall::UnknownKey);
 }
 
-TEST(ec6_no_variant_and_single_variant) {
+TEST(no_variant_and_single_variant) {
     const Catalogue& cat = testCatalogue();
     const MachineDescriptor& seg = *cat.model(kSeg);
     CHECK(seg.variants.empty() && !seg.defaultVariant);

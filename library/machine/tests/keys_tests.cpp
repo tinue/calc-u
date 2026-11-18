@@ -1,7 +1,7 @@
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 
-// LIB-1 AC-12, AC-13, EC-2, EC-3 (design §6, T8).
+// Machine keys: down and up at tick counts, unknown keys refused.
 
 using namespace calcu::machine;
 using namespace calcu::machine::test;
@@ -14,7 +14,7 @@ std::unique_ptr<TestMachine> readyMachine() {
 }
 } // namespace
 
-TEST(ac12_key_down_up_at_tick_counts) {
+TEST(key_down_up_at_tick_counts) {
     auto m = readyMachine();
     CHECK(m != nullptr);
     if (!m) return;
@@ -28,7 +28,7 @@ TEST(ac12_key_down_up_at_tick_counts) {
     CHECK(m->keysDown().empty());
 }
 
-TEST(ac13_two_keys_down_together) {
+TEST(two_keys_down_together) {
     auto m = readyMachine();
     CHECK(m != nullptr);
     if (!m) return;
@@ -44,7 +44,7 @@ TEST(ac13_two_keys_down_together) {
     CHECK(m->keysDown().empty());
 }
 
-TEST(ec2_unknown_key_is_refused_state_unchanged) {
+TEST(unknown_key_is_refused_state_unchanged) {
     auto m = readyMachine();
     CHECK(m != nullptr);
     if (!m) return;
@@ -62,7 +62,7 @@ TEST(ec2_unknown_key_is_refused_state_unchanged) {
     CHECK(sameDisplay(m->readDisplay(), d));
 }
 
-TEST(ec3_repeated_down_or_up_changes_nothing) {
+TEST(repeated_down_or_up_changes_nothing) {
     auto m = readyMachine();
     CHECK(m != nullptr);
     if (!m) return;

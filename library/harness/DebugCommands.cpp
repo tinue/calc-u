@@ -1,13 +1,14 @@
-// The debugger's commands (LIB-10 design §3.9; spec AC-20, AC-50, AC-51,
-// EC-9): the steps of AC-19 but `debug-panel:` (pause, resume, step,
+// The debugger's commands: the debugger's preset steps but `debug-panel:`
+// (pause, resume, step,
 // pause-on-start, trace) and targets, registers, set-register, peek, poke,
 // break, watch, history, disassemble, profile, step-over, step-out,
 // pause-at-start, expect-register, expect-memory and symbols, each turned
-// into the session command or request of LIB-10's DebuggerPart with the
-// setter `harness` (AC-47). A product without a DebuggerPart in its session
-// refuses them with "The machine offers no debug target." (design §4).
+// into the session command or request of the DebuggerPart with the
+// setter `harness`. A product without a DebuggerPart in its session
+// refuses them with "The machine offers no debug target.".
 // Numbers are read as decimal, 0x… or $… and written as 0x with the digits
-// of their width (D-4); a name loaded by `symbols` stands for an address.
+// of their width, as the existing tools print hex; a name loaded by
+// `symbols` stands for an address.
 #include "debugger/RunState.hpp"
 #include "files/Files.hpp"
 #include "formats/Flow.hpp"
@@ -48,7 +49,7 @@ int addressBits(std::uint64_t size) {
 std::uint64_t u64(const sessions::Value* v) { return v && v->integer() ? static_cast<std::uint64_t>(*v->integer()) : 0; }
 std::string text(const sessions::Value* v) { return v && v->string() ? *v->string() : std::string(); }
 
-// A number as the commands read it (D-4), or the word as it is (a symbol).
+// A number as the commands read it, or the word as it is (a symbol).
 sessions::Value numberOrName(const std::string& w) {
     if (auto n = formats::parseNumber(w)) return sessions::Value(*n);
     return sessions::Value(w);
@@ -88,7 +89,7 @@ Reply runStateReply(const ReplyMessage& r) {
 
 
 ReplyMessage send(CommandContext& c, const sessions::CommandName& n, sessions::Value args) {
-    return c.host.command(sessions::Command{n, std::move(args)}, "The machine did not pause.");   // D-6
+    return c.host.command(sessions::Command{n, std::move(args)}, "The machine did not pause.");   // after an hour of emulated time
 }
 ReplyMessage ask(CommandContext& c, const sessions::RequestName& n, sessions::Value args = {}) {
     return c.host.ask(sessions::Request{n, std::move(args)});
@@ -311,9 +312,9 @@ Reply peekCmd(CommandContext& c) {
     const auto view = targetView(c, w[0]);
     const int abits = spaceBits(view, text(v.find("space")));
     const auto& cells = *v.find("cells")->elements();
-    if (const auto f = opts.find("file"); f != opts.end()) {   // AC-50: bytes into the file
+    if (const auto f = opts.find("file"); f != opts.end()) {   // bytes into the file
         std::filesystem::path p = files::toPath(f->second);
-        if (p.is_relative() && !c.host.attached()) p = files::toPath(c.host.setup().traceFolder()) / p;   // the run's folder (LIB-11 AC-8)
+        if (p.is_relative() && !c.host.attached()) p = files::toPath(c.host.setup().traceFolder()) / p;   // the run's folder
         std::ofstream out(p, std::ios::binary | std::ios::trunc);
         const int perCell = std::max(1, (bits + 7) / 8);
         for (const auto& cell : cells) {
@@ -517,7 +518,7 @@ Reply symbolsCmd(CommandContext& c) {
     return doneReply(std::move(res), {std::to_string(n) + " symbols"});
 }
 
-// ── expect-register, expect-memory (AC-50) ───────────────────────────────
+// ── expect-register, expect-memory ──────────────────────────────────────
 
 Reply expectRegisterCmd(CommandContext& c) {
     if (!hasDebugger(c)) return noTarget();

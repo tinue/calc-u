@@ -74,7 +74,7 @@ class Session:
         return self.command(f"not-expect {text}")
 
     def command(self, line: str) -> "Session":
-        """Queues any harness command (docs/contracts/harness.md)."""
+        """Queues any harness command (docs/formats/harness.md)."""
         if "\n" in line:
             raise ValueError(f"step with a line break: {line!r}")
         self._queue.append(line)

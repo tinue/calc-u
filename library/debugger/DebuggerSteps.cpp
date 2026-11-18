@@ -1,11 +1,9 @@
-// The debugger's preset steps (LIB-10 design §3.8; spec AC-19; LIB-6
-// AC-19, AC-62, AC-63): pause:, resume:, step:, pause-on-start:,
-// debug-panel: and trace: on LIB-6's step place. Each is checked when the
+// The debugger's preset steps: pause:, resume:, step:, pause-on-start:,
+// debug-panel: and trace: on the presets' step place. Each is checked when the
 // preset is read; none needs a running machine before it is carried out.
 // pause: and step: have finished when the pause has landed (After::Own);
 // the others when they took effect. They are no harness commands of the
-// same name (`command = false`): the harness has its own, with other rules
-// (§3.9).
+// same name (`command = false`): the harness has its own, with other rules.
 #include "debugger/DebuggerPart.hpp"
 #include "formats/Number.hpp"
 #include "presets/Engine.hpp"
@@ -36,8 +34,8 @@ std::string scalarOf(const YamlNode& n) {
 
 ItemResult failed(std::string why) { return ItemResult{false, std::move(why), {}}; }
 
-// AC-19: on a model without the run-control steps (the Sharp models) the
-// step is [undefined] and refuses the preset (LIB-6 AC-62).
+// On a model without the run-control steps (the Sharp models) the step is
+// [undefined] and refuses the preset.
 bool defined(DebuggerPart& p, ReadContext& ctx, const char* verb, int line) {
     const auto& f = p.setup().runControlSteps;
     if (!f || f(ctx.model().model)) return true;
@@ -54,7 +52,7 @@ std::optional<LevelName> levelOf(DebuggerPart& p, ReadContext& ctx, const std::s
 }
 
 // Runs the machine until the run control has paused it: raw machine calls,
-// which end at once while it is paused (LIB-10 D-6: at most 3600 s of
+// which end at once while it is paused (at most 3600 s of
 // emulated time). True when it paused.
 Task<bool> untilPaused(RunContext& run) {
     sessions::MachineSession& ms = run.session().machineSession();
@@ -82,7 +80,7 @@ public:
     Task<ItemResult> carryOut(RunContext& run) override {
         const RunControl::Result r = part_.runControl().pause(level_);
         if (!r.ok) co_return failed(r.reason);
-        if (!co_await untilPaused(run)) co_return failed("The machine did not pause.");   // LIB-6 AC-56: finished when landed
+        if (!co_await untilPaused(run)) co_return failed("The machine did not pause.");   // finished when landed
         co_return ItemResult{};
     }
     After after() const override { return After::Own; }
@@ -114,7 +112,7 @@ public:
     StepItem(DebuggerPart& p, LevelName l, std::uint64_t n) : part_(p), level_(std::move(l)), count_(n) {}
     Task<ItemResult> carryOut(RunContext& run) override {
         RunControl& rc = part_.runControl();
-        if (!rc.paused()) {   // OQ-4: a line in the log, and the next item
+        if (!rc.paused()) {   // a line in the log, and the next item
             run.log("step: ignored, the machine is not paused");
             co_return ItemResult{};
         }
@@ -149,7 +147,7 @@ private:
     std::optional<LevelName> level_;
 };
 
-class PanelItem final : public Item {   // a frontend step (LIB-6 AC-63): never fails
+class PanelItem final : public Item {   // a frontend step: never fails
 public:
     PanelItem(DebuggerPart& p, std::string v) : part_(p), view_(std::move(v)) {}
     Task<ItemResult> carryOut(RunContext& run) override {
@@ -174,8 +172,8 @@ public:
             t.end(run.session(), TraceSession::Ending::Off);
             co_return ItemResult{};
         }
-        // T3: the trace is the running operation's; its end ends it.
-        if (auto why = t.start(run.session(), *file_, false, true)) co_return failed(*why);   // AC-22, EC-8
+        // The trace is the running operation's; its end ends it.
+        if (auto why = t.start(run.session(), *file_, false, true)) co_return failed(*why);
         co_return ItemResult{};
     }
     After after() const override { return After::TakenEffect; }
@@ -269,7 +267,7 @@ void addDebuggerSteps(presets::Vocabulary& v, DebuggerPart& part) {
                   [p](const YamlNode& n, ReadContext& ctx) -> std::unique_ptr<Item> {
                       const std::string f = scalarOf(n);
                       if (presets::lowerAscii(f) == "off") return std::make_unique<TraceItem>(*p, std::nullopt);
-                      if (auto why = traceNameRefusal(f)) {   // AC-22: refused when the preset is read
+                      if (auto why = traceNameRefusal(f)) {   // refused when the preset is read
                           ctx.error(n.line, *why);
                           return nullptr;
                       }

@@ -26,7 +26,7 @@ std::optional<std::string> RunControl::refusal() const {
 
 RunState RunControl::state() const {
     RunState s;
-    s.paused = mode_ == Mode::Paused;   // D-14: stepping and a pending pause say running
+    s.paused = mode_ == Mode::Paused;   // stepping and a pending pause say running; no third state
     if (s.paused) {
         s.owner = level_;
         s.reason = reason_;
@@ -54,13 +54,13 @@ void RunControl::enterPaused(LevelName level, RunState::Reason reason, std::vect
     level_ = std::move(level);
     reason_ = reason;
     hits_ = std::move(hits);
-    if (reason != RunState::Reason::Entry) armed_.reset();   // a pause disarms both (AC-9); entry is separate (AC-46)
+    if (reason != RunState::Reason::Entry) armed_.reset();   // a pause disarms both; entry is separate
     ctx_->machineSession().setPaused(true);
     publish();
     finishCalls();
 }
 
-// ── G11: a new machine ───────────────────────────────────────────────────
+// ── A new machine ────────────────────────────────────────────────────────
 
 void RunControl::sync() {
     if (!ctx_) return;
@@ -72,16 +72,16 @@ void RunControl::sync() {
     armed_.reset();
     ms.setPaused(false);
     finishCalls();
-    table_.rebind(debugging());   // AC-15: by target name, the rest dropped
+    table_.rebind(debugging());   // by target name, the rest dropped
     trace_.end(*ctx_, TraceSession::Ending::NewMachine);
-    if (ctx_->machine() && pauseAtStart_) {   // G9
+    if (ctx_->machine() && pauseAtStart_) {
         pauseAtStart_ = false;
         enterPaused(kCpu, RunState::Reason::Entry);
     }
     publish();
 }
 
-// ── G10: Reset, Cold boot ────────────────────────────────────────────────
+// ── Reset, Cold boot ─────────────────────────────────────────────────────
 
 void RunControl::restarted(RestartKind kind) {
     sync();
@@ -89,7 +89,7 @@ void RunControl::restarted(RestartKind kind) {
         mode_ = Mode::Running;
         hits_.clear();
         ctx_->machineSession().setPaused(false);
-        finishCalls();   // a step's reply goes out done, with the run state (EC-6)
+        finishCalls();   // a step's reply goes out done, with the run state
     }
     if (armed_ && ctx_->machine()) rules_.startArmed(*armed_, *ctx_->machine());   // seen afresh from the restart on
     if (armed_ && rules_.startFiresAtRestart(*armed_, kind)) enterPaused(*armed_, RunState::Reason::PauseOnStart);
@@ -100,11 +100,11 @@ void RunControl::restarted(RestartKind kind) {
     publish();
 }
 
-// ── G1: the gate ─────────────────────────────────────────────────────────
+// ── The gate ─────────────────────────────────────────────────────────────
 
 machine::Checks RunControl::checks() {
     machine::Checks c;
-    const bool free = !ctx_->busy();   // I-3: no breakpoint or watch while an operation runs
+    const bool free = !ctx_->busy();   // no breakpoint or watch while an operation runs
     c.breakpoints = free && table_.anyBreakpoints();
     c.watches = free && table_.anyWatches();
     if (mode_ == Mode::PausePending || mode_ == Mode::Stepping || armed_ || profile_.on()) c.observer = this;
@@ -114,14 +114,14 @@ machine::Checks RunControl::checks() {
 Ticks RunControl::advance(machine::Machine& m, Ticks atLeast, bool& stoppedEarly) {
     sync();
     stoppedEarly = false;
-    if (mode_ == Mode::Paused) {   // AC-5: no emulated time passes
+    if (mode_ == Mode::Paused) {   // no emulated time passes
         stoppedEarly = true;
         return 0;
     }
     machine::Debugging* d = m.debugging();
     if (!d && !trace_.running()) return m.advance(atLeast);
     // While a trace runs the advance is cut into pieces of 1/60 s, the trace
-    // pumped after each (T2).
+    // pumped after each.
     const Ticks slice = trace_.running() ? sessions::OperationContext::runPiece(m.descriptor().tickRate) : atLeast;
     Ticks ran = 0;
     while (ran < atLeast) {
@@ -153,7 +153,7 @@ bool RunControl::stopAfter(const machine::InstructionEvent& ev) {
     if (profile_.on()) profile_.count(ev.target, ev.address);
     if (landed_ != Landed::None) return true;
     machine::Machine* m = ctx_->machine();
-    if (armed_ && m && rules_.startFiresAfter(*armed_, ev, *m)) {   // G8, also in an operation (AC-13)
+    if (armed_ && m && rules_.startFiresAfter(*armed_, ev, *m)) {   // also in an operation
         firedLevel_ = *armed_;
         landed_ = Landed::StartFired;
         return true;
@@ -174,19 +174,19 @@ bool RunControl::stepDoneAfter(const machine::InstructionEvent& ev) {
         if (!rules_.programStepDoneAfter(ev)) return false;
         return --left_ == 0;
     }
-    if (ev.target != stepTarget_) return false;   // the other targets run meanwhile (AC-39)
+    if (ev.target != stepTarget_) return false;   // the other targets run meanwhile
     machine::Debugging* d = debugging();
     if (!d) return true;
     const machine::DebugTarget& t = d->target(stepTarget_);
     switch (kind_) {
     case StepKind::In:
-        if (ev.nextAddress == ev.address && repeats_ < rules_.cpuStepRepeats()) {   // AC-7, AC-29
+        if (ev.nextAddress == ev.address && repeats_ < rules_.cpuStepRepeats()) {
             ++repeats_;
             return false;
         }
         repeats_ = 0;
         return countedStepDone(t);
-    case StepKind::Over:   // G5: a call is carried out with its routine
+    case StepKind::Over:   // a call is carried out with its routine
         if (overCall_ && t.callDepth() > depth0_) return false;
         if (countedStepDone(t)) return true;
         overCall_ = t.flowAt(ev.nextAddress) == machine::Flow::Call;
@@ -198,7 +198,7 @@ bool RunControl::stepDoneAfter(const machine::InstructionEvent& ev) {
     return false;
 }
 
-// A counted step is over: the step ends at its count, or (D-16) when its
+// A counted step is over: the step ends at its count, or when its
 // test says not to go on.
 bool RunControl::countedStepDone(const machine::DebugTarget& t) {
     if (--left_ == 0) return true;
@@ -208,12 +208,12 @@ bool RunControl::countedStepDone(const machine::DebugTarget& t) {
 void RunControl::onStop(const machine::DebugStop& stop, machine::Debugging& d) {
     const machine::DebugTargetId& name = d.target(stop.target).info().name;
     switch (stop.kind) {
-    case machine::DebugStop::Breakpoint: {   // G6
+    case machine::DebugStop::Breakpoint: {
         std::vector<RunState::Hit> hits;
         const machine::DebugTarget& t = d.target(stop.target);
         for (const Breakpoint* b : table_.at(name, stop.address)) {
             if (!b->qualifier.empty() && !t.qualifierMatches(b->qualifier, stop.address)) continue;
-            if (b->test && !b->test(t)) continue;   // AC-12: the setter's test says go on
+            if (b->test && !b->test(t)) continue;   // the setter's test says go on
             hits.push_back(RunState::Hit{b->id, b->setter});
         }
         if (hits.empty()) {
@@ -223,7 +223,7 @@ void RunControl::onStop(const machine::DebugStop& stop, machine::Debugging& d) {
         enterPaused(kCpu, RunState::Reason::Breakpoint, std::move(hits));
         return;
     }
-    case machine::DebugStop::Watch: {   // G7: the lowest address hit is named (EC-4)
+    case machine::DebugStop::Watch: {   // the lowest address hit is named
         std::vector<machine::WatchHit> sorted = stop.hits;
         std::stable_sort(sorted.begin(), sorted.end(),
                          [](const machine::WatchHit& a, const machine::WatchHit& b) { return a.address < b.address; });
@@ -251,23 +251,23 @@ void RunControl::land() {
     case Landed::None: return;
     case Landed::StartFired: enterPaused(firedLevel_, RunState::Reason::PauseOnStart); break;
     case Landed::PauseLanded: enterPaused(level_, RunState::Reason::Pause); break;
-    case Landed::StepDone: enterPaused(level_, RunState::Reason::Step); break;   // AC-45: the step's level owns it
+    case Landed::StepDone: enterPaused(level_, RunState::Reason::Step); break;   // the step's level owns it
     }
     landed_ = Landed::None;
 }
 
-// ── G2 to G9 ─────────────────────────────────────────────────────────────
+// ── The calls ────────────────────────────────────────────────────────────
 
 RunControl::Result RunControl::pause(const LevelName& level, sessions::CallId call) {
     sync();
     if (auto r = refusal()) return Result{false, *r};
-    if (!rules_.hasLevel(level)) return Result{false, "The machine has no level " + level.value + "."};   // AC-6
-    armed_.reset();   // a pause disarms pause-on-start (AC-9)
-    if (mode_ == Mode::Paused) {   // EC-1
+    if (!rules_.hasLevel(level)) return Result{false, "The machine has no level " + level.value + "."};
+    armed_.reset();   // a pause disarms pause-on-start
+    if (mode_ == Mode::Paused) {
         publish();
         return Result{};
     }
-    if (mode_ == Mode::Stepping) {   // G2: the step ends there; its reply goes out first
+    if (mode_ == Mode::Stepping) {   // the step ends there; its reply goes out first
         mode_ = Mode::Running;
         finishCalls();
     }
@@ -292,7 +292,7 @@ RunControl::Result RunControl::resume() {
     sync();
     if (auto r = refusal()) return Result{false, *r};
     switch (mode_) {
-    case Mode::Running: return Result{};   // EC-2
+    case Mode::Running: return Result{};
     case Mode::PausePending:
     case Mode::Stepping:
         mode_ = Mode::Running;
@@ -302,11 +302,11 @@ RunControl::Result RunControl::resume() {
     case Mode::Paused: break;
     }
     machine::Debugging* d = debugging();
-    d->passOnce(d->current());   // AC-10, AC-39: only the target about to run passes
+    d->passOnce(d->current());   // only the target about to run passes
     mode_ = Mode::Running;
     hits_.clear();
-    ctx_->machineSession().setPaused(false);   // pacing starts afresh (AC-16; LIB-3 AC-23)
-    peripherals::setClocksFromHost(*ctx_->machine(), peripherals::hostDateTime(ctx_->hostTime()));   // AC-16
+    ctx_->machineSession().setPaused(false);   // pacing starts afresh
+    peripherals::setClocksFromHost(*ctx_->machine(), peripherals::hostDateTime(ctx_->hostTime()));
     publish();
     return Result{};
 }
@@ -317,7 +317,7 @@ RunControl::Result RunControl::step(const LevelName& level, std::uint64_t count,
     sync();
     if (auto r = refusal()) return Result{false, *r};
     if (!rules_.hasLevel(level)) return Result{false, "The machine has no level " + level.value + "."};
-    if (mode_ != Mode::Paused) return Result{false, kNotPaused};   // AC-7
+    if (mode_ != Mode::Paused) return Result{false, kNotPaused};
     if (count == 0) return Result{false, "A step needs a count of at least 1."};
     machine::Debugging& d = *debugging();
     std::size_t t = d.current();
@@ -328,7 +328,7 @@ RunControl::Result RunControl::step(const LevelName& level, std::uint64_t count,
     }
     if (kind != StepKind::In && !d.target(t).info().offers.stepOverOut)
         return Result{false, "The target " + d.target(t).info().name.value + " offers no stepping over and out."};
-    d.passOnce(d.current());   // EC-5: the instruction at a breakpoint is carried out
+    d.passOnce(d.current());   // the instruction at a breakpoint is carried out
     mode_ = Mode::Stepping;
     level_ = level;
     kind_ = kind;
@@ -341,7 +341,7 @@ RunControl::Result RunControl::step(const LevelName& level, std::uint64_t count,
     overCall_ = kind == StepKind::Over && dt.flowAt(dt.nextAddress()) == machine::Flow::Call;
     depth0_ = dt.callDepth();
     if (call) calls_.push_back(call);
-    ctx_->machineSession().setPaused(false);   // the run state says running meanwhile (D-14)
+    ctx_->machineSession().setPaused(false);   // the run state says running meanwhile
     publish();
     return Result{true, {}, true};
 }

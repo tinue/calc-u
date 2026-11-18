@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-// The debugger's parts built for the tests (LIB-10 design §6):
+// The debugger's parts built for the tests:
 //   TestLevelRules   the test product's levels: `program` lands at the
 //                    next program step boundary (the mark of a `nop`), one
 //                    `program` step runs to the next boundary; `cpu` lands

@@ -1,5 +1,4 @@
-// LIB-7 L9 (design §6): the harness's media commands (AC-26, AC-28; LIB-11
-// AC-8, AC-22) on its test product with the test kinds (TestProduct::media).
+// The harness's media commands on its test product with the test kinds (TestProduct::media).
 #include "Files.hpp"
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
@@ -21,7 +20,7 @@ struct MediaRun : TestRun {
 
 } // namespace
 
-TEST(ac28_media_reads_topic) {
+TEST(media_reads_topic) {
     MediaRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -31,7 +30,7 @@ TEST(ac28_media_reads_topic) {
     CHECK_EQ(plain.line("media"), std::string("refused: Calc-U-Test has no media.\n"));
 }
 
-TEST(ac28_run_has_empty_save_folder_and_bundled_media) {
+TEST(run_has_empty_save_folder_and_bundled_media) {
     MediaRun run;
     if (!run.server) return;
     const std::string r = run.line("media");
@@ -45,7 +44,7 @@ TEST(ac28_run_has_empty_save_folder_and_bundled_media) {
     CHECK(has(given.line("media"), "\"name\":\"Mine\""));
 }
 
-TEST(ac26_steps_as_commands) {
+TEST(steps_as_commands) {
     MediaRun run;
     if (!run.server) return;
     CHECK_EQ(run.line("test-disk { name: Formatted }"), std::string("done\n"));
@@ -53,7 +52,7 @@ TEST(ac26_steps_as_commands) {
     run.drive()->write("work");
     CHECK_EQ(run.line("saveas { place: disk, as: live, name: Work }"), std::string("done\n"));
     run.drive()->write("work 2");
-    run.line("wait 10ms");   // AC-11: written at the end of the command
+    run.line("wait 10ms");   // written at the end of the command
     CHECK_EQ(calcu::testing::readText(run.server->setup().saveFolder() + "/Work.testdisk.yaml").find("content: work 2") != std::string::npos,
              true);
     CHECK_EQ(run.line("eject disk"), std::string("done\n"));
@@ -62,7 +61,7 @@ TEST(ac26_steps_as_commands) {
     CHECK(has(run.line("test-disk Formatted"), "takes a reference"));   // a bare value
 }
 
-TEST(ac28_import_export_delete) {
+TEST(import_export_delete) {
     MediaRun run;
     if (!run.server) return;
     calcu::testing::TempFolder outside("calcu-media-run-outside");
@@ -82,7 +81,7 @@ TEST(ac28_import_export_delete) {
     CHECK(has(run.line("media delete test-disk Formatted"), "is no longer there"));   // a bundled one is not deleted
 }
 
-TEST(ac26_mapping_line_as_step) {
+TEST(mapping_line_as_step) {
     MediaRun run;
     if (!run.server) return;
     calcu::testing::TempFolder outside("calcu-media-run-outside");

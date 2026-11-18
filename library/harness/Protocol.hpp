@@ -5,8 +5,7 @@
 #include <variant>
 #include <vector>
 
-// Lines and the one-shot form (LIB-11 design §3.2; spec AC-2, AC-3, AC-5,
-// AC-13, AC-22).
+// Lines and the one-shot form.
 // - The word between the commands of a one-shot run is `then`: `calcu
 //   --product c1600 wait 2s then display-text then ticks`. The words of each command
 //   are joined with one space into a line, so the one-shot form and `serve`
@@ -14,7 +13,7 @@
 //   one-shot form; `serve` can.
 // - A product command is reached by its product word first (`test count`,
 //   later `ti59 …`, `pc1600 …`); a common command at the top level.
-// - The value of a step (AC-22): the rest of the line after the command's
+// - The value of a step: the rest of the line after the command's
 //   name, as written, trimmed; a preset step `- floppy: { name: Disk2 }`
 //   becomes the line `floppy { name: Disk2 }`.
 // - A `\r` before the end of a line is dropped (Windows); an empty line is
@@ -32,10 +31,10 @@ struct CommandLine {
 inline constexpr const char* kThen = "then";
 
 // The line split into its command and argument text, or the refusal
-// (`unknown command <word>`, AC-5). An empty line gives an empty path.
+// (`unknown command <word>`). An empty line gives an empty path.
 std::variant<CommandLine, std::string> parseLine(std::string_view line, const CommandRegistry&);
 
-// The commands of a one-shot run, one line each (AC-2).
+// The commands of a one-shot run, one line each.
 std::vector<std::string> splitOneShot(std::span<const std::string> words);
 
 // The text without leading and trailing spaces, tabs and a final \r.

@@ -85,7 +85,7 @@ public:
             if (!c) return CellRead{CellRead::Unreadable, 0};
             return CellRead{CellRead::Value, *c};
         }
-        if (space == kIo) return CellRead{CellRead::Unreadable, 0};   // write-only or a device (AC-2)
+        if (space == kIo) return CellRead{CellRead::Unreadable, 0};   // write-only or a device
         if (space == kIoWritten) {
             if (a >= 16 || !cpu_.written_[a]) return CellRead{CellRead::NoneWritten, 0};
             return CellRead{CellRead::Value, *cpu_.written_[a]};

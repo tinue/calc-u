@@ -1,5 +1,4 @@
-// LIB-5 design §6, L3, L5, L8: live input (AC-2, AC-4, AC-5, AC-9, AC-10;
-// EC-1, EC-6).
+// Live input: held keys, keys held together, what live input drops, focus loss.
 #include "TestHarness.hpp"
 #include "TypingRig.hpp"
 
@@ -16,7 +15,7 @@ std::size_t count(const std::vector<std::string>& log, const std::string& what) 
 }
 } // namespace
 
-TEST(ac2_live_key_down_at_once_when_not_ready) {
+TEST(live_key_down_at_once_when_not_ready) {
     TypingRig r;
     r.run(100);
     r.m->readiness = notReady;   // a running program
@@ -30,7 +29,7 @@ TEST(ac2_live_key_down_at_once_when_not_ready) {
     CHECK(r.log(from).size() > 1 && r.log(from)[1] == std::to_string(t) + " 7 down");
 }
 
-TEST(ac2_live_key_after_engine_hold_and_gap) {
+TEST(live_key_after_engine_hold_and_gap) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -49,7 +48,7 @@ TEST(ac2_live_key_after_engine_hold_and_gap) {
     CHECK(tickOf(log[2]) >= tickOf(log[1]) + 500 && tickOf(log[2]) < tickOf(log[1]) + 505);
 }
 
-TEST(ac9_live_drops_waiting_but_finishes_must_finish) {
+TEST(live_drops_waiting_but_finishes_must_finish) {
     TypingRig r;
     r.run(100);
     const std::size_t mark = r.m->keyEvents().size();
@@ -68,7 +67,7 @@ TEST(ac9_live_drops_waiting_but_finishes_must_finish) {
     if (log.size() == 6) CHECK(log[4].find("b down") != std::string::npos);
 }
 
-TEST(ac9_live_input_stops_a_key_command) {
+TEST(live_input_stops_a_key_command) {
     TypingRig r;
     r.run(100);
     const auto k = r.key({"1", "2", "3"});
@@ -77,10 +76,10 @@ TEST(ac9_live_input_stops_a_key_command) {
     r.screenUp("b");
     r.run(10'000);
     const auto* rep = r.reply(k);
-    CHECK(rep && !rep->done && rep->reason == kStoppedByKey);   // D-9
+    CHECK(rep && !rep->done && rep->reason == kStoppedByKey);
 }
 
-TEST(ac4_held_until_let_go) {
+TEST(held_until_let_go) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -93,7 +92,7 @@ TEST(ac4_held_until_let_go) {
     CHECK(r.log(from).size() > 1 && r.log(from)[1] == std::to_string(t) + " a up");
 }
 
-TEST(ac4_let_go_before_start_is_one_min_press) {
+TEST(let_go_before_start_is_one_min_press) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -109,7 +108,7 @@ TEST(ac4_let_go_before_start_is_one_min_press) {
     }
 }
 
-TEST(ac4_auto_repeat_ignored) {
+TEST(auto_repeat_ignored) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -125,7 +124,7 @@ TEST(ac4_auto_repeat_ignored) {
     CHECK_EQ(r.log(from).size(), std::size_t(2));
 }
 
-TEST(ac5_two_keys_held_together_both_down) {
+TEST(two_keys_held_together_both_down) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -146,7 +145,7 @@ TEST(ac5_two_keys_held_together_both_down) {
     }
 }
 
-TEST(ac5_engine_never_overlaps) {
+TEST(engine_never_overlaps) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -165,7 +164,7 @@ TEST(ac5_engine_never_overlaps) {
     CHECK_EQ(down, 0);
 }
 
-TEST(ec1_key_up_of_other_key_does_nothing) {
+TEST(key_up_of_other_key_does_nothing) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -179,7 +178,7 @@ TEST(ec1_key_up_of_other_key_does_nothing) {
     CHECK_EQ(r.log(from).size(), std::size_t(2));
 }
 
-TEST(ec6_two_holders_one_key_down_until_last) {
+TEST(two_holders_one_key_down_until_last) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -193,7 +192,7 @@ TEST(ec6_two_holders_one_key_down_until_last) {
     CHECK_EQ(r.log(from).size(), std::size_t(2));
 }
 
-TEST(ac10_focus_lost_releases_after_min_drops_waiting) {
+TEST(focus_lost_releases_after_min_drops_waiting) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -202,7 +201,7 @@ TEST(ac10_focus_lost_releases_after_min_drops_waiting) {
     const auto k = r.key({"1", "2"});   // waits: a is down
     r.run(100);
     r.send("focus-lost");
-    CHECK_EQ(r.log(from).size(), std::size_t(1));   // a: its minimum first (OQ-3)
+    CHECK_EQ(r.log(from).size(), std::size_t(1));   // a: its minimum first
     r.run(10'000);
     const auto log = r.log(from);
     CHECK_EQ(log.size(), std::size_t(2));

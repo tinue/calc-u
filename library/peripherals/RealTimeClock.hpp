@@ -4,11 +4,10 @@
 #include <chrono>
 #include <optional>
 
-// The generic kind real-time clock (LIB-2 design §3.4; spec AC-21 to AC-23;
-// capabilities.md C-1). The clock advances in the core by ticks only
-// (AC-22); nothing in a machine reads the host's clock. Whoever builds a
+// The generic kind real-time clock. The clock advances in the core by ticks
+// only; nothing in a machine reads the host's clock. Whoever builds a
 // machine or runs an operation on it hands it the host's date and time
-// (AC-23): the app session, through its peripherals part
+// the app session, through its peripherals part
 // (PeripheralsPart.hpp).
 
 namespace calcu::peripherals {
@@ -30,7 +29,7 @@ public:
     static constexpr machine::KindId kKind{"real-time-clock"};
     machine::KindId kind() const override { return kKind; }
 
-    virtual ClockFields read() const = 0;   // only the kept fields are set (AC-21)
+    virtual ClockFields read() const = 0;   // only the kept fields are set
     // A field the chip lacks, or one left empty, is ignored. `millisecond`
     // preloads the chip's second, as today.
     virtual void set(const ClockFields&, int millisecond = 0) = 0;
@@ -39,7 +38,7 @@ public:
 // The host's local date and time at `t`.
 HostDateTime hostDateTime(std::chrono::system_clock::time_point t);
 ClockFields fieldsOf(const HostDateTime&);
-// Sets every real-time clock capability of the machine (AC-23).
+// Sets every real-time clock capability of the machine.
 void setClocksFromHost(machine::Machine&, const HostDateTime&);
 
 } // namespace calcu::peripherals

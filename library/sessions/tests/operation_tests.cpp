@@ -1,4 +1,4 @@
-// LIB-3 L9 to L12: operations (AC-14 to AC-19, EC-3, EC-6).
+// Operations.
 #include "TestHarness.hpp"
 #include "TestParts.hpp"
 #include <stdexcept>
@@ -34,7 +34,7 @@ Task<Ticks> coldBootAndWait(OperationContext& c) {
 
 // A preset as a nested operation: cold boot, type, a stretch at regular speed.
 Task<OperationResult> presetLike(OperationContext& c) {
-    co_await coldBootAndWait(c);   // AC-17: awaited, not started
+    co_await coldBootAndWait(c);   // a nested operation: awaited, not started
     co_await c.run(3'000);
     c.session().machine()->keyDown(KeyId{"1"});
     co_await c.run(500);
@@ -53,13 +53,13 @@ std::int64_t value(Rig& r) {
 }
 } // namespace
 
-TEST(ac14_busy_while_operation_runs) {
+TEST(busy_while_operation_runs) {
     Rig r;
     r.build();
     r.part.operation = runningFor(200'000);   // two seconds of emulated time
     const CallId id = r.send("tp.op");
     CHECK(r.fe.busy()->operationRuns);   // at once
-    CHECK_EQ(r.fe.replies(id), 0);       // D-2: the reply comes at the end
+    CHECK_EQ(r.fe.replies(id), 0);       // the reply comes at the end
     int calls = 0;
     while (r.session->busy() && calls < 1000) {
         r.call();
@@ -72,7 +72,7 @@ TEST(ac14_busy_while_operation_runs) {
     CHECK_EQ(r.fe.replies(id), 1);
 }
 
-TEST(ac14_one_part_per_call_within_allowance) {
+TEST(one_part_per_call_within_allowance) {
     Rig r;
     r.build();
     r.part.operation = runningFor(300'000);
@@ -85,7 +85,7 @@ TEST(ac14_one_part_per_call_within_allowance) {
         r.session->call(start);
         ++calls;
         const WallTime used = r.clock.now - start;
-        // LIB-17 AC-5: within the allowance of a call at full speed, plus the
+        // Within the allowance of a call at full speed, plus the
         // readings of the one slice that crosses it.
         CHECK(used <= calcu::pacing::Pacer::kFullSpeedAllowance + std::chrono::milliseconds(3));
         CHECK(r.ticks() > t0);
@@ -93,13 +93,13 @@ TEST(ac14_one_part_per_call_within_allowance) {
     CHECK(calls > 3);   // in parts, so the frontend repaints between them
 }
 
-TEST(ac14_full_speed_unless_regular_stretch) {
+TEST(full_speed_unless_regular_stretch) {
     Rig r;
     r.build();
     r.part.operation = [](OperationContext& c) { return regularThenFull(c, 8'000, 100'000); };
     r.send("tp.op");
     // The regular stretch: paced like regular-speed running, a frame per call
-    // (the first call may carry one piece more, LIB-17 AC-3).
+    // (the first call may carry one piece more).
     CHECK(r.fe.busy()->operationRuns && r.fe.busy()->speed == Speed::Regular);
     r.call();
     Ticks t0 = r.ticks();
@@ -111,7 +111,7 @@ TEST(ac14_full_speed_unless_regular_stretch) {
     CHECK(r.ticks() - t0 > 6'000);   // full speed again
 }
 
-TEST(ac14_busy_says_speed_now) {
+TEST(busy_says_speed_now) {
     Rig r;
     r.build();
     r.part.operation = [](OperationContext& c) { return regularThenFull(c, 5'000, 100'000); };
@@ -130,7 +130,7 @@ TEST(ac14_busy_says_speed_now) {
     CHECK(seen == want);
 }
 
-TEST(ac15_changes_sent_at_end_of_call_during_operation) {
+TEST(changes_sent_at_end_of_call_during_operation) {
     Rig r;
     r.build();
     r.part.operation = runningFor(300'000);
@@ -152,7 +152,7 @@ TEST(ac15_changes_sent_at_end_of_call_during_operation) {
     CHECK_EQ(callsWithProduct, calls - 1);
 }
 
-TEST(ac16_second_operation_refused) {
+TEST(second_operation_refused) {
     Rig r;
     r.build();
     r.part.operation = runningFor(200'000);
@@ -166,7 +166,7 @@ TEST(ac16_second_operation_refused) {
     CHECK(r.fe.reply(r.send("tp.op")) == nullptr);   // accepted again: its reply comes at its end
 }
 
-TEST(ac16_product_command_operation_refused_unread) {
+TEST(product_command_operation_refused_unread) {
     TestPart other("tq");   // another product's names
     RigOptions o;
     o.extraParts = {&other};
@@ -180,7 +180,7 @@ TEST(ac16_product_command_operation_refused_unread) {
     CHECK(r.session->busy());
 }
 
-TEST(ac16_other_commands_go_through) {
+TEST(other_commands_go_through) {
     Rig r;
     r.build();
     r.part.operation = runningFor(200'000);
@@ -194,7 +194,7 @@ TEST(ac16_other_commands_go_through) {
     CHECK(r.session->busy());
 }
 
-TEST(ac16_ends_running_operation_command) {
+TEST(ends_running_operation_command) {
     Rig r;
     r.build();
     r.part.operation = runningFor(500'000);
@@ -216,9 +216,9 @@ TEST(ac16_ends_running_operation_command) {
     CHECK(order.size() >= 2 && order[order.size() - 2] == op && order.back() == stop);
 }
 
-// LIB-18 D-6 (design §2): a command declared endsRunningOperation whose
+// A command declared endsRunningOperation whose
 // handler starts nothing (Done) or is refused leaves the operation running.
-TEST(ac16_ending_command_that_starts_nothing_stops_nothing) {
+TEST(ending_command_that_starts_nothing_stops_nothing) {
     Rig r;
     r.build();
     r.part.operation = runningFor(500'000);
@@ -232,7 +232,7 @@ TEST(ac16_ending_command_that_starts_nothing_stops_nothing) {
     CHECK(r.fe.reply(op) && r.fe.reply(op)->done);   // it ran to its end
 }
 
-TEST(ac17_nested_operation_not_refused) {
+TEST(nested_operation_not_refused) {
     Rig r;
     r.build();
     r.part.operation = [](OperationContext& c) { return presetLike(c); };
@@ -243,7 +243,7 @@ TEST(ac17_nested_operation_not_refused) {
     CHECK_EQ(r.m->keyEvents().size(), std::size_t(2));
 }
 
-TEST(ec6_request_answered_while_busy) {
+TEST(request_answered_while_busy) {
     Rig r;
     r.build();
     r.part.operation = runningFor(200'000);
@@ -257,7 +257,7 @@ TEST(ec6_request_answered_while_busy) {
     CHECK(r.session->busy());
 }
 
-TEST(ac18_end_busy_reply_notice_start_afresh) {
+TEST(end_busy_reply_notice_start_afresh) {
     Rig r;
     r.build();
     r.part.operation = runningFor(50'000);
@@ -278,7 +278,7 @@ TEST(ac18_end_busy_reply_notice_start_afresh) {
     CHECK_EQ(r.session->machineSession().freshStarts(), fresh + 2);
 }
 
-TEST(ec3_failure_halfway_then_commands_accepted) {
+TEST(failure_halfway_then_commands_accepted) {
     Rig r;
     r.build();
     r.part.operation = [](OperationContext& c) { return failingHalfway(c, true); };
@@ -303,7 +303,7 @@ TEST(ec3_failure_halfway_then_commands_accepted) {
     CHECK_EQ(r.fe.reply(none)->reason, std::string(kNoMachine));
 }
 
-TEST(ac19_one_go_equals_parts) {
+TEST(one_go_equals_parts) {
     RigOptions virt;
     virt.hosting = Hosting::VirtualTime;
     Rig oneGo(virt);
@@ -342,8 +342,8 @@ TEST(ac19_one_go_equals_parts) {
     CHECK(da && db && sameDisplay(da->output, db->output));
 }
 
-// LIB-6 D-17: OperationContext::hostWait, the one wall time of an operation
-// (a preset's `wait:` while the machine is paused, LIB-6 AC-19).
+// OperationContext::hostWait, the one wall time of an operation
+// (a preset's `wait:` while the machine is paused).
 namespace {
 Task<OperationResult> waitInHostTime(OperationContext& c, WallTime d, bool* waited) {
     *waited = co_await c.hostWait(d);
@@ -384,7 +384,7 @@ TEST(host_wait_ends_at_once_in_virtual_time) {
     CHECK(r.fe.reply(id) && r.fe.reply(id)->done);
 }
 
-// LIB-13 L2 (LIB-13 design §3.6): the payload of an operation's result in its
+// The payload of an operation's result in its
 // reply, and an operation a part starts without a command.
 namespace {
 Task<OperationResult> withPayload(OperationContext& c, bool ok) {

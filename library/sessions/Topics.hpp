@@ -3,8 +3,7 @@
 #include <optional>
 #include <vector>
 
-// Topics (LIB-3 design §3.3; spec AC-5, AC-6, AC-7, EC-1, EC-2, OQ-3, OQ-5).
-// set(), append() and reset() only store; the app session flushes at the end
+// Topics. set(), append() and reset() only store; the app session flushes at the end
 // of each host call, command and service answer.
 
 namespace calcu::sessions {
@@ -17,8 +16,8 @@ public:
     const PayloadPtr& lastSent() const { return sent_; }
     const PayloadPtr& current() const { return current_; }
     // The message of a flush: the stored state when it is not equal to the
-    // last one sent (AC-5); several sets send the last (EC-1), a change back
-    // sends nothing (EC-2).
+    // last one sent; several sets send the last, a change back sends
+    // nothing.
     std::optional<StateMessage> flush();
 
 private:
@@ -27,7 +26,8 @@ private:
     bool dirty_ = false;   // set() since the last flush: no comparison otherwise
 };
 
-enum class History { None, SinceReset };   // notices: None; log, paper: SinceReset (spec OQ-5)
+// Notices: None (a notice is about the moment); log, paper: SinceReset.
+enum class History { None, SinceReset };
 
 class StreamTopic {
 public:
@@ -37,10 +37,10 @@ public:
     void append(PayloadPtr item);
     void reset();
     // What was appended since the last flush, in order, with the reset marker
-    // when the stream started over in between (AC-7).
+    // when the stream started over in between.
     std::optional<StreamMessage> flush();
     // For a listener that starts late: everything since the last reset, with
-    // the reset marker; nothing for History::None (spec OQ-5).
+    // the reset marker; nothing for History::None.
     std::optional<StreamMessage> replay() const;
 
 private:

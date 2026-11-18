@@ -11,8 +11,7 @@
 #include <utility>
 #include <vector>
 
-// The display as text (LIB-11 design §3.5; spec AC-10) and as the machine
-// gives it (AC-23).
+// The display as text and as the machine gives it.
 // - readDotMatrix follows Calc-U-1600's parseLcdText without any model in
 //   it. Per cell: all dots off gives a blank, an exact glyph its text, an
 //   inverted glyph its text, anything else U+FFFD, counted in notText. The
@@ -63,11 +62,11 @@ DisplayText readSegments(const machine::SegmentFrame&, const machine::SegmentLay
 std::vector<std::pair<std::string, std::optional<Decimal>>> indicatorsOn(std::span<const machine::IndicatorOutput>,
                                                                          const std::vector<machine::IndicatorDef>&);
 
-// The lines of `display-text` (AC-10) and its JSON result.
+// The lines of `display-text` and its JSON result.
 std::vector<std::string> displayTextLines(const DisplayText&);
 Value displayTextValue(const DisplayText&);
 
-// The lines of `display` (AC-23) and its JSON result: the raw output.
+// The lines of `display` and its JSON result: the raw output.
 std::vector<std::string> displayLines(const machine::DisplayOutput&, const machine::DisplayDescriptor&);
 Value displayValue(const machine::DisplayOutput&, const machine::DisplayDescriptor&);
 

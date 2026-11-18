@@ -12,11 +12,11 @@ MachineSession::MachineSession(pacing::WallClock clock, std::optional<std::uint3
 
 void MachineSession::setMachine(std::unique_ptr<machine::Machine> m, const pacing::PacingProfile& profile,
                                 int soundRate) {
-    aboutToChange();   // LIB-7 AC-13: the old machine is still there
+    aboutToChange();   // the old machine is still there
     machine_ = std::move(m);
     soundRate_ = machine_ ? soundRate : 0;
     ++generation_;
-    paused_ = false;   // LIB-10 AC-15: a new machine is not paused
+    paused_ = false;   // a new machine is not paused
     if (machine_) {
         pacer_.setMachine(profile, machine_->descriptor().tickRate);   // starts afresh
         ++fresh_;

@@ -16,14 +16,13 @@
 #include <string_view>
 #include <vector>
 
-// One run of the harness (LIB-11 design §3.4, §3.8; spec AC-2, AC-3, AC-6,
-// AC-8, AC-21): its folders and settings (RunSetup) and its session and
+// One run of the harness: its folders and settings (RunSetup) and its session and
 // commands (Server). The serve loop works on a line reader and a writer;
 // no stdio inside (the CLI's main() hands them in).
 
 namespace calcu::harness {
 
-// A local date and time, in no time zone (AC-21; D-4).
+// A local date and time, in no time zone.
 struct LocalDateTime {
     int year = 2000, month = 1, day = 1, hour = 0, minute = 0, second = 0;
     bool operator==(const LocalDateTime&) const = default;
@@ -36,19 +35,19 @@ std::chrono::system_clock::time_point localInstant(const LocalDateTime& t);
 enum class ClockMode { Fixed, Given, Host };
 
 struct RunOptions {
-    bool json = false;                          // AC-4
-    std::optional<std::string> settingsFile;    // AC-8: open it; else defaults, nothing read or written
-    std::optional<std::string> saveFolder;      // AC-8: else an empty one made for the run
-    std::optional<std::string> outputFolder;    // AC-8: traces and screenshots; else the save folder
-    ClockMode clock = ClockMode::Fixed;         // AC-21: 2000-01-01T00:00:00 unless named
+    bool json = false;                          // --json
+    std::optional<std::string> settingsFile;    // open it; else defaults, nothing read or written
+    std::optional<std::string> saveFolder;      // else an empty one made for the run
+    std::optional<std::string> outputFolder;    // traces and screenshots; else the save folder
+    ClockMode clock = ClockMode::Fixed;         // 2000-01-01T00:00:00 unless named
     LocalDateTime given;                        // ClockMode::Given
 };
 
-// The run folder, the settings and the clock (AC-8, AC-21).
+// The run folder, the settings and the clock.
 class RunSetup {
 public:
     static std::unique_ptr<RunSetup> make(const RunOptions&, const settings::ProductDecl&, std::string* error);
-    ~RunSetup();   // removes the run folder (AC-8)
+    ~RunSetup();   // removes the run folder
     RunSetup(const RunSetup&) = delete;
     RunSetup& operator=(const RunSetup&) = delete;
 
@@ -58,16 +57,16 @@ public:
     const std::string& screenshotFolder() const { return outputFolder_; }
     const std::string& runFolder() const { return runFolder_; }
     const settings::SettingsFile& settings() const { return *settings_; }
-    settings::SettingsFile& settings() { return *settings_; }   // LIB-18 AC-9 writes last-model
+    settings::SettingsFile& settings() { return *settings_; }   // the startup part writes last-model
     // The host folders a feature hands to settings::Paths: the save folder,
-    // the output folder for traces and screenshots (AC-8), the rest inside the
-    // run folder, so nothing of the user's is reached (LIB-9 AC-18; D-11;
-    // FrontendKind::Given), and the places on them and the run's settings.
+    // the output folder for traces and screenshots, the rest inside the
+    // run folder, so nothing of the user's is reached
+    // (FrontendKind::Given), and the places on them and the run's settings.
     const settings::HostDirs& hostDirs() const { return dirs_; }
     const settings::Paths& paths() const { return *paths_; }
     std::function<std::chrono::system_clock::time_point()> hostTime() const;
     // The text with the save folder's path written `<save folder>`, and the
-    // run folder's `<run folder>` (AC-8: the path appears in no reply).
+    // run folder's `<run folder>` (the path appears in no reply).
     std::string scrub(std::string) const;
 
 private:
@@ -80,12 +79,12 @@ private:
 };
 
 // What carries the session's machine state for state-save and
-// state-restore (AC-24): a session part with the commands of the kind.
+// state-restore: a session part with the commands of the kind.
 class MachineStatePart;
 
 class Server {
 public:
-    // EC-1: the ROM full set; then LIB-18's start (`start`, the startup
+    // The ROM full set; then the startup part's start (`start`, the startup
     // model under the run's settings, to key readiness). Null with `error` set.
     static std::unique_ptr<Server> start(HarnessProduct&, const RunOptions&, std::string* error);
     ~Server();
@@ -99,11 +98,11 @@ public:
     };
     // One line: its reply (an empty line gets none).
     Result line(std::string_view);
-    // AC-3, EC-3: one reply per line until `quit` or the end of the input.
+    // One reply per line until `quit` or the end of the input.
     // Returns the exit status (0).
     int serve(const std::function<std::optional<std::string>()>& readLine,
               const std::function<void(const std::string&)>& write);
-    // C1600-3 AC-22 (design §3.5): `serve` with a product's add-ons started
+    // `serve` with a product's add-ons started
     // (with serveLoop()): standard input is read by a thread of its own; its
     // lines and the add-ons' tasks are taken in order on this thread; while
     // none waits and an add-on wants time, emulated time passes unpaced in
@@ -112,15 +111,15 @@ public:
                   const std::function<void(const std::string&)>& write);
     // What an add-on gets at its start: the loop's inbox and its end.
     ServeLoop serveLoop();
-    // AC-2: the lines in order until the first refusal; 0 or 1.
+    // The lines in order until the first refusal; 0 or 1.
     int oneShot(const std::vector<std::string>& lines, const std::function<void(const std::string&)>& write);
-    // Completes the files of the run and removes the run folder (EC-3, AC-8).
+    // Completes the files of the run and removes the run folder.
     void finish();
 
     HarnessHost& host() { return *host_; }
     RunSetup& setup() { return *setup_; }
     CommandRegistry& commands() { return registry_; }
-    // How often the harness's wall clock was read for a deadline (AC-6):
+    // How often the harness's wall clock was read for a deadline:
     // it returns 0 every time, so nothing is paced by it.
     int wallClockReads() const { return *clockReads_; }
 
@@ -138,7 +137,7 @@ private:
     std::shared_ptr<Inbox> inbox_;
 };
 
-// The products of a build matched by name or product word, any case (AC-1).
+// The products of a build matched by name or product word, any case.
 HarnessProduct* findProduct(const std::vector<std::unique_ptr<HarnessProduct>>&, std::string_view name);
 
 } // namespace calcu::harness

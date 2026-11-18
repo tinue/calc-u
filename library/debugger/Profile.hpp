@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-// The profile of AC-20 (`profile on|off|report`; LIB-10 design §2): while on,
+// The profile (`profile on|off|report`): while on,
 // how often each address of each target was carried out.
 
 namespace calcu::debugger {

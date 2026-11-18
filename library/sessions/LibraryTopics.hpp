@@ -9,8 +9,7 @@
 #include <string>
 #include <vector>
 
-// This feature's topics, commands and requests and their payloads (LIB-3
-// design §3.4; spec AC-9 to AC-11, AC-21, AC-24, AC-39).
+// The session's own topics, commands and requests and their payloads.
 
 namespace calcu::sessions {
 
@@ -24,7 +23,7 @@ inline const CommandName kContinueCommand{"continue"};
 inline const CommandName kSpeedCommand{"speed"};     // {full: bool}
 inline const CommandName kKeyDownCommand{"key-down"};   // {key: string}
 inline const CommandName kKeyUpCommand{"key-up"};
-// What a host sends to start the product (the Web shell, LIB-15 N3; {model?,
+// What a host sends to start the product (the Web shell; {model?,
 // preset?}); the product's part handles it, the library does not.
 inline const CommandName kStartCommand{"start"};
 
@@ -32,7 +31,7 @@ inline const RequestName kTicksRequest{"ticks"};
 inline const RequestName kCapabilitiesRequest{"capabilities"};
 inline const RequestName kTopicsRequest{"topics"};
 
-// The sentences of design D-7.
+// The fixed English sentences of the session's refusals and notices.
 inline constexpr const char* kAnotherOperationRuns = "Another operation is running.";
 inline constexpr const char* kStopped = "Stopped.";
 inline constexpr const char* kNoMachine = "No machine is running.";
@@ -47,8 +46,8 @@ struct DisplayState final : PayloadOf<DisplayState> {
     Value toValue() const override;
 };
 
-// Whether an operation runs, and the speed now, with or without one (AC-9,
-// AC-14; spec OQ-8).
+// Whether an operation runs, and the speed now, with or without one. Full
+// speed and a playback (an operation) are both told here.
 struct BusyState final : PayloadOf<BusyState> {
     static constexpr PayloadKind kKind{"busy"};
     BusyState(bool runs, pacing::Speed s) : operationRuns(runs), speed(s) {}
@@ -58,7 +57,7 @@ struct BusyState final : PayloadOf<BusyState> {
     Value toValue() const override;
 };
 
-struct Notice final : PayloadOf<Notice> {   // AC-10: an English sentence for the user
+struct Notice final : PayloadOf<Notice> {   // an English sentence for the user
     static constexpr PayloadKind kKind{"notice"};
     explicit Notice(std::string s) : sentence(std::move(s)) {}
     std::string sentence;
@@ -66,7 +65,7 @@ struct Notice final : PayloadOf<Notice> {   // AC-10: an English sentence for th
     Value toValue() const override;
 };
 
-struct LogLine final : PayloadOf<LogLine> {   // AC-11
+struct LogLine final : PayloadOf<LogLine> {
     static constexpr PayloadKind kKind{"log-line"};
     explicit LogLine(std::string t) : text(std::move(t)) {}
     std::string text;
@@ -74,7 +73,7 @@ struct LogLine final : PayloadOf<LogLine> {   // AC-11
     Value toValue() const override;
 };
 
-struct EmulatedTimeReply final : PayloadOf<EmulatedTimeReply> {   // AC-39
+struct EmulatedTimeReply final : PayloadOf<EmulatedTimeReply> {
     static constexpr PayloadKind kKind{"emulated-time"};
     EmulatedTimeReply(machine::Ticks t, double s) : ticks(t), seconds(s) {}
     machine::Ticks ticks;
@@ -83,7 +82,7 @@ struct EmulatedTimeReply final : PayloadOf<EmulatedTimeReply> {   // AC-39
     Value toValue() const override;
 };
 
-struct MachineOffer final : PayloadOf<MachineOffer> {   // AC-39: what the machine offers now
+struct MachineOffer final : PayloadOf<MachineOffer> {   // what the machine offers now
     static constexpr PayloadKind kKind{"machine-offer"};
     std::vector<machine::CapabilityEntry> capabilities;
     machine::Plugged plugged;
@@ -96,7 +95,7 @@ struct TopicEntry {
     TopicName name;
     bool stream;
 };
-struct TopicList final : PayloadOf<TopicList> {   // every declared topic, in declaration order (A-8)
+struct TopicList final : PayloadOf<TopicList> {   // every declared topic, in declaration order, before one is sent
     static constexpr PayloadKind kKind{"topic-list"};
     std::vector<TopicEntry> topics;
     bool same(const TopicList& o) const { return toValue() == o.toValue(); }

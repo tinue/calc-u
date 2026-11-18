@@ -7,13 +7,12 @@
 #include <variant>
 #include <vector>
 
-// Key names to presses (LIB-5 AC-15, D-9; LIB-6 AC-28; LIB-11's key-down):
-// once for the `key` command, the `key:` step and the harness. Part D
-// simplification P-6. Each caller words its own refusal.
+// Key names to presses, once for the `key` command, the `key:` step and the
+// harness's key-down. Each caller words its own refusal.
 
 namespace calcu::typing {
 
-// The key a name stands for without a profile (D-9): the key ID, then an ID
+// The key a name stands for without a profile: the key ID, then an ID
 // in any case, then another spelling of a key in any case; nullptr when none.
 const machine::KeyDescriptor* keyNamed(const machine::MachineDescriptor&, std::string_view name);
 
@@ -23,13 +22,13 @@ std::optional<std::vector<Press>> pressesOfName(const TypingProfile*, const mach
                                                 std::string_view name);
 
 // Why a list of names gives no presses: `name` is no key, or (together) the
-// profile's `names` refuses the names as a whole (AC-26; `name` the first).
+// profile's `names` refuses the names as a whole (`name` the first).
 struct KeyNamesRefused {
     std::string name;
     bool together = false;
 };
 // The presses of the names, name by name, then by the profile's `names` when
-// it has one (AC-15: all or nothing).
+// it has one (all or nothing).
 std::variant<std::vector<Press>, KeyNamesRefused> pressesOfNames(const TypingProfile*, const machine::MachineDescriptor&,
                                                                  const std::vector<std::string>& names);
 

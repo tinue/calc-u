@@ -11,12 +11,11 @@
 #include <string_view>
 #include <vector>
 
-// Typing in the app session (LIB-5 design §3.5; spec AC-15 to AC-19, AC-38,
-// AC-39): the session part that holds the typing engine, adds it as a hook
+// Typing in the app session: the session part that holds the typing engine, adds it as a hook
 // of the machine session, declares the commands, the topic `held-keys` and
 // the request `typing` (TypingTopics.hpp), and sets the product's profile
 // and map for each machine. It goes before the product's part in the
-// session's parts (LIB-3 AC-12).
+// session's parts.
 
 namespace calcu::typing {
 
@@ -25,7 +24,7 @@ class TypingProduct {
 public:
     virtual const TypingProfile* profile(const machine::ModelId&) const = 0;
     virtual const KeyboardMap* keyboardMap(const machine::ModelId&) const = 0;   // nullptr: no host keys
-    // D-8: the product's models type text (`type` is declared).
+    // The product's models type text (`type` is declared).
     virtual bool typesText() const = 0;
 
 protected:
@@ -40,8 +39,8 @@ public:
 
     TypingEngine& engine() { return engine_; }
     const TypingEngine& engine() const { return engine_; }
-    // The product's profiles, for a model before its machine is built (LIB-6:
-    // `key` and `type` are checked when a preset is read).
+    // The product's profiles, for a model before its machine is built (a
+    // preset's `key` and `type` are checked when the preset is read).
     const TypingProduct& product() const { return product_; }
 
     // SessionPart
@@ -63,7 +62,7 @@ private:
     // The machine generation the engine was last set to: a second
     // machineChanged for the same machine (a session in virtual time tells
     // the parts after an operation that built it, when the engine has
-    // followed it already) keeps what is typed (C1600-3: the DAP's set-up).
+    // followed it already) keeps what is typed (the DAP's set-up).
     std::optional<std::uint64_t> engineGeneration_;
     sessions::StateTopic* held_ = nullptr;
     std::map<Token, sessions::CallId> calls_;

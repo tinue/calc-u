@@ -1,4 +1,4 @@
-// LIB-3 L6: the library's own topics (AC-9, AC-10, AC-11).
+// The library's own topics.
 #include "TestHarness.hpp"
 #include "TestParts.hpp"
 
@@ -14,7 +14,7 @@ Task<OperationResult> logging(OperationContext& c) {
 }
 } // namespace
 
-TEST(ac9_display_busy_notices_log_and_their_shapes) {
+TEST(display_busy_notices_log_and_their_shapes) {
     Rig r;
     const auto* list = payloadAs<TopicList>(r.fe.reply(r.ask("topics"))->result);
     CHECK(list && list->topics.size() >= 4);
@@ -37,7 +37,7 @@ TEST(ac9_display_busy_notices_log_and_their_shapes) {
     CHECK(v.find("frame") && *v.find("frame")->find("kind")->string() == "dots");
 }
 
-TEST(ac10_notice_is_the_sentence_as_written) {
+TEST(notice_is_the_sentence_as_written) {
     Rig r;
     const std::string sentence = "The card could not be read: the file is empty.";
     r.send("tp.notice", Value::object({{"text", sentence}}));
@@ -48,7 +48,7 @@ TEST(ac10_notice_is_the_sentence_as_written) {
     CHECK(late.noticeSentences().empty());
 }
 
-TEST(ac11_log_lines_from_library_and_product_part) {
+TEST(log_lines_from_library_and_product_part) {
     Rig r;
     r.build();
     r.part.operation = [](OperationContext& c) { return logging(c); };

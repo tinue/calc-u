@@ -10,22 +10,22 @@
 #include <string>
 #include <vector>
 
-// Building a machine (LIB-1 design §3.8; AC-5, AC-6, EC-1).
+// Building a machine.
 
 namespace calcu::machine {
 
-// RomImage and PeripheralRequest: Attach.hpp (LIB-2).
+// RomImage and PeripheralRequest: Attach.hpp.
 struct BuildRequest {
     ModelId model;
     std::optional<VariantId> variant;          // std::nullopt: the default (or none)
     std::vector<RomImage> roms;
     std::vector<PeripheralRequest> peripherals;
-    int soundRate = 0;                         // samples per second of takeSound() (AC-19)
-    std::shared_ptr<const ProductData> content;   // handed in at build (AC-6)
+    int soundRate = 0;                         // samples per second of takeSound()
+    std::shared_ptr<const ProductData> content;   // handed in at build
 };
 struct BuildResult {
     std::unique_ptr<Machine> machine;          // null when nothing was built
-    std::vector<std::string> missingRoms;      // the files not handed in (EC-1)
+    std::vector<std::string> missingRoms;      // the files not handed in
     std::string refusal;                       // why nothing was built, otherwise
 };
 

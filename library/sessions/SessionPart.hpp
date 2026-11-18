@@ -11,8 +11,7 @@
 #include <string>
 #include <variant>
 
-// Session parts (LIB-3 design §3.8; docs/contracts/README.md L-1; spec AC-12,
-// FE-6): what a library feature or a product's app layer plugs into the app
+// Session parts: what a library feature or a product's app layer plugs into the app
 // session. A product's names carry its prefix ("c59.", "c1600."); the
 // library carries its topics, commands and requests without reading them.
 
@@ -21,17 +20,16 @@ namespace calcu::sessions {
 class MachineSession;
 
 struct Done { PayloadPtr result; };
-struct Refused { std::string reason; };   // a refused command changes nothing (AC-13)
-struct StartOperation { Operation op; };  // refused while another runs (AC-16)
+struct Refused { std::string reason; };   // a refused command changes nothing
+struct StartOperation { Operation op; };  // refused while another runs
 // The reply comes later, through SessionContext::reply(currentCall(), …),
-// once; the session is not busy meanwhile (LIB-5 design §3.5, D-4: `key`
-// and `type`; LIB-10's `pause` and `step` from M-40).
+// once; the session is not busy meanwhile (the typing's `key` and `type`,
+// the debugger's `pause` and `step`).
 struct Deferred {};
 using CommandOutcome = std::variant<Done, Refused, StartOperation, Deferred>;
 
-// A restart of the machine that is running (LIB-10 design §3.11; LIB-18
-// §3.4): told after Machine::reset() or coldBoot(), before the run to key
-// readiness. A new machine is machineChanged, not a restart.
+// A restart of the machine that is running: told after Machine::reset() or
+// coldBoot(), before the run to key readiness. A new machine is machineChanged, not a restart.
 enum class Restart { Reset, ColdBoot };
 
 // What parts, handlers and operations see, on the session's thread.
@@ -39,42 +37,40 @@ class SessionContext {
 public:
     virtual MachineSession& machineSession() = 0;
     virtual machine::Machine* machine() = 0;
-    virtual void notice(std::string sentence) = 0;   // AC-10
-    virtual void log(std::string line) = 0;          // AC-11
+    virtual void notice(std::string sentence) = 0;
+    virtual void log(std::string line) = 0;
     virtual bool busy() const = 0;                    // an operation runs
-    virtual bool hostOffers(HostService) const = 0;   // AC-26
-    // AC-27: asks the first listener that offers the service; `then` runs
+    virtual bool hostOffers(HostService) const = 0;
+    // Asks the first listener that offers the service; `then` runs
     // when the answer arrives. std::nullopt: nobody offers it, nothing asked.
     virtual std::optional<CallId> askHost(HostService, Value args, std::function<void(const ServiceAnswer&)> then) = 0;
-    virtual std::chrono::system_clock::time_point hostTime() const = 0;   // A-7
-    // The speed outside an operation, as the `speed` command sets it (AC-21).
-    // A part sets it for a speed its product asks for itself (Calc-U-59's
-    // KEYSTROKES FullSpeed:, until LIB-6 59); like the command, it changes
-    // nothing while an operation runs (D-6).
+    virtual std::chrono::system_clock::time_point hostTime() const = 0;   // local time; a fixed instant in the harness
+    // The speed outside an operation, as the `speed` command sets it.
+    // A part sets it for a speed its product asks for itself (a preset or a
+    // start that ends at regular speed); like the command, it changes
+    // nothing while an operation runs.
     virtual pacing::Speed commandedSpeed() const = 0;
     virtual void setCommandedSpeed(pacing::Speed) = 0;
     // The display as the `display` topic holds it now (read in this host
     // call before afterCall), or nullptr: for a part that sends the display
-    // in a product's own form (Calc-U-1600's Web page, M-31). Nobody else
-    // reads the machine's display (LIB-1 §3.5: one reader).
+    // in a product's own form (Calc-U-1600's Web page). Nobody else
+    // reads the machine's display: it has one reader.
     virtual const machine::DisplayOutput* display() const { return nullptr; }
-    // A deferred reply (LIB-5 §3.5): the call of the command whose handler
+    // A deferred reply: the call of the command whose handler
     // runs now (0 outside one), and its reply later, once; a second reply,
     // or one to a call that did not defer, is ignored.
     virtual CallId currentCall() const { return 0; }
     virtual void reply(CallId, ReplyMessage) {}
     // The session's wall clock now, and whether the session is hosted in
-    // virtual time (the harness: no wall clock); OperationContext::hostWait
-    // (LIB-6 D-17).
+    // virtual time (the harness: no wall clock); OperationContext::hostWait.
     virtual pacing::WallTime wallTime() const { return pacing::WallTime{0}; }
     virtual bool virtualTime() const { return true; }
-    // LIB-10 §3.11: SessionPart::machineRestarted on every part, in the
-    // order of the parts (LIB-18's MachineControl calls it).
+    // SessionPart::machineRestarted on every part, in the order of the parts
+    // (the startup's MachineControl calls it).
     virtual void tellRestarted(Restart) {}
-    // An operation started by a part, not by a command (LIB-13 design §3.6:
-    // a file kept for later, opened in afterCall). False, and nothing
-    // started, while one runs (AC-16). Its end sends no reply; a failure is a
-    // notice (AC-18).
+    // An operation started by a part, not by a command (a file kept for later, opened in afterCall). False, and nothing
+    // started, while one runs. Its end sends no reply; a failure is a
+    // notice.
     virtual bool startOperation(Operation) { return false; }
 
 protected:
@@ -93,10 +89,9 @@ public:
     virtual StateTopic& stateTopic(TopicName) = 0;
     virtual StreamTopic& streamTopic(TopicName, History) = 0;
     // endsRunningOperation: when its handler starts an operation, the
-    // command first stops a running one (Reset, Cold boot, a model switch;
-    // LIB-18 AC-16, D-6); a handler that gives Done or Refused stops nothing.
+    // command first stops a running one (Reset, Cold boot, a model switch); a handler that gives Done or Refused stops nothing.
     // A name has one owner: declaring it a second time throws
-    // std::logic_error (Part E simplification E-3).
+    // std::logic_error.
     virtual void command(CommandName, Handler, bool endsRunningOperation = false) = 0;
     virtual void request(RequestName, RequestHandler) = 0;
 
@@ -115,18 +110,18 @@ public:
     // At the start of every flush (the end of every host call, command,
     // request and service answer, of advanceUnpaced and of listen), after the
     // parts' afterCall, on the session's thread: a state computed from the
-    // whole session, set on its topic here (LIB-4's control state, LIB-4
-    // design §3.5). It sets topics only and calls nothing of the session.
+    // whole session, set on its topic here (the control part's state). It sets topics
+    // only and calls nothing of the session.
     virtual void beforeFlush(SessionContext&) {}
     virtual void machineChanged(SessionContext&) {}
-    // The machine was reset or cold booted (LIB-10 §3.11: the run control's
-    // restart rules, G9, G10).
+    // The machine was reset or cold booted (the debugger's run control has
+    // restart rules).
     virtual void machineRestarted(SessionContext&, Restart) {}
-    // An operation ended or was stopped (AC-18); e.g. LIB-2's real-time
-    // clocks set from the host (LIB-2 AC-23).
+    // An operation ended or was stopped; e.g. the real-time clocks are
+    // set from the host time.
     virtual void operationEnded(SessionContext&) {}
     virtual void suspending(SessionContext&) {}
-    // LIB-7 AC-13 (LIB-7 design §3.12; LIB-18 §8): before an operation's
+    // Before an operation's
     // first step; before the machine or a peripheral of it changes (a build,
     // an attach, detach or replace, MachineSession::aboutToChange); and when
     // the product quits or the window closes (AppSession::close(), which the

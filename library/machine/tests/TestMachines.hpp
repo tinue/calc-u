@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-// The machines built for the tests (LIB-1 design §6, T4; AC-24): a test
+// The machines built for the tests: a test
 // catalogue with two models at different tick rates and two peripherals, its
 // builder, and a product kind. Library tests use these, never product code.
 //
@@ -28,10 +28,10 @@
 //             a square-wave sound derived from the tick count, variants V1
 //             (default) and V2; the key `off` switches the display off and
 //             `on` on; instructions of 4 ticks; an inner block on a clock of
-//             3/8 of the tick, converted inside the machine (EC-7).
+//             3/8 of the tick, converted inside the machine.
 //   Both      a start-up of 50 ticks before key readiness after a build,
 //             reset, power cycle and cold boot.
-//   test-seg  build option TestSegTiming (LIB-17, M-21; LIB-1 D-8): every
+//   test-seg  build option TestSegTiming: every
 //             instruction of a fixed length, and a loop of a settable number
 //             of instructions whose position loopPosition() reports.
 //   test-printer  fits test.bus, test.chain and test.jack; the switches
@@ -40,7 +40,7 @@
 //             "test.counter".
 //   test-module   fits test.slot, test.bus and test.card; variants 4k
 //             (default) and 8k, each with a ROM entry.
-// For LIB-2 (design §6, T2):
+// For the attach tests:
 //   test-dot  also a chain connector `chain` (pin-out test.chain, contact
 //             level, Takes::Chain, PowerCycle; places a, b, one each), a
 //             module connector `card` (test.card, functional, Takes::One,
@@ -49,23 +49,23 @@
 //             year. Switched off by the key `off`, it answers Nothing.
 //   test-hub  fits test.chain; offers the place `jack` (connector jack,
 //             pin-out test.jack, functional, Takes::Chain, Nothing; two at
-//             once); from LIB-4 (M-37) the holding media place `hub-disk`
-//             (kind test-disk, side 0), listed with the hub as owner (EC-4).
+//             once); the holding media place `hub-disk`
+//             (kind test-disk, side 0), listed with the hub as owner.
 //   test-uart fits test.bus and test.chain; a serial port that sends one
 //             byte (0, 1, 2, ...) every 10 ms of emulated time and keeps what
 //             it receives.
-//   Every plugged peripheral counts the operations it was told of (AC-10).
+//   Every plugged peripheral counts the operations it was told of.
 //   A product rule: the test printer and the test UART are not used
-//   together (the library form of LIB-2 AC-29).
-// For LIB-11 (design T18): with offerState(true) a machine offers the
+//   together.
+// For the harness tests: with offerState(true) a machine offers the
 //   generic kind machine state (`cpu/machine-state` or `main/machine-state`),
 //   off by default so that the other areas' lists stay as they are.
-// For LIB-6 (design D-25): test-seg with the build option TestSegProgram
+// For the preset tests: test-seg with the build option TestSegProgram
 //   (or setProgram()): the key `1` starts a "program" of a settable number
 //   of ticks during which isKeyReady() is false, the key `0` during it stops
 //   it; and a product kind "test.memory" (64 bytes, zero after a cold boot)
 //   that a preset's test section writes. Off by default.
-// For LIB-8 (design §6, "Test printers"), in a catalogue of their own,
+// For the paper tests, in a catalogue of their own,
 //   paperTestCatalogue() (the test catalogue plus these two), so that the
 //   lists other areas' tests check stay as they are:
 //   test-dotter  name TD-20; fits test.bus and test.chain; dots and a text
@@ -76,7 +76,7 @@
 //             padded to 8 characters at (2, top), then 5 dot rows, one per
 //             20 ticks, a fixed pattern per character; a line takes 7
 //             units. `feed`: 4 units and an empty text line. A detach in a
-//             line ends it there, its last row with darkness 0 (EC-7).
+//             line ends it there, its last row with darkness 0.
 //   test-plotter  name TP-4; fits test.bus; pen strokes in four colours, no
 //             text layer (unit 1/10 mm, width 600, printable 50..550, stroke
 //             width 3, 254 dpi); keys `feed` (20 units) and `back` (feeds
@@ -84,13 +84,13 @@
 //             pressed on the machine draws one stroke through four
 //             positions, one per 10 ticks, from (100 + 50k, standing), in
 //             colour k mod 4 (black, blue, green, red).
-// For LIB-10 (design §6): with the build option TestProgram (or
+// For the debugger tests: with the build option TestProgram (or
 //   enableCpu()) the test processor of TestCpu.hpp runs the instructions,
 //   one per instruction of the model's timing: test-seg's target
 //   `test-cpu`, test-dot's `main` and `inner` by turns. debugging() is
 //   nullptr without it, so the other areas' tests stay as they are.
 
-// For LIB-7 (design §2, §6), switched on by TestBuilder::media (off by
+// For the media tests, switched on by TestBuilder::media (off by
 //   default, so that the other areas' capability lists stay as they are):
 //   each media place of a descriptor offers a MediaPlace (test-seg `reader`:
 //   pass-through, sides 0 and 1; test-dot `drive` and test-hub `hub-disk`:
@@ -113,11 +113,11 @@ inline const PeripheralId kPrinter{"test-printer"};
 inline const PeripheralId kModule{"test-module"};
 inline const PeripheralId kHub{"test-hub"};
 inline const PeripheralId kUart{"test-uart"};
-inline const PeripheralId kDotter{"test-dotter"};     // LIB-8: TD-20
-inline const PeripheralId kPlotter{"test-plotter"};   // LIB-8: TP-4
-inline const PeripheralId kMemoryModule{"test-memory-module"};   // LIB-7
-inline const PeripheralId kRomModule{"test-rom-module"};         // LIB-7: not a medium
-inline constexpr Ticks kPassTicks = 200;                          // LIB-7: a card passes the reader
+inline const PeripheralId kDotter{"test-dotter"};     // TD-20
+inline const PeripheralId kPlotter{"test-plotter"};   // TP-4
+inline const PeripheralId kMemoryModule{"test-memory-module"};
+inline const PeripheralId kRomModule{"test-rom-module"};         // not a medium
+inline constexpr Ticks kPassTicks = 200;                          // a card passes the reader
 inline const char* const kTogether = "The test printer and the test UART cannot be used together.";
 
 // The product kind of the tests: the instructions run while the printer is
@@ -129,7 +129,7 @@ public:
     std::uint64_t count = 0;
 };
 
-// Stands in for a generic kind (the library defines none in M-18): the
+// Stands in for a generic kind: the
 // instructions a component has run.
 class TestGeneric : public Capability {
 public:
@@ -138,19 +138,19 @@ public:
     std::uint64_t instructions = 0;
 };
 
-// A module definition as a product would read it (ProductData, §3.9).
+// A module definition as a product would read it (ProductData).
 struct TestModuleDefinition : ProductData {
     explicit TestModuleDefinition(std::string t) : text(std::move(t)) {}
     std::string text;
 };
 
-// LIB-7: the content of a medium of the test kinds (media/tests/TestKinds.hpp).
+// The content of a medium of the test kinds (media/tests/TestKinds.hpp).
 struct TestMediumContent : ProductData {
     explicit TestMediumContent(std::string b) : bytes(std::move(b)) {}
     std::string bytes;
 };
 
-// LIB-7: a media place of a test machine.
+// A media place of a test machine.
 class TestMediaPlace final : public media::MediaPlace {
 public:
     explicit TestMediaPlace(MediaPlaceDescriptor d) : d_(std::move(d)) {}
@@ -174,7 +174,7 @@ public:
     }
 
     // Test hooks: the "ROM" writes (a holding place: at once; a pass-through
-    // place: `writeOnPass` as the medium passes); a write moment (D-11).
+    // place: `writeOnPass` as the medium passes); a write moment.
     bool write(std::string bytes);
     void requestWriteNow() { writeNow_ = true; }
     void advance(Ticks ran);
@@ -184,7 +184,7 @@ public:
     std::optional<std::string> writeOnPass;
     std::optional<std::string> refuse;   // insert refused with this reason
     bool holdsBack = false;              // a pass-through medium never passes
-    bool onlyWhenAsked = false;          // writesWhenAsked() (M-47: a tape)
+    bool onlyWhenAsked = false;          // writesWhenAsked(), as a tape does
     int inserts = 0;
 
 private:
@@ -197,7 +197,7 @@ private:
     bool writeNow_ = false;
 };
 
-// LIB-7: the module medium of test-memory-module.
+// The module medium of test-memory-module.
 class TestModuleMedium final : public media::ModuleMedium {
 public:
     TestModuleMedium(media::Content c, const peripherals::ControlTable* controls);
@@ -212,25 +212,25 @@ private:
     std::uint64_t revision_ = 0;
 };
 
-// The build option of test-seg for the pacing tests (LIB-1 D-8), handed in
+// The build option of test-seg for the pacing tests, handed in
 // as BuildRequest::content.
-// The build option of both models for LIB-18's tests (design §2): the
+// The build option of both models for the startup tests: the
 // start-up after a build, reset, power cycle and cold boot lasts `ticks`
-// instead of kStartUpTicks; kNever: the machine never reports key readiness
-// (EC-7). Handed in as BuildRequest::content.
+// instead of kStartUpTicks; kNever: the machine never reports key readiness.
+// Handed in as BuildRequest::content.
 struct TestStartUp : ProductData {
     static constexpr Ticks kNever = ~Ticks{0};
     explicit TestStartUp(Ticks t) : ticks(t) {}
     Ticks ticks;
 };
 
-// LIB-6's build option of test-seg (design D-25): a program of `length` ticks.
+// The preset tests' build option of test-seg: a program of `length` ticks.
 struct TestSegProgram : ProductData {
     explicit TestSegProgram(Ticks l) : length(l) {}
     Ticks length;
 };
 
-// The memory a preset's test section writes (LIB-6), a product kind.
+// The memory a preset's test section writes, a product kind.
 class TestMemory : public Capability {
 public:
     static constexpr KindId kKind{"test.memory"};
@@ -246,16 +246,16 @@ struct TestSegTiming : ProductData {
 
 Catalogue makeTestCatalogue();
 const Catalogue& testCatalogue();   // one shared copy; a test that adds to it makes its own
-// LIB-8: the test catalogue plus test-dotter and test-plotter.
+// The test catalogue plus test-dotter and test-plotter.
 Catalogue makePaperTestCatalogue();
 const Catalogue& paperTestCatalogue();
-// LIB-7: the test catalogue plus test-memory-module.
+// The test catalogue plus test-memory-module.
 Catalogue makeMediaTestCatalogue();
 const Catalogue& mediaTestCatalogue();
 paper::PaperDescription td20Description();
 paper::PaperDescription tp4Description();
 
-// LIB-8: the test printers' paper output (the behaviour above).
+// The test printers' paper output (the behaviour above).
 class TestPaperPrinter final : public paper::PaperOutputBase {
 public:
     TestPaperPrinter(bool plotter, const peripherals::ControlTable* controls);
@@ -264,7 +264,7 @@ public:
     void key(const KeyId&, std::size_t index);       // a key pressed on the machine
     void control(const ControlId&, bool on);         // a key or switch of its own
     void advance(Ticks ran);
-    void detaching();                                // EC-7
+    void detaching();                                // ends the line before it goes
     bool busy() const { return inLine_ || !queue_.empty(); }
 
 private:
@@ -293,12 +293,12 @@ PeripheralRequest peripheralAt(const Catalogue&, const std::string& place, const
 class TestBuilder : public MachineBuilder {
 public:
     BuildResult build(const BuildRequest&, const Catalogue&) override;
-    int builds = 0;   // the machines built (LIB-18 AC-5)
-    bool media = false;   // LIB-7: the machines offer their media places
+    int builds = 0;   // the machines built
+    bool media = false;   // the machines offer their media places
 };
 
 // The test UART: one byte every 10 ms of the emulated time since it was
-// plugged in, at the host's tick rate it learnt then (P-2).
+// plugged in, at the host's tick rate it learnt then.
 class TestUart {
 public:
     explicit TestUart(TickRate hostRate) : rate_(hostRate) {
@@ -315,7 +315,7 @@ private:
 };
 
 // The clock of test-dot: month, day, weekday, hour, minute and second, moved
-// by ticks only (AC-22); 30 days a month.
+// by ticks only; 30 days a month.
 class TestClock final : public peripherals::RealTimeClock {
 public:
     explicit TestClock(TickRate rate) : rate_(rate) {}
@@ -368,7 +368,7 @@ public:
     Capability* capability(const CapabilityId&) override;
     using Machine::capability;
     std::vector<DebugTargetId> debugTargets() const override { return desc_.debugTargets; }
-    Debugging* debugging() override { return cpu_.get(); }   // LIB-10: with TestProgram only
+    Debugging* debugging() override { return cpu_.get(); }   // with TestProgram only
     void enableCpu(const TestProgram& p) { cpu_ = std::make_unique<TestCpu>(desc_.debugTargets, p); }
     TestCpu* cpu() { return cpu_.get(); }
 
@@ -379,8 +379,8 @@ public:
     const std::vector<ControlEvent>& controlEvents() const { return controlEvents_; }
     TestUart* uartAt(const PlacePath&);
     const std::vector<RomImage>* romsAt(const PlacePath&) const;
-    TestPaperPrinter* printerAt(const PlacePath&);   // LIB-8
-    std::uint64_t operationsTold(const PlacePath&) const;   // AC-10
+    TestPaperPrinter* printerAt(const PlacePath&);
+    std::uint64_t operationsTold(const PlacePath&) const;
     TestClock* clock() { return clock_.get(); }
     int plugCalls = 0, unplugCalls = 0;
     const std::vector<KeyEvent>& keyEvents() const { return events_; }
@@ -389,16 +389,16 @@ public:
     std::uint64_t innerCycles() const { return innerCycles_; }
     void setTiming(std::shared_ptr<const TestSegTiming> t) { timing_ = std::move(t); }
     void setStartUp(Ticks t) { startUpTicks_ = t; }   // TestStartUp
-    // LIB-6 (TestSegProgram): the program of `length` ticks and the memory.
+    // TestSegProgram: the program of `length` ticks and the memory.
     void setProgram(Ticks length) { programLength_ = length; }
     bool programRuns() const { return programLeft_ > 0; }
     TestMemory* memory() { return programLength_ ? &memory_ : nullptr; }
     std::uint64_t presses() const { return presses_; }   // the machine's memory
     // The instruction of the loop the machine is at (0 without a timing).
     std::uint64_t loopPosition() const { return timing_ ? generic_.instructions % timing_->loopLength : 0; }
-    // LIB-11 AC-24: the machine-state capability (not by default).
+    // The machine-state capability (not by default).
     void offerState(bool on) { offersState_ = on; }
-    // LIB-7: the media places as MediaPlace capabilities (not by default).
+    // The media places as MediaPlace capabilities (not by default).
     void enableMedia();
     TestMediaPlace* mediaPlace(const std::string& id, const PlacePath& owner = {});
     TestModuleMedium* moduleAt(const PlacePath&);
@@ -417,9 +417,9 @@ private:
         std::vector<RomImage> roms;
         std::unique_ptr<peripherals::ControlTable> controls;
         std::unique_ptr<TestUart> uart;
-        std::unique_ptr<TestPaperPrinter> printer;   // LIB-8
-        std::unique_ptr<TestMediaPlace> place;       // LIB-7
-        std::unique_ptr<TestModuleMedium> module;    // LIB-7
+        std::unique_ptr<TestPaperPrinter> printer;
+        std::unique_ptr<TestMediaPlace> place;
+        std::unique_ptr<TestModuleMedium> module;
         std::uint64_t operations = 0;
     };
     struct CapRef {
@@ -442,7 +442,7 @@ private:
     Ticks sinceStart_ = 0;
     Ticks startUpTicks_ = kStartUpTicks;
     std::uint64_t presses_ = 0;   // the machine's memory: a cold boot clears it
-    Ticks programLength_ = 0, programLeft_ = 0;   // LIB-6: 0 length: no program
+    Ticks programLength_ = 0, programLeft_ = 0;   // 0 length: no program
     TestMemory memory_;
     bool displayOn_ = true;
     std::uint64_t innerCycles_ = 0, innerRest_ = 0;
@@ -467,16 +467,16 @@ private:
     State state_{*this};
     bool offersState_ = false;
     bool media_ = false;
-    std::vector<std::unique_ptr<TestMediaPlace>> places_;   // LIB-7
+    std::vector<std::unique_ptr<TestMediaPlace>> places_;
     std::shared_ptr<const TestSegTiming> timing_;
-    std::unique_ptr<TestCpu> cpu_;   // LIB-10
+    std::unique_ptr<TestCpu> cpu_;
 };
 
 // Builds through calcu::machine::build() on testCatalogue(); null if refused.
 std::unique_ptr<TestMachine> buildTestMachine(const ModelId&, std::optional<VariantId> variant = std::nullopt,
                                               std::vector<PeripheralRequest> peripherals = {}, int soundRate = 8000);
 
-// test-seg with the build option TestSegTiming (LIB-17's tests).
+// test-seg with the build option TestSegTiming (the pacing tests).
 std::unique_ptr<TestMachine> buildTimedTestSeg(Ticks instructionLength, std::uint64_t loopLength = 1);
 
 // Display outputs compared field by field (indicator names by content).

@@ -7,8 +7,8 @@
 #include <string>
 #include <vector>
 
-// The commands of the kind machine state on the app session (LIB-11 design
-// T18; spec AC-24): `machine-state.save` gives the state with the header the
+// The commands of the kind machine state on the app session:
+// `machine-state.save` gives the state with the header the
 // library writes; `machine-state.restore {bytes}` checks the header against
 // the machine now (product, version, model, variant, plugged peripherals)
 // and refuses a file of another configuration before the machine sees it.

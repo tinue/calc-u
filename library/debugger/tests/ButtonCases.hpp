@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-// The table of the run-control buttons' rule (LIB-10 design §3.10),
+// The table of the run-control buttons' rule,
 // button_cases.json beside this file, read by the C++ tests of both the
 // library and the Qt6 component set; the Playwright test reads the same file.
 

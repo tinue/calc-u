@@ -1,4 +1,4 @@
-// LIB-10 L6 (design §6): pause-on-start and pause-at-start (AC-9, AC-46).
+// Pause-on-start and pause-at-start.
 #include "DebugRig.hpp"
 #include "TestHarness.hpp"
 
@@ -9,7 +9,7 @@ namespace {
 Value lv(const char* level) { return Value::object({{"level", level}}); }
 } // namespace
 
-TEST(ac9_armed_fires_at_rule_event_once) {
+TEST(armed_fires_at_rule_event_once) {
     DebugRig r;
     CHECK(r.runTo(0x01));
     CHECK(r.done(r.send("pause-on-start", lv("program"))));
@@ -24,7 +24,7 @@ TEST(ac9_armed_fires_at_rule_event_once) {
     CHECK(!r.paused());
 }
 
-TEST(ac9_arming_one_disarms_other_off_both_pause_both) {
+TEST(arming_one_disarms_other_off_both_pause_both) {
     DebugRig r;
     r.send("pause-on-start", lv("cpu"));
     CHECK(r.runState()->armed == kCpu);
@@ -39,7 +39,7 @@ TEST(ac9_arming_one_disarms_other_off_both_pause_both) {
     CHECK(!r.done(c));
 }
 
-TEST(ac9_default_cpu_rule_leaves_key_readiness) {
+TEST(default_cpu_rule_leaves_key_readiness) {
     DebugRig r;
     CHECK(r.machine()->isKeyReady());
     r.send("pause-on-start", lv("cpu"));
@@ -52,7 +52,7 @@ TEST(ac9_default_cpu_rule_leaves_key_readiness) {
     CHECK(!r.machine()->isKeyReady());
 }
 
-TEST(ac46_paused_before_first_instruction_after_reset_cold_boot_build) {
+TEST(paused_before_first_instruction_after_reset_cold_boot_build) {
     DebugRig r;
     for (const char* cmd : {"reset", "cold-boot"}) {
         r.send("pause-at-start");
@@ -62,7 +62,7 @@ TEST(ac46_paused_before_first_instruction_after_reset_cold_boot_build) {
         CHECK(s->reason == RunState::Reason::Entry && s->owner == kCpu && !s->pauseAtStart);
         CHECK_EQ(r.pc(), std::uint64_t(0));
         CHECK(r.target().history(8).empty());   // before its first instruction
-        // In the harness's virtual time the restart holds there (D-8).
+        // In the harness's virtual time the restart holds there.
         CHECK_EQ(r.reason(c), std::string("The operation did not finish."));
         r.send("resume");
     }
@@ -74,7 +74,7 @@ TEST(ac46_paused_before_first_instruction_after_reset_cold_boot_build) {
     CHECK_EQ(r.target(1).retired(), std::uint64_t(0));
 }
 
-TEST(ac46_once_and_separate_from_pause_on_start) {
+TEST(once_and_separate_from_pause_on_start) {
     DebugRig r;
     r.send("pause-at-start");
     CHECK(r.runState()->pauseAtStart && !r.runState()->armed);   // not pause-on-start
@@ -87,10 +87,10 @@ TEST(ac46_once_and_separate_from_pause_on_start) {
     CHECK(!r.runState()->pauseAtStart);   // and the other way round
 }
 
-// C59-4 AC-17 (Calc-U-59's ASM overlay): an event outside an advance on which
+// Calc-U-59's ASM overlay: an event outside an advance on which
 // an armed start fires, with the reason pause-on-start; not when unarmed or
 // armed for the other level.
-TEST(c59_4_ac17_fire_start_outside_an_advance) {
+TEST(fire_start_outside_an_advance) {
     DebugRig r;
     CHECK(!r.debugger.runControl().fireStart(kCpu));   // not armed
     r.send("pause-on-start", lv("program"));

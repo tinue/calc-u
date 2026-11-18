@@ -1,11 +1,12 @@
-// LIB-5 design §6, L4: E3, the queue (AC-3, AC-11; EC-3).
+// The queue: a press waits for the one before it, its gap and, where the
+// profile says, key readiness.
 #include "TestHarness.hpp"
 #include "TypingRig.hpp"
 
 using namespace calcu::typing;
 using namespace calcu::typing::test;
 
-TEST(ac3_next_press_after_up_gap_and_readiness) {
+TEST(next_press_after_up_gap_and_readiness) {
     TypingRig r;
     r.run(100);
     bool ready = true;
@@ -28,7 +29,7 @@ TEST(ac3_next_press_after_up_gap_and_readiness) {
     CHECK(r.reply(k) && r.reply(k)->done);
 }
 
-TEST(ac11_text_typed_with_profile_cadence) {
+TEST(text_typed_with_profile_cadence) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -49,7 +50,7 @@ TEST(ac11_text_typed_with_profile_cadence) {
     CHECK(near(tickOf(log[6]), tickOf(log[5]) + 500));
 }
 
-TEST(ec3_waits_without_limit_until_dropped) {
+TEST(waits_without_limit_until_dropped) {
     TypingRig r;
     r.run(100);
     r.m->readiness = [](const TypingTestMachine&) { return false; };   // a program that never stops
@@ -59,14 +60,14 @@ TEST(ec3_waits_without_limit_until_dropped) {
     CHECK_EQ(r.log(from).size(), std::size_t(0));
     CHECK(r.reply(k) == nullptr);
     CHECK_EQ(r.part.engine().waiting(), std::size_t(1));
-    r.screenDown("b");   // AC-9: dropped
+    r.screenDown("b");   // live input: what waits is dropped
     const auto* rep = r.reply(k);
     CHECK(rep && !rep->done && rep->reason == kStoppedByKey);
 }
 
-TEST(ec3_first_press_bound_starts_all_the_same) {
+TEST(first_press_bound_starts_all_the_same) {
     auto p = testProfile();
-    p.queuedWaitsForReadiness = false;   // the PC-1600's (D-6)
+    p.queuedWaitsForReadiness = false;   // the PC-1600's
     p.firstPressOfStep = StartRule::KeyReadiness;
     p.firstPressBound = 5000;
     TypingRig r(calcu::sessions::Hosting::VirtualTime, p);

@@ -2,8 +2,7 @@
 #include "TestMachines.hpp"
 #include "machine/Conformance.hpp"
 
-// checkAgainstDescriptor() (design §6, T13), used by the product tests of
-// LIB-1 AC-33 and AC-40 from M-19 on.
+// checkAgainstDescriptor(), used by the products' conformance tests.
 
 using namespace calcu::machine;
 using namespace calcu::machine::test;

@@ -1,5 +1,4 @@
-// LIB-5 design §6, L9: typed text, paste, latches (AC-11, AC-12, AC-13;
-// EC-4; D-14).
+// Typed text, paste, latches.
 #include "TestHarness.hpp"
 #include "TypingRig.hpp"
 
@@ -15,7 +14,7 @@ std::vector<std::string> keysOf(const std::vector<std::string>& log) {
 }
 } // namespace
 
-TEST(ac12_paste_first_line_skips_unknown_no_enter) {
+TEST(paste_first_line_skips_unknown_no_enter) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -23,7 +22,7 @@ TEST(ac12_paste_first_line_skips_unknown_no_enter) {
     r.run(20'000);
     CHECK(keysOf(r.log(from)) == (std::vector<std::string>{"1", "2"}));   // no 3, no enter
     r.paste("12");
-    r.paste("3");   // AC-34: a second paste is added after the first
+    r.paste("3");   // a second paste is added after the first
     r.run(20'000);
     CHECK(keysOf(r.log(from)) == (std::vector<std::string>{"1", "2", "1", "2", "3"}));
 }
@@ -36,7 +35,7 @@ TEST(char_keys_without_support_same_has_a_key_answer) {
     for (char32_t c : {U'1', U'A', U'é', U'z', U'ü'}) {
         for (int latch = 0; latch < 3; ++latch) {
             m.latches = {{"shift", latch == 1}, {"kbii", latch == 2}};
-            CHECK(p.charKeys(c, nullptr).has_value() == p.charKeys(c, s).has_value());   // D-14
+            CHECK(p.charKeys(c, nullptr).has_value() == p.charKeys(c, s).has_value());   // "has a key" never depends on the latches
         }
     }
     CHECK(p.charKeys(U'é', nullptr) == (std::optional<std::vector<Press>>(
@@ -51,7 +50,7 @@ TEST(char_keys_without_support_same_has_a_key_answer) {
     CHECK(keysOf(r.log(from)) == (std::vector<std::string>{"kbii", "a", "kbii"}));
 }
 
-TEST(ac13_latched_key_released_first_or_skipped) {
+TEST(latched_key_released_first_or_skipped) {
     TypingRig r;
     r.run(100);
     std::size_t from = r.m->keyEvents().size();
@@ -64,7 +63,7 @@ TEST(ac13_latched_key_released_first_or_skipped) {
     r.paste("1\xC3\xA9" "2");
     r.run(20'000);
     CHECK(keysOf(r.log(from)) == (std::vector<std::string>{"1", "2"}));   // é left out
-    // E13: decided when its first press is due, with the latches of then.
+    // Decided when its first press is due, with the latches of then.
     from = r.m->keyEvents().size();
     r.m->latches = {{"shift", false}, {"kbii", true}};
     r.paste("1\xC3\xA9");
@@ -74,7 +73,7 @@ TEST(ac13_latched_key_released_first_or_skipped) {
     CHECK(keysOf(r.log(from)) == (std::vector<std::string>{"1", "kbii", "a", "kbii"}));
 }
 
-TEST(ec4_committed_text_each_char_one_press) {
+TEST(committed_text_each_char_one_press) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -88,7 +87,7 @@ TEST(ec4_committed_text_each_char_one_press) {
     }
 }
 
-TEST(ac16_type_text_and_enter_refuses_unknown_nothing_typed) {
+TEST(type_text_and_enter_refuses_unknown_nothing_typed) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();

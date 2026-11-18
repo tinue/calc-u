@@ -5,14 +5,13 @@
 
 #include "harness/attach/LocalStream.hpp"
 
-// Harness attach, the transport (C59-5 AC-10 to AC-13, EC-1, EC-2, EC-4;
-// design §3.2): a TCP port bound to 127.0.0.1 only, one client at a time,
-// text lines. A host adapter at the ADR 0009 boundary (LIB-1 design §2a):
-// it keeps its lines on LocalStream (an I/O thread of its own and its own
+// Harness attach, the transport: a TCP port bound to 127.0.0.1 only, one
+// client at a time, text lines. A host adapter at the edge of the
+// single-threaded session: it keeps its lines on LocalStream (an I/O thread of its own and its own
 // queue of outgoing bytes) and never touches the session. What arrives goes to an AttachInbox, which the
 // host of the session implements (cu59::SessionThread; a loop in the tests).
 // Compiled only with CALCU_ATTACH (POSIX; never in a release or device
-// build, C59-5 AC-13).
+// build).
 
 namespace calcu::harness {
 
@@ -42,11 +41,11 @@ public:
     AttachEndpoint(const AttachEndpoint&) = delete;
     AttachEndpoint& operator=(const AttachEndpoint&) = delete;
 
-    Opened open();   // bind 127.0.0.1:port and listen; fails without throwing (EC-1)
+    Opened open();   // bind 127.0.0.1:port and listen; fails without throwing
     std::uint16_t port() const { return stream_.port(); }   // the bound port once open
     // Any thread: lines for that client, in order; dropped when it is gone.
     void write(std::uint64_t client, std::vector<std::string> lines);
-    // The session's side ends an attach (EC-2 tests): the client is closed.
+    // The session's side ends an attach (tests): the client is closed.
     void close(std::uint64_t client);
 
 private:

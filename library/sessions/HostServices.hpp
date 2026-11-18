@@ -5,8 +5,7 @@
 #include <string>
 #include <string_view>
 
-// Host services (LIB-3 design §3.6; spec AC-26, AC-27; frontend.md Q-2): what
-// a frontend states it has when it starts to listen. The session asks for a
+// Host services: what a frontend states it has when it starts to listen. The session asks for a
 // service with one message (ServiceAsk) and gets one answer (ServiceAnswer).
 
 namespace calcu::sessions {
@@ -41,7 +40,7 @@ inline std::optional<HostService> serviceNamed(std::string_view name) {
 
 struct HostServices {
     std::set<HostService> offered;
-    bool recordsSound = false;   // a host that records all sound instead of playing it (the harness; AC-20)
+    bool recordsSound = false;   // a host that records all sound instead of playing it (the harness)
     bool offers(HostService s) const { return offered.count(s) != 0; }
 };
 

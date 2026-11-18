@@ -1,6 +1,6 @@
 // Compiled with -ffp-contract=off (library/CMakeLists.txt; MSVC: /fp:precise,
 // its default), so that the same marks give the same pixels on every
-// platform (LIB-8 design §3.3, D-7).
+// platform.
 #include "paper/Picture.hpp"
 #include "formats/Png.hpp"
 #include <algorithm>
@@ -74,7 +74,7 @@ PictureSize pictureSize(const PaperDescription& d, const std::vector<Mark>& mark
         return w > kMaxPictureSide || h > kMaxPictureSide ||
                static_cast<std::int64_t>(w) * static_cast<std::int64_t>(h) > kMaxPicturePixels;
     };
-    if (over(s.width, s.height)) {   // AC-17: the highest resolution at which neither cap is passed
+    if (over(s.width, s.height)) {   // the highest resolution at which neither cap is passed
         const double perDpi = pixelsPerCoord(d, 1.0);   // pixels per Coord at 1 dpi
         const double w1 = static_cast<double>(d.width) * perDpi, h1 = static_cast<double>(length) * perDpi;
         dpi = std::min({dpi, kMaxPictureSide / std::max(w1, h1),

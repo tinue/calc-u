@@ -1,4 +1,4 @@
-// LIB-3 L17: the topic mirror (support for AC-29, AC-38).
+// The topic mirror.
 #include "TestHarness.hpp"
 #include "TestParts.hpp"
 

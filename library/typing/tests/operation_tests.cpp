@@ -1,4 +1,4 @@
-// LIB-5 design §6, L13: typing inside an operation (AC-14, AC-17; §3.6).
+// Typing inside an operation.
 #include "TestHarness.hpp"
 #include "TypingRig.hpp"
 #include "typing/Awaitable.hpp"
@@ -32,7 +32,7 @@ TypingProfile pc1600Like() {
 
 } // namespace
 
-TEST(ac14_first_press_rule_inside_an_operation) {
+TEST(first_press_rule_inside_an_operation) {
     TypingRig r(calcu::sessions::Hosting::VirtualTime, pc1600Like());
     r.run(100);
     r.m->readiness = [](const TypingTestMachine&) { return false; };
@@ -48,14 +48,14 @@ TEST(ac14_first_press_rule_inside_an_operation) {
     CHECK(log.size() == 2 && tickOf(log[0]) >= t + 5000 && tickOf(log[0]) < t + 5005);   // at the bound
 }
 
-TEST(ac14_first_press_at_once_overrides_the_rule) {
+TEST(first_press_at_once_overrides_the_rule) {
     TypingRig r(calcu::sessions::Hosting::VirtualTime, pc1600Like());
     r.run(100);
     r.m->readiness = [](const TypingTestMachine&) { return false; };
     TypeResult res{false, "unset"};
     TypingEngine* e = &r.part.engine();
     TypeOptions o;
-    o.firstPressAtOnce = true;   // LIB-6 AC-58: after skip-wait:
+    o.firstPressAtOnce = true;   // after skip-wait:
     r.other.operation = [e, &res, o](OperationContext& c) { return typing(c, e, keys({"1", "2"}), o, &res); };
     const std::size_t from = r.m->keyEvents().size();
     const auto t = r.ticks();

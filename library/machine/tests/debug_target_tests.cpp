@@ -1,7 +1,6 @@
-// LIB-10 L1, L2 (design §6): the debug-target interface on the test
+// The debug-target interface on the test
 // processor (TestCpu.hpp) behind test-seg's `test-cpu` and test-dot's
-// `main` and `inner`; the conformance check (AC-1 to AC-4, AC-48, AC-49,
-// EC-9).
+// `main` and `inner`; the conformance check.
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 #include "machine/Conformance.hpp"
@@ -35,7 +34,7 @@ std::size_t regIndex(const DebugTarget& t, const std::string& name) {
 
 } // namespace
 
-TEST(ac1_one_target_per_processor_named_as_descriptor) {
+TEST(one_target_per_processor_named_as_descriptor) {
     auto seg = withCpu(kSeg);
     auto dot = withCpu(kDot);
     CHECK(seg && dot);
@@ -53,7 +52,7 @@ TEST(ac1_one_target_per_processor_named_as_descriptor) {
     CHECK(dot->debugTargets() == (std::vector<DebugTargetId>{DebugTargetId{"main"}, DebugTargetId{"inner"}}));
 }
 
-TEST(ac1_target_states_registers_spaces_code_space_offers_qualifier_now) {
+TEST(target_states_registers_spaces_code_space_offers_qualifier_now) {
     auto m = withCpu(kSeg, simple());
     const TargetInfo& info = m->debugging()->target(0).info();
     CHECK_EQ(info.registers.size(), std::size_t(5));
@@ -75,7 +74,7 @@ TEST(ac1_target_states_registers_spaces_code_space_offers_qualifier_now) {
     CHECK(t.qualifierNow() == std::vector<std::string>{"1"});
 }
 
-TEST(ac2_registers_read_written_where_writable) {
+TEST(registers_read_written_where_writable) {
     auto m = withCpu(kSeg, simple());
     DebugTarget& t = m->debugging()->target(0);
     CHECK(t.writeRegister(regIndex(t, "a"), 0x7f));
@@ -88,7 +87,7 @@ TEST(ac2_registers_read_written_where_writable) {
     CHECK_EQ(t.readRegister(regIndex(t, "a")), std::uint64_t(0x7f));
 }
 
-TEST(ac2_peek_no_effect_unreadable_device_cell) {
+TEST(peek_no_effect_unreadable_device_cell) {
     auto m = withCpu(kSeg, simple());
     DebugTarget& t = m->debugging()->target(0);
     const Ticks ticks = m->tickCount();
@@ -99,7 +98,7 @@ TEST(ac2_peek_no_effect_unreadable_device_cell) {
     CHECK_EQ(m->tickCount(), ticks);
 }
 
-TEST(ac2_refused_poke_changes_nothing) {
+TEST(refused_poke_changes_nothing) {
     auto m = withCpu(kSeg, simple());
     DebugTarget& t = m->debugging()->target(0);
     CHECK(t.poke(kMemory, 0x40, 0x11, {}));
@@ -113,7 +112,7 @@ TEST(ac2_refused_poke_changes_nothing) {
     CHECK(t.peek(kIoWritten, 0x03, {}).kind == CellRead::NoneWritten);
 }
 
-TEST(ac3_next_address_and_pre_execution_state) {
+TEST(next_address_and_pre_execution_state) {
     auto m = withCpu(kSeg, simple());
     DebugTarget& t = m->debugging()->target(0);
     CHECK_EQ(t.nextAddress(), std::uint64_t(0));
@@ -125,7 +124,7 @@ TEST(ac3_next_address_and_pre_execution_state) {
     CHECK_EQ(t.retired(), std::uint64_t(1));
 }
 
-TEST(ac4_history_newest_first_with_registers_before) {
+TEST(history_newest_first_with_registers_before) {
     auto m = withCpu(kSeg, simple());
     DebugTarget& t = m->debugging()->target(0);
     for (int i = 0; i < 3; ++i) m->advance(1);
@@ -151,7 +150,7 @@ TEST(conformance_check_debugging) {
     CHECK(!checkDebugging(*bare).empty());
 }
 
-TEST(ac48_written_view_last_value_or_none_no_effect) {
+TEST(written_view_last_value_or_none_no_effect) {
     auto m = withCpu(kSeg, simple());
     DebugTarget& t = m->debugging()->target(0);
     CHECK(t.peek(kIoWritten, 0, {}).kind == CellRead::NoneWritten);   // nothing written since the build
@@ -164,7 +163,7 @@ TEST(ac48_written_view_last_value_or_none_no_effect) {
     CHECK_EQ(t.peek(kIoWritten, 5, {}).value, std::uint64_t(0x33));   // reading the view has no effect
 }
 
-TEST(ac49_every_bank_and_vbank_by_name_no_switch) {
+TEST(every_bank_and_vbank_by_name_no_switch) {
     auto m = withCpu(kSeg, simple());
     DebugTarget& t = m->debugging()->target(0);
     const SpaceInfo& memory = t.info().spaces[kMemory];
@@ -180,7 +179,7 @@ TEST(ac49_every_bank_and_vbank_by_name_no_switch) {
     CHECK_EQ(t.peek(kMemory, 0x81, {}).value, std::uint64_t(0x10));
 }
 
-TEST(ac49_range_across_banks_refused) {
+TEST(range_across_banks_refused) {
     // The library refuses a range that leaves its window before the target is
     // asked (the session's peek, DebuggerPart); the target itself refuses a
     // bank outside a window.
@@ -191,7 +190,7 @@ TEST(ac49_range_across_banks_refused) {
     CHECK(t.peek(kMemory, 0x80, BankSelect{1, 1}).kind == CellRead::Unreadable);   // bank 1 has no vertical bank 1
 }
 
-TEST(ec9_peek_poke_outside_space_refused) {
+TEST(peek_poke_outside_space_refused) {
     auto m = withCpu(kSeg, simple());
     DebugTarget& t = m->debugging()->target(0);
     CHECK(t.peek(kMemory, 256, {}).kind == CellRead::Unreadable);

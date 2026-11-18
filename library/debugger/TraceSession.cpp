@@ -74,25 +74,25 @@ std::optional<std::string> TraceSession::start(sessions::SessionContext& c, std:
     if (!recorder) return std::string("The ") + m->model().value + " records no traces.";
     if (button && name.empty()) name = recorder->buttonFileName();
     if (auto why = traceNameRefusal(name)) return why;
-    if (running()) end(c, Ending::Off);   // one trace at a time (OQ-3)
+    if (running()) end(c, Ending::Off);   // one trace at a time
 
     std::unique_ptr<TraceFile> file;
     const std::optional<settings::Paths::Ensured> folder =
         setup_.folder ? setup_.folder() : std::optional<settings::Paths::Ensured>();
     if (!folder) {
-        // D-10: kept in memory where a listener takes it (the Web, T4).
+        // Kept in memory where a listener takes it (the Web).
         if (!setup_.handOver || !c.hostOffers(sessions::HostService::KeepFile))
-            return std::string("There is no folder for traces.");   // EC-8
+            return std::string("There is no folder for traces.");
         file = TraceFile::inMemory();
     } else {
-        if (!folder->ok) {   // EC-8, AC-53: one sentence, its final period once (a system message may end in one)
+        if (!folder->ok) {   // one sentence, its final period once (a system message may end in one)
             std::string why = "The trace folder cannot be written: " + folder->problem;
             if (why.back() != '.') why += '.';
             return why;
         }
         std::string error;
         file = TraceFile::open(files::fromPath(files::toPath(folder->path) / files::toPath(name)), &error);
-        if (!file) return error;   // AC-22: the step fails
+        if (!file) return error;   // the step fails
     }
     recorder_ = std::move(recorder);
     file_ = std::move(file);
@@ -111,7 +111,7 @@ void TraceSession::pump(sessions::SessionContext& c) {
     const std::uint64_t budget = used >= limit ? 0 : limit - used;
     const bool all = recorder_->take(buffer_, budget);
     write();
-    if (!all) end(c, Ending::Limit);   // T2
+    if (!all) end(c, Ending::Limit);   // the size limit
 }
 
 void TraceSession::write() {
@@ -126,7 +126,7 @@ void TraceSession::end(sessions::SessionContext& c, Ending why) {
     if (!running()) return;                   // the pump reached the limit and ended it
     recorder_->end(buffer_);
     if (why == Ending::Limit) {
-        // AC-24, AC-43: of what waits, only the session's end goes in,
+        // Of what waits, only the session's end goes in,
         // within the bytes the budget kept for it.
         const std::uint64_t n = recorder_->endBytes();
         if (buffer_.size() >= n) buffer_.erase(buffer_.begin(), buffer_.end() - static_cast<std::ptrdiff_t>(n));
@@ -136,7 +136,7 @@ void TraceSession::end(sessions::SessionContext& c, Ending why) {
     file_->close();
     const std::string name = name_;
     switch (why) {
-    case Ending::Limit:   // T2, AC-24, D-11
+    case Ending::Limit:
         c.notice("The trace " + name + " reached the size limit of " + std::to_string(limitBytes() / (1024 * 1024)) +
                  " MB and ended.");
         break;
@@ -144,13 +144,13 @@ void TraceSession::end(sessions::SessionContext& c, Ending why) {
     case Ending::Off:
     case Ending::OperationEnded: break;
     }
-    if (file_->memory()) {   // T4: handed to the user to keep (AC-26)
+    if (file_->memory()) {   // handed to the user to keep
         std::vector<std::uint8_t> bytes = file_->takeMemory();
         c.askHost(sessions::HostService::KeepFile,
                   sessions::Value::object({{"name", name},
                                            {"bytes", sessions::Value(std::move(bytes))},
                                            {"mediaType", "application/octet-stream"},
-                                           {"kind", "trace"}}),   // what a page lists as a trace (C59-4 AC-12)
+                                           {"kind", "trace"}}),   // what a page lists as a trace
                   nullptr);
     }
     file_.reset();

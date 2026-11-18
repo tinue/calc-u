@@ -1,4 +1,4 @@
-// Harness attach (C59-5 design §6, A1 to A5): the endpoint on a port the
+// Harness attach: the endpoint on a port the
 // system picks, a host loop on a thread of its own that calls the session
 // about every 5 ms on the real clock (as an app's session thread), the test
 // product's session on the test machine `test-seg` (100,000 ticks a
@@ -211,7 +211,7 @@ struct Client {
 
 } // namespace
 
-TEST(c59_5_ac10_port_from_argument_else_59059) {
+TEST(port_from_argument_else_59059) {
     CHECK_EQ(attachPort(std::vector<std::string>{}), std::uint16_t{59059});
     CHECK_EQ(attachPort(std::vector<std::string>{"app", "--attach-port", "59160"}), std::uint16_t{59160});
     CHECK_EQ(attachPort(std::vector<std::string>{"--attach-port=59161"}), std::uint16_t{59161});
@@ -219,7 +219,7 @@ TEST(c59_5_ac10_port_from_argument_else_59059) {
     CHECK_EQ(attachPort(std::vector<std::string>{"--attach-port", "70000"}), std::uint16_t{59059});
 }
 
-TEST(c59_5_ac10_bound_to_loopback_only) {
+TEST(bound_to_loopback_only) {
     TestApp app;
     CHECK(app.open().ok);
     CHECK(app.endpoint->port() != 0);
@@ -233,7 +233,7 @@ TEST(c59_5_ac10_bound_to_loopback_only) {
     CHECK_EQ(ntohl(peer.sin_addr.s_addr), static_cast<std::uint32_t>(INADDR_LOOPBACK));
 }
 
-TEST(c59_5_ec1_port_in_use_host_runs_and_log_says_so) {
+TEST(port_in_use_host_runs_and_log_says_so) {
     TestApp first;
     CHECK(first.open().ok);
     TestApp second(first.endpoint->port());
@@ -248,7 +248,7 @@ TEST(c59_5_ec1_port_in_use_host_runs_and_log_says_so) {
     CHECK(t1 > t0);
 }
 
-TEST(c59_5_ac11_quit_ends_attach_not_host) {
+TEST(quit_ends_attach_not_host) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -268,7 +268,7 @@ TEST(c59_5_ac11_quit_ends_attach_not_host) {
     CHECK(again.reply().at(0) == "done 2");
 }
 
-TEST(c59_5_ec2_gone_without_quit_as_never_attached) {
+TEST(gone_without_quit_as_never_attached) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -293,7 +293,7 @@ TEST(c59_5_ec2_gone_without_quit_as_never_attached) {
     CHECK(next.reply().at(0) == "done 2");
 }
 
-TEST(c59_5_ec4_second_harness_one_line_and_closed) {
+TEST(second_harness_one_line_and_closed) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -307,7 +307,7 @@ TEST(c59_5_ec4_second_harness_one_line_and_closed) {
     CHECK(first.reply().at(0) == "done 2");   // the first stays
 }
 
-TEST(c59_5_ac11_command_script_as_in_serve) {
+TEST(command_script_as_in_serve) {
     // The same script through serve and through attach: the same replies,
     // but for the time `wait` reports.
     // (The display and the capabilities differ by setup: the app's machine
@@ -330,7 +330,7 @@ TEST(c59_5_ac11_command_script_as_in_serve) {
     }
 }
 
-TEST(c59_5_ac12_every_state_topic_once_on_attach) {
+TEST(every_state_topic_once_on_attach) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -350,7 +350,7 @@ TEST(c59_5_ac12_every_state_topic_once_on_attach) {
     CHECK(display >= 1);
 }
 
-TEST(c59_5_ac12_reply_only_to_sender) {
+TEST(reply_only_to_sender) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -364,7 +364,7 @@ TEST(c59_5_ac12_reply_only_to_sender) {
     CHECK_EQ(app.replies.load(), 0);   // the app's frontend got none of the harness's replies
 }
 
-TEST(c59_5_ac12_host_service_never_asked_of_harness) {
+TEST(host_service_never_asked_of_harness) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -382,7 +382,7 @@ TEST(c59_5_ac12_host_service_never_asked_of_harness) {
     CHECK(!harnessOffers);
 }
 
-TEST(c59_5_ac12_frontend_keeps_receiving) {
+TEST(frontend_keeps_receiving) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -396,7 +396,7 @@ TEST(c59_5_ac12_frontend_keeps_receiving) {
     CHECK(app.frontendMessages.load() > before);   // the display it changed reaches the app's frontend too
 }
 
-TEST(c59_5_ac14_wait_passes_on_the_app_clock) {
+TEST(wait_passes_on_the_app_clock) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -413,7 +413,7 @@ TEST(c59_5_ac14_wait_passes_on_the_app_clock) {
     }
 }
 
-TEST(c59_5_ac14_wait_at_full_speed_sooner) {
+TEST(wait_at_full_speed_sooner) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -427,7 +427,7 @@ TEST(c59_5_ac14_wait_at_full_speed_sooner) {
     CHECK(wall < 1.0);
 }
 
-TEST(c59_5_ac14_harness_never_advances_the_machine) {
+TEST(harness_never_advances_the_machine) {
     TestApp app;   // not started: nobody calls the session
     CHECK(app.open().ok);
     Client c(app.endpoint->port());
@@ -453,7 +453,7 @@ TEST(c59_5_ac14_harness_never_advances_the_machine) {
     CHECK(!c.line(200ms));   // no reply, no message: no time passed
 }
 
-TEST(c59_5_ec3_command_refused_while_suspended) {
+TEST(command_refused_while_suspended) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -466,7 +466,7 @@ TEST(c59_5_ec3_command_refused_while_suspended) {
     CHECK(c.reply().at(0) == "done 2");
 }
 
-TEST(c59_5_ec3_quit_still_works) {
+TEST(quit_still_works) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -476,7 +476,7 @@ TEST(c59_5_ec3_quit_still_works) {
     CHECK(c.closedByPeer());
 }
 
-TEST(c59_5_operation_reply_when_it_ends) {
+TEST(operation_reply_when_it_ends) {
     TestApp app;
     CHECK(app.open().ok);
     app.start();
@@ -488,7 +488,7 @@ TEST(c59_5_operation_reply_when_it_ends) {
     CHECK(std::chrono::steady_clock::now() - w0 < 3s);
 }
 
-// LIB-14 D-27: the attached harness has the commands of `calcu serve`, in
+// The attached harness has the commands of `calcu serve`, in
 // the same order (the attach's own `json` aside).
 TEST(attach_registry_matches_serve) {
     TestApp app;
@@ -524,10 +524,9 @@ TEST(attach_registry_matches_serve) {
     server->finish();
 }
 
-// LIB-6 AC-34 through attach (D-27): the bare `wait` is the session's
-// `wait-idle` on the app's clock (LIB-6's PresetsPart of the test product;
-// the test's own second `wait-idle` went in Part E simplification E-3, a
-// command has one owner); its reply is the time it took.
+// Through attach, the bare `wait` is the session's `wait-idle` on the app's
+// clock (the PresetsPart of the test product; a command has one owner); its
+// reply is the time it took.
 TEST(attach_bare_wait_ends_when_idle) {
     TestApp app;
     CHECK(app.open().ok);

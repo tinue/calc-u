@@ -1,4 +1,4 @@
-// LIB-3 L14: speed and the hand-offs to the pacer (AC-21, AC-22, AC-23).
+// Speed and the hand-offs to the pacer.
 #include "TestHarness.hpp"
 #include "TestParts.hpp"
 
@@ -20,7 +20,7 @@ Task<OperationResult> regularThenFull(OperationContext& c) {
 }
 
 Task<OperationResult> notWaiting(OperationContext& c) {
-    c.setReportsWaiting(false);   // a preset `wait:` at full speed (LIB-17 AC-16)
+    c.setReportsWaiting(false);   // a preset `wait:` at full speed
     co_await c.run(1'000'000);
     co_return OperationResult{};
 }
@@ -33,7 +33,7 @@ struct Probe final : WaitProbe {
 PacingProfile pacedWhileWaiting() { return PacingProfile{std::nullopt, false, true}; }
 } // namespace
 
-TEST(ac21_speed_from_next_call) {
+TEST(speed_from_next_call) {
     Rig r;
     r.build();
     r.call();
@@ -50,14 +50,14 @@ TEST(ac21_speed_from_next_call) {
     CHECK(r.fe.busy()->speed == Speed::Full);
 }
 
-TEST(ac21_gesture_changes_nothing_while_operation_sets_speed) {
+TEST(gesture_changes_nothing_while_operation_sets_speed) {
     Rig r;
     r.build();
     r.part.operation = [](OperationContext& c) { return regularThenFull(c); };
     r.send("tp.op");
     CHECK(r.fe.busy()->speed == Speed::Regular);
     const CallId hold = r.send("speed", Value::object({{"full", true}}));   // the display held
-    CHECK(r.fe.reply(hold)->done);                                          // D-6: done, nothing changes
+    CHECK(r.fe.reply(hold)->done);                                          // done, nothing changes
     CHECK(r.fe.busy()->speed == Speed::Regular);
     r.call();
     Ticks t0 = r.ticks();
@@ -71,7 +71,7 @@ TEST(ac21_gesture_changes_nothing_while_operation_sets_speed) {
     CHECK(!r.fe.busy()->operationRuns && r.fe.busy()->speed == Speed::Regular);
 }
 
-TEST(ac22_waits_for_input_from_key_readiness) {
+TEST(waits_for_input_from_key_readiness) {
     ScriptedClock clock;
     MachineSession ms(clock.fn(), 1);
     ms.setMachine(mt::buildTestMachine(mt::kSeg), {}, 0);
@@ -79,22 +79,22 @@ TEST(ac22_waits_for_input_from_key_readiness) {
     CHECK(s.ticksRun >= 10);
     CHECK(!s.waitsForInput);   // the start-up of 50 ticks runs
     s = ms.runSlice(SliceRequest{100, WallTime{0}});
-    CHECK(s.waitsForInput);    // key readiness (LIB-1 AC-42)
+    CHECK(s.waitsForInput);    // key readiness
 }
 
-TEST(ac22_waits_for_input_from_wait_probe) {
+TEST(waits_for_input_from_wait_probe) {
     ScriptedClock clock;
     MachineSession ms(clock.fn(), 1);
     Probe probe;
     ms.addWaitProbe(probe);
     ms.setMachine(mt::buildTestMachine(mt::kSeg), {}, 0);
     CHECK(!ms.runSlice(SliceRequest{10, WallTime{0}}).waitsForInput);
-    probe.waits = true;   // a media place waits for a medium (LIB-7)
+    probe.waits = true;   // a media place waits for a medium
     CHECK(ms.runSlice(SliceRequest{10, WallTime{0}}).waitsForInput);
 }
 
-TEST(ac22_operation_reports_not_waiting) {
-    // Full speed paced while the machine waits (LIB-17 AC-12): an operation
+TEST(operation_reports_not_waiting) {
+    // Full speed paced while the machine waits: an operation
     // that reports "not waiting" runs unpaced although the machine is ready.
     Rig waiting, unpaced;
     for (Rig* r : {&waiting, &unpaced}) {
@@ -122,7 +122,7 @@ TEST(ac22_operation_reports_not_waiting) {
     CHECK(unpaced.session->machineSession().waitsForInput());
 }
 
-TEST(ac23_start_afresh_on_create_continue_end_new_machine_resume) {
+TEST(start_afresh_on_create_continue_end_new_machine_resume) {
     Rig r;
     MachineSession& ms = r.session->machineSession();
     CHECK_EQ(ms.freshStarts(), std::uint64_t(1));   // created
@@ -137,7 +137,7 @@ TEST(ac23_start_afresh_on_create_continue_end_new_machine_resume) {
     r.send("tp.op");
     r.callWhileBusy();
     CHECK_EQ(ms.freshStarts(), std::uint64_t(4));   // an operation ended
-    ms.setPaused(true);                             // the debugger pauses (LIB-10)
+    ms.setPaused(true);                             // the debugger pauses
     r.call();
     ms.setPaused(false);
     CHECK_EQ(ms.freshStarts(), std::uint64_t(5));   // the debugger resumes

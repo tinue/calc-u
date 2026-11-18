@@ -1,5 +1,5 @@
-// LIB-8 T5 (design §3.3, §6): the picture of Copy and `paper png` (AC-16,
-// AC-17), and the reference pictures that fix its pixels (TR; D-7).
+// The picture of Copy and `paper png`, and the reference pictures that fix
+// its pixels on every platform.
 #include "PaperTestKit.hpp"
 #include "TestHarness.hpp"
 #include "formats/Png.hpp"
@@ -78,7 +78,7 @@ Paper fromFixture(const PaperDescription& d, const std::string& name) {
 
 } // namespace
 
-TEST(ac16_full_width_all_it_reaches_at_stated_resolution) {
+TEST(full_width_all_it_reaches_at_stated_resolution) {
     FakePrinter dp(mt::td20Description());
     Paper td = td20Paper(dp);
     const PictureSize s = pictureSize(td);
@@ -106,14 +106,14 @@ TEST(ac16_full_width_all_it_reaches_at_stated_resolution) {
     CHECK_EQ(pictureSize(empty).width, 0);
 }
 
-TEST(ac16_reference_pictures_of_the_test_printers) {
+TEST(reference_pictures_of_the_test_printers) {
     FakePrinter dp(mt::td20Description());
     checkReference("td20.png", picturePng(td20Paper(dp)));
     FakePrinter pp(mt::tp4Description());
     checkReference("tp4.png", picturePng(tp4Paper(pp)));
 }
 
-TEST(ac17_long_paper_lowered_to_16000_pixels_never_cropped) {
+TEST(long_paper_lowered_to_16000_pixels_never_cropped) {
     FakePrinter pr(mt::tp4Description());
     Paper p(mt::tp4Description());
     p.bind(&pr);
@@ -128,7 +128,7 @@ TEST(ac17_long_paper_lowered_to_16000_pixels_never_cropped) {
     CHECK(s.top <= p.reach().from && s.bottom >= p.reach().to);   // never cropped
 }
 
-TEST(ac17_wide_long_paper_lowered_to_64_megapixels) {
+TEST(wide_long_paper_lowered_to_64_megapixels) {
     // A TP-4 widened to 210 mm and drawn at 1200 dpi: 9921 pixels wide.
     PaperDescription wide = mt::tp4Description();
     wide.width = u(2'100);

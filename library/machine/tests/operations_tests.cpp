@@ -1,12 +1,12 @@
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 
-// LIB-1 AC-11, AC-42 (design §6, T7).
+// Operations return at once and end at key readiness.
 
 using namespace calcu::machine;
 using namespace calcu::machine::test;
 
-TEST(ac11_operations_return_at_once_and_end_at_key_readiness) {
+TEST(operations_return_at_once_and_end_at_key_readiness) {
     for (int op = 0; op < 3; ++op) {
         auto m = buildTestMachine(kDot, VariantId{"V2"});
         CHECK(m != nullptr);
@@ -30,7 +30,7 @@ TEST(ac11_operations_return_at_once_and_end_at_key_readiness) {
     }
 }
 
-TEST(ac42_key_readiness_only_after_start_up) {
+TEST(key_readiness_only_after_start_up) {
     auto m = buildTestMachine(kSeg);
     CHECK(m != nullptr);
     if (!m) return;

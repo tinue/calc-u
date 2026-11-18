@@ -26,7 +26,7 @@ std::string escaped(const std::string& s) {
 AttachedHarness::AttachedHarness(AppSession& s, HarnessProduct& p, AttachEndpoint& e, std::function<bool()> suspended,
                                  parts::LibraryParts& parts)
     : session_(s), product_(p), endpoint_(e), suspended_(std::move(suspended)) {
-    // D-27: the commands of `calcu serve`, in its order.
+    // The commands of `calcu serve`, in its order.
     addServeCommands(registry_, parts, product_);
 }
 
@@ -38,7 +38,7 @@ void AttachedHarness::handle(const AttachEvent& e) {
         detach();
         client_ = e.client;
         json_ = false;
-        // AC-12: a second listener, sent every state topic once at once.
+        // A second listener, sent every state topic once at once.
         host_ = std::make_unique<HarnessHost>(session_, product_, HarnessHost::Attached{},
                                               [this](const Message& m) { message(m); });
         break;
@@ -48,12 +48,12 @@ void AttachedHarness::handle(const AttachEvent& e) {
         process();
         break;
     case AttachEvent::Kind::Detached:
-        if (e.client == client_) detach();   // EC-2: as if never attached
+        if (e.client == client_) detach();   // as if never attached
         break;
     }
 }
 
-// EC-2: the listener goes, its pending replies with it, keys it holds come up.
+// The listener goes, its pending replies with it, keys it holds come up.
 void AttachedHarness::detach() {
     if (!host_) return;
     queue_.clear();
@@ -132,13 +132,13 @@ void AttachedHarness::runLine(const std::string& text) {
     }
     const CommandLine& cl = std::get<CommandLine>(parsed);
     if (cl.path.empty()) return;
-    if (suspended_ && suspended_()) return reply(refusedReply(kSuspended));   // EC-3
-    if (cl.path.size() == 1 && cl.path[0] == "json") {   // D-2: the attach transport's, not LIB-11's
+    if (suspended_ && suspended_()) return reply(refusedReply(kSuspended));
+    if (cl.path.size() == 1 && cl.path[0] == "json") {   // the attach transport's, not a harness command
         json_ = trimmed(cl.argText) != "off";
         return reply(doneReply());
     }
-    if (cl.path.size() == 1 && cl.path[0] == "wait") {   // AC-14: on the app's clock
-        if (cl.argText.empty()) {   // D-27: until idle, the session's operation on the app's clock
+    if (cl.path.size() == 1 && cl.path[0] == "wait") {   // on the app's clock
+        if (cl.argText.empty()) {   // until idle, the session's operation on the app's clock
             const machine::MachineDescriptor* d = host_->descriptor();
             const auto now = ticks();
             if (!d || !now) return reply(refusedReply(kNoMachine));

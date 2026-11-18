@@ -40,7 +40,7 @@ void AttachEndpoint::onStream(StreamEvent e) {
         in_.clear();
         inbox_.post(AttachEvent{AttachEvent::Kind::Attached, {}, e.client});
         break;
-    case StreamEvent::Kind::Disconnected:   // EC-2: gone without quit, as quit
+    case StreamEvent::Kind::Disconnected:   // gone without quit: as quit
         in_.clear();
         if (e.client != quitClient_) inbox_.post(AttachEvent{AttachEvent::Kind::Detached, {}, e.client});
         break;
@@ -51,7 +51,7 @@ void AttachEndpoint::onStream(StreamEvent e) {
         while ((nl = in_.find('\n')) != std::string::npos) {
             std::string line = trimmedLine(in_.substr(0, nl));
             in_.erase(0, nl + 1);
-            if (line == "quit") {   // AC-11: ends the attach, not the app
+            if (line == "quit") {   // ends the attach, not the app
                 quitClient_ = e.client;
                 in_.clear();
                 inbox_.post(AttachEvent{AttachEvent::Kind::Detached, {}, e.client});   // before the client sees the close

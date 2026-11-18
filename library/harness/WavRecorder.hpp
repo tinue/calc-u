@@ -4,7 +4,7 @@
 #include <span>
 #include <string>
 
-// A 16-bit mono PCM WAV file (LIB-11 design §2; spec AC-9 `audio`, EC-3).
+// A 16-bit mono PCM WAV file (the `audio` command).
 // The header is written at open with sizes of zero and again at close, so
 // the file is complete once close() has run.
 

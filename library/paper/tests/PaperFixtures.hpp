@@ -6,11 +6,10 @@
 #include <string>
 #include <vector>
 
-// The paper tests' data (LIB-8 design §2, §6): the fixture files in
-// library/paper/tests/fixtures/, the reference pictures of the test
-// printers (§3.3, T5), made by Picture.cpp in M-39; CALCU_PAPER_PICTURES=1
-// writes them anew. The PC-100C's description, its marks and its reference
-// picture are Calc-U-59's since M-53 (products/calc-u-59/tests/
+// The paper tests' data: the fixture files in library/paper/tests/fixtures/,
+// the reference pictures of the test printers, made by Picture.cpp;
+// CALCU_PAPER_PICTURES=1 writes them anew. The PC-100C's description, its
+// marks and its reference picture are Calc-U-59's (products/calc-u-59/tests/
 // pc100c_paper_tests.cpp, on core/PC100CPaper.hpp); the CE-150's and
 // CE-1600P's are Calc-U-1600's (products/calc-u-1600/tests/
 // plotter_paper_tests.cpp, on its descriptions).

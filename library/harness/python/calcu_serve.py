@@ -1,5 +1,5 @@
-"""A small helper for driving `calcu serve` over a pipe (LIB-11 design D-2;
-docs/contracts/harness.md Q-2).
+"""A small helper for driving `calcu serve` over a pipe
+(docs/formats/harness.md).
 
     from calcu_serve import Calcu
     with Calcu("/path/to/calcu", "c59") as c:

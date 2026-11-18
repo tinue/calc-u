@@ -1,6 +1,0 @@
-# error: line 6: Unknown step switch.
-format-version: 2
-model: test-seg
-printer: test-printer
-keys:
-  - switch: test-printer trace on

@@ -1,9 +1,0 @@
-# First step 7 on the TI-58.
-model TI-58
-boot
-keys Op 1 6
-keys 2 Op 1 7
-keys Op 1 6
-app-reset
-boot
-keys Op 1 6

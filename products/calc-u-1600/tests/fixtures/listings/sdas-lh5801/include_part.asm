@@ -1,4 +1,0 @@
-; inc
-HELPER:
-	nop
-	rtn

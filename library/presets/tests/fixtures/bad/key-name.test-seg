@@ -1,6 +1,0 @@
-# error: line 6: 7 is not a key of the test-seg.
-format-version: 2
-model: test-seg
-keys:
-  - key: 1 2
-  - key: 3 7

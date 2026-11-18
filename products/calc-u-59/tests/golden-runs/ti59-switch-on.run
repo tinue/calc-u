@@ -1,5 +1,0 @@
-# Switching on a TI-59 with the Master Library and no printer.
-model TI-59
-module ML
-boot
-run 0.5

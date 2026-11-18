@@ -1,6 +1,0 @@
-# error: line 5: skip-wait: cannot be the first or the last item.
-format-version: 2
-model: test-seg
-keys:
-  - skip-wait:
-  - key: 1

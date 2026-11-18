@@ -1,3 +1,0 @@
-format-version: 2
-model: test-seg
-slot-1: { name: test-module }

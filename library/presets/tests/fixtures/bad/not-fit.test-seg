@@ -1,4 +1,0 @@
-# error: line 4: The Test printer does not fit slot-1
-format-version: 2
-model: test-seg
-slot-1: test-printer

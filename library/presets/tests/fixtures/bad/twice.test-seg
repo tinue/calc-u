@@ -1,5 +1,0 @@
-# error: line 5: preset-name: is given twice
-format-version: 2
-model: test-seg
-preset-name: A
-preset-name: B

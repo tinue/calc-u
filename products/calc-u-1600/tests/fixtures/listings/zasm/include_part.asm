@@ -1,2 +1,0 @@
-helper:	nop
-	ret

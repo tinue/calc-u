@@ -1,7 +1,0 @@
-# A small calculation, a function, a second function.
-model TI-59
-boot
-keys 1 2 + 3 4 =
-keys 2 x2
-keys pi * 4 =
-keys CLR

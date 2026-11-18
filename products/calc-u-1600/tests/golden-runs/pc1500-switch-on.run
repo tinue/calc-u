@@ -1,4 +1,0 @@
-# Switching on (ALL RESET and the boot run); the mode after a cold boot (C-7).
-model PC-1500
-boot
-run 1

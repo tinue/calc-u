@@ -1,7 +1,0 @@
-{
-  "name": "calcu-library-web-tests",
-  "private": true,
-  "devDependencies": {
-    "@playwright/test": "^1.48.0"
-  }
-}

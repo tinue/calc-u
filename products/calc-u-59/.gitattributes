@@ -1,2 +1,0 @@
-# ROM disassemblies of TI firmware: keep them out of GitHub's language stats
-rom/*.asm linguist-vendored

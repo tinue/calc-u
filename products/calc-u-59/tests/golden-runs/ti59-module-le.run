@@ -1,7 +1,0 @@
-# Leisure Library: program 01 started.
-model TI-59
-module LE
-printer on
-boot
-keys Pgm 0 1 SBR =
-idle

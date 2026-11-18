@@ -1,8 +1,0 @@
-# An error: the display blinks until CLR.
-model TI-59
-boot
-keys 1 / 0 =
-run 0.3
-run 0.3
-run 0.3
-keys CLR

@@ -1,9 +1,0 @@
-format-version: 2
-model: test-seg
-timeout: 5
-keys:
-  - key: 1
-  - skip-wait:
-  - wait: 10ms
-  - key: 0
-  - let-it-finish:

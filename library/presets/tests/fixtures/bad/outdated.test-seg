@@ -1,4 +1,0 @@
-# error: was written for an earlier release
-model: test-seg
-keys:
-  - key: 1

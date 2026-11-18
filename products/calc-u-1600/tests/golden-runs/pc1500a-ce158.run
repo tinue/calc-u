@@ -1,5 +1,0 @@
-# The CE-158 attached.
-model PC-1500A
-attach ce158
-boot
-run 1

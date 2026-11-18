@@ -1,7 +1,0 @@
-# A CE-1600P attached at the off point of a power cycle (0.8.1's attach on a running machine); a printed line.
-model PC-1600
-boot
-powercycle attach ce1600p
-type lprint 123
-keys enter
-run 3

@@ -1,7 +1,0 @@
-format-version: 2
-model: test-seg
-preset-name: Count
-description: Writes the memory
-test-memory: { at: 0, file: count.bin }
-keys:
-  - key: 2

@@ -364,7 +364,7 @@ keys:
 | `arm: <reference>` | [59: TI-59] | **Arm** a magnetic card: make it ready for the user to feed. Reference by `file:`, `name:` or `mem:`, without a side |
 | `floppy: <reference>` | [1600: PC-1600 with `printer: CE-1600P`] | **Insert** a floppy disk ([media.md §2](media.md#2-floppy-disk)) into the CE-1600F drive, by `file:` or `name:`, with `side: 0\|1` (default `0`). A disk that is in the drive is ejected first |
 | `cassette: <reference>` | [1600: with `printer: CE-150` or `CE-1600P`] | **Insert** a cassette ([media.md §3](media.md#3-cassette)) into the printer's cassette recorder, by `file:` or `name:`. A cassette that is in is ejected first |
-| `eject: <place>` | [1600] | **Eject** the floppy disk (`floppy`) or the cassette (`cassette`): the place is empty afterwards, and its selector shows it so. An empty place: nothing happens |
+| `eject: <place>` | [1600] | **Eject** the floppy disk (`floppy`) or the cassette (`cassette`): the place is empty afterwards, and its selector shows it so. An empty place: nothing happens. The place is named by its place word (the glossary's **Place word**): the kind's eject word where one place holds the kind, so `cassette` for the place `cassette-recorder` |
 | `saveas: <target>` | [both] | **Name & Save** the medium or module at a place, or an in-file magnetic card [59: TI-59] (§5.2.1) |
 
 **`card:`** is the user pushing a card into the calculator. The ROM
@@ -402,7 +402,7 @@ one only to leave it to the user, typically as its last step.
 
 | Key | Value |
 |---|---|
-| `place` | [1600]: `slot-1`, `slot-2` [PC-1600], `floppy` [PC-1600] or `cassette`: the place whose medium or module is saved |
+| `place` | [1600]: the place word of the place whose medium or module is saved: `slot-1`, `slot-2` [PC-1600], `floppy` [PC-1600] or `cassette` (the place `cassette-recorder`) |
 | `card` | [59: TI-59]: the `card-name` of an in-file card (§3.1), defined or fresh. Exactly one of `place` and `card` |
 | `as` | `live`: an instance, saved again after each change. `template`: a template, never written again |
 | `protected` | `true`: save with the module's write-protect switch on, and switch it on in the machine. Only for a module that has the switch (CE-161); not for a floppy disk or a magnetic card |
@@ -619,7 +619,7 @@ then fails, and so ends the preset ([README.md §4](README.md#4-errors)).
 | `keys`, `key`, speed steps, `wait`, `skip-wait`, `let-it-finish`, `expect`, `screenshot`, `trace`, `elapsed-time`, `cut-paper`, `not-expect` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `type`, `sync-clock` | | | | ✓ | ✓ | ✓ |
 | `card`, `arm` | ✓ | | | | | |
-| `saveas` | `card` | | | `slot-1` | `slot-1` | `slot-1`, `slot-2`, `floppy` |
+| `saveas` | `card` | | | `slot-1`, `cassette` | `slot-1`, `cassette` | `slot-1`, `slot-2`, `floppy`, `cassette` |
 | `printer-trace`, `debug-panel` | ✓ | ✓ | ✓ | | | |
 | `pause`, `pause-on-start`, `step`, `resume` | ✓ | ✓ | ✓ | undefined | undefined | undefined |
 

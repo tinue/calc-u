@@ -317,11 +317,11 @@ Options:
 |---|---|---|---|---|---|
 | Frontends | Swift (iOS, macOS), Qt6, Web | Qt6, Web | Qt6, Web | — | — |
 | Display topic (M-2) | segment frame, brightness per position, C indicator | dot frame + 14 indicators | dot frame + 18 indicators | dot frame in 24 cells + status segments | dot frame |
-| Control state (FE-2) | model; module slot picker (ADR 0025); printer connect; card reader place (TI-59) | model, ROM variant; one slot picker; CE-150, CE-158 | model, ROM variant; two slot pickers; CE-1600P (+ disk picker, CE-1600P ROM variant), CE-150, CE-158 (MODE 1); host drive | model; 11-pin peripheral | model; RAM card picker; 11-pin and 15-pin peripherals |
+| Control state (FE-2) | model; module slot picker (ADR 0025); printer connect; card reader place (TI-59); `controls`: the PC-100C's PRINT, ADV, TRACE | model, ROM variant; one slot picker; CE-150, CE-158; `controls`: the CE-161's write-protect switch | model, ROM variant; two slot pickers; CE-1600P (+ disk picker, CE-1600P ROM variant), CE-150, CE-158 (MODE 1); host drive; `controls`: the CE-161's write-protect switch | model; 11-pin peripheral | model; RAM card picker; 11-pin and 15-pin peripherals |
 | Panels | printer paper (PC-100C), debug panel | paper (CE-150), CE-158 printer, debug panel | paper (CE-1600P), CE-158 printer, debug panel | paper (CE-126P) | paper (CE-126P, CE-515P) |
 | Sound out | none emulated (key click is a frontend feature) | buzzer PCM | buzzer PCM | buzzer | buzzer |
 | Stream topics (FE-5) | paper (PC-100C), log | paper (CE-150), CE-158 printer output | paper (CE-1600P), CE-158 printer output | paper (CE-126P) | paper |
-| Product topics (FE-6) | cue card, the debug panel's tabs, heatmap, ASM overlay | INSPECTOR views, CE-158 printer output | same, plus host drive | — | — |
+| Product topics (FE-6) | `c59.calc-indicator` (the LED frame and the C indicator), cue card, the debug panel's tabs, heatmap, ASM overlay | INSPECTOR views, CE-158 printer output | same, plus host drive | — | — |
 | Pacing profile (SP-1) | 20 ms slices, jitter, scan-loop sleep at full speed | about 16 ms slices | about 16 ms slices | — | — |
 
 ## Open questions
@@ -348,7 +348,9 @@ Options:
 - Q-2 (answered 2026-11-10): the host services every frontend provides: an
   audio sink; the clipboard (text and image); file and folder pickers
   (open preset, choose the ROM folder, the save-folder override); export
-  or download of a file (web: download); opening a URL (Help); haptics
+  or download of a file (`keep-file` `{name, bytes, mediaType, kind?}`;
+  web: download; the optional `kind` is `trace` for an ended trace, so
+  that the Web page can list traces, LIB-10 AC-26); opening a URL (Help); haptics
   where the platform has them. File access in the save folder and the
   settings file are the library's. Background: the minimal list (audio sink, clipboard, file and
   folder pickers, …) is settled with contracts 6 and 7, where file access
@@ -378,3 +380,4 @@ Options:
 | 2026-11-11 | Open questions of LIB-3 (user, 2026-11-11) | A command is carried out when it arrives and its reply and changed state topics go out at once; a frontend that starts to listen late gets the paper and the log from their last reset marker on and no earlier notices. |
 | 2026-11-11 | Open questions of LIB-3 (completed, user, 2026-11-11) | The background rule says "suspend" and "continue"; "pause" and "resume" are the debugger's. A suspend while an operation runs stops its progress until continue, and busy stays. Row LIB-15 is named "Web frontend shell". |
 | 2026-11-13 | Q-3 (amended, user, B-4) | A Sharp machine is idle when it reports key readiness for 20 frames in a row (the prompt, `INPUT`, the RESERVE mode; LIB-6 AC-45); the bare `- wait:` is gone. |
+| 2026-11-18 | Fit table, Q-2 (release simplification R-6, D-15) | The control state carries the peripherals' controls in `controls` (LIB-4 AC-21); Calc-U-59's LED frame and C indicator are the product topic `c59.calc-indicator`; the host service `keep-file` takes an optional `kind` (`trace`), kept at the release (`docs/reviews/release-simplification.md` §3). |

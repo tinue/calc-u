@@ -142,7 +142,15 @@ struct HostDirs {
     std::string settingsBase;        // AC-2: Application Support / %APPDATA% / XDG / the Web file system
     std::string saveFolder;          // Swift: iCloud or local Documents (AC-14); Web: in its file system (AC-15); Qt6: empty
     std::string applicationSupport;  // Swift: [trace] location = app-support (AC-24)
-    std::string chosenTraceFolder;   // Swift macOS: the folder the bookmark grants (AC-34); else empty
+    // Swift macOS: the folder the bookmark grants (AC-34), asked at each trace
+    // start (LIB-10 AC-53); unset or empty: none (release simplification L-5).
+    std::function<std::string()> chosenTraceFolder;
+    // Swift iOS: whether iCloud can be used now, asked at each trace start where
+    // [trace] location = icloud (AC-24); while it says no, ensure(Folder::Traces)
+    // refuses; unset: always (release simplification R-1).
+    std::function<bool()> iCloudAvailable;
+    std::string traceFolder;         // Given: the trace folder; empty: none
+    std::string screenshotFolder;    // Given: the screenshot folder; empty: none
 };
 enum class HostOs { MacOS, IOS, Windows, Linux, Web };
 std::string settingsBaseFor(HostOs, const std::function<std::optional<std::string>(const char*)>& env,

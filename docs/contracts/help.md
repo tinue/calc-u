@@ -76,7 +76,7 @@ P = per product:
    power cycle on attach, ROMs and the ROM folder (missing ROMs).
 4. Media (S): templates, instances, Name & Save, insert and eject,
    outdated files (with the TI card reader and fit, the Sharp modules,
-   disks and tapes as product sections or snippets).
+   disks and cassettes as product sections or snippets).
 5. Peripherals and paper (S + P): printers and plotters, the paper
    panel, product devices (PC-100C; CE-150, CE-1600P, CE-158).
 6. Presets (S + P snippets): format, steps, startup presets; reference.
@@ -115,7 +115,7 @@ Options:
 |---|---|---|
 | Source today | JSX in calc-u-site, converted once (ADR 0036) | `docs/` Markdown, moved |
 | Product chapters (HL-2, 9) | cue cards, modules, constant memory, fast mode | BASIC and machine code, COM ports, host drive, module definitions |
-| Product examples (HL-1) | in product chapters: TI key examples, card reader | in product chapters: Sharp `type:` examples, modules, disks, tapes |
+| Product examples (HL-1) | in product chapters: TI key examples, card reader | in product chapters: Sharp `type:` examples, modules, disks, cassettes |
 | Site | `/59/` | `/1600/` (new, Briefing §4.3) |
 
 (Per product, not per model: help is per product.)
@@ -133,3 +133,4 @@ Options:
 | 2026-11-10 | HL-2 | The ten-chapter structure above, in menu and control-bar order (shared and product chapters). |
 | 2026-11-10 | HL-3 | Each release attaches `<Product>-help.zip` (Markdown, images, table of contents); calc-u-site pins it by version and sha256 and renders Markdown and Mermaid itself; the in-app Help links to the product's site. |
 | 2026-11-10 | HL-3 (completed, user, 2026-11-10, batch 8 gate) | The asset's table of contents is `toc.json`. A help tool in the source repository builds and checks the asset (`tools/help build <product>`, `tools/help check <product>`); words the glossary lists under "Avoid" are warnings. Of calc-u.org/59, the install pages go into chapter 2 as a product part and the FAQ into chapter 9; the software pages, their articles and the page with the Web frontend stay pages of the site. Pictures that show what changed are taken anew by hand for the first release. On the site each chapter has an address of its own and today's addresses redirect; the Web frontend of Calc-U-1600 is at `/1600/play/` and `/1600/calc/app/`; each release carries its examples as a file, which the site pins; the design of `/1600/` is decided in calc-u-site. |
+| 2026-11-18 | Wording (release simplification R-6, D-15) | The Sharp medium is the cassette (glossary, 2026-11-17): "tapes" in the chapter list and the fit table read "cassettes". |

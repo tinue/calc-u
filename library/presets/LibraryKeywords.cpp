@@ -73,7 +73,7 @@ std::unique_ptr<Item> readKey(const YamlNode& v, ReadContext& ctx) {
     const std::string written = formats::scalarText(v);
     const std::vector<std::string> names = words(written);
     if (names.empty()) {
-        ctx.error(v.line, "key: needs one or more key names.");
+        ctx.error(v.line, "key: needs one or more key IDs.");
         return nullptr;
     }
     // LIB-5 AC-15: found when the preset is read

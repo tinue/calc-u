@@ -67,13 +67,19 @@ says otherwise. The exception is the preset's `debug:` block
 ([preset.md §3.4](preset.md#34-debug-1600)): its keys and values are camelCase
 (`stopOnEntry`, `cleanStart`, `allReset`), as in the debug launch
 configuration they mirror.
-Keys are matched exactly; fixed values are written in lower case and
-read in any case (`Center` is `center`).
+Keys are matched exactly, and so are `format:` values
+(`format: memory-module`), except that the magnetic card file reads its
+`format:` in any case (C59-7 AC-3). Other fixed values are written in
+lower case; presets, cue cards and the magnetic card file read them in
+any case (`Center` is `center`), Calc-U-1600's media files and the
+module definition only as written.
 
-**Numbers.** `&`, `0x` or `$` makes a number hex; without one it is
-decimal. In the module definition, a number is decimal or hex with `0x`.
-Writers use `0x` for a hex number; the `$` of an `addressed-hex` row is
-part of that encoding (§1.1).
+**Numbers.** In presets, `&`, `0x` or `$` makes a number hex; without
+one it is decimal. In the module definition, a number is decimal or hex
+with `0x`. The byte values of a media file (the magnetic card's
+`partition` and `checksum`) are `0x` or decimal. Writers use `0x` for a
+hex number; the `$` of an `addressed-hex` row is part of that encoding
+(§1.1).
 
 **Booleans** are `true` or `false`.
 

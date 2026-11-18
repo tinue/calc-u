@@ -27,6 +27,7 @@ quarter of the TI-59's memory, numbered 1 to 4; both sides may hold the
 same bank. A card is **fresh** while neither side has been written.
 
 ```yaml
+# Calc-U-59 magnetic card
 format: ti59-magnetic-card
 format-version: 3
 card-name: "My Program"
@@ -75,7 +76,8 @@ Each side:
   the save folder.
 - A write rewrites the file whole. It replaces only the side that was
   written, keeps the name, the description, the template mark and the
-  cue card, and sets `saved`. Comments in the file are not kept.
+  cue card, and sets `saved`. Comments in the file are not kept; the
+  file starts with the comment line `# Calc-U-59 magnetic card`.
 - A card saved without a cue card shows one titled with its name.
 - The corners show the banks of the written sides; they follow from the
   sides and are not set by hand.
@@ -90,8 +92,10 @@ back when a TI-58C starts without a startup preset; it cannot be opened
 or dropped (it is refused with a notice).
 
 ```yaml
+# Calc-U-59 TI-58C constant memory
 format: ti58c-constant-memory
 format-version: 1
+saved: 2026-11-12T10:00:00Z
 cue-card:
   title: Loan
   A: n
@@ -108,6 +112,7 @@ ram:
 | `format-version` | yes | `1` |
 | `memory-name` | no | A name |
 | `description` | no | One line |
+| `saved` | no | The time of the last write, `YYYY-MM-DDTHH:MM:SSZ` (UTC); for your information |
 | `cue-card` | no | The stand-alone cue card fitted when the file was written; absent: none |
 | `ram` | yes | `encoding: register-hex` and `bytes`: the 64 raw registers `R000`–`R063`; H00 to H03 are `R060` to `R063`. A register not listed is zero |
 

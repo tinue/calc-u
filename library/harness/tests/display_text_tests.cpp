@@ -1,4 +1,4 @@
-// LIB-11 design T8, T17: the display as text (AC-9 lcd, AC-10) and as the
+// LIB-11 design T8, T17: the display as text (AC-9 display-text, AC-10) and as the
 // machine gives it (AC-23).
 #include "TestHarness.hpp"
 #include "TestProduct.hpp"
@@ -103,7 +103,7 @@ TEST(ac9_lcd_reads_display_topic) {
     const std::string r = run.line("display-text");
     CHECK(r.rfind("done 3\n", 0) == 0);
     CHECK(r.find("indicators:") != std::string::npos && r.find("not text: ") != std::string::npos);
-    // What lcd shows is the display topic's last state: unchanged without a wait.
+    // What display-text shows is the display topic's last state: unchanged without a wait.
     run.machine().advance(1000);   // behind the session's back
     CHECK_EQ(run.line("display-text"), r);
 }

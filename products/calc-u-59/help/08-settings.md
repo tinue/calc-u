@@ -53,7 +53,7 @@ and no printer.
 
 ## Folders
 
-`[folders] <kind>` of the family has three kinds here. Each is where a
+`[folders] <kind>` of the family has two kinds here. Each is where a
 file dialog starts: the folder last used (written by the app), or a fixed
 folder given as `fixed:<folder>`.
 

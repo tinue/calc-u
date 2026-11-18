@@ -343,7 +343,7 @@ these do not apply to an attached harness and exits with status 2
 | `frontends/swift/Bridge/TISessionController.mm` with `PlatformAdapter` (lines 159-197) over the weak `TIPlatform` | deleted; `TIAppSession` over `cu59::SessionThread` |
 | `TIPlatform.runOnUiThread` → `dispatch_async(main)` | no successor (LIB-3 AC-30). The one main-thread hop is the mailbox wake |
 | `readConstantMemory`, `writeConstantMemory`, `readCardFile`, `cardFileExists`, `writeCard`, `cardFilePath` with `NSFileCoordinator` (`EmulatorViewModel.swift:490-546`) | the library's, in the save folder that `CardStorage` resolves and LIB-9's `HostDirs::saveFolder` carries. Until C59-3 / C59-7 (M-54, M-55) behind LIB-3 59's `TIFileAccess` (A-7, §5). The coordination stays: on Swift `TIFileAccess` reads and writes through the bridge's `TICoordinatedFiles` (D-6) |
-| `traceDirectory`, `traceMaxBytes`, `traceAvailable` | LIB-9 (`Paths`, `[trace]` keys), given at session creation |
+| `traceDirectory`, `traceMaxBytes`, `traceAvailable` | gone: LIB-9's `Paths::ensure(Folder::Traces)` and `[trace] max-file-size-mb`, asked at each trace start; the Swift grant and the iCloud gate are `HostDirs::chosenTraceFolder` and `HostDirs::iCloudAvailable` (release simplification L-5) |
 | `saveLastUsedModel` | a setting (LIB-9, M-32); the Swift frontend writes it on the main thread through `TISettings` when the model topic changes (D-3) |
 | `saveModuleID` | gone (row 59-9; LIB-3 AC-30) |
 | `showErrorTitle`, `diagnostic` | a notice, a log line (LIB-3 AC-10, AC-11); the view model shows notices as today's alert until C59-8 |

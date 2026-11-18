@@ -9,7 +9,7 @@
 // ── AppPaths: where the app's files live ─────────────────────────────────
 //
 // The save folder (~/Calc-U-1600 unless overridden in Settings), the
-// tapes folder, the file a by-name save of a card, disk or tape goes to,
+// cassette folder, the file a by-name save of a module, disk or cassette goes to,
 // and how a path is shown to the user. The places come from the library
 // (calcu::settings::Paths, LIB-9 AC-12): the frontend passes the host's
 // folders (calcu::settings::HostDirs: home, settings base, and on the Web

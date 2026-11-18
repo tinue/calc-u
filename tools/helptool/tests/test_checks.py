@@ -76,6 +76,38 @@ class CheckTests(HelpTestCase):
         # "product" is under Avoid for "Model" but is a term itself: no warning.
         self.assertNotIn("'product'", run.out)
 
+    def test_ac18_source_path_fails(self):
+        cases = [
+            ("The cards are in frontends/qt6/resources/cards.\n", "'frontends/'"),
+            ("See `products/demo/app/Thing.cpp`.\n", "'products/demo/app/'"),
+            ("The [templates](https://github.com/tinue/calc-u/tree/main/products/demo/frontends/qt6/x).\n",
+             "links into the source code"),
+            ("Read `library/sessions/AppSession.cpp`.\n", "'library/'"),
+            ("[core/Machine](https://example.org/x)\n", "'core/'"),
+        ]
+        for text, fragment in cases:
+            with self.subTest(text=text):
+                original = (self.product / "09-models.md").read_text(encoding="utf-8")
+                self.append(self.product / "09-models.md", "\n" + text)
+                self.assertFailsWith(self.tool("check", "demo"), "09-models.md", fragment, "(AC-18)")
+                self.write(self.product / "09-models.md", original)
+
+    def test_ac18_milestone_fails(self):
+        self.append(self.shared / "06-presets.md", "\nThis came with M-52.\n")
+        self.assertFailsWith(self.tool("check", "demo"), "06-presets.md", "the milestone 'M-52'")
+        self.replace(self.shared / "06-presets.md", "\nThis came with M-52.\n", "\nIn `M-7`.\n")
+        self.assertFailsWith(self.tool("check", "demo"), "the milestone 'M-7'")
+
+    def test_ac18_what_a_user_gets_passes(self):
+        self.append(self.product / "09-models.md",
+                    "\nIn `products/demo/` run `tools/read_trace.py`; open"
+                    " [calc-u.org/59/calc/app/](https://calc-u.org/59/calc/app/), the"
+                    " [examples](https://github.com/tinue/calc-u/tree/main/products/demo/examples) and the"
+                    " [notes](https://github.com/tinue/calc-u/blob/main/products/demo/docs/notes.md)."
+                    " A CE-1600M-1 and DM-10 are fine.\n"
+                    "\n```\ncmake --build build --target frontends/qt6/app\n```\n")
+        self.assertPasses(self.tool("check", "demo"))
+
     def test_ac4_non_markdown_source_fails(self):
         self.write(self.product / "09-notes.html", "<h1>Notes</h1>\n")
         self.replace(self.product / "help.yaml", "09-models.md]", "09-models.md, 09-notes.html]")

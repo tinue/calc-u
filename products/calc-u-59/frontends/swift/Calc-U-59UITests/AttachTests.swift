@@ -1,6 +1,6 @@
 import XCTest
 
-/// Harness attach in the simulator (C59-5 design §6, S3 and S4): the app's
+/// Harness attach in the simulator: the app's
 /// Debug build opens its session on 127.0.0.1:<port>; the test, which runs in
 /// the same simulator, attaches as `calcu attach` would. Part of
 /// UIRegressionTests. A fixed port of its own, so it does not meet an app
@@ -28,7 +28,7 @@ final class AttachTests: XCTestCase {
         XCTAssertEqual(harness.command("wait 150ms").first, "done 2")
     }
 
-    /// S3 (AC-10, AC-11, AC-12, AC-14): the harness drives the running app's
+    /// The harness drives the running app's
     /// session; what it changes shows in the window; `wait` passes on the app's
     /// clock; `quit` ends the attach, not the app.
     func testHarnessDrivesTheApp() throws {
@@ -59,7 +59,7 @@ final class AttachTests: XCTestCase {
         shot.lifetime = .keepAlways
         add(shot)
 
-        // AC-14: emulated time passes as the app paces it.
+        // Emulated time passes as the app paces it.
         let t0 = Date()
         let wait = harness.command("wait 1s", timeout: 15)
         let wall = Date().timeIntervalSince(t0)
@@ -95,10 +95,10 @@ final class AttachTests: XCTestCase {
     }
 
     #if os(iOS)
-    /// S4 (AC-8, EC-3): Home sends suspend and the session thread stops
-    /// calling; back in front it calls again. iOS may stop the process once
-    /// the suspend is carried out (its background task ends then); a reply
-    /// that comes while the app is away is the refusal of EC-3.
+    /// Home sends suspend and the session thread stops calling; back in
+    /// front it calls again. iOS may stop the process once the suspend is
+    /// carried out (its background task ends then); a reply that comes while
+    /// the app is away is a refusal ("the app is suspended").
     func testBackgroundSuspendsAndContinues() throws {
         let (app, harness) = launchAttached()
         XCTAssertEqual(harness.command("wait 1s", timeout: 15).first, "done 2")
@@ -116,7 +116,7 @@ final class AttachTests: XCTestCase {
         }
         let note = "a command while in the background: \(away ?? "no reply (the process is stopped)")"
         add(XCTAttachment(string: note))
-        print("[S4] \(note)")
+        print("[background] \(note)")
         if let away { XCTAssertEqual(away, "refused: the app is suspended") }
         Thread.sleep(forTimeInterval: 3)
 
@@ -125,7 +125,7 @@ final class AttachTests: XCTestCase {
         drain(harness)
         let after = seconds(harness)
         let wall = Date().timeIntervalSince(w0)
-        print(String(format: "[S4] away %.2f s of wall time, %.2f s of emulated time", wall, after - before))
+        print(String(format: "[background] away %.2f s of wall time, %.2f s of emulated time", wall, after - before))
         XCTAssertLessThan(after - before, wall - 2, "the session ran while the app was in the background")
         // Calls again: emulated time passes on the app's clock.
         let t0 = Date()
@@ -135,7 +135,7 @@ final class AttachTests: XCTestCase {
         app.terminate()
     }
 
-    /// S5 (AC-5): a program runs; a press on the display (full speed) keeps
+    /// A program runs; a press on the display (full speed) keeps
     /// the session thread busy for whole calls while the main thread takes the
     /// touch and its end; then a touch on a key of the faceplate reaches the
     /// session (R/S stops the program, `display-text` shows its display). The main thread's frame gaps
@@ -158,11 +158,11 @@ final class AttachTests: XCTestCase {
         let regularRate = (seconds(harness) - s1) / Date().timeIntervalSince(w1)
         let note = String(format: "rate against wall time: pressed %.2f, released %.2f", fullRate, regularRate)
         add(XCTAttachment(string: note))
-        print("[S5] \(note)")
+        print("[full speed] \(note)")
         XCTAssertGreaterThan(fullRate, 1.5, "the press did not reach the session as full speed")
         XCTAssertEqual(regularRate, 1.0, accuracy: 0.15, "the end of the press did not reach the session")
 
-        // R/S under the finger (the faceplate's hit map, C59-8 D-9), held as long as a finger.
+        // R/S under the finger (the faceplate's hit map), held as long as a finger.
         let face = app.descendants(matching: .any)["faceplate"].firstMatch
         face.coordinate(withNormalizedOffset: CGVector(dx: 0.0783, dy: 0.9704)).press(forDuration: 0.3)
         XCTAssertEqual(harness.command("wait 500ms", timeout: 10).first, "done 2")

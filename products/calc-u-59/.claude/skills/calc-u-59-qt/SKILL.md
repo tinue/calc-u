@@ -11,16 +11,16 @@ by the repository's `.github/workflows/calc-u-59.yml` and attached to releases b
 `release.yaml`. The **macOS Qt build is local and for development only** —
 never shipped, never built in CI, never signed. On the Mac the Swift app is
 the product. The Qt app has no iCloud: cards, `ti58c.memory.yaml` and traces live in
-the save folder `~/Calc-U-59` (`AppPaths::saveDir()`, LIB-9), each folder (and where Load Preset… starts) set in Settings, as
+the save folder `~/Calc-U-59` (`AppPaths::saveDir()`), each folder (and where Load Preset… starts) set in Settings, as
 in Calc-U-1600.
 
-**The window is put together from LIB-14's shell** (M-57, design §10.4):
+**The window is put together from the library's shell**:
 `MainWindow` makes a `calcu::qt6::Shell` over the `calcu::qt6::SessionHost`
 that `EmulatorController` makes, with Calc-U-59's data from
 `app/TIShellProduct` (`cu59::shellProduct`, `cu59::settingsSpec(ShellFrontend::Qt6, …)`,
 `cu59::faceplateHitMap`). The shell draws the menus (File, Machine, Help; no
-Edit), the control bar (the model picker, LIB-7's `MediaPicker` for `slot-1`,
-the "PC-100C" button, C59-7's `CardControls` by `registerMediaControls("magnetic-card", …)`),
+Edit), the control bar (the model picker, the library's `MediaPicker` for `slot-1`,
+the "PC-100C" button, the product's `CardControls` by `registerMediaControls("magnetic-card", …)`),
 the settings dialog, About, Help, notices, "Loading…" and "ROMs missing",
 all from the control state and the library's commands. **A new menu item
 goes into the menu model (`cu59::shellProduct().items` or the library's
@@ -28,7 +28,7 @@ goes into the menu model (`cu59::shellProduct().items` or the library's
 the shell's (`Shell::setFaceplate` with `FaceplateGeometry`: the canvas's
 scale and corner, and `KeyboardWidget::cardTakes` for the card tap).
 
-**Magnetic cards** (C59-7, LIB-7 59, M-55) are the library's media part: the
+**Magnetic cards** are the library's media part: the
 `media` topic's place `card-reader` (what is fitted, `passing`, the picker)
 and the commands `media.choose` (Arm Card), `media.start-new` with the
 template `implicit:Fresh card` (Arm Fresh Card; a refusal `asks: …` is the
@@ -43,7 +43,7 @@ A corner tap is `c59.tap-card` (the shell lets a press on a card on show
 through to `KeyboardWidget`); the lit corner comes from `c59.cue-card`.
 
 Structure follows the sibling project Calc-U-1600
-(`~/Development/sharp/Calc-U-1600/Qt6`): Widgets, AUTOMOC/AUTORCC, no `.ui`
+(`products/calc-u-1600/frontends/qt6`): Widgets, AUTOMOC/AUTORCC, no `.ui`
 files, QPainter rendering.
 
 Everything that isn't drawing: `reference/AppLayer.md`.
@@ -59,7 +59,7 @@ Everything that isn't drawing: `reference/AppLayer.md`.
    file dialogs belongs in `app/` (calc-u-59-app skill) so the Swift app
    gets it too. `EmulatorController` is the product's glue (as Calc-U-1600's
    `MachineController`): it makes the app session (`cu59::makeAppSession`
-   on the library's `calcu::shell::makeHostSession`, which puts LIB-14's
+   on the library's `calcu::shell::makeHostSession`, which puts the library's
    `SettingsPart` in front; without the full ROM set a session with no
    machine and the topic `roms-missing`) and the `SessionHost` over it
    (the library's `calcu::qt6::ProductHost`: the 60 Hz timer, the listener, the clipboard and open-url services,
@@ -72,17 +72,16 @@ Everything that isn't drawing: `reference/AppLayer.md`.
    `EmulatorController::printerControls`); FREEZE, STEP and RESUME are the
    library's run-control buttons of the levels `program` (CALCULATOR) and
    `cpu` (CPU), FREEZE ON START sends `pause-on-start`, TRACE sends
-   `trace {button: true}` (LIB-10). The model, the module, the printer and
-   the card controls are drawn from the control state only (LIB-4 AC-15;
-   CTest `CalcU59FrontendsDrawControlState`).
+   `trace {button: true}`. The model, the module, the printer and
+   the card controls are drawn from the control state only (CTest `CalcU59FrontendsDrawControlState`).
 3. **One thread.** The session lives on the GUI thread; there is no
    emulation thread and no queue to hop. Qt6 sends neither suspend nor
-   continue (LIB-3 AC-31; CTest `CalcU59NoOwnSession`).
+   continue (CTest `CalcU59NoOwnSession`).
 4. **Assets have one source:** ROMs from `roms/` and artwork from
    `frontends/swift/App/Assets.xcassets` are compiled in as Qt resources by `frontends/qt6/CMakeLists.txt`;
    icons come from `frontends/swift/App/AppIcon.icon` via `tools/gen_qt_icons.sh`. Never copy them.
 5. **Settings** are declared in `app/Settings.hpp` and live in
-   `Calc-U-59.ini` (LIB-9); the settings dialog is the shell's
+   `Calc-U-59.ini`; the settings dialog is the shell's
    (`ShellSettingsDialog` over the `settings` topic, rows from
    `cu59::settingsSpec`), the library's `calcu::qt6::HostFolders`
    (`AppPaths::folders()`, `file()`, `places()`) opens the file and gives
@@ -95,7 +94,7 @@ Everything that isn't drawing: `reference/AppLayer.md`.
    (an offscreen screen may clamp the window size). Ask the user to try the app itself.
    A development or test build (`CALCU_ATTACH`, POSIX) offers harness
    attach (`--attach-port N`, else 59059; `calcu attach`) and
-   `--pacing-probe <s>` (LIB-17 AC-19, CTest `CalcU59QtPacingProbe`), an
+   `--pacing-probe <s>` (CTest `CalcU59QtPacingProbe`), an
    attach client in the app's own process (the library's
    `calcu::qt6::runPacingProbe` over `AttachLineClient`; the lines and the bound are `main.cpp`'s): `ticks` over `<s>` seconds against wall
    time, exit 0 or 1; run it offscreen with a temporary `HOME`, so no
@@ -104,8 +103,8 @@ Everything that isn't drawing: `reference/AppLayer.md`.
    tree with `CALCU_FRONTEND_QT=ON`; offscreen, a `HOME` of the build
    tree's): the real window (`tests/QtFixture`, the bundled examples from
    `examples/`, the file dialogs and the browser replaced by recorders) on
-   the real clock; the scenarios of LIB-14 AC-25 under their IDs
-   (`lib14_acN_…`, the Web's of the same IDs in `frontends/web/tests/shell.spec.js`).
+   the real clock; the shell's scenarios, each under the same name as the
+   Web's in `frontends/web/tests/shell.spec.js`.
    `QtResourceBundle::hideForTests` makes the ROMs-missing case.
 8. **Commit often, never push.**
 
@@ -114,19 +113,19 @@ Everything that isn't drawing: `reference/AppLayer.md`.
 | Qt (`frontends/qt6/app/`) | Swift counterpart |
 |---|---|
 | `main.cpp` | `Calc-U-59App.swift` |
-| `MainWindow` | `CalculatorView` (layout, menus, presets, drag and drop: every file to LIB-13's `open` through the library's `library/qt6/FileOpening` (`calcu::qt6::openFile(window, …)`, which raises the window but for the start, `dragEnter`, `dragMove`, `drop` (accepted, opened after the drop: LIB-13 AC-24), `startFile`, the macOS `FileOpenFilter` in `main.cpp`); Arm Fresh Card's replace question through `calcu::qt6::sendAsking`) |
+| `MainWindow` | `CalculatorView` (layout, menus, presets, drag and drop: every file to the library's `open` through the library's `library/qt6/FileOpening` (`calcu::qt6::openFile(window, …)`, which raises the window but for the start, `dragEnter`, `dragMove`, `drop` (accepted, opened after the drop), `startFile`, the macOS `FileOpenFilter` in `main.cpp`); Arm Fresh Card's replace question through `calcu::qt6::sendAsking`) |
 | `EmulatorController` | `EmulatorViewModel` |
 | `CalculatorPanel` (the faceplate, the shell's control bar and "ROMs missing") | `CalculatorView` calculator column |
 | the shell's control bar (`calcu::qt6::Shell::controlBar()`), `CardControls` | `CalculatorView` bar and card buttons |
 | `KeyboardWidget` (the faceplate: art, LED, cue card, pressed key from `held-keys`, host keys through `calcu::qt6::HostKeys`) | `KeyboardView` |
 | `LedRenderer` | `LEDDisplayView` |
 | `CueCardRenderer` | `CueCardView` |
-| the library's `calcu::qt6::PaperPanel` in the shell's panel area (LIB-8, LIB-14 AC-23) | `PrinterView` |
+| the library's `calcu::qt6::PaperPanel` in the shell's panel area | `PrinterView` |
 | `CardPickerDialog` | `CardPickerView` |
 | `debug/DebugPanel`, `debug/AsmOverlayBox`, `debug/LogWidget` | `DebugView` (`ASMDebugContent`, `StaticDebugContent`); they draw `TIDebugPart`'s product topics through `EmulatorController`, which keeps the LOG tab's view (`cu59::RingLog`) of the `log` topic; Run, TRACE and the CALCULATOR tab follow the product entries (`entryAvailable`) |
 | `debug/LiveDebugWidget` | `LiveDebugView` |
 | `debug/CpuInspectorWidget`, `debug/RomHeatmapWidget` | `CPUInspectorView` |
-| the library's `calcu::qt6::RunControlButtons` (FREEZE, STEP, RESUME of each debug tab, LIB-10 since M-53) | `HoldRepeatButton.swift` |
+| the library's `calcu::qt6::RunControlButtons` (FREEZE, STEP, RESUME of each debug tab) | `HoldRepeatButton.swift` |
 | `ChromeStyle.hpp` | `ChromeControlStyles.swift` |
 | the shell's `ShellSettingsDialog` (`cu59::settingsSpec`), `AppSettings.hpp`, `AppPaths` | `SettingsView`, `AppSettings.swift`, `CardStorage.swift` |
 | the shell's `ShellAbout` (`cu59::shellProduct`'s texts and links, the window icon, "Built with Qt") | `AppInfo.swift` |
@@ -139,8 +138,7 @@ Everything that isn't drawing: `reference/AppLayer.md`.
 cmake -S ../.. -B ../../build/all -G Ninja && cmake --build ../../build/all   # root project: both products, tests + Qt apps
 ```
 
-All C++ builds go through the repository's root `CMakeLists.txt` (ADR 0003;
-options `CALCU_PRODUCT_59`, `CALCU_PRODUCT_1600`, `CALCU_FRONTEND_QT`); the
+All C++ builds go through the repository's root `CMakeLists.txt` (options `CALCU_PRODUCT_59`, `CALCU_PRODUCT_1600`, `CALCU_FRONTEND_QT`); the
 product directory and `frontends/qt6/` do not configure on their own. The
 packaging jobs in CI configure the root into `build/release`
 (`-DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF`) and build `CalcU59Qt`; the

@@ -35,7 +35,7 @@ CardPickerDialog::CardPickerDialog(Mode mode, const std::vector<calcu::media::Pi
     for (const auto& e : cards) {
         auto* item = new QListWidgetItem(QString::fromStdString(e.label), m_list);
         item->setData(kEntryRole, QString::fromStdString(e.id));
-        if (!e.canChoose) {   // LIB-7 AC-9: outdated, with its hint
+        if (!e.canChoose) {   // outdated, with its hint
             item->setFlags(Qt::NoItemFlags);
             if (e.hint) item->setToolTip(QString::fromStdString(*e.hint));
         } else if (e.tooltip) {

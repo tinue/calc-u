@@ -177,7 +177,7 @@ NSInteger keyIndexOf(const std::string &key) {
 
 - (shell::Traits)traits {
     shell::Traits t;   // macOS: {hasQuit, shortcuts, menuBar, settings, about}
-    if (!_withMenuBar) {   // iOS and iPadOS (design §3.1; AC-5, AC-11)
+    if (!_withMenuBar) {   // iOS and iPadOS: no menu bar, no About, no Quit
         t.menuBar = false;
         t.about = false;
         t.hasQuit = false;
@@ -211,7 +211,7 @@ NSInteger keyIndexOf(const std::string &key) {
 
 - (NSArray<TIBarControl *> *)bar {
     NSMutableArray *out = [NSMutableArray array];
-    if (!self.started) return out;   // B7 (AC-19)
+    if (!self.started) return out;   // no bar before the first control state
     for (const auto &g : shell::bar(self.inputs, product(), self.traits))
         for (const auto &c : g.controls) {
             TIBarControl *t = [[TIBarControl alloc] init];
@@ -299,7 +299,7 @@ NSInteger keyIndexOf(const std::string &key) {
     return findIn(self.moreItems, itemID);
 }
 
-// A command the shell sends; its refusal is shown like a notice (D-7, N4).
+// A command the shell sends; its refusal is shown like a notice.
 - (void)sendChecked:(cs::Command)command {
     TIAppSession *s = _session;
     if (!s) return;
@@ -359,7 +359,7 @@ NSInteger keyIndexOf(const std::string &key) {
 
 - (void)pushNotice:(NSString *)sentence { _notices.push(cpp(sentence)); }
 
-// ── The pointer (D-9) ────────────────────────────────────────────────────────
+// ── The pointer ──────────────────────────────────────────────────────────────
 
 - (BOOL)apply:(shell::PointerTracker::Out)out pointer:(int64_t)pointer {
     BOOL pressed = NO;

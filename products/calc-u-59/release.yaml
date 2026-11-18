@@ -21,7 +21,7 @@
 # MANIFEST.json names the version and commit.
 
 name: Calc-U-59
-# One of the products of tinue/calc-u (ADR 0027-0029): prefixed tags, releases
+# One of the products of tinue/calc-u: prefixed tags, releases
 # from main, never GitHub's "Latest".
 tag_prefix: calc-u-59-
 branching: trunk
@@ -55,9 +55,9 @@ build:
       - { artifact: Calc-U-59-windows-x86_64, file: Calc-U-59-Setup.exe,          as: Calc-U-59-windows-x86_64.exe }
       - { artifact: Calc-U-59-windows-arm64,  file: Calc-U-59-Setup-arm64.exe,    as: Calc-U-59-windows-arm64.exe }
       - { artifact: Calc-U-59-web,            file: "Calc-U-59-web-*.zip",        as: Calc-U-59-web.zip }
-      # The help (LIB-16): the Markdown chapters, their pictures, the tutorial
+      # The help: the Markdown chapters, their pictures, the tutorial
       # presets and toc.json (tools/help build calc-u-59); calc-u.org/59/
-      # renders it (LIB-19).
+      # renders it.
       - { artifact: Calc-U-59-help,           file: Calc-U-59-help.zip,           as: Calc-U-59-help.zip }
 
 appstore:

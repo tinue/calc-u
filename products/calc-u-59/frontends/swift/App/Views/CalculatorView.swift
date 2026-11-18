@@ -31,7 +31,7 @@ struct CalculatorView: View {
         UTType(filenameExtension: "ti58") ?? .data,
         UTType(filenameExtension: "ti58c") ?? .data
     ]
-    /// The Preset button's dialog (LIB-13 AC-5, D-21): the preset types and any
+    /// The Preset button's dialog: the preset types and any
     /// file; the session's `open` finds out what it is.
     private static let presetDialogTypes = presetTypes + [.item]
 
@@ -102,7 +102,7 @@ struct CalculatorView: View {
     }
 
     /// Load Preset… (File menu, ⌘O; the Preset button on iOS): the preset
-    /// types and any file (LIB-13 AC-5, D-21), opened as what it is.
+    /// types and any file, opened as what it is.
     private func openPresetDialog() {
         #if os(macOS)
         let panel = NSOpenPanel()

@@ -18,9 +18,9 @@ a magnetic card file (format 3, `.magnetcard.yaml`) **`docs/formats/media.md`**
 `arm:`, `saveas: { card: }` §5.2.
 Read them before writing or editing a preset. Presets of 2.3.0 (no
 `format-version: 2`) are refused with the hint; there is no converter
-(ADR 0037).
+(a release reads only the current version of its own formats).
 
-The code: the library's loader (`library/presets/`, LIB-6) with
+The code: the library's loader (`library/presets/`) with
 Calc-U-59's rules `app/TIPresetRules` (idle, `expect:`, `screenshot:`,
 `slot-1` by `name:` only) and keywords `app/TIPresetKeys` (the four
 sections, `printer-trace:`), `app/TIMagneticCardsKey` (`magnetic-cards:`);
@@ -30,7 +30,7 @@ the cue card reader `app/CueCardYaml`. The code wins where it and these notes di
 the format documents win over the code.
 
 A keystroke program file can also be opened on its own (a drop, the
-dialog, `calcu`'s `open <file>`; LIB-13 AC-23, `app/TIFileKinds`): its
+dialog, `calcu`'s `open <file>`; `app/TIFileKinds`): its
 program is written into the running machine from step 000, without a cold
 boot; the partition, the data registers and the steps it does not list
 stay.
@@ -50,7 +50,7 @@ stay.
   the preset. There is no `...` gap marker: write `# ...` as a comment.
 - **Only what is listed is written.** A `program:` or `data:` section after
   a `keys:` section changes the machine in the middle of the preset and
-  keeps everything it does not list (C59-2 AC-7).
+  keeps everything it does not list.
 - **Full speed by default.** A preset runs at full speed unless a
   `- regular-speed:` comes first; an upgraded example starts its first
   `keys:` with `- regular-speed:` where 2.3.0 ran it at regular speed. Adv
@@ -98,8 +98,7 @@ characters has fewer digits; keep it as printed.
   one bank (`bank:` 1–4); its bare keycodes start at the bank's first step.
 - The four examples with magnetic cards (`globe-print`,
   `historic/characters-fastmode`, `historic/pdcm-card-tricks`,
-  `historic/pdcm-make-cards`) show these patterns (upgraded in M-55,
-  C59-7 AC-30).
+  `historic/pdcm-make-cards`) show these patterns.
 
 ## Transcribing magazine listings (52-Notes)
 

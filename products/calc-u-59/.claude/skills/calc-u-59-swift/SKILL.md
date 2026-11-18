@@ -11,17 +11,17 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
 - App structure, files, threading, bridge: `reference/AppArchitecture.md`.
 - Everything that isn't drawing (run loop, keys, files, debugger, drawing
   rules): `reference/AppLayer.md` and the calc-u-59-app skill.
-- Freeze / step and the debug snapshots: `reference/DebugAPI.md`. Since
-  M-53 FREEZE, STEP, RESUME and FREEZE ON START are the library's run
+- Freeze / step and the debug snapshots: `reference/DebugAPI.md`.
+  FREEZE, STEP, RESUME and FREEZE ON START are the library's run
   control (`pause`, `step`, `resume`, `pause-on-start`; CALCULATOR is
   `program`, CPU `cpu`), and the buttons follow its rule through the bridge
   (`buttonUseFor:` with a `TIRunLevel`, the paused one `pausedLevel`;
   `calcu::debugger::buttonUse`; test
   `Calc-U-59Tests/RunControlTests.swift`); TRACE is the trace session's.
-  Since M-56 (C59-4) the panel draws the session's product topics
+  The panel draws the session's product topics
   `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`,
   `c59.asm-overlay`, `c59.debug-view` (app/TIDebugPart.hpp), which the bridge
-  mirrors; the LOG tab is the bridge's `cu59::RingLog` of LIB-3's `log`
+  mirrors; the LOG tab is the bridge's `cu59::RingLog` of the session's `log`
   (Clear empties the view only); the buttons send `c59.show-calculator-debug`,
   `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`,
   `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`. Run and the
@@ -30,15 +30,15 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   cannot be written refuses the start); FREEZE and FREEZE ON START
   `cu59::freezeButtons` (`freezeButtonsFor:`). The tab a `debug-panel:` step
   asks for arrives as `showDebugPanel:` when c59.debug-view's `requests` grows.
-- Opening a file (LIB-13, M-56): the macOS drop and the Preset button's
+- Opening a file: the macOS drop and the Preset button's
   importer (the preset types and any file) send the library's `open`
   (`openFile:path:fileName:way:completion:`, way `drop` or `dialog`); the
   session finds out what the file is (a preset, a card, an ASM overlay, a
   keystroke program) and a refusal is its notice. `wouldOpenFile:` asks
   `open-would-take`. No Swift code tells a file's kind; test
   `Calc-U-59Tests/OpeningTests.swift`.
-- The family structure (C59-8, M-58): the window is drawn from the
-  library's shell models (LIB-14), which `Bridge/TIShell` computes from the
+- The family structure: the window is drawn from the
+  library's shell models, which `Bridge/TIShell` computes from the
   last Value of each input topic (`control-state`, `busy`, `run-state`,
   `roms-missing`, `settings`, `media`, the `preset-list` reply) with
   `app/TIShellProduct`: `menus` (SwiftUI `Commands` in
@@ -57,21 +57,21 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   the model facts in Swift (`CalcU59FrontendsDrawControlState`,
   `CalcU59NoTestAids`). A new menu item or settings row goes into
   `app/TIShellProduct`, never into a Swift view.
-- Settings (C59-8 D-3): the settings file is the session's. The bridge
+- Settings: the settings file is the session's. The bridge
   opens `Calc-U-59.ini` (or the Debug build's `--settings-file`; the
   library's `calcu::shell::HostSettings`) and
   hands the file to the session thread (the trace folder is the places',
-  read at each trace start, LIB-10 AC-53: `TISessionStart.chosenTraceFolder`
+  read at each trace start: `TISessionStart.chosenTraceFolder`
   is a block the session thread calls for the bookmark's folder,
   `AppSettings.chosenTraceFolder()`, nonisolated; on iOS
   `HostDirs::iCloudAvailable` beside it refuses the iCloud location while
-  signed out), where LIB-14's `SettingsPart` (made
+  signed out), where the library's `SettingsPart` (made
   by `makeAppSession`'s `calcu::shell::HostSessionSetup`) (with `alsoShown` `window.portrait-debug-page`) and
-  LIB-18's start read and write it; views read the values through
+  the library's start read and write it; views read the values through
   `TIShell.setting(_:_:)` and change one with `setSetting` (`set-setting`).
   Only the macOS trace-folder bookmark stays in UserDefaults
   (`AppSettings.swift`).
-- The paper panel (C59-8 AC-12): `PrinterView` draws the library's topic
+- The paper panel: `PrinterView` draws the library's topic
   `paper PC-100C` (dots and text the bridge keeps) under its owner's name
   (`TIShell.paperOwner`), an empty paper under none; Copy and Cut are
   `paper.copy` / `paper.cut`, the picture the library's, the pasteboard
@@ -88,7 +88,7 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    in `app/`, reached through `EmulatorViewModel` → `TIAppSession` (the app
    session) or a `frontends/swift/Bridge/` wrapper. Views are thin bindings
    over `EmulatorViewModel`.
-   **The session runs on its own thread** (`cu59::SessionThread`, C59-5):
+   **The session runs on its own thread** (`cu59::SessionThread`):
    the bridge posts commands (the library's and `c59.*`) and hands each
    batch of messages to the main thread; `EmulatorViewModel.apply` copies
    what a batch changed (`TIChangeShell`: the shell's models). Nothing in
@@ -97,25 +97,24 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    topic (a library one, or a product topic of `TIAppPart`/`TIDebugPart`)
    plus a getter in `TIAppSession` or `TIShell` that reads the last message.
    The cards are the library's `media` topic (place `card-reader`) and
-   `media.*` commands since M-55 (`savedCards`, `armCard:`,
-   `armFreshCard:confirmed:` with the `asks:` replace question, `ejectCard`;
-   C59-7); `c59.tap-card` feeds a corner. No `.u59` card, no `cuecards.txt`.
+   `media.*` commands (`savedCards`, `armCard:`,
+   `armFreshCard:confirmed:` with the `asks:` replace question, `ejectCard`);
+   `c59.tap-card` feeds a corner. No `.u59` card, no `cuecards.txt`.
    **Harness attach (Debug, macOS and simulator only):** the app opens its
    session on 127.0.0.1, port `--attach-port N`, else 59059; `calcu attach
    [--port N]` drives it (`library/harness/attach/`; one port per simulator).
    The attached registry has the serve form's commands, `open` and the
    product's `ti59 …`, not `preset` (load a file with `open <path>`).
    A Debug build also takes `--settings-file <path>` (a relative path in the
-   app's temporary folder); the app has no other aid for its tests (C59-8
-   AC-21).
+   app's temporary folder); the app has no other aid for its tests.
    Release and device builds have no attach (`CALCU_ATTACH` off;
    `Calc-U-59-Debug.entitlements` is the Debug configuration's only).
    `check_no_attach.sh` checks it: `--sources` in Frequent, `--binary` as a
    build phase of every Release and device build, the full build check in
    Longer. The XCFramework phase must keep its declared output, or a Release
-   build after a Debug one links the Debug XCFramework (C59-5 qa-report).
+   build after a Debug one links the Debug XCFramework.
    The Mac app's App Nap activity is `.latencyCritical`: without it a covered
-   window loses emulated time (AC-9).
+   window loses emulated time.
 2. **Parity.** A user-visible change here needs the matching Qt change, and
    the web change if the feature is in the web's scope, on the same branch —
    or a `Pending (Qt)` / `Pending (Web)` row in `reference/FrontendParity.md`.

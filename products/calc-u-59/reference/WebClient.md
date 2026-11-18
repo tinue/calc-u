@@ -8,8 +8,8 @@
 The web client is the third GUI on `core/` + `app/`, next to the Swift
 app (`frontends/swift/App/`) and the Qt6 app (`frontends/qt6/`): the library's app session with
 `cu59::TIAppPart`, as every frontend hosts it, compiled to WebAssembly and run
-single-threaded in a Web Worker on the library's Web shell (`library/web/`,
-LIB-15; since M-34), with React components that only draw what it sends and
+single-threaded in a Web Worker on the library's Web shell (`library/web/`),
+with React components that only draw what it sends and
 forward input to it. It has the
 apps' features (`FrontendParity.md`, the Web column) in two layouts:
 
@@ -22,19 +22,19 @@ The installable PWA (`app/`) picks between them by the window's size.
 
 Deliberately different from the apps: the LED is Classic only; the files
 it keeps are in the browser's IndexedDB, the persistent file system of the
-library's shell (database `/persist-calc-u-59`, LIB-15 AC-5, AC-20): the
-settings file `settings/Calc-U-59/Calc-U-59.ini` (LIB-9 AC-23) and the save
+library's shell (database `/persist-calc-u-59`): the
+settings file `settings/Calc-U-59/Calc-U-59.ini` and the save
 folder `Calc-U-59/` with the magnetic cards (`<name>.magnetcard.yaml`, the
-library's media part since M-55: Arm Card ▸ Import… brings a card file in,
-Saved Media… downloads or deletes one; LIB-7 AC-30, AC-31, AC-36) and
+library's media part: Arm Card ▸ Import… brings a card file in,
+Saved Media… downloads or deletes one) and
 `ti58c.memory.yaml`; nothing is in `localStorage`. Only the
 first copy of the client in a browser writes them; a second tab (or a
-second client on one page) works in memory and says so (AC-8, AC-21; ledger
-59-8). There is no trace folder: a trace (the TRACE button's or a preset's)
+second client on one page) works in memory and says so. There is no trace
+folder: a trace (the TRACE button's or a preset's)
 is kept in the worker's memory by the library's trace session and handed to
-the page with the host service `keep-file` when it ends (LIB-10 AC-26, M-53),
+the page with the host service `keep-file` when it ends,
 which the page offers as a download and lists in the LOG tab (it keeps the
-bytes; the worker keeps no copy, LIB-10 D-25). Like the apps, it starts with
+bytes; the worker keeps no copy). Like the apps, it starts with
 the PC-100C connected.
 
 It is built into a self-contained folder, `frontends/web/dist/`, that does not know
@@ -44,7 +44,7 @@ repository, or a local `frontends/web/dist/` for testing) and mounts the calcula
 from it. This document is the contract between the two.
 
 ```
-library/web/src/* + frontends/web/src/* ──(Babel, in Node)──▶ calc.js: CalcU59        ─┐ LIB-3 messages (postMessage)
+library/web/src/* + frontends/web/src/* ──(Babel, in Node)──▶ calc.js: CalcU59        ─┐ session messages (postMessage)
                                                                              ▼
 calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀── bindings.cpp + app/ + core/ + library (emcc)
 ```
@@ -53,49 +53,49 @@ calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀�
 
 | Path | Role (Qt counterpart) |
 |---|---|
-| `src/page.jsx` | The page's host services for the library's `useShell()` (`createC59Traces`: the library's services, the traces handed over with `keep-file` kept), the `preset` prop as its bundle path, the LOG tab's view of `log`, the page's context; decides nothing (`EmulatorController`). The components send commands and requests by name and read topics with `useTopic` (since M-57; `src/engine.js` went) |
-| `src/painters.js` | Canvas painting: the LED (`LedRenderer`), the cue card's draw list (`CueCardRenderer`); the images and canvas sizes through the library's `calcImage` and `sizeCanvas` (`library/web/src/canvas.js`, Part E E-5) |
+| `src/page.jsx` | The page's host services for the library's `useShell()` (`createC59Traces`: the library's services, the traces handed over with `keep-file` kept), the `preset` prop as its bundle path, the LOG tab's view of `log`, the page's context; decides nothing (`EmulatorController`). The components send commands and requests by name and read topics with `useTopic` |
+| `src/painters.js` | Canvas painting: the LED (`LedRenderer`), the cue card's draw list (`CueCardRenderer`); the images and canvas sizes through the library's `calcImage` and `sizeCanvas` (`library/web/src/canvas.js`) |
 | `src/CalculatorFace.jsx` | Artwork, LED and cue card overlays, pressed-key effect (`held-keys`); the pointer is the React set's `useShellFaceplate` on `c59.faceplate-map` (a press on a fitted card's corner: `c59.tap-card`); transparent key buttons for assistive technology (`KeyboardWidget`) |
 | `src/Dialogs.jsx` | Card picker on the `media` topic (Arm Card, Arm Fresh Card; the replace question by the library's `calcuAskedQuestion`) (`CardPickerDialog`); File ▸ Saved Media… is the library's `ShellSavedMedia` |
-| `src/Paper.jsx` | The PC-100C's pane: the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), owner from the control state, which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (LIB-2's `set-control`; TRACE's position `c59.printer`), Copy and Cut its `paper.copy` / `paper.cut` (LIB-8, M-53; Qt6: `calcu::qt6::PaperPanel`). The PC-100C is attached by the bar's button "PC-100C" (M-57) |
-| `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) on the debug part's product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `heatmap`, `asm-overlay`, `c59.debug-view` and LIB-3's `log` (C59-4, M-56); Run and the CALCULATOR tab follow the `control-state` entries `c59.asm-run`, `c59.calculator-tab` (TRACE can always be pressed); FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` (LIB-10, M-53) |
-| `src/CalcU59.jsx` | The component `CalcU59` (2.3.0's `CalcU59`, renamed in release prep 4), put together from the React set's shell (LIB-14 59, M-57): the menu bar (wide) or the bar's Reset, Preset, Settings and More (portrait), the shell's control bar with LIB-7's module picker (the library's `ShellSlotPicker`) and C59-7's card controls, the shell's dialogs, the storage banner, "ROMs missing"; the product's data and faceplate maps through the library's `useShellProduct` and `useFaceplateMaps`; the two layouts, focus and physical keyboard (the library's `calcuHostKeys`), drag and drop (LIB-13's `open {way: drop, upload: true}`, M-56; the library's `calcuFileDrop`: a drop of exactly one file, LIB-13 AC-25; `calcuOpenFiles`), keyboard feedback (`[keyboard] feedback`) (`MainWindow`) |
+| `src/Paper.jsx` | The PC-100C's pane: the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), owner from the control state, which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (the library's `set-control`; TRACE's position `c59.printer`), Copy and Cut its `paper.copy` / `paper.cut` (Qt6: `calcu::qt6::PaperPanel`). The PC-100C is attached by the bar's button "PC-100C" |
+| `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) on the debug part's product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `heatmap`, `asm-overlay`, `c59.debug-view` and the library's `log`; Run and the CALCULATOR tab follow the `control-state` entries `c59.asm-run`, `c59.calculator-tab` (TRACE can always be pressed); FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` |
+| `src/CalcU59.jsx` | The component `CalcU59`, put together from the React set's shell: the menu bar (wide) or the bar's Reset, Preset, Settings and More (portrait), the shell's control bar with the module picker (the library's `ShellSlotPicker`) and the card controls, the shell's dialogs, the storage banner, "ROMs missing"; the product's data and faceplate maps through the library's `useShellProduct` and `useFaceplateMaps`; the two layouts, focus and physical keyboard (the library's `calcuHostKeys`), drag and drop (the library's `open {way: drop, upload: true}`; the library's `calcuFileDrop`: a drop of exactly one file; `calcuOpenFiles`), keyboard feedback (`[keyboard] feedback`) (`MainWindow`) |
 | `calc-engine-worker.js` | The product's configuration of the library's Web Worker (`library/web/src/worker.js`): the engine's name, its factory, the persistent mount `/persist-calc-u-59` and the lock `calcu59-storage` |
-| `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle` (without the full set: a session without a machine and the topic `roms-missing`), the settings file, the shell's part, LIB-14's `SettingsPart`, LIB-4's ControlPart (C59-4's product entries), `TIAppPart::sessionParts()` (the library's parts with the TI rules, the bundle of `/presets`; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
+| `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle` (without the full set: a session without a machine and the topic `roms-missing`), the settings file, the shell's part, the library's `SettingsPart` and ControlPart (with the debug panel's product entries), `TIAppPart::sessionParts()` (the library's parts with the TI rules, the bundle of `/presets`; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
 | `calc.css` | Tokens, fonts and every rule the client needs |
 | `fonts/` | Archivo (WOFF2, SIL OFL 1.1), for the cue card, as the family `Calc-U Archivo` |
 | `app/` | The installable PWA's own files: `index.html`, `app.css`, `manifest.json`; its page, service worker and worker entry are the library's (`library/web/app/`) |
-| `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, also `width`, `height`, `model` (by its name), `preset` (a path of `examples/bundle.yaml`, sent as the bundle path `examples:<path>` with LIB-18's `start`) |
-| `examples/bundle.yaml` (the product's) | What File ▸ Examples ▸ offers: the request `preset-list` gives its examples in their groups (LIB-6 AC-31; C59-2 AC-13). `build.js` copies exactly the files it lists, and the file itself, to `dist/presets/` (`presets.json` went in M-54) |
+| `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, also `width`, `height`, `model` (by its name), `preset` (a path of `examples/bundle.yaml`, sent as the bundle path `examples:<path>` with the library's `start`) |
+| `examples/bundle.yaml` (the product's) | What File ▸ Examples ▸ offers: the request `preset-list` gives its examples in their groups (`docs/formats/bundle.md`). `build.js` copies exactly the files it lists, and the file itself, to `dist/presets/` |
 | `library/web/vendor/` (the repository's) | React 18 and ReactDOM (shipped), Babel (build only), ReactDOMServer (tests only); one copy for both products |
 | `build.sh`, `build.js` | The build (below) |
 | `tests/`, `run-tests.sh`, `playwright.config.js`, `package.json` | Playwright tests (`tests/helpers.js`: `gotoReady`) |
 
 ### What the session sends
 
-Everything that crosses `postMessage` is a LIB-3 message in the library's
-JS form (commands, requests, replies, state and stream topics; LIB-15 AC-22).
+Everything that crosses `postMessage` is a session message in the library's
+JS form (commands, requests, replies, state and stream topics;
+`docs/formats/session-protocol.md`).
 `app/TIWebPart` sends the `c59.web.*` topics, already in the form the page
-draws, each derived from a product topic's value when it changed (Part E
-simplification E-3): LED cells of `c59.calc-indicator` (`ledCell`, as float32 bytes),
+draws, each derived from a product topic's value when it changed: LED cells of `c59.calc-indicator` (`ledCell`, as float32 bytes),
 the cue card of `c59.cue-card` as a draw list laid out by `cueCardGeometry`
 and friends for the size the page reports. The page reads the control
-state's `controls` (the PC-100C's PRINT, ADV, TRACE; LIB-4 AC-21), the library's `run-state` (FREEZE ON START, ARMED), `busy` (the
+state's `controls` (the PC-100C's PRINT, ADV, TRACE), the library's `run-state` (FREEZE ON START, ARMED), `busy` (the
 display's full-speed hold, `data-full-speed`) and `held-keys` (the key drawn
-pressed) itself; `c59.web.printer` and `c59.web.run-state` went in E-3. The settings are
-LIB-14's `settings` topic and `set-setting` (the shell's dialog). The
+pressed) itself. The settings are
+the library's `settings` topic and `set-setting` (the shell's dialog). The
 cards are the library's `media` topic (the place `card-reader`: the fitted
 card, the side passing, its picker; the saved cards by kind) and its
 `media.*` commands: Arm Card `media.choose {place: card-reader, entry:
 saved:<file>}`, Arm Fresh Card `media.start-new {place: card-reader,
 template: "implicit:Fresh card", name}` (a reply `asks: …` is the replace
 question, sent again with `confirmed`), Eject Card `media.eject`, a corner
-`media.feed`, `media.import`, `media.export`, `media.delete` (LIB-7 59,
-C59-7); the bar's module picker is the `slot-1` picker (LIB-7 AC-47). The debug panel's data are the product topics
-of `app/TIDebugPart` (C59-4 AC-25, M-56), whose values are the page's forms:
+`media.feed`, `media.import`, `media.export`, `media.delete`; the bar's
+module picker is the `slot-1` picker. The debug panel's data are the product topics
+of `app/TIDebugPart`, whose values are the page's forms:
 rows formatted by `DebugText`, heatmap steps (`heatStep`) as bytes. A file
 dropped on the calculator or picked by Load Preset… (several at once:
-one folder, `/uploads`) is LIB-13's `open` with `upload: true`; the session
+one folder, `/uploads`) is the library's `open` with `upload: true`; the session
 decides what it is. The product's data for the shell are the request
 `c59.shell-product {layout, version}` (`app/TIShellProduct`: the items, the
 About texts and links, the settings spec of the layout); the faceplate is
@@ -106,14 +106,14 @@ heatmap's grid `c59.heatmap-grid`; the LED shapes
 (`app/WebPageData`). The start is the shell's `start` command with
 the `model` and `preset` props. The paper, the run state and the trace are
 the library's topics (`papers`, `paper PC-100C`, `paper-copies`,
-`run-state`, `trace`; M-53), which the component set's panel and buttons
+`run-state`, `trace`), which the component set's panel and buttons
 read from the shell. The menus, the bar, the More menu and the settings
 dialog are the shell's models (`library/web/components/shellModel.js`,
 mirroring `library/shell/`), drawn from `control-state`, `busy`,
 `run-state`, `media`, `settings` and the `preset-list` reply.
-The pointer is the shell's hit rule (LIB-14 AC-24): the widened key rects,
+The pointer is the shell's hit rule: the widened key rects,
 distance 0, the display's full-speed hold; a key is fixed when the pointer
-goes down (LIB-14 D-9: a drag no longer moves the press to another key).
+goes down (a drag does not move the press to another key).
 
 ## Build
 
@@ -128,15 +128,15 @@ version in the repository's `.github/workflows/calc-u-59.yml`, job `web`),
 
 1. builds the CMake target `calcu59_web` (`core/` + `app/` + `bindings.cpp`)
    in the repository root's `build/web` tree, configured once with
-   `emcmake` (ADR 0003; the flags are in the product's `CMakeLists.txt`):
+   `emcmake` (the flags are in the product's `CMakeLists.txt`):
    single-threaded (a static host can't be relied on to send the COOP/COEP
    headers `SharedArrayBuffer` needs), with `-fwasm-exceptions` (app/
    reports file errors with exceptions), `MODULARIZE` as
    `createTI59CoreModule`, `FS` and `IDBFS` exported, the library's glue
-   (`calcu_web_glue`) linked; Calc-U-59 has no test-only command (LIB-15
-   AC-29), so CI zips the dist/ its tests ran against;
-2. copies the full set of ROM files (the 24 of `roms/fetch_roms.sh`, LIB-12
-   AC-9; the module files hold the cue cards, C59-7 AC-23) from `roms/` to `dist/bundle/`, and the artwork (`ti59_base`,
+   (`calcu_web_glue`) linked; Calc-U-59 has no test-only command,
+   so CI zips the dist/ its tests ran against;
+2. copies the full set of ROM files (the 24 of `roms/fetch_roms.sh`; the
+   module files hold the cue cards) from `roms/` to `dist/bundle/`, and the artwork (`ti59_base`,
    `ti58_base` and the three cue-card templates) from `frontends/swift/App/Assets.xcassets`
    to `dist/img/`;
 3. copies the static files, React, the font and the app icon (derived from
@@ -146,7 +146,7 @@ version in the repository's `.github/workflows/calc-u-59.yml`, job `web`),
    the library's test product use too): it compiles the library's page side and `src/*` into one `calc.js` (in
    `SOURCES` order, with the version stamped in) and the library's app page
    with `CalcU59` into `app/app.js`, fails on a selector of
-   `calc.css` outside `.calcu-client` (LIB-15 AC-17), copies the library's
+   `calc.css` outside `.calcu-client`, copies the library's
    worker (`library-worker.js`), service worker and app worker entry, the
    presets from `examples/`, writes `files.json` (what the worker loads),
    stamps the service worker with a hash of what it precaches (and fails if
@@ -196,19 +196,19 @@ the file names under `wasm/`, `bundle/`, `img/` and `presets/` and `files.json` 
 | Prop | Default | Meaning |
 |---|---|---|
 | `width` | the parent's width | CSS px the client may take. Wide: the calculator artwork takes 40 % (at most 420 px without `height`, never below 400 px), the printer 220–320 px, the debugger the rest (at least 220 px) |
-| `keyboard` | `true` | The calculator is focusable and takes the physical keyboard while focused (`AppLayer.md` § "Physical Keyboard Mapping"); `false` turns it off (LIB-15 AC-16) |
+| `keyboard` | `true` | The calculator is focusable and takes the physical keyboard while focused (`AppLayer.md` § "Physical Keyboard Mapping"); `false` turns it off |
 | `layout` | `"portrait"` | `"wide"` (calculator, printer, debugger side by side), `"portrait"` (calculator and printer pages) or `"auto"` (by the window's size, the PWA's choice: needs `width` and `height`); another value is ignored with a console warning |
 | `preset` | none | Start with this bundled preset, by its path in `bundle.yaml`, with or without `examples:` (`"sum.ti59"`, `"examples:sum.ti59"`); a path that is not there is a notice |
 | `height` | from the width | CSS px. Without it the height follows the artwork's aspect plus the 50 px bar; with it the artwork fits inside (the PWA passes `#root`'s content box) |
 | `model` | stored setting | Start with this model, by its name: `"TI-59"`, `"TI-58"` or `"TI-58C"`; another name is a notice and the client starts as without it |
 | `workerUrl` | `calc-engine-worker.js` beside `calc.js` | Start the engine through this script. The PWA's, for its service worker; a host leaves it out |
-| `settings` | `true` | Offer Settings… (the File menu, the portrait bar's Settings button and the More menu; LIB-14 AC-29) |
+| `settings` | `true` | Offer Settings… (the File menu, the portrait bar's Settings button and the More menu) |
 
 The props are the family's shared ones in their order (`width`, `keyboard`,
 `layout`, `preset`, then `height`, `model`, `workerUrl`;
 `docs/formats/web-embed.md` at the repository root), then Calc-U-59's own
-`settings`. `model`, `preset` and `workerUrl` are read once, at mount (LIB-15 EC-5).
-2.3.0's `module` prop is gone (LIB-15 AC-19): a host page that wants
+`settings`. `model`, `preset` and `workerUrl` are read once, at mount.
+There is no `module` prop: a host page that wants
 another module names a preset that sets it.
 
 The client has a minimum size, as the apps' windows do: the narrowest
@@ -229,15 +229,13 @@ Requirements on the host:
 - **Same origin.** The worker is started from `calc.js`'s directory, and a
   browser only starts a worker from the page's own origin.
 - **Served over HTTP(S).** The worker fetches every file of `files.json`
-  at init (the ROM full set into `/bundle`, where the ROM lookup finds them,
-  LIB-12; the presets into `/presets`); `file://` doesn't allow `fetch`. A
-  missing or bad ROM file shows the lookup's text and no calculator (the
-  failed start of LIB-15 AC-3: "Calc-U-59 could not start: …"); a file that
-  cannot be fetched is a failed start too. Since M-57 a missing or bad ROM
-file is the shell's "ROMs missing" (`[data-calcu=roms-missing]`, the
-lookup's text in place of the calculator; the menu bar's Help and About
-work, LIB-14 AC-19). Over plain HTTP (not localhost)
-  every copy writes the persistent file system (LIB-15 EC-1).
+  at init (the ROM full set into `/bundle`, where the ROM lookup finds them;
+  the presets into `/presets`); `file://` doesn't allow `fetch`. A file that
+  cannot be fetched is a failed start ("Calc-U-59 could not start: …"). A
+  missing or bad ROM file is the shell's "ROMs missing"
+  (`[data-calcu=roms-missing]`, the lookup's text in place of the
+  calculator; the menu bar's Help and About work). Over plain HTTP (not
+  localhost) every copy writes the persistent file system.
 
 Stable hooks a host's tests may rely on: the root element's classes
 `calcu-client calcu-device` with `data-layout="wide|portrait"` (its
@@ -247,9 +245,9 @@ Stable hooks a host's tests may rely on: the root element's classes
 corners as the buttons `Feed card side 1` and `Feed card side 2`, the key buttons
 named by their face labels (`2nd`, `−`, `R/S`, …) with `aria-pressed`, the
 panels `[data-panel=paper]` and `[data-panel=debug]`, the card controls by
-name (`Arm Card` and `Arm Fresh Card` (both read "Crd", C59-7 AC-13),
+name (`Arm Card` and `Arm Fresh Card` (both read "Crd"),
 `Eject Card`), the card dialog's list `Saved cards`, and the shell's
-elements by their `data-calcu` names (LIB-14 §3.10, B9): `menu-bar`,
+elements by their `data-calcu` names: `menu-bar`,
 `menu-file`, `item-<id>`, `control-bar`, `bar-model`, `bar-place-printer`,
 `media-picker-slot-1`, `bar-action-reset|load-preset|settings`,
 `bar-more`, `more-item-<id>`, `settings-dialog`, `about-dialog`, `notice`,
@@ -294,7 +292,7 @@ leaks no globals besides `CalcU59`.
 `frontends/qt6/app/ChromeStyle.hpp`, fonts) on `.calcu-client` — the calculator's root
 element and the PWA's `<body>` — not on `:root`, so the host's own tokens
 neither leak in nor get overridden; every selector is under `.calcu-client`
-(LIB-15 AC-17; `build.js` fails on one that is not), and the font family is
+(`build.js` fails on one that is not), and the font family is
 `Calc-U Archivo`, a name no host page uses. Sizes that follow the width are inline
 styles; the host styles only its own layout around the client.
 
@@ -328,7 +326,7 @@ browser's HTTP cache then answers. The library's `stampServiceWorker` adds
 everything of `files.json` (the ROMs, the presets) to the list; the worker
 loads them all at its start. The cache is named
 `calcu59-app <scope> <hash>`: a new build is a new cache, used from the
-app's next start (ledger 59-31), and the old one of the same scope is
+app's next start, and the old one of the same scope is
 deleted on activation — other caches on the origin (the host's, another
 copy of the client) are left alone. The service worker never touches the
 persistent file system (IndexedDB).

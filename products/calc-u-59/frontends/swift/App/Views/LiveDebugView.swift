@@ -42,8 +42,8 @@ struct LiveDebugView: View {
     // MARK: - Header
 
     private func liveHeader(baseFontSize: CGFloat) -> some View {
-        // FREEZE, STEP, RESUME: the run-control buttons of `program` (LIB-10 AC-18, AC-34).
-        // FREEZE and FREEZE ON START: cu59::freezeButtons (C59-4 AC-5).
+        // FREEZE, STEP, RESUME: the run-control buttons of `program`.
+        // FREEZE and FREEZE ON START: cu59::freezeButtons.
         let use = vm.buttons(for: .calculator)
         let freeze = vm.freezeButtons(for: .calculator)
         let freezeEnabled = freeze.freeze
@@ -88,7 +88,7 @@ struct LiveDebugView: View {
             // Tap to single-step; hold to auto-step at 2 steps/second.
             HoldRepeatButton(title: "STEP", color: .cyan, baseFontSize: baseFontSize,
                              enabled: use.step) { vm.stepKeycode() }
-                .accessibilityIdentifier("btn-step")   // C59-4 AC-24
+                .accessibilityIdentifier("btn-step")
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
@@ -191,7 +191,7 @@ struct LiveDebugView: View {
                     ScrollView {
                         // Lazy: the whole program memory (up to 960 steps) is
                         // listed; an eager stack rebuilt every row at each STEP
-                        // and gave accessibility thousands of elements (C59-4).
+                        // and gave accessibility thousands of elements.
                         LazyVStack(alignment: .leading, spacing: 0) {
                             ForEach(program, id: \.stepNum) { entry in
                                 HStack(spacing: 0) {

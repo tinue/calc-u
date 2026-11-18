@@ -16,8 +16,8 @@ namespace {
 
 QString q(const std::string& s) { return QString::fromStdString(s); }
 
-// The folder, created when missing (EC-8). One that cannot be created or
-// written is logged and still used: nothing goes to another folder (EC-9).
+// The folder, created when missing. One that cannot be created or
+// written is logged and still used: nothing goes to another folder.
 QString ensured(cs::Folder which) {
     const cs::Paths::Ensured e = places().ensure(which);
     if (!e.ok) qWarning("%s", e.problem.c_str());

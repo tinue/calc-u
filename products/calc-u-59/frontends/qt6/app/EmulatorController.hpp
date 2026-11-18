@@ -19,19 +19,20 @@
 #include <utility>
 #include <vector>
 
-// The product's glue around the session host (LIB-14 design §10.4, M-57; as
-// Calc-U-1600's MachineController): makes Calc-U-59's app session
-// (cu59::makeAppSession with LIB-14's SettingsPart in front, over
+// The product's glue around the session host (as Calc-U-1600's
+// MachineController): makes Calc-U-59's app session
+// (cu59::makeAppSession with the library's SettingsPart in front, over
 // AppPaths::folders()) and the Qt6 component set's SessionHost over it
 // (calcu::qt6::ProductHost), which hosts it on the GUI thread (the
 // 60 Hz timer, the listener, the host services, harness attach). The shell
 // draws the menus, the bar, the settings, About, the notices, "Loading…" and
 // "ROMs missing" from the host; this class keeps what only the product
 // draws: the display, the cue card, the card controls' reads, the PC-100C's
-// TRACE position, the debug panel's topics and commands (C59-4), the LOG
+// TRACE position, the debug panel's topics and commands, the LOG
 // tab's view of the log. It decides nothing and keeps no state of the
 // machine (CLAUDE.md § "Frontend Parity"). Qt6 sends neither suspend nor
-// continue (LIB-3 AC-31; ODD59-25).
+// continue: the desktop app keeps running in the background, where the
+// Swift and Web frontends suspend.
 class EmulatorController : public QObject {
     Q_OBJECT
 public:
@@ -45,9 +46,9 @@ public:
     cu59::TIAppPart& app() { return m_session->part(); }
     calcu::sessions::AppSession& session() { return m_session->session(); }
     /// The ROM lookup found the full set; else the topic `roms-missing` says
-    /// which files are missing and the shell shows it (LIB-14 AC-19).
+    /// which files are missing and the shell shows it.
     bool romsFound() const { return m_romsFound; }
-    /// The host's timer, then LIB-18's `start` (the startup model with its
+    /// The host's timer, then the session's `start` (the startup model with its
     /// startup preset, or its built-in default: ML, no printer).
     void start();
 
@@ -56,7 +57,7 @@ public:
     std::string modelId() const;
     bool isTI59() const { return modelId() == "TI-59"; }
     /// The PC-100C in `printer`, its controls (PRINT, ADV, TRACE) and TRACE's
-    /// position: the control state's `places` and `controls` (LIB-4 AC-21).
+    /// position: the control state's `places` and `controls`.
     bool printerConnected() const;
     std::vector<calcu::peripherals::ControlInfo> printerControls() const;
     bool printerTrace() const;
@@ -68,7 +69,7 @@ public:
     double calcIndicatorOpacity() const;
     const std::optional<cu59::CueCardContent>& cueCard() const;
 
-    // ── Keys: the library's typing (LIB-5); the pointer is the shell's ─────
+    // ── Keys: the library's typing; the pointer is the shell's ─────
     void hostKeyDown(const calcu::typing::HostKeyEvent& e);
     void hostKeyUp(const std::string& physical);
     void focusLost();
@@ -80,21 +81,21 @@ public:
     /// run-control buttons): paper.copy, paper.cut, set-control, pause, step, resume.
     void sendCommand(const calcu::sessions::CommandName& name, calcu::sessions::Value args) { send(name, std::move(args)); }
 
-    // ── Magnetic cards: the library's media topic and commands (C59-7, LIB-7 59) ──
-    /// A place of the media topic (`slot-1`'s picker, LIB-7 AC-47); nullptr without one.
+    // ── Magnetic cards: the library's media topic and commands ──
+    /// A place of the media topic (`slot-1`'s picker); nullptr without one.
     const calcu::media::PlaceState* mediaPlace(const std::string& place) const;
     /// The card reader `card-reader` (TI-59 only); nullptr without one.
     const calcu::media::PlaceState* cardReader() const;
-    /// A card passes through the reader now (Eject Card instead of the Crd buttons, AC-13).
+    /// A card passes through the reader now (Eject Card instead of the Crd buttons).
     bool cardPassing() const;
-    /// The saved cards for Arm Card (AC-14): the reader's picker without the
+    /// The saved cards for Arm Card: the reader's picker without the
     /// empty entry and the implicit fresh card.
     std::vector<calcu::media::PickerEntry> savedCards() const;
     /// Arm Card (`media.choose`): the chosen card fitted, not fed.
     void armCard(const QString& entryId);
     /// Arm Fresh Card (`media.start-new`): a fresh card named `name` fitted;
     /// the refusal, "asks: <question>" when a card of that name is saved
-    /// (send again with `confirmed`), empty when done (AC-15).
+    /// (send again with `confirmed`), empty when done.
     QString armFreshCard(const QString& name, bool confirmed);
     void ejectCard();
     /// A tap on the card window, in canvas fractions: a top corner of a fitted
@@ -107,7 +108,7 @@ public:
     // ── Debugger ─────────────────────────────────────────────────────────────
     void setLiveDebugEnabled(bool on);
     void setCpuDebugEnabled(bool on);
-    /// The run control's state (LIB-10's `run-state`); nullptr before the first.
+    /// The run control's state (the library's `run-state`); nullptr before the first.
     const calcu::debugger::RunState* runState() const;
     bool isFrozen() const;
     /// Pause-on-start of the level `cpu` or `program` armed (FREEZE ON START).
@@ -115,16 +116,16 @@ public:
     void armStart(const calcu::debugger::LevelName& level);
     void disarmStart();
 
-    /// FREEZE and FREEZE ON START of a tab (C59-4 AC-5, AC-7).
+    /// FREEZE and FREEZE ON START of a tab.
     cu59::FreezeButtons freezeButtons(const calcu::debugger::LevelName& level) const {
         return cu59::freezeButtons(level, runState());
     }
-    /// A product entry of the control state (C59-4 AC-25): c59.asm-run,
+    /// A product entry of the control state: c59.asm-run,
     /// c59.calculator-tab; true while there is none yet.
     bool entryAvailable(const char* name) const;
     QString entryReason(const char* name) const;
 
-    // The debug panel's product topics (C59-4 AC-25).
+    // The debug panel's product topics.
     const cu59::LiveDebugSnapshot& liveSnapshot() const;
     const std::vector<cu59::StepEntry>& programListing() const;
     cu59::ProgramSource programListingSource() const;
@@ -134,9 +135,9 @@ public:
     void clearHeatmap() { send(cu59::commands::kHeatmapReset); }
 
     DebugLevel debugLevel() const;
-    /// The LOG button: off, info, debug, off (`c59.log-level`, AC-11).
+    /// The LOG button: off, info, debug, off (`c59.log-level`).
     void cycleDebugLevel();
-    /// The LOG tab's view of LIB-3's `log`: the last 2000 lines (AC-9).
+    /// The LOG tab's view of the session's `log`: the last 2000 lines.
     QString logText() const { return m_logText; }
     /// Empties the tab's view, not the log.
     void clearLog();
@@ -145,7 +146,7 @@ public:
     void dumpProg() { dump("prog"); }
     void dumpMemory() { dump("memory"); }
 
-    /// The TRACE button's trace (LIB-10's `trace` topic and command).
+    /// The TRACE button's trace (the library's `trace` topic and command).
     bool traceRunning() const;
     void setTrace(bool on);
 
@@ -184,14 +185,14 @@ private:
     void dump(const char* what) { send(cu59::commands::kDump, calcu::sessions::Value::object({{"what", what}})); }
 
     bool m_romsFound = false;
-    // The session (with LIB-14's SettingsPart) and its host; ended first in
+    // The session (with the library's SettingsPart) and its host; ended first in
     // the destructor.
     std::unique_ptr<calcu::qt6::ProductHost<cu59::TIAppPart>> m_session;
     std::string m_model;               ///< the model last seen in the control state
     std::pair<bool, std::vector<calcu::peripherals::ControlInfo>> m_printerSeen;   ///< last drawn: plugged in, its controls
-    cu59::RingLog m_log;               ///< the LOG tab's view (AC-9)
+    cu59::RingLog m_log;               ///< the LOG tab's view
     QString m_logText;
     bool m_logDirty = false;
-    QTimer m_logTimer;                 ///< the view's text at 1 Hz, as today
+    QTimer m_logTimer;                 ///< the view's text at 1 Hz
     std::uint64_t m_viewRequests = 0;  ///< c59.debug-view's count seen
 };

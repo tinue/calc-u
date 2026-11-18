@@ -7,8 +7,8 @@ Written by Hynek Sladský
 
 ## File Format
 
-Each example is an ASM overlay file in the ASM overlay format, version 2.0
-(ADR 0037; C59-4 AC-14). The help's reference chapter describes the format
+Each example is an ASM overlay file in the ASM overlay format, version 2.0,
+the only version Calc-U-59 reads. The help's reference chapter describes the format
 from Calc-U-59 3.0 on; until then this section does.
 
 ```

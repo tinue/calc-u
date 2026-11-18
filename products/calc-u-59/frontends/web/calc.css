@@ -129,8 +129,8 @@
 }
 .calcu-client .calcu-printer-header > :last-child { justify-self: end; }
 .calcu-client .calcu-printer-header .calcu-pill { font-size: 12px; }
-/* The component set's paper panel below the PC-100C's connect toggle (M-53;
-   library/web/components/paper.css draws it). */
+/* The component set's paper panel below the PC-100C's connect toggle
+   (library/web/components/paper.css draws it). */
 .calcu-client .calcu-printer > .calcu-paper-panel { flex: 1; margin: 8px; }
 .calcu-client .calcu-printer .calcu-paper-header { flex-wrap: wrap; }
 .calcu-client .calcu-printer .calcu-paper-text { color: #1f1f1f; font: 13px/1.35 var(--calcu-mono); user-select: text; -webkit-user-select: text; }
@@ -157,7 +157,7 @@
 .calcu-client .calcu-hb-orange { color: var(--calcu-orange); }
 .calcu-client .calcu-hb-yellow { color: var(--calcu-yellow); }
 .calcu-client .calcu-hb-blue { color: var(--calcu-blue); }
-/* The run-control buttons of the component set (LIB-10 AC-34) as the header's buttons. */
+/* The run-control buttons of the component set as the header's buttons. */
 .calcu-client .calcu-debug-header .calcu-run-control { display: contents; }
 .calcu-client .calcu-debug-header .calcu-run-control button {
   border: none; background: transparent; padding: 0; cursor: pointer; font: 700 11px var(--calcu-mono); color: #fff;
@@ -237,7 +237,7 @@
 .calcu-client .calcu-form select, .calcu-client .calcu-form input { background: #1f1f1f; border: 1px solid #555; border-radius: 6px; padding: 3px 6px; max-width: 55%; }
 .calcu-client .calcu-form input[type=number] { width: 90px; }
 
-/* ---------- The React set's shell (LIB-14 59, M-57) ------------------------- */
+/* ---------- The React set's shell ------------------------------------------ */
 /* The shell's own stylesheet (library/web/components/shell.css) is light;
    the menus, dialogs and the banner keep it, with dark text on it. */
 .calcu-client .calcu-shell-menubar,

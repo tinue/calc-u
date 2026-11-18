@@ -194,9 +194,9 @@ NSArray<TIInspectorEntry*>* inspectorEntries(const std::vector<cu59::InspectorEn
 
 namespace cs = calcu::sessions;
 
-/// The card and constant-memory files as the app had them (C59-5 D-6): read
-/// and written through NSFileCoordinator (the media part's file access too,
-/// LIB-7 D-30); a card that iCloud has not
+/// The card and constant-memory files as the app had them: read
+/// and written through NSFileCoordinator (the media part's file access too);
+/// a card that iCloud has not
 /// downloaded yet (`.name.icloud`) is started downloading and reads as there
 /// but not readable. On the session thread.
 class CoordinatedFiles final : public calcu::media::FileAccess {
@@ -245,26 +245,26 @@ TIChange changeOf(const cs::TopicName& t) {
     namespace T = cu59::topics;
     if (t == T::kCalcIndicator) return TIChangeDisplay;
     if (t == T::kCueCard) return static_cast<TIChange>(TIChangeCueCard | TIChangeCard);   // on show, the lit corner
-    if (t == calcu::media::kMediaTopic) return static_cast<TIChange>(TIChangeCard | TIChangeShell);   // the card reader (C59-7, M-55)
+    if (t == calcu::media::kMediaTopic) return static_cast<TIChange>(TIChangeCard | TIChangeShell);   // the card reader
     if (t == calcu::debugger::kRunStateTopic) return static_cast<TIChange>(TIChangeRunState | TIChangeShell);
     if (t == calcu::typing::kHeldKeysTopic) return TIChangeRunState;
     if (t == cs::kBusyTopic || t == calcu::shell::kSettingsTopic) return TIChangeShell;
     if (t == calcu::debugger::kTraceTopic) return TIChangeTrace;
-    // The debug panel's product topics (C59-4 AC-25, M-56).
+    // The debug panel's product topics.
     if (t == T::kCalculatorDebug) return TIChangeLive;
     if (t == T::kProgramListing) return TIChangeListing;
     if (t == T::kCpuDebug) return TIChangeCpu;
     if (t == T::kHeatmap) return TIChangeHeatmap;
     if (t == T::kAsmOverlay) return TIChangeAsm;
     if (t == T::kDebugView) return TIChangeLog;   // the log level it carries
-    // The PC-100C's controls and TRACE's position too (LIB-4 AC-21; release prep 3: c59.printer went).
+    // The PC-100C's controls and TRACE's position too.
     if (t == calcu::control::kControlStateTopic)
         return static_cast<TIChange>(TIChangeControl | TIChangeShell | TIChangeCard | TIChangePrinter);
     return static_cast<TIChange>(0);
 }
 
-// C59-5 AC-7: the host services of the app; no audio sink, the key click is
-// the app's own (LIB-3 AC-33).
+// The host services of the app; no audio sink, the key click is
+// the app's own.
 cs::HostServices statedServices() {
     cs::HostServices services;
 #if TARGET_OS_OSX
@@ -300,9 +300,8 @@ TIButtonUse buttonUseOf(const calcu::debugger::ButtonUse& u) {
     return t;
 }
 
-// The host services the bridge answers (LIB-3 AC-27): the clipboard (LIB-8
-// AC-16, LIB-8 D-28: the session's Copy makes the picture; the entry is the
-// platform's). A picture keeps its physical size (`dotsPerInch`).
+// The host services the bridge answers: the clipboard (the session's Copy
+// makes the picture; the entry is the platform's). A picture keeps its physical size (`dotsPerInch`).
 cs::ServiceAnswer answerService(const cs::ServiceAsk& ask) {
     using cs::HostService;
     if (ask.service == HostService::ClipboardImage) {
@@ -349,7 +348,7 @@ cs::ServiceAnswer answerService(const cs::ServiceAsk& ask) {
     return cs::ServiceAnswer{false, cs::Value(), "This frontend does not answer " + std::string(cs::serviceName(ask.service)) + "."};
 }
 
-// A product entry of the control state (C59-4 AC-25): {available, reason}.
+// A product entry of the control state: {available, reason}.
 bool entryAvailable(const calcu::control::ControlState* c, const char* name, std::string* reason = nullptr) {
     const auto* e = c ? c->productEntry(name) : nullptr;
     if (!e || !e->value) return false;
@@ -409,21 +408,21 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 @implementation TIAppSession {
     __weak id<TIAppSessionDelegate> _delegate;
     std::unique_ptr<cu59::SessionThread> _thread;
-    // The shell's inputs (C59-8 D-2): the last Value of each, on the main thread.
+    // The shell's inputs: the last Value of each, on the main thread.
     calcu::shell::ShellInputs _inputs;
     std::string _model;   // the control state's model, to let go of the pointers at a switch
     cs::TopicMirror _mirror;
-    // The PC-100C's paper as the library's topic sent it (the paper panel, C59-8).
+    // The PC-100C's paper as the library's topic sent it (the paper panel).
     std::vector<std::string> _paperLines;
     std::vector<TIPaperDot> _paperDots;
     double _paperReach;
-    // The LOG tab's view of LIB-3's `log` (C59-4 AC-9): the last 2000 lines.
+    // The LOG tab's view of the library's `log`: the last 2000 lines.
     cu59::RingLog _log;
     std::string _logText;
-    // c59.debug-view's count of requests already shown (AC-2).
+    // c59.debug-view's count of requests already shown.
     std::uint64_t _viewRequests;
     // The session's library parts, set by the factory on the session thread
-    // (the attached harness's commands use them, LIB-14 D-27).
+    // (the attached harness's commands use them).
     std::shared_ptr<calcu::parts::LibraryParts*> _libraryParts;
 }
 
@@ -431,22 +430,22 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     if ((self = [super init])) {
         _delegate = delegate;
         namespace st = calcu::settings;
-        // The settings file is the session's (C59-8 D-3): opened here, then
-        // read and written on the session thread only, by LIB-18's start and
-        // LIB-14's SettingsPart; the main thread does not touch it again.
+        // The settings file is the session's: opened here, then
+        // read and written on the session thread only, by the library's start
+        // and its SettingsPart; the main thread does not touch it again.
         st::HostDirs dirs;
         dirs.frontend = st::FrontendKind::Swift;
         dirs.home = cpp(NSHomeDirectory());
         dirs.settingsBase = cpp(start.settingsBase);
         dirs.saveFolder = cpp(start.saveFolder);
         dirs.applicationSupport = cpp([start.settingsBase stringByAppendingPathComponent:@"Calc-U-59"]);
-        // The bookmark's folder, asked at each trace start (LIB-10 AC-53).
+        // The bookmark's folder, asked at each trace start.
         if (NSString* _Nullable (^chosen)(void) = start.chosenTraceFolder)
             dirs.chosenTraceFolder = [chosen] {
                 @autoreleasepool { return cpp(chosen()); }
             };
         // iOS: the iCloud trace location only while signed in, asked at each
-        // trace start beside the bookmark (LIB-9 AC-24, LIB-10 AC-53).
+        // trace start beside the bookmark.
 #if !TARGET_OS_OSX
         dirs.iCloudAvailable = [] { return NSFileManager.defaultManager.ubiquityIdentityToken != nil; };
 #endif
@@ -461,18 +460,18 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
         cu59::TIAppSetup setup;
         setup.roms.set = roms->_set;
-        // LIB-18 AC-17: the settings file decides the startup model; the
+        // The settings file decides the startup model; the
         // session's `start` (makeAppSession) builds it. The save folder, the
-        // trace folder by [trace] location (LIB-9 AC-24), its limit and `~/`
+        // trace folder by [trace] location, its limit and `~/`
         // are the places'.
         setup.settings = file;
         setup.paths = paths;
         setup.examplesFolder = cpp(start.examplesFolder);
         setup.files = std::make_shared<CoordinatedFiles>(delegate);
-        // Where traces go is the places' by [trace] location (LIB-9 AC-24),
-        // read at each trace start with the folder made and written once
-        // (LIB-10 AC-53); iOS: iCloud only while signed in (dirs, above).
-        // C59-5 AC-7 (the session asks none of them yet).
+        // Where traces go is the places' by [trace] location,
+        // read at each trace start with the folder made and written once;
+        // iOS: iCloud only while signed in (dirs, above). The stated host
+        // services (the session asks none of them yet).
         const cs::HostServices services = statedServices();
         __weak TIAppSession* weakSelf = self;
         _shell = [[TIShell alloc] initWithSession:self];
@@ -480,12 +479,12 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         _libraryParts = libraryParts;
         _thread = std::make_unique<cu59::SessionThread>(
             // The file and its places live as long as the factory, which
-            // outlives the session it made (SessionThread::run); LIB-14's
+            // outlives the session it made (SessionThread::run); the library's
             // SettingsPart is the session's (calcu::shell::makeHostSession).
             [setup, settings, libraryParts] {
                 calcu::shell::HostSessionSetup host;
                 host.settings = settings.get();
-                host.settingsAlsoShown = {cu59::kPortraitDebugPage};   // the iOS row (C59-8 AC-7, OQ-4)
+                host.settingsAlsoShown = {cu59::kPortraitDebugPage};   // the iOS row "Debug Page in Portrait"
                 host.clock = cu59::steadyWallTime;
                 host.hostTime = [] { return std::chrono::system_clock::now(); };
                 host.start = true;
@@ -494,7 +493,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
                 return std::move(app.session);
             },
             services, cu59::steadyWallTime,
-            // One hop to the main thread per batch (FS 3); a batch that comes
+            // One hop to the main thread per batch; a batch that comes
             // after the bridge is gone is dropped.
             [weakSelf] { dispatch_async(dispatch_get_main_queue(), ^{ [weakSelf drain]; }); });
         [self askPresetList];
@@ -502,7 +501,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     return self;
 }
 
-// The preset list (LIB-6 AC-32): the Examples menu and the startup preset rows.
+// The preset list: the Examples menu and the startup preset rows.
 - (void)askPresetList {
     __weak TIAppSession* weakSelf = self;
     _thread->ask(cs::Request{calcu::presets::kPresetListRequest, cs::Value::object({})}, [weakSelf](const cs::ReplyMessage& r) {
@@ -544,7 +543,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
             continue;
         }
         if (const auto* s = std::get_if<cs::StreamMessage>(&m)) {
-            if (s->topic == kPaper) {   // LIB-8 AC-6: the reset marker: the paper was emptied
+            if (s->topic == kPaper) {   // the reset marker: the paper was emptied
                 if (s->reset) {
                     _paperLines.clear();
                     _paperDots.clear();
@@ -568,14 +567,14 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
                 changes = static_cast<TIChange>(changes | TIChangePrinter);
                 continue;
             }
-            if (s->topic == calcu::paper::kPaperCopiesTopic) {   // AC-20
+            if (s->topic == calcu::paper::kPaperCopiesTopic) {   // the outcome of a Copy
                 for (const auto& p : s->appended)
                     if (const auto* o = cs::payloadAs<calcu::paper::CopyOutcome>(p);
                         o && [d respondsToSelector:@selector(paperCopied:)])
                         [d paperCopied:static_cast<NSInteger>(o->outcome)];
                 continue;
             }
-            if (s->topic == cs::kNoticesTopic) {   // C59-8 AC-10: the shell's queue, each in turn
+            if (s->topic == cs::kNoticesTopic) {   // the shell's queue, each in turn
                 bool any = false;
                 for (const auto& p : s->appended)
                     if (const auto* n = cs::payloadAs<cs::Notice>(p)) {
@@ -585,7 +584,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
                 if (any) [d noticesChanged];
                 continue;
             }
-            if (s->topic == cs::kLogTopic) {   // C59-4 AC-9: the LOG tab's lines (a message may hold several)
+            if (s->topic == cs::kLogTopic) {   // the LOG tab's lines (a message may hold several)
                 bool any = false;
                 for (const auto& p : s->appended)
                     if (const auto* l = cs::payloadAs<cs::LogLine>(p)) {
@@ -609,7 +608,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         }
         _mirror.deliver(m);
     }
-    // The tab a `debug-panel:` step asked for, each time c59.debug-view's count grows (AC-2, EC-4).
+    // The tab a `debug-panel:` step asked for, each time c59.debug-view's count grows.
     if (const auto* v = [self debugView]; v && v->requests > _viewRequests) {
         _viewRequests = v->requests;
         [d showDebugPanel:static_cast<NSInteger>(v->view)];
@@ -617,7 +616,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     if (changes) [d changed:changes];
 }
 
-// The shell's inputs (C59-8 D-2): the last Value of each topic it draws from.
+// The shell's inputs: the last Value of each topic it draws from.
 - (void)takeInput:(const cs::StateMessage&)st {
     static const calcu::shell::InputNames n;
     const cs::Value v = st.state ? st.state->toValue() : cs::Value();
@@ -682,7 +681,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         [_delegate diagnostic:[NSString stringWithFormat:@"Harness attach on 127.0.0.1:%u.", port]];
         return YES;
     }
-    // EC-1: the app runs on; a line of the session's log says why.
+    // The app runs on; a line of the session's log says why.
     const std::string line = "Attach is not available on port " + std::to_string(port) + ": " + problem + ".";
     _thread->post([line](cs::AppSession& s) { s.context().log(line); });
     return NO;
@@ -807,7 +806,7 @@ static const char* const kCardReaderPlace = "card-reader";
     const auto* p = [self cardReader];
     if (!p) return out;
     using G = calcu::media::PickerEntry::Group;
-    // D-10: the saved cards only; the fresh card is Arm Fresh Card's.
+    // The saved cards only; the fresh card is Arm Fresh Card's.
     for (const auto& e : p->picker)
         if (e.group == G::Instance || e.group == G::UserTemplate)
             [out addObject:[[TISavedCard alloc] initWithName:ns(e.label) entryID:ns(e.id) outdated:!e.canChoose
@@ -837,7 +836,7 @@ static const char* const kCardReaderPlace = "card-reader";
 }
 - (void)ejectCard { [self send:calcu::media::kEjectCommand args:{{"place", kCardReaderPlace}}]; }
 
-// ── Presets (LIB-6 AC-42, D-41: the content, on iOS and on macOS) ──────────
+// ── Presets (the content, on iOS and on macOS) ─────────────────────────────
 
 - (void)loadPresetContent:(NSData *)raw name:(NSString *)name {
     if (!raw) {
@@ -848,7 +847,7 @@ static const char* const kCardReaderPlace = "card-reader";
     [self send:calcu::presets::kLoadPresetCommand args:{{"content", text}, {"name", cpp(name)}}];
 }
 
-// ── Opening a file (LIB-13, M-56) ────────────────────────────────────────────
+// ── Opening a file ───────────────────────────────────────────────────────────
 
 - (void)wouldOpenFile:(NSString *)fileName completion:(void (^)(BOOL))done {
     _thread->ask(cs::Request{calcu::opening::kWouldTakeRequest, cs::Value::object({{"name", cpp(fileName)}})},
@@ -956,7 +955,7 @@ static const char* const kCardReaderPlace = "card-reader";
     const auto* t = _mirror.stateOf<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic);
     return t && t->running;
 }
-// The TRACE button (LIB-10 AC-23): the trace session's file of the button's name.
+// The TRACE button: the trace session's file of the button's name.
 - (void)setManualTrace:(BOOL)on {
     if (on) [self send:calcu::debugger::kTraceCommand args:{{"button", true}}];
     else [self send:calcu::debugger::kTraceCommand args:{{"off", true}}];

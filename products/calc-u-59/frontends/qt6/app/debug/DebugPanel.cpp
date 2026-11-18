@@ -53,7 +53,7 @@ DebugPanel::DebugPanel(EmulatorController& controller, QWidget* parent) : QWidge
     m_stack->addWidget(new LogWidget(controller, m_stack));
     col->addWidget(m_stack, 1);
 
-    // A running ASM overlay belongs to the CPU tab (C59-4 AC-18): the product
+    // A running ASM overlay belongs to the CPU tab: the product
     // entry c59.calculator-tab says no meanwhile; Run asks for the CPU tab
     // through c59.debug-view.
     auto calculatorTab = [this] {

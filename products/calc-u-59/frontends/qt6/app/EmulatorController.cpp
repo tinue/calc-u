@@ -43,25 +43,25 @@ template <class P> const P& orNone(const P* p, const P& none) { return p ? *p : 
 } // namespace
 
 EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock clock) : QObject(parent) {
-    calcu::shell::HostSettings& settings = AppPaths::folders().settings();   // opened at the first use (LIB-9)
-    // The ROM lookup first (LIB-12): without the full set the session has no
-    // machine and the topic roms-missing names the files (LIB-14 AC-19).
+    calcu::shell::HostSettings& settings = AppPaths::folders().settings();   // opened at the first use
+    // The ROM lookup first: without the full set the session has no
+    // machine and the topic roms-missing names the files.
     cu59::TIAppSetup setup;
     setup.roms = cu59::lookUpRoms(QtResourceBundle());
     m_romsFound = setup.roms.ok();
-    AppPaths::saveDir();    // the save folder made at the start (LIB-9 EC-8); the trace folder at each trace (LIB-10 AC-53)
-    // LIB-18: the startup model, `last-model` and the startup presets are the
+    AppPaths::saveDir();    // the save folder made at the start; the trace folder at each trace
+    // The startup model, `last-model` and the startup presets are the
     // settings file's; the save folder (cards, ti58c.memory.yaml), the trace
-    // folder, its limit and `~/` its places' (LIB-9).
+    // folder, its limit and `~/` its places'.
     setup.settings = &settings.file();
     setup.paths = &settings.paths();
-    // LIB-6 AC-31, AC-33: the bundled examples beside the program (bundle.yaml).
+    // The bundled examples beside the program (bundle.yaml).
     setup.examplesFolder = calcu::qt6::toFsPath(AppPaths::bundledExamplesDir()).string();
-    // LIB-14: the settings dialog reads and writes the product's file through
+    // The settings dialog reads and writes the product's file through
     // the session; a change is applied at once (the LED style through the
-    // `settings` topic). A new save folder is used from the next start, as
-    // today (the TI-58C's constant memory file is read at its build, C59-3);
-    // a new trace folder or limit from the next trace (LIB-10 AC-53).
+    // `settings` topic). A new save folder is used from the next start
+    // (the TI-58C's constant memory file is read at its build);
+    // a new trace folder or limit from the next trace.
     calcu::shell::HostSessionSetup host;
     host.settings = &settings;
     host.clock = clock;
@@ -71,7 +71,7 @@ EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock
         cu59::makeAppSession(std::move(setup), std::move(host)), std::move(services), std::move(clock));
     this->host().addMessageHandler([this](const cs::Message& m) { onMessage(m); });
     connect(&this->host(), &calcu::qt6::SessionHost::topicChanged, this, &EmulatorController::topicChanged);
-    // The LOG tab's text at 1 Hz (AC-9; the paging of cu59::RingLog).
+    // The LOG tab's text at 1 Hz (the paging of cu59::RingLog).
     m_logTimer.setInterval(1000);
     connect(&m_logTimer, &QTimer::timeout, this, [this] {
         if (!std::exchange(m_logDirty, false)) return;
@@ -82,16 +82,16 @@ EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock
 }
 
 EmulatorController::~EmulatorController() {
-    // The parts' last duties (the TI-58C's constant memory file, C59-3 AC-6;
-    // what a card still has to write, LIB-7 AC-13). No message goes out after it.
+    // The parts' last duties (the TI-58C's constant memory file; what a
+    // card still has to write). No message goes out after it.
     // Ended first, while the LOG tab's view is still there.
     m_session.reset();
 }
 
 void EmulatorController::start() { m_session->start(); }
 
-// The LOG tab keeps its own view of the log (C59-4 AC-9; LIB-14 AC-18); the
-// notices are the shell's dialog (AC-17), the paper the panel area's.
+// The LOG tab keeps its own view of the log; the notices are the shell's
+// dialog, the paper the panel area's.
 void EmulatorController::onMessage(const cs::Message& m) {
     const auto* s = std::get_if<cs::StreamMessage>(&m);
     if (!s || s->topic != cs::kLogTopic) return;
@@ -116,7 +116,7 @@ void EmulatorController::topicChanged(const QString& name) {
     } else if (t == T::kCueCard) {
         emit cueCardChanged();
         emit cardStateChanged();
-    } else if (t == calcu::media::kMediaTopic) {   // the card reader (LIB-7 59)
+    } else if (t == calcu::media::kMediaTopic) {   // the card reader
         emit cardStateChanged();
     } else if (t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic) {
         emit runStateChanged();
@@ -128,7 +128,7 @@ void EmulatorController::topicChanged(const QString& name) {
         emit heatmapChanged();
     } else if (t == T::kDebugView) {
         const auto& v = orNone(state<cu59::TIDebugView>(T::kDebugView), kNoView);
-        if (v.requests > m_viewRequests) {   // a `debug-panel:` step (AC-2), or Run (AC-18)
+        if (v.requests > m_viewRequests) {   // a `debug-panel:` step, or Run
             m_viewRequests = v.requests;
             emit debugPanelRequested(static_cast<int>(v.view));
         }
@@ -142,7 +142,7 @@ void EmulatorController::topicChanged(const QString& name) {
             emit modelChanged();
             emit cardStateChanged();
         }
-        // The PC-100C plugged in or out, a control of it moved (LIB-4 AC-21).
+        // The PC-100C plugged in or out, a control of it moved.
         auto printer = std::make_pair(printerConnected(), printerControls());
         if (printer != m_printerSeen) {
             m_printerSeen = std::move(printer);
@@ -166,10 +166,10 @@ cs::ReplyMessage EmulatorController::send(const cs::CommandName& name, Value arg
 }
 
 cs::ReplyMessage EmulatorController::ask(const cs::RequestName& name, Value args) {
-    return m_session->ask(name, std::move(args));   // requests do not wait (LIB-3)
+    return m_session->ask(name, std::move(args));   // requests do not wait
 }
 
-// ── Machine: drawn from the control state (LIB-4 AC-15) ─────────────────────
+// ── Machine: drawn from the control state ───────────────────────────────────
 
 std::string EmulatorController::modelId() const {
     const auto* c = state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
@@ -351,5 +351,5 @@ void EmulatorController::loadAsmFile(const QString& path) {
         members.push_back({"text", Value(*text)});
         args = Value(std::move(members));
     }
-    send(cu59::commands::kAsmLoad, std::move(args));   // Select File (AC-16); a refusal is a notice
+    send(cu59::commands::kAsmLoad, std::move(args));   // Select File; a refusal is a notice
 }

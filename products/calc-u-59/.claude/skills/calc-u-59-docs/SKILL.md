@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-docs
-description: Use this skill when working on the Calc-U-59 documentation — the user help (help/, with the shared parts in library/help/ at the repository root; LIB-16), the developer documentation (reference/, root markdown files) — or deciding where documentation belongs. Covers the help-vs-developer split, the help tool (tools/help check|build calc-u-59) and the reference architecture docs. Trigger on any task that touches help/, reference/*.md, README.md, CHANGELOG.md, TODO.md, or PRIVACY.md. Also trigger when the user says "update documentation" (or similar) after finishing core/, app/, frontends/swift/App/, frontends/qt6/ or frontends/web/ work on a release branch — see the Release Documentation Update Workflow section, which updates the help as well.
+description: Use this skill when working on the Calc-U-59 documentation — the user help (help/, with the shared parts in library/help/ at the repository root), the developer documentation (reference/, root markdown files) — or deciding where documentation belongs. Covers the help-vs-developer split, the help tool (tools/help check|build calc-u-59) and the reference architecture docs. Trigger on any task that touches help/, reference/*.md, README.md, CHANGELOG.md, TODO.md, or PRIVACY.md. Also trigger when the user says "update documentation" (or similar) after finishing core/, app/, frontends/swift/App/, frontends/qt6/ or frontends/web/ work on a release branch — see the Release Documentation Update Workflow section, which updates the help as well.
 user-invocable: true
 ---
 
@@ -15,7 +15,7 @@ This skill covers the user help (`help/`), the reference architecture docs (`ref
 - **The help is the *only* place for end-user documentation** —
   installing, operating, syncing, modules, settings, the file formats and
   the debug panel from a user's point of view. It is Markdown in this
-  repository (LIB-16, ADR 0036): the product parts in `help/` (one file or
+  repository (`docs/formats/help.md`): the product parts in `help/` (one file or
   more per chapter, `help/help.yaml`), the parts both products share in
   `library/help/` at the repository root. If you're about to write
   something an app user (not a contributor) would want to read, it goes
@@ -45,7 +45,7 @@ The help has the family's ten chapters (`docs/formats/help.md` at the
 repository root): a chapter has a shared part
 (`library/help/NN-*.md`, which names no product, model or peripheral of
 one product) and/or Calc-U-59's part (`help/NN-*.md`). It was converted
-once from calc-u-site's `59/Pages.jsx` at `acd629c` (M-60); from then on
+once from calc-u-site's `59/Pages.jsx` at `acd629c`; from then on
 `help/` is the source, and the site's pages are not edited for it.
 
 - Check it with `tools/help check calc-u-59` (CTest `CalcU59HelpCheck`,
@@ -53,7 +53,7 @@ once from calc-u-site's `59/Pages.jsx` at `acd629c` (M-60); from then on
   (CTest `CalcU59HelpBuild`; the workflow's `help` job; `release.yaml`
   attaches it). The tool and its checks: `tools/README.md`.
 - `help/settings-keys.txt` is written by `CalcU59Tests`
-  (`CALCU59_HELP_KEYS=1 CalcU59Tests lib16`) from `settingsDecl()`; every
+  (`CALCU59_HELP_KEYS=1 CalcU59Tests settings_keys_file_matches_declaration`) from `settingsDecl()`; every
   key needs its line in chapter 8. `help.yaml`'s `names:` must cover
   `tiCatalogue()` (`help_names_cover_the_catalogue`).
 - `help/downloads/` holds the preset tutorial's six presets
@@ -64,7 +64,7 @@ once from calc-u-site's `59/Pages.jsx` at `acd629c` (M-60); from then on
 
 The website https://calc-u.org/59/ is the separate repository
 `calc-u-site` (`../calc-u-site`); it renders the help asset of a release
-(LIB-19) and keeps its own pages (the software collection, the articles,
+and keeps its own pages (the software collection, the articles,
 the web calculator's page), under its own `CLAUDE.md` and skills. Nothing
 about the site's build, design or URL map belongs in this repository.
 
@@ -133,7 +133,7 @@ Triggered by the user saying **"update documentation"** (or similar) after finis
 
 4. **Update reference docs** (`reference/CoreArchitecture.md`, `reference/AppLayer.md`, `reference/AppArchitecture.md`, `reference/DebugAPI.md`, `reference/FrontendParity.md`, `reference/WebClient.md`, `reference/NewGUIGuide.md`, and `rom/*.md`) for anything the diff invalidated: register model, SCOM layout, PC encoding, machine variants, bridge/debug API surface, settings, file formats. Keep each file's provenance notice intact.
 
-5. **Update the help (`help/`, and `library/help/` where both products change).** Update its chapters for anything user-facing in any GUI: new settings, module behaviour, install steps (Mac, iOS, Windows, Linux), preset keys and steps, file formats, speed or accuracy; run `tools/help check calc-u-59`. The site renders the help asset of the release (LIB-19). What stays the site's (the software collection, the articles derived from `rom/*.md`, the example copies under `59/software-files/`) is updated in `../calc-u-site` under its own `site-59` skill and `CLAUDE.md`, committed there. Leave the web client alone: the site fetches `59/calc/` from a release by its own rules.
+5. **Update the help (`help/`, and `library/help/` where both products change).** Update its chapters for anything user-facing in any GUI: new settings, module behaviour, install steps (Mac, iOS, Windows, Linux), preset keys and steps, file formats, speed or accuracy; run `tools/help check calc-u-59`. The site renders the help asset of the release. What stays the site's (the software collection, the articles derived from `rom/*.md`, the example copies under `59/software-files/`) is updated in `../calc-u-site` under its own `site-59` skill and `CLAUDE.md`, committed there. Leave the web client alone: the site fetches `59/calc/` from a release by its own rules.
 
 6. **The web client** (`frontends/web/`): if the diff touched `core/`, `app/`, `roms/` or `frontends/web/`, build and test it as the calc-u-59-web skill says. The site picks up a new build by pinning the release's `Calc-U-59-web.zip`.
 

@@ -8,14 +8,14 @@ The debugger has three layers:
 
 | Layer | Where | What |
 |---|---|---|
-| Core | `TIMachine`, its debug target `TMC0501` (`core/TIDebugging.hpp`, LIB-10 AC-28), the capability `c59.trace-records` (`core/TraceRecords.hpp`), the debug panel's product kinds `c59.asm-overlay`, `c59.rom-heatmap`, `c59.calculator-state`, `c59.machine-log` (`core/TIDebugKinds.hpp`, C59-4, M-56) and the program memory `c59.program-memory` (`core/TIProductKinds.hpp`), over `TMC0501` (`core/`) | Registers, RAM, program and SCOM access, breakpoints, the observer's marks, the trace ring, step-boundary latch, the machine's log lines, the heatmap's counts, the ASM overlay |
-| Library | LIB-10's `DebuggerPart` (`library/debugger/`): the run control (the machine session's gate), the topics `run-state` and `trace`, the trace session; the run-control buttons of the component sets | Pause, step, resume, pause-on-start, breakpoints, one trace at a time |
+| Core | `TIMachine`, its debug target `TMC0501` (`core/TIDebugging.hpp`), the capability `c59.trace-records` (`core/TraceRecords.hpp`), the debug panel's product kinds `c59.asm-overlay`, `c59.rom-heatmap`, `c59.calculator-state`, `c59.machine-log` (`core/TIDebugKinds.hpp`) and the program memory `c59.program-memory` (`core/TIProductKinds.hpp`), over `TMC0501` (`core/`) | Registers, RAM, program and SCOM access, breakpoints, the observer's marks, the trace ring, step-boundary latch, the machine's log lines, the heatmap's counts, the ASM overlay |
+| Library | The library's `DebuggerPart` (`library/debugger/`): the run control (the machine session's gate), the topics `run-state` and `trace`, the trace session; the run-control buttons of the component sets | Pause, step, resume, pause-on-start, breakpoints, one trace at a time |
 | App layer | `TIDebugPart` (the six product topics, the panel's commands, the product entries), `TILevelRules`, `TITraceRecorder`, `TIDebuggerSetup`, `DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `TraceWriter`, `AsmOverlay` (`app/`) | The TI's levels and trace records, the panels' data and text, the dumps, the ASM overlay format |
 | GUI | Swift: `EmulatorViewModel` → `frontends/swift/Bridge/TIAppSession` (commands and the product topics), views in `frontends/swift/App/Views/` (`DebugView`, `LiveDebugView`, `CPUInspectorView`). Qt: `EmulatorController`, widgets in `frontends/qt6/app/debug/` (`DebugPanel`, `LiveDebugWidget`, `CpuInspectorWidget`, `RomHeatmapWidget`, `AsmOverlayBox`, `LogWidget`). Web: the product topics' values (`frontends/web/bindings.cpp`), `frontends/web/src/Debugger.jsx` (`LiveDebug`, `FreezeHeader`, `CpuInspector`, `Heatmap`, `AsmOverlay`, `LogTab`; wide layout only) | Drawing only |
 
 All three GUIs send the same commands (the library's for pause, step,
 resume, pause-on-start and trace; `TIDebugPart`'s `c59.*` for the panels)
-and draw the same topics (C59-4 AC-25, M-56):
+and draw the same topics:
 
 | Topic (state) | Payload (`app/TIDebugPart.hpp`) | Carries |
 |---|---|---|
@@ -27,15 +27,15 @@ and draw the same topics (C59-4 AC-25, M-56):
 | `c59.debug-view` | `TIDebugView` | the tab `debug-panel:` (or Run) asked for last, a count of the requests, the machine's log level |
 
 A payload's value (`toValue`) is the form the Web page draws; the harness
-reads it with `state <topic>`. The control state (LIB-4) carries the
+reads it with `state <topic>`. The control state carries the
 product entries `c59.asm-run`, `c59.calculator-tab`, each
 `{available, reason}` (TRACE can always be pressed: a trace folder that
-cannot be written refuses the start, LIB-10 AC-53). The commands: `c59.show-calculator-debug {on}`,
+cannot be written refuses the start). The commands: `c59.show-calculator-debug {on}`,
 `c59.show-cpu-debug {on}`, `c59.heatmap-reset`, `c59.log-level {level:
 off|info|debug}`, `c59.dump {what: scom|memory|prog|vars}` (replies with the
 lines), `c59.asm-load {name, text}`, `c59.asm-run`, `c59.asm-clear`; the
 harness's `c59 asm load|run|clear`, `c59 dump …`, `c59 log-level …`,
-`c59 heatmap reset` (C59-4 AC-22). Which panel lives where: `FrontendParity.md`
+`c59 heatmap reset`. Which panel lives where: `FrontendParity.md`
 § "Debugger". The session and controller: `AppLayer.md`. Panel
 behaviour from a user's point of view: the user guide,
 https://calc-u.org/59/.
@@ -45,7 +45,7 @@ https://calc-u.org/59/.
 ## Calculator-level machine access
 
 The core's memory calls the golden runs and the core tests use (through
-`TIMachineTesting`; the memory adapter went in M-59); the app layer and a
+`TIMachineTesting`); the app layer and a
 preset read and write through the kind `c59.program-memory` (`core/TIProductKinds.hpp`). Writes are made
 on the session's thread between two advances. The debugger itself goes through the debug target `TMC0501`
 (`core/TIDebugging.hpp`) and the run control (§ "Freeze / Step Controls").
@@ -83,13 +83,13 @@ writes what the ROM's Op 17 writes, with no key simulation:
 
 ## Freeze / Step Controls
 
-Since M-53 (LIB-10 59) FREEZE, STEP, RESUME and FREEZE ON START are the
+FREEZE, STEP, RESUME and FREEZE ON START are the
 library's run control (`library/debugger/RunControl`), the machine
 session's gate; `TIAppPart` follows its state and rebuilds the panels
 (`DebugModel`). The panel's FREEZE, STEP and RESUME are the run-control
 buttons of the component sets (Qt6 `calcu::qt6::RunControlButtons`, React
 `CalcuRunControlButtons`; Swift follows `calcu::debugger::buttonUse`
-through the bridge), with the labels FREEZE, STEP and RESUME (C59-4).
+through the bridge), with the labels FREEZE, STEP and RESUME.
 
 | The panel | The session's command |
 |---|---|
@@ -107,25 +107,24 @@ through the bridge), with the labels FREEZE, STEP and RESUME (C59-4).
 | Field | Meaning |
 |---|---|
 | `paused` | The machine is paused (no emulated time passes) |
-| `owner` | The level of the pause, `program` (the CALCULATOR tab) or `cpu` (the CPU tab): the tab whose STEP and RESUME apply (2.3.0's "owner"); a step of the other level takes it over |
+| `owner` | The level of the pause, `program` (the CALCULATOR tab) or `cpu` (the CPU tab): the tab whose STEP and RESUME apply; a step of the other level takes it over |
 | `reason` | `pause`, `step`, `breakpoint`, `pause-on-start` |
 | `armed` | The level of pause-on-start (FREEZE ON START), or none |
 
 Arming one level disarms the other; a pause disarms both. A pending pause
 or a step says running until it lands.
 
-### The levels (`app/TILevelRules`; LIB-10 AC-29, AC-30)
+### The levels (`app/TILevelRules`)
 
 | | `program` | `cpu` |
 |---|---|---|
 | Pause | lands at the next program step boundary, or after 50000 weights (IDLE instructions count 4) when none comes (waiting for a key, an ASM overlay) | the same |
 | One step | to the next step boundary — one program byte, as SST; a jump completes in the byte that causes it — or 50000 weights | one instruction, carried out again up to 32 times while the PC stays put (a HOLD, `WAIT Dn`) |
-| Pause-on-start | fires at the next step boundary | fires when the CPU leaves the keyboard scan loop after it was seen there, or jumps to 0000 (a Reset or Cold boot on every model, ledger row 59-34) |
+| Pause-on-start | fires at the next step boundary | fires when the CPU leaves the keyboard scan loop after it was seen there, or jumps to 0000 (a Reset or Cold boot on every model) |
 
 The rules read the marks of `core/TIDebugging.hpp` (boundary, scan loop,
 weight). A pause or a step waiting to land runs on inside the host call
-that asked for it (`TIDebugging::setRunOn`), as 2.3.0's freeze and STEP
-did. When it lands the core runs the next instruction's pre-execution
+that asked for it (`TIDebugging::setRunOn`). When it lands the core runs the next instruction's pre-execution
 phase (`beginNextStep()`), so the views show the next step.
 
 ### Threading
@@ -139,8 +138,7 @@ phase (`beginNextStep()`), so the views show the next step.
   shows, the machine is paused or a start is armed. A machine replaced by
   a model switch is synced first, so its pause is never shown on the new
   one.
-- A Reset or Cold boot resumes a paused machine (`tellRestarted`, LIB-10
-  adapter L-E2); a model switch builds a new machine (the run control
+- A Reset or Cold boot resumes a paused machine (`tellRestarted`); a model switch builds a new machine (the run control
   disarms everything).
 
 ### What a frozen view rebuilds
@@ -305,9 +303,9 @@ and copies it into `vm.cpuHistory`; `vm.cpuHistoryUpdateID` changes with
 it, so `CPUInspectorView` scrolls to the current entry. The frames come
 from the core's ring through the product kind `c59.calculator-state` (they
 hold what the debug target names no register for: `Sout`, the display
-state; C59-4 D-3). The ROM heatmap is the core's own count (the product
+state). The ROM heatmap is the core's own count (the product
 kind `c59.rom-heatmap`, one increment per instruction carried out while the
-CPU tab shows; C59-4 AC-8), set to zero by `c59.heatmap-reset` (the CLR
+CPU tab shows), set to zero by `c59.heatmap-reset` (the CLR
 button), when the tab comes into view, at a Reset and on a new machine; the
 topic `c59.heatmap` carries it (`app/RomHeatmap.hpp`: the grid, steps and
 colours; Swift `vm.romHitCount`).
@@ -327,7 +325,7 @@ of the state.
 
 ### Trace flags
 
-`core/TraceTypes.hpp`. Since M-53 only `TIMachine` sets them: any consumer
+`core/TraceTypes.hpp`. Only `TIMachine` sets them: any consumer
 (the debug panel through `c59.calculator-state`'s `setFrameRing` — CPU tab
 shown, paused, a start armed —, a trace through `c59.trace-records`, the
 run control's checks) gives `TRACE_PC | TRACE_REGS_FULL`; none gives
@@ -342,12 +340,11 @@ run control's checks) gives `TRACE_PC | TRACE_REGS_FULL`; none gives
 
 ### Breakpoints
 
-The run control's breakpoints (LIB-10 AC-31): the debug target `TMC0501`
+The run control's breakpoints: the debug target `TMC0501`
 (`core/TIDebugging.hpp`) stops an advance before the instruction at a
 breakpoint's ROM address while the run control's checks say so; a resume
 passes it once. They are set through the session's `break` command (the
-harness's `break TMC0501 <address>`); no GUI sets them (`debugger.md`
-DB-3). The core's own breakpoints (`TRACE_BREAKPOINTS`, `kBreakpointHit`)
+harness's `break TMC0501 <address>`); no GUI sets them. The core's own breakpoints (`TRACE_BREAKPOINTS`, `kBreakpointHit`)
 are left to the harness's tests.
 
 ### Disassembler
@@ -361,7 +358,7 @@ or `"BR 0x03A2"`.
 
 ## LOG tab
 
-The log is LIB-3's `log` topic (C59-4 AC-9): the machine's own lines (the
+The log is the library's `log` topic: the machine's own lines (the
 product kind `c59.machine-log`, at their level; the lines of one host call
 in one message, parted by `\n`) and the product's lines (a Reset, a preset's
 steps, the dumps) at every level. Each frontend keeps the tab's view, the
@@ -409,17 +406,17 @@ a call through `m_cpu`. `fmtNibs(d, buf, reverse)` in `TMC0501.cpp` formats
 ## ASM Overlay
 
 Runs hand-assembled TMC0501 code from a debug-only ROM region, for
-ROM-level experiments (C59-4 AC-13 to AC-19, AC-26). Core: the product kind
+ROM-level experiments. Core: the product kind
 `c59.asm-overlay` (`core/TIDebugKinds.hpp`: `load`, `clear`, `loaded`,
 `enter`, `running`). App layer: `cu59::readAsmOverlay` (`app/AsmOverlay.hpp`),
 driven by `TIDebugPart::loadAsm`, `runAsm`, `clearAsm` (the commands
 `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`); an `.asm` file opened by
-any way (LIB-13's `open`) is read as by Select File.
+any way (the library's `open`) is read as by Select File.
 
 **Address range.** `0x1800–0x1FFF` (2048 instructions), outside the normal ROM.
 
-**File format: ASM overlay format 2.0** (ADR 0037; `examples/assembly/README.md`
-until the help's reference chapter, LIB-16 AC-10).
+**File format: ASM overlay format 2.0** (the help's `help/10-asm-overlay.md`;
+`examples/assembly/README.md`).
 
 ```
 Calc-U-59 ASM 2.0
@@ -439,7 +436,7 @@ instruction, 0000 to 1FFF. Refused, with a notice that says which: an older
 format (no first line, or another version), no `HEX:` line, nothing after
 it, a run not a multiple of four digits, an instruction above 1FFF, a word
 that is neither hex digits nor a comment, more than 2048 instructions.
-The instructions loaded before stay (EC-2).
+The instructions loaded before stay.
 
 **Run.** A paused machine resumes, and the machine runs to the next keycode
 boundary. COND is set, and `PREG = EXT = 0x1800` is forced on every step —
@@ -447,11 +444,11 @@ as the hardware's external debugger does — until the computed jump lands
 on `0x1800` (`TMC0501::runDebugInjectedProgram`). Not reaching it within
 8192 steps is an error ("ASM entry failed after n step(s).", also a
 notice). If FREEZE ON START of the CPU tab was armed, the machine is paused
-at 1800 with the reason pause-on-start (`RunControl::fireStart`, LIB-10);
+at 1800 with the reason pause-on-start (`RunControl::fireStart`);
 otherwise it runs the overlay in real time, and the panel shows the CPU
 tab. Run cannot be used while an operation runs (the entry `c59.asm-run`).
 
-**Its life (AC-18, AC-26).** It runs from the entry until a Reset, a Cold
+**Its life.** It runs from the entry until a Reset, a Cold
 boot or Clear; a FREEZE does not end it, and while it runs the CALCULATOR
 tab cannot be chosen (the entry `c59.calculator-tab`). A Reset keeps its
 instructions (Run enters them again); a Cold boot and a new machine (a
@@ -464,7 +461,7 @@ overlay was running.
 
 Files `CALCU59_TRACE.bin`, `CALCU58_TRACE.bin`, `CALCU58C_TRACE.bin` (the
 TRACE button's; a preset's `Trace:` and the harness's `trace` name their
-own). Since M-53 (LIB-10 AC-33) the library's trace session starts, limits
+own). The library's trace session starts, limits
 and ends every trace, one at a time: the file goes into the trace folder
 (on the Web, which has none, it is handed over with `keep-file` when it
 ends), the limit is `[trace] max-file-size-mb` MiB for every trace (it ends
@@ -501,13 +498,13 @@ Unknown types are skipped.
 | 0x01 | SESSION_START | u64 Unix time (s); v2 adds u8 model |
 | 0x02 | TRACE_EVENT | One `CpuFrame`: 125 bytes (v2), 124 (v1) |
 | 0x03 | SESSION_END | u32 TRACE_EVENT count; u32 suppressed total, always 0 |
-| 0x04 | USER_EVENT | u8 kind, u8 p1, u8 p2, u8 reserved (no longer written, M-53) |
+| 0x04 | USER_EVENT | u8 kind, u8 p1, u8 p2, u8 reserved (no longer written) |
 | 0x05 | TRACE_GAP | u32 frames lost to ring overflow |
 
-USER_EVENT kinds, in files of 2.3.0 to M-52: 0x01 key down, 0x02 key up
-(p1 = row 1–9, p2 = col 1–5), 0x03 card insert, 0x04 card eject. Since
-M-53 a trace is the CPU's log alone: no USER_EVENT is written, whoever
-starts the trace (user, 2026-11-13; LIB-10 AC-33). The version stays 2.
+USER_EVENT kinds, in older files: 0x01 key down, 0x02 key up
+(p1 = row 1–9, p2 = col 1–5), 0x03 card insert, 0x04 card eject. A trace
+is the CPU's log alone: no USER_EVENT is written, whoever starts the
+trace. The version stays 2.
 
 ### TRACE_EVENT payload (v2, 125 bytes)
 
@@ -552,7 +549,7 @@ run control's advance.
 
 ## TI-58C Constant Memory File (`ti58c.memory.yaml`)
 
-Constant memory format 1 (`docs/formats/media.md` §4; C59-3), read when a
+Constant memory format 1 (`docs/formats/media.md` §4), read when a
 TI-58C is built without a preset and written while that machine runs
 (`app/ConstantMemoryKeeper`, `app/ConstantMemoryFile`; when:
 `AppLayer.md` § "TI-58C Constant Memory"), through `TIFileAccess`
@@ -576,4 +573,4 @@ ram:
   R060–R063), eight hex bytes (`app/Bcd.hpp` `registerLineHex`). Missing
   registers are zero.
 - A damaged file is not used (zeroed memory and a notice); an outdated one
-  is replaced at the first change. 2.3.0's `ti58c.mem` is ignored.
+  is replaced at the first change. The `ti58c.mem` file of releases up to 2.3.0 is ignored.

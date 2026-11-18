@@ -10,7 +10,7 @@ struct DebugView: View {
         VStack(spacing: 0) {
             // Tab bar
             HStack(spacing: 0) {
-                // The product entry c59.calculator-tab (C59-4 AC-18, AC-25):
+                // The product entry c59.calculator-tab:
                 // not while an ASM overlay runs.
                 tabButton("CALCULATOR", .live)
                     .disabled(!vm.calculatorTabAvailable)
@@ -159,7 +159,7 @@ private struct StaticDebugContent: View {
                 }
                 .buttonStyle(.plain)
                 // TRACE can always be pressed; a trace folder that cannot be
-                // written refuses the start (C59-4 AC-12, LIB-10 AC-53).
+                // written refuses the start.
                 .accessibilityIdentifier("btn-trace")
 
                 Button { vm.toggleDebug() } label: {
@@ -221,7 +221,7 @@ private struct ASMDebugContent: View {
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(Color(white: 0.7))
                     .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("asm-status")   // C59-4 AC-24
+                    .accessibilityIdentifier("asm-status")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(10)

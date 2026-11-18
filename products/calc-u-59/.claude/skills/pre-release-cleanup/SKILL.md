@@ -20,11 +20,11 @@ that area.
 
 1. Take the target version from `MARKETING_VERSION`
    (`frontends/swift/Calc-U-59.xcodeproj/project.pbxproj`); releases are
-   tagged `calc-u-59-vX.Y.Z` (ADR 0028), from `main` (ADR 0029).
+   tagged `calc-u-59-vX.Y.Z`, from `main`.
 2. Find **base**, the previous release tag, as the `calc-u-59-docs` skill's
    Release Documentation Update Workflow, step 1, describes. Every "this
    release" below means `base..HEAD`.
-3. The user guide is the help in `help/` (and `library/help/`; LIB-16).
+3. The user guide is the help in `help/` (and `library/help/`).
    Where this release also changes what stays the site's (the software
    collection, the articles), in `../calc-u-site` confirm the branch is
    `59/X.Y.Z`; its rules are in that repository's `CLAUDE.md`.
@@ -156,7 +156,7 @@ the simulators and takes a while.
    in it on iOS. A later commit alone proves nothing: a Mac-only change or a
    change to a screen the shot does not show leaves it current.
 
-**Help set** (the pictures in `help/images/`, LIB-16 AC-16): open them and
+**Help set** (the pictures in `help/images/`): open them and
 compare them with the current UI as the code and App Store set describe it.
 
 If a shot is out of date, list it with the commit that outdated it and propose

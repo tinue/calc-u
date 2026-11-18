@@ -1,6 +1,6 @@
 import XCTest
 
-/// C59-5 S1 (AC-4, AC-6) through the real bridge: commands the Swift side
+/// Through the real bridge: commands the Swift side
 /// sends in an order reach the session in that order, and what the session
 /// sends back arrives on the main thread in that order.
 final class MessageOrderTests: XCTestCase {
@@ -30,7 +30,7 @@ final class MessageOrderTests: XCTestCase {
         XCTAssertEqual(refused, 0)
     }
 
-    /// AC-4: the session thread calls the session about 60 times a second;
+    /// The session thread calls the session about 60 times a second;
     /// the main thread runs no host call.
     func testSessionThreadCallsAbout60TimesASecond() throws {
         let t = try TestSession()

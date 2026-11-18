@@ -41,7 +41,7 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
 
 ## Rules for Core changes
 
-- **ROM files are read by the library's lookup only** (LIB-12; ADR 0035).
+- **ROM files are read by the library's lookup only**.
   The core supplies the reader: `core/TIRomReader` decodes each file for its
   amount (`TIRomText` for the Datamath dumps, `core/ModuleFile` for a
   module's `<ID>.rom.yaml`, `docs/formats/modules.md` §2) and adds the set's
@@ -49,44 +49,42 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   the machine gets the files as bundled in `RomImage`s. The 24 files are
   flat in `roms/` (`roms/README.md`, `roms/fetch_roms.sh`).
 
-- **`calcu::machine::Machine` is the only public interface** (C59-1,
-  ADR 0006): `TIMachine` (`core/TIMachine.hpp`), built with
+- **`calcu::machine::Machine` is the only public interface**: `TIMachine` (`core/TIMachine.hpp`), built with
   `calcu::machine::build(tiCatalogue(), TIMachineBuilder, …)`
   (`core/TICatalogue.hpp`; `cu59::buildMachine` in `app/ProductRoms.hpp`,
-  from the `RomSet` of the ROM lookup, LIB-12).
+  from the `RomSet` of the ROM lookup).
   Model, advances and tick count, Reset/power cycle/cold boot, key readiness,
   keys (key IDs) and the display output go through it only; everything else
-  is a capability (the adapters of C59-1 are gone since M-59: the card
-  reader is the media place `core/TICardReaderPlace` with
+  is a capability (the card reader is the media place `core/TICardReaderPlace` with
   `core/TIMagneticCard`'s content and `buildCardBank`; `libExecPC` is
   `c59.calculator-state`'s; program memory and registers are
   `c59.program-memory`; the core tests reach the core's own calls through
   `TIMachineTesting`). `core/TITypingSupport.hpp` holds the typing support
   and `idleAndKeyDetectRange()`; `core/TIMachineState.*` the `machine-state`
-  kind (C59-9 AC-15: each part's fields in its `stateIo`, records of
-  `core/TIStateRecords.hpp`; a new field of a part goes into its `stateIo`). The debug panel's reads are product kinds since
-  M-56 (`core/TIDebugKinds.hpp`: `c59.asm-overlay`, `c59.rom-heatmap`,
+  kind (each part's fields in its `stateIo`, records of
+  `core/TIStateRecords.hpp`; a new field of a part goes into its `stateIo`). The debug panel's reads are product kinds
+  (`core/TIDebugKinds.hpp`: `c59.asm-overlay`, `c59.rom-heatmap`,
   `c59.calculator-state`, `c59.machine-log`; find one with
   `calcu::machine::first<K>(machine)`, `library/machine/Capability.hpp`); `idleAndKeyDetectRange()` is
   the scan/detect range for `c59 coverage`, the run probe and the tests. The debugger
   reaches the core through `Machine::debugging()`: the debug target
-  `TMC0501` (`core/TIDebugging.hpp`; LIB-10, M-53), whose
+  `TMC0501` (`core/TIDebugging.hpp`), whose
   `InstructionEvent::marks` say step boundary, scan loop and weight; traces
   through the capability `TMC0501/c59.trace-records`
   (`core/TraceRecords.hpp`). `TIMachine` alone sets the trace flags. `TI59Machine`,
   `TMC0501`, `MachineVariant`, `TIKeys`, `TIRomRanges` are core-internal; the
   CTest `CalcU59CoreSeam` (`tests/check_core_seam.sh`) fails on an include of
-  them outside `core/` and `tests/`. Don't add a call to an adapter that the
-  interface has (C59-1 AC-17); a new need goes to the feature that owns it.
-- **Peripherals (C59-6):** the PC-100C (`core/PC100C.*`) and a Solid State
+  them outside `core/` and `tests/`. Don't add an adapter call for what the
+  interface already has.
+- **Peripherals:** the PC-100C (`core/PC100C.*`) and a Solid State
   ROM module (`core/SolidStateRomModule.*`) are peripherals in the places
   `printer` and `slot-1`, plugged by `TIMachine::plug/unplug` through
-  `Machine::attach/detach/replace` (LIB-2); a change is followed by a power
+  `Machine::attach/detach/replace`; a change is followed by a power
   cycle the caller runs. `TMC0501` sees only their functional pin-outs
   (`core/PrinterPinOut.hpp`, `core/ModuleSlotPinOut.hpp`, wired with
   `TiConnectors`) and holds no printer state and no module image; the
   `libExecPC` latch stays in the CPU. The PC-100C's controls (PRINT, ADV,
-  TRACE) and its paper (`printer/paper-output`, LIB-8's kind; the
+  TRACE) and its paper (`printer/paper-output`, the library's paper kind; the
   description, font and dot rules in `core/PC100CPaper.hpp`) are
   capabilities; its code lines are kept only for the golden runs
   (`TIMachineTesting::printedCodeLines`); `CoreArchitecture.md` § "Component Overview", "Printer
@@ -97,9 +95,9 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   (the Reset restore, the polled-hardware bit).
 - **Core stays hardware-only.** File formats, run-loop pacing, key timing and
   debugger snapshots belong in `app/` (calc-u-59-app skill).
-- **The core holds no lock, no atomic and starts no thread** (ADR 0009).
+- **The core holds no lock, no atomic and starts no thread**.
   Every frontend runs the machine on the one thread of its app session
-  (since M-34 also the Web); nothing serialises calls on it.
+  (the Web's too); nothing serialises calls on it.
 - **Trace format:** a new `CpuFrame` field changes the binary trace format
   (`reference/DebugAPI.md`); avoid it where an accessor will do (as
   `libExecPC()` does).

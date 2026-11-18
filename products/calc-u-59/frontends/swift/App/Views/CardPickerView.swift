@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The two card dialogs (C59-7 AC-14, AC-15; drawn natively in C59-8, M-58):
+/// The two card dialogs (drawn natively):
 /// Arm Card lists the saved cards of the save folder by their names (an
 /// outdated one cannot be chosen), Arm Fresh Card asks a name and, when a
 /// card of that name is saved, whether to replace it. Everything else is

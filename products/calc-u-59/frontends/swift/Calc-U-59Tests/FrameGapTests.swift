@@ -3,12 +3,11 @@ import XCTest
 import UIKit
 #endif
 
-/// C59-5 AC-5 (design S5, D-9): while the session thread is busy for whole
-/// calls (full speed, a program running), the main thread keeps its frames,
-/// and a key command sent then is answered when the call is over. The probe
-/// is in the test bundle, not the app (D-9: no probe in the app): a display
-/// link on iOS, a 60 Hz timer on macOS, on the host app's main thread, as
-/// first step 3 measured (FS 3). The numbers go into qa-report.md.
+/// While the session thread is busy for whole calls (full speed, a program
+/// running), the main thread keeps its frames, and a key command sent then is
+/// answered when the call is over. The probe is in the test bundle, not the
+/// app (the app has no probe): a display link on iOS, a 60 Hz timer on
+/// macOS, on the host app's main thread.
 final class FrameGapTests: XCTestCase {
 
     /// An endless loop, started with the A key (the spike's busy-loop.ti59).
@@ -86,7 +85,7 @@ final class FrameGapTests: XCTestCase {
         let regular = measure("program running, regular speed", seconds: 2)
         let regularRate = (t.time(self).seconds - e0) / Date().timeIntervalSince(w0)
 
-        // Full speed as the display's hold gives it (the shell's pointer rule, LIB-14 AC-43).
+        // Full speed as the display's hold gives it (the shell's pointer rule).
         let d = TISharedTables.displayRect, width = 400.0, height = width / Double(TISharedTables.canvasAspect)
         _ = t.session.shell.pointerDown(9, x: Double(d.midX) * width, y: Double(d.midY) * height,
                                         scale: width / Double(TISharedTables.canvasWidthPixels))

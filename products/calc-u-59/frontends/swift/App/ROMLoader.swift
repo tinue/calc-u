@@ -1,18 +1,18 @@
 import Foundation
 import os
 
-/// The app bundle's ROM files (the module files hold the cue cards, M-55). They are looked up
-/// once through the library's lookup (LIB-12, Bridge/TIRomSet); parsing and
+/// The app bundle's ROM files (the module files hold the cue cards). They are looked up
+/// once through the library's lookup (Bridge/TIRomSet); parsing and
 /// checks live in the C++ layers. This only names the folder.
 struct ROMLoader {
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Calc-U-59", category: "ROMLoader")
 
     /// The full set from the bundle's resource folder, or the text that says
-    /// which files are missing or bad (LIB-12 AC-5, AC-10).
+    /// which files are missing or bad.
     static func lookUp() -> Result<TIRomSet, RomsMissing> {
         var leavingOut: String? = nil
         #if DEBUG
-        // UI test only (LIB-12 design D-8): a file treated as missing.
+        // UI test only: a file treated as missing.
         leavingOut = ProcessInfo.processInfo.environment["CALCU59_ROM_LEAVE_OUT"]
         #endif
         var missing: NSString? = nil

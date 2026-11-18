@@ -7,7 +7,7 @@ class QLineEdit;
 class QListWidget;
 class QPushButton;
 
-// The card dialogs of C59-7 (AC-14, AC-15; LIB-7 59): Arm Card lists the
+// The magnetic card dialogs: Arm Card lists the
 // saved magnetic cards of the library's media topic by name (an outdated one
 // as an entry that cannot be chosen, its hint as tooltip; "No cards found"
 // when none) and gives back the chosen entry for `media.choose`; Arm Fresh

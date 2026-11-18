@@ -16,7 +16,7 @@ frontends/qt6/app/ (Qt Widgets) ────────────────
 frontends/web/ (React) ── frontends/web/bindings.cpp ───────────┘   (WebAssembly, no threads)
 ```
 
-- **C++20, standard library only** (ADR 0005) — no Foundation, no Qt, no
+- **C++20, standard library only** — no Foundation, no Qt, no
   iCloud. CMake builds it as C++20, the Xcode project as gnu++20.
 - **No locations.** `app/` never resolves where files live: it takes paths
   (`std::filesystem::path`), and ROM files only through the library's ROM
@@ -37,52 +37,52 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | Module | What it does |
 |---|---|
 | **Orchestration and runtime** | |
-| `TIAppPart` (`TIAppPart.cpp`, `TIAppPartFlows.cpp`) | Calc-U-59 in the library's app session: everything a frontend does with a calculator that isn't drawing (below); the library's parts it brings (`parts::LibraryParts`, M-54), the interim topics and commands, `makeAppSession` (M-33; 2.3.0's `SessionController` taken apart into it in M-34) |
-| `TIProductMachines` | What Calc-U-59 hands LIB-18: the catalogue and builder, the built-in default of each model (the Master Library module, no printer; a TI-58C with the constant memory file's content), the pacing profile, no sound, the 25 s readiness bound (M-54) |
-| `TIPresetRules`, `TIPresetKeys`, `TIPresetCommands` | The TI rules of LIB-6's loader (idle, `expect:`, `screenshot:`, `slot-1` by `name:`), the sections `partition:`, `program:`, `data:`, `cue-card:` and the step `printer-trace:`; the commands `c59.partition`, `c59.program`, `c59.data-registers` (`ProgramMemoryPart`, C59-2 AC-9) (M-54) |
-| `TIDisplayPicture` | The classic segment picture a preset's `screenshot:` writes (LIB-6 AC-40) |
-| `ConstantMemoryKeeper`, `ConstantMemoryFile` | The TI-58C's `ti58c.memory.yaml` (constant memory format 1): what a TI-58C built without a preset gets, when the file is written, the notices (C59-3, M-54) |
-| `TIFileAccess`, `PacingProfiles` | The card and `ti58c.memory.yaml` files on the save folder (read at each use: a change in Settings applies at once, ledger row 59-66); the TI pacing profiles (M-33) |
-| `TIShellProduct` | What Calc-U-59 gives LIB-14's shell, one source for Qt6, the Web and (through the bridge) Swift: the name, help address, About texts and links, the preset filter, the module slot's pin-out, the two card items (`arm-card`, `arm-fresh-card` on the media place `card-reader`); the settings dialog per frontend and layout (`settingsSpec`); the faceplate's hit map in base-image pixels (`faceplateHitMap`, `faceplateMapValue`) (M-57) |
-| `TIWebPart`, `WebPageData` | What the Web page draws, as `c59.web.*` topics and product requests (`c59.shell-product`, `c59.faceplate-map` since M-57; the LED shapes, the mobile layout rules) (LIB-15 59, M-34; LIB-14 59, M-57) |
-| `EmulatorSession` | The runtime around the machine LIB-18 built and the machine session holds (one per machine, made at `machineChanged`): frame sampler, the PC-100C's controls, the module's image, the adapters' reads |
-| `SessionThread` | The Swift frontend's session thread and its two queues (C59-5) |
-| `TILevelRules` | The levels `program` and `cpu` of the run control (LIB-10 AC-29, AC-30): where a pause lands (a step boundary, or 50000 weights), one step, pause-on-start |
-| `TIDebuggerSetup` | The `DebuggerPart`'s set-up: the rules, the trace session on `TITraceRecorder`, the trace folder (none on the Web: hand-over), the panel views (M-53) |
-| `TIPrinters` | The PC-100C with its paper description, for the `PaperPart` (M-53) |
-| `TITyping` | The TI typing profile per model (100 ms of emulated time, held until the ROM read it), the keyboard map (`TIKeyboardMap`), the names `key` takes; handed to the library's `TypingPart` (LIB-5) |
+| `TIAppPart` (`TIAppPart.cpp`, `TIAppPartFlows.cpp`) | Calc-U-59 in the library's app session: everything a frontend does with a calculator that isn't drawing (below); the library's parts it brings (`parts::LibraryParts`), the interim topics and commands, `makeAppSession` |
+| `TIProductMachines` | What Calc-U-59 hands the library's machine control: the catalogue and builder, the built-in default of each model (the Master Library module, no printer; a TI-58C with the constant memory file's content), the pacing profile, no sound, the 25 s readiness bound |
+| `TIPresetRules`, `TIPresetKeys`, `TIPresetCommands` | The TI rules of the library's preset loader (idle, `expect:`, `screenshot:`, `slot-1` by `name:`), the sections `partition:`, `program:`, `data:`, `cue-card:` and the step `printer-trace:`; the commands `c59.partition`, `c59.program`, `c59.data-registers` (`ProgramMemoryPart`) |
+| `TIDisplayPicture` | The classic segment picture a preset's `screenshot:` writes |
+| `ConstantMemoryKeeper`, `ConstantMemoryFile` | The TI-58C's `ti58c.memory.yaml` (constant memory format 1): what a TI-58C built without a preset gets, when the file is written, the notices |
+| `TIFileAccess`, `PacingProfiles` | The card and `ti58c.memory.yaml` files on the save folder (read at each use: a change in Settings applies at once); the TI pacing profiles |
+| `TIShellProduct` | What Calc-U-59 gives the library's shell, one source for Qt6, the Web and (through the bridge) Swift: the name, help address, About texts and links, the preset filter, the module slot's pin-out, the two card items (`arm-card`, `arm-fresh-card` on the media place `card-reader`); the settings dialog per frontend and layout (`settingsSpec`); the faceplate's hit map in base-image pixels (`faceplateHitMap`, `faceplateMapValue`) |
+| `TIWebPart`, `WebPageData` | What the Web page draws, as `c59.web.*` topics and product requests (`c59.shell-product`, `c59.faceplate-map`; the LED shapes, the mobile layout rules) |
+| `EmulatorSession` | The runtime around the machine the library's machine control built and the machine session holds (one per machine, made at `machineChanged`): frame sampler, the PC-100C's controls, the module's image, the adapters' reads |
+| `SessionThread` | The Swift frontend's session thread and its two queues |
+| `TILevelRules` | The levels `program` and `cpu` of the run control: where a pause lands (a step boundary, or 50000 weights), one step, pause-on-start |
+| `TIDebuggerSetup` | The `DebuggerPart`'s set-up: the rules, the trace session on `TITraceRecorder`, the trace folder (none on the Web: hand-over), the panel views |
+| `TIPrinters` | The PC-100C with its paper description, for the `PaperPart` |
+| `TITyping` | The TI typing profile per model (100 ms of emulated time, held until the ROM read it), the keyboard map (`TIKeyboardMap`), the names `key` takes; handed to the library's `TypingPart` |
 | `FrameSampler` | The 60 Hz frame: display, C indicator, card auto-eject |
 | `DisplayPov` | LED brightness per position from the core's duty cycles (persistence of vision) |
 | **Debugger** | |
-| `TIDebugPart` | The debug panel below the frontends (C59-4, M-56): a session part with the six product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `heatmap`, `asm-overlay`, `c59.debug-view`, the commands `c59.show-calculator-debug`, `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`, `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`, and LIB-4 control rules (the product entries `c59.asm-run`, `c59.calculator-tab`); `freezeButtons` (FREEZE and FREEZE ON START of a tab) |
-| `TIFileKinds` | Calc-U-59's file kinds of LIB-13's `open` (M-56): `asm-overlay`, `keystroke-program`, `rom-module-file`, `constant-memory-file` (and, until M-55, the card files of today as `magnetic-card`); `tiPresetExtensions`, `programArguments` (the Qt6 start file) |
+| `TIDebugPart` | The debug panel below the frontends: a session part with the six product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `heatmap`, `asm-overlay`, `c59.debug-view`, the commands `c59.show-calculator-debug`, `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`, `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`, and control rules (the product entries `c59.asm-run`, `c59.calculator-tab`); `freezeButtons` (FREEZE and FREEZE ON START of a tab) |
+| `TIFileKinds` | Calc-U-59's file kinds of the library's `open`: `asm-overlay`, `keystroke-program`, `rom-module-file`, `constant-memory-file`; `tiPresetExtensions`, `programArguments` (the Qt6 start file) |
 | `DebugModel` | The panels' data: CALCULATOR snapshot and listing, CPU history (TIDebugPart owns it) |
 | `DebugSnapshots` | Builds the CALCULATOR snapshot and listing and the CPU history entries |
 | `DebugText` | The panels' shared text and colours; `mobileLayout`, which panels an iOS window shows, `mobilePrinterWidth`, `compactPrinterBar` and `mobileTopMargin` |
 | `DebugLog` | The LOG tab's view (`RingLog`, the last 2000 lines; kept by each frontend) and the Vars / SCOM / Prog / Memory dumps |
 | `RomHeatmap` | How the heatmap is drawn: the grid, heat steps and colours (the counts are the core's `c59.rom-heatmap`) |
 | `ModuleImage` | PRG SOURCE decoding, the module's program table, source labels |
-| `AsmOverlay` | The reader of the ASM overlay format 2.0 (`readAsmOverlay`; C59-4 AC-14, AC-15) |
+| `AsmOverlay` | The reader of the ASM overlay format 2.0 (`readAsmOverlay`) |
 | `TraceWriter` | The records of the binary trace format v2 (`DebugAPI.md`), encoded into a buffer |
-| `TITraceRecorder` | The trace session's records of a TI machine: the frames of `c59.trace-records` as `TraceWriter` records, no key or card records (LIB-10 AC-33) |
+| `TITraceRecorder` | The trace session's records of a TI machine: the frames of `c59.trace-records` as `TraceWriter` records, no key or card records |
 | **Files** | |
 | `Keycodes` | The keycode notation of `program:` and keystroke program files (`docs/formats/preset.md` §4.1) |
 | `CueCardYaml` | The stand-alone cue card block of a preset and of the constant memory file (`docs/formats/cue-card.md`) |
 | `TIMagneticCardKind` | The kind `magnetic-card` of the library's media part and its codec for magnetic card format 3 (`.magnetcard.yaml`, `docs/formats/media.md` §1); the card's label (name, description, cue card); the fitted card's cue card |
 | `TIMagneticCardsKey` | The preset header key `magnetic-cards:` (in-file cards, `docs/formats/preset.md` §3.1) |
 | `ModuleCueCards` | The module cue cards from the `cue-cards:` of a module file (`docs/formats/modules.md` §2.3) |
-| `ProductRoms` | The ROM lookup of Calc-U-59 (`lookUpRoms`, the full set, LIB-12), `buildMachine` from the `RomSet` (the core decodes; C59-1), a module's ROM image |
+| `ProductRoms` | The ROM lookup of Calc-U-59 (`lookUpRoms`, the full set), `buildMachine` from the `RomSet` (the core decodes), a module's ROM image |
 | `ModuleCatalog` | The module list from the module files (`allModuleMetadata`), a module's file name, slot-1's listing for the media part (`tiModuleListing`) |
 | `CueCard` | Cue-card model, encode/parse, spans, layout, geometry, inks, which card shows |
 | **Tables and drawing rules** | |
-| `MachineModelInfo` | Per-model facts: `Model` ↔ `ModelId`, RAM, card reader, ROM files (the tick rate is the descriptor's, key readiness the machine's: C59-1) |
-| `KeyIds` | Matrix code ↔ key ID of the machine's descriptor (C59-1 AC-10) |
+| `MachineModelInfo` | Per-model facts: `Model` ↔ `ModelId`, RAM, card reader, ROM files (the tick rate is the descriptor's, key readiness the machine's) |
+| `KeyIds` | Matrix code ↔ key ID of the machine's descriptor |
 | `KeyboardLayout` | Canvas geometry, key rects, widened hit test; `PointerTracker` (hold the display for full speed, one held key, drag between keys — Qt and web) |
 | `KeyNames` | Keycode mnemonics, operand-step grammar |
 | `SevenSegment` | 7-segment pattern of every display glyph |
 | `LedGeometry` | Segment polygons (modernized), dot grids (classic), decimal point, style parameters |
 | `Bcd` | Register BCD encoding, register lines, `parseDecimal` (a `data:` value) |
-| `Settings` | The settings file `Calc-U-59.ini` (LIB-9): `settingsDecl()` with every key, default and accepted value (read and written through the library's `calcu::settings::SettingsFile`), and typed calls for what a frontend reads itself: the Qt6 window state, the Swift trace location |
+| `Settings` | The settings file `Calc-U-59.ini`: `settingsDecl()` with every key, default and accepted value (read and written through the library's `calcu::settings::SettingsFile`), and typed calls for what a frontend reads itself: the Qt6 window state, the Swift trace location |
 | `TextUtil` | Foundation-compatible string helpers, so ported parsers keep their edge cases |
 
 Each header's top comment says what the module is and where its format or
@@ -90,22 +90,22 @@ rules are documented.
 
 ## The app session (`TIAppPart`)
 
-Every frontend hosts the library's app session (`calcu::sessions::AppSession`,
-LIB-3) made by `cu59::makeAppSession` (`app/TIAppPart.hpp`) or, on the Web,
+Every frontend hosts the library's app session (`calcu::sessions::AppSession`)
+made by `cu59::makeAppSession` (`app/TIAppPart.hpp`) or, on the Web,
 by `frontends/web/bindings.cpp`, both on the library's
-`calcu::shell::makeHostSession` (LIB-14's `SettingsPart` over the host's
-settings file, the order, the start), for the library's Web Worker host (LIB-15,
-with `TIWebPart` behind the part). The session holds the machine session
-(the machine, LIB-17's pacer with the TI profiles of
+`calcu::shell::makeHostSession` (the library's `SettingsPart` over the host's
+settings file, the order, the start), for the library's Web Worker host
+(with `TIWebPart` behind the part). The session holds the machine session
+(the machine, the library's pacer with the TI profiles of
 `app/PacingProfiles.hpp`) and Calc-U-59's parts: `TIAppPart::sessionParts()`
-gives the library's parts in their order (`parts::LibraryParts`, LIB-6
-D-40, as Calc-U-1600's `SharpAppPart`): LIB-5's `TypingPart`, LIB-2's
-`PeripheralsPart`, LIB-6's `PresetsPart` (on `TIPresetRules` and the bundle
-of `examples/`), LIB-18's `StartupPart` (on `TIProductMachines`), LIB-13's
-`OpenPart`, LIB-8's `PaperPart` (on `tiPrinterPapers()`), LIB-10's
+gives the library's parts in their order (`parts::LibraryParts`, as
+Calc-U-1600's `SharpAppPart`): `TypingPart`,
+`PeripheralsPart`, `PresetsPart` (on `TIPresetRules` and the bundle
+of `examples/`), `StartupPart` (on `TIProductMachines`),
+`OpenPart`, `PaperPart` (on `tiPrinterPapers()`),
 `DebuggerPart` (on `tiDebuggerSetup()`); then `ProgramMemoryPart` (the
 `c59.partition`, `c59.program`, `c59.data-registers` commands) and `TIAppPart`.
-`makeAppSession` sends LIB-18's `start` once (the startup model with its
+`makeAppSession` sends the library's `start` once (the startup model with its
 startup preset, else its built-in default); the Web page sends `start
 {model, preset}` itself. A frontend sends commands (the library's: `start`,
 `model`, `reset`, `cold-boot`, `attach`, `detach`, `load-preset`,
@@ -113,34 +113,30 @@ startup preset, else its built-in default); the Web page sends `start
 messages: the library's topics (`display`, `busy`, `notices`, `log`,
 `papers`, `paper PC-100C`, `run-state`, `trace`, …) and the product
 topics `c59.calc-indicator` (the LED frame of the frame sampler and the C
-indicator; `c59.led` until release prep 3), `c59.cue-card` (the cue card
+indicator), `c59.cue-card` (the cue card
 shown, whether the fitted card is on show, its lit corner). The PC-100C in
-`printer` and the positions of its PRINT, ADV and TRACE are LIB-4's
-`control-state` (`places`, `controls`, AC-21; `c59.printer` went in release
-prep 3). The part sets them after
+`printer` and the positions of its PRINT, ADV and TRACE are the library's
+`control-state` (`places`, `controls`). The part sets them after
 each flow from what it left, and the session sends one when its value
-changed (LIB-3 AC-5; their payloads compare by content since Part E
-simplification E-3, which removed 2.3.0's change bits, the change
-observer and the snapshot serials). Their value forms are fixed: `calcu
-state` reads them. (`c59.model` went with C59-8 (M-58): every frontend
-draws the model, the module, the printer and the card controls from
-LIB-4's `control-state`; `c59.run-state` and the command
-`c59.full-speed` went in M-59: the library's `speed` and `busy`.) Then
-the debug panel's product topics (`TIDebugPart`, C59-4 AC-25). Qt6
+changed (their payloads compare by content). Their value forms are fixed:
+`calcu state` reads them. Every frontend draws the model, the module, the
+printer and the card controls from `control-state`; full speed is the
+library's `speed` command and `busy` topic. Then
+the debug panel's product topics (`TIDebugPart`). Qt6
 calls the session on its GUI thread, Swift on `cu59::SessionThread`, the
 Web in its worker (§ "Threads"); each talks to it through the library's
 `calcu::sessions::Listener`. The session owns the parts
 (`AppSessionSetup::owned`) and lets them go first.
 
-The machine is built by LIB-18's machine control and held by the machine
+The machine is built by the library's machine control and held by the machine
 session; `TIAppPart` never builds or owns one. At `machineChanged` it
 makes a new `EmulatorSession` around the session's machine, reads the module and the printer from
-`Machine::plugged()` (no copies of its own, LIB-18 D-26), fits the own cue
+`Machine::plugged()` (no copies of its own), fits the own cue
 card the build gives (a preset's `cue-card:`, or the constant memory
 file's) and tells `ConstantMemoryKeeper` the build. What stays the part's:
-the card reader (until M-55), the PC-100C's TRACE position, the cue card
+the PC-100C's TRACE position, the cue card
 shown. The debug panel's data, the ASM overlay and the log level are
-`TIDebugPart`'s, a part of the same session (C59-4, M-56). Every
+`TIDebugPart`'s, a part of the same session. Every
 pause, step, breakpoint and trace is the `DebuggerPart`'s, the paper the
 `PaperPart`'s. An error is a notice ("title: message"), a diagnostic a log
 line, the card and `ti58c.memory.yaml` files go through `TIFileAccess` in
@@ -162,7 +158,7 @@ After each host call (`TIAppPart::afterCall`):
    machine stands (rebuilt when the tick count moved), and the core's frame
    ring is on while the CPU tab shows, the machine is paused or a start is
    armed. (The trace is pumped by the library's trace session inside the
-   gate, LIB-10 T2.)
+   gate.)
 3. **Slower checks**: the cue card's library program (2 Hz), the LOG text
    (1 Hz); the TI-58C's constant memory file (`ConstantMemoryKeeper`, at
    the latest 0.5 s after a change).
@@ -175,49 +171,48 @@ The app layer has no thread of its own but one host adapter:
 
 | Frontend | Where the session runs |
 |---|---|
-| Swift | `cu59::SessionThread` (`app/SessionThread.*`): builds, calls about 60 times a second and destroys the session on one thread (QoS user-initiated). Posts in one FIFO, messages out in one FIFO to the main thread, one wake per batch (C59-5). In Debug builds for macOS and the simulator it also hosts harness attach (`library/harness/attach/`) |
+| Swift | `cu59::SessionThread` (`app/SessionThread.*`): builds, calls about 60 times a second and destroys the session on one thread (QoS user-initiated). Posts in one FIFO, messages out in one FIFO to the main thread, one wake per batch. In Debug builds for macOS and the simulator it also hosts harness attach (`library/harness/attach/`) |
 | Qt6 | the GUI thread: a 60 Hz `QTimer` calls the session |
-| Web | the library's Web Worker (`library/web/src/worker.js`): a 60 Hz `setInterval` calls the session through the library's `WorkerHost` (LIB-15) |
+| Web | the library's Web Worker (`library/web/src/worker.js`): a 60 Hz `setInterval` calls the session through the library's `WorkerHost` |
 
-Nothing else in the app layer locks (ADR 0009): `EmulatorSession`,
+Nothing else in the app layer locks: `EmulatorSession`,
 `TIAppPart`, `TILevelRules` and `TITraceRecorder` are single-threaded.
 
 ### Key input
 
-Every key goes through the library's typing engine (`library/typing/`,
-LIB-5): host keys (`host-key-down`/`-up` with what the host reported),
+Every key goes through the library's typing engine (`library/typing/`):
+host keys (`host-key-down`/`-up` with what the host reported),
 on-screen keys (`screen-key-down`/`-up`), focus loss (`focus-lost`), the
 harness's `key`. The engine is a slice hook of the machine session, so its
 holds and waits are counted in emulated time and land on their tick
 whatever the pacing. A preset's `key:` step is pressed through the same
-engine (origin Preset; LIB-6, `typing::typeAndWait`), and the loader waits
+engine (origin Preset; `typing::typeAndWait`), and the loader waits
 for idle after it.
 
-The pause and the steps are the library's run control (LIB-10, M-53), the
+The pause and the steps are the library's run control, the
 machine session's gate, with the TI's levels (`TILevelRules`). A pause or
 a program step waiting to land runs on inside the host call that asked for
-it (`TIDebugging::setRunOn`, at most 50000 weights), as 2.3.0's freeze and
-STEP did, not in paced emulated time. Details: `DebugAPI.md` § "Freeze /
+it (`TIDebugging::setRunOn`, at most 50000 weights), not in paced emulated
+time. Details: `DebugAPI.md` § "Freeze /
 Step Controls".
 Core locking: `CoreArchitecture.md` § "Threading Model".
 
 ## Emulation Loop and Timing
 
-Every frontend (Swift and Qt6 since M-33, the Web since M-34): LIB-17's pacer in the machine session, with the TI
+Every frontend: the library's pacer in the machine session, with the TI
 profiles (`app/PacingProfiles.hpp`): a fixed 20 ms slice of the model's
-tick rate, jittered slice ends (the TI-58's error blink, AC-17), and full
+tick rate, jittered slice ends (for the TI-58's error blink), and full
 speed paced at regular speed while the machine waits for input (key
 readiness, or on the TI-59 a `Write` waiting for a card; a printer wait
 does not count). A call drops a lag over 100 ms; full speed runs at most
-14 ms of host time per call. The long-run rate is exact (LIB-17 AC-18:
-0.13 % / 0.10 % faster than 2.3.0 on the TI-59 / TI-58C, ledger 59-33).
+14 ms of host time per call. The long-run rate is exact.
 
 `step()` returns the cycle weight in the low 8 bits (`kWeightMask`). Bit 29
 marks a step boundary (a `program` pause or step lands on it). Bit 30 marks a confirmed
 hardware poll (a key or card-switch wait; not a printer BUSY wait, which is
 counted in emulated cycles, so full speed speeds up printing). Bit 31 marks
-a breakpoint of the core's own (`TRACE_BREAKPOINTS`), set only by
-2.3.0's headless tools (none since M-59). The run control's breakpoints (LIB-10 AC-31, set through
+a breakpoint of the core's own (`TRACE_BREAKPOINTS`; the tests
+only). The run control's breakpoints (set through
 the harness) stop the advance before the instruction (`TIDebugging`); an
 armed start that fires stops it after one, and the run control pauses
 there.
@@ -228,7 +223,7 @@ there.
 |---|---|
 | Frontend hit test (`KeyboardLayout`) | Visual row 0–8, col 0–4 from the top left |
 | `matrixCode(row, col)` (`KeyIds`) | `(row+1)×10 + (col+1)`, 11–95 — the key positions of `docs/formats/preset.md` §8.1 |
-| `keyIdAt(code)` (`KeyIds`) | the descriptor's key `(row−1)×5 + (col−1)`: a key ID (C59-1 AC-9) |
+| `keyIdAt(code)` (`KeyIds`) | the descriptor's key `(row−1)×5 + (col−1)`: a key ID |
 | `Machine::keyDown(keyId)` (`TIMachine`, `core/TIKeys.hpp`) | row → digit slot, column → K-line bit via `kTIKeyLineBits`; `key[digitSlot] \|= 1 << kbit` in the CPU |
 
 `kTIKeyLineBits` maps column 1–5 to K-line bits `{1, 2, 3, 5, 6}` (index 0 unused);
@@ -267,7 +262,7 @@ only second functions a keyboard reaches are A′–E′.
    these characters.
 4. With Command, Control or Option/Alt held, no key is the calculator's.
 5. A letter is the letter the key carries on the user's layout, in every
-   frontend (LIB-5 OQ-2); the frontend sends what the host reported and the
+   frontend; the frontend sends what the host reported and the
    map (`TIKeyboardMap`, `app/TITyping.cpp`) decides.
 
 ### The table
@@ -291,18 +286,18 @@ multiplication.
 `key[]` is a wire level, not an event; the ROM accepts a key only when two
 scans one display sweep apart see it, and drops a shorter press as bounce.
 Every frontend goes through the library's typing
-engine with the TI profile (`app/TITyping.hpp`; LIB-5 AC-20):
+engine with the TI profile (`app/TITyping.hpp`):
 
 - A press is held at least 100 ms of emulated time, and until the ROM's key
   scan has read it once (at most 1 s: a printing loop reads R/S rarely;
-  measured in `tests/typing_tests.cpp`, T59-0). A key-up that comes sooner
+  measured in `tests/typing_tests.cpp`). A key-up that comes sooner
   defers the release; it is never dropped. On-screen keys of every frontend
   go this way, so a click shorter than that still registers.
 - A live key goes down at once, whatever the machine does (R/S and GTO on a
   running program); a press that waits (a two-code binding, a preset's
   key) waits for the steady scan loop before it presses, and again after it
   releases, so a key never lands in the ROM's release gate or debounce.
-- Two keys held together are both down (behaviour change 59-13). Two keys of
+- Two keys held together are both down. Two keys of
   one matrix row are rejected by the ROM, which reads neither.
 - OS auto-repeat is ignored.
 - A two-code binding is one action played as two full presses; its key-up is
@@ -326,8 +321,8 @@ works on the page.
 ## Card Reader Flow
 
 The core side (TST BUSY wait, `CRD_READ`/`CRD_WRITE`, auto-eject at
-`CRD_OFF`) is in `CoreArchitecture.md` § "Magnetic Card Reader". Since M-55
-(C59-7, LIB-7 59) the card reader is the library's media part:
+`CRD_OFF`) is in `CoreArchitecture.md` § "Magnetic Card Reader". The card reader
+is the library's media part:
 
 - **The place.** The TI-59 offers `card-reader/media-place`, a
   `calcu::media::MediaPlace` (`core/TICardReaderPlace`): pass-through, the
@@ -364,25 +359,25 @@ The core side (TST BUSY wait, `CRD_READ`/`CRD_WRITE`, auto-eject at
   the banks of its sides in the corners. A new machine has nothing fitted;
   a Reset, power cycle or Cold boot keep it.
 - **Presets**: `card: { name: | file: | mem: , side: }`, `arm:`,
-  `magnetic-cards:` (`TIMagneticCardsKey`) and `saveas: { card: }` are LIB-7's
-  steps (`docs/formats/preset.md` §3.1, §5.2).
+  `magnetic-cards:` (`TIMagneticCardsKey`) and `saveas: { card: }` are the library's
+  media steps (`docs/formats/preset.md` §3.1, §5.2).
 
 ### Opened Files
 
 Every way a file reaches Calc-U-59 (a drop, Open With, a file named at the
 start of the Qt6 program, File ▸ Load Preset…'s dialog, the harness's
-`open <path>`) sends LIB-13's `open {files, way}`; a drag first asks
+`open <path>`) sends the library's `open {files, way}`; a drag first asks
 `open-would-take {name, size}` (Qt6: the library's `library/qt6/FileOpening`). The library tells presets (`.ti59`, `.ti58`,
 `.ti58c`, or a top-level `model:` line) and media; then the product's file
 kinds (`app/TIFileKinds`, in this order): an `.asm` file is an ASM overlay
 (read as by Select File), a `.keystrokes.yaml` file's program is written
 into the running machine from step 000 (no cold boot), a `.rom.yaml` and
 `ti58c.memory.yaml` are refused with a notice. A magnetic card
-(`.magnetcard.yaml`, LIB-7's medium since M-55) goes through the library's
+(`.magnetcard.yaml`, a medium of the library's media part) goes through the library's
 MediaOpener: fitted where it lies on the TI-59 and written back there (an
 upload on the Web is imported into the save folder first), refused with a
-notice on the TI-58/58C and while a card passes; a `.u59` or `.bin` of 2.3.0
-is no file of the product (C59-7 AC-4). A refusal is the session's notice. On the Mac, the file's security
+notice on the TI-58/58C and while a card passes; the `.u59` and `.bin` cards of releases up to
+2.3.0 are no files of the product. A refusal is the session's notice. On the Mac, the file's security
 scope stays open while a card is fitted, because a write goes back to it.
 
 Card file format: magnetic card format 3 (`docs/formats/media.md` §1;
@@ -390,7 +385,7 @@ Card file format: magnetic card format 3 (`docs/formats/media.md` §1;
 
 ## Presets
 
-A preset (`docs/formats/preset.md`, format 2) is LIB-6's: `load-preset
+A preset (`docs/formats/preset.md`, format 2) is the library's: `load-preset
 {ref}` (Qt6: a file in its folder; a bundled example by its bundle path
 `examples:<path>`) or `load-preset {content, name}` (Swift, an upload or a
 drop on the Web) is one operation of the session. The library's loader
@@ -399,12 +394,13 @@ readiness, or the card wait of Write, without a break for 100 ms; `expect:`
 compares a number with X in 13 digits; `screenshot:` is `TIDisplayPicture`;
 `slot-1` by `name:` only) and keywords (`TIPresetKeys`: `partition:`,
 `program:`, `data:`, `cue-card:`, `printer-trace:`), builds the machine
-through LIB-18 from a cold boot, and carries out the items in file order,
+through the library's machine control from a cold boot, and carries out the items in file order,
 each written through the product kind `c59.program-memory`
-(`core/TIProductKinds.hpp`). A 2.3.0 file is refused with the hint to the
-format. The preset list (`preset-list`) and the startup presets come from
+(`core/TIProductKinds.hpp`). A preset in the format of releases up to
+2.3.0 is refused with the hint to the format. The preset list
+(`preset-list`) and the startup presets come from
 `examples/bundle.yaml`; a startup preset is set in `Calc-U-59.ini`
-(`[preset] <model>`) until the Settings offer it (M-57, M-58).
+(`[preset] <model>`; the Settings' Startup presets).
 
 ## TI-58C Constant Memory
 
@@ -412,9 +408,8 @@ The TI-58C keeps its RAM through power-off. `ConstantMemoryKeeper` keeps
 its 64 raw registers (`R000`–`R063`, H00–H03 as `R060`–`R063`) and the own
 cue card as `ti58c.memory.yaml` (constant memory format 1,
 `docs/formats/media.md` §4; `ConstantMemoryFile`) through `TIFileAccess`, in
-the save folder the frontend names (the Web's: the persistent file system,
-LIB-15 AC-20). It reads the machine through the kind `c59.constant-memory`
-(C59-3).
+the save folder the frontend names (the Web's: the persistent file system).
+It reads the machine through the kind `c59.constant-memory`.
 
 | When | What |
 |---|---|
@@ -424,19 +419,18 @@ LIB-15 AC-20). It reads the machine through the kind `c59.constant-memory`
 | Before the machine is replaced, suspend, quit | Written at once if changed |
 | Reset, power cycle | The memory stays in the machine; the file is not read |
 | Cold boot | RAM zeroed before the processor; the file follows |
-| No file, an outdated or a damaged one; a failed write | Zeroed memory; a notice (outdated, damaged; a failed write once per start). 2.3.0's `ti58c.mem` is ignored |
+| No file, an outdated or a damaged one; a failed write | Zeroed memory; a notice (outdated, damaged; a failed write once per start). The `ti58c.mem` file of releases up to 2.3.0 is ignored |
 
 ## ROM Loading
 
-A frontend looks the ROM files up once at its start (LIB-12):
+A frontend looks the ROM files up once at its start:
 it calls `cu59::lookUpRoms` (`app/ProductRoms.hpp`; Qt6, the Swift bridge,
 the Web's `bindings.cpp`), the library's `calcu::roms::lookUp` over the full
 set of 24 files with the core's `TIRomReader`. Without the full set the app
 session is made with the lookup's result and no ROMs (`TIAppSetup::roms`):
-it builds no machine, refuses `start`, and LIB-18's StartupPart publishes
-LIB-12's `roms-missing {text}`, which LIB-14's shell shows in place of the faceplate while Help and
-About still work (LIB-14 AC-19; Qt6 and the Web since M-57; row 59-54);
-there is no other ROM error. With it, every model switch and module change takes
+it builds no machine, refuses `start`, and the library's StartupPart publishes
+`roms-missing {text}`, which the library's shell shows in place of the faceplate while Help and
+About still work; there is no other ROM error. With it, every model switch and module change takes
 its files from the `RomSet` in memory and reads no file. The catalogue's ROM
 entries (`core/TICatalogue.cpp`) name each model's files: three ROM chips
 (Datamath text dumps: header, a `---` line, then `AAAA: WWWW …` rows, words
@@ -451,31 +445,31 @@ files for the 64 constant rows.
 The TI-59 image is checked against two sentinels: word 0 = `0x0A01`
 (`CLR IDL`) and word 6143 = `0x1987`. A Solid State module's ROM is its
 `roms/<ID>.rom.yaml` (`docs/formats/modules.md` §2, 5000 bytes, read by
-`core/ModuleFile`). Since M-25 (C59-6 AC-8) the module list comes from the
+`core/ModuleFile`). The module list comes from the
 14 module files (`allModuleMetadata(RomSet)`: `module-name`, `description`,
-`menu-sort`); since M-55 the cue cards come from them too (`ModuleCueCards`;
-2.3.0's `roms/solid-state/cuecards.txt` is gone, LIB-12 AC-14).
+`menu-sort`), and so do the module cue cards (`ModuleCueCards`).
 
-## Places: the module and the PC-100C (C59-6)
+## Places: the module and the PC-100C
 
 The module and the PC-100C are peripherals in the machine's places `slot-1`
 and `printer` (`reference/CoreArchitecture.md` § "Component Overview"). The
-build (`TIProductMachines`, a preset's header) plugs them in; LIB-18's
+build (`TIProductMachines`, a preset's header) plugs them in; the library's
 `attach {place, peripheral}` / `detach {place}` change them, each followed by
-the power cycle of the pin-out (row 59-11). `TIAppPart` reads what is
+the power cycle of the pin-out (the TI-58 and TI-59 lose program and data
+registers, the TI-58C keeps its constant memory). `TIAppPart` reads what is
 plugged from the machine and keeps TRACE's position (`m_printerTrace`: off
 at the start, never saved, kept across Reset, power cycle, Cold boot and a
-detach; C59-6 AC-6, row 59-25): it follows the plugged PC-100C's switch,
-and LIB-18's `attach` puts it into a new PC-100C through the product hook
-`TIProductMachines::attaching` (the request's switch positions; Part E
-simplification E-3); a preset's build sets it off unless `printer-trace: on`. Before a detach the
+detach): it follows the plugged PC-100C's switch,
+and the library's `attach` puts it into a new PC-100C through the product hook
+`TIProductMachines::attaching` (the request's switch positions); a preset's
+build sets it off unless `printer-trace: on`. Before a detach the
 PC-100C ends the line it prints where the head is, and its rows go onto the
-paper (LIB-8 EC-7). The paper is LIB-8's `PaperPart`'s: it binds the
+paper. The paper is the library's `PaperPart`'s: it binds the
 `printer/paper-output` capability whenever a PC-100C is plugged in, keeps
 the paper while it is detached and gives it back on any model; a user's
-preset load empties it, a startup preset's keeps it (LIB-8 AC-8). The paper
-panel's `set-control {peripheral: PC-100C, control, on}` is LIB-2's
-`PeripheralsPart`'s (its one owner since E-3; the session refuses a second
+preset load empties it, a startup preset's keeps it. The paper
+panel's `set-control {peripheral: PC-100C, control, on}` is the library's
+`PeripheralsPart`'s (its one owner: the session refuses a second
 declaration of a command name).
 
 ## Drawing Rules
@@ -502,7 +496,7 @@ differ.
 
 ### Cue Card Rendering
 
-The block: `docs/formats/cue-card.md` (a preset's and the constant memory file's, `app/CueCardYaml`); cards and module cue cards still in 2.3.0's `CUECARD:` lines until M-55. A preset's own cue card always draws as the plain `CueCard`.
+The block: `docs/formats/cue-card.md` (a preset's and the constant memory file's, `app/CueCardYaml`). A preset's own cue card always draws as the plain `CueCard`.
 
 - **Templates.** `CueCard`, `MagnetCard` and `SolidStateCard`, each with its
   own artwork (`frontends/swift/App/Assets.xcassets`) and fractional layout
@@ -526,13 +520,13 @@ these functions for the size the page reports, and paints it on a canvas
 
 ### Printer
 
-Since M-53 the PC-100C gives its paper as marks (LIB-8): the font, the
+The PC-100C gives its paper as marks: the font, the
 geometry measured from a real unit (dot pitch ≈ 0.430 mm, line heights
 including lines cut short) and the dot rules are the core's
 (`core/PC100CPaper.hpp`), the paper is the session's `PaperPart`, and the
 Qt6 and Web frontends draw it in the library's paper panel; the picture of
 Copy (600 dpi) is the library's (`library/paper/Picture`). The Swift paper
-panel draws from the same marks (C59-8).
+panel draws from the same marks.
 
 ## Solid-State Program Display
 

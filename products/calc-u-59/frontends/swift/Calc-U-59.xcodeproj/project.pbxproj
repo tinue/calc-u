@@ -425,7 +425,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# The library, core and app layer through the root CMake project (ADR 0013).\n\"$SRCROOT/build_xcframework.sh\" \"$CONFIGURATION\"\n# The bundled examples of examples/bundle.yaml (C59-2 AC-14), the app's folder examples.\n\"$SRCROOT/copy_examples.sh\"\n";
+			shellScript = "# The library, core and app layer through the root CMake project.\n\"$SRCROOT/build_xcframework.sh\" \"$CONFIGURATION\"\n# The bundled examples of examples/bundle.yaml, the app's folder examples.\n\"$SRCROOT/copy_examples.sh\"\n";
 		};
 		CA1C5900000000000000B00D /* Check no attach (C59-5 AC-13) */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -447,7 +447,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# A Release build or a build for a device has no harness attach (C59-5 AC-13).\nif [ \"$CONFIGURATION\" = Release ] || [ \"$PLATFORM_NAME\" = iphoneos ]; then\n  \"$SRCROOT/check_no_attach.sh\" --binary \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\nfi\n";
+			shellScript = "# A Release build or a build for a device has no harness attach.\nif [ \"$CONFIGURATION\" = Release ] || [ \"$PLATFORM_NAME\" = iphoneos ]; then\n  \"$SRCROOT/check_no_attach.sh\" --binary \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

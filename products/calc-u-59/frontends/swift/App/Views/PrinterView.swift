@@ -1,12 +1,12 @@
 import SwiftUI
 
-// The paper panel (C59-8 AC-12, EC-5; LIB-8 AC-12 to AC-20): always there,
+// The paper panel: always there,
 // with the paper of its owner under the owner's name, or an empty paper
 // under none while no printer is attached (the bar's "PC-100C" plugs it in).
 // Drawn from the marks and the text of the library's topic `paper PC-100C`,
 // which the bridge keeps; Copy and Cut are the session's commands (the
 // library makes the picture, the bridge puts it on the pasteboard: macOS
-// two entries, the picture first; iOS one with both, AC-13).
+// two entries, the picture first; iOS one with both).
 struct PrinterView: View {
     @Environment(EmulatorViewModel.self) var viewModel
     @State private var dotMode = true
@@ -56,7 +56,7 @@ struct PrinterView: View {
     private var header: some View {
         HStack(spacing: 12) {
             Spacer()
-            // The owner's name; none while no printer is attached (EC-5).
+            // The owner's name; none while no printer is attached.
             Text(viewModel.paperOwner)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(.white)
@@ -88,7 +88,7 @@ struct PrinterView: View {
     private var paperStrip: some View {
         ScrollView {
             if viewModel.paperOwner.isEmpty {
-                Color.clear.frame(height: 1)   // an empty paper under none (EC-5)
+                Color.clear.frame(height: 1)   // an empty paper under none
             } else if dotMode {
                 dotStrip
             } else {

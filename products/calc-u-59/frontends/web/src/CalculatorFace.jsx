@@ -1,13 +1,14 @@
 // The calculator face: the artwork of the current model, the LED display
 // and the cue card on it, the pressed-key effect (key rect blacked out, the
 // artwork shifted 3 px), as Qt6/app/KeyboardWidget and App/Views/
-// KeyboardView. The pointer is the React set's (useShellFaceplate, LIB-14
-// AC-24, AC-43; M-57) on the product's hit map `c59.faceplate-map` (the
+// KeyboardView. The pointer is the React set's (useShellFaceplate) on the
+// product's hit map `c59.faceplate-map` (the
 // widened key rects of app/KeyboardLayout, in pixels of the 2064 × 4075 base
 // image, distance 0, the display's full-speed hold): a key is fixed at
-// pointer down (LIB-14 D-9). A press on a corner of the fitted magnetic card
-// is the product's first (C59-7 D-12): `c59.tap-card`. The key drawn pressed
-// is the last one live input holds (`held-keys`, LIB-5 AC-19).
+// pointer down. A press on a corner of the fitted magnetic card is the
+// product's first: `c59.tap-card` (the corner rule of app/KeyboardLayout,
+// which sends `media.feed`). The key drawn pressed is the last one live
+// input holds (`held-keys`).
 //
 // Transparent buttons over the keys, named by the key's face label, make
 // the keys reachable for assistive technology (and tests); pointer events on
@@ -123,7 +124,7 @@ function CueCardCanvas({ shell, width, height }) {
 // `faceplate`: the reply of `c59.faceplate-map` for `model` (null until it came).
 function CalculatorFace({ shell, faceplate, model, width }) {
   const held = useTopic(shell, "held-keys");
-  const fullSpeed = useTopic(shell, "busy", (b) => !!b && b.speed === "full");   // LIB-3's speed now
+  const fullSpeed = useTopic(shell, "busy", (b) => !!b && b.speed === "full");   // the session's speed now
   const media = useTopic(shell, "media");
   const reader = ((media && media.places) || []).find((p) => p.place === "card-reader") || null;
   const cardFitted = !!(reader && reader.holds);
@@ -158,8 +159,8 @@ function CalculatorFace({ shell, faceplate, model, width }) {
     }
   }, [model, pressed, width, height, loaded]);
 
-  // The pointer (LIB-14 AC-24, AC-43): the shell's hit rule; a press on a
-  // corner of the fitted card is the card's (C59-7 D-12, design §10.3.4).
+  // The pointer: the shell's hit rule; a press on a corner of the fitted
+  // card is the card's (`c59.tap-card`).
   const hitMap = React.useMemo(() => hitMapOf(faceplate), [faceplate]);
   const scaleRef = React.useRef(scale);
   scaleRef.current = scale;

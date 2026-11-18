@@ -2,10 +2,10 @@
 //
 // The JavaScript half of frontends/web/build.sh, run after the engine and the
 // static files are in dist/: the library's product build
-// (library/web/build/dist.js buildProduct; LIB-15 design §3.5) with the
+// (library/web/build/dist.js buildProduct) with the
 // product's data: calc.js from src/*.jsx, app/app.js with CalcU59,
-// examples/bundle.yaml and exactly the files it lists (C59-2 AC-13, AC-14,
-// LIB-6 AC-31; preloaded at /presets), the service worker's precached core
+// examples/bundle.yaml and exactly the files it lists (preloaded at
+// /presets), the service worker's precached core
 // and MANIFEST.json. The version is release.yaml's (the Xcode project's
 // MARKETING_VERSION, also stamped into calc.js for the Settings dialog).
 //

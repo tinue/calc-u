@@ -25,9 +25,9 @@ final class ScreenshotTests: XCTestCase {
     // MARK: - Helpers
 
     /// The app settings the screenshots show, in a settings file of the
-    /// launch's own (`--settings-file`, C59-8 AC-21), so a new simulator needs
+    /// launch's own (`--settings-file`), so a new simulator needs
     /// no setup by hand and its own settings stay as they are. The module is
-    /// no setting (LIB-9 AC-22): it goes in through attach.
+    /// no setting: it goes in through attach.
     private static let settings = [
         "window.portrait-debug-page=true",
         "display.led-style=classic",
@@ -125,10 +125,10 @@ final class ScreenshotTests: XCTestCase {
         attachScreenshot(app, name: "diag.ti59 — diagnostic complete")
     }
 
-    /// C59-4 AC-16 (AC-24's second scenario; ADR 0032), also the assembly
+    /// The ASM overlay's scenario, also the assembly
     /// overlay screenshot — iPad mini (A17 Pro) landscape: an overlay is chosen
     /// and run and the CPU tab shows it. test_stopwatch.asm is in the ASM
-    /// overlay format 2.0 (M-56).
+    /// overlay format 2.0.
     ///
     /// Sequence:
     ///   1. Switch to CPU tab (shows ASM overlay at the bottom)
@@ -138,7 +138,7 @@ final class ScreenshotTests: XCTestCase {
     ///   5. Wait 3.5 seconds
     ///   6. Tap R/S to stop the stopwatch
     ///   7. Capture screenshot showing elapsed time
-    func testC59_4_AC16AsmOverlay() throws {
+    func testAsmOverlay() throws {
         let app = launchForScreenshot(orientation: .landscapeLeft)
 
         // Step 1: switch to CPU tab
@@ -165,7 +165,7 @@ final class ScreenshotTests: XCTestCase {
         let runButton = app.buttons["btn-asm-run"]
         XCTAssertTrue(runButton.waitForExistence(timeout: 3), "btn-asm-run not found")
         runButton.tap()
-        // The CPU tab shows it: entered at 1800, and the CALCULATOR tab cannot be chosen (AC-18).
+        // The CPU tab shows it: entered at 1800, and the CALCULATOR tab cannot be chosen.
         let entered = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label BEGINSWITH 'ASM entered at 0x1800'"),
                                                 object: app.staticTexts["asm-status"])
         XCTAssertEqual(XCTWaiter.wait(for: [entered], timeout: 5), .completed, "the overlay was not entered")
@@ -273,7 +273,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(right.waitForExistence(timeout: 3), "btn-page-right not found")
         right.tap()
 
-        // Step 5: Cold boot (More, then confirm; C59-8 AC-5). FREEZE ON START
+        // Step 5: Cold boot (More, then confirm). FREEZE ON START
         // fires on its first PC change; a plain Reset runs the routine out of
         // sight, to keep the memory.
         let more = app.buttons["bar-more"]
@@ -283,7 +283,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(cold.waitForExistence(timeout: 3), "more-item-cold-boot not found")
         cold.tap()
         // iOS 27 nests the dialog's button in a system button with the same
-        // identifier: one button on screen, two matches (C59-8 AC-5's test too).
+        // identifier: one button on screen, two matches (FamilyStructureTests' Cold boot test too).
         let confirm = app.buttons["confirm-cold-boot"].firstMatch
         XCTAssertTrue(confirm.waitForExistence(timeout: 3), "Cold boot did not ask")
         confirm.tap()

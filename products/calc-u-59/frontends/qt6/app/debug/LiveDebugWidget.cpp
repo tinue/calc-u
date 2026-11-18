@@ -67,7 +67,7 @@ LiveDebugWidget::LiveDebugWidget(EmulatorController& controller, QWidget* parent
     m_title->setMinimumWidth(40);
     hrow->addWidget(m_title, 1);  // takes the spare width; shrinks first
     // RESUME sits far from STEP to avoid accidental taps while stepping.
-    // LIB-10 AC-34: FREEZE, STEP and RESUME are the library's run-control
+    // FREEZE, STEP and RESUME are the library's run-control
     // buttons of the level `program` (the labels are the product's); FREEZE ON
     // START and ARMED arm and disarm its pause-on-start.
     m_run = new calcu::qt6::RunControlButtons(calcu::debugger::kProgram,
@@ -75,7 +75,7 @@ LiveDebugWidget::LiveDebugWidget(EmulatorController& controller, QWidget* parent
     m_run->setSender([this](const calcu::sessions::CommandName& n, calcu::sessions::Value v) {
         m_controller.sendCommand(n, std::move(v));
     });
-    m_run->hide();   // its buttons go into the header row below, in today's order
+    m_run->hide();   // its buttons go into the header row below
     auto styled = [](QToolButton* b, const QColor& c) {
         b->setStyleSheet(ChromeStyle::headerButton(c));
         b->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -88,7 +88,7 @@ LiveDebugWidget::LiveDebugWidget(EmulatorController& controller, QWidget* parent
     connect(m_freezeOnStart, &QToolButton::clicked, this, [this] { m_controller.armStart(calcu::debugger::kProgram); });
     m_armed = headerButton(QStringLiteral("ARMED"), QColor(255, 204, 0), header);
     connect(m_armed, &QToolButton::clicked, this, [this] { m_controller.disarmStart(); });
-    // RESUME sits far from STEP, as today.
+    // RESUME sits far from STEP.
     for (QWidget* w : std::initializer_list<QWidget*>{resume, pause, m_freezeOnStart, m_armed, step}) hrow->addWidget(w);
     col->addWidget(header);
 
@@ -154,7 +154,7 @@ void LiveDebugWidget::refreshHeader() {
     m_title->setText(narrow ? QStringLiteral("DEBUG") : QStringLiteral("CALCULATOR DEBUG"));
     m_freezeOnStart->setText(narrow ? QStringLiteral("F.START") : QStringLiteral("FREEZE ON START"));
     m_run->setRunState(m_controller.runState());
-    const cu59::FreezeButtons b = m_controller.freezeButtons(calcu::debugger::kProgram);   // C59-4 AC-5
+    const cu59::FreezeButtons b = m_controller.freezeButtons(calcu::debugger::kProgram);
     m_freezeOnStart->setEnabled(b.freezeOnStart);
     m_armed->setEnabled(b.armed);
     refresh();

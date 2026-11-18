@@ -33,20 +33,19 @@ tiCatalogue(), TIMachineBuilder (core/TICatalogue.hpp/.cpp: the three descriptor
                              the PC-100C and the 14 modules)
 ```
 
-Since C59-1 (M-19) the only interface above the core is
-`calcu::machine::Machine` (ADR 0006): `app/` builds a `TIMachine` through
+The only interface above the core is
+`calcu::machine::Machine`: `app/` builds a `TIMachine` through
 `calcu::machine::build(tiCatalogue(), TIMachineBuilder, request)`
-(`cu59::buildMachine`, `app/ProductRoms.hpp`, from the ROM lookup's `RomSet`, LIB-12) and reaches the model, the
+(`cu59::buildMachine`, `app/ProductRoms.hpp`, from the ROM lookup's `RomSet`) and reaches the model, the
 advances and tick count, Reset / power cycle / cold boot, key readiness,
-the keys and the display output through it only (C59-1 AC-17; CTest
-`CalcU59CoreSeam`). The adapters of C59-1 are gone (the last,
-`TIMemoryAdapter`, in M-59: the debug log and snapshots read the kind
-`c59.program-memory`, the core tests `TIMachineTesting`; `TICardReaderAdapter`
-went in M-55: `TICardReaderPlace`, a media place; `libExecPC` is
-`c59.calculator-state`'s); `core/TITypingSupport.hpp` holds the typing
+the keys and the display output through it only (CTest
+`CalcU59CoreSeam`). Everything else goes through capabilities and kinds:
+the debug log and snapshots read the kind `c59.program-memory`, the core
+tests `TIMachineTesting`; the card reader is `TICardReaderPlace`, a media
+place; `libExecPC` is `c59.calculator-state`'s; `core/TITypingSupport.hpp` holds the typing
 support and `idleAndKeyDetectRange()`, a model's scan/detect
-range (for `c59 coverage`, the run probe and the tests). The debug panel's
-`TIDebugPanelAdapter` went in M-56 (C59-4): what the debug target does not
+range (for `c59 coverage`, the run probe and the tests). For the debug
+panel, what the debug target does not
 give is four product kinds of the processor (`core/TIDebugKinds.hpp`,
 `TMC0501/c59.…`): `c59.asm-overlay` (the overlay's words over 1800 to 1FFF,
 its entry with COND set, whether it runs: from the entry until a Reset, a
@@ -55,33 +54,34 @@ per ROM address 0000 to 13FF in `TIMachine::stepOne`, while on),
 `c59.calculator-state` (`snapshotCPU`, `lastStepBoundary`,
 `readCpuFrames`, `readROMKeycode`, the panel's frame ring) and
 `c59.machine-log` (the debug events at their level). The debugger reaches the core
-through the debug target (`core/TIDebugging.hpp`, LIB-10 59, M-53; see
+through the debug target (`core/TIDebugging.hpp`; see
 "Debug target" below).
 `TI59Machine` is the core-internal facade over the three hardware
 components. The core holds no lock (see "Threading Model").
 
-**Places (C59-6, M-25).** The PC-100C and the Solid State ROM modules are
+**Places.** The PC-100C and the Solid State ROM modules are
 peripherals in the places `printer` and `slot-1`, attached and detached
-through `Machine::attach/detach/replace` (LIB-2; `TIMachine::plug/unplug`)
+through `Machine::attach/detach/replace` (`TIMachine::plug/unplug`)
 or with the build request's `peripherals` (attached at the build, no power
 cycle). Both pin-outs are functional and take one peripheral; an attach or
 a detach answers that a power cycle follows, which the caller runs
-(`AfterChange::PowerCycle`; ledger row 59-11). `TMC0501` holds a
+(`AfterChange::PowerCycle`: the TI-58 and TI-59 lose program and data
+registers, the TI-58C keeps its constant memory). `TMC0501` holds a
 `TiConnectors` (`wire()`): a `PrinterPinOut*` with the digit its D0 pad is
 on, and a `ModuleSlotPinOut*`; nullptr when nothing is plugged in. It keeps
 no printer state and no module image. With the PC-100C the machine lists
 two capabilities, `printer/controls` (the library's `Controls`: PRINT and
-ADV keys, TRACE switch) and `printer/paper-output` (LIB-8's paper output
+ADV keys, TRACE switch) and `printer/paper-output` (the library's paper output
 kind, `calcu::paper::PaperOutput`; the PC-100C derives from
-`PaperOutputBase`, its description and dot rules are `core/PC100CPaper.hpp`;
-M-53). Without a PC-100C the machine lists `TMC0501/typing-support` and
+`PaperOutputBase`, its description and dot rules are `core/PC100CPaper.hpp`).
+Without a PC-100C the machine lists `TMC0501/typing-support` and
 `TMC0501/c59.trace-records` only. TRACE's position comes with the
 attach request (`PeripheralRequest::switches`) and stays through reset,
 power cycle and cold boot; the app session keeps it across a model switch
-and a detach (C59-6 AC-6). The machine tells both peripherals of each
+and a detach. The machine tells both peripherals of each
 reset, power cycle and cold boot (`TIMachine::cpuReset`).
 
-**Ticks, operations, keys and display (C59-1).** One instruction is 32
+**Ticks, operations, keys and display.** One instruction is 32
 ticks of the tick rate (455,000 / 384,000 / 394,000 per second, the
 resonator; `TICatalogue.cpp`), 128 in IDLE on the TI-59/58 (the step weight
 × 32). `advance(n)` runs whole instructions until at least `n` ticks
@@ -103,19 +103,19 @@ brightness and the indicator C (`core/TISegments.hpp`).
 | `ROM.hpp/.cpp` | TMC0582/0583/0571B, CD2400/2401/TMC0573 | Instruction ROM (13-bit words) plus the debug overlay |
 | `RAM.hpp/.cpp` | TMC0598 | User RAM (120 × 16 BCD nibbles) |
 | `TMC0501.hpp/.cpp` | TMC0501 + SCOM, card reader | CPU; full instruction execution; the printer and module words go to the pin-outs |
-| `PrinterPinOut.hpp`, `ModuleSlotPinOut.hpp` | — | The printer connector's and the module slot's functional pin-outs (C59-6) |
+| `PrinterPinOut.hpp`, `ModuleSlotPinOut.hpp` | — | The printer connector's and the module slot's functional pin-outs |
 | `PC100C.hpp/.cpp` | PC-100C | The print cradle: character tables, buffer, busy count, dot timing, PRINT/ADV/TRACE |
 | `SolidStateRomModule.hpp/.cpp` | TMC0540 family (TMC0541 …) | A module: 5000-byte image, address register |
-| `PC100CPaper.hpp/.cpp` | PC-100C | Its paper: description (unit 0.430 mm, 129.07 units wide), 5×7 font, character table, dot rules of a cut-short line, placement of a line's dots (LIB-8 AC-24 to AC-27) |
-| `TIDebugging.hpp/.cpp` | — | The debug target `TMC0501` (LIB-10 AC-28), the run control's checks, `c59.trace-records` |
-| `TraceRecords.hpp` | — | The product kind `c59.trace-records`: the frame ring for a trace (LIB-10 D-24) |
+| `PC100CPaper.hpp/.cpp` | PC-100C | Its paper: description (unit 0.430 mm, 129.07 units wide), 5×7 font, character table, dot rules of a cut-short line, placement of a line's dots |
+| `TIDebugging.hpp/.cpp` | — | The debug target `TMC0501`, the run control's checks, `c59.trace-records` |
+| `TraceRecords.hpp` | — | The product kind `c59.trace-records`: the frame ring for a trace |
 | `TI59Machine.hpp/.cpp` | — | Core-internal facade; variant setup |
 | `TIMachine.hpp/.cpp` | — | `calcu::machine::Machine`: ticks, operations, Reset restore, key readiness, keys, display output |
 | `TICatalogue.hpp/.cpp` | — | `tiCatalogue()` (models, PC-100C, 14 modules with their `<ID>.rom.yaml`), `TIMachineBuilder`, `TIConstantMemory` |
-| `TITypingSupport.hpp/.cpp` | — | The typing support (`typing-support`) and the model's key-detect range (the adapters of C59-1 went in M-59) |
-| `TIMachineState.hpp/.cpp`, `TIStateRecords.hpp` | — | LIB-11's `machine-state` on the TI models (C59-9 AC-15): tagged records, each part's fields in its `stateIo` |
+| `TITypingSupport.hpp/.cpp` | — | The typing support (`typing-support`) and the model's key-detect range |
+| `TIMachineState.hpp/.cpp`, `TIStateRecords.hpp` | — | The library's `machine-state` on the TI models: tagged records, each part's fields in its `stateIo` |
 | `TIKeys.hpp/.cpp`, `TISegments.hpp`, `TIRomRanges.hpp`, `TIRomText.hpp/.cpp` | — | Key IDs; glyph rules; scan-loop, idle and card-wait ranges; ROM text decoding |
-| `TIMachineTesting.hpp` | — | Test-only reads inside the core; the PC-100C's code lines (`printedCodeLines`, LIB-8 adapter P-E3: the golden runs; until M-59 also `tools/headless/capi.cpp`) |
+| `TIMachineTesting.hpp` | — | Test-only reads inside the core; the PC-100C's code lines (`printedCodeLines`, for the golden runs) |
 | `MachineVariant.hpp` | — | `TI59 \| TI58 \| TI58C` (core-internal), `hasConstantMemory()`, `hasLargeMemory()` |
 | `TraceTypes.hpp` | — | `CpuFrame`, `DebugEvent`, `TIStepBoundary`, `TRACE_*` flags |
 
@@ -392,7 +392,7 @@ raw RAM cells `RAM[60]`–`RAM[63]` outside that space. Do not call them
 - persist with the 60 normal registers in the constant memory file
   `ti58c.memory.yaml` (constant memory format 1, `docs/formats/media.md` §4;
   `R060`–`R063`), which is read at a build before the processor starts
-  (`TIConstantMemory`, C59-3), and are written by a preset's `data:`
+  (`TIConstantMemory`), and are written by a preset's `data:`
   (`H00`–`H03`) and by the debugger.
 
 RAM[60] is the firmware's system register (signature, partition, Fix):
@@ -408,12 +408,12 @@ everywhere else tags extra registers explicitly (`DataKey::extra`,
 because normal TI-59 registers go up to 99.
 
 **The product kinds of memory** (`core/TIProductKinds.hpp`, implemented in
-`core/TIMemoryKinds.*`; M-54): `c59.program-memory` (capability
+`core/TIMemoryKinds.*`): `c59.program-memory` (capability
 `RAM/c59.program-memory` on every model: program steps, data registers,
 H00–H03, the partition, raw registers; what a preset's sections and the
-`c59` harness commands write, C59-2 AC-17) and `c59.constant-memory`
+`c59` harness commands write) and `c59.constant-memory`
 (`RAM/c59.constant-memory`, TI-58C only: the 64 raw registers and a counter
-that changes with them, C59-3 AC-1).
+that changes with them).
 
 The ROM's own `MEMWR`/`MEMRD` addressing is uniform over 0–63, and the core
 models it that way (`RAM::setLimit(64)`, guarded only by
@@ -506,11 +506,11 @@ assumed to behave the same; there the address is even out of range.
 So a CPU reset followed by the ROM's boot clears the RAM on the TI-59 and
 TI-58, as switching on does: that is `powerCycle()`, and `coldBoot()` is the
 same from zeroed RAM. The Reset button, which the real calculator doesn't
-have, keeps the memory inside the machine since C59-1: `TIMachine::reset()`
+have, keeps the memory inside the machine: `TIMachine::reset()`
 saves the RAM and the partition and puts them back when the boot reaches the
-scan loop (AC-6, AC-19). The boot runs in the run loop's advances, so CPU
+scan loop. The boot runs in the run loop's advances, so CPU
 FREEZE ON START and a trace see the reset routine on a Reset as on a clean
-reset (2.3.0 ran it with the loop stopped; `tests/shared_controller_tests.cpp`). The TI-58C's ROM
+reset (`tests/part_flows_tests.cpp`). The TI-58C's ROM
 has no `RAM.OP`: its constant memory stays through a reset, and its clean reset
 zeroes the RAM.
 
@@ -577,7 +577,7 @@ The return value carries the weight in `kWeightMask` and two bits:
 `TI59Machine::step()` adds `kBreakpointHit` (the core's own breakpoints,
 `TRACE_BREAKPOINTS`; the harness's `break` and the tests only).
 
-**Debug target (LIB-10 59, M-53; `core/TIDebugging.hpp`).**
+**Debug target (`core/TIDebugging.hpp`).**
 `TIMachine::debugging()` gives `TIDebugging` with one target, `TMC0501`
 (`TIDebugTarget`): the registers of the processor frame (`A`–`E` as 16
 digits, `KR`, `SR`, `fA`, `fB`, `flags`, `R5`, `digit`, `EXT`, `PREG`, `pc`;
@@ -596,7 +596,7 @@ advance, the next instruction's pre-execution phase runs at once
 step's. With `setRunOn` set (the app session: while a pause or step waits
 to land), an advance goes on past the ticks asked for until the observer
 stops it, at most 50000 weights later, so a pause lands in the host call
-that asked for it, as 2.3.0's freeze did. The levels (`program`, `cpu`)
+that asked for it. The levels (`program`, `cpu`)
 and what lands where are the app's `TILevelRules`
 (`reference/AppLayer.md`). The frame ring is on while the debug
 panel (`c59.calculator-state`'s `setFrameRing`), a trace
@@ -620,8 +620,7 @@ driven time; the decimal point of the position `R5` names is driven the same
 way. Nothing is driven in RUN mode, so the display goes dark while the
 calculator computes.
 
-`takeDisplay()` (inside the core; above it `TIMachine::readDisplay()`, C59-1
-AC-13) returns per position the
+`takeDisplay()` (inside the core; above it `TIMachine::readDisplay()`) returns per position the
 last latched glyph and its **duty**: the driven time since the previous call
 × 16 (a position is strobed one instruction in 16), so a steadily multiplexed
 display reads 1.0 and a computing one 0. `pollTicks` is the interval in
@@ -725,13 +724,13 @@ discard the hit (multi-key rejection).
 | 12 | KN | Printer ADV button | Ordinary scan hit at row 12 |
 | 15 | KP | Printer TRACE switch (latch) | Above the scan window; polled in the keystroke/print path |
 
-Since C59-6 (M-25) these printer lines are not in the key matrix: they are
+These printer lines are not in the key matrix: they are
 the PC-100C's (`PrinterPinOut::keyLines` at the pads D0, D12, D15), and
 `TMC0501::keyRow(digit)` ORs them into the row it scans, at digit 0 for D0
 on the TI-59/58 and at digit 10 on the TI-58C (the TI machine maps the pad;
 the PC-100C does not know the host). The multi-key rejection runs on the
-combined row, as before. A reset releases PRINT and ADV (the PC-100C is
-told of the operation, as 2.3.0's wipe of `key[]` did); TRACE keeps its
+combined row. A reset releases PRINT and ADV (the PC-100C is
+told of the operation); TRACE keeps its
 position.
 
 ---
@@ -740,8 +739,8 @@ position.
 
 A pass reads or writes one bank of **246 bytes**. A card has two sides, one
 bank each (`core/TIMagneticCard`, the content of the media place
-`core/TICardReaderPlace`; C59-7); the core's card image can also hold all
-four banks, as 2.3.0's oldest 984-byte files did.
+`core/TICardReaderPlace`); the core's card image can also hold all
+four banks (984 bytes).
 
 1. `2nd Read`/`Write` makes the ROM poll the card switch with `TST.BUSY`.
    The switch is held active (no card); when `TST.BUSY` samples it at its
@@ -763,14 +762,14 @@ Bank format and the firmware's checks: `rom/TI59-ROM-Guide.md` §
 ## Solid-State Library Module (TMC0540 CROM)
 
 A 5,000 × 8-bit keycode memory with its **own address counter**, read
-serially over the EXT line. Since C59-6 (M-25) a peripheral in the place
+serially over the EXT line. A peripheral in the place
 `slot-1`: `SolidStateRomModule` (`core/SolidStateRomModule.hpp`) holds the
 image and the address register; `TMC0501` passes the four module words to
 the module slot's pin-out (`ModuleSlotPinOut::word`) and takes the EXT it
 drives. Its bytes come in with the attach, the module file `<ID>.rom.yaml`
-as bundled (LIB-12), decoded with `core/ModuleFile`. An empty slot is no
-object: every module word reads EXT = 0, as 2.3.0's image of zeros did
-(the golden runs `ti59-no-module`, `ti58-no-module` pass unchanged, so the
+as bundled, decoded with `core/ModuleFile`. An empty slot is no
+object: every module word reads EXT = 0, as an image of zeros would
+(the golden runs `ti59-no-module`, `ti58-no-module` show that the
 address register an empty slot reads back as 0 makes no difference). The
 14 modules are the catalogue's (`tiModules()`, `core/TICatalogue.hpp`);
 `CpuFrame::m_libAddr` and `m_libAddrReadPos` read the module's register
@@ -858,15 +857,15 @@ level before fetching resumes.
 
 ## Printer (PC-100C)
 
-Since C59-6 (M-25) the PC-100C is a peripheral in the place `printer`:
+The PC-100C is a peripheral in the place `printer`:
 `PC100C` (`core/PC100C.hpp`) holds the buffer, the ready gate, the busy
 count, the pending code line and the PRINT, ADV and TRACE controls.
 `TMC0501` passes the six printer words to the printer connector
 (`PrinterPinOut::word` with KR as data) and reads Busy for `TST.BUSY`;
-without a PC-100C the words reach nothing. The first step 8 showed that the
-ROM then executes one `PRT.STEP` and no `PRT.GO`, `PRT.OUT` or `PRT.FEED`,
-so a program takes as long without a printer as in 2.3.0 (C59-6 AC-7;
-golden run `ti59-print-without-printer`).
+without a PC-100C the words reach nothing. The ROM then executes one
+`PRT.STEP` and no `PRT.GO`, `PRT.OUT` or `PRT.FEED`, so a program is not
+held up by a printer that is not there (golden run
+`ti59-print-without-printer`).
 
 A 20-character buffer filled right to left; `PRT.GO` reverses it into a
 left-to-right line.
@@ -894,7 +893,7 @@ print: it carries on (the next program steps, the next List line) and polls
 printer's cycle.
 
 Every printer timing here was measured on a PC-100A, not on a PC-100C; no
-difference between the two is expected (user, 2026-11-11; C59-6 AC-4), and
+difference between the two is expected, and
 the PC-100C keeps these numbers.
 
 Measured from audio recordings of a PC-100A (2026-10-24), one unit each of
@@ -920,7 +919,7 @@ paper advance to the next line. Of the measured 4165–4168 for a printed
 line, 4165 is used: the TI-59 printer-interrupt lines below fit it and not
 4168 (see "Dot timing within a line").
 
-The paper (LIB-8, M-53; `core/PC100CPaper.hpp`): `PRT.GO` puts the line's
+The paper (`core/PC100CPaper.hpp`): `PRT.GO` puts the line's
 20 characters on the text layer at once, at the y where the paper stands;
 the line's dots go down when it ends (Busy expires: `rowCount` = 7), each
 character's 5×7 dots at `(i × 6.53 + c + 0.5, top + r + 0.5)` in dot pitches,
@@ -928,7 +927,7 @@ and the paper is fed 10.18 units (a line cut short: only its drawn rows). A
 `PRT.FEED` gives an empty text line and 7.09 units. The capability is
 `printer/paper-output`; the paper itself is the session's (`PaperPart`).
 `PC100C::CodeLine` (the 20 codes, `rowCount`, `partialColumns`,
-`partialHeat`) is kept only for the golden runs (and, until M-59, the headless tool)
+`partialHeat`) is kept only for the golden runs
 (`TIMachineTesting::printedCodeLines`). A `PRT.GO` while a line is printing is the
 **printer interrupt** (during a feed's BUSY it prints normally): the line
 in progress is committed with what is on paper so far, and the new print
@@ -937,7 +936,7 @@ is ignored. Firmware side and the
 a print commits the pending line first, cut short at that moment like an
 interrupt, so lines keep their order; a reset, power cycle or cold boot
 does the same (`PC100C::operation()`), and so does a detach
-(`endLineHere()`, LIB-8 EC-7): the rows printed go onto the paper before
+(`endLineHere()`): the rows printed go onto the paper before
 the printer goes.
 
 **Dot timing within a line.** A stroke fires the 5 dot columns of all 20
@@ -996,15 +995,10 @@ decide.
 
 ## Threading Model
 
-The core holds no lock, no atomic and starts no thread (ADR 0009; C59-1):
+The core holds no lock, no atomic and starts no thread:
 a machine is used from one thread at a time, and the caller serialises.
-2.3.0's four mutexes (`m_keyMutex` in `TI59Machine`, `m_displayMutex`,
-`m_prnMutex`, `m_traceMutex` in `TMC0501`; the printer state they guarded
-is the PC-100C's since C59-6) and the atomics of the trace
-flags and counters have no successor in the core. Since M-34 every frontend
-runs the machine on the one thread of its app session (2.3.0's lock, the
-app layer's `MachineGuard`, went with the last threaded caller), so no
-caller needs to serialise.
+Every frontend runs the machine on the one thread of its app session, so
+no caller needs to serialise.
 
 ---
 
@@ -1023,7 +1017,7 @@ caller needs to serialise.
 Frames go into a 1024-entry ring (~392 bytes each) with **post-execution
 semantics**: `beginNextStep()` patches the previous frame with the state
 after its instruction. Seqno gaps mean ring overflow; the drain reports
-the lost count. Since M-53 the flags are set by `TIMachine` alone: TRACE_PC
+the lost count. The flags are set by `TIMachine` alone: TRACE_PC
 | TRACE_REGS_FULL while the debug panel, a trace or the run control's checks
 want the ring, else none. A trace drains the ring through the capability
 `TMC0501/c59.trace-records` (`core/TraceRecords.hpp`: `begin`, `take`,

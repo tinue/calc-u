@@ -1,9 +1,9 @@
 import Foundation
 
 /// Resolves the save folder: the magnetic cards (`.magnetcard.yaml`, the
-/// library's media part since M-55, LIB-7 59) and `ti58c.memory.yaml`
-/// (C59-3). Reading and writing them is the app layer's via the app session
-/// (the bridge's coordinated file access, C59-5 D-6, LIB-7 D-30).
+/// library's media part) and `ti58c.memory.yaml` (the TI-58C's constant
+/// memory). Reading and writing them is the app layer's via the app session
+/// (the bridge's coordinated file access).
 ///
 /// Storage location (in priority order):
 ///   1. iCloud Documents container — syncs across all signed-in devices

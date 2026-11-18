@@ -1,19 +1,18 @@
 import SwiftUI
 
-/// The control bar below the faceplate (C59-8 AC-3 to AC-6, EC-3, EC-4;
-/// design §3.3), drawn from the library's bar model (`TIShell.bar`, LIB-14
-/// B1 to B9) over the control state: the model picker first, the picker of
-/// `slot-1` (LIB-7's module picker, C59-6 AC-8), the button "PC-100C",
-/// C59-7's card controls on the TI-59; on iOS and iPadOS, where no menu bar
-/// can be counted on, Reset, Preset, Settings and More (B8). No control here
+/// The control bar below the faceplate, drawn from the library's bar model
+/// (`TIShell.bar`) over the control state: the model picker first, the
+/// picker of `slot-1` (the library's module picker), the button "PC-100C",
+/// the card controls on the TI-59; on iOS and iPadOS, where no menu bar
+/// can be counted on, Reset, Preset, Settings and More. No control here
 /// decides what the machine offers: a control is enabled exactly when its
-/// entry is available now (AC-6); on macOS the reason is its help tag.
+/// entry is available now; on macOS the reason is its help tag.
 struct ControlBarView: View {
     @Environment(EmulatorViewModel.self) var viewModel
-    /// Labels beside the icons; off where the bar is too narrow (EC-4).
+    /// Labels beside the icons; off where the bar is too narrow.
     var showLabels: Bool = true
 
-    /// More ▸ Cold boot asks before it is carried out (AC-5, M15).
+    /// More ▸ Cold boot asks before it is carried out.
     @State private var confirming: TIMenuItem?
 
     var body: some View {
@@ -125,7 +124,7 @@ struct ControlBarView: View {
         .accessibilityIdentifier("bar-place-\(control.controlID)")
     }
 
-    // MARK: - Actions (iOS: Reset, Preset, Settings; B8)
+    // MARK: - Actions (iOS: Reset, Preset, Settings)
 
     @ViewBuilder
     private func action(_ item: TIMenuItem) -> some View {
@@ -158,7 +157,7 @@ struct ControlBarView: View {
         }
     }
 
-    // MARK: - More (AC-5, M14)
+    // MARK: - More
 
     private func moreMenu(_ control: TIBarControl) -> some View {
         Menu {
@@ -177,7 +176,7 @@ struct ControlBarView: View {
 }
 
 /// Menu items from the shell's model, submenus nested (the More menu and,
-/// through ShellCommands, the menu bar's): disabled, not left out (AC-18).
+/// through ShellCommands, the menu bar's): disabled, not left out.
 struct MenuItems: View {
     let items: [TIMenuItem]
     var prefix = "item-"
@@ -208,9 +207,9 @@ struct MenuItems: View {
     }
 }
 
-/// C59-7's card controls on the bar (AC-13): Arm Card and Arm Fresh Card
+/// The card controls on the bar: Arm Card and Arm Fresh Card
 /// while no side passes, Eject Card while one does; they follow the card
-/// reader's `insert` entry through the File menu's card items (M17).
+/// reader's `insert` entry through the File menu's card items.
 struct CardControls: View {
     @Environment(EmulatorViewModel.self) var viewModel
     var showLabels: Bool = true
@@ -219,7 +218,7 @@ struct CardControls: View {
         let arm = viewModel.menuItem("arm-card")
         let fresh = viewModel.menuItem("arm-fresh-card")
         if viewModel.cardState == .noCard {
-            // C59-7 AC-13: both read "Crd"; icon and screen-reader name differ.
+            // Both read "Crd"; icon and screen-reader name differ.
             Button("Crd", systemImage: "square.and.arrow.down") {
                 viewModel.cardPickerMode = .arm
             }
@@ -256,7 +255,7 @@ extension View {
         else { self.labelStyle(.iconOnly) }
     }
 
-    /// AC-6: why a control cannot be used, as its help tag on macOS (which
+    /// Why a control cannot be used, as its help tag on macOS (which
     /// XCUITest reads as the element's accessibility help); not shown on iOS.
     @ViewBuilder
     func reasonTag(_ reason: String) -> some View {

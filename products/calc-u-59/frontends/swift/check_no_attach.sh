@@ -1,5 +1,5 @@
 #!/bin/sh
-# C59-5 AC-13 (design B1): a release build, or any build for a real iPhone or
+# A release build, or any build for a real iPhone or
 # iPad, contains no harness attach: no AttachEndpoint or AttachedHarness and
 # none of attach's texts in its code, and the Release app does not ask for
 # incoming connections.

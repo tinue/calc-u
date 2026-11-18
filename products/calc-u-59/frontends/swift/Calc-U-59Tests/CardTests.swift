@@ -1,9 +1,9 @@
 import XCTest
 
-/// C59-7 AC-26, LIB-7 AC-33 on the Swift side of the bridge (M-55): the cards
+/// Magnetic cards on the Swift side of the bridge: the cards
 /// are the library's media of the save folder the app passes (its iCloud
 /// Documents folder, here a temporary one), read and written through the
-/// bridge's coordinated file access (C59-5 D-6, LIB-7 D-30). Arm Card lists
+/// bridge's coordinated file access. Arm Card lists
 /// the saved cards by the names inside them; Arm Fresh Card asks before it
 /// replaces one.
 final class CardTests: XCTestCase {
@@ -21,10 +21,10 @@ final class CardTests: XCTestCase {
         XCTAssertTrue(cond(), what)
     }
 
-    func test_c59_7_ac26_swift_cards_in_the_icloud_save_folder() throws {
+    func test_swift_cards_in_the_icloud_save_folder() throws {
         let t = try TestSession(prepare: { folder in
             try Self.savedCard.write(to: folder.appendingPathComponent("saved.magnetcard.yaml"), atomically: true, encoding: .utf8)
-            // 2.3.0's card files are no cards (C59-7 AC-4): not listed.
+            // 2.3.0's card files are no cards: not listed.
             try "Calc-U-59 Card 2.0\nEND-CARD\n".write(to: folder.appendingPathComponent("old.u59"), atomically: true, encoding: .utf8)
         })
         waitFor("the saved card is listed by its name") { t.session.savedCards.map(\.name) == ["Saved Program"] }

@@ -1,13 +1,13 @@
-# Calc-U-59's help (LIB-16): its product parts, chapter by chapter, in
+# Calc-U-59's help: its product parts, chapter by chapter, in
 # order; the shared parts are library/help/help.yaml's. Checked by
 # `tools/help check calc-u-59` (Frequent: CalcU59HelpCheck), built into
-# Calc-U-59-help.zip by `tools/help build calc-u-59` (design §3, §13).
+# Calc-U-59-help.zip by `tools/help build calc-u-59` (docs/formats/help.md).
 format-version: 1
 product: Calc-U-59
 short: "59"
 site: https://calc-u.org/59/
 version-from: ../release.yaml
-# The words no shared part may use (AC-2, design 13.6, D-14): the product,
+# The words no shared part may use: the product,
 # its models, every peripheral of its catalogue by its name (CalcU59Tests
 # checks them against tiCatalogue()), the processor and the maker.
 names: [Calc-U-59, TI-59, TI-58, TI-58C, PC-100C, Master Library, Applied Statistics, Investment, Surveying, Marine Navigation, Aviation, Leisure Library, Securities Analysis, Business Decisions, Math/Utilities, EE Library, Structural Engineering, Agriculture, RPN Simulator, TMC0501, Texas Instruments]

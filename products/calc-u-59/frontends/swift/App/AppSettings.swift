@@ -1,12 +1,12 @@
 import Foundation
 
-// The settings are the session's (C59-8 D-3): Calc-U-59.ini is read and
-// written by LIB-14's SettingsPart on the session thread, the views read the
+// The settings are the session's: Calc-U-59.ini is read and
+// written by the library's SettingsPart on the session thread, the views read the
 // `settings` topic through `TIShell` and change a value with `set-setting`
 // (TIShell.setSetting). What stays here is the platform's: where the file
 // lives, the launch argument of a Debug build that names a file of its own,
 // and the security-scoped bookmark macOS grants for a chosen trace folder
-// (LIB-9 AC-34), which is not a setting.
+// which is not a setting.
 
 // MARK: - The values the views draw with
 
@@ -40,7 +40,7 @@ enum KeyboardFeedbackType: Int, CaseIterable, Identifiable {
 // MARK: - Places
 
 /// The one platform-store key: the security-scoped bookmark macOS grants for a
-/// chosen trace folder (LIB-9 AC-34). It is not a setting.
+/// chosen trace folder. It is not a setting.
 nonisolated private let traceFolderBookmarkKey = "traceCustomPathBookmark"
 
 #if os(macOS)
@@ -53,12 +53,12 @@ nonisolated private let resolvedTraceFolderLock = NSLock()
 enum AppSettings {
 
     /// Application Support (inside the sandbox container): the settings
-    /// file's base (`Calc-U-59/Calc-U-59.ini`, LIB-9 AC-2).
+    /// file's base (`Calc-U-59/Calc-U-59.ini`).
     static var applicationSupportBase: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
     }
 
-    /// C59-8 AC-21, D-10: a Debug build takes `--settings-file <path>`, the
+    /// A Debug build takes `--settings-file <path>`, the
     /// settings file of this launch (a relative path is taken in the app's
     /// temporary folder); a Release build has none.
     static var launchSettingsFile: String? {
@@ -74,8 +74,8 @@ enum AppSettings {
 
     /// The folder the bookmark of `[trace] folder` grants (macOS); nil without
     /// a usable bookmark. The session asks it at each trace start, on its own
-    /// thread (LIB-10 AC-53; the open panel's grant is the frontend's, the
-    /// bookmark carries it to the next launch, LIB-9 AC-34): a bookmark is
+    /// thread (the open panel's grant is the frontend's, the
+    /// bookmark carries it to the next launch): a bookmark is
     /// resolved once, its folder opened until another bookmark replaces it.
     nonisolated static func chosenTraceFolder() -> String? {
         #if os(macOS)

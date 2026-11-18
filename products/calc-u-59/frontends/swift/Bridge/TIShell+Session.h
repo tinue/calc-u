@@ -1,4 +1,4 @@
-// ObjC++ only: what TIAppSession and TIShell tell each other (C59-8 §3.1).
+// ObjC++ only: what TIAppSession and TIShell tell each other.
 // Never import from the Swift bridging header.
 #import "TIAppSession.h"
 #import "TIShell.h"
@@ -9,16 +9,16 @@
 
 @interface TIShell ()
 - (instancetype)initWithSession:(TIAppSession *)session;
-/// A notice of the `notices` topic (AC-10).
+/// A notice of the `notices` topic.
 - (void)noticeArrived:(const std::string &)sentence;
-/// The busy topic changed ("Loading…", LIB-14 L1).
+/// The busy topic changed ("Loading…").
 - (void)busyChanged;
-/// The machine changed model: every pointer lets go (H6).
+/// The machine changed model: every pointer lets go.
 - (void)modelChanged;
 @end
 
 @interface TIAppSession ()
-/// The last Value of each input topic (D-2), kept by the bridge's drain.
+/// The last Value of each input topic, kept by the bridge's drain.
 - (const calcu::shell::ShellInputs &)shellInputs;
 - (void)setPresetList:(calcu::sessions::Value)list;
 /// A command of the shell's, its reply on the main thread.

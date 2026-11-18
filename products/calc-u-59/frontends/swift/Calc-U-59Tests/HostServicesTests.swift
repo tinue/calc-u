@@ -1,6 +1,6 @@
 import XCTest
 
-/// C59-5 S2 (AC-7): the host services the Swift frontend states to its
+/// The host services the Swift frontend states to its
 /// session, as the session sees them offered.
 final class HostServicesTests: XCTestCase {
 
@@ -29,7 +29,7 @@ final class HostServicesTests: XCTestCase {
     }
     #endif
 
-    /// No audio sink on either: the key click is the frontend's own (LIB-3 AC-33).
+    /// No audio sink on either: the key click is the frontend's own.
     func testNoAudioSink() throws {
         XCTAssertFalse(TIAppSession.statedHostServices.contains("audio-sink"))
         XCTAssertFalse(try offered().contains("audio-sink"))

@@ -4,13 +4,13 @@
 class EmulatorController;
 class QToolButton;
 
-// C59-7's card controls on the shell's bar (AC-13; LIB-14 AC-8, AC-27, M-57):
+// The magnetic card controls on the shell's bar:
 // made by the shell's media factory for the media place `card-reader`
 // (registerMediaControls("magnetic-card", …)), so they exist only while the
-// control state lists the card reader (the TI-59; LIB-4 AC-12). Two "Crd"
+// control state lists the card reader (the TI-59). Two "Crd"
 // buttons, Arm Card and Arm Fresh Card, while no card passes; Eject Card
 // while one does (the media topic's card reader). The two Crd buttons stand
-// for the File menu's card items (`onBar`, LIB-14 M14).
+// for the File menu's card items (`onBar`).
 class CardControls : public QWidget {
     Q_OBJECT
 public:

@@ -17,7 +17,7 @@ CardControls::CardControls(EmulatorController& controller, QWidget* parent) : QW
         row->addWidget(b);
         return b;
     };
-    // C59-7 AC-13: both read "Crd"; the icon and the name tell them apart.
+    // Both read "Crd"; the icon and the name tell them apart.
     m_arm = button(QStringLiteral("⤓ Crd"), QStringLiteral("Arm Card"));
     m_fresh = button(QStringLiteral("＋ Crd"), QStringLiteral("Arm Fresh Card"));
     m_eject = button(QStringLiteral("⏏ Eject Card"), QStringLiteral("Eject Card"));

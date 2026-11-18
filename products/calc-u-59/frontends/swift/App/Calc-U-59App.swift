@@ -11,7 +11,7 @@ struct CalcU59App: App {
     var body: some Scene {
         WindowGroup {
             if let text = viewModel.romsMissingText {
-                // LIB-12 AC-10, C59-8 AC-19: the lookup's text in place of the
+                // The lookup's text in place of the
                 // faceplate; no bar, no Machine menu; Help still works.
                 RomsMissingView(text: text) { viewModel.openHelp() }
                     .preferredColorScheme(.dark)
@@ -19,8 +19,8 @@ struct CalcU59App: App {
                 CalculatorView()
                     .environment(viewModel)
                     .preferredColorScheme(.dark)
-                    // C59-8 AC-10: one notice after the other; over the
-                    // settings sheet while it is open (EC-2: the sheet shows it).
+                    // One notice after the other; over the settings
+                    // sheet while it is open, the sheet shows it.
                     .noticeAlert(viewModel, when: !viewModel.settingsSheetShown)
             }
         }
@@ -34,10 +34,10 @@ struct CalcU59App: App {
                 break
             }
         }
-        // The family's menus (C59-8 AC-1, AC-18; EC-6 on the iPad).
+        // The shell's menus (also in the iPad's system menu bar).
         .commands { ShellCommands(viewModel: viewModel) }
         #if os(macOS)
-        // AC-7: the settings window of the app; Settings… in the application menu.
+        // The settings window of the app; Settings… in the application menu.
         Settings {
             SettingsView()
                 .environment(viewModel)
@@ -46,8 +46,8 @@ struct CalcU59App: App {
     }
 }
 
-/// The ROM files are missing or bad (LIB-12 AC-5): what the lookup says, and
-/// the help (C59-8 AC-19).
+/// The ROM files are missing or bad: what the lookup says, and
+/// the help.
 struct RomsMissingView: View {
     let text: String
     var help: () -> Void = {}

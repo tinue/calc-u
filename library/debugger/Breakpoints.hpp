@@ -8,18 +8,17 @@
 #include <variant>
 #include <vector>
 
-// Breakpoints and watches (LIB-10 design §3.5; spec AC-10 to AC-12, AC-15,
-// AC-47, EC-3). Each belongs to its setter ("harness", "dap"; D-13) and has
-// an ID the table gives, never reused in a session. A test of the setter
-// (AC-12) is asked at a hit; the library sets none. The table hands each
-// target the addresses and ranges of every setter; the run control sorts
-// the hits out (G6, G7).
+// Breakpoints and watches. Each belongs to its setter ("harness", "dap"; a
+// preset sets none, so it needs no setter) and has an ID the table gives,
+// never reused in a session. A test of the setter is asked at a hit; the
+// library sets none. The table hands each target the addresses and ranges
+// of every setter; the run control sorts the hits out.
 
 namespace calcu::debugger {
 
 using Setter = std::string;
 using BreakpointId = std::uint32_t;
-using HitTest = std::function<bool(const machine::DebugTarget&)>;   // true: pause (AC-12)
+using HitTest = std::function<bool(const machine::DebugTarget&)>;   // true: pause
 
 inline const Setter kHarnessSetter = "harness";
 
@@ -44,15 +43,15 @@ class BreakpointTable {
 public:
     // The ID, or the reason it is refused: a target the machine does not
     // have, an address outside the target's code space, a qualifier that is
-    // not the target's (§3.9).
+    // not the target's.
     std::variant<BreakpointId, std::string> addBreakpoint(Setter, const machine::Debugging&, const machine::DebugTargetId&,
                                                           std::uint64_t address, std::vector<std::string> qualifier,
                                                           HitTest = {});
-    // EC-3: a range past the end of its space is refused; so is a target
-    // without watches (AC-11) and a written view (AC-48: read-only).
+    // A range past the end of its space is refused; so is a target without
+    // watches and a written view (views are read-only).
     std::variant<BreakpointId, std::string> addWatch(Setter, const machine::Debugging&, const machine::DebugTargetId&,
                                                      machine::WatchRange, HitTest = {});
-    // Only the setter's own (AC-47); without an ID every one of them.
+    // Only the setter's own; without an ID every one of them.
     void remove(const Setter&, std::optional<BreakpointId> = {});
     std::vector<Breakpoint> breakpoints(const Setter* = nullptr) const;
     std::vector<Watch> watches(const Setter* = nullptr) const;
@@ -60,7 +59,7 @@ public:
     bool anyWatches() const { return !watches_.empty(); }
     // Per target: setBreakpoints and setWatches.
     void apply(machine::Debugging&) const;
-    // A new machine (AC-15): those whose target name is there are kept and
+    // A new machine: those whose target name is there are kept and
     // set again, the rest dropped. nullptr: the machine offers no targets.
     void rebind(machine::Debugging*);
 

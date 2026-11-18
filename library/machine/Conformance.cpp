@@ -55,7 +55,7 @@ void checkKeys(Machine& m, const MachineDescriptor& d, std::vector<std::string>&
 
 void checkPlugged(Machine& m, const Catalogue& cat, const MachineDescriptor& d, std::vector<std::string>& out) {
     for (const auto& e : m.plugged().byPlace) {
-        if (e.place.steps.size() != 1) continue;   // a place on a peripheral: LIB-2
+        if (e.place.steps.size() != 1) continue;   // a place on a peripheral
         const PlaceName& place = e.place.steps[0];
         const auto info = cat.place(d.model, place);
         if (!info) {
@@ -132,7 +132,7 @@ std::vector<std::string> checkDebugging(Machine& m) {
         if (info.name != listed[i]) out.push_back("debug targets: target " + std::to_string(i) + " is named " + q(info.name.value));
         checkInfo(info, out);
     }
-    // Reading has no effect (AC-2, I-2): the tick count, every register and
+    // Reading has no effect: the tick count, every register and
     // every first and last cell stay as they were.
     const Ticks ticks = m.tickCount();
     auto snapshot = [&] {

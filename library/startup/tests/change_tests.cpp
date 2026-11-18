@@ -1,5 +1,4 @@
-// LIB-18 design L5: attach, detach, replace (AC-10, AC-11, AC-12, EC-5;
-// D-14, D-15). test-seg: slot-1 (one module, power cycle), printer and aux
+// Attach, detach, replace. test-seg: slot-1 (one module, power cycle), printer and aux
 // (bus, nothing follows); test-dot: a, b (chain, power cycle), card-1 and
 // card-2 (one module over both, power cycle); switched off by `off`.
 #include "TestHarness.hpp"
@@ -34,7 +33,7 @@ void press(Rig& r, const char* key) {
 }
 } // namespace
 
-TEST(ac10_attach_is_one_operation_over_at_key_readiness) {
+TEST(attach_is_one_operation_over_at_key_readiness) {
     Rig r(dotStart(Hosting::Paced));
     r.callWhileBusy();
     const CallId c = r.send("attach", attachArgs("a", "test-printer"));
@@ -48,7 +47,7 @@ TEST(ac10_attach_is_one_operation_over_at_key_readiness) {
     CHECK_EQ(r.machine()->operationsTold(at({"a"})), std::uint64_t{1});
 }
 
-TEST(ac10_attach_named_and_default_variant) {
+TEST(attach_named_and_default_variant) {
     Rig seg;
     CHECK(seg.done(seg.send("attach", attachArgs("slot-1", "test-module", "8k"))));
     CHECK(holds(*seg.machine(), at({"slot-1"}), mt::kModule, VariantId{"8k"}));
@@ -60,14 +59,14 @@ TEST(ac10_attach_named_and_default_variant) {
     CHECK_EQ(dot.reason(bad), std::string("The Test module has no variant 2k."));
 }
 
-TEST(ac10_detach_place) {
+TEST(detach_place) {
     Rig r;   // the printer in `printer`
     const CallId c = r.send("detach", placeArg("printer"));
     CHECK(r.done(c));
     CHECK(r.machine()->plugged().byPlace.empty());
 }
 
-TEST(ac10_attach_to_full_single_place_is_one_replace_one_power_cycle) {
+TEST(attach_to_full_single_place_is_one_replace_one_power_cycle) {
     Rig r(dotStart());
     CHECK(r.done(r.send("attach", attachArgs("card-1", "test-module"))));
     const int plugs = r.machine()->plugCalls, unplugs = r.machine()->unplugCalls;
@@ -80,14 +79,14 @@ TEST(ac10_attach_to_full_single_place_is_one_replace_one_power_cycle) {
     CHECK_EQ(m->unplugCalls, unplugs + 1);
     CHECK_EQ(m->operationsTold(at({"card-1"})), std::uint64_t{1});   // one power cycle
     CHECK(m->tickCount() > t0 && m->isKeyReady());
-    // The same peripheral and variant again: nothing to do (D-14).
+    // The same peripheral and variant again: nothing to do.
     const Ticks t1 = m->tickCount();
     CHECK(r.done(r.send("attach", attachArgs("card-1", "test-module", "8k"))));
     CHECK_EQ(m->plugCalls, plugs + 1);
     CHECK_EQ(m->tickCount(), t1);
 }
 
-TEST(ac10_switched_off_machine_nothing_follows) {   // AC-33 in the library form; OQ-3
+TEST(switched_off_machine_nothing_follows) {
     Rig r(dotStart());
     press(r, "off");
     CHECK(!r.machine()->readDisplay().on);
@@ -99,7 +98,7 @@ TEST(ac10_switched_off_machine_nothing_follows) {   // AC-33 in the library form
     CHECK(!r.machine()->readDisplay().on);   // it stays off
 }
 
-TEST(ac11_memory_through_power_cycle_and_new_plug_found) {
+TEST(memory_through_power_cycle_and_new_plug_found) {
     Rig r(dotStart());
     press(r, "a");
     press(r, "b");
@@ -111,7 +110,7 @@ TEST(ac11_memory_through_power_cycle_and_new_plug_found) {
     CHECK_EQ(r.machine()->presses(), std::uint64_t{2});
 }
 
-TEST(ac12_refusal_changes_nothing_no_power_cycle_reason) {
+TEST(refusal_changes_nothing_no_power_cycle_reason) {
     Rig r;   // the test printer in `printer`
     const Ticks t0 = r.machine()->tickCount();
     const CallId c = r.send("attach", attachArgs("aux", "test-uart"));
@@ -122,7 +121,7 @@ TEST(ac12_refusal_changes_nothing_no_power_cycle_reason) {
     CHECK_EQ(r.machine()->tickCount(), t0);
 }
 
-TEST(ac12_full_place_refused_by_can_replace_before_the_operation) {
+TEST(full_place_refused_by_can_replace_before_the_operation) {
     RigOptions o;
     o.hosting = Hosting::Paced;
     Rig r(o);
@@ -140,7 +139,7 @@ TEST(ac12_full_place_refused_by_can_replace_before_the_operation) {
     CHECK_EQ(r.machine()->tickCount(), t0);
 }
 
-TEST(ec5_detach_chain_one_power_cycle) {   // LIB-2 EC-3
+TEST(detach_chain_one_power_cycle) {
     Rig r(dotStart());
     CHECK(r.done(r.send("attach", attachArgs("card-1", "test-module"))));
     CHECK(r.done(r.send("attach", attachArgs("a", "test-hub"))));
@@ -152,7 +151,7 @@ TEST(ec5_detach_chain_one_power_cycle) {   // LIB-2 EC-3
     CHECK_EQ(r.machine()->operationsTold(at({"card-1"})), told + 1);  // one power cycle
 }
 
-TEST(detach_empty_place_done) {   // LIB-2 EC-2; D-14
+TEST(detach_empty_place_done) {
     Rig r;
     const Ticks t0 = r.machine()->tickCount();
     const int unplugs = r.machine()->unplugCalls;

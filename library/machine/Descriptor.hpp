@@ -9,15 +9,14 @@
 #include <variant>
 #include <vector>
 
-// Machine and peripheral descriptors (LIB-1 design §3.3; machine.md M-4,
-// M-8): plain values a product builds without a machine and without ROM
-// files (AC-1). What is plugged in and present now is asked from the
-// running machine, never written into a descriptor.
+// Machine and peripheral descriptors: plain values a product builds
+// without a machine and without ROM files. What is plugged in and present
+// now is asked from the running machine, never written into a descriptor.
 
 namespace calcu::machine {
 
-// A ROM entry (roms.md R-1, R-4). The form is LIB-12's; defined here because
-// descriptors carry it from M-18.
+// A ROM entry. The form is the ROM lookup's (library/roms/); defined here
+// because descriptors carry it.
 enum class RomEncoding { Binary, Text };
 enum class ContentUnit { Bytes, Words, Rows };
 struct RomEntry {
@@ -29,9 +28,9 @@ struct RomEntry {
 };
 struct VariantDescriptor { VariantId id; std::vector<RomEntry> roms; };
 
-// Display kinds (machine.md M-2).
+// Display kinds.
 struct SegmentDef    { std::string name; bool ownBrightness; };   // "A".."G", "DP"
-struct SegmentLayout { std::vector<SegmentDef> segments; };        // any number; names and order (D-3)
+struct SegmentLayout { std::vector<SegmentDef> segments; };        // any number; names and order
 struct IndicatorDef  { std::string name; bool hasBrightness; };
 struct SegmentGeometry   { int positions; SegmentLayout layout; bool positionBrightness; };
 struct CellGrouping      { int cellWidth, cellHeight, columns, rows; };
@@ -42,18 +41,18 @@ struct DisplayDescriptor {
 };
 
 // Other spellings are resolved by presets and the harness, not by the
-// machine (D-2).
+// machine.
 struct KeyDescriptor { KeyId id; std::vector<std::string> otherSpellings; };
 
-// Connectors, pin-outs and places (peripherals.md P-3, P-6).
+// Connectors, pin-outs and places.
 enum class PinOutLevel { ContactLevel, Functional };
 enum class Takes { One, Chain };
-enum class AfterChange { PowerCycle, Nothing };   // LIB-2 AC-1; the semantics are LIB-2's
+enum class AfterChange { PowerCycle, Nothing };   // the semantics: Attach.hpp
 struct PinOutDescriptor    { PinOutId id; PinOutLevel level; Takes takes; AfterChange after; };
 struct ConnectorDescriptor { ConnectorId id; std::string form; std::vector<PinOutDescriptor> pinOuts; };
 struct PlaceDescriptor     { PlaceName name; ConnectorId connector; PinOutId pinOut; int takesAtOnce; };
 
-// Components and their modelling depth (machine.md I-4).
+// Components and their modelling depth.
 enum class Depth { Separate, Folded, Functional };
 struct ComponentDescriptor {
     ComponentId id;
@@ -62,19 +61,19 @@ struct ComponentDescriptor {
     std::optional<ComponentId> foldedInto;  // set for Depth::Folded
 };
 
-// Media places; the medium kinds are LIB-7's ("magnetic-card", ...).
+// Media places; the medium kinds are the media area's ("magnetic-card", ...).
 enum class MediaPassage { PassThrough, Holding };
 struct MediaPlaceDescriptor { MediaPlaceId id; std::string mediumKind; MediaPassage passage; std::vector<int> sides; };
 
-// A peripheral's keys and switches (LIB-2 AC-14); never machine keys (AC-14).
+// A peripheral's keys and switches; never machine keys.
 enum class ControlForm { Key, Switch };
 struct ControlDescriptor { ControlId id; ControlForm form; };
 
 struct MachineDescriptor {
     ModelId model;
     ModelFamilyId family;
-    std::vector<VariantDescriptor> variants;    // empty: no variant (EC-6)
-    std::optional<VariantId> defaultVariant;    // the only one when there is one (EC-6)
+    std::vector<VariantDescriptor> variants;    // empty: no variant
+    std::optional<VariantId> defaultVariant;    // the only one when there is one
     std::vector<RomEntry> roms;                 // used when `variants` is empty
     TickRate tickRate = 0;
     DisplayDescriptor display;
@@ -100,13 +99,13 @@ struct PeripheralDescriptor {
     std::vector<VariantDescriptor> variants;
     std::optional<VariantId> defaultVariant;
     std::vector<RomEntry> roms;                 // used when `variants` is empty
-    std::vector<PinOutId> fits;                 // the pin-outs it fits (LIB-2 AC-2)
-    std::vector<ConnectorDescriptor> connectors;   // its own (P-3)
+    std::vector<PinOutId> fits;                 // the pin-outs it fits
+    std::vector<ConnectorDescriptor> connectors;   // its own
     std::vector<PlaceDescriptor> places;
     std::vector<MediaPlaceDescriptor> mediaPlaces;
-    std::vector<ControlDescriptor> controls;    // its keys and switches; never machine keys (AC-14)
+    std::vector<ControlDescriptor> controls;    // its keys and switches; never machine keys
     std::vector<ComponentDescriptor> components;
-    std::shared_ptr<const ProductData> productData;   // e.g. the parsed module definition (§3.9)
+    std::shared_ptr<const ProductData> productData;   // e.g. the parsed module definition
 
     const std::vector<RomEntry>& romsFor(const std::optional<VariantId>&) const;
     bool fitsPinOut(const PinOutId&) const;

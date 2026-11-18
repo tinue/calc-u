@@ -5,7 +5,7 @@ namespace calcu::machine {
 
 namespace {
 // The variant to build: the one named, or the default; refused when it does
-// not belong to the descriptor (EC-6).
+// not belong to the descriptor.
 template <class D>
 bool resolveVariant(const D& d, std::optional<VariantId>& variant) {
     if (d.variants.empty()) return !variant;

@@ -1,5 +1,5 @@
-// LIB-2 T3: attach, detach and replace (AC-1 to AC-11, AC-35, EC-1 to EC-4;
-// the library form of AC-29). The machines and peripherals of
+// Attach, detach and replace, with a product rule on the test catalogue.
+// The machines and peripherals of
 // TestMachines.hpp.
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
@@ -55,7 +55,7 @@ std::vector<std::string> capIds(const Machine& m) {
 
 // ── Pin-outs and fit ─────────────────────────────────────────────────────
 
-TEST(ac1_pinout_states_level_takes_and_after) {
+TEST(pinout_states_level_takes_and_after) {
     const Catalogue& cat = testCatalogue();
     const auto chain = cat.place(kDot, PlaceName{"a"});
     const auto card = cat.place(kDot, PlaceName{"card-1"});
@@ -78,7 +78,7 @@ TEST(ac1_pinout_states_level_takes_and_after) {
     CHECK(seg->attach(request(cat, at({"aux"}), kUart), cat).follows == AfterChange::Nothing);
 }
 
-TEST(ac2_fit_follows_pinout_also_for_added_peripheral) {
+TEST(fit_follows_pinout_also_for_added_peripheral) {
     Catalogue cat = makeTestCatalogue();
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
@@ -107,7 +107,7 @@ TEST(ac2_fit_follows_pinout_also_for_added_peripheral) {
     CHECK(m->canAttach(request(cat, at({"a"}), later.id), cat).has_value());   // it fits only test.card
 }
 
-TEST(ac3_place_takes_its_count_chain_holds_several) {
+TEST(place_takes_its_count_chain_holds_several) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
@@ -133,7 +133,7 @@ TEST(ac3_place_takes_its_count_chain_holds_several) {
 
 // ── Attach and detach ────────────────────────────────────────────────────
 
-TEST(ac4_attach_lists_peripheral_and_capabilities_and_says_what_follows) {
+TEST(attach_lists_peripheral_and_capabilities_and_says_what_follows) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
@@ -160,7 +160,7 @@ TEST(ac4_attach_lists_peripheral_and_capabilities_and_says_what_follows) {
         if (e.peripheral == kModule) CHECK(e.variant == std::optional<VariantId>(VariantId{"8k"}));
 }
 
-TEST(ac4_switched_off_machine_says_nothing_follows) {
+TEST(switched_off_machine_says_nothing_follows) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
@@ -176,7 +176,7 @@ TEST(ac4_switched_off_machine_says_nothing_follows) {
     CHECK(m->attach(request(cat, at({"a"}), kUart), cat).follows == AfterChange::PowerCycle);
 }
 
-TEST(ac5_detach_removes_peripheral_and_capabilities) {
+TEST(detach_removes_peripheral_and_capabilities) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
@@ -196,7 +196,7 @@ TEST(ac5_detach_removes_peripheral_and_capabilities) {
     CHECK(seg && seg->plugged().byPlace.empty());
 }
 
-TEST(ac6_can_attach_agrees_with_attach_refusal_changes_nothing) {
+TEST(can_attach_agrees_with_attach_refusal_changes_nothing) {
     Catalogue cat = makeTestCatalogue();
     auto m = buildTestMachine(kDot, std::nullopt, {peripheralAt(cat, "a", kUart), peripheralAt(cat, "card-1", kModule)});
     CHECK(m != nullptr);
@@ -237,7 +237,7 @@ TEST(ac6_can_attach_agrees_with_attach_refusal_changes_nothing) {
     CHECK(!m->attach(ok, cat).refused && holds(*m, at({"b"}), kHub));
 }
 
-TEST(ac7_full_place_refuses) {
+TEST(full_place_refuses) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kSeg, std::nullopt, {peripheralAt(cat, "slot-1", kModule)});
     CHECK(m != nullptr);
@@ -247,7 +247,7 @@ TEST(ac7_full_place_refuses) {
     CHECK_EQ(m->plugged().byPlace.size(), std::size_t{1});
 }
 
-TEST(ac35_replace_detaches_attaches_asks_once) {
+TEST(replace_detaches_attaches_asks_once) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot, std::nullopt, {peripheralAt(cat, "card-1", kModule)});
     CHECK(m != nullptr);
@@ -274,7 +274,7 @@ TEST(ac35_replace_detaches_attaches_asks_once) {
     CHECK(u && !u->replace(kUart, request(cat, at({"a"}), kPrinter), cat).refused && holds(*u, at({"a"}), kPrinter));
 }
 
-TEST(ac8_chain_holds_peripherals_in_their_places) {
+TEST(chain_holds_peripherals_in_their_places) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
@@ -288,7 +288,7 @@ TEST(ac8_chain_holds_peripherals_in_their_places) {
         }
 }
 
-TEST(ac9_peripheral_place_makes_a_tree_and_its_pinout_decides) {
+TEST(peripheral_place_makes_a_tree_and_its_pinout_decides) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
@@ -307,7 +307,7 @@ TEST(ac9_peripheral_place_makes_a_tree_and_its_pinout_decides) {
     CHECK(m->detach(at({"a", "jack"}), kPrinter, cat).follows == AfterChange::Nothing);
 }
 
-TEST(ac10_operations_keep_peripherals_and_tell_each) {
+TEST(operations_keep_peripherals_and_tell_each) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
@@ -326,7 +326,7 @@ TEST(ac10_operations_keep_peripherals_and_tell_each) {
     }
 }
 
-TEST(ac11_attach_reads_no_file) {
+TEST(attach_reads_no_file) {
     // Every byte in memory, file names that exist nowhere: the peripheral gets
     // exactly these bytes (and Attach.cpp has no file call: review).
     const Catalogue& cat = testCatalogue();
@@ -340,7 +340,7 @@ TEST(ac11_attach_reads_no_file) {
     CHECK(roms && roms->size() == 1 && (*roms)[0].bytes == std::vector<std::uint8_t>({0xDE, 0xAD, 0xBE, 0xEF}));
 }
 
-TEST(ac29_product_refusal_reaches_caller) {
+TEST(product_refusal_reaches_caller) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot, std::nullopt, {peripheralAt(cat, "a", kPrinter)});
     CHECK(m != nullptr);
@@ -353,7 +353,7 @@ TEST(ac29_product_refusal_reaches_caller) {
 
 // ── Edge cases ──────────────────────────────────────────────────────────
 
-TEST(ec1_unfitting_peripheral_refused_with_reason) {
+TEST(unfitting_peripheral_refused_with_reason) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kSeg);
     CHECK(m != nullptr);
@@ -363,7 +363,7 @@ TEST(ec1_unfitting_peripheral_refused_with_reason) {
     CHECK(m->plugged().byPlace.empty());
 }
 
-TEST(ec2_detach_of_empty_place_changes_nothing) {
+TEST(detach_of_empty_place_changes_nothing) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot, std::nullopt, {peripheralAt(cat, "a", kUart)});
     CHECK(m != nullptr);
@@ -377,7 +377,7 @@ TEST(ec2_detach_of_empty_place_changes_nothing) {
     CHECK(samePlugged(*m, before) && m->unplugCalls == unplugs);
 }
 
-TEST(ec3_detach_takes_children_asks_once) {
+TEST(detach_takes_children_asks_once) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
@@ -393,7 +393,7 @@ TEST(ec3_detach_takes_children_asks_once) {
     CHECK(m->capabilities(calcu::peripherals::Controls::kKind).empty());
 }
 
-TEST(ec4_missing_rom_named) {
+TEST(missing_rom_named) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kSeg);
     CHECK(m != nullptr);
@@ -408,7 +408,7 @@ TEST(ec4_missing_rom_named) {
     CHECK(m->plugged().byPlace.empty());
 }
 
-// LIB-18 design L5 (AC-12; LIB-4): canReplace gives the refusal replace()
+// canReplace gives the refusal replace()
 // would give, and changes nothing.
 TEST(can_replace_answers_as_replace_does) {
     const Catalogue& cat = testCatalogue();

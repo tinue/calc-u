@@ -12,22 +12,19 @@
 #include <string>
 #include <utility>
 
-// Operations (LIB-3 design §3.5; spec AC-14 to AC-19, EC-3, EC-4, EC-6): a
-// long piece of work (a preset, a load, a power cycle) written as a C++20
-// coroutine that the app session runs one part per host call.
-//
-// Task<T>, Job<T> and the run request were taken from Calc-U-1600's
-// resumable machine jobs.
+// Operations: a long piece of work (a preset, a load, a power cycle)
+// written as a C++20 coroutine that the app session runs one part per host
+// call.
 //
 // Equivalence by construction: a run request is never split. A Job hands the
 // machine exactly the calls the coroutine asked for, in the same order,
 // whatever budget step() is given; only where the job pauses between them
 // changes. So an operation run in parts leaves the machine in the same state,
-// tick for tick, as one run in one go (AC-19).
+// tick for tick, as one run in one go.
 //
 // Rules for writing one:
 //  - Every function that (transitively) runs the machine is a coroutine
-//    returning Task<T>, and awaits the ones it calls (AC-17: a nested
+//    returning Task<T>, and awaits the ones it calls (a nested
 //    operation is awaited directly).
 //  - Coroutine parameters are taken by value, except the context and
 //    out-pointers: a Task starts lazily, after the full expression that
@@ -164,7 +161,7 @@ struct HostAwaiter {
 // The awaitable form of one machine call that returns the ticks it ran.
 inline detail::RunAwaiter request(std::function<std::uint64_t()> call) { return detail::RunAwaiter{std::move(call)}; }
 // The awaitable that gives the job back to the host until its next call
-// (OperationContext::hostWait, LIB-6 D-17).
+// (OperationContext::hostWait).
 inline detail::HostAwaiter yieldToHost() { return {}; }
 
 // Drives a Task. step() makes run requests until `budget` is spent (a
@@ -237,12 +234,12 @@ struct OperationResult {
         : ok(o), message(std::move(m)), result(std::move(r)) {}
     bool ok = true;
     std::string message;   // an English sentence; the reason when !ok
-    PayloadPtr result;     // the payload of the reply when it ends well (LIB-13 design §3.6)
+    PayloadPtr result;     // the payload of the reply when it ends well
 };
 
 class SessionContext;
 
-// What a running operation may do (design §3.5).
+// What a running operation may do.
 class OperationContext {
 public:
     explicit OperationContext(SessionContext& s) : session_(&s) {}
@@ -251,12 +248,12 @@ public:
     // runPiece() each, at the operation's speed. Throws (inside the
     // operation) when no machine is running.
     Task<machine::Ticks> run(machine::Ticks ticks);
-    void setSpeed(pacing::Speed s) { speed_ = s; }   // AC-14: a stretch at regular speed, paced as usual
+    void setSpeed(pacing::Speed s) { speed_ = s; }   // a stretch at regular speed, paced as usual
     pacing::Speed speed() const { return speed_; }
-    void setReportsWaiting(bool);                    // LIB-17 AC-16: false reports "not waiting"
-    // LIB-6 D-17: co_await: ends when the session's wall clock has passed
+    void setReportsWaiting(bool);                    // false reports "not waiting"
+    // co_await: ends when the session's wall clock has passed
     // `d`, looked at once per host call, also while the machine is paused (a
-    // preset's `wait:` on a paused machine, LIB-6 AC-19). True when it
+    // preset's `wait:` on a paused machine). True when it
     // waited; false at once in Hosting::VirtualTime, which has no wall clock.
     Task<bool> hostWait(pacing::WallTime d);
     SessionContext& session() { return *session_; }
@@ -266,7 +263,7 @@ public:
 
 private:
     SessionContext* session_;
-    pacing::Speed speed_ = pacing::Speed::Full;   // AC-14: full speed unless asked otherwise
+    pacing::Speed speed_ = pacing::Speed::Full;   // full speed unless asked otherwise
 };
 
 using Operation = std::function<Task<OperationResult>(OperationContext&)>;

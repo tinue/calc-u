@@ -8,11 +8,10 @@
 #include <string>
 #include <vector>
 
-// What the paper tests share (LIB-8 design §6): a printer the tests drive
-// call by call, and helpers over the harness's test product (LIB-11's
-// TestProduct, which has the PaperPart with TD-20 and TP-4 on the paper
-// test catalogue, LIB-18's machine control, LIB-6's presets and LIB-2's
-// peripherals part): its lines, its machine, the replies split into lines.
+// What the paper tests share: a printer the tests drive call by call, and
+// helpers over the harness's test product (TestProduct, which has the
+// PaperPart with TD-20 and TP-4 on the paper test catalogue, the startup
+// machine control, the presets and the peripherals part): its lines, its machine, the replies split into lines.
 
 namespace calcu::paper::test {
 

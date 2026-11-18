@@ -121,7 +121,7 @@ Value displayTextValue(const DisplayText& t) {
     return v;
 }
 
-// ── display (AC-23) ─────────────────────────────────────────────────────
+// ── display ─────────────────────────────────────────────────────────────
 
 namespace {
 std::string bits(const std::vector<bool>& b) {

@@ -6,8 +6,7 @@
 #include <optional>
 #include <span>
 
-// The generic kind serial port (LIB-2 design §3.3; spec AC-17, EC-7;
-// capabilities.md C-1, I-3): the bytes a machine sends, taken out, and the
+// The generic kind serial port: the bytes a machine sends, taken out, and the
 // bytes it is to receive, put in, in order; the line settings the machine
 // has set as far as the model has them. The capability reaches no host: a
 // host link (HostLinks.hpp) does that.
@@ -37,16 +36,16 @@ public:
     virtual std::size_t takeSent(std::span<std::uint8_t> out) = 0;          // oldest first; how many
     virtual std::size_t putReceived(std::span<const std::uint8_t> in) = 0;  // how many it took; the rest stays with the caller
     virtual LineSettings lineSettings() const = 0;
-    virtual bool used() const = 0;   // the machine has used the port since it exists (AC-33; D-5)
+    virtual bool used() const = 0;   // the machine has used the port since it exists
     virtual void setPeerLines(const PeerLines&) = 0;
 };
 
 // A ready-made implementation for cores: two queues, no thread, no lock
-// (I-3). The sent queue has no limit, so a machine that sends is never held
-// up (EC-7; D-8); the received queue takes up to kReceiveLimit bytes.
+// The sent queue has no limit, so a machine that sends is never held
+// up; the received queue takes up to kReceiveLimit bytes.
 class SerialPortQueues final : public SerialPort {
 public:
-    static constexpr std::size_t kReceiveLimit = 8192;   // today's kRxHighWater (Calc-U-1600 PtySerialLink)
+    static constexpr std::size_t kReceiveLimit = 8192;   // as PtyHostLink.cpp's kRxHighWater
 
     std::size_t takeSent(std::span<std::uint8_t> out) override;
     std::size_t putReceived(std::span<const std::uint8_t> in) override;

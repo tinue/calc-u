@@ -1,5 +1,4 @@
-// LIB-5 design §6, L10, L11: the typing part in the session (AC-18, AC-19,
-// AC-38, AC-39; D-8).
+// The typing part in the session.
 #include "TestHarness.hpp"
 #include "TypingRig.hpp"
 
@@ -7,7 +6,7 @@ using namespace calcu::typing;
 using namespace calcu::typing::test;
 using calcu::sessions::Value;
 
-TEST(ac18_live_dropped_while_busy_not_pressed_after) {
+TEST(live_dropped_while_busy_not_pressed_after) {
     TypingRig r(calcu::sessions::Hosting::Paced);
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -27,7 +26,7 @@ TEST(ac18_live_dropped_while_busy_not_pressed_after) {
     CHECK(r.log(from).empty());
 }
 
-TEST(ac38_key_and_type_not_busy_stopped_by_live) {
+TEST(key_and_type_not_busy_stopped_by_live) {
     TypingRig r(calcu::sessions::Hosting::Paced);
     r.run(100);
     const auto k = r.key({"1", "2", "3"});
@@ -45,14 +44,14 @@ TEST(ac38_key_and_type_not_busy_stopped_by_live) {
     CHECK(rt && !rt->done && rt->reason == kStoppedByKey);
 }
 
-TEST(ac39_raw_key_down_not_engines) {
+TEST(raw_key_down_not_engines) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
-    r.send("key-down", Value::object({{"key", "a"}}));   // LIB-3's raw command (LIB-11 AC-9)
+    r.send("key-down", Value::object({{"key", "a"}}));   // the harness's raw command
     CHECK_EQ(r.m->keysDown().size(), std::size_t(1));
     CHECK(r.part.engine().idle());
-    CHECK(r.held().empty());   // not in the topic of AC-19
+    CHECK(r.held().empty());   // not in held-keys
     const auto k = r.key({"1"});   // does not wait for it
     CHECK_EQ(r.m->keysDown().size(), std::size_t(2));
     r.send("focus-lost");   // does not release it
@@ -65,7 +64,7 @@ TEST(ac39_raw_key_down_not_engines) {
     CHECK_EQ(r.log(from).size(), std::size_t(4));
 }
 
-TEST(ac19_held_keys_lists_live_only) {
+TEST(held_keys_lists_live_only) {
     TypingRig r;
     r.run(100);
     r.screenDown("a");
@@ -90,8 +89,8 @@ TEST(ac19_held_keys_lists_live_only) {
     CHECK(r.held().empty());
 }
 
-TEST(ac16_type_absent_without_char_profile) {
-    TypingRig r(calcu::sessions::Hosting::VirtualTime, testProfile(), false);   // a product without text (D-8)
+TEST(type_absent_without_char_profile) {
+    TypingRig r(calcu::sessions::Hosting::VirtualTime, testProfile(), false);   // a product without text
     const auto c = r.type("1");
     CHECK(r.reply(c) && !r.reply(c)->done && r.reply(c)->reason == "Unknown command: type.");
     auto p = testProfile();
@@ -105,7 +104,7 @@ TEST(ac16_type_absent_without_char_profile) {
     CHECK(s.m->keyEvents().empty());
 }
 
-TEST(ac15_key_names_refused_nothing_typed_screen_key_unknown) {
+TEST(key_names_refused_nothing_typed_screen_key_unknown) {
     TypingRig r;
     r.run(100);
     const auto bad = r.key({"1", "nokey"});

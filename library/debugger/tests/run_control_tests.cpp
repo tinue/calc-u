@@ -1,7 +1,7 @@
-// LIB-10 L3, L4, L5, L9, L10 (design §6): the run control in an app
-// session on the test processor (TestDebugParts.hpp): the gate, pause,
-// resume and the run state; steps and the level that owns the pause; step
-// over and out; operations; restarts and a new machine.
+// The run control in an app session on the test processor
+// (TestDebugParts.hpp): the gate, pause, resume and the run state; steps
+// and the level that owns the pause; step over and out; operations;
+// restarts and a new machine.
 #include "DebugRig.hpp"
 #include "TestHarness.hpp"
 
@@ -34,9 +34,9 @@ calcu::machine::test::TestProgram waitProgram() {
 
 } // namespace
 
-// ── L3 ───────────────────────────────────────────────────────────────────
+// ── The gate, pause, resume and the run state ────────────────────────────
 
-TEST(ac5_session_has_one_run_control_unused) {
+TEST(session_has_one_run_control_unused) {
     DebugRig r;
     const RunState* s = r.runState();
     CHECK(s && !s->paused && !s->armed && !s->pauseAtStart);   // the topic is there before anything uses it
@@ -46,7 +46,7 @@ TEST(ac5_session_has_one_run_control_unused) {
     CHECK(r.ticks() - t0 >= 1000);
 }
 
-TEST(ac5_paused_no_emulated_time_display_kept) {
+TEST(paused_no_emulated_time_display_kept) {
     DebugRig r;
     pauseAt(r, 0x07);
     const Ticks t0 = r.ticks();
@@ -61,24 +61,24 @@ TEST(ac5_paused_no_emulated_time_display_kept) {
     CHECK(stopped);
 }
 
-TEST(ac5_stopped_advance_gives_ticks_run) {
+TEST(stopped_advance_gives_ticks_run) {
     DebugRig r;
     CHECK(r.runTo(0x00));
     r.breakAt(0x10);
     const Ticks t0 = r.ticks();
     const Ticks ran = r.advance(100'000);
-    CHECK(ran < 100'000);   // fewer than were asked for (LIB-1 AC-7)
+    CHECK(ran < 100'000);   // fewer than were asked for
     CHECK_EQ(r.ticks() - t0, ran);
     CHECK(r.paused());
     CHECK_EQ(r.pc(), std::uint64_t(0x10));
 }
 
-TEST(ac6_pause_lands_where_rules_say_reply_then) {
+TEST(pause_lands_where_rules_say_reply_then) {
     DebugRig r;
     CHECK(r.runTo(0x01));   // just past a boundary
     const CallId c = r.send("pause", lv("program"));
     CHECK(!r.replied(c));            // the reply comes when it has landed
-    CHECK(!r.runState()->paused);    // D-14: running until then
+    CHECK(!r.runState()->paused);    // running until then: no third state
     CHECK_EQ(r.rules.pausesAsked, 1);
     r.advance(10'000);
     CHECK(r.done(c));
@@ -91,7 +91,7 @@ TEST(ac6_pause_lands_where_rules_say_reply_then) {
     CHECK(r.done(d) && r.replyState(d)->owner == kCpu);
 }
 
-TEST(ac6_resume_whichever_level_owned) {
+TEST(resume_whichever_level_owned) {
     DebugRig r;
     for (const char* level : {"program", "cpu"}) {
         const CallId c = r.send("pause", lv(level));
@@ -105,7 +105,7 @@ TEST(ac6_resume_whichever_level_owned) {
     }
 }
 
-TEST(ac6_unknown_level_refused) {
+TEST(unknown_level_refused) {
     DebugRig r;
     const CallId c = r.send("pause", lv("basic"));
     CHECK(!r.done(c));
@@ -116,7 +116,7 @@ TEST(ac6_unknown_level_refused) {
     CHECK(!r.paused());
 }
 
-TEST(ac14_pause_stops_all_targets_names_current) {
+TEST(pause_stops_all_targets_names_current) {
     DebugOptions o;
     o.model = "test-dot";
     DebugRig r(o);
@@ -131,7 +131,7 @@ TEST(ac14_pause_stops_all_targets_names_current) {
     CHECK(r.runState()->target == d->target(d->current()).info().name);
 }
 
-TEST(ac16_resume_sets_clocks_and_starts_afresh) {
+TEST(resume_sets_clocks_and_starts_afresh) {
     DebugOptions o;
     o.model = "test-dot";
     o.hosting = Hosting::Paced;
@@ -143,8 +143,8 @@ TEST(ac16_resume_sets_clocks_and_starts_afresh) {
     const auto fresh = r.session->machineSession().freshStarts();
     const Ticks t0 = r.ticks();
     r.send("resume");
-    CHECK_EQ(r.machine()->clock()->setCalls, sets + 1);   // the host's time (LIB-2 AC-23)
-    CHECK(r.session->machineSession().freshStarts() > fresh);   // pacing starts afresh (LIB-3 AC-23)
+    CHECK_EQ(r.machine()->clock()->setCalls, sets + 1);   // the host's time
+    CHECK(r.session->machineSession().freshStarts() > fresh);   // pacing starts afresh
     r.call();
     r.call();
     // Two host calls of 16 ms at 1 MHz, not the half second of the pause made up.
@@ -152,7 +152,7 @@ TEST(ac16_resume_sets_clocks_and_starts_afresh) {
     CHECK(r.ticks() > t0);
 }
 
-TEST(ac16_paused_survives_suspend_and_continue) {
+TEST(paused_survives_suspend_and_continue) {
     DebugRig r;
     r.send("pause", lv("cpu"));
     r.send("suspend");
@@ -162,7 +162,7 @@ TEST(ac16_paused_survives_suspend_and_continue) {
     CHECK_EQ(r.advance(100), Ticks(0));
 }
 
-TEST(ac17_run_state_fields_for_each_reason) {
+TEST(run_state_fields_for_each_reason) {
     DebugRig r;
     // pause
     r.send("pause", lv("cpu"));
@@ -206,7 +206,7 @@ TEST(ac17_run_state_fields_for_each_reason) {
     CHECK(s->paused && s->reason == RunState::Reason::Entry && s->owner == kCpu && !s->pauseAtStart);
 }
 
-TEST(ec1_pause_while_paused_done_nothing_changes) {
+TEST(pause_while_paused_done_nothing_changes) {
     DebugRig r;
     r.send("pause", lv("cpu"));
     const RunState before = *r.runState();
@@ -217,7 +217,7 @@ TEST(ec1_pause_while_paused_done_nothing_changes) {
     CHECK_EQ(r.fe.stateMessages(kRunStateTopic, mark), 0);
 }
 
-TEST(ec2_resume_while_running_done) {
+TEST(resume_while_running_done) {
     DebugRig r;
     const std::size_t mark = r.fe.log.size();
     const CallId c = r.send("resume");
@@ -226,9 +226,9 @@ TEST(ec2_resume_while_running_done) {
     CHECK_EQ(r.fe.stateMessages(kRunStateTopic, mark), 0);
 }
 
-// ── L4 ───────────────────────────────────────────────────────────────────
+// ── Steps and the level that owns the pause ──────────────────────────────
 
-TEST(ac7_cpu_step_one_instruction_of_named_or_current_target) {
+TEST(cpu_step_one_instruction_of_named_or_current_target) {
     DebugRig r;
     pauseAt(r, 0x01);
     const CallId c = r.send("step", stepArgs("cpu", 1));
@@ -258,7 +258,7 @@ TEST(ac7_cpu_step_one_instruction_of_named_or_current_target) {
     CHECK_EQ(d.target(current).retired(), before + 1);
 }
 
-TEST(ac7_cpu_step_repeats_waiting_instruction_by_rule) {
+TEST(cpu_step_repeats_waiting_instruction_by_rule) {
     DebugOptions o;
     o.program = waitProgram();
     for (int repeats : {32, 2}) {
@@ -283,7 +283,7 @@ TEST(ac7_cpu_step_repeats_waiting_instruction_by_rule) {
     }
 }
 
-TEST(ac7_program_step_by_rule) {
+TEST(program_step_by_rule) {
     DebugRig r;
     pauseAt(r, 0x03);
     const CallId c = r.send("step", stepArgs("program", 1));
@@ -297,25 +297,25 @@ TEST(ac7_program_step_by_rule) {
     CHECK(r.runState()->owner == kProgram);
 }
 
-TEST(ac7_running_while_stepping) {
+TEST(running_while_stepping) {
     DebugRig r;
     pauseAt(r, 0x01);
     r.send("step", stepArgs("cpu", 3));
     CHECK(!r.paused());
-    CHECK(!r.runState()->paused);   // D-14
+    CHECK(!r.runState()->paused);   // stepping says running
     CHECK(r.session->machineSession().runs());
     r.advance(1000);
     CHECK(r.runState()->paused);
 }
 
-TEST(ac7_step_refused_when_not_paused) {
+TEST(step_refused_when_not_paused) {
     DebugRig r;
     const CallId c = r.send("step", stepArgs("cpu", 1));
     CHECK(!r.done(c));
     CHECK_EQ(r.reason(c), std::string(kNotPaused));
 }
 
-TEST(ac7_hit_ends_steps) {
+TEST(hit_ends_steps) {
     DebugRig r;
     pauseAt(r, 0x00);
     r.breakAt(0x12);
@@ -326,7 +326,7 @@ TEST(ac7_hit_ends_steps) {
     CHECK(r.replyState(c)->reason == RunState::Reason::Breakpoint);
 }
 
-TEST(ac45_other_level_step_takes_the_pause) {
+TEST(other_level_step_takes_the_pause) {
     DebugRig r;
     const CallId c = r.send("pause", lv("program"));
     r.advance(10'000);
@@ -337,7 +337,7 @@ TEST(ac45_other_level_step_takes_the_pause) {
     CHECK(r.runState()->owner == kCpu);   // the level of the step owns the pause now
 }
 
-TEST(ec5_step_from_breakpoint_carries_it_out) {
+TEST(step_from_breakpoint_carries_it_out) {
     DebugRig r;
     CHECK(r.runTo(0x00));
     r.breakAt(0x05);
@@ -350,7 +350,7 @@ TEST(ec5_step_from_breakpoint_carries_it_out) {
     CHECK_EQ(r.pc(), std::uint64_t(0x10));   // the call at the breakpoint was carried out
 }
 
-TEST(ec6_large_count_ended_by_pause_reset_new_machine) {
+TEST(large_count_ended_by_pause_reset_new_machine) {
     DebugRig r;
     r.send("pause", lv("cpu"));
     // pause
@@ -375,9 +375,9 @@ TEST(ec6_large_count_ended_by_pause_reset_new_machine) {
     CHECK(!r.paused());
 }
 
-// ── L5 ───────────────────────────────────────────────────────────────────
+// ── Step over and out ────────────────────────────────────────────────────
 
-TEST(ac8_step_over_call_runs_routine) {
+TEST(step_over_call_runs_routine) {
     DebugRig r;
     pauseAt(r, 0x05);   // call 0x10
     const std::uint64_t before = r.target().retired();
@@ -392,7 +392,7 @@ TEST(ac8_step_over_call_runs_routine) {
     CHECK_EQ(r.pc(), std::uint64_t(0x08));
 }
 
-TEST(ac8_step_out_runs_to_return) {
+TEST(step_out_runs_to_return) {
     DebugRig r;
     pauseAt(r, 0x12);   // inside the routine
     const CallId c = r.send("step", stepArgs("cpu", 1, "out"));
@@ -401,7 +401,7 @@ TEST(ac8_step_out_runs_to_return) {
     CHECK_EQ(r.pc(), std::uint64_t(0x07));
 }
 
-TEST(ac8_breakpoint_inside_still_pauses) {
+TEST(breakpoint_inside_still_pauses) {
     DebugRig r;
     pauseAt(r, 0x05);
     r.breakAt(0x12);
@@ -412,7 +412,7 @@ TEST(ac8_breakpoint_inside_still_pauses) {
     CHECK(r.runState()->reason == RunState::Reason::Breakpoint);
 }
 
-TEST(ac8_refused_without_offer) {
+TEST(step_over_and_out_refused_without_offer) {
     DebugOptions o;
     calcu::machine::test::TestProgram p = defaultProgram();
     p.bare = true;
@@ -426,9 +426,9 @@ TEST(ac8_refused_without_offer) {
     CHECK(r.paused());
 }
 
-// ── L9 ───────────────────────────────────────────────────────────────────
+// ── Operations ───────────────────────────────────────────────────────────
 
-TEST(ac13_no_breakpoint_or_watch_in_operation) {
+TEST(no_breakpoint_or_watch_in_operation) {
     DebugRig r;
     r.breakAt(0x10);
     r.send("watch", Value::object({{"setter", "harness"}, {"target", "test-cpu"}, {"space", "memory"}, {"address", 0x30},
@@ -441,7 +441,7 @@ TEST(ac13_no_breakpoint_or_watch_in_operation) {
     CHECK(r.paused());
 }
 
-TEST(ac13_commanded_pause_step_resume_in_operation) {
+TEST(commanded_pause_step_resume_in_operation) {
     DebugRig r;
     const CallId l = r.load(pt::header() + "keys:\n  - pause: cpu\n  - step: { level: cpu, count: 3 }\n  - resume:\n");
     CHECK(r.done(l));
@@ -453,8 +453,8 @@ TEST(ac13_commanded_pause_step_resume_in_operation) {
     CHECK(r.runState()->reason == std::nullopt);
 }
 
-TEST(ac13_armed_start_fires_in_operation) {
-    // The library form of test_cdebug.ti59 (C-1 of FS 5): armed inside the
+TEST(armed_start_fires_in_operation) {
+    // The library form of test_cdebug.ti59: armed inside the
     // load, fired when key 1 starts the program, inside the key's hold.
     DebugOptions o;
     o.hosting = Hosting::Paced;
@@ -473,7 +473,7 @@ TEST(ac13_armed_start_fires_in_operation) {
     CHECK(ev[ev.size() - 2].tick < r.ticks());
 }
 
-TEST(ec7_preset_ends_paused_stays_paused) {
+TEST(preset_ends_paused_stays_paused) {
     DebugRig r;
     const CallId l = r.load(pt::header() + "keys:\n  - pause: cpu\n");
     CHECK(r.done(l));
@@ -481,9 +481,9 @@ TEST(ec7_preset_ends_paused_stays_paused) {
     CHECK(!r.session->busy());
 }
 
-// ── L10 ──────────────────────────────────────────────────────────────────
+// ── Restarts and a new machine ───────────────────────────────────────────
 
-TEST(ac15_reset_and_cold_boot_while_paused_run) {
+TEST(reset_and_cold_boot_while_paused_run) {
     DebugRig r;
     for (const char* cmd : {"reset", "cold-boot"}) {
         r.send("pause", lv("cpu"));
@@ -495,7 +495,7 @@ TEST(ac15_reset_and_cold_boot_while_paused_run) {
     }
 }
 
-TEST(ac15_armed_stays_across_reset) {
+TEST(armed_stays_across_reset) {
     DebugRig r;
     r.send("pause-on-start", lv("cpu"));
     r.send("pause", lv("cpu"));   // a pause disarms...
@@ -510,7 +510,7 @@ TEST(ac15_armed_stays_across_reset) {
     CHECK(r.paused() && r.runState()->reason == RunState::Reason::PauseOnStart);
 }
 
-TEST(ac15_new_machine_not_paused_nothing_armed) {
+TEST(new_machine_not_paused_nothing_armed) {
     DebugRig r;
     r.send("pause-on-start", lv("program"));
     r.send("pause", lv("cpu"));
@@ -523,7 +523,7 @@ TEST(ac15_new_machine_not_paused_nothing_armed) {
     CHECK(!s->paused && !s->armed);
 }
 
-TEST(ac15_breakpoints_rebound_by_target_name_rest_dropped) {
+TEST(breakpoints_rebound_by_target_name_rest_dropped) {
     DebugOptions o;
     o.model = "test-dot";
     DebugRig r(o);
@@ -538,7 +538,7 @@ TEST(ac15_breakpoints_rebound_by_target_name_rest_dropped) {
     CHECK(r.debugger.runControl().table().breakpoints().empty());
 }
 
-// ── D-16 (LIB-10 design §10.15, M-45): a step with a test ─────────────────
+// ── A step with a test ───────────────────────────────────────────────────
 
 TEST(step_until_goes_on_while_the_test_says_so) {
     DebugRig r;

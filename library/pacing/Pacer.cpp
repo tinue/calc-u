@@ -1,10 +1,10 @@
 #include "pacing/Pacer.hpp"
 #include <algorithm>
 
-// The rules R1 to R7 of LIB-17 design §3. Emulated time is compared with an
-// absolute deadline from the origin, never with the length of the last
-// slice (frontend.md I-6): due ticks D = ticksIn(now − origin), against the
-// ticks run since the origin, which carry every overshoot (AC-3).
+// Emulated time is compared with an absolute deadline from the origin, never
+// with the length of the last slice, so no lag builds up: due ticks
+// D = ticksIn(now − origin), against the ticks run since the origin, which
+// carry every overshoot.
 
 namespace calcu::pacing {
 
@@ -12,7 +12,7 @@ using machine::Ticks;
 
 Pacer::Pacer(WallClock clock, std::optional<std::uint32_t> seed) : clock_(std::move(clock)), jitter_(seed) {}
 
-void Pacer::setMachine(const PacingProfile& profile, machine::TickRate rate) {   // R7
+void Pacer::setMachine(const PacingProfile& profile, machine::TickRate rate) {
     profile_ = profile;
     rate_ = rate;
     slice_ = profile.slice ? std::max<Ticks>(1, ticksIn(*profile.slice, rate)) : 0;
@@ -21,7 +21,7 @@ void Pacer::setMachine(const PacingProfile& profile, machine::TickRate rate) {  
     startAfresh();
 }
 
-void Pacer::startAfresh() {   // R7: no lag, nothing to wait out
+void Pacer::startAfresh() {   // no lag, nothing to wait out; the jitter is not reseeded
     rebase(clock_());
     waiting_ = false;
     lastUnpacedEnd_ = origin_;
@@ -32,11 +32,13 @@ void Pacer::rebase(WallTime at) {
     ran_ = 0;
     n_ = 0;
     // The first slice after a rebase ends on its grid point, so it runs at
-    // once (qa-report, deviations); the jitter goes on from the next one.
+    // once; the jitter goes on from the next one. A jittered first end would
+    // wait out its offset, and a caller that drops the lag at every call (a
+    // throttled browser tab) would almost never run the machine.
     next_ = slice_;
 }
 
-Ticks Pacer::nextEnd() {   // R3: Tₙ = n·S + rₙ
+Ticks Pacer::nextEnd() {   // Tₙ = n·S + rₙ (rₙ the jitter offset, else 0)
     if (!next_) next_ = (n_ + 1) * slice_ + (profile_.jitter ? jitter_.offset(slice_) : 0);
     return *next_;
 }
@@ -64,7 +66,7 @@ PaceResult Pacer::pace(Speed speed, SliceRunner& runner) {
         waiting_ = false;
     }
     lastSpeed_ = speed;
-    if (waiting_) {   // R5: paced while the machine waits
+    if (waiting_) {   // paced while the machine waits
         if (paced(now, runner, res, true) != Outcome::LeftWaiting) return res;
         waiting_ = false;
     }
@@ -72,12 +74,12 @@ PaceResult Pacer::pace(Speed speed, SliceRunner& runner) {
     return res;
 }
 
-// R1 to R3, R6: one call at the pace of regular speed. At full speed (R5) a
-// slice that does not report "waits for input" returns to full speed.
+// One call at the pace of regular speed. At full speed (paced while waiting)
+// a slice that does not report "waits for input" returns to full speed.
 Pacer::Outcome Pacer::paced(WallTime now, SliceRunner& runner, PaceResult& res, bool atFull) {
     Ticks due = ticksIn(now - origin_, rate_);
     bool dropped = false;
-    if (due > ran_ && due - ran_ > lagLimit_) {   // R1: dropped whole, nothing caught up
+    if (due > ran_ && due - ran_ > lagLimit_) {   // dropped whole, nothing caught up
         rebase(now);
         due = 0;
         dropped = true;
@@ -88,12 +90,12 @@ Pacer::Outcome Pacer::paced(WallTime now, SliceRunner& runner, PaceResult& res, 
         if (atFull && !s.waitsForInput) return Outcome::LeftWaiting;
         return Outcome::Done;
     };
-    if (!fixed()) {   // R2: the call
+    if (!fixed()) {   // the call: run what is due, the overshoot is carried
         const Ticks want = due > ran_ ? due - ran_ : dropped ? callSlice_ : 0;
         if (want == 0) return Outcome::Done;
         return after(run(runner, want, now, res));
     }
-    for (;;) {   // R3: every slice whose end is due within one slice
+    for (;;) {   // every slice whose end is due within one slice
         const Ticks end = nextEnd();
         if (end > due + slice_) return Outcome::Done;
         ++n_;
@@ -104,8 +106,8 @@ Pacer::Outcome Pacer::paced(WallTime now, SliceRunner& runner, PaceResult& res, 
     }
 }
 
-// R4, R5, R6: full speed, slice after slice until the allowance of the call
-// is used up on the supplied clock, at least one slice.
+// Full speed: slice after slice until the allowance of the call is used up
+// on the supplied clock, at least one slice; then rebase on the clock.
 void Pacer::unpaced(WallTime callStart, SliceRunner& runner, PaceResult& res) {
     const WallTime until = callStart + kFullSpeedAllowance;
     bool ranOne = false;
@@ -121,10 +123,10 @@ void Pacer::unpaced(WallTime callStart, SliceRunner& runner, PaceResult& res) {
         const SliceResult s = run(runner, want, clock_(), res);
         ranOne = true;
         res.ranUnpaced = true;
-        if (s.stoppedEarly) return;   // R6
+        if (s.stoppedEarly) return;   // a debugger stop ends the call
         if (profile_.fullSpeedPacedWhileWaiting && s.waitsForInput) {
-            // R5: this slice is slice 1 of a paced schedule that starts where
-            // the last unpaced slice ended; R4's final rebase is skipped.
+            // This slice is slice 1 of a paced schedule that starts where the
+            // last unpaced slice ended; the final rebase below is skipped.
             origin_ = lastUnpacedEnd_;
             ran_ = s.ticksRun;
             n_ = 1;
@@ -135,7 +137,7 @@ void Pacer::unpaced(WallTime callStart, SliceRunner& runner, PaceResult& res) {
         }
         lastUnpacedEnd_ = clock_();
     }
-    rebase(clock_());   // R4: from here on as if afresh
+    rebase(clock_());   // from here on as if afresh
 }
 
 } // namespace calcu::pacing

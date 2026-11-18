@@ -25,7 +25,7 @@ template <class D> bool hasVariant(const D& d, const std::optional<machine::Vari
 }
 
 // The refusal of one peripheral of a plan on the machine's own places, with
-// its place (LIB-6 AC-52): checked before the builder sees the request.
+// its place: checked before the builder sees the request.
 std::optional<BuildRefusal> checkPlug(const machine::Catalogue& cat, const machine::MachineDescriptor& model,
                                       const PeripheralRequest& p) {
     const std::string where = machine::placeText(p.place);
@@ -97,9 +97,9 @@ std::optional<BuildRefusal> MachineControl::build(sessions::SessionContext& s, M
     }
 
     sessions::MachineSession& ms = s.machineSession();
-    ms.dropInput();   // AC-2, EC-4
-    // D-11: full speed does not carry over. The commanded speed does not
-    // change while an operation runs (LIB-3 D-6): then StartupPart sets it at
+    ms.dropInput();
+    // Full speed does not carry over. The commanded speed does not change
+    // while an operation runs: then StartupPart sets it at
     // the operation's end.
     s.setCommandedSpeed(pacing::Speed::Regular);
     if (s.busy()) regularDue_ = true;
@@ -130,7 +130,7 @@ std::optional<BuildRefusal> MachineControl::check(const Machine& m, const PlugCh
         else r = m.canReplace(old->peripheral, withRoms(c.request), cat);
         break;
     }
-    case PlugChange::Kind::Detach: break;   // an empty place is Done, before (D-14)
+    case PlugChange::Kind::Detach: break;   // an empty place is Done, before
     }
     if (!r) return std::nullopt;
     return BuildRefusal{r->reason, c.place};
@@ -144,7 +144,7 @@ sessions::Task<void> MachineControl::change(sessions::OperationContext& c, PlugC
     const machine::Plugged now = m->plugged();
     const machine::PlugEntry* at = entryAt(now, ch.place);
     const std::optional<machine::PeripheralId> there = at ? std::optional(at->peripheral) : std::nullopt;
-    // LIB-7 AC-13 (M-41): the parts write what they have to save first.
+    // The parts write what they have to save first.
     if (ch.kind != PlugChange::Kind::Detach || there) c.session().machineSession().aboutToChange();
     switch (ch.kind) {
     case PlugChange::Kind::Attach: r = m->attach(withRoms(ch.request), cat); break;
@@ -152,16 +152,16 @@ sessions::Task<void> MachineControl::change(sessions::OperationContext& c, PlugC
         r = there ? m->replace(*there, withRoms(ch.request), cat) : m->attach(withRoms(ch.request), cat);
         break;
     case PlugChange::Kind::Detach:
-        if (there) r = m->detach(ch.place, *there, cat);   // EC-5: what follows asked once for a chain
+        if (there) r = m->detach(ch.place, *there, cat);   // what follows asked once for a chain
         break;
     }
-    if (r.refused) throw std::runtime_error(r.refused->reason);   // AC-12: nothing changed
+    if (r.refused) throw std::runtime_error(r.refused->reason);   // nothing changed
     if (r.follows == machine::AfterChange::PowerCycle) {
-        c.session().machineSession().dropInput();   // AC-14
-        c.session().machine()->powerCycle();         // AC-11
+        c.session().machineSession().dropInput();
+        c.session().machine()->powerCycle();
         co_await untilKeyReady(c);
     }
-    // AfterChange::Nothing: done (a switched-off machine, AC-33).
+    // AfterChange::Nothing: done (a switched-off machine).
 }
 
 sessions::Task<bool> MachineControl::untilKeyReady(sessions::OperationContext& c) {
@@ -175,11 +175,11 @@ sessions::Task<bool> MachineControl::untilKeyReady(sessions::OperationContext& c
     for (;;) {
         m = c.session().machine();
         if (!m) co_return false;
-        if (m->isKeyReady()) co_return true;   // EC-3: also at a prompt of the ROM
+        if (m->isKeyReady()) co_return true;   // also at a prompt of the ROM
         if (m->tickCount() - start >= limit) break;
-        co_await c.run(sessions::OperationContext::runPiece(rate));   // D-4
+        co_await c.run(sessions::OperationContext::runPiece(rate));   // checked after each run piece, no finer
     }
-    // EC-7, D-5: the operation ends as done; one log line, no notice.
+    // The operation ends as done; one log line, no notice.
     c.session().log("The " + model.value + " was not ready for keys after " + secondsText(bound) +
                     " seconds; it is left as it is.");
     co_return false;
@@ -191,7 +191,7 @@ MachinePlan MachineControl::variantPlan(Machine& m, machine::VariantId v) {
     plan.variant = std::move(v);
     for (const auto& e : m.plugged().byPlace) {
         machine::PeripheralRequest r = product_.carried(e, m);
-        for (const Carry& c : carries_) c(r, e, m);   // LIB-7 S-7a
+        for (const Carry& c : carries_) c(r, e, m);
         plan.peripherals.push_back(std::move(r));
     }
     return plan;

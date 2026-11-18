@@ -1,5 +1,4 @@
-// LIB-18 design L8: the harness commands of AC-15 (OQ-5), on the harness's
-// test product.
+// The startup's harness commands, on the harness's test product.
 #include "TestHarness.hpp"
 #include "TestProduct.hpp"
 #include "harness/Run.hpp"
@@ -14,7 +13,7 @@ namespace {
 bool startsWith(const std::string& s, const std::string& p) { return s.rfind(p, 0) == 0; }
 } // namespace
 
-TEST(ac15_each_command_at_top_level_with_its_operations_reply) {
+TEST(each_command_at_top_level_with_its_operations_reply) {
     TestRun run;   // test-seg
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -38,7 +37,7 @@ TEST(ac15_each_command_at_top_level_with_its_operations_reply) {
     CHECK(startsWith(run.line("attach a"), "refused: usage: attach <place> <peripheral>"));
 }
 
-TEST(ac15_attach_variant_as_in_a_preset) {
+TEST(attach_variant_as_in_a_preset) {
     TestRun run({}, mt::kDot);
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -49,7 +48,7 @@ TEST(ac15_attach_variant_as_in_a_preset) {
     CHECK(run.line("capabilities").find("place card-1 test-module:4k\n") != std::string::npos);
 }
 
-TEST(ac15_attach_place_path) {
+TEST(attach_place_path) {
     TestRun run({}, mt::kDot);
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -60,7 +59,7 @@ TEST(ac15_attach_place_path) {
     CHECK(run.line("capabilities").find("place a test-hub\n") != std::string::npos);
 }
 
-TEST(ac15_refusal_exits_nonzero) {
+TEST(refusal_exits_nonzero) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;

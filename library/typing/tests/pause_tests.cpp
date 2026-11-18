@@ -1,4 +1,5 @@
-// LIB-5 design §6, L14: a paused machine (AC-20, library part).
+// A paused machine: the rest of a hold passes in host time, a waiting press
+// waits for the machine to run.
 #include "TestHarness.hpp"
 #include "TypingRig.hpp"
 

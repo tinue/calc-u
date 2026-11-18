@@ -1,6 +1,5 @@
-// LIB-10 L11, L12 (design §6): the trace session (AC-22 to AC-26, EC-8),
-// with the test format of TestDebugParts.hpp: "TTRC", 0x01, 3 bytes per
-// instruction, 0x03.
+// The trace session, with the test format of TestDebugParts.hpp: "TTRC",
+// 0x01, 3 bytes per instruction, 0x03.
 #include "DebugRig.hpp"
 #include "TestHarness.hpp"
 #include "settings/tests/TestProduct.hpp"
@@ -28,7 +27,7 @@ Value off() { return Value::object({{"off", true}}); }
 
 } // namespace
 
-TEST(ac22_trace_records_every_instruction_until_off) {
+TEST(trace_records_every_instruction_until_off) {
     DebugRig r;
     CHECK(r.done(r.send("trace", file("t.bin"))));
     const std::uint64_t before = r.target().retired();
@@ -43,7 +42,7 @@ TEST(ac22_trace_records_every_instruction_until_off) {
     CHECK_EQ(b[6], std::uint8_t(0));      // its target
 }
 
-TEST(ac22_ends_with_its_preset_or_new_machine) {
+TEST(ends_with_its_preset_or_new_machine) {
     DebugRig r;
     const CallId l = r.load(pt::header() + "keys:\n  - trace: p.bin\n  - wait: 10ms\n");
     CHECK(r.done(l));
@@ -57,7 +56,7 @@ TEST(ac22_ends_with_its_preset_or_new_machine) {
     CHECK(complete(fileBytes(r.traces / "q.bin")));
 }
 
-TEST(ac22_replaces_file_one_at_a_time) {
+TEST(replaces_file_one_at_a_time) {
     DebugRig r;
     r.traces.write("t.bin", std::string(5000, 'x'));
     r.send("trace", file("t.bin"));
@@ -71,7 +70,7 @@ TEST(ac22_replaces_file_one_at_a_time) {
     CHECK(complete(fileBytes(r.traces / "u.bin")));
 }
 
-TEST(ac22_slash_refused_at_read) {
+TEST(slash_refused_at_read) {
     DebugRig r;
     for (const char* name : {"a/b.bin", "a\\\\b.bin"}) {
         const CallId l = r.load(pt::header() + "keys:\n  - trace: \"" + name + "\"\n");
@@ -83,7 +82,7 @@ TEST(ac22_slash_refused_at_read) {
     CHECK(!r.done(c));
 }
 
-TEST(ac22_cannot_make_file_step_fails) {
+TEST(cannot_make_file_step_fails) {
     DebugRig r;
     std::filesystem::create_directories(std::filesystem::path(r.traces / "x.bin"));   // a folder of that name
     const CallId l = r.load(pt::header() + "keys:\n  - trace: x.bin\n  - wait: 10ms\n");
@@ -92,7 +91,7 @@ TEST(ac22_cannot_make_file_step_fails) {
     CHECK(!r.traceState()->running);
 }
 
-TEST(ac23_button_name_is_products) {
+TEST(button_name_is_products) {
     DebugRig r;
     r.traces.write("TEST_TRACE.bin", std::string(5000, 'x'));
     CHECK(r.done(r.send("trace", Value::object({{"button", true}}))));
@@ -103,7 +102,7 @@ TEST(ac23_button_name_is_products) {
     CHECK(complete(b) && b.size() < 5000);   // each start replaces the file
 }
 
-TEST(ac24_limit_ends_complete_file_notice) {
+TEST(limit_ends_complete_file_notice) {
     DebugOptions o;
     o.limitMb = 1;
     DebugRig r(o);
@@ -119,7 +118,7 @@ TEST(ac24_limit_ends_complete_file_notice) {
     CHECK(n.size() == 1 && n[0] == "The trace big.bin reached the size limit of 1 MB and ended.");
 }
 
-TEST(ac24_new_machine_log_line) {
+TEST(new_machine_log_line) {
     DebugRig r;
     r.send("trace", file("n.bin"));
     r.advance(100);
@@ -130,7 +129,7 @@ TEST(ac24_new_machine_log_line) {
     CHECK(complete(fileBytes(r.traces / "n.bin")));
 }
 
-TEST(ac25_trace_topic_whoever_started) {
+TEST(trace_topic_whoever_started) {
     DebugRig r;
     CHECK(r.traceState() && !r.traceState()->running);
     r.send("trace", file("c.bin"));
@@ -153,7 +152,7 @@ TEST(ac25_trace_topic_whoever_started) {
     CHECK(!p.traceState()->running);
 }
 
-TEST(ec8_no_writable_folder_step_fails_with_reason) {
+TEST(no_writable_folder_step_fails_with_reason) {
     {
         DebugOptions o;
         o.folder = DebugOptions::Folder::None;
@@ -168,15 +167,14 @@ TEST(ec8_no_writable_folder_step_fails_with_reason) {
         DebugRig r(o);
         const CallId l = r.load(pt::header() + "keys:\n  - trace: t.bin\n");
         CHECK(!r.done(l));
-        CHECK(r.reason(l).find("The trace folder cannot be written: it is read-only.") != std::string::npos);   // AC-53: with the period
+        CHECK(r.reason(l).find("The trace folder cannot be written: it is read-only.") != std::string::npos);   // with the period
         CHECK(r.reason(l).find("read-only..") == std::string::npos);
     }
 }
 
-// AC-53 (user, 2026-11-17, Q-2 of docs/reviews/e-simplification.md): the
-// trace folder of the places as the settings say at each trace start, made
-// and written once; a folder changed after the start is the next trace's.
-TEST(ac53_trace_folder_read_at_each_trace_start) {
+// The trace folder of the places as the settings say at each trace start,
+// made and written once; a folder changed after the start is the next trace's.
+TEST(trace_folder_read_at_each_trace_start) {
     namespace st = calcu::settings;
     st::test::TempDir dir;
     st::SettingsFile file = st::SettingsFile::defaultsOnly(st::test::testProduct());
@@ -212,9 +210,9 @@ TEST(ac53_trace_folder_read_at_each_trace_start) {
     CHECK(gated() && gated()->ok);
 }
 
-// LIB-9 AC-11: [trace] max-file-size-mb zero or negative (now values of the
-// key, no minimum) is 50 MiB, as missing is.
-TEST(ac24_limit_zero_or_negative_is_50_mib) {
+// [trace] max-file-size-mb zero or negative (values of the key, no
+// minimum) is 50 MiB, as missing is.
+TEST(limit_zero_or_negative_is_50_mib) {
     for (long mb : {0L, -3L}) {
         TraceSetup s;
         s.limitMb = [mb] { return mb; };
@@ -226,7 +224,7 @@ TEST(ac24_limit_zero_or_negative_is_50_mib) {
     CHECK_EQ(TraceSession(TraceSetup{}).limitBytes(), std::uint64_t(50) * 1024 * 1024);
 }
 
-TEST(ac53_refusal_is_one_sentence_with_its_reason) {
+TEST(refusal_is_one_sentence_with_its_reason) {
     DebugOptions o;
     o.folder = DebugOptions::Folder::NotWritable;
     DebugRig r(o);
@@ -235,7 +233,7 @@ TEST(ac53_refusal_is_one_sentence_with_its_reason) {
     CHECK_EQ(r.reason(c), std::string("The trace folder cannot be written: it is read-only."));
 }
 
-TEST(ac26_ended_trace_in_memory_handed_with_keep_file) {
+TEST(ended_trace_in_memory_handed_with_keep_file) {
     DebugOptions o;
     o.folder = DebugOptions::Folder::None;
     o.handOver = true;
@@ -257,7 +255,7 @@ TEST(ac26_ended_trace_in_memory_handed_with_keep_file) {
     CHECK(ask->args.find("kind") && *ask->args.find("kind")->string() == "trace");   // a page lists it as a trace
     const auto& bytes = *ask->args.find("bytes")->bytes();
     CHECK(complete(bytes) && records(bytes) > 0);
-    // Without hand-over (Calc-U-1600's Web, D-10) the start fails.
+    // Without hand-over (Calc-U-1600's Web) the start fails.
     DebugOptions q = o;
     q.handOver = false;
     DebugRig s(q);

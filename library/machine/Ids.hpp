@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-// The strong ID types of the machine interface (LIB-1 design §3.1). An ID is
+// The strong ID types of the machine interface. An ID is
 // a string with a type: presets, the harness and the control bar name them
 // (docs/formats/preset.md); the advance loop never touches them.
 
@@ -28,7 +28,7 @@ using ControlId     = Id<struct ControlTag>;
 using CapabilityId  = Id<struct CapabilityTag>;
 using DebugTargetId = Id<struct DebugTargetTag>;  // "TMC0501", "LH5801"
 
-// {"printer"}; deeper for a place on a peripheral (LIB-2 AC-9). Empty: the
+// {"printer"}; deeper for a place on a peripheral. Empty: the
 // machine itself.
 struct PlacePath {
     std::vector<PlaceName> steps;

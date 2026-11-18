@@ -8,11 +8,11 @@
 #include <utility>
 #include <vector>
 
-// A one-client byte stream on 127.0.0.1 (C1600-3 design §3.5; C59-5
-// design §3.2): harness attach's listener, for bytes instead of lines.
+// A one-client byte stream on 127.0.0.1: harness attach's listener, for
+// bytes instead of lines.
 // AttachEndpoint keeps its lines on it; Calc-U-1600's `calcu serve --dap`
-// carries the DAP on it. A host adapter at the ADR 0009 boundary: it has an
-// I/O thread of its own and its own queue of outgoing bytes, and never
+// carries the DAP on it. A host adapter at the edge of the single-threaded
+// session: it has an I/O thread of its own and its own queue of outgoing bytes, and never
 // touches a session. A second client gets `busy` and is closed; the first
 // stays. Compiled only with CALCU_ATTACH (POSIX).
 

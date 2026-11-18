@@ -1,5 +1,4 @@
-// LIB-3 L7, L8: the machine session, host calls, delivery modes (AC-1 to
-// AC-4).
+// The machine session, host calls, delivery modes.
 #include "TestHarness.hpp"
 #include "TestParts.hpp"
 
@@ -22,7 +21,7 @@ struct PressAt final : SliceHook {
 };
 } // namespace
 
-TEST(ac1_app_session_holds_one_machine_session) {
+TEST(app_session_holds_one_machine_session) {
     Rig r;
     MachineSession& ms = r.session->machineSession();
     CHECK(&ms == &r.session->context().machineSession());
@@ -40,13 +39,13 @@ TEST(ac1_app_session_holds_one_machine_session) {
     CHECK(&ms == &r.session->machineSession());
 }
 
-TEST(ac1_machine_replaced_inside_session) {
+TEST(machine_replaced_inside_session) {
     Rig r;
     r.build(mt::kSeg);
     r.call();
     CHECK_EQ(r.part.machineChanges, 1);
     CHECK(std::holds_alternative<calcu::machine::SegmentFrame>(r.fe.state<DisplayState>(kDisplayTopic)->output.frame));
-    r.build(mt::kDot);   // LIB-18 replaces machines inside the session
+    r.build(mt::kDot);   // the startup replaces machines inside the session
     r.call();
     CHECK_EQ(r.part.machineChanges, 2);
     CHECK(std::holds_alternative<calcu::machine::DotMatrixFrame>(r.fe.state<DisplayState>(kDisplayTopic)->output.frame));
@@ -57,7 +56,7 @@ TEST(ac1_machine_replaced_inside_session) {
     CHECK(r.session->context().machine() == nullptr);
 }
 
-TEST(ac2_call_runs_machine_and_sends_changes) {
+TEST(call_runs_machine_and_sends_changes) {
     Rig r;
     r.build();
     const std::size_t mark = r.fe.log.size();
@@ -74,7 +73,7 @@ TEST(ac2_call_runs_machine_and_sends_changes) {
     CHECK_EQ(r.part.afterCalls, 60);
 }
 
-TEST(ac2_without_operation_runs_at_last_commanded_speed) {
+TEST(without_operation_runs_at_last_commanded_speed) {
     Rig r;
     r.build();
     r.call();
@@ -96,7 +95,7 @@ TEST(ac2_without_operation_runs_at_last_commanded_speed) {
     CHECK(r.ticks() - t0 < 2 * regular);
 }
 
-TEST(ac3_no_call_no_run) {
+TEST(no_call_no_run) {
     Rig r;
     r.build();
     r.call();
@@ -109,7 +108,7 @@ TEST(ac3_no_call_no_run) {
 }
 
 namespace {
-// One script of commands and host calls (AC-4).
+// One script of commands and host calls.
 std::vector<std::string> runScript(TestFrontend::Delivery d) {
     RigOptions o;
     o.delivery = d;
@@ -135,7 +134,7 @@ std::vector<std::string> runScript(TestFrontend::Delivery d) {
 }
 } // namespace
 
-TEST(ac4_at_once_and_queued_give_same_messages_in_same_order) {
+TEST(at_once_and_queued_give_same_messages_in_same_order) {
     const auto atOnce = runScript(TestFrontend::Delivery::AtOnce);
     const auto queued = runScript(TestFrontend::Delivery::Queued);
     CHECK(atOnce.size() > 20);
@@ -143,7 +142,7 @@ TEST(ac4_at_once_and_queued_give_same_messages_in_same_order) {
     CHECK(atOnce == queued);
 }
 
-// LIB-8 A-6 (design T8): a virtual-time host's advance runs the parts'
+// A virtual-time host's advance runs the parts'
 // per-call duties before its flush, as a host call does, so that what a part
 // sends from afterCall (the paper's new marks) goes out with the harness's
 // `wait`.

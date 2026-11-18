@@ -1,4 +1,4 @@
-// LIB-8 T1, T2 (design §6): the test printers and the kind (AC-1).
+// The test printers and the kind paper output.
 #include "PaperTestKit.hpp"
 #include "TestHarness.hpp"
 #include "machine/Build.hpp"
@@ -36,7 +36,7 @@ TEST(test_printers_build_and_offer_paper_output) {
     CHECK(dot && dot->capabilities(PaperOutput::kKind).size() == 1);
 }
 
-TEST(ac1_description_states_unit_width_form_drawing_resolution_text_layer) {
+TEST(description_states_unit_width_form_drawing_resolution_text_layer) {
     auto m = buildWith(mt::kSeg, {at("printer", mt::kDotter), at("aux", mt::kPlotter)});
     if (!m) return;
     auto* td = machine::capabilityAs<PaperOutput>(*m, machine::CapabilityId{"printer/paper-output"});
@@ -70,7 +70,7 @@ TEST(ac1_description_states_unit_width_form_drawing_resolution_text_layer) {
     CHECK(!checkPaperOutput(*m, mt::kPlotter, mt::tp4Description()));
 }
 
-TEST(ac1_conformance_check_finds_a_different_description) {
+TEST(conformance_check_finds_a_different_description) {
     auto m = buildWith(mt::kSeg, {at("printer", mt::kDotter)});
     if (!m) return;
     PaperDescription other = mt::td20Description();

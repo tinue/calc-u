@@ -51,7 +51,7 @@ HarnessHost::HarnessHost(sessions::AppSession& s, HarnessProduct& p, Attached,
     listener_.onMessage = [this](const Message& m) {   // every message but a reply
         if (onMessage && !std::holds_alternative<ReplyMessage>(m)) onMessage(m);
     };
-    listener_.listen(session_);   // no host services (C59-5 AC-12)
+    listener_.listen(session_);   // no host services: the app's frontend answers them
 }
 
 HarnessHost::HarnessHost(sessions::AppSession& s, HarnessProduct& p, const RunSetup& r)
@@ -76,7 +76,7 @@ std::optional<ReplyMessage> HarnessHost::takeReplyIfAny(sessions::CallId id) {
 }
 
 // Run in VirtualTime, every command replies at once: an operation runs to its
-// end inside send() (AC-7). Attached, an operation's reply is kept for
+// end inside send(). Attached, an operation's reply is kept for
 // takeReplyIfAny().
 ReplyMessage HarnessHost::command(sessions::Command c, std::string_view giveUp, machine::Ticks within) {
     if (attached()) {
@@ -87,7 +87,8 @@ ReplyMessage HarnessHost::command(sessions::Command c, std::string_view giveUp, 
         return ReplyMessage{sent.call, false, kPendingReply, nullptr};
     }
     // A reply that does not come at once is a deferred one (an operation ran
-    // to its end inside send()): emulated time passes until it comes (D-5).
+    // to its end inside send()): emulated time passes until it comes, at most
+    // an hour, so a program that never takes the keys cannot hang the harness.
     auto got = std::make_shared<std::optional<ReplyMessage>>();
     const auto sent = listener_.send(c.name, std::move(c.args), [got](const ReplyMessage& r) { *got = r; });
     lastCall_ = sent.call;

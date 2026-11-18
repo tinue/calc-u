@@ -1,5 +1,4 @@
-// LIB-2 T4: emulated time through a peripheral (AC-12, AC-13; peripherals.md
-// P-2, I-3).
+// Emulated time through a peripheral.
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 #include <algorithm>
@@ -20,7 +19,7 @@ std::vector<std::uint8_t> drain(Machine& m, const CapabilityId& id) {
 }
 } // namespace
 
-TEST(ac12_same_emulated_seconds_on_two_tick_rates) {
+TEST(same_emulated_seconds_on_two_tick_rates) {
     const Catalogue& cat = testCatalogue();
     auto seg = buildTestMachine(kSeg);
     auto dot = buildTestMachine(kDot);
@@ -40,7 +39,7 @@ TEST(ac12_same_emulated_seconds_on_two_tick_rates) {
     CHECK(fromSeg == fromDot);
 }
 
-TEST(ac13_no_advance_no_output) {
+TEST(no_advance_no_output) {
     const Catalogue& cat = testCatalogue();
     auto m = buildTestMachine(kDot, std::nullopt, {peripheralAt(cat, "a", kUart)});
     CHECK(m != nullptr);

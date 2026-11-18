@@ -1,5 +1,4 @@
-// LIB-18 design L1, L2: the test product, MachineControl::build (AC-1, AC-2,
-// EC-4; LIB-6 AC-52).
+// The test product and MachineControl::build.
 #include "TestHarness.hpp"
 #include "TestHook.hpp"
 #include "TestProductMachines.hpp"
@@ -34,7 +33,7 @@ TEST(test_product_machines_build_each_test_model) {
     CHECK(holds(*r.machine(), at({"a"}), mt::kPrinter) == false);
 }
 
-TEST(ac1_one_build_with_model_variant_and_plugs) {
+TEST(one_build_with_model_variant_and_plugs) {
     RigOptions o;
     o.start = false;
     Rig r(o);
@@ -46,12 +45,12 @@ TEST(ac1_one_build_with_model_variant_and_plugs) {
     if (!m) return;
     CHECK(holds(*m, at({"a"}), mt::kPrinter));
     CHECK(holds(*m, at({"card-1"}), mt::kModule, VariantId{"8k"}));
-    const auto* roms = m->romsAt(at({"card-1"}));   // from the RomSet (LIB-12)
+    const auto* roms = m->romsAt(at({"card-1"}));   // from the RomSet
     CHECK(roms && roms->size() == 1 && (*roms)[0].fileName == "test-module-8k.rom" && (*roms)[0].bytes.size() == 8192);
     CHECK_EQ(m->tickCount(), Ticks{0});   // from a cold boot: nothing ran
 }
 
-TEST(ac1_no_power_cycle_for_what_it_was_built_with) {
+TEST(no_power_cycle_for_what_it_was_built_with) {
     Rig r;   // test-seg with the printer in `printer`
     CHECK(r.done(r.startCall));
     TestMachine* m = r.machine();
@@ -59,31 +58,31 @@ TEST(ac1_no_power_cycle_for_what_it_was_built_with) {
     if (m) CHECK_EQ(m->operationsTold(at({"printer"})), std::uint64_t{0});
 }
 
-TEST(ac1_clock_given_host_time_at_build) {
+TEST(clock_given_host_time_at_build) {
     RigOptions o;
     o.settings = "[startup]\nmodel = test-dot\n";
     Rig r(o);
     TestMachine* m = r.machine();
     CHECK(m && m->clock());
     if (!m || !m->clock()) return;
-    CHECK(m->clock()->setCalls >= 1);   // PeripheralsPart at the new machine (LIB-2 AC-23)
+    CHECK(m->clock()->setCalls >= 1);   // PeripheralsPart at the new machine
     // The host's time of the rig: 2019-12-20 (50 years of 365 days), whatever the zone's hour.
     const auto f = m->clock()->read();
     CHECK(f.month == 12 || f.month == 1);
 }
 
-TEST(ac1_ready_when_key_ready) {
+TEST(ready_when_key_ready) {
     Rig r;
     CHECK(r.done(r.startCall));
     TestMachine* m = r.machine();
     CHECK(m && m->isKeyReady());
     if (!m) return;
-    // D-4: over at the first run piece (1/60 s) after readiness at 50 ticks.
+    // Over at the first run piece (1/60 s) after readiness at 50 ticks.
     const Ticks piece = calcu::sessions::OperationContext::runPiece(mt::kSegRate);
     CHECK(m->tickCount() >= mt::kStartUpTicks && m->tickCount() <= piece + 5);
 }
 
-TEST(ac1_refused_build_changes_nothing) {
+TEST(refused_build_changes_nothing) {
     Rig r;
     TestMachine* before = r.machine();
     const int builds = r.product.builds();
@@ -97,7 +96,7 @@ TEST(ac1_refused_build_changes_nothing) {
     CHECK(control.lastBuild() && control.lastBuild()->origin == BuildOrigin::Start);
 }
 
-TEST(refusal_names_the_refused_place) {   // LIB-6 AC-52
+TEST(refusal_names_the_refused_place) {
     Rig r;
     auto& control = r.startup->control();
     const auto unfit = control.build(r.session->context(), MachinePlan{mt::kSeg, {}, {plug("slot-1", mt::kHub)}, nullptr}, BuildOrigin::Preset);
@@ -128,7 +127,7 @@ TEST(last_build_gives_plan_and_origin) {
           control.lastBuild()->plan.variant == std::optional<VariantId>(VariantId{"V2"}));
 }
 
-TEST(ac2_old_machine_and_its_memory_gone) {
+TEST(old_machine_and_its_memory_gone) {
     Rig r;
     CHECK(r.done(r.send("key-down", Value::object({{"key", "1"}}))));
     CHECK(r.done(r.send("key-up", Value::object({{"key", "1"}}))));
@@ -141,7 +140,7 @@ TEST(ac2_old_machine_and_its_memory_gone) {
     CHECK_EQ(r.product.builds(), 3);
 }
 
-TEST(ac2_full_speed_and_held_keys_do_not_carry_over) {
+TEST(full_speed_and_held_keys_do_not_carry_over) {
     TestHook hook;
     RigOptions o;
     o.hook = &hook;
@@ -152,13 +151,13 @@ TEST(ac2_full_speed_and_held_keys_do_not_carry_over) {
     hook.held = {KeyId{"2"}};                                              // held by the typing engine
     const int drops = hook.drops;
     CHECK(r.done(r.send("model", named("test-dot"))));
-    CHECK(r.fe.busy() && r.fe.busy()->speed == Speed::Regular);   // D-11
+    CHECK(r.fe.busy() && r.fe.busy()->speed == Speed::Regular);   // full speed does not carry over
     CHECK(r.machine()->keysDown().empty());
     CHECK(hook.held.empty());
     CHECK_EQ(hook.drops, drops + 1);
 }
 
-TEST(ec4_text_being_typed_dropped_with_the_old_machine) {
+TEST(text_being_typed_dropped_with_the_old_machine) {
     TestHook hook;
     RigOptions o;
     o.hook = &hook;

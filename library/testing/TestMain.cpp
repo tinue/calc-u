@@ -1,7 +1,7 @@
 #include "TestHarness.hpp"
 #include <cstring>
 
-// The runner of every product's C++ test program (ADR 0038): runs every
+// The runner of every product's C++ test program: runs every
 // registered TEST. An optional argument filters by substring of the test
 // name. CTest runs the programs from their product directory so tests can
 // read roms/ and examples/.

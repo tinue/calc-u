@@ -4,8 +4,7 @@
 #include <string>
 #include <vector>
 
-// Typing inside an operation (LIB-5 design §3.6; spec AC-14, AC-17): for
-// LIB-6's `key:` and `type:` steps. The presses are queued, then the
+// Typing inside an operation: for a preset's `key:` and `type:` steps. The presses are queued, then the
 // machine runs in pieces until they are carried out and the engine is idle;
 // the session cuts the pieces at the engine's nextDue, so the cadence is
 // the same as outside an operation.
@@ -14,13 +13,13 @@ namespace calcu::typing {
 
 struct TypeOptions {
     Origin origin = Origin::Preset;
-    bool firstPressAtOnce = false;   // LIB-6 AC-58: after `skip-wait:` the step's first press goes down at once
+    bool firstPressAtOnce = false;   // after `skip-wait:` the step's first press goes down at once
     // Done when the last key is up, without the profile's wait for readiness
     // after the release (TypingProfile::waitsForReadinessAfterRelease): a
-    // preset's `key:` (LIB-6 AC-58: carried out when its keys are pressed; the
-    // implicit wait for idle follows, except after the last item and before
-    // `skip-wait:`). Found in M-54: a last key that starts a program that never
-    // stops (life.ti59) never finished its item.
+    // preset's `key:` (carried out when its keys are pressed; the implicit
+    // wait for idle follows, except after the last item and before
+    // `skip-wait:`). Otherwise a last key that starts a program that never
+    // stops (life.ti59) would never finish its item.
     bool untilReleased = false;
 };
 

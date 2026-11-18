@@ -13,15 +13,15 @@
 #include <functional>
 #include <vector>
 
-// The harness's side of the app session (LIB-11 design §3.4; spec AC-5 to
-// AC-7, AC-11; harness.md I-1): the listener that keeps the topics, the
+// The harness's side of the app session (docs/formats/harness.md): the
+// listener that keeps the topics, the
 // recording sound sink, and commands whose operations run in one go.
-// - No wall clock (AC-6, harness.md I-2): the session is hosted in
+// - No wall clock: the session is hosted in
 //   Hosting::VirtualTime; the host never makes the host call and emulated
 //   time passes only through advance() (from `wait`) and through operations
-//   run in one go (LIB-3 AC-19). Messages are delivered at once, on the
-//   caller's thread. No thread, no lock (ADR 0009).
-// - Nothing but replies (AC-5): notices and log lines are kept for `state`.
+//   run in one go. Messages are delivered at once, on the caller's
+//   thread. No thread, no lock.
+// - Nothing but replies: notices and log lines are kept for `state`.
 
 namespace calcu::harness {
 
@@ -37,7 +37,7 @@ struct TopicRead {
 };
 
 // A payload value in this area's Value: doubles with six decimals, bytes
-// as "0x…" (design D-10).
+// as "0x…".
 Value fromSession(const sessions::Value&);
 // A payload as one line of JSON ("null" for none): `state`, attach messages.
 std::string payloadText(const sessions::PayloadPtr&);
@@ -45,7 +45,7 @@ std::string payloadText(const sessions::PayloadPtr&);
 class HarnessHost final {
 public:
     HarnessHost(sessions::AppSession&, HarnessProduct&, const RunSetup&);
-    // Attached to a running app (C59-5, library/harness/attach/): the
+    // Attached to a running app (library/harness/attach/): the
     // session is the app's, paced on its wall clock; there is no run setup.
     // A command whose reply does not come at once (an operation) gives the
     // reply kPendingReply; the attach end waits for it (takeReplyIfAny()).
@@ -57,30 +57,30 @@ public:
     std::optional<sessions::ReplyMessage> takeReplyIfAny(sessions::CallId);
     sessions::CallId lastCall() const { return lastCall_; }
     // Attached: every message but a reply, as the listener gets it (the
-    // message lines of the attach line format, LIB-11 design §3.9).
+    // message lines of the attach line format).
     std::function<void(const sessions::Message&)> onMessage;
     ~HarnessHost();
     HarnessHost(const HarnessHost&) = delete;
     HarnessHost& operator=(const HarnessHost&) = delete;
 
     // session.send(me, cmd): an operation it starts runs to its end inside
-    // send() (VirtualTime), so the reply is that of its end (AC-7). A
-    // deferred reply (LIB-5 §3.5, D-5: `key`, `type`) is waited for in
+    // send() (VirtualTime), so the reply is that of its end. A
+    // deferred reply (`key`, `type`) is waited for in
     // virtual time, in pieces of 1/60 s, at most one hour of emulated time;
     // then the reply is "not done" with `giveUp`. `within` (ticks; 0: the
-    // hour) waits less (C1600-5 AC-12: `c1600 call`'s timeout).
+    // hour) waits less (`c1600 call`'s timeout).
     sessions::ReplyMessage command(sessions::Command, std::string_view giveUp = {}, machine::Ticks within = 0);
     sessions::ReplyMessage ask(sessions::Request);
-    machine::Ticks advance(machine::Ticks);       // AC-6, AC-9: session.advanceUnpaced
-    std::optional<TopicRead> readTopic(std::string_view name);   // AC-11, EC-5
+    machine::Ticks advance(machine::Ticks);       // session.advanceUnpaced
+    std::optional<TopicRead> readTopic(std::string_view name);
     std::vector<sessions::TopicEntry> topics();
     const machine::DisplayOutput* display() const;   // the mirror's `display` state
     const machine::MachineDescriptor* descriptor();
-    DisplayText displayText();                       // through the product's rule (AC-10)
-    // AC-9 `audio`: from now on all sound output into a WAV file at `path`;
-    // a second call completes the first file and starts the new one (D-8).
+    DisplayText displayText();                       // through the product's rule
+    // `audio`: from now on all sound output into a WAV file at `path`;
+    // a second call completes the first file and starts the new one.
     Reply record(const std::string& path);
-    void finish();   // completes the WAV file (EC-3) and stops listening
+    void finish();   // completes the WAV file and stops listening
 
     sessions::AppSession& session() { return session_; }
     HarnessProduct& product() { return product_; }

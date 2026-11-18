@@ -1,5 +1,5 @@
-# The harness `calcu` (LIB-11 design §2, §3.7): one program for every product
-# built. The library may not depend on product code (LIB-1 AC-24), so each
+# The harness `calcu`: one program for every product
+# built. The library may not depend on product code, so each
 # product registers its factory with
 #
 #   calcu_harness_add_product(<its app target> <namespace::factory>)
@@ -76,7 +76,7 @@ if(CALCU_TESTS)
                            ${lib}/harness/tests/TestProduct.cpp)
   target_link_libraries(calcu_test PRIVATE calcu_test_machines)
 
-  # T13: the program in a process of its own (argv, stdin, exit status),
+  # The program in a process of its own (argv, stdin, exit status),
   # run with cmake -P (Frequent; docs/test-groups.md); one entry per case of
   # cli_cases.cmake, read from its `CASE STREQUAL "<case>"` branches.
   file(STRINGS ${lib}/harness/tests/cli/cli_cases.cmake case_lines REGEX "CASE STREQUAL \"[a-z0-9_]+\"")
@@ -93,7 +93,7 @@ if(CALCU_TESTS)
                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endforeach()
 
-  # T15: the Python helper for `calcu serve` (D-2), with uv when there is one,
+  # The Python helper for `calcu serve`, with uv when there is one,
   # else with Python 3 (Frequent).
   find_program(CALCU_UV uv)
   if(CALCU_UV)

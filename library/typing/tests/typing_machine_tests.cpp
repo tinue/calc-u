@@ -1,4 +1,4 @@
-// LIB-5 design §6, L1: the test machine `test-type`.
+// The test machine `test-type`.
 #include "TestHarness.hpp"
 #include "TypingRig.hpp"
 

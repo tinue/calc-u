@@ -8,8 +8,7 @@
 #include <string_view>
 #include <vector>
 
-// The typing profile of a model (LIB-5 design §3.2; spec AC-1, AC-3, AC-11,
-// AC-14, AC-15, AC-20, AC-28): holds, gaps, when a press may start, the keys
+// The typing profile of a model: holds, gaps, when a press may start, the keys
 // of a character and the names `key` takes. Every duration is in the
 // machine's ticks: the product builds a profile per model at its tick rate.
 
@@ -19,7 +18,7 @@ class TypingSupport;
 
 struct Press {
     machine::KeyId key;
-    bool mustFinish = false;   // AC-9: typed even when live input drops what waits (the closing KBII)
+    bool mustFinish = false;   // typed even when live input drops what waits (the closing KBII)
     bool operator==(const Press&) const = default;
 };
 
@@ -30,42 +29,43 @@ struct Cadence {
     machine::Ticks gap = 0;
 };
 
-// How the first press of a step starts (AC-14): as any press that waits
+// How the first press of a step starts: as any press that waits
 // (by queuedWaitsForReadiness), at once, or at key readiness (with the
 // profile's bound).
 enum class StartRule { AsQueued, AtOnce, KeyReadiness };
 
-// §3.4 (TR, D-3): a TI press stays down until the ROM has read it
-// `samplesNeeded` more times, at most `maxHold`.
+// A TI press stays down until the ROM's key scan has found it `samplesNeeded`
+// more times, at most `maxHold`, as a user holds R/S until it is taken.
 struct SampleRule {
     std::uint32_t samplesNeeded = 2;
     machine::Ticks maxHold = 0;
 };
 
 struct TypingProfile {
-    machine::Ticks minHold = 0;   // AC-1: every press of the engine
-    Cadence typed;                // AC-11, AC-28: typed text, sequences, `key`
+    machine::Ticks minHold = 0;   // every press of the engine; an earlier key-up waits for it
+    Cadence typed;                // typed text, sequences, `key`
     // PC-1600: 6 frames more after `shift` and `kbii`; none when unset.
     std::function<machine::Ticks(const machine::KeyId&)> extraGapAfter;
-    bool queuedWaitsForReadiness = false;         // AC-3, AC-20, AC-31 (D-6)
-    bool waitsForReadinessAfterRelease = false;   // AC-20: not idle until the machine is ready again
-    StartRule firstPressOfStep = StartRule::AsQueued;   // AC-14
-    std::optional<machine::Ticks> firstPressBound;      // AC-14: PC-1600 15 s; EC-3: none
-    machine::Ticks readinessPoll = 1;                   // D-7: how often a waiting press looks again
-    std::optional<SampleRule> holdUntilSampled;         // §3.4: TI only
+    bool queuedWaitsForReadiness = false;         // a queued press waits for key readiness
+    bool waitsForReadinessAfterRelease = false;   // not idle until the machine is ready again
+    StartRule firstPressOfStep = StartRule::AsQueued;
+    std::optional<machine::Ticks> firstPressBound;      // PC-1600 15 s; none: waits without limit
+    machine::Ticks readinessPoll = 1;                   // how often a waiting press looks again
+    std::optional<SampleRule> holdUntilSampled;         // TI only
 
-    // Typed text (AC-11, AC-13, AC-30): a character → its presses, decided
+    // Typed text: a character → its presses, decided
     // when its first press is due, with the machine's typing support
     // (latches). nullopt: the model has no key for it. With no typing
     // support (nullptr) it answers as for every latch off, and the answer
-    // to "has a key" never depends on the latches (D-14). Unset: the model
+    // to "has a key" never depends on the latches (a preset is refused at read for exactly
+    // the characters that cannot be typed). Unset: the model
     // types no characters.
     std::function<std::optional<std::vector<Press>>(char32_t, const TypingSupport*)> charKeys;
-    std::optional<machine::KeyId> enter;   // AC-16: `type` presses it; none: no `type` (D-8)
-    // `key` names (AC-15, AC-26, AC-41): a name → its presses; nullopt:
+    std::optional<machine::KeyId> enter;   // `type` presses it; none: no `type`
+    // `key` names: a name → its presses; nullopt:
     // refused. Unset: the key IDs of the model as written.
     std::function<std::optional<std::vector<Press>>(std::string_view)> name;
-    // A `key` of several names, when the names act on each other (AC-26: a
+    // A `key` of several names, when the names act on each other (a
     // `2nd` written before a second function is pressed once): the presses
     // of them all; nullopt: refused. Unset: name by name.
     std::function<std::optional<std::vector<Press>>(const std::vector<std::string>&)> names;

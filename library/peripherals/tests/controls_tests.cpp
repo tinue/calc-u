@@ -1,4 +1,4 @@
-// LIB-2 T5: the controls kind (AC-14 to AC-16, EC-6). The test printer's
+// The controls kind. The test printer's
 // switches `online`, `trace` and key `feed`.
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
@@ -25,7 +25,7 @@ bool stateOf(Machine& m, const char* id) {
 }
 } // namespace
 
-TEST(ac14_controls_listed_with_id_form_state) {
+TEST(controls_listed_with_id_form_state) {
     auto m = withPrinter();
     CHECK(m != nullptr);
     if (!m) return;
@@ -51,7 +51,7 @@ TEST(ac14_controls_listed_with_id_form_state) {
     CHECK(bare && bare->capabilities(Controls::kKind).empty() && controlsOf(*bare, kOwner).empty());
 }
 
-TEST(ac15_key_down_up_at_tick_counts) {
+TEST(control_press_release_at_tick_counts) {
     auto m = withPrinter();
     CHECK(m != nullptr);
     if (!m) return;
@@ -70,7 +70,7 @@ TEST(ac15_key_down_up_at_tick_counts) {
     CHECK(m->controlEvents() == want);
 }
 
-TEST(ac16_switch_position_seen_and_reported) {
+TEST(switch_position_seen_and_reported) {
     auto m = withPrinter();
     CHECK(m != nullptr);
     if (!m) return;
@@ -84,8 +84,8 @@ TEST(ac16_switch_position_seen_and_reported) {
     CHECK(!stateOf(*m, "trace") && m->controlEvents().size() == 2 && !m->controlEvents()[1].on);
 }
 
-TEST(ac16_restore_from_request) {
-    // The positions handed in with the attach (D-3): where the peripheral starts.
+TEST(restore_from_request) {
+    // The positions handed in with the attach: where the peripheral starts.
     auto m = withPrinter({SwitchPosition{ControlId{"trace"}, true}, SwitchPosition{ControlId{"feed"}, true},
                           SwitchPosition{ControlId{"no-such"}, true}});
     CHECK(m != nullptr);
@@ -102,7 +102,7 @@ TEST(ac16_restore_from_request) {
     CHECK(stateOf(*m, "online") && !stateOf(*m, "trace"));
 }
 
-TEST(ec6_unknown_control_refused) {
+TEST(unknown_control_refused) {
     auto m = withPrinter();
     CHECK(m != nullptr);
     if (!m) return;
@@ -116,7 +116,7 @@ TEST(ec6_unknown_control_refused) {
     CHECK(c->list() == before && m->controlEvents().empty());
 }
 
-TEST(ec6_wrong_form_refused) {
+TEST(wrong_form_refused) {
     auto m = withPrinter();
     CHECK(m != nullptr);
     if (!m) return;

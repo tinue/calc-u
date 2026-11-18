@@ -1,4 +1,4 @@
-// main() of `calcu` and `calcu_test` (LIB-11 design §2, §3.7): the
+// main() of `calcu` and `calcu_test`: the
 // products of the build come from the generated table products().
 #include "Cli.hpp"
 #include <cstdio>
@@ -14,7 +14,7 @@ std::vector<std::unique_ptr<calcu::harness::HarnessProduct>> products();
 
 int main(int argc, char** argv) {
 #ifdef _WIN32
-    // Text mode would write \n as \r\n (design §8); the reader drops \r.
+    // Text mode would write \n as \r\n; the reader drops \r.
     _setmode(_fileno(stdin), _O_BINARY);
     _setmode(_fileno(stdout), _O_BINARY);
 #endif

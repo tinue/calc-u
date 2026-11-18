@@ -64,7 +64,7 @@ void TypingPart::attach(sessions::SessionSetup& s) {
     auto live = [this](auto f) {
         return [this, f](const Value& a, SessionContext& c) -> CommandOutcome {
             sync();
-            if (c.busy()) return Done{};   // E11, AC-18: dropped while an operation runs
+            if (c.busy()) return Done{};   // dropped while an operation runs
             return f(a);
         };
     };
@@ -91,7 +91,7 @@ void TypingPart::attach(sessions::SessionSetup& s) {
         const machine::Machine* m = engine_.machine();
         if (!m) return Refused{sessions::kNoMachine};
         const machine::KeyId key{sessions::textArg(a, "key")};
-        if (!hasKey(*m, key)) return Refused{"Unknown key: " + key.value + "."};   // LIB-1 EC-2
+        if (!hasKey(*m, key)) return Refused{"Unknown key: " + key.value + "."};
         if (c.busy()) return Done{};
         engine_.screenKeyDown(key, static_cast<std::uint32_t>(sessions::truncatedIntegerArg(a, "pointer")));
         return Done{};
@@ -113,7 +113,7 @@ void TypingPart::attach(sessions::SessionSetup& s) {
                   if (!engine_.machine()) return Refused{sessions::kNoMachine};
                   const std::vector<std::string> names = namesOf(a);
                   if (names.empty()) return Refused{"The key command needs one or more key IDs."};
-                  // AC-15: refused, nothing typed
+                  // an unknown name refuses the command, nothing is typed
                   auto presses = pressesOfNames(engine_.profile(), engine_.machine()->descriptor(), names);
                   if (const auto* no = std::get_if<KeyNamesRefused>(&presses)) return Refused{"Unknown key: " + no->name + "."};
                   return deferred(engine_.typeKeys(std::get<std::vector<Press>>(std::move(presses)), Origin::Typed));
@@ -122,7 +122,7 @@ void TypingPart::attach(sessions::SessionSetup& s) {
         s.command(kType, always([this](const Value& a) -> CommandOutcome {
                       const TypingProfile* p = engine_.profile();
                       if (!engine_.machine()) return Refused{sessions::kNoMachine};
-                      if (!p || !p->charKeys || !p->enter) return Refused{"Unknown command: type."};   // D-8
+                      if (!p || !p->charKeys || !p->enter) return Refused{"Unknown command: type."};   // as on a model without `type`
                       return deferred(engine_.typeText(sessions::textArg(a, "text"), true, true, Origin::Typed));
                   }));
     s.request(kTypingRequest, [this](const Value&, SessionContext&) {
@@ -162,7 +162,7 @@ void TypingPart::heldChanged() {
 
 void TypingPart::sync() {
     if (!ctx_) return;
-    engine_.setPaused(ctx_->machineSession().paused(), wall_);   // AC-20
+    engine_.setPaused(ctx_->machineSession().paused(), wall_);
 }
 
 void TypingPart::beforeCall(SessionContext& c, pacing::WallTime now) {

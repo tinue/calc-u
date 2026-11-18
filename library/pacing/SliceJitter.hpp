@@ -4,7 +4,7 @@
 #include <optional>
 #include <random>
 
-// The jittered slice ends (LIB-17 AC-9 to AC-11; design §3, "Jitter"): the
+// The jittered slice ends: the
 // offset of a slice end after its grid point, drawn evenly from 0 to half a
 // slice. std::minstd_rand is defined exactly by the standard and the draw is
 // our own (no std::uniform_int_distribution, whose results differ between
@@ -14,7 +14,8 @@ namespace calcu::pacing {
 
 class SliceJitter {
 public:
-    // The caller's seed, or std::random_device without one (AC-10).
+    // The caller's seed (the same sequence in every run), or std::random_device
+    // without one (a different sequence each run).
     explicit SliceJitter(std::optional<std::uint32_t> seed = std::nullopt);
     // The offset of the next slice end: 0 to slice / 2 ticks.
     machine::Ticks offset(machine::Ticks slice);

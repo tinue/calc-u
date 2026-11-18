@@ -7,9 +7,8 @@
 #include <vector>
 
 // Names written by people (a preset, a harness command, a setting) matched
-// with the catalogue's without regard to case (LIB-6 AC-1, LIB-18 D-16);
-// the catalogue's spelling back. Part D simplification P-6: one set of these
-// for every area.
+// with the catalogue's without regard to case; the catalogue's spelling
+// back. One set of these for every area.
 
 namespace calcu::machine {
 

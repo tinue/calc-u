@@ -43,7 +43,7 @@ void HostLinks::machineChanged(machine::Machine& m) {
     }
     for (auto& l : links_)
         if (std::find(boundNow.begin(), boundNow.end(), l.fileName) == boundNow.end()) {
-            l.bound.reset();   // the port went away; the file stays (AC-20)
+            l.bound.reset();   // the port went away; the file stays
             l.pending.clear();
         }
 }
@@ -55,7 +55,7 @@ void HostLinks::pump(machine::Machine& m) {
         if (!l.bound) continue;
         auto* port = machine::capabilityAs<SerialPort>(m, *l.bound);
         if (!port) continue;
-        // Machine → link: everything sent; dropped without a link (EC-5).
+        // Machine → link: everything sent; dropped without a link.
         for (;;) {
             const std::size_t n = port->takeSent(buf);
             if (n == 0) break;

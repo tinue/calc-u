@@ -7,7 +7,7 @@
 #include <string_view>
 #include <system_error>
 
-// A fresh, empty folder of the tests (ADR 0038's runner, library/testing/):
+// A fresh, empty folder of the tests (library/testing/):
 // a unique name under the system's temporary folder, removed with all it
 // holds when the object goes, also when a test made parts of it read-only.
 // For the library's tests and both products'.

@@ -3,10 +3,9 @@
 #include <chrono>
 #include <optional>
 
-// The rule of the three run-control buttons of a level (LIB-10 design
-// §3.10; spec AC-18; debugger.md DB-6): pause can be used while the machine
-// runs; step and resume while it is paused and the buttons' level owns the
-// pause. Step fires on press and then every 250 ms while held, until release
+// The rule of the three run-control buttons of a level: pause can be used
+// while the machine runs; step and resume while it is paused and the
+// buttons' level owns the pause. Step fires on press and then every 250 ms while held, until release
 // or until step cannot be used (Calc-U-59 HoldRepeatButton.swift:11-12).
 // The Qt6 widget (library/qt6/RunControlButtons) and the React component
 // (library/web/components/RunControlButtons.jsx) follow the same rule; its

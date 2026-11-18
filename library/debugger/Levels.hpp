@@ -3,9 +3,8 @@
 #include "machine/Ids.hpp"
 #include "machine/Machine.hpp"
 
-// Levels: the product's rules for pause, step and pause-on-start (LIB-10
-// design §3.3; spec AC-6, AC-7, AC-9, AC-29, AC-30, AC-38). Every target
-// has the level `cpu`; a product may declare `program`. The library names
+// Levels: the product's rules for pause, step and pause-on-start. Every
+// target has the level `cpu`; a product may declare `program`. The library names
 // no processor and no model: what lands where, what one `program` step is
 // and when a start fires come from here, reading InstructionEvent::marks.
 
@@ -30,9 +29,9 @@ public:
     // One step of `program` has been carried out after this instruction.
     virtual bool programStepDoneAfter(const machine::InstructionEvent&) { return true; }
     // A `cpu` step carries out an instruction that stays at its address
-    // again, up to this many times (the TI: 32, AC-29).
+    // again, up to this many times (the TI: 32).
     virtual int cpuStepRepeats() const { return 0; }
-    // Pause-on-start. The default for `cpu` (AC-38): the first instruction
+    // Pause-on-start. The default for `cpu`: the first instruction
     // after which the machine is not key ready, once it was seen key ready
     // since arming; isKeyReady() is asked only while a start is armed. The
     // default for `program`: never.

@@ -1,4 +1,4 @@
-// LIB-2 T8: host links on real pseudo-terminals (AC-18, AC-19, AC-20, EC-7).
+// Host links on real pseudo-terminals.
 // Built and run only where CALCU_HAS_PTY is set (macOS, Linux), as the CTest
 // entry calcu_library_pty_tests. The test plays the program on the user's
 // computer: it opens the serial port file in a temporary folder for serial
@@ -42,7 +42,7 @@ HostLinkRules uartRule(bool openAtOnce = true) {
 }
 
 // The program on the user's computer: opens the file at 9600 baud, raw, while
-// the machine set 1200 (the host link ignores the line settings, AC-18).
+// the machine set 1200 (the host link ignores the line settings).
 int openPeer(const std::string& path) {
     const int fd = ::open(path.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fd < 0) return fd;
@@ -93,7 +93,7 @@ bool isLink(const std::string& p) {
 }
 } // namespace
 
-TEST(ac18_bytes_both_ways_moved_between_advances) {
+TEST(bytes_both_ways_moved_between_advances) {
     TempFolder dir("calcu-pty");
     PeripheralsPart part(uartRule(), dir.str());
     st::RigOptions o;
@@ -125,7 +125,7 @@ TEST(ac18_bytes_both_ways_moved_between_advances) {
     ::close(fd);
 }
 
-TEST(ac19_fixed_name_in_the_folder) {
+TEST(fixed_name_in_the_folder) {
     TempFolder dir("calcu-pty");
     const Catalogue& cat = testCatalogue();
     HostLinks links(uartRule(), dir.str());
@@ -151,7 +151,7 @@ TEST(ac19_fixed_name_in_the_folder) {
     CHECK(bare.status().size() == 1 && bare.status()[0].path.rfind("/dev/", 0) == 0);
 }
 
-TEST(ac20_file_outlives_port_and_reconnects) {
+TEST(file_outlives_port_and_reconnects) {
     TempFolder dir("calcu-pty");
     const Catalogue& cat = testCatalogue();
     HostLinks links(uartRule(), dir.str());
@@ -189,7 +189,7 @@ TEST(ac20_file_outlives_port_and_reconnects) {
     ::close(fd);
 }
 
-TEST(ec7_no_reader_machine_not_held_up) {
+TEST(no_reader_machine_not_held_up) {
     TempFolder dir("calcu-pty");
     HostLinks links(uartRule(), dir.str());
     auto m = buildTestMachine(kDot, std::nullopt, {peripheralAt(testCatalogue(), "a", kUart)}, 0);

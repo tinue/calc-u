@@ -1,4 +1,4 @@
-// LIB-3 L16: host services (AC-26, AC-27).
+// Host services.
 #include "TestHarness.hpp"
 #include "TestParts.hpp"
 
@@ -15,7 +15,7 @@ RigOptions withPicker() {
 }
 } // namespace
 
-TEST(ac26_listener_states_services) {
+TEST(listener_states_services) {
     Rig r(withPicker());
     SessionContext& c = r.session->context();
     CHECK(c.hostOffers(HostService::FilePicker));
@@ -29,7 +29,7 @@ TEST(ac26_listener_states_services) {
     CHECK(!c.hostOffers(HostService::FilePicker));
 }
 
-TEST(ac27_one_ask_one_answer_session_runs_meanwhile) {
+TEST(one_ask_one_answer_session_runs_meanwhile) {
     Rig r(withPicker());
     TestFrontend harness;
     r.session->listen(harness, {});
@@ -57,7 +57,7 @@ TEST(ac27_one_ask_one_answer_session_runs_meanwhile) {
     CHECK_EQ(r.part.answers.size(), std::size_t(1));
 }
 
-TEST(ac27_not_busy_while_asking) {
+TEST(not_busy_while_asking) {
     Rig r(withPicker());
     r.build();
     r.send("tp.ask", askFor(HostService::FilePicker));
@@ -69,7 +69,7 @@ TEST(ac27_not_busy_while_asking) {
     CHECK(r.fe.reply(op) && r.fe.reply(op)->done);
 }
 
-TEST(ac27_service_not_offered_not_asked) {
+TEST(service_not_offered_not_asked) {
     Rig r(withPicker());
     const CallId cmd = r.send("tp.ask", askFor(HostService::ClipboardImage));
     CHECK(!r.fe.reply(cmd)->done);   // the part learns nobody offers it

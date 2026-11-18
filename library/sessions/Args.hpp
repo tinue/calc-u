@@ -5,7 +5,7 @@
 #include <string>
 #include <string_view>
 
-// Reading the arguments of a command or request (LIB-3 design §3.1): a
+// Reading the arguments of a command or request: a
 // member of the argument object by key, with what a missing or mistyped
 // member gives. A Web page's numbers arrive as integers when they are whole
 // (library/web/glue/MessageCodec.cpp), so a command of a page that takes a

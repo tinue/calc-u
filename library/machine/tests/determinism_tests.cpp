@@ -4,7 +4,7 @@
 #include <chrono>
 #include <thread>
 
-// LIB-1 AC-6 (design §6, T11).
+// Two machines built alike and given the same keys agree.
 
 using namespace calcu::machine;
 using namespace calcu::machine::test;
@@ -58,7 +58,7 @@ bool same(const std::vector<Seen>& a, const std::vector<Seen>& b) {
 }
 } // namespace
 
-TEST(ac6_two_machines_built_alike_agree) {
+TEST(two_machines_built_alike_agree) {
     const Catalogue& cat = testCatalogue();
     {
         auto a = buildTestMachine(kSeg, std::nullopt, {peripheralAt(cat, "printer", kPrinter)});

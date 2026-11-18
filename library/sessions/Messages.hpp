@@ -8,11 +8,10 @@
 #include <variant>
 #include <vector>
 
-// Messages (LIB-3 design §3.2; spec AC-4, AC-5, AC-7, AC-8, AC-13): all that
-// crosses the boundary of a session (frontend.md I-1). The session hands its
+// Messages: all that crosses the boundary of a session. The session hands its
 // outbox to each listener's deliver() in order, on the session's thread;
-// whether a sink acts at once or queues for another thread is the sink's
-// (AC-4). A sink does not call back into the session from deliver().
+// whether a sink acts at once or queues for another thread is the sink's.
+// A sink does not call back into the session from deliver().
 
 namespace calcu::sessions {
 
@@ -25,11 +24,11 @@ using CallId      = std::uint64_t;                    // per session, increasing
 struct Command { CommandName name; Value args; };
 struct Request { RequestName name; Value args; };
 
-struct StateMessage  { TopicName topic; PayloadPtr state; };                                 // AC-5
-struct StreamMessage { TopicName topic; bool reset = false; std::vector<PayloadPtr> appended; };   // AC-7
-struct ReplyMessage  { CallId call = 0; bool done = false; std::string reason; PayloadPtr result; };   // AC-8, AC-13
-struct ServiceAsk    { CallId ask = 0; HostService service; Value args; };                   // AC-27
-struct SoundStart    { int sampleRate = 0; };                                                // AC-20
+struct StateMessage  { TopicName topic; PayloadPtr state; };
+struct StreamMessage { TopicName topic; bool reset = false; std::vector<PayloadPtr> appended; };
+struct ReplyMessage  { CallId call = 0; bool done = false; std::string reason; PayloadPtr result; };
+struct ServiceAsk    { CallId ask = 0; HostService service; Value args; };
+struct SoundStart    { int sampleRate = 0; };
 struct SoundSamples  { std::vector<std::int16_t> mono; };
 struct SoundStop     {};
 using Message = std::variant<StateMessage, StreamMessage, ReplyMessage, ServiceAsk, SoundStart, SoundSamples, SoundStop>;

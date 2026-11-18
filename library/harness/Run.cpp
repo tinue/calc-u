@@ -106,7 +106,7 @@ std::unique_ptr<RunSetup> RunSetup::make(const RunOptions& o, const settings::Pr
     }
     r->settings_ = std::make_unique<settings::SettingsFile>(
         o.settingsFile ? settings::SettingsFile::open(decl, *o.settingsFile) : settings::SettingsFile::defaultsOnly(decl));
-    // LIB-9 AC-18, D-11: the folders as the run passes them, the others
+    // The folders as the run passes them, the others
     // inside the run folder.
     r->dirs_.frontend = settings::FrontendKind::Given;
     r->dirs_.home = files::fromPathNative(run / "home");
@@ -149,8 +149,8 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     s->product_ = &product;
     s->setup_ = RunSetup::make(options, product.settingsDecl(), error);
     if (!s->setup_) return nullptr;
-    // D-11: the product's app layer on the run's settings and folders;
-    // EC-1 (LIB-12 AC-7): the full set, or no start.
+    // The product's app layer on the run's settings and folders;
+    // the ROM full set, or no start.
     const roms::LookupResult roms = product.prepare(*s->setup_);
     if (!roms.ok()) {
         *error = roms::describe(roms.missing);
@@ -158,21 +158,21 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     }
     s->state_ = std::make_unique<MachineStatePart>(std::string(product.name()), std::string(product.version()));
     sessions::AppSessionSetup setup;
-    // AC-6: the wall clock of a session hosted in virtual time paces nothing;
+    // The wall clock of a session hosted in virtual time paces nothing;
     // this one stands still.
     auto reads = s->clockReads_;
     setup.clock = [reads] {
         ++*reads;
         return pacing::WallTime{0};
     };
-    setup.hostTime = s->setup_->hostTime();   // AC-21 (LIB-3 A-7)
+    setup.hostTime = s->setup_->hostTime();
     setup.hosting = sessions::Hosting::VirtualTime;
     // The one order (LibraryParts): the control part, the run's state part
     // among the host's, the library's and the product's parts.
     setup.parts = product.sessionParts({s->state_.get()});
     s->session_ = std::make_unique<sessions::AppSession>(std::move(setup));
     s->host_ = std::make_unique<HarnessHost>(*s->session_, product, *s->setup_);
-    // LIB-11 AC-2: the machine the product starts with, at key readiness.
+    // The machine the product starts with, at key readiness.
     const sessions::ReplyMessage started = s->host_->command(sessions::Command{sessions::kStartCommand, {}});
     if (!started.done) {
         *error = "The machine was not built: " + started.reason;
@@ -201,7 +201,7 @@ void Server::finish() {
     finished_ = true;
     if (host_) host_->finish();
     host_.reset();
-    if (session_) session_->close();   // LIB-7 AC-13: the parts write what they have to save
+    if (session_) session_->close();   // the parts write what they have to save
     session_.reset();
     setup_.reset();   // removes the run folder
 }
@@ -234,11 +234,11 @@ int Server::serve(const std::function<std::optional<std::string>()>& readLine,
         if (r.quit) break;
         if (!r.text.empty()) write(r.text);
     }
-    finish();   // EC-3: as after quit
+    finish();   // at the end of the input: as after quit
     return 0;
 }
 
-// ── serve with add-ons (C1600-3 design §3.5) ──────────────────────────────
+// ── serve with add-ons ──────────────────────────────────────────────────────
 
 struct Server::Inbox {
     struct Item {
@@ -300,7 +300,7 @@ int Server::serveWith(const std::vector<ServeAddOn*>& addOns, std::function<std:
         }
         if (!item) {   // an add-on may post from wantsTime(): asked without the lock
             const machine::Machine* m = session_->machineSession().machine();
-            if (m && wantsTime()) {   // emulated time, no wall clock (LIB-11 AC-6)
+            if (m && wantsTime()) {   // emulated time, no wall clock
                 host_->advance(sessions::OperationContext::runPiece(m->descriptor().tickRate));
                 continue;
             }
@@ -320,7 +320,7 @@ int Server::serveWith(const std::vector<ServeAddOn*>& addOns, std::function<std:
         if (!r.text.empty()) write(r.text);
     }
     for (ServeAddOn* a : addOns) a->stop();
-    finish();   // EC-3: as after quit
+    finish();   // at the end of the input: as after quit
     // Standard input may still be open: its reader is left to the end of the program.
     if (*readerDone) reader.join();
     else reader.detach();

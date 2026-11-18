@@ -4,10 +4,10 @@
 #include <map>
 #include <vector>
 
-// The topic mirror (LIB-3 design §3.10): a MessageSink that keeps the last
+// The topic mirror: a MessageSink that keeps the last
 // message of each state topic and what each stream topic appended. It reads
 // no payload, so a topic it does not know is kept like any other and changes
-// nothing else (AC-12). It serves every Listener and the test frontend.
+// nothing else. It serves every Listener and the test frontend.
 // Replies, asks and sound are not topics: it ignores them.
 
 namespace calcu::sessions {

@@ -3,10 +3,10 @@
 #include <compare>
 #include <cstdint>
 
-// Emulated time (LIB-1 design §3.2; machine.md M-1): one canonical tick per
+// Emulated time: one canonical tick per
 // machine at a whole-number rate from its descriptor. Every conversion and
-// every comparison of times of two machines goes through EmulatedTime
-// (AC-10, EC-4); no arithmetic on the Ticks of two machines is offered.
+// every comparison of times of two machines goes through EmulatedTime;
+// no arithmetic on the Ticks of two machines is offered.
 
 namespace calcu::machine {
 

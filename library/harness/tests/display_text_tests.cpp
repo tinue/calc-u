@@ -1,5 +1,4 @@
-// LIB-11 design T8, T17: the display as text (AC-9 display-text, AC-10) and as the
-// machine gives it (AC-23).
+// The display as text (display-text) and as the machine gives it (display).
 #include "TestHarness.hpp"
 #include "TestProduct.hpp"
 #include "harness/DisplayText.hpp"
@@ -27,7 +26,7 @@ DotMatrixFrame frameOf(const std::vector<std::array<std::uint8_t, 8>>& cells, in
 const std::vector<IndicatorDef> kDefs = {{"RUN", false}, {"BUSY", false}, {"DIM", true}};
 } // namespace
 
-TEST(ac10_dot_matrix_rows_indicators_and_cells_not_text) {
+TEST(dot_matrix_rows_indicators_and_cells_not_text) {
     const GlyphFont font = testFont();
     const auto a = font.glyphs[0].columns, b = font.glyphs[1].columns, c = font.glyphs[2].columns;
     const std::array<std::uint8_t, 8> blank{}, junk{0x01, 0, 0, 0, 0, 0x02, 0, 0};
@@ -47,7 +46,7 @@ TEST(ac10_dot_matrix_rows_indicators_and_cells_not_text) {
                          "{\"name\":\"DIM\",\"brightness\":0.250}],\"notText\":1}"));
 }
 
-TEST(ac10_inverted_glyph_is_text) {
+TEST(inverted_glyph_is_text) {
     const GlyphFont font = testFont();
     std::array<std::uint8_t, 8> inv{};
     for (int i = 0; i < 6; ++i) inv[std::size_t(i)] = static_cast<std::uint8_t>(~font.glyphs[1].columns[std::size_t(i)]);
@@ -56,7 +55,7 @@ TEST(ac10_inverted_glyph_is_text) {
     CHECK_EQ(t.notText, 0);
 }
 
-TEST(ac10_segment_positions_left_to_right_by_product_rule) {
+TEST(segment_positions_left_to_right_by_product_rule) {
     SegmentLayout layout{{{"A", false}, {"B", false}}};
     SegmentFrame f;
     for (int i = 0; i < 3; ++i) f.positions.push_back(SegmentPosition{{i == 0, i == 1}, 1.0f, {}});
@@ -69,14 +68,14 @@ TEST(ac10_segment_positions_left_to_right_by_product_rule) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
-    run.line("wait 1ms");                // key ready (since the start, LIB-18): C on
+    run.line("wait 1ms");                // key ready (since the start): C on
     run.line("key-down 1");              // a press; a key down lights DP of position 0
     run.line("wait 1ms");                // the display topic is read when time passes
     // Position 1 is the thousands of the tick count: 1 after the start's 1667 ticks.
     CHECK_EQ(run.line("display-text"), std::string("done 2\n1.11\nindicators: C\n"));
 }
 
-TEST(ac10_display_off_says_so) {
+TEST(display_off_says_so) {
     TestRun run({}, mt::kDot);
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -94,7 +93,7 @@ TEST(ac10_display_off_says_so) {
                                            "\"reason\":null}\n"));
 }
 
-TEST(ac9_lcd_reads_display_topic) {
+TEST(lcd_reads_display_topic) {
     TestRun run({}, mt::kDot);
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -108,9 +107,9 @@ TEST(ac9_lcd_reads_display_topic) {
     CHECK_EQ(run.line("display-text"), r);
 }
 
-// ── display (T17) ───────────────────────────────────────────────────────
+// ── display ─────────────────────────────────────────────────────────────
 
-TEST(ac23_dot_matrix_rows_of_ones_and_zeros) {
+TEST(dot_matrix_rows_of_ones_and_zeros) {
     TestRun run({}, mt::kDot);
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -121,26 +120,26 @@ TEST(ac23_dot_matrix_rows_of_ones_and_zeros) {
     CHECK(r.find("\n000000000000\n000000000000\n100000000000\n") != std::string::npos);   // row 3: no press yet
 }
 
-TEST(ac23_segment_positions) {
+TEST(segment_positions) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
-    // At key readiness after the start (LIB-18): C on; position 1 shows 1 (1667 ticks).
+    // At key readiness after the start: C on; position 1 shows 1 (1667 ticks).
     CHECK_EQ(run.line("display"), std::string("done 7\nsegments: A B C D E F G DP\n0 11111100\n1 01100000\n2 11111100\n"
                                               "indicators: 1\nnames: C\non: true\n"));
 }
 
-TEST(ac23_indicator_bits_in_descriptor_order) {
+TEST(indicator_bits_in_descriptor_order) {
     TestRun run({}, mt::kDot);
     CHECK(run.server != nullptr);
     if (!run.server) return;
-    run.line("key-down a");   // BUSY on; RUN off: the run starts at key readiness (LIB-18)
+    run.line("key-down a");   // BUSY on; RUN off: the run starts at key readiness
     run.line("wait 0.001ms");   // one instruction: the display is read
     const std::string r = run.line("display");
     CHECK(r.find("indicators: 01\nnames: RUN BUSY\non: true\n") != std::string::npos);
 }
 
-TEST(ac23_display_off) {
+TEST(display_off) {
     TestRun run({}, mt::kDot);
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -149,7 +148,7 @@ TEST(ac23_display_off) {
     CHECK(run.line("display").find("indicators: 00\nnames: RUN BUSY\non: false\n") != std::string::npos);
 }
 
-TEST(ac23_json_arrays) {
+TEST(json_arrays) {
     RunOptions o;
     o.json = true;
     TestRun run(o);

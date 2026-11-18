@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <memory>
 
-// LIB-17 AC-1 to AC-8, AC-12 to AC-14, EC-1 to EC-6 (design §6, L3 to L8).
+// The pacer at regular and full speed, its profiles and starting afresh.
 // Every test runs on a wall clock of its own (ScriptedClock), never the
 // host's, so no result depends on the speed of the host.
 
@@ -50,9 +50,9 @@ struct Rig {
     }
 };
 
-// The bound of AC-1 at the end of a call (design D-1): fixed, one slice plus
-// the last instruction; the call, the time between two calls plus the last
-// instruction.
+// How far emulated time may be from wall time at the end of a call: fixed,
+// one slice plus the last instruction; the call, the time between two calls
+// plus the last instruction.
 std::int64_t fixedBound(Ticks len) { return static_cast<std::int64_t>(kSlice + len); }
 std::int64_t callBound(WallTime interval, Ticks len) {
     return static_cast<std::int64_t>(ticksIn(interval, kSegRate) + len);
@@ -60,9 +60,9 @@ std::int64_t callBound(WallTime interval, Ticks len) {
 
 } // namespace
 
-// --- AC-1, AC-2, AC-3: regular speed ----------------------------------------
+// --- regular speed -----------------------------------------------------------
 
-TEST(ac1_call_slice_keeps_wall_time_at_60_hz) {
+TEST(call_slice_keeps_wall_time_at_60_hz) {
     Rig r(callProfile(), 3);
     int outside = 0, notOne = 0;
     for (int i = 0; i < 600; ++i) {   // 10 s
@@ -76,7 +76,7 @@ TEST(ac1_call_slice_keeps_wall_time_at_60_hz) {
     CHECK_EQ(notOne, 0);
 }
 
-TEST(ac1_fixed_slice_keeps_wall_time) {
+TEST(fixed_slice_keeps_wall_time) {
     for (bool jitter : {false, true}) {
         Rig r(fixedProfile(jitter), 3);
         int outside = 0, wrongLength = 0;
@@ -93,7 +93,7 @@ TEST(ac1_fixed_slice_keeps_wall_time) {
     }
 }
 
-TEST(ac2_uneven_calls_do_not_add_up) {
+TEST(uneven_calls_do_not_add_up) {
     for (bool fixed : {true, false}) {
         Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
         ScriptRandom rnd{2};
@@ -113,7 +113,7 @@ TEST(ac2_uneven_calls_do_not_add_up) {
     }
 }
 
-TEST(ac3_overshoot_does_not_add_up) {
+TEST(overshoot_does_not_add_up) {
     for (bool fixed : {true, false})
         for (Ticks len : {Ticks{7}, Ticks{37}}) {   // neither divides a slice: every slice overshoots
             Rig r(fixed ? fixedProfile(true) : callProfile(), len);
@@ -131,9 +131,9 @@ TEST(ac3_overshoot_does_not_add_up) {
         }
 }
 
-// --- AC-4: lag ---------------------------------------------------------------
+// --- lag ---------------------------------------------------------------------
 
-TEST(ac4_lag_over_limit_dropped_whole) {
+TEST(lag_over_limit_dropped_whole) {
     for (bool fixed : {true, false}) {
         Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
         for (int i = 0; i < 60; ++i) CHECK(!r.call(k60Hz).lagDropped);
@@ -162,9 +162,9 @@ TEST(ac4_lag_over_limit_dropped_whole) {
     }
 }
 
-// --- AC-5, AC-6, AC-7: full speed --------------------------------------------
+// --- full speed --------------------------------------------------------------
 
-TEST(ac5_full_speed_stops_at_14_ms_of_the_supplied_clock) {
+TEST(full_speed_stops_at_14_ms_of_the_supplied_clock) {
     for (bool fixed : {true, false}) {
         Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
         r.runner.costPerSlice = kMs;   // the host takes 1 ms per slice
@@ -176,7 +176,7 @@ TEST(ac5_full_speed_stops_at_14_ms_of_the_supplied_clock) {
         CHECK(r.clock.now - start < Pacer::kFullSpeedAllowance + kMs);
         CHECK(res.ticksRun >= 14 * (fixed ? kSlice / 2 : kCallSlice));   // far beyond the 14 ms due
         if (!fixed)
-            for (const auto& s : r.runner.slices) CHECK_EQ(s.request.ticks, kCallSlice);   // 1/60 s (D-2)
+            for (const auto& s : r.runner.slices) CHECK_EQ(s.request.ticks, kCallSlice);   // 1/60 s
         // A host slower than the allowance still runs one slice per call.
         r.runner.costPerSlice = 40 * kMs;
         CHECK_EQ(r.pacer.pace(Speed::Full, r.runner).slices, 1);
@@ -184,7 +184,7 @@ TEST(ac5_full_speed_stops_at_14_ms_of_the_supplied_clock) {
     CHECK_EQ(Pacer::kFullSpeedAllowance.count(), 14);
 }
 
-TEST(ac6_back_to_regular_neither_waits_nor_lags) {
+TEST(back_to_regular_neither_waits_nor_lags) {
     for (bool fixed : {true, false}) {
         Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
         r.runner.costPerSlice = kMs / 4;
@@ -205,7 +205,7 @@ TEST(ac6_back_to_regular_neither_waits_nor_lags) {
     }
 }
 
-TEST(ac7_full_speed_keeps_tick_count) {
+TEST(full_speed_keeps_tick_count) {
     Rig r(fixedProfile(true), 5);
     r.runner.costPerSlice = kMs;
     Ticks paced = 0;
@@ -218,9 +218,9 @@ TEST(ac7_full_speed_keeps_tick_count) {
     CHECK(r.m->elapsed().seconds().count() > 20 * 0.0167);   // more emulated time than wall time passed
 }
 
-// --- AC-8: pacing profile -----------------------------------------------------
+// --- pacing profile ----------------------------------------------------------
 
-TEST(ac8_profile_slice_fixed_or_the_call_jitter_and_paced_flag) {
+TEST(profile_slice_fixed_or_the_call_jitter_and_paced_flag) {
     const PacingProfile fixed = fixedProfile(true, true);
     CHECK(fixed.slice.has_value());
     CHECK_EQ(fixed.slice->count(), 20'000);
@@ -241,9 +241,9 @@ TEST(ac8_profile_slice_fixed_or_the_call_jitter_and_paced_flag) {
     for (const auto& s : f.runner.slices) CHECK_EQ(s.request.ticks, kSlice);
 }
 
-// --- AC-12: full speed paced while the machine waits --------------------------
+// --- full speed paced while the machine waits --------------------------------
 
-TEST(ac12_waiting_at_full_speed_waits_one_slice_after_last_unpaced) {
+TEST(waiting_at_full_speed_waits_one_slice_after_last_unpaced) {
     for (bool jitter : {false, true}) {
         Rig r(fixedProfile(jitter, true), 1);
         r.runner.costPerSlice = kMs;
@@ -272,7 +272,7 @@ TEST(ac12_waiting_at_full_speed_waits_one_slice_after_last_unpaced) {
     }
 }
 
-TEST(ac12_not_waiting_returns_to_full_speed) {
+TEST(not_waiting_returns_to_full_speed) {
     Rig r(fixedProfile(true, true), 1);
     r.runner.costPerSlice = kMs;
     bool waiting = true;
@@ -292,7 +292,7 @@ TEST(ac12_not_waiting_returns_to_full_speed) {
     CHECK(next.ranUnpaced);
 }
 
-TEST(ac12_profile_without_flag_never_paced) {
+TEST(profile_without_flag_never_paced) {
     for (bool fixed : {true, false}) {
         Rig r(fixed ? fixedProfile(true, false) : callProfile(false), 1);
         r.runner.costPerSlice = kMs;
@@ -305,9 +305,9 @@ TEST(ac12_profile_without_flag_never_paced) {
     }
 }
 
-// --- AC-13, AC-14, EC-3: starting afresh ---------------------------------------
+// --- starting afresh ----------------------------------------------------------
 
-TEST(ac13_start_afresh_no_lag_nothing_to_wait) {
+TEST(start_afresh_no_lag_nothing_to_wait) {
     for (bool fixed : {true, false}) {
         Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
         for (int i = 0; i < 60; ++i) r.call(k60Hz);
@@ -337,7 +337,7 @@ TEST(ac13_start_afresh_no_lag_nothing_to_wait) {
     }
 }
 
-TEST(ac14_new_machine_new_rate_and_profile) {
+TEST(new_machine_new_rate_and_profile) {
     Rig r(fixedProfile(true), 3);
     for (int i = 0; i < 60; ++i) r.call(k60Hz);
     const Ticks segTicks = r.m->tickCount();
@@ -369,7 +369,7 @@ TEST(ac14_new_machine_new_rate_and_profile) {
     CHECK_EQ(r.runner.slices.back().request.ticks, kSlice);
 }
 
-TEST(ec3_stopped_early_ends_the_call_resume_starts_afresh) {
+TEST(stopped_early_ends_the_call_resume_starts_afresh) {
     Rig r(fixedProfile(true), 3);
     r.runner.costPerSlice = kMs;
     int stopAt = 2;
@@ -391,9 +391,9 @@ TEST(ec3_stopped_early_ends_the_call_resume_starts_afresh) {
     CHECK(std::llabs(r.dev()) <= fixedBound(3));
 }
 
-// --- EC-1, EC-2, EC-4, EC-5, EC-6 -----------------------------------------------
+// --- edge cases: repeated times, toggling, call rates, slow hosts ------------
 
-TEST(ec1_call_slice_same_time_twice_runs_nothing) {
+TEST(call_slice_same_time_twice_runs_nothing) {
     for (bool fixed : {false, true}) {
         Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
         for (int i = 0; i < 10; ++i) r.call(k60Hz);
@@ -410,7 +410,7 @@ TEST(ec1_call_slice_same_time_twice_runs_nothing) {
     }
 }
 
-TEST(ec2_toggling_full_speed_keeps_regular_stretches) {
+TEST(toggling_full_speed_keeps_regular_stretches) {
     for (bool fixed : {true, false}) {
         Rig r(fixed ? fixedProfile(true, true) : callProfile(), 3);
         r.runner.costPerSlice = kMs / 4;
@@ -429,7 +429,7 @@ TEST(ec2_toggling_full_speed_keeps_regular_stretches) {
     }
 }
 
-TEST(ec4_call_slice_at_120_hz) {
+TEST(call_slice_at_120_hz) {
     for (bool fixed : {false, true}) {
         Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
         int outside = 0;
@@ -442,7 +442,7 @@ TEST(ec4_call_slice_at_120_hz) {
     }
 }
 
-TEST(ec5_throttled_caller_runs_slow_without_failing) {
+TEST(throttled_caller_runs_slow_without_failing) {
     for (bool fixed : {true, false})
         for (WallTime interval : {150 * kMs, WallTime(std::chrono::seconds(1))}) {
             Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
@@ -458,7 +458,7 @@ TEST(ec5_throttled_caller_runs_slow_without_failing) {
         }
 }
 
-TEST(ec6_slow_host_drops_lag_again_and_again) {
+TEST(slow_host_drops_lag_again_and_again) {
     for (bool fixed : {true, false}) {
         Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
         r.runner.hostSlowdown = 2.0;   // the host needs 2 s of wall time per emulated second

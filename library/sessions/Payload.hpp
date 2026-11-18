@@ -5,8 +5,7 @@
 #include <string_view>
 #include <utility>
 
-// Payloads (LIB-3 design §3.1; frontend.md I-3, I-4; spec AC-12): what a
-// topic carries and what a reply gives. The library carries a payload
+// Payloads: what a topic carries and what a reply gives. The library carries a payload
 // without reading it: it calls only equals() (to decide whether to send) and,
 // in a translating host, toValue(). An in-process frontend uses payloadAs<P>.
 // A payload is immutable once sent and shared, never copied; it holds no
@@ -23,7 +22,7 @@ class Payload {
 public:
     virtual ~Payload() = default;
     virtual PayloadKind kind() const = 0;
-    virtual bool equals(const Payload&) const = 0;   // AC-5, EC-2
+    virtual bool equals(const Payload&) const = 0;
     virtual Value toValue() const = 0;               // for translators only
 };
 

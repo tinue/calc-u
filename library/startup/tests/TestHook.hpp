@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-// A slice hook that holds typed text and keys as LIB-5's typing engine will
-// (LIB-18 design §2, §3.4): what a test gave it waits, and drop() releases
-// it all and is counted (AC-2, AC-14, EC-4). It acts on nothing.
+// A slice hook that holds typed text and keys as the typing engine does:
+// what a test gave it waits, and drop() releases it all and is counted. It
+// acts on nothing.
 
 namespace calcu::startup::test {
 

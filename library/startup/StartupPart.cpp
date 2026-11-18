@@ -70,13 +70,13 @@ Refused anotherRuns() { return Refused{sessions::kAnotherOperationRuns}; }
 StartupPart::StartupPart(StartupSetup s) : setup_(s) {}
 
 void StartupPart::machineChanged(SessionContext& c) {
-    // AC-9, D-10: whoever built it. A file that is not writable keeps it
-    // until the product quits (LIB-9).
+    // On every new machine, whoever built it. A file that is not writable
+    // keeps it until the product quits.
     if (const Machine* m = c.machine()) setup_.settings.set("startup", "last-model", m->model().value);
 }
 
 void StartupPart::operationEnded(SessionContext& c) {
-    if (setup_.control.takeRegularSpeedDue()) c.setCommandedSpeed(pacing::Speed::Regular);   // D-11
+    if (setup_.control.takeRegularSpeedDue()) c.setCommandedSpeed(pacing::Speed::Regular);
 }
 
 Task<OperationResult> StartupPart::builtInDefault(OperationContext& c, ModelId model, BuildOrigin origin) {
@@ -91,18 +91,18 @@ Task<OperationResult> StartupPart::buildFor(OperationContext& c, ModelId model, 
     SessionContext& s = c.session();
     PresetLoader* loader = setup_.loader;
     std::optional<ModelId> forModel;
-    if (preset.empty() && loader) {   // D-9: without a loader [preset] is not read
+    if (preset.empty() && loader) {   // without a loader [preset] is not read
         preset = settings::startupPreset(setup_.settings, model.value);
         forModel = model;
     }
-    if (preset.empty() || !loader) co_return co_await builtInDefault(c, model, origin);   // AC-4
+    if (preset.empty() || !loader) co_return co_await builtInDefault(c, model, origin);
     const PresetLoad load = co_await loader->load(preset, forModel, setup_.control, c);
     switch (load.outcome) {
-    case PresetLoad::Outcome::CannotLoad:   // EC-1
+    case PresetLoad::Outcome::CannotLoad:
         s.notice("The startup preset of the " + model.value + " could not be loaded: " + load.reason + ". The " +
                  model.value + " starts as its built-in default machine.");
         co_return co_await builtInDefault(c, model, origin);
-    case PresetLoad::Outcome::FailedWhileRunning:   // EC-6: the machine stays as far as it got
+    case PresetLoad::Outcome::FailedWhileRunning:   // the machine stays as far as it got
         s.notice("The startup preset of the " + model.value + " stopped: " + load.reason + ".");
         co_return OperationResult{};
     case PresetLoad::Outcome::Built: break;
@@ -129,23 +129,23 @@ Task<OperationResult> StartupPart::changePlug(OperationContext& c, PlugChange ch
 Task<OperationResult> StartupPart::restart(OperationContext& c, Restart what) {
     Machine* m = c.session().machine();
     if (!m) co_return OperationResult{false, sessions::kNoMachine};
-    c.session().machineSession().dropInput();   // AC-14
+    c.session().machineSession().dropInput();
     switch (what) {
     case Restart::Reset: m->reset(); break;
     case Restart::ColdBoot: m->coldBoot(); break;
     case Restart::PowerCycle: m->powerCycle(); break;
     }
-    // LIB-10 §3.11: the parts are told of a Reset and a Cold boot before the
+    // The parts are told of a Reset and a Cold boot before the
     // run to key readiness (the run control's pause-at-start holds it).
     if (what == Restart::Reset) c.session().tellRestarted(sessions::Restart::Reset);
     if (what == Restart::ColdBoot) c.session().tellRestarted(sessions::Restart::ColdBoot);
-    co_await setup_.control.untilKeyReady(c);   // AC-13; the clocks: PeripheralsPart::operationEnded
+    co_await setup_.control.untilKeyReady(c);   // the clocks: PeripheralsPart::operationEnded
     co_return OperationResult{};
 }
 
 void StartupPart::attach(sessions::SessionSetup& setup) {
     const machine::Catalogue& cat = setup_.control.product().catalogue();
-    // LIB-12 AC-5, LIB-14 AC-19: without the full set no machine is built;
+    // Without the full set no machine is built;
     // the frontends show the files.
     if (!setup_.control.hasRoms() && setup_.romsMissing) {
         auto p = std::make_shared<RomsMissingState>();
@@ -154,16 +154,16 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
         setup.stateTopic(kRomsMissingTopic).set(std::move(p));
     }
 
-    // The start (AC-3 to AC-5): accepted once (D-8), not while an operation runs.
+    // The start: accepted once per app session, not while an operation runs.
     setup.command(sessions::kStartCommand, [this, &cat](const Value& args, SessionContext& c) -> CommandOutcome {
         if (started_) return Refused{kStartedAlready};
         if (c.busy()) return anotherRuns();
-        if (!setup_.control.hasRoms() && setup_.romsMissing) return Refused{roms::describe(*setup_.romsMissing)};   // LIB-12 AC-5
-        ModelId model{settings::startupModel(setup_.settings)};   // AC-3
+        if (!setup_.control.hasRoms() && setup_.romsMissing) return Refused{roms::describe(*setup_.romsMissing)};
+        ModelId model{settings::startupModel(setup_.settings)};
         const std::string named = sessions::textArg(args, "model");
         if (!named.empty()) {
             if (const auto* m = machine::modelNamed(cat, named)) model = m->model;
-            else c.notice("There is no model \"" + named + "\"; the startup model is used.");   // LIB-15 EC-4
+            else c.notice("There is no model \"" + named + "\"; the startup model is used.");
         }
         const std::string preset = sessions::textArg(args, "preset");
         started_ = true;
@@ -172,39 +172,40 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
         }};
     });
 
-    // Model switch (AC-6, AC-8): ends a running operation (AC-16).
+    // Model switch: ends a running operation.
     setup.command(
         kModelCommand,
         [this, &cat](const Value& args, SessionContext& c) -> CommandOutcome {
             const std::string name = sessions::textArg(args, "name");
             const machine::MachineDescriptor* model = machine::modelNamed(cat, name);
-            if (!model) return Refused{"There is no model \"" + name + "\"."};   // D-18
-            if (const Machine* m = c.machine(); m && m->model() == model->model) return Done{};   // AC-8
+            if (!model) return Refused{"There is no model \"" + name + "\"."};
+            if (const Machine* m = c.machine(); m && m->model() == model->model) return Done{};   // nothing happens
             return StartOperation{[this, m = model->model](OperationContext& o) {
                 return buildFor(o, m, std::string(), BuildOrigin::ModelSwitch);
             }};
         },
         /*endsRunningOperation=*/true);
 
-    // Variant switch (AC-7, AC-8).
+    // Variant switch.
     setup.command(kVariantCommand, [this](const Value& args, SessionContext& c) -> CommandOutcome {
-        if (c.busy()) return anotherRuns();   // D-7
+        if (c.busy()) return anotherRuns();   // refused while one runs, even where it would be Done
         const Machine* m = c.machine();
         if (!m) return Refused{sessions::kNoMachine};
         const std::string name = sessions::textArg(args, "name");
         const auto v = machine::variantNamed(m->descriptor().variants, name);
-        if (!v) return Refused{"The " + m->model().value + " has no variant \"" + name + "\"."};   // D-18
-        if (m->variant() == v) return Done{};   // AC-8
+        if (!v) return Refused{"The " + m->model().value + " has no variant \"" + name + "\"."};
+        if (m->variant() == v) return Done{};   // nothing happens
         return StartOperation{[this, chosen = *v](OperationContext& o) { return switchVariant(o, chosen); }};
     });
 
-    // Attach and replace (AC-10 to AC-12; D-14, D-15).
+    // Attach and replace: attaching what is plugged in already is Done and
+    // changes nothing; to a full place that takes one it is a replace.
     setup.command(kAttachCommand, [this, &cat](const Value& args, SessionContext& c) -> CommandOutcome {
         if (c.busy()) return anotherRuns();
         const Machine* m = c.machine();
         if (!m) return Refused{sessions::kNoMachine};
         const PlacePath place = placeFrom(sessions::textArg(args, "place"));
-        // D-16: the catalogue's spelling; an unknown name as written, which the machine refuses.
+        // Names in any case; the catalogue's spelling; an unknown name as written, which the machine refuses.
         const std::string written = sessions::textArg(args, "peripheral");
         const machine::PeripheralDescriptor* d = machine::peripheralNamed(cat, written);
         const machine::PeripheralId id = d ? d->id : machine::PeripheralId{written};
@@ -217,17 +218,17 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
         const auto there = entriesAt(plugged, place);
         const std::optional<VariantId> resolved = variant ? variant : (d ? d->defaultVariant : std::nullopt);
         for (const machine::PlugEntry* e : there)
-            if (e->peripheral == id && e->variant == resolved) return Done{};   // the same again (D-14)
+            if (e->peripheral == id && e->variant == resolved) return Done{};   // the same again
         PlugChange ch;
         ch.place = place;
         ch.request = setup_.control.requestFor(place, id, variant);
         ch.kind = !there.empty() && takesAtOnce(*m, plugged, cat, place) == 1 ? PlugChange::Kind::Replace
                                                                               : PlugChange::Kind::Attach;
-        if (auto refused = setup_.control.check(*m, ch)) return Refused{refused->reason};   // AC-12
+        if (auto refused = setup_.control.check(*m, ch)) return Refused{refused->reason};
         return StartOperation{[this, ch](OperationContext& o) { return changePlug(o, ch); }};
     });
 
-    // Detach (AC-10, EC-5): an empty place is Done (LIB-2 EC-2; D-14).
+    // Detach: an empty place is Done and changes nothing.
     setup.command(kDetachCommand, [this](const Value& args, SessionContext& c) -> CommandOutcome {
         if (c.busy()) return anotherRuns();
         const Machine* m = c.machine();
@@ -239,7 +240,7 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
         return StartOperation{[this, ch](OperationContext& o) { return changePlug(o, ch); }};
     });
 
-    // Reset, Cold boot (end a running operation, AC-16), power cycle (AC-13, AC-14).
+    // Reset, Cold boot (end a running operation), power cycle.
     auto restartCommand = [this](Restart what, bool ends) {
         return [this, what, ends](const Value&, SessionContext& c) -> CommandOutcome {
             if (!ends && c.busy()) return anotherRuns();

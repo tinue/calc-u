@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-// The one C++ test runner of the repository (ADR 0038): a TEST() registry
+// The one C++ test runner of the repository: a TEST() registry
 // with assert-and-tally checks, no dependency. Each test file registers its
 // cases with TEST(); TestMain.cpp (target calcu_test_runner) runs them all
 // and returns non-zero on any failure. A product's test program links

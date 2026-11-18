@@ -3,7 +3,8 @@
 #include <algorithm>
 #include <set>
 
-// LIB-1 AC-20, AC-21, AC-22, AC-23, AC-25, EC-5 (design §6, T12).
+// Capabilities and debug targets of a running machine: listed by kind with
+// their IDs and owners, present only while their owner is.
 
 using namespace calcu::machine;
 using namespace calcu::machine::test;
@@ -19,7 +20,7 @@ std::unique_ptr<TestMachine> fullSeg() {
 }
 } // namespace
 
-TEST(ac20_plugged_per_place_and_per_connector) {
+TEST(plugged_per_place_and_per_connector) {
     auto m = fullSeg();
     CHECK(m != nullptr);
     if (!m) return;
@@ -53,13 +54,13 @@ TEST(ac20_plugged_per_place_and_per_connector) {
     CHECK(bare && bare->plugged().byPlace.empty() && bare->plugged().byConnector.size() == 2);
 }
 
-TEST(ac21_capabilities_listed_with_kind_id_owner) {
+TEST(capabilities_listed_with_kind_id_owner) {
     auto m = fullSeg();
     auto twin = fullSeg();
     CHECK(m && twin);
     if (!m || !twin) return;
     const auto caps = m->capabilities();
-    CHECK_EQ(caps.size(), std::size_t{3});   // with LIB-2's controls of the printer
+    CHECK_EQ(caps.size(), std::size_t{3});   // with the printer's controls
     std::set<std::string> ids;
     for (const auto& e : caps) ids.insert(e.id.value);
     CHECK_EQ(ids.size(), caps.size());   // unique within the machine
@@ -80,7 +81,7 @@ TEST(ac21_capabilities_listed_with_kind_id_owner) {
     CHECK(m->capability(CapabilityId{"no/such"}) == nullptr);
 }
 
-TEST(ac22_peripheral_capabilities_only_with_peripheral) {
+TEST(peripheral_capabilities_only_with_peripheral) {
     auto with = buildTestMachine(kSeg, std::nullopt, {peripheralAt(testCatalogue(), "printer", kPrinter)});
     auto without = buildTestMachine(kSeg);
     CHECK(with && without);
@@ -88,10 +89,10 @@ TEST(ac22_peripheral_capabilities_only_with_peripheral) {
     CHECK_EQ(capabilitiesOf<TestCounter>(*with).size(), std::size_t{1});
     CHECK_EQ(capabilitiesOf<TestCounter>(*without).size(), std::size_t{0});
     CHECK(capabilityAs<TestCounter>(*without, CapabilityId{"printer/test.counter"}) == nullptr);
-    CHECK_EQ(with->capabilities().size(), without->capabilities().size() + 2);   // the counter and LIB-2's controls
+    CHECK_EQ(with->capabilities().size(), without->capabilities().size() + 2);   // the counter and the controls
 }
 
-TEST(ac23_product_kind_handed_out_like_generic) {
+TEST(product_kind_handed_out_like_generic) {
     auto m = buildTestMachine(kSeg, std::nullopt, {peripheralAt(testCatalogue(), "printer", kPrinter)});
     CHECK(m != nullptr);
     if (!m) return;
@@ -110,14 +111,14 @@ TEST(ac23_product_kind_handed_out_like_generic) {
     CHECK(counter->count > 0 && counter->count == instr->instructions);
 }
 
-TEST(ac25_debug_targets_from_descriptor) {
+TEST(debug_targets_from_descriptor) {
     for (const ModelId& id : {kSeg, kDot}) {
         auto m = buildTestMachine(id);
         CHECK(m && m->debugTargets() == testCatalogue().model(id)->debugTargets && !m->debugTargets().empty());
     }
 }
 
-TEST(ec5_absent_kind_gives_empty_list) {
+TEST(absent_kind_gives_empty_list) {
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
     if (!m) return;

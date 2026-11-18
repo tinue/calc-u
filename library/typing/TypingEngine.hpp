@@ -14,18 +14,19 @@
 #include <string_view>
 #include <vector>
 
-// The typing engine (LIB-5 design §3.3; spec AC-1 to AC-13, AC-18, AC-19,
-// AC-38, AC-39; EC-1 to EC-6): host keys, on-screen keys and text turned
+// The typing engine: host keys, on-screen keys and text turned
 // into key down and key up on a machine, by the model's typing profile and
 // keyboard map. It is the machine session's input queue (a SliceHook): the
 // session cuts its advances at nextDue() and calls act() there, so every
-// hold, gap and wait is counted in the machine's ticks (TR; typing.md I-1).
+// hold, gap and wait is counted in the machine's ticks.
 //
-// Single-threaded, on the session's thread; it reads no clock (E14). The
-// one wall-time rule, the rest of a hold on a paused machine (AC-20), uses
+// Single-threaded, on the session's thread; it reads no clock: every
+// decision is a function of the inputs and the tick count at which the host
+// call delivered them. The one wall-time rule, the rest of a hold on a
+// paused machine, uses
 // the time of the host call it is handed (hostCall).
 //
-// Keys put down by the raw `key-down` command are not the engine's (AC-39):
+// Keys put down by the raw `key-down` command are not the engine's:
 // it neither waits for them nor releases them.
 
 namespace calcu::typing {
@@ -34,8 +35,7 @@ class TypingSupport;
 
 // Where a press comes from: live input (a host key, an on-screen key, text
 // the host's input method committed), typed text and commands (Paste Text,
-// `key`, `type`, the debugger's line), a preset (LIB-6; Calc-U-59's
-// KEYSTROKES playback until M-54).
+// `key`, `type`, the debugger's line), a preset.
 enum class Origin { Live, Typed, Preset };
 
 using Token = std::uint64_t;   // one `typeKeys` or `typeText`; 0 for none
@@ -45,9 +45,9 @@ struct TypeResult {
     std::string reason;   // when not done
 };
 
-inline constexpr const char* kStoppedByKey = "Stopped by a key.";                  // D-9
-inline constexpr const char* kStartedOver = "The machine started over.";           // E12
-inline constexpr const char* kFocusWasLost = "The focus was lost.";                 // E10
+inline constexpr const char* kStoppedByKey = "Stopped by a key.";                  // live input stopped a `key` or `type`
+inline constexpr const char* kStartedOver = "The machine started over.";           // drop() or a new machine
+inline constexpr const char* kFocusWasLost = "The focus was lost.";                 // focusLost()
 
 struct Queued {
     Token token = 0;
@@ -55,7 +55,7 @@ struct Queued {
 };
 
 // The keys the engine puts down and lets up, with their ticks: a test seam
-// (the products' typing tests of LIB-5's Calc-U-59 and Calc-U-1600 columns);
+// (the products' typing tests);
 // no production code sets one.
 class KeyObserver {
 public:
@@ -71,7 +71,7 @@ public:
     // checks the session's machine generation and calls `resync` when the
     // machine has changed since setMachine (the part sets the new one).
     void bind(sessions::MachineSession&, std::function<void()> resync);
-    // A new or replaced machine (EC-5): everything it held is forgotten,
+    // A new or replaced machine: everything it held is forgotten,
     // nothing waits, a pending token is not done.
     void setMachine(machine::Machine*, const TypingProfile*, const KeyboardMap*);
     machine::Machine* machine() const { return machine_; }
@@ -81,16 +81,16 @@ public:
     // ── Live input ──
     void hostKeyDown(const HostKeyEvent&);
     void hostKeyUp(const std::string& physical);
-    void hostText(std::u32string_view);   // EC-4
+    void hostText(std::u32string_view);   // committed by the input method: each character a press of the minimum hold
     void screenKeyDown(const machine::KeyId&, std::uint32_t pointer);
     void screenKeyUp(const machine::KeyId&, std::uint32_t pointer);
-    void focusLost();   // AC-10
+    void focusLost();   // live keys let go (after their minimum hold), what waits dropped
 
     // ── Typed text and commands ──
-    void paste(std::string_view utf8);   // AC-12, AC-34: first line, unknown left out, no ENTER, appended
-    // AC-15: the presses in turn. firstPressAtOnce: LIB-6 AC-58 (after `skip-wait:`).
+    void paste(std::string_view utf8);   // first line, unknown left out, no ENTER, appended
+    // The presses in turn. firstPressAtOnce: after `skip-wait:` in a preset.
     Queued typeKeys(std::vector<Press>, Origin, bool firstPressAtOnce = false);
-    // AC-16: the text (and ENTER); with refuseUnknown a character without a
+    // The text (and ENTER); with refuseUnknown a character without a
     // key refuses it all, else it is left out.
     Queued typeText(std::string_view utf8, bool enter, bool refuseUnknown, Origin, bool firstPressAtOnce = false);
     // The token's result, once its last key is up or it was dropped; taken once.
@@ -99,15 +99,16 @@ public:
     void setOnHeldChanged(std::function<void()> f) { onHeld_ = std::move(f); }
     void setObserver(KeyObserver* o) { observer_ = o; }
 
-    // EC-5 (LIB-18 §3.4, D-12): every key the engine holds up now, nothing waits.
+    // A reset, power cycle, cold boot or model switch: every key the engine
+    // holds up now, without its minimum (the machine starts over), nothing waits.
     void drop() override;
     bool idle() const;
     bool released() const { return down_.empty() && queue_.empty(); }   // nothing down, nothing waiting              // nothing down, nothing waiting, the machine ready again where the profile asks
     std::size_t waiting() const { return queue_.size(); }
-    std::vector<machine::KeyId> liveHeld() const;   // AC-19
+    std::vector<machine::KeyId> liveHeld() const;   // the keys live input holds (the held-keys topic)
     std::vector<machine::KeyId> down() const;       // every key the engine holds down
 
-    // AC-20: the machine is paused (a freeze, LIB-10); a held key's rest of
+    // The machine is paused (a freeze of the debugger); a held key's rest of
     // the hold passes in the host's time, in virtual time at once.
     void setPaused(bool paused, pacing::WallTime now);
     void setVirtualTime(bool v) { virtual_ = v; }
@@ -127,7 +128,7 @@ private:
         std::vector<std::string> holders;   // liveSingle: who holds it; empty: one press of minHold
         bool firstOfStep = false;
         bool atOnce = false;
-        std::optional<machine::Ticks> boundAt;   // AC-14: starts all the same at this tick
+        std::optional<machine::Ticks> boundAt;   // starts all the same at this tick
         Token token = 0;
         bool last = false;                  // the token's last press
     };

@@ -1,5 +1,4 @@
-// LIB-3 L2, L3: topics, the flush and the late listener (AC-5, AC-6, AC-7,
-// EC-1, EC-2).
+// Topics, the flush and the late listener.
 #include "TestHarness.hpp"
 #include "TestParts.hpp"
 
@@ -11,7 +10,7 @@ Value valueArg(std::int64_t v) { return Value::object({{"value", v}}); }
 Value textArgs(const char* t) { return Value::object({{"text", t}}); }
 } // namespace
 
-TEST(ac5_state_sent_only_when_it_differs) {
+TEST(state_sent_only_when_it_differs) {
     Rig r;
     const TopicName t = r.part.stateName();
     r.send("tp.set", valueArg(1));
@@ -25,7 +24,7 @@ TEST(ac5_state_sent_only_when_it_differs) {
     CHECK_EQ(r.fe.stateMessages(t), 2);
 }
 
-TEST(ac5_command_reply_and_changed_state_at_once) {
+TEST(command_reply_and_changed_state_at_once) {
     Rig r;
     const std::size_t mark = r.fe.log.size();
     const CallId id = r.send("tp.set", valueArg(7));   // between two host calls
@@ -37,7 +36,7 @@ TEST(ac5_command_reply_and_changed_state_at_once) {
     CHECK(std::get<ReplyMessage>(got[1]).done);
 }
 
-TEST(ac5_machine_output_only_with_host_calls) {
+TEST(machine_output_only_with_host_calls) {
     Rig r;
     r.build();
     r.call();
@@ -51,7 +50,7 @@ TEST(ac5_machine_output_only_with_host_calls) {
     CHECK_EQ(r.fe.stateMessages(kDisplayTopic), before + 1);
 }
 
-TEST(ac7_stream_sends_exactly_what_was_appended) {
+TEST(stream_sends_exactly_what_was_appended) {
     Rig r;
     const TopicName t = r.part.streamName();
     r.part.onAfterCall = [&](SessionContext&, calcu::pacing::WallTime) {
@@ -75,7 +74,7 @@ TEST(ac7_stream_sends_exactly_what_was_appended) {
     CHECK(seen == (std::vector<std::string>{"a", "b", "c"}));
 }
 
-TEST(ac7_stream_reset_marker) {
+TEST(stream_reset_marker) {
     Rig r;
     const TopicName t = r.part.streamName();
     r.send("tp.append", textArgs("old"));
@@ -98,7 +97,7 @@ TEST(ac7_stream_reset_marker) {
     CHECK(r.fe.mirror.takeReset(t));
 }
 
-TEST(ec1_several_changes_send_the_last) {
+TEST(several_changes_send_the_last) {
     Rig r;
     const TopicName t = r.part.stateName();
     r.part.onAfterCall = [&](SessionContext&, calcu::pacing::WallTime) {
@@ -111,7 +110,7 @@ TEST(ec1_several_changes_send_the_last) {
     CHECK_EQ(r.fe.state<TestValue>(t)->v, 3);
 }
 
-TEST(ec2_change_and_back_sends_nothing) {
+TEST(change_and_back_sends_nothing) {
     Rig r;
     const TopicName t = r.part.stateName();
     r.send("tp.set", valueArg(4));
@@ -124,7 +123,7 @@ TEST(ec2_change_and_back_sends_nothing) {
     CHECK_EQ(r.fe.stateMessages(t), 1);
 }
 
-TEST(ac6_new_listener_gets_every_state_topic_once) {
+TEST(new_listener_gets_every_state_topic_once) {
     Rig r;
     r.build();
     r.call();
@@ -141,7 +140,7 @@ TEST(ac6_new_listener_gets_every_state_topic_once) {
     CHECK(mine && its && sameDisplay(mine->output, its->output));
 }
 
-TEST(ac6_late_listener_gets_log_since_reset_and_no_notices) {
+TEST(late_listener_gets_log_since_reset_and_no_notices) {
     Rig r;
     r.send("tp.notice", textArgs("Something happened."));
     r.send("tp.log", textArgs("first"));
@@ -162,7 +161,7 @@ TEST(ac6_late_listener_gets_log_since_reset_and_no_notices) {
         if (const auto* s = std::get_if<StreamMessage>(&m)) CHECK(s->topic != kNoticesTopic);
 }
 
-// LIB-4 L3 (LIB-4 design §3.5): SessionPart::beforeFlush runs at the start of
+// SessionPart::beforeFlush runs at the start of
 // every flush, after the parts' afterCall.
 namespace {
 struct FlushCounter final : SessionPart {

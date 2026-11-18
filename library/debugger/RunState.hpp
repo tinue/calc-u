@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-// The run state, the trace state and the session's names of the debugger
-// (LIB-10 design §3.6; spec AC-17, AC-25). Library names, no prefix.
+// The run state, the trace state and the session's names of the debugger.
+// Library names, no prefix.
 
 namespace calcu::debugger {
 
@@ -19,7 +19,7 @@ inline const sessions::TopicName kTraceTopic{"trace"};          // state: TraceS
 inline const sessions::CommandName kPauseCommand{"pause"};                  // {level}
 inline const sessions::CommandName kResumeCommand{"resume"};
 inline const sessions::CommandName kStepCommand{"step"};                    // {level, count, target?, kind: in|over|out}
-inline constexpr std::int64_t kMaxStepCount = 100000;                       // a step's count is 1 to this (AC-19)
+inline constexpr std::int64_t kMaxStepCount = 100000;                       // a step's count is 1 to this
 inline const sessions::CommandName kPauseOnStartCommand{"pause-on-start"};  // {level} | {off: true}
 inline const sessions::CommandName kPauseAtStartCommand{"pause-at-start"};
 inline const sessions::CommandName kBreakCommand{"break"};                  // {setter, target, address, qualifier?}
@@ -55,7 +55,7 @@ struct RunState final : sessions::PayloadOf<RunState> {
     bool paused = false;
     std::optional<LevelName> owner;             // when paused
     std::optional<Reason> reason;
-    std::optional<machine::DebugTargetId> target;   // the current target (AC-14)
+    std::optional<machine::DebugTargetId> target;   // the current target
     std::vector<Hit> hits;                      // a breakpoint or watch stop
     std::optional<LevelName> armed;             // pause-on-start
     bool pauseAtStart = false;

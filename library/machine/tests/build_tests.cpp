@@ -3,7 +3,7 @@
 #include "machine/Build.hpp"
 #include <algorithm>
 
-// LIB-1 AC-5, EC-1 (design §6, T5).
+// Building a machine: its model and variant, and the missing ROM files named.
 
 using namespace calcu::machine;
 using namespace calcu::machine::test;
@@ -22,7 +22,7 @@ void dropRom(std::vector<RomImage>& roms, const std::string& name) {
 }
 } // namespace
 
-TEST(ac5_machine_reports_model_and_variant_for_its_life) {
+TEST(machine_reports_model_and_variant_for_its_life) {
     auto dot = buildTestMachine(kDot, VariantId{"V2"});
     CHECK(dot != nullptr);
     if (!dot) return;
@@ -47,7 +47,7 @@ TEST(ac5_machine_reports_model_and_variant_for_its_life) {
     CHECK(def && def->variant() == VariantId{"V1"});
 }
 
-TEST(ec1_missing_rom_names_the_file) {
+TEST(missing_rom_names_the_file) {
     const Catalogue& cat = testCatalogue();
     CountingBuilder builder;
     BuildRequest req = requestFor(cat, kDot, VariantId{"V2"});
@@ -62,7 +62,7 @@ TEST(ec1_missing_rom_names_the_file) {
     CHECK_EQ(builder.calls, 1);
 }
 
-TEST(ec1_missing_peripheral_rom_names_the_file) {
+TEST(missing_peripheral_rom_names_the_file) {
     const Catalogue& cat = testCatalogue();
     CountingBuilder builder;
     PeripheralRequest module = peripheralAt(cat, "slot-1", kModule, VariantId{"8k"});

@@ -1,5 +1,5 @@
 {
-  "about": "LIB-10 design §3.10: the rule of the run-control buttons of a level (spec AC-18), read by the C++ tests (button_rule_tests.cpp, library/qt6/tests/run_control_buttons_tests.cpp) and the Playwright test (library/web/tests/run-control.spec.js). state null: no run state yet.",
+  "about": "The rule of the run-control buttons of a level, read by the C++ tests (button_rule_tests.cpp, library/qt6/tests/run_control_buttons_tests.cpp) and the Playwright test (library/web/tests/run-control.spec.js). state null: no run state yet.",
   "repeatMs": 250,
   "cases": [
     {"level": "cpu", "state": null, "pause": false, "step": false, "resume": false},

@@ -1,4 +1,4 @@
-// C1600-3 design T13 (§3.5; AC-22): a product's option of `serve`. Its tasks
+// A product's option of `serve`. Its tasks
 // come through the loop's inbox, in order with standard input's lines, and
 // emulated time passes, unpaced, only while it wants time.
 #include "TestHarness.hpp"
@@ -95,7 +95,7 @@ TEST(serve_addon_events_and_time_while_wanted) {
     CHECK(addOn.ran >= addOn.want);                       // time passed while it wanted it
     CHECK(addOn.ran < addOn.want + 100000);               // in pieces, looked at between them
     CHECK(addOn.stopped);
-    CHECK_EQ(run.server->wallClockReads(), readsBefore);   // no wall clock read for it (LIB-11 AC-6)
+    CHECK_EQ(run.server->wallClockReads(), readsBefore);   // no wall clock read for it
 }
 
 TEST(serve_addon_lines_between_tasks_and_cannot_start) {

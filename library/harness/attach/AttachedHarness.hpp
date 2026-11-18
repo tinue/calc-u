@@ -12,19 +12,18 @@
 #include <set>
 #include <string>
 
-// Harness attach, the session's side (C59-5 AC-11, AC-12, AC-14, EC-2,
-// EC-3; design §3.2): on the thread that hosts the app session. While a
+// Harness attach, the session's side: on the thread that hosts the app
+// session. While a
 // client is attached it is a second listener of the session (HarnessHost in
-// its attached form, no host services) and runs LIB-11's commands on it as
+// its attached form, no host services) and runs the harness commands on it as
 // `calcu serve` does, with one difference: time is the app's. `wait <d>`
 // replies when the app's own host calls have let d of emulated time pass;
-// the harness never advances the machine (AC-14). The bare `wait` replies
-// when the app's machine is idle (LIB-6 AC-34; LIB-14 D-27: the session's
-// `wait-idle` operation, at most an hour). The commands are those of
-// `calcu serve` (D-27): the first, startup, preset, typing, paper, debug,
+// the harness never advances the machine. The bare `wait` replies when the
+// app's machine is idle (the session's `wait-idle` operation, at most an
+// hour). The commands are those of `calcu serve`: the first, startup, preset, typing, paper, debug,
 // media and open commands, then the product's; the preset steps and the
 // media commands use the session's library parts (LibraryParts). Replies and
-// the listener's messages go back as lines (LIB-11 design §3.9).
+// the listener's messages go back as lines.
 
 namespace calcu::harness {
 
@@ -39,7 +38,7 @@ public:
     void handle(const AttachEvent&);
     void afterHostCall();   // a pending `wait` or reply that is due goes out
     bool attached() const { return host_ != nullptr; }
-    const CommandRegistry& commands() const { return registry_; }   // D-27: the serve form's
+    const CommandRegistry& commands() const { return registry_; }   // the serve form's
 
 private:
     struct Pending {
@@ -67,7 +66,7 @@ private:
     bool json_ = false;
     std::deque<std::string> queue_;
     std::optional<Pending> pending_;
-    std::set<std::string> held_;   // keys down through this harness (EC-2)
+    std::set<std::string> held_;   // keys down through this harness; up when it goes
 };
 
 } // namespace calcu::harness

@@ -1,7 +1,8 @@
-// The harness commands `key` and `type` (LIB-5 design §3.5; spec AC-15 to
-// AC-17; D-5, D-8): the session commands of the typing part, whose replies
-// come when the keys are up; the harness lets emulated time pass until then,
-// at most an hour. Neither waits until the machine is idle: that is `wait`.
+// The harness commands `key` and `type`: the session commands of the typing
+// part, whose replies come when the keys are up; the harness lets emulated time pass until then,
+// at most an hour (a program that never comes back to its key scan would
+// otherwise hang the harness). On a model without characters `type` is an
+// unknown command. Neither waits until the machine is idle: that is `wait`.
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
 #include "typing/TypingTopics.hpp"
@@ -10,7 +11,7 @@ namespace calcu::harness {
 
 namespace {
 
-constexpr const char* kNotTaken = "The keys were not taken within an hour.";   // D-5
+constexpr const char* kNotTaken = "The keys were not taken within an hour.";
 
 Reply fromSessionReply(const sessions::ReplyMessage& r) {
     if (!r.done) return refusedReply(r.reason);

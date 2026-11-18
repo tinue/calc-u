@@ -10,27 +10,28 @@
 #include <optional>
 #include <vector>
 
-// The app session (LIB-3 design §3.9; spec AC-1, AC-2, AC-4, AC-6, AC-26):
+// The app session:
 // one per window, for as long as it is open. It holds one machine session,
 // the topics, commands and requests of the parts, the running operation, the
 // busy state and the audio policy. Single-threaded: it holds no lock, starts
-// no thread and throws nothing across its interface (ADR 0009, 0015;
-// frontend.md I-1); everything crosses it as messages.
+// no thread and throws nothing across its interface; everything
+// crosses it as messages.
 
 namespace calcu::sessions {
 
 class MachineSession;
 
-enum class Hosting { Paced, VirtualTime };   // VirtualTime: the harness, AC-19 tests
+enum class Hosting { Paced, VirtualTime };   // VirtualTime: the harness and tests
 
 struct AppSessionSetup {
     pacing::WallClock clock;   // the host's; the pacer reads it within a call
-    // A-7: local date and time in the products, a fixed instant in the
-    // harness (for LIB-2's real-time clocks).
+    // The host time: local date and time in the products, a fixed instant
+    // in the harness. The session sets the real-time clocks with it at build
+    // and at the end of every operation.
     std::function<std::chrono::system_clock::time_point()> hostTime;
     std::vector<SessionPart*> parts;   // library features first, then the product's
     Hosting hosting = Hosting::Paced;
-    std::optional<std::uint32_t> jitterSeed;   // LIB-17 AC-10
+    std::optional<std::uint32_t> jitterSeed;   // same seed, same slice lengths; none: differs per run
     // The parts and what they need (settings, paths), when the session owns
     // them: released first when the session goes, while its machine is still
     // there (a part saves its media into the machine's files), and never
@@ -45,17 +46,18 @@ public:
     AppSession(const AppSession&) = delete;
     AppSession& operator=(const AppSession&) = delete;
 
-    // AC-6, AC-26: the new listener is sent every state topic once and the
+    // The new listener is sent every state topic once and the
     // stream topics with history since their last reset.
     ListenerId listen(MessageSink&, HostServices = {});
     void stopListening(ListenerId);
 
-    void call(pacing::WallTime now);           // AC-2; Paced only
-    CallId send(ListenerId, Command);          // carried out at once (spec OQ-3)
+    void call(pacing::WallTime now);           // Paced only
+    CallId send(ListenerId, Command);          // carried out at once, its reply and
+                                               // changed topics sent at once
     CallId ask(ListenerId, Request);
-    void answer(CallId ask, ServiceAnswer);    // AC-27
-    machine::Ticks advanceUnpaced(machine::Ticks);   // virtual-time hosts (LIB-11 `wait`)
-    // LIB-7 AC-13 (design §3.12): the product quits or the window closes.
+    void answer(CallId ask, ServiceAnswer);
+    machine::Ticks advanceUnpaced(machine::Ticks);   // virtual-time hosts (the harness's `wait`)
+    // The product quits or the window closes.
     // Every part's closing() once (a part writes what it has to save); no
     // message goes out after it. The host calls it while its parts are
     // there, before it destroys the session; the destructor calls no part.

@@ -1,9 +1,9 @@
 // The Sharp pacing profiles (LIB-17 AC-20) and the sink side of the sound
 // (SoundFeed). 0.8.1's Pacer tests (test_absolute_deadline,
 // test_stall_and_restart) moved to the library's pacer tests in M-31
-// (library/pacing/tests/pacer_tests.cpp: ac1_call_slice_keeps_wall_time_at_60_hz,
-// ac4_lag_over_limit_dropped_whole, ac13_start_afresh_no_lag_nothing_to_wait,
-// ac14_new_machine_new_rate_and_profile).
+// (library/pacing/tests/pacer_tests.cpp: call_slice_keeps_wall_time_at_60_hz,
+// lag_over_limit_dropped_whole, start_afresh_no_lag_nothing_to_wait,
+// new_machine_new_rate_and_profile).
 
 #include <cstdio>
 #include <string>

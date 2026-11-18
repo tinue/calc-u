@@ -38,7 +38,7 @@ void PeripheralsPart::attach(sessions::SessionSetup& s) {
             if (r == ControlCall::Done) return sessions::Done{};
             break;
         }
-        return sessions::Refused{"The " + at->peripheral.value + " has no control " + control + "."};   // EC-6
+        return sessions::Refused{"The " + at->peripheral.value + " has no control " + control + "."};
     });
 }
 

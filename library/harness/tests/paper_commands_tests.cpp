@@ -1,5 +1,4 @@
-// LIB-8 T11 (design §6): the harness's paper commands (AC-23, EC-2, EC-6,
-// EC-8) on its test product (TD-20 and TP-4).
+// The harness's paper commands on its test product (TD-20 and TP-4).
 #include "PaperTestKit.hpp"
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
@@ -19,7 +18,7 @@ std::vector<std::uint8_t> readFile(const std::string& path) {
 }
 } // namespace
 
-TEST(ac23_cut_paper_plugged_or_by_name) {
+TEST(cut_paper_plugged_or_by_name) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach printer test-dotter");
@@ -37,7 +36,7 @@ TEST(ac23_cut_paper_plugged_or_by_name) {
     CHECK_EQ(run.line("cut-paper XY-1"), std::string("refused: Unknown printer: XY-1. Printers: TD-20, TP-4.\n"));
 }
 
-TEST(ac23_paper_text_refused_without_text_layer) {
+TEST(paper_text_refused_without_text_layer) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach printer test-dotter");
@@ -47,7 +46,7 @@ TEST(ac23_paper_text_refused_without_text_layer) {
     CHECK_EQ(run.line("paper text TP-4"), std::string("refused: The TP-4 has no text layer.\n"));
 }
 
-TEST(ac23_paper_marks_reply) {
+TEST(paper_marks_reply) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach aux test-plotter");
@@ -61,7 +60,7 @@ TEST(ac23_paper_marks_reply) {
     CHECK(m.size() > 1 && startsWith(m[1], "dot "));
 }
 
-TEST(ac23_paper_png_writes_the_picture) {
+TEST(paper_png_writes_the_picture) {
     calcu::testing::TempFolder t("calcu-paper-png");
     PaperRun run;
     if (!run.server) return;
@@ -75,7 +74,7 @@ TEST(ac23_paper_png_writes_the_picture) {
     CHECK_EQ(run.line("paper png " + (t / "x.png") + " TD-20"), std::string("refused: The paper is empty.\n"));
 }
 
-TEST(ac23_paper_copy_and_cut_refused_for_empty_paper) {
+TEST(paper_copy_and_cut_refused_for_empty_paper) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach printer test-dotter");
@@ -91,7 +90,7 @@ TEST(ac23_paper_copy_and_cut_refused_for_empty_paper) {
     CHECK(startsWith(run.line("paper fold"), "refused: usage: paper"));
 }
 
-TEST(ac23_state_reads_what_was_appended) {
+TEST(state_reads_what_was_appended) {
     PaperRun run;
     if (!run.server) return;
     run.line("state paper TD-20");   // read once: from now on what is appended
@@ -106,7 +105,7 @@ TEST(ac23_state_reads_what_was_appended) {
     CHECK_EQ(run.line("state paper TD-20"), std::string("done 1\nreset\n"));
 }
 
-TEST(ec2_kept_paper_by_name_without_printer_refused_without_name) {
+TEST(kept_paper_by_name_without_printer_refused_without_name) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach printer test-dotter");
@@ -118,7 +117,7 @@ TEST(ec2_kept_paper_by_name_without_printer_refused_without_name) {
         CHECK_EQ(run.line(l), std::string("refused: No printer is plugged in.\n"));
 }
 
-TEST(ec6_paper_png_unwritable_path_refused_with_reason) {
+TEST(paper_png_unwritable_path_refused_with_reason) {
     calcu::testing::TempFolder t("calcu-paper-png");
     PaperRun run;
     if (!run.server) return;
@@ -130,7 +129,7 @@ TEST(ec6_paper_png_unwritable_path_refused_with_reason) {
     CHECK(!std::filesystem::exists(path));
 }
 
-TEST(ec8_commands_on_a_kept_paper_by_name) {
+TEST(commands_on_a_kept_paper_by_name) {
     calcu::testing::TempFolder t("calcu-paper-png");
     PaperRun run;
     if (!run.server) return;

@@ -1,4 +1,5 @@
-// LIB-5 design §6, L6: E14, determinism (AC-6; typing.md I-1, I-3).
+// Determinism: the same input at the same tick counts gives the same keys at
+// the same tick counts, at regular speed, at full speed and without a wall clock.
 #include "TestHarness.hpp"
 #include "TypingRig.hpp"
 #include <functional>
@@ -55,7 +56,7 @@ Run drive(TypingRig& r, const std::vector<Ticks>* atExactly) {
 
 } // namespace
 
-TEST(ac6_same_inputs_same_key_log_paced_full_virtual) {
+TEST(same_inputs_same_key_log_paced_full_virtual) {
     // Paced at regular speed, paced at full speed, in virtual time: each run
     // gives the inputs at the ticks it reached; replayed in virtual time at
     // those ticks, the key log is the same, tick for tick.

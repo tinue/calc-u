@@ -7,9 +7,8 @@
 #include <utility>
 #include <vector>
 
-// The stand-in for LIB-6's loader (LIB-18 design §2; spec: "the Library
-// column shows the criteria that use a startup preset with a stand-in for the
-// loader"). A preset is a name with a scripted plan: it builds the plan
+// The stand-in for the presets' loader, for the tests that use a startup
+// preset. A preset is a name with a scripted plan: it builds the plan
 // through MachineControl (BuildOrigin::StartupPreset) and runs `steps` ticks,
 // or cannot be read, or fails after building. A name it does not know is a
 // file that is gone.

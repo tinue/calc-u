@@ -4,13 +4,13 @@
 #include <string>
 #include <string_view>
 
-// A product's option of `serve` (C1600-3 design §3.5; AC-22): Calc-U-1600's
+// A product's option of `serve`: Calc-U-1600's
 // `calcu --product c1600 serve --dap <port>`. It takes its value at the
 // start; then it has things done on the serve loop's thread (what its own
 // I/O thread got) through the loop's inbox, with standard input's lines in
 // the order they came. While the inbox is empty and an add-on wants time,
 // the loop lets emulated time pass, unpaced, in pieces of 1/60 s, and looks
-// at the inbox between pieces: there is no wall clock (LIB-11 AC-6).
+// at the inbox between pieces: there is no wall clock.
 
 namespace calcu::sessions {
 class AppSession;

@@ -1,8 +1,7 @@
-// The media commands (LIB-7 design §3.11; spec AC-26, AC-28; LIB-11 AC-8,
-// AC-22): `media` (the topic `media` as `state` gives it), `media import
+// The media commands: `media` (the topic `media` as `state` gives it), `media import
 // <file>`, `media export <kind> <name> <path>` and `media delete <kind>
 // <name>`. The media steps (`test-disk { name: Work }`, `eject disk`,
-// `saveas { … }`) are LIB-6's preset commands (StepDef::command), sent as
+// `saveas { … }`) are preset commands (StepDef::command), sent as
 // `run-step`. A product without kinds of medium has no topic `media`: the
 // commands are refused.
 #include "harness/Commands.hpp"
@@ -27,7 +26,7 @@ Reply mediaCmd(CommandContext& c, media::MediaPart* part) {
     static const char* kUsage = "usage: media | media import <file> | media export <kind> <name> <path> | media delete <kind> <name>";
     if (part->kinds().empty()) return refusedReply(std::string(c.host.product().name()) + " has no media.");
     const auto w = words(c.line.argText);
-    if (w.empty()) {   // AC-7: the topic, read again first
+    if (w.empty()) {   // the topic, read again first
         c.host.command(sessions::Command{media::kRefreshCommand, {}});
         const auto t = c.host.readTopic(media::kMediaTopic.value);
         if (!t || !t->state) return refusedReply("The session gave no media.");
@@ -37,15 +36,15 @@ Reply mediaCmd(CommandContext& c, media::MediaPart* part) {
         v.set("state", fromSession(t->state->toValue()));
         return doneReply(std::move(v), {payloadText(t->state)});
     }
-    if (w[0] == "import" && w.size() >= 2) {   // AC-30
+    if (w[0] == "import" && w.size() >= 2) {
         sessions::Value::Array paths{sessions::Value(joined(w, 1, w.size()))};
         return fromSessionReply(c.host.command(
             sessions::Command{media::kImportCommand, sessions::Value::object({{"paths", sessions::Value(std::move(paths))}})}));
     }
-    if (w[0] == "delete" && w.size() >= 3)   // AC-31: the command is the confirmation
+    if (w[0] == "delete" && w.size() >= 3)   // the command is the confirmation
         return fromSessionReply(c.host.command(sessions::Command{
             media::kDeleteCommand, sessions::Value::object({{"kind", w[1]}, {"name", joined(w, 2, w.size())}, {"confirmed", true}})}));
-    if (w[0] == "export" && w.size() >= 4) {   // AC-31, D-13: its files side by side
+    if (w[0] == "export" && w.size() >= 4) {   // a medium with companion files (a tape): its files side by side
         const media::KindDecl* k = part->kind(w[1]);
         if (!k) return refusedReply("There is no kind of medium " + w[1] + ".");
         std::string reason;

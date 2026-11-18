@@ -3,12 +3,12 @@
 #include <chrono>
 #include <thread>
 
-// LIB-1 AC-7, AC-8, AC-9, EC-7, EC-8 (design §6, T6).
+// Emulated time on a machine: advance() runs whole instructions.
 
 using namespace calcu::machine;
 using namespace calcu::machine::test;
 
-TEST(ac7_advance_runs_whole_instructions_and_reports_them) {
+TEST(advance_runs_whole_instructions_and_reports_them) {
     auto m = buildTestMachine(kSeg);   // instructions of 3 and 5 ticks in turn
     CHECK(m != nullptr);
     if (!m) return;
@@ -30,7 +30,7 @@ TEST(ac7_advance_runs_whole_instructions_and_reports_them) {
     CHECK_EQ(wrong, 0);
 }
 
-TEST(ac8_tick_count_never_goes_back) {
+TEST(tick_count_never_goes_back) {
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
     if (!m) return;
@@ -54,7 +54,7 @@ TEST(ac8_tick_count_never_goes_back) {
     CHECK_EQ(buildTestMachine(kDot)->tickCount(), Ticks{0});
 }
 
-TEST(ac9_no_advance_no_change) {
+TEST(no_advance_no_change) {
     auto m = buildTestMachine(kSeg, std::nullopt, {peripheralAt(testCatalogue(), "printer", kPrinter)});
     CHECK(m != nullptr);
     if (!m) return;
@@ -71,7 +71,7 @@ TEST(ac9_no_advance_no_change) {
     CHECK(counter && counter->count == c);
 }
 
-TEST(ec7_one_tick_whatever_clocks_inside) {
+TEST(one_tick_whatever_clocks_inside) {
     // test-dot runs an inner block at 3/8 of its tick, converted inside.
     auto m = buildTestMachine(kDot);
     CHECK(m != nullptr);
@@ -82,7 +82,7 @@ TEST(ec7_one_tick_whatever_clocks_inside) {
     CHECK(m->elapsed() == EmulatedTime(800, kDotRate));
 }
 
-TEST(ec8_advance_by_zero_runs_nothing) {
+TEST(advance_by_zero_runs_nothing) {
     auto m = buildTestMachine(kSeg);
     CHECK(m != nullptr);
     if (!m) return;

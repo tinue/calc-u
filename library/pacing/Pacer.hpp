@@ -7,29 +7,30 @@
 #include <cstdint>
 #include <optional>
 
-// The pacer (LIB-17 design §3; frontend.md SP-1, I-6): it runs a machine in
-// slices so that its emulated time keeps to the wall clock the caller
-// supplies, at regular speed and at full speed.
+// The pacer: it runs a machine in slices so that its emulated time keeps to
+// the wall clock the caller supplies, at regular speed and at full speed. One
+// pacer serves every model, each with its pacing profile; the long-run rate
+// is exact (errors of single calls do not add up).
 //
 // Ownership and threads: the machine session owns one Pacer and makes every
 // call, the clock's included, on its own thread. The pacer has no lock and
-// no thread, never reads a machine and never changes a tick count (AC-7): it
+// no thread, never reads a machine and never changes a tick count: it
 // knows emulated time only from the ticks each slice reports.
 
 namespace calcu::pacing {
 
 struct SliceRequest {
-    machine::Ticks ticks;   // at least this many (LIB-1 AC-7)
+    machine::Ticks ticks;   // at least this many
     WallTime due;           // regular speed: the wall time the slice's end is due; full speed: the time it runs
 };
 
 struct SliceResult {
-    machine::Ticks ticksRun = 0;   // as the machine reports (LIB-1 AC-7)
+    machine::Ticks ticksRun = 0;   // as the machine reports
     bool stoppedEarly = false;     // a debugger pause or a debug target stopped it; the call ends
-    bool waitsForInput = false;    // the machine waits for input in this slice (LIB-3 AC-22)
+    bool waitsForInput = false;    // the machine waits for input in this slice
 };
 
-// Implemented by the machine session (LIB-3): runs one slice on its machine.
+// Implemented by the machine session: runs one slice on its machine.
 class SliceRunner {
 public:
     virtual SliceResult runSlice(const SliceRequest&) = 0;
@@ -41,24 +42,24 @@ protected:
 struct PaceResult {
     machine::Ticks ticksRun = 0;
     int slices = 0;
-    bool ranUnpaced = false;   // a full-speed slice ran: the session throws its sound away (LIB-3 AC-20)
-    bool lagDropped = false;   // AC-4, for tests and the log
+    bool ranUnpaced = false;   // a full-speed slice ran: the session throws its sound away
+    bool lagDropped = false;   // the lag was dropped; for tests and the log
 };
 
 class Pacer {
 public:
-    static constexpr std::chrono::milliseconds kLagLimit{100};           // AC-4
-    static constexpr std::chrono::milliseconds kFullSpeedAllowance{14};  // AC-5
+    static constexpr std::chrono::milliseconds kLagLimit{100};           // a larger lag is dropped, not caught up
+    static constexpr std::chrono::milliseconds kFullSpeedAllowance{14};  // per call; the host keeps the rest of ~16 ms
     // The slice at full speed of a profile whose slice is the call: 1/60 s of
-    // emulated time, as Calc-U-1600 today (design D-2). Also the one slice a
-    // call runs when it drops the lag on such a profile (qa-report,
-    // deviations).
+    // emulated time. Also the one slice a call runs when it drops the lag on
+    // such a profile: running nothing there would let a caller that always
+    // drops (a throttled browser tab) never run the machine.
     static constexpr int kCallSlicesPerSecond = 60;
 
-    explicit Pacer(WallClock clock, std::optional<std::uint32_t> seed = std::nullopt);   // AC-10
+    explicit Pacer(WallClock clock, std::optional<std::uint32_t> seed = std::nullopt);   // a seed makes the jitter reproducible
 
-    void setMachine(const PacingProfile&, machine::TickRate);   // AC-14; starts afresh
-    void startAfresh();                                         // AC-13
+    void setMachine(const PacingProfile&, machine::TickRate);   // starts afresh
+    void startAfresh();                                         // no lag, nothing to wait out
     PaceResult pace(Speed, SliceRunner&);                       // one call of the host
 
 private:
@@ -87,7 +88,7 @@ private:
     std::optional<machine::Ticks> next_;
 
     Speed lastSpeed_ = Speed::Regular;
-    bool waiting_ = false;           // at full speed, paced while the machine waits (AC-12)
+    bool waiting_ = false;           // at full speed, paced while the machine waits
     WallTime lastUnpacedEnd_{0};
 };
 

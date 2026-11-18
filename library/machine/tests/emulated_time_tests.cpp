@@ -4,12 +4,12 @@
 #include <cstdint>
 #include <vector>
 
-// LIB-1 AC-10, EC-4 (design §6, T2).
+// EmulatedTime: conversions and comparisons across tick rates.
 
 using namespace calcu::machine;
 
 namespace {
-// Every tick rate in the catalogues (LIB-1 AC-10).
+// Every tick rate in the catalogues.
 const std::vector<TickRate> kRates{384'000, 394'000, 455'000, 1'300'000, 3'580'000};
 constexpr Ticks kDay = 86'400;
 
@@ -26,7 +26,7 @@ std::vector<Ticks> countsFor(TickRate rate) {
 }
 } // namespace
 
-TEST(ac10_round_trip_every_catalogue_rate) {
+TEST(round_trip_every_catalogue_rate) {
     for (TickRate rate : kRates) {
         int wrong = 0;
         for (Ticks t : countsFor(rate)) {
@@ -37,7 +37,7 @@ TEST(ac10_round_trip_every_catalogue_rate) {
     }
 }
 
-TEST(ac10_whole_multiples_give_whole_seconds) {
+TEST(whole_multiples_give_whole_seconds) {
     for (TickRate rate : kRates) {
         int wrong = 0;
         for (Ticks k : {Ticks{0}, Ticks{1}, Ticks{7}, Ticks{3'600}, kDay, 366 * kDay}) {
@@ -49,7 +49,7 @@ TEST(ac10_whole_multiples_give_whole_seconds) {
     }
 }
 
-TEST(ec4_compare_and_add_across_rates) {
+TEST(compare_and_add_across_rates) {
     // One second on a TI-59 and one on a PC-1600: equal, though the counts differ.
     const EmulatedTime ti(455'000, 455'000), sharp(3'580'000, 3'580'000);
     CHECK(ti == sharp);

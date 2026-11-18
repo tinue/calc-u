@@ -1,6 +1,5 @@
-// LIB-8 T6, T7 (design §6): the topics and the part (AC-6, AC-7, EC-2 to
-// EC-4), and what the paper lives through (AC-8, AC-9, EC-7), on the
-// harness's test product (TD-20 and TP-4, LIB-18's machine control, LIB-6's
+// The topics and the part, and what the paper lives through, on the
+// harness's test product (TD-20 and TP-4, the startup machine control, the
 // presets) with a test frontend listening where messages are checked.
 #include "PaperTestKit.hpp"
 #include "TempFolder.hpp"
@@ -43,7 +42,7 @@ s::ListenerId listen(PaperRun& run, s::test::TestFrontend& fe) { return run.serv
 
 } // namespace
 
-TEST(ac6_one_stream_per_printer_type_plugged_or_not) {
+TEST(one_stream_per_printer_type_plugged_or_not) {
     PaperRun run;
     if (!run.server) return;
     s::test::TestFrontend fe;
@@ -61,7 +60,7 @@ TEST(ac6_one_stream_per_printer_type_plugged_or_not) {
     CHECK_EQ(run.line("state paper XY-1"), std::string("refused: There is no topic paper XY-1.\n"));
 }
 
-TEST(ac6_message_carries_appended_marks_lines_and_reach) {
+TEST(message_carries_appended_marks_lines_and_reach) {
     PaperRun run;
     if (!run.server) return;
     s::test::TestFrontend fe;
@@ -95,7 +94,7 @@ TEST(ac6_message_carries_appended_marks_lines_and_reach) {
     }
 }
 
-TEST(ac6_cut_sends_the_reset) {
+TEST(cut_sends_the_reset) {
     PaperRun run;
     if (!run.server) return;
     s::test::TestFrontend fe;
@@ -110,7 +109,7 @@ TEST(ac6_cut_sends_the_reset) {
     if (!ms.empty()) CHECK(ms[0].reset && ms[0].appended.empty());   // the paper was emptied
 }
 
-TEST(ec3_late_listener_gets_whole_paper_once_then_appended) {
+TEST(late_listener_gets_whole_paper_once_then_appended) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach printer test-dotter");
@@ -135,7 +134,7 @@ TEST(ec3_late_listener_gets_whole_paper_once_then_appended) {
     CHECK_EQ(marksIn(more), run.paperOf("TD-20").marks().size() - tdMarks);
 }
 
-TEST(ac7_same_commands_same_ticks_same_marks) {
+TEST(same_commands_same_ticks_same_marks) {
     std::vector<std::string> replies[2];
     for (auto& r : replies) {
         PaperRun run;
@@ -150,7 +149,7 @@ TEST(ac7_same_commands_same_ticks_same_marks) {
     CHECK(replies[0].size() == 3 && replies[0][0].size() > 100);
 }
 
-TEST(ec2_product_without_printers_has_no_paper_topic) {
+TEST(product_without_printers_has_no_paper_topic) {
     s::AppSessionSetup setup;
     setup.clock = [] { return calcu::pacing::WallTime{0}; };
     setup.hostTime = [] { return std::chrono::system_clock::time_point{}; };
@@ -165,7 +164,7 @@ TEST(ec2_product_without_printers_has_no_paper_topic) {
     CHECK(fe.reply(c) && !fe.reply(c)->done);
 }
 
-TEST(ec4_full_speed_loses_no_mark_shown_at_end_of_call) {
+TEST(full_speed_loses_no_mark_shown_at_end_of_call) {
     PaperRun run;
     if (!run.server) return;
     s::test::TestFrontend fe;
@@ -187,9 +186,9 @@ TEST(ec4_full_speed_loses_no_mark_shown_at_end_of_call) {
     CHECK_EQ(all, p.marks().size());   // no mark lost
 }
 
-// ── T7: what the paper lives through ────────────────────────────────────
+// ── What the paper lives through ────────────────────────────────────────
 
-TEST(ac8_reset_cold_boot_power_cycle_keep_the_paper) {
+TEST(reset_cold_boot_power_cycle_keep_the_paper) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach printer test-dotter");
@@ -207,7 +206,7 @@ TEST(ac8_reset_cold_boot_power_cycle_keep_the_paper) {
     if (p.text().size() == 2) CHECK_EQ(p.text()[1].at.y, units(7));
 }
 
-TEST(ac8_detach_keeps_attach_again_prints_on) {
+TEST(detach_keeps_attach_again_prints_on) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach printer test-dotter");
@@ -240,7 +239,7 @@ TEST(ac8_detach_keeps_attach_again_prints_on) {
     CHECK(std::equal(first.begin() + 1, first.end(), run.marks("TD-20").begin() + 1));   // the old marks unchanged
 }
 
-TEST(ac8_machine_replaced_without_printer_keeps_paper) {
+TEST(machine_replaced_without_printer_keeps_paper) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach printer test-dotter");
@@ -251,12 +250,12 @@ TEST(ac8_machine_replaced_without_printer_keeps_paper) {
     CHECK_EQ(run.line("model test-dot"), std::string("done\n"));   // built bare: no printer
     CHECK(run.marks("TD-20") == td);
     CHECK(run.marks("TP-4") == tp);
-    // The command without a name means the printer plugged in: refused (EC-8).
+    // The command without a name means the printer plugged in: refused.
     CHECK_EQ(run.line("cut-paper"), std::string("refused: No printer is plugged in.\n"));
     CHECK(run.marks("TD-20") == td);
 }
 
-TEST(ac8_user_preset_naming_printer_starts_empty_other_paper_stays) {
+TEST(user_preset_naming_printer_starts_empty_other_paper_stays) {
     calcu::testing::TempFolder t("calcu-paper-presets");
     t.write("td.test-seg", "format-version: 2\nmodel: test-seg\nprinter: test-dotter\n");
     t.write("both.test-seg", "format-version: 2\nmodel: test-seg\nprinter: test-dotter\naux: test-plotter\n");
@@ -275,7 +274,7 @@ TEST(ac8_user_preset_naming_printer_starts_empty_other_paper_stays) {
     CHECK_EQ(run.marks("TP-4"), (std::vector<std::string>{"reach 0 0"}));
 }
 
-TEST(ac8_startup_preset_at_model_switch_keeps_paper) {
+TEST(startup_preset_at_model_switch_keeps_paper) {
     calcu::testing::TempFolder t("calcu-paper-startup");
     t.write("dot.test-dot", "format-version: 2\nmodel: test-dot\na: test-dotter\n");
     t.write("settings.ini", "format-version = 1\n\n[preset]\ntest-dot = " + (t / "dot.test-dot") + "\n");
@@ -289,10 +288,10 @@ TEST(ac8_startup_preset_at_model_switch_keeps_paper) {
     const auto td = run.marks("TD-20");
     CHECK_EQ(run.line("model test-dot"), std::string("done\n"));
     CHECK(!run.machine().plugged().byPlace.empty());   // the startup preset plugged the TD-20 in
-    CHECK(run.marks("TD-20") == td);                    // and the paper stays (OQ-5)
+    CHECK(run.marks("TD-20") == td);                    // and the paper stays
 }
 
-TEST(ac8_new_session_starts_with_empty_papers) {
+TEST(new_session_starts_with_empty_papers) {
     PaperRun run;
     if (!run.server) return;
     for (const auto& [owner, p] : run.part().papers()) CHECK(p->empty());
@@ -300,7 +299,7 @@ TEST(ac8_new_session_starts_with_empty_papers) {
     CHECK_EQ(run.marks("TP-4"), (std::vector<std::string>{"reach 0 0"}));
 }
 
-TEST(ac9_detach_and_attach_send_nothing_for_papers) {
+TEST(detach_and_attach_send_nothing_for_papers) {
     PaperRun run;
     if (!run.server) return;
     s::test::TestFrontend fe;
@@ -319,7 +318,7 @@ TEST(ac9_detach_and_attach_send_nothing_for_papers) {
     CHECK(streams(fe, kTp, mark).empty());
 }
 
-TEST(ac8_attach_in_place_keeps_marks_made_before_the_part_binds) {
+TEST(attach_in_place_keeps_marks_made_before_the_part_binds) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach printer test-dotter");
@@ -336,7 +335,7 @@ TEST(ac8_attach_in_place_keeps_marks_made_before_the_part_binds) {
     CHECK(run.marks("TD-20").size() > 1);
 }
 
-TEST(ec7_detach_in_a_line_keeps_what_was_printed) {
+TEST(detach_in_a_line_keeps_what_was_printed) {
     PaperRun run;
     if (!run.server) return;
     run.line("attach printer test-dotter");

@@ -1,11 +1,11 @@
-// LIB-3 L15: suspend and continue (AC-24, AC-25, EC-4).
+// Suspend and continue.
 #include "TestHarness.hpp"
 #include "TestParts.hpp"
 
 using namespace calcu::sessions;
 using namespace calcu::sessions::test;
 
-TEST(ac24_suspended_no_run_continue_runs) {
+TEST(suspended_no_run_continue_runs) {
     Rig r;
     r.build();
     r.call();
@@ -21,7 +21,7 @@ TEST(ac24_suspended_no_run_continue_runs) {
     CHECK(r.ticks() > t);
 }
 
-TEST(ac24_session_never_suspends_itself) {
+TEST(session_never_suspends_itself) {
     Rig r;
     r.build();
     Ticks last = 0;
@@ -34,12 +34,12 @@ TEST(ac24_session_never_suspends_itself) {
     CHECK_EQ(r.part.suspendings, 0);
 }
 
-TEST(ac25_pause_survives_suspend_and_back) {
+TEST(pause_survives_suspend_and_back) {
     Rig r;
     r.build();
     r.call();
     MachineSession& ms = r.session->machineSession();
-    ms.setPaused(true);   // the debugger (LIB-10)
+    ms.setPaused(true);   // the debugger
     const Ticks t = r.ticks();
     r.send("suspend");
     r.call();
@@ -52,7 +52,7 @@ TEST(ac25_pause_survives_suspend_and_back) {
     CHECK(r.ticks() > t);
 }
 
-TEST(ac25_resume_while_suspended_does_not_run) {
+TEST(resume_while_suspended_does_not_run) {
     Rig r;
     r.build();
     r.call();
@@ -69,7 +69,7 @@ TEST(ac25_resume_while_suspended_does_not_run) {
     CHECK(r.ticks() > t);
 }
 
-TEST(ec4_operation_no_progress_while_suspended_busy_stays) {
+TEST(operation_no_progress_while_suspended_busy_stays) {
     Rig r;
     r.build();
     r.part.operation = runningFor(300'000);

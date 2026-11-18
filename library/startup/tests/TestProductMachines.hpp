@@ -19,12 +19,12 @@
 #include <string>
 #include <vector>
 
-// LIB-18's test product (design §2, §6): ProductMachines over the test
+// The startup tests' product: ProductMachines over the test
 // catalogue (library/machine/tests/TestMachines.hpp) with a build counter, a
 // settable readiness bound and a built-in default per test model; the
 // settings declared for it; and the rig the startup tests share: an app
 // session with PeripheralsPart, StartupPart and the sessions' test part
-// (for an operation that runs, AC-16), a test frontend listening.
+// (for an operation that runs), a test frontend listening.
 
 namespace calcu::startup::test {
 
@@ -99,7 +99,7 @@ inline const settings::ProductDecl& testDecl() {
     return d;
 }
 
-// The full ROM set of the test catalogue, through the one lookup (LIB-12).
+// The full ROM set of the test catalogue, through the one lookup.
 inline std::shared_ptr<const roms::RomSet> testRoms() {
     static const auto set = [] {
         roms::test::TempFolder dir("calcu-startup-roms");
@@ -120,7 +120,7 @@ struct RigOptions {
     PresetLoader* loader = nullptr;
     bool start = true;                 // send `start` at once
     std::function<void(TestProductMachines&)> prepare;   // before the start
-    sessions::SliceHook* hook = nullptr;                  // on the machine session (LIB-5's place)
+    sessions::SliceHook* hook = nullptr;                  // on the machine session (where the typing engine goes)
 };
 
 class Rig {

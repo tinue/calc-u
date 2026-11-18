@@ -5,12 +5,11 @@
 #include <variant>
 #include <vector>
 
-// Capabilities (LIB-1 design §3.7; machine.md M-5, M-7; capabilities.md C-1).
+// Capabilities.
 // A kind is a class that derives from Capability and has
 // `static constexpr KindId kKind`. Generic kinds live in their feature's
 // library area, product kinds in the product's core with the product's
-// prefix. The library compares KindId values only and names no kind
-// (capabilities.md I-1).
+// prefix. The library compares KindId values only and names no kind.
 
 namespace calcu::machine {
 
@@ -29,8 +28,8 @@ struct ComponentOwner  { ComponentId component; bool operator==(const ComponentO
 struct PeripheralOwner { PeripheralId peripheral; PlacePath place; bool operator==(const PeripheralOwner&) const = default; };
 using Owner = std::variant<ComponentOwner, PeripheralOwner>;
 
-// The ID is unique within a machine and the same for machines built alike
-// (AC-21): "<place-path>/<kind>" for a peripheral, "<component>/<kind>" for
+// The ID is unique within a machine and the same for machines built alike:
+// "<place-path>/<kind>" for a peripheral, "<component>/<kind>" for
 // a component, with an index only where an owner has two of one kind.
 struct CapabilityEntry { KindId kind; CapabilityId id; Owner owner; };
 
@@ -46,14 +45,13 @@ template <class K, class M> const K* capabilityAs(const M& machine, const Capabi
     return c && c->kind() == K::kKind ? static_cast<const K*>(c) : nullptr;
 }
 
-// The capabilities of kind K present now; empty if none (EC-5).
+// The capabilities of kind K present now; empty if none.
 template <class K, class M> std::vector<CapabilityEntry> capabilitiesOf(const M& machine) {
     return machine.capabilities(K::kKind);
 }
 
-// The first capability of kind K the machine has now, or nullptr (Part E
-// simplification E-7: the one form of "the machine's K" for library and
-// products).
+// The first capability of kind K the machine has now, or nullptr: the one
+// form of "the machine's K" for library and products.
 template <class K, class M> K* first(M& machine) {
     for (const auto& e : machine.capabilities(K::kKind))
         if (K* k = capabilityAs<K>(machine, e.id)) return k;

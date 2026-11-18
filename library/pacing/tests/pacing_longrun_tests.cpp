@@ -3,11 +3,11 @@
 #include <cstdlib>
 #include <memory>
 
-// LIB-17 AC-2, AC-3 over hours (design §6, L9): five hours of wall time on a
+// Uneven calls and overshoots do not add up, over hours: five hours of wall time on a
 // scripted clock, calls at about 60 Hz with timer jitter of ± 4 ms, an
 // oversleep of 50 ms every 9,000 calls and a stall of 3 s every 250,000
-// calls. The bound of AC-1 is asserted at the end of every call, from the
-// start or from the last stall (AC-4: the lag is dropped there). Both kinds
+// calls. Emulated time within one slice of wall time is asserted at the end of
+// every call, from the start or from the last stall (the lag is dropped there). Both kinds
 // of profile; instructions of 97 ticks, so every slice overshoots.
 
 using namespace calcu::pacing;
@@ -52,7 +52,7 @@ LongRun longRun(const PacingProfile& profile) {
         clock.now += d;
         const Ticks before = m->tickCount();
         const PaceResult res = pacer.pace(Speed::Regular, runner);
-        if (res.lagDropped) {   // AC-4: pacing goes on from the moment of this call
+        if (res.lagDropped) {   // pacing goes on from the moment of this call
             ++out.drops;
             t0 = before;
             w0 = clock.now;
@@ -69,7 +69,7 @@ LongRun longRun(const PacingProfile& profile) {
 
 } // namespace
 
-TEST(ac2_ac3_library_longrun_scripted_fixed) {
+TEST(library_longrun_scripted_fixed) {
     const LongRun r = longRun(fixedProfile(true));
     CHECK(r.hours > 4.99);
     CHECK_EQ(r.drops, r.stalls);   // only the stalls are over the limit
@@ -77,7 +77,7 @@ TEST(ac2_ac3_library_longrun_scripted_fixed) {
     CHECK(r.worst <= static_cast<std::int64_t>(kSlice + kLen));
 }
 
-TEST(ac2_ac3_library_longrun_scripted_call) {
+TEST(library_longrun_scripted_call) {
     const LongRun r = longRun(callProfile());
     CHECK(r.hours > 4.99);
     CHECK_EQ(r.drops, r.stalls);

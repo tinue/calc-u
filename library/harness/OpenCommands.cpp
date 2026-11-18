@@ -1,7 +1,7 @@
-// The harness command of LIB-13 (design §7, D-10; spec AC-9): `open <path>`,
+// The harness command `open <path>`:
 // the session command `open` as a frontend sends it, with the file's bytes
 // and its path (relative to the working directory), way `harness`. The reply
-// is that of AC-3: what the file was opened as, or why it was refused.
+// says what the file was opened as, or why it was refused.
 #include "files/Files.hpp"
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"

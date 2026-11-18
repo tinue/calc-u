@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-// A test product part (LIB-3 design §6): its names carry a product's prefix
+// A test product part: its names carry a product's prefix
 // ("tp." by default). One product topic of each shape, product commands that
 // start an operation and that do not, one product request; and the rig the
 // session tests share: a scripted clock, the session, a test frontend and a
@@ -88,7 +88,7 @@ public:
         });
         // Declared endsRunningOperation: `stop` starts an operation that ends
         // at once (Reset, Cold boot, a model switch), `stop-nothing` has
-        // nothing to do (a switch to the running model; LIB-18 D-6).
+        // nothing to do (a switch to the running model).
         s.command(
             CommandName{p_ + "stop"},
             [](const Value&, SessionContext&) -> CommandOutcome { return StartOperation{runningFor(0)}; }, true);

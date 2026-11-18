@@ -6,14 +6,13 @@
 #include <span>
 #include <string>
 
-// A host link (LIB-2 design §3.5; spec AC-18, AC-19, EC-5, EC-7; glossary):
+// A host link (see the glossary):
 // what connects a machine's serial port to the user's computer. On macOS and
 // Linux it is a pseudo-terminal whose serial port file, a symbolic link with
-// a fixed name in the folder for serial links (LIB-9), any serial program
-// can open with any settings (PtyHostLink.cpp, the successor of Calc-U-1600's
-// PtySerialLink). Elsewhere there is none (NoHostLink.cpp; EC-5).
+// a fixed name in the folder for serial links, any serial program
+// can open with any settings (PtyHostLink.cpp). Elsewhere there is none (NoHostLink.cpp).
 //
-// Threads (ADR 0009): a pseudo-terminal link runs a reader and a writer
+// Threads: a pseudo-terminal link runs a reader and a writer
 // thread of its own; its rings are the only place that synchronizes. The
 // members below are called from the session's thread.
 
@@ -24,13 +23,13 @@ public:
     virtual ~HostLink() = default;
     // What the program on the user's computer sent, oldest first; how many.
     virtual std::size_t read(std::span<std::uint8_t> out) = 0;
-    // Never blocks; dropped while no program reads (EC-7).
+    // Never blocks; dropped while no program reads.
     virtual void write(std::span<const std::uint8_t> in) = 0;
     virtual bool peerOpen() const = 0;   // a program has the file open (→ PeerLines::dcd)
     // The serial port file, or the raw terminal device when none could be
     // made (no folder).
     virtual std::string path() const = 0;
-    // The serial port file into another folder (today's relink()); true when
+    // The serial port file into another folder; true when
     // it was made there.
     virtual bool moveTo(const std::optional<std::string>& folder) = 0;
 };

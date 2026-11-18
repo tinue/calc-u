@@ -1,6 +1,5 @@
-// LIB-11 design T9 to T12, T18: sound, the run folder and settings, the
-// clock, determinism, the machine state (AC-6, AC-8, AC-9 audio, AC-21,
-// AC-24; EC-1, EC-3, EC-6).
+// Sound, the run folder and settings, the clock, determinism, the machine
+// state.
 #include "Files.hpp"
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
@@ -31,9 +30,9 @@ bool inside(const std::string& path, const std::string& folder) { return path.rf
 std::string str(const fs::path& p) { return p.string(); }
 } // namespace
 
-// ── Sound (T9) ──────────────────────────────────────────────────────────
+// ── Sound ───────────────────────────────────────────────────────────────
 
-TEST(ac9_audio_records_all_sound_also_of_an_operation) {
+TEST(audio_records_all_sound_also_of_an_operation) {
     TempFolder out;
     const std::string wav = str(out.path() / "run.wav");
     {
@@ -53,7 +52,7 @@ TEST(ac9_audio_records_all_sound_also_of_an_operation) {
     CHECK_EQ(u32At(bytes, 24), std::uint32_t{8000});
 }
 
-TEST(ec3_wav_complete_when_input_ends) {
+TEST(wav_complete_when_input_ends) {
     TempFolder out;
     const std::string first = str(out.path() / "a.wav"), second = str(out.path() / "b.wav");
     TestRun run({}, mt::kDot);
@@ -63,7 +62,7 @@ TEST(ec3_wav_complete_when_input_ends) {
     std::size_t at = 0;
     run.server->serve([&]() -> std::optional<std::string> { return at < in.size() ? std::optional(in[at++]) : std::nullopt; },
                       [](const std::string&) {});
-    // The header's sizes are those of the data, in both files (D-8: a second
+    // The header's sizes are those of the data, in both files (a second
     // audio completes the first file).
     for (const auto& [path, samples] : {std::pair{first, 8u}, std::pair{second, 16u}}) {
         const std::string b = calcu::testing::readText(path);
@@ -74,7 +73,7 @@ TEST(ec3_wav_complete_when_input_ends) {
     }
 }
 
-TEST(ec6_audio_on_machine_without_sound_is_refused) {
+TEST(audio_on_machine_without_sound_is_refused) {
     TempFolder out;
     TestRun run;   // test-seg has no sound
     CHECK(run.server != nullptr);
@@ -83,9 +82,9 @@ TEST(ec6_audio_on_machine_without_sound_is_refused) {
     CHECK(!fs::exists(out.path() / "x.wav"));
 }
 
-// ── The run folder, settings and ROMs (T10) ─────────────────────────────
+// ── The run folder, settings and ROMs ───────────────────────────────────
 
-TEST(ac8_defaults_and_no_settings_file_read_or_written) {
+TEST(defaults_and_no_settings_file_read_or_written) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -103,7 +102,7 @@ TEST(ac8_defaults_and_no_settings_file_read_or_written) {
     CHECK(!fs::exists(paths.settingsFile()));
 }
 
-TEST(ac8_run_folder_empty_removed_and_in_no_reply) {
+TEST(run_folder_empty_removed_and_in_no_reply) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -118,7 +117,7 @@ TEST(ac8_run_folder_empty_removed_and_in_no_reply) {
     CHECK(!fs::exists(folder));
 }
 
-TEST(ac8_traces_and_screenshots_go_to_the_run_folder) {
+TEST(traces_and_screenshots_go_to_the_run_folder) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -128,7 +127,7 @@ TEST(ac8_traces_and_screenshots_go_to_the_run_folder) {
     CHECK(inside(s.traceFolder(), s.runFolder()));
 }
 
-TEST(ac8_options_name_settings_save_and_output_folders) {
+TEST(options_name_settings_save_and_output_folders) {
     TempFolder mine;
     const fs::path ini = mine.path() / "Calc-U-Test.ini", save = mine.path() / "save", output = mine.path() / "out";
     { std::ofstream(ini) << "format-version = 1\n[startup]\nmodel = test-dot\n"; }
@@ -151,17 +150,17 @@ TEST(ac8_options_name_settings_save_and_output_folders) {
     }
     // The named folders are the agent's: kept, with what is in them. The
     // named settings file is used as a product uses it: the session records
-    // the last used model there (LIB-18 AC-9), and nothing else changes.
+    // the last used model there, and nothing else changes.
     CHECK(fs::exists(save / "kept.txt") && fs::is_directory(output));
     const std::string after = calcu::testing::readText(ini);
     CHECK(after.rfind(before, 0) == 0 || after.find("model = test-dot\n") != std::string::npos);
     CHECK(after.find("last-model = test-dot") != std::string::npos);
 }
 
-// LIB-11 AC-2 with LIB-18 (design L8): the run starts with the machine the
-// product starts with under the default settings: `last` and nothing
-// recorded gives the fallback model, built by LIB-18's start, at key readiness.
-TEST(ac2_run_starts_with_the_startup_model_under_default_settings) {
+// The run starts with the machine the product starts with under the default
+// settings: `last` and nothing recorded gives the fallback model, built by
+// the startup's start, at key readiness.
+TEST(run_starts_with_the_startup_model_under_default_settings) {
     TestRun seg;
     CHECK(seg.server != nullptr);
     if (!seg.server) return;
@@ -174,7 +173,7 @@ TEST(ac2_run_starts_with_the_startup_model_under_default_settings) {
     CHECK(dot.server && dot.machine().model() == mt::kDot && dot.machine().isKeyReady());
 }
 
-// LIB-11 Part D, D.6 H1 (D-11): the product is prepared on the run's
+// The product is prepared on the run's
 // settings and folders before the run asks for its ROMs and its parts.
 TEST(prepare_runs_before_session_parts) {
     TestRun run;
@@ -187,11 +186,11 @@ TEST(prepare_runs_before_session_parts) {
     CHECK_EQ(a[1], std::string("sessionParts"));
 }
 
-TEST(ac8_bundled_roms_through_the_lookup) {
+TEST(bundled_roms_through_the_lookup) {
     TestRun run({}, mt::kDot);
     CHECK(run.server != nullptr);
     if (!run.server) return;
-    // Every file of the full set was read once at the start (LIB-12 AC-6):
+    // Every file of the full set was read once at the start:
     // the machine runs with the bundle gone.
     std::error_code ec;
     for (const auto& e : fs::directory_iterator(run.product.romFolder().path())) fs::remove(e.path(), ec);
@@ -199,7 +198,7 @@ TEST(ac8_bundled_roms_through_the_lookup) {
     CHECK(!run.product.lookUpRoms().ok());   // a new start would not find them
 }
 
-TEST(ec1_missing_rom_ends_at_start_naming_files) {
+TEST(missing_rom_ends_at_start_naming_files) {
     TestProduct p;
     p.romFolder().remove("test-seg.rom");
     p.romFolder().remove("test-dot-v2.rom");
@@ -210,9 +209,9 @@ TEST(ec1_missing_rom_ends_at_start_naming_files) {
     CHECK(error.find("test-dot-v2.rom") != std::string::npos);
 }
 
-// ── The clock (T11) ─────────────────────────────────────────────────────
+// ── The clock ───────────────────────────────────────────────────────────
 
-TEST(ac21_fixed_instant_by_default_at_build_and_after_operation) {
+TEST(fixed_instant_by_default_at_build_and_after_operation) {
     TestRun run({}, mt::kDot);   // test-dot's component rtc
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -230,7 +229,7 @@ TEST(ac21_fixed_instant_by_default_at_build_and_after_operation) {
     CHECK(clock->read() == fixed);   // handed the same instant again
 }
 
-TEST(ac21_clock_option_names_instant) {
+TEST(clock_option_names_instant) {
     RunOptions o;
     o.clock = ClockMode::Given;
     o.given = *parseDateTime("2026-11-15T13:45:30");
@@ -242,7 +241,7 @@ TEST(ac21_clock_option_names_instant) {
     CHECK(!parseDateTime("2026-11-15 13:45:30") && !parseDateTime("2026-13-01T00:00:00") && !parseDateTime("host"));
 }
 
-TEST(ac21_clock_host_hands_host_time) {
+TEST(clock_host_hands_host_time) {
     RunOptions o;
     o.clock = ClockMode::Host;
     const auto before = calcu::peripherals::hostDateTime(std::chrono::system_clock::now());
@@ -255,7 +254,7 @@ TEST(ac21_clock_host_hands_host_time) {
     CHECK((f.hour == before.hour && f.minute == before.minute) || (f.hour == after.hour && f.minute == after.minute));
 }
 
-// ── Determinism (T12) ───────────────────────────────────────────────────
+// ── Determinism ─────────────────────────────────────────────────────────
 
 namespace {
 std::vector<std::string> script(bool json) {
@@ -272,7 +271,7 @@ std::vector<std::string> script(bool json) {
 }
 } // namespace
 
-TEST(ac6_two_runs_give_the_same_replies) {
+TEST(two_runs_give_the_same_replies) {
     for (bool json : {false, true}) {
         const auto a = script(json);
         std::this_thread::sleep_for(std::chrono::milliseconds(30));   // wall time passes between the runs
@@ -282,14 +281,14 @@ TEST(ac6_two_runs_give_the_same_replies) {
     }
 }
 
-TEST(ac6_no_pacer_and_no_wall_clock) {
+TEST(no_pacer_and_no_wall_clock) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
     const int reads = run.server->wallClockReads();
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
     // Wall time passing moves nothing: emulated time passes only by commands.
-    // The start's one run piece (LIB-18 D-4), nothing more.
+    // The start's one run piece, nothing more.
     CHECK_EQ(run.line("ticks"), std::string("done 2\nticks: 1667\nseconds: 0.016670000\n"));
     run.line("wait 10ms");
     run.line("display-text");
@@ -299,7 +298,7 @@ TEST(ac6_no_pacer_and_no_wall_clock) {
     CHECK_EQ(run.server->wallClockReads(), reads);
 }
 
-// ── The machine state (T18) ─────────────────────────────────────────────
+// ── The machine state ───────────────────────────────────────────────────
 
 namespace {
 std::vector<std::string> after(TestRun& run) {
@@ -310,7 +309,7 @@ std::vector<std::string> after(TestRun& run) {
 }
 } // namespace
 
-TEST(ac24_restore_continues_identically) {
+TEST(restore_continues_identically) {
     TempFolder f;
     const std::string file = str(f.path() / "state.bin");
     TestRun run;   // test-seg offers the kind
@@ -330,7 +329,7 @@ TEST(ac24_restore_continues_identically) {
     CHECK(after(other) == first);
 }
 
-TEST(ac24_restore_refused_for_other_configuration_changes_nothing) {
+TEST(restore_refused_for_other_configuration_changes_nothing) {
     TempFolder f;
     const std::string file = str(f.path() / "state.bin");
     {
@@ -361,7 +360,7 @@ TEST(ac24_restore_refused_for_other_configuration_changes_nothing) {
     CHECK(same.line("state-restore " + file) == "refused: The file holds no machine state.\n");
 }
 
-TEST(ac24_refused_without_the_kind) {
+TEST(refused_without_the_kind) {
     TempFolder f;
     TestRun run({}, mt::kDot);   // test-dot does not offer it
     CHECK(run.server != nullptr);
@@ -371,7 +370,7 @@ TEST(ac24_refused_without_the_kind) {
     CHECK(!fs::exists(f.path() / "s.bin"));
 }
 
-TEST(ac24_host_files_not_in_state) {
+TEST(host_files_not_in_state) {
     TempFolder f;
     const std::string file = str(f.path() / "state.bin");
     TestRun run;

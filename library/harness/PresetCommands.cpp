@@ -1,5 +1,6 @@
-// The harness commands of LIB-6 (design §3.9; spec AC-34): one vocabulary
-// with the preset steps (D-15). `key` and `type` are LIB-5's commands, the
+// The harness commands of the presets: one vocabulary with the preset
+// steps, sent through `run-step`, so a command and a step have one reader
+// and one meaning. `key` and `type` are the typing commands, the
 // bare `wait` is FirstCommands.cpp's.
 #include "files/Files.hpp"
 #include "harness/Commands.hpp"

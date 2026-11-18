@@ -1,4 +1,4 @@
-// LIB-18 design L4: model and variant (AC-6, AC-7, AC-8, AC-9; D-16, D-18).
+// Model and variant switches.
 #include "Files.hpp"
 #include "TestHarness.hpp"
 #include "TestPresetLoader.hpp"
@@ -27,7 +27,7 @@ TestPresetLoader::Preset dotV2() {
 std::string lastModel(Rig& r) { return r.settings->text("startup", "last-model"); }
 } // namespace
 
-TEST(ac6_model_switch_from_startup_preset) {
+TEST(model_switch_from_startup_preset) {
     TestPresetLoader loader;
     loader.presets["dot.preset.yaml"] = dotV2();
     RigOptions o;
@@ -42,7 +42,7 @@ TEST(ac6_model_switch_from_startup_preset) {
     CHECK(r.startup->control().lastBuild() && r.startup->control().lastBuild()->origin == BuildOrigin::StartupPreset);
 }
 
-TEST(ac6_model_switch_builtin_default) {
+TEST(model_switch_builtin_default) {
     Rig r;
     const CallId c = r.send("model", named("test-dot"));
     CHECK(r.done(c));
@@ -54,11 +54,11 @@ TEST(ac6_model_switch_builtin_default) {
     CHECK(r.startup->control().lastBuild() && r.startup->control().lastBuild()->origin == BuildOrigin::ModelSwitch);
 }
 
-TEST(ac7_variant_switch_keeps_plugs_in_places) {
+TEST(variant_switch_keeps_plugs_in_places) {
     Rig r(dotStart());
     CHECK(r.done(r.send("attach", attachArgs("a", "test-printer"))));
     CHECK(r.done(r.send("attach", attachArgs("card-1", "test-module", "8k"))));
-    const CallId c = r.send("variant", named("v2"));   // any case (D-16)
+    const CallId c = r.send("variant", named("v2"));   // any case
     CHECK(r.done(c));
     TestMachine* m = r.machine();
     CHECK(m && m->variant() == std::optional<VariantId>(VariantId{"V2"}));
@@ -73,7 +73,7 @@ TEST(ac7_variant_switch_keeps_plugs_in_places) {
     CHECK_EQ(m->operationsTold(at({"a"})), std::uint64_t{0});   // built with them: no power cycle
 }
 
-TEST(ac7_variant_switch_memory_empty_no_preset) {
+TEST(variant_switch_memory_empty_no_preset) {
     TestPresetLoader loader;
     TestPresetLoader::Preset v1 = dotV2();
     v1.plan.variant = VariantId{"V1"};
@@ -91,7 +91,7 @@ TEST(ac7_variant_switch_memory_empty_no_preset) {
     CHECK(r.startup->control().lastBuild() && r.startup->control().lastBuild()->origin == BuildOrigin::VariantSwitch);
 }
 
-TEST(ac8_same_model_done_nothing_built) {
+TEST(same_model_done_nothing_built) {
     Rig r;
     const auto gen = r.session->machineSession().generation();
     const CallId c = r.send("model", named("TEST-SEG"));
@@ -100,7 +100,7 @@ TEST(ac8_same_model_done_nothing_built) {
     CHECK_EQ(r.session->machineSession().generation(), gen);
 }
 
-TEST(ac8_same_variant_done) {
+TEST(same_variant_done) {
     Rig r(dotStart());
     const auto gen = r.session->machineSession().generation();
     CHECK(r.done(r.send("variant", named("v1"))));
@@ -108,7 +108,7 @@ TEST(ac8_same_variant_done) {
     CHECK_EQ(r.session->machineSession().generation(), gen);
 }
 
-TEST(ac9_last_model_after_command_preset_and_start) {
+TEST(last_model_after_command_preset_and_start) {
     TestPresetLoader loader;
     TestPresetLoader::Preset seg;
     seg.plan = MachinePlan{mt::kSeg, std::nullopt, {}, nullptr};
@@ -134,10 +134,10 @@ TEST(ac9_last_model_after_command_preset_and_start) {
     CHECK_EQ(lastModel(r), std::string("test-seg"));
 }
 
-TEST(ac9_unwritable_settings_keep_it_for_the_run) {
+TEST(unwritable_settings_keep_it_for_the_run) {
     RigOptions o;
     o.settings = "[startup]\nmodel = last\nlast-model = test-seg\n";
-    o.formatVersion = "9";   // another format version: not written in this run (LIB-9 AC-7)
+    o.formatVersion = "9";   // another format version: not written in this run
     Rig r(o);
     const std::string before = calcu::testing::readText(r.iniPath);
     CHECK(!r.settings->writable());

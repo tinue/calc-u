@@ -24,7 +24,7 @@ void Paper::bind(PaperOutput* printer) {
 }
 
 void Paper::cut() {
-    closeStroke();   // the pen stays down: the next move starts a stroke on the new paper (D-5)
+    closeStroke();   // the pen stays down: the next move starts a stroke on the new paper
     marks_.clear();
     text_.clear();
     fed_ = false;
@@ -39,7 +39,7 @@ bool Paper::empty() const { return marks_.empty() && text_.empty() && !fed_; }
 
 Reach Paper::reach() const { return fed_ ? reach_ : Reach{}; }
 
-// AC-4: from the least to the greatest y that a mark, a text line or a feed
+// The reach: from the least to the greatest y that a mark, a text line or a feed
 // has since the paper was last empty.
 void Paper::touch(Coord y) {
     if (!fed_) {
@@ -70,12 +70,12 @@ void Paper::penDown(Rgb colour, Position p) {
 }
 
 void Paper::penTo(Position p) {
-    if (!penColour_) {   // a move with the pen up gives no mark (AC-33)
+    if (!penColour_) {   // a move with the pen up gives no mark
         penAt_ = p;
         return;
     }
     const Position at = moved(p);
-    if (!strokeOpen_) {   // the pen went on after a cut (D-5)
+    if (!strokeOpen_) {   // the pen went on after a cut
         const Position from = moved(penAt_ ? *penAt_ : p);
         marks_.push_back(Stroke{*penColour_, {from}});
         strokeOpen_ = true;

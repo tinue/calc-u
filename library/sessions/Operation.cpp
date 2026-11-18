@@ -28,7 +28,7 @@ Task<Ticks> OperationContext::run(Ticks ticks) {
     while (total < ticks) {
         const machine::Machine* m = ms.machine();
         if (!m) throw std::runtime_error(kNoMachine);
-        if (ms.paused()) {   // LIB-10 G12: see below
+        if (ms.paused()) {   // a paused machine holds the operation: see below
             co_await yieldToHost();
             co_return total;
         }
@@ -38,13 +38,12 @@ Task<Ticks> OperationContext::run(Ticks ticks) {
             return ms.advance(piece, stopped);
         });
         if (ran == 0 && ms.machine() && ms.paused()) {
-            // LIB-10 G12: the run control paused the machine (a
+            // The debugger's run control paused the machine (a
             // pause-on-start, a pause-at-start). The run gives the host its
             // call and ends with what ran, so that the caller looks at its
-            // own state again (a key that came up on the paused machine,
-            // LIB-5 AC-20); what needs the machine then waits until it runs.
+            // own state again (a key that came up on the paused machine); what needs the machine then waits until it runs.
             // In virtual time no call comes: the operation does not finish
-            // (LIB-10 D-8).
+            // (its reply is "The operation did not finish.").
             co_await yieldToHost();
             co_return total;
         }

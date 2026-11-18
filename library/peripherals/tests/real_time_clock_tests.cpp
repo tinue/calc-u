@@ -1,5 +1,5 @@
-// LIB-2 T7: the real-time clock kind, hostDateTime, setClocksFromHost, and
-// the session part that sets the clocks (AC-21 to AC-23). test-dot's clock
+// The real-time clock kind, hostDateTime, setClocksFromHost, and
+// the session part that sets the clocks. test-dot's clock
 // keeps every field but the year.
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
@@ -28,7 +28,7 @@ ClockFields kept(const HostDateTime& h) {   // what test-dot's chip keeps of it
 const auto kRigInstant = std::chrono::system_clock::time_point(std::chrono::hours(24 * 365 * 50));
 } // namespace
 
-TEST(ac21_read_and_set_kept_fields) {
+TEST(read_and_set_kept_fields) {
     auto m = buildTestMachine(kDot, std::nullopt, {}, 0);
     CHECK(m != nullptr);
     if (!m) return;
@@ -50,7 +50,7 @@ TEST(ac21_read_and_set_kept_fields) {
     CHECK(seg && seg->capabilities(RealTimeClock::kKind).empty());
 }
 
-TEST(ac21_host_date_time_is_local_time) {
+TEST(host_date_time_is_local_time) {
     const auto t = kRigInstant + std::chrono::milliseconds(1234);
     const HostDateTime h = hostDateTime(t);
     const std::time_t secs = std::chrono::system_clock::to_time_t(kRigInstant) + 1;
@@ -64,7 +64,7 @@ TEST(ac21_host_date_time_is_local_time) {
                              local.tm_min, local.tm_sec, 234}));
 }
 
-TEST(ac22_clock_moves_by_emulated_time_only) {
+TEST(clock_moves_by_emulated_time_only) {
     auto m = buildTestMachine(kDot, std::nullopt, {}, 0);
     CHECK(m != nullptr);
     if (!m) return;
@@ -80,7 +80,7 @@ TEST(ac22_clock_moves_by_emulated_time_only) {
     CHECK(c->read() == (ClockFields{std::nullopt, 11, 16, 1, 0, 0, 0}));
 }
 
-TEST(ac23_set_from_host_at_build_and_after_operation) {
+TEST(set_from_host_at_build_and_after_operation) {
     PeripheralsPart part;
     st::RigOptions o;
     o.extraParts = {&part};
@@ -111,6 +111,6 @@ TEST(ac23_set_from_host_at_build_and_after_operation) {
     r.send("tp.op");
     r.call();
     r.send("tp.stop");
-    // (`tp.stop` starts an operation that ends at once, LIB-18 D-6: both ends set it.)
+    // (`tp.stop` starts an operation that ends at once: both ends set it.)
     CHECK(!r.session->busy() && c->read() == host && m->clock()->setCalls == 4);
 }

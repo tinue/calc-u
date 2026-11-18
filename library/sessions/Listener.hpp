@@ -8,7 +8,7 @@
 #include <optional>
 #include <vector>
 
-// A listener of an app session (LIB-3 design §3.9, §3.10; glossary): what a
+// A listener of an app session (glossary): what a
 // frontend, the harness or a tool uses to talk to the session on its thread.
 // It keeps the topics in a TopicMirror, sends commands and requests, and
 // hands each reply to the handler given with its call, else to onMessage.
@@ -29,7 +29,7 @@ public:
     Listener(const Listener&) = delete;
     Listener& operator=(const Listener&) = delete;
 
-    // AC-6, AC-26: starts to listen; the session sends every state topic
+    // Starts to listen; the session sends every state topic
     // once and the stream topics with their history.
     void listen(AppSession&, HostServices = {});
     void stop();
@@ -42,8 +42,8 @@ public:
         std::optional<ReplyMessage> reply;   // the reply, when it came at once (no operation started)
     };
     // A command. `then` gets its reply where it comes among the messages:
-    // inside send() when it came at once, at the operation's end otherwise
-    // (LIB-3 D-2). Without `then` (or a later onReply) the reply of an
+    // inside send() when it came at once, at the operation's end otherwise,
+    // with its result. Without `then` (or a later onReply) the reply of an
     // operation goes to onMessage.
     Sent send(const CommandName&, Value args = {}, ReplyHandler then = {});
     // A handler for the reply of a call that has not come yet.
@@ -51,7 +51,7 @@ public:
     // A command, then `step` (one host call) until its reply came: a test on
     // a scripted clock, a frozen frontend.
     ReplyMessage runToEnd(const CommandName&, Value args, const std::function<void()>& step);
-    // A request; its reply always comes at once (AC-8).
+    // A request; its reply always comes at once.
     ReplyMessage ask(const RequestName&, Value args = {});
     // A request whose reply goes to `then`, where it comes among the messages.
     CallId ask(const RequestName&, Value args, ReplyHandler then);

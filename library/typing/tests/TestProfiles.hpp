@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-// A typing profile and a keyboard map made for the tests (LIB-5 design §6):
+// A typing profile and a keyboard map made for the tests:
 // for `test-type` (TypingTestMachine.hpp) and test-seg at 100 kHz.
 //
 //   minimum hold 1000 ticks (10 ms); typed text 1000 down, 500 up; 300 more
@@ -89,7 +89,7 @@ public:
 };
 
 // The product of the tests: the profile for every model, the map for every
-// model; `text` false gives a product without `type` (D-8).
+// model; `text` false gives a product without `type`.
 class TestTypingProduct final : public TypingProduct {
 public:
     explicit TestTypingProduct(TypingProfile p = testProfile(), bool text = true) : profile_(std::move(p)), text_(text) {}

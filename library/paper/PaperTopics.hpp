@@ -6,22 +6,21 @@
 #include <string>
 #include <vector>
 
-// The topics, commands and requests of paper output (LIB-8 design §3.5;
-// spec AC-6, AC-9, AC-16, AC-18, AC-20, AC-23). Coordinates cross as
+// The topics, commands and requests of paper output. Coordinates cross as
 // integers in ten-thousandths of the printer's unit (Coord), so a Web page
 // reads them as the C++ side holds them.
 //
 //   papers              state: PaperList, the product's printers in the order declared
 //   paper <owner>       stream, History::SinceReset: PaperAppended; the reset
-//                       marker says the paper was emptied (AC-6)
-//   paper-copies        stream, History::None: CopyOutcome (AC-20)
-//   paper.copy          command {owner?}                 (AC-16)
-//   paper.cut           command {owner?, copy: bool}     (AC-18; copy false: cut-paper, AC-22)
-//   paper.text          request {owner?} → {lines: [...]}   (AC-23)
+//                       marker says the paper was emptied
+//   paper-copies        stream, History::None: CopyOutcome
+//   paper.copy          command {owner?}
+//   paper.cut           command {owner?, copy: bool}     (copy false: cut-paper)
+//   paper.text          request {owner?} → {lines: [...]}
 //   paper.marks         request {owner?} → {lines: [...]}
 //   paper.picture       request {owner?} → {bytes, dotsPerInch, width, height}
 //
-// `owner` is the owner's name in any case (D-8); without it, the printer
+// `owner` is the owner's name in any case; without it, the printer
 // that is plugged in.
 
 namespace calcu::paper {
@@ -36,7 +35,7 @@ inline const sessions::RequestName kPaperTextRequest{"paper.text"};
 inline const sessions::RequestName kPaperMarksRequest{"paper.marks"};
 inline const sessions::RequestName kPaperPictureRequest{"paper.picture"};
 
-// The sentences (§3.5).
+// The sentences.
 inline constexpr const char* kNoPrinterPlugged = "No printer is plugged in.";
 inline constexpr const char* kPaperEmpty = "The paper is empty.";
 inline constexpr const char* kNoClipboard = "No frontend offers the clipboard.";

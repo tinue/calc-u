@@ -1,5 +1,4 @@
-// LIB-18 design L3: the start (AC-3, AC-4, AC-5, EC-1, EC-2, EC-6), with
-// the stand-in for LIB-6's loader.
+// The start, with the stand-in for the presets' loader.
 #include "Files.hpp"
 #include "TestHarness.hpp"
 #include "TestPresetLoader.hpp"
@@ -29,7 +28,7 @@ TestPresetLoader::Preset dotV2() {
 }
 } // namespace
 
-TEST(ac3_startup_model_named) {
+TEST(startup_model_named) {
     RigOptions o;
     o.settings = "[startup]\nmodel = test-dot\nlast-model = test-seg\n";
     Rig r(o);
@@ -37,14 +36,14 @@ TEST(ac3_startup_model_named) {
     CHECK(r.machine() && r.machine()->model() == mt::kDot);
 }
 
-TEST(ac3_last_gives_last_model) {
+TEST(last_gives_last_model) {
     RigOptions o;
     o.settings = "[startup]\nmodel = last\nlast-model = test-dot\n";
     Rig r(o);
     CHECK(r.machine() && r.machine()->model() == mt::kDot);
 }
 
-TEST(ac3_nothing_recorded_gives_fallback) {
+TEST(nothing_recorded_gives_fallback) {
     RigOptions o;
     o.settings = "";
     Rig r(o);
@@ -55,7 +54,7 @@ TEST(ac3_nothing_recorded_gives_fallback) {
     CHECK(none.machine() && none.machine()->model() == mt::kSeg);
 }
 
-TEST(ac4_startup_preset_loaded) {
+TEST(startup_preset_loaded) {
     TestPresetLoader loader;
     loader.presets["seg.preset.yaml"] = segWithUart();
     RigOptions o;
@@ -74,7 +73,7 @@ TEST(ac4_startup_preset_loaded) {
     CHECK(r.notices().empty());
 }
 
-TEST(ac4_no_startup_preset_builtin_default) {
+TEST(no_startup_preset_builtin_default) {
     TestPresetLoader loader;
     loader.presets["seg.preset.yaml"] = segWithUart();
     RigOptions o;
@@ -82,11 +81,11 @@ TEST(ac4_no_startup_preset_builtin_default) {
     o.loader = &loader;
     Rig r(o);
     CHECK(loader.calls.empty());
-    CHECK(r.machine() && holds(*r.machine(), "printer", mt::kPrinter));   // ADR 0021
+    CHECK(r.machine() && holds(*r.machine(), "printer", mt::kPrinter));   // the machine comes from the startup preset
     CHECK(r.startup->control().lastBuild() && r.startup->control().lastBuild()->origin == BuildOrigin::Start);
 }
 
-TEST(ac4_no_loader_builtin_default) {   // D-9
+TEST(no_loader_builtin_default) {
     RigOptions o;
     o.settings = "[preset]\ntest-seg = seg.preset.yaml\n";
     Rig r(o);
@@ -95,7 +94,7 @@ TEST(ac4_no_loader_builtin_default) {   // D-9
     CHECK(r.notices().empty());
 }
 
-TEST(ac5_start_is_one_operation_busy_until_ready) {
+TEST(start_is_one_operation_busy_until_ready) {
     RigOptions o;
     o.hosting = Hosting::Paced;
     Rig r(o);
@@ -109,7 +108,7 @@ TEST(ac5_start_is_one_operation_busy_until_ready) {
     CHECK_EQ(r.product.builds(), 1);
 }
 
-TEST(ac5_one_build_when_model_named) {   // LIB-15 AC-16
+TEST(one_build_when_model_named) {
     RigOptions o;
     o.start = false;
     Rig r(o);
@@ -119,7 +118,7 @@ TEST(ac5_one_build_when_model_named) {   // LIB-15 AC-16
     CHECK(r.machine() && r.machine()->model() == mt::kDot);
 }
 
-TEST(ac5_one_build_when_preset_named) {
+TEST(one_build_when_preset_named) {
     TestPresetLoader loader;
     loader.presets["dot.preset.yaml"] = dotV2();
     RigOptions o;
@@ -134,7 +133,7 @@ TEST(ac5_one_build_when_preset_named) {
     CHECK(r.machine() && r.machine()->variant() == std::optional<VariantId>(VariantId{"V2"}));
 }
 
-TEST(ac5_unknown_model_notice_and_startup_model) {   // LIB-15 EC-4
+TEST(unknown_model_notice_and_startup_model) {
     RigOptions o;
     o.start = false;
     Rig r(o);
@@ -146,7 +145,7 @@ TEST(ac5_unknown_model_notice_and_startup_model) {   // LIB-15 EC-4
     CHECK_EQ(r.product.builds(), 1);
 }
 
-TEST(ac5_second_start_refused) {   // D-8
+TEST(second_start_refused) {
     Rig r;
     const CallId again = r.send("start");
     CHECK(!r.done(again));
@@ -154,7 +153,7 @@ TEST(ac5_second_start_refused) {   // D-8
     CHECK_EQ(r.product.builds(), 1);
 }
 
-TEST(ec1_preset_gone_outdated_or_other_model_gives_default_and_notice) {
+TEST(preset_gone_outdated_or_other_model_gives_default_and_notice) {
     TestPresetLoader loader;
     TestPresetLoader::Preset outdated = segWithUart();
     outdated.script = TestPresetLoader::Script::Outdated;
@@ -181,7 +180,7 @@ TEST(ec1_preset_gone_outdated_or_other_model_gives_default_and_notice) {
     }
 }
 
-TEST(ec2_last_built_by_preset_uses_its_startup_preset) {
+TEST(last_built_by_preset_uses_its_startup_preset) {
     TestPresetLoader loader;
     loader.presets["dot.preset.yaml"] = dotV2();
     TestPresetLoader::Preset start = dotV2();
@@ -210,7 +209,7 @@ TEST(ec2_last_built_by_preset_uses_its_startup_preset) {
     }
 }
 
-TEST(ec6_preset_fails_while_running_machine_stays_notice) {
+TEST(preset_fails_while_running_machine_stays_notice) {
     TestPresetLoader loader;
     TestPresetLoader::Preset failing = segWithUart();
     failing.script = TestPresetLoader::Script::FailAfterBuild;

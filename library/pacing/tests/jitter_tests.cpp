@@ -4,7 +4,7 @@
 #include <memory>
 #include <set>
 
-// LIB-17 AC-9 to AC-11 (design §6, L1, L2): the jittered slice ends.
+// The jittered slice ends.
 
 using namespace calcu::pacing;
 using namespace calcu::pacing::test;
@@ -36,7 +36,7 @@ std::vector<Ticks> requests(std::optional<std::uint32_t> seed, int calls, WallTi
 
 } // namespace
 
-TEST(ac9_jitter_offsets_within_half_a_slice_and_do_not_add_up) {
+TEST(jitter_offsets_within_half_a_slice_and_do_not_add_up) {
     // The draw: evenly from 0 to half a slice.
     SliceJitter j(5);
     Ticks lo = kSlice, hi = 0, sum = 0;
@@ -76,12 +76,12 @@ TEST(ac9_jitter_offsets_within_half_a_slice_and_do_not_add_up) {
     }
     CHECK_EQ(outside, 0);
     CHECK(offsets.size() > 300);   // the offsets vary
-    // AC-1 holds as without jitter: emulated time within one slice of wall time.
+    // As without jitter: emulated time within one slice of wall time.
     const std::int64_t dev = deviation(*m, 0, clock.now, std::chrono::hours(1));
     CHECK(dev <= static_cast<std::int64_t>(kSlice) && dev > -static_cast<std::int64_t>(kSlice / 2));
 }
 
-TEST(ac10_jitter_same_seed_same_sequence) {
+TEST(jitter_same_seed_same_sequence) {
     const auto a = requests(42u, 300, k60Hz);
     const auto b = requests(42u, 300, k60Hz);
     CHECK(a.size() >= 240);
@@ -100,7 +100,7 @@ TEST(ac10_jitter_same_seed_same_sequence) {
     CHECK(requests(43u, 300, k60Hz) != a);   // another seed, another sequence
 }
 
-TEST(ac10_jitter_unseeded_differs) {
+TEST(jitter_unseeded_differs) {
     SliceJitter a, b;
     std::vector<Ticks> sa, sb;
     for (int i = 0; i < 32; ++i) {
@@ -111,7 +111,7 @@ TEST(ac10_jitter_unseeded_differs) {
     CHECK(requests(std::nullopt, 100, k60Hz) != requests(std::nullopt, 100, k60Hz));
 }
 
-TEST(ac11_jittered_slice_ends_hit_more_than_one_loop_position) {
+TEST(jittered_slice_ends_hit_more_than_one_loop_position) {
     // A loop of 8 instructions of 5 ticks: 40 ticks, which divide the slice
     // of 2,000.
     for (bool jitter : {false, true}) {

@@ -3,7 +3,7 @@
 #include "TestDebugParts.hpp"
 #include "presets/PresetsPart.hpp"
 
-// The rig of the debugger's session tests (LIB-10 design §6): an app
+// The rig of the debugger's session tests: an app
 // session with PeripheralsPart, PresetsPart, StartupPart, TypingPart and
 // DebuggerPart (the preset rig's parts, library/presets/tests/PresetRig.hpp)
 // on the test machines with the test processor (TestCpu.hpp) and the
@@ -17,7 +17,7 @@ using sessions::CallId;
 using sessions::Value;
 using namespace std::chrono_literals;
 
-// test-seg builds with the program of LIB-6's rig (key `1` starts a
+// test-seg builds with the program of the preset rig (key `1` starts a
 // program of `segProgram` ticks) and the test processor.
 struct DebugBuilder final : machine::MachineBuilder {
     mt::TestBuilder inner;

@@ -3,9 +3,8 @@
 #include <string>
 #include <string_view>
 
-// Host keys (LIB-5 design §3.1; spec AC-4, AC-7, EC-1, EC-4): what a
-// frontend says of a host key event, as the host reports it. The frontend
-// maps nothing (AC-7); the product's keyboard map does (KeyboardMap.hpp).
+// Host keys: what a frontend says of a host key event, as the host reports
+// it. The frontend maps nothing; the product's keyboard map does (KeyboardMap.hpp).
 
 namespace calcu::typing {
 
@@ -32,13 +31,13 @@ struct Modifiers {
 
 struct HostKeyEvent {
     // The host's own identity of the key (a browser's `code`, Qt's native
-    // scan code, an NSEvent keyCode): it pairs a key-down with its key-up (EC-1).
+    // scan code, an NSEvent keyCode): it pairs a key-down with its key-up.
     std::string physical;
     NamedKey named = NamedKey::None;
     char32_t produced = 0;   // the character the layout produced; 0 for none or more than one
-    char32_t carried = 0;    // a letter key: the letter it carries on the user's layout, lower case (AC-21, OQ-2)
+    char32_t carried = 0;    // a letter key: the letter it carries on the user's layout, lower case (in every frontend)
     Modifiers mods;
-    bool autoRepeat = false;   // the host's own repeat: ignored (AC-4)
+    bool autoRepeat = false;   // the host's own repeat: ignored
 };
 
 // The names of NamedKey in a command's arguments ("escape", "page-up", …;

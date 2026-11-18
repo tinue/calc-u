@@ -19,7 +19,8 @@ using pacing::Speed;
 
 namespace {
 
-// The audio rules of Calc-U-1600's AudioPump (design §3.6, D-5).
+// The audio rules, in one place: the session opens, primes and closes the
+// sink; the sink writes.
 constexpr int kSilenceThreshold = 8;   // a sample this small is silence
 constexpr int kPrimeMs = 40;           // silence written first when the sink opens
 
@@ -104,7 +105,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     }
     Speed commandedSpeed() const override { return commanded; }
     void setCommandedSpeed(Speed sp) override {
-        if (!running) commanded = sp;   // D-6
+        if (!running) commanded = sp;   // nothing while an operation runs
     }
     const machine::DisplayOutput* display() const override {
         const auto* d = payloadAs<DisplayState>(this->displayTopic());
@@ -136,7 +137,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     StateTopic& stateTopic(TopicName) override;
     StreamTopic& streamTopic(TopicName, History) override;
     void command(CommandName name, Handler h, bool ends = false) override {
-        // One owner per command (Part E simplification E-3): a second
+        // One owner per command: a second
         // declaration of a name would silently replace the first.
         const std::string text = name.value;
         if (!commands.emplace(std::move(name), CommandEntry{std::move(h), ends}).second)
@@ -190,7 +191,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     std::unique_ptr<Running> running;
     std::uint64_t seenGeneration = 0;
 
-    // Sound (design §3.6).
+    // Sound.
     std::optional<ListenerId> sinkListener;
     bool sinkOpen = false;
     std::int64_t silentSamples = 0;
@@ -204,7 +205,7 @@ AppSession::Impl::Impl(AppSessionSetup s) : setup(std::move(s)), ms(setup.clock,
     notices = &streamTopic(kNoticesTopic, History::None);
     logTopic = &streamTopic(kLogTopic, History::SinceReset);
     registerLibraryCommands();
-    ms.setAboutToChange([this] {   // LIB-7 AC-13
+    ms.setAboutToChange([this] {
         for (SessionPart* p : setup.parts) p->beforeMachineChange(*this);
     });
     for (SessionPart* p : setup.parts) p->attach(*this);
@@ -241,7 +242,7 @@ void AppSession::Impl::registerLibraryCommands() {
     command(kSpeedCommand, [this](const Value& args, SessionContext&) -> CommandOutcome {
         const Value* full = args.find("full");
         if (!full || !full->boolean()) return Refused{"The speed command needs full: true or false."};
-        if (!running) commanded = *full->boolean() ? Speed::Full : Speed::Regular;   // D-6
+        if (!running) commanded = *full->boolean() ? Speed::Full : Speed::Regular;   // nothing while an operation runs
         return Done{};
     });
     auto key = [this](bool down) {
@@ -289,7 +290,7 @@ const Listener* AppSession::Impl::offerer(HostService s) const {
 std::optional<CallId> AppSession::Impl::askHost(HostService s, Value args,
                                                 std::function<void(const ServiceAnswer&)> then) {
     const Listener* l = offerer(s);
-    if (!l) return std::nullopt;   // AC-27: not asked
+    if (!l) return std::nullopt;   // not asked
     const CallId id = ++nextCall;
     asks.push_back(Out{l->id, ServiceAsk{id, s, std::move(args)}});
     waiting[id] = std::move(then);
@@ -300,7 +301,7 @@ std::optional<CallId> AppSession::Impl::askHost(HostService s, Value args,
 
 void AppSession::Impl::runCommand(ListenerId l, CallId id, const Command& c) {
     const auto it = commands.find(c.name);
-    if (it == commands.end()) {   // AC-13
+    if (it == commands.end()) {
         reply(l, id, false, "Unknown command: " + c.name.value + ".");
         return;
     }
@@ -328,7 +329,7 @@ void AppSession::Impl::runCommand(ListenerId l, CallId id, const Command& c) {
     if (auto* d = std::get_if<Done>(&outcome)) reply(l, id, true, {}, std::move(d->result));
     else if (auto* r = std::get_if<Refused>(&outcome)) reply(l, id, false, std::move(r->reason));
     else {
-        // LIB-18 D-6: a command declared endsRunningOperation stops the
+        // A command declared endsRunningOperation stops the
         // running operation only when it starts one itself; Done (nothing to
         // do) and Refused leave it running.
         if (it->second.endsRunningOperation && running) stopOperation();
@@ -337,11 +338,11 @@ void AppSession::Impl::runCommand(ListenerId l, CallId id, const Command& c) {
 }
 
 void AppSession::Impl::start(ListenerId l, CallId id, Operation op) {
-    if (running) {   // AC-16, whoever's command it is
+    if (running) {   // whoever's command it is
         reply(l, id, false, kAnotherOperationRuns);
         return;
     }
-    for (SessionPart* p : setup.parts) p->beforeOperation(*this);   // LIB-7 AC-13
+    for (SessionPart* p : setup.parts) p->beforeOperation(*this);
     auto r = std::make_unique<Running>();
     r->op = std::move(op);
     r->ctx = std::make_unique<OperationContext>(*this);
@@ -356,7 +357,7 @@ void AppSession::Impl::start(ListenerId l, CallId id, Operation op) {
     }
     running = std::move(r);
     running->step(0);   // up to its first run request
-    if (setup.hosting == Hosting::VirtualTime && !running->over()) {   // AC-19: in one go
+    if (setup.hosting == Hosting::VirtualTime && !running->over()) {   // in one go
         running->step(std::numeric_limits<std::uint64_t>::max());
         if (!running->over()) running->failure = OperationResult{false, "The operation did not finish."};
         if (ms.generation() == seenGeneration) readDisplay();   // else syncMachine reads it
@@ -364,8 +365,8 @@ void AppSession::Impl::start(ListenerId l, CallId id, Operation op) {
     if (running->over()) endOperation();
 }
 
-// AC-18, EC-3: the reply says how it ended, a failure is also a notice, and
-// pacing starts afresh. D-2: the reply goes out at the end.
+// The reply says how it ended and goes out at the end of the operation, a
+// failure is also a notice, and pacing starts afresh.
 void AppSession::Impl::endOperation() {
     std::unique_ptr<Running> r = std::move(running);
     OperationResult res = r->result();
@@ -377,7 +378,7 @@ void AppSession::Impl::endOperation() {
     for (SessionPart* p : setup.parts) p->operationEnded(*this);
 }
 
-void AppSession::Impl::stopOperation() {   // LIB-18 AC-16, D-7
+void AppSession::Impl::stopOperation() {   // replied "Stopped."
     std::unique_ptr<Running> r = std::move(running);
     if (r->call) reply(r->listener, r->call, false, kStopped);
     ms.setReportsWaiting(true);
@@ -385,7 +386,7 @@ void AppSession::Impl::stopOperation() {   // LIB-18 AC-16, D-7
     for (SessionPart* p : setup.parts) p->operationEnded(*this);
 }
 
-// One part of the running operation (AC-14): the pacer at the operation's
+// One part of the running operation: the pacer at the operation's
 // speed, with the slices taken from its run requests.
 void AppSession::Impl::stepOperation(pacing::PaceResult& res) {
     if (!running->over() && !ms.machine()) running->failure = OperationResult{false, kNoMachine};
@@ -394,7 +395,7 @@ void AppSession::Impl::stepOperation(pacing::PaceResult& res) {
         res = ms.pace(running->ctx->speed());
         ms.setSliceSource(nullptr);
     } else if (!running->over() && ms.machine() && running->job.waitsOnHost()) {
-        running->step(1);   // LIB-6 D-17: a host wait goes on while the machine is paused
+        running->step(1);   // a host wait goes on while the machine is paused
     }
     if (running->over()) endOperation();
 }
@@ -416,7 +417,7 @@ void AppSession::Impl::syncMachine() {
     for (SessionPart* p : setup.parts) p->machineChanged(*this);
 }
 
-// AC-20, design §3.6: a recorder gets every sample; the audio sink gets the
+// A recorder gets every sample; the audio sink gets the
 // sound of regular speed outside an operation, opened on the first sound
 // after silence (primed) and closed after a second of silence.
 void AppSession::Impl::sound(bool discard) {
@@ -469,11 +470,11 @@ void AppSession::Impl::sound(bool discard) {
     }
 }
 
-// Design §3.2: the parts' beforeFlush (LIB-4), sound, then the state topics
+// The parts' beforeFlush, sound, then the state topics
 // in declaration order, then the stream topics, then the replies, then the
 // asks.
 void AppSession::Impl::flush() {
-    for (SessionPart* p : setup.parts) p->beforeFlush(*this);   // LIB-4 design §3.5
+    for (SessionPart* p : setup.parts) p->beforeFlush(*this);
     const bool runs = running != nullptr;
     const Speed speed = runs ? running->ctx->speed() : commanded;
     const auto* b = payloadAs<BusyState>(busyTopic->current());
@@ -494,7 +495,7 @@ void AppSession::Impl::flush() {
 }
 
 void AppSession::Impl::deliver(const Out& o) {
-    if (closed) return;   // LIB-7: no message goes out after close()
+    if (closed) return;   // no message goes out after close()
     for (const Listener& l : listeners)
         if (!o.to || *o.to == l.id) l.sink->deliver(o.message);
 }
@@ -504,7 +505,7 @@ void AppSession::Impl::deliver(const Out& o) {
 AppSession::AppSession(AppSessionSetup s) : impl_(std::make_unique<Impl>(std::move(s))) {}
 AppSession::~AppSession() {
     // No part is called from here: a part the session does not own may be
-    // gone already (LIB-3's contract); a host calls close() first (LIB-7).
+    // gone already; a host calls close() first.
     impl_->ms.setAboutToChange(nullptr);
     impl_->setup.owned.reset();   // the parts first, while the machine is there
 }
@@ -512,7 +513,7 @@ AppSession::~AppSession() {
 void AppSession::close() {
     Impl& s = *impl_;
     if (s.closed) return;
-    for (SessionPart* p : s.setup.parts) p->closing(s);   // LIB-7 AC-13: what is to be saved, written
+    for (SessionPart* p : s.setup.parts) p->closing(s);   // what is to be saved, written
     s.closed = true;
 }
 
@@ -535,7 +536,7 @@ void AppSession::stopListening(ListenerId id) {
 
 void AppSession::call(pacing::WallTime now) {
     Impl& s = *impl_;
-    if (s.setup.hosting != Hosting::Paced || s.ms.suspended()) return;   // AC-24, EC-4
+    if (s.setup.hosting != Hosting::Paced || s.ms.suspended()) return;   // a suspend holds a running operation too
     for (SessionPart* p : s.setup.parts) p->beforeCall(s, now);
     pacing::PaceResult res;
     const bool operation = s.running != nullptr;
@@ -602,8 +603,8 @@ Ticks AppSession::advanceUnpaced(Ticks ticks) {
     const bool changed = s.ms.generation() != s.seenGeneration;
     s.syncMachine();
     if (!changed && ran > 0) s.readDisplay();
-    // The parts' per-call duties, as call() runs them (LIB-8 A-6). A host in
-    // virtual time has no wall clock to read (LIB-11 AC-6).
+    // The parts' per-call duties, as call() runs them. A host in
+    // virtual time has no wall clock to read.
     const pacing::WallTime now = s.setup.hosting == Hosting::VirtualTime ? pacing::WallTime{0} : s.wallTime();
     for (SessionPart* p : s.setup.parts) p->afterCall(s, now);
     s.syncMachine();

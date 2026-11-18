@@ -2,16 +2,18 @@
 #include "TestMachines.hpp"
 #include <variant>
 
-// LIB-1 AC-24 (design §6, T1). The build side is the CMake target
-// calcu_library_tests, which links calcu_library and the test runner only,
-// and the CI job `library` of both product workflows, which configures with
-// CALCU_PRODUCT_59=OFF and CALCU_PRODUCT_1600=OFF. This case checks that the
-// machines built for the tests have, between them, what AC-24 names.
+// The library builds and its tests pass without any product. The build side
+// is the CMake target calcu_library_tests, which links calcu_library and the
+// test runner only, and the CI job `library` of both product workflows,
+// which configures with CALCU_PRODUCT_59=OFF and CALCU_PRODUCT_1600=OFF.
+// This case checks that the
+// machines built for the tests have, between them, a segment display, a
+// dot-matrix display, sound, a peripheral and a product kind.
 
 using namespace calcu::machine;
 using namespace calcu::machine::test;
 
-TEST(ac24_library_tests_run_without_products) {
+TEST(library_tests_run_without_products) {
     const Catalogue& cat = testCatalogue();
     bool segment = false, dotMatrix = false, sound = false;
     for (const auto& m : cat.models()) {

@@ -1,5 +1,4 @@
-// LIB-8 T9 (design §6): Copy and Cut in the session (AC-16, AC-18 to AC-20,
-// EC-5), with a test frontend that offers the clipboard.
+// Copy and Cut in the session, with a test frontend that offers the clipboard.
 #include "PaperTestKit.hpp"
 #include "TestFrontend.hpp"
 #include "TestHarness.hpp"
@@ -46,7 +45,7 @@ s::Value owner(const char* o) { return s::Value::object({{"owner", o}}); }
 
 } // namespace
 
-TEST(ac16_copy_asks_clipboard_with_picture_and_text) {
+TEST(copy_asks_clipboard_with_picture_and_text) {
     ClipRun c;
     if (!c.run.server) return;
     c.run.line("attach printer test-dotter");
@@ -55,7 +54,7 @@ TEST(ac16_copy_asks_clipboard_with_picture_and_text) {
     c.run.press("1");
     c.run.press("2");
     // TD-20: the picture and the text, the lines joined by line ends.
-    const s::CallId copy = c.send(kPaperCopyCommand, owner("td-20"));   // any case (D-8)
+    const s::CallId copy = c.send(kPaperCopyCommand, owner("td-20"));   // any case
     CHECK(c.fe.reply(copy) && c.fe.reply(copy)->done);
     auto asks = c.asks();
     CHECK_EQ(asks.size(), std::size_t(1));
@@ -78,7 +77,7 @@ TEST(ac16_copy_asks_clipboard_with_picture_and_text) {
     }
 }
 
-TEST(ac18_cut_copies_then_cuts_also_when_copy_failed) {
+TEST(cut_copies_then_cuts_also_when_copy_failed) {
     ClipRun c;
     if (!c.run.server) return;
     c.run.line("attach printer test-dotter");
@@ -104,7 +103,7 @@ TEST(ac18_cut_copies_then_cuts_also_when_copy_failed) {
     CHECK(none.run.paperOf("TD-20").empty());
 }
 
-TEST(ac19_empty_paper_copy_and_cut_refused) {
+TEST(empty_paper_copy_and_cut_refused) {
     ClipRun c;
     if (!c.run.server) return;
     c.run.line("attach printer test-dotter");
@@ -118,7 +117,7 @@ TEST(ac19_empty_paper_copy_and_cut_refused) {
     CHECK(c.fe.reply(plain) && c.fe.reply(plain)->done);
 }
 
-TEST(ec5_copy_holds_marks_up_to_the_command) {
+TEST(copy_holds_marks_up_to_the_command) {
     ClipRun c;
     if (!c.run.server) return;
     c.run.line("attach printer test-dotter");
@@ -135,7 +134,7 @@ TEST(ec5_copy_holds_marks_up_to_the_command) {
     CHECK(picturePng(c.run.paperOf("TD-20")) != upToNow);
 }
 
-TEST(ac20_copy_outcome_on_paper_copies) {
+TEST(copy_outcome_on_paper_copies) {
     ClipRun c;
     if (!c.run.server) return;
     c.run.line("attach printer test-dotter");

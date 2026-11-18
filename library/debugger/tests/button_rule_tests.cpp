@@ -1,5 +1,5 @@
-// LIB-10 L16 (design §6, §3.10): the rule of the run-control buttons from
-// the table both component sets read (AC-18).
+// The rule of the run-control buttons from the table both component sets
+// read.
 #include "ButtonCases.hpp"
 #include "TestHarness.hpp"
 #include "debugger/ButtonRule.hpp"
@@ -8,7 +8,7 @@ using namespace calcu::debugger;
 using namespace calcu::debugger::test;
 using std::chrono::milliseconds;
 
-TEST(ac18_rule_cases_from_table) {
+TEST(rule_cases_from_table) {
     const ButtonCases t = readButtonCases();
     CHECK(t.cases.size() >= 7);
     for (const auto& c : t.cases) {
@@ -17,7 +17,7 @@ TEST(ac18_rule_cases_from_table) {
     }
 }
 
-TEST(ac18_step_repeats_four_a_second_while_held) {
+TEST(step_repeats_four_a_second_while_held) {
     const ButtonCases t = readButtonCases();
     CHECK_EQ(t.repeatMs, 250);
     CHECK_EQ(StepRepeat::kInterval.count(), static_cast<long long>(t.repeatMs));

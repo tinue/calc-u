@@ -11,21 +11,20 @@
 #include <string>
 #include <vector>
 
-// The papers of a product in its app session (LIB-8 design §3.6; spec AC-6,
-// AC-8, AC-9, AC-16 to AC-19, AC-22, EC-1 to EC-5, EC-7, EC-8): one paper
+// The papers of a product in its app session: one paper
 // for each type of printer the product declares, from the start of the
 // session until it ends, whatever machine runs and whether or not that
 // printer is plugged in. A product without printers adds no part, so it
-// has no paper topic (EC-2).
+// has no paper topic.
 //
-// Binding (A-1): before and after every host call, on a new machine and
+// Binding: before and after every host call, on a new machine and
 // before every paper command and request, the part lists the machine's
 // paper-output capabilities and binds each to the paper of its printer
-// type. Binding sends nothing (AC-9). A capability of a printer that is
-// not declared, or a second one of a type, is logged and left unbound
-// (D-10). A new machine built by a user's preset load (BuildOrigin::Preset)
-// empties the papers of the printers the preset names first (A-3; AC-8
-// table; LIB-6 AC-41); any other build leaves them.
+// type. Binding sends nothing. A capability of a printer that is
+// not declared, or a second one of a type, is logged once and left
+// unbound. A new machine built by a user's preset load (BuildOrigin::Preset)
+// empties the papers of the printers the preset names first; any other
+// build, such as the startup preset at a model switch, leaves them.
 
 namespace calcu::startup {
 class MachineControl;
@@ -44,7 +43,7 @@ struct PrinterPaper {
 class PaperPart final : public sessions::SessionPart {
 public:
     // The owner's name of each printer is its descriptor's name in the
-    // catalogue. `control`: the origin of the last build (A-3); it outlives
+    // catalogue. `control`: the origin of the last build; it outlives
     // the part.
     PaperPart(const machine::Catalogue&, std::vector<PrinterPaper>, const startup::MachineControl& control);
 
@@ -53,12 +52,12 @@ public:
     void afterCall(sessions::SessionContext&, pacing::WallTime) override;
     void machineChanged(sessions::SessionContext&) override;
 
-    // The step `cut-paper` (AC-22): the paper of the printer that is plugged
+    // The step `cut-paper`: the paper of the printer that is plugged
     // in, without a copy; nothing without a printer.
     void cutPlugged(sessions::SessionContext&);
 
     // A paper by its owner's name in any case, the one of the printer that
-    // is plugged in without a name (EC-8). `refusal` says why there is none.
+    // is plugged in without a name. `refusal` says why there is none.
     struct Found {
         Paper* paper = nullptr;
         std::string owner;
@@ -89,15 +88,15 @@ private:
     sessions::StateTopic* papersTopic_ = nullptr;
     sessions::StreamTopic* copiesTopic_ = nullptr;
     std::optional<std::uint64_t> generation_;
-    std::set<std::string> logged_;   // D-10: each unbound capability once
+    std::set<std::string> logged_;   // each unbound capability is logged once
 };
 
-// A-2: the step `- cut-paper:` (no value, no emulated time, also while
+// The step `- cut-paper:` (no value, no emulated time, also while
 // paused; not a harness command of the same name, PaperCommands.cpp has its
 // own). The product, which owns both parts, adds it.
 void addPaperStep(presets::Vocabulary&, PaperPart&);
 
-// Conformance (§3.1): the printer's capability is there, its description
+// Conformance: the printer's capability is there, its description
 // equals the one declared, its standing is 0 after a plug. The problem, or
 // none.
 std::optional<std::string> checkPaperOutput(machine::Machine&, const machine::PeripheralId&, const PaperDescription&);

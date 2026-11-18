@@ -1,11 +1,11 @@
-// LIB-5 design §6, L2: E1, the minimum hold (AC-1).
+// The minimum hold: a key comes up no earlier than its minimum hold.
 #include "TestHarness.hpp"
 #include "TypingRig.hpp"
 
 using namespace calcu::typing;
 using namespace calcu::typing::test;
 
-TEST(ac1_early_key_up_carried_out_at_min_hold) {
+TEST(early_key_up_carried_out_at_min_hold) {
     TypingRig r;
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -22,7 +22,7 @@ TEST(ac1_early_key_up_carried_out_at_min_hold) {
     CHECK(tickOf(log.at(1)) >= t0 + 1000 && tickOf(log.at(1)) < t0 + 1005);
 }
 
-TEST(ac1_key_up_never_dropped) {
+TEST(key_up_never_dropped) {
     TypingRig r(calcu::sessions::Hosting::Paced);
     r.run(100);
     const std::size_t from = r.m->keyEvents().size();
@@ -30,7 +30,7 @@ TEST(ac1_key_up_never_dropped) {
     const auto t0 = r.ticks();
     r.screenUp("b");   // at once
     r.send("focus-lost");
-    r.screenUp("b");   // again: holds nothing (EC-1)
+    r.screenUp("b");   // again: holds nothing, does nothing
     r.run(3000);
     const auto log = r.log(from);
     CHECK_EQ(log.size(), std::size_t(2));
@@ -38,7 +38,7 @@ TEST(ac1_key_up_never_dropped) {
     CHECK(r.part.engine().idle());
 }
 
-TEST(ac1_typed_press_held_its_cadence_at_least_the_minimum) {
+TEST(typed_press_held_its_cadence_at_least_the_minimum) {
     auto p = testProfile();
     p.typed = Cadence{200, 0};   // shorter than the minimum: the minimum holds
     TypingRig r(calcu::sessions::Hosting::VirtualTime, p);

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <array>
 
-// LIB-1 AC-19 (design §6, T10).
+// Sound at the requested rate, whatever the slicing.
 
 using namespace calcu::machine;
 using namespace calcu::machine::test;
@@ -29,7 +29,7 @@ std::vector<std::int16_t> run(Machine& m, Ticks end, Ticks slice) {
 }
 } // namespace
 
-TEST(ac19_samples_at_named_rate_independent_of_slicing) {
+TEST(samples_at_named_rate_independent_of_slicing) {
     const Ticks end = 100'000;   // 0.1 s of test-dot
     for (int rate : {8'000, 11'025}) {
         auto once = buildTestMachine(kDot, std::nullopt, {}, rate);
@@ -50,7 +50,7 @@ TEST(ac19_samples_at_named_rate_independent_of_slicing) {
     }
 }
 
-TEST(ac19_machine_without_sound_gives_none) {
+TEST(machine_without_sound_gives_none) {
     auto m = buildTestMachine(kSeg);
     CHECK(m != nullptr);
     if (!m) return;

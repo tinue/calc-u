@@ -1,4 +1,4 @@
-# The process tests of `calcu` (LIB-11 design §6, T13), with `calcu_test`
+# The process tests of `calcu`, with `calcu_test`
 # (the product made for the tests). cmake -DCALCU=<program> -DCASE=<case>
 # -DWORK=<folder> -P cli_cases.cmake; fails with a message.
 
@@ -24,25 +24,25 @@ function(run prefix)
   set(${prefix}_status "${status}" PARENT_SCOPE)
 endfunction()
 
-if(CASE STREQUAL "ac1_product_by_name_or_short_form_any_case")
+if(CASE STREQUAL "product_by_name_or_short_form_any_case")
   foreach(name Calc-U-Test calc-u-test TEST test)
     run(r ARGS --product ${name} ticks)
     if(NOT r_status EQUAL 0)
       fail("--product ${name} gave ${r_status}: ${r_err}")
     endif()
-    # The run starts at key readiness: one run piece of 1667 ticks (LIB-18 D-4).
+    # The run starts at key readiness: one run piece of 1667 ticks.
     if(NOT r_out STREQUAL "done 2\nticks: 1667\nseconds: 0.016670000\n")
       fail("--product ${name} replied: ${r_out}")
     endif()
   endforeach()
 
-elseif(CASE STREQUAL "ac2_one_shot_runs_in_order_and_exits_zero")
+elseif(CASE STREQUAL "one_shot_runs_in_order_and_exits_zero")
   run(r ARGS --product test wait 1ms then ticks then test count)
   if(NOT r_status EQUAL 0)
     fail("status ${r_status}: ${r_err}")
   endif()
   # wait 1 ms at 100 kHz: 100 ticks; whole instructions of 3 and 5 ticks after
-  # the start's 1667 (LIB-18 D-4): 101.
+  # the start's 1667: 101.
   if(NOT r_out STREQUAL "done 2\nticks: 101\nseconds: 0.001010000\ndone 2\nticks: 1768\nseconds: 0.017680000\ndone 1\noperations: 0\n")
     fail("replied: ${r_out}")
   endif()
@@ -56,7 +56,7 @@ elseif(CASE STREQUAL "ac2_one_shot_runs_in_order_and_exits_zero")
     fail("json replied: ${r_out}")
   endif()
 
-elseif(CASE STREQUAL "ac2_first_refusal_exits_nonzero_with_reason")
+elseif(CASE STREQUAL "first_refusal_exits_nonzero_with_reason")
   run(r ARGS --product test wait 1s then test fail then ticks)
   if(NOT r_status EQUAL 1)
     fail("status ${r_status} (1 expected): ${r_err}")
@@ -66,7 +66,7 @@ elseif(CASE STREQUAL "ac2_first_refusal_exits_nonzero_with_reason")
     fail("replied: ${r_out}")
   endif()
 
-elseif(CASE STREQUAL "ac3_serve_one_reply_per_line_until_quit")
+elseif(CASE STREQUAL "serve_one_reply_per_line_until_quit")
   file(WRITE ${WORK}/in.txt "ticks\r\n\nno-such-command\nwait 2\nkey-down CLR\nquit\nticks\n")
   run(r INPUT ${WORK}/in.txt ARGS --product test serve)
   if(NOT r_status EQUAL 0)
@@ -76,7 +76,7 @@ elseif(CASE STREQUAL "ac3_serve_one_reply_per_line_until_quit")
     fail("replied: ${r_out}")
   endif()
 
-elseif(CASE STREQUAL "ec3_serve_ends_at_end_of_input")
+elseif(CASE STREQUAL "serve_ends_at_end_of_input")
   file(WRITE ${WORK}/settings.ini "format-version = 1\n[startup]\nmodel = test-dot\n")
   file(WRITE ${WORK}/in.txt "audio sound.wav\nwait 10ms\n")
   run(r INPUT ${WORK}/in.txt ARGS --product test --settings settings.ini serve)
@@ -100,7 +100,7 @@ elseif(CASE STREQUAL "ec3_serve_ends_at_end_of_input")
     fail("WAV header ${head}")
   endif()
 
-elseif(CASE STREQUAL "ec4_unknown_product_lists_products")
+elseif(CASE STREQUAL "unknown_product_lists_products")
   run(r ARGS --product no-such ticks)
   if(NOT r_status EQUAL 2)
     fail("status ${r_status}")
@@ -116,9 +116,9 @@ elseif(CASE STREQUAL "ec4_unknown_product_lists_products")
     fail("without --product: status ${r_status}: ${r_err}")
   endif()
 
-# LIB-6 AC-34: check-preset, one line per file; the run ends as failed when
+# check-preset, one line per file; the run ends as failed when
 # a file failed. The paths relative to the working directory.
-elseif(CASE STREQUAL "ac34_check_preset_exit_status")
+elseif(CASE STREQUAL "check_preset_exit_status")
   file(WRITE ${WORK}/good.test-seg "format-version: 2\nmodel: test-seg\nkeys:\n  - key: 1\n")
   file(WRITE ${WORK}/bad.test-seg "format-version: 2\nmodel: test-seg\nkeys:\n  - key: 9\n")
   run(r ARGS --product test check-preset good.test-seg)
@@ -132,10 +132,10 @@ elseif(CASE STREQUAL "ac34_check_preset_exit_status")
     fail("bad: status ${r_status}: ${r_out}${r_err}")
   endif()
 
-# LIB-10 AC-50: a refused expect-register or expect-memory ends a one-shot
+# A refused expect-register or expect-memory ends a one-shot
 # run with the exit status of a refused command, so a test can check a
 # program's result.
-elseif(CASE STREQUAL "ac50_refused_expect_ends_one_shot_nonzero")
+elseif(CASE STREQUAL "refused_expect_ends_one_shot_nonzero")
   run(r ARGS --product test pause then poke test-cpu memory 0x40 7 then expect-memory test-cpu memory 0x40 7)
   if(NOT r_status EQUAL 0)
     fail("kept: status ${r_status}: ${r_out}${r_err}")

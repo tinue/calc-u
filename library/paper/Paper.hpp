@@ -3,12 +3,11 @@
 #include <optional>
 #include <vector>
 
-// One printer type's paper (LIB-8 design §3.2; spec AC-2 to AC-5, AC-8,
-// EC-1): the marks and text lines in the order made, how far the paper
+// One printer type's paper: the marks and text lines in the order made, how far the paper
 // reaches, the cut, and the binding to the printer that prints on it.
 // A position on the paper counts y from where the paper stood when it was
 // last empty; the printer's own coordinates are moved by the offset taken at
-// bind and at cut. No limit on the length (AC-4).
+// bind and at cut. No limit on the length.
 
 namespace calcu::paper {
 
@@ -19,24 +18,24 @@ public:
     // Unbinds the printer bound before (its open stroke closed, its
     // capability told to keep its calls again) and binds `printer`: from now
     // on its marks land here, moved so that it prints on from where this
-    // paper stands (AC-8). nullptr: unbound.
+    // paper stands. nullptr: unbound.
     void bind(PaperOutput*);
     // Forgets the bound printer without calling it: its capability is gone
     // (a detach, a new machine). Its open stroke is closed.
     void release();
     PaperOutput* bound() const { return bound_; }
-    // AC-5, EC-1: empty; y counts again from where the paper stands now. A
+    // Empties the paper; y counts again from where the paper stands now. A
     // stroke open at the cut is closed here and goes on, on the new paper,
-    // with the pen's next move (D-5).
+    // with the pen's next move.
     void cut();
 
     bool empty() const;                       // no marks, no text, nothing fed
-    Reach reach() const;                      // AC-4; 0..0 while empty
+    Reach reach() const;                      // 0..0 while empty
     const std::vector<Mark>& marks() const { return marks_; }
     const std::vector<TextLine>& text() const { return text_; }
     const PaperDescription& description() const { return description_; }
 
-    // What changed since the last take (the topic, AC-6): emptied (a cut in
+    // What changed since the last take (for the topic): emptied (a cut in
     // between: what follows is the new paper's), whether the first mark
     // continues the stroke that the last take ended with (its positions are
     // appended to it), the marks and lines added, the reach now.

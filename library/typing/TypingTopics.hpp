@@ -5,24 +5,25 @@
 #include <cstddef>
 #include <vector>
 
-// The names and payloads of typing in the app session (LIB-5 design §3.5;
-// spec AC-17, AC-19, AC-38). Library names, without a prefix (LIB-3 §3.8).
+// The names and payloads of typing in the app session. Library names,
+// without a prefix.
 
 namespace calcu::typing {
 
 inline const sessions::CommandName kHostKeyDown{"host-key-down"};       // HostKeyEvent (HostKey.hpp); dropped while busy
 inline const sessions::CommandName kHostKeyUp{"host-key-up"};           // {physical}
-inline const sessions::CommandName kHostText{"host-text"};              // {text}: EC-4; dropped while busy
+inline const sessions::CommandName kHostText{"host-text"};              // {text}; dropped while busy
 inline const sessions::CommandName kScreenKeyDown{"screen-key-down"};   // {key, pointer}; dropped while busy
 inline const sessions::CommandName kScreenKeyUp{"screen-key-up"};       // {key, pointer}
-inline const sessions::CommandName kFocusLost{"focus-lost"};            // AC-10
-inline const sessions::CommandName kPaste{"paste"};                     // {text}: AC-12, AC-34; dropped while busy
-inline const sessions::CommandName kKey{"key"};                         // {names: [..]}: AC-15, AC-17; deferred
-inline const sessions::CommandName kType{"type"};                       // {text}: AC-16, AC-17; deferred
-inline const sessions::TopicName kHeldKeysTopic{"held-keys"};           // HeldKeys: AC-19
+inline const sessions::CommandName kFocusLost{"focus-lost"};
+inline const sessions::CommandName kPaste{"paste"};                     // {text}; dropped while busy
+inline const sessions::CommandName kKey{"key"};                         // {names: [..]}; deferred
+inline const sessions::CommandName kType{"type"};                       // {text}; deferred
+inline const sessions::TopicName kHeldKeysTopic{"held-keys"};           // HeldKeys
 inline const sessions::RequestName kTypingRequest{"typing"};            // TypingState
 
-// AC-19: the keys live input holds down on the machine, by key ID.
+// The keys live input holds down on the machine, by key ID, so that a
+// frontend can draw them pressed; keys of typed text and steps are not in it.
 struct HeldKeys final : sessions::PayloadOf<HeldKeys> {
     static constexpr sessions::PayloadKind kKind{"held-keys"};
     std::vector<machine::KeyId> live;

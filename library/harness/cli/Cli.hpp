@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-// The program `calcu` (LIB-11 design §3.8): options, the product, the
+// The program `calcu`: options, the product, the
 // one-shot form or `serve`, and the exit status.
 //
 //   calcu [options] <command> [then <command> ...]
@@ -14,7 +14,7 @@
 //
 // Exit status: 0 when every command was done; 1 at the first refused
 // command, after its reply (the commands after it are not carried out);
-// 2 when the run cannot start (usage, EC-1, EC-4), the message on standard
+// 2 when the run cannot start (usage, missing ROMs, no or unknown product), the message on standard
 // error. `serve` gives 0 at `quit` or at the end of its input.
 
 namespace calcu::harness::cli {

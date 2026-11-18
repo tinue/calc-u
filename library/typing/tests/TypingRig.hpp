@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-// The typing tests' window (LIB-5 design §6): an app session with the
+// The typing tests' window: an app session with the
 // typing part (the test profile and map) and the sessions' test part (an
 // operation `tp.op` of 10 000 ticks), its test frontend listening, a
 // `test-type` machine, and the scripted clock of the session tests. Paced

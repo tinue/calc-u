@@ -85,7 +85,7 @@ int runAttach(const std::vector<std::string>& args, const std::function<std::opt
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string& a = args[i];
         for (const char* o : kNotHere)
-            if (a == o || a.rfind(std::string(o) + "=", 0) == 0) {   // AC-11, D-4
+            if (a == o || a.rfind(std::string(o) + "=", 0) == 0) {
                 err(a + " does not apply to an attached harness: it works with the app's own product, settings and folders.\n");
                 return 2;
             }
@@ -115,7 +115,7 @@ int runAttach(const std::vector<std::string>& args, const std::function<std::opt
         return 2;
     }
     Line in{fd, {}};
-    if (json) {   // D-2: the app formats JSON from now on
+    if (json) {   // the app formats JSON from now on
         sendLine(fd, "json on");
         relayReply(in, true, false, [](const std::string&) {});
     }

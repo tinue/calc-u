@@ -223,7 +223,7 @@
 				8C7285552F69626400D5F025 /* Sources */,
 				8C7285562F69626400D5F025 /* Frameworks */,
 				8C7285572F69626400D5F025 /* Resources */,
-				CA1C5900000000000000B00D /* Check no attach (C59-5 AC-13) */,
+				CA1C5900000000000000B00D /* Check no attach */,
 			);
 			buildRules = (
 			);
@@ -427,7 +427,7 @@
 			shellPath = /bin/sh;
 			shellScript = "# The library, core and app layer through the root CMake project.\n\"$SRCROOT/build_xcframework.sh\" \"$CONFIGURATION\"\n# The bundled examples of examples/bundle.yaml, the app's folder examples.\n\"$SRCROOT/copy_examples.sh\"\n";
 		};
-		CA1C5900000000000000B00D /* Check no attach (C59-5 AC-13) */ = {
+		CA1C5900000000000000B00D /* Check no attach */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -440,7 +440,7 @@
 				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
 				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_DEBUG_DYLIB_PATH)",
 			);
-			name = "Check no attach (C59-5 AC-13)";
+			name = "Check no attach";
 			outputFileListPaths = (
 			);
 			outputPaths = (

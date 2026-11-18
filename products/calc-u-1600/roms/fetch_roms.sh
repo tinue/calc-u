@@ -2,7 +2,7 @@
 # Downloads the Sharp firmware ROM dumps Calc-U-1600 needs into this
 # directory (products/calc-u-1600/roms/), from the ROM repositories (see
 # README.md here for provenance detail on each file). ROMs are not in this
-# repository (Sharp Corporation's copyrighted firmware; ADR 0034) -- so this
+# repository (Sharp Corporation's copyrighted firmware) -- so this
 # script is how a fresh clone (or CI) gets a working roms/ directory before
 # building. It is also the fetch list: names and md5 of the full set.
 #
@@ -30,7 +30,7 @@
 #     -- from tinue/PC-1500-ROM (dumps/ce150/CE-150.BIN)
 #   CE-502B.module.yaml
 #     -- from tinue/PC-1500-ROM (modules/CE-502B.card.yaml): the CE-502B
-#        module definition with its ROM bytes (LIB-12 AC-14)
+#        module definition with its ROM bytes
 #   PC1500_ROM_BASE=<url> overrides that repo's base URL (its root, e.g. a
 #   file:// URL to a local checkout).
 set -eu

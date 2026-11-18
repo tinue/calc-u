@@ -2,10 +2,9 @@
 # Downloads the TI-58/59/58C ROM dumps and the Solid State ROM module files
 # Calc-U-59 needs into this directory (products/calc-u-59/roms/), from the TI
 # ROM repository tinue/TI-59-ROM (see README.md here). ROMs are not in this
-# repository (Texas Instruments' copyrighted firmware; ADR 0034) -- so this
+# repository (Texas Instruments' copyrighted firmware) -- so this
 # script is how a fresh clone (or CI) gets a working roms/ directory before
-# building. It is also the fetch list: names and md5 of the full set
-# (LIB-12 AC-9, AC-14).
+# building. It is also the fetch list: names and md5 of the full set.
 #
 # Idempotent: skips a file that's already present and matches its known
 # md5, so re-running after a partial/interrupted fetch is safe and cheap.

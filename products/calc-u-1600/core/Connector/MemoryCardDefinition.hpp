@@ -613,7 +613,7 @@ inline bool parseContent(const calcu::formats::YamlNode& node, RegionContent* ou
         if (!body || !body->has("protocol")) {
             *error = "line " + std::to_string(node.line) +
                      ": 'flash' content needs a mapping with 'protocol' (chip/firmware "
-                     "properties are never inferred, spec §5)";
+                     "properties are never inferred)";
             return false;
         }
         if (!body->requireOnlyKeys({"kind", "power-up-fill", "protocol", "banks"}, error))

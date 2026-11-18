@@ -11,7 +11,7 @@ class QLineEdit;
 
 // "Load Machine Code…" question dialog for a file without a header (C1600-2
 // AC-18): asks the start address. What it says and whether an address holds
-// come from the session's `c1600.plan-code` (app/SharpLoaderPart; MODE /
+// come from the session's `c1600.code-plan` (app/SharpLoaderPart; MODE /
 // TITLE decide the address space and the target on a PC-1600), asked again
 // with each change of the text; Load is enabled only while the plan holds.
 // `args` are the file's ({bytes, file?}); `plan` is the first plan, without

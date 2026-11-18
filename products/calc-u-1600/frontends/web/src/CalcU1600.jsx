@@ -86,7 +86,7 @@ function TapeControls({ shell, entry }) {
       <span className="calcu-bar-label">Cassette:</span>
       <CalcuMediaPicker place={place} send={bar.send} />
       <button type="button" className="calcu-iconbutton" title="A new cassette to record onto (CSAVE)"
-        data-calcu="tape-new" aria-label="New cassette" onClick={() => bar.recordTape()}>
+        data-calcu="cassette-new" aria-label="New cassette" onClick={() => bar.recordTape()}>
         <SaveIcon />
       </button>
       <button type="button" className="calcu-iconbutton" disabled={!place || !place.nameAndSave} title="Name & Save"
@@ -195,24 +195,27 @@ function CalcU1600(props) {
   // AC-19): the session's file kind, the WAV's choice, then the load.
   // `index`: the file of a WAV already chosen (from 1); otherwise asked when
   // it holds several.
+  // C1600-2 AC-16: the file of a WAV that holds several (from 1); 0 when
+  // there is nothing to choose, null when the user cancels.
+  const pickWavFile = async (title, name, tapeFiles) => {
+    if (!tapeFiles || tapeFiles.length <= 1) return 0;
+    const names = tapeFiles.map((n, i) => `${i + 1}. ${n}`);
+    const picked = await dialogs.ask("choice", { title, text: `${name} holds ${names.length} files. Load which one?`, options: names });
+    return picked === null ? null : picked + 1;
+  };
   const openProgram = async (kind, name, bytes, index) => {
     const title = kind === "basic" ? "Load BASIC Program" : "Load Machine Code";
     if (!index) {
       const k = await shell.request("c1600.file-kind", { bytes });
-      const tapeFiles = k.done && k.value ? k.value.tapeFiles : null;
-      if (tapeFiles && tapeFiles.length > 1) {
-        const names = tapeFiles.map((n, i) => `${i + 1}. ${n}`);
-        const picked = await dialogs.ask("choice", { title, text: `${name} holds ${names.length} files. Load which one?`, options: names });
-        if (picked === null) return;
-        index = picked + 1;
-      }
+      index = await pickWavFile(title, name, k.done && k.value ? k.value.tapeFiles : null);
+      if (index === null) return;
     }
     index = index || 0;
     if (kind === "basic") {
       await sendChecked("c1600.load-basic", { name, bytes, file: index });
       return;
     }
-    const planned = await shell.request("c1600.plan-code", { bytes, file: index, address: "" });
+    const planned = await shell.request("c1600.code-plan", { bytes, file: index, address: "" });
     const plan = planned.done ? planned.value : { refusal: planned.reason };
     let address = "";
     if (plan.needsAddress) {
@@ -245,16 +248,11 @@ function CalcU1600(props) {
     programFlow.current = true;
     (async () => {
       let flow = p.kind === "machine-code-program" ? "code" : "basic";
-      let index = 0;
       const k = await shell.request("c1600.file-kind", { bytes: p.bytes });
       const { tapeFiles, tapeKinds } = (k.done && k.value) || {};
-      if (tapeFiles && tapeFiles.length > 1) {
-        const names = tapeFiles.map((n, i) => `${i + 1}. ${n}`);
-        const picked = await dialogs.ask("choice", { title: "Open", text: `${p.name} holds ${names.length} files. Load which one?`, options: names });
-        if (picked === null) return;
-        index = picked + 1;
-        if (tapeKinds && tapeKinds[picked]) flow = tapeKinds[picked].startsWith("code-") ? "code" : "basic";
-      }
+      const index = await pickWavFile("Open", p.name, tapeFiles);
+      if (index === null) return;
+      if (index && tapeKinds && tapeKinds[index - 1]) flow = tapeKinds[index - 1].startsWith("code-") ? "code" : "basic";
       await openProgram(flow, p.name, p.bytes, index);
     })().finally(() => { programFlow.current = false; });
   }, [shell, programs, dialogs.open]);

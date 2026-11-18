@@ -49,10 +49,10 @@ given as `fixed:<folder>`.
 
 | Key | Dialog label | Where it applies |
 |---|---|---|
-| `[folders] presets` | Examples folder | **File ▸ Load Preset…** |
-| `[folders] basic-programs` | Basic folder | **File ▸ Load BASIC Program…** |
+| `[folders] presets` | Presets folder | **File ▸ Load Preset…** |
+| `[folders] basic-programs` | BASIC folder | **File ▸ Load BASIC Program…** |
 | `[folders] machine-code` | Assembly folder | **File ▸ Load Machine Code…** |
-| `[folders] host-drive` | Host drive folder | **File ▸ Mount Directory…** (the folder last mounted by default) |
+| `[folders] host-drive` | Host drive folder | **File ▸ Host Drive…** (the folder last mounted by default) |
 
 ## Debug server
 

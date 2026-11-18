@@ -142,7 +142,7 @@ PC-1600) and a bundled preset to start with:
 | Shortcuts for menu items | yes ([Shortcuts](../../../library/help/02-getting-started.md#shortcuts)) | none: they are the browser's; pasting still types |
 | The debugger (VS Code) | yes | no |
 | The serial ports (CE-158, the PC-1600's RS-232C) | yes | no |
-| The host drive `S3:` (**File ▸ Mount Directory…**) | yes | no |
+| The host drive `S3:` (**File ▸ Host Drive…**) | yes | no |
 | The INSPECTOR's TRACE and LOG | yes | no |
 | Quit, the window size, the folder settings | yes | no |
 

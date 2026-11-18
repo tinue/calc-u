@@ -91,7 +91,7 @@ struct SharpAppPartOptions {
 //   (C1600-3) and this part;
 // - the product's commands that need its own data, each one
 //   MachineControl::change (LIB-18 D-22):
-//   `c1600.mount-host-drive`, `c1600.ce1600p-rom` (SharpTopics.hpp);
+//   `c1600.mount-host-drive`, `c1600.ce1600p-variant` (SharpTopics.hpp);
 // - the product's topics (`c1600.lamps`, `c1600.serial-links`).
 //
 // The host builds it, hands sessionParts() (every part, LIB-4's ControlPart
@@ -114,7 +114,7 @@ public:
 
     Settings& settings() { return m_settings; }
     AppPaths& paths() { return m_paths; }
-    // LIB-7: the media (modules, disks, tapes): the topic `media`, the
+    // LIB-7: the media (modules, disks, cassettes): the topic `media`, the
     // commands `media.*`, autosave (app/SharpMediaKinds for the formats).
     calcu::media::MediaPart& mediaPart() { return m_lib.media(); }
     SharpLoaderPart& loaderPart() { return m_loaderPart; }

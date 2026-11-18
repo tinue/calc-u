@@ -134,7 +134,7 @@ inline ShellProduct product() {
     p.moduleSlotPinOuts = {"module"};
     p.placesWithoutControl = {"host-drive"};
     p.items.push_back(ProductItem{MenuGroup::FileKinds, "load-program", "Load Program…", "", {}});
-    p.items.push_back(ProductItem{MenuGroup::FileMedia, "mount-drive", "Mount Directory…", "", {}});
+    p.items.push_back(ProductItem{MenuGroup::FileMedia, "mount-drive", "Host Drive…", "", {}});
     p.items.push_back(ProductItem{MenuGroup::MachineEnd, "disk-thing", "Disk Thing", "tp.disk", {}});
     return p;
 }

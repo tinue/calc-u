@@ -677,7 +677,7 @@ through a program or set breakpoints, use the debugger above.
 - **Dump ▾:** hex dumps of the BASIC area, a program module's area (S1, S2),
   a RAM disk (S1:, S2:), and on the PC-1500 the machine-language area
   7C00–7FFF. An entry that doesn't apply right now is greyed out.
-- **Card YAML:** the memory module in each slot, as an `initial-content:`
+- **Module YAML:** the memory module in each slot, as an `initial-content:`
   block for a module definition (see
   [Module definitions](09-module-definitions.md#a-module-with-content-already-on-it)).
 - **Clear** (bin icon): empties the log.

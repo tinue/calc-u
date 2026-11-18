@@ -872,7 +872,7 @@ product items; the page gets the data through the request
 | `copyScreen`, `pasteText` | true, true |
 | `moduleSlotPinOuts` | the three memory slot pin-outs (`core/Machine/SharpCatalogue.cpp:77, 107-108`) |
 | `placesWithoutControl` | `host-drive` (AC-9) |
-| `items` | FileKinds: "Load BASIC Program…", "Load Machine Code…" (C1600-2); FileMedia (Qt6 only): "Mount Directory…", "Unmount" (entry `c1600.host-drive-folder`); Edit: "Copy Screen", which reads "Copy Log Selection" while text of the INSPECTOR is selected (Qt6) |
+| `items` | FileKinds: "Load BASIC Program…", "Load Machine Code…" (C1600-2); FileMedia (Qt6 only): "Host Drive…" (entry `c1600.host-drive`), "Unmount" (entry `c1600.host-drive-folder`); Edit: "Copy Screen", which reads "Copy Log Selection" while text of the INSPECTOR is selected (Qt6) |
 
 `checkShellProduct()` runs in `lib14_ac34_shell_product_complete` (D.8).
 
@@ -967,7 +967,7 @@ of AC-25.
 |---|---|---|---|
 | Q1 | `SharpShellProduct`; the session host in `MachineController` | (support); AC-39 | `CoreTests`, `app/tests/shell_product_tests.cpp`: `lib14_ac34_shell_product_complete` (`checkShellProduct` against each model's control state), `lib14_ac39_help_address_and_about_texts` |
 | Q2 | Qt6 menus | AC-34; AC-1, AC-4, AC-6 for this product | `CalcU1600QtTests`: `lib14_ac34_qt_menus_in_family_order` (File, Edit, Machine, Help and their items per model; ROM Revision only on the PC-1500, ROM Version and CE-1600P ROM on the PC-1600; Cold boot; Resume), `lib14_ac34_copy_log_selection_while_inspector_text_selected`, `lib14_ac34_shortcuts_ctrl_o_r_shift_r`. The macOS application menu is seen in the shot `02-machine-menu` (Longer) |
-| Q3 | Web menus | AC-35 | `shell.spec.js`: `lib14_ac35 the web menus` (no Mount Directory…, Unmount, Quit; Import Media… and Saved Media…; Load Preset… and Examples ▸ as two items), `lib14_ac35 no shortcut is bound` |
+| Q3 | Web menus | AC-35 | `shell.spec.js`: `lib14_ac35 the web menus` (no Host Drive…, Unmount, Quit; Import Media… and Saved Media…; Load Preset… and Examples ▸ as two items), `lib14_ac35 no shortcut is bound` |
 | Q4 | The bar per model | AC-36; AC-8 to AC-10 | `CalcU1600QtTests`: `lib14_ac36_bar_pc1500_pc1500a` (the model picker, the slot picker without a number and with Name & Save, the buttons CE-150 and CE-158, the tape controls only with a CE-150), `lib14_ac36_bar_pc1600` (the slot pickers "1:" and "2:"; the printer picker with None, CE-150, CE-1600P; the CE-158 button; the disk controls, disabled with the reason until the CE-1600P is plugged in; the tape controls with a cassette); `shell.spec.js`: `lib14_ac36 the bar per model` |
 | Q5 | Settings | AC-37; AC-11 to AC-13 | `CalcU1600QtTests`: `lib14_ac37_settings_sections_and_rows` (General: Startup model; Startup presets: three rows; Storage: Save folder, Tapes; Folders: four rows; Tracing: two; Serial ports: the link folder and two status lines, not on Windows; Debugger); `shell.spec.js`: `lib14_ac37 the web settings` (General, Startup presets, the sentence on saved media) |
 | Q6 | "Loading…" and notices | AC-38; AC-15 to AC-17 | `CalcU1600QtTests`: `lib14_ac38_loading_after_500_ms_blocks_nothing` (a preset at full speed: nothing at 300 ms, the overlay at 600 ms; the model picker, Reset and Cold boot enabled; Reset ends it), `lib14_ac38_notice_without_title` |
@@ -1054,7 +1054,8 @@ the same step, consequences of the spec that the ledger lacks:
   undone; their designs say what they do.
 - **D-26 (AC-37).** Calc-U-1600 gives its own Folders section with
   today's labels and "Samples" renamed: "Examples folder", "Basic
-  folder", "Assembly folder", "Host drive folder". Storage keeps "Tapes" ("Cassettes" since release prep step 2)
+  folder" ("Presets folder", "BASIC folder" since the release
+  simplification, ledger 1600-54), "Assembly folder", "Host drive folder". Storage keeps "Tapes" ("Cassettes" since release prep step 2)
   beside "Save folder".
 - **D-27 (AC-44).** The attached harness registers the serve form's
   commands, and its bare `wait` ends at idle on the app's clock. It is a

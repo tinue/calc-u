@@ -58,7 +58,7 @@ void MachineCodeLoadDialog::refresh() {
     calcu::sessions::Value::Object o = *m_args.members();
     o.push_back({"address", calcu::sessions::Value(text)});
     const calcu::sessions::ReplyMessage r =
-        m_ask(cu1600::requests::kPlanCode, calcu::sessions::Value(std::move(o)));
+        m_ask(cu1600::requests::kCodePlan, calcu::sessions::Value(std::move(o)));
     const auto* plan = calcu::sessions::payloadAs<cu1600::CodePlanReply>(r.result);
     bool holds = false;
     QString hint;

@@ -25,7 +25,7 @@ test('lib14_ac35 the web menus', async ({ page }) => {
   const menus = await page.locator(`${c('menu-bar')} > div > button`).allTextContents();
   expect(menus).toEqual(['File', 'Edit', 'Machine', 'Help']);
   // Load Preset… and Examples ▸ are two items; the program files (C1600-2);
-  // the media items of LIB-7; Settings…; no Mount Directory…, Unmount, Quit.
+  // the media items of LIB-7; Settings…; no Host Drive…, Unmount, Quit.
   expect(await items(page, 'file')).toEqual(['load-preset', 'examples', 'load-basic-program', 'load-machine-code',
     'import-media', 'saved-media', 'settings']);
   expect(await items(page, 'edit')).toEqual(['copy-screen', 'paste-text']);

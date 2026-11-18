@@ -338,10 +338,10 @@ TEST(lib12_ac13_no_rom_read_during_session) {
     CHECK(s.switchModel(calcu::machine::ModelId{"PC-1600"}));
     CHECK(s.run(calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", "Old"}})));
     CHECK(s.session.machine()->variant() && s.session.machine()->variant()->value == "Old");
-    CHECK(s.run(cu1600::commands::kCE1600PRom, calcu::sessions::Value::object({{"version", "old"}})));
+    CHECK(s.run(cu1600::commands::kCE1600PVariant, calcu::sessions::Value::object({{"version", "old"}})));
     CHECK(attach("printer", "CE-1600P"));
     CHECK(s.session.ce1600pAttached());
-    CHECK(s.run(cu1600::commands::kCE1600PRom, calcu::sessions::Value::object({{"version", "new"}})));
+    CHECK(s.run(cu1600::commands::kCE1600PVariant, calcu::sessions::Value::object({{"version", "new"}})));
     CHECK(s.run(calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", "New"}})));
     CHECK(s.session.hasLiveMachine());
     CHECK(s.missing() == nullptr);

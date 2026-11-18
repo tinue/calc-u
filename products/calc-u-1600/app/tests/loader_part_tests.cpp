@@ -192,7 +192,7 @@ TEST(c1600_2_ec6_menu_and_harness_refused_while_busy) {
     CHECK(f.start("PC-1600"));
     f.send(calcu::startup::kResetCommand);   // an operation of the menu
     CHECK(f.busy());
-    const sessions::ReplyMessage p = f.listener.ask(q::kPlanCode, Value::object({{"bytes", Value::Bytes(kRtn4)}}));
+    const sessions::ReplyMessage p = f.listener.ask(q::kCodePlan, Value::object({{"bytes", Value::Bytes(kRtn4)}}));
     CHECK(!p.done && p.reason == sessions::kAnotherOperationRuns);
     auto r = f.takeReply(f.send(c::kLoadCode, with(file(kRtn4), "address", "&C100")));
     CHECK(r && !r->done && r->reason == sessions::kAnotherOperationRuns);
@@ -270,7 +270,7 @@ TEST(c1600_2_ac22_address_checked_as_typed) {
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
     auto plan = [&](const char* address) {
-        const sessions::ReplyMessage r = f.listener.ask(q::kPlanCode, with(file(kRtn4), "address", address));
+        const sessions::ReplyMessage r = f.listener.ask(q::kCodePlan, with(file(kRtn4), "address", address));
         const auto* p = sessions::payloadAs<cu1600::CodePlanReply>(r.result);
         return p ? *p : cu1600::CodePlanReply{};
     };

@@ -6,7 +6,7 @@
 #include "Connector/PrintableBytes.hpp"
 #include "Display/DisplayOutputText.hpp"
 #include "Utf8.hpp"
-#include "app/CardYamlDump.hpp"
+#include "app/ModuleYamlDump.hpp"
 #include "app/SharpShellProduct.hpp"
 #include "app/Text.hpp"
 #include "files/Files.hpp"
@@ -103,8 +103,8 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
         return sessions::replyGiven(sessions::valuePayload(
             "c1600.inspector-view", Value(joinLines(m_app.inspectorView(static_cast<inspect::View>(truncatedIntegerArg(a, "view")))))));
     });
-    req("c1600.card-yaml", [this](const Value&, SessionContext&) {
-        return sessions::replyGiven(sessions::valuePayload("c1600.card-yaml", strings(cardYamlDump(m_app))));
+    req("c1600.module-yaml", [this](const Value&, SessionContext&) {
+        return sessions::replyGiven(sessions::valuePayload("c1600.module-yaml", strings(moduleYamlDump(m_app))));
     });
 
     // ── Copy Screen (LIB-14 AC-41) ──────────────────────────────────────

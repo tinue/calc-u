@@ -285,7 +285,7 @@ initial-content:
 
 A project-specific dialect designed so a memory dump can be pasted
 straight into a `bytes: |` block with no reformatting — the INSPECTOR's
-**Card YAML** button ([Debugger](07-debugger.md)) writes exactly this. Lines are
+**Module YAML** button ([Debugger](07-debugger.md)) writes exactly this. Lines are
 either an explicit row or a same-byte run:
 
 ```yaml

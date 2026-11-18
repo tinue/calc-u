@@ -49,12 +49,12 @@ void SharpControlRules::productEntries(const Machine& m, std::vector<calcu::cont
     out.push_back(entry(kDiskControlsEntry, sessions::Value(std::move(disk))));
     out.push_back(entry(kCe158PrinterPanelEntry,
                         sessions::Value::object({{"shown", pluggedAt(m, sharp::kInterface) == sharp::kCE158}})));
-    // File ▸ Mount Directory… and Unmount (LIB-14 AC-9: the place's owner
+    // File ▸ Host Drive… and Unmount (LIB-14 AC-9: the place's owner
     // adds its own items) follow these two.
     sessions::Value::Object mount{{"available", sessions::Value(pc1600 && m_in.canMountHostFolder)}};
     if (!pc1600) mount.push_back({"reason", sessions::Value(kHostDriveIsPc1600s)});
     else if (!m_in.canMountHostFolder) mount.push_back({"reason", sessions::Value(kNoHostFolderHere)});
-    out.push_back(entry(kMountDirectoryEntry, sessions::Value(std::move(mount))));
+    out.push_back(entry(kHostDriveEntry, sessions::Value(std::move(mount))));
     const std::string folder = hostDriveFolder(m);
     sessions::Value::Object hostDrive{{"folder", sessions::Value(folder)}, {"available", sessions::Value(!folder.empty())}};
     if (folder.empty()) hostDrive.push_back({"reason", sessions::Value(kNoFolderMounted)});

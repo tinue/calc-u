@@ -41,7 +41,7 @@ function PillMenu({ label, entries }) {
 const INSPECTOR_MAX_ENTRIES = 200;
 
 // `shell`: LIB-15's shell; the views are the product's requests
-// `c1600.inspector-menu`, `c1600.inspector-view`, `c1600.card-yaml`.
+// `c1600.inspector-menu`, `c1600.inspector-view`, `c1600.module-yaml`.
 function Inspector({ shell }) {
   const [entries, setEntries] = React.useState([]);
   const outRef = React.useRef(null);
@@ -70,8 +70,8 @@ function Inspector({ shell }) {
           <PillMenu label="Memory" entries={menu(false)} />
           <PillMenu label="Dump" entries={menu(true)} />
           <span className="calcu-bar-stretch" />
-          <button type="button" className="calcu-pill" title="The module in each slot, as initial-content: YAML for a card file"
-            onClick={async () => add((await ask("c1600.card-yaml", null)) || [])}>Card YAML</button>
+          <button type="button" className="calcu-pill" title="The module in each slot, as initial-content: YAML for a module definition"
+            onClick={async () => add((await ask("c1600.module-yaml", null)) || [])}>Module YAML</button>
           <button type="button" className="calcu-pill calcu-pill-icon" title="Clear" aria-label="Clear"
             onClick={() => setEntries([])}>
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10l-1 10H4L3 4zm2-2h6v1.5H5z" fill="currentColor" opacity="0.6" /></svg>

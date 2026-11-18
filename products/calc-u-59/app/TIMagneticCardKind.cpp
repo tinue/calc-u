@@ -288,7 +288,7 @@ const calcu::media::KindDecl& magneticCardKind() {
         k.folder = calcu::settings::Folder::Save;
         k.codec = &codec;
         k.formatName = "Magnetic card format";
-        k.describedAt = "docs/formats/media.md §1";
+        k.describedAt = "the User Guide, \"Media files\", \"Magnetic card\"";
         k.currentVersion = kMagneticCardFormatVersion;
         k.implicitTemplates = {calcu::media::ImplicitTemplate{kFreshCardTemplate, "A fresh magnetic card",
                                                               [] { return std::make_shared<TIMagneticCardData>(); }}};

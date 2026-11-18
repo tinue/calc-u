@@ -183,8 +183,8 @@ calcu::shell::ShellProduct MainWindow::product() {
     for (auto& item : p.items) {
         if (item.id == cu1600::kItemLoadBasic) item.act = [this] { chooseProgram(false); };
         else if (item.id == cu1600::kItemLoadCode) item.act = [this] { chooseProgram(true); };
-        else if (item.id == cu1600::kItemMountDirectory) item.act = [this] { mountHostDirectory(); };
-        else if (item.id == cu1600::kItemUnmountDirectory) item.act = [this] { unmountHostDirectory(); };
+        else if (item.id == cu1600::kItemHostDrive) item.act = [this] { mountHostDirectory(); };
+        else if (item.id == cu1600::kItemUnmountHostDrive) item.act = [this] { unmountHostDirectory(); };
     }
     return p;
 }
@@ -236,7 +236,7 @@ void MainWindow::applyCopyLabel() {
     const QString copyName = QString::fromStdString(calcu::shell::names::item(calcu::shell::actions::kCopyScreen));
     if (QAction* copy = menuBar()->findChild<QAction*>(copyName))
         copy->setText(m_inspector->selectedOutputText().isEmpty() ? tr("Copy Screen") : tr("Copy Log Selection"));
-    const QString unmountName = QString::fromStdString(calcu::shell::names::item(cu1600::kItemUnmountDirectory));
+    const QString unmountName = QString::fromStdString(calcu::shell::names::item(cu1600::kItemUnmountHostDrive));
     if (QAction* unmount = menuBar()->findChild<QAction*>(unmountName)) {
         const std::string dir = calcu::shell::read::text(
             productEntry(host().value(calcu::control::kControlStateTopic), cu1600::kHostDriveFolderEntry), "folder");
@@ -339,12 +339,12 @@ QImage MainWindow::toQImage(const GrayImage& screen) {
     return image;
 }
 
-// File ▸ Mount Directory…: the host directory becomes drive S3: (alias Y:
+// File ▸ Host Drive…: the host directory becomes drive S3: (alias Y:
 // without a CE-1600F). The first mount plugs the host drive in, with the
 // power cycle every peripheral attach gets; mounting another directory
 // while one is mounted is a live media swap.
 void MainWindow::mountHostDirectory() {
-    const QString dir = m_shell->choosers().folder(this, tr("Mount Directory as S3:"), m_shell->startFolder("host-drive"));
+    const QString dir = m_shell->choosers().folder(this, tr("Host Drive (S3:)"), m_shell->startFolder("host-drive"));
     if (dir.isEmpty()) return;
     host().send(calcu::shell::commands::kRememberFolder,
                 calcu::sessions::Value::object({{"kind", "host-drive"}, {"folder", dir.toStdString()}}));
@@ -391,19 +391,22 @@ std::optional<calcu::sessions::Value::Object> MainWindow::programArgs(const QStr
     // C1600-2 AC-16: a WAV with several files asks which one.
     const sessions::ReplyMessage kind = m_controller->ask(
         cu1600::requests::kFileKind, sessions::Value::object({{"bytes", args.front().value}}));
-    const auto* k = sessions::payloadAs<cu1600::FileKindReply>(kind.result);
-    if (k && k->tapeFiles.size() > 1) {
-        QStringList names;
-        for (std::size_t i = 0; i < k->tapeFiles.size(); ++i)
-            names << QStringLiteral("%1. %2").arg(i + 1).arg(QString::fromStdString(k->tapeFiles[i]));
-        bool ok = false;
-        const QString picked = QInputDialog::getItem(
-            this, title, tr("%1 holds %2 files. Load which one?").arg(name).arg(names.size()), names,
-            0, false, &ok);
-        if (!ok) return std::nullopt;
-        args.push_back({"file", sessions::Value(names.indexOf(picked) + 1)});
-    }
+    const std::optional<int> file = pickWavFile(title, name, sessions::payloadAs<cu1600::FileKindReply>(kind.result));
+    if (!file) return std::nullopt;
+    if (*file > 0) args.push_back({"file", sessions::Value(*file)});
     return args;
+}
+
+std::optional<int> MainWindow::pickWavFile(const QString& title, const QString& name, const cu1600::FileKindReply* k) {
+    if (!k || k->tapeFiles.size() <= 1) return 0;
+    QStringList names;
+    for (std::size_t i = 0; i < k->tapeFiles.size(); ++i)
+        names << QStringLiteral("%1. %2").arg(i + 1).arg(QString::fromStdString(k->tapeFiles[i]));
+    bool ok = false;
+    const QString picked = QInputDialog::getItem(
+        this, title, tr("%1 holds %2 files. Load which one?").arg(name).arg(names.size()), names, 0, false, &ok);
+    if (!ok) return std::nullopt;
+    return static_cast<int>(names.indexOf(picked)) + 1;
 }
 
 void MainWindow::loadBasicProgram(const QString& name, const QByteArray& bytes, std::optional<int> file) {
@@ -420,7 +423,7 @@ void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, s
     if (!args) return;
     // The one plan (C1600-2 AC-8): a refusal is the notice; headerless code
     // asks the address (AC-18).
-    const sessions::ReplyMessage planned = m_controller->ask(cu1600::requests::kPlanCode, sessions::Value(*args));
+    const sessions::ReplyMessage planned = m_controller->ask(cu1600::requests::kCodePlan, sessions::Value(*args));
     const auto* plan = sessions::payloadAs<cu1600::CodePlanReply>(planned.result);
     if (!planned.done || !plan) {
         QMessageBox::warning(this, title, QString::fromStdString(planned.reason));
@@ -626,21 +629,15 @@ void MainWindow::onProgramOpened(const QString& name, const QByteArray& bytes, c
         cu1600::requests::kFileKind,
         sessions::Value::object({{"bytes", sessions::Value(sessions::Value::Bytes(bytes.begin(), bytes.end()))}}));
     const auto* k = sessions::payloadAs<cu1600::FileKindReply>(r.result);
-    if (k && k->tapeFiles.size() > 1) {
-        QStringList names;
-        for (std::size_t i = 0; i < k->tapeFiles.size(); ++i)
-            names << QStringLiteral("%1. %2").arg(i + 1).arg(QString::fromStdString(k->tapeFiles[i]));
-        bool ok = false;
-        const QString picked = QInputDialog::getItem(
-            this, tr("Open"), tr("%1 holds %2 files. Load which one?").arg(name).arg(names.size()), names, 0, false, &ok);
-        if (!ok) {
-            m_programFlow = false;
-            return;
-        }
-        const qsizetype n = names.indexOf(picked);
-        chosen = static_cast<int>(n) + 1;
-        if (n >= 0 && static_cast<std::size_t>(n) < k->tapeKinds.size())
-            code = k->tapeKinds[static_cast<std::size_t>(n)].rfind("code-", 0) == 0;
+    const std::optional<int> file = pickWavFile(tr("Open"), name, k);
+    if (!file) {
+        m_programFlow = false;
+        return;
+    }
+    if (*file > 0) {
+        chosen = *file;
+        const auto n = static_cast<std::size_t>(*file - 1);
+        if (n < k->tapeKinds.size()) code = k->tapeKinds[n].rfind("code-", 0) == 0;
     }
     if (code) loadMachineCode(name, bytes, chosen);
     else loadBasicProgram(name, bytes, chosen);

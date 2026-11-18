@@ -71,17 +71,17 @@ TEST(lib7_ac37_three_kinds_suffixes_versions_name_keys) {
     CHECK_EQ(k[cu1600::kFloppyKind].suffix, std::string(".floppy.yaml"));
     CHECK_EQ(k[cu1600::kFloppyKind].currentVersion, 2);
     CHECK_EQ(k[cu1600::kFloppyKind].words.insertStep, std::string("floppy"));
-    CHECK_EQ(k[cu1600::kTapeKind].suffix, std::string(".cassette.yaml"));
-    CHECK_EQ(k[cu1600::kTapeKind].currentVersion, 1);
-    CHECK(k[cu1600::kTapeKind].folder == calcu::settings::Folder::Cassettes);
-    CHECK_EQ(k[cu1600::kTapeKind].words.ejectWord, std::string("cassette"));
+    CHECK_EQ(k[cu1600::kCassetteKind].suffix, std::string(".cassette.yaml"));
+    CHECK_EQ(k[cu1600::kCassetteKind].currentVersion, 1);
+    CHECK(k[cu1600::kCassetteKind].folder == calcu::settings::Folder::Cassettes);
+    CHECK_EQ(k[cu1600::kCassetteKind].words.ejectWord, std::string("cassette"));
     // The name tags: module-name, disk-name, cassette-name; template: true.
     const ReadOutcome m = readFile(k[cu1600::kModuleKind], fs::path(kCards) / "ce1600m.module.yaml");
     CHECK(m.status == ReadOutcome::Status::Read && m.info.name == "CE-1600M" && m.info.isTemplate);
     const ReadOutcome d = readFile(k[cu1600::kFloppyKind], fs::path(kCards) / "formatted.floppy.yaml");
     CHECK(d.status == ReadOutcome::Status::Read && d.info.name == "Formatted" && d.info.isTemplate);
     CHECK_EQ(d.info.description, std::string("Formatted, both sides empty"));
-    const ReadOutcome t = readFile(k[cu1600::kTapeKind], fs::path(kCards) / "empty.cassette.yaml");
+    const ReadOutcome t = readFile(k[cu1600::kCassetteKind], fs::path(kCards) / "empty.cassette.yaml");
     CHECK(t.status == ReadOutcome::Status::Read && t.info.name == "Empty" && t.info.isTemplate);
 }
 
@@ -187,11 +187,46 @@ TEST(lib7_ac41_disk_written_whole_description_kept) {
     CHECK(a && b && a->image == b->image);
 }
 
+// AC-9 (ledger 1600-54): the outdated-file notice names the User Guide's
+// page and heading where each format is described.
+TEST(lib7_ac9_outdated_notice_names_the_user_guide) {
+    const Kinds k;
+    CHECK_EQ(media::Shelf::outdatedHint(k[cu1600::kModuleKind], 0),
+             std::string("The module definition format version 0 is outdated: the current version is 1, described in the "
+                         "User Guide, \"Module definition format\"."));
+    CHECK_EQ(media::Shelf::outdatedHint(k[cu1600::kFloppyKind], 1),
+             std::string("The floppy disk format version 1 is outdated: the current version is 2, described in the "
+                         "User Guide, \"Media files\", \"Floppy disk\" (sides 0: and 1: in place of a: and b:)."));
+    CHECK_EQ(media::Shelf::outdatedHint(k[cu1600::kCassetteKind], 0),
+             std::string("The cassette definition format version 0 is outdated: the current version is 1, described in the "
+                         "User Guide, \"Media files\", \"Cassette definition\"."));
+}
+
+// AC-41 (ledger 1600-54): a cassette or disk name with a '"' or a line end
+// would make the file unreadable; the writer refuses it, as the magnetic
+// card's does.
+TEST(lib7_ac41_cassette_and_disk_name_without_quote) {
+    const Kinds k;
+    media::MediumCodec::Write w;
+    w.fileStem = "Bad";
+    for (const char* name : {"Say \"hi\"", "Two\nlines"}) {
+        w.name = name;
+        std::string problem;
+        w.content = std::make_shared<sharp::TapeContent>(wavMono16Bytes(std::vector<std::int16_t>(48, 0), 48000));
+        CHECK(k[cu1600::kCassetteKind].codec->write(w, problem).empty());
+        CHECK_EQ(problem, std::string("A cassette name has no \" and no line end."));
+        problem.clear();
+        w.content = std::make_shared<sharp::FloppyContent>(std::vector<std::uint8_t>(CE1600FCard::kImageSize, 0));
+        CHECK(k[cu1600::kFloppyKind].codec->write(w, problem).empty());
+        CHECK_EQ(problem, std::string("A disk name has no \" and no line end."));
+    }
+}
+
 // ── P5: tapes (AC-42) ───────────────────────────────────────────────────
 
 TEST(lib7_ac42_definition_with_wav_is_a_medium) {
     const Kinds k;
-    const media::KindDecl& tape = k[cu1600::kTapeKind];
+    const media::KindDecl& tape = k[cu1600::kCassetteKind];
     calcu::testing::TempFolder tmp("calcu1600-tape-codec");
     fs::create_directories(tmp.path() / "sounds");
     const std::vector<std::uint8_t> wav = wavMono16Bytes(std::vector<std::int16_t>(480, 1000), 48000);
@@ -233,7 +268,7 @@ TEST(lib7_ac42_definition_with_wav_is_a_medium) {
 // AC-42 (ledger 1600-51): the old cassette names are not read.
 TEST(lib7_ac42_old_format_cassette_tape_refused) {
     const Kinds k;
-    const media::KindDecl& tape = k[cu1600::kTapeKind];
+    const media::KindDecl& tape = k[cu1600::kCassetteKind];
     const ReadOutcome r =
         tape.codec->read("format: cassette-tape\nformat-version: 1\ntape-name: \"Old\"\naudio: { file: old.wav }\n", {});
     CHECK(r.status == ReadOutcome::Status::Unreadable);
@@ -273,7 +308,7 @@ TEST(lib7_ac48_module_definition_format_key) {
 // `saved:`, the time of the write.
 TEST(lib7_ac49_cassette_comment_and_saved) {
     const Kinds k;
-    const media::KindDecl& tape = k[cu1600::kTapeKind];
+    const media::KindDecl& tape = k[cu1600::kCassetteKind];
     media::MediumCodec::Write w;
     w.name = "Rec";
     w.fileStem = "Rec";

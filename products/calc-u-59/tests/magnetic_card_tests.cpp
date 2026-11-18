@@ -145,8 +145,9 @@ TEST(c59_7_ac4_older_version_outdated_with_hint) {
     CHECK(r.status == ReadOutcome::Status::Outdated);
     CHECK_EQ(r.info.formatVersion, 2);
     const std::string hint = calcu::media::Shelf::outdatedHint(magneticCardKind(), 2);
-    CHECK(hint.find("Magnetic card format version 2 is outdated") != std::string::npos &&
-          hint.find("current version is 3") != std::string::npos && hint.find("media.md") != std::string::npos);
+    // Ledger 59-67: the notice names the User Guide's page and heading.
+    CHECK_EQ(hint, std::string("Magnetic card format version 2 is outdated: the current version is 3, described in the "
+                               "User Guide, \"Media files\", \"Magnetic card\"."));
     CHECK(read(replaced(good, "format-version: 3", "format-version: 4")).status == ReadOutcome::Status::Unreadable);
     CHECK(read("Calc-U-59 Card 2.0\nSIDE: 1\nEND-CARD\n").status == ReadOutcome::Status::Unreadable);   // EC-3 / LIB-7 EC-3
 }

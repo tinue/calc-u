@@ -350,3 +350,4 @@ Commands
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): an empty file is refused as empty by every loader (EC-1) | One wording, see OQ-4 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the menu items and dialogs of the loaders are this feature's (AC-15 to AC-19) | Rule 5 of the index: they show this feature's behaviour | 2026-11-10 |
 | OQ-1's last point answered: SDE's source is `sharp/SharpDataExchange`; the migration plan gets the library as today (M-7) | user, 2026-11-14 (question 9 of `docs/migration-plan.md`) | 2026-11-14 |
+| The plan request is `c1600.code-plan`, the name of its payload (was `c1600.plan-code`; internal, no AC names it) | `docs/reviews/release-simplification.md` V-12 | 2026-11-18 |

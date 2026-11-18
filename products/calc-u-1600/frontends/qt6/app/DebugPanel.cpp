@@ -25,7 +25,7 @@
 #include "ChromeColors.hpp"
 #include "Debug/Inspect/HexDump.hpp"
 #include "MachineController.hpp"
-#include "app/CardYamlDump.hpp"
+#include "app/ModuleYamlDump.hpp"
 #include "app/Text.hpp"
 
 namespace {
@@ -79,8 +79,8 @@ DebugPanel::DebugPanel(MachineController* controller, QWidget* parent)
     m_pointersButton = new QPushButton(tr("Pointers"), m_buttonBar);
     m_memoryButton = new QPushButton(tr("Memory"), m_buttonBar);
     m_dumpButton = new QPushButton(tr("Dump"), m_buttonBar);
-    m_cardButton = new QPushButton(tr("Card YAML"), m_buttonBar);
-    m_cardButton->setToolTip(tr("The module in each slot, as initial-content: YAML for a card file"));
+    m_moduleYamlButton = new QPushButton(tr("Module YAML"), m_buttonBar);
+    m_moduleYamlButton->setToolTip(tr("The module in each slot, as initial-content: YAML for a module definition"));
     m_clearButton = new QPushButton(m_buttonBar);
     m_clearButton->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
     m_clearButton->setToolTip(tr("Clear"));
@@ -88,9 +88,9 @@ DebugPanel::DebugPanel(MachineController* controller, QWidget* parent)
     m_pointersButton->setObjectName(QStringLiteral("debugpanel.pointers"));
     m_memoryButton->setObjectName(QStringLiteral("debugpanel.memory"));
     m_dumpButton->setObjectName(QStringLiteral("debugpanel.dump"));
-    m_cardButton->setObjectName(QStringLiteral("debugpanel.card"));
+    m_moduleYamlButton->setObjectName(QStringLiteral("debugpanel.module-yaml"));
     m_clearButton->setObjectName(QStringLiteral("debugpanel.clear"));
-    for (auto* b : {m_pointersButton, m_memoryButton, m_dumpButton, m_cardButton, m_clearButton}) {
+    for (auto* b : {m_pointersButton, m_memoryButton, m_dumpButton, m_moduleYamlButton, m_clearButton}) {
         b->setFocusPolicy(Qt::NoFocus);
     }
     // The menus are filled each time they open: what they offer depends on
@@ -103,7 +103,7 @@ DebugPanel::DebugPanel(MachineController* controller, QWidget* parent)
     row1->addWidget(m_memoryButton);
     row1->addWidget(m_dumpButton);
     row1->addStretch(1);
-    row1->addWidget(m_cardButton);
+    row1->addWidget(m_moduleYamlButton);
     row1->addWidget(m_clearButton);
     buttonBarLayout->addLayout(row1);
 
@@ -129,7 +129,7 @@ DebugPanel::DebugPanel(MachineController* controller, QWidget* parent)
     outer->addWidget(m_buttonBar);
 
     connect(m_pointersButton, &QPushButton::clicked, this, [this] { showView(inspect::View::Pointers); });
-    connect(m_cardButton, &QPushButton::clicked, this, &DebugPanel::debugDumpModuleCardAsYaml);
+    connect(m_moduleYamlButton, &QPushButton::clicked, this, &DebugPanel::debugDumpModuleAsYaml);
     connect(m_clearButton, &QPushButton::clicked, this, &DebugPanel::clearDebug);
     connect(m_traceButton, &QToolButton::clicked, this, [this] { setTraceEnabled(!m_controller->traceActive()); });
     connect(m_logButton, &QToolButton::clicked, this, &DebugPanel::toggleDebugLevel);
@@ -308,6 +308,6 @@ void DebugPanel::showView(inspect::View view) {
     if (!lines.empty()) ringWriteAll({cu1600::joinLines(lines)});
 }
 
-// ── Dump Card YAML ──────────────────────────────────────────────────────
+// ── Module YAML ─────────────────────────────────────────────────────────
 
-void DebugPanel::debugDumpModuleCardAsYaml() { ringWriteAll(cu1600::cardYamlDump(m_controller->app())); }
+void DebugPanel::debugDumpModuleAsYaml() { ringWriteAll(cu1600::moduleYamlDump(m_controller->app())); }

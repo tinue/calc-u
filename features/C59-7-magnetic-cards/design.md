@@ -163,7 +163,7 @@ protected bank (EC-7) and to zeroes (EC-2) is the ROM's; FS 10's result
 |---|---|
 | `id`, `label`, `suffix` | `magnetic-card` (the descriptor's, `core/TICatalogue.cpp:90`), "magnetic card", `.magnetcard.yaml` |
 | `folder`, `bundledFolder` | Save; none (no bundled card files, LIB-7 AC-32) |
-| `formatName`, `describedAt`, `currentVersion` | "Magnetic card format", `docs/formats/media.md` §1 (the help's reference chapter from M-60), 3 |
+| `formatName`, `describedAt`, `currentVersion` | "Magnetic card format", `the User Guide, "Media files", "Magnetic card"` (the help's reference chapter; was `docs/formats/media.md` §1 until the release simplification, ledger 59-67), 3 |
 | `implicitTemplates` | one: "Fresh card", "A fresh magnetic card", `make()` = both sides fresh, no cue card (D-10) |
 | `words` | `insertStep = "card"`, `armStep = "arm"`, `inFileKey = "card"`, `insertNeedsTime = true`; no `ejectWord` (there is no `eject:` step on the TI-59, LIB-7 AC-26) |
 | new fields (LIB-7 §11, library additions) | `rereadBeforeWrite = true` (D-3), `offersNameAndSave = false` (D-5), `replaceQuestion` = "Replace card “{name}”? Its first write replaces both sides and the cue card." (AC-15, D-4) |

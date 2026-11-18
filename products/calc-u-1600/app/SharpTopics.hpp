@@ -33,7 +33,7 @@ inline const calcu::sessions::TopicName kSerialLinks{"c1600.serial-links"};
 // product's data (LIB-18 D-22), each one plug change:
 namespace commands {
 inline const calcu::sessions::CommandName& kStart = calcu::sessions::kStartCommand;                       // (op) {model?, preset?} LIB-15 N3
-inline const calcu::sessions::CommandName kCE1600PRom{"c1600.ce1600p-rom"};      // (op) {version: old|new}
+inline const calcu::sessions::CommandName kCE1600PVariant{"c1600.ce1600p-variant"};      // (op) {version: old|new}
 inline const calcu::sessions::CommandName kMountHostDrive{"c1600.mount-host-drive"};      // (op) {dir}
 // C1600-2 (app/SharpLoaderPart, design §3.7): stateless, each carries the
 // file's bytes; `file` picks a file of a cassette WAV (from 1; the first
@@ -46,7 +46,7 @@ inline const calcu::sessions::CommandName kLoadCode{"c1600.load-code"};         
 
 namespace requests {
 inline const calcu::sessions::RequestName kFileKind{"c1600.file-kind"};          // {bytes} -> FileKindReply
-inline const calcu::sessions::RequestName kPlanCode{"c1600.plan-code"};          // {bytes, file?, address?, length?, cpu?} -> CodePlanReply
+inline const calcu::sessions::RequestName kCodePlan{"c1600.code-plan"};          // {bytes, file?, address?, length?, cpu?} -> CodePlanReply
 } // namespace requests
 
 // C1600-2 AC-1 to AC-3: what a file is.

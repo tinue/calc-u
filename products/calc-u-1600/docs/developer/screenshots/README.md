@@ -199,7 +199,7 @@ Two macOS details:
 | `bar-place-printer`, `bar-place-interface` | the button (one peripheral fits: CE-150, CE-158 on a PC-1500/1500A; CE-158 on a PC-1600) or picker (several: the PC-1600's printer, None, CE-150, CE-1600P) of a place |
 | `bar-disk`; `media-picker-floppy`, `media-side-floppy`, `media-save-floppy`, `media-lamp-floppy` | the CE-1600F's controls (every PC-1600; usable with the CE-1600P) |
 | `bar-media-cassette-recorder`; `media-picker-cassette`, `media-save-tape`, `media-counter-tape` | the cassette's controls (with a CE-150 or CE-1600P) |
-| `debugpanel`, `debugpanel.pointers`, `debugpanel.memory`, `debugpanel.dump`, `debugpanel.card`, `debugpanel.clear`, `debugpanel.trace` | Inspector panel and its buttons (`open:` on `debugpanel.memory` / `debugpanel.dump` shows the menu) |
+| `debugpanel`, `debugpanel.pointers`, `debugpanel.memory`, `debugpanel.dump`, `debugpanel.module-yaml`, `debugpanel.clear`, `debugpanel.trace` | Inspector panel and its buttons (`open:` on `debugpanel.memory` / `debugpanel.dump` shows the menu) |
 | `panel-area`, `paper-panel`, `paper-copy`, `paper-cut` | the shell's panel area, the paper panel (the library's `PaperPanel`, always there) and its buttons |
 | `ce158printer`, `ce158printer.save`, `ce158printer.clear` | CE-158 printer panel |
 | `settings-dialog`, `setting-<section>-<key>`, `settings-close`, `settings-serial` | the shell's Settings dialog, a row, Close, the Serial ports section |

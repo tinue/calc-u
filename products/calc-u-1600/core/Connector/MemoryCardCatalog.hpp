@@ -13,7 +13,7 @@ namespace sharp {
 bool isFullSetFile(std::string_view fileName);
 }  // namespace sharp
 
-constexpr const char* kCardFileSuffix = ".module.yaml";
+constexpr const char* kModuleFileSuffix = ".module.yaml";
 
 // ── Catalogue of on-disk module definition files ──────────────────────
 //
@@ -61,6 +61,6 @@ inline bool parseEntry(const std::string& text, const std::string& path, MemoryC
 inline std::vector<MemoryCardCatalogEntry> scanMemoryCardDirectory(const std::string& dir,
                                                                    std::string* error) {
     return scanNamedFiles<MemoryCardCatalogEntry>(
-        dir, kCardFileSuffix, "module", memory_card_catalog_detail::parseEntry,
+        dir, kModuleFileSuffix, "module", memory_card_catalog_detail::parseEntry,
         [](const MemoryCardCatalogEntry& e) { return e.moduleName; }, error, sharp::isFullSetFile);
 }

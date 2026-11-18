@@ -16,7 +16,7 @@
 
 #include "Machine/SharpProductKinds.hpp"
 #include "SessionFixture.hpp"
-#include "app/CardYamlDump.hpp"
+#include "app/ModuleYamlDump.hpp"
 #include "app/SharpMediaKinds.hpp"
 #include "peripherals/Controls.hpp"
 #include "peripherals/RealTimeClock.hpp"
@@ -159,7 +159,7 @@ const calcu::media::KindState::Item* findItem(const calcu::media::MediaState& s,
 const calcu::media::KindDecl& kindOf(SessionFixture& f, const char* id) { return *f.part().mediaPart().kind(id); }
 
 // The saved media (LIB-7 AC-30, AC-31, AC-43; ported from 0.8.1's
-// MediaLibrary test, the class gone with M-47): the save folder's modules, disks and tapes -- listed
+// MediaLibrary test, the class gone with M-47): the save folder's modules, disks and cassettes -- listed
 // with the place they are in, exported, deleted after asking (not while in
 // a place), imported back.
 TEST(lib7_ac44_test_media_library) {
@@ -252,15 +252,16 @@ TEST(lib7_ac40_write_protect_power_cycle) {
     const sessions::ReplyMessage r = f.nameAndSave("slot-1", "Locked", true);
     CHECK(!r.done && r.reason.find("no write-protect switch") != std::string::npos);
 }
-TEST(test_card_yaml_dump) {
+TEST(test_module_yaml_dump) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
-    std::vector<std::string> dump = cu1600::cardYamlDump(f.part());
-    CHECK(dump.size() == 1 && dump[0].find("no card attached") != std::string::npos);
+    std::vector<std::string> dump = cu1600::moduleYamlDump(f.part());
+    CHECK(dump.size() == 1 && dump[0] == "\xE2\x94\x80\xE2\x94\x80 Module dump: no module plugged in, or it has no dumpable RAM "
+                                         "\xE2\x94\x80\xE2\x94\x80");
     CHECK(f.choose("slot-2", "CE-1600M").done);
-    dump = cu1600::cardYamlDump(f.part());
-    CHECK(dump.size() == 2 && dump[0].find("CE-1600M (Slot 2), unbanked") != std::string::npos);
+    dump = cu1600::moduleYamlDump(f.part());
+    CHECK(dump.size() == 2 && dump[0].find("Module dump: CE-1600M (Slot 2), unbanked") != std::string::npos);
 }
 
 // `model`: a fresh machine of the model, then its startup preset (LIB-18

@@ -37,7 +37,7 @@ std::optional<calcu::machine::ModelId> sharpModel(const std::string& name);
 //   Samples   -- "Load Preset…" (and Settings' default-preset pickers): presets
 //   Basic     -- "Load BASIC Program…" (.bas listings): basic-programs
 //   Assembly  -- "Load Machine Code…" (.bin files): machine-code
-//   HostDrive -- "Mount Directory…" (PC-1600 host drive S3:): host-drive
+//   HostDrive -- "Host Drive…" (PC-1600 host drive S3:): host-drive
 enum class OpenFolder { Samples, Basic, Assembly, HostDrive };
 const char* openFolderKind(OpenFolder folder);
 

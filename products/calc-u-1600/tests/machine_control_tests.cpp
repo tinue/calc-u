@@ -110,7 +110,7 @@ TEST(lib18_ac27_ce1600p_rom_choice_back_to_new) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
-    CHECK(f.ok(cu1600::commands::kCE1600PRom, Value::object({{"version", "old"}})));
+    CHECK(f.ok(cu1600::commands::kCE1600PVariant, Value::object({{"version", "old"}})));
     CHECK(f.part().ce1600pVariant() == "Old");
     CHECK(f.model("PC-1500A"));
     CHECK(f.part().ce1600pVariant() == "New");
@@ -238,7 +238,7 @@ TEST(lib18_ac31_plugged_is_replace_by_other_variant) {
     SessionFixture f;
     CHECK(f.start("PC-1600"));
     CHECK(f.attach("CE-1600P"));
-    CHECK(f.ok(cu1600::commands::kCE1600PRom, Value::object({{"version", "old"}})));
+    CHECK(f.ok(cu1600::commands::kCE1600PVariant, Value::object({{"version", "old"}})));
     const calcu::machine::Machine* m = f.part().machine();
     bool old = false;
     for (const auto& e : m->plugged().byPlace)
@@ -251,7 +251,7 @@ TEST(lib18_ac31_unplugged_choice_holds_for_next_attach) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
-    CHECK(f.ok(cu1600::commands::kCE1600PRom, Value::object({{"version", "old"}})));
+    CHECK(f.ok(cu1600::commands::kCE1600PVariant, Value::object({{"version", "old"}})));
     CHECK(f.part().ce1600pVariant() == "Old");
     // The frontends attach with the choice (MainWindow::togglePeripheral, engine.js).
     const std::string variant = f.part().ce1600pVariant();

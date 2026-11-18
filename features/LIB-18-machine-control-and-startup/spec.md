@@ -342,3 +342,4 @@ While an operation runs
 | What follows an attach is the machine's answer at that moment; a switched-off Sharp machine answers that nothing follows | user, 2026-11-10, batch 4 gate; amends `peripherals.md` P-5 | 2026-11-10 |
 | The built-in default machine of the TI-58 and TI-58C is the same as the TI-59's: Master Library module, no printer | user, 2026-11-10, batch 4 gate; answers `capabilities.md` Q-3 | 2026-11-10 |
 | Aligned with `docs/formats/` after the Q&A round: `ti58c.memory.yaml` (AC-19) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| Calc-U-1600's command of the CE-1600P's variant is `c1600.ce1600p-variant` (was `c1600.ce1600p-rom`; internal, beside the entry `c1600.ce1600p-next-variant`; design AC-31) | the glossary's Variant; `docs/reviews/release-simplification.md` V-12 | 2026-11-18 |

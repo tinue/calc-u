@@ -202,7 +202,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
     });
     // AC-31, D-21: the CE-1600P's ROM: a replace by the other variant, or the
     // choice for the next attach.
-    setup.command(c::kCE1600PRom, [this, busy](const Value& args, SessionContext& s) -> CommandOutcome {
+    setup.command(c::kCE1600PVariant, [this, busy](const Value& args, SessionContext& s) -> CommandOutcome {
         if (s.busy()) return Refused{busy};
         const std::string v = textArg(args, "version") == "old" ? "Old" : "New";
         Machine* m = machine();

@@ -104,7 +104,7 @@ void writeOpc(Ce150Card& card, uint8_t value) {
     card.respondsToWrite(w, value);
 }
 
-// LIB-8 AC-37: a paper connected to the card's paper output, as the
+// A paper connected to the card's paper output, as the
 // session connects one (the strokes are no longer the mechanism's).
 struct PaperOf {
     Ce150Card& card;
@@ -115,7 +115,7 @@ struct PaperOf {
     const calcu::paper::Stroke& last() const { return std::get<calcu::paper::Stroke>(paper.marks().back()); }
 };
 
-TEST(lib8_ac37_ce150_stepper_steps_become_places) {
+TEST(ce150_stepper_steps_become_places) {
     Ce150Card card;
     // Anchor both motors at ring position 0 (phase 0x9 in both nibbles).
     writeOpc(card, 0x99);
@@ -145,7 +145,7 @@ TEST(lib8_ac37_ce150_stepper_steps_become_places) {
 
 // ── pen up/down via OPB ───────────────────────────────────────────────
 
-TEST(lib8_ac37_ce150_a_stroke_per_pen_down) {
+TEST(ce150_a_stroke_per_pen_down) {
     Ce150Card card;
     PaperOf p(card);
     writeOpc(card, 0x99); // anchor
@@ -168,7 +168,7 @@ TEST(lib8_ac37_ce150_a_stroke_per_pen_down) {
 
 // ── colour turret at the carriage left stop ───────────────────────────
 
-TEST(lib8_ac37_ce150_colour_every_third_arrival) {
+TEST(ce150_colour_every_third_arrival) {
     Ce150Card card;
     writeOpc(card, 0x99); // anchor X at ring pos 0
 
@@ -208,7 +208,7 @@ TEST(lib8_ac37_ce150_colour_every_third_arrival) {
     CHECK(card.mechanism().penColor() == held);
 }
 
-TEST(lib8_ac37_reset_keeps_the_paper) {
+TEST(reset_keeps_the_paper) {
     Ce150Card card;
     PaperOf p(card);
     writeOpc(card, 0x99);
@@ -230,7 +230,7 @@ TEST(lib8_ac37_reset_keeps_the_paper) {
     CHECK(p.strokes() == 1); // ink stays on the paper
     CHECK(card.paperOutput().standing() == 4 * calcu::paper::kPerUnit);   // the paper stands where it stood
 
-    // D-11: the next plot goes on below what was drawn, not over it.
+    // The next plot goes on below what was drawn, not over it.
     writeOpc(card, 0x99);
     { SystemBusPins w = me1Write(0xB00D); card.respondsToWrite(w, 0x03); }
     { SystemBusPins w = me1Write(0xB00F); card.respondsToWrite(w, 0x02); }
@@ -299,7 +299,7 @@ bool writeScratchPreset(const std::string& path, const std::string& body) {
 }
 
 // The CE-150 on the bus before the cold boot (a preset's `printer: CE-150`,
-// built by LIB-18 from M-46; here on the old class with its ROMs).
+// built by the library's builder; here on the old class with its ROMs).
 TEST(test_preset_plotter_ce150_attaches_before_reset) {
     SKIP_UNLESS(testRomSet() != nullptr, "the ROMs are not fetched (roms/fetch_roms.sh)");
     PC1500Machine machine(PC1500Variant::PC1500A);

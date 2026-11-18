@@ -9,27 +9,25 @@
 #include "../Tape/TapeDeck.hpp"
 #include "machine/Capability.hpp"
 
-// Calc-U-1600's capability kinds (C1600-1 design §3.6, §5; capabilities.md,
-// product kinds). The app layer reaches what only a Sharp machine offers
-// through these, never through a machine class (C1600-1 AC-19, AC-20).
+// Calc-U-1600's capability kinds (capabilities.md, product kinds). The app layer reaches what only a Sharp machine offers
+// through these, never through a machine class.
 //
 // Product kinds, which stay:
 //   c1600.loader-memory        memory for the BASIC and machine-code loaders (owner: the main CPU)
 //   c1600.inspector            the INSPECTOR views (owner: the main CPU)
 //   c1600.ce158-printer-port   bytes sent to the CE-158's printer port (owner: the CE-158)
 //   c1600.host-drive-folder    the host drive's folder (owner: the host drive)
-//   c1600.trace-records        the records of a CPU trace (owner: the main CPU; LIB-10 D-18)
-//   c1600.routine-call         a routine called from the current state (owner: the main CPU; C1600-5 AC-12)
+//   c1600.trace-records        the records of a CPU trace (owner: the main CPU)
+//   c1600.routine-call         a routine called from the current state (owner: the main CPU)
 //   c1600.tape-deck            the cassette's counter and motor (owner: the CE-150 or CE-1600P)
 //   c1600.floppy-drive         the CE-1600F's lamp (owner: the CE-1600P)
-// The media themselves are LIB-7's kinds since M-47 (SharpMediaPlaces.hpp).
+// The media themselves are the library's media kinds (SharpMediaPlaces.hpp).
 //
-// The owner "the main CPU" (LH5801, SC7852) stands for the machine itself
-// (design D-1).
+// The owner "the main CPU" (LH5801, SC7852) stands for the machine itself.
 
 namespace sharp {
 
-// The loaders' memory access (C1600-2 AC-14, design §3.1): everything the
+// The loaders' memory access: everything the
 // BASIC and machine-code loaders read and write, and nothing more. The
 // loaders (core/Loaders.hpp) name no machine class; they reach memory only
 // through this kind. The implementations over the core are
@@ -103,11 +101,10 @@ public:
     virtual void setFolder(const std::string& folder) = 0;   // a live media swap
 };
 
-// The records of a CPU trace in today's TRACE.bin format, version 3 (LIB-10
-// design §10.7, D-18; AC-42): the header and SESSION_START at begin(), the
+// The records of a CPU trace in the TRACE.bin format, version 3: the header and SESSION_START at begin(), the
 // instruction frames of every CPU and the gap records as the core drains
 // its rings, SESSION_END at endRecord(). The library's trace session writes
-// them into the file, at most a budget at a time (AC-24, AC-43).
+// them into the file, at most a budget at a time.
 class TraceRecords : public calcu::machine::Capability {
 public:
     static constexpr calcu::machine::KindId kKind{"c1600.trace-records"};
@@ -121,11 +118,10 @@ public:
     virtual void end() = 0;         // recording off
 };
 
-// A machine-code routine called from the current state (C1600-5 AC-12,
-// design §3.6): the processor of a debug target makes the call as its own
+// A machine-code routine called from the current state: the processor of a debug target makes the call as its own
 // call instruction does (the LH5801's and LH5803's SJP, the Z-80's CALL):
 // the return address pushed, the program counter at `address`. The harness
-// then runs LIB-10's step-out until the routine has returned. Owner: the
+// then runs the debugger's step-out until the routine has returned. Owner: the
 // main CPU, for every processor of the model.
 class RoutineCall : public calcu::machine::Capability {
 public:
@@ -136,12 +132,10 @@ public:
     virtual bool call(const std::string& target, std::uint16_t address) = 0;
 };
 
-// Since M-47 (LIB-7 §10.2) the tape and the disk themselves are the media
+// The tape and the disk themselves are the media
 // places `cassette` and `floppy` (core/Machine/SharpMediaPlaces.hpp); these
 // two product kinds keep what the control bar shows: the tape counter, its
-// motor and whether it plays or records (AC-42), and the drive's lamp
-// (AC-39). They were adapter kinds until M-47 (C1600-1 §5); M-51's adapter
-// check keeps them as product kinds.
+// motor and whether it plays or records, and the drive's lamp.
 class TapeDeckAccess : public calcu::machine::Capability {
 public:
     static constexpr calcu::machine::KindId kKind{"c1600.tape-deck"};

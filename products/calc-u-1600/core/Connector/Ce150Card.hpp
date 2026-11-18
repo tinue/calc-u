@@ -63,8 +63,7 @@ public:
     AlpsPlotterMechanism&       mechanism() { return m_mechanism; }
     const AlpsPlotterMechanism& mechanism() const { return m_mechanism; }
 
-    // The paper output (LIB-8, design §10.3): made and gone with the card
-    // (D-16), the mechanism's pen listener.
+    // The paper output: made and gone with the card, the mechanism's pen listener.
     Ce150Card() { m_mechanism.setListener(&m_paperOutput); }
     Ce150Card(const Ce150Card&) = delete;
     Ce150Card& operator=(const Ce150Card&) = delete;
@@ -132,7 +131,7 @@ public:
     /// The LH5810 registers: a debugger must not read them as memory.
     bool readHasSideEffects(const SystemBusPins& pins) const override { return isLh5810(pins); }
 
-    // C1600-5 AC-13: the LH5810, the relays, the mechanism.
+    // The machine state: the LH5810, the relays, the mechanism.
     void saveState(sharp::StateWriter& w) const override { const_cast<Ce150Card*>(this)->stateIo(w); }
     void restoreState(sharp::StateReader& r) override { stateIo(r); }
     template <class Io>

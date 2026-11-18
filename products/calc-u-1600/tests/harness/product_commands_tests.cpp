@@ -1,7 +1,6 @@
-// C1600-5 design §6 (T1 to T7): the product commands under `c1600`, each
-// on a `calcu --product c1600` run of its own, the expected replies written
-// out (Technical Requirements). T8 (AC-13, the machine state) is not here:
-// it was split off (design §8; qa-report).
+// The product commands under `c1600`, each on a `calcu --product c1600` run
+// of its own, the expected replies written out. The machine state's
+// commands are tested in tests/machine_state_tests.cpp.
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -52,9 +51,9 @@ void onePrintLine(Run& r) {
 
 } // namespace
 
-// ── T1: AC-1 ─────────────────────────────────────────────────────────────
+// ── The commands ─────────────────────────────────────────────────────────
 
-TEST(c1600_5_ac1_commands_under_c1600_on_every_model) {
+TEST(commands_under_c1600_on_every_model) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -68,15 +67,16 @@ TEST(c1600_5_ac1_commands_under_c1600_on_every_model) {
         CHECK_EQ(r.line(std::string("model ") + model), std::string("done\n"));
         CHECK(starts(r.line("c1600 inspect pointers"), "done "));
         CHECK(starts(r.line("c1600 dump-basic"), "done "));
-        CHECK(starts(r.line("c1600 cassette status"), "refused: "));   // no cassette (EC-2), but the command is there
+        CHECK(starts(r.line("c1600 cassette status"), "refused: "));   // no cassette, but the command is there
     }
 }
 
-// ── T2: AC-2, AC-3, EC-4 ─────────────────────────────────────────────────
+// ── dump-basic ───────────────────────────────────────────────────────────
 
 // The pointers and the rows as `pc1500_cli --preset … --dump-basic` printed
-// them at the pin for the same program (its `---` headings left out, D-3).
-TEST(c1600_5_ac2_dump_basic_pc1500a_after_a_program) {
+// them in v0.8.1 for the same program (its `---` heading lines dropped; the
+// pointer lines and the rows keep their form).
+TEST(dump_basic_pc1500a_after_a_program) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -94,7 +94,7 @@ TEST(c1600_5_ac2_dump_basic_pc1500a_after_a_program) {
                          "40D5: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|\n"));
 }
 
-TEST(c1600_5_ac2_dump_basic_pc1600) {
+TEST(dump_basic_pc1600) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -115,9 +115,9 @@ TEST(c1600_5_ac2_dump_basic_pc1600) {
                          "C0D5: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF  |................|\n"));
 }
 
-// AC-3: a pointer line `NAME $addr = $value` (with the length), a row of 16
+// A pointer line `NAME $addr = $value` (with the length), a row of 16
 // bytes between the address and the characters; --json the same as data.
-TEST(c1600_5_ac3_lines_in_todays_form) {
+TEST(lines_in_todays_form) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::harness::RunOptions o;
     o.json = true;
@@ -133,9 +133,9 @@ TEST(c1600_5_ac3_lines_in_todays_form) {
     CHECK(has(j, "{\"address\":16581,\"bytes\":[0,10,4,240,151,49,13,255,0,0,0,0,0,0,0,0]}"));
 }
 
-// EC-4: right after a cold boot (NEW0? not answered) the pointers as they
+// Right after a cold boot (NEW0? not answered) the pointers as they
 // are, no rows: the start does not lie before the end.
-TEST(c1600_5_ec4_basic_not_set_up_pointers_only) {
+TEST(basic_not_set_up_pointers_only) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -150,9 +150,9 @@ TEST(c1600_5_ec4_basic_not_set_up_pointers_only) {
                          "RAM_END    $7864 = $58 (page)   WARM_START $7A20 = $00\n"));
 }
 
-// ── T3: AC-4 ─────────────────────────────────────────────────────────────
+// ── inspect ──────────────────────────────────────────────────────────────
 
-TEST(c1600_5_ac4_every_view_per_model) {
+TEST(every_view_per_model) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -190,7 +190,7 @@ TEST(c1600_5_ac4_every_view_per_model) {
     }
 }
 
-TEST(c1600_5_ac4_unknown_view_refused) {
+TEST(unknown_view_refused) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -201,7 +201,7 @@ TEST(c1600_5_ac4_unknown_view_refused) {
     CHECK(starts(r.line("c1600 inspect"), "refused: usage: "));
 }
 
-// ── T4: AC-5, AC-6, EC-2, EC-6 ───────────────────────────────────────────
+// ── cassette ─────────────────────────────────────────────────────────────
 
 namespace {
 // A PC-1500A with a CE-150, a one-line program saved to tape with CSAVE.
@@ -212,9 +212,9 @@ void csave(Run& r) {
 }
 } // namespace
 
-TEST(c1600_5_ac5_record_writes_wav_at_motor_stop_and_eject) {
+TEST(record_writes_wav_at_motor_stop_and_eject) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::testing::TempFolder dir("c1600-5-ac5");
+    calcu::testing::TempFolder dir("c1600-cassette-record");
     const fs::path wav = dir.path() / "out.wav";
     Run r;
     CHECK(r.ok());
@@ -240,13 +240,13 @@ TEST(c1600_5_ac5_record_writes_wav_at_motor_stop_and_eject) {
     CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 2.048618462\nmotor: on\n"));
     const std::size_t before = fs::exists(second) ? fileText(second).size() : 0;   // to the last stop of the motor
     CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
-    // Written as LIB-7 AC-42 says: what the deck holds, to its last motor stop.
+    // Written: what the deck holds, to its last motor stop.
     CHECK(fs::exists(second) && fileText(second).size() >= before && fileText(second).compare(0, 4, "RIFF") == 0);
 }
 
-TEST(c1600_5_ac5_record_ejects_the_tape_in_first) {
+TEST(record_ejects_the_tape_in_first) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::testing::TempFolder dir("c1600-5-ac5b");
+    calcu::testing::TempFolder dir("c1600-cassette-record-ejects");
     Run r;
     CHECK(r.ok());
     if (!r.ok()) return;
@@ -261,9 +261,9 @@ TEST(c1600_5_ac5_record_ejects_the_tape_in_first) {
     CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
 }
 
-TEST(c1600_5_ac6_status_playing_recording_empty) {
+TEST(status_playing_recording_empty) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::testing::TempFolder dir("c1600-5-ac6");
+    calcu::testing::TempFolder dir("c1600-cassette-status");
     const fs::path wav = dir.path() / "rec.wav";
     Run r;
     CHECK(r.ok());
@@ -274,7 +274,7 @@ TEST(c1600_5_ac6_status_playing_recording_empty) {
     csave(r);
     CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 12.398522308\nmotor: off\n"));
     CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
-    // The recording played back: a cassette definition beside it (LIB-7 AC-42).
+    // The recording played back: a cassette definition beside it.
     writeFile(dir.path() / "rec.cassette.yaml",
               "format: cassette\nformat-version: 1\ncassette-name: \"Rec\"\naudio: { file: \"rec.wav\" }\n");
     CHECK_EQ(r.line("cassette { file: " + (dir.path() / "rec.cassette.yaml").string() + " }"), std::string("done\n"));
@@ -290,7 +290,7 @@ TEST(c1600_5_ac6_status_playing_recording_empty) {
                          "\"0.000000000\",\"motor\":false},\"reason\":null}\n"));
 }
 
-TEST(c1600_5_ec2_tape_without_cassette_refused) {
+TEST(tape_without_cassette_refused) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder dir("c1600-5-ec2");
     Run r;
@@ -305,7 +305,7 @@ TEST(c1600_5_ec2_tape_without_cassette_refused) {
     CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: empty\nmotor: off\n"));
 }
 
-TEST(c1600_5_ec6_unwritable_path_notice_at_motor_stop) {
+TEST(unwritable_path_notice_at_motor_stop) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder dir("c1600-5-ec6");
     writeFile(dir.path() / "file", "not a folder");
@@ -322,7 +322,7 @@ TEST(c1600_5_ec6_unwritable_path_notice_at_motor_stop) {
     CHECK(has(n, "The cassette recording \xE2\x80\x9Cx.wav\xE2\x80\x9D could not be saved: "));
 }
 
-// ── T5: AC-7, AC-8, AC-9, EC-3 ───────────────────────────────────────────
+// ── serial ───────────────────────────────────────────────────────────────
 
 namespace {
 // A PC-1500A with a CE-158, the CE-158 echo program loaded, in RUN mode.
@@ -335,11 +335,11 @@ void echoProgram(Run& r) {
 }
 } // namespace
 
-// AC-7 feed: one byte in each character time (300 baud, ten bits: 43 333
+// Feed: one byte in each character time (300 baud, ten bits: 43 333
 // ticks of the PC-1500A's 1.3 MHz), the first `hold` of them silent.
-TEST(c1600_5_ac7_feed_one_byte_per_character_time_and_hold) {
+TEST(feed_one_byte_per_character_time_and_hold) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::testing::TempFolder dir("c1600-5-ac7-feed");
+    calcu::testing::TempFolder dir("c1600-serial-feed");
     writeFile(dir.path() / "in.bin", std::string(200, 'x'));
     for (int hold : {0, 10}) {
         Run r;
@@ -356,9 +356,9 @@ TEST(c1600_5_ac7_feed_one_byte_per_character_time_and_hold) {
     }
 }
 
-TEST(c1600_5_ac7_second_feed_replaces_rest) {
+TEST(second_feed_replaces_rest) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::testing::TempFolder dir("c1600-5-ac7-second");
+    calcu::testing::TempFolder dir("c1600-serial-second");
     writeFile(dir.path() / "a.bin", std::string(200, 'a'));
     writeFile(dir.path() / "b.bin", "HELLO\r");
     Run r;
@@ -372,11 +372,11 @@ TEST(c1600_5_ac7_second_feed_replaces_rest) {
     CHECK_EQ(field(r.line("c1600 serial ce158 report"), "received"), std::string("6 of 6 bytes fed"));
 }
 
-// AC-7 capture and report, AC-8's text: the CE-158 echo program sends its
+// Capture and report, and the report's text: the CE-158 echo program sends its
 // prompt, prints on the Centronics port, takes the line fed and prints it.
-TEST(c1600_5_ac7_capture_complete_at_quit_and_switch) {
+TEST(capture_complete_at_quit_and_switch) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::testing::TempFolder dir("c1600-5-ac7-capture");
+    calcu::testing::TempFolder dir("c1600-serial-capture");
     writeFile(dir.path() / "in.txt", "HELLO\r");
     {
         Run r;
@@ -413,12 +413,12 @@ TEST(c1600_5_ac7_capture_complete_at_quit_and_switch) {
     CHECK_EQ(fileText(dir.path() / "b.bin"), std::string("TYPE A LINE AND PRESS RETURN\r"));
 }
 
-TEST(c1600_5_ac7_link_gives_the_path_and_refuses_feed) {
+TEST(link_gives_the_path_and_refuses_feed) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
 #ifdef _WIN32
-    SKIP_UNLESS(false, "no pseudo-terminals on Windows (LIB-2 EC-5)");
+    SKIP_UNLESS(false, "no pseudo-terminals on Windows");
 #endif
-    calcu::testing::TempFolder dir("c1600-5-ac7-link");
+    calcu::testing::TempFolder dir("c1600-serial-link");
     writeFile(dir.path() / "in.bin", "x");
     Run r;
     CHECK(r.ok());
@@ -432,7 +432,7 @@ TEST(c1600_5_ac7_link_gives_the_path_and_refuses_feed) {
     CHECK_EQ(field(r.line("c1600 serial ce158 report"), "host link"), std::string("yes"));
 }
 
-TEST(c1600_5_ac7_report_ce158_with_printer_port) {
+TEST(report_ce158_with_printer_port) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -453,9 +453,9 @@ TEST(c1600_5_ac7_report_ce158_with_printer_port) {
                          "| HELLO FROM THE CE-158\n"));
 }
 
-TEST(c1600_5_ac7_rs232c_on_pc1600) {
+TEST(rs232c_on_pc1600) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::testing::TempFolder dir("c1600-5-ac7-rs232c");
+    calcu::testing::TempFolder dir("c1600-serial-rs232c");
     Run r;
     CHECK(r.ok());
     if (!r.ok()) return;
@@ -468,13 +468,13 @@ TEST(c1600_5_ac7_rs232c_on_pc1600) {
     CHECK_EQ(field(rep, "speed"), std::string("9600 baud"));
     CHECK_EQ(field(rep, "sent"), std::string("308 bytes"));
     CHECK(has(rep, "\n| 61010 SETCOM \"COM1:\",9600,8,N,1,N,N\n"));
-    CHECK(has(rep, "\n| <1A>\n"));   // AC-8: a byte that is no printable ASCII
+    CHECK(has(rep, "\n| <1A>\n"));   // a byte that is no printable ASCII
     CHECK(!has(rep, "\nprinter: "));   // the CE-158's alone
     const std::string sent = fileText(dir.path() / "com1.txt");
     CHECK(sent.size() == 308 && sent.find("61110 SAVE \"COM1:\",A") != std::string::npos);
 }
 
-TEST(c1600_5_ac8_text_rule) {
+TEST(serial_text_rule_for_every_byte) {
     std::vector<std::uint8_t> all;
     for (int b = 0; b < 256; ++b) all.push_back(static_cast<std::uint8_t>(b));
     std::string want;
@@ -493,9 +493,9 @@ TEST(c1600_5_ac8_text_rule) {
     CHECK_EQ(printableBytes(sample, sizeof sample), std::string("A\n<00><7F><FF>"));
 }
 
-// AC-9: no serial port has a host link unless `link` asked: no serial port
+// No serial port has a host link unless `link` asked: no serial port
 // file in the run's folders, the bytes the ports send stay with the run.
-TEST(c1600_5_ac9_no_host_link_unless_asked) {
+TEST(no_host_link_unless_asked) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -510,7 +510,7 @@ TEST(c1600_5_ac9_no_host_link_unless_asked) {
     CHECK_EQ(field(r.line("c1600 serial rs232c report"), "host link"), std::string("no"));
 }
 
-TEST(c1600_5_ec3_port_missing_refused_not_held) {
+TEST(port_missing_refused_not_held) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder dir("c1600-5-ec3");
     writeFile(dir.path() / "in.bin", "x");
@@ -531,11 +531,11 @@ TEST(c1600_5_ec3_port_missing_refused_not_held) {
     CHECK(starts(r.line("c1600 serial ce158 jump"), "refused: usage: "));
 }
 
-// ── T6: AC-11, EC-5 ──────────────────────────────────────────────────────
+// ── host-drive ───────────────────────────────────────────────────────────
 
-TEST(c1600_5_ac11_host_drive_attach_folder_and_off) {
+TEST(host_drive_attach_folder_and_off) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::testing::TempFolder one("c1600-5-ac11-one"), two("c1600-5-ac11-two");
+    calcu::testing::TempFolder one("c1600-host-drive-one"), two("c1600-host-drive-two");
     writeFile(one.path() / "HELLO.TXT", "hi\n");
     writeFile(two.path() / "OTHER.TXT", "hi\n");
     Run r;
@@ -548,7 +548,7 @@ TEST(c1600_5_ac11_host_drive_attach_folder_and_off) {
     CHECK_EQ(r.line("type FILES \"S3:\""), std::string("done\n"));
     r.line("wait");
     CHECK(has(r.line("display-text"), "\nHELLO   .TXT,"));
-    // AC-11: attached already, it shows the other folder from then on.
+    // Attached already, it shows the other folder from then on.
     CHECK_EQ(r.line("c1600 host-drive " + two.str()), std::string("done\n"));
     r.line("type FILES \"S3:\"");
     r.line("wait");
@@ -558,7 +558,7 @@ TEST(c1600_5_ac11_host_drive_attach_folder_and_off) {
     CHECK(has(r.line("capabilities"), "place host-drive empty\n"));
 }
 
-TEST(c1600_5_ec5_refused_on_pc1500_and_for_no_folder) {
+TEST(refused_on_pc1500_and_for_no_folder) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder one("c1600-5-ec5");
     writeFile(one.path() / "file", "x");
@@ -575,7 +575,7 @@ TEST(c1600_5_ec5_refused_on_pc1500_and_for_no_folder) {
     CHECK(has(r.line("capabilities"), "place host-drive empty\n"));
 }
 
-// ── T7: AC-12 ────────────────────────────────────────────────────────────
+// ── call ─────────────────────────────────────────────────────────────────
 
 namespace {
 // The registers of the reply's lines "<name> = <hex>".
@@ -590,7 +590,7 @@ std::string reg(const std::string& reply, const std::string& name) {
 // LH5801 `LDI A,42H` `RTN` at 4800H; Z-80 `LD A,42H` `RET` at D000H. The
 // routine returns to the caller: the program counter and the stack pointer
 // as before, A = 42H; a second run gives the same reply.
-TEST(c1600_5_ac12_call_returns_registers_and_time) {
+TEST(call_returns_registers_and_time) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     std::string first;
     for (int round = 0; round < 2; ++round) {
@@ -608,7 +608,7 @@ TEST(c1600_5_ac12_call_returns_registers_and_time) {
         CHECK(field(call, "ticks") != "" && field(call, "ticks") != "0");
         CHECK(starts(r.line("state run-state"), "done 1\n{\"paused\":true"));
         if (round == 0) first = call;
-        else CHECK_EQ(call, first);   // AC-6: the same reply in another run
+        else CHECK_EQ(call, first);   // the same reply in another run
     }
     Run r;
     CHECK(r.ok());
@@ -627,7 +627,7 @@ TEST(c1600_5_ac12_call_returns_registers_and_time) {
 // A routine that never returns (`JMP 4810H` on itself): past the timeout
 // the machine is paused and the reply says so. The PC-1600's LH5803 does
 // not run while the Z-80 runs the machine, so a call on it ends the same way.
-TEST(c1600_5_ac12_timeout_pauses_and_says_so) {
+TEST(timeout_pauses_and_says_so) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -649,7 +649,7 @@ TEST(c1600_5_ac12_timeout_pauses_and_says_so) {
     CHECK_EQ(reg(sub, "p"), std::string("0x5100"));
 }
 
-TEST(c1600_5_ac12_refused_unless_paused) {
+TEST(refused_unless_paused) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());

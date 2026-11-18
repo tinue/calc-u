@@ -7,7 +7,7 @@
 #include "presets/Reader.hpp"
 #include "presets/Vocabulary.hpp"
 
-// ── A preset's `debug:` block (C1600-4 AC-11, AC-12, AC-14, AC-20, EC-4) ─
+// ── A preset's `debug:` block ─────────────────────────────────────────
 //
 // The header key `debug:` of a project preset: the debugger's settings next
 // to the machine the preset sets up (docs/formats/preset.md §3.4). The keys
@@ -28,8 +28,7 @@ struct DebugBlock final : calcu::presets::ProductValue {
 std::shared_ptr<const DebugBlock> readDebugBlock(const calcu::formats::YamlNode&, int line,
                                                  calcu::presets::ReadContext&);
 
-// The `debug:` block of the preset `ref` for the debugger (C1600-3; design
-// §3.4): read by the library's reader with the product's vocabulary. The
+// The `debug:` block of the preset `ref` for the debugger: read by the library's reader with the product's vocabulary. The
 // block (null when the preset has none), or the read error.
 std::variant<std::shared_ptr<const DebugBlock>, std::string> debugBlockOf(const std::string& ref,
                                                                           const calcu::presets::ReadSetup&,

@@ -12,8 +12,7 @@
 #include <optional>
 
 // Loading and attaching from PresetRoms, for the core tests that build an
-// old machine class directly (the preset loaders' helpers until M-46,
-// core/Preset/PresetRoms).
+// old machine class directly.
 namespace presetroms {
 
 // The images of a model's / peripheral's variant (std::nullopt: none or the

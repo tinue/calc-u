@@ -223,7 +223,7 @@ bool SharpDebugTarget::setWatches(std::vector<calcu::machine::WatchRange> ranges
     m_watches.clear();
     for (const auto& r : ranges) {
         // The CPUs watch ME0 / the Z-80's memory and ME1; the Z-80's I/O
-        // ports and the written views have no watch (AC-11).
+        // ports and the written views have no watch.
         if (r.space > 1 || (kind() == debug::CpuKind::Z80 && r.space != 0) || r.count == 0) continue;
         WatchSet::Watch w;
         w.lo = static_cast<std::uint16_t>(r.first);
@@ -295,7 +295,7 @@ void SharpDebugging::latch(const ::DebugStop& core) {
     m_stop = std::move(s);
 }
 
-// AC-39: only the target about to run passes the breakpoint it stands on; a
+// Only the target about to run passes the breakpoint it stands on; a
 // pass another target had is dropped (RunControl.cpp:88-89 of 0.8.1's core,
 // DebugTarget::resumeFromStop).
 void SharpDebugging::passOnce(std::size_t target) {
@@ -315,7 +315,7 @@ void SharpDebugging::passOnce(std::size_t target) {
 Ticks SharpDebugging::run(Ticks ticks) {
     m_stop.reset();
     if (!m_checks.observer) {
-        // Breakpoints and watches: the core runs as today and ends the
+        // Breakpoints and watches: the core runs on its own path and ends the
         // advance at the latched stop.
         const Ticks r = runCore(ticks);
         latch(consumeCoreStop());

@@ -1,6 +1,5 @@
-// LIB-2 AC-33 through the library's app session (LIB-2 design §6 P10;
-// M-26, M-31): the host links of the serial ports, held by LIB-2's
-// peripherals part. The cases need pseudo-terminals (macOS,
+// The host links of the serial ports through the library's app session,
+// held by the library's peripherals part. The cases need pseudo-terminals (macOS,
 // Linux: the library's CALCU_HAS_PTY). SKIP without ROMs.
 
 #include <chrono>
@@ -39,7 +38,7 @@ bool linkExists(const fs::path& p) {
 
 #if SERIAL_TESTS_HAVE_PTY
 
-TEST(lib2_ac33_pc1600_rs232c_file) {
+TEST(pc1600_rs232c_file) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     Fixture f;
     CHECK(f.start("PC-1600"));
@@ -51,7 +50,7 @@ TEST(lib2_ac33_pc1600_rs232c_file) {
     CHECK(!linkExists(f.links / "calcu1600-ce158.serial"));
 }
 
-TEST(lib2_ac33_ce158_file_on_first_use_all_models) {
+TEST(ce158_file_on_first_use_all_models) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     for (Model model : {calcu::machine::ModelId{"PC-1500"}, calcu::machine::ModelId{"PC-1500A"}, calcu::machine::ModelId{"PC-1600"}}) {
         Fixture f;

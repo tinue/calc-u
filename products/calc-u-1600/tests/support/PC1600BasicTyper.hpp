@@ -10,8 +10,8 @@ class PC1600Machine;
 
 // ── Keystroke-injection primitives for scripted PC-1600 input ───────────
 //
-// The PC-1600 analog of PC1500BasicTyper: the tests' support (the golden
-// runs' and C1600-2 AC-7's reference typer; was core/PC1600/), driving the
+// The PC-1600 analog of PC1500BasicTyper: the tests' support (the reference
+// typer of the golden runs and of `type-basic`), driving the
 // ROM's own line editor via simulated keystrokes and letting the ROM store
 // the line.
 //

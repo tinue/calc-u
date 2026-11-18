@@ -15,7 +15,7 @@ SharpProductMachines::SharpProductMachines(const Catalogue& catalogue,
     : catalogue_(catalogue), hostDriveRom_(std::move(hostDriveRom)) {}
 
 calcu::startup::MachinePlan SharpProductMachines::builtInDefault(const ModelId& model) {
-    // AC-26: the default variant (A04, New), nothing plugged in.
+    // The default variant (A04, New), nothing plugged in.
     return calcu::startup::MachinePlan{model, std::nullopt, {}, nullptr};
 }
 
@@ -26,12 +26,12 @@ calcu::pacing::PacingProfile SharpProductMachines::pacingProfile(const ModelId& 
 int SharpProductMachines::soundRate(const ModelId&) const { return sharp::kSoundRate; }
 
 Seconds SharpProductMachines::readinessBound(const ModelId& model) const {
-    return Seconds(model.value == sharp::kPC1600 ? 27.0 : 7.0);   // LIB-18 EC-7
+    return Seconds(model.value == sharp::kPC1600 ? 27.0 : 7.0);
 }
 
 PeripheralRequest SharpProductMachines::carried(const PlugEntry& entry, Machine& m) {
     PeripheralRequest r = ProductMachines::carried(entry, m);
-    if (entry.peripheral.value == sharp::kHostDrive) {   // AC-28: the folder goes along
+    if (entry.peripheral.value == sharp::kHostDrive) {   // the folder goes along
         if (auto* f = calcu::machine::first<sharp::HostDriveFolder>(m)) r.content = std::make_shared<sharp::HostDriveRequest>(f->folder());
     }
     return r;

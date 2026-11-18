@@ -1,5 +1,4 @@
-// LIB-5 in Calc-U-1600 (design §6, T16-1 to T16-8; spec AC-14, AC-28 to
-// AC-31, AC-33 to AC-36, AC-40, AC-41): the Sharp typing profiles and
+// The Sharp typing profiles and
 // typing support through the library's typing engine, on the product's app
 // session (app/tests/SessionFixture) and in the harness. ROM-gated cases
 // SKIP when the images are absent.
@@ -63,15 +62,15 @@ HostKeyEvent letter(char c, const char* physical) {
     return e;
 }
 
-// ── T16-1: the profiles (AC-14, AC-28, AC-30) ───────────────────────────
+// ── The profiles ──────────────────────────────────────────────────────────
 
-TEST(lib5_ac28_cadence_4_4_and_6_after_shift_pc1600) {
+TEST(cadence_4_4_and_6_after_shift_pc1600) {
     for (const ModelId& m : {kPC1500, kPC1500A, kPC1600}) {
         const auto* p = cu1600::typingProfile(m);
         CHECK(p != nullptr);
         if (!p) continue;
         const Ticks f = frameOf(m);
-        CHECK_EQ(p->minHold, 4 * f);   // D-10: live input too
+        CHECK_EQ(p->minHold, 4 * f);   // 4 frames for every press, live input too
         CHECK_EQ(p->typed.hold, 4 * f);
         CHECK_EQ(p->typed.gap, 4 * f);
         const Ticks extra = m == kPC1600 ? 6 * f : 0;
@@ -79,7 +78,7 @@ TEST(lib5_ac28_cadence_4_4_and_6_after_shift_pc1600) {
         CHECK_EQ(p->gapAfter(KeyId{"kbii"}), 4 * f + extra);
         CHECK_EQ(p->gapAfter(KeyId{"a"}), 4 * f);
         CHECK(p->enter && p->enter->value == "enter");
-        CHECK(!p->waitsForReadinessAfterRelease);   // what follows ENTER is not the profile's (AC-28)
+        CHECK(!p->waitsForReadinessAfterRelease);   // what follows ENTER is not the profile's
     }
     // On the machine: shift 4 down, 4 + 6 up, A 4 down (a typed `a`).
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
@@ -100,11 +99,11 @@ TEST(lib5_ac28_cadence_4_4_and_6_after_shift_pc1600) {
     }
 }
 
-TEST(lib5_ac14_type_starts_at_readiness_pc1600_bound_15s) {
+TEST(type_starts_at_readiness_pc1600_bound_15s) {
     const auto* p = cu1600::typingProfile(kPC1600);
     CHECK(p->firstPressOfStep == StartRule::KeyReadiness);
     CHECK(p->firstPressBound && *p->firstPressBound == calcu::typing::ticksOf(15.0, sharp::sharpCatalogue().model(kPC1600)->tickRate));
-    CHECK(!p->queuedWaitsForReadiness);   // D-6: then the cadence only
+    CHECK(!p->queuedWaitsForReadiness);   // queued presses follow the cadence only
     // At the prompt (key ready) the first press goes down within a poll.
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture s;
@@ -119,16 +118,16 @@ TEST(lib5_ac14_type_starts_at_readiness_pc1600_bound_15s) {
     CHECK(!log.events.empty() && log.events[0].at - t0 <= frameOf(kPC1600));
 }
 
-TEST(lib5_ac14_type_starts_at_once_pc1500) {
+TEST(type_starts_at_once_pc1500) {
     for (const ModelId& m : {kPC1500, kPC1500A}) {
         const auto* p = cu1600::typingProfile(m);
-        CHECK(p->firstPressOfStep == StartRule::AsQueued);   // by the flag: at readiness (D-6)
+        CHECK(p->firstPressOfStep == StartRule::AsQueued);   // by the flag: queued presses wait for readiness
         CHECK(!p->firstPressBound);
         CHECK(p->queuedWaitsForReadiness);
     }
 }
 
-TEST(lib5_ac30_characters_per_model) {
+TEST(characters_per_model) {
     auto keys = [](const ModelId& m, char32_t c) {
         std::string out;
         const auto k = cu1600::charPresses(m, c);
@@ -152,13 +151,13 @@ TEST(lib5_ac30_characters_per_model) {
     CHECK_EQ(keys(kPC1600, '\t'), std::string("none"));
 }
 
-// ── T16-3: held keys, PC-1500 readiness (AC-31) ─────────────────────────
+// ── Held keys, PC-1500 readiness ──────────────────────────────────────────
 
-// The exit check of M-36: a host key held on a PC-1500 auto-repeats as the
+// A host key held on a PC-1500 auto-repeats as the
 // ROM does. Type 1234567890, hold the cursor key left for two seconds, then
 // type X: the ROM has moved the cursor back over the whole line, so X lands
 // at its start, not on the last digit.
-TEST(lib5_ac31_cursor_key_held_rom_repeats_pc1500) {
+TEST(cursor_key_held_rom_repeats_pc1500) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     for (const char* model : {"PC-1500A", "PC-1600"}) {
         SessionFixture s;
@@ -185,7 +184,7 @@ TEST(lib5_ac31_cursor_key_held_rom_repeats_pc1500) {
     }
 }
 
-TEST(lib5_ac31_every_key_held_pc1500a) {
+TEST(every_key_held_pc1500a) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture s;
     CHECK(s.start("PC-1500A"));
@@ -203,7 +202,7 @@ TEST(lib5_ac31_every_key_held_pc1500a) {
     s.engine().setObserver(nullptr);
 }
 
-TEST(lib5_ac31_waiting_press_at_key_readiness_pc1500) {
+TEST(waiting_press_at_key_readiness_pc1500) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture s;
     CHECK(s.start("PC-1500A"));
@@ -219,7 +218,7 @@ TEST(lib5_ac31_waiting_press_at_key_readiness_pc1500) {
     CHECK(s.runUntilTyped(10));
     s.runFor(0.5);
     // The program runs: the machine is not ready for keys, so a press that
-    // waits waits (EC-3); a live key goes down at once.
+    // waits waits; a live key goes down at once.
     Log log;
     s.engine().setObserver(&log);
     s.paste("1");
@@ -229,9 +228,9 @@ TEST(lib5_ac31_waiting_press_at_key_readiness_pc1500) {
     s.engine().setObserver(nullptr);
 }
 
-// ── T16-4: the SHIFT tap (AC-33), as the frontends send it ───────────────
+// ── The SHIFT tap, as the frontends send it ───────────────────────────────
 
-TEST(lib5_ac33_shift_tap_is_one_shift_press) {
+TEST(shift_tap_is_one_shift_press) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture s;
     CHECK(s.start("PC-1600"));
@@ -247,9 +246,9 @@ TEST(lib5_ac33_shift_tap_is_one_shift_press) {
     CHECK(support && support->latched("shift"));   // the ROM took it: SHIFT is latched
 }
 
-// ── T16-5: paste and latches (AC-34, AC-35) ─────────────────────────────
+// ── Paste and latches ─────────────────────────────────────────────────────
 
-TEST(lib5_ac34_paste_releases_latched_shift_skips_under_kbii) {
+TEST(paste_releases_latched_shift_skips_under_kbii) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture s;
     CHECK(s.start("PC-1600"));
@@ -272,7 +271,7 @@ TEST(lib5_ac34_paste_releases_latched_shift_skips_under_kbii) {
     s.engine().setObserver(nullptr);
 }
 
-TEST(lib5_ac34_second_paste_appended) {
+TEST(second_paste_appended) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture s;
     CHECK(s.start("PC-1600"));
@@ -285,7 +284,7 @@ TEST(lib5_ac34_second_paste_appended) {
     s.engine().setObserver(nullptr);
 }
 
-TEST(lib5_ac35_prompt_readiness_and_latches) {
+TEST(prompt_readiness_and_latches) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     for (const char* model : {"PC-1500A", "PC-1600"}) {
         SessionFixture s;
@@ -312,9 +311,9 @@ TEST(lib5_ac35_prompt_readiness_and_latches) {
     }
 }
 
-// ── T16-6: busy (AC-36) ─────────────────────────────────────────────────
+// ── Busy ──────────────────────────────────────────────────────────────────
 
-TEST(lib5_ac36_keys_dropped_during_preset_operation) {
+TEST(keys_dropped_during_preset_operation) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture s;
     CHECK(s.start("PC-1600"));
@@ -329,7 +328,7 @@ TEST(lib5_ac36_keys_dropped_during_preset_operation) {
     CHECK(s.engine().idle());
     for (int i = 0; i < 6000 && s.busy(); ++i) s.call();
     CHECK(!s.busy());
-    // The preset types through the engine too (M-46): the keys are watched
+    // The preset types through the engine too: the keys are watched
     // from its end on.
     Log log;
     s.engine().setObserver(&log);
@@ -341,9 +340,9 @@ TEST(lib5_ac36_keys_dropped_during_preset_operation) {
     s.engine().setObserver(nullptr);
 }
 
-// ── T16-8: BREAK and names (AC-40, AC-41) ───────────────────────────────
+// ── BREAK and names ───────────────────────────────────────────────────────
 
-TEST(lib5_ac40_on_breaks_running_program) {
+TEST(on_breaks_running_program) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     for (const char* model : {"PC-1500A", "PC-1600"}) {
         SessionFixture s;
@@ -372,7 +371,7 @@ TEST(lib5_ac40_on_breaks_running_program) {
     }
 }
 
-TEST(lib5_ac41_break_alias_ent_refused) {
+TEST(break_alias_ent_refused) {
     for (const ModelId& m : {kPC1500, kPC1500A, kPC1600}) {
         const auto* p = cu1600::typingProfile(m);
         auto one = [p](const char* n) {
@@ -383,10 +382,10 @@ TEST(lib5_ac41_break_alias_ent_refused) {
         CHECK_EQ(one("BREAK"), std::string("on"));
         CHECK_EQ(one("Enter"), std::string("enter"));
         CHECK_EQ(one("SHIFT"), std::string("shift"));
-        CHECK_EQ(one("ent"), std::string("refused"));   // OQ-6
+        CHECK_EQ(one("ent"), std::string("refused"));   // `ent` is no longer a name of enter
         CHECK_EQ(one("x"), std::string("x"));
         CHECK_EQ(one("nokey"), std::string("refused"));
-        // Every key ID of the model (LIB-6 AC-44, user 2026-11-18): the
+        // Every key ID of the model: the
         // PC-1600's ctrl, kbii and bs; the PC-1500s have none of them.
         const bool pc1600 = m == kPC1600;
         CHECK_EQ(one("kbii"), std::string(pc1600 ? "kbii" : "refused"));
@@ -396,9 +395,8 @@ TEST(lib5_ac41_break_alias_ent_refused) {
     }
 }
 
-// The harness commands `key` and `type` on a Sharp machine (AC-15 to AC-17;
-// the preset parts are LIB-6's, M-46).
-TEST(lib5_ac17_harness_key_and_type_on_a_sharp_machine) {
+// The harness commands `key` and `type` on a Sharp machine.
+TEST(harness_key_and_type_on_a_sharp_machine) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     auto product = cu1600::makeHarnessProduct();
     std::string error;

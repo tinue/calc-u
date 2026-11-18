@@ -1,17 +1,16 @@
-// C1600-4 AC-16 (design §6 T8; LIB-6 §10.8): each of the 32 examples, in
+// Each of the 32 examples, in
 // its version 2 file, loaded through the harness until the harness `wait`
 // finds the machine idle, leaves what its reference run left: the display
 // as text (`display-text`), the BASIC program and the machine-code areas the
 // reference's inspector views list (`peek`), the BASIC pointers and the
-// paper's strokes (`paper marks`; LIB-8 AC-39). The references are the
-// records of M-4 (tests/reference/v0.8.1-examples/, made with b4ea8c8's
+// paper's strokes (`paper marks`). The references are the records of
+// 0.8.1 (tests/reference/v0.8.1-examples/, made with b4ea8c8's
 // CLIs from the version 1 files); they are never recorded anew. The runs
 // are made in a copy of examples/. Left out: the cells of a real-time
 // clock and the tick counts (none of the compared ranges holds them), the
-// paper's reach (the converted references hold no feeds, LIB-8 D-14).
-// The intended differences are named below with their reason; the presets
-// that waited for LIB-7's media (C1600-4 design §1) are compared since M-47;
-// for make_diskworks_media also the files its `saveas:` wrote, against the
+// paper's reach (the converted references hold no feeds).
+// The intended differences are named below with their reason; for
+// make_diskworks_media also the files its `saveas:` wrote, against the
 // ones of examples/dwx/ it made with 0.8.1, without their time stamps.
 //
 // Longer (`CalcU1600ExampleReferences`, CALCU1600_REFERENCES=1): about
@@ -39,11 +38,11 @@ namespace {
 
 const fs::path kRef = "tests/reference/v0.8.1-examples";
 
-// The presets that wait for a later step (none since M-47, LIB-7 1600).
+// The presets that wait for a later step (none at present).
 const std::map<std::string, std::string> kWaiting = {
 };
 
-// The intended differences (AC-16: "excepted by name"), what each leaves
+// The intended differences (excepted by name), what each leaves
 // out of the comparison, and why.
 struct Excepted {
     bool lcd = false;         // the display is not compared
@@ -53,18 +52,18 @@ struct Excepted {
     const char* why;
 };
 const std::map<std::string, Excepted> kExcepted = {
-    // M-47 finding: the last item, BLOAD, is not waited for (LIB-6 AC-60)
+    // The last item, BLOAD, is not waited for
     // and the harness's `wait` finds the PC-1600 idle (key readiness) while
     // DWX.BIN still comes from the host drive, before DiskWorks draws the
     // banner of the reference; seconds later it shows its file list.
-    {"dwx_DiskWorks.pc1600", {true, -1, false, false, "DiskWorks: idle before its banner is drawn (M-47 finding)"}},
-    // conversion check §4: the program never returns to BASIC; version 1
+    {"dwx_DiskWorks.pc1600", {true, -1, false, false, "DiskWorks: idle before its banner is drawn"}},
+    // The program never returns to BASIC; version 1
     // ran it at full speed up to an hour, version 2 hands it over at once.
-    {"machine-code_Calculat.pc1600", {true, -1, false, true, "Calculat: its program never returns to BASIC (conversion check §4)"}},
-    // conversion check §4, row 1600-30: the last item is not waited for,
+    {"machine-code_Calculat.pc1600", {true, -1, false, true, "Calculat: its program never returns to BASIC"}},
+    // The last item is not waited for,
     // version 1 ended its load while the plot ran; `wait` lets it finish.
     {"plotter_ce150_demo.pc1500a",
-     {true, -1, true, true, "ce150_demo: version 1 ended the load in the middle of the plot (conversion check §4)"}},
+     {true, -1, true, true, "ce150_demo: version 1 ended the load in the middle of the plot"}},
     // The INPUT cursor blinks; the reference caught it off.
     {"plotter_biorhythmus_1600.pc1600", {false, 1, false, false, "biorhythmus_1600: the INPUT cursor's blink phase"}},
 };
@@ -257,7 +256,7 @@ std::vector<std::string> compare(const std::string& base, const fs::path& copy, 
         }
     }
     server->finish();
-    // The media make_diskworks_media saves next to itself (LIB-7 1600, M-47):
+    // The media make_diskworks_media saves next to itself:
     // the module and the disk as the ones of examples/dwx/ (made with 0.8.1,
     // the disk since upgraded to version 2), but their time stamps.
     if (base == "dwx_make_diskworks_media.pc1600")
@@ -265,7 +264,7 @@ std::vector<std::string> compare(const std::string& base, const fs::path& copy, 
             // Left out besides the time stamps: the comments (a module file
             // keeps those of the bundled CE-1601M it was spliced into, which
             // were edited since) and the disk's description, which a save now
-            // keeps (LIB-7 AC-41; 0.8.1's preset save dropped it).
+            // keeps (0.8.1's preset save dropped it).
             auto stamped = [](const std::string& l) {
                 return l.rfind("saved:", 0) == 0 || l.rfind("#", 0) == 0 || l.rfind("description:", 0) == 0;
             };
@@ -293,7 +292,7 @@ std::vector<std::string> compare(const std::string& base, const fs::path& copy, 
 
 } // namespace
 
-TEST(c1600_4_ac16_examples_match_their_references) {
+TEST(examples_match_their_references) {
     SKIP_UNLESS(std::getenv("CALCU1600_REFERENCES") != nullptr, "the reference runs are Longer (CalcU1600ExampleReferences)");
     SKIP_UNLESS(fs::exists("roms/PC1600-P0-B0-new.bin") && fs::exists("roms/PC-1500_A04.ROM"),
                 "the ROMs are not fetched (roms/fetch_roms.sh)");

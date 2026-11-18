@@ -1,9 +1,8 @@
-// C1600-3 (design §6, T1, T2; built in M-45 with LIB-10 1600, D-15): the
-// DAP's layer in app/dap/ -- its breakpoints with their tests, its line
-// steps on the library's `step` with a test (D-16), its view of the
-// targets -- driven with the memtest fixture (MemtestRig.hpp), and today's
-// cases of listings, bindings, expressions, conditions, hit conditions and
-// log messages (AC-23).
+// The DAP's layer in app/dap/ -- its breakpoints with their tests, its line
+// steps on the library's `step` with a test, its view of the targets --
+// driven with the memtest fixture (MemtestRig.hpp), and the cases of
+// listings, bindings, expressions, conditions, hit conditions and log
+// messages.
 
 #include <cstdint>
 #include <cstdio>
@@ -52,7 +51,7 @@ bool evalIs(const std::string& text, int64_t want, bool bigEndian = false) {
     return r.ok && r.value == want;
 }
 
-TEST(c1600_3_ac23_expressions) {
+TEST(dap_expressions_evaluate) {
     CHECK(evalIs("A == 0x10", 1));
     CHECK(evalIs("a != 16", 0));
     CHECK(evalIs("1 + 2 * 3", 7));
@@ -77,9 +76,9 @@ TEST(c1600_3_ac23_expressions) {
     CHECK(eval("nosuch").error.find("nosuch") != std::string::npos);
 }
 
-// ── AC-23: today's run-control cases with source lines and tests ──────────
+// ── Run-control cases with source lines and tests ─────────────────────────
 
-TEST(c1600_3_ac23_line_breakpoint_and_line_steps) {
+TEST(line_breakpoint_and_line_steps) {
     memtest::Rig r;
     if (!r.ok) { std::printf("  SKIP: memtest fixture missing\n"); return; }
     // Line 88 is a comment: the breakpoint resolves to 89 (ldi a,0x00).
@@ -113,7 +112,7 @@ TEST(c1600_3_ac23_line_breakpoint_and_line_steps) {
     CHECK(r.targets().peek(1, debug::kSpaceMain, 0x40C7, &flag) && flag == 0); // ERR_FLAG: pass
 }
 
-TEST(c1600_3_ac23_conditions_hit_counts_and_logpoints) {
+TEST(conditions_hit_counts_and_logpoints) {
     memtest::Rig r;
     if (!r.ok) return;
     // Line 137 is `sta (x)` in pass 1's loop, once per tested byte.
@@ -152,7 +151,7 @@ TEST(c1600_3_ac23_conditions_hit_counts_and_logpoints) {
     CHECK(r.pc() == 0x40CC && r.output.size() == 1);
 }
 
-TEST(c1600_3_ac23_bank_qualified_listing) {
+TEST(bank_qualified_listing) {
     memtest::Rig r;
     if (!r.ok) return;
     // The same listing bound statically for PV=1 only: with PV=0 its
@@ -179,7 +178,7 @@ TEST(c1600_3_ac23_bank_qualified_listing) {
     CHECK(r.reasonIs(Reason::Breakpoint) && r.pc() == 0x40CC);
 }
 
-TEST(c1600_3_ac23_hit_condition_parsing) {
+TEST(hit_condition_parsing) {
     using cu1600::dap::hitConditionMet;
     CHECK(hitConditionMet("3", 3) && !hitConditionMet("3", 4));
     CHECK(hitConditionMet(">= 5", 5) && !hitConditionMet(">=5", 4));
@@ -189,16 +188,16 @@ TEST(c1600_3_ac23_hit_condition_parsing) {
     CHECK(hitConditionMet("often", 1, &valid) && !valid);
 }
 
-// ── T2: AC-12, AC-14 ─────────────────────────────────────────────────────
+// ── Line steps ───────────────────────────────────────────────────────────
 
-TEST(c1600_3_ac12_step_goes_on_until_the_line_changes) {
+TEST(step_goes_on_until_the_line_changes) {
     memtest::Rig r;
     if (!r.ok) return;
     r.lineBreakpoint(89);
     r.resume();
     CHECK(r.runUntilStopped());
     r.clearBreakpoints();
-    // One DAP step is one library step (D-16): it ends once, on a new line,
+    // One DAP step is one library step: it ends once, on a new line,
     // having carried out more than one instruction where the line has more.
     const std::uint64_t before = r.targets().retired(1);
     r.step(StepKind::In, true);
@@ -216,7 +215,7 @@ TEST(c1600_3_ac12_step_goes_on_until_the_line_changes) {
     CHECK_EQ(r.targets().retired(1), at + 1);
 }
 
-TEST(c1600_3_ac12_instruction_granularity_one_instruction) {
+TEST(instruction_granularity_one_instruction) {
     memtest::Rig r;
     if (!r.ok) return;
     r.lineBreakpoint(89);
@@ -229,7 +228,7 @@ TEST(c1600_3_ac12_instruction_granularity_one_instruction) {
     CHECK(r.reasonIs(Reason::Step));
 }
 
-TEST(c1600_3_ac14_breakpoints_belong_to_dap) {
+TEST(breakpoints_belong_to_dap) {
     memtest::Rig r;
     if (!r.ok) return;
     // A breakpoint the harness set stays when the DAP's are set again.
@@ -248,7 +247,7 @@ TEST(c1600_3_ac14_breakpoints_belong_to_dap) {
     CHECK_EQ(table.breakpoints().size(), std::size_t(1));
 }
 
-TEST(c1600_3_ac14_log_message_writes_and_does_not_pause) {
+TEST(log_message_writes_and_does_not_pause) {
     memtest::Rig r;
     if (!r.ok) return;
     r.lineBreakpoint(89, {}, {}, "at {p}");
@@ -262,7 +261,7 @@ TEST(c1600_3_ac14_log_message_writes_and_does_not_pause) {
     CHECK(r.output.size() == 1 && r.output[0] == "at 0x40CC");
 }
 
-TEST(c1600_3_ac14_unworkable_condition_pauses_and_says_why) {
+TEST(unworkable_condition_pauses_and_says_why) {
     memtest::Rig r;
     if (!r.ok) return;
     r.lineBreakpoint(89, "[nosuch] == 1");
@@ -273,7 +272,7 @@ TEST(c1600_3_ac14_unworkable_condition_pauses_and_says_why) {
     CHECK(r.output.size() == 1 && r.output[0].find("nosuch") != std::string::npos);
 }
 
-TEST(c1600_3_ac14_other_bank_passed_status_only_while) {
+TEST(other_bank_passed_status_only_while) {
     memtest::Rig r;
     if (!r.ok) return;
     debug::Listing listing;
@@ -292,7 +291,7 @@ TEST(c1600_3_ac14_other_bank_passed_status_only_while) {
     CHECK(r.pc() == 0x4603);
 }
 
-TEST(c1600_3_ac23_compiled_expressions_match_legacy) {
+TEST(compiled_expressions_match_legacy) {
     static std::map<std::string, int64_t> names = {{"a", 0x10}, {"hl", 0x7A00}, {"cf", 1}, {"LOOP", 0x40C5}, {"Mixed", 7}};
     static uint8_t mem[65536] = {};
     mem[0x7A00] = 0x34; mem[0x7A01] = 0x12; mem[0x0010] = 0x99;
@@ -356,7 +355,7 @@ TEST(c1600_3_ac23_compiled_expressions_match_legacy) {
     CHECK(mismatches == 0);
 }
 
-TEST(c1600_3_ac23_hit_conditions_and_log_templates_match_legacy) {
+TEST(hit_conditions_and_log_templates_match_legacy) {
     const char* const hits[] = {"", "  ", "5", "== 5", "=5", ">= 3", "<=2", "!= 4", "> 1", "<3", "% 3", "%0", "% -2",
                                 "0x10", ">= 0x2", "abc", "5x", "==", " % ", "-1", "= 3 "};
     int mismatches = 0;
@@ -387,7 +386,7 @@ TEST(c1600_3_ac23_hit_conditions_and_log_templates_match_legacy) {
     CHECK(mismatches == 0);
 }
 
-TEST(c1600_3_ac23_function_breakpoint_on_lh5803_symbol) {
+TEST(function_breakpoint_on_lh5803_symbol) {
     // A function breakpoint arms on the CPU whose binding defines the
     // symbol: here the LH5803 (thread 2).
     sharpdebugtest::Rig rig(sharpdebugtest::bareMachine("PC-1600"));

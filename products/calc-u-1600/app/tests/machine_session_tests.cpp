@@ -1,6 +1,6 @@
-// The machine side of SharpAppPart on the library's app session (ported
-// from 0.8.1's MachineSession tests in M-31): model switches, typing through
-// the library's typing engine (LIB-5), peripherals kept over a rebuild. Against the real ROMs
+// The machine side of SharpAppPart on the library's app session: model
+// switches, typing through the library's typing engine, peripherals kept
+// over a rebuild. Against the real ROMs
 // (roms/, run from the product folder); SKIP without them.
 
 #include <cctype>
@@ -48,7 +48,7 @@ void test_switch_and_paste(Model model) {
     if (text.find("42") == std::string::npos) std::fprintf(stderr, "  screen: %s\n", text.c_str());
 }
 
-// LIB-5 AC-37 (instant press and release is one key): a tap on the PC-1600
+// An instant press and release is one key: a tap on the PC-1600
 // presses now and releases after the minimum hold: one "A" on the input
 // line. A key never released would repeat.
 TEST(test_timed_tap_pc1600) {
@@ -70,7 +70,7 @@ TEST(test_timed_tap_pc1600) {
     CHECK(f.screen().find("A'") != std::string::npos);
 }
 
-// AC-37: a key released before the key scan could see it (both events
+// A key released before the key scan could see it (both events
 // between two host calls) stays down for the minimum hold: still exactly
 // one key; a double tap is two; a fast sequence comes out in order.
 void test_minimum_key_hold(Model model) {
@@ -149,7 +149,7 @@ TEST(test_host_keys) {
         calcu::typing::HostKeyEvent left;
         left.physical = "ArrowLeft";
         left.named = calcu::typing::NamedKey::Left;
-        f.hostDown(left);   // held: the ROM's own repeat (AC-31)
+        f.hostDown(left);   // held: the ROM's own repeat
         CHECK(f.engine().liveHeld().size() == 1);
         f.hostUp("ArrowLeft");
         CHECK(f.engine().liveHeld().empty());

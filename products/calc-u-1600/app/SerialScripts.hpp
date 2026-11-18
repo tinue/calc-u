@@ -12,12 +12,9 @@
 #include "sessions/MachineSession.hpp"
 #include "sessions/SessionPart.hpp"
 
-// The serial ports of `c1600 serial <port> …` (C1600-5 AC-7 to AC-9, EC-3;
-// design §3.4, D-4): per port (`ce158`, the CE-158's; `rs232c`, the
-// PC-1600's own) a feed, a capture file and what the report counts. Today's
-// Ce158CliPeer (tools/Ce158CliPeer.hpp at the pin) pumped between slices of
-// its own; this part paces the feed in the machine session's slice hook, in
-// emulated ticks, so a run repeats exactly (LIB-11 AC-6).
+// The serial ports of `c1600 serial <port> …`: per port (`ce158`, the CE-158's; `rs232c`, the
+// PC-1600's own) a feed, a capture file and what the report counts. This part paces the feed in the machine session's slice hook, in
+// emulated ticks, so a run repeats exactly.
 //
 // - feed: the file's bytes are offered to the port one in each character
 //   time (ten bits at the speed the port is set to, 300 baud while it has
@@ -39,7 +36,7 @@ public:
     explicit SerialScriptsPart(std::function<bool(const std::string& port)> linked);
 
     // The serial port capability of `port` ("ce158", "rs232c") on the running
-    // machine, or nullptr (EC-3).
+    // machine, or nullptr.
     calcu::peripherals::SerialPort* port(const std::string& port) const;
 
     void feed(const std::string& port, std::vector<std::uint8_t> bytes, std::uint64_t hold);

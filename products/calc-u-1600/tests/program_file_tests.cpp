@@ -187,8 +187,7 @@ std::vector<uint8_t> readFixture(const char* path, bool* ok) {
     return std::vector<uint8_t>((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 }
 
-// What a dropped or opened file is (the old test_drop_targets): LIB-13
-// AC-22, app/tests/opening_tests.cpp.
+// What a dropped or opened file is: app/tests/opening_tests.cpp.
 
 // Real SharpDataExchange output. Skipped (not failed) when absent.
 TEST(test_real_sample_files) {

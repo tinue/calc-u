@@ -117,8 +117,8 @@ uint8_t LH5803SharedMemory::readME1(uint16_t addr) {
     // Nothing drives the data bus: ME1 is the SC7852's IORQ, so no RAM or
     // ROM answers, and the bus still holds the cycle before's byte -- on a
     // real PC-1600 XPEEK# reads 37 (25H, the second byte of its LDA #(U),
-    // FD 25H) at every address tried, C000H included (2026-10-10,
-    // docs/background/Decisions.md).
+    // FD 25H) at every address tried, C000H included (measured on a real
+    // PC-1600).
     return m_dataBus;
 }
 

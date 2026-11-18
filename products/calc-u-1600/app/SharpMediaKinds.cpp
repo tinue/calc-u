@@ -43,7 +43,7 @@ bool writableName(const std::string& name, const char* what, std::string& proble
     return false;
 }
 
-// ── Battery-backed module (`.module.yaml`, version 1; AC-37, AC-41) ───────
+// ── Battery-backed module (`.module.yaml`, version 1) ─────────────────────
 
 bool switchOf(const MemoryCardDefinition& d, bool* on) {
     bool has = false;
@@ -68,7 +68,7 @@ public:
         ReadOutcome r;
         r.info.formatVersion = static_cast<int>(kCardFormatVersion);
         r.info.name = def.moduleName;
-        if (!def.battery) {   // a module that is not a medium (D-9): the catalogue lists it
+        if (!def.battery) {   // a module that is not a medium: the catalogue lists it
             r.status = ReadOutcome::Status::NotMedium;
             r.problem = "It is not a battery-backed module.";
             return r;
@@ -87,7 +87,7 @@ public:
             problem = "It is not a memory module.";
             return {};
         }
-        // AC-41: spliced into the file it came from; without one (a module
+        // Spliced into the file it came from; without one (a module
         // the machine control plugged in by its name), into its bundled file.
         std::optional<std::string> source = w.source;
         if (!source) source = bundledText(module->definition.moduleName);
@@ -118,7 +118,7 @@ private:
     std::string m_bundledDir;
 };
 
-// ── Floppy disk (`.floppy.yaml`, version 2; AC-37, AC-41) ───────────────
+// ── Floppy disk (`.floppy.yaml`, version 2) ─────────────────────────────
 
 // The header (before `sides:`): its version, name and description.
 struct FloppyHeader {
@@ -140,7 +140,7 @@ class FloppyCodec final : public MediumCodec {
 public:
     ReadOutcome read(const std::string& bytes, const Companion&) const override {
         const auto header = floppyHeader(bytes);
-        if (header && header->version == 1) {   // 0.8.x: sides a and b (row 1600-19)
+        if (header && header->version == 1) {   // version 1 (Calc-U-1600 0.8.x): sides a and b
             ReadOutcome r;
             r.status = ReadOutcome::Status::Outdated;
             r.info.formatVersion = 1;
@@ -167,14 +167,14 @@ public:
             return {};
         }
         if (!writableName(w.name, "disk", problem)) return {};
-        std::string description;   // AC-41: kept
+        std::string description;   // kept
         if (w.source)
             if (const auto h = floppyHeader(*w.source)) description = h->description;
         return {FileOut{"", formatFloppyFile(w.name, disk->image, w.asTemplate, description, w.savedAt)}};
     }
 };
 
-// ── Cassette (`.cassette.yaml`, version 1, with its WAV; AC-42) ──────────────
+// ── Cassette (`.cassette.yaml`, version 1, with its WAV) ─────────────────────
 
 struct CassetteDefinition {
     std::string name, description, audio;
@@ -245,7 +245,7 @@ public:
             return {};
         }
         if (!writableName(w.name, "cassette", problem)) return {};
-        // D-26: a definition written again keeps its sound file's path; a
+        // A definition written again keeps its sound file's path; a
         // copy (Name & Save) gets its WAV beside it, named after its file.
         std::string description, audio = w.fileStem + ".wav";
         if (w.source) {
@@ -302,7 +302,7 @@ std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::ma
         r.place = place;
         r.peripheral = id;
         // A new object per request: the machine takes the card out of it,
-        // and the media part finds the binding by it (S-4).
+        // and the media part finds the binding by it.
         r.content = std::make_shared<sharp::ModuleContent>(content->definition);
         return r;
     };
@@ -310,7 +310,7 @@ std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::ma
     module.fitsPinOut = [](const media::MediumInfo& info, const calcu::machine::PinOutId& pinOut) {
         const auto* content = dynamic_cast<const sharp::ModuleContent*>(info.content.get());
         if (!content) return false;
-        for (CardHost h : content->definition.compatibleHosts) {   // AC-41's table, as moduleDescriptor()
+        for (CardHost h : content->definition.compatibleHosts) {   // the module's hosts, as moduleDescriptor()
             const char* p = h == CardHost::PC1600Slot1   ? sharp::kPC1600Slot1PinOut
                             : h == CardHost::PC1600Slot2 ? sharp::kPC1600Slot2PinOut
                                                          : sharp::kPC1500SlotPinOut;
@@ -334,7 +334,7 @@ std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::ma
     cassette.id = kCassetteKind;
     cassette.label = "cassette";
     cassette.suffix = kCassetteFileSuffix;
-    cassette.companionSuffixes = {".wav"};   // its sound, beside it (LIB-7 AC-43)
+    cassette.companionSuffixes = {".wav"};   // its sound, beside it
     cassette.folder = calcu::settings::Folder::Cassettes;
     cassette.bundledFolder = bundledDir;
     cassette.codec = &cassetteCodec;

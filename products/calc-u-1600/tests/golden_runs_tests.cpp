@@ -1,10 +1,8 @@
-// Golden runs of the Sharp cores (first step 2 of docs/walkthroughs/first-steps.md,
-// M-8 of docs/migration-plan.md), replayed through the machine interface
-// (C1600-1 AC-4, design §8, T10). The .golden files were recorded from the
-// code as imported (Calc-U-1600 0.8.1) by a driver that called PC1500Machine
-// and PC1600Machine directly, before the cores were changed (the power cycle
-// runs in M-26 T0, before the locks went). A run that differs is a finding,
-// not a new reference (C1600-1, Technical Requirements).
+// Golden runs of the Sharp cores, replayed through the machine interface.
+// The .golden files were recorded from the code as imported (Calc-U-1600
+// 0.8.1) by a driver that called PC1500Machine and PC1600Machine directly,
+// before the cores were changed (the power cycle runs before the locks
+// went). A run that differs is a finding, not a new reference.
 //
 // Each tests/golden-runs/<name>.run is a script; <name>.golden is what the
 // core did. CALCU1600_GOLDEN_RECORD=1 writes the .golden of a script that has
@@ -16,7 +14,7 @@
 //   card <file> [slot 1|2]             a bundled module, a peripheral of the BuildRequest
 //   boot                               build(), coldBoot(), the boot run (sharptest::bootRun, tests/BootRun.hpp)
 //   keys <name> ...                    taps: PC-1500 through the typing engine with the
-//                                      PC-1500 profile (LIB-5, M-36; 4 frames down, 4 up),
+//                                      PC-1500 profile (4 frames down, 4 up),
 //                                      the 200 ms in all from the tap's start;
 //                                      PC-1600 keyDown, 80 ms, keyUp, 80 ms
 //   type <text>                        taps for each character (space = space)
@@ -25,18 +23,18 @@
 //   reset                              reset()
 //   allreset                           coldBoot() and the boot run
 //   powercycle [attach <peripheral>]   attach (it waits for the off point), powerCycle(),
-//                                      the boot run (C1600-1 §3.3)
+//                                      the boot run
 // After every line the run records the display as text with its status
 // words (displayText of readDisplay()), the sound (takeSound: samples,
 // non-zero samples, a checksum), the plotters' paper (paper-output, read
-// back into raw steps: sharp::rawPlotPoints, LIB-8 §10.7);
+// back into raw steps: sharp::rawPlotPoints);
 // at the end a checksum of the memory (c1600.loader-memory).
 //
-// Finding (M-26, for the user's ruling): the status words of a record taken
+// The status words of a record taken
 // while the display is off are not compared. The old text readers read the
 // status line from its RAM even then (`> reset` in the two *-reset-allreset
 // runs: blank rows, `status DEG PRO I`); through the interface a display
-// that is off shows no indicator (LIB-1 AC-43), so the run has `status`
+// that is off shows no indicator, so the run has `status`
 // there. Every other line, these runs' included, is compared exactly.
 
 #include <algorithm>
@@ -158,10 +156,10 @@ struct Run {
         // An ID the machine lacks was ignored by the old classes too.
         if (down) m->keyDown(KeyId{name}); else m->keyUp(KeyId{name});
     }
-    // A tap as 0.8.1 types it: on the PC-1500 (its key queue until M-36) a
+    // A tap as 0.8.1 types it: on the PC-1500 (0.8.1 had a key queue) a
     // `key` of the typing engine with the model's profile, 4 frames down and
     // 4 up, the machine advanced in pieces cut where the engine is due, as the
-    // machine session does (LIB-3 §3.7); on the PC-1600 a press held 80 ms.
+    // machine session does; on the PC-1600 a press held 80 ms.
     void tap(const std::string& name) {
         if (is1600()) { key(name, true); advance(0.08); key(name, false); advance(0.08); return; }
         // 0.8.1's queue pressed the key after the first instruction of the
@@ -169,10 +167,10 @@ struct Run {
         const Ticks end = m->tickCount() + static_cast<Ticks>(static_cast<double>(m->descriptor().tickRate) * 0.2);
         cycles += m->advance(1);
         // The PC-1500 profile as 0.8.1's queue typed: without the wait for key
-        // readiness of AC-31 (row 1600-8). With it, pc1500a-ce150 differs in
+        // readiness. With it, pc1500a-ce150 differs in
         // two cycle counts and one audio sample count after `type lprint 123`
         // (display, paper and memory the same): a press waited for readiness
-        // there. Finding of M-36, LIB-5 qa-report; the core is unchanged.
+        // there; the core is unchanged.
         static const calcu::typing::TypingProfile asQueued = [] {
             calcu::typing::TypingProfile p = *cu1600::typingProfile(ModelId{sharp::kPC1500A});   // the PC-1500's is the same
             p.queuedWaitsForReadiness = false;
@@ -312,7 +310,7 @@ std::string play(const std::string& script, std::string* error, std::vector<size
     return run.finish();
 }
 
-TEST(c1600_1_ac4_golden_runs_through_the_interface) {
+TEST(golden_runs_through_the_interface) {
     const fs::path dir = "tests/golden-runs";
     SKIP_UNLESS(testRomSet() != nullptr, "no full ROM set in roms/");
     const bool recording = std::getenv("CALCU1600_GOLDEN_RECORD") != nullptr;

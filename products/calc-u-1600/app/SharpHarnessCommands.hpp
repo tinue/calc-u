@@ -3,12 +3,12 @@
 
 #include "harness/Commands.hpp"
 
-// Calc-U-1600's product commands under `c1600` (LIB-11 AC-13; harness.md
-// H-2): the loaders of C1600-2 (`file-kind`, `load-basic`, `type-basic`,
-// `load-code`) and the commands of C1600-5 (design §3): `dump-basic`,
+// Calc-U-1600's product commands under `c1600` (docs/formats/harness.md):
+// the loaders (`file-kind`, `load-basic`, `type-basic`,
+// `load-code`) and the machine commands: `dump-basic`,
 // `inspect`, `cassette record|status`, `serial <port> feed|capture|link|report`,
 // `host-drive`, `call`. Every handler reaches the machine through the
-// product kinds of C1600-1 and the generic kinds, or through the session's
+// product's machine kinds and the generic kinds, or through the session's
 // commands; none names a machine class.
 
 namespace cu1600 {

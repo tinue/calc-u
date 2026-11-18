@@ -1,4 +1,4 @@
-// C1600-5 design §6, T8 (AC-13; LIB-11 AC-24): the machine state of the
+// The machine state of the
 // Sharp models through `state-save` / `state-restore`, each test on
 // `calcu --product c1600` runs of its own (tests/harness/HarnessRun.hpp).
 // A state saved while a program runs, then 2 s of emulated time; restored,
@@ -110,12 +110,12 @@ void countingOn(const std::string& model) {
 
 } // namespace
 
-TEST(c1600_5_ac13_restore_continues_identically_pc1500) {
+TEST(restore_continues_identically_pc1500) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     countingOn("PC-1500");
 }
 
-TEST(c1600_5_ac13_restore_continues_identically_pc1500a) {
+TEST(restore_continues_identically_pc1500a) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     countingOn("PC-1500A");
     // With what plugs into a PC-1500A: the CE-150 recording a CSAVE on its
@@ -138,7 +138,7 @@ TEST(c1600_5_ac13_restore_continues_identically_pc1500a) {
         {"c1600 cassette status", "c1600 serial ce158 report", "c1600 inspect inventory", "c1600 dump-basic"});
 }
 
-TEST(c1600_5_ac13_restore_continues_identically_pc1600) {
+TEST(restore_continues_identically_pc1600) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     countingOn("PC-1600");
 }
@@ -148,7 +148,7 @@ TEST(c1600_5_ac13_restore_continues_identically_pc1600) {
 // a module in each slot, the host drive. The CE-158 cannot be used with the
 // CE-1600P (the model's rule), so a second machine has it with the CE-150
 // and its cassette.
-TEST(c1600_5_ac13_full_pc1600_with_ce1600p_disk_tape_ce158_modules) {
+TEST(full_pc1600_with_ce1600p_disk_tape_ce158_modules) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     restoreContinuesIdentically(
         [](Run& r, const fs::path& folder) {
@@ -182,9 +182,9 @@ TEST(c1600_5_ac13_full_pc1600_with_ce1600p_disk_tape_ce158_modules) {
         {"c1600 cassette status", "c1600 serial ce158 report", "c1600 inspect inventory"});
 }
 
-// LIB-11 AC-24: a state of another set of plugged peripherals, or of
+// A state of another set of plugged peripherals, or of
 // another model, is refused and changes nothing.
-TEST(c1600_5_ac13_refused_for_other_peripherals) {
+TEST(refused_for_other_peripherals) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     TempFolder f;
     const std::string state = (f.path() / "state.bin").string();

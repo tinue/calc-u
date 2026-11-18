@@ -12,7 +12,7 @@ class LoaderMemory;
 }
 
 // Writes a machine-language block linearly into one PC-1600 load target
-// through the loader memory access (C1600-2 AC-10, AC-14): `slot` 0 = S0,
+// through the loader memory access: `slot` 0 = S0,
 // the internal RAM ($C000-$FFFF); 1 / 2 = the memory slots' $8000-$BFFF
 // window, in global `bank` (machinecode::LoadPlan::bank; ignored for S0) --
 // a block that runs on past $BFFF continues in internal RAM, as BLOAD /

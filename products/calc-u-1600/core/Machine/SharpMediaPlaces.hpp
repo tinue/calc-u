@@ -12,14 +12,13 @@
 #include "machine/ProductData.hpp"
 #include "media/MediaPlace.hpp"
 
-// Calc-U-1600's media places and module media (LIB-7 design §10.4; spec
-// AC-38, AC-39, AC-42; capabilities.md, the media kind): the CE-1600F drive
+// Calc-U-1600's media places and module media: the CE-1600F drive
 // and the cassette of a CE-150 or CE-1600P are holding media places
 // (`calcu::media::MediaPlace`), a battery-backed module in a slot is a
 // module medium (`calcu::media::ModuleMedium`). The content they take and
 // give is one of the three content types below, which the product's codecs
 // (app/SharpMediaKinds) read from and write to the files; the library
-// carries it unread (AC-46).
+// carries it unread.
 
 namespace sharp {
 
@@ -41,7 +40,7 @@ public:
 };
 
 // A cassette: the bytes of its tape's sound file (WAV). A tape without a
-// sample is blank: inserted, it records (today's "new tape to record");
+// sample is blank: inserted, it records ("new tape to record");
 // one with samples plays.
 class TapeContent final : public calcu::machine::ProductData {
 public:
@@ -82,7 +81,7 @@ private:
 
 // The cassette recorder of a CE-150 or CE-1600P: the media place `cassette-recorder`.
 // Recording onto a blank tape keeps the sound in the place; it is written
-// each time the motor stops and when the tape leaves (writesWhenAsked, D-11).
+// each time the motor stops and when the tape leaves (writesWhenAsked).
 class CassettePlace final : public calcu::media::MediaPlace {
 public:
     explicit CassettePlace(TapeDeck& deck) : m_deck(deck) {}
@@ -96,7 +95,7 @@ public:
     bool takeWriteNow() override { return m_deck.takeStopped(); }
     bool writesWhenAsked() const override { return true; }
 
-    /// The machine state (C1600-5 AC-13, StateRecords.hpp): the tape in
+    /// The machine state (StateRecords.hpp): the tape in
     /// play mode as it came. The deck is the core's record.
     template <class Io>
     void stateIo(Io& io) {
@@ -112,7 +111,7 @@ private:
     std::shared_ptr<const TapeContent> m_played;   // the tape in play mode, as it came
 };
 
-// A battery-backed module in a slot (LIB-7 D-1): its content and revision.
+// A battery-backed module in a slot: its content and revision.
 class SlotModuleMedium final : public calcu::media::ModuleMedium {
 public:
     explicit SlotModuleMedium(std::function<const ExpansionCard*()> card) : m_card(std::move(card)) {}

@@ -40,6 +40,6 @@ class LoaderMemory;
 
 /// The bare tokenized payload (no header) -- the run of in-RAM line records
 /// basic::readBasicProgram() yields -- into the program area TITLE selects,
-/// through the loader memory access (C1600-2 AC-14). sharp::loaders::loadBasic
+/// through the loader memory access. sharp::loaders::loadBasic
 /// reads the file and picks the keyword table by MODE.
 BasicLoadResult pc1600LoadBasicPayload(sharp::LoaderMemory& memory, const std::vector<uint8_t>& payload);

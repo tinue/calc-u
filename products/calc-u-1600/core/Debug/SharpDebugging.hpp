@@ -19,10 +19,9 @@
 class PC1500Machine;
 class PC1600Machine;
 
-// ── The Sharp machines' debug targets (LIB-10 design §10.4, §10.5; spec
-// AC-36, AC-37, AC-39, AC-52) ─────────────────────────────────────────────
+// ── The Sharp machines' debug targets ─────────────────────────────────────
 //
-// One machine::DebugTarget per CPU, named as the C1600-1 descriptors name
+// One machine::DebugTarget per CPU, named as the model descriptors name
 // them: the LH5801 of a PC-1500 and PC-1500A; the SC7852 (its Z-80) and the
 // LH5803 of a PC-1600, in that order. Each is a CpuView (CpuViews.hpp) plus
 // the machine's memory access:
@@ -36,13 +35,13 @@ class PC1600Machine;
 //                   C's vertical bank (port 28H, a module in Slot 2)
 //
 // A peek or poke with bank= or vbank= sets the bank registers for that one
-// access and puts them back: no bank is switched for the machine (AC-49).
+// access and puts them back: no bank is switched for the machine.
 // The -written views hold the value the CPU last wrote to each ME1 cell or
-// I/O port since it was built (AC-48), or none.
+// I/O port since it was built, or none.
 //
 // SharpDebugging is the machine's Debugging: SharpMachine::advance runs its
-// run() while checks are set; with all checks off the core runs as before
-// (§10.5; the golden runs see no change). Breakpoints and watches are the
+// run() while checks are set; with all checks off the core runs its own
+// path (the golden runs see no change). Breakpoints and watches are the
 // CPUs' own lists (BreakpointSet, WatchSet), checked only while the Checks
 // say so; the observer runs the machine one machine step at a time.
 //

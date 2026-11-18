@@ -7,12 +7,10 @@
 #include "machine/Display.hpp"
 #include "sessions/SessionPart.hpp"
 
-// The harness's `display-text` on a Sharp machine (LIB-11 AC-10, AC-19; Part D, D.4,
-// D-7, D-12): the font of the model's ROM, read when the machine changes,
+// The harness's `display-text` on a Sharp machine: the font of the model's ROM, read when the machine changes,
 // and the cursor the ROM reports through its RAM, read at each flush; the
 // cell under the cursor reads as the character the ROM saved there, as
-// `--lcd-text` of the CLIs did. Was the FontPart of app/HarnessProduct.cpp
-// (adapter A-4) until M-51.
+// `--lcd-text` of the old CLIs did.
 
 namespace cu1600 {
 

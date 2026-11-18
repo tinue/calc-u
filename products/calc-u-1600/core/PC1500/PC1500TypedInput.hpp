@@ -14,7 +14,7 @@ class PC1500Machine;
 // GUI's clipboard paste (Core/KeyPaste) both turn a host character into a
 // PC-1500 keystroke and both need to know when the ROM is back at its
 // BASIC prompt. Machine-free but for pc1500AtBasicPrompt() (PC1500TypedInput.cpp), so the
-// app layer can resolve keys without a machine class (C1600-1).
+// app layer can resolve keys without a machine class.
 
 /// Maps a host character to the PC-1500 key that types it. `needsShift`
 /// is set when SHIFT must be tapped first (SHIFT is a one-shot latch on

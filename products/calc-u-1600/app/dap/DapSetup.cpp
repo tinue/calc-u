@@ -1,11 +1,9 @@
-// The set-up of a DAP session (C1600-3 design §3.4; AC-4 to AC-7, AC-17,
-// AC-24, AC-25; EC-2 to EC-5): `attach`/`launch`, `restart`,
+// The set-up of a DAP session: `attach`/`launch`, `restart`,
 // `c1600/load` and `c1600/reset`, each one operation of the app
-// session (D-1), answered at its end. So the messages that arrive meanwhile
-// wait (AC-8), and the rules of operations hold inside: no breakpoint or
-// watch pauses it (LIB-10 AC-13), a reset is over when the machine stands
-// at the reset vector (AC-24). 0.8.1 did the same in a nested event loop of
-// the Qt frontend (DebugController::runAndWait).
+// session, answered at its end. So the messages that arrive meanwhile
+// wait, and the rules of operations hold inside: no breakpoint or
+// watch pauses it, a reset is over when the machine stands
+// at the reset vector. No host needs a nested event loop for it.
 //
 // GCC 13: no temporaries inside a co_await expression (named locals).
 
@@ -56,7 +54,7 @@ std::string fileName(const std::string& path) {
 
 bool DapSession::startOperation(const Value& request, std::string* error) {
     if (!ready(error)) return false;
-    if (ctx_.busy()) {   // the part holds messages while one runs (AC-8); a safety only
+    if (ctx_.busy()) {   // the part holds messages while one runs; a safety only
         *error = "Another operation is running.";
         return false;
     }
@@ -130,7 +128,7 @@ Task<OperationResult> DapSession::runRequest(OperationContext& op, Value request
             const Value program = args.find("bin") ? args : *configured;
             ok = co_await buildAndLoad(op, program, /*inSetup=*/false, &body, &error);
         } else if (ok) {
-            // AC-25: no program (a ROM project): the set-up again, then as at
+            // No program (a ROM project): the set-up again, then as at
             // configurationDone.
             stopOnEntry_ = boolOf(attachConfig_, "stopOnEntry");
             const Value config = attachConfig_;
@@ -149,7 +147,7 @@ Task<OperationResult> DapSession::runRequest(OperationContext& op, Value request
     co_return OperationResult{};
 }
 
-// ── S1 to S8 ──────────────────────────────────────────────────────────────
+// ── The set-up ────────────────────────────────────────────────────────────
 
 void DapSession::bindStatic(const Value& v, bool isListing) {
     Value item = v;
@@ -171,14 +169,14 @@ Task<bool> DapSession::setUp(OperationContext& op, Value config, std::string* er
     const Value* programPtr = config.find("program");
     const bool hasProgram = programPtr && programPtr->members() && !programPtr->members()->empty();
     const std::string command = textOf(config, "command");
-    // S2
+    // `boot: debug` takes no program or command.
     if (bootDebug && (hasProgram || !command.empty())) {
         *error = "\"boot\": \"debug\" runs the boot under the debugger; it takes no \"program\" or \"command\"";
         co_return false;
     }
-    // S3: a preset builds the machine; with a program, the clean start of S7
-    // takes it instead. `boot: debug` builds only, paused before the first
-    // instruction (LIB-6 AC-55, LIB-10 AC-46).
+    // A preset builds the machine; with a program, the clean start of Build
+    // & Load takes it instead. `boot: debug` builds only, paused before the
+    // first instruction.
     if (!preset.empty() && !hasProgram) {
         if (bootDebug) rc.pauseAtStart();
         const std::optional<calcu::machine::ModelId> anyModel;
@@ -192,12 +190,12 @@ Task<bool> DapSession::setUp(OperationContext& op, Value config, std::string* er
         *error = "No machine is running";
         co_return false;
     }
-    // S4: Reset or Cold boot, standing at the reset vector (AC-24, D-2).
+    // Reset or Cold boot, standing at the reset vector (resetBare).
     const std::string reset = textOf(config, "reset", "none");
     if (reset == "reset" || reset == "allReset") {
         if (!resetBare(reset == "allReset", error)) co_return false;
     }
-    // S5: the listings and symbols of the configuration.
+    // The listings and symbols of the configuration.
     map_.clear();
     const Value* listings = config.find("listings");
     if (listings && listings->elements())
@@ -211,7 +209,7 @@ Task<bool> DapSession::setUp(OperationContext& op, Value config, std::string* er
             output(b.name + ": " + std::to_string(b.mismatched) + " of " + std::to_string(b.checked) +
                        " lines don't match memory -- not used for source",
                    "important");
-    // S6, S7
+    // Build & Load of the program, else the command typed.
     if (hasProgram) {
         const Value program = *programPtr;
         const bool loaded = co_await buildAndLoad(op, program, /*inSetup=*/true, nullptr, error);
@@ -219,7 +217,7 @@ Task<bool> DapSession::setUp(OperationContext& op, Value config, std::string* er
     } else if (!command.empty()) {
         typeCommand(command);   // typed when the machine runs
     }
-    // S8: the session goes on with a paused machine (AC-4).
+    // The session goes on with a paused machine.
     co_await pauseNow(op);
     co_return true;
 }
@@ -230,7 +228,7 @@ Task<void> DapSession::pauseNow(OperationContext& op) {
     rc.pause(calcu::debugger::kCpu);
     calcu::sessions::MachineSession& ms = ctx_.machineSession();
     // Machine requests of their own, not OperationContext::run: that one gives
-    // the host its call once the machine is paused (LIB-10 G12), which in
+    // the host its call once the machine is paused, which in
     // virtual time would leave the operation unfinished.
     for (int i = 0; i < 1000 && !rc.paused() && ms.machine(); ++i) {
         const calcu::machine::Ticks piece = OperationContext::runPiece(ms.machine()->descriptor().tickRate);
@@ -248,8 +246,10 @@ bool DapSession::resetBare(bool coldBoot, std::string* error) {
         *error = "No machine is running";
         return false;
     }
-    // Without the run to key readiness (D-2), but like any reset: input and
-    // typing dropped; the clocks are set when the operation ends (LIB-2).
+    // Without the run to key readiness: a machine standing at its reset
+    // vector never reaches key readiness, so the operation would not end.
+    // Like any reset otherwise: input and typing dropped; the clocks are set
+    // when the operation ends.
     ctx_.machineSession().dropInput();
     deps_.typing->engine().focusLost();
     runControl().pauseAtStart();
@@ -259,7 +259,7 @@ bool DapSession::resetBare(bool coldBoot, std::string* error) {
     return true;
 }
 
-// ── S7: Build & Load ──────────────────────────────────────────────────────
+// ── Build & Load ──────────────────────────────────────────────────────────
 
 Task<bool> DapSession::cleanStart(OperationContext& op, std::string* how, std::string* error) {
     const std::string preset = textOf(attachConfig_, "preset");
@@ -278,8 +278,8 @@ Task<bool> DapSession::cleanStart(OperationContext& op, std::string* how, std::s
     const calcu::machine::ModelId model = m->model();
     const std::string startup = deps_.settings ? calcu::settings::startupPreset(*deps_.settings, model.value) : std::string();
     if (!startup.empty()) {
-        // The model's startup preset, as LIB-18 loads it; one for another
-        // model is refused (EC-4).
+        // The model's startup preset, as the machine control loads it; one
+        // for another model is refused.
         *how = "startup preset " + startup;
         const std::optional<calcu::machine::ModelId> forModel = model;
         const OperationResult r = co_await deps_.presets->loadWithin(op, startup, false, forModel);
@@ -297,13 +297,13 @@ Task<bool> DapSession::cleanStart(OperationContext& op, std::string* how, std::s
 
 Task<bool> DapSession::buildAndLoad(OperationContext& op, Value d, bool inSetup, Body* body, std::string* error) {
     if (!checkAttach(d, debug::attach::kProgramKeys, error)) co_return false;
-    if (d.find("slot")) {   // EC-2
+    if (d.find("slot")) {
         *error = "Bad \"slot\": it was removed: the loader places code by the machine's MODE, the program area TITLE "
                  "selects, and the address. Set MODE / TITLE on the calculator first.";
         co_return false;
     }
     const std::string bin = textOf(d, "bin");
-    if (bin.empty()) {   // EC-2
+    if (bin.empty()) {
         *error = "Bad \"bin\": it is missing";
         co_return false;
     }
@@ -365,8 +365,9 @@ Task<bool> DapSession::buildAndLoad(OperationContext& op, Value d, bool inSetup,
             if (after == "stopOnEntry") breakpoints_.setEntry(req.thread, r.entry);
             applyBreakpoints();
             typeCommand(r.callCommand);   // typed and entered as the machine runs
-            // In the set-up the program runs from configurationDone (AC-7,
-            // ledger 1600-20); else at the end of this operation.
+            // In the set-up the program runs from configurationDone, once
+            // the client's breakpoints are set, so that a breakpoint near the
+            // entry is not missed; else at the end of this operation.
             if (!inSetup) resumeAtEnd_ = true;
         }
     }

@@ -11,14 +11,14 @@
 // The save folder (~/Calc-U-1600 unless overridden in Settings), the
 // cassette folder, the file a by-name save of a module, disk or cassette goes to,
 // and how a path is shown to the user. The places come from the library
-// (calcu::settings::Paths, LIB-9 AC-12): the frontend passes the host's
+// (calcu::settings::Paths): the frontend passes the host's
 // folders (calcu::settings::HostDirs: home, settings base, and on the Web
 // the save folder) and the bundled folders (BundleDirs: *.module.yaml /
 // *.floppy.yaml templates and ROM images, read only). Folders the app
 // writes to are created when asked for.
 namespace cu1600 {
 
-// The bundled folders the frontend passes (LIB-12, LIB-6 own them later).
+// The bundled folders the frontend passes.
 struct BundleDirs {
     BundleDirs(std::string resources = {}, std::string examples = {})
         : bundledResources(std::move(resources)), bundledExamples(std::move(examples)) {}
@@ -28,8 +28,8 @@ struct BundleDirs {
     std::string bundledExamples;
     // Where the ROM set, the module definitions (and the media templates
     // beside them) and the host drive's ROM lie when they are not all in
-    // bundledResources, as in the source tree the harness reads (LIB-11
-    // AC-20; roms/, frontends/qt6/resources/cards/, firmware/pc1600-hostdrive/);
+    // bundledResources, as in the source tree the harness reads
+    // (roms/, frontends/qt6/resources/cards/, firmware/pc1600-hostdrive/);
     // empty = bundledResources.
     std::string roms, modules, hostDriveRom;
 };
@@ -73,13 +73,13 @@ public:
 
     // Cassettes: [storage] cassette-folder if set, else "Cassettes"
     // inside instanceDir(); created on demand. Cassette definitions and their
-    // sounds live there (LIB-7 AC-42, LIB-9 AC-16).
+    // sounds live there.
     std::string cassetteDir() const;
 
     // [trace] folder / [serial] link-folder if set, else
     // instanceDir(): where traces go (the library's trace session) and where
     // the serial ports' PTY symlinks live. The Web has no trace folder
-    // (traceDir() is empty, LIB-10 D-10); its serial link folder is the save
+    // (traceDir() is empty); its serial link folder is the save
     // folder.
     std::string traceDir() const;
     std::string serialLinkDir() const;

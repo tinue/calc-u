@@ -1,5 +1,5 @@
-// Calc-U-1600's app layer (SharpAppPart) on the library's app session
-// (ported in M-31 from 0.8.1's AppSession tests): the Sharp operations as
+// Calc-U-1600's app layer (SharpAppPart) on the library's app session:
+// the Sharp operations as
 // product commands run in parts on a scripted clock, the bays, the control
 // state topic, the loads. SKIP without ROMs.
 
@@ -34,8 +34,8 @@ using sessionfixture::romsPresent;
 using sessions::Value;
 using Model = calcu::machine::ModelId;
 
-// The module in slot 1 has its write-protect switch on (LIB-2 AC-32: the
-// controls of the peripheral there).
+// The module in slot 1 has its write-protect switch on (the controls of
+// the peripheral there).
 bool slot1Protected(cu1600::SharpAppPart& part) {
     calcu::machine::Machine* m = part.machine();
     if (!m) return false;
@@ -69,7 +69,7 @@ TEST(test_cooperative_preset) {
     f.readCost = std::chrono::milliseconds(1);   // the host's work: the allowance of a call runs out
 
     // A PC-1600 preset (two slot cards, typed commands, a typed program),
-    // a host call at a time (LIB-6 `load-preset`).
+    // a host call at a time (`load-preset`).
     const sessions::CallId id = f.send(calcu::presets::kLoadPresetCommand, preset("tests/fixtures/presets/maxed-out-mem.pc1600"));
     CHECK(f.busy());
     // A second operation is refused while one runs.
@@ -91,7 +91,7 @@ TEST(test_cooperative_preset) {
     CHECK(f.part().model() == calcu::machine::ModelId{"PC-1600"});
     CHECK(f.held("slot-1") && f.held("slot-1")->name == "CE-1600M");
     CHECK(f.held("slot-2") && f.held("slot-2")->name == "CE-1601M");
-    // The last item (FILES) is not waited for (LIB-6 AC-60): until idle.
+    // The last item (FILES) is not waited for: until idle.
     CHECK(f.ok(calcu::presets::kWaitIdleCommand));
     CHECK(f.screen().find("LOOP") != std::string::npos);
 }
@@ -117,10 +117,9 @@ TEST(test_operations_and_selection) {
 }
 
 // The tape counter in the machine topic is what the deck had at the last
-// call -- and an operation ends with one, so it is current right after
-// (ported: the topic `c1600.tapes` went with M-47). The record button is
-// `media.start-new` on the empty tape (LIB-7 AC-20, D-24).
-TEST(lib7_ac44_test_tape_status_follows_calls) {
+// call -- and an operation ends with one, so it is current right after.
+// The record button is `media.start-new` on the empty tape.
+TEST(test_tape_status_follows_calls) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
@@ -139,7 +138,7 @@ TEST(lib7_ac44_test_tape_status_follows_calls) {
     CHECK(f.run(calcu::media::kEjectCommand, Value::object({{"place", "cassette"}})).done);
     CHECK(f.reset());
     CHECK(tapes() == TapeDeck::Mode::Empty);
-    // Nothing was recorded: no file (AC-20: the file at the first write).
+    // Nothing was recorded: no file (the file comes at the first write).
     CHECK(!fs::exists(fs::path(f.cassetteFolder()) / "side a.cassette.yaml"));
 }
 
@@ -158,11 +157,10 @@ const calcu::media::KindState::Item* findItem(const calcu::media::MediaState& s,
 
 const calcu::media::KindDecl& kindOf(SessionFixture& f, const char* id) { return *f.part().mediaPart().kind(id); }
 
-// The saved media (LIB-7 AC-30, AC-31, AC-43; ported from 0.8.1's
-// MediaLibrary test, the class gone with M-47): the save folder's modules, disks and cassettes -- listed
+// The saved media: the save folder's modules, disks and cassettes -- listed
 // with the place they are in, exported, deleted after asking (not while in
 // a place), imported back.
-TEST(lib7_ac44_test_media_library) {
+TEST(test_media_library) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -194,7 +192,7 @@ TEST(lib7_ac44_test_media_library) {
     const std::vector<std::uint8_t> bundled = readBytes("frontends/qt6/resources/cards/ce161.module.yaml");
     CHECK(!media.importBytes(ctx, "ce161.module.yaml", std::string(bundled.begin(), bundled.end()), {}).ok);   // a bundled name
 
-    // A tape: its definition with its WAV (AC-43); a WAV alone is no medium.
+    // A tape: its definition with its WAV; a WAV alone is no medium.
     const std::vector<std::uint8_t> wav = readBytes("tests/fixtures/tape/pc1500_tape.wav");
     const std::string sound(wav.begin(), wav.end());
     const auto companion = [&](const std::string& rel) -> std::optional<std::string> {
@@ -211,10 +209,11 @@ TEST(lib7_ac44_test_media_library) {
     CHECK(!media.importBytes(ctx, "notes.txt", "x", {}).ok);
 }
 
-// Name & Save with "write-protect" (LIB-7 AC-19, AC-40; row 1600-17): the
-// file records the switch, the live card stops taking writes at once, the
+// Name & Save with "write-protect": the file records the switch, the
+// machine is power-cycled as when a module is plugged in, the live card
+// stops taking writes at once, the
 // saved instance comes back protected; a module without the switch refuses.
-TEST(lib7_ac40_write_protect_power_cycle) {
+TEST(write_protect_power_cycle) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500"));
@@ -264,8 +263,8 @@ TEST(test_module_yaml_dump) {
     CHECK(dump.size() == 2 && dump[0].find("Module dump: CE-1600M (Slot 2), unbanked") != std::string::npos);
 }
 
-// `model`: a fresh machine of the model, then its startup preset (LIB-18
-// AC-6); the same model again does nothing.
+// `model`: a fresh machine of the model, then its startup preset; the same
+// model again does nothing.
 TEST(test_pick_model) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
@@ -279,8 +278,8 @@ TEST(test_pick_model) {
     CHECK(!f.part().ce150Attached());
 }
 
-// A startup preset by its bundle path (LIB-18 §10.4); one of another model
-// gives the built-in default and the notice (LIB-18 EC-1).
+// A startup preset by its bundle path; one of another model gives the
+// built-in default and the notice.
 TEST(test_example_ref_default_preset) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
@@ -294,10 +293,10 @@ TEST(test_example_ref_default_preset) {
     CHECK(!n.empty() && n.back().find("could not be loaded") != std::string::npos);
 }
 
-// LIB-2 AC-34 (design §6 P11): the real-time clocks are set from the
+// The real-time clocks are set from the
 // session's host-time source when the machine is built and at the end of
 // every operation.
-TEST(lib2_ac34_set_at_build_and_after_operation) {
+TEST(set_at_build_and_after_operation) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     std::tm t{};
     t.tm_year = 2031 - 1900;

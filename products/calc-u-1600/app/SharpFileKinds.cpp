@@ -34,7 +34,7 @@ ProgramKind programKindOf(const std::vector<std::uint8_t>& bytes, std::string_vi
         case Kind::CodeLH5801:
         case Kind::CodeZ80: return ProgramKind::MachineCode;
         // The classifier's guess alone also takes JPEGs, PDFs and fonts for
-        // code, hence the name; `.rom` is none (AC-17).
+        // code, hence the name; `.rom` is none.
         case Kind::Headerless:
             return f.looksLikeCode && calcu::opening::endsWith(calcu::opening::lowerAscii(name), ".bin")
                        ? ProgramKind::MachineCode
@@ -68,7 +68,7 @@ CommandOutcome ProgramFileKind::open(const OpenedFile& f, Way way, SessionContex
     const std::string name = calcu::opening::fileNameOf(f);
     const std::vector<std::uint8_t>& bytes = *f.bytes;   // takes() saw them
     if (way != Way::Harness && m_topic) {
-        // D4.2: the frontend's program flow (its dialogs: which file of a
+        // The frontend's program flow (its dialogs: which file of a
         // WAV, the address of headerless code).
         auto p = std::make_shared<ProgramOpenedPayload>();
         p->name = name;
@@ -78,7 +78,7 @@ CommandOutcome ProgramFileKind::open(const OpenedFile& f, Way way, SessionContex
         m_topic->append(std::move(p));
         return Done{};
     }
-    // The harness has no dialogs (AC-18): a WAV's first file, by its own
+    // The harness has no dialogs: a WAV's first file, by its own
     // loader; headerless code is refused with the plan's sentence.
     if (ctx.busy()) return Refused{calcu::sessions::kAnotherOperationRuns};
     if (!ctx.machine()) return Refused{calcu::sessions::kNoMachine};

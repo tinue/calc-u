@@ -1,12 +1,12 @@
-# LIB-10 AC-41 (design §10.10, D16-7; ADR 0032): a paused machine shows
+# A paused machine shows
 # "Paused (debugger)" in the window's title, and Machine ▸ Resume runs it
-# again. A check scenario (CalcU1600Shots.lib10-ac41, Longer); format:
+# again. A check scenario (CalcU1600Shots.paused-title-and-resume, Longer); format:
 # docs/developer/screenshots/README.md.
-out: ../../build/shots-check/lib10-ac41
+out: ../../build/shots-check/paused-title-and-resume
 window: 1430x1280
 
 shots:
-  - name: lib10-ac41
+  - name: paused-title-and-resume
     steps:
       - expect-title: Calc-U-1600
       - command: pause

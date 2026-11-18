@@ -9,29 +9,28 @@
 
 // ── Settings: Calc-U-1600's keys, and typed calls over the settings file ──
 //
-// Every setting the app keeps is declared once, in settingsDecl() (LIB-9
-// AC-26): section, key, default and the values it accepts. The values live
+// Every setting the app keeps is declared once, in settingsDecl():
+// section, key, default and the values it accepts. The values live
 // in the product's settings file, `Calc-U-1600.ini`, read and written by the
 // library (calcu::settings::SettingsFile; the frontend opens it at the place
 // calcu::settings gives for its platform). Qt6 and the Web frontend use the
-// same declaration; a key a frontend has no use for is kept and ignored
-// (AC-32). No platform store (QSettings, localStorage) holds a setting
-// (AC-31).
+// same declaration; a key a frontend has no use for is kept and ignored.
+// No platform store (QSettings, localStorage) holds a setting.
 namespace cu1600 {
 
-// The declaration of Calc-U-1600's settings (AC-26). Lives as long as the
+// The declaration of Calc-U-1600's settings. Lives as long as the
 // program.
 const calcu::settings::ProductDecl& settingsDecl();
 
 // The models in the catalogue's order. Their IDs ("PC-1500", "PC-1500A",
 // "PC-1600") are also the names the settings file writes ([startup] model,
-// last-model, the keys of [preset]); D-28 of LIB-14: no enum of its own.
+// last-model, the keys of [preset]); no enum of its own.
 const std::vector<calcu::machine::ModelId>& sharpModels();
 // The model of that name, or none.
 std::optional<calcu::machine::ModelId> sharpModel(const std::string& name);
 
 // The folders the file-open dialogs start in, one per kind of file, each
-// shown as its own row in Settings, and one key in [folders] (AC-29; the
+// shown as its own row in Settings, and one key in [folders] (the
 // rule -- a fixed folder, else the one last used -- is the library's,
 // settings/OpenFolders, which the shell's dialogs and SettingsPart use):
 //   Samples   -- "Load Preset…" (and Settings' default-preset pickers): presets
@@ -50,15 +49,15 @@ public:
 
     // The family's keys ([storage], [trace], [serial], [preset], [folders])
     // and [debug] are read where they are used, through the settings file
-    // (LIB-9's Paths, LIB-18's start, LIB-10's trace, the DAP part).
+    // (the library's Paths, the start, the trace, the DAP part).
 
     // [debug] dap-port: the Debug Adapter Protocol server VS Code attaches
     // to (127.0.0.1 only) listens here unless the value is outside
-    // 1024-65535 (AC-28).
+    // 1024-65535.
     static constexpr int kDefaultDapPort = 32168;
 
     // [window] width / height -- last user-resized main-window size,
-    // restored on the next launch (default 900x500, AC-30).
+    // restored on the next launch (default 900x500).
     static constexpr int kDefaultWindowWidth = 900;
     static constexpr int kDefaultWindowHeight = 500;
     int windowWidth() const { return static_cast<int>(m_file.integer("window", "width")); }
@@ -78,7 +77,7 @@ public:
 
     // The model to boot into: the pinned preference if it names a model,
     // else [startup] last-model (the model last switched to), else the
-    // PC-1500A (AC-27, EC-1).
+    // PC-1500A.
     calcu::machine::ModelId startupModel() const;
 
 private:

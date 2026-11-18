@@ -1,8 +1,8 @@
-// LIB-3 Calc-U-1600 column (M-31; LIB-3 design §6, P16-2, P16-4, P16-5):
-// operations in parts with live updates (AC-35), the buzzer only at regular
-// speed (AC-37), and today's callbacks as messages (AC-38). AC-34 and the
-// Qt6 half of AC-36 are the CTest CalcU1600NoOwnSession; the Web half of
-// AC-36 is frontends/web/tests/suspend.spec.js. On a scripted clock; SKIP
+// The library's app session in Calc-U-1600: operations in parts with live
+// updates, the buzzer only at regular speed, and 0.8.1's callbacks as
+// messages. That the product has no session of its own and the Qt6 app
+// sends no suspend is the CTest CalcU1600NoOwnSession; the Web's suspend is
+// frontends/web/tests/suspend.spec.js. On a scripted clock; SKIP
 // without ROMs.
 
 #include <algorithm>
@@ -49,11 +49,11 @@ int countState(const std::vector<sessions::Message>& ms, std::size_t from, const
     return n;
 }
 
-// LIB-3 AC-35: a preset (the Lissajous example: it plots and waits for the
+// A preset (the Lissajous example: it plots and waits for the
 // program to end) runs in parts:
 // busy over several calls, the display and the paper updated during it,
 // every call within the allowance of a call at full speed.
-TEST(lib3_ac35_preset_in_parts_busy_display_and_paper_update) {
+TEST(preset_in_parts_busy_display_and_paper_update) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
@@ -74,7 +74,7 @@ TEST(lib3_ac35_preset_in_parts_busy_display_and_paper_update) {
         r.displayMessages = countState(f.messages, from, sessions::kDisplayTopic);
         r.controlMessages = countState(f.messages, from, calcu::control::kControlStateTopic);
         r.wallMs = std::chrono::duration<double, std::milli>(f.now - before).count();
-        // The CE-150's paper in the session (LIB-8): its marks so far.
+        // The CE-150's paper in the session: its marks so far.
         r.plotRevision = 0;
         for (const auto& [owner, paper] : f.part().paperPart().papers())
             if (owner == "CE-150") r.plotRevision = sharp::rawPlotPoints(*paper).size();
@@ -94,19 +94,19 @@ TEST(lib3_ac35_preset_in_parts_busy_display_and_paper_update) {
         if (!firstRevision) firstRevision = r.plotRevision + 1;
         lastRevisionWhileBusy = r.plotRevision;
     }
-    std::printf("  AC-35: %zu calls, %ld busy, %d display and %d control-state messages while busy, worst call %.1f ms\n",
+    std::printf("  preset in parts: %zu calls, %ld busy, %d display and %d control-state messages while busy, worst call %.1f ms\n",
                 calls.size(), static_cast<long>(busyCalls), displays, controls, worstMs);
     CHECK(busyCalls > 10);
     CHECK(displays > 5);       // the display kept updating
     CHECK(controls >= 1);      // the armed machine (the CE-150 attached) was shown during it
     CHECK(lastRevisionWhileBusy + 1 > firstRevision);   // the paper grew while it ran
-    CHECK(worstMs <= 14.0 + 3.0);   // LIB-17 AC-5's 14 ms, plus the slice that crosses it
+    CHECK(worstMs <= 14.0 + 3.0);   // a call's allowance at full speed (14 ms), plus the slice that crosses it
     CHECK(!f.busy());
 }
 
-// LIB-3 AC-37: the buzzer through the audio sink at regular speed, nothing
+// The buzzer through the audio sink at regular speed, nothing
 // while the display is held for full speed or an operation runs.
-TEST(lib3_ac37_buzzer_heard_at_regular_speed_only) {
+TEST(buzzer_heard_at_regular_speed_only) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     f.services.offered.insert(sessions::HostService::AudioSink);
@@ -157,25 +157,24 @@ TEST(lib3_ac37_buzzer_heard_at_regular_speed_only) {
     CHECK(duringOp == 0);
 }
 
-// LIB-3 AC-38: everything 0.8.1's callbacks announced
+// Everything 0.8.1's callbacks announced
 // (Shared/MachineSession.hpp:69-93, Shared/AppSession.hpp:62-84) arrives
-// as messages a test frontend keeps, under the owners' names (re-pointed
-// in M-49: LIB-4's `control-state`, LIB-7's `media`, LIB-10's `run-state`,
-// LIB-3's `notices`, `log` and `busy`, LIB-12's `roms-missing`, LIB-2's
-// serial links; the product's own `c1600.lamps`).
-TEST(lib3_ac38_mirror_holds_every_callback) {
+// as messages a test frontend keeps, under the owners' names: the
+// library's `control-state`, `media`, `run-state`, `notices`, `log`,
+// `busy`, `roms-missing` and serial links; the product's own `c1600.lamps`.
+TEST(mirror_holds_every_callback) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
 
-    // romMissing -> LIB-12's roms-missing topic; the start is refused.
+    // romMissing -> the roms-missing topic; the start is refused.
     {
-        SessionFixture f("calcu-session-ac38-missing");
+        SessionFixture f("calcu-session-mirror-missing");
         fs::remove(fs::path(f.paths->bundledResourcesDir()) / "PC1600-P2-B6-new.bin");
         f.open();
         const sessions::ReplyMessage r = f.run(c::kStart);
         CHECK(!r.done);
         const auto* m = f.state<calcu::startup::RomsMissingState>(calcu::startup::kRomsMissingTopic);
         CHECK(m && !m->missing.files.empty());
-        // LIB-18's start builds nothing: its reason names the file (M-46).
+        // The start builds nothing: its reason names the file.
         CHECK(r.reason.find("PC1600-P2-B6-new.bin") != std::string::npos);
         CHECK(!f.part().hasLiveMachine());
     }
@@ -197,8 +196,8 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     }
 
     // machineReplaced, modelSwitched -> the control state's model and a new
-    // machine (LIB-4, LIB-18); machineAboutToChange -> the library's run
-    // state (LIB-10, M-45: the debugger is a part).
+    // machine; machineAboutToChange -> the library's run state (the debugger
+    // is a part).
     const auto generation = f.session().machineSession().generation();
     CHECK(f.model("PC-1600"));
     const auto* after = f.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
@@ -208,7 +207,7 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     CHECK(run && !run->paused);
 
     // runDebuggerSlice -> the run control is the gate of every advance: a
-    // pause stops emulated time, a resume lets it go on (LIB-10 AC-40).
+    // pause stops emulated time, a resume lets it go on.
     CHECK(f.ok(calcu::debugger::kPauseCommand, Value::object({{"level", "cpu"}})));
     const auto ticks = f.part().machine()->tickCount();
     f.runFor(0.5);
@@ -218,7 +217,7 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     CHECK(f.part().machine()->tickCount() > ticks);
 
     // presetArmed -> display and control state during the operation;
-    // presetLog -> log; moduleChanged -> the topic `media` (LIB-7, M-47).
+    // presetLog -> log; moduleChanged -> the topic `media`.
     mark = f.messages.size();
     const fs::path modules = f.root / "modules.pc1600";
     {
@@ -243,8 +242,8 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
         CHECK(p && p->plugged);
     }
 
-    // attachFailed -> the refusal of `attach` (LIB-18 AC-12): the CE-158
-    // refused beside the CE-1600P (ledger 1600-22).
+    // attachFailed -> the refusal of `attach`: the CE-158 refused beside the
+    // CE-1600P.
     const sessions::ReplyMessage ce158 = f.run(
         calcu::startup::kAttachCommand, Value::object({{"place", "interface"}, {"peripheral", "CE-158"}}));
     CHECK(!ce158.done && ce158.reason.find("cannot be used together") != std::string::npos);
@@ -252,9 +251,9 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     (void)f.notices();
     CHECK(!f.choose("slot-1", "No such module").done);
 
-    // tapesChanged -> the topic `media`; the tape status -> c1600.lamps (M-49).
+    // tapesChanged -> the topic `media`; the tape status -> c1600.lamps.
     CHECK(f.part().tapeInterfaceAttached());
-    CHECK(f.run(calcu::media::kStartNewCommand, Value::object({{"place", "cassette"}, {"template", f.entry("cassette", "Empty")}, {"name", "ac38"}})).done);
+    CHECK(f.run(calcu::media::kStartNewCommand, Value::object({{"place", "cassette"}, {"template", f.entry("cassette", "Empty")}, {"name", "mirror"}})).done);
     f.call();
     CHECK(f.state<cu1600::LampsPayload>(t::kLamps)->tape.mode == TapeDeck::Mode::Record);
 
@@ -264,7 +263,7 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     f.call();
     CHECK(f.state<cu1600::SerialLinksPayload>(t::kSerialLinks)->moves == moves + 1);
 
-    // hostDirectories -> the place host-drive available or not (LIB-4 AC-18).
+    // hostDirectories -> the place host-drive available or not.
     const calcu::machine::PlacePath hostDrive{{calcu::machine::PlaceName{"host-drive"}}};
     auto hostDriveAvailable = [&](SessionFixture& s) {
         const auto* cs = s.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
@@ -272,15 +271,15 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
         return p && p->available.now;
     };
     CHECK(hostDriveAvailable(f));
-    SessionFixture web("calcu-session-ac38-web");
+    SessionFixture web("calcu-session-mirror-web");
     web.hostDirectories = false;
     CHECK(web.start("PC-1600"));
     CHECK(!hostDriveAvailable(web));
 }
 
 // Reset, Cold boot and a model switch stop what runs; keys pressed while an
-// operation runs are dropped (ledger 1600-9; LIB-18 AC-16).
-TEST(ledger_1600_9_keys_dropped_and_reset_stops_an_operation) {
+// operation runs are dropped.
+TEST(keys_dropped_and_reset_stops_an_operation) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -289,7 +288,7 @@ TEST(ledger_1600_9_keys_dropped_and_reset_stops_an_operation) {
     f.call();
     CHECK(f.busy());
     f.paste("PRINT 1");
-    CHECK(f.engine().idle());   // dropped (LIB-5 AC-36)
+    CHECK(f.engine().idle());   // dropped
     const sessions::ReplyMessage reset = f.run(calcu::startup::kColdBootCommand);
     CHECK(reset.done);
     const auto stopped = f.takeReply(preset);

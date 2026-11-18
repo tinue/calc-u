@@ -1,7 +1,6 @@
-// The exit check of M-28 (LIB-11 design §6, T14; D-1): `calcu` drives the
-// Sharp machine of the default start, the PC-1500A, headless through the
-// library's app session (the PC-1600 follows with LIB-18's model switch;
-// the product ACs of LIB-11, AC-18 to AC-20, are tested in M-51).
+// `calcu` drives the Sharp machine of the default start, the PC-1500A,
+// headless through the library's app session (the PC-1600 follows with the
+// model switch; the product commands are tested in tests/harness/).
 #include "../app/HarnessProduct.hpp"
 #include "../app/Settings.hpp"
 #include "parts/LibraryParts.hpp"
@@ -18,11 +17,11 @@
 
 using namespace calcu::harness;
 
-// LIB-6 AC-34 (design §10.6 P12): a bundled preset, the harness `wait`
+// A bundled preset, the harness `wait`
 // without a duration, `expect` and `screenshot` on a PC-1600.
-TEST(lib6_ac34_preset_wait_expect_screenshot_on_pc1600) {
+TEST(preset_wait_expect_screenshot_on_pc1600) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-new.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::testing::TempFolder out("calcu1600-ac34");
+    calcu::testing::TempFolder out("calcu1600-preset-wait");
     auto product = cu1600::makeHarnessProduct();
     RunOptions o;
     o.outputFolder = out.str();
@@ -40,8 +39,8 @@ TEST(lib6_ac34_preset_wait_expect_screenshot_on_pc1600) {
     server->finish();
 }
 
-// LIB-18 design P16-6: the harness entry builds with SharpProductMachines
-// (the built-in default of each model, LIB-18 AC-26; the bounds of EC-7).
+// The harness entry builds with SharpProductMachines (the built-in default
+// of each model).
 TEST(harness_starts_with_the_product_machines) {
     std::string error;
     auto run = RunSetup::make({}, cu1600::settingsDecl(), &error);
@@ -87,8 +86,7 @@ TEST(harness_drives_a_sharp_machine) {
     server->finish();
 }
 
-// LIB-18 design P16 (the PC-1600 of the M-28 exit check, LIB-11 D-1): the
-// harness switches to the PC-1600 with LIB-18's `model`, and reads its
+// The harness switches to the PC-1600 with `model`, and reads its
 // display with the PC-1600's font.
 TEST(harness_drives_a_pc1600) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-new.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
@@ -121,7 +119,7 @@ TEST(harness_variant_switch_old) {
     if (!server) return;
     auto reply = [&](const std::string& l) { return server->line(l).text; };
     CHECK_EQ(reply("model PC-1600"), std::string("done\n"));
-    CHECK_EQ(reply("variant old"), std::string("done\n"));   // any case (LIB-18 D-16)
+    CHECK_EQ(reply("variant old"), std::string("done\n"));   // any case
     const auto* m = server->host().session().context().machine();
     CHECK(m && m->model().value == "PC-1600" && m->variant() && m->variant()->value == "Old");
     CHECK(reply("display-text").find(">") != std::string::npos);
@@ -129,7 +127,7 @@ TEST(harness_variant_switch_old) {
     server->finish();
 }
 
-// LIB-8 design §10.6, P16-8 (AC-32 with LIB-8 AC-23): the harness's paper
+// The harness's paper
 // commands on the CE-150 of a PC-1500A.
 namespace {
 struct PaperHarness {
@@ -153,7 +151,7 @@ struct PaperHarness {
 };
 } // namespace
 
-TEST(lib8_ac32_harness_paper_marks_of_the_ce150) {
+TEST(harness_paper_marks_of_the_ce150) {
     SKIP_UNLESS(std::filesystem::exists("roms/CE-150.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     PaperHarness h;
     CHECK(h.server != nullptr);
@@ -167,7 +165,7 @@ TEST(lib8_ac32_harness_paper_marks_of_the_ce150) {
     h.server->finish();
 }
 
-TEST(lib8_ac32_harness_cut_paper_and_png) {
+TEST(harness_cut_paper_and_png) {
     SKIP_UNLESS(std::filesystem::exists("roms/CE-150.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder t("calcu-1600-paper-png");
     PaperHarness h;
@@ -182,9 +180,9 @@ TEST(lib8_ac32_harness_cut_paper_and_png) {
     h.server->finish();
 }
 
-// LIB-10 design §10.10, D16-6 and D16-3 (AC-40, AC-52): the harness's run
+// The harness's run
 // control and memory commands on the Sharp targets.
-TEST(lib10_ac40_harness_pause_step_resume) {
+TEST(harness_pause_step_resume) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-new.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     PaperHarness h;
     CHECK(h.server != nullptr);
@@ -202,7 +200,7 @@ TEST(lib10_ac40_harness_pause_step_resume) {
     h.server->finish();
 }
 
-TEST(lib10_ac40_harness_breakpoint_and_watch) {
+TEST(harness_breakpoint_and_watch) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     PaperHarness h;
     CHECK(h.server != nullptr);
@@ -229,7 +227,7 @@ TEST(lib10_ac40_harness_breakpoint_and_watch) {
     h.server->finish();
 }
 
-TEST(lib10_ac52_harness_peek_bank_and_vbank) {
+TEST(harness_peek_bank_and_vbank) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-new.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     PaperHarness h;
     CHECK(h.server != nullptr);
@@ -243,7 +241,7 @@ TEST(lib10_ac52_harness_peek_bank_and_vbank) {
     h.server->finish();
 }
 
-// ---- C1600-2 AC-21 (design §3.7, T9): the loaders under `c1600` ----
+// ---- The loaders under `c1600` ----
 
 namespace {
 
@@ -262,7 +260,7 @@ std::string scratch(const char* name, const std::string& bytes) {
 
 } // namespace
 
-TEST(c1600_2_ac21_listed_under_c1600) {
+TEST(listed_under_c1600) {
     CommandRegistry r;
     auto product = cu1600::makeHarnessProduct();
     product->addCommands(r);
@@ -273,7 +271,7 @@ TEST(c1600_2_ac21_listed_under_c1600) {
     CHECK(usage);   // --help lists them
 }
 
-TEST(c1600_2_ac21_file_kind) {
+TEST(loader_server_file_kind) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     std::unique_ptr<HarnessProduct> product;
     auto server = loaderServer(product);
@@ -286,7 +284,7 @@ TEST(c1600_2_ac21_file_kind) {
     std::string ce158("\x01\x42" "COM", 5);
     ce158 += std::string(16, '\0');
     ce158 += std::string("\x7C\x01\x00\x01\x7C\x01\x9A\x9A", 8);
-    const std::string code = scratch("c1600_2_code.bin", ce158);
+    const std::string code = scratch("loader_code.bin", ce158);
     const std::string k = server->line("c1600 file-kind " + code).text;
     CHECK(k.find("kind: code-lh5801\n") != std::string::npos && k.find("load: &7C01\n") != std::string::npos &&
           k.find("start: &7C01\n") != std::string::npos);
@@ -294,7 +292,7 @@ TEST(c1600_2_ac21_file_kind) {
     server->finish();
 }
 
-TEST(c1600_2_ac21_load_basic_with_n) {
+TEST(load_basic_with_n) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     std::unique_ptr<HarnessProduct> product;
     auto server = loaderServer(product);
@@ -308,7 +306,7 @@ TEST(c1600_2_ac21_load_basic_with_n) {
     server->finish();
 }
 
-TEST(c1600_2_ac21_type_basic_lines_not_stored) {
+TEST(type_basic_lines_not_stored) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     std::unique_ptr<HarnessProduct> product;
     auto server = loaderServer(product);
@@ -316,22 +314,22 @@ TEST(c1600_2_ac21_type_basic_lines_not_stored) {
     server->line("key cl");
     server->line("type NEW0");
     server->line("wait 1s");
-    const std::string ok = scratch("c1600_2_ok.bas", "10 A=1\n20 END\n");
+    const std::string ok = scratch("loader_ok.bas", "10 A=1\n20 END\n");
     CHECK_EQ(server->line("c1600 type-basic " + ok).text, std::string("done\n"));
-    const std::string bad = scratch("c1600_2_bad.bas", "30 B=2\nB=3\n");
+    const std::string bad = scratch("loader_bad.bas", "30 B=2\nB=3\n");
     const std::string r = server->line("c1600 type-basic " + bad).text;
     CHECK(r.rfind("refused: ", 0) == 0 && r.find("1 program line(s) not stored") != std::string::npos &&
           r.find("\"B=3\"") != std::string::npos);
     server->finish();
 }
 
-TEST(c1600_2_ac21_load_code_options_and_run) {
+TEST(load_code_options_and_run) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-new.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     std::unique_ptr<HarnessProduct> product;
     auto server = loaderServer(product);
     if (!server) return;
     CHECK_EQ(server->line("model PC-1600").text, std::string("done\n"));
-    const std::string raw = scratch("c1600_2_raw.bin", std::string("\xC9\xC9\xC9\xC9", 4));
+    const std::string raw = scratch("loader_raw.bin", std::string("\xC9\xC9\xC9\xC9", 4));
     CHECK(server->line("c1600 load-code " + raw).text.find("needs an address") != std::string::npos);
     const std::string r = server->line("c1600 load-code " + raw + " address=C100 length=2").text;
     CHECK(r.find("range: &C100-&C101\n") != std::string::npos && r.find("area: S0\n") != std::string::npos &&
@@ -341,7 +339,7 @@ TEST(c1600_2_ac21_load_code_options_and_run) {
     CHECK(server->line("c1600 load-code " + raw + " address=&F800").text.find("warning: ") != std::string::npos);
     CHECK(server->line("c1600 load-code " + raw + " cpu=6502").text.rfind("refused: ", 0) == 0);
     // `run` with a header that names an address to start at.
-    const std::string hdr = scratch("c1600_2_hdr.bin",
+    const std::string hdr = scratch("loader_hdr.bin",
                                     std::string("\xFF\x10\x00\x00\x10\x01\x00\x00\x00\xC1\x00\x00\xC1\x00\x00\x0F\xC9", 17));
     const std::string run = server->line("c1600 load-code " + hdr + " run").text;
     CHECK(run.find("started: yes\n") != std::string::npos);
@@ -349,9 +347,9 @@ TEST(c1600_2_ac21_load_code_options_and_run) {
     server->finish();
 }
 
-// ---- LIB-13 AC-18 (Part D, T16-2): `open` in the harness loads at once ----
+// ---- `open` in the harness loads at once ----
 
-TEST(lib13_ac18_harness_open_loads_first_wav_file) {
+TEST(harness_open_loads_first_wav_file) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     std::unique_ptr<HarnessProduct> product;
     auto server = loaderServer(product);
@@ -364,7 +362,7 @@ TEST(lib13_ac18_harness_open_loads_first_wav_file) {
     server->finish();
 }
 
-TEST(lib13_ac18_harness_open_refuses_headerless) {
+TEST(harness_open_refuses_headerless) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     std::unique_ptr<HarnessProduct> product;
     auto server = loaderServer(product);
@@ -372,16 +370,16 @@ TEST(lib13_ac18_harness_open_refuses_headerless) {
     static const char kBlock[] = "\x21\x00\x80\x06\x10\x7E\xFE\x20\x28\x01\x23\x10\xF8\xCD\x00\x10\xC9";
     std::string code;
     for (int i = 0; i < 8; i++) code += std::string(kBlock, 17);
-    const std::string bin = scratch("lib13_headerless.bin", code);
+    const std::string bin = scratch("open_headerless.bin", code);
     const std::string r = server->line("open " + bin).text;
-    CHECK(r.rfind("refused: lib13_headerless.bin: ", 0) == 0 && r.find("needs an address") != std::string::npos);
-    // `.rom` is no machine-code name (AC-17).
-    const std::string rom = scratch("lib13_headerless.rom", code);
-    CHECK_EQ(server->line("open " + rom).text, std::string("refused: Calc-U-1600 cannot open lib13_headerless.rom.\n"));
+    CHECK(r.rfind("refused: open_headerless.bin: ", 0) == 0 && r.find("needs an address") != std::string::npos);
+    // `.rom` is no machine-code name.
+    const std::string rom = scratch("open_headerless.rom", code);
+    CHECK_EQ(server->line("open " + rom).text, std::string("refused: Calc-U-1600 cannot open open_headerless.rom.\n"));
     server->finish();
 }
 
-TEST(lib13_ac18_harness_open_preset_bas_and_headered_bin) {
+TEST(harness_open_preset_bas_and_headered_bin) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     std::unique_ptr<HarnessProduct> product;
     auto server = loaderServer(product);
@@ -394,16 +392,16 @@ TEST(lib13_ac18_harness_open_preset_bas_and_headered_bin) {
     std::string ce158("\x01\x42" "COM", 5);
     ce158 += std::string(16, '\0');
     ce158 += std::string("\x7C\x01\x00\x01\x7C\x01\x9A\x9A", 8);
-    const std::string code = scratch("lib13_code.bin", ce158);
-    CHECK_EQ(server->line("open " + code).text, std::string("done 1\nfile-kind lib13_code.bin machine-code-program\n"));
+    const std::string code = scratch("open_code.bin", ce158);
+    CHECK_EQ(server->line("open " + code).text, std::string("done 1\nfile-kind open_code.bin machine-code-program\n"));
     CHECK_EQ(server->line("open examples/startup/default-pc1500a.pc1500a").text,
              std::string("done 1\npreset default-pc1500a.pc1500a\n"));
     server->finish();
 }
 
-// LIB-4 1600 T16-7 (AC-9 for this product): `state control-state` in the
+// `state control-state` in the
 // harness has the paper panel owned by the plotter and the product entries.
-TEST(lib4_harness_state_control_state_has_paper_panel_and_product_entries) {
+TEST(harness_state_control_state_has_paper_panel_and_product_entries) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     auto product = cu1600::makeHarnessProduct();
     std::string error;

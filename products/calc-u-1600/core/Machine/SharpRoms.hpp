@@ -10,24 +10,22 @@
 #include "machine/Catalogue.hpp"
 #include "roms/Lookup.hpp"
 
-// Calc-U-1600's ROMs through the library's one lookup (LIB-12; design §2,
-// §4). A frontend or tool makes the Bundle of its packaging (a folder:
+// Calc-U-1600's ROMs through the library's one lookup. A frontend or tool makes the Bundle of its packaging (a folder:
 // the bundled resources, /bundle on the Web, roms/ for the tools and tests)
 // and the lookup runs once at its start; on success every machine and
 // every peripheral is built and attached from the RomSet and no ROM file is
-// read again (AC-6); otherwise no machine starts and describe() of the
-// result is the message (AC-5, AC-13).
+// read again; otherwise no machine starts and describe() of the
+// result is the message.
 //
-// In the core, not in app/ as the design has it: the core's scan of module
+// In the core, not in app/: the core's scan of module
 // definition folders (Connector/MemoryCardCatalog.hpp, used by
 // SharpCatalogue's addModuleDefinitions) passes over the files of the full
-// set (isFullSetFile), so the full set lives beside it (LIB-12's Part E
-// simplification E-8).
+// set (isFullSetFile), so the full set lives beside it.
 
 namespace sharp {
 
-/// The full set (AC-12): every ROM entry of sharpCatalogue() but the host
-/// drive's (roms.md Q-1), and the CE-502B's module definition (AC-14).
+/// The full set: every ROM entry of sharpCatalogue() but the host
+/// drive's, and the CE-502B's module definition.
 const calcu::roms::FullSet& fullRomSet();
 
 /// The lookup over `bundle`, with SharpRomReader.
@@ -47,12 +45,12 @@ struct RomSetModule {
 std::vector<RomSetModule> romSetModules(const calcu::roms::RomSet& roms);
 /// The module of `moduleName` among them, or std::nullopt.
 std::optional<RomSetModule> romSetModule(const calcu::roms::RomSet& roms, const std::string& moduleName);
-/// Adds the set's module definitions to `catalogue` (LIB-1 AC-3); returns
+/// Adds the set's module definitions to `catalogue`; returns
 /// how many it added.
 int addModuleDefinitions(calcu::machine::Catalogue& catalogue, const calcu::roms::RomSet& roms);
 
 /// The host drive's own ROM, Calc-U-1600's firmware: always bundled, not
-/// in the full set and not looked up (roms.md Q-1; design D-6). Read from
+/// in the full set and not looked up. Read from
 /// the first of `folders` that has it; std::nullopt when none has. The one
 /// ROM file read outside the lookup (CalcU1600NoOwnRomLookup lists it).
 std::optional<std::vector<std::uint8_t>> readHostDriveRom(const std::vector<std::string>& folders);

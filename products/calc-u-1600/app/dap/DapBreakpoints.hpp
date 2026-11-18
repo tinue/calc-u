@@ -19,14 +19,13 @@ namespace sharp {
 class SharpDebugTarget;
 }
 
-// ── The DAP's breakpoints (C1600-3 design §3.7, AC-14; LIB-10 design §10.3,
-// D-15; built in M-45 from core/Debug/BreakpointTable) ─────────────────────
+// ── The DAP's breakpoints ─────────────────────────────────────────────────
 //
 // Everything the DAP client sets -- source-line, instruction, function
 // (symbol) and data breakpoints, each with an optional condition, hit
 // condition and (not data) log message -- as breakpoints and watches of the
-// library's table (LIB-10 AC-10, AC-11) with the setter `dap` (AC-47), the
-// qualifier of their binding, and a HitTest (AC-12) that decides here
+// library's table with the setter `dap`, the
+// qualifier of their binding, and a HitTest that decides here
 // whether a hit really pauses: a condition that is false, a hit condition
 // not met, a log message (its line is written, no pause) or a bank that is
 // not switched in (the library passes it, qualifierMatches) go on; a
@@ -174,7 +173,7 @@ private:
     std::vector<BreakpointStatus> resolveSource(Source& s, const debug::SourceMap& map);
     std::vector<BreakpointStatus> resolveFunctions(const debug::SourceMap& map);
     void forgetStatus(int id);
-    /// Whether a hit pauses (AC-12, AC-14): the condition, the hit count,
+    /// Whether a hit pauses: the condition, the hit count,
     /// the log message.
     bool passes(const BreakpointSpec& spec, const Compiled& compiled, int& hits, const sharp::SharpDebugTarget& target,
                 const SymbolLookup& symbols);

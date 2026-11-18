@@ -86,7 +86,7 @@ std::optional<std::vector<std::uint8_t>> image(const std::vector<std::uint8_t>& 
 
 BasicLoaded loadBasic(LoaderMemory& mem, const std::vector<std::uint8_t>& image) {
     BasicLoaded out;
-    // AC-5: the PC-1500's words on a PC-1500 and in MODE 1, the PC-1600's in MODE 0.
+    // The PC-1500's words on a PC-1500 and in MODE 1, the PC-1600's in MODE 0.
     const bool pc1600 = mem.pc1600();
     const basic::TransferModel words =
         pc1600 && !mode1(mem) ? basic::TransferModel::PC1600 : basic::TransferModel::PC1500;
@@ -204,7 +204,7 @@ std::variant<CodeLoaded, std::string> loadCode(LoaderMemory& mem, const std::vec
         out.area = machinecode::slotName(lp.slot);
         if (lp.slot == machinecode::Slot::S0) {
             const std::string work = machinecode::pc1600WorkAreaWarning(lp.busAddr, lp.len, lp.cpu);
-            if (!work.empty()) out.warnings.push_back(work);   // AC-12
+            if (!work.empty()) out.warnings.push_back(work);
         }
     }
     out.summary = "Loaded " + std::to_string(lp.len) + " bytes at " + hexAddress(lp.addr) + "–" +

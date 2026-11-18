@@ -12,15 +12,14 @@
 #include "sessions/Payload.hpp"
 #include "sessions/SessionPart.hpp"
 
-// The DAP server (C1600-3 design §3.3; AC-1 to AC-3, AC-8 to AC-10, AC-18,
-// AC-21; EC-1, EC-5): Calc-U-1600's app layer, in the session of every
+// The DAP server: Calc-U-1600's app layer, in the session of every
 // native host (SharpAppPart; the harness's parts), never in the Web's. It
 // needs from its host only a socket on this computer (DapTransport), the
 // settings and the app session; one client at a time, one DapSession per
 // client. Single-threaded, on the session's thread.
 //
 // Names (SharpTopics.hpp has them too):
-//   c1600.dap             state topic: {status, port, client} (AC-21)
+//   c1600.dap             state topic: {status, port, client}
 //   c1600.dap-disconnect  command: ends the DAP session (Settings ▸ Debugger)
 //   c1600.dap-port        command: {port} for this run (--dap), no setting changed
 
@@ -36,7 +35,7 @@ inline constexpr const char* kSecondClient =
     "Calc-U-1600 already has a debugger attached. Stop that debug session (Shift+F5), or use Settings > Debugger > "
     "Disconnect in the app.\n";
 
-// The topic's payload (AC-21).
+// The topic's payload.
 struct DapStatus final : calcu::sessions::PayloadOf<DapStatus> {
     static constexpr calcu::sessions::PayloadKind kKind{"c1600.dap"};
     std::string status;   // "Off", "Listening on 127.0.0.1:<port>", "Client connected on …", "Port <port> not available: <why>"
@@ -59,10 +58,10 @@ public:
     void setTransport(DapTransport*);
     // What the host's socket got, in order, on the session's thread.
     void take(DapInput);
-    // `--dap <port>` for this run; the refusal (EC-1): the server is then off
+    // `--dap <port>` for this run; the refusal: the server is then off
     // for the run.
     std::optional<std::string> setRunPort(long port);
-    // The machine should run now (the harness's serve loop, AC-22).
+    // The machine should run now (the harness's serve loop).
     bool wantsTime() const;
     const DapStatus& status() const { return status_; }
     bool hasClient() const { return client_; }
@@ -79,7 +78,7 @@ private:
     void publish();
     void drain();
     // The client is gone or is sent away: the session ends once its request
-    // is finished (EC-5).
+    // is finished.
     void endSession();
     void finishEnd();
 
@@ -98,10 +97,10 @@ private:
     DapStatus status_;
 
     DapReader reader_;
-    std::deque<Value> held_;   // AC-8
+    std::deque<Value> held_;   // the messages that wait for an operation to end
     bool draining_ = false;
     std::unique_ptr<DapSession> session_;
-    std::unique_ptr<DapSession> retired_;   // a gone client's, while its request is finished (EC-5)
+    std::unique_ptr<DapSession> retired_;   // a gone client's, while its request is finished
     bool endPending_ = false;
 };
 

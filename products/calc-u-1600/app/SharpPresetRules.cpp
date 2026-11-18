@@ -34,18 +34,18 @@ std::vector<std::uint8_t> screenPng(const calcu::machine::DisplayOutput& o, bool
 bool SharpModelRules::pc1600() const { return m_model == sharp::kPC1600; }
 
 calcu::presets::IdleRule SharpModelRules::idle() const {
-    // AC-45, AC-53: key readiness without a break for 20 frames, asked every
+    // Key readiness without a break for 20 frames, asked every
     // frame (a frame: 1/60 s of emulated time, as the cores count it).
     calcu::presets::IdleRule r;
-    // Key readiness as C1600-1 AC-21 built it (readyNow unset). On the
+    // Key readiness as the machine reports it (readyNow unset). On the
     // PC-1600 a frame in which the key matrix is read counts; the Z-80's
     // BASIC reads it for BREAK while a program runs, so a BASIC program that
-    // does not wait for the user counts as idle there too (M-46 finding,
-    // LIB-6 qa-report): it cannot be told from a program that waits with
+    // does not wait for the user counts as idle there too (found
+    // with the bundled examples): it cannot be told from a program that waits with
     // INKEY$, which must count as idle.
     // While the CE-1600F's motor runs (INIT"X:", SAVE"X:…" write for seconds
-    // and read the keyboard meanwhile) the machine is not idle (M-47: the
-    // disk steps of make_diskworks_media).
+    // and read the keyboard meanwhile) the machine is not idle (the
+    // disk steps of the make_diskworks_media example need it).
     if (pc1600())
         r.readyNow = [](const calcu::machine::Machine& m) {
             if (!m.isKeyReady()) return false;
@@ -59,7 +59,7 @@ calcu::presets::IdleRule SharpModelRules::idle() const {
 }
 
 calcu::sessions::Task<ItemResult> SharpModelRules::afterBuild(calcu::presets::RunContext& run) {
-    // AC-46: a PC-1500 or PC-1500A whose ROM stops at `NEW0? :CHECK` (a
+    // A PC-1500 or PC-1500A whose ROM stops at `NEW0? :CHECK` (a
     // memory change at power-on) gets CL, as a user would press it, at most
     // five times; the PC-1600 presses nothing.
     if (pc1600()) co_return ItemResult{};
@@ -120,7 +120,7 @@ Applies SharpModelRules::applies(std::string_view k) const {
 }
 
 void SharpModelRules::checkHeader(const calcu::presets::LoadPlan& plan, calcu::presets::ReadContext& ctx) const {
-    // AC-47, row 1600-22: the CE-1600P and the CE-158 not together, at the
+    // The CE-1600P and the CE-158 not together, at the
     // line of the later key.
     const calcu::presets::PlaceRequest *printer = nullptr, *interface = nullptr;
     for (const auto& r : plan.places) {

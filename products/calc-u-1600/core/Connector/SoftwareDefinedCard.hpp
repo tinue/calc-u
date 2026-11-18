@@ -113,7 +113,7 @@ public:
 
     /// A module without `battery: true` (CE-151, CE-155) comes back as its
     /// definition builds it: RAM at its power-up fill, ROM as it was
-    /// (C1600-1 AC-6; behaviour change 1600-16). A battery-backed one keeps
+    /// as the real device would. A battery-backed one keeps
     /// its content.
     void powerLoss() override {
         if (m_def.battery) return;
@@ -185,7 +185,7 @@ public:
         return out;
     }
 
-    // C1600-5 AC-13: every region's memory, bank latch and flash decoder,
+    // The machine state: every region's memory, bank latch and flash decoder,
     // and the write-protect switch. A restore counts as a change of the
     // content (contentRevision()), so a module medium sees it.
     void saveState(sharp::StateWriter& w) const override { const_cast<SoftwareDefinedCard*>(this)->stateIo(w); }

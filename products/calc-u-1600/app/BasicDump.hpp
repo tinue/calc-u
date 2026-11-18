@@ -6,12 +6,11 @@
 
 #include "Machine/SharpProductKinds.hpp"
 
-// `c1600 dump-basic` (C1600-5 AC-2, AC-3, EC-4; design §3.1, D-3): the
+// `c1600 dump-basic`: the
 // pointers of BASIC and the bytes of the program area, read through the
 // loader memory kind (the PC-1500's ME0, the PC-1600's Z-80 view). The
-// lines are those of today's `--dump-basic` of the two CLIs (moved here
-// from tools/pc1500_cli.cpp and tools/pc1600_cli.cpp at the pin) without
-// their `---` headings.
+// lines are those the old CLIs' `--dump-basic` printed, without their
+// `---` headings.
 
 namespace cu1600 {
 
@@ -29,9 +28,9 @@ struct BasicRow {
 };
 
 struct BasicDump {
-    std::vector<std::string> lines;   // the reply, in today's form
+    std::vector<std::string> lines;   // the reply
     std::vector<BasicPointer> pointers;
-    std::vector<BasicRow> rows;       // empty when the start does not lie before the end (EC-4)
+    std::vector<BasicRow> rows;       // empty when the start does not lie before the end
 };
 
 BasicDump basicDump(const sharp::LoaderMemory&);

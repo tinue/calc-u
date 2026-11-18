@@ -1,5 +1,5 @@
 #!/bin/sh
-# LIB-15 AC-29 (release prep 4): a release Web dist/ (frontends/web/build.sh
+# A release Web dist/ (frontends/web/build.sh
 # --release: the CMake option CALCU_WEB_TEST_AIDS off) answers none of the
 # test-only commands, so its handle has no `c1600.upload` and no
 # `c1600.display-text` (the Playwright tests use them on the test build).
@@ -24,7 +24,7 @@ WASM="$DIST/wasm/calcu1600-core.wasm"
 grep -aqF "c1600.shell-product" "$WASM" || { echo "FAIL: c1600.shell-product not found in $WASM" >&2; exit 1; }
 found=$(grep -rlaF -e "c1600.upload" -e "c1600.display-text" "$DIST" || true)
 if [ -n "$found" ]; then
-  echo "FAIL: a test-only command in the release dist/ (LIB-15 AC-29):" >&2
+  echo "FAIL: a test-only command in the release dist/:" >&2
   echo "$found" >&2
   exit 1
 fi

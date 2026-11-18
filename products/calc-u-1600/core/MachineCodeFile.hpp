@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-// ── Machine-code files: the one plan (C1600-2 AC-8, AC-9, AC-23) ───────
+// ── Machine-code files: the one plan ───────
 //
 // Recognise the file (CE-158 header, PC-1600 header, or none), plan where
 // the code goes and refuse what cannot load, and work out the advice shown
@@ -80,8 +80,8 @@ struct BasicArea {
 // the LH5803's $0000-$7FFF is the Z-80's $8000-$FFFF (pc1600::lh5803ToZ80).
 enum class Cpu { Z80, LH5803 };
 
-// What the PC-1600 placement rules read from the running machine
-// (docs/background/plans/Loader-Mode-Plan.md) -- see pc1600LoadState().
+// What the PC-1600 placement rules read from the running machine -- see
+// pc1600LoadState().
 // The loaders never change MODE or TITLE; they follow them.
 struct PC1600State {
     bool mode1 = false;                 // BMODE b6: MODE 1 (PC-1500 compatible)
@@ -122,8 +122,7 @@ std::string pc1600WorkAreaWarning(uint32_t busAddr, size_t len, Cpu cpu);
 // Every machine-code load -- Load Machine Code…, a preset's machine-code
 // `program: file:`, the debugger's Build & Load -- plans with planLoad(): the file
 // checks, the CPU, the address and length, the range and (PC-1600) the
-// target. On the PC-1600 the MODE and TITLE decide
-// (docs/background/plans/Loader-Mode-Plan.md): a PC-1600 header means Z-80
+// target. On the PC-1600 the MODE and TITLE decide: a PC-1600 header means Z-80
 // code, a CE-158 header LH5801 code (MODE 1 only), a headerless file the
 // MODE's CPU (MODE 0 Z-80, MODE 1 LH5801) -- unless the caller knows the
 // CPU (the debugger's toolchain). The target follows from the address and
@@ -135,7 +134,7 @@ struct LoadOptions {
     bool hasAddress = false;            // overrides the header's load address (in the CPU's space)
     uint32_t address = 0;
     bool hasLength = false;             // overrides the payload size (at most the payload); also takes a
-                                        // header whose length disagrees with the file (AC-8 row 2)
+                                        // header whose length disagrees with the file
     size_t length = 0;
     bool hasCpu = false;                // PC-1600: the caller knows the CPU (the debugger); else the file / MODE decide
     Cpu cpu = Cpu::Z80;
@@ -171,8 +170,8 @@ struct LoadPlan {
 // `state`: PC-1600 only (see pc1600LoadState()).
 LoadPlan planLoad(const File& file, const LoadOptions& options, const PC1600State& state);
 
-// The one sentence of a refused plan (C1600-2 AC-25, design §3.8): the menu's
-// words of today; the caller puts the file's name (and a preset its line)
+// The one sentence of a refused plan: the menu's
+// words; the caller puts the file's name (and a preset its line)
 // before it. Empty when the plan holds.
 std::string refusal(const LoadPlan& plan, const File& file, const LoadOptions& options);
 

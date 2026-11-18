@@ -90,7 +90,7 @@ void SerialScriptsPart::drain() {
         }
     for (const char* word : {"ce158", "rs232c"}) {
         SerialPort* sp = port(word);
-        if (!sp || (linked_ && linked_(word))) continue;   // a host link takes the bytes (AC-7 link)
+        if (!sp || (linked_ && linked_(word))) continue;   // a host link takes the bytes (`link`)
         Port& p = ports_[word];
         std::uint8_t buf[1024];
         for (std::size_t n; (n = sp->takeSent(buf)) > 0;) {
@@ -115,7 +115,7 @@ void SerialScriptsPart::machineChanged(sessions::SessionContext& c) {
     const std::uint64_t g = c.machineSession().generation();
     if (g == generation_) return;
     generation_ = g;
-    // A new machine: what its ports sent starts afresh (AC-7 report); the
+    // A new machine: what its ports sent starts afresh (`report`); the
     // feeds and capture files stay with the port words.
     for (auto& [word, p] : ports_) {
         p.sent.clear();
@@ -123,7 +123,7 @@ void SerialScriptsPart::machineChanged(sessions::SessionContext& c) {
     }
 }
 
-void SerialScriptsPart::closing(sessions::SessionContext&) { drain(); }   // the capture files complete (AC-7)
+void SerialScriptsPart::closing(sessions::SessionContext&) { drain(); }   // the capture files complete
 
 // ── SliceHook ───────────────────────────────────────────────────────────
 
@@ -142,7 +142,7 @@ void SerialScriptsPart::act(Machine& m, Ticks now, calcu::pacing::WallTime) {
             p.due = now + 1000;   // no port now: try again later, nothing lost
             continue;
         }
-        // One byte in each character time in which the port takes it (AC-7).
+        // One byte in each character time in which the port takes it.
         p.taken += sp->putReceived(std::span<const std::uint8_t>(p.feed.data() + p.taken, 1));
         p.due = now + charTicks(m, *sp);
     }

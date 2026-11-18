@@ -86,7 +86,7 @@ public:
 
     uint16_t pc() const { return P; }
     void     setPC(uint16_t v) { P = v; }
-    /// A call from the current state as SJP makes it (C1600-5 AC-12): P
+    /// A call from the current state as SJP makes it: P
     /// pushed, P = `address`; the routine's RTN comes back here.
     void     callRoutine(uint16_t address) { push16(P); P = address; }
     uint16_t sp() const { return S; }
@@ -195,7 +195,7 @@ public:
     /// checked against `watches` while it is non-null. Not owned.
     void setWatches(WatchSet* watches) { m_watches = watches; }
     /// The value the CPU last wrote to ME1 cell `addr` since it was built,
-    /// or -1 (LIB-10 AC-48, AC-52: the debugger's `me1-written` view of the
+    /// or -1 (the debugger's `me1-written` view of the
     /// cells that read back unreadable). Reading it has no effect.
     int me1Written(uint16_t addr) const { return m_me1Written[addr] > 0xFF ? -1 : m_me1Written[addr]; }
 
@@ -236,7 +236,7 @@ public:
     /// stream at the GUI/tooling layer.
     void setCpuIdTag(uint8_t tag) { m_cpuIdTag = tag; }
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// The machine state (Machine/StateRecords.hpp): the
     /// registers, the timer, the latches and what ME1 was written. The
     /// debugger's own (breakpoints, history, trace) is not the machine's.
     template <class Io>

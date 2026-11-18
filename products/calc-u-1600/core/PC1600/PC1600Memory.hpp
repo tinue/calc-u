@@ -420,7 +420,7 @@ public:
     uint8_t readIO(uint8_t port) override;
     void    writeIO(uint8_t port, uint8_t value) override;
 
-    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// The machine state (Machine/StateRecords.hpp): the
     /// internal RAM, the ports and latches, the piezo sampler, the
     /// keyboard, the LCD controllers, the sub-CPU with its clock and the
     /// UART. The bank selection is PC1600Bank's record, the modules and the

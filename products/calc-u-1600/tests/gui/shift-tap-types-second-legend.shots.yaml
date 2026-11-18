@@ -1,15 +1,15 @@
-# LIB-5 AC-33 (design T16-4; ADR 0032): the host's SHIFT tapped alone,
+# The host's SHIFT tapped alone,
 # pressed and let go within 400 ms, is one press of the machine's SHIFT:
 # the next key types its second legend (SHIFT + 1 is ' on the PC-1600), as
 # the Web's typing.spec.js checks, and only that key. Held longer, or with
 # a key in between, it presses nothing. The key events go to the window as the host's
-# keyboard gives them. A check scenario (CalcU1600Shots.lib5-ac33, Longer);
+# keyboard gives them. A check scenario (CalcU1600Shots.shift-tap-types-second-legend, Longer);
 # format: docs/developer/screenshots/README.md.
-out: ../../build/shots-check/lib5-ac33
+out: ../../build/shots-check/shift-tap-types-second-legend
 window: 1430x1280
 
 shots:
-  - name: lib5-ac33-tap
+  - name: shift-tap
     preset: ../../docs/developer/screenshots/presets/pc1600-ready.pc1600
     steps:
       - key: cl
@@ -25,7 +25,7 @@ shots:
       # One press: the first 1 is ', the second a 1 again.
       - expect-lcd: "'1"
   # Held past 400 ms: no tap, the 1 is a 1.
-  - name: lib5-ac33-held
+  - name: shift-held
     steps:
       - key: cl
       - host-key-down: shift
@@ -41,7 +41,7 @@ shots:
       - expect-lcd: "11"
       - expect-no-lcd: "'"
   # SHIFT used as a modifier (a key in between): no tap after it.
-  - name: lib5-ac33-modifier
+  - name: shift-modifier
     steps:
       - key: cl
       - host-key-down: shift

@@ -11,7 +11,7 @@
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 
-// LIB-10 AC-44 (design §10.10, D16-10): today's debug-target tests on the
+// The debug-target tests on the
 // Sharp machines' machine::Debugging (core/Debug/SharpDebugging) without a
 // session. Target drives it as 0.8.1's DebugTarget was driven -- threads
 // from 1, breakpoints and watches armed while set, a free run of a budget,

@@ -15,7 +15,7 @@ class LoaderMemory;
 // -- exact, but minutes of emulated time for a real program. This path takes
 // the tokenized payload (sharp::loaders::loadBasic reads the file and
 // tokenizes a listing), pokes it straight into the BASIC program area through
-// the loader memory access (C1600-2 AC-14), appends the 0xFF program-end
+// the loader memory access, appends the 0xFF program-end
 // marker, and writes BASPRG_END.
 //
 // It does NOT run NEW0 and never resets the machine: this is LOAD semantics,

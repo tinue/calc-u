@@ -1,14 +1,14 @@
-# LIB-7 AC-16 (Calc-U-1600 AC-45; design §10.6 P8; ADR 0032): a module
+# A module
 # template (CE-1600M) is chosen in slot 1 and saved under a name with Name &
 # Save; afterwards the slot holds that instance, picked from its picker's
 # instances (a step that fails when it is not listed). A check scenario
-# (CalcU1600Shots.lib7-ac16-module-template-saved, Longer); format:
+# (CalcU1600Shots.module-template-saved, Longer); format:
 # docs/developer/screenshots/README.md.
-out: ../../build/shots-check/lib7-ac16
+out: ../../build/shots-check/module-template-saved
 window: 1430x1000
 
 shots:
-  - name: lib7-ac16
+  - name: module-template-saved
     preset: ../../docs/developer/screenshots/presets/pc1600-ready.pc1600
     steps:
       - select: media-picker-slot-1 = CE-1600M
@@ -18,4 +18,4 @@ shots:
       - accept
       - run: 1
       - select: media-picker-slot-1 = My programs
-    capture: { target: control-bar, file: lib7-ac16-saved.png, padding: 4 }
+    capture: { target: control-bar, file: module-template-saved.png, padding: 4 }

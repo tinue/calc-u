@@ -1,5 +1,4 @@
-// Edit > Paste Text and typed text on the Sharp models (LIB-5 AC-30, AC-34,
-// AC-35, AC-37; ported in M-36 from 0.8.1's KeyPaste feeder tests): the keys
+// Edit > Paste Text and typed text on the Sharp models: the keys
 // a character gives by the model's typing profile (app/SharpTyping), the
 // KBII sequences and the latches, and -- ROM-gated -- a paste through the
 // library's typing engine reaching each model's ROM without a lost
@@ -32,7 +31,7 @@ const ModelId kPC1600{sharp::kPC1600};
 
 // What a text types, as 0.8.1's tests wrote steps: "^" for a shift press,
 // "~" before each press of an accent's KBII sequence, "_" for space; a
-// character without a key is left out (as a paste does, AC-12).
+// character without a key is left out (as a paste does).
 std::string typed(const ModelId& m, const std::string& text, const calcu::typing::TypingSupport* s = nullptr) {
     const calcu::typing::TypingProfile* p = cu1600::typingProfile(m);
     std::string out;
@@ -51,13 +50,13 @@ struct Latches final : calcu::typing::TypingSupport {
     std::vector<std::pair<std::string, bool>> latches() const override { return {{"shift", shift}, {"kbii", kbii}}; }
 };
 
-TEST(lib5_ac30_shift_and_skip) {
+TEST(shift_and_skip) {
     // Lowercase + '"' + ':' + '#' need SHIFT; tab and 'é' (on the PC-1500) are left out.
     CHECK_EQ(typed(kPC1500, "aB\"\t:#\xC3\xA9 1"), std::string("shift a | b | shift f2 | shift * | shift f3 | _ | 1 | "));
     CHECK_EQ(typed(kPC1600, "aB\"\t:# 1"), std::string("shift a | b | shift f2 | shift * | shift f3 | _ | 1 | "));
 }
 
-TEST(lib5_ac30_kbii_case_exact) {
+TEST(kbii_case_exact) {
     // é/É: SHIFT+KBII S / KBII S. Ë has no uppercase in the ROM -> ë (W).
     // û only exists as SHIFT+KBII. ß has no key and is left out.
     const std::string text = "\xC3\xA9\xC3\x89\xC3\x8B\xC3\xBB\xC3\x9F";
@@ -85,10 +84,10 @@ TEST(test_pc1500_lacks_digit_row_legends) {
     CHECK_EQ(typed(kPC1600, "["), std::string("shift 2 | "));
 }
 
-// AC-34: what the user has latched shapes (or drops) an accented
+// What the user has latched shapes (or drops) an accented
 // character's sequence; with no typing support it is as with none latched,
-// and "has a key" never depends on the latches (D-14).
-TEST(lib5_ac34_kbii_respects_latches) {
+// and "has a key" never depends on the latches.
+TEST(kbii_respects_latches) {
     Latches l;
     const std::string oe = "\xC3\x96";   // Ö
     CHECK_EQ(typed(kPC1600, oe, &l), std::string("kbii r kbii! | "));
@@ -118,7 +117,7 @@ std::uint16_t peekBE16(SessionFixture& f, std::uint16_t addr) {
 // The motivating example: a listing line pasted verbatim, no ENTER sent;
 // it reaches the console input buffer on commit, so the test taps ENTER
 // itself afterwards and checks the characters made it.
-TEST(lib5_ac34_pc1600_paste_line_no_enter) {
+TEST(pc1600_paste_line_no_enter) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -135,7 +134,7 @@ TEST(lib5_ac34_pc1600_paste_line_no_enter) {
 // Only the first line is pasted, and never entered: in PRO mode nothing is
 // stored (BASPRG_END, F867H big-endian, stays put) until ENTER is tapped by
 // hand, and then exactly that one line.
-TEST(lib5_ac12_pc1600_paste_multiline_types_first_line) {
+TEST(pc1600_paste_multiline_types_first_line) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
@@ -166,7 +165,7 @@ bool memoryContains(SessionFixture& f, const std::string& needle) {
     return false;
 }
 
-TEST(lib5_ac12_pc1500_paste_multiline_types_first_line) {
+TEST(pc1500_paste_multiline_types_first_line) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));

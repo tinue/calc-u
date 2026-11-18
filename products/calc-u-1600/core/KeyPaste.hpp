@@ -4,8 +4,8 @@
 
 // ── KBII sequences and the latches they read ─────────────────────────────
 //
-// Paste Text and the live keys go through the library's typing engine since
-// M-36 (LIB-5; app/SharpTyping): what remains here is the one rule for an
+// Paste Text and the live keys go through the library's typing engine
+// (app/SharpTyping): what remains here is the one rule for an
 // accented character on the PC-1600, which the engine's PC-1600 profile and
 // the tests' PC1600BasicTyper (tests/support/) both play.
 

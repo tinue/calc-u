@@ -1,17 +1,16 @@
-// LIB-8 AC-39 (design §4.1, T12): the plots of the reference runs of
-// 0.8.1 (tests/reference/v0.8.1-examples/*.paper, M-8) turned once into the
-// replies of `paper marks`, which C1600-4 AC-16 (M-46) compares new runs
-// with. CALCU1600_PAPER_REPLIES=1 writes the reply files next to the
+// The plots of the reference runs of 0.8.1
+// (tests/reference/v0.8.1-examples/*.paper) turned once into the replies of
+// `paper marks`, which the example reference test compares new runs with. CALCU1600_PAPER_REPLIES=1 writes the reply files next to the
 // references (`<example>.<plotter>.paper-marks`, one per plotter block); the
 // Frequent case checks that the committed files equal what the converter
 // gives, so a change to the converter is seen.
 //
-// The rule (AC-32, AC-33): a stroke starts at each point with newStroke 1,
+// The rule: a stroke starts at each point with newStroke 1,
 // in the pen's colour (black, blue (0, 0, 255), dark green (0, 128, 0), red
 // (255, 0, 0)); its positions are (printableLeft + x, y) in units of
-// 190/1920 mm, the margin rounded once to four decimals (D-3): 66.9474
+// 190/1920 mm, the margin rounded once to four decimals: 66.9474
 // (CE-150), 101.0526 (CE-1600P). The reach is from the least to the
-// greatest y of the points (AC-4); the files hold no feeds (D-14). A plotter
+// greatest y of the points; the files hold no feeds. A plotter
 // has no text layer, so there is no `.paper-text`.
 #include "TestHarness.hpp"
 #include "paper/Replies.hpp"
@@ -97,7 +96,7 @@ std::string readAll(const fs::path& p) {
 
 } // namespace
 
-TEST(lib8_ac39_sharp_plots_turned_into_paper_replies) {
+TEST(sharp_plots_turned_into_paper_replies) {
     SKIP_UNLESS(fs::is_directory(kDir), "the reference runs are not here");
     const char* env = std::getenv("CALCU1600_PAPER_REPLIES");
     const bool write = env && std::string(env) == "1";
@@ -105,7 +104,7 @@ TEST(lib8_ac39_sharp_plots_turned_into_paper_replies) {
     for (const auto& e : fs::directory_iterator(kDir))
         if (e.path().extension() == ".paper") files.push_back(e.path());
     std::sort(files.begin(), files.end());
-    CHECK_EQ(files.size(), std::size_t(14));   // the 14 examples with a plotter (M-8)
+    CHECK_EQ(files.size(), std::size_t(14));   // the 14 examples with a plotter
     std::set<std::string> expected;
     for (const fs::path& f : files) {
         for (const Block& b : convert(f)) {

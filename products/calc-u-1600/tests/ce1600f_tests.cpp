@@ -404,7 +404,7 @@ size_t countLines(const std::string& s) {
 TEST(test_floppy_file_round_trips_both_sides) {
     const auto image = patternedImage();
     const std::string text = formatFloppyFile("My Disk", image, false, "", "2026-01-01T00:00:00Z");
-    CHECK(text.find("format-version: 2\n") != std::string::npos);   // LIB-7 AC-37: version 2, sides 0 and 1
+    CHECK(text.find("format-version: 2\n") != std::string::npos);   // version 2, sides 0 and 1
     CHECK(text.find("\n  0:\n") != std::string::npos && text.find("\n  1:\n") != std::string::npos);
     FloppyFile f;
     std::string err;

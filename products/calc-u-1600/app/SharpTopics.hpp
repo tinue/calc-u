@@ -9,13 +9,11 @@
 #include "sessions/Messages.hpp"
 #include "sessions/Payload.hpp"
 
-// Calc-U-1600's topics, commands and requests on the library's app session
-// (LIB-3 design §4, §5; spec AC-38). The interim topics went with their
-// owners' steps: `c1600.control-state` is LIB-4's `control-state`, the
-// model and the builds of `c1600.machine` are LIB-4's and LIB-18's (M-49).
-// What stays is the product's own: `c1600.lamps` (the tape counter and the
-// floppy lamp, LIB-7 AC-39, AC-42), `c1600.serial-links` (LIB-2's serial
-// link files). `roms-missing` is LIB-12's topic (LIB-12 design §3.5); its
+// Calc-U-1600's topics, commands and requests on the library's app session.
+// The control state, the model and the builds are the library's topics.
+// What is the product's own: `c1600.lamps` (the tape counter and the
+// floppy lamp), `c1600.serial-links` (the serial
+// link files). `roms-missing` is the ROM lookup's topic; its
 // payload lives here until a second product sends it.
 
 namespace cu1600 {
@@ -27,15 +25,15 @@ inline const calcu::sessions::TopicName kSerialLinks{"c1600.serial-links"};
 
 // The commands. Those that start an operation are marked (op). Arguments in
 // braces. The start, the model and variant switches, attach, detach, Reset
-// and Cold boot are LIB-18's (`start`, `model`, `variant`, `attach`,
-// `detach`, `reset`, `cold-boot`; startup/StartupPart.hpp), presets LIB-6's
+// and Cold boot are the library's machine control's (`start`, `model`, `variant`, `attach`,
+// `detach`, `reset`, `cold-boot`; startup/StartupPart.hpp), presets the preset loader's
 // (`load-preset`, `preset-list`; presets/PresetsPart.hpp). These need the
-// product's data (LIB-18 D-22), each one plug change:
+// product's data, each one plug change:
 namespace commands {
-inline const calcu::sessions::CommandName& kStart = calcu::sessions::kStartCommand;                       // (op) {model?, preset?} LIB-15 N3
+inline const calcu::sessions::CommandName& kStart = calcu::sessions::kStartCommand;                       // (op) {model?, preset?}
 inline const calcu::sessions::CommandName kCE1600PVariant{"c1600.ce1600p-variant"};      // (op) {version: old|new}
 inline const calcu::sessions::CommandName kMountHostDrive{"c1600.mount-host-drive"};      // (op) {dir}
-// C1600-2 (app/SharpLoaderPart, design §3.7): stateless, each carries the
+// The loaders (app/SharpLoaderPart): stateless, each carries the
 // file's bytes; `file` picks a file of a cassette WAV (from 1; the first
 // without it); `address` is the text the user typed (C000, &C000, $C000,
 // 0xC000); `cpu` "lh5803" or "z80" (headerless only).
@@ -49,7 +47,7 @@ inline const calcu::sessions::RequestName kFileKind{"c1600.file-kind"};         
 inline const calcu::sessions::RequestName kCodePlan{"c1600.code-plan"};          // {bytes, file?, address?, length?, cpu?} -> CodePlanReply
 } // namespace requests
 
-// C1600-2 AC-1 to AC-3: what a file is.
+// What a file is.
 struct FileKindReply final : calcu::sessions::PayloadOf<FileKindReply> {
     static constexpr calcu::sessions::PayloadKind kKind{"c1600.file-kind"};
     std::string kind;          // empty, basic-listing, basic-pc1500, basic-pc1600, code-lh5801, code-z80, headerless, other
@@ -63,12 +61,12 @@ struct FileKindReply final : calcu::sessions::PayloadOf<FileKindReply> {
     std::uint64_t length = 0;
     std::uint32_t start = 0;   // 0: none
     std::vector<std::string> tapeFiles;
-    std::vector<std::string> tapeKinds;   // the kind of each, as `kind` (LIB-13 AC-18)
+    std::vector<std::string> tapeKinds;   // the kind of each, as `kind`
     bool same(const FileKindReply& o) const { return toValue() == o.toValue(); }
     calcu::sessions::Value toValue() const override;
 };
 
-// C1600-2 AC-8, AC-18: the plan, for the address dialog.
+// The plan, for the address dialog.
 struct CodePlanReply final : calcu::sessions::PayloadOf<CodePlanReply> {
     static constexpr calcu::sessions::PayloadKind kKind{"c1600.code-plan"};
     std::string refusal;       // empty: the plan holds
@@ -83,7 +81,7 @@ struct CodePlanReply final : calcu::sessions::PayloadOf<CodePlanReply> {
     calcu::sessions::Value toValue() const override;
 };
 
-// C1600-2 AC-11, AC-12, AC-13: what was loaded and how to keep and start it.
+// What was loaded and how to keep and start it.
 struct CodeLoadedReply final : calcu::sessions::PayloadOf<CodeLoadedReply> {
     static constexpr calcu::sessions::PayloadKind kKind{"c1600.code-loaded"};
     std::string summary;
@@ -97,8 +95,8 @@ struct CodeLoadedReply final : calcu::sessions::PayloadOf<CodeLoadedReply> {
     calcu::sessions::Value toValue() const override;
 };
 
-// The tape counter (0.8.1's tapeStatus) with the name of the tape in, and
-// the CE-1600F's lamp (LIB-7 AC-39, AC-42). The media themselves are LIB-7's
+// The tape counter with the name of the tape in, and
+// the CE-1600F's lamp. The media themselves are the media part's
 // topic `media`. toValue: {floppyMotor, tapeMode ("play", "record", ""),
 // tapeMotor, tapeSeconds, tapeFile}, as the Web page draws it.
 struct LampsPayload final : calcu::sessions::PayloadOf<LampsPayload> {
@@ -113,7 +111,7 @@ struct LampsPayload final : calcu::sessions::PayloadOf<LampsPayload> {
     calcu::sessions::Value toValue() const override;
 };
 
-// The serial port files (0.8.1's serialLinksRelinked; LIB-2 AC-33).
+// The serial port files.
 struct SerialLinksPayload final : calcu::sessions::PayloadOf<SerialLinksPayload> {
     static constexpr calcu::sessions::PayloadKind kKind{"c1600.serial-links"};
     std::string rs232c, ce158;   // the path a client opens, empty while there is none

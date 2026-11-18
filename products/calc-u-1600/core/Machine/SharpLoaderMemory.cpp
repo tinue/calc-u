@@ -12,7 +12,7 @@ std::uint8_t PC1500LoaderMemory::peek(std::uint16_t a, Processor) const { return
 LoaderMemory::Write PC1500LoaderMemory::writeBuiltIn(std::uint16_t address, const std::uint8_t* data,
                                                      std::size_t size) {
     if (static_cast<std::uint64_t>(address) + size > 0x10000) return {false, 0x10000};
-    // The range first (AC-10, OQ-2): each byte is written back with the
+    // The range first: each byte is written back with the
     // value it holds, which stores nothing new; a byte that is not stored
     // (ROM, open bus, a module that drops it) refuses the whole write.
     for (std::size_t i = 0; i < size; ++i) {

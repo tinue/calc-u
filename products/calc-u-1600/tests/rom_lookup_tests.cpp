@@ -1,4 +1,4 @@
-// LIB-12 ROM lookup, the Calc-U-1600 column (M-27; design §6, Q1-Q3):
+// The ROM lookup of Calc-U-1600:
 // the full set and its fetch list, the binary check, the CE-502B's module
 // definition from the ROM repository, and a start without the full set.
 // Run from products/calc-u-1600 (CoreTests' working directory); SKIP without
@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-#include "../../calc-u-59/tests/Md5.hpp"   // the test MD5 of LIB-12 (test code only)
+#include "../../calc-u-59/tests/Md5.hpp"   // the tests' MD5 (test code only)
 #include "Files.hpp"
 #include "TempFolder.hpp"
 #include "../app/tests/TestSettings.hpp"
@@ -41,7 +41,7 @@ using calcu::roms::Problem;
 using calcu::roms::RomsMissing;
 using Model = calcu::machine::ModelId;
 
-// The table of AC-12, copied from the spec: file, bytes, md5, who needs it.
+// The full ROM set: file, bytes, md5, who needs it.
 struct Row {
     const char* file;
     std::uint64_t bytes;
@@ -70,7 +70,7 @@ const std::vector<Row> kAc12 = {
     {"PC1600-P1-B4-CE1600P-old.bin", 16384, "df41b050acbc29c83214cbaaf29bee91"},
     {"PC1600-P1-B5-CE1600P-OR-F-old.bin", 16384, "33f3ef7207eac06587cc4c6d70c6cbd0"},
 };
-// AC-14: the CE-502B's module definition, md5 recorded when it was moved
+// The CE-502B's module definition, md5 recorded when it was moved
 // into PC-1500-ROM (roms/README.md).
 constexpr const char* kCe502bFile = "CE-502B.module.yaml";
 constexpr const char* kCe502bMd5 = "7c7af4b7adab69b5e75297bc1c3d7279";
@@ -95,7 +95,7 @@ struct BundleCopy {
 };
 
 // The library's app session with Calc-U-1600's part, its bundled resources
-// folder `bundle`, on a scripted clock (M-31; 0.8.1's MachineSession before).
+// folder `bundle`, on a scripted clock.
 struct Session {
     TestSettings testSettings;
     fs::path home = fs::temp_directory_path() / "calcu1600-rom-lookup-home";
@@ -134,7 +134,7 @@ struct Session {
         }
         return run(calcu::startup::kModelCommand, calcu::sessions::Value::object({{"name", m.value.c_str()}}));
     }
-    // LIB-12's `roms-missing` topic, or nullptr.
+    // The `roms-missing` topic, or nullptr.
     const RomsMissing* missing() const {
         const auto* p = host.state<calcu::startup::RomsMissingState>(calcu::startup::kRomsMissingTopic);
         return p ? &p->missing : nullptr;
@@ -142,9 +142,9 @@ struct Session {
     bool noNotices() { return host.mirror().takeAppended(calcu::sessions::kNoticesTopic).empty(); }
 };
 
-// ---- Q1: the full set and SharpRomReader ----
+// ---- The full set and SharpRomReader ----
 
-TEST(lib12_ac12_full_set_is_the_21_files_and_ce502b) {
+TEST(full_set_is_the_21_files_and_ce502b) {
     const auto& files = sharp::fullRomSet().files;
     CHECK(sharp::fullRomSet().catalogueErrors.empty());
     CHECK_EQ(files.size(), kAc12.size() + 1);
@@ -164,7 +164,7 @@ TEST(lib12_ac12_full_set_is_the_21_files_and_ce502b) {
         CHECK_EQ(ce502b->entry.decodedAmount, std::uint64_t{16384});
         CHECK_EQ(ce502b->entry.md5, std::string(kCe502bMd5));
     }
-    // The host drive's own ROM is not in the full set (roms.md Q-1).
+    // The host drive's own ROM is not in the full set: it is not looked up.
     CHECK(!sharp::isFullSetFile("PC1600-P1-B7-HOSTDRIVE.bin"));
 
     SKIP_UNLESS(testRomSet() != nullptr, "no ROM set in roms/");
@@ -173,7 +173,7 @@ TEST(lib12_ac12_full_set_is_the_21_files_and_ce502b) {
     CHECK_EQ(testroms::md5Hex(*testRomSet()->bytes(kCe502bFile)), std::string(kCe502bMd5));
 }
 
-TEST(lib12_ac12_fetch_script_has_the_same_names_and_md5) {
+TEST(fetch_script_has_the_same_names_and_md5) {
     const std::string script = readText("roms/fetch_roms.sh");
     CHECK(!script.empty());
     std::vector<std::pair<std::string, std::string>> fetched;
@@ -193,13 +193,13 @@ TEST(lib12_ac12_fetch_script_has_the_same_names_and_md5) {
     std::sort(want.begin(), want.end());
     CHECK_EQ(fetched.size(), std::size_t{22});
     CHECK(fetched == want);
-    // The copy into the Qt6 card resources went (AC-14).
+    // No copy into the Qt6 card resources.
     CHECK(script.find("resources/cards") == std::string::npos);
 }
 
-TEST(lib12_ac11_binary_dumps_checked_by_byte_size) {
+TEST(binary_dumps_checked_by_byte_size) {
     SKIP_UNLESS(testRomSet() != nullptr, "no ROM set in roms/");
-    BundleCopy copy("ac11");
+    BundleCopy copy("sizes");
     {   // a 16383-byte copy of a 16384-byte dump is bad
         std::vector<std::uint8_t> bytes = *testRomSet()->bytes("PC-1500_A01.ROM");
         bytes.pop_back();
@@ -217,15 +217,15 @@ TEST(lib12_ac11_binary_dumps_checked_by_byte_size) {
     CHECK(sharp::lookUpRoms(calcu::roms::DirectoryBundle("roms")).ok());
 }
 
-TEST(lib12_ec1_ce1600p_b5_file_once_in_set_and_message) {
+TEST(ce1600p_b5_file_once_in_set_and_message) {
     // The CE-1600P's second file is also the CE-1600F's ROM: one file of the
     // full set per variant, needed by the CE-1600P variant (the CE-1600F is
-    // the CE-1600P's own; C1600-1 §3.4).
+    // the CE-1600P's own).
     const auto& files = sharp::fullRomSet().files;
     for (const char* f : {"PC1600-P1-B5-CE1600P-OR-F-new.bin", "PC1600-P1-B5-CE1600P-OR-F-old.bin"})
         CHECK_EQ(std::count_if(files.begin(), files.end(), [&](const auto& e) { return e.entry.fileName == f; }), 1);
     SKIP_UNLESS(testRomSet() != nullptr, "no ROM set in roms/");
-    BundleCopy copy("ec1");
+    BundleCopy copy("ce1600p-b5");
     copy.remove("PC1600-P1-B5-CE1600P-OR-F-old.bin");
     const calcu::roms::LookupResult r = sharp::lookUpRoms(calcu::roms::DirectoryBundle(copy.dir));
     CHECK(!r.ok());
@@ -239,9 +239,9 @@ TEST(lib12_ec1_ce1600p_b5_file_once_in_set_and_message) {
     CHECK(text.find("CE-1600P (variant Old)") != std::string::npos);
 }
 
-// ---- Q3: the CE-502B from the ROM repository ----
+// ---- The CE-502B from the ROM repository ----
 
-TEST(lib12_ac14_ce502b_definition_from_the_set) {
+TEST(ce502b_definition_from_the_set) {
     SKIP_UNLESS(testRomSet() != nullptr, "no ROM set in roms/");
     const std::string text = readText(fs::path("roms") / kCe502bFile);
     CHECK(text.find("format-version: 1") != std::string::npos);
@@ -251,24 +251,24 @@ TEST(lib12_ac14_ce502b_definition_from_the_set) {
     CHECK(m->fileName == kCe502bFile);
     CHECK(m->definition.moduleName == "CE-502B");
     CHECK(m->definition.isRom());
-    // What the reader yields is the entry's amount (design §9: not verified then).
+    // What the reader yields is the entry's amount.
     std::size_t bytes = 0;
     for (const auto& r : m->definition.regions)
         for (const auto& b : r.initialContentByBank) bytes += b.second.size();
     CHECK_EQ(bytes, std::size_t{16384});
     // A definition that does not parse, or of another size, is bad.
-    BundleCopy copy("ac14");
+    BundleCopy copy("ce502b-bad");
     std::ofstream(copy.dir / kCe502bFile, std::ios::trunc) << "format-version: 1\nmodule-name: \"CE-502B\"\n";
     const calcu::roms::LookupResult r = sharp::lookUpRoms(calcu::roms::DirectoryBundle(copy.dir));
     CHECK(!r.ok());
     CHECK(problemOf(r.missing, kCe502bFile) != nullptr);
     // A session lists it among the bundled ROM modules and adds it to its
-    // catalogue (LIB-1 AC-3) from the set.
+    // catalogue from the set.
     Session s("roms");
     CHECK(s.session.catalogue().peripheral(calcu::machine::PeripheralId{"CE-502B"}) != nullptr);
 }
 
-TEST(lib12_ac14_ce502b_not_in_qt6_resources) {
+TEST(ce502b_not_in_qt6_resources) {
     // The definition left the source repository's Qt6 resources: nothing
     // there names it, and the card scans pass over the ROM set's file.
     CHECK(!fs::exists("frontends/qt6/resources/cards/ce502b.module.yaml"));
@@ -279,11 +279,11 @@ TEST(lib12_ac14_ce502b_not_in_qt6_resources) {
     for (const auto& e : scanMemoryCardDirectory("roms", nullptr)) CHECK(e.moduleName != "CE-502B");
 }
 
-// ---- Q2: no machine without the full set, no substitution (AC-13) ----
+// ---- No machine without the full set, no substitution ----
 
-TEST(lib12_ac13_missing_old_set_does_not_start) {
+TEST(missing_old_set_does_not_start) {
     SKIP_UNLESS(testRomSet() != nullptr, "no ROM set in roms/");
-    BundleCopy copy("ac13-old");
+    BundleCopy copy("missing-old");
     copy.remove("PC1600-P0-B0-old.bin");
     Session s(copy.dir);
     // Even a PC-1500A, which never needs the file, does not start.
@@ -299,9 +299,9 @@ TEST(lib12_ac13_missing_old_set_does_not_start) {
     CHECK(text.find(copy.dir.string()) != std::string::npos);
 }
 
-TEST(lib12_ac13_missing_ce1600p_old_file_does_not_start) {
+TEST(missing_ce1600p_old_file_does_not_start) {
     SKIP_UNLESS(testRomSet() != nullptr, "no ROM set in roms/");
-    BundleCopy copy("ac13-ce1600p");
+    BundleCopy copy("missing-ce1600p");
     copy.remove("PC1600-P1-B4-CE1600P-old.bin");
     Session s(copy.dir);
     CHECK(!s.switchModel(calcu::machine::ModelId{"PC-1600"}));
@@ -310,16 +310,16 @@ TEST(lib12_ac13_missing_ce1600p_old_file_does_not_start) {
     CHECK(s.missing() && problemOf(*s.missing(), "PC1600-P1-B4-CE1600P-old.bin") != nullptr);
     CHECK(s.noNotices());
     // A missing file of the New set alike.
-    BundleCopy copy2("ac13-new");
+    BundleCopy copy2("missing-new");
     copy2.remove("PC1600-P2-B6-new.bin");
     Session s2(copy2.dir);
     CHECK(!s2.switchModel(calcu::machine::ModelId{"PC-1600"}));
     CHECK(s2.missing() && problemOf(*s2.missing(), "PC1600-P2-B6-new.bin") != nullptr);
 }
 
-TEST(lib12_ac13_no_rom_read_during_session) {
+TEST(no_rom_read_during_session) {
     SKIP_UNLESS(testRomSet() != nullptr, "no ROM set in roms/");
-    auto copy = std::make_unique<BundleCopy>("ac13-session");
+    auto copy = std::make_unique<BundleCopy>("missing-session");
     Session s(copy->dir);
     copy.reset();   // the bundle folder is gone after the start
     CHECK(!fs::exists(s.paths.bundledResourcesDir()));

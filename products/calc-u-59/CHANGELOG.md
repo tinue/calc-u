@@ -35,6 +35,7 @@
 - **Developer documents** The architecture reference moved from `reference/` to `docs/developer/` (index `docs/developer/README.md`), with hyphenated names as Calc-U-1600's (`App-Layer.md`, which now also holds the Swift app and bridge layer, `Core-Architecture.md`, `Debug-API.md`, …); the trace file's format is `docs/formats/trace.md` at the repository root; the ROM traces moved from `memory/` to `rom/traces/`; `prompt/ti59-agent-prompt.md` points to `docs/formats/preset.md` instead of restating the format. <!-- appstore: skip -->
 - **About** The links to the source, support and the privacy statement go to the repository tinue/calc-u; the Windows installer names it as the publisher's address.
 - **Web embedding** The engine's files are `wasm/calcu59-core.js` and `wasm/calcu59-core.wasm`, with the module factory `createCalcU59Module` (were `ti59-core` and `createTI59CoreModule`). <!-- appstore: skip -->
+- **Open With** On Windows the presets are registered as "Calc-U-59 Preset" (`CalcU59.Preset`), on Linux as `application/x-calcu59-preset`; the Qt app's Mac file type is "Calc-U-59 Preset" too.
 - **Trace reader (developers)** `tools/read_trace.py` reads trace files of version 2 only. <!-- appstore: skip -->
 - **Building (developers)** Building both products is `docs/Building.md` at the repository root; the release audit skill is `calc-u-59-pre-release-cleanup` (was `pre-release-cleanup`). <!-- appstore: skip -->
 

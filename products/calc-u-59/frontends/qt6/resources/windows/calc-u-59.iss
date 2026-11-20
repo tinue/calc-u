@@ -44,13 +44,13 @@ Filename: "{app}\vc_redist.arm64.exe"; Parameters: "/install /quiet /norestart";
 Filename: "{app}\Calc-U-59.exe"; Description: "Start Calc-U-59"; Flags: nowait postinstall skipifsilent
 
 [Registry]
-; Open .ti59 / .ti58 / .ti58c state files with Calc-U-59.
-Root: HKA; Subkey: "Software\Classes\.ti59"; ValueType: string; ValueData: "CalcU59.StateFile"; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Classes\.ti58"; ValueType: string; ValueData: "CalcU59.StateFile"; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Classes\.ti58c"; ValueType: string; ValueData: "CalcU59.StateFile"; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Classes\CalcU59.StateFile"; ValueType: string; ValueData: "Calc-U-59 State File"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\CalcU59.StateFile\DefaultIcon"; ValueType: string; ValueData: "{app}\Calc-U-59.exe,0"
-Root: HKA; Subkey: "Software\Classes\CalcU59.StateFile\shell\open\command"; ValueType: string; ValueData: """{app}\Calc-U-59.exe"" ""%1"""
+; Open .ti59 / .ti58 / .ti58c presets with Calc-U-59.
+Root: HKA; Subkey: "Software\Classes\.ti59"; ValueType: string; ValueData: "CalcU59.Preset"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\.ti58"; ValueType: string; ValueData: "CalcU59.Preset"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\.ti58c"; ValueType: string; ValueData: "CalcU59.Preset"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\CalcU59.Preset"; ValueType: string; ValueData: "Calc-U-59 Preset"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\CalcU59.Preset\DefaultIcon"; ValueType: string; ValueData: "{app}\Calc-U-59.exe,0"
+Root: HKA; Subkey: "Software\Classes\CalcU59.Preset\shell\open\command"; ValueType: string; ValueData: """{app}\Calc-U-59.exe"" ""%1"""
 
 [Icons]
 Name: "{group}\Calc-U-59"; Filename: "{app}\Calc-U-59.exe"

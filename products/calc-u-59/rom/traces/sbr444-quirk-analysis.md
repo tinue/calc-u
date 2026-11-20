@@ -15,7 +15,7 @@ looks harmless, yet leaves the machine in a state where `Ins` computes the inval
 keycode. What the hack does and a shorter way to make 1F (through fast mode)
 are in `rom/printerinterrupt.md`; this document is the trace-level analysis.
 The session of 2026-07-04 analyzed exactly what `SBR 444` and `R/S` do —
-quirk 1 of the chain — and corrected an earlier, wrong account. The session of
+quirk 1 of the chain. The session of
 2026-07-05 analyzed the `2nd P/R` press — quirk 2 — from the two traces proposed by
 open question 1, resolving it.
 
@@ -79,8 +79,8 @@ directly off the module header in the traces).
    zeroed (0BCD), target E := 0 — a resume is not a transfer, so **no range check of
    any kind runs**.
 2. PRGREG_FETCH (08B2) dispatches flag = 1 → CROM interpreter fetch at 082B/082F…
-   from chip PC 0028 = **the header**. *Corrected 2026-10-17 (headless harness,
-   tools/headless/, exact replay of examples/historic/printer-quirks.ti59):* the run fetches
+   from chip PC 0028 = **the header**. *Traced 2026-10-17 with the harness
+   (exact replay of examples/historic/printer-quirks.ti59):* the run fetches
    **12** keycodes, module[28..39] — the BCD start addresses of Pgm 14–19 —
    executed as **29 CP, 52 EE, 30 tan, 95 =, 32 x⇄t, 31 LRN, 33 x², 63 Exc Ind,
    34 √x, 80 Grad, 36 Pgm**, and `Pgm` consumes byte 39 = **51** as its program
@@ -90,9 +90,9 @@ directly off the module header in the traces).
 3. EE (keycode 52) does **not** end the run. Its handler (0110 → 012C → 02DE) sees
    fB[0] set and takes 06B9; with a non-zero Prg Src Flag the 06C0/06C3 gate
    continues the run at 08AE on both branches. A plain RAM program containing EE
-   (`1 EE 2 + 3 = R/S`) likewise runs through it (result 1.03 02). The earlier
-   reading — "exactly two keycodes, EE ends the run, CROM PC 0030" — came from an
-   incomplete rs.txt capture window.
+   (`1 EE 2 + 3 = R/S`) likewise runs through it (result 1.03 02). rs.txt's
+   capture window is incomplete: it shows only two keycodes and CROM PC 0030, as
+   if EE ended the run.
 4. Final state after the second halt: fB = 8A60 — fB[9] set (the blink; the Pgm 51
    error re-asserts it), fB[15] set (EE mode from keycode 52 → display "0. 00"),
    fB[0]/fB[13] clear; SCOM[0] Prg Src Flag **still 1**, PC 008; **CROM PC 0040**.
@@ -146,22 +146,20 @@ source 8).
    `…10000F` — the F depth marker behaves as "empty"; the next push starts a fresh
    depth-1 stack.
 
-### Corrections applied to the repo (commit `0c57628`)
+### What the repository states from this analysis
 
-- The old quirk-1 story ("SBR 444 starts executing mid-formula in Pgm 14's code at
-  3053, quickly errors; R/S resumes and crashes again half a second later") was
-  **wrong** on every mechanism point and was rewritten in `texas-print.ti59`.
-- The "side benefit" claim that the garbage run's `RCL 02`/`RCL 01` need valid data
-  registers is disproved: neither trace contains a single data-register access
-  (`RAMOP` never fires).
-- New ROM annotations at 0x1286 and 0x11E1; the 0x086F note now states only what was
+- `texas-print.ti59` describes quirk 1 by the mechanisms above: SBR 444 does not
+  start executing mid-formula in Pgm 14's code at 3053.
+- The garbage run's `RCL 02`/`RCL 01` need no valid data registers: neither trace
+  contains a single data-register access (`RAMOP` never fires).
+- ROM annotations at 0x1286 and 0x11E1; the 0x086F note states only what was
   verified (P/R after the second halt *reaches the 087E test* with fB[0] clear).
 
 ### Incidental knowledge gained
 
 - Flag semantics: fB[9] = error/blink; fB[15] = EE mode; fB[0] at the 087E test =
   transfer type (set → keycode sub-program, skip RAM range check); fB[11] = SCOM[10]
-  cache stale (previously known). Refined 2026-07-05: fB[0]/fB[13] are set by the
+  cache stale. fB[0]/fB[13] are set by the
   launch prologue's keyboard/RAM-caller branch (0A5C/0A5D) and left clear by its
   library-caller branch (0DA7) — i.e. fB[0] really encodes "launch initiated from
   keyboard/RAM", which the 086F block then treats as the target-type selector.
@@ -172,9 +170,8 @@ source 8).
   SCOM[14] levels 4–6 — pushed on every calculator-level call: SBR into a RAM or
   library program, and keycode-ROM sub-program launches such as P→R (user-provided
   2026-07-04, trace-consistent). The push routine is ROM 0D50–0D78 and runs in *both*
-  traces (during the SBR 444 launch and again during the R/S resume). An earlier
-  revision of this document claimed the R/S handler's 0BC4–0BCA also writes row 15 —
-  that was a static misreading; 0BC4 never executes in rs.txt.
+  traces (during the SBR 444 launch and again during the R/S resume). The R/S
+  handler's 0BC4–0BCA does not write row 15: 0BC4 never executes in rs.txt.
 - Trace frames are post-execution: the COND shown on a `TST`/`Jxx` line is the value
   *after* that instruction; a taken branch is only visible from the next line's
   address. Observed: `TST` of a SET flag leaves COND = 0.
@@ -226,9 +223,8 @@ an error from a 0 ÷ 0 inside that garbage (`03D4`).
    resume push wrote `…1001` (clean depth 1) straight over the reset `…10000F`, so
    F acts as "empty" and the next push restarts the stack at depth 1.
 3. **RESOLVED 2026-10-17 — EE does not end a running program.** The R/S-resumed
-   run continues through EE and ends on the invalid `Pgm 51`; see the corrected
-   R/S findings above. (The earlier question rested on an incomplete rs.txt
-   capture window.)
+   run continues through EE and ends on the invalid `Pgm 51`; see the R/S
+   findings above (rs.txt's capture window is incomplete).
 4. **RESOLVED — SCOM[9] descriptor layout.** Documented by the SCOM register table
    in "Calculators TI-58/59 HW programming guide" by Hynek Sladký
    (TI_58_59-HW-manual.pdf, not in the repository). Nibble 15 = list-data flag;

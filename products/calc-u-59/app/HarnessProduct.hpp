@@ -18,8 +18,8 @@ std::unique_ptr<calcu::harness::HarnessProduct> makeHarnessProduct();
 
 /// The rule of `display-text` for one position: a
 /// digit, -, °, " or ' from the lit segments A–G (core/TISegments.hpp), a
-/// blank for a position not driven, then "." for a lit decimal point, as
-/// display() of release 2.3.0's tools/headless/ti59.py (no hexadecimal digits).
+/// blank for a position not driven, then "." for a lit decimal point (no
+/// hexadecimal digits).
 std::string tiPositionText(const calcu::machine::SegmentPosition&);
 
 } // namespace cu59

@@ -1,8 +1,6 @@
 # What Calc-U-59 bundles from examples/ (docs/formats/bundle.md): the three
-# startup presets, and the examples the Web frontend offered in 2.3.0, in
-# today's order within their groups (fastmode-sst last of "Programs"). Every
-# distribution (Qt6, Swift, Web) bundles exactly the files listed here. The
-# Web offers ten examples, as 2.3.0 did.
+# startup presets and ten examples in three groups. Every distribution (Qt6,
+# Swift, Web) bundles exactly the files listed here.
 
 format: example-bundle
 format-version: 1

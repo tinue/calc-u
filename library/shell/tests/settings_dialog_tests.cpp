@@ -281,7 +281,7 @@ TEST(choice_row_with_labels_offers_only_those) {
     CHECK(style.has_value());
     CHECK_EQ(style->value, std::string("one"));
     CHECK_EQ(choiceText(*style), std::string("one=The first;"));
-    // Without labels: every declared value as written (as before).
+    // Without labels: every declared value as written.
     DialogSpec plain;
     plain.sections.push_back({"Look", {{DialogRow::Widget::Choice, "test", "style", "Style"}}});
     CHECK_EQ(choiceText(*find(dialog(r.topic(), st::presetList(), plain), "test.style")), std::string("one=one;two=two;"));

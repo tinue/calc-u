@@ -39,10 +39,10 @@ SolidCompression=yes
 Source: "..\..\dist\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
 ; windeployqt --compiler-runtime (see calc-u-1600.yml's "Stage standalone-
-; runnable folder" step) no longer drops loose msvcp140.dll/vcruntime140.dll
-; etc. into dist\ for this Qt/VS toolset -- it drops the vc_redist
-; bootstrapper (vc_redist.x64.exe / vc_redist.arm64.exe) instead, copied
-; into {app} by the [Files] entry above, on the assumption the installer
+; runnable folder" step) drops no loose msvcp140.dll/vcruntime140.dll etc.
+; into dist\ for this Qt/VS toolset, but the vc_redist bootstrapper
+; (vc_redist.x64.exe / vc_redist.arm64.exe), copied into {app} by the
+; [Files] entry above, on the assumption the installer
 ; will run it. Without this [Run] entry the app fails to start on a clean
 ; machine with "missing MSVCP140.dll" (confirmed on real ARM64 hardware).
 ; /install /quiet /norestart is the standard silent-bootstrap invocation;

@@ -6,12 +6,9 @@
 // Turns off AppKit's window restoration for this app (registers
 // ApplePersistenceIgnoreState = YES). Call before QApplication exists.
 //
-// The app restores nothing itself, and AppKit's own "reopen windows?"
-// prompt -- shown after a run was killed -- was fatal in 0.8.1: it arrived
-// with the launch's open-application event while the startup default
-// preset's synchronous load pumped events (user input excluded), and each
-// waited for the other. The start now runs in parts, but the app
-// still restores nothing, so the prompt stays off.
+// The app restores nothing itself, so AppKit's own "reopen windows?"
+// prompt -- shown after a run was killed -- has nothing to offer and stays
+// off.
 void macDisableWindowRestoration();
 
 // Turns off the press-and-hold accent picker for this app (registers

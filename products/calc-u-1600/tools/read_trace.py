@@ -2,9 +2,8 @@
 """
 read_trace.py — PC-1500/1500A/1600 binary trace reader.
 
-Parses TRACE.bin (renamed from CALCU1500_TRACE.bin in format v2, once the
-same file started carrying PC-1600 frames alongside PC-1500's own; written
-by the app's "TRACE" debug-panel button or by a preset's `- trace:` step,
+Parses TRACE.bin (the frames of the PC-1500's and the PC-1600's CPUs alike;
+written by the app's "TRACE" debug-panel button or by a preset's `- trace:` step,
 both via the Core writer `core/PC1500/PC1500TraceFile.cpp`) and either:
   • Prints a human-readable text trace to stdout (default)
   • Emits a JSON array (--json)

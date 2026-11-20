@@ -7,11 +7,11 @@ namespace cu59 {
 
 namespace {
 
-constexpr std::uint16_t kFlagBusy = 0x8000;   // the printer busy bit (2.3.0's FLG_BUSY)
-constexpr std::uint16_t kFlagIdle = 0x0001;   // the idle flag (2.3.0's FLG_IDLE)
+constexpr std::uint16_t kFlagBusy = 0x8000;   // the printer busy bit of the CPU flags
+constexpr std::uint16_t kFlagIdle = 0x0001;   // the idle flag of the CPU flags
 
-// The ROM's print-wait spin loops of the TI-59's ROM (also the TI-58's;
-// 2.3.0's tools/agentic/hotsteps.py:22). None is known for the TI-58C.
+// The print-wait spin loops of the TI-59's ROM (also the TI-58's), where the
+// ROM polls the busy printer. None is known for the TI-58C.
 constexpr std::uint16_t kPrintWaitLoops[] = {0x154C, 0x154D, 0x1425, 0x1426, 0x1427, 0x17C1,
                                              0x17C2, 0x17C3, 0x15E4, 0x15E5, 0x1612, 0x1613};
 

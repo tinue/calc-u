@@ -1,4 +1,4 @@
-# Test file for a cue card (2.3.0 drew it as a magnetic card; a preset's cue card is the plain card)
+# Test file for a cue card (a preset's cue card is the plain card, not a magnetic card)
 
 format-version: 2
 model: TI-59

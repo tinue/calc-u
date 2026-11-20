@@ -29,9 +29,9 @@
 #     Rust's std needs, straight from rustc's own --print=native-static-libs
 #     for that build, not a hand-maintained guess.)
 #
-# Since v0.2.1 the release libs are built without sharpdx's serial
-# transport, so there's no libudev (Linux) or crate-vendored Windows
-# import lib (windows.0.52.0.lib) to link or vendor any more.
+# The release libs are built without sharpdx's serial transport, so
+# there's no libudev (Linux) or crate-vendored Windows import lib to link
+# or vendor.
 #
 # The two library filenames are platform-specific on purpose, so a fetch
 # here can never collide with -- or dirty the git status of -- the

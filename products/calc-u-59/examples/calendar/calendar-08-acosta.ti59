@@ -274,15 +274,10 @@ keys:
 
   # Whole-year print for 2026 (per the User Instructions above and the B-row
   # cue-card example: key year, press A, key months, R/S, key start month,
-  # R/S). Data entry and the print itself all run at full speed — this used to
-  # run far slower than real time at full speed (the ROM's fast-mode print
-  # dispatcher retries its own key/printer-busy poll in a tight spin outside
-  # the normal keyboard-scan idle loop, and the full-speed throttle didn't
-  # recognize it), inflating the reported elapsed time 9x over the
-  # regular-speed figure. Fixed by having TMC0501::step() flag a confirmed
-  # poll-retry spin by opcode pattern rather than by ROM address (see
-  # TMC0501.hpp's step() doc comment and EmulatorViewModel.swift's
-  # startEmulationLoop()) — full speed now reports the same elapsed time as
+  # R/S). Data entry and the print itself all run at full speed. The ROM's
+  # fast-mode print dispatcher retries its key/printer-busy poll in a tight
+  # spin outside the keyboard-scan idle loop; TMC0501::step() recognizes that
+  # spin by its opcode pattern, so full speed reports the same elapsed time as
   # regular speed for this print job.
   - full-speed:
   - key: 2

@@ -5,8 +5,8 @@
 
 // The 45 keys of the TI-58/58C/59: key ID, the other
 // spellings of docs/formats/preset.md §8.1, and the key's row (1-9, top to
-// bottom) and column (1-5, left to right). Row r, column c is the key that
-// the matrix code r × 10 + c names in 2.3.0's state files. Core-internal: above the
+// bottom) and column (1-5, left to right). Row r, column c is the key of
+// matrix code r × 10 + c. Core-internal: above the
 // core a key is a calcu::machine::KeyId from the descriptor.
 
 struct TIKey {

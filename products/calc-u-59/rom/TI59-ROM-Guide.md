@@ -4,7 +4,7 @@ A narrative companion to the annotated listing `rom/TI59-commented.asm` and
 the label table `rom/TI59-labels.asm`. The listing documents individual
 instructions; this guide explains the structures and conventions that span
 many routines. Everything here was derived by tracing the unmodified ROM on
-the emulator with the headless harness of 2.3.0 (`tools/headless/`; today the harness `calcu --product c59`, `docs/developer/Harness.md`), unless marked
+the emulator with the harness (`calcu --product c59`, `docs/developer/Harness.md`), unless marked
 otherwise.
 
 Emulator-side facts (instruction set, SCOM/PREG mechanics, chip variants)
@@ -211,7 +211,7 @@ The paren level in each entry is the fence that makes `(` work: a reduce
 only pops entries whose level equals the current one, so `+` inside the
 parenthesis never touches the `×` outside it.
 
-Trace of `2 × ( 3 + 4 yˣ 2 ) =` (2.3.0's `tools/headless/ti59.py`; now `trace` and `tools/read_trace.py --changes`):
+Trace of `2 × ( 3 + 4 yˣ 2 ) =` (`trace` and `tools/read_trace.py --changes`):
 
 | Key | SCOM[12] (low nibbles) | Operands | SCOM[13] nibbles 2/1 (depth, paren) |
 |---|---|---|---|

@@ -15,10 +15,7 @@ typed with `key` and run until idle with `wait`) and a card it feeds, and
 `c59 coverage` reads the ROM words they reached. Boot is a scenario of its
 own ("boot", `profile on` then `cold-boot`, read with `c59 coverage all`).
 The key-detect range is left out of every other scenario (`c59 coverage`
-without `all`), so common idle code doesn't swamp every
-scenario; 2.3.0's tool left out an instruction of that range only with the
-ROM's idle flag set, so a scenario's words differ from its by the release
-gate 0627-062A (docs/developer/Harness.md).
+without `all`), so common idle code doesn't swamp every scenario.
 """
 from __future__ import annotations
 
@@ -214,7 +211,7 @@ SCENARIOS["prt_sci_err"] = ([], S("1",".","5","EE","3","+/-","Prt","1","/","0","
 SCENARIOS["trace_ind"] = ([S("5","STO","0","1")], S("RCL","Ind","0","1"), {"printer": True, "trace": True})
 
 
-# 2.3.0's key names that preset.md §8.1 spells otherwise.
+# The scenarios' key names that preset.md §8.1 spells otherwise.
 RENAMED = {"S+": ["sum+"], "StFlg": ["STF"], "IfFlg": ["IFF"], "mean": ["xbar"], "P>R": ["P/R"], "2ndCLR": ["2nd", "CLR"]}
 
 

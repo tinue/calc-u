@@ -1022,7 +1022,7 @@ void TMC0501::insertCard(const uint8_t* data, size_t count) {
     memset(m_cardFullData, 0, 984);
     if (data && count > 0) {
         if (count >= 984) {
-            // Legacy 4-bank file: copy all banks verbatim.
+            // All four banks: copy them verbatim.
             memcpy(m_cardFullData, data, 984);
         } else if (count == 246) {
             // Single-bank file: always place at slot 0.  CRD_READ starts at
@@ -1267,7 +1267,7 @@ void TMC0501::tracePreStep(uint32_t tf, uint16_t opcode) {
 
     // Display snapshot will be captured at the end of step() after display buffer update
 
-    // Light registers (previously deferred to tracePostStep for non-branch)
+    // Light registers
     if (tf & (TRACE_REGS_LIGHT | TRACE_REGS_FULL)) {
         frame.KR       = KR;
         frame.SR       = SR;
@@ -1278,7 +1278,7 @@ void TMC0501::tracePreStep(uint32_t tf, uint16_t opcode) {
         computeDisplayTraceState(frame.displayOn, frame.maxDigitDecay);
     }
 
-    // Full registers (previously in mid-step block)
+    // Full registers
     if (tf & TRACE_REGS_FULL) {
         memcpy(frame.A,    A,    16);
         memcpy(frame.B,    B,    16);

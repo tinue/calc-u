@@ -10,8 +10,8 @@ Usage:
     # Both files in TI59E.LOG text format:
     python3 compare_trace.py <reference.LOG> <emulator.LOG>
 
-    # Emulator file in binary format (TI59_TRACE.bin):
-    python3 compare_trace.py --bin <reference.LOG> TI59_TRACE.bin
+    # Emulator file in binary format (CALCU59_TRACE.bin):
+    python3 compare_trace.py --bin <reference.LOG> CALCU59_TRACE.bin
 
     # Classic example:
     python3 compare_trace.py 1overx.LOG TI59_TRACE.LOG
@@ -385,7 +385,7 @@ def analyse(ref_path, mine_path):
 
 def load_bin(path):
     """
-    Load a TI59_TRACE.bin file via read_trace and return a list of dicts
+    Load a CALCU59_TRACE.bin file via read_trace and return a list of dicts
     compatible with parse() output (same field names).  USER_EVENT and
     session records are silently dropped; only 'trace' records are returned.
     """
@@ -436,7 +436,7 @@ def main():
     mine_path = args[1]
 
     if use_bin:
-        # ref is text (TI59E.LOG format), mine is binary (TI59_TRACE.bin)
+        # ref is text (TI59E.LOG format), mine is binary (CALCU59_TRACE.bin)
         ref_all  = parse(ref_path)
         mine_all = load_bin(mine_path)
         _analyse_preloaded(ref_path, mine_path, ref_all, mine_all)

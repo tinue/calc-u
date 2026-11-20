@@ -2,7 +2,7 @@
 
 CLI: years.py file.ti59 year... [--no-acosta] [--write FOLDER] [--calcu PATH]
   For each year: replaces the four digit steps before the first `- key:`
-  step that names A (matrix code 11 in 2.3.0's KEYSTROKES) in the preset's
+  step that names A in the preset's
   keys, runs it through calcu (tools/calcu59.py), checks the day rows
   against Python's calendar module and compares the printout line for line
   with Acosta's program (examples/calendar/calendar-08-acosta.ti59) run for

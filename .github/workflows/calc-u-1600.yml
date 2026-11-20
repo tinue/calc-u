@@ -141,11 +141,11 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends cmake ninja-build zip unzip xz-utils
 
-      - uses: mymindstorm/setup-emsdk@v14
+      - uses: mymindstorm/setup-emsdk@v16
         with:
           version: 6.0.13
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 

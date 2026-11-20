@@ -57,7 +57,10 @@ trace button or with a preset's `trace:` step.
 - Only one trace runs at a time: starting a trace ends the one that
   runs.
 - The trace file goes into the trace folder: the save folder, unless
-  `[trace] folder` names another one ([Settings](08-settings.md)). A
+  `[trace] folder` names another one. A frontend that offers
+  `[trace] location` follows it instead: the product's Application
+  Support folder (`app-support`, the default), the save folder
+  (`icloud`), or `[trace] folder` (`folder`) ([Settings](08-settings.md)). A
   file of the same name is replaced. In a Web frontend that has traces,
   a trace that has ended is offered as a download.
 - The trace folder and the size limit are read when a trace starts, so a
@@ -88,6 +91,7 @@ A preset can drive the debugger with these steps
 | `pause-on-start: <level>` / `off` | pauses at the next start the level names (the next program step; the processor leaving key readiness); `off` disarms it |
 | `step: { level: <level>, count: n }` | while paused, carries out n steps (1 to 100000; 1 without a count); not paused, a line in the log and nothing else |
 | `resume:` | lets the paused machine run on |
+| `debug-panel: <view>` | shows that view of the debug panel; a frontend without the panel ignores it |
 
 Not every product defines every one of these steps on every model; the
 product's part says which it takes. A step it does not take refuses the

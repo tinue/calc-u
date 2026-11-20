@@ -88,14 +88,17 @@ own.
 The control bar holds the hardware of the running machine, from left to
 right:
 
-1. the model picker;
-2. one picker for each module slot, with the slot's number before it
+1. in a window without a menu bar, the Reset button;
+2. the model picker;
+3. one picker for each module slot, with the slot's number before it
    when the model has more than one;
-3. a control for each other place where a peripheral can go: a button
+4. a control for each other place where a peripheral can go: a button
    with the peripheral's name when only one fits the place (press it to
    attach or detach), or a picker with an empty choice when several fit;
-4. the controls of each media place, such as a disk drive or a cassette
-   ([Media](04-media.md)).
+5. the controls of each media place, such as a disk drive or a cassette
+   ([Media](04-media.md));
+6. in a window without a menu bar, the Preset, Settings and More
+   buttons.
 
 A model without such a place has no control for it, and no gap where it
 would be. Which controls your product shows for each model is in
@@ -121,7 +124,7 @@ they came.
 
 **File ▸ Settings…** (the Settings button in a window without a menu
 bar) opens a dialog titled "Settings". A change is
-applied and kept at once; the only button is Close. You can change
+applied and kept at once; the only button is Close (Done on iOS). You can change
 settings while an operation runs. The sections are:
 
 | Section | What you set |

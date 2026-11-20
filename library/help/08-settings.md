@@ -9,13 +9,13 @@ which modules, peripherals or media a machine has; a preset does that
 
 **File ▸ Settings…** opens the dialog (in a window without a menu bar, the Settings button; on macOS it is in the
 application menu). A change applies at once and is kept; the only
-button is Close. The dialog can be used while an operation runs. Its
+button is Close (Done on iOS). The dialog can be used while an operation runs. Its
 sections, each shown when the frontend has one of its settings:
 
 | Section | Settings |
 |---|---|
 | General | Startup model: "Last used" or one of the product's models |
-| Startup presets | one row per model: "None", the bundled startup presets for that model, or a file chosen with "Choose…" |
+| Startup presets | one row per model: "None", the bundled startup presets for that model, or (on Windows and Linux) a file chosen with "Choose…" |
 | Storage | the save folder, and the product's further folders |
 | Folders | the folder in which each file dialog starts |
 | Tracing | the trace folder and the largest trace file, in MB |

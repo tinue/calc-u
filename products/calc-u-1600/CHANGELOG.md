@@ -253,6 +253,15 @@
   `calcu1600_core` and `calcu1600_shared` (were `calcu_core` and
   `calcu_shared`), as Calc-U-59's are `calcu59_core` and
   `calcu59_shared`. For developers only.
+- **Tests and build (developers):** the main test program is
+  `CalcU1600CoreTests` (was `CoreTests`), the Web engine target
+  `calcu1600_web` (was `calcu_web`); the CTest entries `CalcU1600TraceReader`,
+  `CalcU1600ReferenceRuns` and `CalcU1600CoreSeam` (were `CalcU1600ReadTrace`,
+  `CalcU1600ExampleReferences`, `CalcU1600MachineIncludeCheck`), set by
+  `CALCU1600_REFERENCE_COMPARE`, `_REFERENCE_RECORD` and `_REFERENCE_ONLY`
+  (were `CALCU1600_REFERENCES`, `_REFERENCES_RECORD`, `_REFERENCES_ONLY`).
+  Building, signing and cloud sessions are `docs/Building.md`,
+  `docs/macos-signing.md` and `docs/Cloud-Sessions.md` at the repository root.
 - **Web build (developers):** `frontends/web/build.sh` and `run-tests.sh`
   run the library's steps (`library/web/build/product.js`,
   `library/web/tools/playwright.sh`); `build.js` holds the product's

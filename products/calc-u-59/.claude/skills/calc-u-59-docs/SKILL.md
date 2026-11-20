@@ -44,9 +44,8 @@ This skill covers the user help (`help/`), the reference architecture docs (`doc
 The help has the family's ten chapters (`docs/formats/help.md` at the
 repository root): a chapter has a shared part
 (`library/help/NN-*.md`, which names no product, model or peripheral of
-one product) and/or Calc-U-59's part (`help/NN-*.md`). It was converted
-once from calc-u-site's `59/Pages.jsx` at `acd629c`; from then on
-`help/` is the source, and the site's pages are not edited for it.
+one product) and/or Calc-U-59's part (`help/NN-*.md`). `help/` is the
+source; the site's pages are not edited for it.
 
 - Check it with `tools/help check calc-u-59` (CTest `CalcU59HelpCheck`,
   Frequent); `tools/help build calc-u-59` builds `Calc-U-59-help.zip`
@@ -93,7 +92,7 @@ CPU traces they cite in `rom/traces/`.
 There is no end-user guide in `docs/developer/` — that content is the help
 (`help/07-debugger.md` for the debug panel, for one).
 
-When updating these files, keep the provenance notice at the top intact — it signals that the content is best-effort reverse-engineering, not authoritative hardware documentation.
+These files are best-effort reverse-engineering, not authoritative hardware documentation; the code wins where they disagree.
 
 ---
 
@@ -111,7 +110,7 @@ When updating these files, keep the provenance notice at the top intact — it s
 
 ## Release Documentation Update Workflow
 
-Triggered by the user saying **"update documentation"** (or similar) after finishing work on `core/`, `app/`, `frontends/swift/App/`, `frontends/qt6/` or `frontends/web/` for a release. The current dev branch (`dev-X.Y.Z`) always starts at the HEAD of the previous release tag — that tag, not `main` and not an arbitrary commit count, is the diff base.
+Triggered by the user saying **"update documentation"** (or similar) after finishing work on `core/`, `app/`, `frontends/swift/App/`, `frontends/qt6/` or `frontends/web/` for a release. The diff base is the previous release tag of Calc-U-59 (`docs/Process.md`), not an arbitrary commit count.
 
 1. **Find the base commit — verify, don't trust a single command blindly.**
    `git describe --tags --abbrev=0` alone can mislead (a mistagged or extra tag), so cross-check two ways:
@@ -119,11 +118,9 @@ Triggered by the user saying **"update documentation"** (or similar) after finis
    grep -m1 MARKETING_VERSION frontends/swift/Calc-U-59.xcodeproj/project.pbxproj   # the target release
    git tag --list 'calc-u-59-v*' --sort=-v:refname   # find the entry just below the target version
    git merge-base HEAD calc-u-59-v<previous-version>  # should equal...
-   # The first release from tinue/calc-u (3.0.0) has no previous tag here: its base is
-   # the commit that imported 2.3.0 (v2.3.0 stays in the archived tinue/Calc-U-59).
-   git rev-parse v<previous-version>                  # ...this, exactly
+   git rev-parse calc-u-59-v<previous-version>        # ...this, exactly
    ```
-   If `merge-base` and `rev-parse` don't match, the dev branch has extra commits beyond a clean fork point (rebasing, cherry-picks, etc.) — stop and ask the user which commit is the real base rather than guessing.
+   If `merge-base` and `rev-parse` don't match, `main` does not contain the tag (a release from a maintenance branch, cherry-picks) — stop and ask the user which commit is the real base rather than guessing. 3.0.0 has no previous tag: its CHANGELOG entry comes from the release-notes seed in `docs/phase-f.md`.
 
 2. **Review what actually changed.**
    ```bash
@@ -134,7 +131,7 @@ Triggered by the user saying **"update documentation"** (or similar) after finis
 
 3. **Update `CHANGELOG.md`.** Confirm every user-facing change from step 2 has an entry under the current `[X.Y.Z] - work in progress` heading, in the existing style (bold **Area** prefix, `### Fixes` subsection for bug fixes). Don't add a release date — that happens at release time.
 
-4. **Update reference docs** (`docs/developer/Core-Architecture.md`, `docs/developer/App-Layer.md`, `docs/developer/Debug-API.md`, `docs/developer/Frontend-Parity.md`, `docs/developer/Web-Client.md`, `docs/developer/New-GUI-Guide.md`, and `rom/*.md`) for anything the diff invalidated: register model, SCOM layout, PC encoding, machine variants, bridge/debug API surface, settings, file formats. Keep each file's provenance notice intact.
+4. **Update reference docs** (`docs/developer/Core-Architecture.md`, `docs/developer/App-Layer.md`, `docs/developer/Debug-API.md`, `docs/developer/Frontend-Parity.md`, `docs/developer/Web-Client.md`, `docs/developer/New-GUI-Guide.md`, and `rom/*.md`) for anything the diff invalidated: register model, SCOM layout, PC encoding, machine variants, bridge/debug API surface, settings, file formats.
 
 5. **Update the help (`help/`, and `library/help/` where both products change).** Update its chapters for anything user-facing in any GUI: new settings, module behaviour, install steps (Mac, iOS, Windows, Linux), preset keys and steps, file formats, speed or accuracy; run `tools/help check calc-u-59`. The site renders the help asset of the release. What stays the site's (the software collection, the articles derived from `rom/*.md`, the example copies under `59/software-files/`) is updated in `../calc-u-site` under its own `site-59` skill and `CLAUDE.md`, committed there. Leave the web client alone: the site fetches `59/calc/` from a release by its own rules.
 

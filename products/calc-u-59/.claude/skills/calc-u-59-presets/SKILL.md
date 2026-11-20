@@ -16,9 +16,9 @@ is **`docs/formats/cue-card.md`**, the bundle file **`docs/formats/bundle.md`**,
 a magnetic card file (format 3, `.magnetcard.yaml`) **`docs/formats/media.md`**
 §1; in-file cards `magnetic-cards:` are `preset.md` §3.1, the steps `card:`,
 `arm:`, `saveas: { card: }` §5.2.
-Read them before writing or editing a preset. Presets of 2.3.0 (no
-`format-version: 2`) cannot be read; there is no converter
-(a release reads only the current version of its own formats).
+Read them before writing or editing a preset. A preset without
+`format-version: 2` is refused; how a user converts an old file by hand is
+the help's "From a 2.3.0 file" (`help/10-preset-sections.md`).
 
 The code: the library's loader (`library/presets/`) with
 Calc-U-59's rules `app/TIPresetRules` (idle, `expect:`, `screenshot:`,
@@ -52,8 +52,8 @@ stay.
   a `keys:` section changes the machine in the middle of the preset and
   keeps everything it does not list.
 - **Full speed by default.** A preset runs at full speed unless a
-  `- regular-speed:` comes first; an upgraded example starts its first
-  `keys:` with `- regular-speed:` where 2.3.0 ran it at regular speed. Adv
+  `- regular-speed:` comes first; an example that needs regular speed starts its
+  first `keys:` with `- regular-speed:`. Adv
   needs regular speed, or the paper runs away.
 - **The last item is not waited for.** Add `- let-it-finish:` last when the
   run the last key starts is part of the result. A paused machine is never
@@ -62,8 +62,8 @@ stay.
   its first 13 digits, cut, not rounded; registers 60–99 exist on the
   TI-59 only; `H00`–`H03` on the TI-58C only, and they are not 60–63.
 - **The machine is what the header names:** no `slot-1` means no module, no
-  `printer:` means no PC-100C (the upgraded examples name `slot-1: { name:
-  ML }` and `printer: PC-100C`, what a fresh 2.3.0 had).
+  `printer:` means no PC-100C (most examples name `slot-1: { name:
+  ML }` and `printer: PC-100C`).
 - **`expect:` on a TI compares a number** with X in 13 digits (after `π`,
   `3.14159265359` passes, `3.141592654` fails); no regular expressions.
 
@@ -83,7 +83,7 @@ characters has fewer digits; keep it as printed.
   "Harness"); `c59 program 000 count=<n>` and `c59 data-registers <NN>…` read
   what it wrote.
 - The examples are checked by `calcu_preset_check.CalcU59Presets`
-  (Frequent) and against their 2.3.0 reference runs by
+  (Frequent) and against their recorded reference runs by
   `CalcU59ReferenceRuns` (Longer; `tests/reference_runs_tests.cpp`).
 - **Cards in a preset (TI-59 only).** `card: { mem: X }` (side 0 by
   default, `side: 1`) pushes a side through the reader *now*: if the ROM

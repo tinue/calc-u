@@ -1,5 +1,5 @@
 ---
-name: pre-release-cleanup
+name: calc-u-59-pre-release-cleanup
 description: Run close to a release to audit GUI parity, simplification, docs (both repositories), changelog and screenshots, fix what is simple, and report what stands between the branch and a release.
 disable-model-invocation: true
 ---

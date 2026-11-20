@@ -28,7 +28,7 @@ using testroms::PartRig;
 namespace {
 
 bool waitForScanLoop(PartRig& r) {
-    return r.runUntil([&] { return !r.busy() && r.part().emulator()->access().machine().isKeyReady(); }, 3000ms);
+    return r.runUntil([&] { return !r.busy() && r.part().machine()->isKeyReady(); }, 3000ms);
 }
 
 // The run control of the part's session.
@@ -66,8 +66,8 @@ bool keys(PartRig& r, std::initializer_list<const char*> names) {
     return reply.done;
 }
 
-double reg(PartRig& r, int n) { return testroms::mem(r.part().emulator()->machine()).readDataReg(n); }
-int step(PartRig& r, int s) { return int(testroms::mem(r.part().emulator()->machine()).readProgramStep(s)); }
+double reg(PartRig& r, int n) { return testroms::mem(*r.part().machine()).readDataReg(n); }
+int step(PartRig& r, int s) { return int(testroms::mem(*r.part().machine()).readProgramStep(s)); }
 
 } // namespace
 
@@ -109,7 +109,7 @@ TEST(part_load_while_frozen_ends_running_without_tracing) {
     CHECK(r.load(preset("data:\n  01: 7\n")).done);
     CHECK(!c.isFrozen());
     r.run(20ms);
-    CHECK_EQ(testroms::hw(c.emulator()->access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
+    CHECK_EQ(testroms::hw(*c.machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
 }
 
 // A new machine disarms pause-on-start. A model switch builds the built-in
@@ -124,8 +124,8 @@ TEST(part_model_switch_keeps_log_resets_freeze) {
     CHECK(r.model("TI-58").done);
     CHECK(c.model() == Model::TI58);
     CHECK(!c.printerConnected());   // nothing of the old machine is carried
-    CHECK(testroms::moduleIn(c.emulator()->access().machine()) == "ML");
-    CHECK_EQ(c.emulator()->access().machine().plugged().byPlace.size(), size_t{1});   // the module only
+    CHECK(testroms::moduleIn(*c.machine()) == "ML");
+    CHECK_EQ(c.machine()->plugged().byPlace.size(), size_t{1});   // the module only
     r.run(20ms);
     CHECK(!c.runState().armed && !c.isFrozen());
     bool dumped = false;   // the dump is in the session's log, which the switch keeps
@@ -143,13 +143,13 @@ TEST(part_reset_keeps_the_memory_and_clean_reset_clears_it) {
     CHECK(waitForScanLoop(r));
     const uint8_t marked[16] = {1, 2, 3};
     uint8_t regs[16];
-    testroms::mem(c.emulator()->access().machine()).writeRAMReg(90, marked);
+    testroms::mem(*c.machine()).writeRAMReg(90, marked);
     CHECK(r.reset().done);
     CHECK(waitForScanLoop(r));
-    testroms::mem(c.emulator()->access().machine()).copyRAMReg(90, regs);
+    testroms::mem(*c.machine()).copyRAMReg(90, regs);
     CHECK(std::equal(std::begin(marked), std::end(marked), regs));
     CHECK(r.coldBoot().done);
-    testroms::mem(c.emulator()->access().machine()).copyRAMReg(90, regs);
+    testroms::mem(*c.machine()).copyRAMReg(90, regs);
     CHECK_EQ(int(regs[0]), 0);
 }
 
@@ -217,8 +217,8 @@ calcu::sessions::Value traceOnArgs() {
 }
 // TRACE as the PC-100C in the machine has it; nullopt without a PC-100C.
 std::optional<bool> traceSwitch(TIAppPart& c) {
-    auto a = c.emulator()->access();
-    auto* controls = testroms::printerControls(a.machine());
+    calcu::machine::Machine& m = *c.machine();
+    auto* controls = testroms::printerControls(m);
     if (!controls) return std::nullopt;
     for (const auto& i : controls->list())
         if (i.id == PC100C::kTrace) return i.on;
@@ -297,12 +297,12 @@ TEST(paper_back_on_attach_on_any_model) {
     CHECK_EQ(reach.to, pc100cpaper::kLine);
     CHECK(r.detach("printer").done);
     CHECK(!c.printerConnected());
-    CHECK(testroms::paper(c.emulator()->access().machine()) == nullptr);
+    CHECK(testroms::paper(*c.machine()) == nullptr);
     r.run(20ms);
     CHECK(r.printedText() == lines);
     CHECK(r.model("TI-58C").done);
     CHECK(r.attach("printer", "PC-100C").done);
-    CHECK(testroms::paper(c.emulator()->access().machine()) != nullptr);
+    CHECK(testroms::paper(*c.machine()) != nullptr);
     CHECK(r.printedText() == lines);              // the paper is back with the PC-100C
     CHECK(waitForScanLoop(r));
     CHECK(keys(r, {"2", "2nd", "Prt"}));
@@ -323,23 +323,23 @@ TEST(change_module_power_cycles) {
     CHECK(waitForScanLoop(r));
     const uint8_t marked[16] = {1, 2, 3};
     uint8_t regs[16];
-    testroms::mem(c.emulator()->access().machine()).writeRAMReg(90, marked);
+    testroms::mem(*c.machine()).writeRAMReg(90, marked);
     CHECK(r.attach("slot-1", "LE").done);   // a replace
     CHECK_EQ(c.moduleID(), std::string("LE"));
-    CHECK(testroms::moduleIn(c.emulator()->access().machine()) == "LE");
+    CHECK(testroms::moduleIn(*c.machine()) == "LE");
     // The power cycle: the TI-59 loses its program and registers (row 59-11).
     CHECK(waitForScanLoop(r));
-    testroms::mem(c.emulator()->access().machine()).copyRAMReg(90, regs);
+    testroms::mem(*c.machine()).copyRAMReg(90, regs);
     CHECK_EQ(int(regs[0]), 0);
     // The printer too.
-    testroms::mem(c.emulator()->access().machine()).writeRAMReg(90, marked);
+    testroms::mem(*c.machine()).writeRAMReg(90, marked);
     CHECK(r.detach("printer").done);
     CHECK(waitForScanLoop(r));
-    testroms::mem(c.emulator()->access().machine()).copyRAMReg(90, regs);
+    testroms::mem(*c.machine()).copyRAMReg(90, regs);
     CHECK_EQ(int(regs[0]), 0);
     // An empty slot.
     CHECK(r.detach("slot-1").done);
-    CHECK(c.moduleID().empty() && testroms::moduleIn(c.emulator()->access().machine()).empty());
+    CHECK(c.moduleID().empty() && testroms::moduleIn(*c.machine()).empty());
     CHECK(waitForScanLoop(r));
     CHECK(r.errors().empty());
 }
@@ -353,7 +353,7 @@ TEST(part_preset_plays_its_keys) {
                                      "  - wait: 50ms\n  - elapsed-time: report\n"));
     CHECK(reply.done);
     r.run(500ms);
-    CHECK_EQ(testroms::displayText(r.part().emulator()->machine()), std::string("5"));
+    CHECK_EQ(testroms::displayText(*r.part().machine()), std::string("5"));
     bool elapsed = false;   // elapsed-time report: a line of the session's log
     for (const auto& m : r.fe.log)
         if (const auto* s = std::get_if<calcu::sessions::StreamMessage>(&m); s && s->topic == calcu::sessions::kLogTopic)
@@ -390,7 +390,7 @@ TEST(part_reload_after_the_first_run) {
                         "data:\n  07: 9\ncue-card:\n  title: Part 2\n"
                         "keys:\n  - key: A\n  - let-it-finish:\n")).done);
     r.run(300ms);
-    calcu::machine::Machine& m = r.part().emulator()->machine();
+    calcu::machine::Machine& m = *r.part().machine();
     CHECK_EQ(testroms::displayText(m), std::string("124"));  // part 2 used part 1's R08
     CHECK_EQ(testroms::mem(m).readDataReg(7), 9.0);
     CHECK(r.part().cueCard() && r.part().cueCard()->title == "Part 2");

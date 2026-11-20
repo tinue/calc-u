@@ -103,7 +103,7 @@ About texts and links, the settings spec of the layout); the faceplate is
 image, the card area, each key's rectangle, the card's corners); the
 heatmap's grid `c59.heatmap-grid`; the LED shapes
 `c59.led-geometry`, the PWA's layout rules `c59.mobile-rules`
-(`app/WebPageData`). The start is the shell's `start` command with
+(`app/TIWebPart`). The start is the shell's `start` command with
 the `model` and `preset` props. The paper, the run state and the trace are
 the library's topics (`papers`, `paper PC-100C`, `paper-copies`,
 `run-state`, `trace`), which the component set's panel and buttons

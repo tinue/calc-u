@@ -24,13 +24,13 @@
 //   `busy` (the speed) and `held-keys` (the key drawn pressed) itself; the
 //   debug panel's data are TIDebugPart's product topics, whose values are
 //   the page's forms;
-// - the command `start` ({model, preset}); commands `c59.web.*` for the sizes
-//   the page draws at (the page's key grid sends the library's
-//   screen-key-down/-up; a dropped file is the library's `open`); every other command
-//   is TIAppPart's (`c59.*`);
+// - the commands `c59.web.cue-card-size` and `c59.web.debug-width`: the sizes
+//   the page draws at (the start is the library's `start`, the page's key grid
+//   sends the library's screen-key-down/-up, a dropped file is the library's
+//   `open`); every other command is TIAppPart's (`c59.*`);
 // - the cards are the library's `media` topic and `media.*` commands;
 // - requests for the drawing material: `c59.led-geometry`, `c59.mobile-rules`
-//   (WebPageData.hpp), `c59.faceplate-map`, `c59.heatmap-grid`.
+//   `c59.faceplate-map`, `c59.heatmap-grid`, `c59.shell-product`.
 // It lives in the app layer so that it builds and is tested natively; the Web
 // engine (frontends/web/bindings.cpp) only adds it to the session. Settings:
 // Calc-U-59.ini in the persistent file system; cards (the media part) and
@@ -48,8 +48,6 @@ inline const calcu::sessions::TopicName kWebDebugFont{"c59.web.debug-font"};
 
 class TIWebPart final : public calcu::sessions::SessionPart {
 public:
-    /// `presetsDir`: the bundled presets (/presets). Traces are the library's,
-    /// handed over with KeepFile when they end.
     TIWebPart();
     ~TIWebPart();
 

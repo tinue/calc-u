@@ -97,7 +97,7 @@ TEST(settings_declaration) {
     CHECK_EQ(f.text("keyboard", "feedback"), std::string("off"));
     CHECK_EQ(f.text("trace", "location"), std::string("app-support"));
     CHECK(f.text("storage", "save-folder").empty() && f.text("trace", "folder").empty());
-    for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) CHECK(cs::startupPreset(f, s59::modelName(m)).empty());
+    for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) CHECK(cs::startupPreset(f, cu59::modelId(m).value).empty());
     CHECK(!f.boolean("window", "portrait-debug-page"));
     f.set("trace", "location", "folder");
     CHECK_EQ(f.text("trace", "location"), std::string("folder"));
@@ -146,8 +146,8 @@ TEST(startup_last_without_last_model_is_ti59) {
     t.file.set("startup", "model", "last");
     t.file.set("startup", "last-model", "PC-1500");  // not a model of this product
     CHECK_EQ(startup(), std::string("TI-59"));
-    CHECK(s59::modelNamed("TI-58C") == Model::TI58C && !s59::modelNamed("ti58c"));
-    CHECK_EQ(std::string(s59::modelName(Model::TI58C)), std::string("TI-58C"));
+    CHECK(cu59::modelFrom({"TI-58C"}) == Model::TI58C && !cu59::modelFrom({"ti58c"}));
+    CHECK_EQ(cu59::modelId(Model::TI58C).value, std::string("TI-58C"));
 }
 
 // The first start has every default and writes the file then, from

@@ -1,0 +1,1077 @@
+[0/2] Re-checking globbed directories...
+[1/635] Building CXX object library/CMakeFiles/calcu_library.dir/settings/Startup.cpp.o
+[2/635] Building CXX object library/CMakeFiles/calcu_library.dir/settings/PlatformBase.cpp.o
+[3/635] Building CXX object library/CMakeFiles/calcu_library.dir/machine/EmulatedTime.cpp.o
+[4/635] Building CXX object library/CMakeFiles/calcu_library.dir/settings/OpenFolders.cpp.o
+[5/635] Building CXX object library/CMakeFiles/calcu_library.dir/machine/Names.cpp.o
+[6/635] Building CXX object library/CMakeFiles/calcu_library.dir/machine/Descriptor.cpp.o
+[7/635] Building CXX object library/CMakeFiles/calcu_library.dir/settings/Paths.cpp.o
+[8/635] Building CXX object library/CMakeFiles/calcu_library.dir/settings/SettingsFile.cpp.o
+[9/635] Building CXX object library/CMakeFiles/calcu_library.dir/settings/AtomicFile.cpp.o
+[10/635] Building CXX object library/CMakeFiles/calcu_library.dir/settings/IniDocument.cpp.o
+[11/635] Building CXX object library/CMakeFiles/calcu_library.dir/machine/Catalogue.cpp.o
+[12/635] Building CXX object library/CMakeFiles/calcu_library.dir/machine/Machine.cpp.o
+[13/635] Building CXX object library/CMakeFiles/calcu_library.dir/settings/Declaration.cpp.o
+[14/635] Building CXX object library/CMakeFiles/calcu_library.dir/pacing/SliceJitter.cpp.o
+[15/635] Building CXX object library/CMakeFiles/calcu_library.dir/machine/Build.cpp.o
+[16/635] Building CXX object library/CMakeFiles/calcu_library.dir/pacing/Pacer.cpp.o
+[17/635] Building CXX object library/CMakeFiles/calcu_library.dir/machine/Attach.cpp.o
+[18/635] Building CXX object library/CMakeFiles/calcu_library.dir/sessions/Topics.cpp.o
+[19/635] Building CXX object library/CMakeFiles/calcu_library.dir/sessions/TopicMirror.cpp.o
+[20/635] Building CXX object library/CMakeFiles/calcu_library.dir/sessions/MachineSession.cpp.o
+[21/635] Building CXX object library/CMakeFiles/calcu_library.dir/machine/Conformance.cpp.o
+[22/635] Building CXX object library/CMakeFiles/calcu_library.dir/peripherals/Controls.cpp.o
+[23/635] Building CXX object library/CMakeFiles/calcu_library.dir/sessions/LibraryTopics.cpp.o
+[24/635] Building CXX object library/CMakeFiles/calcu_library.dir/sessions/Operation.cpp.o
+[25/635] Building CXX object library/CMakeFiles/calcu_library.dir/sessions/Value.cpp.o
+[26/635] Building CXX object library/CMakeFiles/calcu_library.dir/peripherals/RealTimeClock.cpp.o
+[27/635] Building CXX object library/CMakeFiles/calcu_library.dir/formats/Duration.cpp.o
+[28/635] Building CXX object library/CMakeFiles/calcu_library.dir/roms/Bundle.cpp.o
+[29/635] Building CXX object library/CMakeFiles/calcu_library.dir/peripherals/SerialPort.cpp.o
+[30/635] Building CXX object library/CMakeFiles/calcu_library.dir/sessions/Listener.cpp.o
+[31/635] Building CXX object library/CMakeFiles/calcu_library.dir/formats/Number.cpp.o
+[32/635] Building CXX object library/CMakeFiles/calcu_library.dir/peripherals/HostLinks.cpp.o
+[33/635] Building CXX object library/CMakeFiles/calcu_library.dir/peripherals/PeripheralsPart.cpp.o
+[34/635] Building CXX object library/CMakeFiles/calcu_library.dir/peripherals/PtyHostLink.cpp.o
+[35/635] Building CXX object library/CMakeFiles/calcu_library.dir/roms/RomSet.cpp.o
+[36/635] Building CXX object library/CMakeFiles/calcu_library.dir/formats/Png.cpp.o
+[37/635] Building CXX object library/CMakeFiles/calcu_library.dir/roms/FullSet.cpp.o
+[38/635] Building CXX object library/CMakeFiles/calcu_library.dir/typing/HostKey.cpp.o
+[39/635] Building CXX object library/CMakeFiles/calcu_library.dir/formats/Flow.cpp.o
+[40/635] Building CXX object library/CMakeFiles/calcu_library.dir/roms/Lookup.cpp.o
+[41/635] Building CXX object library/CMakeFiles/calcu_library.dir/control/ControlPart.cpp.o
+[42/635] Building CXX object library/CMakeFiles/calcu_library.dir/typing/KeyNames.cpp.o
+[43/635] Building CXX object library/CMakeFiles/calcu_library.dir/typing/TypingTopics.cpp.o
+[44/635] Building CXX object library/CMakeFiles/calcu_library.dir/typing/TypingProfile.cpp.o
+[45/635] Building CXX object library/CMakeFiles/calcu_library.dir/typing/Awaitable.cpp.o
+[46/635] Building CXX object library/CMakeFiles/calcu_library.dir/control/ControlState.cpp.o
+[47/635] Building CXX object library/CMakeFiles/calcu_library.dir/sessions/AppSession.cpp.o
+[48/635] Building CXX object library/CMakeFiles/calcu_library.dir/startup/MachineControl.cpp.o
+[49/635] Building CXX object library/CMakeFiles/calcu_library.dir/typing/TypingPart.cpp.o
+[50/635] Building CXX object library/CMakeFiles/calcu_library.dir/presets/IdleWatch.cpp.o
+[51/635] Building CXX object library/CMakeFiles/calcu_library.dir/control/Compute.cpp.o
+[52/635] Building CXX object library/CMakeFiles/calcu_library.dir/paper/PaperOutput.cpp.o
+[53/635] Building CXX object library/CMakeFiles/calcu_library.dir/typing/TypingEngine.cpp.o
+[54/635] Building CXX object library/CMakeFiles/calcu_library.dir/paper/Paper.cpp.o
+[55/635] Building CXX object library/CMakeFiles/calcu_library.dir/presets/Vocabulary.cpp.o
+[56/635] Building CXX object library/CMakeFiles/calcu_library.dir/presets/Source.cpp.o
+[57/635] Building CXX object library/CMakeFiles/calcu_library.dir/paper/Picture.cpp.o
+[58/635] Building CXX object library/CMakeFiles/calcu_library.dir/presets/Expect.cpp.o
+[59/635] Building CXX object library/CMakeFiles/calcu_library.dir/startup/StartupPart.cpp.o
+[60/635] Building CXX object library/CMakeFiles/calcu_library.dir/presets/Engine.cpp.o
+[61/635] Building CXX object library/CMakeFiles/calcu_library.dir/paper/PaperTopics.cpp.o
+[62/635] Building CXX object library/CMakeFiles/calcu_library.dir/debugger/ButtonRule.cpp.o
+[63/635] Building CXX object library/CMakeFiles/calcu_library.dir/debugger/Levels.cpp.o
+[64/635] Building CXX object library/CMakeFiles/calcu_library.dir/paper/Replies.cpp.o
+[65/635] Building CXX object library/CMakeFiles/calcu_library.dir/presets/BundleFile.cpp.o
+[66/635] Building CXX object library/CMakeFiles/calcu_library.dir/debugger/Profile.cpp.o
+[67/635] Building CXX object library/CMakeFiles/calcu_library.dir/presets/LibraryKeywords.cpp.o
+[68/635] Building CXX object library/CMakeFiles/calcu_library.dir/debugger/Breakpoints.cpp.o
+[69/635] Building CXX object library/CMakeFiles/calcu_library.dir/debugger/Symbols.cpp.o
+[70/635] Building CXX object library/CMakeFiles/calcu_library.dir/media/Header.cpp.o
+[71/635] Building CXX object library/CMakeFiles/calcu_library.dir/presets/PresetsPart.cpp.o
+[72/635] Building CXX object library/CMakeFiles/calcu_library.dir/debugger/RunState.cpp.o
+[73/635] Building CXX object library/CMakeFiles/calcu_library.dir/media/FileAccess.cpp.o
+[74/635] Building CXX object library/CMakeFiles/calcu_library.dir/media/Names.cpp.o
+[75/635] Building CXX object library/CMakeFiles/calcu_library.dir/media/Conformance.cpp.o
+[76/635] Building CXX object library/CMakeFiles/calcu_library.dir/debugger/TraceSession.cpp.o
+[77/635] Building CXX object library/CMakeFiles/calcu_library.dir/paper/PaperPart.cpp.o
+[78/635] Building CXX object library/CMakeFiles/calcu_library.dir/media/Writer.cpp.o
+[79/635] Building CXX object library/CMakeFiles/calcu_library.dir/debugger/DebuggerSteps.cpp.o
+[80/635] Building CXX object library/CMakeFiles/calcu_library.dir/debugger/RunControl.cpp.o
+[81/635] Building CXX object library/CMakeFiles/calcu_library.dir/media/MediaTopics.cpp.o
+[82/635] Building CXX object library/CMakeFiles/calcu_library.dir/opening/StartFile.cpp.o
+[83/635] Building CXX object library/CMakeFiles/calcu_library.dir/opening/Classify.cpp.o
+[84/635] Building CXX object library/CMakeFiles/calcu_library.dir/media/SaveRules.cpp.o
+[85/635] Building CXX object library/CMakeFiles/calcu_library.dir/presets/Reader.cpp.o
+[86/635] Building CXX object library/CMakeFiles/calcu_library.dir/opening/OpenRequest.cpp.o
+[87/635] Building CXX object library/CMakeFiles/calcu_library.dir/media/Shelf.cpp.o
+[88/635] Building CXX object library/CMakeFiles/calcu_library.dir/opening/LibraryOpeners.cpp.o
+[89/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/Commands.cpp.o
+[90/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/DisplayText.cpp.o
+[91/635] Building CXX object library/CMakeFiles/calcu_library.dir/opening/OpenPart.cpp.o
+[92/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/OpenCommands.cpp.o
+[93/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/Reply.cpp.o
+[94/635] Building CXX object library/CMakeFiles/calcu_library.dir/debugger/DebuggerPart.cpp.o
+[95/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/PaperCommands.cpp.o
+[96/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/MediaCommands.cpp.o
+[97/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/FirstCommands.cpp.o
+[98/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/HarnessHost.cpp.o
+[99/635] Building CXX object library/CMakeFiles/calcu_library.dir/shell/Inputs.cpp.o
+[100/635] Building CXX object library/CMakeFiles/calcu_library.dir/media/PresetMedia.cpp.o
+[101/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/WavRecorder.cpp.o
+[102/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/PresetCommands.cpp.o
+[103/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/StartupCommands.cpp.o
+[104/635] Building CXX object library/CMakeFiles/calcu_library.dir/shell/Loading.cpp.o
+[105/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/StatePart.cpp.o
+[106/635] Building CXX object library/CMakeFiles/calcu_library.dir/shell/HitMap.cpp.o
+[107/635] Building CXX object library/CMakeFiles/calcu_library.dir/shell/BarModel.cpp.o
+[108/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/TypingCommands.cpp.o
+[109/635] Building CXX object library/CMakeFiles/calcu_library.dir/shell/HostSession.cpp.o
+[110/635] Building CXX object library/CMakeFiles/calcu_library.dir/parts/LibraryParts.cpp.o
+[111/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/attach/AttachPort.cpp.o
+[112/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/attach/AttachClient.cpp.o
+[113/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Audio/PiezoSampler.cpp.o
+[114/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/attach/AttachEndpoint.cpp.o
+[115/635] Building CXX object library/CMakeFiles/calcu_library.dir/shell/ShellProduct.cpp.o
+[116/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/attach/LocalStream.cpp.o
+[117/635] Building CXX object library/CMakeFiles/calcu_library.dir/shell/ValueForms.cpp.o
+[118/635] Building CXX object library/CMakeFiles/calcu_library.dir/shell/Notices.cpp.o
+[119/635] Building CXX object library/CMakeFiles/calcu_library.dir/shell/SettingsModel.cpp.o
+[120/635] Building CXX object library/CMakeFiles/calcu_library.dir/shell/MenuModel.cpp.o
+[121/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Basic/BasicProgramSource.cpp.o
+[122/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/CPU/LH5803/LH5803Memory.cpp.o
+[123/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/DebugCommands.cpp.o
+[124/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/Run.cpp.o
+[125/635] Building CXX object library/CMakeFiles/calcu_library.dir/shell/SettingsPart.cpp.o
+[126/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/BasicPointerTable.cpp.o
+[127/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/CPU/LH5801/LH5801.cpp.o
+[128/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/CPU/LH5803/LH5803SharedMemory.cpp.o
+[129/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/Disasm/Disassembly.cpp.o
+[130/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/CPU/SC7852/SC7852.cpp.o
+[131/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/Inspect/Inspector.cpp.o
+[132/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/CpuRegisters.cpp.o
+[133/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/DebugExpression.cpp.o
+[134/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/Inspect/HexDump.cpp.o
+[135/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/Disasm/Z80Disassembler.cpp.o
+[136/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/BasicTyping.cpp.o
+[137/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/Inspect/TextTable.cpp.o
+[138/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Display/LcdScreenshot.cpp.o
+[139/635] Building CXX object library/CMakeFiles/calcu_library.dir/harness/attach/AttachedHarness.cpp.o
+[140/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/Disasm/LH5801Disassembler.cpp.o
+[141/635] Building CXX object library/CMakeFiles/calcu_library.dir/media/MediaPart.cpp.o
+[142/635] Linking CXX static library library/libcalcu_library.a
+[143/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/SourceMap.cpp.o
+[144/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/Listing/Listing.cpp.o
+[145/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/ProgramLoader.cpp.o
+[146/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Machine/SharpKeyIds.cpp.o
+[147/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Display/LcdText.cpp.o
+[148/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Machine/SharpDisplayOutput.cpp.o
+[149/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/Inspect/PC1500Inspector.cpp.o
+[150/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Loaders.cpp.o
+[151/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/Listing/ZasmListing.cpp.o
+[152/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1500/PC1500BasicLoader.cpp.o
+[153/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1500/PC1500Display.cpp.o
+[154/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/Listing/SdasListing.cpp.o
+[155/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1500/PC1500Keyboard.cpp.o
+[156/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Machine/SharpLoaderMemory.cpp.o
+[157/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1500/Upd1990ac.cpp.o
+[158/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Display/DisplayOutputText.cpp.o
+[159/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/SharpDebugging.cpp.o
+[160/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1600/PC1600Display.cpp.o
+[161/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/MachineCodeFile.cpp.o
+[162/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Machine/SharpBuilder.cpp.o
+[163/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1500/PC1500MachineCodeLoader.cpp.o
+[164/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1500/PC1500TraceFile.cpp.o
+[165/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1500/PC1500Memory.cpp.o
+[166/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1600/PC1600Keyboard.cpp.o
+[167/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Machine/SharpMediaPlaces.cpp.o
+[168/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Debug/Inspect/PC1600Inspector.cpp.o
+[169/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1600/PC1600BasicLoader.cpp.o
+[170/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1500/PC1500TypedInput.cpp.o
+[171/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1600/PC1600SubCpu.cpp.o
+[172/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1600/PC1600MachineCodeLoader.cpp.o
+[173/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1600/PC1600Memory.cpp.o
+[174/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1600/PC1600ProgramPlacement.cpp.o
+[175/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/ProgramFile.cpp.o
+[176/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/KeyLayout/PC1500KeyLayout.cpp.o
+[177/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/KeyLayout/PC1600KeyLayout.cpp.o
+[178/635] Automatic MOC for target calcu_qt6
+[179/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1600/PC1600TypedInput.cpp.o
+[180/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/AppPaths.cpp.o
+[181/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1600/TC8576F.cpp.o
+[182/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/KeyLayout/FaceplateLayout.cpp.o
+[183/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/AudioSink.cpp.o
+[184/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/LcdLayout.cpp.o
+[185/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/PacingProfiles.cpp.o
+[186/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1500/PC1500Machine.cpp.o
+[187/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/BasicDump.cpp.o
+[188/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/Settings.cpp.o
+[189/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/LcdTextPart.cpp.o
+[190/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1500/PC1500InterfaceMachine.cpp.o
+[191/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Machine/SharpMachine.cpp.o
+[192/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Machine/SharpRoms.cpp.o
+[193/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpDisplayLines.cpp.o
+[194/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SerialScripts.cpp.o
+[195/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpDebuggerSetup.cpp.o
+[196/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpFileKinds.cpp.o
+[197/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpControlRules.cpp.o
+[198/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1600/PC1600InterfaceMachine.cpp.o
+[199/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/ModuleYamlDump.cpp.o
+[200/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpDebugBlock.cpp.o
+[201/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/SharpRomReader.cpp.o
+[202/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/Machine/SharpCatalogue.cpp.o
+[203/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpSymbolReaders.cpp.o
+[204/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpPrinters.cpp.o
+[205/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpTraceRecorder.cpp.o
+[206/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpLoaderPart.cpp.o
+[207/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpProductMachines.cpp.o
+[208/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_core.dir/core/PC1600/PC1600Machine.cpp.o
+[209/635] Linking CXX static library products/calc-u-1600/libcalcu_core.a
+[210/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/dap/DapJson.cpp.o
+[211/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpPresetRules.cpp.o
+[212/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpTyping.cpp.o
+[213/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpSession.cpp.o
+[214/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpShellProduct.cpp.o
+[215/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/dap/DapWire.cpp.o
+[216/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/dap/DapConfig.cpp.o
+[217/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/dap/DapTargets.cpp.o
+[218/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpHarnessCommands.cpp.o
+[219/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/dap/DapStepping.cpp.o
+[220/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/dap/DapPart.cpp.o
+[221/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/dap/DapBreakpoints.cpp.o
+[222/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpAppPart.cpp.o
+[223/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/PaperPainter.cpp.o
+[224/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpPresetKeys.cpp.o
+[225/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpWebPart.cpp.o
+[226/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/ClipboardService.cpp.o
+[227/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/AskedSend.cpp.o
+[228/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/dap/DapSetup.cpp.o
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/app/dap/DapSetup.cpp:225:51: warning: unused parameter 'op' [-Wunused-parameter]
+  225 | Task<void> DapSession::pauseNow(OperationContext& op) {
+      |                                                   ^
+1 warning generated.
+[229/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/calcu_qt6_autogen/mocs_compilation.cpp.o
+[230/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/RunControlButtons.cpp.o
+[231/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/dap/DapSession.cpp.o
+[232/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/PaperPanel.cpp.o
+[233/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/MediaPicker.cpp.o
+[234/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/HostFolders.cpp.o
+[235/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/NameAndSaveDialog.cpp.o
+[236/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/SessionHost.cpp.o
+[237/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/ShellLoading.cpp.o
+[238/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/FileOpening.cpp.o
+[239/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/ShellNotices.cpp.o
+[240/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/ShellMenus.cpp.o
+[241/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/ShellAbout.cpp.o
+[242/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/AppIcon.icns
+[243/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/Assets.car
+[244/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/ce151.module.yaml
+[245/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/ce155.module.yaml
+[246/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu_shared.dir/app/SharpMediaKinds.cpp.o
+[247/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/ce1600m.module.yaml
+[248/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/ce1601m.module.yaml
+[249/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/ce161.module.yaml
+[250/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/ce1638.module.yaml
+[251/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/ce163f.module.yaml
+[252/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/superram.module.yaml
+[253/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/blank.floppy.yaml
+[254/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/formatted.floppy.yaml
+[255/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/empty.cassette.yaml
+[256/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/empty.wav
+[257/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/CE-150.ROM
+[258/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/CE-158.ROM
+[259/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/CE-502B.module.yaml
+[260/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/Shell.cpp.o
+[261/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC-1500_A01.ROM
+[262/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC-1500_A03.ROM
+[263/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC-1500_A04.ROM
+[264/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-LH5803-C000-FFFF-new.bin
+[265/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-LH5803-C000-FFFF-old.bin
+[266/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P0-B0-new.bin
+[267/635] Linking CXX static library products/calc-u-1600/libcalcu_shared.a
+[268/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P0-B0-old.bin
+[269/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P1-B0-new.bin
+[270/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P1-B0-old.bin
+[271/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P1-B3-new.bin
+[272/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P1-B3-old.bin
+[273/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P1-B3B-new.bin
+[274/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P1-B4-CE1600P-new.bin
+[275/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P1-B3B-old.bin
+[276/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P1-B4-CE1600P-old.bin
+[277/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P1-B5-CE1600P-OR-F-new.bin
+[278/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P1-B5-CE1600P-OR-F-old.bin
+[279/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P2-B6-new.bin
+[280/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P1-B7-HOSTDRIVE.bin
+[281/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/PC1600-P2-B6-old.bin
+[282/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/bundle.yaml
+[283/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/startup/default-pc1500.pc1500
+[284/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/startup/default-pc1500a.pc1500a
+[285/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/startup/default-pc1600.pc1600
+[286/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/basic/hanoi.pc1600
+[287/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/basic/hanoi.bas
+[288/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/lissajou-1500.pc1500a
+[289/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/lissajou-1500.bas
+[290/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/lissajou-1600.pc1600
+[291/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/lissajou-1600.bas
+[292/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/rectangles-1600.pc1600
+[293/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/rectangles-1600.bas
+[294/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/globus.pc1600
+[295/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/globus.bas
+[296/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/biorhythmus_1600.pc1600
+[297/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/biorhythmus_1600.bas
+[298/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/ascii.pc1600
+[299/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/plotter/ascii.bas
+[300/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/machine-code/memtest_1500a.pc1500a
+[301/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/examples/machine-code/memtest_1500a.bin
+[302/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/licenses/LICENSE
+[303/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/licenses/NOTICE
+[304/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/licenses/THIRD-PARTY-NOTICES.md
+[305/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/licenses/LGPL-3.0.txt
+[306/635] Copying OS X Content products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/Resources/licenses/GPL-3.0.txt
+[307/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/ShellControlBar.cpp.o
+[308/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/RomsMissingView.cpp.o
+[309/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/AttachLineClient.cpp.o
+[310/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/PacingProbe.cpp.o
+[311/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/HostKeys.cpp.o
+[312/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/ShellSettingsDialog.cpp.o
+[313/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/PanelArea.cpp.o
+[314/635] Building CXX object library/CMakeFiles/calcu_test_runner.dir/testing/TestMain.cpp.o
+[315/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6.dir/FaceplateInput.cpp.o
+[316/635] Building OBJCXX object library/qt6/CMakeFiles/calcu_qt6.dir/MacClipboard.mm.o
+[317/635] Linking CXX static library library/qt6/libcalcu_qt6.a
+[318/635] Building CXX object library/CMakeFiles/calcu_test_machines.dir/machine/tests/TestCpu.cpp.o
+[319/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/build_alone_tests.cpp.o
+[320/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/emulated_time_tests.cpp.o
+[321/635] Building CXX object library/CMakeFiles/calcu_test_machines.dir/media/tests/TestKinds.cpp.o
+[322/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/build_tests.cpp.o
+[323/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/debug_target_tests.cpp.o
+[324/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/operations_tests.cpp.o
+[325/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/capability_tests.cpp.o
+[326/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/display_tests.cpp.o
+[327/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/keys_tests.cpp.o
+[328/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/determinism_tests.cpp.o
+[329/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/settings/tests/ini_document_tests.cpp.o
+[330/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/sound_tests.cpp.o
+[331/635] Building CXX object products/calc-u-1600/CMakeFiles/calcu1600_harness.dir/app/HarnessProduct.cpp.o
+[332/635] Linking CXX static library products/calc-u-1600/libcalcu1600_harness.a
+[333/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/conformance_tests.cpp.o
+[334/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/time_tests.cpp.o
+[335/635] Automatic MOC for target CalcU1600Qt
+[336/635] Automatic MOC for target CalcU1600QtTests
+[337/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/descriptor_tests.cpp.o
+[338/635] Automatic RCC for resources/calc-u-1600.qrc
+[339/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/pacing/tests/pacing_longrun_tests.cpp.o
+[340/635] Automatic RCC for resources/calc-u-1600.qrc
+[341/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/pacing/tests/jitter_tests.cpp.o
+[342/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/settings/tests/startup_tests.cpp.o
+[343/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/machine/tests/attach_tests.cpp.o
+[344/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/pacing/tests/pacer_tests.cpp.o
+[345/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/settings/tests/settings_file_tests.cpp.o
+[346/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/sessions/tests/value_tests.cpp.o
+[347/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/settings/tests/paths_tests.cpp.o
+[348/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/sessions/tests/mirror_tests.cpp.o
+[349/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/sessions/tests/host_service_tests.cpp.o
+[350/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/sessions/tests/library_topics_tests.cpp.o
+[351/635] Building CXX object library/CMakeFiles/calcu_test_machines.dir/machine/tests/TestMachines.cpp.o
+[352/635] Automatic MOC for target calcu_qt6_tests
+[353/635] Automatic MOC for target calcu_qt6_scenarios
+[354/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/sessions/tests/host_call_tests.cpp.o
+[355/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/sessions/tests/command_tests.cpp.o
+[356/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/peripherals/tests/controls_tests.cpp.o
+[357/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/peripherals/tests/host_links_tests.cpp.o
+[358/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/sessions/tests/suspend_tests.cpp.o
+[359/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/sessions/tests/sound_tests.cpp.o
+[360/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/sessions/tests/speed_tests.cpp.o
+[361/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/formats/tests/formats_tests.cpp.o
+[362/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/peripherals/tests/serial_port_tests.cpp.o
+[363/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/peripherals/tests/time_tests.cpp.o
+[364/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/roms/tests/bundle_tests.cpp.o
+[365/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/formats/tests/png_tests.cpp.o
+[366/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/sessions/tests/topic_tests.cpp.o
+[367/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/sessions/tests/operation_tests.cpp.o
+[368/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/peripherals/tests/real_time_clock_tests.cpp.o
+[369/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/formats/tests/yaml_tests.cpp.o
+[370/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/roms/tests/lookup_tests.cpp.o
+[371/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/roms/tests/rom_set_tests.cpp.o
+[372/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/roms/tests/full_set_tests.cpp.o
+[373/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/TypingTestMachine.cpp.o
+[374/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/control/tests/control_part_tests.cpp.o
+[375/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/control/tests/availability_tests.cpp.o
+[376/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/holds_tests.cpp.o
+[377/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/determinism_tests.cpp.o
+[378/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/control/tests/control_state_tests.cpp.o
+[379/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/startup/tests/reset_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/reset_tests.cpp:4:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+1 warning generated.
+[380/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/startup/tests/change_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/change_tests.cpp:5:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+1 warning generated.
+[381/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/startup/tests/build_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/build_tests.cpp:4:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+1 warning generated.
+[382/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/startup/tests/running_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/running_tests.cpp:6:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+1 warning generated.
+[383/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/map_tests.cpp.o
+[384/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/operation_tests.cpp.o
+[385/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/startup/tests/start_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/start_tests.cpp:5:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+1 warning generated.
+[386/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/startup/tests/switch_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/switch_tests.cpp:5:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+1 warning generated.
+[387/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/live_tests.cpp.o
+[388/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/part_tests.cpp.o
+[389/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/pause_tests.cpp.o
+[390/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/typing_machine_tests.cpp.o
+[391/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/queue_tests.cpp.o
+[392/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/reset_tests.cpp.o
+[393/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/typing/tests/text_tests.cpp.o
+[394/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/paper/tests/PaperFixtures.cpp.o
+[395/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/determinism_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/determinism_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/determinism_tests.cpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[396/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/log_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/log_tests.cpp:3:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/log_tests.cpp:3:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[397/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/build_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/build_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/build_tests.cpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[398/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/check_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/check_tests.cpp:3:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/check_tests.cpp:3:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[399/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/header_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/header_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/header_tests.cpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/header_tests.cpp:73:62: warning: missing field 'noFile' initializer [-Wmissing-field-initializers]
+   73 |     rd.rules.seg.places["slot-1"] = PlaceKeyRule{false, false};   // a product that takes name: only
+      |                                                              ^
+3 warnings generated.
+[400/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/list_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/list_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/list_tests.cpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[401/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/place_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/place_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/place_tests.cpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[402/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/pause_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/pause_tests.cpp:4:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/pause_tests.cpp:4:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[403/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/operation_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/operation_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/operation_tests.cpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[404/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/paper/tests/paper_kind_tests.cpp.o
+[405/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/paper/tests/copy_cut_tests.cpp.o
+[406/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/startup_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/startup_tests.cpp:3:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/startup_tests.cpp:3:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[407/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/reader_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/reader_tests.cpp:3:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/reader_tests.cpp:3:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[408/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/media/tests/header_tests.cpp.o
+[409/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/typing_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/typing_tests.cpp:3:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/typing_tests.cpp:3:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[410/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/debugger/tests/button_rule_tests.cpp.o
+[411/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/steps_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/steps_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/steps_tests.cpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[412/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/presets/tests/waits_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/waits_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/waits_tests.cpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+2 warnings generated.
+[413/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/paper/tests/picture_tests.cpp.o
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/paper/tests/picture_tests.cpp:59:7: warning: unused function 'fromFixture' [-Wunused-function]
+   59 | Paper fromFixture(const PaperDescription& d, const std::string& name) {
+      |       ^~~~~~~~~~~
+1 warning generated.
+[414/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/paper/tests/replies_tests.cpp.o
+[415/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/paper/tests/paper_step_tests.cpp.o
+[416/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/paper/tests/paper_tests.cpp.o
+[417/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/paper/tests/paper_part_tests.cpp.o
+[418/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/debugger/tests/start_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/start_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/start_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/start_tests.cpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:75:78: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+   75 |             startup::StartupSetup{machineControl, settings, presetsPart.get()});
+      |                                                                              ^
+3 warnings generated.
+[419/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/debugger/tests/steps_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/steps_tests.cpp:3:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/steps_tests.cpp:3:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/steps_tests.cpp:3:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:75:78: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+   75 |             startup::StartupSetup{machineControl, settings, presetsPart.get()});
+      |                                                                              ^
+3 warnings generated.
+[420/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/debugger/tests/breakpoint_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/breakpoint_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/breakpoint_tests.cpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/breakpoint_tests.cpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:75:78: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+   75 |             startup::StartupSetup{machineControl, settings, presetsPart.get()});
+      |                                                                              ^
+3 warnings generated.
+[421/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/opening/tests/classify_tests.cpp.o
+[422/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/media/tests/names_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/names_tests.cpp:1:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:9:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/names_tests.cpp:1:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:128:79: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  128 |             startup::StartupSetup{machineControl, *settings, presetsPart.get()});
+      |                                                                               ^
+2 warnings generated.
+[423/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/opening/tests/start_file_tests.cpp.o
+[424/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/debugger/tests/trace_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/trace_tests.cpp:3:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/trace_tests.cpp:3:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/trace_tests.cpp:3:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:75:78: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+   75 |             startup::StartupSetup{machineControl, settings, presetsPart.get()});
+      |                                                                              ^
+3 warnings generated.
+[425/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/debugger/tests/run_control_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/run_control_tests.cpp:5:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:2:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:8:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/run_control_tests.cpp:5:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:2:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/presets/tests/PresetRig.hpp:137:75: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  137 |             startup::StartupSetup{machineControl, *settings, presets.get()});
+      |                                                                           ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/run_control_tests.cpp:5:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/debugger/tests/DebugRig.hpp:75:78: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+   75 |             startup::StartupSetup{machineControl, settings, presetsPart.get()});
+      |                                                                              ^
+3 warnings generated.
+[426/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/media/tests/autosave_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/autosave_tests.cpp:1:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:9:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/autosave_tests.cpp:1:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:128:79: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  128 |             startup::StartupSetup{machineControl, *settings, presetsPart.get()});
+      |                                                                               ^
+2 warnings generated.
+[427/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/media/tests/place_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/place_tests.cpp:1:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:9:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/place_tests.cpp:1:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:128:79: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  128 |             startup::StartupSetup{machineControl, *settings, presetsPart.get()});
+      |                                                                               ^
+2 warnings generated.
+[428/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/media/tests/picker_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/picker_tests.cpp:1:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:9:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/picker_tests.cpp:1:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:128:79: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  128 |             startup::StartupSetup{machineControl, *settings, presetsPart.get()});
+      |                                                                               ^
+2 warnings generated.
+[429/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/media/tests/topic_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/topic_tests.cpp:1:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:9:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/topic_tests.cpp:1:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:128:79: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  128 |             startup::StartupSetup{machineControl, *settings, presetsPart.get()});
+      |                                                                               ^
+2 warnings generated.
+[430/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/opening/tests/open_tests.cpp.o
+[431/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/media/tests/saved_media_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/saved_media_tests.cpp:1:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:9:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/saved_media_tests.cpp:1:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:128:79: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  128 |             startup::StartupSetup{machineControl, *settings, presetsPart.get()});
+      |                                                                               ^
+2 warnings generated.
+[432/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/media/tests/preset_media_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/preset_media_tests.cpp:1:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:9:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/preset_media_tests.cpp:1:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:128:79: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  128 |             startup::StartupSetup{machineControl, *settings, presetsPart.get()});
+      |                                                                               ^
+2 warnings generated.
+[433/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/media/tests/shelf_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/shelf_tests.cpp:1:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:9:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/shelf_tests.cpp:1:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:128:79: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  128 |             startup::StartupSetup{machineControl, *settings, presetsPart.get()});
+      |                                                                               ^
+2 warnings generated.
+[434/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/media/tests/save_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/save_tests.cpp:1:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:9:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/save_tests.cpp:1:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:128:79: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  128 |             startup::StartupSetup{machineControl, *settings, presetsPart.get()});
+      |                                                                               ^
+2 warnings generated.
+[435/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/opening/tests/ways_tests.cpp.o
+[436/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/tests/media_commands_tests.cpp.o
+[437/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/tests/commands_tests.cpp.o
+[438/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/tests/display_text_tests.cpp.o
+[439/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/tests/paper_commands_tests.cpp.o
+[440/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/tests/protocol_tests.cpp.o
+[441/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/tests/debug_commands_tests.cpp.o
+[442/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/tests/preset_commands_tests.cpp.o
+[443/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/tests/serve_addon_tests.cpp.o
+[444/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_tests.dir/calcu_qt6_tests_autogen/mocs_compilation.cpp.o
+[445/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/shell/tests/loading_notice_tests.cpp.o
+[446/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/tests/startup_commands_tests.cpp.o
+[447/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/shell/tests/hit_map_tests.cpp.o
+[448/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/tests/run_tests.cpp.o
+[449/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/shell/tests/help_about_tests.cpp.o
+[450/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/opening/tests/real_parts_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/opening/tests/real_parts_tests.cpp:5:
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:9:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/opening/tests/real_parts_tests.cpp:5:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/media/tests/MediaFixture.hpp:128:79: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  128 |             startup::StartupSetup{machineControl, *settings, presetsPart.get()});
+      |                                                                               ^
+2 warnings generated.
+[451/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/attach/tests/attach_cli_tests.cpp.o
+[452/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/tests/TestProduct.cpp.o
+[453/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/shell/tests/value_forms_tests.cpp.o
+[454/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/shell/tests/bar_model_tests.cpp.o
+[455/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_scenarios.dir/calcu_qt6_scenarios_autogen/mocs_compilation.cpp.o
+[456/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_tests.dir/tests/QtTestMain.cpp.o
+[457/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/shell/tests/inputs_fixture_tests.cpp.o
+[458/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_tests.dir/tests/host_keys_tests.cpp.o
+[459/635] Building CXX object library/CMakeFiles/calcu_library_pty_tests.dir/peripherals/tests/pty_tests.cpp.o
+[460/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_scenarios.dir/tests/QtTestMain.cpp.o
+[461/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/harness/attach/tests/attach_tests.cpp.o
+[462/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_tests.dir/tests/file_opening_tests.cpp.o
+[463/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_tests.dir/tests/media_components_tests.cpp.o
+[464/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/shell/tests/menu_model_tests.cpp.o
+[465/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_tests.dir/tests/attach_host_tests.cpp.o
+[466/635] Building CXX object library/harness/cli/CMakeFiles/calcu.dir/Main.cpp.o
+[467/635] Building CXX object library/harness/cli/CMakeFiles/calcu.dir/Products.cpp.o
+[468/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_tests.dir/tests/run_control_buttons_tests.cpp.o
+[469/635] Building CXX object library/CMakeFiles/calcu_library_tests.dir/shell/tests/settings_dialog_tests.cpp.o
+[470/635] Building CXX object library/harness/cli/CMakeFiles/calcu_test.dir/TestProducts.cpp.o
+[471/635] Building CXX object library/harness/cli/CMakeFiles/calcu_test.dir/Main.cpp.o
+[472/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/app/tests/geometry_tests.cpp.o
+[473/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_tests.dir/__/harness/tests/TestProduct.cpp.o
+[474/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/app/tests/pacing_profiles_tests.cpp.o
+[475/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_tests.dir/tests/paper_panel_tests.cpp.o
+In file included from /Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/qt6/tests/paper_panel_tests.cpp:7:
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/library/startup/tests/TestProductMachines.hpp:139:90: warning: missing field 'romsMissing' initializer [-Wmissing-field-initializers]
+  139 |         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
+      |                                                                                          ^
+1 warning generated.
+[476/635] Building CXX object library/harness/cli/CMakeFiles/calcu.dir/Cli.cpp.o
+[477/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_tests.dir/tests/TestWindow.cpp.o
+[478/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/app/tests/keyboard_map_tests.cpp.o
+[479/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_scenarios.dir/tests/shell_scenarios.cpp.o
+[480/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/basic_program_source_tests.cpp.o
+[481/635] Building CXX object library/harness/cli/CMakeFiles/calcu_test.dir/Cli.cpp.o
+[482/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/basic_fastloader_tests.cpp.o
+[483/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/TestPresetRoms.cpp.o
+[484/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/basictyper_tests.cpp.o
+[485/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_scenarios.dir/__/harness/tests/TestProduct.cpp.o
+[486/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/app/tests/settings_tests.cpp.o
+[487/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_scenarios.dir/tests/TestWindow.cpp.o
+[488/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/ce1600p_tests.cpp.o
+[489/635] Building CXX object library/qt6/CMakeFiles/calcu_qt6_tests.dir/tests/shell_widgets_tests.cpp.o
+[490/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/ce150_tests.cpp.o
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/tests/ce150_tests.cpp:290:13: warning: unused variable 'kSysRom' [-Wunused-variable]
+  290 | const char* kSysRom = "roms/PC-1500_A04.ROM";
+      |             ^~~~~~~
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/tests/ce150_tests.cpp:291:13: warning: unused variable 'kCe150Rom' [-Wunused-variable]
+  291 | const char* kCe150Rom = "roms/CE-150.ROM";
+      |             ^~~~~~~~~
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/tests/ce150_tests.cpp:293:6: warning: unused function 'fileExists' [-Wunused-function]
+  293 | bool fileExists(const char* p) { std::ifstream f(p); return f.good(); }
+      |      ^~~~~~~~~~
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/tests/ce150_tests.cpp:295:6: warning: unused function 'writeScratchPreset' [-Wunused-function]
+  295 | bool writeScratchPreset(const std::string& path, const std::string& body) {
+      |      ^~~~~~~~~~~~~~~~~~
+4 warnings generated.
+[491/635] Building CXX object library/harness/cli/CMakeFiles/calcu_test.dir/__/tests/TestProduct.cpp.o
+[492/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/ce1600f_tests.cpp.o
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/tests/ce1600f_tests.cpp:420:28: warning: loop variable 'd' creates a copy from type 'const std::string' (aka 'const basic_string<char>') [-Wrange-loop-construct]
+  420 |     for (const std::string d : {std::string("Two formatted sides"), std::string("The \"Progs\" disk")}) {
+      |                            ^
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/tests/ce1600f_tests.cpp:420:10: note: use reference type 'const std::string &' (aka 'const basic_string<char> &') to prevent copying
+  420 |     for (const std::string d : {std::string("Two formatted sides"), std::string("The \"Progs\" disk")}) {
+      |          ^~~~~~~~~~~~~~~~~~~~~
+      |                            &
+1 warning generated.
+[493/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/connector_tests.cpp.o
+[494/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/ce158_tests.cpp.o
+[495/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/ce502b_tests.cpp.o
+[496/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/ce151_tests.cpp.o
+[497/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/ce155_tests.cpp.o
+[498/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/lcd_screenshot_tests.cpp.o
+[499/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/battery_card_instance_tests.cpp.o
+[500/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/ce161_tests.cpp.o
+[501/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/lh5803_tests.cpp.o
+[502/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/ce163f_tests.cpp.o
+[503/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/ce1638_tests.cpp.o
+[504/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/descriptor_tests.cpp.o
+[505/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/dap_layer_tests.cpp.o
+[506/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/debug_target_tests.cpp.o
+[507/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/disasm_tests.cpp.o
+[508/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/harness_tests.cpp.o
+[509/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_bank_tests.cpp.o
+[510/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/host_directory_drive_tests.cpp.o
+[511/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/lh5801_tests.cpp.o
+[512/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/paper_replies_tests.cpp.o
+[513/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/example_references_tests.cpp.o
+[514/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/lcd_text_tests.cpp.o
+[515/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_ce150_tests.cpp.o
+[516/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/listing_tests.cpp.o
+[517/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1500_tape_tests.cpp.o
+[518/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_keyboard_display_tests.cpp.o
+[519/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_basictyper_tests.cpp.o
+[520/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/loader_memory_tests.cpp.o
+[521/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_program_placement_tests.cpp.o
+[522/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_host_drive_tests.cpp.o
+[523/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/inspector_tests.cpp.o
+[524/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_phase54_tests.cpp.o
+[525/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/program_file_tests.cpp.o
+[526/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_tape_tests.cpp.o
+[527/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/piezo_sampler_tests.cpp.o
+[528/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/media_kinds_tests.cpp.o
+[529/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/golden_runs_tests.cpp.o
+[530/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/program_files_tests.cpp.o
+[531/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/machine_code_file_tests.cpp.o
+[532/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/memory_card_tests.cpp.o
+[533/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_basicloader_tests.cpp.o
+[534/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/sc7852_tests.cpp.o
+[535/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/peripherals_tests.cpp.o
+[536/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/tc8576f_tests.cpp.o
+[537/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_slot_ram_tests.cpp.o
+[538/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_machine_tests.cpp.o
+[539/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/support/PC1500BasicTyper.cpp.o
+[540/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/tape_deck_tests.cpp.o
+[541/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/plotter_paper_tests.cpp.o
+[542/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/support/PC1600BasicTyper.cpp.o
+[543/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/pc1600_slot_module_tests.cpp.o
+[544/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/run_control_tests.cpp.o
+[545/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/preset_content_tests.cpp.o
+[546/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/support/PC1500BasicTyper.cpp.o
+[547/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/TestPresetRoms.cpp.o
+[548/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/control_state_tests.cpp.o
+[549/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/basic_typing_tests.cpp.o
+[550/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/key_paste_tests.cpp.o
+[551/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/pacing_longrun_tests.cpp.o
+[552/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/support/PC1600BasicTyper.cpp.o
+[553/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/machine_control_tests.cpp.o
+[554/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/session_tests.cpp.o
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/tests/session_tests.cpp:34:7: warning: unused function 'toggle' [-Wunused-function]
+   34 | Value toggle(const char* p) { return Value::object({{"peripheral", p}}); }
+      |       ^~~~~~
+1 warning generated.
+[555/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/paper_session_tests.cpp.o
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/tests/paper_session_tests.cpp:36:7: warning: unused function 'toggle' [-Wunused-function]
+   36 | Value toggle(const char* p) { return Value::object({{"peripheral", p}}); }
+      |       ^~~~~~
+1 warning generated.
+[556/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/debugger_tests.cpp.o
+[557/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/typing_tests.cpp.o
+[558/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/sharp_machine_tests.cpp.o
+[559/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600AppSessionTests.dir/tests/TestPresetRoms.cpp.o
+[560/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600AppSessionTests.dir/tests/support/PC1500BasicTyper.cpp.o
+[561/635] Building CXX object products/calc-u-1600/CMakeFiles/CoreTests.dir/tests/rom_lookup_tests.cpp.o
+[562/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600AppSessionTests.dir/app/tests/app_session_tests.cpp.o
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/app/tests/app_session_tests.cpp:52:7: warning: unused function 'toggle' [-Wunused-function]
+   52 | Value toggle(const char* p) { return Value::object({{"peripheral", p}}); }
+      |       ^~~~~~
+1 warning generated.
+[563/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600SessionTests.dir/tests/sharp_presets_tests.cpp.o
+[564/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600AppSessionTests.dir/app/tests/machine_session_tests.cpp.o
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/app/tests/machine_session_tests.cpp:22:44: warning: address of stack memory associated with parameter 'm' returned [-Wreturn-stack-address]
+   22 | const char* settingsName(Model m) { return m.value.c_str(); }
+      |                                            ^
+1 warning generated.
+[565/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600AppSessionTests.dir/tests/support/PC1600BasicTyper.cpp.o
+[566/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600AppSessionTests.dir/app/tests/loader_part_tests.cpp.o
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/app/tests/loader_part_tests.cpp:55:27: warning: unused function 'ce158Code' [-Wunused-function]
+   55 | std::vector<std::uint8_t> ce158Code(const std::vector<std::uint8_t>& payload, std::uint16_t load, std::uint16_t start) {
+      |                           ^~~~~~~~~
+1 warning generated.
+[567/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600AppSessionTests.dir/app/tests/serial_links_tests.cpp.o
+[568/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600AppSessionTests.dir/app/tests/shell_product_tests.cpp.o
+[569/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600AppSessionTests.dir/app/tests/media_session_tests.cpp.o
+[570/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600HelpTests.dir/tests/help/help_tests.cpp.o
+[571/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600HarnessTests.dir/tests/harness/harness_entry_tests.cpp.o
+[572/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600HarnessTests.dir/tests/harness/idle_tests.cpp.o
+[573/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600AppSessionTests.dir/app/tests/opening_tests.cpp.o
+[574/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/FaceplateWidget.cpp.o
+[575/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/LcdWidget.cpp.o
+[576/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600MachineStateTests.dir/tests/machine_state_tests.cpp.o
+[577/635] Building OBJCXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/MacAppSupport.mm.o
+[578/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600DapTests.dir/tests/dap/dap_tests.cpp.o
+[579/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/AppPaths.cpp.o
+[580/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/AppLogging.cpp.o
+[581/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/main.cpp.o
+[582/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/CalcU1600Qt_autogen/mocs_compilation.cpp.o
+[583/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/AudioOutput.cpp.o
+[584/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/MachineController.cpp.o
+[585/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/MachineCodeLoadDialog.cpp.o
+[586/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/debug/DapSocket.cpp.o
+[587/635] Building CXX object products/calc-u-1600/CMakeFiles/CalcU1600HarnessTests.dir/tests/harness/product_commands_tests.cpp.o
+[588/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/DebugPanel.cpp.o
+[589/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/Ce158PrinterWidget.cpp.o
+[590/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/MainWindow.cpp.o
+[591/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/MediaControls.cpp.o
+[592/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/screenshots/ShotCapture.cpp.o
+[593/635] Building OBJCXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/screenshots/MacShotSupport.mm.o
+[594/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/FaceplateWidget.cpp.o
+[595/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/screenshots/ShotScenario.cpp.o
+[596/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/screenshots/PacingProbe.cpp.o
+[597/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/LcdWidget.cpp.o
+[598/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/AppLogging.cpp.o
+[599/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/AppPaths.cpp.o
+[600/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/AudioOutput.cpp.o
+[601/635] Building OBJCXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/MacAppSupport.mm.o
+[602/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/CalcU1600Qt_autogen/3YJK5W5UP7/qrc_calc-u-1600.cpp.o
+[603/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/CalcU1600QtTests_autogen/mocs_compilation.cpp.o
+[604/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/MachineCodeLoadDialog.cpp.o
+[605/635] Linking CXX executable library/calcu_library_tests
+[606/635] Linking CXX executable library/calcu_library_pty_tests
+[607/635] Linking CXX executable library/qt6/calcu_qt6_tests
+[608/635] Linking CXX executable library/qt6/calcu_qt6_scenarios
+[609/635] Linking CXX executable library/harness/cli/calcu
+ld: warning: ignoring duplicate libraries: 'library/libcalcu_library.a'
+[610/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/MachineController.cpp.o
+[611/635] Linking CXX executable library/harness/cli/calcu_test
+ld: warning: ignoring duplicate libraries: 'library/libcalcu_library.a'
+[612/635] Linking CXX executable products/calc-u-1600/CoreTests
+[613/635] Linking CXX executable products/calc-u-1600/CalcU1600SessionTests
+[614/635] Linking CXX executable products/calc-u-1600/CalcU1600AppSessionTests
+[615/635] Linking CXX executable products/calc-u-1600/CalcU1600DapTests
+[616/635] Linking CXX executable products/calc-u-1600/CalcU1600HelpTests
+[617/635] Linking CXX executable products/calc-u-1600/CalcU1600HarnessTests
+[618/635] Linking CXX executable products/calc-u-1600/CalcU1600MachineStateTests
+[619/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/debug/DapSocket.cpp.o
+[620/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/__/__/__/__/library/qt6/tests/QtTestMain.cpp.o
+[621/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/MediaControls.cpp.o
+[622/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/MainWindow.cpp.o
+[623/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/Ce158PrinterWidget.cpp.o
+[624/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/DebugPanel.cpp.o
+[625/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600Qt.dir/app/screenshots/ShotRunner.cpp.o
+[626/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/screenshots/ShotCapture.cpp.o
+[627/635] Linking CXX executable products/calc-u-1600/frontends/qt6/Calc-U-1600.app/Contents/MacOS/Calc-U-1600
+ld: warning: building for macOS-15.8, but linking with dylib '/opt/homebrew/opt/qtmultimedia/lib/QtMultimedia.framework/Versions/A/QtMultimedia' which was built for newer version 27.0
+[628/635] Building OBJCXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/screenshots/MacShotSupport.mm.o
+[629/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/screenshots/ShotScenario.cpp.o
+[630/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/tests/QtFixture.cpp.o
+[631/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/CalcU1600QtTests_autogen/3YJK5W5UP7/qrc_calc-u-1600.cpp.o
+[632/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/app/screenshots/ShotRunner.cpp.o
+[633/635] Building CXX object products/calc-u-1600/frontends/qt6/CMakeFiles/CalcU1600QtTests.dir/tests/window_tests.cpp.o
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/frontends/qt6/tests/window_tests.cpp:622:21: warning: 'QDragEnterEvent' is deprecated: Use the constructor taking QPointF [-Wdeprecated-declarations]
+  622 |     QDragEnterEvent enter(QPoint(100, 100), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+      |                     ^
+/opt/homebrew/opt/qt/lib/QtGui.framework/Headers/qevent.h:784:5: note: 'QDragEnterEvent' has been explicitly marked deprecated here
+  784 |     QT_DEPRECATED_VERSION_X_6_16("Use the constructor taking QPointF")
+      |     ^
+/opt/homebrew/opt/qt/lib/QtCore.framework/Headers/qtdeprecationmarkers.h:286:45: note: expanded from macro 'QT_DEPRECATED_VERSION_X_6_16'
+  286 | # define QT_DEPRECATED_VERSION_X_6_16(text) QT_DEPRECATED_X(text)
+      |                                             ^
+/opt/homebrew/opt/qt/lib/QtCore.framework/Headers/qtdeprecationmarkers.h:32:33: note: expanded from macro 'QT_DEPRECATED_X'
+   32 | #  define QT_DEPRECATED_X(text) Q_DECL_DEPRECATED_X(text)
+      |                                 ^
+/opt/homebrew/opt/qt/lib/QtCore.framework/Headers/qcompilerdetection.h:1018:36: note: expanded from macro 'Q_DECL_DEPRECATED_X'
+ 1018 | #  define Q_DECL_DEPRECATED_X(x) [[deprecated(x)]]
+      |                                    ^
+/Users/me/Development/public/Calc-U/.claude/worktrees/pacing/products/calc-u-1600/frontends/qt6/tests/window_tests.cpp:766:21: warning: 'QDragEnterEvent' is deprecated: Use the constructor taking QPointF [-Wdeprecated-declarations]
+  766 |     QDragEnterEvent enter(QPoint(100, 100), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+      |                     ^
+/opt/homebrew/opt/qt/lib/QtGui.framework/Headers/qevent.h:784:5: note: 'QDragEnterEvent' has been explicitly marked deprecated here
+  784 |     QT_DEPRECATED_VERSION_X_6_16("Use the constructor taking QPointF")
+      |     ^
+/opt/homebrew/opt/qt/lib/QtCore.framework/Headers/qtdeprecationmarkers.h:286:45: note: expanded from macro 'QT_DEPRECATED_VERSION_X_6_16'
+  286 | # define QT_DEPRECATED_VERSION_X_6_16(text) QT_DEPRECATED_X(text)
+      |                                             ^
+/opt/homebrew/opt/qt/lib/QtCore.framework/Headers/qtdeprecationmarkers.h:32:33: note: expanded from macro 'QT_DEPRECATED_X'
+   32 | #  define QT_DEPRECATED_X(text) Q_DECL_DEPRECATED_X(text)
+      |                                 ^
+/opt/homebrew/opt/qt/lib/QtCore.framework/Headers/qcompilerdetection.h:1018:36: note: expanded from macro 'Q_DECL_DEPRECATED_X'
+ 1018 | #  define Q_DECL_DEPRECATED_X(x) [[deprecated(x)]]
+      |                                    ^
+2 warnings generated.
+[634/635] Linking CXX executable products/calc-u-1600/frontends/qt6/CalcU1600QtTests
+ld: warning: building for macOS-15.8, but linking with dylib '/opt/homebrew/opt/qtmultimedia/lib/QtMultimedia.framework/Versions/A/QtMultimedia' which was built for newer version 27.0

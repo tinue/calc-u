@@ -36,8 +36,7 @@ LongRun longRun(const PacingProfile& profile) {
     const WallTime start = clock.now;
     const WallTime base{16'666'667};
     const WallTime longest = base + WallTime(4'000'000) + WallTime(50'000'000);
-    const std::int64_t bound = profile.slice ? static_cast<std::int64_t>(kSlice + kLen)
-                                             : static_cast<std::int64_t>(ticksIn(longest, kSegRate) + kLen);
+    const std::int64_t bound = static_cast<std::int64_t>(ticksIn(profile.slice, kSegRate) + kLen);
     ScriptRandom rnd{7};
     LongRun out;
     Ticks t0 = m->tickCount();
@@ -78,7 +77,7 @@ TEST(library_longrun_scripted_fixed) {
 }
 
 TEST(library_longrun_scripted_call) {
-    const LongRun r = longRun(callProfile());
+    const LongRun r = longRun(shortProfile());
     CHECK(r.hours > 4.99);
     CHECK_EQ(r.drops, r.stalls);
     CHECK_EQ(r.outside, 0);

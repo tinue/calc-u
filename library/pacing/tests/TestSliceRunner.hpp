@@ -53,13 +53,10 @@ public:
     std::vector<SliceRecord> slices;
 };
 
-// Profiles of the tests: a fixed slice of 20 ms, and "the call".
-inline PacingProfile fixedProfile(bool jitter = false, bool pacedWhileWaiting = false) {
-    return PacingProfile{std::chrono::microseconds(20'000), jitter, pacedWhileWaiting};
-}
-inline PacingProfile callProfile(bool pacedWhileWaiting = false) {
-    return PacingProfile{std::nullopt, false, pacedWhileWaiting};
-}
+// Profiles of the tests: slices of 20 ms (the TI's, with or without jitter)
+// and short slices of 2 ms without jitter (the Sharp's).
+inline PacingProfile fixedProfile(bool jitter = false) { return PacingProfile{std::chrono::microseconds(20'000), jitter}; }
+inline PacingProfile shortProfile() { return PacingProfile{std::chrono::microseconds(2'000), false}; }
 
 // Emulated time minus wall time since a baseline, in ticks.
 inline std::int64_t deviation(const TestMachine& m, Ticks ticks0, WallTime wall, WallTime wall0) {

@@ -9,7 +9,7 @@ ROM (OLD where it differs). "Measured" means with the harness.
 | Question | Meaning | Asked by |
 |---|---|---|
 | A, takes keys | the ROM or a program reads the keyboard as input now; watching for BREAK alone is not A | a scripted press before it goes down |
-| W, waits | nothing happens until the user acts: A, and nothing is busy | pacing (asked; full speed is not paced, see In the code) |
+| W, waits | nothing happens until the user acts: A, and nothing is busy | pacing (full speed runs at real time while W holds, outside an operation) |
 | settled | W held for 20 frames (1/60 s each), sampled every frame | the steps: preset items, `key`, `type`, harness `wait` |
 | B, finished | no program and no CALLed machine code runs, the machine is at the BASIC prompt, and settled | `let-it-finish`, the wait "until the program has ended" |
 
@@ -189,9 +189,10 @@ Not counted as waiting for a medium:
   which the feed (`app/SerialScripts.cpp`) and a host link report
   (`SerialPort::setPeerSending`).
 - The rule: `app/SharpPresetRules.cpp`; the keys that do not wait:
-  `app/SharpTyping.cpp` (ON/BREAK, at most 0.2 s). Pacing asks W, but full
-  speed is never paced (`app/PacingProfiles.cpp`): with pacing by the host's
-  calls, paced-while-waiting stops the Qt app answering (the DAP smoke test).
+  `app/SharpTyping.cpp` (ON/BREAK, at most 0.2 s). At full speed the machine
+  runs at real time while W holds (`library/pacing/Pacer.cpp`), except
+  during an operation (a preset, a load, the debugger's set-up), which never
+  reports waiting and runs as fast as the host allows (`library/sessions/AppSession.cpp`).
 - The cases as tests: `tests/harness/idle_tests.cpp`.
 
 ## Not established

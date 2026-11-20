@@ -89,7 +89,7 @@ public:
     const machine::Catalogue& catalogue() const override { return cat_; }
     machine::MachineBuilder& builder() override { return builder_; }
     startup::MachinePlan builtInDefault(const machine::ModelId& m) override { return startup::MachinePlan{m, {}, {}, nullptr}; }
-    pacing::PacingProfile pacingProfile(const machine::ModelId&) const override { return {}; }
+    pacing::PacingProfile pacingProfile(const machine::ModelId&) const override { return {std::chrono::microseconds(16'667), false}; }   // a frame per call
     int soundRate(const machine::ModelId& m) const override { return m == mt::kDot ? 8000 : 0; }
     machine::Seconds readinessBound(const machine::ModelId&) const override { return machine::Seconds(1.0); }
     RigBuilder builder_;

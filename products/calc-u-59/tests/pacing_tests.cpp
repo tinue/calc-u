@@ -30,16 +30,15 @@ void program(SessionRig& r, const std::string& keycodes) {
     r.until([&] { return r.machine().isKeyReady(); });
 }
 
-// A part with one command: a stretch at full speed whose operation reports
-// "not waiting" (a preset's `wait:` with a duration).
+// A part with one command: an operation that runs one emulated second at
+// full speed (as a preset's `wait:` with a duration), on a machine at the
+// prompt: an operation never reports waiting, so it runs unpaced.
 struct FastWaitPart final : SessionPart {
     void attach(SessionSetup& s) override {
         s.command(CommandName{"test.fast-wait"}, [](const Value&, SessionContext&) -> CommandOutcome {
             return StartOperation{[](OperationContext& op) -> Task<OperationResult> {
-                op.setReportsWaiting(false);
                 const auto rate = op.session().machine()->descriptor().tickRate;
                 co_await op.run(rate);   // one emulated second
-                op.setReportsWaiting(true);
                 co_return OperationResult{};
             }};
         });
@@ -51,9 +50,8 @@ struct FastWaitPart final : SessionPart {
 TEST(pacing_profiles_ti) {
     for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) {
         const auto p = pacingProfile(m);
-        CHECK(p.slice == std::optional<std::chrono::microseconds>(20ms));
+        CHECK(p.slice == 20ms);
         CHECK(p.jitter);
-        CHECK(p.fullSpeedPacedWhileWaiting);
     }
     // The session hands it to the pacer with the machine: a 20 ms slice at the
     // model's rate (9,100 / 7,680 / 7,880 ticks a slice) keeps time.

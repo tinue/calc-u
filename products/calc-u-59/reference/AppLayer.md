@@ -201,10 +201,11 @@ Core locking: `CoreArchitecture.md` § "Threading Model".
 
 Every frontend: the library's pacer in the machine session, with the TI
 profiles (`app/PacingProfiles.hpp`): a fixed 20 ms slice of the model's
-tick rate, jittered slice ends (for the TI-58's error blink), and full
-speed paced at regular speed while the machine waits for input (key
+tick rate and jittered slice ends (for the TI-58's error blink). Full
+speed is paced at regular speed while the machine waits for input (key
 readiness, or on the TI-59 a `Write` waiting for a card; a printer wait
-does not count). A call drops a lag over 100 ms; full speed runs at most
+does not count), as on every product; an operation (a preset, a reset)
+never reports waiting and runs as fast as the host allows. A call drops a lag over 100 ms; full speed runs at most
 14 ms of host time per call. The long-run rate is exact.
 
 `step()` returns the cycle weight in the low 8 bits (`kWeightMask`). Bit 29

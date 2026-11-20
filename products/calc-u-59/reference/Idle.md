@@ -9,7 +9,7 @@ of the commented listings `rom/TI59-commented.asm` (TI-59, TI-58) and
 | Question | Meaning | Asked by |
 |---|---|---|
 | A, takes keys | the ROM's keyboard scan looks for a key now | a scripted press before it goes down |
-| W, waits | nothing happens until the user acts: A, or a card is awaited | pacing (full speed runs at real time while W holds) |
+| W, waits | nothing happens until the user acts: A, or a card is awaited | pacing (full speed runs at real time while W holds, outside an operation) |
 | settled | W held for 100 ms of emulated time, sampled every 1 ms | the steps: preset items, `key`, `type`, harness `wait` |
 | B, finished | no program runs, and settled | `let-it-finish`, the wait "until the program has ended", the print listing |
 

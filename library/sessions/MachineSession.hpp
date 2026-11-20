@@ -105,9 +105,8 @@ public:
     // The earliest tick a hook is due at from now (kNever: none): a host
     // that waits for a hook's work ends its advances there.
     machine::Ticks nextDue() const;
-    // Key readiness or a waiting media place, unless switched off.
+    // Key readiness or a waiting media place.
     bool waitsForInput() const;
-    void setReportsWaiting(bool r) { reportsWaiting_ = r; }
 
     void setSliceSource(SliceSource* s) { source_ = s; }
     pacing::SliceResult runSlice(const pacing::SliceRequest&) override;
@@ -128,7 +127,7 @@ private:
     AdvanceGate* gate_ = nullptr;
     std::function<void()> aboutToChange_;
     SliceSource* source_ = nullptr;
-    bool suspended_ = false, paused_ = false, reportsWaiting_ = true;
+    bool suspended_ = false, paused_ = false;
     pacing::WallTime due_{0};
     std::uint64_t fresh_ = 0;
 };

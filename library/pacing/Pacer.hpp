@@ -50,11 +50,6 @@ class Pacer {
 public:
     static constexpr std::chrono::milliseconds kLagLimit{100};           // a larger lag is dropped, not caught up
     static constexpr std::chrono::milliseconds kFullSpeedAllowance{14};  // per call; the host keeps the rest of ~16 ms
-    // The slice at full speed of a profile whose slice is the call: 1/60 s of
-    // emulated time. Also the one slice a call runs when it drops the lag on
-    // such a profile: running nothing there would let a caller that always
-    // drops (a throttled browser tab) never run the machine.
-    static constexpr int kCallSlicesPerSecond = 60;
 
     explicit Pacer(WallClock clock, std::optional<std::uint32_t> seed = std::nullopt);   // a seed makes the jitter reproducible
 
@@ -65,7 +60,6 @@ public:
 private:
     enum class Outcome { Done, Stopped, LeftWaiting };
 
-    bool fixed() const { return slice_ != 0; }
     void rebase(WallTime at);
     machine::Ticks nextEnd();
     Outcome paced(WallTime now, SliceRunner&, PaceResult&, bool atFull);
@@ -76,9 +70,8 @@ private:
     SliceJitter jitter_;
     PacingProfile profile_;
     machine::TickRate rate_ = 0;
-    machine::Ticks slice_ = 0;       // a fixed slice in ticks; 0 for "the call"
+    machine::Ticks slice_ = 1;       // the slice in ticks
     machine::Ticks lagLimit_ = 0;
-    machine::Ticks callSlice_ = 0;
 
     // The origin: wall time origin_ and the ticks run since, ran_; the index
     // n_ of the last slice end on the grid, and the next end once drawn.

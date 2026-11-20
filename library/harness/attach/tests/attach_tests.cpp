@@ -418,7 +418,11 @@ TEST(wait_at_full_speed_sooner) {
     CHECK(app.open().ok);
     app.start();
     Client c(app.endpoint->port());
-    app.onApp([&] { app.session->send(app.frontend, sessions::Command{sessions::kSpeedCommand, sessions::Value::object({{"full", true}})}); });
+    app.onApp([&] {
+        // A machine that computes: full speed is paced while the machine waits for the user.
+        app.session->machineSession().setWaits([](const machine::Machine&) { return false; });
+        app.session->send(app.frontend, sessions::Command{sessions::kSpeedCommand, sessions::Value::object({{"full", true}})});
+    });
     const auto w0 = std::chrono::steady_clock::now();
     c.send("wait 2s");
     const auto r = c.reply(nullptr, 5000ms);

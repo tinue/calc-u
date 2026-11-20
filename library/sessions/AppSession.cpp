@@ -71,7 +71,9 @@ struct Running final : SliceSource {
         res.ticksRun = same ? ms.machine()->tickCount() - t0 : 0;
         // A wait for the host's next call (hostWait) ends the host call too.
         res.stoppedEarly = over() || !same || job.waitsOnHost();
-        res.waitsForInput = same && ms.waitsForInput();
+        // An operation runs as fast as the host allows: it never reports
+        // waiting, so full speed is not paced while the machine waits for it.
+        res.waitsForInput = false;
         return res;
     }
 };
@@ -373,7 +375,6 @@ void AppSession::Impl::endOperation() {
     if (!res.ok && res.message.empty()) res.message = "The operation failed.";
     if (r->call) reply(r->listener, r->call, res.ok, res.ok ? std::string() : res.message, res.ok ? res.result : nullptr);
     if (!res.ok) notice(res.message);
-    ms.setReportsWaiting(true);
     ms.startAfresh();
     for (SessionPart* p : setup.parts) p->operationEnded(*this);
 }
@@ -381,7 +382,6 @@ void AppSession::Impl::endOperation() {
 void AppSession::Impl::stopOperation() {   // replied "Stopped."
     std::unique_ptr<Running> r = std::move(running);
     if (r->call) reply(r->listener, r->call, false, kStopped);
-    ms.setReportsWaiting(true);
     ms.startAfresh();
     for (SessionPart* p : setup.parts) p->operationEnded(*this);
 }

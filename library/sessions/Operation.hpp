@@ -250,7 +250,6 @@ public:
     Task<machine::Ticks> run(machine::Ticks ticks);
     void setSpeed(pacing::Speed s) { speed_ = s; }   // a stretch at regular speed, paced as usual
     pacing::Speed speed() const { return speed_; }
-    void setReportsWaiting(bool);                    // false reports "not waiting"
     // co_await: ends when the session's wall clock has passed
     // `d`, looked at once per host call, also while the machine is paused (a
     // preset's `wait:` on a paused machine). True when it

@@ -51,11 +51,6 @@ and `docs/Process.md` until the closing check at its end has passed.
   are module instances, so every test writes them back. Tell spellbound:
   give the fixtures `template: true` (never written) and prepare the card
   in that test.
-- **Calc-U-1600's cloud-session hook**: `products/calc-u-1600/.claude/settings.json`
-  runs `$CLAUDE_PROJECT_DIR/tools/cloud_session_start.sh`, a path that
-  exists only when a session opens in the product folder; from the
-  repository root the hook is not loaded. Move it to a root
-  `.claude/settings.json` (with Calc-U-59's ROM fetch) or delete it.
 - **Specifications not written**: Calc-U-1600's trace file (`TRACE.bin`) has
   no page in `docs/formats/` (Calc-U-59's is `docs/formats/trace.md`).
 - **Media topic and the Sharp media places**: the machine knows when a

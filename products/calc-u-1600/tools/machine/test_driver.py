@@ -191,7 +191,7 @@ def test_run_to_an_address(tmp_path):
         Machine(tmp_path / "b").run_to("SC7852", 0x0005, timeout=0.1)
 
 
-# Cards and media of your own: module files by path, floppy disks, eject.
+# Modules and media of your own: module files by path, floppy disks, eject.
 
 
 def test_own_card_is_loaded(tmp_path):

@@ -209,24 +209,25 @@ per machine; on the PC-1600 both CPUs drive it (`PC1600BusDrive`).
   left out; RD/WR, R/W and OD are implicit in the read/write calls. None
   of these is used by a bundled card or by the firmware paths we run, so
   nothing breaks today; each would matter for a card that uses it.
-  - **INHIBIT / INH on the PC-1600** (60-pin 25, both slots 15). The
-    PC-1500 honours it (`PC1500Memory::inhibitAsserted()`, from both
-    connectors' `InhibitSource` cards); `PC1600Memory` never asks. On the
-    PC-1600 INH suppresses the internal ROMs CS001/CS123 (a module
-    overriding internal memory, e.g. a CE-1620M EPROM), and its polarity is
+  - **INHIBIT / INH** (PC-1500 40-pin 15 and 60-pin 25; PC-1600 60-pin 25,
+    both slots 15). No card can drive it and neither machine asks for it:
+    the internal ROMs always answer. On the PC-1500 a card pulling it low
+    suppresses the system ROM. On the PC-1600 INH suppresses the internal
+    ROMs CS001/CS123 (a module overriding internal memory, e.g. a CE-1620M
+    EPROM), and its polarity is
     reversed (TRM §7.2.2: INH *high* inhibits; it is the ROM's active-low OE,
-    tied low by default; not reconciled with a second source). No bundled
-    card on either machine implements `InhibitSource` yet. **Plan:** ask
-    `m_systemBus` and both slot connectors in `PC1600Memory::resolveConst()`
-    for the CS001/CS123 ROMs (which pages/banks those are needs the
-    research), then a test card. **Before fixing:** settle the polarity and
+    tied low by default; not reconciled with a second source). **Plan:** a
+    card capability that drives the pin (a level per card, OR'd on the
+    chain, without RTTI), asked by `PC1500Memory::resolve()` for the system
+    ROM and by `PC1600Memory::resolveConst()` for the CS001/CS123 ROMs
+    (which pages/banks those are needs the research), then a test card. **Before fixing:** settle the polarity and
     which ROM banks INH covers.
   - **Interrupt request lines.** PC-1500 60-pin 30 (INT, to the LH5801);
     PC-1600 60-pin 9 (INT1̄ = SC7852 pin 82, "interrupts from PC-1600
     peripherals", IM2 cause 1) and 30 (IRQ). No card can raise one.
     Today the firmware polls: the CE-158's interrupt-ID register reads 80H
     ("none"), and the CE-1600P's key-interrupt enables (port 81H) aren't
-    modelled. **Plan:** an interrupt-source interface like `InhibitSource`
+    modelled. **Plan:** an interrupt-source capability
     (level per card, OR'd on the chain); PC1500Machine feeds it to the
     LH5801's INT, PC1600Machine to the SC7852 interrupt logic as cause 1
     (PC-1600 INT is a level). Needs a card that uses it (CE-158 receive

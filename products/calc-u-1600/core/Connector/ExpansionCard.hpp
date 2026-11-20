@@ -36,7 +36,7 @@ struct PinState {
     //   pin[4]  PC-1500 Y0 (CS &0000-&3FFF) / PC-1600 RAM2 (Slot 1) or RAM1 (Slot 2) CS
     //   pin[5]  PC-1500 S4        / PC-1600 PVOUT
     //   pin[6]  PC-1500 DME0      / PC-1600 MREQ
-    //   pin[15] INHIBIT / INH (see InhibitSource -- output from the card)
+    //   pin[15] INHIBIT / INH (an output of the card; no card drives it)
     //   pin[16] PC-1500 S1 (PC-1500A S3) / PC-1600 S1 (Slot 1) or K0 (Slot 2)
     //   pin[17] PC-1500 S2 (PC-1500A S4) / PC-1600 S2 (Slot 1) or K1 (Slot 2)
     //   pin[18] PC-1500 S3 (PC-1500A S5) / PC-1600 S3 (Slot 1) or K2 (Slot 2)
@@ -76,20 +76,6 @@ struct WriteResult {
     static constexpr WriteResult taken() { return {true, true}; }
 
     constexpr operator bool() const { return claimed; }
-};
-
-// A card that can drive INHIBIT (Ref/Shared/Expansion-Connectors.md's INHIBIT/INH
-// pin: 40-pin contact 15, 60-pin contact 25) to suppress the host's internal ROM and substitute its own
-// content derives from this too. Connectors look for it once, when the
-// card is attached, so the (usual) cards without it cost nothing on each
-// host-ROM fetch -- and a card can't answer assertsInhibit() without
-// declaring the capability. Polarity-free at this interface: "true =
-// suppress ROM"; the connector applies the host's electrical polarity (the
-// PC-1500 pulls the pin low, the PC-1600 drives it high).
-class InhibitSource {
-public:
-    virtual ~InhibitSource() = default;
-    virtual bool assertsInhibit() const = 0;
 };
 
 /// One memory array on a card, as the card describes itself to the

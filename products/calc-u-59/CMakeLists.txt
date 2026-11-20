@@ -189,9 +189,8 @@ if(CALCU_TESTS)
   # Longer: run locally before merging into main and at the end of a part.
   # Against frontends/web/dist/ (frontends/web/build.sh first).
   calcu_add_test(CalcU59WebPlaywright longer COMMAND frontends/web/run-tests.sh)
-  # Each upgraded example through the harness entry against the reference
-  # run recorded with its 2.3.0 file; a difference is a finding
-  # (tests/reference_runs_tests.cpp).
+  # Each example through the harness entry against its recorded reference
+  # run; a difference is a finding (tests/reference_runs_tests.cpp).
   calcu_add_test(CalcU59ReferenceRuns longer COMMAND CalcU59Tests reference_runs_of_the_examples
                  PROPERTIES ENVIRONMENT CALCU59_REFERENCE_COMPARE=1)
   # A build with one ROM file

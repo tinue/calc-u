@@ -406,10 +406,10 @@ TEST(key_2nd_before_second_function_once_in_a_preset) {
              std::string("done\n"));
 }
 
-TEST(old_names_refused_when_read) {
+TEST(names_that_are_no_key_ids_refused_when_read) {
     PresetRead r;
-    for (const char* old : {"2ndCLR", "P>R", "S+", "mean", "StFlg", "IfFlg"}) {
-        const std::string e = r.error(head() + "keys:\n  - key: " + std::string(old) + "\n");
+    for (const char* name : {"2ndCLR", "P>R", "S+", "mean", "StFlg", "IfFlg"}) {
+        const std::string e = r.error(head() + "keys:\n  - key: " + std::string(name) + "\n");
         CHECK(e.find("line 4") != std::string::npos);
     }
     CHECK(!r.error(head() + "keys:\n  - key: 12\n").empty());   // a two-digit number is no key ID

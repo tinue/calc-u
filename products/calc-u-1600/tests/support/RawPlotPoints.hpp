@@ -7,14 +7,14 @@
 #include "paper/Paper.hpp"
 #include "paper/PaperOutput.hpp"
 
-// The tests' reading of a plotter's paper, moved out of the core's
+// The tests' reading of a plotter's paper, beside the core's
 // Connector/PlotterPaperOutput.hpp (no product code reads it).
 
 namespace sharp {
 
 // A plotter's paper back in the mechanism's raw steps, one point per place,
 // `newStroke` on each stroke's first: the form of the golden runs' `paper`
-// lines (written by v0.8.1's CLIs through CALCU_PAPER_OUT).
+// lines.
 struct RawPlotPoint {
     std::int32_t x = 0, y = 0;
     std::uint8_t color = 0, newStroke = 0;

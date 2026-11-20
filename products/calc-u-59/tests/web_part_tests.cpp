@@ -190,8 +190,8 @@ TEST(web_cards_are_files_of_the_save_folder) {
     CHECK(fs::exists(fs::path(r.part().files().saveFolder()) / "Dropped.magnetcard.yaml"));
     const auto* media = r.part().mediaPart().bindingOf("card-reader");
     CHECK(media && media->name == "Dropped");
-    upload("old.u59");
-    CHECK(!fs::exists(fs::path(r.part().files().saveFolder()) / "old.u59"));   // a 2.3.0 card file (.u59) is ignored
+    upload("other.u59");
+    CHECK(!fs::exists(fs::path(r.part().files().saveFolder()) / "other.u59"));   // a file of no kind is ignored
 }
 
 TEST(web_the_page_topics_are_there) {

@@ -1,6 +1,6 @@
 // TI preset content: the product kind
 // "program memory", the sections partition:, program:, data:, cue-card:,
-// the upgraded examples and the bundle file. Read-time refusals through
+// the bundled examples and the bundle file. Read-time refusals through
 // presets::readPreset with TIPresetRules; what a section does through the
 // harness entry in virtual time; the fitted cue card through the app session
 // (SessionRig). ROM-gated cases skip without the ROMs.
@@ -410,9 +410,9 @@ TEST(data_registers_match_the_rom) {
     }
 }
 
-// ── The upgrade ─────────────────────────────────────────────────────────────
+// ── The bundled presets ─────────────────────────────────────────────────────
 
-TEST(no_2_3_0_preset_left) {
+TEST(every_bundled_preset_is_format_2) {
     // The four examples with magnetic cards too.
     int seen = 0;
     for (const auto& e : fs::recursive_directory_iterator("examples")) {

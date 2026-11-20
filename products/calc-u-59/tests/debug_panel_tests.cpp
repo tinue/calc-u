@@ -1,7 +1,7 @@
 // Calc-U-59's debug panel below the frontends: the product topics and
 // entries, `debug-panel:`, the CALCULATOR tab, the buttons, the CPU tab, the
 // heatmap, the LOG tab, the ASM overlay's kind, box, Run and life, its file
-// kind and the earlier debug panel cases. The format is asm_overlay_tests.cpp; the harness harness_tests.cpp.
+// kind and the debug panel's other cases. The format is asm_overlay_tests.cpp; the harness harness_tests.cpp.
 
 #include "TestHarness.hpp"
 #include "SessionRig.hpp"

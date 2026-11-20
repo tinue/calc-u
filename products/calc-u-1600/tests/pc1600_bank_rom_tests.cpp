@@ -1,4 +1,4 @@
-// Headless C++ tests for the remaining PC-1600 ROM images:
+// Headless C++ tests for the PC-1600's bank-3 and CE-1600P ROM images:
 // PC1600-P1-B3-new.bin/PC1600-P1-B3B-new.bin wired into PC1600Machine at their
 // documented bank addresses, and PC1600-P1-B4-CE1600P-new.bin/PC1600-P1-B5-CE1600P-OR-F-new.bin
 // (confirmed CE-1600P ROM -- see roms/README.md) wired in via PC1600Machine::attachCE1600P().

@@ -1,4 +1,4 @@
-"""CTest CalcU59Scripts (Longer): the scripts that stay drive the harness and
+"""CTest CalcU59Scripts (Longer): the scripts drive the harness and
 give what their references hold (tests/references/scripts/).
 
 - tools/coverage.py build boot digit5 add: the ROM words of each scenario
@@ -31,22 +31,22 @@ failed = False
 subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'coverage.py'), 'build', 'boot', 'digit5', 'add'],
                check=True, env=env, stderr=subprocess.DEVNULL)
 built = os.path.join(ROOT, 'tools', 'build', 'coverage.json')
-new = json.load(open(built))
+got = json.load(open(built))
 if record:
     os.makedirs(record, exist_ok=True)
     shutil.copyfile(built, os.path.join(record, 'coverage.json'))
 else:
-    old = json.load(open(os.path.join(REFS, 'coverage.json')))
+    ref = json.load(open(os.path.join(REFS, 'coverage.json')))
     for name in ('boot', 'digit5', 'add'):
-        a, b = set(old[name]), set(new.get(name, []))
+        a, b = set(ref[name]), set(got.get(name, []))
         if a != b:
             failed = True
-            print(f'coverage.py {name}: only before {sorted("%04X" % x for x in a - b)}, only now {sorted("%04X" % x for x in b - a)}')
+            print(f'coverage.py {name}: only in the reference {sorted("%04X" % x for x in a - b)}, only in this run {sorted("%04X" % x for x in b - a)}')
         else:
-            print(f'coverage.py {name}: {len(b)} words as before')
+            print(f'coverage.py {name}: {len(b)} words as the reference')
 show = subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'coverage.py'), 'show', '0300', '0302'],
                       check=True, env=env, capture_output=True, text=True).stdout.split('\n')
-want = [f'{a:04X} [{sum(a in set(v) for v in new.values()):3}]' for a in (0x300, 0x301, 0x302)]
+want = [f'{a:04X} [{sum(a in set(v) for v in got.values()):3}]' for a in (0x300, 0x301, 0x302)]
 if [l[:10] for l in show[:3]] != want:
     failed = True
     print('coverage.py show:', show[:3], 'wanted', want)
@@ -76,5 +76,5 @@ if verdicts(got) != verdicts(was):
     failed = True
     print('fastmode_matrix.py label differs:\n' + got)
 else:
-    print(f'fastmode_matrix.py label: {len(verdicts(got))} cases as before')
+    print(f'fastmode_matrix.py label: {len(verdicts(got))} cases as the reference')
 sys.exit(1 if failed else 0)

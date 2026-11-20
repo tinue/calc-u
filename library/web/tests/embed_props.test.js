@@ -34,7 +34,7 @@ test("shared_props_in_their_order", () => {
   assert.equal(e.height, 2);
   assert.equal(e.model, "TI-59");
   assert.equal(e.workerUrl, "w.js");
-  // A product's own props stay in rest; layout is a shared one now.
+  // A product's own props stay in rest; layout is a shared one.
   assert.deepEqual(Object.keys(e.rest), ["settings"]);
 });
 

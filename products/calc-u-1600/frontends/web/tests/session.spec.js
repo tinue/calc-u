@@ -166,7 +166,7 @@ test('trace step fails on the web', async ({ page }) => {
   expect(r.reason).toMatch(/line 4: .*trace/i);
 });
 
-test('no message of the old protocol', async ({ page }) => {
+test('only the messages of the session protocol', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page);
   await h.ask(page, 'preset-list');

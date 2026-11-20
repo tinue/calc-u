@@ -295,7 +295,7 @@ test('Name & Save can write-protect a CE-161, and only a card with the switch', 
 });
 
 // A module template is saved under a name and is an
-// instance afterwards (no Name & Save for it any more) ...
+// instance afterwards (it offers no Name & Save) ...
 test('module template saved under a name is an instance', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');

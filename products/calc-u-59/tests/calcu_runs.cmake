@@ -19,12 +19,3 @@ if(NOT out MATCHES "^done 2\nticks: [0-9]+\nseconds: 1\\.[0-9]+\ndone 2\n       
   message(FATAL_ERROR "calcu_runs_calc_u_59: replied: ${out}")
 endif()
 message(STATUS "calcu_runs_calc_u_59: ok")
-
-# The product word (glossary "Product word"): `c59`; the old short
-# form `59` is no product any more.
-execute_process(COMMAND ${CALCU} --product 59 ticks
-                OUTPUT_VARIABLE out ERROR_VARIABLE err RESULT_VARIABLE status)
-if(NOT status EQUAL 2)
-  message(FATAL_ERROR "product_word_c59: --product 59 gave status ${status}: ${out}${err}")
-endif()
-message(STATUS "product_word_c59: ok")

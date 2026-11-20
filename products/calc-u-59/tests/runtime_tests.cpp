@@ -125,8 +125,7 @@ TEST(display_pov_keys_as_the_eye_sees_them) {
 // TI-59 they look a little dimmer than the left ones, steadily — no flicker.
 // Mid-phase (frames well inside a lit phase) every position must hold its
 // brightness frame to frame, the rightmost must be dimmer than the leftmost
-// but never dark (with the old per-poll brightness it flickered between 60%
-// and 87% on the TI-58, and before that dropped to dark).
+// but never dark.
 TEST(display_pov_error_blink_is_steady) {
     for (ModelId model : {ModelId{kTI58}, ModelId{kTI59}}) {
         PovRig r(model);

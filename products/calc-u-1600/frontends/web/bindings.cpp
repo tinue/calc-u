@@ -39,7 +39,7 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
                                                       cu1600::BundleDirs{start.bundleDir, start.presetsDir});
     cu1600::SharpAppPartOptions options;
     options.canMountHostFolder = false;
-    options.uploadFolder = start.uploadsDir;   // several files of Upload Preset…
+    options.uploadFolder = start.uploadsDir;   // several files of Load Preset…
     parts->part = std::make_unique<cu1600::SharpAppPart>(parts->typed, *parts->paths, std::move(options));
     parts->web = std::make_unique<cu1600::SharpWebPart>(*parts->part, start.uploadsDir);
 

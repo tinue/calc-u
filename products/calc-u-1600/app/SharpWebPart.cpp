@@ -67,7 +67,7 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     });
 
     // ── Opening files ───────────────────────────────────────────────────
-    // A drop, Upload Preset… and Import Media… go through the library
+    // A drop, Load Preset… and Import Media… go through the library
     // (`open` with the uploads folder for several files,
     // `media.import`); the page sends no `c1600.upload`. It writes one file
     // into the uploads folder and replies its path; the Web tests hand a

@@ -132,9 +132,9 @@
   module" and "module definition" for "memory card" and "custom memory
   cards".
 - **Menus and the control bar follow the family structure.** Settings…
-  is in File, Help has a help item, and the Web version has an Examples
-  menu of its own; File ▸ Load Preset… is Ctrl+O (⌘O) in the desktop
-  version. On the PC-1600's bar a printer picker (none, CE-150,
+  is in File, Help has a help item, and the bundled examples are under
+  File ▸ Examples ▸ in both versions; File ▸ Load Preset… is Ctrl+O (⌘O)
+  in the desktop version. On the PC-1600's bar a printer picker (none, CE-150,
   CE-1600P) replaces the CE-1600P button and the CE-158 has a button; on
   the PC-1500 and PC-1500A the bar has the buttons CE-150 and CE-158. The
   desktop bar shows the cassette controls before the disk controls.
@@ -181,7 +181,7 @@
   A failed autosave is reported with a notice, and a saved file that
   cannot be read, or that carries a bundled template's name, is named in
   the log at each start.
-- **Opening files.** File ▸ Load Preset… (Web: Upload Preset…) and a
+- **Opening files.** File ▸ Load Preset… and a
   drop open a file as what it is: a BASIC or machine-code program goes
   to its loader, a module, disk or cassette file into its place. A disk
   file can be dropped and is used where it lies (Web: imported); a

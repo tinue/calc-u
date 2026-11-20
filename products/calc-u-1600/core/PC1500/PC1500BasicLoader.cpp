@@ -2,19 +2,17 @@
 
 #include <cstdio>
 
+#include "../Basic/BasicPointers.hpp"
 #include "../Machine/SharpProductKinds.hpp"
 #include "PC1500MachineCodeLoader.hpp"
 
 namespace {
 
-// BASIC pointers (big-endian in system RAM).
-constexpr uint16_t kBasPrgSt = 0x7865;
-constexpr uint16_t kBasPrgEnd = 0x7867;
-constexpr uint16_t kVarStart = 0x7899;
+using sharp::readBE16;
 
-uint16_t readBE16(const sharp::LoaderMemory& m, uint16_t addr) {
-    return static_cast<uint16_t>((m.peek(addr) << 8) | m.peek(static_cast<uint16_t>(addr + 1)));
-}
+constexpr uint16_t kBasPrgSt = sharp::kPC1500BasicPointers.programStart;
+constexpr uint16_t kBasPrgEnd = sharp::kPC1500BasicPointers.programEnd;
+constexpr uint16_t kVarStart = sharp::kPC1500BasicPointers.variables;
 
 void writeBE16(sharp::LoaderMemory& m, uint16_t addr, uint16_t value) {
     const uint8_t b[2] = {static_cast<uint8_t>(value >> 8), static_cast<uint8_t>(value & 0xFF)};

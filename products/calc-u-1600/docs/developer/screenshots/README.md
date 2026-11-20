@@ -55,7 +55,7 @@ object names (`library/shell/ObjectNames.hpp`).
   between steps, as it does for a user (a preset at full speed, `run:` in
   wall time). Put `wait-idle` before a capture that must show the end of
   what the steps started; a cursor that blinks or a clock that runs may
-  differ from run to run, so the pictures are no longer byte-identical.
+  differ from run to run, so the pictures are not byte-identical.
 - **Isolated settings.** A run uses a throwaway settings file and an empty
   card/disk folder. Your startup presets, last model, folders and saved
   cards never show up in the images, and the run never changes them. The

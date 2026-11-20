@@ -12,8 +12,3 @@ only `examples/`). User-facing demos and learning material belong in
 - `presets/` — presets used while debugging or regression-checking the
   emulator itself: preset-loader / memory-card tests, the superRAM card
   setup, the Up/Down-key iterator, and the `- trace:` step demo.
-
-The one-time checks `loader-matrix/` (the fast loaders against the ROM's
-serial loads) and `tape-matrix/` (cassette `CLOAD`/`CSAVE` against Pocket
-Tools) are gone with the CLIs they ran on; the product's tests cover the
-loaders and the cassette.

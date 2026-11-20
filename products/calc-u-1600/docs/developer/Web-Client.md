@@ -88,18 +88,11 @@ builds the test build and tests it, then builds `--release`, checks it
   (classic scripts), and renders
   `React.createElement(CalcU1600, props)`:
 
-  | Prop | Meaning |
-  |---|---|
-  | `width` | The client's width in CSS pixels (default: its parent's) |
-  | `keyboard` | Take the physical keyboard while focused (default true) |
-  | `layout` | `"auto"`, the only one and the default; another value is ignored with a console warning (the library's `embedProps`) |
-  | `preset` | A bundled preset to load at start, by its path in `bundle.yaml`, with or without `examples:` (`plotter/lissajou-1600.pc1600`; started as `examples:<path>`) |
-  | `height` | The client's height in CSS pixels (default: its parent's) |
-  | `model` | A model's name (`PC-1500`, `PC-1500A`, `PC-1600`): start with it (read once, at mount); another value, an index too, is a notice |
-  | `workerUrl` | Another worker entry (the app uses `app/engine-worker.js`) |
-
-  The family's shared props in their order (`docs/formats/web-embed.md`
-  at the repository root); Calc-U-59's `CalcU59` takes the same.
+  The props are the family's shared ones (`docs/formats/web-embed.md`
+  §1.1 at the repository root); Calc-U-1600 has no prop of its own.
+  `layout` takes only `"auto"`, the default; `model` takes `PC-1500`,
+  `PC-1500A` or `PC-1600`; without `width` and `height` the client fills
+  its parent.
 
 - **Prerender-safe.** Rendering has no side effects: the worker, fetches
   and listeners start in effects (`tests/prerender.spec.js`).

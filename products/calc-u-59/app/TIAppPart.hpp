@@ -6,7 +6,8 @@
 #include "media/FileAccess.hpp"
 #include "media/MediaPart.hpp"
 #include "settings/Paths.hpp"
-#include "EmulatorSession.hpp"
+#include "FrameSampler.hpp"
+#include "MachineModelInfo.hpp"
 #include "ModuleCatalog.hpp"
 #include "ProductRoms.hpp"
 #include "TIFileAccess.hpp"
@@ -48,7 +49,7 @@
 // memory commands (app/TIPresetCommands) and this part. The
 // machine is built by the library's machine control and held by the machine
 // session; the part follows each new machine (machineChanged): the runtime
-// around it (EmulatorSession: the frame sampler, the debug panel's reads),
+// around it (the frame sampler),
 // the module and the printer read from what is plugged, the
 // own cue card, the TI-58C's constant memory file (ConstantMemoryKeeper).
 // The card reader is the library's media part: the kind `magnetic-card` (app/TIMagneticCardKind), the TI-59's
@@ -191,11 +192,10 @@ public:
     // session; the start, the model switch, Reset, Cold boot, the module and
     // the printer are the library's commands: `start`, `model`, `reset`,
     // `cold-boot`, `attach`, `detach`)
-    bool hasMachine() const { return m_session != nullptr; }
+    bool hasMachine() const { return m_sampler.has_value(); }
     Model model() const { return m_model; }
-    /// The machine's runtime (frames, the debug panel's reads); the machine
-    /// itself is the machine session's.
-    EmulatorSession* emulator() { return m_session.get(); }
+    /// The machine session's machine (null: none yet).
+    calcu::machine::Machine* machine() const;
     /// The module in `slot-1` (empty: none), as the machine says.
     const std::string& moduleID() const { return m_moduleID; }
 
@@ -272,7 +272,6 @@ private:
     /// part's `card-reader` and the library program.
     void refreshCueCard();
     const calcu::debugger::RunControl& runControl() const;
-    calcu::machine::Machine* machine() const;
     TIAppSetup m_setup;
     TIFileAccess m_files;   ///< its file access is the media part's too
     calcu::sessions::SessionContext* m_ctx = nullptr;
@@ -289,7 +288,8 @@ private:
     TIFileKinds m_fileKinds;
     calcu::parts::LibraryParts m_lib;
 
-    std::unique_ptr<EmulatorSession> m_session;
+    /// The 60 Hz frame sampler of the machine followed; a new one per machine.
+    std::optional<FrameSampler> m_sampler;
     std::uint64_t m_seenGeneration = 0;
     Model m_model = Model::TI59;
 

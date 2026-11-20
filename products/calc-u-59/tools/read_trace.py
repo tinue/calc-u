@@ -107,36 +107,20 @@ def _parse_file_header(f):
     return version, model
 
 def _parse_trace_event(payload):
-    """Parse a TRACE_EVENT payload into a dict.
+    """Parse a TRACE_EVENT payload (125 bytes, as app/TraceWriter.cpp writes it) into a dict."""
+    if len(payload) != 125:
+        raise ValueError(f"TRACE_EVENT payload length {len(payload)}, expected 125")
 
-    Supports both legacy v1 payloads (124 bytes) and extended payloads (126 bytes)
-    that include displayOn/maxDigitDecay.
-    """
-    if len(payload) not in (124, 125):
-        raise ValueError(f"TRACE_EVENT payload length {len(payload)}, expected 124 or 125")
-
-    if len(payload) == 125:
-        # Fixed fields (38 bytes)
-        # Unpacks: suppressed(4) + seqno(4) + pc(2) + opcode(2) + fA(2) + fB(2) + KR(2) + SR(2) +
-        #          EXT(2) + PREG(2) + flags(2) + m_libAddr(2) + R5(1) + digit(1) + RAM_ADDR(1) +
-        #          RAM_OP(1) + REG_ADDR(1) + m_libAddrReadPos(1) + cycle_weight(1) +
-        #          displayOn(1) + maxDigitDecay(1) = 37 bytes
-        (suppressed, seqno, pc, opcode, fA, fB, KR, SR,
-         EXT, PREG, cpu_flags, m_libAddr, R5, digit,
-         RAM_ADDR, RAM_OP, REG_ADDR, m_libAddrReadPos, cycle_weight,
-         displayOn, maxDigitDecay) = struct.unpack_from(
-            '<IIHHHHHHHHHH BBBBBBBBB', payload, 0)
-        off = 37
-    else:
-        # Legacy fixed fields (36 bytes)
-        (suppressed, seqno, pc, opcode, fA, fB, KR, SR,
-         EXT, PREG, cpu_flags, m_libAddr, R5, digit,
-         RAM_ADDR, RAM_OP, REG_ADDR, m_libAddrReadPos, cycle_weight, _dispFilter) = struct.unpack_from(
-            '<IIHHHHHHHHHH BBBBBBBB', payload, 0)
-        # Legacy: derive displayOn from _dispFilter
-        displayOn = 0 if _dispFilter >= 3 else 1
-        maxDigitDecay = _dispFilter
-        off = 36
+    # Fixed fields: suppressed(4) + seqno(4) + pc(2) + opcode(2) + fA(2) + fB(2) + KR(2) +
+    # SR(2) + EXT(2) + PREG(2) + flags(2) + m_libAddr(2) + R5(1) + digit(1) + RAM_ADDR(1) +
+    # RAM_OP(1) + REG_ADDR(1) + m_libAddrReadPos(1) + cycle_weight(1) + displayOn(1) +
+    # maxDigitDecay(1) = 37 bytes
+    (suppressed, seqno, pc, opcode, fA, fB, KR, SR,
+     EXT, PREG, cpu_flags, m_libAddr, R5, digit,
+     RAM_ADDR, RAM_OP, REG_ADDR, m_libAddrReadPos, cycle_weight,
+     displayOn, maxDigitDecay) = struct.unpack_from(
+        '<IIHHHHHHHHHH BBBBBBBBB', payload, 0)
+    off = 37
 
     # A–E registers: 16 unpacked nibbles each (index 0 = LSN)
     regs = {}

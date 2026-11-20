@@ -7,7 +7,6 @@
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "../core/TIRomRanges.hpp"
-#include "../app/EmulatorSession.hpp"
 #include "../app/FrameSampler.hpp"
 #include <algorithm>
 #include <chrono>
@@ -36,7 +35,7 @@ TEST(calc_indicator_blink_changes_abruptly) {
     CHECK(std::fabs(s.updateCalcIndicator(1.0f) - 0.65) < 1e-9);  // and back at once
 }
 
-// ── Display: persistence of vision (app/DisplayPov) ───
+// ── Display: persistence of vision (DisplayPov in app/FrameSampler) ───
 
 TEST(display_pov_channel_hold_and_fade) {
     const double frame = 1.0 / 60;

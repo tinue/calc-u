@@ -4,7 +4,7 @@ import SwiftUI
 /// Position 0 (leftmost) is the "C" (calculate) annunciator.
 struct LEDDisplayView: View, Equatable {
     let segments:  [UInt8]   // 12 elements: last driven glyph, A–G as bits 0–6 (Shared LedFrame)
-    let levels:    [UInt8]   // 12 elements: brightness 0…255 per position (app/DisplayPov)
+    let levels:    [UInt8]   // 12 elements: brightness 0…255 per position (DisplayPov in app/FrameSampler)
     let dpLevels:  [UInt8]   // 12 elements: decimal point brightness per position
     let calcIndicatorOpacity: Double
     let fontStyle: LEDFontStyle

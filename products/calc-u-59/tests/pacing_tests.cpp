@@ -49,12 +49,10 @@ struct FastWaitPart final : SessionPart {
 } // namespace
 
 TEST(pacing_profiles_ti) {
-    for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) {
-        const auto p = pacingProfile(m);
-        CHECK(p.slice == std::optional<std::chrono::microseconds>(20ms));
-        CHECK(p.jitter);
-        CHECK(p.fullSpeedPacedWhileWaiting);
-    }
+    const auto p = pacingProfile();
+    CHECK(p.slice == std::optional<std::chrono::microseconds>(20ms));
+    CHECK(p.jitter);
+    CHECK(p.fullSpeedPacedWhileWaiting);
     // The session hands it to the pacer with the machine: a 20 ms slice at the
     // model's rate (9,100 / 7,680 / 7,880 ticks a slice) keeps time.
     SessionRig r;

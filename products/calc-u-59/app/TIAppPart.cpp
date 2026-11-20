@@ -100,7 +100,7 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
 }
 
 TIAppPart::~TIAppPart() {
-    m_session.reset();
+    m_sampler.reset();
 }
 
 std::vector<sessions::SessionPart*> TIAppPart::sessionParts(std::vector<sessions::SessionPart*> host,

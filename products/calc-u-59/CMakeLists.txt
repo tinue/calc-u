@@ -9,7 +9,8 @@ cmake_minimum_required(VERSION 3.21)
 #
 # The Swift app links CalcU59.xcframework, which frontends/swift/
 # build_xcframework.sh builds from calcu59_core and calcu59_shared of this
-# file; Xcode compiles only Swift and the bridge. Every core/ or
+# file (and calcu59_harness in the Debug slices with harness attach); Xcode
+# compiles only Swift and the bridge. Every core/ or
 # app/ change must pass the CMake, Xcode and Web builds — see CLAUDE.md
 # § "Frontend Parity".
 
@@ -99,8 +100,9 @@ if(EMSCRIPTEN)
 endif()
 
 # The product entry of the harness `calcu` (library/harness/cli/):
-# not in calcu59_shared, so the Swift and Web builds carry none of it. It
-# finds the ROMs in the folder the tests use.
+# not in calcu59_shared, so the Web build and the Swift Release and device
+# builds carry none of it; the Swift Debug builds for macOS and the simulator
+# link it for harness attach. It finds the ROMs in the folder the tests use.
 add_library(calcu59_harness STATIC ${SHARED_ROOT}/HarnessProduct.cpp ${SHARED_ROOT}/TIHarnessCommands.cpp)
 target_link_libraries(calcu59_harness PUBLIC calcu59_shared)
 target_link_libraries(calcu59_harness PRIVATE calcu_warnings)

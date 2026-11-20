@@ -70,7 +70,7 @@ drawing rules: `reference/AppLayer.md`. Don't restate them here.
    resets and loads with the library's commands (`start`, `model`, `reset`,
    `cold-boot`, `attach`, `detach`, `load-preset`), never with product
    commands; the machine is the machine session's, and the part follows it
-   at `machineChanged` (a new `EmulatorSession`). No freeze state, no
+   at `machineChanged` (a new `FrameSampler`). No freeze state, no
    printer lines, no trace writer and no preset reader in `app/`
    (`reference/AppLayer.md`). Tests drive them
    on the session (`tests/SessionRig.hpp`: `SessionRig`, and `PartRig` with

@@ -14,9 +14,11 @@ printer, debugger) and portrait (as the iPhone: calculator and printer
 pages; the PWA). Orient new GUI work on the Qt app's widget of the same
 name (`Web-Client.md` § "Layout of `frontends/web/`" maps them).
 
-Layout, build steps, the `dist/` contract, mounting, location independence,
-the render rule, styling, the PWA and `MANIFEST.json`:
-**`docs/developer/Web-Client.md`**. Don't restate them here. Everything that isn't
+Layout, build steps, Calc-U-59's part of the `dist/` contract (props,
+minimum size, test hooks) and the PWA: **`docs/developer/Web-Client.md`**;
+the family's contract (mounting, `dist/`, location independence, the
+render rule, styling, `MANIFEST.json`): `docs/formats/web-embed.md`
+(repository root). Don't restate them here. Everything that isn't
 drawing: `docs/developer/App-Layer.md`. Feature placement:
 `docs/developer/Frontend-Parity.md` (the Web column).
 

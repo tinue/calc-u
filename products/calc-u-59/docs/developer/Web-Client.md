@@ -52,8 +52,8 @@ calc-engine-worker.js → library-worker.js ── wasm/calcu59-core.{js,wasm} �
 | `src/painters.js` | Canvas painting: the LED (`LedRenderer`), the cue card's draw list (`CueCardRenderer`); the images and canvas sizes through the library's `calcImage` and `sizeCanvas` (`library/web/src/canvas.js`) |
 | `src/CalculatorFace.jsx` | Artwork, LED and cue card overlays, pressed-key effect (`held-keys`); the pointer is the React set's `useShellFaceplate` on `c59.faceplate-map` (a press on a fitted card's corner: `c59.tap-card`); transparent key buttons for assistive technology (`KeyboardWidget`) |
 | `src/Dialogs.jsx` | Card picker on the `media` topic (Arm Card, Arm Fresh Card; the replace question by the library's `calcuAskedQuestion`) (`CardPickerDialog`); File ▸ Saved Media… is the library's `ShellSavedMedia` |
-| `src/Paper.jsx` | The PC-100C's pane: the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), owner from the control state, which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (the library's `set-control`; TRACE's position `c59.printer`), Copy and Cut its `paper.copy` / `paper.cut` (Qt6: `calcu::qt6::PaperPanel`). The PC-100C is attached by the bar's button "PC-100C" |
-| `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) on the debug part's product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `heatmap`, `asm-overlay`, `c59.debug-view` and the library's `log`; Run and the CALCULATOR tab follow the `control-state` entries `c59.asm-run`, `c59.calculator-tab` (TRACE can always be pressed); FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` |
+| `src/Paper.jsx` | The PC-100C's pane: the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), owner from the control state, which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (the library's `set-control`; their positions are the `control-state`'s `controls`), Copy and Cut its `paper.copy` / `paper.cut` (Qt6: `calcu::qt6::PaperPanel`). The PC-100C is attached by the bar's button "PC-100C" |
+| `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) on the debug part's product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view` and the library's `log`; Run and the CALCULATOR tab follow the `control-state` entries `c59.asm-run`, `c59.calculator-tab` (TRACE can always be pressed); FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` |
 | `src/CalcU59.jsx` | The component `CalcU59`, put together from the React set's shell: the menu bar (wide) or the bar's Reset, Preset, Settings and More (portrait), the shell's control bar with the module picker (the library's `ShellSlotPicker`) and the card controls, the shell's dialogs, the storage banner, "ROMs missing"; the product's data and faceplate maps through the library's `useShellProduct` and `useFaceplateMaps`; the two layouts, focus and physical keyboard (the library's `calcuHostKeys`), drag and drop (the library's `open {way: drop, upload: true}`; the library's `calcuFileDrop`: a drop of exactly one file; `calcuOpenFiles`), keyboard feedback (`[keyboard] feedback`) (`MainWindow`) |
 | `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle` (without the full set: a session without a machine and the topic `roms-missing`), the settings file, the shell's part, the library's `SettingsPart` and ControlPart (with the debug panel's product entries), `TIAppPart::sessionParts()` (the library's parts with the TI rules, the bundle of `/presets`; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
 | `calc.css` | Tokens, fonts and every rule the client needs |
@@ -160,40 +160,11 @@ downloads and pins.
 
 ## The `dist/` contract
 
-| Path | What it is |
-|---|---|
-| `calc.js` | The calculator components in one closure. Exposes one global, `CalcU59`. Needs a global `React` 18 loaded before it |
-| `calc.css` | Everything the calculator needs to look right: tokens, `@font-face`, cue-card rules |
-| `calc-engine-worker.js`, `library-worker.js` | The engine's Web Worker (the product's configuration, the library's worker) |
-| `wasm/` | `calcu59-core.js`, `calcu59-core.wasm` |
-| `bundle/`, `files.json` | The ROM full set; the list of what the worker loads |
-| `img/` | The calculator artwork and cue-card templates |
-| `fonts/` | The WOFF2 files `calc.css` names, with their licences |
-| `presets/` | `manifest.json` (`[{file, title}]`) and the preset files |
-| `app/` | The PWA (below) |
-| `vendor/` | `react.production.min.js`, `react-dom.production.min.js` — for `app/` and `index.html`; a host page brings its own |
-| `index.html` | Demo page, also what the tests load |
-| `MANIFEST.json` | `{name, version, commit, files}` — below |
-
-Everything else in `dist/` is internal: a host references only `calc.js`,
-`calc.css` and the `CalcU59` props. The worker's message protocol,
-the file names under `wasm/`, `bundle/`, `img/` and `presets/` and `files.json` may change with any build.
-
-### Mounting it
-
-```html
-<link rel="stylesheet" href="calc/calc.css">
-<script src="react.production.min.js"></script>        <!-- the host's React 18 -->
-<script src="react-dom.production.min.js"></script>
-<script src="calc/calc.js"></script>
-<script>
-  ReactDOM.createRoot(el).render(
-    React.createElement(CalcU59, { layout: "portrait", width: 400, keyboard: true }));
-</script>
-```
-
-The props are the family's shared ones (`docs/formats/web-embed.md` §1.1
-at the repository root), then Calc-U-59's own. What is Calc-U-59's:
+What a host page loads and mounts, what `dist/` holds, the shared props,
+location independence, rendering without side effects and the scoped
+styles are the family's: `docs/formats/web-embed.md` at the repository
+root. The global is `CalcU59` (with `CalcU59.portraitWidth(height)`).
+What is Calc-U-59's own:
 
 - `layout`: `"portrait"` (the default: calculator and printer pages),
   `"wide"` (calculator, printer, debugger side by side) or `"auto"` (by
@@ -222,22 +193,10 @@ a flex item) and the host scrolls, as `index.html` does.
 The client sizes itself from these: it has no `scale`. Dialogs (cards,
 settings, About, notices) open inside its own box, so it needs no room outside it.
 
-Requirements on the host:
-
-- **Copy `dist/` as a whole** and keep its internal layout; where it sits
-  doesn't matter.
-- **Load `calc.js` with a classic `<script src>`** — not inlined, bundled or
-  as a module. It finds the rest of `dist/` from its own URL.
-- **Same origin.** The worker is started from `calc.js`'s directory, and a
-  browser only starts a worker from the page's own origin.
-- **Served over HTTP(S).** The worker fetches every file of `files.json`
-  at init (the ROM full set into `/bundle`, where the ROM lookup finds them;
-  the presets into `/presets`); `file://` doesn't allow `fetch`. A file that
-  cannot be fetched is a failed start ("Calc-U-59 could not start: …"). A
-  missing or bad ROM file is the shell's "ROMs missing"
-  (`[data-calcu=roms-missing]`, the lookup's text in place of the
-  calculator; the menu bar's Help and About work). Over plain HTTP (not
-  localhost) every copy writes the persistent file system.
+A file of `files.json` that cannot be fetched is a failed start
+("Calc-U-59 could not start: …"). A missing or bad ROM file is the shell's
+"ROMs missing" (`[data-calcu=roms-missing]`, the lookup's text in place of
+the calculator; the menu bar's Help and About work).
 
 Stable hooks a host's tests may rely on: the root element's classes
 `calcu-client calcu-device` with `data-layout="wide|portrait"` (its
@@ -255,48 +214,18 @@ elements by their `data-calcu` names: `menu-bar`,
 `bar-more`, `more-item-<id>`, `settings-dialog`, `about-dialog`, `notice`,
 `loading`, `storage-banner`, `roms-missing`.
 
-### Location independence
-
-`dist/` must work unchanged under any path (`/`, `/59/play/`,
-`/anything/calc/`). No URL in the client is root-relative:
-
-- `calc.js` captures `document.currentScript.src` while it runs and resolves
-  the worker, the artwork and the presets against that directory
-  (`CALC_BASE`, the library's `src/base.js`).
-- The worker resolves `wasm/…`, `bundle/…`, `presets/…` and `files.json`
-  against its own URL, or `CALC_ROOT` when started through
-  `app/engine-worker.js`; the engine's `.wasm` is pointed back there with
-  `locateFile`.
-- `app/` refers to `../calc.js`, `../calc.css`, `../vendor/…` relatively; its
-  manifest's `start_url` and `scope` are `./`; the service worker is
-  registered relative to `app/app.js` and its precache list is relative to
-  itself.
-
 `run-tests.sh` runs every test twice (two servers of
-`library/web/tools/serve.py`, started by `library/web/tools/playwright.sh`): against a server whose root is `dist/`,
-and against one that serves `dist/` only under `/anything/calc/` and answers
-404 everywhere else, so a root-relative URL fails the second run.
+`library/web/tools/serve.py`, started by `library/web/tools/playwright.sh`):
+against a server whose root is `dist/`, and against one that serves
+`dist/` only under `/anything/calc/` and answers 404 everywhere else, so a
+root-relative URL fails the second run. `tests/prerender.spec.js` renders
+`calc.js` in Node with the vendored ReactDOMServer (the library's sandbox,
+`library/web/tests/dist-helpers.js` `prerender`) and checks that it leaks
+no globals besides `CalcU59`.
 
-### No side effects in render
-
-The website prerenders `CalcU59` server-side in a sandbox whose
-`fetch` and `Worker` throw. So rendering must have no side effects: the
-worker, fetches and listeners start in effects, which a static render never
-runs, and module-level code may only read `document.currentScript` (and
-`location` as a fallback). `tests/prerender.spec.js` renders `calc.js` that
-way in Node with the vendored ReactDOMServer (the library's sandbox,
-`library/web/tests/dist-helpers.js` `prerender`), and also checks that `calc.js`
-leaks no globals besides `CalcU59`.
-
-### Styling
-
-`calc.css` defines its tokens (the apps' dark chrome colours from
-`frontends/qt6/app/ChromeStyle.hpp`, fonts) on `.calcu-client` — the calculator's root
-element and the PWA's `<body>` — not on `:root`, so the host's own tokens
-neither leak in nor get overridden; every selector is under `.calcu-client`
-(`build.js` fails on one that is not), and the font family is
-`Calc-U Archivo`, a name no host page uses. Sizes that follow the width are inline
-styles; the host styles only its own layout around the client.
+`calc.css` takes its tokens from the apps' dark chrome colours
+(`frontends/qt6/app/ChromeStyle.hpp`); the font family is `Calc-U Archivo`,
+a name no host page uses. Sizes that follow the width are inline styles.
 
 ### The PWA (`app/`)
 
@@ -335,17 +264,6 @@ persistent file system (IndexedDB).
 
 ### `MANIFEST.json`
 
-```json
-{
-  "name": "Calc-U-59-web",
-  "version": "<MARKETING_VERSION>",
-  "commit": "<git rev-parse HEAD>[-dirty]",
-  "files": { "calc.js": "<sha256 hex>", "…": "…" }
-}
-```
-
-`version` is `MARKETING_VERSION` from the Xcode project (the only version;
-read through `release.yaml` as ReleaseIt and the help tool read it);
-`commit` gets `-dirty` when the working tree had changes (tracked or
-untracked); `files` lists every file in `dist/` except `MANIFEST.json`
-itself, with `/`-separated paths.
+The form is `docs/formats/web-embed.md` §2.1. Its `version` is
+`MARKETING_VERSION` from the Xcode project (the only version; read through
+`release.yaml` as ReleaseIt and the help tool read it).

@@ -382,7 +382,7 @@ Steps, collected until the next read:
 
 | Step | Does |
 |---|---|
-| `key(names)` | presses keys by name, several separated by blanks: `key("shift mode")` |
+| `key(names)` | presses keys by name, several separated by blanks: `key("shift mode")`. Each key is held until the machine has taken it, then the machine runs until idle. A finger's press that the program may miss: `command("key-down y").wait(0.1).command("key-up y")` (key IDs; ON/BREAK is `on`) |
 | `type(text)` | types one line and ENTER |
 | `wait(seconds=None)` | waits in machine time; without seconds until idle |
 | `expect(text)`, `not_expect(text)` | the next read fails unless / if a screen line holds text (`/regex/` too) |
@@ -396,6 +396,7 @@ Reads:
 | Read | Returns |
 |---|---|
 | `run()` | runs the steps; the replies |
+| `wait_for(text, timeout=60)` | runs the steps, then waits in machine time until a screen line holds text (`/regex/` too); for work the idle wait can't see the end of, such as a LOAD on the PC-1600, which reads the keyboard for BREAK |
 | `lcd` | the screen's text lines |
 | `display()` | the screen's dots (PC-1600: 156 × 32) |
 | `listing()` | the BASIC program as text lines, the detokenizer's (MODE 0 on the PC-1600) |

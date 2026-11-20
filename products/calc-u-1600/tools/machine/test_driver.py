@@ -244,3 +244,11 @@ def test_bus_rom_adds_renum(tmp_path):
     machine = Machine(tmp_path, model="PC-1500A", bus_rom=[renum]).key("cl").type("NEW0")
     machine.type("1 GOTO 2").type("2 END").key("mode").type("RENUM")
     assert machine.listing() == ["10 GOTO 20", "20 END"]
+
+
+def test_wait_for_text(tmp_path):
+    machine = Machine(tmp_path, model="PC-1500A").key("cl").type("NEW0")
+    machine.type("10 FOR I=1 TO 300:NEXT I").type('20 PRINT "DO"+"NE"').key("mode").type("RUN")
+    assert "DONE" in " ".join(machine.wait_for("DONE", timeout=30).lcd)
+    with pytest.raises(MachineError, match="not on the display within 0.5 s"):
+        machine.wait_for("ABSENT", timeout=0.5)

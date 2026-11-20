@@ -292,7 +292,9 @@ if(CALCU_TESTS)
     file(MAKE_DIRECTORY ${PROBE_HOME})
     calcu_add_test(CalcU1600QtPacingProbe checkpoint COMMAND CalcU1600Qt --pacing-probe 60
                    PROPERTIES RUN_SERIAL TRUE TIMEOUT 300)
-    set_tests_properties(CalcU1600QtPacingProbe PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;HOME=${PROBE_HOME}")
+    if(TEST CalcU1600QtPacingProbe)   # registered only with CALCU_TESTS_CHECKPOINT
+      set_tests_properties(CalcU1600QtPacingProbe PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;HOME=${PROBE_HOME}")
+    endif()
     # The help's pictures into help/images/, one scenario per
     # help chapter (tools/make_screenshots.sh builds the app in build/app-1600).
     calcu_add_test(CalcU1600HelpPictures checkpoint COMMAND tools/make_screenshots.sh PROPERTIES RUN_SERIAL TRUE)

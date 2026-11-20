@@ -30,6 +30,12 @@ keys:
   - type: 0
   - type: 45
   - type: 6
+  # The program asks J/N with an INKEY$ loop: a running program, not a key
+  # wait, so the step is not waited for; the answer comes a second later.
+  - skip-wait:
+  - wait: 1s
   - type: N
+  - skip-wait:
+  - wait: 1s
   - type: J
   - let-it-finish:

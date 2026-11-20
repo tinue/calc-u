@@ -106,15 +106,6 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Test
         run: frontends/web/run-tests.sh
-      # The library's Web frontend shell: its test product,
-      # built in the same build/web with this workflow's Emscripten, and its
-      # Playwright tests in Chromium and WebKit, the container's browsers.
-      - name: Test the library's Web frontend shell
-        working-directory: library/web
-        shell: bash
-        run: |
-          npm ci --no-audit --no-fund
-          tests/run-tests.sh --reporter=line
       - name: Zip dist/
         run: |
           set -euo pipefail

@@ -16,7 +16,7 @@ else
   TMP=$(mktemp -d)
   trap 'rm -rf "$TMP"' EXIT
   DIST="$TMP/dist"
-  CALCU1600_WEB_DIST="$DIST" frontends/web/build.sh --release >/dev/null
+  CALCU_WEB_DIST="$DIST" frontends/web/build.sh --release >/dev/null
 fi
 WASM="$DIST/wasm/calcu1600-core.wasm"
 [ -f "$WASM" ] || { echo "FAIL: no $WASM" >&2; exit 1; }

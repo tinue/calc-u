@@ -1,70 +1,10 @@
 #!/usr/bin/env bash
-# Build the web client into frontends/web/dist/ (gitignored): the WASM
-# engine (core/ + app/ + bindings.cpp; CMake target calcu59_web of the
-# repository's root project, built in build/web), the files it
-# loads (bundle/: the ROM full set), the calculator's script,
-# stylesheet and fonts, the presets, the installable app (the library's,
-# library/web/app/) and a demo page. The worker, the service worker and the
-# page side of the shell are the library's (library/web/; build.js).
-# reference/WebClient.md is the contract for what dist/ contains; the
-# product's CMakeLists.txt has the engine's Emscripten flags.
-#
-# Requires emcmake/cmake (e.g. `brew install emscripten`; CI pins the
-# version in .github/workflows/calc-u-59.yml), ninja and node. Re-run
-# whenever core/, app/, roms/ or anything in frontends/web/ changes.
-# The Playwright tests and the release's zip use the same dist/: Calc-U-59
-# has no test-only command.
+# Builds the web client into frontends/web/dist/ (gitignored; CALCU_WEB_DIST:
+# another folder): build.js names what is the product's, the library's
+# library/web/build/product.js does the steps. --release builds without the
+# engine's test-only commands (Calc-U-59's engine has none: the same dist/).
+# Needs emcmake/cmake (Homebrew `emscripten` or an activated emsdk; CI pins
+# the version), ninja and node. Re-run whenever core/, app/, roms/ or
+# anything in frontends/web/ changes.
 set -euo pipefail
-
-WEB="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$WEB/../.." && pwd)"  # the product directory
-ROOT="$(cd "$REPO_ROOT/../.." && pwd)"  # the repository's root CMake project
-BUILD="$ROOT/build/web"
-# CALCU59_ROMS_DIR, CALCU59_WEB_DIST: another ROM folder and another output
-# (tests/rom_missing_build.sh builds a dist/ without one ROM file).
-ROMS="${CALCU59_ROMS_DIR:-$REPO_ROOT/roms}"
-DIST="${CALCU59_WEB_DIST:-$WEB/dist}"
-
-for tool in emcmake cmake ninja node; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
-    echo "error: $tool not found on PATH." >&2
-    exit 1
-  fi
-done
-
-rm -rf "$DIST"
-mkdir -p "$DIST/wasm" "$DIST/bundle" "$DIST/app" "$DIST/vendor" "$DIST/fonts" "$DIST/img"
-
-if [ ! -f "$BUILD/CMakeCache.txt" ]; then
-  emcmake cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release >/dev/null
-fi
-cmake --build "$BUILD" --target calcu59_web
-cp "$BUILD/products/calc-u-59/ti59-core.js" "$BUILD/products/calc-u-59/ti59-core.wasm" "$DIST/wasm/"
-
-# The full set of ROM files (the ten calculator dumps and the 14
-# module files with the module list and cue cards, as roms/fetch_roms.sh
-# fetched them): the library's worker writes everything in
-# bundle/ (files.json) into /bundle, where the lookup finds them. A missing
-# file is not copied, and the started client names it
-# (tests/rom_missing_build.sh).
-cp "$ROMS"/*.txt "$ROMS"/*.rom.yaml "$DIST/bundle/"
-
-# The calculator artwork and the cue-card templates (one source: the Xcode
-# asset catalogue, as for the Qt app).
-for img in ti59_base ti58_base CueCard MagnetCard SolidStateCard; do
-  cp "$REPO_ROOT/frontends/swift/App/Assets.xcassets/$img.imageset/$img.png" "$DIST/img/"
-done
-
-cp "$WEB/index.html" "$WEB/calc-engine-worker.js" "$DIST/"   # build.js writes calc.css
-cp "$WEB"/fonts/* "$DIST/fonts/"
-# React 18 for the PWA and the demo page; a host page brings its own.
-cp "$ROOT/library/web/vendor/react.production.min.js" "$ROOT/library/web/vendor/react-dom.production.min.js" "$DIST/vendor/"
-cp "$WEB/app/index.html" "$WEB/app/app.css" "$WEB/app/manifest.json" "$DIST/app/"
-# The app page, its service worker and worker entry are the library's
-# (library/web/app/; build.js).
-# The app icon, derived from App/AppIcon.icon by tools/gen_qt_icons.sh.
-cp "$REPO_ROOT/frontends/qt6/resources/linux/calc-u-59.png" "$DIST/app/icon.png"
-
-node "$WEB/build.js"
-
-echo "wrote $DIST"
+exec node "$(dirname "$0")/build.js" "$@"

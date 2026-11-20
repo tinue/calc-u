@@ -21,8 +21,8 @@ rm "$TMP/roms/$MISSING"
 echo "rom_missing_build: roms/ without $MISSING"
 
 # The web client, built from that folder into its own dist/.
-CALCU1600_ROMS_DIR="$TMP/roms" CALCU1600_WEB_DIST="$TMP/dist" frontends/web/build.sh >/dev/null
+CALCU1600_ROMS_DIR="$TMP/roms" CALCU_WEB_DIST="$TMP/dist" frontends/web/build.sh >/dev/null
 [ ! -e "$TMP/dist/bundle/$MISSING" ] || { echo "FAIL: dist/ has $MISSING" >&2; exit 1; }
-CALCU1600_WEB_DIST="$TMP/dist" CALCU1600_ROM_TAKEN_AWAY="$MISSING" \
+CALCU_WEB_DIST="$TMP/dist" CALCU1600_ROM_TAKEN_AWAY="$MISSING" \
   frontends/web/run-tests.sh tests/rom-missing.spec.js -g "taken_away" --project root
 echo "rom_missing_build: web names $MISSING: ok"

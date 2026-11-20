@@ -94,12 +94,13 @@ Never edit the calculator there — that copy is generated.
    either way.
 3. **Location-independent** (`WebClient.md` § "Location independence"). Files the worker
    loads go into `dist/bundle/` or `dist/presets/` (`files.json`); other new
-   files the PWA needs offline go into `build.js`'s `core` list for the
-   library's service worker (build.js fails on a missing one).
+   files go into `build.js`'s `files` list; the library's service worker
+   precaches everything in `vendor/`, `wasm/`, `img/` and `fonts/`
+   (`library/web/build/product.js`; the build fails on a missing file).
 4. **Render has no side effects** (`WebClient.md` § "No side effects in render").
 5. **`calc.js` exposes `CalcU59` only** (`src/CalcU59.jsx`). The sources are concatenated
    into one closure; a new file goes into `sources` in `build.js` (the
-   product's data for the library's `buildProduct`), in load order. Its props (`WebClient.md` § "Mounting it": the family's
+   product's values for the library's `buildWebProduct`), in load order. Its props (`WebClient.md` § "Mounting it": the family's
    shared ones from the library's `embedProps`, in the order `width`,
    `keyboard`, `layout`, `preset`, `height`, `model`, `workerUrl`, then
    `settings`) and the stable hooks
@@ -112,7 +113,7 @@ Never edit the calculator there — that copy is generated.
    `frontends/swift/App/Assets.xcassets`, presets from `examples/` (exactly the files
    `examples/bundle.yaml` lists, into `dist/presets/`; the shell's
    Examples ▸ and the startup preset rows ask `preset-list`), the icon from `frontends/qt6/resources/linux/` (derived from
-   `frontends/swift/App/AppIcon.icon`). `build.sh` copies them; never commit copies.
+   `frontends/swift/App/AppIcon.icon`). `build.js`'s `files` names them, the library's build copies them; never commit copies.
 8. **Build and test before committing:** `frontends/web/build.sh && frontends/web/run-tests.sh`.
    Also after any `core/` or `app/` change (CLAUDE.md).
 9. **Commit often, never push.**
@@ -120,7 +121,7 @@ Never edit the calculator there — that copy is generated.
 ## Build and test
 
 ```bash
-frontends/web/build.sh                       # → frontends/web/dist/ (~15 s; engine: CMake target calcu59_web in ../../build/web)
+frontends/web/build.sh                       # → frontends/web/dist/ (~15 s; engine: CMake target calcu59_web in ../../build/web; build.js has the product's values, library/web/build/product.js the steps)
 frontends/web/run-tests.sh                   # all tests, at / and under /anything/calc/
 frontends/web/run-tests.sh -g "cue card"     # extra args go to playwright test
 python3 -m http.server 8000 -d frontends/web/dist   # look at it: http://localhost:8000/
@@ -138,7 +139,9 @@ buttons and the trace hand-over, the portrait pages, the service worker's
 precache. Key presses after a program stops can extend its last entry, as
 on the real calculator — press CLR first. `tests/prerender.spec.js` renders `calc.js`
 in Node. Ports 8059 and 8060 (`CALCU_WEB_PORT` moves both; the servers are
-`library/web/tools/serve.py`). Shared: `tests/helpers.js` (`gotoReady`), and
+`library/web/tools/serve.py`, started by `library/web/tools/playwright.sh`;
+`playwright.config.js` names the projects, `library/web/tools/playwright-config.js`
+the rest). Shared: `tests/helpers.js` (`gotoReady`), and
 the library's `library/web/tests/dist-helpers.js` (`serveDist` for the
 offline test, `prerender`).
 `tests/session.spec.js` records the

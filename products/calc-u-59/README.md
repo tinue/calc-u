@@ -27,7 +27,7 @@ Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_6
 - Cycle-accurate TMC0501 CPU emulation
 - Two native apps and a web client on one C++ app layer: Swift for macOS, iOS and iPadOS (with iCloud card sync), Qt6 for Windows and Linux, and the browser (`frontends/web/`, the engine compiled to WebAssembly)
 - Integrated debugger with register inspection and program memory dump
-- [Debug API](reference/DebugAPI.md) for scripted access to CPU state, breakpoints, instruction tracing, and disassembly
+- [Debug API](docs/developer/Debug-API.md) for scripted access to CPU state, breakpoints, instruction tracing, and disassembly
 - Printer trace mode (functional simulation — see limitation below)
 - Presets (`.ti59`, `.ti58`, `.ti58c`, [preset format 2](../../docs/formats/preset.md)) that set up a machine, its program, registers and cue card, and play keys
 - Card reader emulation and the Solid State Software modules, with cue cards
@@ -37,11 +37,11 @@ Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_6
 
 **Printer:** The PC-100C thermal printer is simulated functionally: the emulator intercepts the ROM's print commands, keeps the printer busy for a line's print time (enough for the [printer interrupt](rom/printerinterrupt.md)), and renders characters with a dot-matrix font calibrated against physical hardware. For a line cut short, the head's column-by-column firing and each dot's heating time are modeled, measured on a real PC-100A; the paper mechanics are not.
 
-**Debugger:** Live view and inspection, and stepping both calculator-level and CPU-level instructions work. The core has a breakpoint API used by the harness's `break` (`reference/DebugAPI.md` § "Breakpoints"), but no GUI has a UI to set one. Also missing: keypress latch while single-stepping and conditional freezes (e.g. on a register change). The API surface will change as it matures.
+**Debugger:** Live view and inspection, and stepping both calculator-level and CPU-level instructions work. The core has a breakpoint API used by the harness's `break` (`docs/developer/Debug-API.md` § "Breakpoints"), but no GUI has a UI to set one. Also missing: keypress latch while single-stepping and conditional freezes (e.g. on a register change). The API surface will change as it matures.
 
 ## Building
 
-The code is layered: `core/` emulates the hardware, `app/` (C++20, standard library only) holds all non-drawing logic, and the three GUIs only draw — see [`reference/AppLayer.md`](reference/AppLayer.md) and [`reference/FrontendParity.md`](reference/FrontendParity.md).
+The code is layered: `core/` emulates the hardware, `app/` (C++20, standard library only) holds all non-drawing logic, and the three GUIs only draw — see [`docs/developer/App-Layer.md`](docs/developer/App-Layer.md) and [`docs/developer/Frontend-Parity.md`](docs/developer/Frontend-Parity.md).
 
 **Swift app (macOS, iOS, iPadOS):** open `frontends/swift/Calc-U-59.xcodeproj` in Xcode, or `xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 -destination platform=macOS build`. The project carries the author's Apple Developer Team ID and bundle identifier (`ch.erzberger.calcu59`). To build it yourself, change the team on the target's *Signing & Capabilities* tab to your own; Xcode updates the bundle identifier. The Simulator needs no changes. For iCloud card sync on a real device, also register a new iCloud container and update the two container identifiers in `Calc-U-59.entitlements`.
 
@@ -53,23 +53,23 @@ cmake -S ../.. -B ../../build/tests -G Ninja -DCALCU_FRONTEND_QT=OFF && cmake --
 
 `../../tools/run_qt.sh 59 --build` builds the Qt app into the repository's `build/app-59` tree; `../../tools/run_qt.sh 59 [file.ti59]` builds and starts it. On macOS, Qt comes from Homebrew and the Qt build is for development only. The Windows and Linux packages are built by CI (the repository's `.github/workflows/calc-u-59.yml`), which also lists the packages each platform needs.
 
-**Web client:** `frontends/web/build.sh` compiles `core/` and `app/` with Emscripten (`emcc`, e.g. `brew install emscripten`) and builds a self-contained `frontends/web/dist/` that the website embeds; `frontends/web/run-tests.sh` runs its Playwright tests against it. CI builds it too and uploads it zipped. See [`reference/WebClient.md`](reference/WebClient.md).
+**Web client:** `frontends/web/build.sh` compiles `core/` and `app/` with Emscripten (`emcc`, e.g. `brew install emscripten`) and builds a self-contained `frontends/web/dist/` that the website embeds; `frontends/web/run-tests.sh` runs its Playwright tests against it. CI builds it too and uploads it zipped. See [`docs/developer/Web-Client.md`](docs/developer/Web-Client.md).
 
-See [`reference/NewGUIGuide.md`](reference/NewGUIGuide.md) if you're considering a GUI for yet another platform.
+See [`docs/developer/New-GUI-Guide.md`](docs/developer/New-GUI-Guide.md) if you're considering a GUI for yet another platform.
 
 ## AI Programming Assistant
 
 The file [`prompt/ti59-agent-prompt.md`](prompt/ti59-agent-prompt.md) is a system prompt that turns a capable LLM (Claude, GPT-4o, etc.) into a TI-59 expert. Paste the entire file as the system prompt, then ask the model to write, explain, or debug TI-59 programs. It outputs ready-to-load `.ti59` presets.
 
-**What it covers:** complete key-code encoding, all instructions (conditionals, DSZ, flags, indirect addressing, subroutines), the AOS operator-precedence system, alphanumeric printing via Op 00–06, the full PC-100C character table, and `.ti59` file format rules including when to use preset registers.
+**What it covers:** complete key-code encoding, all instructions (conditionals, DSZ, flags, indirect addressing, subroutines), the AOS operator-precedence system, alphanumeric printing via Op 00–06, the full PC-100C character table, and the choices for a `.ti59` file, such as when to use preset registers. The file format itself is [`docs/formats/preset.md`](../../docs/formats/preset.md), which the model gets beside the prompt, so the two cannot drift apart.
 
 **How to use it:**
 
-1. Open your LLM interface and set `prompt/ti59-agent-prompt.md` as the system prompt.
+1. Open your LLM interface, set `prompt/ti59-agent-prompt.md` as the system prompt, and attach (or paste) `docs/formats/preset.md` from the repository root.
 2. Ask for a program in plain language, e.g. *"Write a program that sums 1 to N"* or *"Print a sine table from 0° to 90° in 5° steps"*.
 3. The model returns a `.ti59` file. Save it and load it in the emulator.
 
-**Token cost:** The prompt is large (about 40 KB, roughly 10 000 tokens). Every conversation turn carries this overhead. Use a model with a generous context window and be aware that costs add up quickly in long sessions.
+**Token cost:** The prompt and the format are large (about 40 KB and 45 KB, roughly 22 000 tokens together). Every conversation turn carries this overhead. Use a model with a generous context window and be aware that costs add up quickly in long sessions.
 
 ## Changelog
 
@@ -118,45 +118,25 @@ isn't duplicated in this repository.
 | [`LICENSE`](../../LICENSE) | GNU General Public License, version 3 (GPLv3). |
 | [`NOTICE`](NOTICE) | Copyright notice for the GPLv3 license. |
 
-### `reference/` — architecture reference
+### `docs/developer/` — developer documentation
 
-AI-generated by reading the source code; each file carries its own provenance notice. This is developer-facing technical documentation — for how to *use* the app, see the website above, which links back to specific files here where relevant (e.g. file formats).
-
-| Document | Abstract |
-|---|---|
-| [`reference/CoreArchitecture.md`](reference/CoreArchitecture.md) | The C++ emulation core (`core/`): TMC0501 CPU, BCD register model, SCOM memory map, instruction set, display/keyboard/card/printer subsystems, machine-variant differences. |
-| [`reference/AppLayer.md`](reference/AppLayer.md) | The app layer (`app/`) all three GUIs use: modules, the app session's part `TIAppPart`, threads, the real-time emulation loop, key input and the physical keyboard map, card reader, presets (the library's loader with the TI rules), the TI-58C constant memory, ROM loading, drawing rules, tests and goldens. |
-| [`reference/FrontendParity.md`](reference/FrontendParity.md) | Feature-by-feature table of the Swift app, the Qt6 app and the web client — where each feature lives and what is platform-specific. |
-| [`reference/WebClient.md`](reference/WebClient.md) | The web client (`frontends/web/`): layout, build, and the contract of the `frontends/web/dist/` folder the website embeds — mounting `CalcU59`, location independence, no side effects in render, styling, the PWA, `MANIFEST.json`. |
-| [`reference/AppArchitecture.md`](reference/AppArchitecture.md) | The Swift app and ObjC++ `frontends/swift/Bridge/` layer on top of `app/`: layers, file responsibilities, threading, Swift-specific details. |
-| [`reference/DebugAPI.md`](reference/DebugAPI.md) | The debugger across the core (trace, breakpoints, CpuFrame), the app layer (`DebugModel`, snapshots, LOG, trace files, ASM overlay) and the debug panels of all three GUIs. |
-| [`docs/formats/preset.md`](../../docs/formats/preset.md), [`docs/formats/cue-card.md`](../../docs/formats/cue-card.md) (repository root) | The preset format 2 of both products (the TI sections `partition:`, `program:`, `data:`, `cue-card:`, the steps, the TI key IDs) and the cue card block. |
-| [`reference/NewGUIGuide.md`](reference/NewGUIGuide.md) | Porting guide for adding another GUI frontend: building on `app/` (the Qt6 app as the worked example), or compiling `app/` for a platform without threads (the web build as the example). |
+[`docs/developer/README.md`](docs/developer/README.md) indexes the architecture reference: the core, the app layer and the Swift frontend, the debug API, frontend parity, the web client, the harness, idle detection and the porting guide.
 
 ### `.claude/skills/` — AI agent skills
 
-Trigger conditions and workflows for Claude Code when working in specific areas of the codebase. These are agent-only — a human developer should read `reference/` instead; skills are kept short and point there rather than restating content.
+Trigger conditions and workflows for Claude Code when working in specific areas of the codebase. These are agent-only — a human developer should read `docs/developer/` instead; skills are kept short and point there rather than restating content.
 
 | Document | Abstract |
 |---|---|
 | [`calc-u-59-core`](.claude/skills/calc-u-59-core/SKILL.md) | Working on the C++ emulation core (`core/`): CPU model, ROM disassembly, mnemonic workflow, trace infrastructure. |
 | [`calc-u-59-app`](.claude/skills/calc-u-59-app/SKILL.md) | Working on the app layer (`app/`, `tests/`, root CMake): rules, adding a module and its Bridge wrapper, golden-file ports. |
 | [`calc-u-59-qt`](.claude/skills/calc-u-59-qt/SKILL.md) | Working on the Qt6 app (`frontends/qt6/`, CI workflow): ship scope (Windows/Linux), class map against the Swift views, threading, build and packaging. |
-| [`calc-u-59-web`](.claude/skills/calc-u-59-web/SKILL.md) | Working on the web client (`frontends/web/`): rules (no logic, location independence, no side effects in render, own styling), build and tests; points to `reference/WebClient.md`. |
+| [`calc-u-59-web`](.claude/skills/calc-u-59-web/SKILL.md) | Working on the web client (`frontends/web/`): rules (no logic, location independence, no side effects in render, own styling), build and tests; points to `docs/developer/Web-Client.md`. |
 | [`pre-release-cleanup`](.claude/skills/pre-release-cleanup/SKILL.md) | User-invoked release audit: parity, simplification, docs, changelog, screenshots, builds. |
 | [`calc-u-59-swift`](.claude/skills/calc-u-59-swift/SKILL.md) | Working on the Swift/SwiftUI app (`frontends/swift/App/`, `frontends/swift/Bridge/`): view model, bridge, display, keyboard, debug panels, printer, card reader, settings. |
-| [`calc-u-59-docs`](.claude/skills/calc-u-59-docs/SKILL.md) | Working on documentation (the help in `help/`, `reference/`, root markdown files); states the help-vs-developer documentation split, the help tool, and the release documentation update workflow. |
+| [`calc-u-59-docs`](.claude/skills/calc-u-59-docs/SKILL.md) | Working on documentation (the help in `help/`, `docs/developer/`, root markdown files); states the help-vs-developer documentation split, the help tool, and the release documentation update workflow. |
 | [`calc-u-59-presets`](.claude/skills/calc-u-59-presets/SKILL.md) | Pointer to `docs/formats/preset.md` plus the mistakes that come up most in presets of format 2 (keycodes vs. key IDs, second functions, full speed, the last item) and how to check one with `calcu`. |
 | [`calc-u-59-uitesting`](.claude/skills/calc-u-59-uitesting/SKILL.md) | Writing/debugging XCUITest UI tests (`frontends/swift/Calc-U-59UITests/`): file picker navigation, accessibility identifiers, orientation. |
-
-### `memory/` — committed project analysis and traces
-
-Checked-in analysis the project keeps for itself, distinct from any AI tool's private session memory.
-
-| Document | Abstract |
-|---|---|
-| [`memory/MEMORY.md`](memory/MEMORY.md) | Index of the other files in this directory. |
-| [`memory/sbr444-quirk-analysis.md`](memory/sbr444-quirk-analysis.md) | Trace-level analysis of the `SBR 444`/R-S firmware quirk chain in the article's printer-interrupt sequence (overview: `rom/printerinterrupt.md`). The `*.txt` files beside it are the CPU traces it and the ROM annotations cite. |
 
 ### `rom/` — ROM listings and guides
 
@@ -165,19 +145,19 @@ Checked-in analysis the project keeps for itself, distinct from any AI tool's pr
 | [`rom/TI59-ROM-Guide.md`](rom/TI59-ROM-Guide.md), [`rom/TI58C-ROM-Guide.md`](rom/TI58C-ROM-Guide.md) | How each ROM works, as a guide to the annotated listings (`*-commented.asm`, `*-labels.asm`, `*-keycode-programs.asm`). |
 | [`rom/fastmode.md`](rom/fastmode.md) | Fast mode: what it is, the rules for fast-mode programs, the ways in, and how the hack works. |
 | [`rom/printerinterrupt.md`](rom/printerinterrupt.md) | The printer interrupt (keycode 1F): how to use it, how the code is made, and how it works. |
+| [`rom/traces/README.md`](rom/traces/README.md) | The CPU traces the ROM annotations cite, and [`rom/traces/sbr444-quirk-analysis.md`](rom/traces/sbr444-quirk-analysis.md), the trace-level analysis of the `SBR 444`/R-S firmware quirk chain in the article's printer-interrupt sequence (overview: `rom/printerinterrupt.md`). |
 
 ### `tools/` — developer tools
 
 | Document | Abstract |
 |---|---|
-| [`reference/Harness.md`](reference/Harness.md) | The harness `calcu --product c59` without a window: ROM traces of key sequences, timing and profiling presets, the `c59` commands, the scripts that stay (`tools/coverage.py`, `tools/fastmode_matrix.py`, `tools/calendar/`). |
 | [`tools/goldens/README.md`](tools/goldens/README.md) | How the golden files that check the `app/` ports against the former Swift code are made. |
 
 ### `prompt/` — LLM system prompt
 
 | Document | Abstract |
 |---|---|
-| [`prompt/ti59-agent-prompt.md`](prompt/ti59-agent-prompt.md) | Drop-in, self-contained system prompt turning any capable LLM into a TI-59 programming assistant that outputs ready-to-load `.ti59` presets. Self-contained by necessity (pasted into another chat with no repo access), so it duplicates the parts of `docs/formats/preset.md` it needs rather than linking to it. |
+| [`prompt/ti59-agent-prompt.md`](prompt/ti59-agent-prompt.md) | Drop-in, self-contained system prompt turning any capable LLM into a TI-59 programming assistant that outputs ready-to-load `.ti59` presets. The file format is not restated: the model gets `docs/formats/preset.md` beside it. |
 
 ### `examples/` — example and debug presets
 

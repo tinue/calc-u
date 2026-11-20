@@ -4,11 +4,11 @@ A narrative companion to the annotated listing `rom/TI59-commented.asm` and
 the label table `rom/TI59-labels.asm`. The listing documents individual
 instructions; this guide explains the structures and conventions that span
 many routines. Everything here was derived by tracing the unmodified ROM on
-the emulator with the headless harness of 2.3.0 (`tools/headless/`; today the harness `calcu --product c59`, `reference/Harness.md`), unless marked
+the emulator with the headless harness of 2.3.0 (`tools/headless/`; today the harness `calcu --product c59`, `docs/developer/Harness.md`), unless marked
 otherwise.
 
 Emulator-side facts (instruction set, SCOM/PREG mechanics, chip variants)
-live in `reference/CoreArchitecture.md`; this guide is about the firmware.
+live in `docs/developer/Core-Architecture.md`; this guide is about the firmware.
 The TI-58C runs a revised ROM; its differences (constant memory, bug fixes,
 self-test) are in `rom/TI58C-ROM-Guide.md`.
 
@@ -139,12 +139,12 @@ Empty cells are not used, or their use is not known.
   Flag n is bit ⌊n/5⌋ of nibble 11 + (n mod 5). Prg Src: § "Program memory
   and execution".
 - **Rows 1–8** use the stored number format (§ "Number formats").
-- **Row 9:** `reference/CoreArchitecture.md` § "SCOM registers".
+- **Row 9:** `docs/developer/Core-Architecture.md` § "SCOM registers".
 - **Row 12:** § "AOS".
 - **Row 13.** Angle unit 0 = DEG, 1 = GRAD, 0xC = RAD. Top RAM register is
   the index of the highest RAM register (119 TI-59, 59 TI-58), set by the
   power-on probe. Pgm mark: § "Solid State library".
-- **Rows 14–15:** `reference/CoreArchitecture.md` § "SCOM registers".
+- **Rows 14–15:** `docs/developer/Core-Architecture.md` § "SCOM registers".
 
 Rows 1–8 are shared: AOS levels, HIR registers and (5–8) the Op 01–04 print
 buffer use the same storage, so deep pending arithmetic and alpha printing or
@@ -320,7 +320,7 @@ n + 2 (0 = floating); fB[15] = sci, fB[7] = eng.
   8-step program register, nibbles 5–7 = register number (BCD). Nibble 3 =
   Prg Src Flag (0 RAM, 1 library module, 8 keycode sub-program in the
   constant ROM; all values and how the ROM tests them:
-  `reference/CoreArchitecture.md` § "PRG SOURCE flag").
+  `docs/developer/Core-Architecture.md` § "PRG SOURCE flag").
 - **Keycodes** are two BCD digits row·10 + column (2nd functions: column + 5,
   so units 6–9/0); digit keys store their value 00–09 (`KEY_ENCODE` `0788`).
 - **SCOM[10]** caches the current program register as a shift register: the
@@ -452,7 +452,7 @@ keycodes into RAM. One of them then dispatches into the cold-start clear loop
 at `0005`. C has low digit 0 here, so the loop runs once and writes register A,
 which holds the program register with steps 008–015, into SCOM[0]: step 009's
 recorded 42 gives source 4. It goes on into the reset routine (`0375`), whose
-`RAM.OP` op 2 at `0385` clears the whole RAM (`reference/CoreArchitecture.md`
+`RAM.OP` op 2 at `0385` clears the whole RAM (`docs/developer/Core-Architecture.md`
 § "RAM"); checked on a real TI-59. SCOM stays, so t and the HIR registers survive.
 Details and the shifted keycodes from SCOM[0] nibble 9: `rom/fastmode.md` § "The
 LRN entry".
@@ -715,7 +715,7 @@ noted. Sites (all in the listing):
 Active (non-idle) instructions from key acceptance to the next idle loop,
 measured with the headless harness, including display formatting; the
 millisecond column assumes the TI-59's ≈14.2 k instructions/s
-(455 kHz ÷ 2 ÷ 16, see `reference/CoreArchitecture.md`).
+(455 kHz ÷ 2 ÷ 16, see `docs/developer/Core-Architecture.md`).
 
 | Operation | Instructions | ≈ ms |
 |---|---|---|

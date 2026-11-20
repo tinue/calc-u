@@ -39,9 +39,9 @@ both apps were touched anywhere. The real audit is by feature.
 1. List every user-visible change of this release from `CHANGELOG.md` and
    `git log <base>..HEAD`.
 2. For each change, find its implementation in the Swift app, the Qt app and,
-   where the Web column of `reference/FrontendParity.md` puts it in scope, the
+   where the Web column of `docs/developer/Frontend-Parity.md` puts it in scope, the
    web client. Read the code, including the platform conditions around it.
-3. Check its row in `FrontendParity.md` against what you found. Also look for
+3. Check its row in `Frontend-Parity.md` against what you found. Also look for
    non-GUI logic this release added in `frontends/swift/App/`, `frontends/qt6/app/` or `frontends/web/`; it belongs
    in `app/`.
 
@@ -75,7 +75,7 @@ it and continue. On no, the gate stays **open**.
 ## 3. Documentation of this release
 
 Follow the `calc-u-59-docs` skill's Release Documentation Update Workflow, for
-`reference/` and for the help (`help/`, `tools/help check calc-u-59`), and for
+`docs/developer/` and for the help (`help/`, `tools/help check calc-u-59`), and for
 what stays the site's in `../calc-u-site` (with its `site-59` skill). The workflow's changelog step only needs completeness here, since gate
 5 reworks the text.
 
@@ -86,7 +86,7 @@ and the site's build, check and tests pass where the site changed.
 
 ## 4. Documentation consistency
 
-Sweep `README.md`, `CLAUDE.md`, `TODO.md`, `reference/`, `rom/*.md`,
+Sweep `README.md`, `CLAUDE.md`, `TODO.md`, `docs/developer/`, `rom/*.md`,
 `.claude/skills/` and the help (`help/`, `library/help/`). A read-only subagent per group
 keeps the file dumps out of this context; verify each finding before editing.
 

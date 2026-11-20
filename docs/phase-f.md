@@ -97,7 +97,7 @@ What exists:
 - `calcu`, the harness of both products: one-shot commands, `calcu
   serve` (one command per line), attach to a running app, `serve --dap`
   for Calc-U-1600 (`docs/formats/harness.md`; the product commands in
-  `products/calc-u-59/reference/Harness.md` and
+  `products/calc-u-59/docs/developer/Harness.md` and
   `products/calc-u-1600/docs/developer/Harness.md`).
 - Python: `library/harness/python/calcu_serve.py` (a `calcu serve`
   process) and `calcu_machine.py` (`Session`, product-neutral).

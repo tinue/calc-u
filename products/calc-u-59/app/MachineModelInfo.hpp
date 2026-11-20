@@ -28,7 +28,7 @@ struct ModelInfo {
     bool hasCardReader;      ///< TI-59 only.
 
     /// TI-58C only: extra constant-memory registers E000…E003 (H00…H03 in state
-    /// files) starting at raw RAM index 60 — see reference/CoreArchitecture.md
+    /// files) starting at raw RAM index 60 — see docs/developer/Core-Architecture.md
     /// § "TI-58C Extra (Constant Memory) Registers".
     int extraRegisterCount;
 

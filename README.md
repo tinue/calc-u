@@ -35,7 +35,7 @@ them from their own repositories with `roms/fetch_roms.sh`.
 library/<area>/        the shared library, calcu_library (sessions, presets,
                        media, debugger, harness, settings, Qt6 and Web shells, …)
 library/help/          the user-guide chapters both products share
-products/calc-u-59/    Calc-U-59: core/ app/ frontends/ help/ examples/ tests/ reference/
+products/calc-u-59/    Calc-U-59: core/ app/ frontends/ help/ examples/ tests/ docs/
 products/calc-u-1600/  Calc-U-1600: core/ app/ frontends/ help/ examples/ tests/ docs/
 docs/                  formal specifications and project documents (below)
 tools/  ci/            the help tool, the local Linux CI
@@ -69,7 +69,7 @@ product's developer documents say how to build its frontends:
   — presets, media, modules, cue cards, the bundle file, opening files,
   the help asset, the Web embedding interface, the harness `calcu` and
   the session protocol.
-- **Product references:** [Calc-U-59](products/calc-u-59/reference/)
+- **Product references:** [Calc-U-59](products/calc-u-59/docs/developer/)
   (architecture, debug API, harness commands, Web client),
   [Calc-U-1600](products/calc-u-1600/docs/developer/README.md)
   (app layer, debugger and DAP, harness commands, core limitations).

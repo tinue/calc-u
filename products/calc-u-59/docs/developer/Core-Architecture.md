@@ -12,7 +12,7 @@ This document describes the C++ emulation core (`core/`) for the TI-59,
 TI-58 and TI-58C. How the firmware uses the hardware (SCOM map, flags,
 run loop, fast mode) is in `rom/TI59-ROM-Guide.md` and
 `rom/TI58C-ROM-Guide.md`; everything above the hardware (pacing, debugger,
-file formats) is in `reference/AppLayer.md`.
+file formats) is in `docs/developer/App-Layer.md`.
 
 ---
 
@@ -296,7 +296,7 @@ code and the debugger decode:
 
 The SCOM[9] and SCOM[14]/[15] layouts follow the SCOM register table in
 Sladký's *Calculators TI-58/59 HW programming guide* (not in this
-repository), trace-verified in `memory/sbr444-quirk-analysis.md`.
+repository), trace-verified in `rom/traces/sbr444-quirk-analysis.md`.
 
 ### Constant ROM
 
@@ -352,7 +352,7 @@ is all the emulator uses.
 `ROM::load` also accepts 5120 words (`TI58_WORDS`), which no variant uses.
 `read()` masks to 13 bits and returns 0 beyond the image. Addresses
 0x1800–0x1FFF can hold debug ASM overlay words (`loadDebugOverlay`;
-`reference/DebugAPI.md` § "ASM Overlay").
+`docs/developer/Debug-API.md` § "ASM Overlay").
 
 ### User RAM (TMC0598)
 
@@ -571,7 +571,7 @@ The return value carries the weight in `kWeightMask` and two bits:
   every executed program byte (keycode or operand) passes once, from RAM,
   the module or the keycode table. The CPU state there, and on idle entry
   (`kIdleEntryPC` = `0624`, no bit), is latched as `lastStepBoundary()` for
-  the debugger's CALCULATOR view (`reference/DebugAPI.md` §
+  the debugger's CALCULATOR view (`docs/developer/Debug-API.md` §
   "Frozen-display semantics").
 
 `TI59Machine::step()` adds `kBreakpointHit` (the core's own breakpoints,
@@ -598,7 +598,7 @@ to land), an advance goes on past the ticks asked for until the observer
 stops it, at most 50000 weights later, so a pause lands in the host call
 that asked for it. The levels (`program`, `cpu`)
 and what lands where are the app's `TILevelRules`
-(`reference/AppLayer.md`). The frame ring is on while the debug
+(`docs/developer/App-Layer.md`). The frame ring is on while the debug
 panel (`c59.calculator-state`'s `setFrameRing`), a trace
 (`c59.trace-records`) or the run control's checks want it.
 
@@ -1023,8 +1023,8 @@ want the ring, else none. A trace drains the ring through the capability
 `TMC0501/c59.trace-records` (`core/TraceRecords.hpp`: `begin`, `take`,
 `end`), which the app's `TITraceRecorder` turns into records; the panel
 reads it without draining (`c59.calculator-state`'s `readCpuFrames`). Field list and the trace file:
-`reference/DebugAPI.md` § "CPU Inspector" and § "Trace File Format". `emitDebug()` events
-(`setDebugLevel`, `drainDebugEvents`): `reference/DebugAPI.md` § "Core
+`docs/developer/Debug-API.md` § "CPU Inspector" and `docs/formats/trace.md`. `emitDebug()` events
+(`setDebugLevel`, `drainDebugEvents`): `docs/developer/Debug-API.md` § "Core
 debug events".
 
 ---

@@ -46,14 +46,14 @@ Structure follows the sibling project Calc-U-1600
 (`products/calc-u-1600/frontends/qt6`): Widgets, AUTOMOC/AUTORCC, no `.ui`
 files, QPainter rendering.
 
-Everything that isn't drawing: `reference/AppLayer.md`.
+Everything that isn't drawing: `docs/developer/App-Layer.md`.
 
 ## Rules
 
 1. **Parity with the Swift app and the web client** (CLAUDE.md § "Frontend
    Parity"): a user-visible change here needs the matching Swift change, and
    the web change if the feature is in the web's scope, on the same branch —
-   or a `Pending (Swift)` / `Pending (Web)` row in `reference/FrontendParity.md`.
+   or a `Pending (Swift)` / `Pending (Web)` row in `docs/developer/Frontend-Parity.md`.
    Update the table either way.
 2. **No logic in `frontends/qt6/app/`.** Anything that isn't Qt widgets, painting or
    file dialogs belongs in `app/` (calc-u-59-app skill) so the Swift app

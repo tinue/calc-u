@@ -81,7 +81,7 @@ tools/  ci/  .github/workflows/
   chapter in the same branch.
 - The formal specifications are binding: the file formats in
   `docs/formats/`, and the product references next to the code
-  (`products/calc-u-59/reference/`, `products/calc-u-1600/docs/developer/`).
+  (`products/calc-u-59/docs/developer/`, `products/calc-u-1600/docs/developer/`).
   A change to a format, protocol or interface updates its specification
   in the same branch.
 - Hardware and firmware facts come from the research skills (`PC1500`,

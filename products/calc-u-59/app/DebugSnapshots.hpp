@@ -13,7 +13,7 @@
 
 // The CALCULATOR debug tab's data: a calculator-level view decoded from SCOM
 // and RAM (registers, flags, AOS/HIR state, return stack, the program steps
-// around the current one). Field meanings: reference/DebugAPI.md and
+// around the current one). Field meanings: docs/developer/Debug-API.md and
 // rom/TI59-ROM-Guide.md § "SCOM register map". Built at 60 Hz while the tab
 // is visible, so the frontends compare with operator== before redrawing.
 

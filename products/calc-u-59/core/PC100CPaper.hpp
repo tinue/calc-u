@@ -77,7 +77,7 @@ constexpr std::uint8_t faintColumns(int rowCount, int partialColumns, int partia
 }
 
 /// Ink of a dot heated `heat` cycles, relative to a normal one. Fitted to a
-/// PC-100A's cut-short dots (reference/CoreArchitecture.md, "Dot timing
+/// PC-100A's cut-short dots (docs/developer/Core-Architecture.md, "Dot timing
 /// within a line"): barely visible at 0–4 cycles, ≈30% at 12, weak to dark
 /// at 15–19, full from 20.
 double inkAlpha(int heat);

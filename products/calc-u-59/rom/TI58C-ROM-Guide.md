@@ -7,7 +7,7 @@ TI-59/TI-58 firmware, so this guide does not repeat `rom/TI59-ROM-Guide.md`.
 It describes what the TI-58C ROM does differently, and why.
 
 Everything here comes from tracing the unmodified ROMs of both machines with
-the headless harness of 2.3.0 (now `calcu --product c59`, `reference/Harness.md`). Statements marked *derived* come from reading the code
+the headless harness of 2.3.0 (now `calcu --product c59`, `docs/developer/Harness.md`). Statements marked *derived* come from reading the code
 without a trace that shows them directly.
 
 ```bash
@@ -90,7 +90,7 @@ causes compound:
      oscillator's CLK pad is bonded to pin 14, which otherwise carries D0
      (http://www.datamath.org/Chips/TMC0580.htm). The TI-59's printer
      test at D0 then had nowhere to go. Measured on an opened unit:
-     `reference/CoreArchitecture.md`, "TI-58C clock".
+     `docs/developer/Core-Architecture.md`, "TI-58C clock".
 4. **The card-reader code went away.** That freed most of 1680–17FF, which
    now holds a factory self-test and relocated routines.
 5. **The ROM is a later revision.**
@@ -221,14 +221,14 @@ The TI-59 blink and Pause figures were checked against a real TI-59 filmed
 next to a stopwatch. On the TI-59 the printer-present line sits at D0, which
 its idle scan sees as a "row 0" key and discards: two extra digit sweeps per
 pass with a printer ("Printer line in the idle scan",
-`reference/CoreArchitecture.md`). The TI-58C times are the emulator's at
+`docs/developer/Core-Architecture.md`). The TI-58C times are the emulator's at
 394 kHz (12,312.5 instructions per second, idle at full speed). The
 instruction counts behind them match a real TI-58C exactly: the blink is
 11,200 instructions per period (8,800 with the printer), a Pause shows for
 1,489 idle instructions. In seconds a real unit differs, because its clock
 is a DSCOM's own oscillator: it differs between units (PHI ≈ 195–200 kHz)
 and wanders by about 0.8% between sessions ("TI-58C clock",
-`reference/CoreArchitecture.md`).
+`docs/developer/Core-Architecture.md`).
 
 ## Bug fixes
 

@@ -27,12 +27,12 @@ Do not restate these here — read them:
 
 | Topic | Document |
 |---|---|
-| Components, registers, SCOM[9] and the return stack, RAM layout, TI-58C extra registers, instruction set, `step()` pipeline and its return bits, display, keyboard/`WAIT`, card reader, CROM and `libExecPC`, PRG SOURCE flag, printer, threading/locks, trace API, variant table | `reference/CoreArchitecture.md` |
+| Components, registers, SCOM[9] and the return stack, RAM layout, TI-58C extra registers, instruction set, `step()` pipeline and its return bits, display, keyboard/`WAIT`, card reader, CROM and `libExecPC`, PRG SOURCE flag, printer, threading/locks, trace API, variant table | `docs/developer/Core-Architecture.md` |
 | How the firmware uses the hardware: SCOM map, fA/fB flags, AOS, run loop, labels, subroutines, cards, printing, error sites | `rom/TI59-ROM-Guide.md` |
 | What the TI-58C ROM does differently, known core issues it exposed | `rom/TI58C-ROM-Guide.md` |
 | Fast mode; the 1F printer interrupt | `rom/fastmode.md`, `rom/printerinterrupt.md` |
-| `CpuFrame` fields, trace file format, ASM overlay, debugger semantics | `reference/DebugAPI.md` |
-| Pacing, run loop, debugger model — everything above the hardware | `reference/AppLayer.md` |
+| `CpuFrame` fields, ASM overlay, debugger semantics | `docs/developer/Debug-API.md`; the trace file format: `docs/formats/trace.md` (repository root) |
+| Pacing, run loop, debugger model — everything above the hardware | `docs/developer/App-Layer.md` |
 
 Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
 (labels: `rom/*-labels.asm`; keycode sub-programs: `rom/*-keycode-programs.asm`).
@@ -87,7 +87,7 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   TRACE) and its paper (`printer/paper-output`, the library's paper kind; the
   description, font and dot rules in `core/PC100CPaper.hpp`) are
   capabilities; its code lines are kept only for the golden runs
-  (`TIMachineTesting::printedCodeLines`); `CoreArchitecture.md` § "Component Overview", "Printer
+  (`TIMachineTesting::printedCodeLines`); `Core-Architecture.md` § "Component Overview", "Printer
   (PC-100C)", "Solid-State Library Module".
 - **Ticks:** one instruction is 32 ticks, 128 in IDLE on the TI-59/58; the
   tick count is monotonic across every operation (`TIMachine::cpuReset`).
@@ -99,7 +99,7 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   Every frontend runs the machine on the one thread of its app session
   (the Web's too); nothing serialises calls on it.
 - **Trace format:** a new `CpuFrame` field changes the binary trace format
-  (`reference/DebugAPI.md`); avoid it where an accessor will do (as
+  (`docs/formats/trace.md`, repository root); avoid it where an accessor will do (as
   `libExecPC()` does).
 
 ---
@@ -123,7 +123,7 @@ uv run python tools/disasm.py --emit-cpp > /tmp/generated.cpp
 
 | Tool | Purpose |
 |------|---------|
-| `calcu --product c59` | The harness (`reference/Harness.md`, read it first): an annotated ROM trace per key (`trace <file>`, the keys, `trace off`, then `tools/read_trace.py --labels rom/TI59-labels.asm --changes`), `profile`, `c59 coverage`, the timing commands `c59 run-time`, `line-times`, `hot-steps`, `step-trace`, `step-cost`, `c59 keycodes list|disassemble|assemble` |
+| `calcu --product c59` | The harness (`docs/developer/Harness.md`, read it first): an annotated ROM trace per key (`trace <file>`, the keys, `trace off`, then `tools/read_trace.py --labels rom/TI59-labels.asm --changes`), `profile`, `c59 coverage`, the timing commands `c59 run-time`, `line-times`, `hot-steps`, `step-trace`, `step-cost`, `c59 keycodes list|disassemble|assemble` |
 | `tools/coverage.py` | Which keystroke scenario runs which ROM word (on `calcu serve`) |
 | `tools/fastmode_matrix.py` | Each instruction class in fast and normal mode; the stop table (on `calcu serve`) |
 | `tools/disasm.py` | ROM disassembler; `--emit-cpp` regenerates C++ mnemonic arrays |
@@ -142,7 +142,7 @@ uv run python tools/disasm.py --emit-cpp > /tmp/generated.cpp
    Do not launch the iOS Simulator or the built app — that is the user's job.
    When runtime verification is needed, ask the user to launch the app and
    say precisely what to look for. Harness runs (`calcu --product c59`,
-   `reference/Harness.md`) are fine.
+   `docs/developer/Harness.md`) are fine.
 
 2. **Build on macOS.** Verify Swift-facing changes with a macOS build; build for iOS only when explicitly required (commands: `calc-u-59-swift` skill, § "Build Verification").
 

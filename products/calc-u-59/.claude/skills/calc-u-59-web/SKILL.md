@@ -12,13 +12,13 @@ library's Web Worker (`library/web/`); React only draws
 and forwards input. Two layouts: wide (as the macOS/Qt window: calculator,
 printer, debugger) and portrait (as the iPhone: calculator and printer
 pages; the PWA). Orient new GUI work on the Qt app's widget of the same
-name (`WebClient.md` § "Layout of `frontends/web/`" maps them).
+name (`Web-Client.md` § "Layout of `frontends/web/`" maps them).
 
 Layout, build steps, the `dist/` contract, mounting, location independence,
 the render rule, styling, the PWA and `MANIFEST.json`:
-**`reference/WebClient.md`**. Don't restate them here. Everything that isn't
-drawing: `reference/AppLayer.md`. Feature placement:
-`reference/FrontendParity.md` (the Web column).
+**`docs/developer/Web-Client.md`**. Don't restate them here. Everything that isn't
+drawing: `docs/developer/App-Layer.md`. Feature placement:
+`docs/developer/Frontend-Parity.md` (the Web column).
 
 The website (https://calc-u.org/59/, repository `calc-u-site`) only
 *embeds* a built `dist/`, imported from a release's `Calc-U-59-web.zip`.
@@ -90,22 +90,22 @@ Never edit the calculator there — that copy is generated.
    no `localStorage`.
 2. **Parity** (CLAUDE.md § "Frontend Parity"): a user-visible change to a
    feature the web has needs the matching change in the apps, or a
-   `Pending` row in `FrontendParity.md` — and the reverse. Update the table
+   `Pending` row in `Frontend-Parity.md` — and the reverse. Update the table
    either way.
-3. **Location-independent** (`WebClient.md` § "Location independence"). Files the worker
+3. **Location-independent** (`Web-Client.md` § "Location independence"). Files the worker
    loads go into `dist/bundle/` or `dist/presets/` (`files.json`); other new
    files go into `build.js`'s `files` list; the library's service worker
    precaches everything in `vendor/`, `wasm/`, `img/` and `fonts/`
    (`library/web/build/product.js`; the build fails on a missing file).
-4. **Render has no side effects** (`WebClient.md` § "No side effects in render").
+4. **Render has no side effects** (`Web-Client.md` § "No side effects in render").
 5. **`calc.js` exposes `CalcU59` only** (`src/CalcU59.jsx`). The sources are concatenated
    into one closure; a new file goes into `sources` in `build.js` (the
-   product's values for the library's `buildWebProduct`), in load order. Its props (`WebClient.md` § "Mounting it": the family's
+   product's values for the library's `buildWebProduct`), in load order. Its props (`Web-Client.md` § "Mounting it": the family's
    shared ones from the library's `embedProps`, in the order `width`,
    `keyboard`, `layout`, `preset`, `height`, `model`, `workerUrl`, then
    `settings`) and the stable hooks
    are the contract — changing them is a change for the website too.
-6. **The client brings its own styling** (`reference/WebClient.md`). Fonts and
+6. **The client brings its own styling** (`docs/developer/Web-Client.md`). Fonts and
    React are self-hosted in `frontends/web/` (no CDN).
 7. **Assets have one source:** ROMs from `roms/` (in `dist/bundle/`: the
    library's worker fetches all 24 at init into `/bundle`, where the
@@ -156,4 +156,4 @@ The engine's Emscripten flags live in the product's `CMakeLists.txt`
 after an Emscripten upgrade.
 
 CI: job `web` in the repository's `.github/workflows/calc-u-59.yml` (emsdk pinned to the local
-`emcc --version`; bump both together). Artifacts: `reference/WebClient.md`.
+`emcc --version`; bump both together). Artifacts: `docs/developer/Web-Client.md`.

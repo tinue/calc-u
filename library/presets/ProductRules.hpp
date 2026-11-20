@@ -37,7 +37,7 @@ struct ItemResult {
 enum class Applies { Yes, NotForThisModel, Undefined };
 
 // When a model's machine takes keys, waits, has settled and has finished
-// (the product's tables: Calc-U-59 reference/Idle.md, Calc-U-1600
+// (the product's tables: Calc-U-59 docs/developer/Idle.md, Calc-U-1600
 // docs/developer/Idle.md):
 // - takes keys: the ROM or a program reads the keyboard as input now
 //   (unset: Machine::isKeyReady());

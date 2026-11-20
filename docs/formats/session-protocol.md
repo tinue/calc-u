@@ -12,7 +12,7 @@ Terms follow `docs/GLOSSARY.md`. The session is in `library/sessions/`:
 defines its names in the file the tables name.
 
 Product topics, commands and requests carry the product's prefix and are
-not listed here: `c59.*` in `products/calc-u-59/reference/DebugAPI.md`,
+not listed here: `c59.*` in `products/calc-u-59/docs/developer/Debug-API.md`,
 `c1600.*` in `products/calc-u-1600/docs/developer/App-Layer.md`.
 
 ## 1. Values

@@ -16,7 +16,7 @@ namespace {
 // and allows the TI-58 a 384 kHz part, "the preferred part"). The TI-58C has
 // no clock chip and no resonator: its clock comes from the oscillator built
 // into a TMC0580 DSCOM (CD2400 or CD2401), set by external R/C parts
-// (http://www.datamath.org/Chips/TMC0580.htm; reference/CoreArchitecture.md,
+// (http://www.datamath.org/Chips/TMC0580.htm; docs/developer/Core-Architecture.md,
 // "TI-58C clock"). Its rate varies by unit; 394 kHz here is one real TI-58C's
 // clock, from its error blinks; the emulator matches that unit's instruction
 // counts exactly, but its rate wanders ~0.8% between sessions and other units
@@ -70,7 +70,7 @@ MachineDescriptor descriptor(const char* model, TickRate rate, bool ti59, bool t
     };
     d.places = {{PlaceName{"slot-1"}, ConnectorId{"module-slot"}, PinOutId{"module-slot"}, 1},
                 {PlaceName{"printer"}, ConnectorId{"printer-connector"}, PinOutId{"printer-connector"}, 1}};
-    // Depth as the machine is built (reference/CoreArchitecture.md
+    // Depth as the machine is built (docs/developer/Core-Architecture.md
     // § Component Overview). The module (with its address register) and the
     // printer are peripherals behind the two functional connectors, not part
     // of TMC0501; their components are in their descriptors.

@@ -4,7 +4,7 @@ How to run, trace, time and profile TI-59, TI-58 and TI-58C programs without
 a window: the family's harness `calcu` with the product commands under the
 product word `c59`. The common harness (the reply forms, `--json`, the
 options, the exit status, `serve` and the other transports, the library's
-commands) is in [`docs/formats/harness.md`](../../../docs/formats/harness.md);
+commands) is in [`docs/formats/harness.md`](../../../../docs/formats/harness.md);
 this file holds what is Calc-U-59's own.
 
 ## Running it
@@ -33,7 +33,7 @@ frontends host it) in emulated time only, so two runs give the same replies.
 | Start | The startup model (the TI-59 under the default settings) with its startup preset or the built-in default: the Master Library module (`ML`) in `slot-1`, no printer, at key readiness |
 | Models | `model TI-59`, `model TI-58`, `model TI-58C` |
 | Places | `slot-1` (a Solid State ROM module by its ID: `attach slot-1 ML`), `printer` (`attach printer PC-100C`); the media place `card-reader` on the TI-59 |
-| Keys | `key`, `key-down`, `key-up` take the key IDs of [`docs/formats/preset.md`](../../../docs/formats/preset.md) §8.1 (`2nd Pgm`, `x^2`, `RTN`); a TI model has no `type` |
+| Keys | `key`, `key-down`, `key-up` take the key IDs of [`docs/formats/preset.md`](../../../../docs/formats/preset.md) §8.1 (`2nd Pgm`, `x^2`, `RTN`); a TI model has no `type` |
 | Presets | `preset <file>\|examples:<path>`: format 2 only (`.ti59`, `.ti58`, `.ti58c`); the product's sections and rules are `app/TIPresetKeys`, `app/TIPresetRules` |
 | `open <path>` | A preset by its extension or its `model:` line; an `.asm` file as the ASM overlay; a `.keystrokes.yaml` keystroke program file written into the running machine from step 000. Refused: `.rom.yaml` (`… was not opened: this release takes a Solid State ROM module by its ID only.`) and `ti58c.memory.yaml` (`… was not opened: it is Calc-U-59's own constant memory file.`) |
 | `screenshot <name>` | The classic segment picture, into `--output-folder` |
@@ -91,7 +91,7 @@ What the timing commands read between two slices (`app/TIRunProbe`):
 | A program runs | Bit 0 of `fB` |
 | Display lit | A digit or point driven in the last revolution of the digit counter |
 | Processor idle | No program, the idle flag (bit `0x0001` of the flags) set, the program counter in the model's idle and key-detect range |
-| Finished | The program has ended and the machine waits for the user (`reference/Idle.md`): the scan loop with fB[0] clear; the printer has drained before the scan loop |
+| Finished | The program has ended and the machine waits for the user (`docs/developer/Idle.md`): the scan loop with fB[0] clear; the printer has drained before the scan loop |
 
 ### Timing and profiling
 
@@ -182,7 +182,7 @@ mnemonic, and its operands each after one space.
 
 | Element | Form |
 |---|---|
-| Mnemonic | The key ID of [`docs/formats/preset.md`](../../../docs/formats/preset.md) §8.1 (`Lbl`, `STF`, `IFF`, `Dsz`, `Ind`, `x⇄t`); keycode 20 is `2nd CLR`, 92 `RTN`, 82 `HIR`; 26 and 27, which no key enters, their two digits |
+| Mnemonic | The key ID of [`docs/formats/preset.md`](../../../../docs/formats/preset.md) §8.1 (`Lbl`, `STF`, `IFF`, `Dsz`, `Ind`, `x⇄t`); keycode 20 is `2nd CLR`, 92 `RTN`, 82 `HIR`; 26 and 27, which no key enters, their two digits |
 | Merged code | Its key and `Ind`: `STO Ind 05` for `72 05` (62 `Pgm Ind`, 63 `Exc Ind`, 64 `Prd Ind`, 72 `STO Ind`, 73 `RCL Ind`, 74 `SUM Ind`, 83 `GTO Ind`, 84 `Op Ind`) |
 | Register, flag, program or digit number | Two digits; `Ind NN` when indirect (`Pgm`, `STO`, `RCL`, `SUM`, `Exc`, `Prd`, `Fix`, `Op`, `HIR`, `STF`) |
 | Label (after `Lbl`) | The label key's mnemonic |

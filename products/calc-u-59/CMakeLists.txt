@@ -73,7 +73,7 @@ set_target_properties(calcu59_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # -----------------------------------------------------------------------------
 # Web engine (emcmake; frontends/web/build.sh copies it into
-# frontends/web/dist/wasm/, reference/WebClient.md): core/ + app/ behind
+# frontends/web/dist/wasm/, docs/developer/Web-Client.md): core/ + app/ behind
 # frontends/web/bindings.cpp, the factory of the app session the library's
 # Web Worker host runs (calcu_web_glue and calcu_web_engine()).
 # -fwasm-exceptions: app/ reports ROM and file errors with exceptions;

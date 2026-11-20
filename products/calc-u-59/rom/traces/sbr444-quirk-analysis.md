@@ -24,15 +24,15 @@ open question 1, resolving it.
 | Artifact | Role |
 |----------|------|
 | `rom/TI59-commented.asm` | Commented TI-59 ROM disassembly. Relevant annotations: 0x086F (transfer target validate/commit), 0x08B2 (PRGREG_FETCH source dispatch), 0x0A4B (launch prologue / Prg Src Flag write), 0x0D50 (return-stack push), 0x1286 (library transfer resolver — added this session), 0x11E1 (transfer-error halt — added this session). |
-| `reference/CoreArchitecture.md` | Architecture reference; § SCOM registers now documents the SCOM[14]/[15] return stack. |
+| `docs/developer/Core-Architecture.md` | Architecture reference; § SCOM registers now documents the SCOM[14]/[15] return stack. |
 | `TI_58_59-HW-manual.pdf` | "Calculators TI-58/59 HW programming guide" by Hynek Sladký (external document, not in the repository). Source of the SCOM[9] layout and the return-stack level layout. |
 | `examples/historic/texas-print.ti59` | State file automating the article's key sequence; its header holds the authoritative quirk walkthrough (quirks 1–4). |
 | `.claude/skills/calc-u-59-core` | Skill covering the emulation core, trace infrastructure, and ROM analysis workflow. |
 | `tools/read_trace.py` | Rendered the binary traces to text (including the deferred-field validity windows for RAMOP/RAMREG/SREG added just before this analysis — commit `fa6799e`). |
-| `memory/sbr444.txt` | CPU trace: from just before the third `4` of `SBR 444` through the first halt (blinking 239.89). Captured with a scripted `Trace:` directive in the keystroke script (temporary edit of `examples/historic/printer-quirks.ti59`, which replays the same sequence). |
-| `memory/rs.txt` | CPU trace: the `R/S` keypress through the second halt (EE-mode "0. 00"). Same capture method. |
-| `memory/pr-after-halt1.txt` | CPU trace: `2nd P/R` pressed after halt 1 only (scenario run *without* the `R/S`). Captured 2026-07-05, same method. |
-| `memory/pr-after-halt2.txt` | CPU trace: `2nd P/R` pressed after halt 2 (full quirk-1 sequence first). Captured 2026-07-05, same method. |
+| `rom/traces/sbr444.txt` | CPU trace: from just before the third `4` of `SBR 444` through the first halt (blinking 239.89). Captured with a scripted `Trace:` directive in the keystroke script (temporary edit of `examples/historic/printer-quirks.ti59`, which replays the same sequence). |
+| `rom/traces/rs.txt` | CPU trace: the `R/S` keypress through the second halt (EE-mode "0. 00"). Same capture method. |
+| `rom/traces/pr-after-halt1.txt` | CPU trace: `2nd P/R` pressed after halt 1 only (scenario run *without* the `R/S`). Captured 2026-07-05, same method. |
+| `rom/traces/pr-after-halt2.txt` | CPU trace: `2nd P/R` pressed after halt 2 (full quirk-1 sequence first). Captured 2026-07-05, same method. |
 
 Setup at trace start: TI-59 + Master Library, partition 239.89 (after `9 Op 17`),
 step counter at 008 (from an earlier `GTO 008`), Pgm 12 selected.
@@ -205,7 +205,7 @@ an error from a 0 ÷ 0 inside that garbage (`03D4`).
    library-program calls, and keycode-ROM sub-program launches (P→R). The 11E9–11EC
    store in the error halt is the stack being reset (return discarded, F depth
    marker). Push routine annotated at ROM 0x0D50; SCOM table updated in
-   reference/CoreArchitecture.md. Per-level layout documented by the SCOM register
+   docs/developer/Core-Architecture.md. Per-level layout documented by the SCOM register
    table in "Calculators TI-58/59 HW programming guide" by Hynek Sladký
    (TI_58_59-HW-manual.pdf, not in the repository): each level is 5 nibbles — RAM
    register no. (3) + byte no. (1), or a
@@ -236,18 +236,18 @@ an error from a 0 ÷ 0 inside that garbage (`03D4`).
    page" (current library program); 4–3 = "new page" (pending `Pgm nn` selection);
    2 = module security code; 1 = number of RAM chips; 0 = number of program banks =
    program-partition registers / 10 (the OP 17 partition pointer already known from
-   CoreArchitecture.md). Trace check (07F3 `B=LOAD ALL` → `…1212043`): current page
+   Core-Architecture.md). Trace check (07F3 `B=LOAD ALL` → `…1212043`): current page
    12, new page 12, security 0, RAMs 4, banks 3 (= 30 program registers under
    239.89) — all consistent. Correction to the original question: the `…010` tail
    seen during the SBR launch was an artifact — that read was `C=LOAD MANT`
    (nibbles 3–15 only), so nibbles 0–2 were stale C content, not SCOM[9]; nothing
-   actually changes across states. Layout added to reference/CoreArchitecture.md
+   actually changes across states. Layout added to docs/developer/Core-Architecture.md
    § SCOM registers.
 5. **RESOLVED 2026-10-17 — the "extra" CROM fetches between the second halt
    and P/R are part of the R/S-resumed run itself** (12 fetches, 28–39, ending
    with Pgm 51; see above). rs.txt had stopped too early to show them.
 
-New traces are easiest with the harness's `trace` (`calcu --product c59`, `reference/Harness.md`), which
+New traces are easiest with the harness's `trace` (`calcu --product c59`, `docs/developer/Harness.md`), which
 replays a key sequence and prints the ROM trace directly. In a preset, put the
 steps `- trace: <name>.bin` / `- trace: off` around the key of interest in its
 `keys:` (e.g. `examples/historic/printer-quirks.ti59`, whose `trace:` step is

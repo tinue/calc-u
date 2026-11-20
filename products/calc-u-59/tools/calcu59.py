@@ -1,6 +1,6 @@
 """Calc-U-59 through the harness `calcu`, for the scripts that stay:
 tools/coverage.py, tools/fastmode_matrix.py and the calendar scripts in tools/calendar/. One
-`calcu --product c59 serve` per Run, in emulated time only; reference/Harness.md
+`calcu --product c59 serve` per Run, in emulated time only; docs/developer/Harness.md
 has the commands and the recipes.
 
 The calcu program: --calcu PATH on a script's command line, else the

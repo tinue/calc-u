@@ -61,7 +61,7 @@ jobs:
     # frontends/web/build.sh into frontends/web/dist/ (the engine is the
     # root project's calcu59_web target, built in build/web), the
     # Playwright tests against it, and the same dist/ zipped (Calc-U-59 has no
-    # test-only command to leave out of a release; reference/WebClient.md).
+    # test-only command to leave out of a release; docs/developer/Web-Client.md).
     runs-on: ubuntu-24.04
     # Microsoft's Playwright image: Chromium, WebKit and their system
     # libraries are in it (/ms-playwright), so no `playwright install

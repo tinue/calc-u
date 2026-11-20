@@ -569,7 +569,7 @@ and nothing is busy, without a break for the product's stretch; a program
 that waits for a key (INPUT, a PRINT stop, INKEY$) is idle too, and so is,
 on the TI-59, a machine waiting for a magnetic card (after `Write`)
 (§5.2). How a product tells that its machine is idle is the product's
-matter, not this format's (Calc-U-59 `reference/Idle.md`, Calc-U-1600
+matter, not this format's (Calc-U-59 `docs/developer/Idle.md`, Calc-U-1600
 `docs/developer/Idle.md`). A paused machine is not idle; the item finishes after the
 machine has been resumed (§5.6).
 

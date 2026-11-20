@@ -3721,7 +3721,7 @@
 ; the new source flag in place — see examples/historic/texas-print.ti59.
 ; The 0A4F–0A53 shuffle also stashes the CALLER's source (SCOM[0]'s old
 ; nibble 3) into nibble 1 of the rewritten SCOM[0]; 0A56–0A59 then dispatch
-; on it (traces pr-after-halt1/2, memory/sbr444-quirk-analysis.md):
+; on it (traces/pr-after-halt1/2, traces/sbr444-quirk-analysis.md):
 ;   0        → keyboard/RAM caller: fall through to 0A5A; 0A5E/0A5F set
 ;              fB[0]+fB[13], so 0872 later skips the RAM range check.
 ;   non-zero → library caller: 0A59 branches to 0D83 to save the CROM PC
@@ -3954,7 +3954,7 @@
 ; 0890 WITHOUT undoing the launch: the Prg Src Flag written by the
 ; prologue (0A54) stays in SCOM[0], and the return-stack level pushed at
 ; 1334 is never popped (contrast the 11E2 error halt, which resets the
-; stack). TI-59 trace pr-after-halt2: the abandoned P/R launch leaves SCOM[0]
+; stack). TI-59 trace traces/pr-after-halt2: the abandoned P/R launch leaves SCOM[0]
 ; = "…108010" (leaked source 8, stashed caller source 1, step 008) and a
 ; dead stack level naming the leftover CROM position — the state quirk 3
 ; of examples/historic/texas-print.ti59 builds on.
@@ -4796,7 +4796,7 @@
 ; fB[0]/fB[13] are NOT set on this path, so at 0872 the transfer target
 ; gets the RAM-partition range check even when it is a keycode
 ; sub-program — the quirk-2 flag leak of examples/historic/texas-print.ti59
-; (trace pr-after-halt2: P/R after the R/S-resumed garbage run lands here
+; (trace traces/pr-after-halt2: P/R after the R/S-resumed garbage run lands here
 ; because SCOM[0] still says source 1; its entry step 284 then fails the
 ; check at 087C).
 0D83: 00D8  TST fB[13]
@@ -6429,7 +6429,7 @@
 ; from the shared transfer routine via 085C → 0BC9 → 0FB8, traced; the launch
 ; prologue at 0A4D has already written Prg Src Flag := 1). 1287 selects
 ; SCOM[9] (R5 = 9); 128C-1291 recall it — its current/new-page fields
-; (nibbles 6-5 / 4-3, see reference/CoreArchitecture.md § SCOM registers)
+; (nibbles 6-5 / 4-3, see docs/developer/Core-Architecture.md § SCOM registers)
 ; hold the selected library program number p ("Pgm nn") — and form the
 ; header offset 2p (one 2-byte BCD start address per program from module
 ; address 0002). The LIB.PC loop at 1294-1298 points the CROM pointer there;
@@ -6641,7 +6641,7 @@
 1333: 148E  JNC 157A          ; → LIB_LABEL_SEARCH (157A)
 ; ── Return-stack push (RET_PUSH): save the caller's calculator-level return ──
 ; The 6-level subroutine return stack lives in SCOM[15] (levels 1-3) and
-; SCOM[14] (levels 4-6); see reference/CoreArchitecture.md § SCOM registers.
+; SCOM[14] (levels 4-6); see docs/developer/Core-Architecture.md § SCOM registers.
 ; Pushed on every calculator-level call: SBR into a RAM or library program and
 ; keycode-ROM sub-program launches (traced: P→R, Σ+, x̄, SBR, Pgm 02 A), all
 ; via 0D33 → 0FFE → 1334. 1337/1338 load SCOM[15]; 133B checks the depth in the

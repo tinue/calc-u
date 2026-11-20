@@ -1,5 +1,5 @@
 // CalcU59 — the web client, and the one global calc.js exposes
-// (reference/WebClient.md has the props). Put together from the React set's
+// (docs/developer/Web-Client.md has the props). Put together from the React set's
 // shell: in the wide layout the shell's menu bar (File, Machine, Help; no
 // Edit), in the portrait layout no menu bar and the bar's Reset, Preset,
 // Settings and More; in every calculator column the shell's control bar (the
@@ -207,7 +207,7 @@ function PortraitLayout({ page, width, height }) {
 // the product's yet.
 const C59_NO_PRODUCT = { name: "Calc-U-59", items: [], variantLabels: {}, moduleSlotPinOuts: [], placesWithoutControl: [] };
 
-// The props (reference/WebClient.md): the embedding interface's width,
+// The props (docs/developer/Web-Client.md): the embedding interface's width,
 // keyboard (on by default), layout ("portrait", the default, "wide" or
 // "auto"; embedProps ignores another value with a console warning), preset
 // (a bundled preset's path, with or without `examples:`), height, model (by

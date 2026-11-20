@@ -1,11 +1,8 @@
 # Frontend Parity (Swift app ↔ Qt6 app ↔ web client)
 
-> **Provenance notice.** Maintained by hand (and by AI agents) — see
-> CLAUDE.md § "Frontend Parity". Every user-visible feature has a row; a
-> change to one frontend updates its row on the same branch.
-
 All three GUIs run the same `core/` and `app/` code; this table tracks
-the GUI on top. The web client (`frontends/web/`, `Web-Client.md`) has two layouts:
+the GUI on top. Every user-visible feature has a row; a change to one
+frontend updates its row on the same branch. The web client (`frontends/web/`, `Web-Client.md`) has two layouts:
 wide (as the macOS/Qt window) and portrait (as the iPhone, no debugger).
 Web paths are relative to `frontends/web/src/`; `TIWebPart` is
 `app/TIWebPart` (what the page draws, as the session's `c59.web.*` topics

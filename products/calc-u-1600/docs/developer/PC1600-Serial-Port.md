@@ -24,7 +24,7 @@ link: the library's peripherals session part (`calcu::peripherals::PeripheralsPa
 library's app session) holds one `calcu::peripherals::HostLinks`, whose
 rule gives the RS-232C port `calcu1600-rs232c.serial` at once and the CE-158
 `calcu1600-ce158.serial` when it is first used; its `PtyHostLink`
-(`library/peripherals/PtyHostLink.cpp`, the former `PtySerialLink`) is the
+(`library/peripherals/PtyHostLink.cpp`) is the
 pseudo-terminal. A link lives for the session, so the file keeps its name
 across machine rebuilds; `HostLinks::pump` moves the bytes between two
 advances (once per slice). The UART gets its peer when the port is first

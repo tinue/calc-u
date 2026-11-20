@@ -2,9 +2,7 @@
 
 For people who build Calc-U-59 from source or work on the emulator
 itself. Using the emulator (including its debugger) is covered by the
-help (below, "The help"). These files were written by an AI (Claude) from
-the source code; each carries its own provenance notice, and the code wins
-where they disagree.
+help (below, "The help").
 
 ## Build and test
 

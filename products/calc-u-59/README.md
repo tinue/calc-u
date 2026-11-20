@@ -4,9 +4,9 @@ A TI-58, TI-58C, and TI-59 hardware emulator with an integrated debugger for mac
 
 ## Purpose
 
-Calc-U-59 started as a research tool and still has that focus at its core: it accurately emulates the TMC0501 processor shared by the TI-58, TI-58C, and TI-59, and lets you step through ROM code, inspect registers, trace printer output, load raw machine-state files, and study the quirks of the original hardware.
+Calc-U-59 is a research tool at its core: it accurately emulates the TMC0501 processor shared by the TI-58, TI-58C, and TI-59, and lets you step through ROM code, inspect registers, trace printer output, load raw machine-state files, and study the quirks of the original hardware.
 
-It has also grown into a capable calculator in its own right. If you just want a faithful TI-58/58C/59 on your Mac, iPhone, iPad or Windows/Linux PC and don't care about the debugger, that works fine too — on iPhone the debug panel is disabled by default, so the app presents as a classic calculator out of the box.
+It is also a capable calculator in its own right. If you just want a faithful TI-58/58C/59 on your Mac, iPhone, iPad or Windows/Linux PC and don't care about the debugger, that works fine too — on iPhone the debug panel is disabled by default, so the app presents as a classic calculator out of the box.
 
 A third audience is people who have found their own old TI-58 or TI-59 programs — whether on magnetic cards, in printed listings, or from memory — and want to revive them: run them again, understand what they actually do at the machine level, or improve them with the benefit of a full debugger.
 
@@ -20,7 +20,7 @@ Whether you want a classic calculator that just works, or you want to run progra
 
 The user guide is the help in [`help/`](help/) (Calc-U-59's chapters) and [`library/help/`](../../library/help/) (the chapters both Calc-U products share), Markdown that each release carries as `Calc-U-59-help.zip` and calc-u.org/59 renders. Everything else here is developer documentation: architecture and APIs for people building or extending the emulator (including AI agents doing so).
 
-Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_64, aarch64) are on this repository's [Releases page](../../releases); the iPhone and iPad app is on the App Store.
+Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_64, aarch64) are on the [Releases page](https://github.com/tinue/calc-u/releases); the iPhone and iPad app is on the App Store.
 
 ## Features
 
@@ -96,21 +96,21 @@ Special thanks to:
 
 ## Appendix: Documentation Index
 
-This repository's documentation is for developers (and AI agents working on
+Calc-U-59's documentation here is for developers (and AI agents working on
 the code) — not end users. Every document here, grouped by location, with a
 one-line abstract. Start here before writing new documentation — several of
 these already cover ground a new document might otherwise duplicate.
 
 End-user documentation (installing, operating, debug-panel walkthrough) is
-**not** indexed here — it lives entirely on the website linked above and
-isn't duplicated in this repository.
+**not** indexed here — it is the help (below), which the website linked
+above renders.
 
 ### Project root
 
 | Document | Abstract |
 |---|---|
 | [`README.md`](README.md) | This file — project overview, features, limitations, and this index. |
-| [`CLAUDE.md`](CLAUDE.md) | Skill-routing table and pointers to the architecture reference docs, for AI coding agents working in this repo. |
+| [`CLAUDE.md`](CLAUDE.md) | Skill-routing table and pointers to the architecture reference docs, for AI coding agents working on Calc-U-59. |
 | [`CHANGELOG.md`](CHANGELOG.md) | Version history, one heading per release. |
 | [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) | Qt6 (LGPLv3) notice for the Windows/Linux app; React and Archivo notices for the web client; status of the `roms/` ROM images. |
 | [`TODO.md`](TODO.md) | Unsorted backlog of ideas, bugs, and observations across the core, settings, and UI. |

@@ -45,8 +45,7 @@ obligations.
 
   Next: copy the FOR/NEXT arithmetic routine into RAM and time it there.
 
-  MODE 1 (LH-5803) hasn't been re-measured since the host-pacing fix; the
-  old "~7% fast" figure predates it.
+  MODE 1 (LH-5803) still needs a measurement with today's host pacing.
 - **An empty slot in ME0 reads as a constant FFH; real hardware returns
   the last byte on the data bus. To decide.** ME1 already returns the last
   bus byte (`LH5803SharedMemory::readME1`). ME0 doesn't: PC-1600 MODE 0,
@@ -328,7 +327,7 @@ See docs/developer/App-Layer.md and Web-Client.md.
 
 - **The play page on calc-u.org/1600**, wiring the pinned
   `Calc-U-1600-web.zip` into calc-u-site like `59/` (fetch script, page,
-  app link); it replaces the temporary preview at tinue.github.io/1600.
+  app link), in place of the preview at tinue.github.io/1600.
   Then a user-guide section for the web (README has a short one) and a
   parity table (Calc-U-59 style).
 - **Check on a real iPad**: touch, two-finger SHIFT + key, install from
@@ -398,7 +397,7 @@ See docs/developer/App-Layer.md and Web-Client.md.
   first.
 - **Create Debug Project…: templates for slot-module ROMs** (PC-1500
   module, PC-1600 S1/S2): a placeholder `.module.yaml`, a preset with
-  `slot-N-file:`/`slot-N-rom:` and a hello-world `.asm`. Needs the correct
+  `slot-N: { file: … }`/`slot-N-rom:` and a hello-world `.asm`. Needs the correct
   module header per machine first (help/07-debugger.md, "ROM modules in a
   memory slot").
 - **PC-1600 auto power-off control.** No Settings toggle to suppress APO
@@ -416,7 +415,7 @@ See docs/developer/App-Layer.md and Web-Client.md.
   the format only changes compatibly. Rules:
   - **Written only when dirty.** `dirty: true` or no key at all; a clean
     file never carries `dirty: false`. The reader accepts `false` as clean.
-  - **`format-version` stays 1** (pre-1.0, no bump).
+  - **`format-version` stays 2** (pre-1.0, no bump).
   - **Conflicts: the emulator wins.** If the emulator has its own writes
     to the disk that aren't saved yet when it finds `dirty: true`, it
     doesn't reload: its autosave writes the image as usual (without the
@@ -482,9 +481,9 @@ somewhere else doesn't count.
 
   **Sub-CPU half.** The response time comes from the 0.5 s ISR's commands
   (A2H, A8H, A3H) but is applied to every sub-CPU command (clock, IOCS,
-  the power-off byte). It was fitted while the ISR did its full work only
-  every other tick; now it does that every tick, and A−C comes out at
-  60 ms against the real 45 ms, so the per-command time is too long. Of
+  the power-off byte). Its value fits an ISR that does its full work every
+  other tick; the ISR does it every tick, and A−C comes out at 60 ms
+  against the real 45 ms, so the per-command time is too long. Of
   the total, 27.7 µs is the CPC's own DSTB delay (modelled from PR2/PR7);
   the sub-CPU's share is `PC1600SubCpu::kResponseMicros`. First find the
   BASIC-speed residual (the known issue), then re-fit once against

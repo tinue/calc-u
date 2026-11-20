@@ -5,8 +5,8 @@ Calc-U-1600 (PC-1500/1500A/1600), later possibly an SC61860 product. Each
 product is released separately, with its own version and tags; all of them
 build on one shared library.
 
-Until both products have had their first release from this repository,
-`docs/phase-f.md` applies on top of these rules. The help site is
+Until Calc-U-59 3.0.0 and Calc-U-1600 0.9.0 are out, `docs/phase-f.md`
+applies on top of these rules. The help site is
 tracked in `docs/help-site.md`.
 
 ## Layout

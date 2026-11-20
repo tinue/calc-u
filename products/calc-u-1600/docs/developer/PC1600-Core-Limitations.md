@@ -92,9 +92,9 @@ entry when a primary source or a ROM trace disagrees with it.
 - **SDP, RDP and OFF are NOPs on the LH-5803** (TRM §7.1.2). `LH5803.hpp`
 - **The LH-5803's MI input (vector FFF8H) is not driven**: the SC-7852's
   LHMIO (pin 91) and the PC-1500 peripheral IRQ path to the LH-5803 are
-  not modelled; nothing found so far needs them. Since 8858e75 the IF/MSK
-  registers (F00BH/F00AH = ports 1BH/1AH) are the real ones, but nothing
-  drives MI from them.
+  not modelled; nothing found so far needs them. The IF/MSK registers
+  (F00BH/F00AH = ports 1BH/1AH) are the real ones, but nothing drives MI
+  from them.
 - **ME1 wait states** (LHWAIT: one wait for ME1 `**0*H` and 8000H–FFFFH)
   are not modelled. IOE (59) is asserted for ME1 `**00H–**0FH` and
   8000H–FFFFH (`PC1600BusDrive::lh5803Pins`), but the ME1 card decode
@@ -217,8 +217,8 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   `waitForKeyboardScanLoopJob`); the frames are counted from the build,
   not from the call, so it can turn true a frame apart from that job.
 - **One CE-150/CE-1600P, no CE-1600P with CE-158**: refused at the attach
-  with a sentence; the core's own attach still drops the
-  other one, which the refusal now never lets happen.
+  with a sentence, before the core's own attach, which would drop the
+  other one.
 - **No auto-power-off suppression / GUI affordance**: the ROM-level
   `KEYWK3` (F07BH) APO-suppress bit is not driven from Core, and there is
   no Settings toggle or OFF/ON UI control in the app layer.

@@ -1,8 +1,8 @@
 # Development and releases
 
-This applies in full once both products have had their first release
-from this repository; until then `docs/phase-f.md` comes first. Short
-feature branches apply already.
+This applies in full once Calc-U-59 3.0.0 and Calc-U-1600 0.9.0 are out;
+until then `docs/phase-f.md` comes first. Short feature branches apply
+already.
 
 How a product's next version is developed and released from this
 repository (ReleaseIt with `branching: trunk`; its README, "Several

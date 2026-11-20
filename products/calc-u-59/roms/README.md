@@ -20,13 +20,7 @@ details of each dump (chip marking, banks, date of recording).
 | `CD2400.txt`, `CD2401.txt`, `TMC0573.txt`, `CD2400-CONST-K.txt`, `CD2401-CONST-K.txt` | `dumps/ti58c/` | TI-58C | Datamath "ROM Recorder" text (external) |
 | `ML.rom.yaml` … `RP.rom.yaml` (14) | `modules/` | the Solid State ROM modules | Solid State ROM module, `docs/formats/modules.md` §2 (own, `format-version: 1`) |
 
-The calculator dumps are byte for byte the files Calc-U-59 2.3.0 had in
-`roms/calculator/`. The module files were made once from the 2.3.0 module
-dumps (`roms/solid-state/TMC05xx.txt`, which are the same as TI-59-ROM
-`dumps/modules/`) and from `roms/solid-state/cuecards.txt`;
-their ROM images are byte for byte the 2.3.0 ones (test
-`module_images_equal_the_2_3_0_dumps`). The product
-reads the module ROMs from them; the 2.3.0 dumps are no longer fetched.
-
-2.3.0's `solid-state/cuecards.txt` is no longer used: the module list,
-names and cue cards are read from the module files.
+The module files carry, byte for byte, the ROM images of TI-59-ROM's
+`dumps/modules/` (a test pins each image's MD5) and the modules' cue
+cards. The product reads the module ROMs, the module list, the names and
+the cue cards from them.

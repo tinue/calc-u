@@ -98,7 +98,7 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
   built: the `start` command is refused with the lookup's message and the
   `roms-missing` topic carries it. Every rebuild is then a `coldBoot()`.
 - **Operations and keys.** `reset()`, `coldBoot()`, `powerCycle()` (the
-  off / on sequence now runs inside the core, `core/Machine/PowerCycleSequence`),
+  off / on sequence runs inside the core, `core/Machine/PowerCycleSequence`),
   driven by the library's machine control until the machine is ready for keys. Keys are key IDs
   (`keyDown`/`keyUp`; `on` is one of them). Typing (holds, gaps, key
   readiness, Paste Text) is the library's typing engine; the machines offer

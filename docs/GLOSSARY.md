@@ -719,7 +719,7 @@ The full state of a machine in an internal form, written by the
 harness's `state-save <file>` and continued from with `state-restore
 <file>`; refused for another version or machine configuration. It is
 neither a preset nor a medium.
-_Avoid_: snapshot, state file (the 2.3.0 word for a preset)
+_Avoid_: snapshot, state file (a preset is no machine state)
 
 **ASM overlay**:
 Hand-assembled TI-59 CPU code that the debugger loads into an extra ROM
@@ -790,13 +790,8 @@ One published version of one product, with its assets.
 
 **Release tag**:
 The tag of one release, with the product as prefix, such as
-`calc-u-59-v2.4.0`.
+`calc-u-59-v3.0.0`.
 _Avoid_: version tag (for this)
-
-**Archived repository**:
-A product's former repository, read-only, which keeps its history and its
-earlier releases: tinue/Calc-U-59, tinue/Calc-U-1600.
-_Avoid_: old repository, release repository
 
 **Research repository**:
 A repository of hardware and firmware research, such as `ti59-research` or

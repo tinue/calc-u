@@ -26,7 +26,7 @@ Calc-U-1600. In each:
 - **Site pages that are not help** (root page, software pages and
   articles, play page) stay the site's own.
 - **Previews:** a build of a coming release may be shown next to the
-  released one (formerly `/59/beta/`); a preview is never pinned, is kept
+  released one; a preview is never pinned, is kept
   apart from the released pages, and the checks below do not apply to it.
 
 What the two Web frontends keep in the browser (settings, save folder)
@@ -122,16 +122,16 @@ Formats: the asset's layout and `toc.json` are specified in
   `docs/formats/preset.md` of the source repository).
 - **`/59/`:** the complete Calc-U-59 help as hand-written React JSX
   (`59/Pages.jsx`, `routes.js`), prerendered to static HTML by
-  `59/.seo/build.js`. The Web frontend is Calc-U-59 2.3.0 from
-  tinue/Calc-U-59, pinned in `59/web-client.json` (address, sha256,
+  `59/.seo/build.js`. The Web frontend is Calc-U-59 2.3.0's, pinned in
+  `59/web-client.json` (address, sha256,
   version, commit), installed into `59/calc/` by
   `59/.seo/fetch-web-client.js`; `/59/play/` mounts it as
-  `PlayCalculator`. `59/software-files/` holds 39 presets of the old
-  format (no version line), 2 Markdown guides and the four `.asm`
-  overlays, hand-copied from 2.3.0; `59/tutorial-files/` the six old
-  tutorial presets. No preview is shown (`59/beta/` was removed);
-  `59/preview/` holds a design preview page.
-- **`/1600/`:** one placeholder page linking to the archived repository.
+  `PlayCalculator`. `59/software-files/` holds 39 presets without a
+  `format-version` line, 2 Markdown guides and the four `.asm` overlays,
+  copied by hand from release 2.3.0; `59/tutorial-files/` the six
+  tutorial presets in the same form. No preview is shown; `59/preview/`
+  holds a design preview page.
+- **`/1600/`:** one placeholder page with a link to GitHub.
 - **Checks:** `.github/workflows/site.yml`, one job `site-59`:
   re-download the pinned Web frontend and diff `calc/`; rebuild and diff;
   `check.js` (about 1300 assertions); Playwright `59/tests/` (29 tests:
@@ -139,15 +139,15 @@ Formats: the asset's layout and `toc.json` are specified in
 - **Crawlers:** `robots.txt` names only `/59/sitemap.xml` and blocks
   `/59/`'s app, frontend files, preview and beta.
 - **Skills:** `site-59`, `site-59-design`; no skill and no design for
-  `/1600/`. An older content plan for `/1600/` (no play page) is out of
-  date and replaced by this document.
-- **Stale text:** `README.md` still describes a `gh-pages` copy serving
-  the old domain; `CLAUDE.md` calls `/1600/` a placeholder and points at
-  the archived repositories.
+  `/1600/`. The site's own content plan for `/1600/` (no play page) does
+  not apply; this document does.
+- **Text to correct:** `README.md` describes a `gh-pages` copy serving
+  another domain; `CLAUDE.md` calls `/1600/` a placeholder and points at
+  other repositories than tinue/calc-u.
 
-### Where today's `/59/` pages went in the help
+### Where the content of the `/59/` pages is in the help
 
-| Today's address | Help file (Calc-U-59 product part) |
+| Address | Help file (Calc-U-59 product part) |
 |---|---|
 | `/`, `/what-is-a-ti-59/` | `01-introduction.md` |
 | `/getting-started/` | `02-getting-started.md` |
@@ -161,9 +161,9 @@ Formats: the asset's layout and `toc.json` are specified in
 | `/faq/` | `09-faq.md` |
 | `/play/`, `/software/`, articles | stay site pages |
 
-Old deep links (`/getting-started/install-*`, `/getting-started/presets/`,
-`/getting-started/debugger/`, `/getting-started/state-files/`) and the
-old `#hash` addresses (`LEGACY_HASHES` in `59/routes.js`) need redirects
+The deep links `/getting-started/install-*`, `/getting-started/presets/`,
+`/getting-started/debugger/`, `/getting-started/state-files/` and the
+`#hash` addresses (`LEGACY_HASHES` in `59/routes.js`) need redirects
 too.
 
 ## To do
@@ -187,8 +187,8 @@ too.
 ### `/59/` (when Calc-U-59 3.0.0 is released; until then `/59/` stays as it is)
 - [ ] Give each chapter an address; replace the JSX help pages with the
       pages built from the pinned 3.0.0 help asset.
-- [ ] Redirect every address of today (table above, old deep links,
-      `#hash` addresses) to the chapter that holds its content; a site
+- [ ] Redirect every address of the table above, the deep links and the
+      `#hash` addresses to the chapter that holds its content; a site
       test walks the whole table.
 - [ ] `/59/play/` and `/59/calc/app/` from the pinned 3.0.0 Web frontend
       of tinue/calc-u; change the embed once from `PlayCalculator` to
@@ -198,9 +198,8 @@ too.
       drop `tutorial-files/` (the tutorial presets ship in the asset).
 - [ ] Rewrite the navigation tests for the chapters' pages and the
       redirects; the font and play tests pass unchanged.
-- [ ] Make the links to `tinue/Calc-U-59/releases/latest` exact links to
-      the release in tinue/calc-u (three found in `59/Pages.jsx`; the
-      plan counted four: look for the fourth).
+- [ ] Make the release links of `59/Pages.jsx` (three found; look for a
+      fourth) exact links to the release in tinue/calc-u.
 
 ### Site knowledge
 - [ ] Site `CLAUDE.md` and `README.md`: remove the `gh-pages` text,
@@ -209,18 +208,20 @@ too.
       the pending `site-59` edit; write a skill for `/1600/`.
 
 ### Help content (source repository)
-- [ ] Calc-U-59: retake by hand the four pictures that show 2.3.0's
-      control bar (`app-screenshot.png`, `ipad-13-2752x2064.png`,
+- [ ] Calc-U-59: retake by hand the four pictures that show a control
+      bar other than today's (`app-screenshot.png`, `ipad-13-2752x2064.png`,
       `iphone-duo-2852x2006.png`, `ipad-2752x2064-asm.png`) and take the
       two missing ones (the macOS window with its menus; the iPhone's bar
       with the More menu open), from the Swift app of the main checkout.
 - [ ] Calc-U-1600: retake the two menu pictures of chapter 2
-      (`02-rom-menu-pc1500.png`, `02-machine-menu.png`, still 0.8's);
+      (`02-rom-menu-pc1500.png`, `02-machine-menu.png`, menus other than
+      today's);
       they need screen capture rights, so run
       `tools/make_screenshots.sh 02-getting-started` from a terminal that
       has them.
-- [ ] Check every help picture for old words ("Tape", "Tapes") and the
-      old bar; retake those that show them.
+- [ ] Check every help picture for words the glossary avoids ("Tape",
+      "Tapes") and for a control bar other than today's; retake those
+      that show them.
 - [ ] Glossary warnings: the help tool lists 736 places in Calc-U-59's
       help and 886 in Calc-U-1600's of words under "Avoid", most of them
       common words in another sense; narrow the glossary's lists or fix

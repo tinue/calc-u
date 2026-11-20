@@ -110,12 +110,6 @@ public:
     std::vector<std::uint8_t> saveState() const;
     std::optional<std::string> restoreState(const std::vector<std::uint8_t>&);
 
-    // ---- For the core and its tests (tests/BootRun.hpp, SharpTestSupport.hpp) ----
-    bool powerCycleActive() const { return m_sequence.active(); }
-    // Ticks to the sequence's next phase change: an advance of exactly this
-    // runs the phase as one run of the core.
-    calcu::machine::Ticks powerCyclePhaseTicks() const { return m_sequence.remaining(); }
-
 protected:
     SharpMachine(calcu::machine::MachineDescriptor d, std::optional<calcu::machine::VariantId> v)
         : m_descriptor(std::move(d)), m_variant(std::move(v)),

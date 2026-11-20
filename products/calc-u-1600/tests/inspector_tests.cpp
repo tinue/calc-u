@@ -16,7 +16,7 @@
 #include "../core/Debug/Inspect/TextTable.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
-#include "ScriptedSetup.hpp"
+#include "support/Typing.hpp"
 #include "../core/Connector/MemoryCardCatalog.hpp"  // kModuleFileSuffix
 #include "../core/Connector/SoftwareDefinedCard.hpp"
 #include <sstream>
@@ -60,10 +60,9 @@ bool enabled1600(const PC1600Machine& m, inspect::View v) {
     return false;
 }
 
-/// Sets a PC-1600 up as the version 1 preset `yaml` did -- its `slot-N:`
-/// modules, then its `- key:` and `- type:` steps -- on the old class with
-/// the typer (these tests are about the
-/// views). False (test skipped) without the ROM images.
+/// Sets a PC-1600 up from `yaml` -- its `slot-N:` modules, then its
+/// `- key:` and `- type:` steps -- on the machine class, typed through the
+/// typing engine (these tests are about the views). False (test skipped) without the ROM images.
 bool preset1600(PC1600Machine& m, const std::string& yaml) {
     if (!loadPC1600Roms(m)) {
         testharness::skip("PC-1600 ROM images not found");
@@ -91,10 +90,10 @@ bool preset1600(PC1600Machine& m, const std::string& yaml) {
         }
         if (line.rfind("  - ", 0) == 0) steps.push_back(line.substr(4));
     }
-    scripted::bootPC1600(m);
+    sharptest::bootToPrompt(m);
     for (const std::string& step : steps) {
-        if (step.rfind("key: ", 0) == 0) tapKey(m, step.substr(5));
-        else if (step.rfind("type: ", 0) == 0 && !scripted::type(m, step.substr(6))) {
+        if (step.rfind("key: ", 0) == 0) sharptest::tap(m, step.substr(5));
+        else if (step.rfind("type: ", 0) == 0 && !sharptest::typeLine(m, step.substr(6))) {
             testharness::failCount()++;
             return false;
         }
@@ -306,8 +305,8 @@ TEST(test_pc1500_views) {
     PC1500Machine m(PC1500Variant::PC1500A);
     std::string err;
     CHECK(presetroms::loadPC1500Rom(m, "A04", testPresetRoms(), &err));
-    scripted::bootPC1500(m);
-    CHECK(scripted::type(m, "NEW0"));
+    sharptest::bootToPrompt(m);
+    CHECK(sharptest::typeLine(m, "NEW0"));
     const auto view = [&](inspect::View v) {
         return m.debugInspect([&](const PC1500Machine& x) { return inspect::pc1500View(x, v); });
     };

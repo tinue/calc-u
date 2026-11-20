@@ -8,7 +8,7 @@
 
 #include "../core/Connector/SoftwareDefinedCard.hpp"
 #include "../core/Machine/SharpRoms.hpp"
-#include "support/PC1600BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestPresetRoms.hpp"
 
@@ -68,6 +68,6 @@ inline bool loadPC1600Roms(PC1600Machine& m) {
 inline bool bootPC1600(PC1600Machine& m) {
     if (!loadPC1600Roms(m)) return false;
     m.coldBoot();
-    runBootToPrompt(m);
+    sharptest::runUntilKeyReady(m);
     return true;
 }

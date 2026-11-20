@@ -11,7 +11,7 @@
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpCores.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
-#include "BootRun.hpp"
+#include "support/Typing.hpp"
 #include "TestCards.hpp"
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
@@ -121,18 +121,14 @@ inline std::unique_ptr<Machine> buildSharp(const Catalogue& cat, const char* mod
     return std::move(r.machine);
 }
 
-// Cold boot and the boot run to the prompt.
+// Cold boot, then on to key readiness, as the app's start does.
 inline void boot(Machine& m) {
     m.coldBoot();
-    sharptest::bootRun(m);
+    runUntilKeyReady(m);
 }
 
-inline void tap(Machine& m, const std::string& id);
-inline void typeLine(Machine& m, const std::string& text, double settleSeconds = 1);
-inline bool runUntilKeyReady(Machine& m, double capSeconds = 30);
-
 // Built, cold booted, at the prompt. A PC-1500 with fresh RAM asks
-// `NEW0? :CHECK` first: answered with CL, NEW0, ENTER, as the golden runs do.
+// `NEW0? :CHECK` first: answered with CL, NEW0, ENTER, as a user would.
 inline std::unique_ptr<Machine> bootedSharp(const Catalogue& cat, const char* model,
                                             std::vector<PeripheralRequest> peripherals = {}) {
     auto m = buildSharp(cat, model, std::nullopt, std::move(peripherals));
@@ -140,57 +136,10 @@ inline std::unique_ptr<Machine> bootedSharp(const Catalogue& cat, const char* mo
     boot(*m);
     if (m->model().value != "PC-1600") {
         tap(*m, "cl");
-        typeLine(*m, "new0");
+        typeLine(*m, "NEW0");
         runUntilKeyReady(*m, 5);
     }
     return m;
-}
-
-inline Ticks frameTicks(const Machine& m) { return m.descriptor().tickRate / 60; }
-inline Ticks secondsTicks(const Machine& m, double s) {
-    return static_cast<Ticks>(static_cast<double>(m.descriptor().tickRate) * s);
-}
-
-// Advances a frame at a time until key readiness; false at the cap.
-inline bool runUntilKeyReady(Machine& m, double capSeconds) {
-    const Ticks cap = secondsTicks(m, capSeconds);
-    Ticks spent = 0;
-    while (!m.isKeyReady()) {
-        if (spent >= cap) return false;
-        spent += m.advance(frameTicks(m));
-    }
-    return true;
-}
-
-// Advances a frame at a time until `pred`; false at the cap.
-template <class P> bool runUntil(Machine& m, P pred, double capSeconds) {
-    const Ticks cap = secondsTicks(m, capSeconds);
-    Ticks spent = 0;
-    while (!pred()) {
-        if (spent >= cap) return false;
-        spent += m.advance(frameTicks(m));
-    }
-    return true;
-}
-
-// A tap of key `id`: 4 frames down, 4 frames up (the ROMs' key scan sees it
-// on both models; the PC-1500's queue cadence).
-inline void tap(Machine& m, const std::string& id) {
-    m.keyDown(KeyId{id});
-    m.advance(frameTicks(m) * 4);
-    m.keyUp(KeyId{id});
-    m.advance(frameTicks(m) * 4);
-}
-
-// Types `text` (lower-case letters, digits, space and = + * / ( ) . -),
-// then `enter`.
-inline void typeLine(Machine& m, const std::string& text, double settleSeconds) {
-    for (char c : text) tap(m, c == ' ' ? std::string("space") : std::string(1, c));
-    tap(m, "enter");
-    // The line is stored or run: wait until the ROM takes keys again, as
-    // the typers do, at most `settleSeconds`.
-    m.advance(frameTicks(m) * 6);
-    runUntilKeyReady(m, settleSeconds);
 }
 
 inline std::string screen(Machine& m) { return displayText(m).text(); }
@@ -210,7 +159,7 @@ inline void runProgram(Machine& m, const std::string& line) {
     toMode(m, "PRO");
     typeLine(m, line);
     toMode(m, "RUN");
-    typeLine(m, "run", 0.1);
+    typeLine(m, "RUN", 0.1);
 }
 
 inline sharp::LoaderMemory& memoryOf(Machine& m) { return *calcu::machine::first<sharp::LoaderMemory>(m); }

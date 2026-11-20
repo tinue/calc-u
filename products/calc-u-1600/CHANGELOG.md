@@ -261,6 +261,14 @@
   from `sharp::SharpMachine`); `PC1500InterfaceMachine` and
   `PC1600InterfaceMachine` are gone. Their core reset and ALL RESET are
   the machine's `reset()` and `coldBoot()`.
+- **Core tests (developers):** the old typers (`PC1500BasicTyper`,
+  `PC1600BasicTyper`, `namespace job`, `tests/BootRun.hpp`,
+  `tests/ScriptedSetup.hpp`) are gone; the core tests type through the
+  library's typing engine with the model's profile and wait by the
+  product's idle rule (`tests/support/Typing.hpp`). The golden runs boot to
+  key readiness and type through the engine; their committed references
+  wait for a new recording. `PC1600Keyboard`'s scan count is gone from the
+  machine state (a state saved before cannot be restored).
 
 ### Fixed
 

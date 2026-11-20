@@ -14,10 +14,9 @@
 #include "../core/Loaders.hpp"
 #include "../core/Machine/SharpLoaderMemory.hpp"
 #include "../core/MachineCodeFile.hpp"
-#include "support/PC1500BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1500/PC1500MachineCodeLoader.hpp"
-#include "support/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600MachineCodeLoader.hpp"
 #include "LoaderTestSupport.hpp"
@@ -132,7 +131,7 @@ bool bootPC1500(PC1500Machine& m) {
     if (!m.loadROMFile("roms/PC-1500_A04.ROM")) return false;
     m.reset();
     m.runCycles(static_cast<uint64_t>(1300000.0 * 2));
-    waitIdle(m, static_cast<uint64_t>(1300000.0 * 5));
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(1300000.0 * 5)) / m.descriptor().tickRate);
     return true;
 }
 

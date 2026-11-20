@@ -10,10 +10,6 @@
 
 namespace sharp {
 
-inline SharpMachine* sharpOf(calcu::machine::Machine& m) {
-    return m.descriptor().family.value == kSharpFamily ? static_cast<SharpMachine*>(&m) : nullptr;
-}
-
 inline PC1500Machine* pc1500Of(calcu::machine::Machine& m) {
     if (m.descriptor().family.value != kSharpFamily || m.model().value == kPC1600) return nullptr;
     return static_cast<PC1500Machine*>(&m);

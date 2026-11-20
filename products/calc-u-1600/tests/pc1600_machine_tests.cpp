@@ -748,14 +748,14 @@ TEST(test_real_rom_off_stays_off_and_on_restarts) {
 // handler sets F127H bit 6, and the interpreter branches (SubCpu §5).
 void typeProgram(PC1600Machine& m, std::initializer_list<const char*> lines) {
     std::string err;
-    for (const char* l : lines) CHECK(typeLine(m, l, /*pressEnter=*/true, &err));
+    for (const char* l : lines) CHECK(sharptest::typeLine(m, l));
 }
 
 TEST(test_rom_on_time_gosub_fires) {
     PC1600Machine m;
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
-    tapKey(m, "mode"); // RUN -> PRO
-    waitIdle(m, PC1600Machine::kTStateHz);
+    sharptest::tap(m, "mode"); // RUN -> PRO
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     typeProgram(m, {
         "10 POKE &FF80,0",
         "20 DATE$=\"09/26\":TIME$=\"13:29:57\"",
@@ -765,18 +765,15 @@ TEST(test_rom_on_time_gosub_fires) {
         "100 POKE &FF80,123",
         "110 END",
     });
-    tapKey(m, "mode"); // PRO -> RUN
-    waitIdle(m, PC1600Machine::kTStateHz);
-    std::string err;
-    typeLine(m, "RUN", /*pressEnter=*/true, &err);
+    sharptest::tap(m, "mode"); // PRO -> RUN
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
+    sharptest::typeText(m, "RUN");   // the program goes on: no wait for it to settle
     // Step in 50 ms slices until the handler has run; it must be at the
     // 13:30:00 minute carry, not before.
-    PC1600SubCpu::DateTime at{};
-    for (int i = 0; i < 200 && m.memory().read(0xFF80) != 123; i++) {
-        at = m.memory().subCpu().dateTime();
-        m.runCycles(PC1600Machine::kTStateHz / 20);
-    }
+    for (int i = 0; i < 200 && m.memory().read(0xFF80) != 123; i++) m.runCycles(PC1600Machine::kTStateHz / 20);
     CHECK(m.memory().read(0xFF80) == 123);
+    // The slice that ran the handler held the carry: the clock reads 13:30:00 now.
+    const PC1600SubCpu::DateTime at = m.memory().subCpu().dateTime();
     CHECK(at.hour == 0x13 && at.minute == 0x30 && at.second == 0x00);
 }
 
@@ -792,14 +789,14 @@ bool runUntil(PC1600Machine& m, bool wantOff, double seconds) {
 TEST(test_rom_off_on_resumes) {
     PC1600Machine m;
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
-    tapKey(m, "mode"); // RUN -> PRO
-    waitIdle(m, PC1600Machine::kTStateHz);
+    sharptest::tap(m, "mode"); // RUN -> PRO
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     typeProgram(m, {"10 PRINT 1"});
     const uint16_t end = static_cast<uint16_t>((m.memory().read(0xF867) << 8) | m.memory().read(0xF868));
-    tapKey(m, "mode"); // PRO -> RUN
-    waitIdle(m, PC1600Machine::kTStateHz);
+    sharptest::tap(m, "mode"); // PRO -> RUN
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
 
-    tapKey(m, "off");
+    sharptest::tap(m, "off");
     CHECK(runUntil(m, /*wantOff=*/true, 3.0));
     // The OFF key's power-off (P0-B0 0B07H) marks FA08H with AAH x 4.
     for (int i = 0; i < 4; i++) CHECK(m.memory().read(static_cast<uint16_t>(0xFA08 + i)) == 0xAA);
@@ -813,12 +810,12 @@ TEST(test_rom_off_on_resumes) {
     // The boot waits for ON's release, then comes back to the prompt.
     for (int k = 0; k < 30 && !(m.sc7852().halted() && m.sc7852().pc() == 0x92B3); k++)
         m.runCycles(PC1600Machine::kTStateHz / 10);
-    waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz) * 2);
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz) * 2) / m.descriptor().tickRate);
     const uint16_t endAfter = static_cast<uint16_t>((m.memory().read(0xF867) << 8) | m.memory().read(0xF868));
     CHECK(endAfter == end);
     std::string err;
-    CHECK(typeLine(m, "POKE &FF80,55", /*pressEnter=*/true, &err));
-    waitIdle(m, PC1600Machine::kTStateHz);
+    CHECK(sharptest::typeLine(m, "POKE &FF80,55"));
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     CHECK(m.memory().read(0xFF80) == 55);
 }
 
@@ -828,19 +825,19 @@ TEST(test_rom_off_on_resumes) {
 TEST(test_rom_wake_runs_command_at_the_set_time) {
     PC1600Machine m;
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
-    tapKey(m, "mode"); // RUN -> PRO -> RUN, as after any ALL RESET here
-    waitIdle(m, PC1600Machine::kTStateHz);
-    tapKey(m, "mode");
-    waitIdle(m, PC1600Machine::kTStateHz);
+    sharptest::tap(m, "mode"); // RUN -> PRO -> RUN, as after any ALL RESET here
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
+    sharptest::tap(m, "mode");
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     std::string err;
     for (const char* l : {"TIME$=\"13:30:00\"", "DATE$=\"09/26\"", "POKE &FF80,0",
                           "WAKE$(0)=\"09/26/13/31:POKE &FF80,77\"+CHR$(13)"}) {
-        CHECK(typeLine(m, l, /*pressEnter=*/true, &err));
-        waitIdle(m, PC1600Machine::kTStateHz);
+        CHECK(sharptest::typeLine(m, l));
+        sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     }
     const PC1600SubCpu::Alarm w = m.memory().subCpu().timer(PC1600SubCpu::WakeUp);
     CHECK(w.month == 9 && w.day == 0x26 && w.hour == 0x13 && w.minute == 0x31);
-    CHECK(typeLine(m, "POWER OFF", /*pressEnter=*/true, &err));
+    CHECK(sharptest::typeLine(m, "POWER OFF"));
     CHECK(runUntil(m, /*wantOff=*/true, 3.0));
     CHECK(runUntil(m, /*wantOff=*/false, 70.0));
     const PC1600SubCpu::DateTime at = m.memory().subCpu().dateTime();
@@ -859,8 +856,8 @@ TEST(test_rom_wake_runs_command_at_the_set_time) {
 TEST(test_rom_auto_power_off_resumes) {
     PC1600Machine m;
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
-    tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
-    tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
+    sharptest::tap(m, "mode"); sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
+    sharptest::tap(m, "mode"); sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     auto apoCount = [&] { return m.memory().read(0xF0AC) | (m.memory().read(0xF0AD) << 8); };
     CHECK(apoCount() > 0x04B0 - 10 && apoCount() <= 0x04B0);  // counting down from 10 minutes
     const uint8_t fewTicks[] = {0x04, 0x00};
@@ -878,8 +875,8 @@ TEST(test_rom_auto_power_off_resumes) {
     CHECK(m.memory().read(0xFA08) == 0x00);  // signature consumed: resumed
     CHECK(apoCount() > 0x04B0 - 10 && apoCount() <= 0x04B0);  // reloaded to 10 minutes
     std::string err;
-    CHECK(typeLine(m, "POKE &FF80,55", /*pressEnter=*/true, &err));
-    waitIdle(m, PC1600Machine::kTStateHz);
+    CHECK(sharptest::typeLine(m, "POKE &FF80,55"));
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     CHECK(m.memory().read(0xFF80) == 55);
 }
 
@@ -893,12 +890,12 @@ TEST(test_rom_com1_print_reaches_the_peer) {
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     FakeSerialLink link;
     m.setSerialLink(&link);
-    tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
-    tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
+    sharptest::tap(m, "mode"); sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
+    sharptest::tap(m, "mode"); sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     std::string err;
     auto type = [&](const char* l) {
-        CHECK(typeLine(m, l, /*pressEnter=*/true, &err));
-        waitIdle(m, PC1600Machine::kTStateHz);
+        CHECK(sharptest::typeLine(m, l));
+        sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     };
     // SNDSTAT 24: send only while CS is on, 1 s timeout.
     for (const char* l : {"MAXFILES=1", "SETCOM \"COM1:\",9600,8,N,1,N,N", "SNDSTAT \"COM1:\",24,2",

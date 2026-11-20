@@ -449,9 +449,6 @@ somewhere else doesn't count.
   directories: one pass could collect both. `doWrite` stats the file again
   after writing to decide on `resize_file`; the size before the write
   already tells.
-- **`tests/support/PC1600BasicTyper.cpp` `codePointCount` counts UTF-8 lead bytes by
-  hand**; count with `decodeUtf8` (`core/Utf8.hpp`) so malformed bytes count
-  the way the typer then types them.
 - **PC-1600 LCD / sub-CPU timing model** *(behaviour/timing)*.
   `PC1600Display::kBusyClocks = 4` and the sub-CPU's response
   (`PC1600SubCpu::kResponseMicros = 1632` plus the CPC's DSTB delay)

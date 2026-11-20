@@ -3,12 +3,12 @@
 #include <string>
 #include <vector>
 
-// Result types shared by the per-machine BASIC loaders: the keystroke typers
-// (the tests' PC1500BasicTyper / PC1600BasicTyper, tests/support/) and the fast
-// tokenized loaders (PC1500BasicLoader / PC1600BasicLoader,
-// a BASIC `program: file:` and the GUI's Load BASIC Program).
+// Result types of the BASIC loaders: typing a listing in
+// (sharp::loaders::typeProgram, core/BasicTyping.hpp) and the fast
+// tokenized loaders (PC1500BasicLoader / PC1600BasicLoader, a BASIC
+// `program: file:` and the GUI's Load BASIC Program).
 
-/// typeBasicProgramText()'s outcome.
+/// typeProgram()'s outcome.
 struct BasicTypeResult {
     bool ok = false;
     /// Source lines the machine's line editor didn't store -- rejected by the

@@ -25,7 +25,7 @@
 #include "../core/Connector/MemoryCardDefinition.hpp"
 #include "../core/Connector/SoftwareDefinedCard.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
-#include "support/PC1600BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "TestRoms.hpp"
 #include "TestRoms.hpp"
 #include "TestCards.hpp"

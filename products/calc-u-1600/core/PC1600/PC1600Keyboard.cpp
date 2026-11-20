@@ -143,7 +143,6 @@ void PC1600Keyboard::setKeyState(Key key, bool pressed) {
 }
 
 uint8_t PC1600Keyboard::scan(uint8_t opaDriveLines, bool pb6Active) const {
-    ++m_scanCount;
     uint8_t sense = 0xFF;
     for (int s = 0; s < 8; s++) {
         if (opaDriveLines & (1 << s)) continue; // active-low: bit set means NOT strobed

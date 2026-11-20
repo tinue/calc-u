@@ -10,7 +10,7 @@
 #include "../core/Machine/SharpMediaPlaces.hpp"
 #include "media/MediaPlace.hpp"
 #include "../core/PC1500/PC1500Keyboard.hpp"
-#include "support/PC1600BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "../core/PC1600/PC1600Keyboard.hpp"
 #include "TestRoms.hpp"
 #include "SharpTestSupport.hpp"
@@ -180,7 +180,6 @@ TEST(power_cycle_keeps_all_memory) {
         CHECK(pokePattern(*m, a));
         m->powerCycle();
         CHECK(!m->isKeyReady());
-        sharptest::bootRun(*m);
         CHECK(runUntilKeyReady(*m));
         CHECK(m->readDisplay().on);
         CHECK(hasPattern(*m, a));
@@ -292,9 +291,9 @@ TEST(rtc_after_reset_and_cold_boot) {
     // through the first boot after it (PC1600Machine::seedClock's guard), so
     // the clock set above survives one boot; the next cold boot clears it.
     p16->coldBoot();
-    sharptest::bootRun(*p16);
+    runUntilKeyReady(*p16);
     p16->coldBoot();
-    sharptest::bootRun(*p16);
+    runUntilKeyReady(*p16);
     const pp::ClockFields cold = clockOf(*p16)->read();
     CHECK(cold.month == 1 && cold.day == 1 && cold.hour == 0 && cold.minute == 0);
 }
@@ -342,7 +341,7 @@ TEST(on_switches_on_and_breaks) {
         runUntilKeyReady(*m, 5);
         // On a running machine it breaks: an endless program stops.
         const bool p16 = std::string(model) == "PC-1600";
-        runProgram(*m, "10 goto 10");
+        runProgram(*m, "10 GOTO 10");
         m->advance(secondsTicks(*m, 0.5));
         // The PC-1500's key wait is not where a running program is; the
         // PC-1600's readiness also counts a frame in which a
@@ -466,7 +465,7 @@ TEST(pc1500_not_ready_while_bit0_set_or_running) {
     CHECK(memoryOf(*m).writeBuiltIn(0x7B0E, &old, 1).stored);
     CHECK(runUntilKeyReady(*m, 1));
     // A running program: not ready.
-    runProgram(*m, "10 goto 10");
+    runProgram(*m, "10 GOTO 10");
     int ready = 0;
     for (int i = 0; i < 100; ++i) {
         m->advance(frameTicks(*m));
@@ -479,31 +478,10 @@ TEST(pc1600_ready_after_15_ready_frames) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     const Catalogue& c = sharp::sharpCatalogue();
     bool ok = false;
-    PC1600Machine old;
-    std::string err;
-    CHECK(presetroms::loadPC1600RomSet(old, testPresetRoms(), "new", &err));
-    CHECK(presetroms::attachCE1600P(old, testPresetRoms(), "new", &err));
-    // The old class: the first part of runBootToPromptJob, then
-    // waitForKeyboardScanLoopJob, whose return is the moment to match.
-    old.coldBoot();
-    old.runCycles(PC1600Machine::kTStateHz * 2);
-    waitIdle(old, PC1600Machine::kTStateHz * 5);
-    waitForKeyboardScanLoop(old);
-    const std::uint64_t oldReady = old.elapsedTStates();
-
     auto m = buildSharp(c, "PC-1600", std::nullopt, {request(c, "CE-1600P", "printer", std::nullopt, &ok)});
     CHECK(ok && m);
     m->coldBoot();
     CHECK(runUntilKeyReady(*m));
-    // The old job counted the interrupt's key-matrix reads; readiness now
-    // waits for the ROM's KEYGET, which the editor enters a little later:
-    // never earlier than the old job, at most three frames after it.
-    const std::int64_t delta = static_cast<std::int64_t>(m->tickCount()) - static_cast<std::int64_t>(oldReady);
-    const std::int64_t frame = static_cast<std::int64_t>(frameTicks(*m));
-    if (delta > 3 * frame || delta < 0)
-        std::fprintf(stderr, "  ready at %llu, the old job returned at %llu\n",
-                     static_cast<unsigned long long>(m->tickCount()), static_cast<unsigned long long>(oldReady));
-    CHECK(delta <= 3 * frame && delta >= 0);
     // Not ready while switched off, and again only after 15 frames after a reset.
     m->reset();
     CHECK(!m->isKeyReady());
@@ -684,7 +662,7 @@ TEST(ce1600p_variant_keeps_memory_and_disk_side) {
         const PlugEntry* e = pluggedAt(now, "printer");
     CHECK(e && e->variant && e->variant->value == "Old");   // shows at once
     m->powerCycle();
-    sharptest::bootRun(*m);
+    runUntilKeyReady(*m);
     if (auto* d = floppyPlace()) d->insert(std::make_shared<sharp::FloppyContent>(image), side);
     CHECK(runUntilKeyReady(*m));
     CHECK(hasPattern(*m, a));

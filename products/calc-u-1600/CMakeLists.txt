@@ -93,9 +93,6 @@ if(CALCU_TESTS)
   file(GLOB TEST_SOURCES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/app/tests/*.cpp
-    # The tests' support (tests/support/): the old typers and their job
-    # forwarder, the reference typer of the golden runs and of typing a listing in.
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/support/*.cpp
   )
   # The machine state's tests have a program of their own (below).
   list(REMOVE_ITEM TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/machine_state_tests.cpp)

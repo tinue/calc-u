@@ -137,13 +137,13 @@ std::vector<double> ce158SendTimes(const char* model) {
     const bool p16 = std::string(model) == "PC-1600";
     toMode(*m, "PRO");
     if (p16) {   // PC-1500 BASIC on the LH5803 (MODE 1), as the CE-158 needs
-        typeLine(*m, "new");
-        typeLine(*m, "mode1", 2);
+        typeLine(*m, "NEW");
+        typeLine(*m, "MODE1", 2);
         toMode(*m, "PRO");
     }
-    typeLine(*m, "10 setdev po");
-    typeLine(*m, "20 outstat 0");
-    typeLine(*m, "30 lprint 1234567890");
+    typeLine(*m, "10 SETDEV PO");
+    typeLine(*m, "20 OUTSTAT 0");
+    typeLine(*m, "30 LPRINT 1234567890");
     toMode(*m, "RUN");
     pp::SerialPort* port = calcu::machine::first<pp::SerialPort>(*m);
     if (p16)   // the PC-1600's RS-232C port comes first; the CE-158's is at `interface`

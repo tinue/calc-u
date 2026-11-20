@@ -40,9 +40,9 @@ bool bootWithCE1600P(PC1600Machine& m) {
     std::string error;
     if (!loadPC1600Roms(m) || !presetroms::attachCE1600P(m, testPresetRoms(), "new", &error)) return false;
     m.coldBoot();
-    runBootToPrompt(m);
-    tapKey(m, "mode"); // RUN -> PRO
-    waitIdle(m, kSecond);
+    sharptest::runUntilKeyReady(m);
+    sharptest::tap(m, "mode"); // RUN -> PRO
+    sharptest::runUntilSettled(m, double(kSecond) / m.descriptor().tickRate);
     return true;
 }
 
@@ -50,9 +50,9 @@ bool bootWithCE1600P(PC1600Machine& m) {
 // command takes tens of emulated seconds).
 void type(PC1600Machine& m, const std::string& line) {
     std::string err;
-    CHECK(typeLine(m, line, /*pressEnter=*/true, &err));
-    waitUntilBasicIdle(m, 300 * kSecond);
-    waitIdle(m, kSecond);
+    CHECK(sharptest::typeLine(m, line));
+    sharptest::runUntilFinished(m, double(300 * kSecond) / m.descriptor().tickRate);
+    sharptest::runUntilSettled(m, double(kSecond) / m.descriptor().tickRate);
 }
 
 std::string screen(PC1600Machine& m) { return pc1600LcdText(m).plainText(); }
@@ -145,10 +145,10 @@ std::vector<int16_t> csaveInSlices(uint64_t slice) {
     PC1600Machine m;
     if (!bootWithCE1600P(m)) return {};
     std::string err;
-    typeLine(m, "10 PRINT \"SPEED\"", true, &err);
-    waitUntilBasicIdle(m, 10 * kSecond);
+    sharptest::typeLine(m, "10 PRINT \"SPEED\"");
+    sharptest::runUntilFinished(m, double(10 * kSecond) / m.descriptor().tickRate);
     m.tapeRecord("");
-    typeLine(m, "CSAVE \"S\"", true, &err);
+    sharptest::typeLine(m, "CSAVE \"S\"");
     for (uint64_t run = 0; run < 30 * kSecond; run += slice) m.runCycles(slice);
     return m.tapeDeck().recording();
 }

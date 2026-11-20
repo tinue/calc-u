@@ -411,8 +411,8 @@ TEST(test_mode1_xpeek_maps_program_bank_via_lh5803_p_bank) {
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     for (const char* line : {"MODE 1", "XPOKE&C5,&55", "A=XPEEK&C5", "XPOKE&C6,A"}) {
         std::string err;
-        CHECK(typeLine(m, line, /*pressEnter=*/true, &err));
-        waitUntilBasicIdle(m, 60ull * PC1600Machine::kTStateHz);
+        CHECK(sharptest::typeLine(m, line));
+        sharptest::runUntilFinished(m, double(60ull * PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     }
     selectPageCBank(m, 2);
     CHECK(m.memory().read(0x80C5) == 0x55);

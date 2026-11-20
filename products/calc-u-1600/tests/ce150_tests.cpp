@@ -16,7 +16,7 @@
 #include "../core/Connector/PC1500SignalDecode.hpp"
 #include "../core/Connector/PlotterPaperOutput.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
-#include "ScriptedSetup.hpp"
+#include "support/Typing.hpp"
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "paper/Paper.hpp"
@@ -306,7 +306,7 @@ TEST(test_preset_plotter_ce150_attaches_before_reset) {
     std::string err;
     CHECK(presetroms::loadPC1500Rom(machine, "A04", testPresetRoms(), &err));
     CHECK(presetroms::attachCE150(machine, testPresetRoms(), &err));
-    scripted::bootPC1500(machine);
+    sharptest::bootToPrompt(machine);
     CHECK(machine.ce150Attached());
 
     // The CE-150 ROM in 0x8000-0xBFFF is only visible with PV = 0: the

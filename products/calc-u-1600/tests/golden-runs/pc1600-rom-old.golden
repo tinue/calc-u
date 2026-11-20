@@ -1,5 +1,5 @@
 > boot
-  cycles 0
+  cycles 5191324
   lcd |>|
   lcd ||
   lcd ||
@@ -7,7 +7,7 @@
   status DEG RUN I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
 > type print 1+2
-  cycles 5155244
+  cycles 9487305
   lcd |PRINT 1+2|
   lcd ||
   lcd ||
@@ -15,20 +15,20 @@
   status DEG RUN I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
 > keys enter
-  cycles 5728050
+  cycles 10441978
   lcd |PRINT 1+2|
   lcd |                         3|
   lcd ||
   lcd ||
   status DEG RUN I
-  audio samples=7680 nonzero=0 sum=4f9197d17adbd383
+  audio samples=12800 nonzero=0 sum=a17871c74c05b383
 > run 0.5
-  cycles 7518053
+  cycles 12231981
   lcd |PRINT 1+2|
   lcd |                         3|
   lcd ||
   lcd ||
   status DEG RUN I
   audio samples=24000 nonzero=0 sum=95e7975ad1774d83
-= internal ram sum=5a76b79f1aed7bdc
-= z80 view sum=0d97b31bc5e6ddea
+= internal ram sum=6bf655034afbe52a
+= z80 view sum=d734dbcfd7875dec

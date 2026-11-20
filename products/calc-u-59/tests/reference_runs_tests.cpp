@@ -203,7 +203,6 @@ TEST(reference_runs_of_the_examples) {
     if (!draft && !std::getenv("CALCU59_REFERENCE_COMPARE")) return;   // slow: Longer (CalcU59ReferenceRuns)
     SKIP_UNLESS(fs::exists("roms/TMC0571B.txt"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     const fs::path refDir = "tests/references/examples";
-    SKIP_UNLESS(draft || fs::exists(refDir), "references re-recorded, waiting for agreement");
     if (draft) fs::create_directories(draft);
     const char* folder = std::getenv("CALCU59_REFERENCE_EXAMPLES");
     const fs::path examples = folder && *folder ? fs::path(folder) : fs::path("examples");

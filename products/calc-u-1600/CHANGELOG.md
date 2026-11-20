@@ -269,15 +269,13 @@
   `tests/ScriptedSetup.hpp`) are gone; the core tests type through the
   library's typing engine with the model's profile and wait by the
   product's idle rule (`tests/support/Typing.hpp`). The golden runs boot to
-  key readiness and type through the engine; their committed references
-  wait for a new recording. `PC1600Keyboard`'s scan count is gone from the
+  key readiness and type through the engine. `PC1600Keyboard`'s scan count is gone from the
   machine state (a state saved before cannot be restored).
 - **Tests (developers):** the example references are recorded from this
   release's harness (`tests/references/examples/`: the `display-text`, the
   `c1600 inspect` pointers and dumps, `paper marks`; every example), the
   golden runs with today's boot and typing; the 0.8.1 references, their
-  exceptions and the paper-reply converter go once the new set is agreed;
-  until then those tests report SKIP.
+  exceptions and the paper-reply converter are gone.
 
 ### Fixed
 

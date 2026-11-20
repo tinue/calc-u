@@ -1,34 +1,34 @@
 > boot
-  cycles 0
+  cycles 3759215
   lcd |>|
   lcd ||
   lcd ||
   lcd ||
   status DEG RUN I
-  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+  audio samples=48000 nonzero=216 sum=5a33b56db9d192f2
 > type beep 1
-  cycles 3436837
+  cycles 6623194
   lcd |BEEP 1|
   lcd ||
   lcd ||
   lcd ||
   status DEG RUN I
-  audio samples=46080 nonzero=0 sum=cc12c6012c15e383
+  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
 > keys enter
-  cycles 4009640
+  cycles 7100533
   lcd |BEEP 1|
   lcd |>|
   lcd ||
   lcd ||
   status DEG RUN I
-  audio samples=7681 nonzero=2170 sum=fc45e12f764ba18e
+  audio samples=6400 nonzero=2169 sum=b83d7e1f57a12ed7
 > run 2
-  cycles 11169642
+  cycles 14260535
   lcd |BEEP 1|
   lcd |>|
   lcd ||
   lcd ||
   status DEG RUN I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
-= internal ram sum=8d9b6fc934a623e8
-= z80 view sum=4ace7a029a4b1191
+= internal ram sum=7b60dfecdc60bbc1
+= z80 view sum=cfb71027f0b94128

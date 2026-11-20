@@ -1,55 +1,55 @@
 > boot
-  cycles 0
+  cycles 8343518
   lcd |NEW0? :CHECK|
   status DEG PRO I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
   paper CE-150 points=0 sum=14650fb0739d0383
 > run 5
-  cycles 6500000
+  cycles 14843518
   lcd |NEW0? :CHECK|
   status DEG PRO I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
   paper CE-150 points=0 sum=14650fb0739d0383
 > keys cl
-  cycles 6760000
+  cycles 15016846
   lcd |>|
   status DEG PRO I
-  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
   paper CE-150 points=0 sum=14650fb0739d0383
 > type new0
-  cycles 7800000
+  cycles 15710161
   lcd |NEW0_|
   status DEG PRO I
-  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
+  audio samples=25599 nonzero=0 sum=11508a37a79c72cb
   paper CE-150 points=0 sum=14650fb0739d0383
 > keys enter
-  cycles 8060000
+  cycles 15883489
   lcd |>|
   status DEG PRO I
-  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
   paper CE-150 points=0 sum=14650fb0739d0383
 > run 0.5
-  cycles 8710016
+  cycles 16533489
   lcd |>|
   status DEG PRO I
   audio samples=24000 nonzero=0 sum=95e7975ad1774d83
   paper CE-150 points=0 sum=14650fb0739d0383
 > type lprint 123
-  cycles 11310032
+  cycles 18266804
   lcd |LPRINT 123_|
   status DEG PRO I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
   paper CE-150 points=0 sum=14650fb0739d0383
 > keys enter
-  cycles 11570035
+  cycles 18440140
   lcd |LPRINT 123_|
   status BUSY DEG PRO I
-  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
   paper CE-150 points=0 sum=14650fb0739d0383
 > run 3
-  cycles 15470035
+  cycles 22340140
   lcd |>|
   status DEG PRO I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
   paper CE-150 points=108 sum=5107e2446cd699c7
-= me0 sum=2a7d733eeda98bda
+= me0 sum=5946e6f02fe74304

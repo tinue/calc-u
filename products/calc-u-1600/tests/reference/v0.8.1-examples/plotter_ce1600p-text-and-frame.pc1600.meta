@@ -1,6 +1,0 @@
-preset: examples/plotter/ce1600p-text-and-frame.pc1600
-cli: headless/pc1600_cli
-exit: 0
-seconds: 2
---- files changed in the copy of examples/:
---- saved media:

@@ -1,0 +1,257 @@
+preset: examples/plotter/biorhythmus_1600.pc1600
+=== display-text
+N\x84chster Monat?    (J/N)
+
+
+
+indicators: DE G RUN I
+not text: 0
+=== c1600 inspect pointers
+── Pointers ──
+┌──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┐
+│ Name         │ Addr │ Value           │ Meaning                                                            │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ BASIC program                                                                                              │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ BASPRG_ST    │ F865 │ 40C5 → Z80 C0C5 │ S0 program start (ADTBL index F02BH)                               │
+│ BASPRG_END   │ F867 │ 48C0 → Z80 C8C0 │ S0 program end, the FFH mark (ADTBL index F02CH)                   │
+│ EDITHEAD     │ F869 │ 40C5 → Z80 C0C5 │ Edit / merge head                                                  │
+│ PRGSTA       │ FE3C │ C0C5 [5]        │ Start of the TITLE area (PRGADR 02F4H)                             │
+│ PRGENDA      │ FE3F │ C8C0 [5]        │ End of the TITLE area                                              │
+│ PROCPTR      │ FE00 │ C831            │ Interpreter: the next program byte (Z-80)                          │
+│ CURTOP       │ F89E │ 40C5 → Z80 C0C5 │ Block of the current line                                          │
+│ LBCUR        │ F1C1 │ 05              │ ADTBL index of the current line                                    │
+│ CURRENT_LINE │ F89C │ 0000 (0)        │ Current line number                                                │
+│ SRCHLINE     │ F8A8 │ 02DA (730)      │ Line after a SEARCH hit / last entered                             │
+│ CONTADR      │ F0B9 │ 0000            │ CONT / restart address (Z-80)                                      │
+│ TRON         │ F88D │ 00              │ TRON: off                                                          │
+│ TRONMODE     │ F88E │ 02              │ TRON single-step state (1-4)                                       │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Errors and BREAK                                                                                           │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ ERL          │ F89B │ A0              │ Last error number                                                  │
+│ BRKADR       │ F8AC │ 4831 → Z80 C831 │ BREAK address                                                      │
+│ BRKLINE      │ F8AE │ 02DA (730)      │ BREAK line                                                         │
+│ ERRADR       │ F8B2 │ 0000 → Z80 8000 │ Error address                                                      │
+│ ERRLINE      │ F8B4 │ 0000 (0)        │ Error line                                                         │
+│ ONERADR      │ F8B8 │ 8000 (none)     │ ON ERROR GOTO target (bit 15 set: none)                            │
+│ ONERLINE     │ F8BA │ 0000 (0)        │ ON ERROR line                                                      │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Variables and stacks                                                                                       │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ RAM_END      │ F864 │ 6B              │ Page of the S0 user-area top (MEM, VARPTR reset)                   │
+│ VARPTR       │ F899 │ 6A4C → Z80 EA4C │ Start of the variables (they grow down)                            │
+│ FORPTR       │ F890 │ 44              │ FOR stack pointer (low byte)                                       │
+│ GOSUBPTR     │ F891 │ FF              │ GOSUB stack pointer (low byte)                                     │
+│ STRBUFP      │ F894 │ 10              │ String buffer pointer (low byte, FB10H-FB5FH)                      │
+│ LOCKF        │ F9FF │ FF              │ LOCK / UNLOCK state                                                │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Program areas                                                                                              │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ TITLE        │ F1D5 │ 00              │ Selected program area: S0                                          │
+│ S0DESC       │ F029 │ C0              │ S0 base page (b6-0); ML area from base:C5H                         │
+│ S0MTB        │ F02A │ 05              │ First ADTBL index of S0                                            │
+│ PRGBANKS     │ F02B │ 05              │ ADTBL index of the S0 program start                                │
+│ PRGBANKE     │ F02C │ 05              │ ADTBL index of the S0 program end                                  │
+│ ADTBL+1      │ F1D6 │ 00              │ Bank list: unused                                                  │
+│ ADTBL+2      │ F1D7 │ 00              │ unused                                                             │
+│ ADTBL+3      │ F1D8 │ 00              │ unused                                                             │
+│ ADTBL+4      │ F1D9 │ 00              │ unused                                                             │
+│ ADTBL+5      │ F1DA │ 00              │ unused                                                             │
+│ S1MTB        │ F016 │ FF              │ First ADTBL index of S1: none                                      │
+│ S1MBB        │ F018 │ FF              │ Last ADTBL index of S1                                             │
+│ S2MTB        │ F020 │ FF              │ First ADTBL index of S2: none                                      │
+│ S2MBB        │ F022 │ FF              │ Last ADTBL index of S2                                             │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Files and RAM disks                                                                                        │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ FBNO         │ F02D │ 00              │ MAXFILES                                                           │
+│ FBBP         │ F04C │ EBD7            │ Communication-buffer start (PTRF)                                  │
+│ FCBPTR       │ F04E │ EBD7            │ FCB / file-buffer start (PTRG)                                     │
+│ S1RAMSIZ     │ F055 │ 00              │ Slot 1 RAM outside the RAM disk (2 KB units): 0 B                  │
+│ S2RAMSIZ     │ F05B │ 00              │ Slot 2 RAM outside the RAM disk (2 KB units): 0 B                  │
+│ DEVNAME      │ FC16 │ 02              │ Device of the current file operation                               │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Mode and system                                                                                            │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ BMODE        │ F1BC │ 80              │ MODE 0                                                             │
+│ SYMB1        │ F64F │ 43              │ Mode annunciators: RUN                                             │
+│ PORT3D_M     │ F07D │ 04              │ Port 3DH mirror: bank 3 BASIC ROM                                  │
+│ SLOTMAPM     │ F08D │ 1B              │ Port 3CH mirror (SLOTMAP)                                          │
+│ RSTCAUSE     │ FA1B │ 00              │ Last reset / power-on cause: —                                     │
+│ BINTREQ      │ F127 │ 00              │ Pending BASIC interrupts: —                                        │
+│ BINTEN       │ F12A │ 03              │ Enabled sub-CPU interrupts (SWMSK)                                 │
+│ OPNDV        │ F9D1 │ 60              │ PC-1500 peripheral (OPN)                                           │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Display and keyboard                                                                                       │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ DSPLPTR      │ F05C │ 00              │ LCD display start line                                             │
+│ LCDWK1       │ F05D │ 00              │ LCD work 1 (charset / cursor flags)                                │
+│ CRSRY        │ F05F │ 01              │ Cursor row                                                         │
+│ CRSRX        │ F060 │ 00              │ Cursor column                                                      │
+│ KEYWK1       │ F079 │ 00              │ Key work 1 (click / repeat flags)                                  │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Live                                                                                                       │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ SP           │      │ F5F5            │ SC7852 stack pointer (Z-80 stack F500H-F5FFH)                      │
+│ Port 31H     │      │ 60              │ banks A 0, B 0, C 6, D 0                                           │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Computed                                                                                                   │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ MEM          │      │ 8767            │ S0 free bytes: RAM_END:00 − (BASPRG_END + 1) + (5 − F02CH) × 4000H │
+│ Program      │      │ 2044            │ S0 program, with the FFH mark                                      │
+│ ML reserve   │      │ 0               │ Machine-language area C0C5 up to BASPRG_ST (NEW "S0:",n)           │
+│ Variables    │      │ 180             │ RAM_END:00 − VARPTR                                                │
+│ S1 free      │ F015 │ —               │ no program module                                                  │
+│ S2 free      │ F01F │ —               │ no program module                                                  │
+│ PTR5         │ F038 │ EBD7–EFFF       │ EXROM work area, 1065 B                                            │
+└──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┘
+=== c1600 inspect dump-basic
+── BASIC area S0 ──
+── Internal RAM, Z80 C000–EFFF ──
+C000: FF FF FF FF FF FF FF FF  00 00 00 00 00 00 00 00  ................
+C010–C0BF: (00/FF only)
+C0C0: 00 00 00 00 00 00 05 06  22 42 49 4F 22 0D 00 1E  ........"BIO"...
+C0D0: 17 22 42 22 F0 88 3A F1  87 3A F1 B3 30 3A E6 86  ."B"..:..:..0:..
+C0E0: 3A E6 80 33 3A F0 84 0D  00 28 0C F0 B5 33 3A E6  :..3:....(...3:.
+C0F0: 81 3A F0 A4 33 33 0D 00  32 2A F1 A5 49 3D 30 F1  .:..33..2*..I=0.
+C100: B1 34 3A E6 82 28 33 30  30 2B 49 2C 31 32 29 3A  .4:..(300+I,12):
+C110: F0 B9 22 42 49 4F 52 48  59 54 48 4D 45 4E 22 3A  .."BIORHYTHMEN":
+C120: F1 9A 49 0D 00 3C 23 F0  88 3A F1 B3 30 2C 53 3A  ..I..<#..:..0,S:
+C130: E6 86 3A F0 B6 32 3A E6  80 32 3A F0 B5 31 3A F1  ..:..2:..2:..1:.
+C140: 8B 4E 24 28 30 29 2A 33  30 0D 00 46 10 F0 91 22  .N$(0)*30..F..."
+C150: 4E 61 6D 65 20 22 3B 4E  24 28 30 29 0D 00 50 30  Name ";N$(0)..P0
+C160: F0 BB 28 28 38 30 2D 28  F1 64 28 4E 24 28 30 29  ..((80-(.d(N$(0)
+C170: 29 2B 31 39 29 29 2F 32  29 3A F0 B9 22 66 81 72  )+19))/2):.."f.r
+C180: 20 22 3B 4E 24 28 30 29  3B 22 20 28 2A 22 3B 0D   ";N$(0);" (*";.
+C190: 00 5A 4C F0 91 22 47 65  62 75 72 74 73 2D 54 61  .ZL.."Geburts-Ta
+C1A0: 67 20 22 3B 54 3A F0 91  22 4D 6F 6E 61 74 20 20  g ";T:.."Monat
+C1B0: 22 3B 4D 3A F0 91 22 4A  61 68 72 20 20 22 3B 4A  ";M:.."Jahr  ";J
+C1C0: 3A 4D 4D 3D 4D 3A 4A 4A  3D 4A 3A F0 B9 54 3B 22  :MM=M:JJ=J:..T;"
+C1D0: 2E 22 3B 4D 3B 22 2E 22  3B 4A 3B 22 29 22 0D 00  .";M;".";J;")"..
+C1E0: 64 0A F2 B7 4E 24 28 29  3A F0 88 0D 00 6E 11 F0  d...N$():....n..
+C1F0: B5 30 3A F0 B6 31 3A F0  B9 22 61 62 20 22 3B 0D  .0:..1:.."ab ";.
+C200: 00 78 1A F0 88 3A F0 91  22 61 62 20 4D 6F 6E 61  .x...:.."ab Mona
+C210: 74 20 22 3B 4D 41 3A 4D  4F 3D 4D 41 0D 00 82 16  t ";MA:MO=MA....
+C220: F1 96 4D 41 3D 31 F0 B9  22 31 2E 20 4A 61 6E 75  ..MA=1.."1. Janu
+C230: 61 72 20 22 3B 0D 00 8C  17 F1 96 4D 41 3D 32 F0  ar ";......MA=2.
+C240: B9 22 31 2E 20 46 65 62  72 75 61 72 20 22 3B 0D  ."1. Februar ";.
+C250: 00 96 14 F1 96 4D 41 3D  33 F0 B9 22 31 2E 20 4D  .....MA=3.."1. M
+C260: 84 72 7A 20 22 3B 0D 00  A0 15 F1 96 4D 41 3D 34  .rz ";......MA=4
+C270: F0 B9 22 31 2E 20 41 70  72 69 6C 20 22 3B 0D 00  .."1. April ";..
+C280: AA 13 F1 96 4D 41 3D 35  F0 B9 22 31 2E 20 4D 61  ....MA=5.."1. Ma
+C290: 69 20 22 3B 0D 00 B4 14  F1 96 4D 41 3D 36 F0 B9  i ";......MA=6..
+C2A0: 22 31 2E 20 4A 75 6E 69  20 22 3B 0D 00 BE 14 F1  "1. Juni ";.....
+C2B0: 96 4D 41 3D 37 F0 B9 22  31 2E 20 4A 75 6C 69 20  .MA=7.."1. Juli
+C2C0: 22 3B 0D 00 C8 16 F1 96  4D 41 3D 38 F0 B9 22 31  ";......MA=8.."1
+C2D0: 2E 20 41 75 67 75 73 74  20 22 3B 0D 00 D2 19 F1  . August ";.....
+C2E0: 96 4D 41 3D 39 F0 B9 22  31 2E 20 53 65 70 74 65  .MA=9.."1. Septe
+C2F0: 6D 62 65 72 20 22 3B 0D  00 DC 18 F1 96 4D 41 3D  mber ";......MA=
+C300: 31 30 F0 B9 22 31 2E 20  4F 6B 74 6F 62 65 72 20  10.."1. Oktober
+C310: 22 3B 0D 00 E6 19 F1 96  4D 41 3D 31 31 F0 B9 22  ";......MA=11.."
+C320: 31 2E 20 4E 6F 76 65 6D  62 65 72 20 22 3B 0D 00  1. November ";..
+C330: F0 19 F1 96 4D 41 3D 31  32 F0 B9 22 31 2E 20 44  ....MA=12.."1. D
+C340: 65 7A 65 6D 62 65 72 20  22 3B 0D 00 FA 1C F0 91  ezember ";......
+C350: 22 4A 61 68 72 20 20 20  20 20 22 3B 4A 41 3A 4A  "Jahr     ";JA:J
+C360: 4F 3D 4A 41 3A F0 B9 4A  41 0D 01 04 1D F0 BB 31  O=JA:..JA......1
+C370: 38 3A F0 B5 32 3A F0 B9  22 2D 2D 20 70 68 79 73  8:..2:.."-- phys
+C380: 69 73 63 68 20 20 20 22  3B 0D 01 0E 19 F0 B5 33  isch   ";......3
+C390: 3A F0 B9 22 2D 2D 20 70  73 79 63 68 69 73 63 68  :.."-- psychisch
+C3A0: 20 20 20 22 3B 0D 01 18  19 F0 B5 31 3A F0 B9 22     ";......1:.."
+C3B0: 2D 2D 20 69 6E 74 65 6C  6C 65 6B 74 75 65 6C 6C  -- intellektuell
+C3C0: 22 0D 01 22 0E F1 94 1F  02 1C 00 3A F1 94 1F 02  "..".......:....
+C3D0: 80 00 0D 01 2C 13 44 3D  54 58 2D 54 47 3A F0 B5  ....,.D=TX-TG:..
+C3E0: 30 3A E6 81 3A E6 85 33  0D 01 36 2E E6 82 28 32  0:..:..3..6...(2
+C3F0: 30 2C 2D 31 35 30 29 3A  E6 84 3A E6 82 28 2D 32  0,-150):..:..(-2
+C400: 2C 2D 38 30 29 3A F0 B9  22 2D 20 20 20 20 20 20  ,-80):.."-
+C410: 20 20 20 20 20 20 20 2B  22 0D 01 40 1D 58 3D 49         +"..@.X=I
+C420: 2A 32 35 3A F0 B7 28 30  2C 2D 31 30 30 29 2D 28  *25:..(0,-100)-(
+C430: 2D 30 2C 31 31 35 29 2C  30 0D 01 4A 0A F1 A5 5A  -0,115),0..J...Z
+C440: 3D 31 F1 B1 33 31 0D 01  54 13 F1 96 5A 3D 33 31  =1..31..T...Z=31
+C450: F1 50 49 3D 33 30 F1 92  1F 01 A4 00 0D 01 5E 13  .PI=30........^.
+C460: F1 96 5A 3D 32 39 F1 50  49 3D 32 38 F1 92 1F 01  ..Z=29.PI=28....
+C470: A4 00 0D 01 68 07 58 3D  5A 2A 32 35 0D 01 72 0E  ....h.X=Z*25..r.
+C480: F1 96 5A 3D 31 F0 B5 33  F2 83 F0 B5 30 0D 01 7C  ..Z=1..3....0..|
+C490: 15 F0 B7 28 58 2C 2D 31  30 30 29 2D 28 58 2C 31  ...(X,-100)-(X,1
+C4A0: 31 35 29 2C 30 0D 01 86  24 59 3D 38 30 3A 57 3D  15),0...$Y=80:W=
+C4B0: 58 2B 31 30 3A F0 B7 28  57 2D 31 34 2C 31 31 35  X+10:..(W-14,115
+C4C0: 29 2D 28 57 2D 31 34 2C  59 29 2C 39 0D 01 90 1C  )-(W-14,Y),9....
+C4D0: F1 96 5A 3D 31 F0 B5 33  3A F0 B9 5A 3B 22 2E 22  ..Z=1..3:..Z;"."
+C4E0: 3B 4D 4F 3B 22 2E 22 3A  F1 9A 5A 0D 01 9A 0C F0  ;MO;".":..Z.....
+C4F0: B5 30 3A F0 B9 5A 3A F1  9A 5A 0D 01 A4 10 F0 B7  .0:..Z:..Z......
+C500: 28 58 2C 30 29 2D 28 30  2C 30 29 2C 30 0D 01 AE  (X,0)-(0,0),0...
+C510: 4B 50 48 3D F1 71 28 44  2F 32 33 29 3A 50 48 3D  KPH=.q(D/23):PH=
+C520: 44 2D 28 32 33 2A 50 48  29 3A 50 53 3D F1 71 28  D-(23*PH):PS=.q(
+C530: 44 2F 32 38 29 3A 50 53  3D 44 2D 28 32 38 2A 50  D/28):PS=D-(28*P
+C540: 53 29 3A 49 51 3D F1 71  28 44 2F 33 33 29 3A 49  S):IQ=.q(D/33):I
+C550: 51 3D 44 2D 28 33 33 2A  49 51 29 0D 01 B8 11 F1  Q=D-(33*IQ).....
+C560: A5 56 3D 31 F1 B1 33 3A  F0 B5 56 3A 45 3D 30 0D  .V=1..3:..V:E=0.
+C570: 01 C2 09 F1 A5 58 3D 30  F1 B1 49 0D 01 CC 1E F1  .....X=0..I.....
+C580: 96 56 3D 32 F1 98 59 3D  F1 7D 28 28 50 48 2B 58  .V=2..Y=.}((PH+X
+C590: 29 2F 32 33 2A 33 36 30  29 2A 38 30 0D 01 D6 1E  )/23*360)*80....
+C5A0: F1 96 56 3D 33 F1 98 59  3D F1 7D 28 28 50 53 2B  ..V=3..Y=.}((PS+
+C5B0: 58 29 2F 32 38 2A 33 36  30 29 2A 38 30 0D 01 E0  X)/28*360)*80...
+C5C0: 1E F1 96 56 3D 31 F1 98  59 3D F1 7D 28 28 49 51  ...V=1..Y=.}((IQ
+C5D0: 2B 58 29 2F 33 33 2A 33  36 30 29 2A 38 30 0D 01  +X)/33*360)*80..
+C5E0: EA 0B 57 3D 58 2A 32 35  3A 46 3D 30 0D 01 F4 0F  ..W=X*25:F=0....
+C5F0: F1 96 45 3D 30 F1 98 46  3D 39 3A 45 3D 31 0D 01  ..E=0..F=9:E=1..
+C600: FE 10 F0 B7 28 41 2C 42  29 2D 28 57 2C 59 29 2C  ....(A,B)-(W,Y),
+C610: 46 0D 02 08 10 41 3D 57  3A 42 3D 59 3A F1 9A 58  F....A=W:B=Y:..X
+C620: 3A F1 9A 56 0D 02 12 07  F1 92 1F 02 DA 00 0D 02  :..V............
+C630: 1C 0D F1 96 4D 41 3D 32  F1 92 1F 02 44 00 0D 02  ....MA=2....D...
+C640: 26 20 F1 96 4D 41 3D 34  F1 51 4D 41 3D 36 F1 51  & ..MA=4.QMA=6.Q
+C650: 4D 41 3D 39 F1 51 4D 41  3D 31 31 F1 92 1F 02 3A  MA=9.QMA=11....:
+C660: 00 0D 02 30 08 49 3D 33  31 3A F1 99 0D 02 3A 08  ...0.I=31:....:.
+C670: 49 3D 33 30 3A F1 99 0D  02 44 14 53 3D F1 71 28  I=30:....D.S=.q(
+C680: 4A 41 2F 34 29 3A 53 3D  4A 41 2D 53 2A 34 0D 02  JA/4):S=JA-S*4..
+C690: 4E 17 F1 96 53 3D 30 F1  92 1F 02 58 00 F2 83 F1  N...S=0....X....
+C6A0: 98 49 3D 32 38 3A F1 99  0D 02 58 18 53 3D F1 71  .I=28:....X.S=.q
+C6B0: 28 4A 41 2F 31 30 30 29  3A 53 3D 4A 41 2D 53 2A  (JA/100):S=JA-S*
+C6C0: 31 30 30 0D 02 62 17 F1  96 53 3D 30 F1 92 1F 02  100..b...S=0....
+C6D0: 6C 00 F2 83 F1 98 49 3D  32 39 3A F1 99 0D 02 6C  l.....I=29:....l
+C6E0: 18 53 3D F1 71 28 4A 41  2F 34 30 30 29 3A 53 3D  .S=.q(JA/400):S=
+C6F0: 4A 41 2D 53 2A 34 30 30  0D 02 76 17 F1 96 53 3D  JA-S*400..v...S=
+C700: 30 F1 98 49 3D 32 39 F2  83 F1 98 49 3D 32 38 3A  0..I=29....I=28:
+C710: F1 99 0D 02 80 21 F1 96  4D 41 2D 33 3C 30 F1 92  .....!..MA-3<0..
+C720: 1F 02 8A 00 F2 83 F1 98  4D 41 3D 4D 41 2B 31 3A  ........MA=MA+1:
+C730: F1 92 1F 02 94 00 0D 02  8A 11 4A 41 3D 4A 41 2D  ..........JA=JA-
+C740: 31 3A 4D 41 3D 31 33 2B  4D 41 0D 02 94 1D 54 5A  1:MA=13+MA....TZ
+C750: 3D F1 71 28 33 36 35 2E  32 35 2A 4A 41 29 2B F1  =.q(365.25*JA)+.
+C760: 71 28 33 30 2E 36 2A 4D  41 29 0D 02 9E 22 54 5A  q(30.6*MA)..."TZ
+C770: 3D 54 5A 2D F1 71 28 4A  41 2F 31 30 30 29 2B F1  =TZ-.q(JA/100)+.
+C780: 71 28 4A 41 2F 34 30 30  29 3A 54 58 3D 54 5A 0D  q(JA/400):TX=TZ.
+C790: 02 A8 1E F1 96 4D 2D 33  3C 30 F1 92 1F 02 B2 00  .....M-3<0......
+C7A0: F2 83 F1 98 4D 3D 4D 2B  31 3A F1 92 1F 02 BC 00  ....M=M+1:......
+C7B0: 0D 02 B2 0D 4A 3D 4A 2D  31 3A 4D 3D 31 33 2B 4D  ....J=J-1:M=13+M
+C7C0: 0D 02 BC 1D 54 5A 3D F1  71 28 33 36 35 2E 32 35  ....TZ=.q(365.25
+C7D0: 2A 4A 29 2B F1 71 28 33  30 2E 36 2A 4D 29 2B 54  *J)+.q(30.6*M)+T
+C7E0: 0D 02 C6 20 54 5A 3D 54  5A 2D F1 71 28 4A 2F 31  ... TZ=TZ-.q(J/1
+C7F0: 30 30 29 2B F1 71 28 4A  2F 34 30 30 29 3A 54 47  00)+.q(J/400):TG
+C800: 3D 54 5A 0D 02 D0 03 F1  99 0D 02 DA 25 F0 88 3A  =TZ.........%..:
+C810: F0 91 22 4E 84 63 68 73  74 65 72 20 4D 6F 6E 61  .."N.chster Mona
+C820: 74 3F 20 20 20 20 28 4A  2F 4E 29 20 20 22 3B 51  t?    (J/N)  ";Q
+C830: 24 0D 02 E4 4D F1 96 51  24 3D 22 4E 22 F1 51 51  $...M..Q$="N".QQ
+C840: 24 3D 22 6E 22 F1 AE F1  8E F2 83 F1 98 4D 4F 3D  $="n"........MO=
+C850: 4D 4F 2B 31 3A 4D 41 3D  4D 4F 3A 4A 41 3D 4A 4F  MO+1:MA=MO:JA=JO
+C860: 3A 4A 3D 4A 4A 3A 4D 3D  4D 4D 3A F0 88 3A F0 84  :J=JJ:M=MM:..:..
+C870: 31 30 2C 32 3A F0 97 4D  4F 3B 22 20 2F 22 3B 4A  10,2:..MO;" /";J
+C880: 41 0D 02 EE 0E F1 94 1F  02 1C 00 3A F1 94 1F 02  A..........:....
+C890: 80 00 0D 02 F8 21 44 3D  54 58 2D 54 47 3A F0 B5  .....!D=TX-TG:..
+C8A0: 30 3A E6 82 28 30 2C 2D  32 35 30 29 3A E6 84 3A  0:..(0,-250):..:
+C8B0: F1 92 1F 01 36 00 0D 03  02 06 F0 88 3A F1 8E 0D  ....6.......:...
+C8C0–EA3F: (00/FF only)
+EA40: FF FF FF FF FF FF FF FF  FF FF FF FF 49 51 00 0B  ............IQ..
+EA50: 00 00 88 01 00 30 00 00  00 00 00 50 53 00 0B 00  .....0.....PS...
+EA60: 00 88 01 00 17 00 00 00  00 00 50 48 00 0B 00 00  ..........PH....
+EA70: 88 01 00 18 00 00 00 00  00 54 47 00 0B 00 00 88  .........TG.....
+EA80: 05 00 71 79 82 00 00 00  54 58 00 0B 00 00 88 05  ..qy....TX......
+EA90: 00 74 02 87 00 00 00 54  5A 00 0B 00 00 88 05 00  .t.....TZ.......
+EAA0: 71 79 82 00 00 00 4A 4F  00 0B 00 00 88 03 00 20  qy....JO.......
+EAB0: 26 00 00 00 00 4A 41 00  0B 00 00 88 03 00 20 26  &....JA....... &
+EAC0: 00 00 00 00 4D 4F 00 0B  00 00 88 00 00 90 00 00  ....MO..........
+EAD0: 00 00 00 4D 41 00 0B 00  00 88 01 00 10 00 00 00  ...MA...........
+EAE0: 00 00 4A 4A 00 0B 00 00  88 03 00 19 65 00 00 00  ..JJ........e...
+EAF0: 00 4D 4D 00 0B 00 00 88  00 00 80 00 00 00 00 00  .MM.............
+EB00–EFDF: (00/FF only)
+EFE0: 00 00 00 00 00 00 00 00  42 42 00 00 00 00 42 42  ........BB....BB
+EFF0: 00 00 00 00 02 02 00 48  D8 03 EE 42 F3 F5 70 00  .......H...B..p.

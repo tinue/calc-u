@@ -285,7 +285,6 @@ TEST(golden_runs_through_the_interface) {
         if (e.path().extension() == ".run") scripts.push_back(e.path());
     std::sort(scripts.begin(), scripts.end());
     CHECK(!scripts.empty());
-    std::vector<std::string> differ;
     for (const auto& s : scripts) {
         std::string error;
         std::vector<size_t> skip;
@@ -305,21 +304,13 @@ TEST(golden_runs_through_the_interface) {
                                  std::find(skip.begin(), skip.end(), n) != skip.end();
             if (excused) continue;
             if (ea || eb || la != lb) {
-                differ.push_back(golden.filename().string() + ":" + std::to_string(n + 1));
+                std::fprintf(stderr, "  %s:%zu differs\n    golden: %s\n    run:    %s\n", golden.filename().string().c_str(),
+                             n + 1, la.c_str(), lb.c_str());
+                CHECK(false);
                 break;
             }
         }
     }
-    // The committed references were recorded with the boot run and the key
-    // timing of 0.8.1; until the new recording is agreed, a difference is
-    // reported here and the comparison waits.
-    if (!differ.empty()) {
-        std::string list;
-        for (const auto& d : differ) list += " " + d;
-        std::fprintf(stderr, "  %zu of %zu golden runs differ from the committed references:%s\n", differ.size(),
-                     scripts.size(), list.c_str());
-    }
-    SKIP_UNLESS(differ.empty(), "references re-recorded, waiting for agreement");
 }
 
 } // namespace

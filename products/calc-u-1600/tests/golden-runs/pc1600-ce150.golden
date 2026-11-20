@@ -1,5 +1,5 @@
 > boot
-  cycles 0
+  cycles 25244305
   lcd |>|
   lcd ||
   lcd ||
@@ -8,25 +8,25 @@
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
   paper CE-150 points=0 sum=14650fb0739d0383
 > type mode1
-  cycles 2864029
+  cycles 27630953
   lcd |MODE1|
   lcd ||
   lcd ||
   lcd ||
   status DEG RUN I
-  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
+  audio samples=31999 nonzero=0 sum=06e7a51508710acb
   paper CE-150 points=0 sum=14650fb0739d0383
 > keys enter
-  cycles 3436838
+  cycles 28585633
   lcd |>|
   lcd ||
   lcd ||
   lcd ||
   status DEG RUN I
-  audio samples=7680 nonzero=0 sum=4f9197d17adbd383
+  audio samples=12801 nonzero=0 sum=eccbbb5fa21ce8fb
   paper CE-150 points=0 sum=14650fb0739d0383
 > run 1
-  cycles 7016839
+  cycles 32165634
   lcd |>|
   lcd ||
   lcd ||
@@ -35,7 +35,7 @@
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
   paper CE-150 points=0 sum=14650fb0739d0383
 > type lprint 123
-  cycles 12744886
+  cycles 36938946
   lcd |LPRINT 123|
   lcd ||
   lcd ||
@@ -44,16 +44,16 @@
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
   paper CE-150 points=0 sum=14650fb0739d0383
 > keys enter
-  cycles 13317724
+  cycles 37416293
   lcd |LPRINT 123|
   lcd ||
   lcd ||
   lcd ||
   status BUSY DEG RUN I
-  audio samples=7680 nonzero=0 sum=4f9197d17adbd383
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
   paper CE-150 points=0 sum=14650fb0739d0383
 > run 3
-  cycles 24057725
+  cycles 48156294
   lcd |LPRINT 123|
   lcd |>|
   lcd ||
@@ -61,5 +61,5 @@
   status DEG RUN I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
   paper CE-150 points=108 sum=5107e2446cd699c7
-= internal ram sum=9a03190bce674dae
-= z80 view sum=e73278d4fab4a5cf
+= internal ram sum=23a111618cea8e5c
+= z80 view sum=d74138f98fdc766d

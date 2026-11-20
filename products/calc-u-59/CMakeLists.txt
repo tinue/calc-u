@@ -169,8 +169,7 @@ if(CALCU_TESTS)
     # tools/coverage.py and tools/fastmode_matrix.py on the harness
     # (tests/check_scripts.py).
     calcu_add_test(CalcU59Scripts longer
-                   COMMAND ${Python3_EXECUTABLE} tests/check_scripts.py --calcu $<TARGET_FILE:calcu>
-                   PROPERTIES SKIP_RETURN_CODE 77)
+                   COMMAND ${Python3_EXECUTABLE} tests/check_scripts.py --calcu $<TARGET_FILE:calcu>)
   endif()
   # `calcu --product c59 check-preset` over the examples and the startup
   # presets, the ones with magnetic cards included.

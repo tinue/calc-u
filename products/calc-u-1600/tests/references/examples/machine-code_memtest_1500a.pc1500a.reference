@@ -1,0 +1,86 @@
+preset: examples/machine-code/memtest_1500a.pc1500a
+=== display-text
+                         0
+indicators: DE G RUN I
+not text: 0
+=== c1600 inspect pointers
+── Pointers ──
+┌─────────────────┬──────┬───────┬───────────────────────────────────────────────┐
+│ Name            │ Addr │ Value │ Meaning                                       │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ BASIC program                                                                  │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ BASPRG_ST       │ 7865 │ 40C5  │ BASIC program start                           │
+│ BASPRG_END      │ 7867 │ 40C5  │ BASIC program end, the FFH mark               │
+│ BASPRG_EDT      │ 7869 │ 40C5  │ Editor line-modification pointer              │
+│ CURR_TOP        │ 789E │ FFFF  │ Start of the program holding the current line │
+│ CURR_LINE       │ 789C │ 0000  │ Current line number                           │
+│ PREV_LINE       │ 78A2 │ 0000  │ Previous line number                          │
+│ SRCH_LINE       │ 78A8 │ FFFF  │ Line found by a search                        │
+│ DATA_PTR        │ 78BE │ 8002  │ DATA statement cursor                         │
+│ ROM_ST          │ 7861 │ FFFF  │ BASIC program in a ROM module                 │
+│ TRACE_ON        │ 788D │ 00    │ TRON: off                                     │
+│ TRACE_PARAM     │ 788E │ 0478  │ Trace output vector                           │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Errors and BREAK                                                               │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ ERL             │ 789B │ 00    │ Error code                                    │
+│ BREAKPARAM      │ 788A │ 00    │ BREAK flag                                    │
+│ BRK_ADD         │ 78AC │ FFFF  │ BREAK address                                 │
+│ BRK_LINE        │ 78AE │ FFFF  │ BREAK line                                    │
+│ ERR_ADD         │ 78B2 │ FFFF  │ Error address                                 │
+│ ERR_LINE        │ 78B4 │ 0000  │ Error line                                    │
+│ ON_ERR_ADD      │ 78B8 │ FFFF  │ ON ERROR GOTO target                          │
+│ ON_ERR_LINE     │ 78BA │ FFFF  │ ON ERROR line                                 │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Variables and stacks                                                           │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ RAM_ST          │ 7863 │ 40    │ Page of the user RAM start                    │
+│ RAM_END         │ 7864 │ 58    │ Page one past the user RAM top                │
+│ VAR_START       │ 7899 │ 5800  │ Start of the variables (they grow down)       │
+│ CURVARADD       │ 7883 │ 79B8  │ Currently accessed variable                   │
+│ CURVARTYPE      │ 7885 │ 88    │ Its type                                      │
+│ STK_PTR_GSB_FOR │ 7882 │ FF    │ Stack pointer for GOSUB and FOR               │
+│ FORNXT_STK_PTR  │ 7890 │ 38    │ FOR/NEXT stack pointer (low byte)             │
+│ GOSB_STK_PTR_L  │ 7891 │ FF    │ GOSUB stack pointer (low byte)                │
+│ STR_BUF_PTR_L   │ 7894 │ 10    │ String buffer pointer (low byte, 7B10H-7B5FH) │
+│ INBUFPTR_L      │ 788B │ B0    │ Input buffer pointer (low byte, 7BB0H-7BFFH)  │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Mode and system                                                                │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ Annunciators    │ 764F │ 43    │ Mode: RUN                                     │
+│ LOCK            │ 79FF │ FF    │ unlocked                                      │
+│ DISPARAM        │ 7880 │ 20    │ Display at READY                              │
+│ PU_PV           │ 79D0 │ FE    │ PU/PV flag, ROM bank (00 ROM 1, 01 ROM 2)     │
+│ OPN             │ 79D1 │ 60    │ OPN device: LCD                               │
+│ WAIT_CFG        │ 7871 │ 00    │ WAIT setting                                  │
+│ CURSOR_PTR      │ 7875 │ 00    │ Cursor column                                 │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Computed                                                                       │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ MEM             │      │ 5946  │ RAM_END:00 − BASPRG_END − 1                   │
+│ Program         │      │ 1     │ BASIC program, with the FFH mark              │
+│ ML reserve      │      │ 0     │ Machine-language area 40C5 up to BASPRG_ST    │
+│ Variables       │      │ 0     │ RAM_END:00 − VAR_START                        │
+└─────────────────┴──────┴───────┴───────────────────────────────────────────────┘
+=== c1600 inspect dump-basic
+── BASIC area 4000–57FF ──
+4000: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+4010–57EF: (00/FF only)
+57F0: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+=== c1600 inspect dump-ml
+── Machine-language area 7C00–7FFF ──
+7C00: 0D 8E 05 00 00 00 00 00  B5 00 AE 7C 03 86 89 0E  ...........|....
+7C10: 06 89 0B B5 02 AE 7C 03  48 00 4A 02 FB 9A 04 2A  ......|.H.J....*
+7C20: 62 A5 78 64 18 5A 00 A5  78 67 08 A5 78 68 0A B5  b.xd.Z..xg..xh..
+7C30: 55 28 A4 0E 05 A6 89 67  44 84 96 91 0B 89 04 04  U(.....gD.......
+7C40: 16 91 11 A5 78 67 08 A5  78 68 0A B5 AA 28 A4 0E  ....xg..xh...(..
+7C50: 05 A6 89 4B 44 84 96 91  0B 89 04 04 16 91 11 A5  ...KD...........
+7C60: 78 67 08 A5 78 68 0A B5  FF 28 A4 0E 05 A6 89 2F  xg..xh...(...../
+7C70: 44 84 96 91 0B 89 04 04  16 91 11 A5 78 67 08 A5  D...........xg..
+7C80: 78 68 0A B5 00 28 A4 0E  05 A6 89 13 44 84 96 91  xh...(......D...
+7C90: 0B 89 04 04 16 91 11 88  72 48 00 4A 00 FB 9A AE  ........rH.J....
+7CA0: 7C 07 A4 AE 7C 06 84 AE  7C 04 04 AE 7C 05 B5 01  |...|...|...|...
+7CB0: AE 7C 03 48 00 4A 01 FB  9A 00 00 00 00 00 00 00  .|.H.J..........
+7CC0–7FEF: (00/FF only)
+7FF0: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................

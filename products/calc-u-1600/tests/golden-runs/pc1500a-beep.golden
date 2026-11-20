@@ -1,41 +1,41 @@
 > boot
-  cycles 0
+  cycles 541779
   lcd |NEW0? :CHECK|
   status DEG PRO I
-  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+  audio samples=20004 nonzero=798 sum=f57489aeb4d6bab4
 > keys cl
-  cycles 260000
+  cycles 715107
   lcd |>|
   status DEG PRO I
-  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+  audio samples=6399 nonzero=0 sum=ce1df1d22d9eaacb
 > type new0
-  cycles 1300000
+  cycles 1408437
   lcd |NEW0_|
   status DEG PRO I
-  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
+  audio samples=25600 nonzero=0 sum=f302adc2776e6383
 > keys enter
-  cycles 1560000
+  cycles 1581765
   lcd |>|
   status DEG PRO I
-  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
 > run 0.5
-  cycles 2210000
+  cycles 2231765
   lcd |>|
   status DEG PRO I
   audio samples=24000 nonzero=0 sum=95e7975ad1774d83
 > type beep 1
-  cycles 3770003
+  cycles 3271799
   lcd |BEEP 1_|
   status DEG PRO I
-  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+  audio samples=38401 nonzero=0 sum=489b30cc3cc548fb
 > keys enter
-  cycles 4030003
+  cycles 3445129
   lcd |>|
   status DEG PRO I
-  audio samples=9600 nonzero=2495 sum=329e7015fe34566b
+  audio samples=6400 nonzero=2495 sum=52a7c96581c2fd40
 > run 2
-  cycles 6630008
+  cycles 6045129
   lcd |>|
   status DEG PRO I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
-= me0 sum=2cb6c277658d1eab
+= me0 sum=af7bac5dc1e1c27f

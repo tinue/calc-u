@@ -285,7 +285,6 @@ TEST(golden_runs_through_the_machine_interface) {
         if (e.path().extension() == ".run") scripts.push_back(e.path());
     std::sort(scripts.begin(), scripts.end());
     CHECK_EQ(scripts.size(), size_t{18});
-    std::vector<std::string> differ;
     for (const auto& s : scripts) {
         std::string error;
         std::string got = play(testroms::readFile(s.string()).value_or(""), &error);
@@ -295,13 +294,9 @@ TEST(golden_runs_through_the_machine_interface) {
         auto want = testroms::readFile(golden.string());
         if (!want) { std::printf("  %s: no .golden\n", s.filename().c_str()); CHECK(false); continue; }
         const std::string d = compare(golden.filename().string(), *want, got);
-        if (!d.empty()) differ.push_back(d);
+        if (!d.empty()) std::printf("  %s\n", d.c_str());
+        CHECK(d.empty());
     }
-    // The committed references were recorded by 2.3.0 (taps of 100 ms,
-    // its display form); until the new recording is agreed, a difference is
-    // reported here and the comparison waits.
-    for (const auto& d : differ) std::printf("  %s\n", d.c_str());
-    SKIP_UNLESS(differ.empty(), "references re-recorded, waiting for agreement");
 }
 
 // The trace of a TI-59 running ti59-calculation.run with the trace on from
@@ -313,7 +308,7 @@ TEST(golden_runs_through_the_machine_interface) {
 TEST(trace_bytes_equal_the_recorded_reference) {
     const char* draft = std::getenv("CALCU59_GOLDEN_RECORD");
     const auto file = testroms::readFile("tests/golden-runs/ti59-calculation.trace-md5");
-    SKIP_UNLESS(draft || file, "references re-recorded, waiting for agreement");
+    CHECK(draft || file);
     std::unique_ptr<calcu::debugger::TraceRecorder> rec;
     std::vector<uint8_t> out;
     testroms::afterRun() = [&](calcu::machine::Machine& m) {

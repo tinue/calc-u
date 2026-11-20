@@ -252,9 +252,9 @@ TEST(pc1600_left_open_is_closed) {
     checkWellFormed(s);
 }
 
-// §10.11: the trace session's bytes equal the reference recorded with
-// 0.8.1's file path before the core was touched, but for the time of the
-// session start (bytes 19 to 26).
+// §10.11: the trace session's bytes equal the reference
+// (tests/golden-runs/*-basic.trace, a cold boot traced for `frames`
+// frames), but for the time of the session start (bytes 19 to 26).
 void checkReference(const char* model, int frames, const char* reference) {
     std::ifstream in(reference, std::ios::binary);
     const std::vector<std::uint8_t> want((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());

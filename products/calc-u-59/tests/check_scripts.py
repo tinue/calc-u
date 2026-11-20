@@ -10,8 +10,7 @@ give what their references hold (tests/references/scripts/).
   compared.
 
 CLI: check_scripts.py --calcu PATH [--record FOLDER]   (run from products/calc-u-59)
---record writes the references into FOLDER (a draft) instead of comparing.
-Without the references it exits with 77 (CTest: skipped)."""
+--record writes the references into FOLDER (a draft) instead of comparing."""
 import json
 import os
 import re
@@ -26,9 +25,6 @@ args = sys.argv[1:]
 calcu = args[args.index('--calcu') + 1]
 record = args[args.index('--record') + 1] if '--record' in args else None
 env = dict(os.environ, CALCU=calcu)
-if not record and not os.path.isdir(REFS):
-    print('SKIP: references re-recorded, waiting for agreement')
-    sys.exit(77)
 failed = False
 
 # coverage.py

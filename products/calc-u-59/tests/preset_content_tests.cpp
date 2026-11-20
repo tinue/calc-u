@@ -332,7 +332,7 @@ TEST(first_stage_as_today) {
     // sum.ti59's first stage (partition, program, cue card) and its keys give
     // the RAM of its reference run (the full comparison: reference_runs_tests.cpp).
     const fs::path refFile = "tests/references/examples/sum.ti59.reference";
-    SKIP_UNLESS(fs::exists(refFile), "references re-recorded, waiting for agreement");
+    CHECK(fs::exists(refFile));
     Calcu c;
     CHECK_EQ(c("preset examples/sum.ti59"), std::string("done\n"));
     c("wait");

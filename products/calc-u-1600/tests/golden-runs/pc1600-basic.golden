@@ -1,21 +1,21 @@
 > boot
-  cycles 0
+  cycles 3759215
   lcd |>|
   lcd ||
   lcd ||
   lcd ||
   status DEG RUN I
-  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+  audio samples=48000 nonzero=216 sum=5a33b56db9d192f2
 > keys mode
-  cycles 572804
+  cycles 4236546
   lcd |>|
   lcd ||
   lcd ||
   lcd ||
   status DEG PRO I
-  audio samples=7680 nonzero=0 sum=4f9197d17adbd383
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
 > type 10 print 2*3
-  cycles 7446448
+  cycles 10501531
   lcd |10 PRINT 2*3|
   lcd ||
   lcd ||
@@ -23,44 +23,44 @@
   status DEG PRO I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
 > keys enter
-  cycles 8019262
+  cycles 11456208
   lcd |10 PRINT 2*3|
   lcd ||
   lcd ||
   lcd ||
   status DEG PRO I
-  audio samples=7680 nonzero=0 sum=4f9197d17adbd383
+  audio samples=12800 nonzero=0 sum=a17871c74c05b383
 > keys mode
-  cycles 8592066
+  cycles 12589891
   lcd |>|
   lcd ||
   lcd ||
   lcd ||
   status DEG RUN I
-  audio samples=7680 nonzero=0 sum=4f9197d17adbd383
+  audio samples=15201 nonzero=0 sum=c511bfb9965e31fb
 > type run
-  cycles 10310477
+  cycles 14558896
   lcd |RUN|
   lcd ||
   lcd ||
   lcd ||
   status DEG RUN I
-  audio samples=23040 nonzero=0 sum=234d05f272597383
+  audio samples=26400 nonzero=0 sum=4bddfcfb5b666e83
 > keys enter
-  cycles 10883280
+  cycles 15036228
   lcd |RUN|
   lcd |                         6|
   lcd |>|
   lcd ||
   status DEG RUN I
-  audio samples=7680 nonzero=0 sum=4f9197d17adbd383
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
 > run 1
-  cycles 14463281
+  cycles 18616229
   lcd |RUN|
   lcd |                         6|
   lcd |>|
   lcd ||
   status DEG RUN I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
-= internal ram sum=b531746820bbd3ac
-= z80 view sum=c64aa73016824ead
+= internal ram sum=6b790276c5ff9311
+= z80 view sum=b7ef95a71ea338f4

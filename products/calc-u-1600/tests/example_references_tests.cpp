@@ -285,7 +285,6 @@ TEST(examples_match_their_references) {
                 "the reference runs are Longer (CalcU1600ExampleReferences)");
     SKIP_UNLESS(fs::exists("roms/PC1600-P0-B0-new.bin") && fs::exists("roms/PC-1500_A04.ROM"),
                 "the ROMs are not fetched (roms/fetch_roms.sh)");
-    SKIP_UNLESS(draft || fs::exists(kRef), "references re-recorded, waiting for agreement");
     calcu::testing::TempFolder tmp("c1600-references");
     const fs::path copy = tmp.path();
     fs::copy("examples", copy / "examples", fs::copy_options::recursive);

@@ -458,6 +458,10 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
 
 - A **slot** value without `/` and without `.module.yaml` is a bundled module's name (`CE-1600M`,
   `superRAM`). Anything else is a path: `cards/my-ram.module.yaml`, `$cards/superram-full.module.yaml`.
+  A module file is used as the app uses it: one with `template: true` is never written, one
+  without (an instance, as `card()` saves it) gets the machine's writes back. Give a test project's
+  module fixtures `template: true`, so tests run side by side never see each other's writes; read
+  what the machine wrote with `card(n)`.
   The other media are always paths: `floppy("$c1600/frontends/qt6/resources/cards/formatted.floppy.yaml")`,
   `floppy("disks/progs.floppy.yaml")`.
 - `host_drive` is a folder on your computer, found like any path; usually an absolute one or a

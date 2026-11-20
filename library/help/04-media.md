@@ -99,13 +99,14 @@ when the product quits, anything not yet saved is saved.
 If a save fails, a notice says so, once for that medium until a save of
 it succeeds again; the next change tries again.
 
-## Outdated files
+## Files that cannot be read
 
-A file in an older version of its format than the release reads is
-**outdated**. The picker shows it as an entry you cannot choose, marked
-"(outdated)", with a hint that names the format, its current version and
-where it is described. Convert it, and it can be chosen again. A preset
-that names an outdated file is refused with the same hint.
+A file of a medium's kind that cannot be read (it is broken, or it is in
+another version of its format than the release reads) is not listed in a
+picker; the log says once why. A preset that names it is refused with
+that reason, and so is opening or importing it. Files written by an
+earlier release are converted by hand, as
+[the product's part of this chapter](chapter:4) describes.
 
 ## Opening and dropping files
 
@@ -158,8 +159,7 @@ no menu bar) has two more items:
 
 - **Import Media…** copies a medium file into the save folder, as the
   template or instance it says it is. An import is refused when a medium
-  of that kind already has the name, and when the file is outdated or
-  cannot be read.
+  of that kind already has the name, and when the file cannot be read.
 - **Saved Media…** lists your media by kind and name, marks templates
   and the media that are in a place now, lets you save a copy of a
   medium's file, and deletes one that is in no place, after you

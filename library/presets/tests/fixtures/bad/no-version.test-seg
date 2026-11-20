@@ -1,0 +1,4 @@
+# error: format-version: is required
+model: test-seg
+keys:
+  - key: 1

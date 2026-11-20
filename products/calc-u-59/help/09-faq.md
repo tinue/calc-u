@@ -24,14 +24,6 @@ endings (Explorer: "Show file extensions"; Finder: Settings ▸ Advanced ▸
 "Show all filename extensions") and rename the file
 ([Preset tutorial](06-preset-tutorial.md)).
 
-## My preset from Calc-U-59 2.3.0 is refused. Why?
-
-Presets are now in format 2, a different text format; a 2.3.0 file is
-refused with a hint and is upgraded by hand
-([Preset sections](10-preset-sections.md)). The same holds for ASM
-overlays; card files (`.U59`) and `ti58c.mem` of 2.3.0 are no longer
-read and are converted by hand ([Media files](10-media-files.md)).
-
 ## Where do magnetic cards live?
 
 In the save folder, as `<name>.magnetcard.yaml`: the app's iCloud storage

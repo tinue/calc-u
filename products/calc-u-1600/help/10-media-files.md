@@ -23,10 +23,6 @@ Common to all three:
 - Instances lie in the save folder; cassettes lie in the cassette folder,
   `Cassettes` in the save folder unless the settings name another one
   ([Settings](08-settings.md)).
-- A floppy disk written by Calc-U-1600 0.8 (version 1) is refused with a
-  hint until you update it by hand: set `format-version: 2` and rename
-  the sides `a:` and `b:` to `0:` and `1:`. Module definitions of 0.8
-  (`.card.yaml`) are not read; rename them to `.module.yaml`.
 - A name with a character a file name cannot hold (`/`, `:`) is refused.
 
 ## Battery-backed module
@@ -160,8 +156,21 @@ position: 0
   definition.
 - A `.wav` on its own is not a cassette but a program file: opened or
   dropped, it is loaded as a program ([BASIC programs](09-basic-programs.md)).
-- A `.tape.yaml` (`format: cassette-tape`, `tape-name:`) of an earlier
-  build is not read: rename it to `.cassette.yaml` and change those two
-  keys to `format: cassette` and `cassette-name:`.
 
 The bundled template is **Empty**, a blank cassette.
+
+## From 0.8
+
+Calc-U-1600 reads none of the files 0.8 wrote; they stay where they are,
+and you convert them by hand:
+
+- a preset of version 1: as the
+  [preset format, §9.2](https://github.com/tinue/calc-u/blob/main/docs/formats/preset.md#92-calc-u-1600-preset-version-1)
+  lists;
+- a floppy disk (version 1): set `format-version: 2` and rename the
+  sides `a:` and `b:` to `0:` and `1:`;
+- a module definition (`.card.yaml`): rename it to `.module.yaml`;
+  `format: memory-module` may be added;
+- a cassette (`.tape.yaml`, `format: cassette-tape`, `tape-name:`):
+  rename it to `.cassette.yaml` and change those two keys to
+  `format: cassette` and `cassette-name:`.

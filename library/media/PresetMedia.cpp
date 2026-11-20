@@ -105,10 +105,6 @@ std::optional<Found> resolveByName(MediaPart& part, const KindDecl& k, const std
         ctx.error(line, verb + ": there is no " + k.label + " " + inQuotes(name) + ".");
         return std::nullopt;
     }
-    if (e->outdatedHint) {
-        ctx.error(line, verb + ": the " + k.label + " " + inQuotes(e->name) + " is outdated: " + *e->outdatedHint);
-        return std::nullopt;
-    }
     Found f{part.bindingFor(*e), e->info.content, e->info};
     return f;
 }
@@ -132,10 +128,6 @@ std::optional<Found> resolveByFile(MediaPart& part, const KindDecl& k, const std
     });
     if (r.unreadable()) {
         ctx.error(line, verb + ": the " + k.label + " file " + file + " cannot be read" + (r.problem.empty() ? "." : ": " + r.problem));
-        return std::nullopt;
-    }
-    if (r.status == ReadOutcome::Status::Outdated) {
-        ctx.error(line, verb + ": the " + k.label + " file " + file + " is outdated: " + Shelf::outdatedHint(k, r.info.formatVersion));
         return std::nullopt;
     }
     Found f;
@@ -441,10 +433,6 @@ presets::PlaceResolution resolvePlace(MediaPart& part, const machine::PlaceName&
         for (const KindDecl& x : part.kinds())
             if (!e && x.heldBy == HeldBy::ModuleSlot) e = part.shelf().find(x, text(*n));
         if (!e) return {};
-        if (e->outdatedHint) {
-            ctx.error(line, key + ": the " + e->kind->label + " " + inQuotes(e->name) + " is outdated: " + *e->outdatedHint);
-            return presets::PlaceResolution{How::Error, {}};
-        }
         k = e->kind;
         found = Found{part.bindingFor(*e), e->info.content, e->info};
     } else if (const YamlNode* f = v.find("file")) {

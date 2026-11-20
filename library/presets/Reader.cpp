@@ -369,12 +369,11 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
     Chunk* fv = find("format-version");
     std::optional<std::int64_t> version;
     if (fv && fv->value.isScalar()) version = formats::parseNumber(scalarText(fv->value));
-    if (!fv || (version && *version < 2))
-        return ReadError{0, errorText(name, 0,
-                                      "The file was written for an earlier release of " + product +
-                                          " and must be upgraded by hand to preset format 2, as " +
-                                          std::string(setup.rules.formatReference()) + " describes it.")};
+    if (!fv) return ReadError{0, errorText(name, 0, "format-version: is required; this release reads preset format 2.")};
     if (!version) return ReadError{fv->line, errorText(name, fv->line, "format-version: is a whole number.")};
+    if (*version < 2)
+        return ReadError{fv->line, errorText(name, fv->line,
+                                             "This release reads preset format 2, not format " + std::to_string(*version) + ".")};
     if (*version > 2)
         return ReadError{fv->line, errorText(name, fv->line,
                                              "The file was written by a newer release of " + product +

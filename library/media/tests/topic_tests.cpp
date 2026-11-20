@@ -30,7 +30,7 @@ TEST(media_topic_kinds_templates_instances_with_place) {
           cards->templates[0].origin == Origin::Implicit);
     const KindState* disks = s->kindState("test-disk");
     CHECK(disks && disks->templates.size() == 2 && disks->instances.size() == 1);
-    CHECK(disks->instances[0].name == "Work" && !disks->instances[0].inPlace && !disks->instances[0].outdated);
+    CHECK(disks->instances[0].name == "Work" && !disks->instances[0].inPlace);
     CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
     disks = f.state()->kindState("test-disk");
     CHECK(disks->instances[0].inPlace == std::optional<std::string>("disk"));

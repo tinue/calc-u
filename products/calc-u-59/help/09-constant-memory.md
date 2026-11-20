@@ -38,5 +38,4 @@ storage on macOS, the iPhone and the iPad, `Calc-U-59` in your home
 folder on Windows and Linux, the browser's storage for the page in the
 browser. It is not a medium: no picker lists it, and opening or dropping
 it is refused with a notice. A damaged file, or a write that fails, is
-reported with a notice. The format is in [Media files](10-media-files.md);
-the `ti58c.mem` of 2.3.0 is no longer read.
+reported with a notice. The format is in [Media files](10-media-files.md).

@@ -1029,9 +1029,6 @@ MediaPart::OpenedMedium MediaPart::readOpened(std::string_view name, const std::
     if (r.unreadable())
         out.refusal = "The " + out.kind->label + " file " + baseName(name) + " cannot be read" +
                       (r.problem.empty() ? "." : ": " + r.problem);
-    else if (r.status == ReadOutcome::Status::Outdated)
-        out.refusal = "The " + out.kind->label + " file " + baseName(name) + " is outdated: " +
-                      Shelf::outdatedHint(*out.kind, r.info.formatVersion);
     out.isTemplate = r.info.isTemplate;
     out.isModule = out.kind->heldBy == HeldBy::ModuleSlot;
     return out;
@@ -1153,10 +1150,6 @@ MediaPart::Resolved MediaPart::resolveEntry(const Place& p, const std::string& e
     } else if (what == "bundled" || what == "saved") {
         for (const ShelfEntry* e : shelf_.entries(k)) {
             if (e->fileName != rest || (what == "bundled") != (e->origin == Origin::Bundled)) continue;
-            if (e->outdatedHint) {
-                out.refusal = "The " + k.label + " " + inQuotes(e->name) + " is outdated: " + *e->outdatedHint;
-                return out;
-            }
             std::string bytes;   // read again when it is chosen
             const auto r = shelf_.readFile(k, e->path, &bytes);
             if (!r || r->status != ReadOutcome::Status::Read) {
@@ -1272,7 +1265,7 @@ std::vector<PickerEntry> MediaPart::picker(SessionContext& c, const Place& p) co
     std::vector<std::string> shelfNames;   // a catalogue module of that name is the same template
     for (const ShelfEntry* e : p.kind ? shelf_.entries(k) : std::vector<const ShelfEntry*>{}) {
         // A module slot lists the media that fit it.
-        if (slotPlace && k.fitsPinOut && !e->outdatedHint && !k.fitsPinOut(e->info, slotPlace->pinOut)) continue;
+        if (slotPlace && k.fitsPinOut && !k.fitsPinOut(e->info, slotPlace->pinOut)) continue;
         shelfNames.push_back(foldName(e->name));
         PickerEntry x;
         x.label = e->name;
@@ -1290,10 +1283,6 @@ std::vector<PickerEntry> MediaPart::picker(SessionContext& c, const Place& p) co
             x.group = e->isTemplate ? PickerEntry::Group::UserTemplate : PickerEntry::Group::Instance;
             x.id = "saved:" + e->fileName;
             break;
-        }
-        if (e->outdatedHint) {   // outdated: cannot be chosen
-            x.canChoose = false;
-            x.hint = e->outdatedHint;
         }
         (x.group == PickerEntry::Group::BundledTemplate ? bundled : x.group == PickerEntry::Group::UserTemplate ? user : instances)
             .push_back(std::move(x));
@@ -1358,7 +1347,7 @@ std::shared_ptr<const MediaState> MediaPart::state(SessionContext& c) {
         ks.label = k.label;
         ks.suffix = k.suffix;
         for (const ShelfEntry* e : shelf_.entries(k)) {
-            KindState::Item i{e->name, e->description, e->fileName, e->origin, e->isTemplate, e->outdatedHint.has_value(), {}};
+            KindState::Item i{e->name, e->description, e->fileName, e->origin, e->isTemplate, {}};
             for (const auto& [word, b] : bindings_)
                 if ((!e->path.empty() && b.path == e->path) ||
                     (e->path.empty() && b.origin == e->origin && b.kind->id == k.id && b.name == e->name))
@@ -1368,7 +1357,7 @@ std::shared_ptr<const MediaState> MediaPart::state(SessionContext& c) {
         for (const auto& [word, b] : bindings_)   // an opened medium while it is in a place
             if (b.origin == Origin::Opened && b.kind->id == k.id)
                 (b.isTemplate ? ks.templates : ks.instances)
-                    .push_back(KindState::Item{b.name, b.description, baseName(b.path), Origin::Opened, b.isTemplate, false, word});
+                    .push_back(KindState::Item{b.name, b.description, baseName(b.path), Origin::Opened, b.isTemplate, word});
         s->kinds.push_back(std::move(ks));
     }
     Machine* m = c.machine();

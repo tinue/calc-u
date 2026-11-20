@@ -23,9 +23,9 @@ struct ConstantMemoryContents {
     bool operator==(const ConstantMemoryContents&) const = default;
 };
 
-/// Why a file is not read: an older or newer format, or a damaged one.
+/// Why a file is not read: a newer format, or a damaged one.
 struct ConstantMemoryProblem {
-    enum class Kind { Outdated, Newer, Damaged } kind = Kind::Damaged;
+    enum class Kind { Newer, Damaged } kind = Kind::Damaged;
     std::string what;   // Damaged: "line <n>: <what>"
 };
 

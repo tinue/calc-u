@@ -718,8 +718,8 @@ TEST(refused_file_keeps_loaded) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kOverlay, "good.asm").done);
-    const auto reply = asmLoad(r, "HEX:\n0A01\n", "old.asm");
-    CHECK(!reply.done && reply.reason.find("older format") != std::string::npos);
+    const auto reply = asmLoad(r, "HEX:\n0A01\n", "bad.asm");
+    CHECK(!reply.done && reply.reason.find("bad.asm cannot be read") != std::string::npos);
     r.frame();
     CHECK_EQ(asmState(r)->fileName, std::string("good.asm"));
     CHECK_EQ(calcu::machine::first<AsmOverlay>(r.machine())->loaded(), std::size_t{2});
@@ -881,8 +881,8 @@ TEST(asm_opened_as_by_select_file) {
         CHECK_EQ(asmState(r)->fileName, std::string("Counter.ASM"));
         CHECK_EQ(asmState(r)->instructions, 6);
     }
-    const auto old = open(r, "old.asm", "HEX:\n0A01\n");
-    CHECK(!old.done && old.reason.find("older format") != std::string::npos);
+    const auto bad = open(r, "bad.asm", "HEX:\n0A01\n");
+    CHECK(!bad.done && bad.reason.find("bad.asm cannot be read") != std::string::npos);
     r.frame();
     CHECK_EQ(r.notices().size(), std::size_t{1});   // one notice, the open part's
 }

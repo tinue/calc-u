@@ -120,33 +120,21 @@ private:
 
 // ── Floppy disk (`.floppy.yaml`, version 2) ─────────────────────────────
 
-// The header (before `sides:`): its version, name and description.
-struct FloppyHeader {
-    long version = 0;
-    std::string name, description;
-};
-std::optional<FloppyHeader> floppyHeader(const std::string& text) {
+// The description of a disk's file, read from its header only (the part
+// before `sides:`, so the image is not decoded); empty when it has none.
+std::string floppyDescription(const std::string& text) {
     calcu::formats::YamlNode root;
+    calcu::media::Header header;
     std::string error;
-    if (!calcu::formats::parseYaml(text.substr(0, text.find("\nsides:")), &root, &error) || !root.isMap()) return std::nullopt;
-    FloppyHeader h;
-    if (const auto* v = root.find("format-version")) v->asInt(&h.version, &error);
-    if (const auto* n = root.find("disk-name")) n->asString(&h.name, &error);
-    if (const auto* d = root.find("description")) d->asString(&h.description, &error);
-    return h;
+    if (!calcu::formats::parseYaml(text.substr(0, text.find("\nsides:")), &root, &error) ||
+        !calcu::media::readHeader(root, floppyHeaderRules(), &header, &error))
+        return {};
+    return header.description;
 }
 
 class FloppyCodec final : public MediumCodec {
 public:
     ReadOutcome read(const std::string& bytes, const Companion&) const override {
-        const auto header = floppyHeader(bytes);
-        if (header && header->version == 1) {   // version 1 (Calc-U-1600 0.8.x): sides a and b
-            ReadOutcome r;
-            r.status = ReadOutcome::Status::Outdated;
-            r.info.formatVersion = 1;
-            r.info.name = header->name;
-            return r;
-        }
         FloppyFile disk;
         std::string error;
         if (!parseFloppyFile(bytes, &disk, &error)) return unreadable(error);
@@ -167,9 +155,7 @@ public:
             return {};
         }
         if (!writableName(w.name, "disk", problem)) return {};
-        std::string description;   // kept
-        if (w.source)
-            if (const auto h = floppyHeader(*w.source)) description = h->description;
+        const std::string description = w.source ? floppyDescription(*w.source) : std::string();   // kept
         return {FileOut{"", formatFloppyFile(w.name, disk->image, w.asTemplate, description, w.savedAt)}};
     }
 };
@@ -183,23 +169,15 @@ struct CassetteDefinition {
 std::optional<CassetteDefinition> cassetteDefinition(const std::string& text, std::string* error) {
     calcu::formats::YamlNode root;
     if (!calcu::formats::parseYaml(text, &root, error)) return std::nullopt;
-    std::string format;
-    const auto* f = root.find("format");
-    if (!root.isMap() || !f || !f->asString(&format, error) || format != "cassette") {
-        *error = "not a cassette definition (expected 'format: cassette')";
+    calcu::media::Header header;
+    if (!calcu::media::readHeader(root, {"cassette", "cassette definition", 1, "cassette-name"}, &header, error))
         return std::nullopt;
-    }
-    if (!calcu::formats::requireFormatVersion(root, 1, "cassette definition", error)) return std::nullopt;
     if (!root.requireOnlyKeys({"format", "format-version", "cassette-name", "description", "template", "saved", "audio", "position"}, error))
         return std::nullopt;
     CassetteDefinition t;
-    const auto* n = root.find("cassette-name");
-    if (!n || !n->asString(&t.name, error) || t.name.empty()) {
-        *error = "missing 'cassette-name'";
-        return std::nullopt;
-    }
-    if (const auto* d = root.find("description"); d && !d->asString(&t.description, error)) return std::nullopt;
-    if (const auto* tp = root.find("template"); tp && !tp->asBool(&t.isTemplate, error)) return std::nullopt;
+    t.name = header.name;
+    t.description = header.description;
+    t.isTemplate = header.isTemplate;
     const auto* a = root.find("audio");
     const auto* file = a && a->isMap() ? a->find("file") : nullptr;
     if (!file || !a->requireOnlyKeys({"file"}, error) || !file->asString(&t.audio, error) || t.audio.empty()) {
@@ -283,9 +261,6 @@ std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::ma
     module.suffix = kModuleFileSuffix;
     module.bundledFolder = bundledDir;
     module.codec = cardCodecs.back().get();
-    module.formatName = "The module definition format";
-    module.describedAt = "the User Guide, \"Module definition format\"";
-    module.currentVersion = static_cast<int>(kCardFormatVersion);
     module.heldBy = media::HeldBy::ModuleSlot;
     module.isMedium = [](const calcu::machine::PeripheralDescriptor& d) {
         const MemoryCardDefinition* def = definitionOf(d);
@@ -325,9 +300,6 @@ std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::ma
     floppy.suffix = kFloppyFileSuffix;
     floppy.bundledFolder = bundledDir;
     floppy.codec = &floppyCodec;
-    floppy.formatName = "The floppy disk format";
-    floppy.describedAt = "the User Guide, \"Media files\", \"Floppy disk\" (sides 0: and 1: in place of a: and b:)";
-    floppy.currentVersion = static_cast<int>(kFloppyFormatVersion);
     floppy.words = media::PresetWords{"floppy", "", "floppy", "", false};
 
     media::KindDecl cassette;
@@ -338,9 +310,6 @@ std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::ma
     cassette.folder = calcu::settings::Folder::Cassettes;
     cassette.bundledFolder = bundledDir;
     cassette.codec = &cassetteCodec;
-    cassette.formatName = "The cassette definition format";
-    cassette.describedAt = "the User Guide, \"Media files\", \"Cassette definition\"";
-    cassette.currentVersion = 1;
     cassette.words = media::PresetWords{"cassette", "", "cassette", "", false};
 
     return {module, floppy, cassette};

@@ -6,7 +6,7 @@
 //     one control-bar picker from a place's entries (PlaceState of the topic
 //     `media`): the empty place, the templates, the instances, the modules;
 //     an entry's description is its tooltip; an entry that cannot be chosen
-//     is disabled, "(outdated)" with its hint as the tooltip. Choosing
+//     now is disabled, with its hint as the tooltip. Choosing
 //     sends `media.choose {place, entry}`.
 //   <CalcuNameAndSaveDialog place={placeState} prompt="Instance name:"
 //                           send={fn} ask={fn?} onClose={fn} />
@@ -62,9 +62,7 @@ function calcuMediaPlace(media, word) {
 }
 
 function calcuPickerLabel(entry) {
-  if (entry.group === "empty") return "(empty)";
-  const outdated = !entry.canChoose && entry.hint && entry.hint.indexOf("outdated") >= 0;
-  return outdated ? entry.label + " (outdated)" : entry.label;
+  return entry.group === "empty" ? "(empty)" : entry.label;
 }
 
 function CalcuMediaPicker({ place, send }) {

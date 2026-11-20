@@ -153,15 +153,15 @@ TEST(second_start_refused) {
     CHECK_EQ(r.product.builds(), 1);
 }
 
-TEST(preset_gone_outdated_or_other_model_gives_default_and_notice) {
+TEST(preset_gone_unreadable_or_other_model_gives_default_and_notice) {
     TestPresetLoader loader;
-    TestPresetLoader::Preset outdated = segWithUart();
-    outdated.script = TestPresetLoader::Script::Outdated;
-    loader.presets["old.preset.yaml"] = outdated;
+    TestPresetLoader::Preset broken = segWithUart();
+    broken.script = TestPresetLoader::Script::Unreadable;
+    loader.presets["bad.preset.yaml"] = broken;
     loader.presets["dot.preset.yaml"] = dotV2();
     const std::pair<const char*, const char*> cases[] = {
         {"gone.preset.yaml", "the file gone.preset.yaml is gone"},
-        {"old.preset.yaml", "the file old.preset.yaml is outdated"},
+        {"bad.preset.yaml", "the file bad.preset.yaml cannot be read"},
         {"dot.preset.yaml", "it is for the test-dot"},
     };
     for (const auto& [ref, why] : cases) {

@@ -24,13 +24,9 @@ std::shared_ptr<const calcu::machine::ProductData> ConstantMemoryKeeper::content
             if (p.kind == ConstantMemoryProblem::Kind::Damaged)
                 m_notice("The constant memory file " + std::string(kConstantMemoryFileName) + " cannot be read (" + p.what +
                          "); the TI-58C starts with zeroed memory.");
-            else if (p.kind == ConstantMemoryProblem::Kind::Newer)
+            else
                 m_notice("The constant memory file " + std::string(kConstantMemoryFileName) +
                          " was written by a newer release; it is replaced at the first change.");
-            else   // outdated or newer
-                m_notice("The constant memory file " + std::string(kConstantMemoryFileName) +
-                         " is outdated; it is replaced at the first change. Its format is described in the User Guide, "
-                         "chapter Formats.");
         }
     } else if (unreadable) {
         m_notice("The constant memory file " + std::string(kConstantMemoryFileName) +

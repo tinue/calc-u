@@ -36,8 +36,8 @@ struct PickerEntry {
     std::string id;                         // what `media.choose` takes back
     std::string label;                      // the name; a module that is not a medium: the listing's label
     std::optional<std::string> tooltip;     // the description
-    bool canChoose = true;                  // false: outdated or not now
-    std::optional<std::string> hint;        // the outdated hint, or why not now
+    bool canChoose = true;                  // false: not now
+    std::optional<std::string> hint;        // why not now
     bool operator==(const PickerEntry&) const = default;
 };
 
@@ -69,7 +69,7 @@ struct KindState {
     struct Item {
         std::string name, description, fileName;
         Origin origin = Origin::Saved;
-        bool isTemplate = false, outdated = false;
+        bool isTemplate = false;
         std::optional<std::string> inPlace;
         bool operator==(const Item&) const = default;
     };

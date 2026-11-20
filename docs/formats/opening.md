@@ -164,7 +164,7 @@ A file taken by a media suffix is read by the product's media kind first.
 
 | Case | Result |
 |---|---|
-| outdated or unreadable | refused with the media reader's sentence and its hint |
+| unreadable | refused with the media reader's sentence |
 | it fits more than one place now | refused: "`<name>` fits more than one place; choose it in the picker of the place it should go into." |
 | it fits no place now, not an upload | refused: "The `<model>` has no place for `<name>` now; a `<kind name>` goes into `<places>`." (`<places>` joined with `, ` and a last ` or `; without any place in the catalogue the sentence ends after "now.") |
 | it fits no place now, an upload | imported into the save folder, the same sentence as a notice; reply `detail: imported` |

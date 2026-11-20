@@ -20,7 +20,7 @@ struct PresetLoad {
 class PresetLoader {
 public:
     // Reads the preset `ref` (a bundled path or the [preset] value). On a read
-    // error, an outdated file or a preset for another model than `forModel`
+    // error or a preset for another model than `forModel`
     // (when given), or a build that is refused: CannotLoad, nothing built
     // Otherwise it builds the preset's machine through
     // control.build(plan, StartupPreset), from a cold boot (a preset always cold boots), and

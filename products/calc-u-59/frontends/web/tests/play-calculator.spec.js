@@ -267,15 +267,8 @@ test('Settings: the startup model is kept', async ({ page }) => {
 });
 
 // The settings are Calc-U-59.ini, a file of the persistent file system
-// (storage.spec.js reads it there); 2.3.0's entries in the page's storage are not read, and a reload
-// keeps a change.
+// (storage.spec.js reads it there); a reload keeps a change.
 test('settings_in_the_ini_file_survive_a_reload', async ({ page }) => {
-  await page.goto('./?layout=wide');
-  await page.evaluate(() => {
-    window.localStorage.clear();
-    window.localStorage.setItem('calcu59/startupModel', '2');   // 2.3.0: TI-58C
-    window.localStorage.setItem('calcu59/lastUsedModel', '2');
-  });
   await gotoReady(page);
   await expect(modelPicker(page)).toHaveValue('0');   // the defaults: TI-59
   await setSetting(page, 'startup', 'model', 'TI-58C');
@@ -523,9 +516,6 @@ test('a dropped file that is nothing Calc-U-59 opens is refused with a notice', 
   await gotoReady(page);
   await dropFile(page, 'notes.txt', 'hello');
   await expect(el(page, 'notice')).toContainText('Calc-U-59 cannot open notes.txt.');
-  await el(page, 'notice-ok').click();
-  await dropFile(page, 'old.u59', 'Calc-U-59 Card 2.0\n');   // a 2.3.0 card is no card
-  await expect(el(page, 'notice')).toContainText('Calc-U-59 cannot open old.u59.');
 });
 
 // A drop of exactly one file is opened; a drop of
@@ -665,11 +655,11 @@ test('an overlay is chosen and run and the CPU tab shows it', async ({ page }) =
   await expect(debug.getByRole('tab', { name: 'CPU', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(debug.getByRole('tab', { name: 'CALCULATOR', exact: true })).toBeDisabled();
   await expect(debug.locator('.calcu-cpu-list')).toContainText(/^18/m, { timeout: 5000 });
-  // An overlay in the 2.3.0 format is refused with a notice; the loaded one stays.
+  // An overlay without its first line is refused with a notice; the loaded one stays.
   await debug.locator('.calcu-filebutton-inline input[type=file]').setInputFiles({
-    name: 'old.asm', mimeType: 'text/plain', buffer: Buffer.from('HEX:\n0A01\n'),
+    name: 'bad.asm', mimeType: 'text/plain', buffer: Buffer.from('HEX:\n0A01\n'),
   });
-  await expect(el(page, 'notice')).toContainText('old.asm is an ASM overlay in an older format');
+  await expect(el(page, 'notice')).toContainText('bad.asm cannot be read: an ASM overlay starts with the line');
   await el(page, 'notice-ok').click();
   await expect(debug.getByText('File: simple_count.asm')).toBeVisible();
   await debug.getByRole('button', { name: 'Clear', exact: true }).click();

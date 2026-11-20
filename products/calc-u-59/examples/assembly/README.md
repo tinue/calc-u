@@ -23,9 +23,7 @@ HEX:
 ```
 
 - The first line is exactly `Calc-U-59 ASM 2.0`. A file without it, or with
-  another version, is in an older format: Calc-U-59 refuses it and says so.
-  Files written for Calc-U-59 2.3.0 need this line added (and their text
-  after `HEX:` checked against the rules below).
+  another version, cannot be read: Calc-U-59 refuses it and says so.
 - Everything up to the line `HEX:` (any case, alone on its line) is for the
   reader and is not read: here the annotated assembly listing.
 - After `HEX:`, a `;` starts a comment that runs to the end of its line.
@@ -38,8 +36,8 @@ HEX:
   (`1800` to `1FFF`).
 - Lines end with LF or CRLF.
 
-A file is refused, with a notice that says why, when it is in an older
-format, has no `HEX:` line, has no instructions after it, has a run that is
+A file is refused, with a notice that says why, when its first line is
+not that one, has no `HEX:` line, has no instructions after it, has a run that is
 not a multiple of four digits long, an instruction above `1FFF`, anything
 after `HEX:` that is neither hexadecimal digits nor a comment, or more than
 2048 instructions. The instructions loaded before stay.

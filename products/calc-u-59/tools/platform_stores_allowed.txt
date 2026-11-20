@@ -7,15 +7,3 @@
 # chose: a grant by macOS, not a preference. The only thing a
 # frontend keeps outside the settings file.
 swift/App/AppSettings.swift: forKey: traceFolderBookmarkKey
-
-# The Playwright test that checks that 2.3.0's entries are not read and the
-# settings are in the INI file (the page keeps no entry of its own).
-web/tests/play-calculator.spec.js: window.localStorage.clear();
-web/tests/play-calculator.spec.js: window.localStorage.setItem('calcu59/
-
-# 2.3.0's constant memory in localStorage is not read; the test puts one
-# there and takes it away.
-web/tests/storage.spec.js: 2.3.0 kept the constant memory in localStorage
-web/tests/storage.spec.js: 2.3.0's localStorage memory is not read
-web/tests/storage.spec.js: window.localStorage.setItem('calcu59/ti58c.mem',
-web/tests/storage.spec.js: await page.evaluate(() => window.localStorage.removeItem('calcu59/ti58c.mem'));

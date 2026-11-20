@@ -11,8 +11,6 @@
 // `magnetic-card` and its codec for magnetic card format 3
 // (`.magnetcard.yaml`, docs/formats/media.md §1). The content is a
 // TIMagneticCardData (core/TIMagneticCard.hpp) whose label is a TICardLabel.
-// Outdated: a format version below 3. A `.u59` or `.bin` card of release
-// 2.3.0 is not of the kind's suffix: nothing lists, reads or changes it.
 
 namespace cu59 {
 

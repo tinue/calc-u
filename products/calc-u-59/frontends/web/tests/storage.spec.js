@@ -100,24 +100,6 @@ test('the constant memory and the last model are kept across a page load', async
   expect(await settledLed(page)).toBe(seven);
 });
 
-// 2.3.0 kept the constant memory in localStorage
-// (`calcu59/ti58c.mem`); it is not read, and nothing is said.
-test("2.3.0's localStorage memory is not read", async ({ page }) => {
-  await page.goto('./?layout=wide');
-  await page.evaluate(() => {
-    window.localStorage.setItem('calcu59/ti58c.mem',
-      '── Registers (raw values) ──\nR059: 00 00 00 00 00 00 00 07\n');
-  });
-  await gotoReady(page, 'layout=wide&model=TI-58C');
-  await page.waitForTimeout(1500);
-  await press(page, ['CLR', '0', '=']);
-  const zero = await settledLed(page);
-  await press(page, ['CLR', 'RCL', '0', '0']);
-  expect(await settledLed(page)).toBe(zero);
-  await expect(el(page, 'notice')).toHaveCount(0);
-  await page.evaluate(() => window.localStorage.removeItem('calcu59/ti58c.mem'));
-});
-
 test('no calcu59 key read or written', async ({ page }) => {
   await page.addInitScript(() => {
     window.__calcuKeys = [];

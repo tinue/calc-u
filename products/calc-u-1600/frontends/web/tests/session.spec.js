@@ -67,14 +67,14 @@ test('layout auto only, another value ignored with a warning', async ({ page }) 
     ['CalcU1600: layout "wide" is not one of its layouts ("auto"); it is ignored.']);
 });
 
-test('settings in Calc-U-1600.ini, media in the save folder of 0.8.x', async ({ page }) => {
+test('settings in Calc-U-1600.ini, media in the save folder', async ({ page }) => {
   await gotoReady(page, '?model=PC-1600');
   expect((await send(page, 'set-setting', { section: 'startup', key: 'model', value: 'PC-1600' })).done).toBe(true);
   await notBusy(page);
   expect((await send(page, 'media.choose', { place: 'slot-1', entry: 'bundled:ce1600m.module.yaml' })).done).toBe(true);
   await notBusy(page);
   expect((await send(page, 'media.name-and-save', { place: 'slot-1', name: 'Kept' })).done).toBe(true);
-  // The persistent file system is IndexedDB "/persist", as 0.8.x's.
+  // The persistent file system is IndexedDB "/persist".
   await expect.poll(() => page.evaluate(() => new Promise((resolve) => {
     const open = indexedDB.open('/persist');
     open.onsuccess = () => {

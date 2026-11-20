@@ -1,5 +1,5 @@
 // Classifying a file: the order of its tests (Classify.hpp), the preset by
-// its content, the limits per way in; an outdated preset, an unreadable file.
+// its content, the limits per way in; an unreadable preset, an unreadable file.
 #include "OpenRig.hpp"
 #include "TestHarness.hpp"
 
@@ -84,13 +84,13 @@ TEST(open_names_compared_without_case) {
     CHECK(k.what == What::Kind && k.kind == &c.r.listing);
 }
 
-TEST(outdated_preset_extension_is_preset_refused_with_hint) {
+TEST(unreadable_preset_extension_is_preset_refused) {
     Setup c;
-    const std::string old = "format-version: 1\nmodel: test-seg\nBLOB\n";
-    CHECK(c(file("old.test-seg", old)).what == What::Preset);   // not tried as anything else
+    const std::string bad = "format-version: 1\nmodel: test-seg\nBLOB\n";
+    CHECK(c(file("bad.test-seg", bad)).what == What::Preset);   // not tried as anything else
     OpenRig r;
-    const auto* reply = r.opened(file("old.test-seg", old));
-    CHECK(reply && !reply->done && reply->reason.find("old.test-seg") != std::string::npos);
+    const auto* reply = r.opened(file("bad.test-seg", bad));
+    CHECK(reply && !reply->done && reply->reason.find("bad.test-seg") != std::string::npos);
     const auto notices = r.notices();   // the presets part's sentence, as the one notice
     CHECK(reply && notices.size() == 1 && notices[0] == reply->reason);
     CHECK(r.listing.opened.empty() && r.blob.opened.empty());

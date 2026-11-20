@@ -162,11 +162,11 @@ TEST(mirror_holds_every_change_flag) {
 TEST(error_is_notice_diagnostic_is_log) {
     SessionRig r;
     // An error of the part's flows: the constant memory file of the TI-58C
-    // built is outdated.
+    // built cannot be read.
     std::ofstream(r.folder.path() / TIFileAccess::kConstantMemoryFile) << "format: ti58c-constant-memory\nram:\n  encoding: register-hex\n";
     r.model("TI-58C");
     r.frame();
-    CHECK(hasNoticeWith(r, "is outdated"));
+    CHECK(hasNoticeWith(r, "cannot be read"));
     r.part().diagnostic("a developer line");
     r.frame();
     CHECK(hasLog(r, "a developer line"));

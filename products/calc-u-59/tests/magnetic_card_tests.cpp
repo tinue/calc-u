@@ -129,50 +129,24 @@ TEST(refused_whole_missing_side_key_rows_unknown_key_cue_card_key) {
     CHECK(r.problem.find("checksum") != std::string::npos);   // one sentence why
 }
 
-TEST(keys_exact_fixed_values_any_case) {
+TEST(keys_exact_fixed_values_of_sides_any_case) {
     const std::string good = fileOf(*card(bank(1, 0x12), std::nullopt));
     CHECK(read(replaced(good, "data-type: program", "data-type: PROGRAM")).status == ReadOutcome::Status::Read);
     CHECK(read(replaced(good, "encoding: register-hex", "encoding: Register-Hex")).status == ReadOutcome::Status::Read);
     CHECK(read(replaced(good, "protection: false", "protection: False")).status == ReadOutcome::Status::Read);
-    CHECK(read(replaced(good, "format: ti59-magnetic-card", "format: TI59-Magnetic-Card")).status == ReadOutcome::Status::Read);
+    CHECK(read(replaced(good, "format: ti59-magnetic-card", "format: TI59-Magnetic-Card")).status == ReadOutcome::Status::Unreadable);   // the header as written
     CHECK(read(replaced(good, "    bank: 1\n", "    Bank: 1\n")).status == ReadOutcome::Status::Unreadable);   // keys exactly
     CHECK(read(replaced(good, "card-name:", "Card-Name:")).status == ReadOutcome::Status::Unreadable);
 }
 
-TEST(older_version_outdated_with_hint) {
+TEST(other_version_unreadable) {
     const std::string good = fileOf(*card(bank(1, 0x12), std::nullopt));
-    const ReadOutcome r = read(replaced(good, "format-version: 3", "format-version: 2"));
-    CHECK(r.status == ReadOutcome::Status::Outdated);
-    CHECK_EQ(r.info.formatVersion, 2);
-    const std::string hint = calcu::media::Shelf::outdatedHint(magneticCardKind(), 2);
-    // The notice names the User Guide's page and heading.
-    CHECK_EQ(hint, std::string("Magnetic card format version 2 is outdated: the current version is 3, described in the "
-                               "User Guide, \"Media files\", \"Magnetic card\"."));
+    const ReadOutcome older = read(replaced(good, "format-version: 3", "format-version: 2"));
+    CHECK(older.status == ReadOutcome::Status::Unreadable);
+    CHECK_EQ(older.problem, std::string("unsupported magnetic card format-version 2 (this build reads 3)."));
     CHECK(read(replaced(good, "format-version: 3", "format-version: 4")).status == ReadOutcome::Status::Unreadable);
-    CHECK(read("Calc-U-59 Card 2.0\nSIDE: 1\nEND-CARD\n").status == ReadOutcome::Status::Unreadable);
-}
-
-TEST(u59_and_bin_not_listed_not_read_not_changed) {
-    const auto& k = magneticCardKind();
-    CHECK_EQ(k.suffix, std::string(".magnetcard.yaml"));
-    calcu::testing::TempFolder folder("calcu59-cards");
-    folder.write("old.u59", "Calc-U-59 Card 2.0\nEND-CARD\n");
-    folder.write("old.bin", std::string(246, '\0'));
-    folder.write("new.magnetcard.yaml", fileOf(*card(bank(1, 0x12), std::nullopt), "New"));
-    calcu::settings::SettingsFile s = calcu::settings::SettingsFile::defaultsOnly(cu59::settings::settingsDecl());
-    calcu::settings::HostDirs dirs;
-    dirs.frontend = calcu::settings::FrontendKind::Given;   // the save folder as passed
-    dirs.saveFolder = folder.str();
-    calcu::settings::Paths paths(s, dirs);
-    calcu::media::Shelf shelf({k}, &paths);
-    const auto lines = shelf.reread();
-    CHECK(lines.empty());   // nothing about the old files
-    std::vector<std::string> names;
-    for (const auto* e : shelf.entries(k))
-        if (e->origin == calcu::media::Origin::Saved) names.push_back(e->fileName);
-    CHECK(names == std::vector<std::string>{"new.magnetcard.yaml"});
-    CHECK(!shelf.kindOfFile("old.u59") && !shelf.kindOfFile("old.bin"));
-    CHECK_EQ(testroms::readFile(folder / "old.u59").value_or(""), std::string("Calc-U-59 Card 2.0\nEND-CARD\n"));
+    CHECK_EQ(read("card-name: X\nsides: {}\n").problem,
+             std::string("not a magnetic card file (expected 'format: ti59-magnetic-card')."));
 }
 
 TEST(info_name_description_template_no_switch) {

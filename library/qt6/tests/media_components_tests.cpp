@@ -26,8 +26,8 @@ PlaceState slot() {
                 PickerEntry{G::BundledTemplate, "bundled:Blank.testmodule.yaml", "Blank", std::string("An empty module"), true, std::nullopt},
                 PickerEntry{G::UserTemplate, "saved:Mine.testmodule.yaml", "Mine", std::nullopt, true, std::nullopt},
                 PickerEntry{G::Instance, "saved:Bank.testmodule.yaml", "Bank", std::string("My bank"), true, std::nullopt},
-                PickerEntry{G::Instance, "saved:Old.testmodule.yaml", "Old", std::nullopt, false,
-                            std::string("The test module format version 1 is outdated: the current version is 2, described in x.")},
+                PickerEntry{G::Instance, "saved:Later.testmodule.yaml", "Later", std::nullopt, false,
+                            std::string("Another operation runs.")},
                 PickerEntry{G::Module, "module:test-module", "Test module", std::nullopt, true, std::nullopt}};
     p.holds = PlaceState::Held{"Bank", std::nullopt, false, false, false};
     return p;
@@ -44,7 +44,7 @@ TEST(media_picker_draws_entries) {
     picker.setPlace(slot());
     CHECK_EQ(picker.objectName().toStdString(), std::string("media-picker-slot-1"));
     CHECK_EQ(picker.count(), 6);
-    const std::vector<std::string> labels = {"(empty)", "Blank", "Mine", "Bank", "Old (outdated)", "Test module"};
+    const std::vector<std::string> labels = {"(empty)", "Blank", "Mine", "Bank", "Later", "Test module"};
     for (int i = 0; i < picker.count(); ++i) CHECK_EQ(picker.entryLabel(i).toStdString(), labels[static_cast<std::size_t>(i)]);
     CHECK_EQ(picker.entryTooltip(1).toStdString(), std::string("An empty module"));   // the description as its tooltip
     CHECK(picker.entryTooltip(2).isEmpty());
@@ -56,14 +56,14 @@ TEST(media_picker_draws_entries) {
     CHECK_EQ(sent.back().second, std::string(""));   // the empty place
 }
 
-TEST(media_picker_outdated_entry_disabled_with_hint_tooltip) {
+TEST(media_picker_entry_not_now_disabled_with_hint_tooltip) {
     qt6::MediaPicker picker;
     int sent = 0;
     picker.setSender([&](const sessions::CommandName&, sessions::Value) { ++sent; });
     picker.setPlace(slot());
     CHECK(!picker.entryEnabled(4));
     CHECK(picker.entryEnabled(3));
-    CHECK(picker.entryTooltip(4).toStdString().find("version 1 is outdated") != std::string::npos);
+    CHECK_EQ(picker.entryTooltip(4).toStdString(), std::string("Another operation runs."));
     emit picker.activated(4);
     CHECK_EQ(sent, 0);   // it cannot be chosen
 }

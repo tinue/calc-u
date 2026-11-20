@@ -25,7 +25,7 @@ buildWebProduct({
   // bundled examples) from files.json, /uploads (files the user opened), and
   // /persist, the persistent file system in IndexedDB: the settings file
   // (settings/Calc-U-1600/Calc-U-1600.ini) and the save folder
-  // (Calc-U-1600/), the same store and place as 0.8.x. One tab at a time
+  // (Calc-U-1600/). One tab at a time
   // writes it (Web Locks).
   worker: { factory: "createCalcU1600Module", host: "CalcU1600Host", mount: "/persist", lock: "calcu1600-storage" },
   files: [

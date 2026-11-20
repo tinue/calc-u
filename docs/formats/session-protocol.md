@@ -287,8 +287,7 @@ control of the form key is pressed (`on: true`) or let up. Refused: `No
 | `media.delete` | command | `{kind, name, confirmed?}` | — |
 
 - A kind: `{kind, label, suffix, templates: [item], instances: [item]}`;
-  an item: `{name, description, fileName, origin, template, outdated,
-  inPlace?}`; `origin` is `bundled`, `implicit`, `saved` or `opened`.
+  an item: `{name, description, fileName, origin, template, inPlace?}`; `origin` is `bundled`, `implicit`, `saved` or `opened`.
 - A place: `{place, kind, slot, passThrough, sides: [..], holds?, passing?,
   waits, nameAndSave, askWriteProtect, picker: [entry]}`. `place` is the
   place word. `holds`: `{name, template, unsaved, writeProtected, side?}`.

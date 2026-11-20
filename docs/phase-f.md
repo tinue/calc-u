@@ -35,14 +35,44 @@ and `docs/Process.md` until the closing check at its end has passed.
 - **App Store metadata**: the worktree `products/calc-u-59/appstore`
   that `release.yaml` names does not exist yet, so `whatsnew.txt` was
   skipped at the pre-release.
-- **Help pictures**: some pictures still show old words ("Tape", "Tapes",
-  the 2.3.0 control bar); in Calc-U-59 four pictures show the 2.3.0 bar
-  and two new ones are not taken; in Calc-U-1600 four pictures need the
-  Automation permission (`tools/make_screenshots.sh 01-introduction
-  02-getting-started 05-peripherals`, from iTerm2). Retake them with the
-  screenshot runs before each release.
-- **Glossary warnings** of the help check (several hundred, mostly bare
-  "card" and "calculator"): narrow the `_Avoid_` lists or reword.
+- **Help pictures**: the pictures to retake are listed by name in
+  `docs/help-site.md`, "Help content" (Calc-U-59: six, from the Swift app;
+  Calc-U-1600: ten, `tools/make_screenshots.sh <chapter>` from iTerm2).
+- **Glossary warnings** of the help check (several hundred): the check
+  takes every word after `_Avoid_:`, also those the glossary avoids only
+  in one sense ("slot (for this)"), and many common words there carry no
+  qualifier. Proposed: warn only on unqualified words, and qualify the
+  sense-bound ones. The user decides.
+- **Documentation sweep, for the user to decide** (the documents were
+  left as they are):
+  - Load Preset's dialog on Windows and Linux offers presets only; the
+    help says it offers all files (Swift and Web do), and the Calc-U-59
+    tutorial and FAQ describe a greyed-out `.ti59.txt`.
+  - Swift Settings: no Choose… for a startup preset, no Reset for the
+    trace folder (the shared help describes both).
+  - Calc-U-1600: the Debug server (DAP) row shows `true`/`false`; the
+    empty cassette's Name & Save (09-basic-programs); `pc1600-module-class`
+    is not checked against its four values or the header bytes
+    (modules.md, help chapter 10); help chapter 10's second copy of the
+    module definition format; no installing chapter or FAQ; the
+    screenshot names carry other chapter numbers.
+  - Harness: `--help` lists only part of the commands (harness.md says
+    every one); attach refuses `--rom-folder`/`--roms`, options `calcu`
+    does not have; `saveas: { card: }` is accepted on a TI-58 (preset.md:
+    TI-59 only); module cue cards accept `pencil-color` (cue-card.md: not).
+  - Test driver: the API names `card()`, `cardimage`, `read_card` (the
+    glossary says module); `machine.py`'s `app_save_folder()` differs from
+    `settings/Paths` for `~` alone, empty APPDATA/XDG_CONFIG_HOME and
+    Windows without APPDATA; `calcu59.py` configures `build/tools` with
+    `-DCALCU_PRODUCT_1600=OFF`.
+  - Smaller: `tools/run_tests.sh` configures `build/tests` as Debug while
+    the documents' recipe is RelWithDebInfo; `kPolledHardware` is set by
+    the TI core but read by nothing; the Web storage mounts
+    `/persist-calc-u-59` and `/persist`; `tools/refresh_sharpdx.sh`'s
+    default source resolves inside `products/`; "library module" and "the
+    emulator" in the ROM articles and the agent prompt; the README's
+    History paragraph; Calc-U-59 TODO's REST API and polling items; the
+    pre-release-cleanup skill's `appstore` branch.
 - **External tester**: their superRAM suite's `test_title_in_s2_is_refused`
   now fails every run. On the card as their suite ships it (blank, no
   module header) `INIT"S2:","P"` leaves slot 2 a RAM disk (S2MTB FEH), so

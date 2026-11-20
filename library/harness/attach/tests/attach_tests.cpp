@@ -420,7 +420,7 @@ TEST(wait_at_full_speed_sooner) {
     Client c(app.endpoint->port());
     app.onApp([&] {
         // A machine that computes: full speed is paced while the machine waits for the user.
-        app.session->machineSession().setWaits([](const machine::Machine&) { return false; });
+        app.machine().busy = {"a test's computation"};
         app.session->send(app.frontend, sessions::Command{sessions::kSpeedCommand, sessions::Value::object({{"full", true}})});
     });
     const auto w0 = std::chrono::steady_clock::now();

@@ -19,11 +19,6 @@ Task<OperationResult> regularThenFull(OperationContext& c) {
     co_return OperationResult{};
 }
 
-struct Probe final : WaitProbe {
-    bool waits = false;
-    bool waitsForMedium(const calcu::machine::Machine&) const override { return waits; }
-};
-
 } // namespace
 
 TEST(speed_from_next_call) {
@@ -75,15 +70,27 @@ TEST(waits_for_input_from_key_readiness) {
     CHECK(s.waitsForInput);    // key readiness
 }
 
-TEST(waits_for_input_from_wait_probe) {
+TEST(waits_for_input_from_an_awaited_medium) {
     ScriptedClock clock;
     MachineSession ms(clock.fn(), 1);
-    Probe probe;
-    ms.addWaitProbe(probe);
-    ms.setMachine(mt::buildTestMachine(mt::kSeg), {}, 0);
+    auto built = mt::buildTestMachine(mt::kSeg);
+    built->enableMedia();
+    mt::TestMachine& m = *built;
+    ms.setMachine(std::move(built), {}, 0);
     CHECK(!ms.runSlice(SliceRequest{10, WallTime{0}}).waitsForInput);
-    probe.waits = true;   // a media place waits for a medium
+    m.mediaPlace("reader")->waits = true;   // a media place waits for a medium
     CHECK(ms.runSlice(SliceRequest{10, WallTime{0}}).waitsForInput);
+}
+
+TEST(busy_machine_does_not_wait) {
+    ScriptedClock clock;
+    MachineSession ms(clock.fn(), 1);
+    auto built = mt::buildTestMachine(mt::kSeg);
+    mt::TestMachine& m = *built;
+    ms.setMachine(std::move(built), {}, 0);
+    CHECK(ms.runSlice(SliceRequest{100, WallTime{0}}).waitsForInput);
+    m.busy = {"the test"};   // takes keys, but something keeps it busy
+    CHECK(!ms.runSlice(SliceRequest{10, WallTime{0}}).waitsForInput);
 }
 
 TEST(an_operation_is_never_paced_while_the_machine_waits) {

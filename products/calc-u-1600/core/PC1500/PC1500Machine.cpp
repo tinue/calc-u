@@ -27,7 +27,7 @@ const MachineDescriptor& descriptorOf(PC1500Variant model) {
 
 // The capability objects, each over the core.
 struct PC1500Machine::Kinds {
-    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), printerPort(m), call(m), program(m) {}
+    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), printerPort(m), call(m) {}
 
     sharp::PC1500LoaderMemory memory;
     struct Inspector final : sharp::InspectorViews {
@@ -89,32 +89,26 @@ struct PC1500Machine::Kinds {
         }
         PC1500Machine& m;
     } call;
-    struct Program final : sharp::ProgramState {
-        explicit Program(PC1500Machine& m) : m(m) {}
-        std::vector<std::string> busy() const override {
-            if (m.toneSounding()) return {"the buzzer"};
-            return {};
-        }
-        bool programEnded() const override { return m.programEnded(); }
-        // The tape, or the CE-158's port with nothing on its way.
-        bool awaitsMedium() const override {
-            return m.tapeAwaited() || (m.ce158ReceiveWaitSeen() && !port->port().incoming());
-        }
-        PC1500Machine& m;
-        SerialPortCapability* port = nullptr;   // the machine's CE-158 peer
-    } program;
 };
 
 PC1500Machine::PC1500Machine(const MachineDescriptor& d, const VariantId& v)
     : SharpMachine(d, v), m_memory(modelOf(d)), m_cpu(m_memory), m_kinds(std::make_unique<Kinds>(*this)),
       m_debugging(sharp::makeSharpDebugging(*this)) {
     setCE158SerialLink(&m_ce158Port);
-    m_kinds->program.port = &m_ce158Port;
 }
 
 PC1500Machine::PC1500Machine(PC1500Variant model) : PC1500Machine(descriptorOf(model), *descriptorOf(model).defaultVariant) {}
 
 PC1500Machine::~PC1500Machine() = default;
+
+bool PC1500Machine::awaitsMedium() const {
+    return tapeAwaited() || (ce158ReceiveWaitSeen() && !m_ce158Port.port().incoming());
+}
+
+std::vector<std::string> PC1500Machine::busyWith() const {
+    if (toneSounding()) return {"the buzzer"};
+    return {};
+}
 
 void PC1500Machine::coreKey(const std::string& id, bool down) {
     if (down) pressKey(id);
@@ -165,7 +159,6 @@ void PC1500Machine::offer(std::vector<Offered>& out, const std::vector<PlugEntry
     out.push_back(byComponent("LH5801", k.support));
     out.push_back(byComponent("LH5801", k.trace));
     out.push_back(byComponent("LH5801", k.call));
-    out.push_back(byComponent("LH5801", k.program));
     out.push_back(byComponent("LH5801", stateCapability()));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     if (const PlugEntry* e = at(sharp::kPrinter); e && e->peripheral.value == sharp::kCE150) {

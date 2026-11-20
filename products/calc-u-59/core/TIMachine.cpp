@@ -233,6 +233,10 @@ void TIMachine::coldBoot() {
 
 bool TIMachine::isKeyReady() const { return !m_restore && m_ranges.scanLoop.contains(m_hw.pc()); }
 
+bool TIMachine::awaitsMedium() const { return m_cardReader && m_cardReader->waitsForMedium(); }
+
+bool TIMachine::programEnded() const { return (m_hw.snapshotCPU().fB & 1) == 0; }
+
 KeyCall TIMachine::keyDown(const KeyId& id) {
     const TIKey* k = tiKeyById(id.value);
     if (!k) return KeyCall::UnknownKey;

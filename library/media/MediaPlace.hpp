@@ -30,6 +30,8 @@ public:
     virtual std::optional<int> side() const = 0;      // std::nullopt: empty
     virtual Content content() const = 0;              // for saving
     virtual std::uint64_t revision() const = 0;       // changes with the content
+    // The machine waits for a medium at this place now (the media state's
+    // `waits`; the machine's own Machine::awaitsMedium() is the idle signal).
     virtual bool waitsForMedium() const = 0;
     virtual std::optional<bool> writeProtected() const { return std::nullopt; }   // nullopt: no switch
     virtual void setWriteProtected() {}               // on, never off

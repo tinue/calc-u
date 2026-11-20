@@ -94,7 +94,7 @@ struct InFileDefs {
     std::vector<InFileDef> items;
 };
 
-class MediaPart final : public sessions::SessionPart, public sessions::WaitProbe {
+class MediaPart final : public sessions::SessionPart {
 public:
     explicit MediaPart(MediaSetup);
 
@@ -108,7 +108,6 @@ public:
     void operationEnded(sessions::SessionContext&) override;
     void suspending(sessions::SessionContext&) override;
     void closing(sessions::SessionContext&) override;
-    bool waitsForMedium(const machine::Machine&) const override;
 
     const Shelf& shelf() const { return shelf_; }
     void refreshShelf(sessions::SessionContext*);   // read again (log lines at the first scan)

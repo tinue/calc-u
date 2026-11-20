@@ -9,6 +9,7 @@
 #include "../../app/SharpPresetRules.hpp"
 #include "../../app/SharpTyping.hpp"
 #include "../../core/Display/DisplayOutputText.hpp"
+#include "machine/Idle.hpp"
 #include "machine/Machine.hpp"
 #include "presets/ProductRules.hpp"
 #include "sessions/MachineSession.hpp"
@@ -63,7 +64,7 @@ inline bool runUntilSettled(Machine& m, double capSeconds = 30, bool finished = 
     const Ticks piece = std::max<Ticks>(1, std::min(rule.sample, frameTicks(m)));
     Ticks spent = 0, held = 0;
     for (;;) {
-        const calcu::presets::IdleState s = calcu::presets::idleState(rule, m);
+        const calcu::machine::IdleState s = calcu::machine::idleState(m);
         held = (finished ? s.ended : s.waits) ? held : 0;
         if (held >= stretch) return true;
         if (spent >= cap) return false;

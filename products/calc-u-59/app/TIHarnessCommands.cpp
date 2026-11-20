@@ -6,7 +6,6 @@
 #include "TIMnemonics.hpp"
 #include "TIPresetCommands.hpp"
 #include "TIPresetKeys.hpp"
-#include "TIPresetRules.hpp"
 #include "TIRunProbe.hpp"
 #include "../core/PC100C.hpp"
 #include "../core/TITypingSupport.hpp"
@@ -16,6 +15,7 @@
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
 #include "harness/Product.hpp"
+#include "machine/Idle.hpp"
 #include "paper/PaperTopics.hpp"
 #include "parts/LibraryParts.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -310,7 +310,7 @@ Reply lineTimesCmd(CommandContext& c) {
             any = true;
         }
         seen = paper.size();
-        quiet = (!any && calcu::presets::idleState(TIPresetRules().forModel(m->model()).idle(), *m).ended) ? quiet + slice : 0;
+        quiet = (!any && calcu::machine::idleState(*m).ended) ? quiet + slice : 0;
         if (quiet >= quietNeeded) break;
         if (now >= *limit) {
             limited = true;

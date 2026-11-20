@@ -4,7 +4,8 @@
 
 // ROM address ranges the machine keys off. Core-internal: above the core, key
 // readiness is Machine::isKeyReady(), the idle/key-detect range is
-// idleAndKeyDetectRange() (TITypingSupport.hpp) and the card wait is TICardReaderPlace::waitsForMedium.
+// idleAndKeyDetectRange() (TITypingSupport.hpp) and the card wait is
+// Machine::awaitsMedium() (and the reader's TICardReaderPlace::waitsForMedium).
 
 /// Inclusive ROM address range, with an optional second span.
 struct PcRange {

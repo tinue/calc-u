@@ -19,7 +19,6 @@
 //   c1600.host-drive-folder    the host drive's folder (owner: the host drive)
 //   c1600.trace-records        the records of a CPU trace (owner: the main CPU)
 //   c1600.routine-call         a routine called from the current state (owner: the main CPU)
-//   c1600.program-state        what keeps the machine busy, whether the program has ended (owner: the main CPU)
 //   c1600.tape-deck            the cassette's counter and motor (owner: the CE-150 on a PC-1500/1500A, or the CE-1600P)
 //   c1600.floppy-drive         the CE-1600F's lamp (owner: the CE-1600P)
 // The media themselves are the library's media kinds (SharpMediaPlaces.hpp).
@@ -155,20 +154,6 @@ public:
     calcu::machine::KindId kind() const override { return kKind; }
 
     virtual bool motorOn() const = 0;
-};
-
-// For the idle rule (docs/developer/Idle.md): what keeps the machine busy
-// while it takes keys (named, as the harness's idle-state shows them), and
-// whether the BASIC program has ended.
-class ProgramState : public calcu::machine::Capability {
-public:
-    static constexpr calcu::machine::KindId kKind{"c1600.program-state"};
-    calcu::machine::KindId kind() const override { return kKind; }
-
-    virtual std::vector<std::string> busy() const = 0;
-    virtual bool programEnded() const = 0;
-    // A tape or the serial port awaited, nothing on its way ("A medium awaited").
-    virtual bool awaitsMedium() const = 0;
 };
 
 } // namespace sharp

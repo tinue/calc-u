@@ -50,7 +50,6 @@ TEST(media_place_waits_for_medium) {
     f.reader()->waits = true;
     f.ok("media.refresh");
     CHECK(f.place("reader")->waits);
-    CHECK(f.media->waitsForMedium(*f.machine()));
     CHECK(f.session->machineSession().waitsForInput());
 }
 

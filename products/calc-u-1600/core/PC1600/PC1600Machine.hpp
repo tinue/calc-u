@@ -387,7 +387,12 @@ public:
     /// in KEYGET (KEYWK2 F07AH bit 2) with BUSY off (F64EH bit 0), in direct
     /// mode (CURLINE F89CH 0), not for INPUT or a PRINT stop (INTFLG F88AH
     /// bits 5, 6). MODE 1 is the same: the Z-80 runs BASIC in both modes.
-    bool programEnded();
+    bool programEnded() const override;
+    /// The idle signals besides key readiness and the program's end
+    /// (docs/developer/Idle.md): a tape or COM1:/COM2: awaited with nothing
+    /// on its way; the CE-1600F's motor keeps the machine busy.
+    bool awaitsMedium() const override;
+    std::vector<std::string> busyWith() const override;
     /// The CE-1600P's tape loader waited for an edge in this frame or the
     /// last, and the cassette does not play (none in, the motor off, at its end).
     bool tapeAwaited() const;

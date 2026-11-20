@@ -829,6 +829,12 @@ const TestMachine::PlugState* TestMachine::stateAt(const PlacePath& place) const
     return nullptr;
 }
 
+bool TestMachine::awaitsMedium() const {
+    for (const auto& e : capabilities(media::MediaPlace::kKind))
+        if (auto* p = capabilityAs<media::MediaPlace>(*this, e.id); p && p->waitsForMedium()) return true;
+    return false;
+}
+
 void TestMachine::enableMedia() {
     if (media_) return;
     media_ = true;

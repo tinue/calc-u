@@ -1,17 +1,13 @@
 # Idle on the TI-58, TI-58C and TI-59
 
-When the machine takes a key, waits, has settled, or has finished: the
-signals, and how each question is answered from them. Addresses are those
-of the commented listings `rom/TI59-commented.asm` (TI-59, TI-58) and
-`rom/TI58C-commented.asm` (TI-58C); "measured" means with the harness's
-`profile`.
-
-| Question | Meaning | Asked by |
-|---|---|---|
-| A, takes keys | the ROM's keyboard scan looks for a key now | a scripted press before it goes down |
-| W, waits | nothing happens until the user acts: A, or a card is awaited | pacing (full speed runs at real time while W holds, outside an operation) |
-| settled | W held for 100 ms of emulated time, sampled every 1 ms | the steps: preset items, `key`, `type`, harness `wait` |
-| B, finished | no program runs, and settled | `let-it-finish`, the wait "until the program has ended", the print listing |
+The four questions (A takes keys, W waits, settled, B finished) and how
+they are answered from the machine's four signals are the same for every
+product: `docs/formats/preset.md` §6.2 at the repository root. Here: which
+state of the ROM gives each signal on these models, and the cases.
+Addresses are those of the commented listings `rom/TI59-commented.asm`
+(TI-59, TI-58) and `rom/TI58C-commented.asm` (TI-58C); "measured" means
+with the harness's `profile`. Besides the steps, the `c59` print listing
+asks B.
 
 ## Signals
 
@@ -38,17 +34,21 @@ printer state. Measured idle passes:
 0A2F–0A30 (TI-58C) and 0661 (TI-59) run when a key is accepted: outside
 the scan loop, so A drops while a key is taken, as it should.
 
-## The questions
+## The machine's signals
 
-- **A** = no restore pending, and the PC in the scan loop.
-- **W** = A, or the card wait (TI-59). Nothing else is busy while A holds:
-  the printer drain runs before the release gate, so the printer has
-  finished when the PC reaches the scan loop.
-- **settled** = W for 100 ms, sampled every 1 ms (short beside the
-  100 ms, so a break in the readiness of a running program is seen).
-- **B** = A and fB[0] clear, settled. The scan loop is reached only through
-  0622 with fB[0] clear, so A implies it; a card wait inside a program is
-  W without B.
+- **Key readiness** = no restore pending, and the PC in the scan loop.
+- **A medium awaited** = the card wait (TI-59).
+- **Busy**: never. Nothing else is busy while A holds: the printer drain
+  runs before the release gate, so the printer has finished when the PC
+  reaches the scan loop.
+- **The program has ended** = fB[0] clear.
+- **The stretch**: 100 ms, sampled every 1 ms (short beside the 100 ms, so
+  a break in the readiness of a running program is seen).
+
+So W = A or the card wait, and B = W and fB[0] clear, settled. The scan
+loop is reached only through 0622 with fB[0] clear, so A implies it; a
+card wait from the keyboard is W and B without A, one inside a program is
+W without B.
 
 | Case | A | W | settled | B | Signal |
 |---|---|---|---|---|---|
@@ -93,11 +93,12 @@ the test's own hold.
 
 ## In the code
 
-- A: `TIMachine::isKeyReady()` (`core/TIMachine.cpp`, the ranges in
-  `core/TIRomRanges.hpp`).
-- The rule: `app/TIPresetRules.cpp` (the card wait through the card
-  reader's media place, B through fB[0] of `noteRun`); the `c59` print
-  listing asks B.
+- The signals: `TIMachine::isKeyReady()`, `awaitsMedium()` (the card
+  reader's `TICardReaderPlace::waitsForMedium()`) and `programEnded()`
+  (`core/TIMachine.cpp`, the ranges in `core/TIRomRanges.hpp`); the
+  questions from them: the library's `machine/Idle.hpp`.
+- The stretch and the sample: `app/TIPresetRules.cpp`; the `c59` print
+  listing asks B (`app/TIHarnessCommands.cpp`).
 - The keys that do not wait: `app/TITyping.cpp` (R/S, GTO, RST; at most
   0.2 s, then held until sampled).
 - The cases as tests: `tests/idle_tests.cpp`.

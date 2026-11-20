@@ -1,4 +1,4 @@
-// Headless C++ tests for Core/PC1600/PC1600ProgramPlacement.cpp -- the
+// Headless C++ tests for core/PC1600/PC1600ProgramPlacement.cpp -- the
 // pure segment-list + scatter-placement logic for the PC-1600 fast BASIC
 // loader. Driven entirely by a synthetic `peek` over the work-area bytes
 // (no CPU, no ROM), checked against the two worked examples in

@@ -1,5 +1,5 @@
 // Headless C++ tests for the SC7852 (Z-80-compatible) core
-// (Core/CPU/SC7852/SC7852.hpp/.cpp). Same no-framework, assert-and-
+// (core/CPU/SC7852/SC7852.hpp/.cpp). Same no-framework, assert-and-
 // tally style as lh5801_tests.cpp -- see that file's header comment.
 //
 // Build & run: see tools/run_tests.sh

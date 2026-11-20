@@ -1,4 +1,4 @@
-// Headless tests for Core/Basic/BasicProgramSource.cpp -- the fast BASIC
+// Headless tests for core/Basic/BasicProgramSource.cpp -- the fast BASIC
 // loaders' file reader: a plain-text `.bas` listing, tokenized headerless via
 // the vendored libsharpdx with the target model as the tokenizer device, or
 // tokenized BASIC behind a CE-158 / PC-1600 header.

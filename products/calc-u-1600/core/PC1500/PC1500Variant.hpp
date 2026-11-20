@@ -17,7 +17,7 @@
 //   2. Expansion-connector pin reassignment: four of the 40 connector pins
 //      carry a different S-block strobe depending on which model they're
 //      plugged into. Encoded in
-//      Core/Connector/ExpansionConnector.hpp's routesSBlock() -- the
+//      core/Connector/ExpansionConnector.hpp's routesSBlock() -- the
 //      60-pin SystemBus has no equivalent per-variant gap (see that
 //      class's own doc comment).
 enum class PC1500Variant {

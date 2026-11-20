@@ -9,7 +9,7 @@
 ; reservation needed, same convention as examples/machine-code/memtest.asm
 ; and adrtest_1500a.asm.
 ;
-; Display-RAM layout (Core/PC1500/PC1500Display.cpp, read directly from
+; Display-RAM layout (core/PC1500/PC1500Display.cpp, read directly from
 ; this emulator's own source, not guessed):
 ;   0x7600-0x764D  78 bytes, dot-matrix pixel data, columns 0-38 and
 ;                  78-116 (low/high nibble of each byte respectively)

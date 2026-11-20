@@ -1,5 +1,5 @@
 // Headless C++ tests for the dual-CPU facade
-// (Core/PC1600/PC1600Machine.hpp/.cpp, PC1600BusArbiter.hpp). Same
+// (core/PC1600/PC1600Machine.hpp/.cpp, PC1600BusArbiter.hpp). Same
 // no-framework, assert-and-tally style as lh5801_tests.cpp -- see that
 // file's header comment.
 //

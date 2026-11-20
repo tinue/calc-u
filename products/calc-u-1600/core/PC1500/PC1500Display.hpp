@@ -32,7 +32,7 @@ public:
 
     /// The status line, decoded from the two fixed bytes at 0x764E and
     /// 0x764F right after the 156x7 pixel data -- the same two sets as the
-    /// PC-1600's; see Core/Display/StatusLine.hpp. S, ROMAJI, CTRL and BATT
+    /// PC-1600's; see core/Display/StatusLine.hpp. S, ROMAJI, CTRL and BATT
     /// have no bits here and stay off.
     StatusLine statusLine() const;
 

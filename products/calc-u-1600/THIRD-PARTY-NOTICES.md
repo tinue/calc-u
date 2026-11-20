@@ -35,7 +35,7 @@ a development dependency that isn't shipped.
 
 ## Other bundled components
 
-See `Core/Basic/vendor/sharpdx/` for `libsharpdx`, vendored from the
+See `core/Basic/vendor/sharpdx/` for `libsharpdx`, vendored from the
 sibling SharpDataExchange project (own license terms; not part of
 this project's GPLv3 source).
 

@@ -111,15 +111,15 @@ Formats: the asset's layout and `toc.json` are specified in
   `Calc-U-1600-help.zip` and the `-web.zip` files. The final releases
   `calc-u-59-v3.0.0` and `calc-u-1600-v0.9.0` are not published yet.
 - **Embedding:** the Web frontends expose `CalcU59` and `CalcU1600` with
-  the shared props `width`, `height`, `keyboard`, `model`, `preset`,
-  `workerUrl` (Calc-U-59 adds `layout`).
+  the shared props `width`, `height`, `keyboard`, `layout`, `model`,
+  `preset`, `workerUrl` (Calc-U-59 adds `settings`).
 
 ### In calc-u-site
 
 - `main` is the published site; branches `<folder>/<version>`
-  (today `59/2.3.0`, at `main`). The local checkout has one uncommitted
-  edit in the `site-59` skill (the preset grammar now points at
-  `docs/formats/preset.md` of the source repository).
+  (`59/2.3.0`). The `site-59` skill's edit that points the preset
+  grammar at `docs/formats/preset.md` of the source repository is
+  committed on `59/2.3.0`, not merged into `main`.
 - **`/59/`:** the complete Calc-U-59 help as hand-written React JSX
   (`59/Pages.jsx`, `routes.js`), prerendered to static HTML by
   `59/.seo/build.js`. The Web frontend is Calc-U-59 2.3.0's, pinned in
@@ -204,8 +204,9 @@ too.
 ### Site knowledge
 - [ ] Site `CLAUDE.md` and `README.md`: remove the `gh-pages` text,
       describe `/1600/`, the pins, and tinue/calc-u as the source.
-- [ ] Update `site-59` and `site-59-design` for the pinned help; commit
-      the pending `site-59` edit; write a skill for `/1600/`.
+- [ ] Update `site-59` and `site-59-design` for the pinned help; merge
+      the `site-59` edit of `59/2.3.0` into `main`; write a skill for
+      `/1600/`.
 
 ### Help content (source repository)
 - [ ] Calc-U-59: retake by hand the four pictures that show a control
@@ -222,9 +223,9 @@ too.
 - [ ] Check every help picture for words the glossary avoids ("Tape",
       "Tapes") and for a control bar other than today's; retake those
       that show them.
-- [ ] Glossary warnings: the help tool lists 736 places in Calc-U-59's
-      help and 886 in Calc-U-1600's of words under "Avoid", most of them
-      common words in another sense; narrow the glossary's lists or fix
+- [ ] Glossary warnings: the help tool lists the places in each
+      product's help of words under "Avoid", most of them common words
+      in another sense; narrow the glossary's lists or fix
       the text.
 - [ ] The help of each product counts as finished when its final release
       carries the help asset (Calc-U-1600 0.9.0, Calc-U-59 3.0.0).

@@ -23,8 +23,9 @@ frontends/web/ (React) ── frontends/web/bindings.cpp ───────�
   lookup over a `calcu::roms::Bundle` the frontend makes (Swift: the
   bundle's resource folder; Qt: the `:/roms/` qrc, `QtResourceBundle`; Web:
   `/roms` in Emscripten's file system; tools and tests: `roms/`).
-- **One thread.** Everything runs on the app session's thread; only
-  `SessionThread` (the Swift frontend's host adapter) has a lock.
+- **One thread.** Everything runs on the app session's thread; `app/`
+  has no thread and no lock (the Swift frontend's thread and its locks are
+  the library's host adapter `shell/SessionThread`).
 - **Namespace `cu59`.** Headers include the core relatively (`../core/...`)
   and the library by area (`"media/MediaPart.hpp"`).
 
@@ -45,7 +46,6 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `TIFileAccess`, `PacingProfiles` | The card and `ti58c.memory.yaml` files on the save folder (read at each use: a change in Settings applies at once); the TI pacing profiles |
 | `TIShellProduct` | What Calc-U-59 gives the library's shell, one source for Qt6, the Web and (through the bridge) Swift: the name, help address, About texts and links, the preset filter, the module slot's pin-out, the two card items (`arm-card`, `arm-fresh-card` on the media place `card-reader`); the settings dialog per frontend and layout (`settingsSpec`); the faceplate's hit map in base-image pixels (`faceplateHitMap`, `faceplateMapValue`) |
 | `TIWebPart` | What the Web page draws, as `c59.web.*` topics and product requests (`c59.shell-product`, `c59.faceplate-map`; the LED shapes, the mobile layout rules) |
-| `SessionThread` | The Swift frontend's session thread and its two queues |
 | `TILevelRules` | The levels `program` and `cpu` of the run control: where a pause lands (a step boundary, or 50000 weights), one step, pause-on-start |
 | `TIDebuggerSetup` | The `DebuggerPart`'s set-up: the rules, the trace session on `TITraceRecorder`, the trace folder (none on the Web: hand-over), the panel views |
 | `TIPrinters` | The PC-100C with its paper description, for the `PaperPart` |
@@ -73,7 +73,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `ModuleCatalog` | The module list from the module files (`allModuleMetadata`), a module's file name, slot-1's listing for the media part (`tiModuleListing`) |
 | `CueCard` | Cue-card model, encode/parse, spans, layout, geometry, inks, which card shows |
 | **Tables and drawing rules** | |
-| `MachineModelInfo` | Per-model facts: `Model` ↔ `ModelId`, RAM, card reader, ROM files (the tick rate is the descriptor's, key readiness the machine's) |
+| `MachineModelInfo` | Per-model facts in a table keyed by the catalogue's `ModelId` (`kModelFacts`, `info`, `findModel`): display name, RAM, card reader, the trace file's model code and name (the tick rate is the descriptor's, key readiness the machine's) |
 | `KeyIds` | Matrix code ↔ key ID of the machine's descriptor |
 | `KeyboardLayout` | Canvas geometry, key rects, widened hit test; `PointerTracker` (hold the display for full speed, one held key, drag between keys — Qt and web) |
 | `KeyNames` | Keycode mnemonics, operand-step grammar |
@@ -121,7 +121,7 @@ changed (their payloads compare by content). Their value forms are fixed:
 printer and the card controls from `control-state`; full speed is the
 library's `speed` command and `busy` topic. Then
 the debug panel's product topics (`TIDebugPart`). Qt6
-calls the session on its GUI thread, Swift on `cu59::SessionThread`, the
+calls the session on its GUI thread, Swift on `calcu::shell::SessionThread`, the
 Web in its worker (§ "Threads"); each talks to it through the library's
 `calcu::sessions::Listener`. The session owns the parts
 (`AppSessionSetup::owned`) and lets them go first.
@@ -169,7 +169,7 @@ The app layer has no thread of its own but one host adapter:
 
 | Frontend | Where the session runs |
 |---|---|
-| Swift | `cu59::SessionThread` (`app/SessionThread.*`): builds, calls about 60 times a second and destroys the session on one thread (QoS user-initiated). Posts in one FIFO, messages out in one FIFO to the main thread, one wake per batch. In Debug builds for macOS and the simulator it also hosts harness attach (`library/harness/attach/`) |
+| Swift | the library's native threaded host `calcu::shell::SessionThread` (`library/shell/SessionThread.*`): builds, calls about 60 times a second and destroys the session on one thread (QoS user-initiated). Posts in one FIFO, messages out in one FIFO to the main thread, one wake per batch. In Debug builds for macOS and the simulator it also hosts harness attach (`library/harness/attach/`) |
 | Qt6 | the GUI thread: a 60 Hz `QTimer` calls the session |
 | Web | the library's Web Worker (`library/web/src/worker.js`): a 60 Hz `setInterval` calls the session through the library's `WorkerHost` |
 

@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 
 /// A second app session of the Swift frontend, made through the real bridge
-/// (`TIAppSession` over `cu59::SessionThread`) in the app the tests are loaded
+/// (`TIAppSession` over `calcu::shell::SessionThread`) in the app the tests are loaded
 /// into: the ROM files of the app's bundle, a TI-59, a temporary save and
 /// trace folder, a settings file of its own in that folder (nothing of the
 /// user's is read or written). The test plan launches the host app with

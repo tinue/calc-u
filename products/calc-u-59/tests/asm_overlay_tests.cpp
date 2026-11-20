@@ -71,8 +71,8 @@ TEST(asm_overlay_crlf) {
 }
 
 TEST(asm_overlay_first_at_1800) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     auto* o = calcu::machine::first<AsmOverlay>(*m);
     CHECK(o && o->load(words(kHead + "HEX:\n0A01 01D8\n")));
     calcu::machine::DebugTarget& t = m->debugging()->target(0);
@@ -141,8 +141,8 @@ TEST(five_overlays_in_2_0_give_2_3_0s_instructions) {
 
 // DPT.asm needs COND set at its entry: entered, it runs.
 TEST(dpt_runs_with_cond) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     auto* o = calcu::machine::first<AsmOverlay>(*m);
     CHECK(o && o->load(words(*testroms::readFile("examples/assembly/DPT.asm"))));
     const AsmOverlay::Entry e = o->enter(8192);

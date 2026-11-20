@@ -9,7 +9,7 @@
 // client at a time, text lines. A host adapter at the edge of the
 // single-threaded session: it keeps its lines on LocalStream (an I/O thread of its own and its own
 // queue of outgoing bytes) and never touches the session. What arrives goes to an AttachInbox, which the
-// host of the session implements (cu59::SessionThread; a loop in the tests).
+// host of the session implements (shell::SessionThread, the Qt6 SessionHost; a loop in the tests).
 // Compiled only with CALCU_ATTACH (POSIX; never in a release or device
 // build).
 

@@ -15,15 +15,16 @@
 #include <thread>
 #include <vector>
 
-// The Swift frontend's session thread: one thread of its own builds, calls
-// and destroys the app session, about 60 times a second; the frontend's
-// thread only posts and drains. A host adapter above the core, which holds no
-// lock and starts no thread: the one place in the app layer with a thread
-// and locks. Never built by the Web.
+// The native threaded host of an app session, a host adapter: one thread of
+// its own builds, calls and destroys any calcu::sessions::AppSession, about
+// 60 times a second; the frontend's thread only posts and drains. The
+// session stays single-threaded; this adapter at its edge holds the thread
+// and the locks. The Swift frontend hosts its session here (the Qt6 host
+// calls on the GUI thread, the Web on its Worker); never built by the Web.
 //
 // The two queues (the Mailbox): posts in, one FIFO; messages out to the
 // frontend, one FIFO, filled only by this thread. The wake runs once per
-// batch (FS 3: "one hop per batch"); the frontend drains the whole batch.
+// batch, so the frontend takes one hop per batch and drains all of it.
 
 namespace calcu::parts {
 class LibraryParts;
@@ -35,9 +36,7 @@ class HarnessProduct;
 struct AttachEvent;
 } // namespace calcu::harness
 
-namespace cu59 {
-
-namespace sessions = calcu::sessions;
+namespace calcu::shell {
 
 /// One item the frontend drains: a message, and for the reply to a command
 /// it sent with a handler, that handler (run by the frontend, on its thread).
@@ -48,7 +47,7 @@ struct Delivery {
 
 class SessionThread {
 public:
-    /// The session the thread hosts (makeAppSession(...).session; a test's
+    /// The session the thread hosts (a product's app session; a test's
     /// own); runs on the thread.
     using Factory = std::function<std::unique_ptr<sessions::AppSession>()>;
     using ReplyHandler = std::function<void(const sessions::ReplyMessage&)>;
@@ -116,4 +115,4 @@ private:
     std::thread thread_;
 };
 
-} // namespace cu59
+} // namespace calcu::shell

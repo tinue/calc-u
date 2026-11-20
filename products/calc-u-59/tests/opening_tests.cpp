@@ -153,7 +153,7 @@ TEST(partition_registers_other_steps_stay) {
 }
 
 TEST(opened_step_beyond_last_refused) {
-    SessionRig r(Model::TI58);
+    SessionRig r(ModelId{kTI58});
     CHECK(ready(r));
     const std::string past =
         "format: ti-keystroke-program\nformat-version: 1\nprogram-name: Far\nkeycodes: |\n  480 76 LBL\n";
@@ -303,10 +303,10 @@ TEST(dropped_preset_loads_as_the_dialog) {
     CHECK(ready(r));
     const std::string text = "format-version: 2\nmodel: TI-58\nprogram:\n  keycodes: |\n    76 11\n";
     const auto d = open(r, "p.ti58", text, Way::Drop);
-    CHECK(d.done && r.part().model() == Model::TI58);
+    CHECK(d.done && r.part().model() == ModelId{kTI58});
     CHECK_EQ(int(memory(r).readStep(1)), 11);
     CHECK(r.model("TI-59").done);
     const auto f = open(r, "p.ti58", text, Way::Dialog);
-    CHECK(f.done && r.part().model() == Model::TI58);
+    CHECK(f.done && r.part().model() == ModelId{kTI58});
     CHECK_EQ(int(memory(r).readStep(1)), 11);
 }

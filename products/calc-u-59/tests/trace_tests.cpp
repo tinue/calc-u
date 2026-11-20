@@ -53,7 +53,7 @@ constexpr uint64_t kAll = std::numeric_limits<uint64_t>::max();
 
 // The header with TI59, version 2 and the model; written for read_trace.py.
 TEST(header_ti59_version_2_and_model) {
-    auto m = testroms::makeMachine(Model::TI58C);
+    auto m = testroms::makeMachine(ModelId{kTI58C});
     auto rec = makeTITraceRecorder(*m);
     CHECK(rec != nullptr);
     if (!rec) return;
@@ -79,7 +79,7 @@ TEST(header_ti59_version_2_and_model) {
 
 // Session start and end, an instruction, and a gap where the ring dropped frames.
 TEST(records_session_instruction_gap) {
-    auto m = testroms::makeMachine(Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
     auto rec = makeTITraceRecorder(*m);
     std::vector<uint8_t> out;
     rec->begin(out);
@@ -92,7 +92,7 @@ TEST(records_session_instruction_gap) {
     CHECK(kinds == (std::set<uint8_t>{0x01, 0x02, 0x03, 0x05}));
     CHECK_EQ(r.events, 1024u);
     // A budget: whole records only, the rest waits.
-    auto m2 = testroms::makeMachine(Model::TI59);
+    auto m2 = testroms::makeMachine(ModelId{kTI59});
     auto rec2 = makeTITraceRecorder(*m2);
     std::vector<uint8_t> o2;
     rec2->begin(o2);
@@ -124,15 +124,15 @@ TEST(no_key_or_card_records) {
 
 // The button's file is named after the model.
 TEST(button_names_by_model) {
-    for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}}) {
         auto m = testroms::makeMachine(model);
         auto rec = makeTITraceRecorder(*m);
         CHECK(rec != nullptr);
         if (rec) CHECK_EQ(rec->buttonFileName(), TraceWriter::baseFileName(model));
     }
-    CHECK_EQ(TraceWriter::baseFileName(Model::TI59), std::string("CALCU59_TRACE.bin"));
-    CHECK_EQ(TraceWriter::baseFileName(Model::TI58), std::string("CALCU58_TRACE.bin"));
-    CHECK_EQ(TraceWriter::baseFileName(Model::TI58C), std::string("CALCU58C_TRACE.bin"));
+    CHECK_EQ(TraceWriter::baseFileName(ModelId{kTI59}), std::string("CALCU59_TRACE.bin"));
+    CHECK_EQ(TraceWriter::baseFileName(ModelId{kTI58}), std::string("CALCU58_TRACE.bin"));
+    CHECK_EQ(TraceWriter::baseFileName(ModelId{kTI58C}), std::string("CALCU58C_TRACE.bin"));
 }
 
 // The size limit ends every trace with the library's notice, also a preset's trace.

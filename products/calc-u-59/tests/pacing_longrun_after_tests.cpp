@@ -26,7 +26,7 @@ namespace {
 
 // 2.3.0's rate (the "before" test): whole ticks per 20 ms batch
 // (int(instructionHz x 20 ms), 2.3.0's app/Pacing.hpp).
-double oldRate(Model model) {
+double oldRate(ModelId model) {
     constexpr double kBatchSeconds = 0.020;
     const double exact = testroms::instructionHz(model) * kBatchSeconds;
     return static_cast<int32_t>(exact) / exact;
@@ -36,9 +36,9 @@ double oldRate(Model model) {
 // the calls (as the "before" test's).
 constexpr double kBoundSeconds = 0.035;
 
-const char* nameOf(Model m) { return m == Model::TI59 ? "TI-59" : m == Model::TI58 ? "TI-58" : "TI-58C"; }
+const char* nameOf(const ModelId& m) { return info(m).displayName; }
 
-calcu::sessions::ProductSession<TIAppPart> session(Model model, calcu::pacing::WallClock clock) {
+calcu::sessions::ProductSession<TIAppPart> session(ModelId model, calcu::pacing::WallClock clock) {
     static const calcu::testing::TempFolder folder("calcu59-longrun");
     static calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(settings::settingsDecl());
     static const auto paths = testroms::rigPaths(settings, folder.path().string(), folder.path().string());
@@ -48,7 +48,7 @@ calcu::sessions::ProductSession<TIAppPart> session(Model model, calcu::pacing::W
 } // namespace
 
 TEST(pacing_longrun_scripted_ti) {
-    for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}}) {
         WallTime now{std::chrono::hours(2)};
         auto app = session(model, [&] { return now; });
         auto& ms = app.session->machineSession();
@@ -97,7 +97,7 @@ TEST(pacing_longrun_real_clock_ti) {
     const char* env = std::getenv("CALCU59_PACING_LONGRUN");
     if (!env) return;  // the checkpoint group sets it (600)
     const double seconds = std::atof(env);
-    for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}}) {
         auto app = session(model, steadyWallTime);
         auto& ms = app.session->machineSession();
         const double tps = ms.machine()->descriptor().tickRate;

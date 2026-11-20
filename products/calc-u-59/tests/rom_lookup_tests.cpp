@@ -209,7 +209,7 @@ TEST(crlf_and_cr_dumps_check_alike) {
         CHECK(decodeConstantsText(textOf(*r.set->bytes("CD2400-CONST-K.txt")), e1) ==
               decodeConstantsText(textOf(*lf->bytes("CD2400-CONST-K.txt")), e2));
         CHECK(cu59::moduleImage(*r.set, "LE.rom.yaml") == cu59::moduleImage(*lf, "LE.rom.yaml"));
-        CHECK(cu59::buildMachine(cu59::Model::TI58C, *r.set) != nullptr);
+        CHECK(cu59::buildMachine(cu59::ModelId{cu59::kTI58C}, *r.set) != nullptr);
     }
 }
 
@@ -344,7 +344,7 @@ std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> startFrom(const 
     static const calcu::testing::TempFolder folder("calcu59-romlookup");
     static calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(cu59::settings::settingsDecl());
     static const auto paths = testroms::rigPaths(settings, folder.path().string(), folder.path().string());
-    cu59::TIAppSetup s = testroms::appSetup(settings, cu59::Model::TI59, *paths);
+    cu59::TIAppSetup s = testroms::appSetup(settings, cu59::ModelId{cu59::kTI59}, *paths);
     s.roms = roms;
     auto t = std::make_shared<calcu::pacing::WallTime>(std::chrono::hours(1));
     auto app = cu59::makeAppSession(std::move(s), [t] { return *t += std::chrono::milliseconds(1); }, 59u);
@@ -399,8 +399,8 @@ TEST(model_and_module_changes_read_no_file) {
     CHECK(app.has_value());
     if (!app) return;
     cu59::TIAppPart& c = *app->part;
-    for (auto model : {cu59::Model::TI59, cu59::Model::TI58, cu59::Model::TI58C, cu59::Model::TI59}) {
-        command(*app->session, calcu::startup::kModelCommand, calcu::sessions::Value::object({{"name", cu59::modelId(model).value}}));
+    for (auto model : {cu59::ModelId{cu59::kTI59}, cu59::ModelId{cu59::kTI58}, cu59::ModelId{cu59::kTI58C}, cu59::ModelId{cu59::kTI59}}) {
+        command(*app->session, calcu::startup::kModelCommand, calcu::sessions::Value::object({{"name", model.value}}));
         CHECK(c.hasMachine() && c.model() == model);
         CHECK_EQ(c.moduleID(), std::string("ML"));
     }

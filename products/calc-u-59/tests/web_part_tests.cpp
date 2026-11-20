@@ -58,7 +58,7 @@ struct WebPieces {
 // The Web engine's session, natively: the Web part behind the product's.
 struct WebRig : WebPieces, testroms::SessionRig {
     explicit WebRig(bool started = true)
-        : SessionRig(testroms::RigOptions{.model = modelFrom({calcu::settings::startupModel(*file)}).value_or(cu59::Model::TI59),
+        : SessionRig(testroms::RigOptions{.model = cu59::ModelId{calcu::settings::startupModel(*file)},
                                           .before = {settingsPart.get()}, .after = {web.get()},
                                           .saveFolder = dirs.saveFolder, .noTraceFolder = true, .settings = file.get(),
                                           .examplesFolder = (webFolder.path() / "presets").string(), .start = false}) {
@@ -93,12 +93,12 @@ TEST(web_start_takes_the_model_by_name_and_a_bundled_preset) {
         WebRig r(false);
         r.send("start", Value::object({{"model", "TI-58C"}, {"preset", ""}}));
         r.run(2s);
-        CHECK(r.part().model() == Model::TI58C);
+        CHECK(r.part().model() == ModelId{kTI58C});
     }
     WebRig r(false);
     r.send("start", Value::object({{"model", ""}, {"preset", "examples:one.ti59"}}));
     r.run(2s);
-    CHECK(r.part().model() == Model::TI58);
+    CHECK(r.part().model() == ModelId{kTI58});
     CHECK_EQ(testroms::mem(*r.part().machine()).readDataReg(5), 3.25);
     CHECK(r.notices().empty());
 }
@@ -109,7 +109,7 @@ TEST(web_unknown_model_and_preset_are_notices) {
     WebRig r(false);
     r.send("start", Value::object({{"model", "TI-99"}, {"preset", "examples:../one.ti59"}}));
     r.run(2s);
-    CHECK(r.part().model() == Model::TI59);
+    CHECK(r.part().model() == ModelId{kTI59});
     CHECK_EQ(r.notices().size(), size_t{2});
     if (r.notices().size() == 2) {
         CHECK(r.notices()[0].find("no model \"TI-99\"") != std::string::npos);

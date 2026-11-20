@@ -7,7 +7,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 // Swift face of the library's app session: Calc-U-59's
-// session runs on a thread of its own (cu59::SessionThread); this
+// session runs on a thread of its own (the library's calcu::shell::SessionThread); this
 // bridge posts commands to it and hands the messages it sends to the main
 // thread, one batch at a time and in order. It translates types
 // only: what it returns is the last message of a topic, kept on

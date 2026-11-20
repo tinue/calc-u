@@ -45,7 +45,7 @@ struct SwiftRig {
     std::unique_ptr<shell::SettingsPart> settingsPart;
     std::unique_ptr<SessionRig> rig;
 
-    explicit SwiftRig(cu59::Model model = cu59::Model::TI59) {
+    explicit SwiftRig(cu59::ModelId model = cu59::ModelId{cu59::kTI59}) {
         calcu::settings::HostDirs dirs;
         dirs.frontend = calcu::settings::FrontendKind::Swift;
         paths = std::make_unique<calcu::settings::Paths>(file, dirs);
@@ -123,7 +123,7 @@ std::vector<shell::BarControl::Kind> kinds(const std::vector<shell::BarGroupMode
 // an item that cannot be used is disabled, not left out.
 TEST(menus_file_machine_help_in_order) {
     SKIP_UNLESS(roms(), kSkip);
-    for (const auto model : {cu59::Model::TI59, cu59::Model::TI58, cu59::Model::TI58C}) {
+    for (const auto model : {cu59::ModelId{cu59::kTI59}, cu59::ModelId{cu59::kTI58}, cu59::ModelId{cu59::kTI58C}}) {
         SwiftRig s(model);
         const shell::ShellInputs in = s.inputs();
         for (const shell::Traits t : {macTraits(), iosTraits()}) {
@@ -136,7 +136,7 @@ TEST(menus_file_machine_help_in_order) {
             const auto file = ids(ms[0].items);
             CHECK(!file.empty() && file[0] == "load-preset");
             CHECK(has(file, "examples"));   // the bundle has examples
-            const bool ti59 = model == cu59::Model::TI59;
+            const bool ti59 = model == cu59::ModelId{cu59::kTI59};
             CHECK(has(file, cu59::kItemArmCard) == ti59);
             CHECK(has(file, cu59::kItemArmFreshCard) == ti59);
             const auto machine = ids(ms[1].items);
@@ -182,7 +182,7 @@ TEST(shortcuts_and_roles) {
 TEST(control_bar_per_model) {
     SKIP_UNLESS(roms(), kSkip);
     using K = shell::BarControl::Kind;
-    for (const auto model : {cu59::Model::TI59, cu59::Model::TI58, cu59::Model::TI58C}) {
+    for (const auto model : {cu59::ModelId{cu59::kTI59}, cu59::ModelId{cu59::kTI58}, cu59::ModelId{cu59::kTI58C}}) {
         SwiftRig s(model);
         const auto bar = shell::bar(s.inputs(), product(), macTraits());
         const auto ks = kinds(bar);
@@ -195,7 +195,7 @@ TEST(control_bar_per_model) {
         }
         const auto* printer = control(bar, K::PlaceButton, "printer");
         CHECK(printer && printer->label == "PC-100C");
-        CHECK((control(bar, K::Media, "card-reader") != nullptr) == (model == cu59::Model::TI59));
+        CHECK((control(bar, K::Media, "card-reader") != nullptr) == (model == cu59::ModelId{cu59::kTI59}));
         CHECK(control(bar, K::Action) == nullptr);   // Reset and Preset are menu items
         CHECK(control(bar, K::More) == nullptr);
     }

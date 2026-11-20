@@ -21,7 +21,7 @@ struct CardRig : SessionRig {
     using ReplyMessage = calcu::sessions::ReplyMessage;
     static constexpr const char* kPlace = "card-reader";
 
-    explicit CardRig(cu59::Model model = cu59::Model::TI59) : SessionRig(model) {}
+    explicit CardRig(cu59::ModelId model = cu59::ModelId{cu59::kTI59}) : SessionRig(model) {}
 
     /// A preset of format 2 by its content (the library's load-preset).
     ReplyMessage load(const std::string& text, const std::string& name = "test.ti59",

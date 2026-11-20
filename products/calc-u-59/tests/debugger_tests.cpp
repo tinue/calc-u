@@ -74,7 +74,7 @@ TEST(waiting_for_a_key_lands_after_50000) {
 TEST(in_an_overlay_lands_after_50000) {
     // An ASM overlay has no program step boundaries: only the count lands it.
     TILevelRules rules;
-    auto m = testroms::makeMachine(Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
     rules.pauseAsked(kCpu, *m);
     int n = 0;
     while (!rules.pauseLandsAfter(kCpu, event(kActive))) ++n;
@@ -179,7 +179,7 @@ TEST(cpu_fires_leaving_key_readiness) {
 // rule: 0000 next while it was not 0000 at arming, and what was seen stays
 // when the run control arms again at the restart.
 TEST(cpu_fires_at_0000_after_reset_and_cold_boot) {
-    for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}}) {
         SessionRig r(model);
         CHECK(ready(r));
         rc(r).pauseOnStart(kCpu);
@@ -196,7 +196,7 @@ TEST(cpu_fires_at_0000_after_reset_and_cold_boot) {
         rc(r).resume();
     }
     TILevelRules rules;
-    auto m = testroms::makeMachine(Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
     testroms::run(*m, 10);   // not at 0000
     rules.startArmed(kCpu, *m);
     CHECK(!rules.startFiresAfter(kCpu, event(kActive, 0x10, 0x11), *m));
@@ -221,8 +221,8 @@ TEST(arming_one_disarms_the_other) {
 // The TI-58's idle pass detours through the card veto: it is part of the
 // scan loop, so a `cpu` start waits for a key.
 TEST(ti58_card_veto_is_part_of_the_scan_loop) {
-    auto m = testroms::makeMachine(Model::TI58);
-    CHECK(testroms::runToScanLoop(*m, Model::TI58));
+    auto m = testroms::makeMachine(ModelId{kTI58});
+    CHECK(testroms::runToScanLoop(*m, ModelId{kTI58}));
     bool sawVeto = false, left = false;
     for (int i = 0; i < 20'000; ++i) {
         m->advance(1);
@@ -231,7 +231,7 @@ TEST(ti58_card_veto_is_part_of_the_scan_loop) {
     }
     CHECK(sawVeto && !left);
     CHECK(!romRanges(MachineVariant::TI59).scanLoop.contains(kCardVetoLo));   // TI-59: card inserted
-    SessionRig r(Model::TI58);
+    SessionRig r(ModelId{kTI58});
     CHECK(ready(r));
     rc(r).pauseOnStart(kCpu);
     r.runFor(1s);
@@ -243,8 +243,8 @@ TEST(ti58_card_veto_is_part_of_the_scan_loop) {
 // The start lands on the same instruction as a run loop that runs one
 // instruction at a time and asks after each whether to stop.
 TEST(runbatch_stops_at_freeze_inside_advance) {
-    auto stepped = testroms::makeMachine(Model::TI59), batched = testroms::makeMachine(Model::TI59);
-    for (auto* m : {stepped.get(), batched.get()}) testroms::runToScanLoop(*m, Model::TI59);
+    auto stepped = testroms::makeMachine(ModelId{kTI59}), batched = testroms::makeMachine(ModelId{kTI59});
+    for (auto* m : {stepped.get(), batched.get()}) testroms::runToScanLoop(*m, ModelId{kTI59});
     const auto loop = romRanges(MachineVariant::TI59).scanLoop;
     // That rule, one instruction at a time.
     bool seen = false;

@@ -102,8 +102,8 @@ landscape on a large screen) — its column in
   and the web client, which compiles both layers too:
   `frontends/web/build.sh && frontends/web/run-tests.sh` (`frontends/web/dist/` is gitignored; CI builds it).
   `app/` is C++20 and standard-library-only, and runs on one
-  thread: the app session's (Qt6's GUI thread, the Swift frontend's
-  `SessionThread`, the Web's Worker).
+  thread: the app session's (Qt6's GUI thread, the library's
+  `shell/SessionThread` for the Swift frontend, the Web's Worker).
 - **Settings** are declared once, in `app/Settings.hpp` (`settingsDecl()`:
   section, key, default, accepted values), read and written
   through the library's `calcu::settings::SettingsFile` (its `Paths`,

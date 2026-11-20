@@ -16,7 +16,7 @@
 #include "../core/Connector/PC1500SignalDecode.hpp"
 #include "../core/Connector/PlotterPaperOutput.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
-#include "ScriptedSetup.hpp"
+#include "support/Typing.hpp"
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "paper/Paper.hpp"
@@ -299,14 +299,14 @@ bool writeScratchPreset(const std::string& path, const std::string& body) {
 }
 
 // The CE-150 on the bus before the cold boot (a preset's `printer: CE-150`,
-// built by the library's builder; here on the old class with its ROMs).
+// built by the library's builder; here on the class built directly with its ROMs).
 TEST(test_preset_plotter_ce150_attaches_before_reset) {
     SKIP_UNLESS(testRomSet() != nullptr, "the ROMs are not fetched (roms/fetch_roms.sh)");
     PC1500Machine machine(PC1500Variant::PC1500A);
     std::string err;
     CHECK(presetroms::loadPC1500Rom(machine, "A04", testPresetRoms(), &err));
     CHECK(presetroms::attachCE150(machine, testPresetRoms(), &err));
-    scripted::bootPC1500(machine);
+    sharptest::bootToPrompt(machine);
     CHECK(machine.ce150Attached());
 
     // The CE-150 ROM in 0x8000-0xBFFF is only visible with PV = 0: the

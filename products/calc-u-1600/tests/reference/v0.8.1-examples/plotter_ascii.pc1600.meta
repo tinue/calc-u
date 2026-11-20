@@ -1,6 +1,0 @@
-preset: examples/plotter/ascii.pc1600
-cli: headless/pc1600_cli
-exit: 0
-seconds: 12
---- files changed in the copy of examples/:
---- saved media:

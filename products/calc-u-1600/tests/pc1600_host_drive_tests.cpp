@@ -41,18 +41,18 @@ bool bootWithHostDrive(PC1600Machine& m, const fs::path& dir, bool withCE1600P =
         return false;
     }
     if (withCE1600P && !presetroms::attachCE1600P(m, testPresetRoms(), "new", &error)) return false;
-    m.allReset();
-    runBootToPrompt(m);
-    tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);  // as the COM1 test: settle
-    tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);  // the prompt, back in RUN
+    m.coldBoot();
+    sharptest::runUntilKeyReady(m);
+    sharptest::tap(m, "mode"); sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);  // as the COM1 test: settle
+    sharptest::tap(m, "mode"); sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);  // the prompt, back in RUN
     return true;
 }
 
 void type(PC1600Machine& m, const std::string& line) {
     std::string err;
-    CHECK(typeLine(m, line, /*pressEnter=*/true, &err));
-    waitUntilBasicIdle(m, 600ull * PC1600Machine::kTStateHz);
-    waitIdle(m, PC1600Machine::kTStateHz);
+    CHECK(sharptest::typeLine(m, line));
+    sharptest::runUntilFinished(m, double(600ull * PC1600Machine::kTStateHz) / m.descriptor().tickRate);
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
 }
 
 // NEW in PRO mode, then the program, back to RUN mode: `loaded` through
@@ -60,13 +60,13 @@ void type(PC1600Machine& m, const std::string& line) {
 // typed -- lines the ROM has to tokenize itself, as the host drive's CDIR
 // and LDIR, which the loader's tokenizer doesn't know.
 void enterProgram(PC1600Machine& m, const std::string& loaded, const std::string& typed = "") {
-    tapKey(m, "mode");  // RUN -> PRO
-    waitIdle(m, PC1600Machine::kTStateHz);
+    sharptest::tap(m, "mode");  // RUN -> PRO
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     type(m, "NEW");
     if (!loaded.empty()) CHECK(loadertest::loadBasic(m, std::vector<uint8_t>(loaded.begin(), loaded.end())).ok);
-    if (!typed.empty()) CHECK(typeBasicProgramText(m, typed).rejectedLines.empty());
-    tapKey(m, "mode");  // PRO -> RUN
-    waitIdle(m, PC1600Machine::kTStateHz);
+    if (!typed.empty()) CHECK(sharptest::typeProgram(m, typed));
+    sharptest::tap(m, "mode");  // PRO -> RUN
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
 }
 
 // enterProgram() + RUN.
@@ -137,9 +137,9 @@ TEST(test_save_load_kill_name_copy) {
     const std::string saved = calcu::testing::readText(dir.path() / "T.BAS");
     CHECK(saved.size() > 16 && static_cast<uint8_t>(saved[0]) == 0xFF && saved[1] == 0x10);
 
-    tapKey(m, "mode");
+    sharptest::tap(m, "mode");
     type(m, "NEW");
-    tapKey(m, "mode");
+    sharptest::tap(m, "mode");
     type(m, "LOAD \"S3:T.BAS\"");
     type(m, "SAVE \"S3:T2.BAS\"");
     CHECK(calcu::testing::readText(dir.path() / "T2.BAS") == saved);
@@ -229,11 +229,11 @@ TEST(test_mep_fixed_entries) {
     TempDir dir;
     PC1600Machine m;
     SKIP_UNLESS(bootWithHostDrive(m, dir.path()), "PC-1600 ROM images not found");
-    tapKey(m, "mode");  // RUN -> PRO: reserve &C0C5.. for the code
-    waitIdle(m, PC1600Machine::kTStateHz);
+    sharptest::tap(m, "mode");  // RUN -> PRO: reserve &C0C5.. for the code
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     type(m, "NEW \"S0:\",&200");
-    tapKey(m, "mode");
-    waitIdle(m, PC1600Machine::kTStateHz);
+    sharptest::tap(m, "mode");
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     const uint8_t code[] = {
         0xE7, 0x07, 0x23, 0x40,  // RST 20H: bank 7 4023H DIRMODE
         0xE7, 0x07, 0x26, 0x40,  // RST 20H: bank 7 4026H FILEMODE
@@ -268,14 +268,14 @@ TEST(test_mep_fixed_entries) {
 
 // Presses OFF, then ON, and waits for the prompt.
 void powerCycle(PC1600Machine& m) {
-    tapKey(m, "off");
+    sharptest::tap(m, "off");
     m.runCycles(static_cast<uint64_t>(PC1600Machine::kTStateHz) * 3);
     m.setOnKeyPressed(true);
     m.runCycles(PC1600Machine::kTStateHz / 10);
     m.setOnKeyPressed(false);
     for (int k = 0; k < 30 && !(m.sc7852().halted() && m.sc7852().pc() == 0x92B3); k++)
         m.runCycles(PC1600Machine::kTStateHz / 10);
-    waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz) * 2);
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz) * 2) / m.descriptor().tickRate);
 }
 
 // The MEP's BASIC statements CDIR / LDIR: the current directory is where
@@ -307,11 +307,11 @@ TEST(test_cdir_and_ldir_statements) {
     CHECK(!fs::exists(dir.path() / "P.BAS"));
 
     // NEW keeps the directory, power on goes back to the root.
-    tapKey(m, "mode");
-    waitIdle(m, PC1600Machine::kTStateHz);
+    sharptest::tap(m, "mode");
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     type(m, "NEW");
-    tapKey(m, "mode");
-    waitIdle(m, PC1600Machine::kTStateHz);
+    sharptest::tap(m, "mode");
+    sharptest::runUntilSettled(m, double(PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     type(m, "SAVE \"S3:N.BAS\"");
     CHECK(fs::exists(dir.path() / "Sub" / "N.BAS"));
     powerCycle(m);

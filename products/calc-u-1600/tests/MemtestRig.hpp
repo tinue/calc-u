@@ -11,7 +11,7 @@
 #include "../app/dap/DapTargets.hpp"
 #include "../core/Debug/Listing/Listing.hpp"
 #include "../core/Debug/SourceMap.hpp"
-#include "../core/PC1500/PC1500InterfaceMachine.hpp"
+#include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "SharpDebugRig.hpp"
 
@@ -31,7 +31,7 @@ namespace memtest {
 
 struct Rig {
     sharpdebugtest::Rig rig{sharpdebugtest::bareMachine("PC-1500A")};
-    PC1500Machine& machine = static_cast<PC1500InterfaceMachine&>(*rig.machine).core();
+    PC1500Machine& machine = static_cast<PC1500Machine&>(*rig.machine);
     debug::SourceMap map;
     cu1600::dap::DapBreakpoints breakpoints;
     std::string asmFile;

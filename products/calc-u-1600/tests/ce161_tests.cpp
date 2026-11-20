@@ -10,7 +10,7 @@
 #include <cstdio>
 #include <string>
 
-#include "support/PC1500BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestCards.hpp"
 #include "TestHarness.hpp"
@@ -94,14 +94,14 @@ void protectedProgramModule(PC1500Variant variant) {
     m.attachExpansionCard(std::move(card));
     SKIP_UNLESS(m.loadROMFile("roms/PC-1500_A04.ROM"), "roms/PC-1500_A04.ROM not found (run from the repo root)");
     m.reset();
-    runBootToPrompt(m);
+    sharptest::runUntilKeyReady(m);
     auto peek16 = [&](uint16_t a) { return uint16_t(m.memory().peek(a) << 8 | m.memory().peek(a + 1)); };
 
-    tapKey(m, "cl");
-    CHECK(typeLine(m, "NEW 256", true, nullptr));
+    sharptest::tap(m, "cl");
+    CHECK(sharptest::typeLine(m, "NEW 256"));
     CHECK(m.memory().peek(0x7863) == 0x00 && m.memory().peek(0x7864) == ramEnd);
     CHECK(peek16(0x7865) == 0x0100);
-    CHECK(typeBasicProgramText(m, "10 \"A\":POKE &7C50,65:END\n").ok);
+    CHECK(sharptest::typeProgram(m, "10 \"A\":POKE &7C50,65:END\n"));
 
     // The manual's fill program, done from the harness: FF from the
     // program's end marker, then `65279 END` + end marker ending at &3FFF.
@@ -110,7 +110,7 @@ void protectedProgramModule(PC1500Variant variant) {
     for (uint32_t a = end; a < 0x3FF9; a++) m.memory().writeME0(uint16_t(a), 0xFF);
     const uint8_t endLine[] = {0xFE, 0xFF, 0x03, 0xF1, 0x8E, 0x0D, 0xFF};
     for (int i = 0; i < 7; i++) m.memory().writeME0(uint16_t(0x3FF9 + i), endLine[i]);
-    CHECK(typeLine(m, "POKE 0,85,0,1,0,0,0,0,255", true, nullptr));
+    CHECK(sharptest::typeLine(m, "POKE 0,85,0,1,0,0,0,0,255"));
     CHECK(m.memory().peek(0x0000) == 0x55 && m.memory().peek(0x0007) == 0xFF);
 
     // Flip the switch, OFF/ON.
@@ -118,24 +118,24 @@ void protectedProgramModule(PC1500Variant variant) {
     CHECK(c && c->hasWriteProtectSwitch());
     if (!c) return;
     c->setWriteProtected(true);
-    tapKey(m, "off");
+    sharptest::tap(m, "off");
     m.runCycles(static_cast<uint64_t>(PC1500Machine::kCpuHz / 2));
     m.setOnKeyPressed(true);
     m.runCycles(static_cast<uint64_t>(PC1500Machine::kCpuHz / 10));
     m.setOnKeyPressed(false);
-    runBootToPrompt(m);
+    sharptest::runUntilKeyReady(m);
     CHECK(m.memory().peek(0x7860) == 0x00);  // ST_ROM_MOD: module at page 00
     CHECK(peek16(0x7861) == 0x0100);         // its program start
     CHECK(m.memory().peek(0x7863) == 0x40 && m.memory().peek(0x7864) == ramEnd);  // RAM = built-in only
 
-    tapKey(m, "cl");
-    CHECK(typeLine(m, "NEW 0", true, nullptr));
+    sharptest::tap(m, "cl");
+    CHECK(sharptest::typeLine(m, "NEW 0"));
     CHECK(peek16(0x7865) == 0x4000);  // RAM BASIC right after the module
     m.memory().writeME0(0x7C50, 0x00);
-    tapKey(m, "mode");  // PRO -> RUN
-    CHECK(typeLine(m, "GOTO \"A\"", true, nullptr));
+    sharptest::tap(m, "mode");  // PRO -> RUN
+    CHECK(sharptest::typeLine(m, "GOTO \"A\""));
     CHECK(m.memory().peek(0x7C50) == 65);  // the module's program ran
-    CHECK(typeLine(m, "POKE &100,0", true, nullptr));
+    CHECK(sharptest::typeLine(m, "POKE &100,0"));
     CHECK(m.memory().peek(0x0100) == 0x00 && m.memory().peek(0x0101) == 0x0A);  // line 10 untouched
 }
 

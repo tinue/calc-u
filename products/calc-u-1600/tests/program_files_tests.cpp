@@ -12,7 +12,7 @@
 
 #include "../core/Loaders.hpp"
 #include "../core/Machine/SharpLoaderMemory.hpp"
-#include "support/PC1500BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/ProgramFile.hpp"
 #include "LoaderTestSupport.hpp"

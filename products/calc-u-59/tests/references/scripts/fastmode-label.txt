@@ -1,0 +1,22 @@
+SAME Op 08 (list labels)              fast [0, 2]  normal [0]
+DIFF GTO label                        fast []  normal [0]
+       ok: fast=False normal=True
+       disp: fast=['', '0.'] normal=['44.']
+       R59: fast=0 normal=4.4e1
+DIFF x=t label                        fast [2]  normal [0]
+       ok: fast=False normal=True
+       disp: fast=['', '5.'] normal=['44.']
+       R59: fast=0 normal=4.4e1
+DIFF If flg label                     fast [2]  normal [0]
+       ok: fast=False normal=True
+       disp: fast=['', '0.'] normal=['44.']
+       R59: fast=0 normal=4.4e1
+DIFF Dsz label loop                   fast [2]  normal [0]
+       ok: fast=False normal=True
+       disp: fast=['', '1.'] normal=['5.']
+       R00: fast=4. normal=0
+       R30: fast=1. normal=5.
+DIFF SBR label                        fast [0, 1]  normal [0]
+       ok: fast=False normal=True
+       disp: fast=['', '0'] normal=['45.']
+       R59: fast=0 normal=4.5e1

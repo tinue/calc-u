@@ -1,18 +1,18 @@
 > boot
-  cycles 0
+  cycles 3818919
   lcd |>|
   lcd ||
   lcd ||
   lcd ||
   status DEG RUN I
-  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+  audio samples=48000 nonzero=216 sum=4f55cd4626f7966a
 > run 1
-  cycles 3580001
+  cycles 7398920
   lcd |>|
   lcd ||
   lcd ||
   lcd ||
   status DEG RUN I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
-= internal ram sum=cc67be9d9592bf8e
-= z80 view sum=a08fa5fd215e6aa3
+= internal ram sum=93ca10a2b53d1fd6
+= z80 view sum=a266d26d4c1e2113

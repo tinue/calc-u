@@ -1,7 +1,7 @@
 // Headless C++ tests for core/PC1600/PC1600BasicLoader.cpp -- the fast
 // (poke + fix BASPRG_END) PC-1600 BASIC loader, checked byte-for-byte
-// against the keystroke typer. ROM-gated: SKIPs (not fails) when the
-// confirmed PC-1600 ROM set is absent, like pc1600_basictyper_tests.cpp.
+// against the listing typed through the typing engine. ROM-gated: SKIPs
+// (not fails) when the confirmed PC-1600 ROM set is absent.
 //
 // Build & run: see tools/run_tests.sh
 
@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "../core/PC1600/PC1600BasicLoader.hpp"
-#include "support/PC1600BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestCards.hpp"
 #include "TestRoms.hpp"
@@ -28,11 +28,11 @@ namespace {
 // assumes the preset left the machine in.
 bool bootIntoProNew0(PC1600Machine& m) {
     if (!bootPC1600(m)) return false;
-    tapKey(m, "mode");  // RUN -> PRO
-    waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz));
+    sharptest::tap(m, "mode");  // RUN -> PRO
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz)) / m.descriptor().tickRate);
     std::string err;
-    typeLine(m, "NEW0", /*pressEnter=*/true, &err);
-    waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz));
+    sharptest::typeLine(m, "NEW0");
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz)) / m.descriptor().tickRate);
     return true;
 }
 
@@ -45,11 +45,11 @@ bool bootIntoProNew0Slot1Ram(PC1600Machine& m, size_t sizeBytes) {
     if (!ram) return false;
     m.memory().attachSlot1Card(std::move(ram));
     if (!bootPC1600(m)) return false;
-    tapKey(m, "mode");  // RUN -> PRO
-    waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz));
+    sharptest::tap(m, "mode");  // RUN -> PRO
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz)) / m.descriptor().tickRate);
     std::string err;
-    typeLine(m, "NEW0", /*pressEnter=*/true, &err);
-    waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz));
+    sharptest::typeLine(m, "NEW0");
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz)) / m.descriptor().tickRate);
     return true;
 }
 
@@ -76,11 +76,11 @@ std::vector<uint8_t> prgAdr(PC1600Machine& m) { return readRange(m, 0xFE3C, 0xFE
 // RUN time doesn't -- so it doubles as "did the interpreter actually
 // execute the program".
 uint16_t runAndReadVarPtr(PC1600Machine& m) {
-    tapKey(m, "mode");  // PRO -> RUN
-    waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz));
+    sharptest::tap(m, "mode");  // PRO -> RUN
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz)) / m.descriptor().tickRate);
     std::string err;
-    typeLine(m, "RUN", /*pressEnter=*/true, &err);
-    waitUntilBasicIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz) * 6);  // back at the prompt
+    sharptest::typeLine(m, "RUN");
+    sharptest::runUntilFinished(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz) * 6) / m.descriptor().tickRate);  // back at the prompt
     return be16(m, 0xF899);
 }
 
@@ -99,9 +99,7 @@ TEST(s0_parts_in_table_order_line_not_split) {
     {
         PC1600Machine m;
         SKIP_UNLESS(bootIntoProNew0Slot1Ram(m, 0x8000), "PC-1600 ROM set not found");
-        BasicTypeResult typed = typeBasicProgramText(m, src);
-        CHECK(typed.ok);
-        CHECK(typed.rejectedLines.empty());
+        CHECK(sharptest::typeProgram(m, src));
         typedStLh = be16(m, 0xF865);
         typedEndLh = be16(m, 0xF867);
         CHECK(typedStLh == 0x00C5);           // relocated into the module window
@@ -360,12 +358,12 @@ bool prepare(PC1600Machine& m, size_t slot1Ram, size_t slot2Ram, const std::vect
         m.memory().attachSlot2Card(std::move(module));
     }
     if (!bootPC1600(m)) return false;
-    tapKey(m, "mode");  // RUN -> PRO
-    waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz));
+    sharptest::tap(m, "mode");  // RUN -> PRO
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz)) / m.descriptor().tickRate);
     std::string err;
     for (const std::string& line : setup) {
-        typeLine(m, line, /*pressEnter=*/true, &err);
-        waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz) * 2);
+        sharptest::typeLine(m, line);
+        sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz) * 2) / m.descriptor().tickRate);
     }
     return true;
 }
@@ -377,8 +375,7 @@ void checkTypedVsFast(const char* label, size_t slot1Ram, size_t slot2Ram, const
         PC1600Machine m;
         if (!prepare(m, slot1Ram, slot2Ram, setup)) return;
         if (expectTitle >= 0) CHECK(m.programAreaTitle() == expectTitle);
-        BasicTypeResult t = typeBasicProgramText(m, program);
-        CHECK(t.ok && t.rejectedLines.empty());
+        CHECK(sharptest::typeProgram(m, program));
         typed = snapshot(m);
     }
     PC1600Machine m;
@@ -522,12 +519,12 @@ TEST(test_mode_and_title_queries) {
     CHECK(!m.mode1());
     CHECK(m.programAreaTitle() == 0);
     std::string err;
-    typeLine(m, "MODE1", /*pressEnter=*/true, &err);
-    waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz));
+    sharptest::typeLine(m, "MODE1");
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz)) / m.descriptor().tickRate);
     CHECK(m.mode1());
     CHECK(m.programAreaTitle() == 0);
-    typeLine(m, "MODE0", /*pressEnter=*/true, &err);
-    waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz));
+    sharptest::typeLine(m, "MODE0");
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1600Machine::kTStateHz)) / m.descriptor().tickRate);
     CHECK(!m.mode1());
 }
 

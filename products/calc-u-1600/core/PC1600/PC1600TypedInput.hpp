@@ -11,9 +11,8 @@ class PC1600Machine;
 
 // ── Typed-text helpers shared by every scripted PC-1600 input path ───────
 //
-// The PC-1600 analog of core/PC1500/PC1500TypedInput.hpp: used by
-// the tests' PC1600BasicTyper (tests/support/) and the
-// GUI's clipboard paste (core/KeyPaste).
+// The PC-1600 analog of core/PC1500/PC1500TypedInput.hpp: used by the
+// typing engine's PC-1600 profile (app/SharpTyping).
 
 /// Maps a host character to the PC-1600 key that types it. `needsShift`
 /// is set when SHIFT must be tapped first (a one-shot latch), in

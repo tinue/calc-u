@@ -15,7 +15,7 @@
 #include "../core/PC1500/PC1500Keyboard.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1500/PC1500Memory.hpp"
-#include "support/PC1500BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "TestRoms.hpp"
 
 #include <ctime>
@@ -1076,7 +1076,7 @@ TEST(test_pc1500_ram_powerup_reset_and_all_reset) {
     machine.reset();
     CHECK(machine.memory().peek(0x40C5) == 0x5A);
     CHECK(machine.memory().peek(0x7800) == 0xA5);
-    machine.allReset();
+    machine.coldBoot();
     CHECK(machine.memory().peek(0x40C5) == 0x00);
     CHECK(machine.memory().peek(0x7800) == 0xFF);
 }

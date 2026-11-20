@@ -18,17 +18,14 @@
 #include "../core/Utf8.hpp"
 #include "../core/Display/LcdText.hpp"
 #include "../core/PC1500/PC1500BasicLoader.hpp"
-#include "support/PC1500BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "../core/PC1500/PC1500Display.hpp"
 #include "../core/PC1500/PC1500Memory.hpp"
 #include "../core/PC1500/PC1500LcdText.hpp"
-#include "support/PC1500BasicTyper.hpp"
 #include "../core/PC1600/PC1600Bank.hpp"
 #include "../core/PC1600/PC1600BasicLoader.hpp"
-#include "support/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Display.hpp"
 #include "../core/PC1600/PC1600LcdText.hpp"
-#include "support/PC1600BasicTyper.hpp"
 #include "TestRoms.hpp"
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
@@ -188,8 +185,8 @@ const uint64_t kPC1600Settle = PC1600Machine::kTStateHz * 10;
 
 LcdText pc1600Run(PC1600Machine& m, const std::string& line) {
     std::string err;
-    typeLine(m, line, /*pressEnter=*/true, &err);
-    waitUntilBasicIdle(m, kPC1600Settle);
+    sharptest::typeLine(m, line);
+    sharptest::runUntilFinished(m, double(kPC1600Settle) / m.descriptor().tickRate);
     return pc1600LcdText(m);
 }
 
@@ -253,16 +250,16 @@ bool bootPC1500(PC1500Machine& m, const char* rom) {
     if (!m.loadROMFile(rom)) return false;
     m.reset();
     m.runCycles(static_cast<uint64_t>(PC1500Machine::kCpuHz * 2));
-    waitIdle(m, static_cast<uint64_t>(PC1500Machine::kCpuHz * 5));
-    tapKey(m, "cl"); // the cold boot's "NEW0? :CHECK", as the preset loader does
-    waitIdle(m, static_cast<uint64_t>(PC1500Machine::kCpuHz * 2));
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1500Machine::kCpuHz * 5)) / m.descriptor().tickRate);
+    sharptest::tap(m, "cl"); // the cold boot's "NEW0? :CHECK", as the preset loader does
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1500Machine::kCpuHz * 2)) / m.descriptor().tickRate);
     return true;
 }
 
 LcdText pc1500Run(PC1500Machine& m, const std::string& line) {
     std::string err;
-    typeLine(m, line, /*pressEnter=*/true, &err);
-    waitUntilBasicIdle(m, static_cast<uint64_t>(PC1500Machine::kCpuHz * 10));
+    sharptest::typeLine(m, line);
+    sharptest::runUntilFinished(m, double(static_cast<uint64_t>(PC1500Machine::kCpuHz * 10)) / m.descriptor().tickRate);
     return pc1500LcdText(m);
 }
 
@@ -292,11 +289,11 @@ TEST(test_pc1500_print_roundtrip) {
             continue;
         }
         std::string err;
-        typeLine(m, "NEW0", /*pressEnter=*/true, &err); // boots in PRO
+        sharptest::typeLine(m, "NEW0"); // boots in PRO
         const std::string program = pc1500RoundtripProgram();
         CHECK(loadertest::loadBasic(m, std::vector<uint8_t>(program.begin(), program.end())).ok);
-        tapKey(m, "mode");
-        waitIdle(m, static_cast<uint64_t>(PC1500Machine::kCpuHz * 2));
+        sharptest::tap(m, "mode");
+        sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1500Machine::kCpuHz * 2)) / m.descriptor().tickRate);
         LcdText t = pc1500Run(m, "PRINT 12345*-2");
         CHECK(t.rows.size() == 1);
         CHECK(t.contains("-24690"));
@@ -318,8 +315,8 @@ TEST(test_pc1500_print_roundtrip) {
 TEST(test_pc1500_plain_text) {
     PC1500Machine m;
     SKIP_UNLESS(bootPC1500(m, "roms/PC-1500_A04.ROM"), "roms/PC-1500_A04.ROM not found");
-    tapKey(m, "mode"); // boots in PRO
-    waitIdle(m, static_cast<uint64_t>(PC1500Machine::kCpuHz * 2));
+    sharptest::tap(m, "mode"); // boots in PRO
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1500Machine::kCpuHz * 2)) / m.descriptor().tickRate);
     const LcdText t = pc1500Run(m, "PRINT \"AB\";CHR$ 39;CHR$ 91;CHR$ 92;CHR$ 93");
     CHECK(t.plainText() == "AB\u25A1\u221A\u00A5\u03C0");
     if (t.plainText() != "AB\u25A1\u221A\u00A5\u03C0") std::fprintf(stderr, "  plain text: %s\n", t.plainText().c_str());
@@ -391,8 +388,8 @@ TEST(test_status_after_boot) {
 TEST(test_status_angle_pc1500) {
     PC1500Machine m;
     SKIP_UNLESS(bootPC1500(m, "roms/PC-1500_A04.ROM"), "roms/PC-1500_A04.ROM not found");
-    tapKey(m, "mode");
-    waitIdle(m, static_cast<uint64_t>(PC1500Machine::kCpuHz * 2));
+    sharptest::tap(m, "mode");
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(PC1500Machine::kCpuHz * 2)) / m.descriptor().tickRate);
     LcdText t = pc1500Run(m, "GRAD");
     CHECK(std::find(t.status.begin(), t.status.end(), std::string("GRAD")) != t.status.end());
     t = pc1500Run(m, "RADIAN");

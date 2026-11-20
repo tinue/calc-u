@@ -14,7 +14,7 @@
 
 #include "../app/SharpTraceRecorder.hpp"
 #include "../app/tests/SessionFixture.hpp"
-#include "../core/PC1600/PC1600InterfaceMachine.hpp"
+#include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "SharpDebugRig.hpp"
 #include "SharpTestSupport.hpp"
@@ -37,7 +37,7 @@ namespace dbg = calcu::debugger;
 // C000: sta (0x1000) ; nop ; bch C000.
 std::unique_ptr<calcu::machine::Machine> handOverMachine() {
     auto m = sharpdebugtest::bareMachine("PC-1600");
-    PC1600Machine& core = static_cast<PC1600InterfaceMachine&>(*m).core();
+    PC1600Machine& core = static_cast<PC1600Machine&>(*m);
     std::vector<uint8_t> lower(PC1600Memory::kBankSize, 0x00), upper(PC1600Memory::kBankSize, 0x00);
     lower[0] = 0xD3; lower[1] = 0x38; lower[2] = 0x76;
     core.loadBank0(lower.data(), lower.size(), upper.data(), upper.size());
@@ -252,9 +252,9 @@ TEST(pc1600_left_open_is_closed) {
     checkWellFormed(s);
 }
 
-// §10.11: the trace session's bytes equal the reference recorded with
-// 0.8.1's file path before the core was touched, but for the time of the
-// session start (bytes 19 to 26).
+// §10.11: the trace session's bytes equal the reference
+// (tests/golden-runs/*-basic.trace, a cold boot traced for `frames`
+// frames), but for the time of the session start (bytes 19 to 26).
 void checkReference(const char* model, int frames, const char* reference) {
     std::ifstream in(reference, std::ios::binary);
     const std::vector<std::uint8_t> want((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());

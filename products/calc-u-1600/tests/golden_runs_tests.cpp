@@ -1,41 +1,35 @@
-// Golden runs of the Sharp cores, replayed through the machine interface.
-// The .golden files were recorded from the code as imported (Calc-U-1600
-// 0.8.1) by a driver that called PC1500Machine and PC1600Machine directly,
-// before the cores were changed (the power cycle runs before the locks
-// went). A run that differs is a finding, not a new reference.
+// Golden runs of the Sharp machines, replayed through the machine
+// interface with today's code paths: the boot to key readiness (as the
+// app's start) and keys through the library's typing engine with the
+// model's typing profile (tests/support/Typing.hpp). A run that differs is
+// a finding, not a new reference.
 //
 // Each tests/golden-runs/<name>.run is a script; <name>.golden is what the
-// core did. CALCU1600_GOLDEN_RECORD=1 writes the .golden of a script that has
-// none yet; it never overwrites one.
+// machine did. CALCU1600_GOLDEN_RECORD=<folder> writes the recording of
+// every script into that folder (a draft beside the references; it never
+// writes into tests/golden-runs/).
 //
 // Script lines (# starts a comment), and what each is on the interface:
 //   model PC-1500|PC-1500A|PC-1600     rom A01|A03|A04 (PC-1500) or new|old (PC-1600)
 //   attach ce150|ce158|ce1600p         a peripheral of the BuildRequest
 //   card <file> [slot 1|2]             a bundled module, a peripheral of the BuildRequest
-//   boot                               build(), coldBoot(), the boot run (sharptest::bootRun, tests/BootRun.hpp)
-//   keys <name> ...                    taps: PC-1500 through the typing engine with the
-//                                      PC-1500 profile (4 frames down, 4 up),
-//                                      the 200 ms in all from the tap's start;
-//                                      PC-1600 keyDown, 80 ms, keyUp, 80 ms
-//   type <text>                        taps for each character (space = space)
+//   boot                               build(), coldBoot(), on to key readiness
+//   keys <name> ...                    the keys in turn through the typing engine
+//   type <text>                        the same, a key per character (space = space)
 //   press <name> / release <name>      keyDown / keyUp
 //   run <seconds>                      advance(tick rate × seconds)
 //   reset                              reset()
-//   allreset                           coldBoot() and the boot run
+//   allreset                           coldBoot(), on to key readiness
 //   powercycle [attach <peripheral>]   attach (it waits for the off point), powerCycle(),
-//                                      the boot run
+//                                      on to key readiness
 // After every line the run records the display as text with its status
 // words (displayText of readDisplay()), the sound (takeSound: samples,
 // non-zero samples, a checksum), the plotters' paper (paper-output, read
 // back into raw steps: sharp::rawPlotPoints);
 // at the end a checksum of the memory (c1600.loader-memory).
 //
-// The status words of a record taken
-// while the display is off are not compared. The old text readers read the
-// status line from its RAM even then (`> reset` in the two *-reset-allreset
-// runs: blank rows, `status DEG PRO I`); through the interface a display
-// that is off shows no indicator, so the run has `status`
-// there. Every other line, these runs' included, is compared exactly.
+// The status words of a record taken while the display is off are not
+// compared: through the interface a display that is off shows no indicator.
 
 #include <algorithm>
 #include <cstdio>
@@ -56,9 +50,7 @@
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpMachine.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
-#include "../app/SharpTyping.hpp"
 #include "SharpTestSupport.hpp"
-#include "typing/TypingEngine.hpp"
 #include "TestCards.hpp"
 #include "TestHarness.hpp"
 
@@ -102,7 +94,6 @@ struct Run {
     std::vector<std::pair<std::string, int>> cards;
     Catalogue catalogue = sharp::sharpCatalogue();
     std::unique_ptr<Machine> m;
-    uint64_t cycles = 0;
     std::string out, error;
     std::vector<size_t> statusWhileOff;
     // A paper per plotter, connected to its paper output when first seen
@@ -111,9 +102,7 @@ struct Run {
 
     bool is1600() const { return model == "PC-1600"; }
 
-    void advance(double seconds) {
-        cycles += m->advance(static_cast<uint64_t>(static_cast<double>(m->descriptor().tickRate) * seconds));
-    }
+    void advance(double seconds) { m->advance(sharptest::secondsTicks(*m, seconds)); }
 
     std::optional<VariantId> variant() const {
         if (rom.empty()) return std::nullopt;
@@ -149,48 +138,18 @@ struct Run {
         if (!built.machine) { error = built.refusal; return; }
         m = std::move(built.machine);
         m->coldBoot();
-        sharptest::bootRun(*m);
+        sharptest::runUntilKeyReady(*m);
     }
 
     void key(const std::string& name, bool down) {
-        // An ID the machine lacks was ignored by the old classes too.
-        if (down) m->keyDown(KeyId{name}); else m->keyUp(KeyId{name});
+        if (down) m->keyDown(KeyId{name}); else m->keyUp(KeyId{name});   // an ID the machine lacks is ignored
     }
-    // A tap as 0.8.1 types it: on the PC-1500 (0.8.1 had a key queue) a
-    // `key` of the typing engine with the model's profile, 4 frames down and
-    // 4 up, the machine advanced in pieces cut where the engine is due, as the
-    // machine session does; on the PC-1600 a press held 80 ms.
-    void tap(const std::string& name) {
-        if (is1600()) { key(name, true); advance(0.08); key(name, false); advance(0.08); return; }
-        // 0.8.1's queue pressed the key after the first instruction of the
-        // 200 ms advance; the engine presses where it is told to.
-        const Ticks end = m->tickCount() + static_cast<Ticks>(static_cast<double>(m->descriptor().tickRate) * 0.2);
-        cycles += m->advance(1);
-        // The PC-1500 profile as 0.8.1's queue typed: without the wait for key
-        // readiness. With it, pc1500a-ce150 differs in
-        // two cycle counts and one audio sample count after `type lprint 123`
-        // (display, paper and memory the same): a press waited for readiness
-        // there; the core is unchanged.
-        static const calcu::typing::TypingProfile asQueued = [] {
-            calcu::typing::TypingProfile p = *cu1600::typingProfile(ModelId{sharp::kPC1500A});   // the PC-1500's is the same
-            p.queuedWaitsForReadiness = false;
-            return p;
-        }();
-        calcu::typing::TypingEngine engine;
-        engine.setMachine(m.get(), &asQueued, nullptr);
-        engine.typeKeys({calcu::typing::Press{KeyId{name}}}, calcu::typing::Origin::Typed);
-        for (Ticks now = m->tickCount(); now < end; now = m->tickCount()) {
-            if (engine.nextDue(now) <= now) engine.act(*m, now, {});
-            Ticks piece = end - now;
-            const Ticks due = engine.nextDue(now);
-            if (due != calcu::sessions::kNever && due > now) piece = std::min(piece, due - now);
-            cycles += m->advance(piece);
-        }
-        if (engine.nextDue(m->tickCount()) <= m->tickCount()) engine.act(*m, m->tickCount(), {});
+    void keys(const std::vector<std::string>& ids) {
+        if (!sharptest::typeKeys(*m, ids)) error = "keys not carried out";
     }
 
     void powerCycle(const std::string& attach) {
-        bool cycle = m->readDisplay().on;   // a machine that is off only gets the change, as 0.8.1
+        bool cycle = m->readDisplay().on;   // a machine that is off only gets the change
         if (!attach.empty()) {
             std::string err;
             const char* id = attach == "ce150" ? sharp::kCE150 : attach == "ce158" ? sharp::kCE158 : sharp::kCE1600P;
@@ -200,14 +159,14 @@ struct Run {
             cycle = r.follows == AfterChange::PowerCycle;
         }
         m->powerCycle();
-        if (cycle) sharptest::bootRun(*m);
+        if (cycle) sharptest::runUntilKeyReady(*m);
     }
 
     void record(const std::string& line) {
         out += "> " + line + "\n";
         if (!m) return;
         LcdText t = displayText(*m);
-        out += "  cycles " + std::to_string(cycles) + "\n";
+        out += "  cycles " + std::to_string(m->tickCount()) + "\n";
         for (const auto& r : t.rows) out += "  lcd |" + r + "|\n";
         if (!t.poweredOn) statusWhileOff.push_back(static_cast<size_t>(std::count(out.begin(), out.end(), '\n')));
         out += "  status";
@@ -256,14 +215,20 @@ struct Run {
         }
         if (cmd == "boot") { boot(); if (error.empty()) record(line); return; }
         if (!m) { error = "boot first"; return; }
-        if (cmd == "keys") { std::string k; while (in >> k) tap(k); }
-        else if (cmd == "type") {
-            for (char c : rest()) tap(c == ' ' ? std::string("space") : std::string(1, c));
+        if (cmd == "keys") {
+            std::vector<std::string> ids;
+            std::string k;
+            while (in >> k) ids.push_back(k);
+            keys(ids);
+        } else if (cmd == "type") {
+            std::vector<std::string> ids;
+            for (char c : rest()) ids.push_back(c == ' ' ? std::string("space") : std::string(1, c));
+            keys(ids);
         }
         else if (cmd == "press" || cmd == "release") { std::string k; in >> k; key(k, cmd == "press"); }
         else if (cmd == "run") { double s = 0; in >> s; advance(s); }
         else if (cmd == "reset") { m->reset(); }
-        else if (cmd == "allreset") { m->coldBoot(); sharptest::bootRun(*m); }
+        else if (cmd == "allreset") { m->coldBoot(); sharptest::runUntilKeyReady(*m); }
         else if (cmd == "powercycle") {
             std::string word, p;
             in >> word >> p;
@@ -313,7 +278,8 @@ std::string play(const std::string& script, std::string* error, std::vector<size
 TEST(golden_runs_through_the_interface) {
     const fs::path dir = "tests/golden-runs";
     SKIP_UNLESS(testRomSet() != nullptr, "no full ROM set in roms/");
-    const bool recording = std::getenv("CALCU1600_GOLDEN_RECORD") != nullptr;
+    const char* draft = std::getenv("CALCU1600_GOLDEN_RECORD");
+    if (draft) fs::create_directories(draft);
     std::vector<fs::path> scripts;
     for (const auto& e : fs::directory_iterator(dir))
         if (e.path().extension() == ".run") scripts.push_back(e.path());
@@ -326,12 +292,11 @@ TEST(golden_runs_through_the_interface) {
         if (!error.empty()) { std::fprintf(stderr, "FAIL %s: %s\n", s.filename().string().c_str(), error.c_str()); CHECK(false); continue; }
         fs::path golden = s;
         golden.replace_extension(".golden");
-        if (recording && !fs::exists(golden)) { std::ofstream(golden, std::ios::binary) << got; continue; }
+        if (draft) std::ofstream(fs::path(draft) / golden.filename(), std::ios::binary) << got;
         if (!fs::exists(golden)) { std::fprintf(stderr, "FAIL %s: no .golden\n", s.filename().string().c_str()); CHECK(false); continue; }
         const std::string want = readText(golden);
         std::istringstream a(want), b(got);
         std::string la, lb;
-        bool same = true;
         for (size_t n = 0;; ++n) {
             const bool ea = !std::getline(a, la), eb = !std::getline(b, lb);
             if (ea && eb) break;
@@ -339,13 +304,12 @@ TEST(golden_runs_through_the_interface) {
                                  std::find(skip.begin(), skip.end(), n) != skip.end();
             if (excused) continue;
             if (ea || eb || la != lb) {
-                std::fprintf(stderr, "  %s:%zu differs\n    golden: %s\n    run:    %s\n", golden.filename().string().c_str(), n + 1,
-                             la.c_str(), lb.c_str());
-                same = false;
+                std::fprintf(stderr, "  %s:%zu differs\n    golden: %s\n    run:    %s\n", golden.filename().string().c_str(),
+                             n + 1, la.c_str(), lb.c_str());
+                CHECK(false);
                 break;
             }
         }
-        CHECK(same);
     }
 }
 

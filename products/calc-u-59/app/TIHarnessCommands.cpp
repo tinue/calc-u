@@ -287,7 +287,7 @@ Reply lineTimesCmd(CommandContext& c) {
     std::string error;
     const auto limit = limitOf(words(c.line.argText), 4000, rate, &error);
     if (!limit) return refusedReply(error);
-    const Ticks slice = 200 * kInstruction;   // release 2.3.0's tool's sampling
+    const Ticks slice = 200 * kInstruction;   // a printed line takes far longer: a line's time is exact to 200 instructions
     const Ticks quietNeeded = static_cast<Ticks>(15) * rate;
     const Ticks t0 = m->tickCount();
     std::size_t seen = paperLines(c).size();
@@ -370,7 +370,7 @@ Reply runTimeCmd(CommandContext& c) {
     machine::Machine* m = machineOf(c);
     if (!m) return refusedReply(kNoMachine);
     const std::uint32_t rate = rateOf(*m);
-    const Ticks slice = 100 * kInstruction;   // release 2.3.0's tool's sampling
+    const Ticks slice = 100 * kInstruction;   // fine enough for a run's end, coarse enough to be quick
     const Ticks limit = static_cast<Ticks>(4000) * rate;
     const Ticks settleTicks = rate / 4;          // stopped for a quarter second, not a short gap
     std::vector<std::string> lines;
@@ -530,8 +530,8 @@ Reply stepTraceCmd(CommandContext& c) {
 
 // ── `c59 step-cost <keycode>...` ──
 
-// stepcost.py of 2.3.0 (`:18-19`): the SST method of fast mode and GTO 008 R/S,
-// as matrix codes (row × 10 + column).
+// The entry of the program to measure: the SST method of fast mode and
+// GTO 008 R/S, as matrix codes (row × 10 + column).
 constexpr std::uint8_t kFastEntry[] = {82, 85, 83, 52, 82, 83, 94, 95, 61, 92, 92, 62, 41, 92, 42};
 constexpr std::uint8_t kNormalEntry[] = {61, 92, 92, 63, 91};
 constexpr int kReps = 30;
@@ -560,7 +560,7 @@ CostRun measure(CommandContext& c, const std::vector<std::uint8_t>& body, int re
     prog.push_back(81);
     if (static_cast<int>(prog.size()) - 1 > pm->lastStep()) return {std::nullopt, "The program does not fit into the memory."};
     for (std::size_t i = 0; i < prog.size(); ++i) pm->writeStep(static_cast<int>(i), prog[i]);
-    // The registers of 2.3.0's tool (stepcost.py:10-11).
+    // The registers the measured program starts with.
     const std::pair<int, const char*> regs[] = {{0, "10"}, {10, "2.000311000312"}, {11, "2.000311000312"},
                                                 {12, "2.000311000312"}, {22, "98.99"}, {4, "1000"}, {1, "5"}};
     for (const auto& [n, value] : regs)
@@ -610,8 +610,7 @@ Reply stepCostCmd(CommandContext& c) {
     machine::Machine* m = machineOf(c);
     if (!m) return refusedReply(kNoMachine);
     const std::uint32_t rate = rateOf(*m);
-    // The entry keys of 2.3.0's tool are pressed as on a calculator that
-    // waits for keys; pressed into a running program they measure nothing.
+    // The entry keys are pressed as on a calculator that waits for keys; pressed into a running program they measure nothing.
     if (noteRun(*m).running) return refusedReply("A program runs: let it end first (`wait`).");
     const bool printer = hasPrinter(*m);
     std::vector<std::string> lines;

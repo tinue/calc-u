@@ -1,71 +1,71 @@
 > boot
-  cycles 0
+  cycles 541779
   lcd |NEW0? :CHECK|
   status DEG PRO I
-  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+  audio samples=20004 nonzero=798 sum=f57489aeb4d6bab4
 > keys cl
-  cycles 260000
+  cycles 715107
   lcd |>|
   status DEG PRO I
-  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+  audio samples=6399 nonzero=0 sum=ce1df1d22d9eaacb
 > type new0
-  cycles 1300000
+  cycles 1408437
   lcd |NEW0_|
   status DEG PRO I
-  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
+  audio samples=25600 nonzero=0 sum=f302adc2776e6383
 > keys enter
-  cycles 1560000
+  cycles 1581765
   lcd |>|
   status DEG PRO I
-  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
 > run 0.5
-  cycles 2210000
+  cycles 2231765
   lcd |>|
   status DEG PRO I
   audio samples=24000 nonzero=0 sum=95e7975ad1774d83
 > type 10 print 2*3
-  cycles 5330004
+  cycles 4311738
   lcd |10 PRINT 2*3_|
   status DEG PRO I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
 > keys enter
-  cycles 5590004
+  cycles 4485072
   lcd |10:PRINT 2*3|
   status DEG PRO I
-  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
 > keys mode
-  cycles 5850004
+  cycles 4658400
   lcd |>|
   status DEG RUN I
-  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
 > type run
-  cycles 6630004
+  cycles 5178384
   lcd |RUN_|
   status DEG RUN I
-  audio samples=28800 nonzero=0 sum=3b048dc78f408f83
+  audio samples=19199 nonzero=0 sum=68b3093c0d87dacb
 > keys enter
-  cycles 6890004
+  cycles 5351712
   lcd |                         6|
   status DEG RUN I
-  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
 > run 1
-  cycles 8190004
+  cycles 6651712
   lcd |                         6|
   status DEG RUN I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
 > type list
-  cycles 9230004
+  cycles 7345041
   lcd |LIST_|
   status DEG RUN I
-  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
+  audio samples=25600 nonzero=0 sum=f302adc2776e6383
 > keys enter
-  cycles 9490008
+  cycles 7518377
   lcd | ERROR 26|
   status DEG RUN I
-  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+  audio samples=6400 nonzero=0 sum=ac4b565a55715b83
 > run 0.5
-  cycles 10140008
+  cycles 8168377
   lcd | ERROR 26|
   status DEG RUN I
   audio samples=24000 nonzero=0 sum=95e7975ad1774d83
-= me0 sum=21399fe992e07494
+= me0 sum=281d5aa30e0e222e

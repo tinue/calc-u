@@ -1,6 +1,6 @@
 // Calc-U-1600's keys and sections of the preset format on the library's
 // reader and engine -- `program:`, `host-drive:`, `slot-N-rom:`, `bus-rom:`,
-// `debug:` -- their errors, the cases of the old preset tests, the upgraded
+// `debug:` -- their errors and edge cases, the upgraded
 // presets and the bundle file. Read checks run the product's rules on
 // presets::readPreset; loads run the product's harness entry in emulated
 // time. ROM-gated cases SKIP without roms/.
@@ -461,7 +461,7 @@ TEST(debug_block_of_for_the_debugger) {
 TEST(blocks_by_the_file_syntax) {
     PresetReadRig r;
     r.write("b.bin", std::string(0x10, '\0'));
-    // Every block form the old tests used: block maps, flow maps, flow lists,
+    // Every block form: block maps, flow maps, flow lists,
     // comments, quoted text, hex numbers in each notation.
     CHECK(r.ok(kPc1600 + "debug:   # the project\n  listings: [a.lst, \"b c.lst\"]\n  symbols:\n    - { path: s.sym, cpu: lh5803, me: 1 }\n"
                          "  program: { bin: x.bin, address: 0xC0C5, entry: $C0C5 }\n"
@@ -474,7 +474,7 @@ TEST(mistake_refused_without_debugger) {
     CHECK(has(h.load(kPc1600 + "debug:\n  after: later\n"), "refused: "));
 }
 
-// ── Errors, and the old tests' cases ──────────────────────────────────────
+// ── Errors and edge cases ─────────────────────────────────────────────────
 
 TEST(line_key_and_expected_debug_and_bus_rom_prefixed) {
     PresetReadRig r;
@@ -568,7 +568,7 @@ TEST(bundle_lists_todays_entries) {
     if (!entries) return;
     std::vector<std::string> got;
     for (const auto& e : *entries) got.push_back((e.startup ? "startup " : e.group + " ") + e.preset);
-    // examples/bundled.yaml:12-31 of 0.8.1, plus startup/default-pc1600.
+    // The bundle's groups and presets in its order.
     const std::vector<std::string> want = {"startup startup/default-pc1500.pc1500",
                                            "startup startup/default-pc1500a.pc1500a",
                                            "startup startup/default-pc1600.pc1600",

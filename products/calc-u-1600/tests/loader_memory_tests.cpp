@@ -70,8 +70,8 @@ TEST(mode_and_area_pc1600) {
     CHECK(memoryOf(*m).mode() == LoaderMemory::Mode::Mode0);
     CHECK(memoryOf(*m).programArea() == 0);
     tap(*m, "mode");   // PRO, as a preset does before MODE1
-    typeLine(*m, "new", 3);
-    typeLine(*m, "mode1", 5);
+    typeLine(*m, "NEW", 3);
+    typeLine(*m, "MODE1", 5);
     CHECK(memoryOf(*m).mode() == LoaderMemory::Mode::Mode1);
 }
 

@@ -9,12 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "support/PC1500BasicTyper.hpp"
-#include "../core/PC1500/PC1500Machine.hpp"
-#include "support/PC1600BasicTyper.hpp"
-#include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600ProgramPlacement.hpp"
-#include "TestRoms.hpp"
 #include "Machine/SharpProductKinds.hpp"
 #include "../app/tests/SessionFixture.hpp"
 #include "TestHarness.hpp"
@@ -79,41 +74,6 @@ bool indicator(SessionFixture& f, const char* name) {
 
 const char* const kProgram = "10 A=1\n20 PRINT A\n30 DATA 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20\n40 END\n";
 
-// The old typer's memory on a core machine of the same model, the oracle
-// (the memory equals the old typer's).
-std::vector<std::uint8_t> oldTyperBytes1500(const std::string& text) {
-    PC1500Machine m(PC1500Variant::PC1500A);
-    if (!m.loadROMFile("roms/PC-1500_A04.ROM")) return {};
-    m.reset();
-    m.runCycles(static_cast<uint64_t>(1300000.0 * 2));
-    waitIdle(m, static_cast<uint64_t>(1300000.0 * 5));
-    tapKey(m, "cl");
-    std::string err;
-    typeLine(m, "NEW0", true, &err);
-    if (!typeBasicProgramText(m, text).ok) return {};
-    std::vector<std::uint8_t> out;
-    const std::uint16_t st = static_cast<std::uint16_t>(m.memory().peek(0x7865) << 8 | m.memory().peek(0x7866));
-    const std::uint16_t end = static_cast<std::uint16_t>(m.memory().peek(0x7867) << 8 | m.memory().peek(0x7868));
-    for (std::uint32_t a = st; a < end; ++a) out.push_back(m.memory().peek(static_cast<std::uint16_t>(a)));
-    return out;
-}
-
-std::vector<std::uint8_t> oldTyperBytes1600(const std::string& text) {
-    PC1600Machine m;
-    if (!bootPC1600(m)) return {};
-    tapKey(m, "mode");
-    waitIdle(m, PC1600Machine::kTStateHz);
-    std::string err;
-    typeLine(m, "NEW", true, &err);
-    waitIdle(m, PC1600Machine::kTStateHz);
-    if (!typeBasicProgramText(m, text).ok) return {};
-    std::vector<std::uint8_t> out;
-    const std::uint16_t st = pc1600::lh5803ToZ80(static_cast<std::uint16_t>(m.debugPeek(0xF865) << 8 | m.debugPeek(0xF866)));
-    const std::uint16_t end = pc1600::lh5803ToZ80(static_cast<std::uint16_t>(m.debugPeek(0xF867) << 8 | m.debugPeek(0xF868)));
-    for (std::uint32_t a = st; a < end; ++a) out.push_back(m.debugPeek(static_cast<std::uint16_t>(a)));
-    return out;
-}
-
 TEST(lines_typed_with_enter_by_engine_pc1500) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
@@ -133,19 +93,6 @@ TEST(lines_typed_with_enter_by_engine_pc1600) {
     CHECK(r.done);
     if (!r.done) std::fprintf(stderr, "  %s\n", r.reason.c_str());
     CHECK(!programBytes(memory(f)).empty());
-}
-
-TEST(memory_equals_old_typer) {
-    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    for (const char* model : {"PC-1500A", "PC-1600"}) {
-        SessionFixture f;
-        CHECK(ready(f, model));
-        CHECK(f.run(c::kTypeBasic, listing(kProgram)).done);
-        const std::vector<std::uint8_t> oracle =
-            std::string(model) == "PC-1600" ? oldTyperBytes1600(kProgram) : oldTyperBytes1500(kProgram);
-        CHECK(!oracle.empty());
-        CHECK(programBytes(memory(f)) == oracle);
-    }
 }
 
 TEST(empty_line_left_out) {
@@ -234,7 +181,11 @@ TEST(preset_typed_program_through_engine) {
                "    10 A=1\n    20 PRINT A\n    30 DATA 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20\n    40 END\n";
     }
     CHECK(f.ok(calcu::presets::kLoadPresetCommand, Value::object({{"ref", preset.generic_string()}})));
-    CHECK(programBytes(memory(f)) == oldTyperBytes1500(kProgram));
+    // The same bytes as the command's.
+    SessionFixture other;
+    CHECK(ready(other, "PC-1500A"));
+    CHECK(other.run(c::kTypeBasic, listing(kProgram)).done);
+    CHECK(!programBytes(memory(other)).empty() && programBytes(memory(f)) == programBytes(memory(other)));
 }
 
 } // namespace

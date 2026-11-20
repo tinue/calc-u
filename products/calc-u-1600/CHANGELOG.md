@@ -259,6 +259,23 @@
   values, the worker's configuration too (`calc-engine-worker.js` is
   written into `dist/`). Another output folder is `CALCU_WEB_DIST` (was
   `CALCU1600_WEB_DIST`).
+- **Core (developers):** one class per model. `PC1500Machine` and
+  `PC1600Machine` are the `calcu::machine::Machine` themselves (derived
+  from `sharp::SharpMachine`); `PC1500InterfaceMachine` and
+  `PC1600InterfaceMachine` are gone. Their core reset and ALL RESET are
+  the machine's `reset()` and `coldBoot()`.
+- **Core tests (developers):** the old typers (`PC1500BasicTyper`,
+  `PC1600BasicTyper`, `namespace job`, `tests/BootRun.hpp`,
+  `tests/ScriptedSetup.hpp`) are gone; the core tests type through the
+  library's typing engine with the model's profile and wait by the
+  product's idle rule (`tests/support/Typing.hpp`). The golden runs boot to
+  key readiness and type through the engine. `PC1600Keyboard`'s scan count is gone from the
+  machine state (a state saved before cannot be restored).
+- **Tests (developers):** the example references are recorded from this
+  release's harness (`tests/references/examples/`: the `display-text`, the
+  `c1600 inspect` pointers and dumps, `paper marks`; every example), the
+  golden runs with today's boot and typing; the 0.8.1 references, their
+  exceptions and the paper-reply converter are gone.
 
 ### Fixed
 

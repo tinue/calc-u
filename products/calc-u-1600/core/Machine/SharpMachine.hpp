@@ -16,11 +16,10 @@
 #include "machine/ProductData.hpp"
 #include "peripherals/Controls.hpp"
 
-// What the two Sharp machines behind the machine interface share: the tick count, the power cycle sequence, the keys,
-// places and attach, the capability list. PC1500InterfaceMachine and
-// PC1600InterfaceMachine fill in the model's part over the old class each
-// owns. Nothing above the core names any of these classes: they are
-// reached as calcu::machine::Machine.
+// What the two Sharp machines share: the power cycle sequence, the keys,
+// places and attach, the capability list. PC1500Machine and PC1600Machine
+// fill in the model's part. Nothing above the core names any of these
+// classes: they are reached as calcu::machine::Machine.
 //
 // Attach on a running machine: plugged() and the capabilities
 // show the change at once; the bus changes at the off point of the power
@@ -111,18 +110,6 @@ public:
     std::vector<std::uint8_t> saveState() const;
     std::optional<std::string> restoreState(const std::vector<std::uint8_t>&);
 
-    // ---- For the core and its tests (tests/BootRun.hpp, SharpTestSupport.hpp) ----
-    bool powerCycleActive() const { return m_sequence.active(); }
-    // Ticks to the sequence's next phase change: an advance of exactly this
-    // runs the phase as one run of the core.
-    calcu::machine::Ticks powerCyclePhaseTicks() const { return m_sequence.remaining(); }
-    // Runs `f` at the off point of the coming power cycle, after its
-    // changes, or now when no change waits.
-    void atOffPoint(std::function<void()> f);
-    // The module in a slot as plugged() shows it: one that waits for the off
-    // point already, one that waits to come out no longer.
-    ExpansionCard* moduleNow(const calcu::machine::PlaceName&);
-
 protected:
     SharpMachine(calcu::machine::MachineDescriptor d, std::optional<calcu::machine::VariantId> v)
         : m_descriptor(std::move(d)), m_variant(std::move(v)),
@@ -182,6 +169,9 @@ protected:
     calcu::peripherals::ControlTable* switchesAt(const calcu::machine::PlaceName&);
 
 private:
+    // The module in a slot as plugged() shows it: one that waits for the off
+    // point already, one that waits to come out no longer.
+    ExpansionCard* moduleNow(const calcu::machine::PlaceName&);
     // runCore(), or the debug targets' run while a check is on (it ends
     // early at a stop: stopPending()).
     calcu::machine::Ticks runChecked(calcu::machine::Ticks);
@@ -203,7 +193,6 @@ private:
     PowerCycleSequence m_sequence;
     std::vector<calcu::machine::PlugEntry> m_plugged;   // what plugged() gives, by place
     std::vector<std::function<void()>> m_waiting;       // changes for the off point
-    std::vector<std::function<void()>> m_afterWaiting;  // atOffPoint()
     // The modules of the waiting changes, by slot (nullptr: one comes out).
     std::vector<std::pair<calcu::machine::PlaceName, ExpansionCard*>> m_waitingModules;
     std::vector<std::pair<calcu::machine::PlaceName, std::unique_ptr<calcu::peripherals::ControlTable>>> m_switches;

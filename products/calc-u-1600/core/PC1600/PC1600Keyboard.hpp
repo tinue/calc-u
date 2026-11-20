@@ -70,23 +70,14 @@ public:
     /// (KS0-KS7 and/or PB6).
     uint8_t scan(uint8_t opaDriveLines, bool pb6Active) const;
 
-    /// Total matrix strobes since construction -- bumped on every `scan()`
-    /// (i.e. every I/O port 37H sense read). Not hardware; a headless probe
-    /// for "the ROM's keyboard-poll loop is running" (it sweeps the whole
-    /// matrix every idle-loop pass, so this races ahead once that loop
-    /// starts, and barely moves while the ROM is still in boot / printer
-    /// init). See PC1600PresetLoader's settle-before-keys logic.
-    uint64_t scanCount() const { return m_scanCount; }
-
     /// The machine state (Machine/StateRecords.hpp).
     template <class Io>
     void stateIo(Io& io) {
-        io(m_keys)(m_scanCount);
+        io(m_keys);
     }
 
 private:
     static constexpr int kStrobes = 9; // KS0-KS7 + PB6
     static constexpr int kSenseBits = 8;
     std::array<std::array<bool, kSenseBits>, kStrobes> m_keys{};
-    mutable uint64_t m_scanCount = 0;
 };

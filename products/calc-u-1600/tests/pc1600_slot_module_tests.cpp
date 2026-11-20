@@ -215,7 +215,7 @@ TEST(test_boot_with_ce155_in_slot1_is_stable) {
     auto ce155 = card("ce155.module.yaml", CardHost::PC1600Slot1);
     if (!ce155) return;
     m.attachSlot1Card(std::move(ce155));
-    m.allReset();
+    m.coldBoot();
     // Past the boot sequence: about 2M T-states, after which the PC
     // settles into a stable set.
     m.runCycles(PC1600Machine::kTStateHz * 2);
@@ -377,7 +377,7 @@ TEST(test_trigger_latch_modules_in_slot2_contribute_full_16k) {
         auto m = std::make_unique<PC1600Machine>();
         if (!loadPC1600Roms(*m)) return nullptr;
         if (card) m->attachSlot2Card(std::move(card));
-        m->allReset();
+        m->coldBoot();
         m->runCycles(PC1600Machine::kTStateHz * 4);
         return m;
     };
@@ -411,8 +411,8 @@ TEST(test_mode1_xpeek_maps_program_bank_via_lh5803_p_bank) {
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     for (const char* line : {"MODE 1", "XPOKE&C5,&55", "A=XPEEK&C5", "XPOKE&C6,A"}) {
         std::string err;
-        CHECK(typeLine(m, line, /*pressEnter=*/true, &err));
-        waitUntilBasicIdle(m, 60ull * PC1600Machine::kTStateHz);
+        CHECK(sharptest::typeLine(m, line));
+        sharptest::runUntilFinished(m, double(60ull * PC1600Machine::kTStateHz) / m.descriptor().tickRate);
     }
     selectPageCBank(m, 2);
     CHECK(m.memory().read(0x80C5) == 0x55);

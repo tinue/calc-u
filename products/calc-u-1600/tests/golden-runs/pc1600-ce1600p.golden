@@ -1,5 +1,5 @@
 > boot
-  cycles 0
+  cycles 27269990
   lcd |>|
   lcd ||
   lcd ||
@@ -8,7 +8,7 @@
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
   paper CE-1600P points=1 sum=826ec6d8f2444941
 > type lprint 123
-  cycles 5728061
+  cycles 32043294
   lcd |LPRINT 123|
   lcd ||
   lcd ||
@@ -17,16 +17,16 @@
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
   paper CE-1600P points=1 sum=826ec6d8f2444941
 > keys enter
-  cycles 6300867
+  cycles 32997993
   lcd |LPRINT 123|
   lcd ||
   lcd ||
   lcd ||
   status BUSY DEG RUN I
-  audio samples=7680 nonzero=0 sum=4f9197d17adbd383
+  audio samples=12801 nonzero=0 sum=eccbbb5fa21ce8fb
   paper CE-1600P points=1 sum=826ec6d8f2444941
 > run 3
-  cycles 17040868
+  cycles 43737996
   lcd |LPRINT 123|
   lcd |>|
   lcd ||
@@ -34,5 +34,5 @@
   status DEG RUN I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
   paper CE-1600P points=218 sum=ea0f7a5f0cffc7f3
-= internal ram sum=63d48c82032edd03
-= z80 view sum=ba846e6b6a6cad52
+= internal ram sum=64dc942a787d2262
+= z80 view sum=5e1f098aa6fd7083

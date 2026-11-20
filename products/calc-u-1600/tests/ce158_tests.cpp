@@ -18,7 +18,7 @@
 #include "support/RawPlotPoints.hpp"
 #include "../core/Connector/PC1500SignalDecode.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
-#include "ScriptedSetup.hpp"
+#include "support/Typing.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestRoms.hpp"
 #include "FakeSerialLink.hpp"
@@ -300,21 +300,20 @@ std::string text(const std::vector<uint8_t>& bytes) { return std::string(bytes.b
 // CE-158 prints its line, OPN hands LPRINT back to the CE-150.
 TEST(test_rom_lprint_centronics_with_ce150_chained) {
     if (!haveRoms(__func__)) return;
-    // What the preset of 0.8.1 did (PC-1500A, CE-150, CE-158): typed on
-    // the old class.
+    // A PC-1500A with the CE-150 and the CE-158, typed on the machine class.
     PC1500Machine machine(PC1500Variant::PC1500A);
     std::string err;
     CHECK(presetroms::loadPC1500Rom(machine, "A04", testPresetRoms(), &err));
     CHECK(presetroms::attachCE150(machine, testPresetRoms(), &err));
     CHECK(presetroms::attachCE158(machine, testPresetRoms(), &err));
-    scripted::bootPC1500(machine);
-    tapKey(machine, "cl");
-    CHECK(scripted::type(machine, "NEW0"));
-    CHECK(scripted::program(machine, "10 OPN \"LPRT\"\n20 LPRINT \"HELLO CE-158\"\n30 OPN\n40 LPRINT \"CE150\"\n"));
-    tapKey(machine, "cl");
-    tapKey(machine, "mode");
-    CHECK(scripted::type(machine, "RUN"));
-    scripted::untilIdle(machine, 3600);
+    sharptest::bootToPrompt(machine);
+    sharptest::tap(machine, "cl");
+    CHECK(sharptest::typeLine(machine, "NEW0"));
+    CHECK(sharptest::typeProgram(machine, "10 OPN \"LPRT\"\n20 LPRINT \"HELLO CE-158\"\n30 OPN\n40 LPRINT \"CE150\"\n"));
+    sharptest::tap(machine, "cl");
+    sharptest::tap(machine, "mode");
+    CHECK(sharptest::typeLine(machine, "RUN"));
+    sharptest::runUntilFinished(machine, 3600);
     CHECK(machine.ce150Attached() && machine.ce158Attached());
     const std::string printed = text(machine.drainCE158ParallelOutput());
     // The parallel port's power-on end code is LF (CONSOLE 80,1).
@@ -336,14 +335,14 @@ TEST(test_rom_serial_lprint_and_input) {
     link.armed = false;
     link.rx = {'A', 'B', 'C', '1', '2', '3', '\r'};
     machine.setCE158SerialLink(&link);
-    scripted::bootPC1500(machine);
-    tapKey(machine, "cl");
-    CHECK(scripted::type(machine, "NEW0"));
-    CHECK(scripted::program(machine, "10 SETDEV PO\n20 OUTSTAT 0\n30 LPRINT \"SERIAL OUT\"\n"
+    sharptest::bootToPrompt(machine);
+    sharptest::tap(machine, "cl");
+    CHECK(sharptest::typeLine(machine, "NEW0"));
+    CHECK(sharptest::typeProgram(machine, "10 SETDEV PO\n20 OUTSTAT 0\n30 LPRINT \"SERIAL OUT\"\n"
                                      "40 SETDEV KI\n50 INPUT A$\n60 SETDEV\n70 OPN \"LPRT\":LPRINT \"GOT \";A$\n"));
-    tapKey(machine, "cl");
-    tapKey(machine, "mode");
-    CHECK(typeLine(machine, "RUN", true, &err));
+    sharptest::tap(machine, "cl");
+    sharptest::tap(machine, "mode");
+    CHECK(sharptest::typeLine(machine, "RUN"));
     machine.runCycles(1300000); // let INPUT start waiting
     CHECK(text(link.tx) == "SERIAL OUT\r");
     link.armed = true;
@@ -415,17 +414,16 @@ bool havePC1600Roms(const char* test) {
     return false;
 }
 
-// A PC-1600 with the CE-158, NEW, MODE1, `program` typed, RUN: what the
-// preset of 0.8.1 did, typed on the old class.
+// A PC-1600 with the CE-158, NEW, MODE1, `program` typed, RUN.
 bool runPC1600Program(PC1600Machine& machine, const std::string& program) {
     std::string err;
     if (!presetroms::attachCE158(machine, testPresetRoms(), &err)) return false;
-    scripted::bootPC1600(machine);
-    tapKey(machine, "mode");
-    if (!scripted::type(machine, "NEW") || !scripted::type(machine, "MODE1")) return false;
-    if (!scripted::program(machine, program)) return false;
-    tapKey(machine, "mode");
-    return typeLine(machine, "RUN", true, &err);
+    sharptest::bootToPrompt(machine);
+    sharptest::tap(machine, "mode");
+    if (!sharptest::typeLine(machine, "NEW") || !sharptest::typeLine(machine, "MODE1")) return false;
+    if (!sharptest::typeProgram(machine, program)) return false;
+    sharptest::tap(machine, "mode");
+    return sharptest::typeLine(machine, "RUN");
 }
 
 // MODE 1: LPRINT through the CE-158's parallel port, then (SETDEV PO) its
@@ -439,7 +437,7 @@ TEST(test_pc1600_rom_mode1_printing) {
     machine.setCE158SerialLink(&link);
     CHECK(runPC1600Program(machine, "10 OPN \"LPRT\"\n20 LPRINT \"HELLO 1600\"\n30 OPN\n"
                                     "40 SETDEV PO\n50 OUTSTAT 0\n60 LPRINT \"SERIAL 1600\"\n"));
-    scripted::untilIdle(machine, 3600);
+    sharptest::runUntilFinished(machine, 3600);
     CHECK(machine.ce158Attached());
     CHECK(text(machine.drainCE158ParallelOutput()) == "HELLO 1600\n");
     CHECK(text(link.tx) == "SERIAL 1600\r");
@@ -477,7 +475,7 @@ TEST(test_pc1600_lhnmio_trap_runs_ce158_shift) {
     std::string err;
     CHECK(presetroms::loadPC1600RomSet(m, testPresetRoms(), "new", &err));
     CHECK(presetroms::attachCE158(m, testPresetRoms(), &err));
-    m.allReset();
+    m.coldBoot();
     m.runCycles(PC1600Machine::kTStateHz); // LCD on
     auto& mem = m.lh5803Memory();
     auto& cpu = m.lh5803();

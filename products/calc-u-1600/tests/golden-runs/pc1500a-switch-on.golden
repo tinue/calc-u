@@ -1,11 +1,11 @@
 > boot
-  cycles 0
+  cycles 541779
   lcd |NEW0? :CHECK|
   status DEG PRO I
-  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+  audio samples=20004 nonzero=798 sum=f57489aeb4d6bab4
 > run 1
-  cycles 1300000
+  cycles 1841779
   lcd |NEW0? :CHECK|
   status DEG PRO I
   audio samples=48000 nonzero=0 sum=266b3312cb1d9783
-= me0 sum=77851bacd3bec455
+= me0 sum=0afe46ed96db8f9b

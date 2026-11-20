@@ -1,6 +1,6 @@
 // The harness's Calc-U-1600 entry built through app/SharpAppPart,
-// `display-text` with the cursor cell, and every function of v0.8.1's
-// command-line tools (pc1500_cli, pc1600_cli) through `calcu`.
+// `display-text` with the cursor cell, and the product's functions through
+// `calcu`, one block each.
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -154,9 +154,10 @@ TEST(cursor_cell_read_as_text) {
     }
 }
 
-// ── The functions of v0.8.1's command-line tools ────────────────────────
+// ── The product's functions through the harness ─────────────────────────
 
-// One block per function of v0.8.1's `pc1500_cli` and `pc1600_cli` through
+// One block per function of the product's harness (models, peripherals,
+// media, the serial ports, the loaders, paper, the machine state) through
 // `calcu`, on the model it needs, with its reply.
 TEST(every_function_of_the_table) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
@@ -168,33 +169,33 @@ TEST(every_function_of_the_table) {
     CHECK(r.ok());
     if (!r.ok()) return;
 
-    // --preset <file>: build a machine from a preset and run it.
+    // Build a machine from a preset and run it.
     CHECK_EQ(r.line("preset examples:basic/hanoi.pc1600"), std::string("done\n"));
     CHECK(starts(r.line("wait"), "done "));   // settled at the first question (the title shows during WAIT 100)
     CHECK_EQ(r.line("expect Tower Height"), std::string("done\n"));
-    // --check-preset <file>…, tools/check_presets.sh: presets read and checked.
+    // Presets read and checked.
     CHECK(starts(r.line("check-preset examples/basic/hanoi.pc1600 examples/interfaces/ce158_demo.pc1500a"), "done"));
-    // --rom, --ce1600p-rom: the variants.
+    // The variants.
     CHECK_EQ(r.line("variant Old"), std::string("done\n"));
     CHECK_EQ(r.line("attach printer CE-1600P:old"), std::string("done\n"));
     CHECK(has(r.line("capabilities"), "place printer CE-1600P:Old\n"));
-    // --run-after <ticks>, the run for a number of ticks: emulated time.
+    // A run for a number of ticks: emulated time.
     CHECK(starts(r.line("wait 1s"), "done 2\nticks: "));
-    // --lcd-text: the display as text.
+    // The display as text.
     CHECK(has(r.line("display-text"), "\nindicators: "));
-    // --lcd-png: the display as an image, Copy Screen's.
+    // The display as an image, Copy Screen's.
     CHECK_EQ(r.line("screenshot shot.png"), std::string("done\n"));
     CHECK(fs::exists(out.path() / "shot.png"));
-    // --wav <file>: the buzzer of the run as a WAV (`audio`).
+    // The buzzer of the run as a WAV (`audio`).
     CHECK_EQ(r.line("audio " + (out.path() / "buzz.wav").string()), std::string("done\n"));
     r.line("key cl");
     r.line("type BEEP 1");
     r.line("wait 1s");
-    // --dump-mem <address>,<length>: memory as a hex dump.
+    // Memory as a hex dump.
     CHECK(starts(r.line("peek SC7852 memory 0xF865 2"), "done 2\n0xf865: 0x"));
-    // --inspect <view>: an INSPECTOR view.
+    // An INSPECTOR view.
     CHECK(starts(r.line("c1600 inspect pointers"), "done "));
-    // --dump-basic: the BASIC pointers and the program area, two INSPECTOR views.
+    // The BASIC pointers and the program area, two INSPECTOR views.
     CHECK(has(r.line("c1600 inspect pointers"), "BASPRG_ST"));
     CHECK(starts(r.line("c1600 inspect dump-basic"), "done "));
     // The summary after a run: registers, the last instructions, where the
@@ -207,19 +208,19 @@ TEST(every_function_of_the_table) {
     r.line("wait 100ms");
     CHECK(starts(r.line("profile report 3"), "done "));
     CHECK_EQ(r.line("profile off"), std::string("done\n"));
-    // --tape-in, --tape-out: a cassette played and recorded.
+    // A cassette played and recorded.
     CHECK_EQ(r.line("c1600 cassette record " + (out.path() / "tape.wav").string()), std::string("done\n"));
     CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
     CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
     CHECK_EQ(r.line("cassette { name: Empty }"), std::string("done\n"));   // the bundled blank tape
     CHECK(starts(r.line("c1600 cassette status"), "done 2\ncassette: recording "));
-    // --save-dir, --modules-dir: the save folder; the bundled module
+    // The save folder; the bundled module
     // definitions.
     CHECK_EQ(r.line("saveas { place: cassette, as: live, name: Mine }"), std::string("done\n"));
     CHECK(fs::exists(save.path() / "Cassettes" / "Mine.cassette.yaml"));
     CHECK(has(r.line("media"), "\"CE-1600M\""));
 
-    // --ce158-pty, --ce158-rx, --ce158-rx-hold, --ce158-tx: the CE-158's
+    // The CE-158's
     // serial port.
     calcu::testing::TempFolder dir("harness-cli-functions-ce158");
     { std::ofstream(dir.path() / "in.txt", std::ios::binary) << "HELLO\r"; }

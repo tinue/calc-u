@@ -4,13 +4,16 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
 
 #include "../Connector/BusRomCard.hpp"
 #include "../CPU/DebugStop.hpp"
 #include "../CPU/LH5801/LH5801.hpp"
+#include "../Machine/SharpMachine.hpp"
 #include "../Machine/StateRecords.hpp"
+#include "../Serial/SerialPortCapability.hpp"
 #include "../Connector/Ce150Card.hpp"
 #include "../Connector/Ce158Port.hpp"
 #include "../Connector/ExpansionConnector.hpp"
@@ -21,34 +24,34 @@
 #include "PC1500Memory.hpp"
 #include "PC1500TraceFile.hpp"
 
-// ── PC-1500A machine facade ──────────────────────────────────────────────
+// A PC-1500 or PC-1500A: the core and the calcu::machine::Machine in one
+// class. Ticks are LH5801 cycles at 1,300,000 per second. It owns a
+// value-type CPU + memory pair: step()/pressKey()/display() plus the
+// trace/breakpoint passthrough the debugger builds on. The ON key isn't in
+// the named-key vocabulary: it is wired to the CPU's BFI power-on latch, not
+// the matrix (setOnKeyPressed()).
 //
-// Standalone PC-1500/1500A core -- not a subset of the PC-1600 dual-CPU
-// core. Owns a value-type CPU + memory pair: step()/reset()/pressKey()/
-// display() plus the trace/breakpoint passthrough the debugger builds on.
-// The ON key isn't in the named-key vocabulary: it is wired to the CPU's
-// BFI power-on latch, not the matrix (setOnKeyPressed()).
-//
-// Threading: single-threaded, no lock. Everything above the
-// core reaches it through PC1500InterfaceMachine (calcu::machine::Machine);
-// this class stays the core's own, for the core and its tests.
-class PC1500Machine {
+// Threading: single-threaded, no lock. Above the core it is reached only as
+// a calcu::machine::Machine (built by SharpMachineBuilder; the CTest
+// CalcU1600MachineIncludeCheck keeps its name out of app/ and the frontends).
+class PC1500Machine final : public sharp::SharpMachine {
 public:
     /// LH5801 cycles per second -- the unit runCycles() counts (PC1500Clocks.hpp).
     static constexpr uint32_t kCpuHz = kPC1500CpuHz;
 
-    explicit PC1500Machine(PC1500Variant variant = PC1500Variant::PC1500A);
+    PC1500Machine(const calcu::machine::MachineDescriptor&, const calcu::machine::VariantId&);
+    // The model's descriptor of sharpCatalogue(), its default ROM variant.
+    explicit PC1500Machine(PC1500Variant model = PC1500Variant::PC1500A);
+    ~PC1500Machine() override;
 
-    PC1500Variant variant() const { return m_memory.variant(); }
+    PC1500Variant modelVariant() const { return m_memory.variant(); }
+
+    calcu::machine::Ticks tickCount() const override { return m_elapsedCycles; }
+    calcu::machine::DisplayOutput readDisplay() override;
+    std::size_t takeSound(std::span<std::int16_t> out) override { return drainAudio(out.data(), out.size()); }
 
     bool loadROM(const uint8_t* data, std::size_t size);
     bool loadROMFile(const std::string& path);
-    /// The reset button: CPU and chips reset, RAM kept.
-    void reset();
-    /// Reset with all RAM cleared to 0x00 first (Machine > Cold boot). The
-    /// PC-1500 has no separate ALL RESET line; this models pulling the
-    /// batteries, like PC1600Machine::allReset().
-    void allReset();
 
     /// Seed the uPD1990AC real-time clock from a host date/time so BASIC's
     /// TIME reads back something sensible instead of 00000. `month` is
@@ -212,7 +215,7 @@ public:
     /// Why the last automatic save (at a motor stop) failed, once; empty if
     /// it didn't (TapeDeck::takeLastError()).
     std::string tapeTakeLastError();
-    /// Direct access, for the core and its tests.
+    /// Direct access, like cpu()/memory().
     TapeDeck& tapeDeck() { return m_tapeDeck; }
 
     // ── CE-158 RS-232C / Centronics interface (60-pin system bus) ────────
@@ -266,14 +269,6 @@ public:
     }
     void endTraceRecord();
     void endTraceRecords();
-    // ── Machine state (Machine/StateRecords.hpp) ─────────
-    /// The core's records: the CPU(s), the memory with its chips, the
-    /// emulated time, the cassette deck, every card. Saving only reads; a
-    /// restore that fails leaves the reader's error (the caller puts the
-    /// state from before back). The debugger's own state is not in it.
-    void saveState(sharp::StateWriter& w) const;
-    void restoreState(sharp::StateReader& r);
-
     // ── Debugger stops ────────────────────────────────────────────────────
     /// step() and runCycles() latch a stop when the CPU parks on a PC
     /// breakpoint (nothing executed) or completes an instruction whose data
@@ -289,8 +284,31 @@ public:
     }
 
 private:
-    PC1500Memory m_memory;    template <class Io>
+    // ---- The model's part of SharpMachine ----
+    calcu::machine::Ticks runCore(calcu::machine::Ticks n) override { return runCycles(n); }
+    sharp::SharpDebugging* sharpDebugging() override { return m_debugging.get(); }
+    bool coreSwitchedOff() const override { return m_cpu.poweredOff(); }
+    bool coreKeyReady() const override { return keyReady(); }
+    void coreKey(const std::string& id, bool down) override;
+    void coreOnKey(bool down) override { setOnKeyPressed(down); }
+    /// The reset button: CPU and chips reset, RAM kept.
+    void coreReset() override;
+    /// Reset with all RAM cleared to 0x00 first. The PC-1500 has no separate
+    /// ALL RESET line; this models pulling the batteries.
+    void coreColdBoot() override;
+    ExpansionCard* moduleIn(const calcu::machine::PlaceName&) override;
+    void corePlug(const calcu::machine::PeripheralRequest&, const calcu::machine::PeripheralDescriptor&) override;
+    void coreUnplug(const calcu::machine::PlaceName&, const calcu::machine::PeripheralId&) override;
+    void offer(std::vector<Offered>&, const std::vector<calcu::machine::PlugEntry>&) override;
+    // The records: the CPU, the memory with its chips, the emulated time,
+    // the cassette deck, every card, then the CE-158's line and the cassette
+    // place. The debugger's own state is not in it.
+    void coreSaveState(sharp::StateWriter&) const override;
+    void coreRestoreState(sharp::StateReader&) override;
+    template <class Io>
     void stateIo(Io& io);
+
+    PC1500Memory m_memory;
 
     LH5801       m_cpu;
     WatchSet*    m_watches{nullptr};
@@ -356,4 +374,9 @@ private:
             m_traceDrainCounter = 0;
         }
     }
+
+    struct Kinds;   // the capability objects (PC1500Machine.cpp)
+    SerialPortCapability m_ce158Port;   // the CE-158's UART peer; kept across detach and attach
+    std::unique_ptr<Kinds> m_kinds;
+    std::unique_ptr<sharp::SharpDebugging> m_debugging;   // the debugger: after the core, gone before it
 };

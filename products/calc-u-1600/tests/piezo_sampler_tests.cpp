@@ -20,9 +20,8 @@
 #include <vector>
 
 #include "../core/Audio/PiezoSampler.hpp"
-#include "support/PC1500BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
-#include "support/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600Memory.hpp"
 #include "TestRoms.hpp"
@@ -225,12 +224,12 @@ bool bootPC1500(PC1500Machine& m) {
     if (!m.loadROMFile("roms/PC-1500_A04.ROM")) return false;
     m.reset();
     m.runCycles(static_cast<uint64_t>(1300000.0 * 2));
-    waitIdle(m, static_cast<uint64_t>(1300000.0 * 5));
+    sharptest::runUntilSettled(m, double(static_cast<uint64_t>(1300000.0 * 5)) / m.descriptor().tickRate);
     // A cold boot stops at "NEW0? :CHECK"; CL answers it, as
     // PC1500PresetLoader does. A second tap covers one missed while the
     // memory check is still finishing, and is harmless at the prompt.
     for (int i = 0; i < 2; ++i) {
-        tapKey(m, "cl");
+        sharptest::tap(m, "cl");
         m.runCycles(static_cast<uint64_t>(1300000.0 / 2));
     }
     return true;
@@ -244,9 +243,9 @@ std::vector<int16_t> runAndCapture(PC1500Machine& m, const std::string& line, do
     // a short BEEP before it could be drained.
     std::string err;
     std::vector<int16_t> pcm;
-    if (!typeLine(m, line, /*pressEnter=*/false, &err)) return pcm;
+    if (!sharptest::typeText(m, line, false, &err)) return pcm;
     m.discardAudio();
-    tapKey(m, "enter");
+    sharptest::tap(m, "enter");
     std::vector<int16_t> chunk(kRate);
     for (int i = 0; i < seconds * 10; ++i) { // 100 ms steps, draining as we go
         m.runCycles(130000);
@@ -270,10 +269,10 @@ TEST(test_pc1500_beep) {
     CHECK(t.hz > 1000.0 && t.hz < 8000.0);
 
     // BEEP OFF: the ROM stops driving PC6, so nothing is audible.
-    typeLine(m, "BEEP OFF", /*pressEnter=*/true, nullptr);
+    sharptest::typeLine(m, "BEEP OFF");
     ToneStats off = analyse(runAndCapture(m, "BEEP 1"));
     CHECK(off.audibleSamples == 0);
-    typeLine(m, "BEEP ON", /*pressEnter=*/true, nullptr);
+    sharptest::typeLine(m, "BEEP ON");
     CHECK(analyse(runAndCapture(m, "BEEP 1")).audibleSamples > 0);
 }
 
@@ -284,7 +283,7 @@ TEST(test_pc1500_settle_waits_for_beep) {
     PC1500Machine m;
     SKIP_UNLESS(bootPC1500(m), "PC-1500 ROM image not found");
     std::string err;
-    CHECK(typeLine(m, "BEEP 2,100,300", /*pressEnter=*/true, &err));
+    CHECK(sharptest::typeLine(m, "BEEP 2,100,300"));
     const uint16_t pc = m.debugPC();
     CHECK(pc >= 0xE200 && pc <= 0xE4FF); // back at the prompt loop, not E6xx
     const uint64_t edges = m.buzzerEdgeCount();
@@ -300,9 +299,9 @@ std::vector<int16_t> runAndCapture(PC1600Machine& m, const std::string& line, do
     // a short BEEP before it could be drained.
     std::string err;
     std::vector<int16_t> pcm;
-    if (!typeLine(m, line, /*pressEnter=*/false, &err)) return pcm;
+    if (!sharptest::typeText(m, line, false, &err)) return pcm;
     m.discardAudio();
-    tapKey(m, "enter");
+    sharptest::tap(m, "enter");
     std::vector<int16_t> chunk(kRate);
     for (int i = 0; i < seconds * 10; ++i) { // 100 ms steps
         m.runCycles(PC1600Machine::kTStateHz / 10);
@@ -346,9 +345,9 @@ TEST(test_pc1600_beep) {
                 1000.0 * hw.audibleSamples / kRate, hw.hz);
     CHECK(near(hw.hz, 287.13, 0.01));
 
-    typeLine(m, "BEEP OFF", /*pressEnter=*/true, nullptr);
+    sharptest::typeLine(m, "BEEP OFF");
     CHECK(analyse(runAndCapture(m, "BEEP 1")).audibleSamples == 0);
-    typeLine(m, "BEEP ON", /*pressEnter=*/true, nullptr);
+    sharptest::typeLine(m, "BEEP ON");
     CHECK(analyse(runAndCapture(m, "BEEP 1")).audibleSamples > 0);
 }
 
@@ -401,12 +400,12 @@ TEST(test_pc1600_f_register_modulator) {
     CHECK(analyse(runAndCapture(m, "OUT 23,0")).audibleSamples < static_cast<size_t>(kRate / 20));
     // FX = phi/512 (F0-2 = 011): 635 Hz.
     CHECK(near(analyse(runAndCapture(m, "OUT 23,67")).hz, 1300000.0 / 2048, 0.003));
-    typeLine(m, "OUT 23,0", /*pressEnter=*/true, nullptr);
+    sharptest::typeLine(m, "OUT 23,0");
     // BEEP OFF gates it like the BEEP tone.
-    typeLine(m, "BEEP OFF", /*pressEnter=*/true, nullptr);
+    sharptest::typeLine(m, "BEEP OFF");
     CHECK(analyse(runAndCapture(m, "OUT 23,65")).audibleSamples < static_cast<size_t>(kRate / 20));
-    typeLine(m, "OUT 23,0", /*pressEnter=*/true, nullptr);
-    typeLine(m, "BEEP ON", /*pressEnter=*/true, nullptr);
+    sharptest::typeLine(m, "OUT 23,0");
+    sharptest::typeLine(m, "BEEP ON");
 }
 
 // Switching 17H to a faster divider mid-period (no 14H reset) leaves the

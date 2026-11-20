@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "support/PC1500BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "../core/PC1500/PC1500LcdText.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestRoms.hpp"
@@ -42,23 +42,23 @@ bool bootWithCE150(PC1500Machine& m) {
     if (!m.attachCE150(ce150.data(), ce150.size())) return false;
     m.reset();
     m.runCycles(2 * kSecond);
-    waitIdle(m, 5 * kSecond);
+    sharptest::runUntilSettled(m, double(5 * kSecond) / m.descriptor().tickRate);
     for (int i = 0; i < 2; ++i) { // "NEW0? :CHECK" -- see piezo_sampler_tests.cpp
-        tapKey(m, "cl");
+        sharptest::tap(m, "cl");
         m.runCycles(kSecond / 2);
     }
     std::string err;
-    typeLine(m, "NEW0", /*pressEnter=*/true, &err);
-    waitUntilBasicIdle(m, 10 * kSecond);
+    sharptest::typeLine(m, "NEW0");
+    sharptest::runUntilFinished(m, double(10 * kSecond) / m.descriptor().tickRate);
     return true;
 }
 
 // Types `line` + ENTER and runs until the BASIC prompt is back.
 void type(PC1500Machine& m, const std::string& line) {
     std::string err;
-    CHECK(typeLine(m, line, /*pressEnter=*/true, &err));
-    waitUntilBasicIdle(m, 300 * kSecond);
-    waitIdle(m, kSecond);
+    CHECK(sharptest::typeLine(m, line));
+    sharptest::runUntilFinished(m, double(300 * kSecond) / m.descriptor().tickRate);
+    sharptest::runUntilSettled(m, double(kSecond) / m.descriptor().tickRate);
 }
 
 std::string screen(PC1500Machine& m) { return pc1500LcdText(m).plainText(); }

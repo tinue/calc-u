@@ -129,10 +129,9 @@ The register model follows Toshiba's TC8576AF data sheet
 - **No `SerialLink` attached** → nothing connected: modem inputs read off,
   TxD is accepted and reported "sent" immediately, RxD never has data.
   Enough for the internal handshakes the ROM runs before any medium access
-  (RAM disk, power-off) and keeps headless probes deterministic. Behind the
-  machine interface (`PC1600InterfaceMachine`) the UART stays like this until
-  its serial port capability is first taken (the session's host links do it
-  right after a build); the golden runs replay this standalone UART.
+  (RAM disk, power-off) and keeps headless probes deterministic. The UART stays
+  like this until the machine's serial port capability is first taken (the
+  session's host links do it right after a build).
 - **Raw PTY carries no RS-232C modem lines** — the host link
   (`calcu::peripherals::HostLinks::pump`) sets the port's peer lines: CTS
   and DSR permanently asserted, DCD while a program holds the serial port

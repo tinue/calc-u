@@ -2,8 +2,8 @@
 
 #include <map>
 
-#include "../PC1500/PC1500InterfaceMachine.hpp"
-#include "../PC1600/PC1600InterfaceMachine.hpp"
+#include "../PC1500/PC1500Machine.hpp"
+#include "../PC1600/PC1600Machine.hpp"
 #include "Machine/SharpCatalogue.hpp"
 
 using namespace calcu::machine;
@@ -33,9 +33,9 @@ BuildResult SharpMachineBuilder::build(const BuildRequest& req, const Catalogue&
 
     std::unique_ptr<SharpMachine> machine;
     if (d->model.value == kPC1600) {
-        auto m = std::make_unique<PC1600InterfaceMachine>(*d, variant);
+        auto m = std::make_unique<PC1600Machine>(*d, variant);
         // Order of pc1600Roms(): P0-B0, P1-B0, P1-B3, P1-B3B, P2-B6, LH5803.
-        PC1600Machine& c = m->core();
+        PC1600Machine& c = *m;
         const bool ok = c.loadBank0(bytes[0]->data(), bytes[0]->size(), bytes[1]->data(), bytes[1]->size()) &&
                         c.loadBank3Rom(bytes[2]->data(), bytes[2]->size()) &&
                         c.loadBank3bRom(bytes[3]->data(), bytes[3]->size()) &&
@@ -45,8 +45,8 @@ BuildResult SharpMachineBuilder::build(const BuildRequest& req, const Catalogue&
             return {nullptr, {}, "a PC-1600 " + variant.value + " ROM image has the wrong size (a truncated dump?)"};
         machine = std::move(m);
     } else {
-        auto m = std::make_unique<PC1500InterfaceMachine>(*d, variant);
-        if (!m->core().loadROM(bytes[0]->data(), bytes[0]->size()))
+        auto m = std::make_unique<PC1500Machine>(*d, variant);
+        if (!m->loadROM(bytes[0]->data(), bytes[0]->size()))
             return {nullptr, {}, "failed to load firmware ROM: " + roms[0].fileName};
         machine = std::move(m);
     }

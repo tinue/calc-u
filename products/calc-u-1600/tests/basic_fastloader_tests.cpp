@@ -1,9 +1,9 @@
 // Headless C++ tests for core/PC1500/PC1500BasicLoader.cpp -- the fast
 // (poke + fix BASPRG_END) BASIC program loader. Needs a real ROM
 // (roms/PC-1500_A04.ROM, relative to the repo root); skips (not fails) if
-// it is missing, same convention as basictyper_tests.cpp.
+// it is missing.
 //
-// The keystroke typer is the oracle: type a program the slow way, capture
+// Typing through the typing engine is the oracle: type a program the slow way, capture
 // the exact bytes and pointers the ROM produced, wrap them in a CE-158
 // transfer file, load that the fast way on a fresh machine, and require a
 // byte-identical program area + identical pointers.
@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "../core/PC1500/PC1500BasicLoader.hpp"
-#include "support/PC1500BasicTyper.hpp"
+#include "support/Typing.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestHarness.hpp"
 #include "LoaderTestSupport.hpp"
@@ -27,18 +27,18 @@ bool bootMachine(PC1500Machine& machine) {
     if (!machine.loadROMFile("roms/PC-1500_A04.ROM")) return false;
     machine.reset();
     machine.runCycles(static_cast<uint64_t>(1300000.0 * 2));
-    waitIdle(machine, static_cast<uint64_t>(1300000.0 * 5));
+    sharptest::runUntilSettled(machine, double(static_cast<uint64_t>(1300000.0 * 5)) / machine.descriptor().tickRate);
     return true;
 }
 
 // The loader assumes the preset already NEW0'd -- do it here, the same way
 // a `keys:` section would.
 void primeNew0(PC1500Machine& machine) {
-    tapKey(machine, "cl");
-    waitIdle(machine, static_cast<uint64_t>(1300000.0 * 2));
+    sharptest::tap(machine, "cl");
+    sharptest::runUntilSettled(machine, double(static_cast<uint64_t>(1300000.0 * 2)) / machine.descriptor().tickRate);
     std::string err;
-    typeLine(machine, "NEW0", /*pressEnter=*/true, &err);
-    waitIdle(machine, static_cast<uint64_t>(1300000.0 * 2));
+    sharptest::typeLine(machine, "NEW0");
+    sharptest::runUntilSettled(machine, double(static_cast<uint64_t>(1300000.0 * 2)) / machine.descriptor().tickRate);
 }
 
 uint16_t be16(PC1500Machine& m, uint16_t a) {
@@ -73,8 +73,7 @@ bool tokenizeViaOracle(const std::string& src, std::vector<uint8_t>* payload, ui
     PC1500Machine m;
     if (!bootMachine(m)) return false;
     primeNew0(m);
-    BasicTypeResult typed = typeBasicProgramText(m, src);
-    if (!typed.ok || !typed.rejectedLines.empty()) return false;
+    if (!sharptest::typeProgram(m, src)) return false;
     uint16_t st = be16(m, 0x7865);
     uint16_t end = be16(m, 0x7867);
     if (end < st) return false;

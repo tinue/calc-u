@@ -10,10 +10,9 @@ class PC1500Machine;
 
 // ── Typed-text helpers shared by every scripted PC-1500 input path ───────
 //
-// the tests' PC1500BasicTyper (tests/support/) and the
-// GUI's clipboard paste (core/KeyPaste) both turn a host character into a
-// PC-1500 keystroke and both need to know when the ROM is back at its
-// BASIC prompt. Machine-free but for pc1500AtBasicPrompt() (PC1500TypedInput.cpp), so the
+// the typing engine's PC-1500 profile (app/SharpTyping) turns a host
+// character into a PC-1500 keystroke, and the typing support asks when the
+// ROM is back at its BASIC prompt. Machine-free but for pc1500AtBasicPrompt() (PC1500TypedInput.cpp), so the
 // app layer can resolve keys without a machine class.
 
 /// Maps a host character to the PC-1500 key that types it. `needsShift`

@@ -222,7 +222,7 @@ TEST(screenshot_is_the_classic_segment_picture) {
     CHECK(got.rfind("\x89PNG", 0) == 0);
     // The reference picture, made by this code and checked by eye:
     // CALCU59_DISPLAY_PICTURE=1 writes it.
-    const fs::path ref = "tests/reference/display/ti59-123456789.5-.png";
+    const fs::path ref = "tests/references/display/ti59-123456789.5-.png";
     if (std::getenv("CALCU59_DISPLAY_PICTURE")) {
         fs::create_directories(ref.parent_path());
         std::ofstream(ref, std::ios::binary) << got;

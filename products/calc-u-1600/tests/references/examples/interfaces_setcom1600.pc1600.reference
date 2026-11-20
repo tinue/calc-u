@@ -1,0 +1,144 @@
+preset: examples/interfaces/setcom1600.pc1600
+=== display-text
+A$
+F1 to load comm.
+
+
+indicators: DE G RUN II
+not text: 0
+=== c1600 inspect pointers
+── Pointers ──
+┌──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┐
+│ Name         │ Addr │ Value           │ Meaning                                                            │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ BASIC program                                                                                              │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ BASPRG_ST    │ F865 │ 00C5 → Z80 80C5 │ S0 program start (ADTBL index F02BH)                               │
+│ BASPRG_END   │ F867 │ 0192 → Z80 8192 │ S0 program end, the FFH mark (ADTBL index F02CH)                   │
+│ EDITHEAD     │ F869 │ 0000 → Z80 8000 │ Edit / merge head                                                  │
+│ PRGSTA       │ FE3C │ 80C5 [4]        │ Start of the TITLE area (PRGADR 02F4H)                             │
+│ PRGENDA      │ FE3F │ 8192 [4]        │ End of the TITLE area                                              │
+│ PROCPTR      │ FE00 │ FBB2            │ Interpreter: the next program byte (Z-80)                          │
+│ CURTOP       │ F89E │ 00C5 → Z80 80C5 │ Block of the current line                                          │
+│ LBCUR        │ F1C1 │ 04              │ ADTBL index of the current line                                    │
+│ CURRENT_LINE │ F89C │ 0000 (0)        │ Current line number                                                │
+│ SRCHLINE     │ F8A8 │ EE48 (61000)    │ Line after a SEARCH hit / last entered                             │
+│ CONTADR      │ F0B9 │ 0000            │ CONT / restart address (Z-80)                                      │
+│ TRON         │ F88D │ 00              │ TRON: off                                                          │
+│ TRONMODE     │ F88E │ 02              │ TRON single-step state (1-4)                                       │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Errors and BREAK                                                                                           │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ ERL          │ F89B │ 00              │ Last error number                                                  │
+│ BRKADR       │ F8AC │ 0000 → Z80 8000 │ BREAK address                                                      │
+│ BRKLINE      │ F8AE │ 0000 (0)        │ BREAK line                                                         │
+│ ERRADR       │ F8B2 │ 0000 → Z80 8000 │ Error address                                                      │
+│ ERRLINE      │ F8B4 │ 0000 (0)        │ Error line                                                         │
+│ ONERADR      │ F8B8 │ 8000 (none)     │ ON ERROR GOTO target (bit 15 set: none)                            │
+│ ONERLINE     │ F8BA │ 0000 (0)        │ ON ERROR line                                                      │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Variables and stacks                                                                                       │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ RAM_END      │ F864 │ 5F              │ Page of the S0 user-area top (MEM, VARPTR reset)                   │
+│ VARPTR       │ F899 │ 5F00 → Z80 DF00 │ Start of the variables (they grow down)                            │
+│ FORPTR       │ F890 │ 38              │ FOR stack pointer (low byte)                                       │
+│ GOSUBPTR     │ F891 │ FF              │ GOSUB stack pointer (low byte)                                     │
+│ STRBUFP      │ F894 │ 20              │ String buffer pointer (low byte, FB10H-FB5FH)                      │
+│ LOCKF        │ F9FF │ FF              │ LOCK / UNLOCK state                                                │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Program areas                                                                                              │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ TITLE        │ F1D5 │ 00              │ Selected program area: S0                                          │
+│ S0DESC       │ F029 │ 80              │ S0 base page (b6-0); ML area from base:C5H                         │
+│ S0MTB        │ F02A │ 04              │ First ADTBL index of S0                                            │
+│ PRGBANKS     │ F02B │ 04              │ ADTBL index of the S0 program start                                │
+│ PRGBANKE     │ F02C │ 04              │ ADTBL index of the S0 program end                                  │
+│ ADTBL+1      │ F1D6 │ 00              │ Bank list: unused                                                  │
+│ ADTBL+2      │ F1D7 │ 00              │ unused                                                             │
+│ ADTBL+3      │ F1D8 │ 00              │ unused                                                             │
+│ ADTBL+4      │ F1D9 │ 22              │ slot 2, bank 2                                                     │
+│ ADTBL+5      │ F1DA │ 32              │ slot 2, bank 3                                                     │
+│ S1MTB        │ F016 │ FF              │ First ADTBL index of S1: none                                      │
+│ S1MBB        │ F018 │ FF              │ Last ADTBL index of S1                                             │
+│ S2MTB        │ F020 │ FE              │ First ADTBL index of S2: folded into S0                            │
+│ S2MBB        │ F022 │ FF              │ Last ADTBL index of S2                                             │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Files and RAM disks                                                                                        │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ FBNO         │ F02D │ 00              │ MAXFILES                                                           │
+│ FBBP         │ F04C │ DFFF            │ Communication-buffer start (PTRF)                                  │
+│ FCBPTR       │ F04E │ DFFF            │ FCB / file-buffer start (PTRG)                                     │
+│ S1RAMSIZ     │ F055 │ 00              │ Slot 1 RAM outside the RAM disk (2 KB units): 0 B                  │
+│ S2RAMSIZ     │ F05B │ 10              │ Slot 2 RAM outside the RAM disk (2 KB units): 32K                  │
+│ DEVNAME      │ FC16 │ 02              │ Device of the current file operation                               │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Mode and system                                                                                            │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ BMODE        │ F1BC │ 80              │ MODE 0                                                             │
+│ SYMB1        │ F64F │ 43              │ Mode annunciators: RUN                                             │
+│ PORT3D_M     │ F07D │ 04              │ Port 3DH mirror: bank 3 BASIC ROM                                  │
+│ SLOTMAPM     │ F08D │ 1B              │ Port 3CH mirror (SLOTMAP)                                          │
+│ RSTCAUSE     │ FA1B │ 20              │ Last reset / power-on cause: ext power-on                          │
+│ BINTREQ      │ F127 │ 00              │ Pending BASIC interrupts: —                                        │
+│ BINTEN       │ F12A │ 03              │ Enabled sub-CPU interrupts (SWMSK)                                 │
+│ OPNDV        │ F9D1 │ 60              │ PC-1500 peripheral (OPN)                                           │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Display and keyboard                                                                                       │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ DSPLPTR      │ F05C │ 01              │ LCD display start line                                             │
+│ LCDWK1       │ F05D │ 00              │ LCD work 1 (charset / cursor flags)                                │
+│ CRSRY        │ F05F │ 01              │ Cursor row                                                         │
+│ CRSRX        │ F060 │ 10              │ Cursor column                                                      │
+│ KEYWK1       │ F079 │ 00              │ Key work 1 (click / repeat flags)                                  │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Live                                                                                                       │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ SP           │      │ F5F5            │ SC7852 stack pointer (Z-80 stack F500H-F5FFH)                      │
+│ Port 31H     │      │ 60              │ banks A 0, B 0, C 6, D 0                                           │
+├──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┤
+│ Computed                                                                                                   │
+├──────────────┬──────┬─────────────────┬────────────────────────────────────────────────────────────────────┤
+│ MEM          │      │ 40301           │ S0 free bytes: RAM_END:00 − (BASPRG_END + 1) + (5 − F02CH) × 4000H │
+│ Program      │      │ 206             │ S0 program, with the FFH mark                                      │
+│ ML reserve   │      │ 0               │ Machine-language area 80C5 up to BASPRG_ST (NEW "S0:",n)           │
+│ Variables    │      │ 0               │ RAM_END:00 − VARPTR                                                │
+│ S1 free      │ F015 │ —               │ no program module                                                  │
+│ S2 free      │ F01F │ —               │ no program module                                                  │
+│ PTR5         │ F038 │ EFFF–EFFF       │ EXROM work area, 1 B                                               │
+│ PTRF         │ F04C │ DFFF–EFFE       │ communication buffer, 4K                                           │
+└──────────────┴──────┴─────────────────┴────────────────────────────────────────────────────────────────────┘
+=== c1600 inspect dump-basic
+── BASIC area S0 ──
+── Slot 2 — CE-1601M, bank 2, Z80 8000–BFFF ──
+8000: FF FF FF FF FF FF FF FF  00 00 00 00 00 00 00 00  ................
+8010–804F: (00/FF only)
+8050: 00 00 00 00 00 00 11 F2  95 22 53 32 3A 43 4F 4D  ........."S2:COM
+8060: 4D 2E 42 41 53 22 40 00  00 00 00 00 00 00 00 00  M.BAS"@.........
+8070–80BF: (00/FF only)
+80C0: 00 00 00 00 00 EE 48 14  22 4A 22 3A F0 97 22 53  ......H."J":.."S
+80D0: 45 52 49 41 4C 20 49 4E  49 54 22 0D EE 52 19 E8  ERIAL INIT"..R..
+80E0: 82 22 43 4F 4D 31 3A 22  2C 39 36 30 30 2C 38 2C  ."COM1:",9600,8,
+80F0: 4E 2C 31 2C 4E 2C 4E 0D  EE 5C 0C E8 80 22 43 4F  N,1,N,N..\..."CO
+8100: 4D 31 3A 22 2C 30 0D EE  66 10 F2 A2 22 43 4F 4D  M1:",0..f..."COM
+8110: 31 3A 22 2C 32 38 2C 36  30 0D EE 70 10 F2 A4 22  1:",28,60..p..."
+8120: 43 4F 4D 31 3A 22 2C 32  38 2C 36 30 0D EE 7A 0F  COM1:",28,60..z.
+8130: F2 94 22 43 4F 4D 31 3A  22 2C 34 30 39 36 0D EE  .."COM1:",4096..
+8140: 98 03 F1 8E 0D EE AC 0F  22 53 22 3A F0 97 22 53  ........"S":.."S
+8150: 41 56 49 4E 47 22 0D EE  B6 0C F2 99 22 43 4F 4D  AVING"......"COM
+8160: 31 3A 22 2C 41 0D EE C0  03 F1 8E 0D EF 10 10 22  1:",A.........."
+8170: 4C 22 3A F0 97 22 4C 4F  41 44 49 4E 47 22 0D EF  L":.."LOADING"..
+8180: 1A 0A F2 95 22 43 4F 4D  31 3A 22 0D EF 24 03 F1  ...."COM1:"..$..
+8190: 8E 0D FF 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+81A0–81FF: (00/FF only)
+8200: F2 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+8210–BFEF: (00/FF only)
+BFF0: FF FF FF FF FF FF FF FF  FF FF FF FF FF FF FF FF  ................
+── Slot 2 — CE-1601M, bank 3, Z80 8000–BFFF ──
+8000: FF FF FF FF FF FF FF FF  FF FF FF FF FF FF FF FF  ................
+8010–BFEF: (00/FF only)
+BFF0: FF FF FF FF FF FF FF FF  FF FF FF FF FF FF FF FF  ................
+── Internal RAM, Z80 C000–EFFF ──
+C000: FF FF FF FF FF FF FF FF  F2 00 02 0F 04 00 01 01  ................
+C010: 00 02 30 06 00 7B 00 01  03 00 08 00 00 00 00 00  ..0..{..........
+C020–EFEF: (00/FF only)
+EFF0: FF FF FF FF FF FF FF FF  FF FF FF FF FF FF FF 00  ................

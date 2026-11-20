@@ -4,7 +4,7 @@
 // transport (bytes in and out, on the test's thread) in a session of
 // app/tests/SessionFixture.hpp, one host call at a time. The ten scenarios of
 // tools/dap_smoke.py run against the harness as CalcU1600DapSmoke.
-// A program of its own (CalcU1600DapTests), so that CoreTests' Frequent budget
+// A program of its own (CalcU1600DapTests), so that CalcU1600CoreTests' Frequent budget
 // stays as it is.
 
 #include <cstdint>

@@ -6,7 +6,7 @@
 // (SharpAppPart: the machine, the operations; SharpWebPart: what only the
 // page asks for). The page is put together from the React set's shell
 // so the session also has the library's ControlPart (with the product's
-// rules: no host folder in a browser) and its SettingsPart. Built by frontends/web/build.sh (CMake target calcu_web)
+// rules: no host folder in a browser) and its SettingsPart. Built by frontends/web/build.sh (CMake target calcu1600_web)
 // into dist/wasm/.
 
 #include <memory>

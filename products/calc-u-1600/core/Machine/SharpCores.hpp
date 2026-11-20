@@ -3,7 +3,7 @@
 #include "../PC1600/PC1600Machine.hpp"
 #include "Machine/SharpCatalogue.hpp"
 
-// Inside the core only (the include check, CalcU1600MachineIncludeCheck):
+// Inside the core only (the include check, CalcU1600CoreSeam):
 // the model class behind a Sharp machine, for the core's own parts that
 // read a model's hardware (the LCD font, the text of the display). By the
 // descriptor's model and a static_cast; no RTTI.

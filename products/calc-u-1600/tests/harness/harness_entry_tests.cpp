@@ -236,5 +236,5 @@ TEST(every_function_of_the_table) {
     r.server->finish();
     CHECK(fileText(out.path() / "buzz.wav").compare(0, 4, "RIFF") == 0);   // complete at the end of the run
     // read_trace.py, dap_smoke.py and --shots are the CTests
-    // CalcU1600ReadTrace, CalcU1600DapSmoke and CalcU1600Shots.*.
+    // CalcU1600TraceReader, CalcU1600DapSmoke and CalcU1600Shots.*.
 }

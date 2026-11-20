@@ -382,7 +382,7 @@ See docs/developer/App-Layer.md and Web-Client.md.
   (BASIC as a listing) from the in-memory image; nothing calls them yet.
   libsharpdx has no RAM-disk API, so modules need a decoder of their own.
 - **Debugger: manual checks in VS Code** (the automated side passes:
-  CoreTests, `tools/run_tests.sh calc-u-1600` at the repository root, `tools/dap_smoke.py`). With a current
+  CalcU1600CoreTests, `tools/run_tests.sh calc-u-1600` at the repository root, `tools/dap_smoke.py`). With a current
   app build: the disassembly view (current instruction, instruction
   breakpoints); the *Banks* scope under *Registers*; a ROM configuration
   stops with reason `entry`; dynamic configurations are listed and F5

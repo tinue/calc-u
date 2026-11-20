@@ -8,7 +8,7 @@
 #   2. names PC1500Machine or PC1600Machine outside a // comment.
 # The app layer reaches the machine as calcu::machine::Machine
 # (core/Machine/). Run from products/calc-u-1600 (CTest
-# CalcU1600MachineIncludeCheck, group Frequent; CI runs it with the core
+# CalcU1600CoreSeam, group Frequent; CI runs it with the core
 # tests).
 set -eu
 cd "$(dirname "$0")/.."

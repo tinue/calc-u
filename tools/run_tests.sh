@@ -19,7 +19,7 @@ case "${1:-}" in
   59|calc-u-59) PRODUCT=calc-u-59 RUNNERS="CalcU59Tests" ;;
   1600|calc-u-1600)
     PRODUCT=calc-u-1600
-    RUNNERS="CoreTests CalcU1600SessionTests CalcU1600AppSessionTests CalcU1600DapTests CalcU1600HelpTests" ;;
+    RUNNERS="CalcU1600CoreTests CalcU1600SessionTests CalcU1600AppSessionTests CalcU1600DapTests CalcU1600HelpTests" ;;
   *) echo "usage: tools/run_tests.sh calc-u-59|calc-u-1600 [name filter]" >&2; exit 2 ;;
 esac
 shift

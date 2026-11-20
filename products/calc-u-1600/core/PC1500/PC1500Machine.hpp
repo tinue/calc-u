@@ -33,7 +33,7 @@
 //
 // Threading: single-threaded, no lock. Above the core it is reached only as
 // a calcu::machine::Machine (built by SharpMachineBuilder; the CTest
-// CalcU1600MachineIncludeCheck keeps its name out of app/ and the frontends).
+// CalcU1600CoreSeam keeps its name out of app/ and the frontends).
 class PC1500Machine final : public sharp::SharpMachine {
 public:
     /// LH5801 cycles per second -- the unit runCycles() counts (PC1500Clocks.hpp).

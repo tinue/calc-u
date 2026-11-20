@@ -30,7 +30,7 @@ cmake_minimum_required(VERSION 3.21)
 # lists every test and its group.
 #
 # Under the Emscripten toolchain (emcmake) each product defines only its
-# Web engine (calcu59_web, calcu_web) and Calc-U-1600's wasm_smoke check;
+# Web engine (calcu59_web, calcu1600_web) and Calc-U-1600's wasm_smoke check;
 # frontends/web/build.sh of each product builds it in build/web and puts
 # dist/ together. The Swift frontend's XCFramework:
 # products/calc-u-59/frontends/swift/build_xcframework.sh configures this

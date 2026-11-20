@@ -19,7 +19,7 @@ filesIn(ROMS, /\.bin$/i);   // no dump: roms/fetch_roms.sh was not run, stop bef
 buildWebProduct({
   web: WEB,
   name: "Calc-U-1600",
-  target: "calcu_web",
+  target: "calcu1600_web",
   engine: "calcu1600-core",
   // File system: /bundle (ROMs, bundled cards and disks) and /presets (the
   // bundled examples) from files.json, /uploads (files the user opened), and

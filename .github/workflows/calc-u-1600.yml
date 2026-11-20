@@ -53,8 +53,8 @@ env:
 jobs:
   # The repository's root CMake project with Calc-U-1600 only and
   # without Qt: the harness `calcu` (with the product's entry) and the test
-  # programs on top of the calcu1600_core / calcu1600_shared libraries from
-  # cmake/CalcU.cmake; the help's checks (tools/help, Python 3 of the
+  # programs on top of the calcu1600_core / calcu1600_shared libraries of
+  # the product's CMakeLists.txt; the help's checks (tools/help, Python 3 of the
   # runner) run among the tests. This job is
   # the only CI run of the core/ + app/ test suite. The packaging jobs below
   # configure the root too (build/release, CALCU_TESTS off) and build only
@@ -65,13 +65,13 @@ jobs:
       - uses: actions/checkout@v5
 
       # No Qt: core/, app/ and the tests build without it. zlib1g-dev is
-      # CoreTests' own find_package(ZLIB REQUIRED).
+      # CalcU1600CoreTests' own find_package(ZLIB REQUIRED).
       - name: Install build tools
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build zlib1g-dev
 
-      # CoreTests loads roms/PC-1500_A04.ROM relative to the product
+      # CalcU1600CoreTests loads roms/PC-1500_A04.ROM relative to the product
       # directory (which is also the CTest working directory), so this
       # isn't optional here.
       - name: Fetch ROMs

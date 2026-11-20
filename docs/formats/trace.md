@@ -10,10 +10,10 @@ multi-byte fields are little-endian.
 
 Terms follow `docs/GLOSSARY.md`.
 
-## 1. Versions
+## 1. Version
 
-v1 (written by Calc-U-59 1.0.0) is stable. v2 is the current version and
-may change between v2 revisions; readers accept both.
+The file header carries version 2, the only version of this format. A
+reader refuses any other.
 
 ## 2. Layout
 
@@ -25,12 +25,12 @@ may change between v2 revisions; readers accept both.
 
 ### 2.1 File header
 
-| Offset | Size | v1 | v2 |
-|---|---|---|---|
-| 0 | 4 | magic `0x54493539` ('TI59') | same |
-| 4 | 2 | version 1 | version 2 |
-| 6 | 2 | reserved | model: 0 TI-59, 1 TI-58, 2 TI-58C |
-| 8 | 8 | reserved | reserved |
+| Offset | Size | Field |
+|---|---|---|
+| 0 | 4 | magic `0x54493539` ('TI59') |
+| 4 | 2 | version 2 |
+| 6 | 2 | model: 0 TI-59, 1 TI-58, 2 TI-58C |
+| 8 | 8 | reserved |
 
 ### 2.2 Records
 
@@ -38,18 +38,18 @@ Unknown types are skipped.
 
 | Type | Name | Payload |
 |---|---|---|
-| 0x01 | SESSION_START | u64 Unix time (s); v2 adds u8 model |
-| 0x02 | TRACE_EVENT | One `CpuFrame`: 125 bytes (v2), 124 (v1) |
+| 0x01 | SESSION_START | u64 Unix time (s), u8 model |
+| 0x02 | TRACE_EVENT | One `CpuFrame`: 125 bytes |
 | 0x03 | SESSION_END | u32 TRACE_EVENT count; u32 suppressed total, always 0 |
-| 0x04 | USER_EVENT | u8 kind, u8 p1, u8 p2, u8 reserved (no longer written) |
+| 0x04 | USER_EVENT | u8 kind, u8 p1, u8 p2, u8 reserved |
 | 0x05 | TRACE_GAP | u32 frames lost to ring overflow |
 
-USER_EVENT kinds, in older files: 0x01 key down, 0x02 key up
-(p1 = row 1–9, p2 = col 1–5), 0x03 card insert, 0x04 card eject. A trace
-is the CPU's log alone: no USER_EVENT is written, whoever starts the
-trace. The version stays 2.
+USER_EVENT kinds: 0x01 key down, 0x02 key up (p1 = row 1–9, p2 =
+col 1–5), 0x03 card insert, 0x04 card eject. Calc-U-59 writes no
+USER_EVENT: a trace is the CPU's log alone, whoever starts the trace;
+a reader shows one where it finds it.
 
-### 2.3 TRACE_EVENT payload (v2, 125 bytes)
+### 2.3 TRACE_EVENT payload (125 bytes)
 
 Post-execution state of one instruction.
 
@@ -78,10 +78,6 @@ Post-execution state of one instruction.
 | 36 | u8 | maxDigitDecay |
 | 37 | 5 × 16 | A, B, C, D, E: one nibble per byte, index 0 = least significant |
 | 117 | 8 | Sout, packed: low nibble = Sout[2i], high = Sout[2i+1] |
-
-v1 (124 bytes) has one byte at offset 35, `dispFilter` (0–3, ≥ 3 = display
-blanked), and the registers from offset 36; a reader derives
-`displayOn` from it (blanked: 0).
 
 **Gaps.** A TRACE_GAP record says how many frames the writer lost; the
 next TRACE_EVENT's `seqno` is higher by the same amount.

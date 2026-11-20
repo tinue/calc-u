@@ -816,7 +816,7 @@ test('the standalone app precaches all three models', async ({ page }) => {
     const name = names.find((n) => n.startsWith(`calcu59-app ${reg.scope} `));
     return name ? (await (await caches.open(name)).keys()).map((r) => r.url) : [];
   });
-  for (const f of ['../calc.js', '../wasm/ti59-core.wasm', '../img/ti58_base.png', '../bundle/CD2400.txt']) {
+  for (const f of ['../calc.js', '../wasm/calcu59-core.wasm', '../img/ti58_base.png', '../bundle/CD2400.txt']) {
     expect(cached).toContain(new URL(f, page.url()).href);
   }
 });

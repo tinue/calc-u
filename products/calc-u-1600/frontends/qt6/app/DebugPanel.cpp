@@ -237,8 +237,8 @@ void DebugPanel::clearDebug() {
 
 // ── TRACE ─────────────────────────────────────────────────────────────
 
-// The button sends `trace {button: true}` (the library names the file
-// TRACE.bin) and `trace {off: true}`; the library's trace session
+// The button sends `trace {button: true}` (the file is named after the
+// model, CALCU1600_TRACE.bin) and `trace {off: true}`; the library's trace session
 // limits and ends it, with its notice.
 void DebugPanel::setTraceEnabled(bool enabled) {
     if (m_controller->traceActive() == enabled) return;

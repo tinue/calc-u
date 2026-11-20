@@ -485,7 +485,7 @@ public:
         return view(*this);
     }
 
-    // ── Trace: both CPUs' rings drain into one TRACE.bin, tagged by cpuId ──
+    // ── Trace: both CPUs' rings drain into one trace file, tagged by cpuId ──
     //
     // The trace records capture a full instruction trace entirely inside
     // the Core -- step() drains both rings into them.

@@ -2,10 +2,10 @@
 """
 read_trace.py — PC-1500/1500A/1600 binary trace reader.
 
-Parses TRACE.bin (renamed from CALCU1500_TRACE.bin in format v2, once the
-same file started carrying PC-1600 frames alongside PC-1500's own; written
-by the app's "TRACE" debug-panel button or by a preset's `- trace:` step,
-both via the Core writer `core/PC1500/PC1500TraceFile.cpp`) and either:
+Parses a trace file (CALCU1500_TRACE.bin, CALCU1500A_TRACE.bin or
+CALCU1600_TRACE.bin from the app's "TRACE" debug-panel button, after the
+model, or the file a preset's `- trace:` step names; all written by the
+Core writer `core/PC1500/PC1500TraceFile.cpp`) and either:
   • Prints a human-readable text trace to stdout (default)
   • Emits a JSON array (--json)
 
@@ -21,9 +21,9 @@ Each frame's registers are the ones its instruction started from
 in that CPU's next frame.
 
 Usage:
-    python3 read_trace.py TRACE.bin
-    python3 read_trace.py --dedup TRACE.bin   # drop consecutive same-PC frames (per CPU)
-    python3 read_trace.py --json TRACE.bin
+    python3 read_trace.py CALCU1600_TRACE.bin
+    python3 read_trace.py --dedup CALCU1600_TRACE.bin   # drop consecutive same-PC frames (per CPU)
+    python3 read_trace.py --json CALCU1600_TRACE.bin
 """
 
 import sys
@@ -146,7 +146,7 @@ def _parse_trace_gap(payload):
 # ── Public API ────────────────────────────────────────────────────────────
 
 def load_trace(path):
-    """Parse CALCU1500_TRACE.bin and return a list of record dicts.
+    """Parse a trace file and return a list of record dicts.
 
     Record types: 'session_start', 'session_end', 'trace', 'gap'.
     Each 'trace' record is tagged with '_trace_index' (1-indexed).

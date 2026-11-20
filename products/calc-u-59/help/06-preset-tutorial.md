@@ -41,8 +41,8 @@ Settings ▸ Advanced) and rename the file, or rename it in a terminal with
 ## Step 1: Setup
 
 Every preset starts with the same few lines. `format-version: 2` says
-which version of the format the file is written in; a file without it,
-such as one written for Calc-U-59 2.3, is refused with a hint. `model`
+which version of the format the file is written in; a file without it
+is refused with a hint. `model`
 picks the calculator you get (`TI-59`, `TI-58` or `TI-58C`), `slot-1`
 plugs in one of the fourteen Solid State ROM modules by its two-letter
 ID, here `ML` for the Master Library, and `printer: PC-100C` attaches the
@@ -299,7 +299,7 @@ registers of its CALCULATOR tab ([Debugger](07-debugger.md)). On a Mac,
 on Windows and Linux, on an iPad held sideways and on an iPhone Duo
 opened flat the panel is beside the calculator; on an iPhone, and on an
 iPad held upright, it is a page of its own that you turn to with the
-arrow in the corner, once **Settings ▸ Debug Page in Portrait** is on.
+arrow in the corner, once **Settings ▸ Layout ▸ Debug Page in Portrait** is on.
 
 ## Step 6: Keys
 

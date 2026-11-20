@@ -21,17 +21,11 @@ how it is written.
 
 ## The settings file
 
-Calc-U-1600 keeps its settings in one file, `Calc-U-1600.ini`, in exactly
-one place per platform:
+Calc-U-1600 keeps its settings in one file, `Calc-U-1600.ini`, in the folder that
+[Settings](../../../library/help/08-settings.md#the-settings-file)
+names for each platform, with `<Product>` as `Calc-U-1600`.
 
-| Platform | Folder of the settings file |
-|---|---|
-| macOS | `~/Library/Application Support/Calc-U-1600/` |
-| Windows | `%APPDATA%\Calc-U-1600\` |
-| Linux | `$XDG_CONFIG_HOME/Calc-U-1600/`, or `~/.config/Calc-U-1600/` when that variable is not set |
-| Web | inside the page's own storage in the browser; it is not a file you can open |
-
-No other place is searched. The rules of the file (its sections, how a
+The rules of the file (its sections, how a
 missing or unknown key is treated, which keys the product writes itself)
 are those of the [shared reference](../../../library/help/10-reference.md)
 and the [shared Settings chapter](../../../library/help/08-settings.md); Calc-U-1600's

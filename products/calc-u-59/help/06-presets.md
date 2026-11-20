@@ -150,7 +150,7 @@ Besides the family's steps:
 |---|---|
 | `card:`, `arm:`, `saveas: { card: … }` | magnetic cards, above (TI-59) |
 | `printer-trace: on` / `off` | sets the PC-100C's TRACE switch; off unless a preset says so |
-| `pause: program` / `cpu`, `pause-on-start:`, `step:`, `resume:` | the debugger ([Debugger](07-debugger.md)) |
+| `pause: program` / `cpu`, `pause-on-start: program` / `cpu` / `off`, `step:`, `resume:` | the debugger ([Debugger](07-debugger.md)) |
 | `debug-panel: calculator` / `cpu` / `log` | shows that tab of the debug panel |
 
 Calc-U-59 has no `type:` step: the calculator has no text to type.

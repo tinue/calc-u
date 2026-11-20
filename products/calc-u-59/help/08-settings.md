@@ -18,10 +18,10 @@ preset sets them at a start.
 | Section | Setting | Where |
 |---|---|---|
 | General | **Startup model**: "Last used", TI-59, TI-58, TI-58C; and the version | everywhere |
-| Startup presets | one row per model: "None", the bundled startup preset of that model, or a file | everywhere |
+| Startup presets | one row per model: "None", the bundled startup preset of that model, or (Windows, Linux) a file | everywhere |
 | Storage | **Save folder** | Windows, Linux |
 | Folders | the **preset folder**, where Load Preset… starts | Windows, Linux |
-| Tracing | **Trace folder** (Windows, Linux), where traces go (iPhone, iPad: Local or iCloud), **Maximum file size** in MB | as named |
+| Tracing | **Save Location**, where traces go: Local or iCloud, on macOS also Custom Folder (macOS, iPhone, iPad); **Trace folder** (macOS, Windows, Linux); **Maximum file size** in MB (everywhere but the browser's portrait layout) | as named |
 | Display | **Segment Style**: "Modernized" or "Classic" | macOS, iPhone, iPad, Windows, Linux |
 | Keyboard | **Keyboard Feedback**: "Off", "Haptic" (iPhone, iPad), "Click Sound" | iPhone, iPad; the browser's portrait layout |
 | Layout | **Debug Page in Portrait** | iPhone, iPad |
@@ -68,7 +68,7 @@ folder given as `fixed:<folder>`.
 app:
 
 - `[window] x`, `[window] y`: the window's left and top edge (Qt6).
-- `[window] width`, `[window] height`: the window's size.
+- `[window] width`, `[window] height`: the window's size (Qt6).
 - `[window] calculator-width`, `[window] printer-width`,
   `[window] debug-width`: the widths of the calculator, the paper panel
   and the debug panel (Qt6).

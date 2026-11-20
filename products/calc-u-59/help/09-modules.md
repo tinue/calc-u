@@ -25,7 +25,7 @@ into the **module slot** of every model.
 ## Choosing a module
 
 - **The module picker** on the control bar lists the fourteen modules by
-  name, and the empty slot. **Machine ▸ Peripherals ▸** lists them too.
+  name, and the empty slot.
 - **A preset** names its module with `slot-1: { name: ML }`; a preset
   without `slot-1:` leaves the slot empty
   ([Presets of this product](06-presets.md)).

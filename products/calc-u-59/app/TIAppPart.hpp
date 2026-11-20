@@ -226,7 +226,7 @@ public:
     TIDebugPart& debugPart() { return m_debugPart; }
 
     // Magnetic cards: the library's media part, its place
-    // `card-reader` on the TI-59 (reference/AppLayer.md § "Card Reader Flow").
+    // `card-reader` on the TI-59 (docs/developer/App-Layer.md § "Card Reader Flow").
     calcu::media::MediaPart& mediaPart() { return m_lib.media(); }
     /// A tap at (nx, ny) on the card window: a top corner of a fitted card on
     /// show feeds that side. False: nothing fed.

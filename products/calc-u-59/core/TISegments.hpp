@@ -7,7 +7,7 @@
 // The glyph rules of the TI display and the turn
 // of a DisplaySnapshot into the machine's DisplayOutput. Every glyph comes from
 // this table, never from a font: no font reproduces the hardware's lit-segment
-// patterns (reference/NewGUIGuide.md).
+// patterns (docs/developer/New-GUI-Guide.md).
 //
 // Segments: bit 0=A(top) 1=B(upper-right) 2=C(lower-right) 3=D(bottom)
 //           4=E(lower-left) 5=F(upper-left) 6=G(middle)

@@ -1,12 +1,12 @@
 ---
 name: calc-u-59-docs
-description: Use this skill when working on the Calc-U-59 documentation — the user help (help/, with the shared parts in library/help/ at the repository root), the developer documentation (reference/, root markdown files) — or deciding where documentation belongs. Covers the help-vs-developer split, the help tool (tools/help check|build calc-u-59) and the reference architecture docs. Trigger on any task that touches help/, reference/*.md, README.md, CHANGELOG.md, TODO.md, or PRIVACY.md. Also trigger when the user says "update documentation" (or similar) after finishing core/, app/, frontends/swift/App/, frontends/qt6/ or frontends/web/ work on a release branch — see the Release Documentation Update Workflow section, which updates the help as well.
+description: Use this skill when working on the Calc-U-59 documentation — the user help (help/, with the shared parts in library/help/ at the repository root), the developer documentation (docs/developer/, root markdown files) — or deciding where documentation belongs. Covers the help-vs-developer split, the help tool (tools/help check|build calc-u-59) and the reference architecture docs. Trigger on any task that touches help/, docs/developer/*.md, README.md, CHANGELOG.md, TODO.md, or PRIVACY.md. Also trigger when the user says "update documentation" (or similar) after finishing core/, app/, frontends/swift/App/, frontends/qt6/ or frontends/web/ work on a release branch — see the Release Documentation Update Workflow section, which updates the help as well.
 user-invocable: true
 ---
 
 # Calc-U-59 Documentation
 
-This skill covers the user help (`help/`), the reference architecture docs (`reference/`) and root markdown files.
+This skill covers the user help (`help/`), the reference architecture docs (`docs/developer/`) and root markdown files.
 
 ---
 
@@ -19,8 +19,8 @@ This skill covers the user help (`help/`), the reference architecture docs (`ref
   more per chapter, `help/help.yaml`), the parts both products share in
   `library/help/` at the repository root. If you're about to write
   something an app user (not a contributor) would want to read, it goes
-  there, not in `reference/` or a root markdown file.
-- **Everything in the main repository (`reference/`, root markdown files,
+  there, not in `docs/developer/` or a root markdown file.
+- **Everything in the main repository (`docs/developer/`, root markdown files,
   `.claude/skills/`) is developer documentation** — for contributors, the
   project owner, and AI agents working on the code. It assumes the reader
   can read Swift/C++/Qt and doesn't need app-usage instructions.
@@ -28,10 +28,10 @@ This skill covers the user help (`help/`), the reference architecture docs (`ref
   than re-explaining or indexing end-user content.
 - The specifications of the file formats are `docs/formats/` at the
   repository root; the help's chapter 10 describes them for users
-  (`help/10-*.md`). The debug API and the internals live in `reference/`.
+  (`help/10-*.md`). The debug API and the internals live in `docs/developer/`.
 - **Skill files (`.claude/skills/*/SKILL.md`) must not duplicate content
   that already has a home in a developer-accessible markdown file.** A human
-  developer reads `reference/*.md`; only the agent reads skill files. If a
+  developer reads `docs/developer/*.md`; only the agent reads skill files. If a
   skill and a reference doc say the same thing, delete it from the skill and
   link to the doc instead — see `calc-u-59-presets/SKILL.md` for the
   pattern (a few navigation aids, everything else is one link to
@@ -70,24 +70,27 @@ about the site's build, design or URL map belongs in this repository.
 
 The playable calculator on the site (`/59/play/`, the installable app at
 `/59/calc/app/`) is this repository's web client, imported from a release's
-`Calc-U-59-web.zip` — calc-u-59-web skill and `reference/WebClient.md`.
+`Calc-U-59-web.zip` — calc-u-59-web skill and `docs/developer/Web-Client.md`.
 
 ---
 
-## Reference Architecture Docs (`reference/`)
+## Reference Architecture Docs (`docs/developer/`)
 
 These are AI-generated documents produced by reading the source code alongside hardware documentation. They describe the emulator's internals, not the user-facing app.
 
-The list of documents with a line on each is `README.md` § "Appendix:
-Documentation Index" (`reference/` and `rom/`); keep it current when adding
-or removing a document.
+The list of developer documents with a line on each is
+`docs/developer/README.md`; the rest (`rom/`, `tools/`, `examples/`) is in
+`README.md` § "Appendix: Documentation Index". Keep both current when adding
+or removing a document. File names are hyphenated words (`App-Layer.md`), as
+Calc-U-1600's; file formats go to `docs/formats/` at the repository root.
 
 The Qt6 app has no reference doc of its own: its class map and build live in
-the `calc-u-59-qt` skill, its feature placement in `FrontendParity.md`.
+the `calc-u-59-qt` skill, its feature placement in `Frontend-Parity.md`.
 ROM-level documentation (`rom/*-ROM-Guide.md`, `rom/fastmode.md`,
-`rom/printerinterrupt.md`) sits beside the annotated listings in `rom/`.
+`rom/printerinterrupt.md`) sits beside the annotated listings in `rom/`, the
+CPU traces they cite in `rom/traces/`.
 
-There is no end-user guide in `reference/` — that content is the help
+There is no end-user guide in `docs/developer/` — that content is the help
 (`help/07-debugger.md` for the debug panel, for one).
 
 When updating these files, keep the provenance notice at the top intact — it signals that the content is best-effort reverse-engineering, not authoritative hardware documentation.
@@ -131,13 +134,13 @@ Triggered by the user saying **"update documentation"** (or similar) after finis
 
 3. **Update `CHANGELOG.md`.** Confirm every user-facing change from step 2 has an entry under the current `[X.Y.Z] - work in progress` heading, in the existing style (bold **Area** prefix, `### Fixes` subsection for bug fixes). Don't add a release date — that happens at release time.
 
-4. **Update reference docs** (`reference/CoreArchitecture.md`, `reference/AppLayer.md`, `reference/AppArchitecture.md`, `reference/DebugAPI.md`, `reference/FrontendParity.md`, `reference/WebClient.md`, `reference/NewGUIGuide.md`, and `rom/*.md`) for anything the diff invalidated: register model, SCOM layout, PC encoding, machine variants, bridge/debug API surface, settings, file formats. Keep each file's provenance notice intact.
+4. **Update reference docs** (`docs/developer/Core-Architecture.md`, `docs/developer/App-Layer.md`, `docs/developer/Debug-API.md`, `docs/developer/Frontend-Parity.md`, `docs/developer/Web-Client.md`, `docs/developer/New-GUI-Guide.md`, and `rom/*.md`) for anything the diff invalidated: register model, SCOM layout, PC encoding, machine variants, bridge/debug API surface, settings, file formats. Keep each file's provenance notice intact.
 
 5. **Update the help (`help/`, and `library/help/` where both products change).** Update its chapters for anything user-facing in any GUI: new settings, module behaviour, install steps (Mac, iOS, Windows, Linux), preset keys and steps, file formats, speed or accuracy; run `tools/help check calc-u-59`. The site renders the help asset of the release. What stays the site's (the software collection, the articles derived from `rom/*.md`, the example copies under `59/software-files/`) is updated in `../calc-u-site` under its own `site-59` skill and `CLAUDE.md`, committed there. Leave the web client alone: the site fetches `59/calc/` from a release by its own rules.
 
 6. **The web client** (`frontends/web/`): if the diff touched `core/`, `app/`, `roms/` or `frontends/web/`, build and test it as the calc-u-59-web skill says. The site picks up a new build by pinning the release's `Calc-U-59-web.zip`.
 
-7. **Commit, never push, in both repositories.** Main-repo changes (`CHANGELOG.md`, `help/`, `reference/`, `README.md`, `TODO.md`, `tools/`) commit from this repo's root; site changes commit in `../calc-u-site`, where a push publishes the site, so push there only when the user asks.
+7. **Commit, never push, in both repositories.** Main-repo changes (`CHANGELOG.md`, `help/`, `docs/developer/`, `README.md`, `TODO.md`, `tools/`) commit from this repo's root; site changes commit in `../calc-u-site`, where a push publishes the site, so push there only when the user asks.
 
 ---
 

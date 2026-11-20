@@ -58,7 +58,7 @@ row engine (Galidas' table of two-day entries); with it a printed line costs
 0.89 s, and 61 to 64 lines a year are most of the run time. The later gains
 come from the work per month. Fast mode and its entry methods, including
 Acosta's "hi2", are explained in `rom/fastmode.md`; the timing tools are `c59 run-time` and `c59 line-times`
-of the harness and the scripts in `tools/calendar/` (`reference/Harness.md`).
+of the harness and the scripts in `tools/calendar/` (`docs/developer/Harness.md`).
 
 Measured the same way, adding up every key after the year is keyed in
 (Acosta's normal-mode preparation, the new program's fast-mode

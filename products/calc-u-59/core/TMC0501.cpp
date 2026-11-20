@@ -987,7 +987,7 @@ void TMC0501::execALU(uint16_t opcode) {
         if (RAM_OP == 2) {
             // Op 2 clears the whole RAM, whatever the address: a real TI-59 loses
             // everything when a program reaches the reset routine (0385), and t
-            // and the rest of SCOM stay (reference/CoreArchitecture.md § "RAM").
+            // and the rest of SCOM stay (docs/developer/Core-Architecture.md § "RAM").
             ram.clear();
             emitDebug(2, "RAM_OP CLR ALL");
         } else if (RAM_ADDR < ram.size()) {

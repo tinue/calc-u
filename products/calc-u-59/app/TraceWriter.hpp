@@ -6,7 +6,7 @@
 #include <vector>
 
 // The records of Calc-U-59's binary trace file, format version 2
-// (reference/DebugAPI.md; tools/read_trace.py reads it): a 16-byte file
+// (docs/formats/trace.md at the repository root; tools/read_trace.py reads it): a 16-byte file
 // header, then records of [type u8][length u16 LE][payload]. An encoder
 // into a byte buffer only: the library's
 // trace session writes the file and keeps its size limit, and

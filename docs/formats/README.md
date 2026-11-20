@@ -25,9 +25,10 @@ Terms follow `docs/GLOSSARY.md`.
 | [web-embed.md](web-embed.md) | The Web frontend for pages that embed it: `calc.js`, the components and props, `MANIFEST.json`, the worker messages, storage and mounts |
 | [harness.md](harness.md) | The harness `calcu`: replies, JSON, options, exit codes, the common commands, serve and attach |
 | [session-protocol.md](session-protocol.md) | The messages between a session and its listeners: kinds, order, the library's topics, commands and requests |
+| [trace.md](trace.md) | Calc-U-59's binary trace file: header, records, the CPU frame of each instruction |
 
 The product commands of the harness and the DAP server are specified next
-to their code: `products/calc-u-59/reference/Harness.md`,
+to their code: `products/calc-u-59/docs/developer/Harness.md`,
 `products/calc-u-1600/docs/developer/Harness.md` and `DAP.md`.
 
 ## Formats at a glance

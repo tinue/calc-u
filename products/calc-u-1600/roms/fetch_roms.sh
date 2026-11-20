@@ -6,8 +6,9 @@
 # script is how a fresh clone (or CI) gets a working roms/ directory before
 # building. It is also the fetch list: names and md5 of the full set.
 #
-# Idempotent: skips a file that's already present and matches its known
-# md5, so re-running after a partial/interrupted fetch is safe and cheap.
+# Idempotent (tools/fetch_roms_common.sh, the repository's download and
+# md5 check both products share): a file that is there with its md5 is
+# skipped.
 #
 # Usage: products/calc-u-1600/roms/fetch_roms.sh
 #
@@ -36,57 +37,7 @@
 set -eu
 
 cd "$(dirname "$0")"
-ROMS_DIR=.
-
-log() { echo "fetch_roms.sh: $*" >&2; }
-die() { log "error: $*"; exit 1; }
-
-# md5 (BSD/macOS) vs md5sum (Linux) -- print just the hex digest.
-md5_of() {
-  if command -v md5 >/dev/null 2>&1; then
-    md5 -q "$1"
-  else
-    md5sum "$1" | awk '{print $1}'
-  fi
-}
-
-# fetch_if_needed DEST_PATH EXPECTED_MD5 URL... -- downloads the URLs in
-# order and stores their concatenation (more than one for a ROM kept
-# upstream as one file per bank).
-fetch_if_needed() {
-  dest=$1
-  expected_md5=$2
-  shift 2
-
-  # A file left over with different letter case (e.g. a stale ...-old.BIN)
-  # would match `-f "$dest"` on a case-insensitive filesystem and never get
-  # renamed to the lowercase name the build globs for -- drop it first.
-  for existing in "$(dirname "$dest")"/*; do
-    [ "$existing" != "$dest" ] && [ "$(printf %s "$existing" | tr 'A-Z' 'a-z')" = "$(printf %s "$dest" | tr 'A-Z' 'a-z')" ] && rm -f "$existing"
-  done
-
-  if [ -f "$dest" ] && [ "$(md5_of "$dest")" = "$expected_md5" ]; then
-    log "up to date: $dest"
-    return 0
-  fi
-
-  tmp="$dest.tmp$$"
-  : > "$tmp"
-  for url in "$@"; do
-    log "fetching $dest <- $url"
-    if ! curl -fsSL "$url" >> "$tmp"; then
-      rm -f "$tmp"
-      die "download failed: $url"
-    fi
-  done
-
-  actual_md5=$(md5_of "$tmp")
-  if [ "$actual_md5" != "$expected_md5" ]; then
-    rm -f "$tmp"
-    die "checksum mismatch for $dest (got $actual_md5, expected $expected_md5) -- upstream file may have changed, update this script"
-  fi
-  mv "$tmp" "$dest"
-}
+. ../../../tools/fetch_roms_common.sh
 
 mkdir -p "$ROMS_DIR"
 

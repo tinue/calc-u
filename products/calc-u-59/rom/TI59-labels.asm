@@ -12,7 +12,7 @@
 ; "0" and "+", printer attached, TRACE switch latched), CALCU59_TRACE.ans
 ; (examples/historic/texas-print.ti59 single-step), CALCU59_TRACE.txt
 ; (texas-print.ti59 scripted pseudo-code insertion: SBR 444 … P/R, LRN, Ins),
-; errorblink.txt (1/x on a zero display after reset → error blink → CLR,
+; traces/errorblink.txt (1/x on a zero display after reset → error blink → CLR,
 ; no printer).
 ; ══════════════════════════════════════════════════════════════════════════
 
@@ -52,7 +52,7 @@
 027A  KEY_XT             [D] "x⇄t" handler (slot 0023)
 02AC  KEY_GTO            [D] "GTO" handler (slot 0016)
 0318  KEY_DPT            [T] "." handler (slot 0039)
-039F  KEY_CLR            [T] "CLR" handler (slot 0052); checks pending trace record (fA[10]) at entry; flag wipe at 03B0 + CLR fB[9] at 03BA end an error blink — traced in errorblink.txt
+039F  KEY_CLR            [T] "CLR" handler (slot 0052); checks pending trace record (fA[10]) at entry; flag wipe at 03B0 + CLR fB[9] at 03BA end an error blink — traced in traces/errorblink.txt
 03B9  KEY_CE             [D] "CE" handler (slot 0042)
 03E9  KEY_SBR            [D] "SBR" handler (slot 0017)
 03F8  KEY_SST            [D] "SST" handler (slot 0014)
@@ -76,7 +76,7 @@
 022C  ARG_COLLECT_SETUP  [T] suspend the operation sequence until R5+1 argument digits are typed (fB[12]); state in E
 031A  NUMBER_ENTRY       [T] digit / "." entry into the display image in A (digit limits 0338–033B); argument digits diverted to 06C6
 
-; ── Arithmetic / number pipeline (trace: errorblink.txt, 1/x of 0) ──────────
+; ── Arithmetic / number pipeline (trace: traces/errorblink.txt, 1/x of 0) ──────────
 041C  NORM_CALL          [T] "normalize, then do the work" prologue: parks KR+1 (caller's next FN_TABLE slot) in SR, runs NUM_NORM, PREG-returns via 02D1/02D2
 0418  ARITH_OVFL_EXIT    [T] arithmetic overflow exit (fA[4] tag): bumps the pending continuation, then exits to OVFL_CLAMP
 0419  ARITH_EXIT         [T] arithmetic exit: advance SR (current slot) by one, NUM_NORM, return to the next slot
@@ -98,7 +98,7 @@
 
 ; ── User-program execution ──────────────────────────────────────────────────
 0F53  PRG_DISPATCH       [T] RAM-program keycode fetch & computed-jump dispatch (0F53–0F6D); no keycode validation
-082F  LIB_EXEC_FETCH     [T] solid-state (CROM) execution-interpreter IN LIB fetch site — latches the user-visible library PC (see reference/CoreArchitecture.md); instruction site, not an entry point
+082F  LIB_EXEC_FETCH     [T] solid-state (CROM) execution-interpreter IN LIB fetch site — latches the user-visible library PC (see docs/developer/Core-Architecture.md); instruction site, not an entry point
 0B9D  PRGREG_FETCH_CON   [T] constant-table branch of PRGREG_FETCH: step counter → row 16 + step/8 (index in KR[10:8]·8 + KR[6:4]), C=C+CON reads 8 packed keycodes (step 008 → row 17 traced)
 0EDB  PRGREG_RAM_READ    [T] read a program register from RAM (RAM.OP read; register number in the next IO value, nibbles 3·2)
 0F85  PRGREG_RAM_WRITE   [T] write a program register to RAM (RAM.OP write; specifier then data on the two following IO values)

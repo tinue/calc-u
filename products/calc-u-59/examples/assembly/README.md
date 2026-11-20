@@ -56,5 +56,5 @@ The loaded code runs in the calculator's ROM overlay area (`0x1800–0x1FFF`) an
 display in real time. While it runs, the CALCULATOR tab cannot be chosen; FREEZE, STEP and
 RESUME of the CPU tab work on its instructions. A Reset ends its run and keeps it loaded (Run
 enters it again); a Cold boot, a preset or a model switch removes it. The overlay works the
-same in the Mac/iOS, Windows/Linux and Web apps; `reference/DebugAPI.md` § "ASM Overlay"
+same in the Mac/iOS, Windows/Linux and Web apps; `docs/developer/Debug-API.md` § "ASM Overlay"
 describes it.

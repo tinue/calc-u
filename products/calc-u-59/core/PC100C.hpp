@@ -17,7 +17,7 @@
 //
 // Timings: every measurement was made on a PC-100A, not on a PC-100C; no
 // difference between the two is expected
-// (reference/CoreArchitecture.md, "Printer (PC-100C)").
+// (docs/developer/Core-Architecture.md, "Printer (PC-100C)").
 //
 // Its paper is the library's paper output kind: PRT.GO
 // puts the line's 20 characters on the text layer at once, at the y where

@@ -4,7 +4,7 @@ The common protocol of the harness: the program `calcu`, its one-shot
 form, `calcu serve`, and harness attach to a running app. It says what a
 line holds, what a reply looks like and what each common command takes
 and gives. The product commands (`c59 …`, `c1600 …`) are not here: they
-are in `products/calc-u-59/reference/Harness.md` and
+are in `products/calc-u-59/docs/developer/Harness.md` and
 `products/calc-u-1600/docs/developer/Harness.md`.
 
 Terms follow `docs/GLOSSARY.md`. The code is in `library/harness/`:

@@ -310,7 +310,7 @@ TEST(print_gives_a_line) {
 // examples/debug/printer-interrupt-sweep.ti58c on the TI-58C, one line per k: the
 // interrupt comes 2049 + 16·(k − 21) cycles after the print starts, roughly.
 // Expected values are what a real TI-58C + PC-100A printed (2026-10-25 scans,
-// reference/CoreArchitecture.md "Dot timing within a line").
+// docs/developer/Core-Architecture.md "Dot timing within a line").
 static PC100C::CodeLine sweepLine(int k, std::vector<calcu::paper::Mark>* marks = nullptr) {
     const ModelId model = ModelId{kTI58C};
     auto m = testroms::makeMachine(model);

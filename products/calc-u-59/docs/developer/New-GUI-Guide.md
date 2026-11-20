@@ -4,7 +4,7 @@
 > first written by reading the Swift app and the web build side by side,
 > rewritten when the third GUI (Qt6) was built and the logic all GUIs had
 > duplicated moved into `app/`, and again when the web build moved onto
-> `app/` too. Treat it like the other `reference/*.md`
+> `app/` too. Treat it like the other `docs/developer/*.md`
 > files: best-effort, correct as of writing, the code wins.
 
 For anyone adding a GUI for a platform Calc-U-59 doesn't support yet
@@ -17,16 +17,16 @@ to write.
 |---|---|---|
 | Swift app (`frontends/swift/App/`) — macOS, iOS | Swift + SwiftUI | `core/` + `app/` through ObjC++ wrappers in `frontends/swift/Bridge/` |
 | Qt6 app (`frontends/qt6/`) — Windows, Linux (macOS: development only) | C++ + Qt Widgets | `core/` + `app/` directly |
-| Web client (`frontends/web/`) — browsers, embedded by the website | JS + React, engine in WASM | `core/` + `app/` compiled with Emscripten; `frontends/web/bindings.cpp` is the adapter (`WebClient.md`) |
+| Web client (`frontends/web/`) — browsers, embedded by the website | JS + React, engine in WASM | `core/` + `app/` compiled with Emscripten; `frontends/web/bindings.cpp` is the adapter (`Web-Client.md`) |
 
-All three share all non-GUI code and are tracked in `FrontendParity.md`. The
+All three share all non-GUI code and are tracked in `Frontend-Parity.md`. The
 three are kept at feature parity, with a few deliberate exceptions in the
 web client (Classic LED only, session-only cards, no debugger in its
 portrait layout).
 
 ## If your GUI can call C++
 
-Build on `app/` (`AppLayer.md`). The Qt app is the worked
+Build on `app/` (`App-Layer.md`). The Qt app is the worked
 example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 lines
 (header and source).
 
@@ -67,7 +67,7 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    hold, the pickers; send `media.choose`, `media.start-new`, `media.eject`),
    …) and the debug panel's product topics (`c59.calculator-debug`,
    `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `asm-overlay`, `c59.debug-view`;
-   `reference/DebugAPI.md`; the LOG tab keeps the last 2000 lines of the
+   `docs/developer/Debug-API.md`; the LOG tab keeps the last 2000 lines of the
    `log` topic). Send every file the user hands over as the library's `open`
    (a drag asks `open-would-take`). Show `notices` as alerts. Offer `clipboard-image` and
    `clipboard-text` for Copy of the paper, and `keep-file` where a trace
@@ -89,7 +89,7 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    `paper.copy`, `paper.cut` and `set-control`, the run-control buttons'
    `pause`, `step`, `resume` (levels `program` for the CALCULATOR tab, `cpu`
    for the CPU tab), `pause-on-start` and `trace` are the library's.
-5. **Draw** with the shared rules (`AppLayer.md` § "Drawing
+5. **Draw** with the shared rules (`App-Layer.md` § "Drawing
    Rules"): `SevenSegment` + `LedGeometry` for the LED — never a font, no
    font reproduces the hardware's lit segments — `CueCard` for cue cards
    (with `litCardCorner` and `cardCornerGeometry` for the side being read),

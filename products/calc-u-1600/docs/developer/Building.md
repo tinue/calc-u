@@ -191,7 +191,7 @@ configurations committed in the repository's `.run/`:
 
 All of them run and debug interactively (breakpoints, variable
 inspection, stepping) — which is the main thing this build adds over
-`tools/run_tests.sh`.
+`../../tools/run_tests.sh calc-u-1600`.
 
 Run `roms/fetch_roms.sh` (step 2 above) first: `CoreTests` looks the ROMs
 up in `roms/` relative to its working directory (this directory), the
@@ -208,10 +208,11 @@ check do it). No script lists sources.
 ## Running the tests
 
 ```sh
-tools/run_tests.sh
+../../tools/run_tests.sh calc-u-1600
 ```
 
-Builds and runs the product's Frequent tests (no Qt, no GUI): it
+The repository's one test script (`tools/run_tests.sh <product>`, Calc-U-59's
+too) builds and runs the product's Frequent tests (no Qt, no GUI): it
 configures the root project with `-DCALCU_FRONTEND_QT=OFF` into the
 repository's `build/tests` tree (Debug, so Core and the tests compile at
 `-O1`) and runs every Frequent CTest entry of the product: `CoreTests`,
@@ -219,7 +220,7 @@ repository's `build/tests` tree (Debug, so Core and the tests compile at
 `CalcU1600HelpTests`, the help and preset checks and the source checks
 (from this directory, since the tests load `roms/` via relative paths).
 An argument is a filter for the five runner programs:
-`tools/run_tests.sh ce158` runs the tests whose name contains `ce158` in
+`../../tools/run_tests.sh calc-u-1600 ce158` runs the tests whose name contains `ce158` in
 each of them. Needs CMake, Ninja and zlib (`zlib1g-dev` on Ubuntu; macOS has it).
 
 The tests use the repository's one C++ test runner,

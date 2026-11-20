@@ -1,4 +1,4 @@
-// The cases of reference/Idle.md, through the harness: each brings the
+// The cases of docs/developer/Idle.md, through the harness: each brings the
 // machine into its case with timed waits only, then reads the answer of
 // `idle-state` (A takes keys, W waits, the program has ended) and checks
 // what the steps do with it (`wait` returns once settled, `wait-finished`

@@ -1,19 +1,19 @@
 #!/bin/bash
-# Runs inside the container (ci/linux/run.sh starts it): the Linux jobs of
-# .github/workflows/calc-u-59.yml, calc-u-1600.yml and library.yml (which
-# both call) on the copy in /work.
-# Each job is the workflow job's configure, build and test commands; the
-# build trees get one name per job (CI has one machine per job).
+# Runs inside the container (ci/linux/run.sh starts it). Only what can fail
+# on GitHub's Linux runners and not on the Mac: GCC 13 and libstdc++ (a
+# missing include, a stricter overload, an internal compiler error, the
+# order of argument evaluation at run time), Ubuntu's Qt and its moc, the
+# pinned Emscripten and Playwright in Linux browsers. What gives the same
+# result on every host (the help, the source checks) is the Mac's Frequent
+# run.
 #
-#   library     library.yml's `library` job (both workflows' `library`)
-#   core-59     calc-u-59.yml `core-tests`
-#   core-1600   calc-u-1600.yml `core-tests`
-#   qt-59       calc-u-59.yml `linux` up to the build (no AppImage)
-#   qt-1600     calc-u-1600.yml `linux` up to the build (no AppImage)
-#   web-59      calc-u-59.yml `web` up to its tests (web image only; no zip)
-#   web-1600    calc-u-1600.yml `web` up to the release dist/ and its check (web image only; no zip)
-#   help-59     calc-u-59.yml `help`: the help asset (no upload)
-#   help-1600   calc-u-1600.yml `help`: the help asset (no upload)
+#   gcc        one tree with both products, the Qt frontends and the tests:
+#              the build of the workflows' library, core-tests and linux
+#              jobs, then the CTest entries those jobs run (not the Qt
+#              window tests, which no Linux job runs)
+#   web-59     calc-u-59.yml `web` up to its tests (web image only; no zip)
+#   web-1600   calc-u-1600.yml `web` up to the release dist/ and its check,
+#              and the library's Web shell tests (web image only; no zip)
 set -uo pipefail
 cd /work
 
@@ -30,38 +30,16 @@ emsdk() {  # emsdk <version>: the web job's setup-emsdk, without ccache
 
 job() {
   case "$1" in
-    library)
-      cmake -S . -B build/library -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-        -DCALCU_PRODUCT_59=OFF -DCALCU_PRODUCT_1600=OFF -DCALCU_FRONTEND_QT=OFF &&
-      cmake --build build/library &&
-      ctest --test-dir build/library --output-on-failure ;;
-    core-59)
-      cd products/calc-u-59 &&
-      cmake -S ../.. -B ../../build/tests-59 -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-        -DCALCU_PRODUCT_1600=OFF -DCALCU_FRONTEND_QT=OFF &&
-      cmake --build ../../build/tests-59 &&
-      ctest --test-dir ../../build/tests-59 --output-on-failure ;;
-    core-1600)
-      sharpdx && cd products/calc-u-1600 &&
-      cmake -S ../.. -B ../../build/tests-1600 -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-        -DCALCU_PRODUCT_59=OFF -DCALCU_FRONTEND_QT=OFF &&
-      cmake --build ../../build/tests-1600 &&
-      ctest --test-dir ../../build/tests-1600 --output-on-failure ;;
-    qt-59)
-      cd products/calc-u-59 &&
-      cmake -S ../.. -B ../../build/release-59 -G Ninja -DCMAKE_BUILD_TYPE=Release \
-        -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF &&
-      cmake --build ../../build/release-59 --target CalcU59Qt calcu ;;
-    qt-1600)
-      sharpdx && cd products/calc-u-1600 &&
-      cmake -S ../.. -B ../../build/release-1600 -G Ninja -DCMAKE_BUILD_TYPE=Release \
-        -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF &&
-      cmake --build ../../build/release-1600 --target CalcU1600Qt calcu ;;
+    gcc)
+      sharpdx &&
+      cmake -S . -B build/linux -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo &&
+      cmake --build build/linux &&
+      ctest --test-dir build/linux --output-on-failure -j8 \
+        -E '^(calcu_qt6_tests|calcu_qt6_scenarios|CalcU59QtTests|CalcU1600QtTests)' ;;
     web-59)
       emsdk 6.0.12 && cd products/calc-u-59 &&
       frontends/web/build.sh &&
-      frontends/web/run-tests.sh --reporter=line &&
-      (cd /work/library/web && npm ci --no-audit --no-fund && tests/run-tests.sh --reporter=line) ;;
+      frontends/web/run-tests.sh --reporter=line ;;
     web-1600)
       emsdk 6.0.13 && cd products/calc-u-1600 &&
       tools/build_wasm_check.sh &&
@@ -70,10 +48,6 @@ job() {
       frontends/web/run-tests.sh --reporter=line &&
       (cd /work/library/web && npm ci --no-audit --no-fund && tests/run-tests.sh --reporter=line) &&
       frontends/web/build.sh --release && tests/web_no_test_aids.sh frontends/web/dist ;;
-    help-59)
-      python3 tools/help build calc-u-59 --out build/help --quiet-warnings ;;
-    help-1600)
-      python3 tools/help build calc-u-1600 --out build/help --quiet-warnings ;;
     *)
       echo "unknown job: $1" >&2; return 2 ;;
   esac

@@ -1,11 +1,12 @@
 #!/bin/sh
-# Runs the Linux jobs of both CI workflows locally in Podman, natively on
-# arm64, before dispatching CI. GCC 13 on Ubuntu 24.04 as on the
-# runners; x86_64, Windows, macOS packaging and the AppImages stay CI-only.
+# Runs locally in Podman, natively on arm64, what can fail on GitHub's Linux
+# runners and not on the Mac, so that fewer GitHub runs fail: GCC 13 and
+# Qt 6.4 on Ubuntu 24.04 as on the runners, and the web jobs' Emscripten and
+# Playwright. It builds no release asset; x86_64, Windows, macOS packaging
+# and the AppImages stay CI-only.
 #
-#   ci/linux/run.sh                 library core-59 core-1600 qt-59 qt-1600 help-59 help-1600
-#   ci/linux/run.sh core-1600 qt-1600
-#   ci/linux/run.sh web-1600        the web job, in the larger web image
+#   ci/linux/run.sh                 gcc
+#   ci/linux/run.sh web-1600        a web job, in the larger web image
 #
 # The jobs are in ci/linux/jobs.sh. The working tree (with uncommitted
 # changes and the ROMs, without .git and what .gitignore ignores) is copied
@@ -23,7 +24,7 @@ HERE="$REPO/ci/linux"
 MACHINE=${CALCU_PODMAN_MACHINE:-calcu}
 pm() { podman --connection "$MACHINE" "$@"; }
 
-[ $# -gt 0 ] || set -- library core-59 core-1600 qt-59 qt-1600 help-59 help-1600
+[ $# -gt 0 ] || set -- gcc
 # The web jobs run in the web image, the others in the base image: two runs
 # when both are named, so a base job's build tree is never configured in the
 # web image (which has node and the browsers the base image lacks).

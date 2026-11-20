@@ -54,29 +54,32 @@ The Longer group measured 291.5 s on an M4 Pro, within its 10 min.
 
 ## Local Linux CI
 
-`ci/linux/run.sh` runs the CI's Linux jobs in Podman on Ubuntu 24.04 with
-GCC 13, natively on arm64. It is there to keep the GitHub pipeline builds
-from failing, so it runs before a GitHub run is planned (a pre-release,
-for example), not after every merge. Exceptions: work on the pipeline
-itself (the workflows, `ci/`), and work with a high risk of breaking the
-pipeline build (the build system, the toolchain, platform-specific code).
-A change is green by the build and the Frequent group.
+`ci/linux/run.sh` runs in Podman on Ubuntu 24.04, natively on arm64, what
+can fail on GitHub's Linux runners and not on the Mac: GCC 13 and libstdc++
+(a missing include, a stricter overload, an internal compiler error, the
+order of argument evaluation at run time), Ubuntu's Qt and its `moc`, the
+web jobs' pinned Emscripten and Playwright in Linux browsers. These caused
+the failed GitHub runs; what gives the same result on every host (the help,
+the source checks) is covered by the Mac's Frequent run, and Apple's
+notarisation cannot be tried locally. It builds no release asset. It runs
+before a GitHub run is planned (a pre-release, for example), not after every
+merge. Exceptions: work on the pipeline itself (the workflows, `ci/`), and
+work with a high risk of breaking the pipeline build (the build system, the
+toolchain, platform-specific code). A change is green by the build and the
+Frequent group.
 
-| Job | CI job | |
+| Job | What | |
 |---|---|---|
-| `library` | `library` (both workflows call `library.yml`) | default |
-| `core-59`, `core-1600` | `core-tests`: build and the Frequent group | default |
-| `qt-59`, `qt-1600` | `linux` (a matrix in both workflows) up to the build | default |
-| `help-59`, `help-1600` | `help`: the help asset | default |
-| `web-59`, `web-1600` | `web` up to the tests, each product's Emscripten, in the web image: the `web` jobs' Playwright container with their build tools | when named |
+| `gcc` | one tree (RelWithDebInfo) with both products, the Qt frontends and the tests: the code the workflows' `library`, `core-tests` and `linux` jobs build, then the CTest entries those jobs run, without the Qt window tests (`calcu_qt6_*`, `CalcU59QtTests`, `CalcU1600QtTests`), which no Linux job runs | default |
+| `web-59`, `web-1600` | `web` up to the tests, each product's Emscripten, in the web image: the `web` jobs' Playwright container with their build tools; `web-1600` also runs the library's Web shell tests | when named |
 
-`ci/linux/run.sh core-1600` runs one job. The working tree is copied into a
+`ci/linux/run.sh web-1600` runs one job. The working tree is copied into a
 volume without what git ignores (but the ROMs), so builds never write into
 the checkout. The image follows `ci/linux/Containerfile`, which mirrors the
 workflows' install steps and changes with them; its web image starts from
 the same Playwright container as the `web` jobs. Measured on an M4 Pro
-(machine `calcu` with 12 CPUs and 16 GB): 8.7 min cold with the image
-build, 1.6 min warm.
+(machine `calcu` with 12 CPUs and 16 GB), the `gcc` job: 3.8 min with
+a new build tree, 35 s warm (most of it the tests).
 
 ## Library
 

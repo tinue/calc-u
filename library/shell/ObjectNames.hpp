@@ -28,11 +28,5 @@ inline const char* const kNoticeNo = "notice-no";
 inline const char* const kAboutDialog = "about-dialog";
 inline const char* const kPanelArea = "panel-area";
 inline const char* const kRomsMissing = "roms-missing";
-// A window without a menu bar: the bar's actions, the More button and
-// the items of its menu; the storage banner of the React set.
-inline std::string barAction(const std::string& id) { return "bar-action-" + id; }   // bar-action-reset, -load-preset, -settings
-inline const char* const kBarMore = "bar-more";
-inline std::string moreItem(const std::string& id) { return "more-item-" + id; }
-inline const char* const kStorageBanner = "storage-banner";
 
 } // namespace calcu::shell::names

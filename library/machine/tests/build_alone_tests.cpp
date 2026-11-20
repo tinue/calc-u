@@ -25,6 +25,6 @@ TEST(library_tests_run_without_products) {
     CHECK(!cat.peripherals().empty());
     // A product kind, listed by a running machine.
     auto m = buildTestMachine(kSeg, std::nullopt, {peripheralAt(cat, "printer", kPrinter)});
-    CHECK(m && capabilitiesOf<TestCounter>(*m).size() == 1);
+    CHECK(m && m->capabilities(TestCounter::kKind).size() == 1);
     CHECK(TestCounter::kKind.value.find('.') != std::string_view::npos);   // a product's prefix
 }

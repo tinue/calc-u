@@ -25,7 +25,7 @@ calcu::machine::PeripheralRequest plug(const char* place, const PeripheralId& id
 
 // A window with the control state among its parts.
 struct ControlRig {
-    explicit ControlRig(std::vector<const ControlRules*> rules = {}) : control(testSetup(std::move(rules))) {
+    explicit ControlRig(const ControlRules* rules = nullptr) : control(testSetup(rules)) {
         st::RigOptions o;
         o.extraParts = {&control};
         rig = std::make_unique<st::Rig>(o);
@@ -142,7 +142,7 @@ TEST(control_part_no_machine_no_control_state) {
 
 TEST(control_part_two_sessions_same_machine_same_control_state) {
     TestControlRules rules;   // the same product in both
-    ControlRig one({&rules}), two({&rules});
+    ControlRig one(&rules), two(&rules);
     one.rig->part.operation = two.rig->part.operation = [](calcu::sessions::OperationContext& c) {
         return attachUartThenRun(c);
     };

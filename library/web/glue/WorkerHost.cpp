@@ -11,6 +11,8 @@ namespace s = calcu::sessions;
 
 namespace calcu::web {
 
+namespace {
+
 const char* storageModeName(StorageMode m) {
     switch (m) {
     case StorageMode::Kept: return "kept";
@@ -20,8 +22,6 @@ const char* storageModeName(StorageMode m) {
     }
     return "kept";
 }
-
-namespace {
 
 StorageMode storageModeNamed(const std::string& name) {
     if (name == "second-copy") return StorageMode::SecondCopy;

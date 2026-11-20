@@ -42,10 +42,6 @@ inline constexpr const char* kNoClipboard = "No frontend offers the clipboard.";
 std::string noTextLayerSentence(const std::string& owner);                               // "The CE-150 has no text layer."
 std::string unknownPrinterSentence(const std::string& name, const std::vector<std::string>& owners);
 
-// The description as a Value: unit [numerator, denominator], the Coords as
-// integers, form "dots" / "pen-strokes", greys, dpi, textLayer.
-sessions::Value descriptionValue(const PaperDescription&);
-
 struct PaperEntry {
     machine::PeripheralId printer;
     std::string owner;   // the owner's name

@@ -84,6 +84,10 @@ bool commandModifier(Qt::KeyboardModifiers modifiers) {
 #endif
 }
 
+namespace {
+
+// The physical key behind a key event, stable between its press and its
+// release whatever the modifiers did in between (unlike QKeyEvent::key()).
 quint32 physicalKeyId(const QKeyEvent& event) {
 #ifdef Q_OS_MACOS
     // nativeScanCode() carries nothing on macOS; the virtual key code is
@@ -94,6 +98,8 @@ quint32 physicalKeyId(const QKeyEvent& event) {
     return static_cast<quint32>(event.key());
 #endif
 }
+
+} // namespace
 
 std::optional<typing::HostKeyEvent> HostKeys::press(const QKeyEvent& event) {
     const Qt::Key key = static_cast<Qt::Key>(event.key());

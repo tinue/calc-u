@@ -71,7 +71,6 @@ bool accepts(const ProductDecl& product, const KeyDecl& decl, std::string_view v
 // a default its own key does not accept. Empty when the declaration is sound.
 std::vector<std::string> checkDeclaration(const ProductDecl& product);
 
-bool isKebabCase(std::string_view name);
 std::string lowerAscii(std::string_view s);
 
 } // namespace calcu::settings

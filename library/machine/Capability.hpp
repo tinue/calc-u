@@ -45,11 +45,6 @@ template <class K, class M> const K* capabilityAs(const M& machine, const Capabi
     return c && c->kind() == K::kKind ? static_cast<const K*>(c) : nullptr;
 }
 
-// The capabilities of kind K present now; empty if none.
-template <class K, class M> std::vector<CapabilityEntry> capabilitiesOf(const M& machine) {
-    return machine.capabilities(K::kKind);
-}
-
 // The first capability of kind K the machine has now, or nullptr: the one
 // form of "the machine's K" for library and products.
 template <class K, class M> K* first(M& machine) {

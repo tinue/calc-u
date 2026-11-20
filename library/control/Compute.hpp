@@ -28,7 +28,7 @@ namespace calcu::control {
 struct ControlSetup {
     const machine::Catalogue* catalogue = nullptr;   // the product's, never null; read at each computation
     std::vector<machine::PeripheralId> printers;     // who can own the paper panel
-    std::vector<const ControlRules*> rules;          // asked in this order
+    const ControlRules* rules = nullptr;             // the product's; null: none
 };
 
 ControlState computeControlState(const machine::Machine&, const ControlSetup&, bool operationRuns);

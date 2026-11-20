@@ -33,7 +33,4 @@ sessions::Value toValue(const HitMap&);
 // {x, y, w, h}.
 sessions::Value toValue(const Rect&);
 
-// "FileOpen", "FileKinds", ... as in C++ (the groups of shellModel.js).
-const char* menuGroupName(MenuGroup);
-
 } // namespace calcu::shell

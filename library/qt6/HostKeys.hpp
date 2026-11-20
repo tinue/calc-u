@@ -32,10 +32,6 @@ typing::HostKeyEvent hostKeyEvent(Qt::Key key, Qt::KeyboardModifiers modifiers, 
 // (a shortcut no action claimed).
 bool commandModifier(Qt::KeyboardModifiers modifiers);
 
-// The physical key behind a key event, stable between its press and its
-// release whatever the modifiers did in between (unlike QKeyEvent::key()).
-quint32 physicalKeyId(const QKeyEvent&);
-
 // The host keys a window holds down. The window keeps auto-repeat and its
 // product's own keys (Calc-U-1600's SHIFT tap) before these calls.
 class HostKeys {

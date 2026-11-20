@@ -209,8 +209,12 @@ TEST(preset_extensions_media_suffixes) {
     Built b;
     const opening::OpenSetup& s = b.f.part().openPart().setup();
     CHECK_EQ(s.productName, std::string("Calc-U-1600"));
-    CHECK(s.presets && s.presets->extensions() == std::vector<std::string>({".pc1500", ".pc1500a", ".pc1600"}));
-    CHECK(s.media && s.media->suffixes() == std::vector<std::string>({".module.yaml", ".floppy.yaml", ".cassette.yaml"}));
+    CHECK(s.presets && s.presetExtensions == std::vector<std::string>({".pc1500", ".pc1500a", ".pc1600"}));
+    std::vector<std::string> suffixes;
+    if (s.media)
+        for (const auto& k : s.media->kinds())
+            if (!k.suffix.empty()) suffixes.push_back(k.suffix);
+    CHECK(suffixes == std::vector<std::string>({".module.yaml", ".floppy.yaml", ".cassette.yaml"}));
     // A preset by its extension in any case, whatever it holds.
     CHECK_EQ(takenAs(b.f, text("10 PRINT 1\n"), "Hanoi.PC1500A"), std::string("preset"));
     CHECK_EQ(takenAs(b.f, Bytes{}, "x.pc1600"), std::string("preset"));

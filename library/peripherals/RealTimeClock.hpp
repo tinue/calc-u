@@ -37,7 +37,6 @@ public:
 
 // The host's local date and time at `t`.
 HostDateTime hostDateTime(std::chrono::system_clock::time_point t);
-ClockFields fieldsOf(const HostDateTime&);
 // Sets every real-time clock capability of the machine.
 void setClocksFromHost(machine::Machine&, const HostDateTime&);
 

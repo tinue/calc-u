@@ -349,7 +349,26 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
 
 ## 6 Reference
 
-`make_machine(**options)` → a `Machine` in a work folder of its own. Options:
+`make_machine(**options)` → a `Machine` in a work folder of its own. A suite with steps of its own
+overrides the fixture `machine_class` in its `conftest.py`:
+
+```python
+from machine import Machine
+
+class MyMachine(Machine):
+    def new0(self):
+        return self.key("mode").type("NEW0").key("mode")
+
+@pytest.fixture
+def machine_class():
+    return MyMachine
+```
+
+A machine made outside `make_machine`, for example in a session-scoped fixture, takes the project
+root and the names itself: `MyMachine(workdir, project=config.rootpath, paths=path_names(config))`
+(`from calcu_pytest import path_names`).
+
+Options:
 
 | Option | Values | Default |
 |---|---|---|

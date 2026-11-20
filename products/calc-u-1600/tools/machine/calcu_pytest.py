@@ -1,4 +1,5 @@
-"""The pytest plugin of the driver: the fixture `make_machine` and the path names of pytest.ini.
+"""The pytest plugin of the driver: the fixtures `make_machine` and `machine_class`, and the path
+names of pytest.ini.
 
     [pytest]
     pythonpath = <checkout>/products/calc-u-1600/tools/machine <checkout>/library/harness/python
@@ -34,15 +35,22 @@ def _path_names(config) -> dict[str, str]:
 
 
 @pytest.fixture
-def make_machine(request, tmp_path):
-    """make_machine(**options) -> a Machine in a work folder of its own under tmp_path."""
+def machine_class():
+    """The class make_machine makes: Machine. A suite overrides this fixture in its conftest.py with
+    a subclass of Machine that has the suite's own steps."""
+    return Machine
+
+
+@pytest.fixture
+def make_machine(request, tmp_path, machine_class):
+    """make_machine(**options) -> a machine_class in a work folder of its own under tmp_path."""
     root = request.config.rootpath
     names = _path_names(request.config)
     count = itertools.count()
     made: list[Machine] = []
 
     def make(**options) -> Machine:
-        machine = Machine(tmp_path / f"machine-{next(count)}", project=root, paths=names, **options)
+        machine = machine_class(tmp_path / f"machine-{next(count)}", project=root, paths=names, **options)
         made.append(machine)
         return machine
 
@@ -51,4 +59,10 @@ def make_machine(request, tmp_path):
         machine.close()
 
 
-__all__ = ["make_machine", "MachineError"]
+def path_names(config) -> dict[str, str]:
+    """The names of pytest.ini's calcu_paths, for a machine made outside make_machine (for example in
+    a session-scoped fixture): Machine(workdir, project=config.rootpath, paths=path_names(config))."""
+    return _path_names(config)
+
+
+__all__ = ["make_machine", "machine_class", "path_names", "MachineError"]

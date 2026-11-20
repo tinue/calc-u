@@ -349,7 +349,26 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
 
 ## 6 Reference
 
-`make_machine(**options)` → a `Machine` in a work folder of its own. Options:
+`make_machine(**options)` → a `Machine` in a work folder of its own. A suite with steps of its own
+overrides the fixture `machine_class` in its `conftest.py`:
+
+```python
+from machine import Machine
+
+class MyMachine(Machine):
+    def new0(self):
+        return self.key("mode").type("NEW0").key("mode")
+
+@pytest.fixture
+def machine_class():
+    return MyMachine
+```
+
+A machine made outside `make_machine`, for example in a session-scoped fixture, takes the project
+root and the names itself: `MyMachine(workdir, project=config.rootpath, paths=path_names(config))`
+(`from calcu_pytest import path_names`).
+
+Options:
 
 | Option | Values | Default |
 |---|---|---|
@@ -363,7 +382,7 @@ Steps, collected until the next read:
 
 | Step | Does |
 |---|---|
-| `key(names)` | presses keys by name, several separated by blanks: `key("shift mode")` |
+| `key(names)` | presses keys by name, several separated by blanks: `key("shift mode")`. Each key is held until the machine has taken it, then the machine runs until idle. A finger's press that the program may miss: `command("key-down y").wait(0.1).command("key-up y")` (key IDs; ON/BREAK is `on`) |
 | `type(text)` | types one line and ENTER |
 | `wait(seconds=None)` | waits in machine time; without seconds until idle |
 | `expect(text)`, `not_expect(text)` | the next read fails unless / if a screen line holds text (`/regex/` too) |
@@ -377,6 +396,7 @@ Reads:
 | Read | Returns |
 |---|---|
 | `run()` | runs the steps; the replies |
+| `wait_for(text, timeout=60)` | runs the steps, then waits in machine time until a screen line holds text (`/regex/` too); for work the idle wait can't see the end of, such as a LOAD on the PC-1600, which reads the keyboard for BREAK |
 | `lcd` | the screen's text lines |
 | `display()` | the screen's dots (PC-1600: 156 × 32) |
 | `listing()` | the BASIC program as text lines, the detokenizer's (MODE 0 on the PC-1600) |

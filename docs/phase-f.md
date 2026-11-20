@@ -103,7 +103,8 @@ What exists:
 - Python: `library/harness/python/calcu_serve.py` (a `calcu serve`
   process) and `calcu_machine.py` (`Session`, product-neutral).
 - The PC-1600 pytest driver `products/calc-u-1600/tools/machine/`
-  (`Machine`, card images, superRAM cards; CTest
+  (`Machine`, card images, superRAM cards, cards and media of your own
+  by file; CTest
   `CalcU1600MachineDriver`, Longer). It took over an external tester's
   driver; the API their test cases use stays.
 - Golden runs and reference runs of both products, the screenshot

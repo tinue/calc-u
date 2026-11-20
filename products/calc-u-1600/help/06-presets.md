@@ -109,7 +109,7 @@ More on machine code is in [Machine-code programs](09-machine-code.md).
 | Step | What it does |
 |---|---|
 | `- floppy: { name: Formatted }` | Puts a disk into the CE-1600F (PC-1600 with the CE-1600P), by `name:` or `file:`, with `side: 0` or `1` (default 0) |
-| `- cassette: { file: mytape.cassette.yaml }` | Puts a cassette into the cassette recorder of the CE-150 or CE-1600P, by `name:` or `file:` |
+| `- cassette: { file: mytape.cassette.yaml }` | Puts a cassette into the cassette recorder of the CE-150 (PC-1500, PC-1500A) or CE-1600P, by `name:` or `file:` |
 | `- eject: floppy` / `- eject: cassette` | Takes the disk or the cassette out |
 | `- saveas: { place: slot-1, as: live, name: My module }` | Name & Save the module in slot 1 into your save folder. `cassette` saves the cassette; `slot-2` and `floppy` are PC-1600 only |
 | `- saveas: { place: slot-1, as: template, name: My module }` | The same, saved as a template |

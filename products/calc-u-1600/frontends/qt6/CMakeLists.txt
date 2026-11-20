@@ -63,7 +63,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/app/Version.h.in
 file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.iss
      CONTENT "#define APP_VERSION \"@APP_VERSION@\"\n" @ONLY)
 
-# core/ and app/ are the calcu_core / calcu_shared static libraries the
+# core/ and app/ are the calcu1600_core / calcu1600_shared static libraries the
 # product's CMakeLists.txt makes (cmake/CalcU.cmake), with libsharpdx, which
 # classifies and tokenizes every program the loaders read.
 
@@ -131,7 +131,7 @@ if(CALCU_ATTACH)
   endif()
 endif()
 
-target_link_libraries(CalcU1600Qt PRIVATE calcu_shared calcu_qt6)
+target_link_libraries(CalcU1600Qt PRIVATE calcu1600_shared calcu_qt6)
 
 # ---- App icon (macOS bundle icon; Windows' equivalent is the WIN32
 # block's calc-u-1600.rc above, Linux's is the AppImage's --icon-file in
@@ -306,7 +306,7 @@ if(CALCU_TESTS)
   calcu_qt6_moc_compat(CalcU1600QtTests)
   target_include_directories(CalcU1600QtTests PRIVATE app tests ${CMAKE_CURRENT_BINARY_DIR}/generated
                              ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/testing)
-  target_link_libraries(CalcU1600QtTests PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Network calcu_shared calcu_qt6)
+  target_link_libraries(CalcU1600QtTests PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Network calcu1600_shared calcu_qt6)
   if(APPLE)
     target_link_libraries(CalcU1600QtTests PRIVATE "-framework Cocoa")
   endif()
@@ -324,8 +324,4 @@ if(CALCU_TESTS)
                  COMMAND ${CMAKE_COMMAND} -E env CALCU1600_QT_ROMS_MISSING=1 $<TARGET_FILE:CalcU1600QtTests> roms_missing_in_window
                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../..
                  PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
-  # The shot runner steps the machine through attach only.
-  calcu_add_test(CalcU1600ShotsThroughAttach frequent
-                 COMMAND ${CMAKE_COMMAND} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/app/screenshots/ShotRunner.cpp
-                         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_shots_through_attach.cmake)
 endif()

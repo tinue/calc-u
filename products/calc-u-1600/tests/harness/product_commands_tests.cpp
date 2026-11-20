@@ -60,41 +60,40 @@ TEST(commands_under_c1600_on_every_model) {
     if (!r.ok()) return;
     std::string usage;
     for (const std::string& u : r.server->commands().usage()) usage += u + "\n";
-    for (const char* c : {"c1600 file-kind", "c1600 load-basic", "c1600 type-basic", "c1600 load-code", "c1600 dump-basic",
-                          "c1600 list-basic", "c1600 inspect", "c1600 cassette", "c1600 serial", "c1600 host-drive", "c1600 call"})
+    for (const char* c : {"c1600 file-kind", "c1600 load-basic", "c1600 type-basic", "c1600 load-code", "c1600 list-basic",
+                          "c1600 inspect", "c1600 cassette", "c1600 serial", "c1600 host-drive", "c1600 call"})
         CHECK(has(usage, c));
+    CHECK(!has(usage, "c1600 dump-basic"));   // the INSPECTOR's views `pointers` and `dump-basic` show it
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         CHECK_EQ(r.line(std::string("model ") + model), std::string("done\n"));
         CHECK(starts(r.line("c1600 inspect pointers"), "done "));
-        CHECK(starts(r.line("c1600 dump-basic"), "done "));
         CHECK(starts(r.line("c1600 cassette status"), "refused: "));   // no cassette, but the command is there
     }
 }
 
-// ── dump-basic ───────────────────────────────────────────────────────────
+// ── The BASIC pointers and the program area ─────────────────────────────
 
-// The pointers and the rows as `pc1500_cli --preset … --dump-basic` printed
-// them in v0.8.1 for the same program (its `---` heading lines dropped; the
-// pointer lines and the rows keep their form).
-TEST(dump_basic_pc1500a_after_a_program) {
+// What the BASIC pointers hold and the program's bytes are INSPECTOR views:
+// `pointers` and `dump-basic`.
+TEST(basic_pointers_and_area_pc1500a) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
     if (!r.ok()) return;
     onePrintLine(r);
-    CHECK_EQ(r.line("c1600 dump-basic"),
-             std::string("done 8\n"
-                         "BASPRG_ST  $7865 = $40C5\n"
-                         "BASPRG_END $7867 = $40CC   (len = 7)\n"
-                         "BASPRG_EDT $7869 = $40C5\n"
-                         "VAR_START  $7899 = $5800\n"
-                         "DATA_PTR   $78BE = $C0C8\n"
-                         "RAM_END    $7864 = $58 (page)   WARM_START $7A20 = $00\n"
-                         "40C5: 00 0A 04 F0 97 31 0D FF 00 00 00 00 00 00 00 00  |.....1..........|\n"
-                         "40D5: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  |................|\n"));
+    const std::string pointers = r.line("c1600 inspect pointers");
+    CHECK(has(pointers, "│ BASPRG_ST       │ 7865 │ 40C5  │"));
+    CHECK(has(pointers, "│ BASPRG_END      │ 7867 │ 40CC  │"));
+    CHECK(has(pointers, "│ BASPRG_EDT      │ 7869 │ 40C5  │"));
+    CHECK(has(pointers, "│ VAR_START       │ 7899 │ 5800  │"));
+    CHECK(has(pointers, "│ DATA_PTR        │ 78BE │ C0C8  │"));
+    CHECK(has(pointers, "│ RAM_END         │ 7864 │ 58    │"));
+    const std::string area = r.line("c1600 inspect dump-basic");
+    CHECK(has(area, "\n── BASIC area 4000–57FF ──\n"));
+    CHECK(has(area, "\n40C0: 00 00 00 00 00 00 0A 04  F0 97 31 0D FF 00 00 00  ..........1.....\n"));
 }
 
-TEST(dump_basic_pc1600) {
+TEST(basic_pointers_and_area_pc1600) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     Run r;
     CHECK(r.ok());
@@ -104,50 +103,13 @@ TEST(dump_basic_pc1600) {
     CHECK_EQ(r.line("type NEW"), std::string("done\n"));
     CHECK_EQ(r.line("type 10 PRINT 1"), std::string("done\n"));
     CHECK(starts(r.line("wait"), "done "));
-    CHECK_EQ(r.line("c1600 dump-basic"),
-             std::string("done 7\n"
-                         "BASPRG_ST  $F865 = $40C5  (Z-80 $C0C5)\n"
-                         "BASPRG_END $F867 = $40CC  (Z-80 $C0CC, len = 7)\n"
-                         "BASPRG_EDT $F869 = $0000\n"
-                         "F5CF (LE, RAM base) = $C0C5   F89D (LE) = $4000\n"
-                         "VARIABLE_PTR $F899 = $6F00\n"
-                         "C0C5: 00 0A 04 F0 97 31 0D FF 00 FF FF FF FF FF FF FF  |.....1..........|\n"
-                         "C0D5: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF  |................|\n"));
-}
-
-// A pointer line `NAME $addr = $value` (with the length), a row of 16
-// bytes between the address and the characters; --json the same as data.
-TEST(lines_in_todays_form) {
-    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::harness::RunOptions o;
-    o.json = true;
-    Run r(o);
-    CHECK(r.ok());
-    if (!r.ok()) return;
-    CHECK(starts(r.line("key cl"), "{\"done\":true"));
-    r.line("type NEW0");
-    r.line("type 10 PRINT 1");
-    r.line("wait");
-    const std::string j = r.line("c1600 dump-basic");
-    CHECK(has(j, "{\"name\":\"BASPRG_END\",\"address\":30823,\"value\":16588,\"length\":7}"));
-    CHECK(has(j, "{\"address\":16581,\"bytes\":[0,10,4,240,151,49,13,255,0,0,0,0,0,0,0,0]}"));
-}
-
-// Right after a cold boot (NEW0? not answered) the pointers as they
-// are, no rows: the start does not lie before the end.
-TEST(basic_not_set_up_pointers_only) {
-    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    Run r;
-    CHECK(r.ok());
-    if (!r.ok()) return;
-    CHECK_EQ(r.line("c1600 dump-basic"),
-             std::string("done 6\n"
-                         "BASPRG_ST  $7865 = $FFFF\n"
-                         "BASPRG_END $7867 = $FFFF   (len = 0)\n"
-                         "BASPRG_EDT $7869 = $FFFF\n"
-                         "VAR_START  $7899 = $FFFF\n"
-                         "DATA_PTR   $78BE = $8002\n"
-                         "RAM_END    $7864 = $58 (page)   WARM_START $7A20 = $00\n"));
+    const std::string pointers = r.line("c1600 inspect pointers");
+    CHECK(has(pointers, "│ BASPRG_ST    │ F865 │ 40C5 → Z80 C0C5 │"));
+    CHECK(has(pointers, "│ BASPRG_END   │ F867 │ 40CC → Z80 C0CC │"));
+    CHECK(has(pointers, "│ VARPTR       │ F899 │ 6F00 → Z80 EF00 │"));
+    const std::string area = r.line("c1600 inspect dump-basic");
+    CHECK(has(area, "\n── BASIC area S0 ──\n── Internal RAM, Z80 C000–EFFF ──\n"));
+    CHECK(has(area, "\nC0C0: 00 00 00 00 00 00 0A 04  F0 97 31 0D FF 00 FF FF  ..........1.....\n"));
 }
 
 // ── list-basic ───────────────────────────────────────────────────────────
@@ -314,9 +276,9 @@ TEST(record_ejects_the_tape_in_first) {
     CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
 }
 
-// The CE-150 on the PC-1600 (MODE 1) drives its own cassette recorder: CLOAD
-// starts the motor and the tape moves.
-TEST(ce150_on_pc1600_plays_its_cassette) {
+// The CE-150's cassette is not offered on the PC-1600: the `cassette` step
+// and `c1600 cassette` are refused while the plotter stays.
+TEST(ce150_on_pc1600_has_no_cassette) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder dir("c1600-ce150-pc1600-tape");
     fs::copy_file("tests/fixtures/tape/pc1500_tape.wav", dir.path() / "t.wav");
@@ -327,17 +289,11 @@ TEST(ce150_on_pc1600_plays_its_cassette) {
     if (!r.ok()) return;
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
     CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
-    r.line("wait 15s");
-    for (const char* l : {"key mode", "type NEW0", "key mode", "type MODE1"}) {
-        r.line(l);
-        r.line("wait 500ms");
-    }
-    CHECK_EQ(r.line("cassette { file: " + (dir.path() / "t.cassette.yaml").string() + " }"), std::string("done\n"));
-    r.line("type CLOAD");
-    r.line("wait 5s");
-    const std::string status = r.line("c1600 cassette status");
-    CHECK(has(status, "\nmotor: on\n"));
-    CHECK(!has(status, "playing 0.000000000"));
+    CHECK(has(r.line("cassette { file: " + (dir.path() / "t.cassette.yaml").string() + " }"),
+              "cassette: the CE-150's cassette cannot be used on the PC-1600."));
+    const std::string none = "refused: The machine has no cassette: a CE-150 on the PC-1500 or PC-1500A, or a CE-1600P on the PC-1600, brings one.\n";
+    CHECK_EQ(r.line("c1600 cassette status"), none);
+    CHECK_EQ(r.line("c1600 cassette record " + (dir.path() / "rec.wav").string()), none);
 }
 
 TEST(status_playing_recording_empty) {
@@ -375,7 +331,7 @@ TEST(tape_without_cassette_refused) {
     Run r;
     CHECK(r.ok());
     if (!r.ok()) return;
-    const std::string no = "refused: The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.\n";
+    const std::string no = "refused: The machine has no cassette: a CE-150 on the PC-1500 or PC-1500A, or a CE-1600P on the PC-1600, brings one.\n";
     CHECK_EQ(r.line("c1600 cassette record " + (dir.path() / "x.wav").string()), no);
     CHECK_EQ(r.line("c1600 cassette status"), no);
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));

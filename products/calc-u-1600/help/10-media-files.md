@@ -10,7 +10,7 @@ and in [Media](04-media.md); this page gives the files themselves.
 |---|---|---|---|
 | Battery-backed module | `.module.yaml` | 1 | a module slot |
 | Floppy disk | `.floppy.yaml` | 2 | the CE-1600F drive of the CE-1600P (PC-1600) |
-| Cassette | `.cassette.yaml` with a `.wav` | 1 | the cassette recorder of a CE-150 or CE-1600P |
+| Cassette | `.cassette.yaml` with a `.wav` | 1 | the cassette recorder of a CE-150 (PC-1500, PC-1500A) or CE-1600P |
 
 Common to all three:
 
@@ -117,7 +117,8 @@ and **Formatted** (both sides formatted and empty).
 
 ## Cassette definition
 
-A cassette for the cassette recorder of a CE-150 or a CE-1600P. Its tape
+A cassette for the cassette recorder of a CE-150 (PC-1500, PC-1500A) or a
+CE-1600P. Its tape
 is sound, in a `.wav` file; the cassette definition gives it a name and
 a description, like any other medium, and names the sound file.
 

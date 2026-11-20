@@ -18,7 +18,7 @@ class MachineController;
 // INSPECTOR: the docked machine inspector -- a header, a scrolling
 // monospaced output log, and a two-row button bar (Pointers, the Memory ▾
 // and Dump ▾ menus, Module YAML, Clear; then the TRACE / LOG pills). The
-// views themselves are built in Core (Core/Debug/Inspect, via
+// views themselves are built in Core (core/Debug/Inspect, via
 // MachineController::inspectorView()); stepping and breakpoints are the
 // debugger's (help/07-debugger.md), not this panel's. Always visible under the
 // control bar (see MainWindow).

@@ -3,6 +3,8 @@
 #include <array>
 #include <cstdio>
 
+#include "../Basic/BasicPointers.hpp"
+
 namespace pc1600 {
 
 namespace {
@@ -17,10 +19,6 @@ constexpr uint16_t kInternalBase = 0xC000;
 constexpr uint16_t kWorkAreaBase = 0xF000;   // internal RAM ends here (fixed work area above)
 constexpr uint16_t kSlotWindowTop = 0xBFFF;  // page-2 module window top
 constexpr uint32_t kHeaderReserve = 197;     // 8-byte header + 189-byte NEW reserve ($C5)
-
-uint16_t peekBE(const PlacementInput& in, uint16_t addr) {
-    return static_cast<uint16_t>((in.peek(addr) << 8) | in.peek(static_cast<uint16_t>(addr + 1)));
-}
 
 PlacementResult fail(const std::string& msg) {
     PlacementResult r;
@@ -54,7 +52,7 @@ const SlotGeometry& geomForSlot(const PlacementInput& in, int slot) {
 // top of internal RAM). After NEW0 the variable area is empty and this is
 // at / near $EF00.
 uint16_t internalCeiling(const PlacementInput& in) {
-    uint16_t vp = peekBE(in, kVarPtr);
+    uint16_t vp = sharp::readBE16(in.peek, sharp::kPC1600BasicPointers.variables);
     if (vp >= 0x4000 && vp < 0x7000) {
         uint16_t z = lh5803ToZ80(vp);
         if (z > kInternalBase && z <= kWorkAreaBase)
@@ -165,7 +163,7 @@ PlacementResult buildPlacement(const PlacementInput& in, int firstIdx, int lastI
                                const std::vector<uint8_t>& payload, uint16_t regionStart = 0,
                                uint8_t regionLimitPage = 0) {
     PlacementResult r;
-    r.basPrgStValue = peekBE(in, kBasPrgSt);
+    r.basPrgStValue = sharp::readBE16(in.peek, sharp::kPC1600BasicPointers.programStart);
 
     std::array<uint8_t, 6> adtbl{};  // index 1..5 used
     for (int n = 1; n <= 5; ++n)

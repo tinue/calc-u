@@ -2,32 +2,30 @@
 
 #include <cstdio>
 
+#include "../Basic/BasicPointers.hpp"
 #include "../Machine/SharpProductKinds.hpp"
 #include "PC1600MachineCodeLoader.hpp"
 #include "PC1600ProgramPlacement.hpp"
 
 namespace {
 
-// BASIC program-area pointers (SC7852 view). F865/F867/F869 (big-endian)
-// are the PC-1500's BASPRG_ST/END/EDT trio, inherited verbatim
-// (Ref/PC-1600/PC-1600-Work-Area-Map.md, Block C). Their *values* are LH5803-side
-// addresses -- $40C5 on a stock machine, $00C5 once a Slot-1/Slot-2 RAM
-// module has moved the program area into a parked bank window. See
-// Ref/PC-1600/PC-1600-BASIC-Program-Placement.md.
-constexpr uint16_t kBasPrgSt = 0xF865;
-constexpr uint16_t kBasPrgEnd = 0xF867;
+using sharp::readBE16;
+
+// BASIC program-area pointers (SC7852 view). The values of BASPRG_ST/END
+// are LH5803-side addresses -- $40C5 on a stock machine, $00C5 once a
+// Slot-1/Slot-2 RAM module has moved the program area into a parked bank
+// window.
+constexpr uint16_t kBasPrgSt = sharp::kPC1600BasicPointers.programStart;
+constexpr uint16_t kBasPrgEnd = sharp::kPC1600BasicPointers.programEnd;
 constexpr uint16_t kPrgAdrStart = 0xFE3C;  // start lo, hi, bank; end lo, hi, bank (FE3C-FE41)
 constexpr uint16_t kPrgBankStart = 0xF02B; // ADTBL index of the S0 start / end
 constexpr uint16_t kPrgBankEnd = 0xF02C;
 constexpr uint16_t kRamEnd = 0xF864;       // page of the S0 user-area top
-constexpr uint16_t kVarPtr = 0xF899;       // VARIABLE POINTER (BE, stored form)
+constexpr uint16_t kVarPtr = sharp::kPC1600BasicPointers.variables;
 constexpr uint16_t kCurTop = 0xF89E;       // CURRENT TOP (BE, stored form)
 constexpr uint16_t kCurBank = 0xF1C1;      // CURRENT logical bank
 constexpr uint16_t kRamBaseLE = 0xF5CF;  // Z-80-native base right after NEW0; stack-region, cross-check only
 
-uint16_t readBE16(const sharp::LoaderMemory& m, uint16_t addr) {
-    return static_cast<uint16_t>((m.peek(addr) << 8) | m.peek(static_cast<uint16_t>(addr + 1)));
-}
 uint16_t readLE16(const sharp::LoaderMemory& m, uint16_t addr) {
     return static_cast<uint16_t>(m.peek(addr) | (m.peek(static_cast<uint16_t>(addr + 1)) << 8));
 }

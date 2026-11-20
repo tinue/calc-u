@@ -53,7 +53,7 @@ env:
 jobs:
   # The repository's root CMake project with Calc-U-1600 only and
   # without Qt: the harness `calcu` (with the product's entry) and the test
-  # programs on top of the calcu_core / calcu_shared libraries from
+  # programs on top of the calcu1600_core / calcu1600_shared libraries from
   # cmake/CalcU.cmake; the help's checks (tools/help, Python 3 of the
   # runner) run among the tests. This job is
   # the only CI run of the core/ + app/ test suite. The packaging jobs below
@@ -173,6 +173,8 @@ jobs:
       # The library's Web frontend shell: its test product,
       # built in the same build/web with this workflow's Emscripten, and its
       # Playwright tests in Chromium and WebKit, the container's browsers.
+      # Here only, not in calc-u-59.yml too: once per pipeline, as in
+      # ci/linux/jobs.sh (web-1600).
       - name: Test the library's Web frontend shell
         working-directory: library/web
         shell: bash

@@ -1,24 +1,18 @@
 const { defineConfig, devices } = require('@playwright/test');
+const { webTests } = require('../../../../library/web/tools/playwright-config.js');
 
-// run-tests.sh serves dist/ at a server root and, on the next port, only
-// under a sub-path: the client must work unchanged wherever it is hosted
-// (docs/developer/Web-Client.md). Every play test runs against each.
-const PORT = Number(process.env.CALCU_WEB_PORT || 8160);
-
-module.exports = defineConfig({
-  testDir: './tests',
-  timeout: 60000,
-  workers: 2,
-  use: { headless: true },
+// The play tests run at the server root and under the sub-path
+// (docs/developer/Web-Client.md).
+module.exports = defineConfig(webTests(devices, {
   projects: [
-    { name: 'root', testMatch: /play|prerender|rom-missing|session|typing/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
-    { name: 'subpath', testMatch: /play/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT + 1}/anything/calc/` } },
+    { name: 'root', testMatch: /play|prerender|rom-missing|session|typing/, engine: 'chromium', at: 'root' },
+    { name: 'subpath', testMatch: /play/, engine: 'chromium', at: 'subpath' },
     // The page on the React set's shell, in both engines.
-    { name: 'shell-chromium', testMatch: /shell/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
-    { name: 'shell-webkit', testMatch: /shell/, use: { ...devices['Desktop Safari'], baseURL: `http://localhost:${PORT}/` } },
+    { name: 'shell-chromium', testMatch: /shell/, engine: 'chromium', at: 'root' },
+    { name: 'shell-webkit', testMatch: /shell/, engine: 'webkit', at: 'root' },
     // The offline start brings its own server, in both engines: an iPad's
     // installed app is WebKit.
-    { name: 'offline-chromium', testMatch: /offline/, use: { ...devices['Desktop Chrome'] } },
-    { name: 'offline-webkit', testMatch: /offline/, use: { ...devices['Desktop Safari'] } },
+    { name: 'offline-chromium', testMatch: /offline/, engine: 'chromium' },
+    { name: 'offline-webkit', testMatch: /offline/, engine: 'webkit' },
   ],
-});
+}));

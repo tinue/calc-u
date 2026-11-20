@@ -26,12 +26,22 @@ tools/  ci/  .github/workflows/
   rooted at `library/` (`"machine/Machine.hpp"`). Other targets: the
   `calcu` harness, `calcu_web_glue`, `calcu_qt6` (Qt builds only) and the
   attach endpoint (development builds only).
-- Dependencies point one way. `files` is the base; `machine`, `formats`
-  and `settings` use only the standard library and `files`; `sessions`
-  builds on `machine` and `pacing`; the higher areas (`presets`, `paper`,
-  `debugger`, `media`, `opening`, `parts`) are used only by `harness`,
-  `qt6` and the products; `web` uses only `sessions` and `settings`. A
-  new include against this direction is a bug.
+- Dependencies point one way: an area uses the standard library and areas
+  of the levels below its own, never one of its own level or above. A new
+  include against this order is a bug; tests and products may use any area.
+  1. `files`, `formats`, `machine`: the standard library only
+  2. `settings` (on `files`); `pacing`, `roms` (on `machine`)
+  3. `sessions`
+  4. `typing`, `peripherals`, `shell`, `web` (only `sessions` and
+     `settings`), `testing` (the tests' runner and rigs, used only by tests)
+  5. `startup`, `control`
+  6. `presets`
+  7. `paper`, `debugger`, `media`: each adds its steps to the presets'
+     vocabulary
+  8. `opening` (calls the presets and media parts)
+  9. `parts`, the composition root that builds and wires the parts
+  10. `harness`
+  11. `qt6` (`harness` only for attach, in `CALCU_ATTACH` builds)
 - Library code throws no exception across an interface and uses no RTTI,
   no threads and no locks; failures are return values. Sessions are
   single-threaded; only host adapters cross threads.

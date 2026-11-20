@@ -203,6 +203,8 @@ TEST(folder_row_home_change_reset) {
     save = find(shown(r), "storage.save-folder");
     CHECK_EQ(save->shown, std::string("~/Elsewhere"));
     CHECK(save->resettable);   // "Reset" only while it differs
+    r.set("storage", "save-folder", r.home.str() + "y/a");   // a name that only starts like home: as written
+    CHECK_EQ(std::string(find(shown(r), "storage.save-folder")->shown), r.home.str() + "y/a");
     const auto reset = r.set("storage", "save-folder", Value());   // Reset: null is the default
     CHECK(r.fe.reply(reset)->done);
     save = find(shown(r), "storage.save-folder");
@@ -291,11 +293,4 @@ TEST(choice_value_not_listed_shown_as_written) {
     const auto style = find(dialog(r.topic(), st::presetList(), styleSpec()), "test.style");
     CHECK_EQ(style->value, std::string("two"));
     CHECK_EQ(choiceText(*style), std::string("one=The first;two=two;"));
-}
-
-TEST(with_tilde_only_for_home_and_below) {
-    CHECK_EQ(withTilde("/Users/x", "/Users/x"), std::string("~"));
-    CHECK_EQ(withTilde("/Users/x/a", "/Users/x"), std::string("~/a"));
-    CHECK_EQ(withTilde("/Users/xy/a", "/Users/x"), std::string("/Users/xy/a"));
-    CHECK_EQ(withTilde("/tmp/a", ""), std::string("/tmp/a"));
 }

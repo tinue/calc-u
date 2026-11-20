@@ -5,7 +5,7 @@
 // LH5801's cycle rate and this machine's canonical unit of emulated time
 // (PC1500Machine re-exports it as kCpuHz). Everything that counts emulated
 // time on the PC-1500 side derives from this, like kPC1600TStateHz on the
-// PC-1600 (Core/PC1600/PC1600Clocks.hpp).
+// PC-1600 (core/PC1600/PC1600Clocks.hpp).
 inline constexpr uint32_t kPC1500CpuHz = 1300000;
 
 // One 60 Hz frame of CPU cycles: the unit the key-scan cadence (tap/idle

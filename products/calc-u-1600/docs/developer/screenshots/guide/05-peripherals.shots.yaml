@@ -18,7 +18,7 @@ shots:
       - menu: Machine > Peripherals
     capture: { method: system, target: screen-region, file: 03-peripherals-menu.png, padding: 8 }
 
-  # The CE-158's printer port (formerly in the COM ports scenario).
+  # The CE-158's printer port.
   - name: 07-ce158-printer
     window: 900x1000
     preset: ../presets/pc1500a-ce158.pc1500a

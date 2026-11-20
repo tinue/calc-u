@@ -17,7 +17,7 @@ uint8_t PC1500Display::at(uint16_t addr) const {
 
 bool PC1500Display::pixel(int col, int row) const {
     if (col < 0 || col >= kCols || row < 0 || row >= kRows) return false;
-    // Byte-pair layout: Core/Display/Pc1500DisplayRam.hpp.
+    // Byte-pair layout: core/Display/Pc1500DisplayRam.hpp.
     const uint16_t addr = pc1500ram::columnPairAddr(col);
     const uint8_t dots = pc1500ram::columnDots(at(addr), at(uint16_t(addr + 1)), col / 78);
     return ((dots >> row) & 1) != 0;

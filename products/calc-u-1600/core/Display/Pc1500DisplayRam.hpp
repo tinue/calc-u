@@ -9,7 +9,7 @@
 // pair at base + 2 x local: the first byte holds dots 0-3, the second dots
 // 4-7, block 0 in the low nibbles and block 1 in the high ones. 764EH/764FH
 // right after the 156 columns are the status-symbol sets 00H/01H
-// (Core/Display/StatusLine.hpp).
+// (core/Display/StatusLine.hpp).
 //
 // Used by PC1500Display (reading a PC-1500's screen) and by the PC-1600's
 // mirror of LH5803 writes to this RAM onto its LCD (PC1600Display::

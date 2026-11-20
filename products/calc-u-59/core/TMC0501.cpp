@@ -215,7 +215,7 @@ int TMC0501::getStepWeight() const {
 // Called at ~60 Hz (FrameSampler, on the app session's thread).  Integrates what the multiplex drove
 // since the previous call into per-position duty cycles and resets the window.
 // A position that was not driven reads as dark; persistence of vision is the
-// frontend's job (app/DisplayPov).
+// frontend's job (DisplayPov in app/FrameSampler).
 
 // How much this step drives the C indicator (the SH output at digit 12). In
 // RUN, one unit per set fA bit: a film of a real TI-59 running Pgm 01 SBR =

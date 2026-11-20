@@ -17,7 +17,7 @@ Unsorted collection of ideas, bugs, observations etc.
 
 ## Debugger
 ### CPU Debugger
-- **Break points** The core has PC breakpoints (`TI59Machine::addBreakpoint`, `reference/DebugAPI.md` § "Breakpoints"), used only by the harness (`break`); the unwired Swift UI and the view model's breakpoint API were removed in 2.0.0. Remaining: a UI in the GUIs (through `Shared/`), then conditional triggers (register content, IDLE-RUN change, and more).
+- **Break points** The core has PC breakpoints (`TI59Machine::addBreakpoint`, `reference/DebugAPI.md` § "Breakpoints"), used only by the harness (`break`). Remaining: a UI in the GUIs (through the app layer, `app/`), then conditional triggers (register content, IDLE-RUN change, and more).
 - **Latch keyboard entries** Support catching a keypress in single step mode: while the debugger is frozen, a key press is lost (the ROM accepts a key only when two scans one display sweep apart see it).
 
 ### Calculator Debugger

@@ -28,8 +28,7 @@ flowchart TB
   storage, the audio device, the debugger transport and packaging.
 
 Both libraries are built by [`cmake/CalcU.cmake`](../../cmake/CalcU.cmake)
-(`calcu_core`, and `calcu_shared` for `app/`: the target keeps its old
-name) for the Qt app, the harness, the tests and the WebAssembly check.
+(`calcu1600_core`, and `calcu1600_shared` for `app/`) for the Qt app, the harness, the tests and the WebAssembly check.
 
 ## Rules
 
@@ -42,8 +41,7 @@ name) for the Qt app, the harness, the tests and the WebAssembly check.
 - **Single-threaded and never blocking.** Everything runs on the
   frontend's one thread. Long machine work (a boot, a preset, a typed
   program, a power cycle) is a resumable job (below), never a blocking
-  loop with a yield hook. There is no threaded mode (Calc-U-59 2.3.0's app
-  layer had one).
+  loop with a yield hook. There is no threaded mode.
 - **The app layer never decides where files live.** The frontend hands it the
   host's folders (`calcu::settings::HostDirs`: home, the settings base of its
   platform, on the Web the save folder) and the bundled-resources folders
@@ -66,7 +64,7 @@ name) for the Qt app, the harness, the tests and the WebAssembly check.
 | `dap/` | The DAP server (`cu1600::dap`; every native tree, not Emscripten): `DapPart` (a session part: listening, the topic `c1600.dap`, held messages), `DapSession` and `DapSetup.cpp` (the requests, the set-up as operations, the events), its targets, breakpoints and steps on the library's debugger; JSON, framing and `DapTransport`, which a host fills (Qt6: `frontends/qt6/app/debug/DapSocket`; the harness: `serve --dap` on `library/harness/attach/LocalStream`) |
 | `SharpTyping` | Typing on the library's typing engine (`library/typing/`): the typing profile per model (`typingProfile`: 4 + 4 frames, 6 more after SHIFT and KBII on the PC-1600, readiness rules, the characters, the `key` names), the keyboard map per model (`SharpKeyboardMap`), `typingProduct()` for the session's `TypingPart` |
 | `SharpSession` | `makeSharpSession()`: the library's app session with the control part and the part, which the session owns (on the library's `calcu::shell::makeHostSession`: `SharpSessionOptions` is its `HostSessionSetup`; Qt6 with the library's `SettingsPart` over `AppPaths::folders()`, tests, `tools/wasm_smoke`; the Web engine calls the builder itself); a host talks to it through the library's `calcu::sessions::Listener` (Qt6: the Qt6 component set's `SessionHost`) |
-| `SharpControlRules` | The product's side of the library's control state: the place `host-drive` not available where no folder can be mounted, and the product entries `c1600.disk-controls`, `c1600.ce158-printer-panel`, `c1600.host-drive-folder`, `c1600.mount-directory`, `c1600.ce1600p-next-variant`; `sharpControlSetup()` gives the `ControlPart` its rules (its catalogue and printers, CE-150 and CE-1600P, are `LibraryParts`', from the papers). Everything else of the old `ControlState` is the library's generic entries, from the descriptors (one pin-out per 60-pin place) |
+| `SharpControlRules` | The product's side of the library's control state: the place `host-drive` not available where no folder can be mounted, and the product entries `c1600.disk-controls`, `c1600.ce158-printer-panel`, `c1600.host-drive-folder`, `c1600.mount-directory`, `c1600.ce1600p-next-variant`; `SharpAppPart` gives it to `LibraryParts` as the `ControlPart`'s rules (its catalogue and printers, CE-150 and CE-1600P, are `LibraryParts`', from the papers). Everything else of the old `ControlState` is the library's generic entries, from the descriptors (one pin-out per 60-pin place) |
 | `SharpShellProduct` | What the product gives the library's shell, one source for Qt6 and the Web: `shellProduct()` (name, help address, About texts, variant labels, the product's File items), `faceplateHitMap()` (the hit map of `KeyLayout`, distance 24), `settingsSpec()` (the dialog's sections, the product's Folders labels, Serial ports, Debugger); their Value forms for the page are the library's (`shell/ValueForms`), `faceplateMapValue()` adds the art's size and the LCD layout |
 | `SharpWebPart` | What only the Web page asks for (the page is the React set's shell): `c1600.shell-product`, `c1600.faceplate-map`, the INSPECTOR's requests, Copy Screen's picture, the stream `c1600.printer`; with the CMake option `CALCU_WEB_TEST_AIDS` (not in a release Web build) the Web tests' `c1600.upload` and `c1600.display-text` |
 | `SharpMediaKinds` | The three kinds of medium of the library's `MediaPart`: the battery-backed module (`.module.yaml`), the floppy disk (`.floppy.yaml`, version 2) and the cassette (`.cassette.yaml` with its WAV), their codecs, which module fits which slot; the media part keeps the pickers, Name & Save, `saveas:`, autosave and the saved media |
@@ -187,7 +185,7 @@ coroutine a budget at a time (`step(cycles)`), or straight through
 (`runToCompletion()`). The core's tests keep the old typers on it
 ([`tests/support/`](../../tests/support/): `Job.hpp`'s `namespace job`,
 `co_await job::run(machine, n)` on an old machine class); they are not in
-`calcu_core`.
+`calcu1600_core`.
 
 A run request is never split by the budget, so a job sliced into frame
 ticks makes exactly the machine calls of one run straight through. That a

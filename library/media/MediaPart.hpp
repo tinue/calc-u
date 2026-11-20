@@ -192,7 +192,7 @@ public:
     std::vector<std::string> placesFor(const OpenedMedium&, const machine::Machine&) const;
     std::vector<std::string> placesInCatalogue(const OpenedMedium&) const;
     std::optional<std::string> refusesNow(const std::string& place, const machine::Machine&) const;
-    // The command `media.open-file`, for the media opener.
+    // The command `media.open-file`, for the open part.
     sessions::CommandOutcome openFile(const sessions::Value&, sessions::SessionContext&);
 
     // The topic as it would be sent now (tests, the harness's `media`).

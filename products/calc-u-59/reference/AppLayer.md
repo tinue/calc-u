@@ -44,15 +44,13 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `ConstantMemoryKeeper`, `ConstantMemoryFile` | The TI-58C's `ti58c.memory.yaml` (constant memory format 1): what a TI-58C built without a preset gets, when the file is written, the notices |
 | `TIFileAccess`, `PacingProfiles` | The card and `ti58c.memory.yaml` files on the save folder (read at each use: a change in Settings applies at once); the TI pacing profiles |
 | `TIShellProduct` | What Calc-U-59 gives the library's shell, one source for Qt6, the Web and (through the bridge) Swift: the name, help address, About texts and links, the preset filter, the module slot's pin-out, the two card items (`arm-card`, `arm-fresh-card` on the media place `card-reader`); the settings dialog per frontend and layout (`settingsSpec`); the faceplate's hit map in base-image pixels (`faceplateHitMap`, `faceplateMapValue`) |
-| `TIWebPart`, `WebPageData` | What the Web page draws, as `c59.web.*` topics and product requests (`c59.shell-product`, `c59.faceplate-map`; the LED shapes, the mobile layout rules) |
-| `EmulatorSession` | The runtime around the machine the library's machine control built and the machine session holds (one per machine, made at `machineChanged`): frame sampler, the PC-100C's controls, the module's image, the adapters' reads |
+| `TIWebPart` | What the Web page draws, as `c59.web.*` topics and product requests (`c59.shell-product`, `c59.faceplate-map`; the LED shapes, the mobile layout rules) |
 | `SessionThread` | The Swift frontend's session thread and its two queues |
 | `TILevelRules` | The levels `program` and `cpu` of the run control: where a pause lands (a step boundary, or 50000 weights), one step, pause-on-start |
 | `TIDebuggerSetup` | The `DebuggerPart`'s set-up: the rules, the trace session on `TITraceRecorder`, the trace folder (none on the Web: hand-over), the panel views |
 | `TIPrinters` | The PC-100C with its paper description, for the `PaperPart` |
 | `TITyping` | The TI typing profile per model (100 ms of emulated time, held until the ROM read it), the keyboard map (`TIKeyboardMap`), the names `key` takes; handed to the library's `TypingPart` |
-| `FrameSampler` | The 60 Hz frame: display, C indicator, card auto-eject |
-| `DisplayPov` | LED brightness per position from the core's duty cycles (persistence of vision) |
+| `FrameSampler`, `DisplayPov` | The 60 Hz frame (one sampler per machine, made at `machineChanged`): display, C indicator, card auto-eject; `DisplayPov`: LED brightness per position from the core's duty cycles (persistence of vision) |
 | **Debugger** | |
 | `TIDebugPart` | The debug panel below the frontends: a session part with the six product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `heatmap`, `asm-overlay`, `c59.debug-view`, the commands `c59.show-calculator-debug`, `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`, `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`, and control rules (the product entries `c59.asm-run`, `c59.calculator-tab`); `freezeButtons` (FREEZE and FREEZE ON START of a tab) |
 | `TIFileKinds` | Calc-U-59's file kinds of the library's `open`: `asm-overlay`, `keystroke-program`, `rom-module-file`, `constant-memory-file`; `tiPresetExtensions`, `programArguments` (the Qt6 start file) |
@@ -130,8 +128,8 @@ Web in its worker (§ "Threads"); each talks to it through the library's
 
 The machine is built by the library's machine control and held by the machine
 session; `TIAppPart` never builds or owns one. At `machineChanged` it
-makes a new `EmulatorSession` around the session's machine, reads the module and the printer from
-`Machine::plugged()` (no copies of its own), fits the own cue
+makes a new `FrameSampler` for the session's machine, reads the module, the printer and
+the PC-100C's TRACE switch from `Machine::plugged()` and its controls (no copies of its own), fits the own cue
 card the build gives (a preset's `cue-card:`, or the constant memory
 file's) and tells `ConstantMemoryKeeper` the build. What stays the part's:
 the PC-100C's TRACE position, the cue card
@@ -175,7 +173,7 @@ The app layer has no thread of its own but one host adapter:
 | Qt6 | the GUI thread: a 60 Hz `QTimer` calls the session |
 | Web | the library's Web Worker (`library/web/src/worker.js`): a 60 Hz `setInterval` calls the session through the library's `WorkerHost` |
 
-Nothing else in the app layer locks: `EmulatorSession`,
+Nothing else in the app layer locks: `FrameSampler`,
 `TIAppPart`, `TILevelRules` and `TITraceRecorder` are single-threaded.
 
 ### Key input
@@ -373,8 +371,8 @@ kinds (`app/TIFileKinds`, in this order): an `.asm` file is an ASM overlay
 (read as by Select File), a `.keystrokes.yaml` file's program is written
 into the running machine from step 000 (no cold boot), a `.rom.yaml` and
 `ti58c.memory.yaml` are refused with a notice. A magnetic card
-(`.magnetcard.yaml`, a medium of the library's media part) goes through the library's
-MediaOpener: fitted where it lies on the TI-59 and written back there (an
+(`.magnetcard.yaml`, a medium of the library's media part) is opened by the library's open
+part through the media part: fitted where it lies on the TI-59 and written back there (an
 upload on the Web is imported into the save folder first), refused with a
 notice on the TI-58/58C and while a card passes; the `.u59` and `.bin` cards of releases up to
 2.3.0 are no files of the product. A refusal is the session's notice. On the Mac, the file's security

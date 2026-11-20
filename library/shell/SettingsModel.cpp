@@ -27,14 +27,15 @@ const Value* rowOf(const Value& settings, const std::string& section, const std:
     return nullptr;
 }
 
-} // namespace
-
+// `path` with the home folder written as `~`.
 std::string withTilde(const std::string& path, const std::string& home) {
     if (home.empty() || path.rfind(home, 0) != 0) return path;
     if (path.size() == home.size()) return "~";
     if (path[home.size()] == '/' || path[home.size()] == '\\') return "~" + path.substr(home.size());
     return path;
 }
+
+} // namespace
 
 DialogSpec familySections(const settings::ProductDecl& decl, const std::vector<std::string>& keysShown) {
     DialogSection general{"General", {}}, presets{"Startup presets", {}}, storage{"Storage", {}},

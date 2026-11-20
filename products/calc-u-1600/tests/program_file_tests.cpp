@@ -1,4 +1,4 @@
-// Headless tests for Core/ProgramFile -- what libsharpdx's sde_file_info
+// Headless tests for core/ProgramFile -- what libsharpdx's sde_file_info
 // says a program file is, as the loaders see it. Same no-framework,
 // assert-and-tally style as the other Core test files.
 //
@@ -215,7 +215,7 @@ TEST(test_real_sample_files) {
 }
 
 // A cassette WAV is classified as the file on it: these are bin2wav tapes of
-// the .img next to them (Core/tests/pc1500_tape_tests.cpp,
+// the .img next to them (tests/pc1500_tape_tests.cpp,
 // pc1600_tape_tests.cpp load the same WAVs through the emulated ROM).
 TEST(test_cassette_wav) {
     struct Case {

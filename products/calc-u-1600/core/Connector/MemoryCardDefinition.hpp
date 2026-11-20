@@ -30,7 +30,7 @@ bool cardHostFromToken(const std::string& tok, CardHost* out);
 const char* cardHostToken(CardHost h);
 
 // Signal name → physical 40-pin edge-connector contact (1..40) for a
-// terminology's vocabulary, mirroring Core/Connector/ExpansionCard.hpp's
+// terminology's vocabulary, mirroring core/Connector/ExpansionCard.hpp's
 // pin dictionary and Format §1. -1 if `name` is not a signal in that
 // vocabulary. `A0..A15` / `D0..D7` are handled by the caller, not here.
 int resolveSignalPin(CardHost terminology, const std::string& name);

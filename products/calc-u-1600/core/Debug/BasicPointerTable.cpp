@@ -1,5 +1,7 @@
 #include "BasicPointerTable.hpp"
 
+#include "../Basic/BasicPointers.hpp"
+
 namespace CoreDebug {
 
 PC1600ProgramAreas readPC1600ProgramAreas(const std::function<uint8_t(uint16_t)>& peek) {
@@ -10,7 +12,7 @@ PC1600ProgramAreas readPC1600ProgramAreas(const std::function<uint8_t(uint16_t)>
     a.ramEndPage = peek(0xF864);
     // MEM (LH5803 $CC30): RAM_END:00 - (BASPRG_END + 1) + (5 - F02CH) * 4000H,
     // all in the stored (LH5803-view) representation.
-    const int s0End = (peek(0xF867) << 8) | peek(0xF868);
+    const int s0End = sharp::readBE16(peek, sharp::kPC1600BasicPointers.programEnd);
     a.memS0 = (a.ramEndPage << 8) - (s0End + 1) + (5 - a.endIndex) * 0x4000;
     for (int i = 0; i < 2; ++i) {
         PC1600SlotProgramArea& s = a.slot[i];

@@ -14,7 +14,7 @@ Notice).
 | The command, its request and reply | `library/opening/OpenRequest.hpp` |
 | The checks in order, `looksLikePreset`, `wouldTake` | `library/opening/Classify.cpp` |
 | What follows each result; several files; a file kept | `library/opening/OpenPart.cpp` |
-| The seams to presets and media | `library/opening/Openers.hpp`, `LibraryOpeners.cpp` |
+| How a preset and a medium are opened (the presets and media parts) | `library/opening/OpenPart.cpp` |
 | A product's file kind | `library/opening/FileKind.hpp` |
 | The start file | `library/opening/StartFile.cpp` |
 | Calc-U-59's file kinds | `products/calc-u-59/app/TIFileKinds.cpp` |

@@ -55,9 +55,6 @@ std::unique_ptr<PresetSource> folderSource(std::filesystem::path file, std::stri
 std::unique_ptr<PresetSource> contentSource(std::string text, std::string name, std::string home);   // without a folder: no relative path
 std::unique_ptr<PresetSource> bundleSource(const PresetBundle&, std::string pathInBundle);
 
-// "examples:basic/hanoi.pc1600" → "basic/hanoi.pc1600"; nullopt for a path
-// that is no bundle path.
-std::optional<std::string> parseBundlePath(std::string_view ref);
 // A path inside the bundle, `..` resolved; nullopt when it leaves the bundle
 // (bundle.md §2) or is absolute.
 std::optional<std::string> normalBundlePath(std::string_view path);

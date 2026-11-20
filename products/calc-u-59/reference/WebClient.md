@@ -60,7 +60,6 @@ calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀�
 | `src/Paper.jsx` | The PC-100C's pane: the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), owner from the control state, which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (the library's `set-control`; TRACE's position `c59.printer`), Copy and Cut its `paper.copy` / `paper.cut` (Qt6: `calcu::qt6::PaperPanel`). The PC-100C is attached by the bar's button "PC-100C" |
 | `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) on the debug part's product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `heatmap`, `asm-overlay`, `c59.debug-view` and the library's `log`; Run and the CALCULATOR tab follow the `control-state` entries `c59.asm-run`, `c59.calculator-tab` (TRACE can always be pressed); FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` |
 | `src/CalcU59.jsx` | The component `CalcU59`, put together from the React set's shell: the menu bar (wide) or the bar's Reset, Preset, Settings and More (portrait), the shell's control bar with the module picker (the library's `ShellSlotPicker`) and the card controls, the shell's dialogs, the storage banner, "ROMs missing"; the product's data and faceplate maps through the library's `useShellProduct` and `useFaceplateMaps`; the two layouts, focus and physical keyboard (the library's `calcuHostKeys`), drag and drop (the library's `open {way: drop, upload: true}`; the library's `calcuFileDrop`: a drop of exactly one file; `calcuOpenFiles`), keyboard feedback (`[keyboard] feedback`) (`MainWindow`) |
-| `calc-engine-worker.js` | The product's configuration of the library's Web Worker (`library/web/src/worker.js`): the engine's name, its factory, the persistent mount `/persist-calc-u-59` and the lock `calcu59-storage` |
 | `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle` (without the full set: a session without a machine and the topic `roms-missing`), the settings file, the shell's part, the library's `SettingsPart` and ControlPart (with the debug panel's product entries), `TIAppPart::sessionParts()` (the library's parts with the TI rules, the bundle of `/presets`; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
 | `calc.css` | Tokens, fonts and every rule the client needs |
 | `fonts/` | Archivo (WOFF2, SIL OFL 1.1), for the cue card, as the family `Calc-U Archivo` |
@@ -68,8 +67,8 @@ calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀�
 | `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, also `width`, `height`, `model` (by its name), `preset` (a path of `examples/bundle.yaml`, sent as the bundle path `examples:<path>` with the library's `start`) |
 | `examples/bundle.yaml` (the product's) | What File ▸ Examples ▸ offers: the request `preset-list` gives its examples in their groups (`docs/formats/bundle.md`). `build.js` copies exactly the files it lists, and the file itself, to `dist/presets/` |
 | `library/web/vendor/` (the repository's) | React 18 and ReactDOM (shipped), Babel (build only), ReactDOMServer (tests only); one copy for both products |
-| `build.sh`, `build.js` | The build (below) |
-| `tests/`, `run-tests.sh`, `playwright.config.js`, `package.json` | Playwright tests (`tests/helpers.js`: `gotoReady`) |
+| `build.sh`, `build.js` | The build (below): `build.js` names what is the product's (the engine, the worker's configuration with the persistent mount `/persist-calc-u-59` and the lock `calcu59-storage`, the files, the sources), the library's `library/web/build/product.js` does the steps |
+| `tests/`, `run-tests.sh`, `playwright.config.js`, `package.json` | Playwright tests (`tests/helpers.js`: `gotoReady`); the servers and the shared configuration are the library's (`library/web/tools/playwright.sh`, `playwright-config.js`) |
 
 ### What the session sends
 
@@ -103,7 +102,7 @@ About texts and links, the settings spec of the layout); the faceplate is
 image, the card area, each key's rectangle, the card's corners); the
 heatmap's grid `c59.heatmap-grid`; the LED shapes
 `c59.led-geometry`, the PWA's layout rules `c59.mobile-rules`
-(`app/WebPageData`). The start is the shell's `start` command with
+(`app/TIWebPart`). The start is the shell's `start` command with
 the `model` and `preset` props. The paper, the run state and the trace are
 the library's topics (`papers`, `paper PC-100C`, `paper-copies`,
 `run-state`, `trace`), which the component set's panel and buttons
@@ -119,12 +118,16 @@ goes down (a drag does not move the press to another key).
 
 ```bash
 frontends/web/build.sh          # → frontends/web/dist/ (gitignored): tested and zipped for a release
-frontends/web/run-tests.sh      # Playwright against dist/; build first
+frontends/web/run-tests.sh      # Playwright against dist/ on ports 8059 and 8060; build first
 ```
 
 `build.sh` needs `emcmake`/`cmake` (Homebrew `emscripten`; CI pins the same
 version in the repository's `.github/workflows/calc-u-59.yml`, job `web`),
-`ninja` and `node`. It
+`ninja` and `node`. It runs `build.js`, which hands the product's values to
+the library's Web build (`library/web/build/product.js`, the same steps for
+Calc-U-1600). `CALCU_WEB_DIST` names another output folder,
+`CALCU59_ROMS_DIR` another ROM folder (`tests/rom_missing_build.sh`). The
+build
 
 1. builds the CMake target `calcu59_web` (`core/` + `app/` + `bindings.cpp`)
    in the repository root's `build/web` tree, configured once with
@@ -133,18 +136,19 @@ version in the repository's `.github/workflows/calc-u-59.yml`, job `web`),
    headers `SharedArrayBuffer` needs), with `-fwasm-exceptions` (app/
    reports file errors with exceptions), `MODULARIZE` as
    `createTI59CoreModule`, `FS` and `IDBFS` exported, the library's glue
-   (`calcu_web_glue`) linked; Calc-U-59 has no test-only command,
-   so CI zips the dist/ its tests ran against;
+   (`calcu_web_glue`) linked, with the CMake option `CALCU_WEB_TEST_AIDS`
+   on (off with `--release`); Calc-U-59's engine has no test-only command,
+   so both give the same dist/, and CI zips the one its tests ran against;
 2. copies the full set of ROM files (the 24 of `roms/fetch_roms.sh`; the
    module files hold the cue cards) from `roms/` to `dist/bundle/`, and the artwork (`ti59_base`,
    `ti58_base` and the three cue-card templates) from `frontends/swift/App/Assets.xcassets`
    to `dist/img/`;
 3. copies the static files, React, the font and the app icon (derived from
-   `frontends/swift/App/AppIcon.icon` by `tools/gen_qt_icons.sh`);
-4. runs `build.js`, which hands the product's data to the library's product
-   build (`library/web/build/dist.js` `buildProduct`, which Calc-U-1600 and
-   the library's test product use too): it compiles the library's page side and `src/*` into one `calc.js` (in
-   `SOURCES` order, with the version stamped in) and the library's app page
+   `frontends/swift/App/AppIcon.icon` by `tools/gen_qt_icons.sh`), and
+   writes `calc-engine-worker.js` from the worker's configuration;
+4. runs the library's product build (`library/web/build/dist.js`
+   `buildProduct`, which the library's test product uses too): it compiles the library's page side and `src/*` into one `calc.js` (in
+   the order of `build.js`'s `sources`, with the version stamped in) and the library's app page
    with `CalcU59` into `app/app.js`, fails on a selector of
    `calc.css` outside `.calcu-client`, copies the library's
    worker (`library-worker.js`), service worker and app worker entry, the
@@ -193,21 +197,24 @@ the file names under `wasm/`, `bundle/`, `img/` and `presets/` and `files.json` 
 </script>
 ```
 
-| Prop | Default | Meaning |
-|---|---|---|
-| `width` | the parent's width | CSS px the client may take. Wide: the calculator artwork takes 40 % (at most 420 px without `height`, never below 400 px), the printer 220–320 px, the debugger the rest (at least 220 px) |
-| `keyboard` | `true` | The calculator is focusable and takes the physical keyboard while focused (`AppLayer.md` § "Physical Keyboard Mapping"); `false` turns it off |
-| `layout` | `"portrait"` | `"wide"` (calculator, printer, debugger side by side), `"portrait"` (calculator and printer pages) or `"auto"` (by the window's size, the PWA's choice: needs `width` and `height`); another value is ignored with a console warning |
-| `preset` | none | Start with this bundled preset, by its path in `bundle.yaml`, with or without `examples:` (`"sum.ti59"`, `"examples:sum.ti59"`); a path that is not there is a notice |
-| `height` | from the width | CSS px. Without it the height follows the artwork's aspect plus the 50 px bar; with it the artwork fits inside (the PWA passes `#root`'s content box) |
-| `model` | stored setting | Start with this model, by its name: `"TI-59"`, `"TI-58"` or `"TI-58C"`; another name is a notice and the client starts as without it |
-| `workerUrl` | `calc-engine-worker.js` beside `calc.js` | Start the engine through this script. The PWA's, for its service worker; a host leaves it out |
-| `settings` | `true` | Offer Settings… (the File menu, the portrait bar's Settings button and the More menu) |
+The props are the family's shared ones (`docs/formats/web-embed.md` §1.1
+at the repository root), then Calc-U-59's own. What is Calc-U-59's:
 
-The props are the family's shared ones in their order (`width`, `keyboard`,
-`layout`, `preset`, then `height`, `model`, `workerUrl`;
-`docs/formats/web-embed.md` at the repository root), then Calc-U-59's own
-`settings`. `model`, `preset` and `workerUrl` are read once, at mount.
+- `layout`: `"portrait"` (the default: calculator and printer pages),
+  `"wide"` (calculator, printer, debugger side by side) or `"auto"` (by
+  the window's size, the PWA's choice: needs `width` and `height`).
+- `keyboard`: the keys of `AppLayer.md` § "Physical Keyboard Mapping".
+- `width` in wide: the calculator artwork takes 40 % (at most 420 px
+  without `height`, never below 400 px), the printer 220–320 px, the
+  debugger the rest (at least 220 px).
+- `height`: without it the height follows the artwork's aspect plus the
+  50 px bar; with it the artwork fits inside (the PWA passes `#root`'s
+  content box).
+- `model`: `"TI-59"`, `"TI-58"` or `"TI-58C"`; without it the stored
+  setting.
+- `settings` (default `true`), the product's own prop: offer Settings…
+  (the File menu, the portrait bar's Settings button and the More menu).
+
 There is no `module` prop: a host page that wants
 another module names a preset that sets it.
 
@@ -271,7 +278,7 @@ elements by their `data-calcu` names: `menu-bar`,
   itself.
 
 `run-tests.sh` runs every test twice (two servers of
-`library/web/tools/serve.py`): against a server whose root is `dist/`,
+`library/web/tools/serve.py`, started by `library/web/tools/playwright.sh`): against a server whose root is `dist/`,
 and against one that serves `dist/` only under `/anything/calc/` and answers
 404 everywhere else, so a root-relative URL fails the second run.
 

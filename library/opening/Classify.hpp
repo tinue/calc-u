@@ -41,6 +41,5 @@ bool wouldTake(std::string_view name, std::optional<std::uint64_t> size, const O
 using machine::lowerAscii;   // the library's one ASCII lower case (machine/Names.hpp)
 std::string fileNameOf(const OpenedFile&);   // the name, else the last part of the path
 bool endsWith(std::string_view lowerName, std::string_view lowerSuffix);
-std::string sizeText(std::uint64_t bytes);   // "1 MiB", "64 KiB", "100 bytes"
 
 } // namespace calcu::opening

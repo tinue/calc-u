@@ -171,10 +171,6 @@ Not counted as waiting for a medium:
   XOFF can make the PC-1600 wait: work, as any send.
 - **Reads that do not wait:** RXD$ (CRCV1, the PC-1600), RINKEY$ (RXCOM, the
   CE-158) return at once without data.
-- **The CE-150 on the PC-1600** (MODE 1): its recorder runs and the tape
-  moves, but no CLOAD or CSAVE through it works in the emulator yet (the
-  CE-150's ROM receives the signal and decodes bits, the header is never
-  found; a CSAVE writes no readable signal).
 
 ## In the code
 

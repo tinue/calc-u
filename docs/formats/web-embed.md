@@ -20,11 +20,12 @@ service, Save folder, Bundle file).
 | The wire form of the messages | `library/web/glue/MessageCodec.hpp` |
 | The worker's host of the session; `web.start`, `web.storage` | `library/web/glue/WorkerHost.hpp`, `.cpp` |
 | A product's registration | `library/web/glue/Bind.hpp` (`CALCU_WEB_PRODUCT`) |
-| The build: `calc.js`, `calc.css`, `files.json`, `MANIFEST.json`, scoped CSS | `library/web/build/dist.js` |
+| The build: `calc.js`, `calc.css`, `calc-engine-worker.js`, `files.json`, `MANIFEST.json`, scoped CSS | `library/web/build/dist.js` |
+| A product's whole build: the engine in `build/web`, `dist/`, `--release` | `library/web/build/product.js` |
+| The test servers and the Playwright configuration | `library/web/tools/playwright.sh`, `playwright-config.js` |
 | The installed app | `library/web/app/` |
-| A product's worker configuration | `products/<product>/frontends/web/calc-engine-worker.js` |
 | A product's component | `products/calc-u-59/frontends/web/src/CalcU59.jsx`, `products/calc-u-1600/frontends/web/src/CalcU1600.jsx` |
-| A product's build | `products/<product>/frontends/web/build.js` |
+| A product's build: its values (engine, worker configuration, files) | `products/<product>/frontends/web/build.js` |
 
 ---
 
@@ -221,8 +222,9 @@ topic `notices`.
 
 ## 4. The worker
 
-A product's `calc-engine-worker.js` sets `self.CALCU_PRODUCT` and loads
-the library's worker:
+A product's `calc-engine-worker.js` (written by the build from the worker
+configuration of its `build.js`) sets `self.CALCU_PRODUCT` and loads the
+library's worker:
 
 ```js
 self.CALCU_PRODUCT = { name, wasm, factory, host, mount, lock };

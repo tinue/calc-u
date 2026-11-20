@@ -320,7 +320,7 @@ int LH5801::step() {
         // halted (real hardware: only instruction fetch/execute pauses) --
         // that's the entire point of a HLT-then-timer-interrupt idle loop
         // like the ROM's own "IDLE" address (confirmed real behavior: see
-        // Core/tests/lh5801_tests.cpp's boot smoke test). Advance the timer
+        // tests/lh5801_tests.cpp's boot smoke test). Advance the timer
         // by one tick unit per call so a loaded TM eventually wakes us;
         // still returns 0 (no instruction executed) per this method's
         // documented contract -- kHaltTickCycles is exposed so

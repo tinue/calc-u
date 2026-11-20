@@ -52,7 +52,7 @@ public:
 
     /// Cold reset: PU/PV/DISP/T/TM cleared, P loaded from the 16-bit
     /// big-endian reset vector at ME0 0xFFFE/0xFFFF (confirmed against the
-    /// real PC-1500_A04.ROM image — see Core/tests/lh5801_tests.cpp).
+    /// real PC-1500_A04.ROM image — see tests/lh5801_tests.cpp).
     void reset();
 
     /// Execute one instruction at the current P.

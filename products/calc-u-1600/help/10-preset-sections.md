@@ -47,7 +47,7 @@ available on these models.
 | Step | Value |
 |---|---|
 | `floppy:` | `{ name: … }` or `{ file: … }`, with `side: 0\|1` (default 0); PC-1600 with the CE-1600P |
-| `cassette:` | `{ name: … }` or `{ file: … }` (a `.cassette.yaml`); with the CE-150 or the CE-1600P |
+| `cassette:` | `{ name: … }` or `{ file: … }` (a `.cassette.yaml`); with the CE-150 (PC-1500, PC-1500A) or the CE-1600P |
 | `eject:` | `floppy` or `cassette` |
 | `saveas:` | `place:` (`slot-1`, `slot-2`, `floppy`, `cassette`), `as:` (`live` or `template`), `protected: true` (CE-161 only), and `name:` or `file:` |
 | `expect:`, `not-expect:` | text in one line of the display; `\\` for a backslash, `\xHH` for a character outside ASCII; `/…/` a regular expression |

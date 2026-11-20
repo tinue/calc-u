@@ -71,7 +71,7 @@ TEST(availability_variant_of_plugged_peripheral) {
     // A variant entry has its own key: a product's rule refuses 8k alone.
     TestControlRules rules;
     rules.refuse(ChoiceKey{at({"slot-1"}), mt::kModule, VariantId{"8k"}});
-    const ControlState r = computeControlState(*m, testSetup({&rules}), false);
+    const ControlState r = computeControlState(*m, testSetup(&rules), false);
     const PeripheralChoice& mod2 = choiceAt(r, "slot-1", mt::kModule);
     CHECK(variantOf(mod2, "8k")->available == no(kProductReason));
     CHECK(variantOf(mod2, "4k")->available == kYes);
@@ -103,15 +103,10 @@ TEST(availability_operation_before_product_before_machine) {
     // The machine alone: its reason.
     CHECK(choiceAt(computeControlState(*m, testSetup(), false), "aux", mt::kUart).available == no(mt::kTogether));
     // The product too: the product's.
-    CHECK(choiceAt(computeControlState(*m, testSetup({&rules}), false), "aux", mt::kUart).available ==
+    CHECK(choiceAt(computeControlState(*m, testSetup(&rules), false), "aux", mt::kUart).available ==
           no(kProductReason));
     // An operation runs as well: that one.
-    CHECK(choiceAt(computeControlState(*m, testSetup({&rules}), true), "aux", mt::kUart).available == kBusy);
-    // The rule of the first rules object that says so.
-    TestControlRules second;
-    second.refuse(ChoiceKey{at({"aux"}), mt::kUart, std::nullopt}, "The second says no.");
-    CHECK(choiceAt(computeControlState(*m, testSetup({&second, &rules}), false), "aux", mt::kUart).available ==
-          no("The second says no."));
+    CHECK(choiceAt(computeControlState(*m, testSetup(&rules), true), "aux", mt::kUart).available == kBusy);
 }
 
 // ── While an operation runs ─────────────────────────────────────────────
@@ -119,7 +114,7 @@ TEST(availability_operation_before_product_before_machine) {
 TEST(availability_choices_and_actions_refused_while_operation_runs) {
     auto m = mt::buildTestMachine(mt::kDot, std::nullopt, {plug("a", mt::kHub)});
     TestControlRules rules;
-    const ControlState s = computeControlState(*m, testSetup({&rules}), true);
+    const ControlState s = computeControlState(*m, testSetup(&rules), true);
     for (const auto& v : s.variants) CHECK(v.available == kBusy);
     for (const auto& p : s.places) {
         CHECK(p.available == kYes);   // the place as a whole: only a product rule refuses it
@@ -183,13 +178,13 @@ TEST(availability_recomputed_from_machine_after_operation) {
 TEST(availability_product_entry_carried_unread) {
     auto m = mt::buildTestMachine(mt::kSeg);
     TestControlRules rules;
-    const ControlState s = computeControlState(*m, testSetup({&rules}), false);
+    const ControlState s = computeControlState(*m, testSetup(&rules), false);
     const ProductEntry* e = s.productEntry(kTestEntry);
     CHECK(e && e->value == rules.last);   // the very payload the product gave
     CHECK(calcu::sessions::toText(s.toValue()).find("\"product\":{\"test.entry\":{\"model\":\"test-seg\"}}") !=
           std::string::npos);
     rules.entry = false;
-    CHECK(computeControlState(*m, testSetup({&rules}), false).productEntries.empty());
+    CHECK(computeControlState(*m, testSetup(&rules), false).productEntries.empty());
 }
 
 TEST(availability_product_refuses_generic_entry_with_its_reason) {
@@ -200,7 +195,7 @@ TEST(availability_product_refuses_generic_entry_with_its_reason) {
     rules.refuse(ActionKey{kResetAction}, "Not now, says the product.");
     rules.refuse(InsertKey{MediaPlaceId{"drive"}, {}});
     rules.refuse(ChoiceKey{at({"b"}), std::nullopt, std::nullopt});   // the empty choice of b
-    const ControlState s = computeControlState(*m, testSetup({&rules}), false);
+    const ControlState s = computeControlState(*m, testSetup(&rules), false);
     CHECK(s.models[0].available == no(kProductReason) && s.models[1].available == kYes);
     CHECK(s.variants[0].available == kYes && s.variants[1].available == no(kProductReason));
     CHECK(s.action(kResetAction)->available == no("Not now, says the product."));
@@ -215,7 +210,7 @@ TEST(availability_refused_place_passes_reason_to_its_choices) {
     auto m = mt::buildTestMachine(mt::kSeg, std::nullopt, {plug("slot-1", mt::kModule)});
     TestControlRules rules;
     rules.refuse(PlaceKey{at({"slot-1"})}, "This frontend cannot use the slot.");
-    const ControlState s = computeControlState(*m, testSetup({&rules}), false);
+    const ControlState s = computeControlState(*m, testSetup(&rules), false);
     const Availability why = no("This frontend cannot use the slot.");
     const PlaceEntry* slot = s.place(at({"slot-1"}));
     CHECK(slot && slot->available == why && slot->empty == why);
@@ -226,7 +221,7 @@ TEST(availability_refused_place_passes_reason_to_its_choices) {
     }
     CHECK(s.place(at({"printer"}))->available == kYes);
     // While an operation runs, that comes first for the choices.
-    const ControlState busy = computeControlState(*m, testSetup({&rules}), true);
+    const ControlState busy = computeControlState(*m, testSetup(&rules), true);
     CHECK(busy.place(at({"slot-1"}))->empty == kBusy);
     CHECK(busy.place(at({"slot-1"}))->available == why);
 }

@@ -1,4 +1,4 @@
-// Opening through the real presets and media parts (LibraryOpeners), on the
+// Opening through the real presets and media parts, on the
 // media tests' fixture (the media test catalogue, the test kinds, a save
 // folder of the test's own), a pass-through place among them; the folder of
 // a file dialog, on a session with a settings file.
@@ -6,7 +6,6 @@
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
 #include "opening/Classify.hpp"
-#include "opening/LibraryOpeners.hpp"
 #include "opening/OpenPart.hpp"
 
 using namespace calcu::opening;
@@ -25,12 +24,11 @@ struct RealOpen {
         o.model = std::move(model);
         o.settingsIni = std::move(ini);
         o.moreParts = [this](MediaFixture& f) -> std::vector<calcu::sessions::SessionPart*> {
-            presets = std::make_unique<PresetsOpener>(*f.presetsPart, std::vector<std::string>{".TEST-SEG", ".test-dot"});
-            media = std::make_unique<MediaOpener>(*f.media);
             OpenSetup s;
             s.productName = "Test-Product";
-            s.presets = presets.get();
-            s.media = media.get();
+            s.presets = f.presetsPart.get();
+            s.presetExtensions = {".TEST-SEG", ".test-dot"};
+            s.media = f.media.get();
             part = std::make_unique<OpenPart>(std::move(s));
             return {part.get()};
         };
@@ -51,10 +49,8 @@ struct RealOpen {
         return fixture.fe.reply(c);
     }
 
-    std::unique_ptr<PresetsOpener> presets;
-    std::unique_ptr<MediaOpener> media;
     std::unique_ptr<OpenPart> part;
-    MediaFixture fixture;   // last: built after the openers' holders
+    MediaFixture fixture;   // last: built after the part's holder
 };
 
 const OpenReply* replyOf(const calcu::sessions::ReplyMessage* r) {

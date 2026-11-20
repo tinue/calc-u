@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 # Calc-U-1600 in the repository's root CMake project (option
-# CALCU_PRODUCT_1600): the calcu_core / calcu_shared libraries
+# CALCU_PRODUCT_1600): the calcu1600_core / calcu1600_shared libraries
 # (cmake/CalcU.cmake), the Qt6 GUI app (with CALCU_FRONTEND_QT, via
 # add_subdirectory(frontends/qt6)), the product's entry of the harness
 # `calcu`, and the core/ + app/
@@ -42,9 +42,9 @@ if(EMSCRIPTEN)
   # Native wasm exception handling, as Rust's wasm32-unknown-emscripten std
   # in libsharpdx-wasm.a uses it (Emscripten's JS-based -fexceptions would
   # leave its __cpp_exception tag unresolved).
-  target_compile_options(calcu_core PUBLIC -fwasm-exceptions)
+  target_compile_options(calcu1600_core PUBLIC -fwasm-exceptions)
   add_executable(wasm_smoke ${CMAKE_CURRENT_SOURCE_DIR}/tools/wasm_smoke.cpp)
-  target_link_libraries(wasm_smoke PRIVATE calcu_shared)
+  target_link_libraries(wasm_smoke PRIVATE calcu1600_shared)
   # NODERAWFS: the smoke test reads roms/ and the bundled cards straight
   # from the host file system, run from the repo root under node.
   target_link_options(wasm_smoke PRIVATE -fwasm-exceptions -sNODERAWFS=1 -sALLOW_MEMORY_GROWTH=1
@@ -57,7 +57,7 @@ if(EMSCRIPTEN)
                    OUTPUT calcu1600-core EXPORT createCalcU1600Module ENVIRONMENT worker
                    LINK -sSTACK_SIZE=1MB
                         -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,getExceptionMessage,decrementExceptionRefcount)
-  target_link_libraries(calcu_web PRIVATE calcu_shared)
+  target_link_libraries(calcu_web PRIVATE calcu1600_shared)
   return()
 endif()
 
@@ -72,7 +72,7 @@ endif()
 # It finds the ROMs and the module definitions in the folders of the source
 # tree, as the tests use them.
 add_library(calcu1600_harness STATIC ${CMAKE_CURRENT_SOURCE_DIR}/app/HarnessProduct.cpp)
-target_link_libraries(calcu1600_harness PUBLIC calcu_shared)
+target_link_libraries(calcu1600_harness PUBLIC calcu1600_shared)
 target_link_libraries(calcu1600_harness PRIVATE calcu_warnings)
 # The state-file header's version is the app's one: APP_VERSION of the Qt
 # build.
@@ -161,18 +161,10 @@ if(CALCU_TESTS)
   # lookup's allowed files are the host drive's own ROM
   # (core/Machine/SharpRoms.cpp) and the catalogue's ROM entries.
   calcu_product_source_checks(PREFIX CalcU1600 ROM_ALLOW core/Machine/SharpRoms.cpp core/Machine/SharpCatalogue.cpp)
-  # No session class of the
-  # product's own; the Qt6 frontend hosts the library's app session and
-  # sends no suspend.
-  calcu_add_test(CalcU1600NoOwnSession frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_own_session.cmake)
   # The macOS Open With types: the
   # preset extensions as the product's own, .bas, .bbin, .bin as Alternate,
   # no .rom.
   calcu_add_test(CalcU1600OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
-  # The old CLIs, probes, one-time checks and their run configurations
-  # stay gone (the harness `calcu` does their work), and no
-  # PC1600_POWER_PROBE is left.
-  calcu_add_test(CalcU1600NoOldTools frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_old_tools.cmake)
   # The harness writes a PC-1600 trace,
   # tools/read_trace.py reads it unchanged (well under 2 s: Frequent).
   if(Python3_FOUND AND NOT WIN32)

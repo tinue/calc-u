@@ -54,7 +54,7 @@ link`.
 | `peek`, `poke` spaces | `LH5801`, `LH5803`: `me0`, `me1`, `me1-written`, `bank=` PU × 2 + PV; `SC7852`: `memory`, `io`, `io-written`; `peek … file=<file>` writes the bytes to a file |
 | `bank=`, `vbank=` of `SC7852 memory` | `bank=` the page's bank in port 31H. `vbank=` on page B (4000–7FFF) the ROM half of bank 3, port 3DH bit 2: `0` bank 3, `1` the hidden bank 3b, whatever the port selects now (`bank=3 vbank=1`); on page C (8000–BFFF) the vertical bank of the module in slot 2 (port 28H). The kanji ROM of the Japanese models (bank 4 of page C with port 3DH = 02H, as the ROM's SELJROM sets it) is not emulated: bank 4 of page C reads as open bus, FFH, with or without it |
 | `paper` | `paper marks\|png <path>\|copy\|cut [CE-150\|CE-1600P]`, `cut-paper` |
-| media places | `slot-1`, `slot-2` (modules), `floppy` (CE-1600P, sides 0 and 1), `cassette-recorder` (CE-150, CE-1600P) |
+| media places | `slot-1`, `slot-2` (modules), `floppy` (CE-1600P, sides 0 and 1), `cassette-recorder` (CE-150 on the PC-1500/1500A, CE-1600P) |
 | media kinds | `battery-backed-module` (`.module.yaml`), `floppy-disk` (`.floppy.yaml`), `cassette` (`.cassette.yaml` with its WAV); codecs in `app/SharpMediaKinds` |
 | media steps | `floppy { name: Formatted, side: 1 }`, `cassette { file: x.cassette.yaml }`, `eject floppy\|cassette`, `saveas { place: slot-1, as: live, name: Mine }` |
 | `open <path>` | presets `.pc1500`, `.pc1500a`, `.pc1600` (or by their `model:` line); media `.module.yaml`, `.floppy.yaml`, `.cassette.yaml`; a BASIC program (`basic-program`) or machine code (`machine-code-program`) loaded at once (a WAV's first file; headerless code is refused, it needs an address) — the kinds in `app/SharpFileKinds` |
@@ -74,7 +74,6 @@ is none. A file argument is a path relative to the working directory.
 | `c1600 load-basic <file> [<n>]` | loads a BASIC program into memory |
 | `c1600 type-basic <file>` | types a BASIC listing in through the ROM's editor |
 | `c1600 load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803\|z80>] [run]` | loads machine code |
-| `c1600 dump-basic` | the BASIC pointers and the program area |
 | `c1600 list-basic` | the BASIC program as listing lines |
 | `c1600 inspect <view>` | an INSPECTOR view as text |
 | `c1600 cassette record <file.wav>` | a new cassette whose recording goes to the WAV |
@@ -230,51 +229,6 @@ The load dialog's plan (`c1600.code-plan`: the proposed address, the
 processor and its note, where the code would go) is a session request; the
 harness has no command for it.
 
-### `c1600 dump-basic`
-
-The BASIC pointers, one per line, then the program area from its start to
-16 bytes past its end, 16 bytes a row. No arguments.
-
-PC-1500, PC-1500A:
-
-```
-BASPRG_ST  $7865 = $40C5
-BASPRG_END $7867 = $40D2   (len = 13)
-BASPRG_EDT $7869 = $40C5
-VAR_START  $7899 = $....
-DATA_PTR   $78BE = $....
-RAM_END    $7864 = $.. (page)   WARM_START $7A20 = $..
-40C5: 00 0A 09 F1 97 ...  |.....|
-```
-
-PC-1600 (the LH5803's addresses, with the Z-80's beside the start and
-end; Z-80 = LH5803 + $8000 below $8000):
-
-```
-BASPRG_ST  $F865 = $40C5  (Z-80 $C0C5)
-BASPRG_END $F867 = $40D2  (Z-80 $C0D2, len = 13)
-BASPRG_EDT $F869 = $....
-F5CF (LE, RAM base) = $....   F89D (LE) = $....
-VARIABLE_PTR $F899 = $....
-C0C5: 00 0A ... |....|
-```
-
-A row is `<address>: ` and 16 bytes in hex, then the bytes as characters
-between `|` (printable ASCII as it is, any other byte `.`). The rows are in
-the main processor's view (PC-1600: the Z-80's). When the start does not
-lie before the end, the rows are left out and the pointers stand as they
-are.
-
-`--json`: `{"pointers": [{"name", "address", "value", "z80"?, "length"?}],
-"rows": [{"address", "bytes": []}]}`. Pointer names: PC-1500, PC-1500A
-`BASPRG_ST`, `BASPRG_END`, `BASPRG_EDT`, `VAR_START`, `DATA_PTR`,
-`RAM_END`, `WARM_START`; PC-1600 `BASPRG_ST`, `BASPRG_END`, `BASPRG_EDT`,
-`F5CF`, `F89D`, `VARIABLE_PTR`. `z80` is on the PC-1600's `BASPRG_ST` and
-`BASPRG_END`, `length` on `BASPRG_END`.
-
-Refusals: `usage: c1600 dump-basic` (an argument given); `The machine has
-no BASIC memory.`
-
 ### `c1600 list-basic`
 
 The program as listing lines, one per program line, as the detokenizer
@@ -312,6 +266,10 @@ The view of the INSPECTOR, one reply line per line of the view.
 | `dump-s1`, `dump-s2` | Program Area S1, S2 as a dump |
 | `dump-disk-s1`, `dump-disk-s2` | Disk S1:, S2: as a dump |
 
+The BASIC program's pointers (BASPRG_ST, BASPRG_END, the edit head, the
+variables' start) are rows of `pointers`; its bytes are in `dump-basic`,
+the whole BASIC area (PC-1600: S0) as a dump.
+
 A view the model lacks is a done reply of one line, `<title>: not on the
 PC-1500` or `<title>: not on the PC-1600`.
 
@@ -334,8 +292,8 @@ machine has no INSPECTOR.`
 nine decimals, `motor` a boolean.
 
 Refusals: `usage: c1600 cassette record <file.wav> | cassette status`;
-`The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged
-in.`; `record` through `attach`: `This command needs a run of calcu; it is
+`The machine has no cassette: a CE-150 on the PC-1500 or PC-1500A, or a
+CE-1600P on the PC-1600, brings one.`; `record` through `attach`: `This command needs a run of calcu; it is
 not offered through attach.`
 
 ### `c1600 serial ce158|rs232c …`

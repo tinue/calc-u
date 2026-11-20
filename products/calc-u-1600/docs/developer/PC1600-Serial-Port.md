@@ -29,7 +29,7 @@ pseudo-terminal. A link lives for the session, so the file keeps its name
 across machine rebuilds; `HostLinks::pump` moves the bytes between two
 advances (once per slice). The UART gets its peer when the port is first
 taken, which the session's `HostLinks::machineChanged` does right after a
-build, before the cold boot — as the 0.8.1 session attached its PTY;
+build, before the cold boot;
 until then it runs standalone.
 
 **Fidelity: internal line model + software flow-through.** XON/XOFF and

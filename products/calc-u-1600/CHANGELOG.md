@@ -25,15 +25,18 @@
   the one-time checks `dev/tape-matrix/` and `dev/loader-matrix/` are
   gone. Their functions are harness commands (`preset`, `wait`,
   `display-text`, `screenshot`, `audio`, `peek`, `registers`, `history`,
-  `profile`, `eject`, and under `c1600` `dump-basic`, `inspect`,
+  `profile`, `eject`, and under `c1600` `inspect`,
   `cassette record|status`, `serial`, `host-drive`, `call`); the bare
   ROM-file mode of `pc1500_cli`, the probes and the matrices have no
-  successor. A serial port gets a pseudo-terminal only when `link` asks
+  successor. What `--dump-basic` printed is in the INSPECTOR's views
+  `pointers` (the BASIC pointers) and `dump-basic` (the BASIC area),
+  `c1600 inspect <view>`. A serial port gets a pseudo-terminal only when `link` asks
   for one (was `--ce158-pty`). For developers only.
 - **Automated tests with pytest.** A user guide
   (`docs/testing/README.md`): setting up on macOS, Linux and WSL, a test
-  project of your own, two worked examples (MODE 1 with memory modules,
-  RENUM on the PC-1500) that run as a test project in the checkout, the
+  project of your own, three worked examples (MODE 1 with memory modules,
+  RENUM on the PC-1500, the serial ports) that run as a test project in
+  the checkout, the
   path names (`$c1600`, `$saved`, your own), the reference. The driver
   (`tools/machine/`) takes module files and media of your own (a module
   file is plugged as a copy, so the machine's writes never reach it), a printer,
@@ -79,9 +82,12 @@
   folder is `Cassettes` in the save folder (`[storage] cassette-folder`);
   the control bar and its dialogs say "Cassette" ("Cassette:", "Save
   Cassette", "Cassette name:"). The cassette picker and the tape counter
-  show whenever a CE-150 or a CE-1600P is plugged in, also a CE-150 on
-  the PC-1600, and the cassette is taken out when its interface is
-  detached.
+  show whenever a CE-150 (PC-1500/1500A) or a CE-1600P is plugged in,
+  and the cassette is taken out when its interface is detached.
+- **The CE-150's cassette is not offered on the PC-1600.** Its plotter
+  works there; a preset step `cassette:` with it is refused ("the
+  CE-150's cassette cannot be used on the PC-1600"), and the control bar,
+  the harness and the test driver have no cassette for it.
 - **Settings start at their defaults** (the INI file
   `Calc-U-1600.ini`); those of 0.8.x are not carried over. The startup
   model is chosen by the model's name ("PC-1500", was "PC-1500 (ROM
@@ -240,6 +246,16 @@
   its number; `preset` (and `?preset=`) takes a bundled path with or
   without `examples:`. The release's `Calc-U-1600-web.zip` is a release
   build without the Web tests' commands.
+- **Build targets:** the core and the app layer are the CMake targets
+  `calcu1600_core` and `calcu1600_shared` (were `calcu_core` and
+  `calcu_shared`), as Calc-U-59's are `calcu59_core` and
+  `calcu59_shared`. For developers only.
+- **Web build (developers):** `frontends/web/build.sh` and `run-tests.sh`
+  run the library's steps (`library/web/build/product.js`,
+  `library/web/tools/playwright.sh`); `build.js` holds the product's
+  values, the worker's configuration too (`calc-engine-worker.js` is
+  written into `dist/`). Another output folder is `CALCU_WEB_DIST` (was
+  `CALCU1600_WEB_DIST`).
 
 ### Fixed
 

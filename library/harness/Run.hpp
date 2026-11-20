@@ -29,8 +29,6 @@ struct LocalDateTime {
 };
 // `YYYY-MM-DDThh:mm:ss`, or std::nullopt.
 std::optional<LocalDateTime> parseDateTime(std::string_view);
-// The instant at which the host's local date and time is `t`.
-std::chrono::system_clock::time_point localInstant(const LocalDateTime& t);
 
 enum class ClockMode { Fixed, Given, Host };
 

@@ -63,7 +63,16 @@ struct ComponentDescriptor {
 
 // Media places; the medium kinds are the media area's ("magnetic-card", ...).
 enum class MediaPassage { PassThrough, Holding };
-struct MediaPlaceDescriptor { MediaPlaceId id; std::string mediumKind; MediaPassage passage; std::vector<int> sides; };
+struct MediaPlaceDescriptor {
+    MediaPlaceId id;
+    std::string mediumKind;
+    MediaPassage passage;
+    std::vector<int> sides;
+    // A peripheral's media place may exist only at some of the pin-outs it
+    // fits; empty: at all of them.
+    std::vector<PinOutId> onlyAt = {};
+    bool existsAt(const PinOutId&) const;
+};
 
 // A peripheral's keys and switches; never machine keys.
 enum class ControlForm { Key, Switch };

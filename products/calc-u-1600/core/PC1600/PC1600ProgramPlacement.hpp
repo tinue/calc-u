@@ -37,8 +37,6 @@ constexpr uint16_t kS1MBb = 0xF018;
 constexpr uint16_t kS2MTb = 0xF020;    // ... Slot 2
 constexpr uint16_t kS2MBb = 0xF022;
 constexpr uint16_t kAdtbl1 = 0xF1D6;   // ADTBL+1 .. ADTBL+5 -- five 1-byte bank descriptors
-constexpr uint16_t kBasPrgSt = 0xF865; // BASPRG_ST (big-endian), LH5803-side
-constexpr uint16_t kVarPtr = 0xF899;   // VARIABLE POINTER (big-endian), LH5803-side
 constexpr uint16_t kS1Desc = 0xF015;   // S1 / S2 slot descriptor (10 bytes, Work-Area-Map §4.5):
 constexpr uint16_t kS2Desc = 0xF01F;   //   +0 base page, +1 MTb, +2 limit page, +3 MBb,
                                        //   +4..+6 start lo/hi/index, +7..+9 end lo/hi/index

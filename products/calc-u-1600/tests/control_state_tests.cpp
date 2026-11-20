@@ -157,6 +157,10 @@ TEST(pc1600_fields_ce1600p_variants_and_next_variant) {
     CHECK(f.ok(cu1600::commands::kCE1600PVariant, Value::object({{"version", "old"}})));
     s = stateOf(f);
     CHECK(text(product(*s, cu1600::kCe1600pNextVariantEntry), "variant") == "Old");
+    // The CE-150 on the PC-1600: its cassette is not offered there.
+    CHECK(f.attach("CE-150"));
+    s = stateOf(f);
+    CHECK(plugged(*s, "printer", "CE-150") && s->mediaPlaces.empty());
     // Plugged: the running variant, the disk controls usable, the floppy
     // and the cassette listed with their owner, the paper panel's owner.
     CHECK(f.attach("CE-1600P", "Old"));

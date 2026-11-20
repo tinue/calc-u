@@ -52,6 +52,8 @@ std::optional<LocalDateTime> parseDateTime(std::string_view s) {
     return t;
 }
 
+namespace {
+
 std::chrono::system_clock::time_point localInstant(const LocalDateTime& t) {
     std::tm tm{};
     tm.tm_year = t.year - 1900;
@@ -63,6 +65,8 @@ std::chrono::system_clock::time_point localInstant(const LocalDateTime& t) {
     tm.tm_isdst = -1;   // the host's rule for that date
     return std::chrono::system_clock::from_time_t(std::mktime(&tm));
 }
+
+} // namespace
 
 // ── RunSetup ────────────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 // Headless C++ tests for real module definitions (the bundled
 // Qt6/resources/cards/*.module.yaml, as SoftwareDefinedCard) plugged into a
-// PC-1600 40-pin memory-slot connector (Core/Connector/MemorySlotConnector.hpp),
+// PC-1600 40-pin memory-slot connector (core/Connector/MemorySlotConnector.hpp),
 // end to end through PC1600Machine. The card is the *same* definition the
 // PC-1500 side uses -- it wires in pin-for-pin and the connector drives the
 // PC-1600 bay's pins. Same no-framework,

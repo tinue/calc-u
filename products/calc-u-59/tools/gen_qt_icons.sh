@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Regenerate the Qt app's icons from the Swift app's Icon Composer source
-# (App/AppIcon.icon, the only icon source). Run on a Mac after changing it;
+# (frontends/swift/App/AppIcon.icon, the only icon source). Run on a Mac after changing it;
 # the outputs are committed because CI (Windows/Linux) has no actool:
-#   Qt6/resources/macos/AppIcon.icns      local macOS development bundle
-#   Qt6/resources/linux/calc-u-59.png     AppImage icon and window icon (256 px)
-#   Qt6/resources/windows/calc-u-59.ico   exe icon (PNG-compressed, 16–256 px)
+#   frontends/qt6/resources/macos/AppIcon.icns      local macOS development bundle
+#   frontends/qt6/resources/linux/calc-u-59.png     AppImage icon and window icon (256 px)
+#   frontends/qt6/resources/windows/calc-u-59.ico   exe icon (PNG-compressed, 16–256 px)
 # The Linux and Windows icons are the flat layers on the full rounded square,
 # without macOS's transparent margin and shadow (as in Calc-U-1600). Needs
 # rsvg-convert (brew install librsvg).
@@ -49,4 +49,4 @@ for s, data in zip(sizes, images):
     offset += len(data)
 open(out, "wb").write(header + entries + b"".join(images))
 PY
-echo "icons written to Qt6/resources/{macos,linux,windows}"
+echo "icons written to frontends/qt6/resources/{macos,linux,windows}"

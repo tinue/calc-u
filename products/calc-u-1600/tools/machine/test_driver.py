@@ -212,15 +212,17 @@ def test_saved_card_comes_back(tmp_path):
     assert Machine(tmp_path / "b", slot_2=tmp_path / "a" / "slot-2.module.yaml").card(2) == image
 
 
-def test_own_card_file_stays_as_it_is(tmp_path):
-    # A saved module is written back where it was plugged from: the driver plugs a copy in the work
-    # folder, so tests that run side by side never see each other's writes in the project's file.
+def test_template_card_file_stays_as_it_is(tmp_path):
+    # A fixture with `template: true` is never written: the machine's writes stay in memory, so tests
+    # that run side by side never see each other's writes. card() reads what the machine wrote.
     Machine(tmp_path / "a", slot_2="superRAM").card(2)
+    text = (tmp_path / "a" / "slot-2.module.yaml").read_text()
     mine = tmp_path / "mine.module.yaml"
-    mine.write_text((tmp_path / "a" / "slot-2.module.yaml").read_text())
+    mine.write_text(text.replace("\nmodule-name:", "\ntemplate: true\nmodule-name:", 1))
     before = mine.read_text()
     machine = Machine(tmp_path / "b", slot_2=mine)
     machine.key("mode").type("NEW0").key("mode").wait(1).type('INIT"S2:","P"').wait(3).run()
+    assert machine.card(2) != read_card(mine)
     machine.close()
     assert mine.read_text() == before
 

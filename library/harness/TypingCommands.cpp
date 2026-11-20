@@ -3,6 +3,7 @@
 // at most an hour (a program that never comes back to its key scan would
 // otherwise hang the harness). On a model without characters `type` is an
 // unknown command. Neither waits until the machine is idle: that is `wait`.
+#include "formats/Duration.hpp"
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
 #include "typing/TypingTopics.hpp"
@@ -19,18 +20,27 @@ Reply fromSessionReply(const sessions::ReplyMessage& r) {
 }
 
 Reply keyCmd(CommandContext& c) {
-    if (c.line.argText.empty()) return refusedReply("usage: key <key ID> ...");
+    if (c.line.argText.empty()) return refusedReply("usage: key <key ID> ... [hold=<duration>]");
     sessions::Value::Array names;
+    std::optional<double> hold;
     std::string word;
     for (char ch : c.line.argText + " ") {
-        if (ch == ' ' || ch == '\t') {
-            if (!word.empty()) names.push_back(sessions::Value(word));
-            word.clear();
-        } else {
+        if (ch != ' ' && ch != '\t') {
             word += ch;
+            continue;
         }
+        if (word.rfind("hold=", 0) == 0) {   // every press held exactly this long
+            std::string error;
+            const auto us = formats::parseDuration(word.substr(5), &error);
+            if (!us) return refusedReply("hold= takes a duration: " + word.substr(5) + ".");
+            hold = static_cast<double>(*us) / 1e6;
+        } else if (!word.empty()) {
+            names.push_back(sessions::Value(word));
+        }
+        word.clear();
     }
-    sessions::Value a = sessions::Value::object({{"names", sessions::Value(std::move(names))}});
+    sessions::Value a = hold ? sessions::Value::object({{"names", sessions::Value(std::move(names))}, {"hold", *hold}})
+                             : sessions::Value::object({{"names", sessions::Value(std::move(names))}});
     return fromSessionReply(c.host.command(sessions::Command{typing::kKey, std::move(a)}, kNotTaken));
 }
 
@@ -42,7 +52,7 @@ Reply typeCmd(CommandContext& c) {
 } // namespace
 
 void addTypingCommands(CommandRegistry& r) {
-    r.add("key", keyCmd, "key <key ID> ...         press the keys in turn; replies when the last is up");
+    r.add("key", keyCmd, "key <key ID> ... [hold=<d>] press the keys in turn; replies when the last is up");
     r.add("type", typeCmd, "type <text>              type the text and ENTER (Sharp); replies when ENTER is up");
 }
 

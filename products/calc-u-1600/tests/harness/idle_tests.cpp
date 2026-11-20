@@ -168,10 +168,10 @@ void sharedCases(const std::string& model) {
     {   // wait-finished lasts until the program has ended
         Sharp s(model);
         if (!s.ok()) return;
-        s.program({"10 FOR I=1 TO 300", "20 NEXT I", "30 PRINT \"DO\"+\"NE\""});
+        s.program({"10 FOR I=1 TO 300", "20 NEXT I", "30 END"});   // no PRINT: the PC-1500's stops
         s.line("type RUN");
         const double t = Sharp::seconds(s.line("wait-finished"));
-        CHECK(t > 0.3);
+        CHECK(t > 0.3 && t < 60.0);
         expectRow(s.idle(), true, true, true);
     }
     {   // OFF at the prompt: nothing

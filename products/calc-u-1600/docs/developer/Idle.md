@@ -40,11 +40,14 @@ means stopped), the cassette relay through B00E.
 
 ### The questions
 
-- **A** = not off, and (the key wait, or a key read for INKEY$ or TRACE in
-  this frame).
-- **W** = A, and none of: the buzzer line changed in this frame, the
-  CE-150's motor phases not 0.
-- **B** = the key wait, BUSY off, BREAKPARAM bits 5 and 6 clear, settled.
+- **A** = not off, and (the key wait ran in this frame or the last with
+  7B0E bit 0 clear, or INKEY$ read a key in this frame or the last). By
+  frames, not by the PC of the sample: the timer interrupt runs outside the
+  loop (E22E). TRACE's key read is not counted.
+- **W** = A, and the buzzer line did not change in this frame or the last
+  (busy: "the buzzer"). The CE-150's motor phases are not asked: not
+  established that 0 means stopped.
+- **B** = W, BUSY off, BREAKPARAM bits 5 and 6 clear, settled.
 
 | Case | A | W | settled | B | Signal |
 |---|---|---|---|---|---|
@@ -67,6 +70,8 @@ means stopped), the cassette relay through B00E.
 |---|---|---|
 | ON/BREAK | latched: F00B bit 1, tested once per statement (C42A), in each key-wait pass (E269), in TIME_DELAY per 15.625 ms tick (E8A3, E8B0), in BEEP's tone loop each half period (E683), in the CE-150's BRK_150 A746 (after each character, GRAPH step and feed step) and SAVE_NIBBLE BDD6 | any: a 1 ms press broke `10 GOTO 10` (measured). During CLOAD the loader reads the PB7 level instead (BE2F, BE4C): held while it polls; how long is not established |
 
+ON/BREAK from a command (the harness's or the driver's `key`) waits for A
+at most 0.2 s, then goes down; a preset's key waits for A as any key does.
 OFF is not one of them: it works only from the editor (EDCTRL_TBL C3A9 →
 BTN_OFF CD71), as on the real machine.
 
@@ -95,11 +100,12 @@ function per CALLH, and machine code started by XCALL.
 
 ### The questions
 
-- **A** = the system on, CK0 on, and (the key wait, or a key read in this
-  frame).
-- **W** = A, and none of: the CE-1600F's motor on, the CE-1600P's motor
-  power on.
-- **B** = the key wait, BUSY off, CURLINE 0, INTFLG bits 5 and 6 clear,
+- **A** = the system on, and the last 15 frames each had CK0 on and the
+  key wait at the frame's end or a key read in it.
+- **W** = A, and the CE-1600F's motor off (busy: "the CE-1600F's motor").
+  The CE-1600P's motor power is not asked: while it plots the ROM is not
+  in the key wait anyway.
+- **B** = W, the key wait, BUSY off, CURLINE 0, INTFLG bits 5 and 6 clear,
   settled.
 
 | Case | A | W | settled | B | Signal |
@@ -116,7 +122,7 @@ function per CALLH, and machine code started by XCALL.
 | PRINT after `WAIT n` (n > 0) | no | no | no | no | PRTEND's timed wait (SWAIT): part of the program's run time (BREAK can end it) |
 | BEEP | no | no | no | no | SOUT; measured: `wait` lasted the 74 s of `BEEP 20,100,2000` |
 | a direct LOAD, SAVE, COPY (S1:, S2:, S3:, COM1:, X:) | no | no | no | no | no key wait (the serial waits P2-B6 A014, A503 test only the BREAK latch) |
-| plotting, printing on the CE-1600P | no | no | no | no | no key wait; at the prompt with the motor power still on: A, not W |
+| plotting, printing on the CE-1600P | no | no | no | no | no key wait (the motor power is not asked) |
 | the CE-1600F's motor on at the prompt | yes | no | no | no | motor |
 | switched off, auto power-off | no | no | no | no | system off |
 
@@ -126,25 +132,23 @@ function per CALLH, and machine code started by XCALL.
 |---|---|---|
 | ON/BREAK | latched: the IF latch, port 1BH bit 1 (rising edge of PB7), tested before every statement (STMTCHK 3AC0 → BREAKHIT 3C8D; OLD 3B65), in the editor loop (6862), in BEEP, the plotter (PBREAKCHK, CE-1600P bank 4 5788), the floppy (FDFILEEXIT, bank 5 42C9), the cassette and the serial loops; the level, port 1FH bit 7, by KEYMATRIX and WAITONUP (0775) | any for the latch; held while a routine waits for the release (WAITONUP) |
 
+ON/BREAK from a command waits for A at most 0.2 s, then goes down; a
+preset's key waits for A as any key does.
 OFF is not one of them: a matrix key handled only by the editor (EDOFF
 P1-B0 6B3F; ignored during a program's INPUT wait and a PRINT stop with
 F0BBH bit 0).
 
-## Today
+## In the code
 
-- **PC-1500:** `PC1500Machine::keyReady()` is the key wait alone: an INKEY$
-  program is never A (measured: `wait` runs the hour). The idle rule is
-  settled on it. `key break` waits for A and is refused after an hour
-  (measured with `10 GOTO 10`); `key-down break` works.
-- **PC-1600:** a frame is ready when CK0 is on and the SC7852 is in the
-  command loop (9280–9300) or the key matrix was read: the interrupt's
-  scan makes that true while any program runs, so `10 GOTO 10` counts as
-  idle. The idle rule then excludes the CE-1600F's motor and a direct file
-  command (CURLINE 0, not in KEYGET, bank 3b or DTR); with A from the key
-  wait and the key reads, that exclusion is no longer needed. The comment
-  in `app/SharpPresetRules.cpp` says BASIC reads the matrix for BREAK; it is
-  the interrupt.
-- Both: no B; no W beyond the floppy motor.
+- A: `PC1500Machine::keyReady()` and `PC1600Machine::keyReady()` (the frame
+  notes and the 15 frames), `Machine::isKeyReady()` above the core.
+- W's busy list and B: the kind `c1600.program-state`
+  (`core/Machine/SharpProductKinds.hpp`: `PC1500Machine::toneSounding()`,
+  `programEnded()`; `PC1600Machine::programEnded()`, the CE-1600F's motor).
+- The rule: `app/SharpPresetRules.cpp`; the keys that do not wait:
+  `app/SharpTyping.cpp` (ON/BREAK, at most 0.2 s); full speed runs at real
+  time while the machine waits (`app/PacingProfiles.cpp`).
+- The cases as tests: `tests/harness/idle_tests.cpp`.
 
 ## Not established
 

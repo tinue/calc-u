@@ -115,11 +115,12 @@ Task<OperationResult> runItem(OperationContext& op, std::shared_ptr<Item> item, 
     co_return OperationResult{r.ok, r.reason};
 }
 
-Task<OperationResult> waitIdle(OperationContext& op, IdleRule rule) {
+Task<OperationResult> waitIdle(OperationContext& op, IdleRule rule, bool finished) {
     const machine::Machine* m = op.session().machine();
     if (!m) co_return OperationResult{false, sessions::kNoMachine};
     const machine::Ticks hour = static_cast<machine::Ticks>(m->descriptor().tickRate) * 3600;
-    const IdleOutcome w = co_await IdleWatch(std::move(rule)).wait(op, hour);
+    IdleWatch watch(std::move(rule));
+    const IdleOutcome w = finished ? co_await watch.waitFinished(op, hour) : co_await watch.wait(op, hour);
     if (w.noMachine) co_return OperationResult{false, sessions::kNoMachine};
     if (w.paused) co_return OperationResult{false, "The machine is paused."};
     co_return OperationResult{};
@@ -188,12 +189,30 @@ void PresetsPart::attach(sessions::SessionSetup& s) {
         return StartOperation{[this, item, rules](OperationContext& op) { return runItem(op, item, rules, &deps()); }};
     });
 
-    s.command(kWaitIdleCommand, [this](const Value&, SessionContext& c) -> CommandOutcome {
-        if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
+    for (const bool finished : {false, true})
+        s.command(finished ? kWaitFinishedCommand : kWaitIdleCommand,
+                  [this, finished](const Value&, SessionContext& c) -> CommandOutcome {
+                      if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
+                      const machine::Machine* m = c.machine();
+                      if (!m) return Refused{sessions::kNoMachine};
+                      IdleRule rule = setup_.rules->forModel(m->model()).idle();
+                      return StartOperation{[rule, finished](OperationContext& op) { return waitIdle(op, rule, finished); }};
+                  });
+
+    s.request(kIdleStateRequest, [this](const Value&, SessionContext& c) {
         const machine::Machine* m = c.machine();
-        if (!m) return Refused{sessions::kNoMachine};
-        IdleRule rule = setup_.rules->forModel(m->model()).idle();
-        return StartOperation{[rule](OperationContext& op) { return waitIdle(op, rule); }};
+        if (!m) return sessions::replyRefused(std::string(sessions::kNoMachine));
+        const IdleState st = idleState(setup_.rules->forModel(m->model()).idle(), *m);
+        Value::Array busy;
+        for (const std::string& b : st.busy) busy.emplace_back(b);
+        return sessions::replyGiven(sessions::valuePayload(
+            kIdleStateKind, Value::object({{"takesKeys", st.takesKeys}, {"waits", st.waits}, {"ended", st.ended},
+                                           {"busy", Value(std::move(busy))}})));
+    });
+
+    // Pacing asks whether the machine waits, by the same rule.
+    s.context().machineSession().setWaits([this](const machine::Machine& m) {
+        return idleState(setup_.rules->forModel(m.model()).idle(), m).waits;
     });
 
     s.request(kCheckPresetRequest, [this](const Value& args, SessionContext&) {

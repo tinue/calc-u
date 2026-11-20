@@ -20,7 +20,7 @@ PC1500Variant modelOf(const MachineDescriptor& d) {
 
 // The capability objects, each over the core.
 struct PC1500InterfaceMachine::Kinds {
-    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), printerPort(m), call(m) {}
+    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), printerPort(m), call(m), program(m) {}
 
     sharp::PC1500LoaderMemory memory;
     struct Inspector final : sharp::InspectorViews {
@@ -82,6 +82,15 @@ struct PC1500InterfaceMachine::Kinds {
         }
         PC1500Machine& m;
     } call;
+    struct Program final : sharp::ProgramState {
+        explicit Program(PC1500Machine& m) : m(m) {}
+        std::vector<std::string> busy() const override {
+            if (m.toneSounding()) return {"the buzzer"};
+            return {};
+        }
+        bool programEnded() const override { return m.programEnded(); }
+        PC1500Machine& m;
+    } program;
 };
 
 PC1500InterfaceMachine::PC1500InterfaceMachine(const MachineDescriptor& d, const VariantId& v)
@@ -141,6 +150,7 @@ void PC1500InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     out.push_back(byComponent("LH5801", k.support));
     out.push_back(byComponent("LH5801", k.trace));
     out.push_back(byComponent("LH5801", k.call));
+    out.push_back(byComponent("LH5801", k.program));
     out.push_back(byComponent("LH5801", stateCapability()));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     if (const PlugEntry* e = at(sharp::kPrinter); e && e->peripheral.value == sharp::kCE150) {

@@ -22,7 +22,4 @@ struct RunNote {
 /// The note of the machine now; a machine that is not a TI gives the empty note.
 RunNote noteRun(calcu::machine::Machine&);
 
-/// Idle as the preset rules say: key readiness, no program, the printer not busy.
-bool runIdle(calcu::machine::Machine&);
-
 } // namespace cu59

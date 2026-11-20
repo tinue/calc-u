@@ -39,14 +39,16 @@ std::string ownerText(const machine::Owner& o) {
     return "peripheral:" + p.peripheral.value + "@" + machine::placeText(p.place);
 }
 
-// `wait` without a duration waits until the machine is idle,
-// at most an hour of emulated time (the counterpart of a preset's implicit wait).
-Reply waitIdle(CommandContext& c) {
+// `wait` without a duration waits until the machine has settled, and
+// `wait-finished` until its program has ended too; at most an hour of
+// emulated time (the counterpart of a preset's implicit wait).
+Reply waitIdle(CommandContext& c, bool finished) {
     const machine::MachineDescriptor* d = c.host.descriptor();
     if (!d) return refusedReply(kNoMachine);
     const machine::Machine* m = c.host.session().machineSession().machine();
     const machine::Ticks t0 = m ? m->tickCount() : 0;
-    const ReplyMessage r = c.host.command(Command{presets::kWaitIdleCommand, {}});
+    const ReplyMessage r =
+        c.host.command(Command{finished ? presets::kWaitFinishedCommand : presets::kWaitIdleCommand, {}});
     if (!r.done) return refusedReply(r.reason);
     m = c.host.session().machineSession().machine();
     const machine::Ticks ran = m ? m->tickCount() - t0 : 0;
@@ -58,7 +60,7 @@ Reply waitIdle(CommandContext& c) {
 }
 
 Reply waitCmd(CommandContext& c) {
-    if (c.line.argText.empty()) return waitIdle(c);
+    if (c.line.argText.empty()) return waitIdle(c, false);
     std::string error;
     const auto us = formats::parseDuration(c.line.argText, &error);
     if (!us) return refusedReply(error);
@@ -207,10 +209,40 @@ Reply stateRestoreCmd(CommandContext& c) {
     return fromSessionReply(c.host.command(Command{kStateRestoreCommand, std::move(args)}));
 }
 
+Reply waitFinishedCmd(CommandContext& c) {
+    if (!c.line.argText.empty()) return refusedReply("usage: wait-finished");
+    return waitIdle(c, true);
+}
+
+// The product's answers now: takes keys, waits, the program has ended, and
+// what keeps the machine busy.
+Reply idleStateCmd(CommandContext& c) {
+    const ReplyMessage r = c.host.ask(Request{presets::kIdleStateRequest, {}});
+    if (!r.done) return refusedReply(r.reason);
+    const sessions::Value v = r.result ? r.result->toValue() : sessions::Value();
+    auto yes = [&](const char* key) {
+        const sessions::Value* b = v.find(key);
+        return b && b->boolean() && *b->boolean();
+    };
+    Value result = Value::object();
+    result.set("takesKeys", yes("takesKeys")).set("waits", yes("waits")).set("ended", yes("ended"));
+    std::vector<std::string> lines = {std::string("takes keys: ") + (yes("takesKeys") ? "yes" : "no"),
+                                      std::string("waits: ") + (yes("waits") ? "yes" : "no"),
+                                      std::string("ended: ") + (yes("ended") ? "yes" : "no")};
+    std::string busy;
+    if (const sessions::Value* b = v.find("busy"); b && b->elements())
+        for (const sessions::Value& e : *b->elements())
+            if (e.string()) busy += (busy.empty() ? "" : ", ") + *e.string();
+    lines.push_back("busy: " + (busy.empty() ? std::string("nothing") : busy));
+    return doneReply(std::move(result), std::move(lines));
+}
+
 } // namespace
 
 void addFirstCommands(CommandRegistry& r) {
-    r.add("wait", waitCmd, "wait [<duration>]        let emulated time pass: 2s, 1.5s, 500ms; none: until idle");
+    r.add("wait", waitCmd, "wait [<duration>]        let emulated time pass: 2s, 1.5s, 500ms; none: until settled");
+    r.add("wait-finished", waitFinishedCmd, "wait-finished            until the program has ended and the machine has settled");
+    r.add("idle-state", idleStateCmd, "idle-state               takes keys, waits, ended, busy: the product's answers now");
     r.add("key-down", keyCmd(true), "key-down <key ID>        the key down");
     r.add("key-up", keyCmd(false), "key-up <key ID>          the key up");
     addTypingCommands(r);

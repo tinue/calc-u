@@ -21,7 +21,7 @@ namespace {
 struct PC1600InterfaceMachine::Kinds {
     explicit Kinds(PC1600Machine& m)
         : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), floppy(m),
-          drive(driveOf(m)), printerPort(m), hostDrive(m), call(m), direct(m) {}
+          drive(driveOf(m)), printerPort(m), hostDrive(m), call(m), program(m) {}
 
     static sharp::FloppyPlace::Drive driveOf(PC1600Machine& m) {
         sharp::FloppyPlace::Drive d;
@@ -122,11 +122,15 @@ struct PC1600InterfaceMachine::Kinds {
         }
         PC1600Machine& m;
     } call;
-    struct Direct final : sharp::DirectCommand {
-        explicit Direct(PC1600Machine& m) : m(m) {}
-        bool running() const override { return m.directCommandRunning(); }
+    struct Program final : sharp::ProgramState {
+        explicit Program(PC1600Machine& m) : m(m) {}
+        std::vector<std::string> busy() const override {
+            if (m.ce1600fMotorOn()) return {"the CE-1600F's motor"};
+            return {};
+        }
+        bool programEnded() const override { return m.programEnded(); }
         PC1600Machine& m;
-    } direct;
+    } program;
 };
 
 PC1600InterfaceMachine::PC1600InterfaceMachine(const MachineDescriptor& d, const VariantId& v)
@@ -238,7 +242,7 @@ void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     out.push_back(byComponent("SC7852", k.support));
     out.push_back(byComponent("SC7852", k.trace));
     out.push_back(byComponent("SC7852", k.call));
-    out.push_back(byComponent("SC7852", k.direct));
+    out.push_back(byComponent("SC7852", k.program));
     out.push_back(byComponent("SC7852", stateCapability()));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     out.push_back(byComponent(sharp::kRs232cComponent, m_rs232c.port()));

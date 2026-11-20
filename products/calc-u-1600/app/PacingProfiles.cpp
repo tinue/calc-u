@@ -6,7 +6,7 @@ calcu::pacing::PacingProfile pacingProfile(const calcu::machine::ModelId&) {
     calcu::pacing::PacingProfile p;
     p.slice = std::nullopt;                 // the call
     p.jitter = false;
-    p.fullSpeedPacedWhileWaiting = false;   // full speed never paced
+    p.fullSpeedPacedWhileWaiting = true;    // full speed runs at real time while the machine waits for the user
     return p;
 }
 

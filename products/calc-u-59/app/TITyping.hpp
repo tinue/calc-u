@@ -22,6 +22,10 @@ namespace cu59 {
 inline constexpr std::uint32_t kTISamplesNeeded = 1;
 inline constexpr double kTIMaxHoldSeconds = 1.0;
 inline constexpr double kTIMinHoldSeconds = 0.100;
+/// How long R/S, GTO and RST wait for key readiness before they go down all
+/// the same: long beside the few milliseconds the scan loop takes to come
+/// back, so a program typed in LRN mode keeps its order.
+inline constexpr double kTIDoesNotWaitAfterSeconds = 0.200;
 inline constexpr double kTIReadinessPoll = 0.0015;     ///< release 2.3.0's kScanPoll
 
 /// Minimum hold 100 ms of emulated time, presses that wait at key

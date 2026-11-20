@@ -110,12 +110,21 @@ public:
     /// clears it. The tick count of the machine interface.
     uint64_t elapsedCycles() const { return m_elapsedCycles; }
 
-    /// Key readiness: the CPU is in the
-    /// ROM's key wait WAIT_4_KB (E243-E33D) with bit 0 of CURS_CTRL (7B0E)
-    /// clear, and not powered off.
+    /// Key readiness (A of docs/developer/Idle.md), not powered off: the
+    /// ROM's key wait WAIT_4_KB (E243-E33D) ran in this frame or the last
+    /// with bit 0 of CURS_CTRL (7B0E) clear (by frames: the timer interrupt
+    /// runs outside the loop), or INKEY$ read a key (BCMD_INKY D9AA).
     bool keyReady() const {
-        const uint16_t pc = m_cpu.pc();
-        return !m_cpu.poweredOff() && pc >= 0xE243 && pc <= 0xE33D && (m_memory.peek(0x7B0E) & 0x01) == 0;
+        if (m_cpu.poweredOff()) return false;
+        const bool keyWait = m_frame.keyWait || m_lastFrame.keyWait;
+        return (keyWait && (m_memory.peek(0x7B0E) & 0x01) == 0) || m_frame.keyRead || m_lastFrame.keyRead;
+    }
+    /// The buzzer line changed in this frame or the last (a BEEP sounds).
+    bool toneSounding() const { return m_frame.tone || m_lastFrame.tone; }
+    /// The BASIC program has ended: the editor runs (BUSY, 764E bit 0, off)
+    /// and does not wait for INPUT or a PRINT stop (BREAKPARAM 788A bits 5, 6).
+    bool programEnded() const {
+        return (m_memory.peek(0x764E) & 0x01) == 0 && (m_memory.peek(0x788A) & 0x60) == 0;
     }
     /// Buzzer line level changes so far (PiezoSampler::edgeCount()).
     uint64_t buzzerEdgeCount() {
@@ -283,6 +292,17 @@ private:
     Ce158Port m_ce158;                                      // see attachCE158()
     std::vector<std::unique_ptr<BusRomCard>> m_busRoms;     // see attachBusRom()
     uint64_t m_elapsedCycles{0};                            // see elapsedCycles()
+    // keyReady() and toneSounding(), by 60 Hz frames of LH5801 cycles; not in the
+    // state record (after a restore they are at most a frame behind).
+    struct FrameNotes {
+        bool keyWait = false, keyRead = false, tone = false;
+    };
+    FrameNotes m_frame, m_lastFrame;
+    uint64_t m_frameCycles = 0, m_frameEdges = 0;
+    void noteFetch(uint16_t pc) {
+        if (pc >= 0xE243 && pc <= 0xE33D) m_frame.keyWait = true;
+        else if (pc == 0xD9AA) m_frame.keyRead = true;
+    }
 
     // ── The trace records -- see beginTraceRecords() ─────────────────────
     std::unique_ptr<PC1500TraceFile> m_traceFile;

@@ -36,14 +36,32 @@ struct ItemResult {
 
 enum class Applies { Yes, NotForThisModel, Undefined };
 
-// Idle from what the machine reports: `readyNow` without a break for
-// `stretch`, asked every `sample` ticks. The values are the product's (100 ms
-// for the TI, 20 frames for the Sharp models).
+// When a model's machine takes keys, waits, has settled and has finished
+// (the product's tables: Calc-U-59 reference/Idle.md, Calc-U-1600
+// docs/developer/Idle.md):
+// - takes keys: the ROM or a program reads the keyboard as input now
+//   (unset: Machine::isKeyReady());
+// - waits: it takes keys or awaits a medium, and nothing is busy;
+// - settled: it has waited without a break for `stretch`, asked every
+//   `sample` ticks (100 ms for the TI, 20 frames for the Sharp models);
+// - finished: it waits and the program has ended.
 struct IdleRule {
-    std::function<bool(const machine::Machine&)> readyNow;   // unset: Machine::isKeyReady()
+    std::function<bool(const machine::Machine&)> takesKeys;
+    std::function<bool(const machine::Machine&)> awaitsMedium;                // unset: never
+    std::function<std::vector<std::string>(const machine::Machine&)> busy;    // what keeps it busy; unset: nothing
+    std::function<bool(const machine::Machine&)> programEnded;                // unset: always
     machine::Seconds stretch{0.0};
     machine::Ticks sample = 1;
 };
+
+// The rule's answers for the machine now.
+struct IdleState {
+    bool takesKeys = false;
+    bool waits = false;
+    bool ended = false;              // waits, and the program has ended
+    std::vector<std::string> busy;   // what is busy
+};
+IdleState idleState(const IdleRule&, const machine::Machine&);
 
 // The text of `expect:` / `not-expect:` (Expect.hpp): the literal text, or
 // the regular expression between slashes, parsed and compiled when the preset is read.

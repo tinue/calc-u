@@ -91,7 +91,7 @@ What the timing commands read between two slices (`app/TIRunProbe`):
 | A program runs | Bit 0 of `fB` |
 | Display lit | A digit or point driven in the last revolution of the digit counter |
 | Processor idle | No program, the idle flag (bit `0x0001` of the flags) set, the program counter in the model's idle and key-detect range |
-| Idle | Key readiness, no program running, the printer not busy |
+| Finished | The program has ended and the machine waits for the user (`reference/Idle.md`): the scan loop with fB[0] clear; the printer has drained before the scan loop |
 
 ### Timing and profiling
 
@@ -112,7 +112,7 @@ The rules of each:
   a key that started no program. A key not finished after 4000 s is marked
   and the command ends there, done.
 - **`line-times`**: slices of 200 instructions until the machine has been
-  idle for 15 s with no line printed in between, or the limit. A line's
+  finished for 15 s with no line printed in between, or the limit. A line's
   time and gap are from the start of the command and from the line before.
   A line of spaces only is a feed. The printer floor is the least time the
   PC-100C needs for that printout: 4165 instructions per printed line, 1370

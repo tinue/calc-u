@@ -110,7 +110,8 @@ product's part.
 
 A preset waits on its own: **each item starts only when the one before
 has finished**. A key press has finished when the machine is idle
-again, so a key that starts a program finishes when the program stops.
+again: a key that starts a program finishes when the program stops or
+waits for you (an INPUT, a key).
 You rarely need `wait:`.
 
 | You want | Write |

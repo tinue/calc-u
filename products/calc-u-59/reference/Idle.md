@@ -69,9 +69,11 @@ the scan loop, so A drops while a key is taken, as it should.
 
 These keys are read outside the scan loop, each by one `KEY` sample at a
 fixed digit, with no arming and confirmation pair: the key must be down
-when that instruction runs. A scripted press of them goes down at once and
-stays down until the ROM has sampled it, at most a bound; a step may give
-its own hold.
+when that instruction runs. A press of them by a command (the harness's or
+the driver's `key`) waits for A at most 0.2 s, then goes down and stays
+until the ROM has sampled it, at most a bound; a step may give its own
+hold. A preset's key waits for A as any key does: its items run in order,
+and there R/S continues a program once it has stopped.
 
 | Key | Read | How often |
 |---|---|---|
@@ -89,14 +91,16 @@ key's line has been sampled once more, at most 1 s): the bound must be
 longer than a Pause (432 ms), during which no poll runs. GTO stepping is
 the test's own hold.
 
-## Today
+## In the code
 
-- `TIMachine::isKeyReady()` is A; the idle rule (`app/TIPresetRules.cpp`)
-  is settled on W. Both match this table.
-- `TIRunProbe::runIdle` adds "printer not busy" to A; by the printer drain
-  that term never changes the answer. It goes with B.
-- A scripted R/S waits for A (`queuedWaitsForReadiness`), so it cannot stop
-  an endless program; with the keys above it goes in at once.
+- A: `TIMachine::isKeyReady()` (`core/TIMachine.cpp`, the ranges in
+  `core/TIRomRanges.hpp`).
+- The rule: `app/TIPresetRules.cpp` (the card wait through the card
+  reader's media place, B through fB[0] of `noteRun`); the `c59` print
+  listing asks B.
+- The keys that do not wait: `app/TITyping.cpp` (R/S, GTO, RST; at most
+  0.2 s, then held until sampled).
+- The cases as tests: `tests/idle_tests.cpp`.
 
 ## Not established
 

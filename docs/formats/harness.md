@@ -175,9 +175,11 @@ A usage error is `refused: usage: <the command's usage>`.
 | Command | Plain result | `result` |
 |---|---|---|
 | `wait <duration>` | `ticks: <n>`, `seconds: <s>`: what passed; may exceed the duration by less than one instruction. When the debugger has the machine paused after it, also `run state: paused, owner <level>, reason <reason>` | `{ticks, seconds}`; paused: `{ticks, seconds, runState}` with the `run-state` value |
-| `wait` | Until the machine is idle, at most one hour of emulated time (the session's `wait-idle`): `ticks: <n>`, `seconds: <s>`, `hour reached: yes\|no` | `{ticks, seconds, hourReached}` |
+| `wait` | Until the machine is idle (settled: it waits for the user and nothing is busy, for the product's stretch), at most one hour of emulated time (the session's `wait-idle`): `ticks: <n>`, `seconds: <s>`, `hour reached: yes\|no` | `{ticks, seconds, hourReached}` |
+| `wait-finished` | Until the machine is finished (idle, and its program has ended), at most one hour (the session's `wait-finished`): as `wait` | as `wait` |
+| `idle-state` | the product's answers now: `takes keys: yes\|no`, `waits: yes\|no`, `ended: yes\|no` (waits, and the program has ended), `busy: <what>, …\|nothing` (the session's request `idle-state`) | `{takesKeys, waits, ended}` |
 | `key-down <key ID>`, `key-up <key ID>` | — | — |
-| `key <key ID> …` | — (when the last key is up) | — |
+| `key <key ID> … [hold=<duration>]` | — (when the last key is up) | — |
 | `type <text>` | — (when ENTER is up) | — |
 | `display-text` | the rows; `indicators: <names>`; `not text: <n>` (dot matrix only); or the single line `display off` | `{on, rows: [..], indicators: [{name, brightness}], notText}` |
 | `display` | dot matrix: one line per row of dots, each `1` or `0`; segments: `segments: <names>`, then `<position> <bits>` per position; then `indicators: <bits>`, `names: <names>`, `on: true\|false` | `{kind: "dots", rows: [[0,1,…]]}` or `{kind: "segments", segments: [..], positions: [[0,1,…]]}`, then `indicators: [0,1,…], indicatorNames: [..], on` |
@@ -191,9 +193,11 @@ A usage error is `refused: usage: <the command's usage>`.
 
 - **Keys.** `key-down` and `key-up` take the key ID, the ID in any case,
   or another spelling of the key in any case; an unknown key is refused
-  by the session (`Unknown key: <key>.`). `key` presses the keys in turn.
-  `key` and `type` reply when their last key is up, not when the machine
-  is idle; emulated time passes until then, at most one hour, else
+  by the session (`Unknown key: <key>.`). `key` presses the keys in turn,
+  each when the machine takes keys; the keys the product names (BREAK, the
+  TI's R/S) wait for that only briefly. `hold=` holds each key exactly that
+  long (`hold= takes a duration: <text>.`). `key` and `type` reply when their
+  last key is up, not when the machine is idle; emulated time passes until then, at most one hour, else
   `refused: The keys were not taken within an hour.` `type` types the
   text and ENTER; a model without text typing refuses it.
 - **Display.** `display-text` reads the `display` topic through the
@@ -413,7 +417,7 @@ protocol of `serve`, as a second listener without host services.
 session and parts. Time is the app's: the harness never advances the
 machine. `wait <duration>` replies when the app's own host calls have let
 that much emulated time pass; the bare `wait` replies when the app's
-machine is idle (at most one hour). A command that starts an operation
+machine is idle, `wait-finished` when it is finished (at most one hour). A command that starts an operation
 replies when it ends; the lines after it wait in order.
 
 **Lines from the app.** Each is one of:

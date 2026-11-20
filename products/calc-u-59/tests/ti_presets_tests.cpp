@@ -79,7 +79,7 @@ TEST(ti_idle_rule_values) {
     cu59::TIPresetRules rules;
     for (const char* m : {"TI-59", "TI-58", "TI-58C"}) {
         const calcu::presets::IdleRule r = rules.forModel(calcu::machine::ModelId{m}).idle();
-        CHECK(r.readyNow != nullptr);
+        CHECK(!r.takesKeys && r.awaitsMedium && r.programEnded);   // Machine::isKeyReady(), the card wait, the run flag
         CHECK(r.stretch.count() == 0.1);
         const auto rate = tiCatalogue().model(calcu::machine::ModelId{m})->tickRate;
         CHECK_EQ(r.sample, static_cast<calcu::machine::Ticks>(rate / 1000));
@@ -120,7 +120,7 @@ TEST(card_wait_after_write_is_idle) {
     // `1 2nd Write` makes the TI-59 wait for a card: the item finishes (idle), the next one runs.
     CHECK_EQ(c.preset(head() + "keys:\n  - key: 1 Write\n  - elapsed-time: report\n"), std::string("done\n"));
     cu59::TIPresetRules rules;
-    CHECK(rules.forModel(calcu::machine::ModelId{"TI-59"}).idle().readyNow(*c.machine()));
+    CHECK(calcu::presets::idleState(rules.forModel(calcu::machine::ModelId{"TI-59"}).idle(), *c.machine()).waits);
     CHECK(!c.machine()->isKeyReady());
 }
 

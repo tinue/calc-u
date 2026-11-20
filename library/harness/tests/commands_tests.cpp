@@ -223,7 +223,7 @@ TEST(key_names_and_refusal) {
     CHECK_EQ(keyLog(run.machine()), std::string("1+1-2+2-clr+clr-"));
     CHECK_EQ(run.line("key 1 x"), std::string("refused: Unknown key: x.\n"));   // nothing typed
     CHECK_EQ(keyLog(run.machine()), std::string("1+1-2+2-clr+clr-"));
-    CHECK_EQ(run.line("key"), std::string("refused: usage: key <key ID> ...\n"));
+    CHECK_EQ(run.line("key"), std::string("refused: usage: key <key ID> ... [hold=<duration>]\n"));
 }
 
 TEST(type_presses_enter_refuses_unknown_char) {

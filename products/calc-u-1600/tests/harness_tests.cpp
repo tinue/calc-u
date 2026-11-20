@@ -31,8 +31,10 @@ TEST(preset_wait_expect_screenshot_on_pc1600) {
     if (!server) return;
     auto reply = [&](const std::string& l) { return server->line(l).text; };
     CHECK(reply("preset examples:basic/hanoi.pc1600").rfind("done", 0) == 0);
+    // `wait` returns once the program waits for the user: past the title,
+    // shown during WAIT 100 delays, at the first question.
     CHECK(reply("wait").rfind("done", 0) == 0);
-    CHECK(reply("expect Hanoy Towers").rfind("done", 0) == 0);
+    CHECK(reply("expect Tower Height").rfind("done", 0) == 0);
     CHECK(reply("expect Not on the screen").rfind("refused: ", 0) == 0);
     CHECK(reply("screenshot hanoi.png").rfind("done", 0) == 0);
     CHECK(std::filesystem::exists(out.path() / "hanoi.png"));

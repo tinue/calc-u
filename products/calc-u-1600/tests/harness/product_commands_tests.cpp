@@ -290,7 +290,7 @@ TEST(record_writes_wav_at_motor_stop_and_eject) {
     CHECK_EQ(r.line("c1600 cassette record " + second.string()), std::string("done\n"));
     CHECK_EQ(r.line("type CSAVE \"B\""), std::string("done\n"));
     r.line("wait 2s");
-    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 2.048618462\nmotor: on\n"));
+    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 2.049703077\nmotor: on\n"));
     const std::size_t before = fs::exists(second) ? fileText(second).size() : 0;   // to the last stop of the motor
     CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
     // Written: what the deck holds, to its last motor stop.
@@ -325,13 +325,13 @@ TEST(status_playing_recording_empty) {
     CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: empty\nmotor: off\n"));
     CHECK_EQ(r.line("c1600 cassette record " + wav.string()), std::string("done\n"));
     csave(r);
-    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 12.398522308\nmotor: off\n"));
+    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 12.399006923\nmotor: off\n"));
     CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
     // The recording played back: a cassette definition beside it.
     writeFile(dir.path() / "rec.cassette.yaml",
               "format: cassette\nformat-version: 1\ncassette-name: \"Rec\"\naudio: { file: \"rec.wav\" }\n");
     CHECK_EQ(r.line("cassette { file: " + (dir.path() / "rec.cassette.yaml").string() + " }"), std::string("done\n"));
-    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: playing 0.000000000 of 12.398520833\nmotor: off\n"));
+    CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: playing 0.000000000 of 12.399000000\nmotor: off\n"));
     calcu::harness::RunOptions o;
     o.json = true;
     Run j(o);

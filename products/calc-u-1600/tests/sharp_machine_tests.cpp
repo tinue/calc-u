@@ -441,17 +441,18 @@ TEST(pc1500_ready_in_wait_4_kb_with_7b0e_bit0_clear) {
     SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
     auto m = bootedSharp(sharp::sharpCatalogue(), "PC-1500A");
     CHECK(runUntilKeyReady(*m));
-    const std::uint16_t pc = sharp::pc1500Of(*m)->cpu().pc();
-    CHECK(pc >= 0xE243 && pc <= 0xE33D);
     CHECK((memoryOf(*m).peek(0x7B0E) & 1) == 0);
-    // Readiness follows the PC: sampled over a stretch at the prompt, it is
-    // true exactly when the PC is in WAIT_4_KB.
+    // Readiness is by frames: WAIT_4_KB ran in this frame or the last. At the
+    // prompt it holds at every sample, also when the timer interrupt runs
+    // outside the loop (E22E).
+    int outside = 0;
     for (int i = 0; i < 200; ++i) {
         m->advance(97);
         const std::uint16_t now = sharp::pc1500Of(*m)->cpu().pc();
-        const bool inWait = now >= 0xE243 && now <= 0xE33D && (memoryOf(*m).peek(0x7B0E) & 1) == 0;
-        CHECK_EQ(m->isKeyReady(), inWait);
+        outside += now < 0xE243 || now > 0xE33D ? 1 : 0;
+        CHECK(m->isKeyReady());
     }
+    CHECK(outside > 0);   // the samples did land outside the loop
 }
 
 TEST(pc1500_not_ready_while_bit0_set_or_running) {
@@ -494,12 +495,15 @@ TEST(pc1600_ready_after_15_ready_frames) {
     CHECK(ok && m);
     m->coldBoot();
     CHECK(runUntilKeyReady(*m));
+    // The old job counted the interrupt's key-matrix reads; readiness now
+    // waits for the ROM's KEYGET, which the editor enters a little later:
+    // never earlier than the old job, at most three frames after it.
     const std::int64_t delta = static_cast<std::int64_t>(m->tickCount()) - static_cast<std::int64_t>(oldReady);
     const std::int64_t frame = static_cast<std::int64_t>(frameTicks(*m));
-    if (delta > 2 * frame || delta < -2 * frame)
+    if (delta > 3 * frame || delta < 0)
         std::fprintf(stderr, "  ready at %llu, the old job returned at %llu\n",
                      static_cast<unsigned long long>(m->tickCount()), static_cast<unsigned long long>(oldReady));
-    CHECK(delta <= 2 * frame && delta >= -2 * frame);
+    CHECK(delta <= 3 * frame && delta >= 0);
     // Not ready while switched off, and again only after 15 frames after a reset.
     m->reset();
     CHECK(!m->isKeyReady());

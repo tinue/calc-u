@@ -52,6 +52,11 @@ struct TypingProfile {
     std::optional<machine::Ticks> firstPressBound;      // PC-1600 15 s; none: waits without limit
     machine::Ticks readinessPoll = 1;                   // how often a waiting press looks again
     std::optional<SampleRule> holdUntilSampled;         // TI only
+    // Keys the ROM reads outside its key wait (BREAK, the TI's R/S): once at
+    // the front, such a press of a command (`key`, not a preset's item) waits
+    // for key readiness at most doesNotWaitAfter, then goes down all the same.
+    std::function<bool(const machine::KeyId&)> doesNotWait;
+    machine::Ticks doesNotWaitAfter = 0;
 
     // Typed text: a character → its presses, decided
     // when its first press is due, with the machine's typing support

@@ -45,7 +45,7 @@ link`.
 | `attach <place> <peripheral>[:<variant>]` | places `slot-1` (`slot-2` on the PC-1600), `printer` (`CE-150`, `CE-1600P`), `interface` (`CE-158`), `host-drive` (PC-1600: `host-drive`), `bus-rom` (`bus-rom`, several in plug order); a module by its name (`CE-1600M`, …); `CE-1600P:new`, `CE-1600P:old` |
 | `key <key ID> …`, `key-down`, `key-up` | the key IDs, any case; `break` for `on` |
 | `type <text>` | the text and ENTER; replies when ENTER is up |
-| `wait` (idle) | key readiness for 20 frames in a row; on the PC-1600 not while the CE-1600F's motor runs, nor while a file command typed in direct mode (`LOAD`, `SAVE`, `COPY`, …) works: BASIC in direct mode (CURLINE, F89CH, 0), not in the ROM's key wait (KEYWK2, F07AH, bit 2), and the hidden ROM bank 3b selected (port 3DH bit 2 clear, as for every keyword of token bank 06H) or DTR on (a port command runs). A running program counts as idle, since it can't be told from one that polls `INKEY$`; so does machine code started by `CALL` |
+| `wait` (idle), `wait-finished`, `idle-state` | the questions and their signals per model: [Idle](Idle.md) |
 | `display-text` | the rows of text, the cell under the cursor read as the character the ROM saved there (`app/LcdTextPart`), then `indicators:` and `not text:`, or `display off` |
 | `audio <file.wav>` | the piezo's sound into a WAV |
 | `expect`, `not-expect` | text in one line of `display-text`, or `/regex/` |

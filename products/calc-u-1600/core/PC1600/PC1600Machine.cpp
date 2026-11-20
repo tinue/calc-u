@@ -15,6 +15,7 @@ PC1600Machine::PC1600Machine()
 
 void PC1600Machine::resetLocked() {
     m_readyFrames = 0;  // key readiness is counted again from here (keyReady())
+    m_keyReadInFrame = false;
     m_bank.reset();
     m_z80Mem.reset();
     m_z80Mem.keyboard().releaseAll();
@@ -312,6 +313,9 @@ int PC1600Machine::stepLocked(uint64_t* tstates) {
         return kOffSliceTStates;
     }
     if (m_arbiter.sc7852Owns()) {
+        // KEYGETR (0169H) and KEYDIRECT (0175H, INKEY$): a program reads a key.
+        const uint16_t pc = m_sc7852.pc();
+        if (pc == 0x0169 || pc == 0x0175) m_keyReadInFrame = true;
         int c = m_sc7852.step();
         // Parked on a breakpoint: nothing executed, so no time passes.
         if (c == 0 && m_sc7852.breakpointsEnabled() && m_sc7852.consumeBreakpointHit()) {
@@ -426,14 +430,15 @@ void PC1600Machine::advanceSharedClocks(int tstates) {
     m_readyFrameAccum += tstates;
     if (m_readyFrameAccum >= kReadyFrameTStates) {
         m_readyFrameAccum -= kReadyFrameTStates;
-        // The per-frame test of waitForKeyboardScanLoopJob() (tests/support/PC1600BasicTyper.cpp).
-        const uint64_t scans = m_z80Mem.keyboard().scanCount();
-        const bool polling = scans != m_readyLastScan;
-        m_readyLastScan = scans;
-        const uint16_t pc = m_sc7852.pc();
-        const bool atPrompt = m_arbiter.sc7852Owns() && pc >= 0x9280 && pc <= 0x9300;  // pc1600AtBasicPrompt()
-        if ((atPrompt || polling) && m_z80Mem.display().clockEnabled()) ++m_readyFrames;
+        // A frame takes keys (docs/developer/Idle.md) when the LCD clock runs and
+        // the ROM waits in KEYGET (KEYWK2 F07AH bit 2) or a program read a key
+        // in it. The 1/64 s interrupt reads the key matrix whatever runs, so a
+        // matrix read says nothing.
+        m_readyLastScan = m_z80Mem.keyboard().scanCount();   // kept in the state record, no longer asked
+        const bool keyWait = (debugPeek(0xF07A) & 0x04) != 0;
+        if ((keyWait || m_keyReadInFrame) && m_z80Mem.display().clockEnabled()) ++m_readyFrames;
         else m_readyFrames = 0;
+        m_keyReadInFrame = false;
     }
     // LU-57813P calendar clock: one tick per emulated second, fed from
     // both bus-ownership branches of step() -- see kRtcPeriodTStates. The
@@ -518,14 +523,12 @@ uint8_t PC1600Machine::debugPeek(uint16_t addr) {
 
 bool PC1600Machine::mode1() { return (debugPeek(0xF1BC) & 0x40) != 0; }
 
-bool PC1600Machine::directCommandRunning() {
-    if (mode1()) return false;
-    const bool direct = debugPeek(0xF89C) == 0 && debugPeek(0xF89D) == 0;
-    const bool keyWait = (debugPeek(0xF07A) & 0x04) != 0;
-    // The ROM drives DTR on while a port command runs (automatic handshake):
-    // a LOAD"COM1:" waits in the COM driver of bank 3.
-    const bool command = m_bank.hiddenBasicRomSelected() || m_z80Mem.uart().dtr();
-    return direct && command && !keyWait;
+bool PC1600Machine::programEnded() {
+    const bool busyOff = (debugPeek(0xF64E) & 0x01) == 0;           // BUSY, SYMB0 bit 0
+    const bool direct = debugPeek(0xF89C) == 0 && debugPeek(0xF89D) == 0;   // CURLINE
+    const bool noStop = (debugPeek(0xF88A) & 0x60) == 0;             // INTFLG: no PRINT stop, no INPUT
+    const bool keyWait = (debugPeek(0xF07A) & 0x04) != 0;            // KEYWK2: KEYGET waits
+    return busyOff && direct && noStop && keyWait;
 }
 
 int PC1600Machine::programAreaTitle() { return debugPeek(0xF1D5); }

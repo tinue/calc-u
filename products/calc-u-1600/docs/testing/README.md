@@ -131,7 +131,7 @@ How a test runs:
 - `make_machine(...)` makes a machine in a work folder of its own (under pytest's temporary
   folders). Nothing runs yet.
 - Steps (`key`, `type`, `wait`, `expect`, …) are collected. Each `key` and `type` waits until the
-  machine is idle again.
+  machine has settled again: it waits for the user, and nothing is busy.
 - A read (`lcd`, `listing()`, `card()`, `run()`, …) starts `calcu` the first time, then runs the
   collected steps and returns the result. Steps after a read continue from there.
 - A failed `expect` or a refused step raises `MachineError` with the reason: the test fails with
@@ -351,7 +351,7 @@ def test_console(make_machine, tmp_path):
     name.write_bytes(b"WORLD\r")                 # INPUT takes the line up to CR
     machine = make_machine(model="PC-1600")
     machine.key("mode").type("NEW0").load_basic("$programs/greet.bas").key("mode")
-    machine.type("RUN").wait(1)                  # NAME? is out, INPUT waits
+    machine.command("type RUN").wait(1)          # NAME? is out, INPUT waits for the port
     machine.command(f"c1600 serial rs232c feed {name}").wait(1)
     report = machine.send("c1600 serial rs232c report")
     assert report["sent"].splitlines() == ["NAME?", "HELLO WORLD"]
@@ -396,9 +396,9 @@ def test_ce158_csave_cload(make_machine, tmp_path):
     assert two.listing() == listing == ['10 PRINT "HELLO"', "20 GOTO 10"]
 ```
 
-- **A console:** the program runs, so `wait()` without seconds wouldn't wait for it: a running
-  BASIC program reads the keyboard for BREAK and counts as idle. `wait(1)` gives it the time to
-  write `NAME?` and to take the line. `report` shows what it sent.
+- **A console:** the program's INPUT waits for the port, not for a key, so the machine doesn't
+  settle: `type` would wait the hour. The harness's own `type` doesn't wait; `wait(1)` gives the
+  program the time to write `NAME?` and to take the line. `report` shows what it sent.
 - **A program out:** `type` waits until the `SAVE` has ended. The capture file is complete when
   `calcu` ends: `run()` sends the collected steps, then `close()` ends it.
 - **A program in:** the file arrives after the `LOAD` has started (`hold=`): bytes that come
@@ -501,9 +501,10 @@ Steps, collected until the next read:
 
 | Step | Does |
 |---|---|
-| `key(names)` | presses keys by name, several separated by blanks: `key("shift mode")`. Each key is held until the machine has taken it, then the machine runs until idle. A finger's press that the program may miss: `command("key-down y").wait(0.1).command("key-up y")` (key IDs; ON/BREAK is `on` or `break`) |
+| `key(names, hold=None)` | presses keys by name, several separated by blanks: `key("shift mode")`. Each key waits until the machine takes keys and is held until it has taken it, then the machine runs until it has settled. ON/BREAK (`on` or `break`) goes in while a program runs too. `hold`: each key held exactly this many seconds, e.g. a finger's press that the program may miss: `key("y", hold=0.1)` |
 | `type(text)` | types one line and ENTER |
-| `wait(seconds=None)` | waits in machine time; without seconds until idle |
+| `wait(seconds=None)` | waits in machine time; without seconds until the machine has settled: it waits for the user (the prompt, INPUT, a PRINT stop, a program reading INKEY$) and nothing is busy, for 20 frames |
+| `wait_finished()` | waits in machine time until the program has ended (back at the BASIC prompt) and the machine has settled |
 | `expect(text)`, `not_expect(text)` | the next read fails unless / if a screen line holds text (`/regex/` too) |
 | `load(path)` | machine code straight into memory (its header gives the address) |
 | `load_basic(path)`, `type_basic(path)` | a BASIC listing: straight into memory, or typed line by line |
@@ -516,7 +517,7 @@ Reads:
 |---|---|
 | `run()` | runs the steps; the replies |
 | `send(line)` | runs the steps, then any harness command; its result (the command's `--json` value), e.g. `send("c1600 serial rs232c report")["sent"]` |
-| `wait_for(text, timeout=60)` | runs the steps, then waits in machine time until a screen line holds text (`/regex/` too); for work the idle wait can't see the end of: a running BASIC program or machine code started by `CALL` counts as idle, since it reads the keyboard (a direct `LOAD`, `SAVE` or `COPY` does not: `wait()` lasts until it has ended) |
+| `wait_for(text, timeout=60)` | runs the steps, then waits in machine time until a screen line holds text (`/regex/` too); for a screen the machine passes without settling, such as a title shown during a `WAIT n` delay, or a program that waits for the serial port. When the machine waits for the user, the wait and the questions behind it are in [Idle](../developer/Idle.md) |
 | `lcd` | the screen's text lines |
 | `display()` | the screen's dots (PC-1600: 156 × 32) |
 | `listing()` | the BASIC program as text lines, the detokenizer's (MODE 0 on the PC-1600) |

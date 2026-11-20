@@ -4,10 +4,10 @@
 #include "sessions/Operation.hpp"
 #include <optional>
 
-// Idle by a product's rule: the machine runs at the operation's speed in
-// pieces of min(rule.sample, OperationContext::runPiece), readyNow asked
-// after each; idle when it has been ready without a break for the rule's
-// stretch. A paused machine is not idle: the wait goes on in the host's time
+// Settled (or finished) by a product's rule: the machine runs at the
+// operation's speed in pieces of min(rule.sample, OperationContext::runPiece),
+// the rule asked after each; done when it has waited (and its program has
+// ended) without a break for the rule's stretch. A paused machine is not idle: the wait goes on in the host's time
 // until it runs again, and no tick passes meanwhile, so the bound stands
 // still.
 
@@ -24,10 +24,13 @@ struct IdleOutcome {
 class IdleWatch {
 public:
     explicit IdleWatch(IdleRule rule) : rule_(std::move(rule)) {}
-    // nullopt: without a bound (`let-it-finish:`).
+    // Until settled; nullopt: without a bound (`let-it-finish:`).
     sessions::Task<IdleOutcome> wait(sessions::OperationContext&, std::optional<machine::Ticks> bound);
+    // Until finished: settled with its program ended.
+    sessions::Task<IdleOutcome> waitFinished(sessions::OperationContext&, std::optional<machine::Ticks> bound);
 
 private:
+    sessions::Task<IdleOutcome> watch(sessions::OperationContext&, std::optional<machine::Ticks> bound, bool finished);
     IdleRule rule_;
 };
 

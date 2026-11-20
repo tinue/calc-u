@@ -260,11 +260,24 @@
   is written; it used to be written, and the file could not be read
   again.
 - **Web: `?preset=examples:…`** finds the preset; the prefix was doubled.
-- **PC-1600: a preset item and the harness's `wait` last until a direct
-  `LOAD`, `SAVE` or `COPY` has ended.** Such a command reads the keyboard
-  for BREAK, so the machine looked idle while it worked.
+- **Idle is the same question on every model.** A preset item, the
+  harness's `wait` and the test driver wait until the machine waits for
+  the user and nothing is busy: the prompt, INPUT, a PRINT stop, a program
+  reading INKEY$ or calling the key wait. A running program, a `WAIT n`
+  delay, BEEP, a direct `LOAD`, `SAVE` or `COPY` and plotting are waited
+  for; the PC-1600 used to count any running program as idle, and the
+  PC-1500 an INKEY$ loop as busy. The signals per model are in
+  `docs/developer/Idle.md`.
+- **BREAK goes in while a program runs**, from a preset, the harness or
+  the driver; it used to wait for the key wait and was refused after an
+  hour on the PC-1500.
+- **At full speed a waiting machine runs at real time**, as Calc-U-59
+  does, so the prompt and a program waiting for a key no longer spin.
 - **Harness: `key-down` and `key-up` take `break` for `on`**, as `key`
-  does.
+  does; `key … hold=<duration>` holds each key that long, `wait-finished`
+  waits until the program has ended, `idle-state` shows whether the machine
+  takes keys, waits and has finished. The driver has `key(names, hold=)`
+  and `wait_finished()`.
 - **Harness: `peek` and `poke` reach both ROM halves of the PC-1600's bank
   3**: `vbank=` on 4000–7FFF is port 3DH's bit 2 (`bank=3 vbank=1` the
   hidden bank 3b), whatever the port selects now.

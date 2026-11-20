@@ -88,8 +88,10 @@ public:
 
     // ── Typed text and commands ──
     void paste(std::string_view utf8);   // first line, unknown left out, no ENTER, appended
-    // The presses in turn. firstPressAtOnce: after `skip-wait:` in a preset.
-    Queued typeKeys(std::vector<Press>, Origin, bool firstPressAtOnce = false);
+    // The presses in turn. firstPressAtOnce: after `skip-wait:` in a preset;
+    // hold: every press held exactly this long (`key … hold=`).
+    Queued typeKeys(std::vector<Press>, Origin, bool firstPressAtOnce = false,
+                    std::optional<machine::Ticks> hold = std::nullopt);
     // The text (and ENTER); with refuseUnknown a character without a
     // key refuses it all, else it is left out.
     Queued typeText(std::string_view utf8, bool enter, bool refuseUnknown, Origin, bool firstPressAtOnce = false);
@@ -129,6 +131,8 @@ private:
         bool firstOfStep = false;
         bool atOnce = false;
         std::optional<machine::Ticks> boundAt;   // starts all the same at this tick
+        std::optional<machine::Ticks> hold;      // the step's own hold: exactly this long, no sample rule
+        std::optional<machine::Ticks> frontSince;   // first at the front of the queue (doesNotWait)
         Token token = 0;
         bool last = false;                  // the token's last press
     };
@@ -152,6 +156,7 @@ private:
     void run(machine::Ticks now);       // runOnce, then the next poll
     void runOnce(machine::Ticks now);   // releases, then the next press
     bool waitsForReadiness(const Item&, machine::Ticks now) const;
+    bool doesNotWait(const Item&) const;
     bool polling(machine::Ticks now) const;
     bool releaseDue(const Down&, machine::Ticks now) const;
     void release(std::size_t index, machine::Ticks now);

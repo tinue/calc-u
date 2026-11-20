@@ -19,7 +19,7 @@
 //   c1600.host-drive-folder    the host drive's folder (owner: the host drive)
 //   c1600.trace-records        the records of a CPU trace (owner: the main CPU)
 //   c1600.routine-call         a routine called from the current state (owner: the main CPU)
-//   c1600.direct-command       a direct command running (owner: the main CPU; PC-1600 only)
+//   c1600.program-state        what keeps the machine busy, whether the program has ended (owner: the main CPU)
 //   c1600.tape-deck            the cassette's counter and motor (owner: the CE-150 or CE-1600P)
 //   c1600.floppy-drive         the CE-1600F's lamp (owner: the CE-1600P)
 // The media themselves are the library's media kinds (SharpMediaPlaces.hpp).
@@ -157,15 +157,16 @@ public:
     virtual bool motorOn() const = 0;
 };
 
-// Whether a file command typed in direct mode (LOAD, SAVE, COPY, ...) is
-// still at work. Such a command reads the keyboard for BREAK, as the prompt
-// does, so key readiness alone cannot tell the two apart.
-class DirectCommand : public calcu::machine::Capability {
+// For the idle rule (docs/developer/Idle.md): what keeps the machine busy
+// while it takes keys (named, as the harness's idle-state shows them), and
+// whether the BASIC program has ended.
+class ProgramState : public calcu::machine::Capability {
 public:
-    static constexpr calcu::machine::KindId kKind{"c1600.direct-command"};
+    static constexpr calcu::machine::KindId kKind{"c1600.program-state"};
     calcu::machine::KindId kind() const override { return kKind; }
 
-    virtual bool running() const = 0;
+    virtual std::vector<std::string> busy() const = 0;
+    virtual bool programEnded() const = 0;
 };
 
 } // namespace sharp

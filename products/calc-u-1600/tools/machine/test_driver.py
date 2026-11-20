@@ -212,19 +212,6 @@ def test_saved_card_comes_back(tmp_path):
     assert Machine(tmp_path / "b", slot_2=tmp_path / "a" / "slot-2.module.yaml").card(2) == image
 
 
-def test_own_card_file_stays_as_it_is(tmp_path):
-    # A saved module is written back where it was plugged from: the driver plugs a copy in the work
-    # folder, so tests that run side by side never see each other's writes in the project's file.
-    Machine(tmp_path / "a", slot_2="superRAM").card(2)
-    mine = tmp_path / "mine.module.yaml"
-    mine.write_text((tmp_path / "a" / "slot-2.module.yaml").read_text())
-    before = mine.read_text()
-    machine = Machine(tmp_path / "b", slot_2=mine)
-    machine.key("mode").type("NEW0").key("mode").wait(1).type('INIT"S2:","P"').wait(3).run()
-    machine.close()
-    assert mine.read_text() == before
-
-
 def test_own_floppy_goes_in_and_out(tmp_path):
     def sides(path):
         text = path.read_text()

@@ -438,7 +438,6 @@ void PC1600Machine::advanceSharedClocks(int tstates) {
         // the ROM waits in KEYGET (KEYWK2 F07AH bit 2) or a program read a key
         // in it. The 1/64 s interrupt reads the key matrix whatever runs, so a
         // matrix read says nothing.
-        m_readyLastScan = m_z80Mem.keyboard().scanCount();   // kept in the state record, no longer asked
         const bool keyWait = (debugPeek(0xF07A) & 0x04) != 0;
         if ((keyWait || m_keyReadInFrame) && m_z80Mem.display().clockEnabled()) ++m_readyFrames;
         else m_readyFrames = 0;
@@ -762,7 +761,7 @@ void PC1600Machine::stateIo(Io& io) {
     io.end();
     m_z80Mem.stateIo(io);
     io.begin("TIME");
-    io(m_elapsedTStates)(m_readyFrameAccum)(m_readyLastScan)(m_readyFrames);
+    io(m_elapsedTStates)(m_readyFrameAccum)(m_readyFrames);
     io(m_timer64Accum)(m_timer64State)(m_timer64EdgeCount)(m_rtcAccum);
     io.end();
     io.begin("TAPE");

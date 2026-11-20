@@ -49,9 +49,10 @@ model does not have, a peripheral that does not fit its place, a file it
 names that cannot be read), nothing is built and the running machine
 stays as it is. A notice gives the first error with its line number.
 
-A file written for an earlier release (no `format-version`, or a version
-below 2) is refused with a hint: it has to be upgraded by hand to the
-current format. A file from a newer release is refused as such.
+A file without `format-version`, or with another version than 2, is
+refused; a file from a newer release is refused as such. A preset
+written by an earlier release is converted by hand, as
+[the product's part of this chapter](chapter:6) describes.
 
 If a step fails while the preset runs, or does not finish within the
 preset's `timeout:`, the preset stops there: the steps after it are not
@@ -154,7 +155,7 @@ file under `[preset]` ([Settings](08-settings.md)).
 - Without a startup preset, a model is built as the product's built-in
   default machine.
 - If the startup preset cannot be loaded (the file is gone, it is
-  outdated, it is for another model), the built-in default machine is
+  cannot be read, it is for another model), the built-in default machine is
   built and a notice says why.
 - If it is read without an error but fails while it runs, the machine
   stays as far as the preset built it, and a notice says why.

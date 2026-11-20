@@ -102,8 +102,7 @@ four independent dimensions; none can be inferred from another:
 | `notes` | no | Free text, ignored by the loader |
 
 The versioning rules are those of [README.md §2](README.md#2-version-name-and-description).
-The file's suffix is `.module.yaml`; a `.card.yaml` (Calc-U-1600 0.8.x)
-is not read.
+The file's suffix is `.module.yaml`.
 
 **Terminology → signal names** (besides `A0`… address and `D0`… data
 lines):

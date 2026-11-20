@@ -35,9 +35,7 @@ HEX:
   fit.
 
 A file is refused, with a notice that says why, when: its first line is
-missing or names another version (a file written for Calc-U-59 2.3.0 has
-no such line: add it, and check the text after `HEX:` against the rules
-above); it has no `HEX:` line; nothing follows that line; a run of digits
+missing or names another version; it has no `HEX:` line; nothing follows that line; a run of digits
 is not a multiple of four long; an instruction is above `1FFF`; anything
 after `HEX:` is neither hexadecimal digits nor a comment; or it has more
 than 2048 instructions. An overlay loaded before stays.

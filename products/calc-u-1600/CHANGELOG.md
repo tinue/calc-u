@@ -44,8 +44,9 @@
 
 ### Changed
 
-- **Presets are format 2.** A preset of version 1 is refused with a hint
-  to upgrade it by hand (no pop-up, nothing loaded). The changes
+- **Presets are format 2.** A preset of version 1 is refused as a file
+  that cannot be read (nothing loaded); convert it by hand, as the User
+  Guide's "Media files", "From 0.8", describes. The changes
   (`docs/formats/preset.md` §9.2 at the repository root):
   `format-version: 2`; `plotter:` is `printer:`; `slot-1: CE-1600M` is
   `slot-1: { name: CE-1600M }`; `slot-1-rom: x.bin` is
@@ -58,8 +59,8 @@
   `- eject:` empties either; `- cut-paper:` is new.
 - **Floppy disks are version 2.** Their sides are 0 and 1 (were A and
   B), in presets, in the disk file and on screen. A disk saved with
-  0.8.x is refused with the hint until you upgrade it by hand: rename
-  `a:` and `b:` to `0:` and `1:`.
+  0.8.x cannot be read until you convert it by hand: rename `a:` and
+  `b:` to `0:` and `1:`.
 - **Module definitions are `.module.yaml`** with `format: memory-module`;
   a `.card.yaml` is not read (rename it and add the line). The bundled
   and example modules and the CE-502B's file in `roms/`
@@ -86,11 +87,8 @@
   model is chosen by the model's name ("PC-1500", was "PC-1500 (ROM
   A04)"). A folder picked in a file dialog while a fixed folder is set
   for that kind is no longer remembered.
-- **Outdated files** show in their picker as a disabled entry with a
-  hint (they were left out silently). The notice names the User Guide's
-  page and heading, such as "Media files", "Floppy disk" (sides 0: and
-  1: in place of a: and b:), "Media files", "Cassette definition", or
-  "Module definition format".
+- **A media file that cannot be read** (broken, or of another version)
+  is not listed in its picker, and the log says once why.
 - **Waiting in presets.** The bare `- wait:` is gone: every item but the
   last waits until the machine is idle, at most `timeout:` (a header key,
   default 3600 s of emulated time); an item past it fails.

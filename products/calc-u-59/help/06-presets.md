@@ -169,10 +169,3 @@ Printer pictures (four pictures the PC-100C prints). Each model's row of
 Startup presets also offers the startup preset Calc-U-59 bundles for it. Open an
 example to see how it is written. More programs, many of them historic, are in the
 [TI-59 Software Collection](https://calc-u.org/59/software/).
-
-## A 2.3.0 preset
-
-A preset written for Calc-U-59 2.3.0 (`MODEL:`, `PROGRAM:`,
-`KEYSTROKES:` with matrix codes) is refused with a hint: it is upgraded
-by hand to format 2. How each line of the old format is written now is in
-[Preset sections](10-preset-sections.md).

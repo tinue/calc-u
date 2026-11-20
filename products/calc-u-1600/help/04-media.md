@@ -1,7 +1,7 @@
 # Memory modules and floppy disks
 
 Templates, instances, Name & Save, inserting and ejecting, the save folder
-and outdated files are the family's; the
+and files that cannot be read are the family's; the
 [shared part of this chapter](../../../library/help/04-media.md)
 describes them. This part covers the media of Calc-U-1600: the memory
 modules, the CE-1600F's floppy disks, and which files the product opens.

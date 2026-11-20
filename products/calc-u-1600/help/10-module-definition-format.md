@@ -9,9 +9,7 @@ is written, in its current version, `format-version: 1`.
 
 ## 0. The file
 
-- **YAML**, UTF-8, one module per file, extension `.module.yaml` (a
-  `.card.yaml` of Calc-U-1600 0.8 is not read: rename it to
-  `.module.yaml`; `format: memory-module` may be added). A
+- **YAML**, UTF-8, one module per file, extension `.module.yaml`. A
   definition is written and reviewed by hand, so it has comments (`#`
   starts one anywhere).
 - Integers are decimal (`8192`) or hex with `0x` (`0x2000`); hex is usual

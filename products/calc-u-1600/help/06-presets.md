@@ -25,11 +25,6 @@ keys:
 up`); `type:` types a line, then ENTER. Everything after `type: ` is typed
 as written, `#` and quotes included, so a `#` in BASIC (`PRINT #1`) stays.
 
-A preset of version 1, written for Calc-U-1600 0.8 or earlier, is refused
-with a hint; upgrade it by hand as the
-[preset format, §9.2](https://github.com/tinue/calc-u/blob/main/docs/formats/preset.md#92-calc-u-1600-preset-version-1)
-lists.
-
 ## Adding hardware
 
 ```yaml

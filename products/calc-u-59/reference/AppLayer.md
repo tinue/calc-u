@@ -419,7 +419,7 @@ It reads the machine through the kind `c59.constant-memory`.
 | Before the machine is replaced, suspend, quit | Written at once if changed |
 | Reset, power cycle | The memory stays in the machine; the file is not read |
 | Cold boot | RAM zeroed before the processor; the file follows |
-| No file, an outdated or a damaged one; a failed write | Zeroed memory; a notice (outdated, damaged; a failed write once per start). The `ti58c.mem` file of releases up to 2.3.0 is ignored |
+| No file, a damaged or a newer one; a failed write | Zeroed memory; a notice (damaged, newer; a failed write once per start) |
 
 ## ROM Loading
 

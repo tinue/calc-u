@@ -93,9 +93,7 @@ A card file opened from elsewhere, by a drop or with Open With, is used
 and written back where it lies; in the browser it is imported into the
 save folder first. A card file is plain text: its cue card can be edited
 in a text editor ([Cue cards](09-cue-cards.md)), and the next time the
-card is fitted it shows the change. Card files of 2.3.0 (`.U59`) are no
-longer read; they are converted by hand
-([From 2.3.0](10-media-files.md)).
+card is fitted it shows the change.
 
 Presets can feed cards and arm them, define cards of their own and save
 them ([Presets of this product](06-presets.md#magnetic-cards-in-a-preset)).

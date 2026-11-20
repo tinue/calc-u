@@ -17,8 +17,8 @@ page. How cards are used (arming, feeding, Name & Save) is in
 
 All of them follow the family's YAML rules
 ([Reference](../../../library/help/10-reference.md#syntax)). A damaged
-file is refused as a whole and the product says so with a notice; a
-file of an older format is not read.
+file, or one in another version of its format, is refused as a whole
+and the product says so with a notice.
 
 ## Magnetic card
 
@@ -210,9 +210,14 @@ tokens into the symbols real cards use (case matters):
 
 ## From 2.3.0
 
-Calc-U-59 3.0 no longer reads, lists or changes 2.3.0's card files
-(`.U59`, every layout) or its constant memory file `ti58c.mem`; they
-stay where they are, and you convert them by hand:
+Calc-U-59 3.0 reads none of the files 2.3.0 wrote; they stay where they
+are, and you convert them by hand:
+
+- a preset (`.ti59`, `.ti58`, `.ti58c`): line by line as
+  [Preset sections](10-preset-sections.md#from-a-230-file) shows;
+- an ASM overlay: add the first line `Calc-U-59 ASM 2.0` and check the
+  text after `HEX:` against the rules of [ASM overlay](10-asm-overlay.md);
+- the card files (`.U59`) and the constant memory file `ti58c.mem`:
 
 | 2.3.0 | Now |
 |---|---|

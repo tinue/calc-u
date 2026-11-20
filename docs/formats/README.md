@@ -77,12 +77,11 @@ says otherwise. The exception is the preset's `debug:` block
 ([preset.md §3.4](preset.md#34-debug-1600)): its keys and values are camelCase
 (`stopOnEntry`, `cleanStart`, `allReset`), as in the debug launch
 configuration they mirror.
-Keys are matched exactly, and so are `format:` values
-(`format: memory-module`), except that the magnetic card file reads its
-`format:` in any case. Other fixed values are written in
-lower case; presets, cue cards and the magnetic card file read them in
-any case (`Center` is `center`), Calc-U-1600's media files and the
-module definition only as written.
+Keys are matched exactly, and so are a medium's header values
+(`format`, `template`; `format: memory-module`). Other fixed values are
+written in lower case; presets, cue cards and the sides of the magnetic
+card file read them in any case (`Center` is `center`), Calc-U-1600's
+media files and the module definition only as written.
 
 **Numbers.** In presets, `&`, `0x` or `$` makes a number hex; without
 one it is decimal. In the module definition, a number is decimal or hex

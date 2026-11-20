@@ -41,6 +41,14 @@ is stored:
   `# Calc-U-1600 memory module instance …`) and carries `saved`, the
   time of the write. So does the constant memory file (§4). Readers
   ignore the comment; `saved` is informational.
+- **The header** (`format`, `format-version`, the name tag,
+  `description`, `template`, `saved`) is read alike for every kind and
+  for the constant memory file: `format` and `template` exactly as
+  written, the name tag required and not empty (the constant memory file
+  has none). A file of another `format` or another `format-version`
+  cannot be read, like any other file that breaks its section; the
+  reason names the format ("unsupported floppy disk format-version 1
+  (this build reads 2)").
 
 ---
 
@@ -190,7 +198,7 @@ Side 1 of the example is unformatted; side 0 has just been through
 | Key | Required | Value |
 |---|---|---|
 | `format` | yes | `ce1600f-floppy` |
-| `format-version` | yes | `2` (version 1, Calc-U-1600 0.8.x, named the sides `a` and `b`) |
+| `format-version` | yes | `2` |
 | `disk-name` | yes | The name tag; non-empty. Writers double-quote it, so it must not contain `"` or a newline |
 | `description` | no | One line, the picker's tooltip. Written double-quoted, or single-quoted when it holds a `"`. Name & Save and autosave keep it |
 | `template` | no | `true`: a template. Written only by a preset's `saveas:` as a template; Name & Save never writes it |
@@ -200,10 +208,9 @@ Side 1 of the example is unformatted; side 0 has just been through
 | `…encoding` | yes | `addressed-hex` |
 | `…bytes` | yes | A `\|` block scalar in `addressed-hex` covering exactly `0x10000` bytes |
 
-A file of version 1 is listed as outdated, with a hint, and is not
-used. To upgrade it by hand, set `format-version: 2` and rename the
-keys `a:` and `b:` under `sides:` to `0:` and `1:`; the bytes stay as
-they are ([preset.md §9.4](preset.md#94-calc-u-1600-floppy-disk-version-1)).
+A file of another version cannot be read, like any other file that does
+not follow this section. Converting version 1 (Calc-U-1600 0.8.x) is
+[preset.md §9.4](preset.md#94-calc-u-1600-floppy-disk-version-1).
 
 ### 2.2 Sides and byte order
 
@@ -283,8 +290,6 @@ position: 0
 - A `.wav` file on its own is a program file, not a cassette: a preset's
   `program:` loads it into the program area. A cassette definition is a
   medium, inserted into the cassette recorder.
-- Calc-U-1600 0.8.x and the first migration builds wrote `format:
-  cassette-tape`, `tape-name` and `.tape.yaml`; such a file is not read.
 
 ---
 

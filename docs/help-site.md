@@ -104,8 +104,8 @@ Formats: the asset's layout and `toc.json` are specified in
   `products/calc-u-1600/help/` (20 files, pictures made by scenarios).
   Both `tools/help check` runs pass.
 - **Builds and CI:** each product's tests build its asset; each product
-  workflow has a job `help`; the local Linux CI has `help-59` and
-  `help-1600`; each `release.yaml` attaches the help zip.
+  workflow has a job `help` (the local Linux CI has none: the help
+  builds the same on the Mac); each `release.yaml` attaches the help zip.
 - **Releases:** the pre-releases `calc-u-59-v3.0.0-pre` and
   `calc-u-1600-v0.9.0-pre` carry `Calc-U-59-help.zip` /
   `Calc-U-1600-help.zip` and the `-web.zip` files. The final releases

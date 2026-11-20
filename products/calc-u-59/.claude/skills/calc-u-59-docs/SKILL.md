@@ -131,13 +131,13 @@ Triggered by the user saying **"update documentation"** (or similar) after finis
 
 3. **Update `CHANGELOG.md`.** Confirm every user-facing change from step 2 has an entry under the current `[X.Y.Z] - work in progress` heading, in the existing style (bold **Area** prefix, `### Fixes` subsection for bug fixes). Don't add a release date — that happens at release time.
 
-4. **Update reference docs** (`docs/developer/Core-Architecture.md`, `docs/developer/App-Layer.md`, `docs/developer/Debug-API.md`, `docs/developer/Frontend-Parity.md`, `docs/developer/Web-Client.md`, `docs/developer/New-GUI-Guide.md`, and `rom/*.md`) for anything the diff invalidated: register model, SCOM layout, PC encoding, machine variants, bridge/debug API surface, settings, file formats.
+4. **Update reference docs** (`docs/developer/Core-Architecture.md`, `docs/developer/App-Layer.md`, `docs/developer/Debug-API.md`, `docs/developer/Frontend-Parity.md`, `docs/developer/Web-Client.md`, `docs/developer/New-GUI-Guide.md`, `docs/developer/Harness.md`, `docs/developer/Idle.md`, and `rom/*.md`) for anything the diff invalidated: register model, SCOM layout, PC encoding, models, bridge/debug API surface, settings, file formats.
 
 5. **Update the help (`help/`, and `library/help/` where both products change).** Update its chapters for anything user-facing in any GUI: new settings, module behaviour, install steps (Mac, iOS, Windows, Linux), preset keys and steps, file formats, speed or accuracy; run `tools/help check calc-u-59`. The site renders the help asset of the release. What stays the site's (the software collection, the articles derived from `rom/*.md`, the example copies under `59/software-files/`) is updated in `../calc-u-site` under its own `site-59` skill and `CLAUDE.md`, committed there. Leave the web client alone: the site fetches `59/calc/` from a release by its own rules.
 
 6. **The web client** (`frontends/web/`): if the diff touched `core/`, `app/`, `roms/` or `frontends/web/`, build and test it as the calc-u-59-web skill says. The site picks up a new build by pinning the release's `Calc-U-59-web.zip`.
 
-7. **Commit, never push, in both repositories.** Main-repo changes (`CHANGELOG.md`, `help/`, `docs/developer/`, `README.md`, `TODO.md`, `tools/`) commit from this repo's root; site changes commit in `../calc-u-site`, where a push publishes the site, so push there only when the user asks.
+7. **Commit in both repositories.** Main-repo changes (`CHANGELOG.md`, `help/`, `docs/developer/`, `README.md`, `TODO.md`, `tools/`) commit from this repo's root, and push as the root `CLAUDE.md` says; site changes commit in `../calc-u-site`, where a push publishes the site, so push there only when the user asks.
 
 ---
 
@@ -145,7 +145,7 @@ Triggered by the user saying **"update documentation"** (or similar) after finis
 
 1. **Compile, don't run.** Do not launch the Xcode iOS Simulator or run the built Mac app — that is the user's job. When runtime verification is needed, ask the user to launch the app and explain precisely what behaviour or output to look for.
 
-2. **Commit often, never push.** Commit after each logical unit of work. Never run `git push`.
+2. **Commit often.** Commit after each logical unit of work; push as the root `CLAUDE.md` says.
 
 3. **Build on macOS.** Verify Swift-facing changes with a macOS build; build for iOS only when explicitly required (commands: `calc-u-59-swift` skill, § "Build Verification"). Doc-only changes need no build.
 

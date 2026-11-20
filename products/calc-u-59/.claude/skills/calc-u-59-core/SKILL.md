@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-core
-description: Use this skill when working on the C++ emulation core of Calc-U-59 (files in core/). Covers the TMC0501 CPU emulator, BCD register model, SCOM memory, machine variants (TI-59/58/58C), ROM/RAM, instruction set changes, mnemonic workflow, and trace infrastructure. Trigger on any task that touches core/*.cpp, core/*.hpp, tools/mnemonics.tsv, ROM disassembly, trace debugging, or machine variant behaviour.
+description: Use this skill when working on the C++ emulation core of Calc-U-59 (files in core/). Covers the TMC0501 CPU emulator, BCD register model, SCOM memory, the models (TI-59/58/58C), ROM/RAM, instruction set changes, mnemonic workflow, and trace infrastructure. Trigger on any task that touches core/*.cpp, core/*.hpp, tools/mnemonics.tsv, ROM disassembly, trace debugging, or the behaviour of one model.
 user-invocable: true
 ---
 
@@ -15,8 +15,8 @@ This skill covers all work inside `core/` and the associated Python dev tools.
 The TI-59, TI-58, and TI-58C are Texas Instruments handheld programmable calculators (1977–79). This project emulates them at the hardware level: **the original ROM firmware runs unmodified** on an emulated TMC0501 CPU, so calculator behaviour emerges from the firmware — debugging usually means tracing ROM execution, not reading emulator logic.
 
 - **Keystroke programming**: users program the calculator by recording key presses. Each program step stores one two-digit **keycode**; the TI-59 holds up to 960 steps / 100 data registers, with RAM partitioned between the two.
-- **Hardware chips**: TMC0501 (CPU), TMC0571 (SCOM — scratchpad RAM + display/keyboard scan), TMC0540 (CROM — plug-in "Solid State Software" library module).
-- **Solid State Software modules**: plug-in ROM cartridges holding up to 5000 pre-recorded program steps (as keycodes). The user runs library program *n* with `2nd Pgm nn`. The Master Library module ships with the calculator and is loaded by default in the emulator.
+- **Hardware chips**: TMC0501 (CPU), TMC0571 (SCOM — scratchpad RAM + display/keyboard scan), TMC0540 (CROM — the plug-in Solid State ROM module).
+- **Solid State ROM modules**: plug-in ROM modules holding up to 5000 pre-recorded program steps (as keycodes). The user runs library program *n* with `2nd Pgm nn`. The Master Library module ships with the calculator and is loaded by default in the emulator.
 - The display is a 12-digit LED; the firmware multiplexes it digit-by-digit during IDLE.
 
 ---
@@ -146,6 +146,6 @@ uv run python tools/disasm.py --emit-cpp > /tmp/generated.cpp
 
 2. **Build on macOS.** Verify Swift-facing changes with a macOS build; build for iOS only when explicitly required (commands: `calc-u-59-swift` skill, § "Build Verification").
 
-3. **Commit often, never push.** Commit after each logical unit of work. Never run `git push`.
+3. **Commit often.** Commit after each logical unit of work; push as the root `CLAUDE.md` says.
 
 4. **Cite your sources.** When referencing a hardware spec, standard, or external document, include the https URL (or a pointer to the local reference file) in the relevant code comment or documentation.

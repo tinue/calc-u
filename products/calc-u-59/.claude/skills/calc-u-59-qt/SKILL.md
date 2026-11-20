@@ -7,8 +7,8 @@ user-invocable: true
 # Calc-U-59 Qt6 App
 
 **Ship scope first:** the Qt app ships on **Windows and Linux** only, built
-by the repository's `.github/workflows/calc-u-59.yml` and attached to releases by the root
-`release.yaml`. The **macOS Qt build is local and for development only** —
+by the repository's `.github/workflows/calc-u-59.yml` and attached to releases by
+`products/calc-u-59/release.yaml`. The **macOS Qt build is local and for development only** —
 never shipped, never built in CI, never signed. On the Mac the Swift app is
 the product. The Qt app has no iCloud: cards, `ti58c.memory.yaml` and traces live in
 the save folder `~/Calc-U-59` (`AppPaths::saveDir()`), each folder (and where Load Preset… starts) set in Settings, as
@@ -106,7 +106,7 @@ Everything that isn't drawing: `docs/developer/App-Layer.md`.
    the real clock; the shell's scenarios, each under the same name as the
    Web's in `frontends/web/tests/shell.spec.js`.
    `QtResourceBundle::hideForTests` makes the ROMs-missing case.
-8. **Commit often, never push.**
+8. **Commit often;** push as the root `CLAUDE.md` says.
 
 ## Class map
 

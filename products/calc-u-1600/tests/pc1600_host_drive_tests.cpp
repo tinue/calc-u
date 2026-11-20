@@ -41,7 +41,7 @@ bool bootWithHostDrive(PC1600Machine& m, const fs::path& dir, bool withCE1600P =
         return false;
     }
     if (withCE1600P && !presetroms::attachCE1600P(m, testPresetRoms(), "new", &error)) return false;
-    m.allReset();
+    m.coldBoot();
     runBootToPrompt(m);
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);  // as the COM1 test: settle
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);  // the prompt, back in RUN

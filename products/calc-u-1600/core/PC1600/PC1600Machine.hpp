@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -19,8 +20,10 @@
 #include "../CPU/LH5803/LH5803SharedMemory.hpp"
 #include "../CPU/DebugStop.hpp"
 #include "../CPU/SC7852/SC7852.hpp"
+#include "../Machine/SharpMachine.hpp"
 #include "../Machine/StateRecords.hpp"
 #include "../PC1500/PC1500TraceFile.hpp"
+#include "../Serial/SerialPortCapability.hpp"
 #include "../Tape/TapeDeck.hpp"
 #include "PC1600Bank.hpp"
 #include "PC1600BusArbiter.hpp"
@@ -37,7 +40,10 @@ struct PC1600DisplaySnapshot {
     StatusLine statusLine;
 };
 
-// ── PC-1600 dual-CPU machine facade ──────────────────────────────────────
+// A PC-1600: the core and the calcu::machine::Machine in one class. Ticks
+// are SC7852 T-states at 3,580,000 per second; the LH5803 and everything
+// else are counted in them. An advance runs whole steps of whichever CPU
+// has the bus, and steps of 256 while the machine is switched off.
 //
 // Owns both CPUs, the bus arbiter, and the bank/memory decoders -- does
 // NOT reuse PC1500Machine: the PC-1600 is architecturally a dual-CPU,
@@ -51,24 +57,21 @@ struct PC1600DisplaySnapshot {
 // (architecturally guaranteed, not configurable -- see
 // Ref/PC-1600/PC-1600-Machine-Overview.md §6).
 //
-// Threading: single-threaded, no lock. Everything above the
-// core reaches it through PC1600InterfaceMachine (calcu::machine::Machine);
-// this class stays the core's own, for the core and its tests.
-class PC1600Machine {
+// Threading: single-threaded, no lock. Above the core it is reached only as
+// a calcu::machine::Machine (built by SharpMachineBuilder; the CTest
+// CalcU1600MachineIncludeCheck keeps its name out of app/ and the frontends).
+class PC1600Machine final : public sharp::SharpMachine {
 public:
+    PC1600Machine(const calcu::machine::MachineDescriptor&, const calcu::machine::VariantId&);
+    // The PC-1600's descriptor of sharpCatalogue(), its default ROM variant.
     PC1600Machine();
+    ~PC1600Machine() override;
 
-    /// Simple reset -- the PC-1600 manual's lighter reset level: restart
-    /// the CPUs but keep internal RAM (BASIC program, variables, IOCS work
-    /// area), so the boot ROM takes its warm path and nothing is lost.
-    /// Used on hardware to break out of a hung machine-language program.
-    void reset();
-
-    /// ALL RESET -- the deeper level: wipe internal RAM first, so the boot
-    /// ROM runs full cold init, exactly as after a power loss. The cold
-    /// init re-zeroes the calendar clock; re-seed it afterwards with
-    /// seedClock().
-    void allReset();
+    calcu::machine::Ticks tickCount() const override { return m_elapsedTStates; }
+    calcu::machine::DisplayOutput readDisplay() override;
+    calcu::machine::Capability* capability(const calcu::machine::CapabilityId&) override;
+    using SharpMachine::capability;
+    std::size_t takeSound(std::span<std::int16_t> out) override { return drainAudio(out.data(), out.size()); }
 
     /// Seed the sub-CPU's real-time clock. Values are plain decimal
     /// (year = full 4-digit); they are packed to the LU-57813P's BCD
@@ -120,16 +123,6 @@ public:
     /// charged the shared clocks, so the budget and the clocks can't drift
     /// apart.
     uint64_t runCycles(uint64_t maxCycles);
-
-    // ── Machine state (Machine/StateRecords.hpp) ─────────
-    /// The core's records: the SC7852 and the LH5803, the bank selection,
-    /// the memory with its chips, the bus arbiter, the timers, the emulated
-    /// time, the cassette deck, the modules and every card. Saving only
-    /// reads; a restore that fails leaves the reader's error (the caller
-    /// puts the state from before back). The debugger's own state is not in
-    /// it.
-    void saveState(sharp::StateWriter& w) const;
-    void restoreState(sharp::StateReader& r);
 
     // ── Debugger stops ────────────────────────────────────────────────────
     // step() and runCycles() latch a stop when either CPU parks on a PC
@@ -304,10 +297,9 @@ public:
 
     // ── Keyboard / display ────────────────────────────────────────────
     //
-    // keyboard()/display() are direct access, for the core and its tests
-    // (like PC1500Machine's cpu()/memory()); above the core,
-    // PC1600InterfaceMachine reaches the keys and the display through
-    // pressKey/releaseKey/setOnKeyPressed/displaySnapshot below.
+    // keyboard()/display() are direct access (like PC1500Machine's
+    // cpu()/memory()); the machine interface's keys and display go
+    // through pressKey/releaseKey/setOnKeyPressed/displaySnapshot below.
     PC1600Keyboard&       keyboard() { return m_z80Mem.keyboard(); }
     const PC1600Keyboard& keyboard() const { return m_z80Mem.keyboard(); }
     PC1600Display&        display() { return m_z80Mem.display(); }
@@ -504,9 +496,38 @@ public:
     void endTraceRecord();
     void endTraceRecords();
 
+private:
+    // ---- The model's part of SharpMachine ----
+    calcu::machine::Ticks runCore(calcu::machine::Ticks n) override { return runCycles(n); }
+    sharp::SharpDebugging* sharpDebugging() override { return m_debugging.get(); }
+    bool coreSwitchedOff() const override { return isPoweredOff(); }
+    bool coreKeyReady() const override { return keyReady(); }
+    void coreKey(const std::string& id, bool down) override;
+    void coreOnKey(bool down) override { setOnKeyPressed(down); }
+    /// Simple reset -- the PC-1600 manual's lighter reset level: restart
+    /// the CPUs but keep internal RAM (BASIC program, variables, IOCS work
+    /// area), so the boot ROM takes its warm path and nothing is lost.
+    /// Used on hardware to break out of a hung machine-language program.
+    void coreReset() override;
+    /// ALL RESET -- the deeper level: wipe internal RAM first, so the boot
+    /// ROM runs full cold init, exactly as after a power loss. The cold
+    /// init re-zeroes the calendar clock; re-seed it afterwards with
+    /// seedClock().
+    void coreColdBoot() override;
+    ExpansionCard* moduleIn(const calcu::machine::PlaceName&) override;
+    void corePlug(const calcu::machine::PeripheralRequest&, const calcu::machine::PeripheralDescriptor&) override;
+    void coreUnplug(const calcu::machine::PlaceName&, const calcu::machine::PeripheralId&) override;
+    void offer(std::vector<Offered>&, const std::vector<calcu::machine::PlugEntry>&) override;
+    std::optional<std::string> modelRefusal(const calcu::machine::PeripheralRequest&,
+                                            const std::optional<calcu::machine::PeripheralId>&) const override;
+    // The records: the SC7852 and the LH5803, the bank selection, the memory
+    // with its chips, the bus arbiter, the timers, the emulated time, the
+    // cassette deck, the modules and every card, then the serial lines and
+    // the cassette place. The debugger's own state is not in it.
+    void coreSaveState(sharp::StateWriter&) const override;
+    void coreRestoreState(sharp::StateReader&) override;
     template <class Io>
     void stateIo(Io& io);
-private:
 
 
     /// Bodies of the public detach calls (the *Locked names are from when
@@ -516,7 +537,7 @@ private:
     void detachCE150Locked();
     void detachCE158Locked();
 
-    /// Shared body of reset()/allReset().
+    /// Shared body of coreReset()/coreColdBoot().
     void resetLocked();
 
     PC1600Bank m_bank;
@@ -640,4 +661,10 @@ private:
     // PC1600SubCpu::tickOneSecond().
     static constexpr int kRtcPeriodTStates = kTStateHz; // 1 s
     int m_rtcAccum{0};
+
+    struct Kinds;   // the capability objects (PC1600Machine.cpp)
+    SerialPortCapability m_rs232c;      // the TC8576F's peer (component rs232c)
+    SerialPortCapability m_ce158Port;   // the CE-158's UART peer; kept across detach and attach
+    std::unique_ptr<Kinds> m_kinds;
+    std::unique_ptr<sharp::SharpDebugging> m_debugging;   // the debugger: after the core, gone before it
 };

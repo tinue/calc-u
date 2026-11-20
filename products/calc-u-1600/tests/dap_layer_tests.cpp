@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "../core/Debug/DebugExpression.hpp"
-#include "../core/PC1600/PC1600InterfaceMachine.hpp"
+#include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "MemtestRig.hpp"
 #include "TestHarness.hpp"
@@ -546,7 +546,7 @@ TEST(function_breakpoint_on_lh5803_symbol) {
     // A function breakpoint arms on the CPU whose binding defines the
     // symbol: here the LH5803 (thread 2).
     sharpdebugtest::Rig rig(sharpdebugtest::bareMachine("PC-1600"));
-    PC1600Machine& m = static_cast<PC1600InterfaceMachine&>(*rig.machine).core();
+    PC1600Machine& m = static_cast<PC1600Machine&>(*rig.machine);
     std::vector<uint8_t> lower(PC1600Memory::kBankSize, 0x00), upper(PC1600Memory::kBankSize, 0x00);
     lower[0] = 0xD3; lower[1] = 0x38; lower[2] = 0x76; // out (38h),a ; halt
     CHECK(m.loadBank0(lower.data(), lower.size(), upper.data(), upper.size()));

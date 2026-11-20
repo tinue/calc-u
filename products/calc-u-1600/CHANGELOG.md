@@ -256,6 +256,11 @@
   values, the worker's configuration too (`calc-engine-worker.js` is
   written into `dist/`). Another output folder is `CALCU_WEB_DIST` (was
   `CALCU1600_WEB_DIST`).
+- **Core (developers):** one class per model. `PC1500Machine` and
+  `PC1600Machine` are the `calcu::machine::Machine` themselves (derived
+  from `sharp::SharpMachine`); `PC1500InterfaceMachine` and
+  `PC1600InterfaceMachine` are gone. Their core reset and ALL RESET are
+  the machine's `reset()` and `coldBoot()`.
 
 ### Fixed
 

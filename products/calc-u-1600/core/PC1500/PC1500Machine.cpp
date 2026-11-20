@@ -1,9 +1,185 @@
 #include "PC1500Machine.hpp"
 
 #include "../Connector/CardState.hpp"
+#include "../Connector/SoftwareDefinedCard.hpp"
+#include "../Debug/Inspect/PC1500Inspector.hpp"
+#include "../Machine/SharpCatalogue.hpp"
+#include "../Machine/SharpDisplayOutput.hpp"
+#include "../Machine/SharpLoaderMemory.hpp"
+#include "../Machine/SharpProductKinds.hpp"
+#include "PC1500TypedInput.hpp"
+#include "peripherals/RealTimeClock.hpp"
+#include "typing/TypingSupport.hpp"
 
-PC1500Machine::PC1500Machine(PC1500Variant variant)
-    : m_memory(variant), m_cpu(m_memory) {}
+using namespace calcu::machine;
+
+namespace {
+
+PC1500Variant modelOf(const MachineDescriptor& d) {
+    return d.model.value == sharp::kPC1500A ? PC1500Variant::PC1500A : PC1500Variant::PC1500;
+}
+
+const MachineDescriptor& descriptorOf(PC1500Variant model) {
+    return *sharp::sharpCatalogue().model(ModelId{model == PC1500Variant::PC1500A ? sharp::kPC1500A : sharp::kPC1500});
+}
+
+} // namespace
+
+// The capability objects, each over the core.
+struct PC1500Machine::Kinds {
+    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), printerPort(m), call(m), program(m) {}
+
+    sharp::PC1500LoaderMemory memory;
+    struct Inspector final : sharp::InspectorViews {
+        explicit Inspector(PC1500Machine& m) : m(m) {}
+        std::vector<std::string> view(inspect::View v) const override { return inspect::pc1500View(m, v); }
+        std::vector<inspect::MenuEntry> menu(bool dumps) const override { return inspect::pc1500Menu(m, dumps); }
+        std::vector<std::uint8_t> slotImage(int slot, int* bankCount) const override {
+            const ExpansionCard* card = slot == 1 ? m.memory().expansionConnector().attachedCard() : nullptr;
+            *bankCount = card ? card->debugBankCount() : -1;
+            return card ? card->debugImage() : std::vector<std::uint8_t>{};
+        }
+        PC1500Machine& m;
+    } inspector;
+    // Typing support, prompt readiness (no latches, no sample count).
+    struct Support final : calcu::typing::TypingSupport {
+        explicit Support(PC1500Machine& m) : m(m) {}
+        std::optional<bool> promptReady() const override { return pc1500AtBasicPrompt(m); }
+        PC1500Machine& m;
+    } support;
+    struct Trace final : sharp::TraceRecords {
+        explicit Trace(PC1500Machine& m) : m(m) {}
+        bool begin() override { return m.beginTraceRecords(TRACE_FULL); }
+        bool take(std::vector<std::uint8_t>& out, std::uint64_t budget) override { return m.takeTraceRecords(out, budget); }
+        void endRecord() override { m.endTraceRecord(); }
+        void end() override { m.endTraceRecords(); }
+        PC1500Machine& m;
+    } trace;
+    struct Tape final : sharp::TapeDeckAccess {
+        explicit Tape(PC1500Machine& m) : m(m) {}
+        TapeDeck::Status status() const override { return m.tapeStatus(); }
+        PC1500Machine& m;
+    } tape;
+    sharp::CassettePlace cassette;
+    struct Clock final : calcu::peripherals::RealTimeClock {
+        explicit Clock(PC1500Machine& m) : m(m) {}
+        calcu::peripherals::ClockFields read() const override {
+            const Upd1990ac::Fields f = m.memory().rtc().fields();   // the uPD1990AC keeps no year
+            return {std::nullopt, f.month, f.day, f.dow, f.hour, f.minute, f.second};
+        }
+        void set(const calcu::peripherals::ClockFields& f, int ms) override {
+            const auto now = read();
+            m.seedClock(f.year.value_or(2000), f.month.value_or(*now.month), f.day.value_or(*now.day),
+                        f.hour.value_or(*now.hour), f.minute.value_or(*now.minute), f.second.value_or(*now.second), ms);
+        }
+        PC1500Machine& m;
+    } clock;
+    struct PrinterPort final : sharp::Ce158PrinterPort {
+        explicit PrinterPort(PC1500Machine& m) : m(m) {}
+        std::vector<std::uint8_t> drain() override { return m.drainCE158ParallelOutput(); }
+        PC1500Machine& m;
+    } printerPort;
+    // A routine call: SJP on the LH5801.
+    struct Call final : sharp::RoutineCall {
+        explicit Call(PC1500Machine& m) : m(m) {}
+        bool call(const std::string& target, std::uint16_t address) override {
+            if (target != "LH5801") return false;
+            m.cpu().callRoutine(address);
+            return true;
+        }
+        PC1500Machine& m;
+    } call;
+    struct Program final : sharp::ProgramState {
+        explicit Program(PC1500Machine& m) : m(m) {}
+        std::vector<std::string> busy() const override {
+            if (m.toneSounding()) return {"the buzzer"};
+            return {};
+        }
+        bool programEnded() const override { return m.programEnded(); }
+        // The tape, or the CE-158's port with nothing on its way.
+        bool awaitsMedium() const override {
+            return m.tapeAwaited() || (m.ce158ReceiveWaitSeen() && !port->port().incoming());
+        }
+        PC1500Machine& m;
+        SerialPortCapability* port = nullptr;   // the machine's CE-158 peer
+    } program;
+};
+
+PC1500Machine::PC1500Machine(const MachineDescriptor& d, const VariantId& v)
+    : SharpMachine(d, v), m_memory(modelOf(d)), m_cpu(m_memory), m_kinds(std::make_unique<Kinds>(*this)),
+      m_debugging(sharp::makeSharpDebugging(*this)) {
+    setCE158SerialLink(&m_ce158Port);
+    m_kinds->program.port = &m_ce158Port;
+}
+
+PC1500Machine::PC1500Machine(PC1500Variant model) : PC1500Machine(descriptorOf(model), *descriptorOf(model).defaultVariant) {}
+
+PC1500Machine::~PC1500Machine() = default;
+
+void PC1500Machine::coreKey(const std::string& id, bool down) {
+    if (down) pressKey(id);
+    else releaseKey(id);
+}
+
+DisplayOutput PC1500Machine::readDisplay() {
+    const PC1500Display disp = display();
+    std::vector<std::uint8_t> dots(static_cast<std::size_t>(PC1500Display::kCols) * PC1500Display::kRows, 0);
+    for (int row = 0; row < PC1500Display::kRows; ++row)
+        for (int col = 0; col < PC1500Display::kCols; ++col)
+            dots[static_cast<std::size_t>(row) * PC1500Display::kCols + col] = disp.pixel(col, row) ? 1 : 0;
+    return sharp::displayOutput(descriptor(), isDisplayOn(), PC1500Display::kCols, PC1500Display::kRows,
+                                std::move(dots), disp.statusLine());
+}
+
+ExpansionCard* PC1500Machine::moduleIn(const PlaceName& p) {
+    return p.value == sharp::kSlot1 ? m_memory.expansionConnector().attachedCard() : nullptr;
+}
+
+void PC1500Machine::corePlug(const PeripheralRequest& req, const PeripheralDescriptor& d) {
+    const std::string& place = req.place.steps.at(0).value;
+    if (place == sharp::kSlot1) {
+        if (auto card = sharp::moduleCardOf(req, d)) attachExpansionCard(std::move(card));
+        return;
+    }
+    if (const auto* b = dynamic_cast<const sharp::BusRomRequest*>(req.content.get())) {
+        attachBusRom(std::make_unique<BusRomCard>(b->bytes, b->address, b->me1, b->pv, b->pu, b->name));
+        return;
+    }
+    const std::vector<std::uint8_t>* rom = sharp::romImageOf(req, d, 0);
+    if (!rom) return;
+    if (req.peripheral.value == sharp::kCE150) attachCE150(rom->data(), rom->size());
+    else if (req.peripheral.value == sharp::kCE158) attachCE158(rom->data(), rom->size());
+}
+
+void PC1500Machine::coreUnplug(const PlaceName& p, const PeripheralId& id) {
+    if (p.value == sharp::kSlot1) m_memory.expansionConnector().detach();
+    else if (id.value == sharp::kCE150) { tapeEject(); detachCE150(); }   // the cassette goes with it
+    else if (id.value == sharp::kCE158) detachCE158();
+    else if (id.value == sharp::kBusRom) detachBusRoms();
+}
+
+void PC1500Machine::offer(std::vector<Offered>& out, const std::vector<PlugEntry>&) {
+    Kinds& k = *m_kinds;
+    out.push_back(byComponent("LH5801", k.memory));
+    out.push_back(byComponent("LH5801", k.inspector));
+    out.push_back(byComponent("LH5801", k.support));
+    out.push_back(byComponent("LH5801", k.trace));
+    out.push_back(byComponent("LH5801", k.call));
+    out.push_back(byComponent("LH5801", k.program));
+    out.push_back(byComponent("LH5801", stateCapability()));
+    out.push_back(byComponent(sharp::kRtcComponent, k.clock));
+    if (const PlugEntry* e = at(sharp::kPrinter); e && e->peripheral.value == sharp::kCE150) {
+        // The plotter's paper output, once its card is on the bus.
+        if (calcu::paper::PaperOutput* paper = ce150PaperOutput()) out.push_back(byPeripheral(*e, *paper));
+        out.push_back(byPeripheral(*e, k.cassette, "cassette-recorder"));   // the CE-150's cassette
+        out.push_back(byPeripheral(*e, k.tape));
+    }
+    if (const PlugEntry* e = at(sharp::kInterface)) {
+        out.push_back(byPeripheral(*e, m_ce158Port.port()));
+        out.push_back(byPeripheral(*e, k.printerPort));
+    }
+}
+
 
 bool PC1500Machine::loadROM(const uint8_t* data, std::size_t size) {
     return m_memory.loadROM(data, size);
@@ -13,7 +189,7 @@ bool PC1500Machine::loadROMFile(const std::string& path) {
     return m_memory.loadROMFile(path);
 }
 
-void PC1500Machine::reset() {
+void PC1500Machine::coreReset() {
     m_frame = m_lastFrame = FrameNotes{};   // key readiness is seen again from here (keyReady())
     m_memory.reset();
     m_memory.keyboard().releaseAll();
@@ -27,11 +203,9 @@ void PC1500Machine::reset() {
     m_ce158.reset();
 }
 
-void PC1500Machine::allReset() {
-    {
-        m_memory.clearRam();
-    }
-    reset();
+void PC1500Machine::coreColdBoot() {
+    m_memory.clearRam();
+    coreReset();
 }
 
 bool PC1500Machine::attachCE150(const uint8_t* rom, size_t romSize) {
@@ -138,8 +312,8 @@ void PC1500Machine::seedClock(int year, int month, int day, int hour, int minute
 int PC1500Machine::step() {
     noteFetch(m_cpu.pc());
     int c = m_cpu.step();
-    if (c == 0 && m_cpu.breakpointsEnabled() && m_cpu.consumeBreakpointHit()) m_debugStop.latch(DebugStop::Breakpoint, 1);
-    if (m_watches && m_watches->hitPending()) m_debugStop.latch(DebugStop::Watch, 1);
+    if (c == 0 && m_cpu.breakpointsEnabled() && m_cpu.consumeBreakpointHit()) m_debugStop.latch(::DebugStop::Breakpoint, 1);
+    if (m_watches && m_watches->hitPending()) m_debugStop.latch(::DebugStop::Watch, 1);
     // PU/PV (SPU/RPU/SPV/RPV) never touch the bus themselves, so pushing
     // their post-instruction state here is sufficient for the next bus
     // access to see it -- see PC1500Memory::updatePUPV()'s own doc comment.
@@ -185,7 +359,7 @@ uint64_t PC1500Machine::runCycles(uint64_t maxCycles) {
         m_memory.updatePUPV(m_cpu.pu(), m_cpu.pv());
         if (c == 0) {
             if (m_cpu.breakpointsEnabled() && m_cpu.consumeBreakpointHit()) {
-                m_debugStop.latch(DebugStop::Breakpoint, 1);
+                m_debugStop.latch(::DebugStop::Breakpoint, 1);
                 break;
             }
             if (m_cpu.halted() || m_cpu.poweredOff()) {
@@ -212,7 +386,7 @@ uint64_t PC1500Machine::runCycles(uint64_t maxCycles) {
         consumed += static_cast<uint64_t>(c);
         maybeDrainTrace();
         if (m_watches && m_watches->hitPending()) { // the watched access's instruction has completed
-            m_debugStop.latch(DebugStop::Watch, 1);
+            m_debugStop.latch(::DebugStop::Watch, 1);
             break;
         }
     }
@@ -309,7 +483,13 @@ void PC1500Machine::stateIo(Io& io) {
     sharp::cardStateIo(io, "SLT1", m_memory.expansionConnector().attachedCard());
     sharp::cardStateIo(io, "C150", m_ce150Card.get());
     sharp::cardStateIo(io, "C158", m_ce158.card());
+    io.begin("LINE");
+    m_ce158Port.stateIo(io);
+    io.end();
+    io.begin("CASS");
+    m_kinds->cassette.stateIo(io);
+    io.end();
 }
 
-void PC1500Machine::saveState(sharp::StateWriter& w) const { const_cast<PC1500Machine*>(this)->stateIo(w); }
-void PC1500Machine::restoreState(sharp::StateReader& r) { stateIo(r); }
+void PC1500Machine::coreSaveState(sharp::StateWriter& w) const { const_cast<PC1500Machine*>(this)->stateIo(w); }   // only reads
+void PC1500Machine::coreRestoreState(sharp::StateReader& r) { stateIo(r); }

@@ -105,14 +105,6 @@ void SharpMachine::makeWaitingChanges() {
     m_waiting.clear();
     m_waitingModules.clear();
     for (auto& c : changes) c();
-    std::vector<std::function<void()>> after = std::move(m_afterWaiting);
-    m_afterWaiting.clear();
-    for (auto& f : after) f();
-}
-
-void SharpMachine::atOffPoint(std::function<void()> f) {
-    if (m_waiting.empty()) f();
-    else m_afterWaiting.push_back(std::move(f));
 }
 
 // ---- Keys ----
@@ -292,7 +284,7 @@ Capability* SharpMachine::capability(const CapabilityId& id) {
 template <class Io>
 void SharpMachine::stateIo(Io& io) {
     io.begin("SHRP");
-    bool waiting = !m_waiting.empty() || !m_afterWaiting.empty();
+    bool waiting = !m_waiting.empty();
     io(waiting);
     if constexpr (Io::kRestoring)
         if (waiting)

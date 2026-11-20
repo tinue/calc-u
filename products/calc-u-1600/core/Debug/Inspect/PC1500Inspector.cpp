@@ -26,7 +26,7 @@ struct Ctx {
 
     explicit Ctx(const PC1500Machine& machine)
         : m(machine),
-          a(machine.variant() == PC1500Variant::PC1500A),
+          a(machine.modelVariant() == PC1500Variant::PC1500A),
           userRamEnd(a ? 0x5800u : 0x4800u),
           card(machine.memory().expansionConnector().attachedCard()),
           cardName(card ? card->moduleName() : std::string()) {}

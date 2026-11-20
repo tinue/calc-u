@@ -19,7 +19,7 @@ namespace scripted {
 
 // After allReset(): the boot run; a fresh memory map's NEW0? answered.
 inline void bootPC1500(PC1500Machine& m) {
-    m.allReset();
+    m.coldBoot();
     runBootToPrompt(m);
     for (int i = 0; i < 5; ++i) {
         LcdText t = pc1500LcdText(m);
@@ -43,7 +43,7 @@ inline void untilIdle(PC1500Machine& m, double seconds) {
 }
 
 inline void bootPC1600(PC1600Machine& m) {
-    m.allReset();
+    m.coldBoot();
     runBootToPrompt(m);
 }
 

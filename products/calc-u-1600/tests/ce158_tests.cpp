@@ -477,7 +477,7 @@ TEST(test_pc1600_lhnmio_trap_runs_ce158_shift) {
     std::string err;
     CHECK(presetroms::loadPC1600RomSet(m, testPresetRoms(), "new", &err));
     CHECK(presetroms::attachCE158(m, testPresetRoms(), &err));
-    m.allReset();
+    m.coldBoot();
     m.runCycles(PC1600Machine::kTStateHz); // LCD on
     auto& mem = m.lh5803Memory();
     auto& cpu = m.lh5803();

@@ -4,8 +4,8 @@
 class PC1500Machine;
 class PC1600Machine;
 
-// The loader memory access over the core's machine classes: the objects
-// the interface machines list as their `c1600.loader-memory` kind.
+// The loader memory access over the machine classes: the objects they
+// list as their `c1600.loader-memory` kind.
 // Stateless wrappers; this header names the
 // classes only by declaration.
 

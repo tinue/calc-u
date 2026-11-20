@@ -485,7 +485,7 @@ TEST(pc1600_ready_after_15_ready_frames) {
     CHECK(presetroms::attachCE1600P(old, testPresetRoms(), "new", &err));
     // The old class: the first part of runBootToPromptJob, then
     // waitForKeyboardScanLoopJob, whose return is the moment to match.
-    old.allReset();
+    old.coldBoot();
     old.runCycles(PC1600Machine::kTStateHz * 2);
     waitIdle(old, PC1600Machine::kTStateHz * 5);
     waitForKeyboardScanLoop(old);
@@ -674,8 +674,7 @@ TEST(ce1600p_variant_keeps_memory_and_disk_side) {
     CHECK(pokePattern(*m, a));
 
     // The variant change: one replace, then its power cycle. The disk goes
-    // into the new drive at the off point, the same side up, as the session
-    // does it.
+    // into the new drive after it, the same side up.
     const std::vector<std::uint8_t> image = imageOf(drive);
     const int side = drive ? drive->side().value_or(0) : 0;
     const ChangeResult r = m->replace(PeripheralId{"CE-1600P"}, request(c, "CE-1600P", "printer", VariantId{"Old"}, &ok), c);
@@ -684,11 +683,9 @@ TEST(ce1600p_variant_keeps_memory_and_disk_side) {
     const Plugged now = m->plugged();
         const PlugEntry* e = pluggedAt(now, "printer");
     CHECK(e && e->variant && e->variant->value == "Old");   // shows at once
-    sharp::sharpOf(*m)->atOffPoint([&] {
-        if (auto* d = floppyPlace()) d->insert(std::make_shared<sharp::FloppyContent>(image), side);
-    });
     m->powerCycle();
     sharptest::bootRun(*m);
+    if (auto* d = floppyPlace()) d->insert(std::make_shared<sharp::FloppyContent>(image), side);
     CHECK(runUntilKeyReady(*m));
     CHECK(hasPattern(*m, a));
     drive = floppyPlace();

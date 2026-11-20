@@ -5,8 +5,8 @@
 
 #include "../app/SharpDebuggerSetup.hpp"
 #include "../core/Machine/SharpCatalogue.hpp"
-#include "../core/PC1500/PC1500InterfaceMachine.hpp"
-#include "../core/PC1600/PC1600InterfaceMachine.hpp"
+#include "../core/PC1500/PC1500Machine.hpp"
+#include "../core/PC1600/PC1600Machine.hpp"
 #include "debugger/DebuggerPart.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/MachineSession.hpp"
@@ -52,11 +52,9 @@ struct Rig {
 
 // A Sharp model's machine without ROMs (its core runs what the test pokes).
 inline std::unique_ptr<calcu::machine::Machine> bareMachine(const char* model) {
-    static const calcu::machine::Catalogue cat = sharp::sharpCatalogue();
-    const calcu::machine::MachineDescriptor* d = cat.model(calcu::machine::ModelId{model});
-    if (std::string(model) == "PC-1600")
-        return std::make_unique<PC1600InterfaceMachine>(*d, calcu::machine::VariantId{"New"});
-    return std::make_unique<PC1500InterfaceMachine>(*d, calcu::machine::VariantId{"A04"});
+    if (std::string(model) == "PC-1600") return std::make_unique<PC1600Machine>();
+    return std::make_unique<PC1500Machine>(std::string(model) == "PC-1500A" ? PC1500Variant::PC1500A
+                                                                             : PC1500Variant::PC1500);
 }
 
 } // namespace sharpdebugtest

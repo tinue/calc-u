@@ -218,10 +218,9 @@ inline sharp::LoaderMemory& memoryOf(Machine& m) { return *calcu::machine::first
 // The card in a module slot (from 1) as plugged() shows it, or nullptr (the
 // PC-1500 has one slot).
 inline const ExpansionCard* moduleIn(Machine& m, int slot) {
-    if (slot == 2 && sharp::pc1500Of(m)) return nullptr;
-    sharp::SharpMachine* s = sharp::sharpOf(m);
-    if (!s || (slot != 1 && slot != 2)) return nullptr;
-    return s->moduleNow(PlaceName{slot == 2 ? sharp::kSlot2 : sharp::kSlot1});
+    if (PC1600Machine* p = sharp::pc1600Of(m)) return slot == 1 || slot == 2 ? p->memory().slotCard(slot) : nullptr;
+    if (PC1500Machine* p = sharp::pc1500Of(m)) return slot == 1 ? p->expansionConnector().attachedCard() : nullptr;
+    return nullptr;
 }
 
 // An address where a write lands in the module at `slot` (from 1), found by

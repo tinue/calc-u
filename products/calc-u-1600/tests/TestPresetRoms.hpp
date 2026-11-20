@@ -11,8 +11,8 @@
 #include <filesystem>
 #include <optional>
 
-// Loading and attaching from PresetRoms, for the core tests that build an
-// old machine class directly.
+// Loading and attaching from PresetRoms, for the core tests that build a
+// machine class directly (without the builder).
 namespace presetroms {
 
 // The images of a model's / peripheral's variant (std::nullopt: none or the

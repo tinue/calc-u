@@ -67,7 +67,7 @@ inline bool loadPC1600Roms(PC1600Machine& m) {
 // or a plotter before calling, so the boot ROM sees them.
 inline bool bootPC1600(PC1600Machine& m) {
     if (!loadPC1600Roms(m)) return false;
-    m.allReset();
+    m.coldBoot();
     runBootToPrompt(m);
     return true;
 }

@@ -299,7 +299,7 @@ bool writeScratchPreset(const std::string& path, const std::string& body) {
 }
 
 // The CE-150 on the bus before the cold boot (a preset's `printer: CE-150`,
-// built by the library's builder; here on the old class with its ROMs).
+// built by the library's builder; here on the class built directly with its ROMs).
 TEST(test_preset_plotter_ce150_attaches_before_reset) {
     SKIP_UNLESS(testRomSet() != nullptr, "the ROMs are not fetched (roms/fetch_roms.sh)");
     PC1500Machine machine(PC1500Variant::PC1500A);

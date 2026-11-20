@@ -210,7 +210,7 @@ TEST(test_simple_reset_keeps_internal_ram_all_reset_wipes_it) {
     CHECK(m.memory().read(0xF200) == 0xCD);
 
     // ALL RESET: internal RAM gone -> ROM will run full cold init.
-    m.allReset();
+    m.coldBoot();
     CHECK(m.memory().read(0xC100) == 0x00);
     CHECK(m.memory().read(0xF200) == 0x00);
 }
@@ -226,7 +226,7 @@ TEST(test_reset_releases_held_keys) {
     CHECK(m.keyboard().scan(0x00, true) == 0xFF);
 
     m.pressKey("*");
-    m.allReset();
+    m.coldBoot();
     CHECK(m.keyboard().scan(0x00, true) == 0xFF);
 }
 
@@ -241,7 +241,7 @@ TEST(test_reset_level_reported_to_boot_rom_via_request_5A) {
     m.reset();                       // simple reset -> bit 5 clear
     CHECK((cause() & 0x20) == 0);
 
-    m.allReset();                    // ALL RESET -> bit 5 set again
+    m.coldBoot();                    // ALL RESET -> bit 5 set again
     CHECK((cause() & 0x20) != 0);
 }
 

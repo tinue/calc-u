@@ -28,8 +28,7 @@ flowchart TB
   storage, the audio device, the debugger transport and packaging.
 
 Both libraries are built by [`cmake/CalcU.cmake`](../../cmake/CalcU.cmake)
-(`calcu_core`, and `calcu_shared` for `app/`: the target keeps its old
-name) for the Qt app, the harness, the tests and the WebAssembly check.
+(`calcu1600_core`, and `calcu1600_shared` for `app/`) for the Qt app, the harness, the tests and the WebAssembly check.
 
 ## Rules
 
@@ -187,7 +186,7 @@ coroutine a budget at a time (`step(cycles)`), or straight through
 (`runToCompletion()`). The core's tests keep the old typers on it
 ([`tests/support/`](../../tests/support/): `Job.hpp`'s `namespace job`,
 `co_await job::run(machine, n)` on an old machine class); they are not in
-`calcu_core`.
+`calcu1600_core`.
 
 A run request is never split by the budget, so a job sliced into frame
 ticks makes exactly the machine calls of one run straight through. That a

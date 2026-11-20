@@ -29,7 +29,7 @@ with its debugger) is covered by the help (below, "The help").
 | `app/` | The app logic every frontend shares, free of Qt: the live machine and its operations, the media kinds of the library's media part, pacing, settings, paths, layouts ([App-Layer.md](App-Layer.md)); the loaders' commands in `app/SharpLoaderPart` (`c1600.file-kind`, `load-basic`, `type-basic`, `code-plan`, `load-code`; the harness's `pc1600 …`); `app/tests/` |
 | `frontends/web/` | The web client: WASM bindings, worker, React UI, installable app, Playwright tests ([Web-Client.md](Web-Client.md)) |
 | `frontends/qt6/` | The desktop app (`frontends/qt6/app/`) and its bundled resources: cards, faceplates, platform files (`frontends/qt6/resources/`) |
-| `cmake/` | `CalcU.cmake`: the `calcu_core` / `calcu_shared` libraries for every CMake build |
+| `cmake/` | `CalcU.cmake`: the `calcu1600_core` / `calcu1600_shared` libraries for every CMake build |
 | `firmware/` | Our own ROMs, e.g. the host-drive driver ROM (`firmware/pc1600-hostdrive/`) |
 | `vscode/` | The VS Code debugger extension ([README](../../vscode/calcu1600-debug/README.md)); `tools/install_vscode_extension.sh` packages and installs it |
 | `tools/` | Build scripts, `fetch_roms.sh`, `fetch_sharpdx.sh` / `refresh_sharpdx.sh`, `run_tests.sh`, `build_wasm_check.sh` / `build_sharpdx_wasm.sh`, `dap_smoke.py`, `read_trace.py`, `make_screenshots.sh` |

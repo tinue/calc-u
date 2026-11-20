@@ -242,6 +242,10 @@
   its number; `preset` (and `?preset=`) takes a bundled path with or
   without `examples:`. The release's `Calc-U-1600-web.zip` is a release
   build without the Web tests' commands.
+- **Build targets:** the core and the app layer are the CMake targets
+  `calcu1600_core` and `calcu1600_shared` (were `calcu_core` and
+  `calcu_shared`), as Calc-U-59's are `calcu59_core` and
+  `calcu59_shared`. For developers only.
 
 ### Fixed
 

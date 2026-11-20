@@ -18,7 +18,7 @@ TEST(pacing_profiles_sharp) {
         const calcu::pacing::PacingProfile p = cu1600::pacingProfile(m);
         CHECK(!p.slice.has_value());
         CHECK(!p.jitter);
-        CHECK(p.fullSpeedPacedWhileWaiting);   // a waiting machine runs at real time at full speed too
+        CHECK(!p.fullSpeedPacedWhileWaiting);
     }
 }
 

@@ -271,8 +271,6 @@
 - **BREAK goes in while a program runs**, from a preset, the harness or
   the driver; it used to wait for the key wait and was refused after an
   hour on the PC-1500.
-- **At full speed a waiting machine runs at real time**, as Calc-U-59
-  does, so the prompt and a program waiting for a key no longer spin.
 - **Harness: `key-down` and `key-up` take `break` for `on`**, as `key`
   does; `key … hold=<duration>` holds each key that long, `wait-finished`
   waits until the program has ended, `idle-state` shows whether the machine

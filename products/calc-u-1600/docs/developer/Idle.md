@@ -9,7 +9,7 @@ ROM (OLD where it differs). "Measured" means with the harness.
 | Question | Meaning | Asked by |
 |---|---|---|
 | A, takes keys | the ROM or a program reads the keyboard as input now; watching for BREAK alone is not A | a scripted press before it goes down |
-| W, waits | nothing happens until the user acts: A, and nothing is busy | pacing (full speed runs at real time while W holds) |
+| W, waits | nothing happens until the user acts: A, and nothing is busy | pacing (asked; full speed is not paced, see In the code) |
 | settled | W held for 20 frames (1/60 s each), sampled every frame | the steps: preset items, `key`, `type`, harness `wait` |
 | B, finished | no program and no CALLed machine code runs, the machine is at the BASIC prompt, and settled | `let-it-finish`, the wait "until the program has ended" |
 
@@ -146,8 +146,9 @@ F0BBH bit 0).
   (`core/Machine/SharpProductKinds.hpp`: `PC1500Machine::toneSounding()`,
   `programEnded()`; `PC1600Machine::programEnded()`, the CE-1600F's motor).
 - The rule: `app/SharpPresetRules.cpp`; the keys that do not wait:
-  `app/SharpTyping.cpp` (ON/BREAK, at most 0.2 s); full speed runs at real
-  time while the machine waits (`app/PacingProfiles.cpp`).
+  `app/SharpTyping.cpp` (ON/BREAK, at most 0.2 s). Pacing asks W, but full
+  speed is never paced (`app/PacingProfiles.cpp`): with pacing by the host's
+  calls, paced-while-waiting stops the Qt app answering (the DAP smoke test).
 - The cases as tests: `tests/harness/idle_tests.cpp`.
 
 ## Not established

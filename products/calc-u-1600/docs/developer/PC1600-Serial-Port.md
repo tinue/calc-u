@@ -12,8 +12,8 @@ about the implementation; for using the port, see the help,
 `ptsname` give a `/dev/ttysNNN` slave that any serial tool can open
 like a real port. A stable `calcu1600-rs232c.serial` symlink is the documented
 target, so the per-run `ttysNNN` name never leaks to the user. The
-symlink's folder is **Settings ▸ Serial ports ▸ Symlink directory**
-(default `~/Calc-U-1600`).
+symlink's folder is **Settings ▸ Serial ports ▸ Link folder**
+(`[serial] link-folder`; by default the save folder).
 
 **Lifecycle: always active.** The port exists with the PC-1600 machine —
 there is no enable switch, matching the real hardware's built-in port. The
@@ -26,8 +26,8 @@ rule gives the RS-232C port `calcu1600-rs232c.serial` at once and the CE-158
 `calcu1600-ce158.serial` when it is first used; its `PtyHostLink`
 (`library/peripherals/PtyHostLink.cpp`) is the
 pseudo-terminal. A link lives for the session, so the file keeps its name
-across machine rebuilds; `HostLinks::pump` moves the bytes between two
-advances (once per slice). The UART gets its peer when the port is first
+across machine rebuilds; `HostLinks::pump` moves the bytes before and after
+each host call (`PeripheralsPart::beforeCall`, `afterCall`). The UART gets its peer when the port is first
 taken, which the session's `HostLinks::machineChanged` does right after a
 build, before the cold boot;
 until then it runs standalone.

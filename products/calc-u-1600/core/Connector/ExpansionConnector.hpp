@@ -17,7 +17,8 @@
 // With no card attached, every signal reads "not present" -- identical to
 // the plain open-bus behavior. Concrete cards implement the ExpansionCard
 // interface and attach here: the table-driven SoftwareDefinedCard, built
-// from a .module.yaml definition and wired by PC1500PresetLoader.
+// from a .module.yaml definition and wired by the machine builder
+// (core/Machine/SharpMachine.cpp).
 class ExpansionConnector {
 public:
     explicit ExpansionConnector(PC1500Variant variant) : m_variant(variant) {}

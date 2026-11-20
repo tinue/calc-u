@@ -394,7 +394,7 @@ V6N9/10 p14) match the TI-58C. He names the TI-58C for the clear codes.
 
 ## Emulator issues found
 
-Both are recorded here and not fixed in `Core/`:
+Both are recorded here and not fixed in `core/`:
 
 1. **Deferred MEMWR uses the field mask of the following instruction.**
    - Core completes a `MEMWR` at the next ALU instruction, using that
@@ -406,7 +406,7 @@ Both are recorded here and not fixed in `Core/`:
      contents but no valid E000 (a constant memory file written so): the junk survives the "clear".
    - CMs/CP use `C=C-B ALL` after the `MEMWR` and are not affected.
 2. **A computed jump to address 0 is treated as no jump.** `if (PREG)` in
-   `Core/TMC0501.cpp` makes the self-test's exit (`09DD`, KR := 0) fall
+   `core/TMC0501.cpp` makes the self-test's exit (`09DD`, KR := 0) fall
    through to `07B7` instead of restarting at `0000`.
 
 ## Open questions

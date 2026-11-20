@@ -216,10 +216,10 @@ program can't be run without the fill program.
 ## In the emulator
 
 - `write-protect: protected|unprotected` on regular content is the
-  switch; the position is part of the card file. While protected, every
+  switch; the position is part of the module file. While protected, every
   write is refused, host pokes included.
 - Name & Save of the template offers "Write-protect"; presets use
-  `saveas: live protected slot-1:<name>`. The live card is protected at
-  once; the ROM sees it at the next OFF/ON, as in the manual.
+  `saveas: { place: slot-1, as: live, protected: true, name: <name> }`.
+  The live module is protected at once; the ROM sees it at the next OFF/ON, as in the manual.
 - `tests/ce161_tests.cpp` runs the whole procedure against the A04
   ROM on the PC-1500 and PC-1500A.

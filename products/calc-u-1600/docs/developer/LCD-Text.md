@@ -19,15 +19,20 @@ character, or it isn't text.
 | Through the machine interface | `displayText(machine)` (`core/Display/DisplayOutputText.hpp`): the dots and indicators of `readDisplay()`, parsed with the ROM font (`sharpLcdFont`) and the cursor the ROM keeps in RAM. The app layer (Copy Screen, `lcdText`) and the golden replay read the display this way; the harness reads the same cursor (`lcdCursorOf`, `uncoverCursor`). A display that is off gives no rows and no status words. |
 | Core tests | `pc1500LcdText(machine)` / `pc1600LcdText(machine)` on the machine classes (`core/PC1500/PC1500LcdText.hpp`, `core/PC1600/PC1600LcdText.hpp`); see `tests/lcd_text_tests.cpp`. They read the status line even while the display is off. |
 
-Example, the plain PC-1600 after `PRINT MEM`:
+Example, the plain PC-1600 after `PRINT MEM`, as the harness's
+`display-text` writes it:
 
 ```
 PRINT MEM
                      11834
+>
 
-
-status: DEG RUN I
+indicators: DE G RUN I
+not text: 0
 ```
+
+`LcdText::report()` (the `--lcd-text` form, `core/Display/LcdText.hpp`)
+writes the rows, then `status: …` and, when nonzero, `unparsed: n`.
 
 ## What a cell becomes
 

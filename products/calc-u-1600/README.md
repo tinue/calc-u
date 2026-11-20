@@ -8,13 +8,14 @@ A preview of a web version runs in the browser at
 ## Quick Start
 
 1. From the [Releases page](https://github.com/tinue/calc-u/releases),
-   download the package for your platform, along with
-   `Calc-U-1600-examples.zip` — the sample presets and BASIC programs
-   used below.
+   download the package for your platform. The sample presets and BASIC
+   programs used below are in the
+   [examples folder](https://github.com/tinue/calc-u/tree/main/products/calc-u-1600/examples)
+   of the source repository.
 2. Launch the app and pick one of the presets under **File ▸ Examples**:
    each builds a machine and runs a program on it.
-3. Open **Settings…** (Cmd-, / Ctrl-,), and point **Samples folder** at
-   the unzipped `examples/` folder from step 1.
+3. Open **Settings…** (Cmd-, / Ctrl-,), and point the **Presets folder**
+   and the **BASIC folder** at the downloaded `examples/` folder.
 4. Pick a model (PC-1500, PC-1500A, or PC-1600) from the control bar, and
    attach a memory module and/or a plotter if you'd like to try those.
 5. **File ▸ Load BASIC Program…**, pick a `.bas` file from `examples/`
@@ -37,15 +38,15 @@ bar and panels. It is a preview, made for tablets and desktop browsers; a
 phone works, and in landscape it shows the calculator alone. The browser
 can install it as an app, which then runs offline.
 
-- The **Examples** menu has the bundled examples; **File ▸ Upload
+- **File ▸ Examples** has the bundled examples; **File ▸ Load
   Preset…** loads your own.
 - Modules, disks and cassettes you save stay in the browser.
   **File ▸ Import Media…** brings files in, **File ▸ Saved
   Media…** downloads or deletes them. Only one tab saves; a second tab
   says so.
-- A link can choose the model (0 PC-1500, 1 PC-1500A, 2 PC-1600) and a
+- A link can choose the model (`PC-1500`, `PC-1500A` or `PC-1600`) and a
   bundled preset to start with:
-  `https://tinue.github.io/1600/calc/?model=2&preset=plotter/lissajou-1600.pc1600`.
+  `https://tinue.github.io/1600/calc/?model=PC-1600&preset=plotter/lissajou-1600.pc1600`.
 - Not in the browser: the debugger, the serial ports, the host drive
   `S3:`, and the Inspector's TRACE and LOG.
 

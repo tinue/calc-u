@@ -258,7 +258,7 @@ endif()
 # ---- License / third-party-notice files -- ships GPLv3 (this project)
 # and LGPLv3 (bundled Qt6) license text alongside the binary, so LGPLv3's
 # obligation to provide the license text travels with every distributed
-# build, not just the git repo. See ../THIRD-PARTY-NOTICES.md.
+# build, not just the git repo. See ../../THIRD-PARTY-NOTICES.md.
 set(LICENSE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/../../../../LICENSE
   ${CMAKE_CURRENT_SOURCE_DIR}/../../NOTICE

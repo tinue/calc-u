@@ -68,7 +68,7 @@ struct SharpAppPartOptions {
     // unless asked for (requestSerialLink).
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
     bool serialLinksOnRequest = false;
-    // The Web: where several files of Upload Preset… become one folder;
+    // The Web: where several files of Load Preset… become one folder;
     // unset: none.
     std::optional<std::string> uploadFolder;
 };

@@ -1,7 +1,7 @@
 # dev/
 
-Developer material that is not shipped with the release (the release zips
-only `examples/`). User-facing demos and learning material belong in
+Developer material that is not shipped with the release (the release
+bundles the presets `examples/bundle.yaml` lists). User-facing demos and learning material belong in
 `examples/`; regenerable scratch output belongs in `headless/`.
 
 - `hardware-checks/` — small machine-code programs (source, assembled

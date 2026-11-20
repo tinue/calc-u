@@ -1,16 +1,16 @@
 # Vendored `libsharpdx` (SharpDataExchange C ABI)
 
 `libsharpdx.a` + `sharpdx.h` are the prebuilt static library and generated C
-header of [`SharpDataExchange`](../../../../SharpDataExchange) (crate `sharpdx`,
+header of [`SharpDataExchange`](https://github.com/tinue/SharpDataExchange) (crate `sharpdx`,
 version 0.3.5). Every program loader uses it: `sde_file_info` tells what a
 file is (BASIC listing, tokenized BASIC, machine code with or without a
 header, cassette WAV) and where its payload is (`core/ProgramFile.cpp`,
-which decodes a WAV with `sde_wav_count` / `sde_wav_decode`), and `sde_tokenize`
-turns a `.bas` listing into in-RAM line records
-(`core/Basic/BasicProgramSource.cpp`). It is a required dependency.
+which decodes a WAV with `sde_wav_decode`), `sde_tokenize` turns a `.bas`
+listing into in-RAM line records and `sde_detokenize` turns line records back
+into a listing (`core/Basic/BasicProgramSource.cpp`). It is a required dependency.
 
 We vendor the built artifact rather than adding a Rust toolchain to the
-Calc-U-1600 build. Only `sde_file_info` / `sde_tokenize` / `sde_wav_count` /
+Calc-U-1600 build. Only `sde_file_info` / `sde_tokenize` / `sde_detokenize` /
 `sde_wav_decode` / `sde_last_error` / `sde_buf_free` are used; the library does no file I/O and never panics across
 the FFI boundary. It is built without sharpdx's `serial` and `audio` features
 (`--lib --no-default-features`), so it links no serial-port or audio code or
@@ -32,13 +32,13 @@ version (26.0) than being linked` warnings: those are the Rust toolchain's
 **prebuilt** `std` / `core` / `alloc` objects, which carry the toolchain's
 own min-OS and are not recompiled by `MACOSX_DEPLOYMENT_TARGET`. Harmless;
 our own crate objects are built at 15.8 by `refresh_sharpdx.sh`
-(= `CMAKE_OSX_DEPLOYMENT_TARGET` in `Qt6/CMakeLists.txt`). A rustup toolchain's
+(= `CMAKE_OSX_DEPLOYMENT_TARGET` in the repository's root `CMakeLists.txt`). A rustup toolchain's
 `std` is built for macOS 11, so a lib taken from a SharpDataExchange release
 (CI-built with rustup) links without these warnings.
 
 ## Refreshing
 
-Run `tools/refresh_sharpdx.sh` from the repo root after the sibling
+Run `tools/refresh_sharpdx.sh` from the product folder after the sibling
 `SharpDataExchange` checkout changes. It runs
 `cargo build --release --lib --no-default-features` there and copies
 `target/release/libsharpdx.a` + `include/sharpdx.h` over these files. Commit the result.

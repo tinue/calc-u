@@ -38,5 +38,5 @@ The web client (`frontends/web/`, released as `Calc-U-59-web.zip`) includes:
 
 The ROM images under `roms/` are third-party copyrighted firmware belonging
 to Texas Instruments. They are **not** covered by this project's GPLv3
-license — see [LICENSE](LICENSE) for Calc-U-59's own code, and treat
+license — see the `LICENSE` file (at the repository root, and beside this file in the packages) for Calc-U-59's own code, and treat
 `roms/` as a separate, unlicensed-by-us inclusion.

@@ -100,12 +100,12 @@ through the bridge), with the labels FREEZE, STEP and RESUME.
 
 ### The run state (`run-state`, `calcu::debugger::RunState`)
 
-| Field | Meaning |
-|---|---|
-| `paused` | The machine is paused (no emulated time passes) |
-| `owner` | The level of the pause, `program` (the CALCULATOR tab) or `cpu` (the CPU tab): the tab whose STEP and RESUME apply; a step of the other level takes it over |
-| `reason` | `pause`, `step`, `breakpoint`, `pause-on-start` |
-| `armed` | The level of pause-on-start (FREEZE ON START), or none |
+Its fields and reasons are the library's:
+[`docs/formats/session-protocol.md`](../../../../docs/formats/session-protocol.md)
+§11. On the TI models `owner`, the level of the pause, is `program` (the
+CALCULATOR tab) or `cpu` (the CPU tab): the tab whose STEP and RESUME
+apply; a step of the other level takes it over. `armed` is the level of
+FREEZE ON START, or none.
 
 Arming one level disarms the other; a pause disarms both. A pending pause
 or a step says running until it lands.

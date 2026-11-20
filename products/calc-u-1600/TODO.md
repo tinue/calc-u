@@ -423,7 +423,7 @@ See docs/developer/App-Layer.md and Web-Client.md.
   - **Templates can't be dirty.** `dirty` together with `template: true`
     is a parse error.
   Work:
-  - Format: `dirty` in `floppy_detail::parseCatalogEntry`'s key list (with
+  - Format: `dirty` in `parseFloppyFile`'s key list (`core/Connector/FloppyImageFile.hpp`) (with
     the template check) and `formatFloppyFile`, the canonical key order
     and the key table in `docs/formats/media.md` §2.1.
   - Emulator: a cheap periodic check of the inserted disk (mtime first,

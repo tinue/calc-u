@@ -97,7 +97,7 @@ the server speaks it is [DAP.md](DAP.md).
 
 ## Design rules
 
-- **Arming:** the library's rule G1: breakpoints and watches are checked
+- **Arming:** the library's rule: breakpoints and watches are checked
   only while no operation runs (`Checks`). A boot, a preset or a load is an
   operation and never parks on a breakpoint; those loops would hang.
 - **Queueing:** the server's own rule: a message that arrives while
@@ -110,7 +110,7 @@ the server speaks it is [DAP.md](DAP.md).
 - **Typing:** the GUI paste never presses ENTER; that's deliberate. The DAP
   types with ENTER (the engine's `typeText`, on every model).
 - **Build & Load order:** clean start (the configuration's `preset`, else
-  the model's default preset, else All Reset), then a direct load (no
+  the model's startup preset, else Cold boot), then a direct load (no
   dialog or popup), then auto-start. `cleanStart: false` skips the clean
   start.
 - **Memory references** must stay numeric (VS Code can't parse `1:0000`);

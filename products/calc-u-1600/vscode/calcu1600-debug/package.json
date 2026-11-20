@@ -237,7 +237,7 @@
                   "cleanStart": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Before each load: apply 'preset' (else the model's default preset, else All Reset)."
+                    "description": "Before each load: apply 'preset' (else the model's startup preset, else Cold boot)."
                   },
                   "bank": {
                     "type": [

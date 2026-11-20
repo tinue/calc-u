@@ -34,7 +34,7 @@ with its debugger) is covered by the help (below, "The help").
 | `firmware/` | Our own ROMs, e.g. the host-drive driver ROM (`firmware/pc1600-hostdrive/`) |
 | `vscode/` | The VS Code debugger extension ([README](../../vscode/calcu1600-debug/README.md)); `tools/install_vscode_extension.sh` packages and installs it |
 | `tools/` | Build scripts, `fetch_sharpdx.sh` / `refresh_sharpdx.sh`, `build_wasm_check.sh` / `build_sharpdx_wasm.sh`, `dap_smoke.py`, `read_trace.py`, `make_screenshots.sh` |
-| `examples/` | User-facing samples, shipped as `Calc-U-1600-examples.zip` ([README](../../examples/README.md)); `examples/setup/` prepares memory modules ([README](../../examples/setup/README.md)) |
+| `examples/` | User-facing samples; the release bundles those `examples/bundle.yaml` lists ([README](../../examples/README.md)); `examples/setup/` prepares memory modules ([README](../../examples/setup/README.md)) |
 | `dev/` | Developer material that is not shipped: hardware checks and their presets ([README](../../dev/README.md)) |
 | `headless/` | Gitignored scratch output of `calcu` runs and ad hoc checks ([README](../../headless/README.md)) |
 | `release.yaml` | The release settings (assets, signing certificates) for the ReleaseIt tool |

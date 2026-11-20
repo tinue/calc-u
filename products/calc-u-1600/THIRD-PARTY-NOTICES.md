@@ -41,7 +41,7 @@ this project's GPLv3 source).
 
 ROM images under `roms/` are third-party copyrighted firmware belonging
 to Sharp Corporation. They are **not** covered by this project's GPLv3
-license -- see [LICENSE](LICENSE) for Calc-U-1600's own code, and treat
+license -- see the `LICENSE` file (at the repository root, and beside this file in the packages) for Calc-U-1600's own code, and treat
 `roms/` as a separate, unlicensed-by-us inclusion.
 
 The same applies to ROM content bundled inside memory-module definitions

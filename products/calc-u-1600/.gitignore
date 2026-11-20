@@ -1,6 +1,5 @@
 # Output in the product folder (e.g. the Qt6 frontend's frontends/qt6/build/)
 build/
-build-tests/
 
 # Scratch output of `calcu` runs (ROM/RAM dumps, traces, disassembly
 # scratch, etc.) -- see headless/README.md. Everything under here is

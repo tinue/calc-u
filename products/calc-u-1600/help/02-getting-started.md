@@ -129,9 +129,9 @@ panels. It is made for tablets and desktop browsers; a phone works, and in
 landscape it shows the faceplate alone. The browser can install it as an
 app, which then runs offline.
 
-A link can choose the model (`model=0` PC-1500, `1` PC-1500A, `2`
-PC-1600) and a bundled preset to start with:
-`https://tinue.github.io/1600/calc/?model=2&preset=plotter/lissajou-1600.pc1600`.
+A link can choose the model by its name (`model=PC-1500`, `PC-1500A` or
+`PC-1600`) and a bundled preset to start with:
+`https://tinue.github.io/1600/calc/?model=PC-1600&preset=plotter/lissajou-1600.pc1600`.
 
 | | Desktop | Browser |
 |---|---|---|

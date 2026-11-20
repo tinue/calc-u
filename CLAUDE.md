@@ -85,7 +85,8 @@ tools/  ci/  .github/workflows/
   A change to a format, protocol or interface updates its specification
   in the same branch.
 - Hardware and firmware facts come from the research skills (`PC1500`,
-  `SC61860`, `pc1500-build`, `ti59-research`). Don't invent facts
+  `SC61860`, `pc1500-build`) and the research repository
+  `~/Development/ti59-research`. Don't invent facts
   (sizes, behaviour, limits); ask.
 - Agent knowledge follows the code: a rename also changes the skills,
   `CLAUDE.md` files and memory that use the old name.

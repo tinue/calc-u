@@ -608,8 +608,7 @@ CalcU59App                    (Calc-U-59App.swift: scene, background/active, mac
 
 EmulatorViewModel (@Observable, main thread)
 ├─ TIAppSession               (frontends/swift/Bridge/ → library/shell/SessionThread, app/TIAppPart)
-├─ PlatformForwarder          (TIPlatform: files, trace location, settings, alerts, changes)
-└─ displayTimer               (60 Hz Timer → controller.tick())
+└─ PlatformForwarder          (TIPlatform: files, trace location, settings, alerts, changes)
 ```
 
 ### File Responsibilities

@@ -273,9 +273,8 @@ if(CALCU_TESTS)
   # lookup's allowed files are the host drive's own ROM
   # (core/Machine/SharpRoms.cpp) and the catalogue's ROM entries.
   calcu_product_source_checks(PREFIX CalcU1600 ROM_ALLOW core/Machine/SharpRoms.cpp core/Machine/SharpCatalogue.cpp)
-  # The macOS Open With types: the
-  # preset extensions as the product's own, .bas, .bbin, .bin as Alternate,
-  # no .rom.
+  # Open With offers the three preset extensions on macOS, Windows and
+  # Linux; on macOS .bas, .bbin, .bin as Alternate, no .rom.
   calcu_add_test(CalcU1600OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
   # The harness writes a PC-1600 trace,
   # tools/read_trace.py reads it unchanged (well under 2 s: Frequent).

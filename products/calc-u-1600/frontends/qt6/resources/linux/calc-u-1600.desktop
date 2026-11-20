@@ -2,7 +2,8 @@
 Type=Application
 Name=Calc-U-1600
 Comment=Sharp PC-1500/PC-1500A/PC-1600 pocket computer emulator
-Exec=Calc-U-1600
+Exec=Calc-U-1600 %f
 Icon=calc-u-1600
 Categories=Utility;Emulator;
+MimeType=application/x-calcu1600-preset;
 Terminal=false

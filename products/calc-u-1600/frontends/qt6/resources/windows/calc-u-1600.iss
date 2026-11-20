@@ -34,6 +34,7 @@ UninstallDisplayIcon={app}\Calc-U-1600.exe
 OutputDir=..\..\..\..
 Compression=lzma2
 SolidCompression=yes
+ChangesAssociations=yes
 
 [Files]
 Source: "..\..\dist\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
@@ -51,6 +52,15 @@ Source: "..\..\dist\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 [Run]
 Filename: "{app}\vc_redist.x64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Installing Visual C++ Redistributable..."; Check: FileExists(ExpandConstant('{app}\vc_redist.x64.exe')); Flags: waituntilterminated
 Filename: "{app}\vc_redist.arm64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Installing Visual C++ Redistributable..."; Check: FileExists(ExpandConstant('{app}\vc_redist.arm64.exe')); Flags: waituntilterminated
+
+[Registry]
+; Open .pc1500 / .pc1500a / .pc1600 presets with Calc-U-1600.
+Root: HKA; Subkey: "Software\Classes\.pc1500"; ValueType: string; ValueData: "CalcU1600.Preset"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\.pc1500a"; ValueType: string; ValueData: "CalcU1600.Preset"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\.pc1600"; ValueType: string; ValueData: "CalcU1600.Preset"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\CalcU1600.Preset"; ValueType: string; ValueData: "Calc-U-1600 Preset"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\CalcU1600.Preset\DefaultIcon"; ValueType: string; ValueData: "{app}\Calc-U-1600.exe,0"
+Root: HKA; Subkey: "Software\Classes\CalcU1600.Preset\shell\open\command"; ValueType: string; ValueData: """{app}\Calc-U-1600.exe"" ""%1"""
 
 [Icons]
 Name: "{group}\Calc-U-1600"; Filename: "{app}\Calc-U-1600.exe"

@@ -54,8 +54,8 @@ greyed out; where the platform shows tooltips, its tooltip says why.
 - **Resume** lets a paused machine run on
   ([Debugger](07-debugger.md)).
 - **`<Product>` Help** opens this help on calc-u.org in your browser.
-  **About `<Product>`** shows the product's name, its version and its
-  build.
+  **About `<Product>`** shows the product's name, its version, its
+  build and links to its source and to support.
 
 On macOS, Settings…, About and Quit are in the application menu, as on
 every Mac program. In the browser there is no Quit.

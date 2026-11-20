@@ -377,7 +377,7 @@ TEST(help_opens_calc_u_org_1600) {
     CHECK(f.opened.size() == 1 && f.opened[0] == QUrl(QStringLiteral("https://calc-u.org/1600/")));
 }
 
-TEST(about_shows_name_version_and_summary) {
+TEST(about_shows_name_version_summary_and_links) {
     SKIP_UNLESS_WINDOW();
     Fixture f;
     f.action("about")->trigger();
@@ -387,10 +387,12 @@ TEST(about_shows_name_version_and_summary) {
     if (!d) return;
     CHECK(d->findChild<QLabel*>("about-name")->text().contains(QStringLiteral("Calc-U-1600")));
     CHECK(d->findChild<QLabel*>("about-version")->text().startsWith(QStringLiteral("Version ")));
-    bool summary = false;
-    for (QLabel* l : d->findChildren<QLabel*>())
-        summary = summary || l->text().contains(QStringLiteral("pocket-computer emulator"));
-    CHECK(summary);
+    QStringList texts;
+    for (QLabel* l : d->findChildren<QLabel*>()) texts << l->text();
+    const QString all = texts.join(QLatin1Char('\n'));
+    CHECK(all.contains(QStringLiteral("pocket-computer emulator")));
+    CHECK(all.contains(QStringLiteral("https://github.com/tinue/calc-u\"")));
+    CHECK(all.contains(QStringLiteral("https://github.com/tinue/calc-u/issues")));
     d->close();
 }
 

@@ -4,7 +4,7 @@
 // the steps are the library's (library/web/build/product.js). The engine
 // is core/ + app/ + bindings.cpp (the product's CMakeLists.txt has its
 // Emscripten flags). It has no test-only command, so `--release` builds the
-// same dist/ as the Playwright tests drive. reference/WebClient.md is the
+// same dist/ as the Playwright tests drive. docs/developer/Web-Client.md is the
 // contract for what dist/ contains.
 
 const path = require("path");

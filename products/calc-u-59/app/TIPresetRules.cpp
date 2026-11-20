@@ -106,7 +106,7 @@ bool sameValue(const RegisterNibbles& a, const RegisterNibbles& b) {
 }
 
 calcu::presets::IdleRule TIModelRules::idle() const {
-    // reference/Idle.md: takes keys at the scan loop (Machine::isKeyReady());
+    // docs/developer/Idle.md: takes keys at the scan loop (Machine::isKeyReady());
     // waits there or in the card wait of Write / INV Write; nothing else is
     // busy then (the printer drains before the scan loop); the program has
     // ended when fB[0] is clear. Settled after 100 ms of emulated time, asked

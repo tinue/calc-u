@@ -4,9 +4,9 @@
 // What each cell of the 12-digit LED display draws. The glyphs come from the
 // machine's display output (lit segments per position, core/TISegments.hpp
 // holds the rules), never from a font: no font reproduces the hardware's
-// lit-segment patterns (see reference/NewGUIGuide.md). The "C" annunciator's
+// lit-segment patterns (see docs/developer/New-GUI-Guide.md). The "C" annunciator's
 // pattern is here. The drawing itself (shear, glow) stays in each frontend;
-// see reference/AppLayer.md § "LED Display Rendering".
+// see docs/developer/App-Layer.md § "LED Display Rendering".
 //
 // Segments: bit 0=A(top) 1=B(upper-right) 2=C(lower-right) 3=D(bottom)
 //           4=E(lower-left) 5=F(upper-left) 6=G(middle)

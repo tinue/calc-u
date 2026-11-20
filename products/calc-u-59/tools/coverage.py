@@ -18,7 +18,7 @@ The key-detect range is left out of every other scenario (`c59 coverage`
 without `all`), so common idle code doesn't swamp every
 scenario; 2.3.0's tool left out an instruction of that range only with the
 ROM's idle flag set, so a scenario's words differ from its by the release
-gate 0627-062A (reference/Harness.md).
+gate 0627-062A (docs/developer/Harness.md).
 """
 from __future__ import annotations
 

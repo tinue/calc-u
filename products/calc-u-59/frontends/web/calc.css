@@ -1,5 +1,5 @@
 /* The web client's stylesheet — everything CalcU59 needs, so a host
-   page only adds its own layout around it (reference/WebClient.md).
+   page only adds its own layout around it (docs/developer/Web-Client.md).
 
    Tokens live on .calcu-client — CalcU59's root, and the PWA's
    <body> — never on :root, so the host's tokens neither leak in nor get

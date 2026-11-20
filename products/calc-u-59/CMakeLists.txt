@@ -73,7 +73,7 @@ set_target_properties(calcu59_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # -----------------------------------------------------------------------------
 # Web engine (emcmake; frontends/web/build.sh copies it into
-# frontends/web/dist/wasm/, reference/WebClient.md): core/ + app/ behind
+# frontends/web/dist/wasm/, docs/developer/Web-Client.md): core/ + app/ behind
 # frontends/web/bindings.cpp, the factory of the app session the library's
 # Web Worker host runs (calcu_web_glue and calcu_web_engine()).
 # -fwasm-exceptions: app/ reports ROM and file errors with exceptions;
@@ -142,13 +142,13 @@ if(CALCU_TESTS)
   # tests/help_tests.cpp.
   calcu_add_help_tests(CalcU59 calc-u-59)
   # The app layer reaches the machine through the interface only.
-  calcu_add_test(CalcU59CoreSeam frequent COMMAND sh tests/check_core_seam.sh)
+  calcu_add_test(CalcU59CoreSeam frequent COMMAND sh tools/check_core_seam.sh)
   # Open With offers the three preset extensions on macOS, Windows and Linux.
   calcu_add_test(CalcU59OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
   # No thread in app/ but the session thread; the Swift bridge only through it.
-  calcu_add_test(CalcU59SessionThread frequent COMMAND sh tests/check_session_thread.sh)
+  calcu_add_test(CalcU59SessionThread frequent COMMAND sh tools/check_session_thread.sh)
   # The three frontends draw from the control state.
-  calcu_add_test(CalcU59FrontendsDrawControlState frequent COMMAND sh tests/check_frontends_draw_control_state.sh)
+  calcu_add_test(CalcU59FrontendsDrawControlState frequent COMMAND sh tools/check_frontends_draw_control_state.sh)
   # calcu_product_source_checks (library/):
   # the ROM lookup's allowed files are the product's lookUpRoms(), the
   # catalogue's ROM entries and the Qt6 Bundle.

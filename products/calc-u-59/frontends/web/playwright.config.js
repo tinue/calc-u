@@ -2,7 +2,7 @@ const { defineConfig, devices } = require('@playwright/test');
 const { webTests } = require('../../../../library/web/tools/playwright-config.js');
 
 // Every test but the offline start runs at the server root and under the
-// sub-path (reference/WebClient.md).
+// sub-path (docs/developer/Web-Client.md).
 module.exports = defineConfig(webTests(devices, {
   projects: [
     { name: 'root', testIgnore: 'offline.spec.js', engine: 'chromium', at: 'root' },

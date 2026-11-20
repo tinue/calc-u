@@ -81,11 +81,12 @@ tools/  ci/  .github/workflows/
   chapter in the same branch.
 - The formal specifications are binding: the file formats in
   `docs/formats/`, and the product references next to the code
-  (`products/calc-u-59/reference/`, `products/calc-u-1600/docs/developer/`).
+  (`products/calc-u-59/docs/developer/`, `products/calc-u-1600/docs/developer/`).
   A change to a format, protocol or interface updates its specification
   in the same branch.
 - Hardware and firmware facts come from the research skills (`PC1500`,
-  `SC61860`, `pc1500-build`, `ti59-research`). Don't invent facts
+  `SC61860`, `pc1500-build`) and the research repository
+  `~/Development/ti59-research`. Don't invent facts
   (sizes, behaviour, limits); ask.
 - Agent knowledge follows the code: a rename also changes the skills,
   `CLAUDE.md` files and memory that use the old name.

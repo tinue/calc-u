@@ -13,7 +13,7 @@ Invoke the right skill before starting work in each area:
 | `calc-u-59-swift` | Swift/SwiftUI app (`frontends/swift/App/`, `frontends/swift/App/Views/`, `frontends/swift/Bridge/`) |
 | `calc-u-59-qt` | Qt6 desktop app (`frontends/qt6/`, the repository's `.github/workflows/calc-u-59.yml`, Qt packaging) |
 | `calc-u-59-web` | Web client (`frontends/web/`: React + WASM engine, PWA, `frontends/web/build.sh`, `frontends/web/dist/`, the `web` CI job) |
-| `calc-u-59-docs` | Documentation: the user help (`help/`), `reference/`, root markdown files |
+| `calc-u-59-docs` | Documentation: the user help (`help/`), `docs/developer/`, root markdown files |
 | `calc-u-59-presets` | Writing `.ti59`/`.ti58`/`.ti58c` presets of format 2, keystroke program files, `examples/bundle.yaml` — the TI sections, key IDs, checking a preset with `calcu` |
 | `calc-u-59-uitesting` | XCUITest UI tests (`frontends/swift/Calc-U-59UITests/`) — file picker navigation, accessibility identifiers, orientation |
 
@@ -23,19 +23,18 @@ User help is `help/` (the product parts, `help/help.yaml`) and
 `library/help/` at the repository root (the shared parts), checked by
 `tools/help check calc-u-59` (`CalcU59HelpCheck`, Frequent) and built into
 the release's `Calc-U-59-help.zip`. Developer documents stay in
-`reference/`.
+`docs/developer/`.
 
 ## Architecture Reference
 
 Architecture facts (register model, SCOM layout, PC encoding, machine variants, trace API) live in:
 
-- `reference/CoreArchitecture.md` — C++ emulation core
-- `reference/AppLayer.md` — the app layer `app/` and its one thread
-- `reference/AppArchitecture.md` — Swift app and bridge layer
-- `reference/DebugAPI.md` — debug panel and bridge API
-- `reference/FrontendParity.md` — which feature lives where in the three GUIs
-- `reference/WebClient.md` — the web client and its `dist/` contract
-- `reference/Harness.md` — the harness `calcu --product c59`: ROM traces, timing and profiling, the `c59` commands, the scripts that stay
+- `docs/developer/Core-Architecture.md` — C++ emulation core
+- `docs/developer/App-Layer.md` — the app layer `app/`, its one thread, and the Swift app and bridge layer
+- `docs/developer/Debug-API.md` — debug panel and bridge API
+- `docs/developer/Frontend-Parity.md` — which feature lives where in the three GUIs
+- `docs/developer/Web-Client.md` — the web client and its `dist/` contract
+- `docs/developer/Harness.md` — the harness `calcu --product c59`: ROM traces, timing and profiling, the `c59` commands, the scripts that stay
 - `docs/formats/preset.md`, `docs/formats/cue-card.md` (repository root) — the preset format 2 (`.ti59`/`.ti58`/`.ti58c`) and the cue card block
 - `rom/TI59-ROM-Guide.md`, `rom/TI58C-ROM-Guide.md` — how the ROMs work
 
@@ -49,7 +48,7 @@ root tree (`cmake --build ../../build/tests --target calcu`; the program is
 `build/tests/library/harness/cli/calcu`). The common commands, replies and
 options are in `docs/formats/harness.md` (repository root); the `c59`
 commands, the ROM trace recipes and the time base are in
-`reference/Harness.md`: read it before tracing the ROM or measuring
+`docs/developer/Harness.md`: read it before tracing the ROM or measuring
 program speed. Scripts on the harness (`tools/calcu59.py`):
 `tools/coverage.py`, `tools/fastmode_matrix.py`, `tools/calendar/`;
 output in `tools/build/`.
@@ -62,7 +61,7 @@ Qt6 app (Windows and Linux; its macOS build is for development only, never
 shipped and never built in CI) and the web client (`frontends/web/`, embedded by the
 website; no iCloud, debugger only side by side (its wide layout, the PWA in
 landscape on a large screen) — its column in
-`reference/FrontendParity.md` has the scope). Keep them in step:
+`docs/developer/Frontend-Parity.md` has the scope). Keep them in step:
 
 - **Non-GUI logic goes in `app/` only** — parsing, file formats, timing,
   key sequencing, snapshot building, layout rules and numbers the renderers
@@ -88,16 +87,17 @@ landscape on a large screen) — its column in
   comes from the library's `calcu::settings::Paths`.
 - **A user-visible change in one GUI needs the matching change in the others
   on the same branch** — or a `Pending (Qt)` / `Pending (Swift)` /
-  `Pending (Web)` row with a reason in `reference/FrontendParity.md`. Features
+  `Pending (Web)` row with a reason in `docs/developer/Frontend-Parity.md`. Features
   outside the web's scope need no web change (its column says so). Update
   that table either way. `tools/check_parity.sh` flags a branch that touches
   one GUI only.
 - **Every change to `core/` or `app/` must pass all builds before committing:**
-  `cmake -S ../.. -B ../../build/tests -G Ninja -DCALCU_FRONTEND_QT=OFF && cmake --build ../../build/tests && ctest --test-dir ../../build/tests/products/calc-u-59 --output-on-failure`
-  (the repository's root CMake project; that tree holds the Frequent
-  group only, `docs/test-groups.md` at the root lists every test and its
-  group; `CalcU59Tests <substring>` runs the matching `TEST`s of the one
-  runner, `library/testing/`),
+  `../../tools/run_tests.sh calc-u-59` (the repository's one test script:
+  every Frequent CTest entry of the product, `-O1`, in the root CMake
+  project's `build/tests` tree; `docs/test-groups.md` at the root lists
+  every test and its group; `../../tools/run_tests.sh calc-u-59 <substring>`
+  runs the matching `TEST`s of the one runner `CalcU59Tests`,
+  `library/testing/`),
   `xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 -destination platform=macOS build`,
   and the web client, which compiles both layers too:
   `frontends/web/build.sh && frontends/web/run-tests.sh` (`frontends/web/dist/` is gitignored; CI builds it).

@@ -389,7 +389,7 @@ private:
     // program byte (keycodes and operands) from this site; module header reads
     // and label searches use different IN LIB sites that we deliberately
     // ignore.  Verified by execution trace per ROM variant (see
-    // reference/CoreArchitecture.md § "PRG SOURCE flag"; module layout per
+    // docs/developer/Core-Architecture.md § "PRG SOURCE flag"; module layout per
     // https://www.datamath.org/Chips/TMC0540.htm).  TI-58 shares the TI-59
     // ROM; TI-58C uses a different ROM set (CD2400/CD2401/TMC0573) where
     // the interpreter loop lives at a different address.

@@ -8,10 +8,11 @@ user-invocable: true
 
 This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/Views/`, and `frontends/swift/Bridge/`.
 
-- App structure, files, threading, bridge: `reference/AppArchitecture.md`.
+- App structure, files, threading, bridge: `docs/developer/App-Layer.md`
+  § "The Swift frontend".
 - Everything that isn't drawing (run loop, keys, files, debugger, drawing
-  rules): `reference/AppLayer.md` and the calc-u-59-app skill.
-- Freeze / step and the debug snapshots: `reference/DebugAPI.md`.
+  rules): the rest of `docs/developer/App-Layer.md` and the calc-u-59-app skill.
+- Freeze / step and the debug snapshots: `docs/developer/Debug-API.md`.
   FREEZE, STEP, RESUME and FREEZE ON START are the library's run
   control (`pause`, `step`, `resume`, `pause-on-start`; CALCULATOR is
   `program`, CPU `cpu`), and the buttons follow its rule through the bridge
@@ -77,7 +78,7 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   `paper.copy` / `paper.cut`, the picture the library's, the pasteboard
   entry the bridge's (`clipboard-image`: macOS two entries, the picture
   first; iOS one); PRINT, ADV, TRACE are `set-control`.
-  `reference/AppArchitecture.md` § "Printer".
+  `docs/developer/App-Layer.md` § "Printer".
 - TI-59 background: the calc-u-59-core skill's Domain Primer. SwiftUI
   practice: the swiftui-pro skill.
 
@@ -117,12 +118,12 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    window loses emulated time.
 2. **Parity.** A user-visible change here needs the matching Qt change, and
    the web change if the feature is in the web's scope, on the same branch —
-   or a `Pending (Qt)` / `Pending (Web)` row in `reference/FrontendParity.md`.
+   or a `Pending (Qt)` / `Pending (Web)` row in `docs/developer/Frontend-Parity.md`.
    Update the table either way (CLAUDE.md § "Frontend Parity").
 3. **Bridge wrappers translate types only.** Per-frame work that walks
    registers or program memory runs in C++ and crosses the bridge once as a
    finished result — never 100 bridge calls per 60 Hz frame.
-4. **Guard `@Observable` writes** (`reference/AppArchitecture.md` § "60 Hz refresh").
+4. **Guard `@Observable` writes** (`docs/developer/App-Layer.md` § "Messages, not a refresh timer").
 5. **Keep the Dynamic Type cap.** `CalculatorView.body` limits Dynamic Type
    to `.small ... .large`. Wider sizes break the layout (the TI-59 card bar
    first).
@@ -153,7 +154,7 @@ xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme "Calc-U-59" \
 
 The Xcode build first builds `CalcU59.xcframework` (the library, `core/`,
 `app/`) through CMake: it needs CMake and Ninja, and Xcode compiles only
-Swift and the bridge (`reference/AppArchitecture.md` § "Build").
+Swift and the bridge (`docs/developer/App-Layer.md` § "Build").
 
 A change to `core/` or `app/` also needs the CMake build and tests
 (calc-u-59-app skill).

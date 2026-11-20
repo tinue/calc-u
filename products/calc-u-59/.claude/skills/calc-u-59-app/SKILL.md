@@ -7,7 +7,7 @@ user-invocable: true
 # Calc-U-59 App Layer
 
 Architecture, module list, threads, run loop, key input, file flows and
-drawing rules: `reference/AppLayer.md`. Don't restate them here.
+drawing rules: `docs/developer/App-Layer.md`. Don't restate them here.
 
 ## Rules
 
@@ -72,7 +72,7 @@ drawing rules: `reference/AppLayer.md`. Don't restate them here.
    commands; the machine is the machine session's, and the part follows it
    at `machineChanged` (a new `FrameSampler`). No freeze state, no
    printer lines, no trace writer and no preset reader in `app/`
-   (`reference/AppLayer.md`). Tests drive them
+   (`docs/developer/App-Layer.md`). Tests drive them
    on the session (`tests/SessionRig.hpp`: `SessionRig`, and `PartRig` with
    the constant memory file in memory; `tests/CardRig.hpp` for cards, with a
    save folder of its own; `tests/AppRig.hpp` for the start and the
@@ -101,8 +101,8 @@ drawing rules: `reference/AppLayer.md`. Don't restate them here.
    `frontends/swift/Bridge/TIFileFormats+Cpp.h` and `frontends/swift/Bridge/BridgeConvert.h` (struct/string
    conversions); never import those from the bridging header.
 4. Qt access: call it directly.
-5. Add the module to `reference/AppLayer.md`, and a new wrapper to
-   `reference/AppArchitecture.md` § "Bridge Layer".
+5. Add the module to `docs/developer/App-Layer.md`, and a new wrapper to
+   `docs/developer/App-Layer.md` § "Bridge Layer".
 
 ## Porting Swift logic (goldens)
 

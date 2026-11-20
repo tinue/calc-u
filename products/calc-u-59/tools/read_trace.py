@@ -2,7 +2,7 @@
 """
 read_trace.py — TI-59 binary trace reader with disassembly.
 
-Parses TI59_TRACE.bin (and variant filenames) in format documented in DebugAPI.md and either:
+Parses TI59_TRACE.bin (and variant filenames) in the format of docs/formats/trace.md (repository root) and either:
   • Prints a human-readable TI59E.LOG-style text trace to stdout (default)
     Includes disassembled mnemonics (e.g., "11DA 0A76 MEMWR")
   • Emits a JSON array (--json)
@@ -46,7 +46,7 @@ Flags:
                            (A-E, IO, fA, fB, KR, SR, EXT, R5), as ti59.py printed
                            them. Works with the filters and --labels.
 
-A ROM trace of keys through the harness (reference/Harness.md):
+A ROM trace of keys through the harness (docs/developer/Harness.md):
     calcu --product c59 trace k.trace then key 5 + 7 = then trace off
     python3 tools/read_trace.py --clean-heavy --skip-repeating --labels rom/TI59-labels.asm --changes k.trace
 
@@ -59,7 +59,7 @@ import struct
 import sys
 from disasm import disasm
 
-# ── Constants (must match DebugAPI.md) ────────────────────────────────────────
+# ── Constants (must match docs/formats/trace.md) ────────────────────────
 
 MAGIC      = 0x54493539   # 'TI59' in LE memory
 VERSION_V1 = 1             # v1: baseline (released in v1.0.0, stable, no model field)

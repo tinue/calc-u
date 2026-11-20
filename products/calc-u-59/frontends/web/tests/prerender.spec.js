@@ -4,7 +4,7 @@ const { prerender } = require('../../../../../library/web/tests/dist-helpers');
 
 // The website prerenders CalcU59 server-side, in a sandbox whose
 // fetch() and Worker throw: rendering must have no side effects — those
-// belong in effects, which a static render never runs (reference/WebClient.md).
+// belong in effects, which a static render never runs (docs/developer/Web-Client.md).
 // This renders dist/calc.js the same way, in Node; no browser involved.
 
 test('CalcU59 renders server-side without fetch or Worker', async ({}, testInfo) => {

@@ -7,7 +7,7 @@
 #      0'0" -°'°0
 #
 # with the double quote, apostrophe and degree sign that the control nibbles
-# 2, 4 and 5 light (reference/CoreArchitecture.md).
+# 2, 4 and 5 light (docs/developer/Core-Architecture.md).
 #
 # Only the lit phase of the blink shows them, so the script freezes the CPU
 # in it: a frozen display keeps its last frame. Measured with the headless

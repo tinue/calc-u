@@ -75,7 +75,7 @@
 0228  ARG_COLLECT_SETUP  [T] suspend the operation sequence until count+1 argument digits are typed (fB[12]); count already in A[0..1] from 0223–0227; state in E
 02F5  NUMBER_ENTRY       [T] digit / "." entry into the display image in A (digit limits 0313–0316); argument digits diverted to 06BE
 
-; ── Arithmetic / number pipeline (trace: errorblink.txt, 1/x of 0) ──────────
+; ── Arithmetic / number pipeline (trace: traces/errorblink.txt, 1/x of 0) ──────────
 0442  NORM_CALL          [T] "normalize, then do the work" prologue: parks KR+1 (caller's next FN_TABLE slot) in SR, runs NUM_NORM, PREG-returns via 02C9/02CA
 043E  ARITH_OVFL_EXIT    [T] arithmetic overflow exit (fA[4] tag): bumps the pending continuation, then exits to OVFL_CLAMP
 043F  ARITH_EXIT         [T] arithmetic exit: advance SR (current slot) by one, NUM_NORM, return to the next slot
@@ -97,7 +97,7 @@
 
 ; ── User-program execution ──────────────────────────────────────────────────
 0F81  PRG_DISPATCH       [T] RAM-program keycode fetch & computed-jump dispatch (0F81–0F9B); no keycode validation
-0823  LIB_EXEC_FETCH     [T] solid-state (CROM) execution-interpreter IN LIB fetch site — latches the user-visible library PC (see reference/CoreArchitecture.md); instruction site, not an entry point
+0823  LIB_EXEC_FETCH     [T] solid-state (CROM) execution-interpreter IN LIB fetch site — latches the user-visible library PC (see docs/developer/Core-Architecture.md); instruction site, not an entry point
 0B95  PRGREG_FETCH_CON   [T] constant-table branch of PRGREG_FETCH: step counter → row 16 + step/8 (index in KR[10:8]·8 + KR[6:4]), C=C+CON reads 8 packed keycodes (step 008 → row 17 traced)
 0EDA  PRGREG_RAM_READ    [T] read a program register from RAM (MEMRD, binary address A[1..0]; byte position parked D[1] → A[3] → A[0])
 0F6A  PRGREG_RAM_WRITE   [T] write a program register to RAM (MEMWR: address A[1..0] on the bus, data D on the next IO); Ins/Del and Op 09

@@ -450,7 +450,7 @@
 0144: 0015  SET KR[1] ; PREG  ; arm PREG: after one delay-slot instruction,
                               ;   fetch continues at KR[15..4] — for FN_ENTRY
                               ;   the fn table at 0x0500+fn (trace-confirmed
-                              ;   1/x → 0x050A in errorblink.txt)
+                              ;   1/x → 0x050A in traces/errorblink.txt)
 0145: 0100  A=A ALL           ; delay slot — still executes before the target
 ; ═══════════════════════════════════════════════════════════════════════════
 ; AOS ENGINE  (0x0146–0x020A) — the algebraic operating system. Trace-
@@ -757,7 +757,7 @@
 0235: 0051  SET fA[5]         ; then normalize and display X (falls into NUM_NORM)
 ; ═══════════════════════════════════════════════════════════════════════════
 ; NUM_NORM  (0x0236–0x02D2) — finish number entry and normalize X.
-; Trace-confirmed (headless: 5, 21, 7×3; errorblink.txt). Two registers
+; Trace-confirmed (headless: 5, 21, 7×3; traces/errorblink.txt). Two registers
 ; represent X: A is the DISPLAY IMAGE while digits are typed (digits from
 ; nibble 3 up, A[0] = digits after the point), C holds the full-precision
 ; value once a result is shown (fB[5] set). On exit A = C = X normalized:
@@ -808,7 +808,7 @@
 0257: 0033  TOG fA[3]
 0258: 0700  A=A+1 EXP1        ; exponent + 1; a carry out of 99 overflows into …
 0259: 1837  JC 023E           ; … OVFL_CLAMP below (falls through on carry)
-; ── OVER/UNDERFLOW CLAMP (0x025A–0x0263) — trace-confirmed in errorblink.txt.
+; ── OVER/UNDERFLOW CLAMP (0x025A–0x0263) — trace-confirmed in traces/errorblink.txt.
 ; 1/x of 0 lands here twice: once from the divide's overflow exit at 0421, and
 ; again when display rounding (05B9) carries the all-9s image back over the
 ; top. Sets the ERROR blink flag fB[9] (idle gate at 0641) unless fA[14] is
@@ -956,7 +956,7 @@
 02D1: 0015  SET KR[1] ; PREG  ; NUM_NORM return: arm PREG; the delay-slot SWAP
                               ;   below pulls the continuation saved at 041D
                               ;   from SR (e.g. back into the 0x0500 fn table —
-                              ;   trace-confirmed 050B for 1/x, errorblink.txt)
+                              ;   trace-confirmed 050B for 1/x, traces/errorblink.txt)
 ; KEY_USERDEF: keyboard row 1, user-defined label keys A–E and (with 2nd)
 ; A′–E′ (from 06B0); bypasses the dispatch table at 0011. Builds KR for the
 ; 0x0B10 sequence bank (0276: KR[8], KR[15], KR[13] + FN_ENTRY's KR[12]) with
@@ -1206,7 +1206,7 @@
 0386: 0101  IO=A ALL           ; op 2: clears the WHOLE RAM, whatever the address. This is the
                                ;   only op 2 in the ROM, and why memory is empty after power-on.
                                ;   Seen on a real TI-59 when a program reaches this code (fast-mode
-                               ;   entry Pgm 02 SBR 239): RAM gone, SCOM kept. See CoreArchitecture.md.
+                               ;   entry Pgm 02 SBR 239): RAM gone, SCOM kept. See Core-Architecture.md.
 ; Build the memory descriptors for the small (TI-58) configuration, then
 ; double them if the probe found RAM at register 90 (trace-confirmed, TI-59
 ; and TI-58 headless runs):
@@ -1274,7 +1274,7 @@
 ; bits in fA, CLR fB wipes the rest, and the second four SWAPs restore them.
 ; Net effect: reset the volatile flag bits, keep the 4 sticky status bits.
 ; The wipe includes the ERROR flag fB[9] — this is what makes CLR end the
-; error blink (trace-confirmed: errorblink.txt).
+; error blink (trace-confirmed: traces/errorblink.txt).
 03AC: 0074  SWAP fA[7],fB[7]
 03AD: 00D4  SWAP fA[13],fB[13]
 03AE: 0004  SWAP fA[0],fB[0]
@@ -2164,7 +2164,7 @@
 0642: 1828  JC 0656           ; no → loop straight back to the scan window
 ; ═══════════════════════════════════════════════════════════════════════════
 ; ERROR BLINK SERVICE  (0x0643–0x0655)
-; Trace-confirmed in errorblink.txt (1/x on a zero display → blinking
+; Trace-confirmed in traces/errorblink.txt (1/x on a zero display → blinking
 ; "9.9999999 99", ended by CLR). Runs once per idle pass while fB[9] is set.
 ; D[1..3] serves as a pass counter (the MAEX swaps leave D's nibble 0 alone);
 ; each pass increments it, and the PARITY of its hundreds digit (nibble 3)
@@ -2248,7 +2248,7 @@
 0663: 1806  JC 0666           ;   is non-zero when an exponent is shown)
 0664: 0C48  A=SRA MAEX        ; yes → shift A's mantissa right twice, back to
 0665: 0948  A=SRA MANT        ;   the mantissa/EXP working layout (trace-
-                              ;   confirmed in errorblink.txt: CLR pressed on
+                              ;   confirmed in traces/errorblink.txt: CLR pressed on
                               ;   the blinking 9.9999999 99; cf. twin at 04F6)
 0666: 0A75  TST KR[7]         ; rows 12+ (KR[6] and KR[7] both set) are the
 0667: 1816  JC 0672           ; D12 printer pseudo-keys; real rows skip ahead
@@ -2602,7 +2602,7 @@
 076F: 19CD  JC 0689           ; no: the operation is dropped and the key runs normally ("5 STO
                               ;   x²" → 25, trace-checked)
 ; RECIP: "1/x" (slot 050B; X already normalized by the 041C slot before it).
-; Trace-confirmed (1/4, and 1/0 in errorblink.txt → x÷0 exit → error blink).
+; Trace-confirmed (1/4, and 1/0 in traces/errorblink.txt → x÷0 exit → error blink).
 0770: 0051  SET fA[5]         ; result to be displayed
 0771: 0ED4  C=LOAD MMSD1      ; C := 1.0
 0772: 003A  CLR fB[3]
@@ -3542,7 +3542,7 @@
 ; the new source flag in place — see examples/historic/texas-print.ti59.
 ; The 0A4D–0A51 shuffle also stashes the CALLER's source (SCOM[0]'s old
 ; nibble 3) into nibble 1 of the rewritten SCOM[0]; 0A54–0A57 then dispatch
-; on it (traces pr-after-halt1/2, memory/sbr444-quirk-analysis.md):
+; on it (traces/pr-after-halt1/2, traces/sbr444-quirk-analysis.md):
 ;   0        → keyboard/RAM caller: fall through to 0A58; 0A5C/0A5D set
 ;              fB[0]+fB[13], so 087E later skips the RAM range check.
 ;   non-zero → library caller: 0A57 branches to 0DA7 to save the CROM PC
@@ -3759,7 +3759,7 @@
 ; 089C WITHOUT undoing the launch: the Prg Src Flag written by the
 ; prologue (0A52) stays in SCOM[0], and the return-stack level pushed at
 ; 0D50 is never popped (contrast the 11E1 error halt, which resets the
-; stack). Trace pr-after-halt2: the abandoned P/R launch leaves SCOM[0] =
+; stack). Trace traces/pr-after-halt2: the abandoned P/R launch leaves SCOM[0] =
 ; "…108010" (leaked source 8, stashed caller source 1, step 008) and a
 ; dead stack level naming the leftover CROM position — the state quirk 3
 ; of examples/historic/texas-print.ti59 builds on.
@@ -4418,7 +4418,7 @@
 0D4F: 1F81  JC 098F
 ; ── Return-stack push: save the caller's calculator-level return address ────
 ; The 6-level subroutine return stack lives in SCOM[15] (levels 1-3) and
-; SCOM[14] (levels 4-6); see reference/CoreArchitecture.md § SCOM registers.
+; SCOM[14] (levels 4-6); see docs/developer/Core-Architecture.md § SCOM registers.
 ; This routine pushes on every calculator-level call: SBR into a RAM or
 ; library program, and keycode-ROM sub-program launches (P->R). 0D53/0D54
 ; load SCOM[15]; 0D57 checks the depth in the DPT nibble; the shift loops
@@ -4430,7 +4430,7 @@
 ; caller's Prg Src Flag; SCOM[15] nibble 0 counts the pushed levels.
 ; Trace-verified during the SBR 444 launch: the push stores
 ; 0000000000001001 = register 001 / byte 0 / source 0 / depth 1, the
-; keyboard caller at step 008 — see memory/sbr444-quirk-analysis.md.
+; keyboard caller at step 008 — see traces/sbr444-quirk-analysis.md.
 0D50: 0AF7  MOV R5,#15        ; D := SCOM[15] (levels 1–3, depth in nibble 0)
 0D51: 02F4  C=R5 DPT
 0D52: 0121  IO=C ALL
@@ -4541,7 +4541,7 @@
 ; fB[0]/fB[13] are NOT set on this path, so at 087E the transfer target
 ; gets the RAM-partition range check even when it is a keycode
 ; sub-program — the quirk-2 flag leak of examples/historic/texas-print.ti59
-; (trace pr-after-halt2: P/R after the R/S-resumed garbage run lands here
+; (trace traces/pr-after-halt2: P/R after the R/S-resumed garbage run lands here
 ; because SCOM[0] still says source 1; its entry step 284 then fails the
 ; check at 0888).
 0DA7: 00D8  TST fB[13]
@@ -4954,7 +4954,7 @@
 ; hardware the current character is finished and to advance the paper; issuing
 ; it here, mid-way through the *previous, legitimate* print job's row-by-row
 ; dot output (the printer runs asynchronously off firmware timing — see
-; "Printer (PC-100C)" in reference/CoreArchitecture.md), truncates that
+; "Printer (PC-100C)" in docs/developer/Core-Architecture.md), truncates that
 ; character to whatever rows had physically printed so far. This is the
 ; mechanism behind the 1980s "printer interrupt" hack: it doesn't stop the
 ; printer via any dedicated command, it just tricks the firmware into firing
@@ -5085,7 +5085,7 @@
 ;               hardware nibble-shift, so this bit-copy loop stands in for one
 ;   KR[7:4]   = second-fetched digit, reloaded fresh at 0F6A-0F6B
 ; 0F6C SET KR[1] then triggers the PREG computed jump (see "Computed jump
-; (PREG)" in reference/CoreArchitecture.md): addr = KR rotated into PREG.
+; (PREG)" in docs/developer/Core-Architecture.md): addr = KR rotated into PREG.
 ; NEITHER digit is range-checked against 0-9 before this bit-copy/jump. A
 ; corrupted keycode whose digit value is >9 (e.g. the "1F" keycode the
 ; printer-interrupt pseudo-code writes into program memory — see
@@ -6016,7 +6016,7 @@
 ; from the shared transfer routine via 0868 → 0BD1 → 0FAC; the launch
 ; prologue at 0A4B has already written Prg Src Flag := 1). 1286 selects
 ; SCOM[9] (R5 = 9); 128B-1290 recall it — its current/new-page fields
-; (nibbles 6-5 / 4-3, see reference/CoreArchitecture.md § SCOM registers)
+; (nibbles 6-5 / 4-3, see docs/developer/Core-Architecture.md § SCOM registers)
 ; hold the selected library program number p ("Pgm nn") — and form the
 ; header offset 2p (one
 ; 2-byte BCD start address per program from module address 0002). The LIB.PC

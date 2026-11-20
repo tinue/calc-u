@@ -15,7 +15,7 @@
 AppName=Calc-U-59
 AppVersion={#APP_VERSION}
 AppPublisher=Martin Erzberger
-AppPublisherURL=https://github.com/tinue/Calc-U-59
+AppPublisherURL=https://github.com/tinue/calc-u
 DefaultDirName={autopf}\Calc-U-59
 DefaultGroupName=Calc-U-59
 UninstallDisplayIcon={app}\Calc-U-59.exe

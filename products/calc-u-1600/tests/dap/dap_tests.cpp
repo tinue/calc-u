@@ -379,7 +379,7 @@ TEST(bad_key_refused_with_reason) {
     CHECK(c.refusal("attach", obj({{"program", obj({{"listing", Value("x.rst")}})}})).rfind("Bad \"bin\"", 0) == 0);
     CHECK(c.refusal("c1600/load", obj({{"bin", Value(bin)}, {"after", Value("foo")}})).rfind("Bad \"after\"", 0) == 0);
     CHECK(c.refusal("c1600/load", obj({{"bin", Value(bin)}, {"cpu", Value("x86")}})).rfind("Bad \"cpu\"", 0) == 0);
-    CHECK(c.refusal("c1600/load", obj({{"bin", Value(bin)}, {"slot", Value(2)}})).rfind("Bad \"slot\"", 0) == 0);
+    CHECK(c.refusal("c1600/load", obj({{"bin", Value(bin)}, {"slot", Value(2)}})).rfind("Bad \"slot\": not a key of \"program\":", 0) == 0);
     CHECK(c.refusal("restart", obj({{"arguments", obj({{"reset", Value("sometimes")}})}})).rfind("Bad \"reset\"", 0) == 0);
 }
 

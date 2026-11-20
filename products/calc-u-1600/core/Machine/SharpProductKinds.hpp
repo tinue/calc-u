@@ -105,7 +105,7 @@ public:
     virtual void setFolder(const std::string& folder) = 0;   // a live media swap
 };
 
-// The records of a CPU trace in the TRACE.bin format, version 3: the header and SESSION_START at begin(), the
+// The records of a CPU trace in Calc-U-1600's trace format, version 3: the header and SESSION_START at begin(), the
 // instruction frames of every CPU and the gap records as the core drains
 // its rings, SESSION_END at endRecord(). The library's trace session writes
 // them into the file, at most a budget at a time.

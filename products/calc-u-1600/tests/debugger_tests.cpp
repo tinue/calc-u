@@ -290,20 +290,27 @@ TEST(bytes_equal_the_recorded_reference) {
     checkReference("PC-1500A", 120, "tests/golden-runs/pc1500a-basic.trace");
 }
 
-TEST(button_trace_is_trace_bin) {
+TEST(button_trace_is_named_after_the_model) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
     CHECK(f.ok(dbg::kTraceCommand, Value::object({{"button", true}})));
     const auto* t = f.state<dbg::TraceState>(dbg::kTraceTopic);
-    CHECK(t && t->running && t->fileName == "TRACE.bin");
+    CHECK(t && t->running && t->fileName == "CALCU1500A_TRACE.bin");
     f.runFor(0.2);
     CHECK(f.ok(dbg::kTraceCommand, Value::object({{"off", true}})));
     t = f.state<dbg::TraceState>(dbg::kTraceTopic);
     CHECK(t && !t->running);
-    const auto s = tracetest::readTrace(f.paths->traceDir() + "/TRACE.bin");
+    const auto s = tracetest::readTrace(f.paths->traceDir() + "/CALCU1500A_TRACE.bin");
     checkWellFormed(s);
     CHECK(s.traceEventCount > 0);
+
+    SessionFixture g;
+    CHECK(g.start("PC-1500"));
+    CHECK(g.ok(dbg::kTraceCommand, Value::object({{"button", true}})));
+    t = g.state<dbg::TraceState>(dbg::kTraceTopic);
+    CHECK(t && t->running && t->fileName == "CALCU1500_TRACE.bin");
+    CHECK(g.ok(dbg::kTraceCommand, Value::object({{"off", true}})));
 }
 
 // ── The trace folder at each trace start, the refusal ────────────────────
@@ -377,7 +384,7 @@ TEST(button_trace_ends_at_the_limit_with_a_notice) {
     }
     const auto* t = f.state<dbg::TraceState>(dbg::kTraceTopic);
     CHECK(t && !t->running);
-    const std::string path = f.paths->traceDir() + "/TRACE.bin";
+    const std::string path = f.paths->traceDir() + "/CALCU1600_TRACE.bin";
     CHECK(fs::exists(path) && fs::file_size(path) <= 1024 * 1024);
     checkWellFormed(tracetest::readTrace(path));
     CHECK(limitNotice(f));

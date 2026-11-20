@@ -84,7 +84,7 @@ breakpoint or watch pauses it and nothing in it is told as `stopped`.
 | Case | Reply message |
 |---|---|
 | A key with a wrong value | `Bad "<key>": <what>` (`<what>`: "a number from 0 to 7 (&, 0x or $ for hex)", "a number up to &FFFF (&, 0x or $ for hex)", "one of none, reset, allReset", "true or false", "a block of settings", "a list of paths or {path, ...} objects", "a list of paths", "text", "a path") |
-| `slot` in `program` | `Bad "slot": it was removed: the loader places code by the machine's MODE, the program area TITLE selects, and the address. Set MODE / TITLE on the calculator first.` |
+| `slot` in `program` | `Bad "slot": not a key of "program": the loader places code by the machine's MODE, the program area TITLE selects, and the address. Set MODE / TITLE on the calculator first.` |
 | No `bin` in `program` | `Bad "bin": it is missing` |
 | An `entry` that is neither | `Bad "entry": an address from 0 to &FFFF, or a symbol of the listing` |
 | `boot: debug` with `program` or `command` | `"boot": "debug" runs the boot under the debugger; it takes no "program" or "command"` |

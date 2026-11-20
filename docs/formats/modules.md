@@ -395,11 +395,9 @@ the real module. A library program without an item has no module cue
 card: selecting it takes off any module cue card, and the own card
 shows, or nothing.
 
-When the bundled modules are written in this format, every library
-program without a pre-printed cue card gets an item that looks like
-the stand-in card 2.3.0 showed for it: the module's `description` as
-`title` and its `module-name` as `id` (today
-`Shared/CueCard.cpp:402-418`).
+In the bundled modules, every library program without a pre-printed
+cue card has an item with the module's `description` as `title` and
+its `module-name` as `id`.
 
 ### 2.4 The bundled modules
 

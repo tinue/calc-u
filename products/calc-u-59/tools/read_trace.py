@@ -8,10 +8,7 @@ Parses CALCU59_TRACE.bin (and variant filenames) in the format of docs/formats/t
   • Emits a JSON array (--json)
   • Exposes load_trace(path) for import by compare_trace.py
 
-Version support:
-  • v1 (released in v1.0.0): stable, backwards-compatible. File header has no model field.
-  • v2+ (after v1.0.0): volatile, may change without backwards-compat guarantees.
-    v2 adds model indicator to file header and SESSION_START record.
+It reads version 2, the format's only version, and refuses any other.
 
 Usage:
     python3 read_trace.py CALCU59_TRACE.bin                       # output everything
@@ -61,8 +58,7 @@ from disasm import disasm
 # ── Constants (must match docs/formats/trace.md) ────────────────────────
 
 MAGIC      = 0x54493539   # 'TI59' in LE memory
-VERSION_V1 = 1             # v1: baseline (released in v1.0.0, stable, no model field)
-VERSION_V2 = 2             # v2+: volatile, may change. v2 adds model to header and SESSION_START
+VERSION    = 2             # the format's only version: model in the header and SESSION_START
 
 MODEL_NAMES = {0: 'TI-59', 1: 'TI-58', 2: 'TI-58C'}
 
@@ -89,19 +85,16 @@ def _read_exact(f, n):
     return data
 
 def _parse_file_header(f):
-    """Parse and validate file header (16 bytes). Returns model indicator or None."""
+    """Parse and validate file header (16 bytes). Returns the version and the model."""
     hdr = _read_exact(f, 16)
     magic, version = struct.unpack_from('<IH', hdr, 0)
     if magic != MAGIC:
         raise ValueError(f"Bad magic: 0x{magic:08X} (expected 0x{MAGIC:08X})")
-    if version not in (VERSION_V1, VERSION_V2):
-        raise ValueError(f"Unsupported version: {version} (expected {VERSION_V1} or {VERSION_V2})")
+    if version != VERSION:
+        raise ValueError(f"Unsupported version: {version} (expected {VERSION})")
 
-    # v1: no model field (reserved space). v2: model at offset 6–7
-    model = None
-    if version >= VERSION_V2:
-        model_code, = struct.unpack_from('<H', hdr, 6)
-        model = MODEL_NAMES.get(model_code, f'Unknown({model_code})')
+    model_code, = struct.unpack_from('<H', hdr, 6)
+    model = MODEL_NAMES.get(model_code, f'Unknown({model_code})')
 
     return version, model
 
@@ -188,13 +181,12 @@ def _parse_user_event(payload):
         e['col'] = p2
     return e
 
-def _parse_session_start(payload, file_version):
-    """Parse SESSION_START record. v1: 8 bytes (timestamp only).
-    v2+: 9 bytes (timestamp + model byte)."""
+def _parse_session_start(payload):
+    """Parse SESSION_START record: 9 bytes (timestamp + model byte)."""
     ts, = struct.unpack_from('<Q', payload, 0)
     rec = {'type': 'session_start', 'timestamp': ts, 'model': None}
 
-    if file_version >= VERSION_V2 and len(payload) >= 9:
+    if len(payload) >= 9:
         model_code = payload[8]
         rec['model'] = MODEL_NAMES.get(model_code, f'Unknown({model_code})')
 
@@ -251,7 +243,7 @@ def load_trace(path):
             payload = f.read(payload_len)
 
             if rec_type == REC_SESSION_START:
-                records.append(_parse_session_start(payload, file_version))
+                records.append(_parse_session_start(payload))
             elif rec_type == REC_TRACE_EVENT:
                 trace_index += 1
                 rec = _parse_trace_event(payload)

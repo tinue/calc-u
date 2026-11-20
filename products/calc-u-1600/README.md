@@ -7,7 +7,7 @@ A preview of a web version runs in the browser at
 
 ## Quick Start
 
-1. From the [Releases page](https://github.com/tinue/Calc-U-1600/releases),
+1. From the [Releases page](https://github.com/tinue/calc-u/releases),
    download the package for your platform, along with
    `Calc-U-1600-examples.zip` — the sample presets and BASIC programs
    used below.

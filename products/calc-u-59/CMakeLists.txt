@@ -86,7 +86,7 @@ if(EMSCRIPTEN)
     target_compile_options(${target} PRIVATE -fwasm-exceptions -UNDEBUG)
   endforeach()
   calcu_web_engine(calcu59_web SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/frontends/web/bindings.cpp
-                   OUTPUT ti59-core EXPORT createTI59CoreModule ENVIRONMENT web,worker
+                   OUTPUT calcu59-core EXPORT createCalcU59Module ENVIRONMENT web,worker
                    LINK -sNO_EXIT_RUNTIME=1 -sSTACK_SIZE=1MB
                         -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,getExceptionMessage,decrementExceptionRefcount)
   target_link_libraries(calcu59_web PRIVATE calcu59_shared)

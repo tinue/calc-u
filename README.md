@@ -22,9 +22,8 @@ Releases are on this repository's
 [Releases page](https://github.com/tinue/calc-u/releases): the macOS DMG,
 Windows installers (x64, ARM64), Linux AppImages (x86_64, aarch64), the
 Web frontend as a zip, and the user guide as a help zip. Calc-U-59 for
-iPhone and iPad is on the App Store. The first releases from this
-repository, Calc-U-59 3.0.0 and Calc-U-1600 0.9.0, are in preparation;
-their pre-releases are already published.
+iPhone and iPad is on the App Store. Calc-U-59 3.0.0 and Calc-U-1600
+0.9.0 are in preparation; their pre-releases are published.
 
 The ROM images are not part of this repository. Each product fetches
 them from their own repositories with `roms/fetch_roms.sh`.
@@ -79,15 +78,13 @@ apps and web client.
 - **Tests:** [`docs/test-groups.md`](docs/test-groups.md) — the Frequent,
   Longer and Checkpoint groups and the local Linux CI.
 - **Development and releases:** [`docs/Process.md`](docs/Process.md);
-  until the first releases are out, [`docs/phase-f.md`](docs/phase-f.md).
+  until Calc-U-59 3.0.0 and Calc-U-1600 0.9.0 are out,
+  [`docs/phase-f.md`](docs/phase-f.md).
 - **Changes:** each product's `CHANGELOG.md`.
 - **History:** the requirements, plans and design decisions that brought
   both products into this repository are on the branch
   [`history`](https://github.com/tinue/calc-u/tree/history); the full
-  snapshot at that point is the tag `history-phases-0-6`. The products'
-  earlier history is in their own repositories,
-  [tinue/Calc-U-59](https://github.com/tinue/Calc-U-59) and
-  [tinue/Calc-U-1600](https://github.com/tinue/Calc-U-1600).
+  snapshot at that point is the tag `history-phases-0-6`.
 
 ## License
 

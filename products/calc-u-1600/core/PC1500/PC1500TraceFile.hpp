@@ -7,8 +7,9 @@
 
 // ── PC1500TraceFile ────────────────────────────────────────────────────────
 //
-// Core-side writer for the `TRACE.bin` binary instruction-trace format, one
-// file for the frames of every model's CPUs. This is the *only* writer of the
+// Core-side writer for Calc-U-1600's binary instruction-trace format, of
+// every model: a PC-1600's file carries the frames of both its CPUs.
+// This is the *only* writer of the
 // format -- every trace of the app (the debugger's trace, the harness's
 // `trace` command) goes through this same class, so there is nothing else
 // that needs to stay in sync with it except the reader: `tools/read_trace.py`'s constant block and frame

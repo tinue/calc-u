@@ -42,4 +42,4 @@ The developer has no access to these logs.
 ## Contact
 
 If you have questions about this privacy policy, please open an issue at:
-https://github.com/tinue/Calc-U-59/issues
+https://github.com/tinue/calc-u/issues

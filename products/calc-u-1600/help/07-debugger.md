@@ -681,9 +681,10 @@ through a program or set breakpoints, use the debugger above.
   block for a module definition (see
   [Module definitions](09-module-definitions.md#a-module-with-content-already-on-it)).
 - **Clear** (bin icon): empties the log.
-- **TRACE:** starts or stops a CPU instruction trace into `TRACE.bin` in the
-  trace folder (`[trace] folder`); the size limit and its notice are the
-  family's ([Debugger](../../../library/help/07-debugger.md)).
+- **TRACE:** starts or stops a CPU instruction trace into a file named
+  after the model (`CALCU1500_TRACE.bin`, `CALCU1500A_TRACE.bin`,
+  `CALCU1600_TRACE.bin`) in the trace folder (`[trace] folder`); the
+  size limit and its notice are the family's ([Debugger](../../../library/help/07-debugger.md)).
 - **LOG:** a placeholder for now: it cycles Off / Info / Debug, but logs
   nothing yet.
 

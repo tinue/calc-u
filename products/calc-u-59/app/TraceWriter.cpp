@@ -13,7 +13,7 @@ enum : uint8_t {
 };
 
 constexpr uint32_t kMagic = 0x54493539;  // 'TI59' LE
-// The format version: it changes with the record layout, and tools/read_trace.py with it.
+// The trace format has one version; a reader refuses any other.
 constexpr uint16_t kVersion = 2;
 constexpr size_t kFramePayload = 125;
 
@@ -35,7 +35,7 @@ void TraceWriter::sessionStart(std::vector<uint8_t>& out, const ModelId& model, 
     Buf b{out};
     b.u32(kMagic);   // 16-byte header
     b.u16(kVersion);
-    b.u16(info(model).traceCode);   // v2: 0 = TI-59, 1 = TI-58, 2 = TI-58C
+    b.u16(info(model).traceCode);   // model: 0 = TI-59, 1 = TI-58, 2 = TI-58C
     b.u64(0);                              // reserved
     b.record(kSessionStart, 9);
     b.u64(epochSeconds);

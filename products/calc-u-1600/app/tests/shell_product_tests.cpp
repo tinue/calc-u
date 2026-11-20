@@ -41,17 +41,21 @@ TEST(help_address_and_about_texts) {
     CHECK_EQ(a.version, std::string("Version 0.9.0 (abc123)"));
     CHECK(a.lines.size() == 2 && a.lines[0] == "A Sharp PC-1500/1500A/1600 pocket-computer emulator.");
     CHECK(p.aboutLabel == "About Calc-U-1600…");
+    CHECK_EQ(a.links.size(), std::size_t{2});
+    CHECK(a.links.size() == 2 && a.links[0].first == "GitHub" && a.links[0].second == "https://github.com/tinue/calc-u");
+    CHECK(a.links.size() == 2 && a.links[1].first == "Support" &&
+          a.links[1].second == "https://github.com/tinue/calc-u/issues");
 }
 
 // The page's forms of Calc-U-1600 keep their shape: the members in this order,
-// `copyScreen` true (the placeholder act), no `aboutLinks`, items with
+// `copyScreen` true (the placeholder act), `aboutLinks`, items with
 // exactly {group, id, label, entry}, and no `choices` in the settings spec.
 TEST(calc_u_1600_forms_unchanged) {
     using calcu::sessions::Value;
     const Value v = calcu::shell::toValue(cu1600::shellProduct("1.0", "", false));
     std::vector<std::string> keys;
     for (const auto& m : *v.members()) keys.push_back(m.key);
-    CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "variantLabels", "presetFilter",
+    CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "aboutLinks", "variantLabels", "presetFilter",
                                             "copyScreen", "pasteText", "moduleSlotPinOuts", "placesWithoutControl", "items"}));
     CHECK(*v.find("copyScreen")->boolean());
     for (const Value& item : *v.find("items")->elements()) {

@@ -234,8 +234,8 @@ importScripts(`${self.CALC_ROOT || ""}library-worker.js`);
 | Key | Meaning | Calc-U-59 | Calc-U-1600 |
 |---|---|---|---|
 | `name` | the product's name | `Calc-U-59` | `Calc-U-1600` |
-| `wasm` | the engine's file stem in `wasm/` | `ti59-core` | `calcu1600-core` |
-| `factory` | the engine's module factory | `createTI59CoreModule` | `createCalcU1600Module` |
+| `wasm` | the engine's file stem in `wasm/` | `calcu59-core` | `calcu1600-core` |
+| `factory` | the engine's module factory | `createCalcU59Module` | `createCalcU1600Module` |
 | `host` | the class `CALCU_WEB_PRODUCT` registers | `CalcU59Host` | `CalcU1600Host` |
 | `mount` | the persistent file system's mount point | `/persist-calc-u-59` | `/persist` |
 | `lock` | the Web Lock of the one writer | `calcu59-storage` | `calcu1600-storage` |

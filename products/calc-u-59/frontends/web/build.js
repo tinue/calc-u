@@ -21,7 +21,7 @@ buildWebProduct({
   web: WEB,
   name: "Calc-U-59",
   target: "calcu59_web",
-  engine: "ti59-core",
+  engine: "calcu59-core",
   // File system: /bundle (the ROM full set) and /presets (the bundled
   // presets) from files.json, /uploads (files the user opened), and
   // /persist-calc-u-59, the persistent file system in IndexedDB: the settings
@@ -29,7 +29,7 @@ buildWebProduct({
   // the magnetic cards and ti58c.memory.yaml). A mount of its own, so that it
   // never shares a store with Calc-U-1600 on one origin. One tab at a time
   // writes it (Web Locks).
-  worker: { factory: "createTI59CoreModule", host: "CalcU59Host", mount: "/persist-calc-u-59", lock: "calcu59-storage" },
+  worker: { factory: "createCalcU59Module", host: "CalcU59Host", mount: "/persist-calc-u-59", lock: "calcu59-storage" },
   files: [
     // The full set of ROM files (the ten calculator dumps and the 14 module
     // files with the module list and cue cards, as roms/fetch_roms.sh
@@ -49,5 +49,5 @@ buildWebProduct({
   sources: ["page.jsx", "painters.js", "CalculatorFace.jsx", "Dialogs.jsx", "Paper.jsx", "Debugger.jsx", "CalcU59.jsx"],
   component: "CalcU59", props: { layout: "auto" },
   installSentence: "Install Calc-U 59 for one-tap, full-screen launches.",
-  swId: "calcu59",   // 2.3.0's cache names: its caches go at the first activation
+  swId: "calcu59",   // the prefix of its caches: an activation removes the older ones that carry it
 });

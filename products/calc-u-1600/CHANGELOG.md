@@ -276,6 +276,15 @@
   `c1600 inspect` pointers and dumps, `paper marks`; every example), the
   golden runs with today's boot and typing; the 0.8.1 references, their
   exceptions and the paper-reply converter are gone.
+- **TRACE button:** the trace file is named after the model:
+  `CALCU1500_TRACE.bin`, `CALCU1500A_TRACE.bin` or `CALCU1600_TRACE.bin`
+  (was `TRACE.bin` for every model).
+- **About** shows the links to the source (GitHub) and to support
+  (GitHub issues) of tinue/calc-u, and the README's Releases link goes
+  to tinue/calc-u.
+- **Debugging:** a `slot` in a program's set-up is refused with
+  `Bad "slot": not a key of "program": …`, followed by how the loader
+  places the code.
 
 ### Fixed
 

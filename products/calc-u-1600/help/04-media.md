@@ -122,10 +122,8 @@ rules for it, autosave and the save folder are in the
   [Media files](10-media-files.md) and the
   [module definition format](10-module-definition-format.md).
 - **Disks of Calc-U-1600 0.8.** Disk files are version 2, whose sides are
-  `0:` and `1:`. A disk saved with 0.8 shows in the picker as a disabled
-  entry with a hint: open the file in a text editor, set
-  `format-version: 2` and rename `a:` and `b:` under `sides:` to `0:` and
-  `1:`.
+  `0:` and `1:`. A disk saved with 0.8 is not listed in the picker;
+  convert it by hand as [From 0.8](10-media-files.md#from-08) says.
 - **Editing a saved disk file.** To change a saved disk's file with
   another program, choose (empty) first, so that Calc-U-1600 doesn't
   write over your edit.

@@ -2,7 +2,7 @@
 
 ## Qt6
 
-Calc-U-1600's Qt6/ desktop app is built on [Qt6](https://www.qt.io/), (c)
+Calc-U-1600's Qt6 desktop app (`frontends/qt6/`) is built on [Qt6](https://www.qt.io/), (c)
 The Qt Company Ltd and other contributors. It uses the Qt Widgets, Qt Multimedia
 and Qt Network modules and their transitive dependencies (QtCore, QtGui,
 QtDBus, and related platform-integration modules).
@@ -23,11 +23,11 @@ The macOS/Linux/Windows builds published by this project's CI record the
 exact Qt version installed for that build in the GitHub Actions run log
 (`.github/workflows/calc-u-1600.yml` at the repository root).
 
-## Web client (`Web/`)
+## Web client (`frontends/web/`)
 
 The web client bundles [React and ReactDOM](https://react.dev/) 18 (MIT
 license, (c) Meta Platforms, Inc. and affiliates) from the repository's
-`library/web/vendor/`, which `Web/dist/vendor/` ships. That folder also holds ReactDOMServer (MIT, tests
+`library/web/vendor/`, which `frontends/web/dist/vendor/` ships. That folder also holds ReactDOMServer (MIT, tests
 only) and [Babel standalone](https://babeljs.io/) (MIT, (c) Sebastian
 McKenzie and contributors), used only at build time to compile the JSX.
 The tests use [Playwright](https://playwright.dev/) (Apache License 2.0),

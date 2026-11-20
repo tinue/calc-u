@@ -22,9 +22,9 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
     p.aboutLines = {"Calc-U-59 Calculator Emulation",
                     "Cycle-accurate TI-59, TI-58, and TI-58C emulation with magnetic cards, paper tape printer, "
                     "presets, and debugger tools."};
-    p.aboutLinks = {{"GitHub", "https://github.com/tinue/Calc-U-59"},
-                    {"Support", "https://github.com/tinue/Calc-U-59/issues"},
-                    {"Privacy", "https://github.com/tinue/Calc-U-59/blob/main/PRIVACY.md"}};
+    p.aboutLinks = {{"GitHub", "https://github.com/tinue/calc-u"},
+                    {"Support", "https://github.com/tinue/calc-u/issues"},
+                    {"Privacy", "https://github.com/tinue/calc-u/blob/main/products/calc-u-59/PRIVACY.md"}};
     p.presetFilter = "Presets (*.ti59 *.ti58 *.ti58c)";
     // Neither Copy Screen nor Paste Text, so no Edit menu.
     p.moduleSlotPinOuts = {"module-slot"};

@@ -2,7 +2,7 @@
 
 ## Qt6
 
-Calc-U-59's Qt6 desktop app (`Qt6/`, the Windows and Linux builds) is built on
+Calc-U-59's Qt6 desktop app (`frontends/qt6/`, the Windows and Linux builds) is built on
 [Qt6](https://www.qt.io/), (c) The Qt Company Ltd and other contributors. It
 uses the Qt Widgets module and its dependencies (QtCore, QtGui and the
 platform-integration plugins).
@@ -25,7 +25,7 @@ The Swift app for macOS and iOS does not use Qt.
 
 ## Web client
 
-The web client (`Web/`, released as `Calc-U-59-web.zip`) includes:
+The web client (`frontends/web/`, released as `Calc-U-59-web.zip`) includes:
 
 - [React](https://react.dev/) 18.3.1 (`react`, `react-dom`), (c) Facebook,
   Inc. and its affiliates, under the MIT license (notice kept in

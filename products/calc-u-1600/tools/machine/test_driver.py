@@ -1,5 +1,7 @@
 """Tests of the driver and the card parser."""
 
+from pathlib import Path
+
 import pytest
 
 from cardimage import CardFormatError, RamDisk, read_card
@@ -22,6 +24,10 @@ CARD = """\
             $0000: FF...
 """
 PRINT_42 = 'PRINT "=";6*7'
+DWX = Path(__file__).resolve().parents[2] / "examples" / "dwx"
+OWN_CARD = DWX / "CE-1601M - Progs.module.yaml"
+OWN_FLOPPY = DWX / "Progs.floppy.yaml"
+BANK_1 = slice(0x8000, None)   # the RAM disk; the PC-1600 rewrites bank 0's head at power on
 
 
 def write(tmp_path, text):
@@ -135,3 +141,54 @@ def test_run_to_an_address(tmp_path):
     with pytest.raises(MachineError, match="did not reach"):
         Machine(tmp_path / "b").run_to("SC7852", 0x0005, timeout=0.1)
 
+
+# Cards and media of your own: module files by path, floppy disks, eject.
+
+
+def test_own_card_is_loaded(tmp_path):
+    image = Machine(tmp_path, slot_2=OWN_CARD).card(2)
+    assert image[BANK_1] == read_card(OWN_CARD)[BANK_1]
+
+
+def test_relative_paths_are_in_the_workdir(tmp_path):
+    (tmp_path / "mine").mkdir()
+    (tmp_path / "mine" / "card.module.yaml").write_text(OWN_CARD.read_text())
+    image = Machine(tmp_path, slot_2="mine/card.module.yaml").card(2)
+    assert image[BANK_1] == read_card(OWN_CARD)[BANK_1]
+
+
+def test_saved_card_comes_back(tmp_path):
+    first = Machine(tmp_path / "a", slot_2=OWN_CARD).command("poke SC7852 memory 0x8000 0x5a bank=2 vbank=1")
+    image = first.card(2)
+    assert image[0x8000] == 0x5A
+    assert Machine(tmp_path / "b", slot_2=tmp_path / "a" / "slot-2.module.yaml").card(2) == image
+
+
+def test_own_floppy_goes_in_and_out(tmp_path):
+    def sides(path):
+        text = path.read_text()
+        return text[text.index("\nsides:"):]
+
+    saved = tmp_path / "live.floppy.yaml"
+    machine = Machine(tmp_path, printer="CE-1600P").floppy(OWN_FLOPPY)
+    machine.command(f"saveas {{ place: floppy, as: live, file: {saved} }}").run()
+    assert sides(saved) == sides(OWN_FLOPPY)
+    machine.eject("floppy").run()
+
+
+def test_missing_own_card_raises(tmp_path):
+    with pytest.raises(MachineError, match="no module file"):
+        Machine(tmp_path, slot_2=tmp_path / "absent.module.yaml")
+
+
+def test_floppy_needs_the_printer(tmp_path):
+    with pytest.raises(MachineError, match="CE-1600P"):
+        Machine(tmp_path).floppy(OWN_FLOPPY).run()
+
+
+def test_subclass_may_redefine_command(tmp_path):
+    class Suite(Machine):
+        def command(self, text, seconds=3):   # a BASIC direct command, as a suite may define it
+            return self.key("cl").type(text).wait(seconds)
+
+    assert "= 42" in Suite(tmp_path).command(PRINT_42, 1).lcd

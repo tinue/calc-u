@@ -55,26 +55,31 @@ class Session:
 
     def key(self, names: str) -> "Session":
         """Presses keys by name, several separated by blanks."""
-        return self.command(f"key {names}").command("wait")
+        return self._step(f"key {names}")._step("wait")
 
     def type(self, text: str) -> "Session":
         """Types one line of text; the line is ended as `type` ends it."""
-        return self.command(f"type {text}").command("wait")
+        return self._step(f"type {text}")._step("wait")
 
     def wait(self, seconds: Optional[float] = None) -> "Session":
         """Waits in machine time; without seconds until the machine is idle."""
-        return self.command("wait" if seconds is None else f"wait {seconds}s")
+        return self._step("wait" if seconds is None else f"wait {seconds}s")
 
     def expect(self, text: str) -> "Session":
         """Fails the next read if no display line holds text (or matches /regex/)."""
-        return self.command(f"expect {text}")
+        return self._step(f"expect {text}")
 
     def not_expect(self, text: str) -> "Session":
         """Fails the next read if a display line holds text."""
-        return self.command(f"not-expect {text}")
+        return self._step(f"not-expect {text}")
 
     def command(self, line: str) -> "Session":
         """Queues any harness command (docs/formats/harness.md)."""
+        return self._step(line)
+
+    def _step(self, line: str) -> "Session":
+        # The steps queue here, not through command(): a suite's subclass may give command() a
+        # meaning of its own (a BASIC direct command, say) without breaking key() and type().
         if "\n" in line:
             raise ValueError(f"step with a line break: {line!r}")
         self._queue.append(line)
@@ -139,7 +144,7 @@ class Session:
         return waited["seconds"]
 
     def resume(self) -> "Session":
-        return self.command("resume")
+        return self._step("resume")
 
     def close(self) -> None:
         if self._finalizer:

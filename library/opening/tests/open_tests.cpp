@@ -171,7 +171,7 @@ TEST(open_upload_imported_then_placed) {
     OpenRig r("test-dot");
     const auto* a = r.opened(file("w.testdisk.yaml", disk("W", "up").text(), "/uploads/w.testdisk.yaml"), Way::Drop, true);
     CHECK(a && a->done && isAs(r.replyOf(a), OpenedAs::Medium, "disk"));
-    CHECK(r.fixture.exists("w.testdisk.yaml"));
+    CHECK(r.fixture.exists("W.testdisk.yaml"));   // saved under the medium's name
     CHECK_EQ(r.fixture.drive()->bytes(), std::string("up"));
 }
 
@@ -196,7 +196,7 @@ TEST(no_place_refused_in_place_imported_as_upload) {
     CHECK(!r.fixture.exists("w.testdisk.yaml"));   // not copied
     const auto* up = r.opened(file("w.testdisk.yaml", disk("W", "x").text()), Way::Drop, true);
     CHECK(up && up->done && isAs(r.replyOf(up), OpenedAs::Medium, "imported"));
-    CHECK(r.fixture.exists("w.testdisk.yaml"));
+    CHECK(r.fixture.exists("W.testdisk.yaml"));   // saved under the medium's name
     CHECK(hasText(r.notices(), "has no place for w.testdisk.yaml now"));   // in the save folder, and told so
 }
 

@@ -51,6 +51,10 @@ ShellControlBar::ShellControlBar(Shell& shell, QWidget* parent) : QWidget(parent
 
 QComboBox* ShellControlBar::picker(const std::vector<MenuItem>& choices, QWidget* parent) {
     auto* box = new QComboBox(parent);
+    // No shell widget takes the keyboard focus: the window owns typing, and
+    // with a focusable widget in it Qt spends Tab on moving the focus
+    // instead of handing it to the keyboard map. Clicks work all the same.
+    box->setFocusPolicy(Qt::NoFocus);
     auto* model = qobject_cast<QStandardItemModel*>(box->model());
     int current = -1;
     for (std::size_t i = 0; i < choices.size(); ++i) {
@@ -90,6 +94,7 @@ QWidget* ShellControlBar::build(const BarControl& c, QWidget* parent) {
     }
     case BarControl::Kind::PlaceButton: {   // pressed while plugged in
         auto* b = new QToolButton(parent);
+        b->setFocusPolicy(Qt::NoFocus);
         b->setObjectName(QString::fromStdString(shell::names::barPlace(c.id)));
         b->setText(QString::fromStdString(c.label));
         b->setCheckable(true);

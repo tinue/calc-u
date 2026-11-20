@@ -6,6 +6,7 @@
 #include "TestWindow.hpp"
 #include "qt6/PanelArea.hpp"
 #include "qt6/PaperPanel.hpp"
+#include "qt6/RunControlButtons.hpp"
 #include "qt6/ShellSettingsDialog.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "shell/ObjectNames.hpp"
@@ -25,6 +26,7 @@
 #include <QStandardItemModel>
 #include <QToolButton>
 #include <QtGlobal>
+#include <cstdio>
 #ifdef CALCU_QT_TEST
 #include <QTest>
 #endif
@@ -518,6 +520,30 @@ TEST(paper_panel_always_on_widgets) {
     auto* own = new QLabel(QStringLiteral("INSPECTOR"));
     area->addPanel(own);
     CHECK(own->parentWidget() == area);
+}
+
+// No widget of the shell takes the keyboard focus: the window owns typing,
+// and with a focusable widget in it Qt spends Tab on moving the focus,
+// so the key never reaches the product's keyboard map.
+TEST(shell_widgets_take_no_focus) {
+    TestWindow w;
+    w.shell->registerMediaControls("test-card", [](const Value& entry, QWidget* parent) -> QWidget* {
+        return new QLabel(QString::fromStdString("card " + shell::read::text(entry, "id")), parent);
+    });
+    w.command("tsp.plug", Value::object({{"place", "printer"}, {"peripheral", "test-dotter"}}));
+    w.step();
+    qt6::RunControlButtons run(debugger::LevelName{"cpu"});
+    auto* area = w.find<qt6::PanelArea>(names::kPanelArea);
+    CHECK(area && qobject_cast<qt6::PaperPanel*>(area->panel("paper")));
+    int widgets = 0;
+    for (QWidget* root : {w.shell->controlBar(), static_cast<QWidget*>(area), static_cast<QWidget*>(&run)})
+        for (QWidget* c : root->findChildren<QWidget*>()) {
+            // A combo box's list is a popup window of its own, open only while chosen.
+            if (c->focusPolicy() == Qt::NoFocus || c->window() != root->window()) continue;
+            ++widgets;
+            std::fprintf(stderr, "  takes focus: %s (%s)\n", c->metaObject()->className(), qPrintable(c->objectName()));
+        }
+    CHECK_EQ(widgets, 0);
 }
 
 TEST(mouse_and_touch_on_test_faceplate) {

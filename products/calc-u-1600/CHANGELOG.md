@@ -234,6 +234,9 @@
 
 ### Fixed
 
+- **Desktop: Tab is MODE again.** The buttons and pickers of the control
+  bar and the paper panel no longer take the keyboard focus, so Tab
+  reaches the calculator instead of moving the focus to them.
 - **macOS: the desktop app keeps real-time pace in the background.** It
   holds an activity against App Nap, so a machine whose window is not in
   front no longer falls behind.

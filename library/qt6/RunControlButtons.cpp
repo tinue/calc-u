@@ -11,6 +11,7 @@ RunControlButtons::RunControlButtons(debugger::LevelName level, Labels labels, Q
     row->setContentsMargins(0, 0, 0, 0);
     auto make = [&](const QString& text, const char* name) {
         auto* b = new QToolButton(this);
+        b->setFocusPolicy(Qt::NoFocus);
         b->setText(text);
         b->setObjectName(QString::fromLatin1(name));
         row->addWidget(b);

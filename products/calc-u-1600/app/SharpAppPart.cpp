@@ -421,9 +421,11 @@ std::string SharpAppPart::slotModuleName(int slot) const {
 // ---- Cassette recorder and CE-1600F ----
 
 bool SharpAppPart::tapeInterfaceAttached() const {
-    // The cassette of a CE-150 or a CE-1600P, on every model.
+    // The cassette of a CE-150 on the PC-1500 and PC-1500A, or of a CE-1600P.
     const std::string printer = pluggedAt(sharp::kPrinter);
-    return printer == sharp::kCE150 || printer == sharp::kCE1600P;
+    const Machine* m = machine();
+    const bool pc1600 = m && m->model().value == sharp::kPC1600;
+    return (printer == sharp::kCE150 && !pc1600) || printer == sharp::kCE1600P;
 }
 
 TapeDeck::Status SharpAppPart::tapeStatus() const {

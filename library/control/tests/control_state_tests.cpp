@@ -205,6 +205,20 @@ TEST(control_state_entries_in_descriptor_order) {
     CHECK(s.mediaPlaces.size() == 2 && s.mediaPlaces[0].id.value == "drive" && s.mediaPlaces[1].id.value == "hub-disk");
 }
 
+// A peripheral's media place that exists only at other pin-outs is not
+// listed where it is plugged.
+TEST(control_state_media_place_only_at_its_pin_outs) {
+    const calcu::machine::Catalogue& base = mt::testCatalogue();
+    std::vector<calcu::machine::PeripheralDescriptor> peripherals = base.peripherals();
+    for (auto& p : peripherals)
+        if (p.id == mt::kHub) p.mediaPlaces[0].onlyAt = {calcu::machine::PinOutId{"test.elsewhere"}};
+    const calcu::machine::Catalogue cat(base.models(), std::move(peripherals));
+    auto m = dot(std::nullopt, {plug("a", mt::kHub)});
+    const ControlState s = computeControlState(*m, testSetup({}, &cat), false);
+    CHECK(s.mediaPlaces.size() == 1 && s.mediaPlaces[0].id.value == "drive");
+    CHECK(computeControlState(*m, testSetup(), false).mediaPlaces.size() == 2);   // at every pin-out it fits
+}
+
 TEST(control_state_plugged_peripheral_says_plugged) {
     auto m = dot(std::nullopt, {plug("card-2", mt::kModule)});
     const ControlState s = computeControlState(*m, testSetup(), false);

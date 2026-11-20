@@ -280,7 +280,8 @@ per machine; on the PC-1600 both CPUs drive it (`PC1600BusDrive`).
   F = 00H. Only then model it. The PC-1600 doesn't use `LH5811Serial`; it
   has its own small modulator in `PC1600Memory` (`m_fReg`, `m_sdo`, ports
   14H/17H), which would grow the divider or move onto `LH5811Serial`.
-- **CE-150 on a PC-1600 (MODE 1): no tape path.** The CE-150 ROM runs on
+- **CE-150 on a PC-1600 (MODE 1): no tape path**, so its cassette is not
+  offered there (`SharpCatalogue.cpp`). The CE-150 ROM runs on
   the LH5803 and drives ME1 F004H-F00FH, which reach the SC-7852's ports
   14H-1FH. `attachCE150` connects no recorder, port 16H (L, transmit)
   isn't handled, and CMTOUT comes only from OPC b7. Open: whether the

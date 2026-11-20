@@ -250,7 +250,8 @@ public:
     // connector, where it answers the LH5803's cycles). Mutually exclusive
     // with the CE-1600P (one plotter at a time) -- attaching one detaches
     // the other. A chip/machine reset re-anchors the card but
-    // leaves it attached (like the CE-1600P).
+    // leaves it attached (like the CE-1600P). Its cassette recorder is not
+    // connected here: the CE-150's cassette is not offered on the PC-1600.
     bool attachCE150(const uint8_t* rom, size_t romSize); // 8192 bytes
     void detachCE150();
     bool ce150Attached() const { return m_ce150Card != nullptr; }

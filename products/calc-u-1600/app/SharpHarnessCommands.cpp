@@ -298,6 +298,9 @@ const media::KindDecl& recordingKind() {
     return k;
 }
 
+const char* const kNoCassette =
+    "The machine has no cassette: a CE-150 on the PC-1500 or PC-1500A, or a CE-1600P on the PC-1600, brings one.";
+
 bool hasCassette(machine::Machine& m) {
     for (const auto& e : m.capabilities(media::MediaPlace::kKind))
         if (auto* p = machine::capabilityAs<media::MediaPlace>(m, e.id); p && p->id().value == "cassette-recorder") return true;
@@ -316,7 +319,7 @@ Reply cassetteCmd(CommandContext& c, const SharpHarnessParts& parts) {
     if (!m) return noMachine();
     if (!w.empty() && w[0] == "status" && w.size() == 1) {
         const sharp::TapeDeckAccess* deck = calcu::machine::first<sharp::TapeDeckAccess>(*m);
-        if (!deck) return refusedReply("The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.");
+        if (!deck) return refusedReply(kNoCassette);
         const TapeDeck::Status s = deck->status();
         const char* mode = s.mode == TapeDeck::Mode::Play ? "playing" : s.mode == TapeDeck::Mode::Record ? "recording" : "empty";
         std::vector<std::string> lines;
@@ -332,7 +335,7 @@ Reply cassetteCmd(CommandContext& c, const SharpHarnessParts& parts) {
         return doneReply(std::move(v), std::move(lines));
     }
     if (w.size() != 2 || w[0] != "record") return refusedReply("usage: c1600 cassette record <file.wav> | cassette status");
-    if (!hasCassette(*m)) return refusedReply("The machine has no cassette: neither a CE-150 nor a CE-1600P is plugged in.");
+    if (!hasCassette(*m)) return refusedReply(kNoCassette);
     SharpAppPart* app = parts.app ? parts.app() : nullptr;
     if (!app) return notInThisRun();
     std::error_code ec;

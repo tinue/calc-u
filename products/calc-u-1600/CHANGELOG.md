@@ -81,9 +81,12 @@
   folder is `Cassettes` in the save folder (`[storage] cassette-folder`);
   the control bar and its dialogs say "Cassette" ("Cassette:", "Save
   Cassette", "Cassette name:"). The cassette picker and the tape counter
-  show whenever a CE-150 or a CE-1600P is plugged in, also a CE-150 on
-  the PC-1600, and the cassette is taken out when its interface is
-  detached.
+  show whenever a CE-150 (PC-1500/1500A) or a CE-1600P is plugged in,
+  and the cassette is taken out when its interface is detached.
+- **The CE-150's cassette is not offered on the PC-1600.** Its plotter
+  works there; a preset step `cassette:` with it is refused ("the
+  CE-150's cassette cannot be used on the PC-1600"), and the control bar,
+  the harness and the test driver have no cassette for it.
 - **Settings start at their defaults** (the INI file
   `Calc-U-1600.ini`); those of 0.8.x are not carried over. The startup
   model is chosen by the model's name ("PC-1500", was "PC-1500 (ROM

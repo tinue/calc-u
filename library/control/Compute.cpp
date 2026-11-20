@@ -163,9 +163,14 @@ private:
             out.mediaPlaces.push_back(std::move(e));
         };
         for (const auto& d : m_.descriptor().mediaPlaces) add(d, {}, std::nullopt);
-        for (const machine::PlugEntry* p : walked_)   // in the order of the place walk
-            if (const machine::PeripheralDescriptor* d = cat_.peripheral(p->peripheral))
-                for (const auto& mp : d->mediaPlaces) add(mp, p->place, p->peripheral);
+        for (const machine::PlugEntry* p : walked_) {   // in the order of the place walk
+            const machine::PeripheralDescriptor* d = cat_.peripheral(p->peripheral);
+            const auto at = std::find_if(out.places.begin(), out.places.end(),
+                                         [&](const PlaceEntry& e) { return e.path == p->place; });
+            if (!d || at == out.places.end()) continue;
+            for (const auto& mp : d->mediaPlaces)
+                if (mp.existsAt(at->pinOut)) add(mp, p->place, p->peripheral);
+        }
     }
 
     // One paper panel when a printer of the product's list fits a place

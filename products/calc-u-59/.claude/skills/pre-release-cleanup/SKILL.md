@@ -170,7 +170,7 @@ hand into `help/images/`, so name the ones needed. Otherwise the gate stays **op
 Run all of these, including when this session changed no code: a release needs
 them passing on the final tree.
 
-- The three builds in `CLAUDE.md` § "Frontend Parity": CMake with ctest,
+- The three builds in `CLAUDE.md` § "Frontend Parity": `../../tools/run_tests.sh calc-u-59`,
   `xcodebuild` for macOS, and `frontends/web/build.sh && frontends/web/run-tests.sh`.
 - `../../tools/run_qt.sh 59 --build`.
 - The site's build, check and tests, as `site-59` describes.

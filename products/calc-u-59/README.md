@@ -48,7 +48,8 @@ The code is layered: `core/` emulates the hardware, `app/` (C++20, standard libr
 **C++ build, tests and Qt6 app:** the source repository's root CMake project compiles `core/`, `app/`, the C++ test suite and, when Qt6 is found, the Qt app (`-DCALCU_FRONTEND_QT=OFF` skips it, `-DCALCU_PRODUCT_1600=OFF` leaves out Calc-U-1600). From this directory:
 
 ```bash
-cmake -S ../.. -B ../../build/tests -G Ninja -DCALCU_FRONTEND_QT=OFF && cmake --build ../../build/tests && ctest --test-dir ../../build/tests/products/calc-u-59 --output-on-failure
+../../tools/run_tests.sh calc-u-59            # every Frequent test of the product, in ../../build/tests
+../../tools/run_tests.sh calc-u-59 <text>     # the TESTs whose name contains <text>
 ```
 
 `../../tools/run_qt.sh 59 --build` builds the Qt app into the repository's `build/app-59` tree; `../../tools/run_qt.sh 59 [file.ti59]` builds and starts it. On macOS, Qt comes from Homebrew and the Qt build is for development only. The Windows and Linux packages are built by CI (the repository's `.github/workflows/calc-u-59.yml`), which also lists the packages each platform needs.

@@ -10,7 +10,7 @@ where they disagree.
 
 - [README.md](../../README.md) § "Building" — the Swift app, the root
   CMake project with the tests and the Qt6 app, the web client.
-- `../../tools/run_tests.sh calc-u-59 [filter]` (repository root) — every
+- `tools/run_tests.sh calc-u-59 [filter]` at the repository root — every
   Frequent CTest entry of the product, `-O1`, in the repository's
   `build/tests` tree; a filter runs the `TEST`s whose name contains it.
 - [roms/README.md](../../roms/README.md) — where each ROM image comes from;

@@ -50,6 +50,18 @@ Tests: `tools/helptool/tests/` (`python3 -m unittest discover -s
 helptool/tests -t .` in `tools/`; CTest `LibraryHelpTool`), on the fixture
 help tree `tools/helptool/tests/fixtures/good/`.
 
+## run_tests.sh: a product's Frequent tests
+
+```sh
+tools/run_tests.sh calc-u-59           # every Frequent CTest entry of the product
+tools/run_tests.sh calc-u-1600 ce158   # the TESTs whose name contains ce158, in each runner program
+```
+
+Builds the product's runner programs (and `calcu`) in the repository's
+`build/tests` tree, configured the first time as Debug without the Qt apps
+(the cores and the test programs at `-O1`), and runs them from the product
+directory. The product is `calc-u-59` or `59`, `calc-u-1600` or `1600`.
+
 ## run_qt.sh: a product's Qt6 app, built and started
 
 ```sh

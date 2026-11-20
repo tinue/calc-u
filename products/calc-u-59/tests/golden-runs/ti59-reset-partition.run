@@ -1,9 +1,9 @@
-# First step 7: a partition other than the ROM's default, then today's Reset.
+# First step 7: a partition other than the ROM's default, then Reset.
 model TI-59
 boot
 keys Op 1 6
 keys 4 Op 1 7
 keys Op 1 6
-app-reset
+reset
 boot
 keys Op 1 6

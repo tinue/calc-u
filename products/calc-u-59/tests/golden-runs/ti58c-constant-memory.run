@@ -1,4 +1,4 @@
-# The TI-58C: filled, then started again the way 2.3.0 starts it (first step 11).
+# The TI-58C: filled, then switched off and on again: the constant memory keeps it (first step 11).
 model TI-58C
 boot
 keys 4 2 STO 0 5
@@ -6,16 +6,15 @@ keys Fix 2
 keys 3 Op 1 7
 keys LRN 1 + 2 = R/S LRN
 keys CLR
-save-ram
-app-poweron
+power-cycle
 boot
 keys RCL 0 5
 keys Op 1 6
 keys RST R/S
 idle
-app-reset
+reset
 boot
 keys RCL 0 5
-app-coldboot
+cold-boot
 boot
 keys RCL 0 5

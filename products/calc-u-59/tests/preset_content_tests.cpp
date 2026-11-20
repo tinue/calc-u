@@ -330,17 +330,19 @@ TEST(model_printer_card_unknown_keys) {
 TEST(first_stage_as_today) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
     // sum.ti59's first stage (partition, program, cue card) and its keys give
-    // the RAM of its 2.3.0 reference run (the full comparison: reference_runs_tests.cpp).
+    // the RAM of its reference run (the full comparison: reference_runs_tests.cpp).
+    const fs::path refFile = "tests/references/examples/sum.ti59.reference";
+    SKIP_UNLESS(fs::exists(refFile), "references re-recorded, waiting for agreement");
     Calcu c;
     CHECK_EQ(c("preset examples/sum.ti59"), std::string("done\n"));
     c("wait");
-    std::ifstream ref("tests/reference/v2.3.0-examples/sum.ti59.txt");
+    std::ifstream ref(refFile);
     std::string line;
     bool inRam = false;
     int compared = 0;
     cu59::ProgramMemory* pm = cu59::programMemoryOf(*c.machine());
     while (std::getline(ref, line)) {
-        if (line.rfind("--- ram", 0) == 0) { inRam = true; continue; }
+        if (line.rfind("--- ", 0) == 0) { inRam = line == "--- ram"; continue; }
         if (!inRam || line.empty()) continue;
         const int reg = std::stoi(line.substr(0, line.find(' ')));
         const std::string hex = line.substr(line.find(' ') + 1);

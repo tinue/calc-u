@@ -4,6 +4,6 @@ boot
 keys Op 1 6
 keys 2 Op 1 7
 keys Op 1 6
-app-reset
+reset
 boot
 keys Op 1 6

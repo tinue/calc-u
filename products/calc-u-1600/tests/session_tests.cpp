@@ -1,6 +1,6 @@
 // The library's app session in Calc-U-1600: operations in parts with live
-// updates, the buzzer only at regular speed, and 0.8.1's callbacks as
-// messages. That the product has no session of its own and the Qt6 app
+// updates, the buzzer only at regular speed, and what the session tells a
+// frontend as messages. That the product has no session of its own and the Qt6 app
 // sends no suspend is the CTest CalcU1600NoOwnSession; the Web's suspend is
 // frontends/web/tests/suspend.spec.js. On a scripted clock; SKIP
 // without ROMs.
@@ -157,8 +157,7 @@ TEST(buzzer_heard_at_regular_speed_only) {
     CHECK(duringOp == 0);
 }
 
-// Everything 0.8.1's callbacks announced
-// (Shared/MachineSession.hpp:69-93, Shared/AppSession.hpp:62-84) arrives
+// What a frontend is told arrives
 // as messages a test frontend keeps, under the owners' names: the
 // library's `control-state`, `media`, `run-state`, `notices`, `log`,
 // `busy`, `roms-missing` and serial links; the product's own `c1600.lamps`.

@@ -322,7 +322,7 @@ void checkReferencePicture(const calcu::paper::PaperDescription& d, const std::s
 
 TEST(reference_pictures_of_the_plotters) {
     checkReferencePicture(sharp::ce150PaperDescription(),
-                          "tests/reference/v0.8.1-examples/plotter_ce150_demo.pc1500a.CE-150.paper-marks",
+                          "tests/fixtures/paper/ce150.marks",
                           "tests/fixtures/paper/ce150.png", 2646);   // 56 mm at 1200 dpi
     checkReferencePicture(sharp::ce1600pPaperDescription(), "tests/fixtures/paper/ce1600p.marks",
                           "tests/fixtures/paper/ce1600p.png", 9921);   // a short CE-1600P paper at 1200 dpi

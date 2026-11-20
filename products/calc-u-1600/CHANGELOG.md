@@ -25,10 +25,12 @@
   the one-time checks `dev/tape-matrix/` and `dev/loader-matrix/` are
   gone. Their functions are harness commands (`preset`, `wait`,
   `display-text`, `screenshot`, `audio`, `peek`, `registers`, `history`,
-  `profile`, `eject`, and under `c1600` `dump-basic`, `inspect`,
+  `profile`, `eject`, and under `c1600` `inspect`,
   `cassette record|status`, `serial`, `host-drive`, `call`); the bare
   ROM-file mode of `pc1500_cli`, the probes and the matrices have no
-  successor. A serial port gets a pseudo-terminal only when `link` asks
+  successor. What `--dump-basic` printed is in the INSPECTOR's views
+  `pointers` (the BASIC pointers) and `dump-basic` (the BASIC area),
+  `c1600 inspect <view>`. A serial port gets a pseudo-terminal only when `link` asks
   for one (was `--ce158-pty`). For developers only.
 - **Automated tests with pytest.** A user guide
   (`docs/testing/README.md`): setting up on macOS, Linux and WSL, a test

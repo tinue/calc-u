@@ -21,7 +21,7 @@
 #include "Machine/SharpProductKinds.hpp"
 #include "MachineCodeFile.hpp"
 #include "Tape/TapeDeck.hpp"
-#include "app/BasicDump.hpp"
+#include "app/BasicListing.hpp"
 #include "app/SerialScripts.hpp"
 #include "app/SharpAppPart.hpp"
 #include "app/SharpFileKinds.hpp"
@@ -219,40 +219,6 @@ Reply loadCodeCmd(CommandContext& c) {
     lines.push_back(std::string("started: ") + (l->started ? "yes" : "no"));
     v.set("started", l->started);
     return doneReply(std::move(v), std::move(lines));
-}
-
-// ── dump-basic ──────────────────────────────────────────────────────────
-
-Reply dumpBasicCmd(CommandContext& c) {
-    if (!c.line.argText.empty()) return refusedReply("usage: c1600 dump-basic");
-    machine::Machine* m = machineOf(c);
-    if (!m) return noMachine();
-    const sharp::LoaderMemory* mem = calcu::machine::first<sharp::LoaderMemory>(*m);
-    if (!mem) return refusedReply("The machine has no BASIC memory.");
-    BasicDump d = basicDump(*mem);
-    harness::Value pointers = harness::Value::array();
-    for (const BasicPointer& p : d.pointers) {
-        harness::Value o = harness::Value::object();
-        o.set("name", p.name);
-        o.set("address", static_cast<unsigned>(p.address));
-        o.set("value", static_cast<unsigned>(p.value));
-        if (p.z80) o.set("z80", static_cast<unsigned>(*p.z80));
-        if (p.length) o.set("length", *p.length);
-        pointers.push(std::move(o));
-    }
-    harness::Value rows = harness::Value::array();
-    for (const BasicRow& r : d.rows) {
-        harness::Value o = harness::Value::object();
-        o.set("address", static_cast<unsigned>(r.address));
-        harness::Value bytes = harness::Value::array();
-        for (std::uint8_t b : r.bytes) bytes.push(static_cast<unsigned>(b));
-        o.set("bytes", std::move(bytes));
-        rows.push(std::move(o));
-    }
-    harness::Value v = harness::Value::object();
-    v.set("pointers", std::move(pointers));
-    v.set("rows", std::move(rows));
-    return doneReply(std::move(v), std::move(d.lines));
 }
 
 // ── list-basic ──────────────────────────────────────────────────────────
@@ -577,7 +543,6 @@ void addSharpHarnessCommands(harness::CommandRegistry& r, SharpHarnessParts part
     r.addProduct("c1600", "type-basic", typeBasicCmd, "type-basic <file>  type a BASIC listing in (PRO mode)");
     r.addProduct("c1600", "load-code", loadCodeCmd,
                  "load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803|z80>] [run]  load machine code");
-    r.addProduct("c1600", "dump-basic", dumpBasicCmd, "dump-basic  the BASIC pointers and the program area");
     r.addProduct("c1600", "list-basic", listBasicCmd, "list-basic  the BASIC program as listing lines");
     r.addProduct("c1600", "inspect", inspectCmd, "inspect <view>  an INSPECTOR view as text");
     r.addProduct("c1600", "cassette", [parts](CommandContext& c) { return cassetteCmd(c, parts); },

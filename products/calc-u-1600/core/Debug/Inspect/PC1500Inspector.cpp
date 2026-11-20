@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "../../Basic/BasicPointers.hpp"
 #include "../../Connector/PC1500SignalDecode.hpp"
 #include "../../PC1500/PC1500Machine.hpp"
 #include "InspectCommon.hpp"
@@ -31,7 +32,7 @@ struct Ctx {
           cardName(card ? card->moduleName() : std::string()) {}
 
     uint8_t peek(uint16_t a) const { return m.memory().peek(a); }
-    uint16_t be(uint16_t a) const { return uint16_t(peek(a) << 8 | peek(uint16_t(a + 1))); }
+    uint16_t be(uint16_t a) const { return sharp::readBE16(*this, a); }
 
     std::string moduleLabel() const { return card ? "Module " + (cardName.empty() ? std::string("card") : cardName) : "Module slot"; }
 
@@ -87,9 +88,9 @@ bool ce158On(const PC1500Machine& m) { return m.ce158Attached(); }
 const std::vector<Group>& pc1500Pointers() {
     static const std::vector<Group> groups = {
         {"BASIC program",
-         {{"BASPRG_ST", 0x7865, V::Word, "BASIC program start"},
-          {"BASPRG_END", 0x7867, V::Word, "BASIC program end, the FFH mark"},
-          {"BASPRG_EDT", 0x7869, V::Word, "Editor line-modification pointer"},
+         {{"BASPRG_ST", sharp::kPC1500BasicPointers.programStart, V::Word, "BASIC program start"},
+          {"BASPRG_END", sharp::kPC1500BasicPointers.programEnd, V::Word, "BASIC program end, the FFH mark"},
+          {"BASPRG_EDT", sharp::kPC1500BasicPointers.editHead, V::Word, "Editor line-modification pointer"},
           {"CURR_TOP", 0x789E, V::Word, "Start of the program holding the current line"},
           {"CURR_LINE", 0x789C, V::Word, "Current line number"},
           {"PREV_LINE", 0x78A2, V::Word, "Previous line number"},
@@ -110,7 +111,7 @@ const std::vector<Group>& pc1500Pointers() {
         {"Variables and stacks",
          {{"RAM_ST", 0x7863, V::Byte, "Page of the user RAM start"},
           {"RAM_END", 0x7864, V::Byte, "Page one past the user RAM top"},
-          {"VAR_START", 0x7899, V::Word, "Start of the variables (they grow down)"},
+          {"VAR_START", sharp::kPC1500BasicPointers.variables, V::Word, "Start of the variables (they grow down)"},
           {"CURVARADD", 0x7883, V::Word, "Currently accessed variable"},
           {"CURVARTYPE", 0x7885, V::Byte, "Its type"},
           {"STK_PTR_GSB_FOR", 0x7882, V::Byte, "Stack pointer for GOSUB and FOR"},
@@ -155,9 +156,9 @@ Figures figures(const Ctx& c) {
     Figures f;
     f.ramSt = uint16_t(c.peek(0x7863) << 8);
     f.ramEnd = uint16_t(c.peek(0x7864) << 8);
-    f.start = c.be(0x7865);
-    f.end = c.be(0x7867);
-    f.varStart = c.be(0x7899);
+    f.start = c.be(sharp::kPC1500BasicPointers.programStart);
+    f.end = c.be(sharp::kPC1500BasicPointers.programEnd);
+    f.varStart = c.be(sharp::kPC1500BasicPointers.variables);
     f.mlStart = uint16_t(f.ramSt + 0xC5);  // NEW 0: RAM start + C5H (Address-Decoding §5.4)
     return f;
 }

@@ -74,7 +74,6 @@ is none. A file argument is a path relative to the working directory.
 | `c1600 load-basic <file> [<n>]` | loads a BASIC program into memory |
 | `c1600 type-basic <file>` | types a BASIC listing in through the ROM's editor |
 | `c1600 load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803\|z80>] [run]` | loads machine code |
-| `c1600 dump-basic` | the BASIC pointers and the program area |
 | `c1600 list-basic` | the BASIC program as listing lines |
 | `c1600 inspect <view>` | an INSPECTOR view as text |
 | `c1600 cassette record <file.wav>` | a new cassette whose recording goes to the WAV |
@@ -230,51 +229,6 @@ The load dialog's plan (`c1600.code-plan`: the proposed address, the
 processor and its note, where the code would go) is a session request; the
 harness has no command for it.
 
-### `c1600 dump-basic`
-
-The BASIC pointers, one per line, then the program area from its start to
-16 bytes past its end, 16 bytes a row. No arguments.
-
-PC-1500, PC-1500A:
-
-```
-BASPRG_ST  $7865 = $40C5
-BASPRG_END $7867 = $40D2   (len = 13)
-BASPRG_EDT $7869 = $40C5
-VAR_START  $7899 = $....
-DATA_PTR   $78BE = $....
-RAM_END    $7864 = $.. (page)   WARM_START $7A20 = $..
-40C5: 00 0A 09 F1 97 ...  |.....|
-```
-
-PC-1600 (the LH5803's addresses, with the Z-80's beside the start and
-end; Z-80 = LH5803 + $8000 below $8000):
-
-```
-BASPRG_ST  $F865 = $40C5  (Z-80 $C0C5)
-BASPRG_END $F867 = $40D2  (Z-80 $C0D2, len = 13)
-BASPRG_EDT $F869 = $....
-F5CF (LE, RAM base) = $....   F89D (LE) = $....
-VARIABLE_PTR $F899 = $....
-C0C5: 00 0A ... |....|
-```
-
-A row is `<address>: ` and 16 bytes in hex, then the bytes as characters
-between `|` (printable ASCII as it is, any other byte `.`). The rows are in
-the main processor's view (PC-1600: the Z-80's). When the start does not
-lie before the end, the rows are left out and the pointers stand as they
-are.
-
-`--json`: `{"pointers": [{"name", "address", "value", "z80"?, "length"?}],
-"rows": [{"address", "bytes": []}]}`. Pointer names: PC-1500, PC-1500A
-`BASPRG_ST`, `BASPRG_END`, `BASPRG_EDT`, `VAR_START`, `DATA_PTR`,
-`RAM_END`, `WARM_START`; PC-1600 `BASPRG_ST`, `BASPRG_END`, `BASPRG_EDT`,
-`F5CF`, `F89D`, `VARIABLE_PTR`. `z80` is on the PC-1600's `BASPRG_ST` and
-`BASPRG_END`, `length` on `BASPRG_END`.
-
-Refusals: `usage: c1600 dump-basic` (an argument given); `The machine has
-no BASIC memory.`
-
 ### `c1600 list-basic`
 
 The program as listing lines, one per program line, as the detokenizer
@@ -311,6 +265,10 @@ The view of the INSPECTOR, one reply line per line of the view.
 | `dump-ml` | the Machine-Language Area as a dump |
 | `dump-s1`, `dump-s2` | Program Area S1, S2 as a dump |
 | `dump-disk-s1`, `dump-disk-s2` | Disk S1:, S2: as a dump |
+
+The BASIC program's pointers (BASPRG_ST, BASPRG_END, the edit head, the
+variables' start) are rows of `pointers`; its bytes are in `dump-basic`,
+the whole BASIC area (PC-1600: S0) as a dump.
 
 A view the model lacks is a done reply of one line, `<title>: not on the
 PC-1500` or `<title>: not on the PC-1600`.

@@ -194,8 +194,9 @@ TEST(every_function_of_the_table) {
     CHECK(starts(r.line("peek SC7852 memory 0xF865 2"), "done 2\n0xf865: 0x"));
     // --inspect <view>: an INSPECTOR view.
     CHECK(starts(r.line("c1600 inspect pointers"), "done "));
-    // --dump-basic: the BASIC pointers and the program area.
-    CHECK(has(r.line("c1600 dump-basic"), "\nBASPRG_ST  $F865 = $"));
+    // --dump-basic: the BASIC pointers and the program area, two INSPECTOR views.
+    CHECK(has(r.line("c1600 inspect pointers"), "BASPRG_ST"));
+    CHECK(starts(r.line("c1600 inspect dump-basic"), "done "));
     // The summary after a run: registers, the last instructions, where the
     // program counter spent its time.
     r.line("pause");

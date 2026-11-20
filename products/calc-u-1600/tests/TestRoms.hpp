@@ -13,7 +13,7 @@
 #include "TestPresetRoms.hpp"
 
 // ROM loading for the ROM-gated tests. Run from the product folder
-// (CoreTests' working directory): the images live in roms/. Every ROM a
+// (CalcU1600CoreTests' working directory): the images live in roms/. Every ROM a
 // test needs comes from the ROM set of roms/, looked up once through the
 // library's lookup as the app does; the helpers return null /
 // false when a file of the full set is missing, so a test can print SKIP

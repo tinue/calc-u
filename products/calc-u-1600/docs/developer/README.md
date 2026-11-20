@@ -6,17 +6,19 @@ with its debugger) is covered by the help (below, "The help").
 
 ## Build and test
 
-- [Building.md](Building.md) — prerequisites, `libsharpdx`, getting the
-  ROMs, per-platform builds, CLion, running the tests, packaging.
+- [Building.md](../../../../docs/Building.md) (repository root) —
+  prerequisites, `libsharpdx`, getting the ROMs, per-platform builds,
+  CLion, running the tests, packaging.
 - [roms/README.md](../../roms/README.md) — where each ROM image comes from
   and its checksum; `roms/fetch_roms.sh` downloads them: the full set (21
   dumps and the CE-502B's module definition) that the one ROM lookup checks
-  at every start (Building.md, "Get the ROMs").
-- [Cloud-Sessions.md](Cloud-Sessions.md) — how the repository is set up for
-  Claude Code cloud sessions; [CLAUDE.md](../../CLAUDE.md) holds the project
-  instructions for Claude Code.
-- [.github/macos-signing.md](../../.github/macos-signing.md) — how the CI
-  signs and notarizes the macOS app.
+  at every start (Building.md, "Get the source and the ROMs").
+- [Cloud-Sessions.md](../../../../docs/Cloud-Sessions.md) (repository
+  root) — how the repository is set up for Claude Code cloud sessions;
+  [CLAUDE.md](../../CLAUDE.md) holds the project instructions for Claude
+  Code.
+- [macos-signing.md](../../../../docs/macos-signing.md) (repository root)
+  — how the macOS apps are signed and notarized.
 - [TODO.md](../../TODO.md) — known issues, open work and the code-cleanup
   backlog.
 - [CHANGELOG.md](../../CHANGELOG.md) — what changed in each release.
@@ -29,7 +31,6 @@ with its debugger) is covered by the help (below, "The help").
 | `app/` | The app logic every frontend shares, free of Qt: the live machine and its operations, the media kinds of the library's media part, pacing, settings, paths, layouts ([App-Layer.md](App-Layer.md)); the loaders' commands in `app/SharpLoaderPart` (`c1600.file-kind`, `load-basic`, `type-basic`, `code-plan`, `load-code`; the harness's `c1600 …`); `app/tests/` |
 | `frontends/web/` | The web client: WASM bindings, worker, React UI, installable app, Playwright tests ([Web-Client.md](Web-Client.md)) |
 | `frontends/qt6/` | The desktop app (`frontends/qt6/app/`) and its bundled resources: cards, faceplates, platform files (`frontends/qt6/resources/`) |
-| `cmake/` | `CalcU.cmake`: the `calcu1600_core` / `calcu1600_shared` libraries for every CMake build |
 | `firmware/` | Our own ROMs, e.g. the host-drive driver ROM (`firmware/pc1600-hostdrive/`) |
 | `vscode/` | The VS Code debugger extension ([README](../../vscode/calcu1600-debug/README.md)); `tools/install_vscode_extension.sh` packages and installs it |
 | `tools/` | Build scripts, `fetch_sharpdx.sh` / `refresh_sharpdx.sh`, `build_wasm_check.sh` / `build_sharpdx_wasm.sh`, `dap_smoke.py`, `read_trace.py`, `make_screenshots.sh` |

@@ -59,7 +59,7 @@ struct PC1600DisplaySnapshot {
 //
 // Threading: single-threaded, no lock. Above the core it is reached only as
 // a calcu::machine::Machine (built by SharpMachineBuilder; the CTest
-// CalcU1600MachineIncludeCheck keeps its name out of app/ and the frontends).
+// CalcU1600CoreSeam keeps its name out of app/ and the frontends).
 class PC1600Machine final : public sharp::SharpMachine {
 public:
     PC1600Machine(const calcu::machine::MachineDescriptor&, const calcu::machine::VariantId&);

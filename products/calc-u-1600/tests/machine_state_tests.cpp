@@ -4,7 +4,7 @@
 // A state saved while a program runs, then 2 s of emulated time; restored,
 // in the same run and in another, the same 2 s give the same display, the
 // same ticks and the same sound. A program of its own (CTest
-// CalcU1600MachineStateTests, Longer), so that CoreTests' budget stays.
+// CalcU1600MachineStateTests, Longer), so that CalcU1600CoreTests' budget stays.
 #include <filesystem>
 #include <fstream>
 #include <iterator>

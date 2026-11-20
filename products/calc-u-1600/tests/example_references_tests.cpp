@@ -12,10 +12,10 @@
 // `saveas:` wrote, against the ones of examples/dwx/, without their time
 // stamps.
 //
-// Longer (`CalcU1600ExampleReferences`, CALCU1600_REFERENCES=1).
-// CALCU1600_REFERENCES_RECORD=<folder> writes the references of every
+// Longer (`CalcU1600ReferenceRuns`, CALCU1600_REFERENCE_COMPARE=1).
+// CALCU1600_REFERENCE_RECORD=<folder> writes the references of every
 // example into that folder (a draft); it never writes into
-// tests/references/. CALCU1600_REFERENCES_ONLY=<text> limits both to the
+// tests/references/. CALCU1600_REFERENCE_ONLY=<text> limits both to the
 // examples whose name holds the text.
 #include "../app/HarnessProduct.hpp"
 #include "TempFolder.hpp"
@@ -280,16 +280,16 @@ std::vector<std::string> compare(const std::string& preset, const fs::path& copy
 } // namespace
 
 TEST(examples_match_their_references) {
-    const char* draft = std::getenv("CALCU1600_REFERENCES_RECORD");
-    SKIP_UNLESS(draft || std::getenv("CALCU1600_REFERENCES") != nullptr,
-                "the reference runs are Longer (CalcU1600ExampleReferences)");
+    const char* draft = std::getenv("CALCU1600_REFERENCE_RECORD");
+    SKIP_UNLESS(draft || std::getenv("CALCU1600_REFERENCE_COMPARE") != nullptr,
+                "the reference runs are Longer (CalcU1600ReferenceRuns)");
     SKIP_UNLESS(fs::exists("roms/PC1600-P0-B0-new.bin") && fs::exists("roms/PC-1500_A04.ROM"),
                 "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder tmp("c1600-references");
     const fs::path copy = tmp.path();
     fs::copy("examples", copy / "examples", fs::copy_options::recursive);
     if (draft) fs::create_directories(draft);
-    const char* only = std::getenv("CALCU1600_REFERENCES_ONLY");
+    const char* only = std::getenv("CALCU1600_REFERENCE_ONLY");
     int done = 0;
     for (const std::string& preset : examplePresets()) {
         const std::string base = baseOf(preset);

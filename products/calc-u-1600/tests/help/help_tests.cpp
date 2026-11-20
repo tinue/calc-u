@@ -4,7 +4,7 @@
 // (CALCU1600_HELP_KEYS=1 writes it anew); the words a shared part may not
 // use (help/help.yaml's `names:`) cover the catalogue and the bundled
 // module definitions. A program of its own (CalcU1600HelpTests), so that
-// CoreTests' Frequent budget stays as it is.
+// CalcU1600CoreTests' Frequent budget stays as it is.
 
 #include <cstdio>
 #include <cstdlib>

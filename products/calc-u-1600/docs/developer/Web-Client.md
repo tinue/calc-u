@@ -47,13 +47,13 @@ at the repository root).
 ## Build and test
 
 ```sh
-frontends/web/build.sh        # emcmake build of the calcu_web target, then dist/
+frontends/web/build.sh        # emcmake build of the calcu1600_web target, then dist/
 frontends/web/run-tests.sh    # Playwright on ports 8160 and 8161: root, sub-path, offline (Chromium, WebKit), prerender
 ```
 
 `build.sh` needs `emcmake` (emsdk 6.0.13, as for the
-[WebAssembly check](Building.md#webassembly-check)), node and the ROMs. The
-engine is the CMake target `calcu_web` of the repository's root project,
+[WebAssembly check](../../../../docs/Building.md#the-web-clients)), node and the ROMs. The
+engine is the CMake target `calcu1600_web` of the repository's root project,
 built in its `build/web` tree
 (`calcu1600-core.js` / `.wasm`): no `-pthread`, native wasm exceptions,
 `IDBFS`. `build.js` hands the product's values (engine, worker

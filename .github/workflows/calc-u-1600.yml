@@ -3,7 +3,7 @@ name: Calc-U-1600
 # Calc-U-1600 lives in products/calc-u-1600/; every run step
 # works there (defaults below).
 
-# Builds the Qt6 app (see docs/developer/Building.md) on Linux x86_64,
+# Builds the Qt6 app (see the repository's docs/Building.md) on Linux x86_64,
 # Linux arm64, macOS, and Windows. Every job runs roms/fetch_roms.sh
 # before configuring -- ROMs aren't committed here (see roms/README.md),
 # so without this step the build "succeeds" (CMake globs an empty roms/ directory without erroring)
@@ -19,9 +19,8 @@ name: Calc-U-1600
 # macOS runs macdeployqt to embed the Qt frameworks (see
 # frontends/qt6/CMakeLists.txt's MACOSX_BUNDLE), then Developer-ID-signs the .app
 # (hardened runtime), notarizes + staples it, and packages it into a
-# signed/notarized/stapled .dmg -- same Developer ID/Team ID as
-# SharpDataExchange, see products/calc-u-1600/.github/macos-signing.md
-# for the repo secrets this needs and how to rotate them. The windows jobs (one matrix) run
+# signed/notarized/stapled .dmg -- see docs/macos-signing.md for the
+# repository secrets this needs and how to rotate them. The windows jobs (one matrix) run
 # windeployqt so the staged folder is genuinely standalone-runnable (Qt
 # DLLs + MSVC runtime bundled alongside the .exe, since Windows has no
 # equivalent to Linux's "the system already has Qt installed" or macOS's
@@ -53,8 +52,8 @@ env:
 jobs:
   # The repository's root CMake project with Calc-U-1600 only and
   # without Qt: the harness `calcu` (with the product's entry) and the test
-  # programs on top of the calcu1600_core / calcu1600_shared libraries from
-  # cmake/CalcU.cmake; the help's checks (tools/help, Python 3 of the
+  # programs on top of the calcu1600_core / calcu1600_shared libraries of
+  # the product's CMakeLists.txt; the help's checks (tools/help, Python 3 of the
   # runner) run among the tests. This job is
   # the only CI run of the core/ + app/ test suite. The packaging jobs below
   # configure the root too (build/release, CALCU_TESTS off) and build only
@@ -65,13 +64,13 @@ jobs:
       - uses: actions/checkout@v5
 
       # No Qt: core/, app/ and the tests build without it. zlib1g-dev is
-      # CoreTests' own find_package(ZLIB REQUIRED).
+      # CalcU1600CoreTests' own find_package(ZLIB REQUIRED).
       - name: Install build tools
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build zlib1g-dev
 
-      # CoreTests loads roms/PC-1500_A04.ROM relative to the product
+      # CalcU1600CoreTests loads roms/PC-1500_A04.ROM relative to the product
       # directory (which is also the CTest working directory), so this
       # isn't optional here.
       - name: Fetch ROMs
@@ -142,11 +141,11 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends cmake ninja-build zip unzip xz-utils
 
-      - uses: mymindstorm/setup-emsdk@v14
+      - uses: mymindstorm/setup-emsdk@v16
         with:
           version: 6.0.13
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -419,9 +418,8 @@ jobs:
         # launch.
         run: $(brew --prefix qt)/bin/macdeployqt $QT_BUILD/Calc-U-1600.app
 
-      # See products/calc-u-1600/.github/macos-signing.md (same Developer
-      # ID, team 7Q3QN9AV9J, as SharpDataExchange) for how these repo
-      # secrets were produced and how to rotate them.
+      # See docs/macos-signing.md (Developer ID, team 7Q3QN9AV9J) for how
+      # these repository secrets are produced and how to rotate them.
       - name: Import signing certificate
         env:
           APP_P12_B64: ${{ secrets.APPLE_CERT_APPLICATION_P12_BASE64 }}

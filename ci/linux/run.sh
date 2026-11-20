@@ -69,7 +69,7 @@ ignored() {
 # The copy compares contents (--checksum) and gives a copied file the time
 # of the copy (--no-times): with the source's times a file changed after an
 # earlier run's build could look older than its object, and ninja would keep
-# the stale object (seen once: a link error and a crash of CoreTests that a
+# the stale object (seen once: a link error and a crash of CalcU1600CoreTests that a
 # fresh volume did not have).
 # run_in <target> <job>...: the copy, then the jobs, in that target's image.
 # A web job gets its own build/web per product, since each product's

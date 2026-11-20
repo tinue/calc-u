@@ -18,7 +18,7 @@
 
 // Sharp machines built through the machine interface for the tests
 // (sharp_machine_tests, descriptor_tests, peripherals_tests). Run from
-// products/calc-u-1600 (CoreTests' working directory). The ROM images come
+// products/calc-u-1600 (CalcU1600CoreTests' working directory). The ROM images come
 // from the ROM set of roms/ (testRomSet()); a helper returns null /
 // false when a file of the full set is missing, so a test can SKIP.
 

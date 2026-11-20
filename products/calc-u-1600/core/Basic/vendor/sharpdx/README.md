@@ -24,7 +24,7 @@ frameworks.
 ## Linking
 
 Every CMake build (the Qt6 app, the tests, the web engine) links it through
-the `calcu_sharpdx` target in `cmake/CalcU.cmake`. Only the script builds
+the `calcu_sharpdx` target in the product's `CMakeLists.txt`. Only the script builds
 (`tools/build_*.sh`) pass the archive path on the clang++ command line.
 
 `ld` prints a handful of `object file ... was built for newer 'macOS'

@@ -64,7 +64,7 @@ file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.iss
      CONTENT "#define APP_VERSION \"@APP_VERSION@\"\n" @ONLY)
 
 # core/ and app/ are the calcu1600_core / calcu1600_shared static libraries the
-# product's CMakeLists.txt makes (cmake/CalcU.cmake), with libsharpdx, which
+# product's CMakeLists.txt makes, with libsharpdx, which
 # classifies and tokenizes every program the loaders read.
 
 # MACOSX_BUNDLE: build a real .app on macOS (Contents/MacOS + Contents/

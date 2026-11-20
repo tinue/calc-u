@@ -27,7 +27,7 @@ flowchart TB
 - **A frontend** keeps widgets and painting, dialogs, menus, settings
   storage, the audio device, the debugger transport and packaging.
 
-Both libraries are built by [`cmake/CalcU.cmake`](../../cmake/CalcU.cmake)
+Both libraries are built by the product's [`CMakeLists.txt`](../../CMakeLists.txt)
 (`calcu1600_core`, and `calcu1600_shared` for `app/`) for the Qt app, the harness, the tests and the WebAssembly check.
 
 ## Rules
@@ -83,7 +83,7 @@ Both libraries are built by [`cmake/CalcU.cmake`](../../cmake/CalcU.cmake)
 `SharpAppPart` builds the live machine and hands it to the library's
 machine session (`MachineSession::setMachine`, with its pacing profile),
 which owns it (the library's machine interface, `library/machine/`). Nothing in `app/` or a frontend names
-`PC1500Machine` or `PC1600Machine`: the CTest `CalcU1600MachineIncludeCheck`
+`PC1500Machine` or `PC1600Machine`: the CTest `CalcU1600CoreSeam`
 (`tools/check_machine_includes.sh`, Frequent and CI) fails the build when a
 file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
 
@@ -204,7 +204,7 @@ time, three presets through `load-preset`, typed input. `libsharpdx-wasm.a` is t
 program loaders' Rust library built for `wasm32-unknown-emscripten`
 (`tools/build_sharpdx_wasm.sh`). Native wasm exceptions
 (`-fwasm-exceptions`), no threads; there are no host links there (the
-library's `NoHostLink.cpp`). The web client builds the same libraries as the `calcu_web`
+library's `NoHostLink.cpp`). The web client builds the same libraries as the `calcu1600_web`
 target ([Web-Client.md](Web-Client.md)).
 
 ## Not in the app layer yet

@@ -1,7 +1,7 @@
 // The ROM lookup of Calc-U-1600:
 // the full set and its fetch list, the binary check, the CE-502B's module
 // definition from the ROM repository, and a start without the full set.
-// Run from products/calc-u-1600 (CoreTests' working directory); SKIP without
+// Run from products/calc-u-1600 (CalcU1600CoreTests' working directory); SKIP without
 // the fetched ROMs in roms/.
 
 #include <algorithm>

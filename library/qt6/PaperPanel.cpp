@@ -39,6 +39,7 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     ownerLabel_->setObjectName(QStringLiteral("paper-owner"));
     header->addWidget(ownerLabel_);
     viewToggle_ = new QToolButton(this);
+    viewToggle_->setFocusPolicy(Qt::NoFocus);
     viewToggle_->setObjectName(QStringLiteral("paper-view-toggle"));
     viewToggle_->setCheckable(true);
     viewToggle_->setToolTip(tr("Switches between the marks and the text"));
@@ -49,10 +50,12 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     header->addWidget(controlsBox_);
     header->addStretch(1);
     copy_ = new QToolButton(this);
+    copy_->setFocusPolicy(Qt::NoFocus);
     copy_->setObjectName(QStringLiteral("paper-copy"));
     copy_->setText(tr("Copy"));
     header->addWidget(copy_);
     cut_ = new QToolButton(this);
+    cut_->setFocusPolicy(Qt::NoFocus);
     cut_->setObjectName(QStringLiteral("paper-cut"));
     cut_->setText(tr("Cut"));
     header->addWidget(cut_);
@@ -63,7 +66,8 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     text_ = new QPlainTextEdit(stack_);
     text_->setObjectName(QStringLiteral("paper-text"));
     text_->setReadOnly(true);
-    text_->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+    text_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    text_->setFocusPolicy(Qt::NoFocus);
     QFont fixed = QFontDatabase::systemFont(QFontDatabase::FixedFont);
     fixed.setStyleHint(QFont::TypeWriter);
     fixed.setFixedPitch(true);
@@ -221,6 +225,7 @@ void PaperPanel::rebuildControls() {
     for (QToolButton* b : controlsBox_->findChildren<QToolButton*>()) delete b;
     for (const auto& c : controls_) {
         auto* b = new QToolButton(controlsBox_);
+        b->setFocusPolicy(Qt::NoFocus);
         const std::string id = c.id.value;
         b->setObjectName(QString::fromStdString("paper-control-" + id));
         b->setText(QString::fromStdString(id));
@@ -280,6 +285,7 @@ void PaperPanel::toast(const QString& sentence) {
 
 PaperView::PaperView(QWidget* parent) : QAbstractScrollArea(parent) {
     setObjectName(QStringLiteral("paper-view"));
+    setFocusPolicy(Qt::NoFocus);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);   // no scroll bar
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setFrameShape(QFrame::NoFrame);

@@ -4,6 +4,7 @@
 namespace calcu::qt6 {
 
 MediaPicker::MediaPicker(QWidget* parent) : QComboBox(parent) {
+    setFocusPolicy(Qt::NoFocus);
     connect(this, qOverload<int>(&QComboBox::activated), this, [this](int i) { chosen(i); });
 }
 

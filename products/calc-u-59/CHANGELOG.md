@@ -31,6 +31,7 @@
 - **Web embedding** For site authors: the component is `CalcU59`, with `CalcU59.portraitWidth(h)`; the global `PlayCalculator` is gone. The props are `width`, `keyboard` (now on by default), `layout` (`portrait`, `wide`, `auto`), `preset`, `height`, `model` (the model's name only), `workerUrl` and `settings`; the `module` prop and the demo page's `?module=` are gone, as a preset sets the module. An unknown `model` or `preset` gives a notice, and an unknown `layout` a console warning. <!-- appstore: skip -->
 
 ### Fixes
+- **Keyboard** Qt app: the buttons and pickers of the control bar and the paper panel no longer take the keyboard focus, so Tab no longer moves the focus away from the calculator.
 - **Accuracy** At regular speed the TI-59 and the TI-58C no longer run 0.13% and 0.10% slow.
 - **Keyboard** A second key pressed while another is held no longer releases the first; both reach the calculator, and a key-up releases only its own key. At full speed, one press of Adv no longer feeds many lines, and an elapsed time measured over a full-speed stretch no longer counts the extra time a key was held.
 

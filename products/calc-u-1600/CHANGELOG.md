@@ -260,6 +260,9 @@
   is written; it used to be written, and the file could not be read
   again.
 - **Web: `?preset=examples:…`** finds the preset; the prefix was doubled.
+- **PC-1600 with a CE-150: the cassette recorder runs.** CLOAD and CSAVE
+  in MODE 1 start the motor and move the tape; the recorder was not wired
+  to the CE-150 on the PC-1600.
 - **Idle is the same question on every model.** A preset item, the
   harness's `wait` and the test driver wait until the machine waits for
   the user and nothing is busy: the prompt, INPUT, a PRINT stop, a program

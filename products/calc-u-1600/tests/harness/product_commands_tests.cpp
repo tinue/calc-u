@@ -314,6 +314,32 @@ TEST(record_ejects_the_tape_in_first) {
     CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
 }
 
+// The CE-150 on the PC-1600 (MODE 1) drives its own cassette recorder: CLOAD
+// starts the motor and the tape moves.
+TEST(ce150_on_pc1600_plays_its_cassette) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    calcu::testing::TempFolder dir("c1600-ce150-pc1600-tape");
+    fs::copy_file("tests/fixtures/tape/pc1500_tape.wav", dir.path() / "t.wav");
+    writeFile(dir.path() / "t.cassette.yaml",
+              "format: cassette\nformat-version: 1\ncassette-name: \"T\"\naudio: { file: t.wav }\n");
+    Run r;
+    CHECK(r.ok());
+    if (!r.ok()) return;
+    CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
+    CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
+    r.line("wait 15s");
+    for (const char* l : {"key mode", "type NEW0", "key mode", "type MODE1"}) {
+        r.line(l);
+        r.line("wait 500ms");
+    }
+    CHECK_EQ(r.line("cassette { file: " + (dir.path() / "t.cassette.yaml").string() + " }"), std::string("done\n"));
+    r.line("type CLOAD");
+    r.line("wait 5s");
+    const std::string status = r.line("c1600 cassette status");
+    CHECK(has(status, "\nmotor: on\n"));
+    CHECK(!has(status, "playing 0.000000000"));
+}
+
 TEST(status_playing_recording_empty) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder dir("c1600-cassette-status");

@@ -231,6 +231,7 @@ bool PC1600Machine::attachCE150(const uint8_t* rom, size_t romSize) {
     detachCE150Locked();
     detachCE1600PLocked(); // one plotter on the bus at a time
     card->reset();
+    card->connectRecorder(&m_tapeDeck);   // its cassette recorder, as on the PC-1500
     m_z80Mem.systemBus().attach(card.get());
     m_ce150Card = std::move(card);
     return true;

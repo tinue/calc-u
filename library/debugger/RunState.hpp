@@ -66,8 +66,6 @@ struct RunState final : sessions::PayloadOf<RunState> {
     sessions::Value toValue() const override;
 };
 
-const char* reasonName(RunState::Reason);   // "pause", "step", "breakpoint", "watch", "pause-on-start", "entry"
-
 struct TraceState final : sessions::PayloadOf<TraceState> {
     static constexpr sessions::PayloadKind kKind{"trace"};
     bool running = false;

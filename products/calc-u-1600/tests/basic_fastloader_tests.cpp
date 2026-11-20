@@ -1,4 +1,4 @@
-// Headless C++ tests for Core/PC1500/PC1500BasicLoader.cpp -- the fast
+// Headless C++ tests for core/PC1500/PC1500BasicLoader.cpp -- the fast
 // (poke + fix BASPRG_END) BASIC program loader. Needs a real ROM
 // (roms/PC-1500_A04.ROM, relative to the repo root); skips (not fails) if
 // it is missing, same convention as basictyper_tests.cpp.

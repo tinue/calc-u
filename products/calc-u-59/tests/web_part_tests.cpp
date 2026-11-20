@@ -58,7 +58,7 @@ struct WebPieces {
 // The Web engine's session, natively: the Web part behind the product's.
 struct WebRig : WebPieces, testroms::SessionRig {
     explicit WebRig(bool started = true)
-        : SessionRig(testroms::RigOptions{.model = settings::modelNamed(calcu::settings::startupModel(*file)).value_or(cu59::Model::TI59),
+        : SessionRig(testroms::RigOptions{.model = modelFrom({calcu::settings::startupModel(*file)}).value_or(cu59::Model::TI59),
                                           .before = {settingsPart.get()}, .after = {web.get()},
                                           .saveFolder = dirs.saveFolder, .noTraceFolder = true, .settings = file.get(),
                                           .examplesFolder = (webFolder.path() / "presets").string(), .start = false}) {
@@ -99,7 +99,7 @@ TEST(web_start_takes_the_model_by_name_and_a_bundled_preset) {
     r.send("start", Value::object({{"model", ""}, {"preset", "examples:one.ti59"}}));
     r.run(2s);
     CHECK(r.part().model() == Model::TI58);
-    CHECK_EQ(testroms::mem(r.part().emulator()->machine()).readDataReg(5), 3.25);
+    CHECK_EQ(testroms::mem(*r.part().machine()).readDataReg(5), 3.25);
     CHECK(r.notices().empty());
 }
 

@@ -3,7 +3,6 @@
 #include "debugger/DebuggerPart.hpp"
 #include "machine/Catalogue.hpp"
 #include "media/MediaPart.hpp"
-#include "opening/LibraryOpeners.hpp"
 #include "opening/OpenPart.hpp"
 #include "paper/PaperPart.hpp"
 #include "peripherals/PeripheralsPart.hpp"
@@ -89,8 +88,8 @@ struct LibraryPartsSetup {
     // Where several files become one folder (the Web hosts'
     // uploads folder); none: several files are opened one by one.
     std::optional<std::string> uploadFolder;
-    // The product's control rules.
-    std::vector<const control::ControlRules*> controlRules;
+    // The product's control rules (null: none).
+    const control::ControlRules* controlRules = nullptr;
 };
 
 // The parts of others, in their places of the session's order (above).
@@ -143,8 +142,6 @@ private:
     std::unique_ptr<paper::PaperPart> paper_;
     std::unique_ptr<debugger::DebuggerPart> debugger_;
     std::unique_ptr<media::MediaPart> media_;
-    std::unique_ptr<opening::PresetsOpener> presetsOpener_;
-    std::unique_ptr<opening::MediaOpener> mediaOpener_;
     std::unique_ptr<opening::OpenPart> open_;
     std::unique_ptr<control::ControlPart> control_;
 };

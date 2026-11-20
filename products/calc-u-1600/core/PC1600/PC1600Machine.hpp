@@ -250,7 +250,8 @@ public:
     // connector, where it answers the LH5803's cycles). Mutually exclusive
     // with the CE-1600P (one plotter at a time) -- attaching one detaches
     // the other. A chip/machine reset re-anchors the card but
-    // leaves it attached (like the CE-1600P).
+    // leaves it attached (like the CE-1600P). Its cassette recorder is not
+    // connected here: the CE-150's cassette is not offered on the PC-1600.
     bool attachCE150(const uint8_t* rom, size_t romSize); // 8192 bytes
     void detachCE150();
     bool ce150Attached() const { return m_ce150Card != nullptr; }
@@ -358,7 +359,7 @@ public:
 
     // ── Memory-slot connectors ───────────────────────────────────────
     // A card plugs in pin-for-pin; MemorySlotConnector drives the PC-1600
-    // bay's pins (see Core/Connector/MemorySlotConnector.hpp).
+    // bay's pins (see core/Connector/MemorySlotConnector.hpp).
     void attachSlot1Card(std::unique_ptr<ExpansionCard> card) { m_z80Mem.attachSlot1Card(std::move(card)); }
     void attachSlot2Card(std::unique_ptr<ExpansionCard> card) { m_z80Mem.attachSlot2Card(std::move(card)); }
     void detachSlot1() { m_z80Mem.detachSlot1(); }
@@ -480,7 +481,7 @@ public:
     DebugBankState inspectBankState() const;
 
     /// Runs `view(*this)` and returns its result: one consistent snapshot
-    /// for the inspector (Core/Debug/Inspect), which reads through the const
+    /// for the inspector (core/Debug/Inspect), which reads through the const
     /// accessors and the inspect*() calls only.
     template <class F>
     auto debugInspect(F&& view) const {
@@ -531,11 +532,10 @@ private:
     TapeDeck m_tapeDeck{double(kPC1600TStateHz)}; // see tapePlay()
     std::unique_ptr<CE1600PCard> m_ce1600pCard; // see attachCE1600P()
     uint64_t m_elapsedTStates{0};                 // see elapsedTStates()
-    // keyReady(): the frame grid since the build, the scan count at the last
-    // frame end, and how many frames in a row were ready.
+    // keyReady(): the frame grid since the build and how many frames in a
+    // row were ready.
     static constexpr int kReadyFrameTStates = static_cast<int>(kTStateHz / 60);
     int m_readyFrameAccum{0};
-    uint64_t m_readyLastScan{0};
     int m_readyFrames{0};
     bool m_keyReadInFrame{false};   // KEYGETR or KEYDIRECT entered in this frame (not in the state record)
     struct MediumWaits {

@@ -208,7 +208,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   documented (the Service Manual lists the CE-1600P's reset, KL, but not
   the RESET switch among the power-on sources).
 - **Power cycle behind the machine interface**: `Machine::powerCycle()` runs
-  0.8.1's sequence over the following advances (`off` 4 frames, up to
+  its sequence over the following advances (`off` 4 frames, up to
   180 frames to the off point, `on` 4 frames; `core/Machine/PowerCycleSequence.hpp`).
   An attach or detach on a running machine reaches the bus at that off
   point; on a switched-off machine at once, and it stays off. The key
@@ -427,8 +427,10 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   devices on (`SETDEV PO` reaches the CE-158), yet `INPUT` after
   `SETDEV KI` still takes the keyboard. Why is open (TODO.md).
   `core/Connector/Ce158Card.hpp`, `LH5803SharedMemory.cpp`
-- **Cassette (CMT) through a CE-150 on the PC-1600** — no tape path
-  (TODO.md, "Cassette tape"). `LH5803SharedMemory.cpp`
+- **Cassette (CMT) through a CE-150 on the PC-1600** — no tape path, and
+  the CE-150's cassette is not offered on the PC-1600 (its media place
+  exists only at the PC-1500's printer pin-out; TODO.md, "Cassette").
+  `LH5803SharedMemory.cpp`, `SharpCatalogue.cpp`
 - **Buzzer: partial.** Modelled: the PC-1500 OPC/PC6 line, the PC-1600 OPC
   b7/b6 line, and the PC-1600 F-register (17H) modulator in its idle case
   (SDO = FX, phi = 1.3 MHz / 4, measured). The PC-1600 also has an

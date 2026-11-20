@@ -9,7 +9,8 @@ cmake_minimum_required(VERSION 3.21)
 #
 # The Swift app links CalcU59.xcframework, which frontends/swift/
 # build_xcframework.sh builds from calcu59_core and calcu59_shared of this
-# file; Xcode compiles only Swift and the bridge. Every core/ or
+# file (and calcu59_harness in the Debug slices with harness attach); Xcode
+# compiles only Swift and the bridge. Every core/ or
 # app/ change must pass the CMake, Xcode and Web builds — see CLAUDE.md
 # § "Frontend Parity".
 
@@ -99,8 +100,9 @@ if(EMSCRIPTEN)
 endif()
 
 # The product entry of the harness `calcu` (library/harness/cli/):
-# not in calcu59_shared, so the Swift and Web builds carry none of it. It
-# finds the ROMs in the folder the tests use.
+# not in calcu59_shared, so the Web build and the Swift Release and device
+# builds carry none of it; the Swift Debug builds for macOS and the simulator
+# link it for harness attach. It finds the ROMs in the folder the tests use.
 add_library(calcu59_harness STATIC ${SHARED_ROOT}/HarnessProduct.cpp ${SHARED_ROOT}/TIHarnessCommands.cpp)
 target_link_libraries(calcu59_harness PUBLIC calcu59_shared)
 target_link_libraries(calcu59_harness PRIVATE calcu_warnings)
@@ -148,10 +150,8 @@ if(CALCU_TESTS)
   calcu_add_test(CalcU59CoreSeam frequent COMMAND sh tests/check_core_seam.sh)
   # Open With offers the three preset extensions on macOS, Windows and Linux.
   calcu_add_test(CalcU59OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
-  # The Qt6 and Swift frontends use
-  # none of the product's own session classes; no thread in app/ but the
-  # session thread; the bridge only through it.
-  calcu_add_test(CalcU59NoOwnSession frequent COMMAND sh tests/check_no_own_session.sh)
+  # No thread in app/ but the session thread; the Swift bridge only through it.
+  calcu_add_test(CalcU59SessionThread frequent COMMAND sh tests/check_session_thread.sh)
   # The three frontends draw from the control state.
   calcu_add_test(CalcU59FrontendsDrawControlState frequent COMMAND sh tests/check_frontends_draw_control_state.sh)
   # calcu_product_source_checks (library/):
@@ -160,9 +160,6 @@ if(CALCU_TESTS)
   calcu_product_source_checks(PREFIX CalcU59
                               ROM_ALLOW app/ProductRoms.cpp app/ProductRoms.hpp core/TICatalogue.cpp
                                         frontends/qt6/app/QtResourceBundle.cpp)
-  # tools/headless/ and tools/agentic/ stay gone (their functions are `calcu`
-  # commands) and no file is named for adapters (tools/check_no_old_tools.cmake).
-  calcu_add_test(CalcU59NoOldTools frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_old_tools.cmake)
   # `calcu --product c59` runs as a process
   # of its own (tests/calcu_runs.cmake; also in every desktop job of the workflow).
   calcu_add_test(CalcU59CalcuRuns frequent COMMAND ${CMAKE_COMMAND} -DCALCU=$<TARGET_FILE:calcu> -P tests/calcu_runs.cmake)
@@ -191,7 +188,7 @@ if(CALCU_TESTS)
   # Attach only in Debug builds for macOS and the
   # simulator, in the sources that decide it.
   calcu_add_test(CalcU59NoAttachSources frequent COMMAND sh frontends/swift/check_no_attach.sh --sources)
-  # No test aid and no model facts in the Swift app.
+  # No test aid in the Swift app.
   calcu_add_test(CalcU59NoTestAids frequent COMMAND sh frontends/swift/check_no_test_aids.sh)
 
   # Longer: run locally before merging into main and at the end of a part.

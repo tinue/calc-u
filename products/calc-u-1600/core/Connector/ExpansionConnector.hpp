@@ -28,7 +28,7 @@ public:
 
     /// Consulted by PC1500Memory only for ME0 addresses whose own decode
     /// (resolve()) already determined are open bus (Y0, the variant's open
-    /// S-range, Y2) or ROM-with-INHIBIT-asserted.
+    /// S-range, Y2).
     bool read(uint16_t addr, bool pu, bool pv, uint8_t& outValue) const {
         if (m_card.empty()) return false;
         return m_card.read(decode(addr, /*forWrite=*/false, pu, pv), outValue);
@@ -44,9 +44,6 @@ public:
         pins.direct = direct;
         return m_card.write(pins, value);
     }
-
-    // Queried on every host-ROM fetch; see InhibitSource.
-    bool inhibitAsserted() const { return m_card.inhibitAsserted(); }
 
 private:
     PC1500Variant m_variant;

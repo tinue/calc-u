@@ -1,4 +1,4 @@
-// Headless C++ tests for Core/PC1600/PC1600ProgramPlacement.cpp -- the
+// Headless C++ tests for core/PC1600/PC1600ProgramPlacement.cpp -- the
 // pure segment-list + scatter-placement logic for the PC-1600 fast BASIC
 // loader. Driven entirely by a synthetic `peek` over the work-area bytes
 // (no CPU, no ROM), checked against the two worked examples in
@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <map>
 
+#include "../core/Basic/BasicPointers.hpp"
 #include "../core/Debug/BasicPointerTable.hpp"
 #include "../core/PC1600/PC1600ProgramPlacement.hpp"
 #include "TestHarness.hpp"
@@ -76,8 +77,8 @@ std::vector<uint8_t> program(int lines, size_t recordSize) {
 TEST(test_stock_single_internal_segment) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 0xFF);      // not 1..5 -> S0 is internal-only
-    m.setBE(pc1600::kBasPrgSt, 0x40C5);
-    m.setBE(pc1600::kVarPtr, 0x6F00); // -> ceiling $EEFF
+    m.setBE(sharp::kPC1600BasicPointers.programStart, 0x40C5);
+    m.setBE(sharp::kPC1600BasicPointers.variables, 0x6F00); // -> ceiling $EEFF
     PlacementInput in = makeInput(m);
 
     PlacementResult r = pc1600::planS0Placement(in, program(1, 100));
@@ -102,7 +103,7 @@ TEST(test_stock_single_internal_segment) {
 TEST(test_two_program_segments) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 0xFF);
-    m.setBE(pc1600::kBasPrgSt, 0x40C5);
+    m.setBE(sharp::kPC1600BasicPointers.programStart, 0x40C5);
     PlacementInput in = makeInput(m);
 
     std::vector<uint8_t> p = program(2, 50);
@@ -138,7 +139,7 @@ TEST(test_ce1600m_slot1_extension_memory) {
     m.set(pc1600::kS2MTb, 0xFF);
     m.set(pc1600::kAdtbl1 + 3, 0x01);   // ADTBL[4] = bank 0 / slot 1
     m.set(pc1600::kAdtbl1 + 4, 0x11);   // ADTBL[5] = bank 1 / slot 1
-    m.setBE(pc1600::kBasPrgSt, 0x00C5);
+    m.setBE(sharp::kPC1600BasicPointers.programStart, 0x00C5);
     PlacementInput in = makeInput(m);
     in.slot1 = ram(0x8000);             // CE-1600M: 32 KB, unbanked
 
@@ -173,7 +174,7 @@ TEST(test_trm_example1_scatter_and_bank_end_mark) {
     m.set(pc1600::kAdtbl1 + 2, 0x01);   // ADTBL[3] = bank 0 / slot 1
     m.set(pc1600::kAdtbl1 + 3, 0x22);   // ADTBL[4] = bank 2 / slot 2
     m.set(pc1600::kAdtbl1 + 4, 0x32);   // ADTBL[5] = bank 3 / slot 2
-    m.setBE(pc1600::kBasPrgSt, 0x20C5); // -> Z-80 $A0C5 (CE-159 window base $A000 + $C5)
+    m.setBE(sharp::kPC1600BasicPointers.programStart, 0x20C5); // -> Z-80 $A0C5 (CE-159 window base $A000 + $C5)
     PlacementInput in = makeInput(m);
     in.slot1 = ram(0x2000);             // CE-159: 8 KB, top-justified at $A000
     in.slot2 = ram(0x8000);             // CE-1600M: 32 KB
@@ -220,7 +221,7 @@ TEST(test_entry5_straddles_into_internal_ram) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 5);
     m.set(pc1600::kAdtbl1 + 4, 0x01);   // ADTBL[5] = bank 0 / slot 1
-    m.setBE(pc1600::kBasPrgSt, 0x3FC5); // -> Z-80 $BFC5, 59 bytes before $C000
+    m.setBE(sharp::kPC1600BasicPointers.programStart, 0x3FC5); // -> Z-80 $BFC5, 59 bytes before $C000
     PlacementInput in = makeInput(m);
     in.slot1 = ram(0x4000);
 
@@ -248,7 +249,7 @@ TEST(test_trm_example2_program_module_region) {
     m.set(pc1600::kAdtbl1 + 1, 0x81);   // ADTBL[2] = bank 0 / slot 1, leading
     m.set(pc1600::kAdtbl1 + 2, 0x11);   // ADTBL[3] = bank 1 / slot 1
     m.set(pc1600::kAdtbl1 + 3, 0xA2);   // ADTBL[4] = bank 2 / slot 2, leading
-    m.setBE(pc1600::kBasPrgSt, 0x40C5);  // the active S0 program still sits in internal RAM
+    m.setBE(sharp::kPC1600BasicPointers.programStart, 0x40C5);  // the active S0 program still sits in internal RAM
     PlacementInput in = makeInput(m);
     in.slot1 = ram(0x8000);
     in.slot2 = ram(0x4000);
@@ -280,7 +281,7 @@ TEST(test_trm_example2_program_module_region) {
 TEST(test_program_too_large) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 0xFF);
-    m.setBE(pc1600::kBasPrgSt, 0x40C5);
+    m.setBE(sharp::kPC1600BasicPointers.programStart, 0x40C5);
     PlacementInput in = makeInput(m);
     PlacementResult r = pc1600::planS0Placement(in, program(700, 100));
     CHECK(!r.ok);
@@ -290,7 +291,7 @@ TEST(test_program_too_large) {
 TEST(test_basprgst_outside_first_segment) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 0xFF);
-    m.setBE(pc1600::kBasPrgSt, 0x0100);  // -> Z-80 $8100, not in the internal segment
+    m.setBE(sharp::kPC1600BasicPointers.programStart, 0x0100);  // -> Z-80 $8100, not in the internal segment
     PlacementInput in = makeInput(m);
     PlacementResult r = pc1600::planS0Placement(in, program(1, 10));
     CHECK(!r.ok);
@@ -317,7 +318,7 @@ TEST(test_vertical_banked_module_uses_bank0) {
     m.set(pc1600::kS2MTb, 0xFE);
     m.set(pc1600::kAdtbl1 + 3, 0x22);    // ADTBL[4] = bank 2 / slot 2
     m.set(pc1600::kAdtbl1 + 4, 0x32);    // ADTBL[5] = bank 3 / slot 2
-    m.setBE(pc1600::kBasPrgSt, 0x00C5);
+    m.setBE(sharp::kPC1600BasicPointers.programStart, 0x00C5);
     PlacementInput in = makeInput(m);
     in.slot2 = bankedRam(0x8000, 2);     // CE-1601M: 64 KB image, 32 KB per vertical bank
 

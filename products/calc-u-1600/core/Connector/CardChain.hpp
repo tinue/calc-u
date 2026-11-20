@@ -8,11 +8,10 @@
 
 // ── The card list behind every connector ─────────────────────────────────
 //
-// One shell for both plug types: which cards are plugged in, which of them
-// can drive INHIBIT, and "offer this access to each card until one claims
-// it". What the pins carry is the owning connector's business (its own
-// decode()), never this class's -- it only dispatches an already-built pin
-// state. `Card` is the card interface of that plug and `Pins` the pin state
+// One shell for both plug types: which cards are plugged in, and "offer
+// this access to each card until one claims it". What the pins carry is the
+// owning connector's business (its own decode()), never this class's -- it
+// only dispatches an already-built pin state. `Card` is the card interface of that plug and `Pins` the pin state
 // its respondsToRead/respondsToWrite take.
 //
 // A 60-pin connector is a real chain (attach() appends; the CE-150 exposes
@@ -33,8 +32,6 @@ public:
     void attachFirst(Card* card) { insert(m_cards.begin(), card); }
     void detach(Card* card) {
         m_cards.erase(std::remove(m_cards.begin(), m_cards.end(), card), m_cards.end());
-        if (auto* source = dynamic_cast<const InhibitSource*>(card))
-            m_inhibit.erase(std::remove(m_inhibit.begin(), m_inhibit.end(), source), m_inhibit.end());
     }
     /// The chain-of-one form: afterwards `card` (or nothing, for null) is
     /// the only card.
@@ -42,10 +39,7 @@ public:
         clear();
         attach(card);
     }
-    void clear() {
-        m_cards.clear();
-        m_inhibit.clear();
-    }
+    void clear() { m_cards.clear(); }
 
     bool empty() const { return m_cards.empty(); }
     const std::vector<Card*>& cards() const { return m_cards; }
@@ -73,8 +67,6 @@ public:
         return false;
     }
 
-    // Queried on every host-ROM fetch; see InhibitSource. Only the cards
-    // that declared the capability are asked.
     /// The cassette lines: CMTOUT goes to every card; CMTIN reads as the
     /// first card that drives it, or `idle` when none does.
     void setCmtOut(bool level) const {
@@ -87,19 +79,11 @@ public:
         return idle;
     }
 
-    bool inhibitAsserted() const {
-        for (const InhibitSource* source : m_inhibit)
-            if (source->assertsInhibit()) return true;
-        return false;
-    }
-
 private:
     void insert(typename std::vector<Card*>::iterator at, Card* card) {
         if (!card || std::find(m_cards.begin(), m_cards.end(), card) != m_cards.end()) return;
         m_cards.insert(at, card);
-        if (auto* source = dynamic_cast<const InhibitSource*>(card)) m_inhibit.push_back(source);
     }
 
     std::vector<Card*> m_cards;
-    std::vector<const InhibitSource*> m_inhibit; // the cards in m_cards that can assert INHIBIT
 };

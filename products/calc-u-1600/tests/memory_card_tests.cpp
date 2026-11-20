@@ -1,6 +1,6 @@
 // Headless C++ tests for the universal software-defined memory module:
-//   * Core/Connector/MemoryCardDefinition.hpp -- parse + validate + resolve
-//   * Core/Connector/SoftwareDefinedCard.hpp  -- the ExpansionCard itself
+//   * core/Connector/MemoryCardDefinition.hpp -- parse + validate + resolve
+//   * core/Connector/SoftwareDefinedCard.hpp  -- the ExpansionCard itself
 //   * the `slot-N:` preset keys and the OUT (28H) -> Slot 2 route
 //
 // Same no-framework, assert-and-tally style as lh5801_tests.cpp.

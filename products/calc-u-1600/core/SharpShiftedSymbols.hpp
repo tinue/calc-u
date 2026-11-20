@@ -9,9 +9,9 @@
 //
 // This is the single C++ source of truth for that table. Callers add
 // their own machine-specific extras:
-//   * Core/PC1500/PC1500TypedInput.hpp also routes a-z here (SHIFT tap =
+//   * core/PC1500/PC1500TypedInput.hpp also routes a-z here (SHIFT tap =
 //     lowercase on the PC-1500's single-legend letter keys).
-//   * Core/PC1600/PC1600TypedInput.hpp also maps the PC-1600 digit-row
+//   * core/PC1600/PC1600TypedInput.hpp also maps the PC-1600 digit-row
 //     second legends (' [ ] ` { } \ ~ |) plus SHIFT + . = _, which the
 //     PC-1500 lacks.
 inline bool sharpShiftedSymbolBaseKey(char c, std::string* base) {

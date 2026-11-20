@@ -24,7 +24,6 @@ namespace calcu::web {
 
 // The persistent file system's mode, from storage.js.
 enum class StorageMode { Kept, SecondCopy, Unreadable, Unavailable };
-const char* storageModeName(StorageMode);
 
 inline const sessions::TopicName kStartTopic{"web.start"};       // {state: "running" | "failed", failure}
 inline const sessions::TopicName kStorageTopic{"web.storage"};   // {mode, sentence}

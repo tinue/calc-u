@@ -84,12 +84,22 @@ TEST(shell_product_form_has_links_and_copy_screen_flag) {
 }
 
 TEST(menu_group_value_names) {
-    CHECK_EQ(std::string(shell::menuGroupName(shell::MenuGroup::FileOpen)), std::string("FileOpen"));
-    CHECK_EQ(std::string(shell::menuGroupName(shell::MenuGroup::FileKinds)), std::string("FileKinds"));
-    CHECK_EQ(std::string(shell::menuGroupName(shell::MenuGroup::FileEnd)), std::string("FileEnd"));
-    CHECK_EQ(std::string(shell::menuGroupName(shell::MenuGroup::Edit)), std::string("Edit"));
-    CHECK_EQ(std::string(shell::menuGroupName(shell::MenuGroup::MachineEnd)), std::string("MachineEnd"));
-    CHECK_EQ(std::string(shell::menuGroupName(shell::MenuGroup::Help)), std::string("Help"));
+    const auto groupOf = [](shell::MenuGroup g) {
+        shell::ShellProduct p;
+        shell::ProductItem i;
+        i.group = g;
+        i.id = "x";
+        p.items.push_back(i);
+        const Value v = shell::toValue(p);
+        return *(*v.find("items")->elements())[0].find("group")->string();
+    };
+    CHECK_EQ(groupOf(shell::MenuGroup::FileOpen), std::string("FileOpen"));
+    CHECK_EQ(groupOf(shell::MenuGroup::FileKinds), std::string("FileKinds"));
+    CHECK_EQ(groupOf(shell::MenuGroup::FileMedia), std::string("FileMedia"));
+    CHECK_EQ(groupOf(shell::MenuGroup::FileEnd), std::string("FileEnd"));
+    CHECK_EQ(groupOf(shell::MenuGroup::Edit), std::string("Edit"));
+    CHECK_EQ(groupOf(shell::MenuGroup::MachineEnd), std::string("MachineEnd"));
+    CHECK_EQ(groupOf(shell::MenuGroup::Help), std::string("Help"));
 }
 
 TEST(dialog_spec_value_form) {

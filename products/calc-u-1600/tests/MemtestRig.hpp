@@ -19,8 +19,7 @@
 // ENTRY 0x40C5) and its sdas listing on a PC-1500A with no ROM, in a session
 // with Calc-U-1600's DebuggerPart, driven through the DAP's layer
 // (app/dap/: DapBreakpoints, DapStepping, DapTargets) -- the run-control
-// cases (0.8.1's Core/tests/run_control_tests.cpp) on the library's run
-// control. A small harness calls it:
+// cases on the library's run control. A small harness calls it:
 //
 //   4600  sjp 0x40C5      ; BE 40 C5
 //   4603  bch 0x4603      ; 9E 02  -- parks here when memtest returns

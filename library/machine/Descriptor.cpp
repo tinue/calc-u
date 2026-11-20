@@ -41,6 +41,10 @@ const std::vector<RomEntry>& PeripheralDescriptor::romsFor(const std::optional<V
     return romsOf(variants, defaultVariant, roms, variant);
 }
 
+bool MediaPlaceDescriptor::existsAt(const PinOutId& id) const {
+    return onlyAt.empty() || std::find(onlyAt.begin(), onlyAt.end(), id) != onlyAt.end();
+}
+
 bool PeripheralDescriptor::fitsPinOut(const PinOutId& id) const {
     return std::find(fits.begin(), fits.end(), id) != fits.end();
 }

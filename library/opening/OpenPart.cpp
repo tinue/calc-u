@@ -1,6 +1,8 @@
 #include "opening/OpenPart.hpp"
 #include "files/Files.hpp"
+#include "media/MediaPart.hpp"
 #include "opening/Classify.hpp"
+#include "presets/PresetsPart.hpp"
 #include "sessions/Args.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <algorithm>
@@ -64,6 +66,19 @@ std::string joinedOr(const std::vector<std::string>& list) {
 }
 
 
+std::string text(const OpenedFile& f) { return f.bytes ? std::string(f.bytes->begin(), f.bytes->end()) : std::string(); }
+
+// `media.open-file` for the file: where it lies, or (an upload) its bytes.
+Value mediumArgs(const OpenedFile& f, const std::optional<std::string>& place, bool upload, bool confirmed) {
+    Value::Object o{{"name", Value(fileNameOf(f))}};
+    if (f.path) o.push_back({"path", Value(*f.path)});
+    if (f.bytes) o.push_back({"bytes", Value(Value::Bytes(*f.bytes))});
+    if (upload) o.push_back({"upload", Value(true)});
+    if (confirmed) o.push_back({"confirmed", Value(true)});
+    if (place) o.push_back({"place", Value(*place)});
+    return Value(std::move(o));
+}
+
 // The file's name without any folder, for a file written into a folder.
 std::string plainName(const OpenedFile& f) {
     std::string n = fileNameOf(f);
@@ -123,7 +138,9 @@ CommandOutcome OpenPart::openOne(const OpenedFile& f, const OpenRequest& req, Se
     case Classified::What::Preset: {
         // From its folder where the host can write it; an upload, or a file
         // without a path, as its content.
-        CommandOutcome o = f.path && !req.upload ? setup_.presets->loadFile(*f.path, c) : setup_.presets->loadContent(f, c);
+        const Value args = f.path && !req.upload ? Value::object({{"ref", *f.path}})
+                                                 : Value::object({{"content", text(f)}, {"name", name}});
+        CommandOutcome o = setup_.presets->loadPreset(args, c);
         return finish(std::move(o), OpenReply(OpenedAs::Preset, name), c);
     }
     case Classified::What::Medium: return openMedium(f, req, c);
@@ -134,31 +151,34 @@ CommandOutcome OpenPart::openOne(const OpenedFile& f, const OpenRequest& req, Se
 }
 
 // A medium: read and checked, its one place now, then used where it lies
-// or (an upload) imported into the save folder.
+// (the file is the medium's instance from then on, written back there unless
+// it is a template) or, an upload, imported into the save folder first. A
+// name already taken there and not confirmed is media's `asks:` refusal.
 CommandOutcome OpenPart::openMedium(const OpenedFile& f, const OpenRequest& req, SessionContext& c) {
-    MediaOpening& m = *setup_.media;
+    media::MediaPart& m = *setup_.media;
     const std::string name = fileNameOf(f);
-    const MediumFile mf = m.read(f);
-    if (mf.refusal) return refuse(c, *mf.refusal);   // with media's hint
+    const media::MediaPart::OpenedMedium medium = m.readOpened(name, text(f), f.path.value_or(std::string()));
+    if (medium.refusal) return refuse(c, *medium.refusal);   // with media's hint
     const machine::Machine& mc = *c.machine();
-    const std::vector<std::string> places = m.placesFor(mf, f, mc);
+    const std::vector<std::string> places = m.placesFor(medium, mc);
     if (places.size() > 1)
         return refuse(c, name + " fits more than one place; choose it in the picker of the place it should go into.");
     if (places.empty()) {
-        const auto where = m.placesInCatalogue(mf);
+        const auto where = m.placesInCatalogue(medium);
         std::string sentence = "The " + mc.descriptor().model.value + " has no place for " + name + " now";
-        sentence += where.empty() ? "." : "; a " + mf.kindName + " goes into " + joinedOr(where) + ".";
+        if (!where.empty() && medium.kind) sentence += "; a " + medium.kind->label + " goes into " + joinedOr(where);
+        sentence += ".";
         if (!req.upload) return refuse(c, sentence);   // not copied
-        CommandOutcome o = m.importAndUse(f, std::nullopt, req.confirmed, c);   // imported, waits for its picker
+        // Imported only: it waits in the save folder for its picker.
+        CommandOutcome o = m.openFile(mediumArgs(f, std::nullopt, true, req.confirmed), c);
         if (std::holds_alternative<Refused>(o)) return finish(std::move(o), OpenReply(OpenedAs::Medium, name), c);
         c.notice(sentence);
         return finish(std::move(o), OpenReply(OpenedAs::Medium, name, "imported"), c);
     }
     const std::string& place = places.front();
     if (auto r = m.refusesNow(place, mc)) return refuse(c, *r);   // nothing imported
-    OpenReply reply(OpenedAs::Medium, name, place);
-    if (req.upload) return finish(m.importAndUse(f, place, req.confirmed, c), std::move(reply), c);
-    return finish(m.useWhereItLies(f, place, c), std::move(reply), c);
+    return finish(m.openFile(mediumArgs(f, place, req.upload, req.upload && req.confirmed), c),
+                  OpenReply(OpenedAs::Medium, name, place), c);
 }
 
 // Several files from a Web file dialog are one folder; the preset among
@@ -183,11 +203,11 @@ CommandOutcome OpenPart::openSeveral(const OpenRequest& req, SessionContext& c) 
     // The first by name of those with a preset extension, else of those
     // whose text has a model line; each must pass test 1.
     std::vector<const OpenedFile*> byExtension, byContent;
-    const auto extensions = setup_.presets->extensions();
     for (const OpenedFile& f : req.files) {
         const std::string lower = lowerAscii(plainName(f));
         if (!f.bytes || lower.empty() || lower[0] == '.') continue;
-        if (std::any_of(extensions.begin(), extensions.end(), [&](const std::string& e) { return endsWith(lower, lowerAscii(e)); }))
+        if (std::any_of(setup_.presetExtensions.begin(), setup_.presetExtensions.end(),
+                        [&](const std::string& e) { return endsWith(lower, lowerAscii(e)); }))
             byExtension.push_back(&f);
         else if (looksLikePreset(*f.bytes))
             byContent.push_back(&f);
@@ -200,7 +220,7 @@ CommandOutcome OpenPart::openSeveral(const OpenRequest& req, SessionContext& c) 
     const Classified k = classify(*first, req.way, setup_);
     if (k.what == Classified::What::Refused) return refuse(c, k.refusal);   // 1b
     const std::string path = files::fromPath(folder / files::toPath(plainName(*first)));
-    return finish(setup_.presets->loadFile(path, c), OpenReply(OpenedAs::Preset, plainName(*first)), c);
+    return finish(setup_.presets->loadPreset(Value::object({{"ref", path}}), c), OpenReply(OpenedAs::Preset, plainName(*first)), c);
 }
 
 } // namespace calcu::opening

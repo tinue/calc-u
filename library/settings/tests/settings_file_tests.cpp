@@ -20,9 +20,14 @@ std::string iniPath(const TempDir& dir) { return dir / "Test-Product/Test-Produc
 
 TEST(settings_declaration_names_kebab_case) {
     CHECK(checkDeclaration(testProduct()).empty());
-    CHECK(isKebabCase("max-file-size-mb") && isKebabCase("startup") && isKebabCase("a1"));
-    CHECK(!isKebabCase("maxFileSize") && !isKebabCase("max_file") && !isKebabCase("-a") &&
-          !isKebabCase("a-") && !isKebabCase("a--b") && !isKebabCase("") && !isKebabCase("A"));
+    const auto keyIsKebab = [](const std::string& key) {
+        ProductDecl d = testProduct();
+        d.keys.push_back(testKey("test", key, ValueKind::Text, ""));
+        return checkDeclaration(d).empty();
+    };
+    CHECK(keyIsKebab("max-file-size-mb") && keyIsKebab("startup-x") && keyIsKebab("a1"));
+    CHECK(!keyIsKebab("maxFileSize") && !keyIsKebab("max_file") && !keyIsKebab("-a") && !keyIsKebab("a-") &&
+          !keyIsKebab("a--b") && !keyIsKebab("") && !keyIsKebab("A"));
     // [preset] keys are model names as the glossary writes them; others are kebab-case.
     ProductDecl bad = testProduct();
     bad.keys.push_back(testKey("test", "camelCase", ValueKind::Text, ""));

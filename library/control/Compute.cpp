@@ -35,8 +35,7 @@ public:
         panels(out);
         controls(out);
         actions(out);
-        for (const ControlRules* r : setup_.rules)
-            if (r) r->productEntries(m_, out.productEntries);
+        if (setup_.rules) setup_.rules->productEntries(m_, out.productEntries);
         return out;
     }
 
@@ -55,10 +54,7 @@ private:
         return before(key, endsOperation, inherited).value_or(Availability{});
     }
     std::optional<std::string> productSays(const EntryKey& key) const {
-        for (const ControlRules* r : setup_.rules)
-            if (r)
-                if (auto why = r->unavailable(key, m_)) return why;
-        return std::nullopt;
+        return setup_.rules ? setup_.rules->unavailable(key, m_) : std::nullopt;
     }
 
     void models(ControlState& out) const {
@@ -167,9 +163,14 @@ private:
             out.mediaPlaces.push_back(std::move(e));
         };
         for (const auto& d : m_.descriptor().mediaPlaces) add(d, {}, std::nullopt);
-        for (const machine::PlugEntry* p : walked_)   // in the order of the place walk
-            if (const machine::PeripheralDescriptor* d = cat_.peripheral(p->peripheral))
-                for (const auto& mp : d->mediaPlaces) add(mp, p->place, p->peripheral);
+        for (const machine::PlugEntry* p : walked_) {   // in the order of the place walk
+            const machine::PeripheralDescriptor* d = cat_.peripheral(p->peripheral);
+            const auto at = std::find_if(out.places.begin(), out.places.end(),
+                                         [&](const PlaceEntry& e) { return e.path == p->place; });
+            if (!d || at == out.places.end()) continue;
+            for (const auto& mp : d->mediaPlaces)
+                if (mp.existsAt(at->pinOut)) add(mp, p->place, p->peripheral);
+        }
     }
 
     // One paper panel when a printer of the product's list fits a place

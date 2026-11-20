@@ -43,8 +43,4 @@ private:
     Inputs m_in;
 };
 
-// The product's rules of the library's ControlPart for Calc-U-1600;
-// its catalogue and printers are LibraryParts' (the papers' printers).
-std::vector<const calcu::control::ControlRules*> sharpControlSetup(const SharpControlRules&);
-
 } // namespace cu1600

@@ -1,10 +1,10 @@
 # The emulation core and the frontend-neutral app layer as two static
 # libraries, for every CMake build in the repository:
 #
-#   calcu_core    core/ -- the hardware (CPUs, machines, cards, loaders)
-#   calcu_shared  app/  -- the app layer: everything above the core that
-#                 isn't drawing (docs/developer/App-Layer.md); links
-#                 calcu_core (the target keeps the app layer's old name)
+#   calcu1600_core    core/ -- the hardware (CPUs, machines, cards, loaders)
+#   calcu1600_shared  app/  -- the app layer: everything above the core that
+#                     isn't drawing (docs/developer/App-Layer.md); links
+#                     calcu1600_core
 #
 # Included once, by the product's CMakeLists.txt (a subdirectory of the
 # repository's root CMake project).
@@ -12,7 +12,7 @@
 # The source lists are globbed: every core/**/*.cpp and every app/**/*.cpp
 # except app/tests/.
 #
-# calcu_core is compiled at -O1 in Debug unless
+# calcu1600_core is compiled at -O1 in Debug unless
 # CALCU_TESTS_DEBUG is ON (calcu_debug_o1, the root CMakeLists.txt).
 
 get_filename_component(CALCU_ROOT ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
@@ -74,26 +74,26 @@ if(WIN32)
   endif()
 endif()
 
-# ---- calcu_core
+# ---- calcu1600_core
 file(GLOB_RECURSE CALCU_CORE_SOURCES CONFIGURE_DEPENDS ${CALCU_CORE_ROOT}/*.cpp)
-add_library(calcu_core STATIC ${CALCU_CORE_SOURCES})
-target_include_directories(calcu_core PUBLIC ${CALCU_CORE_ROOT})
-target_compile_features(calcu_core PUBLIC cxx_std_20)
-target_link_libraries(calcu_core PRIVATE calcu_warnings)
+add_library(calcu1600_core STATIC ${CALCU_CORE_SOURCES})
+target_include_directories(calcu1600_core PUBLIC ${CALCU_CORE_ROOT})
+target_compile_features(calcu1600_core PUBLIC cxx_std_20)
+target_link_libraries(calcu1600_core PRIVATE calcu_warnings)
 # The sources are UTF-8 without a BOM (U'á' literals, PC1600TypedInput.hpp);
 # MSVC would read them in the ANSI codepage (C2015). Targets linking Qt got
 # /utf-8 from Qt6::Platform; core/ and app/ don't link Qt, so set it here --
 # PUBLIC, since everything that includes core/'s headers needs it too.
 if(MSVC)
-  target_compile_options(calcu_core PUBLIC /utf-8)
+  target_compile_options(calcu1600_core PUBLIC /utf-8)
 endif()
-target_link_libraries(calcu_core PUBLIC calcu_sharpdx)
+target_link_libraries(calcu1600_core PUBLIC calcu_sharpdx)
 # The library (the root project's calcu_library): the machine interface,
 # the settings file. Products do not configure on their own.
-target_link_libraries(calcu_core PUBLIC calcu_library)
-calcu_debug_o1(calcu_core)
+target_link_libraries(calcu1600_core PUBLIC calcu_library)
+calcu_debug_o1(calcu1600_core)
 
-# ---- calcu_shared
+# ---- calcu1600_shared
 # app/ is C++20 and standard-library-only: no Qt, Cocoa or Emscripten
 # headers, and single-threaded (docs/developer/App-Layer.md).
 # Headers include their core dependencies relative to core/ ("PC1600/...")
@@ -108,13 +108,13 @@ list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "/app/HarnessProduct\\.cpp$")
 if(EMSCRIPTEN)
   list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "/app/dap/")
 endif()
-add_library(calcu_shared STATIC ${CALCU_SHARED_SOURCES})
+add_library(calcu1600_shared STATIC ${CALCU_SHARED_SOURCES})
 # The Web page's test-only commands (library/CMakeLists.txt):
 # a definition of the one file that holds them, so that switching the
 # option compiles only it again.
 if(CALCU_WEB_TEST_AIDS)
   set_source_files_properties(${CALCU_SHARED_ROOT}/SharpWebPart.cpp PROPERTIES COMPILE_DEFINITIONS CALCU_WEB_TEST_AIDS)
 endif()
-target_include_directories(calcu_shared PUBLIC ${CALCU_ROOT})
-target_link_libraries(calcu_shared PRIVATE calcu_warnings)
-target_link_libraries(calcu_shared PUBLIC calcu_core)
+target_include_directories(calcu1600_shared PUBLIC ${CALCU_ROOT})
+target_link_libraries(calcu1600_shared PRIVATE calcu_warnings)
+target_link_libraries(calcu1600_shared PUBLIC calcu1600_core)

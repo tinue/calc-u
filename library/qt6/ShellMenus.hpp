@@ -40,7 +40,4 @@ private:
     int rebuilds_ = 0;
 };
 
-// The key sequence of a shortcut of the model.
-QKeySequence keySequence(shell::MenuItem::Shortcut);
-
 } // namespace calcu::qt6

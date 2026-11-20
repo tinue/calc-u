@@ -6,7 +6,7 @@
 #include "PC1600Machine.hpp"
 
 // The PC-1600 graphics area (156 x 32, status strip excluded) as an
-// LcdBitmap -- see Core/Display/LcdScreenshot.hpp.
+// LcdBitmap -- see core/Display/LcdScreenshot.hpp.
 inline LcdBitmap pc1600LcdBitmap(const PC1600DisplaySnapshot& snap) {
     LcdBitmap bitmap;
     bitmap.cols = PC1600Display::kWidth;

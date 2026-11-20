@@ -58,10 +58,6 @@ DisplayText readSegments(const machine::SegmentFrame&, const machine::SegmentLay
                          bool rightmostFirst, std::span<const machine::IndicatorOutput>,
                          const std::vector<machine::IndicatorDef>& defs);
 
-// The indicators that are on, in descriptor order.
-std::vector<std::pair<std::string, std::optional<Decimal>>> indicatorsOn(std::span<const machine::IndicatorOutput>,
-                                                                         const std::vector<machine::IndicatorDef>&);
-
 // The lines of `display-text` and its JSON result.
 std::vector<std::string> displayTextLines(const DisplayText&);
 Value displayTextValue(const DisplayText&);

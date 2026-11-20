@@ -13,7 +13,6 @@
 #include "../core/Debug/DebugExpression.hpp"
 #include "../core/PC1600/PC1600InterfaceMachine.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
-#include "LegacyExpression.hpp"
 #include "MemtestRig.hpp"
 #include "TestHarness.hpp"
 
@@ -291,7 +290,7 @@ TEST(other_bank_passed_status_only_while) {
     CHECK(r.pc() == 0x4603);
 }
 
-TEST(compiled_expressions_match_legacy) {
+TEST(expressions_evaluate_as_written) {
     static std::map<std::string, int64_t> names = {{"a", 0x10}, {"hl", 0x7A00}, {"cf", 1}, {"LOOP", 0x40C5}, {"Mixed", 7}};
     static uint8_t mem[65536] = {};
     mem[0x7A00] = 0x34; mem[0x7A01] = 0x12; mem[0x0010] = 0x99;
@@ -312,60 +311,197 @@ TEST(compiled_expressions_match_legacy) {
     debug::ExpressionContext noMemory = full;
     noMemory.readByte = nullptr;
     debug::ExpressionContext nothing;
+    enum Context { Full, BigEndian, NoMemory, Nothing };
     const debug::ExpressionContext* contexts[] = {&full, &bigEndian, &noMemory, &nothing};
 
+    struct Case {
+        Context context;
+        const char* text;
+        bool ok;
+        int64_t value;
+        const char* error;
+    };
+    // Every text in the full context; in the others only where the answer
+    // differs from the full one (the rest is checked there too).
+    const Case cases[] = {
+        {Full, "", false, 0, "empty expression"},
+        {Full, "  ", false, 0, "empty expression"},
+        {Full, "1", true, 1, ""},
+        {Full, "0x10", true, 0x10, ""},
+        {Full, "$ff", true, 0xFF, ""},
+        {Full, "&7A00", true, 0x7A00, ""},
+        {Full, "0x", false, 0, "missing hex digits"},
+        {Full, "$", false, 0, "missing hex digits"},
+        {Full, "12+3*4", true, 0x18, ""},
+        {Full, "(1+2)*3", true, 9, ""},
+        {Full, "-5 % 3", true, -2, ""},
+        {Full, "~0", true, -1, ""},
+        {Full, "!0", true, 1, ""},
+        {Full, "!!7", true, 1, ""},
+        {Full, "+3", true, 3, ""},
+        {Full, "1<<4", true, 0x10, ""},
+        {Full, "256>>2", true, 0x40, ""},
+        {Full, "1<2", true, 1, ""},
+        {Full, "2<=2", true, 1, ""},
+        {Full, "3>2", true, 1, ""},
+        {Full, "3>=4", true, 0, ""},
+        {Full, "1==1", true, 1, ""},
+        {Full, "1!=1", true, 0, ""},
+        {Full, "6&3", true, 2, ""},
+        {Full, "6|3", true, 7, ""},
+        {Full, "6^3", true, 5, ""},
+        {Full, "1&&0", true, 0, ""},
+        {Full, "0||2", true, 1, ""},
+        {Full, "a", true, 0x10, ""},
+        {Full, "A", true, 0x10, ""},
+        {Full, "hl", true, 0x7A00, ""},
+        {Full, "Mixed", true, 7, ""},
+        {Full, "mixed", false, 0, "unknown name 'mixed'"},
+        {Full, "LOOP", true, 0x40C5, ""},
+        {Full, "loop", false, 0, "unknown name 'loop'"},
+        {Full, "foo", false, 0, "unknown name 'foo'"},
+        {Full, "foo +", false, 0, "unknown name 'foo'"},
+        {Full, "foo bar", false, 0, "unknown name 'foo'"},
+        {Full, "a b", false, 0, "unexpected 'b'"},
+        {Full, "1 2", false, 0, "unexpected '2'"},
+        {Full, "1/0", false, 0, "division by zero"},
+        {Full, "1/0*", false, 0, "division by zero"},
+        {Full, "1%0", false, 0, "division by zero"},
+        {Full, "1/foo", false, 0, "unknown name 'foo'"},
+        {Full, "foo/0", false, 0, "unknown name 'foo'"},
+        {Full, "[hl]", true, 0x34, ""},
+        {Full, "w[hl]", true, 0x1234, ""},
+        {Full, "#[0x10]", true, 0x99, ""},
+        {Full, "#[0x9000]", false, 0, "memory at 36864 is not readable"},
+        {Full, "[0x1234]", false, 0, "memory at 4660 is not readable"},
+        {Full, "w[0x1233]", false, 0, "memory at 4659 is not readable"},
+        {Full, "[hl", false, 0, "missing ']'"},
+        {Full, "w[", false, 0, "unexpected end of expression"},
+        {Full, "#[", false, 0, "unexpected end of expression"},
+        {Full, "(1+2", false, 0, "missing ')'"},
+        {Full, "1+2)", false, 0, "unexpected ')'"},
+        {Full, "1+", false, 0, "unexpected end of expression"},
+        {Full, "*2", false, 0, "unexpected '*'"},
+        {Full, "!=3", false, 0, "unexpected '!'"},
+        {Full, "a == 0x10 && cf", true, 1, ""},
+        {Full, "[hl] == 0x34 || foo", false, 0, "unknown name 'foo'"},
+        {Full, "(foo", false, 0, "unknown name 'foo'"},
+        {Full, "[foo]", false, 0, "unknown name 'foo'"},
+        {Full, "[1/0]", false, 0, "division by zero"},
+        {Full, "1 + [0x1234] + foo", false, 0, "memory at 4660 is not readable"},
+        {Full, "foo + [0x1234]", false, 0, "unknown name 'foo'"},
+        {Full, "0x7FFFFFFFFFFFFFFF+1", true, INT64_MIN, ""},
+        {Full, "-(-9223372036854775807-1)", true, INT64_MIN, ""},
+        {Full, "1<<64", true, 1, ""},
+        {Full, "1<<63", true, INT64_MIN, ""},
+        {Full, "-1>>1", true, -1, ""},
+        {Full, "a&&&cf", true, 1, ""},
+        {Full, "a|||cf", false, 0, "unexpected '|'"},
+        {Full, "a<<<1", false, 0, "unexpected '<'"},
+        {Full, "a===1", false, 0, "unexpected '='"},
+        {Full, "_x.y$'", false, 0, "unknown name '_x.y$''"},
+        {Full, "w [hl]", false, 0, "unknown name 'w'"},
+        {Full, "W[hl]", true, 0x1234, ""},
+        {Full, "#(1)", false, 0, "unexpected '#'"},
+        {Full, "((((((1))))))", true, 1, ""},
+        {Full, "1 ? 2", false, 0, "unexpected '?'"},
+        {Full, "@", false, 0, "unexpected '@'"},
+        {Full, "a @", false, 0, "unexpected '@'"},
+        {Full, "[hl] @", false, 0, "unexpected '@'"},
+        {Full, "1 +\t2", true, 3, ""},
+        {BigEndian, "w[hl]", true, 0x3412, ""},
+        {BigEndian, "W[hl]", true, 0x3412, ""},
+        {NoMemory, "[hl]", false, 0, "memory not available"},
+        {NoMemory, "w[hl]", false, 0, "memory not available"},
+        {NoMemory, "#[0x10]", false, 0, "memory not available"},
+        {NoMemory, "#[0x9000]", false, 0, "memory not available"},
+        {NoMemory, "[0x1234]", false, 0, "memory not available"},
+        {NoMemory, "w[0x1233]", false, 0, "memory not available"},
+        {NoMemory, "[hl] == 0x34 || foo", false, 0, "memory not available"},
+        {NoMemory, "1 + [0x1234] + foo", false, 0, "memory not available"},
+        {NoMemory, "W[hl]", false, 0, "memory not available"},
+        {NoMemory, "[hl] @", false, 0, "memory not available"},
+        {Nothing, "a", false, 0, "unknown name 'a'"},
+        {Nothing, "A", false, 0, "unknown name 'A'"},
+        {Nothing, "hl", false, 0, "unknown name 'hl'"},
+        {Nothing, "Mixed", false, 0, "unknown name 'Mixed'"},
+        {Nothing, "LOOP", false, 0, "unknown name 'LOOP'"},
+        {Nothing, "a b", false, 0, "unknown name 'a'"},
+        {Nothing, "[hl]", false, 0, "unknown name 'hl'"},
+        {Nothing, "w[hl]", false, 0, "unknown name 'hl'"},
+        {Nothing, "#[0x10]", false, 0, "memory not available"},
+        {Nothing, "#[0x9000]", false, 0, "memory not available"},
+        {Nothing, "[0x1234]", false, 0, "memory not available"},
+        {Nothing, "w[0x1233]", false, 0, "memory not available"},
+        {Nothing, "[hl", false, 0, "unknown name 'hl'"},
+        {Nothing, "a == 0x10 && cf", false, 0, "unknown name 'a'"},
+        {Nothing, "[hl] == 0x34 || foo", false, 0, "unknown name 'hl'"},
+        {Nothing, "1 + [0x1234] + foo", false, 0, "memory not available"},
+        {Nothing, "a&&&cf", false, 0, "unknown name 'a'"},
+        {Nothing, "a|||cf", false, 0, "unknown name 'a'"},
+        {Nothing, "a<<<1", false, 0, "unknown name 'a'"},
+        {Nothing, "a===1", false, 0, "unknown name 'a'"},
+        {Nothing, "W[hl]", false, 0, "unknown name 'hl'"},
+        {Nothing, "a @", false, 0, "unknown name 'a'"},
+        {Nothing, "[hl] @", false, 0, "unknown name 'hl'"},
+    };
     int mismatches = 0;
-    auto same = [&](const std::string& text) {
-        for (const debug::ExpressionContext* ctx : contexts) {
-            const debug::ExpressionResult want = legacy::evaluate(text, *ctx);
-            const debug::ExpressionResult got = debug::evaluate(text, *ctx);
-            if (want.ok != got.ok || want.error != got.error || (want.ok && want.value != got.value)) {
-                if (mismatches++ < 10)
-                    std::fprintf(stderr, "  expr \"%s\": legacy ok=%d %lld '%s', compiled ok=%d %lld '%s'\n", text.c_str(),
-                                 want.ok, (long long)want.value, want.error.c_str(), got.ok, (long long)got.value,
-                                 got.error.c_str());
-            }
+    auto check = [&](Context c, const char* text, bool ok, int64_t value, const std::string& error) {
+        const debug::ExpressionResult got = debug::evaluate(text, *contexts[c]);
+        if (got.ok != ok || got.error != error || (ok && got.value != value)) {
+            if (mismatches++ < 10)
+                std::fprintf(stderr, "  expr \"%s\" in context %d: want ok=%d %lld '%s', got ok=%d %lld '%s'\n", text, int(c),
+                             ok, (long long)value, error.c_str(), got.ok, (long long)got.value, got.error.c_str());
         }
     };
-    const char* const corpus[] = {
-        "", "  ", "1", "0x10", "$ff", "&7A00", "0x", "$", "12+3*4", "(1+2)*3", "-5 % 3", "~0", "!0", "!!7", "+3",
-        "1<<4", "256>>2", "1<2", "2<=2", "3>2", "3>=4", "1==1", "1!=1", "6&3", "6|3", "6^3", "1&&0", "0||2",
-        "a", "A", "hl", "Mixed", "mixed", "LOOP", "loop", "foo", "foo +", "foo bar", "a b", "1 2", "1/0", "1/0*",
-        "1%0", "1/foo", "foo/0", "[hl]", "w[hl]", "#[0x10]", "#[0x9000]", "[0x1234]", "w[0x1233]", "[hl", "w[",
-        "#[", "(1+2", "1+2)", "1+", "*2", "!=3", "a == 0x10 && cf", "[hl] == 0x34 || foo", "(foo", "[foo]",
-        "[1/0]", "1 + [0x1234] + foo", "foo + [0x1234]", "0x7FFFFFFFFFFFFFFF+1", "-(-9223372036854775807-1)",
-        "1<<64", "1<<63", "-1>>1", "a&&&cf", "a|||cf", "a<<<1", "a===1", "_x.y$'", "w [hl]", "W[hl]", "#(1)",
-        "((((((1))))))", "1 ? 2", "@", "a @", "[hl] @", "1 +\t2",
-    };
-    for (const char* text : corpus) same(text);
-
-    // Seeded random token soup: every mixture of valid and broken input.
-    const char* const tokens[] = {"a", "hl", "foo", "LOOP", "Mixed", "0x10", "$ff", "&7A00", "12", "0", "[", "]", "w[",
-                                  "#[", "(", ")", "+", "-", "*", "/", "%", "<<", ">>", "<", "<=", ">", ">=", "==",
-                                  "!=", "&&", "||", "&", "|", "^", "!", "~", " ", "0x", "$", "0x1234", "@"};
-    const size_t kTokens = sizeof tokens / sizeof tokens[0];
-    uint32_t seed = 12345;
-    auto next = [&seed] { seed = seed * 1103515245u + 12345u; return (seed >> 16) & 0x7FFF; };
-    for (int i = 0; i < 20000; i++) {
-        std::string text;
-        const int n = 1 + int(next() % 9);
-        for (int k = 0; k < n; k++) text += tokens[next() % kTokens];
-        same(text);
+    for (const Case& k : cases) check(k.context, k.text, k.ok, k.value, k.error);
+    for (const Case& k : cases) {
+        if (k.context != Full) continue;
+        for (Context c : {BigEndian, NoMemory, Nothing}) {
+            bool listed = false;
+            for (const Case& other : cases) listed = listed || (other.context == c && std::string(other.text) == k.text);
+            if (!listed) check(c, k.text, k.ok, k.value, k.error);
+        }
     }
     CHECK(mismatches == 0);
 }
 
-TEST(hit_conditions_and_log_templates_match_legacy) {
-    const char* const hits[] = {"", "  ", "5", "== 5", "=5", ">= 3", "<=2", "!= 4", "> 1", "<3", "% 3", "%0", "% -2",
-                                "0x10", ">= 0x2", "abc", "5x", "==", " % ", "-1", "= 3 "};
+TEST(hit_conditions_and_log_templates) {
+    struct Hit {
+        const char* condition;
+        bool valid;
+        uint32_t stopsAt; // bit n: the condition is met at hit count n (0..20)
+    };
+    const Hit hits[] = {
+        {"", true, 0x1FFFFF},
+        {"  ", true, 0x1FFFFF},
+        {"5", true, 0x000020},
+        {"== 5", true, 0x000020},
+        {"=5", true, 0x000020},
+        {">= 3", true, 0x1FFFF8},
+        {"<=2", true, 0x000007},
+        {"!= 4", true, 0x1FFFEF},
+        {"> 1", true, 0x1FFFFC},
+        {"<3", true, 0x000007},
+        {"% 3", true, 0x049249},
+        {"%0", true, 0x000000},
+        {"% -2", true, 0x000000},
+        {"0x10", true, 0x010000},
+        {">= 0x2", true, 0x1FFFFC},
+        {"abc", false, 0x1FFFFF},
+        {"5x", false, 0x1FFFFF},
+        {"==", false, 0x1FFFFF},
+        {" % ", false, 0x1FFFFF},
+        {"-1", true, 0x000000},
+        {"= 3 ", true, 0x000008},
+    };
     int mismatches = 0;
-    for (const char* h : hits)
+    for (const Hit& h : hits)
         for (int n = 0; n <= 20; n++) {
-            bool wantValid = false, gotValid = false;
-            const bool want = legacy::hitConditionMet(h, n, &wantValid);
-            const bool got = cu1600::dap::hitConditionMet(h, n, &gotValid);
-            if (want != got || wantValid != gotValid) {
-                if (mismatches++ < 5) std::fprintf(stderr, "  hit \"%s\" at %d: legacy %d/%d, now %d/%d\n", h, n, want, wantValid, got, gotValid);
+            bool valid = false;
+            const bool met = cu1600::dap::hitConditionMet(h.condition, n, &valid);
+            if (met != (((h.stopsAt >> n) & 1) != 0) || valid != h.valid) {
+                if (mismatches++ < 5) std::fprintf(stderr, "  hit \"%s\" at %d: got %d/%d\n", h.condition, n, met, valid);
             }
         }
     debug::ExpressionContext ctx;
@@ -375,14 +511,34 @@ TEST(hit_conditions_and_log_templates_match_legacy) {
         return true;
     };
     ctx.readByte = [](uint16_t addr, bool, uint8_t* v) { *v = uint8_t(addr); return addr != 7; };
-    const char* const logs[] = {"", "plain", "a={a}", "{a}{x}", "x={x} a={a}!", "{foo}", "{[7]}", "{[8]}",
-                                "{-1}", "{1/0}", "open {a", "}{a}", "{}", "{{a}}", "a={a} b={", "{ a + 1 }"};
-    for (const char* m : logs)
-        if (legacy::interpolateLog(m, ctx) != cu1600::dap::interpolateLog(m, ctx)) {
-            if (mismatches++ < 10)
-                std::fprintf(stderr, "  log \"%s\": legacy '%s', now '%s'\n", m, legacy::interpolateLog(m, ctx).c_str(),
-                             cu1600::dap::interpolateLog(m, ctx).c_str());
+    struct Log {
+        const char* message;
+        const char* text;
+    };
+    const Log logs[] = {
+        {"", ""},
+        {"plain", "plain"},
+        {"a={a}", "a=0x42"},
+        {"{a}{x}", "0x420x1234"},
+        {"x={x} a={a}!", "x=0x1234 a=0x42!"},
+        {"{foo}", "{unknown name 'foo'}"},
+        {"{[7]}", "{memory at 7 is not readable}"},
+        {"{[8]}", "0x08"},
+        {"{-1}", "-1"},
+        {"{1/0}", "{division by zero}"},
+        {"open {a", "open {a"},
+        {"}{a}", "}0x42"},
+        {"{}", "{empty expression}"},
+        {"{{a}}", "{unexpected '{'}}"},
+        {"a={a} b={", "a=0x42 b={"},
+        {"{ a + 1 }", "0x43"},
+    };
+    for (const Log& l : logs) {
+        const std::string got = cu1600::dap::interpolateLog(l.message, ctx);
+        if (got != l.text) {
+            if (mismatches++ < 10) std::fprintf(stderr, "  log \"%s\": want '%s', got '%s'\n", l.message, l.text, got.c_str());
         }
+    }
     CHECK(mismatches == 0);
 }
 

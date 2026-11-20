@@ -1,4 +1,4 @@
-// Headless C++ tests for Core/PC1600/PC1600BasicLoader.cpp -- the fast
+// Headless C++ tests for core/PC1600/PC1600BasicLoader.cpp -- the fast
 // (poke + fix BASPRG_END) PC-1600 BASIC loader, checked byte-for-byte
 // against the keystroke typer. ROM-gated: SKIPs (not fails) when the
 // confirmed PC-1600 ROM set is absent, like pc1600_basictyper_tests.cpp.

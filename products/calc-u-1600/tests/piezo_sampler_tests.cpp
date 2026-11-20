@@ -1,4 +1,4 @@
-// Headless C++ tests for Core/Audio/PiezoSampler.cpp and for the buzzer
+// Headless C++ tests for core/Audio/PiezoSampler.cpp and for the buzzer
 // drive lines feeding it: PC-1500 LH5811 OPC bit 6 (PC6) and PC-1600
 // SC-7852 OPC port 18H (bit 7 wave, bit 6 gate).
 //

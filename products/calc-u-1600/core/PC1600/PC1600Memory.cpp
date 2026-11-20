@@ -374,7 +374,7 @@ void PC1600Memory::writeIO(uint8_t port, uint8_t value) {
         case 0x3C: m_bank.writePort3C(value); return;
         case 0x3D: m_bank.writePort3D(value); return;
         case 0x35: m_intMask = value; return;
-        case 0x39: m_im2VectorLow = value; if (m_cpu) m_cpu->setIM2VectorByte(value); return;
+        case 0x39: if (m_cpu) m_cpu->setIM2VectorByte(value); return;
         case 0x38: if (m_arbiter) m_arbiter->requestSwitchFromSC7852(); return;
         case 0x18:
             // Buzzer: bit 6 = enable (BEEP ON/OFF), bit 7 = the square

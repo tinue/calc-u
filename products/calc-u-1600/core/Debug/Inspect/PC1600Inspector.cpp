@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "../../Basic/BasicPointers.hpp"
 #include "../../PC1600/PC1600BusDrive.hpp"
 #include "../../PC1600/PC1600Machine.hpp"
 #include "../../PC1600/PC1600ProgramPlacement.hpp"
@@ -64,7 +65,7 @@ struct Ctx {
     /// A work-area / internal-RAM byte (C000H up), read in place; below
     /// that, through the current banks.
     uint8_t wa(uint16_t a) const { return a >= 0xC000 ? ram[a - 0xC000] : m.memory().peek(a); }
-    uint16_t be(uint16_t a) const { return uint16_t(wa(a) << 8 | wa(uint16_t(a + 1))); }
+    uint16_t be(uint16_t a) const { return sharp::readBE16([this](uint16_t at) { return wa(at); }, a); }
     uint16_t le(uint16_t a) const { return uint16_t(wa(uint16_t(a + 1)) << 8 | wa(a)); }
 
     pc1600::PlacementInput placementInput() const {
@@ -141,9 +142,9 @@ std::string decodeMtb(uint8_t v) {
 const std::vector<Group>& pc1600Pointers() {
     static const std::vector<Group> groups = {
         {"BASIC program",
-         {{"BASPRG_ST", 0xF865, V::AddrBE, "S0 program start (ADTBL index F02BH)"},
-          {"BASPRG_END", 0xF867, V::AddrBE, "S0 program end, the FFH mark (ADTBL index F02CH)"},
-          {"EDITHEAD", 0xF869, V::AddrBE, "Edit / merge head"},
+         {{"BASPRG_ST", sharp::kPC1600BasicPointers.programStart, V::AddrBE, "S0 program start (ADTBL index F02BH)"},
+          {"BASPRG_END", sharp::kPC1600BasicPointers.programEnd, V::AddrBE, "S0 program end, the FFH mark (ADTBL index F02CH)"},
+          {"EDITHEAD", sharp::kPC1600BasicPointers.editHead, V::AddrBE, "Edit / merge head"},
           {"PRGSTA", 0xFE3C, V::Z80Bank, "Start of the TITLE area (PRGADR 02F4H)"},
           {"PRGENDA", 0xFE3F, V::Z80Bank, "End of the TITLE area"},
           {"PROCPTR", 0xFE00, V::WordLE, "Interpreter: the next program byte (Z-80)"},
@@ -164,7 +165,7 @@ const std::vector<Group>& pc1600Pointers() {
           {"ONERLINE", 0xF8BA, V::WordBE, "ON ERROR line"}}},
         {"Variables and stacks",
          {{"RAM_END", 0xF864, V::Byte, "Page of the S0 user-area top (MEM, VARPTR reset)"},
-          {"VARPTR", 0xF899, V::AddrBE, "Start of the variables (they grow down)"},
+          {"VARPTR", sharp::kPC1600BasicPointers.variables, V::AddrBE, "Start of the variables (they grow down)"},
           {"FORPTR", 0xF890, V::Byte, "FOR stack pointer (low byte)"},
           {"GOSUBPTR", 0xF891, V::Byte, "GOSUB stack pointer (low byte)"},
           {"STRBUFP", 0xF894, V::Byte, "String buffer pointer (low byte, FB10H-FB5FH)"},
@@ -238,11 +239,11 @@ struct S0Figures {
 
 S0Figures s0Figures(const Ctx& c) {
     S0Figures f;
-    f.start = lh5803ToZ80(c.be(0xF865));
-    f.end = lh5803ToZ80(c.be(0xF867));
+    f.start = lh5803ToZ80(c.be(sharp::kPC1600BasicPointers.programStart));
+    f.end = lh5803ToZ80(c.be(sharp::kPC1600BasicPointers.programEnd));
     f.startIndex = c.wa(0xF02B);
     f.endIndex = c.wa(0xF02C);
-    f.varPtr = lh5803ToZ80(c.be(0xF899));
+    f.varPtr = lh5803ToZ80(c.be(sharp::kPC1600BasicPointers.variables));
     f.ramEnd = lh5803ToZ80(uint16_t(c.wa(0xF864) << 8));
     f.mlStart = lh5803ToZ80(uint16_t((c.wa(0xF029) & 0x7F) << 8 | 0xC5));
     // Work-Area-Map §3.5: the ADTBL index steps 4000H per bank.

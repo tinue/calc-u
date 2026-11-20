@@ -23,9 +23,13 @@ HostDateTime hostDateTime(std::chrono::system_clock::time_point t) {
                         local.tm_hour,        local.tm_min,     local.tm_sec,  static_cast<int>(ms)};
 }
 
+namespace {
+
 ClockFields fieldsOf(const HostDateTime& h) {
     return ClockFields{h.year, h.month, h.day, h.weekday, h.hour, h.minute, h.second};
 }
+
+} // namespace
 
 void setClocksFromHost(machine::Machine& m, const HostDateTime& h) {
     const ClockFields f = fieldsOf(h);

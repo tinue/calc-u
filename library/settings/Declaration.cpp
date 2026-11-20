@@ -14,6 +14,8 @@ std::string lowerAscii(std::string_view s) {
     return out;
 }
 
+namespace {
+
 bool isKebabCase(std::string_view name) {
     if (name.empty() || name.front() == '-' || name.back() == '-') return false;
     char prev = 0;
@@ -24,6 +26,8 @@ bool isKebabCase(std::string_view name) {
     }
     return true;
 }
+
+} // namespace
 
 const KeyDecl* ProductDecl::find(std::string_view section, std::string_view key) const {
     const std::string s = lowerAscii(section), k = lowerAscii(key);

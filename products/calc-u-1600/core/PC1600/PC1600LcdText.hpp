@@ -8,7 +8,7 @@
 #include "PC1600Machine.hpp"
 #include "PC1600Screenshot.hpp"
 
-// The PC-1600 screen as text -- see Core/Display/LcdText.hpp.
+// The PC-1600 screen as text -- see core/Display/LcdText.hpp.
 //
 // Font: bank 6's 6x8 ROM font, 6 bytes per character, column-wise. Its
 // address differs between the ROM versions (CGLOW: new ADA4H, old ADE3H), so it is read from the ROM:

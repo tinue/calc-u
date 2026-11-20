@@ -9,7 +9,7 @@
 #include "PC1500Machine.hpp"
 #include "PC1500Screenshot.hpp"
 
-// The PC-1500/1500A screen as text -- see Core/Display/LcdText.hpp.
+// The PC-1500/1500A screen as text -- see core/Display/LcdText.hpp.
 //
 // Font: CHARSET at FCA0H, 5 bytes per character for 20H-7FH, column-wise
 // (PC-1500_ROM-A0x.lh5801.asm; CHAR_2_ADDR, EE48H, computes FC00H + 5 x

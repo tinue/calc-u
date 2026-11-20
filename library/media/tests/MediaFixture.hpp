@@ -88,6 +88,7 @@ struct FixtureOptions {
     // card needs), and the host's file access.
     std::function<void(std::vector<KindDecl>&)> kinds;
     std::shared_ptr<const FileAccess> files;
+    bool start = true;   // false: no machine until the case sends `start`
 };
 
 class MediaFixture {
@@ -146,7 +147,7 @@ public:
                                  contentFrom(c ? formats::scalarText(*c) : std::string()));
                 }
             }});
-        control = std::make_unique<control::ControlPart>(control::ControlSetup{&mt::mediaTestCatalogue(), {}, {}});
+        control = std::make_unique<control::ControlPart>(control::ControlSetup{&mt::mediaTestCatalogue(), {}, nullptr});
         sessions::AppSessionSetup s;
         s.clock = clock.fn();
         s.hostTime = [] { return std::chrono::system_clock::time_point(std::chrono::hours(24 * 365 * 50)); };
@@ -157,6 +158,7 @@ public:
         s.jitterSeed = 1;
         session = std::make_unique<sessions::AppSession>(std::move(s));
         id = session->listen(fe, o.services);
+        if (!o.start) return;
         startCall = send("start", Value::object({{"model", o.model}}));
         callWhileBusy();
     }

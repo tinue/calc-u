@@ -49,9 +49,6 @@ public:
         return nullptr;
     }
 
-    // Queried on every host-ROM fetch; see InhibitSource.
-    bool inhibitAsserted() const { return m_chain.inhibitAsserted(); }
-
     /// CMTOUT: the main unit's cassette-write line.
     void setCmtOut(bool level) { m_chain.setCmtOut(level); }
     /// CMTIN as a card drives it; `idle` if none does.

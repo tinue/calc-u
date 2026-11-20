@@ -5,7 +5,7 @@
 
 // Calc-U-1600's product commands under `c1600` (docs/formats/harness.md):
 // the loaders (`file-kind`, `load-basic`, `type-basic`,
-// `load-code`) and the machine commands: `dump-basic`,
+// `load-code`) and the machine commands: `list-basic`,
 // `inspect`, `cassette record|status`, `serial <port> feed|capture|link|report`,
 // `host-drive`, `call`. Every handler reaches the machine through the
 // product's machine kinds and the generic kinds, or through the session's

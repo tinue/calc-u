@@ -103,7 +103,7 @@ About texts and links, the settings spec of the layout); the faceplate is
 image, the card area, each key's rectangle, the card's corners); the
 heatmap's grid `c59.heatmap-grid`; the LED shapes
 `c59.led-geometry`, the PWA's layout rules `c59.mobile-rules`
-(`app/WebPageData`). The start is the shell's `start` command with
+(`app/TIWebPart`). The start is the shell's `start` command with
 the `model` and `preset` props. The paper, the run state and the trace are
 the library's topics (`papers`, `paper PC-100C`, `paper-copies`,
 `run-state`, `trace`), which the component set's panel and buttons
@@ -193,21 +193,24 @@ the file names under `wasm/`, `bundle/`, `img/` and `presets/` and `files.json` 
 </script>
 ```
 
-| Prop | Default | Meaning |
-|---|---|---|
-| `width` | the parent's width | CSS px the client may take. Wide: the calculator artwork takes 40 % (at most 420 px without `height`, never below 400 px), the printer 220–320 px, the debugger the rest (at least 220 px) |
-| `keyboard` | `true` | The calculator is focusable and takes the physical keyboard while focused (`AppLayer.md` § "Physical Keyboard Mapping"); `false` turns it off |
-| `layout` | `"portrait"` | `"wide"` (calculator, printer, debugger side by side), `"portrait"` (calculator and printer pages) or `"auto"` (by the window's size, the PWA's choice: needs `width` and `height`); another value is ignored with a console warning |
-| `preset` | none | Start with this bundled preset, by its path in `bundle.yaml`, with or without `examples:` (`"sum.ti59"`, `"examples:sum.ti59"`); a path that is not there is a notice |
-| `height` | from the width | CSS px. Without it the height follows the artwork's aspect plus the 50 px bar; with it the artwork fits inside (the PWA passes `#root`'s content box) |
-| `model` | stored setting | Start with this model, by its name: `"TI-59"`, `"TI-58"` or `"TI-58C"`; another name is a notice and the client starts as without it |
-| `workerUrl` | `calc-engine-worker.js` beside `calc.js` | Start the engine through this script. The PWA's, for its service worker; a host leaves it out |
-| `settings` | `true` | Offer Settings… (the File menu, the portrait bar's Settings button and the More menu) |
+The props are the family's shared ones (`docs/formats/web-embed.md` §1.1
+at the repository root), then Calc-U-59's own. What is Calc-U-59's:
 
-The props are the family's shared ones in their order (`width`, `keyboard`,
-`layout`, `preset`, then `height`, `model`, `workerUrl`;
-`docs/formats/web-embed.md` at the repository root), then Calc-U-59's own
-`settings`. `model`, `preset` and `workerUrl` are read once, at mount.
+- `layout`: `"portrait"` (the default: calculator and printer pages),
+  `"wide"` (calculator, printer, debugger side by side) or `"auto"` (by
+  the window's size, the PWA's choice: needs `width` and `height`).
+- `keyboard`: the keys of `AppLayer.md` § "Physical Keyboard Mapping".
+- `width` in wide: the calculator artwork takes 40 % (at most 420 px
+  without `height`, never below 400 px), the printer 220–320 px, the
+  debugger the rest (at least 220 px).
+- `height`: without it the height follows the artwork's aspect plus the
+  50 px bar; with it the artwork fits inside (the PWA passes `#root`'s
+  content box).
+- `model`: `"TI-59"`, `"TI-58"` or `"TI-58C"`; without it the stored
+  setting.
+- `settings` (default `true`), the product's own prop: offer Settings…
+  (the File menu, the portrait bar's Settings button and the More menu).
+
 There is no `module` prop: a host page that wants
 another module names a preset that sets it.
 

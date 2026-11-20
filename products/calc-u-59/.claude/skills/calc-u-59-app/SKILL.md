@@ -61,7 +61,7 @@ drawing rules: `reference/AppLayer.md`. Don't restate them here.
    `DebuggerPart`, `MediaPart` (the magnetic card, `app/TIMagneticCardKind`;
    the TI-59's place `card-reader`; slot-1's module listing,
    `tiModuleListing`; the save folder through the host's `media::FileAccess`, `TIAppSetup::files`;
-   a card file opened goes through its MediaOpener), `OpenPart` with the file kinds of
+   a card file opened goes through the open part to the library media part), `OpenPart` with the file kinds of
    `app/TIFileKinds`; then `ProgramMemoryPart` (`c59.partition`,
    `c59.program`, `c59.data-registers`), `TIDebugPart` (the debug panel's six
    product topics, its `c59.*` commands and the control state's product entries)
@@ -70,7 +70,7 @@ drawing rules: `reference/AppLayer.md`. Don't restate them here.
    resets and loads with the library's commands (`start`, `model`, `reset`,
    `cold-boot`, `attach`, `detach`, `load-preset`), never with product
    commands; the machine is the machine session's, and the part follows it
-   at `machineChanged` (a new `EmulatorSession`). No freeze state, no
+   at `machineChanged` (a new `FrameSampler`). No freeze state, no
    printer lines, no trace writer and no preset reader in `app/`
    (`reference/AppLayer.md`). Tests drive them
    on the session (`tests/SessionRig.hpp`: `SessionRig`, and `PartRig` with

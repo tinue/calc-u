@@ -6,6 +6,18 @@ using namespace calcu::paper;
 using namespace calcu::paper::test;
 namespace mt = calcu::machine::test;
 
+namespace {
+// A number as the marks reply writes it, and read back: the reach line's `from`.
+std::string numberText(Coord c) {
+    const std::string line = marksReply(Reach{c, 0}, {}).front();   // "reach <c> 0"
+    return line.substr(6, line.size() - 8);
+}
+std::optional<Coord> numberRead(const std::string& text) {
+    const auto r = readMarksReply({"reach " + text + " 0"});
+    return r ? std::optional<Coord>(r->reach.from) : std::nullopt;
+}
+} // namespace
+
 TEST(numbers_whole_without_point_else_four_decimals) {
     CHECK_EQ(numberText(units(7)), std::string("7"));
     CHECK_EQ(numberText(65'300), std::string("6.53"));
@@ -15,10 +27,10 @@ TEST(numbers_whole_without_point_else_four_decimals) {
     CHECK_EQ(numberText(-5'000), std::string("-0.5"));
     CHECK_EQ(numberText(1), std::string("0.0001"));
     for (Coord c : {Coord(0), Coord(7), Coord(-5'000), Coord(669'474), Coord(-123'456'789)})
-        CHECK(parseNumberText(numberText(c)) == std::optional<Coord>(c));
-    CHECK(!parseNumberText("1.23456"));
-    CHECK(!parseNumberText("1."));
-    CHECK(!parseNumberText("abc"));
+        CHECK(numberRead(numberText(c)) == std::optional<Coord>(c));
+    CHECK(!numberRead("1.23456"));
+    CHECK(!numberRead("1."));
+    CHECK(!numberRead("abc"));
 }
 
 TEST(marks_reply_reach_then_dots_and_strokes) {

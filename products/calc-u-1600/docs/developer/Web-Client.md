@@ -37,19 +37,18 @@ at the repository root).
 | File | What it is |
 |---|---|
 | `bindings.cpp` | The product's factory of the library's app session (`CALCU_WEB_PRODUCT(CalcU1600Host, …)`): the library's `SettingsPart` and `ControlPart` (no host folder in a browser and the uploads folder for Upload Preset…'s files, `SharpAppPartOptions`), `SharpAppPart`, `SharpWebPart` (app layer) and the session; the library's `WorkerHost` translates its messages |
-| `calc-engine-worker.js` | The product's entry to the library's worker (`library/web/src/worker.js`, `dist/library-worker.js`): name, wasm, mount `/persist`, lock `calcu1600-storage` |
 | `src/CalcU1600.jsx` | The page, put together from the React set's shell: `useCalcuShell` over the library's `useShell()`, `ShellMenuBar`, `ShellControlBar` (the slot picker `ShellSlotPicker` with Name & Save, the disk controls in its `extra`), the shell's dialogs (Saved Media… `ShellSavedMedia`), notices, "Loading…" and "ROMs missing"; the product's data from the request `c1600.shell-product` through the library's `useShellProduct` (`app/SharpShellProduct`: items, labels, the settings spec), the faceplate's hit map and LCD layout from `c1600.faceplate-map {model}` through `useFaceplateMaps`; Load Preset… and the drop through `calcuOpenFiles` and `calcuFileDrop` (a drop of exactly one file); the page's glue is the library's (`library/web/components/useShellProduct.jsx`, `ShellMedia.jsx`; `calcImage`, `sizeCanvas` in `library/web/src/canvas.js`). The loaders: `c1600.file-kind`, `c1600.load-basic`, `c1600.code-plan` (asked again per keystroke in the address dialog), `c1600.load-code`, each carrying the file's bytes (`app/SharpLoaderPart`) |
 | `src/*.jsx`, `src/*.js` | The client, compiled with the library's page side (`library/web/src/`) into one `dist/calc.js` (one global, `CalcU1600`) |
 | `calc.css` | Styles, all under `.calcu-client`, light and dark |
 | `app/` | The installable app's page, manifest and stylesheet; its app page, service worker and worker entry are the library's (`library/web/app/`) |
-| `build.sh`, `build.js` | The build (below) |
-| `tests/`, `run-tests.sh` | Playwright tests |
+| `build.sh`, `build.js` | The build (below): `build.js` names what is the product's (the engine, the worker's configuration with the mount `/persist` and the lock `calcu1600-storage`, the files, the sources), the library's `library/web/build/product.js` does the steps |
+| `tests/`, `run-tests.sh`, `playwright.config.js` | Playwright tests; the servers and the shared configuration are the library's (`library/web/tools/playwright.sh`, `playwright-config.js`) |
 
 ## Build and test
 
 ```sh
 frontends/web/build.sh        # emcmake build of the calcu_web target, then dist/
-frontends/web/run-tests.sh    # Playwright: root, sub-path, offline (Chromium, WebKit), prerender
+frontends/web/run-tests.sh    # Playwright on ports 8160 and 8161: root, sub-path, offline (Chromium, WebKit), prerender
 ```
 
 `build.sh` needs `emcmake` (emsdk 6.0.13, as for the
@@ -57,9 +56,14 @@ frontends/web/run-tests.sh    # Playwright: root, sub-path, offline (Chromium, W
 engine is the CMake target `calcu_web` of the repository's root project,
 built in its `build/web` tree
 (`calcu1600-core.js` / `.wasm`): no `-pthread`, native wasm exceptions,
-`IDBFS`. `build.js` hands the product's data (sources, component, presets,
-precached core) to the library's product build (`library/web/build/dist.js`
-`buildProduct`, which the library's test product uses too): it compiles the JSX with the library's vendored Babel (`library/web/vendor/`, also React 18, ReactDOM and ReactDOMServer; no npm
+`IDBFS`. `build.js` hands the product's values (engine, worker
+configuration, the files of `dist/`, sources, component) to the library's
+Web build (`library/web/build/product.js`, the same steps for Calc-U-59;
+`CALCU_WEB_DIST` names another output folder, `CALCU1600_ROMS_DIR` another
+ROM folder), which builds the engine, copies the files, writes
+`calc-engine-worker.js` and runs the library's product build
+(`library/web/build/dist.js` `buildProduct`, which the library's test
+product uses too): it compiles the JSX with the library's vendored Babel (`library/web/vendor/`, also React 18, ReactDOM and ReactDOMServer; no npm
 runtime dependencies), fails on a `calc.css` selector outside `.calcu-client`, copies
 [`examples/bundle.yaml`](../../examples/bundle.yaml) and exactly the files it
 lists (each preset and the files it names; nothing else of `examples/`) into
@@ -68,7 +72,7 @@ request), writes `files.json`, stamps
 the service worker's precache list and writes `MANIFEST.json`; the version
 is the one `release.yaml` names (the Qt app's `APP_VERSION`, as ReleaseIt
 and the help tool read it). `run-tests.sh` serves `dist/` with the
-library's `library/web/tools/serve.py`; the offline and prerender tests use
+library's `library/web/tools/serve.py` (started by `library/web/tools/playwright.sh`); the offline and prerender tests use
 `library/web/tests/dist-helpers.js`. `build.sh` makes the test build (the
 CMake option `CALCU_WEB_TEST_AIDS` ON in `build/web`: the session answers
 the Web tests' `c1600.upload` and `c1600.display-text`); `build.sh

@@ -31,8 +31,8 @@ grep -q "$MISSING: missing" "$TMP/err" || { echo "FAIL: calcu does not name $MIS
 echo "rom_missing_build: the harness names $MISSING: ok"
 
 # The web client, built from that folder into its own dist/.
-CALCU59_ROMS_DIR="$TMP/roms" CALCU59_WEB_DIST="$TMP/dist" frontends/web/build.sh >/dev/null
+CALCU59_ROMS_DIR="$TMP/roms" CALCU_WEB_DIST="$TMP/dist" frontends/web/build.sh >/dev/null
 [ ! -e "$TMP/dist/bundle/$MISSING" ] || { echo "FAIL: dist/ has $MISSING" >&2; exit 1; }
-CALCU59_WEB_DIST="$TMP/dist" CALCU59_ROM_TAKEN_AWAY="$MISSING" \
+CALCU_WEB_DIST="$TMP/dist" CALCU59_ROM_TAKEN_AWAY="$MISSING" \
   frontends/web/run-tests.sh tests/rom-missing.spec.js -g "taken_away" --project root
 echo "rom_missing_build: web names $MISSING: ok"

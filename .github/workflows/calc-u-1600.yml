@@ -173,6 +173,8 @@ jobs:
       # The library's Web frontend shell: its test product,
       # built in the same build/web with this workflow's Emscripten, and its
       # Playwright tests in Chromium and WebKit, the container's browsers.
+      # Here only, not in calc-u-59.yml too: once per pipeline, as in
+      # ci/linux/jobs.sh (web-1600).
       - name: Test the library's Web frontend shell
         working-directory: library/web
         shell: bash

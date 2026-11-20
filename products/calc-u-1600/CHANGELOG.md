@@ -242,6 +242,12 @@
   its number; `preset` (and `?preset=`) takes a bundled path with or
   without `examples:`. The release's `Calc-U-1600-web.zip` is a release
   build without the Web tests' commands.
+- **Web build (developers):** `frontends/web/build.sh` and `run-tests.sh`
+  run the library's steps (`library/web/build/product.js`,
+  `library/web/tools/playwright.sh`); `build.js` holds the product's
+  values, the worker's configuration too (`calc-engine-worker.js` is
+  written into `dist/`). Another output folder is `CALCU_WEB_DIST` (was
+  `CALCU1600_WEB_DIST`).
 
 ### Fixed
 

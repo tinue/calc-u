@@ -41,4 +41,15 @@ BasicProgramSource readBasicProgram(const std::vector<uint8_t>& bytes, TransferM
 /// Same, for the file at `path`; errors name it.
 BasicProgramSource readBasicProgramFile(const std::string& path, TransferModel listingModel);
 
+// The other way: line records as above, up to and with the model's 0xFF end
+// mark or without it, back to listing lines through sde_detokenize, with
+// `model`'s keyword table. The lines are the detokenizer's, unchanged.
+struct BasicListing {
+    bool ok = false;
+    std::vector<std::string> lines;
+    std::string error;   // set when ok == false
+};
+
+BasicListing detokenize(const std::vector<uint8_t>& records, TransferModel model);
+
 }  // namespace basic

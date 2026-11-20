@@ -255,6 +255,21 @@ Reply dumpBasicCmd(CommandContext& c) {
     return doneReply(std::move(v), std::move(d.lines));
 }
 
+// ── list-basic ──────────────────────────────────────────────────────────
+
+Reply listBasicCmd(CommandContext& c) {
+    if (!c.line.argText.empty()) return refusedReply("usage: c1600 list-basic");
+    machine::Machine* m = machineOf(c);
+    if (!m) return noMachine();
+    const sharp::LoaderMemory* mem = calcu::machine::first<sharp::LoaderMemory>(*m);
+    if (!mem) return refusedReply("The machine has no BASIC memory.");
+    BasicListingReply l = basicListing(*mem);
+    if (!l.problem.empty()) return refusedReply(l.problem);
+    harness::Value arr = harness::Value::array();
+    for (const std::string& line : l.lines) arr.push(line);
+    return doneReply(std::move(arr), std::move(l.lines));
+}
+
 // ── inspect ─────────────────────────────────────────────────────────────
 
 constexpr inspect::View kViews[] = {
@@ -563,6 +578,7 @@ void addSharpHarnessCommands(harness::CommandRegistry& r, SharpHarnessParts part
     r.addProduct("c1600", "load-code", loadCodeCmd,
                  "load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803|z80>] [run]  load machine code");
     r.addProduct("c1600", "dump-basic", dumpBasicCmd, "dump-basic  the BASIC pointers and the program area");
+    r.addProduct("c1600", "list-basic", listBasicCmd, "list-basic  the BASIC program as listing lines");
     r.addProduct("c1600", "inspect", inspectCmd, "inspect <view>  an INSPECTOR view as text");
     r.addProduct("c1600", "cassette", [parts](CommandContext& c) { return cassetteCmd(c, parts); },
                  "cassette record <file.wav> | cassette status  record the cassette into a WAV; the tape counter");

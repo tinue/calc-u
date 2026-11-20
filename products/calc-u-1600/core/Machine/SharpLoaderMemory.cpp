@@ -65,6 +65,12 @@ bool PC1600LoaderMemory::slotRam(int bank, std::uint16_t address, std::size_t si
     return m_.debugSlotBusWritable(bank, address, size);
 }
 
+std::uint8_t PC1600LoaderMemory::peekSlot(int bank, std::uint16_t address) const {
+    std::uint8_t v = 0xFF;
+    if (bank >= 0 && bank <= 3 && address >= 0x8000 && address < 0xC000) m_.memory().slotBusRead(bank, address, v);
+    return v;
+}
+
 LoaderMemory::Module PC1600LoaderMemory::module(int slot) const {
     Module out;
     if (slot != 1 && slot != 2) return out;

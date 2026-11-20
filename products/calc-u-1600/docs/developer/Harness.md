@@ -73,6 +73,7 @@ is none. A file argument is a path relative to the working directory.
 | `c1600 type-basic <file>` | types a BASIC listing in through the ROM's editor |
 | `c1600 load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803\|z80>] [run]` | loads machine code |
 | `c1600 dump-basic` | the BASIC pointers and the program area |
+| `c1600 list-basic` | the BASIC program as listing lines |
 | `c1600 inspect <view>` | an INSPECTOR view as text |
 | `c1600 cassette record <file.wav>` | a new cassette whose recording goes to the WAV |
 | `c1600 cassette status` | the tape counter and the motor |
@@ -271,6 +272,24 @@ are.
 
 Refusals: `usage: c1600 dump-basic` (an argument given); `The machine has
 no BASIC memory.`
+
+### `c1600 list-basic`
+
+The program as listing lines, one per program line, as the detokenizer
+(`libsharpdx`, `sde_detokenize`) writes them, with the model's keyword
+table: no blank between a variable or number and the keyword after it
+(`40 ON N+1GOTO 70,50`). PC-1500, PC-1500A: the program from BASPRG_ST
+($7865) to its FFH end mark. PC-1600: the program area TITLE selects (S0,
+or the S1/S2 program module), read across its module banks and internal
+RAM as the BASIC loader lays it down: a module bank's part ends with its
+00 00 mark. No program: `done` and no lines.
+
+`--json`: `["10 PRINT 1", "20 GOTO 10"]`.
+
+Refusals: `usage: c1600 list-basic` (an argument given); `The machine has
+no BASIC memory.`; `list-basic reads a program in MODE 0 only.` (a PC-1600
+in MODE 1); the placement's reason when the program area can't be worked
+out; `The program can't be read: <the detokenizer's reason>`.
 
 ### `c1600 inspect <view>`
 

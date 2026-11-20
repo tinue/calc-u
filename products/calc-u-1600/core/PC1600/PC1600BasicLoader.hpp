@@ -43,3 +43,9 @@ class LoaderMemory;
 /// through the loader memory access. sharp::loaders::loadBasic
 /// reads the file and picks the keyword table by MODE.
 BasicLoadResult pc1600LoadBasicPayload(sharp::LoaderMemory& memory, const std::vector<uint8_t>& payload);
+
+/// The other way: the line records of the program in the program area TITLE
+/// selects, without the bank-end marks and the $FF end mark, read across the
+/// area's segments (internal RAM, module banks) as the loader lays them
+/// down. False with `error` if the area can't be planned.
+bool pc1600ReadBasicRecords(const sharp::LoaderMemory& memory, std::vector<uint8_t>& records, std::string& error);

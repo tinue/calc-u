@@ -11,6 +11,11 @@ machine is. Each `key` and `type` is followed by a `wait` until the machine
 is idle, as the items of a preset are (docs/formats/preset.md). A refused
 command raises MachineError with the harness's reason.
 
+A path a test gives (`path()`) is absolute, `$name/...` (a named folder:
+`$project`, `$calcu`, `$work`, the product's, the suite's own), or relative to
+the test project root. An environment variable CALCU_PATH_<NAME> wins over a
+name.
+
 A product layer sets up the machine in `setup()` (for example with a preset
 that has only a header) and adds its own steps; see
 products/calc-u-1600/tools/machine/machine.py. Standard library only.
@@ -26,6 +31,7 @@ from typing import Any, Optional
 from calcu_serve import TREES, Calcu, Refused, find_calcu
 
 TIMEOUT_SECONDS = 300
+CHECKOUT = Path(__file__).resolve().parents[3]   # library/harness/python/ in the checkout
 
 
 class MachineError(RuntimeError):
@@ -42,10 +48,16 @@ def calcu_program() -> str:
 
 
 class Session:
-    def __init__(self, workdir: os.PathLike | str, product: str):
-        """workdir takes the files of one machine: its save folder, outputs and results."""
+    def __init__(self, workdir: os.PathLike | str, product: str, project: os.PathLike | str | None = None,
+                 paths: Optional[dict[str, os.PathLike | str]] = None):
+        """workdir takes the files of one machine: its save folder, outputs and results.
+        project: the test project root (default: the current directory); paths: names of the
+        suite's own folders, relative to project or absolute."""
         self.workdir = Path(workdir).resolve()
         self.product = product
+        self.project = Path(project or Path.cwd()).resolve()
+        self._names: dict[str, Any] = {"project": self.project, "calcu": CHECKOUT, "work": self.workdir}
+        self._names.update({k: self.project / v for k, v in (paths or {}).items()})
         self._queue: list[str] = []
         self._calcu: Optional[Calcu] = None
         self._replies: list[dict[str, Any]] = []
@@ -149,6 +161,29 @@ class Session:
     def close(self) -> None:
         if self._finalizer:
             self._finalizer()
+
+    # ── paths ──────────────────────────────────────────────────────────
+
+    def path(self, path: os.PathLike | str) -> Path:
+        """An absolute path as it is; `$name/rest` in the named folder; anything else in the
+        test project root."""
+        text = os.fspath(path)
+        if text.startswith("$"):
+            name, _, rest = text[1:].partition("/")
+            base = os.environ.get(f"CALCU_PATH_{name.upper()}")
+            if base is None:
+                if name not in self._names:
+                    raise MachineError(f"{text}: no path name ${name}; the names: "
+                                       + ", ".join("$" + n for n in sorted(self._names)))
+                base = self._names[name]
+                if callable(base):
+                    base = base()
+            return (self.project / base / rest).resolve()
+        return (self.project / text).resolve()
+
+    def add_path_name(self, name: str, folder: Any) -> None:
+        """For the product layer: a name for a folder, or a function giving it when it is used."""
+        self._names.setdefault(name, folder)
 
     # ── for the product layer ─────────────────────────────────────────
 

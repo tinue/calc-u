@@ -102,11 +102,12 @@ What exists:
   `products/calc-u-1600/docs/developer/Harness.md`).
 - Python: `library/harness/python/calcu_serve.py` (a `calcu serve`
   process) and `calcu_machine.py` (`Session`, product-neutral).
-- The PC-1600 pytest driver `products/calc-u-1600/tools/machine/`
-  (`Machine`, card images, superRAM cards, cards and media of your own
-  by file; CTest
-  `CalcU1600MachineDriver`, Longer). It took over an external tester's
-  driver; the API their test cases use stays.
+- The pytest driver `products/calc-u-1600/tools/machine/` for the
+  PC-1500, PC-1500A and PC-1600, and its user guide
+  `products/calc-u-1600/docs/testing/README.md` (CTest
+  `CalcU1600MachineDriver` and `CalcU1600TestingExamples`, Longer). It
+  began as the external tester's driver; their suite is a source of
+  requirements, and gets rewritten on the driver.
 - Golden runs and reference runs of both products, the screenshot
   scenarios, Playwright, XCUITest, the DAP smoke test.
 
@@ -323,6 +324,7 @@ Still to add to the CHANGELOG entry:
 - Labels: the INSPECTOR's button "Card YAML" is "Module YAML" (its tooltip "… YAML for a module definition"), and the lines it prints begin "Module dump:" (was "Module card dump:"; "no module plugged in" was "no card attached"); File ▸ "Mount Directory…" is "Host Drive…" (its folder dialog "Host Drive (S3:)", was "Mount Directory as S3:"); Settings ▸ Folders reads "Presets folder" and "BASIC folder" (were "Examples folder", "Basic folder"); the web page's Settings ▸ Storage sentence says "Saved media (modules, disks and cassettes) …" (was "tapes"). The outdated-file notice names the User Guide's page and heading: "Media files", "Floppy disk" (sides 0: and 1: in place of a: and b:); "Media files", "Cassette definition"; and "Module definition format" (were "Floppy disks" and "Cassettes", headings that did not exist, and "the module definition format"). A cassette or disk name with a `"` or a line end is refused when it is written, with "A cassette name has no " and no line end." or "A disk name has no " and no line end." (0.8.1: it was written, and the file could not be read again).
 - Developers (`calcu --product c1600`): the command `switch <peripheral> <control> on|off` is `set-control <peripheral> <control> on|off` (`switch` is an unknown command); `key` without a key replies "refused: usage: key <key ID> ..." and the session's refusal reads "The key command needs one or more key IDs."; a preset's `key:` without a key is refused with "key: needs one or more key IDs.", and `key-down`/`key-up` without `key` with "The key command needs key: <key ID>.". Presets: the step `syncclock:` is `sync-clock:` (and so is the harness command); a preset with `syncclock:` is refused as an unknown keyword; the bundled startup preset `default-pc1600.pc1600` uses `sync-clock:`, and its log line reads `sync-clock`. Debug server (VS Code users of custom requests): the request `c1600/screen` is `c1600/display-text` and answers with the keys of the harness's `display-text --json`: `on`, `rows`, `indicators` (`[{name, brightness}]`) and `notText` (was `rows`, `status`, `unparsed`, `poweredOn`, `cursor`); the extension sends neither. Site authors: `model` and `?model=` take the model's name only (`PC-1600`; an index such as `2` gives the notice "There is no model …"); `preset` and `?preset=` take a bundled preset's path with or without `examples:` (a given prefix used to be doubled, and the preset was not found).
 - Presets and harness: the PC-1600's `ctrl`, `kbii` and `bs` can be pressed by name, as in 0.8.1 (no change against 0.8.1).
+- Developers: automated tests with pytest: the guide `docs/testing/README.md` (setup, a test project of your own, two worked examples, path names), the driver's module files and media of your own, printer, bus ROMs, `load_basic`/`type_basic`, `listing()` with the new harness command `c1600 list-basic`. The driver began as the one "spellbound" wrote and is developed further together with spellbound.
 
 Still to add to the CHANGELOG entry:
 

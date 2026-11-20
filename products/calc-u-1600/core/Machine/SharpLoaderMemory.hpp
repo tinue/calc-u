@@ -20,6 +20,7 @@ public:
     Write writeBuiltIn(std::uint16_t address, const std::uint8_t* data, std::size_t size) override;
     Write writeSlot(int, std::uint16_t address, const std::uint8_t*, std::size_t) override { return {false, address}; }
     bool slotRam(int, std::uint16_t, std::size_t) const override { return false; }
+    std::uint8_t peekSlot(int, std::uint16_t) const override { return 0xFF; }
     Module module(int) const override { return {}; }
     std::vector<std::uint8_t> internalRam() const override { return {}; }
 
@@ -36,6 +37,7 @@ public:
     Write writeBuiltIn(std::uint16_t address, const std::uint8_t* data, std::size_t size) override;
     Write writeSlot(int bank, std::uint16_t address, const std::uint8_t* data, std::size_t size) override;
     bool slotRam(int bank, std::uint16_t address, std::size_t size) const override;
+    std::uint8_t peekSlot(int bank, std::uint16_t address) const override;
     Module module(int slot) const override;
     std::vector<std::uint8_t> internalRam() const override;
 

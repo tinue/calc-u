@@ -61,7 +61,7 @@ TEST(commands_under_c1600_on_every_model) {
     std::string usage;
     for (const std::string& u : r.server->commands().usage()) usage += u + "\n";
     for (const char* c : {"c1600 file-kind", "c1600 load-basic", "c1600 type-basic", "c1600 load-code", "c1600 dump-basic",
-                          "c1600 inspect", "c1600 cassette", "c1600 serial", "c1600 host-drive", "c1600 call"})
+                          "c1600 list-basic", "c1600 inspect", "c1600 cassette", "c1600 serial", "c1600 host-drive", "c1600 call"})
         CHECK(has(usage, c));
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         CHECK_EQ(r.line(std::string("model ") + model), std::string("done\n"));
@@ -148,6 +148,59 @@ TEST(basic_not_set_up_pointers_only) {
                          "VAR_START  $7899 = $FFFF\n"
                          "DATA_PTR   $78BE = $8002\n"
                          "RAM_END    $7864 = $58 (page)   WARM_START $7A20 = $00\n"));
+}
+
+// ── list-basic ───────────────────────────────────────────────────────────
+
+TEST(list_basic_pc1500a) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    Run r;
+    CHECK(r.ok());
+    if (!r.ok()) return;
+    CHECK_EQ(r.line("c1600 list-basic"), std::string("done\n"));   // no program yet: no lines
+    onePrintLine(r);
+    CHECK_EQ(r.line("type 20 GOTO 10"), std::string("done\n"));
+    CHECK(starts(r.line("wait"), "done "));
+    CHECK_EQ(r.line("c1600 list-basic"), std::string("done 2\n10 PRINT 1\n20 GOTO 10\n"));
+}
+
+// With a CE-1600M in slot 1, S0 runs through both of its 16 KB banks: a
+// program longer than one bank is read across the bank-end mark, in order.
+TEST(list_basic_pc1600_across_module_banks) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    calcu::testing::TempFolder dir("c1600-list-basic");
+    std::string listing;
+    std::vector<std::string> lines;
+    for (int n = 1; n <= 600; ++n) {
+        lines.push_back(std::to_string(n * 10) + " REM " + std::string(36, char('A' + n % 26)));
+        listing += lines.back() + "\n";
+    }
+    writeFile(dir.path() / "long.bas", listing);
+    Run r;
+    CHECK(r.ok());
+    if (!r.ok()) return;
+    CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
+    CHECK_EQ(r.line("attach slot-1 CE-1600M"), std::string("done\n"));
+    CHECK_EQ(r.line("cold-boot"), std::string("done\n"));   // the ROM finds the module at the start
+    CHECK(starts(r.line("wait"), "done "));
+    CHECK_EQ(r.line("key mode"), std::string("done\n"));
+    CHECK_EQ(r.line("type NEW0"), std::string("done\n"));
+    CHECK(starts(r.line("wait"), "done "));
+    CHECK(starts(r.line("c1600 load-basic " + (dir.path() / "long.bas").string()), "done"));
+    std::string want = "done 600\n";
+    for (const std::string& l : lines) want += l + "\n";
+    CHECK_EQ(r.line("c1600 list-basic"), want);
+}
+
+TEST(list_basic_refused_in_mode1) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    Run r;
+    CHECK(r.ok());
+    if (!r.ok()) return;
+    CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
+    CHECK_EQ(r.line("type MODE1"), std::string("done\n"));
+    CHECK(starts(r.line("wait"), "done "));
+    CHECK_EQ(r.line("c1600 list-basic"), std::string("refused: list-basic reads a program in MODE 0 only.\n"));
 }
 
 // ── inspect ──────────────────────────────────────────────────────────────

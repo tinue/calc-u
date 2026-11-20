@@ -1,7 +1,6 @@
 #pragma once
 #include "opening/FileKind.hpp"
 #include "opening/OpenRequest.hpp"
-#include "opening/Openers.hpp"
 #include "sessions/SessionPart.hpp"
 #include <cstdint>
 #include <map>
@@ -11,14 +10,25 @@
 
 // The open part: the command `open`, the request `open-would-take`, the
 // file kept while the session is busy. One per app session, after the
-// presets and media parts it opens with.
+// presets and media parts it opens with: a preset is the presets part's
+// `load-preset` ({ref} from its folder, {content, name} as its content), a
+// medium the media part's reads of opened files and `media.open-file`. A
+// refusal of theirs becomes the open part's notice.
+
+namespace calcu::presets {
+class PresetsPart;
+}
+namespace calcu::media {
+class MediaPart;
+}
 
 namespace calcu::opening {
 
 struct OpenSetup {
     std::string productName;                       // test 6's sentence
-    PresetOpening* presets = nullptr;
-    MediaOpening* media = nullptr;
+    presets::PresetsPart* presets = nullptr;       // null: no presets are opened
+    std::vector<std::string> presetExtensions;     // ".ti59", ".pc1500a": any case
+    media::MediaPart* media = nullptr;             // null: no media are opened; its kinds' suffixes
     std::vector<FileKind*> kinds;                  // in the product's order
     std::map<Way, std::uint64_t> maxBytes;         // a way not listed has no limit
     std::optional<std::string> uploadFolder;       // where several files become one folder (Web: /uploads)

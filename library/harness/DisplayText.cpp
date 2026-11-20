@@ -23,8 +23,8 @@ Cell inverted(const Cell& c, const GlyphFont& f) {
     for (int i = 0; i < f.cellWidth; ++i) out[i] = static_cast<std::uint8_t>(~c[i] & rowMask(f.cellHeight));
     return out;
 }
-} // namespace
 
+// The indicators that are on, in descriptor order.
 std::vector<std::pair<std::string, std::optional<Decimal>>> indicatorsOn(std::span<const IndicatorOutput> out,
                                                                          const std::vector<IndicatorDef>& defs) {
     std::vector<std::pair<std::string, std::optional<Decimal>>> on;
@@ -37,6 +37,8 @@ std::vector<std::pair<std::string, std::optional<Decimal>>> indicatorsOn(std::sp
             }
     return on;
 }
+
+} // namespace
 
 DisplayText readDotMatrix(const machine::DotMatrixFrame& frame, const GlyphFont& font,
                           std::span<const IndicatorOutput> indicators, const std::vector<IndicatorDef>& defs) {

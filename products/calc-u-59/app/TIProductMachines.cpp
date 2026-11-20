@@ -16,8 +16,8 @@ calcu::startup::MachinePlan TIProductMachines::builtInDefault(const calcu::machi
     return plan;
 }
 
-calcu::pacing::PacingProfile TIProductMachines::pacingProfile(const calcu::machine::ModelId& model) const {
-    return cu59::pacingProfile(model);
+calcu::pacing::PacingProfile TIProductMachines::pacingProfile(const calcu::machine::ModelId&) const {
+    return cu59::pacingProfile();
 }
 
 // The PC-100C attached takes TRACE where the app session kept it.

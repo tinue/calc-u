@@ -6,7 +6,7 @@
 ;
 ; RESULT (real PC-1500A): reading (a) below -- DRL -> A=0x34,
 ; mem=0x41 ; DRR -> A=0x34, mem=0x23 -- which is what the emulator's
-; LH5801 core does (Core/CPU/LH5801/LH5801.cpp, drlMerge/drrMerge).
+; LH5801 core does (core/CPU/LH5801/LH5801.cpp, drlMerge/drrMerge).
 ; The ADR result (D+5) hasn't been read back from hardware yet.
 ;
 ; Target: PC-1500A, machine-language area (see examples/machine-code/memtest_1500a.pc1500a
@@ -176,7 +176,7 @@ START:
 ; carry, zero result), but "ldi a,0x00" sets Z from the loaded value
 ; (0x00 -> Z=1) same as the Z bit T already has from the line above, so
 ; this is a no-op on T -- C/V/H/IE are untouched by any LDI A, per this
-; project's LH5801 core (Core/CPU/LH5801/LH5801.cpp, case 0xB5).
+; project's LH5801 core (core/CPU/LH5801/LH5801.cpp, case 0xB5).
             ldi     a,0x00      ; A = 0x00 -- the ADR operand under test
             adr     u           ; FD EA -- the instruction under test:
                                  ; U = U + A (16-bit)

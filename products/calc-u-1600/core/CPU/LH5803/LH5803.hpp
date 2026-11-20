@@ -6,7 +6,7 @@
 // The LH5803 is the PC-1600's LH5801-compatible co-processor. Per the
 // Sharp Technical Reference Manual (§7.1.2), it "supports almost all
 // LH-5801 machine language instructions"; every opcode/flag/timing
-// behavior is inherited from `Core/CPU/LH5801` except the three below.
+// behavior is inherited from `core/CPU/LH5801` except the three below.
 //
 // The documented differences are pin-level (reversed address byte order
 // and inverted A15 seen from the SC7852 side, ME0/ME1 on pins 29/30, PV

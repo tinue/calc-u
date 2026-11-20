@@ -45,13 +45,10 @@ write("presets/demo/seg.test", "model: test-seg\n");
 fs.writeFileSync(path.join(OUT, "img", "icon.png"), ICON);
 copy(path.join(HERE, "index.html"), "index.html");
 for (const f of ["react.production.min.js", "react-dom.production.min.js"]) copy(path.join(VENDOR, f), `vendor/${f}`);
-write("calc-engine-worker.js",
-  "// The test product's worker entry (library/web/src/worker.js reads the config).\n" +
-  `self.CALCU_PRODUCT = ${JSON.stringify({
-    name: NAME, wasm: "calcutest-core", factory: "createCalcUTestModule", host: "CalcUTestHost",
-    mount: `/persist-${ID}`, lock: `${ID}-storage`,
-  })};\n` +
-  'importScripts(`${self.CALC_ROOT || ""}library-worker.js`);\n');
+dist.writeProductWorker(OUT, {
+  name: NAME, wasm: "calcutest-core", factory: "createCalcUTestModule", host: "CalcUTestHost",
+  mount: `/persist-${ID}`, lock: `${ID}-storage`,
+});
 
 // Workers for the failure tests (a start that fails, an unreadable store,
 // no store): beside the product's,

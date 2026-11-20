@@ -247,22 +247,34 @@ private:
 
 // A medium step needs a place of its kind -- the
 // model's own, or one of a peripheral the header (or the running machine)
-// plugs in; else the error names the peripherals that have one.
+// plugs in where that place exists; else the error names the peripherals
+// that have one here, or the plugged-in one whose place does not exist here.
 bool placeFor(const KindDecl& k, const std::string& verb, int line, ReadContext& ctx) {
     const machine::MachineDescriptor& model = ctx.model();
     for (const auto& p : model.mediaPlaces)
         if (p.mediumKind == k.id) return true;
     std::vector<std::string> needs;
+    std::string without;
     for (const auto& d : ctx.catalogue().peripherals()) {
         if (std::none_of(d.mediaPlaces.begin(), d.mediaPlaces.end(), [&](const auto& p) { return p.mediumKind == k.id; }))
             continue;
+        const std::string name = d.name.empty() ? d.id.value : d.name;
         for (const auto& place : model.places) {
             const auto info = ctx.catalogue().place(model.model, place.name);
             if (!info || std::find(info->fitting.begin(), info->fitting.end(), d.id) == info->fitting.end()) continue;
-            if (ctx.plugged(place.name, d.id)) return true;
-            needs.push_back(d.name.empty() ? d.id.value : d.name);
+            const bool exists = std::any_of(d.mediaPlaces.begin(), d.mediaPlaces.end(), [&](const auto& p) {
+                return p.mediumKind == k.id && p.existsAt(place.pinOut);
+            });
+            const bool plugged = ctx.plugged(place.name, d.id);
+            if (plugged && exists) return true;
+            if (plugged) without = name;   // plugged in, but its place does not exist here
+            else if (exists) needs.push_back(name);
             break;
         }
+    }
+    if (!without.empty()) {
+        ctx.error(line, verb + ": the " + without + "'s " + k.label + " cannot be used on the " + model.model.value + ".");
+        return false;
     }
     std::string list;
     for (std::size_t i = 0; i < needs.size(); ++i) list += (i == 0 ? "" : i + 1 == needs.size() ? " or " : ", ") + needs[i];

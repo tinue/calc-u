@@ -65,6 +65,5 @@ void SharpControlRules::productEntries(const Machine& m, std::vector<calcu::cont
                                                                                           : std::string("New")}})));
 }
 
-std::vector<const calcu::control::ControlRules*> sharpControlSetup(const SharpControlRules& rules) { return {&rules}; }
 
 } // namespace cu1600

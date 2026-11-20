@@ -7,6 +7,7 @@
 #include "../core/TIDebugging.hpp"
 #include "../core/TIDebugKinds.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "peripherals/Controls.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/PC100CPaper.hpp"
 #include <algorithm>
@@ -14,6 +15,34 @@
 namespace cu59 {
 
 using namespace std::chrono_literals;
+
+namespace {
+const calcu::machine::PlacePath kSlot{{kTIModulePlace}};
+const calcu::machine::PlacePath kPrinter{{kTIPrinterPlace}};
+const calcu::machine::CapabilityId kControls{"printer/controls"};
+
+/// The module in `slot-1` now (empty: none).
+std::string moduleIn(const calcu::machine::Machine& m) {
+    for (const auto& e : m.plugged().byPlace)
+        if (e.place == kSlot) return e.peripheral.value;
+    return {};
+}
+
+bool printerIn(const calcu::machine::Machine& m) {
+    for (const auto& e : m.plugged().byPlace)
+        if (e.place == kPrinter) return true;
+    return false;
+}
+
+/// The PC-100C switch's position; nullopt without a PC-100C.
+std::optional<bool> printerSwitch(calcu::machine::Machine& m, const calcu::machine::ControlId& id) {
+    auto* c = calcu::machine::capabilityAs<calcu::peripherals::Controls>(m, kControls);
+    if (!c) return std::nullopt;
+    for (const auto& info : c->list())
+        if (info.id == id) return info.on;
+    return std::nullopt;
+}
+} // namespace
 
 // The product's flows of cu59::TIAppPart; the machine control and the
 // presets are the library's. The session plumbing is TIAppPart.cpp.
@@ -27,7 +56,7 @@ void TIAppPart::followMachine() {
     if (m_lastFit == Fitted::Card) m_lastFit = Fitted::None;
     m_activeProgram = 0;
     if (!m) {
-        m_session.reset();
+        m_sampler.reset();
         return;
     }
     // A pause or a step waiting to land runs on in the host call that asked
@@ -36,8 +65,8 @@ void TIAppPart::followMachine() {
         calcu::debugger::RunControl* rc = &m_lib.debugger().runControl();
         static_cast<TIDebugging*>(d)->setRunOn([rc] { return !rc->running() && !rc->paused(); });
     }
-    m_session = std::make_unique<EmulatorSession>(*m, *m_setup.roms.set);
-    m_model = m_session->model();
+    m_sampler.emplace();
+    m_model = m->model();
 
     // The own cue card: a preset's build has
     // none until its `cue-card:` (fitted on this machine already, when the
@@ -61,9 +90,10 @@ void TIAppPart::followMachine() {
 }
 
 void TIAppPart::followPlugs(bool newMachine) {
-    if (!m_session) return;
+    calcu::machine::Machine* m = machine();
+    if (!m_sampler || !m) return;
     // The module (what the machine says is plugged).
-    const std::string module = m_session->moduleID();
+    const std::string module = moduleIn(*m);
     if (newMachine || module != m_moduleID) {
         m_moduleID = module;
         // The module cue cards from the module file.
@@ -75,14 +105,14 @@ void TIAppPart::followPlugs(bool newMachine) {
     // what the machine's PC-100C shows (the library's set-control, a preset's build,
     // printer-trace:) and stays while none is plugged; an attach puts it into
     // the new PC-100C (TIProductMachines::attaching).
-    m_printerConnected = m_session->printerPlugged();
+    m_printerConnected = printerIn(*m);
     if (m_printerConnected)
-        if (const auto on = m_session->printerSwitch(PC100C::kTrace)) m_printerTrace = *on;
+        if (const auto on = printerSwitch(*m, PC100C::kTrace)) m_printerTrace = *on;
 }
 
 void TIAppPart::machineRestarted(calcu::sessions::SessionContext& ctx, calcu::sessions::Restart r) {
     m_ctx = &ctx;
-    if (!m_session) return;
+    if (!m_sampler) return;
     // The paper, the plugs, TRACE and the fitted cards stay (a card in the
     // reader was taken out by the core's place; the ASM overlay's run ends
     // in the core).
@@ -102,8 +132,9 @@ void TIAppPart::fitOwnCueCard(const CueCardContent& card) {
 // ── 60 Hz frame ──────────────────────────────────────────────────────────────
 
 void TIAppPart::frame(Clock::time_point) {
-    if (!m_session || !machine()) return;
-    const FrameUpdate f = m_session->tick();
+    calcu::machine::Machine* m = machine();
+    if (!m_sampler || !m) return;
+    const FrameUpdate f = m_sampler->tick(*m);
     m_display = f.led;
     m_calcOpacity = f.calcIndicatorOpacity;
     refreshCueCard();   // the library program and the fitted card at each call

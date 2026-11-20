@@ -4,8 +4,9 @@
 
 Serves <dir> at the server's root, or, with a prefix such as
 /anything/calc, only below it (everything else a 404): the sub-path that
-shows that dist/ works wherever it is hosted. Both products'
-frontends/web/run-tests.sh and the library's tests/run-tests.sh start it.
+shows that dist/ works wherever it is hosted. playwright.sh starts it, for
+both products' frontends/web/run-tests.sh and the library's
+tests/run-tests.sh.
 """
 import functools
 import http.server

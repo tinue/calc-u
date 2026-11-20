@@ -1,5 +1,4 @@
 #include "qt6/SessionHost.hpp"
-#include "harness/attach/AttachPort.hpp"
 #include "qt6/ClipboardService.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <QDesktopServices>
@@ -10,6 +9,7 @@
 
 #ifdef CALCU_ATTACH
 #include "harness/attach/AttachEndpoint.hpp"
+#include "harness/attach/AttachPort.hpp"
 #include "harness/attach/AttachedHarness.hpp"
 #endif
 
@@ -171,6 +171,7 @@ bool SessionHost::attachOpen() const {
 }
 
 std::uint16_t SessionHost::attachPortFrom(const QStringList& arguments) {
+#ifdef CALCU_ATTACH
     std::vector<std::string> args;
     for (int i = 0; i < arguments.size(); ++i) {
         const QString& a = arguments[i];
@@ -180,6 +181,10 @@ std::uint16_t SessionHost::attachPortFrom(const QStringList& arguments) {
         args.push_back(a.toStdString());
     }
     return harness::attachPort(args);
+#else
+    (void)arguments;
+    return 0;
+#endif
 }
 
 } // namespace calcu::qt6

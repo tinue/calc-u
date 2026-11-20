@@ -1,6 +1,6 @@
-// Headless tests for the listing parsers (Core/Debug/Listing/) and the
-// source map (Core/Debug/SourceMap). Same assert-and-tally style as
-// lh5801_tests.cpp. The fixtures under Core/tests/fixtures/listings/ are
+// Headless tests for the listing parsers (core/Debug/Listing/) and the
+// source map (core/Debug/SourceMap). Same assert-and-tally style as
+// lh5801_tests.cpp. The fixtures under tests/fixtures/listings/ are
 // real assembler output:
 //
 //   sdas-lh5801/memtest.*       examples/machine-code/memtest.asm (ENTRY 0x40C5) through

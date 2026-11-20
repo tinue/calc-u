@@ -1,6 +1,6 @@
-// Headless C++ tests for the cassette building blocks: Core/Tape/TapeDeck.hpp
-// (the WAV-backed recorder), Core/Audio/WavFile.hpp's reader, and
-// Core/CPU/LH5811Serial.hpp (the PC-1500's tape transmitter and timer).
+// Headless C++ tests for the cassette building blocks: core/Tape/TapeDeck.hpp
+// (the WAV-backed recorder), core/Audio/WavFile.hpp's reader, and
+// core/CPU/LH5811Serial.hpp (the PC-1500's tape transmitter and timer).
 // Synthetic only -- the machine-level CSAVE/CLOAD tests drive the real ROMs
 // in pc1500_tape_tests.cpp / pc1600_tape_tests.cpp.
 //

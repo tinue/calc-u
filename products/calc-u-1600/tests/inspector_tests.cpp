@@ -1,4 +1,4 @@
-// Tests for the debug panel's inspector (Core/Debug/Inspect): the table and
+// Tests for the debug panel's inspector (core/Debug/Inspect): the table and
 // dump formatting, the bank-state and LH5803 reads it builds on, and the
 // views on machines set up by preset (modules, INIT, NEW, TITLE).
 

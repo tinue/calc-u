@@ -4,6 +4,8 @@
 
 namespace calcu::paper {
 
+namespace {
+
 std::string numberText(Coord c) {
     const bool negative = c < 0;
     const std::uint64_t a = negative ? std::uint64_t(0) - static_cast<std::uint64_t>(c) : static_cast<std::uint64_t>(c);
@@ -44,6 +46,8 @@ std::optional<Coord> parseNumberText(std::string_view t) {
     const Coord v = whole * kPerUnit + frac;
     return negative ? -v : v;
 }
+
+} // namespace
 
 std::string colourText(Rgb c) {
     char buf[8];

@@ -360,7 +360,7 @@ is all the emulator uses.
 TI-58C at 64). Program steps fill registers from the bottom (2 nibbles per
 step, units digit first, 8 steps per register); data registers count down
 from the top, Rnn = RAM[top − nn]. The ROM keeps top as BCD in SCOM[13]
-nibbles 5–3: 119 (TI-59) or 59 (TI-58/58C); `TIMemoryAdapter::dataRegCount()`
+nibbles 5–3: 119 (TI-59) or 59 (TI-58/58C); `TI59Machine::dataRegCount()`
 is top + 1 and `readDataReg`/`writeDataRegister` use it. The
 partition (SCOM[9] nibble 0 = program registers ÷ 10) is set by Op 17; the
 defaults are 479.59 (TI-59) and 239.29 (TI-58/58C).
@@ -627,7 +627,7 @@ display reads 1.0 and a computing one 0. `pollTicks` is the interval in
 weighted cycles; a poll with no cycle since the last one returns the last
 snapshot again. Each call restarts the window, so a core has one display
 consumer (`FrameSampler`, through `readDisplay()`). The core makes no visibility decision: brightness and
-persistence of vision are `app/DisplayPov`.
+persistence of vision are `DisplayPov` (`app/FrameSampler`).
 
 The **C indicator** (`calcIndicator`) is its mean drive over the interval: the
 number of set `fA` bits in RUN mode, `fA` bit 14 in IDLE (Sladký). That RUN

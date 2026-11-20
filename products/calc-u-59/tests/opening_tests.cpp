@@ -68,7 +68,7 @@ TEST(preset_extensions_ti59_ti58_ti58c) {
 
 TEST(one_medium_magnetic_card) {
     // The magnetic card is the one medium of Calc-U-59
-    // (`.magnetcard.yaml`), opened by the library's MediaOpener; no product
+    // (`.magnetcard.yaml`), opened by the library's media part; no product
     // file kind takes a card file, and 2.3.0's .u59 and .bin are no files of
     // the product.
     SessionRig r;

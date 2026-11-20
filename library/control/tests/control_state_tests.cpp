@@ -49,7 +49,7 @@ TEST(control_state_value_round_trip) {
     auto m = seg({plug("printer", mt::kPrinter)});
     TestControlRules rules;
     rules.refuse(ActionKey{kOpenAction});
-    const ControlState s = computeControlState(*m, testSetup({&rules}), false);
+    const ControlState s = computeControlState(*m, testSetup(&rules), false);
     const std::string t = toText(s.toValue());
     // One object, keys in the order of the fields.
     const char* keys[] = {"\"models\":", "\"model\":", "\"variants\":", "\"variant\":", "\"places\":",
@@ -73,7 +73,7 @@ TEST(control_state_value_round_trip) {
     CHECK(contains(t, std::string("{\"command\":\"open\",\"available\":false,\"reason\":\"") + kProductReason + "\"}"));
     CHECK(contains(t, "\"product\":{\"test.entry\":{\"model\":\"test-seg\"}}"));
     // Computed twice from the same machine: the same value, and equal payloads.
-    const ControlState again = computeControlState(*m, testSetup({&rules}), false);
+    const ControlState again = computeControlState(*m, testSetup(&rules), false);
     CHECK(again.toValue() == s.toValue());
     CHECK(again.equals(s));
 }
@@ -205,6 +205,20 @@ TEST(control_state_entries_in_descriptor_order) {
     CHECK(s.mediaPlaces.size() == 2 && s.mediaPlaces[0].id.value == "drive" && s.mediaPlaces[1].id.value == "hub-disk");
 }
 
+// A peripheral's media place that exists only at other pin-outs is not
+// listed where it is plugged.
+TEST(control_state_media_place_only_at_its_pin_outs) {
+    const calcu::machine::Catalogue& base = mt::testCatalogue();
+    std::vector<calcu::machine::PeripheralDescriptor> peripherals = base.peripherals();
+    for (auto& p : peripherals)
+        if (p.id == mt::kHub) p.mediaPlaces[0].onlyAt = {calcu::machine::PinOutId{"test.elsewhere"}};
+    const calcu::machine::Catalogue cat(base.models(), std::move(peripherals));
+    auto m = dot(std::nullopt, {plug("a", mt::kHub)});
+    const ControlState s = computeControlState(*m, testSetup({}, &cat), false);
+    CHECK(s.mediaPlaces.size() == 1 && s.mediaPlaces[0].id.value == "drive");
+    CHECK(computeControlState(*m, testSetup(), false).mediaPlaces.size() == 2);   // at every pin-out it fits
+}
+
 TEST(control_state_plugged_peripheral_says_plugged) {
     auto m = dot(std::nullopt, {plug("card-2", mt::kModule)});
     const ControlState s = computeControlState(*m, testSetup(), false);
@@ -245,7 +259,7 @@ TEST(control_state_place_media_place_panel_absent_where_model_lacks_them) {
 TEST(control_state_module_added_to_catalogue_listed_next_time) {
     calcu::machine::Catalogue cat = mt::makeTestCatalogue();
     auto m = seg();
-    const ControlSetup setup = testSetup({}, &cat);
+    const ControlSetup setup = testSetup(nullptr, &cat);
     CHECK(fittingIds(*computeControlState(*m, setup, false).place(at({"slot-1"}))) ==
           (std::vector<std::string>{"test-module"}));
     calcu::machine::PeripheralDescriptor later;

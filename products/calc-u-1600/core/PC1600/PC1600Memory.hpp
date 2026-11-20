@@ -83,12 +83,10 @@ public:
     void setBusArbiter(PC1600BusArbiter* arbiter) { m_arbiter = arbiter; }
 
     /// Wires Port 39H writes through to the CPU's own IM2 vector-byte
-    /// latch -- without this, a real ROM write to 39H only updated this
-    /// class's own copy
-    /// (`m_im2VectorLow`, kept for readback/tests) and the SC7852's IM2
-    /// dispatch used its unrelated, never-written default, so any genuine
-    /// interrupt would have vectored through garbage. Defaults to nullptr,
-    /// same no-op-when-unset convention as setBusArbiter().
+    /// latch, the only copy of it: without this the SC7852's IM2 dispatch
+    /// would use its never-written default and vector through garbage.
+    /// Defaults to nullptr, same no-op-when-unset convention as
+    /// setBusArbiter().
     void setCPU(SC7852* cpu) { m_cpu = cpu; }
 
     /// Raw port 35H value -- debug/test access, same convention as
@@ -431,7 +429,7 @@ public:
         io(m_internalRam);
         io.end();
         io.begin("PORT");
-        io(m_intCause)(m_intMask)(m_lhNmiLatch)(m_im2VectorLow)(m_dda)(m_opa)(m_ddb)(m_opb)(m_opc)(m_fReg)(m_sdo)(m_sdoAccum);
+        io(m_intCause)(m_intMask)(m_lhNmiLatch)(m_dda)(m_opa)(m_ddb)(m_opb)(m_opc)(m_fReg)(m_sdo)(m_sdoAccum);
         io(m_pbIn)(m_msk)(m_if);
         m_keyboard.stateIo(io);
         io.end();
@@ -468,7 +466,6 @@ private:
                                 // INT = intCause() & mask (interruptLevel())
     uint8_t m_intMask{0};       // Port 35H
     bool m_lhNmiLatch{false};   // LHNMIO, see latchLhNmi(); a port 36H write clears it
-    uint8_t m_im2VectorLow{0xFF}; // Port 39H
 
     // Keyboard/display I/O. LH5810-style port block:
     // DDA(1CH)/DDB(1DH) direction registers (bit i: 1 = output, 0 = input).

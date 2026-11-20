@@ -187,7 +187,7 @@ public:
     //
     // The 40-pin (single-slot) and 60-pin (daisy-chain) connectors, built
     // for this memory's own variant. With no card attached they are pure
-    // open bus. See Core/Connector/ExpansionConnector.hpp and SystemBus.hpp
+    // open bus. See core/Connector/ExpansionConnector.hpp and SystemBus.hpp
     // for what these model; PC1500Machine forwards its accessors here.
     ExpansionConnector& expansionConnector() { return m_expansionConnector; }
     const ExpansionConnector& expansionConnector() const { return m_expansionConnector; }
@@ -329,11 +329,6 @@ private:
         if (m_systemBus.empty()) return WriteResult::ignored();
         return m_systemBus.write(busPins(addr, /*forWrite=*/true, me1), value);
     }
-
-    // True if any card on either connector is pulling INHIBIT low --
-    // suppresses the system ROM (see resolve()'s ROM branch). With nothing
-    // attached, always false (the ROM answers unconditionally).
-    bool inhibitAsserted() const;
 
     static bool isIoChipAddress(uint16_t addr) { return (addr & 0xF000) == 0xF000; }
     /// Register slots 0-3 of the LH5811: no register there.

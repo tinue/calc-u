@@ -85,14 +85,6 @@ const cs::ProductDecl& settingsDecl() {
     return decl;
 }
 
-const char* modelName(const ModelId& model) { return info(model).displayName; }
-
-std::optional<ModelId> modelNamed(std::string_view name) {
-    for (const ModelInfo& m : kModelFacts)
-        if (name == m.displayName) return ModelId{m.id};
-    return std::nullopt;
-}
-
 const char* openFolderKind(OpenFolder folder) {
     switch (folder) {
     case OpenFolder::Presets: return "presets";

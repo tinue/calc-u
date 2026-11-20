@@ -11,7 +11,7 @@ class LoaderMemory;
 
 // ── Fast BASIC program loading for the PC-1600 ─────────────────────────
 //
-// The PC-1600 analog of Core/PC1500/PC1500BasicLoader: takes a BASIC
+// The PC-1600 analog of core/PC1500/PC1500BasicLoader: takes a BASIC
 // listing (tokenized in-process) or an already-tokenized file
 // (basic::readBasicProgram()), pokes the payload into the BASIC program
 // area, appends the 0xFF end marker, and writes BASPRG_END -- instead of
@@ -36,7 +36,7 @@ class LoaderMemory;
 //     module header's end offset (+5/+6); then PRGADR (FE3C-FE41), CURRENT
 //     TOP (F89E) and the CURRENT bank (F1C1) as PRGRESET sets them.
 // Checked byte for byte against the keystroke typer's work area
-// (Core/tests/pc1600_basicloader_tests.cpp).
+// (tests/pc1600_basicloader_tests.cpp).
 
 /// The bare tokenized payload (no header) -- the run of in-RAM line records
 /// basic::readBasicProgram() yields -- into the program area TITLE selects,

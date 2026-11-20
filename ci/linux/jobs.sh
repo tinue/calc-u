@@ -39,6 +39,7 @@ job() {
     web-59)
       emsdk 6.0.12 && cd products/calc-u-59 &&
       frontends/web/build.sh &&
+      (cd frontends/web && npm ci --no-audit --no-fund) &&
       frontends/web/run-tests.sh --reporter=line ;;
     web-1600)
       emsdk 6.0.13 && cd products/calc-u-1600 &&

@@ -14,12 +14,16 @@ const machine::KeyDescriptor* keyNamed(const machine::MachineDescriptor& d, std:
     return nullptr;
 }
 
+namespace {
+
 std::optional<std::vector<Press>> pressesOfName(const TypingProfile* p, const machine::MachineDescriptor& d,
                                                 std::string_view name) {
     if (p && p->name) return p->name(name);
     if (const machine::KeyDescriptor* k = keyNamed(d, name)) return std::vector<Press>{Press{k->id}};
     return std::nullopt;
 }
+
+} // namespace
 
 std::variant<std::vector<Press>, KeyNamesRefused> pressesOfNames(const TypingProfile* p,
                                                                  const machine::MachineDescriptor& d,

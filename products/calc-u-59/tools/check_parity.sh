@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Warn when a branch changes one GUI but not the others (CLAUDE.md
-# § "Frontend Parity"): App/ (Swift), Qt6/app/ (Qt), Web/src/ + Web/app/ +
-# Web/calc.css (web). Touching reference/FrontendParity.md counts as
+# § "Frontend Parity"): frontends/swift/App/ (Swift), frontends/qt6/app/ (Qt), frontends/web/src/ +
+# frontends/web/app/ + frontends/web/calc.css (web). Touching reference/FrontendParity.md counts as
 # acknowledging the gap (a Pending row). A Swift + Qt change without the web
 # is not flagged: much of the apps is outside the web's scope, and the
 # table's Web column says which.

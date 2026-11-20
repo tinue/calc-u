@@ -135,7 +135,7 @@ TEST(restore_continues_identically_pc1500a) {
             r.line("wait 500ms");
             CHECK(has(r.line("c1600 cassette status"), "motor: on"));   // saved while the CSAVE records
         },
-        {"c1600 cassette status", "c1600 serial ce158 report", "c1600 inspect inventory", "c1600 dump-basic"});
+        {"c1600 cassette status", "c1600 serial ce158 report", "c1600 inspect inventory", "c1600 inspect dump-basic"});
 }
 
 TEST(restore_continues_identically_pc1600) {
@@ -168,7 +168,7 @@ TEST(full_pc1600_with_ce1600p_disk_tape_ce158_modules) {
             r.line("wait 500ms");
             CHECK(has(r.line("c1600 cassette status"), "motor: on"));   // saved while the CSAVE records
         },
-        {"c1600 cassette status", "c1600 inspect disks", "c1600 inspect inventory", "c1600 dump-basic"});
+        {"c1600 cassette status", "c1600 inspect disks", "c1600 inspect inventory", "c1600 inspect dump-basic"});
 
     restoreContinuesIdentically(
         [](Run& r, const fs::path&) {

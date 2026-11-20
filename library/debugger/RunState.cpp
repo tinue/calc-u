@@ -4,6 +4,8 @@ namespace calcu::debugger {
 
 using sessions::Value;
 
+namespace {
+
 const char* reasonName(RunState::Reason r) {
     switch (r) {
     case RunState::Reason::Pause: return "pause";
@@ -15,6 +17,8 @@ const char* reasonName(RunState::Reason r) {
     }
     return "";
 }
+
+} // namespace
 
 Value RunState::toValue() const {
     Value::Object o;

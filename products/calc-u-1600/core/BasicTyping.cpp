@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Basic/BasicLineStoreCheck.hpp"
+#include "Basic/BasicPointers.hpp"
 #include "Machine/SharpProductKinds.hpp"
 #include "PC1600/PC1600ProgramPlacement.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -17,15 +18,11 @@ namespace {
 
 using calcu::machine::Ticks;
 
-std::uint16_t readBE16(const LoaderMemory& m, std::uint16_t a) {
-    return static_cast<std::uint16_t>((m.peek(a) << 8) | m.peek(static_cast<std::uint16_t>(a + 1)));
-}
-
 // The selected program area as the typed line sees it: the start, the end
 // mark and the end "key" that folds the PC-1600's bank index in, so a line
 // that moves the end into another bank still counts as a change. PC-1500:
-// BASPRG_ST / BASPRG_END ($7865 / $7867). PC-1600 S0: F865 / F867 (LH5803
-// addresses) with the bank F02CH; S1 / S2: the slot descriptor.
+// BASPRG_ST / BASPRG_END. PC-1600 S0: the same pair (LH5803 addresses)
+// with the bank F02CH; S1 / S2: the slot descriptor.
 struct Area {
     std::uint32_t start = 0, end = 0, endKey = 0;
 };
@@ -33,8 +30,8 @@ struct Area {
 Area areaOf(const LoaderMemory& m) {
     Area a;
     if (!m.pc1600()) {
-        a.start = readBE16(m, 0x7865);
-        a.end = readBE16(m, 0x7867);
+        a.start = readBE16(m, kPC1500BasicPointers.programStart);
+        a.end = readBE16(m, kPC1500BasicPointers.programEnd);
         a.endKey = a.end;
         return a;
     }
@@ -45,8 +42,8 @@ Area areaOf(const LoaderMemory& m) {
         a.end = d.end;
         a.endKey = a.end | (static_cast<std::uint32_t>(d.endIndex) << 16);
     } else {
-        a.start = pc1600::lh5803ToZ80(readBE16(m, 0xF865));
-        a.end = pc1600::lh5803ToZ80(readBE16(m, 0xF867));
+        a.start = pc1600::lh5803ToZ80(readBE16(m, kPC1600BasicPointers.programStart));
+        a.end = pc1600::lh5803ToZ80(readBE16(m, kPC1600BasicPointers.programEnd));
         a.endKey = a.end | (static_cast<std::uint32_t>(m.peek(0xF02C)) << 16);
     }
     return a;

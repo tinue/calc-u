@@ -1,5 +1,5 @@
 // Headless C++ tests for the PC-1600 bank-switching layer
-// (Core/PC1600/PC1600Bank.hpp, PC1600Memory.hpp). Pure truth-table tests
+// (core/PC1600/PC1600Bank.hpp, PC1600Memory.hpp). Pure truth-table tests
 // against synthetic port writes and byte patterns -- no CPU involved.
 // Same no-framework, assert-and-tally style as lh5801_tests.cpp -- see
 // that file's header comment.

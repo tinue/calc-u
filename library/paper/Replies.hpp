@@ -19,8 +19,6 @@
 
 namespace calcu::paper {
 
-std::string numberText(Coord);
-std::optional<Coord> parseNumberText(std::string_view);   // the inverse; nullopt for anything else
 std::string colourText(Rgb);                               // #rrggbb
 
 std::vector<std::string> textReply(const std::vector<TextLine>&);

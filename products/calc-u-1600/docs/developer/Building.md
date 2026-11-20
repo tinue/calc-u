@@ -187,7 +187,7 @@ configurations committed in the repository's `.run/`:
 |---|---|---|
 | `Calc-U-1600` | `CalcU1600Qt` | The Qt6 GUI app |
 | `CoreTests` | `CoreTests` | Headless test suite, also runnable via CTest |
-| `calcu-1600` | `calcu` | The harness, `calcu --product c1600 serve`: one command per line on standard input (the product's section Harness of `CLAUDE.md`). Every function of the old CLIs `pc1500_cli` and `pc1600_cli` and of the three probes is a `calcu` command |
+| `calcu-1600` | `calcu` | The harness, `calcu --product c1600 serve`: one command per line on standard input (the product's section Harness of `CLAUDE.md`) |
 
 All of them run and debug interactively (breakpoints, variable
 inspection, stepping) — which is the main thing this build adds over
@@ -200,8 +200,8 @@ lookup as the app, and ROMs aren't committed. A ROM test without the full set re
 skipped.
 
 `core/` and `app/` come from [`cmake/CalcU.cmake`](../../cmake/CalcU.cmake),
-which globs the sources into two static libraries: `calcu_core` and
-`calcu_shared` (the frontend-neutral layer above Core). A new `.cpp` under
+which globs the sources into two static libraries: `calcu1600_core` and
+`calcu1600_shared` (the frontend-neutral layer above Core). A new `.cpp` under
 either directory needs no list entry; re-run CMake (or let Ninja's glob
 check do it). No script lists sources.
 
@@ -239,7 +239,7 @@ cmake --build ../../build/tests
 ctest --test-dir ../../build/tests --output-on-failure
 ```
 
-The tests are always built optimized: `CoreTests` and `calcu_core` compile
+The tests are always built optimized: `CoreTests` and `calcu1600_core` compile
 at `-O1` in a Debug build (which is what `tools/run_tests.sh` uses; the root
 `CMakeLists.txt`'s `calcu_debug_o1`, which Calc-U-59's core and tests use
 too) — the suite runs about three times

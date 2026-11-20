@@ -13,6 +13,8 @@ std::string unknownPrinterSentence(const std::string& name, const std::vector<st
     return "Unknown printer: " + name + ". Printers: " + list + ".";
 }
 
+namespace {
+
 Value descriptionValue(const PaperDescription& d) {
     Value::Array greys;
     for (auto g : d.darknessGreys) greys.push_back(Value(int(g)));
@@ -27,6 +29,8 @@ Value descriptionValue(const PaperDescription& d) {
                           {"pictureDotsPerInch", d.pictureDotsPerInch},
                           {"textLayer", d.textLayer}});
 }
+
+} // namespace
 
 Value PaperList::toValue() const {
     Value::Array a;

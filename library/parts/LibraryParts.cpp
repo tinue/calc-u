@@ -67,10 +67,9 @@ LibraryParts::LibraryParts(LibraryPartsSetup s)
     media::addMediaToPresets(presets_->vocabulary(), *media_);
     opening::OpenSetup open;
     open.productName = setup_.productName;
-    presetsOpener_ = std::make_unique<opening::PresetsOpener>(*presets_, setup_.presetExtensions);
-    open.presets = presetsOpener_.get();
-    mediaOpener_ = std::make_unique<opening::MediaOpener>(*media_);
-    open.media = mediaOpener_.get();
+    open.presets = presets_.get();
+    open.presetExtensions = setup_.presetExtensions;
+    open.media = media_.get();
     open.kinds = setup_.fileKinds;
     open.maxBytes = setup_.openLimits;
     open.uploadFolder = setup_.uploadFolder;

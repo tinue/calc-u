@@ -21,7 +21,6 @@ namespace calcu::opening {
 
 enum class Way { Drop, OpenWith, Start, Dialog, Harness };
 
-std::string_view wayName(Way);
 std::optional<Way> wayNamed(std::string_view);
 
 struct OpenedFile {

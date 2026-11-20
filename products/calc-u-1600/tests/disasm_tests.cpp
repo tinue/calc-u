@@ -1,6 +1,6 @@
 // Headless tests for the debugger's disassemblers
-// (Core/Debug/Disasm/) and the CPUs' always-on history rings
-// (Core/CPU/HistoryRing.hpp). Same assert-and-tally style as
+// (core/Debug/Disasm/) and the CPUs' always-on history rings
+// (core/CPU/HistoryRing.hpp). Same assert-and-tally style as
 // lh5801_tests.cpp.
 //
 // The LH5801 text vectors are the instruction/byte pairs of the

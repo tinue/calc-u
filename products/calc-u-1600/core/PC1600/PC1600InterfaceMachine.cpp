@@ -236,8 +236,8 @@ void PC1600InterfaceMachine::corePlug(const PeripheralRequest& req, const Periph
 void PC1600InterfaceMachine::coreUnplug(const PlaceName& p, const PeripheralId& id) {
     if (p.value == sharp::kSlot1) m_core->detachSlot1();
     else if (p.value == sharp::kSlot2) m_core->detachSlot2();
-    else if (id.value == sharp::kCE150) { m_core->tapeEject(); m_core->detachCE150(); }   // the cassette goes with it
-    else if (id.value == sharp::kCE1600P) { m_core->tapeEject(); m_core->detachCE1600P(); }
+    else if (id.value == sharp::kCE150) m_core->detachCE150();
+    else if (id.value == sharp::kCE1600P) { m_core->tapeEject(); m_core->detachCE1600P(); }   // the cassette goes with it
     else if (id.value == sharp::kCE158) m_core->detachCE158();
     else if (id.value == sharp::kHostDrive) m_core->detachHostDrive();
     else if (id.value == sharp::kBusRom) m_core->detachBusRoms();
@@ -262,9 +262,6 @@ void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
             if (calcu::paper::PaperOutput* paper = m_core->ce1600pPaperOutput()) out.push_back(byPeripheral(*e, *paper));
             out.push_back(byPeripheral(*e, k.floppy));
             out.push_back(byPeripheral(*e, k.drive, "floppy"));   // the CE-1600F's media place
-        }
-        // The cassette of either interface.
-        if (e->peripheral.value == sharp::kCE150 || e->peripheral.value == sharp::kCE1600P) {
             out.push_back(byPeripheral(*e, k.cassette, "cassette-recorder"));
             out.push_back(byPeripheral(*e, k.tape));
         }

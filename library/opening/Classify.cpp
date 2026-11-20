@@ -1,5 +1,6 @@
 #include "opening/Classify.hpp"
 #include "machine/Names.hpp"
+#include "media/MediaPart.hpp"
 #include "opening/FileKind.hpp"
 #include "opening/OpenPart.hpp"
 #include <cstring>
@@ -17,14 +18,14 @@ bool endsWith(std::string_view s, std::string_view suffix) {
     return !suffix.empty() && s.size() >= suffix.size() && s.substr(s.size() - suffix.size()) == suffix;
 }
 
+namespace {
+
 std::string sizeText(std::uint64_t n) {
     constexpr std::uint64_t kKiB = 1024, kMiB = 1024 * 1024;
     if (n >= kMiB && n % kMiB == 0) return std::to_string(n / kMiB) + " MiB";
     if (n >= kKiB && n % kKiB == 0) return std::to_string(n / kKiB) + " KiB";
     return std::to_string(n) + " bytes";
 }
-
-namespace {
 
 // Well-formed UTF-8: no overlong forms, no surrogates, nothing above U+10FFFF.
 bool validUtf8(const std::uint8_t* p, std::size_t n) {
@@ -65,6 +66,14 @@ bool hasAny(std::string_view lowerName, const std::vector<std::string>& suffixes
     for (const auto& s : suffixes)
         if (endsWith(lowerName, machine::lowerAscii(s))) return true;
     return false;
+}
+
+std::vector<std::string> mediumSuffixes(const OpenSetup& s) {
+    std::vector<std::string> out;
+    if (s.media)
+        for (const auto& k : s.media->kinds())
+            if (!k.suffix.empty()) out.push_back(k.suffix);
+    return out;
 }
 
 std::optional<std::uint64_t> limitOf(Way w, const OpenSetup& s) {
@@ -111,11 +120,11 @@ Classified classify(const OpenedFile& f, Way way, const OpenSetup& s) {
         out.refusal = name + " is a hidden file and is not opened.";
         return out;
     }
-    if (s.presets && hasAny(lower, s.presets->extensions())) {   // 2: whatever it holds
+    if (s.presets && hasAny(lower, s.presetExtensions)) {   // 2: whatever it holds
         out.what = Classified::What::Preset;
         return out;
     }
-    if (s.media && hasAny(lower, s.media->suffixes())) {   // 3
+    if (hasAny(lower, mediumSuffixes(s))) {   // 3
         out.what = Classified::What::Medium;
         return out;
     }
@@ -137,8 +146,8 @@ bool wouldTake(std::string_view name, std::optional<std::uint64_t> size, const O
     if (const auto limit = limitOf(Way::Drop, s); limit && size && *size > *limit) return false;   // 1b
     if (name.empty() || name[0] == '.') return false;                                           // 1c
     const std::string lower = machine::lowerAscii(name);
-    if (s.presets && hasAny(lower, s.presets->extensions())) return true;   // 2
-    if (s.media && hasAny(lower, s.media->suffixes())) return true;         // 3
+    if (s.presets && hasAny(lower, s.presetExtensions)) return true;   // 2
+    if (hasAny(lower, mediumSuffixes(s))) return true;         // 3
     for (FileKind* k : s.kinds)
         if (k && k->takesName(lower)) return true;
     return false;

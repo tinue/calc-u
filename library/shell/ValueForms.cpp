@@ -29,8 +29,6 @@ const char* widgetName(DialogRow::Widget w) {
     return "text";
 }
 
-} // namespace
-
 const char* menuGroupName(MenuGroup g) {
     switch (g) {
         case MenuGroup::FileOpen: return "FileOpen";
@@ -43,6 +41,8 @@ const char* menuGroupName(MenuGroup g) {
     }
     return "FileKinds";
 }
+
+} // namespace
 
 Value toValue(const Rect& r) { return Value::object({{"x", r.x}, {"y", r.y}, {"w", r.w}, {"h", r.h}}); }
 

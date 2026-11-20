@@ -89,7 +89,6 @@ MediaPart::MediaPart(MediaSetup s)
 
 void MediaPart::attach(sessions::SessionSetup& s) {
     topic_ = &s.stateTopic(kMediaTopic);
-    s.context().machineSession().addWaitProbe(*this);
     refreshShelf(&s.context());   // the lines of the first scan at the start
 
     s.command(kRefreshCommand, [this](const Value&, SessionContext& c) -> CommandOutcome {
@@ -299,12 +298,6 @@ void MediaPart::operationEnded(SessionContext& c) {
 
 void MediaPart::suspending(SessionContext& c) { flushAll(c); }
 void MediaPart::closing(SessionContext& c) { flushAll(c); }   // quit
-
-bool MediaPart::waitsForMedium(const Machine& m) const {
-    for (const auto& e : m.capabilities(MediaPlace::kKind))
-        if (auto* p = machine::capabilityAs<MediaPlace>(m, e.id); p && p->waitsForMedium()) return true;
-    return false;
-}
 
 void MediaPart::refreshShelf(SessionContext* c) {
     const std::vector<std::string> lines = shelf_.reread();

@@ -358,6 +358,8 @@ public:
     void powerCycle() override;
     void coldBoot() override;
     bool isKeyReady() const override { return sinceStart_ >= startUpTicks_ && programLeft_ == 0; }
+    bool awaitsMedium() const override;   // a media place waits (enableMedia)
+    std::vector<std::string> busyWith() const override { return busy; }
     KeyCall keyDown(const KeyId&) override;
     KeyCall keyUp(const KeyId&) override;
     DisplayOutput readDisplay() override;
@@ -383,6 +385,9 @@ public:
     std::uint64_t operationsTold(const PlacePath&) const;
     TestClock* clock() { return clock_.get(); }
     int plugCalls = 0, unplugCalls = 0;
+    // What keeps the machine busy, set by a test: while it is not empty the
+    // machine never waits, though it takes keys (a machine that computes).
+    std::vector<std::string> busy;
     const std::vector<KeyEvent>& keyEvents() const { return events_; }
     const std::vector<KeyId>& keysDown() const { return keysDown_; }
     std::uint64_t instructionsRun() const { return generic_.instructions; }

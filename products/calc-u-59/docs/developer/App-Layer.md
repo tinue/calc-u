@@ -366,7 +366,8 @@ is the library's media part:
   core ejects it at `CRD_OFF`; Eject Card keeps a whole written bank only;
   a Reset, power cycle or Cold boot takes a card in the reader out as Eject
   Card does. `waitsForMedium()` is the card wait of `n Write` / `n INV Write`
-  (the idle rule of the presets and the pacing's wait probe use it).
+  (the media state's `waits`; the machine's `awaitsMedium()`, the idle
+  signal, asks it).
 - **The kind.** `app/TIMagneticCardKind`: `magnetic-card`, `.magnetcard.yaml`,
   format 3, the implicit template "Fresh card", the steps `card:` / `arm:`
   and `saveas: { card: }`; it asks the media part to read the card's file

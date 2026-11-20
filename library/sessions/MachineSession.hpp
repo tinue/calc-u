@@ -30,15 +30,6 @@ protected:
     ~SliceHook() = default;
 };
 
-// A media place that waits for a medium (library/media).
-class WaitProbe {
-public:
-    virtual bool waitsForMedium(const machine::Machine&) const = 0;
-
-protected:
-    ~WaitProbe() = default;
-};
-
 // The debugger's run control (pause, breakpoints): how far a slice runs.
 class AdvanceGate {
 public:
@@ -85,10 +76,6 @@ public:
     void addHook(SliceHook& h) { hooks_.push_back(&h); }
     // SliceHook::drop() on every hook.
     void dropInput();
-    void addWaitProbe(WaitProbe& p) { probes_.push_back(&p); }
-    // Whether the machine waits for the user, by the product's rule; when
-    // set, it alone answers waitsForInput().
-    void setWaits(std::function<bool(const machine::Machine&)> w) { waits_ = std::move(w); }
     void setGate(AdvanceGate* g) { gate_ = g; }
 
     void setSuspended(bool);   // false starts afresh
@@ -105,7 +92,7 @@ public:
     // The earliest tick a hook is due at from now (kNever: none): a host
     // that waits for a hook's work ends its advances there.
     machine::Ticks nextDue() const;
-    // Key readiness or a waiting media place.
+    // The machine waits for the user (machine/Idle.hpp).
     bool waitsForInput() const;
 
     void setSliceSource(SliceSource* s) { source_ = s; }
@@ -122,8 +109,6 @@ private:
     int soundRate_ = 0;
     std::uint64_t generation_ = 0;
     std::vector<SliceHook*> hooks_;
-    std::vector<WaitProbe*> probes_;
-    std::function<bool(const machine::Machine&)> waits_;
     AdvanceGate* gate_ = nullptr;
     std::function<void()> aboutToChange_;
     SliceSource* source_ = nullptr;

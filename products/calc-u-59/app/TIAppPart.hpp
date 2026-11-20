@@ -54,8 +54,8 @@
 // own cue card, the TI-58C's constant memory file (ConstantMemoryKeeper).
 // The card reader is the library's media part: the kind `magnetic-card` (app/TIMagneticCardKind), the TI-59's
 // pass-through place `card-reader`, the save folder, the steps `card:` and
-// `arm:`, the header key `magnetic-cards:`; the media part is the card
-// wait's WaitProbe, and the library's `open` fits a card file through it. What
+// `arm:`, the header key `magnetic-cards:`; the library's `open` fits a
+// card file through the media part. What
 // stays the part's: the PC-100C's TRACE position (the switch is
 // set through the library's `set-control`, the position kept while the PC-100C is
 // detached and put into the next one by TIProductMachines::attaching), the

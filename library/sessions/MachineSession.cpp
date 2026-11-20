@@ -1,4 +1,5 @@
 #include "sessions/MachineSession.hpp"
+#include "machine/Idle.hpp"
 #include <algorithm>
 
 namespace calcu::sessions {
@@ -98,10 +99,7 @@ Ticks MachineSession::nextDue() const {
 }
 
 bool MachineSession::waitsForInput() const {
-    if (!machine_) return false;
-    if (waits_) return waits_(*machine_);
-    if (machine_->isKeyReady()) return true;
-    return std::any_of(probes_.begin(), probes_.end(), [&](WaitProbe* p) { return p->waitsForMedium(*machine_); });
+    return machine_ && machine::idleState(*machine_).waits;
 }
 
 pacing::SliceResult MachineSession::runSlice(const pacing::SliceRequest& req) {

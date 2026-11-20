@@ -1,8 +1,6 @@
 #include "TIPresetRules.hpp"
-#include "TIRunProbe.hpp"
 #include "Bcd.hpp"
 #include "TIDisplayPicture.hpp"
-#include "media/MediaPlace.hpp"
 #include "../core/TIDebugKinds.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TISegments.hpp"
@@ -106,22 +104,9 @@ bool sameValue(const RegisterNibbles& a, const RegisterNibbles& b) {
 }
 
 calcu::presets::IdleRule TIModelRules::idle() const {
-    // docs/developer/Idle.md: takes keys at the scan loop (Machine::isKeyReady());
-    // waits there or in the card wait of Write / INV Write; nothing else is
-    // busy then (the printer drains before the scan loop); the program has
-    // ended when fB[0] is clear. Settled after 100 ms of emulated time, asked
-    // every 1 ms (short beside the 100 ms, so a break in the readiness of a
-    // running program is seen).
+    // Settled after 100 ms of emulated time, asked every 1 ms (short beside
+    // the 100 ms, so a break in the readiness of a running program is seen).
     calcu::presets::IdleRule r;
-    r.awaitsMedium = [](const calcu::machine::Machine& m) {
-        // The card reader's media place says when the ROM waits for a card.
-        for (const auto& e : m.capabilities(calcu::media::MediaPlace::kKind))
-            if (auto* p = calcu::machine::capabilityAs<calcu::media::MediaPlace>(m, e.id); p && p->waitsForMedium()) return true;
-        return false;
-    };
-    r.programEnded = [](const calcu::machine::Machine& m) {
-        return !noteRun(const_cast<calcu::machine::Machine&>(m)).running;   // noteRun only reads
-    };
     r.stretch = calcu::machine::Seconds(0.1);
     const calcu::machine::TickRate rate = tiCatalogue().model(calcu::machine::ModelId{m_model})->tickRate;
     r.sample = rate / 1000;

@@ -1,4 +1,5 @@
 #include "presets/IdleWatch.hpp"
+#include "machine/Idle.hpp"
 #include "sessions/MachineSession.hpp"
 #include "sessions/SessionPart.hpp"
 #include <algorithm>
@@ -14,16 +15,6 @@ sessions::Task<bool> untilRunning(sessions::OperationContext& op) {
         if (!waited) co_return false;
     }
     co_return true;
-}
-
-IdleState idleState(const IdleRule& rule, const machine::Machine& m) {
-    IdleState s;
-    s.takesKeys = rule.takesKeys ? rule.takesKeys(m) : m.isKeyReady();
-    if (rule.busy) s.busy = rule.busy(m);
-    const bool awaits = rule.awaitsMedium && rule.awaitsMedium(m);
-    s.waits = (s.takesKeys || awaits) && s.busy.empty();
-    s.ended = s.waits && (!rule.programEnded || rule.programEnded(m));
-    return s;
 }
 
 sessions::Task<IdleOutcome> IdleWatch::wait(sessions::OperationContext& op, std::optional<Ticks> bound) {
@@ -61,7 +52,7 @@ sessions::Task<IdleOutcome> IdleWatch::watch(sessions::OperationContext& op, std
         }
         const Ticks now = m->tickCount();
         out.waited = now - start;
-        const IdleState st = idleState(rule_, *m);
+        const machine::IdleState st = machine::idleState(*m);
         const bool ready = finished ? st.ended : st.waits;
         if (!ready) readySince.reset();
         else if (!readySince) readySince = now;

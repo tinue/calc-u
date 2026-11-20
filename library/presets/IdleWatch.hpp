@@ -6,8 +6,8 @@
 
 // Settled (or finished) by a product's rule: the machine runs at the
 // operation's speed in pieces of min(rule.sample, OperationContext::runPiece),
-// the rule asked after each; done when it has waited (and its program has
-// ended) without a break for the rule's stretch. A paused machine is not idle: the wait goes on in the host's time
+// its idle state (machine/Idle.hpp) asked after each; done when it has waited
+// (and its program has ended) without a break for the rule's stretch. A paused machine is not idle: the wait goes on in the host's time
 // until it runs again, and no tick passes meanwhile, so the bound stands
 // still.
 

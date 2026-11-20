@@ -1,17 +1,21 @@
 # Idle on the PC-1500, PC-1500A and PC-1600
 
-When the machine takes a key, waits, has settled, or has finished: the
-signals, and how each question is answered from them. Addresses are those
-of the annotated disassemblies (research skill `PC1500`): the PC-1500 A04
-(the same in A01 and A03 for every routine named here), the PC-1600 NEW
-ROM (OLD where it differs). "Measured" means with the harness.
+The four questions (A takes keys, W waits, settled, B finished) and how
+they are answered from the machine's four signals are the same for every
+product: `docs/formats/preset.md` §6.2 at the repository root. Here: which
+state of the ROM gives each signal on these models, and the cases. B means
+here: no program and no CALLed machine code runs, the machine is at the
+BASIC prompt. Addresses are those of the annotated disassemblies (research
+skill `PC1500`): the PC-1500 A04 (the same in A01 and A03 for every
+routine named here), the PC-1600 NEW ROM (OLD where it differs).
+"Measured" means with the harness.
 
-| Question | Meaning | Asked by |
-|---|---|---|
-| A, takes keys | the ROM or a program reads the keyboard as input now; watching for BREAK alone is not A | a scripted press before it goes down |
-| W, waits | nothing happens until the user acts: A, and nothing is busy | pacing (full speed runs at real time while W holds, outside an operation) |
-| settled | W held for 20 frames (1/60 s each), sampled every frame | the steps: preset items, `key`, `type`, harness `wait` |
-| B, finished | no program and no CALLed machine code runs, the machine is at the BASIC prompt, and settled | `let-it-finish`, the wait "until the program has ended" |
+On every model:
+
+- **The stretch**: 20 frames (1/60 s each), sampled every frame.
+- **Key readiness** is also off while the emulator's own power cycle
+  (its OFF and ON presses, after an attach on a running machine or the
+  command `power-cycle`) is under way.
 
 ## PC-1500 and PC-1500A
 
@@ -38,16 +42,17 @@ that: the buzzer line ME1 F008 bit 6 changing (BEEP E66F–E6A0), the CE-150's
 motor phases ME1 B008 (not 0 while coils are on; not established that 0
 means stopped), the cassette relay through B00E.
 
-### The questions
+### The machine's signals
 
-- **A** = not off, and (the key wait ran in this frame or the last with
-  7B0E bit 0 clear, or INKEY$ read a key in this frame or the last). By
-  frames, not by the PC of the sample: the timer interrupt runs outside the
-  loop (E22E). TRACE's key read is not counted.
-- **W** = A, and the buzzer line did not change in this frame or the last
-  (busy: "the buzzer"). The CE-150's motor phases are not asked: not
-  established that 0 means stopped.
-- **B** = W, BUSY off, BREAKPARAM bits 5 and 6 clear, settled.
+- **Key readiness** = not off, and (the key wait ran in this frame or the
+  last with 7B0E bit 0 clear, or INKEY$ read a key in this frame or the
+  last). By frames, not by the PC of the sample: the timer interrupt runs
+  outside the loop (E22E). TRACE's key read is not counted.
+- **Busy** = the buzzer line changed in this frame or the last ("the
+  buzzer"). The CE-150's motor phases are not asked: not established that
+  0 means stopped.
+- **A medium awaited**: [below](#a-medium-awaited).
+- **The program has ended** = BUSY off, BREAKPARAM bits 5 and 6 clear.
 
 | Case | A | W | settled | B | Signal |
 |---|---|---|---|---|---|
@@ -71,7 +76,8 @@ means stopped), the cassette relay through B00E.
 | ON/BREAK | latched: F00B bit 1, tested once per statement (C42A), in each key-wait pass (E269), in TIME_DELAY per 15.625 ms tick (E8A3, E8B0), in BEEP's tone loop each half period (E683), in the CE-150's BRK_150 A746 (after each character, GRAPH step and feed step) and SAVE_NIBBLE BDD6 | any: a 1 ms press broke `10 GOTO 10` (measured). During CLOAD the loader reads the PB7 level instead (BE2F, BE4C): held while it polls; how long is not established |
 
 ON/BREAK from a command (the harness's or the driver's `key`) waits for A
-at most 0.2 s, then goes down; a preset's key waits for A as any key does.
+at most 0.2 s, then goes down; a preset's key waits for A as any key does
+(on the PC-1500 every press of a step waits for A).
 OFF is not one of them: it works only from the editor (EDCTRL_TBL C3A9 →
 BTN_OFF CD71), as on the real machine.
 
@@ -98,15 +104,16 @@ function per CALLH, and machine code started by XCALL.
 | tone | SOUT (bank 3 5EB9) masks the 1/64 s and sub-CPU interrupts while it sounds | BEEP |
 | off | the system off (OFF and auto power-off end in the LH5803's OFF routine E527) | — |
 
-### The questions
+### The machine's signals
 
-- **A** = the system on, and the last 15 frames each had CK0 on and the
-  key wait at the frame's end or a key read in it.
-- **W** = A, and the CE-1600F's motor off (busy: "the CE-1600F's motor").
-  The CE-1600P's motor power is not asked: while it plots the ROM is not
-  in the key wait anyway.
-- **B** = W, the key wait, BUSY off, CURLINE 0, INTFLG bits 5 and 6 clear,
-  settled.
+- **Key readiness** = the system on, and the last 15 frames each had CK0
+  on and the key wait at the frame's end or a key read in it.
+- **Busy** = the CE-1600F's motor on ("the CE-1600F's motor"). The
+  CE-1600P's motor power is not asked: while it plots the ROM is not in
+  the key wait anyway.
+- **A medium awaited**: [below](#a-medium-awaited).
+- **The program has ended** = the key wait, BUSY off, CURLINE 0, INTFLG
+  bits 5 and 6 clear.
 
 | Case | A | W | settled | B | Signal |
 |---|---|---|---|---|---|
@@ -133,8 +140,10 @@ function per CALLH, and machine code started by XCALL.
 |---|---|---|
 | ON/BREAK | latched: the IF latch, port 1BH bit 1 (rising edge of PB7), tested before every statement (STMTCHK 3AC0 → BREAKHIT 3C8D; OLD 3B65), in the editor loop (6862), in BEEP, the plotter (PBREAKCHK, CE-1600P bank 4 5788), the floppy (FDFILEEXIT, bank 5 42C9), the cassette and the serial loops; the level, port 1FH bit 7, by KEYMATRIX and WAITONUP (0775) | any for the latch; held while a routine waits for the release (WAITONUP) |
 
-ON/BREAK from a command waits for A at most 0.2 s, then goes down; a
-preset's key waits for A as any key does.
+ON/BREAK from a command waits for A at most 0.2 s, then goes down. Of a
+step's presses only the first waits for A (at most 15 s), ON/BREAK as any
+key; the presses after it follow the cadence only, as the PC-1600's paste
+feeder did.
 OFF is not one of them: a matrix key handled only by the editor (EDOFF
 P1-B0 6B3F; ignored during a program's INPUT wait and a PRINT stop with
 F0BBH bit 0).
@@ -174,17 +183,19 @@ Not counted as waiting for a medium:
 
 ## In the code
 
-- A: `PC1500Machine::keyReady()` and `PC1600Machine::keyReady()` (the frame
-  notes and the 15 frames), `Machine::isKeyReady()` above the core.
-- W's busy list, a medium awaited and B: the kind `c1600.program-state`
-  (`core/Machine/SharpProductKinds.hpp`: `PC1500Machine::toneSounding()`,
-  `tapeAwaited()`, `ce158ReceiveWaitSeen()`, `programEnded()`;
-  `PC1600Machine::tapeAwaited()`, `receiveWaitSeen()`, `programEnded()`, the
-  CE-1600F's motor). "Nothing on its way" for the port: the library's
+- Key readiness: `PC1500Machine::keyReady()` and `PC1600Machine::keyReady()`
+  (the frame notes and the 15 frames), `SharpMachine::isKeyReady()` (no
+  power cycle under way) above them.
+- The other signals: the machine interface's `busyWith()`, `awaitsMedium()`
+  and `programEnded()` of `PC1500Machine` (`toneSounding()`,
+  `tapeAwaited()`, `ce158ReceiveWaitSeen()`) and `PC1600Machine`
+  (`tapeAwaited()`, `receiveWaitSeen()`, the CE-1600F's motor); the
+  questions from them: the library's `machine/Idle.hpp`. "Nothing on its
+  way" for the port: the library's
   `SerialPortQueues::incoming()`, bytes queued or still with the other side,
   which the feed (`app/SerialScripts.cpp`) and a host link report
   (`SerialPort::setPeerSending`).
-- The rule: `app/SharpPresetRules.cpp`; the keys that do not wait:
+- The stretch and the sample: `app/SharpPresetRules.cpp`; the keys that do not wait:
   `app/SharpTyping.cpp` (ON/BREAK, at most 0.2 s). At full speed the machine
   runs at real time while W holds (`library/pacing/Pacer.cpp`), except
   during an operation (a preset, a load, the debugger's set-up), which never

@@ -176,7 +176,8 @@ public:
         return m;
     }
     void waits(bool w) {
-        session->machineSession().setWaits([w](const machine::Machine&) { return w; });
+        if (w) m->busy.clear();
+        else m->busy = {"a test's computation"};
     }
     CallId send(const std::string& name, Value args = Value()) {
         return session->send(id, Command{CommandName{name}, std::move(args)});

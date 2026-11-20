@@ -568,10 +568,25 @@ item, and not after an item followed by `skip-wait:`.
 and nothing is busy, without a break for the product's stretch; a program
 that waits for a key (INPUT, a PRINT stop, INKEY$) is idle too, and so is,
 on the TI-59, a machine waiting for a magnetic card (after `Write`)
-(§5.2). How a product tells that its machine is idle is the product's
-matter, not this format's (Calc-U-59 `docs/developer/Idle.md`, Calc-U-1600
-`docs/developer/Idle.md`). A paused machine is not idle; the item finishes after the
+(§5.2). A paused machine is not idle; the item finishes after the
 machine has been resumed (§5.6).
+
+Every product answers the same four questions, from four signals its
+machine gives (key readiness, a medium awaited, what keeps it busy, the
+program ended), in the same way:
+
+| Question | Answer | Asked by |
+|---|---|---|
+| A, takes keys | key readiness: the ROM or a program reads the keyboard as input now; watching for BREAK alone is not A | a press that waits for it before it goes down (the product's typing profile says which); the start-up, Reset and a power cycle, which run to it |
+| W, waits | A, or a medium awaited with nothing on its way; and nothing keeps the machine busy | the pacing: outside an operation, full speed runs at real time while W holds |
+| settled | W without a break for the product's stretch, asked every sample | the implicit wait, `key:`, `type:`, the harness's `wait` |
+| B, finished | W and the program has ended, without a break for the stretch | `let-it-finish:`, the wait "until the program has ended" |
+
+The harness's `idle-state` shows A, W, `ended` (W and the program has
+ended, now) and the busy list. Which state of the ROM gives each signal,
+and the stretch and the sample, are the product's (Calc-U-59
+`docs/developer/Idle.md`: 100 ms of emulated time, asked every 1 ms;
+Calc-U-1600 `docs/developer/Idle.md`: 20 frames, asked every frame).
 
 So a key that starts a program finishes when the program stops:
 `full-speed:` before it runs the whole program at full speed,

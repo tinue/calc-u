@@ -133,9 +133,14 @@ public:
     }
     /// The CE-158 waited in its receive loop in this frame or the last.
     bool ce158ReceiveWaitSeen() const { return ce158Attached() && (m_frame.portWait || m_lastFrame.portWait); }
+    /// The idle signals besides key readiness (docs/developer/Idle.md):
+    /// the buzzer keeps the machine busy; a medium is awaited when the tape
+    /// is (tapeAwaited) or the CE-158 waits to receive with nothing on its way.
+    bool awaitsMedium() const override;
+    std::vector<std::string> busyWith() const override;
     /// The BASIC program has ended: the editor runs (BUSY, 764E bit 0, off)
     /// and does not wait for INPUT or a PRINT stop (BREAKPARAM 788A bits 5, 6).
-    bool programEnded() const {
+    bool programEnded() const override {
         return (m_memory.peek(0x764E) & 0x01) == 0 && (m_memory.peek(0x788A) & 0x60) == 0;
     }
     /// Buzzer line level changes so far (PiezoSampler::edgeCount()).

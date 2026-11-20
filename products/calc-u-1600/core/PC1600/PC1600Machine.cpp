@@ -20,7 +20,7 @@ using namespace calcu::machine;
 struct PC1600Machine::Kinds {
     explicit Kinds(PC1600Machine& m)
         : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), floppy(m),
-          drive(driveOf(m)), printerPort(m), hostDrive(m), call(m), program(m) {}
+          drive(driveOf(m)), printerPort(m), hostDrive(m), call(m) {}
 
     static sharp::FloppyPlace::Drive driveOf(PC1600Machine& m) {
         sharp::FloppyPlace::Drive d;
@@ -121,21 +121,6 @@ struct PC1600Machine::Kinds {
         }
         PC1600Machine& m;
     } call;
-    struct Program final : sharp::ProgramState {
-        explicit Program(PC1600Machine& m) : m(m) {}
-        std::vector<std::string> busy() const override {
-            if (m.ce1600fMotorOn()) return {"the CE-1600F's motor"};
-            return {};
-        }
-        bool programEnded() const override { return m.programEnded(); }
-        // The tape, or COM1:/COM2: with nothing on its way.
-        bool awaitsMedium() const override {
-            return m.tapeAwaited() || (m.receiveWaitSeen(oldRom) && !port->port().incoming());
-        }
-        PC1600Machine& m;
-        SerialPortCapability* port = nullptr;   // the machine's RS-232C peer
-        bool oldRom = false;                    // the variant Old: CRCVA's loop at other addresses
-    } program;
 };
 
 PC1600Machine::PC1600Machine(const MachineDescriptor& d, const VariantId& v)
@@ -147,8 +132,6 @@ PC1600Machine::PC1600Machine(const MachineDescriptor& d, const VariantId& v)
     m_lh5803.setCpuIdTag(CPU_ID_LH5803);
     // The RS-232C peer is attached when the port is first taken (capability()).
     setCE158SerialLink(&m_ce158Port);
-    m_kinds->program.port = &m_rs232c;
-    m_kinds->program.oldRom = v.value == "Old";
 }
 
 PC1600Machine::PC1600Machine()
@@ -257,7 +240,6 @@ void PC1600Machine::offer(std::vector<Offered>& out, const std::vector<PlugEntry
     out.push_back(byComponent("SC7852", k.support));
     out.push_back(byComponent("SC7852", k.trace));
     out.push_back(byComponent("SC7852", k.call));
-    out.push_back(byComponent("SC7852", k.program));
     out.push_back(byComponent("SC7852", stateCapability()));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     out.push_back(byComponent(sharp::kRs232cComponent, m_rs232c.port()));
@@ -822,12 +804,25 @@ bool PC1600Machine::receiveWaitSeen(bool oldRom) const {
                   : m_mediumWaits.receiveNew || m_lastMediumWaits.receiveNew;
 }
 
-bool PC1600Machine::programEnded() {
-    const bool busyOff = (debugPeek(0xF64E) & 0x01) == 0;           // BUSY, SYMB0 bit 0
-    const bool direct = debugPeek(0xF89C) == 0 && debugPeek(0xF89D) == 0;   // CURLINE
-    const bool noStop = (debugPeek(0xF88A) & 0x60) == 0;             // INTFLG: no PRINT stop, no INPUT
-    const bool keyWait = (debugPeek(0xF07A) & 0x04) != 0;            // KEYWK2: KEYGET waits
+bool PC1600Machine::programEnded() const {
+    const auto peek = [this](std::uint16_t a) { return m_z80Mem.peek(a); };
+    const bool busyOff = (peek(0xF64E) & 0x01) == 0;              // BUSY, SYMB0 bit 0
+    const bool direct = peek(0xF89C) == 0 && peek(0xF89D) == 0;   // CURLINE
+    const bool noStop = (peek(0xF88A) & 0x60) == 0;               // INTFLG: no PRINT stop, no INPUT
+    const bool keyWait = (peek(0xF07A) & 0x04) != 0;              // KEYWK2: KEYGET waits
     return busyOff && direct && noStop && keyWait;
+}
+
+// The tape, or COM1:/COM2: with nothing on its way; the variant Old has
+// CRCVA's loop at other addresses.
+bool PC1600Machine::awaitsMedium() const {
+    const bool oldRom = variant() && variant()->value == "Old";
+    return tapeAwaited() || (receiveWaitSeen(oldRom) && !m_rs232c.port().incoming());
+}
+
+std::vector<std::string> PC1600Machine::busyWith() const {
+    if (ce1600fMotorOn()) return {"the CE-1600F's motor"};
+    return {};
 }
 
 int PC1600Machine::programAreaTitle() { return debugPeek(0xF1D5); }

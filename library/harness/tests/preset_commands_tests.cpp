@@ -75,7 +75,7 @@ TEST(wait_until_idle_reports_time_and_hour) {
     CHECK(r.find("hour reached: no\n") != std::string::npos);
     // A machine that never becomes idle: the hour is reached.
     auto* rules = static_cast<calcu::presets::test::TestPresetRules*>(run.product.presetRules());
-    rules->seg.rule.takesKeys = [](const machine::Machine&) { return false; };
+    run.machine().busy = {"a test's computation"};
     rules->seg.rule.sample = 100'000;
     const std::string h = run.line("wait");
     CHECK(startsWith(h, "done 3\nticks: 3600"));

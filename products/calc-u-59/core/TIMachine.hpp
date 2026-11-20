@@ -44,7 +44,13 @@ public:
     void reset() override;
     void powerCycle() override;
     void coldBoot() override;
+    /// The idle signals: key readiness at the ROM's scan loop; a card awaited
+    /// in the card wait of Write / INV Write (the TI-59's reader); nothing
+    /// keeps it busy (the printer drains before the scan loop); the program
+    /// has ended when fB[0] is clear.
     bool isKeyReady() const override;
+    bool awaitsMedium() const override;
+    bool programEnded() const override;
     calcu::machine::KeyCall keyDown(const calcu::machine::KeyId&) override;
     calcu::machine::KeyCall keyUp(const calcu::machine::KeyId&) override;
     calcu::machine::DisplayOutput readDisplay() override;

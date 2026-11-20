@@ -1,5 +1,6 @@
 #include "presets/PresetsPart.hpp"
 #include "formats/Flow.hpp"
+#include "machine/Idle.hpp"
 #include "presets/IdleWatch.hpp"
 #include "sessions/Args.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -205,17 +206,12 @@ void PresetsPart::attach(sessions::SessionSetup& s) {
     s.request(kIdleStateRequest, [this](const Value&, SessionContext& c) {
         const machine::Machine* m = c.machine();
         if (!m) return sessions::replyRefused(std::string(sessions::kNoMachine));
-        const IdleState st = idleState(setup_.rules->forModel(m->model()).idle(), *m);
+        const machine::IdleState st = machine::idleState(*m);
         Value::Array busy;
         for (const std::string& b : st.busy) busy.emplace_back(b);
         return sessions::replyGiven(sessions::valuePayload(
             kIdleStateKind, Value::object({{"takesKeys", st.takesKeys}, {"waits", st.waits}, {"ended", st.ended},
                                            {"busy", Value(std::move(busy))}})));
-    });
-
-    // Pacing asks whether the machine waits, by the same rule.
-    s.context().machineSession().setWaits([this](const machine::Machine& m) {
-        return idleState(setup_.rules->forModel(m.model()).idle(), m).waits;
     });
 
     s.request(kCheckPresetRequest, [this](const Value& args, SessionContext&) {

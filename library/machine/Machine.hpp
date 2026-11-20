@@ -63,7 +63,20 @@ public:
     virtual void reset() = 0;
     virtual void powerCycle() = 0;
     virtual void coldBoot() = 0;
+
+    // The idle signals, read between two advances; idleState() (Idle.hpp)
+    // puts them together for the pacing and the presets. Key readiness: the
+    // ROM or a program reads the keyboard as input now.
     virtual bool isKeyReady() const = 0;
+    // A medium awaited with nothing on its way (a card, a tape, a serial
+    // port's bytes); none by default.
+    virtual bool awaitsMedium() const { return false; }
+    // What keeps the machine busy while it waits, named for the harness's
+    // `idle-state`; nothing by default.
+    virtual std::vector<std::string> busyWith() const { return {}; }
+    // The program has ended: back at the prompt or key scan; by default
+    // always, for a machine that runs no program of its own.
+    virtual bool programEnded() const { return true; }
 
     // Keys, at the current tick count.
     virtual KeyCall keyDown(const KeyId&) = 0;

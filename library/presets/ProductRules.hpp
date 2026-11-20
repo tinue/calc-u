@@ -6,7 +6,6 @@
 #include "sessions/Operation.hpp"
 #include "startup/MachinePlan.hpp"
 #include <cstdint>
-#include <functional>
 #include <optional>
 #include <regex>
 #include <string>
@@ -36,32 +35,15 @@ struct ItemResult {
 
 enum class Applies { Yes, NotForThisModel, Undefined };
 
-// When a model's machine takes keys, waits, has settled and has finished
-// (the product's tables: Calc-U-59 docs/developer/Idle.md, Calc-U-1600
-// docs/developer/Idle.md):
-// - takes keys: the ROM or a program reads the keyboard as input now
-//   (unset: Machine::isKeyReady());
-// - waits: it takes keys or awaits a medium, and nothing is busy;
-// - settled: it has waited without a break for `stretch`, asked every
-//   `sample` ticks (100 ms for the TI, 20 frames for the Sharp models);
-// - finished: it waits and the program has ended.
+// How long a model's machine must wait without a break to be settled (or
+// finished, when its program has ended too; machine/Idle.hpp answers the
+// questions from the machine's idle signals), asked every `sample` ticks:
+// a stretch the product chose for a machine reason (100 ms asked every 1 ms
+// for the TI, 20 frames asked every frame for the Sharp models).
 struct IdleRule {
-    std::function<bool(const machine::Machine&)> takesKeys;
-    std::function<bool(const machine::Machine&)> awaitsMedium;                // unset: never
-    std::function<std::vector<std::string>(const machine::Machine&)> busy;    // what keeps it busy; unset: nothing
-    std::function<bool(const machine::Machine&)> programEnded;                // unset: always
     machine::Seconds stretch{0.0};
     machine::Ticks sample = 1;
 };
-
-// The rule's answers for the machine now.
-struct IdleState {
-    bool takesKeys = false;
-    bool waits = false;
-    bool ended = false;              // waits, and the program has ended
-    std::vector<std::string> busy;   // what is busy
-};
-IdleState idleState(const IdleRule&, const machine::Machine&);
 
 // The text of `expect:` / `not-expect:` (Expect.hpp): the literal text, or
 // the regular expression between slashes, parsed and compiled when the preset is read.

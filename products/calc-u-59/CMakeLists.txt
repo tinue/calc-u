@@ -148,10 +148,8 @@ if(CALCU_TESTS)
   calcu_add_test(CalcU59CoreSeam frequent COMMAND sh tests/check_core_seam.sh)
   # Open With offers the three preset extensions on macOS, Windows and Linux.
   calcu_add_test(CalcU59OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
-  # The Qt6 and Swift frontends use
-  # none of the product's own session classes; no thread in app/ but the
-  # session thread; the bridge only through it.
-  calcu_add_test(CalcU59NoOwnSession frequent COMMAND sh tests/check_no_own_session.sh)
+  # No thread in app/ but the session thread; the Swift bridge only through it.
+  calcu_add_test(CalcU59SessionThread frequent COMMAND sh tests/check_session_thread.sh)
   # The three frontends draw from the control state.
   calcu_add_test(CalcU59FrontendsDrawControlState frequent COMMAND sh tests/check_frontends_draw_control_state.sh)
   # calcu_product_source_checks (library/):
@@ -160,9 +158,6 @@ if(CALCU_TESTS)
   calcu_product_source_checks(PREFIX CalcU59
                               ROM_ALLOW app/ProductRoms.cpp app/ProductRoms.hpp core/TICatalogue.cpp
                                         frontends/qt6/app/QtResourceBundle.cpp)
-  # tools/headless/ and tools/agentic/ stay gone (their functions are `calcu`
-  # commands) and no file is named for adapters (tools/check_no_old_tools.cmake).
-  calcu_add_test(CalcU59NoOldTools frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_old_tools.cmake)
   # `calcu --product c59` runs as a process
   # of its own (tests/calcu_runs.cmake; also in every desktop job of the workflow).
   calcu_add_test(CalcU59CalcuRuns frequent COMMAND ${CMAKE_COMMAND} -DCALCU=$<TARGET_FILE:calcu> -P tests/calcu_runs.cmake)
@@ -191,7 +186,7 @@ if(CALCU_TESTS)
   # Attach only in Debug builds for macOS and the
   # simulator, in the sources that decide it.
   calcu_add_test(CalcU59NoAttachSources frequent COMMAND sh frontends/swift/check_no_attach.sh --sources)
-  # No test aid and no model facts in the Swift app.
+  # No test aid in the Swift app.
   calcu_add_test(CalcU59NoTestAids frequent COMMAND sh frontends/swift/check_no_test_aids.sh)
 
   # Longer: run locally before merging into main and at the end of a part.

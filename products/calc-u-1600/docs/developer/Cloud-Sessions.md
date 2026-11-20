@@ -11,7 +11,7 @@ GitHub. It needs the same things as the `core-tests` CI job in
 | What | Where it lives | When it runs |
 | :--- | :--- | :--- |
 | Qt6 + zlib apt packages | The cloud environment's **Setup script** (claude.ai/code → environment settings) | Once, then cached for ~7 days |
-| ROMs + Linux libsharpdx | `tools/cloud_session_start.sh`, run by the SessionStart hook in `.claude/settings.json` | Every cloud session start/resume (no-op locally) |
+| ROMs + Linux libsharpdx | `roms/fetch_roms.sh` and `tools/fetch_sharpdx.sh` (from this folder), run by hand | At the start of a session that builds |
 
 ### Environment setup script
 
@@ -32,7 +32,14 @@ are needed.
 
 ## Building and testing in a session
 
-Same as `core-tests`:
+First fetch what git does not hold:
+
+```bash
+roms/fetch_roms.sh
+tools/fetch_sharpdx.sh
+```
+
+Then build and test as `core-tests` does:
 
 ```bash
 cmake -S ../.. -B ../../build/tests -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \

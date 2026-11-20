@@ -23,13 +23,13 @@ open question 1, resolving it.
 
 | Artifact | Role |
 |----------|------|
-| `rom/TI59-commented.asm` | Commented TI-59 ROM disassembly. Relevant annotations: 0x086F (transfer target validate/commit), 0x08B2 (PRGREG_FETCH source dispatch), 0x0A4B (launch prologue / Prg Src Flag write), 0x0D50 (return-stack push), 0x1286 (library transfer resolver — added this session), 0x11E1 (transfer-error halt — added this session). |
-| `docs/developer/Core-Architecture.md` | Architecture reference; § SCOM registers now documents the SCOM[14]/[15] return stack. |
+| `rom/TI59-commented.asm` | Commented TI-59 ROM disassembly. Relevant annotations: 0x086F (transfer target validate/commit), 0x08B2 (PRGREG_FETCH source dispatch), 0x0A4B (launch prologue / Prg Src Flag write), 0x0D50 (return-stack push), 0x1286 (library transfer resolver), 0x11E1 (transfer-error halt). |
+| `docs/developer/Core-Architecture.md` | Architecture reference; § SCOM registers documents the SCOM[14]/[15] return stack. |
 | `TI_58_59-HW-manual.pdf` | "Calculators TI-58/59 HW programming guide" by Hynek Sladký (external document, not in the repository). Source of the SCOM[9] layout and the return-stack level layout. |
-| `examples/historic/texas-print.ti59` | State file automating the article's key sequence; its header holds the authoritative quirk walkthrough (quirks 1–4). |
+| `examples/historic/texas-print.ti59` | Preset automating the article's key sequence; its header holds the authoritative quirk walkthrough (quirks 1–4). |
 | `.claude/skills/calc-u-59-core` | Skill covering the emulation core, trace infrastructure, and ROM analysis workflow. |
-| `tools/read_trace.py` | Rendered the binary traces to text (including the deferred-field validity windows for RAMOP/RAMREG/SREG added just before this analysis — commit `fa6799e`). |
-| `rom/traces/sbr444.txt` | CPU trace: from just before the third `4` of `SBR 444` through the first halt (blinking 239.89). Captured with a scripted `Trace:` directive in the keystroke script (temporary edit of `examples/historic/printer-quirks.ti59`, which replays the same sequence). |
+| `tools/read_trace.py` | Rendered the binary traces to text (including the deferred-field validity windows for RAMOP/RAMREG/SREG). |
+| `rom/traces/sbr444.txt` | CPU trace: from just before the third `4` of `SBR 444` through the first halt (blinking 239.89). Captured with a `trace:` step in the preset's `keys:` (`examples/historic/printer-quirks.ti59`, which replays the same sequence; its `trace:` step is commented out). |
 | `rom/traces/rs.txt` | CPU trace: the `R/S` keypress through the second halt (EE-mode "0. 00"). Same capture method. |
 | `rom/traces/pr-after-halt1.txt` | CPU trace: `2nd P/R` pressed after halt 1 only (scenario run *without* the `R/S`). Captured 2026-07-05, same method. |
 | `rom/traces/pr-after-halt2.txt` | CPU trace: `2nd P/R` pressed after halt 2 (full quirk-1 sequence first). Captured 2026-07-05, same method. |

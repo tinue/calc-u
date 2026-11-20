@@ -1,11 +1,11 @@
 # Release configuration for ReleaseIt's `release` command
 # (https://github.com/tinue/ReleaseIt).
 #
-#   release                 macOS pre-release v<version>-pre (also writes
+#   release                 macOS pre-release calc-u-59-v<version>-pre (also writes
 #                           appstore/whatsnew.txt from the CHANGELOG)
 #   release --rc            release candidate (dates the CHANGELOG entry)
-#   release --release       promote to v<version> in place
-#   release --next          start the next dev branch
+#   release --release       promote to calc-u-59-v<version> in place
+#   release --next          start the next version on main (cuts no branch)
 #   release ios             iOS TestFlight upload
 #   release ios --release   App Store Connect: metadata, screenshots, build
 #

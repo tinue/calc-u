@@ -53,8 +53,8 @@ sentence as a notice. Every sentence names the file.
 
 `open-would-take` answers for a drag before the drop: `takes` is true
 when the drop would not be refused by size or as hidden, and the name has
-a preset extension, a media suffix, or a file kind's name rule takes it
-(`FileKind::takesName`). The size is checked against the `drop` limit,
+a preset extension (when presets are opened), a media suffix, or a file
+kind's name rule takes it (`FileKind::takesName`). The size is checked against the `drop` limit,
 only when `size` is given.
 
 ## 2. The checks, in order
@@ -67,14 +67,15 @@ decides.
 | 1 | `bytes` absent | refused: "`<name>` could not be read." |
 | 2 | more bytes than the way's limit (§2.1) | refused: "`<name>` is larger than `<limit>` and is not opened." |
 | 3 | the name starts with `.` | refused: "`<name>` is a hidden file and is not opened." |
-| 4 | the name ends in one of the product's preset extensions | a preset, whatever it holds |
+| 4 | presets are opened, and the name ends in one of the product's preset extensions | a preset, whatever it holds |
 | 5 | the name ends in one of the product's media suffixes | a medium (§4) |
 | 6 | the first of the product's file kinds, in its order, that takes the file | that file kind (§3) |
-| 7 | `looksLikePreset(bytes)` | a preset |
+| 7 | presets are opened, and `looksLikePreset(bytes)` | a preset |
 | 8 | none | refused: "`<product>` cannot open `<name>`." |
 
-`<product>` is `Calc-U-59` or `Calc-U-1600`. A preset that does not load
-is refused with the preset loader's sentence.
+`<product>` is `Calc-U-59` or `Calc-U-1600`. Presets are opened when the
+open part is given the presets part. A preset that does not load is
+refused with the preset loader's sentence.
 
 ### 2.1 Size limits
 

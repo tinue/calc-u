@@ -163,5 +163,6 @@ on). In the browser a module, disk or cassette file is imported into the
 saved media first.
 
 On macOS you can also drop a file onto the Dock icon, or open it from the
-Finder with **Open With ▸ Calc-U-1600**; double-clicking a preset opens
-it in Calc-U-1600.
+Finder with **Open With ▸ Calc-U-1600**. On macOS, Windows and Linux,
+double-clicking a preset (`.pc1500`, `.pc1500a`, `.pc1600`) opens it in
+Calc-U-1600.

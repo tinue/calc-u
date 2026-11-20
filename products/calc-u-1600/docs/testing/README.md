@@ -73,11 +73,11 @@ A test project is a folder of its own, outside the checkout:
 
 ```
 ~/pc-tests/
-├── pytest.ini          where the driver is, where your files are
+├── pytest.ini          where the driver is; names for your folders
 ├── pyproject.toml      made by uv: pytest and pytest-xdist
-├── cards/              your module files (*.module.yaml)
-├── media/              floppy disks, cassettes, host-drive folders
-├── programs/           BASIC listings, machine code, ROM images
+├── my-ram.module.yaml  your files, wherever you like in the project
+├── programs/
+│   └── jumps.bas
 ├── test_mode1.py
 └── test_renum.py
 ```
@@ -88,23 +88,20 @@ A test project is a folder of its own, outside the checkout:
 mkdir ~/pc-tests && cd ~/pc-tests
 uv init --bare
 uv add --dev pytest pytest-xdist
-mkdir cards media programs
+mkdir programs
 ```
 
-**2. `pytest.ini`.** Names the driver's two folders in your checkout and your folders:
+**2. `pytest.ini`.** Names the driver's two folders in your checkout:
 
 ```ini
 [pytest]
 pythonpath = /home/me/calc-u/products/calc-u-1600/tools/machine
              /home/me/calc-u/library/harness/python
 addopts = -p calcu_pytest
-calcu_cards = cards
-calcu_media = media
-calcu_programs = programs
 ```
 
-`-p calcu_pytest` loads the driver's pytest plugin: the fixture `make_machine` and the three
-`calcu_…` settings ([5 Paths](#5-paths)).
+`-p calcu_pytest` loads the driver's pytest plugin: the fixture `make_machine` and the path names
+of [5 Paths](#5-paths). A line `calcu_paths =` adds names of your own.
 
 **3. A first test,** `test_hello.py`:
 
@@ -138,19 +135,22 @@ mode, both with `>` on the screen. So a test knows the mode without looking.
 ## 3 Example: MODE 1 and memory modules
 
 On the PC-1600, `MODE 1` switches to PC-1500 mode. It needs the RAM the PC-1500 code sees to be one
-flat block of at most 16 KB without banking. A bank-switched module refuses it with `ERROR 110`.
+flat block of at most 16 KB. A banked PC-1600 module (the bank number on the data bus, Port 28H)
+refuses it with `ERROR 110`, and so does more than one module's RAM.
 
 | Slot 1 | Slot 2 | `MODE1` |
 |---|---|---|
 | — | — | accepted |
 | CE-151, CE-155 or CE-161 | — | accepted |
+| CE-163F or CE-1638 | — | accepted: the ROM can't detect their RAM and ignores the card |
 | — | CE-161, CE-163F or CE-1638 | accepted (their banks are ignored) |
 | CE-1600M (32 KB) | — | ERROR 110 |
 | — | CE-1600M, CE-1601M or superRAM | ERROR 110 |
 | CE-155 | CE-163F or CE-1638 | ERROR 110 |
 
-A CE-163F or CE-1638 in slot 1 doesn't give ERROR 110 on a real PC-1600, but it breaks the machine:
-its bank selection is triggered uncontrolled. Don't test it there.
+The CE-163F and CE-1638 are PC-1500 modules: they take their bank from the address bus, so the
+PC-1600 doesn't treat them as banked. In slot 1 their bank changes all the time, the ROM finds no
+RAM, and `MEM` stays as it is without a module.
 
 `test_mode1.py`:
 
@@ -161,12 +161,13 @@ REFUSED, ACCEPTED = True, False
 CASES = {
     "none":               ({}, ACCEPTED),
     "CE-161 in 1":        ({"slot_1": "CE-161"}, ACCEPTED),
+    "CE-163F in 1":       ({"slot_1": "CE-163F"}, ACCEPTED),
     "CE-163F in 2":       ({"slot_2": "CE-163F"}, ACCEPTED),
     "CE-1600M in 1":      ({"slot_1": "CE-1600M"}, REFUSED),
     "CE-1600M in 2":      ({"slot_2": "CE-1600M"}, REFUSED),
     "superRAM in 2":      ({"slot_2": "superRAM"}, REFUSED),
     "CE-155 and CE-1638": ({"slot_1": "CE-155", "slot_2": "CE-1638"}, REFUSED),
-    "my card in 2":       ({"slot_2": "my-ram"}, REFUSED),     # cards/my-ram.module.yaml
+    "my card in 2":       ({"slot_2": "my-ram.module.yaml"}, REFUSED),   # in the project
 }
 
 
@@ -182,21 +183,18 @@ def test_mode1(make_machine, slots, refused):
     machine.run()
 ```
 
-- A slot takes a bundled module by its name (`CE-1600M`, …), a file of your `cards/` folder by
-  its name without `.module.yaml`, or a path ([5 Paths](#5-paths)).
+- A slot takes a bundled module by its name (`CE-1600M`, …) or a module file
+  ([5 Paths](#5-paths)).
 - `expect` and `not_expect` take effect at the next read; `run()` is a read without a result.
-- One test function, eight machines: pytest shows each case by its id, and `-n auto` runs them at
+- One test function, nine machines: pytest shows each case by its id, and `-n auto` runs them at
   the same time.
 
 ## 4 Example: RENUM on the PC-1500
 
 The repository has a ROM extension that adds `RENUM [new][,[old][,step]]` to PC-1500 BASIC, as a
-module on the 60-pin bus at &8800 (the debugger's *PC-1500 ROM extension* template). Copy its
-built ROM into your project:
-
-```sh
-cp ~/calc-u/products/calc-u-1600/tests/fixtures/dap/pc1500-bus-rom/rom.bin ~/pc-tests/programs/renum.bin
-```
+module on the 60-pin bus at &8800. It is the debugger's *PC-1500 ROM extension* example; the test
+uses its built ROM where it is, `$c1600/tests/fixtures/dap/pc1500-bus-rom/rom.bin`
+([5 Paths](#5-paths)).
 
 RENUM gives the lines from `old` on (default: the first) the numbers `new`, `new+step`, …
 (defaults 10 and 10) and changes every `GOTO`, `GOSUB`, `THEN`, `ON…GOTO` and `RESTORE` to match. On
@@ -233,6 +231,7 @@ from pathlib import Path
 import pytest
 
 ORIGINAL = (Path(__file__).parent / "programs" / "jumps.bas").read_text().splitlines()
+RENUM_ROM = "$c1600/tests/fixtures/dap/pc1500-bus-rom/rom.bin"
 RENUMBERED = {
     "RENUM": ORIGINAL,                        # 10, 20, ... again
     "RENUM 100,,10": [
@@ -251,7 +250,7 @@ REFUSED = {"RENUM 100,,0": "ERROR 19", "RENUM 60000,,1000": "ERROR 30", "RENUM 1
 
 @pytest.fixture(params=["PC-1500", "PC-1500A"])
 def machine(request, make_machine):
-    renum = {"file": "renum.bin", "address": 0x8800, "pv": 0}     # programs/renum.bin
+    renum = {"file": RENUM_ROM, "address": 0x8800, "pv": 0}
     return make_machine(model=request.param, bus_rom=[renum])
 
 
@@ -262,7 +261,7 @@ def with_program(request, machine):
         for line in ORIGINAL:
             machine.type(line)
     else:
-        getattr(machine, request.param)("jumps.bas")
+        getattr(machine, request.param)("programs/jumps.bas")
     return machine.key("mode")                 # to RUN mode
 
 
@@ -282,33 +281,47 @@ A fixture with `params` multiplies every test that uses it.
 
 ## 5 Paths
 
-A test names files: module files, floppy disks, programs, ROM images, a host-drive folder. An
-absolute path is used as it is. A relative one is found like this:
+A test names files and folders: module files, floppy disks, cassettes, programs, ROM images, a
+host-drive folder. A path is one of three:
 
-```mermaid
-flowchart LR
-    P[relative path] --> K{its kind's setting}
-    K -- set --> S[relative to the setting]
-    K -- not set --> R[relative to the test project root]
+| Path | Found in | Example |
+|---|---|---|
+| absolute | as it is | `/Volumes/STICK/cards/test.module.yaml` |
+| `$name/…` | the folder the name stands for | `$c1600/examples/dwx/Progs.floppy.yaml` |
+| anything else | the test project root | `programs/jumps.bas`, `MyFloppy.floppy.yaml` |
+
+The **test project root** is the folder of `pytest.ini`: the same for every test file, whatever
+folder pytest is started from.
+
+The names:
+
+| Name | Stands for | Known from |
+|---|---|---|
+| `$project` | the test project root | `pytest.ini` |
+| `$calcu` | the checkout's root, `~/calc-u` | where the driver is (`pythonpath`) |
+| `$c1600` | the product in the checkout, `$calcu/products/calc-u-1600` | the same |
+| `$saved` | the save folder of the Calc-U-1600 app, by default `~/Calc-U-1600`: the media you saved there with Name & Save | the app's settings file, `[storage] save-folder`; an error if the app was never started |
+| `$work` | this machine's work folder (also `machine.workdir`) | the driver |
+| your own | a folder you name in `pytest.ini` | `calcu_paths` |
+
+Names of your own, one per line, relative to the root or absolute:
+
+```ini
+calcu_paths =
+    cards = test-cards
+    stick = /Volumes/STICK
 ```
 
-| Setting in `pytest.ini` | Environment variable | For |
-|---|---|---|
-| `calcu_cards` | `CALCU_CARDS` | `slot_1`, `slot_2` |
-| `calcu_media` | `CALCU_MEDIA` | `floppy()`, `cassette()`, `host_drive` |
-| `calcu_programs` | `CALCU_PROGRAMS` | `load()`, `load_basic()`, `type_basic()`, `bus_rom` |
-| — | `CALCU` | the `calcu` program |
+An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on another computer:
+`CALCU_PATH_STICK=/media/me/STICK uv run pytest`. An unknown name raises `MachineError`.
 
-- The **test project root** is the folder of `pytest.ini`. It is the same for every test file, and
-  doesn't depend on the folder pytest is started from.
-- A relative setting is relative to the root. An environment variable wins over the setting, for
-  example on another computer: `CALCU_CARDS=/mnt/cards uv run pytest`.
-- A **slot name** without `/` and without `.module.yaml` is looked up as
-  `<calcu_cards>/<name>.module.yaml` first, then among the bundled modules.
-- **Files a test makes** belong in its own folders, given as absolute paths: `tmp_path` (pytest's
-  per-test folder) or `machine.workdir`. A card saved with `card(2)` is
-  `machine.workdir / "slot-2.module.yaml"`; a host drive the test fills is
-  `host_drive=tmp_path / "drive"`.
+- A **slot** value without `/` and without `.module.yaml` is a module's name: one of the driver's
+  test cards (`ram-1m`, …) or a bundled module (`CE-1600M`). Anything else is a path:
+  `my-ram.module.yaml`, `$cards/superram-full.module.yaml`.
+- `host_drive` is a folder on your computer, found like any path; usually an absolute one or a
+  per-test folder: `host_drive=tmp_path / "drive"`.
+- **Files a test makes** belong in pytest's per-test folder `tmp_path` or in `$work`. A card saved
+  with `card(2)` is `$work/slot-2.module.yaml`, to put into the next machine.
 
 ## 6 Reference
 
@@ -317,7 +330,7 @@ flowchart LR
 | Option | Values | Default |
 |---|---|---|
 | `model` | `PC-1500`, `PC-1500A`, `PC-1600` | `PC-1600` |
-| `slot_1`, `slot_2` | a module name or path; `slot_2` on the PC-1600 only | empty |
+| `slot_1`, `slot_2` | a bundled module's name or a path; `slot_2` on the PC-1600 only | empty |
 | `printer` | `CE-150`, `CE-1600P`, `CE-1600P:old` | none |
 | `host_drive` | a folder, the PC-1600's drive `S3:` | none |
 | `bus_rom` | a list of `{"file", "address", "pv"}`: ROMs on the 60-pin bus, in plug order | none |
@@ -364,7 +377,7 @@ flowchart LR
 
 | Part | Where | Does |
 |---|---|---|
-| `calcu_pytest` | `products/calc-u-1600/tools/machine/` | the pytest plugin: the `make_machine` fixture, the path settings |
+| `calcu_pytest` | `products/calc-u-1600/tools/machine/` | the pytest plugin: the `make_machine` fixture, the path names |
 | `Machine` | same folder, `machine.py` | the PC-1500/1600 part: models, slots, media, bus ROMs, `card()`, `listing()` |
 | `cardimage.py` | same folder | reads saved module files into bytes, and the RAM disk on them |
 | `cards/` | same folder | `ram-256k`, `ram-512k`, `ram-1m`: superRAM cards for tests |

@@ -61,13 +61,18 @@ a detach answers that a power cycle follows, which the caller runs
 registers, the TI-58C keeps its constant memory). `TMC0501` holds a
 `TiConnectors` (`wire()`): a `PrinterPinOut*` with the digit its D0 pad is
 on, and a `ModuleSlotPinOut*`; nullptr when nothing is plugged in. It keeps
-no printer state and no module image. With the PC-100C the machine lists
-two capabilities, `printer/controls` (the library's `Controls`: PRINT and
+no printer state and no module image. Every machine lists the capabilities
+`TMC0501/typing-support`, `TMC0501/c59.trace-records`,
+`TMC0501/c59.asm-overlay`, `TMC0501/c59.rom-heatmap`,
+`TMC0501/c59.calculator-state`, `TMC0501/c59.machine-log`,
+`RAM/c59.program-memory`, `TMC0501/c59.library-program` and
+`TMC0501/machine-state`; the TI-58C also `RAM/c59.constant-memory`, the
+TI-59 `card-reader/media-place` (`TIMachine::capabilities`). With the
+PC-100C it lists two more, `printer/controls` (the library's `Controls`: PRINT and
 ADV keys, TRACE switch) and `printer/paper-output` (the library's paper output
 kind, `calcu::paper::PaperOutput`; the PC-100C derives from
 `PaperOutputBase`, its description and dot rules are `core/PC100CPaper.hpp`).
-Without a PC-100C the machine lists `TMC0501/typing-support` and
-`TMC0501/c59.trace-records` only. TRACE's position comes with the
+TRACE's position comes with the
 attach request (`PeripheralRequest::switches`) and stays through reset,
 power cycle and cold boot; the app session keeps it across a model switch
 and a detach. The machine tells both peripherals of each
@@ -141,9 +146,9 @@ TP0240 clock chip page (http://www.datamath.org/Chips/TP0240.htm) — 455 kHz
 active. The TI-59 rates are confirmed on a real TI-59: videos (see "Printer
 line in the idle scan") and a logic analyser on its clock chip, whose PHI1/PHI2
 pins run at f/2 (226.6 kHz) while active and f/8 (56.7 kHz) while idle, for a
-453.3 kHz resonator. The frequencies live in `resonatorHz()`
-(`core/MachineVariant.hpp`); the instruction rates in
-`app/MachineModelInfo.hpp` derive from it.
+453.3 kHz resonator. The rates are the catalogue's tick rates `kTI59Rate`,
+`kTI58Rate` and `kTI58CRate` (`core/TICatalogue.cpp`); an instruction is
+32 ticks.
 
 ### TI-58C clock
 
@@ -200,7 +205,7 @@ the pack in, or with a bench supply on the battery terminals.
 **Emulator model.** The emulator keeps a base clock for every variant,
 because the rest of the timing code derives from it (instruction rate =
 base ÷ 32). For the TI-58C that base is 2 × PHI, not a frequency found on
-the board. `resonatorHz()` uses 394 kHz (12,312.5 instructions/s), unit B's
+the board. `kTI58CRate` is 394 kHz (12,312.5 instructions/s), unit B's
 rate from its error blinks with and without the printer.
 
 **Accuracy.** The emulator runs the TI-58C **instruction-exact**. On unit B,
@@ -555,9 +560,11 @@ The return value carries the weight in `kWeightMask` and two bits:
 
 - **`kPolledHardware`** — a backward branch that retries a `KEY` or
   `TST.BUSY` poll executed just before it: a spin-wait on a key, the card
-  switch and so on, whose real duration does not depend on CPU speed.
-  `app/Pacing` throttles full-speed runs on it. A `TST.BUSY` retry counts
-  only while the KR line is active and the printer is not busy, so full speed also speeds up printing.
+  switch and so on, whose real duration does not depend on CPU speed. A
+  `TST.BUSY` retry counts only while the KR line is active and the printer
+  is not busy. Nothing above the core reads the bit: at full speed the
+  library's pacer (`pacing/Pacer`) runs a machine that waits for input at
+  regular speed.
 - **`kStepBoundary`** — the next instruction is the interpreter's step
   dispatch, `stepDispatchPC()` = `0837` (TI-59/58) or `082B` (TI-58C), which
   every executed program byte (keycode or operand) passes once, from RAM,
@@ -817,7 +824,7 @@ fetches (verified by trace), hence the address check. The latch starts at
 cycle that follows a module change. It
 is exposed as `TI59Machine::libExecPC()` and the kind `c59.calculator-state`'s
 `libExecPC()` (`core/TIDebugKinds.hpp`), not as a `CpuFrame`
-field, so the trace format did not change. `ModuleImage::libraryStep` turns
+field. `ModuleImage::libraryStep` turns
 it into program number and program-relative step.
 
 ### PRG SOURCE flag (SCOM[0] nibble 3)

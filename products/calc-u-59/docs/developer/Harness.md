@@ -23,6 +23,10 @@ frontends host it) in emulated time only, so two runs give the same replies.
   which the scripts below use. `--calcu PATH`, `CALCU`, else the
   `build/tests`, `build/all` or `build/tools` tree's (the library's
   `calcu_serve.find_calcu`), else `build/tools` built on first use.
+- `calcu attach [--port N] [--json] [--messages]` drives the session of a
+  running app: a development or test build of the Qt6 app (`CALCU_ATTACH`)
+  or a Debug build of the Swift app (macOS and simulator) listens on
+  `--attach-port N`, else 59059.
 - `calcu --help` lists every command; the IDE run configuration is
   `.run/calcu-59.run.xml` (repository root).
 
@@ -280,8 +284,10 @@ session's machine.
 **ROM coverage by scenario:** `tools/coverage.py build [name…]` runs the
 scenarios on one `calcu serve` (each from a cold boot) into
 `tools/build/coverage.json`; `show 0400 04FF`, `unique sqrt`, `gaps` read
-it; `--variant TI58C`. A scenario's words leave out the key-detect range
-0627-0660 but keep the release gate 0627-062A; `boot` is read with `all`.
+it; `--variant TI58C`. A scenario's words leave out the model's idle and
+key-detect range (0627-0660 on the TI-59; on the TI-58 also the card veto
+0459-045B; on the TI-58C 0627-0659 and the printer rescan 0A25-0A30); `boot`
+is read with `all`.
 
 **What works in fast mode:** `tools/fastmode_matrix.py [substring]`; the
 results are in `rom/fastmode.md`, the ROM side in `rom/TI59-ROM-Guide.md`

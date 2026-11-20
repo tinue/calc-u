@@ -6,8 +6,8 @@ product: `docs/formats/preset.md` §6.2 at the repository root. Here: which
 state of the ROM gives each signal on these models, and the cases.
 Addresses are those of the commented listings `rom/TI59-commented.asm`
 (TI-59, TI-58) and `rom/TI58C-commented.asm` (TI-58C); "measured" means
-with the harness's `profile`. Besides the steps, the `c59` print listing
-asks B.
+with the harness's `profile`. Besides the steps, the `c59 line-times`
+command asks B.
 
 ## Signals
 
@@ -80,13 +80,16 @@ and there R/S continues a program once it has stopped.
 | R/S | between steps of a RAM program: TI-59 07DD–07DF, TI-58C 07D1–07D3 (stops the run); in the card wait 16B2 and the card run-out 16EA; in List 141F–1421 (TI-58C 1417–1419) | measured on `Lbl A GTO A`: 15 polls/s, about every 67 ms; not during a Pause, a long operation or a printer wait |
 | GTO | between steps of a RAM program: TI-59 07CF, TI-58C 07CB; held, every second step lights the display for 256 passes (about 216 ms TI-59, 60 ms TI-58C) | as R/S; not when the memory is protected |
 | RST | in a library program, at every module fetch: TI-59 0834–0836, TI-58C 0828–082A (stops the run, performs RST) | every module fetch |
-| ADV, `.` | during Adv: TI-59 0F36–0F43, TI-58C 0F57–0F5B (feeds while held) | every feed step |
+
+During Adv the ROM reads ADV and `.` too (TI-59 0F36–0F43, TI-58C
+0F57–0F5B: it feeds while they are held), at every feed step; a press of
+them waits for A as any key does.
 
 The polls between steps run only for a RAM program (Prg Src 0) and only at
 a step boundary with no INV, operand or label byte pending (07CB–07CE);
 a keycode sub-program, a library program and fast mode poll no R/S.
 
-The hold: today's sample rule fits (at least 100 ms down, then until the
+The hold: the sample rule fits (at least 100 ms down, then until the
 key's line has been sampled once more, at most 1 s): the bound must be
 longer than a Pause (432 ms), during which no poll runs. GTO stepping is
 the test's own hold.
@@ -97,8 +100,8 @@ the test's own hold.
   reader's `TICardReaderPlace::waitsForMedium()`) and `programEnded()`
   (`core/TIMachine.cpp`, the ranges in `core/TIRomRanges.hpp`); the
   questions from them: the library's `machine/Idle.hpp`.
-- The stretch and the sample: `app/TIPresetRules.cpp`; the `c59` print
-  listing asks B (`app/TIHarnessCommands.cpp`).
+- The stretch and the sample: `app/TIPresetRules.cpp`; `c59 line-times`
+  asks B (`app/TIHarnessCommands.cpp`).
 - The keys that do not wait: `app/TITyping.cpp` (R/S, GTO, RST; at most
   0.2 s, then held until sampled).
 - The cases as tests: `tests/idle_tests.cpp`.

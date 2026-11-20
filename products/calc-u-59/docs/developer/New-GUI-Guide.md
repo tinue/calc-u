@@ -14,14 +14,14 @@ to write.
 
 All three share all non-GUI code and are tracked in `Frontend-Parity.md`. The
 three are kept at feature parity, with a few deliberate exceptions in the
-web client (Classic LED only, session-only cards, no debugger in its
-portrait layout).
+web client (Classic LED only, cards kept in the browser's IndexedDB, no
+debugger in its portrait layout).
 
 ## If your GUI can call C++
 
 Build on `app/` (`App-Layer.md`). The Qt app is the worked
-example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 lines
-(header and source).
+example: `frontends/qt6/app/EmulatorController` is the whole adapter (header and
+source).
 
 1. **Host one app session** on one thread of yours: look the ROM files up
    once (`cu59::lookUpRoms` over a `calcu::roms::Bundle` of the ROM files of
@@ -59,7 +59,7 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    the library's `media` (the card reader `card-reader` and `slot-1`: what they
    hold, the pickers; send `media.choose`, `media.start-new`, `media.eject`),
    …) and the debug panel's product topics (`c59.calculator-debug`,
-   `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `asm-overlay`, `c59.debug-view`;
+   `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view`;
    `docs/developer/Debug-API.md`; the LOG tab keeps the last 2000 lines of the
    `log` topic). Send every file the user hands over as the library's `open`
    (a drag asks `open-would-take`). Show `notices` as alerts. Offer `clipboard-image` and
@@ -76,9 +76,10 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    name for Escape/Return/Enter, the character produced, the letter the key
    carries, the modifiers; the frontend maps nothing) and `host-key-up
    {physical}`, `focus-lost` on focus loss; draw the pressed key from the
-   `held-keys` topic. The rest as the `c59.*` commands (`cu59::commands`):
-   `setFullSpeed` while the display is held, `tapCard` on a press (not a
-   drag) over a fitted card, and the file actions; the paper panel's
+   `held-keys` topic. Holding the display is the library's `speed {full}`
+   (from `PointerTracker`); a press (not a drag) over a fitted card is
+   `c59.tap-card` (`cu59::commands`); a file of any way is the library's
+   `open`; the cards are the library's `media.*`; the paper panel's
    `paper.copy`, `paper.cut` and `set-control`, the run-control buttons'
    `pause`, `step`, `resume` (levels `program` for the CALCULATOR tab, `cpu`
    for the CPU tab), `pause-on-start` and `trace` are the library's.
@@ -111,9 +112,12 @@ session, with `app/TIWebPart` for what the page draws):
   start, synchronously. Fetch the full set (`cu59::fullRomSet()`) before
   making the session, as the library's Web worker does into `/bundle`
   (`files.json`); nothing is read later.
-- **Pass drawing data, not drawing.** `TIWebPart` sends what changed as plain data — segment masks and brightness per LED cell, the cue
-  card as a laid-out draw list, printer lines with their heights, debug rows
-  formatted by `DebugText`, the LED geometry — and the GUI paints it.
+- **Pass drawing data, not drawing.** `TIWebPart` sends what changed as
+  plain data — the topics `c59.web.display` (segment masks and brightness
+  per LED cell), `c59.web.cue-card` (the cue card as a laid-out draw list)
+  and `c59.web.debug-font`, and requests such as `c59.led-geometry` — and
+  the GUI paints it. The paper is the library's `paper PC-100C` topic, the
+  debug rows `TIDebugPart`'s topics.
 
 What stays in the GUI's own language is the same as above: widgets and
 painting, events, file pickers and storage.

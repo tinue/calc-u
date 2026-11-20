@@ -11,7 +11,6 @@ using machine::Ticks;
 
 Ticks OperationContext::runPiece(machine::TickRate rate) { return std::max<Ticks>(1, rate / 60); }
 
-void OperationContext::setReportsWaiting(bool r) { session_->machineSession().setReportsWaiting(r); }
 
 Task<bool> OperationContext::hostWait(pacing::WallTime d) {
     if (session_->virtualTime()) co_return false;

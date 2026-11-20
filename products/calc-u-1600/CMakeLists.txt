@@ -285,10 +285,14 @@ if(CALCU_TESTS)
   calcu_add_test(CalcU1600PacingRealClock checkpoint COMMAND CalcU1600SessionTests pacing_longrun_real_clock
                  PROPERTIES ENVIRONMENT CALCU1600_PACING_LONGRUN=600 TIMEOUT 1500)
   if(TARGET CalcU1600Qt)
-    # A PC-1600 keeps one minute in the Qt6
-    # frontend (the --pacing-probe test hook of non-release builds).
+    # A PC-1600 keeps one minute in the Qt6 frontend (the --pacing-probe
+    # test hook of non-release builds), offscreen with a home of its own: the
+    # user's settings (a startup model or preset) would change what runs.
+    set(PROBE_HOME ${CMAKE_CURRENT_BINARY_DIR}/pacing-probe-home)
+    file(MAKE_DIRECTORY ${PROBE_HOME})
     calcu_add_test(CalcU1600QtPacingProbe checkpoint COMMAND CalcU1600Qt --pacing-probe 60
                    PROPERTIES RUN_SERIAL TRUE TIMEOUT 300)
+    set_tests_properties(CalcU1600QtPacingProbe PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;HOME=${PROBE_HOME}")
     # The help's pictures into help/images/, one scenario per
     # help chapter (tools/make_screenshots.sh builds the app in build/app-1600).
     calcu_add_test(CalcU1600HelpPictures checkpoint COMMAND tools/make_screenshots.sh PROPERTIES RUN_SERIAL TRUE)

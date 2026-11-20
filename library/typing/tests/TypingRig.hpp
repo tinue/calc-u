@@ -39,7 +39,7 @@ struct TypingRig {
     TypingTestMachine* build() {
         auto mm = makeTypingMachine();
         m = mm.get();
-        session->machineSession().setMachine(std::move(mm), pacing::PacingProfile{}, 0);
+        session->machineSession().setMachine(std::move(mm), pacing::PacingProfile{std::chrono::microseconds(2'000), false}, 0);   // short slices: the tests step in milliseconds
         session->advanceUnpaced(0);   // the session tells its parts
         return m;
     }

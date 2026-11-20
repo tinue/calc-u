@@ -4,8 +4,8 @@
 
 namespace cu1600 {
 
-// The pacing profile of a Sharp model: the slice
-// is the host's call, no jitter, and full speed is never paced. The same for the PC-1500, PC-1500A and PC-1600;
+// The pacing profile of a Sharp model: slices of 2 ms, no jitter. The same
+// for the PC-1500, PC-1500A and PC-1600;
 // handed to the machine session with each new machine.
 calcu::pacing::PacingProfile pacingProfile(const calcu::machine::ModelId& model);
 

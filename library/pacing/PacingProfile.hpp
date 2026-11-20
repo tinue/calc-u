@@ -1,20 +1,20 @@
 #pragma once
 #include <chrono>
-#include <optional>
 
 // What a product supplies per model for the pacer (glossary: pacing
-// profile), and the speed the machine session asks for.
+// profile), and the speed the machine session asks for. At full speed the
+// pacer runs a machine that waits for the user at regular speed, so it never
+// spins at the prompt; an operation never reports waiting (AppSession).
 
 namespace calcu::pacing {
 
 enum class Speed { Regular, Full };
 
 struct PacingProfile {
-    // A fixed slice length, or std::nullopt for "the call": each call runs
-    // the emulated time due up to the wall time of that call.
-    std::optional<std::chrono::microseconds> slice;
-    bool jitter = false;                      // slice ends jittered (fixed slices only)
-    bool fullSpeedPacedWhileWaiting = false;  // full speed paced while the machine waits for input
+    // The slice length: the pacer runs the machine in slices of this much
+    // emulated time on a fixed grid, at regular speed and at full speed.
+    std::chrono::microseconds slice{20'000};   // each product sets its own
+    bool jitter = false;   // slice ends jittered around the grid
 };
 
 } // namespace calcu::pacing

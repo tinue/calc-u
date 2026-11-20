@@ -47,6 +47,9 @@
 
 ### Changed
 
+- **At full speed a waiting machine runs at real time**, as in Calc-U-59,
+  so the prompt and a program waiting for a key no longer spin; a preset,
+  a load or a reset still runs as fast as the host allows throughout.
 - **Presets are format 2.** A preset of version 1 is refused as a file
   that cannot be read (nothing loaded); convert it by hand, as the User
   Guide's "Media files", "From 0.8", describes. The changes

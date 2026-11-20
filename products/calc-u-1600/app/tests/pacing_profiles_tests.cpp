@@ -11,14 +11,13 @@
 
 namespace {
 
-// The PC-1500, PC-1500A and PC-1600 each have a profile whose
-// slice is the call, with no jitter, and full speed never paced.
+// The PC-1500, PC-1500A and PC-1600 each have a profile of 2 ms slices,
+// with no jitter.
 TEST(pacing_profiles_sharp) {
     for (calcu::machine::ModelId m : {calcu::machine::ModelId{"PC-1500"}, calcu::machine::ModelId{"PC-1500A"}, calcu::machine::ModelId{"PC-1600"}}) {
         const calcu::pacing::PacingProfile p = cu1600::pacingProfile(m);
-        CHECK(!p.slice.has_value());
+        CHECK_EQ(p.slice.count(), 2'000);
         CHECK(!p.jitter);
-        CHECK(!p.fullSpeedPacedWhileWaiting);
     }
 }
 

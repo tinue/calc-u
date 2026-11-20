@@ -20,7 +20,7 @@ const WallTime k60Hz{16'666'667};
 const WallTime k120Hz{8'333'333};
 const WallTime kMs{1'000'000};
 constexpr Ticks kSlice = 2'000;   // 20 ms at test-seg's 100,000 ticks per second
-constexpr Ticks kCallSlice = kSegRate / 60;
+constexpr Ticks kShortSlice = 200;   // 2 ms
 constexpr std::int64_t kMsTicks = kSegRate / 1000;   // the host time of a slice in some tests
 
 // A test-seg machine with a fixed instruction length, its runner, a pacer
@@ -50,30 +50,37 @@ struct Rig {
     }
 };
 
-// How far emulated time may be from wall time at the end of a call: fixed,
-// one slice plus the last instruction; the call, the time between two calls
-// plus the last instruction.
+// How far emulated time may be from wall time at the end of a call: one
+// slice plus the last instruction.
 std::int64_t fixedBound(Ticks len) { return static_cast<std::int64_t>(kSlice + len); }
-std::int64_t callBound(WallTime interval, Ticks len) {
-    return static_cast<std::int64_t>(ticksIn(interval, kSegRate) + len);
-}
+
+// The two kinds of profile the products use: 20 ms with jitter, 2 ms without.
+struct Variant {
+    PacingProfile profile;
+    Ticks slice;
+    std::int64_t bound(Ticks len) const { return static_cast<std::int64_t>(slice + len); }
+};
+const Variant kVariants[] = {{fixedProfile(true), kSlice}, {shortProfile(), kShortSlice}};
 
 } // namespace
 
 // --- regular speed -----------------------------------------------------------
 
-TEST(call_slice_keeps_wall_time_at_60_hz) {
-    Rig r(callProfile(), 3);
-    int outside = 0, notOne = 0;
+TEST(short_slices_run_evenly_at_60_hz) {
+    // Slices much shorter than the host's call: each call runs about what is
+    // due, never none or twice that, also with the host timer's jitter.
+    Rig r(shortProfile(), 3);
+    ScriptRandom rnd{5};
+    int outside = 0, uneven = 0;
     for (int i = 0; i < 600; ++i) {   // 10 s
-        r.clock.now += k60Hz;
-        if (r.dev() < -callBound(k60Hz, 3)) ++outside;   // just before the call
-        const PaceResult res = r.pacer.pace(Speed::Regular, r.runner);
-        if (res.slices != 1) ++notOne;                   // one slice: the call
-        if (r.dev() < 0 || r.dev() >= 3) ++outside;      // after it: due ticks, plus less than an instruction
+        const WallTime d = k60Hz + WallTime(rnd.below(2'000'001) - 1'000'000);   // ± 1 ms
+        const PaceResult res = r.call(d);
+        const auto due = static_cast<std::int64_t>(ticksIn(d, kSegRate));
+        if (i > 0 && std::llabs(static_cast<std::int64_t>(res.ticksRun) - due) > 2 * static_cast<std::int64_t>(kShortSlice)) ++uneven;
+        if (std::llabs(r.dev()) > static_cast<std::int64_t>(kShortSlice + 3)) ++outside;
     }
     CHECK_EQ(outside, 0);
-    CHECK_EQ(notOne, 0);
+    CHECK_EQ(uneven, 0);
 }
 
 TEST(fixed_slice_keeps_wall_time) {
@@ -94,8 +101,8 @@ TEST(fixed_slice_keeps_wall_time) {
 }
 
 TEST(uneven_calls_do_not_add_up) {
-    for (bool fixed : {true, false}) {
-        Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
+    for (const Variant& v : kVariants) {
+        Rig r(v.profile, 3);
         ScriptRandom rnd{2};
         int outside = 0, dropped = 0;
         const WallTime longest = k60Hz + 4 * kMs + 30 * kMs;
@@ -104,50 +111,50 @@ TEST(uneven_calls_do_not_add_up) {
             if (i % 50 == 49) d += 30 * kMs;                                     // an oversleep
             const PaceResult res = r.call(d);
             if (res.lagDropped) ++dropped;
-            const std::int64_t bound = fixed ? fixedBound(3) : callBound(longest, 3);
+            const std::int64_t bound = v.bound(3);
             if (std::llabs(r.dev()) > bound) ++outside;
         }
         CHECK_EQ(dropped, 0);
         CHECK_EQ(outside, 0);
-        CHECK(std::llabs(r.dev()) <= (fixed ? fixedBound(3) : 3));   // at the end too: nothing added up
+        CHECK(std::llabs(r.dev()) <= v.bound(3));   // at the end too: nothing added up
     }
 }
 
 TEST(overshoot_does_not_add_up) {
-    for (bool fixed : {true, false})
+    for (const Variant& v : kVariants)
         for (Ticks len : {Ticks{7}, Ticks{37}}) {   // neither divides a slice: every slice overshoots
-            Rig r(fixed ? fixedProfile(true) : callProfile(), len);
+            Rig r(v.profile, len);
             int outside = 0;
             for (int i = 0; i < 6'000; ++i) {
                 r.call(k60Hz);
-                if (std::llabs(r.dev()) > (fixed ? fixedBound(len) : callBound(k60Hz, len))) ++outside;
+                if (std::llabs(r.dev()) > v.bound(len)) ++outside;
             }
             Ticks overshoot = 0;
             for (const auto& s : r.runner.slices) overshoot += s.result.ticksRun - s.request.ticks;
-            CHECK(overshoot > 5 * kSlice);   // dropped, the overshoots would add up to far beyond the bound
+            CHECK(overshoot > 5 * v.slice);   // dropped, the overshoots would add up to far beyond the bound
             CHECK_EQ(outside, 0);
-            CHECK(r.dev() >= 0 ? r.dev() < static_cast<std::int64_t>(fixed ? kSlice + len : len)
-                               : r.dev() > -static_cast<std::int64_t>(kSlice));
+            CHECK(r.dev() >= 0 ? r.dev() < static_cast<std::int64_t>(v.slice + len)
+                               : r.dev() > -static_cast<std::int64_t>(v.slice));
         }
 }
 
 // --- lag ---------------------------------------------------------------------
 
 TEST(lag_over_limit_dropped_whole) {
-    for (bool fixed : {true, false}) {
-        Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
+    for (const Variant& v : kVariants) {
+        Rig r(v.profile, 3);
         for (int i = 0; i < 60; ++i) CHECK(!r.call(k60Hz).lagDropped);
         // 90 ms late: under the limit, caught up.
         PaceResult res = r.call(90 * kMs);
         CHECK(!res.lagDropped);
-        CHECK(std::llabs(r.dev()) <= (fixed ? fixedBound(3) : 3));
+        CHECK(std::llabs(r.dev()) <= v.bound(3));
         // 500 ms late: over the limit, dropped whole.
         r.clock.now += 500 * kMs;
         const Ticks before = r.m->tickCount();
         const WallTime at = r.clock.now;
         res = r.pacer.pace(Speed::Regular, r.runner);
         CHECK(res.lagDropped);
-        CHECK(res.ticksRun <= (fixed ? kSlice : kCallSlice) + 3);   // one slice at most, nothing caught up
+        CHECK(res.ticksRun <= v.slice + 3);   // one slice at most, nothing caught up
         CHECK(res.ticksRun > 0);
         // From the moment of that call, pacing goes on.
         r.t0 = before;
@@ -155,7 +162,7 @@ TEST(lag_over_limit_dropped_whole) {
         int outside = 0, dropped = 0;
         for (int i = 0; i < 120; ++i) {
             if (r.call(k60Hz).lagDropped) ++dropped;
-            if (std::llabs(r.dev()) > (fixed ? fixedBound(3) : callBound(k60Hz, 3))) ++outside;
+            if (std::llabs(r.dev()) > v.bound(3)) ++outside;
         }
         CHECK_EQ(dropped, 0);
         CHECK_EQ(outside, 0);
@@ -165,8 +172,8 @@ TEST(lag_over_limit_dropped_whole) {
 // --- full speed --------------------------------------------------------------
 
 TEST(full_speed_stops_at_14_ms_of_the_supplied_clock) {
-    for (bool fixed : {true, false}) {
-        Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
+    for (const Variant& v : kVariants) {
+        Rig r(v.profile, 3);
         r.runner.costPerSlice = kMs;   // the host takes 1 ms per slice
         const WallTime start = r.clock.now;
         const PaceResult res = r.pacer.pace(Speed::Full, r.runner);
@@ -174,9 +181,7 @@ TEST(full_speed_stops_at_14_ms_of_the_supplied_clock) {
         CHECK(res.ranUnpaced);
         CHECK(r.clock.now - start >= Pacer::kFullSpeedAllowance);
         CHECK(r.clock.now - start < Pacer::kFullSpeedAllowance + kMs);
-        CHECK(res.ticksRun >= 14 * (fixed ? kSlice / 2 : kCallSlice));   // far beyond the 14 ms due
-        if (!fixed)
-            for (const auto& s : r.runner.slices) CHECK_EQ(s.request.ticks, kCallSlice);   // 1/60 s
+        CHECK(res.ticksRun >= 14 * (v.slice / 2));   // far beyond the 14 ms due
         // A host slower than the allowance still runs one slice per call.
         r.runner.costPerSlice = 40 * kMs;
         CHECK_EQ(r.pacer.pace(Speed::Full, r.runner).slices, 1);
@@ -185,8 +190,8 @@ TEST(full_speed_stops_at_14_ms_of_the_supplied_clock) {
 }
 
 TEST(back_to_regular_neither_waits_nor_lags) {
-    for (bool fixed : {true, false}) {
-        Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
+    for (const Variant& v : kVariants) {
+        Rig r(v.profile, 3);
         r.runner.costPerSlice = kMs / 4;
         for (int i = 0; i < 30; ++i) r.call(k60Hz);
         for (int i = 0; i < 30; ++i) r.call(k60Hz, Speed::Full);   // gains emulated time
@@ -197,7 +202,7 @@ TEST(back_to_regular_neither_waits_nor_lags) {
             const PaceResult res = r.call(k60Hz);
             if (res.lagDropped) ++dropped;
             if (i == 0 && res.slices == 0) ++idle;   // the gain is not waited out
-            if (std::llabs(r.dev()) > (fixed ? fixedBound(3) : callBound(k60Hz, 3)) + kMsTicks) ++outside;
+            if (std::llabs(r.dev()) > v.bound(3) + kMsTicks) ++outside;
         }
         CHECK_EQ(idle, 0);
         CHECK_EQ(dropped, 0);
@@ -220,32 +225,27 @@ TEST(full_speed_keeps_tick_count) {
 
 // --- pacing profile ----------------------------------------------------------
 
-TEST(profile_slice_fixed_or_the_call_jitter_and_paced_flag) {
-    const PacingProfile fixed = fixedProfile(true, true);
-    CHECK(fixed.slice.has_value());
-    CHECK_EQ(fixed.slice->count(), 20'000);
-    CHECK(fixed.jitter);
-    CHECK(fixed.fullSpeedPacedWhileWaiting);
-    const PacingProfile call{};
-    CHECK(!call.slice.has_value());
-    CHECK(!call.jitter);
-    CHECK(!call.fullSpeedPacedWhileWaiting);
-    // The call: one slice per call of what is due. Fixed: slices of the length.
-    Rig c(call, 1);
-    c.call(50 * kMs);
-    CHECK_EQ(c.runner.slices.size(), std::size_t{1});
-    CHECK_EQ(c.runner.slices[0].request.ticks, ticksIn(50 * kMs, kSegRate));
+TEST(profile_slice_and_jitter) {
+    const PacingProfile ti = fixedProfile(true);
+    CHECK_EQ(ti.slice.count(), 20'000);
+    CHECK(ti.jitter);
+    CHECK(!shortProfile().jitter);
+    // Slices of the profile's length, up to one slice ahead of what is due.
     Rig f(fixedProfile(), 1);
     f.call(50 * kMs);
-    CHECK_EQ(f.runner.slices.size(), std::size_t{3});   // ends 20, 40, 60 ms: up to one slice ahead
+    CHECK_EQ(f.runner.slices.size(), std::size_t{3});   // ends 20, 40, 60 ms
     for (const auto& s : f.runner.slices) CHECK_EQ(s.request.ticks, kSlice);
+    Rig c(shortProfile(), 1);
+    c.call(50 * kMs);
+    CHECK_EQ(c.runner.slices.size(), std::size_t{26});   // ends 2 ... 52 ms
+    for (const auto& s : c.runner.slices) CHECK(s.request.ticks <= kShortSlice);
 }
 
 // --- full speed paced while the machine waits --------------------------------
 
 TEST(waiting_at_full_speed_waits_one_slice_after_last_unpaced) {
     for (bool jitter : {false, true}) {
-        Rig r(fixedProfile(jitter, true), 1);
+        Rig r(fixedProfile(jitter), 1);
         r.runner.costPerSlice = kMs;
         r.runner.waits = [](int i) { return i >= 3; };
         const PaceResult first = r.pacer.pace(Speed::Full, r.runner);
@@ -273,7 +273,7 @@ TEST(waiting_at_full_speed_waits_one_slice_after_last_unpaced) {
 }
 
 TEST(not_waiting_returns_to_full_speed) {
-    Rig r(fixedProfile(true, true), 1);
+    Rig r(fixedProfile(true), 1);
     r.runner.costPerSlice = kMs;
     bool waiting = true;
     r.runner.waits = [&](int) { return waiting; };
@@ -292,24 +292,11 @@ TEST(not_waiting_returns_to_full_speed) {
     CHECK(next.ranUnpaced);
 }
 
-TEST(profile_without_flag_never_paced) {
-    for (bool fixed : {true, false}) {
-        Rig r(fixed ? fixedProfile(true, false) : callProfile(false), 1);
-        r.runner.costPerSlice = kMs;
-        r.runner.waits = [](int) { return true; };
-        for (int i = 0; i < 5; ++i) {
-            const PaceResult res = r.call(k60Hz, Speed::Full);
-            CHECK_EQ(res.slices, 14);
-            CHECK(res.ranUnpaced);
-        }
-    }
-}
-
 // --- starting afresh ----------------------------------------------------------
 
 TEST(start_afresh_no_lag_nothing_to_wait) {
-    for (bool fixed : {true, false}) {
-        Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
+    for (const Variant& v : kVariants) {
+        Rig r(v.profile, 3);
         for (int i = 0; i < 60; ++i) r.call(k60Hz);
         // Suspended for 5 s, then continued: start afresh.
         r.clock.now += std::chrono::seconds(5);
@@ -318,7 +305,7 @@ TEST(start_afresh_no_lag_nothing_to_wait) {
         PaceResult res = r.call(k60Hz);
         CHECK(!res.lagDropped);
         CHECK(res.slices >= 1);
-        CHECK(res.ticksRun <= kSlice + 3);   // nothing caught up
+        CHECK(res.ticksRun <= ticksIn(k60Hz, kSegRate) + v.slice + 3);   // one call's worth, nothing caught up
         // Ahead at full speed, then afresh: nothing to wait out.
         r.runner.costPerSlice = kMs;
         r.call(k60Hz, Speed::Full);
@@ -330,7 +317,7 @@ TEST(start_afresh_no_lag_nothing_to_wait) {
             res = r.call(k60Hz);
             if (res.lagDropped) ++dropped;
             if (i == 0) CHECK(res.slices >= 1);
-            if (std::llabs(r.dev()) > (fixed ? fixedBound(3) : callBound(k60Hz, 3))) ++outside;
+            if (std::llabs(r.dev()) > v.bound(3)) ++outside;
         }
         CHECK_EQ(dropped, 0);
         CHECK_EQ(outside, 0);
@@ -341,26 +328,24 @@ TEST(new_machine_new_rate_and_profile) {
     Rig r(fixedProfile(true), 3);
     for (int i = 0; i < 60; ++i) r.call(k60Hz);
     const Ticks segTicks = r.m->tickCount();
-    // A model switch: test-dot at 1,000,000 ticks per second, slice "the call".
+    // A model switch: test-dot at 1,000,000 ticks per second, short slices.
     auto dot = calcu::machine::test::buildTestMachine(kDot);
     CHECK(dot != nullptr);
     if (!dot) return;
     r.clock.now += std::chrono::seconds(2);
     r.runner.machine = dot.get();
-    r.pacer.setMachine(callProfile(), kDotRate);
+    r.pacer.setMachine(shortProfile(), kDotRate);
     const std::size_t first = r.runner.slices.size();
     const WallTime w0 = r.clock.now;
     int outside = 0, dropped = 0;
     for (int i = 0; i < 60; ++i) {
         if (r.call(k60Hz).lagDropped) ++dropped;
         const std::int64_t dev = deviation(*dot, 0, r.clock.now, w0);
-        if (dev < 0 || dev >= 4) ++outside;   // the new rate, slice "the call", instructions of 4 ticks
+        if (std::llabs(dev) > static_cast<std::int64_t>(ticksIn(2 * kMs, kDotRate)) + 4) ++outside;   // the new rate, instructions of 4 ticks
     }
     CHECK_EQ(dropped, 0);
     CHECK_EQ(outside, 0);
-    CHECK_EQ(r.runner.slices.size() - first, std::size_t{60});
-    CHECK(r.runner.slices[first].request.ticks + 4 >= ticksIn(k60Hz, kDotRate));
-    CHECK(r.runner.slices[first].request.ticks <= ticksIn(k60Hz, kDotRate));
+    CHECK_EQ(r.runner.slices[first].request.ticks, ticksIn(2 * kMs, kDotRate));
     CHECK_EQ(r.m->tickCount(), segTicks);   // the old machine ran no more
     // And back, with a fixed slice of the old rate.
     r.runner.machine = r.m.get();
@@ -393,9 +378,9 @@ TEST(stopped_early_ends_the_call_resume_starts_afresh) {
 
 // --- edge cases: repeated times, toggling, call rates, slow hosts ------------
 
-TEST(call_slice_same_time_twice_runs_nothing) {
-    for (bool fixed : {false, true}) {
-        Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
+TEST(same_time_twice_runs_nothing) {
+    for (const Variant& v : kVariants) {
+        Rig r(v.profile, 3);
         for (int i = 0; i < 10; ++i) r.call(k60Hz);
         const Ticks ticks = r.m->tickCount();
         const std::size_t slices = r.runner.slices.size();
@@ -411,8 +396,8 @@ TEST(call_slice_same_time_twice_runs_nothing) {
 }
 
 TEST(toggling_full_speed_keeps_regular_stretches) {
-    for (bool fixed : {true, false}) {
-        Rig r(fixed ? fixedProfile(true, true) : callProfile(), 3);
+    for (const Variant& v : kVariants) {
+        Rig r(v.profile, 3);
         r.runner.costPerSlice = kMs / 4;
         int outside = 0, dropped = 0;
         for (int round = 0; round < 200; ++round) {
@@ -421,7 +406,7 @@ TEST(toggling_full_speed_keeps_regular_stretches) {
             for (int i = 0; i < 1 + round % 4; ++i) {
                 const PaceResult res = r.call(k60Hz);
                 if (res.lagDropped) ++dropped;
-                if (std::llabs(r.dev()) > (fixed ? fixedBound(3) : callBound(k60Hz, 3)) + kMsTicks) ++outside;
+                if (std::llabs(r.dev()) > v.bound(3) + kMsTicks) ++outside;
             }
         }
         CHECK_EQ(dropped, 0);
@@ -429,23 +414,23 @@ TEST(toggling_full_speed_keeps_regular_stretches) {
     }
 }
 
-TEST(call_slice_at_120_hz) {
-    for (bool fixed : {false, true}) {
-        Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
+TEST(calls_at_120_hz) {
+    for (const Variant& v : kVariants) {
+        Rig r(v.profile, 3);
         int outside = 0;
         for (int i = 0; i < 1'200; ++i) {   // 10 s
             r.call(k120Hz);
-            if (std::llabs(r.dev()) > (fixed ? fixedBound(3) : callBound(k120Hz, 3))) ++outside;
+            if (std::llabs(r.dev()) > v.bound(3)) ++outside;
         }
         CHECK_EQ(outside, 0);
-        CHECK(std::llabs(r.dev()) <= (fixed ? fixedBound(3) : 3));
+        CHECK(std::llabs(r.dev()) <= v.bound(3));
     }
 }
 
 TEST(throttled_caller_runs_slow_without_failing) {
-    for (bool fixed : {true, false})
+    for (const Variant& v : kVariants)
         for (WallTime interval : {150 * kMs, WallTime(std::chrono::seconds(1))}) {
-            Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
+            Rig r(v.profile, 3);
             int notDropped = 0, idle = 0;
             for (int i = 0; i < 100; ++i) {
                 const PaceResult res = r.call(interval);
@@ -459,8 +444,8 @@ TEST(throttled_caller_runs_slow_without_failing) {
 }
 
 TEST(slow_host_drops_lag_again_and_again) {
-    for (bool fixed : {true, false}) {
-        Rig r(fixed ? fixedProfile(true) : callProfile(), 3);
+    for (const Variant& v : kVariants) {
+        Rig r(v.profile, 3);
         r.runner.hostSlowdown = 2.0;   // the host needs 2 s of wall time per emulated second
         int dropped = 0;
         for (int i = 0; i < 3'000; ++i)

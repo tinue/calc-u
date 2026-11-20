@@ -1,9 +1,5 @@
 // The long-run pacing tests: Calc-U-1600 on the library's pacer through the
-// library's app session. The same test on 0.8.1's pacer measured a drift --
-// the PC-1600
-// 0.0037 % fast while on and 0.21 % fast once switched off, the PC-1500A
-// 12.7 ms over an hour, because 0.8.1 dropped the overshoot of each advance
-// -- which is the expected difference to this one.
+// library's app session.
 //
 // Scripted (Frequent group): a wall clock this test supplies, calls about 60
 // times a second with ±4 ms jitter, an oversleep now and then and one stall;
@@ -31,9 +27,9 @@ namespace {
 namespace sessions = calcu::sessions;
 using sessionfixture::SessionFixture;
 
-// The bound for a profile whose slice is the call: the last
-// instruction's overshoot, well under a millisecond; 2 ms leaves room.
-constexpr double kBoundSeconds = 0.002;
+// The bound: the pacer runs up to one slice (2 ms) ahead of wall time, plus
+// the last instruction's overshoot, well under a millisecond; 4 ms leaves room.
+constexpr double kBoundSeconds = 0.004;
 constexpr double kPpm = 100e-6;   // a crystal's tolerance
 constexpr double kDefaultScriptedSeconds = 120;
 

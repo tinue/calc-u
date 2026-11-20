@@ -92,7 +92,7 @@ TEST(without_operation_runs_at_last_commanded_speed) {
     r.send("speed", Value::object({{"full", false}}));
     t0 = r.ticks();
     r.call();
-    CHECK(r.ticks() - t0 < 2 * regular);
+    CHECK(r.ticks() - t0 <= 2 * regular + 1'000);   // a call's worth and at most one slice ahead
 }
 
 TEST(no_call_no_run) {

@@ -58,11 +58,6 @@ std::string Shelf::folderOf(const KindDecl& k) const {
     return paths_->folder(k.folder).value_or(std::string());
 }
 
-std::string Shelf::outdatedHint(const KindDecl& k, int version) {
-    return k.formatName + " version " + std::to_string(version) + " is outdated: the current version is " +
-           std::to_string(k.currentVersion) + ", described in " + k.describedAt + ".";
-}
-
 std::optional<ReadOutcome> Shelf::readFile(const KindDecl& k, const std::string& path, std::string* bytesOut) const {
     const auto bytes = files_->read(path).bytes;
     if (!bytes || !k.codec) return std::nullopt;
@@ -97,10 +92,6 @@ std::vector<std::string> Shelf::reread() {
             e.isTemplate = origin == Origin::Bundled || r->info.isTemplate;   // bundled files are templates
             e.hasWriteProtect = r->info.hasWriteProtect;
             e.writeProtected = r->info.writeProtected;
-            if (r->status == ReadOutcome::Status::Outdated) {
-                e.outdatedHint = outdatedHint(k, r->info.formatVersion);
-                lines.push_back("The " + k.label + " file " + file + " is outdated: " + *e.outdatedHint);
-            }
             entries_.push_back(std::move(e));
         };
         for (const std::string& f : filesOf(*files_, k.bundledFolder, k)) entry(k.bundledFolder, f, Origin::Bundled);

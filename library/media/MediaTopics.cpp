@@ -19,7 +19,7 @@ namespace {
 
 Value itemValue(const KindState::Item& i) {
     Value::Object o{{"name", i.name}, {"description", i.description}, {"fileName", i.fileName},
-                    {"origin", originText(i.origin)}, {"template", i.isTemplate}, {"outdated", i.outdated}};
+                    {"origin", originText(i.origin)}, {"template", i.isTemplate}};
     if (i.inPlace) o.push_back({"inPlace", *i.inPlace});
     return Value(std::move(o));
 }

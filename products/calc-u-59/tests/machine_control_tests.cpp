@@ -4,6 +4,7 @@
 // session as a native frontend hosts it (tests/AppRig.hpp).
 
 #include "TestHarness.hpp"
+#include "testing/TempFolder.hpp"
 #include "AppRig.hpp"
 #include "../core/PC100C.hpp"
 #include "peripherals/PeripheralsPart.hpp"
@@ -53,10 +54,13 @@ TEST(builtin_default_ml_no_printer) {
     }
 }
 
-TEST(startup_preset_of_2_3_0_gives_default_and_notice) {
+TEST(unreadable_startup_preset_gives_default_and_notice) {
     SKIP_UNLESS(roms(), kSkip);
-    Rig r("TI-59", std::make_shared<apprig::Files>(), [](calcu::settings::SettingsFile& s) {
-        s.set("preset", "TI-59", "tests/fixtures/v2.3.0/globe-print.ti59");   // as 2.3.0 shipped it
+    calcu::testing::TempFolder folder("calcu59-startup");
+    folder.write("bad.ti59", "model: TI-59\nprinter: PC-100C\n");   // no format-version
+    const std::string path = (folder.path() / "bad.ti59").string();
+    Rig r("TI-59", std::make_shared<apprig::Files>(), [&](calcu::settings::SettingsFile& s) {
+        s.set("preset", "TI-59", path);
     });
     CHECK_EQ(r.plugged("slot-1"), std::string("ML"));
     CHECK_EQ(r.plugged("printer"), std::string());

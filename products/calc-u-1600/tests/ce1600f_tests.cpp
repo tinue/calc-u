@@ -442,10 +442,10 @@ TEST(test_floppy_file_rejects_missing_or_unknown_version) {
     FloppyFile f;
     std::string err;
 
-    std::string v1 = good;   // 0.8.x: outdated (the codec says so, app/SharpMediaKinds)
+    std::string v1 = good;
     v1.replace(v1.find("format-version: 2"), 17, "format-version: 1");
     CHECK(!parseFloppyFile(v1, &f, &err));
-    CHECK(err == "unsupported floppy format-version 1 (this build reads 2)");
+    CHECK(err == "unsupported floppy disk format-version 1 (this build reads 2)");
 
     std::string noVersion = good;
     noVersion.erase(noVersion.find("format-version: 2\n"), 18);

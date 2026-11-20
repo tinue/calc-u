@@ -18,10 +18,7 @@ void MediaPicker::setPlace(const media::PlaceState& p) {
     int current = 0;
     bool listed = !p.holds;
     for (const media::PickerEntry& e : p.picker) {
-        QString label = e.group == media::PickerEntry::Group::Empty ? emptyLabel() : QString::fromStdString(e.label);
-        const bool outdated = !e.canChoose && e.hint && e.hint->find("outdated") != std::string::npos;
-        if (outdated) label += QStringLiteral(" (outdated)");
-        addItem(label);
+        addItem(e.group == media::PickerEntry::Group::Empty ? emptyLabel() : QString::fromStdString(e.label));
         const int i = count() - 1;
         ids_.push_back(e.id);
         const std::optional<std::string>& tip = e.canChoose ? e.tooltip : e.hint;

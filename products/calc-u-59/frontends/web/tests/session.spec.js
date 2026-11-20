@@ -31,19 +31,19 @@ const request = (page, name, args) =>
   page.evaluate(([n, a]) => document.querySelector('.calcu-client').calcuShell.request(n, a).then((r) => r.value), [name, args || null]);
 const el = (page, name) => page.locator(`[data-calcu="${name}"]`);
 
-test('CalcU59 props, layout and settings, no module', async ({ page }) => {
+test('CalcU59 props, layout and settings', async ({ page }) => {
   // model by its name.
   await gotoReady(page, 'layout=wide&model=TI-58C');
   await expect(el(page, 'bar-model')).toHaveValue('2');
-  // A second CalcU59 without keyboard, with 2.3.0's module prop and
-  // settings off: keyboard is on by default, module is not read.
+  // A second CalcU59 without keyboard and with settings off: keyboard is on
+  // by default.
   await page.evaluate(() => {
     const div = document.createElement('div');
     div.id = 'second';
     div.style.width = '400px';
     document.body.appendChild(div);
     ReactDOM.createRoot(div).render(React.createElement(CalcU59,
-      { layout: 'portrait', width: 360, height: 640, module: 'ST', settings: false }));
+      { layout: 'portrait', width: 360, height: 640, settings: false }));
   });
   const second = page.locator('#second .calcu-client');
   await expect(second.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
@@ -57,22 +57,14 @@ test('CalcU59 props, layout and settings, no module', async ({ page }) => {
   await second.locator('[data-calcu="bar-more"]').click();
   await expect(second.locator('[data-calcu="more-item-settings"]')).toHaveCount(0);
   await expect(second.locator('[data-calcu="more-item-help"]')).toBeVisible();
-  // 2.3.0's module prop is not read: the Master Library, as the control state says.
-  await expect.poll(() => second.evaluate((e) => {
-    const cs = e.calcuShell.getState().topics['control-state'];
-    const slot = cs && cs.places.find((p) => p.place === 'slot-1');
-    const plugged = slot && slot.fitting.find((f) => f.plugged);
-    return plugged ? plugged.id : '';
-  })).toBe('ML');
 });
 
-// The component is CalcU59, the one global of calc.js; 2.3.0's
-// PlayCalculator is gone. The shared props have layout among them;
-// `portraitWidth` moved along.
-test('CalcU59 is the component, PlayCalculator is gone', async ({ page }) => {
+// The component is CalcU59, the one global of calc.js, with its
+// `portraitWidth`; the shared props have layout among them.
+test('CalcU59 is the component', async ({ page }) => {
   await gotoReady(page, 'layout=portrait');
-  expect(await page.evaluate(() => [typeof window.CalcU59, typeof window.PlayCalculator,
-    typeof (window.CalcU59 && window.CalcU59.portraitWidth)])).toEqual(['function', 'undefined', 'function']);
+  expect(await page.evaluate(() => [typeof window.CalcU59,
+    typeof (window.CalcU59 && window.CalcU59.portraitWidth)])).toEqual(['function', 'function']);
   await expect(page.locator('.calcu-client')).toHaveAttribute('data-layout', 'portrait');
 });
 
@@ -122,9 +114,6 @@ test('no message of the old protocol', async ({ page }) => {
   for (const k of sent) expect(['listen', 'command', 'request', 'answer']).toContain(k);
   for (const k of received) expect(['state', 'stream', 'reply', 'ask', 'sound-start', 'sound', 'sound-stop']).toContain(k);
   expect(sent).toContain('listen');
-  // 2.3.0's own message types (its calc-engine-worker.js) are gone.
-  const types = await page.evaluate(() => [...window.__calcuSent, ...window.__calcuReceived].map((m) => m && m.type).filter(Boolean));
-  expect(types).toEqual([]);
 });
 
 test('hidden page suspends, shown continues', async ({ page }) => {

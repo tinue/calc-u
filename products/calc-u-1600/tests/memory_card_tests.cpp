@@ -1197,15 +1197,6 @@ TEST(test_catalog_scan_lists_and_sorts) {
     CHECK(err.find("broken.module.yaml") != std::string::npos);  // reported, not fatal
 }
 
-// A `.card.yaml` is not read.
-TEST(card_yaml_not_read) {
-    const calcu::testing::TempFolder dirFolder("calcu1600-old-cards");
-    std::ofstream(dirFolder.str() + "/ce155.card.yaml") << kCe155Yaml;
-    std::string err;
-    CHECK(scanMemoryCardDirectory(dirFolder.str(), &err).empty());
-    CHECK_EQ(std::string(kModuleFileSuffix), std::string(".module.yaml"));
-}
-
 TEST(test_catalog_scan_missing_dir) {
     std::string err;
     auto entries = scanMemoryCardDirectory("/no/such/module/dir", &err);

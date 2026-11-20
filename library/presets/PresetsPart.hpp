@@ -82,7 +82,7 @@ public:
                                                          std::optional<machine::ModelId> forModel);
     void operationEnded(sessions::SessionContext&) override;   // regular speed at the end
 
-    // startup::PresetLoader: a read error, an outdated file, another model
+    // startup::PresetLoader: a read error, another model
     // than forModel or a refused build: CannotLoad, nothing built; a failure
     // while it is carried out: FailedWhileRunning.
     sessions::Task<startup::PresetLoad> load(std::string ref, std::optional<machine::ModelId> forModel,

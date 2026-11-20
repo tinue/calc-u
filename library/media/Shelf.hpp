@@ -24,7 +24,6 @@ struct ShelfEntry {
     std::string path;                          // for the part only
     Origin origin = Origin::Saved;
     bool isTemplate = false, hasWriteProtect = false, writeProtected = false;
-    std::optional<std::string> outdatedHint;   // the entry cannot be chosen
     MediumInfo info;                           // Read: what the codec gave
     std::string bytes;                         // the file as read (the codec's splice source)
 };
@@ -35,16 +34,16 @@ public:
     Shelf(const std::vector<KindDecl>&, const settings::Paths*, std::shared_ptr<const FileAccess> files = nullptr);
     const FileAccess& files() const { return *files_; }
 
-    // The folders read again. The log lines (an unreadable, an outdated, a
+    // The folders read again. The log lines (an unreadable or a
     // left-out file: one per file) come only from the first scan after the
     // session started.
     std::vector<std::string> reread();
     bool scanned() const { return scanned_; }
-    // The kind's entries: bundled, implicit, then saved (outdated included).
+    // The kind's entries: bundled, implicit, then saved.
     std::vector<const ShelfEntry*> entries(const KindDecl&) const;
     // Bundled and implicit first, then the save folder. Of two saved
     // files with one name, the one whose file name the name gives, else the
-    // first by file name. Outdated entries are found too.
+    // first by file name.
     const ShelfEntry* find(const KindDecl&, std::string_view name) const;
     // A saved entry by its file name in the kind's folder.
     const ShelfEntry* byFileName(const KindDecl&, std::string_view fileName) const;
@@ -62,8 +61,6 @@ public:
     // The kind's folder (save folder or tape folder), "" when there is none.
     std::string folderOf(const KindDecl&) const;
     const settings::Paths* paths() const { return paths_; }
-    // "<format> version <n> is outdated: …".
-    static std::string outdatedHint(const KindDecl&, int version);
 
 private:
     std::vector<KindDecl> kinds_;

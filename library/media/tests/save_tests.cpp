@@ -18,9 +18,6 @@ FixtureOptions dot() {
         s.write("Free.testdisk.yaml", disk("Free", "free").text());
         s.write("Busy.testdisk.yaml", disk("Busy", "busy").text());
         s.write("Broken.testdisk.yaml", "broken\n");
-        TestFile old = disk("Old", "o");
-        old.version = 1;
-        s.write("Old.testdisk.yaml", old.text());
     };
     return o;
 }
@@ -88,7 +85,6 @@ TEST(save_rules_table) {
         CHECK(plan(by, "formatted").verdict == V::Refused);                                      // a bundled name
         CHECK(plan(by, "Busy").verdict == V::Refused);                                           // in another place
         CHECK(plan(by, "Broken").verdict == V::Write && plan(by, "Broken").path == f.saveRoot / "Broken-1.testdisk.yaml");   // numbered
-        CHECK(plan(by, "Old").verdict == V::Write && plan(by, "Old").path == f.saveRoot / "Old-1.testdisk.yaml");
     }
     CHECK(plan(SaveBy::NameAndSave, "Tpl").verdict == V::Refused);   // a user template's name
     CHECK(plan(SaveBy::SaveasLive, "Tpl").verdict == V::Refused);

@@ -25,15 +25,15 @@ TEST(startup_preset_built_by_the_loader) {
     CHECK(r.notices().empty());
 }
 
-TEST(startup_preset_outdated_gives_default_and_notice) {
+TEST(startup_preset_unreadable_gives_default_and_notice) {
     calcu::testing::TempFolder t("calcu-start");
-    t.write("old.test-seg", "MODEL: TI-59\nKEYSTROKES:\n");
-    Rig r(startingWith(t / "old.test-seg"));
+    t.write("bad.test-seg", "MODEL: TI-59\nKEYSTROKES:\n");
+    Rig r(startingWith(t / "bad.test-seg"));
     CHECK(r.done(r.startCall));
     CHECK(r.machine() && r.machine()->plugged().byPlace.empty());   // the built-in default
     const auto n = r.notices();
     CHECK(n.size() == 1 && hasLine(n, "The startup preset of the test-seg could not be loaded: ") &&
-          hasLine(n, "earlier release"));
+          hasLine(n, "format-version: is required"));
     // A preset of another model is not the startup preset of this one.
     t.write("dot.test-dot", header("test-dot"));
     Rig d(startingWith(t / "dot.test-dot"));

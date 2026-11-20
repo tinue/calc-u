@@ -52,7 +52,7 @@ TEST(import_current_medium_under_inner_name) {
     CHECK(e && e->isTemplate);   // as the template it says it is
 }
 
-TEST(import_refused_name_taken_outdated_unreadable) {
+TEST(import_refused_name_taken_or_unreadable) {
     MediaFixture f(dot());
     calcu::testing::TempFolder outside("calcu-media-outside");
     outside.write("a.testdisk.yaml", disk("formatted", "x").text());
@@ -64,8 +64,8 @@ TEST(import_refused_name_taken_outdated_unreadable) {
     outside.write("e.txt", "text\n");
     CHECK_EQ(f.refusal("media.import", paths({outside / "a.testdisk.yaml"})), std::string("A test disk named “Formatted” exists already."));
     CHECK_EQ(f.refusal("media.import", paths({outside / "b.testdisk.yaml"})), std::string("A test disk named “Work” exists already."));
-    CHECK(f.refusal("media.import", paths({outside / "c.testdisk.yaml"})).find("is outdated: The test disk format version 1") !=
-          std::string::npos);
+    CHECK_EQ(f.refusal("media.import", paths({outside / "c.testdisk.yaml"})),
+             std::string("The test disk file c.testdisk.yaml cannot be read: Its version is not known."));
     CHECK(f.refusal("media.import", paths({outside / "d.testdisk.yaml"})).find("cannot be read") != std::string::npos);
     CHECK_EQ(f.refusal("media.import", paths({outside / "e.txt"})), std::string("The file e.txt is not a medium of this product."));
     CHECK(!f.exists("a.testdisk.yaml") && f.saved("Work.testdisk.yaml").find("WORK") == std::string::npos);

@@ -37,7 +37,7 @@
 // comment preservation, unlike BatteryCardInstance.hpp's card instances).
 
 constexpr const char* kFloppyFileSuffix = ".floppy.yaml";
-constexpr long kFloppyFormatVersion = 2;   // version 1 (0.8.x) named the sides a and b (outdated, preset.md §9.4)
+constexpr long kFloppyFormatVersion = 2;
 
 struct FloppyFile {
     std::string diskName;
@@ -55,45 +55,12 @@ namespace floppy_detail {
 constexpr const char* kFormatTag = "ce1600f-floppy";
 constexpr const char* kSideKeys[2] = {"0", "1"};
 
-// Checks `format`/`format-version` and reads `disk-name`, `description`
-// and `template` from a parsed file.
-inline bool readHeader(const calcu::formats::YamlNode& root, std::string* diskName, std::string* description, bool* isTemplate,
-                       std::string* error) {
-    if (!root.isMap()) {
-        *error = "not a floppy-disk file (expected a YAML mapping)";
-        return false;
-    }
-    std::string format;
-    const calcu::formats::YamlNode* formatNode = root.find("format");
-    if (!formatNode || !formatNode->asString(&format, error) || format != kFormatTag) {
-        *error = std::string("not a floppy-disk file (expected 'format: ") + kFormatTag + "')";
-        return false;
-    }
-    if (!calcu::formats::requireFormatVersion(root, kFloppyFormatVersion, "floppy", error)) return false;
-    if (!root.requireOnlyKeys({"format", "format-version", "disk-name", "description", "template", "saved", "sides"}, error))
-        return false;
-    const calcu::formats::YamlNode* nameNode = root.find("disk-name");
-    if (!nameNode) {
-        *error = "missing 'disk-name'";
-        return false;
-    }
-    if (!nameNode->asString(diskName, error)) return false;
-    if (diskName->empty()) {
-        *error = "empty 'disk-name'";
-        return false;
-    }
-    description->clear();
-    if (const calcu::formats::YamlNode* descriptionNode = root.find("description")) {
-        if (!descriptionNode->asString(description, error)) return false;
-    }
-    *isTemplate = false;
-    if (const calcu::formats::YamlNode* templateNode = root.find("template")) {
-        if (!templateNode->asBool(isTemplate, error)) return false;
-    }
-    return true;
-}
-
 }  // namespace floppy_detail
+
+// What the header of a disk's file must be.
+inline calcu::media::HeaderRules floppyHeaderRules() {
+    return {floppy_detail::kFormatTag, "floppy disk", kFloppyFormatVersion, "disk-name"};
+}
 
 // Serializes `image` (must be CE1600FCard::kImageSize bytes) as a complete
 // version-2 file. `diskName` is written double-quoted verbatim (the YAML
@@ -128,7 +95,13 @@ inline std::string formatFloppyFile(const std::string& diskName, const std::vect
 inline bool parseFloppyFile(const std::string& text, FloppyFile* out, std::string* error) {
     calcu::formats::YamlNode root;
     if (!calcu::formats::parseYaml(text, &root, error)) return false;
-    if (!floppy_detail::readHeader(root, &out->diskName, &out->description, &out->isTemplate, error)) return false;
+    calcu::media::Header header;
+    if (!calcu::media::readHeader(root, floppyHeaderRules(), &header, error)) return false;
+    if (!root.requireOnlyKeys({"format", "format-version", "disk-name", "description", "template", "saved", "sides"}, error))
+        return false;
+    out->diskName = header.name;
+    out->description = header.description;
+    out->isTemplate = header.isTemplate;
     const calcu::formats::YamlNode* sides = root.find("sides");
     if (!sides || !sides->isMap()) {
         *error = "missing 'sides' mapping";

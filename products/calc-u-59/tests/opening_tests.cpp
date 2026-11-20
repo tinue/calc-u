@@ -69,17 +69,15 @@ TEST(preset_extensions_ti59_ti58_ti58c) {
 TEST(one_medium_magnetic_card) {
     // The magnetic card is the one medium of Calc-U-59
     // (`.magnetcard.yaml`), opened by the library's MediaOpener; no product
-    // file kind takes a card file, and 2.3.0's .u59 and .bin are no files of
-    // the product.
+    // file kind takes a card file.
     SessionRig r;
     CHECK(ready(r));
     const auto* media = &r.part().mediaPart();
     CHECK(media && media->kinds().size() == 1 && media->kinds()[0].id == "magnetic-card");
-    CHECK(media && media->shelf().kindOfFile("x.magnetcard.yaml") && !media->shelf().kindOfFile("x.u59") &&
-          !media->shelf().kindOfFile("x.bin"));
+    CHECK(media && media->shelf().kindOfFile("x.magnetcard.yaml"));
     TIDebugPart debug(TIDebugSetup{});
     TIFileKinds kinds(debug);
-    for (auto* k : kinds.kinds()) CHECK(!k->takesName("x.magnetcard.yaml") && !k->takesName("x.u59") && !k->takesName("x.bin"));
+    for (auto* k : kinds.kinds()) CHECK(!k->takesName("x.magnetcard.yaml"));
 }
 
 TEST(kinds_keystrokes_and_asm_in_order) {
@@ -279,21 +277,21 @@ TEST(refusal_notice_names_the_file) {
     CHECK(!r.notices().empty() && r.notices().back().find("readme.txt") != std::string::npos);
 }
 
-// ── Extensions and outdated files ────────────────────────────────────────────
+// ── Extensions and unreadable files ──────────────────────────────────────────
 
 TEST(preset_by_extension_in_any_case) {
     SessionRig r;
     CHECK(ready(r));
     CHECK_EQ(as(open(r, "P.TI59", kPreset)), std::string("preset"));
-    // An outdated preset is a preset by its extension, refused with the loader's hint.
-    const auto old = open(r, "old.ti59", "Calc-U-59 2.0\nPROGRAM:\n");
-    CHECK(!old.done && old.reason.find("format") != std::string::npos);
+    // An unreadable preset is a preset by its extension, refused with the reader's reason.
+    const auto bad = open(r, "bad.ti59", "model: TI-59\nprogram:\n");
+    CHECK(!bad.done && bad.reason.find("format-version: is required") != std::string::npos);
 }
 
 TEST(hidden_file_refused) {
     SessionRig r;
     CHECK(ready(r));
-    const auto m = open(r, ".a.u59", "x");
+    const auto m = open(r, ".a.magnetcard.yaml", "x");
     CHECK(!m.done);
     CHECK(m.reason.find("hidden") != std::string::npos);
     const auto p = open(r, ".p.ti59", kPreset);

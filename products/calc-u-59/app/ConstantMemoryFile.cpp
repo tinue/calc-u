@@ -30,19 +30,12 @@ bool allDigits(std::string_view s) {
 std::variant<ConstantMemoryContents, ConstantMemoryProblem> readConstantMemoryFile(std::string_view text) {
     YamlNode root;
     std::string error;
-    if (!calcu::formats::parseYaml(std::string(text), &root, &error)) {
-        // A file that is no format of this release at all (the plain text of release 2.3.0) is outdated.
-        if (text.find("format-version") == std::string_view::npos) return ConstantMemoryProblem{ConstantMemoryProblem::Kind::Outdated, {}};
+    if (!calcu::formats::parseYaml(std::string(text), &root, &error)) return damaged(0, error);
+    calcu::media::Header header;
+    if (!calcu::media::readHeader(root, {"ti58c-constant-memory", "constant memory", 1, ""}, &header, &error)) {
+        if (header.formatVersion > 1) return ConstantMemoryProblem{ConstantMemoryProblem::Kind::Newer, {}};
         return damaged(0, error);
     }
-    if (!root.isMap()) return ConstantMemoryProblem{ConstantMemoryProblem::Kind::Outdated, {}};
-    const YamlNode* format = root.find("format");
-    const YamlNode* version = root.find("format-version");
-    if (!format || calcu::formats::scalarText(*format) != "ti58c-constant-memory" || !version)
-        return ConstantMemoryProblem{ConstantMemoryProblem::Kind::Outdated, {}};
-    const std::string v = calcu::formats::scalarText(*version);
-    if (!allDigits(v) || v.size() > 6 || std::stol(v) < 1) return ConstantMemoryProblem{ConstantMemoryProblem::Kind::Outdated, {}};
-    if (std::stol(v) > 1) return ConstantMemoryProblem{ConstantMemoryProblem::Kind::Newer, {}};
     ConstantMemoryContents out;
     for (const auto& [k, n] : root.map)
         if (k != "format" && k != "format-version" && k != "memory-name" && k != "description" && k != "saved" && k != "cue-card" && k != "ram")

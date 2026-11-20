@@ -46,7 +46,7 @@ Words recorded(const std::string& name) {
 
 TEST(first_line_version) {
     CHECK(words(kHead + "HEX:\n0A01\n") == Words{0x0A01});
-    CHECK(refusal("Calc-U-59 ASM 2.0 \nHEX:\n0A01\n").find("older format") != std::string::npos);   // exactly
+    CHECK(refusal("Calc-U-59 ASM 2.0 \nHEX:\n0A01\n").find("starts with the line") != std::string::npos);   // exactly
 }
 
 TEST(prose_before_hex_not_read) {
@@ -82,11 +82,10 @@ TEST(asm_overlay_first_at_1800) {
 
 // ── One case per refusal ──────────────────────────────────────────────────────
 
-TEST(outdated_names_the_format_version_and_where) {
+TEST(no_first_line_names_it) {
     for (const std::string& text : {std::string("HEX:\n0A01\n"), std::string("Calc-U-59 ASM 1.0\nHEX:\n0A01\n"), std::string()}) {
         const std::string s = refusal(text);
-        CHECK_EQ(s, std::string("t.asm is an ASM overlay in an older format. This release reads the ASM overlay format "
-                                "version 2.0, described in the help's reference chapter."));
+        CHECK_EQ(s, std::string("t.asm cannot be read: an ASM overlay starts with the line Calc-U-59 ASM 2.0."));
     }
 }
 TEST(asm_overlay_no_hex_line) { CHECK_EQ(refusal(kHead + "0A01\n"), std::string("t.asm has no HEX: line.")); }

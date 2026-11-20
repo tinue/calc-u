@@ -245,7 +245,7 @@ TEST(harness_asm_load_run_clear) {
     CHECK(run.rfind("done 1\nASM entered at 0x1800 (", 0) == 0);
     CHECK(c("state c59.asm-overlay").find("simple_count.asm") != std::string::npos);
     CHECK_EQ(c("c59 asm clear"), std::string("done\n"));
-    CHECK(c("c59 asm load examples/assembly/README.md").rfind("refused: README.md is an ASM overlay in an older format.", 0) == 0);
+    CHECK(c("c59 asm load examples/assembly/README.md").rfind("refused: README.md cannot be read: an ASM overlay starts with", 0) == 0);
     CHECK(c("c59 asm load /no/such.asm").rfind("refused: such.asm could not be read.", 0) == 0);
     CHECK(c("c59 asm").rfind("refused: usage:", 0) == 0);
 }

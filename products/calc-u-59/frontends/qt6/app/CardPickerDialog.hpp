@@ -8,9 +8,8 @@ class QListWidget;
 class QPushButton;
 
 // The magnetic card dialogs: Arm Card lists the
-// saved magnetic cards of the library's media topic by name (an outdated one
-// as an entry that cannot be chosen, its hint as tooltip; "No cards found"
-// when none) and gives back the chosen entry for `media.choose`; Arm Fresh
+// saved magnetic cards of the library's media topic by name (one that cannot
+// be chosen now disabled, its hint as tooltip; "No cards found" when none) and gives back the chosen entry for `media.choose`; Arm Fresh
 // Card asks a name, shows the saved cards, and gives back the name for
 // `media.start-new` (the replace question is the session's `asks:`,
 // confirmReplace). It reads no folder and decides no name rule. The

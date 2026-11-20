@@ -386,11 +386,11 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
 @end
 
 @implementation TISavedCard
-- (instancetype)initWithName:(NSString *)name entryID:(NSString *)entryID outdated:(BOOL)outdated hint:(NSString *)hint {
+- (instancetype)initWithName:(NSString *)name entryID:(NSString *)entryID canChoose:(BOOL)canChoose hint:(NSString *)hint {
     if ((self = [super init])) {
         _name = [name copy];
         _entryID = [entryID copy];
-        _outdated = outdated;
+        _canChoose = canChoose;
         _hint = [hint copy];
     }
     return self;
@@ -809,7 +809,7 @@ static const char* const kCardReaderPlace = "card-reader";
     // The saved cards only; the fresh card is Arm Fresh Card's.
     for (const auto& e : p->picker)
         if (e.group == G::Instance || e.group == G::UserTemplate)
-            [out addObject:[[TISavedCard alloc] initWithName:ns(e.label) entryID:ns(e.id) outdated:!e.canChoose
+            [out addObject:[[TISavedCard alloc] initWithName:ns(e.label) entryID:ns(e.id) canChoose:e.canChoose
                                                         hint:e.hint ? ns(*e.hint) : nil]];
     return out;
 }

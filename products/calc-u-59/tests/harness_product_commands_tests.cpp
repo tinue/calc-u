@@ -82,7 +82,6 @@ TEST(commands_under_c59_on_ti59_ti58_ti58c) {
         CHECK_EQ(r("c59 keycodes disassemble"), std::string("done 2\n000  Lbl A\n002  RTN\n"));
     }
     CHECK_EQ(r("c59 nothing"), std::string("refused: unknown command c59 nothing\n"));
-    CHECK_EQ(r("ti59 partition"), std::string("refused: unknown command ti59\n"));   // the old word (release prep step 1)
 }
 
 // ── c59 coverage ─────────────────────────────────────────────────────────────

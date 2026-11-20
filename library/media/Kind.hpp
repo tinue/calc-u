@@ -37,9 +37,9 @@ struct ReadOutcome {
     // Calc-U-1600 module definition without a battery: a module that is not
     // a medium). The shelf neither lists nor logs it; every other reader
     // takes it as Unreadable, with the problem.
-    enum class Status { Read, Outdated, Unreadable, NotMedium } status = Status::Unreadable;
+    enum class Status { Read, Unreadable, NotMedium } status = Status::Unreadable;
     bool unreadable() const { return status == Status::Unreadable || status == Status::NotMedium; }
-    MediumInfo info;                // Read; Outdated: name and version only
+    MediumInfo info;                // Read
     std::string problem;            // Unreadable: why, one sentence
 };
 
@@ -98,8 +98,6 @@ struct KindDecl {
     settings::Folder folder = settings::Folder::Save;   // Cassettes for a cassette
     std::string bundledFolder;       // as the frontend or harness finds it; empty: none
     const MediumCodec* codec = nullptr;
-    std::string formatName, describedAt;   // the hint for an outdated file
-    int currentVersion = 0;
     std::vector<ImplicitTemplate> implicitTemplates;
     HeldBy heldBy = HeldBy::MediaPlace;
     // HeldBy::ModuleSlot: which catalogue peripherals are templates of this

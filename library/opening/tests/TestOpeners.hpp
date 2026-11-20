@@ -17,15 +17,15 @@
 // open part, recording what they are asked; two file kinds built for the
 // tests; the rig: the sessions' test session with the open part.
 //
-//   presets   `.tseg`, `.tdot`; a preset whose text holds `outdated` is
-//             refused with a hint, one loaded as its content that holds
+//   presets   `.tseg`, `.tdot`; a preset whose text holds `broken` is
+//             refused as unreadable, one loaded as its content that holds
 //             `file:` is refused because it names other files; the
 //             others start an operation of 100 ticks.
 //   media     `.tcard.yaml` (the pass-through `reader` of test-seg),
 //             `.tdisk.yaml` (the holding `drive` of test-dot, unless
 //             `noDrive`), `.tmod.yaml` (a module: `slot-1` of test-seg, two
-//             slots `card-1`, `card-2` on test-dot). Text with `outdated`:
-//             refused with media's hint; with `template`: a template.
+//             slots `card-1`, `card-2` on test-dot). Text with `broken`:
+//             refused as unreadable; with `template`: a template.
 //             `passing` holds the places passing a medium through now.
 //             An import is refused with `asks:` when its name is saved
 //             already and the request is not confirmed.
@@ -74,8 +74,8 @@ public:
 
 private:
     static CommandOutcome verdict(const std::string& name, const std::string& text, bool alone) {
-        if (text.find("outdated") != std::string::npos)
-            return Refused{name + " is a preset of format 1: set format-version: 2 (see the preset format)."};
+        if (text.find("broken") != std::string::npos)
+            return Refused{name + ", line 1: model: is required."};
         if (alone && text.find("file:") != std::string::npos)
             return Refused{name + " names other files, which cannot be found when it is opened alone."};
         return StartOperation{ticksOp(100)};
@@ -97,8 +97,8 @@ public:
         else if (endsWith(n, ".tdisk.yaml")) m.kind = "test-disk", m.kindName = "test disk";
         else m.kind = "test-module", m.kindName = "test module", m.isModule = true;
         const std::string t = textOf(f);
-        if (t.find("outdated") != std::string::npos)
-            m.refusal = "The " + m.kindName + " file " + f.name + " is outdated: set format-version: 2 (see the media format).";
+        if (t.find("broken") != std::string::npos)
+            m.refusal = "The " + m.kindName + " file " + f.name + " cannot be read: missing 'format-version'.";
         m.isTemplate = t.find("template") != std::string::npos;
         ++reads;
         return m;

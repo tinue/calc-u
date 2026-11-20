@@ -25,7 +25,7 @@ protected:
 
 // What media read and checked first.
 struct MediumFile {
-    std::optional<std::string> refusal;   // outdated or unreadable, with media's hint
+    std::optional<std::string> refusal;   // unreadable, with media's reason
     std::string kind, kindName;           // "test-disk", "test disk"
     bool isTemplate = false;              // opened, never written back
     bool isModule = false;                // goes into a module slot (plugged in as by the slot's picker)

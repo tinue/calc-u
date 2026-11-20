@@ -45,10 +45,6 @@ public:
             r.status = ReadOutcome::Status::NotMedium;
             return r;
         }
-        if (r.info.formatVersion == 1) {
-            r.status = ReadOutcome::Status::Outdated;
-            return r;
-        }
         if (r.info.formatVersion != 2) {
             r.problem = "Its version is not known.";
             return r;
@@ -140,9 +136,6 @@ std::vector<KindDecl> testKinds(const TestKindFolders& folders) {
     card.suffix = ".testcard.yaml";
     card.bundledFolder = folders.cards;
     card.codec = &codec("test-card");
-    card.formatName = "The test card format";
-    card.describedAt = "library/media/tests/TestKinds.hpp";
-    card.currentVersion = 2;
     card.implicitTemplates = {ImplicitTemplate{"Fresh", "A fresh test card", [] { return contentFrom(""); }}};
     card.words = PresetWords{"test-card", "test-arm", "", "test-card", true};
 
@@ -153,9 +146,6 @@ std::vector<KindDecl> testKinds(const TestKindFolders& folders) {
     disk.companionSuffixes = {".dat"};   // its companion files (Import Media… takes them along)
     disk.bundledFolder = folders.disks;
     disk.codec = &codec("test-disk");
-    disk.formatName = "The test disk format";
-    disk.describedAt = "library/media/tests/TestKinds.hpp";
-    disk.currentVersion = 2;
     disk.words = PresetWords{"test-disk", "", "disk", "", false};
 
     KindDecl module;
@@ -164,9 +154,6 @@ std::vector<KindDecl> testKinds(const TestKindFolders& folders) {
     module.suffix = ".testmodule.yaml";
     module.bundledFolder = folders.modules;
     module.codec = &codec("test-module");
-    module.formatName = "The test module format";
-    module.describedAt = "library/media/tests/TestKinds.hpp";
-    module.currentVersion = 2;
     module.heldBy = HeldBy::ModuleSlot;
     module.isMedium = [](const machine::PeripheralDescriptor& d) { return d.id == mt::kMemoryModule; };
     module.moduleRequest = [](const MediumInfo& info, const machine::PlacePath& at) -> std::optional<machine::PeripheralRequest> {

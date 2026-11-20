@@ -52,10 +52,10 @@ TEST(log_lines_from_library_and_product_part) {
     Rig r;
     r.build();
     r.part.operation = [](OperationContext& c) { return logging(c); };
-    r.send("tp.log", Value::object({{"text", "outdated: a.yaml"}}));
+    r.send("tp.log", Value::object({{"text", "unreadable: a.yaml"}}));
     r.send("tp.op");
     r.callWhileBusy();
     std::vector<std::string> lines;
     for (const auto& p : r.fe.mirror.takeAppended(kLogTopic)) lines.push_back(payloadAs<LogLine>(p)->text);
-    CHECK(lines == (std::vector<std::string>{"outdated: a.yaml", "preset: line 1", "preset: line 2"}));
+    CHECK(lines == (std::vector<std::string>{"unreadable: a.yaml", "preset: line 1", "preset: line 2"}));
 }

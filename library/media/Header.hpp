@@ -1,9 +1,11 @@
 #pragma once
+#include "formats/Yaml.hpp"
 #include <string>
 
 // The header every medium's file starts with (docs/formats/media.md): one
-// writer for the lines in their documented order. Standard library only, so
-// a product's core may write it too.
+// writer for the lines in their documented order, and one reader. Standard
+// library and the header-only YAML reader only, so a product's core may use
+// it too.
 
 namespace calcu::media {
 
@@ -25,5 +27,21 @@ std::string quotedScalar(const std::string&);
 // The header's lines, each ending in '\n': the comment, `format`,
 // `format-version`, the name key, `description`, `template`, `saved`.
 std::string headerText(const Header&);
+
+// What a reader expects of a header.
+struct HeaderRules {
+    std::string format;        // the `format:` the file must carry
+    std::string what;          // the format in a problem ("floppy disk")
+    long formatVersion = 1;    // the one version read
+    std::string nameKey;       // required, not empty; empty: the file has no name key
+};
+
+// Checks `format` and `format-version` of a parsed file and reads the name
+// key, `description`, `template` and `saved` into `out` (no `comment`).
+// False with `problem` set (no full stop) when the file is no mapping, has
+// another format, another or no version, or no name; `out->formatVersion`
+// is then the version the file carries (0: none), so a caller can tell a
+// newer file. Unknown keys are the caller's to check.
+bool readHeader(const formats::YamlNode& root, const HeaderRules&, Header* out, std::string* problem);
 
 } // namespace calcu::media

@@ -168,7 +168,6 @@ class TestPresetRules final : public ProductRules {
 public:
     TestPresetRules() : seg(false), dot(true) {}
     std::string_view productName() const override { return "Calc-U-Test"; }
-    std::string_view formatReference() const override { return "docs/formats/preset.md"; }
     ModelRules& forModel(const machine::ModelId& m) override { return m == mt::kDot ? static_cast<ModelRules&>(dot) : seg; }
 
     void addKeywords(Vocabulary& v) override {

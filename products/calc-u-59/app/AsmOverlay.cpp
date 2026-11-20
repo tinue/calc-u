@@ -38,8 +38,7 @@ std::variant<std::vector<std::uint16_t>, std::string> readAsmOverlay(std::string
     const std::string file(name);
     const std::vector<std::string_view> all = lines(text);
     if (all.empty() || all.front() != kAsmOverlayFirstLine)
-        return file + " is an ASM overlay in an older format. This release reads the ASM overlay format version 2.0, "
-                      "described in the help's reference chapter.";
+        return file + " cannot be read: an ASM overlay starts with the line " + std::string(kAsmOverlayFirstLine) + ".";
     size_t hex = all.size();
     for (size_t i = 1; i < all.size(); ++i)
         if (toUpper(trimBlanks(all[i])) == "HEX:") {

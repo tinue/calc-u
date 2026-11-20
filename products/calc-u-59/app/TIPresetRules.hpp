@@ -36,7 +36,6 @@ public:
     explicit TIPresetRules(TIKeywordSetup setup = {}) : m_setup(std::move(setup)) {}
     std::string_view productName() const override { return "Calc-U-59"; }
     // The User Guide's chapter, by its name.
-    std::string_view formatReference() const override { return "the preset format in the User Guide, chapter Presets"; }
     calcu::presets::ModelRules& forModel(const calcu::machine::ModelId&) override;
     void addKeywords(calcu::presets::Vocabulary& v) override { addTIKeywords(v, m_setup); }
 

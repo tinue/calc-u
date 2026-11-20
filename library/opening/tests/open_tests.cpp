@@ -91,14 +91,14 @@ TEST(open_reply_says_why_refused) {
 
 // ── A medium ──
 
-TEST(open_medium_checked_first_hint_passed_on) {
+TEST(open_medium_checked_first_refusal_passed_on) {
     OpenRig r;
     r.rig.build(mt::kDot);
-    const auto* a = r.opened(file("old.tdisk.yaml", "outdated", "/m/old.tdisk.yaml"));
-    CHECK(a && !a->done && a->reason.find("is outdated: set format-version: 2") != std::string::npos);
-    CHECK(hasText(r.notices(), "old.tdisk.yaml is outdated"));
+    const auto* a = r.opened(file("bad.tdisk.yaml", "broken", "/m/bad.tdisk.yaml"));
+    CHECK(a && !a->done && a->reason.find("cannot be read: missing 'format-version'") != std::string::npos);
+    CHECK(hasText(r.notices(), "bad.tdisk.yaml cannot be read"));
     CHECK(r.media.uses.empty() && r.media.imports == 0);
-    const auto* up = r.opened(file("old.tdisk.yaml", "outdated"), Way::Drop, true);   // an upload: not imported either
+    const auto* up = r.opened(file("bad.tdisk.yaml", "broken"), Way::Drop, true);   // an upload: not imported either
     CHECK(up && !up->done && r.media.imports == 0);
 }
 

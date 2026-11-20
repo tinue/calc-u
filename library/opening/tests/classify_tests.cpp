@@ -1,5 +1,5 @@
 // Classifying a file: the order of its tests (Classify.hpp), the preset by
-// its content, the limits per way in; an outdated preset, an unreadable file.
+// its content, the limits per way in; an unreadable preset, an unreadable file.
 #include "TestHarness.hpp"
 #include "TestOpeners.hpp"
 
@@ -87,15 +87,15 @@ TEST(open_names_compared_without_case) {
     CHECK(k.what == What::Kind && k.kind == &c.listing);
 }
 
-TEST(outdated_preset_extension_is_preset_refused_with_hint) {
+TEST(unreadable_preset_extension_is_preset_refused) {
     Setup c;
-    CHECK(c(file("old.tseg", "format-version: 1\noutdated\n")).what == What::Preset);   // not tried as anything else
+    CHECK(c(file("bad.tseg", "format-version: 2\nbroken\n")).what == What::Preset);   // not tried as anything else
     OpenRig r;
     r.rig.build();
-    const auto* reply = r.opened(file("old.tseg", "format-version: 1\noutdated\n"));
+    const auto* reply = r.opened(file("bad.tseg", "format-version: 2\nbroken\n"));
     CHECK(reply && !reply->done);
-    CHECK(reply && reply->reason.find("old.tseg is a preset of format 1") == 0);
-    CHECK(hasText(r.notices(), "set format-version: 2"));   // the hint, as a notice
+    CHECK(reply && reply->reason.find("bad.tseg, line 1: model: is required.") == 0);
+    CHECK(hasText(r.notices(), "model: is required"));   // the refusal, as a notice
     CHECK(r.listing.opened.empty() && r.blob.opened.empty() && r.media.reads == 0);
 }
 

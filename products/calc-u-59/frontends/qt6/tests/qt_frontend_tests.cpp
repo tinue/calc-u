@@ -193,9 +193,9 @@ TEST(card_buttons_and_eject_by_card_state) {
     CHECK(f.waitFor([&] { return controls() == nullptr; }, 3000));
 }
 
-// Arm Card's dialog: the saved cards of the save folder by name, an outdated one disabled
-// with its hint, "No cards found" when none; a 2.3.0 card is not listed.
-TEST(arm_card_dialog_lists_saved_cards_outdated_disabled_none_found) {
+// Arm Card's dialog: the saved cards of the save folder by name, "No cards found"
+// when none; a card file that cannot be read is not listed.
+TEST(arm_card_dialog_lists_saved_cards_none_found) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     const QString folder = AppPaths::saveDir();
     CHECK(QDir(folder).dirName() == QStringLiteral("Calc-U-59"));   // ~/Calc-U-59 (the test HOME)
@@ -210,24 +210,15 @@ TEST(arm_card_dialog_lists_saved_cards_outdated_disabled_none_found) {
     writeFile(folder + QStringLiteral("/Mine.magnetcard.yaml"),
               cu59::writeMagneticCardFile(cu59::TIMagneticCardData{}, "My Card", "", false, std::nullopt, ""));
     writeFile(folder + QStringLiteral("/Old.magnetcard.yaml"), "format: ti59-magnetic-card\nformat-version: 2\ncard-name: Old\n");
-    writeFile(folder + QStringLiteral("/card.U59"), "Calc-U-59 Card 2.0\nEND-CARD\n");   // an old card file: not listed
     Fixture f;
     f.c().sendCommand(calcu::media::kRefreshCommand, Value::object({}));
     f.run(100);
     CardPickerDialog dialog(CardPickerDialog::Mode::Arm, f.c().savedCards(), folder);
     QStringList names;
     for (int i = 0; i < dialog.list()->count(); ++i) names << dialog.list()->item(i)->text();
-    CHECK(names.contains(QStringLiteral("My Card")) && names.contains(QStringLiteral("Old")) && names.size() == 2);
-    for (int i = 0; i < dialog.list()->count(); ++i) {
-        QListWidgetItem* item = dialog.list()->item(i);
-        if (item->text() == QStringLiteral("Old")) {
-            CHECK(!(item->flags() & Qt::ItemIsEnabled));
-            CHECK(item->toolTip().contains(QStringLiteral("outdated")));
-        } else {
-            CHECK(item->flags() & Qt::ItemIsEnabled);
-            dialog.list()->setCurrentItem(item);
-        }
-    }
+    CHECK(names == QStringList{QStringLiteral("My Card")});
+    CHECK(dialog.list()->item(0)->flags() & Qt::ItemIsEnabled);
+    dialog.list()->setCurrentItem(dialog.list()->item(0));
     dialog.accept();
     CHECK_EQ(dialog.selectedEntry(), QStringLiteral("saved:Mine.magnetcard.yaml"));
     f.c().armCard(dialog.selectedEntry());

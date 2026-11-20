@@ -76,13 +76,13 @@ test('picker lists the saved instance', async ({ page }) => {
   }).toBe('Mine');
 });
 
-test('outdated entry disabled with hint', async ({ page }) => {
+test('file of another version not listed', async ({ page }) => {
   await start(page);
   await saved(page, 'Old.testdisk.yaml', disk('Old', 'o', 'version-1'));
-  const option = el(page, 'media-picker-disk').locator('option', { hasText: 'Old (outdated)' });
-  await expect(option).toHaveCount(1);
-  await expect(option).toBeDisabled();
-  expect(await option.getAttribute('title')).toContain('outdated');
+  await saved(page, 'Mine.testdisk.yaml', disk('Mine', 'm'));   // listed after the other one was read
+  const picker = el(page, 'media-picker-disk');
+  await expect(picker.locator('option', { hasText: 'Mine' })).toHaveCount(1);
+  await expect(picker.locator('option', { hasText: 'Old' })).toHaveCount(0);
 });
 
 test('name and save asks the name', async ({ page }) => {

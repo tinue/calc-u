@@ -97,8 +97,8 @@ TEST(first_error_refuses_the_file_machine_untouched) {
     CHECK(c.model() == Model::TI58 && r.ticks() >= ticksBefore);
     reply = r.load("\xff\xfe");
     CHECK(!reply.done && reply.reason.find("UTF-8") != std::string::npos);
-    reply = r.load("PARTITION: 479\n");   // a 2.3.0 file: outdated, with the hint
-    CHECK(!reply.done && reply.reason.find("Calc-U-59") != std::string::npos);
+    reply = r.load("partition: 479\n");   // no format-version
+    CHECK(!reply.done && reply.reason.find("format-version: is required") != std::string::npos);
 }
 
 TEST(part_load_while_frozen_ends_running_without_tracing) {

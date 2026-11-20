@@ -109,7 +109,7 @@ def test_failed_expect_raises(tmp_path):
 
 
 def test_blank_card_is_returned(tmp_path):
-    image = Machine(tmp_path, slot_2="ram-512k").card(2)
+    image = Machine(tmp_path, slot_2="superRAM").card(2)
     assert len(image) == 512 * 1024
 
 

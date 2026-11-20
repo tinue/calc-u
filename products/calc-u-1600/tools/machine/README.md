@@ -8,7 +8,6 @@ your own, worked examples, paths, the reference, how it works.
 | `calcu_pytest.py` | The pytest plugin: the fixtures `make_machine` and `machine_class`, the path names of `pytest.ini` |
 | `machine.py` | Class `Machine`: models, slots, printer, media, bus ROMs, `listing()`, `card()` |
 | `cardimage.py` | Parser for saved module files and the RAM disk on them (no machine needed) |
-| `cards/` | `ram-256k`, `ram-512k`, `ram-1m`: superRAM with 8, 16, 32 vertical banks |
 | `test_driver.py`, `test_plugin.py` | Tests of the driver, the parser and the plugin |
 | `../../../../library/harness/python/calcu_machine.py` | Class `Session`, the product-neutral part |
 

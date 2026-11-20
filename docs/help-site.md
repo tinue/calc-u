@@ -209,20 +209,22 @@ too.
       `/1600/`.
 
 ### Help content (source repository)
-- [ ] Calc-U-59: retake by hand the four pictures that show a control
-      bar other than today's (`app-screenshot.png`, `ipad-13-2752x2064.png`,
-      `iphone-duo-2852x2006.png`, `ipad-2752x2064-asm.png`) and take the
-      two missing ones (the macOS window with its menus; the iPhone's bar
-      with the More menu open), from the Swift app of the main checkout.
-- [ ] Calc-U-1600: retake the two menu pictures of chapter 2
-      (`02-rom-menu-pc1500.png`, `02-machine-menu.png`, menus other than
-      today's);
-      they need screen capture rights, so run
-      `tools/make_screenshots.sh 02-getting-started` from a terminal that
-      has them.
-- [ ] Check every help picture for words the glossary avoids ("Tape",
-      "Tapes") and for a control bar other than today's; retake those
-      that show them.
+- [ ] Calc-U-59: retake from the Swift app of the main checkout the four
+      pictures with the 2.3.0 control bar (no module picker, PC-100C
+      button or More: `app-screenshot.png`, `ipad-13-2752x2064.png`,
+      `ipad-2752x2064-asm.png`, `iphone-duo-2852x2006.png`) and the two cue
+      card pictures that show a magnetic card's side badges on a preset's
+      plain card (`cuecard-key-grid.png`, `cuecard-single-label.png`); take
+      the two missing ones (the macOS window with its menus; the iPhone's
+      bar with the More menu open).
+- [ ] Calc-U-1600: retake with `tools/make_screenshots.sh <chapter>` from a
+      terminal with the screen-recording and Automation rights (iTerm2):
+      "Tape:" on the bar (`01-app-overview.png`, `04-tape-recording.png`,
+      `04-tape-loading.png`, `05-floppy-picker.png`, `05-slot-picker.png`),
+      "Tape name:" (`04-tape-save.png`), "Card YAML" (`01-app-overview.png`,
+      `09-debug-panel.png`), "Reset All" and no Resume
+      (`02-machine-menu.png`, `02-rom-menu-pc1500.png`), "Tapes", "Examples
+      folder", "Basic folder" (`09-settings.png`).
 - [ ] Glossary warnings: the help tool lists the places in each
       product's help of words under "Avoid", most of them common words
       in another sense; narrow the glossary's lists or fix

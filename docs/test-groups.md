@@ -55,9 +55,12 @@ The Longer group measured 291.5 s on an M4 Pro, within its 10 min.
 ## Local Linux CI
 
 `ci/linux/run.sh` runs the CI's Linux jobs in Podman on Ubuntu 24.04 with
-GCC 13, natively on arm64: before dispatching CI, and after a change a GCC
-build may take differently from Apple clang. A change is green by the
-build and the Frequent group; the local Linux CI is an extra check.
+GCC 13, natively on arm64. It is there to keep the GitHub pipeline builds
+from failing, so it runs before a GitHub run is planned (a pre-release,
+for example), not after every merge. Exceptions: work on the pipeline
+itself (the workflows, `ci/`), and work with a high risk of breaking the
+pipeline build (the build system, the toolchain, platform-specific code).
+A change is green by the build and the Frequent group.
 
 | Job | CI job | |
 |---|---|---|

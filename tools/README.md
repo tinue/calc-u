@@ -83,3 +83,17 @@ The local development build (Release, Ninja; configured the first time
 only). On macOS the `.app` is started through `open`, else the binary;
 arguments after the product go to the app. Calc-U-1600's
 `tools/make_screenshots.sh` builds through it.
+
+## check_playwright_version.sh: one Playwright version
+
+```sh
+tools/check_playwright_version.sh   # exit 1 and the list of places when they differ
+```
+
+Checks that the three `package-lock.json` files (Calc-U-59's and
+Calc-U-1600's Web frontends, `library/web/`) lock one Playwright version
+and that the Playwright container of both product workflows' `web` jobs
+and of the local CI's web image (`ci/linux/Containerfile`) is of that
+release: the container's browsers belong to one Playwright release.
+Reads files only. CTest `LibraryPlaywrightVersion` (Frequent; not on
+Windows).

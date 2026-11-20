@@ -109,7 +109,8 @@ magnetic-cards:
 
 - Each item has `card-name`, optional `description`, optional
   `cue-card` ([cue-card.md](cue-card.md)), and
-  `sides` with `0`, `1` or both. A side not given is fresh (unwritten).
+  `sides` with `0`, `1` or both, or `{}` for a fresh card. A side not
+  given is fresh (unwritten).
 - **A side replaces its whole bank.** Steps and registers it does not
   list are read as 00. Bank n holds program steps 240·(n−1) … +239 and
   data registers 120 − 30·n … 149 − 30·n (bank 4 = R00–R29, bank 3 =
@@ -297,7 +298,7 @@ data:
 - The value is a decimal literal; an exponent is allowed. Integers are
   stored digit for digit, other values rounded to 13 significant digits.
   A whole number with more than 13 significant digits keeps its first
-  13: the digits after the 13th are cut, as today.
+  13: the digits after the 13th are cut.
 - **Only the listed registers are written.** Every other register keeps
   its contents (zero after the cold boot).
 - `program:` and `data:` are written as given, in file order; a listing
@@ -420,6 +421,7 @@ one only to leave it to the user, typically as its last step.
 magnetic-cards:
   - card-name: PDCM-1
     cue-card: { title: "PDCM 1: 11.-03 / -998.-03" }
+    sides: {}
 keys:
   - key: 1 2nd Write
   - card: { mem: PDCM-1, side: 0 }

@@ -411,7 +411,7 @@ protocol of `serve`, as a second listener without host services.
 | `quit` | Ends the attach, not the app. A connection that closes without `quit` is taken as `quit` |
 | Ending | The listener goes, with its pending replies; the keys held down through it come up |
 | Suspended app | Every command line: `refused: the app is suspended` |
-| `json on`, `json off` | Meant as a command of attach only, switching replies and message lines to JSON and back. The attached harness parses the line before it looks for `json`, so today the line is refused (`refused: unknown command json`) and replies stay plain |
+| `json on`, `json off` | Meant as a command of attach only, switching replies and message lines to JSON and back. The attached harness parses the line before it looks for `json`: the line is refused (`refused: unknown command json`) and replies stay plain |
 
 **Commands.** Those of `serve` (§5) and the product's, on the app's
 session and parts. Time is the app's: the harness never advances the
@@ -441,7 +441,8 @@ replies when it ends; the lines after it wait in order.
 **`calcu attach`.** Connects to `127.0.0.1:<port>` (`--port N`, else
 59059), sends each line of its standard input and relays each reply
 unchanged; message lines only with `--messages`. `--json` sends `json on`
-first and drops its reply (see the table above). Empty lines are not sent. It ends at `quit` or at the end of its
+first and drops its reply; the line is refused, so replies stay plain
+(see the table above). Empty lines are not sent. It ends at `quit` or at the end of its
 input, and sends `quit` then, with exit status 0.
 
 | Case | Exit 2 with |
@@ -456,6 +457,12 @@ input, and sends `quit` then, with exit status 0.
 `library/harness/python/calcu_serve.py` drives `calcu serve` over a pipe:
 one command line per `send()`, its one reply back (the JSON object, or
 `{done, lines, reason}` in plain form). Standard library only.
+
+`library/harness/python/calcu_machine.py` builds on it: `Session`, a test
+machine on `calcu serve` for pytest suites of any product, whose steps
+(`key`, `type`, `wait`, `expect`, …) are queued and sent at the next read.
+It is the product-neutral layer the Calc-U-1600 driver
+(`products/calc-u-1600/tools/machine/`) builds on.
 
 ## 8. `serve --dap <port>` (Calc-U-1600)
 

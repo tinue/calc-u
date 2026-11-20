@@ -133,6 +133,10 @@ cmake --build build/tests
 ctest --test-dir build/tests -j8
 ```
 
+This is the script's tree: `tools/run_tests.sh` configures `build/tests`
+as Debug only when it is missing, and uses a tree configured by hand as
+it is.
+
 CI's `core-tests` jobs run the same with one product each
 (`-DCALCU_PRODUCT_1600=OFF` or `-DCALCU_PRODUCT_59=OFF`).
 

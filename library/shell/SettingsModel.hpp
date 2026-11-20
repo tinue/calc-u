@@ -54,7 +54,4 @@ inline constexpr const char* kSettingsTitle = "Settings";
 // row is left out.
 std::vector<ShownSection> dialog(const sessions::Value& settings, const sessions::Value& presetList, const DialogSpec&);
 
-// `path` with the home folder written as `~`.
-std::string withTilde(const std::string& path, const std::string& home);
-
 } // namespace calcu::shell

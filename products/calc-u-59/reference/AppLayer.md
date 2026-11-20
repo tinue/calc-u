@@ -371,8 +371,8 @@ kinds (`app/TIFileKinds`, in this order): an `.asm` file is an ASM overlay
 (read as by Select File), a `.keystrokes.yaml` file's program is written
 into the running machine from step 000 (no cold boot), a `.rom.yaml` and
 `ti58c.memory.yaml` are refused with a notice. A magnetic card
-(`.magnetcard.yaml`, a medium of the library's media part) goes through the library's
-MediaOpener: fitted where it lies on the TI-59 and written back there (an
+(`.magnetcard.yaml`, a medium of the library's media part) is opened by the library's open
+part through the media part: fitted where it lies on the TI-59 and written back there (an
 upload on the Web is imported into the save folder first), refused with a
 notice on the TI-58/58C and while a card passes; the `.u59` and `.bin` cards of releases up to
 2.3.0 are no files of the product. A refusal is the session's notice. On the Mac, the file's security

@@ -19,9 +19,7 @@ namespace {
 RealTimeClock* clockOf(Machine& m) { return capabilityAs<RealTimeClock>(m, CapabilityId{"rtc/real-time-clock"}); }
 
 ClockFields kept(const HostDateTime& h) {   // what test-dot's chip keeps of it
-    ClockFields f = fieldsOf(h);
-    f.year.reset();
-    return f;
+    return ClockFields{std::nullopt, h.month, h.day, h.weekday, h.hour, h.minute, h.second};
 }
 
 // The instant of the session rig (TestParts.hpp): 50 * 365 days after 1970.

@@ -2,7 +2,7 @@
 #include "TestHarness.hpp"
 
 // The saved media and import, and a medium opened from elsewhere (the command
-// the media opener uses).
+// the open part uses).
 
 using namespace calcu;
 using namespace calcu::media;

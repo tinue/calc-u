@@ -86,8 +86,8 @@ TEST(peripheral_capabilities_only_with_peripheral) {
     auto without = buildTestMachine(kSeg);
     CHECK(with && without);
     if (!with || !without) return;
-    CHECK_EQ(capabilitiesOf<TestCounter>(*with).size(), std::size_t{1});
-    CHECK_EQ(capabilitiesOf<TestCounter>(*without).size(), std::size_t{0});
+    CHECK_EQ(with->capabilities(TestCounter::kKind).size(), std::size_t{1});
+    CHECK_EQ(without->capabilities(TestCounter::kKind).size(), std::size_t{0});
     CHECK(capabilityAs<TestCounter>(*without, CapabilityId{"printer/test.counter"}) == nullptr);
     CHECK_EQ(with->capabilities().size(), without->capabilities().size() + 2);   // the counter and the controls
 }
@@ -98,10 +98,9 @@ TEST(product_kind_handed_out_like_generic) {
     if (!m) return;
     Machine& base = *m;   // through the interface only
     // Listed the same way...
-    const auto product = capabilitiesOf<TestCounter>(base);
-    const auto generic = capabilitiesOf<TestGeneric>(base);
+    const auto product = base.capabilities(TestCounter::kKind);
+    const auto generic = base.capabilities(TestGeneric::kKind);
     CHECK(product.size() == 1 && generic.size() == 1);
-    CHECK(base.capabilities(KindId{"test.counter"}).size() == 1);
     // ...and handed out the same way.
     auto* counter = capabilityAs<TestCounter>(base, product[0].id);
     auto* instr = capabilityAs<TestGeneric>(base, generic[0].id);
@@ -123,5 +122,5 @@ TEST(absent_kind_gives_empty_list) {
     CHECK(m != nullptr);
     if (!m) return;
     CHECK(m->capabilities(KindId{"no-such-kind"}).empty());
-    CHECK(capabilitiesOf<TestCounter>(*m).empty());
+    CHECK(m->capabilities(TestCounter::kKind).empty());
 }

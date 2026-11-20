@@ -87,6 +87,4 @@ struct MediaState final : sessions::PayloadOf<MediaState> {
     const KindState* kindState(const std::string& id) const;
 };
 
-const char* groupText(PickerEntry::Group);
-
 } // namespace calcu::media

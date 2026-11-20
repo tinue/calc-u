@@ -35,8 +35,7 @@ public:
         panels(out);
         controls(out);
         actions(out);
-        for (const ControlRules* r : setup_.rules)
-            if (r) r->productEntries(m_, out.productEntries);
+        if (setup_.rules) setup_.rules->productEntries(m_, out.productEntries);
         return out;
     }
 
@@ -55,10 +54,7 @@ private:
         return before(key, endsOperation, inherited).value_or(Availability{});
     }
     std::optional<std::string> productSays(const EntryKey& key) const {
-        for (const ControlRules* r : setup_.rules)
-            if (r)
-                if (auto why = r->unavailable(key, m_)) return why;
-        return std::nullopt;
+        return setup_.rules ? setup_.rules->unavailable(key, m_) : std::nullopt;
     }
 
     void models(ControlState& out) const {

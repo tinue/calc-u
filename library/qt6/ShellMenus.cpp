@@ -32,8 +32,7 @@ QAction::MenuRole role(MenuItem::Role r) {
     return QAction::NoRole;   // Qt's heuristic moves nothing else
 }
 
-} // namespace
-
+// The key sequence of a shortcut of the model.
 QKeySequence keySequence(MenuItem::Shortcut s) {
     switch (s) {
     case MenuItem::Shortcut::LoadPreset: return QKeySequence(Qt::CTRL | Qt::Key_O);   // CTRL: Command on macOS
@@ -47,6 +46,8 @@ QKeySequence keySequence(MenuItem::Shortcut s) {
     }
     return QKeySequence();
 }
+
+} // namespace
 
 ShellMenus::ShellMenus(QMenuBar& bar, Shell& shell) : QObject(&bar), bar_(bar), shell_(shell) {
     bar_.setObjectName(shell::names::kMenuBar);

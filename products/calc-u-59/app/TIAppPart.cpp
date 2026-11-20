@@ -91,7 +91,7 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     s.productName = "Calc-U-59";
     s.presetExtensions = tiPresetExtensions();   // no size limit
     s.fileKinds = m_fileKinds.kinds();
-    s.controlRules = {&m_debugPart};   // the debug panel's product entries of the control state
+    s.controlRules = &m_debugPart;   // the debug panel's product entries of the control state
     // The magnetic card in the save folder, slot-1's modules.
     s.mediaKinds = {magneticCardKind()};
     s.mediaFiles = m_files.files();   // the host's, else the plain one

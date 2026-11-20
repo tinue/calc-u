@@ -72,7 +72,7 @@ public:
     std::uint16_t attachPort() const;   // the bound port (port 0: the one the system picked)
     bool attachOpen() const;
     // `--attach-port N` (0: the system picks, for an in-process client),
-    // else 59059.
+    // else 59059; 0 in a build without CALCU_ATTACH.
     static std::uint16_t attachPortFrom(const QStringList& arguments);
 
 signals:

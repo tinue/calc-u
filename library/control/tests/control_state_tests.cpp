@@ -49,7 +49,7 @@ TEST(control_state_value_round_trip) {
     auto m = seg({plug("printer", mt::kPrinter)});
     TestControlRules rules;
     rules.refuse(ActionKey{kOpenAction});
-    const ControlState s = computeControlState(*m, testSetup({&rules}), false);
+    const ControlState s = computeControlState(*m, testSetup(&rules), false);
     const std::string t = toText(s.toValue());
     // One object, keys in the order of the fields.
     const char* keys[] = {"\"models\":", "\"model\":", "\"variants\":", "\"variant\":", "\"places\":",
@@ -73,7 +73,7 @@ TEST(control_state_value_round_trip) {
     CHECK(contains(t, std::string("{\"command\":\"open\",\"available\":false,\"reason\":\"") + kProductReason + "\"}"));
     CHECK(contains(t, "\"product\":{\"test.entry\":{\"model\":\"test-seg\"}}"));
     // Computed twice from the same machine: the same value, and equal payloads.
-    const ControlState again = computeControlState(*m, testSetup({&rules}), false);
+    const ControlState again = computeControlState(*m, testSetup(&rules), false);
     CHECK(again.toValue() == s.toValue());
     CHECK(again.equals(s));
 }
@@ -245,7 +245,7 @@ TEST(control_state_place_media_place_panel_absent_where_model_lacks_them) {
 TEST(control_state_module_added_to_catalogue_listed_next_time) {
     calcu::machine::Catalogue cat = mt::makeTestCatalogue();
     auto m = seg();
-    const ControlSetup setup = testSetup({}, &cat);
+    const ControlSetup setup = testSetup(nullptr, &cat);
     CHECK(fittingIds(*computeControlState(*m, setup, false).place(at({"slot-1"}))) ==
           (std::vector<std::string>{"test-module"}));
     calcu::machine::PeripheralDescriptor later;

@@ -40,9 +40,15 @@ FixtureOptions onDot() {
 
 Value choose(const std::string& place, const std::string& entry) { return Value::object({{"place", place}, {"entry", entry}}); }
 
-std::vector<std::string> labels(const PlaceState* p) {
+// The picker of a place as the topic sends it: "<group>:<label>".
+std::vector<std::string> labels(const MediaFixture& f, const std::string& place) {
     std::vector<std::string> out;
-    for (const auto& e : p->picker) out.push_back(std::string(groupText(e.group)) + ":" + e.label);
+    const Value v = f.state()->toValue();
+    for (const Value& p : *v.find("places")->elements()) {
+        if (*p.find("place")->string() != place) continue;
+        for (const Value& e : *p.find("picker")->elements())
+            out.push_back(*e.find("group")->string() + ":" + *e.find("label")->string());
+    }
     return out;
 }
 
@@ -59,7 +65,7 @@ TEST(picker_order_empty_templates_instances_modules) {
                                            "instance:B",
                                            "module:Test module",
                                            "module:Test ROM module"};
-    CHECK(labels(f.place("slot-1")) == want);
+    CHECK(labels(f, "slot-1") == want);
 }
 
 TEST(picker_tooltip_is_description) {
@@ -77,7 +83,7 @@ TEST(picker_listing_label_and_sort_key) {
     o.listing.tooltip = [](const machine::PeripheralDescriptor&) { return std::nullopt; };
     o.listing.sortKey = [](const machine::PeripheralDescriptor& d) { return d.id == mt::kRomModule ? 1 : 2; };
     MediaFixture f(o);
-    const auto l = labels(f.place("slot-1"));
+    const auto l = labels(f, "slot-1");
     CHECK(l.size() == 9 && l[7] == "module:Described Test ROM module" && l[8] == "module:Described Test module");
     CHECK(!f.place("slot-1")->picker[7].tooltip);
 }

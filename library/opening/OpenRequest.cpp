@@ -12,13 +12,14 @@ struct WayName {
 };
 constexpr WayName kWays[] = {
     {Way::Drop, "drop"}, {Way::OpenWith, "open-with"}, {Way::Start, "start"}, {Way::Dialog, "dialog"}, {Way::Harness, "harness"}};
-} // namespace
 
 std::string_view wayName(Way w) {
     for (const auto& x : kWays)
         if (x.way == w) return x.name;
     return "drop";
 }
+
+} // namespace
 
 std::optional<Way> wayNamed(std::string_view n) {
     for (const auto& x : kWays)

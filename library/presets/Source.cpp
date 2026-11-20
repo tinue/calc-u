@@ -158,11 +158,15 @@ std::unique_ptr<PresetSource> bundleSource(const PresetBundle& b, std::string pa
     return std::make_unique<BundleSource>(b, std::move(pathInBundle));
 }
 
+namespace {
+
 std::optional<std::string> parseBundlePath(std::string_view ref) {
     constexpr std::string_view kPrefix = "examples:";
     if (ref.substr(0, kPrefix.size()) != kPrefix) return std::nullopt;
     return normalBundlePath(ref.substr(kPrefix.size()));
 }
+
+} // namespace
 
 std::optional<std::string> normalBundlePath(std::string_view path) {
     if (path.empty() || path.front() == '/' || path.front() == '\\' || path.find(':') != std::string_view::npos)

@@ -56,9 +56,8 @@ inline PlacePath at(std::initializer_list<const char*> steps) {
 
 // The setup of the tests: the test catalogue, the test printer as the only
 // printer, the rules given.
-inline ControlSetup testSetup(std::vector<const ControlRules*> rules = {},
-                              const machine::Catalogue* cat = &mt::testCatalogue()) {
-    return ControlSetup{cat, {mt::kPrinter}, std::move(rules)};
+inline ControlSetup testSetup(const ControlRules* rules = nullptr, const machine::Catalogue* cat = &mt::testCatalogue()) {
+    return ControlSetup{cat, {mt::kPrinter}, rules};
 }
 
 inline std::vector<std::string> placeTexts(const ControlState& s) {

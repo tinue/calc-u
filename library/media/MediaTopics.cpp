@@ -4,6 +4,8 @@ namespace calcu::media {
 
 using sessions::Value;
 
+namespace {
+
 const char* groupText(PickerEntry::Group g) {
     switch (g) {
     case PickerEntry::Group::Empty: return "empty";
@@ -14,8 +16,6 @@ const char* groupText(PickerEntry::Group g) {
     }
     return "";
 }
-
-namespace {
 
 Value itemValue(const KindState::Item& i) {
     Value::Object o{{"name", i.name}, {"description", i.description}, {"fileName", i.fileName},

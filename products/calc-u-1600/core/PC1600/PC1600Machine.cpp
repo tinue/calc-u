@@ -518,6 +518,16 @@ uint8_t PC1600Machine::debugPeek(uint16_t addr) {
 
 bool PC1600Machine::mode1() { return (debugPeek(0xF1BC) & 0x40) != 0; }
 
+bool PC1600Machine::directCommandRunning() {
+    if (mode1()) return false;
+    const bool direct = debugPeek(0xF89C) == 0 && debugPeek(0xF89D) == 0;
+    const bool keyWait = (debugPeek(0xF07A) & 0x04) != 0;
+    // The ROM drives DTR on while a port command runs (automatic handshake):
+    // a LOAD"COM1:" waits in the COM driver of bank 3.
+    const bool command = m_bank.hiddenBasicRomSelected() || m_z80Mem.uart().dtr();
+    return direct && command && !keyWait;
+}
+
 int PC1600Machine::programAreaTitle() { return debugPeek(0xF1D5); }
 
 bool PC1600Machine::debugSc7852Owns() {

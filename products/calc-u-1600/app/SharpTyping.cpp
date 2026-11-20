@@ -80,7 +80,7 @@ std::optional<std::vector<Press>> pc1600Char(char32_t c, const TypingSupport* s)
 std::function<std::optional<std::vector<Press>>(std::string_view)> namesOf(const std::vector<std::string>& ids) {
     return [&ids](std::string_view n) -> std::optional<std::vector<Press>> {
         const std::string w = calcu::machine::lowerAscii(n);
-        if (w == "break") return std::vector<Press>{Press{KeyId{sharp::kOnKeyId}}};
+        if (w == sharp::kBreakSpelling) return std::vector<Press>{Press{KeyId{sharp::kOnKeyId}}};
         for (const std::string& k : ids)
             if (k == w) return std::vector<Press>{Press{KeyId{k}}};
         return std::nullopt;

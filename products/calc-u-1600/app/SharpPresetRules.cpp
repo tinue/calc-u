@@ -42,13 +42,17 @@ calcu::presets::IdleRule SharpModelRules::idle() const {
     // BASIC reads it for BREAK while a program runs, so a BASIC program that
     // does not wait for the user counts as idle there too (found
     // with the bundled examples): it cannot be told from a program that waits with
-    // INKEY$, which must count as idle.
+    // INKEY$, which must count as idle, and so does machine code started by
+    // CALL. A file command typed in direct mode (LOAD, SAVE, COPY) reads it for
+    // BREAK too; while it works the machine is not idle.
     // While the CE-1600F's motor runs (INIT"X:", SAVE"X:…" write for seconds
     // and read the keyboard meanwhile) the machine is not idle (the
     // disk steps of the make_diskworks_media example need it).
     if (pc1600())
         r.readyNow = [](const calcu::machine::Machine& m) {
             if (!m.isKeyReady()) return false;
+            const sharp::DirectCommand* command = calcu::machine::first<sharp::DirectCommand>(m);
+            if (command && command->running()) return false;
             const sharp::FloppyDriveAccess* drive = calcu::machine::first<sharp::FloppyDriveAccess>(m);
             return !drive || !drive->motorOn();
         };

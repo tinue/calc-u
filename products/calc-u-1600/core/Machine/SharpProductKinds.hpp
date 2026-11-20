@@ -19,6 +19,7 @@
 //   c1600.host-drive-folder    the host drive's folder (owner: the host drive)
 //   c1600.trace-records        the records of a CPU trace (owner: the main CPU)
 //   c1600.routine-call         a routine called from the current state (owner: the main CPU)
+//   c1600.direct-command       a direct command running (owner: the main CPU; PC-1600 only)
 //   c1600.tape-deck            the cassette's counter and motor (owner: the CE-150 or CE-1600P)
 //   c1600.floppy-drive         the CE-1600F's lamp (owner: the CE-1600P)
 // The media themselves are the library's media kinds (SharpMediaPlaces.hpp).
@@ -154,6 +155,17 @@ public:
     calcu::machine::KindId kind() const override { return kKind; }
 
     virtual bool motorOn() const = 0;
+};
+
+// Whether a file command typed in direct mode (LOAD, SAVE, COPY, ...) is
+// still at work. Such a command reads the keyboard for BREAK, as the prompt
+// does, so key readiness alone cannot tell the two apart.
+class DirectCommand : public calcu::machine::Capability {
+public:
+    static constexpr calcu::machine::KindId kKind{"c1600.direct-command"};
+    calcu::machine::KindId kind() const override { return kKind; }
+
+    virtual bool running() const = 0;
 };
 
 } // namespace sharp

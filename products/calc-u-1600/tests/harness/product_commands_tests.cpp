@@ -611,6 +611,42 @@ TEST(host_drive_attach_folder_and_off) {
     CHECK(has(r.line("capabilities"), "place host-drive empty\n"));
 }
 
+// A command typed in direct mode reads the keyboard for BREAK while it works,
+// as the prompt does; `wait` still lasts until it has ended: the file is
+// whole after SAVE, the program whole after LOAD.
+TEST(wait_lasts_until_a_direct_save_and_load_end) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    calcu::testing::TempFolder drive("c1600-host-drive-wait");
+    std::string program;
+    for (int i = 1; i <= 200; ++i)
+        program += std::to_string(10 * i) + " PRINT \"LINE " + std::to_string(i) + " ABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n";
+    writeFile(drive.path() / "p.bas", program);
+    Run r;
+    CHECK(r.ok());
+    if (!r.ok()) return;
+    CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
+    CHECK_EQ(r.line("c1600 host-drive " + drive.str()), std::string("done\n"));
+    r.line("wait");
+    CHECK_EQ(r.line("key mode"), std::string("done\n"));
+    CHECK_EQ(r.line("type NEW0"), std::string("done\n"));
+    CHECK(starts(r.line("c1600 load-basic " + (drive.path() / "p.bas").string()), "done"));
+    CHECK_EQ(r.line("key mode"), std::string("done\n"));
+    r.line("wait");
+    CHECK_EQ(r.line("type SAVE\"S3:P.BAS\""), std::string("done\n"));
+    r.line("wait");
+    const auto saved = fs::file_size(drive.path() / "P.BAS");
+    r.line("wait 5s");
+    CHECK_EQ(fs::file_size(drive.path() / "P.BAS"), saved);
+    CHECK(has(r.line("display-text"), "\n>\n"));
+    CHECK_EQ(r.line("key mode"), std::string("done\n"));
+    CHECK_EQ(r.line("type NEW0"), std::string("done\n"));
+    CHECK_EQ(r.line("key mode"), std::string("done\n"));
+    CHECK_EQ(r.line("type LOAD\"S3:P.BAS\""), std::string("done\n"));
+    r.line("wait");
+    CHECK(has(r.line("display-text"), "\n>\n"));
+    CHECK(has(r.line("c1600 list-basic"), "\n2000 PRINT \"LINE 200 "));
+}
+
 TEST(refused_on_pc1500_and_for_no_folder) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder one("c1600-5-ec5");

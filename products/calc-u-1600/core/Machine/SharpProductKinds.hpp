@@ -65,6 +65,10 @@ public:
     virtual Write writeSlot(int bank, std::uint16_t address, const std::uint8_t* data, std::size_t size) = 0;
     // Whether writeSlot would store [address, address + size).
     virtual bool slotRam(int bank, std::uint16_t address, std::size_t size) const = 0;
+    // PC-1600: what a module answers at &8000-&BFFF in global bank 0-3, as
+    // writeSlot reaches it, without side effects; 0xFF where nothing answers.
+    // 0xFF on the PC-1500.
+    virtual std::uint8_t peekSlot(int bank, std::uint16_t address) const = 0;
     virtual Module module(int slot) const = 0;   // slot 1 or 2
     // The PC-1600's fixed 16 KB internal RAM; empty on the PC-1500.
     virtual std::vector<std::uint8_t> internalRam() const = 0;

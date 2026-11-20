@@ -74,9 +74,9 @@ A test project is a folder of its own, outside the checkout:
 ```
 ~/pc-tests/
 ├── pytest.ini          where the driver is; names for your folders
+├── conftest.py         one line: loads the driver
 ├── pyproject.toml      made by uv: pytest and pytest-xdist
-├── my-ram.module.yaml  your files, wherever you like in the project
-├── programs/
+├── programs/           your files, wherever you like in the project
 │   └── jumps.bas
 ├── test_mode1.py
 └── test_renum.py
@@ -91,17 +91,24 @@ uv add --dev pytest pytest-xdist
 mkdir programs
 ```
 
-**2. `pytest.ini`.** Names the driver's two folders in your checkout:
+**2. `pytest.ini` and `conftest.py`.** `pytest.ini` names the driver's two folders in your
+checkout and, if you like, names for your own folders:
 
 ```ini
 [pytest]
 pythonpath = /home/me/calc-u/products/calc-u-1600/tools/machine
              /home/me/calc-u/library/harness/python
-addopts = -p calcu_pytest
+calcu_paths =
+    programs = programs
 ```
 
-`-p calcu_pytest` loads the driver's pytest plugin: the fixture `make_machine` and the path names
-of [5 Paths](#5-paths). A line `calcu_paths =` adds names of your own.
+`conftest.py` loads the driver's pytest plugin, `calcu_pytest`: the fixture `make_machine` and the
+path names of [5 Paths](#5-paths). It has to be this file, not `-p calcu_pytest` in `addopts`:
+pytest loads `-p` plugins before it reads `pythonpath`.
+
+```python
+pytest_plugins = ["calcu_pytest"]
+```
 
 **3. A first test,** `test_hello.py`:
 
@@ -133,6 +140,10 @@ A fresh machine always starts the same way: a PC-1600 in RUN mode, a PC-1500 or 
 mode, both with `>` on the screen. So a test knows the mode without looking.
 
 ## 3 Example: MODE 1 and memory modules
+
+Both examples are a test project in the checkout, [`docs/testing/example/`](example/), that runs
+as it is: `cd products/calc-u-1600/docs/testing/example`, then
+`uv run --no-project --with pytest --with pytest-xdist pytest -n auto`.
 
 On the PC-1600, `MODE 1` switches to PC-1500 mode. It needs the RAM the PC-1500 code sees to be one
 flat block of at most 16 KB. A banked PC-1600 module (the bank number on the data bus, Port 28H)
@@ -167,7 +178,7 @@ CASES = {
     "CE-1600M in 2":      ({"slot_2": "CE-1600M"}, REFUSED),
     "superRAM in 2":      ({"slot_2": "superRAM"}, REFUSED),
     "CE-155 and CE-1638": ({"slot_1": "CE-155", "slot_2": "CE-1638"}, REFUSED),
-    "my card in 2":       ({"slot_2": "my-ram.module.yaml"}, REFUSED),   # in the project
+    "a card file in 2":   ({"slot_2": "$c1600/examples/dwx/CE-1601M - Progs.module.yaml"}, REFUSED),
 }
 
 
@@ -183,7 +194,8 @@ def test_mode1(make_machine, slots, refused):
     machine.run()
 ```
 
-- A slot takes a bundled module by its name (`CE-1600M`, …) or a module file
+- A slot takes a bundled module by its name (`CE-1600M`, …) or a module file. The last case
+  uses a card with content from the checkout's examples, by the path name `$c1600`
   ([5 Paths](#5-paths)).
 - `expect` and `not_expect` take effect at the next read; `run()` is a read without a result.
 - One test function, nine machines: pytest shows each case by its id, and `-n auto` runs them at
@@ -201,7 +213,8 @@ RENUM gives the lines from `old` on (default: the first) the numbers `new`, `new
 an error the program stays as it was: `ERROR 19` (a number 0 or above 65279), `ERROR 11` (no line
 `old`), `ERROR 30` (the last new number above 65279).
 
-`programs/jumps.bas`, a program with every kind of jump:
+`programs/jumps.bas`, a program with every kind of jump (`$programs/jumps.bas` in the test, by the
+name from `pytest.ini`):
 
 ```basic
 10 REM RENUM DEMO
@@ -230,18 +243,25 @@ from pathlib import Path
 
 import pytest
 
-ORIGINAL = (Path(__file__).parent / "programs" / "jumps.bas").read_text().splitlines()
+# listing() gives the lines as the detokenizer writes them: no blank between a
+# variable or number and the keyword after it (ON N+1GOTO, IF NTHEN).
+LISTED = [
+    "10 REM RENUM DEMO", "20 RESTORE 80", "30 READ N",
+    "40 ON N+1GOTO 70,50,50,50", "50 GOSUB 90", "60 IF NTHEN 30",
+    '70 PRINT "DONE":END', "80 DATA 3,2,1,0", "90 PRINT N:RETURN",
+]
+PROGRAM = Path(__file__).parent / "programs"
 RENUM_ROM = "$c1600/tests/fixtures/dap/pc1500-bus-rom/rom.bin"
 RENUMBERED = {
-    "RENUM": ORIGINAL,                        # 10, 20, ... again
+    "RENUM": LISTED,                          # 10, 20, ... again
     "RENUM 100,,10": [
         "100 REM RENUM DEMO", "110 RESTORE 170", "120 READ N",
-        "130 ON N+1 GOTO 160,140,140,140", "140 GOSUB 180", "150 IF N THEN 120",
+        "130 ON N+1GOTO 160,140,140,140", "140 GOSUB 180", "150 IF NTHEN 120",
         '160 PRINT "DONE":END', "170 DATA 3,2,1,0", "180 PRINT N:RETURN",
     ],
     "RENUM 1000,50,100": [                    # from line 50 on only
         "10 REM RENUM DEMO", "20 RESTORE 1300", "30 READ N",
-        "40 ON N+1 GOTO 1200,1000,1000,1000", "1000 GOSUB 1400", "1100 IF N THEN 30",
+        "40 ON N+1GOTO 1200,1000,1000,1000", "1000 GOSUB 1400", "1100 IF NTHEN 30",
         '1200 PRINT "DONE":END', "1300 DATA 3,2,1,0", "1400 PRINT N:RETURN",
     ],
 }
@@ -258,10 +278,10 @@ def machine(request, make_machine):
 def with_program(request, machine):
     machine.key("cl").type("NEW0")             # a fresh PC-1500 is in PRO mode
     if request.param == "typed":
-        for line in ORIGINAL:
+        for line in (PROGRAM / "jumps.bas").read_text().splitlines():
             machine.type(line)
     else:
-        getattr(machine, request.param)("programs/jumps.bas")
+        getattr(machine, request.param)("$programs/jumps.bas")
     return machine.key("mode")                 # to RUN mode
 
 
@@ -273,11 +293,15 @@ def test_renum(with_program, command):
 @pytest.mark.parametrize("command", REFUSED)
 def test_renum_refused(with_program, command):
     machine = with_program.type(command).expect(REFUSED[command])
-    assert machine.listing() == ORIGINAL
+    assert machine.listing() == LISTED
 ```
 
-Two fixtures with two and three choices, two tests with three commands each: 36 runs from 30 lines.
-A fixture with `params` multiplies every test that uses it.
+Two fixtures with two and three choices, two tests with three commands each: 36 runs. A fixture
+with `params` multiplies every test that uses it.
+
+`listing()` gives the lines as the program's detokenizer writes them, which isn't always as they
+were typed: no blank between a variable or number and the keyword after it (`ON N+1GOTO`,
+`IF NTHEN`). Write the expected lines in that form.
 
 ## 5 Paths
 
@@ -317,7 +341,7 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
 
 - A **slot** value without `/` and without `.module.yaml` is a module's name: one of the driver's
   test cards (`ram-1m`, …) or a bundled module (`CE-1600M`). Anything else is a path:
-  `my-ram.module.yaml`, `$cards/superram-full.module.yaml`.
+  `cards/my-ram.module.yaml`, `$cards/superram-full.module.yaml`.
 - `host_drive` is a folder on your computer, found like any path; usually an absolute one or a
   per-test folder: `host_drive=tmp_path / "drive"`.
 - **Files a test makes** belong in pytest's per-test folder `tmp_path` or in `$work`. A card saved
@@ -330,7 +354,7 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
 | Option | Values | Default |
 |---|---|---|
 | `model` | `PC-1500`, `PC-1500A`, `PC-1600` | `PC-1600` |
-| `slot_1`, `slot_2` | a bundled module's name or a path; `slot_2` on the PC-1600 only | empty |
+| `slot_1`, `slot_2` | a module's name (a driver test card or a bundled module) or a path; `slot_2` on the PC-1600 only | empty |
 | `printer` | `CE-150`, `CE-1600P`, `CE-1600P:old` | none |
 | `host_drive` | a folder, the PC-1600's drive `S3:` | none |
 | `bus_rom` | a list of `{"file", "address", "pv"}`: ROMs on the 60-pin bus, in plug order | none |
@@ -355,8 +379,8 @@ Reads:
 | `run()` | runs the steps; the replies |
 | `lcd` | the screen's text lines |
 | `display()` | the screen's dots (PC-1600: 156 × 32) |
-| `listing()` | the BASIC program as text lines |
-| `card(slot)` | a module's bytes, in bank order; also saved in the work folder |
+| `listing()` | the BASIC program as text lines, the detokenizer's (MODE 0 on the PC-1600) |
+| `card(slot)` | a module's bytes, in bank order; also saved as `$work/slot-<n>.module.yaml` |
 | `peek(target, space, address, count, bank=, vbank=)` | memory bytes, without side effects |
 | `expect_memory(target, space, address, values, …)` | raises unless the bytes match |
 | `save_state(path)`, `restore_state(path)` | the whole machine |
@@ -381,16 +405,17 @@ flowchart LR
 | `Machine` | same folder, `machine.py` | the PC-1500/1600 part: models, slots, media, bus ROMs, `card()`, `listing()` |
 | `cardimage.py` | same folder | reads saved module files into bytes, and the RAM disk on them |
 | `cards/` | same folder | `ram-256k`, `ram-512k`, `ram-1m`: superRAM cards for tests |
-| `Session` | `library/harness/python/calcu_machine.py` | the part common to every Calc-U product: steps, reads, starting and ending `calcu` |
+| `Session` | `library/harness/python/calcu_machine.py` | the part common to every Calc-U product: steps, reads, path names, starting and ending `calcu` |
 | `calcu` | `library/harness/cli/`, built into `build/tools/` | the headless runner: the emulator without a window |
 
-- `make_machine` makes the work folder and a `Machine`. The first read starts `calcu --product c1600
-  serve` with the work folder's `save/` and `out/` as its save and output folders.
+- `conftest.py` loads `calcu_pytest`; `make_machine` makes the work folder and a `Machine` with the
+  project root and the path names. The first read starts `calcu --product c1600 serve` with the
+  work folder's `save/` and `out/` as its save and output folders.
 - The `Machine` writes a short preset, `setup.pc1600`, with the model, slots, printer, host drive
   and bus ROMs, and loads it; the machine starts cold.
-- Each step is one harness command line: `key mode`, `type NEW0`, `wait`, `expect ERROR 110`,
-  `floppy { file: …, side: 0 }`. `calcu` answers each with one reply line; a refusal becomes
-  `MachineError`.
+- Each step and read is one harness command line: `key mode`, `type NEW0`, `wait`,
+  `expect ERROR 110`, `floppy { file: …, side: 0 }`, `c1600 list-basic`. `calcu` answers each with
+  one reply line; a refusal becomes `MachineError`.
 - `calcu` runs the emulation as fast as it can, in machine time: `wait 2s` is two seconds for the
   machine, much less for you.
 - After a failure, the work folder holds the preset and what `calcu` wrote: pytest keeps the

@@ -103,6 +103,41 @@ void eraseOld(sharp::LoaderMemory& machine, const std::vector<pc1600::ProgramSeg
 
 }  // namespace
 
+bool pc1600ReadBasicRecords(const sharp::LoaderMemory& machine, std::vector<uint8_t>& records, std::string& error) {
+    const int title = machine.programArea();
+    pc1600::PlacementInput in;
+    in.peek = [&machine](uint16_t a) { return machine.peek(a); };
+    in.slot1 = pc1600SlotGeometry(machine, 1);
+    in.slot2 = pc1600SlotGeometry(machine, 2);
+    const pc1600::PlacementResult plan =
+        title == 1 || title == 2 ? pc1600::planModuleRegionPlacement(in, title, {}) : pc1600::planS0Placement(in, {});
+    if (!plan.ok) {
+        error = plan.error;
+        return false;
+    }
+    records.clear();
+    for (size_t k = 0; k < plan.segments.size(); ++k) {
+        const pc1600::ProgramSegment& sg = plan.segments[k];
+        auto at = [&](uint32_t a) {
+            return sg.kind == pc1600::ProgramSegment::Kind::InternalRam
+                       ? machine.peek(static_cast<uint16_t>(a))
+                       : machine.peekSlot(sg.adtblBank, static_cast<uint16_t>(a));
+        };
+        // [line hi][line lo][len][content]; 00 00 ends a module bank's part,
+        // the program goes on in the next segment; FFH ends it.
+        for (uint32_t a = k == 0 ? plan.startAddr : sg.base; a + 2 <= sg.top;) {
+            const uint8_t hi = at(a), lo = at(a + 1);
+            if (hi == 0xFF) return true;
+            if (hi == 0 && lo == 0) break;
+            const uint32_t size = 3u + at(a + 2);
+            if (a + size - 1 > sg.top) break;
+            for (uint32_t i = 0; i < size; ++i) records.push_back(at(a + i));
+            a += size;
+        }
+    }
+    return true;
+}
+
 // LOAD semantics: works off the live work area -- no reset, no MODE / TITLE
 // change, no NEW0. The target is the program area TITLE (F1D5H) selects:
 // S0 (placement across S0's ADTBL banks and internal RAM, planS0Placement)

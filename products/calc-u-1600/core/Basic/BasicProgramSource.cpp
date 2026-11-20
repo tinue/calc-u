@@ -73,4 +73,28 @@ BasicProgramSource readBasicProgramFile(const std::string& path, TransferModel l
     return s;
 }
 
+BasicListing detokenize(const std::vector<uint8_t>& records, TransferModel model) {
+    BasicListing l;
+    const SdeDevice dev = (model == TransferModel::PC1600) ? SDE_DEVICE_PC1600 : SDE_DEVICE_PC1500;
+    uint8_t* out = nullptr;
+    size_t out_len = 0;
+    const int32_t rc = sde_detokenize(dev, records.data(), records.size(), SDE_LINE_ENDING_LF, &out, &out_len);
+    if (rc != SDE_OK) {
+        l.error = sde_last_error();
+        if (l.error.empty()) l.error = "detokenizer error " + std::to_string(rc);
+        return l;
+    }
+    const std::string text(reinterpret_cast<const char*>(out), out_len);
+    sde_buf_free(out, out_len);
+    std::size_t from = 0;
+    while (from < text.size()) {
+        const std::size_t nl = text.find('\n', from);
+        const std::size_t to = nl == std::string::npos ? text.size() : nl;
+        l.lines.push_back(text.substr(from, to - from));
+        from = to + 1;
+    }
+    l.ok = true;
+    return l;
+}
+
 }  // namespace basic

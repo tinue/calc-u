@@ -223,7 +223,7 @@ if(CALCU_TESTS)
   calcu1600_test_program(CalcU1600MachineStateTests ${CMAKE_CURRENT_SOURCE_DIR}/tests/machine_state_tests.cpp)
   calcu_add_test(CalcU1600MachineStateTests longer COMMAND CalcU1600MachineStateTests)
 
-  # The pytest driver on `calcu serve` (tools/machine/README.md): its own
+  # The pytest driver on `calcu serve` (docs/testing/README.md): its own
   # tests, with pytest through uv (fetched once, so Longer). Where uv is.
   find_program(CALCU1600_UV uv)
   if(CALCU1600_UV)
@@ -231,6 +231,11 @@ if(CALCU_TESTS)
                    COMMAND ${CMAKE_COMMAND} -E env CALCU=$<TARGET_FILE:calcu> PYTHONDONTWRITEBYTECODE=1
                            ${CALCU1600_UV} run --no-project --with pytest==8.3.5 --with pytest-xdist==3.6.1
                            pytest -q -n auto tools/machine)
+    # The testing guide's examples (docs/testing/README.md) as a test project of their own.
+    calcu_add_test(CalcU1600TestingExamples longer
+                   COMMAND ${CMAKE_COMMAND} -E env CALCU=$<TARGET_FILE:calcu> PYTHONDONTWRITEBYTECODE=1
+                           ${CALCU1600_UV} run --no-project --with pytest==8.3.5 --with pytest-xdist==3.6.1
+                           pytest -q -n auto docs/testing/example)
   endif()
 
   # Longer: run locally before merging into main.

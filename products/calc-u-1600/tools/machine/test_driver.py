@@ -1,5 +1,6 @@
 """Tests of the driver and the card parser."""
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -150,10 +151,10 @@ def test_own_card_is_loaded(tmp_path):
     assert image[BANK_1] == read_card(OWN_CARD)[BANK_1]
 
 
-def test_relative_paths_are_in_the_workdir(tmp_path):
+def test_relative_paths_are_in_the_project(tmp_path):
     (tmp_path / "mine").mkdir()
     (tmp_path / "mine" / "card.module.yaml").write_text(OWN_CARD.read_text())
-    image = Machine(tmp_path, slot_2="mine/card.module.yaml").card(2)
+    image = Machine(tmp_path / "work", slot_2="mine/card.module.yaml", project=tmp_path).card(2)
     assert image[BANK_1] == read_card(OWN_CARD)[BANK_1]
 
 
@@ -177,8 +178,10 @@ def test_own_floppy_goes_in_and_out(tmp_path):
 
 
 def test_missing_own_card_raises(tmp_path):
-    with pytest.raises(MachineError, match="no module file"):
+    with pytest.raises(MachineError, match="no file"):
         Machine(tmp_path, slot_2=tmp_path / "absent.module.yaml")
+    with pytest.raises(MachineError, match="no file"):
+        Machine(tmp_path, bus_rom=[{"file": "absent.bin", "address": 0x8800, "pv": 0}], project=tmp_path)
 
 
 def test_floppy_needs_the_printer(tmp_path):
@@ -192,3 +195,52 @@ def test_subclass_may_redefine_command(tmp_path):
             return self.key("cl").type(text).wait(seconds)
 
     assert "= 42" in Suite(tmp_path).command(PRINT_42, 1).lcd
+
+
+# Path names, listing(), load_basic(), bus ROMs.
+
+
+def test_path_names(tmp_path, monkeypatch):
+    machine = Machine(tmp_path / "work", project=tmp_path, paths={"cards": "my-cards", "stick": "/Volumes/X"})
+    assert machine.path("a.bas") == tmp_path / "a.bas"
+    assert machine.path("/abs/a.bas") == Path("/abs/a.bas")
+    assert machine.path("$project/a.bas") == tmp_path / "a.bas"
+    assert machine.path("$cards/a.module.yaml") == tmp_path / "my-cards" / "a.module.yaml"
+    assert machine.path("$stick/a") == Path("/Volumes/X/a")
+    assert machine.path("$work/slot-2.module.yaml") == machine.workdir / "slot-2.module.yaml"
+    assert machine.path("$c1600/examples") == DWX.parent
+    assert machine.path("$calcu/library") == DWX.parents[3] / "library"
+    monkeypatch.setenv("CALCU_PATH_CARDS", str(tmp_path / "elsewhere"))
+    assert machine.path("$cards/a") == tmp_path / "elsewhere" / "a"
+    with pytest.raises(MachineError, match=r"no path name \$nope"):
+        machine.path("$nope/a")
+
+
+def test_saved_is_the_apps_save_folder(tmp_path, monkeypatch):
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+    machine = Machine(tmp_path / "work", project=tmp_path)
+    with pytest.raises(MachineError, match="no settings file"):
+        machine.path("$saved/a.floppy.yaml")
+    base = tmp_path / "Library" / "Application Support" if sys.platform == "darwin" else tmp_path / ".config"
+    (base / "Calc-U-1600").mkdir(parents=True)
+    ini = base / "Calc-U-1600" / "Calc-U-1600.ini"
+    ini.write_text("[storage]\n# The save folder\nsave-folder =\n")
+    assert machine.path("$saved/a") == tmp_path / "Calc-U-1600" / "a"
+    ini.write_text("[storage]\nsave-folder = ~/Media\n")
+    assert machine.path("$saved/a") == tmp_path / "Media" / "a"
+
+
+def test_listing_after_load_basic(tmp_path):
+    program = tmp_path / "p.bas"
+    program.write_text("10 PRINT 1\n20 GOTO 10\n")
+    machine = Machine(tmp_path / "work", model="PC-1500A", project=tmp_path)
+    assert machine.key("cl").type("NEW0").listing() == []
+    assert machine.load_basic("p.bas").listing() == ["10 PRINT 1", "20 GOTO 10"]
+
+
+def test_bus_rom_adds_renum(tmp_path):
+    renum = {"file": "$c1600/tests/fixtures/dap/pc1500-bus-rom/rom.bin", "address": 0x8800, "pv": 0}
+    machine = Machine(tmp_path, model="PC-1500A", bus_rom=[renum]).key("cl").type("NEW0")
+    machine.type("1 GOTO 2").type("2 END").key("mode").type("RENUM")
+    assert machine.listing() == ["10 GOTO 20", "20 END"]

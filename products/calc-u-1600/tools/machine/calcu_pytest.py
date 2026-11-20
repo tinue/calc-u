@@ -1,0 +1,54 @@
+"""The pytest plugin of the driver: the fixture `make_machine` and the path names of pytest.ini.
+
+    [pytest]
+    pythonpath = <checkout>/products/calc-u-1600/tools/machine <checkout>/library/harness/python
+    addopts = -p calcu_pytest
+    calcu_paths =
+        cards = test-cards
+
+The test project root is pytest's rootdir, the folder of pytest.ini. See docs/testing/README.md.
+"""
+
+from __future__ import annotations
+
+import itertools
+
+import pytest
+
+from machine import Machine, MachineError
+
+
+def pytest_addoption(parser):
+    parser.addini("calcu_paths", "names for folders: `name = path`, one per line, relative to the root",
+                  type="linelist", default=[])
+
+
+def _path_names(config) -> dict[str, str]:
+    names = {}
+    for line in config.getini("calcu_paths"):
+        name, equals, folder = line.partition("=")
+        if not equals or not name.strip() or not folder.strip():
+            raise pytest.UsageError(f"calcu_paths: `{line}` is not `name = path`")
+        names[name.strip()] = folder.strip()
+    return names
+
+
+@pytest.fixture
+def make_machine(request, tmp_path):
+    """make_machine(**options) -> a Machine in a work folder of its own under tmp_path."""
+    root = request.config.rootpath
+    names = _path_names(request.config)
+    count = itertools.count()
+    made: list[Machine] = []
+
+    def make(**options) -> Machine:
+        machine = Machine(tmp_path / f"machine-{next(count)}", project=root, paths=names, **options)
+        made.append(machine)
+        return machine
+
+    yield make
+    for machine in made:
+        machine.close()
+
+
+__all__ = ["make_machine", "MachineError"]

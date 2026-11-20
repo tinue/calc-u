@@ -120,7 +120,10 @@ Task<OperationResult> waitIdle(OperationContext& op, IdleRule rule, bool finishe
     if (!m) co_return OperationResult{false, sessions::kNoMachine};
     const machine::Ticks hour = static_cast<machine::Ticks>(m->descriptor().tickRate) * 3600;
     IdleWatch watch(std::move(rule));
-    const IdleOutcome w = finished ? co_await watch.waitFinished(op, hour) : co_await watch.wait(op, hour);
+    // No ?: around co_await: GCC 13 ends in an internal compiler error on it.
+    IdleOutcome w;
+    if (finished) w = co_await watch.waitFinished(op, hour);
+    else w = co_await watch.wait(op, hour);
     if (w.noMachine) co_return OperationResult{false, sessions::kNoMachine};
     if (w.paused) co_return OperationResult{false, "The machine is paused."};
     co_return OperationResult{};

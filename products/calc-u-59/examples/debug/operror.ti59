@@ -1,25 +1,14 @@
-# operror.ti59 Op 01 error in emulator (FIXED)
+# operror.ti59: Op 01 on a value recalled from a register.
 #
-# Expections: - Calc. display shows 1731371735
-# Reality:    - Calc. display shows 1731371734
-
-# The display changes during Op 01 (correct before, wrong after).
-# Op 01 stores the wrong value. This only hgappens when the value is retrieved from
-# a memory register (RCL). When the same number is keyed in, Op 01 does not change
-# it when storing.
-# Real hardware does not show this behaviour.
+# Expected: the display shows 1731371735 after RCL 15 Op 01, the same as
+# after keying the digits in and Op 01.
 #
-# Root cause: not Op 01 itself. The REGISTERS: loader of the 2.x presets
-# (encodeTI59BCD, then in App/StateFileLoader.swift) converted the decimal literal
-# to BCD via an iterative float digit-extraction loop (mantissa/pow, then
-# repeated subtract+multiply-by-10). That loop accumulates floating-point
-# rounding error across the 13 mantissa digits, so register 15 was actually
-# stored as 1731371734.999090, not 1731371735. IDLE's normal display
-# formatting rounds this back to ...735, hiding the error, but Op 01's
-# processing exposed the true stored value as ...734. Keying the digits in
-# directly builds the BCD register digit-by-digit with no floating-point
-# step, so it never hit this. Fixed by using a correctly-rounded %.12e
-# string conversion instead of the manual loop.
+# The `data:` value is converted to BCD by a correctly rounded %.12e
+# conversion, so register 15 holds exactly 1731371735. A conversion that
+# accumulates floating-point error would store 1731371734.999090: IDLE's
+# display rounds it to ...735, but Op 01 shows the stored ...734. Keying
+# the digits builds the register digit by digit and is exact either way.
+# The traces operror.bin and opok.bin record both paths.
 
 # model: TI-59
 

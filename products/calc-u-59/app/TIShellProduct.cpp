@@ -17,8 +17,7 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
     p.version = std::move(version);
     p.build = std::move(build);
     p.helpUrl = kHelpUrl;
-    // The Qt6 and Swift texts, one for every frontend, "presets"
-    // for "preset state files".
+    // The texts of every frontend.
     p.aboutLines = {"Calc-U-59 Calculator Emulation",
                     "Cycle-accurate TI-59, TI-58, and TI-58C emulation with magnetic cards, paper tape printer, "
                     "presets, and debugger tools."};

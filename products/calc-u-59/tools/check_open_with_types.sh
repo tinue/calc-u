@@ -21,5 +21,5 @@ win=$(sed -n 's/.*Subkey: "Software\\Classes\\\.\([a-z0-9]*\)".*/\1/p' $R/window
 grep -q '"%1"' $R/windows/calc-u-59.iss || fail "Windows: the file is not handed over as an argument"
 
 grep -q '^Exec=Calc-U-59 %f$' $R/linux/calc-u-59.desktop || fail "Linux: Exec does not hand over one file (%f)"
-grep -q '^MimeType=application/x-calcu59-state;$' $R/linux/calc-u-59.desktop || fail "Linux: the MIME type of the presets is not the only one"
+grep -q '^MimeType=application/x-calcu59-preset;$' $R/linux/calc-u-59.desktop || fail "Linux: the MIME type of the presets is not the only one"
 echo "check_open_with_types: ok"

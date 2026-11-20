@@ -62,6 +62,15 @@ Builds the product's runner programs (and `calcu`) in the repository's
 (the cores and the test programs at `-O1`), and runs them from the product
 directory. The product is `calc-u-59` or `59`, `calc-u-1600` or `1600`.
 
+## fetch_roms_common.sh: the ROM download both products share
+
+`products/<product>/roms/fetch_roms.sh` fetches a product's ROM files: it
+is the product's fetch list (each file's name, md5 and source, and the
+environment variable that overrides a source repository's base URL) and
+sources `tools/fetch_roms_common.sh`, which downloads, joins the parts of
+a file kept upstream per bank, checks the md5 and skips a file that is
+already there.
+
 ## run_qt.sh: a product's Qt6 app, built and started
 
 ```sh

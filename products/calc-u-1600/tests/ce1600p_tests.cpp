@@ -14,7 +14,7 @@
 namespace {
 
 // The mechanism with its paper output and a paper connected to
-// it, as the session connects one (the paper is no longer the mechanism's).
+// it, as the session connects one (the paper is not the mechanism's).
 struct Plotted {
     AlpsPlotterMechanism m;
     sharp::PlotterPaperOutput out{sharp::ce1600pPaperDescription()};

@@ -102,7 +102,7 @@ test('an unknown model or preset gives a notice and starts without it', async ({
   await expect(el(page, 'notice')).toContainText('could not be loaded');
 });
 
-test('no message of the old protocol', async ({ page }) => {
+test('only the messages of the session protocol', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page);
   await page.getByRole('button', { name: '5', exact: true }).click();

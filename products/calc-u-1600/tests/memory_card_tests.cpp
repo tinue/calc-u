@@ -1264,7 +1264,7 @@ TEST(test_write_protect_switch) {
           def.regions[0].contentForBank(0).writeProtected);
     CHECK(rejects(yamlWith("on"), &err));
     CHECK(err.find("protected|unprotected") != std::string::npos);
-    CHECK(rejects(yamlWith("{ default: protected, persisted: true }"), &err));  // the old map form
+    CHECK(rejects(yamlWith("{ default: protected, persisted: true }"), &err));  // a map is refused
 
     auto sd = buildCard(yamlWith("unprotected").c_str(), CardHost::PC1500);
     CHECK(sd != nullptr);

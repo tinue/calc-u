@@ -152,7 +152,6 @@ Trigger conditions and workflows for Claude Code when working in specific areas 
 
 | Document | Abstract |
 |---|---|
-| [`tools/goldens/README.md`](tools/goldens/README.md) | How the golden files that check the `app/` ports against the former Swift code are made. |
 
 ### `prompt/` — LLM system prompt
 

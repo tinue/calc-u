@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The harness without a ROM file: `calcu --product c59` on a ROM folder without one file of the full
 set (CALCU59_ROMS_DIR) ends with exit status 2 and an error that names it,
-and on the full set starts as before. Run from products/calc-u-59 with
+and on the full set starts. Run from products/calc-u-59 with
 CALCU set to the program (CTest CalcU59HarnessRomMissing, Frequent)."""
 import os
 import shutil

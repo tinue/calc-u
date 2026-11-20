@@ -1,12 +1,11 @@
-// The "after" long-run pacing tests: the library's pacer, through the app
-// session as every frontend hosts it. The rate of emulated time against wall
-// time is compared with 2.3.0's, measured by a "before" test on 2.3.0's
-// batches (CooperativePacing, since removed): up to
+// The long-run pacing tests: the library's pacer, through the app session as
+// every frontend hosts it. The rate of emulated time against wall time is
+// compared with the expected rate of whole ticks per 20 ms slice: up to
 // 0.3 % passes, 0.3 % to 1 % is printed for the user, above 1 % fails.
 //
-// Scripted (Frequent): an hour per model on a clock this test supplies, the
-// same calls as the "before" test. Real clock (Checkpoint):
-// CALCU59_PACING_LONGRUN=<seconds>.
+// Scripted (Frequent): an hour per model on a clock this test supplies, calls
+// about 60 times a second with ±4 ms jitter, an oversleep now and then and one
+// stall. Real clock (Checkpoint): CALCU59_PACING_LONGRUN=<seconds>.
 
 #include "TestHarness.hpp"
 #include "SessionRig.hpp"
@@ -24,16 +23,16 @@ using calcu::pacing::WallTime;
 
 namespace {
 
-// 2.3.0's rate (the "before" test): whole ticks per 20 ms batch
-// (int(instructionHz x 20 ms), 2.3.0's app/Pacing.hpp).
-double oldRate(ModelId model) {
-    constexpr double kBatchSeconds = 0.020;
-    const double exact = testroms::instructionHz(model) * kBatchSeconds;
+// The expected rate: whole ticks per 20 ms slice (int(instructionHz x 20 ms))
+// against the exact ticks of the slice.
+double sliceRate(ModelId model) {
+    constexpr double kSliceSeconds = 0.020;
+    const double exact = testroms::instructionHz(model) * kSliceSeconds;
     return static_cast<int32_t>(exact) / exact;
 }
 
 // The pacer's bound: one 20 ms slice, its jitter of half a slice, the spread of
-// the calls (as the "before" test's).
+// the calls.
 constexpr double kBoundSeconds = 0.035;
 
 const char* nameOf(const ModelId& m) { return info(m).displayName; }
@@ -82,10 +81,10 @@ TEST(pacing_longrun_scripted_ti) {
         wallSum += std::chrono::duration<double>(now - begin).count();
         emulatedSum += (ms.machine()->tickCount() - ticks0) / tps;
         const double rate = emulatedSum / wallSum;
-        const double before = oldRate(model);
-        const double diff = std::fabs(rate / before - 1.0);
-        std::printf("  pacing after %s: rate %.6f (2.3.0: %.6f), difference %.3f %%, worst |emulated - wall| %.4f s\n",
-                    nameOf(model), rate, before, diff * 100, worst);
+        const double expected = sliceRate(model);
+        const double diff = std::fabs(rate / expected - 1.0);
+        std::printf("  pacing %s: rate %.6f (expected %.6f), difference %.3f %%, worst |emulated - wall| %.4f s\n",
+                    nameOf(model), rate, expected, diff * 100, worst);
         if (diff > 0.003 && diff <= 0.01)
             std::printf("  NOTICE for the user: %s differs by %.3f %% (0.3 to 1 %%)\n", nameOf(model), diff * 100);
         CHECK(diff <= 0.01);
@@ -110,7 +109,7 @@ TEST(pacing_longrun_real_clock_ti) {
         app.session->call(steadyWallTime());
         const double wall = std::chrono::duration<double>(Clock::now() - w0).count();
         const double emulated = (ms.machine()->tickCount() - t0) / tps;
-        std::printf("  pacing after, real clock %s: wall %.3f s, emulated %.3f s, difference %.4f s\n", nameOf(model),
+        std::printf("  pacing, real clock %s: wall %.3f s, emulated %.3f s, difference %.4f s\n", nameOf(model),
                     wall, emulated, emulated - wall);
         CHECK(std::fabs(emulated - wall) <= kBoundSeconds);
     }

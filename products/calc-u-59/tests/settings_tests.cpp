@@ -76,7 +76,7 @@ TEST(settings_declaration) {
                                           "window.x", "window.y", "window.width", "window.height",
                                           "window.calculator-width", "window.printer-width",
                                           "window.debug-width", "window.portrait-debug-page"}));
-    CHECK(d.find("folders", "other") == nullptr);  // removed, no dialog used it
+    CHECK(d.find("folders", "other") == nullptr);  // not a key: no dialog uses it
 
     // The accepted values.
     const auto accepts = [&](const char* sec, const char* key, const char* v) {
@@ -200,7 +200,7 @@ TEST(no_key_holds_a_module) {
         CHECK(name.find("solid") == std::string::npos);
         CHECK(name.find("printer.") == std::string::npos);
     }
-    // A key from 2.3.0's stores does not count, and is kept as an unknown key.
+    // A key the settings do not declare does not count, and is kept as an unknown key.
     TestSettings t;
     t.file.set("startup", "solid-state-module", "LE");
     CHECK(!s59::settingsDecl().find("startup", "solid-state-module"));

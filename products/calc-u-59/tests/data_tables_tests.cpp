@@ -1,5 +1,5 @@
-// app/ data tables: key names (against the Swift golden) (the keyboard
-// map's rules are in typing_tests.cpp),
+// app/ data tables: key names (against the recorded reference
+// tests/golden/keynames.txt; the keyboard map's rules are in typing_tests.cpp),
 // 7-segment patterns, printer font, key layout and model info.
 
 #include "TestHarness.hpp"
@@ -14,7 +14,7 @@
 
 using namespace cu59;
 
-TEST(keynames_match_swift_golden) {
+TEST(keynames_match_the_recorded_golden) {
     auto text = testroms::readFile("tests/golden/keynames.txt");
     CHECK(text.has_value());
     if (!text) return;

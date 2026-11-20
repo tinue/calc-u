@@ -2,7 +2,7 @@
 // The loaders (core/Loaders.hpp) on a core machine, for the
 // core's tests that build a PC1500Machine / PC1600Machine themselves: the
 // loader memory access over the core (core/Machine/SharpLoaderMemory) and
-// sharp::loaders on it, with the old result types.
+// sharp::loaders on it, with the core's result types (BasicLoadResult).
 
 #include <fstream>
 #include <iterator>

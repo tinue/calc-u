@@ -622,8 +622,8 @@ TEST(printer_timing_same_paper_at_regular_and_full_speed) {
     // examples/debug/printer-timing.ti59 with every
     // speed step at regular speed, and at full speed: a key of a preset (Prt,
     // Adv) is held 100 ms of emulated time and until read at every speed, so
-    // both give the same paper, and the paper of the file as it is (2.3.0's
-    // 104 lines).
+    // both give the same paper, and the paper of the file as it is (104
+    // lines).
     const auto text = testroms::readFile("examples/debug/printer-timing.ti59");
     CHECK(text.has_value());
     if (!text) return;

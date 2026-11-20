@@ -48,8 +48,8 @@ uint16_t rd16(PC1600Machine& m, uint16_t a) {
 // memory sizing sets) : C5H, the first byte after the 197-byte reserve --
 // C0C5H stock, lower by what a slot module adds to S0.
 // Ref/PC-1600/PC-1600-Work-Area-Map.md (F029H, and INIT's `(F029H AND
-// 7FH):C5H`). F5CFH, which these tests used to read, is a Z-80 stack slot:
-// the half-second sub-CPU interrupt routine overwrites it.
+// 7FH):C5H`). Not F5CFH: it is a Z-80 stack slot that the half-second
+// sub-CPU interrupt routine overwrites.
 uint16_t programStart(PC1600Machine& m) {
     return uint16_t((m.memory().read(0xF029) << 8) | 0xC5);
 }

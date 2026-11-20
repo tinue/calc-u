@@ -1,5 +1,5 @@
 // `calcu` drives a TI-59 headless, through the library's app session with
-// TIAppPart; at the end, the functions of 2.3.0's tools, `display-text` and
+// TIAppPart; at the end, the trace and measure functions, `display-text` and
 // the emulated time through `calcu`.
 #include "../app/HarnessProduct.hpp"
 #include "TestHarness.hpp"
@@ -75,7 +75,7 @@ TEST(harness_key_on_a_ti59) {
     CHECK_EQ(reply("key 2 x^2"), std::string("done\n"));
     reply("wait 300ms");
     CHECK_EQ(reply("display-text"), std::string("done 2\n          4. \nindicators:\n"));   // a result: x² of 2
-    CHECK_EQ(reply("key 1 S+"), std::string("refused: Unknown key: S+.\n"));   // an old name; nothing typed
+    CHECK_EQ(reply("key 1 S+"), std::string("refused: Unknown key: S+.\n"));   // not a key name; nothing typed
     CHECK_EQ(reply("key CLR 2nd pi"), std::string("done\n"));                  // 2nd before a second function: once
     reply("wait 300ms");
     CHECK(reply("display-text").find("3.14159265") != std::string::npos);
@@ -423,7 +423,7 @@ TEST(display_text_indicator_c_line_and_brightness_in_json) {
 }
 
 // An instruction in the ROM's idle state weighs four on the
-// TI-59 and TI-58, one on the TI-58C; ticks ÷ 32 are the instructions as 2.3.0's tools counted them.
+// TI-59 and TI-58, one on the TI-58C; ticks ÷ 32 are the instructions.
 TEST(idle_instruction_weighs_four_on_ti59_and_ti58) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     for (const char* model : {"TI-59", "TI-58"}) {
@@ -457,18 +457,17 @@ TEST(ti58c_instruction_weighs_one) {
     CHECK(n * 32 <= ticks + 32 && ticks <= n * 32 + 32);
 }
 
-// Every function of Calc-U-59 2.3.0's tools (one block per function)
-// through `calcu`.
-TEST(harness_every_function_of_the_old_tools) {
+// The trace and measure functions (one block per function) through `calcu`.
+TEST(harness_trace_and_measure_functions) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
-    calcu::testing::TempFolder dir("calcu59-ac14");
+    calcu::testing::TempFolder dir("calcu59-functions");
     calcu::harness::RunOptions o;
     o.saveFolder = (dir.path() / "save").string();
     std::filesystem::create_directories(dir.path() / "save");
     tirig::Calcu c(o);
     CHECK(c);
     if (!c) return;
-    // headless/: run without a window, the ROMs through the lookup (one-shot and serve).
+    // run without a window, the ROMs through the lookup (one-shot and serve).
     CHECK(c("wait 1s").rfind("done 2\nticks: ", 0) == 0);
     {
         tirig::Calcu pipe;   // serve ends its run at the end of the input
@@ -512,7 +511,7 @@ TEST(harness_every_function_of_the_old_tools) {
     CHECK(done(c("pause")));
     CHECK(done(c("step { level: cpu, count: 10 }")));
     CHECK(done(c("resume")));
-    // the emulated time (ticks ÷ 32 are the instructions as 2.3.0's tools counted them)
+    // the emulated time (ticks ÷ 32 are the instructions)
     CHECK(c("ticks").find("seconds: ") != std::string::npos);
     // a record per instruction; the power-on trace (read with tools/read_trace.py, CalcU59TraceReader)
     CHECK(done(c("trace k.trace")));
@@ -553,7 +552,7 @@ TEST(harness_every_function_of_the_old_tools) {
     CHECK_EQ(c("saveas { card: X, as: live, name: Saved }"), std::string("done\n"));
     CHECK(std::filesystem::exists(dir.path() / "save" / "Saved.magnetcard.yaml"));
     CHECK(done(c("arm { name: Saved }")));
-    // agentic/: a preset, its keys' run time, its printout; line times; the hottest steps
+    // a preset, its keys' run time, its printout; line times; the hottest steps
     CHECK_EQ(c("preset examples:sum.ti59"), std::string("done\n"));
     CHECK(c("c59 run-time 5 A").find("total ") != std::string::npos);
     c("c59 program 000 76 11 42 00 76 12 97 00 12 91");
@@ -563,14 +562,14 @@ TEST(harness_every_function_of_the_old_tools) {
     CHECK_EQ(c("c59 step-cost 43 22"), std::string("refused: A program runs: let it end first (`wait`).\n"));
     c("wait");
     CHECK(c("c59 step-cost 43 22").find("fast ") != std::string::npos);
-    // kdis.py: the program instruction by instruction, the registers, the partition
+    // the program instruction by instruction, the registers, the partition
     CHECK(c("c59 keycodes disassemble").find("Lbl A") != std::string::npos || done(c("c59 keycodes disassemble")));
     CHECK(done(c("c59 data-registers 00 01")));
     CHECK(done(c("c59 partition")));
-    // a listing to paste into a preset; asm59.py's plain assembly
+    // a listing to paste into a preset; plain assembly of keycodes
     CHECK(done(c("c59 keycodes list")));
     dir.write("a.asm59", "000  Lbl A\n002  RTN\n");
     CHECK_EQ(c("c59 keycodes assemble " + (dir.path() / "a.asm59").string()), std::string("done 1\nsteps: 000-002\n"));
-    // fastmode_matrix.py, the calendar scripts and read_trace.py stay scripts:
+    // fastmode_matrix.py, the calendar scripts and read_trace.py are scripts:
     // CalcU59Scripts, CalcU59CalendarScripts, CalcU59TraceReader.
 }

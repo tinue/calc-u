@@ -1,4 +1,4 @@
-# First step 9 on the TI-58 (LIB-18's built-in default machine), sampled every 0.1 s.
+# First step 9 on the TI-58 without a module, sampled every 0.1 s.
 model TI-58
 module none
 boot

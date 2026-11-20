@@ -105,7 +105,7 @@ void writeOpc(Ce150Card& card, uint8_t value) {
 }
 
 // A paper connected to the card's paper output, as the
-// session connects one (the strokes are no longer the mechanism's).
+// session connects one (the strokes are the paper's, not the mechanism's).
 struct PaperOf {
     Ce150Card& card;
     calcu::paper::Paper paper{card.paperOutput().description()};

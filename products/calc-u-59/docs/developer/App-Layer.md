@@ -80,7 +80,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (§ "Bridge La
 | `LedGeometry` | Segment polygons (modernized), dot grids (classic), decimal point, style parameters |
 | `Bcd` | Register BCD encoding, register lines, `parseDecimal` (a `data:` value) |
 | `Settings` | The settings file `Calc-U-59.ini`: `settingsDecl()` with every key, default and accepted value (read and written through the library's `calcu::settings::SettingsFile`), and typed calls for what a frontend reads itself: the Qt6 window state, the Swift trace location |
-| `TextUtil` | Foundation-compatible string helpers, so ported parsers keep their edge cases |
+| `TextUtil` | String helpers that behave as Foundation's (`.newlines` splitting, whitespace trimming, `Int(_:radix:)`), edge cases included |
 
 Each header's top comment says what the module is and where its format or
 rules are documented.
@@ -761,6 +761,5 @@ modules, with the ROMs from `roms/` (`LedGeometry` has no test of its own;
 `BatchJitter` is covered through the cooperative runner). A second target,
 `CalcU59TraceReader`, runs `tools/read_trace.py` on the trace the tests wrote
 (`build/trace-test.bin`, `tests/trace_tests.cpp`), so the reader stays in
-step with `TraceWriter`. Ports of Swift code are checked against
-goldens produced by compiling the Swift original (`tools/goldens/`,
-`tests/golden/`).
+step with `TraceWriter`. The key names and the file formats are checked
+against recorded goldens (`tests/golden/`); a difference is a finding.

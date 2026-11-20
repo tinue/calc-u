@@ -47,11 +47,9 @@ const std::vector<std::pair<std::string, std::string>> kFullSet = {
     {"AG.rom.yaml", "4903315a721f4ff41e60b40abbaeb284"},  {"RP.rom.yaml", "d62d3ea22600d0df8f24a6355ee0ea95"},
 };
 
-// The md5 of each module's 5000-byte image as Calc-U-59 2.3.0 decoded it from
-// roms/solid-state/TMC05xx.txt (parseModuleTxt), computed on 2026-11-15 from
-// the dumps of TI-59-ROM dumps/modules/ (90cd4a7), the files fetch_roms.sh
-// fetched then.
-const std::map<std::string, std::string> kImages230 = {
+// The recorded md5 of each module's 5000-byte image, decoded from the module
+// dumps of TI-59-ROM dumps/modules/ (90cd4a7), recorded on 2026-11-15.
+const std::map<std::string, std::string> kModuleImageMd5 = {
     {"ML", "c2424949bcc52a0fac60345d33a07cde"}, {"ST", "bb7a258e79b60854fd759073b748fdce"},
     {"RE", "681f7bcf7c7be69037c3f382d265c349"}, {"SY", "e6014c604a7b40710d7f5e4a0aa5eba3"},
     {"NG", "9e0b92d73a52f203ce74a350cc19a9e1"}, {"AV", "57ee384f1f4531503fed1a5946225e78"},
@@ -286,9 +284,9 @@ TEST(module_rom_from_rom_yaml) {
     }
 }
 
-TEST(module_images_equal_the_2_3_0_dumps) {
+TEST(module_images_have_their_recorded_md5) {
     auto set = testroms::romSet();
-    for (const auto& [id, md5] : kImages230) {
+    for (const auto& [id, md5] : kModuleImageMd5) {
         auto image = cu59::moduleImage(*set, id + ".rom.yaml");
         CHECK(image.has_value());
         if (image) CHECK_EQ(testroms::md5Hex(*image), md5);

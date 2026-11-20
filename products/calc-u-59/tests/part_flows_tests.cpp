@@ -153,10 +153,8 @@ TEST(part_reset_keeps_the_memory_and_clean_reset_clears_it) {
     CHECK_EQ(int(regs[0]), 0);
 }
 
-// 2.3.0 ran a plain Reset's reset routine with the run loop stopped, so only a
-// clean reset could be frozen at its first instruction. Now both return at
-// once and the ROM's start-up runs in the run loop, so an armed FREEZE ON
-// START (the run control's pause-on-start cpu, TILevelRules) fires on either
+// A plain Reset and a clean reset both return at once and the ROM's start-up
+// runs in the run loop, so an armed FREEZE ON START (the run control's pause-on-start cpu, TILevelRules) fires on either
 // the library's `reset` or `cold-boot`.
 TEST(part_cpu_freeze_on_start_sees_reset_and_clean_reset) {
     PartRig r;

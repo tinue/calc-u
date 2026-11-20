@@ -17,7 +17,7 @@
 //
 // CALCU59_REFERENCE_COMPARE=1 runs it (Longer: CalcU59ReferenceRuns);
 // CALCU59_REFERENCE_EXAMPLES=<folder> compares the files of another folder
-// (a draft of an upgrade) instead of examples/. CALCU59_REFERENCE_RECORD=<folder>
+// (a draft) instead of examples/. CALCU59_REFERENCE_RECORD=<folder>
 // writes the references of every example into that folder (a draft); it
 // never writes into tests/references/.
 

@@ -144,7 +144,7 @@ test('no long press for clean', async ({ page }) => {
   await gotoReady(page, 'layout=portrait');
   const reset = el(page, 'bar-action-reset');
   await reset.dispatchEvent('pointerdown', { pointerType: 'touch', pointerId: 7 });
-  await page.waitForTimeout(1300);   // 2.3.0 gave "Clean" after one second
+  await page.waitForTimeout(1300);   // held well past a second: still a plain Reset
   await reset.dispatchEvent('pointerup', { pointerType: 'touch', pointerId: 7 });
   await reset.click();
   await expect.poll(() => commands(page)).toContain('reset');
@@ -235,7 +235,7 @@ test('loading and the notice dialog', async ({ page }) => {
   await expect(el(page, 'notice').locator('.calcu-shell-modal-title')).toHaveCount(0);
   await el(page, 'notice-ok').click();
   await expect(el(page, 'notice')).toHaveCount(0);
-  await expect(page.locator('.calcu-status')).toHaveCount(0);   // no status line any more
+  await expect(page.locator('.calcu-status')).toHaveCount(0);   // no status line
 });
 
 // Help and About.

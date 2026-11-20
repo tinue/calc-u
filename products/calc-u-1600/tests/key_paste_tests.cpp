@@ -29,7 +29,7 @@ using sessionfixture::romsPresent;
 const ModelId kPC1500{sharp::kPC1500A};
 const ModelId kPC1600{sharp::kPC1600};
 
-// What a text types, as 0.8.1's tests wrote steps: "^" for a shift press,
+// What a text types, written as steps: "^" for a shift press,
 // "~" before each press of an accent's KBII sequence, "_" for space; a
 // character without a key is left out (as a paste does).
 std::string typed(const ModelId& m, const std::string& text, const calcu::typing::TypingSupport* s = nullptr) {

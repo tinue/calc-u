@@ -1,4 +1,4 @@
-# Memory filled, then a power cycle (0.8.1's off, power-down, on, boot); LIST.
+# Memory filled, then a power cycle (off, power-down, on, boot); LIST.
 model PC-1500A
 boot
 keys cl

@@ -2,16 +2,14 @@
 // are golden_runs_tests.cpp, the core's own cases core_tests.cpp, the seam the
 // CTest CalcU59CoreSeam.
 //
-// The expected values that cannot come from the golden runs, recorded from
-// the code of Calc-U-59 2.3.0 before any core change:
-// - Ticks: TMC0501::getStepWeight (core/TMC0501.cpp:283-285 at v2.3.0) is 4 in
-//   the IDLE state and 1 otherwise, never 4 on the TI-58C; one instruction is
-//   32 ticks, so 32 and 128.
+// The expected values that cannot come from the golden runs:
+// - Ticks: TMC0501::getStepWeight is 4 in the IDLE state and 1 otherwise,
+//   never 4 on the TI-58C; one instruction is 32 ticks, so 32 and 128.
 // - Partition (golden runs ti59-reset-partition and
 //   ti58-reset-partition): the ROM's default partition is 479.59 on the TI-59
 //   (60 program registers) and 239.29 on the TI-58 (30); "4 Op 17" makes the
 //   TI-59 639.39 (80), "2 Op 17" the TI-58 319.19 (40). A Reset keeps the
-//   partition (2.3.0's put the default back).
+//   partition.
 // - Constant memory: a TI-58C at "2 Op 17" (319.19, 40)
 //   and Fix 2.
 
@@ -402,7 +400,7 @@ TEST(each_key_id_presses_its_row_and_column) {
         if (!code) continue;
         const int row = *code / 10, col = *code % 10;
         CHECK(cu59::keyIdAt(*code) == k.id);
-        const uint8_t bit = static_cast<uint8_t>(1u << kTIKeyLineBits[col]);   // 2.3.0's KeyMatrix kKBits
+        const uint8_t bit = static_cast<uint8_t>(1u << kTIKeyLineBits[col]);
         CHECK(m->keyDown(k.id) == KeyCall::Done);
         CHECK_EQ(TIMachineTesting::keyLines(ti(*m), row) & 0b1101110, int(bit));
         for (int other = 1; other <= 9; ++other)

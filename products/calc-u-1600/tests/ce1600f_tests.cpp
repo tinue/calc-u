@@ -279,7 +279,7 @@ TEST(test_disk_changed_latch_starts_set_and_clears_on_step) {
 // Confirmed via register-level tracing against the real ROM: DSKINIT's
 // very first command to a freshly-changed drive is 0x01, not 0x20, and it
 // immediately polls base+2 -- if the changed-disk latch only cleared on
-// 0x20 (an earlier draft's unconfirmed guess), that poll would still see
+// 0x20, that poll would still see
 // it set and DSKINIT would abort. The latch must clear on any command.
 TEST(test_disk_changed_latch_clears_on_any_command_not_just_step) {
     CE1600FCard card;

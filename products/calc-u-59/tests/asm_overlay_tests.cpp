@@ -29,8 +29,8 @@ std::string refusal(const std::string& text) {
     return "(read)";
 }
 
-// tests/fixtures/asm/<name>.words: the instructions 2.3.0's reader gave the
-// file, recorded once before the reader changed.
+// tests/fixtures/asm/<name>.words: the recorded instructions of the file, a
+// reference the reader must give.
 Words recorded(const std::string& name) {
     const auto text = testroms::readFile("tests/fixtures/asm/" + name + ".words");
     Words out;
@@ -112,9 +112,8 @@ TEST(asm_overlay_more_than_2048) {
 
 // ── The five shipped overlays ────────────────────────────────────────────────
 
-// Each is in version 2.0 and gives the instructions 2.3.0's reader gave it
-// (2.3.0's parser case, without the two lenient cases now refused).
-TEST(five_overlays_in_2_0_give_2_3_0s_instructions) {
+// Each is in version 2.0 and gives its recorded instructions.
+TEST(five_overlays_give_their_recorded_instructions) {
     const std::pair<const char*, const char*> files[] = {
         {"examples/assembly/Decoder.asm", "Decoder"},          {"examples/assembly/DPT.asm", "DPT"},
         {"examples/assembly/simple_count.asm", "simple_count"}, {"examples/assembly/stopwatch.asm", "stopwatch"},
@@ -128,7 +127,7 @@ TEST(five_overlays_in_2_0_give_2_3_0s_instructions) {
         const Words got = words(*text);
         const Words want = recorded(name);
         CHECK(!want.empty());
-        if (got != want) std::fprintf(stderr, "  %s: %zu instructions, 2.3.0 gave %zu\n", path, got.size(), want.size());
+        if (got != want) std::fprintf(stderr, "  %s: %zu instructions, %zu recorded\n", path, got.size(), want.size());
         CHECK(got == want);
         ++count;
     }

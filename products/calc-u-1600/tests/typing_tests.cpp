@@ -192,7 +192,7 @@ TEST(every_key_held_pc1500a) {
     s.runFor(0.5);
     Log log;
     s.engine().setObserver(&log);
-    s.hostDown(letter('a', "KeyA"));   // not queued: held (0.8.1 queued all but the cursor keys)
+    s.hostDown(letter('a', "KeyA"));   // not queued: held
     s.runFor(1.0);
     CHECK_EQ(log.events.size(), std::size_t(1));
     CHECK(s.engine().liveHeld() == std::vector<KeyId>{KeyId{"a"}});
@@ -382,7 +382,7 @@ TEST(break_alias_ent_refused) {
         CHECK_EQ(one("BREAK"), std::string("on"));
         CHECK_EQ(one("Enter"), std::string("enter"));
         CHECK_EQ(one("SHIFT"), std::string("shift"));
-        CHECK_EQ(one("ent"), std::string("refused"));   // `ent` is no longer a name of enter
+        CHECK_EQ(one("ent"), std::string("refused"));   // `ent` is not a name of enter
         CHECK_EQ(one("x"), std::string("x"));
         CHECK_EQ(one("nokey"), std::string("refused"));
         // Every key ID of the model: the

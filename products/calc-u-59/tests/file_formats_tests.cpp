@@ -1,6 +1,6 @@
-// app/ file formats against the Swift originals (tests/golden/formats.txt,
-// produced by tools/goldens/formats_main.swift): cue cards, BCD encoders,
-// register lines and math tokens. Also round trips for the constant memory
+// app/ file formats against the recorded reference tests/golden/formats.txt
+// (one record per case: the BCD encoding of a register, a register line, a
+// cue card's text): cue cards, BCD encoders, register lines and math tokens. Also round trips for the constant memory
 // file. The magnetic card format is in magnetic_card_tests.cpp.
 
 #include "TestHarness.hpp"

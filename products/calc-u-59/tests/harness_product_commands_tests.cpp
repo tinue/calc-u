@@ -1,7 +1,6 @@
 // The product commands of Calc-U-59 under
 // `c59`, each on a `calcu` run (harness::Server) with a program small
-// enough that its reply is written out here. The numbers were compared with
-// the earlier tools on the same program before they were retired.
+// enough that its reply is written out here.
 #include "../app/HarnessProduct.hpp"
 #include "../app/TIMnemonics.hpp"
 #include "../app/TITyping.hpp"
@@ -103,10 +102,8 @@ TEST(addresses_of_one_key_in_order_without_key_readiness) {
     if (!r) return;
     r("profile on");
     r("key 5");
-    // The retired tools/headless/coverage.py's scenario of the 5 key,
-    // without 0627-062A: the old rule left out an instruction of the
-    // key-detect range only with the idle flag set; the profile keeps no
-    // flag, so the whole range 0627-0660 is left out.
+    // The addresses of the 5 key without the key-detect range: the profile
+    // keeps no idle flag, so the whole range 0627-0660 is left out.
     const std::string want =
         "done 9\n"
         "0037 0167 0168 0169 016A 016B 016C 016D 016E 02E2 02E3 02E4 02E5 02E6 02E7 02E8\n"
@@ -150,9 +147,9 @@ TEST(lines_gaps_summary_floor) {
     r("attach printer PC-100C");
     r(kLinesProgram);
     r("key A");
-    // tools/agentic/linetimes.py on the same program (from before the key,
-    // in samples of 10 ms): 0.11, 0.40 (+0.29), 0.69 (+0.29), 0.79 (+0.10),
-    // 0.89 (+0.10); here from after the key, in slices of 200 instructions.
+    // Sampled every 10 ms from before the key, the lines come at 0.11, 0.40
+    // (+0.29), 0.69 (+0.29), 0.79 (+0.10), 0.89 (+0.10); here from after the
+    // key, in slices of 200 instructions.
     CHECK_EQ(r("c59 line-times"), std::string("done 9\n"
                                                "0.014065934 0.014065934 |          1.        |\n"
                                                "0.309450549 0.295384615 |          2.        |\n"
@@ -221,7 +218,7 @@ TEST(time_per_key_and_total) {
     Run r;
     if (!r) return;
     r(kLoopProgram);
-    // tools/agentic/runtime.py on the same program and keys: A:3.19.
+    // A runs about 3.19 s on this program and keys.
     CHECK_EQ(r("c59 run-time 2 0 A"), std::string("done 4\n2 0.000000000\n0 0.000000000\nA 3.187481318\ntotal 3.187481318\n"));
     CHECK_EQ(r("display-text"), std::string("done 2\n         20. \nindicators: C\n"));   // the display after the run
     // A Pause flash does not end the time (memory run_time_measurement).
@@ -293,9 +290,8 @@ TEST(cost_of_rcl_in_fast_and_normal_mode) {
     Run r;
     if (!r) return;
     r("attach printer PC-100C");
-    // The retired tools/agentic/stepcost.py "43 22" (a fresh TI-59
-    // with a PC-100C for each run): fast 580, normal 1332 instructions
-    // (41 / 94 ms). Here on the session's machine.
+    // "43 22" on a fresh TI-59 with a PC-100C for each run costs fast 580,
+    // normal 1332 instructions (41 / 94 ms); here on the session's machine.
     CHECK_EQ(r("c59 step-cost 43 22"), std::string("done 3\nfast 584 instructions 41 ms\nnormal 1333 instructions 94 ms\nprinter: yes\n"));
     CHECK_EQ(r("c59 step-cost"), std::string("refused: usage: c59 step-cost <keycode> [<keycode> ...] (e.g. c59 step-cost 43 22)\n"));
     CHECK_EQ(r("c59 step-cost 4"), std::string("refused: A keycode is two digits, 00 to 99: 4.\n"));

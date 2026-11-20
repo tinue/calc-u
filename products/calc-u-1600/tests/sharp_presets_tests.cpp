@@ -1,6 +1,6 @@
 // The product's preset rules on the library's loader -- models and keys,
 // idle, what follows the build, hardware together, the picture and the
-// text, the log, the cases of the old preset tests, typing in a preset.
+// text, the log, steps and their values, typing in a preset.
 // Read checks run SharpPresetRules on presets::readPreset; loads run the
 // product's harness entry or its app session. ROM-gated cases SKIP.
 #include "../app/SharpDisplayLines.hpp"
@@ -296,7 +296,7 @@ TEST(log_lines_on_log_topic) {
     CHECK(has(all, "carried out to its end"));
 }
 
-// ── The old preset tests' cases ───────────────────────────────────────────
+// ── Steps and their values ────────────────────────────────────────────────
 
 TEST(test_inline_comment_and_raw_values) {
     PresetReadRig r;

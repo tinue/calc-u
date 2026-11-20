@@ -69,7 +69,7 @@ TEST(z80_breakpoint_and_skip_once) {
     cpu.resumePastBreakpoint();
     CHECK(cpu.step() > 0 && cpu.pc() == 0x0002);
     cpu.step(); cpu.step();     // around the loop again
-    CHECK(cpu.step() == 0 && cpu.consumeBreakpointHit()); // skip was once only
+    CHECK(cpu.step() == 0 && cpu.consumeBreakpointHit()); // the skip is once only
 }
 
 TEST(z80_breakpoint_not_between_prefix_and_opcode) {

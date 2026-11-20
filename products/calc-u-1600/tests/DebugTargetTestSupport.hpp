@@ -13,11 +13,10 @@
 
 // The debug-target tests on the
 // Sharp machines' machine::Debugging (core/Debug/SharpDebugging) without a
-// session. Target drives it as 0.8.1's DebugTarget was driven -- threads
-// from 1, breakpoints and watches armed while set, a free run of a budget,
-// a resume past the breakpoint the bus owner stands on -- through the new
-// interface only: setChecks(), run(), takeStop(), passOnce() and the
-// observer.
+// session. Target drives it with threads from 1, breakpoints and watches
+// armed while set, a free run of a budget and a resume past the breakpoint
+// the bus owner stands on, through the interface only: setChecks(), run(),
+// takeStop(), passOnce() and the observer.
 
 namespace debugtest {
 
@@ -51,7 +50,7 @@ public:
     bool peek(int thread, debug::Space s, std::uint16_t a, std::uint8_t* v) const { return t(thread).peekByte(s, a, v); }
     bool poke(int thread, debug::Space s, std::uint16_t a, std::uint8_t v) { return t(thread).pokeByte(s, a, v); }
 
-    // Armed while set (0.8.1's default): the checks follow the lists.
+    // Armed while set: the checks follow the lists.
     void setBreakpoints(int thread, const std::vector<std::uint16_t>& addrs) {
         t(thread).setBreakpoints(std::vector<std::uint64_t>(addrs.begin(), addrs.end()));
         m_bps[thread == 1 ? 0 : 1] = !addrs.empty();

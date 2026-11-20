@@ -1,4 +1,4 @@
-# Memory filled, then a power cycle (0.8.1's off, power-down, on, boot); LIST in PRO mode.
+# Memory filled, then a power cycle (off, power-down, on, boot); LIST in PRO mode.
 model PC-1600
 boot
 keys mode

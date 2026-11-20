@@ -1,6 +1,6 @@
 // Calc-U-1600's keys and sections of the preset format on the library's
 // reader and engine -- `program:`, `host-drive:`, `slot-N-rom:`, `bus-rom:`,
-// `debug:` -- their errors and edge cases, the upgraded
+// `debug:` -- their errors and edge cases, the bundled
 // presets and the bundle file. Read checks run the product's rules on
 // presets::readPreset; loads run the product's harness entry in emulated
 // time. ROM-gated cases SKIP without roms/.

@@ -36,13 +36,18 @@ bool SharpModelRules::pc1600() const { return m_model == sharp::kPC1600; }
 calcu::presets::IdleRule SharpModelRules::idle() const {
     // docs/developer/Idle.md: takes keys by the core's key readiness
     // (Machine::isKeyReady()); the core's program state names what keeps the
-    // machine busy (the PC-1500's buzzer, the CE-1600F's motor) and says
+    // machine busy (the PC-1500's buzzer, the CE-1600F's motor), whether a
+    // tape or the serial port is awaited with nothing on its way, and
     // whether the program has ended. Settled after 20 frames (a frame: 1/60 s
     // of emulated time, as the cores count it), asked every frame.
     calcu::presets::IdleRule r;
     r.busy = [](const calcu::machine::Machine& m) -> std::vector<std::string> {
         const sharp::ProgramState* p = calcu::machine::first<sharp::ProgramState>(m);
         return p ? p->busy() : std::vector<std::string>{};
+    };
+    r.awaitsMedium = [](const calcu::machine::Machine& m) {
+        const sharp::ProgramState* p = calcu::machine::first<sharp::ProgramState>(m);
+        return p && p->awaitsMedium();
     };
     r.programEnded = [](const calcu::machine::Machine& m) {
         const sharp::ProgramState* p = calcu::machine::first<sharp::ProgramState>(m);

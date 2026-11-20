@@ -167,6 +167,8 @@ public:
 
     virtual std::vector<std::string> busy() const = 0;
     virtual bool programEnded() const = 0;
+    // A tape or the serial port awaited, nothing on its way ("A medium awaited").
+    virtual bool awaitsMedium() const = 0;
 };
 
 } // namespace sharp

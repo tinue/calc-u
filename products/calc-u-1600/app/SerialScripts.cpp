@@ -47,6 +47,7 @@ void SerialScriptsPart::feed(const std::string& word, std::vector<std::uint8_t> 
     SerialPort* sp = port(word);
     // The first byte at the first character time after `hold` of them.
     p.due = m && sp ? m->tickCount() + charTicks(*m, *sp) * hold : 0;
+    if (sp) sp->setPeerSending(!p.feed.empty());   // held bytes are on their way too
 }
 
 std::optional<std::string> SerialScriptsPart::capture(const std::string& word, const std::string& path) {
@@ -145,6 +146,7 @@ void SerialScriptsPart::act(Machine& m, Ticks now, calcu::pacing::WallTime) {
         // One byte in each character time in which the port takes it.
         p.taken += sp->putReceived(std::span<const std::uint8_t>(p.feed.data() + p.taken, 1));
         p.due = now + charTicks(m, *sp);
+        sp->setPeerSending(p.taken < p.feed.size());
     }
 }
 

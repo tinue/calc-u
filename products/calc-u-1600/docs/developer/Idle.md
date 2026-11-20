@@ -61,7 +61,7 @@ means stopped), the cassette relay through B00E.
 | CALL to code with its own keyboard scan | — | — | — | no | no general signal: the test gives seconds |
 | `10 GOTO 10`, BEEP, a CE-150 plot or print, CSAVE | no | no | no | no | not in the key wait, BUSY on |
 | PRINT after `WAIT n` (n > 0) | no | no | no | no | TIME_DELAY E88C: a timed delay, part of the program's run time (BREAK can end it) |
-| CLOAD waiting for the tape | no | no | no | no | LOAD_NIBBLE BE25, BUSY on: a medium is awaited, but no medium place reports it |
+| CLOAD waiting for the tape (no cassette, at its end) | no | yes | yes | no | a medium awaited, [below](#a-medium-awaited) |
 | switched off | no | no | no | no | powered off |
 
 ### Keys that do not wait for A
@@ -121,7 +121,8 @@ function per CALLH, and machine code started by XCALL.
 | `10 GOTO 10`, `FOR … NEXT` | no | no | no | no | no key wait, no key read |
 | PRINT after `WAIT n` (n > 0) | no | no | no | no | PRTEND's timed wait (SWAIT): part of the program's run time (BREAK can end it) |
 | BEEP | no | no | no | no | SOUT; measured: `wait` lasted the 74 s of `BEEP 20,100,2000` |
-| a direct LOAD, SAVE, COPY (S1:, S2:, S3:, COM1:, X:) | no | no | no | no | no key wait (the serial waits P2-B6 A014, A503 test only the BREAK latch) |
+| a direct LOAD, SAVE, COPY (S1:, S2:, S3:, X:; COM1: while bytes come) | no | no | no | no | no key wait |
+| a LOAD from COM1: or the cassette with nothing to come | no | yes | yes | no | a medium awaited, [below](#a-medium-awaited) |
 | plotting, printing on the CE-1600P | no | no | no | no | no key wait (the motor power is not asked) |
 | the CE-1600F's motor on at the prompt | yes | no | no | no | motor |
 | switched off, auto power-off | no | no | no | no | system off |
@@ -138,13 +139,55 @@ OFF is not one of them: a matrix key handled only by the editor (EDOFF
 P1-B0 6B3F; ignored during a program's INPUT wait and a PRINT stop with
 F0BBH bit 0).
 
+## A medium awaited
+
+A program or command that waits for the tape or for the serial port waits
+for a medium, as the TI-59 waits for a magnetic card: W without A. Only
+while nothing arrives: in the loops below the ROM also waits between two
+bits of a playing tape and between two bytes of a feed, which is work.
+
+| Model | Wait | ROM signal | Nothing arrives (the emulator) | Ends |
+|---|---|---|---|---|
+| PC-1500, PC-1500A with CE-150 | the tape loader (CLOAD, MERGE, CHAIN, INPUT# from tape) | an edge wait of LOAD_NIBBLE (CE-150 BE02–BEF7): BE11–BE1C, BE21–BE2C, no timeout | the cassette does not play: none in, the motor off, or at its end | an edge; BREAK (PB7, BE19, BE29) |
+| PC-1500, PC-1500A with CE-158 | receiving (INPUT with `SETDEV KI`, CLOAD, MERGE, INPUT# with `CI`) | the receive loop 828E–82A0 with RXCOM 81E6–822F (the shared region 8168–82EB, both banks), entered through the vector 7BAAH | no byte in the UART (DA) and none still to come from the feed (held bytes too) or the host link; or a line the peer must drive is off (the loop waits for CTS, CD, DSR too) | a byte; ON (82B3); error 58; error 50 (low battery) |
+| PC-1600 with CE-1600P | the tape loader (CLOAD, MERGE, CHAIN; MODE 0 and MODE 1) | MODE 0: the first edge wait of CMBITIN, L6149–6152 (CE-1600P bank 5; no timeout while F1A9H bit 7 is set, the default); MODE 1: the edge waits of CM1500BIT, 62CD–62D8 and 62F7–6302 | the cassette does not play | an edge; BREAK (port 1BH bit 1) |
+| PC-1600 | receiving on COM1: or COM2: (INPUT with `SETDEV "COM1:",KI`, LOAD"COM1:", INPUT#, COPY) | CRCVA (IOCS 04H, bank 6 9FEC): the loop 9FF4–A018 and what it calls (A02B–A084, 9FB1–9FBB, 9E93–9EA1, 9FD4–9FDB); OLD A034, the loop A03C–A060; the ring empty (read pointer F144H = write pointer F146H) | no byte in the ring or the CPC and none still to come from the feed (held bytes too) or the host link | a byte; BREAK (F150H bit 7); the RCVSTAT timeout (F14CH COM1, F14DH COM2; 0 = none, the default); an error |
+
+| Case | A | W | settled | B |
+|---|---|---|---|---|
+| CLOAD with no cassette in, or the tape at its end | no | yes | yes | no |
+| a tape that plays: the leader, the header, the data, and the silence a PC-1600 MODE 0 file has between header and data | no | no | no | no |
+| INPUT from the port with nothing fed | no | yes | yes | no |
+| LOAD"COM1:" while a feed still has bytes, held ones too | no | no | no | no |
+| a direct LOAD"COM1:" with nothing fed | no | yes | yes | no |
+
+Not counted as waiting for a medium:
+
+- **Sending.** The PC-1600 waits before each byte for XOFF to end (F151H
+  bit 3) and for the lines SNDSTAT asks for (COMSENDBYTE, bank 6 A503, the
+  loop A509–A566); the CE-158 for CTS, CD and DSR (TXCOM 823A, the loop
+  823E–8256). The same loops also run while a byte is still going out. The
+  harness's other side and a host link keep their lines on, so only a fed
+  XOFF can make the PC-1600 wait: work, as any send.
+- **Reads that do not wait:** RXD$ (CRCV1, the PC-1600), RINKEY$ (RXCOM, the
+  CE-158) return at once without data.
+- **The CE-150 on the PC-1600** (MODE 1): its recorder runs and the tape
+  moves, but no CLOAD or CSAVE through it works in the emulator yet (the
+  CE-150's ROM receives the signal and decodes bits, the header is never
+  found; a CSAVE writes no readable signal).
+
 ## In the code
 
 - A: `PC1500Machine::keyReady()` and `PC1600Machine::keyReady()` (the frame
   notes and the 15 frames), `Machine::isKeyReady()` above the core.
-- W's busy list and B: the kind `c1600.program-state`
+- W's busy list, a medium awaited and B: the kind `c1600.program-state`
   (`core/Machine/SharpProductKinds.hpp`: `PC1500Machine::toneSounding()`,
-  `programEnded()`; `PC1600Machine::programEnded()`, the CE-1600F's motor).
+  `tapeAwaited()`, `ce158ReceiveWaitSeen()`, `programEnded()`;
+  `PC1600Machine::tapeAwaited()`, `receiveWaitSeen()`, `programEnded()`, the
+  CE-1600F's motor). "Nothing on its way" for the port: the library's
+  `SerialPortQueues::incoming()`, bytes queued or still with the other side,
+  which the feed (`app/SerialScripts.cpp`) and a host link report
+  (`SerialPort::setPeerSending`).
 - The rule: `app/SharpPresetRules.cpp`; the keys that do not wait:
   `app/SharpTyping.cpp` (ON/BREAK, at most 0.2 s). Pacing asks W, but full
   speed is never paced (`app/PacingProfiles.cpp`): with pacing by the host's

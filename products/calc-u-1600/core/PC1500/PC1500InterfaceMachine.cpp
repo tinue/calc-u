@@ -89,7 +89,12 @@ struct PC1500InterfaceMachine::Kinds {
             return {};
         }
         bool programEnded() const override { return m.programEnded(); }
+        // The tape, or the CE-158's port with nothing on its way.
+        bool awaitsMedium() const override {
+            return m.tapeAwaited() || (m.ce158ReceiveWaitSeen() && !port->port().incoming());
+        }
         PC1500Machine& m;
+        SerialPortCapability* port = nullptr;   // the interface machine's CE-158 peer
     } program;
 };
 
@@ -97,6 +102,7 @@ PC1500InterfaceMachine::PC1500InterfaceMachine(const MachineDescriptor& d, const
     : SharpMachine(d, v), m_core(std::make_unique<PC1500Machine>(modelOf(d))), m_kinds(std::make_unique<Kinds>(*m_core)),
       m_debugging(sharp::makeSharpDebugging(*m_core)) {
     m_core->setCE158SerialLink(&m_ce158Port);
+    m_kinds->program.port = &m_ce158Port;
 }
 
 PC1500InterfaceMachine::~PC1500InterfaceMachine() = default;

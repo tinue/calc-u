@@ -73,6 +73,7 @@ void HostLinks::pump(machine::Machine& m) {
             l.pending.erase(l.pending.begin(), l.pending.begin() + static_cast<std::ptrdiff_t>(taken));
         }
         port->setPeerLines(PeerLines{true, true, l.link && l.link->peerOpen(), false});
+        port->setPeerSending(!l.pending.empty());
     }
 }
 

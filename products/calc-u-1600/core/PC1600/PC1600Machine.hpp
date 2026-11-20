@@ -395,6 +395,12 @@ public:
     /// mode (CURLINE F89CH 0), not for INPUT or a PRINT stop (INTFLG F88AH
     /// bits 5, 6). MODE 1 is the same: the Z-80 runs BASIC in both modes.
     bool programEnded();
+    /// The CE-1600P's tape loader waited for an edge in this frame or the
+    /// last, and the cassette does not play (none in, the motor off, at its end).
+    bool tapeAwaited() const;
+    /// CRCVA waited on an empty ring in this frame or the last (the loop of
+    /// the OLD or the NEW ROM).
+    bool receiveWaitSeen(bool oldRom) const;
     /// The selected program area, TITLE (F1D5H): 0 = S0, 1 = S1, 2 = S2.
     int programAreaTitle();
 
@@ -532,6 +538,12 @@ private:
     uint64_t m_readyLastScan{0};
     int m_readyFrames{0};
     bool m_keyReadInFrame{false};   // KEYGETR or KEYDIRECT entered in this frame (not in the state record)
+    struct MediumWaits {
+        bool tape = false, receiveNew = false, receiveOld = false;
+    };
+    MediumWaits m_mediumWaits, m_lastMediumWaits;   // this frame and the last (not in the state record)
+    void noteTapeWait(uint16_t pc);
+    void noteReceiveWait(uint16_t pc);
     std::unique_ptr<CE1600FCard> m_ce1600fCard; // union-attached with m_ce1600pCard
     std::unique_ptr<PC1600HostDriveCard> m_hostDriveCard; // see attachHostDrive()
     std::vector<std::unique_ptr<SystemBusCard>> m_busRoms; // see attachBusRom()

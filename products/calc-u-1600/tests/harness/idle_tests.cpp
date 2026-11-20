@@ -352,3 +352,142 @@ TEST(idle_pc1600_ce1600p_is_busy_while_it_prints) {
     s.pause("200ms");
     expectBusy(s, 2);
 }
+
+// ── A medium awaited (docs/developer/Idle.md, "A medium awaited") ─────────
+
+namespace {
+
+// A cassette definition beside a copy of the fixture's sound file.
+std::string cassetteOf(const fs::path& folder, const char* wav) {
+    fs::copy_file(fs::path("tests/fixtures/tape") / wav, folder / wav, fs::copy_options::overwrite_existing);
+    const fs::path yaml = folder / (std::string(wav) + ".cassette.yaml");
+    std::ofstream(yaml, std::ios::binary) << "format: cassette\nformat-version: 1\ncassette-name: \"T\"\naudio: { file: "
+                                          << wav << " }\n";
+    return yaml.string();
+}
+
+// A PC-1500A with a CE-150 at the prompt in RUN mode, NEW0 done.
+void pc1500WithCe150(Sharp& s) {
+    s.line("attach printer CE-150");
+    s.pause("5s");
+    s.program({});   // CL answers the memory check, NEW0, RUN mode
+}
+
+// Waits for the medium, the program has not ended.
+void expectAwaitsMedium(Sharp& s) {
+    expectRow(s.idle(), false, true, false);
+    expectSettles(s);
+}
+
+} // namespace
+
+TEST(idle_pc1500_cload_without_a_cassette_awaits_the_tape) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    Sharp s("PC-1500A");
+    if (!s.ok()) return;
+    pc1500WithCe150(s);
+    s.line("type CLOAD");
+    s.pause("2s");   // past the motor start (1 s), in LOAD_NIBBLE's edge wait
+    expectAwaitsMedium(s);
+}
+
+TEST(idle_pc1500_cload_from_a_playing_tape_is_work_until_loaded) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    Sharp s("PC-1500A");
+    if (!s.ok()) return;
+    pc1500WithCe150(s);
+    CHECK_EQ(s.line("cassette { file: " + cassetteOf(s.folder(), "pc1500_tape.wav") + " }"), std::string("done\n"));
+    s.line("type CLOAD");
+    s.pause("1500ms");   // the leader
+    expectBusy(s, 2);
+    expectSettlesAfterWork(s);   // until the program is in
+    expectRow(s.idle(), true, true, true);
+    s.typeLine("RUN");
+    s.pause("2s");
+    CHECK(has(s.line("display-text"), "SUM= 385"));
+    // A second CLOAD finds the tape at its end: it waits for a medium again.
+    s.line("type CLOAD");
+    s.pause("2s");
+    expectAwaitsMedium(s);
+}
+
+TEST(idle_pc1500_ce158_input_awaits_the_port) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    Sharp s("PC-1500A");
+    if (!s.ok()) return;
+    s.line("attach interface CE-158");
+    s.pause("3s");
+    s.program({"10 SETCOM 1200,8,N,1:OUTSTAT 0", "20 SETDEV KI", "30 INPUT N$", "40 SETDEV", "50 PRINT N$"});
+    s.runProgram();
+    expectAwaitsMedium(s);   // nothing fed
+    // A feed still to come (held): bytes arrive, work.
+    const fs::path name = s.folder() / "name.txt";
+    std::ofstream(name, std::ios::binary) << "WORLD\r";
+    s.line("c1600 serial ce158 feed " + name.string() + " hold=240");   // 2 s at 1200 baud
+    s.pause("500ms");
+    expectBusy(s, 2);
+    expectSettlesAfterWork(s);
+    CHECK(has(s.line("display-text"), "WORLD"));
+}
+
+TEST(idle_pc1600_com1_input_awaits_the_port) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    Sharp s("PC-1600");
+    if (!s.ok()) return;
+    s.program({"10 SETCOM \"COM1:\",9600,8,N,1,N,N", "20 SETDEV \"COM1:\",KI", "30 INPUT N$", "40 SETDEV \"COM2:\"",
+               "50 PRINT N$"});
+    s.runProgram();
+    expectAwaitsMedium(s);   // nothing fed: CRCVA waits on an empty ring
+    const fs::path name = s.folder() / "name.txt";
+    std::ofstream(name, std::ios::binary) << "WORLD\r";
+    s.line("c1600 serial rs232c feed " + name.string() + " hold=1920");   // 2 s at 9600 baud
+    s.pause("500ms");
+    expectBusy(s, 2);
+    expectSettlesAfterWork(s);
+    CHECK(has(s.line("display-text"), "WORLD"));
+}
+
+TEST(idle_pc1600_direct_load_com1_awaits_the_port_then_loads) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    Sharp s("PC-1600");
+    if (!s.ok()) return;
+    s.program({});
+    s.typeLine("SETCOM \"COM1:\",9600,8,N,1,N,N");
+    s.line("type LOAD\"COM1:\"");
+    s.pause("500ms");
+    expectAwaitsMedium(s);   // nothing fed yet
+    const fs::path file = s.folder() / "p.txt";
+    std::ofstream(file, std::ios::binary) << "10 A=6*7\r\n20 PRINT A\r\n\x1a";
+    s.line("c1600 serial rs232c feed " + file.string());
+    expectSettlesAfterWork(s);   // the LOAD has ended
+    expectRow(s.idle(), true, true, true);
+    CHECK(has(s.line("c1600 list-basic"), "\n20 PRINT A\n"));
+}
+
+TEST(idle_pc1600_cload_awaits_the_tape_and_a_playing_tape_is_work) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    {   // no cassette: CMBITIN's first edge wait, without a timeout
+        Sharp s("PC-1600");
+        if (!s.ok()) return;
+        s.line("attach printer CE-1600P");
+        s.pause("15s");   // the pen's home run
+        s.program({});
+        s.line("type CLOAD");
+        s.pause("2s");
+        expectAwaitsMedium(s);
+    }
+    {   // a playing tape, its silence between header and data too
+        Sharp s("PC-1600");
+        if (!s.ok()) return;
+        s.line("attach printer CE-1600P");
+        s.pause("15s");
+        s.program({});
+        CHECK_EQ(s.line("cassette { file: " + cassetteOf(s.folder(), "pc1600_tape.wav") + " }"), std::string("done\n"));
+        s.line("type CLOAD");
+        s.pause("4500ms");   // the tape at 4.2-5.2 s: silence, the loader in its edge wait, the motor on
+        expectBusy(s, 2);
+        expectSettlesAfterWork(s);
+        expectRow(s.idle(), true, true, true);
+        CHECK(has(s.line("c1600 list-basic"), "\n180 END\n500 PRINT \"SUBROUTINE\":RETURN\n"));   // the whole program
+    }
+}

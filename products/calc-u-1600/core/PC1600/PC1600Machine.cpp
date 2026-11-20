@@ -16,6 +16,7 @@ PC1600Machine::PC1600Machine()
 void PC1600Machine::resetLocked() {
     m_readyFrames = 0;  // key readiness is counted again from here (keyReady())
     m_keyReadInFrame = false;
+    m_mediumWaits = m_lastMediumWaits = MediumWaits{};
     m_bank.reset();
     m_z80Mem.reset();
     m_z80Mem.keyboard().releaseAll();
@@ -317,6 +318,8 @@ int PC1600Machine::stepLocked(uint64_t* tstates) {
         // KEYGETR (0169H) and KEYDIRECT (0175H, INKEY$): a program reads a key.
         const uint16_t pc = m_sc7852.pc();
         if (pc == 0x0169 || pc == 0x0175) m_keyReadInFrame = true;
+        else if (pc >= 0x6149 && pc <= 0x6302) noteTapeWait(pc);
+        else if (pc >= 0x9FF4 && pc <= 0xA060) noteReceiveWait(pc);
         int c = m_sc7852.step();
         // Parked on a breakpoint: nothing executed, so no time passes.
         if (c == 0 && m_sc7852.breakpointsEnabled() && m_sc7852.consumeBreakpointHit()) {
@@ -440,6 +443,8 @@ void PC1600Machine::advanceSharedClocks(int tstates) {
         if ((keyWait || m_keyReadInFrame) && m_z80Mem.display().clockEnabled()) ++m_readyFrames;
         else m_readyFrames = 0;
         m_keyReadInFrame = false;
+        m_lastMediumWaits = m_mediumWaits;
+        m_mediumWaits = MediumWaits{};
     }
     // LU-57813P calendar clock: one tick per emulated second, fed from
     // both bus-ownership branches of step() -- see kRtcPeriodTStates. The
@@ -523,6 +528,33 @@ uint8_t PC1600Machine::debugPeek(uint16_t addr) {
 }
 
 bool PC1600Machine::mode1() { return (debugPeek(0xF1BC) & 0x40) != 0; }
+
+// docs/developer/Idle.md, "A medium awaited": the CE-1600P's tape loaders
+// (bank 5 in page B) in an edge wait -- MODE 0 CMBITIN L6149-6152, MODE 1
+// CM1500BIT 62CD-62D8 and 62F7-6302 -- and CRCVA's receive loop (bank 6 in
+// page C), NEW 9FF4-A018, OLD A03C-A060.
+void PC1600Machine::noteTapeWait(uint16_t pc) {
+    if (!m_ce1600pCard || m_bank.pageBBank() != 5) return;
+    if ((pc >= 0x6149 && pc <= 0x6152) || (pc >= 0x62CD && pc <= 0x62D8) || (pc >= 0x62F7 && pc <= 0x6302))
+        m_mediumWaits.tape = true;
+}
+
+void PC1600Machine::noteReceiveWait(uint16_t pc) {
+    if (m_bank.pageCBank() != 6) return;
+    if (pc <= 0xA018) m_mediumWaits.receiveNew = true;
+    if (pc >= 0xA03C && pc <= 0xA060) m_mediumWaits.receiveOld = true;
+}
+
+bool PC1600Machine::tapeAwaited() const {
+    if (!(m_mediumWaits.tape || m_lastMediumWaits.tape)) return false;
+    const TapeDeck::Status st = m_tapeDeck.status();
+    return st.mode != TapeDeck::Mode::Play || !st.motor || m_tapeDeck.atEnd();
+}
+
+bool PC1600Machine::receiveWaitSeen(bool oldRom) const {
+    return oldRom ? m_mediumWaits.receiveOld || m_lastMediumWaits.receiveOld
+                  : m_mediumWaits.receiveNew || m_lastMediumWaits.receiveNew;
+}
 
 bool PC1600Machine::programEnded() {
     const bool busyOff = (debugPeek(0xF64E) & 0x01) == 0;           // BUSY, SYMB0 bit 0

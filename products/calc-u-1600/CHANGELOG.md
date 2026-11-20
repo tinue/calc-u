@@ -268,9 +268,14 @@
   for; the PC-1600 used to count any running program as idle, and the
   PC-1500 an INKEY$ loop as busy. The signals per model are in
   `docs/developer/Idle.md`.
-- **BREAK goes in while a program runs**, from a preset, the harness or
-  the driver; it used to wait for the key wait and was refused after an
-  hour on the PC-1500.
+- **A tape or the serial port awaited counts as waiting**, as Calc-U-59's
+  card wait does: CLOAD with no cassette in (or at its end), INPUT, LOAD or
+  CLOAD from the PC-1600's port or the CE-158 with nothing coming. The step
+  returns instead of running into its timeout; while a tape plays or bytes
+  come, it is waited for.
+- **BREAK goes in while a program runs**, from the harness or the driver
+  (a preset's keys wait for the machine as before); it used to wait for the
+  key wait and was refused after an hour on the PC-1500.
 - **Harness: `key-down` and `key-up` take `break` for `on`**, as `key`
   does; `key … hold=<duration>` holds each key that long, `wait-finished`
   waits until the program has ended, `idle-state` shows whether the machine

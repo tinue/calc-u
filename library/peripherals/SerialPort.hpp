@@ -38,6 +38,10 @@ public:
     virtual LineSettings lineSettings() const = 0;
     virtual bool used() const = 0;   // the machine has used the port since it exists
     virtual void setPeerLines(const PeerLines&) = 0;
+    // The other side still has bytes to send: a feed's rest (held bytes
+    // too), what a host link has read and not yet handed over. A machine
+    // that waits to receive waits for a medium only while nothing comes.
+    virtual void setPeerSending(bool) {}
 };
 
 // A ready-made implementation for cores: two queues, no thread, no lock
@@ -52,6 +56,7 @@ public:
     LineSettings lineSettings() const override { return line_; }
     bool used() const override { return used_; }
     void setPeerLines(const PeerLines& p) override { peer_ = p; }
+    void setPeerSending(bool s) override { peerSending_ = s; }
 
     // The core's side, called by the UART at its character time.
     void machineSends(std::uint8_t b) {
@@ -64,11 +69,14 @@ public:
     void markUsed() { used_ = true; }
 
     std::size_t sentWaiting() const { return sent_.size(); }
+    // Bytes on their way to the machine: queued here, or still with the other side.
+    bool incoming() const { return !received_.empty() || peerSending_; }
 
 private:
     std::deque<std::uint8_t> sent_, received_;
     LineSettings line_;
     PeerLines peer_;
+    bool peerSending_ = false;
     bool used_ = false;
 };
 

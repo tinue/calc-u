@@ -7,8 +7,8 @@ cmake_minimum_required(VERSION 3.21)
 # `calcu`, and the core/ + app/
 # test suite as CTest targets (with CALCU_TESTS). Opening the
 # repository root in CLion (or any CMake-aware IDE) gives run/debug
-# configurations for all of them -- see the "CLion / IDE Integration"
-# section of docs/developer/Building.md. Under Emscripten only the Web
+# configurations for all of them -- see the "CLion and other IDEs"
+# section of the repository's docs/Building.md. Under Emscripten only the Web
 # engine (calcu1600_web) and the wasm_smoke check (frontends/web/build.sh,
 # tools/build_wasm_check.sh; both build in the root's build/web).
 #

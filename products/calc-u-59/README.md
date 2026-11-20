@@ -43,18 +43,7 @@ Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_6
 
 The code is layered: `core/` emulates the hardware, `app/` (C++20, standard library only) holds all non-drawing logic, and the three GUIs only draw — see [`docs/developer/App-Layer.md`](docs/developer/App-Layer.md) and [`docs/developer/Frontend-Parity.md`](docs/developer/Frontend-Parity.md).
 
-**Swift app (macOS, iOS, iPadOS):** open `frontends/swift/Calc-U-59.xcodeproj` in Xcode, or `xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 -destination platform=macOS build`. The project carries the author's Apple Developer Team ID and bundle identifier (`ch.erzberger.calcu59`). To build it yourself, change the team on the target's *Signing & Capabilities* tab to your own; Xcode updates the bundle identifier. The Simulator needs no changes. For iCloud card sync on a real device, also register a new iCloud container and update the two container identifiers in `Calc-U-59.entitlements`.
-
-**C++ build, tests and Qt6 app:** the source repository's root CMake project compiles `core/`, `app/`, the C++ test suite and, when Qt6 is found, the Qt app (`-DCALCU_FRONTEND_QT=OFF` skips it, `-DCALCU_PRODUCT_1600=OFF` leaves out Calc-U-1600). From this directory:
-
-```bash
-../../tools/run_tests.sh calc-u-59            # every Frequent test of the product, in ../../build/tests
-../../tools/run_tests.sh calc-u-59 <text>     # the TESTs whose name contains <text>
-```
-
-`../../tools/run_qt.sh 59 --build` builds the Qt app into the repository's `build/app-59` tree; `../../tools/run_qt.sh 59 [file.ti59]` builds and starts it. On macOS, Qt comes from Homebrew and the Qt build is for development only. The Windows and Linux packages are built by CI (the repository's `.github/workflows/calc-u-59.yml`), which also lists the packages each platform needs.
-
-**Web client:** `frontends/web/build.sh` compiles `core/` and `app/` with Emscripten (`emcc`, e.g. `brew install emscripten`) and builds a self-contained `frontends/web/dist/` that the website embeds; `frontends/web/run-tests.sh` runs its Playwright tests against it. CI builds it too and uploads it zipped. See [`docs/developer/Web-Client.md`](docs/developer/Web-Client.md).
+How to build the Swift app, the Qt6 app, the web client and the tests: [`docs/Building.md`](../../docs/Building.md) at the repository root. `../../tools/run_tests.sh calc-u-59` runs every Frequent test of the product.
 
 See [`docs/developer/New-GUI-Guide.md`](docs/developer/New-GUI-Guide.md) if you're considering a GUI for yet another platform.
 

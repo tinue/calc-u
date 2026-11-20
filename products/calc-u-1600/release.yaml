@@ -47,6 +47,6 @@ build:
       - { artifact: Calc-U-1600-help,           file: Calc-U-1600-help.zip,     as: Calc-U-1600-help.zip }
 
 # Developer ID certificates the macOS CI job signs with; rotated yearly with
-# ReleaseIt's `renew-certs` (see products/calc-u-1600/.github/macos-signing.md).
+# ReleaseIt's `renew-certs` (see docs/macos-signing.md at the repository root).
 certs:
   team_id: 7Q3QN9AV9J

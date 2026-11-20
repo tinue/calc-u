@@ -2,8 +2,8 @@
 # Builds a product's Qt6 app (Release, Ninja) from the root CMake project
 # into build/app-<n>, the other product off (configured the
 # first time only), and starts it: on macOS the .app through `open`, else
-# the binary. The local development build; on macOS the Qt app is never
-# shipped, Windows and Linux packages come from CI.
+# the binary. The local development build; the release packages come
+# from CI (docs/Building.md).
 #
 #   tools/run_qt.sh 59 [args]      # build and start; args go to the app (a preset)
 #   tools/run_qt.sh 1600 --build   # build only

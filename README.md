@@ -59,10 +59,9 @@ ctest --test-dir build/tests -j8
 (or the `TEST`s whose name contains the filter) in the same tree.
 
 Options: `CALCU_PRODUCT_59`, `CALCU_PRODUCT_1600`, `CALCU_FRONTEND_QT`,
-`CALCU_TESTS`, `CALCU_TESTS_LONGER`, `CALCU_TESTS_CHECKPOINT`. Each
-product's developer documents say how to build its frontends:
-[Calc-U-59](products/calc-u-59/README.md),
-[Calc-U-1600](products/calc-u-1600/docs/developer/Building.md).
+`CALCU_TESTS`, `CALCU_TESTS_LONGER`, `CALCU_TESTS_CHECKPOINT`.
+[`docs/Building.md`](docs/Building.md) says how to build each product's
+apps and web client.
 
 ## Further information
 

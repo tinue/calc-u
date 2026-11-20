@@ -59,7 +59,7 @@ settings alone. A port outside 1024 to 65535 is reported, and the server
 stays off for that run.
 
 **Without a window.** The harness `calcu`, which you build from the source
-repository ([Building](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/developer/Building.md)),
+repository ([Building](https://github.com/tinue/calc-u/blob/main/docs/Building.md)),
 serves a debugger too: `calcu --product c1600 serve --dap 32168`. It has no
 wall clock: while VS Code has the machine running, emulated time passes as
 fast as the computer allows. A session that stops at breakpoints repeats

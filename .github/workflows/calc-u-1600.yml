@@ -3,7 +3,7 @@ name: Calc-U-1600
 # Calc-U-1600 lives in products/calc-u-1600/; every run step
 # works there (defaults below).
 
-# Builds the Qt6 app (see docs/developer/Building.md) on Linux x86_64,
+# Builds the Qt6 app (see the repository's docs/Building.md) on Linux x86_64,
 # Linux arm64, macOS, and Windows. Every job runs roms/fetch_roms.sh
 # before configuring -- ROMs aren't committed here (see roms/README.md),
 # so without this step the build "succeeds" (CMake globs an empty roms/ directory without erroring)
@@ -19,9 +19,8 @@ name: Calc-U-1600
 # macOS runs macdeployqt to embed the Qt frameworks (see
 # frontends/qt6/CMakeLists.txt's MACOSX_BUNDLE), then Developer-ID-signs the .app
 # (hardened runtime), notarizes + staples it, and packages it into a
-# signed/notarized/stapled .dmg -- same Developer ID/Team ID as
-# SharpDataExchange, see products/calc-u-1600/.github/macos-signing.md
-# for the repo secrets this needs and how to rotate them. The windows jobs (one matrix) run
+# signed/notarized/stapled .dmg -- see docs/macos-signing.md for the
+# repository secrets this needs and how to rotate them. The windows jobs (one matrix) run
 # windeployqt so the staged folder is genuinely standalone-runnable (Qt
 # DLLs + MSVC runtime bundled alongside the .exe, since Windows has no
 # equivalent to Linux's "the system already has Qt installed" or macOS's
@@ -419,9 +418,8 @@ jobs:
         # launch.
         run: $(brew --prefix qt)/bin/macdeployqt $QT_BUILD/Calc-U-1600.app
 
-      # See products/calc-u-1600/.github/macos-signing.md (same Developer
-      # ID, team 7Q3QN9AV9J, as SharpDataExchange) for how these repo
-      # secrets were produced and how to rotate them.
+      # See docs/macos-signing.md (Developer ID, team 7Q3QN9AV9J) for how
+      # these repository secrets are produced and how to rotate them.
       - name: Import signing certificate
         env:
           APP_P12_B64: ${{ secrets.APPLE_CERT_APPLICATION_P12_BASE64 }}

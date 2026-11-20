@@ -93,4 +93,4 @@ a serial port file unless you ask for one:
 `calcu --product c1600 c1600 serial ce158|rs232c feed <file>`,
 `capture <file>`, `link` (makes the serial port file) and `report`. It is
 built from the source repository
-([Building](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/developer/Building.md)).
+([Building](https://github.com/tinue/calc-u/blob/main/docs/Building.md)).

@@ -28,7 +28,8 @@ from typing import Any, Optional, Sequence
 REPO = Path(__file__).resolve().parents[3]
 # The root build trees that hold `calcu`, in the order they are looked in:
 # build/tests (the Frequent tree, CLAUDE.md), build/all (everything),
-# build/tools (Calc-U-59's scripts build it on first use, tools/calcu59.py).
+# build/tools (the harness alone: the Calc-U-1600 test driver's guide configures it,
+# products/calc-u-59/tools/calcu59.py builds it on first use).
 TREES = ("tests", "all", "tools")
 
 

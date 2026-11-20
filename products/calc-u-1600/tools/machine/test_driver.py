@@ -118,7 +118,8 @@ def test_step_rejects_line_break(tmp_path):
         Machine(tmp_path).type("A\nkeys:")
 
 
-# The harness commands behind wishes 1-4 and 12 of the requirements (calcu_machine.Session).
+# The steps and reads on harness commands of calcu_machine.Session: keys, expectations, memory,
+# breaking and waiting for a program, the display's dots, the state, running to an address.
 
 
 def test_bs_is_a_key(tmp_path):

@@ -1,26 +1,6 @@
-# macOS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-
+# Output in the product folder (e.g. the Qt6 frontend's frontends/qt6/build/)
 build/
-build-debug/
 build-tests/
-
-# CLion's own out-of-source build directories for the root CMakeLists.txt
-# (cmake-build-debug, cmake-build-release, ...). CLion drops a self-ignoring
-# .gitignore inside each one, so they'd stay out of `git status` anyway --
-# listing them here makes that explicit rather than accidental.
-cmake-build-*/
-
-# Compiled object files
-*.o
-
-# Python bytecode cache (tools/*.py helper scripts)
-__pycache__/
-*.pyc
 
 # Scratch output of `calcu` runs (ROM/RAM dumps, traces, disassembly
 # scratch, etc.) -- see headless/README.md. Everything under here is
@@ -28,33 +8,15 @@ __pycache__/
 /headless/*
 !/headless/README.md
 
-# Debug trace captures dropped at the repo root by an ad hoc run outside
+# Debug trace captures dropped at the product root by an ad hoc run outside
 # headless/ (see core/PC1500/PC1500TraceFile.hpp for the format) -- root only, other .bin under subdirectories is unaffected by this rule.
 /*.bin
 
-# Sharp firmware ROM dumps -- ROMs are not in this repository.
-# roms/fetch_roms.sh (re)downloads the 11 with a known public source into
-# roms/ before building; roms/CE-150.ROM has no public source yet and, if
-# you have your own dump, stays local-only. roms/README.md (provenance
-# notes) stays tracked.
-roms/*.ROM
-roms/*.bin
-
-# IntelliJ IDEA
-.idea/
-*.iml
-*.ipr
-*.iws
-
-# VS Code editor settings (local/per-checkout preference, e.g. pointing
-# cmake.sourceDirectory)
-/.vscode/
-
-
 # Non-macOS libsharpdx binaries fetched by tools/fetch_sharpdx.sh (see
-# cmake/CalcU.cmake) -- unlike core/Basic/vendor/sharpdx/libsharpdx.a
-# (macOS, committed, refreshed via tools/refresh_sharpdx.sh), these are
-# meant to stay a local/CI-only build artifact, never committed.
+# the calcu_sharpdx target in CMakeLists.txt) -- unlike
+# core/Basic/vendor/sharpdx/libsharpdx.a (macOS, committed, refreshed via
+# tools/refresh_sharpdx.sh), these are meant to stay a local/CI-only build
+# artifact, never committed.
 /core/Basic/vendor/sharpdx/libsharpdx-linux.a
 /core/Basic/vendor/sharpdx/*.lib
 /core/Basic/vendor/sharpdx/native-libs-windows.txt

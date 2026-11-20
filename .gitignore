@@ -1,6 +1,25 @@
 # Build trees of the root CMake project (CMakeLists.txt)
 /build/
 
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Compiled object files
+*.o
+
+# IntelliJ IDEA and CLion
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Local Claude Code settings (permissions only, no secrets, but local)
+.claude/settings.local.json

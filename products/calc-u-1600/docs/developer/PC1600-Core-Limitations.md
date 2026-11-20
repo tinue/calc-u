@@ -208,7 +208,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   documented (the Service Manual lists the CE-1600P's reset, KL, but not
   the RESET switch among the power-on sources).
 - **Power cycle behind the machine interface**: `Machine::powerCycle()` runs
-  0.8.1's sequence over the following advances (`off` 4 frames, up to
+  its sequence over the following advances (`off` 4 frames, up to
   180 frames to the off point, `on` 4 frames; `core/Machine/PowerCycleSequence.hpp`).
   An attach or detach on a running machine reaches the bus at that off
   point; on a switched-off machine at once, and it stays off. The key

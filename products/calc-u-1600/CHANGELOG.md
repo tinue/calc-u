@@ -32,8 +32,9 @@
   for one (was `--ce158-pty`). For developers only.
 - **Automated tests with pytest.** A user guide
   (`docs/testing/README.md`): setting up on macOS, Linux and WSL, a test
-  project of your own, two worked examples (MODE 1 with memory modules,
-  RENUM on the PC-1500) that run as a test project in the checkout, the
+  project of your own, three worked examples (MODE 1 with memory modules,
+  RENUM on the PC-1500, the serial ports) that run as a test project in
+  the checkout, the
   path names (`$c1600`, `$saved`, your own), the reference. The driver
   (`tools/machine/`) takes module files and media of your own (a module
   file is plugged as a copy, so the machine's writes never reach it), a printer,

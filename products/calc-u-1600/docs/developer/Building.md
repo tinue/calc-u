@@ -187,7 +187,7 @@ configurations committed in the repository's `.run/`:
 |---|---|---|
 | `Calc-U-1600` | `CalcU1600Qt` | The Qt6 GUI app |
 | `CoreTests` | `CoreTests` | Headless test suite, also runnable via CTest |
-| `calcu-1600` | `calcu` | The harness, `calcu --product c1600 serve`: one command per line on standard input (the product's section Harness of `CLAUDE.md`). Every function of the old CLIs `pc1500_cli` and `pc1600_cli` and of the three probes is a `calcu` command |
+| `calcu-1600` | `calcu` | The harness, `calcu --product c1600 serve`: one command per line on standard input (the product's section Harness of `CLAUDE.md`) |
 
 All of them run and debug interactively (breakpoints, variable
 inspection, stepping) — which is the main thing this build adds over

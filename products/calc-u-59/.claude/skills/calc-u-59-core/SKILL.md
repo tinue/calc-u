@@ -73,7 +73,7 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   through the capability `TMC0501/c59.trace-records`
   (`core/TraceRecords.hpp`). `TIMachine` alone sets the trace flags. `TI59Machine`,
   `TMC0501`, `MachineVariant`, `TIKeys`, `TIRomRanges` are core-internal; the
-  CTest `CalcU59CoreSeam` (`tests/check_core_seam.sh`) fails on an include of
+  CTest `CalcU59CoreSeam` (`tools/check_core_seam.sh`) fails on an include of
   them outside `core/` and `tests/`. Don't add an adapter call for what the
   interface already has.
 - **Peripherals:** the PC-100C (`core/PC100C.*`) and a Solid State

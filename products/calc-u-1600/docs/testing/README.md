@@ -305,8 +305,19 @@ were typed: no blank between a variable or number and the keyword after it (`ON 
 
 ## 5 Paths
 
-A test names files and folders: module files, floppy disks, cassettes, programs, ROM images, a
-host-drive folder. A path is one of three:
+The driver brings no modules, media or programs of its own. A test runs on what Calc-U-1600
+ships, and on what the test project brings:
+
+- **Shipped:** the bundled modules by name (`CE-1600M`, `superRAM`); the bundled media and the
+  examples as files of the checkout, by `$c1600`: the module definitions, `blank.floppy.yaml`,
+  `formatted.floppy.yaml` and `empty.cassette.yaml` in `$c1600/frontends/qt6/resources/cards/`,
+  the examples in `$c1600/examples/`.
+- **Brought:** anything else is a file of the test project, whatever the medium: a module still
+  being built, a floppy disk or a cassette with your programs, a ROM image, a program. Copy the
+  nearest shipped file and change it, or save one in the app (Name & Save, then `$saved`) and
+  copy it into the project.
+
+A test names these files and folders by path. A path is one of three:
 
 | Path | Found in | Example |
 |---|---|---|
@@ -341,9 +352,8 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
 
 - A **slot** value without `/` and without `.module.yaml` is a bundled module's name (`CE-1600M`,
   `superRAM`). Anything else is a path: `cards/my-ram.module.yaml`, `$cards/superram-full.module.yaml`.
-  A module that isn't bundled, for example one still being built, is a file of the test project:
-  copy the nearest bundled definition from the checkout (`$c1600/frontends/qt6/resources/cards/`)
-  and change it.
+  The other media are always paths: `floppy("$c1600/frontends/qt6/resources/cards/formatted.floppy.yaml")`,
+  `floppy("disks/progs.floppy.yaml")`.
 - `host_drive` is a folder on your computer, found like any path; usually an absolute one or a
   per-test folder: `host_drive=tmp_path / "drive"`.
 - **Files a test makes** belong in pytest's per-test folder `tmp_path` or in `$work`. A card saved

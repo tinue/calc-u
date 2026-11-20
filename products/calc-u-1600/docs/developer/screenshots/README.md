@@ -45,8 +45,7 @@ client (`library/qt6/AttachLineClient`, the harness's serve protocol): every
 step that loads a preset, lets time pass, presses keys or types is the
 harness's `preset`, `wait`, `key`, `type`, `reset`, `cold-boot` (and
 `expect`, `pause`, `resume`), so the runner never steps the machine
-itself (the Frequent CTest `CalcU1600ShotsThroughAttach` checks
-`ShotRunner.cpp` for it). UI steps find the shell's widgets by their
+itself. UI steps find the shell's widgets by their
 object names (`library/shell/ObjectNames.hpp`).
 
 ## What a run guarantees

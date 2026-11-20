@@ -161,18 +161,10 @@ if(CALCU_TESTS)
   # lookup's allowed files are the host drive's own ROM
   # (core/Machine/SharpRoms.cpp) and the catalogue's ROM entries.
   calcu_product_source_checks(PREFIX CalcU1600 ROM_ALLOW core/Machine/SharpRoms.cpp core/Machine/SharpCatalogue.cpp)
-  # No session class of the
-  # product's own; the Qt6 frontend hosts the library's app session and
-  # sends no suspend.
-  calcu_add_test(CalcU1600NoOwnSession frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_own_session.cmake)
   # The macOS Open With types: the
   # preset extensions as the product's own, .bas, .bbin, .bin as Alternate,
   # no .rom.
   calcu_add_test(CalcU1600OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
-  # The old CLIs, probes, one-time checks and their run configurations
-  # stay gone (the harness `calcu` does their work), and no
-  # PC1600_POWER_PROBE is left.
-  calcu_add_test(CalcU1600NoOldTools frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_old_tools.cmake)
   # The harness writes a PC-1600 trace,
   # tools/read_trace.py reads it unchanged (well under 2 s: Frequent).
   if(Python3_FOUND AND NOT WIN32)

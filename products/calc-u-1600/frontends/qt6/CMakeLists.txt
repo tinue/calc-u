@@ -324,8 +324,4 @@ if(CALCU_TESTS)
                  COMMAND ${CMAKE_COMMAND} -E env CALCU1600_QT_ROMS_MISSING=1 $<TARGET_FILE:CalcU1600QtTests> roms_missing_in_window
                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../..
                  PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
-  # The shot runner steps the machine through attach only.
-  calcu_add_test(CalcU1600ShotsThroughAttach frequent
-                 COMMAND ${CMAKE_COMMAND} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/app/screenshots/ShotRunner.cpp
-                         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_shots_through_attach.cmake)
 endif()

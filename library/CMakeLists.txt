@@ -156,7 +156,10 @@ endif()
 # checks every product runs over its own tree with the library's scripts
 # (Frequent; docs/test-groups.md). <PREFIX>NoOwnRomLookup: no source looks for
 # a ROM file outside the lookup but the files ROM_ALLOW names
-# (library/roms/tests/check_no_own_rom_lookup.sh).
+# (library/roms/tests/check_no_own_rom_lookup.sh). <PREFIX>NoOwnSession: the
+# frontends host the library's app session, the product defines no session
+# class of its own, the Qt6 frontend sends no suspend or continue
+# (library/sessions/tests/check_no_own_session.sh).
 # <PREFIX>NoPlatformSettings: no frontend keeps a setting in a platform store
 # (UserDefaults, @AppStorage, QSettings, localStorage;
 # allow-list tools/platform_stores_allowed.txt). Needs bash: not on
@@ -166,6 +169,8 @@ function(calcu_product_source_checks)
   cmake_parse_arguments(C "" "PREFIX" "ROM_ALLOW" ${ARGN})
   calcu_add_test(${C_PREFIX}NoOwnRomLookup frequent
                  COMMAND sh ${CALCU_LIBRARY_DIR}/roms/tests/check_no_own_rom_lookup.sh . ${C_ROM_ALLOW})
+  calcu_add_test(${C_PREFIX}NoOwnSession frequent
+                 COMMAND sh ${CALCU_LIBRARY_DIR}/sessions/tests/check_no_own_session.sh .)
   if(NOT WIN32)
     calcu_add_test(${C_PREFIX}NoPlatformSettings frequent
                    COMMAND bash ${CALCU_LIBRARY_DIR}/settings/check_platform_stores.sh frontends

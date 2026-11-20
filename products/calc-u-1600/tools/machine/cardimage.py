@@ -1,8 +1,9 @@
 """Reads the byte image of a saved card and the RAM disk on it.
 
-A card comes from the step `saveas: live slot-N:file:NAME.module.yaml`. The format is
-docs/Memory-Card-Definition-Format.md of Calc-U-1600, chapter 6. The RAM disk layout follows
-the PC-1600 file system (header, FAT, directory). Project neutral, no PC-1600 is needed to use this module.
+A card comes from the step `saveas { place: slot-N, as: live, file: NAME.module.yaml }`
+(Machine.card()). The format is docs/formats/modules.md, §1.7 Initial content, at the repository
+root. The RAM disk layout follows the PC-1600 file system (header, FAT, directory). No PC-1600 is
+needed to use this module.
 """
 
 import re
@@ -20,15 +21,21 @@ class CardFormatError(ValueError):
 
 
 def read_card(path):
-    """Returns the bytes of all banks of a saved card, in bank order."""
+    """Returns the bytes of a saved card: of all banks in bank order, or of an unbanked region."""
     text = Path(path).read_text()
     if text.count("initial-content:") != 1:
         raise CardFormatError(f"{path}: expected exactly one region with content")
     size = re.search(r"^\s*bank-size:\s*(0x[0-9A-Fa-f]+|\d+)", text, re.M)
-    if not size:
-        raise CardFormatError(f"{path}: no bank-size, only banked cards are supported")
-    bank_size = int(size.group(1), 0)
     content = text[text.index("initial-content:"):]
+    if not size:
+        capacity = re.search(r"^\s*capacity:\s*(0x[0-9A-Fa-f]+|\d+)", text, re.M)
+        if not capacity:
+            raise CardFormatError(f"{path}: neither bank-size nor capacity")
+        try:
+            return _read_bank(content, int(capacity.group(1), 0))
+        except CardFormatError as e:
+            raise CardFormatError(f"{path}: {e}") from None
+    bank_size = int(size.group(1), 0)
     banks = re.split(r"^\s*- bank:\s*", content, flags=re.M)[1:]
     if not banks:
         raise CardFormatError(f"{path}: no banks")

@@ -24,6 +24,17 @@ CARD = """\
           bytes: |
             $0000: FF...
 """
+UNBANKED = """\
+    capacity: 0x20
+    banking: none
+    initial-content:
+      blocks:
+        - offset: 0x0000
+          encoding: addressed-hex
+          bytes: |
+            $0000: 01 02 03 04 05 06 07 08  09 0A 0B 0C 0D 0E 0F 10
+            $0010: FF...
+"""
 PRINT_42 = 'PRINT "=";6*7'
 DWX = Path(__file__).resolve().parents[2] / "examples" / "dwx"
 OWN_CARD = DWX / "CE-1601M - Progs.module.yaml"
@@ -49,13 +60,22 @@ def test_read_card(tmp_path):
         CARD.replace("        - bank: 1", "        - bank: 2"),
         CARD.replace("bank-size: 0x20", "bank-size: 0x08"),
         CARD.replace("bank-size: 0x20", ""),
+        UNBANKED.replace("capacity: 0x20", "capacity: 0x08"),
         CARD.replace("addressed-hex", "base64"),
     ],
-    ids=["gap", "bank number", "bank too long", "no bank size", "encoding"],
+    ids=["gap", "bank number", "bank too long", "no bank size", "unbanked too long", "encoding"],
 )
 def test_read_card_rejects(tmp_path, broken):
     with pytest.raises(CardFormatError):
         read_card(write(tmp_path, broken))
+
+
+def test_read_unbanked_card(tmp_path):
+    assert read_card(write(tmp_path, UNBANKED)) == bytes(range(1, 17)) + b"\xFF" * 16
+
+
+def test_unbanked_module_is_returned(tmp_path):
+    assert len(Machine(tmp_path, slot_1="CE-1600M").card(1)) == 32 * 1024
 
 
 def test_file_chain_is_checked():

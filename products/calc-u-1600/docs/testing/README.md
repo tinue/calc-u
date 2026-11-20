@@ -505,7 +505,7 @@ Steps, collected until the next read:
 | `type(text)` | types one line and ENTER |
 | `wait(seconds=None)` | waits in machine time; without seconds until the machine has settled: it waits for the user (the prompt, INPUT, a PRINT stop, a program reading INKEY$) and nothing is busy, for 20 frames |
 | `wait_finished()` | waits in machine time until the program has ended (back at the BASIC prompt) and the machine has settled |
-| `expect(text)`, `not_expect(text)` | the next read fails unless / if a screen line holds text (`/regex/` too) |
+| `expect(text)`, `not_expect(text)` | the next read fails unless / if a screen line holds text (`/regex/` too). A character that blinks, such as the `:` after the line number of a listed line on the PC-1600, is in one phase or the other at the check: match both, `expect('/10[ :]PRINT/')` |
 | `load(path)` | machine code straight into memory (its header gives the address) |
 | `load_basic(path)`, `type_basic(path)` | a BASIC listing: straight into memory, or typed line by line |
 | `floppy(path, side=0)`, `cassette(path)`, `eject(place)` | inserts or ejects (`floppy`, `cassette`) a medium |

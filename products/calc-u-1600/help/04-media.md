@@ -154,7 +154,7 @@ file decides:
 | a BASIC listing, or tokenized BASIC (`.bbin`) | **File ▸ Load BASIC Program…** ([BASIC programs](09-basic-programs.md)) |
 | machine code with a CE-158 or PC-1600 header | **File ▸ Load Machine Code…** ([Machine code](09-machine-code.md)) |
 | machine code without a header, in a `.bin` file | **File ▸ Load Machine Code…**, which asks for the address |
-| a cassette recording (WAV) of a PC-1500 (CE-150) or PC-1600 (CE-1600P) | by the file on the tape, as above; with several files you choose one |
+| a cassette's sound file (`.wav`) of a PC-1500 (CE-150) or PC-1600 (CE-1600P) | by the file on the tape, as above; with several files you choose one |
 
 Anything else, and a file over 1 MiB, is refused with a notice. A file
 loads into the running computer, exactly like the menu item, so prepare

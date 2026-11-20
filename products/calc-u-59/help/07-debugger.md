@@ -8,8 +8,8 @@ of the calculator's processor.
 
 The debug panel stands beside the calculator and the paper on macOS,
 Windows and Linux, on the iPad in landscape and in the browser's wide
-layout; on the iPhone it is a page of its own (Settings ▸ Layout ▸
-Debug Page in Portrait). It has three tabs: **CALCULATOR**, **CPU** and
+layout; in portrait on the iPhone and the iPad it is a page of its own
+(Settings ▸ Layout ▸ Debug Page in Portrait). It has three tabs: **CALCULATOR**, **CPU** and
 **LOG**.
 
 | Tab | Shows | Use it for |
@@ -108,7 +108,7 @@ into the trace folder ([the family's rules](../../../library/help/07-debugger.md
 
 | System | Trace folder |
 |---|---|
-| macOS | the save folder, unless Settings ▸ Tracing names another place |
+| macOS | the app's own storage (Application Support), its iCloud folder or the trace folder, as Settings ▸ Tracing ▸ Save Location says |
 | iPhone, iPad | the app's own storage (Application Support), or its iCloud folder when Settings ▸ Tracing says iCloud |
 | Windows, Linux | the save folder, unless Settings ▸ Tracing ▸ Trace folder names another |
 | the browser | a trace that ended is offered to download, in the wide layout |
@@ -141,7 +141,7 @@ script folds repeated loops such as the keyboard scan loop.
   trace instead: it records without stopping the calculator.
 - **Only one FREEZE ON START** is armed at a time; arming it in one tab
   disarms the other.
-- **In a preset**, `pause: program` or `pause: cpu`, `pause-on-start:`,
+- **In a preset**, `pause: program` or `pause: cpu`, `pause-on-start: program` / `cpu` / `off`,
   `step: { level: cpu, count: 5 }` and `resume:` do what the buttons do,
   and `debug-panel: cpu` shows that tab
   ([Presets of this product](06-presets.md)).

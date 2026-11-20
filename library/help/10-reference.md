@@ -107,7 +107,7 @@ has finished, unless a `skip-wait:` stands between them.
 | `elapsed-time` | `start` or `report` | notes the emulated time, or writes the time since then (or since the preset started) to the log as `m:ss.mmm` |
 | `cut-paper` | none | cuts the paper of the printer that is plugged in; without one, nothing happens |
 | `saveas` | `{ place: …, as: live\|template, name: … }` or `file:` instead of `name:` | Name & Save of the medium or module at a place ([Media](04-media.md)) |
-| `pause`, `pause-on-start`, `step`, `resume` | as in [Debugger](07-debugger.md#debugger-steps-in-a-preset) | drive the debugger, where the product defines them |
+| `pause`, `pause-on-start`, `step`, `resume`, `debug-panel` | as in [Debugger](07-debugger.md#debugger-steps-in-a-preset) | drive the debugger, where the product defines them |
 
 **When an item has finished:** a `key:` when its last press is done and
 the machine is idle; a section when its content is written (machine code

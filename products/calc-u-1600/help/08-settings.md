@@ -27,8 +27,9 @@ opens the settings dialog; a change applies at once.
 - **Debugger:** the debug server for VS Code, its port, its status, and
   **Disconnect** ([Debugger](07-debugger.md)).
 
-The Web frontend shows the startup model and the startup presets only; it
-keeps your modules, disks and cassettes in the browser's storage for the page.
+The Web frontend shows the startup model, the startup presets and, under
+Storage, a note that it keeps your modules, disks and cassettes in the
+browser's storage for the page.
 
 ## Startup presets
 

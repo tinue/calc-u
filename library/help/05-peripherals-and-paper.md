@@ -26,8 +26,8 @@ You attach and detach a peripheral in three ways:
   to attach or detach. A place that several fit has a picker with an
   empty choice. A module slot has its own picker, with the modules and
   memory modules that fit it ([Media](04-media.md#choosing-a-medium)).
-- **In the menu.** **Machine ▸ Peripherals ▸** lists each place with the
-  peripherals that fit it, the plugged-in one marked. Choose another to
+- **In the menu.** **Machine ▸ Peripherals ▸** lists each place other
+  than a module slot with the peripherals that fit it, the plugged-in one marked. Choose another to
   attach it in place of what is there; choose the marked one to detach
   it.
 - **In a preset**, which names the peripherals of its machine

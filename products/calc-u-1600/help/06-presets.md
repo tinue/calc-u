@@ -141,8 +141,11 @@ on the PC-1600 also `ctrl`, `kbii` and `bs`.
 
 ## The examples
 
-The presets Calc-U-1600 comes with are under **File ▸ Examples**, in the
-groups BASIC, Plotter and Machine code, by their description. Every
+The presets Calc-U-1600 comes with are under **File ▸ Examples**, by
+name, in three groups: BASIC (Hanoi, the Towers of Hanoi), Plotter
+(Lissajous on the CE-150 of a PC-1500A; on the CE-1600P Lissajous,
+Rectangles in four pens, a globe, a biorhythm chart and a character
+chart) and Machine code (a memory test of the PC-1500A). Every
 example, also those not bundled, is in the
 [examples folder](https://github.com/tinue/calc-u/tree/main/products/calc-u-1600/examples)
 of the source repository; download it to open the files with **File ▸
@@ -153,8 +156,8 @@ Load Preset…**.
 **Settings ▸ Startup presets** sets one preset per model (the keys
 `[preset] PC-1500`, `[preset] PC-1500A`, `[preset] PC-1600`,
 [Settings](08-settings.md)). Each model's list offers the startup presets
-the product comes with, by description; **Choose…** takes a preset file of
-your own. A model switch starts with no modules and no peripherals, so a
+the product comes with, each as its name and description; **Choose…**
+(on the desktop) takes a preset file of your own. A model switch starts with no modules and no peripherals, so a
 startup preset is how a model gets its usual hardware.
 
 The PC-1600's bundled startup preset:
@@ -163,7 +166,10 @@ The PC-1600's bundled startup preset:
    CE-1600M in slot 1 and a CE-1601M in slot 2;
 2. formats and splits the CE-1601M as a RAM disk (`INIT"S2:","F"`,
    `INIT"S2:","M"`);
-3. sets up `COM1:` as in [COM ports](09-com-ports.md);
+3. sets up `COM1:` at 9600 baud, 8 bits, no parity, 1 stop bit and no
+   handshake (`SETCOM "COM1:",9600,8,N,1,N,N`, then `OUTSTAT`,
+   `SNDSTAT "COM1:",28`, `RCVSTAT "COM1:",28` and `INIT "COM1:",8192`;
+   [COM ports](09-com-ports.md) explains them);
 4. puts `SAVE"COM1:"@` and `LOAD"COM1:"@` on the F1 and F2 keys;
 5. shows the free memory, then sets the clock.
 

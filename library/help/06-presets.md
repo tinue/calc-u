@@ -51,8 +51,9 @@ stays as it is. A notice gives the first error with its line number.
 
 A file without `format-version`, or with another version than 2, is
 refused; a file from a newer release is refused as such. A preset
-written by an earlier release is converted by hand, as
-[the product's part of this chapter](chapter:6) describes.
+written by an earlier release is converted by hand, as the last section
+of the product's media files page describes
+([Reference of this product](chapter:10)).
 
 If a step fails while the preset runs, or does not finish within the
 preset's `timeout:`, the preset stops there: the steps after it are not
@@ -148,13 +149,13 @@ compared (a line of text, a number) is the product's: see its part.
 A **startup preset** is the preset a model is built from when the
 product starts with that model, or when you switch to that model. Set
 one per model in **Settings ▸ Startup presets**: "None", the startup
-presets the product bundles for that model, or (in the desktop
-frontends) any preset file with "Choose…". It is kept in the settings
+presets the product bundles for that model, or (on Windows and
+Linux) any preset file with "Choose…". It is kept in the settings
 file under `[preset]` ([Settings](08-settings.md)).
 
 - Without a startup preset, a model is built as the product's built-in
   default machine.
-- If the startup preset cannot be loaded (the file is gone, it is
+- If the startup preset cannot be loaded (the file is gone, it
   cannot be read, it is for another model), the built-in default machine is
   built and a notice says why.
 - If it is read without an error but fails while it runs, the machine

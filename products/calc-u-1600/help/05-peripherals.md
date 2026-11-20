@@ -60,11 +60,16 @@ to paste or print:
 **Cut** copies the plot, then tears the paper off, so that the next plot
 starts on a clean sheet.
 
-The CE-1600P plugs in with its New ROM; **Machine ▸ CE-1600P ROM** (while
-it is plugged in) switches to the Old one and back, keeping the disk and
-the cassette. Unplugging the CE-1600P takes the disk out of the CE-1600F.
+The CE-1600P has its own ROM, New (the default) or Old, which the
+CE-1600F floppy disk drive uses too. The control bar and the menus plug
+it in with the New ROM; a preset or the harness can name the Old one.
+**Machine ▸ CE-1600P ROM** (while it is plugged in) switches to the Old
+one and back, keeping the disk in the drive, the same side up, and the
+cassette. Unplugging the CE-1600P takes the disk out of the CE-1600F.
 
-Both plotters have a cassette recorder: while one is plugged in, the
+The CE-1600P has a cassette recorder, and so has the CE-150 on the
+PC-1500 and PC-1500A (not on the PC-1600): while one with a recorder is
+plugged in, the
 control bar shows the cassette picker and the counter
 ([Loading a BASIC program](09-basic-programs.md)); unplugging it takes the
 cassette out.

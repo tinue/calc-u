@@ -147,7 +147,9 @@ std::vector<PeripheralDescriptor> peripherals() {
     ce150.name = "CE-150";
     ce150.roms = {rom("CE-150.ROM", 8192, "eb9aa5156c6849890b137799efc50a4b")};
     ce150.fits = {PinOutId{kPC1500PrinterPinOut}, PinOutId{kPC1600PrinterPinOut}};
-    ce150.mediaPlaces = {{MediaPlaceId{"cassette-recorder"}, "cassette", MediaPassage::Holding, {}}};
+    // Its cassette only on the PC-1500 and PC-1500A: on the PC-1600 the
+    // recorder ran but CLOAD found no header and CSAVE wrote nothing readable.
+    ce150.mediaPlaces = {{MediaPlaceId{"cassette-recorder"}, "cassette", MediaPassage::Holding, {}, {PinOutId{kPC1500PrinterPinOut}}}};
     ce150.components = {{ComponentId{"plotter"}, "ALPS plotter mechanism and its paper", Depth::Functional, std::nullopt}};
 
     PeripheralDescriptor ce158;

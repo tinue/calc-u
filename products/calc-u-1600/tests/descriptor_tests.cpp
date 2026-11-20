@@ -285,7 +285,7 @@ TEST(machines_conform) {
 
 // The media places:
 // media::checkMediaPlaces on each model, bare and with each peripheral
-// that has media places (the CE-150's cassette; the CE-1600P's cassette
+// that has media places (the CE-150's cassette on the PC-1500/1500A; the CE-1600P's cassette
 // and floppy drive); a battery-backed module in a slot is a module medium.
 TEST(one_media_place_capability_per_media_place) {
     const Catalogue c = catalogueWithModules();
@@ -297,7 +297,8 @@ TEST(one_media_place_capability_per_media_place) {
     plugs.push_back({"PC-1600", {request(c, "CE-1600P", "printer", VariantId{"Old"}), moduleRequest("CE-1600M", "slot-1"),
                                  moduleRequest("CE-1601M", "slot-2")}, 2});
     plugs.push_back({"PC-1600", {request(c, "CE-1600P", "printer", VariantId{"New"})}, 2});
-    plugs.push_back({"PC-1600", {request(c, "CE-150", "printer"), moduleRequest("CE-151", "slot-1")}, 1});
+    // The CE-150 on the PC-1600: its cassette is not offered there.
+    plugs.push_back({"PC-1600", {request(c, "CE-150", "printer"), moduleRequest("CE-151", "slot-1")}, 0});
     int built = 0;
     for (auto& pl : plugs) {
         std::vector<PeripheralRequest> requests = pl.peripherals;

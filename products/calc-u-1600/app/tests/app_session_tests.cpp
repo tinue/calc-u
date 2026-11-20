@@ -116,6 +116,16 @@ TEST(test_operations_and_selection) {
     CHECK(!n.empty() && n.back() == r.reason);
 }
 
+// The CE-150 on the PC-1600: its cassette is not offered there, the plotter is.
+TEST(test_no_cassette_for_ce150_on_pc1600) {
+    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
+    SessionFixture f;
+    CHECK(f.start("PC-1600"));
+    CHECK(f.attach("CE-150"));
+    CHECK(!f.part().tapeInterfaceAttached());
+    CHECK(f.mediaPlace("cassette") == nullptr);
+}
+
 // The tape counter in the machine topic is what the deck had at the last
 // call -- and an operation ends with one, so it is current right after.
 // The record button is `media.start-new` on the empty tape.

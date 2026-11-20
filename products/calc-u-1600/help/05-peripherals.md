@@ -11,6 +11,9 @@ and CE-1600P plotters and the CE-158 interface.
 | CE-1600P | PC-1600 | Four-colour pen plotter with a cassette interface and the CE-1600F floppy drive |
 | CE-158 | PC-1500, PC-1500A, PC-1600 | Interface with a serial (RS-232C) and a printer (parallel) port |
 
+On the PC-1600 the CE-150 is a plotter only: its cassette interface is
+not available there.
+
 They are plugged in and out with the control bar (the CE-150 and CE-158
 buttons on the PC-1500 and PC-1500A; the printer picker and the CE-158
 button on the PC-1600) or in **Machine ▸ Peripherals**. One plotter at a

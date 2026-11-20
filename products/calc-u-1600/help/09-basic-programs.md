@@ -82,13 +82,14 @@ interface in real time, and the ROM's `CLOAD` reads it.
 
 ## The cassette: CLOAD and CSAVE
 
-The CE-150 (on any model) and the CE-1600P (PC-1600) have the jacks of a
-cassette recorder. A cassette is a medium ([Media](04-media.md)): a
+The CE-150 (PC-1500, PC-1500A) and the CE-1600P (PC-1600) have the jacks
+of a cassette recorder; the CE-150's cassette is not available on the
+PC-1600. A cassette is a medium ([Media](04-media.md)): a
 **cassette definition** (`<name>.cassette.yaml`: its name, a description,
 and the sound file it uses) with the sound of its tape, a WAV file beside
 it, in the cassette folder (**File ▸ Settings… ▸ Storage ▸ Cassettes**,
 `Cassettes` in the save folder by default). The cassette controls sit on
-the control bar whenever a CE-150 or a CE-1600P is plugged in. The
+the control bar whenever one of them is plugged in. The
 recorder starts empty, and detaching its interface takes the cassette
 out. You put a cassette in, then type the command as on the real
 machine:
@@ -145,7 +146,6 @@ Good to know:
   The calculator's own `CSAVE` writes a long lead-in.
 - **Formats.** The PC-1500 reads and writes PC-1500 tapes. The PC-1600 in
   MODE 0 reads and writes PC-1600 tapes. Not yet supported: the PC-1600
-  reading PC-1500 tapes in MODE 1 (`CLOAD` through the CE-1600P). The
-  CE-150's cassette on a PC-1600 is offered but not tested yet.
+  reading PC-1500 tapes in MODE 1 (`CLOAD` through the CE-1600P).
 - **In a preset** the step `cassette:` puts a cassette in and `eject: cassette` takes it
   out ([Presets](06-presets.md)).

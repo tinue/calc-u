@@ -114,15 +114,23 @@ What exists:
 Still to develop, for the external tester's suite and its follow-up
 project (their suite and its files are private: never commit, copy into
 the repository or publish them):
-- [ ] Serial send and expect for the CE-158 and the PC-1600's RS-232C,
-      and the built-in RS-232C as COM1 with its settings and handshake,
-      coupled to data on the other side (like the host drive).
-- [ ] Saving a card as a raw image.
-- [ ] The open-bus value (last byte on the bus), a ROM folder option for
-      the driver, non-empty sampled lines, banks 3a/3b of the superRAM
-      card: each needs a decision first.
-- [ ] A release package or build instructions for the tester, and the
-      question whether a sample program of theirs may be published.
+- [ ] The serial ports in the guide: how a test drives the PC-1600's
+      RS-232C (COM1) and the CE-158 with today's `c1600 serial` commands,
+      for "tests of a console and of file transfer over the serial port".
+      No driver change.
+- [ ] A card as a raw image, "the counterpart of `encoding: file`" (0.7.x;
+      today `slot-N-rom:`): the guide shows `card()`'s bytes written to a
+      `.bin`.
+- [ ] `peek`/`poke` of the ROM variants a port selects: bank 3 and 3b (port
+      3DH b2), and the variant of 3DH b1 if the emulator has it.
+- [ ] The idle rule: a PC-1600 `LOAD` or `COPY` reads the keyboard for
+      BREAK and so looks idle (`app/SharpPresetRules.cpp`). And `key-down
+      break` is refused while `key break` is accepted.
+
+Later, not now: the ROM version of a run (OLD/NEW, A01-A04), by version,
+not by path; the open-bus value. Decided: no release package for testers
+(the guide says how to build), and no sample program of theirs in the
+repository.
 
 ## The releases
 

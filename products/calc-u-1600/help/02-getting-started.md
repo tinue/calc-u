@@ -41,8 +41,7 @@ plugged-in peripherals:
 
 - **PC-1600:** **ROM Version** New (the default) or Old: the BASIC ROM.
 - **CE-1600P ROM**, while the CE-1600P is plugged in: New (the default) or
-  Old. The CE-1600F floppy drive uses that ROM too. The menus and the bar
-  plug the CE-1600P in with the New ROM; a preset can name the Old one.
+  Old ([The plotters](05-peripherals.md#the-plotters)).
 
 ![The Machine menu](images/02-machine-menu.png)
 
@@ -137,7 +136,7 @@ PC-1600) and a bundled preset to start with:
 | | Desktop | Browser |
 |---|---|---|
 | Models, modules, plotters, the CE-1600F | yes | yes |
-| Presets: the examples, your own | **File ▸ Examples**, **File ▸ Load Preset…** | **Examples**, **Upload Preset…** |
+| Presets: the examples, your own | **File ▸ Examples**, **File ▸ Load Preset…** | **File ▸ Examples ▸**, **File ▸ Load Preset…** |
 | Saved modules, disks and cassettes | files in the save folder | kept in the browser; **Import Media…** brings files in, **Saved Media…** downloads or deletes them; only one tab saves, a second tab says so |
 | Shortcuts for menu items | yes ([Shortcuts](../../../library/help/02-getting-started.md#shortcuts)) | none: they are the browser's; pasting still types |
 | The debugger (VS Code) | yes | no |

@@ -12,12 +12,13 @@ shots:
     preset: ../presets/pc1600-hanoi-run.pc1600
     capture: { target: lcd, file: 04-hanoi-running.png }
 
-  # Cassette: Save puts a new tape in, CSAVE records onto it (saved when the
-  # motor stops); then the tape picked from the list plays into CLOAD. The
-  # shot run starts with an empty tape folder, so it records first. The
+  # Cassette: Save puts a new cassette in, CSAVE records onto it (saved when
+  # the motor stops); then the cassette picked from the list plays into
+  # CLOAD. The shot run starts with an empty cassette folder, so it records
+  # first. The
   # pictures mid-transfer come after fixed times; the ends are wait-idle.
   - name: 04-tape
-    window: 1760x1000   # the Tape group widens the PC-1600 control bar
+    window: 1760x1000   # the cassette controls widen the PC-1600 control bar
     preset: ../presets/pc1600-tape.pc1600
     steps:
       - click: media-save-tape

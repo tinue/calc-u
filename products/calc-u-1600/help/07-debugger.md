@@ -1,9 +1,10 @@
 # Debugger on the PC-1500 and PC-1600
 
-The family's debugger (pause, step, resume, the run control, traces) is
-described in [Debugger](../../../library/help/07-debugger.md). This page
-covers what Calc-U-1600 adds: debugging machine code from VS Code, and the
-INSPECTOR panel.
+The family's debugger (running and paused, traces) is described in
+[Debugger](../../../library/help/07-debugger.md). The Calc-U-1600 window
+has no run-control buttons: you pause and step from the debugger in VS
+Code, and **Machine ▸ Resume** resumes. This page covers what Calc-U-1600
+adds: debugging machine code from VS Code, and the INSPECTOR panel.
 
 Calc-U-1600 can debug machine code while it runs, from VS Code (and, not yet
 tested, CLion):
@@ -251,9 +252,9 @@ first preset it finds:
 
 ```mermaid
 flowchart TD
-    start["Debug current file:<br/>FOO.asm"] --> a{"FOO.pc1600 / FOO.pc1500a<br/>next to it?"}
+    start["Debug current file:<br/>FOO.asm"] --> a{"FOO.pc1600 / .pc1500a / .pc1500<br/>next to it?"}
     a -- yes --> useA["use it"]
-    a -- no --> b{"debug.pc1600 / .pc1500a<br/>in the folder?"}
+    a -- no --> b{"debug.pc1600 / .pc1500a / .pc1500<br/>in the folder?"}
     b -- yes --> useB["use it"]
     b -- no --> useC["a plain machine<br/>(bundled with the extension)"]
 ```
@@ -637,7 +638,8 @@ with the other sections in [Preset sections](10-preset-sections.md).
 ## The INSPECTOR
 
 The INSPECTOR panel shows what is in the machine right now, as text you can
-select and copy (**Edit ▸ Copy Screen** copies the selected text). To step
+select and copy (while text is selected, **Edit ▸ Copy Screen** reads
+**Copy Log Selection** and copies it). To step
 through a program or set breakpoints, use the debugger above.
 
 ![The INSPECTOR after Pointers](images/09-debug-panel.png)

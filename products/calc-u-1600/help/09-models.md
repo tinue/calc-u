@@ -14,10 +14,8 @@ and the PC-1600.
 | PC-1600 | ROM New (the default) or Old | **ROM Version** |
 
 The CE-1600P has its own ROM, New (the default) or Old: **Machine ▸
-CE-1600P ROM** while the CE-1600P is plugged in. The CE-1600F floppy disk
-drive uses that ROM too. The control bar and the menus attach the CE-1600P
-with the New ROM; a preset or the harness can name the Old one. Changing the
-CE-1600P's ROM keeps the disk in the drive, the same side up, and the cassette.
+CE-1600P ROM** while the CE-1600P is plugged in
+([The plotters](05-peripherals.md#the-plotters)).
 
 ## Reset, power cycle and Cold boot
 
@@ -56,9 +54,6 @@ it and asks you to set BASIC up again: the calculator shows
 `NEW0? :CHECK`, and you type `NEW 0`, as on the real device. On a PC-1500,
 plugging a program module in or out moves BASIC's program area
 ([Media](04-media.md)).
-
-The CE-1600P and the CE-158 cannot be used together: attaching one while
-the other is attached is refused.
 
 ## A model switch
 

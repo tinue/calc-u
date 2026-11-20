@@ -93,6 +93,8 @@ public:
     /// The DSTB delay Td (CPC §8.1) in SC-7852 T-states: how long after a
     /// 21H write the strobe reaches the sub-CPU's KI.
     int dstbDelayTStates() const;
+    /// DTR as the command register drives it.
+    bool dtr() const { return m_dtr; }
 
     /// The machine state (Machine/StateRecords.hpp).
     template <class Io>

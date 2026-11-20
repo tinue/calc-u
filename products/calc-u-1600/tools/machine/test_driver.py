@@ -139,6 +139,19 @@ def test_peek_reads_memory(tmp_path):
         machine.expect_memory("SC7852", "memory", 0xC000, bytes([9]))
 
 
+def test_peek_reads_either_half_of_bank_3(tmp_path):
+    # Port 3DH bit 2 is page B's vertical bank: 0 the ROM of bank 3, 1 the hidden bank 3b,
+    # whatever the port selects now.
+    roms = Path(__file__).parents[2] / "roms"
+    bank3 = (roms / "PC1600-P1-B3-new.bin").read_bytes()[:4]
+    bank3b = (roms / "PC1600-P1-B3B-new.bin").read_bytes()[:4]
+    assert bank3 != bank3b
+    machine = Machine(tmp_path)
+    assert machine.peek("SC7852", "memory", 0x4000, 4, bank=3, vbank=0) == bank3
+    assert machine.peek("SC7852", "memory", 0x4000, 4, bank=3, vbank=1) == bank3b
+    assert machine.peek("SC7852", "memory", 0x4000, 4, bank=3) == bank3
+
+
 def test_display_gives_the_dots(tmp_path):
     dots = Machine(tmp_path).type(PRINT_42).display()
     assert len(dots["rows"]) == 32 and len(dots["rows"][0]) == 156

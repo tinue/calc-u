@@ -390,6 +390,15 @@ public:
     /// MODE 1 (PC-1500 compatible) is on: BMODE (F1BCH) bit 6. The loaders
     /// read it to decide the keyword table and the address space.
     bool mode1();
+    /// A direct command of the hidden ROM bank 3b is at work (OPEN, SAVE,
+    /// LOAD, COPY, ...: the statement dispatcher clears port 3DH bit 2 for the
+    /// keywords of token bank 06H): the Z-80's BASIC is in direct mode
+    /// (CURLINE, F89CH, is 0, as the ROM's DIRMODE tests it), bank 3b is
+    /// selected, and the ROM does not wait for a key in KEYGET (KEYWK2, F07AH,
+    /// bit 2). A running program has a line number, so it is never one; nor
+    /// is machine code started by CALL (bank 3), nor anything in MODE 1, whose
+    /// BASIC is the LH5803's.
+    bool directCommandRunning();
     /// The selected program area, TITLE (F1D5H): 0 = S0, 1 = S1, 2 = S2.
     int programAreaTitle();
 

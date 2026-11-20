@@ -425,10 +425,12 @@ public:
     static constexpr std::size_t kZ80 = 0, kLh5803 = 1;
 
     explicit PC1600Debugging(PC1600Machine& m) : m_machine(m) {
-        // The Z-80's memory by the page banks of port 31H; page C also by
-        // the vertical bank of a module in Slot 2 (port 28H).
+        // The Z-80's memory by the page banks of port 31H; page B also by
+        // the ROM half of bank 3 (port 3DH bit 2: vertical bank 0 is bank 3,
+        // 1 the hidden bank 3b), page C by the vertical bank of a module in
+        // Slot 2 (port 28H).
         std::vector<calcu::machine::BankWindow> pages{
-            {0x0000, 0x4000, 2, 0}, {0x4000, 0x4000, 8, 0}, {0x8000, 0x4000, 8, 256}, {0xC000, 0x4000, 2, 0}};
+            {0x0000, 0x4000, 2, 0}, {0x4000, 0x4000, 8, 2}, {0x8000, 0x4000, 8, 256}, {0xC000, 0x4000, 2, 0}};
         addTarget("SC7852", std::make_unique<debug::Z80CpuView>(m.sc7852()),
                   {space("memory", false, pages), space("io", false, {}, 256), space("io-written", true, {}, 256)},
                   {{"bank", values(8)}});
@@ -509,16 +511,18 @@ protected:
 
 private:
     // A page bank (and vertical bank) of a bank= / vbank= for one access,
-    // put back after it: port 31H's field of the address's page, port 28H.
-    // The vertical bank is the module's own latch, set by OUT (28H) on the
-    // bus: it is driven for the access and driven back to what it was (the
-    // OUT of the CPU is not, so io-written keeps the CPU's value).
+    // put back after it: port 31H's field of the address's page; on page B
+    // port 3DH's latch, on page C port 28H. Page C's vertical bank is the
+    // module's own latch, set by OUT (28H) on the bus: it is driven for the
+    // access and driven back to what it was (the OUT of the CPU is not, so
+    // io-written keeps the CPU's value).
     struct PageBanked {
         PC1600Machine& m;
-        std::uint8_t port31, port28;
-        bool vbank = false;
+        std::uint8_t port31, port28, port3d;
+        bool vbank = false, romHalf = false;
         PageBanked(PC1600Machine& machine, std::uint16_t address, BankSelect b)
-            : m(machine), port31(machine.bank().readPort31()), port28(machine.bank().slot2VerticalBank()) {
+            : m(machine), port31(machine.bank().readPort31()), port28(machine.bank().slot2VerticalBank()),
+              port3d(machine.bank().port3DLatch()) {
             if (b.bank) {
                 static const int kShift[4] = {0, 1, 4, 7};
                 static const int kMask[4] = {0x01, 0x07, 0x07, 0x01};
@@ -526,13 +530,17 @@ private:
                 const auto field = static_cast<std::uint8_t>((*b.bank & kMask[page]) << kShift[page]);
                 m.bank().writePort31(static_cast<std::uint8_t>((port31 & ~(kMask[page] << kShift[page])) | field));
             }
-            if (b.vbank) {
+            if (b.vbank && address >> 14 == 1) {
+                romHalf = true;
+                m.bank().writePort3D(static_cast<std::uint8_t>(*b.vbank ? port3d & ~0x04 : port3d | 0x04));
+            } else if (b.vbank) {
                 vbank = true;
                 m.memory().writeIO(0x28, static_cast<std::uint8_t>(*b.vbank));
             }
         }
         ~PageBanked() {
             m.bank().writePort31(port31);
+            if (romHalf) m.bank().writePort3D(port3d);
             if (vbank) m.memory().writeIO(0x28, port28);
         }
     };

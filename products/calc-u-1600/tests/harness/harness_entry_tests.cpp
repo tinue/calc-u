@@ -92,6 +92,28 @@ TEST(lcd_rows_indicators_not_text_off) {
     CHECK(has(lcd, "\nindicators: DE G RUN I\nnot text: 0\n"));
 }
 
+// Every key step takes the same spellings: `break` (any case) is `on` for
+// `key-down` and `key-up` as for `key`. Held for a moment, it breaks a
+// running program.
+TEST(key_down_and_up_take_break_for_on) {
+    SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    Run r;
+    CHECK(r.ok());
+    if (!r.ok()) return;
+    CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
+    CHECK_EQ(r.line("key mode"), std::string("done\n"));
+    CHECK_EQ(r.line("type 10 GOTO 10"), std::string("done\n"));
+    CHECK_EQ(r.line("key mode"), std::string("done\n"));
+    CHECK_EQ(r.line("type RUN"), std::string("done\n"));
+    r.line("wait 500ms");
+    CHECK_EQ(r.line("key-down Break"), std::string("done\n"));
+    r.line("wait 100ms");
+    CHECK_EQ(r.line("key-up break"), std::string("done\n"));
+    r.line("wait 500ms");
+    CHECK(has(r.line("display-text"), "BREAK"));
+    CHECK_EQ(r.line("key-down nokey"), std::string("refused: Unknown key: nokey.\n"));
+}
+
 // The cell under the cursor reads as the character the ROM saved there, as
 // --lcd-text did: `ABC` typed, the cursor moved onto the B (the PC-1500A's
 // cursor is the full block, its glyph 7FH; the PC-1600's an underline).

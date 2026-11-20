@@ -114,16 +114,16 @@ What exists:
 Still to develop, for the external tester's suite and its follow-up
 project (their suite and its files are private: never commit, copy into
 the repository or publish them):
-- [ ] The serial ports in the guide: how a test drives the PC-1600's
+- [x] The serial ports in the guide: how a test drives the PC-1600's
       RS-232C (COM1) and the CE-158 with today's `c1600 serial` commands,
       for "tests of a console and of file transfer over the serial port".
       No driver change.
-- [ ] A card as a raw image, "the counterpart of `encoding: file`" (0.7.x;
+- [x] A card as a raw image, "the counterpart of `encoding: file`" (0.7.x;
       today `slot-N-rom:`): the guide shows `card()`'s bytes written to a
       `.bin`.
-- [ ] `peek`/`poke` of the ROM variants a port selects: bank 3 and 3b (port
+- [x] `peek`/`poke` of the ROM variants a port selects: bank 3 and 3b (port
       3DH b2), and the variant of 3DH b1 if the emulator has it.
-- [ ] The idle rule: a PC-1600 `LOAD` or `COPY` reads the keyboard for
+- [x] The idle rule: a PC-1600 `LOAD` or `COPY` reads the keyboard for
       BREAK and so looks idle (`app/SharpPresetRules.cpp`). And `key-down
       break` is refused while `key break` is accepted.
 

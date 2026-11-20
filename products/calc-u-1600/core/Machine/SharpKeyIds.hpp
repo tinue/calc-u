@@ -14,5 +14,8 @@ const std::vector<std::string>& pc1500KeyIds();
 const std::vector<std::string>& pc1600KeyIds();
 
 inline constexpr const char* kOnKeyId = "on";
+// The other spelling of `on`, for presets and the harness (every key step:
+// `key`, `key-down`, `key-up`).
+inline constexpr const char* kBreakSpelling = "break";
 
 } // namespace sharp

@@ -43,6 +43,11 @@ VariantDescriptor pc1500Variant(const char* id, const char* md5) {
     return {VariantId{id}, {rom(("PC-1500_" + std::string(id) + ".ROM").c_str(), 16384, md5)}};
 }
 
+KeyDescriptor key(const std::string& id) {
+    if (id == kOnKeyId) return {KeyId{id}, {kBreakSpelling}};
+    return {KeyId{id}, {}};
+}
+
 DisplayDescriptor display(bool pc1600) {
     DisplayDescriptor d;
     d.geometry = DotMatrixGeometry{156, pc1600 ? 32 : 7, std::nullopt};
@@ -76,7 +81,7 @@ MachineDescriptor pc1500Descriptor(bool pc1500a) {
     d.tickRate = kPC1500CpuHz;   // one LH5801 cycle
     d.display = display(false);
     d.hasSound = true;
-    for (const auto& k : pc1500KeyIds()) d.keys.push_back({KeyId{k}, {}});
+    for (const auto& k : pc1500KeyIds()) d.keys.push_back(key(k));
     d.connectors = {{ConnectorId{"40-pin"}, "40-pin memory slot", {contactLevel(kPC1500SlotPinOut, Takes::One)}},
                     {ConnectorId{"60-pin"}, "60-pin system bus", {contactLevel(kPC1500BusPinOut, Takes::Chain), contactLevel(kPC1500PrinterPinOut, Takes::Chain), contactLevel(kPC1500InterfacePinOut, Takes::Chain)}}};
     d.places = {{PlaceName{kSlot1}, ConnectorId{"40-pin"}, PinOutId{kPC1500SlotPinOut}, 1},
@@ -107,7 +112,7 @@ MachineDescriptor pc1600Descriptor() {
     d.tickRate = kPC1600TStateHz;   // one SC7852 T-state; the LH5803 counts in them too
     d.display = display(true);
     d.hasSound = true;
-    for (const auto& k : pc1600KeyIds()) d.keys.push_back({KeyId{k}, {}});
+    for (const auto& k : pc1600KeyIds()) d.keys.push_back(key(k));
     d.connectors = {{ConnectorId{"40-pin-1"}, "40-pin memory slot", {contactLevel(kPC1600Slot1PinOut, Takes::One)}},
                     {ConnectorId{"40-pin-2"}, "40-pin memory slot", {contactLevel(kPC1600Slot2PinOut, Takes::One)}},
                     {ConnectorId{"60-pin"}, "60-pin system bus", {contactLevel(kPC1600BusPinOut, Takes::Chain), contactLevel(kPC1600PrinterPinOut, Takes::Chain), contactLevel(kPC1600InterfacePinOut, Takes::Chain), contactLevel(kPC1600HostDrivePinOut, Takes::Chain)}},

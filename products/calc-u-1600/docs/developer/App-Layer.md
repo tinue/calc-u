@@ -113,7 +113,8 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
   sentence.
 - **What only a Sharp machine has** is a capability: the product kinds
   `c1600.loader-memory`, `c1600.inspector`, `c1600.ce158-printer-port`,
-  `c1600.host-drive-folder`, `c1600.trace-records`, and the adapter kinds
+  `c1600.host-drive-folder`, `c1600.trace-records`, `c1600.direct-command`,
+  and the adapter kinds
   `c1600.tape-deck`, `c1600.floppy-drive`
   (`core/Machine/SharpProductKinds.hpp`); the library's `serial-port`,
   `real-time-clock`, `controls` (the CE-161's write-protect switch) and

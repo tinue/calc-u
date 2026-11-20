@@ -43,14 +43,16 @@ link`.
 | `model <m>` | `PC-1500`, `PC-1500A`, `PC-1600` |
 | `variant <v>` | PC-1500: `A01`, `A03`, `A04` (default `A04`); PC-1500A: `A04`; PC-1600: `New`, `Old` (default `New`) |
 | `attach <place> <peripheral>[:<variant>]` | places `slot-1` (`slot-2` on the PC-1600), `printer` (`CE-150`, `CE-1600P`), `interface` (`CE-158`), `host-drive` (PC-1600: `host-drive`), `bus-rom` (`bus-rom`, several in plug order); a module by its name (`CE-1600M`, …); `CE-1600P:new`, `CE-1600P:old` |
-| `key <key ID> …` | the key IDs, any case; `break` for `on` |
+| `key <key ID> …`, `key-down`, `key-up` | the key IDs, any case; `break` for `on` |
 | `type <text>` | the text and ENTER; replies when ENTER is up |
+| `wait` (idle) | key readiness for 20 frames in a row; on the PC-1600 not while the CE-1600F's motor runs, nor while a file command typed in direct mode (`LOAD`, `SAVE`, `COPY`, …) works: BASIC in direct mode (CURLINE, F89CH, 0), not in the ROM's key wait (KEYWK2, F07AH, bit 2), and the hidden ROM bank 3b selected (port 3DH bit 2 clear, as for every keyword of token bank 06H) or DTR on (a port command runs). A running program counts as idle, since it can't be told from one that polls `INKEY$`; so does machine code started by `CALL` |
 | `display-text` | the rows of text, the cell under the cursor read as the character the ROM saved there (`app/LcdTextPart`), then `indicators:` and `not text:`, or `display off` |
 | `audio <file.wav>` | the piezo's sound into a WAV |
 | `expect`, `not-expect` | text in one line of `display-text`, or `/regex/` |
 | `screenshot <name>` | Copy Screen's picture, into `--output-folder` |
 | debug targets | PC-1500, PC-1500A: `LH5801`; PC-1600: `SC7852`, `LH5803` |
-| `peek`, `poke` spaces | `LH5801`, `LH5803`: `me0`, `me1`, `me1-written`; `SC7852`: `memory`, `io`, `io-written`; `bank=`, `vbank=`; `peek … file=<file>` writes the bytes to a file |
+| `peek`, `poke` spaces | `LH5801`, `LH5803`: `me0`, `me1`, `me1-written`, `bank=` PU × 2 + PV; `SC7852`: `memory`, `io`, `io-written`; `peek … file=<file>` writes the bytes to a file |
+| `bank=`, `vbank=` of `SC7852 memory` | `bank=` the page's bank in port 31H. `vbank=` on page B (4000–7FFF) the ROM half of bank 3, port 3DH bit 2: `0` bank 3, `1` the hidden bank 3b, whatever the port selects now (`bank=3 vbank=1`); on page C (8000–BFFF) the vertical bank of the module in slot 2 (port 28H). The kanji ROM of the Japanese models (port 3DH bit 1, bank 4 of page C) is not emulated |
 | `paper` | `paper marks\|png <path>\|copy\|cut [CE-150\|CE-1600P]`, `cut-paper` |
 | media places | `slot-1`, `slot-2` (modules), `floppy` (CE-1600P, sides 0 and 1), `cassette-recorder` (CE-150, CE-1600P) |
 | media kinds | `battery-backed-module` (`.module.yaml`), `floppy-disk` (`.floppy.yaml`), `cassette` (`.cassette.yaml` with its WAV); codecs in `app/SharpMediaKinds` |

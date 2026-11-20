@@ -260,6 +260,14 @@
   is written; it used to be written, and the file could not be read
   again.
 - **Web: `?preset=examples:…`** finds the preset; the prefix was doubled.
+- **PC-1600: a preset item and the harness's `wait` last until a direct
+  `LOAD`, `SAVE` or `COPY` has ended.** Such a command reads the keyboard
+  for BREAK, so the machine looked idle while it worked.
+- **Harness: `key-down` and `key-up` take `break` for `on`**, as `key`
+  does.
+- **Harness: `peek` and `poke` reach both ROM halves of the PC-1600's bank
+  3**: `vbank=` on 4000–7FFF is port 3DH's bit 2 (`bank=3 vbank=1` the
+  hidden bank 3b), whatever the port selects now.
 
 ## [0.8.1] - 2026-11-14
 

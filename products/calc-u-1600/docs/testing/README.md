@@ -9,8 +9,9 @@ It is developed further together with spellbound, in this repository.
 
 Contents: [1 Setup](#1-setup) · [2 A test project](#2-a-test-project) ·
 [3 Example: MODE 1 and memory modules](#3-example-mode-1-and-memory-modules) ·
-[4 Example: RENUM on the PC-1500](#4-example-renum-on-the-pc-1500) · [5 Paths](#5-paths) ·
-[6 Reference](#6-reference) · [Appendix: how it works](#appendix-how-it-works)
+[4 Example: RENUM on the PC-1500](#4-example-renum-on-the-pc-1500) ·
+[5 Example: the serial ports](#5-example-the-serial-ports) · [6 Paths](#6-paths) ·
+[7 Reference](#7-reference) · [Appendix: how it works](#appendix-how-it-works)
 
 ## 1 Setup
 
@@ -103,7 +104,7 @@ calcu_paths =
 ```
 
 `conftest.py` loads the driver's pytest plugin, `calcu_pytest`: the fixture `make_machine` and the
-path names of [5 Paths](#5-paths). It has to be this file, not `-p calcu_pytest` in `addopts`:
+path names of [6 Paths](#6-paths). It has to be this file, not `-p calcu_pytest` in `addopts`:
 pytest loads `-p` plugins before it reads `pythonpath`.
 
 ```python
@@ -141,7 +142,7 @@ mode, both with `>` on the screen. So a test knows the mode without looking.
 
 ## 3 Example: MODE 1 and memory modules
 
-Both examples are a test project in the checkout, [`docs/testing/example/`](example/), that runs
+The examples are a test project in the checkout, [`docs/testing/example/`](example/), that runs
 as it is: `cd products/calc-u-1600/docs/testing/example`, then
 `uv run --no-project --with pytest --with pytest-xdist pytest -n auto`.
 
@@ -196,7 +197,7 @@ def test_mode1(make_machine, slots, refused):
 
 - A slot takes a bundled module by its name (`CE-1600M`, …) or a module file. The last case
   uses a card with content from the checkout's examples, by the path name `$c1600`
-  ([5 Paths](#5-paths)).
+  ([6 Paths](#6-paths)).
 - `expect` and `not_expect` take effect at the next read; `run()` is a read without a result.
 - One test function, nine machines: pytest shows each case by its id, and `-n auto` runs them at
   the same time.
@@ -206,7 +207,7 @@ def test_mode1(make_machine, slots, refused):
 The repository has a ROM extension that adds `RENUM [new][,[old][,step]]` to PC-1500 BASIC, as a
 module on the 60-pin bus at &8800. It is the debugger's *PC-1500 ROM extension* example; the test
 uses its built ROM where it is, `$c1600/tests/fixtures/dap/pc1500-bus-rom/rom.bin`
-([5 Paths](#5-paths)).
+([6 Paths](#6-paths)).
 
 RENUM gives the lines from `old` on (default: the first) the numbers `new`, `new+step`, …
 (defaults 10 and 10) and changes every `GOTO`, `GOSUB`, `THEN`, `ON…GOTO` and `RESTORE` to match. On
@@ -303,7 +304,112 @@ with `params` multiplies every test that uses it.
 were typed: no blank between a variable or number and the keyword after it (`ON N+1GOTO`,
 `IF NTHEN`). Write the expected lines in that form.
 
-## 5 Paths
+## 5 Example: the serial ports
+
+The PC-1600 has its own RS-232C port, `COM1:`. The PC-1500 and PC-1500A get one with the CE-158
+interface (the PC-1600 too, in MODE 1, without a CE-1600P). A test plays the other side of the
+cable with harness commands: `rs232c` is the PC-1600's port, `ce158` the CE-158's.
+
+| Command, from `command()` | Does |
+|---|---|
+| `c1600 serial rs232c\|ce158 feed <file> [hold=<n>]` | sends the file's bytes to the machine, one per character time at the speed the port is set to, after `n` character times of nothing |
+| `c1600 serial rs232c\|ce158 capture <file>` | writes what the machine sends into the file; the file is complete when `calcu` ends |
+| `c1600 serial rs232c\|ce158 report` | with `send()`: `baud` (0 when not set), `used`, `fed` and `taken` (bytes fed, bytes the machine took), `sent` (everything the port sent, as text: printable ASCII and LF as they are, CR left out, any other byte `<XX>`); for the CE-158 also `printer`, its parallel port |
+
+The other side holds CTS, DSR and CD on: the PC-1600 sends without a `SNDSTAT` of its own. The
+BASIC side, as the examples set it up:
+
+| | PC-1600, `COM1:` | CE-158 |
+|---|---|---|
+| speed, bits, parity, stop bits | `SETCOM "COM1:",9600,8,N,1,N,N` (then XON/XOFF and shift in/out, both off) | `SETCOM 1200,8,N,1` (50 to 2400 baud) |
+| handshake lines | automatic | `OUTSTAT 0`: RTS and DTR on (off at power-on) |
+| `INPUT` from the port, `LPRINT` to it | `SETDEV "COM1:",KI,PO`; line ends with `PCONSOLE "COM1:",0,2` (CR LF) | `SETDEV KI,PO` (`DO` for `PRINT`) |
+| a program out, a program in | `SAVE"COM1:",A` (ASCII: CR LF after each line, 1AH at the end), `LOAD"COM1:"` | `SETDEV CO`, then `CSAVE "name"`; `SETDEV CI`, then `CLOAD "name"` |
+
+`test_serial.py`, with `programs/greet.bas`, a console program:
+
+```basic
+10 SETCOM "COM1:",9600,8,N,1,N,N
+20 PCONSOLE "COM1:",0,2
+30 SETDEV "COM1:",KI,PO
+40 LPRINT "NAME?"
+50 INPUT N$
+60 LPRINT "HELLO ";N$
+70 END
+```
+
+```python
+from pathlib import Path
+
+PROGRAMS = Path(__file__).parent / "programs"
+COM1 = 'SETCOM "COM1:",9600,8,N,1,N,N'
+LISTED = (PROGRAMS / "greet.bas").read_text().splitlines()   # listing() gives these lines as they are
+
+
+def test_console(make_machine, tmp_path):
+    name = tmp_path / "name.txt"
+    name.write_bytes(b"WORLD\r")                 # INPUT takes the line up to CR
+    machine = make_machine(model="PC-1600")
+    machine.key("mode").type("NEW0").load_basic("$programs/greet.bas").key("mode")
+    machine.type("RUN").wait(1)                  # NAME? is out, INPUT waits
+    machine.command(f"c1600 serial rs232c feed {name}").wait(1)
+    report = machine.send("c1600 serial rs232c report")
+    assert report["sent"].splitlines() == ["NAME?", "HELLO WORLD"]
+    assert report["taken"] == report["fed"] == 6
+
+
+def test_save(make_machine, tmp_path):
+    sent = tmp_path / "sent.bas"
+    machine = make_machine(model="PC-1600")
+    machine.key("mode").type("NEW0").load_basic("$programs/greet.bas").key("mode")
+    machine.command(f"c1600 serial rs232c capture {sent}")
+    machine.type(COM1).type('SAVE"COM1:",A').run()   # type waits until the SAVE has ended
+    machine.close()                              # the capture file is complete when calcu ends
+    data = sent.read_bytes()
+    assert data.endswith(b"\r\n\x1a")            # CR LF after each line, 1AH at the end
+    assert [line.rstrip() for line in data[:-3].decode("ascii").split("\r\n")] == LISTED
+
+
+def test_load(make_machine, tmp_path):
+    file = tmp_path / "greet.txt"
+    file.write_bytes(b"".join(line.encode("ascii") + b"\r\n" for line in LISTED) + b"\x1a")
+    machine = make_machine(model="PC-1600")
+    machine.key("mode").type("NEW0").key("mode").type(COM1)
+    machine.command('type LOAD"COM1:"')          # the harness's type: no wait
+    machine.command(f"c1600 serial rs232c feed {file} hold=100").wait()
+    assert machine.listing() == LISTED
+
+
+def test_ce158_csave_cload(make_machine, tmp_path):
+    sent = tmp_path / "sent.bin"
+    one = make_machine(model="PC-1500A").command("attach interface CE-158")
+    one.key("cl").type("NEW0").type('10 PRINT "HELLO"').type("20 GOTO 10").key("mode")
+    one.command(f"c1600 serial ce158 capture {sent}")
+    one.type("SETCOM 1200,8,N,1").type("OUTSTAT 0").type("SETDEV CO").type('CSAVE "P"')
+    listing = one.listing()
+    one.close()
+    two = make_machine(model="PC-1500A").command("attach interface CE-158")
+    two.key("cl").type("NEW0").key("mode")
+    two.type("SETCOM 1200,8,N,1").type("OUTSTAT 0").type("SETDEV CI")
+    two.command('type CLOAD "P"')
+    two.command(f"c1600 serial ce158 feed {sent} hold=10").wait()
+    assert two.listing() == listing == ['10 PRINT "HELLO"', "20 GOTO 10"]
+```
+
+- **A console:** the program runs, so `wait()` without seconds wouldn't wait for it: a running
+  BASIC program reads the keyboard for BREAK and counts as idle. `wait(1)` gives it the time to
+  write `NAME?` and to take the line. `report` shows what it sent.
+- **A program out:** `type` waits until the `SAVE` has ended. The capture file is complete when
+  `calcu` ends: `run()` sends the collected steps, then `close()` ends it.
+- **A program in:** the file arrives after the `LOAD` has started (`hold=`): bytes that come
+  before are not loaded. The harness's own `type` doesn't wait, so the feed follows at once; then
+  `wait()` lasts until the `LOAD` has ended. A `LOAD` that gets nothing waits up to an hour of
+  machine time, about a minute.
+- **The CE-158:** the driver has no option for it; `command("attach interface CE-158")` plugs it
+  in. `CLOADa` needs two seconds of silence between the lines, which `feed` doesn't give: the
+  test sends the program the binary way, from one machine to the next.
+
+## 6 Paths
 
 The driver brings no modules, media or programs of its own. A test runs on what Calc-U-1600
 ships, and on what the test project brings:
@@ -357,9 +463,10 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
 - `host_drive` is a folder on your computer, found like any path; usually an absolute one or a
   per-test folder: `host_drive=tmp_path / "drive"`.
 - **Files a test makes** belong in pytest's per-test folder `tmp_path` or in `$work`. A card saved
-  with `card(2)` is `$work/slot-2.module.yaml`, to put into the next machine.
+  with `card(2)` is `$work/slot-2.module.yaml`, to put into the next machine; its bytes alone, a
+  raw image, are `card(2)` written to a file ([7 Reference](#7-reference)).
 
-## 6 Reference
+## 7 Reference
 
 `make_machine(**options)` → a `Machine` in a work folder of its own. A suite with steps of its own
 overrides the fixture `machine_class` in its `conftest.py`:
@@ -394,7 +501,7 @@ Steps, collected until the next read:
 
 | Step | Does |
 |---|---|
-| `key(names)` | presses keys by name, several separated by blanks: `key("shift mode")`. Each key is held until the machine has taken it, then the machine runs until idle. A finger's press that the program may miss: `command("key-down y").wait(0.1).command("key-up y")` (key IDs; ON/BREAK is `on`) |
+| `key(names)` | presses keys by name, several separated by blanks: `key("shift mode")`. Each key is held until the machine has taken it, then the machine runs until idle. A finger's press that the program may miss: `command("key-down y").wait(0.1).command("key-up y")` (key IDs; ON/BREAK is `on` or `break`) |
 | `type(text)` | types one line and ENTER |
 | `wait(seconds=None)` | waits in machine time; without seconds until idle |
 | `expect(text)`, `not_expect(text)` | the next read fails unless / if a screen line holds text (`/regex/` too) |
@@ -408,12 +515,13 @@ Reads:
 | Read | Returns |
 |---|---|
 | `run()` | runs the steps; the replies |
-| `wait_for(text, timeout=60)` | runs the steps, then waits in machine time until a screen line holds text (`/regex/` too); for work the idle wait can't see the end of, such as a LOAD on the PC-1600, which reads the keyboard for BREAK |
+| `send(line)` | runs the steps, then any harness command; its result (the command's `--json` value), e.g. `send("c1600 serial rs232c report")["sent"]` |
+| `wait_for(text, timeout=60)` | runs the steps, then waits in machine time until a screen line holds text (`/regex/` too); for work the idle wait can't see the end of: a running BASIC program or machine code started by `CALL` counts as idle, since it reads the keyboard (a direct `LOAD`, `SAVE` or `COPY` does not: `wait()` lasts until it has ended) |
 | `lcd` | the screen's text lines |
 | `display()` | the screen's dots (PC-1600: 156 × 32) |
 | `listing()` | the BASIC program as text lines, the detokenizer's (MODE 0 on the PC-1600) |
-| `card(slot)` | a module's bytes, in bank order; also saved as `$work/slot-<n>.module.yaml` |
-| `peek(target, space, address, count, bank=, vbank=)` | memory bytes, without side effects |
+| `card(slot)` | a module's bytes, in bank order; also saved as `$work/slot-<n>.module.yaml`. As a raw image, the form a preset's `slot-N-rom:` loads into a ROM module: `(tmp_path / "slot-2.bin").write_bytes(machine.card(2))` |
+| `peek(target, space, address, count, bank=, vbank=)` | memory bytes, without side effects. On the PC-1600, `bank=3, vbank=1` reads the hidden ROM bank 3b and `vbank=0` bank 3, whatever port 3DH selects now; the banks are in [the harness's PC-1500/1600 commands](../developer/Harness.md) |
 | `expect_memory(target, space, address, values, …)` | raises unless the bytes match |
 | `save_state(path)`, `restore_state(path)` | the whole machine |
 | `run_to(target, address, timeout)` | runs until the CPU reaches the address; seconds taken |

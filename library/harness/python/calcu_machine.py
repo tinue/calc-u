@@ -158,8 +158,8 @@ class Session:
     def wait_for(self, text: str, timeout: float = 60.0, step: float = 0.25) -> "Session":
         """Runs the queued steps, then waits in steps of `step` seconds of machine time until a
         display line holds text (or matches /regex/, as expect); MachineError after `timeout`.
-        For work the idle wait can't see the end of, such as a PC-1600 LOAD, which reads the
-        keyboard for BREAK and so looks idle."""
+        For work the idle wait can't see the end of, such as a program that the machine counts
+        as idle while it runs."""
         self.run()
         waited = 0.0
         while True:

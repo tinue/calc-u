@@ -77,7 +77,7 @@ TEST(preset_for_another_model_builds_it_last_model_follows) {
     auto& c = r.part();
     const auto reply = r.load(preset("data:\n  05: 3.25\n", "TI-58"));
     CHECK(reply.done);
-    CHECK(c.model() == Model::TI58);
+    CHECK(c.model() == ModelId{kTI58});
     CHECK(!c.isFrozen());
     CHECK_EQ(reg(r, 5), 3.25);
     CHECK_EQ(r.settings.text("startup", "last-model"), std::string("TI-58"));
@@ -87,14 +87,14 @@ TEST(preset_for_another_model_builds_it_last_model_follows) {
 // Any error refuses the file whole, with its first error and its line; the
 // machine stays as it was.
 TEST(first_error_refuses_the_file_machine_untouched) {
-    PartRig r(Model::TI58);
+    PartRig r(ModelId{kTI58});
     auto& c = r.part();
     const auto ticksBefore = r.ticks();
     auto reply = r.load(preset("partition: 959\ndata:\n  77: 1\n", "TI-58"));   // beyond the TI-58's 479; R77 too
     CHECK(!reply.done);
     CHECK(reply.reason.find("line 5") != std::string::npos);   // the first error only
     CHECK(reply.reason.find("line 7") == std::string::npos);
-    CHECK(c.model() == Model::TI58 && r.ticks() >= ticksBefore);
+    CHECK(c.model() == ModelId{kTI58} && r.ticks() >= ticksBefore);
     reply = r.load("\xff\xfe");
     CHECK(!reply.done && reply.reason.find("UTF-8") != std::string::npos);
     reply = r.load("PARTITION: 479\n");   // a 2.3.0 file: outdated, with the hint
@@ -122,7 +122,7 @@ TEST(part_model_switch_keeps_log_resets_freeze) {
     rc(r).pauseOnStart(kProgram);
     CHECK(c.runState().armed == kProgram);
     CHECK(r.model("TI-58").done);
-    CHECK(c.model() == Model::TI58);
+    CHECK(c.model() == ModelId{kTI58});
     CHECK(!c.printerConnected());   // nothing of the old machine is carried
     CHECK(testroms::moduleIn(c.emulator()->access().machine()) == "ML");
     CHECK_EQ(c.emulator()->access().machine().plugged().byPlace.size(), size_t{1});   // the module only
@@ -402,7 +402,7 @@ TEST(dropped_preset_loads_by_its_content) {
     PartRig r;
     CHECK(drop(r, preset("program:\n  keycodes: |\n    76 11\nkeys:\n  - key: CLR\n", "TI-58"), "", "p.ti58"));
     CHECK(r.runUntil([&] { return !r.busy(); }));
-    CHECK(r.part().model() == Model::TI58);
+    CHECK(r.part().model() == ModelId{kTI58});
     CHECK_EQ(step(r, 1), 11);
     CHECK(r.errors().empty());
     CHECK(!drop(r, std::nullopt, "", "p.ti58"));

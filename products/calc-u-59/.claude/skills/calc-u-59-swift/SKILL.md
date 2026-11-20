@@ -88,7 +88,7 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    in `app/`, reached through `EmulatorViewModel` → `TIAppSession` (the app
    session) or a `frontends/swift/Bridge/` wrapper. Views are thin bindings
    over `EmulatorViewModel`.
-   **The session runs on its own thread** (`cu59::SessionThread`):
+   **The session runs on its own thread** (the library's `calcu::shell::SessionThread`):
    the bridge posts commands (the library's and `c59.*`) and hands each
    batch of messages to the main thread; `EmulatorViewModel.apply` copies
    what a batch changed (`TIChangeShell`: the shell's models). Nothing in

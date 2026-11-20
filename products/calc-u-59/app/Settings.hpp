@@ -26,8 +26,8 @@ namespace cu59::settings {
 const calcu::settings::ProductDecl& settingsDecl();
 
 // The model's name as the settings file writes it: "TI-59", "TI-58", "TI-58C".
-const char* modelName(Model model);
-std::optional<Model> modelNamed(std::string_view name);
+const char* modelName(const ModelId& model);
+std::optional<ModelId> modelNamed(std::string_view name);
 
 // The folders a file dialog starts in, one key each in [folders]:
 //   Presets     -- "Load Preset…": presets

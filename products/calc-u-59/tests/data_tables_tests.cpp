@@ -84,9 +84,9 @@ TEST(keyboard_layout_hit_test) {
 }
 
 TEST(model_info) {
-    CHECK_EQ(testroms::instructionHz(Model::TI59), 14218.75);
-    CHECK_EQ(testroms::instructionHz(Model::TI58C), 12312.5);
-    CHECK(info(Model::TI59).hasCardReader && !info(Model::TI58).hasCardReader);
+    CHECK_EQ(testroms::instructionHz(ModelId{kTI59}), 14218.75);
+    CHECK_EQ(testroms::instructionHz(ModelId{kTI58C}), 12312.5);
+    CHECK(info(ModelId{kTI59}).hasCardReader && !info(ModelId{kTI58}).hasCardReader);
     const auto c = romRanges(MachineVariant::TI58C), t = romRanges(MachineVariant::TI59);
     CHECK(c.scanLoop.contains(0x0A2E) && !c.scanLoop.contains(0x065A));
     CHECK(t.scanLoop.contains(0x0660));  // printer line at D0: confirm scan every pass

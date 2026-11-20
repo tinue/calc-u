@@ -12,7 +12,7 @@ const calcu::machine::CapabilityId kControls{"printer/controls"};
 } // namespace
 
 EmulatorSession::EmulatorSession(calcu::machine::Machine& machine, const calcu::roms::RomSet&)
-    : m_model(modelFrom(machine.model()).value_or(Model::TI59)), m_machine(machine) {}
+    : m_model(machine.model()), m_machine(machine) {}
 
 std::string EmulatorSession::moduleID() const {
     for (const auto& e : m_machine.plugged().byPlace)

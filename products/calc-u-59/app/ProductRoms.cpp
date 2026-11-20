@@ -35,12 +35,12 @@ calcu::machine::PeripheralRequest printerRequest(bool trace) {
     return r;
 }
 
-std::unique_ptr<calcu::machine::Machine> buildMachine(Model model, const calcu::roms::RomSet& roms,
+std::unique_ptr<calcu::machine::Machine> buildMachine(const ModelId& model, const calcu::roms::RomSet& roms,
                                                       const MachinePeripherals& peripherals,
                                                       std::shared_ptr<const calcu::machine::ProductData> content) {
     const auto& catalogue = tiCatalogue();
     calcu::machine::BuildRequest request;
-    request.model = modelId(model);
+    request.model = model;
     request.roms = roms.imagesFor(*catalogue.model(request.model), std::nullopt);
     if (peripherals.module) request.peripherals.push_back(moduleRequest(*peripherals.module, roms));
     if (peripherals.printer) request.peripherals.push_back(printerRequest(peripherals.trace));

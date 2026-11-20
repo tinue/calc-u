@@ -27,7 +27,7 @@ public:
     EmulatorSession(const EmulatorSession&) = delete;
     EmulatorSession& operator=(const EmulatorSession&) = delete;
 
-    Model model() const { return m_model; }
+    const ModelId& model() const { return m_model; }
     /// The machine (its capabilities: the product kinds of core/TIProductKinds.hpp).
     class Access {
     public:
@@ -51,7 +51,7 @@ public:
     FrameUpdate tick() { return m_sampler.tick(m_machine); }
 
 private:
-    const Model m_model;
+    const ModelId m_model;
     calcu::machine::Machine& m_machine;
     FrameSampler m_sampler;
 };

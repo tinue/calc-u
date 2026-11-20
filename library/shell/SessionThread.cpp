@@ -1,4 +1,4 @@
-#include "SessionThread.hpp"
+#include "shell/SessionThread.hpp"
 #include "sessions/LibraryTopics.hpp"
 #ifdef CALCU_ATTACH
 #include "harness/attach/AttachEndpoint.hpp"
@@ -8,7 +8,7 @@
 #include <pthread.h>
 #endif
 
-namespace cu59 {
+namespace calcu::shell {
 
 #ifdef CALCU_ATTACH
 struct SessionThread::Attach final : calcu::harness::AttachInbox {
@@ -137,6 +137,8 @@ std::string SessionThread::openAttach([[maybe_unused]] calcu::harness::HarnessPr
 
 void SessionThread::run(Factory factory) {
 #if defined(__APPLE__)
+    // The user waits for these calls: without the QoS class the system may
+    // put the thread on an efficiency core and the 60 Hz pace slips.
     pthread_set_qos_class_self_np(QOS_CLASS_USER_INITIATED, 0);
 #endif
     std::unique_ptr<sessions::AppSession> session = factory();   // built on this thread
@@ -197,4 +199,4 @@ done:
     session.reset();   // destroyed on this thread
 }
 
-} // namespace cu59
+} // namespace calcu::shell

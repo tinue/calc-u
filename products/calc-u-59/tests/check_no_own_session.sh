@@ -1,7 +1,8 @@
 #!/bin/sh
 # The Qt6, Swift and Web frontends host the
 # library's app session and use none of the product's own session classes; the
-# app layer has no thread but the Swift frontend's session thread.
+# app layer has no thread (the Swift frontend's session thread is the
+# library's shell/SessionThread).
 # Run from products/calc-u-59. Exit 1 with the lines found.
 set -u
 fail=0
@@ -13,13 +14,13 @@ if [ -n "$found" ]; then
     echo "$found"
     fail=1
 fi
-threads=$(grep -rnE 'std::thread\b' app | grep -v '^app/SessionThread\.' | grep -vE '^[^:]+:[0-9]+:\s*//')
+threads=$(grep -rnE 'std::thread\b' app | grep -vE '^[^:]+:[0-9]+:\s*//')
 if [ -n "$threads" ]; then
-    echo "A thread in the app layer outside SessionThread (the core holds no lock):"
+    echo "A thread in the app layer (the library's SessionThread hosts the session):"
     echo "$threads"
     fail=1
 fi
-# The bridge reaches the session only through cu59::SessionThread: it includes no SessionController.hpp and calls no tick.
+# The bridge reaches the session only through calcu::shell::SessionThread: it includes no SessionController.hpp and calls no tick.
 if grep -nE '#include .*SessionController\.hpp|->tick\(|\.tick\(' frontends/swift/Bridge/* >/dev/null 2>&1; then
     echo "The Swift bridge reaches past the session thread:"
     grep -nE '#include .*SessionController\.hpp|->tick\(|\.tick\(' frontends/swift/Bridge/*

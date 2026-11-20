@@ -76,12 +76,12 @@ namespace {
 // A machine driven frame by frame (60 Hz of emulated time) through FrameSampler,
 // as the apps do.
 struct PovRig {
-    Model model;
+    ModelId model;
     std::unique_ptr<calcu::machine::Machine> m;
     FrameSampler sampler;
     double hz;
     double acc = 0;
-    explicit PovRig(Model md) : model(md), m(testroms::makeMachine(md)), hz(testroms::instructionHz(md)) {
+    explicit PovRig(ModelId md) : model(md), m(testroms::makeMachine(md)), hz(testroms::instructionHz(md)) {
         testroms::runToScanLoop(*m, md);
         m->readDisplay();
     }
@@ -117,8 +117,8 @@ struct PovRig {
 // Calibrated on a real TI-59: a digit key's ≈ 11 ms of dark display is
 // invisible, sin (≈ 350 ms) visibly darkens.
 TEST(display_pov_keys_as_the_eye_sees_them) {
-    CHECK_EQ(PovRig(Model::TI59).dimmestDuring({82, 83}, {84}), 255);    // 1 2 → 3
-    CHECK_EQ(PovRig(Model::TI59).dimmestDuring({84, 92}, {21, 33}), 0);  // 30 sin
+    CHECK_EQ(PovRig(ModelId{kTI59}).dimmestDuring({82, 83}, {84}), 255);    // 1 2 → 3
+    CHECK_EQ(PovRig(ModelId{kTI59}).dimmestDuring({84, 92}, {21, 33}), 0);  // 30 sin
 }
 
 // In the error blink each lit pass leaves IDLE before the sweep reaches the
@@ -129,7 +129,7 @@ TEST(display_pov_keys_as_the_eye_sees_them) {
 // but never dark (with the old per-poll brightness it flickered between 60%
 // and 87% on the TI-58, and before that dropped to dark).
 TEST(display_pov_error_blink_is_steady) {
-    for (Model model : {Model::TI58, Model::TI59}) {
+    for (ModelId model : {ModelId{kTI58}, ModelId{kTI59}}) {
         PovRig r(model);
         for (int k : {92, 35}) testroms::tap(*r.m, model, k);  // 0 1/x → error blink
         std::vector<FrameUpdate> f;

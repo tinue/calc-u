@@ -36,7 +36,7 @@
 #include <vector>
 
 // Calc-U-59's app layer in the library's app session. The frontends
-// (Qt6 on its GUI thread, Swift on cu59::SessionThread) host a
+// (Qt6 on its GUI thread, Swift on calcu::shell::SessionThread) host a
 // calcu::sessions::AppSession made by makeAppSession(); everything they do
 // is a command or a request, everything they get is a message.
 //
@@ -192,7 +192,7 @@ public:
     // the printer are the library's commands: `start`, `model`, `reset`,
     // `cold-boot`, `attach`, `detach`)
     bool hasMachine() const { return m_session != nullptr; }
-    Model model() const { return m_model; }
+    const ModelId& model() const { return m_model; }
     /// The machine's runtime (frames, the debug panel's reads); the machine
     /// itself is the machine session's.
     EmulatorSession* emulator() { return m_session.get(); }
@@ -291,7 +291,7 @@ private:
 
     std::unique_ptr<EmulatorSession> m_session;
     std::uint64_t m_seenGeneration = 0;
-    Model m_model = Model::TI59;
+    ModelId m_model{kTI59};
 
     std::string m_moduleID;
     std::map<int, CueCardContent> m_moduleCards;

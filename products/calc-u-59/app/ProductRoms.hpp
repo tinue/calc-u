@@ -46,7 +46,7 @@ calcu::machine::PeripheralRequest printerRequest(bool trace);
 /// build (no power cycle). `content`: a TI-58C's constant memory
 /// (TIConstantMemory). A set that lookUpRoms() made always builds;
 /// anything else is a programming error (std::logic_error).
-std::unique_ptr<calcu::machine::Machine> buildMachine(Model model, const calcu::roms::RomSet& roms,
+std::unique_ptr<calcu::machine::Machine> buildMachine(const ModelId& model, const calcu::roms::RomSet& roms,
                                                       const MachinePeripherals& peripherals = {},
                                                       std::shared_ptr<const calcu::machine::ProductData> content = nullptr);
 

@@ -85,11 +85,11 @@ const cs::ProductDecl& settingsDecl() {
     return decl;
 }
 
-const char* modelName(Model model) { return info(model).displayName; }
+const char* modelName(const ModelId& model) { return info(model).displayName; }
 
-std::optional<Model> modelNamed(std::string_view name) {
-    for (Model m : {Model::TI59, Model::TI58, Model::TI58C})
-        if (name == modelName(m)) return m;
+std::optional<ModelId> modelNamed(std::string_view name) {
+    for (const ModelInfo& m : kModelFacts)
+        if (name == m.displayName) return ModelId{m.id};
     return std::nullopt;
 }
 

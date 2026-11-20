@@ -12,7 +12,7 @@ namespace {
 
 class TITraceRecorder final : public calcu::debugger::TraceRecorder {
 public:
-    TITraceRecorder(TraceRecords& records, Model model, std::function<std::uint64_t()> clock)
+    TITraceRecorder(TraceRecords& records, ModelId model, std::function<std::uint64_t()> clock)
         : m_records(&records), m_model(model), m_clock(std::move(clock)) {}
 
     void begin(std::vector<std::uint8_t>& out) override {
@@ -63,7 +63,7 @@ public:
 
 private:
     TraceRecords* m_records;
-    Model m_model;
+    ModelId m_model;
     std::function<std::uint64_t()> m_clock;
     std::vector<CpuFrame> m_frames;
     std::size_t m_next = 0;
@@ -77,7 +77,7 @@ std::unique_ptr<calcu::debugger::TraceRecorder> makeTITraceRecorder(calcu::machi
                                                                     std::function<std::uint64_t()> clock) {
     auto* records = calcu::machine::capabilityAs<TraceRecords>(m, calcu::machine::CapabilityId{"TMC0501/c59.trace-records"});
     if (!records) return nullptr;
-    return std::make_unique<TITraceRecorder>(*records, modelFrom(m.model()).value_or(Model::TI59), std::move(clock));
+    return std::make_unique<TITraceRecorder>(*records, m.model(), std::move(clock));
 }
 
 } // namespace cu59

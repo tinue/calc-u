@@ -103,7 +103,7 @@ TEST(ti58c_from_preset_cold_booted) {
     CHECK(r.memory().readRaw(59) != *cu59::parseDecimal("42"));
 }
 
-// ── Model switch ────────────────────────────────────────────────────────────
+// ── Model switch ──────────────────────────────────────────────────────────────
 
 TEST(switch_carries_no_module_no_printer) {
     SKIP_UNLESS(roms(), kSkip);
@@ -114,7 +114,7 @@ TEST(switch_carries_no_module_no_printer) {
     CHECK(r.send(st::kModelCommand, Value::object({{"name", "TI-58"}})).done);
     CHECK_EQ(r.plugged("slot-1"), std::string("ML"));   // the built-in default: nothing of the old machine
     CHECK_EQ(r.plugged("printer"), std::string());
-    CHECK(r.part().model() == cu59::Model::TI58);
+    CHECK(r.part().model() == cu59::ModelId{cu59::kTI58});
 }
 
 TEST(log_and_debug_settings_stay) {
@@ -133,7 +133,7 @@ TEST(last_model_follows_a_preset_build) {
     Rig r("TI-59");
     CHECK(r.load(head("TI-58") + "data:\n  00: 1\n", "x.ti58").done);
     CHECK_EQ(r.machine()->model().value, std::string("TI-58"));
-    CHECK(r.part().model() == cu59::Model::TI58);
+    CHECK(r.part().model() == cu59::ModelId{cu59::kTI58});
     CHECK_EQ(r.settings.text("startup", "last-model"), std::string("TI-58"));
 }
 

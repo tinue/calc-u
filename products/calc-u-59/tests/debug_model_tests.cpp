@@ -15,9 +15,9 @@ using namespace cu59;
 namespace {
 /// X as the CALCULATOR tab shows it after tapping `keys` (matrix codes) on a fresh TI-59.
 std::string xAfter(std::initializer_list<int> keys) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
-    for (int k : keys) testroms::tap(*m, Model::TI59, k);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
+    for (int k : keys) testroms::tap(*m, ModelId{kTI59}, k);
     std::vector<uint8_t> romCache;
     auto s = buildLiveSnapshot(*m, ModuleImage{}, romCache, calcViewState(*m)).snap;
     return xRegisterLine(s.xValue, s.xRaw);
@@ -48,7 +48,7 @@ TEST(x_register_entry_and_result) {
 namespace {
 /// The CALCULATOR tab's current step and X after each debugger STEP through
 /// `prog` (started with A, so it begins with LBL A), until step `last` is next.
-std::vector<std::string> stepThrough(const std::vector<uint8_t>& prog, int last, Model model = Model::TI59) {
+std::vector<std::string> stepThrough(const std::vector<uint8_t>& prog, int last, ModelId model = ModelId{kTI59}) {
     auto m = testroms::makeMachine(model);
     testroms::runToScanLoop(*m, model);
     testroms::mem(*m).writeProgram(prog.data(), prog.size());
@@ -91,14 +91,14 @@ TEST(step_shows_the_next_step) {
     CHECK(std::find(pr.begin(), pr.end(), "284 X: 4") != pr.end());
     CHECK(std::none_of(pr.begin(), pr.end(), [](const std::string& s) { return s.find("X: A=") != std::string::npos; }));
     // The TI-58C's ROM has its dispatch elsewhere (082B).
-    CHECK(stepThrough(prog, 19, Model::TI58C) == gto);
+    CHECK(stepThrough(prog, 19, ModelId{kTI58C}) == gto);
 }
 
 // While a program runs, the view is built from the last latched boundary, so
 // sampling at arbitrary instructions (as the 60 Hz refresh does) never shows X
 // mid-operation; the live CPU state at those samples often would.
 TEST(running_view_shows_only_step_boundaries) {
-    for (Model model : {Model::TI59, Model::TI58C}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58C}}) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
         // LBL A, 2, √x, ×, 3, =, 1/x, +, 7, =, GTO 00 02
@@ -123,8 +123,8 @@ TEST(running_view_shows_only_step_boundaries) {
 // At idle the cursor is what LRN shows after SST: the counter + 1, or the
 // counter itself after RST or a jump (fB[11]).
 TEST(idle_cursor_matches_lrn_after_sst) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     std::vector<uint8_t> prog = {1, 85, 61, 0, 17};  // 1 + GTO 00 17 Nop… 2 = R/S
     prog.resize(17, 68);
     prog.insert(prog.end(), {2, 95, 91});
@@ -134,11 +134,11 @@ TEST(idle_cursor_matches_lrn_after_sst) {
         return buildLiveSnapshot(*m, ModuleImage{}, romCache, calcViewState(*m))
             .snap.currentStep;
     };
-    testroms::tap(*m, Model::TI59, 81);  // RST
+    testroms::tap(*m, ModelId{kTI59}, 81);  // RST
     CHECK_EQ(next(), 0);
     const int expected[] = {1, 2, 3, 4, 17, 18};
     for (int e : expected) {
-        testroms::tap(*m, Model::TI59, 41);  // SST
+        testroms::tap(*m, ModelId{kTI59}, 41);  // SST
         CHECK_EQ(next(), e);
     }
 }

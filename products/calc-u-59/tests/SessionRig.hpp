@@ -44,11 +44,11 @@ inline std::unique_ptr<calcu::settings::Paths> rigPaths(const calcu::settings::S
 /// What a frontend hands the part: the ROM set, the cue cards,
 /// the settings (`[startup] model`: `model`), the bundled
 /// examples and the places (`paths`: rigPaths of the save folder).
-inline cu59::TIAppSetup appSetup(calcu::settings::SettingsFile& settings, cu59::Model model,
+inline cu59::TIAppSetup appSetup(calcu::settings::SettingsFile& settings, cu59::ModelId model,
                                  const calcu::settings::Paths& paths) {
     cu59::TIAppSetup s;
     s.roms.set = romSet();
-    settings.set("startup", "model", cu59::modelId(model).value);
+    settings.set("startup", "model", model.value);
     s.settings = &settings;
     s.paths = &paths;
     s.examplesFolder = "examples";
@@ -74,7 +74,7 @@ struct MapFileIO final : calcu::media::FileAccess {
 };
 
 struct RigOptions {
-    cu59::Model model = cu59::Model::TI59;
+    cu59::ModelId model = cu59::ModelId{cu59::kTI59};
     calcu::sessions::HostServices services;
     std::vector<calcu::sessions::SessionPart*> before;   ///< parts in front of the product's
     std::vector<calcu::sessions::SessionPart*> after;    ///< parts behind it
@@ -121,7 +121,7 @@ struct SessionRig {
         // The library's start (makeAppSession sent it): until the machine is ready for keys.
         if (o.start) until([this] { return session().machineSession().machine() && !session().context().busy(); });
     }
-    explicit SessionRig(cu59::Model model = cu59::Model::TI59, calcu::sessions::HostServices services = {},
+    explicit SessionRig(cu59::ModelId model = cu59::ModelId{cu59::kTI59}, calcu::sessions::HostServices services = {},
                         std::vector<calcu::sessions::SessionPart*> before = {})
         : SessionRig(RigOptions{.model = model, .services = std::move(services), .before = std::move(before)}) {}
 
@@ -245,7 +245,7 @@ struct SessionRig {
 struct PartRig : SessionRig {
     std::shared_ptr<MapFileIO> io;
     MapFileIO& p;
-    explicit PartRig(cu59::Model model = cu59::Model::TI59, std::shared_ptr<MapFileIO> files = std::make_shared<MapFileIO>())
+    explicit PartRig(cu59::ModelId model = cu59::ModelId{cu59::kTI59}, std::shared_ptr<MapFileIO> files = std::make_shared<MapFileIO>())
         : SessionRig(RigOptions{.model = model, .files = files, .saveFolder = "cards"}), io(std::move(files)), p(*io) {}
 
     /// The notices so far (what a direct call said goes out at the next call).

@@ -10,7 +10,7 @@
 
 namespace cu59 {
 
-inline calcu::pacing::PacingProfile pacingProfile(Model) {
+inline calcu::pacing::PacingProfile pacingProfile(const ModelId&) {
     calcu::pacing::PacingProfile p;
     p.slice = std::chrono::microseconds(20'000);
     p.jitter = true;

@@ -10,7 +10,10 @@
 #include <algorithm>
 #include <vector>
 
-using cu59::Model;
+using cu59::ModelId;
+using cu59::kTI59;
+using cu59::kTI58;
+using cu59::kTI58C;
 using namespace testroms;
 
 namespace {
@@ -24,19 +27,19 @@ constexpr int kKey0 = 92, kRecip = 35;
 TEST(rom_sentinels_and_sizes) {
     // The five files per model decode into 6144 words and 64 constant rows
     // inside the core; a TI-59 image with a wrong sentinel is refused.
-    for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) {
-        auto images = romSet()->imagesFor(*tiCatalogue().model(cu59::modelId(m)), std::nullopt);
+    for (ModelId m : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}}) {
+        auto images = romSet()->imagesFor(*tiCatalogue().model(m), std::nullopt);
         CHECK_EQ(images.size(), size_t{5});
         std::vector<std::string_view> roms, constants;
         for (size_t i = 0; i < images.size(); ++i)
             (i < 3 ? roms : constants).emplace_back(reinterpret_cast<const char*>(images[i].bytes.data()), images[i].bytes.size());
         std::string error;
-        TIRoms d = decodeRomSet(m == Model::TI59 ? MachineVariant::TI59 : m == Model::TI58 ? MachineVariant::TI58 : MachineVariant::TI58C,
+        TIRoms d = decodeRomSet(m == ModelId{kTI59} ? MachineVariant::TI59 : m == ModelId{kTI58} ? MachineVariant::TI58 : MachineVariant::TI58C,
                                 roms, constants, error);
         CHECK(error.empty());
         CHECK_EQ(d.words.size(), size_t{6144});
         CHECK_EQ(d.constants.size(), size_t{64 * 16});
-        if (m == Model::TI59 && d.words.size() == 6144) {
+        if (m == ModelId{kTI59} && d.words.size() == 6144) {
             CHECK_EQ(d.words[0], 0x0A01);
             CHECK_EQ(d.words[6143], 0x1987);
         }
@@ -60,7 +63,7 @@ TEST(module_master_library_parses) {
 }
 
 TEST(boot_reaches_key_readiness_all_models) {
-    for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}}) {
         auto m = testroms::makeMachine(model);
         CHECK(testroms::runToScanLoop(*m, model));
         CHECK_EQ(testroms::displayText(*m), std::string("0"));
@@ -68,7 +71,7 @@ TEST(boot_reaches_key_readiness_all_models) {
 }
 
 TEST(two_plus_three_equals_five) {
-    for (Model model : {Model::TI59, Model::TI58C}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58C}}) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
         for (int k : {kClr, kKey2, kPlus, kKey3, kEquals}) testroms::tap(*m, model, k);
@@ -83,7 +86,7 @@ TEST(two_plus_three_equals_five) {
 // nibbles 2, 4 and 5, which depend on the zero suppression, and for a leftmost
 // zero (the fourth picture, nibble 9).
 TEST(control_nibble_glyphs) {
-    const Model model = Model::TI59;
+    const ModelId model = ModelId{kTI59};
     auto m = testroms::makeMachine(model);
     testroms::runToScanLoop(*m, model);
     // The picture once two polls agree: the first after a key still holds what
@@ -111,7 +114,7 @@ TEST(control_nibble_glyphs) {
 // Error-blink period (0 1/x) of the TI-59 ROM in seconds: 0x0655 SET.IDLE
 // re-lights the display once per lit pass; a lit phase starts at the first one
 // after a dark phase (≥ 2000 ticks without it).
-static double errorBlinkPeriod(Model model, bool printer) {
+static double errorBlinkPeriod(ModelId model, bool printer) {
     auto m = testroms::makeMachine(model, printer);   // the PC-100C in its place or not
     testroms::runToScanLoop(*m, model);
     for (int k : {kKey0, kRecip}) testroms::tap(*m, model, k);
@@ -133,9 +136,9 @@ static double errorBlinkPeriod(Model model, bool printer) {
 // PC-100C: 0.899 s per period; stand-alone, 0.449 s. The printer's KP line at
 // D0 sends every idle pass through the confirmation scan (0x0659–0x0660).
 TEST(error_blink_period_ti59) {
-    double period = errorBlinkPeriod(Model::TI59, true);
+    double period = errorBlinkPeriod(ModelId{kTI59}, true);
     CHECK(period > 0.899 * 0.98 && period < 0.899 * 1.02);
-    period = errorBlinkPeriod(Model::TI59, false);
+    period = errorBlinkPeriod(ModelId{kTI59}, false);
     CHECK(period > 0.449 * 0.98 && period < 0.449 * 1.02);
 }
 
@@ -144,9 +147,9 @@ TEST(error_blink_period_ti59) {
 // TI-58's card veto (digit 7, the 0x0459 card poll); with the printer also
 // through the KP·D0 confirmation scan. Emulated: 0.681 s and 1.215 s.
 TEST(error_blink_period_ti58) {
-    double period = errorBlinkPeriod(Model::TI58, false);
+    double period = errorBlinkPeriod(ModelId{kTI58}, false);
     CHECK(period > 0.6801 * 0.99 && period < 0.6801 * 1.01);
-    period = errorBlinkPeriod(Model::TI58, true);
+    period = errorBlinkPeriod(ModelId{kTI58}, true);
     CHECK(period > 1.2122 * 0.99 && period < 1.2122 * 1.01);
 }
 
@@ -154,10 +157,10 @@ TEST(error_blink_period_ti58) {
 // instructions is fixed by the ROM path alone; a real unit's blink in seconds
 // gives that unit's clock, to which its other measurements are normalised.
 static double ti58cErrorBlinkTicks(bool printer) {
-    auto m = testroms::makeMachine(Model::TI58C, printer);
-    testroms::runToScanLoop(*m, Model::TI58C);
-    for (int k : {kKey0, kRecip}) testroms::tap(*m, Model::TI58C, k);
-    const double hz = instructionHz(Model::TI58C);
+    auto m = testroms::makeMachine(ModelId{kTI58C}, printer);
+    testroms::runToScanLoop(*m, ModelId{kTI58C});
+    for (int k : {kKey0, kRecip}) testroms::tap(*m, ModelId{kTI58C}, k);
+    const double hz = instructionHz(ModelId{kTI58C});
     // The multiplex leaves short gaps in a lit phase; a lit phase starts after
     // ≥ 10 ms without any driven digit.
     const uint64_t gap = static_cast<uint64_t>(0.010 * hz);
@@ -197,7 +200,7 @@ TEST(error_blink_period_ti58c) {
 // readDisplay() reports how long each position was driven: a steady IDLE display
 // reads 1.0 for lit positions and 0 for suppressed ones, a computing CPU 0.
 TEST(display_duty_normalised) {
-    for (Model model : {Model::TI59, Model::TI58C}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58C}}) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
         for (int k : {kKey2, kKey3}) testroms::tap(*m, model, k);  // shows "23"
@@ -218,8 +221,8 @@ TEST(display_duty_normalised) {
 }
 
 TEST(ti58c_keeps_memory) {
-    auto m = testroms::makeMachine(Model::TI58C);
-    testroms::runToScanLoop(*m, Model::TI58C);
+    auto m = testroms::makeMachine(ModelId{kTI58C});
+    testroms::runToScanLoop(*m, ModelId{kTI58C});
     std::vector<uint8_t> a(1920), b(1920);
     mem(*m).serialiseRAM(a.data());
     uint8_t reg[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6};
@@ -236,7 +239,7 @@ TEST(ti58c_keeps_memory) {
 // reset routine, whose RAM.OP op 2 clears the whole RAM. Checked on a real TI-59:
 // program and registers gone, t still there.
 TEST(start_up_clears_memory_except_ti58c) {
-    for (Model model : {Model::TI59, Model::TI58}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58}}) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
         const uint8_t entry[] = {2, 4, 0, 42, 0, 36, 2, 71, 40, 0, 97, 99, 99, 0, 0, 0, 1, 2, 3};
@@ -254,7 +257,7 @@ TEST(start_up_clears_memory_except_ti58c) {
 }
 
 TEST(start_up_clears_memory_except_ti58c_power_cycle) {
-    for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}}) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
         auto eleven = cu59::encodeBcd("11");
@@ -263,13 +266,13 @@ TEST(start_up_clears_memory_except_ti58c_power_cycle) {
         testroms::runToScanLoop(*m, model);
         uint8_t reg[16];
         mem(*m).copyRAMReg(5, reg);
-        CHECK_EQ(std::equal(eleven.begin(), eleven.end(), reg), model == Model::TI58C);
+        CHECK_EQ(std::equal(eleven.begin(), eleven.end(), reg), model == ModelId{kTI58C});
     }
 }
 
 TEST(card_insert_and_eject) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     // The mode (read/write) is set later by the ROM's card opcodes, not by insertion.
     card(*m).insertCard(nullptr, 0);  // blank card
     CHECK(card(*m).isCardPresent());
@@ -281,9 +284,9 @@ TEST(card_insert_and_eject) {
 // PRINT held down prints the display, on the text layer and as the dots of
 // its characters.
 TEST(print_gives_a_line) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
-    testroms::tap(*m, Model::TI59, kKey2);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
+    testroms::tap(*m, ModelId{kTI59}, kKey2);
     testroms::printerControl(*m, PC100C::kPrint, true);
     run(*m, 3000);
     testroms::printerControl(*m, PC100C::kPrint, false);
@@ -309,7 +312,7 @@ TEST(print_gives_a_line) {
 // Expected values are what a real TI-58C + PC-100A printed (2026-10-25 scans,
 // reference/CoreArchitecture.md "Dot timing within a line").
 static PC100C::CodeLine sweepLine(int k, std::vector<calcu::paper::Mark>* marks = nullptr) {
-    const Model model = Model::TI58C;
+    const ModelId model = ModelId{kTI58C};
     auto m = testroms::makeMachine(model);
     testroms::runToScanLoop(*m, model);
     // 000 INV SBR, 001–004 Nop, 005 Op 05 Int, 008 1F, 009 RTN;
@@ -354,8 +357,8 @@ TEST(interrupt_rows_against_the_scan) {
 }
 
 TEST(breakpoint_sets_step_bit31) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     uint16_t target = dbg(*m).pc();
     TI59Machine& hw = testroms::hw(*m);   // the core's own breakpoints (headless tools)
     hw.setTraceFlags(hw.traceFlags() | TRACE_BREAKPOINTS);

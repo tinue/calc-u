@@ -28,13 +28,18 @@ tools/  ci/  .github/workflows/
   attach endpoint (development builds only).
 - Dependencies point one way. `files` is the base; `machine`, `formats`
   and `settings` use only the standard library and `files`; `sessions`
-  builds on `machine` and `pacing`; the higher areas (`presets`, `paper`,
+  builds on `machine` and `pacing`; `shell` builds on `sessions` and
+  `settings`, and its native threaded host `SessionThread` also hosts
+  harness attach; the higher areas (`presets`, `paper`,
   `debugger`, `media`, `opening`, `parts`) are used only by `harness`,
   `qt6` and the products; `web` uses only `sessions` and `settings`. A
   new include against this direction is a bug.
 - Library code throws no exception across an interface and uses no RTTI,
   no threads and no locks; failures are return values. Sessions are
-  single-threaded; only host adapters cross threads.
+  single-threaded. The one exception are the host adapters at a
+  session's edge, which may hold threads and locks and say so in their
+  header: `shell/SessionThread`, `harness/attach/`, the pseudo-terminal
+  link of `peripherals`, and `qt6`.
 - A product's code that implements a library interface stays in the
   product (`core/`, `app/`), in the product's style.
 

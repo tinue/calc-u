@@ -77,15 +77,15 @@ inline calcu::media::MediaPlace* cardPlace(Machine& m) {
 inline cu59::CalculatorState& panel(Machine& m) { return dbg(m); }
 
 /// Instructions per second in RUN mode: tick rate / 32.
-inline double instructionHz(cu59::Model model) {
-    return tiCatalogue().model(cu59::modelId(model))->tickRate / 32.0;
+inline double instructionHz(cu59::ModelId model) {
+    return tiCatalogue().model(model)->tickRate / 32.0;
 }
 
 inline void freshMachine(Machine& m);
 
 /// Build a machine with ROM and constants, the Master Library and the
 /// PC-100C attached at the build.
-inline std::unique_ptr<Machine> makeMachine(cu59::Model model, bool printer = true) {
+inline std::unique_ptr<Machine> makeMachine(cu59::ModelId model, bool printer = true) {
     auto m = cu59::buildMachine(model, *romSet(), cu59::MachinePeripherals{std::string("ML"), printer, false});
     freshMachine(*m);
     return m;
@@ -177,7 +177,7 @@ inline void run(Machine& m, uint32_t n) {
 }
 
 /// Run until the machine reports key readiness (or give up).
-inline bool runToScanLoop(Machine& m, cu59::Model, uint32_t maxSteps = 2'000'000) {
+inline bool runToScanLoop(Machine& m, cu59::ModelId, uint32_t maxSteps = 2'000'000) {
     for (uint32_t i = 0; i < maxSteps; i += 100) {
         run(m, 100);
         if (m.isKeyReady()) return true;
@@ -225,7 +225,7 @@ inline void press(Machine& m, int code) { m.keyDown(*cu59::keyIdAt(static_cast<u
 inline void release(Machine& m, int code) { m.keyUp(*cu59::keyIdAt(static_cast<uint8_t>(code))); }
 
 /// Press a matrix key, hold ~100 ms of emulated time, release, settle.
-inline void tap(Machine& m, cu59::Model model, int code) {
+inline void tap(Machine& m, cu59::ModelId model, int code) {
     press(m, code);
     run(m, static_cast<uint32_t>(instructionHz(model) * 0.1));
     release(m, code);

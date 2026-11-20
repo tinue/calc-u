@@ -47,8 +47,10 @@ and `docs/Process.md` until the closing check at its end has passed.
   now fails every run. On the card as their suite ships it (blank, no
   module header) `INIT"S2:","P"` leaves slot 2 a RAM disk (S2MTB FEH), so
   the ROM refuses `TITLE"S2:"` with ERROR 101 (routine 1EEFH). It passed
-  only when an earlier test had written the card file, which the driver
-  no longer allows (module files are plugged as copies). Tell spellbound.
+  only when an earlier test had written the card file: their seven cards
+  are module instances, so every test writes them back. Tell spellbound:
+  give the fixtures `template: true` (never written) and prepare the card
+  in that test.
 - **Calc-U-1600's cloud-session hook**: `products/calc-u-1600/.claude/settings.json`
   runs `$CLAUDE_PROJECT_DIR/tools/cloud_session_start.sh`, a path that
   exists only when a session opens in the product folder; from the

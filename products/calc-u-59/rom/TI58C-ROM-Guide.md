@@ -7,7 +7,7 @@ TI-59/TI-58 firmware, so this guide does not repeat `rom/TI59-ROM-Guide.md`.
 It describes what the TI-58C ROM does differently, and why.
 
 Everything here comes from tracing the unmodified ROMs of both machines with
-the headless harness of 2.3.0 (now `calcu --product c59`, `docs/developer/Harness.md`). Statements marked *derived* come from reading the code
+the harness (`calcu --product c59`, `docs/developer/Harness.md`). Statements marked *derived* come from reading the code
 without a trace that shows them directly.
 
 ```bash

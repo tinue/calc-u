@@ -67,9 +67,8 @@ const std::map<std::string, std::uint8_t>& keycodeOfPresses() {
 }
 
 // The name the PC-100C's List prints for a keycode: app/KeyNames' names, but
-// for × (65), which the printer prints `x` and release 2.3.0's debug panel
-// table names `|x|`, keycode 50's name (tests/golden/keynames.txt keeps
-// that table).
+// for × (65), which the printer prints `x`: the mnemonic `|x|` is keycode
+// 50's name (tests/golden/keynames.txt holds the table).
 std::string printedName(std::uint8_t k) { return k == 65 ? std::string("x") : mnemonic(k); }
 
 } // namespace

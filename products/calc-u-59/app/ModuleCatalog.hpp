@@ -24,8 +24,7 @@ struct ModuleMetadata {
 };
 
 /// Every module's metadata from its module file in the set, in menu order
-/// (`menu-sort`; ties keep the catalogue's order, 2.3.0's cuecards.txt
-/// order, so ST comes before RE). `menuTitle` is the
+/// (`menu-sort`; ties keep the catalogue's order, so ST comes before RE). `menuTitle` is the
 /// file's `description`, `title` its `title`.
 std::vector<ModuleMetadata> allModuleMetadata(const calcu::roms::RomSet& roms);
 

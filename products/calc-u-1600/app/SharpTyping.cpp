@@ -74,8 +74,8 @@ std::optional<std::vector<Press>> pc1600Char(char32_t c, const TypingSupport* s)
     return pressesOf(base, shift);
 }
 
-// The model's key IDs in any case, `break` for `on`; nothing else
-// (`ent` is no longer a name). Every key ID is a name, the PC-1600's
+// The model's key IDs in any case, `break` for `on`; nothing else. Every
+// key ID is a name, the PC-1600's
 // `ctrl`, `kbii` and `bs` too.
 std::function<std::optional<std::vector<Press>>(std::string_view)> namesOf(const std::vector<std::string>& ids) {
     return [&ids](std::string_view n) -> std::optional<std::vector<Press>> {

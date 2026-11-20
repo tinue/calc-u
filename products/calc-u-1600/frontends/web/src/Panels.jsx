@@ -124,8 +124,7 @@ function Ce158Printer({ shell }) {
   );
 }
 
-// The pill menus' list and their dismissal (once the menu bar's, which the
-// shell's ShellMenuBar replaced).
+// The pill menus' list and their dismissal.
 function MenuList({ items, onDone, className }) {
   const [open, setOpen] = React.useState(-1);
   return (

@@ -2,7 +2,7 @@
 """
 read_trace.py — TI-59 binary trace reader with disassembly.
 
-Parses TI59_TRACE.bin (and variant filenames) in the format of docs/formats/trace.md (repository root) and either:
+Parses CALCU59_TRACE.bin (and variant filenames) in the format of docs/formats/trace.md (repository root) and either:
   • Prints a human-readable TI59E.LOG-style text trace to stdout (default)
     Includes disassembled mnemonics (e.g., "11DA 0A76 MEMWR")
   • Emits a JSON array (--json)
@@ -14,16 +14,16 @@ Version support:
     v2 adds model indicator to file header and SESSION_START record.
 
 Usage:
-    python3 read_trace.py TI59_TRACE.bin                       # output everything
-    python3 read_trace.py --dedup TI59_TRACE.bin               # filter consecutive same-PC
-    python3 read_trace.py --skip-repeating TI59_TRACE.bin      # dedup + collapse repeating loops
-    python3 read_trace.py --clean TI59_TRACE.bin               # find reset, skip to after first scan loop
-    python3 read_trace.py --clean-heavy TI59_TRACE.bin         # skip reset and first keyboard scan loop
-    python3 read_trace.py --clean --dedup TI59_TRACE.bin       # clean + dedup
-    python3 read_trace.py --clean-heavy --color TI59_TRACE.bin # clean-heavy + coloring
-    python3 read_trace.py --clean --json TI59_TRACE.bin        # clean + JSON output
-    python3 read_trace.py --dedup --color TI59_TRACE.bin       # filters + coloring
-    python3 read_trace.py --json TI59_TRACE.bin
+    python3 read_trace.py CALCU59_TRACE.bin                       # output everything
+    python3 read_trace.py --dedup CALCU59_TRACE.bin               # filter consecutive same-PC
+    python3 read_trace.py --skip-repeating CALCU59_TRACE.bin      # dedup + collapse repeating loops
+    python3 read_trace.py --clean CALCU59_TRACE.bin               # find reset, skip to after first scan loop
+    python3 read_trace.py --clean-heavy CALCU59_TRACE.bin         # skip reset and first keyboard scan loop
+    python3 read_trace.py --clean --dedup CALCU59_TRACE.bin       # clean + dedup
+    python3 read_trace.py --clean-heavy --color CALCU59_TRACE.bin # clean-heavy + coloring
+    python3 read_trace.py --clean --json CALCU59_TRACE.bin        # clean + JSON output
+    python3 read_trace.py --dedup --color CALCU59_TRACE.bin       # filters + coloring
+    python3 read_trace.py --json CALCU59_TRACE.bin
 
 Flags:
     --json                 Output as JSON array
@@ -39,8 +39,7 @@ Flags:
     --color                Colorize trace entries (DISP ON: light yellow, IDLE=1: darker white,
                            both: dark yellow). Works with any filter combination.
     --labels <file>        ROM labels inline, from a label table (rom/TI59-labels.asm,
-                           rom/TI58C-labels.asm: lines "ADDR  NAME ..."), as
-                           2.3.0's tools/headless/ti59.py showed them.
+                           rom/TI58C-labels.asm: lines "ADDR  NAME ...").
     --changes              One line per instruction, "PC OPCODE dDIGIT [c0] mnemonic
                            changes…": only the registers the instruction changed
                            (A-E, IO, fA, fB, KR, SR, EXT, R5), as ti59.py printed
@@ -209,7 +208,7 @@ def _parse_session_end(payload):
 
 def load_trace(path):
     """
-    Parse TI59_TRACE.bin (or variant) and return a list of record dicts.
+    Parse CALCU59_TRACE.bin (or variant) and return a list of record dicts.
 
     Record types:
       'session_start'  — session boundary with optional model field

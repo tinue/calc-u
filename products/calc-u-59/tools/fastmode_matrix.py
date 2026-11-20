@@ -103,7 +103,7 @@ IDLE_LO, IDLE_HI = 0x0627, 0x0660
 
 
 def regval(text):
-    """`c59 data-registers`' value as 2.3.0's tool wrote it ('1e1' → '1.e1')."""
+    """`c59 data-registers`' value with a decimal point before the exponent ('1e1' → '1.e1')."""
     m = re.match(r'^(-?\d)(\.?\d*)(e.*)?$', text)
     if not m or text == '0':
         return text

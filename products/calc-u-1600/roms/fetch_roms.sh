@@ -57,8 +57,8 @@ fetch_if_needed "$ROMS_DIR/CE-502B.module.yaml" 7c7af4b7adab69b5e75297bc1c3d7279
 
 # ---- PC-1600 (tinue/PC-1600-ROM) -- upstream files are uppercase .BIN in
 # dumps/new/ (current ROM), dumps/old/ (older ROM) and dumps/ce1600p/{new,old}/
-# (CE-1600P). Renamed lowercase .bin here (the Calc-U-1600 0.8.1 Qt6 build globs *.bin,
-# case-sensitive) and every ROM gets a -new/-old suffix so both versions live
+# (CE-1600P). Renamed lowercase .bin here (the names the catalogue looks for)
+# and every ROM gets a -new/-old suffix so both versions live
 # side by side in the flat roms/ directory. ----
 PC1600_BASE="${PC1600_ROM_BASE:-https://raw.githubusercontent.com/tinue/PC-1600-ROM/main}/dumps"
 

@@ -296,8 +296,7 @@ void SharpDebugging::latch(const ::DebugStop& core) {
 }
 
 // Only the target about to run passes the breakpoint it stands on; a
-// pass another target had is dropped (RunControl.cpp:88-89 of 0.8.1's core,
-// DebugTarget::resumeFromStop).
+// pass another target had is dropped.
 void SharpDebugging::passOnce(std::size_t target) {
     for (std::size_t i = 0; i < m_targets.size(); ++i) {
         SharpDebugTarget& t = *m_targets[i];
@@ -321,8 +320,8 @@ Ticks SharpDebugging::run(Ticks ticks) {
         latch(consumeCoreStop());
         return r;
     }
-    // The observer: one machine step at a time (stepMachine() of 0.8.1),
-    // the observer called after each instruction with the target that
+    // The observer: one machine step at a time, the observer called after
+    // each instruction with the target that
     // carried it out.
     const std::uint64_t start = elapsed();
     while (elapsed() - start < ticks) {

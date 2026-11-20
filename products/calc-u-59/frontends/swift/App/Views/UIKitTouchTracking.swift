@@ -5,19 +5,15 @@ import UIKit
 
 /// Raw UIKit touch tracking, bypassing SwiftUI's `DragGesture`.
 ///
-/// iOS 27 regressed `DragGesture(minimumDistance: 0)`'s `onChanged`/`onEnded`
-/// pair: `onEnded` now frequently fires within ~1ms of `onChanged`, as if the
-/// touch was released the instant it began, regardless of how long the real
-/// touch is actually held — confirmed reproducible (iOS 26.5: reliable,
-/// iOS 27.0: ~1-in-20 presses actually register). `UIView.touchesBegan` /
-/// `touchesMoved` / `touchesEnded` / `touchesCancelled`, one layer below
-/// SwiftUI's gesture-recognition engine, don't exhibit this — see the
-/// key-press-reliability investigation that replaced `KeyboardView`'s
-/// gestures with this type.
+/// On iOS 27, `DragGesture(minimumDistance: 0)` often fires `onEnded` within
+/// ~1ms of `onChanged`, as if the touch was released the instant it began,
+/// however long the touch is held (about 1 in 20 presses registers; iOS 26.5
+/// is reliable). `UIView.touchesBegan` / `touchesMoved` / `touchesEnded` /
+/// `touchesCancelled`, one layer below SwiftUI's gesture recognition, don't
+/// show this, so `KeyboardView` tracks its keys with this type.
 ///
 /// Only single-touch tracking is needed: the calculator's key matrix has no
-/// multi-touch behavior to preserve (the previous `DragGesture` didn't track
-/// multiple touches either).
+/// multi-touch behavior.
 struct UIKitTouchTracker: UIViewRepresentable {
     var onChanged: (CGPoint) -> Void
     var onEnded: () -> Void

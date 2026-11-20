@@ -350,20 +350,6 @@ def load_chips(chip_names: list[str], roms_dir: Path) -> list[tuple[int, int]]:
     return words
 
 
-def load_rom(path: Path) -> list[tuple[int, int]]:
-    """Parse a legacy flat .hex ROM file → ordered list of (address, opcode) tuples."""
-    hex_str = "".join(
-        line.strip()
-        for line in path.read_text(encoding="ascii").splitlines()
-        if line.strip()
-    )
-    raw = bytes.fromhex(hex_str)
-    return [
-        (i // 2, ((raw[i] << 8) | raw[i + 1]) & 0x1FFF)
-        for i in range(0, len(raw), 2)
-    ]
-
-
 # ── Section markers ──────────────────────────────────────────────────────────
 
 # Section markers and ROM metadata keyed by first address of each region.
@@ -381,7 +367,7 @@ _ROM_META: dict[str, dict] = {
         },
         "expected": 6144,
         "addr_range": "0x0000–0x17FF",
-        "title": "TI-59 ROM Disassembly — Phase 1 (raw, unlabeled)",
+        "title": "TI-59 ROM Disassembly (raw, unlabeled)",
         "checksums": [(0x0000, 0x0A01), (0x17FF, 0x1987)],
     },
     "58C": {
@@ -393,7 +379,7 @@ _ROM_META: dict[str, dict] = {
         },
         "expected": 6144,
         "addr_range": "0x0000–0x17FF",
-        "title": "TI-58C ROM Disassembly — Phase 1 (raw, unlabeled)",
+        "title": "TI-58C ROM Disassembly (raw, unlabeled)",
         "checksums": [(0x0000, 0x0A01)],
     },
 }

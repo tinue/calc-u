@@ -151,7 +151,7 @@ void addDebugPanelCommands(harness::CommandRegistry& r) {
     }, "heatmap reset  set the ROM heatmap's counts to zero");
 }
 
-// ── The functions of the earlier tools ──────────────────────────────────────
+// ── Coverage, timing and keycode functions ──────────────────────────────────
 
 constexpr const char* kNoMachine = "There is no machine.";
 constexpr Ticks kInstruction = 32;   // ticks of one instruction outside the idle state

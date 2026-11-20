@@ -89,7 +89,7 @@ calcu::typing::TypingProfile makeProfile(const ModelId& m) {
     return p;   // no characters, no ENTER: no `type`
 }
 
-// The character → key ID of the 26 bindings of release 2.3.0's KeyboardMap.cpp.
+// The character → key ID of the keyboard map's 26 bindings.
 std::optional<KeyId> binding(char32_t c) {
     switch (c) {
     case 'a': return KeyId{"A"};

@@ -26,7 +26,7 @@ inline constexpr double kTIMinHoldSeconds = 0.100;
 /// the same: long beside the few milliseconds the scan loop takes to come
 /// back, so a program typed in LRN mode keeps its order.
 inline constexpr double kTIDoesNotWaitAfterSeconds = 0.200;
-inline constexpr double kTIReadinessPoll = 0.0015;     ///< release 2.3.0's kScanPoll
+inline constexpr double kTIReadinessPoll = 0.0015;     ///< how often a wait at key readiness looks again
 
 /// Minimum hold 100 ms of emulated time, presses that wait at key
 /// readiness (and again after a release), held until sampled; no characters,
@@ -40,7 +40,7 @@ std::optional<std::vector<calcu::typing::Press>> tiKeyName(std::string_view);
 /// is pressed once.
 std::optional<std::vector<calcu::typing::Press>> tiKeyNames(const std::vector<std::string>&);
 
-/// The 26 keys of release 2.3.0's keyboard map by its rules: a letter by the
+/// The keyboard map's 26 keys by these rules: a letter by the
 /// letter the key carries (Shift: `2nd`, then the letter's key), anything
 /// else by the character the layout produced; nothing with Command,
 /// Control or Option.

@@ -13,7 +13,7 @@ enum : uint8_t {
 };
 
 constexpr uint32_t kMagic = 0x54493539;  // 'TI59' LE
-// v1 (released in v1.0.0) is stable; v2+ can evolve without backwards-compat guarantees.
+// The format version: it changes with the record layout, and tools/read_trace.py with it.
 constexpr uint16_t kVersion = 2;
 constexpr size_t kFramePayload = 125;
 
@@ -88,7 +88,7 @@ void TraceWriter::sessionEnd(std::vector<uint8_t>& out, uint32_t events) {
     Buf b{out};
     b.record(kSessionEnd, 8);
     b.u32(events);
-    b.u32(0);  // suppressed-event total: always 0 (no deduplication), kept for the format
+    b.u32(0);  // the format's suppressed-event total: always 0 (no deduplication)
 }
 
 } // namespace cu59

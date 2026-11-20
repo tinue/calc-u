@@ -3,8 +3,7 @@
 #include <cstdint>
 
 // The power cycle of a Sharp machine as a sequence over the advances that
-// follow: the sequence of 0.8.1's MachineSession
-// (`app/MachineSession.cpp:244-257`), in the core. No clock, no thread:
+// follow, in the core. No clock, no thread:
 // SharpMachine::advance() runs it in chunks that end on its phase changes,
 // and each phase is one run of the core.
 //

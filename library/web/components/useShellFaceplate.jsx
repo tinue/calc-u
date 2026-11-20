@@ -15,7 +15,7 @@
 // element, in logical pixels; `productFirst(x, y)` gets a press in hit-map
 // units first, and a press it takes (true) is not the faceplate's: its
 // moves and release pass by as well. A number or a function as the fourth
-// argument is `scale`, as before.
+// argument is `scale` itself, as shorthand for `{ scale }`.
 
 function useShellFaceplate(shell, hitMap, ref, options) {
   const opts = options !== null && typeof options === "object" ? options : { scale: options };

@@ -9,8 +9,7 @@
 
 // The harness's `display-text` on a Sharp machine: the font of the model's ROM, read when the machine changes,
 // and the cursor the ROM reports through its RAM, read at each flush; the
-// cell under the cursor reads as the character the ROM saved there, as
-// `--lcd-text` of the old CLIs did.
+// cell under the cursor reads as the character the ROM saved there.
 
 namespace cu1600 {
 

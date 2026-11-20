@@ -1,6 +1,6 @@
-# ret_bug_label.ti59 — Reproduce bug with lost return address, use to generate a trace
+# ret_bug_label.ti59 — a subroutine return address that must not get lost; use it to generate a trace
 #
-# The bug is fixed, and the emulator now correctlxy shows "1" at the end (used to be a "5").
+# The display shows "1" at the end.
 #
 
 format-version: 2

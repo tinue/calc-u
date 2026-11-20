@@ -458,8 +458,7 @@ def bootstrap_storage(udid, name, keep_booted=False):
     """Ensure the Files app has created its local-storage container.
 
     A freshly created simulator has no such container until something touches
-    it, which is why this used to be a manual "open the Files app once" step.
-    Booting the device and launching Files.app does it unattended.
+    it; booting the device and launching Files.app creates it unattended.
     """
     existing = storage_dir(udid)
     if existing:

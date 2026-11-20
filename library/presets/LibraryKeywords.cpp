@@ -136,10 +136,7 @@ public:
             co_await run.op().hostWait(std::chrono::microseconds(us_));
             co_return ItemResult{};
         }
-        const bool full = run.op().speed() == pacing::Speed::Full;
-        if (full) run.op().setReportsWaiting(false);   // as fast as the host allows
         co_await run.op().run(ticksOfMicros(us_, m->descriptor().tickRate));
-        if (full) run.op().setReportsWaiting(true);
         co_return ItemResult{};
     }
     After after() const override { return After::TakenEffect; }

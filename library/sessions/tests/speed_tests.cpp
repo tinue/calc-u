@@ -19,18 +19,11 @@ Task<OperationResult> regularThenFull(OperationContext& c) {
     co_return OperationResult{};
 }
 
-Task<OperationResult> notWaiting(OperationContext& c) {
-    c.setReportsWaiting(false);   // a preset `wait:` at full speed
-    co_await c.run(1'000'000);
-    co_return OperationResult{};
-}
-
 struct Probe final : WaitProbe {
     bool waits = false;
     bool waitsForMedium(const calcu::machine::Machine&) const override { return waits; }
 };
 
-PacingProfile pacedWhileWaiting() { return PacingProfile{std::nullopt, false, true}; }
 } // namespace
 
 TEST(speed_from_next_call) {
@@ -93,33 +86,29 @@ TEST(waits_for_input_from_wait_probe) {
     CHECK(ms.runSlice(SliceRequest{10, WallTime{0}}).waitsForInput);
 }
 
-TEST(operation_reports_not_waiting) {
-    // Full speed paced while the machine waits: an operation
-    // that reports "not waiting" runs unpaced although the machine is ready.
-    Rig waiting, unpaced;
-    for (Rig* r : {&waiting, &unpaced}) {
-        r->build(mt::kSeg, 0, pacedWhileWaiting());
-        r->part.operation = runningFor(1'000'000);
+TEST(an_operation_is_never_paced_while_the_machine_waits) {
+    // Full speed is paced while the machine waits for the user, so it does
+    // not spin at the prompt; an operation (a preset, a load) runs as fast as
+    // the host allows although the machine is ready.
+    Rig user, op;
+    for (Rig* r : {&user, &op}) {
+        r->build(mt::kSeg, 0, PacingProfile{});
+        r->waits(true);
     }
-    unpaced.part.operation = [](OperationContext& c) { return notWaiting(c); };
-    waiting.send("tp.op");
-    unpaced.send("tp.op");
-    CHECK(waiting.session->machineSession().waitsForInput() == false);   // not ready before the start-up
-    CHECK(!unpaced.session->machineSession().waitsForInput());
-    Ticks w = 0, u = 0;
+    user.send("speed", Value::object({{"full", true}}));
+    op.part.operation = runningFor(1'000'000);
+    op.send("tp.op");
+    Ticks u = 0, o = 0;
     for (int i = 0; i < 4; ++i) {
-        const Ticks w0 = waiting.ticks(), u0 = unpaced.ticks();
-        waiting.call();
-        unpaced.call();
-        w = waiting.ticks() - w0;
-        u = unpaced.ticks() - u0;
+        const Ticks u0 = user.ticks(), o0 = op.ticks();
+        user.call();
+        op.call();
+        u = user.ticks() - u0;
+        o = op.ticks() - o0;
     }
-    CHECK(waiting.session->machineSession().waitsForInput());
-    CHECK(!unpaced.session->machineSession().waitsForInput());
-    CHECK(u > 3 * w);
-    // At its end the machine session reports waiting again.
-    unpaced.send("tp.stop");
-    CHECK(unpaced.session->machineSession().waitsForInput());
+    CHECK(user.session->machineSession().waitsForInput());
+    CHECK(op.session->machineSession().waitsForInput());
+    CHECK(o > 3 * u);
 }
 
 TEST(start_afresh_on_create_continue_end_new_machine_resume) {
@@ -141,11 +130,12 @@ TEST(start_afresh_on_create_continue_end_new_machine_resume) {
     r.call();
     ms.setPaused(false);
     CHECK_EQ(ms.freshStarts(), std::uint64_t(5));   // the debugger resumes
-    // Observed: no lag after a long pause; the next call runs one frame's worth.
+    // Observed: no lag after a long pause; the next call runs one frame's
+    // worth, and at most one slice ahead.
     ms.setPaused(true);
     r.clock.now += std::chrono::milliseconds(80);   // under the lag limit
     ms.setPaused(false);
     const Ticks t0 = r.ticks();
     r.call();
-    CHECK(r.ticks() - t0 < 2'500);
+    CHECK(r.ticks() - t0 < 3'500);
 }

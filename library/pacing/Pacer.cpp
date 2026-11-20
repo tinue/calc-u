@@ -15,9 +15,8 @@ Pacer::Pacer(WallClock clock, std::optional<std::uint32_t> seed) : clock_(std::m
 void Pacer::setMachine(const PacingProfile& profile, machine::TickRate rate) {
     profile_ = profile;
     rate_ = rate;
-    slice_ = profile.slice ? std::max<Ticks>(1, ticksIn(*profile.slice, rate)) : 0;
+    slice_ = std::max<Ticks>(1, ticksIn(profile.slice, rate));
     lagLimit_ = ticksIn(kLagLimit, rate);
-    callSlice_ = std::max<Ticks>(1, rate / kCallSlicesPerSecond);
     startAfresh();
 }
 
@@ -74,15 +73,13 @@ PaceResult Pacer::pace(Speed speed, SliceRunner& runner) {
     return res;
 }
 
-// One call at the pace of regular speed. At full speed (paced while waiting)
+// One call at the pace of regular speed. At full speed, while the machine waits,
 // a slice that does not report "waits for input" returns to full speed.
 Pacer::Outcome Pacer::paced(WallTime now, SliceRunner& runner, PaceResult& res, bool atFull) {
     Ticks due = ticksIn(now - origin_, rate_);
-    bool dropped = false;
     if (due > ran_ && due - ran_ > lagLimit_) {   // dropped whole, nothing caught up
         rebase(now);
         due = 0;
-        dropped = true;
         res.lagDropped = true;
     }
     auto after = [&](const SliceResult& s) {
@@ -90,11 +87,6 @@ Pacer::Outcome Pacer::paced(WallTime now, SliceRunner& runner, PaceResult& res, 
         if (atFull && !s.waitsForInput) return Outcome::LeftWaiting;
         return Outcome::Done;
     };
-    if (!fixed()) {   // the call: run what is due, the overshoot is carried
-        const Ticks want = due > ran_ ? due - ran_ : dropped ? callSlice_ : 0;
-        if (want == 0) return Outcome::Done;
-        return after(run(runner, want, now, res));
-    }
     for (;;) {   // every slice whose end is due within one slice
         const Ticks end = nextEnd();
         if (end > due + slice_) return Outcome::Done;
@@ -112,19 +104,15 @@ void Pacer::unpaced(WallTime callStart, SliceRunner& runner, PaceResult& res) {
     const WallTime until = callStart + kFullSpeedAllowance;
     bool ranOne = false;
     while (!ranOne || clock_() < until) {
-        Ticks want = callSlice_;
-        if (fixed()) {
-            const Ticks end = nextEnd();
-            ++n_;
-            next_.reset();
-            if (end <= ran_) continue;
-            want = end - ran_;
-        }
-        const SliceResult s = run(runner, want, clock_(), res);
+        const Ticks end = nextEnd();
+        ++n_;
+        next_.reset();
+        if (end <= ran_) continue;
+        const SliceResult s = run(runner, end - ran_, clock_(), res);
         ranOne = true;
         res.ranUnpaced = true;
         if (s.stoppedEarly) return;   // a debugger stop ends the call
-        if (profile_.fullSpeedPacedWhileWaiting && s.waitsForInput) {
+        if (s.waitsForInput) {
             // This slice is slice 1 of a paced schedule that starts where the
             // last unpaced slice ended; the final rebase below is skipped.
             origin_ = lastUnpacedEnd_;

@@ -422,7 +422,9 @@ _Avoid_: batch, frame (for this)
 
 **Pacing profile**:
 What a product supplies per model for the pacer: the slice length and
-the model's pacing particulars.
+whether slice ends are jittered. At full speed every product's machine
+runs at regular speed while it waits for the user; an operation never
+counts as waiting.
 
 **Lag**:
 How far a machine's emulated time is behind the wall clock at regular

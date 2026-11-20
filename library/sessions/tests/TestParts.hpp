@@ -164,13 +164,19 @@ public:
     Rig(const Rig&) = delete;
     Rig& operator=(const Rig&) = delete;
 
-    // A machine built for the tests; "the call" profile unless given.
+    // A machine built for the tests; slices of 1/60 s unless given.
     TestMachine* build(const machine::ModelId& model = machine::test::kSeg, int soundRate = 8000,
-                       pacing::PacingProfile profile = {}) {
+                       pacing::PacingProfile profile = {std::chrono::microseconds(16'667), false}) {
         auto mm = machine::test::buildTestMachine(model, std::nullopt, {}, soundRate);
         m = mm.get();
         session->machineSession().setMachine(std::move(mm), profile, soundRate);
+        // A machine that computes: full speed is paced only while the machine
+        // waits for the user, which a test asks for with waits(true).
+        waits(false);
         return m;
+    }
+    void waits(bool w) {
+        session->machineSession().setWaits([w](const machine::Machine&) { return w; });
     }
     CallId send(const std::string& name, Value args = Value()) {
         return session->send(id, Command{CommandName{name}, std::move(args)});

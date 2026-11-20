@@ -79,7 +79,10 @@ bool parseYaml(const std::string& text, YamlNode* out, std::string* error, const
 // a version this build doesn't know is refused rather than guessed. Check it
 // before the key list, so a newer file says "unsupported version" instead of
 // "unknown key". `what` names the format in the message ("card", "floppy").
-bool requireFormatVersion(const YamlNode& root, long expected, const char* what, std::string* error);
+// `found`, when given, gets the version the file carries (0 when it has
+// none), so a caller can tell a newer file from a broken one.
+bool requireFormatVersion(const YamlNode& root, long expected, const char* what, std::string* error,
+                          long* found = nullptr);
 
 // ── implementation ───────────────────────────────────────────────────────
 
@@ -573,7 +576,9 @@ inline bool YamlNode::requireOnlyKeys(std::initializer_list<const char*> allowed
     return true;
 }
 
-inline bool requireFormatVersion(const YamlNode& root, long expected, const char* what, std::string* error) {
+inline bool requireFormatVersion(const YamlNode& root, long expected, const char* what, std::string* error,
+                                 long* found) {
+    if (found) *found = 0;
     const YamlNode* versionNode = root.find("format-version");
     if (!versionNode) {
         *error = "missing 'format-version'";
@@ -581,6 +586,7 @@ inline bool requireFormatVersion(const YamlNode& root, long expected, const char
     }
     long version = 0;
     if (!versionNode->asInt(&version, error)) return false;
+    if (found) *found = version;
     if (version != expected) {
         *error = std::string("unsupported ") + what + " format-version " + std::to_string(version) +
                  " (this build reads " + std::to_string(expected) + ")";

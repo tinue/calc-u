@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The two card dialogs (drawn natively):
-/// Arm Card lists the saved cards of the save folder by their names (an
-/// outdated one cannot be chosen), Arm Fresh Card asks a name and, when a
+/// Arm Card lists the saved cards of the save folder by their names (one
+/// that cannot be chosen now is disabled), Arm Fresh Card asks a name and, when a
 /// card of that name is saved, whether to replace it. Everything else is
 /// the library's media part through the bridge.
 struct CardPickerView: View {
@@ -66,7 +66,7 @@ struct CardPickerView: View {
                         Label(card.name, systemImage: "doc")
                     }
                     .buttonStyle(.plain)
-                    .disabled(mode == .arm && card.outdated)
+                    .disabled(mode == .arm && !card.canChoose)
                     .help(card.hint ?? "")
                 }
             }

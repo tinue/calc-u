@@ -83,9 +83,7 @@ std::variant<KeystrokeProgram, std::string> readKeystrokeProgramFile(std::string
     const YamlNode* format = root.find("format");
     if (!format || calcu::formats::scalarText(*format) != "ti-keystroke-program")
         return std::string("format: must be ti-keystroke-program.");
-    const YamlNode* version = root.find("format-version");
-    if (!version || calcu::formats::scalarText(*version) != "1")
-        return std::string("format-version: must be 1.");
+    if (!calcu::formats::requireFormatVersion(root, 1, "keystroke program", &error)) return error + ".";
     const YamlNode* name = root.find("program-name");
     if (!name || !name->isScalar() || calcu::formats::scalarText(*name).empty())
         return std::string("program-name: is required.");

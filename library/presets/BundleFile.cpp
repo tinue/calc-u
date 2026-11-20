@@ -1,6 +1,5 @@
 #include "presets/BundleFile.hpp"
 #include "formats/Flow.hpp"
-#include "formats/Number.hpp"
 #include "formats/Yaml.hpp"
 #include <algorithm>
 #include <set>
@@ -83,9 +82,10 @@ std::variant<std::vector<BundleEntry>, ReadError> readBundleFile(const PresetBun
     if (!root.isMap()) return at(0, "The bundle file is a mapping.");
     const YamlNode* format = root.find("format");
     if (!format || scalarText(*format) != "example-bundle") return at(0, "format: example-bundle is missing.");
-    const YamlNode* version = root.find("format-version");
-    const auto v = version && version->isScalar() ? formats::parseNumber(scalarText(*version)) : std::nullopt;
-    if (!v || *v != 1) return at(version ? version->line : 0, "This release reads format-version: 1 of the bundle file.");
+    if (!formats::requireFormatVersion(root, 1, "bundle", &error)) {
+        const YamlNode* version = root.find("format-version");
+        return at(version ? version->line : 0, error + ".");
+    }
     for (const auto& [k, n] : root.map)
         if (k != "format" && k != "format-version" && k != "startup" && k != "groups")
             return at(n.line, "Unknown key " + k + ".");

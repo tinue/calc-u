@@ -1,74 +1,10 @@
 #!/usr/bin/env bash
-# Builds the web client into frontends/web/dist/ (gitignored): the WASM engine (core/ +
-# app/ + frontends/web/bindings.cpp, CMake target calcu_web of the repository's
-# root project, built in build/web), the files it loads
-# (ROMs, bundled cards and disks, the curated presets), the faceplates, the
-# client script and stylesheet, the installable app (app/) and a demo page.
-# docs/developer/Web-Client.md is the contract for what dist/ contains.
-#
+# Builds the web client into frontends/web/dist/ (gitignored; CALCU_WEB_DIST:
+# another folder): build.js names what is the product's, the library's
+# library/web/build/product.js does the steps. --release builds without the
+# engine's test-only commands, as the release's zip is built; without it the
+# test build the Playwright tests drive.
 # Needs emcmake/cmake (Homebrew `emscripten` or an activated emsdk; CI pins
 # the version), ninja, node, and ROMs in roms/ (roms/fetch_roms.sh).
-# --release: without the test-only commands (the CMake option
-# CALCU_WEB_TEST_AIDS off in build/web), as the release's zip
-# is built; without it the test build the Playwright tests drive. Switching
-# compiles only the files the option changes again.
 set -euo pipefail
-AIDS=ON
-for arg in "$@"; do
-  case "$arg" in
-    --release) AIDS=OFF ;;
-    *) echo "usage: $0 [--release]" >&2; exit 2 ;;
-  esac
-done
-
-WEB="$(cd "$(dirname "$0")" && pwd)"
-REPO="$(cd "$WEB/../.." && pwd)"  # the product directory
-ROOT="$(cd "$REPO/../.." && pwd)"  # the repository's root CMake project
-DIST="${CALCU1600_WEB_DIST:-$WEB/dist}"
-BUILD="$ROOT/build/web"
-
-for tool in emcmake cmake ninja node; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
-    echo "error: $tool not found on PATH." >&2
-    exit 1
-  fi
-done
-if ! ls "${CALCU1600_ROMS_DIR:-$REPO/roms}"/*.bin >/dev/null 2>&1; then
-  echo "error: no ROMs in roms/ -- run roms/fetch_roms.sh." >&2
-  exit 1
-fi
-
-if [ ! -f "$BUILD/CMakeCache.txt" ]; then
-  emcmake cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCALCU_WEB_TEST_AIDS=$AIDS >/dev/null
-elif ! grep -qx "CALCU_WEB_TEST_AIDS:BOOL=$AIDS" "$BUILD/CMakeCache.txt"; then
-  emcmake cmake -S "$ROOT" -B "$BUILD" -DCALCU_WEB_TEST_AIDS=$AIDS >/dev/null
-fi
-cmake --build "$BUILD" --target calcu_web
-
-rm -rf "$DIST"
-mkdir -p "$DIST/wasm" "$DIST/bundle" "$DIST/img" "$DIST/app" "$DIST/vendor"
-
-cp "$BUILD/products/calc-u-1600/calcu1600-core.js" "$BUILD/products/calc-u-1600/calcu1600-core.wasm" "$DIST/wasm/"
-# What the engine reads as bundled resources (AppPaths::bundledResourcesDir):
-# the ROM full set (the dumps and the CE-502B's module definition) and the
-# bundled card and disk templates. The host-drive ROM
-# stays out: the web has no host drive. CALCU1600_ROMS_DIR: another ROM
-# folder (tests/rom_missing_build.sh).
-ROMS="${CALCU1600_ROMS_DIR:-$REPO/roms}"
-find "$ROMS" -maxdepth 1 -type f \( -iname '*.bin' -o -iname '*.rom' -o -name '*.module.yaml' \) -exec cp {} "$DIST/bundle/" \;
-cp "$REPO"/frontends/qt6/resources/cards/*.yaml "$REPO"/frontends/qt6/resources/cards/*.wav "$DIST/bundle/"   # the empty tape's sound too
-
-cp "$REPO"/frontends/qt6/resources/faceplates/*.png "$DIST/img/"
-cp "$REPO/frontends/qt6/resources/linux/calc-u-1600.png" "$DIST/img/icon.png"
-cp "$REPO/frontends/qt6/resources/linux/calc-u-1600.png" "$DIST/app/icon.png"
-
-cp "$WEB/index.html" "$WEB/calc-engine-worker.js" "$DIST/"   # build.js writes calc.css
-# React 18 for the app and the demo page; a host page brings its own.
-cp "$ROOT/library/web/vendor/react.production.min.js" "$ROOT/library/web/vendor/react-dom.production.min.js" "$DIST/vendor/"
-cp "$WEB/app/index.html" "$WEB/app/app.css" "$WEB/app/manifest.json" "$DIST/app/"
-# The service worker, the app's worker entry and the audio worklet are the
-# library's (library/web/; build.js copies them).
-
-node "$WEB/build.js"
-
-echo "wrote $DIST"
+exec node "$(dirname "$0")/build.js" "$@"

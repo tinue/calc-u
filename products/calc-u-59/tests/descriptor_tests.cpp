@@ -149,7 +149,7 @@ TEST(descriptor_components_and_depth) {
 // With the card reader's media place capability.
 TEST(machine_conforms_to_descriptor_without_peripherals) {
     for (const char* m : kModels) {
-        auto machine = cu59::buildMachine(*cu59::modelFrom(ModelId{m}), *testroms::romSet(),
+        auto machine = cu59::buildMachine(ModelId{m}, *testroms::romSet(),
                                           cu59::MachinePeripherals{std::nullopt, false, false});
         const auto diffs = checkAgainstDescriptor(*machine, tiCatalogue());
         for (const auto& d : diffs) std::printf("  %s: %s\n", m, d.c_str());
@@ -185,7 +185,7 @@ TEST(descriptor_pc100c_and_14_modules) {
         CHECK(!p->components.empty() && p->components[0].depth == Depth::Functional);
     }
     // Its paper: the capability of the kind paper-output while it is plugged in.
-    auto with = cu59::buildMachine(cu59::Model::TI59, *testroms::romSet(), cu59::MachinePeripherals{std::nullopt, true, false});
+    auto with = cu59::buildMachine(cu59::ModelId{cu59::kTI59}, *testroms::romSet(), cu59::MachinePeripherals{std::nullopt, true, false});
     CHECK_EQ(with->capabilities(calcu::paper::PaperOutput::kKind).size(), size_t{1});
     for (const auto& m : tiModules()) {
         const auto* d = c.peripheral(PeripheralId{m.id});
@@ -207,7 +207,7 @@ TEST(machine_conforms_to_descriptor_with_printer_and_module) {
     for (const char* m : kModels) {
         for (bool with : {true, false}) {
             const cu59::MachinePeripherals places{with ? std::optional<std::string>("ML") : std::nullopt, with, false};
-            auto machine = cu59::buildMachine(*cu59::modelFrom(ModelId{m}), *testroms::romSet(), places);
+            auto machine = cu59::buildMachine(ModelId{m}, *testroms::romSet(), places);
             const auto diffs = checkAgainstDescriptor(*machine, tiCatalogue());
             for (const auto& d : diffs) std::printf("  %s: %s\n", m, d.c_str());
             CHECK(diffs.empty());

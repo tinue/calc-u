@@ -11,7 +11,7 @@ using namespace cu59;
 using namespace calcu::machine;
 
 namespace {
-const Model kModels[] = {Model::TI59, Model::TI58, Model::TI58C};
+const ModelId kModels[] = {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}};
 
 std::vector<std::string> names(const TargetInfo& t) {
     std::vector<std::string> out;
@@ -21,7 +21,7 @@ std::vector<std::string> names(const TargetInfo& t) {
 } // namespace
 
 TEST(one_target_tmc0501_on_every_model) {
-    for (Model model : kModels) {
+    for (ModelId model : kModels) {
         auto m = testroms::makeMachine(model);
         Debugging* d = m->debugging();
         CHECK(d != nullptr);
@@ -33,8 +33,8 @@ TEST(one_target_tmc0501_on_every_model) {
 }
 
 TEST(registers_of_the_processor_frame) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     const DebugTarget& t = m->debugging()->target(0);
     CHECK(names(t.info()) == (std::vector<std::string>{"A", "B", "C", "D", "E", "KR", "SR", "fA", "fB", "flags", "R5",
                                                        "digit", "EXT", "PREG", "pc"}));
@@ -49,7 +49,7 @@ TEST(registers_of_the_processor_frame) {
 }
 
 TEST(spaces_rom_ram_scom_program) {
-    for (Model model : kModels) {
+    for (ModelId model : kModels) {
         auto m = testroms::makeMachine(model);
         const TargetInfo& i = m->debugging()->target(0).info();
         CHECK_EQ(i.spaces.size(), std::size_t{4});
@@ -65,8 +65,8 @@ TEST(spaces_rom_ram_scom_program) {
 }
 
 TEST(ram_and_program_written_rom_scom_refused) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     DebugTarget& t = m->debugging()->target(0);
     CHECK(t.poke(1, 7, 0x0123456789ABCDEFull, {}));
     CHECK_EQ(t.peek(1, 7, {}).value, 0x0123456789ABCDEFull);
@@ -83,8 +83,8 @@ TEST(ram_and_program_written_rom_scom_refused) {
 }
 
 TEST(history_and_decoding_no_watches_no_over_out) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     DebugTarget& t = m->debugging()->target(0);
     const TargetOffers& o = t.info().offers;
     CHECK(!o.watches && !o.stepOverOut && o.decode && o.history > 0 && o.qualifier.empty());
@@ -110,7 +110,7 @@ TEST(history_and_decoding_no_watches_no_over_out) {
 }
 
 TEST(conformance_on_every_model) {
-    for (Model model : kModels) {
+    for (ModelId model : kModels) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
         const auto problems = checkDebugging(*m);

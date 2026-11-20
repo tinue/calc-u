@@ -29,7 +29,7 @@ bool isBundledPath(const Shelf& shelf, const KindDecl& k, const std::string& pat
 }
 
 // The file the name gives, or the first free numbered one
-// when that file holds another medium, cannot be read or is outdated.
+// when that file holds another medium or cannot be read.
 std::string targetFor(const Shelf& shelf, const KindDecl& k, const std::string& name, const ShelfEntry* replacing) {
     const std::string folder = shelf.folderOf(k);
     const std::string own = fileNameFor(name, k);
@@ -68,7 +68,6 @@ Plan planSave(const SaveRequest& r, const Shelf& shelf, const InPlace& inPlace) 
             return refused(inQuotes(name) + " is the name of a bundled " + k.label + ".");
     }
     same = shelf.find(k, name);
-    if (same && same->outdatedHint) same = nullptr;   // an outdated file: a numbered file below
     if (same && same->isTemplate) {   // a user template's name
         if (r.by != SaveBy::SaveasTemplate) return refused(inQuotes(name) + " is the name of a template.");
         Plan p;
@@ -124,11 +123,6 @@ ImportPlan planImport(const std::string& fileName, const std::string& bytes, con
     const ReadOutcome r = k.codec->read(bytes, companion);
     if (r.unreadable()) {
         out.plan = refused("The " + k.label + " file " + file + " cannot be read" + (r.problem.empty() ? "." : ": " + r.problem));
-        return out;
-    }
-    if (r.status == ReadOutcome::Status::Outdated) {
-        out.plan = refused("The " + k.label + " file " + file + " is outdated: " +
-                           Shelf::outdatedHint(k, r.info.formatVersion));
         return out;
     }
     out.info = r.info;

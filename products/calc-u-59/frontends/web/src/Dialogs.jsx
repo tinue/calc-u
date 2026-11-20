@@ -33,8 +33,8 @@ function readFileInput(e, as) {
 
 // ── Cards ───────────────────────────────────────────────────────────────────
 // The library's media part: Arm Card lists the
-// saved cards of the save folder by the names inside them (an outdated one
-// cannot be chosen, its hint the tooltip) and fits the one chosen
+// saved cards of the save folder by the names inside them (one that cannot
+// be chosen now is disabled, its hint the tooltip) and fits the one chosen
 // (`media.choose`); Arm Fresh Card asks the name and fits a fresh card of it
 // (`media.start-new`), asking first when a card of that name is saved. The
 // cards are files of the persistent save folder: Import Media… and Saved
@@ -98,7 +98,7 @@ function CardPicker({ shell, mode, onClose }) {
               title={e.hint || e.tooltip || undefined}
               onClick={() => { setSelected(e.id); if (fresh) { setName(e.label); setAsking(null); } }}
               onDoubleClick={() => { if (!fresh && e.canChoose) arm(e.id); }}
-            >{e.canChoose ? e.label : `${e.label} (outdated)`}</button>
+            >{e.label}</button>
           </li>
         ))}
       </ul>

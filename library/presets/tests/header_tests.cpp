@@ -108,16 +108,16 @@ TEST(model_from_model_key_not_extension) {
     CHECK(planOf(t) && planOf(t)->model == mt::kDot);
 }
 
-TEST(missing_or_old_version_refused_as_outdated) {
+TEST(missing_or_other_version_refused) {
     Reading rd;
-    const std::string want =
-        "t.test-seg: The file was written for an earlier release of Calc-U-Test and must be upgraded by hand to "
-        "preset format 2, as docs/formats/preset.md describes it.";
-    CHECK_EQ(rd.error("model: test-seg\nkeys:\n  - key: 1\n"), want);
-    CHECK_EQ(rd.error("format-version: 1\nmodel: test-seg\n"), want);
+    const std::string missing = "t.test-seg: format-version: is required; this release reads preset format 2.";
+    CHECK_EQ(rd.error("model: test-seg\nkeys:\n  - key: 1\n"), missing);
+    CHECK_EQ(rd.error("MODEL: TI-59\nKEYSTROKES:\n"), missing);
+    CHECK_EQ(rd.error("format-version: 1\nmodel: test-seg\n"),
+             std::string("t.test-seg, line 1: This release reads preset format 2, not format 1."));
     // Checked before any other key: an unknown key does not hide it.
-    CHECK_EQ(rd.error("plotter: CE-1600P\nformat-version: 1\nmodel: test-seg\n"), want);
-    CHECK_EQ(rd.error("MODEL: TI-59\nKEYSTROKES:\n"), want);   // a 2.3.0 state file
+    CHECK_EQ(rd.error("plotter: CE-1600P\nformat-version: 1\nmodel: test-seg\n"),
+             std::string("t.test-seg, line 2: This release reads preset format 2, not format 1."));
 }
 
 TEST(newer_version_refused) {

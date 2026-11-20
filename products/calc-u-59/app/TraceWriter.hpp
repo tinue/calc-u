@@ -17,11 +17,11 @@ namespace cu59 {
 
 struct TraceWriter {
     /// The button's file name by model: CALCU59_TRACE.bin, CALCU58_TRACE.bin, CALCU58C_TRACE.bin.
-    static std::string baseFileName(Model model);
+    static std::string baseFileName(const ModelId& model);
 
     /// The file header (`TI59`, version 2, the model) and SESSION_START with
     /// `epochSeconds`.
-    static void sessionStart(std::vector<std::uint8_t>& out, Model model, std::uint64_t epochSeconds);
+    static void sessionStart(std::vector<std::uint8_t>& out, const ModelId& model, std::uint64_t epochSeconds);
     /// One TRACE_EVENT (kEventBytes).
     static void event(std::vector<std::uint8_t>& out, const CpuFrame& frame);
     /// TRACE_GAP: `count` frames lost to the ring (kGapBytes).

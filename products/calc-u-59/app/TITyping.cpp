@@ -69,8 +69,8 @@ const std::map<std::string, std::vector<Press>>& nameTable() {
     return table;
 }
 
-calcu::typing::TypingProfile makeProfile(Model m) {
-    const calcu::machine::TickRate rate = tiCatalogue().model(modelId(m))->tickRate;
+calcu::typing::TypingProfile makeProfile(const ModelId& m) {
+    const calcu::machine::TickRate rate = tiCatalogue().model(m)->tickRate;
     calcu::typing::TypingProfile p;
     p.minHold = calcu::typing::ticksOf(kTIMinHoldSeconds, rate);
     p.typed = calcu::typing::Cadence{p.minHold, 0};
@@ -116,8 +116,7 @@ std::optional<KeyId> binding(char32_t c) {
 class TIProduct final : public calcu::typing::TypingProduct {
 public:
     const calcu::typing::TypingProfile* profile(const calcu::machine::ModelId& id) const override {
-        const auto m = modelFrom(id);
-        return m ? &typingProfile(*m) : nullptr;
+        return findModel(id) ? &typingProfile(id) : nullptr;
     }
     const calcu::typing::KeyboardMap* keyboardMap(const calcu::machine::ModelId&) const override { return &map_; }
     bool typesText() const override { return false; }
@@ -128,10 +127,12 @@ private:
 
 } // namespace
 
-const calcu::typing::TypingProfile& typingProfile(Model m) {
-    static const calcu::typing::TypingProfile profiles[3] = {makeProfile(Model::TI59), makeProfile(Model::TI58),
-                                                             makeProfile(Model::TI58C)};
-    return profiles[static_cast<int>(m)];
+const calcu::typing::TypingProfile& typingProfile(const ModelId& m) {
+    static const calcu::typing::TypingProfile profiles[] = {makeProfile(ModelId{kModelFacts[0].id}),
+                                                            makeProfile(ModelId{kModelFacts[1].id}),
+                                                            makeProfile(ModelId{kModelFacts[2].id})};
+    static_assert(std::size(profiles) == std::size(kModelFacts));
+    return profiles[modelIndex(m)];
 }
 
 std::optional<std::vector<Press>> tiKeyName(std::string_view name) {

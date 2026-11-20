@@ -88,24 +88,19 @@ TEST(picker_listing_label_and_sort_key) {
     CHECK(!f.place("slot-1")->picker[7].tooltip);
 }
 
-TEST(outdated_entry_disabled_with_hint) {
+TEST(file_of_another_version_not_listed) {
     MediaFixture f(onDot());
     const PlaceState* p = f.place("disk");
-    const auto it = std::find_if(p->picker.begin(), p->picker.end(), [](const PickerEntry& e) { return e.label == "Old"; });
-    CHECK(it != p->picker.end());
-    if (it == p->picker.end()) return;
-    CHECK(!it->canChoose);
-    CHECK(it->hint == std::optional<std::string>("The test disk format version 1 is outdated: the current version is 2, "
-                                                  "described in library/media/tests/TestKinds.hpp."));
-    CHECK(f.state()->kindState("test-disk")->instances.size() == 3);
-    CHECK(!f.ok("media.choose", choose("disk", "saved:Old.testdisk.yaml")) || !f.place("disk")->holds);
+    CHECK(std::none_of(p->picker.begin(), p->picker.end(), [](const PickerEntry& e) { return e.label == "Old"; }));
+    CHECK(f.state()->kindState("test-disk")->instances.size() == 2);
+    CHECK(!f.ok("media.choose", choose("disk", "saved:Old.testdisk.yaml")));
 }
 
-TEST(outdated_logged_once_per_start) {
+TEST(unreadable_logged_once_per_start) {
     MediaFixture f(onDot());
     const auto lines = f.logLines();
     CHECK(std::count_if(lines.begin(), lines.end(), [](const std::string& l) {
-              return l.find("Old.testdisk.yaml is outdated") != std::string::npos;
+              return l.find("Old.testdisk.yaml cannot be read: Its version is not known.") != std::string::npos;
           }) == 1);
     CHECK(f.ok("media.refresh"));
     CHECK(!hasLine(f.logLines(), "Old.testdisk.yaml"));

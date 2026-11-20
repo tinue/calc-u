@@ -18,8 +18,7 @@
 // The library decides presets (.ti59, .ti58, .ti58c, or a `model:` line)
 // and media before them: a magnetic card (`.magnetcard.yaml`) is a medium of
 // the library's media part, fitted into the TI-59's card reader by the
-// library's open part (release 2.3.0's .u59 and .bin cards are no files of
-// the product).
+// library's open part.
 
 namespace cu59 {
 

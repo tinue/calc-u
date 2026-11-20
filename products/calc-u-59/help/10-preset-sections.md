@@ -281,7 +281,8 @@ A keyword that a model does not have refuses the preset when it is read.
 ## From a 2.3.0 file
 
 A preset written for Calc-U-59 2.3.0 (`MODEL:`, `PROGRAM:`,
-`KEYSTROKES:` …) is refused with a hint to upgrade it. By hand:
+`KEYSTROKES:` …) is not read; convert it by hand
+([From 2.3.0](10-media-files.md#from-230) lists the other files):
 
 | 2.3.0 | Version 2 |
 |---|---|

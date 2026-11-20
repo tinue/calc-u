@@ -6,8 +6,8 @@
 #include <vector>
 
 // The kinds of medium built for the tests: a YAML-like
-// codec of their own, one `key: value` per line, version 2 current and 1
-// outdated:
+// codec of their own, one `key: value` per line, version 2 (any other is
+// not read):
 //
 //   format: test-disk        (test-card, test-disk, test-module)
 //   format-version: 2

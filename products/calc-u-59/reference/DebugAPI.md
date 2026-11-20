@@ -572,5 +572,5 @@ ram:
 - One line per non-zero register, `Rnnn` = raw index 000–063 (H00–H03 are
   R060–R063), eight hex bytes (`app/Bcd.hpp` `registerLineHex`). Missing
   registers are zero.
-- A damaged file is not used (zeroed memory and a notice); an outdated one
-  is replaced at the first change. The `ti58c.mem` file of releases up to 2.3.0 is ignored.
+- A damaged file, or one of another format or version, is not used
+  (zeroed memory and a notice) and is replaced at the first change.

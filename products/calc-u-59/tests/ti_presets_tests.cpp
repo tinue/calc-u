@@ -124,18 +124,7 @@ TEST(card_wait_after_write_is_idle) {
     CHECK(!c.machine()->isKeyReady());
 }
 
-// ── Outdated, all or nothing ────────────────────────────────────────────────
-
-TEST(file_of_2_3_0_refused_as_outdated_with_hint) {
-    PresetRead r;
-    // An example as 2.3.0 shipped it (kept as a fixture; the example itself is upgraded).
-    const std::string old = fileText("tests/fixtures/v2.3.0/globe-print.ti59");
-    const std::string e = r.error(old, "globe-print.ti59");
-    CHECK(e.find("Calc-U-59") != std::string::npos);
-    CHECK(e.find("the preset format in the User Guide, chapter Presets") != std::string::npos);
-    const std::string tiny = r.error("MODEL: TI-59\nPROGRAM:\n000 76 LBL\n");
-    CHECK(tiny.find("the preset format in the User Guide") != std::string::npos);
-}
+// ── All or nothing ──────────────────────────────────────────────────────────
 
 TEST(any_error_refuses_whole_machine_untouched) {
     SKIP_UNLESS(tirig::haveRoms(), kSkip);
@@ -320,7 +309,7 @@ TEST(save_folder_changed_after_the_start_is_used_at_once) {
     calcu::testing::TempFolder home{"calcu59-places"};
     testroms::RigOptions o;
     o.qt6Home = home.str();
-    o.model = cu59::Model::TI58C;
+    o.model = cu59::ModelId{cu59::kTI58C};
     testroms::SessionRig s(o);
     const fs::path later = home.path() / "later";
     s.settings.set("storage", "save-folder", later.string());

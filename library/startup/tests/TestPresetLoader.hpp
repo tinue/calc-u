@@ -17,7 +17,7 @@ namespace calcu::startup::test {
 
 class TestPresetLoader final : public PresetLoader {
 public:
-    enum class Script { Build, Outdated, FailAfterBuild };
+    enum class Script { Build, Unreadable, FailAfterBuild };
     struct Preset {
         MachinePlan plan;
         Script script = Script::Build;
@@ -30,8 +30,8 @@ public:
         const auto it = presets.find(ref);
         if (it == presets.end()) co_return PresetLoad{PresetLoad::Outcome::CannotLoad, "the file " + ref + " is gone"};
         const Preset p = it->second;
-        if (p.script == Script::Outdated)
-            co_return PresetLoad{PresetLoad::Outcome::CannotLoad, "the file " + ref + " is outdated"};
+        if (p.script == Script::Unreadable)
+            co_return PresetLoad{PresetLoad::Outcome::CannotLoad, "the file " + ref + " cannot be read"};
         if (forModel && p.plan.model != *forModel)
             co_return PresetLoad{PresetLoad::Outcome::CannotLoad, "it is for the " + p.plan.model.value};
         if (auto refused = control.build(c.session(), p.plan, BuildOrigin::StartupPreset))

@@ -49,7 +49,7 @@ file wherever they stand, and each appears at most once.
 
 | Key | Value |
 |---|---|
-| `format-version` | `2`. Required. A file without it or with a lower value was written for an earlier release and is refused; a higher value, for a newer release |
+| `format-version` | `2`. Required. A file without it or with another value is refused |
 | `model` | Required. A model of the product, optionally followed by `:` and one of its variants: `<model>:<variant>`. Without a variant, the model's default one |
 | `preset-name` | The name shown in menus and lists, at most 18 characters, different from the other presets of the same model. Without it, the file name without its extension |
 | `description` | One line for lists, menus and tooltips |

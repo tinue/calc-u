@@ -47,6 +47,11 @@ else()
   set(CALCU_HAS_PTY OFF)
   list(REMOVE_ITEM CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/PtyHostLink.cpp)
 endif()
+# The native threaded host (shell/SessionThread.cpp): never in a Web build,
+# whose session runs on its Worker.
+if(EMSCRIPTEN)
+  list(REMOVE_ITEM CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/shell/SessionThread.cpp)
+endif()
 add_library(calcu_library STATIC ${CALCU_LIBRARY_SOURCES})
 # The paper picture gives the same pixels on every
 # platform; no fused multiply-add (MSVC's /fp:precise, its default, keeps
@@ -54,7 +59,7 @@ add_library(calcu_library STATIC ${CALCU_LIBRARY_SOURCES})
 if(NOT MSVC)
   set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/paper/Picture.cpp PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
 endif()
-if(CALCU_HAS_PTY OR CALCU_ATTACH)
+if(NOT EMSCRIPTEN)   # SessionThread, the pseudo-terminal link, harness attach
   find_package(Threads REQUIRED)
   target_link_libraries(calcu_library PUBLIC Threads::Threads)
 endif()

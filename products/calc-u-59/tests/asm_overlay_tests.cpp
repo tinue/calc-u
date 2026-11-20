@@ -46,7 +46,7 @@ Words recorded(const std::string& name) {
 
 TEST(first_line_version) {
     CHECK(words(kHead + "HEX:\n0A01\n") == Words{0x0A01});
-    CHECK(refusal("Calc-U-59 ASM 2.0 \nHEX:\n0A01\n").find("older format") != std::string::npos);   // exactly
+    CHECK(refusal("Calc-U-59 ASM 2.0 \nHEX:\n0A01\n").find("starts with the line") != std::string::npos);   // exactly
 }
 
 TEST(prose_before_hex_not_read) {
@@ -71,8 +71,8 @@ TEST(asm_overlay_crlf) {
 }
 
 TEST(asm_overlay_first_at_1800) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     auto* o = calcu::machine::first<AsmOverlay>(*m);
     CHECK(o && o->load(words(kHead + "HEX:\n0A01 01D8\n")));
     calcu::machine::DebugTarget& t = m->debugging()->target(0);
@@ -82,11 +82,10 @@ TEST(asm_overlay_first_at_1800) {
 
 // ── One case per refusal ──────────────────────────────────────────────────────
 
-TEST(outdated_names_the_format_version_and_where) {
+TEST(no_first_line_names_it) {
     for (const std::string& text : {std::string("HEX:\n0A01\n"), std::string("Calc-U-59 ASM 1.0\nHEX:\n0A01\n"), std::string()}) {
         const std::string s = refusal(text);
-        CHECK_EQ(s, std::string("t.asm is an ASM overlay in an older format. This release reads the ASM overlay format "
-                                "version 2.0, described in the help's reference chapter."));
+        CHECK_EQ(s, std::string("t.asm cannot be read: an ASM overlay starts with the line Calc-U-59 ASM 2.0."));
     }
 }
 TEST(asm_overlay_no_hex_line) { CHECK_EQ(refusal(kHead + "0A01\n"), std::string("t.asm has no HEX: line.")); }
@@ -142,8 +141,8 @@ TEST(five_overlays_in_2_0_give_2_3_0s_instructions) {
 
 // DPT.asm needs COND set at its entry: entered, it runs.
 TEST(dpt_runs_with_cond) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     auto* o = calcu::machine::first<AsmOverlay>(*m);
     CHECK(o && o->load(words(*testroms::readFile("examples/assembly/DPT.asm"))));
     const AsmOverlay::Entry e = o->enter(8192);

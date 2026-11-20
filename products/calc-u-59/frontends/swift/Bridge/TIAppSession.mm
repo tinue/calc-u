@@ -12,7 +12,7 @@
 #include <calcu59/core/TICatalogue.hpp>
 #include <calcu59/app/ProductRoms.hpp>
 #include <calcu59/app/KeyboardLayout.hpp>
-#include <calcu59/app/SessionThread.hpp>
+#include "shell/SessionThread.hpp"
 #include <calcu59/app/TIAppPart.hpp>
 #include <calcu59/app/DebugLog.hpp>
 #include <calcu59/app/TIDebugPart.hpp>
@@ -386,18 +386,18 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
 @end
 
 @implementation TISavedCard
-- (instancetype)initWithName:(NSString *)name entryID:(NSString *)entryID outdated:(BOOL)outdated hint:(NSString *)hint {
+- (instancetype)initWithName:(NSString *)name entryID:(NSString *)entryID canChoose:(BOOL)canChoose hint:(NSString *)hint {
     if ((self = [super init])) {
         _name = [name copy];
         _entryID = [entryID copy];
-        _outdated = outdated;
+        _canChoose = canChoose;
         _hint = [hint copy];
     }
     return self;
 }
 @end
 
-static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
+static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     if (!done) return {};
     return [done](const cs::ReplyMessage& r) {
         const auto* f = cs::payloadAs<cu59::TIFlag>(r.result);
@@ -407,7 +407,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 @implementation TIAppSession {
     __weak id<TIAppSessionDelegate> _delegate;
-    std::unique_ptr<cu59::SessionThread> _thread;
+    std::unique_ptr<calcu::shell::SessionThread> _thread;
     // The shell's inputs: the last Value of each, on the main thread.
     calcu::shell::ShellInputs _inputs;
     std::string _model;   // the control state's model, to let go of the pointers at a switch
@@ -477,7 +477,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         _shell = [[TIShell alloc] initWithSession:self];
         auto libraryParts = std::make_shared<calcu::parts::LibraryParts*>(nullptr);
         _libraryParts = libraryParts;
-        _thread = std::make_unique<cu59::SessionThread>(
+        _thread = std::make_unique<calcu::shell::SessionThread>(
             // The file and its places live as long as the factory, which
             // outlives the session it made (SessionThread::run); the library's
             // SettingsPart is the session's (calcu::shell::makeHostSession).
@@ -655,7 +655,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (void)shellNoticesChanged { [_delegate noticesChanged]; }
 - (void)shellInputsChanged { [_delegate changed:TIChangeShell]; }
 
-- (void)send:(const cs::CommandName&)name args:(std::vector<cs::Value::Member>)args reply:(cu59::SessionThread::ReplyHandler)reply {
+- (void)send:(const cs::CommandName&)name args:(std::vector<cs::Value::Member>)args reply:(calcu::shell::SessionThread::ReplyHandler)reply {
     _thread->send(cs::Command{name, cs::Value(std::move(args))}, std::move(reply));
 }
 - (void)send:(const cs::CommandName&)name args:(std::vector<cs::Value::Member>)args {
@@ -809,7 +809,7 @@ static const char* const kCardReaderPlace = "card-reader";
     // The saved cards only; the fresh card is Arm Fresh Card's.
     for (const auto& e : p->picker)
         if (e.group == G::Instance || e.group == G::UserTemplate)
-            [out addObject:[[TISavedCard alloc] initWithName:ns(e.label) entryID:ns(e.id) outdated:!e.canChoose
+            [out addObject:[[TISavedCard alloc] initWithName:ns(e.label) entryID:ns(e.id) canChoose:e.canChoose
                                                         hint:e.hint ? ns(*e.hint) : nil]];
     return out;
 }
@@ -865,7 +865,7 @@ static const char* const kCardReaderPlace = "card-reader";
     if (raw) f.bytes = bytes(raw);
     q.files = {std::move(f)};
     q.way = calcu::opening::wayNamed(cpp(way)).value_or(calcu::opening::Way::Drop);
-    cu59::SessionThread::ReplyHandler reply;
+    calcu::shell::SessionThread::ReplyHandler reply;
     if (done) reply = [done](const cs::ReplyMessage& r) { done(r.done ? YES : NO); };
     _thread->send(cs::Command{calcu::opening::kOpenCommand, q.toValue()}, std::move(reply));
 }

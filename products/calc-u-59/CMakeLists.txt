@@ -58,20 +58,15 @@ add_library(calcu59_core STATIC
 target_include_directories(calcu59_core PUBLIC ${CORE_ROOT})
 target_link_libraries(calcu59_core PRIVATE calcu_warnings)
 set_target_properties(calcu59_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-# The core holds no lock and starts no thread; the app layer's one thread is
-# the Swift frontend's session thread (SessionThread).
+# The core and the app layer hold no lock and start no thread; the Swift
+# frontend's session thread is the library's (shell/SessionThread).
 target_link_libraries(calcu59_core PUBLIC calcu_library)
 
 file(GLOB SHARED_SOURCES CONFIGURE_DEPENDS ${SHARED_ROOT}/*.cpp)
 list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/HarnessProduct.cpp ${SHARED_ROOT}/TIHarnessCommands.cpp)   # calcu59_harness below
-if(EMSCRIPTEN)
-  # The Swift frontend's session thread: never in the Web engine.
-  list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/SessionThread.cpp)
-endif()
 add_library(calcu59_shared STATIC ${SHARED_SOURCES})
 target_include_directories(calcu59_shared PUBLIC ${SHARED_ROOT})
-find_package(Threads REQUIRED)
-target_link_libraries(calcu59_shared PUBLIC calcu59_core Threads::Threads)
+target_link_libraries(calcu59_shared PUBLIC calcu59_core)
 target_link_libraries(calcu59_shared PRIVATE calcu_warnings)
 # Position-independent, as calcu59_core (the XCFramework's libraries).
 set_target_properties(calcu59_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)

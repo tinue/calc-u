@@ -24,8 +24,6 @@ final class CardTests: XCTestCase {
     func test_swift_cards_in_the_icloud_save_folder() throws {
         let t = try TestSession(prepare: { folder in
             try Self.savedCard.write(to: folder.appendingPathComponent("saved.magnetcard.yaml"), atomically: true, encoding: .utf8)
-            // 2.3.0's card files are no cards: not listed.
-            try "Calc-U-59 Card 2.0\nEND-CARD\n".write(to: folder.appendingPathComponent("old.u59"), atomically: true, encoding: .utf8)
         })
         waitFor("the saved card is listed by its name") { t.session.savedCards.map(\.name) == ["Saved Program"] }
 

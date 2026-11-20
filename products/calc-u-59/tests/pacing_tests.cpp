@@ -105,7 +105,7 @@ TEST(card_wait_is_waiting) {
 
 TEST(preset_wait_at_full_speed_on_idle_is_not_paced) {
     FastWaitPart fast;
-    SessionRig r(Model::TI59, {}, {&fast});
+    SessionRig r(ModelId{kTI59}, {}, {&fast});
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     const auto w0 = r.now;
     const CallId id = r.post(CommandName{"test.fast-wait"});
@@ -117,7 +117,7 @@ TEST(preset_wait_at_full_speed_on_idle_is_not_paced) {
 
 // The TI-58's error blink seen at 50 slice ends takes more than one PC.
 TEST(ti58_error_blink_pc_varies_over_50_slice_ends) {
-    SessionRig r(Model::TI58);
+    SessionRig r(ModelId{kTI58});
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     r.tap(92);   // 0
     r.tap(35);   // 1/x: error, the display blinks

@@ -198,8 +198,8 @@ TEST(view_kept_until_shown) {
 // ── The CALCULATOR tab ───────────────────────────────────────────────────────
 
 TEST(shows_registers_partition_steps_flags_source_scom_returns) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     // LBL A, STO 12, RCL 12, GTO 01 23, R/S
     const uint8_t prog[] = {76, 11, 42, 12, 43, 12, 61, 1, 23, 91};
     testroms::mem(*m).writeProgram(prog, sizeof prog);
@@ -235,8 +235,8 @@ TEST(shows_registers_partition_steps_flags_source_scom_returns) {
 }
 
 TEST(ti58c_shows_h00_to_h03) {
-    auto m = testroms::makeMachine(Model::TI58C);
-    testroms::runToScanLoop(*m, Model::TI58C);
+    auto m = testroms::makeMachine(ModelId{kTI58C});
+    testroms::runToScanLoop(*m, ModelId{kTI58C});
     auto* pm = calcu::machine::first<ProgramMemory>(*m);
     CHECK(pm && pm->extraCount() == 4);
     RegisterNibbles v{};
@@ -253,8 +253,8 @@ TEST(ti58c_shows_h00_to_h03) {
 // Through the debug target: the data registers and SCOM the
 // tab shows are what the target's spaces hold.
 TEST(read_through_the_target) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     auto reg = encodeBcd(std::string_view("2.5"));
     testroms::mem(*m).writeDataRegister(3, reg.data());
     const auto& t = m->debugging()->target(0);
@@ -391,8 +391,8 @@ TEST(newest_32_running_up_to_1024_and_next_paused) {
 // ── The heatmap ──────────────────────────────────────────────────────────────
 
 TEST(counts_each_rom_address_once) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     auto* h = calcu::machine::first<RomHeatmapCounter>(*m);
     CHECK(h && h->counts().size() == 0x1400);
     testroms::run(*m, 100);
@@ -483,8 +483,8 @@ TEST(clear_empties_the_view_not_the_log) {
 }
 
 TEST(dumps_in_todays_layout) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     auto v = encodeBcd(std::string_view("42"));
     testroms::mem(*m).writeDataRegister(7, v.data());
     auto vars = dumpVars(*m);
@@ -628,7 +628,7 @@ TEST(trace_refused_where_the_folder_cannot_be_written) {
 // ── The overlay kind ─────────────────────────────────────────────────────────
 
 TEST(up_to_2048_over_1800_to_1fff) {
-    for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}}) {
         auto m = testroms::makeMachine(model);
         auto* o = calcu::machine::first<AsmOverlay>(*m);
         CHECK(o != nullptr);
@@ -642,7 +642,7 @@ TEST(up_to_2048_over_1800_to_1fff) {
 }
 
 TEST(asm_overlay_taken_away) {
-    auto m = testroms::makeMachine(Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
     auto* o = calcu::machine::first<AsmOverlay>(*m);
     const auto before = m->debugging()->target(0).peek(0, 0x1800, {}).value;
     CHECK(o->load({0x0A01}));
@@ -652,8 +652,8 @@ TEST(asm_overlay_taken_away) {
 }
 
 TEST(asm_overlay_entered_at_1800) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     auto* o = calcu::machine::first<AsmOverlay>(*m);
     CHECK(!o->enter(8192).entered);   // nothing loaded
     CHECK(o->load({0x0A01, 0x0A01}));
@@ -718,8 +718,8 @@ TEST(refused_file_keeps_loaded) {
     SessionRig r;
     CHECK(ready(r));
     CHECK(asmLoad(r, kOverlay, "good.asm").done);
-    const auto reply = asmLoad(r, "HEX:\n0A01\n", "old.asm");
-    CHECK(!reply.done && reply.reason.find("older format") != std::string::npos);
+    const auto reply = asmLoad(r, "HEX:\n0A01\n", "bad.asm");
+    CHECK(!reply.done && reply.reason.find("bad.asm cannot be read") != std::string::npos);
     r.frame();
     CHECK_EQ(asmState(r)->fileName, std::string("good.asm"));
     CHECK_EQ(calcu::machine::first<AsmOverlay>(r.machine())->loaded(), std::size_t{2});
@@ -744,8 +744,8 @@ TEST(fails_after_8192_with_status_and_notice) {
     // An overlay whose entry never reaches 1800: a branch at the entry is not
     // taken by the core's entry; an instruction stream that never stops at a
     // program step boundary is not needed: the entry gives up after 8192.
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
+    auto m = testroms::makeMachine(ModelId{kTI59});
+    testroms::runToScanLoop(*m, ModelId{kTI59});
     auto* o = calcu::machine::first<AsmOverlay>(*m);
     CHECK(o->load({0x0A01}));
     const auto e = o->enter(0);   // no instruction allowed: not entered
@@ -881,8 +881,8 @@ TEST(asm_opened_as_by_select_file) {
         CHECK_EQ(asmState(r)->fileName, std::string("Counter.ASM"));
         CHECK_EQ(asmState(r)->instructions, 6);
     }
-    const auto old = open(r, "old.asm", "HEX:\n0A01\n");
-    CHECK(!old.done && old.reason.find("older format") != std::string::npos);
+    const auto bad = open(r, "bad.asm", "HEX:\n0A01\n");
+    CHECK(!bad.done && bad.reason.find("bad.asm cannot be read") != std::string::npos);
     r.frame();
     CHECK_EQ(r.notices().size(), std::size_t{1});   // one notice, the open part's
 }

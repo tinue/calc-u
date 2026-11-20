@@ -17,7 +17,7 @@ a magnetic card file (format 3, `.magnetcard.yaml`) **`docs/formats/media.md`**
 §1; in-file cards `magnetic-cards:` are `preset.md` §3.1, the steps `card:`,
 `arm:`, `saveas: { card: }` §5.2.
 Read them before writing or editing a preset. Presets of 2.3.0 (no
-`format-version: 2`) are refused with the hint; there is no converter
+`format-version: 2`) cannot be read; there is no converter
 (a release reads only the current version of its own formats).
 
 The code: the library's loader (`library/presets/`) with

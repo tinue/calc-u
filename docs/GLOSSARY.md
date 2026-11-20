@@ -405,10 +405,6 @@ The preset a DAP launch configuration names with `project`: its `debug:`
 block is the base of the configuration, and the session loads it unless
 the configuration names another.
 
-**Outdated**:
-Said of a file in an older version of an own format than the release
-reads.
-
 ## Running
 
 **Full speed**:

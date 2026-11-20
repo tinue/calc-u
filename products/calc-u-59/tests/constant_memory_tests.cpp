@@ -161,34 +161,22 @@ TEST(register_above_r063_refused) {
     CHECK(p && p->kind == cu59::ConstantMemoryProblem::Kind::Damaged && p->what.find("line 6") != std::string::npos);
 }
 
-TEST(outdated_or_no_version_not_read_notice) {
+TEST(no_or_other_version_not_read_notice) {
     SKIP_UNLESS(roms(), kSkip);
     for (const char* text : {"format: ti58c-constant-memory\nram:\n  encoding: register-hex\n",
                              "format: ti58c-constant-memory\nformat-version: 0\nram:\n  encoding: register-hex\n",
-                             "CUECARD:\nTitle: X\n── Registers (raw values) ──\nR055: 00 00 00 00 00 00 00 35\n"}) {
+                             "format: ti59-magnetic-card\nformat-version: 1\nram:\n  encoding: register-hex\n"}) {
         auto files = std::make_shared<Files>();
         files->files[kMemoryPath] = text;
         Rig r("TI-58C", files);
         bool noticed = false;
-        for (const auto& n : r.notices()) noticed = noticed || n.find("is outdated") != std::string::npos;
+        for (const auto& n : r.notices()) noticed = noticed || n.find("cannot be read") != std::string::npos;
         CHECK(noticed);
         CHECK(r.part().constantMemory().fromFile());   // replaced at the first change
         r.memory().writeRegister(5, num("7"));
         r.runFor(std::chrono::milliseconds(700));
         CHECK(written(*files).has_value());
     }
-}
-
-TEST(ti58c_mem_ignored_without_notice) {
-    SKIP_UNLESS(roms(), kSkip);
-    auto files = std::make_shared<Files>();
-    files->files["save/ti58c.mem"] = "── Registers (raw values) ──\nR055: 00 00 00 00 00 00 00 35\n";
-    Rig r("TI-58C", files);
-    CHECK(r.memory().readRaw(55) != num("3.5"));
-    for (const auto& n : r.notices()) CHECK(n.find("ti58c.mem") == std::string::npos);
-    r.memory().writeRegister(5, num("7"));
-    r.runFor(std::chrono::milliseconds(700));
-    CHECK_EQ(files->writes["save/ti58c.mem"], 0);   // not changed
 }
 
 TEST(damaged_line_nothing_used_notice) {

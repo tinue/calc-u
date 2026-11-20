@@ -37,7 +37,7 @@
 #include <vector>
 
 // Calc-U-59's app layer in the library's app session. The frontends
-// (Qt6 on its GUI thread, Swift on cu59::SessionThread) host a
+// (Qt6 on its GUI thread, Swift on calcu::shell::SessionThread) host a
 // calcu::sessions::AppSession made by makeAppSession(); everything they do
 // is a command or a request, everything they get is a message.
 //
@@ -193,7 +193,7 @@ public:
     // the printer are the library's commands: `start`, `model`, `reset`,
     // `cold-boot`, `attach`, `detach`)
     bool hasMachine() const { return m_sampler.has_value(); }
-    Model model() const { return m_model; }
+    const ModelId& model() const { return m_model; }
     /// The machine session's machine (null: none yet).
     calcu::machine::Machine* machine() const;
     /// The module in `slot-1` (empty: none), as the machine says.
@@ -291,7 +291,7 @@ private:
     /// The 60 Hz frame sampler of the machine followed; a new one per machine.
     std::optional<FrameSampler> m_sampler;
     std::uint64_t m_seenGeneration = 0;
-    Model m_model = Model::TI59;
+    ModelId m_model{kTI59};
 
     std::string m_moduleID;
     std::map<int, CueCardContent> m_moduleCards;

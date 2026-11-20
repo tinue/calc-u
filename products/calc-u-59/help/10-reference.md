@@ -18,15 +18,6 @@ the pages below add what is Calc-U-59's own.
 | Settings file | `Calc-U-59.ini` | `format-version = 1` | [below](#the-settings-file) |
 | Keyboard map | (built in) | | [Keyboard map](10-keyboard-map.md) |
 
-Files written for Calc-U-59 2.3.0 are not read: a preset (`.ti59`,
-`.ti58`, `.ti58c` without `format-version: 2`) and an ASM overlay
-without its first line are refused with a hint to upgrade them, and the
-card files (`.U59`) and the constant memory file `ti58c.mem` of 2.3.0
-are no longer read or listed. How to convert a preset is in
-[Preset sections](10-preset-sections.md#from-a-230-file); the cards and
-the constant memory are converted by hand
-([Media files](10-media-files.md#from-230)).
-
 The full specification of every format, for those who write tools, is
 in the source repository:
 [docs/formats/](https://github.com/tinue/calc-u/blob/main/docs/formats/README.md).

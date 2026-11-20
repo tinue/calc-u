@@ -39,14 +39,14 @@ std::vector<std::uint8_t> fixtureBytes(const std::string& name) {
 }
 
 // A TI-59 with the PC-100C at key readiness, its paper tapped from the start.
-std::unique_ptr<calcu::machine::Machine> printing(Model model = Model::TI59) {
+std::unique_ptr<calcu::machine::Machine> printing(ModelId model = ModelId{kTI59}) {
     auto m = testroms::makeMachine(model);
     testroms::printedLines(*m);
     testroms::runToScanLoop(*m, model);
     return m;
 }
 
-void prt(calcu::machine::Machine& m, Model model, int digit) {
+void prt(calcu::machine::Machine& m, ModelId model, int digit) {
     testroms::tap(m, model, kDigit[digit]);
     testroms::tap(m, model, k2nd);
     testroms::tap(m, model, kPrtKey);
@@ -71,7 +71,7 @@ TEST(pc100c_states_its_paper) {
     CHECK_EQ(int(d.darknessGreys[20]), 0);   // a full dot is black
     CHECK(d.darknessGreys[0] > 230);          // barely visible
     CHECK_EQ(d.pictureDotsPerInch, 600);
-    for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
+    for (ModelId model : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}}) {
         auto m = testroms::makeMachine(model);
         const auto problem = checkPaperOutput(*m, kPC100C, d);
         CHECK(!problem.has_value());
@@ -82,7 +82,7 @@ TEST(pc100c_states_its_paper) {
 // A line gives its 20 positions at (0, top) and the font's dots.
 TEST(line_gives_20_positions_and_font_dots) {
     auto m = printing();
-    prt(*m, Model::TI59, 7);
+    prt(*m, ModelId{kTI59}, 7);
     const Paper& p = paperOf(*m);
     CHECK_EQ(p.text().size(), std::size_t{1});
     if (p.text().empty()) return;
@@ -98,8 +98,8 @@ TEST(line_gives_20_positions_and_font_dots) {
 
 TEST(complete_line_takes_10_18) {
     auto m = printing();
-    prt(*m, Model::TI59, 1);
-    prt(*m, Model::TI59, 2);
+    prt(*m, ModelId{kTI59}, 1);
+    prt(*m, ModelId{kTI59}, 2);
     const Paper& p = paperOf(*m);
     CHECK_EQ(p.text().size(), std::size_t{2});
     if (p.text().size() < 2) return;
@@ -113,7 +113,7 @@ TEST(feed_takes_7_09_and_an_empty_line) {
     testroms::printerControl(*m, PC100C::kAdv, true);
     run(*m, 300);
     testroms::printerControl(*m, PC100C::kAdv, false);
-    run(*m, static_cast<uint32_t>(testroms::instructionHz(Model::TI59) * 0.2));
+    run(*m, static_cast<uint32_t>(testroms::instructionHz(ModelId{kTI59}) * 0.2));
     const Paper& p = paperOf(*m);
     CHECK(p.text().size() >= 2);
     for (const auto& l : p.text()) CHECK(l.text.empty());
@@ -123,9 +123,9 @@ TEST(feed_takes_7_09_and_an_empty_line) {
 
 TEST(adv_gives_two_feeds) {
     auto m = printing();
-    testroms::tap(*m, Model::TI59, k2nd);
-    testroms::tap(*m, Model::TI59, kAdvKey);   // 2nd Adv, once
-    run(*m, static_cast<uint32_t>(testroms::instructionHz(Model::TI59) * 0.5));
+    testroms::tap(*m, ModelId{kTI59}, k2nd);
+    testroms::tap(*m, ModelId{kTI59}, kAdvKey);   // 2nd Adv, once
+    run(*m, static_cast<uint32_t>(testroms::instructionHz(ModelId{kTI59}) * 0.5));
     const Paper& p = paperOf(*m);
     CHECK_EQ(p.text().size(), std::size_t{2});
     CHECK_EQ(p.reach().to, Coord{2 * 70'900});
@@ -181,7 +181,7 @@ TEST(takes_only_the_paper_of_its_rows) {
 // Copy's picture is at 600 dpi, about 1311 pixels wide.
 TEST(copy_is_600_dpi_about_1311_pixels_wide) {
     auto m = printing();
-    prt(*m, Model::TI59, 3);
+    prt(*m, ModelId{kTI59}, 3);
     const PictureSize s = pictureSize(paperOf(*m));
     CHECK_EQ(s.width, 1311);
     CHECK_EQ(s.dotsPerInch, 600.0);

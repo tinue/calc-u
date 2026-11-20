@@ -75,10 +75,10 @@ TEST(builtin_default_variant_and_nothing_plugged) {
     }
 }
 
-TEST(version1_startup_preset_gives_default_and_notice) {
+TEST(other_version_startup_preset_gives_default_and_notice) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
-    // A startup preset of format 1: the built-in default and a notice.
+    // A startup preset of another format: the built-in default and a notice.
     const fs::path v1 = f.root / "startup-v1.pc1600";
     std::ofstream(v1) << "format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nfloppy: Formatted\nslot-1: CE-1600M\n";
     f.settings.file().set("preset", "PC-1600", v1.generic_string());
@@ -87,7 +87,7 @@ TEST(version1_startup_preset_gives_default_and_notice) {
     CHECK_EQ(pluggedCount(f), std::size_t{0});
     const auto n = f.notices();
     CHECK(!n.empty() && n.back().find("could not be loaded") != std::string::npos &&
-          n.back().find("upgraded by hand to preset format 2") != std::string::npos);
+          n.back().find("This release reads preset format 2, not format 1.") != std::string::npos);
 }
 
 // ── Model and variant ────────────────────────────────────────────────────

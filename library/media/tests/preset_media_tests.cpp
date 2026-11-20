@@ -29,9 +29,6 @@ FixtureOptions dot() {
         b.write("disks/Formatted.testdisk.yaml", disk("Formatted", "f").text());
         s.write("Work.testdisk.yaml", disk("Work", "w").text());
         s.write("Two.testdisk.yaml", disk("Two", "2").text());
-        TestFile old = disk("Old", "o");
-        old.version = 1;
-        s.write("Old.testdisk.yaml", old.text());
         s.write("Broken.testdisk.yaml", "broken\n");
     };
     return o;
@@ -87,11 +84,9 @@ TEST(in_file_media_from_header_key_saved_only_by_saveas) {
     CHECK_EQ(contentOf(f.media->bindingOf("reader")->content), std::string(""));
 }
 
-TEST(preset_medium_missing_outdated_unreadable_refused_at_read) {
+TEST(preset_medium_missing_unreadable_refused_at_read) {
     MediaFixture f(dot());
     CHECK(hasLine({f.readError(keys("test-dot", "  - test-disk: { name: Nowhere }\n"))}, "there is no test disk “Nowhere”"));
-    CHECK(hasLine({f.readError(keys("test-dot", "  - test-disk: { name: Old }\n"))},
-                  "is outdated: The test disk format version 1 is outdated: the current version is 2"));
     CHECK(hasLine({f.readError(keys("test-dot", "  - test-disk: { file: " + (f.saveRoot / "Broken.testdisk.yaml") + " }\n"))},
                   "cannot be read"));
     CHECK(hasLine({f.readError(keys("test-dot", "  - test-disk: { file: " + (f.saveRoot / "Gone.testdisk.yaml") + " }\n"))},

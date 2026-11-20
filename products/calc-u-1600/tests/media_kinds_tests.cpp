@@ -65,13 +65,10 @@ TEST(three_kinds_suffixes_versions_name_keys) {
     const Kinds k;
     CHECK_EQ(k.kinds.size(), std::size_t{3});
     CHECK_EQ(k[cu1600::kModuleKind].suffix, std::string(".module.yaml"));
-    CHECK_EQ(k[cu1600::kModuleKind].currentVersion, 1);
     CHECK(k[cu1600::kModuleKind].heldBy == media::HeldBy::ModuleSlot);
     CHECK_EQ(k[cu1600::kFloppyKind].suffix, std::string(".floppy.yaml"));
-    CHECK_EQ(k[cu1600::kFloppyKind].currentVersion, 2);
     CHECK_EQ(k[cu1600::kFloppyKind].words.insertStep, std::string("floppy"));
     CHECK_EQ(k[cu1600::kCassetteKind].suffix, std::string(".cassette.yaml"));
-    CHECK_EQ(k[cu1600::kCassetteKind].currentVersion, 1);
     CHECK(k[cu1600::kCassetteKind].folder == calcu::settings::Folder::Cassettes);
     CHECK_EQ(k[cu1600::kCassetteKind].words.ejectWord, std::string("cassette"));
     // The name tags: module-name, disk-name, cassette-name; template: true.
@@ -84,7 +81,7 @@ TEST(three_kinds_suffixes_versions_name_keys) {
     CHECK(t.status == ReadOutcome::Status::Read && t.info.name == "Empty" && t.info.isTemplate);
 }
 
-TEST(floppy_v2_sides_0_1_v1_outdated_with_hint) {
+TEST(floppy_v2_sides_0_1_other_version_unreadable) {
     const Kinds k;
     const media::KindDecl& floppy = k[cu1600::kFloppyKind];
     std::vector<std::uint8_t> image(CE1600FCard::kImageSize, 0);
@@ -97,15 +94,14 @@ TEST(floppy_v2_sides_0_1_v1_outdated_with_hint) {
     CHECK(r.status == ReadOutcome::Status::Read);
     const auto* c = dynamic_cast<const sharp::FloppyContent*>(r.info.content.get());
     CHECK(c && c->image == image);
-    // Version 1 (0.8.x, sides a and b) is outdated, its name still read.
+    // Another version is not read.
     std::string v1 = v2;
     v1.replace(v1.find("format-version: 2"), 17, "format-version: 1");
     v1.replace(v1.find("\n  0:\n"), 6, "\n  a:\n");
     v1.replace(v1.find("\n  1:\n"), 6, "\n  b:\n");
     const ReadOutcome o = floppy.codec->read(v1, {});
-    CHECK(o.status == ReadOutcome::Status::Outdated && o.info.formatVersion == 1 && o.info.name == "Disk");
-    const std::string hint = media::Shelf::outdatedHint(floppy, 1);
-    CHECK(hint.find("version 1 is outdated") != std::string::npos && hint.find("current version is 2") != std::string::npos);
+    CHECK(o.status == ReadOutcome::Status::Unreadable);
+    CHECK_EQ(o.problem, std::string("unsupported floppy disk format-version 1 (this build reads 2)."));
     // Sides a and b at version 2: not read.
     std::string mixed = v1;
     mixed.replace(mixed.find("format-version: 1"), 17, "format-version: 2");
@@ -186,21 +182,6 @@ TEST(disk_written_whole_description_kept) {
     CHECK(a && b && a->image == b->image);
 }
 
-// The outdated-file notice names the User Guide's
-// page and heading where each format is described.
-TEST(outdated_notice_names_the_user_guide) {
-    const Kinds k;
-    CHECK_EQ(media::Shelf::outdatedHint(k[cu1600::kModuleKind], 0),
-             std::string("The module definition format version 0 is outdated: the current version is 1, described in the "
-                         "User Guide, \"Module definition format\"."));
-    CHECK_EQ(media::Shelf::outdatedHint(k[cu1600::kFloppyKind], 1),
-             std::string("The floppy disk format version 1 is outdated: the current version is 2, described in the "
-                         "User Guide, \"Media files\", \"Floppy disk\" (sides 0: and 1: in place of a: and b:)."));
-    CHECK_EQ(media::Shelf::outdatedHint(k[cu1600::kCassetteKind], 0),
-             std::string("The cassette definition format version 0 is outdated: the current version is 1, described in the "
-                         "User Guide, \"Media files\", \"Cassette definition\"."));
-}
-
 // A cassette or disk name with a '"' or a line end
 // would make the file unreadable; the writer refuses it, as the magnetic
 // card's does.
@@ -262,18 +243,6 @@ TEST(definition_with_wav_is_a_medium) {
     std::ofstream(tmp.path() / "Lost.cassette.yaml") << "format: cassette\nformat-version: 1\ncassette-name: \"Lost\"\naudio: { file: none.wav }\n";
     const ReadOutcome lost = readFile(tape, tmp.path() / "Lost.cassette.yaml");
     CHECK(lost.status == ReadOutcome::Status::Unreadable && lost.problem.find("none.wav") != std::string::npos);
-}
-
-// The old cassette names are not read.
-TEST(old_format_cassette_tape_refused) {
-    const Kinds k;
-    const media::KindDecl& tape = k[cu1600::kCassetteKind];
-    const ReadOutcome r =
-        tape.codec->read("format: cassette-tape\nformat-version: 1\ntape-name: \"Old\"\naudio: { file: old.wav }\n", {});
-    CHECK(r.status == ReadOutcome::Status::Unreadable);
-    CHECK_EQ(r.problem, std::string("not a cassette definition (expected 'format: cassette')."));
-    CHECK_EQ(tape.label, std::string("cassette"));
-    CHECK_EQ(tape.words.insertStep, std::string("cassette"));
 }
 
 // `format: memory-module` -- written always, read when there, another

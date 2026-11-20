@@ -90,16 +90,16 @@ TEST(open_reply_says_why_refused) {
 
 // ── A medium ──
 
-TEST(open_medium_checked_first_hint_passed_on) {
+TEST(open_medium_checked_first_refusal_passed_on) {
     OpenRig r("test-dot");
-    TestFile old = disk("Old", "o");
-    old.version = 1;
-    const auto* a = r.opened(file("old.testdisk.yaml", old.text(), "/m/old.testdisk.yaml"));
-    CHECK(a && !a->done && a->reason.find("is outdated") != std::string::npos);
-    CHECK(hasText(r.notices(), "is outdated"));
+    TestFile bad = disk("Old", "o");
+    bad.version = 1;
+    const auto* a = r.opened(file("bad.testdisk.yaml", bad.text(), "/m/bad.testdisk.yaml"));
+    CHECK(a && !a->done && a->reason.find("cannot be read: Its version is not known.") != std::string::npos);
+    CHECK(hasText(r.notices(), "cannot be read: Its version is not known."));
     CHECK(!r.fixture.place("disk")->holds);
-    const auto* up = r.opened(file("old.testdisk.yaml", old.text()), Way::Drop, true);   // an upload: not imported either
-    CHECK(up && !up->done && !r.fixture.exists("old.testdisk.yaml"));
+    const auto* up = r.opened(file("bad.testdisk.yaml", bad.text()), Way::Drop, true);   // an upload: not imported either
+    CHECK(up && !up->done && !r.fixture.exists("bad.testdisk.yaml"));
 }
 
 TEST(open_medium_used_where_it_lies) {

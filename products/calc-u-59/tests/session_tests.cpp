@@ -162,11 +162,11 @@ TEST(mirror_holds_every_change_flag) {
 TEST(error_is_notice_diagnostic_is_log) {
     SessionRig r;
     // An error of the part's flows: the constant memory file of the TI-58C
-    // built is outdated.
+    // built cannot be read.
     std::ofstream(r.folder.path() / TIFileAccess::kConstantMemoryFile) << "format: ti58c-constant-memory\nram:\n  encoding: register-hex\n";
     r.model("TI-58C");
     r.frame();
-    CHECK(hasNoticeWith(r, "is outdated"));
+    CHECK(hasNoticeWith(r, "cannot be read"));
     r.part().diagnostic("a developer line");
     r.frame();
     CHECK(hasLog(r, "a developer line"));
@@ -175,7 +175,7 @@ TEST(error_is_notice_diagnostic_is_log) {
 // The card and constant-memory files are the session's, in the save
 // folder, without a frontend.
 TEST(card_and_constant_memory_files_without_frontend) {
-    SessionRig r(Model::TI58C);   // built from the file: it writes it at the first change
+    SessionRig r(ModelId{kTI58C});   // built from the file: it writes it at the first change
     r.runFor(1s);
     const auto mem = r.folder.path() / TIFileAccess::kConstantMemoryFile;
     CHECK_EQ(std::string(TIFileAccess::kConstantMemoryFile), std::string("ti58c.memory.yaml"));
@@ -273,7 +273,7 @@ TEST(display_and_paper_update_during_preset) {
 TEST(no_sound_messages_and_no_sink_stated) {
     HostServices services;
     services.offered = {HostService::AudioSink};
-    SessionRig r(Model::TI59, services);
+    SessionRig r(ModelId{kTI59}, services);
     CHECK(!r.machine().descriptor().hasSound);
     r.tap(83);
     r.runFor(1s);
@@ -287,7 +287,7 @@ TEST(no_sound_messages_and_no_sink_stated) {
 // Suspend writes the TI-58C's memory at once and runs nothing; continue
 // runs again.
 TEST(suspend_persists_and_stops_continue_runs) {
-    SessionRig r(Model::TI58C);
+    SessionRig r(ModelId{kTI58C});
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     r.runFor(1s);   // the first change written
     const auto mem = r.folder.path() / TIFileAccess::kConstantMemoryFile;

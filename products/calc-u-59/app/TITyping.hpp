@@ -31,7 +31,7 @@ inline constexpr double kTIReadinessPoll = 0.0015;     ///< release 2.3.0's kSca
 /// Minimum hold 100 ms of emulated time, presses that wait at key
 /// readiness (and again after a release), held until sampled; no characters,
 /// no `type`; the names of docs/formats/preset.md §8.1 for `key`.
-const calcu::typing::TypingProfile& typingProfile(Model);
+const calcu::typing::TypingProfile& typingProfile(const ModelId&);
 
 /// The presses of one `key` name (§8.1, §8.1.1), matched without
 /// regard to case; nullopt for any other word.

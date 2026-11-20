@@ -25,7 +25,10 @@ namespace {
 namespace fs = std::filesystem;
 namespace cs = calcu::settings;
 namespace s59 = cu59::settings;
-using cu59::Model;
+using cu59::ModelId;
+using cu59::kTI59;
+using cu59::kTI58;
+using cu59::kTI58C;
 
 using calcu::testing::readText;
 using TempDir = calcu::testing::TempFolder;
@@ -97,7 +100,7 @@ TEST(settings_declaration) {
     CHECK_EQ(f.text("keyboard", "feedback"), std::string("off"));
     CHECK_EQ(f.text("trace", "location"), std::string("app-support"));
     CHECK(f.text("storage", "save-folder").empty() && f.text("trace", "folder").empty());
-    for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) CHECK(cs::startupPreset(f, cu59::modelId(m).value).empty());
+    for (const char* m : {kTI59, kTI58, kTI58C}) CHECK(cs::startupPreset(f, m).empty());
     CHECK(!f.boolean("window", "portrait-debug-page"));
     f.set("trace", "location", "folder");
     CHECK_EQ(f.text("trace", "location"), std::string("folder"));
@@ -146,8 +149,8 @@ TEST(startup_last_without_last_model_is_ti59) {
     t.file.set("startup", "model", "last");
     t.file.set("startup", "last-model", "PC-1500");  // not a model of this product
     CHECK_EQ(startup(), std::string("TI-59"));
-    CHECK(cu59::modelFrom({"TI-58C"}) == Model::TI58C && !cu59::modelFrom({"ti58c"}));
-    CHECK_EQ(cu59::modelId(Model::TI58C).value, std::string("TI-58C"));
+    CHECK(cu59::findModel(ModelId{"TI-58C"}) && !cu59::findModel(ModelId{"ti58c"}));
+    CHECK_EQ(std::string(cu59::info(ModelId{kTI58C}).displayName), std::string("TI-58C"));
 }
 
 // The first start has every default and writes the file then, from

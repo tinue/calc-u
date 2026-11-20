@@ -123,7 +123,6 @@ class ProductRules {
 public:
     virtual ~ProductRules() = default;
     virtual std::string_view productName() const = 0;       // for the notices
-    virtual std::string_view formatReference() const = 0;   // where the preset format is described (the outdated notice)
     virtual ModelRules& forModel(const machine::ModelId&) = 0;
     virtual void addKeywords(Vocabulary&) {}                // header keys, sections, steps
 };

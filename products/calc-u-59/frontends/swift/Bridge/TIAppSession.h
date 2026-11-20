@@ -7,7 +7,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 // Swift face of the library's app session: Calc-U-59's
-// session runs on a thread of its own (cu59::SessionThread); this
+// session runs on a thread of its own (the library's calcu::shell::SessionThread); this
 // bridge posts commands to it and hands the messages it sends to the main
 // thread, one batch at a time and in order. It translates types
 // only: what it returns is the last message of a topic, kept on
@@ -97,7 +97,7 @@ typedef struct {
 @interface TISavedCard : NSObject
 @property (nonatomic, readonly, copy) NSString *name;
 @property (nonatomic, readonly, copy) NSString *entryID;   ///< the picker entry `media.choose` takes
-@property (nonatomic, readonly) BOOL outdated;
+@property (nonatomic, readonly) BOOL canChoose;   ///< false: not now (another operation runs)
 @property (nonatomic, readonly, copy, nullable) NSString *hint;
 @end
 
@@ -269,7 +269,7 @@ typedef struct {
 /// The fitted card's name, nil when none.
 @property (nonatomic, readonly, nullable) NSString *fittedCardName;
 /// The saved cards of the save folder by the names inside them, as Arm Card
-/// lists them: an outdated one cannot be chosen and has a hint.
+/// lists them: one that cannot be chosen now has a hint.
 @property (nonatomic, readonly) NSArray<TISavedCard *> *savedCards;
 /// Arm Card: the saved card fitted for the user to feed (`media.choose`).
 - (void)armCard:(TISavedCard *)card;

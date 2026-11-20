@@ -66,7 +66,7 @@ void TIAppPart::followMachine() {
         static_cast<TIDebugging*>(d)->setRunOn([rc] { return !rc->running() && !rc->paused(); });
     }
     m_sampler.emplace();
-    m_model = modelFrom(m->model()).value_or(Model::TI59);
+    m_model = m->model();
 
     // The own cue card: a preset's build has
     // none until its `cue-card:` (fitted on this machine already, when the

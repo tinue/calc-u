@@ -150,7 +150,7 @@ std::string segmentsOfGolden(const std::string& display) {
 }
 
 struct Run {
-    cu59::Model model = cu59::Model::TI59;
+    cu59::ModelId model = cu59::ModelId{cu59::kTI59};
     std::unique_ptr<calcu::machine::Machine> m;
     std::string module = "ML";
     bool printer = false;
@@ -214,7 +214,7 @@ struct Run {
         auto rest = [&] { std::string a; std::getline(in, a); return a.empty() ? a : a.substr(a.find_first_not_of(' ')); };
         if (cmd == "model") {
             std::string name = rest();
-            model = name == "TI-58" ? cu59::Model::TI58 : name == "TI-58C" ? cu59::Model::TI58C : cu59::Model::TI59;
+            model = name == "TI-58" ? cu59::ModelId{cu59::kTI58} : name == "TI-58C" ? cu59::ModelId{cu59::kTI58C} : cu59::ModelId{cu59::kTI59};
             return;
         }
         if (cmd == "module") { module = rest(); return; }

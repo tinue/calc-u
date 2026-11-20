@@ -1,20 +1,15 @@
 const { defineConfig, devices } = require('@playwright/test');
+const { webTests } = require('../../../../library/web/tools/playwright-config.js');
 
-// run-tests.sh serves dist/ at a server root and, on the next port, only
-// under a sub-path: the client must work unchanged wherever it is hosted
-// (reference/WebClient.md). Every test runs once against each.
-const PORT = Number(process.env.CALCU_WEB_PORT || 8059);
-
-module.exports = defineConfig({
-  testDir: './tests',
-  timeout: 10000,
-  use: { headless: true },
+// Every test but the offline start runs at the server root and under the
+// sub-path (reference/WebClient.md).
+module.exports = defineConfig(webTests(devices, {
   projects: [
-    { name: 'root', testIgnore: 'offline.spec.js', use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
-    { name: 'subpath', testIgnore: 'offline.spec.js', use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT + 1}/anything/calc/` } },
+    { name: 'root', testIgnore: 'offline.spec.js', engine: 'chromium', at: 'root' },
+    { name: 'subpath', testIgnore: 'offline.spec.js', engine: 'chromium', at: 'subpath' },
     // The offline start brings its own server, and runs in both engines: the
     // iPhone's installed app is WebKit.
-    { name: 'offline-chromium', testMatch: 'offline.spec.js', use: { ...devices['Desktop Chrome'] } },
-    { name: 'offline-webkit', testMatch: 'offline.spec.js', use: { ...devices['Desktop Safari'] } },
+    { name: 'offline-chromium', testMatch: 'offline.spec.js', engine: 'chromium' },
+    { name: 'offline-webkit', testMatch: 'offline.spec.js', engine: 'webkit' },
   ],
-});
+}));

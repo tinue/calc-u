@@ -71,10 +71,10 @@ TEST(open_preset_through_presets_part) {
     const auto* b = r.opened(OpenedFile{"notes.txt", "/uploads/notes.txt", std::vector<std::uint8_t>(text.begin(), text.end())},
                              Way::Drop, true);
     CHECK(b && b->done && r.fixture.machine()->descriptor().model.value == "test-seg");
-    // Through the presets part: an outdated preset is refused with its hint, one notice.
+    // Through the presets part: an unreadable preset is refused, one notice.
     r.fixture.notices();
-    dir.write("old.test-seg", "format-version: 1\nmodel: test-seg\n");
-    const auto* c = r.opened(r.onDisk(dir, "old.test-seg"));
+    dir.write("bad.test-seg", "format-version: 1\nmodel: test-seg\n");
+    const auto* c = r.opened(r.onDisk(dir, "bad.test-seg"));
     CHECK(c && !c->done && !c->reason.empty());
     const auto n = r.fixture.notices();
     CHECK_EQ(n.size(), std::size_t(1));
@@ -103,12 +103,12 @@ TEST(open_medium_through_media_part) {
     outside.write("C.testcard.yaml", card("C", "c").text());
     const auto* c = r.opened(r.onDisk(outside, "C.testcard.yaml"));
     CHECK(c && !c->done && c->reason.find("The test-dot has no place for C.testcard.yaml now; a test card goes into") == 0);
-    // An outdated medium: media's hint.
+    // A file of another version: media's refusal.
     TestFile old = disk("Old", "o");
     old.version = 1;
     outside.write("Old.testdisk.yaml", old.text());
     const auto* d = r.opened(r.onDisk(outside, "Old.testdisk.yaml"));
-    CHECK(d && !d->done && d->reason.find("is outdated") != std::string::npos);
+    CHECK(d && !d->done && d->reason == "The test disk file Old.testdisk.yaml cannot be read: Its version is not known.");
 }
 
 TEST(open_pass_through_follows_product) {

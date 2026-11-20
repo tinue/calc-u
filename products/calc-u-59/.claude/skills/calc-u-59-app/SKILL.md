@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-app
-description: Use this skill when working on the app layer of Calc-U-59 (the C++ app logic) (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, presets (the TI rules and keywords of the library's loader: TIPresetRules, TIPresetKeys, Keycodes, the c59 commands), the TI-58C constant memory file (ConstantMemoryKeeper), magnetic cards on the library's media part (TIMagneticCardKind, TIMagneticCardsKey, the card reader place of the core), cue cards and module cue cards (ModuleCueCards), the app session's product part (TIAppPart, makeAppSession, the library's parts it owns, TIProductMachines; TIWebPart for the Web page), the Swift frontend's session thread (SessionThread), the emulator runtime (machine session, key sequencing, frame sampling), the TI's side of the library's paper (TIPrinters) and debugger (TILevelRules, TITraceRecorder, TIDebuggerSetup), the debug panel (TIDebugPart: its product topics, commands and entries; the ASM overlay reader AsmOverlay), the file kinds of the library's open (TIFileKinds), the debugger model (DebugModel), debug snapshots, the trace records (TraceWriter), view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for an app-layer module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
+description: Use this skill when working on the app layer of Calc-U-59 (the C++ app logic) (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, presets (the TI rules and keywords of the library's loader: TIPresetRules, TIPresetKeys, Keycodes, the c59 commands), the TI-58C constant memory file (ConstantMemoryKeeper), magnetic cards on the library's media part (TIMagneticCardKind, TIMagneticCardsKey, the card reader place of the core), cue cards and module cue cards (ModuleCueCards), the app session's product part (TIAppPart, makeAppSession, the library's parts it owns, TIProductMachines; TIWebPart for the Web page), the Swift frontend's use of the library's session thread (shell/SessionThread), the emulator runtime (machine session, key sequencing, frame sampling), the TI's side of the library's paper (TIPrinters) and debugger (TILevelRules, TITraceRecorder, TIDebuggerSetup), the debug panel (TIDebugPart: its product topics, commands and entries; the ASM overlay reader AsmOverlay), the file kinds of the library's open (TIFileKinds), the debugger model (DebugModel), debug snapshots, the trace records (TraceWriter), view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for an app-layer module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
 user-invocable: true
 ---
 
@@ -30,8 +30,8 @@ drawing rules: `reference/AppLayer.md`. Don't restate them here.
    the web build needs `emcc` — calc-u-59-web skill.)
 5. **One thread per session, no other.** Every frontend hosts the library's
    app session (`cu59::makeAppSession`; Qt6 on its GUI thread, Swift on
-   `SessionThread`, the only `std::thread` in `app/`, never in the Web
-   build; the Web in the library's Web Worker through
+   the library's `calcu::shell::SessionThread` (no `std::thread` in `app/`,
+   never in the Web build); the Web in the library's Web Worker through
    `frontends/web/bindings.cpp`). The app layer inside it is
    single-threaded: no thread, no wait, no lock. Everything a
    frontend does is a command (`cu59::commands`, the Web's `c59.web.*`),

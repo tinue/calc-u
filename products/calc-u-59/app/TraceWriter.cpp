@@ -29,24 +29,17 @@ struct Buf {
 
 } // namespace
 
-std::string TraceWriter::baseFileName(Model model) {
-    switch (model) {
-    case Model::TI59:  return "CALCU59_TRACE.bin";
-    case Model::TI58:  return "CALCU58_TRACE.bin";
-    case Model::TI58C: return "CALCU58C_TRACE.bin";
-    }
-    return "CALCU59_TRACE.bin";
-}
+std::string TraceWriter::baseFileName(const ModelId& model) { return info(model).traceFileName; }
 
-void TraceWriter::sessionStart(std::vector<uint8_t>& out, Model model, uint64_t epochSeconds) {
+void TraceWriter::sessionStart(std::vector<uint8_t>& out, const ModelId& model, uint64_t epochSeconds) {
     Buf b{out};
     b.u32(kMagic);   // 16-byte header
     b.u16(kVersion);
-    b.u16(static_cast<uint16_t>(model));   // v2: 0 = TI-59, 1 = TI-58, 2 = TI-58C
+    b.u16(info(model).traceCode);   // v2: 0 = TI-59, 1 = TI-58, 2 = TI-58C
     b.u64(0);                              // reserved
     b.record(kSessionStart, 9);
     b.u64(epochSeconds);
-    b.u8(static_cast<uint8_t>(model));
+    b.u8(info(model).traceCode);
 }
 
 void TraceWriter::event(std::vector<uint8_t>& out, const CpuFrame& f) {

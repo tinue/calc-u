@@ -53,7 +53,7 @@ struct TIRig : testroms::PartRig {
     KeyLog log;
     // The PC-100C (the built-in default has none): the print loops and Adv
     // need it.
-    explicit TIRig(Model m = Model::TI59) : PartRig(m) {
+    explicit TIRig(ModelId m = ModelId{kTI59}) : PartRig(m) {
         attach("printer", "PC-100C");
         engine().setObserver(&log);
     }
@@ -76,7 +76,7 @@ struct TIRig : testroms::PartRig {
     }
     bool ready() { return machine().isKeyReady(); }
     bool idleWait(std::chrono::milliseconds limit = 10s) { return until([&] { return ready(); }, limit); }
-    Ticks minHold() const { return typingProfile(Model::TI59).minHold; }
+    Ticks minHold() const { return typingProfile(ModelId{kTI59}).minHold; }
     std::vector<KeyId> held() const {
         const auto* h = state<calcu::typing::HeldKeys>(calcu::typing::kHeldKeysTopic);
         return h ? h->live : std::vector<KeyId>{};
@@ -124,7 +124,7 @@ const std::string kPauseLoop = "76 11 66 61 11";   // Lbl A Pause GTO A
 // A preset of format 2 with `keycodes` for the rig's model, the Master
 // Library module and the PC-100C.
 std::string programPreset(TIRig& r, const std::string& keycodes) {
-    return "format-version: 2\nmodel: " + modelId(r.part().model()).value +
+    return "format-version: 2\nmodel: " + r.part().model().value +
            "\nslot-1: { name: ML }\nprinter: PC-100C\nprogram:\n  keycodes: |\n    " + keycodes + "\n";
 }
 
@@ -144,7 +144,7 @@ struct Tap {
     bool stopped = false;
     double heldMs = 0;
 };
-Tap tapRsOnPrintLoop(Model model, bool full, std::uint32_t samples, std::chrono::milliseconds phase) {
+Tap tapRsOnPrintLoop(ModelId model, bool full, std::uint32_t samples, std::chrono::milliseconds phase) {
     calcu::typing::TypingProfile p = typingProfile(model);   // outlives the rig that uses it
     if (samples == 0) p.holdUntilSampled.reset();
     else p.holdUntilSampled->samplesNeeded = samples;
@@ -180,9 +180,9 @@ TEST(sample_rule_measurement) {
     // GTO A` in each of four phases, on the three models, at regular and
     // full speed. 0: the 100 ms minimum alone (not always enough).
     std::printf("sample rule  model    speed    samples  phase(ms)  stopped  held(ms)\n");
-    const Model models[] = {Model::TI59, Model::TI58, Model::TI58C};
+    const ModelId models[] = {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}};
     bool chosenAlways = true;
-    for (Model m : models)
+    for (ModelId m : models)
         for (bool full : {false, true})
             for (std::uint32_t n : {0u, 1u, 2u})
                 for (auto phase : {0ms, 75ms, 150ms, 225ms}) {
@@ -217,9 +217,9 @@ TEST(idle_tap_stays_100ms_adv_as_without_the_rule) {
 // ── The TI profile, sampled, pause ──────────────────────────────────────────
 
 TEST(typing_ti_profile) {
-    for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) {
+    for (ModelId m : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}}) {
         const auto& p = typingProfile(m);
-        const auto rate = tiCatalogue().model(modelId(m))->tickRate;
+        const auto rate = tiCatalogue().model(m)->tickRate;
         CHECK_EQ(p.minHold, calcu::typing::ticksOf(0.100, rate));   // 100 ms of emulated time
         CHECK_EQ(p.typed.hold, p.minHold);
         CHECK_EQ(p.typed.gap, Ticks{0});
@@ -228,7 +228,7 @@ TEST(typing_ti_profile) {
         CHECK(!p.firstPressBound);   // waits without limit
         CHECK(p.holdUntilSampled && p.holdUntilSampled->samplesNeeded == kTISamplesNeeded);
         CHECK(!p.charKeys && !p.enter);   // no characters, no `type`
-        CHECK(typingProduct().profile(modelId(m)) == &p);
+        CHECK(typingProduct().profile(m) == &p);
         CHECK(!typingProduct().typesText());
     }
 }
@@ -274,7 +274,7 @@ TEST(rs_stops_running_program) {
 }
 
 TEST(rs_stops_printing_loop_every_phase) {
-    for (Model m : {Model::TI59, Model::TI58, Model::TI58C})
+    for (ModelId m : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}})
         for (bool full : {false, true})
             for (auto phase : {0ms, 75ms, 150ms, 225ms}) CHECK(tapRsOnPrintLoop(m, full, kTISamplesNeeded, phase).stopped);
 }
@@ -425,7 +425,7 @@ TEST(second_key_does_not_release_first) {
     s.hostUp("Digit7");
     s.runFor(1500ms);
     CHECK(s.log.keys() == (std::vector<std::string>{"7+", "8+", "7-", "8-"}));
-    CHECK(s.log.held(1) <= typingProfile(Model::TI59).holdUntilSampled->maxHold + 512);
+    CHECK(s.log.held(1) <= typingProfile(ModelId{kTI59}).holdUntilSampled->maxHold + 512);
 }
 
 TEST(screen_key_through_the_engine_minimum_hold) {

@@ -105,6 +105,7 @@ public:
         auto unreadable = [&](const std::string& why) {
             out.status = ReadOutcome::Status::Unreadable;
             out.problem = why;
+            if (!out.problem.empty() && out.problem.back() != '.') out.problem += '.';
             return out;
         };
         // A mark for the byte order, or bytes that are not UTF-8.
@@ -112,43 +113,19 @@ public:
         YamlNode root;
         std::string error;
         if (!calcu::formats::parseYaml(bytes, &root, &error)) return unreadable(error);
-        if (!root.isMap()) return unreadable("It is no magnetic card file.");
-        const YamlNode* format = root.find("format");
-        if (!format || calcu::machine::lowerAscii(text(*format)) != "ti59-magnetic-card") return unreadable("It is no magnetic card file (format: ti59-magnetic-card).");
-        const YamlNode* version = root.find("format-version");
-        if (!version) return unreadable("It has no format-version.");
-        const std::string v = text(*version);
-        int ver = 0;
-        try {
-            std::size_t used = 0;
-            ver = std::stoi(v, &used);
-            if (used != v.size()) ver = 0;
-        } catch (...) {
-            ver = 0;
-        }
-        if (ver <= 0) return unreadable("Its format-version is no number.");
-        if (ver < kMagneticCardFormatVersion) {   // outdated
-            out.status = ReadOutcome::Status::Outdated;
-            out.info.formatVersion = ver;
-            if (const YamlNode* n = root.find("card-name")) out.info.name = text(*n);
-            return out;
-        }
-        if (ver > kMagneticCardFormatVersion) return unreadable("Magnetic card format version " + v + " is not supported.");
+        calcu::media::Header header;
+        if (!calcu::media::readHeader(root, {"ti59-magnetic-card", "magnetic card", kMagneticCardFormatVersion, "card-name"},
+                                      &header, &error))
+            return unreadable(error);
         for (const auto& [k, n] : root.map)
             if (k != "format" && k != "format-version" && k != "card-name" && k != "description" && k != "template" &&
                 k != "saved" && k != "cue-card" && k != "sides")
                 return unreadable("line " + std::to_string(n.line) + ": unknown key " + k + ".");
         auto card = std::make_shared<TIMagneticCardData>();
         auto label = std::make_shared<TICardLabel>();
-        const YamlNode* name = root.find("card-name");
-        if (!name || text(*name).empty()) return unreadable("It has no card-name.");
-        label->name = text(*name);
-        if (const YamlNode* d = root.find("description")) label->description = text(*d);
-        if (const YamlNode* t = root.find("template")) {
-            const std::string tv = calcu::machine::lowerAscii(text(*t));
-            if (tv != "true" && tv != "false") return unreadable("line " + std::to_string(t->line) + ": template: is true or false.");
-            label->isTemplate = tv == "true";
-        }
+        label->name = header.name;
+        label->description = header.description;
+        label->isTemplate = header.isTemplate;
         if (const YamlNode* c = root.find("cue-card")) {
             std::string why;
             int at = 0;
@@ -176,7 +153,7 @@ public:
         out.info.name = label->name;
         out.info.description = label->description;
         out.info.isTemplate = label->isTemplate;
-        out.info.formatVersion = ver;
+        out.info.formatVersion = header.formatVersion;
         out.info.hasWriteProtect = false;   // a bank's protection is the calculator's
         out.info.content = card;
         return out;
@@ -284,9 +261,6 @@ const calcu::media::KindDecl& magneticCardKind() {
         k.suffix = ".magnetcard.yaml";
         k.folder = calcu::settings::Folder::Save;
         k.codec = &codec;
-        k.formatName = "Magnetic card format";
-        k.describedAt = "the User Guide, \"Media files\", \"Magnetic card\"";
-        k.currentVersion = kMagneticCardFormatVersion;
         k.implicitTemplates = {calcu::media::ImplicitTemplate{kFreshCardTemplate, "A fresh magnetic card",
                                                               [] { return std::make_shared<TIMagneticCardData>(); }}};
         k.words.insertStep = "card";

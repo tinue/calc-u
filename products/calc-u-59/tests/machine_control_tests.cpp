@@ -4,6 +4,7 @@
 // session as a native frontend hosts it (tests/AppRig.hpp).
 
 #include "TestHarness.hpp"
+#include "testing/TempFolder.hpp"
 #include "AppRig.hpp"
 #include "../core/PC100C.hpp"
 #include "peripherals/PeripheralsPart.hpp"
@@ -53,10 +54,13 @@ TEST(builtin_default_ml_no_printer) {
     }
 }
 
-TEST(startup_preset_of_2_3_0_gives_default_and_notice) {
+TEST(unreadable_startup_preset_gives_default_and_notice) {
     SKIP_UNLESS(roms(), kSkip);
-    Rig r("TI-59", std::make_shared<apprig::Files>(), [](calcu::settings::SettingsFile& s) {
-        s.set("preset", "TI-59", "tests/fixtures/v2.3.0/globe-print.ti59");   // as 2.3.0 shipped it
+    calcu::testing::TempFolder folder("calcu59-startup");
+    folder.write("bad.ti59", "model: TI-59\nprinter: PC-100C\n");   // no format-version
+    const std::string path = (folder.path() / "bad.ti59").string();
+    Rig r("TI-59", std::make_shared<apprig::Files>(), [&](calcu::settings::SettingsFile& s) {
+        s.set("preset", "TI-59", path);
     });
     CHECK_EQ(r.plugged("slot-1"), std::string("ML"));
     CHECK_EQ(r.plugged("printer"), std::string());
@@ -103,7 +107,7 @@ TEST(ti58c_from_preset_cold_booted) {
     CHECK(r.memory().readRaw(59) != *cu59::parseDecimal("42"));
 }
 
-// ── Model switch ────────────────────────────────────────────────────────────
+// ── Model switch ──────────────────────────────────────────────────────────────
 
 TEST(switch_carries_no_module_no_printer) {
     SKIP_UNLESS(roms(), kSkip);
@@ -114,7 +118,7 @@ TEST(switch_carries_no_module_no_printer) {
     CHECK(r.send(st::kModelCommand, Value::object({{"name", "TI-58"}})).done);
     CHECK_EQ(r.plugged("slot-1"), std::string("ML"));   // the built-in default: nothing of the old machine
     CHECK_EQ(r.plugged("printer"), std::string());
-    CHECK(r.part().model() == cu59::Model::TI58);
+    CHECK(r.part().model() == cu59::ModelId{cu59::kTI58});
 }
 
 TEST(log_and_debug_settings_stay) {
@@ -133,7 +137,7 @@ TEST(last_model_follows_a_preset_build) {
     Rig r("TI-59");
     CHECK(r.load(head("TI-58") + "data:\n  00: 1\n", "x.ti58").done);
     CHECK_EQ(r.machine()->model().value, std::string("TI-58"));
-    CHECK(r.part().model() == cu59::Model::TI58);
+    CHECK(r.part().model() == cu59::ModelId{cu59::kTI58});
     CHECK_EQ(r.settings.text("startup", "last-model"), std::string("TI-58"));
 }
 

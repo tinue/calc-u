@@ -531,18 +531,15 @@ TEST(one_name_one_card_two_steps_fill_two_sides) {
     CHECK(s0 && s1 && bankOfPageByte((*s0)[2]) == 1 && bankOfPageByte((*s1)[2]) == 2);
 }
 
-TEST(missing_outdated_unreadable_card_refuses_preset) {
+TEST(missing_or_unreadable_card_refuses_preset) {
     NEEDS_ROMS;
     CardRig r;
     const auto missing = r.load(CardRig::preset("keys:\n  - card: { name: Nowhere }\n"));
     CHECK(!missing.done && missing.reason.find("no magnetic card") != std::string::npos);
     const auto noFile = r.load(CardRig::preset("keys:\n  - arm: { file: nowhere.magnetcard.yaml }\n"));
     CHECK(!noFile.done);
-    r.writeCardFile("Old", "format: ti59-magnetic-card\nformat-version: 2\ncard-name: Old\nsides: {}\n");
     r.writeCardFile("Bad", "format: ti59-magnetic-card\nformat-version: 3\ncard-name: Bad\nsides:\n  0:\n    bank: 1\n");
     r.send(calcu::media::kRefreshCommand);
-    const auto old = r.load(CardRig::preset("keys:\n  - card: { name: Old }\n"));
-    CHECK(!old.done && old.reason.find("outdated") != std::string::npos);
     const auto bad = r.load(CardRig::preset("keys:\n  - card: { file: " + (r.folder.path() / "Bad.magnetcard.yaml").string() + " }\n"));
     CHECK(!bad.done && bad.reason.find("cannot be read") != std::string::npos);
 }
@@ -647,13 +644,6 @@ TEST(opened_card_refused_on_ti58_and_ti58c_with_notice) {
         CHECK(r.notices().size() > before);
         CHECK(!r.fitted());
     }
-    // A .u59 or .bin of 2.3.0 is no card: refused as no file of the product.
-    CHECK(r.model("TI-59").done);
-    elsewhere.write("old.u59", "Calc-U-59 Card 2.0\nEND-CARD\n");
-    const auto before = r.notices().size();
-    r.drop("old.u59", elsewhere / "old.u59");
-    r.runFor(100ms);
-    CHECK(r.notices().size() > before && !r.fitted());
 }
 
 // A card opened while one passes is refused, nothing imported.

@@ -12,7 +12,7 @@
 //   share one parser. A literal argument `then` cannot be written in the
 //   one-shot form; `serve` can.
 // - A product command is reached by its product word first (`test count`,
-//   later `ti59 …`, `pc1600 …`); a common command at the top level.
+//   `c59 …`, `c1600 …`); a common command at the top level.
 // - The value of a step: the rest of the line after the command's
 //   name, as written, trimmed; a preset step `- floppy: { name: Disk2 }`
 //   becomes the line `floppy { name: Disk2 }`.

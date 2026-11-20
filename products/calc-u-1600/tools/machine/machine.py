@@ -15,6 +15,7 @@ directory. A failed `expect()` raises MachineError. In a pytest suite the fixtur
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 from pathlib import Path
 from typing import Any, Optional, Union
@@ -85,6 +86,15 @@ class Machine(Session):
             return self._existing(slot)
         return None
 
+    def _own_copy(self, slot: int, file: Optional[Path]) -> Optional[Path]:
+        """A module file copied into the work folder: the machine writes its module back to the file
+        it was plugged from, and the test project's file stays as it is for every other test."""
+        if file is None:
+            return None
+        copy = self.workdir / f"plugged-slot-{slot}.module.yaml"
+        shutil.copyfile(file, copy)
+        return copy
+
     # ── steps ──────────────────────────────────────────────────────────
 
     def load(self, path) -> "Machine":
@@ -130,7 +140,7 @@ class Machine(Session):
             lines.append(f"printer: {self.printer}")
         for slot, name in self.slots.items():
             if name:
-                file = self._files[slot]
+                file = self._own_copy(slot, self._files[slot])
                 lines.append(f"slot-{slot}: {{ file: {file} }}" if file else f"slot-{slot}: {{ name: {name} }}")
         if self.host_drive:
             lines.append(f"host-drive: {{ folder: {self.path(self.host_drive)} }}")

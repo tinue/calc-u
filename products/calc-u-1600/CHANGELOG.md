@@ -35,7 +35,8 @@
   project of your own, two worked examples (MODE 1 with memory modules,
   RENUM on the PC-1500) that run as a test project in the checkout, the
   path names (`$c1600`, `$saved`, your own), the reference. The driver
-  (`tools/machine/`) takes module files and media of your own, a printer,
+  (`tools/machine/`) takes module files and media of your own (a module
+  file is plugged as a copy, so the machine's writes never reach it), a printer,
   bus ROMs, `load_basic`/`type_basic`, and reads the program with
   `listing()` through the new harness command `c1600 list-basic`. The
   driver began as the one "spellbound" wrote for the superRAM tests and

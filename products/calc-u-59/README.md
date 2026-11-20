@@ -27,7 +27,7 @@ Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_6
 - Cycle-accurate TMC0501 CPU emulation
 - Two native apps and a web client on one C++ app layer: Swift for macOS, iOS and iPadOS (with iCloud card sync), Qt6 for Windows and Linux, and the browser (`frontends/web/`, the engine compiled to WebAssembly)
 - Integrated debugger with register inspection and program memory dump
-- [Debug API](docs/developer/Debug-API.md) for scripted access to CPU state, breakpoints, instruction tracing, and disassembly
+- The [harness](docs/developer/Harness.md) (`calcu --product c59`) for scripted access: the machine without a window, CPU state, breakpoints, instruction traces, timing and profiling; the debug panel's interface is the [Debug API](docs/developer/Debug-API.md)
 - Printer trace mode (functional simulation — see limitation below)
 - Presets (`.ti59`, `.ti58`, `.ti58c`, [preset format 2](../../docs/formats/preset.md)) that set up a machine, its program, registers and cue card, and play keys
 - Card reader emulation and the Solid State Software modules, with cue cards
@@ -136,11 +136,6 @@ Trigger conditions and workflows for Claude Code when working in specific areas 
 | [`rom/fastmode.md`](rom/fastmode.md) | Fast mode: what it is, the rules for fast-mode programs, the ways in, and how the hack works. |
 | [`rom/printerinterrupt.md`](rom/printerinterrupt.md) | The printer interrupt (keycode 1F): how to use it, how the code is made, and how it works. |
 | [`rom/traces/README.md`](rom/traces/README.md) | The CPU traces the ROM annotations cite, and [`rom/traces/sbr444-quirk-analysis.md`](rom/traces/sbr444-quirk-analysis.md), the trace-level analysis of the `SBR 444`/R-S firmware quirk chain in the article's printer-interrupt sequence (overview: `rom/printerinterrupt.md`). |
-
-### `tools/` — developer tools
-
-| Document | Abstract |
-|---|---|
 
 ### `prompt/` — LLM system prompt
 

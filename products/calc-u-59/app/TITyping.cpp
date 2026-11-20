@@ -78,6 +78,12 @@ calcu::typing::TypingProfile makeProfile(Model m) {
     p.waitsForReadinessAfterRelease = true;
     p.readinessPoll = std::max<calcu::machine::Ticks>(1, calcu::typing::ticksOf(kTIReadinessPoll, rate));
     p.holdUntilSampled = calcu::typing::SampleRule{kTISamplesNeeded, calcu::typing::ticksOf(kTIMaxHoldSeconds, rate)};
+    // reference/Idle.md: the ROM samples R/S and GTO between the steps of a
+    // running program and RST in a library program, outside the scan loop;
+    // they wait for it only briefly, then go down all the same and stay until
+    // sampled (holdUntilSampled, its bound above a Pause).
+    p.doesNotWait = [](const KeyId& k) { return k.value == "R/S" || k.value == "GTO" || k.value == "RST"; };
+    p.doesNotWaitAfter = calcu::typing::ticksOf(kTIDoesNotWaitAfterSeconds, rate);
     p.name = tiKeyName;
     p.names = tiKeyNames;
     return p;   // no characters, no ENTER: no `type`

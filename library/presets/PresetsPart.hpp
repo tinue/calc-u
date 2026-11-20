@@ -33,7 +33,10 @@ namespace calcu::presets {
 
 inline const sessions::CommandName kLoadPresetCommand{"load-preset"};
 inline const sessions::CommandName kRunStepCommand{"run-step"};
-inline const sessions::CommandName kWaitIdleCommand{"wait-idle"};
+inline const sessions::CommandName kWaitIdleCommand{"wait-idle"};            // until settled
+inline const sessions::CommandName kWaitFinishedCommand{"wait-finished"};    // until finished
+inline const sessions::RequestName kIdleStateRequest{"idle-state"};          // the rule's answers now
+inline constexpr std::string_view kIdleStateKind = "idle-state";
 inline const sessions::RequestName kCheckPresetRequest{"check-preset"};
 inline const sessions::RequestName kPresetListRequest{"preset-list"};
 

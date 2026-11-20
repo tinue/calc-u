@@ -170,8 +170,8 @@ TEST(every_function_of_the_table) {
 
     // --preset <file>: build a machine from a preset and run it.
     CHECK_EQ(r.line("preset examples:basic/hanoi.pc1600"), std::string("done\n"));
-    CHECK(starts(r.line("wait"), "done "));
-    CHECK_EQ(r.line("expect Hanoy Towers"), std::string("done\n"));
+    CHECK(starts(r.line("wait"), "done "));   // settled at the first question (the title shows during WAIT 100)
+    CHECK_EQ(r.line("expect Tower Height"), std::string("done\n"));
     // --check-preset <file>…, tools/check_presets.sh: presets read and checked.
     CHECK(starts(r.line("check-preset examples/basic/hanoi.pc1600 examples/interfaces/ce158_demo.pc1500a"), "done"));
     // --rom, --ce1600p-rom: the variants.

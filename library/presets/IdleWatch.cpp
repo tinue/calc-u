@@ -16,7 +16,25 @@ sessions::Task<bool> untilRunning(sessions::OperationContext& op) {
     co_return true;
 }
 
+IdleState idleState(const IdleRule& rule, const machine::Machine& m) {
+    IdleState s;
+    s.takesKeys = rule.takesKeys ? rule.takesKeys(m) : m.isKeyReady();
+    if (rule.busy) s.busy = rule.busy(m);
+    const bool awaits = rule.awaitsMedium && rule.awaitsMedium(m);
+    s.waits = (s.takesKeys || awaits) && s.busy.empty();
+    s.ended = s.waits && (!rule.programEnded || rule.programEnded(m));
+    return s;
+}
+
 sessions::Task<IdleOutcome> IdleWatch::wait(sessions::OperationContext& op, std::optional<Ticks> bound) {
+    return watch(op, bound, false);
+}
+
+sessions::Task<IdleOutcome> IdleWatch::waitFinished(sessions::OperationContext& op, std::optional<Ticks> bound) {
+    return watch(op, bound, true);
+}
+
+sessions::Task<IdleOutcome> IdleWatch::watch(sessions::OperationContext& op, std::optional<Ticks> bound, bool finished) {
     IdleOutcome out;
     const machine::Machine* m = op.session().machine();
     if (!m) {
@@ -43,7 +61,8 @@ sessions::Task<IdleOutcome> IdleWatch::wait(sessions::OperationContext& op, std:
         }
         const Ticks now = m->tickCount();
         out.waited = now - start;
-        const bool ready = rule_.readyNow ? rule_.readyNow(*m) : m->isKeyReady();
+        const IdleState st = idleState(rule_, *m);
+        const bool ready = finished ? st.ended : st.waits;
         if (!ready) readySince.reset();
         else if (!readySince) readySince = now;
         if (readySince && now - *readySince >= stretch) {

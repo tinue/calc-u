@@ -116,7 +116,11 @@ void TypingPart::attach(sessions::SessionSetup& s) {
                   // an unknown name refuses the command, nothing is typed
                   auto presses = pressesOfNames(engine_.profile(), engine_.machine()->descriptor(), names);
                   if (const auto* no = std::get_if<KeyNamesRefused>(&presses)) return Refused{"Unknown key: " + no->name + "."};
-                  return deferred(engine_.typeKeys(std::get<std::vector<Press>>(std::move(presses)), Origin::Typed));
+                  // hold: seconds of emulated time, every press held exactly this long
+                  std::optional<machine::Ticks> hold;
+                  if (const Value* h = a.find("hold"); h && h->real())
+                      hold = std::max<machine::Ticks>(1, ticksOf(*h->real(), engine_.machine()->descriptor().tickRate));
+                  return deferred(engine_.typeKeys(std::get<std::vector<Press>>(std::move(presses)), Origin::Typed, false, hold));
               }));
     if (product_.typesText())
         s.command(kType, always([this](const Value& a) -> CommandOutcome {

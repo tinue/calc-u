@@ -438,9 +438,20 @@ than usual; a behaviour of the machine, not of the emulator.
 _Avoid_: full speed, turbo (for this)
 
 **Idle**:
-Said of a machine that has finished what it was doing and waits for the
-user; on the TI-59 also a machine waiting for a magnetic card. Each
-product says how this is detected for its models.
+Said of a machine that waits for the user and is busy with nothing else,
+without a break for a short stretch: at its prompt or key scan, in INPUT,
+at a PRINT stop, in a program reading the keyboard; on the TI-59 also a
+machine waiting for a magnetic card. Each product says how this is
+detected for its models, with the questions behind it (takes keys,
+waits); its tables call it settled.
+
+**Finished**:
+Said of a machine that is idle and whose program has ended: back at the
+prompt or key scan, no program and no called machine code running.
+
+**Key readiness**:
+The machine takes an ordinary key now: the ROM or a program reads the
+keyboard as input. Watching only for BREAK is not key readiness.
 
 **Reset**:
 The emulator restarting a machine with its memory kept. On the TI-58/59

@@ -196,7 +196,7 @@ The terms this help uses, each with one meaning.
 | Full speed | Running a machine as fast as the computer allows |
 | Regular speed | Running a machine at the real device's speed |
 | Emulated time | The time a machine has run, counted by the machine itself |
-| Idle | A machine that has finished what it was doing and waits for you |
+| Idle | A machine that waits for you and is busy with nothing else: at its prompt, or a program waiting for a key |
 | Reset | Restarting a machine with its memory kept |
 | Cold boot | Starting a machine with all memory empty, as after a long battery removal |
 | Power cycle | Switching a real device off and on; what survives depends on the model |

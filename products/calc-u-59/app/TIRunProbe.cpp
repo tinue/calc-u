@@ -37,10 +37,4 @@ RunNote noteRun(calcu::machine::Machine& m) {
     return n;
 }
 
-bool runIdle(calcu::machine::Machine& m) {
-    if (!m.isKeyReady()) return false;
-    const RunNote n = noteRun(m);
-    return !n.running && !n.printerBusy;
-}
-
 } // namespace cu59

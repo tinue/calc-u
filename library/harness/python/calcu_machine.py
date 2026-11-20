@@ -8,7 +8,7 @@ Steps (`key`, `type`, `wait`, `expect`, `not_expect`, `command`) are queued
 and sent to one live machine at the next read (`run`, `lcd`, `display`,
 `peek`, ...). Nothing is replayed: steps after a read continue from where the
 machine is. Each `key` and `type` is followed by a `wait` until the machine
-is idle, as the items of a preset are (docs/formats/preset.md). A refused
+has settled, as the items of a preset are (docs/formats/preset.md). A refused
 command raises MachineError with the harness's reason.
 
 A path a test gives (`path()`) is absolute, `$name/...` (a named folder:
@@ -65,17 +65,24 @@ class Session:
 
     # ── steps ──────────────────────────────────────────────────────────
 
-    def key(self, names: str) -> "Session":
-        """Presses keys by name, several separated by blanks."""
-        return self._step(f"key {names}")._step("wait")
+    def key(self, names: str, hold: Optional[float] = None) -> "Session":
+        """Presses keys by name, several separated by blanks; hold: each held exactly this many
+        seconds of machine time."""
+        held = "" if hold is None else f" hold={hold}s"
+        return self._step(f"key {names}{held}")._step("wait")
 
     def type(self, text: str) -> "Session":
         """Types one line of text; the line is ended as `type` ends it."""
         return self._step(f"type {text}")._step("wait")
 
     def wait(self, seconds: Optional[float] = None) -> "Session":
-        """Waits in machine time; without seconds until the machine is idle."""
+        """Waits in machine time; without seconds until the machine has settled (it waits for the
+        user)."""
         return self._step("wait" if seconds is None else f"wait {seconds}s")
+
+    def wait_finished(self) -> "Session":
+        """Waits in machine time until the program has ended and the machine has settled."""
+        return self._step("wait-finished")
 
     def expect(self, text: str) -> "Session":
         """Fails the next read if no display line holds text (or matches /regex/)."""
@@ -158,8 +165,8 @@ class Session:
     def wait_for(self, text: str, timeout: float = 60.0, step: float = 0.25) -> "Session":
         """Runs the queued steps, then waits in steps of `step` seconds of machine time until a
         display line holds text (or matches /regex/, as expect); MachineError after `timeout`.
-        For work the idle wait can't see the end of, such as a program that the machine counts
-        as idle while it runs."""
+        For a screen the machine passes without settling, such as a title shown during a timed
+        delay, or a program that waits for the serial port."""
         self.run()
         waited = 0.0
         while True:

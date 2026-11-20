@@ -348,11 +348,11 @@ public:
     /// machine interface.
     uint64_t elapsedTStates() const { return m_elapsedTStates; }
 
-    /// Key readiness: the last
-    /// kReadyFramesNeeded whole 60 Hz frames (counted from the build) were
-    /// each ready as waitForKeyboardScanLoopJob() decides it -- CK0 on, and
-    /// the SC7852 in the BASIC command loop or the key matrix read in the
-    /// frame -- and the system is on. Any reset starts the count again.
+    /// Key readiness (A of docs/developer/Idle.md): the last
+    /// kReadyFramesNeeded whole 60 Hz frames (counted from the build) each
+    /// took keys -- CK0 on, and the ROM waiting in KEYGET or a program reading
+    /// a key (KEYGETR, KEYDIRECT) -- and the system is on. Any reset starts the
+    /// count again.
     static constexpr int kReadyFramesNeeded = 15;
     bool keyReady() const { return m_z80Mem.subCpu().systemOn() && m_readyFrames >= kReadyFramesNeeded; }
 
@@ -390,15 +390,11 @@ public:
     /// MODE 1 (PC-1500 compatible) is on: BMODE (F1BCH) bit 6. The loaders
     /// read it to decide the keyword table and the address space.
     bool mode1();
-    /// A direct command of the hidden ROM bank 3b is at work (OPEN, SAVE,
-    /// LOAD, COPY, ...: the statement dispatcher clears port 3DH bit 2 for the
-    /// keywords of token bank 06H): the Z-80's BASIC is in direct mode
-    /// (CURLINE, F89CH, is 0, as the ROM's DIRMODE tests it), bank 3b is
-    /// selected, and the ROM does not wait for a key in KEYGET (KEYWK2, F07AH,
-    /// bit 2). A running program has a line number, so it is never one; nor
-    /// is machine code started by CALL (bank 3), nor anything in MODE 1, whose
-    /// BASIC is the LH5803's.
-    bool directCommandRunning();
+    /// The BASIC program has ended (docs/developer/Idle.md): the editor waits
+    /// in KEYGET (KEYWK2 F07AH bit 2) with BUSY off (F64EH bit 0), in direct
+    /// mode (CURLINE F89CH 0), not for INPUT or a PRINT stop (INTFLG F88AH
+    /// bits 5, 6). MODE 1 is the same: the Z-80 runs BASIC in both modes.
+    bool programEnded();
     /// The selected program area, TITLE (F1D5H): 0 = S0, 1 = S1, 2 = S2.
     int programAreaTitle();
 
@@ -535,6 +531,7 @@ private:
     int m_readyFrameAccum{0};
     uint64_t m_readyLastScan{0};
     int m_readyFrames{0};
+    bool m_keyReadInFrame{false};   // KEYGETR or KEYDIRECT entered in this frame (not in the state record)
     std::unique_ptr<CE1600FCard> m_ce1600fCard; // union-attached with m_ce1600pCard
     std::unique_ptr<PC1600HostDriveCard> m_hostDriveCard; // see attachHostDrive()
     std::vector<std::unique_ptr<SystemBusCard>> m_busRoms; // see attachBusRom()

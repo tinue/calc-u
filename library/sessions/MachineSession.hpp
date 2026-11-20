@@ -86,6 +86,9 @@ public:
     // SliceHook::drop() on every hook.
     void dropInput();
     void addWaitProbe(WaitProbe& p) { probes_.push_back(&p); }
+    // Whether the machine waits for the user, by the product's rule; when
+    // set, it alone answers waitsForInput().
+    void setWaits(std::function<bool(const machine::Machine&)> w) { waits_ = std::move(w); }
     void setGate(AdvanceGate* g) { gate_ = g; }
 
     void setSuspended(bool);   // false starts afresh
@@ -121,6 +124,7 @@ private:
     std::uint64_t generation_ = 0;
     std::vector<SliceHook*> hooks_;
     std::vector<WaitProbe*> probes_;
+    std::function<bool(const machine::Machine&)> waits_;
     AdvanceGate* gate_ = nullptr;
     std::function<void()> aboutToChange_;
     SliceSource* source_ = nullptr;

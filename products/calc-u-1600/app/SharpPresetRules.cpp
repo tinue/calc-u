@@ -34,28 +34,20 @@ std::vector<std::uint8_t> screenPng(const calcu::machine::DisplayOutput& o, bool
 bool SharpModelRules::pc1600() const { return m_model == sharp::kPC1600; }
 
 calcu::presets::IdleRule SharpModelRules::idle() const {
-    // Key readiness without a break for 20 frames, asked every
-    // frame (a frame: 1/60 s of emulated time, as the cores count it).
+    // docs/developer/Idle.md: takes keys by the core's key readiness
+    // (Machine::isKeyReady()); the core's program state names what keeps the
+    // machine busy (the PC-1500's buzzer, the CE-1600F's motor) and says
+    // whether the program has ended. Settled after 20 frames (a frame: 1/60 s
+    // of emulated time, as the cores count it), asked every frame.
     calcu::presets::IdleRule r;
-    // Key readiness as the machine reports it (readyNow unset). On the
-    // PC-1600 a frame in which the key matrix is read counts; the Z-80's
-    // BASIC reads it for BREAK while a program runs, so a BASIC program that
-    // does not wait for the user counts as idle there too (found
-    // with the bundled examples): it cannot be told from a program that waits with
-    // INKEY$, which must count as idle, and so does machine code started by
-    // CALL. A file command typed in direct mode (LOAD, SAVE, COPY) reads it for
-    // BREAK too; while it works the machine is not idle.
-    // While the CE-1600F's motor runs (INIT"X:", SAVE"X:…" write for seconds
-    // and read the keyboard meanwhile) the machine is not idle (the
-    // disk steps of the make_diskworks_media example need it).
-    if (pc1600())
-        r.readyNow = [](const calcu::machine::Machine& m) {
-            if (!m.isKeyReady()) return false;
-            const sharp::DirectCommand* command = calcu::machine::first<sharp::DirectCommand>(m);
-            if (command && command->running()) return false;
-            const sharp::FloppyDriveAccess* drive = calcu::machine::first<sharp::FloppyDriveAccess>(m);
-            return !drive || !drive->motorOn();
-        };
+    r.busy = [](const calcu::machine::Machine& m) -> std::vector<std::string> {
+        const sharp::ProgramState* p = calcu::machine::first<sharp::ProgramState>(m);
+        return p ? p->busy() : std::vector<std::string>{};
+    };
+    r.programEnded = [](const calcu::machine::Machine& m) {
+        const sharp::ProgramState* p = calcu::machine::first<sharp::ProgramState>(m);
+        return !p || p->programEnded();
+    };
     r.stretch = calcu::machine::Seconds(20.0 / 60.0);
     const calcu::machine::TickRate rate = sharp::sharpCatalogue().model(calcu::machine::ModelId{m_model})->tickRate;
     r.sample = rate / 60;

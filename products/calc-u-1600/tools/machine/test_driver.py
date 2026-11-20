@@ -152,6 +152,20 @@ def test_peek_reads_either_half_of_bank_3(tmp_path):
     assert machine.peek("SC7852", "memory", 0x4000, 4, bank=3) == bank3
 
 
+def test_break_goes_in_while_a_program_runs(tmp_path):
+    machine = Machine(tmp_path).key("mode").type("10 GOTO 10").key("mode").command("type RUN").wait(1)
+    assert "BREAK" in " ".join(machine.key("break").lcd)
+
+
+def test_wait_finished_lasts_until_the_program_has_ended(tmp_path):
+    machine = Machine(tmp_path).key("mode").type("10 FOR I=1 TO 300").type("20 NEXT I").key("mode")
+    assert machine.command("type RUN").wait_finished().lcd[:2] == ["RUN", ">"]
+
+
+def test_key_takes_its_own_hold(tmp_path):
+    assert Machine(tmp_path).key("cl").key("a", hold=0.2).lcd[0].startswith("A")
+
+
 def test_display_gives_the_dots(tmp_path):
     dots = Machine(tmp_path).type(PRINT_42).display()
     assert len(dots["rows"]) == 32 and len(dots["rows"][0]) == 156

@@ -564,11 +564,13 @@ item, and not after an item followed by `skip-wait:`.
 | `wait:` | the duration has passed |
 | every other step | it has taken effect |
 
-**Idle** has the meaning of the glossary: the machine has finished what
-it was doing and waits for the user. On the TI-59, a machine waiting
-for a magnetic card (after `Write`) is idle too (§5.2). How a product
-tells that its machine is idle is the product's matter, not this
-format's. A paused machine is not idle; the item finishes after the
+**Idle** has the meaning of the glossary: the machine waits for the user
+and nothing is busy, without a break for the product's stretch; a program
+that waits for a key (INPUT, a PRINT stop, INKEY$) is idle too, and so is,
+on the TI-59, a machine waiting for a magnetic card (after `Write`)
+(§5.2). How a product tells that its machine is idle is the product's
+matter, not this format's (Calc-U-59 `reference/Idle.md`, Calc-U-1600
+`docs/developer/Idle.md`). A paused machine is not idle; the item finishes after the
 machine has been resumed (§5.6).
 
 So a key that starts a program finishes when the program stops:

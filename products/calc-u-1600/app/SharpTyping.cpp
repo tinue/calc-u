@@ -111,6 +111,11 @@ TypingProfile sharpProfile(const char* model) {
         p.charKeys = pc1500Char;
         p.name = namesOf(sharp::pc1500KeyIds());
     }
+    // docs/developer/Idle.md: the ROM latches ON/BREAK and tests it outside its
+    // key wait (each statement, BEEP, the plotters, the drives): it waits for
+    // key readiness only briefly, then goes down all the same.
+    p.doesNotWait = [](const KeyId& k) { return k.value == sharp::kOnKeyId; };
+    p.doesNotWaitAfter = frame(12);   // 0.2 s
     return p;
 }
 

@@ -241,19 +241,20 @@ bool TypingEngine::startFront(Ticks now) {
         }
         return true;
     }
+    if (!f.frontSince) f.frontSince = now;
     if (waitsForReadiness(f, now) && !machine_->isKeyReady()) return false;
     Item it = std::move(f);
     queue_.pop_front();
     Down d;
     d.key = it.press.key;
     d.at = now;
-    d.hold = it.liveSingle ? profile_->minHold : profile_->typed.hold;
+    d.hold = it.hold ? *it.hold : it.liveSingle ? profile_->minHold : profile_->typed.hold;
     d.holders = it.holders;
     d.liveSingle = it.liveSingle;
     d.live = it.origin == Origin::Live;
     d.token = it.token;
     d.last = it.last;
-    if (profile_->holdUntilSampled)
+    if (profile_->holdUntilSampled && !it.hold)
         if (const TypingSupport* s = support()) d.samplesAt = s->samples(d.key);
     keyDown(d.key, now);
     down_.push_back(std::move(d));
@@ -274,7 +275,14 @@ bool TypingEngine::waitsForReadiness(const Item& f, Ticks now) const {
         else if (r == StartRule::KeyReadiness) ready = true;
     }
     if (ready && f.boundAt && now >= *f.boundAt) ready = false;   // the bound passed: all the same
+    if (ready && f.frontSince && doesNotWait(f) && now >= *f.frontSince + profile_->doesNotWaitAfter) ready = false;
     return ready;
+}
+
+// A preset's keys are excepted: its items run in order, and there R/S
+// continues a program once it has stopped.
+bool TypingEngine::doesNotWait(const Item& f) const {
+    return f.origin == Origin::Typed && !f.isChar && profile_->doesNotWait && profile_->doesNotWait(f.press.key);
 }
 
 // Something waits for the machine (readiness, a key read, readiness again):
@@ -441,7 +449,7 @@ void TypingEngine::focusLost() {   // keys keep their minimum hold, so no press 
 
 // ── Typed text and commands ─────────────────────────────────────────────
 
-Queued TypingEngine::typeKeys(std::vector<Press> presses, Origin origin, bool atOnce) {
+Queued TypingEngine::typeKeys(std::vector<Press> presses, Origin origin, bool atOnce, std::optional<Ticks> hold) {
     if (!current()) return Queued{0, std::string(sessions::kNoMachine)};
     const Token t = nextToken();
     open_.push_back(t);
@@ -459,6 +467,7 @@ Queued TypingEngine::typeKeys(std::vector<Press> presses, Origin origin, bool at
         it.atOnce = atOnce && i == 0;
         if (i == 0 && !atOnce && profile_->firstPressOfStep == StartRule::KeyReadiness && profile_->firstPressBound)
             it.boundAt = n + *profile_->firstPressBound;
+        it.hold = hold;
         it.last = i + 1 == presses.size();
         queue_.push_back(std::move(it));
     }
@@ -580,6 +589,7 @@ Ticks TypingEngine::nextDue(Ticks now) const {
         else if (!blocked(now, f.liveSingle) && waitsForReadiness(f, now)) {
             if (pollAt_ == kNever) due = std::min(due, now);   // the first look once nothing blocks it
             if (f.boundAt) due = std::min(due, std::max(now, *f.boundAt));
+            if (f.frontSince && doesNotWait(f)) due = std::min(due, std::max(now, *f.frontSince + profile_->doesNotWaitAfter));
         } else if (!blocked(now, f.liveSingle)) {
             due = std::min(due, now);
         }

@@ -10,7 +10,7 @@ def test_console(make_machine, tmp_path):
     name.write_bytes(b"WORLD\r")                 # INPUT takes the line up to CR
     machine = make_machine(model="PC-1600")
     machine.key("mode").type("NEW0").load_basic("$programs/greet.bas").key("mode")
-    machine.type("RUN").wait(1)                  # NAME? is out, INPUT waits
+    machine.command("type RUN").wait(1)          # NAME? is out, INPUT waits for the port
     machine.command(f"c1600 serial rs232c feed {name}").wait(1)
     report = machine.send("c1600 serial rs232c report")
     assert report["sent"].splitlines() == ["NAME?", "HELLO WORLD"]

@@ -151,8 +151,8 @@ TEST(sharp_idle_rule_values) {
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         const calcu::presets::IdleRule r = rules.forModel(calcu::machine::ModelId{model}).idle();
         const auto rate = sharp::sharpCatalogue().model(calcu::machine::ModelId{model})->tickRate;
-        // Machine::isKeyReady(); on the PC-1600 also the CE-1600F's motor off.
-        CHECK(static_cast<bool>(r.readyNow) == (std::string(model) == "PC-1600"));
+        // Machine::isKeyReady() takes keys; the core's program state says what is busy and whether the program has ended.
+        CHECK(!r.takesKeys && r.busy && r.programEnded && !r.awaitsMedium);
         CHECK(r.stretch.count() > 0.333 && r.stretch.count() < 0.334);   // 20 frames
         CHECK_EQ(r.sample, rate / 60);                                    // asked every frame
     }

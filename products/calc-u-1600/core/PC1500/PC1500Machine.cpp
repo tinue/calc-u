@@ -14,6 +14,7 @@ bool PC1500Machine::loadROMFile(const std::string& path) {
 }
 
 void PC1500Machine::reset() {
+    m_frame = m_lastFrame = FrameNotes{};   // key readiness is seen again from here (keyReady())
     m_memory.reset();
     m_memory.keyboard().releaseAll();
     m_cpu.reset();
@@ -135,6 +136,7 @@ void PC1500Machine::seedClock(int year, int month, int day, int hour, int minute
 }
 
 int PC1500Machine::step() {
+    noteFetch(m_cpu.pc());
     int c = m_cpu.step();
     if (c == 0 && m_cpu.breakpointsEnabled() && m_cpu.consumeBreakpointHit()) m_debugStop.latch(DebugStop::Breakpoint, 1);
     if (m_watches && m_watches->hitPending()) m_debugStop.latch(DebugStop::Watch, 1);
@@ -153,6 +155,15 @@ int PC1500Machine::step() {
 
 void PC1500Machine::advancePeripherals(uint32_t cycles) {
     m_elapsedCycles += cycles;  // every cycle step() and runCycles() consume passes here
+    m_frameCycles += cycles;
+    if (m_frameCycles >= kPC1500CyclesPerFrame) {
+        m_frameCycles -= kPC1500CyclesPerFrame;
+        const uint64_t edges = m_memory.piezo().edgeCount();
+        m_frame.tone = edges != m_frameEdges;
+        m_frameEdges = edges;
+        m_lastFrame = m_frame;
+        m_frame = FrameNotes{};
+    }
     // The uPD1990AC RTC's TP output is defined in real time, not CPU
     // cycles (it has its own independent crystal) -- this Core has no
     // other notion of elapsed time to drive it from, so it advances here,
@@ -169,6 +180,7 @@ void PC1500Machine::advancePeripherals(uint32_t cycles) {
 uint64_t PC1500Machine::runCycles(uint64_t maxCycles) {
     uint64_t consumed = 0;
     while (consumed < maxCycles) {
+        noteFetch(m_cpu.pc());
         int c = m_cpu.step();
         m_memory.updatePUPV(m_cpu.pu(), m_cpu.pv());
         if (c == 0) {

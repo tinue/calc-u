@@ -99,6 +99,7 @@ Ticks MachineSession::nextDue() const {
 
 bool MachineSession::waitsForInput() const {
     if (!reportsWaiting_ || !machine_) return false;
+    if (waits_) return waits_(*machine_);
     if (machine_->isKeyReady()) return true;
     return std::any_of(probes_.begin(), probes_.end(), [&](WaitProbe* p) { return p->waitsForMedium(*machine_); });
 }

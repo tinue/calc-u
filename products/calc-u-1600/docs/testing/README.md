@@ -339,9 +339,11 @@ calcu_paths =
 An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on another computer:
 `CALCU_PATH_STICK=/media/me/STICK uv run pytest`. An unknown name raises `MachineError`.
 
-- A **slot** value without `/` and without `.module.yaml` is a module's name: one of the driver's
-  test cards (`ram-1m`, …) or a bundled module (`CE-1600M`). Anything else is a path:
-  `cards/my-ram.module.yaml`, `$cards/superram-full.module.yaml`.
+- A **slot** value without `/` and without `.module.yaml` is a bundled module's name (`CE-1600M`,
+  `superRAM`). Anything else is a path: `cards/my-ram.module.yaml`, `$cards/superram-full.module.yaml`.
+  A module that isn't bundled, for example one still being built, is a file of the test project:
+  copy the nearest bundled definition from the checkout (`$c1600/frontends/qt6/resources/cards/`)
+  and change it.
 - `host_drive` is a folder on your computer, found like any path; usually an absolute one or a
   per-test folder: `host_drive=tmp_path / "drive"`.
 - **Files a test makes** belong in pytest's per-test folder `tmp_path` or in `$work`. A card saved
@@ -373,7 +375,7 @@ Options:
 | Option | Values | Default |
 |---|---|---|
 | `model` | `PC-1500`, `PC-1500A`, `PC-1600` | `PC-1600` |
-| `slot_1`, `slot_2` | a module's name (a driver test card or a bundled module) or a path; `slot_2` on the PC-1600 only | empty |
+| `slot_1`, `slot_2` | a bundled module's name or a path; `slot_2` on the PC-1600 only | empty |
 | `printer` | `CE-150`, `CE-1600P`, `CE-1600P:old` | none |
 | `host_drive` | a folder, the PC-1600's drive `S3:` | none |
 | `bus_rom` | a list of `{"file", "address", "pv"}`: ROMs on the 60-pin bus, in plug order | none |
@@ -424,7 +426,6 @@ flowchart LR
 | `calcu_pytest` | `products/calc-u-1600/tools/machine/` | the pytest plugin: the `make_machine` fixture, the path names |
 | `Machine` | same folder, `machine.py` | the PC-1500/1600 part: models, slots, media, bus ROMs, `card()`, `listing()` |
 | `cardimage.py` | same folder | reads saved module files into bytes, and the RAM disk on them |
-| `cards/` | same folder | `ram-256k`, `ram-512k`, `ram-1m`: superRAM cards for tests |
 | `Session` | `library/harness/python/calcu_machine.py` | the part common to every Calc-U product: steps, reads, path names, starting and ending `calcu` |
 | `calcu` | `library/harness/cli/`, built into `build/tools/` | the headless runner: the emulator without a window |
 

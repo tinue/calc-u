@@ -1,7 +1,7 @@
 """The PC-1500, PC-1500A and PC-1600 as a pytest test machine, on `calcu serve`
 (library/harness/python/calcu_machine.py). The user guide is docs/testing/README.md.
 
-    machine = Machine(tmp_path, slot_2="ram-1m")
+    machine = Machine(tmp_path, slot_2="superRAM")
     machine.type('PRINT "=";6*7').wait(1)
     assert "= 42" in machine.lcd
     image = machine.card(2)
@@ -25,7 +25,6 @@ from cardimage import read_card
 __all__ = ["Machine", "MachineError"]
 
 PRODUCT = CHECKOUT / "products" / "calc-u-1600"
-CARDS = Path(__file__).resolve().parent / "cards"
 APP = "Calc-U-1600"
 
 Slot = Union[str, os.PathLike, None]
@@ -61,9 +60,8 @@ class Machine(Session):
                  model: str = "PC-1600", printer: Optional[str] = None,
                  bus_rom: Optional[list[dict[str, Any]]] = None, project=None, paths=None):
         """model: PC-1500, PC-1500A or PC-1600.
-        slot_1, slot_2: a module's name -- one of cards/ (ram-256k, ...) or a bundled one
-        (CE-1600M, ...) -- or a module file: a Path, or a str ending in .module.yaml or holding
-        a /. printer: CE-150 or CE-1600P[:old]. bus_rom: ROMs on the 60-pin bus, in plug order,
+        slot_1, slot_2: a bundled module's name (CE-1600M, superRAM, ...) or a module file: a
+        Path, or a str ending in .module.yaml or holding a /. printer: CE-150 or CE-1600P[:old]. bus_rom: ROMs on the 60-pin bus, in plug order,
         each {"file", "address", "pv"}. project, paths: see Session.path()."""
         super().__init__(workdir, "c1600", project, paths)
         self.add_path_name("c1600", PRODUCT)
@@ -85,8 +83,7 @@ class Machine(Session):
         """The module file of a slot argument, or None for a bundled module's name."""
         if isinstance(slot, os.PathLike) or "/" in slot or slot.endswith(".module.yaml"):
             return self._existing(slot)
-        file = CARDS / f"{slot}.module.yaml"
-        return file if file.exists() else None
+        return None
 
     # ── steps ──────────────────────────────────────────────────────────
 

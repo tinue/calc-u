@@ -56,7 +56,8 @@ same simulator, connects with `HarnessClient` to 127.0.0.1 and sends
 `attach slot-1 LE`, `state settings`). A load started with a tap is awaited
 with `waitForOperation` (the busy topic, then the bare `wait`); a key into
 a running program (an overlay among them) is `key-down`/`key-up`. The
-attached registry has no `preset`: open a file with `open <path>`. Each
+attached registry has every `calcu serve` command, `preset <path>` and
+`open <path>` among them. Each
 simulator needs a port of its own: the helpers use 59162, `AttachTests`
 59160, `PacingTests` 59161. A notice is an alert: tap
 `app.alerts.buttons["OK"]` (iOS drops the identifier `notice-ok` on an
@@ -72,8 +73,8 @@ terminal. Use a simulator from `bin/simulators status` (the configured set in
 Reset the simulator first, as the CTest entries and `bin/run-screenshots` do:
 `bin/simulators reset` puts back the example presets and deletes what the app
 saved (its cards and `ti58c.memory.yaml` in the app's Documents folder), so a
-run never sees the cards of earlier runs (otherwise Arm Card's list grew
-past the screen and a card test stopped finding its card):
+run never sees the cards of earlier runs (Arm Card's list would grow past
+the screen and a card test would not find its card):
 
 ```bash
 bin/simulators reset --role iphone

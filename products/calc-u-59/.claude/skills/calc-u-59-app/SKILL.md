@@ -83,7 +83,7 @@ drawing rules: `docs/developer/App-Layer.md`. Don't restate them here.
    `library/testing/TestHarness.hpp`: `TEST`/`CHECK`/`SKIP_UNLESS`;
    `TestRoms.hpp` boots machines from `roms/`). Tests run from the product
    directory.
-7. **Commit often, never push.**
+7. **Commit often;** push as the root `CLAUDE.md` says.
 
 ## Adding a module
 

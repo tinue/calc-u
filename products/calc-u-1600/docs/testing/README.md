@@ -1,7 +1,7 @@
 # Automated tests with Calc-U-1600
 
 Write pytest tests that run on an emulated PC-1500, PC-1500A or PC-1600: press keys, type lines,
-plug modules and media, then check the display, memory, cards or the BASIC program. Each test gets
+plug modules and media, then check the display, memory, modules or the BASIC program. Each test gets
 a fresh machine; many run in parallel.
 
 The test driver began as the one "spellbound" wrote for the tests of the superRAM module.
@@ -32,7 +32,7 @@ xcode-select --install
 brew install cmake ninja uv
 
 # Linux, WSL (Ubuntu 24.04)
-sudo apt install build-essential cmake ninja-build zlib1g-dev git curl
+sudo apt install build-essential cmake ninja-build git curl
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
@@ -52,7 +52,7 @@ products/calc-u-1600/roms/fetch_roms.sh
 
 ```sh
 cmake -S . -B build/tools -G Ninja -DCMAKE_BUILD_TYPE=Release \
-      -DCALCU_FRONTEND_QT=OFF -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF
+      -DCALCU_FRONTEND_QT=OFF -DCALCU_TESTS=OFF
 cmake --build build/tools --target calcu
 ```
 
@@ -154,7 +154,7 @@ refuses it with `ERROR 110`, and so does more than one module's RAM.
 |---|---|---|
 | — | — | accepted |
 | CE-151, CE-155 or CE-161 | — | accepted |
-| CE-163F or CE-1638 | — | accepted: the ROM can't detect their RAM and ignores the card |
+| CE-163F or CE-1638 | — | accepted: the ROM can't detect their RAM and ignores the module |
 | — | CE-161, CE-163F or CE-1638 | accepted (their banks are ignored) |
 | CE-1600M (32 KB) | — | ERROR 110 |
 | — | CE-1600M, CE-1601M or superRAM | ERROR 110 |
@@ -179,7 +179,7 @@ CASES = {
     "CE-1600M in 2":      ({"slot_2": "CE-1600M"}, REFUSED),
     "superRAM in 2":      ({"slot_2": "superRAM"}, REFUSED),
     "CE-155 and CE-1638": ({"slot_1": "CE-155", "slot_2": "CE-1638"}, REFUSED),
-    "a card file in 2":   ({"slot_2": "$c1600/examples/dwx/CE-1601M - Progs.module.yaml"}, REFUSED),
+    "a module file in 2": ({"slot_2": "$c1600/examples/dwx/CE-1601M - Progs.module.yaml"}, REFUSED),
 }
 
 
@@ -196,7 +196,7 @@ def test_mode1(make_machine, slots, refused):
 ```
 
 - A slot takes a bundled module by its name (`CE-1600M`, …) or a module file. The last case
-  uses a card with content from the checkout's examples, by the path name `$c1600`
+  uses a module with content from the checkout's examples, by the path name `$c1600`
   ([6 Paths](#6-paths)).
 - `expect` and `not_expect` take effect at the next read; `run()` is a read without a result.
 - One test function, nine machines: pytest shows each case by its id, and `-n auto` runs them at
@@ -417,7 +417,8 @@ ships, and on what the test project brings:
 - **Shipped:** the bundled modules by name (`CE-1600M`, `superRAM`); the bundled media and the
   examples as files of the checkout, by `$c1600`: the module definitions, `blank.floppy.yaml`,
   `formatted.floppy.yaml` and `empty.cassette.yaml` in `$c1600/frontends/qt6/resources/cards/`,
-  the examples in `$c1600/examples/`.
+  the examples in `$c1600/examples/`, the test fixtures (such as the RENUM ROM) in
+  `$c1600/tests/fixtures/`.
 - **Brought:** anything else is a file of the test project, whatever the medium: a module still
   being built, a floppy disk or a cassette with your programs, a ROM image, a program. Copy the
   nearest shipped file and change it, or save one in the app (Name & Save, then `$saved`) and
@@ -466,7 +467,7 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
   `floppy("disks/progs.floppy.yaml")`.
 - `host_drive` is a folder on your computer, found like any path; usually an absolute one or a
   per-test folder: `host_drive=tmp_path / "drive"`.
-- **Files a test makes** belong in pytest's per-test folder `tmp_path` or in `$work`. A card saved
+- **Files a test makes** belong in pytest's per-test folder `tmp_path` or in `$work`. A module saved
   with `card(2)` is `$work/slot-2.module.yaml`, to put into the next machine; its bytes alone, a
   raw image, are `card(2)` written to a file ([7 Reference](#7-reference)).
 
@@ -476,6 +477,7 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
 overrides the fixture `machine_class` in its `conftest.py`:
 
 ```python
+import pytest
 from machine import Machine
 
 class MyMachine(Machine):
@@ -550,7 +552,7 @@ flowchart LR
 | `Machine` | same folder, `machine.py` | the PC-1500/1600 part: models, slots, media, bus ROMs, `card()`, `listing()` |
 | `cardimage.py` | same folder | reads saved module files into bytes, and the RAM disk on them |
 | `Session` | `library/harness/python/calcu_machine.py` | the part common to every Calc-U product: steps, reads, path names, starting and ending `calcu` |
-| `calcu` | `library/harness/cli/`, built into `build/tools/` | the headless runner: the emulator without a window |
+| `calcu` | `library/harness/cli/`, built into `build/tools/` | the harness: the emulator without a window, driven by command lines |
 
 - `conftest.py` loads `calcu_pytest`; `make_machine` makes the work folder and a `Machine` with the
   project root and the path names. The first read starts `calcu --product c1600 serve` with the

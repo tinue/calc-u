@@ -71,16 +71,17 @@ stay.
 
 Some programs store text for the PC-100C: a register holds up to five
 2-digit character codes (`Op 01`–`Op 04`), each a `row col` pair of the
-printer's 8 × 8 table (`PRN_CODE[64]` in `core/TMC0501.cpp`);
+printer's 8 × 8 table (`pc100cpaper::kCharacters[64]` in `core/PC100CPaper.hpp`);
 `3013351523` → 30 13 35 15 23 → `MARCH`. A value with fewer than five
 characters has fewer digits; keep it as printed.
 
 ## Checking a preset
 
 - `calcu --product c59 check-preset <file>…` reads it as a load would;
-  `calcu --product c59 preset <file> then wait then display-text then paper text`
-  carries it out in emulated time (products/calc-u-59/CLAUDE.md,
-  "Harness"); `c59 program 000 count=<n>` and `c59 data-registers <NN>…` read
+  `calcu --product c59 preset <file> then wait then display-text` carries it
+  out in emulated time (products/calc-u-59/CLAUDE.md, "Harness"); add
+  `then paper text` when the preset names `printer: PC-100C` (refused
+  without a printer); `c59 program 000 count=<n>` and `c59 data-registers <NN>…` read
   what it wrote.
 - The examples are checked by `calcu_preset_check.CalcU59Presets`
   (Frequent) and against their recorded reference runs by

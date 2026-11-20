@@ -12,7 +12,7 @@ status for the final report: **green**, **fixed** (was off, now green) or
 this order because each one's result feeds the next: parity fixes change code,
 simplification reshapes it, and the docs describe what remains.
 
-Commit each logical fix on the current branches, and leave pushing to the user.
+Commit each logical fix on the current branches; push as the root `CLAUDE.md` says.
 Invoke the area skill from the `CLAUDE.md` table before changing anything in
 that area.
 

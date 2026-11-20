@@ -3,9 +3,11 @@ names of pytest.ini.
 
     [pytest]
     pythonpath = <checkout>/products/calc-u-1600/tools/machine <checkout>/library/harness/python
-    addopts = -p calcu_pytest
     calcu_paths =
         cards = test-cards
+
+The project's conftest.py loads the plugin, `pytest_plugins = ["calcu_pytest"]`; `-p calcu_pytest`
+in `addopts` fails, as pytest loads `-p` plugins before it reads `pythonpath`.
 
 The test project root is pytest's rootdir, the folder of pytest.ini. See docs/testing/README.md.
 """

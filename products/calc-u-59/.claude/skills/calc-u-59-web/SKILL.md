@@ -63,7 +63,7 @@ Never edit the calculator there — that copy is generated.
    A trace is handed over with `keep-file` when it ends; the page lists it.
    The debug panel draws the product topics of `app/TIDebugPart`:
    `c59.calculator-debug`, `c59.program-listing` (the whole listing while
-   paused), `c59.cpu-debug`, `c59.heatmap`, `asm-overlay`, `c59.debug-view` (the tab a
+   paused), `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view` (the tab a
    `debug-panel:` step asked for: shown when its `requests` grows; the log
    level), whose values are already the page's forms; the LOG tab keeps the
    last 2000 lines of the session's `log` stream (clear empties the view only); the
@@ -116,7 +116,7 @@ Never edit the calculator there — that copy is generated.
    `frontends/swift/App/AppIcon.icon`). `build.js`'s `files` names them, the library's build copies them; never commit copies.
 8. **Build and test before committing:** `frontends/web/build.sh && frontends/web/run-tests.sh`.
    Also after any `core/` or `app/` change (CLAUDE.md).
-9. **Commit often, never push.**
+9. **Commit often;** push as the root `CLAUDE.md` says.
 
 ## Build and test
 

@@ -104,8 +104,8 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    **Harness attach (Debug, macOS and simulator only):** the app opens its
    session on 127.0.0.1, port `--attach-port N`, else 59059; `calcu attach
    [--port N]` drives it (`library/harness/attach/`; one port per simulator).
-   The attached registry has the serve form's commands, `open` and the
-   product's `ti59 …`, not `preset` (load a file with `open <path>`).
+   The attached registry has every command of the serve form (`preset`
+   and `open` among them) and the product's `c59 …`.
    A Debug build also takes `--settings-file <path>` (a relative path in the
    app's temporary folder); the app has no other aid for its tests.
    Release and device builds have no attach (`CALCU_ATTACH` off;
@@ -129,7 +129,7 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    first).
 6. **Compile, don't run.** Never launch the simulator or the built Mac app;
    ask the user to, saying exactly what to look for.
-7. **Commit often, never push.**
+7. **Commit often;** push as the root `CLAUDE.md` says.
 8. **Cite sources.** A hardware spec or external document gets its https URL
    (or local reference file) in the comment or doc.
 

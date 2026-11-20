@@ -27,14 +27,14 @@ the release's `Calc-U-59-help.zip`. Developer documents stay in
 
 ## Architecture Reference
 
-Architecture facts (register model, SCOM layout, PC encoding, machine variants, trace API) live in:
+Architecture facts (register model, SCOM layout, PC encoding, models, trace API) live in:
 
 - `docs/developer/Core-Architecture.md` — C++ emulation core
 - `docs/developer/App-Layer.md` — the app layer `app/`, its one thread, and the Swift app and bridge layer
 - `docs/developer/Debug-API.md` — debug panel and bridge API
 - `docs/developer/Frontend-Parity.md` — which feature lives where in the three GUIs
 - `docs/developer/Web-Client.md` — the web client and its `dist/` contract
-- `docs/developer/Harness.md` — the harness `calcu --product c59`: ROM traces, timing and profiling, the `c59` commands, the scripts that stay
+- `docs/developer/Harness.md` — the harness `calcu --product c59`: ROM traces, timing and profiling, the `c59` commands, recipes and pitfalls
 - `docs/formats/preset.md`, `docs/formats/cue-card.md` (repository root) — the preset format 2 (`.ti59`/`.ti58`/`.ti58c`) and the cue card block
 - `rom/TI59-ROM-Guide.md`, `rom/TI58C-ROM-Guide.md` — how the ROMs work
 

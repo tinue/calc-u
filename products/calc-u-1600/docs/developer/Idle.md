@@ -180,9 +180,14 @@ Not counted as waiting for a medium:
 
 - A: `PC1500Machine::keyReady()` and `PC1600Machine::keyReady()` (the frame
   notes and the 15 frames), `Machine::isKeyReady()` above the core.
-- W's busy list and B: the kind `c1600.program-state`
+- W's busy list, a medium awaited and B: the kind `c1600.program-state`
   (`core/Machine/SharpProductKinds.hpp`: `PC1500Machine::toneSounding()`,
-  `programEnded()`; `PC1600Machine::programEnded()`, the CE-1600F's motor).
+  `tapeAwaited()`, `ce158ReceiveWaitSeen()`, `programEnded()`;
+  `PC1600Machine::tapeAwaited()`, `receiveWaitSeen()`, `programEnded()`, the
+  CE-1600F's motor). "Nothing on its way" for the port: the library's
+  `SerialPortQueues::incoming()`, bytes queued or still with the other side,
+  which the feed (`app/SerialScripts.cpp`) and a host link report
+  (`SerialPort::setPeerSending`).
 - The rule: `app/SharpPresetRules.cpp`; the keys that do not wait:
   `app/SharpTyping.cpp` (ON/BREAK, at most 0.2 s). Pacing asks W, but full
   speed is never paced (`app/PacingProfiles.cpp`): with pacing by the host's

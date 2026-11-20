@@ -129,7 +129,13 @@ struct PC1600InterfaceMachine::Kinds {
             return {};
         }
         bool programEnded() const override { return m.programEnded(); }
+        // The tape, or COM1:/COM2: with nothing on its way.
+        bool awaitsMedium() const override {
+            return m.tapeAwaited() || (m.receiveWaitSeen(oldRom) && !port->port().incoming());
+        }
         PC1600Machine& m;
+        SerialPortCapability* port = nullptr;   // the interface machine's RS-232C peer
+        bool oldRom = false;                    // the variant Old: CRCVA's loop at other addresses
     } program;
 };
 
@@ -138,6 +144,8 @@ PC1600InterfaceMachine::PC1600InterfaceMachine(const MachineDescriptor& d, const
       m_debugging(sharp::makeSharpDebugging(*m_core)) {
     // The RS-232C peer is attached when the port is first taken (capability()).
     m_core->setCE158SerialLink(&m_ce158Port);
+    m_kinds->program.port = &m_rs232c;
+    m_kinds->program.oldRom = v.value == "Old";
 }
 
 PC1600InterfaceMachine::~PC1600InterfaceMachine() = default;

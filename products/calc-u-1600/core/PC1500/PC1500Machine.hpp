@@ -121,6 +121,15 @@ public:
     }
     /// The buzzer line changed in this frame or the last (a BEEP sounds).
     bool toneSounding() const { return m_frame.tone || m_lastFrame.tone; }
+    /// The CE-150's tape loader waited for an edge in this frame or the last,
+    /// and the cassette does not play (none in, the motor off, at its end).
+    bool tapeAwaited() const {
+        if (!ce150Attached() || !(m_frame.tapeWait || m_lastFrame.tapeWait)) return false;
+        const TapeDeck::Status st = m_tapeDeck.status();
+        return st.mode != TapeDeck::Mode::Play || !st.motor || m_tapeDeck.atEnd();
+    }
+    /// The CE-158 waited in its receive loop in this frame or the last.
+    bool ce158ReceiveWaitSeen() const { return ce158Attached() && (m_frame.portWait || m_lastFrame.portWait); }
     /// The BASIC program has ended: the editor runs (BUSY, 764E bit 0, off)
     /// and does not wait for INPUT or a PRINT stop (BREAKPARAM 788A bits 5, 6).
     bool programEnded() const {
@@ -295,13 +304,24 @@ private:
     // keyReady() and toneSounding(), by 60 Hz frames of LH5801 cycles; not in the
     // state record (after a restore they are at most a frame behind).
     struct FrameNotes {
-        bool keyWait = false, keyRead = false, tone = false;
+        bool keyWait = false, keyRead = false, tone = false, tapeWait = false, portWait = false;
     };
     FrameNotes m_frame, m_lastFrame;
     uint64_t m_frameCycles = 0, m_frameEdges = 0;
     void noteFetch(uint16_t pc) {
         if (pc >= 0xE243 && pc <= 0xE33D) m_frame.keyWait = true;
         else if (pc == 0xD9AA) m_frame.keyRead = true;
+        else if (pc >= 0x8000 && pc < 0xC000) noteMediumWait(pc);
+    }
+    // docs/developer/Idle.md, "A medium awaited": the CE-150's tape loader in
+    // an edge wait of LOAD_NIBBLE (its ROM, PV 0); the CE-158 in its receive
+    // loop with RXCOM (its ROM, PV 1, the region both banks share).
+    void noteMediumWait(uint16_t pc) {
+        if (!m_cpu.pv()) {
+            if ((pc >= 0xBE11 && pc <= 0xBE1C) || (pc >= 0xBE21 && pc <= 0xBE2C)) m_frame.tapeWait = true;
+        } else if ((pc >= 0x828E && pc <= 0x82A0) || (pc >= 0x81E6 && pc <= 0x822F)) {
+            m_frame.portWait = true;
+        }
     }
 
     // ── The trace records -- see beginTraceRecords() ─────────────────────

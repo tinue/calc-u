@@ -351,8 +351,8 @@ def test_console(make_machine, tmp_path):
     name.write_bytes(b"WORLD\r")                 # INPUT takes the line up to CR
     machine = make_machine(model="PC-1600")
     machine.key("mode").type("NEW0").load_basic("$programs/greet.bas").key("mode")
-    machine.command("type RUN").wait(1)          # NAME? is out, INPUT waits for the port
-    machine.command(f"c1600 serial rs232c feed {name}").wait(1)
+    machine.type("RUN")                          # until INPUT waits for the port
+    machine.command(f"c1600 serial rs232c feed {name}").wait()
     report = machine.send("c1600 serial rs232c report")
     assert report["sent"].splitlines() == ["NAME?", "HELLO WORLD"]
     assert report["taken"] == report["fed"] == 6
@@ -375,8 +375,8 @@ def test_load(make_machine, tmp_path):
     file.write_bytes(b"".join(line.encode("ascii") + b"\r\n" for line in LISTED) + b"\x1a")
     machine = make_machine(model="PC-1600")
     machine.key("mode").type("NEW0").key("mode").type(COM1)
-    machine.command('type LOAD"COM1:"')          # the harness's type: no wait
-    machine.command(f"c1600 serial rs232c feed {file} hold=100").wait()
+    machine.type('LOAD"COM1:"')                  # until the LOAD waits for the port
+    machine.command(f"c1600 serial rs232c feed {file}").wait()   # until the LOAD has ended
     assert machine.listing() == LISTED
 
 
@@ -391,20 +391,20 @@ def test_ce158_csave_cload(make_machine, tmp_path):
     two = make_machine(model="PC-1500A").command("attach interface CE-158")
     two.key("cl").type("NEW0").key("mode")
     two.type("SETCOM 1200,8,N,1").type("OUTSTAT 0").type("SETDEV CI")
-    two.command('type CLOAD "P"')
-    two.command(f"c1600 serial ce158 feed {sent} hold=10").wait()
+    two.type('CLOAD "P"')
+    two.command(f"c1600 serial ce158 feed {sent}").wait()
     assert two.listing() == listing == ['10 PRINT "HELLO"', "20 GOTO 10"]
 ```
 
-- **A console:** the program's INPUT waits for the port, not for a key, so the machine doesn't
-  settle: `type` would wait the hour. The harness's own `type` doesn't wait; `wait(1)` gives the
-  program the time to write `NAME?` and to take the line. `report` shows what it sent.
+- **Waiting for the port:** a program or command that waits for bytes from the port waits for
+  a medium, as for a key: `type` returns once INPUT, `LOAD` or `CLOAD` waits with nothing on its
+  way. While bytes come (a feed, held ones too) the machine works, and `wait()` lasts until it
+  waits again or has ended. The signals: [Idle](../developer/Idle.md#a-medium-awaited).
+- **A console:** `report` shows what the program sent.
 - **A program out:** `type` waits until the `SAVE` has ended. The capture file is complete when
   `calcu` ends: `run()` sends the collected steps, then `close()` ends it.
-- **A program in:** the file arrives after the `LOAD` has started (`hold=`): bytes that come
-  before are not loaded. The harness's own `type` doesn't wait, so the feed follows at once; then
-  `wait()` lasts until the `LOAD` has ended. A `LOAD` that gets nothing waits up to an hour of
-  machine time, about a minute.
+- **A program in:** the file is fed once the `LOAD` waits: bytes that come before it has started
+  are not loaded.
 - **The CE-158:** the driver has no option for it; `command("attach interface CE-158")` plugs it
   in. `CLOADa` needs two seconds of silence between the lines, which `feed` doesn't give: the
   test sends the program the binary way, from one machine to the next.

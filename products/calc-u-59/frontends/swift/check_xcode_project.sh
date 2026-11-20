@@ -20,7 +20,6 @@ ls Bridge App 2>/dev/null | /usr/bin/grep -E '\.(cpp|cc|cxx)$' && fail "a C++ so
 
 # The ROM resources are the full set, flat in roms/: the ten
 # calculator dumps and the 14 module files.
-/usr/bin/grep -n "cuecards.txt" "$PBX" && fail "$PBX bundles cuecards.txt (the module files hold the cue cards)"
 n=$(/usr/bin/grep -cE '/\* roms/[A-Z]{2}\.rom\.yaml in Resources \*/,' "$PBX")
 [ "$n" = 14 ] || fail "$PBX bundles $n module files, not the 14 .rom.yaml"
 n=$(/usr/bin/grep -cE '/\* roms/[A-Z0-9-]+\.txt in Resources \*/,' "$PBX")

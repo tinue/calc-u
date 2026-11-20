@@ -51,7 +51,7 @@ and `docs/Process.md` until the closing check at its end has passed.
   are module instances, so every test writes them back. Tell spellbound:
   give the fixtures `template: true` (never written) and prepare the card
   in that test.
-- **Specifications not written**: Calc-U-1600's trace file (`TRACE.bin`) has
+- **Specifications not written**: Calc-U-1600's trace file (`CALCU1600_TRACE.bin` and its siblings by model) has
   no page in `docs/formats/` (Calc-U-59's is `docs/formats/trace.md`).
 - **Media topic and the Sharp media places**: the machine knows when a
   Sharp tape or serial port is awaited (`awaitsMedium()`), but the places'

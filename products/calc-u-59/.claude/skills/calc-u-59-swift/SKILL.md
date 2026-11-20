@@ -100,7 +100,7 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    The cards are the library's `media` topic (place `card-reader`) and
    `media.*` commands (`savedCards`, `armCard:`,
    `armFreshCard:confirmed:` with the `asks:` replace question, `ejectCard`);
-   `c59.tap-card` feeds a corner. No `.u59` card, no `cuecards.txt`.
+   `c59.tap-card` feeds a corner.
    **Harness attach (Debug, macOS and simulator only):** the app opens its
    session on 127.0.0.1, port `--attach-port N`, else 59059; `calcu attach
    [--port N]` drives it (`library/harness/attach/`; one port per simulator).

@@ -9,9 +9,9 @@
 #include <string_view>
 #include <vector>
 
-// Small string helpers mirroring the Foundation calls the Swift parsers were
-// written against (components(separatedBy: .newlines), trimming .whitespaces,
-// split(separator: " "), Int(_:radix:)), so the C++ ports keep their edge cases.
+// Small string helpers with the edge cases of the Foundation calls the Swift
+// frontend uses (components(separatedBy: .newlines), trimming .whitespaces,
+// split(separator: " "), Int(_:radix:)).
 
 namespace cu59 {
 

@@ -36,6 +36,7 @@
 - **About** The links to the source, support and the privacy statement go to the repository tinue/calc-u; the Windows installer names it as the publisher's address.
 - **Web embedding** The engine's files are `wasm/calcu59-core.js` and `wasm/calcu59-core.wasm`, with the module factory `createCalcU59Module` (were `ti59-core` and `createTI59CoreModule`). <!-- appstore: skip -->
 - **Trace reader (developers)** `tools/read_trace.py` reads trace files of version 2 only. <!-- appstore: skip -->
+- **Building (developers)** Building both products is `docs/Building.md` at the repository root; the release audit skill is `calc-u-59-pre-release-cleanup` (was `pre-release-cleanup`). <!-- appstore: skip -->
 
 ### Fixes
 - **Keyboard** Qt app: the buttons and pickers of the control bar and the paper panel no longer take the keyboard focus, so Tab no longer moves the focus away from the calculator.

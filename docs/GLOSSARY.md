@@ -450,6 +450,7 @@ prompt or key scan, no program and no called machine code running.
 **Key readiness**:
 The machine takes an ordinary key now: the ROM or a program reads the
 keyboard as input. Watching only for BREAK is not key readiness.
+_Avoid_: scan loop (for the general term)
 
 **Reset**:
 The emulator restarting a machine with its memory kept. On the TI-58/59
@@ -661,10 +662,6 @@ _Avoid_: key sequencer, typer
 **Typing profile**:
 What a product supplies per model for the typing engine: key sequences
 for characters, the minimum hold, the cadence.
-
-**Key readiness**:
-The state in which a machine's ROM can take the next key.
-_Avoid_: scan loop (for the general term)
 
 **Live input**, **Typed text**, **Press**, **Frame** (of typing):
 Live input is what a user does now, with a host key or an on-screen

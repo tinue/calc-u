@@ -7,8 +7,7 @@
 // The PC-100C's paper: its description, the 5 × 7 font of 64 characters, the character of
 // each 6-bit code, the dot rules of a line cut short and the placement of a
 // line's dots on the paper. The core gives marks (the machine draws nothing),
-// so it holds them; the converter of the paper replies
-// (tests/paper_replies_tests.cpp) uses the same copy.
+// so it holds them.
 //
 // Geometry, from a measured print head, in dot pitches (the unit): total
 // span (first → last dot centre) 55 mm; a 5-dot character 1.9 mm (4 units);

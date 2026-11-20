@@ -43,10 +43,23 @@ and `docs/Process.md` until the closing check at its end has passed.
   screenshot runs before each release.
 - **Glossary warnings** of the help check (several hundred, mostly bare
   "card" and "calculator"): narrow the `_Avoid_` lists or reword.
-- **Paper references**: six `.paper-marks` references of Calc-U-59 cannot
-  match (`picard`, `switzerland`, `texas-print`, `test_texas`,
-  `printer-quirks`, `fast-grafik-3d-plot`); they are kept as named
-  findings. Decide: delete them or fix the cause.
+- **External tester**: their superRAM suite's `test_title_in_s2_is_refused`
+  now fails every run. On the card as their suite ships it (blank, no
+  module header) `INIT"S2:","P"` leaves slot 2 a RAM disk (S2MTB FEH), so
+  the ROM refuses `TITLE"S2:"` with ERROR 101 (routine 1EEFH). It passed
+  only when an earlier test had written the card file, which the driver
+  no longer allows (module files are plugged as copies). Tell spellbound.
+- **Calc-U-1600's cloud-session hook**: `products/calc-u-1600/.claude/settings.json`
+  runs `$CLAUDE_PROJECT_DIR/tools/cloud_session_start.sh`, a path that
+  exists only when a session opens in the product folder; from the
+  repository root the hook is not loaded. Move it to a root
+  `.claude/settings.json` (with Calc-U-59's ROM fetch) or delete it.
+- **Specifications not written**: Calc-U-1600's trace file (`TRACE.bin`) has
+  no page in `docs/formats/` (Calc-U-59's is `docs/formats/trace.md`).
+- **Media topic and the Sharp media places**: the machine knows when a
+  Sharp tape or serial port is awaited (`awaitsMedium()`), but the places'
+  `waitsForMedium()` stays false, so the media topic never shows them as
+  waiting.
 - **Calc-U-59 checks by hand**: a loaded ASM overlay on a model switch
   (removed or kept); the preset format's speed-dependent `Adv` text
   against the behaviour; the tutorial's iCloud advice; `.keystrokes.yaml`
@@ -64,8 +77,7 @@ and `docs/Process.md` until the closing check at its end has passed.
   fake app and does not catch it.
 - **Smaller findings**: Swift `xcodebuild` fails from a worktree under
   `.claude/worktrees/` (works from the main checkout); the Playwright drag
-  test is flaky locally; `tools/dap_smoke.py` failed several times before
-  passing; `examples/memory/maxed-out-mem.pc1600` says INIT "F" is needed
+  test is flaky locally; `examples/memory/maxed-out-mem.pc1600` says INIT "F" is needed
   before "M"/"P", which the research says is not true; the Duo debug
   header wraps mid-word.
 

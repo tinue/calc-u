@@ -13,7 +13,7 @@ a limitation of that shared code. PC-1500-only items are marked
 
 This is a "what the core does **not** do" list. It is not a bug list —
 these are design boundaries, chosen to keep boot-to-BASIC and the
-already-shipped behaviour deterministic and well-sourced. Revisit an
+product's behaviour deterministic and well-sourced. Revisit an
 entry when a primary source or a ROM trace disagrees with it.
 
 ---
@@ -135,9 +135,8 @@ The register model follows Toshiba's TC8576AF data sheet
 - **Raw PTY carries no RS-232C modem lines** — the host link
   (`calcu::peripherals::HostLinks::pump`) sets the port's peer lines: CTS
   and DSR permanently asserted, DCD while a program holds the serial port
-  file open. Until the first pump the RS-232C port reports DCD off (as the
-  PTY did before a program opened it); the CE-158's port starts with all
-  inputs on, as its standalone UART did in the golden runs. Non-POSIX build: there is no host link;
+  file open. Until the first pump the RS-232C port reports DCD off; the CE-158's port
+  starts with all inputs on, as in the golden runs. Non-POSIX build: there is no host link;
   the bytes the machine sends are dropped.
 - **Still open** (see `docs/developer/PC1600-Serial-Port.md` and `TODO.md`): an
   end-to-end round-trip against real SharpDataExchange and the follow-on
@@ -213,9 +212,9 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   point; on a switched-off machine at once, and it stays off. The key
   readiness of `isKeyReady()` is 15 whole 60 Hz frames in a row in which
   CK0 is on and the SC7852 is in the BASIC command loop or read the key
-  matrix (`PC1600Machine::keyReady()`, the per-frame test of
-  `waitForKeyboardScanLoopJob`); the frames are counted from the build,
-  not from the call, so it can turn true a frame apart from that job.
+  matrix (`PC1600Machine::keyReady()`, `kReadyFramesNeeded`); the frames
+  are counted from the build and again from any reset, not from a call,
+  so it can turn true a frame apart from a caller's own count.
 - **One CE-150/CE-1600P, no CE-1600P with CE-158**: refused at the attach
   with a sentence, before the core's own attach, which would drop the
   other one.
@@ -233,7 +232,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   half (beta) mirrors onto page-B bank 1 (4000-7FFF) in addition to its
   normal page-C bank-1 home, per the TRM's 0196H entry + diagram. Untested
   against real hardware or firmware: no card in this project's catalogue
-  (CE-155, CE-1600M, CE-1620M) is banked or invokes 0196H, so coverage is
+  (CE-155, CE-1600M) is banked or invokes 0196H, so coverage is
   synthetic port-write tests only, transcribing the documented truth table
   rather than cross-checked against an independent source. Collides with
   SLOT2MAP mode 2 at the same window (page-B bank 1) if firmware ever arms
@@ -372,7 +371,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
 
 - **40-pin `ExpansionConnector` (PC-1500 side)**: concrete cards attach
   through it — the `SoftwareDefinedCard`, built from a `.module.yaml`
-  definition and wired by `PC1500PresetLoader`. The GUI reads the
+  definition and wired by the machine builder (`core/Machine/SharpMachine.cpp`). The GUI reads the
   attached module's name from the slot (`ExpansionCard::moduleName()`).
 - **60-pin `SystemBus`: WEX / W1 / WAIT, INT / IRQ, BFO / φOS, RSTE** are
   not driven or read. A contact whose level isn't documented (DME0 on Z-80
@@ -398,8 +397,8 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   and program complete instantaneously, so the firmware's poll loops exit
   naturally. `SoftwareDefinedCard::flashWrite()`
 - **No battery backup model** — a module's contents persist only as its
-  `.module.yaml` file (a live card autosaves); there is no per-chip
-  battery-backed state in a machine snapshot.
+  `.module.yaml` file (a live module autosaves); there is no per-chip
+  battery-backed state.
 - **`MemoryCardDefinition` v1 scope**: Regular, Flash and ROM content,
   single-kind or `by-bank`-split, with Unbanked or trigger-based Banked
   latches. `line-based` latches are rejected with a "not supported in v1"

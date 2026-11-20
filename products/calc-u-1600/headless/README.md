@@ -5,8 +5,7 @@ hoc work: screenshots and traces (`--output-folder headless`), WAV files of
 `audio` and `c1600 cassette record`, captures of `c1600 serial … capture`,
 memory images (`peek … file=`), machine states (`state-save`), format-utility test images, disassembly
 scratch, and similar. The harness itself is the target `calcu` of a root
-CMake tree (`products/calc-u-1600/CLAUDE.md`, section Harness); the
-headless CLIs and probes that were once built into this folder are gone.
+CMake tree (`products/calc-u-1600/CLAUDE.md`, section Harness).
 
 Everything in here except this file is ignored by version control: it's
 all regenerable (rerun the command) or disposable. Nothing durable should

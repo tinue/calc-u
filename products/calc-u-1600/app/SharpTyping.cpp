@@ -101,7 +101,7 @@ TypingProfile sharpProfile(const char* model) {
     if (pc1600) {
         const Ticks six = frame(6);
         p.extraGapAfter = [six](const KeyId& k) -> Ticks { return k.value == "shift" || k.value == "kbii" ? six : 0; };
-        p.queuedWaitsForReadiness = false;   // queued presses follow the cadence only, as the PC-1600's paste feeder did
+        p.queuedWaitsForReadiness = false;   // queued presses follow the cadence only
         p.firstPressOfStep = calcu::typing::StartRule::KeyReadiness;
         p.firstPressBound = calcu::typing::ticksOf(15.0, rate);
         p.charKeys = pc1600Char;

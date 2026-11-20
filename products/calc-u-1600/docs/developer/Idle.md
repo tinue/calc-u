@@ -142,8 +142,7 @@ function per CALLH, and machine code started by XCALL.
 
 ON/BREAK from a command waits for A at most 0.2 s, then goes down. Of a
 step's presses only the first waits for A (at most 15 s), ON/BREAK as any
-key; the presses after it follow the cadence only, as the PC-1600's paste
-feeder did.
+key; the presses after it follow the cadence only.
 OFF is not one of them: a matrix key handled only by the editor (EDOFF
 P1-B0 6B3F; ignored during a program's INPUT wait and a PRINT stop with
 F0BBH bit 0).

@@ -9,14 +9,14 @@ flowchart TB
     Qt["frontends/qt6/app/ — desktop GUI<br/>(widgets, dialogs, menus, QAudioSink, the DAP's socket)"]
     Web["frontends/web/ — web client<br/>(React, canvas, IndexedDB, AudioWorklet)"]
     App["app/ — the app layer, no GUI<br/>SharpAppPart on the library's app session, media kinds, settings, paths, layouts"]
-    Core["core/ — the hardware<br/>CPUs, machines, cards, loaders, jobs"]
+    Core["core/ — the hardware<br/>CPUs, machines, modules, loaders"]
     Qt --> App
     Web --> App
     App --> Core
 ```
 
 - **`core/`** is the emulated hardware and what drives it: CPUs, machines,
-  cards and connectors, program loaders, the debugger core. Presets are
+  memory modules and connectors, program loaders, the debugger core. Presets are
   the library's (`library/presets/`).
 - **`app/`** is everything above `core/` that is not drawing: the product's
   part of the library's app session (the live machine and its operations,
@@ -58,17 +58,17 @@ Both libraries are built by the product's [`CMakeLists.txt`](../../CMakeLists.tx
 
 | File | What it is |
 |---|---|
-| `SharpAppPart` | Calc-U-1600's part of the library's app session (a `calcu::sessions::SessionPart`): the live PC-1500/1500A/1600 as one `calcu::machine::Machine` handed to the machine session, memory-module slots, peripherals, tape, host drive, trace, inspector; the library's parts it hosts: `MediaPart` (the media); `PresetsPart` (`load-preset {ref \| content,name; buildOnly}`, `check-preset`, `preset-list`, `run-step`, `wait-idle`) and `StartupPart` (`start`, `model {name}`, `variant {name}`, `attach {place, peripheral, variant?}`, `detach {place}`, `reset`, `cold-boot`, `power-cycle`); the library's media commands (`media.choose`, …), the product commands `c1600.mount-host-drive`, `c1600.ce1600p-variant` (each a plug change of the library's machine control); the product topics `c1600.lamps` (the tape counter, the floppy lamp) and `c1600.serial-links` (`SharpTopics.hpp`; `roms-missing` is the `StartupPart`'s); the rules of the control state (`SharpControlRules`) and the library's `ControlPart`, first in the one order of `LibraryParts::sessionParts` (see "The machine" below). `SharpAppPartOptions`: `canMountHostFolder` (the Web says no), `uploadFolder` (the Web's uploads folder, where several files of Upload Preset… become one folder) |
+| `SharpAppPart` | Calc-U-1600's part of the library's app session (a `calcu::sessions::SessionPart`): the live PC-1500/1500A/1600 as one `calcu::machine::Machine` handed to the machine session, memory-module slots, peripherals, tape, host drive, trace, inspector; the library's parts it hosts: `MediaPart` (the media); `PresetsPart` (`load-preset {ref \| content,name; buildOnly}`, `check-preset`, `preset-list`, `run-step`, `wait-idle`) and `StartupPart` (`start`, `model {name}`, `variant {name}`, `attach {place, peripheral, variant?}`, `detach {place}`, `reset`, `cold-boot`, `power-cycle`); the library's media commands (`media.choose`, …), the product commands `c1600.mount-host-drive`, `c1600.ce1600p-variant` (each a plug change of the library's machine control); the product topics `c1600.lamps` (the tape counter, the floppy lamp) and `c1600.serial-links` (`SharpTopics.hpp`; `roms-missing` is the `StartupPart`'s); the rules of the control state (`SharpControlRules`) and the library's `ControlPart`, first in the one order of `LibraryParts::sessionParts` (see "The machine" below). `SharpAppPartOptions`: `canMountHostFolder` (the Web says no), `uploadFolder` (the Web's uploads folder, where several files of Load Preset… become one folder) |
 | `SharpDebuggerSetup`, `SharpTraceRecorder`, `SharpSymbolReaders` | The library's debugger for the Sharp models: the `DebuggerPart`'s set-up (`cpu` only, the trace session on the core's records, no run-control steps), the trace records into the trace file, the symbols of the Sharp listings |
 | `SharpPrinters` | The CE-150's and the CE-1600P's papers for the library's `PaperPart` |
 | `dap/` | The DAP server (`cu1600::dap`; every native tree, not Emscripten): `DapPart` (a session part: listening, the topic `c1600.dap`, held messages), `DapSession` and `DapSetup.cpp` (the requests, the set-up as operations, the events), its targets, breakpoints and steps on the library's debugger; JSON, framing and `DapTransport`, which a host fills (Qt6: `frontends/qt6/app/debug/DapSocket`; the harness: `serve --dap` on `library/harness/attach/LocalStream`) |
 | `SharpTyping` | Typing on the library's typing engine (`library/typing/`): the typing profile per model (`typingProfile`: 4 + 4 frames, 6 more after SHIFT and KBII on the PC-1600, readiness rules, the characters, the `key` names), the keyboard map per model (`SharpKeyboardMap`), `typingProduct()` for the session's `TypingPart` |
 | `SharpSession` | `makeSharpSession()`: the library's app session with the control part and the part, which the session owns (on the library's `calcu::shell::makeHostSession`: `SharpSessionOptions` is its `HostSessionSetup`; Qt6 with the library's `SettingsPart` over `AppPaths::folders()`, tests, `tools/wasm_smoke`; the Web engine calls the builder itself); a host talks to it through the library's `calcu::sessions::Listener` (Qt6: the Qt6 component set's `SessionHost`) |
-| `SharpControlRules` | The product's side of the library's control state: the place `host-drive` not available where no folder can be mounted, and the product entries `c1600.disk-controls`, `c1600.ce158-printer-panel`, `c1600.host-drive-folder`, `c1600.mount-directory`, `c1600.ce1600p-next-variant`; `SharpAppPart` gives it to `LibraryParts` as the `ControlPart`'s rules (its catalogue and printers, CE-150 and CE-1600P, are `LibraryParts`', from the papers). Everything else of the old `ControlState` is the library's generic entries, from the descriptors (one pin-out per 60-pin place) |
+| `SharpControlRules` | The product's side of the library's control state: the place `host-drive` not available where no folder can be mounted, and the product entries `c1600.disk-controls`, `c1600.ce158-printer-panel`, `c1600.host-drive-folder`, `c1600.host-drive`, `c1600.ce1600p-next-variant`; `SharpAppPart` gives it to `LibraryParts` as the `ControlPart`'s rules (its catalogue and printers, CE-150 and CE-1600P, are `LibraryParts`', from the papers). Every other entry of the control state is the library's generic one, from the descriptors (one pin-out per 60-pin place) |
 | `SharpShellProduct` | What the product gives the library's shell, one source for Qt6 and the Web: `shellProduct()` (name, help address, About texts, variant labels, the product's File items), `faceplateHitMap()` (the hit map of `KeyLayout`, distance 24), `settingsSpec()` (the dialog's sections, the product's Folders labels, Serial ports, Debugger); their Value forms for the page are the library's (`shell/ValueForms`), `faceplateMapValue()` adds the art's size and the LCD layout |
 | `SharpWebPart` | What only the Web page asks for (the page is the React set's shell): `c1600.shell-product`, `c1600.faceplate-map`, the INSPECTOR's requests, Copy Screen's picture, the stream `c1600.printer`; with the CMake option `CALCU_WEB_TEST_AIDS` (not in a release Web build) the Web tests' `c1600.upload` and `c1600.display-text` |
 | `SharpMediaKinds` | The three kinds of medium of the library's `MediaPart`: the battery-backed module (`.module.yaml`), the floppy disk (`.floppy.yaml`, version 2) and the cassette (`.cassette.yaml` with its WAV), their codecs, which module fits which slot; the media part keeps the pickers, Name & Save, `saveas:`, autosave and the saved media |
-| `SharpPresetRules`, `SharpPresetKeys`, `SharpDebugBlock` | The product's part of the library's preset loader: its rules per model (when the machine is idle, what `expect:` reads, what `screenshot:` writes), its keys and sections (`program:`, `host-drive:`, `slot-N-rom:`, `bus-rom:`, `debug:`), and the reader of the `debug:` block (`debugBlockOf`). The bundled presets are the library's preset list from `examples/bundle.yaml` (`SharpAppPart::presetEntries()`, the `preset-list` request); a bundled example is addressed as `examples:<path>` |
+| `SharpPresetRules`, `SharpPresetKeys`, `SharpDebugBlock` | The product's part of the library's preset loader: its rules per model (when the machine is idle, what `expect:` reads, what `screenshot:` writes), its keys and sections (`program:`, `host-drive:`, `slot-N-rom:`, `bus-rom:`, `debug:`), and the reader of the `debug:` block (`debugBlockOf`). The bundled presets are the library's preset list from `examples/bundle.yaml` (`calcu::presets::presetList`, the `preset-list` request); a bundled example is addressed as `examples:<path>` |
 | `SharpProductMachines` | The machines for the library's start, model and variant switches and plug changes |
 | `PacingProfiles`, `AudioSink` | The Sharp pacing profiles (slices of 2 ms, no jitter); the host's audio output and `SoundFeed`, which plays the session's sound messages into it |
 | `Settings`, `AppPaths` | Every settings key with its default (the declaration of `Calc-U-1600.ini`); the save/tapes/bundle folders and by-name save paths |
@@ -76,6 +76,10 @@ Both libraries are built by the product's [`CMakeLists.txt`](../../CMakeLists.tx
 | `SharpLoaderPart` | The loaders in the session: `c1600.file-kind` (what a file is, a WAV's files), `c1600.load-basic`, `c1600.type-basic` (an operation), `c1600.code-plan` (the one plan, asked again as the address is typed), `c1600.load-code` (the load and its advice; an operation with `run`); stateless, each call carries the file. The harness has it too (`c1600 file-kind`, `load-basic`, `type-basic`, `load-code`) |
 | `SharpFileKinds` | Opening a file: a drop, Open With, the file named at the start and Load Preset… send the library's `open` (the `OpenPart` that `SharpAppPart` owns, after the loaders among the parts), and the drag `open-would-take`. The library tells presets (`.pc1500`, `.pc1500a`, `.pc1600`, a `model:` line) and media by their names; `BasicProgramKind` and `MachineCodeKind` take the rest by the loaders' classifier (headerless code only in a `.bin`). A program file opened by a way with a window is the stream topic `c1600.program-opened`, on which the frontend runs its program flow; in the harness it is loaded at once. The limit is 1 MiB for a drop, Open With and the start argument. The library's `opening/StartFile` picks the file named when the Qt6 program starts |
 | `ModuleYamlDump` | The INSPECTOR's Module YAML: each slot's module RAM as an `initial-content:` block |
+| `HarnessProduct`, `SharpHarnessCommands` | The product in the harness `calcu` (`calcu --product c1600`): the library's app session with `SharpAppPart` as the frontends host it, plus `LcdTextPart` and `SerialScripts`; the commands under `c1600` (the loaders, `list-basic`, `inspect`, `cassette`, `serial`, `host-drive`, `call`) ([Harness.md](Harness.md)) |
+| `LcdTextPart`, `SharpDisplayLines` | The display as text with the ROM's own font: the preset steps `expect:`/`not-expect:` and the harness's `display-text` (with the cell under the cursor) |
+| `BasicListing` | `c1600 list-basic`: the program as listing lines, with the model's keyword table |
+| `SerialScripts` | The serial ports of `c1600 serial <port> …`: a feed paced in emulated ticks, a capture file, the report's counts |
 | `Text` | Small string helpers |
 
 ## The machine
@@ -105,14 +109,15 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
   the generic kind `typing-support` (prompt readiness; on the PC-1600 the
   SHIFT and KBII latches).
 - **Peripherals** are `attach`/`detach`/`replace` in the places `slot-1`,
-  `slot-2`, `printer`, `interface`, `host-drive`; a change on a running
+  `slot-2`, `printer`, `interface`, `host-drive` and `bus-rom` (a ROM on
+  the 60-pin connector that only a preset plugs in, any number); a change on a running
   machine reaches the bus at the off point of the power cycle that follows.
   The CE-1600P with the CE-158, or a second printer, is refused with a
   sentence.
 - **What only a Sharp machine has** is a capability: the product kinds
   `c1600.loader-memory`, `c1600.inspector`, `c1600.ce158-printer-port`,
-  `c1600.host-drive-folder`, `c1600.trace-records`,
-  and the adapter kinds
+  `c1600.host-drive-folder`, `c1600.trace-records`, `c1600.routine-call`
+  (the harness's `c1600 call`), and the adapter kinds
   `c1600.tape-deck`, `c1600.floppy-drive`
   (`core/Machine/SharpProductKinds.hpp`); the library's `serial-port`,
   `real-time-clock`, `controls` (the CE-161's write-protect switch) and
@@ -136,9 +141,9 @@ messages: it sends commands and requests, and keeps what the topics send.
 
 1. Open the `SettingsFile`, build `Settings` over it and `AppPaths` (with
    its `HostDirs` and `BundleDirs`), then the session with
-   `makeSharpSession()` (or, like the Web engine, the part and the session
-   by hand: the part's `sessionParts()` in the `AppSessionSetup`, the part
-   in its `owned`), and listen with a `calcu::sessions::Listener`, stating
+   `makeSharpSession()` (or, like the Web engine, the part and the
+   library's `calcu::shell::makeHostSession` with a `HostSessionSetup`), and
+   listen with a `calcu::sessions::Listener`, stating
    the frontend's host services (an audio sink; a folder picker offers
    File ▸ Host Drive…).
 2. Send `start` (the `StartupPart`): the startup model (or the one
@@ -149,7 +154,7 @@ messages: it sends commands and requests, and keeps what the topics send.
    runs the machine at the speed last commanded (`speed {full}` while the
    display is held), or one part of the running operation; the parts do
    their per-call duties (autosave, tape); the topics that changed go out.
-   Repaint from the `display` topic (`displayFrameOf`, `lcd::indicators()`).
+   Repaint from the library's `display` topic (`calcu::sessions::DisplayState`, `lcd::indicators()`).
 4. Send keys as the library's typing commands: a host key as
    `host-key-down` / `host-key-up` with what the host reported (the
    product's keyboard map in the session decides), an on-screen key as
@@ -192,7 +197,7 @@ preset run in parts equals one in one go is a test of the presets
 (`tests/sharp_presets_tests.cpp`).
 
 Writing one: every function that (transitively) runs the machine returns
-`job::Task<T>` and awaits the ones it calls; take parameters by value
+`calcu::sessions::Task<T>` and awaits the ones it calls; take parameters by value
 (except the machine and out-pointers) — a Task starts lazily, after the
 expression that created it.
 
@@ -206,9 +211,3 @@ program loaders' Rust library built for `wasm32-unknown-emscripten`
 (`-fwasm-exceptions`), no threads; there are no host links there (the
 library's `NoHostLink.cpp`). The web client builds the same libraries as the `calcu1600_web`
 target ([Web-Client.md](Web-Client.md)).
-
-## Not in the app layer yet
-
-Nothing of the tools: the harness `calcu` runs the app session with
-`SharpAppPart`. What is left is in
-rows of [TODO.md](../../TODO.md).

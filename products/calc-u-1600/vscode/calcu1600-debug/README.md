@@ -17,7 +17,7 @@ The user manual is the help's Debugger chapter, `products/calc-u-1600/help/07-de
 From the repository root:
 
 ```sh
-tools/install_vscode_extension.sh
+products/calc-u-1600/tools/install_vscode_extension.sh
 ```
 
 The script packages `headless/calcu1600-debug.vsix` and installs it with `code --install-extension`. Reload the VS Code window afterwards, and re-run the script whenever the extension changes. Don't copy or symlink this folder into `~/.vscode/extensions`: current VS Code never loads such extensions.

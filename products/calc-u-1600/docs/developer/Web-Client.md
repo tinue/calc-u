@@ -36,7 +36,7 @@ at the repository root).
 
 | File | What it is |
 |---|---|
-| `bindings.cpp` | The product's factory of the library's app session (`CALCU_WEB_PRODUCT(CalcU1600Host, …)`): the library's `SettingsPart` and `ControlPart` (no host folder in a browser and the uploads folder for Upload Preset…'s files, `SharpAppPartOptions`), `SharpAppPart`, `SharpWebPart` (app layer) and the session; the library's `WorkerHost` translates its messages |
+| `bindings.cpp` | The product's factory of the library's app session (`CALCU_WEB_PRODUCT(CalcU1600Host, …)`): the library's `SettingsPart` and `ControlPart` (no host folder in a browser and the uploads folder for the files of Load Preset…, `SharpAppPartOptions`), `SharpAppPart`, `SharpWebPart` (app layer) and the session; the library's `WorkerHost` translates its messages |
 | `src/CalcU1600.jsx` | The page, put together from the React set's shell: `useCalcuShell` over the library's `useShell()`, `ShellMenuBar`, `ShellControlBar` (the slot picker `ShellSlotPicker` with Name & Save, the disk controls in its `extra`), the shell's dialogs (Saved Media… `ShellSavedMedia`), notices, "Loading…" and "ROMs missing"; the product's data from the request `c1600.shell-product` through the library's `useShellProduct` (`app/SharpShellProduct`: items, labels, the settings spec), the faceplate's hit map and LCD layout from `c1600.faceplate-map {model}` through `useFaceplateMaps`; Load Preset… and the drop through `calcuOpenFiles` and `calcuFileDrop` (a drop of exactly one file); the page's glue is the library's (`library/web/components/useShellProduct.jsx`, `ShellMedia.jsx`; `calcImage`, `sizeCanvas` in `library/web/src/canvas.js`). The loaders: `c1600.file-kind`, `c1600.load-basic`, `c1600.code-plan` (asked again per keystroke in the address dialog), `c1600.load-code`, each carrying the file's bytes (`app/SharpLoaderPart`) |
 | `src/*.jsx`, `src/*.js` | The client, compiled with the library's page side (`library/web/src/`) into one `dist/calc.js` (one global, `CalcU1600`) |
 | `calc.css` | Styles, all under `.calcu-client`, light and dark |
@@ -124,7 +124,7 @@ builds the test build and tests it, then builds `--release`, checks it
   same IDBFS mount as the save folder (the keys of `app/Settings.hpp`, the
   same as Qt6's; the ones the Web has no use for are kept and ignored).
   Nothing is kept in `localStorage`.
-- The save folder (`AppPaths` home `/persist`): saved cards, disks, tapes.
+- The save folder (`AppPaths` home `/persist`): saved modules, disks, cassettes.
   It is an IDBFS mount with `autoPersist`, so every write, rename and
   delete reaches IndexedDB without help. The embedded client and the app
   on one origin share it.
@@ -168,7 +168,7 @@ Things that are only in the Qt app, or that a browser can't do:
   upload): the session refuses a file over 1 MiB, decides what
   it is, imports a medium first and keeps a file that comes while busy; a
   program file comes back as the topic `c1600.program-opened` and runs the
-  flow of Load BASIC Program… or Load Machine Code…. Upload Preset… sends
+  flow of Load BASIC Program… or Load Machine Code…. Load Preset… sends
   its files the same way (way `dialog`; several are one folder in
   `/uploads`, the preset among them opened).
 - **Audio.** The AudioContext starts on the first key or click (a browser

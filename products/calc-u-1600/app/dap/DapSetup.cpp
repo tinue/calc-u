@@ -298,7 +298,7 @@ Task<bool> DapSession::cleanStart(OperationContext& op, std::string* how, std::s
 Task<bool> DapSession::buildAndLoad(OperationContext& op, Value d, bool inSetup, Body* body, std::string* error) {
     if (!checkAttach(d, debug::attach::kProgramKeys, error)) co_return false;
     if (d.find("slot")) {
-        *error = "Bad \"slot\": it was removed: the loader places code by the machine's MODE, the program area TITLE "
+        *error = "Bad \"slot\": not a key of \"program\": the loader places code by the machine's MODE, the program area TITLE "
                  "selects, and the address. Set MODE / TITLE on the calculator first.";
         co_return false;
     }

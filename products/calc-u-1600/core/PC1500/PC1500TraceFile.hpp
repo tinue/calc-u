@@ -20,7 +20,7 @@
 // Z80CpuFrame, the PC-1600's SC7852).
 //
 // Both CPUs' frames land in ONE file (not two), tagged by `cpuId`
-// (CpuFrame/Z80CpuFrame's own field, Core/TraceTypes.hpp) -- safe because
+// (CpuFrame/Z80CpuFrame's own field, core/TraceTypes.hpp) -- safe because
 // PC1600BusArbiter guarantees only one CPU ever executes at a time (no
 // real concurrency to race), and each CPU's own trace ring has an
 // independent internal mutex, so draining both every tick can't deadlock

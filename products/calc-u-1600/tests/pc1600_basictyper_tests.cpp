@@ -1,4 +1,4 @@
-// Headless C++ tests for Core/PC1600/PC1600BasicTyper.cpp -- the PC-1600
+// Headless C++ tests for tests/support/PC1600BasicTyper.cpp -- the PC-1600
 // analog of basictyper_tests.cpp.
 //
 // The PC-1600's native BASIC does not tokenize (a line is stored as plain

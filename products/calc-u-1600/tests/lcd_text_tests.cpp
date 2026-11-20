@@ -1,4 +1,4 @@
-// Headless C++ tests for Core/Display/LcdText and the per-model adapters
+// Headless C++ tests for core/Display/LcdText and the per-model adapters
 // (PC1500LcdText.hpp, PC1600LcdText.hpp). The synthetic tests build a
 // bitmap from a hand-made font; the ROM-gated ones print through the real
 // ROM and read the screen back. ROM-gated tests SKIP (not fail) when

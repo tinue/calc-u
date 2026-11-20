@@ -1,5 +1,5 @@
 // Headless C++ tests for the LH5803 core (a thin
-// subclass of LH5801, see Core/CPU/LH5803/LH5803.hpp) and its standalone
+// subclass of LH5801, see core/CPU/LH5803/LH5803.hpp) and its standalone
 // LH5803Memory bus adapter. Same no-framework, assert-and-tally style as
 // lh5801_tests.cpp -- see that file's header comment.
 //

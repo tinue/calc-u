@@ -53,7 +53,7 @@ env:
 jobs:
   # The repository's root CMake project with Calc-U-1600 only and
   # without Qt: the harness `calcu` (with the product's entry) and the test
-  # programs on top of the calcu_core / calcu_shared libraries from
+  # programs on top of the calcu1600_core / calcu1600_shared libraries from
   # cmake/CalcU.cmake; the help's checks (tools/help, Python 3 of the
   # runner) run among the tests. This job is
   # the only CI run of the core/ + app/ test suite. The packaging jobs below

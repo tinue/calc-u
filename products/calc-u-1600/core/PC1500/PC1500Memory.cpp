@@ -59,22 +59,11 @@ void PC1500Memory::reset() {
     // release physically-held keys.
 }
 
-bool PC1500Memory::inhibitAsserted() const {
-    return m_expansionConnector.inhibitAsserted() || m_systemBus.inhibitAsserted();
-}
-
 const uint8_t* PC1500Memory::resolve(uint16_t addr, bool forWrite) const {
     if (addr >= kRomBase) {
-        // ROM never accepts writes, regardless of INHIBIT -- checked first
-        // so a write doesn't pay for the INHIBIT query below.
+        // ROM never accepts writes. No card drives INHIBIT, so the system
+        // ROM always answers its reads.
         if (forWrite) return nullptr;
-        // A card on either connector can pull INHIBIT low to suppress the
-        // system ROM and substitute its own content there (Expansion-
-        // Connectors.md §2.1/§2.2's INHIBIT pin) -- readME0/peek fall
-        // through to the connectors below when this returns nullptr, so
-        // this is the ROM's whole story here; the connector's own response
-        // (if any) is what actually supplies the byte.
-        if (inhibitAsserted()) return nullptr;
         return &m_rom[addr - kRomBase];
     }
     if (addr >= kUserRamBase && addr < kUserRamBase + m_userRamSize) {
@@ -101,10 +90,9 @@ uint8_t* PC1500Memory::resolve(uint16_t addr, bool forWrite) {
 }
 
 uint8_t PC1500Memory::readOpenBus(uint16_t addr) const {
-    // Called once resolve() has already returned nullptr: either a
-    // module-slot open-bus range (Y0, the variant's open S-range, Y2) or
-    // ROM with INHIBIT asserted -- in both cases, a card on either
-    // connector gets first refusal before we fall back to the open-bus
+    // Called once resolve() has already returned nullptr: a module-slot
+    // open-bus range (Y0, the variant's open S-range, Y2), where a card on
+    // either connector gets first refusal before we fall back to the open-bus
     // 0xFF. Consulted on every access in these ranges, not a memory-map
     // shortcut.
     uint8_t v;

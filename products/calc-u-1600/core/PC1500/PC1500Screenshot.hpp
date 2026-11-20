@@ -6,7 +6,7 @@
 #include "PC1500Machine.hpp"
 
 // The PC-1500/1500A dot matrix (156 x 7) as an LcdBitmap -- see
-// Core/Display/LcdScreenshot.hpp.
+// core/Display/LcdScreenshot.hpp.
 inline LcdBitmap pc1500LcdBitmap(const PC1500Display& disp, bool poweredOn) {
     LcdBitmap bitmap;
     bitmap.cols = PC1500Display::kCols;

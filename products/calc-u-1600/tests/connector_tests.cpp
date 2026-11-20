@@ -1,5 +1,5 @@
 // Headless C++ tests for the connector layer
-// (Core/Connector/ExpansionConnector.hpp, SystemBus.hpp, ExpansionCard.hpp,
+// (core/Connector/ExpansionConnector.hpp, SystemBus.hpp, ExpansionCard.hpp,
 // SystemBusCard.hpp).
 // Same no-framework, assert-and-tally style as lh5801_tests.cpp -- see that
 // file's header comment. Exercises PC1500Memory's dispatch into both
@@ -30,13 +30,13 @@ namespace {
 // help/09-module-definitions.md §4's AND/OR addressing model) without
 // a new subclass per test.
 template <class Card, class Pins>
-class StubCardT : public Card, public InhibitSource {
+class StubCardT : public Card {
 public:
     using ReadFn = std::function<bool(const Pins&, uint8_t&)>;
     using WriteFn = std::function<bool(const Pins&, uint8_t)>;
 
-    explicit StubCardT(ReadFn read, WriteFn write = nullptr, bool inhibit = false)
-        : m_read(std::move(read)), m_write(std::move(write)), m_inhibit(inhibit) {}
+    explicit StubCardT(ReadFn read, WriteFn write = nullptr)
+        : m_read(std::move(read)), m_write(std::move(write)) {}
 
     bool respondsToRead(const Pins& pins, uint8_t& outValue) const override {
         return m_read && m_read(pins, outValue);
@@ -44,12 +44,10 @@ public:
     WriteResult respondsToWrite(const Pins& pins, uint8_t value) override {
         return m_write && m_write(pins, value) ? WriteResult::taken() : WriteResult::ignored();
     }
-    bool assertsInhibit() const override { return m_inhibit; }
 
 private:
     ReadFn m_read;
     WriteFn m_write;
-    bool m_inhibit;
 };
 
 using StubCard = StubCardT<ExpansionCard, PinState>;   // 40-pin
@@ -58,14 +56,14 @@ using BusStub = StubCardT<SystemBusCard, SystemBusPins>; // 60-pin
 // A read-only stub that returns `value` whenever `predicate` matches --
 // covers the common case (most tests below don't care about writes).
 template <class Stub = StubCard, class Predicate>
-Stub makeReadStub(uint8_t value, Predicate predicate, bool inhibit = false) {
+Stub makeReadStub(uint8_t value, Predicate predicate) {
     return Stub(
         [value, predicate](const auto& pins, uint8_t& out) -> bool {
             if (!predicate(pins)) return false;
             out = value;
             return true;
         },
-        nullptr, inhibit);
+        nullptr);
 }
 
 TEST(test_regression_no_card_attached) {
@@ -76,7 +74,7 @@ TEST(test_regression_no_card_attached) {
     CHECK(machine.memory().readME0(0x0000) == 0xFF); // Y0, no card
     CHECK(machine.memory().readME0(0x8000) == 0xFF); // Y2, no card
     CHECK(machine.memory().readME0(0x5800) == 0xFF); // S3, no card (PC-1500A open range)
-    CHECK(machine.memory().readME0(0xC000) == 0xFF); // ROM, powers up 0xFF, no INHIBIT
+    CHECK(machine.memory().readME0(0xC000) == 0xFF); // ROM, powers up 0xFF
 }
 
 TEST(test_expansion_connector_y0_subrange_dispatch) {
@@ -133,27 +131,6 @@ TEST(test_expansion_connector_pu_pv_gating) {
 
     machine.memory().updatePUPV(true, true);
     CHECK(machine.memory().readME0(0x8000) == 0xFF); // PV=1 no longer matches the card's gate
-}
-
-TEST(test_inhibit_suppresses_rom) {
-    PC1500Machine machine(PC1500Variant::PC1500A);
-    std::vector<uint8_t> rom(0x4000, 0xAB);
-    CHECK(machine.memory().loadROM(rom.data(), rom.size()));
-    CHECK(machine.memory().readME0(0xC000) == 0xAB); // plain ROM read, no card at all
-
-    // A card that asserts INHIBIT but doesn't itself respond: ROM must be
-    // suppressed (open bus), not silently left readable.
-    StubCard silentInhibit = StubCard(nullptr, nullptr, /*inhibit=*/true);
-    machine.expansionConnector().attach(&silentInhibit);
-    CHECK(machine.memory().readME0(0xC000) == 0xFF);
-
-    // A card that asserts INHIBIT and substitutes its own byte.
-    StubCard replacingInhibit = makeReadStub(0x77, [](const PinState& p) { return p.address == 0xC000; }, /*inhibit=*/true);
-    machine.expansionConnector().attach(&replacingInhibit);
-    CHECK(machine.memory().readME0(0xC000) == 0x77);
-
-    machine.expansionConnector().detach();
-    CHECK(machine.memory().readME0(0xC000) == 0xAB); // ROM restored once nothing asserts INHIBIT
 }
 
 TEST(test_systembus_me1_access) {
@@ -228,26 +205,25 @@ TEST(test_card_chain_shell) {
     CHECK(!chain.write(pins, 0x12).claimed); // nobody claims -> ignored
 
     StubCard first = makeReadStub(0x11, [](const PinState&) { return true; });
-    StubCard second = makeReadStub(0x22, [](const PinState&) { return true; }, /*inhibit=*/true);
+    StubCard second = makeReadStub(0x22, [](const PinState&) { return true; });
     chain.attach(&first);
     chain.attach(&first); // no duplicate
     chain.attach(&second);
     CHECK(chain.cards().size() == 2);
     CHECK(chain.read(pins, v) && v == 0x11); // first responder wins
-    CHECK(chain.inhibitAsserted());          // only `second` declared InhibitSource
 
     chain.detach(&second);
-    CHECK(!chain.inhibitAsserted());         // its inhibit entry went with it
+    CHECK(chain.cards().size() == 1 && chain.front() == &first);
 
     StubCard writer(nullptr, [](const PinState&, uint8_t) { return true; });
     chain.attach(&writer);
     CHECK(chain.write(pins, 0x34).stored);   // `first` ignores writes, `writer` takes it
 
-    // Chain-of-one form: replace() leaves exactly the new card, inhibit included.
+    // Chain-of-one form: replace() leaves exactly the new card.
     chain.replace(&second);
-    CHECK(chain.cards().size() == 1 && chain.front() == &second && chain.inhibitAsserted());
+    CHECK(chain.cards().size() == 1 && chain.front() == &second);
     chain.replace(nullptr);
-    CHECK(chain.empty() && !chain.inhibitAsserted());
+    CHECK(chain.empty());
 }
 
 TEST(test_systembus_contacts_pc1500) {

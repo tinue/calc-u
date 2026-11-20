@@ -1,4 +1,4 @@
-// Headless C++ tests for Core/Connector/BatteryCardInstance.hpp -- the
+// Headless C++ tests for core/Connector/BatteryCardInstance.hpp -- the
 // addressed-hex writer + battery-card instance splice logic used by the
 // Qt6 prototype's "Name & Save" / autosave flow. Same no-framework,
 // assert-and-tally style as memory_card_tests.cpp.

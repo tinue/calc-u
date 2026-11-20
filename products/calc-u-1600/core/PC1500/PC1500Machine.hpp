@@ -156,7 +156,7 @@ public:
     const PC1500Memory& memory() const { return m_memory; }
 
     /// Runs `view(*this)` and returns its result: one consistent snapshot
-    /// for the inspector (Core/Debug/Inspect), which reads through the const
+    /// for the inspector (core/Debug/Inspect), which reads through the const
     /// accessors only.
     template <class F>
     auto debugInspect(F&& view) const {

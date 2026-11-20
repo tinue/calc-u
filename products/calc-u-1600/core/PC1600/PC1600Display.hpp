@@ -107,7 +107,7 @@ public:
     /// Recomputes every `statusLine()` flag from IC3's own column 63,
     /// pages 4/6/7 (rotated by IC3's own `addressStartLine`, same as the
     /// graphics-area scroll) per the TRM's SMBLSET bit map -- see
-    /// `Core/Display/StatusLine.hpp`'s own class comment for the full
+    /// `core/Display/StatusLine.hpp`'s own class comment for the full
     /// derivation. Called after every write that could have
     /// touched that cell (`writeIO()`, both for IC3's own data/command
     /// ports and its `addressStartLine` register, since a scroll rotates
@@ -122,7 +122,7 @@ public:
     /// PC-1600 (2026-10-03; no source documents it, and the ROM has no code
     /// for it): an LH5803 write to 7600H-764DH / 7700H-774DH shows at once
     /// on the LCD's bottom text line, in the PC-1500 layout
-    /// (Core/Display/Pc1500DisplayRam.hpp) -- the whole column is redrawn
+    /// (core/Display/Pc1500DisplayRam.hpp) -- the whole column is redrawn
     /// from both bytes of its pair, replacing what was there, and it lands
     /// on the line that is at the bottom *now*, whatever the scroll. A write
     /// to 764EH / 764FH redraws status set 00H / 01H the same way (that is

@@ -1,5 +1,5 @@
 # PC-1500 memory test with the CE-155 loaded through the universal
-# software-defined module (Core/Connector/SoftwareDefinedCard.hpp) from
+# software-defined module (core/Connector/SoftwareDefinedCard.hpp) from
 # its module definition file.
 #  X=2 (2 passes)
 #  CALL &38C5,X   -> X holds the test result when finished

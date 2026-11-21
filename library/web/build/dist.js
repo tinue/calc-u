@@ -185,6 +185,18 @@ function stampServiceWorker(dist, { id, core }) {
   return unique;
 }
 
+// The build ID of a product (tools/build-id.cmake): the commit, pre- while
+// its CHANGELOG entry is open, -dirty with changes not committed; the About
+// and the Settings' version line show it in parentheses.
+function buildId(productDir) {
+  try {
+    return execFileSync("cmake", [`-DPRODUCT=${productDir}`, "-P", path.join(WEB, "..", "..", "tools", "build-id.cmake")],
+                        { encoding: "utf8" }).trim() || "unknown";
+  } catch (_) {
+    return "unknown";
+  }
+}
+
 function gitCommit(dir) {
   try {
     const git = (...args) => execFileSync("git", ["-C", dir, ...args], { encoding: "utf8" }).trim();
@@ -276,11 +288,11 @@ function copyPresets(dist, bundleFile) {
 // A product's build, after its engine and its static files are in dist/:
 // calc.css (the product's stylesheet and the component set's, every
 // selector scoped), calc.js (one closure: the library, the component set and
-// `sources`), app/app.js with `component`, the library's app files and
+// `sources`, with __CALC_VERSION__ and __CALC_BUILD__ stamped), app/app.js with `component`, the library's app files and
 // worker, the presets of `bundle` (a bundle.yaml; none without it),
 // files.json, the service worker stamped with `swId` and `core` and
 // MANIFEST.json `name`. Returns what it wrote.
-function buildProduct({ dist, name, version, css, sources, replace, banner, component, props, installSentence, bundle, swId, core }) {
+function buildProduct({ dist, name, version, build, css, sources, replace, banner, component, props, installSentence, bundle, swId, core }) {
   const cssText = [css, ...COMPONENT_CSS].map(read).join("\n");
   const outside = checkScopedCss(cssText);
   if (outside.length) throw new Error(`calc.css: selectors outside .calcu-client: ${outside.join(", ")}`);
@@ -289,7 +301,7 @@ function buildProduct({ dist, name, version, css, sources, replace, banner, comp
     vendor: VENDOR,
     librarySources: [...LIBRARY_SOURCES, ...COMPONENT_SOURCES],
     productSources: sources,
-    replace: { __CALC_VERSION__: version, ...replace },
+    replace: { __CALC_VERSION__: version, __CALC_BUILD__: build || "unknown", ...replace },
     banner,
     out: path.join(dist, "calc.js"),
   });
@@ -307,5 +319,5 @@ function buildProduct({ dist, name, version, css, sources, replace, banner, comp
 
 module.exports = {
   VENDOR, LIBRARY_SOURCES, COMPONENT_SOURCES, COMPONENT_CSS, WORKER_SOURCES, walk, compileCalcJs, compileApp, copyAppFiles, writeLibraryWorker, writeProductWorker,
-  writeFilesList, stampServiceWorker, writeManifest, checkScopedCss, releaseVersion, buildProduct,
+  writeFilesList, stampServiceWorker, writeManifest, checkScopedCss, releaseVersion, buildId, buildProduct,
 };

@@ -1,6 +1,7 @@
 # Changelog
 
 ## [0.9.0] - work in progress
+- **About** The About shows the version and in parentheses the commit it was built from, also on the web: `pre-` before it for a pre-release, `-dirty` after it for a build with changes not committed.
 
 ### New
 

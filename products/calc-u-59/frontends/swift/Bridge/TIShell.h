@@ -203,6 +203,11 @@ extern NSString *const TIShellActionQuit;
 @property (nonatomic, readonly) NSInteger pointerKey;
 
 /// The About texts and links of every frontend (TIShellProduct).
+/// The version with the build number (3.0.0-0) and the build ID
+/// (tools/build-id.cmake: the commit, pre- while the CHANGELOG entry is
+/// open, -dirty), as the About and the Settings show them.
+@property (class, nonatomic, readonly) NSString *versionText;
+@property (class, nonatomic, readonly) NSString *buildId;
 @property (class, nonatomic, readonly) NSArray<NSString *> *aboutLines;
 @property (class, nonatomic, readonly) NSArray<NSArray<NSString *> *> *aboutLinks;   ///< [label, address]
 @property (class, nonatomic, readonly) NSString *helpURL;

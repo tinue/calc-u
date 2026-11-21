@@ -29,6 +29,7 @@ const FACE_MIN_AUTO = 120;  // layout="auto": whatever a landscape phone's heigh
 const SPLITTERS = 1 + 5;  // the line after the calculator, the divider before the debugger
 const MENU_HEIGHT = 26;
 const CALC_VERSION = "__CALC_VERSION__";
+const CALC_BUILD = "__CALC_BUILD__";   // tools/build-id.cmake
 
 /// The artwork's width that `height` leaves room for, and the column height for an artwork width.
 const faceWidthFor = (height) => (height - BAR_HEIGHT - 2 * FACE_PADDING) * CANVAS_ASPECT;
@@ -252,8 +253,8 @@ function CalcU59(props) {
   // The product's shell data per layout (the settings differ).
   // No Copy Screen.
   const { product } = useShellProduct(shell, {
-    request: "c59.shell-product", args: { layout: portrait ? "portrait" : "wide", version: CALC_VERSION },
-    fallback: C59_NO_PRODUCT, version: CALC_VERSION, build: "", copyScreen: null, openFiles,
+    request: "c59.shell-product", args: { layout: portrait ? "portrait" : "wide", version: CALC_VERSION, build: CALC_BUILD },
+    fallback: C59_NO_PRODUCT, version: CALC_VERSION, build: CALC_BUILD, copyScreen: null, openFiles,
     acts: { "arm-card": () => setCardDialog("arm"), "arm-fresh-card": () => setCardDialog("fresh") },
   });
   const traits = React.useMemo(() => traitsFor(portrait, settings), [portrait, settings]);

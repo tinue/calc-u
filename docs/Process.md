@@ -44,6 +44,23 @@ Calc-U-59 3.1.0 after 3.0.0; Calc-U-1600 works the same with
    the pre-release into the release, never marked "Latest".
 6. Start the next version with step 1 (`--next`, 3.2.0).
 
+### What a build shows
+
+The About and the version line of the Settings show
+`Version <version>[-<build number>] (<build ID>)`, in every frontend of
+both products. The build number is the Swift app's
+(`CURRENT_PROJECT_VERSION`; 3.0.0-0); Qt and the web have none. The build
+ID comes from `tools/build-id.cmake`, at each build:
+
+| Build | Build ID |
+|---|---|
+| Release candidate, and so the release | `a015f34`: the commit |
+| Pre-release, and a local build before the release | `pre-a015f34`: the product's CHANGELOG entry is still "work in progress" |
+| A build with changes not committed | `pre-a015f34-dirty` |
+
+`--rc` dates the entry before it builds, so the build that becomes the
+release has no `pre-`; `--release` builds nothing.
+
 ### A patch of a released version
 
 A fix for 3.0.0 while 3.1.0 is in progress goes on a maintenance branch

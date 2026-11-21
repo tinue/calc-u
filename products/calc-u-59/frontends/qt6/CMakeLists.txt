@@ -41,19 +41,7 @@ foreach(line ${VERSION_LINES})
   endif()
 endforeach()
 
-# git describe: a short build id for bug reports ("unknown" without git).
-set(APP_BUILD_ID "unknown")
-find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS ${REPO_ROOT}/../../.git)  # the source repository's root
-  execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
-                  WORKING_DIRECTORY ${REPO_ROOT}
-                  OUTPUT_VARIABLE APP_BUILD_ID_RAW OUTPUT_STRIP_TRAILING_WHITESPACE
-                  RESULT_VARIABLE GIT_RESULT ERROR_QUIET)
-  if(GIT_RESULT EQUAL 0 AND NOT APP_BUILD_ID_RAW STREQUAL "")
-    set(APP_BUILD_ID ${APP_BUILD_ID_RAW})
-  endif()
-endif()
-message(STATUS "Calc-U-59 (Qt) version ${APP_VERSION} build ${APP_BUILD_ID}")
+message(STATUS "Calc-U-59 (Qt) version ${APP_VERSION}")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/app/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h @ONLY)
 file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.iss
@@ -137,6 +125,8 @@ qt_add_resources(CalcU59Qt "artwork" PREFIX "/img" FILES ${ARTWORK})
 set(CALCU59_QT_ARTWORK ${ARTWORK})
 
 target_include_directories(CalcU59Qt PRIVATE ${CORE_ROOT} ${SHARED_ROOT} app ${CMAKE_CURRENT_BINARY_DIR}/generated)
+# generated/BuildId.h: the build ID (tools/build-id.cmake), at each build.
+calcu_build_id_header(CalcU59QtBuildId ${REPO_ROOT} CalcU59Qt)
 # The machine interface: the core implements calcu::machine.
 target_link_libraries(CalcU59Qt PRIVATE Qt6::Widgets calcu_library)
 # The Qt6 component set: the paper panel, the run-control buttons and the
@@ -240,6 +230,7 @@ if(CALCU_TESTS)
   qt_add_resources(CalcU59QtTests "artwork" PREFIX "/img" FILES ${CALCU59_QT_ARTWORK})
   set_target_properties(CalcU59QtTests PROPERTIES AUTOMOC ON)
   calcu_qt6_moc_compat(CalcU59QtTests)
+  add_dependencies(CalcU59QtTests CalcU59QtBuildId)
   target_include_directories(CalcU59QtTests PRIVATE ${CORE_ROOT} ${SHARED_ROOT} app tests ${CMAKE_CURRENT_BINARY_DIR}/generated
                              ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/testing)
   target_link_libraries(CalcU59QtTests PRIVATE Qt6::Widgets calcu_library calcu_qt6 calcu_warnings)

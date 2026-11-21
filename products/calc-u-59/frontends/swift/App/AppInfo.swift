@@ -5,22 +5,6 @@ import AppKit
 #endif
 
 enum AppInfo {
-    static var marketingVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
-    }
-
-    static var buildNumber: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
-    }
-
-    static var versionDisplayString: String {
-        "Version: \(marketingVersion) (\(buildNumber))"
-    }
-
-    static var versionNumberString: String {
-        "\(marketingVersion) (\(buildNumber))"
-    }
-
     // The About texts and links of every frontend (app/TIShellProduct).
     static var subtitle: String { TIShell.aboutLines.first ?? "" }
     static var aboutSummary: String { TIShell.aboutLines.dropFirst().joined(separator: "\n") }
@@ -33,7 +17,9 @@ enum AppInfo {
 extension AppInfo {
     static var aboutPanelOptions: [NSApplication.AboutPanelOptionKey: Any] {
         [
-            .version: "\(marketingVersion) (\(buildNumber))",
+            // The panel shows "Version <applicationVersion> (<version>)".
+            .applicationVersion: TIShell.versionText,
+            .version: TIShell.buildId,
             .credits: aboutCredits
         ]
     }

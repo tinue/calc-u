@@ -25,36 +25,14 @@ set(CMAKE_AUTOUIC OFF)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Network)
 qt_standard_project_setup()
 
-# ---- App version / build id (About dialog, macOS bundle Info.plist) ----
+# ---- App version (About dialog, macOS bundle Info.plist) ----
 # Single source of truth for the version number -- both the generated
 # Version.h below and the MACOSX_BUNDLE_*VERSION* properties further down
 # reference this instead of each hardcoding "0.1.0" separately, as does
 # the Windows installer (generated Version.iss below).
 set(APP_VERSION "0.9.0")
 
-# git describe gives a short, human-meaningful build id (tag or short hash,
-# +"-dirty" if the tree has local changes) for bug reports. Falls back to
-# "unknown" when building from a source tree with no .git (e.g. a tarball
-# produced by `git archive`) or when git itself isn't available -- this is
-# a graceful degradation, not a build failure. Captured once at CMake
-# configure time (not re-derived on every rebuild); re-run cmake to refresh
-# it after checking out a different commit.
-set(APP_BUILD_ID "unknown")
-find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../../../.git)
-  execute_process(
-    COMMAND ${GIT_EXECUTABLE} describe --always --dirty
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    OUTPUT_VARIABLE APP_BUILD_ID_RAW
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    RESULT_VARIABLE GIT_DESCRIBE_RESULT
-    ERROR_QUIET
-  )
-  if(GIT_DESCRIBE_RESULT EQUAL 0 AND NOT APP_BUILD_ID_RAW STREQUAL "")
-    set(APP_BUILD_ID ${APP_BUILD_ID_RAW})
-  endif()
-endif()
-message(STATUS "Calc-U-1600 version ${APP_VERSION} build ${APP_BUILD_ID}")
+message(STATUS "Calc-U-1600 version ${APP_VERSION}")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/app/Version.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h @ONLY)
@@ -114,6 +92,8 @@ if(WIN32)
 endif()
 
 target_include_directories(CalcU1600Qt PRIVATE app ${CMAKE_CURRENT_BINARY_DIR}/generated)
+# generated/BuildId.h: the build ID (tools/build-id.cmake), at each build.
+calcu_build_id_header(CalcU1600QtBuildId ${CMAKE_CURRENT_SOURCE_DIR}/../.. CalcU1600Qt)
 target_link_libraries(CalcU1600Qt PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Network)
 # Harness attach in development and test builds (CALCU_ATTACH: POSIX trees
 # with the tests), and its clients in the same process: the screenshot
@@ -304,6 +284,7 @@ if(CALCU_TESTS)
   endif()
   set_target_properties(CalcU1600QtTests PROPERTIES AUTOMOC ON AUTORCC ON)
   calcu_qt6_moc_compat(CalcU1600QtTests)
+  add_dependencies(CalcU1600QtTests CalcU1600QtBuildId)
   target_include_directories(CalcU1600QtTests PRIVATE app tests ${CMAKE_CURRENT_BINARY_DIR}/generated
                              ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/testing)
   target_link_libraries(CalcU1600QtTests PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Network calcu1600_shared calcu_qt6)

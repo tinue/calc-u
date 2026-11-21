@@ -1,6 +1,7 @@
 # Changelog
 
 ## [3.0.0] - work in progress
+- **About** The About and the version line of the Settings show the version, on the Mac and iOS with the build number (3.0.0-0), and in parentheses the commit it was built from: `pre-` before it for a pre-release, `-dirty` after it for a build with changes not committed.
 - **Files from 2.3.0** This release does not read the files 2.3.0 wrote. A preset (`.ti59`, `.ti58`, `.ti58c`) or an ASM overlay written for 2.3.0 is refused as a file that cannot be read. Magnetic card files (`.U59`, every layout) and the TI-58C's `ti58c.mem` are no files of this release: nothing reads, lists or changes them. You convert all of them by hand, as the User Guide's "Media files", "From 2.3.0", describes (presets line by line in "Preset sections", "From a 2.3.0 file"). The settings start at their defaults; those of 2.3.0 are not carried over.
 - **Presets** The preset format is new: YAML-shaped, with `format-version: 2`, and key IDs such as `- key: Pgm` instead of matrix codes. A preset with any error is refused whole, and the notice shows its first error with its line.
 - **Presets** A preset always builds its calculator from a cold boot, and it names its model. It no longer adds to the running calculator, and it no longer keeps a module or printer it does not name. An upgraded 2.3.0 file names the model of its extension, so `diag.ti58` now switches to a TI-58.

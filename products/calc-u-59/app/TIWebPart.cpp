@@ -137,10 +137,12 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     // adds its acts and its version.
     req("c59.shell-product", [](const Value& a) {
         const std::string version = textArg(a, "version");
+        const std::string build = textArg(a, "build");
         const ShellFrontend f = textArg(a, "layout") == "portrait" ? ShellFrontend::WebPortrait : ShellFrontend::WebWide;
+        const calcu::shell::ShellProduct p = shellProduct(version, build);
         return answer("c59.shell-product",
-                      Value::object({{"product", calcu::shell::toValue(shellProduct(version, ""))},
-                                     {"settingsSpec", calcu::shell::toValue(settingsSpec(f, "Version " + version))}}));
+                      Value::object({{"product", calcu::shell::toValue(p)},
+                                     {"settingsSpec", calcu::shell::toValue(settingsSpec(f, calcu::shell::about(p).version))}}));
     });
     // The faceplate of a model: the hit map (base image pixels), the
     // card area and the canvas (faceplateMapValue), and what the page draws

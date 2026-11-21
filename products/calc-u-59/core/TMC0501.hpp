@@ -245,6 +245,14 @@ public:
     /// (FrameSampler, ~60 Hz on the app session's thread).
     DisplaySnapshot takeDisplay();
 
+    /// A long call (a pause running on until it lands) integrates seconds of
+    /// display, which no frame shows: what ran so far becomes the window
+    /// before, and a new one starts. joinDisplayWindows() at the end of the
+    /// call makes them one again, so takeDisplay() reports the last one or
+    /// two windows, as a frame polled at that instant does.
+    void startDisplayWindow();
+    void joinDisplayWindows();
+
     uint16_t pc()       const { return addr; }
     uint16_t cpuFlags() const { return flags; }
 
@@ -435,6 +443,12 @@ private:
 
     uint32_t m_cSteps{0};          // Steps (IDLE or non-IDLE) where fA≠0 since last takeDisplay().
     uint32_t m_pollSteps{0};       // Weighted step count since last takeDisplay() (non-IDLE=1, IDLE=4).
+    // The window before the current one (startDisplayWindow); empty between
+    // calls, so it is not part of the state.
+    uint32_t m_prevDigitLitTicks[12]{};
+    uint32_t m_prevDpLitTicks[12]{};
+    uint32_t m_prevCSteps{0};
+    uint32_t m_prevPollSteps{0};
     uint64_t m_elapsedTicks{0};    // Weighted step count since last reset(); never drained (see elapsedTicks()).
 
     // ── Keyboard matrix ───────────────────────────────────────────────

@@ -272,6 +272,24 @@ DisplaySnapshot TMC0501::takeDisplay() {
     return result;
 }
 
+void TMC0501::startDisplayWindow() {
+    for (int i = 0; i < 12; ++i) {
+        m_prevDigitLitTicks[i] = std::exchange(m_digitLitTicks[i], 0u);
+        m_prevDpLitTicks[i] = std::exchange(m_dpLitTicks[i], 0u);
+    }
+    m_prevCSteps = std::exchange(m_cSteps, 0u);
+    m_prevPollSteps = std::exchange(m_pollSteps, 0u);
+}
+
+void TMC0501::joinDisplayWindows() {
+    for (int i = 0; i < 12; ++i) {
+        m_digitLitTicks[i] += std::exchange(m_prevDigitLitTicks[i], 0u);
+        m_dpLitTicks[i] += std::exchange(m_prevDpLitTicks[i], 0u);
+    }
+    m_cSteps += std::exchange(m_prevCSteps, 0u);
+    m_pollSteps += std::exchange(m_prevPollSteps, 0u);
+}
+
 // ── BCD digit-serial ALU ──────────────────────────────────────────────────────
 //
 // Iterates over all 16 digit positions, propagating BCD carry.

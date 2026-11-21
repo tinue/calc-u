@@ -41,11 +41,6 @@ and `docs/Process.md` until the closing check at its end has passed.
   file), `test_card_read_by_its_corner` and
   `test_fresh_card_written_and_listed` (no name field in the card dialog).
   The iOS suite passes.
-- **Glyphs screenshot** (`iphone-06-display-glyphs`): the frozen display
-  still shows uneven levels (a dim extra "-" at position 6), also with the
-  frame sampler keeping a frozen display's levels; the running display is
-  even. The App Store picture shows the uneven levels until this is
-  understood.
 - **Help pictures**: the pictures to retake are listed by name in
   `docs/help-site.md`, "Help content" (Calc-U-59: six, from the Swift app;
   Calc-U-1600: ten, `tools/make_screenshots.sh <chapter>` from iTerm2).

@@ -54,6 +54,21 @@ and `docs/Process.md` until the closing check at its end has passed.
   { i, dots in … }`), so that no row reads the array by index; and a test
   that cuts a printed paper in dot mode. Seen: the paper cut by hand, then
   a preset started that prints.
+- **Next to fix: Load Preset… offers presets only, in every frontend.**
+  Like every dedicated item (Load BASIC… and the others), it filters for
+  its own kind; only a drop, Open With and a file named at the start take
+  any file and let the session's `open` find out what it is. Today the Qt
+  frontends of both products filter (the products' `presetFilter`); the
+  Swift app offers the preset types and any file (`presetDialogTypes` and
+  `allowsOtherFileTypes` in `frontends/swift/App/Views/CalculatorView.swift`,
+  the panel's message, the iOS file importer), the Calc-U-59 Web sets no
+  `presetAccept` (any file), and the Calc-U-1600 Web adds
+  `.bas,.bbin,.bin,.wav,.yaml` and passes the picked files through `open`
+  as one folder, so that a preset can bring the media it names (the page
+  has no folder of its own): settle how a Web preset gets its media when
+  the dialog takes presets only. The help follows: `library/help/04-media.md`
+  ("offers presets and all files"); the Calc-U-59 tutorial and FAQ's
+  greyed-out `.ti59.txt` then hold on every platform.
 
 - **Mac UI tests** (`CalcU59UITestsMac`): six of 21 fail, none of them
   from a change of 2026-11-21 (two checked on the `main` before it):
@@ -74,9 +89,6 @@ and `docs/Process.md` until the closing check at its end has passed.
   sense-bound ones. The user decides.
 - **Documentation sweep, for the user to decide** (the documents were
   left as they are):
-  - Load Preset's dialog on Windows and Linux offers presets only; the
-    help says it offers all files (Swift and Web do), and the Calc-U-59
-    tutorial and FAQ describe a greyed-out `.ti59.txt`.
   - Swift Settings: no Choose… for a startup preset, no Reset for the
     trace folder (the shared help describes both).
   - Calc-U-1600: the Debug server (DAP) row shows `true`/`false`; the

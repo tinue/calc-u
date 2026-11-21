@@ -101,9 +101,9 @@ function TapeControls({ shell, entry }) {
 }
 
 // The CE-1600F's disk controls:
-// shown on every PC-1600 by the product entry `c1600.disk-controls`, usable
-// only while the CE-1600P is plugged in (its reason the tooltip) and no
-// operation runs (the media place's insert).
+// shown while a PC-1600 has the CE-1600P (the product entry
+// `c1600.disk-controls`), last on the bar; usable while no operation runs
+// (the media place's insert, its reason the tooltip).
 function DiskControls({ s }) {
   const bar = React.useContext(C1600Bar);
   const cs = s.inputs.controlState;
@@ -111,7 +111,7 @@ function DiskControls({ s }) {
   if (!entry || !entry.shown) return null;
   const floppy = calcuShellList(cs, "mediaPlaces").find((m) => calcuShellText(m, "id") === "floppy");
   const insert = floppy ? calcuShellAvailability(floppy, "insert") : { now: true, reason: "" };
-  const ok = entry.available ? insert : { now: false, reason: entry.reason || "" };
+  const ok = insert;
   const place = ok.now ? calcuMediaPlace(s.inputs.media, "floppy") : null;
   const side = place && place.holds && place.holds.side ? 1 : 0;
   return (

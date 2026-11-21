@@ -42,11 +42,9 @@ void SharpControlRules::productEntries(const Machine& m, std::vector<calcu::cont
     const bool pc1600 = m.model().value == sharp::kPC1600;
     const std::string printer = pluggedAt(m, sharp::kPrinter);
     const bool ce1600p = printer == sharp::kCE1600P;
-    // The CE-1600F is in the CE-1600P's box: its controls stay on every
-    // PC-1600's bar so the bar does not jump.
-    sessions::Value::Object disk{{"shown", sessions::Value(pc1600)}, {"available", sessions::Value(pc1600 && ce1600p)}};
-    if (!(pc1600 && ce1600p)) disk.push_back({"reason", sessions::Value(kDiskInCe1600p)});
-    out.push_back(entry(kDiskControlsEntry, sessions::Value(std::move(disk))));
+    // The CE-1600F is in the CE-1600P's box: without it there is no drive,
+    // so no disk controls (they stand last on the bar; nothing moves).
+    out.push_back(entry(kDiskControlsEntry, sessions::Value::object({{"shown", pc1600 && ce1600p}})));
     out.push_back(entry(kCe158PrinterPanelEntry,
                         sessions::Value::object({{"shown", pluggedAt(m, sharp::kInterface) == sharp::kCE158}})));
     // File ▸ Host Drive… and Unmount (the place's owner

@@ -17,14 +17,13 @@
 namespace cu1600 {
 
 // The product entries, each a value payload of the same kind.
-inline constexpr const char* kDiskControlsEntry = "c1600.disk-controls";              // {shown, available, reason}
+inline constexpr const char* kDiskControlsEntry = "c1600.disk-controls";              // {shown}
 inline constexpr const char* kCe158PrinterPanelEntry = "c1600.ce158-printer-panel";   // {shown}
 inline constexpr const char* kHostDriveFolderEntry = "c1600.host-drive-folder";       // {folder ("" none), available, reason}: Unmount
 inline constexpr const char* kHostDriveEntry = "c1600.host-drive";                   // {available, reason}: Host Drive…
 inline constexpr const char* kCe1600pNextVariantEntry = "c1600.ce1600p-next-variant"; // {variant}, while unplugged
 
 inline constexpr const char* kNoHostFolderHere = "A host folder cannot be mounted here.";
-inline constexpr const char* kDiskInCe1600p = "The disk drive is in the CE-1600P.";
 inline constexpr const char* kHostDriveIsPc1600s = "The host drive is the PC-1600's.";
 inline constexpr const char* kNoFolderMounted = "No folder is mounted.";
 

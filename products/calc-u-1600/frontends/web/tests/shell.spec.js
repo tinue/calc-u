@@ -82,19 +82,20 @@ test('the control bar per model', async ({ page }) => {
   await expect(page.locator(c('bar-place-printer'))).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
   await expect(page.locator(c('bar-media-cassette-recorder'))).toBeVisible();
   // PC-1600: "1:" and "2:", a printer picker with None, CE-150, CE-1600P,
-  // the CE-158's button, the disk controls disabled with the reason.
+  // the CE-158's button, no disk controls without the CE-1600P.
   await h.pickModel(page, 'PC-1600');
   await expect(page.locator(`${c('bar-slot-slot-1')} .calcu-shell-slot-number`)).toHaveText('1:');
   await expect(page.locator(`${c('bar-slot-slot-2')} .calcu-shell-slot-number`)).toHaveText('2:');
   await expect(page.locator(`${c('bar-place-printer')} option`)).toHaveText(['None', 'CE-150', 'CE-1600P']);
   await expect(page.locator(c('bar-place-interface'))).toHaveText('CE-158');
-  const fieldsetDisabled = (n) => page.locator(c(n)).evaluate((e) => e.disabled);
-  expect(await fieldsetDisabled('bar-disk')).toBe(true);
-  await expect(page.locator(c('bar-disk'))).toHaveAttribute('title', 'The disk drive is in the CE-1600P.');
+  await expect(page.locator(c('bar-disk'))).toHaveCount(0);
   await expect(page.locator(c('bar-media-cassette-recorder'))).toHaveCount(0);
   await page.locator(c('bar-place-printer')).selectOption({ label: 'CE-1600P' });
-  await expect.poll(() => fieldsetDisabled('bar-disk'), { timeout: 30000 }).toBe(false);
+  await expect.poll(() => page.locator(c('bar-disk')).evaluate((e) => e.disabled), { timeout: 30000 }).toBe(false);
   await expect(page.locator(c('bar-media-cassette-recorder'))).toBeVisible();
+  // The disk after the cassette: the cassette keeps its place.
+  const x = async (n) => (await page.locator(c(n)).boundingBox()).x;
+  expect(await x('bar-media-cassette-recorder')).toBeLessThan(await x('bar-disk'));
   // The CE-158 beside the CE-1600P: refused, with the machine's reason.
   await expect(page.locator(c('bar-place-interface'))).toHaveAttribute('aria-disabled', 'true');
 });

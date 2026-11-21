@@ -65,6 +65,20 @@ tools/  ci/  .github/workflows/
   branch. Every product builds and tests green on `main`.
 - When in doubt, it is shared. A divergence that is found is a bug.
 
+## No jumping controls (every GUI, every frontend)
+
+- A control never moves because another control came or went. Bars,
+  rows and dialogs keep their alignment (left stays left) whatever is
+  shown.
+- What the machine as configured can never have is not shown (no disk
+  controls next to a CE-150, no card controls on a TI-58). Leave it out
+  only where the controls around it stay where they are: such controls
+  go at the end of their row, or after the controls that never change.
+- What is only unavailable for now is shown disabled, with the reason
+  as its tooltip.
+- The one exception: the PC-1500/1500A and the PC-1600 differ too much
+  for one layout; switching between them may reorder controls.
+
 ## Working
 
 - Working language English, for documents, code, comments and commit

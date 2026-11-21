@@ -146,9 +146,8 @@ TEST(pc1600_fields_ce1600p_variants_and_next_variant) {
     CHECK(s->place(path("slot-1")) && s->place(path("slot-2")));
     CHECK(fitting(*s, "printer") == (std::vector<std::string>{"CE-150", "CE-1600P"}));
     CHECK(fitting(*s, "host-drive") == (std::vector<std::string>{"host-drive"}));
-    // floppyShown on every PC-1600, usable only with the CE-1600P.
-    auto disk = product(*s, cu1600::kDiskControlsEntry);
-    CHECK(flag(disk, "shown") && !flag(disk, "available") && text(disk, "reason") == cu1600::kDiskInCe1600p);
+    // No disk controls without the CE-1600P (the CE-1600F is in its box).
+    CHECK(!flag(product(*s, cu1600::kDiskControlsEntry), "shown"));
     // The CE-1600P's variants in `printer`, and the one an attach uses.
     const control::PlaceEntry* printer = s->place(path("printer"));
     const control::PeripheralChoice* p = printer ? control::choice(*printer, machine::PeripheralId{"CE-1600P"}) : nullptr;
@@ -161,7 +160,7 @@ TEST(pc1600_fields_ce1600p_variants_and_next_variant) {
     CHECK(f.attach("CE-150"));
     s = stateOf(f);
     CHECK(plugged(*s, "printer", "CE-150") && s->mediaPlaces.empty());
-    // Plugged: the running variant, the disk controls usable, the floppy
+    // Plugged: the running variant, the disk controls shown, the floppy
     // and the cassette listed with their owner, the paper panel's owner.
     CHECK(f.attach("CE-1600P", "Old"));
     s = stateOf(f);
@@ -169,7 +168,7 @@ TEST(pc1600_fields_ce1600p_variants_and_next_variant) {
     p = printer ? control::choice(*printer, machine::PeripheralId{"CE-1600P"}) : nullptr;
     CHECK(p && p->plugged && p->variant && p->variant->value == "Old");
     CHECK(!product(*s, cu1600::kCe1600pNextVariantEntry).ok);
-    CHECK(flag(product(*s, cu1600::kDiskControlsEntry), "available"));
+    CHECK(flag(product(*s, cu1600::kDiskControlsEntry), "shown"));
     std::vector<std::string> media;
     for (const auto& m : s->mediaPlaces) media.push_back(m.id.value + "@" + (m.owner ? m.owner->value : ""));
     CHECK(media == (std::vector<std::string>{"cassette-recorder@CE-1600P", "floppy@CE-1600P"}));

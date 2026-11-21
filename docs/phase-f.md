@@ -41,6 +41,18 @@ and `docs/Process.md` until the closing check at its end has passed.
   Without a debug level none of these may appear; what a preset prints on
   purpose (`elapsed-time: report`'s `Elapsed: 1:16.052`) stays. Seen with
   `examples/calendar/calendar-09-dispatch.ti59`.
+- **Next to fix: the Mac app crashes when the paper is cut in dot mode**
+  (3.0.0-pre, 2026-11-21, symbolicated with the archive's dSYM): an index
+  out of range in `PrinterView.dotStrip`
+  (`frontends/swift/App/Views/PrinterView.swift:115`). The strip's
+  `ForEach(viewModel.paperBands.indices, id: \.self)` reads
+  `viewModel.paperBands[i]` in its row closure; a paper cut (`.paperCut`
+  in `EmulatorViewModel`, the only place where `paperBands` shrinks, to
+  `[]`) lets SwiftUI update the rows still in view with their old indices
+  before the `ForEach` sees the shorter array. Proposed: give each row its
+  band as a value (`ForEach(Array(paperBands.enumerated()), id: \.offset)
+  { i, dots in … }`), so that no row reads the array by index; and a test
+  that cuts a printed paper in dot mode.
 
 - **Mac UI tests** (`CalcU59UITestsMac`): six of 21 fail, none of them
   from a change of 2026-11-21 (two checked on the `main` before it):

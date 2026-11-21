@@ -33,8 +33,6 @@ version:
 
 release:
   latest: false
-  post_release:
-    - bin/install-release.sh
   # GitHub Releases doesn't keep Unix file permissions on uploaded assets.
   notes_suffix: >-
     **Linux**: the downloaded .AppImage needs its executable bit set before it

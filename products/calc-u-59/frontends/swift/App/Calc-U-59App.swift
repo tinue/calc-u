@@ -9,7 +9,9 @@ struct CalcU59App: App {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
-        WindowGroup {
+        // A fixed id keeps the window's saved frame under one name; the
+        // default name comes from the view's type, which changes per launch.
+        WindowGroup(id: "calculator") {
             if let text = viewModel.romsMissingText {
                 // The lookup's text in place of the
                 // faceplate; no bar, no Machine menu; Help still works.

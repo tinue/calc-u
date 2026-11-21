@@ -13,7 +13,7 @@ cap lettering, one for the digits, one for the legends, one math x per context, 
 the colours (ti59-ink.json). Every cap label is centred on its cap; the legends share a
 baseline per row, letter-spaced to their width on the target. Type and signs follow a photo
 of a TI-58C: Helvetica, a bold italic serif for the math letters. The keys are flat: a cap in a
-narrow dark gap.
+narrow dark gap, lit from the top.
 Fonts, font metrics, the output buffer, rich text and the rendering are in tools/faceplate/svgkit.py.
 
 Layers (bottom to top):
@@ -21,7 +21,9 @@ Layers (bottom to top):
   display     dark red glass panel; inside it the LED digits (group led, cells as in
               app/LedGeometry: 12 cells, cell 0 rightmost, modernized segments; empty unless --led)
   print-text  printed legends above the keys (second functions, A'..E')
-  keys        flat caps in a dark gap, and their labels; data-x/y/w/h = the cap (the app's key rect)
+  keys        flat caps in a black gap, lit from the top (a highlight along each cap's top edge,
+              around its top corners and down its sides; a shadow below each well), and their
+              labels; data-x/y/w/h = the cap (the app's key rect)
   cue-card    the cue card window (kCardRect), hidden unless --card. The app draws the fitted
               card here and lays a semi-transparent wash (#1A0505, 40 %) over its top 28 %: the
               red display glass the card slides under. Group card holds the card art, card-wash
@@ -72,7 +74,7 @@ CAPS = {  # face, label; the lettering on the brown caps is the same cream as th
     "yellow": ("#e6ae46", "#0e0b08"),
     "cream":  (CREAM, "#0e0b08"),
 }
-GAP = "#0a0908"            # the dark gap around every cap
+GAP = "#030303"            # the black gap around every cap
 LED_ON = "#ff1a1a"         # LedGeometry modernized: active (1.0, 0.1, 0.1)
 LED_OFF = "#330000"        # inactive (0.2, 0, 0) at alpha 0.2
 WASH, WASH_ALPHA = "#1a0505", 0.4   # app/CueCard.hpp kCueCardWashColor / kCueCardWashAlpha
@@ -90,6 +92,14 @@ DIG_X, DIG_W = [400, 850, 1300], 367
 ROW_Y = [1048, 1399, 1749, 2099, 2448, 2798, 3152, 3504, 3855]
 ROW_H = [195] * 5 + [199] * 4
 RIM = 14                   # dark gap around the flat cap; the cap covers the app's key rect
+# Light from the top, as on the reference: a highlight along the top edge of every cap that
+# wraps around its top corners and runs a little way down both sides, thinning out (white over
+# the face, strongest on the light cream caps, where less would not show), and a soft shadow
+# each key throws below its well, which thickens the dark rim under the cap.
+LIGHT_BAND, LIGHT_SIDE, LIGHT_TAIL = 13, 4, 40   # band height, side width, how far the sides run down
+LIGHT = {"brown": 0.30, "yellow": 0.45, "cream": 0.72}   # white opacity per cap colour
+CAP_R = 12                 # corner radius of a cap
+SHADOW_DROP, SHADOW_BLUR, SHADOW_ALPHA = 7, 4, 0.8
 LEGEND_GAP = 33            # baseline of a legend -> top of its well (median on the target)
 CAP_SIZE = 115             # all cap lettering: cap height 84 as on the target
 CAP_CONDENSE = 0.95        # Helvetica bold is a little wider than the target's lettering
@@ -287,6 +297,7 @@ def defs():
     emit(f"""
 <filter id="ledGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="{0.8 * seg_width() / 2:.1f}"/></filter>
 <filter id="ledBloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="{0.2 * seg_width() / 2:.1f}"/></filter>
+<filter id="keyShadow" x="-10%" y="-20%" width="120%" height="140%"><feGaussianBlur stdDeviation="{SHADOW_BLUR}"/></filter>
 <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">
   <stop offset="0" stop-color="{GLASS[0]}"/>
   <stop offset="0.5" stop-color="{GLASS[1]}"/>
@@ -404,13 +415,17 @@ B, R = "b", "r"   # Helvetica bold, Helvetica regular
 
 
 def key(ident, x, y, w, h, scheme, runs, op_box=None):
-    """A flat key: the dark gap around the cap (where the real one shows the PCB), the flat cap
-    and its label, centred on the cap."""
+    """A key lit from the top: its shadow below the well, the dark gap around the cap (where the
+    real one shows the PCB), the flat cap with a highlight band along its top edge, and its
+    label, centred on the cap."""
     face, lcol = CAPS[scheme]
     cx, cy, cw, ch = x + RIM, y + RIM, w - 2 * RIM, h - 2 * RIM
     emit(f'<g id="key-{ident}" class="key" data-x="{cx}" data-y="{cy}" data-w="{cw}" data-h="{ch}">')
+    emit(f'<rect x="{x}" y="{y + SHADOW_DROP}" width="{w}" height="{h}" rx="24" fill="#000000" '
+         f'fill-opacity="{SHADOW_ALPHA}" filter="url(#keyShadow)"/>')
     emit(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="24" fill="{GAP}"/>')
-    emit(f'<rect x="{cx}" y="{cy}" width="{cw}" height="{ch}" rx="12" fill="{face}"/>')
+    emit(f'<rect x="{cx}" y="{cy}" width="{cw}" height="{ch}" rx="{CAP_R}" fill="{face}"/>')
+    emit(f'<path d="{highlight(cx, cy, cw)}" fill="#ffffff" fill-opacity="{LIGHT[scheme]}"/>')
     mx, my = cx + cw / 2, cy + ch / 2
     if isinstance(runs, str):
         op_icon(runs, mx, my, op_box, lcol)
@@ -418,6 +433,16 @@ def key(ident, x, y, w, h, scheme, runs, op_box=None):
         size = DIGIT_SIZE if scheme == "cream" else CAP_SIZE
         draw_label(runs, size, lcol, cx=mx, cy=my, maxw=cw - 2 * CAP_MARGIN, condense=CAP_CONDENSE)
     emit("</g>")
+
+
+def highlight(cx, cy, cw):
+    """The highlight of a cap: its outline from the left tail up around the top corners to the
+    right tail, back along an inner edge that leaves the sides at LIGHT_SIDE and the top band
+    at LIGHT_BAND, both thinning out towards the tails."""
+    x1, r, b, sd, t = cx + cw, CAP_R, LIGHT_BAND, LIGHT_SIDE, LIGHT_TAIL
+    return (f"M{cx},{cy + t} V{cy + r} Q{cx},{cy} {cx + r},{cy} H{x1 - r} Q{x1},{cy} {x1},{cy + r} V{cy + t} "
+            f"Q{x1 - sd},{cy + b + 2} {x1 - sd - r},{cy + b} H{cx + sd + r} "
+            f"Q{cx + sd},{cy + b + 2} {cx},{cy + t} Z")
 
 
 def op_icon(kind, mx, my, size, color):

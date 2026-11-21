@@ -34,7 +34,9 @@ go next to it). `build_cards.py`: `--keep-svg`, `--no-png`, `-o DIR`.
 - **Layout**: the emulator's, not the original calculator's: the canvas of
   `app/KeyboardLayout.hpp` (`kDisplayRect`, `kCardRect`), the LED cells of
   `app/LedGeometry`.
-- **Look**: flat keys (a cap in a narrow dark gap), flat black panel. Type and
+- **Look**: flat keys (a cap in a narrow black gap), lit from the top: a highlight along
+  each cap's top edge that wraps around its top corners, and a shadow below each
+  well; flat black panel. Type and
   signs after a TI-58C: Helvetica (TeX Gyre Heros), bold italic serif (TeX
   Gyre Termes) for x and y. Warm gold legends; the lettering on the brown
   caps is the cream of the number keys.

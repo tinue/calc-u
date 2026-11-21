@@ -240,7 +240,7 @@ ExpressionResult CompiledExpression::run(const ExpressionContext& ctx) const {
             }
             case Code::Unary: {
                 const int64_t v = pop();
-                stack.push_back(op.sub == '!' ? (v ? 0 : 1) : op.sub == '~' ? ~v : -v);
+                stack.push_back(op.sub == '!' ? (v ? 0 : 1) : op.sub == '~' ? ~v : int64_t(0 - uint64_t(v)));
                 break;
             }
             case Code::Binary: {
@@ -260,16 +260,21 @@ ExpressionResult CompiledExpression::run(const ExpressionContext& ctx) const {
                     case '>': v = a > b ? 1 : 0; break;
                     case 'L': v = int64_t(uint64_t(a) << (b & 63)); break;
                     case 'R': v = a >> (b & 63); break;
-                    case '+': v = a + b; break;
-                    case '-': v = a - b; break;
-                    case '*': v = a * b; break;
+                    // Two's complement wraps, as the CPU's registers do;
+                    // in unsigned arithmetic, where wrapping is defined.
+                    case '+': v = int64_t(uint64_t(a) + uint64_t(b)); break;
+                    case '-': v = int64_t(uint64_t(a) - uint64_t(b)); break;
+                    case '*': v = int64_t(uint64_t(a) * uint64_t(b)); break;
                     case '/':
                     case '%':
                         if (b == 0) {
                             r.error = "division by zero";
                             return r;
                         }
-                        v = op.sub == '/' ? a / b : a % b;
+                        if (b == -1)   // INT64_MIN / -1 overflows (and traps on x86)
+                            v = op.sub == '/' ? int64_t(0 - uint64_t(a)) : 0;
+                        else
+                            v = op.sub == '/' ? a / b : a % b;
                         break;
                 }
                 stack.push_back(v);

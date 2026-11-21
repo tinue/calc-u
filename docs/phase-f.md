@@ -84,6 +84,42 @@ and `docs/Process.md` until the closing check at its end has passed.
   way as Calc-U-1600 (the labels, the order); the Swift app included,
   where its sandbox allows (a chosen folder needs its grant, as the trace
   folder has).
+- **Sanitizer findings, open** (`build/asan`, `docs/test-groups.md`
+  "Sanitizers"; three findings were fixed with the option: a signed
+  overflow in Calc-U-1600's debugger expressions, two uses after free in
+  test code):
+  - Calc-U-59's machine state writes structs as their bytes
+    (`StateWriter::raw` in `core/TIStateRecords.hpp`: `RAM_MASK`,
+    `m_lastDisplay`, `m_stepBoundary` in `TMC0501::stateIo`), padding and
+    all: the padding carries whatever the memory held, so two saves of the
+    same state can differ in those bytes. The machine runs on the same
+    after a restore; `restore_continues_identically_*` and
+    `with_printer_module_and_card_in_reader` fail in `build/asan` only (one
+    byte of `DisplaySnapshot`'s padding), and may with another compiler.
+    Proposed: the fields one by one (a change of the state's bytes,
+    `docs/formats/`).
+  - The harness's unpaced advance (`HarnessHost::command`, a key that
+    waits) flushes the session after every piece, and each flush computes
+    the control state anew (`ControlPart::beforeFlush`), though nothing
+    changed: 22 s of `calcu_library_tests`' 30 s are
+    `harness_key_gives_up_after_an_hour`, more than 30 min under ASan.
+    Proposed: compute the control state only when the machine's plugging
+    or the session's setup changed.
+- **Stale indices in the Web frontends** (from a scan of every frontend
+  for the printer crash's kind of bug; Swift and Qt have no other case):
+  - Calc-U-1600 CE-158 panel (`frontends/web/src/Panels.jsx` `Ce158Printer`):
+    Clear keeps a count into the stream `c1600.printer`, which keeps its
+    last 500 items (`library/web/src/shell.js`) and can be reset: after
+    500 items and a Clear the panel stays empty for good (and Save saves
+    nothing); after a reset new output stays hidden. Qt keeps its own
+    buffer. Proposed: a marker of the last item cleared, dropped on a reset.
+  - Calc-U-59 Web CPU inspector (`frontends/web/src/Debugger.jsx`): the
+    picked row is an index kept over a STEP, which shifts the rows, so the
+    registers shown are another instruction's. Qt and Swift select the
+    current instruction anew. Proposed: drop the pick when the rows change.
+  - Calc-U-1600 Web (`frontends/web/src/CalcU1600.jsx`, `programsSeen`):
+    the same count into `c1600.program-opened`; it handles a reset, not
+    the 500 kept items (after 500 opened programs no more are taken).
 
 - **Mac UI tests** (`CalcU59UITestsMac`): six of 21 fail, none of them
   from a change of 2026-11-21 (two checked on the `main` before it):

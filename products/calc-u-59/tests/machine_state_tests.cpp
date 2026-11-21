@@ -112,11 +112,13 @@ void restoresIdentically(const std::string& name, const std::vector<std::string>
         other = after2s(r, dir, "c.state", paper);
     }
     CHECK(!first.empty());
-    if (first != same) {
+    for (const std::string* run : {&same, &other}) {
+        if (first == *run) continue;
         std::size_t i = 0;
-        while (i < first.size() && i < same.size() && first[i] == same[i]) ++i;
-        std::fprintf(stderr, "%s: differs at %zu of %zu/%zu:\n%s\n---\n%s\n", name.c_str(), i, first.size(), same.size(),
-                     first.substr(0, std::min<std::size_t>(first.size(), 600)).c_str(), same.substr(0, std::min<std::size_t>(same.size(), 600)).c_str());
+        while (i < first.size() && i < run->size() && first[i] == (*run)[i]) ++i;
+        std::fprintf(stderr, "%s: the %s run differs at %zu of %zu/%zu:\n%s\n---\n%s\n", name.c_str(),
+                     run == &same ? "restored" : "other session's", i, first.size(), run->size(),
+                     first.substr(0, std::min<std::size_t>(first.size(), 600)).c_str(), run->substr(0, std::min<std::size_t>(run->size(), 600)).c_str());
     }
     CHECK(first == same);
     CHECK(first == other);

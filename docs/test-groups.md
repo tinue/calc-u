@@ -54,6 +54,29 @@ A test that outgrows its group's budget moves up a group or is split.
 
 The Longer group measured 291.5 s on an M4 Pro, within its 10 min.
 
+## Sanitizers
+
+A tree with `-DCALCU_SANITIZE=address,undefined` builds every target with
+AddressSanitizer and UndefinedBehaviorSanitizer and the standard
+library's bounds checks (libc++ hardening, libstdc++ assertions): a use
+after free, an access out of bounds or undefined behaviour stops the test
+program, and its entry fails with the report. `thread` instead checks the
+threaded edges (the session thread, attach, the Qt apps). It runs the
+groups as any tree does, locally and by hand: after a change to memory
+handling, lifetimes or the threaded edges, and before a release.
+
+```sh
+cmake -S . -B build/asan -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+  -DCALCU_FRONTEND_QT=OFF -DCALCU_SANITIZE=address,undefined
+cmake --build build/asan
+ctest --test-dir build/asan -j8 --timeout 3600
+```
+
+The programs run 10 to 50 times slower: `CalcU59Tests` about 9 min,
+`calcu_library_tests` more than 30 min (`harness_key_gives_up_after_an_hour`
+alone; the harness computes the control state after every piece of its
+emulated hour).
+
 ## Local Linux CI
 
 `ci/linux/run.sh` runs in Podman on Ubuntu 24.04, natively on arm64, what

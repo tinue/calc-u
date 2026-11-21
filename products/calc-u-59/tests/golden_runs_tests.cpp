@@ -324,6 +324,7 @@ TEST(trace_bytes_equal_the_recorded_reference) {
     CHECK(error.empty());
     CHECK(rec != nullptr);
     if (!rec) return;
+    rec->machineGone();   // play() has destroyed the machine, as the app says on a switch
     rec->end(out);
     const std::string now = std::to_string(out.size()) + " " + testroms::md5Hex(out) + "\n";
     if (draft) {

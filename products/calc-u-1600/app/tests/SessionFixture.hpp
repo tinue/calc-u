@@ -52,6 +52,7 @@ struct SessionFixture {
     bool hostDirectories = true;
     sessions::HostServices services;
     int calls = 0;
+    std::vector<std::shared_ptr<const calcu::media::MediaState>> keptMedia;   // what mediaPlace() points into
     // Wall time each read of the clock takes: the host's work inside a call
     // (an operation at full speed runs until its allowance is used up).
     // Without it, a call at full speed (an operation) would never see its
@@ -170,10 +171,10 @@ struct SessionFixture {
     }
     // ---- The media: the topic `media` and its commands, as the control bar sends them ----
     std::shared_ptr<const calcu::media::MediaState> media() { return part().mediaPart().state(session().context()); }
+    // The pointer stays valid for the fixture's life: every state handed out is kept.
     const calcu::media::PlaceState* mediaPlace(const std::string& place) {
-        static std::shared_ptr<const calcu::media::MediaState> kept;   // the state the pointer is into
-        kept = media();
-        for (const auto& p : kept->places)
+        keptMedia.push_back(media());
+        for (const auto& p : keptMedia.back()->places)
             if (p.place == place) return &p;
         return nullptr;
     }

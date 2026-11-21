@@ -23,6 +23,8 @@ cmake_minimum_required(VERSION 3.21)
 #                           sets and the ten-minute pacing runs
 #   CALCU_TESTS_DEBUG   the cores and test programs at -O0 in a Debug tree
 #                       (else -O1: calcu_debug_o1 below), for stepping through
+#   CALCU_SANITIZE      sanitizers for every target (below), the tree
+#                       build/asan of docs/test-groups.md
 #
 # Test groups: every CTest entry carries the label frequent,
 # longer or checkpoint. Without the two options a tree has only the
@@ -57,6 +59,21 @@ option(CALCU_TESTS_LONGER "Also register the Longer group's tests" OFF)
 option(CALCU_TESTS_CHECKPOINT "Also register the Checkpoint group's tests" OFF)
 
 option(CALCU_TESTS_DEBUG "Build the cores and the test programs at -O0 in Debug, for stepping through" OFF)
+
+# CALCU_SANITIZE: the sanitizers every target is built with, as -fsanitize
+# takes them (address,undefined; thread alone), and the standard library's
+# own bounds checks (libc++ hardening, libstdc++ assertions) with them.
+# A finding stops the program, so the test that ran into it fails. Not for
+# MSVC or Emscripten.
+set(CALCU_SANITIZE "" CACHE STRING "Sanitizers for every target (address,undefined or thread); empty for none")
+if(CALCU_SANITIZE)
+  if(MSVC OR EMSCRIPTEN)
+    message(FATAL_ERROR "CALCU_SANITIZE needs Clang or GCC on macOS or Linux")
+  endif()
+  add_compile_options(-fsanitize=${CALCU_SANITIZE} -fno-sanitize-recover=all -fno-omit-frame-pointer -g)
+  add_link_options(-fsanitize=${CALCU_SANITIZE})
+  add_compile_definitions(_GLIBCXX_ASSERTIONS _LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE)
+endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()

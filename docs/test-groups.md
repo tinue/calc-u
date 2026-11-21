@@ -143,7 +143,7 @@ Measured on an M4 Pro, RelWithDebInfo.
 | `CalcU59MacAttach` | `tests/mac_attach_check.sh <calcu>`: the Debug Mac app through Launch Services on port 59171; `calcu attach`; one minute in front, 30 s covered by a grey window over every screen (`tests/mac_window.swift`), hidden and shown | Checkpoint | about 2 min with the app built |
 | `CalcU59SwiftUnitTestsMac` | `xcodebuild test -testPlan UnitTests` on macOS (the macOS host services) | Checkpoint | 14 s of tests |
 | `CalcU59AppStoreScreenshots` | `bin/run-screenshots`: the App Store set (the iPhone Duo is opened flat by hand) | Checkpoint | not measured |
-| `CalcU59UITestsMac` | XCUITest plan `UIRegressionTests` on macOS | Checkpoint | not measured (needs a signed runner and the Accessibility permission) |
+| `CalcU59UITestsMac` | XCUITest plan `UIRegressionTests` on macOS; needs `Calc-U-59UITests-Runner.app` (Debug build products) allowed in System Settings ▸ Privacy & Security ▸ "Gerätesteuerung und Datenzugriff" (macOS 27; Accessibility before) | Checkpoint | 150 s; 15 of 21 pass, six open (`docs/phase-f.md`) |
 
 ## Calc-U-1600
 

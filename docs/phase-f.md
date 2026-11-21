@@ -32,6 +32,19 @@ and `docs/Process.md` until the closing check at its end has passed.
 
 ### Open items
 
+- **Mac UI tests** (`CalcU59UITestsMac`): six of 21 fail, none of them
+  from a change of 2026-11-21 (two checked on the `main` before it):
+  `test_a_key_under_the_pointer` (a click at a place within the faceplate
+  does not even move the pointer, while buttons and menus are clicked),
+  `test_an_example` (no cue card), `test_the_printer` ("no operation
+  started"), `testRomMissingShowsMessage` (the text does not name the
+  file), `test_card_read_by_its_corner` and
+  `test_fresh_card_written_and_listed` (no name field in the card dialog).
+  The iOS suite passes.
+- **Glyphs screenshot** (`iphone-06-display-glyphs`): the frozen display
+  still shows uneven levels (a dim extra "-" at position 6), also with the
+  frame sampler keeping a frozen display's levels; the running display is
+  even. The App Store keeps the earlier picture until this is understood.
 - **Help pictures**: the pictures to retake are listed by name in
   `docs/help-site.md`, "Help content" (Calc-U-59: six, from the Swift app;
   Calc-U-1600: ten, `tools/make_screenshots.sh <chapter>` from iTerm2).

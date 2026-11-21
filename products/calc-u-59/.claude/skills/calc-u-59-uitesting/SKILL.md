@@ -46,10 +46,14 @@ The file-picker, preset and orientation tests are `#if !os(macOS)` guarded; `Lay
 `--UITesting`, no hidden R/S button and no `keystroke-playback-status`
 (CTest `CalcU59NoTestAids`). A test launches through the helpers, which
 write a settings file of the launch's own (`writeSettingsFile`, the
-runner's temporary folder; the simulator's app reads it by path — checked
-by `test_settings_file_by_path`; on macOS the file goes into the
-app's container `tmp/` and the app gets its name) and pass `--settings-file`
-and `--attach-port`. A test that needs the session (a load's end, the
+runner's temporary folder, given by its full path; the simulator's app
+reads it there — checked by `test_settings_file_by_path`; the Mac runner
+is sandboxed, and the Mac Debug app may read and write its `tmp/`
+(`Calc-U-59-Debug-macOS.entitlements`, Debug for macOS only) and pass
+`--settings-file` and `--attach-port`. On macOS each launch also sets the
+window's frame (1200 × 750, `-NSWindow Frame calculator`): the saved frame
+is shared with every earlier launch, and in a short window the bar leaves
+out the card buttons. A test that needs the session (a load's end, the
 display as text, emulated time, the module) attaches: the runner, in the
 same simulator, connects with `HarnessClient` to 127.0.0.1 and sends
 `calcu serve` commands (`wait 1s`, `key-down R/S`, `display-text`, `ticks`,
@@ -59,9 +63,17 @@ a running program (an overlay among them) is `key-down`/`key-up`. The
 attached registry has every `calcu serve` command, `preset <path>` and
 `open <path>` among them. Each
 simulator needs a port of its own: the helpers use 59162, `AttachTests`
-59160, `PacingTests` 59161. A notice is an alert: tap
-`app.alerts.buttons["OK"]` (iOS drops the identifier `notice-ok` on an
-alert's button).
+59160, `PacingTests` 59161. A notice is an alert on iOS and a sheet on
+the Mac window: `notice(app)`, `noticeText(app, contains:)` and
+`closeNotice(app)` in `FamilyStructureTests` (iOS: tap OK by its label,
+the alert's button drops the identifier `notice-ok`; Mac: Return, as a
+scripted click does not reach the sheet's default button).
+
+**macOS runs** need the runner's permission to control the computer:
+System Settings ▸ Privacy & Security ▸ "Gerätesteuerung und Datenzugriff"
+(macOS 27; was Accessibility), `Calc-U-59UITests-Runner.app` of the Debug
+build products added and on. Without it no synthesized click reaches the
+window (menus still do).
 
 ---
 

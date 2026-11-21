@@ -16,10 +16,10 @@ let uiTestAttachPort: UInt16 = 59162
 extension XCTestCase {
 
     /// A settings file for one launch, with these values ("section.key=value"),
-    /// at a path the app under test reads (the runner
-    /// writes it, the simulator's app reads it by path). On macOS the app is
-    /// sandboxed: the file goes into its container's temporary folder, and
-    /// the app is given its name, which it takes in that folder.
+    /// in the runner's temporary folder; the app is given its full path. The
+    /// simulator's app reads it there; the Mac runner is sandboxed, and the
+    /// Mac Debug app may read its temporary folder
+    /// (Calc-U-59-Debug-macOS.entitlements).
     func writeSettingsFile(_ values: [String]) -> String {
         var sections: [String: [String]] = [:]
         var order: [String] = []
@@ -31,18 +31,13 @@ extension XCTestCase {
         }
         var text = "format-version = 1\n"
         for s in order { text += "\n[\(s)]\n" + sections[s]!.joined(separator: "\n") + "\n" }
-        let name = "uitest-\(UUID().uuidString).ini"
-        #if os(macOS)
-        let folder = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Containers/ch.erzberger.calcu59/Data/tmp", isDirectory: true)
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try? text.write(to: folder.appendingPathComponent(name), atomically: true, encoding: .utf8)
-        return name
-        #else
-        let path = (NSTemporaryDirectory() as NSString).appendingPathComponent(name)
-        try? text.write(toFile: path, atomically: true, encoding: .utf8)
+        let path = (NSTemporaryDirectory() as NSString).appendingPathComponent("uitest-\(UUID().uuidString).ini")
+        do {
+            try text.write(toFile: path, atomically: true, encoding: .utf8)
+        } catch {
+            XCTFail("the settings file cannot be written: \(error)")
+        }
         return path
-        #endif
     }
 
     /// Launch the app with a settings file of its own and harness attach.
@@ -51,6 +46,13 @@ extension XCTestCase {
         let app = XCUIApplication()
         app.launchArguments += ["--settings-file", writeSettingsFile(settings),
                                 "--attach-port", String(uiTestAttachPort)] + arguments
+        #if os(macOS)
+        // A window of one size, tall enough for the full bar (the card
+        // buttons need a faceplate as wide as the bar): the window's saved
+        // frame is the app's, shared with every earlier launch. The argument
+        // domain overrides it for this launch only.
+        app.launchArguments += ["-NSWindow Frame calculator", "100 100 1200 750 0 0 2560 1410 "]
+        #endif
         app.launch()
         return app
     }

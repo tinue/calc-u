@@ -52,7 +52,8 @@ and `docs/Process.md` until the closing check at its end has passed.
   before the `ForEach` sees the shorter array. Proposed: give each row its
   band as a value (`ForEach(Array(paperBands.enumerated()), id: \.offset)
   { i, dots in … }`), so that no row reads the array by index; and a test
-  that cuts a printed paper in dot mode.
+  that cuts a printed paper in dot mode. Seen: the paper cut by hand, then
+  a preset started that prints.
 
 - **Mac UI tests** (`CalcU59UITestsMac`): six of 21 fail, none of them
   from a change of 2026-11-21 (two checked on the `main` before it):

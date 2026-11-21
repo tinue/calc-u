@@ -625,7 +625,13 @@ last latched glyph and its **duty**: the driven time since the previous call
 display reads 1.0 and a computing one 0. `pollTicks` is the interval in
 weighted cycles; a poll with no cycle since the last one returns the last
 snapshot again. Each call restarts the window, so a core has one display
-consumer (`FrameSampler`, through `readDisplay()`). The core makes no visibility decision: brightness and
+consumer (`FrameSampler`, through `readDisplay()`). A pause running on to
+its landing (up to 50000 weights in one host call, `app/TILevelRules`) would
+integrate seconds of display, a blink's dark and lit phases mixed: there
+`TIMachine::advance` restarts the window every 60th of a second
+(`startDisplayWindow()`) and keeps the one before (`joinDisplayWindows()`
+at the end of the call), so the frozen display shows the last frames, as a
+running one does at that instant. The core makes no visibility decision: brightness and
 persistence of vision are `DisplayPov` (`app/FrameSampler`).
 
 The **C indicator** (`calcIndicator`) is its mean drive over the interval: the

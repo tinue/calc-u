@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <fstream>
+#include <sstream>
 
 using namespace cu59;
 using namespace std::chrono_literals;
@@ -180,4 +182,41 @@ TEST(display_pov_frozen_display_keeps_its_levels) {
         const FrameUpdate f = r.sampler.tick(*r.m);
         for (int p = 0; p < 12; ++p) CHECK_EQ(int(f.led.digitLevel[p]), int(last.led.digitLevel[p]));
     }
+}
+
+// A CPU pause runs on to a program step boundary, in a blink seconds of
+// emulated time in one host call (TILevelRules). The display frozen there
+// is the one a running display shows at that instant, not that run's mean
+// (the App Store picture of the glyphs).
+TEST(display_frozen_by_a_pause_shows_the_running_frame) {
+    std::string preset;
+    {
+        std::ifstream f("examples/screentest/test_58_glyphs.ti58");
+        std::stringstream ss;
+        ss << f.rdbuf();
+        preset = ss.str();
+    }
+    const std::string running = preset.substr(0, preset.find("  - wait: 400ms"));
+    CHECK(running.size() < preset.size());
+    auto load = [](testroms::SessionRig& r, const std::string& content) {
+        r.post(calcu::presets::kLoadPresetCommand,
+               calcu::sessions::Value::object({{"content", content}, {"name", "glyphs.ti58"}}));
+    };
+    testroms::SessionRig frozen(ModelId{kTI58});
+    load(frozen, preset);
+    CHECK(frozen.until([&] { return !frozen.busy(); }, std::chrono::minutes(1)));
+    for (int i = 0; i < 3; ++i) frozen.frame();
+    const calcu::machine::Ticks landed = frozen.machine().tickCount();
+    const LedFrame shown = frozen.part().display();
+
+    testroms::SessionRig live(ModelId{kTI58});
+    load(live, running);
+    while (live.machine().tickCount() < landed) live.frame();
+    const LedFrame seen = live.part().display();
+    int lit = 0;
+    for (int p = 0; p < 12; ++p) {
+        CHECK(std::abs(int(shown.digitLevel[p]) - int(seen.digitLevel[p])) <= 32);
+        if (seen.digitLevel[p] > 0) ++lit;
+    }
+    CHECK(lit >= 8);   // landed in a lit phase: the glyphs are seen
 }

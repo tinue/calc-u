@@ -38,6 +38,8 @@ public:
     /// Display since the previous call; it restarts the integration window:
     /// one consumer per machine (see TMC0501).
     DisplaySnapshot takeDisplay();
+    void startDisplayWindow() { m_cpu.startDisplayWindow(); }   ///< see TMC0501
+    void joinDisplayWindows() { m_cpu.joinDisplayWindows(); }
 
     /// TI-58C persistence helpers.
     void serialiseRAM(uint8_t* dst) const;   // 120*16 bytes

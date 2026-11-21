@@ -50,6 +50,11 @@ Ticks TIMachine::advance(Ticks atLeast) {
     const auto& bps = m_debugging.m_target.breakpoints();
     const bool runOn = c.observer && m_debugging.m_runOn && m_debugging.m_runOn();
     constexpr Ticks kRunOnAtMost = Ticks{50'000} * 4 * kTicksPerWeight;   // TILevelRules lands it before
+    // Running on can take seconds of emulated time in this one call (a blink
+    // has no step boundary): the display integrates only the last frames, so
+    // a frozen display shows what a running one showed when the pause landed.
+    const Ticks frameTicks = static_cast<Ticks>(m_descriptor.tickRate / 60);
+    Ticks windowStart = start;
     while (tickCount() - start < atLeast || (runOn && tickCount() - start < atLeast + kRunOnAtMost)) {
         const std::uint16_t at = m_hw.pc();
         if (c.breakpoints && !m_debugging.m_passOnce && std::binary_search(bps.begin(), bps.end(), at)) {
@@ -61,6 +66,10 @@ Ticks TIMachine::advance(Ticks atLeast) {
         }
         m_debugging.m_passOnce = false;
         const std::uint32_t r = stepOne();
+        if (runOn && tickCount() - windowStart >= frameTicks) {
+            m_hw.startDisplayWindow();
+            windowStart = tickCount();
+        }
         if (!c.observer) continue;
         const std::uint16_t next = m_hw.pc();
         InstructionEvent ev;
@@ -75,6 +84,7 @@ Ticks TIMachine::advance(Ticks atLeast) {
             break;
         }
     }
+    m_hw.joinDisplayWindows();
     return tickCount() - start;
 }
 

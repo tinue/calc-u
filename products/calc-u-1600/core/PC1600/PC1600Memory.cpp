@@ -56,37 +56,17 @@ void PC1600Memory::reset() {
     // VGG keeps their RAM and registers.
     m_display.setClockEnabled(false);
     // Port-block reset: modulation off, SDO back to its idle level.
-    m_fReg = 0;
-    m_sdo = true;
-    m_sdoAccum = 0;
-    updateBuzzerLine();
+    m_serial.reset();
+    updateLines(m_serial.sdo());
 }
 
-void PC1600Memory::advanceBuzzer(uint32_t tstates) {
-    updateBuzzerLine(); // the cassette input may have moved since (the recorder's last tick)
-    if ((m_fReg & 0x40) == 0) {
-        m_piezo.advance(tstates);
-        return;
-    }
-    // FX = phi / (64 << F0-2); SDO toggles every half of that period.
-    // Codes 5-7 aren't in the TRM table; treat them as the slowest, /1024.
-    const int fx = std::min(m_fReg & 0x07, 4);
-    const int64_t halfPeriod = int64_t{kPC1600TStateHz} * (int64_t{64} << fx) / 2; // in T-states * kModulatorHz
-    // A 17H write can select a faster divider mid-period (no 14H reset), so
-    // the phase may already be past the new half period: that toggle is
-    // due now, not a negative time from now.
-    m_sdoAccum = std::min(m_sdoAccum, halfPeriod);
-    int64_t remaining = tstates;
-    while (m_sdoAccum + remaining * kModulatorHz >= halfPeriod) {
-        const int64_t take = (halfPeriod - m_sdoAccum + kModulatorHz - 1) / kModulatorHz;
-        m_piezo.advance(static_cast<uint32_t>(take));
-        remaining -= take;
-        m_sdoAccum += take * kModulatorHz - halfPeriod;
-        m_sdo = !m_sdo;
-        updateBuzzerLine();
-    }
-    m_sdoAccum += remaining * kModulatorHz;
-    m_piezo.advance(static_cast<uint32_t>(remaining));
+void PC1600Memory::advanceSerial(uint32_t tstates, bool lh5803Runs) {
+    m_serial.setPhiHz(lh5803Runs ? kPhiLH5803Hz : kPhiSC7852Hz);
+    m_serial.advance(tstates, [this](uint32_t n, bool sdo) {
+        updateLines(sdo);   // the cassette input may have moved since (the recorder's last tick)
+        m_piezo.advance(n);
+        m_systemBus.advanceCassette(n);
+    });
 }
 
 const uint8_t* PC1600Memory::resolveConst(uint16_t addr) const {
@@ -299,13 +279,15 @@ uint8_t PC1600Memory::readIO(uint8_t port) {
         // this port's write side. The timer ISR reads it at PC1600-P1-B3-new.bin
         // 4102H/4112H to decide which pending causes are unmasked.
         case 0x35: return m_intMask;
-        case 0x17: return m_fReg;
+        case 0x17: return m_serial.f();
+        case 0x19: return m_serial.g();
         case 0x18: return m_opc;
         // MSK read: the mask in bits 0-3, and the live CL1/SD1/PB7/IRQ inputs
-        // in bits 7-4 (PC-1500 TRM p.71). Only PB7 (the ON key, bit 5) has a
-        // source here; the others read 0.
-        case 0x1A: return static_cast<uint8_t>((m_msk & 0x0F) | ((m_pbIn & kPbInOnKey) ? 0x20 : 0x00));
-        case 0x1B: return m_if;
+        // in bits 7-4 (PC-1500 TRM p.71). CL1 (bit 7) is the serial clock
+        // (see m_serial), PB7 (bit 5) the ON key; SD1 and IRQ read 0.
+        case 0x1A: return static_cast<uint8_t>((m_msk & 0x0F) | (m_serial.cl0() ? 0x80 : 0x00) |
+                                               ((m_pbIn & kPbInOnKey) ? 0x20 : 0x00));
+        case 0x1B: return static_cast<uint8_t>((m_if & ~0x08) | (m_serial.td() ? 0x08 : 0x00)); // b3 = TD, read-only
         case 0x1C: return m_dda;
         case 0x1D: return m_ddb;
         case 0x1E: return m_opa;
@@ -379,20 +361,16 @@ void PC1600Memory::writeIO(uint8_t port, uint8_t value) {
         case 0x18:
             // Buzzer: bit 6 = enable (BEEP ON/OFF), bit 7 = the square
             // wave the BEEP loop toggles. See m_opc.
+            // b7 is also PC7', the CE-1600P's cassette-write signal (bank 5
+            // CMTONE0/1 bit-bangs it), into SD0 (see m_serial).
             m_opc = value;
-            updateBuzzerLine();
-            // b7 is also SD0, the cassette-write line out to the 60-pin
-            // bus (bank 5 CMTONE0/1 bit-bangs it).
-            m_systemBus.setCmtOut((value & 0x80) != 0);
+            updateLines(m_serial.sdo());
             return;
-        // 14H: divider reset -- restart the modulation clocks' phase.
-        case 0x14: m_sdoAccum = 0; return;
-        // 17H: F register -- SDO modulation (see m_fReg).
-        case 0x17:
-            m_fReg = static_cast<uint8_t>(value & 0x7F);
-            if ((m_fReg & 0x40) == 0) m_sdo = true; // normal mode: SDO = SXO = idle mark
-            updateBuzzerLine();
-            return;
+        // The serial block (see m_serial): 14H divider reset, 16H L, 17H F, 19H G.
+        case 0x14: m_serial.resetDivider(); return;
+        case 0x16: m_serial.writeL(value); updateLines(m_serial.sdo()); return;
+        case 0x17: m_serial.writeF(value); updateLines(m_serial.sdo()); return;
+        case 0x19: m_serial.writeG(value); return;
         case 0x1A: m_msk = static_cast<uint8_t>(value & 0x0F); return;
         case 0x1B: m_if = value; return;
         case 0x1C: m_dda = value; return;

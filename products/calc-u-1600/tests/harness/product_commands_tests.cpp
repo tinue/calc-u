@@ -276,9 +276,9 @@ TEST(record_ejects_the_tape_in_first) {
     CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
 }
 
-// The CE-150's cassette is not offered on the PC-1600: the `cassette` step
-// and `c1600 cassette` are refused while the plotter stays.
-TEST(ce150_on_pc1600_has_no_cassette) {
+// The CE-150's cassette on the PC-1600: the `cassette` step and
+// `c1600 cassette` take it; without a printer both are refused.
+TEST(ce150_on_pc1600_has_its_cassette) {
     SKIP_UNLESS(romsPresent(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder dir("c1600-ce150-pc1600-tape");
     fs::copy_file("tests/fixtures/tape/pc1500_tape.wav", dir.path() / "t.wav");
@@ -289,9 +289,10 @@ TEST(ce150_on_pc1600_has_no_cassette) {
     if (!r.ok()) return;
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
     CHECK_EQ(r.line("attach printer CE-150"), std::string("done\n"));
-    CHECK(has(r.line("cassette { file: " + (dir.path() / "t.cassette.yaml").string() + " }"),
-              "cassette: the CE-150's cassette cannot be used on the PC-1600."));
-    const std::string none = "refused: The machine has no cassette: a CE-150 on the PC-1500 or PC-1500A, or a CE-1600P on the PC-1600, brings one.\n";
+    CHECK_EQ(r.line("cassette { file: " + (dir.path() / "t.cassette.yaml").string() + " }"), std::string("done\n"));
+    CHECK(has(r.line("c1600 cassette status"), "cassette: playing"));
+    CHECK_EQ(r.line("detach printer"), std::string("done\n"));
+    const std::string none = "refused: The machine has no cassette: a CE-150, or a CE-1600P on the PC-1600, brings one.\n";
     CHECK_EQ(r.line("c1600 cassette status"), none);
     CHECK_EQ(r.line("c1600 cassette record " + (dir.path() / "rec.wav").string()), none);
 }
@@ -331,7 +332,7 @@ TEST(tape_without_cassette_refused) {
     Run r;
     CHECK(r.ok());
     if (!r.ok()) return;
-    const std::string no = "refused: The machine has no cassette: a CE-150 on the PC-1500 or PC-1500A, or a CE-1600P on the PC-1600, brings one.\n";
+    const std::string no = "refused: The machine has no cassette: a CE-150, or a CE-1600P on the PC-1600, brings one.\n";
     CHECK_EQ(r.line("c1600 cassette record " + (dir.path() / "x.wav").string()), no);
     CHECK_EQ(r.line("c1600 cassette status"), no);
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));

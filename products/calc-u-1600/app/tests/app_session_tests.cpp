@@ -116,14 +116,14 @@ TEST(test_operations_and_selection) {
     CHECK(!n.empty() && n.back() == r.reason);
 }
 
-// The CE-150 on the PC-1600: its cassette is not offered there, the plotter is.
-TEST(test_no_cassette_for_ce150_on_pc1600) {
+// The CE-150 on the PC-1600: its cassette is offered there (MODE 1).
+TEST(test_cassette_for_ce150_on_pc1600) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
     CHECK(f.attach("CE-150"));
-    CHECK(!f.part().tapeInterfaceAttached());
-    CHECK(f.mediaPlace("cassette") == nullptr);
+    CHECK(f.part().tapeInterfaceAttached());
+    CHECK(f.mediaPlace("cassette") != nullptr);
 }
 
 // The tape counter in the machine topic is what the deck had at the last

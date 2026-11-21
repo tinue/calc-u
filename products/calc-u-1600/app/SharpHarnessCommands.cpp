@@ -299,7 +299,7 @@ const media::KindDecl& recordingKind() {
 }
 
 const char* const kNoCassette =
-    "The machine has no cassette: a CE-150 on the PC-1500 or PC-1500A, or a CE-1600P on the PC-1600, brings one.";
+    "The machine has no cassette: a CE-150, or a CE-1600P on the PC-1600, brings one.";
 
 bool hasCassette(machine::Machine& m) {
     for (const auto& e : m.capabilities(media::MediaPlace::kKind))

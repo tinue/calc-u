@@ -292,8 +292,8 @@ machine has no INSPECTOR.`
 nine decimals, `motor` a boolean.
 
 Refusals: `usage: c1600 cassette record <file.wav> | cassette status`;
-`The machine has no cassette: a CE-150 on the PC-1500 or PC-1500A, or a
-CE-1600P on the PC-1600, brings one.`; `record` through `attach`: `This command needs a run of calcu; it is
+`The machine has no cassette: a CE-150, or a CE-1600P on the PC-1600,
+brings one.`; `record` through `attach`: `This command needs a run of calcu; it is
 not offered through attach.`
 
 ### `c1600 serial ce158|rs232c …`

@@ -267,8 +267,16 @@ TEST(bar_pc1600) {
     CHECK(f.waitFor([&] { return f.find<QWidget>("media-picker-cassette") != nullptr; }, 5000));
     f.run(100);
     auto* tape = f.find<QWidget>("media-picker-cassette");
-    CHECK(tape && tape->mapTo(f.find<QWidget>(names::kControlBar), QPoint()).x() <
-                      disk->mapTo(f.find<QWidget>(names::kControlBar), QPoint()).x());
+    auto* bar = f.find<QWidget>(names::kControlBar);
+    const int tapeX = tape ? tape->mapTo(bar, QPoint()).x() : -1;
+    CHECK(tape && tapeX < disk->mapTo(bar, QPoint()).x());
+    // The CE-150: its cassette where the CE-1600P's was, no disk controls.
+    f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-150"}}));
+    CHECK(f.waitFor([&] { return !disk->isVisible(); }, 5000));
+    f.run(100);
+    tape = f.find<QWidget>("media-picker-cassette");
+    CHECK(tape && tape->isVisible());
+    CHECK_EQ(tape ? tape->mapTo(bar, QPoint()).x() : -2, tapeX);
 }
 
 // ── The settings ────────────────────────────────────────────────────────

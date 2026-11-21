@@ -195,7 +195,7 @@ public:
     /// motorOn(). False when no floppy is attached.
     bool ce1600fMotorOn() const;
 
-    // ── Cassette recorder (CE-152 on the CE-1600P's jacks) ──────────────
+    // ── Cassette recorder (CE-152 on the CE-1600P's or the CE-150's jacks)
     //
     // The recorder outlives attach/detach of the interface: arm it with a
     // WAV to play (CLOAD) or a file to record into (CSAVE); it moves only
@@ -243,8 +243,8 @@ public:
     // connector, where it answers the LH5803's cycles). Mutually exclusive
     // with the CE-1600P (one plotter at a time) -- attaching one detaches
     // the other. A chip/machine reset re-anchors the card but
-    // leaves it attached (like the CE-1600P). Its cassette recorder is not
-    // connected here: the CE-150's cassette is not offered on the PC-1600.
+    // leaves it attached (like the CE-1600P). Its cassette recorder is the
+    // machine's tape deck (MODE 1 CLOAD/CSAVE through the CE-150's ROM).
     bool attachCE150(const uint8_t* rom, size_t romSize); // 8192 bytes
     void detachCE150();
     bool ce150Attached() const { return m_ce150Card != nullptr; }

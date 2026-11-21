@@ -1,4 +1,5 @@
 #pragma once
+#include "../CPU/LH5811Serial.hpp"
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -102,12 +103,13 @@ public:
     TC8576F&             uart() { return m_uart; }
     const TC8576F&       uart() const { return m_uart; }
     /// Buzzer drive line as PCM, in SC-7852 T-states -- advanced by
-    /// PC1600Machine::step() on both CPUs' branches (via advanceBuzzer()).
-    /// See m_opc and m_fReg.
+    /// PC1600Machine::step() on both CPUs' branches (via advanceSerial()).
+    /// See m_opc and m_serial.
     PiezoSampler&        piezo() { return m_piezo; }
-    /// Credits `tstates` of elapsed time to the buzzer: runs the F-register
-    /// modulator (toggling SDO at its exact edge times) and the sampler.
-    void advanceBuzzer(uint32_t tstates);
+    /// Credits `tstates` of elapsed time to the serial block (SDO at its
+    /// exact edge times), the buzzer, the cassette write line and the
+    /// cards' cassette recorder. `lh5803Runs` picks the block's phi.
+    void advanceSerial(uint32_t tstates, bool lh5803Runs);
 
     /// Sets/clears the ON key's live state (not part of the scan matrix --
     /// see PC1600Keyboard's class comment). A press transition sets IF
@@ -429,7 +431,8 @@ public:
         io(m_internalRam);
         io.end();
         io.begin("PORT");
-        io(m_intCause)(m_intMask)(m_lhNmiLatch)(m_dda)(m_opa)(m_ddb)(m_opb)(m_opc)(m_fReg)(m_sdo)(m_sdoAccum);
+        io(m_intCause)(m_intMask)(m_lhNmiLatch)(m_dda)(m_opa)(m_ddb)(m_opb)(m_opc);
+        m_serial.stateIo(io);
         io(m_pbIn)(m_msk)(m_if);
         m_keyboard.stateIo(io);
         io.end();
@@ -479,43 +482,55 @@ private:
     // and bit 6 gates the buzzer: the firmware clears it for BEEP OFF
     // (5EFE, F86B bit 0) and sets it again for BEEP ON (5F31, OR C0H). This
     // matches Systemhandbuch Appendix 6 ("b7 buzzer line, b6 buzzer on").
-    // Per TRM 7.5 the same line also carries cassette-record output (SD0),
-    // so a future cassette model shares this latch. It has to be readable
+    // The same bit is the CE-1600P's cassette-write signal (PC7', see
+    // m_serial). It has to be readable
     // because the ROM does read-modify-write on it.
     uint8_t m_opc{0};
-    // F register (17H) and the modulated serial output SDO -- PC-1500 TRM
-    // 3-3-2 (9) and 3-2 D for the LH5810/5811 this block is compatible
-    // with. F6 = 1 switches SDO from normal serial data to the modulation
-    // clocks: SDO = SXO*FX + /SXO*FY. F0-2 pick FX and F3-5 pick FY, each
-    // phi/64, /128, /256, /512 or /1024. Only the idle case is modelled:
-    // no serial transmit (L, 16H), so SXO sits at mark = 1 and SDO = FX.
+    // The serial block of the LH5810/5811-compatible port (14H divider
+    // reset, 16H L, 17H F, 19H G; IF b3 = TD, MSK b7 = CL1): the shared
+    // LH5811Serial. F6 = 1 puts the modulation clocks on SDO: the CE-150's
+    // tape code (run by the LH5803 in MODE 1) sends its bytes through L
+    // with F = 63H, and `OUT &17,65` whistles.
     //
-    // phi, measured: dampflok.bas (Baum Systemhandbuch p.52) whistles with F = 41H
-    // (FX = /128). A real unit plays it at 2539 Hz (2533.24 Hz recorded, less
-    // the recorder's -0.22% seen in every BEEP recording), = 1.3 MHz / 512.
-    // So this block's modulator runs from phi = 1.3 MHz / 4 = 325 kHz.
-    // Baum Systemhandbuch Anhang A p.93 confirms &17: "OUT &17,65" on /
-    // "OUT &17,0" off, a continuous tone, the cassette-recording sync signal.
-    // Its "2639 Hz" is a typo: no power-of-two divider of 1.3 or 3.58 MHz
-    // gives that, while 2539 Hz is 1.3 MHz / 512. (The
-    // PC-1500's own LH5811 runs at 1.3 MHz: the CE-150 tape code writes
-    // F = 63H for its 2539 / 1270 Hz tones, /512 and /1024.)
+    // phi, measured twice on a real unit:
+    // - The SC7852 running: dampflok.bas (Baum Systemhandbuch p.52) whistles
+    //   with F = 41H (FX = /128) at 2539 Hz (2533.24 Hz recorded, less the
+    //   recorder's -0.22% seen in every BEEP recording) = 325 kHz / 128.
+    //   Baum Anhang A p.93: "OUT &17,65" on / "OUT &17,0" off, the
+    //   cassette-recording sync signal (its "2639 Hz" is a typo).
+    // - The LH5803 running: a MODE 1 CSAVE through the CE-150 (F = 63H)
+    //   records a 2535 Hz leader and 1267 Hz zeros, the PC-1500's 2539 /
+    //   1270 Hz = 1.3 MHz / 512 and / 1024, as the TRM's MODE 1 tape format
+    //   says (2.54 / 1.27 kHz). So phi is phiOS (1.3 MHz) while the LH5803
+    //   runs and phiOS / 4 while the SC7852 does.
     //
-    // SDO reaches the buzzer through the same gate as OPC b7/b6. The line
-    // idles high and either input going low sounds it
-    // (Ref/PC-1600/PC-1600-CPU-SC7852-Z80.md pin 75: PC6 = NAND(..., SD0)). So the
-    // audible level is (b6 && b7) && SDO. The recording agrees: the
-    // whistle runs on unchanged through the noise routine's OPC writes, and
-    // BEEP OFF (b6 low) silences both. PB2, the cassette input, is the
-    // gate's fourth input, so a tape playing into CLOAD sounds too (a real
-    // unit is audible on CSAVE and CLOAD); it counts as high (its pull-up)
-    // while no tape interface drives it.
-    static constexpr int64_t kModulatorHz = kPC1600PhiOsHz / 4;   // phi of the F-register dividers
-    uint8_t m_fReg{0};
-    bool    m_sdo{true};
-    int64_t m_sdoAccum{0};  // T-states * kModulatorHz into the current SDO half period
-    void updateBuzzerLine() {
-        m_piezo.setLevel((m_opc & 0xC0) == 0xC0 && m_sdo && m_systemBus.cmtIn(true));
+    // CL1: the CE-150's tape reader (LOAD_NIBBLE, CE-150 ROM BE02) times
+    // the bits on MSK b7, the serial clock it restarts with a 14H write, as
+    // on the PC-1500, where CL0 is wired to CL1. No PC-1600 document shows
+    // that wiring; Sharp documents CE-150 tapes loading in MODE 1 (TRM
+    // p.197), which needs it, so CL1 reads CL0 here too.
+    //
+    // The buzzer: SDO reaches it through the same gate as OPC b7/b6. The
+    // line idles high and either input going low sounds it (TRM p.220, pin
+    // 75: PC6 = NAND(PB2, PC6', PC7', SD0)). So the audible level is
+    // (b6 && b7) && SDO. The recording agrees: the whistle runs on
+    // unchanged through the noise routine's OPC writes, and BEEP OFF (b6
+    // low) silences both. PB2, the cassette input, is the gate's fourth
+    // input, so a tape playing into CLOAD sounds too (a real unit is
+    // audible on CSAVE and CLOAD); it counts as high (its pull-up) while no
+    // tape interface drives it.
+    //
+    // The cassette write line: SD0 = AND(SD0', PC7') (TRM p.221; SD0' the
+    // CE-150's recording signal = SDO, PC7' the CE-1600P's = OPC b7), wired
+    // straight to CMTOUT (Service Manual p.50). Both idle high (Service
+    // Manual §7-6), so either one writes while the other rests.
+    static constexpr uint64_t kPhiLH5803Hz = kPC1600PhiOsHz;
+    static constexpr uint64_t kPhiSC7852Hz = kPC1600PhiOsHz / 4;
+    LH5811Serial m_serial{kPC1600TStateHz, kPhiSC7852Hz};
+    bool lineLevel(bool sdo) const { return sdo && (m_opc & 0x80) != 0; }
+    void updateLines(bool sdo) {
+        m_systemBus.setCmtOut(lineLevel(sdo));
+        m_piezo.setLevel((m_opc & 0xC0) == 0xC0 && sdo && m_systemBus.cmtIn(true));
     }
     // Sampled in SC-7852 T-states.
     PiezoSampler m_piezo{double(kPC1600TStateHz), PiezoSampler::Transducer::PC1600};

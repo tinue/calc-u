@@ -32,9 +32,6 @@ and `docs/Process.md` until the closing check at its end has passed.
 
 ### Open items
 
-- **App Store metadata**: the worktree `products/calc-u-59/appstore`
-  that `release.yaml` names does not exist yet, so `whatsnew.txt` was
-  skipped at the pre-release.
 - **Help pictures**: the pictures to retake are listed by name in
   `docs/help-site.md`, "Help content" (Calc-U-59: six, from the Swift app;
   Calc-U-1600: ten, `tools/make_screenshots.sh <chapter>` from iTerm2).
@@ -196,7 +193,7 @@ repository.
 
 ### Calc-U-59 3.0.0
 
-- [ ] App Store metadata: the orphan branch `appstore` of tinue/Calc-U-59
+- [x] App Store metadata: the orphan branch `appstore` of tinue/Calc-U-59
       (description, keywords, screenshots, `whatsnew.txt`) pushed to
       tinue/calc-u and checked out as the worktree
       `products/calc-u-59/appstore`.

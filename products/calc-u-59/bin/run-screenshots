@@ -38,11 +38,22 @@ trap 'stop_capture_watcher; rm -f /tmp/calc-u-59-screenshot-dir /tmp/calc-u-59-s
 
 # ── Test runner ────────────────────────────────────────────────────────────────
 
+quit_app_everywhere() {
+    local udid
+    for udid in $(xcrun simctl list devices booted -j |
+                  python3 -c 'import json, sys; [print(d["udid"]) for r in json.load(sys.stdin)["devices"].values() for d in r]'); do
+        xcrun simctl terminate "$udid" ch.erzberger.calcu59 2>/dev/null || true
+    done
+}
+
 run_test() {
     local udid="$1"
     local only="${2:-}"
     local -a extra=()
     [[ -n "$only" ]] && extra+=(-only-testing "Calc-U-59UITests/ScreenshotTests/$only")
+    # Every simulator shares the Mac's 127.0.0.1: an app left running on
+    # another one holds the attach port, and the test would drive that app.
+    quit_app_everywhere
     echo "▶ $udid${only:+ ($only)}"
     xcodebuild test \
         -project "$SRCROOT/frontends/swift/Calc-U-59.xcodeproj" \

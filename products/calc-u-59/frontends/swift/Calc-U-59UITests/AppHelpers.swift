@@ -86,11 +86,32 @@ extension XCTestCase {
     /// starts) stays paused (docs/formats/preset.md §5.6); a paused machine is never idle,
     /// so the bare `wait` would wait until it is resumed (§6.2): for
     /// `endsPaused` the run-state topic is read until it says paused.
-    func waitForOperation(_ harness: HarnessClient, timeout: TimeInterval, endsPaused: Bool = false) {
-        XCTAssertTrue(harness.waitForMessage(timeout: 15) { $0.hasPrefix("message busy ") && $0.contains("\"operationRuns\":true") },
-                      "no operation started")
-        XCTAssertTrue(harness.waitForMessage(timeout: timeout) { $0.hasPrefix("message busy ") && $0.contains("\"operationRuns\":false") },
-                      "the operation did not end")
+    ///
+    /// For a preset (`preset`: its file name) the start is that preset's own
+    /// end line in the log: a busy pair of another operation, such as one the
+    /// closing file picker causes, would end the wait before the preset ran.
+    func waitForOperation(_ harness: HarnessClient, timeout: TimeInterval, endsPaused: Bool = false,
+                          preset: String? = nil) {
+        if let preset {
+            var ending = ""
+            XCTAssertTrue(harness.waitForMessage(timeout: timeout + 15) {
+                guard $0.hasPrefix("message log "), $0.contains("Preset "), $0.contains(preset),
+                      $0.contains(" carried out to its end.") || $0.contains(" stopped: ") else { return false }
+                ending = $0
+                return true
+            }, "the preset \(preset) did not run to its end")
+            XCTAssertTrue(ending.contains(" carried out to its end."), "the preset \(preset) stopped: \(ending)")
+            // The busy topic's end may come before the log's last lines.
+            if !endsPaused {
+                waitIdle(harness)
+                return
+            }
+        } else {
+            XCTAssertTrue(harness.waitForMessage(timeout: 15) { $0.hasPrefix("message busy ") && $0.contains("\"operationRuns\":true") },
+                          "no operation started")
+            XCTAssertTrue(harness.waitForMessage(timeout: timeout) { $0.hasPrefix("message busy ") && $0.contains("\"operationRuns\":false") },
+                          "the operation did not end")
+        }
         if endsPaused {
             let end = Date().addingTimeInterval(10)
             var state: [String] = []
@@ -160,7 +181,7 @@ extension XCTestCase {
         XCTAssertTrue(cell.waitForExistence(timeout: 5), "\(file) not found in file picker")
         harness.drain()   // the busy messages before the tap
         cell.tap()
-        waitForOperation(harness, timeout: idleTimeout, endsPaused: endsPaused)
+        waitForOperation(harness, timeout: idleTimeout, endsPaused: endsPaused, preset: file)
     }
     #endif
 

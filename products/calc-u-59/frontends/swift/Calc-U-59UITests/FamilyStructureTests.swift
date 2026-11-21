@@ -37,6 +37,37 @@ final class FamilyStructureTests: XCTestCase {
         app.descendants(matching: .any)[id].firstMatch
     }
 
+    /// The session's notice: an alert on iOS, a sheet on the Mac window.
+    /// Its OK is found by its label (iOS drops the identifier `notice-ok`
+    /// on an alert's button).
+    private func notice(_ app: XCUIApplication) -> XCUIElement {
+        #if os(macOS)
+        app.sheets.firstMatch
+        #else
+        app.alerts.firstMatch
+        #endif
+    }
+
+    /// OK of the notice: a tap on iOS; Return on the Mac, where OK is the
+    /// sheet's default button and a scripted click does not reach it.
+    private func closeNotice(_ app: XCUIApplication) {
+        #if os(macOS)
+        app.typeKey(.return, modifierFlags: [])
+        #else
+        notice(app).buttons["OK"].firstMatch.tap()
+        #endif
+    }
+
+    /// The notice's text that contains `text` (the alert's label on iOS, a
+    /// text of the sheet on the Mac).
+    private func noticeText(_ app: XCUIApplication, contains text: String) -> XCUIElement {
+        #if os(macOS)
+        notice(app).staticTexts.matching(NSPredicate(format: "value CONTAINS %@", text)).firstMatch
+        #else
+        app.alerts.matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+        #endif
+    }
+
     /// A key of the faceplate by its place on the base image (canvas fractions).
     private func tapKey(_ app: XCUIApplication, x: Double, y: Double, hold: TimeInterval = 0.2) {
         let face = element(app, "faceplate")
@@ -315,19 +346,17 @@ final class FamilyStructureTests: XCTestCase {
         for name in ["first.asm", "second.asm"] {
             _ = harness.command("c59 asm load \(try badOverlay(name))")
         }
-        let ok = app.alerts.buttons["OK"].firstMatch   // the alert's OK (iOS drops the identifier `notice-ok` there)
+        let ok = notice(app).buttons["OK"].firstMatch
         XCTAssertTrue(ok.waitForExistence(timeout: 5), "no notice")
-        XCTAssertTrue(app.alerts.firstMatch.label.contains("first.asm"), "the first notice is not first")
+        XCTAssertTrue(noticeText(app, contains: "first.asm").waitForExistence(timeout: 2), "the first notice is not first")
         attachScreenshot(app, name: "The first notice")
-        ok.tap()
-        let next = app.alerts.buttons["OK"].firstMatch
+        closeNotice(app)
+        let next = notice(app).buttons["OK"].firstMatch
         if !next.waitForExistence(timeout: 5) { print("[notices] \(app.debugDescription)") }
         XCTAssertTrue(next.exists, "the second notice was lost")
-        let second = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS 'second.asm'"),
-                                               object: app.alerts.firstMatch)
-        XCTAssertEqual(XCTWaiter.wait(for: [second], timeout: 5), .completed, "the second notice is not second")
-        app.alerts.buttons["OK"].firstMatch.tap()
-        XCTAssertTrue(app.alerts.firstMatch.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(noticeText(app, contains: "second.asm").waitForExistence(timeout: 5), "the second notice is not second")
+        closeNotice(app)
+        XCTAssertTrue(notice(app).waitForNonExistence(timeout: 5))
         app.terminate()
     }
 

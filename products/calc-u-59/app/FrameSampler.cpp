@@ -62,12 +62,14 @@ FrameUpdate FrameSampler::tick(calcu::machine::Machine& m) {
 
     u.display = m.readDisplay();
     // The poll's length: what ran since the previous tick. With nothing run
-    // since, the core repeats its last snapshot, and the poll counts as long
-    // as the previous one.
+    // since (a frozen machine), the core repeats its last snapshot, which a
+    // pause may have cut off mid-sweep: the levels stay as they were, so a
+    // frozen display keeps what it showed.
     const calcu::machine::Ticks now = m.tickCount();
-    if (now != m_lastTicks) m_lastSeconds = static_cast<double>(now - m_lastTicks) / m.descriptor().tickRate;
+    if (now != m_lastTicks) {
+        m_pov.update(u.display, static_cast<double>(now - m_lastTicks) / m.descriptor().tickRate);
+    }
     m_lastTicks = now;
-    m_pov.update(u.display, m_lastSeconds);
     auto level = [](float b) { return static_cast<uint8_t>(std::lround(b * 255.0f)); };
     const auto& positions = std::get<calcu::machine::SegmentFrame>(u.display.frame).positions;
     for (int i = 0; i < 12; ++i) {

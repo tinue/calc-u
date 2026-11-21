@@ -16,6 +16,11 @@ struct ShellCommands: Commands {
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
             if let file = menu("file") { ShellMenuItems(items: file.items, viewModel: viewModel) }
+            else {
+                // The session starts after the menu bar is built: a group
+                // empty at launch takes the File menu away for good.
+                Button("Load Preset…") {}.disabled(true)
+            }
         }
         CommandMenu("Machine") {
             if let machine = menu("machine") { ShellMenuItems(items: machine.items, viewModel: viewModel) }

@@ -166,3 +166,18 @@ TEST(display_pov_error_blink_is_steady) {
 }
 
 
+
+// A machine frozen in a lit phase of the error blink: the display keeps the
+// levels it showed. The pause cuts the last poll off mid-sweep, and that
+// poll, seen again at every tick, would drive the positions unevenly.
+TEST(display_pov_frozen_display_keeps_its_levels) {
+    PovRig r(ModelId{kTI59});
+    for (int k : {92, 35}) testroms::tap(*r.m, ModelId{kTI59}, k);  // 0 1/x → error blink
+    FrameUpdate last;
+    for (int i = 0; i < 300; ++i) last = r.frame();
+    while (last.led.digitLevel[10] < 245) last = r.frame();   // in a lit phase
+    for (int i = 0; i < 120; ++i) {                              // two seconds frozen
+        const FrameUpdate f = r.sampler.tick(*r.m);
+        for (int p = 0; p < 12; ++p) CHECK_EQ(int(f.led.digitLevel[p]), int(last.led.digitLevel[p]));
+    }
+}

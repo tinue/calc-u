@@ -42,7 +42,10 @@ The control bar below the calculator holds, from left to right:
    ([The PC-100C printer](05-printer.md));
 4. on the TI-59 only, the two **Crd** buttons, Arm Card and Arm Fresh
    Card, and **Eject Card** in their place while a card passes the reader
-   ([Magnetic cards](04-magnetic-cards.md)).
+   ([Magnetic cards](04-magnetic-cards.md)). On an iPad or iPhone, where
+   the calculator stands beside the paper and the bar is wider than the
+   calculator, these buttons are left out; a card armed in another
+   layout (turned, or folded) is still fed by touching its corner.
 
 Changing the module, or attaching or detaching the PC-100C, goes through
 a power cycle, as on the real calculator ([What differs by

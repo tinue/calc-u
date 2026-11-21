@@ -118,7 +118,6 @@ private:
     DisplayPov m_pov;
     uint8_t m_lastSegments[12]{};          ///< per position, the glyph of its last driven poll
     calcu::machine::Ticks m_lastTicks = 0;  ///< tick count at the previous tick
-    double m_lastSeconds = 0;              ///< the previous poll's length (no instruction since: again)
 };
 
 } // namespace cu59

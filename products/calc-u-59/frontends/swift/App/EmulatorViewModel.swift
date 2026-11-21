@@ -205,6 +205,8 @@ class EmulatorViewModel {
     #if os(macOS)
     /// The dropped card in the reader, whose security scope is still open.
     @ObservationIgnored private var droppedCardScope: URL?
+    /// Files opened with the app before its session had started.
+    @ObservationIgnored private var filesBeforeStart: [URL] = []
     #endif
 
     // ── Cue card and module ──────────────────────────────────────────────────
@@ -280,6 +282,11 @@ class EmulatorViewModel {
         #if DEBUG && (os(macOS) || targetEnvironment(simulator))
         // Harness attach: `calcu attach`, the port of --attach-port, else 59059.
         session?.openAttach(withArguments: ProcessInfo.processInfo.arguments)
+        #endif
+        #if os(macOS)
+        let waiting = filesBeforeStart
+        filesBeforeStart = []
+        openWith(waiting)
         #endif
     }
 
@@ -588,6 +595,17 @@ class EmulatorViewModel {
     func openDroppedFile(_ url: URL) -> Bool {
         open(url, way: "drop")
         return true
+    }
+
+    /// Files from the Finder's Open With (or a double-click):
+    /// `open {way: open-with}`, each as what it is. Files that come with the
+    /// launch arrive before the session has started and wait for it.
+    func openWith(_ urls: [URL]) {
+        guard session != nil else {
+            filesBeforeStart += urls
+            return
+        }
+        for url in urls { open(url, way: "open-with") }
     }
     #endif
 

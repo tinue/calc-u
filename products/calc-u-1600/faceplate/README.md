@@ -15,7 +15,6 @@ The Qt and Web frontends both take the images from `frontends/qt6/resources/face
 |---|---|
 | `build_svg_1500.py` | the PC-1500 / PC-1500A (`--model 1500|1500a`) |
 | `build_svg_1600.py` | the PC-1600; shares keys, filters and legend placement with the 1500 |
-| `lcdfont.py` | the 5 x 7 LCD font of the previews |
 | `keys.py` | writes the key tables from the faceplate SVGs |
 
 Colours, key caps and printed details follow 600 dpi scans of a PC-1500, a

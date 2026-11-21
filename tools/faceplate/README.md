@@ -6,6 +6,7 @@ share:
 | File | |
 |---|---|
 | `svgkit.py` | the embedded fonts, the SVG output buffer and layers, rich text, small vector icons, `svg_keys` (the key rectangles of a generated SVG), `render_png` and `finish` (SVG → PNG) |
+| `lcdfont.py` | the 5 x 7 LCD font of the Sharp faceplates' previews |
 | `render.sh` | `render.sh in.svg out.png [scale]`: renders an SVG with headless Chrome (`CHROME` names another browser) |
 | `fonts/` | TeX Gyre Heros, Heros Cn, Adventor, Termes (GUST Font License) |
 

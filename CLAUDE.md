@@ -1,8 +1,9 @@
 # Calc-U
 
 One repository for the Calc-U products: Calc-U-59 (TI-58/58C/59) and
-Calc-U-1600 (PC-1500/1500A/1600), later possibly an SC61860 product. Each
-product is released separately, with its own version and tags; all of them
+Calc-U-1600 (PC-1500/1500A/1600), later possibly Calc-U-1403
+(PC-1401/1402/1403H/1421, SC61860), which so far holds only its faceplates
+(`products/calc-u-1403/faceplate/`). Each product is released separately, with its own version and tags; all of them
 build on one shared library.
 
 Until Calc-U-59 3.0.0 and Calc-U-1600 0.9.0 are out, `docs/phase-f.md`

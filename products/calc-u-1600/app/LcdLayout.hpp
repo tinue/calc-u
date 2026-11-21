@@ -55,7 +55,7 @@ inline constexpr double kP16RowLeft = 0.025;
 inline constexpr double kP16RowRight = 0.9205;
 
 struct P16Item { const char* name; double rawX; };
-// rawStartX, measured from source-material/Display.png -- fixed reference
+// rawStartX, measured on a close-up of the PC-1600 display -- fixed reference
 // data, remapped below into [kP16RowLeft, kP16RowRight] exactly like
 // Layout.startX(for:) does.
 inline constexpr P16Item kP16Items[] = {

@@ -50,6 +50,13 @@ Tests: `tools/helptool/tests/` (`python3 -m unittest discover -s
 helptool/tests -t .` in `tools/`; CTest `LibraryHelpTool`), on the fixture
 help tree `tools/helptool/tests/fixtures/good/`.
 
+## faceplate/: the kit of the faceplate generators
+
+The fonts, the SVG helpers and the rendering the products' faceplate
+generators share (`tools/faceplate/README.md`). Each product's
+`products/<product>/faceplate/build.sh` writes its faceplate images and key
+table; the outputs are committed.
+
 ## run_tests.sh: a product's Frequent tests
 
 ```sh

@@ -2,20 +2,20 @@
 """Generates the Calc-U-1600 app icon: a simplified PC-1600 (screen, "1600"
 logo, QWERTY keys, number keys) with a stylized landscape demo on the LCD.
 
-    python3 source-material/Calc-U-1600_icon.py
+    python3 tools/gen_icon.py [MASTER.svg]
 
-writes the master source-material/Calc-U-1600_icon.svg and the macOS Icon
-Composer layer Qt6/resources/macos/AppIcon.icon/Assets/pc1600.svg (the same
-without the backdrop; the icon.json fill replaces it). Then regenerate the
-platform icons from the repo root:
+writes the macOS Icon Composer layer
+frontends/qt6/resources/macos/AppIcon.icon/Assets/pc1600.svg (without the
+backdrop; the icon.json fill replaces it) and, with MASTER.svg, the full icon
+there. Then regenerate the platform icons from the product folder:
 
     for s in 16 32 128 256; do
-      rsvg-convert -w $s -h $s source-material/Calc-U-1600_icon.svg -o /tmp/i$s.png
+      rsvg-convert -w $s -h $s MASTER.svg -o /tmp/i$s.png
     done
     magick /tmp/i16.png /tmp/i32.png /tmp/i128.png /tmp/i256.png \
-      Qt6/resources/windows/calc-u-1600.ico
-    cp /tmp/i256.png Qt6/resources/linux/calc-u-1600.png
-    xcrun actool Qt6/resources/macos/AppIcon.icon --compile Qt6/resources/macos \
+      frontends/qt6/resources/windows/calc-u-1600.ico
+    cp /tmp/i256.png frontends/qt6/resources/linux/calc-u-1600.png
+    xcrun actool frontends/qt6/resources/macos/AppIcon.icon --compile frontends/qt6/resources/macos \
       --app-icon AppIcon --platform macosx --minimum-deployment-target 15.8 \
       --target-device mac --output-partial-info-plist /dev/null
 """
@@ -168,6 +168,8 @@ BASE = dict(
 )
 
 if __name__ == '__main__':
+    import sys
     root = pathlib.Path(__file__).resolve().parent.parent
-    (root / 'source-material/Calc-U-1600_icon.svg').write_text(build(BASE))
-    (root / 'Qt6/resources/macos/AppIcon.icon/Assets/pc1600.svg').write_text(build(dict(BASE, backdrop=False)))
+    (root / 'frontends/qt6/resources/macos/AppIcon.icon/Assets/pc1600.svg').write_text(build(dict(BASE, backdrop=False)))
+    if len(sys.argv) > 1:
+        pathlib.Path(sys.argv[1]).write_text(build(BASE))

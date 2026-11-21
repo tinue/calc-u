@@ -256,6 +256,7 @@ from the old repositories. The CHANGELOG entries are written from them.
 - The sides of a magnetic card are 0 and 1 (2.3.0: 1 and 2), in presets, in the card file and on screen.
 - The PC-100C's TRACE switch keeps its position when the printer is disconnected and connected again and through a model switch, as the real switch does (2.3.0: off after each). A preset sets it off unless it says `printer-trace: on` (2.3.0: a preset without `PRINTER: on` kept it).
 - Under Examples, `fastmode-sst` is the last of "Programs", not tenth after the printer pictures.
+- The faceplate and the cue cards are new drawings (flat keys, TI-58C type, warm gold legends, cue cards with straight rules of one width); a key's on-screen area is its cap.
 - A magnetic card carries its own cue card (from `magnetic-cards:` or from its card file), never the preset's `cue-card:`; a card without one shows a plain card titled with its name. A card a preset feeds is fitted after it has passed through the reader, in-file cards too.
 - A keystroke program file (`.keystrokes.yaml`) can be opened or dropped: its program goes into the running calculator without a cold boot. A Solid State ROM module file or the constant memory file is refused with a notice.
 - On the web, the calculator fetches all 24 ROM files at the start (2.3.0: 6 or 7), and the installed app caches them all.

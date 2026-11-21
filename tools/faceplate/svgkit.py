@@ -236,7 +236,23 @@ def render_png(svg_path):
     subprocess.run([str(HERE / "render.sh"), str(svg_path), str(png)], check=True)
     before = png.stat().st_size
     oxipng.optimize(png, level=4, strip=oxipng.StripChunks.safe())
+    tag_srgb(png)
     print(f"{png.name}: {before // 1024} KB -> {png.stat().st_size // 1024} KB")
+
+
+def tag_srgb(png):
+    """Mark the PNG as sRGB (an sRGB chunk after IHDR), the colour space the faceplates are
+    drawn in. Chrome writes the screenshot untagged, and macOS shows an untagged image in
+    another colour space: on a wide-gamut display the blacks turn grey."""
+    import struct
+    import zlib
+    data = Path(png).read_bytes()
+    if b"sRGB" in data[:64] or b"iCCP" in data[:64]:
+        return
+    end = 8 + 8 + struct.unpack(">I", data[8:12])[0] + 4   # signature, IHDR
+    body = b"sRGB" + b"\x00"                                # rendering intent: perceptual
+    chunk = struct.pack(">I", 1) + body + struct.pack(">I", zlib.crc32(body))
+    Path(png).write_bytes(data[:end] + chunk + data[end:])
 
 
 def finish(svg_path, svg, layout, keep_svg=False, no_png=False):

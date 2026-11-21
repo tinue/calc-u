@@ -16,14 +16,13 @@ struct ControlBarView: View {
     @State private var confirming: TIMenuItem?
 
     var body: some View {
-        HStack(spacing: 12) {
-            ForEach(Array(viewModel.barControls.enumerated()), id: \.offset) { index, control in
-                if index > 0, control.group != viewModel.barControls[index - 1].group,
-                   control.group == .end || control.group == .media {
-                    Spacer(minLength: 0)
-                }
-                view(for: control)
-            }
+        // The bar never widens the calculator: where the full bar is wider
+        // than the faceplate (side by side on an iPad mini or an open iPhone
+        // Duo), the card controls are left out. A card armed in another
+        // layout is still fed by its corner on the faceplate.
+        ViewThatFits(in: .horizontal) {
+            row(withCards: true)
+            row(withCards: false)
         }
         .buttonStyle(ChromeButtonStyle())
         .padding(.horizontal, 12)
@@ -42,6 +41,19 @@ struct ControlBarView: View {
                 Button(item.label, role: .destructive) { viewModel.choose(item) }
                     .accessibilityIdentifier("confirm-\(item.itemID)")
                 Button("Cancel", role: .cancel) {}
+            }
+        }
+    }
+
+    private func row(withCards: Bool) -> some View {
+        let controls = viewModel.barControls.filter { withCards || $0.kind != .media }
+        return HStack(spacing: 12) {
+            ForEach(Array(controls.enumerated()), id: \.offset) { index, control in
+                if index > 0, control.group != controls[index - 1].group,
+                   control.group == .end || control.group == .media {
+                    Spacer(minLength: 0)
+                }
+                view(for: control)
             }
         }
     }

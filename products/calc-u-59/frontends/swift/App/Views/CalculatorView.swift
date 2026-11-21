@@ -178,6 +178,9 @@ struct CalculatorView: View {
                 KeyboardView()
                 Spacer()
                 ControlBarView(showLabels: showLabels)
+                    // No ideal width: the faceplate alone sets the column's
+                    // width where the column is sized to its content.
+                    .frame(minWidth: 0, idealWidth: 0, maxWidth: .infinity)
             }
             .background(Color(white: 29.0/255.0))
             .padding(.horizontal, 8)

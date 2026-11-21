@@ -39,21 +39,12 @@ go next to it). `build_cards.py`: `--keep-svg`, `--no-png`, `-o DIR`.
   Gyre Termes) for x and y. Warm gold legends; the lettering on the brown
   caps is the cream of the number keys.
 
-Layers of the SVG (bottom to top):
-
-| Layer | Contents |
-|---|---|
-| `body` | black keyboard panel |
-| `display` | dark red glass panel; group `led`: 12 cells as in `app/LedGeometry`, empty unless `--led` |
-| `print-text` | legends above the keys |
-| `keys` | flat caps in a dark gap, labels; `data-x/y/w/h` = the cap |
-| `cue-card` | the cue card window (`kCardRect`): group `card` the card art, `card-wash` the wash the app lays over the card's top 28 % (`kCueCardWashColor` at `kCueCardWashAlpha`). Hidden unless `--card`. |
+The layers of the SVG are listed in the header of `build_svg_ti59.py`.
 
 ## The cue cards
 
 Straight rules of one width (8), a regular column pitch, one corner radius per
 card. The cells line up with the app's text layout (`app/CueCard.cpp`
 `cueCardLayout`); the MagnetCard arrows are the app's own points
-(`cardCornerGeometry`), as the app redraws them on a lit corner. Layers:
-`card` (the card), `print` (bands, badges, rules, dividers, arrows, the
-SolidState title as outlines).
+(`cardCornerGeometry`), as the app redraws them on a lit corner. The layers are
+listed in the header of `build_cards.py`.

@@ -32,14 +32,4 @@ Options: `--model 1500|1500a` (`build_svg_1500.py`), `--text`, `--cursor`,
 `--segments`, `--keep-svg`, `--no-png`, `-o` (required; the PNG and
 `<name>-layout.json` go next to it).
 
-Layers of the SVGs (bottom to top):
-
-| Layer | Contents |
-|---|---|
-| `body` | brushed aluminium plate |
-| `print-areas` | display band, key shelf / logo panel, key panels |
-| `lighting` | plate shading, bevelled edges |
-| `print-lines` | rules, dividers, frames |
-| `print-text` | printed labels (shift functions, captions, logo) |
-| `display` | LCD bezel, window, LCD background, dots and status segments (off by default) |
-| `keys` | key wells, caps and cap labels; `data-x/y/w/h` = the key well |
+Each generator's header lists the layers of its SVG and what the key rectangles are.

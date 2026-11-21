@@ -1,14 +1,14 @@
 """SVG helpers shared by the faceplate generators of the products (products/*/faceplate/):
-the embedded fonts, the output buffer and layers, rich text, small vector icons, the key
-rectangles of a generated SVG and the rendering to PNG.
+the embedded fonts and their metrics, the output buffer and layers, rich text, small vector
+icons, the key rectangles of a generated SVG and the rendering to PNG.
 """
 import base64
 import io
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 HERE = Path(__file__).resolve().parent   # tools/faceplate/: render.sh
 FONTS = HERE / "fonts"                   # TeX Gyre, GUST Font License
-from xml.sax.saxutils import escape
 
 RED_PRINT = "#a9443a"
 BLACK_PRINT = "#1e1e1e"
@@ -34,13 +34,21 @@ EMBED = [  # family, file, weight, style
 ]
 
 
-def font_faces():
-    """@font-face rules with base64 subsets (printable ASCII + symbols used)."""
+def face(family, weight, style=None):
+    """The EMBED entry (family, file, weight, style) of a font."""
+    return next(e for e in EMBED if e[0] == family and e[2] == weight and (style is None or e[3] == style))
+
+
+def font_faces(families=None):
+    """@font-face rules with base64 subsets (printable ASCII + symbols used) of the embedded
+    fonts, or of the given families only."""
     from fontTools import subset
     from fontTools.ttLib import TTFont
-    text = "".join(chr(c) for c in range(32, 127)) + "ΣσθπΔ′∧÷×∗−–→↔·√x̄ȳ"
+    text = "".join(chr(c) for c in range(32, 127)) + "ΣσθπΔ′∧÷×∗−–→↔·√x̄ȳ≥"
     rules = []
     for fam, fn, wt, st in EMBED:
+        if families and fam not in families:
+            continue
         font = TTFont(FONTS / fn)
         sub = subset.Subsetter(subset.Options())
         sub.populate(text=text)
@@ -52,15 +60,60 @@ def font_faces():
                      f"src:url(data:font/otf;base64,{b64}) format('opentype');}}")
     return "\n".join(rules)
 
+
+# ---------------------------------------------------------------- font metrics
+_fonts, _bounds = {}, {}
+
+
+def font(file):
+    """The font file (in fonts/) as a fontTools TTFont, loaded once."""
+    if file not in _fonts:
+        from fontTools.ttLib import TTFont
+        _fonts[file] = TTFont(FONTS / file)
+    return _fonts[file]
+
+
+def advance(text, file, size):
+    """The advance width of a text at `size`."""
+    f = font(file)
+    cmap, hmtx, upm = f.getBestCmap(), f["hmtx"], f["head"].unitsPerEm
+    return sum(hmtx[cmap[ord(c)]][0] for c in text) * size / upm
+
+
+def glyph_runs(text, file, size):
+    """(x offset, ink box) per glyph of a text at `size`; boxes y-up, None for blanks."""
+    from fontTools.pens.boundsPen import BoundsPen
+    f = font(file)
+    cmap, hmtx, upm, gs = f.getBestCmap(), f["hmtx"], f["head"].unitsPerEm, f.getGlyphSet()
+    runs, x = [], 0.0
+    for ch in text:
+        g = cmap[ord(ch)]
+        if (file, g) not in _bounds:
+            pen = BoundsPen(gs)
+            gs[g].draw(pen)
+            _bounds[file, g] = pen.bounds
+        b = _bounds[file, g]
+        runs.append((x, None if b is None else tuple(v * size / upm for v in b)))
+        x += hmtx[g][0] * size / upm
+    return runs
+
+
+# ---------------------------------------------------------------- output buffer
 out = []
+
+
+def svg_open(w, h):
+    """The <svg> start tag of a w x h canvas."""
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
+            f'width="{w}" height="{h}" viewBox="0 0 {w} {h}">')
 
 
 def emit(s):
     out.append(s)
 
 
-def layer(name):
-    emit(f'<g id="{name}" inkscape:groupmode="layer" inkscape:label="{name}">')
+def layer(name, extra=""):
+    emit(f'<g id="{name}" inkscape:groupmode="layer" inkscape:label="{name}"{extra}>')
 
 
 def end():
@@ -166,6 +219,11 @@ def svg_keys(svg):
     return {m[0]: tuple(float(v) for v in m[1:])
             for m in re.findall(r'id="key-([^"]+)" class="key" data-x="([^"]+)" data-y="([^"]+)" '
                                 r'data-w="([^"]+)" data-h="([^"]+)"', svg)}
+
+
+def keymap(svg):
+    """The key rectangles of a generated SVG for its layout JSON, {name: {x, y, w, h}}."""
+    return {k: dict(zip("xywh", r)) for k, r in svg_keys(svg).items()}
 
 
 def render_png(svg_path):

@@ -14,3 +14,5 @@ uv run faceplate/build_svg.py --model 1403h --text '10PRINT"Hello, World!"' --cu
 Options: `--model 1401|1402|1403h|1421`, `--text`, `--cursor`, `--segments`
 (`model`: the model's own), `--keep-svg`, `--no-png`, `-o` (required; the PNG
 and `<name>-layout.json` go next to it).
+
+The layers of the SVG are listed in the header of `build_svg.py`.

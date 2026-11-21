@@ -3,37 +3,42 @@
 # requires-python = ">=3.10,<3.15"
 # dependencies = ["fonttools", "pyoxipng"]
 # ///
-"""Generate a layered, semantic SVG of the Sharp PC-1401 / PC-1402 / PC-1403H / PC-1421 front panel.
+"""Generate the layered, semantic SVG of the PC-1401 / PC-1402 / PC-1403H / PC-1421 faceplate.
 
-Coordinate system: 2576 x 1150 units; the geometry was measured on a photo of a PC-1403H
-scaled to 2576 px width.
-The four models share the panel; their differences are listed in MODELS.
+Coordinate system: 2576 x 1150 units; the geometry was measured on a photo of a PC-1403H scaled
+to 2576 px width. The four models share the panel; their differences are listed in MODELS.
+Fonts, font metrics, the output buffer, rich text and the rendering are in tools/faceplate/svgkit.py.
 
-Layers (bottom to top):
-  body        brushed aluminium base plate + case edge
-  print-areas printed tinted areas (bands, panels, colored bars)
-  brushing    brushed-metal texture applied to body + printed areas
-  print-lines printed frame lines
-  print-text  printed labels (shift functions, captions)
-  display     bezel, LCD background, LCD dots and status segments
-  keys        key wells, caps and cap labels
+Layers (bottom to top); body and print-areas lie in the group brushed-plate, whose filter
+brushes the plate and the print together:
+  case              dark lower case under the plate
+  body              aluminium plate
+  print-areas       tinted areas: power panel, BASIC panel, grey bands (PC-1421: cream panels)
+  lighting          plate shading, bevelled edge
+  print-areas-solid unbrushed bars: MATRIX bar, STAT bar (PC-1421: the dark COMP box)
+  print-lines       printed frame lines
+  print-text        printed labels (shift functions, captions)
+  display           bezel with logo, model and memory badge, LCD background, glass captions,
+                    dots and status segments (off unless lit)
+  power-switch      the POWER slide switch
+  keys              key wells, caps and cap labels; data-x/y/w/h = the key well
 
 Usage: build_svg.py [--model 1401|1402|1403h|1421] [--text '10PRINT"Hello, World!"'] [--cursor N]
                     [--segments SML,DEG,PRO] [--keep-svg] [--no-png] -o out.svg
-Writes the SVG to -o, the PNG next to it (rendered with headless Chrome, losslessly optimised with
-oxipng; the SVG is deleted unless --keep-svg) and <name>-layout.json (keys, LCD dot geometry,
-segment boxes). Without --text, --cursor and --segments the LCD is off: the faceplate.
+Writes the SVG to -o, the PNG next to it (rendered with headless Chrome, losslessly optimised
+with oxipng; the SVG is deleted unless --keep-svg) and <name>-layout.json (key wells, LCD dot geometry, segment boxes).
+Without --text, --cursor and --segments the LCD is off: the faceplate; with them, a preview.
 """
 import argparse
-import base64
-import io
 import sys
 from pathlib import Path
 from xml.sax.saxutils import escape
 
 sys.dont_write_bytecode = True   # keep the source folders free of __pycache__
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools" / "faceplate"))
-import svgkit  # noqa: E402  (fonts, rendering)
+import svgkit  # noqa: E402  (fonts, output buffer, rich text, rendering)
+from svgkit import (BLACK_PRINT, FONT_COND, FONT_GEO, FONT_LOGO, FONT_SANS, RED_PRINT,  # noqa: E402
+                    emit, end, icon, layer, rich)
 from lcdfont import FONT  # noqa: E402
 
 W, H = 2576, 1150
@@ -43,51 +48,10 @@ ALU = "#b9bec4"
 ALU_EDGE = "#8d9298"
 BAND = "#a7a49d"          # grey printed bands (right section)
 PANEL = "#bdb6a8"         # warm grey printed panels (left)
-RED_PRINT = "#a9443a"
-BLACK_PRINT = "#1e1e1e"
 BAR_RED = "#a94a3d"
 FIN_PANEL = "#cdc8a3"     # PC-1421: cream printed areas (power panel, financial keys)
 FIN_BOX = "#2b221b"       # PC-1421: dark box behind COMP
 FIN_ORANGE = "#e08a45"    # PC-1421: RCL on the dark box
-
-# Embedded TeX Gyre fonts (GUST Font License), see tools/faceplate/fonts/:
-#   Heros    ~ Helvetica            printed labels, bold key legends
-#   Heros Cn ~ Helvetica Condensed  narrow key legends (CAL, BASIC, ...)
-#   Adventor ~ ITC Avant Garde      digits on the brown keys, logo text
-#   Termes   ~ Times italic         math letters x, y, pi ...
-FONT_SANS = "PCHeros, 'Helvetica Neue', Helvetica, sans-serif"
-FONT_COND = "PCHerosCn, 'Helvetica Neue', sans-serif"
-FONT_MATH = "PCTermes, 'Times New Roman', serif"
-FONT_GEO = "PCAdventor, 'Avenir Next', sans-serif"
-FONT_LOGO = FONT_GEO
-EMBED = [  # family, file, weight, style
-    ("PCHeros", "texgyreheros-regular.otf", 400, "normal"),
-    ("PCHeros", "texgyreheros-bold.otf", 700, "normal"),
-    ("PCHerosCn", "texgyreheroscn-regular.otf", 400, "normal"),
-    ("PCHerosCn", "texgyreheroscn-bold.otf", 700, "normal"),
-    ("PCAdventor", "texgyreadventor-bold.otf", 700, "normal"),
-    ("PCTermes", "texgyretermes-italic.otf", 400, "italic"),
-    ("PCTermes", "texgyretermes-bolditalic.otf", 700, "italic"),
-]
-
-
-def font_faces():
-    """@font-face rules with base64 subsets (printable ASCII + symbols used)."""
-    from fontTools import subset
-    from fontTools.ttLib import TTFont
-    text = "".join(chr(c) for c in range(32, 127)) + "ΣσθπΔ′∧÷×∗−–→↔·√x̄ȳ"
-    rules = []
-    for fam, fn, wt, st in EMBED:
-        font = TTFont(svgkit.FONTS / fn)
-        sub = subset.Subsetter(subset.Options())
-        sub.populate(text=text)
-        sub.subset(font)
-        buf = io.BytesIO()
-        font.save(buf)
-        b64 = base64.b64encode(buf.getvalue()).decode()
-        rules.append(f"@font-face{{font-family:{fam};font-weight:{wt};font-style:{st};"
-                     f"src:url(data:font/otf;base64,{b64}) format('opentype');}}")
-    return "\n".join(rules)
 
 CAPS = {
     #          face      face-top  skirt     label
@@ -137,82 +101,10 @@ FIN_GLASS = {"PRINT": (587, 587, 0), "FIN": (665, 665, 0), "STAT": (719, 719, 0)
              "RUN": (1157, 1157, 0), "PRO": (1220, 1220, 0), "BASIC": (1310, None, 88)}
 M = MODELS["1403h"]  # selected in main()
 
-out = []
-
-
-def emit(s):
-    out.append(s)
-
-
-def layer(name):
-    emit(f'<g id="{name}" inkscape:groupmode="layer" inkscape:label="{name}">')
-
-
-def end():
-    emit("</g>")
-
-
-# ---------------------------------------------------------------- rich text
-def rich(x, y, segs, size, color=BLACK_PRINT, family=FONT_SANS, weight=500,
-         anchor="middle", fit=None, style="", ident=None, vcap=False):
-    """segs: str or list of (text, flags). flags chars:
-    r=red k=black w=white i=italic-math ^=superscript _=subscript b=bold c=condensed
-    """
-    if isinstance(segs, str):
-        segs = [(segs, "")]
-    if vcap:  # centre the cap height on y (baseline = y + cap/2)
-        y += 0.35 * size
-    attrs = (f'x="{x:.1f}" y="{y:.1f}" font-family="{family}" font-size="{size}" '
-             f'font-weight="{weight}" fill="{color}" text-anchor="{anchor}" '
-             f'dominant-baseline="{"alphabetic" if vcap else "central"}"')
-    if fit:
-        attrs += f' textLength="{fit}" lengthAdjust="spacingAndGlyphs"'
-    if style:
-        attrs += f' style="{style}"'
-    if ident:
-        attrs += f' id="{ident}"'
-    parts = []
-    shift = 0.0
-    for text, flags in segs:
-        a = []
-        if "r" in flags:
-            a.append(f'fill="{RED_PRINT}"')
-        if "k" in flags:
-            a.append(f'fill="{BLACK_PRINT}"')
-        if "w" in flags:
-            a.append('fill="#ffffff"')
-        if "i" in flags:
-            a.append(f'font-family="{FONT_MATH}" font-style="italic"')
-        if "c" in flags:
-            a.append(f'font-family="{FONT_COND}"')
-        if "b" in flags:
-            a.append('font-weight="700"')
-        if "a" in flags:
-            tcol = RED_PRINT if "r" in flags else BLACK_PRINT if "k" in flags else color
-            text = "→"
-            a.append(f'style="stroke:{tcol};stroke-width:{size * 0.07:.1f};stroke-linejoin:round"')
-        if "g" in flags:
-            a.append(f'font-family="{FONT_GEO}"')
-        if "s" in flags and "^" not in flags:
-            a.append(f'font-size="{size * 0.72:.1f}"')
-        want = -0.30 * size if "^" in flags else (0.25 * size if "_" in flags else 0.0)
-        if "a" in flags:  # lift arrows to the middle of the cap height
-            want = -0.10 * size
-        if "u" in flags:  # small lift, e.g. the vinculum of a root sign
-            want = -0.47 * size
-        if "^" in flags or "_" in flags:
-            a.append(f'font-size="{size * 0.70:.1f}"')
-        if want != shift:
-            a.append(f'dy="{want - shift:.1f}"')
-            shift = want
-        parts.append(f'<tspan {" ".join(a)}>{escape(text)}</tspan>')
-    emit(f'<text {attrs}>{"".join(parts)}</text>')
-
-
 # ---------------------------------------------------------------- defs
 def defs():
     emit("<defs>")
-    emit(f"<style>{font_faces()}</style>")
+    emit(f"<style>{svgkit.font_faces()}</style>")
     # brushed aluminium: horizontal streak noise mixed into the source graphic
     emit("""
 <filter id="brushed" x="0" y="0" width="1" height="1" filterUnits="objectBoundingBox" color-interpolation-filters="sRGB">
@@ -367,40 +259,6 @@ def cap_geom(x, y, w, h):
     cw = w - ml - mr
     ch = h * 0.83
     return cx, cy, cw, ch
-
-
-def icon(kind, cx, cy, s, color):
-    """Small vector glyphs drawn as paths, centred at cx,cy, scale s (~font size)."""
-    k = s / 20.0
-    if kind == "down" or kind == "up":
-        sg = 1 if kind == "down" else -1
-        d = (f"M{cx - 2*k:.1f},{cy - 9*k*sg:.1f} L{cx + 2*k:.1f},{cy - 9*k*sg:.1f} "
-             f"L{cx + 2*k:.1f},{cy + 1*k*sg:.1f} L{cx + 7*k:.1f},{cy + 1*k*sg:.1f} "
-             f"L{cx:.1f},{cy + 10*k*sg:.1f} L{cx - 7*k:.1f},{cy + 1*k*sg:.1f} "
-             f"L{cx - 2*k:.1f},{cy + 1*k*sg:.1f} Z")
-    elif kind in ("left", "right"):
-        sg = 1 if kind == "right" else -1
-        d = (f"M{cx - 12*k*sg:.1f},{cy - 8*k:.1f} L{cx + 12*k*sg:.1f},{cy:.1f} "
-             f"L{cx - 12*k*sg:.1f},{cy + 8*k:.1f} Z")
-    elif kind == "updown":
-        d = (f"M{cx:.1f},{cy - 13*k:.1f} L{cx + 8*k:.1f},{cy - 3*k:.1f} L{cx + 2.3*k:.1f},{cy - 3*k:.1f} "
-             f"L{cx + 2.3*k:.1f},{cy + 3*k:.1f} L{cx + 8*k:.1f},{cy + 3*k:.1f} L{cx:.1f},{cy + 13*k:.1f} "
-             f"L{cx - 8*k:.1f},{cy + 3*k:.1f} L{cx - 2.3*k:.1f},{cy + 3*k:.1f} L{cx - 2.3*k:.1f},{cy - 3*k:.1f} "
-             f"L{cx - 8*k:.1f},{cy - 3*k:.1f} Z")
-    elif kind == "sqrt":
-        emit(f'<path d="M{cx - 15*k:.1f},{cy + 1*k:.1f} L{cx - 11*k:.1f},{cy - 1*k:.1f} L{cx - 6*k:.1f},{cy + 10*k:.1f} '
-             f'L{cx - 1*k:.1f},{cy - 10*k:.1f} H{cx + 16*k:.1f}" fill="none" stroke="{color}" '
-             f'stroke-width="{3.6*k:.1f}" stroke-linejoin="miter"/>')
-        return
-    elif kind == "dot":
-        emit(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{4.2*k:.1f}" fill="{color}"/>')
-        return
-    elif kind == "arrow":  # small solid right arrow (used inside text-like labels)
-        d = (f"M{cx - 7*k:.1f},{cy - 1.6*k:.1f} H{cx + 1*k:.1f} V{cy - 5*k:.1f} L{cx + 7*k:.1f},{cy:.1f} "
-             f"L{cx + 1*k:.1f},{cy + 5*k:.1f} V{cy + 1.6*k:.1f} H{cx - 7*k:.1f} Z")
-    else:
-        raise ValueError(kind)
-    emit(f'<path d="{d}" fill="{color}"/>')
 
 
 def key(ident, x, y, w, h, scheme, label, size=34, family=FONT_SANS, weight=600, fit=None, label_color=None,
@@ -602,7 +460,7 @@ def printed_text():
 
 def fin_text():
     """PC-1421: shift labels of the financial keys, statistics labels on the brown keys, DAYS line."""
-    R, K = RED_PRINT, BLACK_PRINT
+    R = RED_PRINT
     rows = [
         [None, [("STO", "")], [("NPV", "")], [("IRR", "")], [("N", ""), ("i", "i")], [("CA", "")]],
         [[("×12", "")], [("÷12", "")], [("→", "sab"), ("APR", "")], [("→", "sab"), ("EFF", "")],
@@ -796,8 +654,8 @@ def main():
     a.segments = M["segments"] if a.segments == "model" else a.segments
     if not M["lowercase"]:
         a.text = a.text.upper()
-    emit(f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
-         f'width="{W}" height="{H}" viewBox="0 0 {W} {H}">')
+    svgkit.out.clear()
+    emit(svgkit.svg_open(W, H))
     defs()
     body_and_prints()
     printed_text()
@@ -805,12 +663,10 @@ def main():
     power_switch()
     keys()
     emit("</svg>")
-    import re
-    keymap = {m[0]: dict(x=float(m[1]), y=float(m[2]), w=float(m[3]), h=float(m[4]))
-              for m in re.findall(r'id="key-([^"]+)" class="key" data-x="([^"]+)" data-y="([^"]+)" data-w="([^"]+)" data-h="([^"]+)"', "\n".join(out))}
+    svg = "\n".join(svgkit.out)
     lcd = dict(LCD, text_x0=TEXT_X0, text_y0=TEXT_Y0, dot_pitch_x=DOT_PX, dot_pitch_y=DOT_PY,
                dot_w=DOT_W, dot_h=DOT_H, chars=CHARS)
-    svgkit.finish(a.out, "\n".join(out), {"size": [W, H], "keys": keymap, "lcd": lcd, "segments": SEG_BOX},
+    svgkit.finish(a.out, svg, {"size": [W, H], "keys": svgkit.keymap(svg), "lcd": lcd, "segments": SEG_BOX},
                   a.keep_svg, a.no_png)
 
 

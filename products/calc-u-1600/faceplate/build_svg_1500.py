@@ -3,32 +3,31 @@
 # requires-python = ">=3.10,<3.15"
 # dependencies = ["fonttools", "pyoxipng"]
 # ///
-"""Generate a layered, semantic SVG of the Sharp PC-1500 / PC-1500A front panel.
+"""Generate the layered, semantic SVG of the PC-1500 / PC-1500A faceplate.
 
 Coordinate system: 4000 x 1760 units; the key wells, the dark band, the LCD bezel and the key
-shelf were measured on a reference drawing of that size.
-Colours, key caps and printed details follow 600 dpi scans of a PC-1500 and a PC-1500A
-(not in the repo). The two models share the geometry; their differences are listed in MODELS.
-Fonts, text helper and output are in tools/faceplate/svgkit.py.
+shelf were measured on a reference drawing of that size. Colours, key caps and printed details
+follow 600 dpi scans of a PC-1500 and a PC-1500A (not in the repository). The two models share
+the geometry; their differences are listed in MODELS.
+Fonts, font metrics, the output buffer, rich text and the rendering are in tools/faceplate/svgkit.py.
 
-Layers (bottom to top):
-  body        brushed aluminium plate
+Layers (bottom to top); body and print-areas lie in the group brushed-plate, whose filter
+brushes the plate and the print together:
+  body        aluminium plate
   print-areas dark display band, key shelf under the LCD
   lighting    plate shading, bevelled edges
   print-lines band rule, shelf dividers and frame, POWER line or box
   print-text  printed labels (shift functions, captions, logo)
-  display     LCD bezel, window, LCD background, dots and status segments
-  keys        key wells, caps and cap labels
+  display     LCD bezel, window, LCD background, dots and status segments (off unless lit)
+  keys        key wells, caps and cap labels; data-x/y/w/h = the key well
 
-Usage: build_svg_1500.py [--model 1500|1500a] [--text '10 PRINT "HELLO"'] [--cursor N] [--segments DE,G,RUN,BATT]
-                         [--keep-svg] [--no-png] [-o out.svg]
+Usage: build_svg_1500.py [--model 1500|1500a] [--text '10 PRINT "HELLO"'] [--cursor N]
+                         [--segments DE,G,RUN,BATT] [--keep-svg] [--no-png] -o out.svg
 Writes the SVG to -o, the PNG next to it (rendered with headless Chrome, losslessly optimised
-with oxipng; the SVG is deleted unless --keep-svg) and <name>-layout.json (key wells, LCD dot
-geometry, segment boxes). Without --text, --cursor and --segments the LCD is off: the faceplate.
---text, --cursor and --segments light the LCD for a preview.
+with oxipng; the SVG is deleted unless --keep-svg) and <name>-layout.json (key wells, LCD dot geometry, segment boxes).
+Without --text, --cursor and --segments the LCD is off: the faceplate; with them, a preview.
 """
 import argparse
-import re
 import sys
 from pathlib import Path
 
@@ -36,7 +35,7 @@ sys.dont_write_bytecode = True   # keep the source folders free of __pycache__
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools" / "faceplate"))
 
 import svgkit as B
-from svgkit import FONT_COND, FONT_GEO, FONT_LOGO, FONT_MATH, FONT_SANS, emit, end, layer, rich
+from svgkit import FONT_COND, FONT_LOGO, FONT_SANS, emit, end, layer, rich
 from lcdfont import FONT
 
 W, H = 4000, 1760
@@ -394,32 +393,14 @@ def printed_text():
     end()
 
 
-_FONTS = {}
-
-
 def ink_bottom(segs, size):
     """Lowest ink of a legend relative to its baseline, in units (positive = above the baseline)."""
-    from fontTools.pens.boundsPen import BoundsPen
-    from fontTools.ttLib import TTFont
     if isinstance(segs, str):
         segs = [(segs, "")]
-    lo = None
-    for text, flags in segs:
-        fn = "texgyretermes-italic.otf" if "i" in flags else "texgyreheros-regular.otf"
-        if fn not in _FONTS:
-            _FONTS[fn] = TTFont(B.FONTS / fn)
-        font = _FONTS[fn]
-        gs, cmap = font.getGlyphSet(), font.getBestCmap()
-        upm = font["head"].unitsPerEm
-        for ch in text:
-            if ch == " ":
-                continue
-            pen = BoundsPen(gs)
-            gs[cmap[ord(ch)]].draw(pen)
-            if pen.bounds:
-                y = pen.bounds[1] * size / upm
-                lo = y if lo is None else min(lo, y)
-    return lo or 0.0
+    lows = [b[1] for text, flags in segs
+            for _, b in B.glyph_runs(text, "texgyretermes-italic.otf" if "i" in flags else "texgyreheros-regular.otf", size)
+            if b]
+    return min(lows) if lows else 0.0
 
 
 # ---------------------------------------------------------------- display
@@ -498,8 +479,7 @@ def main():
     M = dict(MODELS[a.model], **({"band": a.band} if a.band else {}))
     out = a.out
     B.out.clear()
-    emit(f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
-         f'width="{W}" height="{H}" viewBox="0 0 {W} {H}">')
+    emit(B.svg_open(W, H))
     defs()
     body_and_prints()
     printed_text()
@@ -507,12 +487,9 @@ def main():
     keys()
     emit("</svg>")
     svg = "\n".join(B.out)
-    keymap = {m[0]: dict(x=float(m[1]), y=float(m[2]), w=float(m[3]), h=float(m[4]))
-              for m in re.findall(r'id="key-([^"]+)" class="key" data-x="([^"]+)" data-y="([^"]+)" '
-                                  r'data-w="([^"]+)" data-h="([^"]+)"', svg)}
     lcd = dict(PANEL, cols=COLS, rows=ROWS, matrix_x0=round(_IX, 2), matrix_y0=round(MATRIX_Y0, 2),
                dot_pitch_x=round(DOT_PX, 4), dot_pitch_y=round(DOT_PY, 4), dot=round(DOT, 4))
-    B.finish(out, svg, {"size": [W, H], "keys": keymap, "lcd": lcd, "segments": SEG_BOX},
+    B.finish(out, svg, {"size": [W, H], "keys": B.keymap(svg), "lcd": lcd, "segments": SEG_BOX},
              a.keep_svg, a.no_png)
 
 

@@ -3,23 +3,24 @@
 # requires-python = ">=3.10,<3.15"
 # dependencies = ["fonttools", "pyoxipng"]
 # ///
-"""Generate the three Calc-U-59 cue card templates as layered SVGs and PNGs.
+"""Generate the layered, semantic SVGs of the three Calc-U-59 cue card templates.
 
-The card art the app draws a fitted card on (CueCard, MagnetCard, SolidStateCard; 2064 x 440,
-the size of the app's card images and of its card window kCardRect). Geometry measured on the
-app's reference card images and made exact: straight rules of one width, regular column
-pitch, one corner radius per card. The cells line up with the app's text layout
+Coordinate system: 2064 x 440 units, the size of the app's card window kCardRect (CueCard,
+MagnetCard, SolidStateCard: the card art the app draws a fitted card on). The geometry was
+measured on the app's reference card images and made exact: straight rules of one width,
+regular column pitch, one corner radius per card. The cells line up with the app's text layout
 (app/CueCard.cpp cueCardLayout: xFractions, title/grid rows); the MagnetCard arrows are the
 app's own points (cardCornerGeometry), as the app redraws them on a lit corner.
+Fonts, font metrics, the output buffer, rich text and the rendering are in tools/faceplate/svgkit.py.
 
-Layers per card (bottom to top):
+Layers of each card (bottom to top), inside a group clipped to the card's outline:
   card    the card itself (rounded rectangle)
   print   printed areas (MagnetCard: top band, badges, right strip), rules, column dividers,
           the right column, the arrows, the SolidState title (as outlines: no font needed)
 
 Usage: build_cards.py [--keep-svg] [--no-png] -o DIR
-Writes <DIR>/CueCard.png, MagnetCard.png, SolidStateCard.png: the SVGs rendered with headless
-Chrome and losslessly optimised with oxipng; the SVGs are deleted unless --keep-svg.
+Writes <DIR>/CueCard.svg, MagnetCard.svg, SolidStateCard.svg and the PNGs next to them (rendered
+with headless Chrome, losslessly optimised with oxipng; the SVGs are deleted unless --keep-svg).
 """
 import argparse
 import sys
@@ -28,12 +29,12 @@ from pathlib import Path
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
-from fontTools.ttLib import TTFont
 
-HERE = Path(__file__).resolve().parent   # faceplate/: the measured data
+HERE = Path(__file__).resolve().parent   # faceplate/
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(HERE.parents[2] / "tools" / "faceplate"))
-import svgkit  # noqa: E402  (fonts, rendering)
+import svgkit  # noqa: E402  (fonts, output buffer, rendering)
+from svgkit import emit, end, layer  # noqa: E402
 W, H = 2064, 440
 RULE = 8   # every printed rule and divider
 
@@ -55,11 +56,18 @@ def vrule(x, y0, y1, color):
 
 
 def svg(name, card, layers):
-    body = "\n".join(f'<g id="{k}" inkscape:groupmode="layer" inkscape:label="{k}">\n{v}\n</g>' for k, v in layers)
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
-            f'width="{W}" height="{H}" viewBox="0 0 {W} {H}">\n<title>{name}</title>\n'
-            f'<defs><clipPath id="cardClip"><path d="{card}"/></clipPath></defs>\n'
-            f'<g clip-path="url(#cardClip)">\n{body}\n</g>\n</svg>\n')
+    svgkit.out.clear()
+    emit(svgkit.svg_open(W, H))
+    emit(f"<title>{name}</title>")
+    emit(f'<defs><clipPath id="cardClip"><path d="{card}"/></clipPath></defs>')
+    emit('<g clip-path="url(#cardClip)">')
+    for ident, content in layers:
+        layer(ident)
+        emit(content)
+        end()
+    emit("</g>")
+    emit("</svg>")
+    return "\n".join(svgkit.out) + "\n"
 
 
 def columns(first, pitch):
@@ -107,7 +115,7 @@ def magnet_card():
 def title_path(text, box):
     """The title as outlines (TeX Gyre Adventor bold ~ ITC Avant Garde) filling its ink box:
     sized by the height, stretched to the width."""
-    font = TTFont(svgkit.FONTS / "texgyreadventor-bold.otf")
+    font = svgkit.font("texgyreadventor-bold.otf")
     gs, cmap, hmtx = font.getGlyphSet(), font.getBestCmap(), font["hmtx"]
     x, glyphs = 0, []
     for ch in text:

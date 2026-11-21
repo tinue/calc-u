@@ -3,50 +3,48 @@
 # requires-python = ">=3.10,<3.15"
 # dependencies = ["fonttools", "pyoxipng"]
 # ///
-"""Generate a layered, semantic SVG of the Calc-U-59 face (TI-59 / TI-58 / TI-58C).
+"""Generate the layered, semantic SVG of the TI-59 / TI-58 / TI-58C faceplate of Calc-U-59.
 
 Coordinate system: 2064 x 4075 units, the canvas of Calc-U-59 (app/KeyboardLayout.hpp:
-kCanvasAspect, kDisplayRect, kCardRect, kKeyRects). The layout is the emulator's, not the
-original calculator's: key wells, legend rows and the display panel were measured on a
-reference rendering of the face, and so were the sizes (one size for all cap
-lettering, one for the digits, one for the legends, one math x per context, the signs) and the
-colours (ti59-ink.json). Every cap label is centred on its
-cap; the legends share a baseline per row, letter-spaced to their width on the target. Type
-and signs follow a photo of a TI-58C: Helvetica, a bold italic
-serif for the math letters. The keys are flat: a cap in a narrow dark gap.
+kCanvasAspect, kDisplayRect, kCardRect; kKeyRects are written from the caps here). The layout
+is the emulator's, not the original calculator's: key wells, legend rows and the display panel
+were measured on a reference rendering of the face, and so were the sizes (one size for all
+cap lettering, one for the digits, one for the legends, one math x per context, the signs) and
+the colours (ti59-ink.json). Every cap label is centred on its cap; the legends share a
+baseline per row, letter-spaced to their width on the target. Type and signs follow a photo
+of a TI-58C: Helvetica, a bold italic serif for the math letters. The keys are flat: a cap in a
+narrow dark gap.
+Fonts, font metrics, the output buffer, rich text and the rendering are in tools/faceplate/svgkit.py.
 
 Layers (bottom to top):
   body        black keyboard panel
   display     dark red glass panel; inside it the LED digits (group led, cells as in
-              app/LedGeometry: 12 cells, cell 0 rightmost, modernized segments)
+              app/LedGeometry: 12 cells, cell 0 rightmost, modernized segments; empty unless --led)
   print-text  printed legends above the keys (second functions, A'..E')
-  keys        flat caps in a dark gap, and their labels; data-x/y/w/h = the cap (covers the app's key rect)
-  cue-card    the cue card window (kCardRect). The app draws the fitted card here and
-              lays a semi-transparent wash (#1A0505, 40 %) over its top 28 %: the red
-              display glass the card slides under. Group card holds the card art
-              (hidden unless --card), group card-wash the wash (shown with the card).
+  keys        flat caps in a dark gap, and their labels; data-x/y/w/h = the cap (the app's key rect)
+  cue-card    the cue card window (kCardRect), hidden unless --card. The app draws the fitted
+              card here and lays a semi-transparent wash (#1A0505, 40 %) over its top 28 %: the
+              red display glass the card slides under. Group card holds the card art, card-wash
+              the wash.
 
-Usage: build_svg_ti59.py [--model 59|58] [--led 3.141592654] [--card MagnetCard.png] [--keep-svg] [--no-png] -o out.svg
-Writes the SVG to -o, the PNG next to it (rendered with headless Chrome, losslessly optimised with
-oxipng; the SVG is deleted unless --keep-svg) and <name>-layout.json (canvas, display, LED cells,
-card window and wash, key rects). Without --led and --card: the faceplate (LED off, no card);
-with them, a preview with sample LED digits or a fitted cue card (and its wash).
+Usage: build_svg_ti59.py [--model 59|58] [--led 3.141592654] [--card MagnetCard.png]
+                         [--legend warm] [--keep-svg] [--no-png] -o out.svg
+Writes the SVG to -o, the PNG next to it (rendered with headless Chrome, losslessly optimised
+with oxipng; the SVG is deleted unless --keep-svg) and <name>-layout.json (canvas, display, LED cells, card window and wash, key rects).
+Without --led and --card: the faceplate (LED off, no card); with them, a preview.
 """
 import argparse
 import base64
-import io
 import json
 import sys
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-from fontTools import subset
-from fontTools.ttLib import TTFont
-
 HERE = Path(__file__).resolve().parent   # faceplate/: the measured data
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(HERE.parents[2] / "tools" / "faceplate"))
-import svgkit  # noqa: E402  (fonts, rendering)
+import svgkit  # noqa: E402  (fonts, output buffer, rendering)
+from svgkit import emit, end, layer  # noqa: E402
 W, H = 2064, 4075
 # ink boxes of every legend and cap label on the target
 _ink = HERE / "ti59-ink.json"
@@ -100,77 +98,19 @@ DIGIT_SIZE = 134           # digits: height 98 as on the target
 LS, LSTROKE = 88, 3.0      # all legends: Helvetica regular + outline ~ medium weight, cap height 67
 
 # ---------------------------------------------------------------- fonts
-FONTS = {  # key: (css family, file, weight, style)
-    "b": ("TIHeros", "texgyreheros-bold.otf", 700, "normal"),
-    "r": ("TIHeros", "texgyreheros-regular.otf", 400, "normal"),
-    "m": ("TITermes", "texgyretermes-bolditalic.otf", 700, "italic"),
+FONTS = {  # key: the embedded font (svgkit.EMBED: family, file, weight, style)
+    "b": svgkit.face("PCHeros", 700),
+    "r": svgkit.face("PCHeros", 400),
+    "m": svgkit.face("PCTermes", 700),
 }
-_tt = {}
-
-
-def tt(key):
-    if key not in _tt:
-        _tt[key] = TTFont(svgkit.FONTS / FONTS[key][1])
-    return _tt[key]
 
 
 def advance(text, key, size):
-    f = tt(key)
-    cmap, hmtx, upm = f.getBestCmap(), f["hmtx"], f["head"].unitsPerEm
-    return sum(hmtx[cmap[ord(c)]][0] for c in text) * size / upm
-
-
-_bounds = {}
+    return svgkit.advance(text, FONTS[key][1], size)
 
 
 def glyph_runs(text, key, size):
-    """(x offset, ink box) per glyph of a text in font `key` at `size`; boxes y-up, None for blanks."""
-    from fontTools.pens.boundsPen import BoundsPen
-    f = tt(key)
-    cmap, hmtx, upm, gs = f.getBestCmap(), f["hmtx"], f["head"].unitsPerEm, f.getGlyphSet()
-    out, x = [], 0.0
-    for ch in text:
-        g = cmap[ord(ch)]
-        if (key, g) not in _bounds:
-            pen = BoundsPen(gs)
-            gs[g].draw(pen)
-            _bounds[key, g] = pen.bounds
-        b = _bounds[key, g]
-        out.append((x, None if b is None else tuple(v * size / upm for v in b)))
-        x += hmtx[g][0] * size / upm
-    return out
-
-
-def font_faces():
-    text = "".join(chr(c) for c in range(32, 127)) + "Σπ→≥÷×−"
-    rules = []
-    for fam, fn, wt, st in FONTS.values():
-        font = TTFont(svgkit.FONTS / fn)
-        sub = subset.Subsetter(subset.Options())
-        sub.populate(text=text)
-        sub.subset(font)
-        buf = io.BytesIO()
-        font.save(buf)
-        b64 = base64.b64encode(buf.getvalue()).decode()
-        rules.append(f"@font-face{{font-family:{fam};font-weight:{wt};font-style:{st};"
-                     f"src:url(data:font/otf;base64,{b64}) format('opentype');}}")
-    return "\n".join(rules)
-
-
-# ---------------------------------------------------------------- output helpers
-out = []
-
-
-def emit(s):
-    out.append(s)
-
-
-def layer(name, extra=""):
-    emit(f'<g id="{name}" inkscape:groupmode="layer" inkscape:label="{name}"{extra}>')
-
-
-def end():
-    emit("</g>")
+    return svgkit.glyph_runs(text, FONTS[key][1], size)
 
 
 # ---------------------------------------------------------------- rich text
@@ -343,7 +283,7 @@ def draw_label(runs, size, color, stroke=0.0, cx=None, cy=None, base=None, maxw=
 # ---------------------------------------------------------------- defs
 def defs():
     emit("<defs>")
-    emit(f"<style>{font_faces()}</style>")
+    emit(f"<style>{svgkit.font_faces(('PCHeros', 'PCTermes'))}</style>")
     emit(f"""
 <filter id="ledGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="{0.8 * seg_width() / 2:.1f}"/></filter>
 <filter id="ledBloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="{0.2 * seg_width() / 2:.1f}"/></filter>
@@ -621,7 +561,7 @@ def printed_text(model):
 def cue_card(card_png):
     show = card_png is not None
     layer("cue-card", "" if show else ' style="display:none"')
-    emit(f'<g id="card" clip-path="url(#cardClip)">')
+    emit('<g id="card" clip-path="url(#cardClip)">')
     if show:
         b64 = base64.b64encode(Path(card_png).read_bytes()).decode()
         emit(f'<image x="{CARD["x"]}" y="{CARD["y"]}" width="{CARD["w"]}" height="{CARD["h"]}" '
@@ -650,9 +590,8 @@ def main():
     LEGEND_NAME = a.legend
     ink = LEGENDS_INK[a.legend]
     LEGEND = ink[0] if len(ink) == 1 else "url(#legendInk)"
-    out.clear()
-    emit(f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
-         f'width="{W}" height="{H}" viewBox="0 0 {W} {H}">')
+    svgkit.out.clear()
+    emit(svgkit.svg_open(W, H))
     defs()
     body()
     display(a.led)
@@ -660,21 +599,14 @@ def main():
     keys()
     cue_card(a.card)
     emit("</svg>")
-    svg.write_text("\n".join(out))
-    import re
-    keymap = {m[0]: dict(x=int(m[1]), y=int(m[2]), w=int(m[3]), h=int(m[4]))
-              for m in re.findall(r'id="key-([^"]+)" class="key" data-x="(\d+)" data-y="(\d+)" '
-                                  r'data-w="(\d+)" data-h="(\d+)"', "\n".join(out))}
+    text = "\n".join(svgkit.out)
     cw = DISPLAY["w"] / CELLS
     layout = {"size": [W, H], "display_panel": DISPLAY_PANEL, "display": DISPLAY,
               "led": {"cells": CELLS, "cell_w": cw, "cell_h": DISPLAY["h"], "slant": SLANT,
                       "cell_x": {str(i): round(DISPLAY["x"] + (CELLS - 1 - i) * cw, 2) for i in range(CELLS)}},
-              "card": CARD, "card_wash": dict(CARD, h=WASH_H, color=WASH, alpha=WASH_ALPHA), "keys": keymap}
-    (svg.parent / f"{svg.stem}-layout.json").write_text(json.dumps(layout, indent=1))
-    if not a.no_png:
-        svgkit.render_png(svg)
-        if not a.keep_svg:
-            svg.unlink()
+              "card": CARD, "card_wash": dict(CARD, h=WASH_H, color=WASH, alpha=WASH_ALPHA),
+              "keys": svgkit.keymap(text)}
+    svgkit.finish(svg, text, layout, a.keep_svg, a.no_png)
 
 
 if __name__ == "__main__":

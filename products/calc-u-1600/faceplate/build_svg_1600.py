@@ -3,32 +3,31 @@
 # requires-python = ">=3.10,<3.15"
 # dependencies = ["fonttools", "pyoxipng"]
 # ///
-"""Generate a layered, semantic SVG of the Sharp PC-1600 front panel.
+"""Generate the layered, semantic SVG of the PC-1600 faceplate.
 
 Coordinate system: 4000 x 1777 units; the key wells, bands, bezel and panels were measured on a
-reference drawing of that size.
-Key caps, colours and printed details follow a 600 dpi scan of a PC-1600 (not in the repo),
-lightened towards the drawing where the scan is too dark.
-Keys, filters and legend placement are shared with build_svg_1500.py; fonts, text helper and
-output are in tools/faceplate/svgkit.py.
+reference drawing of that size. Key caps, colours and printed details follow a 600 dpi scan of
+a PC-1600 (not in the repository), lightened towards the drawing where the scan is too dark.
+Keys, filters and legend placement are shared with build_svg_1500.py.
+Fonts, font metrics, the output buffer, rich text and the rendering are in tools/faceplate/svgkit.py.
 
-Layers (bottom to top):
-  body        brushed aluminium plate
+Layers (bottom to top); body and print-areas lie in the group brushed-plate, whose filter
+brushes the plate and the print together:
+  body        aluminium plate
   print-areas display band (LCD + function-key strip), logo panel, grey key panel
   lighting    plate shading, bevelled edges
   print-lines rules and dividers
   print-text  printed labels (shift functions, captions, logo)
-  display     LCD bezel, window, LCD background, dots and status segments
-  keys        key wells, caps and cap labels
+  display     LCD bezel, window, LCD background, dots and status segments (off unless lit)
+  keys        key wells, caps and cap labels; data-x/y/w/h = the key well
 
-Usage: build_svg_1600.py [--text LINE1 --text LINE2 ...] [--cursor L,C] [--segments RUN,BATT] [--keep-svg] [--no-png] [-o out.svg]
+Usage: build_svg_1600.py [--text LINE1 --text LINE2 ...] [--cursor L,C] [--segments RUN,BATT]
+                         [--keep-svg] [--no-png] -o out.svg
 Writes the SVG to -o, the PNG next to it (rendered with headless Chrome, losslessly optimised
-with oxipng; the SVG is deleted unless --keep-svg) and <name>-layout.json (key wells, LCD dot
-geometry, segment boxes). Without --text, --cursor and --segments the LCD is off: the faceplate.
---text, --cursor and --segments light the LCD for a preview.
+with oxipng; the SVG is deleted unless --keep-svg) and <name>-layout.json (key wells, LCD dot geometry, segment boxes).
+Without --text, --cursor and --segments the LCD is off: the faceplate; with them, a preview.
 """
 import argparse
-import re
 import sys
 from pathlib import Path
 
@@ -358,8 +357,7 @@ def main():
     cursor = None if a.cursor == "none" else tuple(int(v) for v in a.cursor.split(","))
     segments = set(a.segments.split(",")) - {""}
     B.out.clear()
-    emit(f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
-         f'width="{W}" height="{H}" viewBox="0 0 {W} {H}">')
+    emit(B.svg_open(W, H))
     P.defs()
     body_and_prints()
     printed_text()
@@ -367,12 +365,9 @@ def main():
     keys()
     emit("</svg>")
     svg = "\n".join(B.out)
-    keymap = {m[0]: dict(x=float(m[1]), y=float(m[2]), w=float(m[3]), h=float(m[4]))
-              for m in re.findall(r'id="key-([^"]+)" class="key" data-x="([^"]+)" data-y="([^"]+)" '
-                                  r'data-w="([^"]+)" data-h="([^"]+)"', svg)}
     lcd = dict(PANEL_LCD, cols=COLS, rows=ROWS, matrix_x0=round(MX0, 2), matrix_y0=round(MY0, 2),
                dot_pitch_x=round(DOT_PX, 4), dot_pitch_y=round(DOT_PY, 4), dot=round(DOT, 4))
-    B.finish(out, svg, {"size": [W, H], "keys": keymap, "lcd": lcd, "segments": SEG_BOX},
+    B.finish(out, svg, {"size": [W, H], "keys": B.keymap(svg), "lcd": lcd, "segments": SEG_BOX},
              a.keep_svg, a.no_png)
 
 

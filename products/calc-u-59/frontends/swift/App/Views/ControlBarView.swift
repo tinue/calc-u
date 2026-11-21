@@ -27,7 +27,8 @@ struct ControlBarView: View {
         }
         .buttonStyle(ChromeButtonStyle())
         .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity)
+        // Leading: without the TI-59's card controls the rest stays put.
+        .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 50)
         .background(Color(white: 0.15))
         .foregroundStyle(.white)

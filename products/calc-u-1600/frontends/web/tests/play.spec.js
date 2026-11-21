@@ -187,7 +187,7 @@ test('the control bar follows the model: peripherals, floppy, tape', async ({ pa
   await expect(page.locator('[data-panel=paper]')).toBeVisible();
 
   await pickModel(page, 'PC-1600');
-  await expect.poll(() => page.locator(c('bar-disk')).evaluate((e) => e.disabled)).toBe(true);
+  await expect(page.locator(c('bar-disk'))).toHaveCount(0);
   await page.locator(c('bar-place-printer')).selectOption({ label: 'CE-1600P' });
   await expect.poll(() => page.locator(c('bar-disk')).evaluate((e) => e.disabled), { timeout: 30000 }).toBe(false);
   // Machine ▸ Peripherals: the CE-158 is ruled out while the CE-1600P is on.

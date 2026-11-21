@@ -91,8 +91,7 @@ DiskControl::DiskControl(MachineController& c, QWidget* parent) : MediaPlaceCont
     auto* l = new QHBoxLayout(this);
     l->setContentsMargins(0, 0, 0, 0);
     l->setSpacing(2);
-    m_label = new QLabel(tr("Disk:"), this);
-    l->addWidget(m_label);
+    l->addWidget(new QLabel(tr("Disk:"), this));
     l->addWidget(m_picker);
     m_side = new QPushButton(QStringLiteral("0"), this);
     m_side->setFocusPolicy(Qt::NoFocus);
@@ -120,14 +119,7 @@ void DiskControl::refresh() {
     const auto* cs = m_controller.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
     const calcu::control::ProductEntry* e = cs ? cs->productEntry(cu1600::kDiskControlsEntry) : nullptr;
     const sessions::Value v = e && e->value ? e->value->toValue() : sessions::Value();
-    const bool shown = calcu::shell::read::flag(v, "shown");
-    const calcu::shell::Availability a = calcu::shell::availabilityOf(v);
-    setVisible(shown);
-    for (QWidget* w : {static_cast<QWidget*>(m_label), static_cast<QWidget*>(m_picker), static_cast<QWidget*>(m_side)}) {
-        w->setEnabled(a.now);
-        w->setToolTip(a.now ? QString() : QString::fromStdString(a.reason));
-    }
-    if (!a.now) m_save->setEnabled(false);
+    setVisible(calcu::shell::read::flag(v, "shown"));
     const calcu::media::MediaState* s = m_controller.media();
     const calcu::media::PlaceState* p = s ? s->place("floppy") : nullptr;
     m_side->setText(QString::number(p && p->holds && p->holds->side ? *p->holds->side : 0));

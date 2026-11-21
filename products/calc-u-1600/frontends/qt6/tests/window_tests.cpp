@@ -258,15 +258,17 @@ TEST(bar_pc1600) {
     CHECK_EQ(barPlaceText(f, "printer"), std::string("picker:None,CE-150,CE-1600P"));
     CHECK_EQ(barPlaceText(f, "interface"), std::string("CE-158"));
     CHECK(!f.find<QWidget>(names::barPlace("host-drive")));
-    // The disk controls: on every PC-1600, disabled with the reason.
+    // No disk controls without the CE-1600P.
     auto* disk = f.find<QWidget>("bar-disk");
-    auto* picker = f.find<QComboBox>("media-picker-floppy");
-    CHECK(disk && disk->isVisible() && picker && !picker->isEnabled());
-    CHECK(picker && picker->toolTip().toStdString() == cu1600::kDiskInCe1600p);
-    // The CE-1600P: the disk controls usable, the tape's with its cassette.
+    CHECK(disk && !disk->isVisible());
+    // The CE-1600P: the tape's controls with its cassette, the disk's after them.
     f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-1600P"}}));
-    CHECK(f.waitFor([&] { return f.find<QComboBox>("media-picker-floppy")->isEnabled(); }, 5000));
+    CHECK(f.waitFor([&] { return disk->isVisible() && f.find<QComboBox>("media-picker-floppy")->isEnabled(); }, 5000));
     CHECK(f.waitFor([&] { return f.find<QWidget>("media-picker-cassette") != nullptr; }, 5000));
+    f.run(100);
+    auto* tape = f.find<QWidget>("media-picker-cassette");
+    CHECK(tape && tape->mapTo(f.find<QWidget>(names::kControlBar), QPoint()).x() <
+                      disk->mapTo(f.find<QWidget>(names::kControlBar), QPoint()).x());
 }
 
 // ── The settings ────────────────────────────────────────────────────────

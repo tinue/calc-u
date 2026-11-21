@@ -17,9 +17,9 @@ class MediaPicker;
 // - SlotControl: a module slot's picker and Name & Save (the shell's slot
 //   factory, Shell::registerSlotPicker).
 // - DiskControl: the CE-1600F's picker, the side and Name & Save, with the
-//   drive's lamp; on every PC-1600's bar, usable while the CE-1600P is
-//   plugged in (the product entry `c1600.disk-controls`), so a
-//   product control of the group Media, not the shell's media control.
+//   drive's lamp; shown while a PC-1600 has the CE-1600P (the product
+//   entry `c1600.disk-controls`), a product control at the end of the
+//   group Media, after the cassette.
 // - TapeControl: the cassette's picker, Save (a new tape to record onto)
 //   and the counter (`c1600.lamps`); the shell's media factory of the kind
 //   cassette, shown while a peripheral with a cassette is plugged in.
@@ -58,7 +58,6 @@ public:
     void refreshLamps() override;
 
 private:
-    QLabel* m_label = nullptr;
     QPushButton* m_side = nullptr;
     QLabel* m_lamp = nullptr;
 };

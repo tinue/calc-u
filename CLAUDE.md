@@ -16,6 +16,7 @@ CMakeLists.txt          one root CMake project for every product
 library/<area>/         the shared library, calcu_library
 products/<product>/     everything of one product: release.yaml, CHANGELOG.md,
                         core/ app/ frontends/ tests/ examples/ roms/ help/ docs/
+                        faceplate/ (generators of the faceplate art and key tables)
 docs/                   formats/, GLOSSARY.md, Process.md, test-groups.md
 tools/  ci/  .github/workflows/
 ```

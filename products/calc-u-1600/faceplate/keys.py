@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""Regenerate the key hit rectangles in app/KeyLayout/ from the layered faceplate SVGs.
+"""Rewrite the key hit rectangles in app/KeyLayout/ from the generated faceplate SVGs.
 
-Each key in source-material/<model>.svg is a group
-`<g id="key-<name>" class="key" data-x=.. data-y=.. data-w=.. data-h=..>` in
-the artwork's own pixels. This script rewrites the x, y, w, h of every
-`{"<key>", x, y, w, h},` entry in the C++ tables in place, keeping the
+Every key of a faceplate SVG carries its rectangle in the faceplate's pixels
+(tools/faceplate/svgkit.py svg_keys). This script rewrites the x, y, w, h of
+every `{"<key>", x, y, w, h},` entry in the C++ tables in place, keeping the
 tables' order, comments and key names (the named-key vocabulary).
 
-Usage: tools/faceplate_keys.py [--check]
+Usage: keys.py DIR [--check]   (DIR holds pc1500.svg, pc1500a.svg, pc1600.svg; build.sh runs it)
   --check  exit 1 if a table differs from the SVG instead of rewriting it.
 """
 
@@ -15,7 +14,10 @@ import re
 import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT.parents[1] / "tools" / "faceplate"))
+import svgkit  # noqa: E402
 
 # SVG ids that differ from the named-key vocabulary.
 SVG_TO_KEY = {
@@ -26,23 +28,19 @@ SVG_TO_KEY = {
 # (SVG, C++ table). The PC-1500A shares the PC-1500 table; the script checks
 # that its SVG has the same rectangles.
 TABLES = [
-    ("source-material/PC-1500.svg", "app/KeyLayout/PC1500KeyLayout.cpp"),
-    ("source-material/PC1600.svg", "app/KeyLayout/PC1600KeyLayout.cpp"),
+    ("pc1500.svg", "app/KeyLayout/PC1500KeyLayout.cpp"),
+    ("pc1600.svg", "app/KeyLayout/PC1600KeyLayout.cpp"),
 ]
-SAME_AS = [("source-material/PC-1500A.svg", "source-material/PC-1500.svg")]
+SAME_AS = [("pc1500a.svg", "pc1500.svg")]
+SVG_DIR = Path(".")
 
-KEY_RE = re.compile(r'<g id="key-([^"]+)" class="key" data-x="([\d.]+)" data-y="([\d.]+)" '
-                    r'data-w="([\d.]+)" data-h="([\d.]+)"')
 ENTRY_RE = re.compile(r'\{"([^"]+)", [\d.]+, [\d.]+, [\d.]+, [\d.]+\},')
 
 
 def svg_keys(path):
     """Ordered list of (name, (x, y, w, h)) in the SVG's document order."""
-    out = []
-    for m in KEY_RE.finditer((ROOT / path).read_text()):
-        name = SVG_TO_KEY.get(m.group(1), m.group(1))
-        out.append((name, tuple(m.group(i) for i in range(2, 6))))
-    return out
+    keys = svgkit.svg_keys((SVG_DIR / path).read_text())
+    return [(SVG_TO_KEY.get(n, n), tuple(f"{v:g}" for v in r)) for n, r in keys.items()]
 
 
 def rewrite(svg, cpp):
@@ -50,7 +48,7 @@ def rewrite(svg, cpp):
     # the bottom); the table lists them in that order under one name, so
     # repeated names are matched by occurrence, top to bottom.
     pending = {}
-    for name, rect in sorted(svg_keys(svg), key=lambda k: (int(k[1][1]), int(k[1][0]))):
+    for name, rect in sorted(svg_keys(svg), key=lambda k: (float(k[1][1]), float(k[1][0]))):
         name = "shift" if name == "shift2" else name
         pending.setdefault(name, []).append(rect)
     used = set()
@@ -74,7 +72,11 @@ def rewrite(svg, cpp):
 
 
 def main():
-    check = "--check" in sys.argv[1:]
+    global SVG_DIR
+    args = [a for a in sys.argv[1:] if a != "--check"]
+    if len(args) != 1:
+        sys.exit(__doc__)
+    check, SVG_DIR = "--check" in sys.argv[1:], Path(args[0])
     for a, b in SAME_AS:
         if svg_keys(a) != svg_keys(b):
             sys.exit(f"{a} and {b} differ in their key rectangles; they share one table")

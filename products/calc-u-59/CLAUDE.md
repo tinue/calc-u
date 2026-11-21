@@ -115,7 +115,8 @@ landscape on a large screen) — its column in
   through `Bridge/TIShell`); no frontend keeps a setting in UserDefaults, QSettings or
   `localStorage` (CTest `CalcU59NoPlatformSettings`, allow-list
   `tools/platform_stores_allowed.txt`).
-- **Assets have one source:** ROMs in `roms/`, artwork in `frontends/swift/App/Assets.xcassets`,
+- **Assets have one source:** ROMs in `roms/`, artwork in `frontends/swift/App/Assets.xcassets`
+  (written with the key rectangles by `faceplate/build.sh`),
   the icon in `frontends/swift/App/AppIcon.icon` (`tools/gen_qt_icons.sh` derives the Qt icons;
   `frontends/web/build.sh` copies the Linux one), the bundled presets in `examples/`, exactly the files `examples/bundle.yaml` lists (all three frontends bundle them).
 - **Version:** `MARKETING_VERSION` in the Xcode project is the only version;

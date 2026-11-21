@@ -415,12 +415,12 @@ TEST(test_pc1600_f_register_faster_divider_mid_period) {
     PC1600Machine m;
     PC1600Memory& mem = m.memory();
     mem.writeIO(0x17, 0x44);   // FX = phi/1024: half period ~5640 T-states
-    mem.advanceBuzzer(5000);
+    mem.advanceSerial(5000, false);
     int16_t buf[4096];
     while (mem.piezo().drain(buf, 4096) > 0) {}
     const uint64_t edges = mem.piezo().edgeCount();
     mem.writeIO(0x17, 0x40);   // FX = phi/64: half period ~352 T-states
-    mem.advanceBuzzer(1);
+    mem.advanceSerial(1, false);
     CHECK(mem.piezo().available() <= 1);
     CHECK(mem.piezo().edgeCount() - edges <= 1);
 }

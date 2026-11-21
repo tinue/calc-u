@@ -226,8 +226,8 @@ void PC1600Machine::corePlug(const PeripheralRequest& req, const PeripheralDescr
 void PC1600Machine::coreUnplug(const PlaceName& p, const PeripheralId& id) {
     if (p.value == sharp::kSlot1) detachSlot1();
     else if (p.value == sharp::kSlot2) detachSlot2();
-    else if (id.value == sharp::kCE150) detachCE150();
-    else if (id.value == sharp::kCE1600P) { tapeEject(); detachCE1600P(); }   // the cassette goes with it
+    else if (id.value == sharp::kCE150) { tapeEject(); detachCE150(); }       // the cassette goes with it
+    else if (id.value == sharp::kCE1600P) { tapeEject(); detachCE1600P(); }
     else if (id.value == sharp::kCE158) detachCE158();
     else if (id.value == sharp::kHostDrive) detachHostDrive();
     else if (id.value == sharp::kBusRom) detachBusRoms();
@@ -247,6 +247,8 @@ void PC1600Machine::offer(std::vector<Offered>& out, const std::vector<PlugEntry
         // The plotter's paper output, once its card is on the bus.
         if (e->peripheral.value == sharp::kCE150) {
             if (calcu::paper::PaperOutput* paper = ce150PaperOutput()) out.push_back(byPeripheral(*e, *paper));
+            out.push_back(byPeripheral(*e, k.cassette, "cassette-recorder"));   // the CE-150's cassette
+            out.push_back(byPeripheral(*e, k.tape));
         } else if (e->peripheral.value == sharp::kCE1600P) {
             if (calcu::paper::PaperOutput* paper = ce1600pPaperOutput()) out.push_back(byPeripheral(*e, *paper));
             out.push_back(byPeripheral(*e, k.floppy));
@@ -482,6 +484,7 @@ bool PC1600Machine::attachCE150(const uint8_t* rom, size_t romSize) {
     detachCE150Locked();
     detachCE1600PLocked(); // one plotter on the bus at a time
     card->reset();
+    card->connectRecorder(&m_tapeDeck);
     m_z80Mem.systemBus().attach(card.get());
     m_ce150Card = std::move(card);
     return true;
@@ -700,7 +703,9 @@ void PC1600Machine::advanceSharedClocks(int tstates) {
     // leave it there for the machine's whole "powered off" span; the
     // clock sits on the always-powered VGG rail and must not lag by it.
     m_rtcAccum += tstates;
-    m_z80Mem.advanceBuzzer(static_cast<uint32_t>(tstates));
+    // The serial block, the buzzer and the cassette recorder; the block's
+    // phi follows the CPU that ran (PC1600Memory::m_serial).
+    m_z80Mem.advanceSerial(static_cast<uint32_t>(tstates), !m_arbiter.sc7852Owns());
     while (m_rtcAccum >= kRtcPeriodTStates) {
         m_rtcAccum -= kRtcPeriodTStates;
         m_z80Mem.subCpu().tickOneSecond();
@@ -712,7 +717,6 @@ void PC1600Machine::advanceSharedClocks(int tstates) {
     m_z80Mem.subCpu().tickByTStates(tstates);
     m_z80Mem.display().tick(tstates);
     m_ce158.tick(static_cast<uint64_t>(tstates)); // the CE-158's own UART clock
-    m_z80Mem.systemBus().advanceCassette(static_cast<uint32_t>(tstates)); // the cassette recorder
 }
 
 uint64_t PC1600Machine::runCycles(uint64_t maxCycles) {

@@ -42,7 +42,8 @@
 // receive side (SD1, U, RD), which nothing here uses.
 //
 // Time comes in CPU cycles; `phiHz` / `cpuHz` converts (the PC-1500's φOS
-// is the CPU clock, 1:1).
+// is the CPU clock, 1:1). The PC-1600's SC7852 holds a copy of the block
+// whose phi depends on the CPU that runs (setPhiHz(), see PC1600Memory).
 class LH5811Serial {
 public:
     LH5811Serial(uint64_t cpuHz, uint64_t phiHz) : m_cpuHz(cpuHz), m_phiHz(phiHz) {}
@@ -61,6 +62,9 @@ public:
     void writeG(uint8_t v) { m_g = v; }        // register 9
     uint8_t g() const { return m_g; }
     void writeF(uint8_t v) { m_f = v; }        // register 7
+    uint8_t f() const { return m_f; }
+    /// phi from now on; the divider keeps its count and phase.
+    void setPhiHz(uint64_t phiHz) { m_phiHz = phiHz; }
     void writeL(uint8_t v) {                   // register 6
         m_td = false;
         if (m_shiftBits == 0) {

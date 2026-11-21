@@ -1,7 +1,11 @@
-// Cassette CLOAD / CSAVE on the PC-1600 (MODE 0) through the CE-1600P's
-// cassette interface, end to end against the real ROMs: the bank-5 tape
-// driver bit-bangs OPC 18H b7 and times PB2 itself; the recorder is the
-// machine's TapeDeck. SKIPs (not fails) when the ROM images are absent.
+// Cassette CLOAD / CSAVE on the PC-1600, end to end against the real ROMs;
+// the recorder is the machine's TapeDeck. SKIPs (not fails) when the ROM
+// images are absent.
+// - MODE 0 through the CE-1600P's cassette interface: the bank-5 tape
+//   driver bit-bangs OPC 18H b7 and times PB2 itself.
+// - MODE 1 through the CE-150: the LH5803 runs the CE-150's tape code,
+//   which drives the port block's serial transmitter (SDO) and reads PB2
+//   against the CL1 timer -- PC-1500 tapes.
 //
 // The fixture in fixtures/tape/ was made with Pocket Tools 2.1.1:
 //   bas2img -p 1600 pc1600_tape.bas pc1600_tape.img
@@ -29,6 +33,8 @@ constexpr uint64_t kSecond = PC1600Machine::kTStateHz;
 constexpr uint16_t kProgramStart = 0xC0C5; // S0 BASIC program, Z-80 view
 const char* kFixtureWav = "tests/fixtures/tape/pc1600_tape.wav";
 const char* kFixtureImg = "tests/fixtures/tape/pc1600_tape.img";
+const char* kPc1500Wav = "tests/fixtures/tape/pc1500_tape.wav";
+const char* kPc1500Img = "tests/fixtures/tape/pc1500_tape.img";
 
 std::vector<uint8_t> readFile(const char* path) {
     std::vector<uint8_t> bytes;
@@ -136,6 +142,76 @@ TEST(test_pc1600_csave_cload_round_trip) {
     b.tapeDeck().loadForPlay(asPlayback(damaged), TapeDeck::kRecordSampleRate);
     type(b, "CLOAD? \"ROUNDTRIP\"");
     CHECK(screen(b).find("ERROR") != std::string::npos);
+}
+
+// PC-1600 + CE-150, MODE 1 (the LH5803 runs PC-1500 BASIC), NEW0.
+bool bootMode1WithCE150(PC1600Machine& m) {
+    std::vector<uint8_t> ce150;
+    if (!loadPC1600Roms(m) || !readRomImage("roms/CE-150.ROM", &ce150)) return false;
+    if (!m.attachCE150(ce150.data(), ce150.size())) return false;
+    m.coldBoot();
+    sharptest::runUntilKeyReady(m);
+    sharptest::tap(m, "mode"); // RUN -> PRO
+    sharptest::runUntilSettled(m, double(kSecond) / m.descriptor().tickRate);
+    type(m, "MODE 1");
+    type(m, "NEW0");
+    return true;
+}
+
+// The MODE 1 program area, from the pointers the LH5803 shares with the
+// SC7852 (F865H, big-endian, an LH5803 address; the SC7852 sees it +8000H).
+bool mode1ProgramIs(PC1600Machine& m, const std::vector<uint8_t>& image) {
+    const uint16_t start = static_cast<uint16_t>(m.debugPeek(0xF865) << 8 | m.debugPeek(0xF866));
+    for (size_t i = 0; i < image.size(); ++i)
+        if (m.debugPeek(static_cast<uint16_t>(start + 0x8000 + i)) != image[i]) return false;
+    return true;
+}
+
+// A PC-1500 tape (bin2wav -p 1500) CLOADs in MODE 1 through the CE-150.
+TEST(test_pc1600_mode1_ce150_cloads_pc1500_tape) {
+    const std::vector<uint8_t> image = readFile(kPc1500Img);
+    PC1600Machine m;
+    SKIP_UNLESS(!image.empty() && bootMode1WithCE150(m), "PC-1600 or CE-150 ROM images or fixture not found");
+    std::string error;
+    CHECK(m.tapePlay(kPc1500Wav, error));
+    type(m, "CLOAD");
+    const std::string lcd = screen(m);
+    CHECK(lcd.find("ERROR") == std::string::npos);
+    CHECK(mode1ProgramIs(m, image));
+    CHECK(!m.tapeStatus().motor);
+    if (!mode1ProgramIs(m, image)) std::fprintf(stderr, "  screen:\n%s", lcd.c_str());
+}
+
+// CSAVE in MODE 1 through the CE-150 writes the PC-1500's tones (2539 /
+// 1270 Hz, as a real unit records them) and a tape that CLOADs back.
+TEST(test_pc1600_mode1_ce150_csave_cload_round_trip) {
+    const std::vector<uint8_t> image = readFile(kPc1500Img);
+    PC1600Machine a;
+    SKIP_UNLESS(!image.empty() && bootMode1WithCE150(a), "PC-1600 or CE-150 ROM images or fixture not found");
+    std::string error;
+    CHECK(a.tapePlay(kPc1500Wav, error));
+    type(a, "CLOAD");
+    a.tapeRecord("");
+    type(a, "CSAVE \"ROUNDTRIP\"");
+    CHECK(screen(a).find("ERROR") == std::string::npos);
+    const std::vector<int16_t> recording = a.tapeDeck().recording();
+    CHECK(recording.size() > 8 * TapeDeck::kRecordSampleRate);
+    // The leader's tone: zero crossings over one second of it, 2 s in.
+    const size_t rate = TapeDeck::kRecordSampleRate;
+    size_t first = 0;
+    while (first < recording.size() && std::abs(recording[first]) < 1000) ++first;
+    size_t crossings = 0;
+    for (size_t i = first + 2 * rate; i + 1 < first + 3 * rate && i + 1 < recording.size(); ++i)
+        if ((recording[i] < 0) != (recording[i + 1] < 0)) ++crossings;
+    CHECK(crossings > 2 * 2500 && crossings < 2 * 2580);
+    if (!(crossings > 2 * 2500 && crossings < 2 * 2580)) std::fprintf(stderr, "  leader: %zu crossings/s\n", crossings);
+
+    PC1600Machine b;
+    CHECK(bootMode1WithCE150(b));
+    b.tapeDeck().loadForPlay(asPlayback(recording), TapeDeck::kRecordSampleRate);
+    type(b, "CLOAD \"ROUNDTRIP\"");
+    CHECK(screen(b).find("ERROR") == std::string::npos);
+    CHECK(mode1ProgramIs(b, image));
 }
 
 // The recording is a function of emulated time only: running the same

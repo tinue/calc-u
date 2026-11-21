@@ -82,9 +82,10 @@ interface in real time, and the ROM's `CLOAD` reads it.
 
 ## The cassette: CLOAD and CSAVE
 
-The CE-150 (PC-1500, PC-1500A) and the CE-1600P (PC-1600) have the jacks
-of a cassette recorder; the CE-150's cassette is not available on the
-PC-1600. A cassette is a medium ([Media](04-media.md)): a
+The CE-150 and the CE-1600P (PC-1600) have the jacks of a cassette
+recorder. On a PC-1600 the CE-150's cassette works in MODE 1, with
+PC-1500 tapes; in MODE 0 the PC-1600 refuses `CLOAD` and `CSAVE` through
+it (ERROR 110), as the real one does. A cassette is a medium ([Media](04-media.md)): a
 **cassette definition** (`<name>.cassette.yaml`: its name, a description,
 and the sound file it uses) with the sound of its tape, a WAV file beside
 it, in the cassette folder (**File ▸ Settings… ▸ Storage ▸ Cassettes**,

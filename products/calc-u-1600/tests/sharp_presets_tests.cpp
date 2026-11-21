@@ -193,7 +193,7 @@ TEST(ce158_with_ce1600p_names_both) {
 }
 
 // The `floppy:` clause: [1600: PC-1600 with CE-1600P];
-// `cassette:` [with a CE-150 on the PC-1500/1500A or a CE-1600P].
+// `cassette:` [with a CE-150 or a CE-1600P].
 TEST(floppy_without_ce1600p_refused) {
     HarnessPreset h;
     CHECK(h.ok());
@@ -202,9 +202,9 @@ TEST(floppy_without_ce1600p_refused) {
     r = h.load("format-version: 2\nmodel: PC-1500\nkeys:\n  - floppy: { name: Formatted }\n", "t.pc1500");
     CHECK(has(r, "floppy is not available on the PC-1500."));
     r = h.load(k1600 + "keys:\n  - cassette: { name: Empty }\n");
-    CHECK(has(r, "cassette: the PC-1600 has no place for a cassette without the CE-1600P."));
-    r = h.load(k1600 + "printer: CE-150\nkeys:\n  - cassette: { name: Empty }\n");
-    CHECK(has(r, "cassette: the CE-150's cassette cannot be used on the PC-1600."));
+    CHECK(has(r, "cassette: the PC-1600 has no place for a cassette without the CE-150 or CE-1600P."));
+    CHECK(has(h.line("check-preset " + h.write("ce150.pc1600", k1600 + "printer: CE-150\nkeys:\n  - cassette: { name: Empty }\n").generic_string()),
+              "ok "));
     CHECK(has(h.line("check-preset " + h.write("ok.pc1600", k1600 + "printer: CE-1600P\nkeys:\n  - floppy: { name: Formatted }\n  - cassette: { name: Empty }\n").generic_string()),
               "ok "));
 }

@@ -224,6 +224,7 @@
 				8C7285562F69626400D5F025 /* Frameworks */,
 				8C7285572F69626400D5F025 /* Resources */,
 				CA1C5900000000000000B00D /* Check no attach */,
+				CA1C5900000000000000B00E /* Build ID */,
 			);
 			buildRules = (
 			);
@@ -422,6 +423,7 @@
 			outputPaths = (
 				"$(SRCROOT)/../../../../build/xcframework-59/CalcU59.xcframework",
 				"$(SRCROOT)/../../../../build/bundle-59/examples",
+				"$(SRCROOT)/../../../../build/bundle-59/build-id.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -448,6 +450,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# A Release build or a build for a device has no harness attach.\nif [ \"$CONFIGURATION\" = Release ] || [ \"$PLATFORM_NAME\" = iphoneos ]; then\n  \"$SRCROOT/check_no_attach.sh\" --binary \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\nfi\n";
+		};
+		CA1C5900000000000000B00E /* Build ID */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../../../../build/bundle-59/build-id.txt",
+			);
+			name = "Build ID";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/build-id.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# The build ID of build_xcframework.sh (tools/build-id.cmake) into the app.\ncp \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

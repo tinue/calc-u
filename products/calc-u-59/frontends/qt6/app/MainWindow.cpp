@@ -39,8 +39,7 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
     // The shell over the session host, with Calc-U-59's data and the
     // Qt6 frontend's settings dialog.
     m_shell = new calcu::qt6::Shell(*this, host(), product(),
-                                    cu59::settingsSpec(cu59::ShellFrontend::Qt6,
-                                                       std::string("Version ") + APP_VERSION + " (" + APP_BUILD_ID + ")"));
+                                    cu59::settingsSpec(cu59::ShellFrontend::Qt6, calcu::shell::about(product()).version));
     m_calculator->setShellWidgets(m_shell->controlBar(), m_shell->romsMissingView());
 
     // The paper panel in the shell's panel area, the splitter's second

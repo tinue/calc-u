@@ -120,3 +120,8 @@ if [ "$stale" = 1 ]; then
 else
   echo "$XCF is up to date ($CONFIG)"
 fi
+
+# The build ID (tools/build-id.cmake) for the About and the Settings' version
+# line; the app target's phase "Build ID" copies it into the app.
+mkdir -p "$REPO/build/bundle-59"
+cmake -DPRODUCT="$PRODUCT" -DOUT="$REPO/build/bundle-59/build-id.txt" -P "$REPO/tools/build-id.cmake"

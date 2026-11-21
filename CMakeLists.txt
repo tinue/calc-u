@@ -83,6 +83,21 @@ function(calcu_add_test name group)
   set_tests_properties(${name} PROPERTIES LABELS ${group} ${T_PROPERTIES})
 endfunction()
 
+# calcu_build_id_header(<name> <product directory> <target…>): the calling
+# directory's generated/BuildId.h with APP_BUILD_ID (tools/build-id.cmake),
+# made again at each build of the targets, which include generated/.
+function(calcu_build_id_header name product)
+  set(header ${CMAKE_CURRENT_BINARY_DIR}/generated/BuildId.h)
+  add_custom_target(${name}
+    COMMAND ${CMAKE_COMMAND} -DPRODUCT=${product} -DHEADER=${header} -P ${CMAKE_SOURCE_DIR}/tools/build-id.cmake
+    BYPRODUCTS ${header}
+    COMMENT "Build ID of ${product}"
+    VERBATIM)
+  foreach(target ${ARGN})
+    add_dependencies(${target} ${name})
+  endforeach()
+endfunction()
+
 # calcu_add_help_tests(<prefix> <product>): <prefix>HelpCheck and
 # <prefix>HelpBuild, Frequent: tools/help checks the product's help and
 # builds its asset into the calling directory's tree (help/), so the test

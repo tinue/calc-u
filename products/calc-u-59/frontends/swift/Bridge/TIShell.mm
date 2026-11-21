@@ -133,9 +133,19 @@ std::string bundleString(NSString *key, const char *fallback) {
     return [v isKindOfClass:NSString.class] ? cpp((NSString *)v) : std::string(fallback);
 }
 
+// The version with the build number (3.0.0-0), and the build ID in
+// parentheses after it: build-id.txt of tools/build-id.cmake, which the
+// app target's phase "Build ID" puts into the app.
+std::string buildId() {
+    NSString *file = [NSBundle.mainBundle pathForResource:@"build-id" ofType:@"txt"];
+    NSString *text = file ? [NSString stringWithContentsOfFile:file encoding:NSUTF8StringEncoding error:nil] : nil;
+    text = [text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    return text.length ? cpp(text) : std::string("unknown");
+}
+
 const shell::ShellProduct &product() {
-    static const shell::ShellProduct p =
-        cu59::shellProduct(bundleString(@"CFBundleShortVersionString", "1.0.0"), bundleString(@"CFBundleVersion", "1"));
+    static const shell::ShellProduct p = cu59::shellProduct(
+        bundleString(@"CFBundleShortVersionString", "1.0.0") + "-" + bundleString(@"CFBundleVersion", "1"), buildId());
     return p;
 }
 
@@ -235,7 +245,7 @@ NSInteger keyIndexOf(const std::string &key) {
     const auto frontend = cu59::ShellFrontend::SwiftIOS;
 #endif
     const auto &p = product();
-    const auto spec = cu59::settingsSpec(frontend, "Version " + p.version + " (" + p.build + ")");
+    const auto spec = cu59::settingsSpec(frontend, shell::about(p).version);
     NSMutableArray *out = [NSMutableArray array];
     for (const auto &sec : shell::dialog(self.inputs.settings, self.inputs.presetList, spec)) {
         NSMutableArray *rows = [NSMutableArray array];
@@ -396,6 +406,8 @@ NSInteger keyIndexOf(const std::string &key) {
 }
 - (NSInteger)pointerKey { return _lastKey; }
 
++ (NSString *)versionText { return ns(product().version); }
++ (NSString *)buildId { return ns(product().build); }
 + (NSArray<NSString *> *)aboutLines {
     NSMutableArray *out = [NSMutableArray array];
     for (const auto &l : product().aboutLines) [out addObject:ns(l)];

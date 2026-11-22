@@ -1,0 +1,9 @@
+# Colour literals check_chrome_colours.sh lets pass, each with its reason.
+# The LCD's colours come from app/LcdLayout (the painter's rgb() helper).
+frontends/web/src/painters.js
+# The floppy icon of the Name & Save button: an icon's artwork.
+frontends/web/src/CalcU1600.jsx	fill="#
+# The development page around the client and the installed app's page and
+# manifest: drawn before the engine answers, outside .calcu-client.
+frontends/web/index.html
+frontends/web/app

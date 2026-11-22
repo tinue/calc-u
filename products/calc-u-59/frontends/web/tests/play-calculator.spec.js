@@ -31,6 +31,26 @@ async function settledLed(page) {
   throw new Error('LED display never settled');
 }
 
+// The largest difference of any colour channel of two LED pictures; 255 for
+// pictures of different sizes. The glow is drawn with a blur, which may
+// differ by a step or two between two drawings of the same display.
+async function ledDistance(page, a, b) {
+  return page.evaluate(async ([a, b]) => {
+    const load = (url) => new Promise((done) => { const i = new Image(); i.onload = () => done(i); i.src = url; });
+    const [ia, ib] = await Promise.all([load(a), load(b)]);
+    if (ia.width !== ib.width || ia.height !== ib.height) return 255;
+    const c = document.createElement('canvas');
+    c.width = ia.width;
+    c.height = ia.height;
+    const ctx = c.getContext('2d');
+    const pixels = (img) => { ctx.clearRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0); return ctx.getImageData(0, 0, c.width, c.height).data; };
+    const da = pixels(ia), db = pixels(ib);
+    let most = 0;
+    for (let k = 0; k < da.length; k++) most = Math.max(most, Math.abs(da[k] - db[k]));
+    return most;
+  }, [a, b]);
+}
+
 async function showing(page, labels) {
   await pressKey(page, 'CLR');
   await pressKeys(page, labels);
@@ -118,8 +138,8 @@ test('2 + 3 = computes through the real emulation core', async ({ page }) => {
   await gotoReady(page, 'layout=portrait');
   // Results against results: an entry shows no decimal point, a result does.
   const five = await showing(page, ['5', '=']);
-  expect(await showing(page, ['2', '+', '3', '='])).toBe(five);
-  expect(five).not.toBe(await showing(page, ['6', '=']));
+  expect(await ledDistance(page, five, await showing(page, ['2', '+', '3', '=']))).toBeLessThanOrEqual(4);
+  expect(await ledDistance(page, five, await showing(page, ['6', '=']))).toBeGreaterThan(64);
 });
 
 test('a press just outside a key hits it (widened hit test)', async ({ page }) => {

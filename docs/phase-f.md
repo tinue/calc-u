@@ -32,17 +32,6 @@ and `docs/Process.md` until the closing check at its end has passed.
 
 ### Open items
 
-- **Sanitizer findings, open** (`build/asan`, `docs/test-groups.md`
-  "Sanitizers"; three findings were fixed with the option: a signed
-  overflow in Calc-U-1600's debugger expressions, two uses after free in
-  test code):
-  - The harness's unpaced advance (`HarnessHost::command`, a key that
-    waits) flushes the session after every piece, and each flush computes
-    the control state anew (`ControlPart::beforeFlush`), though nothing
-    changed: 22 s of `calcu_library_tests`' 30 s are
-    `harness_key_gives_up_after_an_hour`, more than 30 min under ASan.
-    Proposed: compute the control state only when the machine's plugging
-    or the session's setup changed.
 - **Stale indices in the Web frontends** (from a scan of every frontend
   for the printer crash's kind of bug; Swift and Qt have no other case):
   - Calc-U-1600 CE-158 panel (`frontends/web/src/Panels.jsx` `Ce158Printer`):

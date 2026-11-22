@@ -123,6 +123,10 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
                                                      CALCU_PAPER_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/paper/tests/fixtures"
                                                      CALCU_SHELL_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/shell/tests")
   calcu_add_test(calcu_library_tests frequent COMMAND calcu_library_tests WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  # The harness giving up on a key after an hour of emulated time: the one
+  # slow test of the program, Longer.
+  calcu_add_test(LibraryHarnessHour longer COMMAND calcu_library_tests harness_key_gives_up_after_an_hour
+                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} PROPERTIES ENVIRONMENT CALCU_HARNESS_HOUR=1)
 
   # The host links on real pseudo-terminals (Frequent; macOS and
   # Linux only), a program of their own so that they can move to Longer.

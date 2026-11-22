@@ -51,7 +51,7 @@ function minimumWidth(portrait) {
 
 // The shell's traits: the Web has no Quit and binds no shortcut; the
 // page's platform decides the menu bar (useShell.jsx).
-const traitsFor = (settings) => Object.assign({}, CALCU_SHELL_WEB_TRAITS, { settings: settings !== false, about: true });
+const traitsFor = (settings) => Object.assign({}, CALCU_SHELL_WEB_TRAITS, { settings: settings !== false });
 
 // Keyboard feedback (Settings, portrait): a short click synthesised with
 // WebAudio. No vibration: iOS Safari has no Vibration API, and Android's
@@ -265,7 +265,7 @@ function PortraitLayout({ page, width, height: whole }) {
 
 // Before `c59.shell-product` answered: the shell's frame with nothing of
 // the product's yet.
-const C59_NO_PRODUCT = { name: "Calc-U-59", items: [], variantLabels: {}, barModelLabels: {}, moduleSlotPinOuts: [], placesWithoutControl: [], placesOnPaper: [] };
+const C59_NO_PRODUCT = { name: "Calc-U-59", acts: {} };
 
 // The props (docs/developer/Web-Client.md): the embedding interface's width,
 // keyboard (on by default), layout ("portrait", the default, "wide" or
@@ -319,7 +319,7 @@ function CalcU59(props) {
   const dark = useColourScheme();
   const chromeStyle = React.useMemo(() => calcuChromeStyle(chrome, dark), [chrome, dark]);
   const traits = React.useMemo(() => traitsFor(settings), [settings]);
-  const s = useCalcuShell(shell, product, traits);
+  const s = useCalcuShell(shell, product, traits, { layout: portrait ? "portrait" : "wide", version: CALC_VERSION, build: CALC_BUILD });
   const cs = s.inputs.controlState;
   const model = (cs && cs.model) || modelProp || "TI-59";
 

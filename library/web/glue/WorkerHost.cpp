@@ -87,7 +87,9 @@ WorkerHost::WorkerHost(const AppSessionFactory& factory, val start)
     start_.storageSentence = text(storage, "sentence");
     start_.shellPart = part_.get();
     try {
-        session_ = factory(start_);
+        WebSession made = factory(start_);
+        session_ = std::move(made.session);
+        shellSetup_ = std::move(made.shell);
     } catch (const std::exception& e) {
         failure_ = e.what();
     } catch (...) {
@@ -111,6 +113,20 @@ void WorkerHost::post(const s::Message& m, double pageCall) {
         filePickerAsks_.insert(ask->ask);
     if (pageCall != 0 && std::holds_alternative<s::ReplyMessage>(m)) message.set("call", pageCall);
     post_(message, transfer);
+    models_.take(m);
+}
+
+void WorkerHost::postShell() {
+    if (!listener_.listening()) return;
+    if (models_.presetListWanted())
+        listener_.ask(models_.presetListRequest(), {}, [this](const s::ReplyMessage& r) {
+            models_.takePresetList(r);
+            postShell();
+        });
+    s::Value v = models_.value();
+    if (v.isNull() || v == postedModels_) return;
+    postedModels_ = v;
+    post(s::StateMessage{kShellTopic, s::valuePayload(kShellTopic.value, std::move(v))});
 }
 
 void WorkerHost::receive(val message) {
@@ -131,6 +147,23 @@ void WorkerHost::receive(val message) {
         }
         listener_.onMessage = [this](const s::Message& m) { post(m); };
         listener_.listen(*session_, std::move(services));
+        postShell();
+        return;
+    }
+    if (kind == "shell") {   // the page's traits: the models from now on
+        const s::Value args = fromJs(message["args"]);
+        if (!shellSetup_) return;
+        shell::ModelSetup setup = shellSetup_(args);
+        // The Web has no Quit and binds no shortcut; its saved media are a dialog of the page.
+        setup.traits.hasQuit = false;
+        setup.traits.shortcuts = false;
+        setup.traits.savedMedia = true;
+        setup.traits.platform = shell::read::flag(args, "mobile") ? shell::Platform::Mobile : shell::Platform::Desktop;
+        setup.traits.settings = shell::read::flag(args, "settings", true);
+        setup.traits.about = shell::read::flag(args, "about", true);
+        models_.set(std::move(setup));
+        postedModels_ = s::Value();
+        postShell();
         return;
     }
     if (!listener_.listening()) return;
@@ -139,12 +172,14 @@ void WorkerHost::receive(val message) {
         auto reply = [this, pageCall](const s::ReplyMessage& r) { post(r, pageCall); };
         if (kind == "command") listener_.send(s::CommandName{text(message, "name")}, fromJs(message["args"]), reply);
         else listener_.ask(s::RequestName{text(message, "name")}, fromJs(message["args"]), reply);
+        postShell();
         return;
     }
     if (kind == "answer") {
         const auto ask = static_cast<s::CallId>(pageCall);
         if (filePickerAsks_.erase(ask)) {
             answerFilePicker(ask, message);
+            postShell();
             return;
         }
         s::ServiceAnswer a;
@@ -152,6 +187,7 @@ void WorkerHost::receive(val message) {
         a.reason = text(message, "reason");
         a.result = fromJs(message["value"]);
         session_->answer(ask, std::move(a));
+        postShell();
         return;
     }
     // A message the glue cannot decode: refused with a reply when it waits for one.
@@ -199,7 +235,9 @@ pacing::WallTime wallTimeNow() {
 }
 
 void WorkerHost::call() {
-    if (session_) session_->call(wallTimeNow());
+    if (!session_) return;
+    session_->call(wallTimeNow());
+    postShell();
 }
 
 } // namespace calcu::web

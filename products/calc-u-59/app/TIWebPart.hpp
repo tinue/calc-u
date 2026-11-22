@@ -4,6 +4,7 @@
 #include "TIAppPart.hpp"
 #include "sessions/Payload.hpp"
 #include "sessions/SessionPart.hpp"
+#include "shell/ModelHost.hpp"
 #include <cstdint>
 #include <filesystem>
 #include <string>
@@ -30,7 +31,9 @@
 //   `open`); every other command is TIAppPart's (`c59.*`);
 // - the cards are the library's `media` topic and `media.*` commands;
 // - requests for the drawing material: `c59.led-geometry`,
-//   `c59.faceplate-map`, `c59.heatmap-grid`, `c59.shell-product`.
+//   `c59.faceplate-map`, `c59.heatmap-grid`, `c59.shell-product` (the product's
+//   data and chrome; the menus, the bar and the dialog are the library's,
+//   shellSetup());
 // It lives in the app layer so that it builds and is tested natively; the Web
 // engine (frontends/web/bindings.cpp) only adds it to the session. Settings:
 // Calc-U-59.ini in the persistent file system; cards (the media part) and
@@ -56,6 +59,11 @@ public:
 
     void attach(calcu::sessions::SessionSetup&) override;
     void afterCall(calcu::sessions::SessionContext&, calcu::pacing::WallTime) override;
+
+    /// The shell of the page's `shell` message ({layout: "portrait" |
+    /// "wide", version, build}): TIShellProduct's product and settings
+    /// dialog of that layout.
+    static calcu::shell::ModelSetup shellSetup(const calcu::sessions::Value& args);
 
 private:
     using Value = calcu::sessions::Value;

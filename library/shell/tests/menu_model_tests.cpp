@@ -1,5 +1,4 @@
-// The menu model. Mirrored case by case in
-// library/web/tests/shell_model.test.js.
+// The menu model.
 #include "TestHarness.hpp"
 #include "TestShellPart.hpp"
 #include "shell/MenuModel.hpp"
@@ -412,8 +411,7 @@ TEST(no_settings_item_without_settings) {   // and Traits::about
     CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help"));
 }
 
-// A native frontend's own toggles and submenus among the product's items
-// (not in the Web's form, so not mirrored in shell_model.test.js).
+// A native frontend's own toggles and submenus among the product's items.
 TEST(product_toggle_and_submenu) {
     auto p = st::product();
     bool tracing = true;

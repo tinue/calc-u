@@ -47,7 +47,7 @@ struct WebParts {
     explicit WebParts(const calcu::settings::HostDirs& dirs) : settings(s59::settingsDecl(), dirs) {}
 };
 
-std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web::WebStart& start) {
+calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
     auto parts = std::make_shared<WebParts>(start.placesDirs());
     std::error_code ec;
     std::filesystem::create_directories(start.dirs.saveFolder, ec);
@@ -82,7 +82,7 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     host.logSettingsProblem = true;
     cu59::TIAppPart& app = *parts->app;
     host.owned = std::move(parts);
-    return calcu::shell::makeHostSession(app, std::move(host)).session;
+    return {calcu::shell::makeHostSession(app, std::move(host)).session, &cu59::TIWebPart::shellSetup};
 }
 
 } // namespace

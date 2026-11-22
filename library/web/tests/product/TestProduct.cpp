@@ -65,6 +65,7 @@
 #include "settings/Declaration.hpp"
 #include "settings/Paths.hpp"
 #include "settings/SettingsFile.hpp"
+#include "shell/SettingsModel.hpp"
 #include "shell/SettingsPart.hpp"
 #include "shell/tests/TestShellPart.hpp"
 #include "web/glue/Bind.hpp"
@@ -437,7 +438,7 @@ struct Parts {
     std::unique_ptr<calcu::media::MediaPart> media;   // in Test-M
 };
 
-std::unique_ptr<s::AppSession> makeTestSession(const WebStart& w) {
+calcu::web::WebSession makeTestSession(const WebStart& w) {
     auto parts = std::make_shared<Parts>(w);
     s::AppSessionSetup setup;
     setup.clock = calcu::web::wallTimeNow;
@@ -446,7 +447,15 @@ std::unique_ptr<s::AppSession> makeTestSession(const WebStart& w) {
     if (parts->media) setup.parts.push_back(parts->media.get());
     setup.hosting = s::Hosting::Paced;
     setup.owned = std::move(parts);
-    return std::make_unique<s::AppSession>(std::move(setup));
+    // The shell: TestShellPart.hpp's product with Paste Text (an Edit menu),
+    // the family sections of its settings.
+    return {std::make_unique<s::AppSession>(std::move(setup)), [decl = declFor(w.product)](const s::Value&) {
+                calcu::shell::ModelSetup m;
+                m.product = calcu::shell::test::product();
+                m.product.pasteText = true;
+                m.spec = calcu::shell::familySections(decl);
+                return m;
+            }};
 }
 
 } // namespace

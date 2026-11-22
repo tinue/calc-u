@@ -1,4 +1,4 @@
-// The bar and panel models. Mirrored in shell_model.test.js.
+// The bar and panel models; barFit is mirrored in shell_model.test.js.
 #include "TestHarness.hpp"
 #include "TestShellPart.hpp"
 #include "shell/BarModel.hpp"

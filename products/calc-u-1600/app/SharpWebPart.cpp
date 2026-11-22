@@ -44,6 +44,13 @@ SharpWebPart::SharpWebPart(SharpAppPart& app, std::string uploadsDir, std::strin
 
 SharpWebPart::~SharpWebPart() = default;
 
+calcu::shell::ModelSetup SharpWebPart::shellSetup() const {
+    calcu::shell::ModelSetup setup;
+    setup.product = shellProduct(m_version, "", false, false);
+    setup.spec = settingsSpec(false, false);
+    return setup;
+}
+
 void SharpWebPart::attach(sessions::SessionSetup& setup) {
     m_printer = &setup.streamTopic(topics::kWebPrinter, sessions::History::None);
 
@@ -54,13 +61,12 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     };
 
     // ── The shell ───────────────────────────────────────────────────────
-    // The product's data for the React set's shell with its chrome
-    // (SharpChrome), and the faceplate's hit map and LCD layout, from the
-    // tables Qt6 uses.
+    // The product's data for the page (its help address, About, the
+    // uploads' accept list) with its chrome (SharpChrome), and the
+    // faceplate's hit map and LCD layout, from the tables Qt6 uses.
     req("c1600.shell-product", [this](const Value&, SessionContext&) {
         return sessions::replyGiven(
             sessions::valuePayload("c1600.shell-product", Value::object({{"product", calcu::shell::toValue(shellProduct(m_version, "", false, false))},
-                                                         {"settingsSpec", calcu::shell::toValue(settingsSpec(false, false))},
                                                          {"chrome", calcu::shell::toValue(sharpChrome())}})));
     });
     req("c1600.faceplate-map", [](const Value& a, SessionContext&) {

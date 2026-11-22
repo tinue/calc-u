@@ -1,5 +1,4 @@
-// The shell's data in the Value forms the Web page reads
-// (shell/ValueForms; library/web/components/shellModel.js).
+// The shell's data in the Value forms the Web page reads (shell/ValueForms).
 #include "TestHarness.hpp"
 #include "sessions/Value.hpp"
 #include "shell/ValueForms.hpp"
@@ -7,6 +6,8 @@
 using namespace calcu;
 using sessions::Value;
 
+// What the page needs of the product: its texts, the uploads' accept list,
+// the items by id; the About links only when there are.
 TEST(shell_product_value_form) {
     shell::ShellProduct p;
     p.name = "Test-Product";
@@ -14,124 +15,68 @@ TEST(shell_product_value_form) {
     p.helpUrl = "https://example.org/";
     p.aboutLabel = "About Test…";
     p.aboutLines = {"one", "two"};
-    p.variantLabels = {{"B", "Rev B"}, {"A", "Rev A"}};
-    p.presetFilter = "Presets (*.tp)";
     p.presetUploads = ".tp,.yaml";
-    p.copyScreen = [] {};   // the form says whether there is the item
-    p.pasteText = true;
-    p.moduleSlotPinOuts = {"module"};
-    p.placesWithoutControl = {"host-drive"};
-    shell::ProductItem i;
-    i.group = shell::MenuGroup::FileMedia;
-    i.id = "mount";
-    i.label = "Mount…";
-    i.entry = "t.mount";
-    p.items.push_back(i);
-    p.mobileBarMedia = {"magnetic-card"};
-    const Value want = Value::object(
-        {{"name", "Test-Product"},
-         {"helpUrl", "https://example.org/"},
-         {"aboutLabel", "About Test…"},
-         {"aboutLines", Value(Value::Array{"one", "two"})},
-         {"variantLabels", Value(Value::Object{{"A", Value("Rev A")}, {"B", Value("Rev B")}})},
-         {"barModelLabels", Value(Value::Object{})},
-         {"barSpread", false},
-         {"barShortPickers", false},
-         {"presetFilter", "Presets (*.tp)"},
-         {"presetUploads", ".tp,.yaml"},
-         {"copyScreen", true},
-         {"pasteText", true},
-         {"moduleSlotPinOuts", Value(Value::Array{"module"})},
-         {"placesWithoutControl", Value(Value::Array{"host-drive"})},
-         {"placesOnPaper", Value(Value::Array{})},
-         {"mobileBarMedia", Value(Value::Array{"magnetic-card"})},
-         {"items", Value(Value::Array{Value::object(
-                       {{"group", "FileMedia"}, {"id", "mount"}, {"label", "Mount…"}, {"entry", "t.mount"}})})}});
+    p.items.push_back(shell::ProductItem{shell::MenuGroup::FileMedia, "mount", "Mount…", "t.mount", {}});
+    const Value want = Value::object({{"name", "Test-Product"},
+                                      {"helpUrl", "https://example.org/"},
+                                      {"aboutLabel", "About Test…"},
+                                      {"aboutLines", Value(Value::Array{"one", "two"})},
+                                      {"presetUploads", ".tp,.yaml"},
+                                      {"items", Value(Value::Array{Value::object({{"id", "mount"}, {"label", "Mount…"}})})}});
     CHECK_EQ(sessions::toText(shell::toValue(p)), sessions::toText(want));
+    p.aboutLinks = {{"Source", "https://example.org/src"}};
+    CHECK_EQ(sessions::toText(*shell::toValue(p).find("aboutLinks")),
+             sessions::toText(Value(Value::Array{Value(Value::Array{"Source", "https://example.org/src"})})));
 }
 
-// The About links when there are, Copy Screen as
-// the product has it, an item's onBar and mediaPlace when set; a dialog
-// row's labelled choices.
-TEST(shell_product_form_has_links_and_copy_screen_flag) {
-    shell::ShellProduct p;
-    p.name = "Calc-U-Test";
-    p.aboutLinks = {{"Source", "https://example.org/src"}, {"Privacy", "https://example.org/p"}};
-    shell::ProductItem card;
-    card.group = shell::MenuGroup::FileMedia;
-    card.id = "arm-card";
-    card.label = "Arm Card…";
-    card.onBar = true;
-    card.mediaPlace = "card-reader";
-    p.items.push_back(card);
-    const Value v = shell::toValue(p);
-    CHECK_EQ(sessions::toText(*v.find("aboutLinks")),
-             sessions::toText(Value(Value::Array{Value(Value::Array{"Source", "https://example.org/src"}),
-                                                 Value(Value::Array{"Privacy", "https://example.org/p"})})));
-    CHECK(*v.find("copyScreen")->boolean() == false);   // no Copy Screen: no Edit item
-    const Value& item = (*v.find("items")->elements())[0];
-    CHECK(*item.find("onBar")->boolean());
-    CHECK_EQ(*item.find("mediaPlace")->string(), std::string("card-reader"));
-    // Members in the documented order: aboutLinks after aboutLines.
+// A menu item with every member, its kind, role and shortcut by name.
+TEST(menu_item_value_form) {
+    shell::MenuItem i;
+    i.kind = shell::MenuItem::Kind::Submenu;
+    i.id = "x";
+    i.role = shell::MenuItem::Role::Preferences;
+    i.shortcut = shell::MenuItem::Shortcut::ColdBoot;
+    i.children.push_back(shell::MenuItem{});
+    const Value v = shell::toValue(i);
     std::vector<std::string> keys;
     for (const auto& m : *v.members()) keys.push_back(m.key);
-    CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "aboutLinks", "variantLabels",
-                                            "barModelLabels", "barSpread", "barShortPickers", "presetFilter", "presetUploads", "copyScreen", "pasteText", "moduleSlotPinOuts",
-                                            "placesWithoutControl", "placesOnPaper", "mobileBarMedia", "items"}));
-    // A labelled choice row carries its choices; one without does not.
-    shell::DialogSpec spec;
-    shell::DialogRow style{shell::DialogRow::Widget::Choice, "display", "led-style", "Segment Style"};
-    style.choices = {{"modernized", "Modernized"}, {"classic", "Classic"}};
-    spec.sections.push_back({"Display", {style, {shell::DialogRow::Widget::Integer, "trace", "max", "Max"}}});
-    const Value specValue = shell::toValue(spec);
-    const auto& rows = *(*specValue.elements())[0].find("rows")->elements();
-    CHECK_EQ(sessions::toText(*rows[0].find("choices")),
-             sessions::toText(Value(Value::Array{Value(Value::Array{"modernized", "Modernized"}),
-                                                 Value(Value::Array{"classic", "Classic"})})));
-    CHECK(rows[1].find("choices") == nullptr);
+    CHECK(keys == (std::vector<std::string>{"kind", "id", "label", "checkable", "checked", "enabled", "reason", "role",
+                                            "shortcut", "command", "args", "children", "confirm", "destructive"}));
+    CHECK_EQ(*v.find("kind")->string(), std::string("submenu"));
+    CHECK_EQ(*v.find("role")->string(), std::string("preferences"));
+    CHECK_EQ(*v.find("shortcut")->string(), std::string("cold-boot"));
+    CHECK_EQ(*(*v.find("children")->elements())[0].find("kind")->string(), std::string("action"));
 }
 
-TEST(menu_group_value_names) {
-    const auto groupOf = [](shell::MenuGroup g) {
-        shell::ShellProduct p;
-        shell::ProductItem i;
-        i.group = g;
-        i.id = "x";
-        p.items.push_back(i);
-        const Value v = shell::toValue(p);
-        return *(*v.find("items")->elements())[0].find("group")->string();
-    };
-    CHECK_EQ(groupOf(shell::MenuGroup::FileOpen), std::string("FileOpen"));
-    CHECK_EQ(groupOf(shell::MenuGroup::FileKinds), std::string("FileKinds"));
-    CHECK_EQ(groupOf(shell::MenuGroup::FileMedia), std::string("FileMedia"));
-    CHECK_EQ(groupOf(shell::MenuGroup::FileEnd), std::string("FileEnd"));
-    CHECK_EQ(groupOf(shell::MenuGroup::Edit), std::string("Edit"));
-    CHECK_EQ(groupOf(shell::MenuGroup::MachineEnd), std::string("MachineEnd"));
-    CHECK_EQ(groupOf(shell::MenuGroup::Help), std::string("Help"));
+// The bar's groups and controls by name.
+TEST(bar_value_form) {
+    shell::BarGroupModel g{shell::BarGroup::Media, {}, true};
+    shell::BarControl c;
+    c.kind = shell::BarControl::Kind::PlacePicker;
+    c.id = "printer";
+    g.controls.push_back(c);
+    const Value v = shell::toValue(std::vector<shell::BarGroupModel>{g});
+    const Value& group = (*v.elements())[0];
+    CHECK_EQ(*group.find("group")->string(), std::string("Media"));
+    CHECK(*group.find("pushed")->boolean());
+    const Value& control = (*group.find("controls")->elements())[0];
+    CHECK_EQ(*control.find("kind")->string(), std::string("picker"));
+    CHECK_EQ(*control.find("id")->string(), std::string("printer"));
 }
 
-TEST(dialog_spec_value_form) {
-    using W = shell::DialogRow::Widget;
-    shell::DialogSpec spec;
-    spec.sections.push_back({"General", {{W::StartupModel, "startup", "model", "Model"}, {W::Text, "s", "k", "Text"}}});
-    spec.sections.push_back({"Other",
-                             {{W::StartupPreset, "preset", "A", "A"},
-                              {W::Folder, "folders", "f", "F"},
-                              {W::Integer, "debug", "port", "Port"},
-                              {W::Choice, "debug", "on", "On"},
-                              {W::Note, "storage", "n", "Note"}}});
-    const Value v = shell::toValue(spec);
-    const auto* sections = v.elements();
-    CHECK(sections && sections->size() == 2);
-    const Value& first = (*sections)[0];
-    CHECK_EQ(*first.find("title")->string(), std::string("General"));
-    const auto& rows = *first.find("rows")->elements();
-    CHECK_EQ(sessions::toText(rows[0]),
-             sessions::toText(Value::object({{"widget", "startup-model"}, {"section", "startup"}, {"key", "model"}, {"label", "Model"}})));
-    CHECK_EQ(*rows[1].find("widget")->string(), std::string("text"));
-    std::vector<std::string> widgets;
-    for (const Value& r : *(*sections)[1].find("rows")->elements()) widgets.push_back(*r.find("widget")->string());
-    CHECK(widgets == (std::vector<std::string>{"startup-preset", "folder", "integer", "choice", "note"}));
+// A shown dialog row: its row, value, choices as pairs, min and max null when unset.
+TEST(dialog_value_form) {
+    shell::ShownRow r;
+    r.row = {shell::DialogRow::Widget::Integer, "trace", "max", "Max"};
+    r.value = "5";
+    r.choices = {{"a", "A"}};
+    r.min = 1;
+    const Value v = shell::toValue(std::vector<shell::ShownSection>{{"Tracing", {r}}});
+    const Value& row = (*(*v.elements())[0].find("rows")->elements())[0];
+    CHECK_EQ(*row.find("row")->find("widget")->string(), std::string("integer"));
+    CHECK_EQ(sessions::toText(*row.find("choices")), sessions::toText(Value(Value::Array{Value(Value::Array{"a", "A"})})));
+    CHECK(*row.find("min")->integer() == 1);
+    CHECK(row.find("max")->isNull());
 }
 
 TEST(hit_map_value_form) {

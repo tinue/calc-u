@@ -11,6 +11,7 @@
 #include "app/SharpAppPart.hpp"
 #include "sessions/Payload.hpp"
 #include "sessions/SessionPart.hpp"
+#include "shell/ModelHost.hpp"
 
 namespace cu1600 {
 
@@ -39,6 +40,10 @@ public:
 
     void attach(calcu::sessions::SessionSetup&) override;
     void afterCall(calcu::sessions::SessionContext&, calcu::pacing::WallTime) override;
+
+    // The shell of the page's `shell` message: SharpShellProduct's product
+    // and settings dialog.
+    calcu::shell::ModelSetup shellSetup() const;
 
 private:
     void printer();

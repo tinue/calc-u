@@ -176,7 +176,7 @@ test('only the messages of the session protocol', async ({ page }) => {
     sent: window.__calcuSent.map((m) => m && m.kind),
     received: window.__calcuReceived.map((m) => m && m.kind),
   }));
-  for (const k of sent) expect(['listen', 'command', 'request', 'answer']).toContain(k);
+  for (const k of sent) expect(['listen', 'shell', 'command', 'request', 'answer']).toContain(k);
   for (const k of received) expect(['state', 'stream', 'reply', 'ask', 'sound-start', 'sound', 'sound-stop']).toContain(k);
   expect(sent).toContain('listen');
 });

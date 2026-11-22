@@ -5,6 +5,7 @@
 #include "sessions/Payload.hpp"
 #include "sessions/SessionPart.hpp"
 #include "settings/HostDirs.hpp"
+#include "shell/ModelHost.hpp"
 #include <emscripten/val.h>
 #include <filesystem>
 #include <functional>
@@ -16,9 +17,10 @@
 
 // The Web Worker's host of one app session: it builds the session through the product's factory,
 // listens to it with the services the page states, passes the page's
-// messages in and the session's out, and makes the host call. It only
-// translates: it reads no topic and decides no rule. Single-threaded, as the
-// worker is.
+// messages in and the session's out, and makes the host call. It decides
+// no rule: the shell's models are the library's (shell::ModelHost), fed
+// with the messages it passes on and posted as the topic `web.shell`.
+// Single-threaded, as the worker is.
 
 namespace calcu::web {
 
@@ -27,6 +29,7 @@ enum class StorageMode { Kept, SecondCopy, Unreadable, Unavailable };
 
 inline const sessions::TopicName kStartTopic{"web.start"};       // {state: "running" | "failed", failure}
 inline const sessions::TopicName kStorageTopic{"web.storage"};   // {mode, sentence}
+inline const sessions::TopicName kShellTopic{"web.shell"};       // shell::ModelHost::value()
 
 // What the worker passes in.
 struct WebStart {
@@ -48,9 +51,15 @@ struct WebStart {
     }
 };
 
-// The product's session (Hosting::Paced); it owns the product's parts and
-// what they need (AppSessionSetup::owned).
-using AppSessionFactory = std::function<std::unique_ptr<sessions::AppSession>(const WebStart&)>;
+// The product's session (Hosting::Paced), which owns the product's parts
+// and what they need (AppSessionSetup::owned), and its shell: the product,
+// the settings dialog and its traits for the page's `shell` message, whose
+// args the page writes ({mobile, settings, about} and the product's own).
+struct WebSession {
+    std::unique_ptr<sessions::AppSession> session;
+    std::function<shell::ModelSetup(const sessions::Value& args)> shell;
+};
+using AppSessionFactory = std::function<WebSession(const WebStart&)>;
 
 // The worker's wall clock (performance.now()), the one the host call passes:
 // a factory gives it to AppSessionSetup::clock.
@@ -67,7 +76,7 @@ public:
 
     // Why the session could not be built; empty when it runs.
     std::string failure() const { return failure_; }
-    void receive(emscripten::val message);   // listen, command, request, answer
+    void receive(emscripten::val message);   // listen, shell, command, request, answer
     void call();                             // the host call, with the wall time now
 
 private:
@@ -75,10 +84,14 @@ private:
 
     void post(const sessions::Message&, double pageCall = 0);
     void answerFilePicker(sessions::CallId ask, emscripten::val message);
+    void postShell();   // the models, when they changed
 
     std::unique_ptr<ShellPart> part_;
     WebStart start_;
     std::unique_ptr<sessions::AppSession> session_;
+    std::function<shell::ModelSetup(const sessions::Value&)> shellSetup_;
+    shell::ModelHost models_;
+    sessions::Value postedModels_;
     sessions::Listener listener_;   // stops listening before the session goes
     emscripten::val post_;
     std::string failure_;

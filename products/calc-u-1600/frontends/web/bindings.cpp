@@ -32,7 +32,7 @@ struct WebParts {
     explicit WebParts(const calcu::settings::HostDirs& dirs) : settings(cu1600::settingsDecl(), dirs) {}
 };
 
-std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web::WebStart& start) {
+calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
     const calcu::settings::HostDirs dirs = start.placesDirs();
     auto parts = std::make_shared<WebParts>(dirs);
     parts->paths = std::make_unique<cu1600::AppPaths>(parts->typed, dirs,
@@ -52,8 +52,10 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     host.clock = &calcu::web::wallTimeNow;
     host.logSettingsProblem = true;
     cu1600::SharpAppPart& part = *parts->part;
+    const cu1600::SharpWebPart& web = *parts->web;   // the session owns it
     host.owned = std::move(parts);
-    return calcu::shell::makeHostSession(part, std::move(host)).session;
+    return {calcu::shell::makeHostSession(part, std::move(host)).session,
+            [&web](const calcu::sessions::Value&) { return web.shellSetup(); }};
 }
 
 } // namespace

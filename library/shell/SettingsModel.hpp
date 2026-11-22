@@ -10,7 +10,7 @@
 // The settings dialog's sections and rows: what the frontend shows, in order;
 // the values come from the `settings` topic (SettingsPart), the startup
 // presets from the `preset-list` reply. The family rows' labels are fixed
-// here (and in shellModel.js); the product labels its own.
+// here; the product labels its own.
 
 namespace calcu::shell {
 

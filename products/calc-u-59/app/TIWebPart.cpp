@@ -101,6 +101,14 @@ TIWebPart::~TIWebPart() = default;
 
 void TIWebPart::bind(TIAppPart& app) { m_app = &app; }
 
+calcu::shell::ModelSetup TIWebPart::shellSetup(const Value& a) {
+    const ShellFrontend f = textArg(a, "layout") == "portrait" ? ShellFrontend::WebPortrait : ShellFrontend::WebWide;
+    calcu::shell::ModelSetup setup;
+    setup.product = shellProduct(textArg(a, "version"), textArg(a, "build"));
+    setup.spec = settingsSpec(f, calcu::shell::about(setup.product).version);
+    return setup;
+}
+
 void TIWebPart::attach(sessions::SessionSetup& s) {
     // TIAppPart's topics (declared before: the part is behind it), drawn in the page's form.
     m_calcIndicator = &s.stateTopic(topics::kCalcIndicator);
@@ -139,18 +147,12 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     auto req = [&s](const char* name, std::function<ReplyMessage(const Value&)> f) {
         s.request(sessions::RequestName{name}, [f = std::move(f)](const Value& a, SessionContext&) { return f(a); });
     };
-    // The product's data for the React set's shell, the settings dialog of
-    // the layout, from TIShellProduct, and the chrome (TIChrome); the
-    // page adds its acts and its version.
+    // The product's data for the page (its help address, About, the
+    // uploads' accept list) and the chrome (TIChrome); the page adds its acts.
     req("c59.shell-product", [](const Value& a) {
-        const std::string version = textArg(a, "version");
-        const std::string build = textArg(a, "build");
-        const ShellFrontend f = textArg(a, "layout") == "portrait" ? ShellFrontend::WebPortrait : ShellFrontend::WebWide;
-        const calcu::shell::ShellProduct p = shellProduct(version, build);
-        return answer("c59.shell-product",
-                      Value::object({{"product", calcu::shell::toValue(p)},
-                                     {"settingsSpec", calcu::shell::toValue(settingsSpec(f, calcu::shell::about(p).version))},
-                                     {"chrome", calcu::shell::toValue(tiChrome())}}));
+        const calcu::shell::ShellProduct p = shellProduct(textArg(a, "version"), textArg(a, "build"));
+        return answer("c59.shell-product", Value::object({{"product", calcu::shell::toValue(p)},
+                                                          {"chrome", calcu::shell::toValue(tiChrome())}}));
     });
     // The faceplate of a model: the hit map (base image pixels), the
     // card area and the canvas (faceplateMapValue), and what the page draws

@@ -133,20 +133,30 @@ TEST(web_settings_in_the_ini_file) {
     CHECK(r.fe.mirror.state(TopicName{"settings"}) != nullptr);
 }
 
-// The product's shell data for the page, per layout.
+// The product's data for the page, and its shell per layout: the settings differ.
 TEST(web_shell_product_per_layout) {
     WebRig r;
-    const Value wide = r.ask("c59.shell-product", Value::object({{"layout", "wide"}, {"version", "3.0.0"}}));
-    const Value* product = wide.find("product");
+    const Value answer = r.ask("c59.shell-product", Value::object({{"version", "3.0.0"}}));
+    const Value* product = answer.find("product");
     CHECK(product && product->find("name") && *product->find("name")->string() == "Calc-U-59");
     CHECK(product && product->find("aboutLinks") && product->find("aboutLinks")->elements()->size() == 3);
-    CHECK(product && product->find("copyScreen") && !*product->find("copyScreen")->boolean());
-    const std::string wideSpec = toText(*wide.find("settingsSpec"));
-    CHECK(wideSpec.find("max-file-size-mb") != std::string::npos);
-    CHECK(wideSpec.find("Version 3.0.0") != std::string::npos);
-    CHECK(wideSpec.find("feedback") == std::string::npos);
-    const std::string portrait = toText(*r.ask("c59.shell-product", Value::object({{"layout", "portrait"}, {"version", "3.0.0"}}))
-                                             .find("settingsSpec"));
+    CHECK(answer.find("chrome") != nullptr);
+    const auto rows = [](const char* layout) {
+        std::string out;
+        const auto setup = cu59::TIWebPart::shellSetup(Value::object({{"layout", layout}, {"version", "3.0.0"}}));
+        for (const auto& section : setup.spec.sections)
+            for (const auto& row : section.rows) {
+                out += row.key + "|" + row.label;
+                for (const auto& [value, label] : row.choices) out += "|" + label;
+                out += "\n";
+            }
+        return out;
+    };
+    const std::string wide = rows("wide");
+    CHECK(wide.find("max-file-size-mb") != std::string::npos);
+    CHECK(wide.find("Version 3.0.0") != std::string::npos);
+    CHECK(wide.find("feedback") == std::string::npos);
+    const std::string portrait = rows("portrait");
     CHECK(portrait.find("feedback") != std::string::npos);
     CHECK(portrait.find("Click Sound") != std::string::npos);
     CHECK(portrait.find("max-file-size-mb") == std::string::npos);

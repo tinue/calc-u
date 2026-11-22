@@ -100,8 +100,9 @@ rows formatted by `DebugText`, heatmap steps (`heatStep`) as bytes. A file
 dropped on the calculator or picked by Load Preset… (several at once:
 one folder, `/uploads`) is the library's `open` with `upload: true`; the session
 decides what it is. The product's data for the shell are the request
-`c59.shell-product {layout, version}` (`app/TIShellProduct`: the items, the
-About texts and links, the settings spec of the layout); the faceplate is
+`c59.shell-product {version, build}` (`app/TIShellProduct`: the help
+address, the About texts and links, the uploads' accept list) with the
+chrome; the faceplate is
 `c59.faceplate-map {model}` (the hit map in pixels of the 2064 × 4075 base
 image, the card area, each key's rectangle, the card's corners); the
 heatmap's grid `c59.heatmap-grid`; the LED shapes
@@ -113,9 +114,10 @@ the `model` and `preset` props. The paper, the run state and the trace are
 the library's topics (`papers`, `paper PC-100C`, `paper-copies`,
 `run-state`, `trace`), which the component set's panel and buttons
 read from the shell. The menus, the bar, the More menu and the settings
-dialog are the shell's models (`library/web/components/shellModel.js`,
-mirroring `library/shell/`), drawn from `control-state`, `busy`,
-`run-state`, `media`, `settings` and the `preset-list` reply.
+dialog are the library's C++ models, which the worker serves as the topic
+`web.shell` (`docs/formats/web-embed.md` §3.1) for the page's `shell
+{mobile, settings, layout, version, build}` (`TIWebPart::shellSetup`: the
+settings of the layout).
 The pointer is the shell's hit rule: the widened key rects,
 distance 0, the display's full-speed hold; a key is fixed when the pointer
 goes down (a drag does not move the press to another key).

@@ -78,7 +78,7 @@ tools/  ci/  .github/workflows/
 - The one exception: the PC-1500/1500A and the PC-1600 differ too much
   for one layout; switching between them may reorder controls.
 
-## Platforms and bars
+## Desktop, mobile and bars
 
 The rules live in `library/shell/BarModel`, `library/shell/MenuModel` and
 `library/shell/View`; the code is the rule. The Web page draws the models
@@ -86,10 +86,10 @@ its worker serves (`shell::ModelHost`); `library/web/components/shellModel.js`
 mirrors only the rules that run on the page's clock and measurements (the
 view, `barFit`, "Loading…", notices, the pointer).
 
-- Every window is desktop or mobile (`shell::Traits::platform`). Desktop:
+- Every window is desktop or mobile (`shell::Traits::mobile`). Desktop:
   Qt always, a Web page in a desktop browser's tab; it has a menu bar.
   Mobile: the iOS app, the installed Web app, a browser asking for the
-  mobile site (`calcuShellPlatform`); it never has a menu bar.
+  mobile site (`calcuShellMobile`); it never has a menu bar.
 - More is on every bar, at the right edge (End pushed, More alone in it).
   Load Preset… and Settings… are inside More, never bar buttons.
 - More holds every menu item, in menu order under a heading per menu

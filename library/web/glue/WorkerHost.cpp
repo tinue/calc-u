@@ -158,7 +158,7 @@ void WorkerHost::receive(val message) {
         setup.traits.hasQuit = false;
         setup.traits.shortcuts = false;
         setup.traits.savedMedia = true;
-        setup.traits.platform = shell::read::flag(args, "mobile") ? shell::Platform::Mobile : shell::Platform::Desktop;
+        setup.traits.mobile = shell::read::flag(args, "mobile");
         setup.traits.settings = shell::read::flag(args, "settings", true);
         setup.traits.about = shell::read::flag(args, "about", true);
         models_.set(std::move(setup));

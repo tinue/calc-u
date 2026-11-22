@@ -65,7 +65,7 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Tra
     std::vector<BarGroupModel> out;
     if (!in.started()) return out;   // no control state: no bar
     const sessions::Value& cs = in.controlState;
-    const bool mobile = t.platform == Platform::Mobile;
+    const bool mobile = t.mobile;
 
     BarGroupModel model{BarGroup::AfterModel, {}};
     BarControl picker;
@@ -107,7 +107,7 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Tra
         c.entry = m;
         media.controls.push_back(std::move(c));
     }
-    // More, at the right edge on every platform: every menu's items.
+    // More, at the right edge of every bar: every menu's items.
     BarGroupModel end{BarGroup::End, {}, true};
     BarControl more;
     more.kind = BarControl::Kind::More;

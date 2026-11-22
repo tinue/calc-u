@@ -104,7 +104,7 @@ test('the desktop page has the menus and more at the end of the bar', async ({ p
 test('the mobile page has no menu bar and more at the right edge', async ({ page }) => {
   await recordCommands(page);
   for (const layout of ['portrait', 'wide']) {
-    await gotoReady(page, `layout=${layout}&platform=mobile`);
+    await gotoReady(page, `layout=${layout}&mobile=1`);
     await expect(el(page, 'menu-bar')).toHaveCount(0);
     const bar = el(page, 'control-bar');
     expect(await ids(bar.locator('[data-calcu^="bar-"]:not([data-calcu^="bar-group-"])'))).toEqual(
@@ -124,14 +124,14 @@ test('the mobile page has no menu bar and more at the right edge', async ({ page
 
 // A desktop page in the portrait layout keeps its menu bar.
 test('the desktop page has the menu bar in portrait too', async ({ page }) => {
-  await gotoReady(page, 'layout=portrait&platform=desktop');
+  await gotoReady(page, 'layout=portrait&mobile=0');
   await expect(el(page, 'menu-bar')).toBeVisible();
   await expect(el(page, 'bar-more')).toBeVisible();
 });
 
 test('more holds every menu item under its heading', async ({ page }) => {
   await page.setViewportSize({ width: 280, height: 700 });
-  await gotoReady(page, 'layout=portrait&platform=mobile');
+  await gotoReady(page, 'layout=portrait&mobile=1');
   await el(page, 'bar-more').click();
   const menu = el(page, 'more-menu');
   await expect(menu).toBeVisible();
@@ -153,7 +153,7 @@ test('more holds every menu item under its heading', async ({ page }) => {
 
 test('cold boot asks first', async ({ page }) => {
   await recordCommands(page);
-  await gotoReady(page, 'layout=portrait&platform=mobile');
+  await gotoReady(page, 'layout=portrait&mobile=1');
   await el(page, 'bar-more').click();
   await el(page, 'more-item-cold-boot').click();
   const ask = el(page, 'more-confirm');

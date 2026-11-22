@@ -1,7 +1,7 @@
 // CalcU59 — the web client, and the one global calc.js exposes
 // (docs/developer/Web-Client.md has the props). Put together from the React set's
 // shell: on a desktop the shell's menu bar (File, Machine, Help; no Edit),
-// on mobile none (the shell's platform, useShell.jsx), in either layout; in
+// on mobile none (CALCU_SHELL_MOBILE, useShell.jsx), in either layout; in
 // every calculator column the shell's control bar (the model picker, the
 // library's module picker of `slot-1`, the card controls, More at its
 // right edge with Load Preset… and Settings… in it); the button "PC-100C"
@@ -50,7 +50,7 @@ function minimumWidth(portrait) {
 }
 
 // The shell's traits: the Web has no Quit and binds no shortcut; the
-// page's platform decides the menu bar (useShell.jsx).
+// page being mobile decides the menu bar (useShell.jsx).
 const traitsFor = (settings) => Object.assign({}, CALCU_SHELL_WEB_TRAITS, { settings: settings !== false });
 
 // Keyboard feedback (Settings, portrait): a short click synthesised with
@@ -198,7 +198,7 @@ function autoView(width, height, menuHeight) {
   const view = calcuShellView({
     width, height, faceplateAspect: CANVAS_ASPECT, fixedWidth: 2 * FACE_PADDING,
     fixedHeight: menuHeight + sizes.barHeight + 2 * FACE_PADDING,
-    panelsMinWidth: sizes.panelsMinWidth, panelsMinHeight: sizes.panelsMinHeight, platform: CALCU_SHELL_WEB_TRAITS.platform,
+    panelsMinWidth: sizes.panelsMinWidth, panelsMinHeight: sizes.panelsMinHeight, mobile: CALCU_SHELL_MOBILE,
   });
   const wide = view.side === "beside" && view.panelsFit;
   return {
@@ -285,7 +285,7 @@ function CalcU59(props) {
   const rootRef = React.useRef(null);
   const [measured, setMeasured] = React.useState(0);
   const auto = layout === "auto";
-  const menuBar = CALCU_SHELL_WEB_TRAITS.platform !== "mobile";
+  const menuBar = !CALCU_SHELL_MOBILE;
   const hostKeys = React.useRef(null);
   if (!hostKeys.current) hostKeys.current = calcuHostKeys();
 

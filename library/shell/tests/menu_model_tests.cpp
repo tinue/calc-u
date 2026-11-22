@@ -254,7 +254,7 @@ namespace {
 
 Traits mobile() {
     Traits t = kWeb;
-    t.platform = Platform::Mobile;
+    t.mobile = true;
     return t;
 }
 

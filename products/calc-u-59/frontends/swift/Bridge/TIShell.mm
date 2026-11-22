@@ -194,7 +194,7 @@ NSInteger keyIndexOf(const std::string &key) {
     // The iPhone and the iPad: mobile (no menu bar; every item is in
     // More), no About, no Quit, no shortcuts.
     shell::Traits t;
-    t.platform = shell::Platform::Mobile;
+    t.mobile = true;
     t.about = false;
     t.hasQuit = false;
     t.shortcuts = false;

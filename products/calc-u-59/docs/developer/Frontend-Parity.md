@@ -11,7 +11,7 @@ the pages; the iPhone app stays upright in portrait.
 The platform class is apart from the layout: Qt is desktop (a menu bar),
 the Swift frontend mobile (none), the Web desktop in a browser tab on a
 computer and mobile when installed or when the browser asks for the
-mobile site (the library's `calcuShellPlatform`; `?platform=` in a test).
+mobile site (the library's `calcuShellMobile`; `?mobile=` in a test).
 Web paths are relative to `frontends/web/src/`; `TIWebPart` is
 `app/TIWebPart` (what the page draws, as the session's `c59.web.*` topics
 and product requests). The Qt6 and Web windows are

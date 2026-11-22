@@ -39,7 +39,7 @@ Never edit the calculator there — that copy is generated.
    The page is put together from the React set's
    shell (`library/web/components/`): `useCalcuShell` with the page's
    platform (desktop: the menu bar `ShellMenuBar`, File / Machine / Help, no
-   Edit; mobile: none; `?platform=` overrides) and the bar's More at its
+   Edit; mobile: none; `?mobile=` overrides) and the bar's More at its
    right edge on both (`ShellMoreMenu`, Load Preset… and Settings… in it),
    `ShellControlBar` in each calculator column (the model
    picker, the library's `CalcuMediaPicker` for `slot-1`,

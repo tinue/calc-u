@@ -5,7 +5,7 @@
 // group it names (it reads its own product entries). A group
 // without a control takes no room. Names: control-bar,
 // bar-model, bar-slot-<place>, bar-place-<place>, bar-media-<media place>.
-// End holds the More button at the right edge on every platform (bar-more,
+// End holds the More button at the right edge of every bar (bar-more,
 // ShellMoreMenu; `compact`: its icon alone).
 //
 //   <ShellControlBar shell={s} slotPicker={Component?} mediaControls={{kind: Component}}

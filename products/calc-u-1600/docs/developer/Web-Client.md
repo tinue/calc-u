@@ -21,8 +21,8 @@ and is always there, named after the plotter plugged in.
 Narrower than 700 px, the inspector gives way to the printer, or to the
 paper while a plotter is plugged in.
 
-The page is desktop or mobile (the library's `calcuShellPlatform`,
-`library/web/components/useShell.jsx`; `?platform=desktop|mobile` in a
+The page is desktop or mobile (the library's `calcuShellMobile`,
+`library/web/components/useShell.jsx`; `?mobile=0|1` in a
 test): mobile for the installed PWA and for a browser that asks for the
 mobile site. Desktop has the menu bar, mobile none; the control bar ends
 with More on both (Load Preset… and Settings… in it). The mobile bar

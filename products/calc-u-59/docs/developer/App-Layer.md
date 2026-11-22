@@ -613,7 +613,7 @@ EmulatorViewModel (@Observable, main thread)
 | `AppSettings.swift` | Where the settings file lives (Application Support), the Debug-only `--settings-file`; the settings themselves are the session's |
 | `CueCardContent.swift` | Swift cue-card value type and its `TICueCard` conversion |
 | `Views/CalculatorView.swift` | Root view; the layouts — pages, or side by side with or without the debugger, as `TIViewRules.mobileLayout` (Shared `mobileLayout`) says for the window's size and an active fold (iPhone Duo), with the printer's width (`mobilePrinterWidth`) and a top margin for windows without a top inset (`mobileTopMargin`); the control bar (`ControlBarView`); the notice alert; Load Preset…'s file importer (the preset types, the library's `open`), the settings sheet and the ASM file importer |
-| `Views/ControlBarView.swift` | The control bar from `TIShell.bar`: the model picker, the picker of `slot-1`, the card controls (`CardControls`); Preset, Settings and More (with Reset; Cold boot asks first, its question on the More button); `PlaceButton`, the place button of the bar and the paper panel |
+| `Views/ControlBarView.swift` | The control bar from `TIShell.bar`: the model picker, the picker of `slot-1`, the card controls (`CardControls`); More at the right edge (Load Preset…, Settings…, Reset; Cold boot asks first, its question on the More button); `PlaceButton`, the place button of the bar and the paper panel |
 | `Views/ShellCommands.swift` | The family's menus File, Machine, Help in the iPad's menu bar as SwiftUI `Commands` from `TIShell.menus`, the shortcuts as key equivalents |
 | `Views/KeyboardView.swift` | Calculator art; the pointer through the library's rule (`TIShell` on `cu59::faceplateHitMap`: the key, the display for full speed; the card's corners first), pressed-key effect, haptics / click, "Loading…" below the display |
 | `Views/UIKitTouchTracking.swift` | Raw-touch tracker that replaces `DragGesture` for keys (iOS 27 fires `onEnded` early) |
@@ -651,7 +651,7 @@ imports the public ones.
 
 | Wrapper | Wraps |
 |---|---|
-| `TIShell.{h,mm}` | The library's shell models for Swift: the last Value of each input topic (`control-state`, `busy`, `run-state`, `roms-missing`, `settings`, `media`, the `preset-list` reply) gives `calcu::shell::menus`, `moreItems`, `bar`, `dialog` over `cu59::settingsSpec`, `panels`, `LoadingRule`, `NoticeQueue` and `PointerTracker` on `cu59::faceplateHitMap`, with the traits of a window with or without a menu bar; `choose:` sends an item's command (a refusal is a notice) or hands back a shell action; value objects `TIMenu`, `TIMenuItem`, `TIBarControl`, `TIDialogSection`, `TIDialogRow` |
+| `TIShell.{h,mm}` | The library's shell models for Swift: the last Value of each input topic (`control-state`, `busy`, `run-state`, `roms-missing`, `settings`, `media`, the `preset-list` reply) gives `calcu::shell::menus`, `moreItems`, `bar`, `dialog` over `cu59::settingsSpec`, `panels`, `LoadingRule`, `NoticeQueue` and `PointerTracker` on `cu59::faceplateHitMap`, with the traits of the mobile platform (no About, no Quit); `choose:` sends an item's command (a refusal is a notice) or hands back a shell action; value objects `TIMenu`, `TIMenuItem`, `TIBarControl`, `TIDialogSection`, `TIDialogRow` |
 | `TIShell+Session.h` | ObjC++-only: what `TIAppSession` and `TIShell` tell each other (the inputs, the notices, the busy changes) |
 | `TIAppSession.{h,mm}` | The app session on `calcu::shell::SessionThread`, with the library's `SettingsPart` and the settings file it owns (opened here, then the session thread's only; `--settings-file` in Debug builds): commands out, messages in on the main thread (the last of each topic kept); `TIAppSessionDelegate` (alerts, the tab of `debug-panel:` from the topic `c59.debug-view`, diagnostics, `changed`); the debug panel's product topics (`c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view`), the LOG tab's `cu59::RingLog` of the library's `log`, the `control-state` entries (`asmRunAvailable`, `calculatorTabAvailable`), `freezeButtonsFor:` (`cu59::freezeButtons`) and the library's `open` / `open-would-take` (`openFile:…way:`, `wouldOpenFile:`); `TISessionStart`, `TIRomSet`; the coordinated save folder files (`CoordinatedFiles`, a `calcu::media::FileAccess`: `TIAppSetup::files`, the constant memory file's and the media part's file access); the cards on the library's `media` topic and `media.choose`, `media.start-new`, `media.eject` (`savedCards`, `armCard:`, `armFreshCard:`, `TISavedCard`); value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, built when Swift reads them; also the library's `paper PC-100C` (kept as text lines and `TIPaperDot`s), `paper-copies`, `run-state` (`buttonUseFor:`, calcu::debugger::buttonUse) and `trace`, the run control's commands, and the clipboard host services (`clipboard-image`, `clipboard-text`) answered on the pasteboard |
 | `TISharedTables.{h,mm}` | `SevenSegment`, `KeyboardLayout`, `KeyIds`, the base image's width (the hit map's unit) |
@@ -669,7 +669,7 @@ Never import the three ObjC++-only headers from the bridging header.
 shell models, computed by `TIShell` in the bridge from the same
 topics the Qt6 and React sets read: the menus (`ShellCommands`, in the iPad's menu bar; the items with the
 roles Settings…, About and Quit are left out), the control bar
-(`ControlBarView`, with Preset, Settings and More; `CalculatorView` measures it with and without its labels and the library's `barFit` (`TIBarFit`) gives its width and labels), the PC-100C's button on the paper panel (`TIShell.paperPlaces`), the settings (`SettingsView`), "Loading…" and
+(`ControlBarView`, with More at its right edge; `CalculatorView` measures it with and without its labels and the library's `barFit` (`TIBarFit`) gives its width and labels), the PC-100C's button on the paper panel (`TIShell.paperPlaces`), the settings (`SettingsView`), "Loading…" and
 the notices (one alert after the other). No Swift view decides what the
 machine offers; a control or item is enabled exactly when its entry is.
 
@@ -716,7 +716,7 @@ of `app/TIDebugPart` and the library's `log`; the buttons send its commands
 the control state's product entries.
 
 **Opening files.** A file picked with the file importer of Load Preset…
-(the bar's Preset, File ▸ Load Preset… ⌘O in the iPad's menu bar; the
+(More ▸ Load Preset…, File ▸ Load Preset… ⌘O in the iPad's menu bar; the
 preset types only) goes to the session's `open` (way `dialog`) with its
 bytes and path; the session finds out what it is, and a refusal arrives as
 its notice (an alert).

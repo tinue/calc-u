@@ -15,6 +15,12 @@ apps' features (`Frontend-Parity.md`, the Web column) in two layouts:
 
 The installable PWA (`app/`) picks between them by the window's size.
 
+Apart from the layout, the page is desktop or mobile (the library's
+`calcuShellPlatform`, `library/web/components/useShell.jsx`): mobile for
+the installed PWA and for a browser that asks for the mobile site, else
+desktop. Desktop has the menu bar, mobile none; the control bar ends with
+More on both (Load Preset… and Settings… in it).
+
 Deliberately different from the apps: the LED is Classic only; the files
 it keeps are in the browser's IndexedDB, the persistent file system of the
 library's shell (database `/persist-calc-u-59`): the
@@ -54,12 +60,12 @@ calc-engine-worker.js → library-worker.js ── wasm/calcu59-core.{js,wasm} �
 | `src/Dialogs.jsx` | Card picker on the `media` topic (Arm Card, Arm Fresh Card; the replace question by the library's `calcuAskedQuestion`) (`CardPickerDialog`); File ▸ Saved Media… is the library's `ShellSavedMedia` |
 | `src/Paper.jsx` | The PC-100C's pane: the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), owner from the control state, which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (the library's `set-control`; their positions are the `control-state`'s `controls`), Copy and Cut its `paper.copy` / `paper.cut` (Qt6: `calcu::qt6::PaperPanel`). The PC-100C is attached by its button "PC-100C" at the left of the panel's header (the panel model's `places`) |
 | `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) on the debug part's product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view` and the library's `log`; Run and the CALCULATOR tab follow the `control-state` entries `c59.asm-run`, `c59.calculator-tab` (TRACE can always be pressed); FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` |
-| `src/CalcU59.jsx` | The component `CalcU59`, put together from the React set's shell: the menu bar (wide) or the bar's Preset, Settings and More (portrait; Reset in More), the shell's control bar with the module picker (the library's `ShellSlotPicker`) and the card controls, the shell's dialogs, the storage banner, "ROMs missing"; the product's data and faceplate maps through the library's `useShellProduct` and `useFaceplateMaps`; the two layouts, focus and physical keyboard (the library's `calcuHostKeys`), drag and drop (the library's `open {way: drop, upload: true}`; the library's `calcuFileDrop`: a drop of exactly one file; `calcuOpenFiles`), keyboard feedback (`[keyboard] feedback`) (`MainWindow`) |
+| `src/CalcU59.jsx` | The component `CalcU59`, put together from the React set's shell: the menu bar (desktop; none on mobile), the shell's control bar with More at its right edge with the module picker (the library's `ShellSlotPicker`) and the card controls, the shell's dialogs, the storage banner, "ROMs missing"; the product's data and faceplate maps through the library's `useShellProduct` and `useFaceplateMaps`; the two layouts, focus and physical keyboard (the library's `calcuHostKeys`), drag and drop (the library's `open {way: drop, upload: true}`; the library's `calcuFileDrop`: a drop of exactly one file; `calcuOpenFiles`), keyboard feedback (`[keyboard] feedback`) (`MainWindow`) |
 | `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle` (without the full set: a session without a machine and the topic `roms-missing`), the settings file, the shell's part, the library's `SettingsPart` and ControlPart (with the debug panel's product entries), `TIAppPart::sessionParts()` (the library's parts with the TI rules, the bundle of `/presets`; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
 | `calc.css` | Tokens, fonts and every rule the client needs |
 | `fonts/` | Archivo (WOFF2, SIL OFL 1.1), for the cue card, as the family `Calc-U Archivo` |
 | `app/` | The installable PWA's own files: `index.html`, `app.css`, `manifest.json`; its page, service worker and worker entry are the library's (`library/web/app/`) |
-| `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, also `width`, `height`, `model` (by its name), `preset` (a path of `examples/bundle.yaml`, sent as the bundle path `examples:<path>` with the library's `start`) |
+| `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, `?platform=desktop|mobile` (the library's override), also `width`, `height`, `model` (by its name), `preset` (a path of `examples/bundle.yaml`, sent as the bundle path `examples:<path>` with the library's `start`) |
 | `examples/bundle.yaml` (the product's) | What File ▸ Examples ▸ offers: the request `preset-list` gives its examples in their groups (`docs/formats/bundle.md`). `build.js` copies exactly the files it lists, and the file itself, to `dist/presets/` |
 | `library/web/vendor/` (the repository's) | React 18 and ReactDOM (shipped), Babel (build only), ReactDOMServer (tests only); one copy for both products |
 | `build.sh`, `build.js` | The build (below): `build.js` names what is the product's (the engine, the worker's configuration with the persistent mount `/persist-calc-u-59` and the lock `calcu59-storage`, the files, the sources), the library's `library/web/build/product.js` does the steps |
@@ -181,7 +187,7 @@ What is Calc-U-59's own:
 - `model`: `"TI-59"`, `"TI-58"` or `"TI-58C"`; without it the stored
   setting.
 - `settings` (default `true`), the product's own prop: offer Settings…
-  (the File menu, the portrait bar's Settings button and the More menu).
+  (the File menu and the More menu).
 
 There is no `module` prop: a host page that wants
 another module names a preset that sets it.
@@ -212,8 +218,7 @@ name (`Arm Card` and `Arm Fresh Card` (both read "Crd"),
 `Eject Card`), the card dialog's list `Saved cards`, and the shell's
 elements by their `data-calcu` names: `menu-bar`,
 `menu-file`, `item-<id>`, `control-bar`, `bar-model`, `bar-place-printer`,
-`media-picker-slot-1`, `bar-action-reset|load-preset|settings`,
-`bar-more`, `more-item-<id>`, `settings-dialog`, `about-dialog`, `notice`,
+`media-picker-slot-1`, `bar-more`, `more-item-<id>`, `settings-dialog`, `about-dialog`, `notice`,
 `loading`, `storage-banner`, `roms-missing`.
 
 `run-tests.sh` runs every test twice (two servers of

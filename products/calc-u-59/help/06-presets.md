@@ -11,9 +11,9 @@ with a file to download at each step.
 
 A preset is a plain UTF-8 text file ending in `.ti59`, `.ti58` or `.ti58c`;
 the ending does not choose the model, `model:` does. Load one with
-**File ▸ Load Preset…** (the **Preset** button on the iPhone, the iPad and
-in the browser's portrait layout), drop it on the window, or choose an
-example under **Examples ▸**.
+**File ▸ Load Preset…** (**More ▸ Load Preset…** on every bar, the only
+way on the iPhone, the iPad and on mobile in the browser), drop it on the
+window, or choose an example under **Examples ▸**.
 
 ## An example
 

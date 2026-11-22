@@ -16,7 +16,8 @@ not available there.
 
 They are plugged in and out with the control bar (the CE-150 and CE-158
 buttons on the PC-1500 and PC-1500A; the printer picker and the CE-158
-button on the PC-1600) or in **Machine ▸ Peripherals**. One plotter at a
+button on the PC-1600) or in **Machine ▸ Peripherals** (**More ▸
+Peripherals** on mobile, where the bar has none of these controls). One plotter at a
 time can be plugged in. The CE-1600P and the CE-158 cannot be used
 together: plugging in one while the other is there is refused with a
 notice.

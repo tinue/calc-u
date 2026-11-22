@@ -335,7 +335,7 @@ typedef struct {
 
 /// The level of the machine's own log lines (c59.debug-view).
 @property (nonatomic, readonly) NSInteger debugLevel;   ///< 0 off, 1 info, 2 debug
-/// The LOG button: `c59.log-level` with the next of off, info, debug.
+/// The LOG button: the library's `log-level` with the next of off, info, debug.
 - (void)cycleDebugLevel;
 /// The LOG tab's view of the library's `log` (the last 2000 lines, cu59::RingLog).
 @property (nonatomic, readonly) NSString *logText;

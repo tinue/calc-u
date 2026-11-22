@@ -171,6 +171,11 @@ bool MachineController::traceActive() const {
     return t && t->running;
 }
 
+calcu::sessions::LogLevel MachineController::logLevel() const {
+    const auto* l = state<calcu::sessions::LogLevelState>(calcu::sessions::kLogLevelTopic);
+    return l ? l->level : calcu::sessions::LogLevel::Off;
+}
+
 bool MachineController::machinePaused() const {
     const auto* s = state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
     return s && s->paused;

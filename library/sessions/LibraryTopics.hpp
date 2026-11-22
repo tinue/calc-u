@@ -4,6 +4,7 @@
 #include "machine/EmulatedTime.hpp"
 #include "machine/Machine.hpp"
 #include "pacing/PacingProfile.hpp"
+#include "sessions/LogLevel.hpp"
 #include "sessions/Messages.hpp"
 #include "sessions/Payload.hpp"
 #include <string>
@@ -17,12 +18,14 @@ inline const TopicName kDisplayTopic{"display"};   // state: DisplayState
 inline const TopicName kBusyTopic{"busy"};         // state: BusyState
 inline const TopicName kNoticesTopic{"notices"};   // stream, History::None: Notice
 inline const TopicName kLogTopic{"log"};           // stream, History::SinceReset: LogLine
+inline const TopicName kLogLevelTopic{"log-level"};   // state: LogLevelState
 
 inline const CommandName kSuspendCommand{"suspend"};
 inline const CommandName kContinueCommand{"continue"};
 inline const CommandName kSpeedCommand{"speed"};     // {full: bool}
 inline const CommandName kKeyDownCommand{"key-down"};   // {key: string}
 inline const CommandName kKeyUpCommand{"key-up"};
+inline const CommandName kLogLevelCommand{"log-level"};   // {level: off|info|debug}
 // What a host sends to start the product (the Web shell; {model?,
 // preset?}); the product's part handles it, the library does not.
 inline const CommandName kStartCommand{"start"};
@@ -70,6 +73,14 @@ struct LogLine final : PayloadOf<LogLine> {
     explicit LogLine(std::string t) : text(std::move(t)) {}
     std::string text;
     bool same(const LogLine& o) const { return text == o.text; }
+    Value toValue() const override;
+};
+
+struct LogLevelState final : PayloadOf<LogLevelState> {
+    static constexpr PayloadKind kKind{"log-level"};
+    explicit LogLevelState(LogLevel l) : level(l) {}
+    LogLevel level;
+    bool same(const LogLevelState& o) const { return level == o.level; }
     Value toValue() const override;
 };
 

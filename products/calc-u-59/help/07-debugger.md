@@ -94,10 +94,10 @@ the ROM's page changes show in the addresses.
 - **SCOM**, **Memory**, **Prog** and **Vars** write the calculator's own
   registers, its memory, the program or the data registers into the log;
   the bin button empties the tab's view.
-- **LOG** steps the level of the calculator's own log lines through Off,
-  Info and Debug (a grey, orange or red dot). At Debug the calculator
-  logs each write to its registers and memory; that is mostly for the
-  developer.
+- **LOG** steps the log's level through Off, Info and Debug (a grey,
+  orange or red dot). At Info the log also shows how a preset is carried
+  out, each step as it is done; at Debug the calculator logs each write
+  to its registers and memory as well, which is mostly for the developer.
 - **TRACE** starts and ends a trace of the processor's instructions.
 
 ## Traces

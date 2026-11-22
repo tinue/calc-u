@@ -132,6 +132,7 @@ void EmulatorController::topicChanged(const QString& name) {
             m_viewRequests = v.requests;
             emit debugPanelRequested(static_cast<int>(v.view));
         }
+    } else if (t == cs::kLogLevelTopic) {
         emit logChanged();   // the level shown
     } else if (t == T::kAsmOverlay) {
         emit asmChanged();
@@ -321,11 +322,12 @@ const std::vector<uint32_t>& EmulatorController::heatmapCounts() const {
     return orNone(state<cu59::TIHeatmap>(cu59::topics::kHeatmap), kNoHeatmap).counts;
 }
 EmulatorController::DebugLevel EmulatorController::debugLevel() const {
-    return orNone(state<cu59::TIDebugView>(cu59::topics::kDebugView), kNoView).logLevel;
+    const auto* l = state<cs::LogLevelState>(cs::kLogLevelTopic);
+    return l ? l->level : DebugLevel::Off;
 }
 void EmulatorController::cycleDebugLevel() {
     const auto next = static_cast<DebugLevel>((static_cast<int>(debugLevel()) + 1) % 3);
-    send(cu59::commands::kLogLevel, Value::object({{"level", std::string(cu59::debugLevelName(next))}}));
+    send(cs::kLogLevelCommand, Value::object({{"level", std::string(cs::logLevelName(next))}}));
 }
 void EmulatorController::clearLog() {
     m_log.clear();

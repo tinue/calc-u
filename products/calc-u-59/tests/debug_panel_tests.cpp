@@ -16,6 +16,7 @@
 #include "control/ControlState.hpp"
 #include "debugger/ButtonRule.hpp"
 #include "debugger/RunState.hpp"
+#include "sessions/LibraryTopics.hpp"
 #include "opening/OpenRequest.hpp"
 #include <algorithm>
 
@@ -25,6 +26,7 @@ using calcu::debugger::kCpu;
 using calcu::debugger::kProgram;
 using calcu::debugger::RunState;
 using calcu::sessions::Value;
+namespace cs = calcu::sessions;
 using testroms::SessionRig;
 
 namespace {
@@ -105,7 +107,7 @@ TEST(six_product_topics_read_by_state) {
         if (p && *p) (void)(*p)->toValue();   // what the harness's `state` reads
     }
     CHECK_EQ(asmState(r)->fileName, std::string("No file selected"));
-    CHECK(topic<TIDebugView>(r, topics::kDebugView)->logLevel == DebugLevel::Off);
+    CHECK(topic<cs::LogLevelState>(r, cs::kLogLevelTopic)->level == cs::LogLevel::Off);
 }
 
 TEST(entries_asm_run_and_calculator_tab_with_reasons) {
@@ -508,16 +510,16 @@ TEST(dumps_in_todays_layout) {
     CHECK(!r.send(commands::kDump, Value::object({{"what", "nothing"}})).done);
 }
 
-TEST(levels_off_info_debug) {
+// The machine's own lines follow the session's log level.
+TEST(machine_log_follows_the_log_level) {
     SessionRig r;
     CHECK(ready(r));
     for (const char* l : {"info", "debug", "off"}) {
-        CHECK(r.send(commands::kLogLevel, Value::object({{"level", l}})).done);
+        CHECK(r.send(cs::kLogLevelCommand, Value::object({{"level", l}})).done);
         r.frame();
-        CHECK_EQ(std::string(debugLevelName(topic<TIDebugView>(r, topics::kDebugView)->logLevel)), std::string(l));
-        CHECK_EQ(calcu::machine::first<MachineLog>(r.machine())->level(), static_cast<int>(*debugLevelNamed(l)));
+        CHECK_EQ(std::string(cs::logLevelName(topic<cs::LogLevelState>(r, cs::kLogLevelTopic)->level)), std::string(l));
+        CHECK_EQ(calcu::machine::first<MachineLog>(r.machine())->level(), static_cast<int>(*cs::logLevelNamed(l)));
     }
-    CHECK(!r.send(commands::kLogLevel, Value::object({{"level", "loud"}})).done);
 }
 
 TEST(debug_logs_each_register_and_memory_write) {
@@ -527,11 +529,11 @@ TEST(debug_logs_each_register_and_memory_write) {
     for (int k : {82, 42, 92, 82}) r.tap(k);   // 1 STO 01: memory written, at the level off nothing
     r.runFor(100ms);
     CHECK_EQ(logTexts(r).size(), before);
-    r.send(commands::kLogLevel, Value::object({{"level", "debug"}}));
+    r.send(cs::kLogLevelCommand, Value::object({{"level", "debug"}}));
     for (int k : {83, 42, 92, 83}) r.tap(k);   // 2 STO 02
     r.runFor(100ms);
     CHECK(logTexts(r).size() > before);
-    r.send(commands::kLogLevel, Value::object({{"level", "off"}}));
+    r.send(cs::kLogLevelCommand, Value::object({{"level", "off"}}));
 }
 
 TEST(product_lines_at_every_level) {

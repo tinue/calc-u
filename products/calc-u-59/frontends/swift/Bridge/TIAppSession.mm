@@ -256,7 +256,7 @@ TIChange changeOf(const cs::TopicName& t) {
     if (t == T::kCpuDebug) return TIChangeCpu;
     if (t == T::kHeatmap) return TIChangeHeatmap;
     if (t == T::kAsmOverlay) return TIChangeAsm;
-    if (t == T::kDebugView) return TIChangeLog;   // the log level it carries
+    if (t == cs::kLogLevelTopic) return TIChangeLog;   // the level the LOG button shows
     // The PC-100C's controls and TRACE's position too.
     if (t == calcu::control::kControlStateTopic)
         return static_cast<TIChange>(TIChangeControl | TIChangeShell | TIChangeCard | TIChangePrinter);
@@ -936,10 +936,13 @@ static const char* const kCardReaderPlace = "card-reader";
 }
 - (void)clearHeatmap { [self send:cu59::commands::kHeatmapReset]; }
 
-- (NSInteger)debugLevel { const auto* v = [self debugView]; return v ? static_cast<NSInteger>(v->logLevel) : 0; }
+- (NSInteger)debugLevel {
+    const auto* l = _mirror.stateOf<cs::LogLevelState>(cs::kLogLevelTopic);
+    return l ? static_cast<NSInteger>(l->level) : 0;
+}
 - (void)cycleDebugLevel {
-    const auto next = static_cast<cu59::DebugLevel>(([self debugLevel] + 1) % 3);
-    [self send:cu59::commands::kLogLevel args:{{"level", std::string(cu59::debugLevelName(next))}}];
+    const auto next = static_cast<cs::LogLevel>(([self debugLevel] + 1) % 3);
+    [self send:cs::kLogLevelCommand args:{{"level", std::string(cs::logLevelName(next))}}];
 }
 - (NSString *)logText { return ns(_logText); }
 - (void)clearLog {

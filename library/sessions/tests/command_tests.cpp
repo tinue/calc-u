@@ -110,7 +110,7 @@ TEST(topics_request_lists_declared_topics) {
     std::vector<std::string> names;
     for (const auto& t : list->topics) names.push_back(t.name.value + (t.stream ? ":stream" : ":state"));
     CHECK(names == (std::vector<std::string>{"display:state", "busy:state", "notices:stream", "log:stream",
-                                             "tp.state:state", "tp.stream:stream"}));
+                                             "log-level:state", "tp.state:state", "tp.stream:stream"}));
 }
 
 TEST(product_topic_command_request_travel_like_generic) {

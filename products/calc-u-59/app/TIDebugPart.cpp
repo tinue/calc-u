@@ -64,21 +64,6 @@ std::optional<DebugPanel> debugPanelNamed(std::string_view n) {
     if (n == "log") return DebugPanel::Log;
     return std::nullopt;
 }
-std::string_view debugLevelName(DebugLevel l) {
-    switch (l) {
-    case DebugLevel::Off: return "off";
-    case DebugLevel::Info: return "info";
-    case DebugLevel::Debug: return "debug";
-    }
-    return "off";
-}
-std::optional<DebugLevel> debugLevelNamed(std::string_view n) {
-    if (n == "off") return DebugLevel::Off;
-    if (n == "info") return DebugLevel::Info;
-    if (n == "debug") return DebugLevel::Debug;
-    return std::nullopt;
-}
-
 FreezeButtons freezeButtons(const debugger::LevelName& level, const debugger::RunState* s) {
     FreezeButtons b;
     if (!s) return b;
@@ -194,9 +179,7 @@ Value TIAsmOverlayState::toValue() const {
 }
 
 Value TIDebugView::toValue() const {
-    return Value::object({{"view", std::string(debugPanelName(view))},
-                          {"requests", static_cast<std::int64_t>(requests)},
-                          {"logLevel", std::string(debugLevelName(logLevel))}});
+    return Value::object({{"view", std::string(debugPanelName(view))}, {"requests", static_cast<std::int64_t>(requests)}});
 }
 
 // ── The part ─────────────────────────────────────────────────────────────────
@@ -252,12 +235,6 @@ void TIDebugPart::attach(sessions::SessionSetup& s) {
     });
     add(commands::kHeatmapReset, [this](const Value&) -> CommandOutcome {
         resetHeatmap();
-        return Done{};
-    });
-    add(commands::kLogLevel, [this](const Value& a) -> CommandOutcome {
-        const auto l = debugLevelNamed(textArg(a, "level"));
-        if (!l) return Refused{"The log level is off, info or debug."};
-        setLogLevel(*l);
         return Done{};
     });
     add(commands::kDump, [this](const Value& a) -> CommandOutcome {
@@ -369,7 +346,7 @@ void TIDebugPart::follow() {
         m_generation = m_ctx->machineSession().generation();
         m_debug.attach({});
         refreshModule();
-        if (auto* log = calcu::machine::first<MachineLog>(*m)) log->setLevel(static_cast<int>(m_logLevel));
+        m_appliedLevel.reset();
         if (auto* h = calcu::machine::first<RomHeatmapCounter>(*m)) h->setOn(m_cpuShown || m_setup.alwaysShown);
         if (m_asm.instructions > 0) {
             m_asm.fileName = kNoFile;
@@ -385,6 +362,11 @@ void TIDebugPart::follow() {
         for (const auto& e : m->plugged().byPlace)
             if (e.place == kSlot) id = e.peripheral.value;
         if (id != m_moduleID) refreshModule();   // a module attached or detached
+    }
+    // The machine's own lines at the session's log level (the `log-level` command).
+    if (m_appliedLevel != m_ctx->logLevel()) {
+        m_appliedLevel = m_ctx->logLevel();
+        if (auto* log = calcu::machine::first<MachineLog>(*m)) log->setLevel(static_cast<int>(*m_appliedLevel));
     }
 
     debugger::RunControl* rc = runControl();
@@ -500,14 +482,6 @@ void TIDebugPart::resetHeatmap() {
     if (machine::Machine* m = machine())
         if (auto* h = calcu::machine::first<RomHeatmapCounter>(*m)) h->reset();
     m_heatDirty = true;
-}
-
-void TIDebugPart::setLogLevel(DebugLevel l) {
-    m_logLevel = l;
-    if (machine::Machine* m = machine())
-        if (auto* log = calcu::machine::first<MachineLog>(*m)) log->setLevel(static_cast<int>(l));
-    m_view.logLevel = l;
-    if (m_viewTopic) m_viewTopic->set(std::make_shared<TIDebugView>(m_view));
 }
 
 std::vector<std::string> TIDebugPart::dump(std::string_view what) {

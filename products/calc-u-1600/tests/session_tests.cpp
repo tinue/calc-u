@@ -224,6 +224,7 @@ TEST(mirror_holds_every_callback) {
         out << "format-version: 2\nmodel: PC-1600\nprinter: CE-1600P\nslot-1: { name: CE-1600M }\n"
                "keys:\n  - key: mode\n  - type: NEW0\n  - key: mode\n  - type: PRINT MEM\n";
     }
+    f.send(calcu::sessions::kLogLevelCommand, calcu::sessions::Value::object({{"level", "info"}}));   // the progress lines
     const sessions::CallId id = f.send(calcu::presets::kLoadPresetCommand, Value::object({{"ref", modules.generic_string()}}));
     int controlWhileBusy = countState(f.messages, mark, calcu::control::kControlStateTopic);   // the command's own flush: armed
     while (!f.takeReply(id)) {

@@ -45,6 +45,10 @@
   `listing()` through the new harness command `c1600 list-basic`. The
   driver began as the one "spellbound" wrote for the superRAM tests and
   is developed further together with spellbound.
+- **The INSPECTOR's LOG button works.** It sets the level of the log: at
+  Off the log keeps what a preset writes on purpose and why it stopped;
+  Info adds how a preset is carried out, each step as it is done. The
+  harness has the same as `log-level off|info|debug`.
 
 ### Changed
 

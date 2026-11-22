@@ -46,7 +46,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (§ "Bridge La
 | `TITyping` | The TI typing profile per model (100 ms of emulated time, held until the ROM read it), the keyboard map (`TIKeyboardMap`), the names `key` takes; handed to the library's `TypingPart` |
 | `FrameSampler`, `DisplayPov` | The 60 Hz frame (one sampler per machine, made at `machineChanged`): display, C indicator, card auto-eject; `DisplayPov`: LED brightness per position from the core's duty cycles (persistence of vision) |
 | **Debugger** | |
-| `TIDebugPart` | The debug panel below the frontends: a session part with the six product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view`, the commands `c59.show-calculator-debug`, `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`, `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`, and control rules (the product entries `c59.asm-run`, `c59.calculator-tab`); `freezeButtons` (FREEZE and FREEZE ON START of a tab) |
+| `TIDebugPart` | The debug panel below the frontends: a session part with the six product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view`, the commands `c59.show-calculator-debug`, `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.dump`, `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`, and control rules (the product entries `c59.asm-run`, `c59.calculator-tab`); `freezeButtons` (FREEZE and FREEZE ON START of a tab) |
 | `TIFileKinds` | Calc-U-59's file kinds of the library's `open`: `asm-overlay`, `keystroke-program`, `rom-module-file`, `constant-memory-file`; `tiPresetExtensions`, `programArguments` (the Qt6 start file) |
 | `DebugModel` | The panels' data: CALCULATOR snapshot and listing, CPU history (TIDebugPart owns it) |
 | `DebugSnapshots` | Builds the CALCULATOR snapshot and listing and the CPU history entries |
@@ -127,8 +127,8 @@ the PC-100C's TRACE switch from `Machine::plugged()` and its controls (no copies
 card the build gives (a preset's `cue-card:`, or the constant memory
 file's) and tells `ConstantMemoryKeeper` the build. What stays the part's:
 the PC-100C's TRACE position, the cue card
-shown. The debug panel's data, the ASM overlay and the log level are
-`TIDebugPart`'s, a part of the same session. Every
+shown. The debug panel's data and the ASM overlay are
+`TIDebugPart`'s (the log level is the session's), a part of the same session. Every
 pause, step, breakpoint and trace is the `DebuggerPart`'s, the paper the
 `PaperPart`'s. An error is a notice ("title: message"), a diagnostic a log
 line, the card and `ti58c.memory.yaml` files go through `TIFileAccess` in
@@ -721,7 +721,7 @@ which can be used is the library's rule (`buttonUseFor:`, and
 START is `pause-on-start`, the LOG tab's TRACE the trace session's button
 trace. What the tabs show is the session's: the product topics
 of `app/TIDebugPart` and the library's `log`; the buttons send its commands
-(`c59.dump`, `c59.log-level`, `c59.heatmap-reset`, `c59.asm-load`,
+(`c59.dump`, `c59.heatmap-reset`, `c59.asm-load`,
 `c59.asm-run`, `c59.asm-clear`); Run, TRACE and the CALCULATOR tab follow
 the control state's product entries.
 

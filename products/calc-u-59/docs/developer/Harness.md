@@ -228,7 +228,6 @@ cannot be read.`, `The file holds no instruction.`
 | `c59 asm run` | The overlay's status line (entered at 1800) |
 | `c59 asm clear` | The overlay taken away |
 | `c59 dump scom\|memory\|prog\|vars` | The lines of the dump (also into the log) |
-| `c59 log-level off\|info\|debug` | The level of the machine's own log lines |
 | `c59 heatmap reset` | The ROM heatmap's counts set to zero |
 
 `state c59.calculator-debug|c59.program-listing|c59.cpu-debug|c59.heatmap|c59.asm-overlay|c59.debug-view`

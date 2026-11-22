@@ -2,7 +2,7 @@
 
 // The product commands of Calc-U-59 under `c59` (docs/formats/harness.md):
 // the program memory (`partition`, `program`, `registers`), the debug panel
-// (`asm`, `dump`, `log-level`, `heatmap`) and the functions of the earlier
+// (`asm`, `dump`, `heatmap`) and the functions of the earlier
 // tools: `coverage`, `line-times`, `run-time`, `hot-steps`, `step-trace`,
 // `step-cost`, `keycodes list|disassemble|assemble`. Every handler reaches
 // the machine through the session's commands and the capabilities (the

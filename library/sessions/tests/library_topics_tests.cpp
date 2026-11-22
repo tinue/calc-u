@@ -59,3 +59,23 @@ TEST(log_lines_from_library_and_product_part) {
     for (const auto& p : r.fe.mirror.takeAppended(kLogTopic)) lines.push_back(payloadAs<LogLine>(p)->text);
     CHECK(lines == (std::vector<std::string>{"unreadable: a.yaml", "preset: line 1", "preset: line 2"}));
 }
+
+// `log-level` sets what the log tells: a line at a level above it is left
+// out; `log` lines are kept at every level.
+TEST(log_level_leaves_out_the_lines_above_it) {
+    Rig r;
+    CHECK(r.fe.mirror.state(kLogLevelTopic));
+    const auto level = [&] { return payloadAs<LogLevelState>(*r.fe.mirror.state(kLogLevelTopic))->level; };
+    CHECK(level() == LogLevel::Off);
+    r.send("tp.log-info", Value::object({{"text", "hidden"}}));
+    r.send("tp.log", Value::object({{"text", "kept"}}));
+    CHECK(r.fe.reply(r.send("log-level", Value::object({{"level", "info"}})))->done);
+    CHECK(level() == LogLevel::Info);
+    r.send("tp.log-info", Value::object({{"text", "shown"}}));
+    const CallId loud = r.send("log-level", Value::object({{"level", "loud"}}));
+    CHECK_EQ(r.fe.reply(loud)->reason, std::string("The log level is off, info or debug."));
+    CHECK(level() == LogLevel::Info);   // a refusal changes nothing
+    std::vector<std::string> lines;
+    for (const auto& p : r.fe.mirror.takeAppended(kLogTopic)) lines.push_back(payloadAs<LogLine>(p)->text);
+    CHECK(lines == (std::vector<std::string>{"kept", "shown"}));
+}

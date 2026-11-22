@@ -21,6 +21,7 @@ Rig rigWith(Ticks program, Hosting h = Hosting::VirtualTime) {
 
 TEST(sections_in_file_order_header_anywhere) {
     Rig r;
+    r.send("log-level", calcu::sessions::Value::object({{"level", "info"}}));   // the progress lines
     const CallId c = r.load(header() +
                             "test-memory: { at: 0, bytes: 01 }\n"
                             "keys:\n  - key: 2\n"

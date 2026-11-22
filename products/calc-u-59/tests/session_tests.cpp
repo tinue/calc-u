@@ -148,8 +148,8 @@ TEST(mirror_holds_every_change_flag) {
     CHECK(moves(topics::kCpuDebug, [&] { r.send(commands::kShowCpuDebug, Value::object({{"on", true}})); }));
     CHECK(moves(topics::kHeatmap, [&] { r.send(commands::kHeatmapReset); }));
     CHECK(moves(topics::kAsmOverlay, [&] { r.send(commands::kAsmRun); }));   // "No ASM overlay loaded."
-    CHECK(moves(topics::kDebugView, [&] { r.send(commands::kLogLevel, Value::object({{"level", "info"}})); }));
-    // The trace and the pause are the library's topics.
+    // The log level, the trace and the pause are the library's topics.
+    CHECK(moves(kLogLevelTopic, [&] { r.send(kLogLevelCommand, Value::object({{"level", "info"}})); }));
     r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
     CHECK(r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);
     r.send(calcu::debugger::kTraceCommand, Value::object({{"off", true}}));

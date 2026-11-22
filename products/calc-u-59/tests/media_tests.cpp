@@ -179,6 +179,7 @@ TEST(missing_name_or_file_refuses) {
 TEST(undefined_mem_fresh) {
     NEEDS_ROMS;
     CardRig r;
+    r.send(calcu::sessions::kLogLevelCommand, calcu::sessions::Value::object({{"level", "info"}}));   // the progress lines
     CHECK(r.load(CardRig::preset("keys:\n  - arm: { mem: Nobody }\n")).done);
     const auto c = r.fitted() ? magneticCardOf(r.fitted()->content) : nullptr;
     CHECK(c && std::holds_alternative<std::monostate>(c->sides[0]) && std::holds_alternative<std::monostate>(c->sides[1]));

@@ -65,6 +65,7 @@ TEST(test_cooperative_preset) {
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
     CHECK(f.part().model() == calcu::machine::ModelId{"PC-1500A"});
+    f.send(calcu::sessions::kLogLevelCommand, calcu::sessions::Value::object({{"level", "info"}}));   // the step log
     f.messages.clear();
     f.readCost = std::chrono::milliseconds(1);   // the host's work: the allowance of a call runs out
 

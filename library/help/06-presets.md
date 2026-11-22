@@ -60,6 +60,12 @@ preset's `timeout:`, the preset stops there: the steps after it are not
 carried out, the machine stays as it is, and a notice gives the line and
 the reason.
 
+To follow a preset step by step, set the debugger's **LOG** button to
+Info (orange): the log then shows the machine the preset built, each
+step as it is done and the preset's end. At Off (grey) the log keeps
+only what a step writes on purpose, such as `elapsed-time: report`, and
+why a preset stopped.
+
 ## A first preset
 
 ```yaml

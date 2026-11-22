@@ -73,6 +73,13 @@ Handler speedCmd(bool full) {
     };
 }
 
+Reply logLevelCmd(CommandContext& c) {
+    const auto w = words(c.line.argText);
+    if (w.size() != 1) return refusedReply("usage: log-level off|info|debug");
+    return fromSessionReply(
+        c.host.command(sessions::Command{sessions::kLogLevelCommand, sessions::Value::object({{"level", w[0]}})}));
+}
+
 Reply setControlCmd(CommandContext& c) {
     const auto w = words(c.line.argText);
     if (w.size() != 3 || (w[2] != "on" && w[2] != "off"))
@@ -119,6 +126,7 @@ void addPresetCommands(CommandRegistry& r, const presets::Vocabulary* v) {
     r.add("preset-list", presetListCmd, "preset-list              the bundled presets");
     r.add("full-speed", speedCmd(true), "full-speed               the machine at full speed");
     r.add("regular-speed", speedCmd(false), "regular-speed            the machine at regular speed");
+    r.add("log-level", logLevelCmd, "log-level off|info|debug what the log tells (info: how a preset is carried out)");
     r.add("set-control", setControlCmd,
           "set-control <peripheral> <control> on|off  a switch set, or a key pressed or let up");
     if (v) {

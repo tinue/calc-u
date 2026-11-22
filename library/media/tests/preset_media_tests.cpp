@@ -149,6 +149,7 @@ TEST(instance_by_file_written_in_place_rerun_starts_from_it) {
 
 TEST(medium_log_names_kind_and_name_tag) {
     MediaFixture f(dot());
+    f.send("log-level", calcu::sessions::Value::object({{"level", "info"}}));   // the progress lines
     f.logLines();
     CHECK(f.done(f.load(keys("test-dot", "  - test-disk: { file: " + (f.saveRoot / "Work.testdisk.yaml") + " }\n"))));
     f.drive()->write("logged");

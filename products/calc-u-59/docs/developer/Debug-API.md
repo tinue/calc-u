@@ -20,18 +20,19 @@ and draw the same topics:
 | `c59.cpu-debug` | `TICpuDebug` | the CPU tab's instructions (while shown, `c59.show-cpu-debug {on}`, or paused) |
 | `c59.heatmap` | `TIHeatmap` | the counts of 0000 to 13FF, about 10 Hz |
 | `c59.asm-overlay` | `TIAsmOverlayState` | file name, number of instructions, status line, whether the overlay runs |
-| `c59.debug-view` | `TIDebugView` | the tab `debug-panel:` (or Run) asked for last, a count of the requests, the machine's log level |
+| `c59.debug-view` | `TIDebugView` | the tab `debug-panel:` (or Run) asked for last, a count of the requests |
 
 A payload's value (`toValue`) is the form the Web page draws; the harness
 reads it with `state <topic>`. The control state carries the
 product entries `c59.asm-run`, `c59.calculator-tab`, each
 `{available, reason}` (TRACE can always be pressed: a trace folder that
 cannot be written refuses the start). The commands: `c59.show-calculator-debug {on}`,
-`c59.show-cpu-debug {on}`, `c59.heatmap-reset`, `c59.log-level {level:
-off|info|debug}`, `c59.dump {what: scom|memory|prog|vars}` (replies with the
+`c59.show-cpu-debug {on}`, `c59.heatmap-reset`, `c59.dump {what: scom|memory|prog|vars}` (replies with the
 lines), `c59.asm-load {name, text}`, `c59.asm-run`, `c59.asm-clear`; the
-harness's `c59 asm load|run|clear`, `c59 dump …`, `c59 log-level …`,
-`c59 heatmap reset`. Which panel lives where: `Frontend-Parity.md`
+harness's `c59 asm load|run|clear`, `c59 dump …`,
+`c59 heatmap reset`. The LOG button sends the library's `log-level
+{level: off|info|debug}` and shows its `log-level` topic (the harness's
+`log-level …`). Which panel lives where: `Frontend-Parity.md`
 § "Debugger". The session and controller: `App-Layer.md`. Panel
 behaviour from a user's point of view: the user guide,
 https://calc-u.org/59/.
@@ -368,9 +369,10 @@ its clear button empties the view, not the log.
 | `dump("scom")` | 16 rows, nibble 15 first: `S00 0000000000000000` |
 | `dump("prog")` | Non-zero program registers as their 8 keycodes in step order: `P000: 76 11 …` |
 | `dump("memory")` | Every non-zero RAM register by physical index, in the register-line format of `ti58c.memory.yaml` |
-| `setLogLevel` (`c59.log-level {level}`) | Level Off → Info → Debug → Off (the button cycles; `c59.debug-view.logLevel` shows it) |
+| the library's `log-level {level}` | Level Off → Info → Debug → Off (the button cycles; the `log-level` topic shows it): Info adds how a preset is carried out, Debug every register write |
 
-The level is passed to the core (`c59.machine-log`'s `setLevel`). App-layer
+`TIDebugPart` passes the session's level to the core (`c59.machine-log`'s
+`setLevel`), for each new machine too. App-layer
 code logs through the session's `log` (`SessionContext::log`).
 
 ### Core debug events

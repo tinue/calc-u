@@ -287,6 +287,7 @@ TEST(log_lines_on_log_topic) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     sessionfixture::SessionFixture f;
     CHECK(f.start("PC-1500A"));
+    f.send(calcu::sessions::kLogLevelCommand, calcu::sessions::Value::object({{"level", "info"}}));   // the progress lines
     (void)f.listener.mirror().takeAppended(calcu::sessions::kLogTopic);
     CHECK(f.loadPreset("examples:startup/default-pc1500a.pc1500a").done);
     std::string all;

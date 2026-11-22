@@ -43,6 +43,7 @@
 - **Open With** On Windows the presets are registered as "Calc-U-59 Preset" (`CalcU59.Preset`), on Linux as `application/x-calcu59-preset`; the Qt app's Mac file type is "Calc-U-59 Preset" too. <!-- appstore: skip -->
 - **Trace reader (developers)** `tools/read_trace.py` reads trace files of version 2 only. <!-- appstore: skip -->
 - **Building (developers)** Building both products is `docs/Building.md` at the repository root; the release audit skill is `calc-u-59-pre-release-cleanup` (was `pre-release-cleanup`). <!-- appstore: skip -->
+- **Debugger** The LOG button sets the level of the whole log: at Off the log keeps what a preset writes on purpose (`elapsed-time: report`) and why a preset stopped; Info adds how a preset is carried out, each step as it is done; Debug adds each write to the registers and the memory. The harness's `c59 log-level` is now `log-level`.
 
 ### Fixes
 - **Keyboard** Qt app: the buttons and pickers of the control bar and the paper panel no longer take the keyboard focus, so Tab no longer moves the focus away from the calculator. <!-- appstore: skip -->

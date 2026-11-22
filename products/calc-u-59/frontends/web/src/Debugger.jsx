@@ -4,7 +4,7 @@
 // product topics of the debug part (app/TIDebugPart): c59.calculator-debug,
 // c59.program-listing, c59.cpu-debug, c59.heatmap, c59.asm-overlay and c59.debug-view, whose
 // values are already the rows formatted by app/DebugText; the LOG tab is
-// the session's `log`. FREEZE, STEP and RESUME of each tab are the component set's
+// the session's `log` at its `log-level`. FREEZE, STEP and RESUME of each tab are the component set's
 // run-control buttons for the level `program` (CALCULATOR) and `cpu` (CPU),
 // on the library's `run-state`, which FREEZE ON START
 // and ARMED read too; TRACE is the trace
@@ -258,14 +258,14 @@ function CpuInspector({ data, font, narrow }) {
 function LogTab() {
   const page = usePage();
   const shell = page.shell;
-  const view = useTopic(shell, "c59.debug-view");
-  const log = { lines: page.log.lines, level: view ? view.logLevel : "off" };
+  const logLevel = useTopic(shell, "log-level");
+  const log = { lines: page.log.lines, level: logLevel ? logLevel.level : "off" };
   const trace = useTopic(shell, "trace") || NO_TRACE;
   const traces = useTraces(page.traces);
   const ref = React.useRef(null);
   const text = React.useMemo(() => log.lines.join("\n"), [log.lines]);
   React.useLayoutEffect(() => { ref.current.scrollTop = ref.current.scrollHeight; }, [text]);
-  // The level of the machine's own lines: off → info → debug → off.
+  // The session's log level: off → info → debug → off.
   const LEVELS = ["off", "info", "debug"];
   const level = Math.max(0, LEVELS.indexOf(log.level));
   const labels = ["LOG ○", "LOG ●", "LOG ●"];
@@ -288,9 +288,9 @@ function LogTab() {
             title="Write every executed instruction to the binary trace file (downloaded when switched off)"
             style={trace.running ? { color: "orange" } : undefined}
             onClick={() => shell.send("trace", trace.running ? { off: true } : { button: true })}>{trace.running ? "TRACE ●" : "TRACE ○"}</button>
-          <button type="button" className="calcu-pill" title="Core log level: off / info / debug"
+          <button type="button" className="calcu-pill" title="Log level: off / info (how presets run) / debug (every register write)"
             style={level ? { color: level === 1 ? "orange" : "#ff3b30" } : undefined}
-            onClick={() => shell.send("c59.log-level", { level: LEVELS[(level + 1) % 3] })}>{labels[level]}</button>
+            onClick={() => shell.send("log-level", { level: LEVELS[(level + 1) % 3] })}>{labels[level]}</button>
         </div>
         {traces.length > 0 && (
           <div className="calcu-traces" aria-label="Trace files">

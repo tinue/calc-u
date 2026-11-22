@@ -51,7 +51,7 @@ LogWidget::LogWidget(EmulatorController& controller, QWidget* parent) : QWidget(
     // The library's trace session, the button's file (trace {button: true}).
     connect(m_trace, &QPushButton::clicked, this, [this] { m_controller.setTrace(!m_controller.traceRunning()); });
     m_level = new QPushButton(bar);
-    m_level->setToolTip(QStringLiteral("Core log level: off / info / debug"));
+    m_level->setToolTip(QStringLiteral("Log level: off / info (how presets run) / debug (every register write)"));
     connect(m_level, &QPushButton::clicked, this, [this] { m_controller.cycleDebugLevel(); });
     row2->addWidget(m_trace);
     row2->addWidget(m_level);

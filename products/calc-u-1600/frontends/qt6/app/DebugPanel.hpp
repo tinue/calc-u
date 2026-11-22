@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Debug/Inspect/Inspector.hpp"
+#include "sessions/LogLevel.hpp"
 
 class QMenu;
 class QPlainTextEdit;
@@ -87,8 +88,11 @@ private:
     void setTraceEnabled(bool enabled);
     void updateTraceButtonAppearance();
 
-    // ── LOG (cosmetic placeholder -- Core has no log statements yet) ─────
-    enum class DebugLevel { Off, Info, Debug } m_debugLevel = DebugLevel::Off;
+    // ── LOG ───────────────────────────────────────────────────────────
+    // The session's log level (the library's `log-level`): at Info the log
+    // tells how a preset is carried out. m_shownLevel is what the button
+    // shows, so the next frame notices a level set elsewhere (the attach).
+    calcu::sessions::LogLevel m_shownLevel = calcu::sessions::LogLevel::Off;
     void toggleDebugLevel();
     void updateLogButtonAppearance();
 

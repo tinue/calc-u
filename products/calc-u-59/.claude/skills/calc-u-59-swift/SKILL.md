@@ -24,8 +24,9 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   `c59.asm-overlay`, `c59.debug-view` (app/TIDebugPart.hpp), which the bridge
   mirrors; the LOG tab is the bridge's `cu59::RingLog` of the session's `log`
   (Clear empties the view only); the buttons send `c59.show-calculator-debug`,
-  `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`,
-  `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`. Run and the
+  `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.dump`,
+  `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`, and the library's
+  `log-level`. Run and the
   CALCULATOR tab follow the `control-state` entries `c59.asm-run`,
   `c59.calculator-tab`; TRACE can always be pressed (a trace folder that
   cannot be written refuses the start); FREEZE and FREEZE ON START

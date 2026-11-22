@@ -83,7 +83,7 @@ public:
                 auto loaded = sharp::loaders::loadCode(*m, bytes, request);
                 if (auto* why = std::get_if<std::string>(&loaded)) co_return failed(sharp::loaders::refusal(name, *why));
                 const sharp::loaders::CodeLoaded& code = std::get<sharp::loaders::CodeLoaded>(loaded);
-                run.log("  program: " + code.summary);
+                run.progress("  program: " + code.summary);
                 if (!code.headerStart) co_return ItemResult{};
                 // Auto-run (preset.md §4.1): the starting command; the
                 // implicit wait lets the code return.
@@ -93,7 +93,7 @@ public:
                 const calcu::typing::TypeResult t = co_await calcu::typing::typeTextAndWait(
                     run.op(), *engine, command, true, {calcu::typing::Origin::Preset, run.firstPressAtOnce()});
                 if (!t.done) co_return failed(t.reason);
-                run.log("  program: started with " + command);
+                run.progress("  program: started with " + command);
                 co_return ItemResult{};
             }
             case ProgramWay::TypeIn: {

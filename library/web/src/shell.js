@@ -154,8 +154,8 @@ function createShell({ product, workerUrl, start, services }) {
 }
 
 // `?pace=1`: a line at the top of the page with the worker's pace (how often
-// its timer fires, the calls per tick, the share of time it computes) and
-// the speed, to see what a browser grants the worker.
+// its timer fires, the share of time it computes, the longest gap) and the
+// speed, to see what a browser grants the worker.
 function calcuPaceOverlay(p, busy) {
   if (typeof document === "undefined" || !/[?&]pace=1\b/.test(location.search)) return;
   let el = document.getElementById("calcu-pace");
@@ -166,7 +166,7 @@ function calcuPaceOverlay(p, busy) {
       "background:rgba(0,0,0,0.7);color:#fff;pointer-events:none";
     document.body.appendChild(el);
   }
-  el.textContent = `ticks/s ${p.ticksPerSecond}  calls/tick ${p.callsPerTick}  busy ${p.busyPercent}%  ` +
+  el.textContent = `ticks/s ${p.ticksPerSecond}  busy ${p.busyPercent}%  ` +
     `longest gap ${p.longestGapMs} ms  speed ${(busy && busy.speed) || "?"}`;
 }
 

@@ -55,32 +55,16 @@
     postStart("failed", why);
   }
 
-  // A call at full speed runs the machine for most of a frame. A browser
-  // may call the timer much rarer than asked (iOS throttles a worker's
-  // timer), and one such call per tick would leave full speed at about real
-  // time: while the calls use their whole allowance, call again, until
-  // 7/8 of the time since the last tick is used. At regular speed a call
-  // returns at once, and one call is made.
-  const FULL_CALL_MS = 10;   // a call this long ran at full speed
-  const MOST_MS = 100;       // the longest stretch the worker keeps to itself
   let lastTick = null;
   // The pace of the calls, once a second, for the page's `?pace=1` overlay
-  // (shell.js): ticks, calls, the time spent in them, the longest gap.
-  const pace = { since: null, ticks: 0, calls: 0, busy: 0, longest: 0 };
+  // (shell.js): ticks, the time spent in them, the longest gap.
+  const pace = { since: null, ticks: 0, busy: 0, longest: 0 };
   function tick() {
     const start = performance.now();
-    const gap = lastTick === null ? FRAME_MS : Math.min(start - lastTick, MOST_MS);
     if (lastTick !== null) pace.longest = Math.max(pace.longest, start - lastTick);
     lastTick = start;
     try {
-      let before = start;
-      for (;;) {
-        host.call();
-        pace.calls += 1;
-        const now = performance.now();
-        if (now - before < FULL_CALL_MS || now - start >= gap * 7 / 8 - FULL_CALL_MS) break;
-        before = now;
-      }
+      host.call();
     } catch (e) {
       fail(errorText(e));
     }
@@ -91,9 +75,9 @@
     if (end - pace.since >= 1000) {
       const secs = (end - pace.since) / 1000;
       postMessage({ kind: "state", topic: "web.pace", value: {
-        ticksPerSecond: Math.round(pace.ticks / secs), callsPerTick: +(pace.calls / pace.ticks).toFixed(1),
+        ticksPerSecond: Math.round(pace.ticks / secs),
         busyPercent: Math.round(pace.busy / (end - pace.since) * 100), longestGapMs: Math.round(pace.longest) } });
-      Object.assign(pace, { since: end, ticks: 0, calls: 0, busy: 0, longest: 0 });
+      Object.assign(pace, { since: end, ticks: 0, busy: 0, longest: 0 });
     }
   }
 

@@ -354,6 +354,17 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
 @implementation TISessionStart
 @end
 
+@interface TIPickerEntry ()
+@property (nonatomic, readwrite, copy) NSString *entryID;
+@property (nonatomic, readwrite, copy) NSString *label;
+@property (nonatomic, readwrite, copy) NSString *shortLabel;
+@property (nonatomic, readwrite, copy, nullable) NSString *tooltip;
+@property (nonatomic, readwrite) BOOL canChoose;
+@property (nonatomic, readwrite) BOOL chosen;
+@end
+@implementation TIPickerEntry
+@end
+
 @implementation TISavedCard
 - (instancetype)initWithName:(NSString *)name entryID:(NSString *)entryID canChoose:(BOOL)canChoose hint:(NSString *)hint {
     if ((self = [super init])) {
@@ -779,6 +790,29 @@ static const char* const kCardReaderPlace = "card-reader";
     return YES;
 }
 - (void)ejectCard { [self send:calcu::media::kEjectCommand args:{{"place", kCardReaderPlace}}]; }
+
+- (NSArray<TIPickerEntry *> *)pickerEntriesForPlace:(NSString *)place {
+    NSMutableArray<TIPickerEntry *>* out = [NSMutableArray array];
+    const auto* m = _mirror.stateOf<calcu::media::MediaState>(calcu::media::kMediaTopic);
+    const auto* p = m ? m->place(cpp(place)) : nullptr;
+    if (!p) return out;
+    using G = calcu::media::PickerEntry::Group;
+    for (const auto& e : p->picker) {
+        TIPickerEntry *t = [[TIPickerEntry alloc] init];
+        t.entryID = ns(e.id);
+        t.label = e.group == G::Empty ? @"None" : ns(e.label);
+        t.shortLabel = ns(calcu::media::shortLabel(e));
+        const auto& tip = e.canChoose ? e.tooltip : e.hint;
+        t.tooltip = tip ? ns(*tip) : nil;
+        t.canChoose = e.canChoose;
+        t.chosen = e.chosen;
+        [out addObject:t];
+    }
+    return out;
+}
+- (void)chooseEntry:(TIPickerEntry *)entry place:(NSString *)place {
+    [self send:calcu::media::kChooseCommand args:{{"place", cpp(place)}, {"entry", cpp(entry.entryID)}}];
+}
 
 // ── Presets (the content) ────────────────────────────────────────────
 

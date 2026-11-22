@@ -38,7 +38,7 @@ calcu::qt6::PaperPanel* paperOf(Fixture& f) {
     return qobject_cast<calcu::qt6::PaperPanel*>(f.w().shell().panelArea()->panel("paper"));
 }
 
-// The PC-100C attached with the bar's button, at key readiness again (the
+// The PC-100C attached with its button on the paper panel, at key readiness again (the
 // power cycle the attach brings).
 bool withPrinter(Fixture& f) {
     auto* button = f.find<QToolButton>(names::barPlace("printer"));

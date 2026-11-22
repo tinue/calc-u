@@ -93,6 +93,17 @@ typedef struct {
 - (void)paperCopied:(NSInteger)outcome NS_SWIFT_NAME(paperCopied(_:));
 @end
 
+/// An entry of a media place's picker (the library's `media` topic), in the
+/// topic's order: a module slot's modules in the product's listing order.
+@interface TIPickerEntry : NSObject
+@property (nonatomic, readonly, copy) NSString *entryID;      ///< what `media.choose` takes
+@property (nonatomic, readonly, copy) NSString *label;        ///< the name ("Master Library")
+@property (nonatomic, readonly, copy) NSString *shortLabel;   ///< the closed picker's text ("ML", "—")
+@property (nonatomic, readonly, copy, nullable) NSString *tooltip;
+@property (nonatomic, readonly) BOOL canChoose;               ///< false: not now
+@property (nonatomic, readonly) BOOL chosen;                  ///< what the place holds
+@end
+
 /// A saved magnetic card, as Arm Card lists it.
 @interface TISavedCard : NSObject
 @property (nonatomic, readonly, copy) NSString *name;
@@ -276,6 +287,11 @@ typedef struct {
 - (BOOL)tapCardAtX:(double)x y:(double)y;
 /// Eject Card: a passing card is taken out and stays fitted (`media.eject`).
 - (void)ejectCard;
+
+/// The picker of a media place (a module slot): its entries in order.
+- (NSArray<TIPickerEntry *> *)pickerEntriesForPlace:(NSString *)place NS_SWIFT_NAME(pickerEntries(place:));
+/// An entry chosen (`media.choose {place, entry}`).
+- (void)chooseEntry:(TIPickerEntry *)entry place:(NSString *)place NS_SWIFT_NAME(choose(_:place:));
 
 // ── Presets (the library's `load-preset {content, name}`) ──────────────────
 - (void)loadPresetContent:(nullable NSData *)raw name:(NSString *)name;

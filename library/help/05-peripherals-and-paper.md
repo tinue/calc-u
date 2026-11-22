@@ -76,7 +76,10 @@ speed it runs ahead, while the machine is paused it stands still.
 ## The paper panel
 
 Everything a printer puts on its paper is shown in the **paper panel**.
-A product with printers always shows the panel.
+A product with printers always shows the panel. Its header shows the
+printer's name in the middle and, on the right, the control for the
+view; the printer's own controls and **Copy** and **Cut** are in the row
+below the paper.
 
 - While a printer is plugged in, the panel shows its paper under the
   printer's name, the whole width of the paper scaled to the panel, each

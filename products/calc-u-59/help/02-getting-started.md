@@ -35,17 +35,16 @@ fits ([Cue cards](09-cue-cards.md)).
 
 The control bar below the calculator holds, from left to right:
 
-1. the **model picker**: TI-59, TI-58, TI-58C;
+1. the **model picker**: 59, 58, 58C, short for TI-59, TI-58, TI-58C;
 2. the **module picker** of the module slot: the fourteen Solid State
    ROM modules and the empty slot ([Solid State ROM modules](09-modules.md));
-3. the button **PC-100C**, which attaches or detaches the printer
-   ([The PC-100C printer](05-printer.md));
-4. on the TI-59 only, the two **Crd** buttons, Arm Card and Arm Fresh
+3. on the TI-59 only, the two **Crd** buttons, Arm Card and Arm Fresh
    Card, and **Eject Card** in their place while a card passes the reader
-   ([Magnetic cards](04-magnetic-cards.md)). On an iPad or iPhone, where
-   the calculator stands beside the paper and the bar is wider than the
-   calculator, these buttons are left out; a card armed in another
-   layout (turned, or folded) is still fed by touching its corner.
+   ([Magnetic cards](04-magnetic-cards.md)).
+
+The button **PC-100C**, which attaches or detaches the printer, is at
+the left of the paper panel's header, above the paper it prints on
+([The PC-100C printer](05-printer.md)).
 
 Changing the module, or attaching or detaching the PC-100C, goes through
 a power cycle, as on the real calculator ([What differs by
@@ -69,10 +68,10 @@ shortcuts are those of the family: Load Preset… Ctrl+O (⌘O), Reset
 Ctrl+R (⌘R), Cold boot Ctrl+Shift+R (⇧⌘R).
 
 Where there is no menu bar (the iPhone, the iPad, the browser's
-portrait layout), the control bar keeps the buttons **Reset**,
-**Preset** and **Settings**, and the **More** button (⋯) holds
-Examples ▸, the media items (in the browser), Cold boot, which asks
-first, Resume, Calc-U-59 Help, and About in the browser. On the iPad,
+portrait layout), the control bar keeps the buttons **Preset** and
+**Settings**, and the **More** button (⋯) holds Examples ▸, the media
+items (in the browser), Reset, Cold boot, which asks first, Resume,
+Calc-U-59 Help, and About in the browser. On the iPad,
 the menu bar iPadOS gives an app shows File, Machine and Help, without
 Settings…, About and Quit.
 

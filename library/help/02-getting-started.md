@@ -63,10 +63,10 @@ every Mac program. In the browser there is no Quit.
 ### Without a menu bar
 
 A window without a menu bar (on a phone, on a tablet, in the browser's
-portrait layout) keeps Reset, Preset and Settings as buttons on the
-control bar and has a **More** button (⋯) with every other item:
-Examples ▸, the items for media, Cold boot, which asks first, Resume,
-Help, and About where the system has one. An item that cannot be used
+portrait layout) keeps Preset and Settings as buttons on the control
+bar and has a **More** button (⋯) with every other item: Examples ▸,
+the items for media, Reset, Cold boot, which asks first, Resume, Help,
+and About where the system has one. An item that cannot be used
 now is greyed out there too.
 
 ### Shortcuts

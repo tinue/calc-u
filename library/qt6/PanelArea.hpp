@@ -1,5 +1,6 @@
 #pragma once
 #include "sessions/Messages.hpp"
+#include "qt6/ShellControlBar.hpp"
 #include "shell/BarModel.hpp"
 #include <QWidget>
 #include <functional>
@@ -26,6 +27,7 @@ public:
     PanelArea(SessionHost&, QWidget* parent = nullptr);
 
     void set(const std::vector<shell::Panel>&);
+    void setChoose(Choose c) { choose_ = std::move(c); }   // for the place controls on the paper
     void registerPanel(std::string kind, Factory);
     void addPanel(QWidget*);   // a product's panel, from its own product entry
     QWidget* panel(const std::string& kind) const;
@@ -36,6 +38,8 @@ private:
     QBoxLayout* layout_;
     std::map<std::string, Factory> factories_;
     std::map<std::string, QWidget*> panels_;
+    Choose choose_;
+    std::string placesShown_;   // the paper's place controls as last built
 };
 
 } // namespace calcu::qt6

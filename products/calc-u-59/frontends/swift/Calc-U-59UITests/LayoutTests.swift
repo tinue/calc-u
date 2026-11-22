@@ -42,7 +42,7 @@ final class LayoutTests: XCTestCase {
         XCTAssertTrue(text.waitForExistence(timeout: 10), "no ROMs-missing text")
         XCTAssertTrue(text.label.contains("TMC0583.txt: missing"), "the text does not name the file: \(text.label)")
         XCTAssertTrue(text.label.contains("The full set of ROM files is needed"))
-        XCTAssertFalse(app.buttons["btn-reset"].exists, "the calculator is shown")
+        XCTAssertFalse(app.buttons["btn-preset"].exists, "the calculator is shown")
         // No bar; Help still works.
         XCTAssertFalse(app.descendants(matching: .any)["bar-model"].exists, "a control bar without the ROMs")
         XCTAssertTrue(app.buttons["item-help"].exists, "no help without the ROMs")
@@ -50,17 +50,6 @@ final class LayoutTests: XCTestCase {
 
     // MARK: - Button visibility
 
-    /// The Reset button must be visible and hittable in the control bar; on
-    /// macOS Reset and Load Preset… are in the menus.
-    @MainActor
-    func testResetButtonVisible() throws {
-        let app = launchApp(orientation: .portrait)
-        let button = app.buttons["btn-reset"]
-        XCTAssertTrue(button.waitForExistence(timeout: 5), "Reset button not found")
-        XCTAssertTrue(button.isHittable, "Reset button exists but is not hittable")
-    }
-
-    /// The Preset button must be visible and hittable in the card reader bar.
     @MainActor
     func testPresetButtonVisible() throws {
         let app = launchApp(orientation: .portrait)
@@ -93,19 +82,6 @@ final class LayoutTests: XCTestCase {
         XCTAssertLessThanOrEqual(
             height, singleLineLabelMaxHeight,
             "Preset button is \(height) pt tall — label may be wrapping"
-        )
-    }
-
-    /// Reset button label must not wrap onto two lines.
-    @MainActor
-    func testResetButtonLabelSingleLine() throws {
-        let app = launchApp(orientation: .portrait)
-        let button = app.buttons["btn-reset"]
-        XCTAssertTrue(button.waitForExistence(timeout: 5), "Reset button not found")
-        let height = button.frame.height
-        XCTAssertLessThanOrEqual(
-            height, singleLineLabelMaxHeight,
-            "Reset button is \(height) pt tall — label may be wrapping"
         )
     }
 

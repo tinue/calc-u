@@ -1,5 +1,6 @@
 #include "CpuInspectorWidget.hpp"
 #include "ChromeStyle.hpp"
+#include "DebugHeaderRow.hpp"
 #include "DebugText.hpp"
 #include "EmulatorController.hpp"
 #include "qt6/RunControlButtons.hpp"
@@ -63,40 +64,9 @@ CpuInspectorWidget::CpuInspectorWidget(EmulatorController& controller, QWidget* 
     col->setContentsMargins(0, 0, 0, 0);
     col->setSpacing(0);
 
-    auto* header = new QWidget(this);
-    header->setStyleSheet(QStringLiteral("background: %1;").arg(ChromeStyle::rgb(ChromeStyle::kDebugHeader)));
-    auto* hrow = new QHBoxLayout(header);
-    hrow->setContentsMargins(10, 6, 10, 6);
-    hrow->setSpacing(8);
-    m_title = new QLabel(QStringLiteral("CPU DEBUG"), header);
-    m_title->setStyleSheet(QStringLiteral("color: rgba(255,255,255,0.6); font-weight: bold; font-size: 11px;"));
-    m_title->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-    m_title->setMinimumWidth(40);
-    hrow->addWidget(m_title, 1);  // takes the spare width; shrinks first
-    // FREEZE, STEP and RESUME are the library's run-control
-    // buttons of the level `cpu` (the labels are the product's); FREEZE ON
-    // START and ARMED arm and disarm its pause-on-start.
-    m_run = new calcu::qt6::RunControlButtons(calcu::debugger::kCpu,
-                                              {QStringLiteral("FREEZE"), QStringLiteral("STEP"), QStringLiteral("RESUME")}, header);
-    m_run->setSender([this](const calcu::sessions::CommandName& n, calcu::sessions::Value v) {
-        m_controller.sendCommand(n, std::move(v));
-    });
-    m_run->hide();   // its buttons go into the header row below
-    auto styled = [](QToolButton* b, const QColor& c) {
-        b->setStyleSheet(ChromeStyle::headerButton(c));
-        b->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        return b;
-    };
-    QToolButton* resume = styled(m_run->resumeButton(), QColor(255, 149, 0));
-    QToolButton* pause = styled(m_run->pauseButton(), Qt::white);
-    QToolButton* step = styled(m_run->stepButton(), QColor(50, 173, 230));
-    m_freezeOnStart = headerButton(QStringLiteral("FREEZE ON START"), Qt::white, header);
-    connect(m_freezeOnStart, &QToolButton::clicked, this, [this] { m_controller.armStart(calcu::debugger::kCpu); });
-    m_armed = headerButton(QStringLiteral("ARMED"), QColor(255, 204, 0), header);
-    connect(m_armed, &QToolButton::clicked, this, [this] { m_controller.disarmStart(); });
-    // RESUME sits far from STEP.
-    for (QWidget* w : std::initializer_list<QWidget*>{resume, pause, m_freezeOnStart, m_armed, step}) hrow->addWidget(w);
-    col->addWidget(header);
+    // The header as app/'s debugHeader describes it (DebugHeaderRow).
+    m_header = new DebugHeaderRow(m_controller, true, this);
+    col->addWidget(m_header);
 
     m_list = new QListWidget(this);
     m_list->setFixedHeight(200);
@@ -161,14 +131,7 @@ void CpuInspectorWidget::resizeEvent(QResizeEvent* e) {
     refreshList();
 }
 
-void CpuInspectorWidget::refreshHeader() {
-    bool narrow = baseFontSize() < 13;
-    m_freezeOnStart->setText(narrow ? QStringLiteral("F.START") : QStringLiteral("FREEZE ON START"));
-    m_run->setRunState(m_controller.runState());
-    const cu59::FreezeButtons b = m_controller.freezeButtons(calcu::debugger::kCpu);
-    m_freezeOnStart->setEnabled(b.freezeOnStart);
-    m_armed->setEnabled(b.armed);
-}
+void CpuInspectorWidget::refreshHeader() { m_header->refresh(baseFontSize()); }
 
 void CpuInspectorWidget::refreshList() {
     const auto& history = m_controller.cpuHistory();

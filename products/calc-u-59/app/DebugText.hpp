@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <vector>
 
 // Text and colours of the two debug panels (CALCULATOR and CPU) that both
 // apps show identically. Colours are packed 0xRRGGBB, as in RomHeatmap.
@@ -11,6 +12,25 @@ namespace cu59 {
 
 /// Base font size of both panels by their width: compact / normal / large.
 int debugPanelFontSize(double width);
+
+/// The header of a debug tab (CALCULATOR, CPU), the same in every GUI: its
+/// title and its run-control buttons left to right, each with its label in
+/// a wide and a narrow header and its colour. RESUME sits far from STEP,
+/// against a tap meant for the other while stepping. The buttons are drawn
+/// at the panel's base font size. Button IDs: resume, freeze,
+/// freeze-on-start, armed, step.
+struct DebugHeaderButton {
+    std::string id, label, narrowLabel;
+    std::uint32_t colour;
+};
+struct DebugHeader {
+    std::string title, narrowTitle;
+    std::vector<DebugHeaderButton> buttons;
+};
+DebugHeader debugHeader(bool cpu);
+/// A header goes narrow (short title and labels) below this base font size.
+inline constexpr double kDebugHeaderNarrowBelow = 13;
+inline bool debugHeaderNarrow(double baseFontSize) { return baseFontSize < kDebugHeaderNarrowBelow; }
 
 /// iOS window layouts (the Swift app on iPhone and iPad).
 enum class MobileLayout {
@@ -37,9 +57,6 @@ struct WidthRange {
     double min, max;
 };
 WidthRange mobilePrinterWidth(MobileLayout layout, double width);
-/// Whether the calculator's control bar keeps its labels in an iOS window this
-/// wide (or the PWA's): below it, icons only (iPad mini, iPad Pro in portrait).
-bool mobileBarLabels(double width);
 /// The printer's button bar goes compact (short labels, tighter buttons) on a
 /// tape narrower than the wide range above: the one beside the debugger.
 bool compactPrinterBar(double printerWidth);

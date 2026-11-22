@@ -57,6 +57,18 @@ void PanelArea::set(const std::vector<shell::Panel>& panels) {
         }
         if (auto* paper = qobject_cast<PaperPanel*>(w)) {   // always, with or without an owner
             paper->setOwner(p.owner.empty() ? std::nullopt : std::optional<machine::PeripheralId>(machine::PeripheralId{p.owner}));
+            std::string shown;   // built anew only when they changed
+            for (const auto& c : p.places) {
+                shown += c.id + "|" + c.label + (c.plugged ? "1" : "0") + "|";
+                for (const auto& i : c.choices) shown += i.id + (i.enabled ? "1" : "0") + (i.checked ? "1" : "0") + i.reason + ",";
+                shown += ";";
+            }
+            if (shown != placesShown_) {
+                placesShown_ = shown;
+                std::vector<QWidget*> places;
+                for (const auto& c : p.places) places.push_back(placeControl(c, choose_, paper));
+                paper->setPlaces(std::move(places));
+            }
         }
         w->show();
     }

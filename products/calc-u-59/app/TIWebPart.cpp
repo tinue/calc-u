@@ -75,6 +75,23 @@ Value webLedGeometry(double w, double h) {
 // What the PWA shows in a window of this size (layout="auto"), as the iOS
 // app does. A browser can't see a fold, so a half-open foldable counts as
 // its whole window.
+// The debug tabs' headers (app/DebugText's debugHeader): {calculator, cpu,
+// narrowBelow}, each {title, narrowTitle, buttons: [{id, label, narrowLabel,
+// colour: "#rrggbb"}]}.
+Value webDebugHeaders() {
+    auto one = [](bool cpu) {
+        const DebugHeader h = debugHeader(cpu);
+        Value::Array buttons;
+        for (const auto& b : h.buttons) {
+            char colour[8];
+            std::snprintf(colour, sizeof colour, "#%06x", static_cast<unsigned>(b.colour));
+            buttons.push_back(Value::object({{"id", b.id}, {"label", b.label}, {"narrowLabel", b.narrowLabel}, {"colour", std::string(colour)}}));
+        }
+        return Value::object({{"title", h.title}, {"narrowTitle", h.narrowTitle}, {"buttons", Value(std::move(buttons))}});
+    };
+    return Value::object({{"calculator", one(false)}, {"cpu", one(true)}, {"narrowBelow", kDebugHeaderNarrowBelow}});
+}
+
 Value webMobileRules(double w, double h) {
     const auto layout = mobileLayout(w, h, false);
     const auto printer = mobilePrinterWidth(layout, w);
@@ -82,8 +99,7 @@ Value webMobileRules(double w, double h) {
                           {"debugger", layout == MobileLayout::CalcPrinterDebugger},
                           {"printerMin", printer.min},
                           {"printerMax", printer.max},
-                          {"compactPrinterBar", compactPrinterBar(printer.max)},
-                          {"barLabels", mobileBarLabels(w)}});
+                          {"compactPrinterBar", compactPrinterBar(printer.max)}});
 }
 
 } // namespace
@@ -181,6 +197,7 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     });
     req("c59.led-geometry", [](const Value& a) { return answer("c59.led-geometry", webLedGeometry(realArg(a, "w"), realArg(a, "h"))); });
     req("c59.mobile-rules", [](const Value& a) { return answer("c59.mobile-rules", webMobileRules(realArg(a, "w"), realArg(a, "h"))); });
+    req("c59.debug-headers", [](const Value&) { return answer("c59.debug-headers", webDebugHeaders()); });
 }
 
 void TIWebPart::afterCall(SessionContext&, calcu::pacing::WallTime) { drain(); }

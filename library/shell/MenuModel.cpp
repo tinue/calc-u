@@ -344,7 +344,7 @@ std::vector<Menu> menus(const ShellInputs& in, const ShellProduct& p, Traits t) 
 
 std::vector<MenuItem> moreItems(const std::vector<Menu>& ms, const ShellProduct& p) {
     auto onBar = [&](const MenuItem& i) {
-        if (i.id == actions::kLoadPreset || i.id == actions::kSettings || i.id == actions::kQuit || i.id == "reset" ||
+        if (i.id == actions::kLoadPreset || i.id == actions::kSettings || i.id == actions::kQuit ||
             i.id == "model" || i.id == "peripherals")
             return true;
         for (const auto& item : p.items)

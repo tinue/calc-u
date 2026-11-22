@@ -143,7 +143,7 @@ const C1600_PANELS = { paper: () => null };
 
 // Before `c1600.shell-product` answered: the shell's frame with nothing of
 // the product's yet.
-const C1600_NO_PRODUCT = { name: "Calc-U-1600", items: [], variantLabels: {}, moduleSlotPinOuts: [], placesWithoutControl: [] };
+const C1600_NO_PRODUCT = { name: "Calc-U-1600", items: [], variantLabels: {}, barModelLabels: {}, moduleSlotPinOuts: [], placesWithoutControl: [], placesOnPaper: [] };
 
 // The props: the shared ones of embedProps
 // (width, keyboard, layout, preset, height, model, workerUrl). One layout:

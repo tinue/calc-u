@@ -15,11 +15,22 @@ class QHBoxLayout;
 // checkable QToolButtons for the one-peripheral places; the library's module
 // picker and the media owners' controls from registered factories; the
 // product's own controls in the group it names. A group without a control
-// is hidden: no gap.
+// is hidden: no gap. A group the model pushes takes up the room before it
+// (a spread bar); a picker the model shows short shows its short text
+// (a slot's media picker: the entries' `short`).
 
 namespace calcu::qt6 {
 
 class Shell;
+
+using Choose = std::function<void(const shell::MenuItem&)>;
+// A picker of a control's choices; a disabled choice carries its reason as
+// its tooltip; `choose` carries out the one picked.
+QComboBox* shellPicker(const std::vector<shell::MenuItem>& choices, Choose choose, QWidget* parent);
+// A place's control, on the bar or on the paper panel: a checkable button
+// where one peripheral fits (checked while plugged in), a picker where
+// several do. Object name bar-place-<place>.
+QWidget* placeControl(const shell::BarControl&, Choose choose, QWidget* parent);
 
 class ShellControlBar : public QWidget {
     Q_OBJECT
@@ -39,19 +50,23 @@ public:
     }
     QWidget* group(shell::BarGroup g) const { return groups_[static_cast<std::size_t>(g)]; }
 
+
 private:
     struct Product {
         std::string after;
         QWidget* widget;
     };
     QWidget* build(const shell::BarControl&, QWidget* parent);
-    QComboBox* picker(const std::vector<shell::MenuItem>& choices, QWidget* parent);
+    Choose choose() { return [this](const shell::MenuItem& i) { chooseItem(i); }; }
+    void chooseItem(const shell::MenuItem&);
     void layoutGroup(shell::BarGroup);
 
     Shell& shell_;
-    std::array<QWidget*, 6> groups_{};   // one per shell::BarGroup, Start first
-    std::array<std::vector<std::pair<std::string, QWidget*>>, 6> shellWidgets_;
-    std::array<std::vector<Product>, 6> productWidgets_;
+    QHBoxLayout* row_ = nullptr;
+    static constexpr std::size_t kGroups = 5;   // one per shell::BarGroup
+    std::array<QWidget*, kGroups> groups_{};
+    std::array<std::vector<std::pair<std::string, QWidget*>>, kGroups> shellWidgets_;
+    std::array<std::vector<Product>, kGroups> productWidgets_;
     std::string shown_;
     Factory slotFactory_;
     std::map<std::string, Factory> mediaFactories_;

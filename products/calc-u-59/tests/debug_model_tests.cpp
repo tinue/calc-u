@@ -194,8 +194,6 @@ TEST(mobile_layout) {
     CHECK_EQ(mobilePrinterWidth(MobileLayout::CalcPrinterDebugger, 880).max, 220.0); // Duo: narrow tape
     CHECK_EQ(mobilePrinterWidth(MobileLayout::CalcPrinterDebugger, 1133).max, 360.0); // iPad
     CHECK_EQ(mobilePrinterWidth(MobileLayout::CalcPrinter, 832).min, 290.0);
-    CHECK(!mobileBarLabels(1133)); // iPad mini landscape: icons
-    CHECK(mobileBarLabels(1366));  // iPad Pro 13" landscape: labels
     CHECK_EQ(mobileTopMargin(0), 32.0);  // iPhone Duo open
     CHECK_EQ(mobileTopMargin(24), 0.0);  // iPad: status bar inset
     CHECK_EQ(partitionLine(60, 60), std::string("Steps: 480, Registers: 60 (479.59)"));
@@ -226,4 +224,20 @@ TEST(mobile_layout) {
     uint8_t n[16] = {0x15, 0xA};  // high bits are masked
     CHECK_EQ(registerNibbles(n), std::string("00000000000000A5"));
     CHECK_EQ(hexBin16(0x1F0A), std::string("1F0A [0001 1111 0000 1010]"));
+}
+
+// Both tabs' headers: RESUME, FREEZE, FREEZE ON START, ARMED, STEP, RESUME
+// away from STEP; the narrow forms below a base font size of 13.
+TEST(debug_header_buttons_and_narrow_forms) {
+    for (bool cpu : {false, true}) {
+        const DebugHeader h = debugHeader(cpu);
+        std::string ids;
+        for (const auto& b : h.buttons) ids += b.id + " ";
+        CHECK_EQ(ids, std::string("resume freeze freeze-on-start armed step "));
+        CHECK_EQ(h.buttons[2].narrowLabel, std::string("F.START"));
+    }
+    CHECK_EQ(debugHeader(false).narrowTitle, std::string("DEBUG"));
+    CHECK_EQ(debugHeader(true).title, std::string("CPU DEBUG"));
+    CHECK(debugHeaderNarrow(11));
+    CHECK(!debugHeaderNarrow(13));
 }

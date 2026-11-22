@@ -3,11 +3,16 @@
 // area for panels.
 //
 //   <CalcuPaperPanel shell={shell} owner={peripheralId | null}
-//                    controls={[{id, form: "key" | "switch", on}]} send={fn?} />
+//                    controls={[{id, form: "key" | "switch", on}]} send={fn?}
+//                    places={[bar control]} onChoose={fn} />
 //
 // owner: the printer plugged in, from the control state; controls:
-// that printer's controls; send(command, args) defaults to
-// shell.send. Copy and Cut arm the clipboard inside the click (armClipboard,
+// that printer's controls; places: the shell's place controls on the paper
+// (the panel model's), first in the header, onChoose(item) carrying out
+// their choice (the shell's choose); send(command, args) defaults to
+// shell.send. The header holds the places left, the owner's name centred
+// and the view control right; below the paper, the owner's controls left
+// and Copy and Cut right. Copy and Cut arm the clipboard inside the click (armClipboard,
 // hostServices.js) and send `paper.copy` / `paper.cut {copy: true}`.
 // Elements carry data-calcu names for the tests: paper-panel, paper-owner,
 // paper-view, paper-copy, paper-cut, paper-toast, paper-text,
@@ -59,7 +64,7 @@ function CalcuPaperControl({ control, onSet }) {
   );
 }
 
-function CalcuPaperPanel({ shell, owner, controls, send }) {
+function CalcuPaperPanel({ shell, owner, controls, send, places, onChoose }) {
   const state = useCalcuPaper(shell);
   const entry = calcuPaperOf(state.papers, owner);
   const name = entry ? entry.owner : "";
@@ -156,19 +161,19 @@ function CalcuPaperPanel({ shell, owner, controls, send }) {
   return (
     <div className="calcu-paper-panel" data-calcu="paper-panel">
       <div className="calcu-paper-header">
+        <span className="calcu-paper-places">
+          {(places || []).map((c) => (
+            <ShellPlaceControl key={c.id} control={c} onChoose={onChoose || (() => {})}>{"\u{1F5A8}\uFE0E"}</ShellPlaceControl>
+          ))}
+        </span>
         <span className="calcu-paper-owner" data-calcu="paper-owner">{name}</span>
-        {textLayer && (
-          <button type="button" className="calcu-paper-view" data-calcu="paper-view" data-view={view}
-            aria-pressed={view === "text"} onClick={() => setView(view === "text" ? "marks" : "text")}>
-            {view === "text" ? "Text" : "Marks"}
-          </button>
-        )}
-        {entry && (controls || []).map((c) => <CalcuPaperControl key={c.id} control={c} onSet={setControl} />)}
-        <span className="calcu-paper-actions">
-          <button type="button" data-calcu="paper-copy" disabled={!usable}
-            onClick={() => copyOrCut("paper.copy", { owner: name })}>Copy</button>
-          <button type="button" data-calcu="paper-cut" disabled={!usable}
-            onClick={() => copyOrCut("paper.cut", { owner: name, copy: true })}>Cut</button>
+        <span className="calcu-paper-views">
+          {textLayer && (
+            <button type="button" className="calcu-paper-view" data-calcu="paper-view" data-view={view}
+              aria-pressed={view === "text"} onClick={() => setView(view === "text" ? "marks" : "text")}>
+              {view === "text" ? "Text" : "Marks"}
+            </button>
+          )}
         </span>
       </div>
       {showText ? (
@@ -181,6 +186,15 @@ function CalcuPaperPanel({ shell, owner, controls, send }) {
           </div>
         </div>
       )}
+      <div className="calcu-paper-footer">
+        {entry && (controls || []).map((c) => <CalcuPaperControl key={c.id} control={c} onSet={setControl} />)}
+        <span className="calcu-paper-actions">
+          <button type="button" data-calcu="paper-copy" disabled={!usable}
+            onClick={() => copyOrCut("paper.copy", { owner: name })}>Copy</button>
+          <button type="button" data-calcu="paper-cut" disabled={!usable}
+            onClick={() => copyOrCut("paper.cut", { owner: name, copy: true })}>Cut</button>
+        </span>
+      </div>
       {toast && <div className="calcu-paper-toast" data-calcu="paper-toast" role="status">{toast}</div>}
     </div>
   );

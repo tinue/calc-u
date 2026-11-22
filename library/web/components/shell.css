@@ -150,3 +150,7 @@
   color: #5c4a00;
   font: 12px system-ui, sans-serif;
 }
+/* A group the bar model pushes (a spread bar: the media group, End). */
+.calcu-client .calcu-shell-bar-group.calcu-shell-pushed { margin-left: auto; }
+/* A compact bar keeps its labels unseen and out of the flow (measurable). */
+.calcu-client .calcu-shell-compact .calcu-bar-label { position: absolute; visibility: hidden; pointer-events: none; }

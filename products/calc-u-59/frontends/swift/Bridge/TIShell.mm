@@ -54,6 +54,9 @@ NSString *const TIShellActionHelp = @"help";
 
 @interface TIBarControl ()
 @property (nonatomic, readwrite) TIBarControlKind kind;
+@property (nonatomic, readwrite, copy) NSString *shown;
+@property (nonatomic, readwrite) BOOL shortShown;
+@property (nonatomic, readwrite) BOOL groupPushed;
 @property (nonatomic, readwrite) TIBarGroup group;
 @property (nonatomic, readwrite, copy) NSString *controlID;
 @property (nonatomic, readwrite, copy) NSString *label;
@@ -62,6 +65,20 @@ NSString *const TIShellActionHelp = @"help";
 @property (nonatomic, readwrite, copy) NSString *mediumKind;
 @property (nonatomic, readwrite, nullable) TIMenuItem *item;
 @end
+@interface TIBarFit ()
+@property (nonatomic, readwrite) CGFloat width;
+@property (nonatomic, readwrite) BOOL labels;
+@end
+@implementation TIBarFit
++ (TIBarFit *)fitForFaceplate:(CGFloat)faceplate withoutLabels:(CGFloat)without withLabels:(CGFloat)with {
+    const auto f = shell::barFit(faceplate, without, with);
+    TIBarFit *t = [[TIBarFit alloc] init];
+    t.width = f.width;
+    t.labels = f.labels;
+    return t;
+}
+@end
+
 @implementation TIBarControl
 @end
 
@@ -180,7 +197,7 @@ NSInteger keyIndexOf(const std::string &key) {
 
 - (shell::Traits)traits {
     // The iPhone and the iPad: no menu bar to count on (the bar holds
-    // Reset, Preset, Settings and More), no About, no Quit.
+    // Preset, Settings and More), no About, no Quit.
     shell::Traits t;
     t.menuBar = false;
     t.about = false;
@@ -212,22 +229,27 @@ NSInteger keyIndexOf(const std::string &key) {
     return itemsFrom(shell::moreItems(shell::menus(self.inputs, product(), self.traits), product()));
 }
 
+static TIBarControl *controlFrom(const shell::BarControl &c, shell::BarGroup group, bool pushed) {
+    TIBarControl *t = [[TIBarControl alloc] init];
+    t.kind = static_cast<TIBarControlKind>(c.kind);
+    t.group = static_cast<TIBarGroup>(group);
+    t.groupPushed = pushed;
+    t.shown = ns(c.shown);
+    t.shortShown = c.shortShown;
+    t.controlID = ns(c.id);
+    t.label = ns(c.label);
+    t.plugged = c.plugged;
+    t.choices = itemsFrom(c.choices);
+    t.mediumKind = ns(c.mediumKind);
+    if (c.kind == shell::BarControl::Kind::Action) t.item = itemFrom(c.item);
+    return t;
+}
+
 - (NSArray<TIBarControl *> *)bar {
     NSMutableArray *out = [NSMutableArray array];
     if (!self.started) return out;   // no bar before the first control state
     for (const auto &g : shell::bar(self.inputs, product(), self.traits))
-        for (const auto &c : g.controls) {
-            TIBarControl *t = [[TIBarControl alloc] init];
-            t.kind = static_cast<TIBarControlKind>(c.kind);
-            t.group = static_cast<TIBarGroup>(g.group);
-            t.controlID = ns(c.id);
-            t.label = ns(c.label);
-            t.plugged = c.plugged;
-            t.choices = itemsFrom(c.choices);
-            t.mediumKind = ns(c.mediumKind);
-            if (c.kind == shell::BarControl::Kind::Action) t.item = itemFrom(c.item);
-            [out addObject:t];
-        }
+        for (const auto &c : g.controls) [out addObject:controlFrom(c, g.group, g.pushed)];
     return out;
 }
 
@@ -273,9 +295,17 @@ NSInteger keyIndexOf(const std::string &key) {
 - (NSString *)modelID { return ns(shell::read::text(self.inputs.controlState, "model")); }
 
 - (NSString *)paperOwner {
-    for (const auto &p : shell::panels(self.inputs))
+    for (const auto &p : shell::panels(self.inputs, product()))
         if (p.kind == "paper") return ns(p.owner);
     return @"";
+}
+
+- (NSArray<TIBarControl *> *)paperPlaces {
+    NSMutableArray *out = [NSMutableArray array];
+    for (const auto &p : shell::panels(self.inputs, product()))
+        if (p.kind == "paper")
+            for (const auto &c : p.places) [out addObject:controlFrom(c, shell::BarGroup::Places, false)];
+    return out;
 }
 
 - (NSString *)settingValueInSection:(NSString *)section key:(NSString *)key {

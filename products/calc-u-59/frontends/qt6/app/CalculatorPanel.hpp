@@ -13,9 +13,25 @@ class CalculatorPanel : public QWidget {
 public:
     explicit CalculatorPanel(EmulatorController& controller, QWidget* parent = nullptr);
     KeyboardWidget* keyboard() const { return m_keyboard; }
+
+signals:
+    /// The bar's and the paper's text scale changed with the faceplate
+    /// (ChromeStyle::fontScale).
+    void fontScaleChanged(double scale);
+
+public:
     /// The shell's widgets, placed below and in place of the faceplate.
     void setShellWidgets(QWidget* controlBar, QWidget* romsMissing);
 
+protected:
+    bool eventFilter(QObject*, QEvent*) override;
+
 private:
+    // The bar as wide as the faceplate, wider only where its controls
+    // need more; centred under the faceplate.
+    void fitBar();
+
     KeyboardWidget* m_keyboard;
+    QWidget* m_bar = nullptr;
+    double m_fontScale = 0;
 };

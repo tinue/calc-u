@@ -17,8 +17,7 @@ namespace calcu::shell {
 // The menu groups a product item goes into.
 enum class MenuGroup { FileOpen, FileKinds, FileMedia, FileEnd, Edit, MachineEnd, Help };
 // The groups of the control bar, left to right.
-// Start: before the model picker, only in a window without a menu bar.
-enum class BarGroup { Start, AfterModel, Slots, Places, Media, End };
+enum class BarGroup { AfterModel, Slots, Places, Media, End };
 
 struct ProductItem {
     MenuGroup group = MenuGroup::FileKinds;
@@ -42,6 +41,17 @@ struct ShellProduct {
     std::vector<std::string> aboutLines;            // the texts in order
     std::vector<std::pair<std::string, std::string>> aboutLinks;   // label, address
     std::map<std::string, std::string> variantLabels;   // model or peripheral ID → submenu label
+    // Model ID → its name on the bar's model picker, short so the bar fits
+    // beside the faceplate; a model not listed shows its ID. The menus
+    // keep the ID.
+    std::map<std::string, std::string> barModelLabels;
+    // The bar as the iOS app draws it: the media group in the middle and
+    // End at the right edge (else every group packed left), and each picker
+    // showing its short text when closed (the model's bar name, a module's
+    // ID) instead of the chosen entry's label. The bar model carries both
+    // (BarGroupModel::pushed, BarControl::shortShown).
+    bool barSpread = false;
+    bool barShortPickers = false;
     std::string presetFilter;                       // the file dialog's filter for Load Preset…
     // The Web's Upload Preset…: an accept list (".ti59,.yaml") of the presets
     // and every file a preset can name. A page has no folder to look in, so
@@ -53,6 +63,9 @@ struct ShellProduct {
     bool pasteText = false;
     std::set<std::string> moduleSlotPinOuts;        // the pin-outs of module slots
     std::set<std::string> placesWithoutControl;     // "host-drive"
+    // Places whose control the paper panel shows, at the left of its
+    // header, instead of the bar: Calc-U-59's PC-100C over its paper.
+    std::set<std::string> placesOnPaper;
     std::vector<ProductItem> items;
 };
 

@@ -80,6 +80,11 @@ class EmulatorViewModel {
     private(set) var menus: [TIMenu] = []
     private(set) var moreItems: [TIMenuItem] = []
     private(set) var barControls: [TIBarControl] = []
+    /// The place controls on the paper panel (the PC-100C's button).
+    private(set) var paperPlaces: [TIBarControl] = []
+    /// The pickers of the bar's module slots, by place: the `media` topic's
+    /// entries in its order (the modules in the product's listing order).
+    private(set) var slotEntries: [String: [TIPickerEntry]] = [:]
     private(set) var settingsSections: [TIDialogSection] = []
     /// The paper panel's owner, "" while no printer is attached.
     private(set) var paperOwner: String = ""
@@ -258,6 +263,11 @@ class EmulatorViewModel {
         let made = TIAppSession(roms: romSet, start: start, delegate: platform)
         session = made
         shell = made.shell
+        // A debug tab that appeared before the session (the first start
+        // after installing waits long for iCloud) switched its data on into
+        // nothing: hand its flags over now.
+        if liveDebugEnabled { made.setLiveDebugEnabled(true) }
+        if cpuDebugEnabled { made.setCpuDebugEnabled(true) }
         if let problem = made.settingsProblem { print("[Settings] \(problem)") }
         #if DEBUG && targetEnvironment(simulator)
         // Harness attach: `calcu attach`, the port of --attach-port, else 59059.
@@ -341,6 +351,8 @@ class EmulatorViewModel {
     /// The calculator view lost the focus or went away: every key held comes
     /// up, after its minimum hold.
     func keyboardRelease() { session?.focusLost() }
+    /// A module slot's entry chosen (`media.choose`).
+    func choose(_ entry: TIPickerEntry, place: String) { session?.choose(entry, place: place) }
 
     // MARK: - Printer
 
@@ -412,6 +424,12 @@ class EmulatorViewModel {
         menus = shell.menus
         moreItems = shell.moreItems
         barControls = shell.bar
+        paperPlaces = shell.paperPlaces
+        if let session {
+            var entries: [String: [TIPickerEntry]] = [:]
+            for c in barControls where c.kind == .slotPicker { entries[c.controlID] = session.pickerEntries(place: c.controlID) }
+            slotEntries = entries
+        }
         settingsSections = shell.settingsDialog
         if paperOwner != shell.paperOwner { paperOwner = shell.paperOwner }
         let led = LEDFontStyle(setting: shell.setting("display", "led-style"))

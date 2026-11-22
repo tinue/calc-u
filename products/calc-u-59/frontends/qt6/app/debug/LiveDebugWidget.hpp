@@ -1,6 +1,7 @@
 #pragma once
 #include <QWidget>
 
+class DebugHeaderRow;
 class EmulatorController;
 namespace calcu::qt6 {
 class RunControlButtons;
@@ -27,10 +28,7 @@ private:
     int baseFontSize() const;
 
     EmulatorController& m_controller;
-    QLabel* m_title;
-    calcu::qt6::RunControlButtons* m_run;   ///< FREEZE, STEP, RESUME
-    QToolButton* m_freezeOnStart;
-    QToolButton* m_armed;
+    DebugHeaderRow* m_header;   ///< title, RESUME, FREEZE, FREEZE ON START, ARMED, STEP
     QLabel* m_debug;
     QLabel* m_partition;
     QLabel* m_source;

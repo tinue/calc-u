@@ -1377,6 +1377,16 @@ std::shared_ptr<const MediaState> MediaPart::state(SessionContext& c) {
         }
         if (cap) ps.waits = cap->waitsForMedium();
         ps.picker = picker(c, p);
+        // The chosen entry: the one of the held medium's name, the empty one
+        // while nothing is held; a held medium no entry lists gets its own.
+        bool chosen = false;
+        for (PickerEntry& e : ps.picker) {
+            e.chosen = !chosen && (ps.holds ? e.group != PickerEntry::Group::Empty && e.label == ps.holds->name
+                                            : e.group == PickerEntry::Group::Empty);
+            chosen = chosen || e.chosen;
+        }
+        if (!chosen && ps.holds)
+            ps.picker.push_back(PickerEntry{PickerEntry::Group::Held, "", ps.holds->name, std::nullopt, false, std::nullopt, true});
         s->places.push_back(std::move(ps));
     }
     return s;

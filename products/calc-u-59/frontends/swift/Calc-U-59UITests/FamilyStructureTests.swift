@@ -93,13 +93,13 @@ final class FamilyStructureTests: XCTestCase {
 
     func test_the_menus() throws {
         let (app, _) = launch()
-        // Every item on the bar or behind More.
-        for id in ["btn-reset", "bar-model", "bar-slot-slot-1", "bar-place-printer", "bar-media-card-reader",
+        // Every item on the bar or behind More (the PC-100C is on the paper).
+        for id in ["bar-model", "bar-slot-slot-1", "bar-media-card-reader",
                    "btn-preset", "btn-settings", "bar-more"] {
             XCTAssertTrue(element(app, id).waitForExistence(timeout: 5), "no \(id) on the bar")
         }
         openMore(app)
-        for id in ["more-item-examples", "more-item-cold-boot", "more-item-resume", "more-item-help"] {
+        for id in ["more-item-examples", "more-item-reset", "more-item-cold-boot", "more-item-resume", "more-item-help"] {
             XCTAssertTrue(element(app, id).waitForExistence(timeout: 3), "More has no \(id)")
         }
         XCTAssertFalse(element(app, "more-item-resume").isEnabled, "Resume while running")
@@ -124,17 +124,18 @@ final class FamilyStructureTests: XCTestCase {
 
     func test_the_bar() throws {
         let (app, harness) = launch()
-        for id in ["bar-model", "bar-slot-slot-1", "bar-place-printer", "bar-media-card-reader"] {
+        // The PC-100C is on the paper panel (test_the_printer).
+        for id in ["bar-model", "bar-slot-slot-1", "bar-media-card-reader"] {
             XCTAssertTrue(element(app, id).waitForExistence(timeout: 5), "no \(id) on the bar")
         }
-        // The model picker first, before the module and the printer.
+        // The model picker first, before the module.
         let model = element(app, "bar-model").frame, slot = element(app, "bar-slot-slot-1").frame
         XCTAssertLessThan(model.minX, slot.minX, "the model picker is not before the module picker")
-        XCTAssertEqual(element(app, "bar-model").label, "TI-59")
+        XCTAssertEqual(element(app, "bar-model").label, "59")
         element(app, "bar-slot-slot-1").tap()
-        XCTAssertTrue(element(app, "item-peripheral-slot-1-none").waitForExistence(timeout: 3), "no None in the module picker")
-        XCTAssertTrue(element(app, "item-peripheral-slot-1-LE").exists, "no LE in the module picker")
-        element(app, "item-peripheral-slot-1-LE").tap()
+        XCTAssertTrue(element(app, "item-slot-1-none").waitForExistence(timeout: 3), "no None in the module picker")
+        XCTAssertTrue(element(app, "item-module:LE").exists, "no LE in the module picker")
+        element(app, "item-module:LE").tap()
         waitForOperation(harness, timeout: 15)
         let state = harness.command("state control-state").joined(separator: "\n")
         XCTAssertTrue(state.contains("LE"), "the module did not change: \(state)")
@@ -149,20 +150,25 @@ final class FamilyStructureTests: XCTestCase {
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"),
                                              object: element(app, "bar-media-card-reader"))
         XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 5), .completed, "card controls on the TI-58")
-        XCTAssertEqual(element(app, "bar-model").label, "TI-58")
+        XCTAssertEqual(element(app, "bar-model").label, "58")
         app.terminate()
     }
 
     /// On an iPhone in portrait every control of the bar can be reached.
     func test_iphone_portrait_reaches_every_control() throws {
         let app = launchApp(orientation: .portrait)
-        for id in ["btn-reset", "bar-model", "bar-slot-slot-1", "bar-place-printer", "bar-media-card-reader",
+        for id in ["bar-model", "bar-slot-slot-1", "bar-media-card-reader",
                    "btn-preset", "btn-settings", "bar-more"] {
             let e = element(app, id)
             XCTAssertTrue(e.waitForExistence(timeout: 5), "no \(id)")
             XCTAssertTrue(e.isHittable, "\(id) cannot be reached")
         }
         attachScreenshot(app, name: "The bar in portrait")
+        // The PC-100C on the paper page, beside the page arrow.
+        app.buttons["btn-page-right"].tap()
+        let plug = element(app, "bar-place-printer")
+        XCTAssertTrue(plug.waitForExistence(timeout: 5), "no bar-place-printer on the paper page")
+        XCTAssertTrue(plug.isHittable, "bar-place-printer cannot be reached")
         app.terminate()
     }
 
@@ -334,6 +340,8 @@ final class FamilyStructureTests: XCTestCase {
 
     func test_the_printer() throws {
         let (app, harness) = launch()
+        let right = app.buttons["btn-page-right"]
+        if right.exists { right.tap() }   // the paged layout: the paper page, with the PC-100C's button
         let owner = element(app, "paper-owner")
         let plug = element(app, "bar-place-printer")
         XCTAssertTrue(plug.waitForExistence(timeout: 5))
@@ -344,8 +352,6 @@ final class FamilyStructureTests: XCTestCase {
         XCTAssertEqual(harness.command("key 1 2 3", timeout: 10).first, "done")
         XCTAssertEqual(harness.command("key 2nd Prt", timeout: 10).first, "done")
         XCTAssertEqual(harness.command("wait 2s", timeout: 10).first, "done 2")
-        let right = app.buttons["btn-page-right"]
-        if right.exists { right.tap() }   // the paged layout: the paper page
         XCTAssertTrue(owner.waitForExistence(timeout: 5))
         XCTAssertEqual(owner.label, "PC-100C")
         element(app, "paper-view-mode").tap()   // the text view
@@ -363,13 +369,13 @@ final class FamilyStructureTests: XCTestCase {
     /// keeps running and prints on the new paper.
     func test_paper_cut_in_dot_mode() throws {
         let (app, harness) = launch()
+        let right = app.buttons["btn-page-right"]
+        if right.exists { right.tap() }   // the paged layout: the paper page, with the PC-100C's button
         let plug = element(app, "bar-place-printer")
         XCTAssertTrue(plug.waitForExistence(timeout: 5))
         plug.tap()
         waitForOperation(harness, timeout: 20)
         XCTAssertEqual(element(app, "bar-place-printer").value as? String, "On")
-        let right = app.buttons["btn-page-right"]
-        if right.exists { right.tap() }   // the paged layout: the paper page
         let owner = element(app, "paper-owner")
         XCTAssertTrue(owner.waitForExistence(timeout: 5))
         for round in 1...3 {

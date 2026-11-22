@@ -294,52 +294,13 @@ struct CPUInspectorView: View {
         // FREEZE and FREEZE ON START: cu59::freezeButtons.
         let use = vm.buttons(for: .cpu)
         let freeze = vm.freezeButtons(for: .cpu)
-        let freezeEnabled = freeze.freeze
-        let freezeOnStartEnabled = freeze.freezeOnStart && !freeze.armed
-        let narrow = baseFontSize < 13
-
-        return HStack(spacing: 8) {
-            Text("CPU DEBUG")
-                .font(.caption.bold())
-                .foregroundStyle(.white.opacity(0.6))
-            Spacer()
-
-
-            // RESUME sits at the far left, away from STEP, to avoid accidental
-            // taps while stepping.
-            Button("RESUME") { vm.resume() }
-                .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.orange)
-                .opacity(use.resume ? 1 : 0.4)
-                .disabled(!use.resume)
-
-            Button("FREEZE") { vm.freeze(from: .cpu) }
-                .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.white)
-                .opacity(freezeEnabled ? 1 : 0.4)
-                .disabled(!freezeEnabled)
-
-            Button(narrow ? "F.START" : "FREEZE ON START") { vm.freezeOnScanLoopExit() }
-                .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.white)
-                .opacity(freezeOnStartEnabled ? 1 : 0.4)
-                .disabled(!freezeOnStartEnabled)
-                .accessibilityIdentifier("btn-cpu-freeze-on-start")
-
-            Button("ARMED") { vm.disarmCPUScanLoopFreeze() }
-                .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.yellow)
-                .opacity(freeze.armed ? 1 : 0.4)
-                .disabled(!freeze.armed)
-
-            // Tap to single-step; hold to auto-step at 2 steps/second.
-            HoldRepeatButton(title: "STEP", color: .cyan, baseFontSize: baseFontSize,
-                             enabled: use.step) { vm.stepFrozen() }
-                .accessibilityIdentifier("btn-cpu-step")
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Color(white: 0.07))
+        return DebugHeaderView(cpu: true, baseFontSize: baseFontSize, buttons: [
+            "resume": .init(enabled: use.resume) { vm.resume() },
+            "freeze": .init(enabled: freeze.freeze) { vm.freeze(from: .cpu) },
+            "freeze-on-start": .init(enabled: freeze.freezeOnStart && !freeze.armed) { vm.freezeOnScanLoopExit() },
+            "armed": .init(enabled: freeze.armed) { vm.disarmCPUScanLoopFreeze() },
+            "step": .init(enabled: use.step) { vm.stepFrozen() },
+        ])
     }
 
     // MARK: - Section Container

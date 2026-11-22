@@ -117,7 +117,7 @@ Everything that isn't drawing: `docs/developer/App-Layer.md`.
 | `MainWindow` | `CalculatorView` (layout, menus, presets, drag and drop: every file to the library's `open` through the library's `library/qt6/FileOpening` (`calcu::qt6::openFile(window, …)`, which raises the window but for the start, `dragEnter`, `dragMove`, `drop` (accepted, opened after the drop), `startFile`, the macOS `FileOpenFilter` in `main.cpp`); Arm Fresh Card's replace question through `calcu::qt6::sendAsking`) |
 | `EmulatorController` | `EmulatorViewModel` |
 | `CalculatorPanel` (the faceplate, the shell's control bar and "ROMs missing") | `CalculatorView` calculator column |
-| the shell's control bar (`calcu::qt6::Shell::controlBar()`), `CardControls` | `CalculatorView` bar and card buttons |
+| the shell's control bar (`calcu::qt6::Shell::controlBar()`), `CardControls`; `CalculatorPanel::fitBar` (the library's `barFit`, the text scale `ChromeStyle::fontScale`) | `CalculatorView` bar (`TIBarFit`) and card buttons |
 | `KeyboardWidget` (the faceplate: art, LED, cue card, pressed key from `held-keys`, host keys through `calcu::qt6::HostKeys`) | `KeyboardView` |
 | `LedRenderer` | `LEDDisplayView` |
 | `CueCardRenderer` | `CueCardView` |
@@ -125,6 +125,7 @@ Everything that isn't drawing: `docs/developer/App-Layer.md`.
 | `CardPickerDialog` | `CardPickerView` |
 | `debug/DebugPanel`, `debug/AsmOverlayBox`, `debug/LogWidget` | `DebugView` (`ASMDebugContent`, `StaticDebugContent`); they draw `TIDebugPart`'s product topics through `EmulatorController`, which keeps the LOG tab's view (`cu59::RingLog`) of the `log` topic; Run, TRACE and the CALCULATOR tab follow the product entries (`entryAvailable`) |
 | `debug/LiveDebugWidget` | `LiveDebugView` |
+| `debug/DebugHeaderRow` (both tabs' header from app/'s `debugHeader`) | `DebugHeaderView` |
 | `debug/CpuInspectorWidget`, `debug/RomHeatmapWidget` | `CPUInspectorView` |
 | the library's `calcu::qt6::RunControlButtons` (FREEZE, STEP, RESUME of each debug tab) | `HoldRepeatButton.swift` |
 | `ChromeStyle.hpp` | `ChromeControlStyles.swift` |

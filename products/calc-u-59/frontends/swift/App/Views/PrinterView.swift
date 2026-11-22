@@ -2,7 +2,8 @@ import SwiftUI
 
 // The paper panel: always there,
 // with the paper of its owner under the owner's name, or an empty paper
-// under none while no printer is attached (the bar's "PC-100C" plugs it in).
+// under none while no printer is attached; the PC-100C's button at the
+// header's left plugs it in.
 // Drawn from the marks and the text of the library's topic `paper PC-100C`,
 // which the bridge keeps; Copy and Cut are the session's commands (the
 // library makes the picture, the bridge puts it on the pasteboard: one
@@ -55,13 +56,11 @@ struct PrinterView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            Spacer()
-            // The owner's name; none while no printer is attached.
-            Text(viewModel.paperOwner)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(.white)
-                .padding(.vertical, 6)
-                .accessibilityIdentifier("paper-owner")
+            // The place controls on the paper (the PC-100C); the owner's name
+            // in the middle says what it is.
+            ForEach(viewModel.paperPlaces, id: \.controlID) { control in
+                PlaceButton(control: control, showLabel: false)
+            }
             Spacer()
             // Dot / text toggle
             Button {
@@ -78,6 +77,16 @@ struct PrinterView: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("paper-view-mode")
+        }
+        // The owner's name, none while no printer is attached: an overlay, so
+        // it never changes the column's width; one line, centred.
+        .overlay {
+            Text(viewModel.paperOwner)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .fixedSize()
+                .accessibilityIdentifier("paper-owner")
         }
         .padding(.top, 8 + portraitTopInset).padding(.bottom, 8)
         .background(Color(white: 0.08))

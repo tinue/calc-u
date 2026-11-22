@@ -41,22 +41,24 @@ async function menuIds(page, prefix, scope) {
 test('the bar per model', async ({ page }) => {
   await gotoReady(page);
   const model = el(page, 'bar-model');
-  await expect(model.locator('option')).toHaveText(['TI-59', 'TI-58', 'TI-58C']);
+  await expect(model.locator('option')).toHaveText(['59', '58', '58C']);
   await expect(model).toHaveValue('0');
   // The picker of slot-1: the empty slot and the 14 Solid State ROM modules.
   const slot = el(page, 'media-picker-slot-1');
   await expect(slot.locator('option')).toHaveCount(15);
   await expect(slot.locator('option:checked')).toHaveText(/Master Library/);
-  // The button "PC-100C" for the place `printer`, pressed while plugged in.
-  const printer = el(page, 'bar-place-printer');
-  await expect(printer).toHaveText('PC-100C');
+  // The button "PC-100C" for the place `printer`, on the paper panel,
+  // pressed while plugged in.
+  const printer = el(page, 'paper-panel').locator('[data-calcu="bar-place-printer"]');
+  await expect(printer).toHaveAttribute('aria-label', 'PC-100C');
+  await expect(el(page, 'control-bar').locator('[data-calcu="bar-place-printer"]')).toHaveCount(0);
   await expect(printer).toHaveAttribute('aria-pressed', 'false');
   await printer.click();
   await expect(printer).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
   // The card controls on the TI-59 only.
   await expect(el(page, 'bar-media-card-reader')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Arm Card', exact: true })).toBeVisible();
-  await model.selectOption({ label: 'TI-58' });
+  await model.selectOption({ label: '58' });
   await expect(model).toHaveValue('1', { timeout: 5000 });
   await expect(el(page, 'bar-media-card-reader')).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Arm .*Card/ })).toHaveCount(0);
@@ -88,26 +90,31 @@ test('the wide layout has the menus and no reset preset or settings on the bar',
   await expect(el(page, 'item-about')).toHaveText(/About Calc-U-59/);
 });
 
-// The portrait layout.
-test('portrait bar keeps reset preset settings and more', async ({ page }) => {
+// The portrait layout: Reset is in More.
+test('portrait bar keeps preset settings and more', async ({ page }) => {
+  await recordCommands(page);
   await gotoReady(page, 'layout=portrait');
   await expect(el(page, 'menu-bar')).toHaveCount(0);
   const bar = el(page, 'control-bar');
   expect((await ids(bar.locator('[data-calcu^="bar-action-"], [data-calcu="bar-more"], [data-calcu="bar-model"]')))).toEqual(
-    ['bar-action-reset', 'bar-model', 'bar-action-load-preset', 'bar-action-settings', 'bar-more']);
+    ['bar-model', 'bar-action-load-preset', 'bar-action-settings', 'bar-more']);
+  await el(page, 'bar-more').click();
+  await el(page, 'more-item-reset').click();
+  await expect.poll(() => commands(page)).toContain('reset');
+  expect(await commands(page)).not.toContain('cold-boot');
   await expect(el(page, 'bar-action-load-preset')).toHaveAttribute('aria-label', 'Preset');
   await el(page, 'bar-action-settings').click();
   await expect(el(page, 'settings-dialog')).toBeVisible();
 });
 
-test('more holds examples cold boot resume and help', async ({ page }) => {
+test('more holds examples reset cold boot resume and help', async ({ page }) => {
   await page.setViewportSize({ width: 280, height: 700 });
   await gotoReady(page, 'layout=portrait');
   await el(page, 'bar-more').click();
   const menu = el(page, 'more-menu');
   await expect(menu).toBeVisible();
   await expect.poll(() => menuIds(page, 'more-item-', menu)).toEqual(
-    ['examples', 'import-media', 'saved-media', 'cold-boot', 'resume', 'help', 'about']);
+    ['examples', 'import-media', 'saved-media', 'reset', 'cold-boot', 'resume', 'help', 'about']);
   await expect(el(page, 'more-item-resume')).toHaveAttribute('aria-disabled', 'true');
   // Inside the client at the narrowest portrait.
   const client = await page.locator('.calcu-client').boundingBox();
@@ -139,19 +146,6 @@ test('cold boot asks first', async ({ page }) => {
   await expect.poll(() => commands(page)).toContain('cold-boot');
 });
 
-test('no long press for clean', async ({ page }) => {
-  await recordCommands(page);
-  await gotoReady(page, 'layout=portrait');
-  const reset = el(page, 'bar-action-reset');
-  await reset.dispatchEvent('pointerdown', { pointerType: 'touch', pointerId: 7 });
-  await page.waitForTimeout(1300);   // held well past a second: still a plain Reset
-  await reset.dispatchEvent('pointerup', { pointerType: 'touch', pointerId: 7 });
-  await reset.click();
-  await expect.poll(() => commands(page)).toContain('reset');
-  expect(await commands(page)).not.toContain('cold-boot');
-  await expect(reset).toHaveText('↺');   // the icon alone (compact), never "Clean"
-});
-
 test('settings prop off', async ({ page }) => {
   await page.goto('./?layout=wide');
   await page.evaluate(() => {
@@ -164,7 +158,7 @@ test('settings prop off', async ({ page }) => {
   const second = page.locator('#second .calcu-client');
   await expect(second.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
   await expect(second.locator('[data-calcu="bar-action-settings"]')).toHaveCount(0);
-  await expect(second.locator('[data-calcu="bar-action-reset"]')).toBeVisible();
+  await expect(second.locator('[data-calcu="bar-action-load-preset"]')).toBeVisible();
   await page.waitForTimeout(500);
   if (await second.locator('[data-calcu="notice"]').count()) await second.locator('[data-calcu="notice-ok"]').click();   // a second copy's storage notice
   await second.locator('[data-calcu="bar-more"]').click();

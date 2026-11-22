@@ -613,7 +613,7 @@ EmulatorViewModel (@Observable, main thread)
 | `AppSettings.swift` | Where the settings file lives (Application Support), the Debug-only `--settings-file`; the settings themselves are the session's |
 | `CueCardContent.swift` | Swift cue-card value type and its `TICueCard` conversion |
 | `Views/CalculatorView.swift` | Root view; the layouts — pages, or side by side with or without the debugger, as `TIViewRules.mobileLayout` (Shared `mobileLayout`) says for the window's size and an active fold (iPhone Duo), with the printer's width (`mobilePrinterWidth`) and a top margin for windows without a top inset (`mobileTopMargin`); the control bar (`ControlBarView`); the notice alert; Load Preset…'s file importer (the preset types, the library's `open`), the settings sheet and the ASM file importer |
-| `Views/ControlBarView.swift` | The control bar from `TIShell.bar`: the model picker, the picker of `slot-1`, the button "PC-100C", the card controls (`CardControls`); Reset, Preset, Settings and More (Cold boot asks first) |
+| `Views/ControlBarView.swift` | The control bar from `TIShell.bar`: the model picker, the picker of `slot-1`, the card controls (`CardControls`); Preset, Settings and More (with Reset; Cold boot asks first, its question on the More button); `PlaceButton`, the place button of the bar and the paper panel |
 | `Views/ShellCommands.swift` | The family's menus File, Machine, Help in the iPad's menu bar as SwiftUI `Commands` from `TIShell.menus`, the shortcuts as key equivalents |
 | `Views/KeyboardView.swift` | Calculator art; the pointer through the library's rule (`TIShell` on `cu59::faceplateHitMap`: the key, the display for full speed; the card's corners first), pressed-key effect, haptics / click, "Loading…" below the display |
 | `Views/UIKitTouchTracking.swift` | Raw-touch tracker that replaces `DragGesture` for keys (iOS 27 fires `onEnded` early) |
@@ -623,6 +623,7 @@ EmulatorViewModel (@Observable, main thread)
 | `Views/CardPickerView.swift` | Arm Card (the saved cards by name, from the library's `media` topic) and Arm Fresh Card (a name; the replace question) |
 | `Views/DebugView.swift` | Debug tabs; `ASMDebugContent`; LOG tab (`StaticDebugContent`) |
 | `Views/LiveDebugView.swift`, `Views/CPUInspectorView.swift` | CALCULATOR and CPU tabs |
+| `Views/DebugHeaderView.swift` | Both tabs' header as `DebugText`'s `debugHeader` describes it (`TIViewRules.debugHeaderButtons`) |
 | `Views/HoldRepeatButton.swift` | Fires on press, repeats every 0.25 s while held and while step can be used (STEP) |
 | `Views/ChromeControlStyles.swift` | Dark chrome button and menu styles |
 | `Views/SettingsView.swift` | The settings from `TIShell.settingsDialog` (`cu59::settingsSpec(SwiftIOS)`): a choice is a picker (true and false a toggle), a number a field; a change is `set-setting` at once; the notice alert over the sheet |
@@ -668,7 +669,7 @@ Never import the three ObjC++-only headers from the bridging header.
 shell models, computed by `TIShell` in the bridge from the same
 topics the Qt6 and React sets read: the menus (`ShellCommands`, in the iPad's menu bar; the items with the
 roles Settings…, About and Quit are left out), the control bar
-(`ControlBarView`, with Reset, Preset, Settings and More), the settings (`SettingsView`), "Loading…" and
+(`ControlBarView`, with Preset, Settings and More; `CalculatorView` measures it with and without its labels and the library's `barFit` (`TIBarFit`) gives its width and labels), the PC-100C's button on the paper panel (`TIShell.paperPlaces`), the settings (`SettingsView`), "Loading…" and
 the notices (one alert after the other). No Swift view decides what the
 machine offers; a control or item is enabled exactly when its entry is.
 
@@ -691,8 +692,8 @@ first to `tapCard` (`KeyboardView`), and `CueCardView` draws the side being read
 from `litCardCorner`: § "Card Reader Flow".
 
 **Printer.** The paper panel is always there: the owner's
-paper under its name while the PC-100C is attached (the bar's button
-attaches it), an empty paper under none. The paper is the library's: the bridge keeps what the topic
+paper under its name while the PC-100C is attached (its button at the
+left of the panel's header attaches it), an empty paper under none. The paper is the library's: the bridge keeps what the topic
 `paper PC-100C` sends (text lines, dots in the dot pitch with their ink; the
 reset marker empties it), the view model files the dots by band of 10 units,
 and `PrinterView` draws the bands in view (`PaperBand`) or the selectable

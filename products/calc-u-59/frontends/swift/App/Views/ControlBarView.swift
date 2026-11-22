@@ -2,28 +2,23 @@ import SwiftUI
 
 /// The control bar below the faceplate, drawn from the library's bar model
 /// (`TIShell.bar`) over the control state: the model picker first, the
-/// picker of `slot-1` (the library's module picker), the button "PC-100C",
-/// the card controls on the TI-59; on iOS and iPadOS, where no menu bar
-/// can be counted on, Reset, Preset, Settings and More. No control here
+/// picker of `slot-1` (the library's module picker), the card controls on
+/// the TI-59; on iOS and iPadOS, where no menu bar can be counted on,
+/// Preset, Settings and More (with Reset). The PC-100C's button is on the
+/// paper panel (`TIShell.paperPlaces`). No control here
 /// decides what the machine offers: a control is enabled exactly when its
 /// entry is available now.
 struct ControlBarView: View {
     @Environment(EmulatorViewModel.self) var viewModel
-    /// Labels beside the icons; off where the bar is too narrow.
-    var showLabels: Bool = true
+    /// The labels ("Crd", "Preset") beside the icons; the column decides by
+    /// the library's rule (TIBarFit).
+    var labels: Bool = true
 
     /// More ▸ Cold boot asks before it is carried out.
     @State private var confirming: TIMenuItem?
 
     var body: some View {
-        // The bar never widens the calculator: where the full bar is wider
-        // than the faceplate (side by side on an iPad mini or an open iPhone
-        // Duo), the card controls are left out. A card armed in another
-        // layout is still fed by its corner on the faceplate.
-        ViewThatFits(in: .horizontal) {
-            row(withCards: true)
-            row(withCards: false)
-        }
+        row(labels: labels)
         .buttonStyle(ChromeButtonStyle())
         .padding(.horizontal, 12)
         // Leading: without the TI-59's card controls the rest stays put.
@@ -33,46 +28,39 @@ struct ControlBarView: View {
         .foregroundStyle(.white)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("control-bar")
-        .confirmationDialog(confirming?.confirm ?? "", isPresented: .init(
-            get: { confirming != nil },
-            set: { if !$0 { confirming = nil } }
-        ), titleVisibility: .visible) {
-            if let item = confirming {
-                Button(item.label, role: .destructive) { viewModel.choose(item) }
-                    .accessibilityIdentifier("confirm-\(item.itemID)")
-                Button("Cancel", role: .cancel) {}
-            }
-        }
     }
 
-    private func row(withCards: Bool) -> some View {
-        let controls = viewModel.barControls.filter { withCards || $0.kind != .media }
+    /// The bar model's groups; a spread bar (Calc-U-59): the model and the
+    /// module left, the card controls in the middle, Preset, Settings and More right.
+    private func row(labels: Bool) -> some View {
+        let controls = viewModel.barControls
         return HStack(spacing: 12) {
             ForEach(Array(controls.enumerated()), id: \.offset) { index, control in
-                if index > 0, control.group != controls[index - 1].group,
-                   control.group == .end || control.group == .media {
+                // A group the bar model pushes (a spread bar) takes the room before it.
+                if index > 0, control.group != controls[index - 1].group, control.groupPushed {
                     Spacer(minLength: 0)
                 }
-                view(for: control)
+                view(for: control, labels: labels)
             }
         }
     }
 
     @ViewBuilder
-    private func view(for control: TIBarControl) -> some View {
+    private func view(for control: TIBarControl, labels: Bool) -> some View {
         switch control.kind {
         case .modelPicker:
-            picker(control, label: viewModel.modelID, id: "bar-model")
+            picker(control, label: control.shown, id: "bar-model")
         case .slotPicker:
-            picker(control, label: Self.shortLabel(control), id: "bar-slot-\(control.controlID)")
+            slotPicker(control)
         case .placePicker:
-            picker(control, label: Self.shortLabel(control), id: "bar-place-\(control.controlID)")
+            picker(control, label: control.shortShown ? control.shown : (control.choices.first(where: \.checked)?.label ?? "—"),
+                   id: "bar-place-\(control.controlID)")
         case .placeButton:
-            placeButton(control)
+            PlaceButton(control: control, showLabel: labels)
         case .media:
-            CardControls(showLabels: showLabels)
+            CardControls(showLabels: labels)
         case .action:
-            if let item = control.item { action(item) }
+            if let item = control.item { action(item, labels: labels) }
         case .more:
             moreMenu(control)
         @unknown default:
@@ -103,56 +91,43 @@ struct ControlBarView: View {
         .accessibilityIdentifier(id)
     }
 
-    /// What a picker shows on the bar: the chosen entry's ID (ML, LE, …), "—" for none.
-    private static func shortLabel(_ control: TIBarControl) -> String {
-        guard let chosen = control.choices.first(where: { $0.checked }) else { return "—" }
-        let prefix = "peripheral-\(control.controlID)-"
-        let id = chosen.itemID.hasPrefix(prefix) ? String(chosen.itemID.dropFirst(prefix.count)) : chosen.label
-        return id == "none" ? "—" : id
-    }
-
-    // MARK: - The place button (the PC-100C)
-
-    private func placeButton(_ control: TIBarControl) -> some View {
-        let item = control.choices.first
-        return Button {
-            if let item { viewModel.choose(item) }
-        } label: {
-            HStack(spacing: 6) {
-                if showLabels { Text(control.label) } else { Image(systemName: "printer") }
-                Circle()
-                    .fill(control.plugged ? Color.red : Color.gray.opacity(0.4))
-                    .frame(width: 8, height: 8)
+    /// A module slot's picker: the `media` topic's entries in their order
+    /// (the product's listing), the chosen one's short label ("ML") on the bar.
+    private func slotPicker(_ control: TIBarControl) -> some View {
+        let entries = viewModel.slotEntries[control.controlID] ?? []
+        let chosen = entries.first(where: \.chosen)
+        let shown = (control.shortShown ? chosen?.shortLabel : chosen?.label) ?? "—"
+        return Menu {
+            ForEach(Array(entries.enumerated()), id: \.offset) { _, entry in
+                Button {
+                    viewModel.choose(entry, place: control.controlID)
+                } label: {
+                    if entry.chosen { Label(entry.label, systemImage: "checkmark") } else { Text(entry.label) }
+                }
+                .disabled(!entry.canChoose)
+                // "item-module:LE"; the empty slot "item-slot-1-none"
+                .accessibilityIdentifier("item-" + (entry.entryID.isEmpty ? "\(control.controlID)-none" : entry.entryID))
             }
-            .font(.system(size: 11, weight: .bold))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .background(Color(white: 0.25))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+        } label: {
+            Text(control.label.isEmpty ? shown : "\(control.label) \(shown)")
+                .font(.callout.weight(.semibold))
+                .fixedSize()
         }
-        .disabled(!(item?.enabled ?? false))
-        .accessibilityLabel(control.label)
-        .accessibilityValue(control.plugged ? "On" : "Off")
-        .accessibilityIdentifier("bar-place-\(control.controlID)")
+        .menuStyle(ChromeMenuStyle())
+        .menuOrder(.fixed)
+        .fixedSize()
+        .disabled(!(control.choices.first?.enabled ?? true))
+        .accessibilityIdentifier("bar-slot-\(control.controlID)")
     }
 
-    // MARK: - Actions (iOS: Reset, Preset, Settings)
+    // MARK: - Actions (iOS: Preset, Settings)
 
     @ViewBuilder
-    private func action(_ item: TIMenuItem) -> some View {
+    private func action(_ item: TIMenuItem, labels: Bool) -> some View {
         switch item.itemID {
-        case "reset":
-            Button("Reset", systemImage: "arrow.counterclockwise") {
-                viewModel.feedbackForReset()
-                viewModel.choose(item)
-            }
-            .foregroundStyle(.orange)
-            .labelStyle(showLabel: showLabels)
-            .disabled(!item.enabled)
-            .accessibilityIdentifier("btn-reset")
         case TIShellActionLoadPreset:
             Button("Preset", systemImage: "doc.badge.arrow.up") { viewModel.choose(item) }
-                .labelStyle(showLabel: showLabels)
+                .labelStyle(showLabel: labels)
                 .controlSize(.large)
                 .disabled(!item.enabled)
                 .accessibilityIdentifier("btn-preset")
@@ -174,16 +149,32 @@ struct ControlBarView: View {
     private func moreMenu(_ control: TIBarControl) -> some View {
         Menu {
             MenuItems(items: control.choices, prefix: "more-item-") { item in
-                if !item.confirm.isEmpty { confirming = item } else { viewModel.choose(item) }
+                if !item.confirm.isEmpty { confirming = item; return }
+                if item.itemID == "reset" { viewModel.feedbackForReset() }
+                viewModel.choose(item)
             }
         } label: {
             Image(systemName: "ellipsis.circle")
                 .font(.system(size: 18))
         }
         .menuStyle(ChromeMenuStyle())
+        // In the model's order, top to bottom: opened upwards from the bar,
+        // iOS would otherwise put the first item next to the button.
+        .menuOrder(.fixed)
         .fixedSize()
         .accessibilityLabel("More")
         .accessibilityIdentifier("bar-more")
+        // On the More button, so the iPad's popover points at it.
+        .confirmationDialog(confirming?.confirm ?? "", isPresented: .init(
+            get: { confirming != nil },
+            set: { if !$0 { confirming = nil } }
+        ), titleVisibility: .visible) {
+            if let item = confirming {
+                Button(item.label, role: .destructive) { viewModel.choose(item) }
+                    .accessibilityIdentifier("confirm-\(item.itemID)")
+                Button("Cancel", role: .cancel) {}
+            }
+        }
     }
 }
 
@@ -264,5 +255,39 @@ extension View {
     func labelStyle(showLabel: Bool) -> some View {
         if showLabel { self.labelStyle(.titleAndIcon) }
         else { self.labelStyle(.iconOnly) }
+    }
+}
+
+/// A place's button (the library's place button), on the bar or the paper
+/// panel: pressed (red) while plugged in; its label, or the printer where
+/// the label would not fit or the name stands beside it.
+struct PlaceButton: View {
+    @Environment(EmulatorViewModel.self) var viewModel
+    let control: TIBarControl
+    var showLabel: Bool
+
+    var body: some View {
+        let item = control.choices.first
+        Button {
+            if let item { viewModel.choose(item) }
+        } label: {
+            HStack(spacing: 6) {
+                if showLabel { Text(control.label) } else { Image(systemName: "printer") }
+                Circle()
+                    .fill(control.plugged ? Color.red : Color.gray.opacity(0.4))
+                    .frame(width: 8, height: 8)
+            }
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color(white: 0.25))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .disabled(!(item?.enabled ?? false))
+        .accessibilityLabel(control.label)
+        .accessibilityValue(control.plugged ? "On" : "Off")
+        .accessibilityIdentifier("bar-place-\(control.controlID)")
     }
 }

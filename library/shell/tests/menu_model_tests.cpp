@@ -269,14 +269,14 @@ TEST(more_items_are_the_items_without_a_control) {
     // The menus are still computed.
     CHECK_EQ(join(menuIds(ms)), std::string("file machine help"));
     CHECK_EQ(join(ids(moreItems(ms, p))),
-             std::string("examples - load-program - import-media saved-media mount-drive - variants-model - cold-boot resume disk-thing - help about"));
+             std::string("examples - load-program - import-media saved-media mount-drive - variants-model - reset cold-boot resume disk-thing - help about"));
     // A product item the product draws on the bar is left out, and no separator doubles.
     p.items[1].onBar = true;
     CHECK_EQ(join(ids(moreItems(menus(in, p, portrait()), p))),
-             std::string("examples - load-program - import-media saved-media - variants-model - cold-boot resume disk-thing - help about"));
+             std::string("examples - load-program - import-media saved-media - variants-model - reset cold-boot resume disk-thing - help about"));
     p.items[0].onBar = true;
     CHECK_EQ(join(ids(moreItems(menus(in, p, portrait()), p))),
-             std::string("examples - import-media saved-media - variants-model - cold-boot resume disk-thing - help about"));
+             std::string("examples - import-media saved-media - variants-model - reset cold-boot resume disk-thing - help about"));
 }
 
 TEST(more_cold_boot_asks_first) {

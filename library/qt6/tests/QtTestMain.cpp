@@ -1,12 +1,11 @@
 #include "TestHarness.hpp"
 #include <QApplication>
-#include <cstring>
 #include <QtGlobal>
 
 // The runner of calcu_qt6_tests: the repository's one runner
 // (library/testing/TestMain.cpp) with a QApplication around it, on the
-// platform the environment names (CTest: QT_QPA_PLATFORM=offscreen). An
-// optional argument filters by substring of the test name.
+// platform the environment names (CTest: QT_QPA_PLATFORM=offscreen); its
+// arguments are the runner's (TestHarness.hpp).
 
 namespace {
 // The offscreen platform's notes on what it does not do (size hints, font
@@ -20,19 +19,7 @@ void quietOffscreen(QtMsgType type, const QMessageLogContext&, const QString& ms
 
 int main(int argc, char** argv) {
     qInstallMessageHandler(quietOffscreen);
-    const char* filter = argc > 1 ? argv[1] : nullptr;
     int qtArgc = 1;
     QApplication app(qtArgc, argv);
-    int ran = 0;
-    for (auto& c : testharness::registry()) {
-        if (filter && !std::strstr(c.name, filter)) continue;
-        int before = testharness::failCount();
-        testharness::currentName() = c.name;
-        c.fn();
-        ++ran;
-        if (testharness::failCount() != before) std::fprintf(stderr, "  in %s\n", c.name);
-    }
-    std::printf("%d tests (%d skipped), %d checks passed, %d failed\n", ran, testharness::skipCount(),
-                testharness::passCount(), testharness::failCount());
-    return testharness::failCount() == 0 ? 0 : 1;
+    return testharness::runTests(argc, argv);
 }

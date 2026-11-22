@@ -85,7 +85,7 @@ characters has fewer digits; keep it as printed.
   what it wrote.
 - The examples are checked by `calcu_preset_check.CalcU59Presets`
   (Frequent) and against their recorded reference runs by
-  `CalcU59ReferenceRuns` (Longer; `tests/reference_runs_tests.cpp`).
+  `CalcU59Tests.longer` (Longer; `tests/reference_runs_tests.cpp`).
 - **Cards in a preset (TI-59 only).** `card: { mem: X }` (side 0 by
   default, `side: 1`) pushes a side through the reader *now*: if the ROM
   is waiting for a key, it reads the card at idle. A card a program asks for

@@ -262,10 +262,11 @@
 - **Tests and build (developers):** the main test program is
   `CalcU1600CoreTests` (was `CoreTests`), the Web engine target
   `calcu1600_web` (was `calcu_web`); the CTest entries `CalcU1600TraceReader`,
-  `CalcU1600ReferenceRuns` and `CalcU1600CoreSeam` (were `CalcU1600ReadTrace`,
-  `CalcU1600ExampleReferences`, `CalcU1600MachineIncludeCheck`), set by
-  `CALCU1600_REFERENCE_COMPARE`, `_REFERENCE_RECORD` and `_REFERENCE_ONLY`
-  (were `CALCU1600_REFERENCES`, `_REFERENCES_RECORD`, `_REFERENCES_ONLY`).
+  `CalcU1600CoreTests.longer` (the reference runs) and `CalcU1600CoreSeam`
+  (were `CalcU1600ReadTrace`, `CalcU1600ExampleReferences`,
+  `CalcU1600MachineIncludeCheck`); `CALCU1600_REFERENCE_RECORD` and
+  `_REFERENCE_ONLY` (were `CALCU1600_REFERENCES_RECORD`, `_REFERENCES_ONLY`).
+  A test program runs one group of its tests (`--group longer`).
   Building, signing and cloud sessions are `docs/Building.md`,
   `docs/macos-signing.md` and `docs/Cloud-Sessions.md` at the repository root.
 - **Web build (developers):** `frontends/web/build.sh` and `run-tests.sh`

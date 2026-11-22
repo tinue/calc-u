@@ -15,7 +15,7 @@
 // stops: it is only loaded without a failure. A difference is a finding
 // (CLAUDE.md: never a new reference).
 //
-// CALCU59_REFERENCE_COMPARE=1 runs it (Longer: CalcU59ReferenceRuns);
+// Longer (`CalcU59Tests --group longer`).
 // CALCU59_REFERENCE_EXAMPLES=<folder> compares the files of another folder
 // (a draft) instead of examples/. CALCU59_REFERENCE_RECORD=<folder>
 // writes the references of every example into that folder (a draft); it
@@ -198,9 +198,8 @@ std::string firstDifference(const std::vector<std::string>& want, const std::vec
 
 } // namespace
 
-TEST(reference_runs_of_the_examples) {
+TEST_IN(longer, reference_runs_of_the_examples) {
     const char* draft = std::getenv("CALCU59_REFERENCE_RECORD");
-    if (!draft && !std::getenv("CALCU59_REFERENCE_COMPARE")) return;   // slow: Longer (CalcU59ReferenceRuns)
     SKIP_UNLESS(fs::exists("roms/TMC0571B.txt"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     const fs::path refDir = "tests/references/examples";
     if (draft) fs::create_directories(draft);

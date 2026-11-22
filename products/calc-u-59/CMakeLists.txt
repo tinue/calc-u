@@ -189,10 +189,10 @@ if(CALCU_TESTS)
   # Longer: run locally before merging into main and at the end of a part.
   # Against frontends/web/dist/ (frontends/web/build.sh first).
   calcu_add_test(CalcU59WebPlaywright longer COMMAND frontends/web/run-tests.sh)
-  # Each example through the harness entry against its recorded reference
-  # run; a difference is a finding (tests/reference_runs_tests.cpp).
-  calcu_add_test(CalcU59ReferenceRuns longer COMMAND CalcU59Tests reference_runs_of_the_examples
-                 PROPERTIES ENVIRONMENT CALCU59_REFERENCE_COMPARE=1)
+  # The runner's Longer TESTs (TEST_IN(longer, …)): each example through
+  # the harness entry against its recorded reference run; a difference is a
+  # finding (tests/reference_runs_tests.cpp).
+  calcu_add_test(CalcU59Tests.longer longer COMMAND CalcU59Tests --group longer)
   # A build with one ROM file
   # taken away starts in neither the harness nor the web client, naming it.
   if(NOT WIN32)
@@ -226,8 +226,8 @@ if(CALCU_TESTS)
     calcu_add_test(CalcU59WebPacing checkpoint COMMAND frontends/web/run-tests.sh tests/pacing.spec.js --project root
                    PROPERTIES ENVIRONMENT CALCU59_WEB_PACING=1 TIMEOUT 300)
   endif()
-  calcu_add_test(CalcU59PacingRealClock checkpoint COMMAND CalcU59Tests pacing_longrun_real_clock
-                 PROPERTIES ENVIRONMENT CALCU59_PACING_LONGRUN=600 TIMEOUT 900)
+  # The runner's Checkpoint TESTs: ten minutes per model on the real clock.
+  calcu_add_test(CalcU59Tests.checkpoint checkpoint COMMAND CalcU59Tests --group checkpoint PROPERTIES TIMEOUT 900)
   if(APPLE)
     # The App Store set into appstore/screenshots (the iPhone Duo is opened
     # flat by hand) and the XCUITests on macOS.

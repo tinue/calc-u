@@ -33,9 +33,11 @@ Calc-U-59 3.1.0 after 3.0.0; Calc-U-1600 works the same with
    `main` in the meantime.
 3. **Pre-release**, as often as needed, on `main`:
    `release -C products/calc-u-59`. It sets or moves the tag
-   `calc-u-59-v3.1.0-pre` to the current `main`, builds the Mac app
-   locally and dispatches `.github/workflows/calc-u-59.yml` for Windows,
-   Linux, the web client and the help.
+   `calc-u-59-v3.1.0-pre` to the current `main` and dispatches
+   `.github/workflows/calc-u-59.yml` for the macOS DMG, Windows, Linux,
+   the web client and the help. The iOS app goes to TestFlight with
+   `release ios`; in App Store Connect it is not offered on Macs (the
+   Mac app is the Qt6 DMG).
 4. **Release candidate**: `release -C products/calc-u-59 --rc` dates the
    CHANGELOG entry and commits it on `main`.
 5. **Release**: `release -C products/calc-u-59 --release` puts the tag
@@ -48,7 +50,7 @@ Calc-U-59 3.1.0 after 3.0.0; Calc-U-1600 works the same with
 
 The About and the version line of the Settings show
 `Version <version>[-<build number>] (<build ID>)`, in every frontend of
-both products. The build number is the Swift app's
+both products. The build number is the iOS app's
 (`CURRENT_PROJECT_VERSION`; 3.0.0-0); Qt and the web have none. The build
 ID comes from `tools/build-id.cmake`, at each build:
 

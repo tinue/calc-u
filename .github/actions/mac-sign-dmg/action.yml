@@ -1,0 +1,140 @@
+# Signs a Qt6 .app with the Developer ID Application certificate (hardened
+# runtime), notarizes and staples it, packages it into a .dmg with an
+# /Applications symlink for drag-install, and signs, notarizes and staples
+# the .dmg too. The Mac jobs of calc-u-59.yml and calc-u-1600.yml run it
+# after macdeployqt. docs/macos-signing.md (Developer ID, team 7Q3QN9AV9J)
+# says how the secrets passed in are produced and rotated. Paths are
+# relative to the workspace.
+name: Sign, notarize and package a Mac app
+description: Developer ID signing, notarization and a signed, notarized .dmg
+
+inputs:
+  app:
+    description: the .app bundle, Qt frameworks already embedded
+    required: true
+  dmg:
+    description: the .dmg to write
+    required: true
+  volume-name:
+    description: the .dmg's volume name
+    required: true
+  certificate-p12-base64:
+    required: true
+  certificate-password:
+    required: true
+  api-key-p8-base64:
+    required: true
+  api-key-id:
+    required: true
+  api-issuer-id:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Import signing certificate
+      shell: bash
+      env:
+        APP_P12_B64: ${{ inputs.certificate-p12-base64 }}
+        P12_PASSWORD: ${{ inputs.certificate-password }}
+        API_KEY_B64: ${{ inputs.api-key-p8-base64 }}
+      run: |
+        set -euo pipefail
+        KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+        KEYCHAIN_PWD="$(openssl rand -base64 24)"
+        security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
+        security set-keychain-settings -lut 21600 "$KEYCHAIN"
+        security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
+
+        echo "$APP_P12_B64" | base64 --decode > "$RUNNER_TEMP/app.p12"
+        security import "$RUNNER_TEMP/app.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign
+        rm -f "$RUNNER_TEMP/app.p12"
+
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PWD" "$KEYCHAIN" >/dev/null
+        security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | sed 's/"//g')
+
+        APP_IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -n1)"
+        if [ -z "$APP_IDENTITY" ]; then
+          echo "::error::missing Developer ID Application identity after import"; exit 1
+        fi
+        echo "APP_IDENTITY=$APP_IDENTITY" >> "$GITHUB_ENV"
+        echo "SIGN_KEYCHAIN=$KEYCHAIN"    >> "$GITHUB_ENV"
+        echo "$API_KEY_B64" | base64 --decode > "$RUNNER_TEMP/asc_api_key.p8"
+
+    - name: Codesign the .app (Developer ID Application, hardened runtime)
+      shell: bash
+      env:
+        APP: ${{ inputs.app }}
+      run: |
+        set -euo pipefail
+        # --deep signs every embedded framework/dylib macdeployqt placed
+        # under Contents/Frameworks too, not just the outer bundle.
+        codesign --deep --force --timestamp --options runtime \
+          --sign "$APP_IDENTITY" --keychain "$SIGN_KEYCHAIN" "$APP"
+        codesign --verify --deep --strict --verbose=2 "$APP"
+
+    - name: Notarize the .app
+      shell: bash
+      env:
+        APP: ${{ inputs.app }}
+        KEY_ID: ${{ inputs.api-key-id }}
+        ISSUER_ID: ${{ inputs.api-issuer-id }}
+      run: |
+        set -euo pipefail
+        ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/notarize.zip"
+        xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+          --key "$RUNNER_TEMP/asc_api_key.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
+          --wait --timeout 30m
+        # The ticket comes from Apple's CloudKit server; a dropped connection
+        # there (stapler error 68) is transient, so retry before giving up.
+        for i in 1 2 3; do
+          xcrun stapler staple "$APP" && break
+          [ "$i" = 3 ] && exit 1
+          echo "stapler failed, retrying in 30 s…"; sleep 30
+        done
+        xcrun stapler validate "$APP"
+        spctl -a -vvv "$APP"
+
+    - name: Build the DMG
+      shell: bash
+      env:
+        APP: ${{ inputs.app }}
+        DMG: ${{ inputs.dmg }}
+        VOLUME: ${{ inputs.volume-name }}
+      run: |
+        set -euo pipefail
+        STAGE="$RUNNER_TEMP/dmg-stage"
+        rm -rf "$STAGE"
+        mkdir -p "$STAGE"
+        cp -R "$APP" "$STAGE/"
+        ln -s /Applications "$STAGE/Applications"
+        hdiutil create -volname "$VOLUME" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+
+    - name: Sign + notarize + staple the DMG
+      shell: bash
+      env:
+        DMG: ${{ inputs.dmg }}
+        KEY_ID: ${{ inputs.api-key-id }}
+        ISSUER_ID: ${{ inputs.api-issuer-id }}
+      run: |
+        set -euo pipefail
+        codesign --force --timestamp --sign "$APP_IDENTITY" --keychain "$SIGN_KEYCHAIN" "$DMG"
+        xcrun notarytool submit "$DMG" \
+          --key "$RUNNER_TEMP/asc_api_key.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
+          --wait --timeout 30m
+        # The ticket comes from Apple's CloudKit server; a dropped connection
+        # there (stapler error 68) is transient, so retry before giving up.
+        for i in 1 2 3; do
+          xcrun stapler staple "$DMG" && break
+          [ "$i" = 3 ] && exit 1
+          echo "stapler failed, retrying in 30 s…"; sleep 30
+        done
+        xcrun stapler validate "$DMG"
+        spctl -a -vvv -t open --context context:primary-signature "$DMG"
+
+    - name: Clean up signing material
+      if: always()
+      shell: bash
+      run: |
+        rm -f "$RUNNER_TEMP/asc_api_key.p8"
+        security delete-keychain "$RUNNER_TEMP/build.keychain-db" 2>/dev/null || true

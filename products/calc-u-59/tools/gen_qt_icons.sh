@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Regenerate the Qt app's icons from the Swift app's Icon Composer source
 # (frontends/swift/App/AppIcon.icon, the only icon source). Run on a Mac after changing it;
-# the outputs are committed because CI (Windows/Linux) has no actool:
-#   frontends/qt6/resources/macos/AppIcon.icns      local macOS development bundle
+# the outputs are committed because the CI runners' Xcode cannot compile .icon:
+#   frontends/qt6/resources/macos/Assets.car        macOS bundle icon (macOS 26+)
+#   frontends/qt6/resources/macos/AppIcon.icns      macOS bundle icon (older macOS)
 #   frontends/qt6/resources/linux/calc-u-59.png     AppImage icon and window icon (256 px)
 #   frontends/qt6/resources/windows/calc-u-59.ico   exe icon (PNG-compressed, 16–256 px)
 # The Linux and Windows icons are the flat layers on the full rounded square,
@@ -14,8 +15,8 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 xcrun actool "$ROOT/frontends/swift/App/AppIcon.icon" --compile "$TMP" --app-icon AppIcon --platform macosx \
-    --minimum-deployment-target 15.6 --target-device mac --output-partial-info-plist "$TMP/partial.plist" >/dev/null
-cp "$TMP/AppIcon.icns" "$ROOT/frontends/qt6/resources/macos/AppIcon.icns"
+    --minimum-deployment-target 15.8 --target-device mac --output-partial-info-plist "$TMP/partial.plist" >/dev/null
+cp "$TMP/AppIcon.icns" "$TMP/Assets.car" "$ROOT/frontends/qt6/resources/macos/"
 
 # Flat icon: icon.json's fill colour, then its layers bottom to top.
 python3 - "$ROOT/frontends/swift/App/AppIcon.icon" > "$TMP/flat.svg" <<'PY'

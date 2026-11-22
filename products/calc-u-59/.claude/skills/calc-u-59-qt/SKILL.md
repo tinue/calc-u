@@ -1,16 +1,17 @@
 ---
 name: calc-u-59-qt
-description: Use this skill when working on the Qt6 desktop app of Calc-U-59 (frontends/qt6/, frontends/qt6/app/, frontends/qt6/resources/, `.github/workflows/calc-u-59.yml` (repository root), the repository's tools/run_qt.sh, tools/gen_qt_icons.sh). Covers the class map against the Swift views, threading (the library's app session on the GUI thread), building, packaging for Windows and Linux, and the parity rule with the Swift app. Trigger on any task that touches frontends/qt6/ or the Qt CI workflow.
+description: Use this skill when working on the Qt6 desktop app of Calc-U-59 (frontends/qt6/, frontends/qt6/app/, frontends/qt6/resources/, `.github/workflows/calc-u-59.yml` (repository root), the repository's tools/run_qt.sh, tools/gen_qt_icons.sh). Covers the class map against the Swift views, threading (the library's app session on the GUI thread), building, packaging for macOS, Windows and Linux, and the parity rule with the Swift app. Trigger on any task that touches frontends/qt6/ or the Qt CI workflow.
 user-invocable: true
 ---
 
 # Calc-U-59 Qt6 App
 
-**Ship scope first:** the Qt app ships on **Windows and Linux** only, built
-by the repository's `.github/workflows/calc-u-59.yml` and attached to releases by
-`products/calc-u-59/release.yaml`. The **macOS Qt build is local and for development only** —
-never shipped, never built in CI, never signed. On the Mac the Swift app is
-the product. The Qt app has no iCloud: cards, `ti58c.memory.yaml` and traces live in
+**Ship scope first:** the Qt app is the desktop app on **macOS, Windows and
+Linux**, built by the repository's `.github/workflows/calc-u-59.yml` and attached
+to releases by `products/calc-u-59/release.yaml`; the Swift app is the iPhone
+and iPad app only. The desktop is for research — working with the
+emulation, finding out about the machine, writing keycode programs — so
+development tools and folders belong here. The Qt app has no iCloud: cards, `ti58c.memory.yaml` and traces live in
 the save folder `~/Calc-U-59` (`AppPaths::saveDir()`), each folder (and where Load Preset… starts) set in Settings, as
 in Calc-U-1600.
 
@@ -148,10 +149,19 @@ The version is read from the Xcode project's `MARKETING_VERSION`.
 
 ## Packaging (CI only)
 
+- **macOS** arm64 (`mac-aarch64`, macos-15, Homebrew's Qt): macdeployqt,
+  then the repository's action `.github/actions/mac-sign-dmg` (Developer ID,
+  hardened runtime, notarized and stapled `.app` and `.dmg`;
+  `docs/macos-signing.md`). The bundle id is `ch.erzberger.CalcU59Qt`; the
+  icon is `resources/macos/Assets.car` + `AppIcon.icns` (`tools/gen_qt_icons.sh`);
+  the licenses go into `Contents/Resources/licenses`. The macOS host
+  settings (App Nap, window restoration, press-and-hold) are the library's
+  `qt6/MacHost`, applied in `main.cpp`.
 - **Linux** x86_64 / aarch64: linuxdeploy + Qt plugin → AppImage, with the
   Wayland and platform-theme plugins and a GTK-theme `AppRun` wrapper.
 - **Windows** x86_64 / arm64: windeployqt → Inno Setup
   (`frontends/qt6/resources/windows/calc-u-59.iss`, preset associations).
 - `LICENSE`, `NOTICE`, `THIRD-PARTY-NOTICES.md` and `licenses/` (Qt LGPLv3)
-  ship in both packages: next to the Windows executable, and in
-  `usr/share/doc/calc-u-59/` inside the AppImage.
+  ship in every package: next to the Windows executable, in
+  `usr/share/doc/calc-u-59/` inside the AppImage, in
+  `Contents/Resources/licenses` of the Mac bundle.

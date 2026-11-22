@@ -1,11 +1,12 @@
-# Calc-U-59 (products/calc-u-59/): Qt6 builds for Windows
-# and Linux, the web client (frontends/web/), plus the C++ test suite. Every
-# run step works in the product directory.
+# Calc-U-59 (products/calc-u-59/): the Qt6 builds for macOS, Windows and
+# Linux, the web client (frontends/web/), the help, plus the C++ test suite.
+# Every run step works in the product directory.
 #
 # Run by hand (workflow_dispatch) — ReleaseIt's `release` dispatches it for a
-# pre-release and attaches the artifacts (release.yaml). There is no macOS Qt
-# job on purpose: on the Mac the Swift app (built locally) is the product, and
-# the Mac Qt build is for development only (tools/run_qt.sh 59).
+# pre-release and attaches the artifacts (release.yaml). The macOS job embeds
+# the Qt frameworks (macdeployqt), then the repository's action
+# .github/actions/mac-sign-dmg signs, notarizes and staples the .app and its
+# .dmg (docs/macos-signing.md: the secrets and their rotation).
 #
 # ROMs are not in this repository: every job fetches them with
 # roms/fetch_roms.sh from tinue/TI-59-ROM and checks their md5; the Qt build
@@ -193,6 +194,50 @@ jobs:
         with:
           name: Calc-U-59-linux-${{ matrix.arch }}
           path: products/calc-u-59/Calc-U-59-*.AppImage
+          if-no-files-found: error
+
+  mac-aarch64:
+    # Apple Silicon (arm64). macOS 15 so Homebrew's Qt bottles (embedded by
+    # macdeployqt) are built for 15.x too, matching CMAKE_OSX_DEPLOYMENT_TARGET.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Qt6 + build tools
+        run: brew install qt cmake ninja
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+      - name: Configure (repository root)
+        run: >-
+          cmake -S ../.. -B $RELEASE_BUILD -G Ninja -DCMAKE_PREFIX_PATH=$(brew --prefix qt)
+          -DCMAKE_BUILD_TYPE=Release -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
+      - name: Build
+        # A real .app bundle (frontends/qt6/CMakeLists.txt's MACOSX_BUNDLE).
+        run: cmake --build $RELEASE_BUILD --target CalcU59Qt calcu
+      - name: Run calcu (the harness CLI with Calc-U-59)
+        run: cmake -DCALCU=$RELEASE_BUILD/library/harness/cli/calcu -P tests/calcu_runs.cmake
+      - name: Embed Qt frameworks (macdeployqt)
+        # The bundle links Homebrew's Qt by absolute path until macdeployqt
+        # copies the frameworks into Contents/Frameworks and rewrites the
+        # rpaths; only then does it run on a Mac without that Qt.
+        run: $(brew --prefix qt)/bin/macdeployqt $QT_BUILD/Calc-U-59.app
+      # The repository secrets: docs/macos-signing.md.
+      - name: Sign, notarize and package the DMG
+        uses: ./.github/actions/mac-sign-dmg
+        with:
+          app: build/release/products/calc-u-59/frontends/qt6/Calc-U-59.app
+          dmg: build/release/products/calc-u-59/frontends/qt6/Calc-U-59.dmg
+          volume-name: Calc-U-59
+          certificate-p12-base64: ${{ secrets.APPLE_CERT_APPLICATION_P12_BASE64 }}
+          certificate-password: ${{ secrets.APPLE_CERT_P12_PASSWORD }}
+          api-key-p8-base64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          api-key-id: ${{ secrets.APPLE_API_KEY_ID }}
+          api-issuer-id: ${{ secrets.APPLE_API_ISSUER_ID }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-59-mac-aarch64
+          path: build/release/products/calc-u-59/frontends/qt6/Calc-U-59.dmg
           if-no-files-found: error
 
   windows:

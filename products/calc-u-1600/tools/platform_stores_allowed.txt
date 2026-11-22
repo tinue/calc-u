@@ -3,11 +3,5 @@
 # CalcU1600NoPlatformSettings). One entry per line: `<path under
 # frontends/>: <text of the line>`.
 
-# AppKit's own defaults for this app, registered (never stored) at every
-# start: no window restoration, no press-and-hold accent picker
-# (MacAppSupport.h says why). They are not the user's settings.
-qt6/app/MacAppSupport.mm: registerDefaults:@{@"ApplePersistenceIgnoreState" : @YES}
-qt6/app/MacAppSupport.mm: registerDefaults:@{@"ApplePressAndHoldEnabled" : @NO}
-
 # The Playwright test that checks that no setting is in localStorage.
 web/tests/shell.spec.js: Object.keys(window.localStorage)

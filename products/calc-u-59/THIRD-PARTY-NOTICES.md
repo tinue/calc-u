@@ -2,7 +2,7 @@
 
 ## Qt6
 
-Calc-U-59's Qt6 desktop app (`frontends/qt6/`, the Windows and Linux builds) is built on
+Calc-U-59's Qt6 desktop app (`frontends/qt6/`, the macOS, Windows and Linux builds) is built on
 [Qt6](https://www.qt.io/), (c) The Qt Company Ltd and other contributors. It
 uses the Qt Widgets module and its dependencies (QtCore, QtGui and the
 platform-integration plugins).
@@ -21,7 +21,7 @@ available free of charge from The Qt Company:
 The builds published by this project's CI record the exact Qt version in the
 GitHub Actions run log (`.github/workflows/calc-u-59.yml` at the repository root).
 
-The Swift app for macOS and iOS does not use Qt.
+The Swift app for iPhone and iPad does not use Qt.
 
 ## Web client
 

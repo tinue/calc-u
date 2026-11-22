@@ -1,10 +1,9 @@
 cmake_minimum_required(VERSION 3.21)
-# Calc-U-59 Qt6 desktop app. Built as part of the repository's root CMake
-# project (the root's tools/run_qt.sh, the local development build on
-# macOS; the release packaging for Windows and Linux in CI,
+# Calc-U-59 Qt6 desktop app for macOS, Windows and Linux. Built as part of
+# the repository's root CMake project (the root's tools/run_qt.sh, the local
+# development build; the release packaging in CI,
 # .github/workflows/calc-u-59.yml, in build/release). It does not configure
-# on its own. The Mac Qt build is never shipped: on macOS the Swift app
-# (Calc-U-59.xcodeproj) is the product.
+# on its own.
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   message(FATAL_ERROR "frontends/qt6 is part of the root CMake project: "
                       "configure the repository root, e.g. cmake -S ../../../.. -B ../../../../build/all")
@@ -157,19 +156,24 @@ if(WIN32)
   target_sources(CalcU59Qt PRIVATE resources/windows/calc-u-59.rc)
 endif()
 
+# ---- macOS bundle: the icon (Assets.car for macOS 26+, AppIcon.icns for
+# older macOS; tools/gen_qt_icons.sh writes both from the Swift app's
+# AppIcon.icon, committed because the CI runners' Xcode cannot compile
+# .icon), the bundle identifier (stable for signing and notarization in CI)
+# and Info.plist.in with the preset document types. ----
 if(APPLE)
-  # Local development bundle only (never signed, notarized or shipped).
-  set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/AppIcon.icns)
-  if(EXISTS ${APP_ICON})
-    set_source_files_properties(${APP_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-    target_sources(CalcU59Qt PRIVATE ${APP_ICON})
-  endif()
+  set(APP_ICON_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/AppIcon.icns
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/Assets.car)
+  set_source_files_properties(${APP_ICON_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+  target_sources(CalcU59Qt PRIVATE ${APP_ICON_FILES})
   set_target_properties(CalcU59Qt PROPERTIES
     MACOSX_BUNDLE_ICON_FILE AppIcon
-    MACOSX_BUNDLE_GUI_IDENTIFIER ch.erzberger.Calc-U-59-Qt
+    MACOSX_BUNDLE_GUI_IDENTIFIER ch.erzberger.CalcU59Qt
     MACOSX_BUNDLE_BUNDLE_VERSION ${APP_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${APP_VERSION}
     MACOSX_BUNDLE_BUNDLE_NAME "Calc-U-59"
+    MACOSX_BUNDLE_COPYRIGHT "Copyright (C) 2026 Martin Erzberger"
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/Info.plist.in
   )
 endif()
@@ -217,6 +221,22 @@ if(NOT APPLE)
   install(FILES ${EXAMPLES_SRC_DIR}/bundle.yaml DESTINATION bin/resources/examples)
 endif()
 
+# ---- License and third-party notice files: GPLv3 (this project) and
+# LGPLv3 (the bundled Qt6) travel with every distributed build. In the
+# macOS bundle under Resources/licenses; the Windows and Linux packaging
+# (.github/workflows/calc-u-59.yml) copies them itself. See
+# ../../THIRD-PARTY-NOTICES.md. ----
+if(APPLE)
+  set(LICENSE_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../LICENSE
+    ${REPO_ROOT}/NOTICE
+    ${REPO_ROOT}/THIRD-PARTY-NOTICES.md
+    ${REPO_ROOT}/licenses/LGPL-3.0.txt
+    ${REPO_ROOT}/licenses/GPL-3.0.txt)
+  set_source_files_properties(${LICENSE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/licenses")
+  target_sources(CalcU59Qt PRIVATE ${LICENSE_FILES})
+endif()
+
 # CalcU59QtTests: the app's widgets
 # on its EmulatorController, the session on the real ROMs (compiled in as
 # the app has them), offscreen, with a HOME of its own (no settings of the
@@ -244,5 +264,5 @@ if(CALCU_TESTS)
   set_tests_properties(CalcU59QtTests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;HOME=${QT_TEST_HOME}")
 endif()
 
-# ---- Install (used by the Windows/Linux packaging jobs) ----
+# ---- Install ----
 install(TARGETS CalcU59Qt BUNDLE DESTINATION . RUNTIME DESTINATION bin)

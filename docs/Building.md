@@ -44,7 +44,7 @@ The commands below run from the repository root and put their trees under
   doesn't provide `qt_standard_project_setup()` and won't configure. On
   macOS the Xcode command-line tools too: the Qt apps have Objective-C++
   sources (the library's `library/qt6/MacClipboard.mm` for the clipboard
-  pictures, Calc-U-1600's `MacAppSupport.mm` and
+  pictures, `library/qt6/MacHost.mm` for the host settings, Calc-U-1600's
   `screenshots/MacShotSupport.mm`).
 - For the web clients, **Emscripten** (`emcc`/`emcmake`: Homebrew
   `emscripten`, or an activated emsdk) and **node**.
@@ -197,9 +197,8 @@ tools/run_qt.sh 1600 --build
 ```
 
 Homebrew's Qt is found automatically, and the app is a real `.app`
-bundle. Calc-U-59's Qt app on macOS is for development only; on the Mac
-the Swift app is the product. To run Calc-U-1600's app outside this
-checkout (e.g. on another Mac), embed the Qt frameworks:
+bundle. To run an app outside this checkout (e.g. on another Mac), embed
+the Qt frameworks:
 
 ```sh
 $(brew --prefix qt)/bin/macdeployqt "$(tools/run_qt.sh 1600 --app-dir)/Calc-U-1600.app"
@@ -333,6 +332,7 @@ Release packaging (installers, AppImages, the web and help zips, Mac
 signing and notarization) is done by ReleaseIt's `release` command
 ([ReleaseIt](https://github.com/tinue/ReleaseIt)) from each product's
 `release.yaml`, which dispatches the product's workflow
-([Process.md](Process.md)). Calc-U-59's Mac app is built and signed
-locally, Calc-U-1600's in CI ([macos-signing.md](macos-signing.md)). The
-Windows installers are unsigned.
+([Process.md](Process.md)). Both Mac apps are built, signed and
+notarized in CI ([macos-signing.md](macos-signing.md)); Calc-U-59's iOS
+app is built locally by Xcode (`release ios`). The Windows installers are
+unsigned.

@@ -2,7 +2,11 @@
 
 #include <string>
 
+// The Qt6 component set's macOS host settings, which both products' apps
+// apply at their start.
 #ifdef __APPLE__
+namespace calcu::qt6 {
+
 // Turns off AppKit's window restoration for this app (registers
 // ApplePersistenceIgnoreState = YES). Call before QApplication exists.
 //
@@ -18,14 +22,15 @@ void macDisableWindowRestoration();
 // QApplication exists.
 void macDisablePressAndHold();
 
+// Keeps App Nap from stretching the timers of the process while its window
+// is not in front, for the whole run: the emulation keeps real-time pace in
+// the background. The pacing probes rely on it too.
+void macKeepTimersPrecise();
+
 // The app's Application Support folder (inside the sandbox container for a
 // sandboxed app): the base of the settings file on macOS.
 // Empty if macOS gives none.
 std::string macApplicationSupportFolder();
 
-// Keeps App Nap from stretching the timers of the process while its window
-// is not in front, for the whole run: the emulation keeps real-time pace in
-// the background, as Calc-U-59's Swift app does. The --pacing-probe relies
-// on it too.
-void macKeepTimersPrecise();
+} // namespace calcu::qt6
 #endif

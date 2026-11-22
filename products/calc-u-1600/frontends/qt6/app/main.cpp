@@ -13,13 +13,11 @@
 #include "AppLogging.hpp"
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
-#ifdef __APPLE__
-#include "MacAppSupport.h"
-#endif
 #include "MainWindow.hpp"
 #include "MachineController.hpp"
 #include "opening/OpenRequest.hpp"
 #include "qt6/FileOpening.hpp"
+#include "qt6/MacHost.hpp"
 #ifdef CALCU_ATTACH
 #include "app/HarnessProduct.hpp"
 #include "harness/Product.hpp"
@@ -32,9 +30,9 @@
 int main(int argc, char** argv) {
     AppLogging::install();
 #ifdef __APPLE__
-    macDisableWindowRestoration(); // see MacAppSupport.h: the restore prompt deadlocks the startup preset
-    macDisablePressAndHold();      // see MacAppSupport.h: held letters stay held keys
-    macKeepTimersPrecise();        // see MacAppSupport.h: real-time pace in the background
+    calcu::qt6::macDisableWindowRestoration(); // the restore prompt deadlocks the startup preset
+    calcu::qt6::macDisablePressAndHold();      // held letters stay held keys
+    calcu::qt6::macKeepTimersPrecise();        // real-time pace in the background
 #endif
     QApplication app(argc, argv);
     calcu::qt6::FileOpenFilter fileOpen;

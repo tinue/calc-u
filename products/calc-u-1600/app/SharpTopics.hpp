@@ -109,6 +109,12 @@ struct LampsPayload final : calcu::sessions::PayloadOf<LampsPayload> {
                tape.length == o.tape.length && tapeName == o.tapeName && floppyMotor == o.floppyMotor;
     }
     calcu::sessions::Value toValue() const override;
+    // The cassette's counter as every GUI shows it: "0:00" without a
+    // cassette (dimmed), "▶ m:ss" playing (the position), "● m:ss"
+    // recording (the length); its tooltip.
+    bool tapeEmpty() const { return tape.mode == TapeDeck::Mode::Empty; }
+    std::string tapeCounter() const;
+    std::string tapeTip() const;
 };
 
 // The serial port files.

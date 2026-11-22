@@ -144,9 +144,11 @@ TapeControl::TapeControl(MachineController& c, QWidget* parent) : MediaPlaceCont
     // The blank tape records into memory; Name & Save keeps it under a name.
     m_save = compactButton(this, tr("Name & Save"), QStringLiteral("media-save-cassette"));
     l->addWidget(m_save);
-    m_counter = new QLabel(QStringLiteral("–"), this);
+    m_counter = new QLabel(this);
     m_counter->setObjectName(QStringLiteral("media-counter-tape"));
-    m_counter->setMinimumWidth(m_counter->fontMetrics().horizontalAdvance(QStringLiteral("● 00:00 ")));
+    // As wide as its widest text, whatever it shows: no control moves.
+    m_counter->setFixedWidth(m_counter->fontMetrics().horizontalAdvance(QStringLiteral("\u25CF 00:00 ")));
+    m_counter->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     l->addWidget(m_counter);
     connect(m_save, &QPushButton::clicked, this, [this] { nameAndSave(tr("Cassette name:")); });
     refresh();
@@ -159,10 +161,7 @@ void TapeControl::refresh() {
 
 void TapeControl::refreshLamps() {
     const cu1600::LampsPayload lamps = m_controller.lamps();
-    const auto& t = lamps.tape;
-    const int seconds = static_cast<int>(t.mode == TapeDeck::Mode::Record ? t.length : t.position);
-    const QString time = QStringLiteral("%1:%2").arg(seconds / 60, 2, 10, QLatin1Char('0')).arg(seconds % 60, 2, 10, QLatin1Char('0'));
-    const QString mark = t.mode == TapeDeck::Mode::Record ? QStringLiteral("●") : t.mode == TapeDeck::Mode::Play ? QStringLiteral("▶") : QString();
-    m_counter->setText(t.mode == TapeDeck::Mode::Empty ? QStringLiteral("–") : (mark + QLatin1Char(' ') + time));
-    m_counter->setToolTip(QString::fromStdString(lamps.tapeName));
+    m_counter->setText(QString::fromStdString(lamps.tapeCounter()));
+    m_counter->setToolTip(QString::fromStdString(lamps.tapeTip()));
+    m_counter->setEnabled(!lamps.tapeEmpty());   // dimmed without a cassette
 }

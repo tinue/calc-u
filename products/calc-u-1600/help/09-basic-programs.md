@@ -110,8 +110,9 @@ machine:
 
 A cassette keeps its role: one you saved plays, the blank one records. To play back what you recorded, pick it from the list; that
 also takes the recording cassette out. "(empty)" takes a cassette out. The counter shows
-▶ (playing) or ● (recording) and the tape position. It turns green while
-the motor runs:
+▶ and the tape position while playing, ● and the length recorded while
+recording, and a dimmed 0:00 without a cassette. It turns green while the
+motor runs:
 
 ![CSAVE running onto a new cassette](images/04-tape-recording.png)
 

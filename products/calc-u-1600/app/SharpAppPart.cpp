@@ -474,7 +474,25 @@ sessions::Value LampsPayload::toValue() const {
          {"tapeMotor", tape.motor},
          {"tapeSeconds", static_cast<int>(tape.position)},
          {"tapeLength", static_cast<int>(tape.length)},
-         {"tapeFile", tapeName}});
+         {"tapeFile", tapeName},
+         {"tapeEmpty", tapeEmpty()},
+         {"tapeCounter", tapeCounter()},
+         {"tapeTip", tapeTip()}});
+}
+
+std::string LampsPayload::tapeCounter() const {
+    if (tapeEmpty()) return "0:00";
+    const bool recording = tape.mode == TapeDeck::Mode::Record;
+    const int s = static_cast<int>(recording ? tape.length : tape.position);
+    char time[16];
+    std::snprintf(time, sizeof time, "%d:%02d", s / 60, s % 60);
+    return std::string(recording ? "\u25CF " : "\u25B6 ") + time;
+}
+
+std::string LampsPayload::tapeTip() const {
+    if (tape.mode == TapeDeck::Mode::Play) return "Playing " + tapeName;
+    if (tape.mode == TapeDeck::Mode::Record) return "Recording onto " + tapeName;
+    return "No cassette";
 }
 sessions::Value SerialLinksPayload::toValue() const {
     return sessions::Value::object({{"rs232c", rs232c}, {"ce158", ce158}, {"moves", static_cast<std::int64_t>(moves)}});

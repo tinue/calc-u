@@ -64,12 +64,6 @@ function SlotControls(props) {
   return <ShellSlotPicker {...props} nameAndSave={bar.nameAndSave} icon={<SaveIcon />} />;
 }
 
-function tapeCounter(lamps) {
-  if (!lamps || !lamps.tapeMode) return "–";
-  const s = lamps.tapeSeconds;
-  return `${lamps.tapeMode === "play" ? "▶" : "●"} ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
-
 // The cassette's controls (the shell's media control of the kind
 // `cassette`): the tape picker (Blank records into memory), Name & Save,
 // the counter with the motor (`c1600.lamps`).
@@ -86,9 +80,9 @@ function TapeControls({ shell, entry }) {
         data-calcu="name-and-save-cassette" aria-label="Name & Save cassette" onClick={() => bar.nameAndSave("cassette")}>
         <SaveIcon />
       </button>
-      <span className={`calcu-tape-counter${lamps && lamps.tapeMotor ? " on" : ""}`} data-lamp="tape"
-        title={lamps && lamps.tapeMode === "play" ? `Playing ${lamps.tapeFile}` : lamps && lamps.tapeMode === "record" ? `Recording onto ${lamps.tapeFile}` : "No cassette"}>
-        {tapeCounter(lamps)}
+      <span className={`calcu-tape-counter${lamps && lamps.tapeMotor ? " on" : ""}${!lamps || lamps.tapeEmpty ? " empty" : ""}`}
+        data-lamp="tape" title={lamps ? lamps.tapeTip : "No cassette"}>
+        {lamps ? lamps.tapeCounter : "0:00"}
       </span>
     </fieldset>
   );

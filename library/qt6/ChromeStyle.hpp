@@ -21,6 +21,13 @@ bool darkAppearance(const QWidget*);
 QString header(const shell::ChromeColours&, const shell::ChromeSizes&);
 // A panel button bar's declarations: its colour and its height.
 QString buttonBar(const shell::ChromeColours&, const shell::ChromeSizes&);
+// A panel's body below its header (a QPlainTextEdit, a QStackedWidget,
+// `selector`): the output colours and its border but at the top.
+QString output(const shell::ChromeColours&, const QString& selector);
+// A panel button bar (object name panel-buttons, or `name`) with its
+// buttons of `buttons` ("QPushButton", "QToolButton") as pills.
+QString panelButtons(const shell::ChromeColours&, const shell::ChromeSizes&, const QString& buttons,
+                     const QString& name = QStringLiteral("panel-buttons"));
 // The pill's core declarations (shape, font, colours) for a selector of
 // the caller's.
 QString pillCore(const shell::ChromeColours&, const shell::ChromeSizes&, const shell::Colour& background);

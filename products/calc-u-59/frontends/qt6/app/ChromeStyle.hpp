@@ -31,7 +31,7 @@ inline QString pillButton() { return calcu::qt6::chrome::pills(colours(), chrome
 
 /// A panel button bar of the chrome's height with pill buttons.
 inline QString buttonBar() {
-    return QStringLiteral("QWidget#panel-buttons { %1 }").arg(calcu::qt6::chrome::buttonBar(colours(), chrome().sizes)) + pillButton();
+    return calcu::qt6::chrome::panelButtons(colours(), chrome().sizes, QStringLiteral("QPushButton"));
 }
 
 /// Plain text button on a bar (Reset, Preset, …): no frame, dims when

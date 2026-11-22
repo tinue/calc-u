@@ -7,8 +7,8 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: #e8e8e8;
-  color: #1d1d1f;   /* light whatever the page's theme */
+  background: var(--calcu-window);
+  color: var(--calcu-text);
 }
 /* Header: the place controls left, the owner's name centred, the view
    control right; below the paper: the owner's controls left, Copy and Cut
@@ -32,10 +32,10 @@
   height: 8px;
   margin-left: 6px;
   border-radius: 50%;
-  background: var(--calcu-unplugged, GrayText);
+  background: var(--calcu-unplugged);
   vertical-align: middle;
 }
-.calcu-client .calcu-paper-places .calcu-shell-place.calcu-shell-plugged::after { background: var(--calcu-plugged, Highlight); }
+.calcu-client .calcu-paper-places .calcu-shell-place.calcu-shell-plugged::after { background: var(--calcu-plugged); }
 .calcu-client .calcu-paper-owner { font-weight: 600; white-space: nowrap; }
 .calcu-client .calcu-paper-views { display: inline-flex; justify-self: end; }
 .calcu-client .calcu-paper-footer {
@@ -46,14 +46,14 @@
   min-height: 24px;
 }
 .calcu-client .calcu-paper-actions { display: inline-flex; gap: 4px; margin-left: auto; }
-.calcu-client .calcu-paper-control.calcu-paper-down { box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); background: #cccccc; }
+.calcu-client .calcu-paper-control.calcu-paper-down { box-shadow: inset 0 1px 3px var(--calcu-shadow); background: var(--calcu-pill-pressed); }
 .calcu-client .calcu-paper-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: none;
-  background: #ffffff;
+  background: var(--calcu-paper);
   touch-action: pan-y;
 }
 .calcu-client .calcu-paper-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
@@ -65,7 +65,8 @@
   margin: 0;
   padding: 8px;
   overflow: auto;
-  background: #ffffff;
+  background: var(--calcu-paper);
+  color: var(--calcu-paper-text);
   font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace;
   user-select: text;
   -webkit-user-select: text;
@@ -78,7 +79,7 @@
   transform: translateX(-50%);
   padding: 4px 10px;
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.75);
-  color: #ffffff;
+  background: var(--calcu-menu-text);
+  color: var(--calcu-menu);
   pointer-events: none;
 }

@@ -22,6 +22,15 @@ QString buttonBar(const shell::ChromeColours& c, const shell::ChromeSizes& s) {
     return QStringLiteral("background-color: %1; min-height: %2px; max-height: %2px;").arg(qcss(c.buttonBar)).arg(h);
 }
 
+QString output(const shell::ChromeColours& c, const QString& sel) {
+    return QStringLiteral("%1 { background-color: %2; color: %3; border: 1px solid %4; border-top: none; }")
+        .arg(sel, qcss(c.output), qcss(c.outputText), qcss(c.outputBorder));
+}
+
+QString panelButtons(const shell::ChromeColours& c, const shell::ChromeSizes& s, const QString& buttons, const QString& name) {
+    return QStringLiteral("#%1 { %2 }").arg(name, buttonBar(c, s)) + pills(c, s, buttons);
+}
+
 QString pillCore(const shell::ChromeColours& c, const shell::ChromeSizes& s, const shell::Colour& background) {
     QString font;
     if (s.pillFontSize > 0) font += QStringLiteral(" font-size: %1px;").arg(qRound(s.pillFontSize));

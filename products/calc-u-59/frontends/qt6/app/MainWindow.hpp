@@ -61,7 +61,7 @@ protected:
     bool eventFilter(QObject* o, QEvent* e) override;
 
 private:
-    QPointer<QWidget> m_paperStyled;   // the paper panel in the chrome now
+    QPointer<QWidget> m_paperStyled;   // the paper panel that has the PC-100C's controls
     calcu::shell::ShellProduct product();
     void restoreWindowState();
     void saveWindowState();

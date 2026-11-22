@@ -43,6 +43,7 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
     // Qt6 frontend's settings dialog.
     m_shell = new calcu::qt6::Shell(*this, host(), product(),
                                     cu59::settingsSpec(cu59::ShellFrontend::Qt6, calcu::shell::about(product()).version));
+    m_shell->setChrome(ChromeStyle::chrome());
     m_calculator->setShellWidgets(m_shell->controlBar(), m_shell->romsMissingView());
 
     // The paper panel in the shell's panel area, the splitter's second
@@ -104,7 +105,7 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
         return cards;
     });
     connect(m_controller.get(), &EmulatorController::printerChanged, this, &MainWindow::followPrinter);
-    // The paper panel in app/'s chrome from the moment the shell shows it.
+    // The PC-100C's controls on the paper panel from the moment the shell shows it.
     connect(&host(), &calcu::qt6::SessionHost::topicChanged, this, [this] {
         auto* paper = m_shell->panelArea()->panel("paper");
         if (paper && paper != m_paperStyled) followPrinter();
@@ -163,13 +164,11 @@ calcu::shell::ShellProduct MainWindow::product() {
 
 // The PC-100C's controls on the paper panel while it owns it:
 // PRINT and ADV keys, TRACE a switch at its position, as the control state
-// lists them; the panel in app/'s chrome, the paper in its cream.
+// lists them.
 void MainWindow::followPrinter() {
     auto* paper = qobject_cast<calcu::qt6::PaperPanel*>(m_shell->panelArea()->panel("paper"));
     if (!paper) return;
-    if (paper != m_paperStyled) paper->setChrome(ChromeStyle::colours(), ChromeStyle::chrome().sizes);
     m_paperStyled = paper;
-    paper->setPaperColour(ChromeStyle::qcolour(ChromeStyle::colours().output));
     paper->setControls(m_controller->printerControls());
 }
 

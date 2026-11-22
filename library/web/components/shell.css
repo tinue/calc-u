@@ -1,20 +1,54 @@
 /* The shell of the React component set: every selector inside .calcu-client
-   (build/dist.js checks it). */
+   (build/dist.js checks it). Colours are the product's chrome only: the
+   common ones (shell::ChromeColours) and shell::kWebColourNames, set on
+   the client by calcuChromeStyle; until the engine answers, these neutral
+   system colours. */
+.calcu-client {
+  --calcu-window: Canvas;
+  --calcu-text: CanvasText;
+  --calcu-text-dim: GrayText;
+  --calcu-header: ButtonFace;
+  --calcu-header-text: CanvasText;
+  --calcu-button-bar: ButtonFace;
+  --calcu-pill: ButtonFace;
+  --calcu-pill-hover: ButtonFace;
+  --calcu-pill-pressed: ButtonFace;
+  --calcu-pill-off: ButtonFace;
+  --calcu-pill-text: ButtonText;
+  --calcu-pill-text-off: GrayText;
+  --calcu-output: Canvas;
+  --calcu-output-text: CanvasText;
+  --calcu-output-border: GrayText;
+  --calcu-plugged: Highlight;
+  --calcu-unplugged: GrayText;
+  --calcu-menu: Canvas;
+  --calcu-menu-text: CanvasText;
+  --calcu-menu-border: GrayText;
+  --calcu-menu-hover: Highlight;
+  --calcu-menu-hover-text: HighlightText;
+  --calcu-scrim: transparent;
+  --calcu-shadow: transparent;
+  --calcu-alert: CanvasText;
+  --calcu-banner: Mark;
+  --calcu-banner-text: MarkText;
+  --calcu-paper: Canvas;
+  --calcu-paper-text: CanvasText;
+}
 .calcu-client .calcu-shell-menubar {
   display: flex;
   gap: 2px;
   padding: 2px 4px;
-  background: #f0f0f0;
-  border-bottom: 1px solid #cccccc;
+  background: var(--calcu-menu);
+  border-bottom: 1px solid var(--calcu-menu-border);
   font: 13px system-ui, sans-serif;
   position: relative;
   z-index: 20;
 }
-/* The menus, the More popup and the dialogs are light whatever the page's
-   theme: their text is dark, not the client's (light on a dark page). */
+/* The menus, the More popup and the dialogs in the chrome's menu colours,
+   whatever the client's text is. */
 .calcu-client .calcu-shell-menubar,
 .calcu-client .calcu-shell-menu-items,
-.calcu-client .calcu-shell-modal { color: #1d1d1f; }
+.calcu-client .calcu-shell-modal { color: var(--calcu-menu-text); }
 .calcu-client .calcu-shell-menu { position: relative; }
 .calcu-client .calcu-shell-menu-title {
   border: 0;
@@ -23,7 +57,7 @@
   font: inherit;
   cursor: default;
 }
-.calcu-client .calcu-shell-open > .calcu-shell-menu-title { background: #d8d8d8; }
+.calcu-client .calcu-shell-open > .calcu-shell-menu-title { background: var(--calcu-menu-hover); color: var(--calcu-menu-hover-text); }
 .calcu-client .calcu-shell-menu-items {
   position: absolute;
   top: 100%;
@@ -32,9 +66,9 @@
   margin: 0;
   padding: 4px 0;
   list-style: none;
-  background: #ffffff;
-  border: 1px solid #bbbbbb;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background: var(--calcu-menu);
+  border: 1px solid var(--calcu-menu-border);
+  box-shadow: 0 2px 8px var(--calcu-shadow);
   z-index: 30;
 }
 .calcu-client .calcu-shell-menu-items .calcu-shell-menu-items { top: -5px; left: 100%; }
@@ -47,15 +81,15 @@
   white-space: nowrap;
   cursor: default;
 }
-.calcu-client .calcu-shell-item:hover { background: #e4ecf7; }
-.calcu-client .calcu-shell-disabled { color: #999999; }
+.calcu-client .calcu-shell-item:hover { background: var(--calcu-menu-hover); color: var(--calcu-menu-hover-text); }
+.calcu-client .calcu-shell-disabled { color: var(--calcu-text-dim); }
 .calcu-client .calcu-shell-disabled:hover { background: transparent; }
 .calcu-client .calcu-shell-check { width: 14px; text-align: center; }
 .calcu-client .calcu-shell-label { flex: 1 1 auto; }
 /* A menu's name in More: small and dimmed, above its items. */
 .calcu-client .calcu-shell-heading { padding: 6px 10px 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; opacity: 0.6; cursor: default; }
 .calcu-client .calcu-shell-heading:not(:first-child) { margin-top: 4px; }
-.calcu-client .calcu-shell-separator { height: 1px; margin: 4px 0; background: #dddddd; }
+.calcu-client .calcu-shell-separator { height: 1px; margin: 4px 0; background: var(--calcu-menu-border); }
 .calcu-client .calcu-shell-bar {
   display: flex;
   flex-wrap: wrap;
@@ -66,8 +100,8 @@
 }
 .calcu-client .calcu-shell-bar-group { display: inline-flex; align-items: center; gap: 4px; }
 .calcu-client .calcu-shell-slot { display: inline-flex; align-items: center; gap: 2px; }
-.calcu-client .calcu-shell-place.calcu-shell-plugged { box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); background: #cccccc; }
-.calcu-client .calcu-shell-place[aria-disabled="true"] { color: #999999; }
+.calcu-client .calcu-shell-place.calcu-shell-plugged { box-shadow: inset 0 1px 3px var(--calcu-shadow); background: var(--calcu-pill-pressed); }
+.calcu-client .calcu-shell-place[aria-disabled="true"] { color: var(--calcu-text-dim); }
 .calcu-client .calcu-shell-panels { display: flex; min-height: 0; }
 .calcu-client .calcu-shell-panels > * { flex: 1 1 0; min-width: 0; }
 .calcu-client .calcu-shell-modal-backdrop {
@@ -76,7 +110,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--calcu-scrim);
   z-index: 50;
 }
 .calcu-client .calcu-shell-modal {
@@ -84,14 +118,14 @@
   max-height: 90%;
   overflow: auto;
   padding: 12px 16px;
-  background: #ffffff;
+  background: var(--calcu-menu);
   border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px var(--calcu-shadow);
   font: 13px system-ui, sans-serif;
 }
 .calcu-client .calcu-shell-modal-title { font-weight: 600; margin-bottom: 8px; }
 .calcu-client .calcu-shell-modal-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-.calcu-client .calcu-shell-section { margin: 0 0 8px; border: 1px solid #dddddd; }
+.calcu-client .calcu-shell-section { margin: 0 0 8px; border: 1px solid var(--calcu-menu-border); }
 .calcu-client .calcu-shell-setting { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
 .calcu-client .calcu-shell-setting-label { min-width: 160px; }
 .calcu-client .calcu-shell-folder { display: inline-flex; align-items: center; gap: 6px; }
@@ -104,9 +138,10 @@
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--calcu-menu);
+  color: var(--calcu-menu-text);
   border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 4px var(--calcu-shadow);
   pointer-events: none;
   z-index: 40;
   font: 13px system-ui, sans-serif;
@@ -114,7 +149,7 @@
 .calcu-client .calcu-shell-spinner {
   width: 12px;
   height: 12px;
-  border: 2px solid #999999;
+  border: 2px solid var(--calcu-text-dim);
   border-top-color: transparent;
   border-radius: 50%;
   animation: calcu-shell-spin 0.8s linear infinite;
@@ -131,7 +166,7 @@
   gap: 4px;
   font: inherit;
 }
-.calcu-client .calcu-shell-action[aria-disabled="true"] { color: #999999; }
+.calcu-client .calcu-shell-action[aria-disabled="true"] { color: var(--calcu-text-dim); }
 .calcu-client .calcu-shell-action-icon { font-size: 15px; line-height: 1; }
 .calcu-client .calcu-shell-more { display: inline-flex; }
 .calcu-client .calcu-shell-more-popup {
@@ -151,12 +186,12 @@
   box-shadow: none;
   padding: 0 0 0 12px;
 }
-.calcu-client .calcu-shell-destructive { color: #b00020; }
+.calcu-client .calcu-shell-destructive { color: var(--calcu-alert); }
 .calcu-client .calcu-shell-storage-banner {
   flex: none;
   padding: 5px 12px;
-  background: #fff4c2;
-  color: #5c4a00;
+  background: var(--calcu-banner);
+  color: var(--calcu-banner-text);
   font: 12px system-ui, sans-serif;
 }
 /* A group the bar model pushes (a spread bar: the media group, End). */

@@ -7,37 +7,18 @@
   /* The colours and sizes are the product's chrome (app/SharpChrome, the
      Qt6 app's look), set on this element by CalcU1600 from the engine's
      answer, light or dark with the system; until it came, these neutral
-     system colours. */
-  --calcu-window: Canvas;
-  --calcu-text: CanvasText;
-  --calcu-text-dim: GrayText;
+     system colours for the product's own names (the common ones are the
+     library's, shell.css). */
   --calcu-control: ButtonFace;
   --calcu-control-hover: ButtonFace;
   --calcu-control-pressed: ButtonFace;
   --calcu-separator: GrayText;
   --calcu-accent: Highlight;
   --calcu-accent-text: HighlightText;
-  --calcu-menu: Canvas;
-  --calcu-menu-border: GrayText;
-  --calcu-menu-hover: Highlight;
-  --calcu-header: ButtonFace;
-  --calcu-header-text: CanvasText;
-  --calcu-output: Canvas;
-  --calcu-output-text: CanvasText;
-  --calcu-output-border: GrayText;
-  --calcu-button-bar: ButtonFace;
-  --calcu-pill: ButtonFace;
-  --calcu-pill-hover: ButtonFace;
-  --calcu-pill-pressed: ButtonFace;
-  --calcu-pill-off: ButtonFace;
-  --calcu-pill-text: ButtonText;
-  --calcu-pill-text-off: GrayText;
   --calcu-lamp-off: GrayText;
   --calcu-lamp-on: Highlight;
   --calcu-hint: CanvasText;
   --calcu-key-pressed: transparent;
-  --calcu-scrim: transparent;
-  --calcu-shadow: transparent;
   --calcu-modal-shadow: transparent;
   --calcu-banner-border: GrayText;
   --calcu-mono: "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace;
@@ -167,8 +148,11 @@
   padding: 0 24px 0 9px;
   border: none;
   border-radius: 6px;
-  background: var(--calcu-control) no-repeat right 7px center / 7px 11px
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 11'><path d='M1 4l2.5-2.5L6 4M1 7l2.5 2.5L6 7' fill='none' stroke='%23555' stroke-width='1.3'/></svg>");
+  /* The arrow: two half-squares of the chrome's dim text, a caret. */
+  background:
+    linear-gradient(45deg, transparent 50%, var(--calcu-text-dim) 50%) no-repeat right 12px center / 4px 4px,
+    linear-gradient(135deg, var(--calcu-text-dim) 50%, transparent 50%) no-repeat right 8px center / 4px 4px,
+    var(--calcu-control);
   color: inherit;
   font: inherit;
   -webkit-appearance: none;

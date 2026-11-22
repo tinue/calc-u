@@ -114,8 +114,10 @@ view, `barFit`, "Loading…", notices, the pointer).
   builds its stylesheets of it, Swift reads it through the bridge, the Web
   gets it with the shell-product answer as CSS custom properties. Panels
   side by side share the header height, the button-bar height and the
-  pill. A colour literal in a frontend fails its product's CTest
-  `…ChromeColours`.
+  pill. The component sets draw the shell with the common colours and
+  `shell::shellColourNames()` (menus, dialogs, banner, paper), which every
+  product's chrome gives. A colour literal in a frontend or a component
+  set fails the CTest `…ChromeColours` (the product's, the library's).
 
 ## Working
 

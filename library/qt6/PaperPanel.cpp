@@ -74,7 +74,6 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     text_->setLineWrapMode(QPlainTextEdit::NoWrap);
     stack_->addWidget(view_);
     stack_->addWidget(text_);
-    setPaperColour(Qt::white);
     outer->addWidget(stack_, 1);
 
     // Below the paper: the owner's controls left, Copy and Cut right.
@@ -225,14 +224,6 @@ void PaperPanel::setOwner(std::optional<machine::PeripheralId> owner) {
     refresh();
 }
 
-void PaperPanel::setPaperColour(QColor c) {
-    view_->setPaperColour(c);
-    QPalette pal = text_->palette();
-    pal.setColor(QPalette::Base, c);
-    pal.setColor(QPalette::Text, QColor(0x1f, 0x1f, 0x1f));
-    text_->setPalette(pal);
-}
-
 // The panel in the product's chrome: the header and the button bar at
 // its heights and colours, every button in them a pill, the paper's body
 // with the output border, the place dot's colours.
@@ -241,10 +232,17 @@ void PaperPanel::setChrome(const shell::ChromeColours& c, const shell::ChromeSiz
     header_->setStyleSheet(QStringLiteral("#paper-header { %1 } #paper-header QLabel { color: %2; font-weight: bold; }")
                                .arg(header(c, s), qcss(c.headerText)) +
                            pills(c, s, QStringLiteral("QToolButton")));
-    footer_->setStyleSheet(QStringLiteral("#paper-footer { %1 }").arg(buttonBar(c, s)) + pills(c, s, QStringLiteral("QToolButton")));
+    footer_->setStyleSheet(panelButtons(c, s, QStringLiteral("QToolButton"), QStringLiteral("paper-footer")));
     stack_->setStyleSheet(QStringLiteral("QStackedWidget { border: 1px solid %1; border-top: none; }").arg(qcss(c.outputBorder)));
     plugged_ = qcolour(c.plugged);
     unplugged_ = qcolour(c.unplugged);
+    // The paper in both views, whatever the window's palette.
+    const QColor paper = qcolour(c.named(shell::colour::kPaper));
+    view_->setPaperColour(paper);
+    QPalette pal = text_->palette();
+    pal.setColor(QPalette::Base, paper);
+    pal.setColor(QPalette::Text, qcolour(c.named(shell::colour::kPaperText)));
+    text_->setPalette(pal);
     const QIcon printer = QIcon::fromTheme(QIcon::ThemeIcon::DocumentPrint);
     for (QToolButton* b : header_->findChildren<QToolButton*>())
         if (b != viewToggle_) b->setIcon(placeIcon(printer, b->isChecked() ? plugged_ : unplugged_));
@@ -421,7 +419,7 @@ void PaperView::updateRange(bool follow) {
 
 void PaperView::paintEvent(QPaintEvent*) {
     QPainter p(viewport());
-    p.fillRect(viewport()->rect(), paperColour_);
+    p.fillRect(viewport()->rect(), paperColour_.isValid() ? paperColour_ : palette().color(QPalette::Base));
     if (!paper_) {   // no printer: a hint where the paper would start
         p.setPen(palette().color(QPalette::PlaceholderText));
         p.drawText(viewport()->rect().adjusted(8, 12, -8, 0), Qt::AlignHCenter | Qt::AlignTop | Qt::TextWordWrap,

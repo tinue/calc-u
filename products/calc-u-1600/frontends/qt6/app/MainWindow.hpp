@@ -96,13 +96,11 @@ private:
 
     calcu::sessions::LogLevel m_logShown = calcu::sessions::LogLevel::Off;
     bool m_traceShown = false;
-    QPointer<QWidget> m_paperStyled;   // the paper panel in the chrome now
 
     calcu::shell::ShellProduct product();
     void setTrace(bool on);
     void setLogLevel(calcu::sessions::LogLevel);
     void followTraceAndLog();
-    void applyPaperChrome(bool appearanceChanged);
     void onTopic(const QString& topic);
     void followControlState();
     calcu::qt6::Shell::FaceplateGeometry faceplateGeometry();

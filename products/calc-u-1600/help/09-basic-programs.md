@@ -98,19 +98,17 @@ machine:
 - **To load,** pick a cassette from the **Cassette** list. It goes in rewound.
   Type `CLOAD`, `CLOAD "name"`, `CLOAD M` or `CLOAD?`. A second `CLOAD`
   reads on from where the first one stopped, as on a real tape.
-- **To save,** click the save button next to the list and name the new
-  cassette. Type `CSAVE "name"` (or `CSAVE M`). The cassette's definition
-  and its WAV are written each time the motor stops, so a finished `CSAVE`
-  is saved at once. Another `CSAVE` onto the same cassette goes after it.
-  If a cassette of that name exists, you're asked before it is replaced.
-- **The empty cassette** in the list is a template: a `CSAVE` onto it
-  stays in the recorder until you Name & Save it (or take the cassette
-  out).
+- **To save,** pick **Blank** from the **Cassette** list and type
+  `CSAVE "name"` (or `CSAVE M`). Another `CSAVE` goes after it on the same
+  tape. The blank cassette is a template: what you record stays in the
+  recorder until you keep it with **Name & Save**, the save button next
+  to the list (or take the cassette out). If a cassette of that name
+  exists, you're asked before it is replaced.
+- **(empty)** is no cassette: a `CSAVE` then records nothing.
 
 ![Naming a new cassette](images/04-tape-save.png)
 
-A cassette keeps its role: one picked from the list only plays, a new one
-only records. To play back what you recorded, pick it from the list; that
+A cassette keeps its role: one you saved plays, the blank one records. To play back what you recorded, pick it from the list; that
 also takes the recording cassette out. "(empty)" takes a cassette out. The counter shows
 ▶ (playing) or ● (recording) and the tape position. It turns green while
 the motor runs:

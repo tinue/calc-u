@@ -40,6 +40,11 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
     // The host drive needs a folder (File ▸ Host Drive…); a bus
     // ROM is plugged in by a preset only.
     p.placesWithoutControl = {sharp::kHostDrivePlace, sharp::kBusRomPlace};
+    // Short model names, so that a phone's bar fits; the menus keep the IDs.
+    p.barModelLabels = {{sharp::kPC1500, "1500"}, {sharp::kPC1500A, "1500A"}, {sharp::kPC1600, "1600"}};
+    // The disk stays on a phone's bar (its own controls, the product's);
+    // the cassette is chosen through More there.
+    p.mobileBarMedia = {"floppy-disk"};
     auto item = [](shell::MenuGroup g, const char* id, const char* label, const char* entry = "") {
         shell::ProductItem i;
         i.group = g;

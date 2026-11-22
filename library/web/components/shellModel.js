@@ -24,10 +24,10 @@
 // copyScreen: fn | null, pasteText, moduleSlotPinOuts: [...], placesWithoutControl: [...], placesOnPaper: [...],
 // items: [{group, id, label, entry, act, onBar, mediaPlace}]}; groups as in C++: "FileOpen", "FileKinds",
 // "FileMedia", "FileEnd", "Edit", "MachineEnd", "Help".
-// traits: {hasQuit, shortcuts, savedMedia, menuBar, settings, about} (menuBar
-// false is a window without a menu bar: the menus are still computed, for the
-// More button, but not drawn; settings false: no Settings…; about false: no
-// About).
+// traits: {hasQuit, shortcuts, savedMedia, platform, settings, about} (platform
+// "desktop" has a menu bar, "mobile" none: the menus are still computed, for
+// the More button, but not drawn; settings false: no Settings…; about false:
+// no About).
 
 const CALCU_SHELL_ACTIONS = {
   loadPreset: "load-preset", savedMedia: "saved-media", settings: "settings", quit: "quit",
@@ -35,7 +35,7 @@ const CALCU_SHELL_ACTIONS = {
 };
 const CALCU_SHELL_BAR_GROUPS = ["AfterModel", "Slots", "Places", "Media", "End"];
 const CALCU_SHELL_COLD_BOOT_QUESTION = "Cold boot the machine? What it holds in memory is lost.";   // asked in the More menu
-const CALCU_SHELL_TRAITS = { hasQuit: false, shortcuts: false, savedMedia: true, menuBar: true, settings: true, about: true };
+const CALCU_SHELL_TRAITS = { hasQuit: false, shortcuts: false, savedMedia: true, platform: "desktop", settings: true, about: true };
 const CALCU_SHELL_LOADING_MS = 500;
 // The notice queue's question rule, as shell::kAsksPrefix (Notices.cpp): "asks:"
 // and the spaces after it dropped. Every sender writes CALCU_ASKS ("asks: ",
@@ -184,6 +184,7 @@ function calcuShellFileMenu(inputs, product, traits) {
     media.push(calcuShellItem("saved-media", "Saved Media…"));
   }
   media.push(...calcuShellProductItems(inputs, product, "FileMedia"));
+  media.push(...calcuShellMediaMenus(inputs, product, traits));
   calcuShellAppendGroup(items, media);
   const end = calcuShellProductItems(inputs, product, "FileEnd");
   if (traits.settings !== false)
@@ -191,6 +192,34 @@ function calcuShellFileMenu(inputs, product, traits) {
   if (traits.hasQuit) end.push(calcuShellItem("quit", "Quit", { role: "quit", shortcut: traits.shortcuts ? "quit" : "none" }));
   calcuShellAppendGroup(items, end);
   return items;
+}
+
+// Mobile: a media place whose controls the bar leaves out (not in the
+// product's mobileBarMedia) gets a submenu: its entries to choose, then
+// Name & Save… (the shell action `media-name-and-save`, args {place}).
+function calcuShellMediaMenus(inputs, product, traits) {
+  const kept = product.mobileBarMedia;
+  if (traits.platform !== "mobile" || !kept || !calcuShellStarted(inputs)) return [];
+  const out = [];
+  for (const m of calcuShellList(inputs.controlState, "mediaPlaces")) {
+    const kind = calcuShellText(m, "kind");
+    if (kept.includes(kind)) continue;
+    const id = calcuShellText(m, "id");
+    const place = calcuShellList(inputs.media, "places").find((p) => p.place === id || p.kind === kind);
+    if (!place) continue;
+    const insert = calcuShellAvailability(m, "insert");
+    const entries = (place.picker || []).map((e, i) => calcuShellApply(calcuShellItem(`media-${place.place}-${i}`,
+      e.group === "empty" ? "(empty)" : e.label, { checkable: true, checked: !!e.chosen,
+        command: e.chosen ? "" : "media.choose", args: { place: place.place, entry: e.id } }),
+      insert.now && e.canChoose === false ? { now: false, reason: e.hint || "" } : insert));
+    const save = calcuShellApply(calcuShellItem(`media-name-and-save-${place.place}`, "Name & Save…",
+      { args: { place: place.place } }), place.nameAndSave ? insert : { now: false, reason: "Nothing to save." });
+    const kinds = calcuShellList(inputs.media, "kinds").find((k) => k.kind === kind);
+    const label = (kinds && kinds.label) || kind;
+    out.push(calcuShellSubmenu(`media-${place.place}`, label.charAt(0).toUpperCase() + label.slice(1),
+      entries.concat([calcuShellSeparator(), save])));
+  }
+  return out;
 }
 
 function calcuShellEditMenu(inputs, product, traits) {
@@ -272,11 +301,12 @@ function calcuShellMenus(inputs, product, traits) {
   return out;
 }
 
-// The items of the More button, in menu order, without what has a
-// control on a bar without a menu bar; one separator between the groups
-// that remain, never first, last or twice; Cold boot asks first.
-function calcuShellMoreItems(menus, product) {
-  const own = ["load-preset", "settings", "quit", "model", "peripherals"];
+// The items of the More button, in menu order, without what has a control
+// elsewhere (the model picker; the places' controls where `placesShown`, the
+// default); one separator between the groups that remain, never first, last
+// or twice; Cold boot asks first.
+function calcuShellMoreItems(menus, product, placesShown = true) {
+  const own = ["quit", "model"].concat(placesShown ? ["peripherals"] : []);
   const onBar = (i) => own.includes(i.id) || (product.items || []).some((p) => p.id === i.id && p.onBar);
   const out = [];
   let pending = false;
@@ -294,7 +324,6 @@ function calcuShellMoreItems(menus, product) {
   }
   return out;
 }
-
 function calcuShellFindItem(menus, id) {
   const walk = (items) => {
     for (const i of items) {
@@ -335,18 +364,25 @@ function calcuShellBar(inputs, product, traits) {
     const c = calcuShellPlaceControl(place, product, isSlot && slotCount > 1 ? `${slot}:` : "");
     if (c) groups[isSlot ? 1 : 2].controls.push(c);
   }
-  for (const m of calcuShellList(cs, "mediaPlaces"))
-    groups[3].controls.push({ kind: "media", id: calcuShellText(m, "id"), label: "", plugged: false, choices: [], entry: m, mediumKind: calcuShellText(m, "kind") });
-  if (t.menuBar !== false) return groups;
-  // A window without a menu bar. End holds Preset, Settings and More
-  // (with Reset), each following its menu item.
+  const mobile = t.platform === "mobile";
+  // Mobile keeps on its bar what is used while the machine runs: the
+  // peripherals' places and the media the product does not name go to More.
+  const mobileMedia = product.mobileBarMedia || null;
+  for (const m of calcuShellList(cs, "mediaPlaces")) {
+    const kind = calcuShellText(m, "kind");
+    if (mobile && mobileMedia && !mobileMedia.includes(kind)) continue;
+    groups[3].controls.push({ kind: "media", id: calcuShellText(m, "id"), label: "", plugged: false, choices: [], entry: m, mediumKind: kind });
+  }
+  if (mobile) groups[2].controls = [];
+  // More, at the right edge on every platform: what the bar does not show.
+  groups[4].pushed = true;
+  // The places' controls are shown when the bar has them or the paper panel
+  // has every one; else More has the Peripherals submenu.
+  const shown = !mobile || places.every((p) => onPaper.includes(calcuShellText(p, "place")) ||
+    ["slot", "none"].includes(calcuShellPlaceKind(p, product)));
   const menus = calcuShellMenus(inputs, product, t);
-  const action = (id, label) => {
-    const item = calcuShellFindItem(menus, id);
-    return item ? { kind: "action", id, label, plugged: false, choices: [], entry: null, mediumKind: "", item } : null;
-  };
-  groups[4].controls.push(...[action("load-preset", "Preset"), action("settings", "Settings")].filter(Boolean));
-  groups[4].controls.push({ kind: "more", id: "more", label: "More", plugged: false, choices: calcuShellMoreItems(menus, product), entry: null, mediumKind: "" });
+  groups[4].controls.push({ kind: "more", id: "more", label: "More", plugged: false,
+    choices: calcuShellMoreItems(menus, product, shown), entry: null, mediumKind: "" });
   return groups;
 }
 
@@ -383,6 +419,9 @@ function calcuShellPlaceControl(place, product, slotLabel) {
   }
   if (kind === "picker") {
     const choices = calcuShellPlaceChoices(place, true);
+    // Closed, the picker shows only what is plugged in: its empty entry
+    // names the place ("No printer"), so it needs no label beside it.
+    if (choices.length && choices[0].id === `peripheral-${id}-none`) choices[0].label = `No ${id.replace(/-/g, " ")}`;
     return Object.assign(c, { kind: "picker", choices, shown: shownOf(choices) });
   }
   return null;

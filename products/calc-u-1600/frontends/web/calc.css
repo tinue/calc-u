@@ -224,8 +224,12 @@
 .calcu-client .calcu-inspector { flex: 2; }
 .calcu-client .calcu-paper,
 .calcu-client .calcu-printer { flex: 1; }
+/* Panels side by side line up: every header and every button bar has one
+   height, the paper panel's too. */
 .calcu-client .calcu-panel-header {
   flex: none;
+  box-sizing: border-box;
+  height: var(--calcu-panel-header-height);
   padding: 6px 0;
   text-align: center;
   font-size: 12px;
@@ -244,6 +248,8 @@
 }
 .calcu-client .calcu-panel-buttons {
   flex: none;
+  box-sizing: border-box;
+  height: var(--calcu-panel-buttons-height);
   display: flex;
   gap: 8px;
   align-items: center;
@@ -382,3 +388,29 @@
 .calcu-client .calcu-shell-panels { flex: 1; min-height: 0; gap: 6px; }
 .calcu-client .calcu-shell-panels > .calcu-inspector { flex: 2 1 0; }
 .calcu-client .calcu-shell-roms-missing { flex: 1; }
+/* The slot pickers: one fixed width, the longest module ID ("CE-1600M"),
+   whatever they show; the list keeps the full names. */
+.calcu-client .calcu-shell-slot .calcu-media-picker { width: 9em; max-width: none; }
+
+/* The paper panel (the library's) in the panels' chrome: the header and the
+   button bar of the INSPECTOR and the CE-158, the Copy and Cut pills. */
+.calcu-client { --calcu-panel-header-height: 28px; --calcu-panel-buttons-height: 40px; }
+.calcu-client .calcu-paper > .calcu-paper-panel { flex: 1; background: var(--calcu-buttonbar-bg); color: var(--calcu-text); }
+.calcu-client .calcu-paper .calcu-paper-header {
+  box-sizing: border-box; height: var(--calcu-panel-header-height); min-height: 0; padding: 0 6px;
+  background: var(--calcu-header-bg); color: var(--calcu-header-text); font-size: 12px;
+}
+.calcu-client .calcu-paper .calcu-paper-owner { font-weight: 700; }
+.calcu-client .calcu-paper .calcu-paper-scroll,
+.calcu-client .calcu-paper .calcu-paper-text { border: 1px solid var(--calcu-output-border); border-top: none; color: #1d1d1f; }
+.calcu-client .calcu-paper .calcu-paper-footer {
+  box-sizing: border-box; height: var(--calcu-panel-buttons-height); min-height: 0; gap: 8px; padding: 0 10px;
+  background: var(--calcu-buttonbar-bg);
+}
+.calcu-client .calcu-paper .calcu-paper-header button,
+.calcu-client .calcu-paper .calcu-paper-footer button {
+  height: 24px; padding: 4px 8px; border: none; border-radius: 6px;
+  background: var(--calcu-pill-bg); color: var(--calcu-pill-text); font: inherit; cursor: default;
+}
+.calcu-client .calcu-paper .calcu-paper-footer button:disabled { background: var(--calcu-pill-off); }
+.calcu-client .calcu-paper .calcu-paper-control.calcu-paper-down { filter: brightness(0.77); }

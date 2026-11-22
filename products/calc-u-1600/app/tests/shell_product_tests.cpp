@@ -57,7 +57,7 @@ TEST(calc_u_1600_forms_unchanged) {
     for (const auto& m : *v.members()) keys.push_back(m.key);
     CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "aboutLinks", "variantLabels", "barModelLabels", "barSpread", "barShortPickers", "presetFilter",
                                             "presetUploads",
-                                            "copyScreen", "pasteText", "moduleSlotPinOuts", "placesWithoutControl", "placesOnPaper", "items"}));
+                                            "copyScreen", "pasteText", "moduleSlotPinOuts", "placesWithoutControl", "placesOnPaper", "mobileBarMedia", "items"}));
     CHECK(*v.find("copyScreen")->boolean());
     for (const Value& item : *v.find("items")->elements()) {
         std::vector<std::string> fields;

@@ -52,7 +52,7 @@ test('keys during a load are dropped', async ({ page }) => {
       }
     });
   });
-  await page.locator(c('bar-model')).selectOption({ label: 'PC-1500A' });   // a model switch: an operation
+  await page.locator(c('bar-model')).selectOption({ label: '1500A' });   // a model switch: an operation
   await expect.poll(() => page.evaluate(() => window.calcuTypedWhileBusy), { timeout: 10000 }).toBe(true);
   await expect.poll(() => busy(page), { timeout: 30000 }).toBe(false);
   await page.waitForTimeout(1000);

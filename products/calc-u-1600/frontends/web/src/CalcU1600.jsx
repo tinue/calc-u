@@ -73,8 +73,8 @@ function tapeCounter(lamps) {
 }
 
 // The cassette's controls (the shell's media control of the kind
-// `cassette`): the tape picker, a new tape to record onto, Name &
-// Save, the counter with the motor (`c1600.lamps`).
+// `cassette`): the tape picker (Blank records into memory), Name & Save,
+// the counter with the motor (`c1600.lamps`).
 function TapeControls({ shell, entry }) {
   const bar = React.useContext(C1600Bar);
   const place = calcuMediaPlace(shell.inputs.media, "cassette");
@@ -84,10 +84,6 @@ function TapeControls({ shell, entry }) {
     <fieldset className="calcu-bar-fieldset" disabled={!ok.now} title={ok.now ? undefined : ok.reason}>
       <span className="calcu-bar-label">Cassette:</span>
       <CalcuMediaPicker place={place} send={bar.send} />
-      <button type="button" className="calcu-iconbutton" title="A new cassette to record onto (CSAVE)"
-        data-calcu="cassette-new" aria-label="New cassette" onClick={() => bar.recordTape()}>
-        <SaveIcon />
-      </button>
       <button type="button" className="calcu-iconbutton" disabled={!place || !place.nameAndSave} title="Name & Save"
         data-calcu="name-and-save-cassette" aria-label="Name & Save cassette" onClick={() => bar.nameAndSave("cassette")}>
         <SaveIcon />
@@ -258,6 +254,7 @@ function CalcU1600(props) {
     request: "c1600.shell-product", fallback: C1600_NO_PRODUCT, version: CalcU1600.version, build: CalcU1600.build,
     copyScreen, openFiles,
     acts: { "load-basic-program": () => pickProgram("basic"), "load-machine-code": () => pickProgram("code") },
+    nameAndSave: (place) => bar.nameAndSave(place),
   });
 
   const s = useCalcuShell(shell, product, CALCU_SHELL_WEB_TRAITS);
@@ -320,17 +317,6 @@ function CalcU1600(props) {
       const prompt = word === "floppy" ? "Disk name:" : word === "cassette" ? "Cassette name:" : "Instance name:";
       await dialogs.ask("nameAndSave", { shell, place, prompt });
     },
-    // The record button: a new tape under a name, on the empty tape: the
-    // name first, asked before an instance is replaced
-    // (the shell's question); its files at the first motor stop.
-    recordTape: async () => {
-      const place = calcuMediaPlace(s.inputs.media, "cassette");
-      const empty = place && (place.picker || []).find((e) => e.group === "bundled-template" && e.label === "Empty");
-      if (!empty) return;
-      const name = await dialogs.ask("prompt", { title: "Save Cassette", label: "Cassette name:" });
-      if (name === null) return;
-      await sendChecked("media.start-new", { place: "cassette", template: empty.id, name });
-    },
   };
 
   // ── Keyboard (MainWindow::keyPressEvent / keyReleaseEvent) ──────────
@@ -383,12 +369,14 @@ function CalcU1600(props) {
     return () => ro.disconnect();
   }, [width, height]);
   const W = measured.w || 900, H = measured.h || 600;
+  const mobile = s.traits.platform === "mobile";
+  const menuHeight = mobile ? 0 : MENU_HEIGHT;   // mobile has no menu bar
   // The calculator comes first: the faceplate is as large as the window
   // allows. Only when it reaches both edges and leaves PANEL_MIN or more
   // below it do the panels get that space (portrait, tall windows) -- a
   // phone in landscape shows the calculator alone.
   const aspect = FACE_ASPECT[model] || FACE_ASPECT[DEFAULT_MODEL];
-  const faceRoom = H - MENU_HEIGHT - BAR_HEIGHT;
+  const faceRoom = H - menuHeight - BAR_HEIGHT;
   const faceWidth = Math.max(200, Math.min(W, faceRoom * aspect));
   const panelRoom = faceRoom - W / aspect >= PANEL_MIN;
   const paperOwner = (s.panels.find((p) => p.kind === "paper") || {}).owner || "";
@@ -400,6 +388,10 @@ function CalcU1600(props) {
   const showPrinter = panelRoom && !!(printerEntry && printerEntry.shown);
   const showInspector = panelRoom && (W >= INSPECTOR_MIN_WIDTH || !(showPaper || showPrinter));
   const anyPanel = showInspector || showPaper || showPrinter;
+  // Mobile with room below the faceplate (a phone in portrait): the panels
+  // alone, the paper over the whole width; the keys are too small to use
+  // there, so the calculator is used turned.
+  const panelsOnly = mobile && anyPanel;
 
   const romsMissing = !!s.romsMissing && !s.started;
   const failed = start === "failed";
@@ -418,10 +410,10 @@ function CalcU1600(props) {
         if (text && shell) { e.preventDefault(); send("paste", { text }); }
       }}
       {...calcuFileDrop(shell ? openFiles : null)}>
-      <ShellMenuBar shell={s} />
+      {!mobile && <ShellMenuBar shell={s} />}
       {/* The library's storage sentence. */}
       <ShellStorageBanner shell={shell} />
-      <div className="calcu-face-row">
+      <div className="calcu-face-row" style={panelsOnly && !romsMissing && !failed ? { display: "none" } : undefined}>
         {romsMissing && <ShellRomsMissing shell={s} />}
         {failed && !romsMissing && <div className="calcu-shell-roms-missing" data-calcu="start-failed" role="alert">{failure}</div>}
         {!romsMissing && !failed && <Faceplate shell={shell} model={model} map={maps[model] || null} width={faceWidth} shiftFlash={shiftFlash} />}

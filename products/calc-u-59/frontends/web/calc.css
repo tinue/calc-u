@@ -257,10 +257,7 @@
 
 /* ---------- The React set's shell ------------------------------------------ */
 /* The shell's own stylesheet (library/web/components/shell.css) is light;
-   the menus, dialogs and the banner keep it, with dark text on it. */
-.calcu-client .calcu-shell-menubar,
-.calcu-client .calcu-shell-menu-items,
-.calcu-client .calcu-shell-modal { color: #1d1d1f; }
+   the menus, dialogs and the banner keep it. */
 .calcu-client .calcu-shell-menubar { flex: none; height: 26px; align-items: center; padding: 0 4px; }
 .calcu-client .calcu-bar > .calcu-shell-bar {
   flex: 1; flex-wrap: nowrap; padding: 0; gap: 8px; overflow: hidden; color: var(--calcu-fg);

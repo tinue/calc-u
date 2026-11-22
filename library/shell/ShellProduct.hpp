@@ -66,6 +66,9 @@ struct ShellProduct {
     // Places whose control the paper panel shows, at the left of its
     // header, instead of the bar: Calc-U-59's PC-100C over its paper.
     std::set<std::string> placesOnPaper;
+    // The media kinds a mobile bar keeps ("magnetic-card"); every other
+    // medium is chosen through More there.
+    std::set<std::string> mobileBarMedia;
     std::vector<ProductItem> items;
 };
 

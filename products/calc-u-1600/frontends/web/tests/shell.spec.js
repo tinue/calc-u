@@ -86,7 +86,7 @@ test('the control bar per model', async ({ page }) => {
   await h.pickModel(page, 'PC-1600');
   await expect(page.locator(`${c('bar-slot-slot-1')} .calcu-shell-slot-number`)).toHaveText('1:');
   await expect(page.locator(`${c('bar-slot-slot-2')} .calcu-shell-slot-number`)).toHaveText('2:');
-  await expect(page.locator(`${c('bar-place-printer')} option`)).toHaveText(['None', 'CE-150', 'CE-1600P']);
+  await expect(page.locator(`${c('bar-place-printer')} option`)).toHaveText(['No printer', 'CE-150', 'CE-1600P']);
   await expect(page.locator(c('bar-place-interface'))).toHaveText('CE-158');
   await expect(page.locator(c('bar-disk'))).toHaveCount(0);
   await expect(page.locator(c('bar-media-cassette-recorder'))).toHaveCount(0);

@@ -77,8 +77,8 @@ TEST(three_kinds_suffixes_versions_name_keys) {
     const ReadOutcome d = readFile(k[cu1600::kFloppyKind], fs::path(kCards) / "formatted.floppy.yaml");
     CHECK(d.status == ReadOutcome::Status::Read && d.info.name == "Formatted" && d.info.isTemplate);
     CHECK_EQ(d.info.description, std::string("Formatted, both sides empty"));
-    const ReadOutcome t = readFile(k[cu1600::kCassetteKind], fs::path(kCards) / "empty.cassette.yaml");
-    CHECK(t.status == ReadOutcome::Status::Read && t.info.name == "Empty" && t.info.isTemplate);
+    const ReadOutcome t = readFile(k[cu1600::kCassetteKind], fs::path(kCards) / "blank.cassette.yaml");
+    CHECK(t.status == ReadOutcome::Status::Read && t.info.name == "Blank" && t.info.isTemplate);
 }
 
 TEST(floppy_v2_sides_0_1_other_version_unreadable) {
@@ -339,7 +339,7 @@ TEST(tape_flow_through_the_harness) {
     CHECK(h.line("key cl cl").rfind("done", 0) == 0);   // NEW0? :CHECK after the power cycle
     CHECK(h.line("type NEW0").rfind("done", 0) == 0);
     std::string m = h.line("media");
-    CHECK(m.find("\"empty.cassette.yaml\"") != std::string::npos);   // the bundled template, offered
+    CHECK(m.find("\"blank.cassette.yaml\"") != std::string::npos);   // the bundled template, offered
     // A hand-written definition around an existing WAV (the fixture).
     const fs::path wav = fs::absolute("tests/fixtures/tape/pc1500_tape.wav");
     const fs::path def = h.write("fixture.cassette.yaml", "format: cassette\nformat-version: 1\ncassette-name: \"Fixture\"\n"
@@ -353,7 +353,7 @@ TEST(tape_flow_through_the_harness) {
     m = h.line("media");
     CHECK(m.find("\"place\":\"cassette\"") != std::string::npos && m.find("\"holds\"") == std::string::npos);
     // CSAVE onto the empty tape: the sound lives in the place until saved.
-    CHECK(h.line("cassette { name: Empty }").rfind("done", 0) == 0);
+    CHECK(h.line("cassette { name: Blank }").rfind("done", 0) == 0);
     CHECK(h.line("type CSAVE \"RT\"").rfind("done", 0) == 0);
     CHECK(h.line("wait").rfind("done", 0) == 0);
     m = h.line("media");

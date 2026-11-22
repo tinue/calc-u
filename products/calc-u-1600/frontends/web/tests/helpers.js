@@ -41,7 +41,8 @@ async function menu(page, menuId, ...items) {
 // A model from the control bar's model picker; done once the session has it.
 async function pickModel(page, model) {
   const picker = page.locator(c('bar-model'));
-  const index = await picker.locator('option').evaluateAll((os, m) => os.findIndex((o) => o.textContent === m), model);
+  // The picker shows the model's short name ("1600" for PC-1600).
+  const index = await picker.locator('option').evaluateAll((os, m) => os.findIndex((o) => o.textContent === m.replace(/^PC-/, '')), model);
   await picker.selectOption(String(index));
   await expect(page.locator(`.calcu-face[data-model="${model}"]`)).toHaveCount(1, { timeout: 30000 });
   // The model switch is an operation; keys typed while it runs are dropped.

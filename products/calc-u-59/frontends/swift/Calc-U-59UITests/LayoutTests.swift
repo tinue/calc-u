@@ -106,8 +106,10 @@ final class LayoutTests: XCTestCase {
 
     /// Landscape: a wide window shows the debugger beside the calculator
     /// whatever "Debug Page in Portrait" says — iPad, and iPhone Duo opened
-    /// flat (Shared mobileLayout: at least 820 × 560 pt of safe area). Plain iPhones stay
-    /// in portrait, so the test skips there.
+    /// flat (the library's view rule on TIChrome: the room beside the
+    /// faceplate takes the printer and the debugger, 256 + 220 pt, and the
+    /// window is 560 pt high). Plain iPhones stay in portrait, so the test
+    /// skips there.
     @MainActor
     func testWideWindowShowsDebugger() throws {
         let app = launchApp(orientation: .landscapeLeft)
@@ -120,7 +122,8 @@ final class LayoutTests: XCTestCase {
         guard !app.buttons["btn-page-right"].exists else {
             throw XCTSkip("App stays in portrait on this device")
         }
-        let wide = w >= 820 && h >= 560
+        let faceplate = (h - 66) * 2064 / 4075   // the column's bar and insets above and below
+        let wide = h >= 560 && w - 18 - faceplate >= 256 + 220
         XCTAssertEqual(app.buttons["btn-tab-calculator"].waitForExistence(timeout: 3), wide,
                        "Debugger visibility wrong for a \(w) × \(h) pt window")
         guard wide else { return }

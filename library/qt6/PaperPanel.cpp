@@ -422,7 +422,13 @@ void PaperView::updateRange(bool follow) {
 void PaperView::paintEvent(QPaintEvent*) {
     QPainter p(viewport());
     p.fillRect(viewport()->rect(), paperColour_);
-    if (!paper_ || paper_->description.width <= 0) return;
+    if (!paper_) {   // no printer: a hint where the paper would start
+        p.setPen(palette().color(QPalette::PlaceholderText));
+        p.drawText(viewport()->rect().adjusted(8, 12, -8, 0), Qt::AlignHCenter | Qt::AlignTop | Qt::TextWordWrap,
+                   tr("No printer attached."));
+        return;
+    }
+    if (paper_->description.width <= 0) return;
     const double k = pointsPerCoord();
     if (k <= 0) return;
     PaperScale s;

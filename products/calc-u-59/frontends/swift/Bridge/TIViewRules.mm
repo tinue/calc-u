@@ -4,6 +4,7 @@
 #include <calcu59/app/KeyboardLayout.hpp>
 #include <calcu59/app/DebugSnapshots.hpp>
 #include <calcu59/app/DebugText.hpp>
+#include <calcu59/app/TIChrome.hpp>
 #include <calcu59/app/LedGeometry.hpp>
 #include <calcu59/app/ModuleImage.hpp>
 #include <calcu59/core/PC100CPaper.hpp>
@@ -237,15 +238,13 @@ static std::vector<cu59::LabelSpan> spansFrom(NSArray<TILabelSpan*>* spans) {
     return [NSString stringWithUTF8String:(narrow ? h.narrowTitle : h.title).c_str()];
 }
 + (BOOL)debugHeaderNarrow:(CGFloat)baseFontSize { return cu59::debugHeaderNarrow(baseFontSize); }
-+ (TIMobileLayout)mobileLayoutWidth:(CGFloat)width height:(CGFloat)height horizontalFold:(BOOL)fold {
-    return static_cast<TIMobileLayout>(cu59::mobileLayout(width, height, fold));
++ (TIView)viewWidth:(CGFloat)width height:(CGFloat)height {
+    // The dividers beside the faceplate's column: one point each.
+    const calcu::shell::View v = calcu::shell::view(cu59::viewInputs(width, height, 2, true));
+    return TIView{v.side == calcu::shell::ViewSide::Beside && v.panelsFit, v.debuggerFits};
 }
 + (CGFloat)mobileTopMargin:(CGFloat)topInset { return cu59::mobileTopMargin(topInset); }
 + (BOOL)compactPrinterBar:(CGFloat)printerWidth { return cu59::compactPrinterBar(printerWidth); }
-+ (TIWidthRange)mobilePrinterWidth:(TIMobileLayout)layout width:(CGFloat)width {
-    auto r = cu59::mobilePrinterWidth(static_cast<cu59::MobileLayout>(layout), width);
-    return {r.min, r.max};
-}
 + (NSString *)partitionLineProgramRegs:(NSInteger)programRegs dataRegs:(NSInteger)dataRegs {
     return ns(cu59::partitionLine(static_cast<int>(programRegs), static_cast<int>(dataRegs)));
 }

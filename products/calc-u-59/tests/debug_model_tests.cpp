@@ -2,6 +2,7 @@
 // views; what the debug panel shows is in debug_panel_tests.cpp.
 
 #include "TestHarness.hpp"
+#include "../app/TIChrome.hpp"
 #include "TestRoms.hpp"
 #include "../app/Bcd.hpp"
 #include "../app/DebugLog.hpp"
@@ -184,16 +185,20 @@ TEST(debug_panel_text) {
     CHECK_EQ(debugPanelFontSize(800), 13);
 }
 
+// The view rule on the chrome's sizes for the iOS windows (their safe
+// areas, points): pages upright, side by side when wide, the debugger
+// where the window is wide and high enough.
+TEST(view_of_the_ios_windows) {
+    const auto at = [](double w, double h) { return calcu::shell::view(cu59::viewInputs(w, h, 2, true)); };
+    const auto sideBySide = [](const calcu::shell::View& v) { return v.side == calcu::shell::ViewSide::Beside && v.panelsFit; };
+    CHECK(!sideBySide(at(440, 956)));                                  // iPhone portrait
+    CHECK(sideBySide(at(832, 419)) && !at(832, 419).debuggerFits);     // iPhone landscape
+    CHECK(sideBySide(at(880, 645)) && at(880, 645).debuggerFits);      // iPhone Duo open
+    CHECK(!sideBySide(at(669, 951)));                                  // Duo open, tall
+    CHECK(sideBySide(at(1133, 744)) && at(1133, 744).debuggerFits);    // iPad mini landscape
+}
+
 TEST(mobile_layout) {
-    CHECK(mobileLayout(440, 956, false) == MobileLayout::Paged);               // iPhone portrait
-    CHECK(mobileLayout(832, 419, false) == MobileLayout::CalcPrinter);         // iPhone landscape (safe area)
-    CHECK(mobileLayout(880, 645, false) == MobileLayout::CalcPrinterDebugger); // iPhone Duo open (safe area)
-    CHECK(mobileLayout(880, 645, true) == MobileLayout::Paged);                // Duo laptop pose
-    CHECK(mobileLayout(669, 951, false) == MobileLayout::Paged);               // Duo open, tall
-    CHECK(mobileLayout(1133, 744, false) == MobileLayout::CalcPrinterDebugger); // iPad mini landscape
-    CHECK_EQ(mobilePrinterWidth(MobileLayout::CalcPrinterDebugger, 880).max, 220.0); // Duo: narrow tape
-    CHECK_EQ(mobilePrinterWidth(MobileLayout::CalcPrinterDebugger, 1133).max, 360.0); // iPad
-    CHECK_EQ(mobilePrinterWidth(MobileLayout::CalcPrinter, 832).min, 290.0);
     CHECK_EQ(mobileTopMargin(0), 32.0);  // iPhone Duo open
     CHECK_EQ(mobileTopMargin(24), 0.0);  // iPad: status bar inset
     CHECK_EQ(partitionLine(60, 60), std::string("Steps: 480, Registers: 60 (479.59)"));

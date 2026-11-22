@@ -92,7 +92,7 @@ struct CalculatorView: View {
         }
     }
 
-    /// Load Preset… (More; File menu, ⌘O on the iPad's menu bar):
+    /// Load Preset… (More):
     /// presets only, as every dedicated loader takes its own kind.
     private func openPresetDialog() {
         filePickerModeBinding.wrappedValue = .preset
@@ -100,25 +100,25 @@ struct CalculatorView: View {
 
     @ViewBuilder
     private var layout: some View {
-        // Side by side when wide, button-navigated pages otherwise
-        // (TIViewRules.mobileLayout decides by the window's size and fold)
+        // The library's view rule: side by side where the printer fits
+        // beside the faceplate (the debugger too where it fits), else the
+        // pages; also the pages over an active fold, whose upper half
+        // alone is too low.
         GeometryReader { geo in
-            let layout = TIViewRules.mobileLayoutWidth(geo.size.width, height: geo.size.height,
-                                                       horizontalFold: Self.hasHorizontalFold(geo))
-            if layout != .paged {
-                let printerWidth = TIViewRules.mobilePrinterWidth(layout, width: geo.size.width)
+            let view = TIViewRules.viewWidth(geo.size.width, height: geo.size.height)
+            if view.sideBySide && !Self.hasHorizontalFold(geo) {
                 HStack(spacing: 0) {
                     calculatorBody()
                         .fixedSize(horizontal: true, vertical: false)
                     Divider()
                     PrinterView()
-                        .frame(minWidth: printerWidth.min, maxWidth: printerWidth.max)
-                    if layout == .calcPrinterDebugger {
+                        .frame(minWidth: TIChrome.printerMinWidth, maxWidth: TIChrome.printerMaxWidth)
+                    if view.debugger {
                         Divider()
                         // Clipped: its .background(Color) fills would otherwise
                         // spread into the safe area, past the other two columns.
                         DebugView(activeFilePickerMode: filePickerModeBinding)
-                            .frame(minWidth: 220)
+                            .frame(minWidth: TIChrome.debuggerMinWidth)
                             .clipped()
                     }
                 }

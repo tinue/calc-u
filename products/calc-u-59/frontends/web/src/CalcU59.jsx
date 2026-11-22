@@ -198,14 +198,11 @@ function autoView(width, height, menuHeight) {
   const view = calcuShellView({
     width, height, faceplateAspect: CANVAS_ASPECT, fixedWidth: 2 * FACE_PADDING,
     fixedHeight: menuHeight + sizes.barHeight + 2 * FACE_PADDING,
-    panelsMinWidth: sizes.panelsMinWidth, panelsMinHeight: sizes.panelsMinHeight, mobile: CALCU_SHELL_MOBILE,
+    panelsMinWidth: sizes.panelsMinWidth, panelsMinHeight: sizes.panelsMinHeight,
+    debuggerMinWidth: sizes.debuggerMinWidth, debuggerMinHeight: sizes.debuggerMinHeight, mobile: CALCU_SHELL_MOBILE,
   });
   const wide = view.side === "beside" && view.panelsFit;
-  return {
-    wide, printerMin: sizes.printerMinWidth, printerMax: sizes.printerMaxWidth,
-    debugger: wide && sizes.debuggerMinWidth > 0 && view.room >= sizes.panelsMinWidth + sizes.debuggerMinWidth &&
-      height >= sizes.debuggerMinHeight,
-  };
+  return { wide, printerMin: sizes.printerMinWidth, printerMax: sizes.printerMaxWidth, debugger: wide && view.debuggerFits };
 }
 
 /// `rules` is embeddedWide() or (layout="auto") autoView(): the artwork

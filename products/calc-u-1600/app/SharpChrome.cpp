@@ -95,6 +95,9 @@ calcu::shell::Chrome make() {
     // faceplate, at least this high; none beside it.
     s.panelsMinHeight = 200;
     s.panelsMinWidth = 0;
+    // The inspector (the debugger) beside the paper in that row: the
+    // window at least this wide; narrower, one of them at a time.
+    s.debuggerMinWidth = 700;
     return c;
 }
 

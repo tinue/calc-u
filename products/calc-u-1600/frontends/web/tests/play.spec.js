@@ -94,6 +94,16 @@ test('the panels take only the room a full-width faceplate leaves', async ({ pag
   await expect(page.locator(c('panel-area'))).toHaveCount(0);
 });
 
+// On mobile upright the panels alone are the paper, with its hint without
+// a plotter, and never the inspector.
+test('the mobile panels alone are the paper without the inspector', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoReady(page, '?mobile=1');
+  await expect(page.locator(c('paper-panel'))).toBeVisible();
+  await expect(page.locator(c('paper-hint'))).toHaveText('No printer attached.');
+  await expect(page.locator('[data-panel=inspector]')).toHaveCount(0);
+});
+
 test('the client has the keyboard from the start, no click needed', async ({ page }) => {
   await gotoReady(page);
   await expect(page.locator('.calcu-client')).toBeFocused();

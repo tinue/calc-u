@@ -18,7 +18,6 @@
 // calc.css: the menu bar is taller on a touch screen (pointer: coarse).
 const MENU_HEIGHT = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches ? 40 : 26;
 const BAR_HEIGHT_UNTIL_CHROME = 40;   // the control bar before the engine answered
-const INSPECTOR_MIN_WIDTH = 700; // narrower: the inspector only when no other panel is shown
 const SHIFT_TAP_MS = 400;
 const SHIFT_TAP_POINTER = 1000;   // the screen press a SHIFT tap is sent as (no pointer of the faceplate)
 const IS_MAC = CALCU_HOST_IS_MAC;
@@ -383,18 +382,20 @@ function CalcU1600(props) {
     width: W, height: H, faceplateAspect: FACE_ASPECT[model] || FACE_ASPECT[DEFAULT_MODEL],
     fixedHeight: menuHeight + (sizes.barHeight || BAR_HEIGHT_UNTIL_CHROME),
     panelsMinWidth: sizes.panelsMinWidth || 0, panelsMinHeight: sizes.panelsMinHeight || 0,
+    debuggerMinWidth: sizes.debuggerMinWidth || 0, debuggerMinHeight: sizes.debuggerMinHeight || 0,
     mobile, panelsAloneOnMobileBelow: true,
   });
   const faceWidth = Math.max(200, view.faceplateWidth);
   const panelRoom = view.panelsAlone || (view.side === "below" && view.panelsFit);
   const paperOwner = (s.panels.find((p) => p.kind === "paper") || {}).owner || "";
   const printerEntry = cs && cs.product ? cs.product["c1600.ce158-printer-panel"] : null;
-  // The paper panel with or without a plotter. Where only one
-  // panel fits (a narrow window), it gives way to the inspector while no
-  // plotter is plugged in, as the panels give way today.
-  const showPaper = panelRoom && (W >= INSPECTOR_MIN_WIDTH || !!paperOwner);
+  // The paper panel with or without a plotter, the inspector beside it
+  // where the view rule's debugger fits. Narrower, the paper gives way to
+  // the inspector while no plotter is plugged in. The panels alone (mobile)
+  // are the paper, with its hint without a plotter, and never the inspector.
+  const showPaper = panelRoom && (view.panelsAlone || view.debuggerFits || !!paperOwner);
   const showPrinter = panelRoom && !!(printerEntry && printerEntry.shown);
-  const showInspector = panelRoom && (W >= INSPECTOR_MIN_WIDTH || !(showPaper || showPrinter));
+  const showInspector = panelRoom && !view.panelsAlone && (view.debuggerFits || !(showPaper || showPrinter));
   const anyPanel = showInspector || showPaper || showPrinter;
   // The panels alone: the paper over the whole width; the keys are too
   // small to use there, so the calculator is used turned.

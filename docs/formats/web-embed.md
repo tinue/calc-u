@@ -162,6 +162,7 @@ plain object. No message type of a product's own.
 |---|---|
 | page → worker | `{kind: "listen", args: {services: [name, …]}}` |
 | page → worker | `{kind: "shell", args: {mobile, settings, about, …}}`: the page's traits and the product's own args of its shell (§3.1) |
+| page → worker | `{kind: "pace"}`: the worker measures its pace and sends it once a second as the state topic `web.pace` `{ticksPerSecond, busyPercent, longestGapMs}` (the page's `?pace=1` line) |
 | page → worker | `{kind: "command", name, args, call}` |
 | page → worker | `{kind: "request", name, args, call}` |
 | page → worker | `{kind: "answer", call, done, reason, value}` |
@@ -309,6 +310,19 @@ product's component with `layout: "auto"` and starts the worker through
 precaches the app page, `calc.js`, `calc.css`, the workers, the engine,
 the images and every file of `files.json`. Its cache is named
 `<id>-app <scope> <hash>` (`<id>`: `calcu59`, `calc-u-1600`); a new
-release waits until no window of the app is open, then removes the older
-caches of the same prefix. It never touches the persistent file system.
-An embedded component is outside its scope.
+release waits until no window of the app is open, or until a page posts it
+`{type: "skip-waiting"}`, then takes over (claiming the open pages, which
+reload) and removes the older caches of the same prefix. The page offers
+that while a release waits: the banner "A new version is ready." with
+Reload. It never touches the persistent file system. An embedded
+component is outside its scope.
+
+The page and its `app.css` are the library's (`library/web/app/`); a
+product's `app/` holds its `index.html`, with the page's colours as the
+custom properties `--calcu-app-background`, `--calcu-app-banner`,
+`--calcu-app-banner-border`, `--calcu-app-banner-text`,
+`--calcu-app-banner-dim`, `--calcu-app-action`, `--calcu-app-action-text`,
+and its `manifest.json`. In a browser tab the page drops the viewport's
+`viewport-fit=cover`, so the browser's own bars do not float over it;
+installed, it covers the screen and keeps clear of its edges with the
+safe-area padding.

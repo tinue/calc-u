@@ -56,10 +56,19 @@
   }
 
   let lastTick = null;
-  // The pace of the calls, once a second, for the page's `?pace=1` overlay
-  // (shell.js): ticks, the time spent in them, the longest gap.
+  // The pace of the calls, once a second, once the page asks for it (its
+  // `?pace=1` line, shell.js): ticks, the time spent in them, the longest gap.
+  let measurePace = false;
   const pace = { since: null, ticks: 0, busy: 0, longest: 0 };
   function tick() {
+    if (!measurePace) {
+      try {
+        host.call();
+      } catch (e) {
+        fail(errorText(e));
+      }
+      return;
+    }
     const start = performance.now();
     if (lastTick !== null) pace.longest = Math.max(pace.longest, start - lastTick);
     lastTick = start;
@@ -88,6 +97,7 @@
   // A message from the page: to the host; suspend and continue also stop and
   // start the calls, the command first.
   function handle(m) {
+    if (m.kind === "pace") { measurePace = true; return; }
     if (!host) return;
     try {
       host.receive(m);

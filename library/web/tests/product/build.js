@@ -63,7 +63,6 @@ write("tests/unavailable-worker.js",
   'IDBFactory.prototype.open = function () { throw new DOMException("stubbed open", "InvalidStateError"); };\n' +
   'self.CALC_ROOT = "../";\nimportScripts("../calc-engine-worker.js");\n');
 
-copy(path.join(HERE, "app.css"), "app/app.css");
 fs.writeFileSync(path.join(OUT, "app", "icon.png"), ICON);
 write("app/manifest.json", JSON.stringify({
   name: NAME, short_name: NAME, start_url: "./", scope: "./", display: "standalone",

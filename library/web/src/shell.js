@@ -129,6 +129,7 @@ function createShell({ product, workerUrl, start, services }) {
     };
     worker.onmessageerror = () => failWith("a message from the worker could not be read");
     post({ kind: "listen", args: { services: offered.names } });
+    if (typeof location !== "undefined" && /[?&]pace=1\b/.test(location.search)) post({ kind: "pace" });   // the worker measures
     call("command", "start", { model: (start && start.model) || "", preset: (start && start.preset) || "" });
   }
 
@@ -156,8 +157,9 @@ function createShell({ product, workerUrl, start, services }) {
   };
 }
 
-// `?pace=1`: a line at the top of the page with the worker's pace (how often
-// its timer fires, the share of time it computes, the longest gap) and the
+// `?pace=1`: a line at the top of the page with the worker's pace, which it
+// measures only when the page asks (the message `pace`): how often its
+// timer fires, the share of time it computes, the longest gap, and the
 // speed, to see what a browser grants the worker.
 function calcuPaceOverlay(p, busy) {
   if (typeof document === "undefined" || !/[?&]pace=1\b/.test(location.search)) return;

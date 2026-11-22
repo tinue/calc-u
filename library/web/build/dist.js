@@ -12,7 +12,7 @@
 //                                one closure, one global
 //   compileApp({vendor, component, props, installSentence, out})
 //                                dist/app/app.js from library/web/app/app.jsx
-//   copyAppFiles(dist)           app/sw.js, app/engine-worker.js, audio-worklet.js
+//   copyAppFiles(dist)           app/sw.js, app/app.css, app/engine-worker.js, audio-worklet.js
 //   writeLibraryWorker(dist)     src/sentences.js + storage.js + worker.js →
 //                                dist/library-worker.js
 //   writeProductWorker(dist, config)   dist/calc-engine-worker.js: self.CALCU_PRODUCT
@@ -125,6 +125,7 @@ function compileApp({ vendor, component, props, installSentence, out }) {
 function copyAppFiles(dist) {
   fs.mkdirSync(path.join(dist, "app"), { recursive: true });
   fs.copyFileSync(path.join(WEB, "app", "sw.js"), path.join(dist, "app", "sw.js"));
+  fs.copyFileSync(path.join(WEB, "app", "app.css"), path.join(dist, "app", "app.css"));
   fs.copyFileSync(path.join(WEB, "app", "engine-worker.js"), path.join(dist, "app", "engine-worker.js"));
   fs.copyFileSync(path.join(WEB, "src", "audio-worklet.js"), path.join(dist, "audio-worklet.js"));
 }

@@ -44,12 +44,30 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
 
 namespace {
 
+// The start folders of the dedicated loaders, in the declaration's order,
+// labelled as Calc-U-1600 labels its own.
+const std::vector<std::string> kFolderKeys{"folders.presets", "folders.asm-overlays"};
+
+void labelFolders(shell::DialogSpec& spec) {
+    for (auto& s : spec.sections) {
+        if (s.title != "Folders") continue;
+        for (auto& r : s.rows) {
+            if (r.key == settings::openFolderKind(settings::OpenFolder::Presets)) r.label = "Presets folder";
+            else if (r.key == settings::openFolderKind(settings::OpenFolder::AsmOverlays)) r.label = "ASM overlay folder";
+        }
+    }
+}
+
 // The rows and labels of the Swift
 // settings (frontends/swift/App/Views/SettingsView.swift at 7bdd51c).
 shell::DialogSpec swiftSpec(bool mac, const std::string& versionLine) {
     using W = shell::DialogRow::Widget;
-    shell::DialogSpec spec =
-        shell::familySections(settings::settingsDecl(), {"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C"});
+    // The Mac's file dialogs start in the loaders' folders; the iOS file
+    // importer takes no start folder.
+    std::vector<std::string> keys{"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C"};
+    if (mac) keys.insert(keys.end(), kFolderKeys.begin(), kFolderKeys.end());
+    shell::DialogSpec spec = shell::familySections(settings::settingsDecl(), keys);
+    labelFolders(spec);
     for (auto& s : spec.sections)
         if (s.title == "General") s.rows.push_back({W::Note, "general", "version", versionLine});
     shell::DialogRow style{W::Choice, "display", "led-style", "Segment Style"};
@@ -80,16 +98,16 @@ shell::DialogSpec settingsSpec(ShellFrontend f, const std::string& versionLine) 
     using W = shell::DialogRow::Widget;
     if (f == ShellFrontend::SwiftMac || f == ShellFrontend::SwiftIOS) return swiftSpec(f == ShellFrontend::SwiftMac, versionLine);
     std::vector<std::string> keys{"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C"};
-    if (f == ShellFrontend::Qt6)
-        for (const char* k : {"storage.save-folder", "folders.presets", "trace.folder", "trace.max-file-size-mb"}) keys.push_back(k);
+    if (f == ShellFrontend::Qt6) {
+        keys.push_back("storage.save-folder");
+        keys.insert(keys.end(), kFolderKeys.begin(), kFolderKeys.end());
+        for (const char* k : {"trace.folder", "trace.max-file-size-mb"}) keys.push_back(k);
+    }
     if (f == ShellFrontend::WebWide) keys.push_back("trace.max-file-size-mb");
     shell::DialogSpec spec = shell::familySections(settings::settingsDecl(), keys);
-    for (auto& s : spec.sections) {
+    labelFolders(spec);
+    for (auto& s : spec.sections)
         if (s.title == "General") s.rows.push_back({W::Note, "general", "version", versionLine});
-        if (s.title == "Folders")
-            for (auto& r : s.rows)
-                if (r.key == "presets") r.label = "Preset folder";
-    }
     if (f == ShellFrontend::Qt6) {
         shell::DialogRow style{W::Choice, "display", "led-style", "Segment Style"};
         style.choices = {{"modernized", "Modernized"}, {"classic", "Classic"}};

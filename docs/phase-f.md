@@ -32,21 +32,6 @@ and `docs/Process.md` until the closing check at its end has passed.
 
 ### Open items
 
-- **Next to fix: Calc-U-59's start folders, as Calc-U-1600's.** Calc-U-1600
-  shows a start folder for every dedicated loader in its settings (Qt:
-  every `[folders]` key, Presets, BASIC, Assembly, Host drive). Calc-U-59
-  declares `[folders] presets` and `asm-overlays` and `[storage]
-  save-folder` (`app/Settings.cpp`), but `settingsSpec`
-  (`app/TIShellProduct.cpp`) shows on Qt the save folder and the preset
-  folder only (no ASM overlay folder, though the ASM dialog starts in it),
-  on the Web none, and in the Swift app (`swiftSpec`) none but the trace
-  folder; the Swift dialogs also ignore them (Load Preset… and the ASM
-  importer set no start folder; the cards' folder is `CardStorage`'s).
-  Proposed: every dedicated loader of Calc-U-59 starts in its `[folders]`
-  key, and every frontend with a file system shows those rows the same
-  way as Calc-U-1600 (the labels, the order); the Swift app included,
-  where its sandbox allows (a chosen folder needs its grant, as the trace
-  folder has).
 - **Sanitizer findings, open** (`build/asan`, `docs/test-groups.md`
   "Sanitizers"; three findings were fixed with the option: a signed
   overflow in Calc-U-1600's debugger expressions, two uses after free in

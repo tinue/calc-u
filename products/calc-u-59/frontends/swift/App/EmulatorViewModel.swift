@@ -440,6 +440,22 @@ class EmulatorViewModel {
         shell?.setSetting(section, key, value: value)
     }
 
+    /// Where the Mac's file dialog for a kind of file starts (`[folders]
+    /// <kind>`); nil before any folder was used: the sandbox's home folder is
+    /// no place to start, the panel then picks its own.
+    func startFolder(_ kind: String) -> URL? {
+        guard let path = shell?.startFolder(kind), !path.isEmpty,
+              URL(fileURLWithPath: path).standardizedFileURL != URL(fileURLWithPath: NSHomeDirectory()).standardizedFileURL
+        else { return nil }
+        return URL(fileURLWithPath: path, isDirectory: true)
+    }
+
+    /// After a pick: the file's folder is where the dialog starts next time,
+    /// unless a fixed folder is set.
+    func rememberFolder(_ kind: String, of url: URL) {
+        shell?.rememberFolder(kind, ofFile: url.path)
+    }
+
     /// The notice alert's buttons: OK, or Yes and No for a question.
     func closeNotice() {
         shell?.closeNotice()

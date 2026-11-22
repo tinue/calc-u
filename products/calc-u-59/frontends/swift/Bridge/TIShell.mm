@@ -303,6 +303,19 @@ NSInteger keyIndexOf(const std::string &key) {
     [self sendChecked:cs::Command{shell::commands::kSetSetting, cs::Value(std::move(args))}];
 }
 
+- (NSString *)startFolder:(NSString *)kind {
+    const std::string k = cpp(kind);
+    for (const auto &r : shell::read::elements(self.inputs.settings, "rows"))
+        if (shell::read::text(r, "section") == "folders" && shell::read::text(r, "key") == k)
+            return ns(shell::read::text(r, "inUse"));
+    return @"";
+}
+
+- (void)rememberFolder:(NSString *)kind ofFile:(NSString *)path {
+    const cs::Value args = cs::Value::object({{"kind", cpp(kind)}, {"folder", cpp(path.stringByDeletingLastPathComponent)}});
+    [self sendChecked:cs::Command{shell::commands::kRememberFolder, args}];
+}
+
 - (TIMenuItem *)itemWithID:(NSString *)itemID {
     for (TIMenu *m in self.menus)
         if (TIMenuItem *i = findIn(m.items, itemID)) return i;

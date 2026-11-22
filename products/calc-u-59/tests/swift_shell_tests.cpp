@@ -289,6 +289,7 @@ TEST(settings_spec_macos_and_ios) {
     };
     CHECK_EQ(describe(cu59::ShellFrontend::SwiftMac),
              std::string("General: Startup model Version 3.0.0 (test);Startup presets: TI-59 TI-58 TI-58C;"
+                         "Folders: Presets folder ASM overlay folder;"
                          "Display: Segment Style;Tracing: Save Location Trace folder Maximum file size (MB);"));
     CHECK_EQ(describe(cu59::ShellFrontend::SwiftIOS),
              std::string("General: Startup model Version 3.0.0 (test);Startup presets: TI-59 TI-58 TI-58C;"

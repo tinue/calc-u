@@ -20,7 +20,7 @@ preset sets them at a start.
 | General | **Startup model**: "Last used", TI-59, TI-58, TI-58C; and the version | everywhere |
 | Startup presets | one row per model: "None", the bundled startup preset of that model, or (Windows, Linux) a file | everywhere |
 | Storage | **Save folder** | Windows, Linux |
-| Folders | the **preset folder**, where Load Preset… starts | Windows, Linux |
+| Folders | the **Presets folder**, where Load Preset… starts, and the **ASM overlay folder**, where the ASM overlay's Select File starts; each the folder last used until you choose one, **Reset** goes back to it | macOS, Windows, Linux |
 | Tracing | **Save Location**, where traces go: Local or iCloud, on macOS also Custom Folder (macOS, iPhone, iPad); **Trace folder** (macOS, Windows, Linux); **Maximum file size** in MB (everywhere but the browser's portrait layout) | as named |
 | Display | **Segment Style**: "Modernized" or "Classic" | macOS, iPhone, iPad, Windows, Linux |
 | Keyboard | **Keyboard Feedback**: "Off", "Haptic" (iPhone, iPad), "Click Sound" | iPhone, iPad; the browser's portrait layout |
@@ -59,8 +59,8 @@ folder given as `fixed:<folder>`.
 
 | Key | Where it applies |
 |---|---|
-| `[folders] presets` | **File ▸ Load Preset…** (in the dialog: the preset folder) |
-| `[folders] asm-overlays` | **Select File** of the ASM overlay ([Debugger](07-debugger.md)) |
+| `[folders] presets` | **File ▸ Load Preset…** (in the dialog: the Presets folder) |
+| `[folders] asm-overlays` | **Select File** of the ASM overlay ([Debugger](07-debugger.md); in the dialog: the ASM overlay folder) |
 
 ## Window
 

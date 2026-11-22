@@ -86,7 +86,7 @@ TEST(settings_spec_per_frontend_and_layout) {
     using F = cu59::ShellFrontend;
     CHECK_EQ(describe(cu59::settingsSpec(F::Qt6, "Version 3.0.0 (x)")),
              std::string("General: Startup model Version 3.0.0 (x);Startup presets: TI-59 TI-58 TI-58C;Storage: Save folder;"
-                         "Folders: Preset folder;Tracing: Trace folder Maximum file size (MB);Display: Segment Style;"));
+                         "Folders: Presets folder ASM overlay folder;Tracing: Trace folder Maximum file size (MB);Display: Segment Style;"));
     CHECK_EQ(describe(cu59::settingsSpec(F::WebWide, "Version 3.0.0")),
              std::string("General: Startup model Version 3.0.0;Startup presets: TI-59 TI-58 TI-58C;"
                          "Tracing: Maximum file size (MB);"));
@@ -99,12 +99,22 @@ TEST(settings_spec_per_frontend_and_layout) {
     const auto portrait = cu59::settingsSpec(F::WebPortrait, "");
     CHECK(portrait.sections.back().rows[0].choices ==
           (std::vector<std::pair<std::string, std::string>>{{"off", "Off"}, {"click", "Click Sound"}}));
-    // No Solid State Module row; the [folders] kind asm-overlays gets none.
+    // No Solid State Module row.
     for (const auto& s : qt.sections)
-        for (const auto& r : s.rows) {
-            CHECK(r.key != "module");
-            CHECK(r.key != "asm-overlays" && r.key != "other");
-        }
+        for (const auto& r : s.rows) CHECK(r.key != "module");
+    // The Mac's file dialogs start in the loaders' folders; the iOS importer
+    // takes no start folder, the Web has no folders.
+    auto folders = [](const shell::DialogSpec& spec) {
+        std::string out;
+        for (const auto& s : spec.sections)
+            if (s.title == "Folders")
+                for (const auto& r : s.rows) out += r.key + " ";
+        return out;
+    };
+    CHECK_EQ(folders(cu59::settingsSpec(F::SwiftMac, "")), std::string("presets asm-overlays "));
+    CHECK_EQ(folders(qt), std::string("presets asm-overlays "));
+    CHECK_EQ(folders(cu59::settingsSpec(F::SwiftIOS, "")), std::string());
+    CHECK_EQ(folders(cu59::settingsSpec(F::WebWide, "")), std::string());
 }
 
 TEST(faceplate_hit_map) {

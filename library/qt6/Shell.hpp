@@ -95,6 +95,9 @@ public:
     void choose(const shell::MenuItem&);
     // A command the shell sends: its refusal becomes a notice or a question.
     void sendChecked(const sessions::CommandName&, sessions::Value args);
+    // The product's own state of its items changed (a toggle's check): the
+    // menus and More are computed anew.
+    void productChanged();
     void openSettings();
     void openAbout();
     void loadPreset();

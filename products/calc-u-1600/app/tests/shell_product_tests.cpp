@@ -2,6 +2,7 @@
 // state, and the help address and the About texts.
 #include "SessionFixture.hpp"
 #include "TestHarness.hpp"
+#include "app/SharpChrome.hpp"
 #include "app/SharpShellProduct.hpp"
 #include "control/ControlState.hpp"
 #include "shell/ValueForms.hpp"
@@ -73,4 +74,14 @@ TEST(calc_u_1600_forms_unchanged) {
                 CHECK(fields == (std::vector<std::string>{"widget", "section", "key", "label"}));
             }
     }
+}
+
+// The chrome: every colour the GUIs name is in both sets.
+TEST(sharp_chrome_complete) {
+    const calcu::shell::Chrome& c = cu1600::sharpChrome();
+    const auto problems = calcu::shell::checkChrome(c, cu1600::sharpChromeNames());
+    for (const auto& p : problems) std::printf("  %s\n", p.c_str());
+    CHECK(problems.empty());
+    CHECK(c.dark.has_value());
+    CHECK(calcu::shell::toValue(c).find("dark") != nullptr);
 }

@@ -1,6 +1,7 @@
 #include "shell/MenuModel.hpp"
 #include <algorithm>
 #include <functional>
+#include <optional>
 
 namespace calcu::shell {
 
@@ -48,6 +49,34 @@ void appendGroup(std::vector<MenuItem>& into, std::vector<MenuItem> group) {
     for (auto& i : group) into.push_back(std::move(i));
 }
 
+// A product item as the control state has it now, or none (its media
+// place is not there).
+std::optional<MenuItem> productItem(const ProductItem& item, const Value& controlState, const Value* entries) {
+    if (!item.children.empty()) {
+        std::vector<MenuItem> children;
+        for (const auto& c : item.children)
+            if (auto i = productItem(c, controlState, entries)) children.push_back(std::move(*i));
+        return submenu(item.id, item.label, std::move(children));
+    }
+    MenuItem i = action(item.id, item.label);
+    if (!item.mediaPlace.empty()) {   // only with its media place, as its `insert`
+        const Value* place = nullptr;
+        for (const auto& m : read::elements(controlState, "mediaPlaces"))
+            if (read::text(m, "id") == item.mediaPlace) place = &m;
+        if (!place) return std::nullopt;
+        applyAvailability(i, availabilityOf(*place, "insert"));
+    }
+    if (!item.entry.empty() && i.enabled) {   // a product item follows its product entry
+        const Value* e = entries ? entries->find(item.entry) : nullptr;
+        applyAvailability(i, e ? availabilityOf(*e) : Availability{false, ""});
+    }
+    if (item.checked) {
+        i.checkable = true;
+        i.checked = item.checked();
+    }
+    return i;
+}
+
 std::vector<MenuItem> productItems(const ShellInputs& in, const ShellProduct& p, MenuGroup g) {
     std::vector<MenuItem> out;
     // Without a control state the product could not start; only its
@@ -56,19 +85,7 @@ std::vector<MenuItem> productItems(const ShellInputs& in, const ShellProduct& p,
     const Value* entries = in.controlState.find("product");
     for (const auto& item : p.items) {
         if (item.group != g) continue;
-        MenuItem i = action(item.id, item.label);
-        if (!item.mediaPlace.empty()) {   // only with its media place, as its `insert`
-            const Value* place = nullptr;
-            for (const auto& m : read::elements(in.controlState, "mediaPlaces"))
-                if (read::text(m, "id") == item.mediaPlace) place = &m;
-            if (!place) continue;
-            applyAvailability(i, availabilityOf(*place, "insert"));
-        }
-        if (!item.entry.empty() && i.enabled) {   // a product item follows its product entry
-            const Value* e = entries ? entries->find(item.entry) : nullptr;
-            applyAvailability(i, e ? availabilityOf(*e) : Availability{false, ""});
-        }
-        out.push_back(std::move(i));
+        if (auto i = productItem(item, in.controlState, entries)) out.push_back(std::move(*i));
     }
     return out;
 }

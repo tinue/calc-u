@@ -391,11 +391,10 @@ TEST(button_trace_ends_at_the_limit_with_a_notice) {
 }
 
 
-// Longer (CalcU1600DebuggerSpeed): a PC-1600 at full speed with a
+// A PC-1600 at full speed with a
 // breakpoint set that is never reached, against the same run without one;
 // the numbers are printed.
-TEST(speed_pc1600_full_speed_with_a_breakpoint) {
-    if (!std::getenv("CALCU1600_SPEED")) return;
+TEST_IN(longer, speed_pc1600_full_speed_with_a_breakpoint) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     auto measure = [](bool breakpoint) {
         const calcu::machine::Catalogue cat = sharp::sharpCatalogue();

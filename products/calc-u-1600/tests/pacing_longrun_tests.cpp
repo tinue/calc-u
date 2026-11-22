@@ -9,9 +9,9 @@
 // clock) must match wall time within kBoundSeconds, and over each
 // stretch between stalls it may differ by no more than 100 ppm.
 //
-// Real clock (Checkpoint group): CALCU1600_PACING_LONGRUN=<seconds> runs the
-// same session on the real clock (600 for the checkpoint) and checks the
-// bound at the end.
+// Real clock (Checkpoint group, `--group checkpoint`): the same session on
+// the real clock for ten minutes (CALCU1600_PACING_LONGRUN=<seconds> for
+// another time), the bound checked at the end.
 
 #include <chrono>
 #include <cmath>
@@ -90,9 +90,8 @@ void test_scripted(const char* model) {
 }
 
 void test_real_clock(const char* model) {
-    const char* env = std::getenv("CALCU1600_PACING_LONGRUN");
-    if (!env) return;   // the checkpoint group sets it (600)
-    const double seconds = std::atof(env);
+    const char* env = std::getenv("CALCU1600_PACING_LONGRUN");   // seconds; ten minutes unless set
+    const double seconds = env ? std::atof(env) : 600.0;
     SessionFixture f("calcu-pacing-longrun-real");
     auto steady = [] {
         return std::chrono::duration_cast<calcu::pacing::WallTime>(std::chrono::steady_clock::now().time_since_epoch());
@@ -129,8 +128,7 @@ void test_real_clock(const char* model) {
 
 } // namespace
 
-// Scripted: Frequent group. Real clock: Checkpoint group, only with
-// CALCU1600_PACING_LONGRUN set.
+// Scripted: Frequent group. Real clock: Checkpoint group.
 TEST(pacing_longrun_scripted_pc1500a) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     test_scripted("PC-1500A");
@@ -139,5 +137,5 @@ TEST(pacing_longrun_scripted_pc1600) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     test_scripted("PC-1600");
 }
-TEST(pacing_longrun_real_clock_pc1500a) { test_real_clock("PC-1500A"); }
-TEST(pacing_longrun_real_clock_pc1600) { test_real_clock("PC-1600"); }
+TEST_IN(checkpoint, pacing_longrun_real_clock_pc1500a) { test_real_clock("PC-1500A"); }
+TEST_IN(checkpoint, pacing_longrun_real_clock_pc1600) { test_real_clock("PC-1600"); }

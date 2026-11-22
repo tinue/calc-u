@@ -2,7 +2,6 @@
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
 #include "TestProduct.hpp"
-#include <cstdlib>
 #include <limits>
 #include <string>
 #include <vector>
@@ -263,10 +262,8 @@ TEST(type_replies_when_enter_up) {
     CHECK(ev.size() == 4 && run.machine().tickCount() - ev[3].tick < 8);
 }
 
-// An hour of emulated time in pieces: about 20 s, so Longer only
-// (LibraryHarnessHour sets CALCU_HARNESS_HOUR).
-TEST(harness_key_gives_up_after_an_hour) {
-    if (!std::getenv("CALCU_HARNESS_HOUR")) return;
+// An hour of emulated time in pieces of 1/60 s: about 20 s, so Longer.
+TEST_IN(longer, harness_key_gives_up_after_an_hour) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;

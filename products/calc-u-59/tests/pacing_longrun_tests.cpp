@@ -5,7 +5,8 @@
 //
 // Scripted (Frequent): an hour per model on a clock this test supplies, calls
 // about 60 times a second with ±4 ms jitter, an oversleep now and then and one
-// stall. Real clock (Checkpoint): CALCU59_PACING_LONGRUN=<seconds>.
+// stall. Real clock (Checkpoint, `--group checkpoint`): ten minutes, or
+// CALCU59_PACING_LONGRUN=<seconds>.
 
 #include "TestHarness.hpp"
 #include "SessionRig.hpp"
@@ -92,10 +93,9 @@ TEST(pacing_longrun_scripted_ti) {
     }
 }
 
-TEST(pacing_longrun_real_clock_ti) {
-    const char* env = std::getenv("CALCU59_PACING_LONGRUN");
-    if (!env) return;  // the checkpoint group sets it (600)
-    const double seconds = std::atof(env);
+TEST_IN(checkpoint, pacing_longrun_real_clock_ti) {
+    const char* env = std::getenv("CALCU59_PACING_LONGRUN");   // seconds; ten minutes unless set
+    const double seconds = env ? std::atof(env) : 600.0;
     for (ModelId model : {ModelId{kTI59}, ModelId{kTI58}, ModelId{kTI58C}}) {
         auto app = session(model, steadyWallTime);
         auto& ms = app.session->machineSession();

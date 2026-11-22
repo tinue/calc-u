@@ -346,12 +346,10 @@ if(CALCU_TESTS)
   # smoke builds in build/web itself (Emscripten).
   calcu_add_test(CalcU1600WebPlaywright longer COMMAND frontends/web/run-tests.sh)
   calcu_add_test(CalcU1600WasmSmoke longer COMMAND tools/build_wasm_check.sh)
-  # The examples against their reference runs.
-  calcu_add_test(CalcU1600ReferenceRuns longer COMMAND CalcU1600CoreTests examples_match_their_references
-                 PROPERTIES ENVIRONMENT CALCU1600_REFERENCE_COMPARE=1)
-  # Full speed with a breakpoint set, printed (with and without the breakpoint).
-  calcu_add_test(CalcU1600DebuggerSpeed longer COMMAND CalcU1600SessionTests speed_pc1600_full_speed_with_a_breakpoint
-                 PROPERTIES ENVIRONMENT CALCU1600_SPEED=1)
+  # The runners' Longer TESTs (TEST_IN(longer, …)): the examples against
+  # their reference runs; full speed with a breakpoint set, printed.
+  calcu_add_test(CalcU1600CoreTests.longer longer COMMAND CalcU1600CoreTests --group longer)
+  calcu_add_test(CalcU1600SessionTests.longer longer COMMAND CalcU1600SessionTests --group longer)
   # A Web dist/ built from a
   # ROM folder without one file names it and starts no calculator.
   if(NOT WIN32)
@@ -395,9 +393,10 @@ if(CALCU_TESTS)
   endif()
 
   # Checkpoint: run before a release.
-  # Ten minutes per model on the real clock (PC-1500A, then PC-1600).
-  calcu_add_test(CalcU1600PacingRealClock checkpoint COMMAND CalcU1600SessionTests pacing_longrun_real_clock
-                 PROPERTIES ENVIRONMENT CALCU1600_PACING_LONGRUN=600 TIMEOUT 1500)
+  # The runner's Checkpoint TESTs: ten minutes per model on the real clock
+  # (PC-1500A, then PC-1600).
+  calcu_add_test(CalcU1600SessionTests.checkpoint checkpoint COMMAND CalcU1600SessionTests --group checkpoint
+                 PROPERTIES TIMEOUT 1500)
   if(TARGET CalcU1600Qt)
     # A PC-1600 keeps one minute in the Qt6 frontend (the --pacing-probe
     # test hook of non-release builds), offscreen with a home of its own: the

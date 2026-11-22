@@ -12,7 +12,7 @@
 // `saveas:` wrote, against the ones of examples/dwx/, without their time
 // stamps.
 //
-// Longer (`CalcU1600ReferenceRuns`, CALCU1600_REFERENCE_COMPARE=1).
+// Longer (`CalcU1600CoreTests --group longer`).
 // CALCU1600_REFERENCE_RECORD=<folder> writes the references of every
 // example into that folder (a draft); it never writes into
 // tests/references/. CALCU1600_REFERENCE_ONLY=<text> limits both to the
@@ -279,10 +279,8 @@ std::vector<std::string> compare(const std::string& preset, const fs::path& copy
 
 } // namespace
 
-TEST(examples_match_their_references) {
+TEST_IN(longer, examples_match_their_references) {
     const char* draft = std::getenv("CALCU1600_REFERENCE_RECORD");
-    SKIP_UNLESS(draft || std::getenv("CALCU1600_REFERENCE_COMPARE") != nullptr,
-                "the reference runs are Longer (CalcU1600ReferenceRuns)");
     SKIP_UNLESS(fs::exists("roms/PC1600-P0-B0-new.bin") && fs::exists("roms/PC-1500_A04.ROM"),
                 "the ROMs are not fetched (roms/fetch_roms.sh)");
     calcu::testing::TempFolder tmp("c1600-references");

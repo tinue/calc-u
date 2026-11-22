@@ -12,7 +12,7 @@ chapter](chapter:2).
 
 ```mermaid
 flowchart TB
-  menus["Menus: File · Edit · Machine · Help, or the More button"]
+  menus["Menus: File · Edit · Machine · Help (on a desktop)"]
   faceplate["Faceplate: the display and the keys of the model"]
   bar["Control bar: the model, then the module slots, peripherals and media"]
   panels["Panels: the paper, and the product's own"]
@@ -60,14 +60,19 @@ greyed out; where the platform shows tooltips, its tooltip says why.
 On macOS, Settings…, About and Quit are in the application menu, as on
 every Mac program. In the browser there is no Quit.
 
-### Without a menu bar
+### Desktop and mobile
 
-A window without a menu bar (on a phone, on a tablet, in the browser's
-portrait layout) keeps Preset and Settings as buttons on the control
-bar and has a **More** button (⋯) with every other item: Examples ▸,
-the items for media, Reset, Cold boot, which asks first, Resume, Help,
-and About where the system has one. An item that cannot be used
-now is greyed out there too.
+On a **desktop** (the desktop apps, the browser in a tab on a computer)
+the menus are in the menu bar. On **mobile** (on the iPhone and the iPad,
+the browser version installed on a phone or tablet, a browser that asks
+for the mobile site) there is no menu bar.
+
+On both, the control bar ends with the **More** button (⋯) at its right
+edge. It holds the menus' items without what has a control elsewhere:
+Load Preset…, Examples ▸, the items for media, Settings…, Reset, Cold
+boot, which asks first there, Resume, Help, and About where the system
+has one. Model ▸ is not in it (the model picker is on the bar), nor
+Quit. An item that cannot be used now is greyed out there too.
 
 ### Shortcuts
 
@@ -88,17 +93,22 @@ own.
 The control bar holds the hardware of the running machine, from left to
 right:
 
-1. in a window without a menu bar, the Reset button;
-2. the model picker;
-3. one picker for each module slot, with the slot's number before it
+1. the model picker;
+2. one picker for each module slot, with the slot's number before it
    when the model has more than one;
-4. a control for each other place where a peripheral can go: a button
+3. a control for each other place where a peripheral can go: a button
    with the peripheral's name when only one fits the place (press it to
-   attach or detach), or a picker with an empty choice when several fit;
-5. the controls of each media place, such as a disk drive or a cassette
+   attach or detach), or a picker when several fit, whose empty choice
+   names the place ("No printer");
+4. the controls of each media place, such as a disk drive or a cassette
    ([Media](04-media.md));
-6. in a window without a menu bar, the Preset, Settings and More
-   buttons.
+5. the More button, at the right edge.
+
+On mobile the bar keeps what you use while the machine runs: the model
+picker, the module slots and the media the product names there. The
+places' controls are in **More ▸ Peripherals ▸** (unless the product
+shows them on a panel), and each other media place has a submenu in
+More: its media to choose, then **Name & Save…**.
 
 A model without such a place has no control for it, and no gap where it
 would be. Which controls your product shows for each model is in
@@ -122,8 +132,8 @@ they came.
 
 ## The settings dialog
 
-**File ▸ Settings…** (the Settings button in a window without a menu
-bar) opens a dialog titled "Settings". A change is
+**File ▸ Settings…** (More ▸ Settings… on mobile) opens a dialog titled
+"Settings". A change is
 applied and kept at once; the only button is Close (Done on iOS). You can change
 settings while an operation runs. The sections are:
 

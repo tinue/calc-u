@@ -46,6 +46,7 @@ std::string fixtureText() {
     values.emplace_back("noColdBoot", noColdBoot.toValue());
     values.emplace_back("presetList", st::presetList());
     values.emplace_back("media", st::mediaWithKind());
+    values.emplace_back("mediaPlace", st::mediaWithPlace());
     std::string out =
         "# The inputs of library/web/tests/shell_model.test.js, written by\n"
         "# library/shell/tests/inputs_fixture_tests.cpp (CALCU_SHELL_INPUTS=1). Do not edit.\n";

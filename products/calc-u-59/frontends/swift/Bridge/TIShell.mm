@@ -63,7 +63,6 @@ NSString *const TIShellActionHelp = @"help";
 @property (nonatomic, readwrite) BOOL plugged;
 @property (nonatomic, readwrite, copy) NSArray<TIMenuItem *> *choices;
 @property (nonatomic, readwrite, copy) NSString *mediumKind;
-@property (nonatomic, readwrite, nullable) TIMenuItem *item;
 @end
 @interface TIBarFit ()
 @property (nonatomic, readwrite) CGFloat width;
@@ -196,10 +195,10 @@ NSInteger keyIndexOf(const std::string &key) {
 }
 
 - (shell::Traits)traits {
-    // The iPhone and the iPad: no menu bar to count on (the bar holds
-    // Preset, Settings and More), no About, no Quit.
+    // The iPhone and the iPad: mobile (no menu bar to count on; Load
+    // Preset… and Settings… are in More), no About, no Quit.
     shell::Traits t;
-    t.menuBar = false;
+    t.platform = shell::Platform::Mobile;
     t.about = false;
     t.hasQuit = false;
     return t;
@@ -225,8 +224,11 @@ NSInteger keyIndexOf(const std::string &key) {
     return out;
 }
 
-- (NSArray<TIMenuItem *> *)moreItems {
-    return itemsFrom(shell::moreItems(shell::menus(self.inputs, product(), self.traits), product()));
+- (NSArray<TIMenuItem *> *)moreItems {   // the bar's More, which knows whether the places are shown
+    for (const auto &g : shell::bar(self.inputs, product(), self.traits))
+        for (const auto &c : g.controls)
+            if (c.kind == shell::BarControl::Kind::More) return itemsFrom(c.choices);
+    return @[];
 }
 
 static TIBarControl *controlFrom(const shell::BarControl &c, shell::BarGroup group, bool pushed) {
@@ -241,7 +243,6 @@ static TIBarControl *controlFrom(const shell::BarControl &c, shell::BarGroup gro
     t.plugged = c.plugged;
     t.choices = itemsFrom(c.choices);
     t.mediumKind = ns(c.mediumKind);
-    if (c.kind == shell::BarControl::Kind::Action) t.item = itemFrom(c.item);
     return t;
 }
 

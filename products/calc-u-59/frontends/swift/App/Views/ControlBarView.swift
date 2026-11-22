@@ -3,14 +3,14 @@ import SwiftUI
 /// The control bar below the faceplate, drawn from the library's bar model
 /// (`TIShell.bar`) over the control state: the model picker first, the
 /// picker of `slot-1` (the library's module picker), the card controls on
-/// the TI-59; on iOS and iPadOS, where no menu bar can be counted on,
-/// Preset, Settings and More (with Reset). The PC-100C's button is on the
+/// the TI-59; More at the right edge (Load Preset…, Settings…, Reset and the
+/// rest of the menus). The PC-100C's button is on the
 /// paper panel (`TIShell.paperPlaces`). No control here
 /// decides what the machine offers: a control is enabled exactly when its
 /// entry is available now.
 struct ControlBarView: View {
     @Environment(EmulatorViewModel.self) var viewModel
-    /// The labels ("Crd", "Preset") beside the icons; the column decides by
+    /// The labels ("Crd") beside the icons; the column decides by
     /// the library's rule (TIBarFit).
     var labels: Bool = true
 
@@ -31,7 +31,7 @@ struct ControlBarView: View {
     }
 
     /// The bar model's groups; a spread bar (Calc-U-59): the model and the
-    /// module left, the card controls in the middle, Preset, Settings and More right.
+    /// module left, the card controls in the middle, More right.
     private func row(labels: Bool) -> some View {
         let controls = viewModel.barControls
         return HStack(spacing: 12) {
@@ -59,8 +59,6 @@ struct ControlBarView: View {
             PlaceButton(control: control, showLabel: labels)
         case .media:
             CardControls(showLabels: labels)
-        case .action:
-            if let item = control.item { action(item, labels: labels) }
         case .more:
             moreMenu(control)
         @unknown default:
@@ -118,30 +116,6 @@ struct ControlBarView: View {
         .fixedSize()
         .disabled(!(control.choices.first?.enabled ?? true))
         .accessibilityIdentifier("bar-slot-\(control.controlID)")
-    }
-
-    // MARK: - Actions (iOS: Preset, Settings)
-
-    @ViewBuilder
-    private func action(_ item: TIMenuItem, labels: Bool) -> some View {
-        switch item.itemID {
-        case TIShellActionLoadPreset:
-            Button("Preset", systemImage: "doc.badge.arrow.up") { viewModel.choose(item) }
-                .labelStyle(showLabel: labels)
-                .controlSize(.large)
-                .disabled(!item.enabled)
-                .accessibilityIdentifier("btn-preset")
-        case TIShellActionSettings:
-            Button("Settings", systemImage: "gear") { viewModel.choose(item) }
-                .labelStyle(.iconOnly)
-                .controlSize(.large)
-                .disabled(!item.enabled)
-                .accessibilityIdentifier("btn-settings")
-        default:
-            Button(item.label) { viewModel.choose(item) }
-                .disabled(!item.enabled)
-                .accessibilityIdentifier("bar-action-\(item.itemID)")
-        }
     }
 
     // MARK: - More

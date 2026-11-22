@@ -121,6 +121,22 @@ inline Value mediaWithKind() {
                           {"places", Value(Value::Array{})}});
 }
 
+// The media topic with the place `card`: its picker holds the empty entry
+// (chosen), a template and an instance that cannot be chosen now.
+inline Value mediaWithPlace() {
+    auto entry = [](const char* group, const char* id, const char* label, bool canChoose, bool chosen, const char* hint = "") {
+        Value::Object o{{"group", group}, {"id", id}, {"label", label}, {"canChoose", canChoose}, {"chosen", chosen}};
+        if (*hint) o.push_back({"hint", hint});
+        return Value(std::move(o));
+    };
+    const Value picker(Value::Array{entry("empty", "", "Empty", true, true),
+                                    entry("bundled-template", "bundled:Blank.test-card.yaml", "Blank", true, false),
+                                    entry("instance", "saved:Busy.test-card.yaml", "Busy", false, false, "In the other reader.")});
+    const Value place = Value::object({{"place", "card"}, {"kind", "test-card"}, {"nameAndSave", false}, {"picker", picker}});
+    return Value::object({{"kinds", Value(Value::Array{Value::object({{"kind", "test-card"}, {"label", "test card"}})})},
+                          {"places", Value(Value::Array{place})}});
+}
+
 inline ShellProduct product() {
     ShellProduct p;
     p.name = "Test-Product";

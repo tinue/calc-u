@@ -9,7 +9,7 @@
 //   calcuShellMenus(inputs, product, traits) → [{id, label, items}]
 //   calcuShellBar(inputs, product, traits) → [{group, controls, pushed}]
 //   calcuShellBarFit(faceplate, withoutLabels, withLabels, room?) → {width, labels}
-//   calcuShellMoreItems(menus, product) → the items of the More button
+//   calcuShellMoreItems(menus, product, placesShown?) → the items of the More button
 //   calcuShellPanels(inputs, product) → [{kind, owner, ownerPlace, places}]
 //   calcuShellFamilySections(rows, keysShown) → spec; calcuShellDialog(settings, presetList, spec)
 //   calcuShellLoading() → {busy(runs, full, now), shown(now), due()}
@@ -22,12 +22,11 @@
 // helpUrl, aboutLabel, aboutLines, aboutLinks: [[label, url]], variantLabels: {id: label},
 // barModelLabels: {id: label}, barSpread, barShortPickers,
 // copyScreen: fn | null, pasteText, moduleSlotPinOuts: [...], placesWithoutControl: [...], placesOnPaper: [...],
-// items: [{group, id, label, entry, act, onBar, mediaPlace}]}; groups as in C++: "FileOpen", "FileKinds",
+// mobileBarMedia: [...], items: [{group, id, label, entry, act, onBar, mediaPlace}]}; groups as in C++: "FileOpen", "FileKinds",
 // "FileMedia", "FileEnd", "Edit", "MachineEnd", "Help".
 // traits: {hasQuit, shortcuts, savedMedia, platform, settings, about} (platform
-// "desktop" has a menu bar, "mobile" none: the menus are still computed, for
-// the More button, but not drawn; settings false: no Settings…; about false:
-// no About).
+// "desktop" has a menu bar, "mobile" none; the menus are computed on both,
+// for the More button; settings false: no Settings…; about false: no About).
 
 const CALCU_SHELL_ACTIONS = {
   loadPreset: "load-preset", savedMedia: "saved-media", settings: "settings", quit: "quit",
@@ -198,8 +197,8 @@ function calcuShellFileMenu(inputs, product, traits) {
 // product's mobileBarMedia) gets a submenu: its entries to choose, then
 // Name & Save… (the shell action `media-name-and-save`, args {place}).
 function calcuShellMediaMenus(inputs, product, traits) {
-  const kept = product.mobileBarMedia;
-  if (traits.platform !== "mobile" || !kept || !calcuShellStarted(inputs)) return [];
+  const kept = product.mobileBarMedia || [];
+  if (traits.platform !== "mobile" || !calcuShellStarted(inputs)) return [];
   const out = [];
   for (const m of calcuShellList(inputs.controlState, "mediaPlaces")) {
     const kind = calcuShellText(m, "kind");
@@ -351,8 +350,8 @@ function calcuShellBar(inputs, product, traits) {
   const running = choices.find((c) => c.checked);
   groups[0].controls.push({ kind: "model", id: "model", label: "", shown: running ? running.label : "",
     shortShown: !!product.barShortPickers, plugged: false, choices, entry: null, mediumKind: "" });
-  // A spread bar: the room before the media group and End is taken up.
-  groups[3].pushed = groups[4].pushed = !!product.barSpread;
+  // A spread bar: the room before the media group is taken up (End's always is, below).
+  groups[3].pushed = !!product.barSpread;
   const places = calcuShellList(cs, "places");
   const slotCount = places.filter((p) => calcuShellPlaceKind(p, product) === "slot").length;
   let slot = 0;
@@ -367,10 +366,10 @@ function calcuShellBar(inputs, product, traits) {
   const mobile = t.platform === "mobile";
   // Mobile keeps on its bar what is used while the machine runs: the
   // peripherals' places and the media the product does not name go to More.
-  const mobileMedia = product.mobileBarMedia || null;
+  const mobileMedia = product.mobileBarMedia || [];
   for (const m of calcuShellList(cs, "mediaPlaces")) {
     const kind = calcuShellText(m, "kind");
-    if (mobile && mobileMedia && !mobileMedia.includes(kind)) continue;
+    if (mobile && !mobileMedia.includes(kind)) continue;
     groups[3].controls.push({ kind: "media", id: calcuShellText(m, "id"), label: "", plugged: false, choices: [], entry: m, mediumKind: kind });
   }
   if (mobile) groups[2].controls = [];

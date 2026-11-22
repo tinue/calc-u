@@ -42,7 +42,7 @@ final class LayoutTests: XCTestCase {
         XCTAssertTrue(text.waitForExistence(timeout: 10), "no ROMs-missing text")
         XCTAssertTrue(text.label.contains("TMC0583.txt: missing"), "the text does not name the file: \(text.label)")
         XCTAssertTrue(text.label.contains("The full set of ROM files is needed"))
-        XCTAssertFalse(app.buttons["btn-preset"].exists, "the calculator is shown")
+        XCTAssertFalse(app.buttons["bar-more"].exists, "the calculator is shown")
         // No bar; Help still works.
         XCTAssertFalse(app.descendants(matching: .any)["bar-model"].exists, "a control bar without the ROMs")
         XCTAssertTrue(app.buttons["item-help"].exists, "no help without the ROMs")
@@ -50,54 +50,57 @@ final class LayoutTests: XCTestCase {
 
     // MARK: - Button visibility
 
+    /// The More button must be visible and hittable.
     @MainActor
-    func testPresetButtonVisible() throws {
+    func testMoreButtonVisible() throws {
         let app = launchApp(orientation: .portrait)
-        let button = app.buttons["btn-preset"]
-        XCTAssertTrue(button.waitForExistence(timeout: 5), "Preset button not found")
-        XCTAssertTrue(button.isHittable, "Preset button exists but is not hittable")
+        let button = app.buttons["bar-more"]
+        XCTAssertTrue(button.waitForExistence(timeout: 5), "More button not found")
+        XCTAssertTrue(button.isHittable, "More button exists but is not hittable")
     }
 
-    /// The Settings button must be visible and hittable.
+    /// Load Preset… and Settings… are in More, not on the bar.
     @MainActor
-    func testSettingsButtonVisible() throws {
+    func testPresetAndSettingsInMore() throws {
         let app = launchApp(orientation: .portrait)
-        let button = app.buttons["btn-settings"]
-        XCTAssertTrue(button.waitForExistence(timeout: 5), "Settings button not found")
-        XCTAssertTrue(button.isHittable, "Settings button exists but is not hittable")
+        XCTAssertTrue(app.buttons["bar-more"].waitForExistence(timeout: 5), "More button not found")
+        app.buttons["bar-more"].tap()
+        for id in ["more-item-load-preset", "more-item-settings"] {
+            XCTAssertTrue(app.descendants(matching: .any)[id].firstMatch.waitForExistence(timeout: 3), "More has no \(id)")
+        }
     }
 
     // MARK: - Label wrapping
 
-    /// Preset button label must not wrap onto two lines.
+    /// The card button's label must not wrap onto two lines.
     ///
-    /// A .large SwiftUI button with a single-line label should be at most
-    /// ~56 pt tall. If the label wraps, the button grows taller than that.
+    /// A SwiftUI button with a single-line label should be at most ~56 pt
+    /// tall. If the label wraps, the button grows taller than that.
     @MainActor
-    func testPresetButtonLabelSingleLine() throws {
+    func testCardButtonLabelSingleLine() throws {
         let app = launchApp(orientation: .portrait)
-        let button = app.buttons["btn-preset"]
-        XCTAssertTrue(button.waitForExistence(timeout: 5), "Preset button not found")
+        let button = app.buttons["bar-media-card-reader"]
+        XCTAssertTrue(button.waitForExistence(timeout: 5), "card button not found")
         let height = button.frame.height
         XCTAssertLessThanOrEqual(
             height, singleLineLabelMaxHeight,
-            "Preset button is \(height) pt tall — label may be wrapping"
+            "card button is \(height) pt tall — label may be wrapping"
         )
     }
 
-    /// Landscape: Preset button label must not wrap onto two lines.
+    /// Landscape: the card button's label must not wrap onto two lines.
     ///
     /// On iPad the landscape layout switches to side-by-side mode where the
     /// card reader bar is always visible — the most likely place for wrapping.
     @MainActor
-    func testPresetButtonLabelSingleLineLandscape() throws {
+    func testCardButtonLabelSingleLineLandscape() throws {
         let app = launchApp(orientation: .landscapeLeft)
-        let button = app.buttons["btn-preset"]
-        XCTAssertTrue(button.waitForExistence(timeout: 5), "Preset button not found in landscape")
+        let button = app.buttons["bar-media-card-reader"]
+        XCTAssertTrue(button.waitForExistence(timeout: 5), "card button not found in landscape")
         let height = button.frame.height
         XCTAssertLessThanOrEqual(
             height, singleLineLabelMaxHeight,
-            "Preset button is \(height) pt tall in landscape — label may be wrapping"
+            "card button is \(height) pt tall in landscape — label may be wrapping"
         )
     }
 
@@ -108,7 +111,7 @@ final class LayoutTests: XCTestCase {
     @MainActor
     func testWideWindowShowsDebugger() throws {
         let app = launchApp(orientation: .landscapeLeft)
-        XCTAssertTrue(app.buttons["btn-preset"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["bar-more"].waitForExistence(timeout: 5))
         // The window frame includes the safe-area insets the app's layout excludes;
         // close enough on the devices this runs on (iPad, iPhone Duo).
         let frame = app.windows.firstMatch.frame
@@ -144,7 +147,7 @@ final class LayoutTests: XCTestCase {
     @MainActor
     func testScreenshotLandscape() throws {
         let app = launchApp(orientation: .landscapeLeft)
-        _ = app.buttons["btn-preset"].waitForExistence(timeout: 5)
+        _ = app.buttons["bar-more"].waitForExistence(timeout: 5)
         attachScreenshot(app, name: "Landscape — \(deviceDescription)")
     }
 

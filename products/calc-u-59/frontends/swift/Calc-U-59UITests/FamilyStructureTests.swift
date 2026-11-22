@@ -94,12 +94,12 @@ final class FamilyStructureTests: XCTestCase {
     func test_the_menus() throws {
         let (app, _) = launch()
         // Every item on the bar or behind More (the PC-100C is on the paper).
-        for id in ["bar-model", "bar-slot-slot-1", "bar-media-card-reader",
-                   "btn-preset", "btn-settings", "bar-more"] {
+        for id in ["bar-model", "bar-slot-slot-1", "bar-media-card-reader", "bar-more"] {
             XCTAssertTrue(element(app, id).waitForExistence(timeout: 5), "no \(id) on the bar")
         }
         openMore(app)
-        for id in ["more-item-examples", "more-item-reset", "more-item-cold-boot", "more-item-resume", "more-item-help"] {
+        for id in ["more-item-load-preset", "more-item-examples", "more-item-settings", "more-item-reset",
+                   "more-item-cold-boot", "more-item-resume", "more-item-help"] {
             XCTAssertTrue(element(app, id).waitForExistence(timeout: 3), "More has no \(id)")
         }
         XCTAssertFalse(element(app, "more-item-resume").isEnabled, "Resume while running")
@@ -157,8 +157,7 @@ final class FamilyStructureTests: XCTestCase {
     /// On an iPhone in portrait every control of the bar can be reached.
     func test_iphone_portrait_reaches_every_control() throws {
         let app = launchApp(orientation: .portrait)
-        for id in ["bar-model", "bar-slot-slot-1", "bar-media-card-reader",
-                   "btn-preset", "btn-settings", "bar-more"] {
+        for id in ["bar-model", "bar-slot-slot-1", "bar-media-card-reader", "bar-more"] {
             let e = element(app, id)
             XCTAssertTrue(e.waitForExistence(timeout: 5), "no \(id)")
             XCTAssertTrue(e.isHittable, "\(id) cannot be reached")
@@ -192,7 +191,7 @@ final class FamilyStructureTests: XCTestCase {
 
     func test_the_settings() throws {
         let (app, harness) = launch()
-        app.buttons["btn-settings"].tap()
+        chooseFromMore(app, "settings")
         XCTAssertTrue(element(app, "settings-dialog").waitForExistence(timeout: 5), "no settings")
         var rows = ["setting-startup-model", "setting-preset-TI-59", "setting-preset-TI-58", "setting-preset-TI-58C",
                     "setting-display-led-style", "setting-trace-location", "setting-trace-max-file-size-mb"]
@@ -228,7 +227,7 @@ final class FamilyStructureTests: XCTestCase {
     /// A notice that comes while the settings sheet is open shows over it.
     func test_notice_over_the_settings_sheet() throws {
         let (app, harness) = launch()
-        app.buttons["btn-settings"].tap()
+        chooseFromMore(app, "settings")
         XCTAssertTrue(element(app, "settings-dialog").waitForExistence(timeout: 5))
         _ = harness.command("c59 asm load \(try badOverlay("notes.asm"))")
         let ok = app.alerts.buttons["OK"].firstMatch   // the alert's OK (iOS drops the identifier `notice-ok` there)

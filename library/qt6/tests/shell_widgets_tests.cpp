@@ -210,7 +210,7 @@ TEST(bar_on_widgets) {
     CHECK(slot1->findChild<QComboBox*>() != nullptr);   // without the media picker: the fallback
     CHECK(w.find<QToolButton>(names::barPlace("printer"))->text() == QStringLiteral("TD-20"));
     auto* aux = w.find<QComboBox>(names::barPlace("aux"));
-    CHECK(aux && aux->count() == 3 && aux->itemText(0) == QStringLiteral("None"));
+    CHECK(aux && aux->count() == 3 && aux->itemText(0) == QStringLiteral("No aux"));
     CHECK(w.find<QWidget>(names::barPlace("host-drive")) == nullptr);
     CHECK(w.find<QLabel>(names::barMedia("card")) != nullptr);
     // Left to right: model, slots, places, media.
@@ -220,6 +220,17 @@ TEST(bar_on_widgets) {
     CHECK(x(w.find<QWidget>(names::barSlot("slot-2"))) < x(w.find<QWidget>(names::barPlace("printer"))));
     CHECK(x(w.find<QWidget>(names::barPlace("printer"))) < x(aux));
     CHECK(x(aux) < x(w.find<QWidget>(names::barMedia("card"))));
+    // More at the end, with Load Preset… and Settings… and without Quit.
+    auto* more = w.find<QToolButton>(names::kBarMore);
+    CHECK(more != nullptr && more->menu() != nullptr);
+    if (more) {
+        CHECK(x(w.find<QWidget>(names::barMedia("card"))) < x(more));
+        QStringList ids;
+        for (QAction* a : more->menu()->actions()) ids << a->objectName();
+        CHECK(ids.contains(QString::fromStdString(names::moreItem("load-preset"))));
+        CHECK(ids.contains(QString::fromStdString(names::moreItem("settings"))));
+        CHECK(!ids.contains(QString::fromStdString(names::moreItem("quit"))));
+    }
     // A product control in the group it names.
     auto* extra = new QToolButton();
     extra->setObjectName(QStringLiteral("tp-disk"));
@@ -265,7 +276,7 @@ TEST(no_control_no_gap_on_widgets) {
     int visibleGroups = 0;
     for (int i = 0; i < 5; ++i)
         if (auto* g = w.find<QWidget>("bar-group-" + std::to_string(i)); g && g->isVisible()) ++visibleGroups;
-    CHECK_EQ(visibleGroups, 2);   // the model picker and the printer
+    CHECK_EQ(visibleGroups, 3);   // the model picker, the printer and More
 }
 
 TEST(settings_dialog_on_widgets) {

@@ -38,16 +38,21 @@ struct Menu {
     std::vector<MenuItem> items;
 };
 
+// Where a frontend runs. Desktop (Qt, a Web page in a desktop browser's
+// tab) has a menu bar; Mobile (the iOS app, the installed Web app, a
+// browser that asks for the mobile site) has none, and its bar keeps only
+// what is used while the machine runs. The menus are computed on both, for
+// the More button.
+enum class Platform { Desktop, Mobile };
+
 // Qt6: {true, true, false}; Web: {false, false, true}.
-// `menuBar` false for a window without a menu bar (the Web's portrait
-// layout, iOS): the menus are still computed, for the More button;
 // `settings` false: no Settings… (the Web prop `settings` off); `about`
 // false: no About (iOS).
 struct Traits {
     bool hasQuit = true;
     bool shortcuts = true;
     bool savedMedia = false;
-    bool menuBar = true;
+    Platform platform = Platform::Desktop;
     bool settings = true;
     bool about = true;
 };
@@ -62,16 +67,20 @@ inline constexpr const char* kCopyScreen = "copy-screen";   // the product's fun
 inline constexpr const char* kPasteText = "paste-text";     // `paste {text}` with the clipboard's text
 inline constexpr const char* kHelp = "help";
 inline constexpr const char* kAbout = "about";
+// Mobile, a media place's submenu: `<prefix><place>`, args {place}, the
+// media components' Name & Save dialog for that place.
+inline constexpr const char* kNameAndSavePrefix = "media-name-and-save-";
 } // namespace actions
 
 std::vector<Menu> menus(const ShellInputs&, const ShellProduct&, Traits);
 
-// The items of the More button (a window without a menu bar), in menu
-// order: File, Edit, Machine, Help without what has a control on such a bar
-// (Load Preset…, Settings…, Quit, Reset, Model ▸, Peripherals ▸, a product
-// item with `onBar`); one separator between the groups that remain, never
-// first, last or twice. Cold boot asks first.
-std::vector<MenuItem> moreItems(const std::vector<Menu>&, const ShellProduct&);
+// The items of the More button (on every bar), in menu order: File, Edit,
+// Machine, Help without what has a control elsewhere: Quit (the window's
+// own), Model ▸ (the model picker), Peripherals ▸ where `placesShown` (the
+// places' controls are on the bar or the paper panel), a product item with
+// `onBar`. One separator between the groups that remain, never first, last
+// or twice. Cold boot asks first.
+std::vector<MenuItem> moreItems(const std::vector<Menu>&, const ShellProduct&, bool placesShown = true);
 inline constexpr const char* kColdBootQuestion = "Cold boot the machine? What it holds in memory is lost.";
 
 // Shared with the bar model: the models as items, the running one

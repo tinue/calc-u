@@ -27,6 +27,7 @@ TEST(shell_product_value_form) {
     i.label = "Mount…";
     i.entry = "t.mount";
     p.items.push_back(i);
+    p.mobileBarMedia = {"magnetic-card"};
     const Value want = Value::object(
         {{"name", "Test-Product"},
          {"helpUrl", "https://example.org/"},
@@ -43,6 +44,7 @@ TEST(shell_product_value_form) {
          {"moduleSlotPinOuts", Value(Value::Array{"module"})},
          {"placesWithoutControl", Value(Value::Array{"host-drive"})},
          {"placesOnPaper", Value(Value::Array{})},
+         {"mobileBarMedia", Value(Value::Array{"magnetic-card"})},
          {"items", Value(Value::Array{Value::object(
                        {{"group", "FileMedia"}, {"id", "mount"}, {"label", "Mount…"}, {"entry", "t.mount"}})})}});
     CHECK_EQ(sessions::toText(shell::toValue(p)), sessions::toText(want));

@@ -1,10 +1,11 @@
 // CalcU59 — the web client, and the one global calc.js exposes
 // (docs/developer/Web-Client.md has the props). Put together from the React set's
-// shell: in the wide layout the shell's menu bar (File, Machine, Help; no
-// Edit), in the portrait layout no menu bar and the bar's Preset,
-// Settings and More; in every calculator column the shell's control bar (the
-// model picker, the library's module picker of `slot-1`, the card
-// controls); the button "PC-100C" on the paper pane; the shell's
+// shell: on a desktop the shell's menu bar (File, Machine, Help; no Edit),
+// on mobile none (the shell's platform, useShell.jsx), in either layout; in
+// every calculator column the shell's control bar (the model picker, the
+// library's module picker of `slot-1`, the card controls, More at its
+// right edge with Load Preset… and Settings… in it); the button "PC-100C"
+// on the paper pane; the shell's
 // settings, About, notices, "Loading…", the storage banner and "ROMs
 // missing". The product's data come from `c59.shell-product` and
 // `c59.faceplate-map` (app/TIShellProduct, TIWebPart). Two layouts, and

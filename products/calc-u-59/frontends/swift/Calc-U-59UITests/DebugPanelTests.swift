@@ -25,7 +25,7 @@ final class DebugPanelTests: XCTestCase {
                             settings: ["window.portrait-debug-page=true"])
         harness = attachHarness()
         waitIdle(harness)
-        XCTAssertTrue(app.buttons["btn-preset"].waitForExistence(timeout: 10), "the calculator did not start")
+        XCTAssertTrue(app.buttons["bar-more"].waitForExistence(timeout: 10), "the calculator did not start")
         let left = app.buttons["btn-page-left"]
         if left.exists { left.tap() }   // the paged layout: the debugger is left of the calculator
         XCTAssertTrue(app.buttons["btn-tab-calculator"].waitForExistence(timeout: 5), "the debug panel is not shown")

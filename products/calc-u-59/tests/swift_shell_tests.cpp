@@ -27,11 +27,11 @@ namespace {
 bool roms() { return std::filesystem::exists("roms/TMC0571B.txt"); }
 const char* const kSkip = "the ROMs are not fetched (roms/fetch_roms.sh)";
 
-// The Swift frontend's traits (the iPhone and the iPad): no menu bar to
-// count on, no About, no Quit.
+// The Swift frontend's traits (the iPhone and the iPad): mobile, no About,
+// no Quit.
 shell::Traits swiftTraits() {
     shell::Traits t;
-    t.menuBar = false;
+    t.platform = shell::Platform::Mobile;
     t.about = false;
     t.hasQuit = false;
     return t;
@@ -193,21 +193,20 @@ TEST(control_bar_per_model) {
     }
 }
 
-// Without a menu bar the bar keeps Preset and Settings, and More holds
-// Examples, Reset, Cold boot, Resume and the help.
+// The bar ends with More, which holds Load Preset…, Examples, Settings…,
+// Reset, Cold boot, Resume and the help.
 TEST(more_holds_examples_reset_cold_boot_resume_help) {
     SKIP_UNLESS(roms(), kSkip);
     using K = shell::BarControl::Kind;
     SwiftRig s;
     const auto in = s.inputs();
     const auto bar = shell::bar(in, product(), swiftTraits());
-    CHECK(control(bar, K::Action, "reset") == nullptr);
-    CHECK(control(bar, K::Action, shell::actions::kLoadPreset) != nullptr);
-    CHECK(control(bar, K::Action, shell::actions::kSettings) != nullptr);
+    CHECK(bar.back().controls.size() == 1);   // End: More alone
     const auto* more = control(bar, K::More);
     CHECK(more != nullptr);
     if (!more) return;
-    CHECK((ids(more->choices) == std::vector<std::string>{"examples", "reset", "cold-boot", "resume", shell::actions::kHelp}));
+    CHECK((ids(more->choices) == std::vector<std::string>{shell::actions::kLoadPreset, "examples", shell::actions::kSettings,
+                                                         "reset", "cold-boot", "resume", shell::actions::kHelp}));
     const auto more2 = shell::moreItems(shell::menus(in, product(), swiftTraits()), product());
     CHECK(ids(more2) == ids(more->choices));
 }
@@ -316,7 +315,7 @@ TEST(no_bar_no_machine_menu_without_control_state) {
         std::size_t controls = 0;
         for (const auto& g : shell::bar(in, product(), t))
             for (const auto& c : g.controls)
-                if (c.kind != shell::BarControl::Kind::More && c.kind != shell::BarControl::Kind::Action) ++controls;
+                if (c.kind != shell::BarControl::Kind::More) ++controls;
         CHECK_EQ(controls, std::size_t{0});
         CHECK(!in.started());
     }

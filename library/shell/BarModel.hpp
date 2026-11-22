@@ -15,8 +15,7 @@
 namespace calcu::shell {
 
 struct BarControl {
-    // Action and More only in a window without a menu bar.
-    enum class Kind { ModelPicker, SlotPicker, PlaceButton, PlacePicker, Media, Action, More };
+    enum class Kind { ModelPicker, SlotPicker, PlaceButton, PlacePicker, Media, More };
     Kind kind = Kind::ModelPicker;
     std::string id;           // "model", a place, a media place
     std::string label;        // "1:" before a slot when the model has more than one; the peripheral's name on a button
@@ -26,22 +25,26 @@ struct BarControl {
     std::string shown;
     bool shortShown = false;
     bool plugged = false;     // a button: shown as pressed
-    std::vector<MenuItem> choices;   // a picker: "None" and what fits; a button: its one choice
+    // A picker: its empty entry ("No printer") and what fits; a button: its
+    // one choice; More: moreItems().
+    std::vector<MenuItem> choices;
     sessions::Value entry;    // the place or media place entry, for the media components' and the products' factories
     std::string mediumKind;   // Media: the kind, which picks the factory
-    MenuItem item;            // Action: the menu item it carries out (id, label, enabled, reason, command)
 };
 
 struct BarGroupModel {
     BarGroup group;
     std::vector<BarControl> controls;
-    bool pushed = false;      // the room before it is taken up (a spread bar: Media, End)
+    bool pushed = false;      // the room before it is taken up (End always; a spread bar's Media)
 };
 
-// The bar's groups; with `traits.menuBar == false` End holds the Actions
-// `load-preset` ("Preset") and `settings` ("Settings", unless
-// `traits.settings` is off), then More, whose `choices` are moreItems()
-// (Reset among them). The product's placesOnPaper are not on the bar.
+// The bar's groups. End holds More alone, pushed to the right edge on every
+// platform; Load Preset… and Settings… are in it, so the bar has the same
+// controls with or without a menu bar. Mobile keeps what is used while the
+// machine runs: the model picker, the module slots and the media of the
+// product's mobileBarMedia; the places go to More ▸ Peripherals, the other
+// media to their submenus in More. The product's placesOnPaper are not on
+// the bar.
 std::vector<BarGroupModel> bar(const ShellInputs&, const ShellProduct&, Traits = {});
 
 // The bar below a faceplate: its labels ("Crd", "Preset") only where the

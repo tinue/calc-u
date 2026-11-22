@@ -162,13 +162,22 @@ extension XCTestCase {
         if folder.waitForExistence(timeout: 2) { folder.tap() }
     }
 
-    /// Load `file` through the Preset button and wait, through attach, for
+    /// Carries out More ▸ `item` (`load-preset`, `settings`, …): the bar's
+    /// More button, then its item.
+    func chooseFromMore(_ app: XCUIApplication, _ item: String) {
+        let more = app.buttons["bar-more"]
+        XCTAssertTrue(more.waitForExistence(timeout: 5), "no More button")
+        more.tap()
+        let entry = app.descendants(matching: .any)["more-item-\(item)"].firstMatch
+        XCTAssertTrue(entry.waitForExistence(timeout: 3), "More has no \(item)")
+        entry.tap()
+    }
+
+    /// Load `file` through More ▸ Load Preset… and wait, through attach, for
     /// the load to end within `idleTimeout` (paused, for `endsPaused`).
     func loadPreset(_ app: XCUIApplication, file: String, idleTimeout: TimeInterval, harness: HarnessClient,
                     endsPaused: Bool = false) {
-        let presetButton = app.buttons["btn-preset"]
-        XCTAssertTrue(presetButton.waitForExistence(timeout: 5), "Preset button not found")
-        presetButton.tap()
+        chooseFromMore(app, "load-preset")
 
         navigateToOnMyIPhone(app, targetFile: file)
         let cell = app.cells.containing(.staticText, identifier: file).firstMatch

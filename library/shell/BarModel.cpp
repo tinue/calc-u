@@ -6,18 +6,6 @@ namespace calcu::shell {
 
 namespace {
 
-// An Action that follows its menu item, under the bar's label.
-void addAction(std::vector<BarControl>& into, const std::vector<Menu>& ms, const char* id, const char* label) {
-    const MenuItem* i = findItem(ms, id);
-    if (!i) return;
-    BarControl c;
-    c.kind = BarControl::Kind::Action;
-    c.id = id;
-    c.label = label;
-    c.item = *i;
-    into.push_back(std::move(c));
-}
-
 // A place's control: a module slot's picker (its label "n:" given), a
 // button where one peripheral fits, a picker where several do; none for a
 // place without a control.
@@ -56,6 +44,13 @@ std::optional<BarControl> placeControl(const sessions::Value& place, const Shell
     case PlaceKind::Picker:
         c.kind = BarControl::Kind::PlacePicker;
         c.choices = placeChoices(place, true);
+        // Closed, the picker shows only what is plugged in: its empty entry
+        // names the place ("No printer"), so it needs no label beside it.
+        if (!c.choices.empty() && c.choices.front().id == "peripheral-" + c.id + "-none") {
+            std::string name = c.id;
+            std::replace(name.begin(), name.end(), '-', ' ');
+            c.choices.front().label = "No " + name;
+        }
         c.shown = shownOf(c.choices, c.id);
         return c;
     case PlaceKind::NoControl:
@@ -70,8 +65,7 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Tra
     std::vector<BarGroupModel> out;
     if (!in.started()) return out;   // no control state: no bar
     const sessions::Value& cs = in.controlState;
-    std::vector<Menu> ms;
-    if (!t.menuBar) ms = menus(in, p, t);   // a window without a menu bar: Reset is in More
+    const bool mobile = t.platform == Platform::Mobile;
 
     BarGroupModel model{BarGroup::AfterModel, {}};
     BarControl picker;
@@ -90,10 +84,20 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Tra
     for (const auto& place : read::elements(cs, "places"))
         if (placeKind(place, p) == PlaceKind::ModuleSlot) ++slotCount;
     std::size_t slot = 0;
+    // The places' controls are shown where the bar has them (desktop) or
+    // the paper panel has every one; else More has the Peripherals submenu.
+    bool placesShown = true;
     for (const auto& place : read::elements(cs, "places")) {
         if (p.placesOnPaper.count(read::text(place, "place"))) continue;   // on the paper panel
-        const bool isSlot = placeKind(place, p) == PlaceKind::ModuleSlot;
+        const PlaceKind kind = placeKind(place, p);
+        const bool isSlot = kind == PlaceKind::ModuleSlot;
         if (isSlot) ++slot;
+        // Mobile keeps on its bar what is used while the machine runs: the
+        // module slots, not the peripherals' places.
+        if (mobile && !isSlot) {
+            placesShown = placesShown && kind == PlaceKind::NoControl;
+            continue;
+        }
         auto c = placeControl(place, p, isSlot && slotCount > 1 ? std::to_string(slot) + ":" : "");
         if (!c) continue;   // no control, no gap
         (isSlot ? slots : places).controls.push_back(std::move(*c));
@@ -103,20 +107,20 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Tra
         c.kind = BarControl::Kind::Media;
         c.id = read::text(m, "id");
         c.mediumKind = read::text(m, "kind");
+        // Mobile: only the media the product names; the others are chosen
+        // in their submenu of More.
+        if (mobile && !p.mobileBarMedia.count(c.mediumKind)) continue;
         c.entry = m;
         media.controls.push_back(std::move(c));
     }
-    BarGroupModel end{BarGroup::End, {}, p.barSpread};
-    if (!t.menuBar) {   // a window without a menu bar
-        addAction(end.controls, ms, actions::kLoadPreset, "Preset");
-        addAction(end.controls, ms, actions::kSettings, "Settings");
-        BarControl more;
-        more.kind = BarControl::Kind::More;
-        more.id = "more";
-        more.label = "More";
-        more.choices = moreItems(ms, p);
-        end.controls.push_back(std::move(more));
-    }
+    // More, at the right edge on every platform: what the bar does not show.
+    BarGroupModel end{BarGroup::End, {}, true};
+    BarControl more;
+    more.kind = BarControl::Kind::More;
+    more.id = "more";
+    more.label = "More";
+    more.choices = moreItems(menus(in, p, t), p, placesShown);
+    end.controls.push_back(std::move(more));
     out.push_back(std::move(model));
     out.push_back(std::move(slots));
     out.push_back(std::move(places));

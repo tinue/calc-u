@@ -9,12 +9,15 @@
 
 class QComboBox;
 class QHBoxLayout;
+class QMenu;
+class QToolButton;
 
 // The control bar of the Qt6 shell: one container per group, left to right;
 // QComboBox pickers whose disabled items carry the reason as their tooltip;
 // checkable QToolButtons for the one-peripheral places; the library's module
 // picker and the media owners' controls from registered factories; the
-// product's own controls in the group it names. A group without a control
+// product's own controls in the group it names; at the end the More button,
+// a menu of the bar model's More items. A group without a control
 // is hidden: no gap. A group the model pushes takes up the room before it
 // (a spread bar); a picker the model shows short shows its short text
 // (a slot's media picker: the entries' `short`).
@@ -59,6 +62,9 @@ private:
     QWidget* build(const shell::BarControl&, QWidget* parent);
     Choose choose() { return [this](const shell::MenuItem& i) { chooseItem(i); }; }
     void chooseItem(const shell::MenuItem&);
+    void chooseMore(const shell::MenuItem&);   // an item with `confirm` asks first
+    QWidget* moreButton(const shell::BarControl&, QWidget* parent);
+    void fillMoreMenu();
     void layoutGroup(shell::BarGroup);
 
     Shell& shell_;
@@ -70,6 +76,10 @@ private:
     std::string shown_;
     Factory slotFactory_;
     std::map<std::string, Factory> mediaFactories_;
+    QToolButton* more_ = nullptr;
+    QMenu* moreMenu_ = nullptr;
+    std::vector<shell::MenuItem> moreItems_;
+    std::string moreShown_;
 };
 
 } // namespace calcu::qt6

@@ -249,13 +249,13 @@ TEST(check_shell_product_reports_missing_labels) {
     CHECK_EQ(problems.size(), std::size_t{2});
 }
 
-// ── A window without a menu bar ──
+// ── The More button ──
 
 namespace {
 
-Traits portrait() {
-    Traits t{false, false, true};
-    t.menuBar = false;
+Traits mobile() {
+    Traits t = kWeb;
+    t.platform = Platform::Mobile;
     return t;
 }
 
@@ -265,23 +265,77 @@ TEST(more_items_are_the_items_without_a_control) {
     auto in = st::inputs();
     in.media = st::mediaWithKind();
     auto p = st::product();
-    const auto ms = menus(in, p, portrait());
-    // The menus are still computed.
+    const auto ms = menus(in, p, mobile());
+    // The menus are computed without a menu bar too.
     CHECK_EQ(join(menuIds(ms)), std::string("file machine help"));
+    // Load Preset… and Settings… are in More; the model picker and the places' controls are elsewhere.
     CHECK_EQ(join(ids(moreItems(ms, p))),
-             std::string("examples - load-program - import-media saved-media mount-drive - variants-model - reset cold-boot resume disk-thing - help about"));
+             std::string("load-preset examples - load-program - import-media saved-media mount-drive - settings - variants-model - reset cold-boot resume disk-thing - help about"));
     // A product item the product draws on the bar is left out, and no separator doubles.
     p.items[1].onBar = true;
-    CHECK_EQ(join(ids(moreItems(menus(in, p, portrait()), p))),
-             std::string("examples - load-program - import-media saved-media - variants-model - reset cold-boot resume disk-thing - help about"));
+    CHECK_EQ(join(ids(moreItems(menus(in, p, mobile()), p))),
+             std::string("load-preset examples - load-program - import-media saved-media - settings - variants-model - reset cold-boot resume disk-thing - help about"));
     p.items[0].onBar = true;
-    CHECK_EQ(join(ids(moreItems(menus(in, p, portrait()), p))),
-             std::string("examples - import-media saved-media - variants-model - reset cold-boot resume disk-thing - help about"));
+    CHECK_EQ(join(ids(moreItems(menus(in, p, mobile()), p))),
+             std::string("load-preset examples - import-media saved-media - settings - variants-model - reset cold-boot resume disk-thing - help about"));
+    // Where the places' controls are not shown, Peripherals ▸ is in More.
+    CHECK_EQ(join(ids(moreItems(menus(in, p, mobile()), p, false))),
+             std::string("load-preset examples - import-media saved-media - settings - variants-model peripherals - reset cold-boot resume disk-thing - help about"));
+    // Quit is the window's own.
+    CHECK(findItem(menus(in, p, kQt), "quit") != nullptr);
+    for (const auto& i : moreItems(menus(in, p, kQt), p)) CHECK(i.id != "quit");
+}
+
+// Mobile: a media place the bar leaves out has a submenu in File: its
+// picker's entries to choose, then Name & Save….
+TEST(mobile_media_submenu_chooses_and_names_and_saves) {
+    auto in = st::inputs();
+    in.media = st::mediaWithPlace();
+    auto p = st::product();
+    auto ms = menus(in, p, mobile());
+    const MenuItem* sub = findItem(ms, "media-card");
+    CHECK(sub != nullptr);
+    CHECK(sub->kind == MenuItem::Kind::Submenu);
+    CHECK_EQ(sub->label, std::string("Test card"));
+    CHECK_EQ(join(ids(sub->children)), std::string("media-card-0 media-card-1 media-card-2 - media-name-and-save-card"));
+    const auto& empty = sub->children[0];
+    CHECK_EQ(empty.label, std::string("(empty)"));
+    CHECK(empty.checked && empty.command.value.empty());   // chosen: sends nothing
+    const auto& blank = sub->children[1];
+    CHECK_EQ(blank.label, std::string("Blank"));
+    CHECK_EQ(blank.command.value, std::string("media.choose"));
+    CHECK(blank.args == Value::object({{"place", "card"}, {"entry", "bundled:Blank.test-card.yaml"}}));
+    CHECK(blank.enabled);
+    CHECK(!sub->children[2].enabled);   // cannot be chosen now: its hint
+    CHECK_EQ(sub->children[2].reason, std::string("In the other reader."));
+    const auto& save = sub->children[4];
+    CHECK_EQ(save.label, std::string("Name & Save…"));
+    CHECK(save.command.value.empty());   // the shell's action
+    CHECK(save.args == Value::object({{"place", "card"}}));
+    CHECK(!save.enabled);
+    CHECK_EQ(save.reason, std::string("Nothing to save."));
+    // In More too, in File's media group.
+    bool inMore = false;
+    for (const auto& i : moreItems(ms, p)) inMore = inMore || i.id == "media-card";
+    CHECK(inMore);
+    // The place's `insert` not available: every entry disabled with its reason.
+    auto cs = st::controlState();
+    cs.mediaPlaces[0].insert = st::unavailable("A card passes.");
+    in.controlState = cs.toValue();
+    sub = findItem(menus(in, p, mobile()), "media-card");
+    CHECK(!sub->children[1].enabled);
+    CHECK_EQ(sub->children[1].reason, std::string("A card passes."));
+    // A medium the bar keeps, or desktop: no submenu.
+    in = st::inputs();
+    in.media = st::mediaWithPlace();
+    CHECK(findItem(menus(in, p, kWeb), "media-card") == nullptr);
+    p.mobileBarMedia = {"test-card"};
+    CHECK(findItem(menus(in, p, mobile()), "media-card") == nullptr);
 }
 
 TEST(more_cold_boot_asks_first) {
     const auto p = st::product();
-    const auto ms = menus(st::inputs(), p, portrait());
+    const auto ms = menus(st::inputs(), p, mobile());
     const auto more = moreItems(ms, p);
     const MenuItem* cold = nullptr;
     for (const auto& i : more)
@@ -302,7 +356,7 @@ TEST(more_follows_availability) {
     for (auto& a : cs.actions)
         if (a.command == control::kColdBootAction) a.available = st::unavailable("An operation runs.");
     const auto p = st::product();
-    auto more = moreItems(menus(st::inputs(cs.toValue()), p, portrait()), p);
+    auto more = moreItems(menus(st::inputs(cs.toValue()), p, mobile()), p);
     auto byId = [&](const char* id) -> const MenuItem* {
         for (const auto& i : more)
             if (i.id == id) return &i;
@@ -316,7 +370,7 @@ TEST(more_follows_availability) {
     // Computed again from new inputs: available now, and Resume while paused.
     auto in = st::inputs();
     in.runState = Value::object({{"paused", true}});
-    more = moreItems(menus(in, p, portrait()), p);
+    more = moreItems(menus(in, p, mobile()), p);
     CHECK(byId("cold-boot")->enabled);
     CHECK(byId("resume")->enabled);
 }

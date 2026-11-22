@@ -92,7 +92,7 @@ struct CalculatorView: View {
         }
     }
 
-    /// Load Preset… (the Preset button; File menu, ⌘O on the iPad's menu bar):
+    /// Load Preset… (More; File menu, ⌘O on the iPad's menu bar):
     /// presets only, as every dedicated loader takes its own kind.
     private func openPresetDialog() {
         filePickerModeBinding.wrappedValue = .preset

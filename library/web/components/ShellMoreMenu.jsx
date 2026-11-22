@@ -1,5 +1,5 @@
-// ShellMoreMenu -- the More button of a window without a menu bar: the button
-// (⋯, its label unless `compact`) opens a popup of the menu bar's items
+// ShellMoreMenu -- the More button at the end of every bar: the button
+// (⋯, its label unless `compact`) opens a popup of the menus' items
 // (ShellMenuItems) anchored to it, kept inside the client's width; an item
 // with `confirm` asks first in a ShellModal with the item's label and
 // Cancel. The items are the bar model's `choices`, computed again at

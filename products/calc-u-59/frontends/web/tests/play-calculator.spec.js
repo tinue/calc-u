@@ -61,11 +61,11 @@ async function fileItem(page, ...path) {
   }
 }
 
-/// File ▸ Load Preset… (the bar's Preset in portrait) with an uploaded file.
+/// File ▸ Load Preset… (More ▸ Load Preset… without a menu bar) with an uploaded file.
 async function uploadPreset(page, text, name = 'test.ti59') {
   const chooser = page.waitForEvent('filechooser');
   if (await el(page, 'menu-bar').count()) await fileItem(page, 'load-preset');
-  else await el(page, 'bar-action-load-preset').click();
+  else { await el(page, 'bar-more').click(); await el(page, 'more-item-load-preset').click(); }
   await (await chooser).setFiles({ name, mimeType: 'text/plain', buffer: Buffer.from(text) });
   await page.waitForTimeout(600);
 }
@@ -779,7 +779,6 @@ test('the standalone app follows the window as it rotates', async ({ page }) => 
   const bar = await page.locator('.calcu-bar').boundingBox();
   expect(bar.y + bar.height).toBeLessThanOrEqual(419);
   await expect(el(page, 'menu-bar')).toBeVisible();
-  await expect(el(page, 'bar-action-load-preset')).toHaveCount(0);
 
   // iPhone Duo open: the narrow tape's button bar fits it.
   await page.setViewportSize({ width: 880, height: 645 });

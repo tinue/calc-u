@@ -263,10 +263,11 @@ TEST(harness_dump_replies_lines) {
 TEST(harness_log_level) {
     SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
     tirig::Calcu c;
-    CHECK_EQ(c("c59 log-level debug"), std::string("done\n"));
-    CHECK(c("state c59.debug-view").find("debug") != std::string::npos);
-    CHECK_EQ(c("c59 log-level off"), std::string("done\n"));
-    CHECK(c("c59 log-level loud").rfind("refused: ", 0) == 0);
+    CHECK_EQ(c("log-level debug"), std::string("done\n"));
+    CHECK(c("state log-level").find("debug") != std::string::npos);
+    CHECK_EQ(c("log-level off"), std::string("done\n"));
+    CHECK(c("log-level loud").rfind("refused: ", 0) == 0);
+    CHECK(c("c59 log-level debug").rfind("refused: ", 0) == 0);   // the library's, not the product's
 }
 
 TEST(harness_heatmap_reset) {

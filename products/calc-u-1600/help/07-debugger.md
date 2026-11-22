@@ -687,8 +687,9 @@ through a program or set breakpoints, use the debugger above.
   after the model (`CALCU1500_TRACE.bin`, `CALCU1500A_TRACE.bin`,
   `CALCU1600_TRACE.bin`) in the trace folder (`[trace] folder`); the
   size limit and its notice are the family's ([Debugger](../../../library/help/07-debugger.md)).
-- **LOG:** a placeholder for now: it cycles Off / Info / Debug, but logs
-  nothing yet.
+- **LOG:** cycles the log's level through Off, Info and Debug (a grey,
+  orange or red dot). At Info the log also shows how a preset is carried
+  out, each step as it is done; Debug adds nothing yet.
 
 The harness prints the same views without a window:
 `calcu --product c1600 c1600 inspect <view>` with `pointers`, `inventory`,

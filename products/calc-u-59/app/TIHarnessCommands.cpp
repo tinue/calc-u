@@ -139,11 +139,6 @@ void addDebugPanelCommands(harness::CommandRegistry& r) {
         if (w.size() != 1) return refusedReply("usage: c59 dump scom|memory|prog|vars");
         return linesReply(c.host.command(sessions::Command{commands::kDump, sessions::Value::object({{"what", w[0]}})}));
     }, "dump scom|memory|prog|vars  the lines of a dump (also into the log)");
-    r.addProduct("c59", "log-level", [](CommandContext& c) {
-        const auto w = words(c.line.argText);
-        if (w.size() != 1) return refusedReply("usage: c59 log-level off|info|debug");
-        return linesReply(c.host.command(sessions::Command{commands::kLogLevel, sessions::Value::object({{"level", w[0]}})}));
-    }, "log-level off|info|debug  the level of the machine's own log lines");
     r.addProduct("c59", "heatmap", [](CommandContext& c) {
         const auto w = words(c.line.argText);
         if (w.size() != 1 || w[0] != "reset") return refusedReply("usage: c59 heatmap reset");

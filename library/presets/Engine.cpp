@@ -61,6 +61,9 @@ Task<LoadOutcome> carryOut(sessions::OperationContext& op, std::shared_ptr<const
     const std::string& name = plan->name;
     ModelRules& rules = *plan->rules;
     RunContext run(op, plan.get(), rules, deps);
+    // How the preset is carried out: at the log level info. Why it
+    // stopped: at every level.
+    auto progress = [&](std::string line) { s.logAt(sessions::LogLevel::Info, std::move(line)); };
     auto stopped = [&](int line, const std::string& why) {
         const std::string message = errorText(name, line, why);
         s.log("Preset " + name + " stopped: " + message);
@@ -73,12 +76,12 @@ Task<LoadOutcome> carryOut(sessions::OperationContext& op, std::shared_ptr<const
         s, machinePlan(*plan), opts.startup ? startup::BuildOrigin::StartupPreset : startup::BuildOrigin::Preset);
     if (refused)   // nothing changed
         co_return LoadOutcome{LoadOutcome::Kind::NotBuilt, errorText(name, lineOfPlace(*plan, refused->place), refused->reason)};
-    s.log("Preset " + name + ": " + withVariant(plan->model.value, plan->variant));
+    progress("Preset " + name + ": " + withVariant(plan->model.value, plan->variant));
     for (const auto& r : plan->places)
-        s.log("  " + machine::placeText(r.request.place) + ": " + withVariant(r.request.peripheral.value, r.request.variant));
+        progress("  " + machine::placeText(r.request.place) + ": " + withVariant(r.request.peripheral.value, r.request.variant));
     run.elapsed() = ElapsedBase{s.machineSession().generation(), std::nullopt};   // from tick 0
     if (opts.buildOnly) {   // over at once, without waiting for key readiness
-        s.log("Preset " + name + " built only.");
+        progress("Preset " + name + " built only.");
         co_return LoadOutcome{};
     }
     const bool ready = co_await deps.control->untilKeyReady(op);
@@ -108,10 +111,10 @@ Task<LoadOutcome> carryOut(sessions::OperationContext& op, std::shared_ptr<const
         run.setNotWaitedFor(last && !plan->letItFinish);
         const ItemResult res = co_await item.carryOut(run);
         if (!res.ok) {   // the machine stays as it is
-            s.log("  line " + std::to_string(item.line) + " " + item.logText() + ": failed: " + res.reason);
+            progress("  line " + std::to_string(item.line) + " " + item.logText() + ": failed: " + res.reason);
             co_return stopped(item.line, res.reason);
         }
-        s.log("  line " + std::to_string(item.line) + " " + item.logText() + ": done");
+        progress("  line " + std::to_string(item.line) + " " + item.logText() + ": done");
         atOnce = entry.skipWaitAfter;
         if (last) {
             if (!plan->letItFinish) break;   // not waited for
@@ -127,13 +130,13 @@ Task<LoadOutcome> carryOut(sessions::OperationContext& op, std::shared_ptr<const
         if (w.boundReached)
             co_return stopped(item.line, "The " + item.logText() + " has not finished after " +
                                              std::to_string(plan->header.timeoutSeconds) + " s of emulated time (timeout:).");
-        if (last) s.log("  let-it-finish: the machine is idle");
+        if (last) progress("  let-it-finish: the machine is idle");
     }
     if (plan->items.empty() && plan->letItFinish) {   // let-it-finish: alone
         const IdleOutcome w = co_await watch.wait(op, std::nullopt);
         if (!w.idle) co_return stopped(plan->modelLine, w.paused ? "The machine is paused." : sessions::kNoMachine);
     }
-    s.log("Preset " + name + " carried out to its end.");
+    progress("Preset " + name + " carried out to its end.");
     co_return LoadOutcome{};
 }
 

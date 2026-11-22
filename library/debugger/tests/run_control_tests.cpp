@@ -443,6 +443,7 @@ TEST(no_breakpoint_or_watch_in_operation) {
 
 TEST(commanded_pause_step_resume_in_operation) {
     DebugRig r;
+    r.send("log-level", calcu::sessions::Value::object({{"level", "info"}}));   // the progress lines
     const CallId l = r.load(pt::header() + "keys:\n  - pause: cpu\n  - step: { level: cpu, count: 3 }\n  - resume:\n");
     CHECK(r.done(l));
     const auto log = r.logLines();

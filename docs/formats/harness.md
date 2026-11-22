@@ -264,6 +264,7 @@ Each replies `done` or `refused: <reason>` when its operation has ended.
 | `check-preset <file> …` | `ok <file>` or `FAIL <reason>` per file | `[{file, ok, error}]`; `error` is `null` when ok |
 | `preset-list` | `<bundle path> \| <model> \| startup\|example (<group>) \| <name>[ \| <description>]` per bundled preset | the `preset-list` value |
 | `full-speed`, `regular-speed` | — | — |
+| `log-level off\|info\|debug` | — | — |
 | `set-control <peripheral> <control> on\|off` | — | — |
 | `<step> [<value>]` | — or, for `elapsed-time report`, its line | — or `{text}` |
 
@@ -271,6 +272,8 @@ Each replies `done` or `refused: <reason>` when its operation has ended.
   directory; `examples:<path>` is a bundled preset. `check-preset` reads
   and checks each file and builds nothing; its reply is `done`, and a
   failing file ends a one-shot run with exit status 1.
+- `log-level` is the session's `log-level`: what the log tells, at `info`
+  how a preset is carried out.
 - `set-control` sets a switch, or presses (`on`) or lets up (`off`) a
   control of the form key. Peripheral and control are matched in any
   case.

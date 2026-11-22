@@ -19,6 +19,7 @@
 #include "qt6/ProductHost.hpp"
 #include "qt6/SessionHost.hpp"
 #include "sessions/AppSession.hpp"
+#include "sessions/LogLevel.hpp"
 #include "typing/HostKey.hpp"
 
 namespace calcu::media {
@@ -93,6 +94,7 @@ public:
     std::vector<std::string> inspectorView(inspect::View view) const { return app().inspectorView(view); }
     std::vector<inspect::MenuEntry> inspectorMenu(bool dumps) const { return app().inspectorMenu(dumps); }
     bool traceActive() const;     // the library's `trace` topic
+    calcu::sessions::LogLevel logLevel() const;   // the session's `log-level` topic
     bool machinePaused() const;   // the library's `run-state` topic
     std::vector<std::uint8_t> drainCE158PrinterOutput() { return app().drainCE158PrinterOutput(); }
     cu1600::LampsPayload lamps() const;   // the tape counter, the floppy lamp

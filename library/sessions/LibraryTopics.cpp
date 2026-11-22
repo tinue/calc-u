@@ -73,6 +73,8 @@ Value Notice::toValue() const { return Value::object({{"sentence", sentence}}); 
 
 Value LogLine::toValue() const { return Value::object({{"text", text}}); }
 
+Value LogLevelState::toValue() const { return Value::object({{"level", std::string(logLevelName(level))}}); }
+
 Value EmulatedTimeReply::toValue() const { return Value::object({{"ticks", ticks}, {"seconds", seconds}}); }
 
 Value MachineOffer::toValue() const {

@@ -32,15 +32,6 @@ and `docs/Process.md` until the closing check at its end has passed.
 
 ### Open items
 
-- **Next to fix: preset progress in the LOG without a debug level.** With
-  no debug level set (the LOG otherwise blank), the LOG and the DEBUG LOG
-  still show the preset engine's progress (`library/presets/Engine.cpp`):
-  `Preset <name>: TI-59`, the configuration lines (`slot-1: ML`,
-  `printer: PC-100C`), one `line <n> <step>: done` per step and
-  `Preset <name> carried out to its end.`, for the startup preset too.
-  Without a debug level none of these may appear; what a preset prints on
-  purpose (`elapsed-time: report`'s `Elapsed: 1:16.052`) stays. Seen with
-  `examples/calendar/calendar-09-dispatch.ti59`.
 - **Next to fix: the Mac app crashes when the paper is cut in dot mode**
   (3.0.0-pre, 2026-11-21, symbolicated with the archive's dSYM): an index
   out of range in `PrinterView.dotStrip`

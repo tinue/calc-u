@@ -127,9 +127,10 @@ test('buzzer samples at regular speed, none at full speed or in an operation', a
   expect(during).toBe(0);
 });
 
-// A preset's log lines are in the engine's log stream.
+// A preset's log lines are in the engine's log stream, at the log level info.
 test('preset log in the log stream', async ({ page }) => {
   await gotoReady(page);
+  await send(page, 'log-level', { level: 'info' });
   await send(page, 'load-preset', { ref: 'examples:basic/hanoi.pc1600' });
   await expect.poll(async () => (await log(page)).join('\n'), { timeout: 45000 })
     .toContain('Preset examples:basic/hanoi.pc1600 carried out to its end.');

@@ -17,6 +17,7 @@ std::string keys(const std::string& items, const std::string& model = "test-seg"
 
 TEST(each_step_does_what_its_ac_says) {
     DebugRig r;
+    r.send("log-level", calcu::sessions::Value::object({{"level", "info"}}));   // the progress lines
     const CallId l = r.load(keys("  - trace: s.bin\n"
                                  "  - pause: program\n"
                                  "  - step: { level: cpu, count: 2 }\n"

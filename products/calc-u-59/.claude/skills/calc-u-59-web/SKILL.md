@@ -69,8 +69,8 @@ Never edit the calculator there — that copy is generated.
    `debug-panel:` step asked for: shown when its `requests` grows; the log
    level), whose values are already the page's forms; the LOG tab keeps the
    last 2000 lines of the session's `log` stream (clear empties the view only); the
-   buttons send `c59.dump`, `c59.log-level`, `c59.heatmap-reset`,
-   `c59.asm-load` / `-run` / `-clear`; Run and the CALCULATOR tab
+   buttons send `c59.dump`, `c59.heatmap-reset`,
+   `c59.asm-load` / `-run` / `-clear` and the library's `log-level`; Run and the CALCULATOR tab
    follow the `control-state` product entries `c59.asm-run`,
    `c59.calculator-tab`, TRACE can always be pressed (`bindings.cpp` builds the session with the library's
    `calcu::shell::makeHostSession`: the library's ControlPart and

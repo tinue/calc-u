@@ -36,7 +36,7 @@
 class EmulatorController : public QObject {
     Q_OBJECT
 public:
-    using DebugLevel = cu59::DebugLevel;
+    using DebugLevel = calcu::sessions::LogLevel;
 
     /// `clock`: the host's wall clock (the tests' scripted one).
     explicit EmulatorController(QObject* parent = nullptr, calcu::pacing::WallClock clock = cu59::steadyWallTime);
@@ -135,7 +135,7 @@ public:
     void clearHeatmap() { send(cu59::commands::kHeatmapReset); }
 
     DebugLevel debugLevel() const;
-    /// The LOG button: off, info, debug, off (`c59.log-level`).
+    /// The LOG button: off, info, debug, off (the library's `log-level`).
     void cycleDebugLevel();
     /// The LOG tab's view of the session's `log`: the last 2000 lines.
     QString logText() const { return m_logText; }

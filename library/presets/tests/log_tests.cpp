@@ -8,6 +8,7 @@ using namespace calcu::presets::test;
 
 TEST(log_lines_file_machine_peripherals_items_end) {
     Rig r;
+    r.send("log-level", calcu::sessions::Value::object({{"level", "info"}}));   // the progress lines
     r.logLines();
     const CallId c = r.load("format-version: 2\nmodel: test-seg\nprinter: test-printer\nslot-1: test-module:8k\n"
                             "test-memory: { at: 0, bytes: 01 }\n"
@@ -29,6 +30,7 @@ TEST(log_lines_file_machine_peripherals_items_end) {
 
 TEST(failure_line_holds_the_error) {
     Rig r;
+    r.send("log-level", calcu::sessions::Value::object({{"level", "info"}}));   // the progress lines
     r.logLines();
     const CallId c = r.load(header() + "keys:\n  - key: 2\n  - expect: 7\n  - key: 3\n");
     CHECK(!r.done(c));
@@ -37,4 +39,19 @@ TEST(failure_line_holds_the_error) {
     CHECK(hasLine(log, "t.test-seg stopped: "));
     CHECK(hasLine(log, "t.test-seg, line 5: Expected 7"));
     CHECK(!hasLine(log, "carried out to its end"));
+}
+
+// At the level off the log keeps what a step gives on purpose and why a
+// preset stopped, not how it is carried out.
+TEST(level_off_leaves_out_the_progress) {
+    Rig r;
+    r.logLines();
+    CHECK(r.done(r.load(header() + "keys:\n  - key: 2\n  - elapsed-time: report\n")));
+    auto log = r.logLines();
+    CHECK_EQ(log.size(), std::size_t(1));
+    CHECK(!log.empty() && log[0].rfind("Elapsed: 0:00.0", 0) == 0);
+    CHECK(!r.done(r.load(header() + "keys:\n  - expect: 7\n")));
+    log = r.logLines();
+    CHECK_EQ(log.size(), std::size_t(1));
+    CHECK(hasLine(log, "t.test-seg stopped: "));
 }

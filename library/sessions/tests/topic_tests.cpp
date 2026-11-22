@@ -130,8 +130,9 @@ TEST(new_listener_gets_every_state_topic_once) {
     r.send("tp.set", valueArg(9));
     TestFrontend late;
     r.session->listen(late);
-    for (const TopicName& t : {kDisplayTopic, kBusyTopic, r.part.stateName()}) CHECK_EQ(late.stateMessages(t), 1);
-    CHECK_EQ(late.count<StateMessage>(), 3);
+    for (const TopicName& t : {kDisplayTopic, kBusyTopic, kLogLevelTopic, r.part.stateName()})
+        CHECK_EQ(late.stateMessages(t), 1);
+    CHECK_EQ(late.count<StateMessage>(), 4);
     CHECK_EQ(late.state<TestValue>(r.part.stateName())->v, 9);
     CHECK(late.busy() && !late.busy()->operationRuns);
     // It holds the whole current state without asking back.

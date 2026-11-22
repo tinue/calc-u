@@ -71,7 +71,7 @@ and each answer. Its order:
 6. the asks.
 
 A listener therefore has the new state when the reply arrives. The
-declared order is `display`, `busy`, `notices`, `log`, then the topics of
+declared order is `display`, `busy`, `notices`, `log`, `log-level`, then the topics of
 each part in the order of the parts.
 
 ### 2.2 A new listener
@@ -128,10 +128,12 @@ silence.
 | `busy` | state | — | `{operationRuns, speed: "regular" \| "full"}` |
 | `notices` | stream, no history | — | `{sentence}`: one English sentence for the user |
 | `log` | stream, since reset | — | `{text}` |
+| `log-level` | state | — | `{level: "off" \| "info" \| "debug"}` |
 | `suspend` | command | — | — |
 | `continue` | command | — | — |
 | `speed` | command | `{full}` | — |
 | `key-down`, `key-up` | command | `{key}` (a key ID) | — |
+| `log-level` | command | `{level}`: `off`, `info` or `debug` | — |
 | `start` | command | `{model?, preset?}` | — (§14) |
 | `ticks` | request | — | `{ticks, seconds}` (seconds a real) |
 | `capabilities` | request | — | `{capabilities: [{kind, id, owner}], plugged: {byPlace: [plug], byConnector: [{owner, connector, plugged: [plug]}]}, places: [..]}`; `owner` is `{component}` or `{peripheral, place}`; a plug is `{place, peripheral, variant}`; a place is an array of its steps |
@@ -142,6 +144,13 @@ silence.
   already so.
 - `speed` sets the speed outside an operation; while an operation runs it
   is done and changes nothing.
+- `log-level` sets what `log` tells; it starts at `off`. At `off` the log
+  holds what a step gives on purpose (`elapsed-time: report`), the
+  library's and the products' events (a medium saved, why a preset
+  stopped, a file left out); `info` adds how a preset is carried out (the
+  machine and its peripherals, each item as it is done, its end);
+  `debug` adds a product's own detail (Calc-U-59: each write to the
+  registers and the memory). Another level: `The log level is off, info or debug.`
 - `key-down` and `key-up` call the machine at the current tick; an
   unknown key: `Unknown key: <key>.`; arguments without `key`: `The key
   command needs key: <key ID>.`
@@ -157,6 +166,7 @@ silence.
 | `The operation did not finish.` | a session hosted in virtual time whose operation did not end in one go |
 | `The command failed.` | a command whose handler failed without a reason |
 | `The speed command needs full: true or false.` | `speed` without `full` |
+| `The log level is off, info or debug.` | `log-level` with another level |
 
 ## 5. Control state
 

@@ -1,5 +1,6 @@
 #include "DebugPanel.hpp"
 #include "debugger/RunState.hpp"
+#include "sessions/LibraryTopics.hpp"
 
 #include <QEvent>
 #include <QFont>
@@ -121,6 +122,7 @@ DebugPanel::DebugPanel(MachineController* controller, QWidget* parent)
     m_logButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_logButton->setAutoRaise(true);
     m_logButton->setFocusPolicy(Qt::NoFocus);
+    m_logButton->setToolTip(tr("Log level: off / info (how presets run) / debug"));
     row2->addWidget(m_traceButton);
     row2->addWidget(m_logButton);
     row2->addStretch(1);
@@ -255,6 +257,7 @@ void DebugPanel::onFrameTick() {
     // The trace topic: a trace the session ended (its limit, a new machine)
     // shows on the button.
     if (m_traceShownActive != m_controller->traceActive()) updateTraceButtonAppearance();
+    if (m_shownLevel != m_controller->logLevel()) updateLogButtonAppearance();
 }
 
 void DebugPanel::updateTraceButtonAppearance() {
@@ -271,19 +274,24 @@ void DebugPanel::updateTraceButtonAppearance() {
             .arg(ChromeStyle::pillCore(bg, m_pillTextColor), cssRgba(m_pillTextColor)));
 }
 
-// ── LOG (placeholder) ──────────────────────────────────────────────────
+// ── LOG ────────────────────────────────────────────────────────────────
 
 void DebugPanel::toggleDebugLevel() {
-    m_debugLevel = static_cast<DebugLevel>((static_cast<int>(m_debugLevel) + 1) % 3);
-    updateLogButtonAppearance();
+    using calcu::sessions::LogLevel;
+    const auto next = static_cast<LogLevel>((static_cast<int>(m_controller->logLevel()) + 1) % 3);
+    m_controller->send(calcu::sessions::kLogLevelCommand,
+                       calcu::sessions::Value::object({{"level", std::string(calcu::sessions::logLevelName(next))}}),
+                       [this](const calcu::sessions::ReplyMessage&) { updateLogButtonAppearance(); });
 }
 
 void DebugPanel::updateLogButtonAppearance() {
+    using calcu::sessions::LogLevel;
+    m_shownLevel = m_controller->logLevel();
     QColor dot;
-    switch (m_debugLevel) {
-        case DebugLevel::Off:   dot = QColor(128, 128, 128, 128); break;
-        case DebugLevel::Info:  dot = QColor(255, 165, 0); break;
-        case DebugLevel::Debug: dot = QColor(255, 0, 0); break;
+    switch (m_shownLevel) {
+        case LogLevel::Off:   dot = QColor(128, 128, 128, 128); break;
+        case LogLevel::Info:  dot = QColor(255, 165, 0); break;
+        case LogLevel::Debug: dot = QColor(255, 0, 0); break;
     }
     m_logButton->setIcon(dotIcon(dot));
     m_logButton->setStyleSheet(QString("QToolButton { %1 }").arg(ChromeStyle::pillCore(m_pillOnColor, m_pillTextColor)));

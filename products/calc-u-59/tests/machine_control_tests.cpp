@@ -9,6 +9,8 @@
 #include "../core/PC100C.hpp"
 #include "peripherals/PeripheralsPart.hpp"
 #include "../app/Bcd.hpp"
+#include "../core/TIDebugKinds.hpp"
+#include "sessions/LibraryTopics.hpp"
 
 using apprig::attach;
 using apprig::detach;
@@ -124,10 +126,10 @@ TEST(switch_carries_no_module_no_printer) {
 TEST(log_and_debug_settings_stay) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
-    r.part().debugPart().setLogLevel(cu59::DebugLevel::Info);
+    CHECK(r.send(calcu::sessions::kLogLevelCommand, Value::object({{"level", "info"}})).done);
     r.part().debugPart().setCpuShown(true);
     CHECK(r.send(st::kModelCommand, Value::object({{"name", "TI-58C"}})).done);
-    CHECK(r.part().debugPart().logLevel() == cu59::DebugLevel::Info);
+    CHECK_EQ(calcu::machine::first<cu59::MachineLog>(*r.machine())->level(), 1);   // the new machine's own lines at info
     CHECK(r.part().debugPart().cpuShown());
     CHECK(r.part().hasMachine());
 }

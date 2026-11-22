@@ -99,6 +99,10 @@ public:
             c.log(textArg(a, "text"));
             return Done{};
         });
+        s.command(CommandName{p_ + "log-info"}, [](const Value& a, SessionContext& c) -> CommandOutcome {
+            c.logAt(LogLevel::Info, textArg(a, "text"));
+            return Done{};
+        });
         s.command(CommandName{p_ + "notice"}, [](const Value& a, SessionContext& c) -> CommandOutcome {
             c.notice(textArg(a, "text"));
             return Done{};

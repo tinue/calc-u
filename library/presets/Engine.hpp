@@ -67,7 +67,10 @@ public:
     bool notWaitedFor() const { return notWaitedFor_; }
     void setNotWaitedFor(bool b) { notWaitedFor_ = b; }
     sessions::Task<bool> untilRunning();   // while paused, in the host's time
+    // What a step gives on purpose (`elapsed-time: report`): at every level.
     void log(std::string line) { op_.session().log(std::move(line)); }
+    // How the preset is carried out: at Info.
+    void progress(std::string line) { op_.session().logAt(sessions::LogLevel::Info, std::move(line)); }
     typing::TypingEngine* typing() { return deps_.typing ? &deps_.typing->engine() : nullptr; }
     // The display as it is at this moment.
     machine::DisplayOutput display();

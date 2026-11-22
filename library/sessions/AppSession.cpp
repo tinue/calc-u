@@ -99,6 +99,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     machine::Machine* machine() override { return ms.machine(); }
     void notice(std::string sentence) override { notices->append(std::make_shared<Notice>(std::move(sentence))); }
     void log(std::string line) override { logTopic->append(std::make_shared<LogLine>(std::move(line))); }
+    LogLevel logLevel() const override { return level; }
     bool busy() const override { return running != nullptr; }
     bool hostOffers(HostService s) const override { return offerer(s) != nullptr; }
     std::optional<CallId> askHost(HostService, Value, std::function<void(const ServiceAnswer&)>) override;
@@ -172,6 +173,8 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     StateTopic* busyTopic = nullptr;
     StreamTopic* notices = nullptr;
     StreamTopic* logTopic = nullptr;
+    StateTopic* logLevelTopic = nullptr;
+    LogLevel level = LogLevel::Off;
 
     struct CommandEntry {
         Handler handler;
@@ -206,6 +209,8 @@ AppSession::Impl::Impl(AppSessionSetup s) : setup(std::move(s)), ms(setup.clock,
     busyTopic = &stateTopic(kBusyTopic);
     notices = &streamTopic(kNoticesTopic, History::None);
     logTopic = &streamTopic(kLogTopic, History::SinceReset);
+    logLevelTopic = &stateTopic(kLogLevelTopic);
+    logLevelTopic->set(std::make_shared<LogLevelState>(level));
     registerLibraryCommands();
     ms.setAboutToChange([this] {
         for (SessionPart* p : setup.parts) p->beforeMachineChange(*this);
@@ -245,6 +250,14 @@ void AppSession::Impl::registerLibraryCommands() {
         const Value* full = args.find("full");
         if (!full || !full->boolean()) return Refused{"The speed command needs full: true or false."};
         if (!running) commanded = *full->boolean() ? Speed::Full : Speed::Regular;   // nothing while an operation runs
+        return Done{};
+    });
+    command(kLogLevelCommand, [this](const Value& args, SessionContext&) -> CommandOutcome {
+        const Value* l = args.find("level");
+        const auto named = l && l->string() ? logLevelNamed(*l->string()) : std::nullopt;
+        if (!named) return Refused{"The log level is off, info or debug."};
+        level = *named;
+        logLevelTopic->set(std::make_shared<LogLevelState>(level));
         return Done{};
     });
     auto key = [this](bool down) {

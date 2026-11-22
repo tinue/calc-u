@@ -27,14 +27,13 @@
 //   c59.cpu-debug          the CPU tab's instructions, while shown or paused
 //   c59.heatmap            the ROM heatmap's counts, about 10 Hz
 //   c59.asm-overlay        the ASM overlay's box
-//   c59.debug-view         the tab a `debug-panel:` step asked for last and the
-//                          level of the machine's log
+//   c59.debug-view         the tab a `debug-panel:` step asked for last
 //
 // Each payload's value (toValue) is the form the Web page draws (the
 // formatted rows, the heatmap's steps as bytes); the native frontends read
 // the payload's fields. The log is the library's `log` topic: the machine's
-// own lines (the product kind c59.machine-log) go there at their level, the
-// dumps at every level. The run state and the trace are the library debugger's.
+// own lines (the product kind c59.machine-log) go there at the session's
+// log level (the library's `log-level`), the dumps at every level. The run state and the trace are the library debugger's.
 //
 // It is also control rules of the control state: the product entries
 // c59.asm-run and c59.calculator-tab, each {available, reason}. TRACE can
@@ -46,12 +45,8 @@ namespace cu59 {
 
 /// A tab of the debug panel, as the step `debug-panel:` names it.
 enum class DebugPanel { Calculator, Cpu, Log };
-/// The level of the machine's own log lines.
-enum class DebugLevel { Off = 0, Info = 1, Debug = 2 };
 std::string_view debugPanelName(DebugPanel);
 std::optional<DebugPanel> debugPanelNamed(std::string_view);
-std::string_view debugLevelName(DebugLevel);
-std::optional<DebugLevel> debugLevelNamed(std::string_view);
 
 namespace topics {
 using calcu::sessions::TopicName;
@@ -68,7 +63,6 @@ using calcu::sessions::CommandName;
 inline const CommandName kShowCalculatorDebug{"c59.show-calculator-debug"}; // {on}: the CALCULATOR tab is shown
 inline const CommandName kShowCpuDebug{"c59.show-cpu-debug"};   // {on}: the CPU tab is shown (the heatmap counts, from zero)
 inline const CommandName kHeatmapReset{"c59.heatmap-reset"};
-inline const CommandName kLogLevel{"c59.log-level"};           // {level: off|info|debug}
 inline const CommandName kDump{"c59.dump"};                    // {what: scom|memory|prog|vars} → the lines
 inline const CommandName kAsmLoad{"c59.asm-load"};             // {name, text (absent: unreadable)} → the count
 inline const CommandName kAsmRun{"c59.asm-run"};               // → the status line
@@ -139,8 +133,7 @@ struct TIDebugView final : calcu::sessions::PayloadOf<TIDebugView> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.debug-view"};
     DebugPanel view = DebugPanel::Calculator;
     std::uint64_t requests = 0;   ///< grows with each tab asked for: a frontend shows `view` when it grows
-    DebugLevel logLevel = DebugLevel::Off;
-    bool same(const TIDebugView& o) const { return view == o.view && requests == o.requests && logLevel == o.logLevel; }
+    bool same(const TIDebugView& o) const { return view == o.view && requests == o.requests; }
     calcu::sessions::Value toValue() const override;
 };
 
@@ -177,7 +170,6 @@ public:
     void setLiveShown(bool on);
     void setCpuShown(bool on);
     void resetHeatmap();
-    void setLogLevel(DebugLevel);
     /// The dump's lines, also written into the log; empty: no machine
     /// or an unknown `what`.
     std::vector<std::string> dump(std::string_view what);
@@ -192,7 +184,6 @@ public:
 
     // What the topics carry now.
     const DebugModel& model() const { return m_debug; }
-    DebugLevel logLevel() const { return m_logLevel; }
     const TIAsmOverlayState& asmState() const { return m_asm; }
     bool overlayRunning() const;
     bool liveShown() const { return m_liveShown; }
@@ -227,7 +218,7 @@ private:
     bool m_listingDirty = true, m_liveDirty = true, m_cpuDirty = true, m_heatDirty = true;
     std::uint64_t m_serial = 0;
     calcu::pacing::WallTime m_nextHeat{0};
-    DebugLevel m_logLevel = DebugLevel::Off;
+    std::optional<calcu::sessions::LogLevel> m_appliedLevel;   // the machine log's level, as last set
     TIDebugView m_view;
     TIAsmOverlayState m_asm;
 };

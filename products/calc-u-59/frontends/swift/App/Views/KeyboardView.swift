@@ -168,5 +168,5 @@ struct KeyboardView: View {
 #Preview {
     KeyboardView()
         .environment(EmulatorViewModel())
-        .background(Color(white: 0.08))
+        .background(Chrome.window)
 }

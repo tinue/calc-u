@@ -136,7 +136,7 @@ struct CalculatorView: View {
 
     private func calculatorBody() -> some View {
         ZStack {
-            Color(red: 29/255, green: 29/255, blue: 28/255)
+            Chrome.window
 
             VStack(spacing: 0) {
                 KeyboardView()
@@ -157,9 +157,9 @@ struct CalculatorView: View {
                     .accessibilityHidden(true)
                 }
             }
-            .background(Color(white: 29.0/255.0))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
+            .background(Chrome.window)
+            .padding(.horizontal, Chrome.panelInset)
+            .padding(.vertical, Chrome.panelInset)
         }
     }
 

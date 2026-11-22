@@ -24,9 +24,9 @@ struct LiveDebugView: View {
                     }
                     .padding(4)
                 }
-                .background(Color(white: 0.10))
+                .background(Chrome.debugBackground)
             }
-            .background(Color(white: 0.10))
+            .background(Chrome.debugBackground)
         }
         // Gate the 60 Hz live-snapshot build on actual panel visibility.
         .onAppear    { vm.liveDebugEnabled = true }
@@ -63,13 +63,13 @@ struct LiveDebugView: View {
             HStack(spacing: 12) {
                 Text(String(format: "FA:%04X", snap.fA))
                     .font(.system(size: baseFontSize + 2, design: .monospaced))
-                    .foregroundStyle(Color(white: 0.65))
+                    .foregroundStyle(Chrome.text.opacity(0.65))
                 Text(String(format: "FB:%04X", snap.fB))
                     .font(.system(size: baseFontSize + 2, design: .monospaced))
-                    .foregroundStyle(Color(white: 0.65))
+                    .foregroundStyle(Chrome.text.opacity(0.65))
                 Text("HIR0:\(snap.statusRegister)")
                     .font(.system(size: baseFontSize + 2, design: .monospaced))
-                    .foregroundStyle(Color(white: 0.85))
+                    .foregroundStyle(Chrome.text.opacity(0.85))
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -123,7 +123,7 @@ struct LiveDebugView: View {
                     ForEach(Array(snap.nonZeroRegs.enumerated()), id: \.offset) { _, entry in
                         Text(TIViewRules.registerLine(entry.num, value: entry.value, hidden: entry.isHidden))
                             .font(.system(size: baseFontSize + 2, design: .monospaced))
-                            .foregroundStyle(Color(white: 0.85))
+                            .foregroundStyle(Chrome.text.opacity(0.85))
                     }
                 }
                 .padding(.horizontal, 8)
@@ -156,14 +156,14 @@ struct LiveDebugView: View {
                             ForEach(program, id: \.stepNum) { entry in
                                 HStack(spacing: 0) {
                                     Text(String(format: "%03d", entry.stepNum))
-                                        .foregroundStyle(entry.isCurrent ? .white : Color(white: 0.55))
+                                        .foregroundStyle(entry.isCurrent ? .white : Chrome.text.opacity(0.55))
                                     Text("  ")
                                     Text(String(format: "%02d", entry.keycode))
-                                        .foregroundStyle(entry.isCurrent ? Color(red: 0.6, green: 1.0, blue: 0.6)
-                                                                         : Color(white: 0.45))
+                                        .foregroundStyle(entry.isCurrent ? Chrome.stepCurrent
+                                                                         : Chrome.text.opacity(0.45))
                                     Text("  ")
                                     Text(entry.mnemonic)
-                                        .foregroundStyle(entry.isCurrent ? .white : Color(white: 0.65))
+                                        .foregroundStyle(entry.isCurrent ? .white : Chrome.text.opacity(0.65))
                                     if entry.isCurrent {
                                         Text("  " + TIViewRules.currentStepMarker(true))
                                             .font(.system(size: baseFontSize, design: .monospaced))
@@ -204,14 +204,14 @@ struct LiveDebugView: View {
                     ForEach(window, id: \.stepNum) { entry in
                         HStack(spacing: 0) {
                             Text(String(format: "%03d", entry.stepNum))
-                                .foregroundStyle(entry.isCurrent ? .white : Color(white: 0.55))
+                                .foregroundStyle(entry.isCurrent ? .white : Chrome.text.opacity(0.55))
                             Text("  ")
                             Text(String(format: "%02d", entry.keycode))
-                                .foregroundStyle(entry.isCurrent ? Color(red: 0.6, green: 1.0, blue: 0.6)
-                                                                 : Color(white: 0.45))
+                                .foregroundStyle(entry.isCurrent ? Chrome.stepCurrent
+                                                                 : Chrome.text.opacity(0.45))
                             Text("  ")
                             Text(entry.mnemonic)
-                                .foregroundStyle(entry.isCurrent ? .white : Color(white: 0.65))
+                                .foregroundStyle(entry.isCurrent ? .white : Chrome.text.opacity(0.65))
                             if entry.isCurrent {
                                 Text("  " + TIViewRules.currentStepMarker(false))
                                     .font(.system(size: baseFontSize, design: .monospaced))
@@ -247,19 +247,19 @@ struct LiveDebugView: View {
             HStack(spacing: 12) {
                 Text("FIX:\(snap.fixIndicator)")
                     .font(.system(size: baseFontSize + 2, design: .monospaced))
-                    .foregroundStyle(Color(white: 0.85))
+                    .foregroundStyle(Chrome.text.opacity(0.85))
                 Text(TIViewRules.angleModeLabel(snap.angleMode))
                     .font(.system(size: baseFontSize + 2, design: .monospaced))
-                    .foregroundStyle(Color(white: snap.angleMode < 0 ? 0.4 : 0.85))
+                    .foregroundStyle(Chrome.text.opacity(snap.angleMode < 0 ? 0.4 : 0.85))
                 Text("Eng")
                     .font(.system(size: baseFontSize + 2, design: .monospaced))
-                    .foregroundStyle(snap.engIndicator.isEmpty ? Color(white: 0.4) : Color(white: 0.85))
+                    .foregroundStyle(snap.engIndicator.isEmpty ? Chrome.text.opacity(0.4) : Chrome.text.opacity(0.85))
                 Text("2nd")
                     .font(.system(size: baseFontSize + 2, design: .monospaced))
-                    .foregroundStyle(snap.secondIndicator.isEmpty ? Color(white: 0.4) : Color(white: 0.85))
+                    .foregroundStyle(snap.secondIndicator.isEmpty ? Chrome.text.opacity(0.4) : Chrome.text.opacity(0.85))
                 Text("INV")
                     .font(.system(size: baseFontSize + 2, design: .monospaced))
-                    .foregroundStyle(snap.invIndicator.isEmpty ? Color(white: 0.4) : Color(white: 0.85))
+                    .foregroundStyle(snap.invIndicator.isEmpty ? Chrome.text.opacity(0.4) : Chrome.text.opacity(0.85))
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -290,7 +290,7 @@ struct LiveDebugView: View {
     private func xtRegisterSection(baseFontSize: CGFloat) -> some View {
         let snap = vm.liveDebugSnapshot
         let isZero = snap.tRegister == 0
-        let color = isZero ? Color(white: 0.6) : Color(white: 0.85)
+        let color = isZero ? Chrome.text.opacity(0.6) : Chrome.text.opacity(0.85)
         return SectionBox(title: "") {
             HStack(spacing: 12) {
                 Text(TIViewRules.xRegisterLine(snap.xValue, raw: snap.xRaw))
@@ -307,7 +307,7 @@ struct LiveDebugView: View {
 
     private func hirRow(_ number: Int, _ value: Double, baseFontSize: CGFloat) -> some View {
         let isZero = value == 0
-        let color = isZero ? Color(white: 0.6) : Color(white: 0.85)
+        let color = isZero ? Chrome.text.opacity(0.6) : Chrome.text.opacity(0.85)
         return Text(TIViewRules.hirLine(number, value: value))
             .font(.system(size: baseFontSize + 2, design: .monospaced))
             .foregroundStyle(color)
@@ -339,7 +339,7 @@ struct LiveDebugView: View {
 
     private func flagIndicator(num: Int, state: Bool, baseFontSize: CGFloat) -> some View {
         Text("F\(num):\(state ? 1 : 0)")
-            .foregroundStyle(Color(white: state ? 0.85 : 0.6))
+            .foregroundStyle(Chrome.text.opacity(state ? 0.85 : 0.6))
     }
 
     // MARK: - Partition Section
@@ -349,7 +349,7 @@ struct LiveDebugView: View {
         return SectionBox(title: "PARTITION") {
             Text(TIViewRules.partitionLineProgramRegs(snap.programRegCount, dataRegs: snap.dataRegCount))
                 .font(.system(size: baseFontSize + 2, design: .monospaced))
-                .foregroundStyle(Color(white: 0.75))
+                .foregroundStyle(Chrome.text.opacity(0.75))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
         }
@@ -363,7 +363,7 @@ struct LiveDebugView: View {
         return SectionBox(title: "") {
             Text(sourceText)
                 .font(.system(size: baseFontSize + 2, design: .monospaced))
-                .foregroundStyle(Color(white: 0.85))
+                .foregroundStyle(Chrome.text.opacity(0.85))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
         }
@@ -405,9 +405,9 @@ private struct SectionBox<Content: View>: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(Color(white: 0.07))
+                .background(Chrome.debugHeader)
             content()
-                .background(Color(white: 0.13))
+                .background(Chrome.section)
         }
         .cornerRadius(3)
     }
@@ -456,5 +456,5 @@ private struct SectionBox<Content: View>: View {
             return vm
         }())
         .frame(width: 300, height: 600)
-        .background(Color(white: 0.15))
+        .background(Chrome.buttonBar)
 }

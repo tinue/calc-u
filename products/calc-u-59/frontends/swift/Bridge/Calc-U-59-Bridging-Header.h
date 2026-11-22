@@ -4,5 +4,6 @@
 #import "TISharedTables.h"
 #import "TIFileFormats.h"
 #import "TIViewRules.h"
+#import "TIChrome.h"
 #import "TIShell.h"
 #import "TIAppSession.h"

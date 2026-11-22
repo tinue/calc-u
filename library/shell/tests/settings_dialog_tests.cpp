@@ -1,8 +1,7 @@
 // SettingsPart (the `settings` topic, `set-setting`) and the dialog model,
 // on the settings area's
 // test product declaration (library/settings/tests/TestProduct.hpp) and an
-// app session in virtual time. The model part is mirrored in
-// shell_model.test.js.
+// app session in virtual time.
 #include "../../settings/tests/TestProduct.hpp"
 #include "TestFrontend.hpp"
 #include "TestHarness.hpp"

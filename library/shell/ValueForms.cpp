@@ -29,55 +29,144 @@ const char* widgetName(DialogRow::Widget w) {
     return "text";
 }
 
-const char* menuGroupName(MenuGroup g) {
+const char* barGroupName(BarGroup g) {
     switch (g) {
-        case MenuGroup::FileOpen: return "FileOpen";
-        case MenuGroup::FileKinds: return "FileKinds";
-        case MenuGroup::FileMedia: return "FileMedia";
-        case MenuGroup::FileEnd: return "FileEnd";
-        case MenuGroup::Edit: return "Edit";
-        case MenuGroup::MachineEnd: return "MachineEnd";
-        case MenuGroup::Help: return "Help";
+        case BarGroup::AfterModel: return "AfterModel";
+        case BarGroup::Slots: return "Slots";
+        case BarGroup::Places: return "Places";
+        case BarGroup::Media: return "Media";
+        case BarGroup::End: return "End";
     }
-    return "FileKinds";
+    return "End";
+}
+
+const char* kindName(MenuItem::Kind k) {
+    switch (k) {
+        case MenuItem::Kind::Submenu: return "submenu";
+        case MenuItem::Kind::Separator: return "separator";
+        case MenuItem::Kind::Action: break;
+    }
+    return "action";
+}
+
+const char* roleName(MenuItem::Role r) {
+    switch (r) {
+        case MenuItem::Role::Preferences: return "preferences";
+        case MenuItem::Role::About: return "about";
+        case MenuItem::Role::Quit: return "quit";
+        case MenuItem::Role::None: break;
+    }
+    return "none";
+}
+
+const char* shortcutName(MenuItem::Shortcut s) {
+    using S = MenuItem::Shortcut;
+    switch (s) {
+        case S::LoadPreset: return "load-preset";
+        case S::Reset: return "reset";
+        case S::ColdBoot: return "cold-boot";
+        case S::Preferences: return "preferences";
+        case S::Quit: return "quit";
+        case S::Copy: return "copy";
+        case S::Paste: return "paste";
+        case S::None: break;
+    }
+    return "none";
+}
+
+const char* controlName(BarControl::Kind k) {
+    using K = BarControl::Kind;
+    switch (k) {
+        case K::SlotPicker: return "slot";
+        case K::PlaceButton: return "button";
+        case K::PlacePicker: return "picker";
+        case K::Media: return "media";
+        case K::More: return "more";
+        case K::ModelPicker: break;
+    }
+    return "model";
+}
+
+Value items(const std::vector<MenuItem>& list) {
+    Value::Array out;
+    for (const auto& i : list) out.push_back(toValue(i));
+    return Value(std::move(out));
+}
+
+Value pairs(const std::vector<std::pair<std::string, std::string>>& list) {
+    Value::Array out;
+    for (const auto& [a, b] : list) out.push_back(Value(Value::Array{Value(a), Value(b)}));
+    return Value(std::move(out));
+}
+
+Value control(const BarControl& c) {
+    return Value::object({{"kind", controlName(c.kind)}, {"id", c.id}, {"label", c.label}, {"shown", c.shown},
+                          {"shortShown", c.shortShown}, {"plugged", c.plugged}, {"choices", items(c.choices)},
+                          {"entry", c.entry}, {"mediumKind", c.mediumKind}});
+}
+
+Value dialogRow(const DialogRow& r) {
+    return Value::object({{"widget", widgetName(r.widget)}, {"section", r.section}, {"key", r.key},
+                          {"label", r.label}, {"choices", pairs(r.choices)}});
 }
 
 } // namespace
 
-Value toValue(const Rect& r) { return Value::object({{"x", r.x}, {"y", r.y}, {"w", r.w}, {"h", r.h}}); }
-
-Value toValue(const DialogSpec& spec) {
-    Value::Array sections;
-    for (const auto& s : spec.sections) {
-        Value::Array rows;
-        for (const auto& r : s.rows) {
-            Value::Object row{{"widget", Value(widgetName(r.widget))}, {"section", Value(r.section)},
-                              {"key", Value(r.key)}, {"label", Value(r.label)}};
-            if (!r.choices.empty()) {   // only when set: Calc-U-1600's form stays as it was
-                Value::Array choices;
-                for (const auto& [value, label] : r.choices) choices.push_back(Value(Value::Array{Value(value), Value(label)}));
-                row.push_back({"choices", Value(std::move(choices))});
-            }
-            rows.push_back(Value(std::move(row)));
-        }
-        sections.push_back(Value::object({{"title", s.title}, {"rows", Value(std::move(rows))}}));
-    }
-    return Value(std::move(sections));
+Value toValue(const MenuItem& i) {
+    return Value::object({{"kind", kindName(i.kind)}, {"id", i.id}, {"label", i.label}, {"checkable", i.checkable},
+                          {"checked", i.checked}, {"enabled", i.enabled}, {"reason", i.reason},
+                          {"role", roleName(i.role)}, {"shortcut", shortcutName(i.shortcut)},
+                          {"command", i.command.value}, {"args", i.args}, {"children", items(i.children)},
+                          {"confirm", i.confirm}, {"destructive", i.destructive}});
 }
 
-Value toValue(const ShellProduct& p) {
-    Value::Object variantLabels;
-    for (const auto& [id, label] : p.variantLabels) variantLabels.push_back({id, Value(label)});
-    Value::Object barModelLabels;
-    for (const auto& [id, label] : p.barModelLabels) barModelLabels.push_back({id, Value(label)});
-    Value::Array items;
-    for (const auto& i : p.items) {
-        Value::Object item{{"group", Value(menuGroupName(i.group))}, {"id", Value(i.id)}, {"label", Value(i.label)},
-                           {"entry", Value(i.entry)}};
-        if (i.onBar) item.push_back({"onBar", Value(true)});                // only when set
-        if (!i.mediaPlace.empty()) item.push_back({"mediaPlace", Value(i.mediaPlace)});
-        items.push_back(Value(std::move(item)));
+Value toValue(const std::vector<Menu>& menus) {
+    Value::Array out;
+    for (const auto& m : menus) out.push_back(Value::object({{"id", m.id}, {"label", m.label}, {"items", items(m.items)}}));
+    return Value(std::move(out));
+}
+
+Value toValue(const std::vector<BarGroupModel>& groups) {
+    Value::Array out;
+    for (const auto& g : groups) {
+        Value::Array controls;
+        for (const auto& c : g.controls) controls.push_back(control(c));
+        out.push_back(Value::object({{"group", barGroupName(g.group)}, {"controls", Value(std::move(controls))},
+                                     {"pushed", g.pushed}}));
     }
+    return Value(std::move(out));
+}
+
+Value toValue(const std::vector<Panel>& panels) {
+    Value::Array out;
+    for (const auto& p : panels) {
+        Value::Array places;
+        for (const auto& c : p.places) places.push_back(control(c));
+        out.push_back(Value::object({{"kind", p.kind}, {"owner", p.owner}, {"ownerPlace", p.ownerPlace},
+                                     {"places", Value(std::move(places))}}));
+    }
+    return Value(std::move(out));
+}
+
+Value toValue(const std::vector<ShownSection>& sections) {
+    Value::Array out;
+    for (const auto& s : sections) {
+        Value::Array rows;
+        for (const auto& r : s.rows)
+            rows.push_back(Value::object({{"row", dialogRow(r.row)}, {"value", r.value}, {"shown", r.shown},
+                                          {"choices", pairs(r.choices)}, {"resettable", r.resettable},
+                                          {"min", r.min ? Value(*r.min) : Value()},
+                                          {"max", r.max ? Value(*r.max) : Value()}}));
+        out.push_back(Value::object({{"title", s.title}, {"rows", Value(std::move(rows))}}));
+    }
+    return Value(std::move(out));
+}
+
+Value toValue(const Rect& r) { return Value::object({{"x", r.x}, {"y", r.y}, {"w", r.w}, {"h", r.h}}); }
+
+Value toValue(const ShellProduct& p) {
+    Value::Array items;
+    for (const auto& i : p.items) items.push_back(Value::object({{"id", i.id}, {"label", i.label}}));
     Value::Object out{{"name", Value(p.name)},
                       {"helpUrl", Value(p.helpUrl)},
                       {"aboutLabel", Value(p.aboutLabel)},
@@ -87,18 +176,7 @@ Value toValue(const ShellProduct& p) {
         for (const auto& [label, url] : p.aboutLinks) links.push_back(Value(Value::Array{Value(label), Value(url)}));
         out.push_back({"aboutLinks", Value(std::move(links))});
     }
-    out.push_back({"variantLabels", Value(std::move(variantLabels))});
-    out.push_back({"barModelLabels", Value(std::move(barModelLabels))});
-    out.push_back({"barSpread", Value(p.barSpread)});
-    out.push_back({"barShortPickers", Value(p.barShortPickers)});
-    out.push_back({"presetFilter", Value(p.presetFilter)});
     out.push_back({"presetUploads", Value(p.presetUploads)});
-    out.push_back({"copyScreen", Value(static_cast<bool>(p.copyScreen))});   // whether the product has the item
-    out.push_back({"pasteText", Value(p.pasteText)});
-    out.push_back({"moduleSlotPinOuts", strings(p.moduleSlotPinOuts)});
-    out.push_back({"placesWithoutControl", strings(p.placesWithoutControl)});
-    out.push_back({"placesOnPaper", strings(p.placesOnPaper)});
-    out.push_back({"mobileBarMedia", strings(p.mobileBarMedia)});
     out.push_back({"items", Value(std::move(items))});
     return Value(std::move(out));
 }

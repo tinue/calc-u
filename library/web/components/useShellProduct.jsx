@@ -2,16 +2,15 @@
 //
 //   useShellProduct(shell, {request, args, fallback, version, build,
 //                   copyScreen, openFiles, acts, nameAndSave}) → {product, ready, chrome}
-//     the product's shell data: `request` (`<prefix>.shell-product`) with
+//     the product's data: `request` (`<prefix>.shell-product`) with
 //     `args`, once per distinct `args` while the session runs, its answer
-//     {product, settingsSpec} kept; `fallback` (the shell's frame with
-//     nothing of the product's) until it came. The product is the answer's
-//     with the page's `version` and `build`, Copy Screen (`copyScreen`, or
-//     null: none), the settings spec, Load Preset… (the files picked by the
-//     product's `presetUploads`: the preset with the files it names, through
-//     `openFiles(files, "dialog")`) and each item's
-//     act from `acts` by its id, and Name & Save of a media place from
-//     More (`nameAndSave(place)`). copyScreen, openFiles and acts are read
+//     {product, chrome} kept; `fallback` (the shell's frame with nothing of
+//     the product's) until it came. The product is the answer's with the
+//     page's `version` and `build`, Copy Screen (`copyScreen`, or null:
+//     none), Load Preset… (the files picked by the product's
+//     `presetUploads`: the preset with the files it names, through
+//     `openFiles(files, "dialog")`), the items' acts (`acts`, by id) and
+//     Name & Save of a media place from More (`nameAndSave(place)`). copyScreen, openFiles and acts are read
 //     when used, so they may be new closures at each render. `chrome`: the
 //     answer's chrome (the product's app/ Chrome in shell/Chrome's form),
 //     null until it came.
@@ -60,12 +59,11 @@ function useShellProduct(shell, options) {
       build: options.build,
       copyScreen: hasCopyScreen ? () => latest.current.copyScreen() : null,
       nameAndSave: (place) => { if (latest.current.nameAndSave) latest.current.nameAndSave(place); },
-      settingsSpec: data.settingsSpec,
       loadPreset: async () => {
         const files = await calcuPickFiles(p.presetUploads || "", true);
         if (files.length) latest.current.openFiles(files, "dialog");
       },
-      items: p.items.map((i) => ({ ...i, act: () => { const act = (latest.current.acts || {})[i.id]; if (act) act(); } })),
+      acts: Object.fromEntries(p.items.map((i) => [i.id, () => { const act = (latest.current.acts || {})[i.id]; if (act) act(); }])),
     };
   }, [data, hasCopyScreen]);
   return { product, ready: !!data, chrome: (data && data.chrome) || null };

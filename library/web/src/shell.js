@@ -143,6 +143,9 @@ function createShell({ product, workerUrl, start, services }) {
     listenStream: (l) => { streamListeners.add(l); return () => streamListeners.delete(l); },
     send: (name, args) => call("command", name, args),
     request: (name, args) => call("request", name, args),
+    // The page's traits and the product's args of its shell: the worker
+    // posts the shell's models as the topic `web.shell` from then on.
+    setShell: (args) => post({ kind: "shell", args }),
     unlockAudio: audio.unlock,
     destroy: () => {
       destroyed = true;

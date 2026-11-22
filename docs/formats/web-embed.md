@@ -18,7 +18,7 @@ service, Save folder, Bundle file).
 | The worker: files, storage, the call loop | `library/web/src/worker.js` |
 | The persistent file system | `library/web/src/storage.js` |
 | The wire form of the messages | `library/web/glue/MessageCodec.hpp` |
-| The worker's host of the session; `web.start`, `web.storage` | `library/web/glue/WorkerHost.hpp`, `.cpp` |
+| The worker's host of the session; `web.start`, `web.storage`, `web.shell` | `library/web/glue/WorkerHost.hpp`, `.cpp` |
 | A product's registration | `library/web/glue/Bind.hpp` (`CALCU_WEB_PRODUCT`) |
 | The build: `calc.js`, `calc.css`, `calc-engine-worker.js`, `files.json`, `MANIFEST.json`, scoped CSS | `library/web/build/dist.js` |
 | A product's whole build: the engine in `build/web`, `dist/`, `--release` | `library/web/build/product.js` |
@@ -161,6 +161,7 @@ plain object. No message type of a product's own.
 | Direction | Form |
 |---|---|
 | page → worker | `{kind: "listen", args: {services: [name, …]}}` |
+| page → worker | `{kind: "shell", args: {mobile, settings, about, …}}`: the page's traits and the product's own args of its shell (§3.1) |
 | page → worker | `{kind: "command", name, args, call}` |
 | page → worker | `{kind: "request", name, args, call}` |
 | page → worker | `{kind: "answer", call, done, reason, value}` |
@@ -205,6 +206,16 @@ with the wall time.
 |---|---|---|
 | `web.start` | state | `{state: "running" \| "failed", failure}` |
 | `web.storage` | state | `{mode, sentence}`: §5 |
+| `web.shell` | state | `{menus, bar, panels, dialog}`: the shell's models for the page's last `shell` message |
+
+The shell's models are the library's (`library/shell/`: `menus`, `bar`,
+`panels`, the settings `dialog`) over the session's topics and the
+`preset-list` reply, in the Value forms of `library/shell/ValueForms.hpp`;
+the worker computes them anew after each message and call and sends them
+when they changed. The `shell` message names the page's traits — `mobile`
+(true: the mobile bar, no menu bar), `settings` and `about` (false: no
+Settings…, no About; both true when not given) — and the product's own
+args (Calc-U-59: `layout`, `version`, `build`); none comes before it.
 
 The page's start state is `starting`, then `running` at the first
 `web.start`, or `failed` at `web.start` with `failed`, at an error of

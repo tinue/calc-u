@@ -78,10 +78,8 @@ TEST(help_address_about_texts_and_links) {
     CHECK(a.links.size() == 3 && a.links[0].second == "https://github.com/tinue/calc-u");
     CHECK(a.links.size() == 3 && a.links[1].second == "https://github.com/tinue/calc-u/issues");
     CHECK(a.links.size() == 3 && a.links[2].second == "https://github.com/tinue/calc-u/blob/main/products/calc-u-59/PRIVACY.md");
-    // The page's form carries the links and says there is no Copy Screen.
-    const Value v = shell::toValue(p);
-    CHECK(v.find("aboutLinks") != nullptr);
-    CHECK(!*v.find("copyScreen")->boolean());
+    // The page's form carries the links.
+    CHECK(shell::toValue(p).find("aboutLinks") != nullptr);
 }
 
 TEST(settings_spec_per_frontend_and_layout) {

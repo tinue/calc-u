@@ -9,7 +9,7 @@
 //   CALCU_WEB_PRODUCT(CalcU1600Host, cu1600::makeWebAppSession)
 
 namespace calcu::web {
-template <std::unique_ptr<sessions::AppSession> (*Factory)(const WebStart&)>
+template <WebSession (*Factory)(const WebStart&)>
 WorkerHost* makeWorkerHost(emscripten::val start) {
     return new WorkerHost(AppSessionFactory(Factory), start);
 }

@@ -48,34 +48,6 @@ TEST(help_address_and_about_texts) {
           a.links[1].second == "https://github.com/tinue/calc-u/issues");
 }
 
-// The page's forms of Calc-U-1600 keep their shape: the members in this order,
-// `copyScreen` true (the placeholder act), `aboutLinks`, items with
-// exactly {group, id, label, entry}, and no `choices` in the settings spec.
-TEST(calc_u_1600_forms_unchanged) {
-    using calcu::sessions::Value;
-    const Value v = calcu::shell::toValue(cu1600::shellProduct("1.0", "", false, false));
-    std::vector<std::string> keys;
-    for (const auto& m : *v.members()) keys.push_back(m.key);
-    CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "aboutLinks", "variantLabels", "barModelLabels", "barSpread", "barShortPickers", "presetFilter",
-                                            "presetUploads",
-                                            "copyScreen", "pasteText", "moduleSlotPinOuts", "placesWithoutControl", "placesOnPaper", "mobileBarMedia", "items"}));
-    CHECK(*v.find("copyScreen")->boolean());
-    for (const Value& item : *v.find("items")->elements()) {
-        std::vector<std::string> fields;
-        for (const auto& m : *item.members()) fields.push_back(m.key);
-        CHECK(fields == (std::vector<std::string>{"group", "id", "label", "entry"}));
-    }
-    for (bool qt6 : {false, true}) {
-        const Value spec = calcu::shell::toValue(cu1600::settingsSpec(qt6, true));
-        for (const Value& s : *spec.elements())
-            for (const Value& r : *s.find("rows")->elements()) {
-                std::vector<std::string> fields;
-                for (const auto& m : *r.members()) fields.push_back(m.key);
-                CHECK(fields == (std::vector<std::string>{"widget", "section", "key", "label"}));
-            }
-    }
-}
-
 // The chrome: every colour the GUIs name is in both sets.
 TEST(sharp_chrome_complete) {
     const calcu::shell::Chrome& c = cu1600::sharpChrome();

@@ -7,8 +7,7 @@
 #include <vector>
 
 // The menus: computed afresh from the inputs at each change; a component
-// set replaces what changed in place. Mirrored rule by rule in
-// library/web/components/shellModel.js (calcuShellMenus).
+// set replaces what changed in place.
 
 namespace calcu::shell {
 

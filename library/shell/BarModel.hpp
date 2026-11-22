@@ -9,8 +9,8 @@
 
 // The control bar: groups left to right, inside a group the descriptor order. The
 // shell reads no product entry: a product's own control goes into the group
-// it names (Qt6 Shell::addBarControl, React `extra`). Mirrored in
-// shellModel.js (calcuShellBar).
+// it names (Qt6 Shell::addBarControl, React `extra`). barFit is mirrored
+// in shellModel.js (calcuShellBarFit): the page measures and fits at once.
 
 namespace calcu::shell {
 

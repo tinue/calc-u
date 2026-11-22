@@ -35,10 +35,9 @@ tools/  ci/  .github/workflows/
   2. `settings` (on `files`); `pacing`, `roms` (on `machine`)
   3. `sessions`
   4. `typing`, `peripherals`, `shell` (its `SessionThread` uses `parts`
-     and `harness` only for attach, in `CALCU_ATTACH` builds), `web` (only
-     `sessions` and `settings`), `testing` (the tests' runner and rigs,
-     used only by tests)
-  5. `startup`, `control`
+     and `harness` only for attach, in `CALCU_ATTACH` builds), `testing`
+     (the tests' runner and rigs, used only by tests)
+  5. `startup`, `control`, `web` (only `sessions`, `settings` and `shell`)
   6. `presets`
   7. `paper`, `debugger`, `media`: each adds its steps to the presets'
      vocabulary
@@ -82,7 +81,10 @@ tools/  ci/  .github/workflows/
 ## Platforms and bars
 
 The rules live in `library/shell/BarModel`, `library/shell/MenuModel` and
-their mirror `library/web/components/shellModel.js`; the code is the rule.
+`library/shell/View`; the code is the rule. The Web page draws the models
+its worker serves (`shell::ModelHost`); `library/web/components/shellModel.js`
+mirrors only the rules that run on the page's clock and measurements (the
+view, `barFit`, "Loading…", notices, the pointer).
 
 - Every window is desktop or mobile (`shell::Traits::platform`). Desktop:
   Qt always, a Web page in a desktop browser's tab; it has a menu bar.

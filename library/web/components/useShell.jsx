@@ -1,20 +1,22 @@
 // useCalcuShell -- the shell's state for a product component of the React
-// set: the models of shellModel.js drawn from the topics, and the senders.
+// set: the models the worker serves (the library's C++ shell models, topic
+// `web.shell`) and the senders.
 // (Not `useShell`: that name is the hook that creates the shell, src/embed.js,
 // so this one carries the set's prefix.)
 //
-//   const s = useCalcuShell(shell, product, {hasQuit: false, shortcuts: false, savedMedia: true});
-//   (traits also `platform` ("desktop": a menu bar; "mobile": none, the
-//   bar keeps what is used while the machine runs), `settings`, `about`.)
+//   const s = useCalcuShell(shell, product, {settings, about}, shellArgs);
+//   (traits: `settings` false: no Settings…; `about` false: no About; the
+//   page's platform is CALCU_SHELL_PLATFORM. shellArgs: the product's own
+//   args of its shell, as its Web part reads them.)
 //   s.menus, s.bar, s.panels, s.dialog (the settings rows), s.loading, s.notice,
 //   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" | null)
 //   s.choose(item), s.setSetting(section, key, value), s.closeNotice(yes), s.close()
 //
-// `product` is the JS form of ShellProduct (shellModel.js); `product.loadPreset`
-// (optional) replaces the shell's Load Preset… (a product that opens the picked
-// files through the session's `open`); `product.settingsSpec`
-// (optional) is the dialog's spec, else the family sections of the rows the
-// `settings` topic has; `product.keysShown` limits them.
+// `product` is the page's form of the product's data (`*.shell-product`):
+// its name, help address and About, `product.loadPreset` (optional) in
+// place of the shell's Load Preset… (a product that opens the picked files
+// through the session's `open`), `copyScreen`, `nameAndSave(place)` and its
+// items' acts by id.
 
 // The page's platform, fixed while it is open: "mobile" for the installed
 // app and for a browser that asks for the mobile site, else "desktop". The
@@ -34,23 +36,23 @@ function calcuShellPlatform() {
   return /iPhone|iPod|Android.*Mobile|Mobi/.test(window.navigator.userAgent) ? "mobile" : "desktop";
 }
 const CALCU_SHELL_PLATFORM = calcuShellPlatform();
-const CALCU_SHELL_WEB_TRAITS = { hasQuit: false, shortcuts: false, savedMedia: true, platform: CALCU_SHELL_PLATFORM };
+const CALCU_SHELL_WEB_TRAITS = { platform: CALCU_SHELL_PLATFORM, settings: true, about: true };
+const CALCU_SHELL_NO_MODELS = { menus: [], bar: [], panels: [], dialog: [] };
 
 function calcuShellNow() {
   return typeof performance !== "undefined" ? performance.now() : Date.now();
 }
 
-function useCalcuShell(shell, product, traits) {
+function useCalcuShell(shell, product, traits, shellArgs) {
   const t = Object.assign({}, CALCU_SHELL_WEB_TRAITS, traits || {});
-  const traitsKey = JSON.stringify(t);
+  const shellKey = JSON.stringify([t, shellArgs || {}]);
   const controlState = useTopic(shell, "control-state");
   const busy = useTopic(shell, "busy");
   const runState = useTopic(shell, "run-state");
   const romsMissing = useTopic(shell, "roms-missing");
   const settings = useTopic(shell, "settings");
   const media = useTopic(shell, "media");
-  const started = useShellState(shell, (st) => st.start);
-  const [presetList, setPresetList] = React.useState(null);
+  const models = useTopic(shell, "web.shell") || CALCU_SHELL_NO_MODELS;
   const [open, setOpen] = React.useState(null);
   const [, setVersion] = React.useState(0);
   const rerender = React.useCallback(() => setVersion((v) => v + 1), []);
@@ -59,11 +61,11 @@ function useCalcuShell(shell, product, traits) {
   const loading = React.useRef(null);
   if (!loading.current) loading.current = calcuShellLoading();
 
-  const askPresets = React.useCallback(() => {
-    if (!shell) return;
-    shell.request("preset-list").then((r) => setPresetList(r.done ? r.value : null));
-  }, [shell]);
-  React.useEffect(() => { if (started === "running") askPresets(); }, [started, askPresets]);
+  // The worker computes the models for this page's traits.
+  React.useEffect(() => {
+    if (shell && shell.setShell) shell.setShell(Object.assign({ mobile: t.platform === "mobile",
+      settings: t.settings !== false, about: t.about !== false }, shellArgs || {}));
+  }, [shell, shellKey]);
 
   // Each notice, in order; none lost.
   React.useEffect(() => {
@@ -87,16 +89,9 @@ function useCalcuShell(shell, product, traits) {
     return () => clearTimeout(id);
   }, [runs, full, rerender]);
 
-  const inputs = { controlState: controlState || null, busy: busy || null, presetList, runState: runState || null,
+  const inputs = { controlState: controlState || null, busy: busy || null, runState: runState || null,
     romsMissing: romsMissing || null, settings: settings || null, media: media || null };
-  const menus = React.useMemo(() => calcuShellMenus(inputs, product, t),
-    [controlState, presetList, runState, media, product, traitsKey]);
-  // The bar's actions and the More items follow the same inputs as the menus.
-  const bar = React.useMemo(() => calcuShellBar(inputs, product, t),
-    [controlState, presetList, runState, media, product, traitsKey]);
-  const panels = React.useMemo(() => calcuShellPanels(inputs, product), [controlState, product]);
-  const spec = product.settingsSpec || calcuShellFamilySections((settings && settings.rows) || [], product.keysShown);
-  const dialog = calcuShellDialog(settings || null, presetList, spec);
+  const { menus, bar, panels, dialog } = models;
 
   const sendChecked = (name, args) => {
     if (!shell) return Promise.resolve({ done: false });
@@ -120,7 +115,7 @@ function useCalcuShell(shell, product, traits) {
     if (item.command) { sendChecked(item.command, item.args); return; }
     const a = CALCU_SHELL_ACTIONS;
     if (item.id === a.loadPreset) (product.loadPreset || loadPreset)();   // a product may open the files itself
-    else if (item.id === a.settings) { askPresets(); setOpen("settings"); }
+    else if (item.id === a.settings) setOpen("settings");
     else if (item.id === a.about) setOpen("about");
     else if (item.id === a.savedMedia) setOpen("saved-media");
     else if (item.id.startsWith("media-name-and-save-")) { if (product.nameAndSave) product.nameAndSave(item.args.place); }
@@ -130,8 +125,8 @@ function useCalcuShell(shell, product, traits) {
       const read = typeof navigator !== "undefined" && navigator.clipboard ? navigator.clipboard.readText() : Promise.resolve("");
       read.then((text) => sendChecked("paste", { text }), () => {});
     } else {
-      const own = (product.items || []).find((p) => p.id === item.id);   // a product item acts
-      if (own && own.act) own.act();
+      const act = (product.acts || {})[item.id];   // a product item acts
+      if (act) act();
     }
   };
   const current = notices.current.current();

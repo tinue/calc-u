@@ -74,6 +74,10 @@ struct ChromeSizes {
     double barHeight = 40, barGap = 6;  // the control bar
     double slotPickerEm = 9;            // a module slot's picker, whatever it shows
     double printerMinWidth = 0, printerMaxWidth = 0;   // the printer column (desktop, embedded); 0: none
+    double debuggerMinWidth = 0, debuggerMinHeight = 0;   // the debugger beside the printer; 0: none
+    // The view rule's panels (shell::view): the least room they take beside
+    // the faceplate (a width) and below it (a height); 0: no panels there.
+    double panelsMinWidth = 0, panelsMinHeight = 0;
     // The bar's and the panels' text keeps its size next to the faceplate:
     // as designed at `textScaleWidth`, growing with a wider faceplate up to
     // `textScaleMax` times. 0: the text never scales.
@@ -94,6 +98,7 @@ struct Chrome {
 //  sizes: {panelHeaderHeight, panelButtonsHeight, panelInset, pillHeight,
 //  pillRadius, pillPaddingX, pillPaddingY, pillFontSize, pillBold,
 //  barHeight, barGap, slotPickerEm, printerMinWidth, printerMaxWidth,
+//  debuggerMinWidth, debuggerMinHeight, panelsMinWidth, panelsMinHeight,
 //  textScaleWidth, textScaleMax}}; colour names in kebab-case, as the Web's
 // custom properties (`--calcu-pill-text`).
 sessions::Value toValue(const Chrome&);

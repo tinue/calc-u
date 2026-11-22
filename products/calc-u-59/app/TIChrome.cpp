@@ -74,6 +74,15 @@ calcu::shell::Chrome make() {
     // its buttons in one row below the paper.
     s.printerMinWidth = 240;
     s.printerMaxWidth = 400;
+    // The view rule (shell::view): the printer column with its insets
+    // beside the faceplate, else the pages; no panels below the tall
+    // faceplate. The debugger joins it where the room beside takes both
+    // and the window is tall enough for its sections (not a phone in
+    // landscape).
+    s.panelsMinWidth = 256;
+    s.panelsMinHeight = 0;
+    s.debuggerMinWidth = 220;
+    s.debuggerMinHeight = 560;
     // The bar's and the paper panel's text as designed at 440 px, growing
     // with the faceplate up to twice that.
     s.textScaleWidth = 440;

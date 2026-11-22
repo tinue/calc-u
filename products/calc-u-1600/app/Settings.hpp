@@ -57,9 +57,9 @@ public:
     static constexpr int kDefaultDapPort = 32168;
 
     // [window] width / height -- last user-resized main-window size,
-    // restored on the next launch (default 900x500).
+    // restored on the next launch (default 900x700: the panels below the faceplate).
     static constexpr int kDefaultWindowWidth = 900;
-    static constexpr int kDefaultWindowHeight = 500;
+    static constexpr int kDefaultWindowHeight = 700;
     int windowWidth() const { return static_cast<int>(m_file.integer("window", "width")); }
     int windowHeight() const { return static_cast<int>(m_file.integer("window", "height")); }
     void setWindowSize(int width, int height) {

@@ -25,6 +25,9 @@ public:
 
 protected:
     bool eventFilter(QObject*, QEvent*) override;
+    // The faceplate no taller than the column's width gives it, the bar
+    // right below it (a narrow page leaves its room at the bottom).
+    void resizeEvent(QResizeEvent*) override;
 
 private:
     // The bar as wide as the faceplate, wider only where its controls

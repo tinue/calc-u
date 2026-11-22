@@ -248,11 +248,22 @@ void ShellControlBar::set(const std::vector<shell::BarGroupModel>& model) {
         }
         shellWidgets_[g].clear();
     }
-    // The room before a pushed group takes the space; else the last stretch.
+    // The room before a pushed group takes the space, the room of a group
+    // that is not pushed none (else a group would move when another one
+    // grows or shrinks); without a pushed group the last stretch.
     bool spread = false;
     for (const auto& group : model) spread = spread || group.pushed;
-    for (int i = 0; i < row_->count(); ++i)
-        if (row_->itemAt(i)->spacerItem()) row_->setStretch(i, i == row_->count() - 1 ? (spread ? 0 : 1) : (spread ? 1 : 0));
+    const auto pushed = [&](QWidget* w) {
+        for (const auto& group : model)
+            if (groups_[static_cast<std::size_t>(group.group)] == w) return group.pushed;
+        return false;
+    };
+    for (int i = 0; i < row_->count(); ++i) {
+        if (!row_->itemAt(i)->spacerItem()) continue;
+        const bool last = i == row_->count() - 1;
+        QWidget* next = last ? nullptr : row_->itemAt(i + 1)->widget();
+        row_->setStretch(i, last ? (spread ? 0 : 1) : (next && pushed(next) ? 1 : 0));
+    }
     for (const auto& group : model) {
         const auto g = static_cast<std::size_t>(group.group);
         for (const auto& c : group.controls)

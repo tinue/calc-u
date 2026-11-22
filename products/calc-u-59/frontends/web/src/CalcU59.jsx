@@ -9,22 +9,25 @@
 // settings, About, notices, "Loading…", the storage banner and "ROMs
 // missing". The product's data come from `c59.shell-product` and
 // `c59.faceplate-map` (app/TIShellProduct, TIWebPart). Two layouts, and
-// layout="auto" (the PWA) picks between them by the window's size, with the
-// iOS rules of app/ (`c59.mobile-rules`):
-//   wide     — calculator | printer | debugger, as the macOS window and the
-//              Qt MainWindow (resizable dividers between the columns);
+// layout="auto" (the PWA) picks between them by the window's size with the
+// library's view rule (calcuShellView, on app/'s chrome):
+//   wide     — calculator | printer | debugger, as the Qt MainWindow
+//              (resizable dividers between the columns): the room beside
+//              the faceplate takes the printer (and the debugger, where it
+//              takes both and the window is tall enough);
 //   portrait — one page at a time, calculator or printer, switched with the
-//              corner chevrons, as the iPhone layout (no debugger).
+//              corner chevrons, as the iPhone layout (no debugger): the
+//              fallback where the room beside is too small, or below.
 // It owns the physical keyboard while focused (host keys through the
 // library's calcuHostKeys), the drop (the session's `open`), and keyboard
 // feedback (portrait).
 
 const FACE_PADDING = 8;
-const DEBUG_MIN = 220;
 // The bar's height and the printer column's width range are app/'s
 // (TIChrome, the chrome of `c59.shell-product`); these numbers stand in only
-// until the engine answered. One product per page, so one set.
-const CHROME_SIZES = { barHeight: 50, printerMinWidth: 240, printerMaxWidth: 400 };
+// until the engine answered (layout="auto" waits for the chrome). One
+// product per page, so one set.
+const CHROME_SIZES = { barHeight: 50, printerMinWidth: 240, printerMaxWidth: 400, debuggerMinWidth: 220 };
 const takeChromeSizes = (chrome) => { if (chrome && chrome.sizes) Object.assign(CHROME_SIZES, chrome.sizes); };
 // The narrowest artwork whose control bar still fits (labelled in wide, icons
 // in portrait). Below it the client keeps its size and the page scrolls, as
@@ -43,7 +46,7 @@ const columnHeight = (faceWidth, height) => Math.max(height || 0, faceWidth / CA
 /// The client's minimum width for a layout.
 function minimumWidth(portrait) {
   return portrait ? FACE_MIN.portrait + 2 * FACE_PADDING
-    : FACE_MIN.wide + 2 * FACE_PADDING + CHROME_SIZES.printerMinWidth + DEBUG_MIN + SPLITTERS;
+    : FACE_MIN.wide + 2 * FACE_PADDING + CHROME_SIZES.printerMinWidth + CHROME_SIZES.debuggerMinWidth + SPLITTERS;
 }
 
 // The shell's traits: the Web has no Quit and binds no shortcut; the
@@ -184,13 +187,30 @@ function Divider({ onDrag }) {
 /// window, within limits, and the debugger is always there.
 const embeddedWide = () => ({
   embedded: true, printerMin: CHROME_SIZES.printerMinWidth, printerMax: CHROME_SIZES.printerMaxWidth, printerStart: 360,
-  debugger: true, compactPrinterBar: false,
+  debugger: true,
 });
 
-/// `rules` is embeddedWide() or (layout="auto") app/'s mobile rules: the
-/// artwork fills the height, whatever its size, the bar and the printer follow
-/// the iOS app, and the debugger may be left out. A bar wider than the artwork
-/// widens the column.
+/// The view of layout="auto" for the client's room (the library's rule on
+/// app/'s chrome): beside the faceplate with the panels fitting, the wide
+/// layout; else the pages.
+function autoView(width, height, menuHeight) {
+  const sizes = CHROME_SIZES;
+  const view = calcuShellView({
+    width, height, faceplateAspect: CANVAS_ASPECT, fixedWidth: 2 * FACE_PADDING,
+    fixedHeight: menuHeight + sizes.barHeight + 2 * FACE_PADDING,
+    panelsMinWidth: sizes.panelsMinWidth, panelsMinHeight: sizes.panelsMinHeight, platform: CALCU_SHELL_WEB_TRAITS.platform,
+  });
+  const wide = view.side === "beside" && view.panelsFit;
+  return {
+    wide, printerMin: sizes.printerMinWidth, printerMax: sizes.printerMaxWidth,
+    debugger: wide && sizes.debuggerMinWidth > 0 && view.room >= sizes.panelsMinWidth + sizes.debuggerMinWidth &&
+      height >= sizes.debuggerMinHeight,
+  };
+}
+
+/// `rules` is embeddedWide() or (layout="auto") autoView(): the artwork
+/// fills the height, whatever its size, and the debugger may be left out.
+/// A bar wider than the artwork widens the column.
 function WideLayout({ page, width, height, rules }) {
   const room = height ? height - page.menuHeight : 0;
   const faceWidth = rules.embedded
@@ -202,7 +222,7 @@ function WideLayout({ page, width, height, rules }) {
   const { printerMin, printerMax, debugger: hasDebugger } = rules;
   const [printerWidth, setPrinterWidth] = React.useState(rules.printerStart ?? printerMax);
   const free = width - columnWidth - 2;
-  const pw = Math.max(printerMin, Math.min(printerMax, printerWidth, free - (hasDebugger ? DEBUG_MIN : 0)));
+  const pw = Math.max(printerMin, Math.min(printerMax, printerWidth, free - (hasDebugger ? CHROME_SIZES.debuggerMinWidth : 0)));
   return (
     <div className="calcu-wide" style={{ height: total }}>
       <CalculatorColumn page={page} faceWidth={faceWidth} width={columnWidth} />
@@ -265,8 +285,7 @@ function CalcU59(props) {
   const rootRef = React.useRef(null);
   const [measured, setMeasured] = React.useState(0);
   const auto = layout === "auto";
-  const [rules, setRules] = React.useState(null);
-  const portrait = auto ? !rules || rules.paged : layout !== "wide";
+  const menuBar = CALCU_SHELL_WEB_TRAITS.platform !== "mobile";
   const hostKeys = React.useRef(null);
   if (!hostKeys.current) hostKeys.current = calcuHostKeys();
 
@@ -276,18 +295,16 @@ function CalcU59(props) {
   const failure = useShellState(shell, (st) => st.failure);
   const log = useLogView(shell);
 
-  // layout="auto": the rules for this size come from the worker.
-  React.useEffect(() => {
-    if (!auto || !shell || start !== "running") return undefined;
-    let current = true;
-    shell.request("c59.mobile-rules", { w: width, h: height }).then((r) => { if (current && r.done) setRules(r.value); });
-    return () => { current = false; };
-  }, [auto, shell, start, width, height]);
-
   // Load Preset… and a drop are the session's `open` (an upload):
   // it decides what the files are, several are one folder, a refusal
   // is its notice. The picker offers the preset extensions and all files.
   const openFiles = (files, way) => calcuOpenFiles((name, args) => shell.send(name, args), files, way);
+
+  // layout="auto": the view for this size, once app/'s chrome is here
+  // (the answer of the last render; the first answer's layout is portrait).
+  const [chromeHere, setChromeHere] = React.useState(false);
+  const rules = auto && chromeHere ? autoView(width || measured || 0, height || 0, menuBar ? MENU_HEIGHT : 0) : null;
+  const portrait = auto ? !rules || !rules.wide : layout !== "wide";
 
   // The product's shell data per layout (the settings differ).
   // No Copy Screen.
@@ -298,6 +315,7 @@ function CalcU59(props) {
   });
   // The product's chrome (app/TIChrome) as the root's custom properties.
   takeChromeSizes(chrome);
+  React.useEffect(() => { if (chrome) setChromeHere(true); }, [chrome]);
   const dark = useColourScheme();
   const chromeStyle = React.useMemo(() => calcuChromeStyle(chrome, dark), [chrome, dark]);
   const traits = React.useMemo(() => traitsFor(settings), [settings]);
@@ -368,7 +386,6 @@ function CalcU59(props) {
 
   const paper = s.panels.find((p) => p.kind === "paper") || {};
   const paperOwner = paper.owner || "";
-  const menuBar = s.traits.platform !== "mobile";
   const page = { shell, s, faceplate: maps[model] || null, model, paperOwner, paperPlaces: paper.places || [], cardDialog: setCardDialog,
     menuHeight: menuBar ? MENU_HEIGHT : 0 };
   const romsMissing = !!s.romsMissing && !s.started;

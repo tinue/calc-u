@@ -57,14 +57,15 @@ const Paper& paperOf(calcu::machine::Machine& m) { return testroms::paperTap(m).
 
 } // namespace
 
-// Dots, a text layer, 430/1000 mm, 129.07 units, the whole width
-// printable, 21 greys; the capability conforms on every model.
+// Dots, a text layer, 430/1000 mm, the 2.5 inch roll (147.67 units) with
+// the head's 129.07 units printable in its middle, 21 greys; the capability
+// conforms on every model.
 TEST(pc100c_states_its_paper) {
     const PaperDescription& d = pc100cpaper::description();
     CHECK(d.unit == (Millimetres{430, 1000}));
-    CHECK_EQ(d.width, Coord{1'290'700});
-    CHECK_EQ(d.printableLeft, Coord{0});
-    CHECK_EQ(d.printableWidth, d.width);
+    CHECK_EQ(d.width, Coord{1'476'744});
+    CHECK_EQ(d.printableWidth, Coord{1'290'700});
+    CHECK_EQ(d.printableLeft, (d.width - d.printableWidth) / 2);   // the line centred on the roll
     CHECK(d.form == MarkForm::Dots);
     CHECK(d.textLayer);
     CHECK_EQ(d.darknessGreys.size(), std::size_t{21});
@@ -159,7 +160,7 @@ TEST(cut_short_rows_and_columns_with_their_darkness) {
         const int row = static_cast<int>(d.at.y / kPerUnit);
         CHECK(row <= 3);
         if (row == 3) {
-            const int col = static_cast<int>((d.at.x % pc100cpaper::kCharStep) / kPerUnit);
+            const int col = static_cast<int>(((d.at.x - pc100cpaper::kMargin) % pc100cpaper::kCharStep) / kPerUnit);
             CHECK(col >= 3);   // the 2 rightmost columns fired
             if (col == 3) {
                 CHECK_EQ(int(d.darkness), 5);
@@ -178,12 +179,12 @@ TEST(takes_only_the_paper_of_its_rows) {
     CHECK_EQ(pc100cpaper::lineHeight(7, 0), Coord{101'800});
 }
 
-// Copy's picture is at 600 dpi, about 1311 pixels wide.
-TEST(copy_is_600_dpi_about_1311_pixels_wide) {
+// Copy's picture is at 600 dpi, the 2.5 inch roll 1500 pixels wide.
+TEST(copy_is_600_dpi_1500_pixels_wide) {
     auto m = printing();
     prt(*m, ModelId{kTI59}, 3);
     const PictureSize s = pictureSize(paperOf(*m));
-    CHECK_EQ(s.width, 1311);
+    CHECK_EQ(s.width, 1500);
     CHECK_EQ(s.dotsPerInch, 600.0);
 }
 
@@ -202,7 +203,7 @@ TEST(reference_picture_of_the_pc100c) {
         paper.dot(d.at, d.darkness);
     }
     paper.fedTo(read->reach.to);
-    CHECK_EQ(pictureSize(paper).width, 1311);
+    CHECK_EQ(pictureSize(paper).width, 1500);
     const auto png = picturePng(paper);
     if (const char* e = std::getenv("CALCU_PAPER_PICTURES"); e && std::string(e) == "1")
         std::ofstream(kFixtures + "pc100c.png", std::ios::binary)

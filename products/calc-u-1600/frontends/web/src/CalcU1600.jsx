@@ -18,7 +18,6 @@
 // calc.css: the menu bar is taller on a touch screen (pointer: coarse).
 const MENU_HEIGHT = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches ? 40 : 26;
 const BAR_HEIGHT_UNTIL_CHROME = 40;   // the control bar before the engine answered
-const PANEL_MIN = 220;          // the least room below the faceplate worth a panels' row
 const INSPECTOR_MIN_WIDTH = 700; // narrower: the inspector only when no other panel is shown
 const SHIFT_TAP_MS = 400;
 const SHIFT_TAP_POINTER = 1000;   // the screen press a SHIFT tap is sent as (no pointer of the faceplate)
@@ -375,14 +374,19 @@ function CalcU1600(props) {
   const W = measured.w || 900, H = measured.h || 600;
   const mobile = s.traits.platform === "mobile";
   const menuHeight = mobile ? 0 : MENU_HEIGHT;   // mobile has no menu bar
-  // The calculator comes first: the faceplate is as large as the window
-  // allows. Only when it reaches both edges and leaves PANEL_MIN or more
-  // below it do the panels get that space (portrait, tall windows) -- a
-  // phone in landscape shows the calculator alone.
-  const aspect = FACE_ASPECT[model] || FACE_ASPECT[DEFAULT_MODEL];
-  const faceRoom = H - menuHeight - ((chrome && chrome.sizes.barHeight) || BAR_HEIGHT_UNTIL_CHROME);
-  const faceWidth = Math.max(200, Math.min(W, faceRoom * aspect));
-  const panelRoom = faceRoom - W / aspect >= PANEL_MIN;
+  // The library's view rule on app/'s chrome: the faceplate as large as
+  // the window allows; the panels' row below it where the room below takes
+  // it, else the calculator alone (a phone in landscape); on mobile with the
+  // room below (a phone in portrait) the panels alone.
+  const sizes = (chrome && chrome.sizes) || {};
+  const view = calcuShellView({
+    width: W, height: H, faceplateAspect: FACE_ASPECT[model] || FACE_ASPECT[DEFAULT_MODEL],
+    fixedHeight: menuHeight + (sizes.barHeight || BAR_HEIGHT_UNTIL_CHROME),
+    panelsMinWidth: sizes.panelsMinWidth || 0, panelsMinHeight: sizes.panelsMinHeight || 0,
+    platform: s.traits.platform, panelsAloneOnMobileBelow: true,
+  });
+  const faceWidth = Math.max(200, view.faceplateWidth);
+  const panelRoom = view.panelsAlone || (view.side === "below" && view.panelsFit);
   const paperOwner = (s.panels.find((p) => p.kind === "paper") || {}).owner || "";
   const printerEntry = cs && cs.product ? cs.product["c1600.ce158-printer-panel"] : null;
   // The paper panel with or without a plotter. Where only one
@@ -392,10 +396,9 @@ function CalcU1600(props) {
   const showPrinter = panelRoom && !!(printerEntry && printerEntry.shown);
   const showInspector = panelRoom && (W >= INSPECTOR_MIN_WIDTH || !(showPaper || showPrinter));
   const anyPanel = showInspector || showPaper || showPrinter;
-  // Mobile with room below the faceplate (a phone in portrait): the panels
-  // alone, the paper over the whole width; the keys are too small to use
-  // there, so the calculator is used turned.
-  const panelsOnly = mobile && anyPanel;
+  // The panels alone: the paper over the whole width; the keys are too
+  // small to use there, so the calculator is used turned.
+  const panelsOnly = view.panelsAlone && anyPanel;
 
   const romsMissing = !!s.romsMissing && !s.started;
   const failed = start === "failed";

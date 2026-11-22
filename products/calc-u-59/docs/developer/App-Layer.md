@@ -39,7 +39,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (§ "Bridge La
 | `ConstantMemoryKeeper`, `ConstantMemoryFile` | The TI-58C's `ti58c.memory.yaml` (constant memory format 1): what a TI-58C built without a preset gets, when the file is written, the notices |
 | `TIFileAccess`, `PacingProfiles` | The card and `ti58c.memory.yaml` files on the save folder (read at each use: a change in Settings applies at once); the TI pacing profiles |
 | `TIShellProduct` | What Calc-U-59 gives the library's shell, one source for Qt6, the Web and (through the bridge) Swift: the name, help address, About texts and links, the preset filter, the module slot's pin-out, the two card items (`arm-card`, `arm-fresh-card` on the media place `card-reader`); the settings dialog per frontend and layout (`settingsSpec`); the faceplate's hit map in base-image pixels (`faceplateHitMap`, `faceplateMapValue`) |
-| `TIWebPart` | What the Web page draws, as `c59.web.*` topics and product requests (`c59.shell-product`, `c59.faceplate-map`; the LED shapes, the mobile layout rules) |
+| `TIWebPart` | What the Web page draws, as `c59.web.*` topics and product requests (`c59.shell-product`, `c59.faceplate-map`; the LED shapes, the debug tabs' headers) |
 | `TILevelRules` | The levels `program` and `cpu` of the run control: where a pause lands (a step boundary, or 50000 weights), one step, pause-on-start |
 | `TIDebuggerSetup` | The `DebuggerPart`'s set-up: the rules, the trace session on `TITraceRecorder`, the trace folder (none on the Web: hand-over), the panel views |
 | `TIPrinters` | The PC-100C with its paper description, for the `PaperPart` |
@@ -50,8 +50,8 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (§ "Bridge La
 | `TIFileKinds` | Calc-U-59's file kinds of the library's `open`: `asm-overlay`, `keystroke-program`, `rom-module-file`, `constant-memory-file`; `tiPresetExtensions`, `programArguments` (the Qt6 start file) |
 | `DebugModel` | The panels' data: CALCULATOR snapshot and listing, CPU history (TIDebugPart owns it) |
 | `DebugSnapshots` | Builds the CALCULATOR snapshot and listing and the CPU history entries |
-| `TIChrome` | The GUIs' look and layout values (the library's `shell::Chrome`, dark only): the colours by name, the panel header and button-bar heights, the inset, the pill's shape, the bar, the printer column's width range (desktop, embedded), the text scale with the faceplate; every GUI reads it, the Web through `c59.shell-product` |
-| `DebugText` | The panels' shared text and colours; `mobileLayout`, which panels an iOS window shows, `mobilePrinterWidth`, `compactPrinterBar` and `mobileTopMargin` |
+| `TIChrome` | The GUIs' look and layout values (the library's `shell::Chrome`, dark only): the colours by name, the panel header and button-bar heights, the inset, the pill's shape, the bar, the printer column's width range (desktop, embedded), the view rule's numbers for the library's `shell::view` (the printer column's least room beside the faceplate, none below it; the debugger's least width and the window's least height for it), the text scale with the faceplate; every GUI reads it, the Web through `c59.shell-product` |
+| `DebugText` | The panels' shared text and colours; `mobileLayout`, which panels an iPad window shows (the Qt window and the Web's `auto` layout use the library's `shell::view` on `TIChrome`), `mobilePrinterWidth`, `compactPrinterBar` and `mobileTopMargin` |
 | `DebugLog` | The LOG tab's view (`RingLog`, the last 2000 lines; kept by each frontend) and the Vars / SCOM / Prog / Memory dumps |
 | `RomHeatmap` | How the heatmap is drawn: the grid, heat steps and colours (the counts are the core's `c59.rom-heatmap`) |
 | `ModuleImage` | PRG SOURCE decoding, the module's program table, source labels |

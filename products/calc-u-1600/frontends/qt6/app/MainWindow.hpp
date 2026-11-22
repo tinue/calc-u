@@ -68,6 +68,8 @@ public:
     // The tests: Copy Screen's picture and text go here, not to the
     // platform's clipboard.
     void setClipboardSink(std::function<void(const QImage&, const QString&)> sink) { m_clipboardSink = std::move(sink); }
+    /// The panels' row is shown (the view rule gives it room).
+    bool panelsShown() const;
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
@@ -107,6 +109,11 @@ private:
     void applyCopyLabel();
     void copyScreen();
     void refreshSerialStatus();
+    // The library's view rule (shell::view on app/'s chrome): the panels'
+    // row below the faceplate where the room below takes it, else the
+    // calculator alone.
+    void applyView();
+    calcu::qt6::PanelArea* m_panels = nullptr;
 
     // The two program flows, behind File ▸ Load BASIC Program… and
     // Load Machine Code… (after their dialog, which remembers the folder) and

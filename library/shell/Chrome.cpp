@@ -72,6 +72,10 @@ Value toValue(const Chrome& chrome) {
                                  {"slotPickerEm", s.slotPickerEm},
                                  {"printerMinWidth", s.printerMinWidth},
                                  {"printerMaxWidth", s.printerMaxWidth},
+                                 {"debuggerMinWidth", s.debuggerMinWidth},
+                                 {"debuggerMinHeight", s.debuggerMinHeight},
+                                 {"panelsMinWidth", s.panelsMinWidth},
+                                 {"panelsMinHeight", s.panelsMinHeight},
                                  {"textScaleWidth", s.textScaleWidth},
                                  {"textScaleMax", s.textScaleMax}});
     Value::Object o{{"light", colours(chrome.light)}};

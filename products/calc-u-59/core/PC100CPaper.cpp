@@ -94,9 +94,9 @@ const calcu::paper::PaperDescription& description() {
     static const calcu::paper::PaperDescription d = [] {
         calcu::paper::PaperDescription p;
         p.unit = calcu::paper::Millimetres{430, 1000};
-        p.width = kWidth;   // 129.07 units
-        p.printableLeft = 0;
-        p.printableWidth = kWidth;   // the whole width
+        p.width = kPaperWidth;
+        p.printableLeft = kMargin;
+        p.printableWidth = kWidth;
         p.form = calcu::paper::MarkForm::Dots;
         p.dotDiameter = 7'600;   // 0.38 of the pitch as radius
         for (int heat = 0; heat <= kFullInkCycles; ++heat)
@@ -121,7 +121,7 @@ std::vector<Dot> lineDots(const std::array<std::uint8_t, 20>& codes, int rowCoun
                 const auto bit = static_cast<std::uint8_t>(0x10 >> c);
                 if (!(inked & bit)) continue;
                 const auto darkness = static_cast<std::uint8_t>((faint & bit) ? heat : kFullInkCycles);
-                out.push_back(Dot{Position{static_cast<Coord>(i) * kCharStep + c * kPerUnit + kPerUnit / 2,
+                out.push_back(Dot{Position{kMargin + static_cast<Coord>(i) * kCharStep + c * kPerUnit + kPerUnit / 2,
                                            top + r * kPerUnit + kPerUnit / 2},
                                   darkness});
             }

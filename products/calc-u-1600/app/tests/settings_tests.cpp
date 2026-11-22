@@ -47,7 +47,7 @@ TEST(settings_declaration_keys_and_defaults) {
         {"debug.dap-port", "32168"},        {"serial.link-folder", ""},
         {"folders.presets", ""},            {"folders.basic-programs", ""},
         {"folders.machine-code", ""},       {"folders.host-drive", ""},
-        {"window.width", "900"},            {"window.height", "500"},
+        {"window.width", "900"},            {"window.height", "700"},
     };
     std::vector<std::pair<std::string, std::string>> actual;
     for (const cs::KeyDecl& k : d.keys) actual.emplace_back(k.section + "." + k.key, k.defaultValue);
@@ -134,14 +134,14 @@ TEST(folders_four_kinds) {
     for (const auto& [folder, key] : kinds) CHECK_EQ(std::string(cu1600::openFolderKind(folder)), std::string(key));
 }
 
-// [window] keeps the size the user gave; without it 900 x 500.
-TEST(window_size_default_900x500_and_kept) {
+// [window] keeps the size the user gave; without it 900 x 700.
+TEST(window_size_default_900x700_and_kept) {
     TempDir tmp("calcu1600-settings-window");
     const std::string path = (tmp.path() / "Calc-U-1600.ini").generic_string();
     {
         cs::SettingsFile file = cs::SettingsFile::open(cu1600::settingsDecl(), path);
         cu1600::Settings s(file);
-        CHECK(s.windowWidth() == 900 && s.windowHeight() == 500);
+        CHECK(s.windowWidth() == 900 && s.windowHeight() == 700);
         s.setWindowSize(1024, 640);
     }
     cs::SettingsFile again = cs::SettingsFile::open(cu1600::settingsDecl(), path);

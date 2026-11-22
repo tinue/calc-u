@@ -19,11 +19,13 @@
 #include "qt6/SessionHost.hpp"
 #include "qt6/Shell.hpp"
 #include "shell/Inputs.hpp"
+#include "shell/View.hpp"
 #include <QCloseEvent>
 #include <QFileDialog>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QSplitter>
+#include <QToolButton>
 
 MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
     : QMainWindow(parent), m_controller(std::make_unique<EmulatorController>(nullptr, std::move(clock))) {
@@ -109,7 +111,26 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
     });
     connect(m_debug, &DebugPanel::selectAsmFileRequested, this, &MainWindow::selectAsmFile);
 
+    // The pages' chevron, over the column's top corner (not one of the
+    // splitter's columns).
+    m_chevron = new QToolButton(this);
+    m_chevron->setObjectName(QStringLiteral("page-chevron"));
+    const calcu::shell::PillShape& pill = sizes.pill;
+    m_chevron->setFixedSize(qRound(pill.height + pill.paddingX), qRound(pill.height));
+    m_chevron->setStyleSheet(QStringLiteral("QToolButton { background: %1; color: %2; border: none; border-radius: %3px;"
+                                            " font-size: %4px; font-weight: 600; }")
+                                 .arg(ChromeStyle::rgb(cu59::chrome::kChevron), ChromeStyle::rgb(ChromeStyle::qcolour(ChromeStyle::colours().text)))
+                                 .arg(qRound(pill.radius))
+                                 .arg(qRound(pill.height - 2 * pill.paddingY)));
+    m_chevron->hide();
+    connect(m_chevron, &QToolButton::clicked, this, [this] {
+        m_printerPage = !m_printerPage;
+        applyView();
+    });
+    m_splitter->installEventFilter(this);
+
     restoreWindowState();
+    applyView();
     m_keyboard->setFocus();
 }
 
@@ -183,6 +204,46 @@ void MainWindow::selectAsmFile() {
     m_controller->loadAsmFile(path);
 }
 
+// The library's view rule on the window's room: the printer beside the
+// faceplate where it fits (the debugger too where the room takes both and
+// the window is tall enough), else the pages.
+void MainWindow::applyView() {
+    if (!m_splitter || !m_debug) return;
+    const calcu::shell::ChromeSizes& s = ChromeStyle::chrome().sizes;
+    calcu::shell::ViewInputs in;
+    in.width = m_splitter->width();
+    in.height = m_splitter->height();
+    in.faceplateAspect = cu59::kCanvasAspect;
+    // The column's insets and the splitter's dividers beside the faceplate.
+    in.fixedWidth = 2 * s.panelInset + 2 * m_splitter->handleWidth();
+    in.fixedHeight = s.barHeight + 2 * s.panelInset;
+    in.panelsMinWidth = s.panelsMinWidth;
+    in.panelsMinHeight = s.panelsMinHeight;
+    const calcu::shell::View v = calcu::shell::view(in);
+    const bool wide = v.side == calcu::shell::ViewSide::Beside && v.panelsFit;
+    const bool debugger = wide && s.debuggerMinWidth > 0 && v.room >= s.panelsMinWidth + s.debuggerMinWidth &&
+                          in.height >= s.debuggerMinHeight;
+    m_paged = !wide;
+    QWidget* panels = m_shell->panelArea();
+    m_calculator->setVisible(wide || !m_printerPage);
+    panels->setVisible(wide || m_printerPage);
+    m_debug->setVisible(debugger);
+    m_chevron->setVisible(m_paged);
+    if (m_paged) {
+        const QRect area = m_splitter->geometry();
+        const int margin = qRound(s.panelInset);
+        m_chevron->setText(m_printerPage ? QStringLiteral("‹") : QStringLiteral("›"));
+        m_chevron->setToolTip(m_printerPage ? tr("Calculator") : tr("Printer"));
+        m_chevron->move(m_printerPage ? area.left() + margin : area.right() - margin - m_chevron->width(), area.top() + margin);
+        m_chevron->raise();
+    }
+}
+
+bool MainWindow::eventFilter(QObject* o, QEvent* e) {
+    if (o == m_splitter && e->type() == QEvent::Resize) applyView();
+    return QMainWindow::eventFilter(o, e);
+}
+
 void MainWindow::closeEvent(QCloseEvent* e) {
     saveWindowState();   // the constant memory: the session's closing (EmulatorController's end)
     QMainWindow::closeEvent(e);
@@ -203,13 +264,14 @@ void MainWindow::restoreWindowState() {
 void MainWindow::saveWindowState() {
     const QRect g = normalGeometry();
     const QPoint at = isMaximized() || isFullScreen() ? g.topLeft() : pos();
-    cu59::settings::WindowState w;
+    // The columns' widths as last seen side by side.
+    cu59::settings::WindowState w = AppSettings::settings().windowState();
     w.x = at.x();
     w.y = at.y();
     w.width = g.width();
     w.height = g.height();
     const QList<int> sizes = m_splitter->sizes();
-    if (sizes.size() == 3) {
+    if (sizes.size() == 3 && sizes[0] > 0 && sizes[1] > 0 && sizes[2] > 0) {
         w.calculatorWidth = sizes[0];
         w.printerWidth = sizes[1];
         w.debugWidth = sizes[2];

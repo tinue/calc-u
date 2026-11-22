@@ -736,3 +736,91 @@ test("choice_value_not_listed_shown_as_written", () => {
   assert.equal(style.value, "two");
   assert.deepEqual(style.choices, [["one", "The first"], ["two", "two"]]);
 });
+
+// The view rule (shell/View, library/shell/tests/view_tests.cpp): the
+// TI-59's tall faceplate with its column's margins and bar, the PC-1500's
+// wide one with its bar; a desktop window has the Web's menu bar.
+const VIEW_MENU = 26;
+const tallView = (width, height, platform) => ({ width, height, faceplateAspect: 2064 / 4075, fixedWidth: 16,
+  fixedHeight: 50 + 16 + (platform === "desktop" ? VIEW_MENU : 0), panelsMinWidth: 256, panelsMinHeight: 0, platform });
+const wideView = (width, height, platform) => ({ width, height, faceplateAspect: 4000 / 1760, fixedWidth: 0,
+  fixedHeight: 40 + (platform === "desktop" ? VIEW_MENU : 0), panelsMinWidth: 0, panelsMinHeight: 200, platform,
+  panelsAloneOnMobileBelow: true });
+
+test("view_tall_desktop_ordinary", () => {
+  const v = m.calcuShellView(tallView(1400, 900, "desktop"));
+  assert.equal(v.side, "beside");
+  assert.equal(v.panelsFit, true);
+  assert.equal(v.panelsAlone, false);
+});
+
+test("view_tall_desktop_narrow", () => {
+  const v = m.calcuShellView(tallView(400, 900, "desktop"));
+  assert.equal(v.side, "below");
+  assert.equal(v.panelsFit, false);
+});
+
+test("view_tall_phone_portrait", () => {
+  const v = m.calcuShellView(tallView(393, 852, "mobile"));
+  assert.equal(v.side, "below");
+  assert.equal(v.panelsFit, false);
+  assert.equal(v.panelsAlone, false);
+});
+
+test("view_tall_phone_landscape", () => {
+  const v = m.calcuShellView(tallView(852, 393, "mobile"));
+  assert.equal(v.side, "beside");
+  assert.equal(v.panelsFit, true);
+});
+
+test("view_wide_desktop_ordinary", () => {
+  const v = m.calcuShellView(wideView(1400, 900, "desktop"));
+  assert.equal(v.side, "below");
+  assert.equal(v.panelsFit, true);
+  assert.equal(v.panelsAlone, false);
+});
+
+test("view_wide_desktop_narrow", () => {
+  const v = m.calcuShellView(wideView(600, 900, "desktop"));
+  assert.equal(v.side, "below");
+  assert.equal(v.panelsFit, true);
+});
+
+test("view_wide_phone_portrait", () => {
+  const v = m.calcuShellView(wideView(393, 852, "mobile"));
+  assert.equal(v.side, "below");
+  assert.equal(v.panelsAlone, true);
+});
+
+test("view_wide_phone_landscape", () => {
+  const v = m.calcuShellView(wideView(852, 393, "mobile"));
+  assert.equal(v.side, "beside");
+  assert.equal(v.panelsFit, false);
+  assert.equal(v.panelsAlone, false);
+});
+
+test("view_wide_phone_landscape_safe_area", () => {
+  const v = m.calcuShellView(wideView(838, 440, "mobile"));
+  assert.equal(v.side, "below");
+  assert.equal(v.panelsFit, false);
+  assert.equal(v.panelsAlone, false);
+});
+
+test("view_faceplate_fitted", () => {
+  const box = { width: 1000, height: 540, faceplateAspect: 2, fixedWidth: 0, fixedHeight: 40 };
+  let v = m.calcuShellView(box);
+  assert.equal(v.faceplateWidth, 1000);
+  assert.equal(v.faceplateHeight, 500);
+  assert.equal(v.side, "below");
+  assert.equal(v.room, 0);
+  v = m.calcuShellView(Object.assign(box, { width: 1300 }));
+  assert.equal(v.side, "beside");
+  assert.equal(v.faceplateWidth, 1000);
+  assert.equal(v.room, 300);
+});
+
+test("view_no_panels_on_a_side", () => {
+  const box = { width: 4000, height: 500, faceplateAspect: 2, panelsMinWidth: 0, panelsMinHeight: 100 };
+  assert.equal(m.calcuShellView(box).panelsFit, false);
+  assert.equal(m.calcuShellView(Object.assign(box, { panelsMinWidth: 100 })).panelsFit, true);
+});

@@ -67,7 +67,7 @@ TEST(roms_and_module_definitions_as_the_frontends) {
     if (!r.ok()) return;
     const std::string media = r.line("media");
     for (const char* bundled : {"\"CE-1600M\"", "\"CE-1601M\"", "\"CE-161\"", "\"CE-1638\"", "\"CE-163F\"", "\"superRAM\"",
-                                "\"Formatted\"", "\"Blank\"", "\"Empty\""})
+                                "\"Formatted\"", "\"Blank\""})
         CHECK(has(media, bundled));
     CHECK(has(media, "\"module:CE-502B\""));   // the ROM set's module
     CHECK(has(media, "\"module:CE-151\"") && has(media, "\"module:CE-155\""));

@@ -50,7 +50,7 @@ at the repository root).
 | `bindings.cpp` | The product's factory of the library's app session (`CALCU_WEB_PRODUCT(CalcU1600Host, …)`): the library's `SettingsPart` and `ControlPart` (no host folder in a browser and the uploads folder for the files of Load Preset…, `SharpAppPartOptions`), `SharpAppPart`, `SharpWebPart` (app layer) and the session; the library's `WorkerHost` translates its messages |
 | `src/CalcU1600.jsx` | The page, put together from the React set's shell: `useCalcuShell` over the library's `useShell()`, `ShellMenuBar`, `ShellControlBar` (the slot picker `ShellSlotPicker` with Name & Save, the disk controls in its `extra`), the shell's dialogs (Saved Media… `ShellSavedMedia`), notices, "Loading…" and "ROMs missing"; the product's data from the request `c1600.shell-product` through the library's `useShellProduct` (`app/SharpShellProduct`: items, labels, the settings spec), the faceplate's hit map and LCD layout from `c1600.faceplate-map {model}` through `useFaceplateMaps`; Load Preset… (the files of the product's `presetUploads`: the preset with the files it names) and the drop through `calcuOpenFiles` and `calcuFileDrop` (a drop of exactly one file); the page's glue is the library's (`library/web/components/useShellProduct.jsx`, `ShellMedia.jsx`; `calcImage`, `sizeCanvas` in `library/web/src/canvas.js`). The loaders: `c1600.file-kind`, `c1600.load-basic`, `c1600.code-plan` (asked again per keystroke in the address dialog), `c1600.load-code`, each carrying the file's bytes (`app/SharpLoaderPart`) |
 | `src/*.jsx`, `src/*.js` | The client, compiled with the library's page side (`library/web/src/`) into one `dist/calc.js` (one global, `CalcU1600`) |
-| `calc.css` | Styles, all under `.calcu-client`, light and dark |
+| `calc.css` | Styles, all under `.calcu-client`, on custom properties only: app/'s `SharpChrome` (`c1600.shell-product`'s `chrome`, light or dark with the system, set on the root by `calcuChromeStyle`), neutral system colours until the engine answers |
 | `app/` | The installable app's page, manifest and stylesheet; its app page, service worker and worker entry are the library's (`library/web/app/`) |
 | `build.sh`, `build.js` | The build (below): `build.js` names what is the product's (the engine, the worker's configuration with the mount `/persist` and the lock `calcu1600-storage`, the files, the sources), the library's `library/web/build/product.js` does the steps |
 | `tests/`, `run-tests.sh`, `playwright.config.js` | Playwright tests; the servers and the shared configuration are the library's (`library/web/tools/playwright.sh`, `playwright-config.js`) |
@@ -155,7 +155,7 @@ Things that are only in the Qt app, or that a browser can't do:
 - the DAP debugger (`app/dap/` is not in the Emscripten build);
 - serial ports (PC-1600 RS-232C, CE-158 serial: host PTYs);
 - the host drive S3: (Host Drive…);
-- the INSPECTOR's TRACE and LOG;
+- Machine ▸ Trace and Log Level ▸ (`SharpShellProduct`'s `withTrace`);
 - Quit, window size, folder settings.
 
 ## Input

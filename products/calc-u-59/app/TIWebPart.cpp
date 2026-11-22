@@ -1,4 +1,5 @@
 #include "TIWebPart.hpp"
+#include "TIChrome.hpp"
 #include "DebugText.hpp"
 #include "KeyIds.hpp"
 #include "typing/TypingTopics.hpp"
@@ -149,8 +150,8 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
         s.request(sessions::RequestName{name}, [f = std::move(f)](const Value& a, SessionContext&) { return f(a); });
     };
     // The product's data for the React set's shell, the settings dialog of
-    // the layout, from TIShellProduct; the page
-    // adds its acts and its version.
+    // the layout, from TIShellProduct, and the chrome (TIChrome); the
+    // page adds its acts and its version.
     req("c59.shell-product", [](const Value& a) {
         const std::string version = textArg(a, "version");
         const std::string build = textArg(a, "build");
@@ -158,7 +159,8 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
         const calcu::shell::ShellProduct p = shellProduct(version, build);
         return answer("c59.shell-product",
                       Value::object({{"product", calcu::shell::toValue(p)},
-                                     {"settingsSpec", calcu::shell::toValue(settingsSpec(f, calcu::shell::about(p).version))}}));
+                                     {"settingsSpec", calcu::shell::toValue(settingsSpec(f, calcu::shell::about(p).version))},
+                                     {"chrome", calcu::shell::toValue(tiChrome())}}));
     });
     // The faceplate of a model: the hit map (base image pixels), the
     // card area and the canvas (faceplateMapValue), and what the page draws

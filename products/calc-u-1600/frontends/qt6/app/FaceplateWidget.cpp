@@ -1,4 +1,6 @@
 #include "FaceplateWidget.hpp"
+#include "app/SharpChrome.hpp"
+#include "qt6/ChromeStyle.hpp"
 #include "LcdWidget.hpp"
 
 #include <QPainter>
@@ -104,13 +106,13 @@ void FaceplateWidget::paintEvent(QPaintEvent*) {
         painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter.drawPixmap(toQRect(m_fitted.art), m_pixmap);
     }
-    // The keys live input holds: a translucent white overlay
-    // on each one's own area.
+    // The keys live input holds: the chrome's overlay on each one's own area.
     if (!m_layout) return;
+    const QColor held = calcu::qt6::chrome::qcolour(cu1600::sharpChrome().light.named(cu1600::chrome::kKeyPressed));
     for (const std::string& k : shownKeys()) {
         const int i = KeyLayout::heldKeyIndex(*m_layout, k.c_str(), m_pressX, m_pressY);
         if (i >= 0 && i < static_cast<int>(m_fitted.keys.size()))
-            painter.fillRect(toQRect(m_fitted.keys[static_cast<std::size_t>(i)]), QColor(255, 255, 255, 64));
+            painter.fillRect(toQRect(m_fitted.keys[static_cast<std::size_t>(i)]), held);
     }
 }
 

@@ -16,6 +16,7 @@
 #include "qt6/MediaPicker.hpp"
 #include "qt6/PanelArea.hpp"
 #include "qt6/PaperPanel.hpp"
+#include "qt6/SessionHost.hpp"
 #include "qt6/Shell.hpp"
 #include "shell/Inputs.hpp"
 #include <QCloseEvent>
@@ -48,10 +49,15 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
     panels->setParent(m_splitter);
     panels->setAutoFillBackground(true);
     QPalette pal = panels->palette();
-    pal.setColor(QPalette::Window, ChromeStyle::kPanel);
+    pal.setColor(QPalette::Window, ChromeStyle::qcolour(ChromeStyle::colours().window));
     panels->setPalette(pal);
-    panels->setContentsMargins(8, 8, 8, 8);
-    panels->setMaximumWidth(400);   // the printer's buttons in one row below the paper
+    // The printer column's width range (app/'s TIChrome): its buttons in
+    // one row below the paper; inset as the calculator's faceplate.
+    const calcu::shell::ChromeSizes& sizes = ChromeStyle::chrome().sizes;
+    const int inset = qRound(sizes.panelInset);
+    panels->setContentsMargins(inset, inset, inset, inset);
+    panels->setMinimumWidth(qRound(sizes.printerMinWidth) + 2 * inset);
+    panels->setMaximumWidth(qRound(sizes.printerMaxWidth) + 2 * inset);
     // The paper panel's text grows with the faceplate, as the bar's does.
     const QFont base = panels->font();
     connect(m_calculator, &CalculatorPanel::fontScaleChanged, panels, [panels, base](double scale) {
@@ -96,6 +102,11 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
         return cards;
     });
     connect(m_controller.get(), &EmulatorController::printerChanged, this, &MainWindow::followPrinter);
+    // The paper panel in app/'s chrome from the moment the shell shows it.
+    connect(&host(), &calcu::qt6::SessionHost::topicChanged, this, [this] {
+        auto* paper = m_shell->panelArea()->panel("paper");
+        if (paper && paper != m_paperStyled) followPrinter();
+    });
     connect(m_debug, &DebugPanel::selectAsmFileRequested, this, &MainWindow::selectAsmFile);
 
     restoreWindowState();
@@ -131,11 +142,13 @@ calcu::shell::ShellProduct MainWindow::product() {
 
 // The PC-100C's controls on the paper panel while it owns it:
 // PRINT and ADV keys, TRACE a switch at its position, as the control state
-// lists them; the paper in the apps' cream.
+// lists them; the panel in app/'s chrome, the paper in its cream.
 void MainWindow::followPrinter() {
     auto* paper = qobject_cast<calcu::qt6::PaperPanel*>(m_shell->panelArea()->panel("paper"));
     if (!paper) return;
-    paper->setPaperColour(ChromeStyle::kPaper);
+    if (paper != m_paperStyled) paper->setChrome(ChromeStyle::colours(), ChromeStyle::chrome().sizes);
+    m_paperStyled = paper;
+    paper->setPaperColour(ChromeStyle::qcolour(ChromeStyle::colours().output));
     paper->setControls(m_controller->printerControls());
 }
 

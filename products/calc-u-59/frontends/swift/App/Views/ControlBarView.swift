@@ -23,9 +23,9 @@ struct ControlBarView: View {
         .padding(.horizontal, 12)
         // Leading: without the TI-59's card controls the rest stays put.
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 50)
-        .background(Color(white: 0.15))
-        .foregroundStyle(.white)
+        .frame(height: Chrome.barHeight)
+        .background(Chrome.buttonBar)
+        .foregroundStyle(Chrome.text)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("control-bar")
     }
@@ -34,7 +34,7 @@ struct ControlBarView: View {
     /// module left, the card controls in the middle, More right.
     private func row(labels: Bool) -> some View {
         let controls = viewModel.barControls
-        return HStack(spacing: 12) {
+        return HStack(spacing: Chrome.barGap) {
             ForEach(Array(controls.enumerated()), id: \.offset) { index, control in
                 // A group the bar model pushes (a spread bar) takes the room before it.
                 if index > 0, control.group != controls[index - 1].group, control.groupPushed {
@@ -247,16 +247,9 @@ struct PlaceButton: View {
         } label: {
             HStack(spacing: 6) {
                 if showLabel { Text(control.label) } else { Image(systemName: "printer") }
-                Circle()
-                    .fill(control.plugged ? Color.red : Color.gray.opacity(0.4))
-                    .frame(width: 8, height: 8)
+                ChromeDot(on: control.plugged)
             }
-            .font(.system(size: 11, weight: .bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color(white: 0.25))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .chromePill()
         }
         .buttonStyle(.plain)
         .disabled(!(item?.enabled ?? false))

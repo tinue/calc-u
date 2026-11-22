@@ -17,28 +17,28 @@ struct PrinterView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 29/255, green: 29/255, blue: 28/255)
+            Chrome.window
 
             VStack(spacing: 0) {
                 header
                 paperStrip
                 Spacer()
                 buttonBar
-                    .frame(height: 50)
+                    .frame(height: Chrome.panelButtonsHeight)
                     .disabled(viewModel.paperOwner.isEmpty)   // the PC-100C's buttons, while it is attached
             }
-            .background(Color(white: 29.0/255.0))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
+            .background(Chrome.window)
+            .padding(.horizontal, Chrome.panelInset)
+            .padding(.vertical, Chrome.panelInset)
         }
         .overlay(alignment: .bottom) {
             if showCopiedToast {
                 Text(toastText)
                     .font(.caption.bold())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Chrome.text)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
-                    .background(Color.black.opacity(0.75))
+                    .background(Chrome.toast)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .padding(.bottom, 48)
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
@@ -68,12 +68,7 @@ struct PrinterView: View {
             } label: {
                 Image(systemName: dotMode ? "circle.grid.3x3.fill" : "text.alignleft")
                     .accessibilityLabel(dotMode ? "Text" : "Dots")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color(white: 0.25))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .chromePill()
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("paper-view-mode")
@@ -83,13 +78,14 @@ struct PrinterView: View {
         .overlay {
             Text(viewModel.paperOwner)
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Chrome.headerText)
                 .lineLimit(1)
                 .fixedSize()
                 .accessibilityIdentifier("paper-owner")
         }
-        .padding(.top, 8 + portraitTopInset).padding(.bottom, 8)
-        .background(Color(white: 0.08))
+        .frame(height: Chrome.panelHeaderHeight)
+        .padding(.top, portraitTopInset)
+        .background(Chrome.header)
     }
 
     // MARK: - Paper strip
@@ -106,10 +102,10 @@ struct PrinterView: View {
         }
         .scrollIndicators(.never)
         .defaultScrollAnchor(.bottom)
-        .background(Color(red: 0.96, green: 0.94, blue: 0.88))
+        .background(Chrome.output)
         .overlay(
             RoundedRectangle(cornerRadius: 2)
-                .stroke(Color(white: 0.7), lineWidth: 0.5)
+                .stroke(Chrome.outputBorder, lineWidth: 0.5)
         )
         .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
     }
@@ -137,7 +133,7 @@ struct PrinterView: View {
     private var textStrip: some View {
         Text(viewModel.printerLines.isEmpty ? " " : viewModel.printerLines.joined(separator: "\n"))
             .font(.system(size: 13, design: .monospaced))
-            .foregroundStyle(Color(white: 0.15))
+            .foregroundStyle(Chrome.outputText)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -165,11 +161,9 @@ struct PrinterView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Text("T")
-                        Circle()
-                            .fill(viewModel.printerTrace ? Color.red : Color.gray.opacity(0.4))
-                            .frame(width: 8, height: 8)
+                        ChromeDot(on: viewModel.printerTrace)
                     }
-                    .printerButtonChrome(compact: compact, shade: 0.25)
+                    .printerButtonChrome(compact: compact)
                 }
                 .buttonStyle(.plain)
 
@@ -184,7 +178,7 @@ struct PrinterView: View {
                 Button { viewModel.copyPaper() } label: {
                     Image(systemName: "doc.on.doc")
                         .font(.system(size: 13))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Chrome.text)
                 }
                 .disabled(viewModel.printerLines.isEmpty || viewModel.paperOwner.isEmpty)
                 .accessibilityLabel("Copy")
@@ -193,7 +187,7 @@ struct PrinterView: View {
                 Button { viewModel.cutPaper() } label: {
                     Image(systemName: "scissors")
                         .font(.system(size: 13))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Chrome.text)
                 }
                 .disabled(viewModel.printerLines.isEmpty || viewModel.paperOwner.isEmpty)
                 .accessibilityLabel("Cut")
@@ -202,8 +196,8 @@ struct PrinterView: View {
             .buttonStyle(ChromeButtonStyle())
             .padding(.horizontal, compact ? 6 : 12)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(Color(white: 0.15))
+            .frame(height: Chrome.panelButtonsHeight)
+            .background(Chrome.buttonBar)
         }
     }
 
@@ -217,7 +211,7 @@ struct PrinterView: View {
         onRelease: @escaping () -> Void
     ) -> some View {
         Text(label)
-            .printerButtonChrome(compact: compact, shade: 0.28)
+            .printerButtonChrome(compact: compact)
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { _ in onPress() }
@@ -233,7 +227,7 @@ struct PrinterView: View {
 struct PaperBand: View {
     let index: Int
     let dots: [TIPaperDot]
-    var dotColor: Color = Color(white: 0.12)
+    var dotColor: Color = Chrome.ink
 
     private static let widthUnits = TIViewRules.printerWidthUnits
     private static let bandUnits = EmulatorViewModel.paperBandUnits
@@ -272,14 +266,9 @@ struct PaperBand: View {
 }
 
 private extension View {
-    /// The printer bar's button look; `compact` on the narrow tape.
-    func printerButtonChrome(compact: Bool, shade: Double) -> some View {
-        font(.caption.bold())
-            .foregroundStyle(.white)
-            .frame(minWidth: compact ? 30 : 36)
-            .padding(.horizontal, compact ? 6 : 10)
-            .padding(.vertical, 6)
-            .background(Color(white: shade))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+    /// The printer bar's button look: a pill, narrower on the narrow tape
+    /// (`compact`).
+    func printerButtonChrome(compact: Bool) -> some View {
+        chromePill(minWidth: compact ? 30 : 36)
     }
 }

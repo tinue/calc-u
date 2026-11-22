@@ -99,6 +99,13 @@ their mirror `library/web/components/shellModel.js`; the code is the rule.
   `mobileBarMedia`. Places go to More ▸ Peripherals ▸; every other media
   place gets a submenu in File (so in More): its entries, then Name & Save….
 - A place picker's empty entry names its place ("No printer").
+- Look and layout values live in the product's chrome (`app/TIChrome`,
+  `app/SharpChrome`, the library's `shell/Chrome`), read by every GUI: Qt
+  builds its stylesheets of it, Swift reads it through the bridge, the Web
+  gets it with the shell-product answer as CSS custom properties. Panels
+  side by side share the header height, the button-bar height and the
+  pill. A colour literal in a frontend fails its product's CTest
+  `…ChromeColours`.
 
 ## Working
 

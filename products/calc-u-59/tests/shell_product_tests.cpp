@@ -3,12 +3,14 @@
 // per frontend and layout; the faceplate's hit map; ROMs missing.
 #include "../app/KeyIds.hpp"
 #include "../app/KeyboardLayout.hpp"
+#include "../app/TIChrome.hpp"
 #include "../app/TIShellProduct.hpp"
 #include "AppRig.hpp"
 #include "TestHarness.hpp"
 #include "control/ControlState.hpp"
 #include "shell/MenuModel.hpp"
 #include "shell/ValueForms.hpp"
+#include <cstdio>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -165,4 +167,17 @@ TEST(roms_missing_topic_without_a_machine) {
     CHECK(fe.reply(start) && !fe.reply(start)->done);   // no machine is built
     CHECK(app.session->machineSession().machine() == nullptr);
     app.session->close();
+}
+
+// The chrome: every colour the GUIs name is there; dark only; the printer's
+// width range and the text scale as the GUIs use them.
+TEST(ti_chrome_complete) {
+    const shell::Chrome& c = cu59::tiChrome();
+    const auto problems = shell::checkChrome(c, cu59::tiChromeNames());
+    for (const auto& p : problems) std::printf("  %s\n", p.c_str());
+    CHECK(problems.empty());
+    CHECK(!c.dark.has_value());
+    CHECK(c.sizes.printerMinWidth < c.sizes.printerMaxWidth);
+    CHECK_EQ(c.textScale(880), 2.0);
+    CHECK(shell::toValue(c).find("sizes") != nullptr);
 }

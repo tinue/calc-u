@@ -117,7 +117,7 @@ Everything that isn't drawing: `docs/developer/App-Layer.md`.
 | `MainWindow` | `CalculatorView` (layout, menus, presets, drag and drop: every file to the library's `open` through the library's `library/qt6/FileOpening` (`calcu::qt6::openFile(window, …)`, which raises the window but for the start, `dragEnter`, `dragMove`, `drop` (accepted, opened after the drop), `startFile`, the macOS `FileOpenFilter` in `main.cpp`); Arm Fresh Card's replace question through `calcu::qt6::sendAsking`) |
 | `EmulatorController` | `EmulatorViewModel` |
 | `CalculatorPanel` (the faceplate, the shell's control bar and "ROMs missing") | `CalculatorView` calculator column |
-| the shell's control bar (`calcu::qt6::Shell::controlBar()`), `CardControls`; `CalculatorPanel::fitBar` (the library's `barFit`, the text scale `ChromeStyle::fontScale`) | `CalculatorView` bar (`TIBarFit`) and card buttons |
+| the shell's control bar (`calcu::qt6::Shell::controlBar()`), `CardControls`; `CalculatorPanel::fitBar` (the library's `barFit`, the text scale `ChromeStyle::fontScale`, app/'s `TIChrome`) | `CalculatorView` bar (`TIBarFit`) and card buttons |
 | `KeyboardWidget` (the faceplate: art, LED, cue card, pressed key from `held-keys`, host keys through `calcu::qt6::HostKeys`) | `KeyboardView` |
 | `LedRenderer` | `LEDDisplayView` |
 | `CueCardRenderer` | `CueCardView` |
@@ -128,7 +128,7 @@ Everything that isn't drawing: `docs/developer/App-Layer.md`.
 | `debug/DebugHeaderRow` (both tabs' header from app/'s `debugHeader`) | `DebugHeaderView` |
 | `debug/CpuInspectorWidget`, `debug/RomHeatmapWidget` | `CPUInspectorView` |
 | the library's `calcu::qt6::RunControlButtons` (FREEZE, STEP, RESUME of each debug tab) | `HoldRepeatButton.swift` |
-| `ChromeStyle.hpp` | `ChromeControlStyles.swift` |
+| `ChromeStyle.hpp` (stylesheets over app/'s `TIChrome`) | `ChromeControlStyles.swift` (`Chrome`, the bridge's `TIChrome`) |
 | the shell's `ShellSettingsDialog` (`cu59::settingsSpec`), `AppSettings.hpp`, `AppPaths` | `SettingsView`, `AppSettings.swift`, `CardStorage.swift` |
 | the shell's `ShellAbout` (`cu59::shellProduct`'s texts and links, the window icon, "Built with Qt") | — (no About on iOS) |
 

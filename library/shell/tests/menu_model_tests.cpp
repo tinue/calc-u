@@ -411,3 +411,31 @@ TEST(no_settings_item_without_settings) {   // and Traits::about
     CHECK(findItem(ms, "about") == nullptr);
     CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help"));
 }
+
+// A native frontend's own toggles and submenus among the product's items
+// (not in the Web's form, so not mirrored in shell_model.test.js).
+TEST(product_toggle_and_submenu) {
+    auto p = st::product();
+    bool tracing = true;
+    ProductItem trace{MenuGroup::MachineEnd, "trace", "Trace", "", {}};
+    trace.checked = [&tracing] { return tracing; };
+    ProductItem log{MenuGroup::MachineEnd, "log", "Log", "", {}};
+    for (const char* id : {"log-off", "log-info"}) {
+        ProductItem level{MenuGroup::MachineEnd, id, id, "", {}};
+        level.checked = [id] { return std::string(id) == "log-info"; };
+        log.children.push_back(level);
+    }
+    p.items.push_back(trace);
+    p.items.push_back(log);
+    auto ms = menus(st::inputs(), p, kQt);
+    const MenuItem* t = findItem(ms, "trace");
+    CHECK(t && t->checkable && t->checked);
+    const MenuItem* l = findItem(ms, "log");
+    CHECK(l && l->kind == MenuItem::Kind::Submenu);
+    CHECK_EQ(join(ids(l->children)), std::string("log-off log-info"));
+    CHECK(!findItem(ms, "log-off")->checked);
+    CHECK(findItem(ms, "log-info")->checked);
+    tracing = false;
+    ms = menus(st::inputs(), p, kQt);
+    CHECK(!findItem(ms, "trace")->checked);
+}

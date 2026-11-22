@@ -276,6 +276,8 @@ if(CALCU_TESTS)
   # Open With offers the three preset extensions on macOS, Windows and
   # Linux; on macOS .bas, .bbin, .bin as Alternate, no .rom.
   calcu_add_test(CalcU1600OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
+  # The frontends take their colours from app/'s chrome (SharpChrome).
+  calcu_add_test(CalcU1600ChromeColours frequent COMMAND sh ${CMAKE_SOURCE_DIR}/tools/check_chrome_colours.sh .)
   # The harness writes a PC-1600 trace,
   # tools/read_trace.py reads it unchanged (well under 2 s: Frequent).
   if(Python3_FOUND AND NOT WIN32)

@@ -1,6 +1,7 @@
 #include "Ce158PrinterWidget.hpp"
 #include "AppPaths.hpp"
-#include "ChromeColors.hpp"
+#include "app/SharpChrome.hpp"
+#include "qt6/ChromeStyle.hpp"
 #include "MachineController.hpp"
 #include "Connector/PrintableBytes.hpp"
 #include <QEvent>
@@ -47,8 +48,10 @@ Ce158PrinterWidget::Ce158PrinterWidget(MachineController* controller, QWidget* p
     outer->addWidget(m_output, /*stretch=*/1);
 
     m_buttonBar = new QWidget(this);
+    m_buttonBar->setObjectName(QStringLiteral("panel-buttons"));
+    m_buttonBar->setAttribute(Qt::WA_StyledBackground, true);
     auto* buttonBarLayout = new QHBoxLayout(m_buttonBar);
-    buttonBarLayout->setContentsMargins(10, 8, 10, 8);
+    buttonBarLayout->setContentsMargins(10, 0, 10, 0);
     buttonBarLayout->setSpacing(8);
     m_saveButton = new QPushButton(tr("Save…"), m_buttonBar);
     m_saveButton->setToolTip(tr("Save the printed bytes, exactly as sent, to a file."));
@@ -80,16 +83,15 @@ void Ce158PrinterWidget::changeEvent(QEvent* event) {
 }
 
 void Ce158PrinterWidget::applyChrome() {
-    const ChromeColors c = ChromeColors::forWidget(this);
-    m_header->setStyleSheet(ChromeStyle::header(c));
-    m_serialLabel->setStyleSheet(QString("background-color: %1; color: %2;")
-                                     .arg(cssRgba(c.buttonBarBackground), cssRgba(c.outputText)));
-    m_output->setStyleSheet(QString("QPlainTextEdit { background-color: %1; color: %2; border: 1px solid %3; }")
-                                .arg(cssRgba(c.outputBackground), cssRgba(c.outputText), cssRgba(c.outputBorder)));
-    m_buttonBar->setStyleSheet(ChromeStyle::buttonBar(c));
-    const QString buttonStyle = ChromeStyle::pillPushButton(c);
-    m_saveButton->setStyleSheet(buttonStyle);
-    m_clearButton->setStyleSheet(buttonStyle);
+    namespace ch = calcu::qt6::chrome;
+    const calcu::shell::Chrome& chrome = cu1600::sharpChrome();
+    const calcu::shell::ChromeColours& c = chrome.colours(ch::darkAppearance(this));
+    m_header->setStyleSheet(ch::header(c, chrome.sizes));
+    m_serialLabel->setStyleSheet(QString("background-color: %1; color: %2;").arg(ch::qcss(c.buttonBar), ch::qcss(c.outputText)));
+    m_output->setStyleSheet(QString("QPlainTextEdit { background-color: %1; color: %2; border: 1px solid %3; border-top: none; }")
+                                .arg(ch::qcss(c.output), ch::qcss(c.outputText), ch::qcss(c.outputBorder)));
+    m_buttonBar->setStyleSheet(QStringLiteral("#panel-buttons { %1 }").arg(ch::buttonBar(c, chrome.sizes)) +
+                               ch::pills(c, chrome.sizes, QStringLiteral("QPushButton")));
 }
 
 void Ce158PrinterWidget::onFrameTick() {

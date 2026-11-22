@@ -20,7 +20,7 @@ namespace cu1600 {
 // library's topics (`control-state`, `busy`, `settings`, `media`, ...) and
 // send the library's commands. What is left here is the product's own:
 // - the stream topic `c1600.printer` (the CE-158's printer output);
-// - the requests `c1600.shell-product` (SharpShellProduct),
+// - the requests `c1600.shell-product` (SharpShellProduct, SharpChrome),
 //   `c1600.faceplate-map {model}` (the hit map, the LCD's layout),
 //   `c1600.inspector-menu`, `c1600.inspector-view`, `c1600.module-yaml`,
 //   `c1600.screen-image`;

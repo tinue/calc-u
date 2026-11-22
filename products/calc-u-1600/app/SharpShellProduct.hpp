@@ -22,6 +22,13 @@ inline constexpr const char* kItemLoadBasic = "load-basic-program";
 inline constexpr const char* kItemLoadCode = "load-machine-code";
 inline constexpr const char* kItemHostDrive = "host-drive";
 inline constexpr const char* kItemUnmountHostDrive = "unmount-host-drive";
+// Machine ▸ Trace (the trace file, CALCU1600_TRACE.bin) and Log Level ▸
+// Off, Info, Debug (the session's `log-level`).
+inline constexpr const char* kItemTrace = "trace";
+inline constexpr const char* kItemLogLevel = "log-level";
+inline constexpr const char* kItemLogOff = "log-off";
+inline constexpr const char* kItemLogInfo = "log-info";
+inline constexpr const char* kItemLogDebug = "log-debug";
 
 
 inline constexpr const char* kHelpUrl = "https://calc-u.org/1600/";
@@ -30,8 +37,9 @@ inline constexpr const char* kHelpUrl = "https://calc-u.org/1600/";
 inline constexpr double kFaceplateHitDistance = 24;
 
 // `withHostFolders`: the Qt6 frontend's FileMedia items (Host Drive…,
-// Unmount); the Web has none.
-calcu::shell::ShellProduct shellProduct(std::string version, std::string build, bool withHostFolders);
+// Unmount); `withTrace`: its Machine items Trace and Log Level ▸. The Web
+// has neither.
+calcu::shell::ShellProduct shellProduct(std::string version, std::string build, bool withHostFolders, bool withTrace);
 
 // The hit map of the model's faceplate in the art's own pixels (the scale
 // is the art's shown width over its width), the display area the LCD.

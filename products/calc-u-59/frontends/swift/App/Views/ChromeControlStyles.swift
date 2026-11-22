@@ -31,3 +31,85 @@ struct ChromeMenuStyle: MenuStyle {
         Menu(configuration)
     }
 }
+
+// MARK: - Chrome
+
+extension Color {
+    /// A colour of the chrome (TIChrome, app/TIChrome).
+    init(_ c: TIChromeColour) {
+        self.init(.sRGB, red: Double(c.red), green: Double(c.green), blue: Double(c.blue), opacity: Double(c.alpha))
+    }
+}
+
+/// Calc-U-59's look and layout (app/TIChrome through the bridge), the same
+/// values the Qt6 and Web GUIs draw with.
+enum Chrome {
+    static let window = Color(TIChrome.window)
+    static let text = Color(TIChrome.text)
+    static let textDim = Color(TIChrome.textDim)
+    static let header = Color(TIChrome.header)
+    static let headerText = Color(TIChrome.headerText)
+    static let buttonBar = Color(TIChrome.buttonBar)
+    static let pill = Color(TIChrome.pill)
+    static let pillHover = Color(TIChrome.pillHover)
+    static let pillPressed = Color(TIChrome.pillPressed)
+    static let pillOff = Color(TIChrome.pillOff)
+    static let pillText = Color(TIChrome.pillText)
+    static let output = Color(TIChrome.output)
+    static let outputText = Color(TIChrome.outputText)
+    static let outputBorder = Color(TIChrome.outputBorder)
+    static let plugged = Color(TIChrome.plugged)
+    static let unplugged = Color(TIChrome.unplugged)
+    // The product's own (cu59::chrome).
+    static let debugBackground = named("debug-background")
+    static let debugHeader = named("debug-header")
+    static let section = named("section")
+    static let tabSelected = named("tab-selected")
+    static let divider = named("divider")
+    static let orange = named("orange")
+    static let red = named("red")
+    static let yellow = named("yellow")
+    static let green = named("green")
+    static let stepCurrent = named("step-current")
+    static let heatmapPc = named("heatmap-pc")
+    static let hover = named("hover")
+    static let logText = named("log-text")
+    static let toast = named("toast")
+    static let ink = named("ink")
+    static func named(_ name: String) -> Color { Color(TIChrome.named(name)) }
+
+    static let panelHeaderHeight = TIChrome.panelHeaderHeight
+    static let panelButtonsHeight = TIChrome.panelButtonsHeight
+    static let panelInset = TIChrome.panelInset
+    static let pillShape = TIChrome.pillShape
+    static let barHeight = TIChrome.barHeight
+    static let barGap = TIChrome.barGap
+    static var pillFont: Font {
+        .system(size: TIChrome.pillFontSize, weight: TIChrome.pillBold ? .bold : .regular)
+    }
+}
+
+extension View {
+    /// A pill button's look (the chrome's shape, colours and font); a pill
+    /// at least `minWidth` wide where given.
+    func chromePill(minWidth: CGFloat? = nil, fill: Color = Chrome.pill) -> some View {
+        let shape = Chrome.pillShape
+        return font(Chrome.pillFont)
+            .foregroundStyle(Chrome.pillText)
+            .frame(minWidth: minWidth)
+            .padding(.horizontal, shape.paddingX)
+            .frame(minHeight: shape.height)
+            .background(fill)
+            .clipShape(RoundedRectangle(cornerRadius: shape.radius))
+    }
+}
+
+/// The dot of a place button or a toggle: in its colour while on (plugged
+/// in), the chrome's unplugged grey while off.
+struct ChromeDot: View {
+    var on: Bool
+    var colour: Color = Chrome.plugged
+    var body: some View {
+        Circle().fill(on ? colour : Chrome.unplugged).frame(width: 8, height: 8)
+    }
+}

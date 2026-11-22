@@ -1,21 +1,16 @@
 #include "DebugPanel.hpp"
-#include "debugger/RunState.hpp"
-#include "sessions/LibraryTopics.hpp"
 
 #include <QEvent>
 #include <QFont>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
-#include <QPainter>
 #include <QPalette>
-#include <QPixmap>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QScrollBar>
 #include <QStyle>
 #include <QTextCursor>
-#include <QToolButton>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -23,7 +18,8 @@
 
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
-#include "ChromeColors.hpp"
+#include "app/SharpChrome.hpp"
+#include "qt6/ChromeStyle.hpp"
 #include "Debug/Inspect/HexDump.hpp"
 #include "MachineController.hpp"
 #include "app/ModuleYamlDump.hpp"
@@ -71,15 +67,14 @@ DebugPanel::DebugPanel(MachineController* controller, QWidget* parent)
 
     // ── Button bar ───────────────────────────────────────────────────
     m_buttonBar = new QWidget(this);
-    auto* buttonBarLayout = new QVBoxLayout(m_buttonBar);
-    buttonBarLayout->setContentsMargins(10, 8, 10, 8);
-    buttonBarLayout->setSpacing(8);
-
-    auto* row1 = new QHBoxLayout();
-    row1->setSpacing(8);
+    m_buttonBar->setObjectName(QStringLiteral("panel-buttons"));
+    m_buttonBar->setAttribute(Qt::WA_StyledBackground, true);
+    auto* row = new QHBoxLayout(m_buttonBar);
+    row->setContentsMargins(10, 0, 10, 0);
+    row->setSpacing(8);
     m_pointersButton = new QPushButton(tr("Pointers"), m_buttonBar);
-    m_memoryButton = new QPushButton(tr("Memory"), m_buttonBar);
-    m_dumpButton = new QPushButton(tr("Dump"), m_buttonBar);
+    m_memoryButton = new QPushButton(tr("Memory ▾"), m_buttonBar);
+    m_dumpButton = new QPushButton(tr("Dump ▾"), m_buttonBar);
     m_moduleYamlButton = new QPushButton(tr("Module YAML"), m_buttonBar);
     m_moduleYamlButton->setToolTip(tr("The module in each slot, as initial-content: YAML for a module definition"));
     m_clearButton = new QPushButton(m_buttonBar);
@@ -100,41 +95,17 @@ DebugPanel::DebugPanel(MachineController* controller, QWidget* parent)
     m_dumpButton->setMenu(new QMenu(m_dumpButton));
     connect(m_memoryButton->menu(), &QMenu::aboutToShow, this, [this] { fillMenu(m_memoryButton->menu(), false); });
     connect(m_dumpButton->menu(), &QMenu::aboutToShow, this, [this] { fillMenu(m_dumpButton->menu(), true); });
-    row1->addWidget(m_pointersButton);
-    row1->addWidget(m_memoryButton);
-    row1->addWidget(m_dumpButton);
-    row1->addStretch(1);
-    row1->addWidget(m_moduleYamlButton);
-    row1->addWidget(m_clearButton);
-    buttonBarLayout->addLayout(row1);
-
-    auto* row2 = new QHBoxLayout();
-    row2->setSpacing(8);
-    m_traceButton = new QToolButton(m_buttonBar);
-    m_traceButton->setObjectName(QStringLiteral("debugpanel.trace"));
-    m_traceButton->setText(tr(" TRACE"));
-    m_traceButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_traceButton->setCheckable(false);
-    m_traceButton->setAutoRaise(true);
-    m_traceButton->setFocusPolicy(Qt::NoFocus);
-    m_logButton = new QToolButton(m_buttonBar);
-    m_logButton->setText(tr(" LOG"));
-    m_logButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_logButton->setAutoRaise(true);
-    m_logButton->setFocusPolicy(Qt::NoFocus);
-    m_logButton->setToolTip(tr("Log level: off / info (how presets run) / debug"));
-    row2->addWidget(m_traceButton);
-    row2->addWidget(m_logButton);
-    row2->addStretch(1);
-    buttonBarLayout->addLayout(row2);
-
+    row->addWidget(m_pointersButton);
+    row->addWidget(m_memoryButton);
+    row->addWidget(m_dumpButton);
+    row->addStretch(1);
+    row->addWidget(m_moduleYamlButton);
+    row->addWidget(m_clearButton);
     outer->addWidget(m_buttonBar);
 
     connect(m_pointersButton, &QPushButton::clicked, this, [this] { showView(inspect::View::Pointers); });
     connect(m_moduleYamlButton, &QPushButton::clicked, this, &DebugPanel::debugDumpModuleAsYaml);
     connect(m_clearButton, &QPushButton::clicked, this, &DebugPanel::clearDebug);
-    connect(m_traceButton, &QToolButton::clicked, this, [this] { setTraceEnabled(!m_controller->traceActive()); });
-    connect(m_logButton, &QToolButton::clicked, this, &DebugPanel::toggleDebugLevel);
 
     applyChrome();
 }
@@ -146,10 +117,6 @@ QString DebugPanel::selectedOutputText() const {
 
 DebugPanel::~DebugPanel() = default;
 
-bool DebugPanel::isDarkMode() const {
-    return ChromeColors::isDarkMode(this);
-}
-
 void DebugPanel::changeEvent(QEvent* event) {
     QWidget::changeEvent(event);
     if (event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange) {
@@ -158,31 +125,14 @@ void DebugPanel::changeEvent(QEvent* event) {
 }
 
 void DebugPanel::applyChrome() {
-    const ChromeColors c = ChromeColors::forWidget(this);
-    m_pillOnColor = c.pillBackground;
-    m_pillOffColor = c.pillBackgroundOff;
-    m_pillTextColor = c.pillText;
-
-    m_header->setStyleSheet(ChromeStyle::header(c));
-    m_output->setStyleSheet(
-        QString("QPlainTextEdit { background-color: %1; color: %2;"
-                " border: 1px solid %3; border-radius: 2px; }")
-            .arg(cssRgba(c.outputBackground), cssRgba(c.outputText), cssRgba(c.outputBorder)));
-    m_buttonBar->setStyleSheet(ChromeStyle::buttonBar(c));
-
-    updateTraceButtonAppearance();
-    updateLogButtonAppearance();
-}
-
-QIcon DebugPanel::dotIcon(const QColor& color) const {
-    QPixmap pixmap(8, 8);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(color);
-    painter.drawEllipse(0, 0, 8, 8);
-    return QIcon(pixmap);
+    namespace ch = calcu::qt6::chrome;
+    const calcu::shell::Chrome& chrome = cu1600::sharpChrome();
+    const calcu::shell::ChromeColours& c = chrome.colours(ch::darkAppearance(this));
+    m_header->setStyleSheet(ch::header(c, chrome.sizes));
+    m_output->setStyleSheet(QString("QPlainTextEdit { background-color: %1; color: %2; border: 1px solid %3; border-top: none; }")
+                                .arg(ch::qcss(c.output), ch::qcss(c.outputText), ch::qcss(c.outputBorder)));
+    m_buttonBar->setStyleSheet(QStringLiteral("#panel-buttons { %1 }").arg(ch::buttonBar(c, chrome.sizes)) +
+                               ch::pills(c, chrome.sizes, QStringLiteral("QPushButton")));
 }
 
 // ── Ring buffer / paging ──────────────────────────────────────────────
@@ -235,66 +185,6 @@ void DebugPanel::clearDebug() {
     m_debugLastDisplayHead = 0;
     m_output->setPlainText(QString());
     m_clearButton->setEnabled(false);
-}
-
-// ── TRACE ─────────────────────────────────────────────────────────────
-
-// The button sends `trace {button: true}` (the file is named after the
-// model, CALCU1600_TRACE.bin) and `trace {off: true}`; the library's trace session
-// limits and ends it, with its notice.
-void DebugPanel::setTraceEnabled(bool enabled) {
-    if (m_controller->traceActive() == enabled) return;
-    m_controller->send(calcu::debugger::kTraceCommand,
-                       enabled ? calcu::sessions::Value::object({{"button", true}})
-                               : calcu::sessions::Value::object({{"off", true}}),
-                       [this](const calcu::sessions::ReplyMessage& r) {
-                           if (!r.done && !r.reason.empty()) ringWriteAll({"TRACE: " + r.reason});
-                           updateTraceButtonAppearance();
-                       });
-}
-
-void DebugPanel::onFrameTick() {
-    // The trace topic: a trace the session ended (its limit, a new machine)
-    // shows on the button.
-    if (m_traceShownActive != m_controller->traceActive()) updateTraceButtonAppearance();
-    if (m_shownLevel != m_controller->logLevel()) updateLogButtonAppearance();
-}
-
-void DebugPanel::updateTraceButtonAppearance() {
-    const bool available = m_controller->hasLiveMachine();
-    m_traceShownActive = m_controller->traceActive();
-    const QColor dot = !available ? QColor(255, 0, 0, 128)
-                                   : (m_traceShownActive ? QColor(255, 165, 0) : QColor(128, 128, 128, 128));
-    m_traceButton->setIcon(dotIcon(dot));
-    m_traceButton->setEnabled(available);
-    const QColor bg = available ? m_pillOnColor : m_pillOffColor;
-    m_traceButton->setStyleSheet(
-        QString("QToolButton { %1 }"
-                " QToolButton:disabled { color: %2; }")
-            .arg(ChromeStyle::pillCore(bg, m_pillTextColor), cssRgba(m_pillTextColor)));
-}
-
-// ── LOG ────────────────────────────────────────────────────────────────
-
-void DebugPanel::toggleDebugLevel() {
-    using calcu::sessions::LogLevel;
-    const auto next = static_cast<LogLevel>((static_cast<int>(m_controller->logLevel()) + 1) % 3);
-    m_controller->send(calcu::sessions::kLogLevelCommand,
-                       calcu::sessions::Value::object({{"level", std::string(calcu::sessions::logLevelName(next))}}),
-                       [this](const calcu::sessions::ReplyMessage&) { updateLogButtonAppearance(); });
-}
-
-void DebugPanel::updateLogButtonAppearance() {
-    using calcu::sessions::LogLevel;
-    m_shownLevel = m_controller->logLevel();
-    QColor dot;
-    switch (m_shownLevel) {
-        case LogLevel::Off:   dot = QColor(128, 128, 128, 128); break;
-        case LogLevel::Info:  dot = QColor(255, 165, 0); break;
-        case LogLevel::Debug: dot = QColor(255, 0, 0); break;
-    }
-    m_logButton->setIcon(dotIcon(dot));
-    m_logButton->setStyleSheet(QString("QToolButton { %1 }").arg(ChromeStyle::pillCore(m_pillOnColor, m_pillTextColor)));
 }
 
 // ── Inspector views ────────────────────────────────────────────────────

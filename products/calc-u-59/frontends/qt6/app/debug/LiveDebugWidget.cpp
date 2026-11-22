@@ -14,7 +14,7 @@
 namespace {
 
 QString span(const QString& text, double white) {
-    return QStringLiteral("<span style='color:%1'>%2</span>").arg(ChromeStyle::gray(white).name(), text.toHtmlEscaped());
+    return QStringLiteral("<span style='color:%1'>%2</span>").arg(ChromeStyle::rgb(ChromeStyle::text(white)), text.toHtmlEscaped());
 }
 
 QString spanColor(const QString& text, const QColor& c) {
@@ -30,13 +30,13 @@ QLabel* section(QVBoxLayout* into, const QString& title, QWidget* parent) {
     col->setContentsMargins(0, 0, 0, 0);
     col->setSpacing(0);
     auto* head = new QLabel(title, box);
-    head->setStyleSheet(QStringLiteral("color: rgba(255,255,255,0.45); background: %1; font: bold 9px Menlo, monospace;"
-                                       " padding: 3px 8px;").arg(ChromeStyle::rgb(ChromeStyle::kDebugHeader)));
+    head->setStyleSheet(QStringLiteral("color: %2; background: %1; font: bold 9px Menlo, monospace;"
+                                       " padding: 3px 8px;").arg(ChromeStyle::rgb(cu59::chrome::kDebugHeader), ChromeStyle::rgb(ChromeStyle::text(0.45))));
     col->addWidget(head);
     auto* body = new QLabel(box);
     body->setTextFormat(Qt::RichText);
     body->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    body->setStyleSheet(QStringLiteral("background: %1; padding: 4px 8px;").arg(ChromeStyle::rgb(ChromeStyle::kSectionBody)));
+    body->setStyleSheet(QStringLiteral("background: %1; padding: 4px 8px;").arg(ChromeStyle::rgb(cu59::chrome::kSection)));
     col->addWidget(body);
     into->addWidget(box);
     return body;
@@ -71,7 +71,7 @@ LiveDebugWidget::LiveDebugWidget(EmulatorController& controller, QWidget* parent
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
     auto* content = new QWidget(scroll);
-    content->setStyleSheet(QStringLiteral("background: %1;").arg(ChromeStyle::rgb(ChromeStyle::kDebugBackground)));
+    content->setStyleSheet(QStringLiteral("background: %1;").arg(ChromeStyle::rgb(cu59::chrome::kDebugBackground)));
     auto* sections = new QVBoxLayout(content);
     sections->setContentsMargins(4, 4, 4, 4);
     sections->setSpacing(1);
@@ -83,14 +83,14 @@ LiveDebugWidget::LiveDebugWidget(EmulatorController& controller, QWidget* parent
     stepsCol->setContentsMargins(0, 0, 0, 0);
     stepsCol->setSpacing(0);
     auto* stepsHead = new QLabel(QStringLiteral("PROGRAM STEPS"), stepsBox);
-    stepsHead->setStyleSheet(QStringLiteral("color: rgba(255,255,255,0.45); background: %1; font: bold 9px Menlo, monospace;"
-                                            " padding: 3px 8px;").arg(ChromeStyle::rgb(ChromeStyle::kDebugHeader)));
+    stepsHead->setStyleSheet(QStringLiteral("color: %2; background: %1; font: bold 9px Menlo, monospace;"
+                                            " padding: 3px 8px;").arg(ChromeStyle::rgb(cu59::chrome::kDebugHeader), ChromeStyle::rgb(ChromeStyle::text(0.45))));
     stepsCol->addWidget(stepsHead);
     m_steps = new QListWidget(stepsBox);
     m_steps->setFixedHeight(165);
     m_steps->setSelectionMode(QAbstractItemView::NoSelection);
     m_steps->setFocusPolicy(Qt::NoFocus);
-    m_steps->setStyleSheet(QStringLiteral("QListWidget { background: %1; border: none; }").arg(ChromeStyle::rgb(ChromeStyle::kSectionBody)));
+    m_steps->setStyleSheet(QStringLiteral("QListWidget { background: %1; border: none; }").arg(ChromeStyle::rgb(cu59::chrome::kSection)));
     stepsCol->addWidget(m_steps);
     sections->addWidget(stepsBox);
 
@@ -145,7 +145,7 @@ void LiveDebugWidget::refresh() {
     for (const auto& e : entries) {
         auto* item = new QListWidgetItem(qs(cu59::programStepLine(e, frozen)), m_steps);
         item->setFont(mono);
-        item->setForeground(e.isCurrent ? Qt::white : ChromeStyle::gray(0.6));
+        item->setForeground(ChromeStyle::text(e.isCurrent ? 1 : 0.6));
         if (e.isCurrent) {
             item->setBackground(highlight);
             current = m_steps->count() - 1;

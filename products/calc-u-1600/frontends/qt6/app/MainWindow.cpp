@@ -10,14 +10,18 @@
 #include "MachineCodeLoadDialog.hpp"
 #include "MediaControls.hpp"
 #include "Version.h"
+#include "app/SharpChrome.hpp"
 #include "app/SharpControlRules.hpp"
 #include "app/SharpFileKinds.hpp"
 #include "app/SharpShellProduct.hpp"
 #include "control/ControlState.hpp"
+#include "debugger/RunState.hpp"
 #include "opening/OpenRequest.hpp"
+#include "qt6/ChromeStyle.hpp"
 #include "qt6/FileOpening.hpp"
 #include "qt6/MacClipboard.h"
 #include "qt6/PanelArea.hpp"
+#include "qt6/PaperPanel.hpp"
 #include "qt6/ShellSettingsDialog.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "shell/Inputs.hpp"
@@ -127,7 +131,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     connect(&host(), &calcu::qt6::SessionHost::topicChanged, this, &MainWindow::onTopic);
     connect(&host(), &calcu::qt6::SessionHost::called, this, [this] {
-        m_inspector->onFrameTick();
+        followTraceAndLog();
+        applyPaperChrome(false);
         if (m_ce158Printer->isVisible()) m_ce158Printer->onFrameTick();
         if (auto* d = m_shell->settingsDialog(); d && d->isVisible()) refreshSerialStatus();
     });
@@ -178,15 +183,67 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 }
 
 calcu::shell::ShellProduct MainWindow::product() {
-    calcu::shell::ShellProduct p = cu1600::shellProduct(APP_VERSION, APP_BUILD_ID, /*withHostFolders=*/true);
+    calcu::shell::ShellProduct p = cu1600::shellProduct(APP_VERSION, APP_BUILD_ID, /*withHostFolders=*/true, /*withTrace=*/true);
     p.copyScreen = [this] { copyScreen(); };
     for (auto& item : p.items) {
         if (item.id == cu1600::kItemLoadBasic) item.act = [this] { chooseProgram(false); };
         else if (item.id == cu1600::kItemLoadCode) item.act = [this] { chooseProgram(true); };
         else if (item.id == cu1600::kItemHostDrive) item.act = [this] { mountHostDirectory(); };
         else if (item.id == cu1600::kItemUnmountHostDrive) item.act = [this] { unmountHostDirectory(); };
+        else if (item.id == cu1600::kItemTrace) {
+            item.act = [this] { setTrace(!m_controller->traceActive()); };
+            item.checked = [this] { return m_controller->traceActive(); };
+        } else if (item.id == cu1600::kItemLogLevel) {
+            using calcu::sessions::LogLevel;
+            for (auto& level : item.children) {
+                const LogLevel l = level.id == cu1600::kItemLogInfo    ? LogLevel::Info
+                                   : level.id == cu1600::kItemLogDebug ? LogLevel::Debug
+                                                                       : LogLevel::Off;
+                level.act = [this, l] { setLogLevel(l); };
+                level.checked = [this, l] { return m_controller->logLevel() == l; };
+            }
+        }
     }
     return p;
+}
+
+// Machine ▸ Trace: `trace {button: true}` (the file is named after the
+// model, CALCU1600_TRACE.bin) or `trace {off: true}`; the library's trace
+// session limits and ends it, with its notice. A refusal is a notice.
+void MainWindow::setTrace(bool on) {
+    if (m_controller->traceActive() == on) return;
+    m_shell->sendChecked(calcu::debugger::kTraceCommand, on ? calcu::sessions::Value::object({{"button", true}})
+                                                            : calcu::sessions::Value::object({{"off", true}}));
+}
+
+// Machine ▸ Log Level ▸: the session's `log-level`; at Info the log tells
+// how a preset is carried out.
+void MainWindow::setLogLevel(calcu::sessions::LogLevel level) {
+    m_shell->sendChecked(calcu::sessions::kLogLevelCommand,
+                         calcu::sessions::Value::object({{"level", std::string(calcu::sessions::logLevelName(level))}}));
+}
+
+// The trace and the log level as their items show them: a trace the session
+// ended (its limit, a new machine) or a level set elsewhere (the attach)
+// shows at the next call.
+void MainWindow::followTraceAndLog() {
+    const bool trace = m_controller->traceActive();
+    const calcu::sessions::LogLevel level = m_controller->logLevel();
+    if (trace == m_traceShown && level == m_logShown) return;
+    m_traceShown = trace;
+    m_logShown = level;
+    m_shell->productChanged();
+}
+
+// The library's paper panel in the product's chrome, as the INSPECTOR and
+// the CE-158's panel: when it appears, and at each change of appearance.
+void MainWindow::applyPaperChrome(bool appearanceChanged) {
+    auto* paper = qobject_cast<calcu::qt6::PaperPanel*>(m_shell->panelArea()->panel("paper"));
+    if (!paper || (paper == m_paperStyled && !appearanceChanged)) return;
+    m_paperStyled = paper;
+    const calcu::shell::Chrome& chrome = cu1600::sharpChrome();
+    const calcu::shell::ChromeColours& c = chrome.colours(calcu::qt6::chrome::darkAppearance(this));
+    paper->setChrome(c, chrome.sizes);
 }
 
 void MainWindow::onTopic(const QString& topic) {
@@ -565,6 +622,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event) {
 
 void MainWindow::changeEvent(QEvent* event) {
     if (event->type() == QEvent::ActivationChange && !isActiveWindow()) releaseHeldKeys();
+    if (event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange) applyPaperChrome(true);
     QMainWindow::changeEvent(event);
 }
 

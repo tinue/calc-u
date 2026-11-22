@@ -43,6 +43,6 @@ struct DebugHeaderView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color(white: 0.07))
+        .background(Chrome.debugHeader)
     }
 }

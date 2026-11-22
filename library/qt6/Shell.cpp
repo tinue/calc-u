@@ -197,6 +197,8 @@ void Shell::refresh(const QString&) {
     if (settings_ && settings_->isVisible()) settings_->refresh();
 }
 
+void Shell::productChanged() { refresh(QString()); }
+
 void Shell::sendChecked(const sessions::CommandName& name, sessions::Value args) {
     sessions::Command sent{name, args};
     host_.send(name, std::move(args), [this, sent](const sessions::ReplyMessage& r) {
@@ -233,8 +235,14 @@ void Shell::choose(const shell::MenuItem& item) {
     } else if (item.id == a::kPasteText) {
         sendChecked(shell::commands::kPaste, sessions::Value::object({{"text", choosers_.clipboardText().toStdString()}}));
     } else {
-        for (const auto& p : product_.items)   // the product's own item
-            if (p.id == item.id && p.act) p.act();
+        // The product's own item, in a submenu of the product's too.
+        const std::function<void(const std::vector<shell::ProductItem>&)> act = [&](const auto& items) {
+            for (const auto& p : items) {
+                if (p.id == item.id && p.act) p.act();
+                act(p.children);
+            }
+        };
+        act(product_.items);
     }
 }
 

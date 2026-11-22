@@ -50,6 +50,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (§ "Bridge La
 | `TIFileKinds` | Calc-U-59's file kinds of the library's `open`: `asm-overlay`, `keystroke-program`, `rom-module-file`, `constant-memory-file`; `tiPresetExtensions`, `programArguments` (the Qt6 start file) |
 | `DebugModel` | The panels' data: CALCULATOR snapshot and listing, CPU history (TIDebugPart owns it) |
 | `DebugSnapshots` | Builds the CALCULATOR snapshot and listing and the CPU history entries |
+| `TIChrome` | The GUIs' look and layout values (the library's `shell::Chrome`, dark only): the colours by name, the panel header and button-bar heights, the inset, the pill's shape, the bar, the printer column's width range (desktop, embedded), the text scale with the faceplate; every GUI reads it, the Web through `c59.shell-product` |
 | `DebugText` | The panels' shared text and colours; `mobileLayout`, which panels an iOS window shows, `mobilePrinterWidth`, `compactPrinterBar` and `mobileTopMargin` |
 | `DebugLog` | The LOG tab's view (`RingLog`, the last 2000 lines; kept by each frontend) and the Vars / SCOM / Prog / Memory dumps |
 | `RomHeatmap` | How the heatmap is drawn: the grid, heat steps and colours (the counts are the core's `c59.rom-heatmap`) |
@@ -625,7 +626,7 @@ EmulatorViewModel (@Observable, main thread)
 | `Views/LiveDebugView.swift`, `Views/CPUInspectorView.swift` | CALCULATOR and CPU tabs |
 | `Views/DebugHeaderView.swift` | Both tabs' header as `DebugText`'s `debugHeader` describes it (`TIViewRules.debugHeaderButtons`) |
 | `Views/HoldRepeatButton.swift` | Fires on press, repeats every 0.25 s while held and while step can be used (STEP) |
-| `Views/ChromeControlStyles.swift` | Dark chrome button and menu styles |
+| `Views/ChromeControlStyles.swift` | Dark chrome button and menu styles; `Chrome`, app/'s `TIChrome` through the bridge, the pill and the plugged dot |
 | `Views/SettingsView.swift` | The settings from `TIShell.settingsDialog` (`cu59::settingsSpec(SwiftIOS)`): a choice is a picker (true and false a toggle), a number a field; a change is `set-setting` at once; the notice alert over the sheet |
 
 ### Build

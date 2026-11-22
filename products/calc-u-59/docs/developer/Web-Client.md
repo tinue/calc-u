@@ -230,9 +230,15 @@ root-relative URL fails the second run. `tests/prerender.spec.js` renders
 `library/web/tests/dist-helpers.js` `prerender`) and checks that it leaks
 no globals besides `CalcU59`.
 
-`calc.css` takes its tokens from the apps' dark chrome colours
-(`frontends/qt6/app/ChromeStyle.hpp`); the font family is `Calc-U Archivo`,
-a name no host page uses. Sizes that follow the width are inline styles.
+`calc.css` refers to custom properties only: the chrome of app/'s
+`TIChrome` (colours `--calcu-<name>`, the panel header and button-bar
+heights, the inset, the pill's shape, the bar's height and gap), which
+`c59.shell-product` carries and `CalcU59` sets on its root
+(`calcuChromeStyle`, `library/web/components/useShellProduct.jsx`); until the
+engine answers they fall back to neutral system colours. `CalcU59` takes
+the bar's height and the printer column's width range from the same
+chrome. The font family is `Calc-U Archivo`, a name no host page uses.
+Sizes that follow the width are inline styles.
 
 ### The PWA (`app/`)
 

@@ -32,6 +32,14 @@ struct ProductItem {
     // The item exists while the control state lists this media place, and
     // is enabled exactly when its `insert` is. Empty: none.
     std::string mediaPlace = {};
+    // A toggle: checkable, checked while this says so. It is the
+    // frontend's own state, so the frontend has the menus computed anew
+    // when it changes (the Qt6 Shell's productChanged()). None: an action.
+    std::function<bool()> checked = {};
+    // A submenu of these items in place of an action. Toggles and submenus
+    // are a native frontend's (their state is its own); the Web's form of
+    // the product has neither.
+    std::vector<ProductItem> children = {};
 };
 
 struct ShellProduct {

@@ -149,6 +149,8 @@ if(CALCU_TESTS)
   calcu_add_test(CalcU59SessionThread frequent COMMAND sh tools/check_session_thread.sh)
   # The three frontends draw from the control state.
   calcu_add_test(CalcU59FrontendsDrawControlState frequent COMMAND sh tools/check_frontends_draw_control_state.sh)
+  # The frontends take their colours from app/'s chrome (TIChrome).
+  calcu_add_test(CalcU59ChromeColours frequent COMMAND sh ${CMAKE_SOURCE_DIR}/tools/check_chrome_colours.sh .)
   # calcu_product_source_checks (library/):
   # the ROM lookup's allowed files are the product's lookUpRoms(), the
   # catalogue's ROM entries and the Qt6 Bundle.

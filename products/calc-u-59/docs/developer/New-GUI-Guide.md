@@ -91,7 +91,9 @@ source).
    `library/web/components/`; the paper's marks come from the
    `paper PC-100C` topic), `DebugSnapshots`, `DebugText`, `RomHeatmap`
    (the heatmap's steps and colours), `RingLog` and `freezeButtons` for the
-   debugger.
+   debugger, and `TIChrome` for every colour and the panels' sizes: panels
+   side by side share the header height, the button-bar height and the
+   pill.
 
 What stays per GUI: widgets and painting (glow, fonts), file dialogs and
 the host folders it passes to the library (the settings file and the save

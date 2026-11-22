@@ -8,7 +8,7 @@ struct DebugView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Tab bar
+            // Tab bar: the panel header, as high as the printer's beside it.
             HStack(spacing: 0) {
                 // The product entry c59.calculator-tab:
                 // not while an ASM overlay runs.
@@ -19,8 +19,10 @@ struct DebugView: View {
                 tabButton("LOG", .log)
                 Spacer()
             }
+            .frame(height: Chrome.panelHeaderHeight)
+            .background(Chrome.debugHeader)
             .padding(.top, portraitTopInset)
-            .background(Color(white: 0.07))
+            .background(Chrome.debugHeader)
 
             // Tab content. Held to the space below the tab bar: content taller
             // than the panel (CPU tab in a short window) would otherwise push
@@ -33,7 +35,7 @@ struct DebugView: View {
                         CPUInspectorView()
                             .frame(maxHeight: .infinity)
 
-                        Divider().background(Color(white: 0.25))
+                        Divider().background(Chrome.pill)
 
                         ASMDebugContent(activeFilePickerMode: $activeFilePickerMode)
                     }
@@ -45,7 +47,11 @@ struct DebugView: View {
             .clipped()
             .contentShape(Rectangle())
         }
-        .background(Color(white: 0.10))
+        .background(Chrome.debugBackground)
+        // The chrome's inset above and below, as the printer column has it,
+        // so the headers and the button bars side by side line up.
+        .padding(.vertical, Chrome.panelInset)
+        .background(Chrome.debugBackground)
         .onChange(of: vm.asmOverlayActive) { _, active in
             if active { vm.debugTab = .cpu }
         }
@@ -58,10 +64,10 @@ struct DebugView: View {
     private func tabButton(_ label: String, _ tab_: DebugTab) -> some View {
         Button(label) { vm.debugTab = tab_ }
             .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(vm.debugTab == tab_ ? .white : .white.opacity(0.4))
+            .foregroundStyle(vm.debugTab == tab_ ? Chrome.text : Chrome.text.opacity(0.4))
             .padding(.horizontal, 12)
-            .padding(.vertical, 5)
-            .background(vm.debugTab == tab_ ? Color(white: 0.20) : Color.clear)
+            .frame(maxHeight: .infinity)
+            .background(vm.debugTab == tab_ ? Chrome.tabSelected : Color.clear)
             .accessibilityIdentifier("btn-tab-\(label.lowercased())")
     }
 }
@@ -77,7 +83,7 @@ private struct StaticDebugContent: View {
             outputArea
             buttonBar
         }
-        .background(Color(white: 0.10))
+        .background(Chrome.debugBackground)
     }
 
     // MARK: - Header
@@ -85,10 +91,10 @@ private struct StaticDebugContent: View {
     private var header: some View {
         Text("DEBUG LOG")
             .font(.caption.bold())
-            .foregroundStyle(.white.opacity(0.6))
+            .foregroundStyle(Chrome.text.opacity(0.6))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
-            .background(Color(white: 0.07))
+            .background(Chrome.debugHeader)
     }
 
     // MARK: - Selectable output area
@@ -98,17 +104,17 @@ private struct StaticDebugContent: View {
             ScrollView {
                 Text(vm.debugDisplayText.isEmpty ? " " : vm.debugDisplayText)
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(Color(white: 0.85))
+                    .foregroundStyle(Chrome.logText)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(8)
                     .textSelection(.enabled)
                     .id(vm.debugClearID)
                 Color.clear.frame(height: 1).id("bottom")
             }
-            .background(Color(white: 0.13))
+            .background(Chrome.section)
             .overlay(
                 RoundedRectangle(cornerRadius: 2)
-                    .stroke(Color(white: 0.25), lineWidth: 0.5)
+                    .stroke(Chrome.pill, lineWidth: 0.5)
             )
             .onChange(of: vm.debugDisplayText) {
                 withAnimation(.easeOut(duration: 0.15)) {
@@ -120,8 +126,10 @@ private struct StaticDebugContent: View {
 
     // MARK: - Button bar
 
+    // Two rows, each a panel button bar, the lower one at the panel's
+    // bottom beside the printer's.
     private var buttonBar: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
             // Row 1: Main action buttons
             HStack(spacing: 8) {
                 Button("SCOM") { vm.debugDumpSCOM() }
@@ -136,26 +144,20 @@ private struct StaticDebugContent: View {
                     vm.clearDebug()
                 } label: {
                     Image(systemName: "trash")
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(Chrome.text.opacity(0.6))
                 }
                 .disabled(vm.debugDisplayText.isEmpty)
             }
+            .frame(height: Chrome.panelButtonsHeight)
 
             // Row 2: Status toggles
             HStack(spacing: 8) {
                 Button { vm.cIndicatorDebug.toggle() } label: {
                     HStack(spacing: 4) {
                         Text("TRACE")
-                        Circle()
-                            .fill(vm.cIndicatorDebug ? Color.orange : Color.gray.opacity(0.4))
-                            .frame(width: 8, height: 8)
+                        ChromeDot(on: vm.cIndicatorDebug, colour: Chrome.orange)
                     }
-                    .font(.caption.bold())
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(white: 0.25))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .chromePill()
                 }
                 .buttonStyle(.plain)
                 // TRACE can always be pressed; a trace folder that cannot be
@@ -165,33 +167,20 @@ private struct StaticDebugContent: View {
                 Button { vm.toggleDebug() } label: {
                     HStack(spacing: 4) {
                         Text("LOG")
-                        Circle()
-                            .fill({
-                                switch vm.debugLevel {
-                                case .off:   return Color.gray.opacity(0.4)
-                                case .info:  return Color.orange
-                                case .debug: return Color.red
-                                }
-                            }())
-                            .frame(width: 8, height: 8)
+                        ChromeDot(on: vm.debugLevel != .off, colour: vm.debugLevel == .debug ? Chrome.red : Chrome.orange)
                     }
-                    .font(.caption.bold())
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(white: 0.25))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .chromePill()
                 }
                 .buttonStyle(.plain)
 
                 Spacer()
             }
+            .frame(height: Chrome.panelButtonsHeight)
         }
         .font(.caption.bold())
-        .foregroundStyle(.white)
+        .foregroundStyle(Chrome.text)
         .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(Color(white: 0.15))
+        .background(Chrome.buttonBar)
     }
 }
 
@@ -203,32 +192,32 @@ private struct ASMDebugContent: View {
         VStack(spacing: 0) {
             Text("ASM OVERLAY")
                 .font(.caption.bold())
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(Chrome.text.opacity(0.6))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 6)
-                .background(Color(white: 0.07))
+                .background(Chrome.debugHeader)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("File: \(vm.asmFileName)")
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(Color(white: 0.85))
+                    .foregroundStyle(Chrome.text.opacity(0.85))
                     .accessibilityIdentifier("asm-file")
                 Text("Words: \(vm.asmWordCount)")
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(Color(white: 0.75))
+                    .foregroundStyle(Chrome.text.opacity(0.75))
                     .accessibilityIdentifier("asm-words")
                 Text(vm.asmStatusMessage)
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(Color(white: 0.7))
+                    .foregroundStyle(Chrome.text.opacity(0.7))
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("asm-status")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(10)
-            .background(Color(white: 0.13))
+            .background(Chrome.section)
             .overlay(
                 RoundedRectangle(cornerRadius: 2)
-                    .stroke(Color(white: 0.25), lineWidth: 0.5)
+                    .stroke(Chrome.pill, lineWidth: 0.5)
             )
             .padding(8)
 
@@ -237,24 +226,14 @@ private struct ASMDebugContent: View {
                     activeFilePickerMode = .asm
                 }
                 .buttonStyle(.plain)
-                .font(.caption.bold())
-                .foregroundStyle(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(white: 0.25))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .chromePill()
                 .accessibilityIdentifier("btn-asm-select")
 
                 Button("Run") {
                     vm.runASMOverlay()
                 }
                 .buttonStyle(.plain)
-                .font(.caption.bold())
-                .foregroundStyle(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(white: 0.25))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .chromePill()
                 .disabled(!vm.canRunASM)
                 .accessibilityIdentifier("btn-asm-run")
 
@@ -262,20 +241,15 @@ private struct ASMDebugContent: View {
                     vm.clearASMOverlay()
                 }
                 .buttonStyle(.plain)
-                .font(.caption.bold())
-                .foregroundStyle(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(white: 0.25))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .chromePill()
 
                 Spacer()
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(Color(white: 0.15))
+            .frame(height: Chrome.panelButtonsHeight)
+            .background(Chrome.buttonBar)
         }
-        .background(Color(white: 0.10))
+        .background(Chrome.debugBackground)
     }
 }
 

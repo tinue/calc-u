@@ -3,6 +3,7 @@
 #include "paper/PaperTopics.hpp"
 #include "peripherals/Controls.hpp"
 #include "sessions/Messages.hpp"
+#include "shell/Chrome.hpp"
 #include <QAbstractScrollArea>
 #include <QColor>
 #include <QIcon>
@@ -32,11 +33,13 @@ class QHBoxLayout;
 // left, the owner's name centred and the view control (with a text layer)
 // right; below it the paper, scrolled with the wheel or by touch without a
 // scroll bar, or the text in a fixed-width font; below the paper the
-// owner's controls left, Copy and Cut right.
+// owner's controls left, Copy and Cut right. The product's chrome
+// (setChrome) gives the header and the button bar their heights and look.
 // A Copy or Cut is answered by a toast inside the panel for 1.8 s.
 //
-// Object names: paper-panel, paper-owner, paper-view-toggle, paper-copy,
-// paper-cut, paper-control-<id>, paper-view, paper-text, paper-toast.
+// Object names: paper-panel, paper-header, paper-footer, paper-owner,
+// paper-view-toggle, paper-copy, paper-cut, paper-control-<id>, paper-view,
+// paper-text, paper-toast.
 
 namespace calcu::qt6 {
 
@@ -60,7 +63,10 @@ public:
     // panel area makes them); a button shows the printer icon where the
     // platform has one, its name as the tooltip.
     void setPlaces(std::vector<QWidget*>);
-    static QIcon placeIcon(const QIcon& printer, bool plugged);
+    static QIcon placeIcon(const QIcon& printer, const QColor& dot);
+    // The product's chrome (shell/Chrome): the header and the button bar
+    // line up with the panels beside it.
+    void setChrome(const shell::ChromeColours&, const shell::ChromeSizes&);
     void setSender(Sender s) { sender_ = std::move(s); }
 
     // What the panel shows now (the tests, the shell).
@@ -96,6 +102,9 @@ private:
     std::optional<machine::PeripheralId> owner_;
     std::vector<peripherals::ControlInfo> controls_;
 
+    QWidget* header_;
+    QWidget* footer_;
+    QColor plugged_{Qt::red}, unplugged_{Qt::gray};
     QHBoxLayout* placesLayout_;
     QLabel* ownerLabel_;
     QToolButton* viewToggle_;

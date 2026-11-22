@@ -155,7 +155,8 @@ TEST(qt_menus_in_family_order) {
                      "Host Drive…", "Unmount", "-", "Settings…", "Quit"}));
     CHECK(checkList("Edit", labels(f.find<QMenu>(names::menu("edit"))), {"Copy Screen", "Paste Text"}));
     CHECK(checkList("Machine", labels(f.find<QMenu>(names::menu("machine"))),
-                    {"Model ▸", "ROM Revision ▸", "Peripherals ▸", "-", "Reset", "Cold boot", "Resume"}));
+                    {"Model ▸", "ROM Revision ▸", "Peripherals ▸", "-", "Reset", "Cold boot", "Resume", "Trace", "Log Level ▸"}));
+    CHECK(checkList("Log Level", labels(f.find<QMenu>(names::item(cu1600::kItemLogLevel))), {"Off", "Info (how presets run)", "Debug"}));
     CHECK(checkList("Help", labels(f.find<QMenu>(names::menu("help"))), {"Calc-U-1600 Help", "About Calc-U-1600…"}));
     CHECK(checkList("ROM Revision", labels(f.find<QMenu>(names::item("variants-model"))), {"A01", "A03", "A04"}));
     CHECK(checkList("Peripherals", labels(f.find<QMenu>(names::item("peripherals"))), {"CE-150", "-", "CE-158"}));
@@ -169,19 +170,35 @@ TEST(qt_menus_in_family_order) {
     // The PC-1600: ROM Version ▸, and CE-1600P ROM ▸ while it is plugged in.
     f.command("model", Value::object({{"name", "PC-1600"}}));
     f.run(100);
-    CHECK(checkList("PC-1600 submenus", machineSubmenus(f), {"Model ▸", "ROM Version ▸", "Peripherals ▸"}));
+    CHECK(checkList("PC-1600 submenus", machineSubmenus(f), {"Model ▸", "ROM Version ▸", "Peripherals ▸", "Log Level ▸"}));
     CHECK(f.action(cu1600::kItemHostDrive)->isEnabled());
     CHECK(!f.action(cu1600::kItemUnmountHostDrive)->isEnabled());
     f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-1600P"}}));
     f.run(100);
     CHECK(checkList("PC-1600 + CE-1600P", machineSubmenus(f),
-                    {"Model ▸", "ROM Version ▸", "CE-1600P ROM ▸", "Peripherals ▸"}));
+                    {"Model ▸", "ROM Version ▸", "CE-1600P ROM ▸", "Peripherals ▸", "Log Level ▸"}));
     CHECK(checkList("PC-1600 Peripherals", labels(f.find<QMenu>(names::item("peripherals"))),
                     {"CE-150", "CE-1600P", "-", "CE-158"}));
     // The PC-1500A: one ROM, no submenu.
     f.command("model", Value::object({{"name", "PC-1500A"}}));
     f.run(100);
-    CHECK(checkList("PC-1500A submenus", machineSubmenus(f), {"Model ▸", "Peripherals ▸"}));
+    CHECK(checkList("PC-1500A submenus", machineSubmenus(f), {"Model ▸", "Peripherals ▸", "Log Level ▸"}));
+}
+
+// Machine ▸ Log Level ▸ sets the session's level and shows it checked;
+// Trace is a toggle.
+TEST(log_level_and_trace_in_machine_menu) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f("PC-1500");
+    QAction* info = f.action(cu1600::kItemLogInfo);
+    QAction* trace = f.action(cu1600::kItemTrace);
+    CHECK(info && trace && info->isCheckable() && trace->isCheckable() && !trace->isChecked());
+    CHECK(f.action(cu1600::kItemLogOff) && f.action(cu1600::kItemLogOff)->isChecked());
+    if (info) info->trigger();
+    CHECK(f.waitFor([&] { return f.w().controller()->logLevel() == calcu::sessions::LogLevel::Info; }, 5000));
+    CHECK(f.waitFor([&] { return f.action(cu1600::kItemLogInfo) && f.action(cu1600::kItemLogInfo)->isChecked(); }, 5000));
+    if (QAction* off = f.action(cu1600::kItemLogOff)) off->trigger();
+    CHECK(f.waitFor([&] { return f.w().controller()->logLevel() == calcu::sessions::LogLevel::Off; }, 5000));
 }
 
 TEST(copy_log_selection_while_inspector_text_selected) {
@@ -230,7 +247,7 @@ TEST(bar_pc1500_pc1500a) {
         auto* bar = f.find<QWidget>(names::kControlBar);
         CHECK(bar && bar->isVisible());
         auto* m = f.find<QComboBox>(names::kBarModel);
-        CHECK(m && m->currentText().toStdString() == model);
+        CHECK(m && m->currentText().toStdString() == std::string(model).substr(3));   // the bar's short name
         CHECK(f.find<QWidget>(names::barSlot("slot-1")) && !f.find<QWidget>(names::barSlot("slot-2")));
         CHECK(f.find<QWidget>("media-picker-slot-1") && f.find<QWidget>("media-save-slot-1"));
         CHECK_EQ(barPlaceText(f, "printer"), std::string("CE-150"));
@@ -255,7 +272,7 @@ TEST(bar_pc1600) {
         CHECK(slot1->findChild<QLabel*>() && slot1->findChild<QLabel*>()->text() == "1:");
         CHECK(slot2->findChild<QLabel*>() && slot2->findChild<QLabel*>()->text() == "2:");
     }
-    CHECK_EQ(barPlaceText(f, "printer"), std::string("picker:None,CE-150,CE-1600P"));
+    CHECK_EQ(barPlaceText(f, "printer"), std::string("picker:No printer,CE-150,CE-1600P"));
     CHECK_EQ(barPlaceText(f, "interface"), std::string("CE-158"));
     CHECK(!f.find<QWidget>(names::barPlace("host-drive")));
     // No disk controls without the CE-1600P.

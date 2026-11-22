@@ -1,6 +1,8 @@
 #include "MainWindow.hpp"
 #include "EmulatorController.hpp"
+#include "TIChrome.hpp"
 #include "TIFileKinds.hpp"
+#include "qt6/ChromeStyle.hpp"
 #include "qt6/FileOpening.hpp"
 #include "qt6/MacHost.hpp"
 #include "qt6/SessionHost.hpp"
@@ -20,23 +22,27 @@
 
 namespace {
 
-/// The Swift app is always dark (preferredColorScheme(.dark)); so is this.
+/// The Swift app is always dark (preferredColorScheme(.dark)); so is this,
+/// in app/'s chrome (TIChrome).
 void applyDarkPalette(QApplication& app) {
+    namespace ch = cu59::chrome;
     app.setStyle(QStyleFactory::create(QStringLiteral("Fusion")));
+    const calcu::shell::ChromeColours& c = cu59::tiChrome().light;
+    const auto q = [](const calcu::shell::Colour& x) { return calcu::qt6::chrome::qcolour(x); };
     QPalette p;
-    p.setColor(QPalette::Window, QColor(37, 37, 37));
-    p.setColor(QPalette::WindowText, Qt::white);
-    p.setColor(QPalette::Base, QColor(28, 28, 28));
-    p.setColor(QPalette::AlternateBase, QColor(45, 45, 45));
-    p.setColor(QPalette::Text, Qt::white);
-    p.setColor(QPalette::Button, QColor(50, 50, 50));
-    p.setColor(QPalette::ButtonText, Qt::white);
-    p.setColor(QPalette::Highlight, QColor(10, 132, 255));
-    p.setColor(QPalette::HighlightedText, Qt::white);
-    p.setColor(QPalette::ToolTipBase, QColor(50, 50, 50));
-    p.setColor(QPalette::ToolTipText, Qt::white);
-    p.setColor(QPalette::Disabled, QPalette::Text, QColor(128, 128, 128));
-    p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(128, 128, 128));
+    p.setColor(QPalette::Window, q(c.named(ch::kDialog)));
+    p.setColor(QPalette::WindowText, q(c.text));
+    p.setColor(QPalette::Base, q(c.named(ch::kField)));
+    p.setColor(QPalette::AlternateBase, q(c.named(ch::kAlternate)));
+    p.setColor(QPalette::Text, q(c.text));
+    p.setColor(QPalette::Button, q(c.named(ch::kButton)));
+    p.setColor(QPalette::ButtonText, q(c.text));
+    p.setColor(QPalette::Highlight, q(c.named(ch::kHighlight)));
+    p.setColor(QPalette::HighlightedText, q(c.text));
+    p.setColor(QPalette::ToolTipBase, q(c.named(ch::kButton)));
+    p.setColor(QPalette::ToolTipText, q(c.text));
+    p.setColor(QPalette::Disabled, QPalette::Text, q(c.text.withAlpha(0.5)));
+    p.setColor(QPalette::Disabled, QPalette::ButtonText, q(c.text.withAlpha(0.5)));
     app.setPalette(p);
 }
 

@@ -13,18 +13,23 @@
 DebugPanel::DebugPanel(EmulatorController& controller, QWidget* parent) : QWidget(parent), m_controller(controller) {
     setAutoFillBackground(true);
     QPalette pal = palette();
-    pal.setColor(QPalette::Window, ChromeStyle::kDebugBackground);
+    pal.setColor(QPalette::Window, ChromeStyle::named(cu59::chrome::kDebugBackground));
     setPalette(pal);
     setMinimumWidth(220);
 
+    // Inset as the printer beside it, the tab row as high as its header:
+    // the panels' headers and button bars line up (TIChrome).
+    const calcu::shell::ChromeSizes& sizes = ChromeStyle::chrome().sizes;
+    const int inset = qRound(sizes.panelInset);
     auto* col = new QVBoxLayout(this);
-    col->setContentsMargins(0, 0, 0, 0);
+    col->setContentsMargins(0, inset, 0, inset);
     col->setSpacing(0);
 
     auto* tabBar = new QWidget(this);
+    tabBar->setFixedHeight(qRound(sizes.panelHeaderHeight));
     tabBar->setAutoFillBackground(true);
     QPalette tp = tabBar->palette();
-    tp.setColor(QPalette::Window, ChromeStyle::kDebugHeader);
+    tp.setColor(QPalette::Window, ChromeStyle::named(cu59::chrome::kDebugHeader));
     tabBar->setPalette(tp);
     auto* trow = new QHBoxLayout(tabBar);
     trow->setContentsMargins(0, 0, 0, 0);
@@ -74,10 +79,11 @@ void DebugPanel::select(int tab) {
     for (int i = 0; i < 3; ++i) {
         bool on = i == tab;
         m_tabs[i]->setStyleSheet(QStringLiteral("QToolButton { color: %1; background: %2; border: none;"
-                                                " font-weight: bold; font-size: 10px; padding: 5px 12px; }"
-                                                "QToolButton:disabled { color: rgba(255,255,255,0.14); }")
-                                     .arg(on ? QStringLiteral("white") : QStringLiteral("rgba(255,255,255,0.4)"),
-                                          on ? ChromeStyle::rgb(ChromeStyle::gray(0.20)) : QStringLiteral("transparent")));
+                                                " font-weight: bold; font-size: 10px; padding: 0 12px; }"
+                                                "QToolButton:disabled { color: %3; }")
+                                     .arg(ChromeStyle::rgb(ChromeStyle::text(on ? 1 : 0.4)),
+                                          on ? ChromeStyle::rgb(cu59::chrome::kTabSelected) : QStringLiteral("transparent"),
+                                          ChromeStyle::rgb(ChromeStyle::text(0.14))));
     }
     notifyVisibility();
 }

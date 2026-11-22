@@ -98,8 +98,8 @@ struct CPUInspectorView: View {
                                 let isSelected = (selectedIndex == idx)
                                 let opacity = snapshot.isHistory ? 1.0 : 0.4
                                 let bgColor: Color = snapshot.isCurrent
-                                    ? Color.green.opacity(0.35)
-                                    : (isSelected ? Color(white: 0.20) : Color.clear)
+                                    ? Chrome.green.opacity(0.35)
+                                    : (isSelected ? Chrome.tabSelected : Color.clear)
 
                                 HStack(spacing: 8) {
                                     Text(String(format: "%04X", snapshot.pc))
@@ -212,7 +212,7 @@ struct CPUInspectorView: View {
                                     }
                                     HStack(spacing: 16) {
                                         Text("COND: \(cond)")
-                                            .foregroundStyle(cond == 1 ? Color.yellow.opacity(0.4) : Color.yellow)
+                                            .foregroundStyle(cond == 1 ? Chrome.yellow.opacity(0.4) : Chrome.yellow)
                                         Text("IDLE: \(idle)")
                                             .foregroundStyle(idle == 1 ? .white : .white.opacity(0.45))
                                         Text(String(format: "DIGIT: %2d", postDigit))
@@ -232,7 +232,7 @@ struct CPUInspectorView: View {
                                         Text("Lit: \(cpu.maxDigitDecay)")
                                             .foregroundStyle(.white.opacity(0.85))
                                         Text(displayOn ? "ON" : "OFF")
-                                            .foregroundStyle(displayOn ? Color.green.opacity(0.85) : Color.red.opacity(0.7))
+                                            .foregroundStyle(displayOn ? Chrome.green.opacity(0.85) : Chrome.red.opacity(0.7))
                                         Spacer()
                                     }
                                 }
@@ -283,7 +283,7 @@ struct CPUInspectorView: View {
                 }
                 return .handled
             }
-            .background(Color(white: 0.10))
+            .background(Chrome.debugBackground)
         }
     }
 
@@ -313,9 +313,9 @@ struct CPUInspectorView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(Color(white: 0.07))
+                .background(Chrome.debugHeader)
             content()
-                .background(Color(white: 0.13))
+                .background(Chrome.section)
         }
         .cornerRadius(3)
     }
@@ -365,7 +365,7 @@ struct CPUInspectorView: View {
                 if let addr = heatmapHoveredAddress {
                     Text(String(format: "0x%04X", addr))
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Color(red: 1.0, green: 0.84, blue: 0.0).opacity(0.85))
+                        .foregroundStyle(Chrome.hover)
                         .padding(.trailing, 6)
                 }
                 Button("CLR") { vm.clearRomHeatmap(); heatmapRenderer.reset() }
@@ -376,7 +376,7 @@ struct CPUInspectorView: View {
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(Color(white: 0.07))
+            .background(Chrome.debugHeader)
 
             // Canvas blits the cached CGImage (cheap) + draws one green PC dot per frame.
             // CGImage coordinate origin is bottom-left; SwiftUI Canvas is top-left → flip.
@@ -397,14 +397,14 @@ struct CPUInspectorView: View {
                     if currentPC < 0x1400 {
                         let col = currentPC % Int(cols)
                         let row = currentPC / Int(cols)
-                        cgCtx.setFillColor(CGColor(red: 0, green: 1, blue: 0, alpha: 1))
+                        cgCtx.setFillColor(UIColor(Chrome.heatmapPc).cgColor)
                         cgCtx.fill(CGRect(x: CGFloat(col) * cw, y: CGFloat(row) * ch,
                                           width: max(1, cw - 0.5), height: max(1, ch - 0.5)))
                     }
                 }
             }
             .frame(height: rows * cellSize)
-            .background(Color(white: 0.13))
+            .background(Chrome.section)
             // An iPad's pointer device.
             .onContinuousHover { phase in
                 switch phase {

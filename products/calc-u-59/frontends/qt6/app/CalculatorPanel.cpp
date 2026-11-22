@@ -13,10 +13,11 @@ CalculatorPanel::CalculatorPanel(EmulatorController& controller, QWidget* parent
     setObjectName(QStringLiteral("calculator"));
     setAutoFillBackground(true);
     QPalette pal = palette();
-    pal.setColor(QPalette::Window, ChromeStyle::kPanel);
+    pal.setColor(QPalette::Window, ChromeStyle::qcolour(ChromeStyle::colours().window));
     setPalette(pal);
+    const int inset = qRound(ChromeStyle::chrome().sizes.panelInset);
     auto* col = new QVBoxLayout(this);
-    col->setContentsMargins(8, 8, 8, 8);
+    col->setContentsMargins(inset, inset, inset, inset);
     col->setSpacing(0);
     m_keyboard = new KeyboardWidget(controller, this);
     col->addWidget(m_keyboard, 1);
@@ -29,9 +30,11 @@ void CalculatorPanel::setShellWidgets(QWidget* controlBar, QWidget* romsMissing)
     controlBar->setParent(this);
     controlBar->setAutoFillBackground(true);
     QPalette pal = controlBar->palette();
-    pal.setColor(QPalette::Window, ChromeStyle::kBar);
+    pal.setColor(QPalette::Window, ChromeStyle::qcolour(ChromeStyle::colours().buttonBar));
     controlBar->setPalette(pal);
     controlBar->setStyleSheet(ChromeStyle::barButton());
+    // As high as the panels' button bars beside it (TIChrome).
+    controlBar->setFixedHeight(qRound(ChromeStyle::chrome().sizes.barHeight));
     // Expanding up to its maximum (fitBar() sets it), centred between two
     // stretches that take only what is left: a widget laid out with an
     // alignment would keep its size hint instead.

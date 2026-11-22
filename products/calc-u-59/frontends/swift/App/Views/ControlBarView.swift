@@ -152,40 +152,24 @@ struct ControlBarView: View {
     }
 }
 
-/// The More menu's items from the shell's model: each menu under its
+/// The More menu's items from the shell's model: each menu after its
 /// heading, submenus nested; disabled, not left out.
 struct MenuItems: View {
     let items: [TIMenuItem]
     var prefix = "item-"
     let choose: (TIMenuItem) -> Void
 
-    /// The items between one heading and the next, under that heading.
-    private var sections: [(heading: TIMenuItem?, items: [TIMenuItem])] {
-        var out: [(heading: TIMenuItem?, items: [TIMenuItem])] = []
-        for item in items {
-            if item.kind == .heading { out.append((item, [])); continue }
-            if out.isEmpty { out.append((nil, [])) }
-            out[out.count - 1].items.append(item)
-        }
-        return out
-    }
-
     var body: some View {
-        ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
-            if let heading = section.heading {
-                Section(heading.label) { rows(section.items) }
-            } else {
-                rows(section.items)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func rows(_ items: [TIMenuItem]) -> some View {
-        ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+        ForEach(Array(items.enumerated()), id: \.offset) { index, item in
             switch item.kind {
-            case .separator, .heading:
+            case .separator:
                 Divider()
+            case .heading:   // a menu's name: a line that is not chosen
+                if index > 0 { Divider() }
+                Text(item.label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("\(prefix)\(item.itemID)")
             case .submenu:
                 Menu(item.label) {
                     MenuItems(items: item.children, prefix: prefix, choose: choose)

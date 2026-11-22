@@ -176,11 +176,11 @@ function CalcuPaperPanel({ shell, owner, controls, send, places, onChoose }) {
           )}
         </span>
       </div>
-      {!owner && <p className="calcu-paper-hint" data-calcu="paper-hint">No printer attached.</p>}
       {showText ? (
         <pre className="calcu-paper-text" data-calcu="paper-text">{paper.lines.map((l) => l.text).join("\n")}</pre>
       ) : (
         <div className="calcu-paper-scroll" data-calcu="paper-scroll" ref={scrollRef} onScroll={onScroll}>
+          {!owner && <p className="calcu-paper-hint" data-calcu="paper-hint">No printer attached.</p>}
           <div className="calcu-paper-sheet" style={{ height: contentHeight }}>
             <canvas className="calcu-paper-canvas" data-calcu="paper-canvas" ref={canvasRef}
               style={{ top: scrollTop, width: size.width, height: size.height }} />

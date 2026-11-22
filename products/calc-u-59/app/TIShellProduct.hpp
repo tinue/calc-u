@@ -15,7 +15,7 @@ namespace cu59 {
 
 inline constexpr const char* kHelpUrl = "https://calc-u.org/59/";
 // The two card items, on the TI-59 only: they follow the media place
-// `card-reader`; the card controls stand for them on the bar (`onBar`).
+// `card-reader`; the card controls stand for them on the bar.
 inline constexpr const char* kItemArmCard = "arm-card";
 inline constexpr const char* kItemArmFreshCard = "arm-fresh-card";
 inline constexpr const char* kCardReaderPlace = "card-reader";

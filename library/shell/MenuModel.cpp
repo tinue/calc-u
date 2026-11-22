@@ -1,4 +1,5 @@
 #include "shell/MenuModel.hpp"
+#include <cctype>
 #include <algorithm>
 #include <functional>
 #include <optional>
@@ -404,31 +405,20 @@ std::vector<Menu> menus(const ShellInputs& in, const ShellProduct& p, Traits t) 
     return out;
 }
 
-std::vector<MenuItem> moreItems(const std::vector<Menu>& ms, const ShellProduct& p, bool placesShown) {
-    auto onBar = [&](const MenuItem& i) {
-        if (i.id == actions::kQuit || i.id == "model" || (placesShown && i.id == "peripherals")) return true;
-        for (const auto& item : p.items)
-            if (item.id == i.id && item.onBar) return true;
-        return false;
-    };
+std::vector<MenuItem> moreItems(const std::vector<Menu>& ms) {
     std::vector<MenuItem> out;
-    bool pending = false;
     for (const auto& m : ms) {
-        pending = true;   // a new menu is a new group
-        for (const auto& i : m.items) {
-            if (i.kind == MenuItem::Kind::Separator) {
-                pending = true;
-                continue;
+        MenuItem heading;
+        heading.kind = MenuItem::Kind::Heading;
+        heading.id = "heading-" + m.id;
+        for (char c : m.label) heading.label += static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+        out.push_back(std::move(heading));
+        for (MenuItem i : m.items) {
+            if (i.id == "cold-boot") {
+                i.confirm = kColdBootQuestion;
+                i.destructive = true;
             }
-            if (onBar(i)) continue;
-            if (pending && !out.empty()) out.push_back(separator());
-            pending = false;
-            MenuItem copy = i;
-            if (copy.id == "cold-boot") {
-                copy.confirm = kColdBootQuestion;
-                copy.destructive = true;
-            }
-            out.push_back(std::move(copy));
+            out.push_back(std::move(i));
         }
     }
     return out;

@@ -209,11 +209,11 @@ TEST(bar_more_at_the_right_edge_on_every_platform) {
         CHECK(inMore(*more, "load-preset") != nullptr);
         CHECK(inMore(*more, "load-preset")->command.value.empty());   // the shell's file dialog
         CHECK(inMore(*more, "settings") != nullptr);
-        CHECK(inMore(*more, "model") == nullptr);   // the model picker is on the bar
+        CHECK(inMore(*more, "model") != nullptr);   // every menu item, the model picker's too
         CHECK_EQ(inMore(*more, "reset")->command.value, std::string("reset"));
     }
     const auto b = bar(in, p, web);
-    CHECK_EQ(controlOf(b, "more")->choices.size(), moreItems(menus(in, p, web), p).size());
+    CHECK_EQ(controlOf(b, "more")->choices.size(), moreItems(menus(in, p, web)).size());
     // Each item follows its menu item.
     auto cs = st::controlState();
     for (auto& a : cs.actions)
@@ -238,19 +238,6 @@ TEST(mobile_bar_drops_places_and_unlisted_media) {
     p.mobileBarMedia.clear();
     CHECK_EQ(describe(bar(st::inputs(), p, Traits{false, false, true})),
              std::string("[model][slot-1 slot-2][printer aux][card][more]"));
-}
-
-// More has Peripherals ▸ only where the places' controls are not shown: on
-// mobile, unless the paper panel has every place with a control.
-TEST(peripherals_in_more_only_on_mobile) {
-    auto p = st::product();
-    const auto in = st::inputs();
-    CHECK(inMore(*controlOf(bar(in, p, Traits{false, false, true}), "more"), "peripherals") == nullptr);
-    CHECK(inMore(*controlOf(bar(in, p, mobile()), "more"), "peripherals") != nullptr);
-    p.placesOnPaper = {"printer", "aux"};
-    CHECK(inMore(*controlOf(bar(in, p, mobile()), "more"), "peripherals") == nullptr);
-    p.placesOnPaper = {"printer"};
-    CHECK(inMore(*controlOf(bar(in, p, mobile()), "more"), "peripherals") != nullptr);
 }
 
 // A place picker's empty entry names its place, so it needs no label; the

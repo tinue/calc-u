@@ -95,6 +95,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     serialPorts = false;   // no host links on Windows
 #endif
     m_shell = new calcu::qt6::Shell(*this, host(), product(), cu1600::settingsSpec(true, serialPorts));
+    m_shell->setChrome(cu1600::sharpChrome());
     auto* layout = new QVBoxLayout(central);
     layout->setContentsMargins(6, 6, 6, 4);
     layout->setSpacing(4);

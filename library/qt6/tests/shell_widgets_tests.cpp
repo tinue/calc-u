@@ -220,7 +220,7 @@ TEST(bar_on_widgets) {
     CHECK(x(w.find<QWidget>(names::barSlot("slot-2"))) < x(w.find<QWidget>(names::barPlace("printer"))));
     CHECK(x(w.find<QWidget>(names::barPlace("printer"))) < x(aux));
     CHECK(x(aux) < x(w.find<QWidget>(names::barMedia("card"))));
-    // More at the end, with Load Preset… and Settings… and without Quit.
+    // More at the end, with every menu item: Load Preset…, Settings…, Quit.
     auto* more = w.find<QToolButton>(names::kBarMore);
     CHECK(more != nullptr && more->menu() != nullptr);
     if (more) {
@@ -229,7 +229,7 @@ TEST(bar_on_widgets) {
         for (QAction* a : more->menu()->actions()) ids << a->objectName();
         CHECK(ids.contains(QString::fromStdString(names::moreItem("load-preset"))));
         CHECK(ids.contains(QString::fromStdString(names::moreItem("settings"))));
-        CHECK(!ids.contains(QString::fromStdString(names::moreItem("quit"))));
+        CHECK(ids.contains(QString::fromStdString(names::moreItem("quit"))));
     }
     // A product control in the group it names.
     auto* extra = new QToolButton();

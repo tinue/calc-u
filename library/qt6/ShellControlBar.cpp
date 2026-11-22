@@ -1,8 +1,11 @@
 #include "qt6/ShellControlBar.hpp"
+#include "qt6/ChromeStyle.hpp"
 #include "qt6/MediaPicker.hpp"
 #include "qt6/Shell.hpp"
 #include "shell/ObjectNames.hpp"
 #include <QComboBox>
+#include <QEvent>
+#include <QFont>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
@@ -50,6 +53,16 @@ void fillMore(QMenu& menu, const std::vector<MenuItem>& items, const Choose& cho
         const QString name = QString::fromStdString(shell::names::moreItem(item.id));
         if (item.kind == MenuItem::Kind::Separator) {
             menu.addSeparator();
+            continue;
+        }
+        if (item.kind == MenuItem::Kind::Heading) {   // a menu's name: bold, not chosen
+            if (!menu.isEmpty()) menu.addSeparator();
+            QAction* h = menu.addAction(QString::fromStdString(item.label));
+            h->setObjectName(name);
+            h->setEnabled(false);
+            QFont f = h->font();
+            f.setBold(true);
+            h->setFont(f);
             continue;
         }
         if (item.kind == MenuItem::Kind::Submenu) {
@@ -159,10 +172,27 @@ QWidget* ShellControlBar::moreButton(const BarControl& c, QWidget* parent) {
         });
     }
     more_->setParent(parent);
-    more_->setText(QString::fromStdString(c.label));
+    more_->setText(QString::fromStdString(c.icon + " " + c.label));
+    styleMore();
     moreItems_ = c.choices;
     fillMoreMenu();
     return more_;
+}
+
+void ShellControlBar::setChrome(const shell::Chrome* c) {
+    chrome_ = c;
+    styleMore();
+}
+
+void ShellControlBar::styleMore() {
+    if (!more_ || !chrome_) return;
+    const shell::ChromeColours& c = chrome_->colours(chrome::darkAppearance(this));
+    more_->setStyleSheet(chrome::pills(c, chrome_->sizes, QStringLiteral("QToolButton")));
+}
+
+void ShellControlBar::changeEvent(QEvent* e) {
+    if (e->type() == QEvent::PaletteChange) styleMore();
+    QWidget::changeEvent(e);
 }
 
 void ShellControlBar::fillMoreMenu() {

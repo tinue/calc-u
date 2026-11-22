@@ -17,26 +17,7 @@ typedef NS_ENUM(NSInteger, TIMenuItemKind) {
     TIMenuItemKindAction,
     TIMenuItemKindSubmenu,
     TIMenuItemKindSeparator,
-};
-
-/// The item a platform's own menu holds; the iPad's menu bar leaves those out.
-typedef NS_ENUM(NSInteger, TIMenuRole) {
-    TIMenuRoleNone,
-    TIMenuRolePreferences,
-    TIMenuRoleAbout,
-    TIMenuRoleQuit,
-};
-
-/// The shortcuts: Load Preset… ⌘O, Reset ⌘R, Cold boot ⇧⌘R, …
-typedef NS_ENUM(NSInteger, TIMenuShortcut) {
-    TIMenuShortcutNone,
-    TIMenuShortcutLoadPreset,
-    TIMenuShortcutReset,
-    TIMenuShortcutColdBoot,
-    TIMenuShortcutPreferences,
-    TIMenuShortcutQuit,
-    TIMenuShortcutCopy,
-    TIMenuShortcutPaste,
+    TIMenuItemKindHeading,   ///< a menu's name in More
 };
 
 /// A menu item (calcu::shell::MenuItem).
@@ -48,8 +29,6 @@ typedef NS_ENUM(NSInteger, TIMenuShortcut) {
 @property (nonatomic, readonly) BOOL checkable;
 @property (nonatomic, readonly) BOOL checked;
 @property (nonatomic, readonly, copy) NSString *reason;   ///< why it cannot be used now
-@property (nonatomic, readonly) TIMenuRole role;
-@property (nonatomic, readonly) TIMenuShortcut shortcut;
 /// A question asked before it is carried out (Cold boot behind More), "" for none.
 @property (nonatomic, readonly, copy) NSString *confirm;
 @property (nonatomic, readonly) BOOL destructive;

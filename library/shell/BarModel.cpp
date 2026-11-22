@@ -84,9 +84,6 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Tra
     for (const auto& place : read::elements(cs, "places"))
         if (placeKind(place, p) == PlaceKind::ModuleSlot) ++slotCount;
     std::size_t slot = 0;
-    // The places' controls are shown where the bar has them (desktop) or
-    // the paper panel has every one; else More has the Peripherals submenu.
-    bool placesShown = true;
     for (const auto& place : read::elements(cs, "places")) {
         if (p.placesOnPaper.count(read::text(place, "place"))) continue;   // on the paper panel
         const PlaceKind kind = placeKind(place, p);
@@ -94,10 +91,7 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Tra
         if (isSlot) ++slot;
         // Mobile keeps on its bar what is used while the machine runs: the
         // module slots, not the peripherals' places.
-        if (mobile && !isSlot) {
-            placesShown = placesShown && kind == PlaceKind::NoControl;
-            continue;
-        }
+        if (mobile && !isSlot) continue;
         auto c = placeControl(place, p, isSlot && slotCount > 1 ? std::to_string(slot) + ":" : "");
         if (!c) continue;   // no control, no gap
         (isSlot ? slots : places).controls.push_back(std::move(*c));
@@ -113,13 +107,14 @@ std::vector<BarGroupModel> bar(const ShellInputs& in, const ShellProduct& p, Tra
         c.entry = m;
         media.controls.push_back(std::move(c));
     }
-    // More, at the right edge on every platform: what the bar does not show.
+    // More, at the right edge on every platform: every menu's items.
     BarGroupModel end{BarGroup::End, {}, true};
     BarControl more;
     more.kind = BarControl::Kind::More;
     more.id = "more";
     more.label = "More";
-    more.choices = moreItems(menus(in, p, t), p, placesShown);
+    more.icon = "\u22EF";
+    more.choices = moreItems(menus(in, p, t));
     end.controls.push_back(std::move(more));
     out.push_back(std::move(model));
     out.push_back(std::move(slots));

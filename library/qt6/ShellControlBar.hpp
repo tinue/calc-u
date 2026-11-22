@@ -1,4 +1,5 @@
 #pragma once
+#include "shell/Chrome.hpp"
 #include "shell/BarModel.hpp"
 #include <QWidget>
 #include <array>
@@ -52,6 +53,11 @@ public:
         shown_.clear();
     }
     QWidget* group(shell::BarGroup g) const { return groups_[static_cast<std::size_t>(g)]; }
+    // The product's chrome: More is a pill of it, light or dark with the window.
+    void setChrome(const shell::Chrome*);
+
+protected:
+    void changeEvent(QEvent*) override;
 
 
 private:
@@ -65,6 +71,7 @@ private:
     void chooseMore(const shell::MenuItem&);   // an item with `confirm` asks first
     QWidget* moreButton(const shell::BarControl&, QWidget* parent);
     void fillMoreMenu();
+    void styleMore();
     void layoutGroup(shell::BarGroup);
 
     Shell& shell_;
@@ -76,6 +83,7 @@ private:
     std::string shown_;
     Factory slotFactory_;
     std::map<std::string, Factory> mediaFactories_;
+    const shell::Chrome* chrome_ = nullptr;
     QToolButton* more_ = nullptr;
     QMenu* moreMenu_ = nullptr;
     std::vector<shell::MenuItem> moreItems_;

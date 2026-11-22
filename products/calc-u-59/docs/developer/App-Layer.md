@@ -585,7 +585,7 @@ its threads are under "Threads" above.
 ### Layer Overview
 
 ```
-CalcU59App                    (Calc-U-59App.swift: scene, background/active, the iPad's menu bar)
+CalcU59App                    (Calc-U-59App.swift: scene, background/active)
 └─ CalculatorView             (adaptive layout, toolbar, card bar, file importer, alerts)
     ├─ KeyboardView           (calculator art, hit test, LED + cue-card overlays)
     │   ├─ LEDDisplayView
@@ -607,7 +607,7 @@ EmulatorViewModel (@Observable, main thread)
 
 | File | Role |
 |---|---|
-| `Calc-U-59App.swift` | App entry; suspends on background, resumes on active; the family's menus (`ShellCommands`); `RomsMissingView` with the Help item |
+| `Calc-U-59App.swift` | App entry; suspends on background, resumes on active; `RomsMissingView` with the Help item |
 | `EmulatorViewModel.swift` | The `@Observable` face of the app session: sends the commands, copies the topics into observable properties; holds `TIShell` and copies the shell's models (menus, More items, bar, settings rows, the paper's owner, "Loading…", the notice shown) at each change of their inputs; the pointer on the faceplate through the shell's rule; Swift mirrors of the debug snapshot and `ProgramSource` |
 | `ROMLoader.swift` | The ROM lookup over the bundle's resource folder (`TIRomSet`; a "ROMs missing" text in place of the calculator) |
 | `CardStorage.swift` | The save folder (cards, `ti58c.memory.yaml`): iCloud Documents container, else local Documents |
@@ -615,7 +615,6 @@ EmulatorViewModel (@Observable, main thread)
 | `CueCardContent.swift` | Swift cue-card value type and its `TICueCard` conversion |
 | `Views/CalculatorView.swift` | Root view; the layouts — pages, or side by side with or without the debugger, as `TIViewRules.mobileLayout` (Shared `mobileLayout`) says for the window's size and an active fold (iPhone Duo), with the printer's width (`mobilePrinterWidth`) and a top margin for windows without a top inset (`mobileTopMargin`); the control bar (`ControlBarView`); the notice alert; Load Preset…'s file importer (the preset types, the library's `open`), the settings sheet and the ASM file importer |
 | `Views/ControlBarView.swift` | The control bar from `TIShell.bar`: the model picker, the picker of `slot-1`, the card controls (`CardControls`); More at the right edge (Load Preset…, Settings…, Reset; Cold boot asks first, its question on the More button); `PlaceButton`, the place button of the bar and the paper panel |
-| `Views/ShellCommands.swift` | The family's menus File, Machine, Help in the iPad's menu bar as SwiftUI `Commands` from `TIShell.menus`, the shortcuts as key equivalents |
 | `Views/KeyboardView.swift` | Calculator art; the pointer through the library's rule (`TIShell` on `cu59::faceplateHitMap`: the key, the display for full speed; the card's corners first), pressed-key effect, haptics / click, "Loading…" below the display |
 | `Views/UIKitTouchTracking.swift` | Raw-touch tracker that replaces `DragGesture` for keys (iOS 27 fires `onEnded` early) |
 | `Views/LEDDisplayView.swift` | 12-digit LED in a SwiftUI `Canvas` |
@@ -668,9 +667,9 @@ Never import the three ObjC++-only headers from the bridging header.
 
 **The family structure.** The window is drawn from the library's
 shell models, computed by `TIShell` in the bridge from the same
-topics the Qt6 and React sets read: the menus (`ShellCommands`, in the iPad's menu bar; the items with the
-roles Settings…, About and Quit are left out), the control bar
-(`ControlBarView`, with More at its right edge; `CalculatorView` measures it with and without its labels and the library's `barFit` (`TIBarFit`) gives its width and labels), the PC-100C's button on the paper panel (`TIShell.paperPlaces`), the settings (`SettingsView`), "Loading…" and
+topics the Qt6 and React sets read: the control bar
+(`ControlBarView`, with More at its right edge, which holds every menu
+item under its menu's heading; `CalculatorView` measures it with and without its labels and the library's `barFit` (`TIBarFit`) gives its width and labels), the PC-100C's button on the paper panel (`TIShell.paperPlaces`), the settings (`SettingsView`), "Loading…" and
 the notices (one alert after the other). No Swift view decides what the
 machine offers; a control or item is enabled exactly when its entry is.
 
@@ -717,8 +716,7 @@ of `app/TIDebugPart` and the library's `log`; the buttons send its commands
 the control state's product entries.
 
 **Opening files.** A file picked with the file importer of Load Preset…
-(More ▸ Load Preset…, File ▸ Load Preset… ⌘O in the iPad's menu bar; the
-preset types only) goes to the session's `open` (way `dialog`) with its
+(More ▸ Load Preset…; the preset types only) goes to the session's `open` (way `dialog`) with its
 bytes and path; the session finds out what it is, and a refusal arrives as
 its notice (an alert).
 

@@ -93,24 +93,17 @@ final class FamilyStructureTests: XCTestCase {
 
     func test_the_menus() throws {
         let (app, _) = launch()
-        // Every item on the bar or behind More (the PC-100C is on the paper).
+        // The bar's controls; More holds every menu's items (the PC-100C is on the paper too).
         for id in ["bar-model", "bar-slot-slot-1", "bar-media-card-reader", "bar-more"] {
             XCTAssertTrue(element(app, id).waitForExistence(timeout: 5), "no \(id) on the bar")
         }
         openMore(app)
-        for id in ["more-item-load-preset", "more-item-examples", "more-item-settings", "more-item-reset",
-                   "more-item-cold-boot", "more-item-resume", "more-item-help"] {
+        for id in ["more-item-load-preset", "more-item-examples", "more-item-settings", "more-item-model",
+                   "more-item-peripherals", "more-item-reset", "more-item-cold-boot", "more-item-resume", "more-item-help"] {
             XCTAssertTrue(element(app, id).waitForExistence(timeout: 3), "More has no \(id)")
         }
         XCTAssertFalse(element(app, "more-item-resume").isEnabled, "Resume while running")
         attachScreenshot(app, name: "The More menu")
-        app.terminate()
-    }
-
-    func test_command_r_resets() throws {
-        let (app, harness) = launch()
-        XCTAssertFalse(app.menuBars.firstMatch.exists, "a menu bar on iOS")   // not there
-        _ = harness
         app.terminate()
     }
 

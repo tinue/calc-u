@@ -331,8 +331,8 @@ its control bar keeps only what is used while the machine runs.
 _Avoid_: portrait, landscape (for this: those are layouts)
 
 **More**:
-The button at the right edge of every control bar: a menu of the menus'
-items without what has a control elsewhere.
+The button at the right edge of every control bar: a menu of every menu's
+items, each menu under its heading.
 
 **Faceplate**:
 The picture of the calculator with its display and its on-screen keys.

@@ -70,13 +70,11 @@ On macOS, Settings…, About and Quit are in the application menu. The
 shortcuts are those of the family: Load Preset… Ctrl+O (⌘O), Reset
 Ctrl+R (⌘R), Cold boot Ctrl+Shift+R (⇧⌘R).
 
-On every bar the **More** button (⋯) holds Load Preset…, Examples ▸, the
-media items (in the browser), Settings…, Reset, Cold boot, which asks
-first, Resume, Calc-U-59 Help, and About in the browser. On mobile (the
-iPhone, the iPad, the browser version installed on a phone or tablet, a browser
-asking for the mobile site) there is no menu bar, so More is the way to
-them. On the iPad, the menu bar iPadOS gives an app shows File, Machine
-and Help, without Settings…, About and Quit.
+On every bar the **More** button (⋯) holds every menu item, each menu
+under its name. On mobile (the
+iPhone, the iPad, the browser version installed on a phone or tablet, a
+browser asking for the mobile site) there is no menu bar, so More is the
+way to them.
 
 **Help ▸ Calc-U-59 Help** opens [calc-u.org/59](https://calc-u.org/59/) in
 your browser.

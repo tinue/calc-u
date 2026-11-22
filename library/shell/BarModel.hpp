@@ -19,6 +19,7 @@ struct BarControl {
     Kind kind = Kind::ModelPicker;
     std::string id;           // "model", a place, a media place
     std::string label;        // "1:" before a slot when the model has more than one; the peripheral's name on a button
+    std::string icon;         // drawn before the label: More's "⋯"
     // A picker: what it shows closed where the product wants it short
     // (shortShown): the model's bar name, the chosen entry's ID ("ML"), "—"
     // for none. A module slot's media picker shows the topic's `short`.

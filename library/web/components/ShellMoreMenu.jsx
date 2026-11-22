@@ -1,14 +1,14 @@
 // ShellMoreMenu -- the More button at the end of every bar: the button
-// (⋯, its label unless `compact`) opens a popup of the menus' items
+// (its icon, its label unless `compact`) opens a popup of the menus' items
 // (ShellMenuItems) anchored to it, kept inside the client's width; an item
 // with `confirm` asks first in a ShellModal with the item's label and
 // Cancel. The items are the bar model's `choices`, computed again at
 // every change of an input. Names: bar-more, more-menu,
 // more-item-<id>, more-confirm, more-confirm-yes, more-confirm-no.
 //
-//   <ShellMoreMenu shell={s} items={control.choices} label="More" compact={bool} />
+//   <ShellMoreMenu shell={s} items={control.choices} label="More" icon="⋯" compact={bool} />
 
-function ShellMoreMenu({ shell, items, label, compact }) {
+function ShellMoreMenu({ shell, items, label, icon, compact }) {
   const s = shell;
   const [open, setOpen] = React.useState(false);
   const [asking, setAsking] = React.useState(null);
@@ -52,7 +52,7 @@ function ShellMoreMenu({ shell, items, label, compact }) {
     <span className="calcu-shell-more" ref={ref}>
       <button type="button" className="calcu-shell-action" data-calcu="bar-more" aria-haspopup="true" aria-expanded={open}
         aria-label={label} title={label} onClick={() => setOpen(!open)}>
-        <span className="calcu-shell-action-icon" aria-hidden="true">{CALCU_SHELL_ACTION_ICONS.more}</span>
+        <span className="calcu-shell-action-icon" aria-hidden="true">{icon}</span>
         {!compact && <span className="calcu-shell-action-label">{label}</span>}
       </button>
       {open && (

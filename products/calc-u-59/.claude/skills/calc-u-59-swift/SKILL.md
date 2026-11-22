@@ -46,11 +46,10 @@ skill).
   library's shell models, which `Bridge/TIShell` computes from the
   last Value of each input topic (`control-state`, `busy`, `run-state`,
   `roms-missing`, `settings`, `media`, the `preset-list` reply) with
-  `app/TIShellProduct`: `menus` (SwiftUI `Commands` in
-  `Views/ShellCommands.swift`, the iPad's menu bar; the items with the roles
-  Settings…, About and Quit are left out), `bar` (`Views/ControlBarView.swift`: the model picker, the picker
+  `app/TIShellProduct`: `menus` (no menu bar: the item lookup by id),
+  `bar` (`Views/ControlBarView.swift`: the model picker, the picker
   of `slot-1`, the card controls; More at the right edge (the traits'
-  platform Mobile), `moreItems` with Load Preset…, Settings…, Reset,
+  platform Mobile), `moreItems`: every menu item under its heading,
   Cold boot asks first), `paperPlaces` (the
   PC-100C's button on the paper panel, `Views/PrinterView.swift`), `settingsDialog`
   (`Views/SettingsView.swift` over `cu59::settingsSpec(SwiftIOS)`, a sheet),

@@ -1,6 +1,7 @@
 #pragma once
 #include "qt6/SessionHost.hpp"
 #include "shell/BarModel.hpp"
+#include "shell/Chrome.hpp"
 #include "shell/HitMap.hpp"
 #include "shell/Inputs.hpp"
 #include "shell/Loading.hpp"
@@ -79,6 +80,10 @@ public:
     void registerSlotPicker(Factory);                              // the library's module picker
     void registerPanel(std::string kind, std::function<QWidget*(QWidget* parent)>);   // the library's paper panel by default
     void setChoosers(ShellChoosers);
+    // The product's chrome (its app/ Chrome, alive as long as the shell)
+    // for a product whose bar has pills: More is a pill of it. Without it
+    // More takes the bar's own style.
+    void setChrome(const shell::Chrome&);
 
     // What the shell shows now (the tests, the scenarios).
     const shell::ShellInputs& inputs() const { return inputs_; }

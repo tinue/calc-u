@@ -184,7 +184,7 @@ The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug pa
 | `bar-slot-slot-1` | Button | The module picker (the `media` topic's entries in their order; closed: the module's ID); its entries `item-module:<id>` (`item-slot-1-none` for the empty slot) |
 | `bar-place-printer` | Button | "PC-100C" at the left of the paper panel's header (iPhone portrait: on the paper page): value `On` / `Off` |
 | `bar-media-card-reader` | Button | Arm Card (or Eject Card while a side passes), TI-59 only |
-| `bar-more` | Button | More, at the right edge of the bar: items `more-item-<id>` (`load-preset`, `examples`, `settings`, `reset`, `cold-boot`, `resume`, `help`; helper `chooseFromMore(app, id)`); Cold boot's confirmation `confirm-cold-boot` |
+| `bar-more` | Button | More, at the right edge of the bar: items `more-item-<id>`, every menu item (`load-preset`, `examples`, `settings`, `model`, `peripherals`, `reset`, `cold-boot`, `resume`, `help`; headings `more-item-heading-<menu>`; helper `chooseFromMore(app, id)`); Cold boot's confirmation `confirm-cold-boot` |
 | `settings-dialog` | Other | The settings form; rows `setting-<section>-<key>`; `settings-close` (Done) |
 | `loading` | Other | "Loading…" below the display |
 | `faceplate` | Other | The calculator's art: tap a key at a normalised offset (key centres from `app/KeyboardLayout.hpp`, e.g. 1 at 0.2812, 0.8839; R/S at 0.0783, 0.9704) |

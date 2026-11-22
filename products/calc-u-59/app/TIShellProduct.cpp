@@ -42,7 +42,6 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
         i.id = id;
         i.label = label;
         i.mediaPlace = kCardReaderPlace;
-        i.onBar = true;
         p.items.push_back(std::move(i));
     }
     return p;

@@ -26,9 +26,6 @@ struct ProductItem {
     // whether the item can be used now; empty: always.
     std::string entry;
     std::function<void()> act;
-    // The product draws its own control for it on the bar, so a window
-    // without a menu bar leaves it out of the More menu.
-    bool onBar = false;
     // The item exists while the control state lists this media place, and
     // is enabled exactly when its `insert` is. Empty: none.
     std::string mediaPlace = {};

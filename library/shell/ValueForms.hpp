@@ -28,13 +28,13 @@ sessions::Value toValue(const HitMap&);
 sessions::Value toValue(const Rect&);
 
 // The models the Web page draws (ModelHost): an item {kind: "action" |
-// "submenu" | "separator", id, label, checkable, checked, enabled, reason,
+// "submenu" | "separator" | "heading", id, label, checkable, checked, enabled, reason,
 // role: "none" | "preferences" | "about" | "quit", shortcut: "none" |
 // "load-preset" | "reset" | "cold-boot" | "preferences" | "quit" | "copy" |
 // "paste", command, args, children, confirm, destructive}; a menu {id,
 // label, items}; a bar group {group: "AfterModel" | "Slots" | "Places" |
 // "Media" | "End", controls, pushed}, a control {kind: "model" | "slot" |
-// "button" | "picker" | "media" | "more", id, label, shown, shortShown,
+// "button" | "picker" | "media" | "more", id, label, icon, shown, shortShown,
 // plugged, choices, entry, mediumKind}; a panel {kind, owner, ownerPlace,
 // places}; a dialog section {title, rows: [{row, value, shown, choices:
 // [[value, label]], resettable, min, max}]} (min, max null when unset).

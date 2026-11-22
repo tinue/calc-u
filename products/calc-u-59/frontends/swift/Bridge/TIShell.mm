@@ -34,8 +34,6 @@ NSString *const TIShellActionHelp = @"help";
 @property (nonatomic, readwrite) BOOL checkable;
 @property (nonatomic, readwrite) BOOL checked;
 @property (nonatomic, readwrite, copy) NSString *reason;
-@property (nonatomic, readwrite) TIMenuRole role;
-@property (nonatomic, readwrite) TIMenuShortcut shortcut;
 @property (nonatomic, readwrite, copy) NSString *confirm;
 @property (nonatomic, readwrite) BOOL destructive;
 @property (nonatomic, readwrite, copy) NSArray<TIMenuItem *> *children;
@@ -117,8 +115,6 @@ TIMenuItem *itemFrom(const shell::MenuItem &i) {
     t.checkable = i.checkable;
     t.checked = i.checked;
     t.reason = ns(i.reason);
-    t.role = static_cast<TIMenuRole>(i.role);
-    t.shortcut = static_cast<TIMenuShortcut>(i.shortcut);
     t.confirm = ns(i.confirm);
     t.destructive = i.destructive;
     NSMutableArray *children = [NSMutableArray arrayWithCapacity:i.children.size()];
@@ -195,12 +191,13 @@ NSInteger keyIndexOf(const std::string &key) {
 }
 
 - (shell::Traits)traits {
-    // The iPhone and the iPad: mobile (no menu bar to count on; Load
-    // Preset… and Settings… are in More), no About, no Quit.
+    // The iPhone and the iPad: mobile (no menu bar; every item is in
+    // More), no About, no Quit, no shortcuts.
     shell::Traits t;
     t.platform = shell::Platform::Mobile;
     t.about = false;
     t.hasQuit = false;
+    t.shortcuts = false;
     return t;
 }
 
@@ -224,11 +221,8 @@ NSInteger keyIndexOf(const std::string &key) {
     return out;
 }
 
-- (NSArray<TIMenuItem *> *)moreItems {   // the bar's More, which knows whether the places are shown
-    for (const auto &g : shell::bar(self.inputs, product(), self.traits))
-        for (const auto &c : g.controls)
-            if (c.kind == shell::BarControl::Kind::More) return itemsFrom(c.choices);
-    return @[];
+- (NSArray<TIMenuItem *> *)moreItems {
+    return itemsFrom(shell::moreItems(shell::menus(self.inputs, product(), self.traits)));
 }
 
 static TIBarControl *controlFrom(const shell::BarControl &c, shell::BarGroup group, bool pushed) {
@@ -323,10 +317,10 @@ static TIBarControl *controlFrom(const shell::BarControl &c, shell::BarGroup gro
     [self sendChecked:cs::Command{shell::commands::kSetSetting, cs::Value(std::move(args))}];
 }
 
-- (TIMenuItem *)itemWithID:(NSString *)itemID {
+- (TIMenuItem *)itemWithID:(NSString *)itemID {   // More holds the menus' items: the menus are enough
     for (TIMenu *m in self.menus)
         if (TIMenuItem *i = findIn(m.items, itemID)) return i;
-    return findIn(self.moreItems, itemID);
+    return nil;
 }
 
 // A command the shell sends; its refusal is shown like a notice.

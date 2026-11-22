@@ -260,29 +260,27 @@ Traits mobile() {
 
 } // namespace
 
-TEST(more_items_are_the_items_without_a_control) {
+TEST(more_items_are_every_menu_under_its_heading) {
     auto in = st::inputs();
     in.media = st::mediaWithKind();
     auto p = st::product();
     const auto ms = menus(in, p, mobile());
     // The menus are computed without a menu bar too.
     CHECK_EQ(join(menuIds(ms)), std::string("file machine help"));
-    // Load Preset… and Settings… are in More; the model picker and the places' controls are elsewhere.
-    CHECK_EQ(join(ids(moreItems(ms, p))),
-             std::string("load-preset examples - load-program - import-media saved-media mount-drive - settings - variants-model - reset cold-boot resume disk-thing - help about"));
-    // A product item the product draws on the bar is left out, and no separator doubles.
-    p.items[1].onBar = true;
-    CHECK_EQ(join(ids(moreItems(menus(in, p, mobile()), p))),
-             std::string("load-preset examples - load-program - import-media saved-media - settings - variants-model - reset cold-boot resume disk-thing - help about"));
-    p.items[0].onBar = true;
-    CHECK_EQ(join(ids(moreItems(menus(in, p, mobile()), p))),
-             std::string("load-preset examples - import-media saved-media - settings - variants-model - reset cold-boot resume disk-thing - help about"));
-    // Where the places' controls are not shown, Peripherals ▸ is in More.
-    CHECK_EQ(join(ids(moreItems(menus(in, p, mobile()), p, false))),
-             std::string("load-preset examples - import-media saved-media - settings - variants-model peripherals - reset cold-boot resume disk-thing - help about"));
-    // Quit is the window's own.
-    CHECK(findItem(menus(in, p, kQt), "quit") != nullptr);
-    for (const auto& i : moreItems(menus(in, p, kQt), p)) CHECK(i.id != "quit");
+    // Every item of every menu, each menu after its heading; submenus stay submenus.
+    const auto more = moreItems(ms);
+    CHECK_EQ(join(ids(more)),
+             std::string("heading-file load-preset examples - load-program - import-media saved-media mount-drive - settings "
+                         "heading-machine model variants-model peripherals - reset cold-boot resume disk-thing "
+                         "heading-help help about"));
+    CHECK(more[0].kind == MenuItem::Kind::Heading);
+    CHECK_EQ(more[0].label, std::string("FILE"));
+    for (const auto& i : more)
+        if (i.id == "model") CHECK(i.kind == MenuItem::Kind::Submenu && !i.children.empty());
+    // Quit is in More too where the menus have it.
+    bool quit = false;
+    for (const auto& i : moreItems(menus(in, p, kQt))) quit = quit || i.id == "quit";
+    CHECK(quit);
 }
 
 // Mobile: a media place the bar leaves out has a submenu in File: its
@@ -315,7 +313,7 @@ TEST(mobile_media_submenu_chooses_and_names_and_saves) {
     CHECK_EQ(save.reason, std::string("Nothing to save."));
     // In More too, in File's media group.
     bool inMore = false;
-    for (const auto& i : moreItems(ms, p)) inMore = inMore || i.id == "media-card";
+    for (const auto& i : moreItems(ms)) inMore = inMore || i.id == "media-card";
     CHECK(inMore);
     // The place's `insert` not available: every entry disabled with its reason.
     auto cs = st::controlState();
@@ -335,7 +333,7 @@ TEST(mobile_media_submenu_chooses_and_names_and_saves) {
 TEST(more_cold_boot_asks_first) {
     const auto p = st::product();
     const auto ms = menus(st::inputs(), p, mobile());
-    const auto more = moreItems(ms, p);
+    const auto more = moreItems(ms);
     const MenuItem* cold = nullptr;
     for (const auto& i : more)
         if (i.id == "cold-boot") cold = &i;
@@ -355,7 +353,7 @@ TEST(more_follows_availability) {
     for (auto& a : cs.actions)
         if (a.command == control::kColdBootAction) a.available = st::unavailable("An operation runs.");
     const auto p = st::product();
-    auto more = moreItems(menus(st::inputs(cs.toValue()), p, mobile()), p);
+    auto more = moreItems(menus(st::inputs(cs.toValue()), p, mobile()));
     auto byId = [&](const char* id) -> const MenuItem* {
         for (const auto& i : more)
             if (i.id == id) return &i;
@@ -369,7 +367,7 @@ TEST(more_follows_availability) {
     // Computed again from new inputs: available now, and Resume while paused.
     auto in = st::inputs();
     in.runState = Value::object({{"paused", true}});
-    more = moreItems(menus(in, p, mobile()), p);
+    more = moreItems(menus(in, p, mobile()));
     CHECK(byId("cold-boot")->enabled);
     CHECK(byId("resume")->enabled);
 }

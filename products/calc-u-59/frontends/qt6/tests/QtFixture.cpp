@@ -12,6 +12,7 @@
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QMenuBar>
+#include <QTemporaryDir>
 #include <QThread>
 #include <filesystem>
 #include <memory>
@@ -21,7 +22,28 @@ namespace qtfixture {
 
 bool romsPresent() { return std::filesystem::exists(CALCU59_DIR "/roms/TMC0571B.txt"); }
 
+namespace {
+
+// Folders of the test process's own: the user's settings and cards stay
+// untouched (and their startup presets out of the tests).
+void useOwnFolders() {
+    static QTemporaryDir dir;
+    static bool done = false;
+    if (done) return;
+    done = true;
+    const std::filesystem::path root = dir.path().toStdString();
+    calcu::settings::HostDirs dirs;
+    dirs.frontend = calcu::settings::FrontendKind::Qt6;
+    dirs.home = (root / "home").generic_string();
+    dirs.settingsBase = (root / "settings").generic_string();
+    std::filesystem::create_directories(dirs.home);
+    AppPaths::useHostDirs(dirs);
+}
+
+} // namespace
+
 Fixture::Fixture(const char* model, bool started) {
+    useOwnFolders();
     AppPaths::useBundledExamplesDir(QStringLiteral(CALCU59_DIR "/examples"));
     AppPaths::file().set("startup", "model", model);
     window = std::make_unique<MainWindow>();

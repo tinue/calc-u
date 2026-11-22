@@ -15,7 +15,7 @@ View view(const ViewInputs& in) {
     v.room = v.side == ViewSide::Beside ? boxWidth - v.faceplateWidth : boxHeight - v.faceplateHeight;
     const double least = v.side == ViewSide::Beside ? in.panelsMinWidth : in.panelsMinHeight;
     v.panelsFit = least > 0 && v.room >= least;
-    v.panelsAlone = in.panelsAloneOnMobileBelow && in.platform == Platform::Mobile && v.side == ViewSide::Below;
+    v.panelsAlone = in.panelsAloneOnMobileBelow && in.platform == Platform::Mobile && v.side == ViewSide::Below && v.panelsFit;
     return v;
 }
 

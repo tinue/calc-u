@@ -94,6 +94,15 @@ TEST(view_wide_phone_landscape) {
     CHECK(!v.panelsAlone);
 }
 
+// A phone in landscape whose safe area narrows the window: the room is
+// below, but only a sliver of it; the calculator stays.
+TEST(view_wide_phone_landscape_safe_area) {
+    const auto v = shell::view(wide(838, 440, Platform::Mobile));
+    CHECK(v.side == ViewSide::Below);
+    CHECK(!v.panelsFit);
+    CHECK(!v.panelsAlone);
+}
+
 // The faceplate fills the box less the fixed parts in one direction, its
 // proportions kept; the room is what is left in the other.
 TEST(view_faceplate_fitted) {

@@ -414,7 +414,9 @@ function calcuShellView(inputs) {
   const least = (side === "beside" ? i.panelsMinWidth : i.panelsMinHeight) || 0;
   return {
     side, panelsFit: least > 0 && room >= least,
-    panelsAlone: !!i.panelsAloneOnMobileBelow && i.platform === "mobile" && side === "below",
+    // Only where the room below takes the panels: a sliver of it (a phone in
+    // landscape whose safe area narrows the window) keeps the calculator.
+    panelsAlone: !!i.panelsAloneOnMobileBelow && i.platform === "mobile" && side === "below" && least > 0 && room >= least,
     faceplateWidth, faceplateHeight, room,
   };
 }

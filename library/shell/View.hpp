@@ -27,8 +27,10 @@ struct ViewInputs {
     // height); 0: the product has no panels on that side.
     double panelsMinWidth = 0, panelsMinHeight = 0;
     Platform platform = Platform::Desktop;
-    // On mobile with the room below: the panels alone, without the
-    // faceplate (a phone in portrait, whose keys would be too small).
+    // On mobile where the room below takes the panels: the panels alone,
+    // without the faceplate (a phone in portrait, whose keys would be too
+    // small). A sliver of room below (a phone in landscape whose safe
+    // area makes the window a little narrower) keeps the calculator.
     bool panelsAloneOnMobileBelow = false;
 };
 

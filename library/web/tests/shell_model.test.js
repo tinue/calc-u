@@ -799,6 +799,13 @@ test("view_wide_phone_landscape", () => {
   assert.equal(v.panelsAlone, false);
 });
 
+test("view_wide_phone_landscape_safe_area", () => {
+  const v = m.calcuShellView(wideView(838, 440, "mobile"));
+  assert.equal(v.side, "below");
+  assert.equal(v.panelsFit, false);
+  assert.equal(v.panelsAlone, false);
+});
+
 test("view_faceplate_fitted", () => {
   const box = { width: 1000, height: 540, faceplateAspect: 2, fixedWidth: 0, fixedHeight: 40 };
   let v = m.calcuShellView(box);

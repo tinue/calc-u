@@ -2,8 +2,7 @@
 
 How a file handed to a product is classified and what it is opened as:
 by a drop, by Open With, as the file named when a desktop program
-starts, from the file dialog of Load Preset… (Upload Preset… in a Web
-frontend), or from the harness. The frontend decides nothing about the
+starts, from the file dialog of Load Preset…, or from the harness. The frontend decides nothing about the
 file; the app session classifies it and opens it.
 
 Terms follow `docs/GLOSSARY.md` (Open, File kind, Preset, Medium,
@@ -36,7 +35,7 @@ open-would-take  {name, size?} → {takes}
 | `path` | Where the host has the file |
 | `bytes` | The file's content. Absent: the host could not read it |
 | `way` | `drop`, `open-with`, `start`, `dialog` or `harness`. Absent: `drop` |
-| `upload` | The host cannot write the file back (a Web frontend). A preset is then opened from its content, a medium is imported first |
+| `upload` | The host cannot write the file back (a Web frontend). A preset is then opened from an upload folder (§5), or from its content without one; a medium is imported first |
 | `confirmed` | The user said yes to replacing a medium of the same name (§4) |
 
 **Reply.** `{as, file, detail}`:
@@ -178,11 +177,13 @@ question, not a refusal: the reply's reason begins with `asks: ` and
 holds the question, and no notice is given. The frontend asks; on yes it
 sends the same `open` with `confirmed: true`, on no nothing.
 
-## 5. Several files
+## 5. Several files, and an uploaded preset
 
-Only from a Web file dialog, and only with an upload folder
-(`/uploads`). Without one, or without a preset loader, the first file is
-opened alone.
+Several files come only from a Web file dialog, and are one folder only
+with an upload folder (`/uploads`). Without one, or without a preset
+loader, the first file is opened alone. An uploaded preset alone (one file
+with `upload` that check 1 to 3 take as a preset) goes the same way, a
+folder of its own.
 
 1. A new folder `<upload folder>/open-<n>` is made (`n` counts up from 1,
    past folders that exist), and every file with bytes is written into
@@ -193,12 +194,17 @@ opened alone.
    over.
 3. With no such file, the first file of the request is opened alone.
    Else the preset passes checks 1 to 3 and is loaded from its path in the
-   folder, so that its references to the other files resolve there.
+   folder as an upload: a relative `file:` it names is looked up in the
+   folder by its last part alone (`cards/a.magnetcard.yaml` is
+   `a.magnetcard.yaml`), since the files lie there without their folders;
+   `~/` and absolute paths resolve as for any preset. The messages name the
+   preset by its file name.
 
 | Case | Sentence |
 |---|---|
 | the folder cannot be made | "The files could not be put together in `<folder>`: `<reason>`" |
 | a file cannot be written | "`<file>` could not be written to `<folder>`." |
+| a relative file the preset names is not in the folder | "The preset `<preset>` names the file `<path>`, which was not chosen with it: choose the preset together with every file it names." |
 
 ## 6. A file while the session is busy
 
@@ -215,7 +221,7 @@ refusal is then a notice only, and a question becomes the notice
 | `drop` | one file dragged onto the window; the window is raised first | one file dropped onto the window | exactly one file dropped onto the page; a drop of more is ignored. `upload: true` |
 | `open-with` | macOS: a file opened from Finder or dropped onto the Dock icon, also at a cold launch | none | none |
 | `start` | the last argument after the program's name that does not start with `-` and names an existing file, opened once the window is shown | none | none |
-| `dialog` | the file chosen in Load Preset… | the file chosen in Load Preset… | the files chosen in Upload Preset…, `upload: true` |
+| `dialog` | the file chosen in Load Preset… | the file chosen in Load Preset… | the files chosen in Load Preset… (the product's `presetUploads`: the presets and the files a preset can name), `upload: true` |
 | `harness` | the harness's `open <path>` | — | — |
 
 A drag shows a pointer that accepts only one file the session would take

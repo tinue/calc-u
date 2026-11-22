@@ -43,6 +43,10 @@ struct ShellProduct {
     std::vector<std::pair<std::string, std::string>> aboutLinks;   // label, address
     std::map<std::string, std::string> variantLabels;   // model or peripheral ID → submenu label
     std::string presetFilter;                       // the file dialog's filter for Load Preset…
+    // The Web's Upload Preset…: an accept list (".ti59,.yaml") of the presets
+    // and every file a preset can name. A page has no folder to look in, so
+    // the preset is chosen together with its files.
+    std::string presetUploads;
     // Edit items: Copy Screen is the product's, so it
     // is its function; Paste Text is the shell's, switched on here.
     std::function<void()> copyScreen;

@@ -37,10 +37,15 @@ std::optional<std::string> decoded(const std::vector<std::uint8_t>& bytes, const
 
 std::string notRead(std::string_view path) { return "The file " + std::string(path) + " cannot be read."; }
 
+// A preset in a folder on disk. An upload (the Web) is a preset chosen with
+// its files, all of them put into one folder by their names alone: a file it
+// names is looked up there by its name, and one not chosen with it is
+// refused with the advice to choose it too.
 class FolderSource final : public PresetSource {
 public:
-    FolderSource(fs::path file, std::string home) : file_(std::move(file)), home_(std::move(home)) {}
-    std::string name() const override { return files::fromPath(file_); }
+    FolderSource(fs::path file, std::string home, bool upload)
+        : file_(std::move(file)), home_(std::move(home)), upload_(upload) {}
+    std::string name() const override { return upload_ ? files::fromPath(file_.filename()) : files::fromPath(file_); }
     std::string stem() const override { return stemOf(files::fromPath(file_.filename())); }
     std::optional<std::string> text() const override {
         const auto bytes = readFile(file_);
@@ -54,19 +59,26 @@ public:
     std::variant<std::vector<std::uint8_t>, std::string> readNamed(std::string_view path) const override {
         const fs::path p = resolve(path);
         if (auto b = readFile(p)) return *b;
+        if (upload_ && chosenWith(path))
+            return "The preset " + name() + " names the file " + std::string(path) +
+                   ", which was not chosen with it: choose the preset together with every file it names.";
         return notRead(files::fromPath(p));
     }
     std::string resolvedName(std::string_view path) const override { return files::fromPath(resolve(path)); }
 
 private:
+    bool chosenWith(std::string_view path) const {
+        return !homePath(path, home_) && !files::toPath(path).is_absolute();
+    }
     fs::path resolve(std::string_view path) const {
         if (auto h = homePath(path, home_)) return *h;
         const fs::path p = files::toPath(path);
         if (p.is_absolute()) return p;
-        return file_.parent_path() / p;
+        return file_.parent_path() / (upload_ ? p.filename() : p);
     }
     fs::path file_;
     std::string home_;
+    bool upload_;
     mutable std::string why_;
 };
 
@@ -147,7 +159,11 @@ std::optional<std::vector<std::uint8_t>> DirectoryPresetBundle::read(std::string
 std::string DirectoryPresetBundle::where() const { return files::fromPath(root_); }
 
 std::unique_ptr<PresetSource> folderSource(fs::path file, std::string home) {
-    return std::make_unique<FolderSource>(std::move(file), std::move(home));
+    return std::make_unique<FolderSource>(std::move(file), std::move(home), false);
+}
+
+std::unique_ptr<PresetSource> uploadSource(fs::path file, std::string home) {
+    return std::make_unique<FolderSource>(std::move(file), std::move(home), true);
 }
 
 std::unique_ptr<PresetSource> contentSource(std::string text, std::string name, std::string home) {

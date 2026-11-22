@@ -301,6 +301,46 @@ TEST(several_files_one_folder_preset_found_by_path) {
     CHECK(std::filesystem::exists(folder / "game.test-seg") && std::filesystem::exists(folder / "data.testdisk.yaml"));
 }
 
+TEST(several_files_named_file_found_by_its_name_alone) {
+    calcu::testing::TempFolder up("calcu-uploads");
+    OpenRig r(withUploads(up));
+    OpenRequest q;
+    q.files = {file("data.testdisk.yaml", disk("Data", "d").text()),
+               file("game.test-seg", keys("test-dot", "  - test-disk: { file: disks/data.testdisk.yaml }\n"))};
+    q.way = Way::Dialog;
+    q.upload = true;
+    const CallId c = r.open(q);
+    r.fixture.callWhileBusy();
+    const auto* reply = r.fixture.fe.reply(c);
+    CHECK(reply && reply->done);
+    CHECK_EQ(r.fixture.drive() ? r.fixture.drive()->bytes() : std::string(), std::string("d"));
+}
+
+TEST(uploaded_preset_without_a_file_it_names_refused_with_the_advice) {
+    calcu::testing::TempFolder up("calcu-uploads");
+    OpenRig r(withUploads(up));
+    const std::string advice =
+        "The preset game.test-seg names the file data.testdisk.yaml, which was not chosen with it: "
+        "choose the preset together with every file it names.";
+    // Alone: a folder of its own, the same advice.
+    OpenRequest q;
+    q.files = {file("game.test-seg", keys("test-dot", "  - test-disk: { file: data.testdisk.yaml }\n"))};
+    q.way = Way::Dialog;
+    q.upload = true;
+    CallId c = r.open(q);
+    r.fixture.callWhileBusy();
+    const auto* reply = r.fixture.fe.reply(c);
+    CHECK(reply && !reply->done && reply->reason.find(advice) != std::string::npos);
+    CHECK(hasText(r.notices(), advice));
+    CHECK(std::filesystem::exists(up.path() / "open-1" / "game.test-seg"));
+    // With another file, not the one it names.
+    q.files.push_back(file("other.testdisk.yaml", disk("Other", "o").text()));
+    c = r.open(q);
+    r.fixture.callWhileBusy();
+    reply = r.fixture.fe.reply(c);
+    CHECK(reply && !reply->done && reply->reason.find(advice) != std::string::npos);
+}
+
 TEST(several_files_first_preset_by_name) {
     calcu::testing::TempFolder up("calcu-uploads");
     OpenRig r(withUploads(up));

@@ -618,7 +618,7 @@ EmulatorViewModel (@Observable, main thread)
 | `AppSettings.swift` | Where the settings file lives (Application Support), the Debug-only `--settings-file`, and the security-scoped bookmark of a chosen trace folder, the one value kept in UserDefaults, the only thing kept outside the settings file; the settings themselves are the session's |
 | `AppInfo.swift` | Version and the macOS About panel; its texts and links are `TIShell`'s (`app/TIShellProduct`) |
 | `CueCardContent.swift` | Swift cue-card value type and its `TICueCard` conversion |
-| `Views/CalculatorView.swift` | Root view; macOS side-by-side and iOS layouts — pages, or side by side with or without the debugger, as `TIViewRules.mobileLayout` (Shared `mobileLayout`) says for the window's size and an active fold (iPhone Duo), with the printer's width (`mobilePrinterWidth`) and a top margin for windows without a top inset (`mobileTopMargin`); the control bar (`ControlBarView`); the notice alert; Load Preset…'s file dialog (any file, the library's `open`), the settings sheet (iOS) and the ASM file importer; the macOS drop (`open`) |
+| `Views/CalculatorView.swift` | Root view; macOS side-by-side and iOS layouts — pages, or side by side with or without the debugger, as `TIViewRules.mobileLayout` (Shared `mobileLayout`) says for the window's size and an active fold (iPhone Duo), with the printer's width (`mobilePrinterWidth`) and a top margin for windows without a top inset (`mobileTopMargin`); the control bar (`ControlBarView`); the notice alert; Load Preset…'s file dialog (the preset types, the library's `open`), the settings sheet (iOS) and the ASM file importer; the macOS drop (`open`) |
 | `Views/ControlBarView.swift` | The control bar from `TIShell.bar`: the model picker, the picker of `slot-1`, the button "PC-100C", the card controls (`CardControls`); on iOS Reset, Preset, Settings and More (Cold boot asks first); a disabled control's reason as its help tag on macOS |
 | `Views/ShellCommands.swift` | The family's menus File, Machine, Help as SwiftUI `Commands` from `TIShell.menus`, the shortcuts as key equivalents |
 | `Views/KeyboardView.swift` | Calculator art; the pointer through the library's rule (`TIShell` on `cu59::faceplateHitMap`: the key, the display for full speed; the card's corners first), pressed-key effect, haptics / click, "Loading…" below the display, `PhysicalKeyboardModifier` (macOS) |
@@ -726,7 +726,7 @@ of `app/TIDebugPart` and the library's `log`; the buttons send its commands
 the control state's product entries.
 
 **Opening files.** A file dropped on the macOS window and a file picked with
-the Preset button (the preset types and any file) go to the session's
+the Preset button (the preset types only) go to the session's
 `open` (way `drop` or `dialog`) with their bytes and path; the
 session finds out what it is, and a refusal arrives as its notice (an alert).
 Load Preset… is the File menu's (⌘O) on macOS and the bar's Preset on iOS.

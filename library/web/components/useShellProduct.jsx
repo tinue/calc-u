@@ -1,14 +1,15 @@
 // A product page's glue to its session, the same for both products' pages.
 //
 //   useShellProduct(shell, {request, args, fallback, version, build,
-//                   copyScreen, presetAccept, openFiles, acts}) → {product, ready}
+//                   copyScreen, openFiles, acts}) → {product, ready}
 //     the product's shell data: `request` (`<prefix>.shell-product`) with
 //     `args`, once per distinct `args` while the session runs, its answer
 //     {product, settingsSpec} kept; `fallback` (the shell's frame with
 //     nothing of the product's) until it came. The product is the answer's
 //     with the page's `version` and `build`, Copy Screen (`copyScreen`, or
-//     null: none), the settings spec, Load Preset… (the picked files,
-//     `presetAccept`, through `openFiles(files, "dialog")`) and each item's
+//     null: none), the settings spec, Load Preset… (the files picked by the
+//     product's `presetUploads`: the preset with the files it names, through
+//     `openFiles(files, "dialog")`) and each item's
 //     act from `acts` by its id. copyScreen, openFiles and acts are read
 //     when used, so they may be new closures at each render.
 //   useFaceplateMaps(shell, request, model) → {[model]: map}
@@ -47,7 +48,7 @@ function useShellProduct(shell, options) {
       copyScreen: hasCopyScreen ? () => latest.current.copyScreen() : null,
       settingsSpec: data.settingsSpec,
       loadPreset: async () => {
-        const files = await calcuPickFiles(latest.current.presetAccept || "", true);
+        const files = await calcuPickFiles(p.presetUploads || "", true);
         if (files.length) latest.current.openFiles(files, "dialog");
       },
       items: p.items.map((i) => ({ ...i, act: () => { const act = (latest.current.acts || {})[i.id]; if (act) act(); } })),

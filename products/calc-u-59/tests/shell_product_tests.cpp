@@ -59,6 +59,7 @@ TEST(shell_product_complete) {
     CHECK(!p.copyScreen);
     CHECK(!p.pasteText);
     CHECK_EQ(p.presetFilter, std::string("Presets (*.ti59 *.ti58 *.ti58c)"));
+    CHECK_EQ(p.presetUploads, std::string(".ti59,.ti58,.ti58c,.yaml"));
     CHECK(p.variantLabels.empty());
 }
 

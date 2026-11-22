@@ -91,7 +91,7 @@ function useCalcuShell(shell, product, traits) {
     });
   };
   const loadPreset = () => {   // the page has no files of its own: the preset's text (`content`)
-    calcuPickFiles(product.presetAccept || "", false).then(async (files) => {
+    calcuPickFiles(product.presetUploads || "", false).then(async (files) => {
       if (!files.length) return;
       const text = await files[0].text();
       sendChecked("load-preset", { content: text, name: files[0].name });

@@ -8,7 +8,8 @@
 #include <variant>
 #include <vector>
 
-// Where a preset comes from: a file in a folder on disk, a preset of the
+// Where a preset comes from: a file in a folder on disk (or one uploaded
+// with its files), a preset of the
 // product's bundle (a bundle path `examples:<path>`), or content handed over
 // without a folder (iOS, the Web). The source reads the preset's text and the
 // files it names.
@@ -52,6 +53,10 @@ public:
 };
 
 std::unique_ptr<PresetSource> folderSource(std::filesystem::path file, std::string home);
+// A preset chosen with its files where there is no folder to look in (the
+// Web): they lie together in one upload folder, a file it names is looked up
+// there by its name alone, and one not chosen with it is refused so.
+std::unique_ptr<PresetSource> uploadSource(std::filesystem::path file, std::string home);
 std::unique_ptr<PresetSource> contentSource(std::string text, std::string name, std::string home);   // without a folder: no relative path
 std::unique_ptr<PresetSource> bundleSource(const PresetBundle&, std::string pathInBundle);
 

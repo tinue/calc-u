@@ -186,8 +186,9 @@
   A failed autosave is reported with a notice, and a saved file that
   cannot be read, or that carries a bundled template's name, is named in
   the log at each start.
-- **Opening files.** File ▸ Load Preset… and a
-  drop open a file as what it is: a BASIC or machine-code program goes
+- **Opening files.** File ▸ Load Preset… offers presets; in the browser
+  the preset is chosen together with the files it names, which are found
+  by their names. A drop opens a file as what it is: a BASIC or machine-code program goes
   to its loader, a module, disk or cassette file into its place. A disk
   file can be dropped and is used where it lies (Web: imported); a
   module file is plugged in when it is clear where it goes. A file named

@@ -1,4 +1,5 @@
 #include "presets/PresetsPart.hpp"
+#include "files/Files.hpp"
 #include "formats/Flow.hpp"
 #include "machine/Idle.hpp"
 #include "presets/IdleWatch.hpp"
@@ -58,6 +59,8 @@ std::unique_ptr<PresetSource> PresetsPart::sourceOf(const Value& args) const {
         if (name.empty()) name = "the preset";
         return contentSource(*content->string(), std::move(name), setup_.home);
     }
+    if (sessions::flagArg(args, "upload"))   // chosen with its files, without a folder of its own
+        return uploadSource(files::toPath(sessions::textArg(args, "ref")), setup_.home);
     return sourceFor(sessions::textArg(args, "ref"), setup_.bundle, setup_.home);
 }
 

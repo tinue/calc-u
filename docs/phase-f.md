@@ -32,21 +32,6 @@ and `docs/Process.md` until the closing check at its end has passed.
 
 ### Open items
 
-- **Next to fix: Load Preset… offers presets only, in every frontend.**
-  Like every dedicated item (Load BASIC… and the others), it filters for
-  its own kind; only a drop, Open With and a file named at the start take
-  any file and let the session's `open` find out what it is. Today the Qt
-  frontends of both products filter (the products' `presetFilter`); the
-  Swift app offers the preset types and any file (`presetDialogTypes` and
-  `allowsOtherFileTypes` in `frontends/swift/App/Views/CalculatorView.swift`,
-  the panel's message, the iOS file importer), the Calc-U-59 Web sets no
-  `presetAccept` (any file), and the Calc-U-1600 Web adds
-  `.bas,.bbin,.bin,.wav,.yaml` and passes the picked files through `open`
-  as one folder, so that a preset can bring the media it names (the page
-  has no folder of its own): settle how a Web preset gets its media when
-  the dialog takes presets only. The help follows: `library/help/04-media.md`
-  ("offers presets and all files"); the Calc-U-59 tutorial and FAQ's
-  greyed-out `.ti59.txt` then hold on every platform.
 - **Next to fix: Calc-U-59's start folders, as Calc-U-1600's.** Calc-U-1600
   shows a start folder for every dedicated loader in its settings (Qt:
   every `[folders]` key, Presets, BASIC, Assembly, Host drive). Calc-U-59

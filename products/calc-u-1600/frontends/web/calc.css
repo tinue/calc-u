@@ -203,7 +203,8 @@
 .calcu-client .calcu-lamp { flex: none; width: 14px; text-align: center; color: var(--calcu-lamp-off); }
 .calcu-client .calcu-lamp.on,
 .calcu-client .calcu-tape-counter.on { color: var(--calcu-lamp-on); }
-.calcu-client .calcu-tape-counter { flex: none; min-width: 4.5em; font-variant-numeric: tabular-nums; }
+.calcu-client .calcu-tape-counter { flex: none; width: 4.5em; text-align: right; font-variant-numeric: tabular-nums; }
+.calcu-client .calcu-tape-counter.empty { color: var(--calcu-text-dim); }
 
 /* ── Docked panels ────────────────────────────────────────────────── */
 .calcu-client .calcu-panels { flex: 1; min-height: 0; display: flex; gap: var(--calcu-panel-inset, 0); padding: 0 var(--calcu-panel-inset, 0) var(--calcu-panel-inset, 0); }

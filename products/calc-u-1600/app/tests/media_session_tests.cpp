@@ -305,3 +305,20 @@ TEST(name_with_slash_or_colon_refused) {
 }
 
 } // namespace
+
+// The cassette's counter as every GUI shows it.
+TEST(tape_counter_text) {
+    cu1600::LampsPayload l;
+    CHECK(l.tapeEmpty());
+    CHECK_EQ(l.tapeCounter(), std::string("0:00"));
+    CHECK_EQ(l.tapeTip(), std::string("No cassette"));
+    l.tapeName = "hanoi";
+    l.tape.mode = TapeDeck::Mode::Play;
+    l.tape.position = 75;
+    CHECK_EQ(l.tapeCounter(), std::string("▶ 1:15"));
+    CHECK_EQ(l.tapeTip(), std::string("Playing hanoi"));
+    l.tape.mode = TapeDeck::Mode::Record;
+    l.tape.length = 9;
+    CHECK_EQ(l.tapeCounter(), std::string("● 0:09"));
+    CHECK_EQ(l.tapeTip(), std::string("Recording onto hanoi"));
+}

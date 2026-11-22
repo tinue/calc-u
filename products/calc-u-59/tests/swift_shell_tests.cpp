@@ -27,9 +27,9 @@ namespace {
 bool roms() { return std::filesystem::exists("roms/TMC0571B.txt"); }
 const char* const kSkip = "the ROMs are not fetched (roms/fetch_roms.sh)";
 
-// The Swift frontend's traits on the Mac (the defaults).
-shell::Traits macTraits() { return shell::Traits{}; }
-shell::Traits iosTraits() {
+// The Swift frontend's traits (the iPhone and the iPad): no menu bar to
+// count on, no About, no Quit.
+shell::Traits swiftTraits() {
     shell::Traits t;
     t.menuBar = false;
     t.about = false;
@@ -118,16 +118,16 @@ std::vector<shell::BarControl::Kind> kinds(const std::vector<shell::BarGroupMode
 
 } // namespace
 
-// File, Machine, Help in that order with their items, on
-// macOS and in the iPad's menu bar; the card items on the TI-59 only;
+// File, Machine, Help in that order with their items, as the iPad's menu
+// bar shows them; the card items on the TI-59 only;
 // an item that cannot be used is disabled, not left out.
 TEST(menus_file_machine_help_in_order) {
     SKIP_UNLESS(roms(), kSkip);
     for (const auto model : {cu59::ModelId{cu59::kTI59}, cu59::ModelId{cu59::kTI58}, cu59::ModelId{cu59::kTI58C}}) {
         SwiftRig s(model);
         const shell::ShellInputs in = s.inputs();
-        for (const shell::Traits t : {macTraits(), iosTraits()}) {
-            const auto ms = shell::menus(in, product(), t);
+        {
+            const auto ms = shell::menus(in, product(), swiftTraits());
             CHECK_EQ(ms.size(), std::size_t{3});
             if (ms.size() != 3) continue;
             CHECK_EQ(ms[0].label, std::string("File"));
@@ -150,43 +150,32 @@ TEST(menus_file_machine_help_in_order) {
     }
 }
 
-// The shortcuts and the items macOS puts in the application menu.
-TEST(shortcuts_and_roles) {
+// The shortcuts of a hardware keyboard; no About and no Quit.
+TEST(shortcuts_no_about_no_quit) {
     SKIP_UNLESS(roms(), kSkip);
     SwiftRig s;
-    const auto ms = shell::menus(s.inputs(), product(), macTraits());
+    const auto ms = shell::menus(s.inputs(), product(), swiftTraits());
     using S = shell::MenuItem::Shortcut;
-    using R = shell::MenuItem::Role;
     const auto* load = shell::findItem(ms, "load-preset");
     const auto* reset = shell::findItem(ms, "reset");
     const auto* cold = shell::findItem(ms, "cold-boot");
     CHECK(load && load->shortcut == S::LoadPreset);
     CHECK(reset && reset->shortcut == S::Reset);
     CHECK(cold && cold->shortcut == S::ColdBoot);
-    // Settings…, Quit and About carry the roles the app menu takes them by.
-    const auto* settings = shell::findItem(ms, shell::actions::kSettings);
-    const auto* quit = shell::findItem(ms, shell::actions::kQuit);
-    const auto* about = shell::findItem(ms, shell::actions::kAbout);
-    CHECK(settings && settings->role == R::Preferences);
-    CHECK(quit && quit->role == R::Quit);
-    CHECK(about && about->role == R::About);
-    // iOS: no About and no Quit.
-    const auto ios = shell::menus(s.inputs(), product(), iosTraits());
-    CHECK(shell::findItem(ios, shell::actions::kAbout) == nullptr);
-    CHECK(shell::findItem(ios, shell::actions::kQuit) == nullptr);
+    CHECK(shell::findItem(ms, shell::actions::kAbout) == nullptr);
+    CHECK(shell::findItem(ms, shell::actions::kQuit) == nullptr);
 }
 
 // The bar per model: the model picker first, the
 // picker of slot-1 with the 14 modules and None, the button PC-100C, the
-// card controls on the TI-59 only; on macOS no Reset and no Preset.
+// card controls on the TI-59 only.
 TEST(control_bar_per_model) {
     SKIP_UNLESS(roms(), kSkip);
     using K = shell::BarControl::Kind;
     for (const auto model : {cu59::ModelId{cu59::kTI59}, cu59::ModelId{cu59::kTI58}, cu59::ModelId{cu59::kTI58C}}) {
         SwiftRig s(model);
-        const auto bar = shell::bar(s.inputs(), product(), macTraits());
-        const auto ks = kinds(bar);
-        CHECK(!ks.empty() && ks[0] == K::ModelPicker);
+        const auto bar = shell::bar(s.inputs(), product(), swiftTraits());
+        CHECK(control(bar, K::ModelPicker) != nullptr);
         const auto* slot = control(bar, K::SlotPicker, "slot-1");
         CHECK(slot != nullptr);
         if (slot) {
@@ -196,8 +185,6 @@ TEST(control_bar_per_model) {
         const auto* printer = control(bar, K::PlaceButton, "printer");
         CHECK(printer && printer->label == "PC-100C");
         CHECK((control(bar, K::Media, "card-reader") != nullptr) == (model == cu59::ModelId{cu59::kTI59}));
-        CHECK(control(bar, K::Action) == nullptr);   // Reset and Preset are menu items
-        CHECK(control(bar, K::More) == nullptr);
     }
 }
 
@@ -208,7 +195,7 @@ TEST(more_holds_examples_cold_boot_resume_help) {
     using K = shell::BarControl::Kind;
     SwiftRig s;
     const auto in = s.inputs();
-    const auto bar = shell::bar(in, product(), iosTraits());
+    const auto bar = shell::bar(in, product(), swiftTraits());
     CHECK(control(bar, K::Action, "reset") != nullptr);
     CHECK(control(bar, K::Action, shell::actions::kLoadPreset) != nullptr);
     CHECK(control(bar, K::Action, shell::actions::kSettings) != nullptr);
@@ -216,7 +203,7 @@ TEST(more_holds_examples_cold_boot_resume_help) {
     CHECK(more != nullptr);
     if (!more) return;
     CHECK((ids(more->choices) == std::vector<std::string>{"examples", "cold-boot", "resume", shell::actions::kHelp}));
-    const auto more2 = shell::moreItems(shell::menus(in, product(), iosTraits()), product());
+    const auto more2 = shell::moreItems(shell::menus(in, product(), swiftTraits()), product());
     CHECK(ids(more2) == ids(more->choices));
 }
 
@@ -224,7 +211,7 @@ TEST(more_holds_examples_cold_boot_resume_help) {
 TEST(cold_boot_asks_first) {
     SKIP_UNLESS(roms(), kSkip);
     SwiftRig s;
-    const auto more = shell::moreItems(shell::menus(s.inputs(), product(), iosTraits()), product());
+    const auto more = shell::moreItems(shell::menus(s.inputs(), product(), swiftTraits()), product());
     const shell::MenuItem* cold = nullptr;
     for (const auto& i : more)
         if (i.id == "cold-boot") cold = &i;
@@ -256,7 +243,7 @@ TEST(more_follows_the_control_state) {
     auto more = [&] {
         shell::ShellInputs in = s.inputs();
         in.presetList = list;
-        return shell::moreItems(shell::menus(in, product(), iosTraits()), product());
+        return shell::moreItems(shell::menus(in, product(), swiftTraits()), product());
     };
     CHECK(exampleEnabled(more()));
     // An operation: a preset that waits a while.
@@ -272,9 +259,9 @@ TEST(more_follows_the_control_state) {
     CHECK(exampleEnabled(more()));
 }
 
-// The settings dialog of macOS and of iOS, drawn from the
-// settings topic of SettingsPart (the iOS [window] row included).
-TEST(settings_spec_macos_and_ios) {
+// The settings dialog, drawn from the settings topic of SettingsPart (the
+// [window] row included).
+TEST(settings_spec) {
     SKIP_UNLESS(roms(), kSkip);
     SwiftRig s;
     const auto in = s.inputs();
@@ -287,10 +274,6 @@ TEST(settings_spec_macos_and_ios) {
         }
         return out;
     };
-    CHECK_EQ(describe(cu59::ShellFrontend::SwiftMac),
-             std::string("General: Startup model Version 3.0.0 (test);Startup presets: TI-59 TI-58 TI-58C;"
-                         "Folders: Presets folder ASM overlay folder;"
-                         "Display: Segment Style;Tracing: Save Location Trace folder Maximum file size (MB);"));
     CHECK_EQ(describe(cu59::ShellFrontend::SwiftIOS),
              std::string("General: Startup model Version 3.0.0 (test);Startup presets: TI-59 TI-58 TI-58C;"
                          "Display: Segment Style;Keyboard: Keyboard Feedback;Layout: Debug Page in Portrait;"
@@ -311,7 +294,7 @@ TEST(settings_spec_macos_and_ios) {
                      Value::object({{"section", "display"}, {"key", "led-style"}, {"value", "classic"}})).done);
     CHECK_EQ(s.file.text("display", "led-style"), std::string("classic"));
     // The Solid State Module row is gone: no setting holds it.
-    CHECK(describe(cu59::ShellFrontend::SwiftMac).find("Module") == std::string::npos);
+    CHECK(describe(cu59::ShellFrontend::SwiftIOS).find("Module") == std::string::npos);
 }
 
 // Without a control state there is no bar and no Machine menu;
@@ -319,7 +302,8 @@ TEST(settings_spec_macos_and_ios) {
 TEST(no_bar_no_machine_menu_without_control_state) {
     shell::ShellInputs in;
     in.romsMissing = Value::object({{"text", "Calc-U-59 cannot start."}});
-    for (const shell::Traits t : {macTraits(), iosTraits()}) {
+    {
+        const shell::Traits t = swiftTraits();
         const auto ms = shell::menus(in, product(), t);
         CHECK(shell::findMenu(ms, "machine") == nullptr);
         CHECK(shell::findItem(ms, shell::actions::kHelp) != nullptr);

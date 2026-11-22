@@ -19,7 +19,7 @@ typedef NS_ENUM(NSInteger, TIMenuItemKind) {
     TIMenuItemKindSeparator,
 };
 
-/// The item the platform's own menu holds (macOS's application menu).
+/// The item a platform's own menu holds; the iPad's menu bar leaves those out.
 typedef NS_ENUM(NSInteger, TIMenuRole) {
     TIMenuRoleNone,
     TIMenuRolePreferences,
@@ -134,16 +134,10 @@ typedef NS_ENUM(NSInteger, TIDialogWidget) {
 extern NSString *const TIShellActionLoadPreset;
 extern NSString *const TIShellActionSettings;
 extern NSString *const TIShellActionHelp;
-extern NSString *const TIShellActionAbout;
-extern NSString *const TIShellActionQuit;
 
 @interface TIShell : NSObject
 
 - (instancetype)init NS_UNAVAILABLE;
-
-/// The models with the traits of a window with a menu bar (macOS) or
-/// without one (iOS, iPadOS). Set by platform; the tests flip it.
-@property (nonatomic) BOOL withMenuBar;
 
 /// A control state came (before it, the bar is empty).
 @property (nonatomic, readonly) BOOL started;
@@ -164,12 +158,6 @@ extern NSString *const TIShellActionQuit;
 /// A setting changed, applied and written at once (`set-setting`); nil: its default.
 - (void)setSetting:(NSString *)section key:(NSString *)key value:(nullable NSString *)value
     NS_SWIFT_NAME(setSetting(_:_:value:));
-/// Where the file dialog for a kind of file starts (`[folders] <kind>`: the
-/// fixed folder, else the folder last used, else the home folder).
-- (NSString *)startFolder:(NSString *)kind NS_SWIFT_NAME(startFolder(_:));
-/// After a pick: the file's folder is the kind's folder last used, unless a
-/// fixed one is set (`remember-folder`).
-- (void)rememberFolder:(NSString *)kind ofFile:(NSString *)path NS_SWIFT_NAME(rememberFolder(_:ofFile:));
 
 /// The item by id, depth first, in the menus or the More items.
 - (nullable TIMenuItem *)itemWithID:(NSString *)itemID NS_SWIFT_NAME(item(_:));

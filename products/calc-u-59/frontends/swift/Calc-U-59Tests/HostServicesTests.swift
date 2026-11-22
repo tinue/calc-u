@@ -13,21 +13,12 @@ final class HostServicesTests: XCTestCase {
         return names
     }
 
-    #if os(iOS)
-    func testStatedServicesIOS() throws {
+    func testStatedServices() throws {
         let expected = ["clipboard-text", "clipboard-image", "file-picker", "keep-file", "open-url", "haptics"]
         XCTAssertEqual(Set(TIAppSession.statedHostServices), Set(expected))
         XCTAssertEqual(Set(try offered()), Set(expected))
     }
-    #endif
 
-    #if os(macOS)
-    func testStatedServicesMacOS() throws {
-        let expected = ["clipboard-text", "clipboard-image", "file-picker", "folder-picker", "keep-file", "open-url"]
-        XCTAssertEqual(Set(TIAppSession.statedHostServices), Set(expected))
-        XCTAssertEqual(Set(try offered()), Set(expected))
-    }
-    #endif
 
     /// No audio sink on either: the key click is the frontend's own.
     func testNoAudioSink() throws {

@@ -1,8 +1,8 @@
 #!/bin/sh
 # Builds CalcU59.xcframework: the library, the
 # Calc-U-59 core and the Calc-U-59 app layer from the repository's root
-# CMake project, as one static library per platform -- macOS (arm64,
-# x86_64), iOS devices (arm64), the iOS simulator (arm64, x86_64) -- with
+# CMake project, as one static library per platform -- iOS devices
+# (arm64), the iOS simulator (arm64, x86_64) -- with
 # their headers under calcu59/core/ and calcu59/app/, and the library's
 # (library/**/*.hpp) under their area folders, machine/Machine.hpp
 # among them.
@@ -67,11 +67,10 @@ slice() {  # slice <name> <attach ON|OFF> <cmake args...>
   fi
 }
 
-# Attach exactly in Debug for macOS and the simulator, never for a device or
-# in Release.
+# Attach exactly in Debug for the simulator, never for a device or in
+# Release.
 DEV_ATTACH=OFF
 [ "$CONFIG" = Debug ] && DEV_ATTACH=ON
-slice macos "$DEV_ATTACH" -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=15.6
 slice ios OFF -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_ARCHITECTURES=arm64 \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=18.0
 slice ios-simulator "$DEV_ATTACH" -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator \
@@ -111,7 +110,6 @@ fi
 if [ "$stale" = 1 ]; then
   rm -rf "$XCF"
   xcodebuild -create-xcframework \
-    -library "$TREES/macos/libCalcU59.a" -headers "$HEADERS" \
     -library "$TREES/ios/libCalcU59.a" -headers "$HEADERS" \
     -library "$TREES/ios-simulator/libCalcU59.a" -headers "$HEADERS" \
     -output "$XCF" >/dev/null

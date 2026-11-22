@@ -10,24 +10,18 @@ final class FamilyStructureTests: XCTestCase {
         continueAfterFailure = false
     }
 
-    #if !os(macOS)
     override class func tearDown() {
         XCUIDevice.shared.orientation = .portrait
         super.tearDown()
     }
-    #endif
 
     // MARK: - Helpers
 
     /// The app in its usual layout (iPhone portrait, iPad landscape), attached
     /// and idle.
     private func launch(settings: [String] = []) -> (XCUIApplication, HarnessClient) {
-        #if os(macOS)
-        let app = launchApp(settings: settings)
-        #else
         let app = launchApp(orientation: UIDevice.current.userInterfaceIdiom == .pad ? .landscapeLeft : .portrait,
                             settings: settings)
-        #endif
         let harness = attachHarness()
         waitIdle(harness)
         return (app, harness)
@@ -41,31 +35,19 @@ final class FamilyStructureTests: XCTestCase {
     /// Its OK is found by its label (iOS drops the identifier `notice-ok`
     /// on an alert's button).
     private func notice(_ app: XCUIApplication) -> XCUIElement {
-        #if os(macOS)
-        app.sheets.firstMatch
-        #else
         app.alerts.firstMatch
-        #endif
     }
 
     /// OK of the notice: a tap on iOS; Return on the Mac, where OK is the
     /// sheet's default button and a scripted click does not reach it.
     private func closeNotice(_ app: XCUIApplication) {
-        #if os(macOS)
-        app.typeKey(.return, modifierFlags: [])
-        #else
         notice(app).buttons["OK"].firstMatch.tap()
-        #endif
     }
 
     /// The notice's text that contains `text` (the alert's label on iOS, a
     /// text of the sheet on the Mac).
     private func noticeText(_ app: XCUIApplication, contains text: String) -> XCUIElement {
-        #if os(macOS)
-        notice(app).staticTexts.matching(NSPredicate(format: "value CONTAINS %@", text)).firstMatch
-        #else
         app.alerts.matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
-        #endif
     }
 
     /// A key of the faceplate by its place on the base image (canvas fractions).
@@ -88,14 +70,12 @@ final class FamilyStructureTests: XCTestCase {
         return r.count > 1 ? r[1] : ""
     }
 
-    #if !os(macOS)
     /// The More menu open.
     private func openMore(_ app: XCUIApplication) {
         let more = app.buttons["bar-more"]
         XCTAssertTrue(more.waitForExistence(timeout: 5), "no More button")
         more.tap()
     }
-    #endif
 
     // MARK: - The settings file of a launch
 
@@ -114,22 +94,6 @@ final class FamilyStructureTests: XCTestCase {
 
     func test_the_menus() throws {
         let (app, _) = launch()
-        #if os(macOS)
-        for menu in ["File", "Machine", "Help"] {
-            XCTAssertTrue(app.menuBars.menuBarItems[menu].exists, "no \(menu) menu")
-        }
-        app.menuBars.menuBarItems["File"].click()
-        XCTAssertTrue(app.menuItems["Load Preset…"].exists)
-        XCTAssertTrue(app.menuItems["Examples"].exists)
-        XCTAssertTrue(app.menuItems["Arm Card…"].exists)
-        app.typeKey(.escape, modifierFlags: [])
-        app.menuBars.menuBarItems["Machine"].click()
-        for item in ["Model", "Peripherals", "Reset", "Cold boot", "Resume"] {
-            XCTAssertTrue(app.menuItems[item].exists, "Machine has no \(item)")
-        }
-        XCTAssertFalse(app.menuItems["Resume"].isEnabled, "Resume while running (disabled, not left out)")
-        app.typeKey(.escape, modifierFlags: [])
-        #else
         // Every item on the bar or behind More.
         for id in ["btn-reset", "bar-model", "bar-slot-slot-1", "bar-place-printer", "bar-media-card-reader",
                    "btn-preset", "btn-settings", "bar-more"] {
@@ -141,40 +105,21 @@ final class FamilyStructureTests: XCTestCase {
         }
         XCTAssertFalse(element(app, "more-item-resume").isEnabled, "Resume while running")
         attachScreenshot(app, name: "The More menu")
-        #endif
         app.terminate()
     }
 
     func test_command_r_resets() throws {
         let (app, harness) = launch()
-        #if os(macOS)
-        for key in ["1", "2"] { XCTAssertEqual(harness.command("key \(key)").first, "done") }
-        XCTAssertTrue(lcd(harness).contains("12"))
-        element(app, "faceplate").click()
-        app.typeKey("r", modifierFlags: .command)
-        waitForOperation(harness, timeout: 15)
-        XCTAssertEqual(harness.command("wait 500ms").first, "done 2")
-        XCTAssertFalse(lcd(harness).contains("12"), "Command+R did not reset")
-        #else
         XCTAssertFalse(app.menuBars.firstMatch.exists, "a menu bar on iOS")   // not there
         _ = harness
-        #endif
         app.terminate()
     }
 
     func test_application_menu() throws {
         let (app, _) = launch()
-        #if os(macOS)
-        app.menuBars.menuBarItems.element(boundBy: 1).click()   // the application menu
-        XCTAssertTrue(app.menuItems["About Calc-U-59"].exists)
-        XCTAssertTrue(app.menuItems["Settings…"].exists)
-        XCTAssertTrue(app.menuItems["Quit Calc-U-59"].exists)
-        app.typeKey(.escape, modifierFlags: [])
-        #else
         openMore(app)
         XCTAssertFalse(element(app, "more-item-about").exists, "About on iOS")   // not there
         XCTAssertFalse(element(app, "more-item-quit").exists, "Quit on iOS")
-        #endif
         app.terminate()
     }
 
@@ -183,10 +128,6 @@ final class FamilyStructureTests: XCTestCase {
         for id in ["bar-model", "bar-slot-slot-1", "bar-place-printer", "bar-media-card-reader"] {
             XCTAssertTrue(element(app, id).waitForExistence(timeout: 5), "no \(id) on the bar")
         }
-        #if os(macOS)
-        XCTAssertFalse(app.buttons["btn-reset"].exists, "Reset on the bar on macOS")
-        XCTAssertFalse(app.buttons["btn-preset"].exists, "Preset on the bar on macOS")
-        #else
         // The model picker first, before the module and the printer.
         let model = element(app, "bar-model").frame, slot = element(app, "bar-slot-slot-1").frame
         XCTAssertLessThan(model.minX, slot.minX, "the model picker is not before the module picker")
@@ -198,11 +139,9 @@ final class FamilyStructureTests: XCTestCase {
         waitForOperation(harness, timeout: 15)
         let state = harness.command("state control-state").joined(separator: "\n")
         XCTAssertTrue(state.contains("LE"), "the module did not change: \(state)")
-        #endif
         app.terminate()
     }
 
-    #if !os(macOS)
     /// No magnetic card controls on the TI-58 and TI-58C.
     func test_no_card_controls_on_the_ti58() throws {
         let (app, harness) = launch()
@@ -243,23 +182,16 @@ final class FamilyStructureTests: XCTestCase {
         XCTAssertFalse(lcd(harness).contains("42"), "the cold boot did not happen")
         app.terminate()
     }
-    #endif
 
     // MARK: - The settings
 
     func test_the_settings() throws {
         let (app, harness) = launch()
-        #if os(macOS)
-        app.typeKey(",", modifierFlags: .command)
-        #else
         app.buttons["btn-settings"].tap()
-        #endif
         XCTAssertTrue(element(app, "settings-dialog").waitForExistence(timeout: 5), "no settings")
         var rows = ["setting-startup-model", "setting-preset-TI-59", "setting-preset-TI-58", "setting-preset-TI-58C",
                     "setting-display-led-style", "setting-trace-location", "setting-trace-max-file-size-mb"]
-        #if !os(macOS)
         rows += ["setting-keyboard-feedback", "setting-window-portrait-debug-page"]
-        #endif
         for id in rows {
             // The form is a list: a row further down is there once scrolled to.
             var found = element(app, id).waitForExistence(timeout: 2)
@@ -271,7 +203,6 @@ final class FamilyStructureTests: XCTestCase {
         }
         element(app, "settings-dialog").swipeDown()
         XCTAssertFalse(app.staticTexts["Solid State Module"].exists, "a module row in the settings (the module is chosen on the bar)")
-        #if !os(macOS)
         // A change is applied and written at once.
         let toggle = element(app, "setting-window-portrait-debug-page")
         toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
@@ -286,13 +217,9 @@ final class FamilyStructureTests: XCTestCase {
         attachScreenshot(app, name: "The settings sheet")
         app.buttons["settings-close"].tap()
         XCTAssertTrue(element(app, "settings-dialog").waitForNonExistence(timeout: 5), "Done did not close it")
-        #else
-        _ = harness
-        #endif
         app.terminate()
     }
 
-    #if !os(macOS)
     /// A notice that comes while the settings sheet is open shows over it.
     func test_notice_over_the_settings_sheet() throws {
         let (app, harness) = launch()
@@ -305,7 +232,6 @@ final class FamilyStructureTests: XCTestCase {
         XCTAssertTrue(element(app, "settings-dialog").exists, "the sheet went with the notice")
         app.terminate()
     }
-    #endif
 
     // MARK: - Loading…, notices, Help
 
@@ -329,12 +255,10 @@ final class FamilyStructureTests: XCTestCase {
         print("[loading] Loading… \(shown ? "shown" : "not shown") after \(Date().timeIntervalSince(t0)) s")
         XCTAssertTrue(shown, "no Loading… during a long load")
         // The keys and the bar under and around it still take touches.
-        #if !os(macOS)
         openMore(app)
         XCTAssertTrue(element(app, "more-item-help").waitForExistence(timeout: 3), "the bar took no touch")
         attachScreenshot(app, name: "Loading…")
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)).tap()   // closes the menu
-        #endif
         XCTAssertTrue(loading.waitForNonExistence(timeout: 60), "Loading… stayed")
         app.terminate()
     }
@@ -362,12 +286,6 @@ final class FamilyStructureTests: XCTestCase {
 
     func test_help() throws {
         let (app, _) = launch()
-        #if os(macOS)
-        app.menuBars.menuBarItems["Help"].click()
-        XCTAssertTrue(app.menuItems["Calc-U-59 Help"].exists)
-        XCTAssertTrue(app.menuItems["Calc-U-59 Help"].isEnabled)
-        app.typeKey(.escape, modifierFlags: [])
-        #else
         openMore(app)
         let help = element(app, "more-item-help")
         XCTAssertTrue(help.waitForExistence(timeout: 3))
@@ -376,7 +294,6 @@ final class FamilyStructureTests: XCTestCase {
         XCTAssertTrue(app.wait(for: .runningBackground, timeout: 10) || app.state != .runningForeground,
                       "the help did not open")
         app.activate()
-        #endif
         app.terminate()
     }
 
@@ -394,12 +311,6 @@ final class FamilyStructureTests: XCTestCase {
 
     func test_an_example() throws {
         let (app, harness) = launch()
-        #if os(macOS)
-        app.menuBars.menuBarItems["File"].click()
-        app.menuItems["Examples"].hover()
-        app.menuItems["Programs"].hover()
-        app.menuItems["Sum of N numbers"].click()
-        #else
         openMore(app)
         element(app, "more-item-examples").tap()
         let group = app.buttons["Programs"]
@@ -408,7 +319,6 @@ final class FamilyStructureTests: XCTestCase {
         let sum = app.buttons["Sum of N numbers"]
         XCTAssertTrue(sum.waitForExistence(timeout: 3), "no Sum of N numbers")
         sum.tap()
-        #endif
         waitForOperation(harness, timeout: 60)
         // Its cue card above the keys, in its template.
         let card = element(app, "cue-card")
@@ -435,10 +345,8 @@ final class FamilyStructureTests: XCTestCase {
         XCTAssertEqual(harness.command("key 1 2 3", timeout: 10).first, "done")
         XCTAssertEqual(harness.command("key 2nd Prt", timeout: 10).first, "done")
         XCTAssertEqual(harness.command("wait 2s", timeout: 10).first, "done 2")
-        #if !os(macOS)
         let right = app.buttons["btn-page-right"]
         if right.exists { right.tap() }   // the paged layout: the paper page
-        #endif
         XCTAssertTrue(owner.waitForExistence(timeout: 5))
         XCTAssertEqual(owner.label, "PC-100C")
         element(app, "paper-view-mode").tap()   // the text view
@@ -461,10 +369,8 @@ final class FamilyStructureTests: XCTestCase {
         plug.tap()
         waitForOperation(harness, timeout: 20)
         XCTAssertEqual(element(app, "bar-place-printer").value as? String, "On")
-        #if !os(macOS)
         let right = app.buttons["btn-page-right"]
         if right.exists { right.tap() }   // the paged layout: the paper page
-        #endif
         let owner = element(app, "paper-owner")
         XCTAssertTrue(owner.waitForExistence(timeout: 5))
         for round in 1...3 {
@@ -489,7 +395,6 @@ final class FamilyStructureTests: XCTestCase {
     func test_one_picture_per_layout() throws {
         let (app, _) = launch(settings: ["window.portrait-debug-page=true"])
         attachScreenshot(app, name: "Layout — the window")
-        #if !os(macOS)
         let right = app.buttons["btn-page-right"]
         if right.exists {   // the paged layout: calculator, paper, debugger
             right.tap()
@@ -501,7 +406,6 @@ final class FamilyStructureTests: XCTestCase {
         } else {
             XCTAssertTrue(app.buttons["btn-tab-calculator"].exists, "the wide layout has no debug panel")
         }
-        #endif
         app.terminate()
     }
 }

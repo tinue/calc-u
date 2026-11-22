@@ -20,10 +20,6 @@ struct HostDirs {
     std::string settingsBase;        // Application Support / %APPDATA% / XDG / the Web file system
     std::string saveFolder;          // Swift: iCloud or local Documents; Web: in its file system; Given: the folder; Qt6: empty
     std::string applicationSupport;  // Swift: traces with [trace] location = app-support
-    // Swift macOS: the folder the bookmark grants, asked each time
-    // the trace folder is (at each trace start: the sandbox's
-    // grant is the frontend's); unset or empty: none.
-    std::function<std::string()> chosenTraceFolder;
     // Swift iOS: whether iCloud can be used now (signed in), asked at each
     // trace start where [trace] location = icloud:
     // while it says no, ensure(Folder::Traces) refuses; unset: always.

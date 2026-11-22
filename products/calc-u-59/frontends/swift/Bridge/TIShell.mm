@@ -20,8 +20,6 @@ namespace cs = calcu::sessions;
 NSString *const TIShellActionLoadPreset = @"load-preset";
 NSString *const TIShellActionSettings = @"settings";
 NSString *const TIShellActionHelp = @"help";
-NSString *const TIShellActionAbout = @"about";
-NSString *const TIShellActionQuit = @"quit";
 
 // ── Value objects (type translation only) ────────────────────────────────────
 
@@ -170,11 +168,6 @@ NSInteger keyIndexOf(const std::string &key) {
 - (instancetype)initWithSession:(TIAppSession *)session {
     if ((self = [super init])) {
         _session = session;
-#if TARGET_OS_OSX
-        _withMenuBar = YES;
-#else
-        _withMenuBar = NO;
-#endif
         _scale = std::make_shared<double>(1.0);
         _lastKey = -1;
         // Every TI model has the same 45 keys (cu59::faceplateHitMap).
@@ -186,12 +179,12 @@ NSInteger keyIndexOf(const std::string &key) {
 }
 
 - (shell::Traits)traits {
-    shell::Traits t;   // macOS: {hasQuit, shortcuts, menuBar, settings, about}
-    if (!_withMenuBar) {   // iOS and iPadOS: no menu bar, no About, no Quit
-        t.menuBar = false;
-        t.about = false;
-        t.hasQuit = false;
-    }
+    // The iPhone and the iPad: no menu bar to count on (the bar holds
+    // Reset, Preset, Settings and More), no About, no Quit.
+    shell::Traits t;
+    t.menuBar = false;
+    t.about = false;
+    t.hasQuit = false;
     return t;
 }
 
@@ -239,11 +232,7 @@ NSInteger keyIndexOf(const std::string &key) {
 }
 
 - (NSArray<TIDialogSection *> *)settingsDialog {
-#if TARGET_OS_OSX
-    const auto frontend = cu59::ShellFrontend::SwiftMac;
-#else
     const auto frontend = cu59::ShellFrontend::SwiftIOS;
-#endif
     const auto &p = product();
     const auto spec = cu59::settingsSpec(frontend, shell::about(p).version);
     NSMutableArray *out = [NSMutableArray array];
@@ -301,19 +290,6 @@ NSInteger keyIndexOf(const std::string &key) {
     std::vector<cs::Value::Member> args{{"section", cpp(section)}, {"key", cpp(key)}};
     args.push_back({"value", value ? cs::Value(cpp(value)) : cs::Value()});
     [self sendChecked:cs::Command{shell::commands::kSetSetting, cs::Value(std::move(args))}];
-}
-
-- (NSString *)startFolder:(NSString *)kind {
-    const std::string k = cpp(kind);
-    for (const auto &r : shell::read::elements(self.inputs.settings, "rows"))
-        if (shell::read::text(r, "section") == "folders" && shell::read::text(r, "key") == k)
-            return ns(shell::read::text(r, "inUse"));
-    return @"";
-}
-
-- (void)rememberFolder:(NSString *)kind ofFile:(NSString *)path {
-    const cs::Value args = cs::Value::object({{"kind", cpp(kind)}, {"folder", cpp(path.stringByDeletingLastPathComponent)}});
-    [self sendChecked:cs::Command{shell::commands::kRememberFolder, args}];
 }
 
 - (TIMenuItem *)itemWithID:(NSString *)itemID {

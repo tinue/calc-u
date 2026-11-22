@@ -12,7 +12,6 @@ import XCTest
 ///
 /// Prerequisite: diag.ti59 must be present on "On My iPhone" in the simulator.
 /// The setup-simulator-state-files script installs it.
-#if !os(macOS)
 final class PresetLoadTests: XCTestCase {
 
     override func setUpWithError() throws {
@@ -44,4 +43,3 @@ final class PresetLoadTests: XCTestCase {
         app.terminate()
     }
 }
-#endif

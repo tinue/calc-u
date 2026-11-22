@@ -1,6 +1,5 @@
 import SwiftUI
 
-#if !os(macOS)
 import UIKit
 
 /// Raw UIKit touch tracking, bypassing SwiftUI's `DragGesture`.
@@ -55,4 +54,3 @@ struct UIKitTouchTracker: UIViewRepresentable {
         uiView.onEnded = onEnded
     }
 }
-#endif

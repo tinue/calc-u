@@ -15,26 +15,20 @@ final class ShellBridgeTests: XCTestCase {
     /// File, Machine and Help, in that order, with their items.
     func test_menus_through_the_bridge() throws {
         let t = try started()
-        for withMenuBar in [true, false] {
-            t.session.shell.withMenuBar = withMenuBar
-            let menus = t.session.shell.menus
-            XCTAssertEqual(menus.map(\.label), ["File", "Machine", "Help"])
-            XCTAssertEqual(menus.first?.items.first?.itemID, "load-preset")
-            XCTAssertEqual(menus.dropFirst().first?.items.filter { $0.kind != .separator }.map(\.itemID),
-                           ["model", "peripherals", "reset", "cold-boot", "resume"])
-            XCTAssertEqual(menus.last?.items.first?.label, "Calc-U-59 Help")
-            // The TI-59 has the card items.
-            XCTAssertNotNil(t.session.shell.item("arm-card"))
-        }
-        // Without a menu bar: Reset, Preset, Settings on the bar, the rest behind More.
-        t.session.shell.withMenuBar = false
+        let menus = t.session.shell.menus
+        XCTAssertEqual(menus.map(\.label), ["File", "Machine", "Help"])
+        XCTAssertEqual(menus.first?.items.first?.itemID, "load-preset")
+        XCTAssertEqual(menus.dropFirst().first?.items.filter { $0.kind != .separator }.map(\.itemID),
+                       ["model", "peripherals", "reset", "cold-boot", "resume"])
+        XCTAssertEqual(menus.last?.items.first?.label, "Calc-U-59 Help")
+        // The TI-59 has the card items.
+        XCTAssertNotNil(t.session.shell.item("arm-card"))
+        // Reset, Preset, Settings on the bar, the rest behind More.
         let bar = t.session.shell.bar
         XCTAssertEqual(bar.first?.kind, .action)
         XCTAssertEqual(bar.filter { $0.kind == .action }.compactMap { $0.item?.itemID }, ["reset", "load-preset", "settings"])
         let more = bar.first { $0.kind == .more }
         XCTAssertEqual(more?.choices.filter { $0.kind != .separator }.map(\.itemID), ["examples", "cold-boot", "resume", "help"])
-        t.session.shell.withMenuBar = true
-        XCTAssertEqual(t.session.shell.bar.first?.kind, .modelPicker)   // the model first
     }
 
     /// An entry that is not available now is disabled, with its reason.
@@ -73,7 +67,7 @@ final class ShellBridgeTests: XCTestCase {
         shell.pointerUp(1)
     }
 
-    /// The macOS About panel shows the texts and links of every frontend.
+    /// The About texts and links are the product's, as in every frontend.
     func test_about_texts_are_the_products() {
         XCTAssertEqual(TIShell.aboutLines.first, "Calc-U-59 Calculator Emulation")
         XCTAssertEqual(TIShell.aboutLinks.map { $0.first ?? "" }, ["GitHub", "Support", "Privacy"])
@@ -86,11 +80,7 @@ final class ShellBridgeTests: XCTestCase {
         let t = try started()
         XCTAssertTrue(TestSession.until(5) { !t.session.shell.settingsDialog.isEmpty })
         let titles = t.session.shell.settingsDialog.map(\.title)
-        #if os(macOS)
-        XCTAssertEqual(titles, ["General", "Startup presets", "Folders", "Display", "Tracing"])
-        #else
         XCTAssertEqual(titles, ["General", "Startup presets", "Display", "Keyboard", "Layout", "Tracing"])
-        #endif
         XCTAssertEqual(t.session.shell.setting("display", "led-style"), "modernized")
         t.session.shell.setSetting("display", "led-style", value: "classic")
         XCTAssertTrue(TestSession.until(5) { t.session.shell.setting("display", "led-style") == "classic" })
@@ -98,26 +88,7 @@ final class ShellBridgeTests: XCTestCase {
         XCTAssertTrue(text.contains("led-style = classic"), text)
     }
 
-    /// A loader's start folder: the folder last used after a pick, a fixed
-    /// one over it, and Reset back to the folder last used.
-    func test_start_folder_last_used_and_fixed() throws {
-        let t = try started()
-        XCTAssertTrue(TestSession.until(5) { !t.session.shell.settingsDialog.isEmpty })
-        let used = t.folder.appendingPathComponent("presets-used").path
-        t.session.shell.rememberFolder("presets", ofFile: used + "/a.ti59")
-        XCTAssertTrue(TestSession.until(5) { t.session.shell.startFolder("presets") == used })
-        let fixed = t.folder.appendingPathComponent("presets-fixed").path
-        t.session.shell.setSetting("folders", "presets", value: fixed)
-        XCTAssertTrue(TestSession.until(5) { t.session.shell.startFolder("presets") == fixed })
-        t.session.shell.rememberFolder("presets", ofFile: used + "/b.ti59")   // a pick keeps the fixed folder
-        XCTAssertTrue(TestSession.until(5) { t.session.shell.startFolder("presets") == fixed })
-        t.session.shell.setSetting("folders", "presets", value: nil)   // Reset
-        XCTAssertTrue(TestSession.until(5) { t.session.shell.setting("folders", "presets").isEmpty })
-        XCTAssertEqual(t.session.shell.startFolder("asm-overlays").isEmpty, false, "another kind starts at home")
-    }
-
-    /// Copy of the paper: on macOS two entries, the picture
-    /// first; on iOS one entry with both.
+    /// Copy of the paper: one pasteboard entry with the picture and the text.
     func test_paper_copy_forms() throws {
         let t = try started()
         // The PC-100C into its place (the bar's button), then a feed.
@@ -131,23 +102,11 @@ final class ShellBridgeTests: XCTestCase {
         TestSession.run(0.5)
         t.session.setPrinterControl("ADV", on: false)
         XCTAssertTrue(TestSession.until(10) { t.session.paperLineCount > 0 }, "the feed did not reach the paper")
-        #if os(macOS)
-        NSPasteboard.general.clearContents()
-        #else
         UIPasteboard.general.items = []
-        #endif
         t.session.copyPaper()
-        #if os(macOS)
-        XCTAssertTrue(TestSession.until(10) { (NSPasteboard.general.pasteboardItems?.count ?? 0) > 0 }, "nothing copied")
-        let items = NSPasteboard.general.pasteboardItems ?? []
-        let first = items.first?.types ?? []
-        XCTAssertTrue(first.contains(.tiff) || first.contains(.png), "the picture is not first: \(items.map(\.types))")
-        if items.count > 1 { XCTAssertTrue(items[1].types.contains(.string), "the second entry is not text") }
-        #else
         XCTAssertTrue(TestSession.until(10) { UIPasteboard.general.items.count > 0 }, "nothing copied")
         XCTAssertEqual(UIPasteboard.general.items.count, 1)
         XCTAssertNotNil(UIPasteboard.general.items.first?["public.png"], "no picture in the entry")
-        #endif
     }
 
     /// "Loading…" while an operation runs at full
@@ -160,19 +119,6 @@ final class ShellBridgeTests: XCTestCase {
         XCTAssertTrue(TestSession.until(120) { !t.session.shell.loadingShown }, "Loading… stayed")
     }
 
-    #if os(macOS)
-    /// Swift on macOS: a host key reaches the machine through
-    /// the session's typing; the key it presses is held (`held-keys`).
-    func test_host_key_reaches_the_machine() throws {
-        let t = try started()
-        TestSession.run(0.5)
-        t.session.hostKeyDownPhysical("1", named: "", produced: 0x31, carried: 0, shift: false, control: false,
-                                      alt: false, command: false)
-        XCTAssertTrue(TestSession.until(5) { t.session.heldKey == 7 * 5 + 1 }, "the host key 1 does not hold the key 1")
-        t.session.hostKeyUpPhysical("1")
-        XCTAssertTrue(TestSession.until(5) { t.session.heldKey == -1 }, "the key 1 stayed down")
-    }
-    #endif
 
     /// An on-screen key goes through the typing engine,
     /// its minimum hold included: a press let go at once still holds the key.

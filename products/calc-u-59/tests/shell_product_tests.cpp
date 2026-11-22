@@ -102,8 +102,8 @@ TEST(settings_spec_per_frontend_and_layout) {
     // No Solid State Module row.
     for (const auto& s : qt.sections)
         for (const auto& r : s.rows) CHECK(r.key != "module");
-    // The Mac's file dialogs start in the loaders' folders; the iOS importer
-    // takes no start folder, the Web has no folders.
+    // The desktop's file dialogs start in the loaders' folders; the iOS
+    // importer takes no start folder, the Web has no folders.
     auto folders = [](const shell::DialogSpec& spec) {
         std::string out;
         for (const auto& s : spec.sections)
@@ -111,7 +111,6 @@ TEST(settings_spec_per_frontend_and_layout) {
                 for (const auto& r : s.rows) out += r.key + " ";
         return out;
     };
-    CHECK_EQ(folders(cu59::settingsSpec(F::SwiftMac, "")), std::string("presets asm-overlays "));
     CHECK_EQ(folders(qt), std::string("presets asm-overlays "));
     CHECK_EQ(folders(cu59::settingsSpec(F::SwiftIOS, "")), std::string());
     CHECK_EQ(folders(cu59::settingsSpec(F::WebWide, "")), std::string());

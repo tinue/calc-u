@@ -3,7 +3,3 @@
 # CalcU59NoPlatformSettings). One entry per line: `<path under
 # frontends/>: <text of the line>`.
 
-# The security-scoped bookmark macOS grants for a trace folder the user
-# chose: a grant by macOS, not a preference. The only thing a
-# frontend keeps outside the settings file.
-swift/App/AppSettings.swift: forKey: traceFolderBookmarkKey

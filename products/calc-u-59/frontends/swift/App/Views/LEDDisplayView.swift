@@ -145,8 +145,8 @@ struct LEDDisplayView: View, Equatable {
 }
 
 private extension NSValue {
-    /// The boxed CGPoint (TIViewRules boxes points with @encode(CGPoint)); works on
-    /// macOS and iOS alike, unlike pointValue / cgPointValue.
+    /// The boxed CGPoint (TIViewRules boxes points with @encode(CGPoint)), read
+    /// through getValue as the bridge boxed it.
     var cgPoint: CGPoint {
         var p = CGPoint.zero
         getValue(&p, size: MemoryLayout<CGPoint>.size)

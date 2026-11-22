@@ -88,8 +88,8 @@ TEST(settings_declaration) {
     CHECK(accepts("display", "led-style", "modernized") && accepts("display", "led-style", "classic"));
     CHECK(!accepts("display", "led-style", "1"));
     for (const char* v : {"off", "haptic", "click"}) CHECK(accepts("keyboard", "feedback", v));
-    for (const char* v : {"app-support", "icloud", "folder"}) CHECK(accepts("trace", "location", v));
-    CHECK(!accepts("trace", "location", "local"));
+    for (const char* v : {"app-support", "icloud"}) CHECK(accepts("trace", "location", v));
+    CHECK(!accepts("trace", "location", "local") && !accepts("trace", "location", "folder"));
 
     // The settings file reads and writes those keys by the declaration.
     TestSettings t;
@@ -102,8 +102,6 @@ TEST(settings_declaration) {
     CHECK(f.text("storage", "save-folder").empty() && f.text("trace", "folder").empty());
     for (const char* m : {kTI59, kTI58, kTI58C}) CHECK(cs::startupPreset(f, m).empty());
     CHECK(!f.boolean("window", "portrait-debug-page"));
-    f.set("trace", "location", "folder");
-    CHECK_EQ(f.text("trace", "location"), std::string("folder"));
     f.set("trace", "location", "icloud");
     CHECK_EQ(f.text("trace", "location"), std::string("icloud"));
     f.set("trace", "max-file-size-mb", "12");
@@ -206,10 +204,9 @@ TEST(no_key_holds_a_module) {
     CHECK(!s59::settingsDecl().find("startup", "solid-state-module"));
 }
 
-// Swift's trace location is Application Support (the default),
-// iCloud (the save folder) or a chosen folder: the one the bookmark grants,
-// passed in, else [trace] folder, else Application Support.
-TEST(trace_location_app_support_icloud_folder) {
+// Swift's trace location is Application Support (the default) or iCloud
+// (the save folder); [trace] folder is the Qt6 frontend's and changes neither.
+TEST(trace_location_app_support_or_icloud) {
     TestSettings t;
     cs::HostDirs dirs;
     dirs.frontend = cs::FrontendKind::Swift;
@@ -225,12 +222,10 @@ TEST(trace_location_app_support_icloud_folder) {
     }
     t.file.set("trace", "location", "icloud");
     CHECK(cs::Paths(t.file, dirs).traceFolder() == dirs.saveFolder);
-    t.file.set("trace", "location", "folder");
-    CHECK(cs::Paths(t.file, dirs).traceFolder() == dirs.applicationSupport);  // no folder chosen
     t.file.set("trace", "folder", "/Users/u/Traces");
-    CHECK(cs::Paths(t.file, dirs).traceFolder() == std::optional<std::string>("/Users/u/Traces"));
-    dirs.chosenTraceFolder = [] { return std::string("/Volumes/Granted/Traces"); };  // the bookmark's folder
-    CHECK(cs::Paths(t.file, dirs).traceFolder() == std::optional<std::string>("/Volumes/Granted/Traces"));
+    CHECK(cs::Paths(t.file, dirs).traceFolder() == dirs.saveFolder);
+    t.file.set("trace", "location", "app-support");
+    CHECK(cs::Paths(t.file, dirs).traceFolder() == dirs.applicationSupport);
     // The save folder override is ignored outside Qt6.
     t.file.set("storage", "save-folder", "/elsewhere");
     CHECK_EQ(cs::Paths(t.file, dirs).saveFolder(), dirs.saveFolder);

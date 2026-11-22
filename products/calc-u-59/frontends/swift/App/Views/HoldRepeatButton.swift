@@ -33,8 +33,7 @@ struct HoldRepeatButton: View {
                         isPressing = true
                         action()                      // immediate first step
                         // Register in .common modes so the timer keeps firing
-                        // while the mouse button is held on macOS (the run loop
-                        // is in event-tracking mode during a press).
+                        // while the run loop tracks the press.
                         let t = Timer(timeInterval: repeatInterval, repeats: true) { _ in
                             action()
                         }

@@ -1,7 +1,7 @@
 #!/bin/sh
 # CTest CalcU59OpenWithTypes: the
 # file types the apps are opened with by the file manager are today's three
-# preset extensions, on macOS (the Swift app's and the Qt6 app's Info.plist),
+# preset extensions, on macOS (the Qt6 app's Info.plist),
 # Windows (the installer) and Linux (the desktop entry), and no other. Run from the product directory (CTest does).
 set -e
 R=frontends/qt6/resources
@@ -10,7 +10,7 @@ for f in $R/macos/Info.plist.in $R/windows/calc-u-59.iss $R/linux/calc-u-59.desk
   [ -f "$f" ] || fail "$f is missing"
 done
 
-for plist in $R/macos/Info.plist.in frontends/swift/Calc-U-59-Info.plist; do
+for plist in $R/macos/Info.plist.in; do
   mac=$(awk '/<key>CFBundleTypeExtensions<\/key>/ { found = 1; next }
              found && /<\/array>/ { exit }
              found && /<string>/ { s = $0; sub(/.*<string>/, "", s); sub(/<\/string>.*/, "", s); print s }' \

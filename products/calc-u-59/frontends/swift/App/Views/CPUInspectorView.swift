@@ -252,10 +252,8 @@ struct CPUInspectorView: View {
             }
             .focusable()
             .focused($isFocused)
-            // Focus is taken on click, not on appear: this panel is visible
-            // alongside the calculator on macOS, and grabbing first responder here
-            // would silently divert every physical keypress away from the
-            // calculator's keyboard input (see KeyboardView's PhysicalKeyboardModifier).
+            // Focus is taken on a tap, not on appear: the arrow keys of an
+            // iPad's keyboard step the list only once it was chosen.
             .onTapGesture { isFocused = true }
             .onAppear {
                 // Gate CPU tracing + snapshot building on panel visibility.
@@ -446,7 +444,7 @@ struct CPUInspectorView: View {
             }
             .frame(height: rows * cellSize)
             .background(Color(white: 0.13))
-            // macOS pointer hover and iPadOS pointer device.
+            // An iPad's pointer device.
             .onContinuousHover { phase in
                 switch phase {
                 case .active(let location): heatmapHoveredAddress = addressAt(location)

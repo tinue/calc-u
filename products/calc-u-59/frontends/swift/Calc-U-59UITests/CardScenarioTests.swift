@@ -12,12 +12,10 @@ final class CardScenarioTests: XCTestCase {
         continueAfterFailure = false
     }
 
-    #if !os(macOS)
     override class func tearDown() {
         XCUIDevice.shared.orientation = .portrait
         super.tearDown()
     }
-    #endif
 
     private static let head = "format-version: 2\nmodel: TI-59\nslot-1: { name: ML }\nprinter: PC-100C\n"
     /// Lbl A 1 2 3 R/S: A shows 123.
@@ -32,11 +30,7 @@ final class CardScenarioTests: XCTestCase {
     }
 
     private func launch() -> (XCUIApplication, HarnessClient) {
-        #if os(macOS)
-        let app = launchApp()
-        #else
         let app = launchApp(orientation: .portrait)
-        #endif
         let harness = attachHarness()
         waitIdle(harness)
         return (app, harness)

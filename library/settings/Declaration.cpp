@@ -135,8 +135,8 @@ KeyDecl traceMaxFileSizeMb() {
 }
 KeyDecl traceLocation() {
     KeyDecl d = key("trace", "location", ValueKind::Choice, "app-support",
-                    "Where traces go: app-support, icloud or folder ([trace] folder; Swift only).");
-    d.choices = {"app-support", "icloud", "folder"};
+                    "Where traces go: app-support or icloud (Swift only).");
+    d.choices = {"app-support", "icloud"};
     return d;
 }
 KeyDecl serialLinkFolder() {

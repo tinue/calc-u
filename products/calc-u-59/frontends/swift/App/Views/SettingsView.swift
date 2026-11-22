@@ -1,10 +1,6 @@
 import SwiftUI
-#if os(macOS)
-import AppKit
-#endif
 
-/// The settings: macOS's settings window of
-/// the app, iOS's sheet whose one button is Done. The sections and rows are
+/// The settings: a sheet whose one button is Done. The sections and rows are
 /// the library's dialog model (`TIShell.settingsDialog` over
 /// `cu59::settingsSpec`, the values of the `settings` topic, the startup
 /// presets of the preset list); a change is `set-setting`, applied and
@@ -12,17 +8,9 @@ import AppKit
 /// it.
 struct SettingsView: View {
     @Environment(EmulatorViewModel.self) var viewModel
-    #if !os(macOS)
     @Environment(\.dismiss) private var dismiss
-    #endif
-    @State private var authRefresh = UUID()
 
     var body: some View {
-        #if os(macOS)
-        form
-            .frame(minWidth: 460, minHeight: 540)
-            .padding()
-        #else
         NavigationStack {
             form
                 .navigationTitle("Settings")
@@ -37,11 +25,6 @@ struct SettingsView: View {
         }
         .frame(maxHeight: .infinity)
         .noticeAlert(viewModel)
-        #endif
-    }
-
-    private var traceLocation: String {
-        viewModel.settingsSections.flatMap(\.rows).first { $0.section == "trace" && $0.key == "location" }?.value ?? ""
     }
 
     private var form: some View {
@@ -81,46 +64,6 @@ struct SettingsView: View {
                 .frame(width: 90)
                 .accessibilityIdentifier(id)
             }
-        case .folder where row.section == "folders":
-            // Where a loader's file dialog starts (macOS): the folder last
-            // used, or one chosen here; Reset goes back to the folder last used.
-            VStack(alignment: .leading, spacing: 4) {
-                Text(row.label)
-                HStack {
-                    Text(row.shown == "~" ? "The folder last used" : row.shown)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.head)
-                        .accessibilityIdentifier("\(id)-shown")
-                    Spacer()
-                    Button("Choose…") { chooseStartFolder(row) }
-                        .accessibilityIdentifier(id)
-                    Button("Reset") { viewModel.setSetting(row.section, row.key, nil) }
-                        .disabled(!row.resettable)
-                        .accessibilityIdentifier("\(id)-reset")
-                }
-            }
-        case .folder:
-            // The trace folder of `[trace] location = folder` (macOS).
-            if row.section != "trace" || traceLocation == "folder" {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(row.shown.isEmpty ? "No folder chosen" : row.shown)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.head)
-                        Spacer()
-                        Button("Choose…") { chooseFolder() }
-                            .accessibilityIdentifier(id)
-                    }
-                    if AppSettings.traceFolderNeedsReauthorization(path: row.value) {
-                        Text("This folder needs to be authorized again. Click Choose… to allow trace files there.")
-                            .foregroundStyle(.orange)
-                            .font(.caption)
-                            .id(authRefresh)
-                    }
-                }
-            }
         case .text:
             HStack {
                 Text(row.label)
@@ -146,36 +89,6 @@ struct SettingsView: View {
                 .accessibilityIdentifier(id)
             }
         }
-    }
-
-    /// A loader's start folder: only where its dialog starts, so no grant is
-    /// kept (the open panel reaches any folder).
-    private func chooseStartFolder(_ row: TIDialogRow) {
-        #if os(macOS)
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.message = "Choose the \(row.label.lowercased())"
-        panel.directoryURL = viewModel.startFolder(row.key)
-        if panel.runModal() == .OK, let url = panel.url {
-            viewModel.setSetting(row.section, row.key, url.path)
-        }
-        #endif
-    }
-
-    private func chooseFolder() {
-        #if os(macOS)
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.message = "Choose a folder for CALCU59_TRACE.bin"
-        if panel.runModal() == .OK, let url = panel.url {
-            viewModel.chooseTraceFolder(url)   // [trace] folder, and the security-scoped bookmark
-            authRefresh = UUID()
-        }
-        #endif
     }
 }
 

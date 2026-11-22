@@ -20,9 +20,9 @@ inline constexpr const char* kItemArmCard = "arm-card";
 inline constexpr const char* kItemArmFreshCard = "arm-fresh-card";
 inline constexpr const char* kCardReaderPlace = "card-reader";
 
-// The settings dialog differs by frontend and layout; the Swift frontend's
-// on macOS and on iOS and iPadOS.
-enum class ShellFrontend { Qt6, WebWide, WebPortrait, SwiftMac, SwiftIOS };
+// The settings dialog differs by frontend and layout; SwiftIOS is the Swift
+// frontend's (iPhone and iPad).
+enum class ShellFrontend { Qt6, WebWide, WebPortrait, SwiftIOS };
 
 // The [window] key of the Swift frontend's iOS settings, which the shell's
 // SettingsPart shows only when the frontend asks

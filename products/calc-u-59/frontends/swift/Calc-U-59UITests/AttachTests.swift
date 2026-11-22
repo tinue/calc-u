@@ -94,7 +94,6 @@ final class AttachTests: XCTestCase {
         while Date() < end, harness.line(timeout: end.timeIntervalSinceNow) != nil {}
     }
 
-    #if os(iOS)
     /// Home sends suspend and the session thread stops calling; back in
     /// front it calls again. iOS may stop the process once the suspend is
     /// carried out (its background task ends then); a reply that comes while
@@ -171,5 +170,4 @@ final class AttachTests: XCTestCase {
         harness.send("quit")
         app.terminate()
     }
-    #endif
 }

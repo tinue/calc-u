@@ -1,13 +1,10 @@
 import XCTest
-#if os(iOS)
 import UIKit
-#endif
 
 /// While the session thread is busy for whole calls (full speed, a program
 /// running), the main thread keeps its frames, and a key command sent then is
 /// answered when the call is over. The probe is in the test bundle, not the
-/// app (the app has no probe): a display link on iOS, a 60 Hz timer on
-/// macOS, on the host app's main thread.
+/// app (the app has no probe): a display link on the host app's main thread.
 final class FrameGapTests: XCTestCase {
 
     /// An endless loop, started with the A key (the spike's busy-loop.ti59).
@@ -29,7 +26,6 @@ final class FrameGapTests: XCTestCase {
     private final class Probe: NSObject {
         private(set) var gaps: [Double] = []
         private var last: CFTimeInterval = 0
-        #if os(iOS)
         private var link: CADisplayLink?
         func start() {
             link = CADisplayLink(target: self, selector: #selector(tick(_:)))
@@ -37,15 +33,6 @@ final class FrameGapTests: XCTestCase {
         }
         @objc private func tick(_ l: CADisplayLink) { record(l.timestamp) }
         func stop() { link?.invalidate() }
-        #else
-        private var timer: Timer?
-        func start() {
-            let t = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in self?.record(CACurrentMediaTime()) }
-            RunLoop.main.add(t, forMode: .common)
-            timer = t
-        }
-        func stop() { timer?.invalidate() }
-        #endif
         private func record(_ t: CFTimeInterval) {
             if last > 0 { gaps.append((t - last) * 1000) }
             last = t

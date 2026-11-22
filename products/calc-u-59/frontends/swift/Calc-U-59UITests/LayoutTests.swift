@@ -21,12 +21,10 @@ final class LayoutTests: XCTestCase {
 
     /// Leave the simulator in portrait after all tests complete so the next run
     /// starts in the expected orientation without a rotation dance.
-    #if !os(macOS)
     override class func tearDown() {
         XCUIDevice.shared.orientation = .portrait
         super.tearDown()
     }
-    #endif
 
     // MARK: - ROM files missing
 
@@ -35,9 +33,7 @@ final class LayoutTests: XCTestCase {
     /// lookup's text naming it, in place of the calculator.
     @MainActor
     func testRomMissingShowsMessage() throws {
-        #if !os(macOS)
         XCUIDevice.shared.orientation = .portrait
-        #endif
         let app = XCUIApplication()
         app.launchArguments += ["--settings-file", writeSettingsFile([])]
         app.launchEnvironment["CALCU59_ROM_LEAVE_OUT"] = "TMC0583.txt"
@@ -58,23 +54,12 @@ final class LayoutTests: XCTestCase {
     /// macOS Reset and Load Preset… are in the menus.
     @MainActor
     func testResetButtonVisible() throws {
-        #if os(macOS)
-        let app = launchApp()
-        app.menuBars.menuBarItems["Machine"].click()
-        XCTAssertTrue(app.menuItems["Reset"].waitForExistence(timeout: 5), "Machine ▸ Reset not found")
-        app.typeKey(.escape, modifierFlags: [])
-        app.menuBars.menuBarItems["File"].click()
-        XCTAssertTrue(app.menuItems["Load Preset…"].waitForExistence(timeout: 5), "File ▸ Load Preset… not found")
-        app.typeKey(.escape, modifierFlags: [])
-        #else
         let app = launchApp(orientation: .portrait)
         let button = app.buttons["btn-reset"]
         XCTAssertTrue(button.waitForExistence(timeout: 5), "Reset button not found")
         XCTAssertTrue(button.isHittable, "Reset button exists but is not hittable")
-        #endif
     }
 
-    #if !os(macOS)
     /// The Preset button must be visible and hittable in the card reader bar.
     @MainActor
     func testPresetButtonVisible() throws {
@@ -167,23 +152,17 @@ final class LayoutTests: XCTestCase {
         app.buttons["btn-tab-calculator"].tap()
         XCTAssertTrue(app.buttons["btn-freeze"].waitForExistence(timeout: 2), "CALCULATOR tab didn't open")
     }
-    #endif
 
     // MARK: - Screenshots
 
     /// Portrait screenshot for visual review.
     @MainActor
     func testScreenshotPortrait() throws {
-        #if os(macOS)
-        let app = launchApp()
-        #else
         let app = launchApp(orientation: .portrait)
-        #endif
         _ = app.descendants(matching: .any)["bar-model"].waitForExistence(timeout: 5)
         attachScreenshot(app, name: "Portrait — \(deviceDescription)")
     }
 
-    #if !os(macOS)
     /// Landscape screenshot — important for iPad where the layout switches to
     /// side-by-side mode and the card reader bar must fit without wrapping.
     @MainActor
@@ -192,16 +171,11 @@ final class LayoutTests: XCTestCase {
         _ = app.buttons["btn-preset"].waitForExistence(timeout: 5)
         attachScreenshot(app, name: "Landscape — \(deviceDescription)")
     }
-    #endif
 
     // MARK: - Helpers
 
     private var deviceDescription: String {
-        #if os(macOS)
-        return "macOS"
-        #else
         let device = UIDevice.current
         return "\(device.model) \(device.systemVersion)"
-        #endif
     }
 }

@@ -23,8 +23,8 @@ final class ShellBridgeTests: XCTestCase {
         XCTAssertEqual(menus.last?.items.first?.label, "Calc-U-59 Help")
         // The TI-59 has the card items.
         XCTAssertNotNil(t.session.shell.item("arm-card"))
-        // The model picker first, More last with Load Preset… and
-        // Settings…; the PC-100C on the paper panel.
+        // The model picker first, More last with every menu item under
+        // its heading; the PC-100C on the paper panel.
         let bar = t.session.shell.bar
         XCTAssertEqual(bar.first?.kind, .modelPicker)
         XCTAssertEqual(bar.first?.shown, "59")
@@ -33,7 +33,8 @@ final class ShellBridgeTests: XCTestCase {
         XCTAssertEqual(t.session.shell.paperPlaces.map(\.controlID), ["printer"])
         let more = bar.first { $0.kind == .more }
         XCTAssertEqual(more?.choices.filter { $0.kind != .separator }.map(\.itemID),
-                       ["load-preset", "examples", "settings", "reset", "cold-boot", "resume", "help"])
+                       ["heading-file", "load-preset", "examples", "arm-card", "arm-fresh-card", "settings",
+                        "heading-machine", "model", "peripherals", "reset", "cold-boot", "resume", "heading-help", "help"])
     }
 
     /// An entry that is not available now is disabled, with its reason.

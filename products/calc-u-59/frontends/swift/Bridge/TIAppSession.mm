@@ -424,7 +424,10 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         const auto& decl = cu59::settings::settingsDecl();
         std::optional<std::string> path;
         if (start.settingsFile) path = cpp(start.settingsFile);
-        auto settings = std::make_shared<calcu::shell::HostSettings>(decl, dirs, path);
+        // A settings file the run names (the tests) starts bare, without
+        // the startup presets a fresh install gets.
+        const bool firstValues = !path;
+        auto settings = std::make_shared<calcu::shell::HostSettings>(decl, dirs, path, firstValues);
         st::SettingsFile* file = &settings->file();
         const st::Paths* paths = &settings->paths();
         _settingsProblem = file->problem().empty() ? nil : ns(file->problem());

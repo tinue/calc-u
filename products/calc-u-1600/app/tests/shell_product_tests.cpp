@@ -16,7 +16,7 @@ using sessionfixture::romsPresent;
 
 TEST(shell_product_complete) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    const calcu::shell::ShellProduct p = cu1600::shellProduct("1.0", "test", true);
+    const calcu::shell::ShellProduct p = cu1600::shellProduct("1.0", "test", true, true);
     SessionFixture f;
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         CHECK(model == std::string("PC-1500") ? f.start(model) : f.model(model));
@@ -30,12 +30,12 @@ TEST(shell_product_complete) {
     }
     std::vector<std::string> items;
     for (const auto& i : p.items) items.push_back(i.label);
-    CHECK(items == (std::vector<std::string>{"Load BASIC Program…", "Load Machine Code…", "Host Drive…", "Unmount"}));
-    CHECK(cu1600::shellProduct("1.0", "", false).items.size() == 2);   // no host folders on the Web
+    CHECK(items == (std::vector<std::string>{"Load BASIC Program…", "Load Machine Code…", "Host Drive…", "Unmount", "Trace", "Log Level"}));
+    CHECK(cu1600::shellProduct("1.0", "", false, false).items.size() == 2);   // no host folders and no trace on the Web
 }
 
 TEST(help_address_and_about_texts) {
-    const calcu::shell::ShellProduct p = cu1600::shellProduct("0.9.0", "abc123", true);
+    const calcu::shell::ShellProduct p = cu1600::shellProduct("0.9.0", "abc123", true, true);
     CHECK_EQ(p.helpUrl, std::string("https://calc-u.org/1600/"));
     const calcu::shell::AboutModel a = calcu::shell::about(p);
     CHECK_EQ(a.name, std::string("Calc-U-1600"));
@@ -53,7 +53,7 @@ TEST(help_address_and_about_texts) {
 // exactly {group, id, label, entry}, and no `choices` in the settings spec.
 TEST(calc_u_1600_forms_unchanged) {
     using calcu::sessions::Value;
-    const Value v = calcu::shell::toValue(cu1600::shellProduct("1.0", "", false));
+    const Value v = calcu::shell::toValue(cu1600::shellProduct("1.0", "", false, false));
     std::vector<std::string> keys;
     for (const auto& m : *v.members()) keys.push_back(m.key);
     CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "aboutLinks", "variantLabels", "barModelLabels", "barSpread", "barShortPickers", "presetFilter",

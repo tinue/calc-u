@@ -16,7 +16,7 @@ namespace sessions = calcu::sessions;
 namespace shell = calcu::shell;
 using sessions::Value;
 
-shell::ShellProduct shellProduct(std::string version, std::string build, bool withHostFolders) {
+shell::ShellProduct shellProduct(std::string version, std::string build, bool withHostFolders, bool withTrace) {
     shell::ShellProduct p;
     p.name = "Calc-U-1600";
     p.version = std::move(version);
@@ -58,6 +58,16 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
     if (withHostFolders) {
         p.items.push_back(item(shell::MenuGroup::FileMedia, kItemHostDrive, "Host Drive…", kHostDriveEntry));
         p.items.push_back(item(shell::MenuGroup::FileMedia, kItemUnmountHostDrive, "Unmount", kHostDriveFolderEntry));
+    }
+    if (withTrace) {
+        // The frontend makes Trace a toggle and the levels a choice (their
+        // `checked`, from the session's trace and log-level).
+        p.items.push_back(item(shell::MenuGroup::MachineEnd, kItemTrace, "Trace"));
+        shell::ProductItem log = item(shell::MenuGroup::MachineEnd, kItemLogLevel, "Log Level");
+        log.children = {item(shell::MenuGroup::MachineEnd, kItemLogOff, "Off"),
+                        item(shell::MenuGroup::MachineEnd, kItemLogInfo, "Info (how presets run)"),
+                        item(shell::MenuGroup::MachineEnd, kItemLogDebug, "Debug")};
+        p.items.push_back(std::move(log));
     }
     return p;
 }

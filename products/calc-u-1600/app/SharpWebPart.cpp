@@ -59,7 +59,7 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     // tables Qt6 uses.
     req("c1600.shell-product", [this](const Value&, SessionContext&) {
         return sessions::replyGiven(
-            sessions::valuePayload("c1600.shell-product", Value::object({{"product", calcu::shell::toValue(shellProduct(m_version, "", false))},
+            sessions::valuePayload("c1600.shell-product", Value::object({{"product", calcu::shell::toValue(shellProduct(m_version, "", false, false))},
                                                          {"settingsSpec", calcu::shell::toValue(settingsSpec(false, false))},
                                                          {"chrome", calcu::shell::toValue(sharpChrome())}})));
     });

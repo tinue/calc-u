@@ -30,7 +30,7 @@ the server speaks it is [DAP.md](DAP.md).
   set-up runs only from `configurationDone`, so the client's breakpoints
   are set first.
 - **Traces:** the library's trace session (`trace` command, the
-  INSPECTOR's TRACE button as `trace {button: true}`, a preset's
+  Qt6 frontend's Machine ▸ Trace as `trace {button: true}`, a preset's
   `trace:` step through the library's preset engine) writes the core's
   records (`c1600.trace-records`, `app/SharpTraceRecorder`) into the trace
   folder, limits every trace to `[trace] max-file-size-mb` MiB and says so

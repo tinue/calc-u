@@ -223,7 +223,9 @@ too.
       "Tape:" on the bar (`01-app-overview.png`, `04-tape-recording.png`,
       `04-tape-loading.png`, `05-floppy-picker.png`, `05-slot-picker.png`),
       "Tape name:" (`04-tape-save.png`), "Card YAML" (`01-app-overview.png`,
-      `09-debug-panel.png`), "Reset All" and no Resume
+      `09-debug-panel.png`), the INSPECTOR's one row of pills without TRACE
+      and LOG (`01-app-overview.png`, `09-debug-panel.png`), Machine ▸ Trace
+      and Log Level ▸ (`02-machine-menu.png`), "Reset All" and no Resume
       (`02-machine-menu.png`, `02-rom-menu-pc1500.png`), "Tapes", "Examples
       folder", "Basic folder" (`09-settings.png`).
 - [ ] Glossary warnings: the help tool lists the places in each

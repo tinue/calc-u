@@ -16,10 +16,8 @@ let uiTestAttachPort: UInt16 = 59162
 extension XCTestCase {
 
     /// A settings file for one launch, with these values ("section.key=value"),
-    /// in the runner's temporary folder; the app is given its full path. The
-    /// simulator's app reads it there; the Mac runner is sandboxed, and the
-    /// Mac Debug app may read its temporary folder
-    /// (Calc-U-59-Debug-macOS.entitlements).
+    /// in the runner's temporary folder; the app is given its full path and
+    /// reads it there (the simulator).
     func writeSettingsFile(_ values: [String]) -> String {
         var sections: [String: [String]] = [:]
         var order: [String] = []

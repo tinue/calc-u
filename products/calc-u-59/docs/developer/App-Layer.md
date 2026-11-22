@@ -198,8 +198,8 @@ A Debug build for the simulator opens its session to the harness
 on 127.0.0.1, the port of the launch argument `--attach-port N`, else
 59059 (`openAttach(withArguments:)`); `calcu attach [--port N]` on the Mac
 that runs the simulator drives it, and `Calc-U-59UITests/HarnessClient.swift` from an XCUITest.
-Only the Debug configuration has `com.apple.security.network.server`
-(`Calc-U-59-Debug.entitlements`); Release and device builds have no attach.
+Release and device builds have no attach; the simulator needs no
+entitlement for it, so every configuration signs with `Calc-U-59.entitlements`.
 
 ### Key input
 
@@ -611,7 +611,6 @@ EmulatorViewModel (@Observable, main thread)
 | `ROMLoader.swift` | The ROM lookup over the bundle's resource folder (`TIRomSet`; a "ROMs missing" text in place of the calculator) |
 | `CardStorage.swift` | The save folder (cards, `ti58c.memory.yaml`): iCloud Documents container, else local Documents |
 | `AppSettings.swift` | Where the settings file lives (Application Support), the Debug-only `--settings-file`; the settings themselves are the session's |
-| `AppInfo.swift` | Version; texts and links are `TIShell`'s (`app/TIShellProduct`) |
 | `CueCardContent.swift` | Swift cue-card value type and its `TICueCard` conversion |
 | `Views/CalculatorView.swift` | Root view; the layouts — pages, or side by side with or without the debugger, as `TIViewRules.mobileLayout` (Shared `mobileLayout`) says for the window's size and an active fold (iPhone Duo), with the printer's width (`mobilePrinterWidth`) and a top margin for windows without a top inset (`mobileTopMargin`); the control bar (`ControlBarView`); the notice alert; Load Preset…'s file importer (the preset types, the library's `open`), the settings sheet and the ASM file importer |
 | `Views/ControlBarView.swift` | The control bar from `TIShell.bar`: the model picker, the picker of `slot-1`, the button "PC-100C", the card controls (`CardControls`); Reset, Preset, Settings and More (Cold boot asks first) |
@@ -635,7 +634,7 @@ C++ below them, the library, `core/` and `app/`, comes as
 `CalcU59.xcframework`: the project's aggregate target
 `CalcU59Core`, which the app depends on, runs
 `frontends/swift/build_xcframework.sh`, which builds it with the
-repository's root CMake project for macOS, iOS devices and the iOS
+repository's root CMake project for iOS devices and the iOS
 simulator into `build/xcframework-59/` (Release or Debug, as the Xcode
 build). So every Xcode build is built from the current sources; without
 CMake and Ninja the build stops with an error. The bridge includes the

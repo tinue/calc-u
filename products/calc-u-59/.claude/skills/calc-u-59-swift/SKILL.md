@@ -107,8 +107,8 @@ skill).
    and `open` among them) and the product's `c59 …`.
    A Debug build also takes `--settings-file <path>` (a relative path in the
    app's temporary folder); the app has no other aid for its tests.
-   Release and device builds have no attach (`CALCU_ATTACH` off;
-   `Calc-U-59-Debug.entitlements` is the Debug configuration's only).
+   Release and device builds have no attach (`CALCU_ATTACH` off; one
+   entitlements file, `Calc-U-59.entitlements`, for every configuration).
    `check_no_attach.sh` checks it: `--sources` in Frequent, `--binary` as a
    build phase of every Release and device build, the full build check in
    Longer. The XCFramework phase must keep its declared output, or a Release

@@ -5,8 +5,7 @@ import XCTest
 /// pacing bound (below). Emulated time is read over harness attach
 /// (`ticks`), wall time is the test's own clock. Checkpoint: in the test
 /// plan `PacingCheckpoint`, not in `UIRegressionTests`. On the iOS
-/// simulator; the Mac app is checked by `tests/mac_attach_check.sh`, which
-/// needs no XCUITest runner on macOS.
+/// simulator.
 final class PacingTests: XCTestCase {
     static let port: UInt16 = 59161
 

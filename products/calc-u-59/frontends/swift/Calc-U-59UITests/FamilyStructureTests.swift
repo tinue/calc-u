@@ -1,8 +1,7 @@
 import XCTest
 
-/// The shell's scenarios in the Swift frontend, on iOS
-/// (UIRegressionTests) and on macOS (CalcU59UITestsMac). A row that is "not
-/// there" on a system is a test that finds no such element. The app is
+/// The shell's scenarios in the Swift frontend (UIRegressionTests). A row
+/// that is "not there" is a test that finds no such element. The app is
 /// launched with a settings file of its own and harness attach.
 final class FamilyStructureTests: XCTestCase {
 

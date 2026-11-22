@@ -92,6 +92,8 @@ extension XCTestCase {
     /// For a preset (`preset`: its file name) the start is that preset's own
     /// end line in the log: a busy pair of another operation, such as one the
     /// closing file picker causes, would end the wait before the preset ran.
+    /// The end line is logged at Info, so the caller sets `log-level info`
+    /// before the preset starts (`loadPreset` does).
     func waitForOperation(_ harness: HarnessClient, timeout: TimeInterval, endsPaused: Bool = false,
                           preset: String? = nil) {
         if let preset {
@@ -181,6 +183,9 @@ extension XCTestCase {
         navigateToOnMyIPhone(app, targetFile: file)
         let cell = app.cells.containing(.staticText, identifier: file).firstMatch
         XCTAssertTrue(cell.waitForExistence(timeout: 5), "\(file) not found in file picker")
+        // The preset's end line, which the wait reads, is logged at Info.
+        XCTAssertEqual(harness.command("log-level info", timeout: 10).first?.hasPrefix("done"), true,
+                       "log-level info was refused")
         harness.drain()   // the busy messages before the tap
         cell.tap()
         waitForOperation(harness, timeout: idleTimeout, endsPaused: endsPaused, preset: file)

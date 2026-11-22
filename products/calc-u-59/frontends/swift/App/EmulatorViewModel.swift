@@ -258,6 +258,11 @@ class EmulatorViewModel {
         let made = TIAppSession(roms: romSet, start: start, delegate: platform)
         session = made
         shell = made.shell
+        // A debug tab that appeared before the session (the first start
+        // after installing waits long for iCloud) switched its data on into
+        // nothing: hand its flags over now.
+        if liveDebugEnabled { made.setLiveDebugEnabled(true) }
+        if cpuDebugEnabled { made.setCpuDebugEnabled(true) }
         if let problem = made.settingsProblem { print("[Settings] \(problem)") }
         #if DEBUG && targetEnvironment(simulator)
         // Harness attach: `calcu attach`, the port of --attach-port, else 59059.

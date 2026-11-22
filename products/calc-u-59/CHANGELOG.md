@@ -46,6 +46,7 @@
 - **Debugger** The LOG button sets the level of the whole log: at Off the log keeps what a preset writes on purpose (`elapsed-time: report`) and why a preset stopped; Info adds how a preset is carried out, each step as it is done; Debug adds each write to the registers and the memory. The harness's `c59 log-level` is now `log-level`.
 
 ### Fixes
+- **Debugger** iPhone and iPad: on the first start after installing, the CALCULATOR and CPU tabs show the machine at once; they stayed empty until another tab was chosen.
 - **Keyboard** Qt app: the buttons and pickers of the control bar and the paper panel no longer take the keyboard focus, so Tab no longer moves the focus away from the calculator. <!-- appstore: skip -->
 - **Accuracy** At regular speed the TI-59 and the TI-58C no longer run 0.13% and 0.10% slow.
 - **Keyboard** A second key pressed while another is held no longer releases the first; both reach the calculator, and a key-up releases only its own key. At full speed, one press of Adv no longer feeds many lines, and an elapsed time measured over a full-speed stretch no longer counts the extra time a key was held.

@@ -452,6 +452,38 @@ final class FamilyStructureTests: XCTestCase {
         app.terminate()
     }
 
+    /// A cut empties the dot strip while its bands are in view; the app
+    /// keeps running and prints on the new paper.
+    func test_paper_cut_in_dot_mode() throws {
+        let (app, harness) = launch()
+        let plug = element(app, "bar-place-printer")
+        XCTAssertTrue(plug.waitForExistence(timeout: 5))
+        plug.tap()
+        waitForOperation(harness, timeout: 20)
+        XCTAssertEqual(element(app, "bar-place-printer").value as? String, "On")
+        #if !os(macOS)
+        let right = app.buttons["btn-page-right"]
+        if right.exists { right.tap() }   // the paged layout: the paper page
+        #endif
+        let owner = element(app, "paper-owner")
+        XCTAssertTrue(owner.waitForExistence(timeout: 5))
+        for round in 1...3 {
+            // Several lines, so that more than one band is in view.
+            for n in ["1", "2 2", "3 3 3", "4 4 4 4"] {
+                XCTAssertEqual(harness.command("key \(n) 2nd Prt", timeout: 10).first, "done")
+            }
+            XCTAssertEqual(harness.command("wait 2s", timeout: 10).first, "done 2")
+            element(app, "paper-cut").tap()
+            XCTAssertEqual(harness.command("key CLR 2nd Prt", timeout: 10).first, "done", "round \(round)")
+        }
+        XCTAssertEqual(app.state, .runningForeground, "the app ended after a cut in dot mode")
+        element(app, "paper-view-mode").tap()   // the text view: the last print only
+        let text = element(app, "paper-text")
+        XCTAssertTrue(text.waitForExistence(timeout: 3))
+        XCTAssertFalse(text.label.contains("4444"), "the cut kept the paper: \(text.label)")
+        app.terminate()
+    }
+
     // MARK: - The layouts
 
     func test_one_picture_per_layout() throws {

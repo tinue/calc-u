@@ -27,6 +27,13 @@ flowchart TB
 - **The panels** show what a peripheral puts out, such as the paper of
   a printer ([Peripherals and paper](05-peripherals-and-paper.md)).
 
+The faceplate is always as large as the window allows. The panels go
+where room is left: beside the faceplate in a window wider than it, below
+it in a taller one. Where that room is too small for them, each product
+shows what it can instead (its chapter on the window says what). On a
+computer the view changes as you resize the window; on a phone or tablet,
+as you turn it.
+
 ## The menus
 
 The menus are the same in every product, in this order. An item for

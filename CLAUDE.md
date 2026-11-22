@@ -99,6 +99,15 @@ their mirror `library/web/components/shellModel.js`; the code is the rule.
   `mobileBarMedia`. Places go to More ▸ Peripherals ▸; every other media
   place gets a submenu in File (so in More): its entries, then Name & Save….
 - A place picker's empty entry names its place ("No printer").
+- One view rule for every GUI, `shell::view` (`library/shell/View`, in
+  JS `calcuShellView`): the faceplate as large as the window allows; the
+  room left beside or below it picks the view (panels next to it or
+  underneath) when it takes the panels' minimum (the chrome's
+  `panelsMinWidth`/`panelsMinHeight`), else the product's fallback
+  (Calc-U-59: its pages; Calc-U-1600: the calculator alone, the panels
+  alone on mobile with the room below). Desktop follows its window's
+  size, mobile its rotation; where an app can lock its orientation it is
+  locked to the faceplate's (Calc-U-59: portrait), Calc-U-1600 is not.
 - Look and layout values live in the product's chrome (`app/TIChrome`,
   `app/SharpChrome`, the library's `shell/Chrome`), read by every GUI: Qt
   builds its stylesheets of it, Swift reads it through the bridge, the Web

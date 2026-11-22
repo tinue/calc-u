@@ -9,6 +9,7 @@
 //   calcuShellMenus(inputs, product, traits) → [{id, label, items}]
 //   calcuShellBar(inputs, product, traits) → [{group, controls, pushed}]
 //   calcuShellBarFit(faceplate, withoutLabels, withLabels, room?) → {width, labels}
+//   calcuShellView(inputs) → {side, panelsFit, panelsAlone, faceplateWidth, faceplateHeight, room}
 //   calcuShellMoreItems(menus, product, placesShown?) → the items of the More button
 //   calcuShellPanels(inputs, product) → [{kind, owner, ownerPlace, places}]
 //   calcuShellFamilySections(rows, keysShown) → spec; calcuShellDialog(settings, presetList, spec)
@@ -393,6 +394,31 @@ function calcuShellBarFit(faceplate, withoutLabels, withLabels, room = Infinity)
   return { labels, width: Math.min(room, Math.max(faceplate, labels ? withLabels : withoutLabels)) };
 }
 
+// The view rule (C++ shell::view): the faceplate as large as the window
+// allows, its proportions kept; the room left over lies "beside" it (the
+// window relatively wider) or "below" it, and picks the view. The panels go
+// there only when that room is at least their minimum on that side (0: no
+// panels there); else the product's fallback. On mobile with the room below,
+// panelsAloneOnMobileBelow gives the panels alone.
+// inputs: {width, height, faceplateAspect, fixedWidth, fixedHeight,
+// panelsMinWidth, panelsMinHeight, platform, panelsAloneOnMobileBelow}.
+function calcuShellView(inputs) {
+  const i = inputs;
+  const boxWidth = Math.max(0, i.width - (i.fixedWidth || 0));
+  const boxHeight = Math.max(0, i.height - (i.fixedHeight || 0));
+  const aspect = i.faceplateAspect > 0 ? i.faceplateAspect : 1;
+  const faceplateWidth = Math.min(boxWidth, boxHeight * aspect);
+  const faceplateHeight = faceplateWidth / aspect;
+  const side = boxWidth > boxHeight * aspect ? "beside" : "below";
+  const room = side === "beside" ? boxWidth - faceplateWidth : boxHeight - faceplateHeight;
+  const least = (side === "beside" ? i.panelsMinWidth : i.panelsMinHeight) || 0;
+  return {
+    side, panelsFit: least > 0 && room >= least,
+    panelsAlone: !!i.panelsAloneOnMobileBelow && i.platform === "mobile" && side === "below",
+    faceplateWidth, faceplateHeight, room,
+  };
+}
+
 // A place's control: a module slot's picker (its label "n:" given), a
 // button where one peripheral fits, a picker where several do; null for a
 // place without a control.
@@ -639,7 +665,7 @@ function calcuShellAbout(product) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    calcuShellMenus, calcuShellFindItem, calcuShellBar, calcuShellBarFit, calcuShellPanels, calcuShellFamilySections,
+    calcuShellMenus, calcuShellFindItem, calcuShellBar, calcuShellBarFit, calcuShellView, calcuShellPanels, calcuShellFamilySections,
     calcuShellDialog, calcuShellWithTilde, calcuShellLoading, calcuShellNotices, calcuShellKeyAt,
     calcuShellPointer, calcuShellAbout, calcuShellMoreItems, CALCU_SHELL_LOADING_MS, CALCU_SHELL_COLD_BOOT_QUESTION,
   };

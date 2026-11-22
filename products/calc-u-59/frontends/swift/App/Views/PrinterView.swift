@@ -108,11 +108,14 @@ struct PrinterView: View {
     // MARK: - Dot strip
 
     /// The paper in bands of EmulatorViewModel.paperBandUnits: only the bands
-    /// in view are drawn (LazyVStack).
+    /// in view are drawn (LazyVStack). Each row gets its band as a value: a
+    /// cut empties `paperBands`, and SwiftUI may still update the rows in
+    /// view before the ForEach sees the shorter array, so no row may read
+    /// the array by index.
     private var dotStrip: some View {
         LazyVStack(spacing: 0) {
-            ForEach(viewModel.paperBands.indices, id: \.self) { i in
-                PaperBand(index: i, dots: viewModel.paperBands[i])
+            ForEach(Array(viewModel.paperBands.enumerated()), id: \.offset) { i, dots in
+                PaperBand(index: i, dots: dots)
             }
         }
         .padding(.horizontal, TIViewRules.printerPaperPaddingX)

@@ -32,19 +32,6 @@ and `docs/Process.md` until the closing check at its end has passed.
 
 ### Open items
 
-- **Next to fix: the Mac app crashes when the paper is cut in dot mode**
-  (3.0.0-pre, 2026-11-21, symbolicated with the archive's dSYM): an index
-  out of range in `PrinterView.dotStrip`
-  (`frontends/swift/App/Views/PrinterView.swift:115`). The strip's
-  `ForEach(viewModel.paperBands.indices, id: \.self)` reads
-  `viewModel.paperBands[i]` in its row closure; a paper cut (`.paperCut`
-  in `EmulatorViewModel`, the only place where `paperBands` shrinks, to
-  `[]`) lets SwiftUI update the rows still in view with their old indices
-  before the `ForEach` sees the shorter array. Proposed: give each row its
-  band as a value (`ForEach(Array(paperBands.enumerated()), id: \.offset)
-  { i, dots in … }`), so that no row reads the array by index; and a test
-  that cuts a printed paper in dot mode. Seen: the paper cut by hand, then
-  a preset started that prints.
 - **Next to fix: Load Preset… offers presets only, in every frontend.**
   Like every dedicated item (Load BASIC… and the others), it filters for
   its own kind; only a drop, Open With and a file named at the start take

@@ -140,7 +140,8 @@ the paper alone, without the faceplate (its keys would be too small) and
 without the inspector, and in landscape the faceplate alone. In the browser as in the desktop
 program, the panels are below the faceplate where the window leaves them
 room; in a wide, low window the calculator is alone. The browser can install it as an
-app, which then runs offline.
+app, which then runs offline. A new release takes over at the next start,
+or at once with **Reload** in the banner "A new version is ready.".
 
 A link can choose the model by its name (`model=PC-1500`, `PC-1500A` or
 `PC-1600`) and a bundled preset to start with:

@@ -99,7 +99,7 @@ function buildWebProduct({ web, name, target, engine, worker, files, sources, co
     ["wasm/", [`${engine}.js`, `${engine}.wasm`].map((f) => path.join(engineDir, f))],
     ["vendor/", ["react.production.min.js", "react-dom.production.min.js"].map((f) => path.join(dist.VENDOR, f))],
     ["index.html", path.join(web, "index.html")],
-    ["app/", ["index.html", "app.css", "manifest.json"].map((f) => path.join(web, "app", f))],
+    ["app/", ["index.html", "manifest.json"].map((f) => path.join(web, "app", f))],
     ...files,
   ]);
   dist.writeProductWorker(out, { name, wasm: engine, ...worker });

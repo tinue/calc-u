@@ -90,7 +90,8 @@ similar command in their menu. The installed app is the browser version,
 laid out as the iPhone and iPad app and following the device's rotation.
 It has the TI-59, TI-58 and TI-58C, all fourteen modules, the presets and
 the settings, and runs without a connection once installed. A new
-release takes over at the next start.
+release takes over at the next start, or at once with **Reload** in the
+banner "A new version is ready.".
 
 **Where your files go.** The browser keeps your magnetic cards and the
 TI-58C's constant memory in its storage for the page, from one visit to

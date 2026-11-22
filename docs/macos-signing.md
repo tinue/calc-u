@@ -1,27 +1,32 @@
 # macOS signing and notarization
 
-Both products ship a Mac app signed with the same Apple Developer ID
-(team `7Q3QN9AV9J`), signed with the **Developer ID Application**
+Both products ship their Qt6 app for the Mac, signed with the same Apple
+Developer ID (team `7Q3QN9AV9J`): the **Developer ID Application**
 certificate and the hardened runtime, notarized and stapled, in a `.dmg`.
-Where that happens differs:
+Both are signed in CI, by the `mac-aarch64` job of the product's
+workflow, with the repository secrets below:
 
-| Product | Mac app | Signed | Bundle identifier |
+| Product | Mac app | Workflow | Bundle identifier |
 |---|---|---|---|
-| Calc-U-59 | the Swift app (`products/calc-u-59/frontends/swift/`) | locally, by ReleaseIt's `release` (`build: kind: xcode-dmg` in `products/calc-u-59/release.yaml`, `bin/ExportOptions.plist`: `developer-id`, Xcode's automatic signing) | `ch.erzberger.calcu59` |
-| Calc-U-1600 | the Qt6 app (`products/calc-u-1600/frontends/qt6/`) | in CI, the `mac-aarch64` job of [`.github/workflows/calc-u-1600.yml`](../.github/workflows/calc-u-1600.yml), with the repository secrets below | `ch.erzberger.CalcU1600Qt` (set in `frontends/qt6/CMakeLists.txt`) |
+| Calc-U-59 | `products/calc-u-59/frontends/qt6/` | [`.github/workflows/calc-u-59.yml`](../.github/workflows/calc-u-59.yml) | `ch.erzberger.CalcU59Qt` |
+| Calc-U-1600 | `products/calc-u-1600/frontends/qt6/` | [`.github/workflows/calc-u-1600.yml`](../.github/workflows/calc-u-1600.yml) | `ch.erzberger.CalcU1600Qt` |
 
-Calc-U-59's Qt6 app has no Mac build in CI (`.github/workflows/calc-u-59.yml`):
-on the Mac the Swift app is the product.
+The bundle identifiers are set in each app's `frontends/qt6/CMakeLists.txt`.
+Calc-U-59's iOS app (`products/calc-u-59/frontends/swift/`) goes to the App
+Store through Xcode's own signing (`release ios`), not with these
+certificates.
 
-## The CI job (Calc-U-1600)
+## The CI job
 
-The `mac-aarch64` job:
+Each `mac-aarch64` job builds the `.app`, then:
 
 1. Runs `macdeployqt` on the `.app` (`frontends/qt6/CMakeLists.txt`'s
    `MACOSX_BUNDLE`) to embed the Qt frameworks, so the bundle doesn't
    depend on Homebrew's Qt on the machine that runs it.
-2. Signs the `.app` with the Developer ID Application certificate and the
-   hardened runtime.
+2. Runs the repository's action
+   [`.github/actions/mac-sign-dmg`](../.github/actions/mac-sign-dmg/action.yml),
+   which does the rest. It signs the `.app` with the Developer ID
+   Application certificate and the hardened runtime.
 3. Notarizes and staples the `.app`.
 4. Packages it into a `.dmg` (with an `/Applications` symlink for
    drag-install), then signs, notarizes and staples the `.dmg` too.

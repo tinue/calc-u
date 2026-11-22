@@ -21,7 +21,7 @@
 namespace AppPaths {
 
 // The host folders and the settings file of this run (the Qt6 component
-// set's; the settings base on macOS: macApplicationSupportFolder()):
+// set's; the settings base on macOS: calcu::qt6::macApplicationSupportFolder()):
 // the file is opened at the first use, a problem goes to the log as
 // "Settings: <problem>"; places() for the library's SettingsPart.
 calcu::qt6::HostFolders& folders();

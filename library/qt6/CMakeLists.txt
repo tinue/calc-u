@@ -49,9 +49,11 @@ if(CALCU_ATTACH)
   target_link_libraries(calcu_qt6 PUBLIC Qt6::Network)
 endif()
 # On macOS the picture of `clipboard-image` goes through
-# Cocoa, which keeps its physical size (Qt's clipboard loses it).
+# Cocoa, which keeps its physical size (Qt's clipboard loses it); MacHost
+# holds the host settings both apps apply at their start.
 if(APPLE)
-  target_sources(calcu_qt6 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/MacClipboard.mm)
+  target_sources(calcu_qt6 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/MacClipboard.mm
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/MacHost.mm)
   target_link_libraries(calcu_qt6 PUBLIC "-framework Cocoa")
 endif()
 set_target_properties(calcu_qt6 PROPERTIES AUTOMOC ON)

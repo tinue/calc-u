@@ -56,9 +56,11 @@ output in `tools/build/`.
 ## Frontend Parity (Swift app ↔ Qt6 app ↔ web client)
 
 Three GUIs share `core/` (hardware) and `app/` (everything else that isn't
-drawing): the Swift app (macOS, iOS — the Mac product, with iCloud), the
-Qt6 app (Windows and Linux; its macOS build is for development only, never
-shipped and never built in CI) and the web client (`frontends/web/`, embedded by the
+drawing): the Qt6 app (the desktop app on macOS, Windows and Linux, for
+research: working with the emulation, finding out about the machine,
+writing keycode programs), the Swift app (iPhone and iPad, with iCloud,
+for using the calculator as the real one; its debugger for looking, not
+for program development) and the web client (`frontends/web/`, embedded by the
 website; no iCloud, debugger only side by side (its wide layout, the PWA in
 landscape on a large screen) — its column in
 `docs/developer/Frontend-Parity.md` has the scope). Keep them in step:

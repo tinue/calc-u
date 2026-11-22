@@ -7,6 +7,7 @@
 #include "settings/Paths.hpp"
 #include "settings/PlatformBase.hpp"
 #include "settings/SettingsFile.hpp"
+#include "qt6/MacHost.hpp"
 
 namespace AppPaths {
 
@@ -27,9 +28,15 @@ QString ensured(cs::Folder which) {
 } // namespace
 
 calcu::qt6::HostFolders& folders() {
-    // The development build is not sandboxed: ~/Library/Application Support
-    // on macOS (no folder of its own passed).
-    static calcu::qt6::HostFolders f(cu59::settings::settingsDecl());
+    // On macOS the settings base is the app's Application Support
+    // folder as macOS gives it.
+    static calcu::qt6::HostFolders f(cu59::settings::settingsDecl(),
+#if defined(Q_OS_MACOS)
+                                     [] { return calcu::qt6::macApplicationSupportFolder(); }
+#else
+                                     {}
+#endif
+    );
     return f;
 }
 

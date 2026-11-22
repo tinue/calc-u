@@ -39,13 +39,13 @@ cmake_minimum_required(VERSION 3.21)
 # file for macOS, iOS and the iOS simulator in build/xcframework-59; the
 # Xcode project runs it before every build.
 
-# One minimum for the whole tree, before project(): Calc-U-1600 needs 15.8
-# (its vendored libsharpdx is built for it); the Calc-U-59 Qt build on the
-# Mac is for development only (its Mac product is the Swift app).
+# One minimum for the whole tree, before project(), so both products' Mac
+# apps (the Qt6 builds) need the same macOS: 15.8, which Calc-U-1600's
+# vendored libsharpdx is built for.
 set(CMAKE_OSX_DEPLOYMENT_TARGET "15.8" CACHE STRING "Minimum macOS version")
 
 if(APPLE)
-  # Calc-U-1600's Qt6 app has Objective-C++ sources.
+  # The Qt6 component set and Calc-U-1600's Qt6 app have Objective-C++ sources.
   project(Calc-U LANGUAGES CXX OBJCXX)
 else()
   project(Calc-U LANGUAGES CXX)

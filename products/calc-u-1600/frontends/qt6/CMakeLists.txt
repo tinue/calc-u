@@ -11,8 +11,9 @@ endif()
 # the vendored libsharpdx (SharpDataExchange's .cargo/config.toml) and
 # tools/refresh_sharpdx.sh. C++20 and Homebrew's Qt prefix are the root's too.
 if(APPLE)
-  # MacAppSupport.mm and MacShotSupport.mm need Objective-C++ (the paper's
-  # clipboard path is the Qt6 component set's qt6/MacClipboard.mm).
+  # The screenshot scenarios' MacShotSupport.mm needs Objective-C++ (the
+  # paper's clipboard path and the macOS host settings are the Qt6 component
+  # set's qt6/MacClipboard.mm and qt6/MacHost.mm).
   project(CalcU1600Qt CXX OBJCXX)
 else()
   project(CalcU1600Qt CXX)
@@ -69,9 +70,6 @@ set(CALCU1600_QT_SOURCES
   app/AudioOutput.cpp
   app/debug/DapSocket.cpp
   resources/calc-u-1600.qrc)
-if(APPLE)
-  list(APPEND CALCU1600_QT_SOURCES app/MacAppSupport.mm)
-endif()
 qt_add_executable(CalcU1600Qt
   MACOSX_BUNDLE
   WIN32
@@ -139,6 +137,7 @@ if(APPLE)
     MACOSX_BUNDLE_BUNDLE_VERSION ${APP_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${APP_VERSION}
     MACOSX_BUNDLE_BUNDLE_NAME "Calc-U-1600"
+    MACOSX_BUNDLE_COPYRIGHT "Copyright (C) 2026 Martin Erzberger"
     # Qt's template plus the document types the Dock and Finder open here.
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/Info.plist.in
   )

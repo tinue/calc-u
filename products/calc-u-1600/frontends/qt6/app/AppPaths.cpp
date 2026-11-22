@@ -8,9 +8,7 @@
 #include <optional>
 
 #include "settings/SettingsFile.hpp"
-#ifdef __APPLE__
-#include "MacAppSupport.h"
-#endif
+#include "qt6/MacHost.hpp"
 
 namespace AppPaths {
 
@@ -55,7 +53,7 @@ calcu::qt6::HostFolders& folders() {
     // folder as macOS gives it (inside the container of a sandboxed app).
     static calcu::qt6::HostFolders f(cu1600::settingsDecl(),
 #if defined(Q_OS_MACOS)
-                                     [] { return macApplicationSupportFolder(); }
+                                     [] { return calcu::qt6::macApplicationSupportFolder(); }
 #else
                                      {}
 #endif

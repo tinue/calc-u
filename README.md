@@ -10,7 +10,7 @@ library, and each is released on its own.
 |---|---|---|
 | Machines | Texas Instruments TI-59, TI-58, TI-58C | Sharp PC-1500, PC-1500A, PC-1600 |
 | Peripherals and media | PC-100C printer, magnetic cards, Solid State ROM modules, the TI-58C's constant memory | CE-150 and CE-1600P printer/plotters, CE-158 serial interface, memory modules, CE-1600F floppy disks, cassettes, a host-folder drive |
-| Platforms | macOS, iPhone and iPad (Swift), Windows and Linux (Qt6), the browser (WebAssembly) | macOS, Windows and Linux (Qt6), the browser (WebAssembly) |
+| Platforms | macOS, Windows and Linux (Qt6), iPhone and iPad (Swift), the browser (WebAssembly) | macOS, Windows and Linux (Qt6), the browser (WebAssembly) |
 | Debugger | Calculator and CPU level, traces, ASM overlays | CPU level for the LH5801/LH5803 and Z-80, DAP for VS Code |
 | User guide | <https://calc-u.org/59/> | <https://calc-u.org/1600/> (being built) |
 | Source | [`products/calc-u-59/`](products/calc-u-59/) | [`products/calc-u-1600/`](products/calc-u-1600/) |

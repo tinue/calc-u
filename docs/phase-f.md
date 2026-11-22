@@ -27,8 +27,9 @@ and `docs/Process.md` until the closing check at its end has passed.
 - **ReleaseIt** runs from its unmerged branch `several-products`
   (products with prefixed tags, `branching: trunk`). It has to be merged
   and released in the ReleaseIt repository before the first release.
-- **Notarisation**: the notarytool keychain profile has to exist on the
-  release machine (it was lost once and stored again).
+- **Mac app of Calc-U-59**: the Qt6 DMG from CI, as Calc-U-1600's; the
+  next pre-release has it in place of the Swift app's DMG. In App Store
+  Connect, untick the iPad app's availability on Macs (the user).
 
 ### Open items
 
@@ -225,8 +226,8 @@ repository.
 - [ ] CHANGELOG entry complete (release-notes seed, including its
       "Still to add" items).
 - [ ] The Checkpoint group of Calc-U-59 green.
-- [ ] macOS DMG notarised locally; iOS through TestFlight, then submitted
-      to the App Store.
+- [ ] The macOS DMG from CI opens on a Mac without Homebrew's Qt; iOS
+      through TestFlight, then submitted to the App Store.
 - [ ] `release -C products/calc-u-59 --rc`, then `--release`: tag
       `calc-u-59-v3.0.0`; the GitHub release, not "Latest"; the version
       live in the App Store.

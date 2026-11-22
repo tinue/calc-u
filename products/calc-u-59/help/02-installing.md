@@ -19,24 +19,26 @@ It needs iOS or iPadOS 18 or later. On the iPhone the app stays in
 portrait: the calculator fills the screen, and the printer and the
 debugger are pages you turn with the arrows in the top corners (the
 debugger only with **Settings ▸ Layout ▸ Debug Page in Portrait**). On the
-iPad in landscape the window is laid out as on the Mac
-([The window on each system](02-getting-started.md#the-window-on-each-system)).
+iPad in landscape the calculator, the printer and the debugger are side
+by side ([The window on each system](02-getting-started.md#the-window-on-each-system)).
 Magnetic cards and the TI-58C's constant memory are kept in the app's
-iCloud storage, so they are on your Mac too.
+iCloud storage, so the iPhone and the iPad share them.
 
-## Mac
+## Mac, Windows and Linux
 
-1. Download the DMG of the latest Calc-U-59 release from
-   [GitHub](https://github.com/tinue/calc-u/releases).
+The desktop app is the same on all three systems: the calculators, the
+printer, cards, presets and the debugger, with folders of your own for
+writing and keeping programs.
+
+**Mac**
+
+1. Download `Calc-U-59-mac-aarch64.dmg` from the latest Calc-U-59 release
+   on [GitHub](https://github.com/tinue/calc-u/releases).
 2. Open the DMG and drag Calc-U-59.app to the Applications folder.
 3. Eject the disk image and start the app from Applications.
 
 The app is signed and notarized by Apple, so macOS opens it like any
-other program. It needs macOS 15.6 or later. Magnetic cards and the
-TI-58C's constant memory sync through iCloud with the iPhone and iPad
-app.
-
-## Windows and Linux
+other program. It needs a Mac with Apple silicon and macOS 15.8 or later.
 
 **Windows**
 
@@ -56,21 +58,20 @@ app.
 2. Make it executable (`chmod +x Calc-U-59-*.AppImage`, or the file's
    Properties dialog) and run it. Nothing else needs installing.
 
-The Windows and Linux app has the same calculators, printer, cards,
-presets and debugger as the Mac app.
-
 **Where your files go.** Magnetic cards and the TI-58C's constant memory
 (`ti58c.memory.yaml`) are kept in the save folder, `Calc-U-59` in your
 home folder unless **Settings ▸ Storage ▸ Save folder** names another;
 traces go there too unless **Settings ▸ Tracing** names a trace folder.
 **Settings ▸ Folders** sets the folder **Load Preset…** starts in
-([Settings of this product](08-settings.md)). There is no iCloud on these
-systems: copy the card files across to have them on an Apple device.
+([Settings of this product](08-settings.md)). The desktop app does not use
+iCloud: copy the card files across to have them on an iPhone or iPad.
 
 **Opening presets.** Besides **File ▸ Load Preset…**, you can drop a
-`.ti59`, `.ti58` or `.ti58c` file on the window. On Windows the installer
-makes Calc-U-59 open these files with a double click; on Linux, name the
-file on the command line (`./Calc-U-59-*.AppImage program.ti59`).
+`.ti59`, `.ti58` or `.ti58c` file on the window. On the Mac, the Finder's
+**Open With** offers Calc-U-59 for these files, and a file dropped on its
+Dock icon opens; on Windows the installer makes Calc-U-59 open them with a
+double click; on Linux, name the file on the command line
+(`./Calc-U-59-*.AppImage program.ti59`).
 
 ## Android
 

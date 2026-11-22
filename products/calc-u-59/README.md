@@ -25,7 +25,7 @@ Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_6
 ## Features
 
 - Cycle-accurate TMC0501 CPU emulation
-- Two native apps and a web client on one C++ app layer: Swift for macOS, iOS and iPadOS (with iCloud card sync), Qt6 for Windows and Linux, and the browser (`frontends/web/`, the engine compiled to WebAssembly)
+- Two native apps and a web client on one C++ app layer: Qt6 for macOS, Windows and Linux (the desktop app, for working with the machine and writing programs), Swift for iPhone and iPad (with iCloud card sync, for using the calculator as the real one), and the browser (`frontends/web/`, the engine compiled to WebAssembly)
 - Integrated debugger with register inspection and program memory dump
 - The [harness](docs/developer/Harness.md) (`calcu --product c59`) for scripted access: the machine without a window, CPU state, breakpoints, instruction traces, timing and profiling; the debug panel's interface is the [Debug API](docs/developer/Debug-API.md)
 - Printer trace mode (functional simulation — see limitation below)
@@ -71,7 +71,7 @@ Copyright (C) 2026 Martin Erzberger. Calc-U-59 is free software, licensed
 under the [GNU General Public License, version 3](../../LICENSE) (GPLv3); see
 [NOTICE](NOTICE) for the full copyright notice.
 
-The Windows and Linux app is built on [Qt6](https://www.qt.io/), used under
+The desktop app is built on [Qt6](https://www.qt.io/), used under
 the LGPLv3 — see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for Qt and
 for the `roms/` ROM images, which are third-party copyrighted material not
 covered by this project's license.
@@ -101,9 +101,9 @@ above renders.
 | [`README.md`](README.md) | This file — project overview, features, limitations, and this index. |
 | [`CLAUDE.md`](CLAUDE.md) | Skill-routing table and pointers to the architecture reference docs, for AI coding agents working on Calc-U-59. |
 | [`CHANGELOG.md`](CHANGELOG.md) | Version history, one heading per release. |
-| [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) | Qt6 (LGPLv3) notice for the Windows/Linux app; React and Archivo notices for the web client; status of the `roms/` ROM images. |
+| [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) | Qt6 (LGPLv3) notice for the desktop app; React and Archivo notices for the web client; status of the `roms/` ROM images. |
 | [`TODO.md`](TODO.md) | Unsorted backlog of ideas, bugs, and observations across the core, settings, and UI. |
-| [`release.yaml`](release.yaml) | Release configuration for ReleaseIt: the Mac DMG built locally, the Windows/Linux packages and the web client's zip from CI, the iOS App Store upload. After `release` and `release --rc`, ReleaseIt installs the Mac app from the DMG into /Applications. |
+| [`release.yaml`](release.yaml) | Release configuration for ReleaseIt: the Mac DMG, the Windows/Linux packages, the web client's and the help's zips from CI, the iOS App Store upload. |
 | [`PRIVACY.md`](PRIVACY.md) | App Store privacy policy — Calc-U-59 collects no data and makes no network connections. |
 | [`LICENSE`](../../LICENSE) | GNU General Public License, version 3 (GPLv3). |
 | [`NOTICE`](NOTICE) | Copyright notice for the GPLv3 license. |
@@ -120,7 +120,7 @@ Trigger conditions and workflows for Claude Code when working in specific areas 
 |---|---|
 | [`calc-u-59-core`](.claude/skills/calc-u-59-core/SKILL.md) | Working on the C++ emulation core (`core/`): CPU model, ROM disassembly, mnemonic workflow, trace infrastructure. |
 | [`calc-u-59-app`](.claude/skills/calc-u-59-app/SKILL.md) | Working on the app layer (`app/`, `tests/`, root CMake): rules, adding a module and its Bridge wrapper, golden-file ports. |
-| [`calc-u-59-qt`](.claude/skills/calc-u-59-qt/SKILL.md) | Working on the Qt6 app (`frontends/qt6/`, CI workflow): ship scope (Windows/Linux), class map against the Swift views, threading, build and packaging. |
+| [`calc-u-59-qt`](.claude/skills/calc-u-59-qt/SKILL.md) | Working on the Qt6 app (`frontends/qt6/`, CI workflow): ship scope (macOS, Windows, Linux), class map against the Swift views, threading, build and packaging. |
 | [`calc-u-59-web`](.claude/skills/calc-u-59-web/SKILL.md) | Working on the web client (`frontends/web/`): rules (no logic, location independence, no side effects in render, own styling), build and tests; points to `docs/developer/Web-Client.md`. |
 | [`calc-u-59-pre-release-cleanup`](.claude/skills/calc-u-59-pre-release-cleanup/SKILL.md) | User-invoked release audit: parity, simplification, docs, changelog, screenshots, builds. |
 | [`calc-u-59-swift`](.claude/skills/calc-u-59-swift/SKILL.md) | Working on the Swift/SwiftUI app (`frontends/swift/App/`, `frontends/swift/Bridge/`): view model, bridge, display, keyboard, debug panels, printer, card reader, settings. |

@@ -2,6 +2,7 @@
 #include "EmulatorController.hpp"
 #include "TIFileKinds.hpp"
 #include "qt6/FileOpening.hpp"
+#include "qt6/MacHost.hpp"
 #include "qt6/SessionHost.hpp"
 #include <QApplication>
 #include <QIcon>
@@ -61,12 +62,21 @@ int runPacingProbe(QApplication& app, std::uint16_t port, double seconds) {
 } // namespace
 
 int main(int argc, char* argv[]) {
+#ifdef __APPLE__
+    calcu::qt6::macDisableWindowRestoration(); // the app restores nothing: no reopen prompt
+    calcu::qt6::macDisablePressAndHold();      // held letters stay held keys
+    calcu::qt6::macKeepTimersPrecise();        // real-time pace in the background
+#endif
     QApplication app(argc, argv);
     calcu::qt6::FileOpenFilter fileOpen;   // macOS Open With, at a cold launch before the window
     app.installEventFilter(&fileOpen);
     QApplication::setApplicationName(QStringLiteral("Calc-U-59"));
     QApplication::setOrganizationName(QStringLiteral("Calc-U-59"));
-    QApplication::setWindowIcon(QIcon(QStringLiteral(":/app/icon.png")));   // also About's
+    // Also About's. Not on macOS: there it would replace the bundle's
+    // system-masked Dock icon (AppIcon.icon) with this full-bleed PNG.
+#ifndef __APPLE__
+    QApplication::setWindowIcon(QIcon(QStringLiteral(":/app/icon.png")));
+#endif
     applyDarkPalette(app);
 
     // Developer option: --grab <file.png> [--after <ms>] saves a screenshot of the

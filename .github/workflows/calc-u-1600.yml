@@ -17,7 +17,8 @@ name: Calc-U-1600
 # roughly-24.04-equivalent glibc, less than AppImage's usual promise of
 # running on much older systems too, but that's an acceptable bar here.
 # macOS runs macdeployqt to embed the Qt frameworks (see
-# frontends/qt6/CMakeLists.txt's MACOSX_BUNDLE), then Developer-ID-signs the .app
+# frontends/qt6/CMakeLists.txt's MACOSX_BUNDLE), then the repository's
+# action .github/actions/mac-sign-dmg Developer-ID-signs the .app
 # (hardened runtime), notarizes + staples it, and packages it into a
 # signed/notarized/stapled .dmg -- see docs/macos-signing.md for the
 # repository secrets this needs and how to rotate them. The windows jobs (one matrix) run
@@ -418,103 +419,18 @@ jobs:
         # launch.
         run: $(brew --prefix qt)/bin/macdeployqt $QT_BUILD/Calc-U-1600.app
 
-      # See docs/macos-signing.md (Developer ID, team 7Q3QN9AV9J) for how
-      # these repository secrets are produced and how to rotate them.
-      - name: Import signing certificate
-        env:
-          APP_P12_B64: ${{ secrets.APPLE_CERT_APPLICATION_P12_BASE64 }}
-          P12_PASSWORD: ${{ secrets.APPLE_CERT_P12_PASSWORD }}
-        run: |
-          set -euo pipefail
-          KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
-          KEYCHAIN_PWD="$(openssl rand -base64 24)"
-          security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN"
-          security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
-
-          echo "$APP_P12_B64" | base64 --decode > "$RUNNER_TEMP/app.p12"
-          security import "$RUNNER_TEMP/app.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign
-          rm -f "$RUNNER_TEMP/app.p12"
-
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PWD" "$KEYCHAIN" >/dev/null
-          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | sed 's/"//g')
-
-          APP_IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -n1)"
-          if [ -z "$APP_IDENTITY" ]; then
-            echo "::error::missing Developer ID Application identity after import"; exit 1
-          fi
-          echo "APP_IDENTITY=$APP_IDENTITY" >> "$GITHUB_ENV"
-          echo "SIGN_KEYCHAIN=$KEYCHAIN"    >> "$GITHUB_ENV"
-
-      - name: Codesign the .app (Developer ID Application, hardened runtime)
-        run: |
-          set -euo pipefail
-          APP=$QT_BUILD/Calc-U-1600.app
-          # --deep signs every embedded framework/dylib macdeployqt placed
-          # under Contents/Frameworks too, not just the outer bundle.
-          codesign --deep --force --timestamp --options runtime \
-            --sign "$APP_IDENTITY" --keychain "$SIGN_KEYCHAIN" "$APP"
-          codesign --verify --deep --strict --verbose=2 "$APP"
-
-      - name: Notarize the .app
-        env:
-          KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
-          API_KEY_B64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
-        run: |
-          set -euo pipefail
-          echo "$API_KEY_B64" | base64 --decode > "$RUNNER_TEMP/asc_api_key.p8"
-          APP=$QT_BUILD/Calc-U-1600.app
-          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/Calc-U-1600.zip"
-          xcrun notarytool submit "$RUNNER_TEMP/Calc-U-1600.zip" \
-            --key "$RUNNER_TEMP/asc_api_key.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
-            --wait --timeout 30m
-          # The ticket comes from Apple's CloudKit server; a dropped connection
-          # there (stapler error 68) is transient, so retry before giving up.
-          for i in 1 2 3; do
-            xcrun stapler staple "$APP" && break
-            [ "$i" = 3 ] && exit 1
-            echo "stapler failed, retrying in 30 s…"; sleep 30
-          done
-          xcrun stapler validate "$APP"
-          spctl -a -vvv "$APP"
-
-      - name: Build the DMG
-        run: |
-          set -euo pipefail
-          STAGE="$RUNNER_TEMP/dmg-stage"
-          mkdir -p "$STAGE"
-          cp -R $QT_BUILD/Calc-U-1600.app "$STAGE/"
-          ln -s /Applications "$STAGE/Applications"
-          hdiutil create -volname "Calc-U-1600" -srcfolder "$STAGE" \
-            -ov -format UDZO $QT_BUILD/Calc-U-1600.dmg
-
-      - name: Sign + notarize + staple the DMG
-        env:
-          KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
-        run: |
-          set -euo pipefail
-          DMG=$QT_BUILD/Calc-U-1600.dmg
-          codesign --force --timestamp --sign "$APP_IDENTITY" --keychain "$SIGN_KEYCHAIN" "$DMG"
-          xcrun notarytool submit "$DMG" \
-            --key "$RUNNER_TEMP/asc_api_key.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
-            --wait --timeout 30m
-          # The ticket comes from Apple's CloudKit server; a dropped connection
-          # there (stapler error 68) is transient, so retry before giving up.
-          for i in 1 2 3; do
-            xcrun stapler staple "$DMG" && break
-            [ "$i" = 3 ] && exit 1
-            echo "stapler failed, retrying in 30 s…"; sleep 30
-          done
-          xcrun stapler validate "$DMG"
-          spctl -a -vvv -t open --context context:primary-signature "$DMG"
-
-      - name: Clean up signing material
-        if: always()
-        run: |
-          rm -f "$RUNNER_TEMP/asc_api_key.p8"
-          security delete-keychain "$RUNNER_TEMP/build.keychain-db" 2>/dev/null || true
+      # The repository secrets: docs/macos-signing.md.
+      - name: Sign, notarize and package the DMG
+        uses: ./.github/actions/mac-sign-dmg
+        with:
+          app: build/release/products/calc-u-1600/frontends/qt6/Calc-U-1600.app
+          dmg: build/release/products/calc-u-1600/frontends/qt6/Calc-U-1600.dmg
+          volume-name: Calc-U-1600
+          certificate-p12-base64: ${{ secrets.APPLE_CERT_APPLICATION_P12_BASE64 }}
+          certificate-password: ${{ secrets.APPLE_CERT_P12_PASSWORD }}
+          api-key-p8-base64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          api-key-id: ${{ secrets.APPLE_API_KEY_ID }}
+          api-issuer-id: ${{ secrets.APPLE_API_ISSUER_ID }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6

@@ -1,7 +1,7 @@
 // A product page's glue to its session, the same for both products' pages.
 //
 //   useShellProduct(shell, {request, args, fallback, version, build,
-//                   copyScreen, openFiles, acts, nameAndSave}) → {product, ready}
+//                   copyScreen, openFiles, acts, nameAndSave}) → {product, ready, chrome}
 //     the product's shell data: `request` (`<prefix>.shell-product`) with
 //     `args`, once per distinct `args` while the session runs, its answer
 //     {product, settingsSpec} kept; `fallback` (the shell's frame with
@@ -12,7 +12,19 @@
 //     `openFiles(files, "dialog")`) and each item's
 //     act from `acts` by its id, and Name & Save of a media place from
 //     More (`nameAndSave(place)`). copyScreen, openFiles and acts are read
-//     when used, so they may be new closures at each render.
+//     when used, so they may be new closures at each render. `chrome`: the
+//     answer's chrome (the product's app/ Chrome in shell/Chrome's form),
+//     null until it came.
+//   useColourScheme() → true while the system's appearance is dark
+//   calcuChromeStyle(chrome, dark) → the style object of the client's root:
+//     every colour of the set for the appearance as `--calcu-<name>`, the
+//     sizes as `--calcu-panel-header-height`, `--calcu-panel-buttons-height`,
+//     `--calcu-panel-inset`, `--calcu-pill-height`, `--calcu-pill-radius`,
+//     `--calcu-pill-padding`, `--calcu-pill-font-size` and
+//     `--calcu-pill-font-weight` (only when set), `--calcu-bar-height`,
+//     `--calcu-bar-gap`, `--calcu-slot-picker-width` (only when set),
+//     `--calcu-printer-min-width`, `--calcu-printer-max-width` (only when
+//     set); {} without chrome (the CSS's neutral fallbacks then).
 //   useFaceplateMaps(shell, request, model) → {[model]: map}
 //     the faceplate maps, one `request` {model} per model
 //   calcuOpenFiles(send, files, way) → the reply, or null without files
@@ -56,7 +68,44 @@ function useShellProduct(shell, options) {
       items: p.items.map((i) => ({ ...i, act: () => { const act = (latest.current.acts || {})[i.id]; if (act) act(); } })),
     };
   }, [data, hasCopyScreen]);
-  return { product, ready: !!data };
+  return { product, ready: !!data, chrome: (data && data.chrome) || null };
+}
+
+function useColourScheme() {
+  const query = React.useMemo(() => (window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null), []);
+  const [dark, setDark] = React.useState(!!(query && query.matches));
+  React.useEffect(() => {
+    if (!query) return undefined;
+    const changed = (e) => setDark(e.matches);
+    query.addEventListener("change", changed);
+    return () => query.removeEventListener("change", changed);
+  }, [query]);
+  return dark;
+}
+
+function calcuChromeStyle(chrome, dark) {
+  if (!chrome) return {};
+  const style = {};
+  const colours = dark && chrome.dark ? chrome.dark : chrome.light;
+  for (const name of Object.keys(colours || {})) style[`--calcu-${name}`] = colours[name];
+  const s = chrome.sizes || {};
+  const px = (v) => `${v}px`;
+  style["--calcu-panel-header-height"] = px(s.panelHeaderHeight);
+  style["--calcu-panel-buttons-height"] = px(s.panelButtonsHeight);
+  style["--calcu-panel-inset"] = px(s.panelInset);
+  style["--calcu-pill-height"] = px(s.pillHeight);
+  style["--calcu-pill-radius"] = px(s.pillRadius);
+  style["--calcu-pill-padding"] = `${px(s.pillPaddingY)} ${px(s.pillPaddingX)}`;
+  if (s.pillFontSize) style["--calcu-pill-font-size"] = px(s.pillFontSize);
+  if (s.pillBold) style["--calcu-pill-font-weight"] = "700";
+  style["--calcu-bar-height"] = px(s.barHeight);
+  style["--calcu-bar-gap"] = px(s.barGap);
+  if (s.slotPickerEm) style["--calcu-slot-picker-width"] = `${s.slotPickerEm}em`;
+  if (s.printerMaxWidth) {
+    style["--calcu-printer-min-width"] = px(s.printerMinWidth);
+    style["--calcu-printer-max-width"] = px(s.printerMaxWidth);
+  }
+  return style;
 }
 
 function useFaceplateMaps(shell, request, model) {

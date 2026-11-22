@@ -17,7 +17,7 @@
 
 // calc.css: the menu bar is taller on a touch screen (pointer: coarse).
 const MENU_HEIGHT = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches ? 40 : 26;
-const BAR_HEIGHT = 40;
+const BAR_HEIGHT_UNTIL_CHROME = 40;   // the control bar before the engine answered
 const PANEL_MIN = 220;          // the least room below the faceplate worth a panels' row
 const INSPECTOR_MIN_WIDTH = 700; // narrower: the inspector only when no other panel is shown
 const SHIFT_TAP_MS = 400;
@@ -250,7 +250,7 @@ function CalcU1600(props) {
   // The product's shell data with the page's acts. Load Preset…: the
   // picked files through the session's `open` (a preset with the files it
   // names, as one folder).
-  const { product, ready: productReady } = useShellProduct(shell, {
+  const { product, ready: productReady, chrome } = useShellProduct(shell, {
     request: "c1600.shell-product", fallback: C1600_NO_PRODUCT, version: CalcU1600.version, build: CalcU1600.build,
     copyScreen, openFiles,
     acts: { "load-basic-program": () => pickProgram("basic"), "load-machine-code": () => pickProgram("code") },
@@ -259,6 +259,10 @@ function CalcU1600(props) {
 
   const s = useCalcuShell(shell, product, CALCU_SHELL_WEB_TRAITS);
   sRef.current = s;
+  // The product's chrome (app/SharpChrome) as the root's custom properties,
+  // light or dark with the system.
+  const dark = useColourScheme();
+  const chromeStyle = React.useMemo(() => calcuChromeStyle(chrome, dark), [chrome, dark]);
   const cs = s.inputs.controlState;
   const busy = !!(s.inputs.busy && s.inputs.busy.operationRuns);
   const model = (cs && cs.model) || modelProp || DEFAULT_MODEL;
@@ -376,7 +380,7 @@ function CalcU1600(props) {
   // below it do the panels get that space (portrait, tall windows) -- a
   // phone in landscape shows the calculator alone.
   const aspect = FACE_ASPECT[model] || FACE_ASPECT[DEFAULT_MODEL];
-  const faceRoom = H - menuHeight - BAR_HEIGHT;
+  const faceRoom = H - menuHeight - ((chrome && chrome.sizes.barHeight) || BAR_HEIGHT_UNTIL_CHROME);
   const faceWidth = Math.max(200, Math.min(W, faceRoom * aspect));
   const panelRoom = faceRoom - W / aspect >= PANEL_MIN;
   const paperOwner = (s.panels.find((p) => p.kind === "paper") || {}).owner || "";
@@ -396,7 +400,7 @@ function CalcU1600(props) {
   const romsMissing = !!s.romsMissing && !s.started;
   const failed = start === "failed";
   return (
-    <div className="calcu-client" ref={rootRef} tabIndex={0} style={{ width: W, height: H }}
+    <div className="calcu-client" ref={rootRef} tabIndex={0} style={{ ...chromeStyle, width: W, height: H }}
       data-ready={ready ? "true" : "false"} data-model={model}
       onKeyDown={onKeyDown} onKeyUp={onKeyUp} onBlur={releaseHeldKeys}
       onPointerDown={() => { shiftTap.current = null; if (shell) shell.unlockAudio(); }}

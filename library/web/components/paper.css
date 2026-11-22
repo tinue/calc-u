@@ -21,6 +21,20 @@
   min-height: 24px;
 }
 .calcu-client .calcu-paper-places { display: inline-flex; gap: 4px; justify-self: start; }
+/* A place control on the paper (Calc-U-59's PC-100C) carries the dot of
+   every GUI: the product chrome's plugged colour while it is plugged in,
+   its unplugged colour otherwise. */
+.calcu-client .calcu-paper-places .calcu-shell-place::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--calcu-unplugged, GrayText);
+  vertical-align: middle;
+}
+.calcu-client .calcu-paper-places .calcu-shell-place.calcu-shell-plugged::after { background: var(--calcu-plugged, Highlight); }
 .calcu-client .calcu-paper-owner { font-weight: 600; white-space: nowrap; }
 .calcu-client .calcu-paper-views { display: inline-flex; justify-self: end; }
 .calcu-client .calcu-paper-footer {

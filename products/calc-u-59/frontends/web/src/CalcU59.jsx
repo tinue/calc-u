@@ -19,9 +19,13 @@
 // library's calcuHostKeys), the drop (the session's `open`), and keyboard
 // feedback (portrait).
 
-const BAR_HEIGHT = 50;
 const FACE_PADDING = 8;
-const PRINTER_MIN = 240, PRINTER_MAX = 400, DEBUG_MIN = 220;
+const DEBUG_MIN = 220;
+// The bar's height and the printer column's width range are app/'s
+// (TIChrome, the chrome of `c59.shell-product`); these numbers stand in only
+// until the engine answered. One product per page, so one set.
+const CHROME_SIZES = { barHeight: 50, printerMinWidth: 240, printerMaxWidth: 400 };
+const takeChromeSizes = (chrome) => { if (chrome && chrome.sizes) Object.assign(CHROME_SIZES, chrome.sizes); };
 // The narrowest artwork whose control bar still fits (labelled in wide, icons
 // in portrait). Below it the client keeps its size and the page scrolls, as
 // the apps' windows have a minimum size.
@@ -33,13 +37,13 @@ const CALC_VERSION = "__CALC_VERSION__";
 const CALC_BUILD = "__CALC_BUILD__";   // tools/build-id.cmake
 
 /// The artwork's width that `height` leaves room for, and the column height for an artwork width.
-const faceWidthFor = (height) => (height - BAR_HEIGHT - 2 * FACE_PADDING) * CANVAS_ASPECT;
-const columnHeight = (faceWidth, height) => Math.max(height || 0, faceWidth / CANVAS_ASPECT + 2 * FACE_PADDING + BAR_HEIGHT);
+const faceWidthFor = (height) => (height - CHROME_SIZES.barHeight - 2 * FACE_PADDING) * CANVAS_ASPECT;
+const columnHeight = (faceWidth, height) => Math.max(height || 0, faceWidth / CANVAS_ASPECT + 2 * FACE_PADDING + CHROME_SIZES.barHeight);
 
 /// The client's minimum width for a layout.
 function minimumWidth(portrait) {
   return portrait ? FACE_MIN.portrait + 2 * FACE_PADDING
-    : FACE_MIN.wide + 2 * FACE_PADDING + PRINTER_MIN + DEBUG_MIN + SPLITTERS;
+    : FACE_MIN.wide + 2 * FACE_PADDING + CHROME_SIZES.printerMinWidth + DEBUG_MIN + SPLITTERS;
 }
 
 // The shell's traits: the Web has no Quit and binds no shortcut; the
@@ -178,12 +182,12 @@ function Divider({ onDrag }) {
 
 /// The rules of the embedded layout="wide": the artwork's size follows the
 /// window, within limits, and the debugger is always there.
-const EMBEDDED_WIDE = {
-  embedded: true, printerMin: PRINTER_MIN, printerMax: PRINTER_MAX, printerStart: 360,
+const embeddedWide = () => ({
+  embedded: true, printerMin: CHROME_SIZES.printerMinWidth, printerMax: CHROME_SIZES.printerMaxWidth, printerStart: 360,
   debugger: true, compactPrinterBar: false,
-};
+});
 
-/// `rules` is EMBEDDED_WIDE or (layout="auto") app/'s mobile rules: the
+/// `rules` is embeddedWide() or (layout="auto") app/'s mobile rules: the
 /// artwork fills the height, whatever its size, the bar and the printer follow
 /// the iOS app, and the debugger may be left out. A bar wider than the artwork
 /// widens the column.
@@ -287,11 +291,15 @@ function CalcU59(props) {
 
   // The product's shell data per layout (the settings differ).
   // No Copy Screen.
-  const { product } = useShellProduct(shell, {
+  const { product, chrome } = useShellProduct(shell, {
     request: "c59.shell-product", args: { layout: portrait ? "portrait" : "wide", version: CALC_VERSION, build: CALC_BUILD },
     fallback: C59_NO_PRODUCT, version: CALC_VERSION, build: CALC_BUILD, copyScreen: null, openFiles,
     acts: { "arm-card": () => setCardDialog("arm"), "arm-fresh-card": () => setCardDialog("fresh") },
   });
+  // The product's chrome (app/TIChrome) as the root's custom properties.
+  takeChromeSizes(chrome);
+  const dark = useColourScheme();
+  const chromeStyle = React.useMemo(() => calcuChromeStyle(chrome, dark), [chrome, dark]);
   const traits = React.useMemo(() => traitsFor(settings), [settings]);
   const s = useCalcuShell(shell, product, traits);
   const cs = s.inputs.controlState;
@@ -372,7 +380,7 @@ function CalcU59(props) {
       className="calcu-client calcu-device"
       data-layout={portrait ? "portrait" : "wide"}
       data-start={start}
-      style={{ width: w }}
+      style={{ ...chromeStyle, width: w }}
       tabIndex={keyboard ? 0 : undefined}
       aria-label="Calc-U-59 calculator"
       onKeyDown={onKeyDown}
@@ -389,7 +397,7 @@ function CalcU59(props) {
         {(menuBar || romsMissing) && !failed && <ShellMenuBar shell={s} />}
         {romsMissing && <ShellRomsMissing shell={s} />}
         {failed && !romsMissing && <div className="calcu-shell-roms-missing" data-calcu="start-failed" role="alert">{failure}</div>}
-        {!romsMissing && !failed && (!auto || rules) && <Layout page={page} width={w} height={height} rules={rules || EMBEDDED_WIDE} />}
+        {!romsMissing && !failed && (!auto || rules) && <Layout page={page} width={w} height={height} rules={rules || embeddedWide()} />}
         <KeyFeedback shell={shell} enabled={touch} />
         <ShellDialogs shell={s} savedMedia={ShellSavedMedia} />
         {cardDialog && <CardPicker shell={shell} mode={cardDialog} onClose={() => setCardDialog(null)} />}

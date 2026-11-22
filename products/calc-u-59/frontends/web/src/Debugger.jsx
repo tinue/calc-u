@@ -25,9 +25,11 @@ const useRun = (shell) => {
 };
 const useEntries = (shell) => useTopic(shell, "control-state", (cs) => (cs && cs.product) || null);
 
-const CURRENT_PC_RGB = [52, 199, 89];
 
-const grey = (white) => `rgba(255,255,255,${white})`;
+// A chrome colour (app/TIChrome, the client's custom properties) at a share
+// of its strength; grey(w): the text's colour at w.
+const tint = (name, share) => `color-mix(in srgb, var(--calcu-${name}) ${Math.round(share * 100)}%, transparent)`;
+const grey = (white) => tint("text", white);
 
 function Section({ title, extra, children }) {
   return (
@@ -133,7 +135,7 @@ function LiveDebug({ font }) {
           <Section title="PROGRAM STEPS">
             <div className="calcu-steps" ref={stepsRef}>
               {steps.map((r, i) => (
-                <div key={i} style={r.current ? { background: highlight, color: "#fff" } : { color: grey(0.6) }}>{r.text}</div>
+                <div key={i} style={r.current ? { background: highlight, color: "var(--calcu-text)" } : { color: grey(0.6) }}>{r.text}</div>
               ))}
             </div>
           </Section>
@@ -180,10 +182,13 @@ function Heatmap({ data, currentPC }) {
     canvas.width = cols;
     canvas.height = rows;
     const ctx = canvas.getContext("2d");
+    // The PC's cell in the chrome's heatmap-pc ("#rrggbb", TIChrome).
+    const hex = getComputedStyle(canvas).getPropertyValue("--calcu-heatmap-pc").trim();
+    const pcRgb = /^#[0-9a-f]{6}$/i.test(hex) ? [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)) : [0, 0, 0];
     const img = ctx.createImageData(cols, rows);
     const d = img.data;
     for (let i = 0; i < cols * rows; i++) {
-      const c = currentPC === i ? CURRENT_PC_RGB : colors[steps ? steps[i] : 0];
+      const c = currentPC === i ? pcRgb : colors[steps ? steps[i] : 0];
       d[i * 4] = c[0];
       d[i * 4 + 1] = c[1];
       d[i * 4 + 2] = c[2];
@@ -252,7 +257,7 @@ function CpuInspector({ data, font }) {
         {rows.map((r, i) => (
           <div key={i} onClick={() => setPicked(i)}
             className={i === selected ? "calcu-cpu-selected" : ""}
-            style={{ color: `rgba(255,255,255,${r.history ? 0.9 : 0.35})`, background: r.current ? "rgba(52,199,89,0.35)" : undefined }}>
+            style={{ color: grey(r.history ? 0.9 : 0.35), background: r.current ? tint("green", 0.35) : undefined }}>
             {r.text}
           </div>
         ))}
@@ -268,15 +273,15 @@ function CpuInspector({ data, font }) {
             <div style={{ color: value }}>{f.fB}</div>
             <div><Run>{f.SR}</Run><Gap /><Run>{f.R5}</Run></div>
             <div>
-              <Run color={f.cond ? "rgba(255,204,0,0.4)" : "#ffcc00"}>{`COND: ${f.cond ? 1 : 0}`}</Run><Gap />
-              <Run color={f.idle ? "#fff" : grey(0.45)}>{`IDLE: ${f.idle ? 1 : 0}`}</Run><Gap />
+              <Run color={f.cond ? tint("yellow", 0.4) : "var(--calcu-yellow)"}>{`COND: ${f.cond ? 1 : 0}`}</Run><Gap />
+              <Run color={f.idle ? "var(--calcu-text)" : grey(0.45)}>{`IDLE: ${f.idle ? 1 : 0}`}</Run><Gap />
               <Run>{f.digit}</Run>
             </div>
           </>}
         </Section>
         <Section title="DISPLAY STATE">
           {f && <><Run>{f.lit}</Run><Gap />
-            <Run color={f.displayOn ? "rgba(52,199,89,0.85)" : "rgba(255,59,48,0.7)"}>{f.displayOn ? "ON" : "OFF"}</Run></>}
+            <Run color={f.displayOn ? tint("green", 0.85) : tint("red", 0.7)}>{f.displayOn ? "ON" : "OFF"}</Run></>}
         </Section>
         <Heatmap data={data} currentPC={current >= 0 ? rows[current].pc : -1} />
         <AsmOverlay />
@@ -305,23 +310,6 @@ function LogTab() {
       <div className="calcu-debug-header calcu-center"><span className="calcu-debug-title">DEBUG LOG</span></div>
       <textarea className="calcu-log" ref={ref} readOnly value={text} aria-label="Debug log" />
       <div className="calcu-log-bar">
-        <div className="calcu-buttonrow">
-          {[["SCOM", "scom"], ["Memory", "memory"], ["Prog", "prog"], ["Vars", "vars"]].map(([label, what]) => (
-            <button key={what} type="button" className="calcu-pill" onClick={() => shell.send("c59.dump", { what })}>{label}</button>
-          ))}
-          <span className="calcu-spacer" />
-          <button type="button" className="calcu-pill" title="Clear the log" aria-label="Clear the log" disabled={!text}
-            onClick={() => page.log.clear()}>🗑</button>
-        </div>
-        <div className="calcu-buttonrow">
-          <button type="button" className="calcu-pill" aria-pressed={trace.running}
-            title="Write every executed instruction to the binary trace file (downloaded when switched off)"
-            style={trace.running ? { color: "orange" } : undefined}
-            onClick={() => shell.send("trace", trace.running ? { off: true } : { button: true })}>{trace.running ? "TRACE ●" : "TRACE ○"}</button>
-          <button type="button" className="calcu-pill" title="Log level: off / info (how presets run) / debug (every register write)"
-            style={level ? { color: level === 1 ? "orange" : "#ff3b30" } : undefined}
-            onClick={() => shell.send("log-level", { level: LEVELS[(level + 1) % 3] })}>{labels[level]}</button>
-        </div>
         {traces.length > 0 && (
           <div className="calcu-traces" aria-label="Trace files">
             {traces.map((t) => (
@@ -330,6 +318,23 @@ function LogTab() {
             ))}
           </div>
         )}
+        <div className="calcu-buttonrow">
+          {[["SCOM", "scom"], ["Memory", "memory"], ["Prog", "prog"], ["Vars", "vars"]].map(([label, what]) => (
+            <button key={what} type="button" className="calcu-pill" onClick={() => shell.send("c59.dump", { what })}>{label}</button>
+          ))}
+          <span className="calcu-spacer" />
+          <button type="button" className="calcu-pill" title="Clear the log" aria-label="Clear the log" disabled={!text}
+            onClick={() => page.log.clear()}>🗑</button>
+        </div>
+        <div className="calcu-buttonrow calcu-log-buttons">
+          <button type="button" className="calcu-pill" aria-pressed={trace.running}
+            title="Write every executed instruction to the binary trace file (downloaded when switched off)"
+            style={trace.running ? { color: "var(--calcu-orange)" } : undefined}
+            onClick={() => shell.send("trace", trace.running ? { off: true } : { button: true })}>{trace.running ? "TRACE ●" : "TRACE ○"}</button>
+          <button type="button" className="calcu-pill" title="Log level: off / info (how presets run) / debug (every register write)"
+            style={level ? { color: level === 1 ? "var(--calcu-orange)" : "var(--calcu-red)" } : undefined}
+            onClick={() => shell.send("log-level", { level: LEVELS[(level + 1) % 3] })}>{labels[level]}</button>
+        </div>
       </div>
     </div>
   );

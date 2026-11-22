@@ -19,7 +19,7 @@ beside the faceplate that takes the printer column gives wide, anything
 else portrait.
 
 Apart from the layout, the page is desktop or mobile (the library's
-`calcuShellPlatform`, `library/web/components/useShell.jsx`): mobile for
+`calcuShellMobile`, `library/web/components/useShell.jsx`): mobile for
 the installed PWA and for a browser that asks for the mobile site, else
 desktop. Desktop has the menu bar, mobile none; the control bar ends with
 More on both (Load Preset… and Settings… in it).
@@ -68,7 +68,7 @@ calc-engine-worker.js → library-worker.js ── wasm/calcu59-core.{js,wasm} �
 | `calc.css` | Tokens, fonts and every rule the client needs |
 | `fonts/` | Archivo (WOFF2, SIL OFL 1.1), for the cue card, as the family `Calc-U Archivo` |
 | `app/` | The installable PWA's own files: `index.html`, `app.css`, `manifest.json`; its page, service worker and worker entry are the library's (`library/web/app/`) |
-| `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, `?platform=desktop|mobile` (the library's override), also `width`, `height`, `model` (by its name), `preset` (a path of `examples/bundle.yaml`, sent as the bundle path `examples:<path>` with the library's `start`) |
+| `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, `?mobile=0|1` (the library's override), also `width`, `height`, `model` (by its name), `preset` (a path of `examples/bundle.yaml`, sent as the bundle path `examples:<path>` with the library's `start`) |
 | `examples/bundle.yaml` (the product's) | What File ▸ Examples ▸ offers: the request `preset-list` gives its examples in their groups (`docs/formats/bundle.md`). `build.js` copies exactly the files it lists, and the file itself, to `dist/presets/` |
 | `library/web/vendor/` (the repository's) | React 18 and ReactDOM (shipped), Babel (build only), ReactDOMServer (tests only); one copy for both products |
 | `build.sh`, `build.js` | The build (below): `build.js` names what is the product's (the engine, the worker's configuration with the persistent mount `/persist-calc-u-59` and the lock `calcu59-storage`, the files, the sources), the library's `library/web/build/product.js` does the steps |

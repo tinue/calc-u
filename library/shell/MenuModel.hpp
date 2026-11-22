@@ -37,21 +37,19 @@ struct Menu {
     std::vector<MenuItem> items;
 };
 
-// Where a frontend runs. Desktop (Qt, a Web page in a desktop browser's
-// tab) has a menu bar; Mobile (the iOS app, the installed Web app, a
-// browser that asks for the mobile site) has none, and its bar keeps only
-// what is used while the machine runs. The menus are computed on both, for
-// the More button.
-enum class Platform { Desktop, Mobile };
-
-// Qt6: {true, true, false}; Web: {false, false, true}.
-// `settings` false: no Settings… (the Web prop `settings` off); `about`
-// false: no About (iOS).
+// What a window offers. Qt6: {true, true, false}; Web: {false, false,
+// true}. `mobile`: the window is mobile (the iOS app, the installed Web
+// app, a browser that asks for the mobile site), else desktop (Qt, a Web
+// page in a desktop browser's tab); a desktop window has a menu bar, a
+// mobile one none, and its bar keeps only what is used while the machine
+// runs. The menus are computed on both, for the More button. `settings`
+// false: no Settings… (the Web prop `settings` off); `about` false: no
+// About (iOS).
 struct Traits {
     bool hasQuit = true;
     bool shortcuts = true;
     bool savedMedia = false;
-    Platform platform = Platform::Desktop;
+    bool mobile = false;
     bool settings = true;
     bool about = true;
 };

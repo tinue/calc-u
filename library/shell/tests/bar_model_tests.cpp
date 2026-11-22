@@ -180,7 +180,7 @@ namespace {
 
 Traits mobile() {
     Traits t{false, false, true};
-    t.platform = Platform::Mobile;
+    t.mobile = true;
     return t;
 }
 
@@ -192,7 +192,7 @@ const MenuItem* inMore(const BarControl& m, const std::string& id) {
 
 } // namespace
 
-// More alone in End, at the right edge, on every platform; Load Preset…
+// More alone in End, at the right edge, on every bar; Load Preset…
 // and Settings… in it, each following its menu item.
 TEST(bar_more_at_the_right_edge_on_every_platform) {
     const Traits web{false, false, true};

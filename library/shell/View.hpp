@@ -10,7 +10,7 @@
 // product's fallback applies (Calc-U-59: its pages; Calc-U-1600: the
 // calculator alone, or on mobile with the room below the panels alone).
 // A desktop window changes its view with its size, a mobile one with its
-// rotation; the platform only decides the panels-alone case.
+// rotation; only the panels-alone case is mobile's alone.
 
 namespace calcu::shell {
 
@@ -26,7 +26,7 @@ struct ViewInputs {
     // The least room the panels take beside (a width) and below (a
     // height); 0: the product has no panels on that side.
     double panelsMinWidth = 0, panelsMinHeight = 0;
-    Platform platform = Platform::Desktop;
+    bool mobile = false;   // a mobile window (shell::Traits::mobile)
     // On mobile where the room below takes the panels: the panels alone,
     // without the faceplate (a phone in portrait, whose keys would be too
     // small). A sliver of room below (a phone in landscape whose safe

@@ -6,7 +6,7 @@
 //
 //   const s = useCalcuShell(shell, product, {settings, about}, shellArgs);
 //   (traits: `settings` false: no Settings…; `about` false: no About; the
-//   page's platform is CALCU_SHELL_PLATFORM. shellArgs: the product's own
+//   page is mobile when CALCU_SHELL_MOBILE. shellArgs: the product's own
 //   args of its shell, as its Web part reads them.)
 //   s.menus, s.bar, s.panels, s.dialog (the settings rows), s.loading, s.notice,
 //   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" | null)
@@ -18,25 +18,25 @@
 // through the session's `open`), `copyScreen`, `nameAndSave(place)` and its
 // items' acts by id.
 
-// The page's platform, fixed while it is open: "mobile" for the installed
-// app and for a browser that asks for the mobile site, else "desktop". The
-// browser's own choice decides (Safari's "Request Desktop Website", Chrome's
-// "Desktop site" change what it reports), so a user who wants the desktop
-// page on a phone gets it. `?platform=mobile|desktop` overrides, for trying
-// one on the other.
-function calcuShellPlatform() {
+// Whether the page is mobile, fixed while it is open: true for the
+// installed app and for a browser that asks for the mobile site, else
+// false (desktop). The browser's own choice decides (Safari's "Request
+// Desktop Website", Chrome's "Desktop site" change what it reports), so a
+// user who wants the desktop page on a phone gets it. `?mobile=1|0`
+// overrides, for trying one on the other.
+function calcuShellMobile() {
   // A server-side render (no browser around it) draws the desktop page.
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function" || !window.navigator) return "desktop";
-  const asked = /[?&]platform=(mobile|desktop)\b/.exec((window.location && window.location.search) || "");
-  if (asked) return asked[1];
-  if (window.matchMedia("(display-mode: standalone)").matches) return "mobile";
-  if (window.navigator.standalone === true) return "mobile";
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function" || !window.navigator) return false;
+  const asked = /[?&]mobile=([01])\b/.exec((window.location && window.location.search) || "");
+  if (asked) return asked[1] === "1";
+  if (window.matchMedia("(display-mode: standalone)").matches) return true;
+  if (window.navigator.standalone === true) return true;
   const hints = window.navigator.userAgentData;
-  if (hints && typeof hints.mobile === "boolean") return hints.mobile ? "mobile" : "desktop";
-  return /iPhone|iPod|Android.*Mobile|Mobi/.test(window.navigator.userAgent) ? "mobile" : "desktop";
+  if (hints && typeof hints.mobile === "boolean") return hints.mobile;
+  return /iPhone|iPod|Android.*Mobile|Mobi/.test(window.navigator.userAgent);
 }
-const CALCU_SHELL_PLATFORM = calcuShellPlatform();
-const CALCU_SHELL_WEB_TRAITS = { platform: CALCU_SHELL_PLATFORM, settings: true, about: true };
+const CALCU_SHELL_MOBILE = calcuShellMobile();
+const CALCU_SHELL_WEB_TRAITS = { mobile: CALCU_SHELL_MOBILE, settings: true, about: true };
 const CALCU_SHELL_NO_MODELS = { menus: [], bar: [], panels: [], dialog: [] };
 
 function calcuShellNow() {
@@ -63,7 +63,7 @@ function useCalcuShell(shell, product, traits, shellArgs) {
 
   // The worker computes the models for this page's traits.
   React.useEffect(() => {
-    if (shell && shell.setShell) shell.setShell(Object.assign({ mobile: t.platform === "mobile",
+    if (shell && shell.setShell) shell.setShell(Object.assign({ mobile: !!t.mobile,
       settings: t.settings !== false, about: t.about !== false }, shellArgs || {}));
   }, [shell, shellKey]);
 

@@ -31,7 +31,7 @@ const char* const kSkip = "the ROMs are not fetched (roms/fetch_roms.sh)";
 // no Quit.
 shell::Traits swiftTraits() {
     shell::Traits t;
-    t.platform = shell::Platform::Mobile;
+    t.mobile = true;
     t.about = false;
     t.hasQuit = false;
     t.shortcuts = false;

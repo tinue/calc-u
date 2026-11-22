@@ -118,7 +118,7 @@ std::string variantLabel(const ShellProduct& p, const std::string& id) {
 // components' dialog carries out (the shell action kNameAndSavePrefix).
 std::vector<MenuItem> mediaMenus(const ShellInputs& in, const ShellProduct& p, Traits t) {
     std::vector<MenuItem> out;
-    if (t.platform != Platform::Mobile || !in.started()) return out;
+    if (!t.mobile || !in.started()) return out;
     for (const auto& m : read::elements(in.controlState, "mediaPlaces")) {
         const std::string kind = read::text(m, "kind");
         if (p.mobileBarMedia.count(kind)) continue;

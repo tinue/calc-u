@@ -324,11 +324,13 @@ model, then one picker per module slot and media place.
 _Avoid_: toolbar
 
 **Desktop, mobile**:
-The two platform classes a window is drawn for. Desktop (Qt, a Web page
-in a browser tab on a computer) has a menu bar; mobile (the Swift frontend on iOS, the
-installed Web app, a browser that asks for the mobile site) has none, and
-its control bar keeps only what is used while the machine runs.
-_Avoid_: portrait, landscape (for this: those are layouts)
+What a window is (`shell::Traits::mobile`), whatever its platform. Desktop
+(Qt, a Web page in a browser tab on a computer) has a menu bar; mobile
+(the Swift frontend on iOS, the installed Web app, a browser that asks
+for the mobile site) has none, and its control bar keeps only what is
+used while the machine runs.
+_Avoid_: platform, portrait, landscape (for this: a platform is the OS,
+portrait and landscape are layouts)
 
 **More**:
 The button at the right edge of every control bar: a menu of every menu's

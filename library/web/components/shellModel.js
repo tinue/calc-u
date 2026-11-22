@@ -53,7 +53,7 @@ function calcuShellBarFit(faceplate, withoutLabels, withLabels, room = Infinity)
 // panels there); else the product's fallback. On mobile with the room below,
 // panelsAloneOnMobileBelow gives the panels alone.
 // inputs: {width, height, faceplateAspect, fixedWidth, fixedHeight,
-// panelsMinWidth, panelsMinHeight, platform, panelsAloneOnMobileBelow}.
+// panelsMinWidth, panelsMinHeight, mobile, panelsAloneOnMobileBelow}.
 function calcuShellView(inputs) {
   const i = inputs;
   const boxWidth = Math.max(0, i.width - (i.fixedWidth || 0));
@@ -68,7 +68,7 @@ function calcuShellView(inputs) {
     side, panelsFit: least > 0 && room >= least,
     // Only where the room below takes the panels: a sliver of it (a phone in
     // landscape whose safe area narrows the window) keeps the calculator.
-    panelsAlone: !!i.panelsAloneOnMobileBelow && i.platform === "mobile" && side === "below" && least > 0 && room >= least,
+    panelsAlone: !!i.panelsAloneOnMobileBelow && !!i.mobile && side === "below" && least > 0 && room >= least,
     faceplateWidth, faceplateHeight, room,
   };
 }

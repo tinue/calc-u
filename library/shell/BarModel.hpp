@@ -40,7 +40,7 @@ struct BarGroupModel {
 };
 
 // The bar's groups. End holds More alone, pushed to the right edge on every
-// platform; Load Preset… and Settings… are in it, so the bar has the same
+// bar; Load Preset… and Settings… are in it, so the bar has the same
 // controls with or without a menu bar. Mobile keeps what is used while the
 // machine runs: the model picker, the module slots and the media of the
 // product's mobileBarMedia; the places go to More ▸ Peripherals, the other

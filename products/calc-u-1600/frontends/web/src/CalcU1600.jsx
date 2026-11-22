@@ -372,7 +372,7 @@ function CalcU1600(props) {
     return () => ro.disconnect();
   }, [width, height]);
   const W = measured.w || 900, H = measured.h || 600;
-  const mobile = s.traits.platform === "mobile";
+  const mobile = !!s.traits.mobile;
   const menuHeight = mobile ? 0 : MENU_HEIGHT;   // mobile has no menu bar
   // The library's view rule on app/'s chrome: the faceplate as large as
   // the window allows; the panels' row below it where the room below takes
@@ -383,7 +383,7 @@ function CalcU1600(props) {
     width: W, height: H, faceplateAspect: FACE_ASPECT[model] || FACE_ASPECT[DEFAULT_MODEL],
     fixedHeight: menuHeight + (sizes.barHeight || BAR_HEIGHT_UNTIL_CHROME),
     panelsMinWidth: sizes.panelsMinWidth || 0, panelsMinHeight: sizes.panelsMinHeight || 0,
-    platform: s.traits.platform, panelsAloneOnMobileBelow: true,
+    mobile, panelsAloneOnMobileBelow: true,
   });
   const faceWidth = Math.max(200, view.faceplateWidth);
   const panelRoom = view.panelsAlone || (view.side === "below" && view.panelsFit);

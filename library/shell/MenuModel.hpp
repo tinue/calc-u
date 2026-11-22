@@ -12,7 +12,7 @@
 namespace calcu::shell {
 
 struct MenuItem {
-    enum class Kind { Action, Submenu, Separator };
+    enum class Kind { Action, Submenu, Separator, Heading };   // Heading: a menu's name in More
     enum class Role { None, Preferences, About, Quit };
     enum class Shortcut { None, LoadPreset, Reset, ColdBoot, Preferences, Quit, Copy, Paste };
 
@@ -73,13 +73,10 @@ inline constexpr const char* kNameAndSavePrefix = "media-name-and-save-";
 
 std::vector<Menu> menus(const ShellInputs&, const ShellProduct&, Traits);
 
-// The items of the More button (on every bar), in menu order: File, Edit,
-// Machine, Help without what has a control elsewhere: Quit (the window's
-// own), Model ▸ (the model picker), Peripherals ▸ where `placesShown` (the
-// places' controls are on the bar or the paper panel), a product item with
-// `onBar`. One separator between the groups that remain, never first, last
-// or twice. Cold boot asks first.
-std::vector<MenuItem> moreItems(const std::vector<Menu>&, const ShellProduct&, bool placesShown = true);
+// The items of the More button (on every bar): every menu's items in menu
+// order, each menu after its heading (its name in capitals, id
+// `heading-<menu>`); submenus stay submenus. Cold boot asks first.
+std::vector<MenuItem> moreItems(const std::vector<Menu>&);
 inline constexpr const char* kColdBootQuestion = "Cold boot the machine? What it holds in memory is lost.";
 
 // Shared with the bar model: the models as items, the running one

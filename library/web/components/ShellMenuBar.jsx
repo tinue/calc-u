@@ -22,6 +22,7 @@ function ShellMenuItems({ s, items, onDone, prefix = "item-", onChoose }) {
     <ul className="calcu-shell-menu-items" role="menu" ref={ref}>
       {items.map((item, i) => {
         if (item.kind === "separator") return <li key={`sep-${i}`} className="calcu-shell-separator" role="separator" />;
+        if (item.kind === "heading") return <li key={item.id} className="calcu-shell-heading" role="presentation" data-calcu={`${prefix}${item.id}`}>{item.label}</li>;
         const disabled = item.enabled === false;
         const isSub = item.kind === "submenu";
         return (

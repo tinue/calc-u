@@ -52,6 +52,9 @@
 .calcu-client .calcu-shell-disabled:hover { background: transparent; }
 .calcu-client .calcu-shell-check { width: 14px; text-align: center; }
 .calcu-client .calcu-shell-label { flex: 1 1 auto; }
+/* A menu's name in More: small and dimmed, above its items. */
+.calcu-client .calcu-shell-heading { padding: 6px 10px 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; opacity: 0.6; cursor: default; }
+.calcu-client .calcu-shell-heading:not(:first-child) { margin-top: 4px; }
 .calcu-client .calcu-shell-separator { height: 1px; margin: 4px 0; background: #dddddd; }
 .calcu-client .calcu-shell-bar {
   display: flex;

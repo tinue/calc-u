@@ -78,7 +78,6 @@ class EmulatorViewModel {
     /// A control state came (without one, no bar and no Machine menu).
     private(set) var started: Bool = false
     private(set) var menus: [TIMenu] = []
-    private(set) var moreItems: [TIMenuItem] = []
     private(set) var barControls: [TIBarControl] = []
     /// The place controls on the paper panel (the PC-100C's button).
     private(set) var paperPlaces: [TIBarControl] = []
@@ -331,14 +330,8 @@ class EmulatorViewModel {
 
     /// A menu item of the shell by id (the card items, for the bar's card controls).
     func menuItem(_ id: String) -> TIMenuItem? {
-        func find(_ items: [TIMenuItem]) -> TIMenuItem? {
-            for i in items {
-                if i.itemID == id && i.kind != .separator { return i }
-                if let c = find(i.children) { return c }
-            }
-            return nil
-        }
-        return find(menus.flatMap(\.items))
+        _ = menus   // observed: the item follows the menus' copy
+        return shell?.item(id)
     }
 
     /// The key a pointer holds, drawn pressed at once (row × 5 + col).
@@ -422,7 +415,6 @@ class EmulatorViewModel {
         if started != shell.started { started = shell.started }
         if modelID != shell.modelID { modelID = shell.modelID }
         menus = shell.menus
-        moreItems = shell.moreItems
         barControls = shell.bar
         paperPlaces = shell.paperPlaces
         if let session {

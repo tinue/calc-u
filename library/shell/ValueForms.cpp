@@ -44,6 +44,7 @@ const char* kindName(MenuItem::Kind k) {
     switch (k) {
         case MenuItem::Kind::Submenu: return "submenu";
         case MenuItem::Kind::Separator: return "separator";
+        case MenuItem::Kind::Heading: return "heading";
         case MenuItem::Kind::Action: break;
     }
     return "action";
@@ -100,7 +101,7 @@ Value pairs(const std::vector<std::pair<std::string, std::string>>& list) {
 }
 
 Value control(const BarControl& c) {
-    return Value::object({{"kind", controlName(c.kind)}, {"id", c.id}, {"label", c.label}, {"shown", c.shown},
+    return Value::object({{"kind", controlName(c.kind)}, {"id", c.id}, {"label", c.label}, {"icon", c.icon}, {"shown", c.shown},
                           {"shortShown", c.shortShown}, {"plugged", c.plugged}, {"choices", items(c.choices)},
                           {"entry", c.entry}, {"mediumKind", c.mediumKind}});
 }

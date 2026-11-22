@@ -10,7 +10,7 @@ class QToolButton;
 // control state lists the card reader (the TI-59). Two "Crd"
 // buttons, Arm Card and Arm Fresh Card, while no card passes; Eject Card
 // while one does (the media topic's card reader). The two Crd buttons stand
-// for the File menu's card items (`onBar`).
+// for the File menu's card items.
 class CardControls : public QWidget {
     Q_OBJECT
 public:

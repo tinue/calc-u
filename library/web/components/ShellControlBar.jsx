@@ -50,7 +50,6 @@ function ShellPlaceControl({ control, onChoose, children }) {
 }
 
 // The set's icon of the More button.
-const CALCU_SHELL_ACTION_ICONS = { more: "⋯" };
 
 function ShellControlBar({ shell, slotPicker, mediaControls, extra, compact }) {
   const s = shell;
@@ -72,7 +71,7 @@ function ShellControlBar({ shell, slotPicker, mediaControls, extra, compact }) {
       case "picker":
         return <ShellPlaceControl key={c.id} control={c} onChoose={s.choose} />;
       case "more":
-        return <ShellMoreMenu key="more" shell={s} items={c.choices} label={c.label} compact={compact} />;
+        return <ShellMoreMenu key="more" shell={s} items={c.choices} label={c.label} icon={c.icon} compact={compact} />;
       case "media": {
         const Media = mediaControls && mediaControls[c.mediumKind];
         return Media ? <span key={c.id} data-calcu={`bar-media-${c.id}`}><Media shell={s} entry={c.entry} /></span> : null;

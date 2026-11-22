@@ -127,6 +127,8 @@ void Shell::setChoosers(ShellChoosers c) {
     choosers_ = std::move(c);
 }
 
+void Shell::setChrome(const shell::Chrome& c) { bar_->setChrome(&c); }
+
 bool Shell::loadingShown() const { return loadingView_ && !loadingView_->isHidden(); }
 
 void Shell::askPresetList() {

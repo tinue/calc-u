@@ -75,11 +75,9 @@ the browser version installed on a phone or tablet, a browser that asks
 for the mobile site) there is no menu bar.
 
 On both, the control bar ends with the **More** button (⋯) at its right
-edge. It holds the menus' items without what has a control elsewhere:
-Load Preset…, Examples ▸, the items for media, Settings…, Reset, Cold
-boot, which asks first there, Resume, Help, and About where the system
-has one. Model ▸ is not in it (the model picker is on the bar), nor
-Quit. An item that cannot be used now is greyed out there too.
+edge. It holds every item of the menus, each menu under its name (FILE,
+EDIT, MACHINE, HELP), with the submenus as in the menus. Cold boot asks
+first there. An item that cannot be used now is greyed out there too.
 
 ### Shortcuts
 
@@ -139,7 +137,7 @@ they came.
 
 ## The settings dialog
 
-**File ▸ Settings…** (More ▸ Settings… on mobile) opens a dialog titled
+**File ▸ Settings…** (in More too) opens a dialog titled
 "Settings". A change is
 applied and kept at once; the only button is Close (Done on iOS). You can change
 settings while an operation runs. The sections are:

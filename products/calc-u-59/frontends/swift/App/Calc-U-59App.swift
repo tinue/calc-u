@@ -30,8 +30,6 @@ struct CalcU59App: App {
     var body: some Scene {
         WindowGroup(id: "calculator") { content }
             .onChange(of: scenePhase) { _, newPhase in phaseChanged(newPhase) }
-            // The shell's menus (also in the iPad's system menu bar).
-            .commands { ShellCommands(viewModel: viewModel) }
     }
 
     private func phaseChanged(_ newPhase: ScenePhase) {

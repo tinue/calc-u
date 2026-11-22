@@ -79,13 +79,14 @@ test('the desktop page has the menus and more at the end of the bar', async ({ p
   await el(page, 'menu-machine').click();
   await expect.poll(() => menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(['model', 'peripherals', 'reset', 'cold-boot', 'resume']);
   await expect(el(page, 'item-resume')).toHaveAttribute('aria-disabled', 'true');
-  // The bar has More at its end, and no button of Reset, Preset or Settings; Cold boot is the menu item.
+  // The bar has More at its end, and no button of Reset, Preset or Settings; More holds every menu's items.
   await page.keyboard.press('Escape');
   await expect(el(page, 'bar-more')).toBeVisible();
   await expect(el(page, 'control-bar').locator('[data-calcu^="bar-action-"]')).toHaveCount(0);
   await el(page, 'bar-more').click();
   await expect.poll(() => menuIds(page, 'more-item-', el(page, 'more-menu'))).toEqual(
-    ['load-preset', 'examples', 'import-media', 'saved-media', 'settings', 'reset', 'cold-boot', 'resume', 'help', 'about']);
+    ['heading-file', 'load-preset', 'examples', 'import-media', 'saved-media', 'arm-card', 'arm-fresh-card', 'settings',
+      'heading-machine', 'model', 'peripherals', 'reset', 'cold-boot', 'resume', 'heading-help', 'help', 'about']);
   await el(page, 'bar-more').click();
   await el(page, 'menu-machine').click();
   await el(page, 'item-cold-boot').click();
@@ -128,14 +129,15 @@ test('the desktop page has the menu bar in portrait too', async ({ page }) => {
   await expect(el(page, 'bar-more')).toBeVisible();
 });
 
-test('more holds load preset examples settings reset cold boot resume and help', async ({ page }) => {
+test('more holds every menu item under its heading', async ({ page }) => {
   await page.setViewportSize({ width: 280, height: 700 });
   await gotoReady(page, 'layout=portrait&platform=mobile');
   await el(page, 'bar-more').click();
   const menu = el(page, 'more-menu');
   await expect(menu).toBeVisible();
   await expect.poll(() => menuIds(page, 'more-item-', menu)).toEqual(
-    ['load-preset', 'examples', 'import-media', 'saved-media', 'settings', 'reset', 'cold-boot', 'resume', 'help', 'about']);
+    ['heading-file', 'load-preset', 'examples', 'import-media', 'saved-media', 'arm-card', 'arm-fresh-card', 'settings',
+      'heading-machine', 'model', 'peripherals', 'reset', 'cold-boot', 'resume', 'heading-help', 'help', 'about']);
   await expect(el(page, 'more-item-resume')).toHaveAttribute('aria-disabled', 'true');
   // Inside the client at the narrowest portrait.
   const client = await page.locator('.calcu-client').boundingBox();

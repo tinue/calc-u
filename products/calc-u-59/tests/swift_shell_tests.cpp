@@ -34,6 +34,7 @@ shell::Traits swiftTraits() {
     t.platform = shell::Platform::Mobile;
     t.about = false;
     t.hasQuit = false;
+    t.shortcuts = false;
     return t;
 }
 
@@ -150,8 +151,8 @@ TEST(menus_file_machine_help_in_order) {
     }
 }
 
-// The shortcuts of a hardware keyboard; no About and no Quit.
-TEST(shortcuts_no_about_no_quit) {
+// No shortcuts (no menu bar), no About and no Quit.
+TEST(no_shortcuts_no_about_no_quit) {
     SKIP_UNLESS(roms(), kSkip);
     SwiftRig s;
     const auto ms = shell::menus(s.inputs(), product(), swiftTraits());
@@ -159,9 +160,9 @@ TEST(shortcuts_no_about_no_quit) {
     const auto* load = shell::findItem(ms, "load-preset");
     const auto* reset = shell::findItem(ms, "reset");
     const auto* cold = shell::findItem(ms, "cold-boot");
-    CHECK(load && load->shortcut == S::LoadPreset);
-    CHECK(reset && reset->shortcut == S::Reset);
-    CHECK(cold && cold->shortcut == S::ColdBoot);
+    CHECK(load && load->shortcut == S::None);
+    CHECK(reset && reset->shortcut == S::None);
+    CHECK(cold && cold->shortcut == S::None);
     CHECK(shell::findItem(ms, shell::actions::kAbout) == nullptr);
     CHECK(shell::findItem(ms, shell::actions::kQuit) == nullptr);
 }
@@ -193,8 +194,7 @@ TEST(control_bar_per_model) {
     }
 }
 
-// The bar ends with More, which holds Load Preset…, Examples, Settings…,
-// Reset, Cold boot, Resume and the help.
+// The bar ends with More, which holds every menu's items under its heading.
 TEST(more_holds_examples_reset_cold_boot_resume_help) {
     SKIP_UNLESS(roms(), kSkip);
     using K = shell::BarControl::Kind;
@@ -205,9 +205,11 @@ TEST(more_holds_examples_reset_cold_boot_resume_help) {
     const auto* more = control(bar, K::More);
     CHECK(more != nullptr);
     if (!more) return;
-    CHECK((ids(more->choices) == std::vector<std::string>{shell::actions::kLoadPreset, "examples", shell::actions::kSettings,
-                                                         "reset", "cold-boot", "resume", shell::actions::kHelp}));
-    const auto more2 = shell::moreItems(shell::menus(in, product(), swiftTraits()), product());
+    CHECK((ids(more->choices) == std::vector<std::string>{"heading-file", shell::actions::kLoadPreset, "examples", "arm-card",
+                                                         "arm-fresh-card", shell::actions::kSettings, "heading-machine",
+                                                         "model", "peripherals", "reset", "cold-boot", "resume",
+                                                         "heading-help", shell::actions::kHelp}));
+    const auto more2 = shell::moreItems(shell::menus(in, product(), swiftTraits()));
     CHECK(ids(more2) == ids(more->choices));
 }
 
@@ -215,7 +217,7 @@ TEST(more_holds_examples_reset_cold_boot_resume_help) {
 TEST(cold_boot_asks_first) {
     SKIP_UNLESS(roms(), kSkip);
     SwiftRig s;
-    const auto more = shell::moreItems(shell::menus(s.inputs(), product(), swiftTraits()), product());
+    const auto more = shell::moreItems(shell::menus(s.inputs(), product(), swiftTraits()));
     const shell::MenuItem* cold = nullptr;
     for (const auto& i : more)
         if (i.id == "cold-boot") cold = &i;
@@ -247,7 +249,7 @@ TEST(more_follows_the_control_state) {
     auto more = [&] {
         shell::ShellInputs in = s.inputs();
         in.presetList = list;
-        return shell::moreItems(shell::menus(in, product(), swiftTraits()), product());
+        return shell::moreItems(shell::menus(in, product(), swiftTraits()));
     };
     CHECK(exampleEnabled(more()));
     // An operation: a preset that waits a while.

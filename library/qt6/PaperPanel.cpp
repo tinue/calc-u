@@ -1,4 +1,5 @@
 #include "qt6/PaperPanel.hpp"
+#include "qt6/ChromeStyle.hpp"
 #include "qt6/PaperPainter.hpp"
 #include <QApplication>
 #include <QFontDatabase>
@@ -34,12 +35,15 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     setObjectName(QStringLiteral("paper-panel"));
     auto* outer = new QVBoxLayout(this);
     outer->setContentsMargins(0, 0, 0, 0);
-    outer->setSpacing(2);
+    outer->setSpacing(0);
 
     // The header: the place controls left, the owner's name centred, the
     // view control right, each in its own column so none moves another.
-    auto* header = new QGridLayout;
-    header->setContentsMargins(4, 2, 4, 2);
+    header_ = new QWidget(this);
+    header_->setObjectName(QStringLiteral("paper-header"));
+    header_->setAttribute(Qt::WA_StyledBackground, true);
+    auto* header = new QGridLayout(header_);
+    header->setContentsMargins(6, 0, 6, 0);
     placesLayout_ = new QHBoxLayout;
     placesLayout_->setContentsMargins(0, 0, 0, 0);
     header->addLayout(placesLayout_, 0, 0, Qt::AlignLeft | Qt::AlignVCenter);
@@ -54,7 +58,7 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     header->addWidget(viewToggle_, 0, 2, Qt::AlignRight | Qt::AlignVCenter);
     header->setColumnStretch(0, 1);
     header->setColumnStretch(2, 1);
-    outer->addLayout(header);
+    outer->addWidget(header_);
 
     stack_ = new QStackedWidget(this);
     view_ = new PaperView(stack_);
@@ -74,8 +78,12 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     outer->addWidget(stack_, 1);
 
     // Below the paper: the owner's controls left, Copy and Cut right.
-    auto* footer = new QHBoxLayout;
-    footer->setContentsMargins(4, 2, 4, 2);
+    footer_ = new QWidget(this);
+    footer_->setObjectName(QStringLiteral("paper-footer"));
+    footer_->setAttribute(Qt::WA_StyledBackground, true);
+    auto* footer = new QHBoxLayout(footer_);
+    footer->setContentsMargins(10, 0, 10, 0);
+    footer->setSpacing(8);
     controlsBox_ = new QWidget(this);
     controlsLayout_ = new QHBoxLayout(controlsBox_);
     controlsLayout_->setContentsMargins(0, 0, 0, 0);
@@ -91,7 +99,7 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     cut_->setObjectName(QStringLiteral("paper-cut"));
     cut_->setText(tr("Cut"));
     footer->addWidget(cut_);
-    outer->addLayout(footer);
+    outer->addWidget(footer_);
 
     toast_ = new QLabel(this);
     toast_->setObjectName(QStringLiteral("paper-toast"));
@@ -225,9 +233,26 @@ void PaperPanel::setPaperColour(QColor c) {
     text_->setPalette(pal);
 }
 
+// The panel in the product's chrome: the header and the button bar at
+// its heights and colours, every button in them a pill, the paper's body
+// with the output border, the place dot's colours.
+void PaperPanel::setChrome(const shell::ChromeColours& c, const shell::ChromeSizes& s) {
+    using namespace qt6::chrome;
+    header_->setStyleSheet(QStringLiteral("#paper-header { %1 } #paper-header QLabel { color: %2; font-weight: bold; }")
+                               .arg(header(c, s), qcss(c.headerText)) +
+                           pills(c, s, QStringLiteral("QToolButton")));
+    footer_->setStyleSheet(QStringLiteral("#paper-footer { %1 }").arg(buttonBar(c, s)) + pills(c, s, QStringLiteral("QToolButton")));
+    stack_->setStyleSheet(QStringLiteral("QStackedWidget { border: 1px solid %1; border-top: none; }").arg(qcss(c.outputBorder)));
+    plugged_ = qcolour(c.plugged);
+    unplugged_ = qcolour(c.unplugged);
+    const QIcon printer = QIcon::fromTheme(QIcon::ThemeIcon::DocumentPrint);
+    for (QToolButton* b : header_->findChildren<QToolButton*>())
+        if (b != viewToggle_) b->setIcon(placeIcon(printer, b->isChecked() ? plugged_ : unplugged_));
+}
+
 // A place button's icon: the printer (where the platform has one) and the
-// dot, red while the peripheral is plugged in, as in the iOS and Web apps.
-QIcon PaperPanel::placeIcon(const QIcon& printer, bool plugged) {
+// dot in the chrome's plugged or unplugged colour.
+QIcon PaperPanel::placeIcon(const QIcon& printer, const QColor& dot) {
     const qreal dpr = qApp->devicePixelRatio();
     QPixmap pm(QSize(34, 16) * dpr);
     pm.setDevicePixelRatio(dpr);
@@ -236,7 +261,7 @@ QIcon PaperPanel::placeIcon(const QIcon& printer, bool plugged) {
     p.setRenderHint(QPainter::Antialiasing);
     if (!printer.isNull()) printer.paint(&p, QRect(0, 0, 16, 16));
     p.setPen(Qt::NoPen);
-    p.setBrush(plugged ? QColor(0xff, 0x3b, 0x30) : QColor(128, 128, 128, 102));
+    p.setBrush(dot);
     p.drawEllipse(QRectF(printer.isNull() ? 2 : 22, 4, 8, 8));
     return QIcon(pm);
 }
@@ -255,7 +280,7 @@ void PaperPanel::setPlaces(std::vector<QWidget*> places) {
         w->setParent(this);
         if (auto* b = qobject_cast<QToolButton*>(w)) {
             if (b->toolTip().isEmpty()) b->setToolTip(b->text());
-            b->setIcon(placeIcon(printer, b->isChecked()));
+            b->setIcon(placeIcon(printer, b->isChecked() ? plugged_ : unplugged_));
             b->setIconSize(QSize(34, 16));
             b->setToolButtonStyle(printer.isNull() ? Qt::ToolButtonTextBesideIcon : Qt::ToolButtonIconOnly);
         }

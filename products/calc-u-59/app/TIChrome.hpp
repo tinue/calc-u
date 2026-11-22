@@ -38,6 +38,8 @@ inline constexpr std::string_view kToast = "toast";                        // a 
 inline constexpr std::string_view kShadow = "shadow";
 inline constexpr std::string_view kChevron = "chevron";                    // the portrait pages' arrows
 inline constexpr std::string_view kInk = "ink";                            // the PC-100C's dots
+inline constexpr std::string_view kStepCurrent = "step-current";           // the current step's address
+inline constexpr std::string_view kHeatmapPc = "heatmap-pc";               // the PC on the ROM heatmap
 } // namespace chrome
 
 const calcu::shell::Chrome& tiChrome();

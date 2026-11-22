@@ -1,4 +1,5 @@
 #include "RomHeatmapWidget.hpp"
+#include "ChromeStyle.hpp"
 #include "EmulatorController.hpp"
 #include "RomHeatmap.hpp"
 #include <QMouseEvent>
@@ -48,7 +49,7 @@ void RomHeatmapWidget::paintEvent(QPaintEvent*) {
     if (m_currentPC >= 0 && m_currentPC < kHeatmapCols * kHeatmapRows) {
         double cw = static_cast<double>(width()) / kHeatmapCols, ch = static_cast<double>(height()) / kHeatmapRows;
         p.fillRect(QRectF((m_currentPC % kHeatmapCols) * cw, (m_currentPC / kHeatmapCols) * ch, std::max(1.0, cw - 0.5),
-                          std::max(1.0, ch - 0.5)), Qt::green);
+                          std::max(1.0, ch - 0.5)), ChromeStyle::named(cu59::chrome::kHeatmapPc));
     }
 }
 

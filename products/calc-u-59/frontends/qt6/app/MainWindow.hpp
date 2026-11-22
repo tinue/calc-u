@@ -3,6 +3,7 @@
 #include "pacing/WallClock.hpp"
 #include "shell/ShellProduct.hpp"
 #include <QMainWindow>
+#include <QPointer>
 #include <memory>
 
 class CalculatorPanel;
@@ -51,6 +52,7 @@ protected:
     void dropEvent(QDropEvent* e) override;
 
 private:
+    QPointer<QWidget> m_paperStyled;   // the paper panel in the chrome now
     calcu::shell::ShellProduct product();
     void restoreWindowState();
     void saveWindowState();

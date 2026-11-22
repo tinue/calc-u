@@ -1,24 +1,21 @@
 #pragma once
-#include <QColor>
-#include <QIcon>
 #include <QWidget>
 #include <cstdint>
 #include <string>
 #include <vector>
 
 #include "Debug/Inspect/Inspector.hpp"
-#include "sessions/LogLevel.hpp"
 
 class QMenu;
 class QPlainTextEdit;
 class QPushButton;
-class QToolButton;
 class QLabel;
 class MachineController;
 
 // INSPECTOR: the docked machine inspector -- a header, a scrolling
-// monospaced output log, and a two-row button bar (Pointers, the Memory ▾
-// and Dump ▾ menus, Module YAML, Clear; then the TRACE / LOG pills). The
+// monospaced output log, and a button bar of pills (Pointers, the Memory ▾
+// and Dump ▾ menus, Module YAML, Clear) in the product's chrome
+// (app/SharpChrome), lined up with the panels beside it. The
 // views themselves are built in Core (core/Debug/Inspect, via
 // MachineController::inspectorView()); stepping and breakpoints are the
 // debugger's (help/07-debugger.md), not this panel's. Always visible under the
@@ -34,10 +31,6 @@ public:
     explicit DebugPanel(MachineController* controller, QWidget* parent = nullptr);
     ~DebugPanel();
 
-    // Called once per ~60Hz frame tick from MainWindow::onFrameTick() --
-    // checks the trace file against its size cap while TRACE is enabled.
-    void onFrameTick();
-
     // Text selected (with the mouse) in the output area, "" if none.
     // `outputSelectionChanged` fires when that changes -- Edit > Copy then
     // copies it instead of the screen.
@@ -47,10 +40,8 @@ signals:
     void outputSelectionChanged(bool hasSelection);
 
 protected:
-    // Re-applies theme-aware chrome colors when the system light/dark
-    // appearance changes (QEvent::PaletteChange/ApplicationPaletteChange) --
-    // see applyChrome()'s own doc comment for why the container backgrounds,
-    // not just the buttons, need to track this.
+    // The system's light/dark appearance changed (PaletteChange,
+    // ApplicationPaletteChange): the chrome follows.
     void changeEvent(QEvent* event) override;
 
 private:
@@ -64,8 +55,6 @@ private:
     QPushButton* m_dumpButton = nullptr;   // Dump ▾
     QPushButton* m_moduleYamlButton = nullptr;
     QPushButton* m_clearButton = nullptr;
-    QToolButton* m_traceButton = nullptr;
-    QToolButton* m_logButton = nullptr;
 
     // ── Ring buffer / paging ─────────────────────────────────────────────
     static constexpr int kRingBufCap = 2000;
@@ -78,48 +67,13 @@ private:
     void ringWriteAll(const std::vector<std::string>& lines);
     void refreshDebugDisplay();
 
-    // ── TRACE ─────────────────────────────────────────────────────────
-    // The library's trace session runs the capture: this
-    // panel only starts and stops it through the `trace` command. Whether
-    // one runs is the `trace` topic (MachineController::traceActive());
-    // m_traceShownActive is what the button shows, so the next frame
-    // notices a trace the session ended (its size limit, a new machine).
-    bool m_traceShownActive = false;
-    void setTraceEnabled(bool enabled);
-    void updateTraceButtonAppearance();
-
-    // ── LOG ───────────────────────────────────────────────────────────
-    // The session's log level (the library's `log-level`): at Info the log
-    // tells how a preset is carried out. m_shownLevel is what the button
-    // shows, so the next frame notices a level set elsewhere (the attach).
-    calcu::sessions::LogLevel m_shownLevel = calcu::sessions::LogLevel::Off;
-    void toggleDebugLevel();
-    void updateLogButtonAppearance();
-
     // ── Inspector views and Module YAML ───────────────────────────────
     void fillMenu(QMenu* menu, bool dumps);
     void showView(inspect::View view);
     void debugDumpModuleAsYaml();
     void clearDebug();
 
-    QIcon dotIcon(const QColor& color) const;
-
-    // ── Theming ──────────────────────────────────────────────────────
-    //
-    // The window chrome and native controls track the system light/dark
-    // appearance, so the header/output/button-bar backgrounds need to as
-    // well: a hardcoded-light backdrop puts native dark-mode buttons on a
-    // surface they're not designed for -- macOS renders a dark-mode
-    // QPushButton assuming a dark surface behind it, so its text reads as
-    // washed-out/disabled on a light bar. This panel tracks the system
-    // appearance with two hand-picked palettes (light and dark, matched for
-    // relative contrast/hierarchy), applied to the header/output/button-bar
-    // containers so native buttons always sit on a backdrop their own
-    // platform styling expects. Re-applied on QEvent::PaletteChange (see
-    // changeEvent()) so a live light/dark switch updates without a relaunch.
-    bool isDarkMode() const;
+    // The chrome's light or dark colours as the window's appearance is,
+    // again at each palette change (changeEvent).
     void applyChrome();
-    QColor m_pillOnColor;
-    QColor m_pillOffColor;
-    QColor m_pillTextColor;
 };

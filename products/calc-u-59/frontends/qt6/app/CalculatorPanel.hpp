@@ -16,7 +16,7 @@ public:
 
 signals:
     /// The bar's and the paper's text scale changed with the faceplate
-    /// (ChromeStyle::fontScale).
+    /// (app/'s rule, TIChrome::textScale).
     void fontScaleChanged(double scale);
 
 public:

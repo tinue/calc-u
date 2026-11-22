@@ -1,5 +1,8 @@
 #include "MediaControls.hpp"
+#include "app/SharpChrome.hpp"
+#include "qt6/ChromeStyle.hpp"
 
+#include <QFontInfo>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -29,7 +32,9 @@ QPushButton* compactButton(QWidget* parent, const QString& tip, const QString& n
 }
 
 void lampStyle(QLabel* lamp, bool on) {
-    lamp->setStyleSheet(on ? QStringLiteral("color: #2ecc40;") : QStringLiteral("color: palette(mid);"));
+    namespace ch = calcu::qt6::chrome;
+    const calcu::shell::ChromeColours& c = cu1600::sharpChrome().colours(ch::darkAppearance(lamp));
+    lamp->setStyleSheet(QStringLiteral("color: %1;").arg(ch::qcss(c.named(on ? cu1600::chrome::kLampOn : cu1600::chrome::kLampOff))));
 }
 
 } // namespace
@@ -77,6 +82,10 @@ SlotControl::SlotControl(MachineController& c, std::string place, QWidget* paren
     l->setContentsMargins(0, 0, 0, 0);
     l->setSpacing(2);
     l->addWidget(m_picker);
+    // One width whatever it shows (the chrome's, in em), so the bar's
+    // controls never move when a module comes or goes.
+    if (const double em = cu1600::sharpChrome().sizes.slotPickerEm; em > 0)
+        m_picker->setFixedWidth(qRound(em * QFontInfo(m_picker->font()).pixelSize()));
     m_save = compactButton(this, tr("Name & Save"), QString::fromStdString("media-save-" + m_place));
     l->addWidget(m_save);
     connect(m_save, &QPushButton::clicked, this, [this] { nameAndSave(tr("Instance name:")); });

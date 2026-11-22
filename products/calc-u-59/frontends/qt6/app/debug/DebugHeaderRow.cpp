@@ -11,12 +11,12 @@ DebugHeaderRow::DebugHeaderRow(EmulatorController& controller, bool cpu, QWidget
     : QWidget(parent), m_controller(controller), m_cpu(cpu),
       m_level(cpu ? calcu::debugger::kCpu : calcu::debugger::kProgram) {
     setAttribute(Qt::WA_StyledBackground, true);
-    setStyleSheet(QStringLiteral("DebugHeaderRow { background: %1; }").arg(ChromeStyle::rgb(ChromeStyle::kDebugHeader)));
+    setStyleSheet(QStringLiteral("DebugHeaderRow { background: %1; }").arg(ChromeStyle::rgb(cu59::chrome::kDebugHeader)));
     auto* row = new QHBoxLayout(this);
     row->setContentsMargins(10, 6, 10, 6);
     row->setSpacing(8);
     m_title = new QLabel(this);
-    m_title->setStyleSheet(QStringLiteral("color: rgba(255,255,255,0.6); font-weight: bold; font-size: 11px;"));
+    m_title->setStyleSheet(QStringLiteral("color: %1; font-weight: bold; font-size: 11px;").arg(ChromeStyle::rgb(ChromeStyle::text(0.6))));
     m_title->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     m_title->setMinimumWidth(40);
     row->addWidget(m_title, 1);   // takes the spare width; shrinks first

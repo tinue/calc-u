@@ -55,6 +55,8 @@ calcu::shell::Chrome make() {
         {std::string(chrome::kShadow), Colour{0, 0, 0, 153}},
         {std::string(chrome::kChevron), Colour{60, 60, 60, 179}},
         {std::string(chrome::kInk), Colour::grey(0.12)},
+        {std::string(chrome::kStepCurrent), Colour{153, 255, 153, 255}},
+        {std::string(chrome::kHeatmapPc), Colour::rgb(0x00ff00)},
     };
 
     calcu::shell::ChromeSizes& s = c.sizes;
@@ -90,7 +92,7 @@ std::vector<std::string_view> tiChromeNames() {
     using namespace chrome;
     return {kDebugBackground, kDebugHeader, kSection, kTabSelected, kPillOn, kDivider, kColumnLine, kOrange, kRed,
             kYellow, kBlue, kGreen, kHover, kLogText, kDialog, kDialogFooter, kField, kFieldBorder, kListLine,
-            kAlternate, kButton, kHighlight, kScrim, kToast, kShadow, kChevron, kInk};
+            kAlternate, kButton, kHighlight, kScrim, kToast, kShadow, kChevron, kInk, kStepCurrent, kHeatmapPc};
 }
 
 } // namespace cu59

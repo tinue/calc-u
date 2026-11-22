@@ -36,10 +36,11 @@ Never edit the calculator there — that copy is generated.
    `CalcuPaperPanel` (`src/Paper.jsx`) and the run-control buttons
    `CalcuRunControlButtons` (`src/Debugger.jsx`), on the shell.
    The page is put together from the React set's
-   shell (`library/web/components/`): `useCalcuShell` with the layout's
-   traits (wide: the menu bar `ShellMenuBar`, File / Machine / Help, no Edit;
-   portrait: no menu bar, the bar's Preset, Settings and More (with Reset),
-   `ShellMoreMenu`), `ShellControlBar` in each calculator column (the model
+   shell (`library/web/components/`): `useCalcuShell` with the page's
+   platform (desktop: the menu bar `ShellMenuBar`, File / Machine / Help, no
+   Edit; mobile: none; `?platform=` overrides) and the bar's More at its
+   right edge on both (`ShellMoreMenu`, Load Preset… and Settings… in it),
+   `ShellControlBar` in each calculator column (the model
    picker, the library's `CalcuMediaPicker` for `slot-1`,
    the product's card controls as the media controls of `magnetic-card`),
    the button "PC-100C" on the paper panel (the panel model's `places`),

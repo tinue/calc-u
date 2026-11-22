@@ -49,8 +49,7 @@ test('CalcU59 props, layout and settings', async ({ page }) => {
   await expect(second.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
   await expect(second).toHaveAttribute('tabindex', '0');           // keyboard on
   await expect(second).toHaveAttribute('data-layout', 'portrait');  // layout
-  // settings={false}: no Settings button and no Settings… behind More.
-  await expect(second.locator('[data-calcu="bar-action-settings"]')).toHaveCount(0);
+  // settings={false}: no Settings… behind More.
   // The second copy on the page keeps nothing it saves: its notice first.
   await expect(second.locator('[data-calcu="notice"]')).toBeVisible();
   await second.locator('[data-calcu="notice-ok"]').click();

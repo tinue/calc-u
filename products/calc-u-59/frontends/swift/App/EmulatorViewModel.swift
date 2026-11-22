@@ -523,7 +523,7 @@ class EmulatorViewModel {
 
     // MARK: - Opening files (the session's `open`)
 
-    /// The Preset button's file dialog: any file, opened
+    /// Load Preset…'s file dialog: any file, opened
     /// as what it is (a preset, an ASM overlay, a keystroke program, a card);
     /// its content goes over (the picked file is readable only inside
     /// its security scope). A refusal is the session's notice.

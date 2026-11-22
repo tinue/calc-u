@@ -210,7 +210,7 @@ const control = (groups, id) => groups.flatMap((g) => g.controls).find((c) => c.
 
 test("bar_groups_and_order", () => {
   const b = m.calcuShellBar(inputs(), product());
-  assert.equal(describeBar(b), "[model][slot-1 slot-2][printer aux][card][]");
+  assert.equal(describeBar(b), "[model][slot-1 slot-2][printer aux][card][more]");
   assert.deepEqual(b.map((g) => g.group), ["AfterModel", "Slots", "Places", "Media", "End"]);
   assert.equal(control(b, "model").choices.length, 2);
   assert.equal(control(b, "card").mediumKind, "test-card");
@@ -238,7 +238,7 @@ test("place_button_for_one_picker_for_several", () => {
   assert.equal(control(b, "printer").kind, "button");
   assert.equal(control(b, "printer").label, "TD-20");
   assert.equal(control(b, "aux").kind, "picker");
-  assert.deepEqual(control(b, "aux").choices.map((c) => c.label), ["None", "TP-4", "TD-21"]);
+  assert.deepEqual(control(b, "aux").choices.map((c) => c.label), ["No aux", "TP-4", "TD-21"]);
 });
 
 test("place_button_attaches_and_detaches", () => {
@@ -260,7 +260,7 @@ test("place_needing_more_has_no_control", () => {
 });
 
 test("bar_no_entry_no_gap", () => {
-  assert.equal(describeBar(m.calcuShellBar(inputs(clone(INPUTS.modelB)), product())), "[model][][printer][][]");
+  assert.equal(describeBar(m.calcuShellBar(inputs(clone(INPUTS.modelB)), product())), "[model][][printer][][more]");
 });
 
 test("paper_panel_always_with_or_without_owner", () => {
@@ -521,9 +521,9 @@ test("about_shows_product_texts", () => {
   assert.equal(m.calcuShellAbout(p).version, "Version 1.2.3");
 });
 
-// A window without a menu bar and labelled choices; the C++ cases of the same names in
+// The More button, the mobile bar and labelled choices; the C++ cases of the same names in
 // menu_model_tests.cpp, bar_model_tests.cpp, settings_dialog_tests.cpp.
-const PORTRAIT = Object.assign({}, WEB, { menuBar: false });
+const MOBILE = Object.assign({}, WEB, { platform: "mobile" });
 const withAction = (cs, command, available) => {
   for (const a of cs.actions) if (a.command === command) Object.assign(a, available);
   return cs;
@@ -532,21 +532,61 @@ const withAction = (cs, command, available) => {
 test("more_items_are_the_items_without_a_control", () => {
   const p = product();
   const inp = Object.assign(inputs(), { media: clone(INPUTS.media) });
-  const ms = m.calcuShellMenus(inp, p, PORTRAIT);
+  const ms = m.calcuShellMenus(inp, p, MOBILE);
   assert.equal(ms.map((x) => x.id).join(" "), "file machine help");
   assert.equal(ids(m.calcuShellMoreItems(ms, p)),
-    "examples - load-program - import-media saved-media mount-drive - variants-model - reset cold-boot resume disk-thing - help about");
+    "load-preset examples - load-program - import-media saved-media mount-drive - settings - variants-model - reset cold-boot resume disk-thing - help about");
   p.items[1].onBar = true;
-  assert.equal(ids(m.calcuShellMoreItems(m.calcuShellMenus(inp, p, PORTRAIT), p)),
-    "examples - load-program - import-media saved-media - variants-model - reset cold-boot resume disk-thing - help about");
+  assert.equal(ids(m.calcuShellMoreItems(m.calcuShellMenus(inp, p, MOBILE), p)),
+    "load-preset examples - load-program - import-media saved-media - settings - variants-model - reset cold-boot resume disk-thing - help about");
   p.items[0].onBar = true;
-  assert.equal(ids(m.calcuShellMoreItems(m.calcuShellMenus(inp, p, PORTRAIT), p)),
-    "examples - import-media saved-media - variants-model - reset cold-boot resume disk-thing - help about");
+  assert.equal(ids(m.calcuShellMoreItems(m.calcuShellMenus(inp, p, MOBILE), p)),
+    "load-preset examples - import-media saved-media - settings - variants-model - reset cold-boot resume disk-thing - help about");
+  assert.equal(ids(m.calcuShellMoreItems(m.calcuShellMenus(inp, p, MOBILE), p, false)),
+    "load-preset examples - import-media saved-media - settings - variants-model peripherals - reset cold-boot resume disk-thing - help about");
+  assert.ok(find(m.calcuShellMenus(inp, p, QT), "quit"));
+  assert.ok(!m.calcuShellMoreItems(m.calcuShellMenus(inp, p, QT), p).some((i) => i.id === "quit"));
+});
+
+test("mobile_media_submenu_chooses_and_names_and_saves", () => {
+  const p = product();
+  let inp = Object.assign(inputs(), { media: clone(INPUTS.mediaPlace) });
+  let ms = m.calcuShellMenus(inp, p, MOBILE);
+  let sub = find(ms, "media-card");
+  assert.equal(sub.kind, "submenu");
+  assert.equal(sub.label, "Test card");
+  assert.equal(ids(sub.children), "media-card-0 media-card-1 media-card-2 - media-name-and-save-card");
+  assert.equal(sub.children[0].label, "(empty)");
+  assert.ok(sub.children[0].checked);
+  assert.equal(sub.children[0].command, "");
+  assert.equal(sub.children[1].label, "Blank");
+  assert.equal(sub.children[1].command, "media.choose");
+  assert.deepEqual(sub.children[1].args, { place: "card", entry: "bundled:Blank.test-card.yaml" });
+  assert.equal(sub.children[1].enabled, true);
+  assert.equal(sub.children[2].enabled, false);
+  assert.equal(sub.children[2].reason, "In the other reader.");
+  const save = sub.children[4];
+  assert.equal(save.label, "Name & Save…");
+  assert.equal(save.command, "");
+  assert.deepEqual(save.args, { place: "card" });
+  assert.equal(save.enabled, false);
+  assert.equal(save.reason, "Nothing to save.");
+  assert.ok(m.calcuShellMoreItems(ms, p).some((i) => i.id === "media-card"));
+  const cs = clone(INPUTS.modelA);
+  cs.mediaPlaces[0].insert = { available: false, reason: "A card passes." };
+  inp.controlState = cs;
+  sub = find(m.calcuShellMenus(inp, p, MOBILE), "media-card");
+  assert.equal(sub.children[1].enabled, false);
+  assert.equal(sub.children[1].reason, "A card passes.");
+  inp = Object.assign(inputs(), { media: clone(INPUTS.mediaPlace) });
+  assert.equal(find(m.calcuShellMenus(inp, p, WEB), "media-card"), null);
+  p.mobileBarMedia = ["test-card"];
+  assert.equal(find(m.calcuShellMenus(inp, p, MOBILE), "media-card"), null);
 });
 
 test("more_cold_boot_asks_first", () => {
   const p = product();
-  const ms = m.calcuShellMenus(inputs(), p, PORTRAIT);
+  const ms = m.calcuShellMenus(inputs(), p, MOBILE);
   const more = m.calcuShellMoreItems(ms, p);
   const cold = more.find((i) => i.id === "cold-boot");
   assert.equal(cold.confirm, "Cold boot the machine? What it holds in memory is lost.");
@@ -559,7 +599,7 @@ test("more_cold_boot_asks_first", () => {
 test("more_follows_availability", () => {
   const p = product();
   const cs = withAction(clone(INPUTS.modelA), "cold-boot", { available: false, reason: "An operation runs." });
-  let more = m.calcuShellMoreItems(m.calcuShellMenus(inputs(cs), p, PORTRAIT), p);
+  let more = m.calcuShellMoreItems(m.calcuShellMenus(inputs(cs), p, MOBILE), p);
   const by = (id) => more.find((i) => i.id === id);
   assert.equal(by("cold-boot").enabled, false);
   assert.equal(by("cold-boot").reason, "An operation runs.");
@@ -567,7 +607,7 @@ test("more_follows_availability", () => {
   assert.equal(by("disk-thing").reason, "No disk drive.");
   const inp = inputs();
   inp.runState = { paused: true };
-  more = m.calcuShellMoreItems(m.calcuShellMenus(inp, p, PORTRAIT), p);
+  more = m.calcuShellMoreItems(m.calcuShellMenus(inp, p, MOBILE), p);
   assert.equal(by("cold-boot").enabled, true);
   assert.equal(by("resume").enabled, true);
 });
@@ -597,25 +637,60 @@ test("no_settings_item_without_settings", () => {
   assert.equal(ids(menu(ms, "help").items), "help");
 });
 
-test("bar_without_menu_bar_keeps_preset_settings_and_more", () => {
+const inMore = (b, id) => control(b, "more").choices.find((i) => i.id === id) || null;
+
+test("bar_more_at_the_right_edge_on_every_platform", () => {
   const p = product();
-  const b = m.calcuShellBar(inputs(), p, PORTRAIT);
-  assert.equal(describeBar(b), "[model][slot-1 slot-2][printer aux][card][load-preset settings more]");
-  assert.equal(b[0].group, "AfterModel");
-  assert.equal(b[4].group, "End");
-  assert.equal(control(b, "load-preset").label, "Preset");
-  assert.equal(control(b, "load-preset").item.command, "");
-  assert.equal(control(b, "settings").label, "Settings");
-  const more = control(b, "more");
-  assert.equal(more.kind, "more");
-  assert.equal(more.choices.length, m.calcuShellMoreItems(m.calcuShellMenus(inputs(), p, PORTRAIT), p).length);
-  assert.equal(more.choices.find((i) => i.id === "reset").command, "reset");
+  for (const t of [WEB, MOBILE]) {
+    const b = m.calcuShellBar(inputs(), p, t);
+    assert.equal(b[4].group, "End");
+    assert.equal(b[4].pushed, true);
+    assert.equal(b[4].controls.length, 1);
+    const more = control(b, "more");
+    assert.equal(more.kind, "more");
+    assert.equal(more.label, "More");
+    assert.ok(inMore(b, "load-preset"));
+    assert.equal(inMore(b, "load-preset").command, "");
+    assert.ok(inMore(b, "settings"));
+    assert.equal(inMore(b, "model"), null);
+    assert.equal(inMore(b, "reset").command, "reset");
+  }
+  assert.equal(control(m.calcuShellBar(inputs(), p, WEB), "more").choices.length,
+    m.calcuShellMoreItems(m.calcuShellMenus(inputs(), p, WEB), p).length);
   const cs = withAction(clone(INPUTS.modelA), "reset", { available: false, reason: "An operation runs." });
-  const reset2 = control(m.calcuShellBar(inputs(cs), p, PORTRAIT), "more").choices.find((i) => i.id === "reset");
-  assert.equal(reset2.enabled, false);
-  assert.equal(reset2.reason, "An operation runs.");
-  assert.equal(control(m.calcuShellBar(inputs(), p, Object.assign({}, PORTRAIT, { settings: false })), "settings"), null);
-  assert.equal(describeBar(m.calcuShellBar(inputs(), p, WEB)), "[model][slot-1 slot-2][printer aux][card][]");
+  const reset = inMore(m.calcuShellBar(inputs(cs), p, WEB), "reset");
+  assert.equal(reset.enabled, false);
+  assert.equal(reset.reason, "An operation runs.");
+  assert.equal(inMore(m.calcuShellBar(inputs(), p, Object.assign({}, WEB, { settings: false })), "settings"), null);
+});
+
+test("mobile_bar_drops_places_and_unlisted_media", () => {
+  const p = product();
+  assert.equal(describeBar(m.calcuShellBar(inputs(), p, MOBILE)), "[model][slot-1 slot-2][][][more]");
+  p.mobileBarMedia = ["test-card"];
+  assert.equal(describeBar(m.calcuShellBar(inputs(), p, MOBILE)), "[model][slot-1 slot-2][][card][more]");
+  p.mobileBarMedia = [];
+  assert.equal(describeBar(m.calcuShellBar(inputs(), p, WEB)), "[model][slot-1 slot-2][printer aux][card][more]");
+});
+
+test("peripherals_in_more_only_on_mobile", () => {
+  const p = product();
+  assert.equal(inMore(m.calcuShellBar(inputs(), p, WEB), "peripherals"), null);
+  assert.ok(inMore(m.calcuShellBar(inputs(), p, MOBILE), "peripherals"));
+  p.placesOnPaper = ["printer", "aux"];
+  assert.equal(inMore(m.calcuShellBar(inputs(), p, MOBILE), "peripherals"), null);
+  p.placesOnPaper = ["printer"];
+  assert.ok(inMore(m.calcuShellBar(inputs(), p, MOBILE), "peripherals"));
+});
+
+test("place_picker_empty_entry_names_the_place", () => {
+  const cs = clone(INPUTS.modelA);
+  cs.places[3].place = "aux-printer";
+  const picker = control(m.calcuShellBar(inputs(cs), product()), "aux-printer");
+  assert.equal(picker.kind, "picker");
+  assert.equal(picker.choices[0].label, "No aux printer");
+  assert.equal(picker.shown, "\u2014");
+  assert.equal(find(m.calcuShellMenus(inputs(cs), product()), "peripheral-aux-printer-none"), null);
 });
 
 test("bar_fit_labels_and_width", () => {
@@ -627,7 +702,7 @@ test("bar_fit_labels_and_width", () => {
 
 test("bar_spread_and_short_pickers", () => {
   let b = m.calcuShellBar(inputs(), product());
-  for (const g of b) assert.equal(g.pushed, false);
+  for (const g of b) assert.equal(g.pushed, g.group === "End");   // More at the right edge always
   const p = Object.assign(product(), { barSpread: true, barShortPickers: true });
   b = m.calcuShellBar(inputs(), p);
   for (const g of b) assert.equal(g.pushed, g.group === "Media" || g.group === "End");
@@ -637,7 +712,7 @@ test("bar_spread_and_short_pickers", () => {
 
 test("place_on_paper_is_on_the_paper_panel", () => {
   const p = Object.assign(product(), { placesOnPaper: ["printer"] });
-  assert.equal(describeBar(m.calcuShellBar(inputs(), p)), "[model][slot-1 slot-2][aux][card][]");
+  assert.equal(describeBar(m.calcuShellBar(inputs(), p)), "[model][slot-1 slot-2][aux][card][more]");
   const ps = m.calcuShellPanels(inputs(), p);
   assert.equal(ps[0].places.length, 1);
   assert.equal(ps[0].places[0].id, "printer");

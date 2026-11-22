@@ -94,6 +94,50 @@ std::string variantLabel(const ShellProduct& p, const std::string& id) {
     return it != p.variantLabels.end() ? it->second : "Variant";   // a missing label: checkShellProduct reports it
 }
 
+// Mobile: a media place whose controls the bar leaves out (its kind not in
+// the product's mobileBarMedia) gets a submenu named after its kind: the
+// entries of its picker to choose, then Name & Save…, which the media
+// components' dialog carries out (the shell action kNameAndSavePrefix).
+std::vector<MenuItem> mediaMenus(const ShellInputs& in, const ShellProduct& p, Traits t) {
+    std::vector<MenuItem> out;
+    if (t.platform != Platform::Mobile || !in.started()) return out;
+    for (const auto& m : read::elements(in.controlState, "mediaPlaces")) {
+        const std::string kind = read::text(m, "kind");
+        if (p.mobileBarMedia.count(kind)) continue;
+        const std::string id = read::text(m, "id");
+        const Value* place = nullptr;
+        for (const auto& x : read::elements(in.media, "places"))
+            if (!place && (read::text(x, "place") == id || read::text(x, "kind") == kind)) place = &x;
+        if (!place) continue;
+        const std::string where = read::text(*place, "place");
+        const Availability insert = availabilityOf(m, "insert");
+        std::vector<MenuItem> children;
+        std::size_t n = 0;
+        for (const auto& e : read::elements(*place, "picker")) {
+            const bool empty = read::text(e, "group") == "empty";
+            MenuItem i = action("media-" + where + "-" + std::to_string(n++), empty ? "(empty)" : read::text(e, "label"));
+            i.checkable = true;
+            i.checked = read::flag(e, "chosen");
+            if (!i.checked) i.command = commands::kMediaChoose;
+            i.args = Value::object({{"place", where}, {"entry", read::text(e, "id")}});
+            applyAvailability(i, insert.now && !read::flag(e, "canChoose", true) ? Availability{false, read::text(e, "hint")}
+                                                                                 : insert);
+            children.push_back(std::move(i));
+        }
+        children.push_back(separator());
+        MenuItem save = action(actions::kNameAndSavePrefix + where, "Name & Save…");
+        save.args = Value::object({{"place", where}});
+        applyAvailability(save, read::flag(*place, "nameAndSave") ? insert : Availability{false, "Nothing to save."});
+        children.push_back(std::move(save));
+        std::string label = kind;
+        for (const auto& k : read::elements(in.media, "kinds"))
+            if (read::text(k, "kind") == kind && !read::text(k, "label").empty()) label = read::text(k, "label");
+        if (!label.empty() && label[0] >= 'a' && label[0] <= 'z') label[0] = static_cast<char>(label[0] - 'a' + 'A');
+        out.push_back(submenu("media-" + where, label, std::move(children)));
+    }
+    return out;
+}
+
 std::vector<MenuItem> fileMenu(const ShellInputs& in, const ShellProduct& p, Traits t) {
     std::vector<MenuItem> items;
     // FileOpen: Load Preset…, Examples ▸.
@@ -145,6 +189,7 @@ std::vector<MenuItem> fileMenu(const ShellInputs& in, const ShellProduct& p, Tra
         media.push_back(action(actions::kSavedMedia, "Saved Media…"));
     }
     for (auto& i : productItems(in, p, MenuGroup::FileMedia)) media.push_back(std::move(i));
+    for (auto& i : mediaMenus(in, p, t)) media.push_back(std::move(i));
     appendGroup(items, std::move(media));
     std::vector<MenuItem> end = productItems(in, p, MenuGroup::FileEnd);
     if (t.settings) {
@@ -342,11 +387,9 @@ std::vector<Menu> menus(const ShellInputs& in, const ShellProduct& p, Traits t) 
     return out;
 }
 
-std::vector<MenuItem> moreItems(const std::vector<Menu>& ms, const ShellProduct& p) {
+std::vector<MenuItem> moreItems(const std::vector<Menu>& ms, const ShellProduct& p, bool placesShown) {
     auto onBar = [&](const MenuItem& i) {
-        if (i.id == actions::kLoadPreset || i.id == actions::kSettings || i.id == actions::kQuit ||
-            i.id == "model" || i.id == "peripherals")
-            return true;
+        if (i.id == actions::kQuit || i.id == "model" || (placesShown && i.id == "peripherals")) return true;
         for (const auto& item : p.items)
             if (item.id == i.id && item.onBar) return true;
         return false;

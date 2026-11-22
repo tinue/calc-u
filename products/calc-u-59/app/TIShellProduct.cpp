@@ -35,6 +35,7 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
     // Neither Copy Screen nor Paste Text, so no Edit menu.
     p.moduleSlotPinOuts = {"module-slot"};
     p.placesOnPaper = {kTIPrinterPlace.value};   // the PC-100C's button over its paper
+    p.mobileBarMedia = {"magnetic-card"};
     for (const auto& [id, label] : {std::pair{kItemArmCard, "Arm Card…"}, std::pair{kItemArmFreshCard, "Arm Fresh Card…"}}) {
         shell::ProductItem i;
         i.group = shell::MenuGroup::FileMedia;

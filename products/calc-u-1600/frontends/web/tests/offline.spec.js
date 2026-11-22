@@ -25,7 +25,7 @@ test('the installed app starts without a connection and runs every model', async
   await app.goto(appUrl);
   await expect(app.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
   for (const model of ['PC-1600', 'PC-1500', 'PC-1500A']) {
-    await app.locator('[data-calcu=bar-model]').selectOption({ label: model });
+    await app.locator('[data-calcu=bar-model]').selectOption({ label: model.replace(/^PC-/, '') });
     await expect(app.locator(`.calcu-face[data-model="${model}"]`)).toHaveCount(1, { timeout: 30000 });
   }
   // A bundled preset, with its program file, from the cache (File ▸ Examples ▸).

@@ -21,14 +21,12 @@ final class FilePickerTests: XCTestCase {
 
     // MARK: - Tests
 
-    /// The Preset button must open the document picker sheet.
+    /// More ▸ Load Preset… must open the document picker sheet.
     @MainActor
     func testFilePickerOpens() throws {
         let app = launchApp(orientation: .portrait)
 
-        let presetButton = app.buttons["btn-preset"]
-        XCTAssertTrue(presetButton.waitForExistence(timeout: 5), "Preset button not found")
-        presetButton.tap()
+        chooseFromMore(app, "load-preset")
 
         // The system document picker presents a Cancel button on both iPhone and iPad.
         XCTAssertTrue(pickerCancelButton(app).waitForExistence(timeout: 5), "File picker did not appear")
@@ -38,7 +36,7 @@ final class FilePickerTests: XCTestCase {
         cancelPicker(app)
     }
 
-    /// Tapping Preset a second time after a Cancel must reopen the picker.
+    /// Load Preset… a second time after a Cancel must reopen the picker.
     ///
     /// Regression: the iPad popover dismiss path left filePickerMode non-nil while
     /// filePickerPresented was false, so a second tap was a no-op.
@@ -46,16 +44,13 @@ final class FilePickerTests: XCTestCase {
     func testFilePickerReopensAfterCancel() throws {
         let app = launchApp(orientation: .portrait)
 
-        let presetButton = app.buttons["btn-preset"]
-        XCTAssertTrue(presetButton.waitForExistence(timeout: 5), "Preset button not found")
-
         // First open → cancel
-        presetButton.tap()
+        chooseFromMore(app, "load-preset")
         XCTAssertTrue(pickerCancelButton(app).waitForExistence(timeout: 5), "File picker did not appear on first tap")
         cancelPicker(app)
 
         // Second open — this was the failure case
-        presetButton.tap()
+        chooseFromMore(app, "load-preset")
         XCTAssertTrue(
             pickerCancelButton(app).waitForExistence(timeout: 5),
             "File picker did not reopen after cancel — regression in filePickerPresented state"

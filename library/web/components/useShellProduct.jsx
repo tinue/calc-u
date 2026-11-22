@@ -1,7 +1,7 @@
 // A product page's glue to its session, the same for both products' pages.
 //
 //   useShellProduct(shell, {request, args, fallback, version, build,
-//                   copyScreen, openFiles, acts}) → {product, ready}
+//                   copyScreen, openFiles, acts, nameAndSave}) → {product, ready}
 //     the product's shell data: `request` (`<prefix>.shell-product`) with
 //     `args`, once per distinct `args` while the session runs, its answer
 //     {product, settingsSpec} kept; `fallback` (the shell's frame with
@@ -10,7 +10,8 @@
 //     null: none), the settings spec, Load Preset… (the files picked by the
 //     product's `presetUploads`: the preset with the files it names, through
 //     `openFiles(files, "dialog")`) and each item's
-//     act from `acts` by its id. copyScreen, openFiles and acts are read
+//     act from `acts` by its id, and Name & Save of a media place from
+//     More (`nameAndSave(place)`). copyScreen, openFiles and acts are read
 //     when used, so they may be new closures at each render.
 //   useFaceplateMaps(shell, request, model) → {[model]: map}
 //     the faceplate maps, one `request` {model} per model
@@ -46,6 +47,7 @@ function useShellProduct(shell, options) {
       version: options.version,
       build: options.build,
       copyScreen: hasCopyScreen ? () => latest.current.copyScreen() : null,
+      nameAndSave: (place) => { if (latest.current.nameAndSave) latest.current.nameAndSave(place); },
       settingsSpec: data.settingsSpec,
       loadPreset: async () => {
         const files = await calcuPickFiles(p.presetUploads || "", true);

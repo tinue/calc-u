@@ -12,8 +12,8 @@ build is on the App Store; on Android the browser installs the web app.
    [App Store](https://apps.apple.com/us/app/calc-u-59/id6761413142).
 2. Start it and pick the model in the control bar. **Settings ▸ General
    ▸ Startup model** chooses the model it starts with.
-3. **Preset** opens a `.ti59`, `.ti58` or `.ti58c` file with the file
-   picker.
+3. **More ▸ Load Preset…** opens a `.ti59`, `.ti58` or `.ti58c` file
+   with the file picker.
 
 It needs iOS or iPadOS 18 or later. On the iPhone the app stays in
 portrait: the calculator fills the screen, and the printer and the
@@ -95,7 +95,7 @@ release takes over at the next start.
 **Where your files go.** The browser keeps your magnetic cards and the
 TI-58C's constant memory in its storage for the page, from one visit to
 the next. **Import Media…** brings a card file in, **Saved Media…**
-lists, downloads and deletes your cards (both behind the More button in
-the portrait layout). **Preset** opens the bundled examples and any other
-`.ti59`, `.ti58` or `.ti58c` file on the device; files are read on the
+lists, downloads and deletes your cards (both in the File menu and
+behind the More button). **Examples ▸** opens the bundled examples,
+**Load Preset…** any other `.ti59`, `.ti58` or `.ti58c` file on the device; files are read on the
 device and not uploaded anywhere.

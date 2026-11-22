@@ -1,10 +1,11 @@
 // CalcU59 — the web client, and the one global calc.js exposes
 // (docs/developer/Web-Client.md has the props). Put together from the React set's
-// shell: in the wide layout the shell's menu bar (File, Machine, Help; no
-// Edit), in the portrait layout no menu bar and the bar's Preset,
-// Settings and More; in every calculator column the shell's control bar (the
-// model picker, the library's module picker of `slot-1`, the card
-// controls); the button "PC-100C" on the paper pane; the shell's
+// shell: on a desktop the shell's menu bar (File, Machine, Help; no Edit),
+// on mobile none (the shell's platform, useShell.jsx), in either layout; in
+// every calculator column the shell's control bar (the model picker, the
+// library's module picker of `slot-1`, the card controls, More at its
+// right edge with Load Preset… and Settings… in it); the button "PC-100C"
+// on the paper pane; the shell's
 // settings, About, notices, "Loading…", the storage banner and "ROMs
 // missing". The product's data come from `c59.shell-product` and
 // `c59.faceplate-map` (app/TIShellProduct, TIWebPart). Two layouts, and
@@ -41,10 +42,9 @@ function minimumWidth(portrait) {
     : FACE_MIN.wide + 2 * FACE_PADDING + PRINTER_MIN + DEBUG_MIN + SPLITTERS;
 }
 
-// The shell's traits per layout: the Web has no Quit and binds no
-// shortcut; portrait has no menu bar.
-const traitsFor = (portrait, settings) => ({ hasQuit: false, shortcuts: false, savedMedia: true,
-  menuBar: !portrait, settings: settings !== false, about: true });
+// The shell's traits: the Web has no Quit and binds no shortcut; the
+// page's platform decides the menu bar (useShell.jsx).
+const traitsFor = (settings) => Object.assign({}, CALCU_SHELL_WEB_TRAITS, { settings: settings !== false, about: true });
 
 // Keyboard feedback (Settings, portrait): a short click synthesised with
 // WebAudio. No vibration: iOS Safari has no Vibration API, and Android's
@@ -188,7 +188,7 @@ const EMBEDDED_WIDE = {
 /// the iOS app, and the debugger may be left out. A bar wider than the artwork
 /// widens the column.
 function WideLayout({ page, width, height, rules }) {
-  const room = height ? height - MENU_HEIGHT : 0;
+  const room = height ? height - page.menuHeight : 0;
   const faceWidth = rules.embedded
     ? Math.max(FACE_MIN.wide, Math.min(room ? faceWidthFor(room) : 420, width * 0.4))
     : Math.max(FACE_MIN_AUTO, faceWidthFor(room));
@@ -210,7 +210,8 @@ function WideLayout({ page, width, height, rules }) {
   );
 }
 
-function PortraitLayout({ page, width, height }) {
+function PortraitLayout({ page, width, height: whole }) {
+  const height = whole ? whole - page.menuHeight : whole;
   const byWidth = width - 2 * FACE_PADDING;
   const faceWidth = Math.max(FACE_MIN.portrait, height ? Math.min(byWidth, faceWidthFor(height)) : byWidth);
   const total = columnHeight(faceWidth, height);
@@ -291,7 +292,7 @@ function CalcU59(props) {
     fallback: C59_NO_PRODUCT, version: CALC_VERSION, build: CALC_BUILD, copyScreen: null, openFiles,
     acts: { "arm-card": () => setCardDialog("arm"), "arm-fresh-card": () => setCardDialog("fresh") },
   });
-  const traits = React.useMemo(() => traitsFor(portrait, settings), [portrait, settings]);
+  const traits = React.useMemo(() => traitsFor(settings), [settings]);
   const s = useCalcuShell(shell, product, traits);
   const cs = s.inputs.controlState;
   const model = (cs && cs.model) || modelProp || "TI-59";
@@ -359,7 +360,9 @@ function CalcU59(props) {
 
   const paper = s.panels.find((p) => p.kind === "paper") || {};
   const paperOwner = paper.owner || "";
-  const page = { shell, s, faceplate: maps[model] || null, model, paperOwner, paperPlaces: paper.places || [], cardDialog: setCardDialog };
+  const menuBar = s.traits.platform !== "mobile";
+  const page = { shell, s, faceplate: maps[model] || null, model, paperOwner, paperPlaces: paper.places || [], cardDialog: setCardDialog,
+    menuHeight: menuBar ? MENU_HEIGHT : 0 };
   const romsMissing = !!s.romsMissing && !s.started;
   const failed = start === "failed";
   const Layout = portrait ? PortraitLayout : WideLayout;
@@ -381,9 +384,9 @@ function CalcU59(props) {
     >
       <C59_PAGE.Provider value={{ shell, s, traces: traces.current, log }}>
         <ShellStorageBanner shell={shell} />
-        {/* Without a machine there is no bar and no More button, so the
-            portrait layout shows the menu bar for Help and About too. */}
-        {(!portrait || romsMissing) && !failed && <ShellMenuBar shell={s} />}
+        {/* Without a machine there is no bar and no More button, so mobile
+            shows the menu bar for Help and About too. */}
+        {(menuBar || romsMissing) && !failed && <ShellMenuBar shell={s} />}
         {romsMissing && <ShellRomsMissing shell={s} />}
         {failed && !romsMissing && <div className="calcu-shell-roms-missing" data-calcu="start-failed" role="alert">{failure}</div>}
         {!romsMissing && !failed && (!auto || rules) && <Layout page={page} width={w} height={height} rules={rules || EMBEDDED_WIDE} />}

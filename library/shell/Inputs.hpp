@@ -47,6 +47,7 @@ inline const sessions::CommandName kLoadPreset{"load-preset"};
 inline const sessions::CommandName kResume{"resume"};
 inline const sessions::CommandName kPaste{"paste"};
 inline const sessions::CommandName kMediaImport{"media.import"};
+inline const sessions::CommandName kMediaChoose{"media.choose"};
 inline const sessions::CommandName kScreenKeyDown{"screen-key-down"};
 inline const sessions::CommandName kScreenKeyUp{"screen-key-up"};
 inline const sessions::CommandName kSpeed{"speed"};

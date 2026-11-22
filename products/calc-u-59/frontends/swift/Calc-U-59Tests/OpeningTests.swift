@@ -1,7 +1,7 @@
 import XCTest
 
 /// A file the session refuses after the
-/// Swift frontend handed it over (a drop, the Preset button's dialog) is shown
+/// Swift frontend handed it over (a drop, Load Preset…'s dialog) is shown
 /// as the session's notice, which names the file.
 final class OpeningTests: XCTestCase {
 

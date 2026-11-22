@@ -159,7 +159,7 @@ file(GLOB MODULE_FILES ${CARD_RESOURCES_SRC_DIR}/*.module.yaml)
 # Bundled CE-1600F floppy disks (*.floppy.yaml, Connector/FloppyImageFile.hpp)
 # -- listed in the disk picker ahead of the user's saved ones.
 file(GLOB FLOPPY_FILES ${CARD_RESOURCES_SRC_DIR}/*.floppy.yaml)
-# The bundled cassette template "Empty" (*.cassette.yaml with its sound).
+# The bundled cassette template "Blank" (*.cassette.yaml with its sound).
 file(GLOB CASSETTE_FILES ${CARD_RESOURCES_SRC_DIR}/*.cassette.yaml ${CARD_RESOURCES_SRC_DIR}/*.wav)
 set(ROM_RESOURCES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../roms)
 # The ROM full set as roms/fetch_roms.sh fetches it: the dumps and the

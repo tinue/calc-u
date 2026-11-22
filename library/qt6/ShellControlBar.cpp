@@ -5,7 +5,11 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMenu>
+#include <QMessageBox>
+#include <QPushButton>
 #include <QStandardItemModel>
+#include <QTimer>
 #include <QToolButton>
 #include <algorithm>
 
@@ -16,6 +20,14 @@ namespace {
 using shell::BarControl;
 using shell::MenuItem;
 
+std::string describe(const std::vector<MenuItem>& items) {
+    std::string s;
+    for (const auto& i : items)
+        s += std::to_string(static_cast<int>(i.kind)) + i.id + i.label + (i.enabled ? "1" : "0") + (i.checked ? "1" : "0") +
+             i.reason + i.command.value + sessions::toText(i.args) + "{" + describe(i.children) + "},";
+    return s;
+}
+
 std::string describe(const std::vector<shell::BarGroupModel>& groups) {
     std::string s;
     for (const auto& g : groups) {
@@ -23,14 +35,41 @@ std::string describe(const std::vector<shell::BarGroupModel>& groups) {
         for (const auto& c : g.controls) {
             s += std::to_string(static_cast<int>(c.kind)) + c.id + "|" + c.label + (c.plugged ? "1" : "0") + "|" +
                  c.shown + (c.shortShown ? "1" : "0") + "|" +
-                 sessions::toText(c.entry) + "|";
-            for (const auto& i : c.choices)
-                s += i.id + i.label + (i.enabled ? "1" : "0") + (i.checked ? "1" : "0") + i.reason + ",";
-            s += ";";
+                 sessions::toText(c.entry) + "|" + describe(c.choices) + ";";
         }
         s += "]";
     }
     return s;
+}
+
+// The More menu's items, as the menu bar has them but without shortcuts
+// (the menu bar's own); a disabled item's reason as its tooltip.
+void fillMore(QMenu& menu, const std::vector<MenuItem>& items, const Choose& choose) {
+    menu.setToolTipsVisible(true);
+    for (const auto& item : items) {
+        const QString name = QString::fromStdString(shell::names::moreItem(item.id));
+        if (item.kind == MenuItem::Kind::Separator) {
+            menu.addSeparator();
+            continue;
+        }
+        if (item.kind == MenuItem::Kind::Submenu) {
+            auto* sub = new QMenu(QString::fromStdString(item.label), &menu);
+            sub->setObjectName(name);
+            sub->menuAction()->setObjectName(name + QStringLiteral("-menu"));
+            sub->menuAction()->setMenuRole(QAction::NoRole);
+            fillMore(*sub, item.children, choose);
+            menu.addMenu(sub);
+            continue;
+        }
+        QAction* a = menu.addAction(QString::fromStdString(item.label));
+        a->setObjectName(name);
+        a->setMenuRole(QAction::NoRole);   // the menu bar's items carry the roles
+        a->setCheckable(item.checkable);
+        a->setChecked(item.checked);
+        a->setEnabled(item.enabled);
+        if (!item.reason.empty()) a->setToolTip(QString::fromStdString(item.reason));
+        QObject::connect(a, &QAction::triggered, &menu, [choose, item] { choose(item); });
+    }
 }
 
 } // namespace
@@ -103,6 +142,63 @@ QWidget* placeControl(const BarControl& c, Choose choose, QWidget* parent) {
 
 void ShellControlBar::chooseItem(const MenuItem& i) { shell_.choose(i); }
 
+// One button for the bar's life: its menu may be open (a nested loop)
+// while a topic changes, so the menu is filled anew only once it is closed.
+QWidget* ShellControlBar::moreButton(const BarControl& c, QWidget* parent) {
+    if (!more_) {
+        more_ = new QToolButton(parent);
+        more_->setFocusPolicy(Qt::NoFocus);
+        more_->setObjectName(shell::names::kBarMore);
+        more_->setPopupMode(QToolButton::InstantPopup);
+        more_->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        moreMenu_ = new QMenu(more_);
+        moreMenu_->setObjectName(shell::names::kMoreMenu);
+        more_->setMenu(moreMenu_);
+        connect(moreMenu_, &QMenu::aboutToHide, this, [this] {
+            QTimer::singleShot(0, this, [this] { fillMoreMenu(); });   // after the chosen item's signal
+        });
+    }
+    more_->setParent(parent);
+    more_->setText(QString::fromStdString(c.label));
+    moreItems_ = c.choices;
+    fillMoreMenu();
+    return more_;
+}
+
+void ShellControlBar::fillMoreMenu() {
+    if (!moreMenu_ || moreMenu_->isVisible()) return;
+    const std::string text = describe(moreItems_);
+    if (text == moreShown_) return;
+    moreShown_ = text;
+    for (QMenu* sub : moreMenu_->findChildren<QMenu*>(QString(), Qt::FindDirectChildrenOnly)) delete sub;
+    moreMenu_->clear();
+    fillMore(*moreMenu_, moreItems_, [this](const MenuItem& i) { chooseMore(i); });
+}
+
+void ShellControlBar::chooseMore(const MenuItem& i) {
+    if (i.confirm.empty()) {
+        shell_.choose(i);
+        return;
+    }
+    // Asked first, window-modal and without a nested loop: the item's
+    // label and Cancel.
+    auto* box = new QMessageBox(window());
+    box->setObjectName(shell::names::kMoreConfirm);
+    box->setAttribute(Qt::WA_DeleteOnClose);
+    box->setIcon(i.destructive ? QMessageBox::Warning : QMessageBox::Question);
+    box->setText(QString::fromStdString(i.confirm));
+    QPushButton* yes = box->addButton(QString::fromStdString(i.label), i.destructive ? QMessageBox::DestructiveRole
+                                                                                     : QMessageBox::AcceptRole);
+    yes->setObjectName(shell::names::kMoreConfirmYes);
+    QPushButton* no = box->addButton(QMessageBox::Cancel);
+    no->setObjectName(shell::names::kMoreConfirmNo);
+    box->setDefaultButton(no);
+    connect(box, &QMessageBox::buttonClicked, this, [this, yes, i](QAbstractButton* clicked) {
+        if (clicked == yes) shell_.choose(i);
+    });
+    box->open();
+}
+
 QWidget* ShellControlBar::build(const BarControl& c, QWidget* parent) {
     switch (c.kind) {
     case BarControl::Kind::ModelPicker: {
@@ -133,9 +229,8 @@ QWidget* ShellControlBar::build(const BarControl& c, QWidget* parent) {
         if (w) w->setObjectName(QString::fromStdString(shell::names::barMedia(c.id)));
         return w;
     }
-    case BarControl::Kind::Action:
-    case BarControl::Kind::More:   // no Qt6 frontend is without a menu bar
-        return nullptr;
+    case BarControl::Kind::More:   // a menu of what the bar does not show
+        return moreButton(c, parent);
     }
     return nullptr;
 }
@@ -146,6 +241,7 @@ void ShellControlBar::set(const std::vector<shell::BarGroupModel>& model) {
     shown_ = text;
     for (std::size_t g = 0; g < groups_.size(); ++g) {
         for (auto& [id, w] : shellWidgets_[g]) {
+            if (w == more_) continue;   // kept, see moreButton()
             w->hide();
             w->setObjectName(QString());   // gone for the scenarios before it is deleted
             w->deleteLater();

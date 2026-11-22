@@ -72,6 +72,5 @@ public:
     void refreshLamps() override;
 
 private:
-    void saveTape();
     QLabel* m_counter = nullptr;
 };

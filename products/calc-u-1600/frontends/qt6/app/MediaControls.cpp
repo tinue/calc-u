@@ -1,10 +1,8 @@
 #include "MediaControls.hpp"
 
 #include <QHBoxLayout>
-#include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
-#include <QMessageBox>
 #include <QPushButton>
 #include <QStyle>
 
@@ -12,7 +10,6 @@
 #include "app/SharpControlRules.hpp"
 #include "control/ControlState.hpp"
 #include "media/MediaTopics.hpp"
-#include "qt6/AskedSend.hpp"
 #include "qt6/MediaPicker.hpp"
 #include "qt6/NameAndSaveDialog.hpp"
 #include "shell/Inputs.hpp"
@@ -135,19 +132,19 @@ TapeControl::TapeControl(MachineController& c, QWidget* parent) : MediaPlaceCont
     l->addWidget(new QLabel(tr("Cassette:"), this));
     m_picker->setToolTip(tr("A cassette to play (CLOAD)"));
     l->addWidget(m_picker);
-    m_save = compactButton(this, tr("A new cassette to record onto (CSAVE)"), QStringLiteral("media-save-tape"));
+    // The blank tape records into memory; Name & Save keeps it under a name.
+    m_save = compactButton(this, tr("Name & Save"), QStringLiteral("media-save-cassette"));
     l->addWidget(m_save);
     m_counter = new QLabel(QStringLiteral("–"), this);
     m_counter->setObjectName(QStringLiteral("media-counter-tape"));
     m_counter->setMinimumWidth(m_counter->fontMetrics().horizontalAdvance(QStringLiteral("● 00:00 ")));
     l->addWidget(m_counter);
-    connect(m_save, &QPushButton::clicked, this, &TapeControl::saveTape);
+    connect(m_save, &QPushButton::clicked, this, [this] { nameAndSave(tr("Cassette name:")); });
     refresh();
 }
 
 void TapeControl::refresh() {
     MediaPlaceControl::refresh();
-    m_save->setEnabled(true);   // Save starts a new tape; always there while the cassette is
     refreshLamps();
 }
 
@@ -159,32 +156,4 @@ void TapeControl::refreshLamps() {
     const QString mark = t.mode == TapeDeck::Mode::Record ? QStringLiteral("●") : t.mode == TapeDeck::Mode::Play ? QStringLiteral("▶") : QString();
     m_counter->setText(t.mode == TapeDeck::Mode::Empty ? QStringLiteral("–") : (mark + QLatin1Char(' ') + time));
     m_counter->setToolTip(QString::fromStdString(lamps.tapeName));
-}
-
-// Save: a new tape to record onto (CSAVE), named first (`media.start-new`
-// on the empty tape). A tape of that name: asked before it
-// is replaced.
-void TapeControl::saveTape() {
-    bool ok = false;
-    const QString name =
-        QInputDialog::getText(window(), tr("Save Cassette"), tr("Cassette name:"), QLineEdit::Normal, QString(), &ok).trimmed();
-    if (!ok) return;
-    std::string empty;   // the bundled empty tape's entry
-    if (const calcu::media::MediaState* s = m_controller.media())
-        if (const calcu::media::PlaceState* p = s->place("cassette"))
-            for (const auto& e : p->picker)
-                if (e.group == calcu::media::PickerEntry::Group::BundledTemplate && e.label == "Empty") empty = e.id;
-    sessions::Value::Object args{{"place", sessions::Value("cassette")},
-                                 {"template", sessions::Value(empty)},
-                                 {"name", sessions::Value(name.toStdString())}};
-    const calcu::qt6::AskedSend r = calcu::qt6::sendAsking(
-        [&](bool confirmed) {
-            sessions::Value::Object a = args;
-            if (confirmed) a.push_back({"confirmed", sessions::Value(true)});
-            return m_controller.sendAndWait(calcu::media::kStartNewCommand, sessions::Value(std::move(a))).reason;
-        },
-        [this](const QString& question) {
-            return QMessageBox::question(window(), tr("Save Cassette"), question) == QMessageBox::Yes;
-        });
-    if (!r.done && !r.declined) QMessageBox::warning(window(), tr("Save Cassette"), QString::fromStdString(r.refusal));
 }

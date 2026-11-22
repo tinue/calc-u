@@ -71,7 +71,6 @@ typedef NS_ENUM(NSInteger, TIBarControlKind) {
     TIBarControlKindPlaceButton,
     TIBarControlKindPlacePicker,
     TIBarControlKindMedia,
-    TIBarControlKindAction,
     TIBarControlKindMore,
 };
 
@@ -107,8 +106,6 @@ typedef NS_ENUM(NSInteger, TIBarGroup) {
 /// A picker: its entries (the running one checked); a button: its one choice; More: its items.
 @property (nonatomic, readonly, copy) NSArray<TIMenuItem *> *choices;
 @property (nonatomic, readonly, copy) NSString *mediumKind;
-/// An action: the menu item it carries out.
-@property (nonatomic, readonly, nullable) TIMenuItem *item;
 @end
 
 typedef NS_ENUM(NSInteger, TIDialogWidget) {

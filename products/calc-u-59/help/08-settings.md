@@ -8,7 +8,7 @@ and its own keys.
 
 Calc-U-59's settings file is `Calc-U-59.ini`. **Settings…** (in the
 application menu on macOS, in the File menu on Windows, Linux and in the
-browser's wide layout, the Settings button elsewhere) opens the settings;
+browser on a computer, and behind the More button on every bar) opens the settings;
 a change applies at once. The settings say nothing about the module or
 the printer: the control bar and presets choose those, and a startup
 preset sets them at a start.

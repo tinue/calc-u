@@ -161,8 +161,7 @@ whether the product would take it.
 
 ## Saved media
 
-In the browser, the File menu (or the More button, where the window has
-no menu bar) has two more items:
+In the browser, the File menu (and the More button) has two more items:
 
 - **Import Media…** copies a medium file into the save folder, as the
   template or instance it says it is. An import is refused when a medium

@@ -66,8 +66,8 @@ test('the bar per model', async ({ page }) => {
   await expect(el(page, 'bar-place-printer')).toBeVisible();
 });
 
-// The wide layout's menus.
-test('the wide layout has the menus and no reset preset or settings on the bar', async ({ page }) => {
+// A desktop page: the menus, and More at the end of the bar.
+test('the desktop page has the menus and more at the end of the bar', async ({ page }) => {
   await recordCommands(page);
   await gotoReady(page);
   const titles = await page.locator('[data-calcu^="menu-"]:not([data-calcu="menu-bar"])').allTextContents();
@@ -79,8 +79,15 @@ test('the wide layout has the menus and no reset preset or settings on the bar',
   await el(page, 'menu-machine').click();
   await expect.poll(() => menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(['model', 'peripherals', 'reset', 'cold-boot', 'resume']);
   await expect(el(page, 'item-resume')).toHaveAttribute('aria-disabled', 'true');
-  // The bar has none of Reset, Preset, Settings, More; Cold boot is the menu item.
-  for (const n of ['bar-action-reset', 'bar-action-load-preset', 'bar-action-settings', 'bar-more']) await expect(el(page, n)).toHaveCount(0);
+  // The bar has More at its end, and no button of Reset, Preset or Settings; Cold boot is the menu item.
+  await page.keyboard.press('Escape');
+  await expect(el(page, 'bar-more')).toBeVisible();
+  await expect(el(page, 'control-bar').locator('[data-calcu^="bar-action-"]')).toHaveCount(0);
+  await el(page, 'bar-more').click();
+  await expect.poll(() => menuIds(page, 'more-item-', el(page, 'more-menu'))).toEqual(
+    ['load-preset', 'examples', 'import-media', 'saved-media', 'settings', 'reset', 'cold-boot', 'resume', 'help', 'about']);
+  await el(page, 'bar-more').click();
+  await el(page, 'menu-machine').click();
   await el(page, 'item-cold-boot').click();
   await expect(el(page, 'more-confirm')).toHaveCount(0);   // the menu item asks nothing (the More menu's asks first)
   await expect.poll(() => commands(page)).toContain('cold-boot');
@@ -90,31 +97,45 @@ test('the wide layout has the menus and no reset preset or settings on the bar',
   await expect(el(page, 'item-about')).toHaveText(/About Calc-U-59/);
 });
 
-// The portrait layout: Reset is in More.
-test('portrait bar keeps preset settings and more', async ({ page }) => {
+// The mobile page: no menu bar, in either layout; the bar keeps the model,
+// the module and the card controls, More at its right edge with Load Preset…
+// and Settings… in it.
+test('the mobile page has no menu bar and more at the right edge', async ({ page }) => {
   await recordCommands(page);
-  await gotoReady(page, 'layout=portrait');
-  await expect(el(page, 'menu-bar')).toHaveCount(0);
-  const bar = el(page, 'control-bar');
-  expect((await ids(bar.locator('[data-calcu^="bar-action-"], [data-calcu="bar-more"], [data-calcu="bar-model"]')))).toEqual(
-    ['bar-model', 'bar-action-load-preset', 'bar-action-settings', 'bar-more']);
+  for (const layout of ['portrait', 'wide']) {
+    await gotoReady(page, `layout=${layout}&platform=mobile`);
+    await expect(el(page, 'menu-bar')).toHaveCount(0);
+    const bar = el(page, 'control-bar');
+    expect(await ids(bar.locator('[data-calcu^="bar-"]:not([data-calcu^="bar-group-"])'))).toEqual(
+      ['bar-model', 'bar-slot-slot-1', 'bar-media-card-reader', 'bar-more']);
+    const more = await el(page, 'bar-more').boundingBox();
+    const box = await bar.first().boundingBox();
+    expect(box.x + box.width - (more.x + more.width)).toBeLessThan(16);   // at the right edge
+  }
   await el(page, 'bar-more').click();
   await el(page, 'more-item-reset').click();
   await expect.poll(() => commands(page)).toContain('reset');
   expect(await commands(page)).not.toContain('cold-boot');
-  await expect(el(page, 'bar-action-load-preset')).toHaveAttribute('aria-label', 'Preset');
-  await el(page, 'bar-action-settings').click();
+  await el(page, 'bar-more').click();
+  await el(page, 'more-item-settings').click();
   await expect(el(page, 'settings-dialog')).toBeVisible();
 });
 
-test('more holds examples reset cold boot resume and help', async ({ page }) => {
+// A desktop page in the portrait layout keeps its menu bar.
+test('the desktop page has the menu bar in portrait too', async ({ page }) => {
+  await gotoReady(page, 'layout=portrait&platform=desktop');
+  await expect(el(page, 'menu-bar')).toBeVisible();
+  await expect(el(page, 'bar-more')).toBeVisible();
+});
+
+test('more holds load preset examples settings reset cold boot resume and help', async ({ page }) => {
   await page.setViewportSize({ width: 280, height: 700 });
-  await gotoReady(page, 'layout=portrait');
+  await gotoReady(page, 'layout=portrait&platform=mobile');
   await el(page, 'bar-more').click();
   const menu = el(page, 'more-menu');
   await expect(menu).toBeVisible();
   await expect.poll(() => menuIds(page, 'more-item-', menu)).toEqual(
-    ['examples', 'import-media', 'saved-media', 'reset', 'cold-boot', 'resume', 'help', 'about']);
+    ['load-preset', 'examples', 'import-media', 'saved-media', 'settings', 'reset', 'cold-boot', 'resume', 'help', 'about']);
   await expect(el(page, 'more-item-resume')).toHaveAttribute('aria-disabled', 'true');
   // Inside the client at the narrowest portrait.
   const client = await page.locator('.calcu-client').boundingBox();
@@ -130,7 +151,7 @@ test('more holds examples reset cold boot resume and help', async ({ page }) => 
 
 test('cold boot asks first', async ({ page }) => {
   await recordCommands(page);
-  await gotoReady(page, 'layout=portrait');
+  await gotoReady(page, 'layout=portrait&platform=mobile');
   await el(page, 'bar-more').click();
   await el(page, 'more-item-cold-boot').click();
   const ask = el(page, 'more-confirm');
@@ -157,11 +178,11 @@ test('settings prop off', async ({ page }) => {
   });
   const second = page.locator('#second .calcu-client');
   await expect(second.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
-  await expect(second.locator('[data-calcu="bar-action-settings"]')).toHaveCount(0);
-  await expect(second.locator('[data-calcu="bar-action-load-preset"]')).toBeVisible();
   await page.waitForTimeout(500);
   if (await second.locator('[data-calcu="notice"]').count()) await second.locator('[data-calcu="notice-ok"]').click();   // a second copy's storage notice
+  // No Settings… in More or the menus; Load Preset… stays.
   await second.locator('[data-calcu="bar-more"]').click();
+  await expect(second.locator('[data-calcu="more-item-load-preset"]')).toBeVisible();
   await expect(second.locator('[data-calcu="more-item-settings"]')).toHaveCount(0);
   await expect(second.locator('[data-calcu="more-item-about"]')).toBeVisible();
 });
@@ -194,7 +215,8 @@ test('the web settings per layout', async ({ page }) => {
   await el(page, 'settings-close').click();
 
   await gotoReady(page, 'layout=portrait');
-  await el(page, 'bar-action-settings').click();
+  await el(page, 'bar-more').click();
+  await el(page, 'more-item-settings').click();
   expect(await sections(page)).toEqual(['General', 'Startup presets', 'Keyboard']);
   await expect(el(page, 'setting-keyboard-feedback').locator('option')).toHaveText(['Off', 'Click Sound']);
   await expect(el(page, 'setting-startup-model')).toHaveValue('TI-58C');   // kept

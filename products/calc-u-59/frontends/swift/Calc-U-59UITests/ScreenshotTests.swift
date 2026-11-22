@@ -202,9 +202,7 @@ final class ScreenshotTests: XCTestCase {
     func testScreenshotSettings() throws {
         let app = launchForScreenshot(orientation: .portrait)
 
-        let settingsButton = app.buttons["btn-settings"]
-        XCTAssertTrue(settingsButton.waitForExistence(timeout: 5), "btn-settings not found")
-        settingsButton.tap()
+        chooseFromMore(app, "settings")
 
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5),
                       "Settings sheet did not appear")
@@ -319,7 +317,7 @@ final class ScreenshotTests: XCTestCase {
         // Try landscape; a plain iPhone stays in portrait (page arrows), so
         // relaunch it upright for the paged flow and an unrotated screenshot.
         var app = launchForScreenshot(orientation: .landscapeLeft)
-        XCTAssertTrue(app.buttons["btn-preset"].waitForExistence(timeout: 5), "Preset button not found")
+        XCTAssertTrue(app.buttons["bar-more"].waitForExistence(timeout: 5), "More button not found")
         let isPad = !app.buttons["btn-page-right"].exists  // side by side
         if !isPad {
             app.terminate()

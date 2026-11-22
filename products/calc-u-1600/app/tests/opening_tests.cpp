@@ -432,7 +432,7 @@ TEST(tape_definition_into_cassette_wav_is_never_a_tape) {
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1500A"));
     CHECK(f.attach("CE-150"));
-    const sessions::ReplyMessage r = openFile(f, onDisk(fs::path(kCards) / "empty.cassette.yaml"), Way::Drop);
+    const sessions::ReplyMessage r = openFile(f, onDisk(fs::path(kCards) / "blank.cassette.yaml"), Way::Drop);
     CHECK(r.done);
     CHECK(replyOf(r) && replyOf(r)->detail == "cassette");
     CHECK(f.held("cassette") != nullptr);

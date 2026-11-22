@@ -4,7 +4,7 @@ The window, the control bar, the menus and the settings dialog are the
 family's; the [shared part of this chapter](../../../library/help/02-getting-started.md)
 describes them ([the window](../../../library/help/02-getting-started.md#the-window),
 [the menus](../../../library/help/02-getting-started.md#the-menus),
-[without a menu bar](../../../library/help/02-getting-started.md#without-a-menu-bar),
+[desktop and mobile](../../../library/help/02-getting-started.md#desktop-and-mobile),
 [the control bar](../../../library/help/02-getting-started.md#the-control-bar)).
 This part shows what they hold on the TI-59, the TI-58 and the TI-58C,
 and how the window looks on each system. How to install Calc-U-59 is in
@@ -40,7 +40,10 @@ The control bar below the calculator holds, from left to right:
    ROM modules and the empty slot ([Solid State ROM modules](09-modules.md));
 3. on the TI-59 only, the two **Crd** buttons, Arm Card and Arm Fresh
    Card, and **Eject Card** in their place while a card passes the reader
-   ([Magnetic cards](04-magnetic-cards.md)).
+   ([Magnetic cards](04-magnetic-cards.md));
+4. the **More** button (⋯), at the right edge.
+
+The bar is the same on a desktop and on mobile.
 
 The button **PC-100C**, which attaches or detaches the printer, is at
 the left of the paper panel's header, above the paper it prints on
@@ -53,8 +56,8 @@ and card controls are disabled.
 
 ## The menus
 
-Where the window has a menu bar (macOS, Windows, Linux, the browser's
-wide layout):
+On a desktop (macOS, Windows, Linux, the browser in a tab on a
+computer) the window has a menu bar:
 
 | Menu | Items |
 |---|---|
@@ -67,13 +70,13 @@ On macOS, Settings…, About and Quit are in the application menu. The
 shortcuts are those of the family: Load Preset… Ctrl+O (⌘O), Reset
 Ctrl+R (⌘R), Cold boot Ctrl+Shift+R (⇧⌘R).
 
-Where there is no menu bar (the iPhone, the iPad, the browser's
-portrait layout), the control bar keeps the buttons **Preset** and
-**Settings**, and the **More** button (⋯) holds Examples ▸, the media
-items (in the browser), Reset, Cold boot, which asks first, Resume,
-Calc-U-59 Help, and About in the browser. On the iPad,
-the menu bar iPadOS gives an app shows File, Machine and Help, without
-Settings…, About and Quit.
+On every bar the **More** button (⋯) holds Load Preset…, Examples ▸, the
+media items (in the browser), Settings…, Reset, Cold boot, which asks
+first, Resume, Calc-U-59 Help, and About in the browser. On mobile (the
+iPhone, the iPad, the browser version installed on a phone or tablet, a browser
+asking for the mobile site) there is no menu bar, so More is the way to
+them. On the iPad, the menu bar iPadOS gives an app shows File, Machine
+and Help, without Settings…, About and Quit.
 
 **Help ▸ Calc-U-59 Help** opens [calc-u.org/59](https://calc-u.org/59/) in
 your browser.
@@ -93,10 +96,10 @@ your browser.
   of the iPhone. An iPhone that opens flat shows them side by side as on
   the iPad.
 - **The browser** ([calc-u.org/59/play/](https://calc-u.org/59/play/),
-  or installed as an app): the **wide** layout with the menu bar, the
-  paper and the debugger; the **portrait** layout with the More button,
-  the paper as a second page. An installed app follows the device's
-  rotation.
+  or installed as an app): the **wide** layout with the paper and the
+  debugger; the **portrait** layout with the paper as a second page. In a
+  tab on a computer the page has the menu bar; installed on a phone or
+  tablet it has none. An installed app follows the device's rotation.
 
 ![The calculator, the paper and the debugger on an iPad in landscape](images/ipad-13-2752x2064.png)
 

@@ -414,18 +414,20 @@ test('the disk side button turns the disk over', async ({ page }) => {
   expect(await shown(page.locator(c('media-picker-floppy')))).toBe('Formatted');
 });
 
-// The record button: a name first, a new tape on the empty template.
-test('a new tape is recorded under its name', async ({ page }) => {
+// The blank tape records into memory; Name & Save keeps it under a name.
+test('the blank tape is saved under its name', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
   await page.locator(c('bar-place-printer')).click();
   await expect(page.locator(c('media-picker-cassette'))).toBeVisible({ timeout: 30000 });
-  await page.locator(c('cassette-new')).click();
+  await expect(page.locator(c('name-and-save-cassette'))).toBeDisabled();
+  await page.locator(c('media-picker-cassette')).selectOption({ label: 'Blank' });
+  await expect(page.locator(c('name-and-save-cassette'))).toBeEnabled({ timeout: 30000 });
+  await page.locator(c('name-and-save-cassette')).click();
   const name = `Rec ${Date.now()}`;
-  await page.locator('[data-dialog=prompt] input[type=text]').fill(name);
-  await page.locator('[data-dialog=prompt] button', { hasText: 'OK' }).click();
+  await page.locator(c('media-name')).fill(name);
+  await page.locator(c('media-save')).click();
   await expect.poll(() => shown(page.locator(c('media-picker-cassette'))), { timeout: 30000 }).toBe(name);
-  await expect(page.locator('[data-lamp=tape]')).toContainText('●');
 });
 
 test('headerless code asks the address, then NEW and CALL', async ({ page }) => {

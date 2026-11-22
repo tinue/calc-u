@@ -45,8 +45,8 @@ struct ShellProduct {
     // beside the faceplate; a model not listed shows its ID. The menus
     // keep the ID.
     std::map<std::string, std::string> barModelLabels;
-    // The bar as the iOS app draws it: the media group in the middle and
-    // End at the right edge (else every group packed left), and each picker
+    // The bar as the iOS app draws it: the media group in the middle (else
+    // packed left after the places; End is at the right edge on every bar), and each picker
     // showing its short text when closed (the model's bar name, a module's
     // ID) instead of the chosen entry's label. The bar model carries both
     // (BarGroupModel::pushed, BarControl::shortShown).
@@ -66,6 +66,9 @@ struct ShellProduct {
     // Places whose control the paper panel shows, at the left of its
     // header, instead of the bar: Calc-U-59's PC-100C over its paper.
     std::set<std::string> placesOnPaper;
+    // The media kinds a mobile bar keeps ("magnetic-card"); every other
+    // medium is chosen through More there.
+    std::set<std::string> mobileBarMedia;
     std::vector<ProductItem> items;
 };
 

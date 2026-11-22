@@ -79,6 +79,27 @@ tools/  ci/  .github/workflows/
 - The one exception: the PC-1500/1500A and the PC-1600 differ too much
   for one layout; switching between them may reorder controls.
 
+## Platforms and bars
+
+The rules live in `library/shell/BarModel`, `library/shell/MenuModel` and
+their mirror `library/web/components/shellModel.js`; the code is the rule.
+
+- Every window is desktop or mobile (`shell::Traits::platform`). Desktop:
+  Qt always, a Web page in a desktop browser's tab; it has a menu bar.
+  Mobile: the iOS app, the installed Web app, a browser asking for the
+  mobile site (`calcuShellPlatform`); it never has a menu bar.
+- More is on every bar, at the right edge (End pushed, More alone in it).
+  Load Preset… and Settings… are inside More, never bar buttons.
+- More holds the menus' items without what has a control elsewhere: Quit,
+  Model ▸, and Peripherals ▸ where the places' controls are shown (on
+  desktop, or where the paper panel has every place with a control).
+  Cold boot asks first there.
+- The mobile bar keeps what is used while the machine runs: the model
+  picker, the module slots and the media of the product's
+  `mobileBarMedia`. Places go to More ▸ Peripherals ▸; every other media
+  place gets a submenu in File (so in More): its entries, then Name & Save….
+- A place picker's empty entry names its place ("No printer").
+
 ## Working
 
 - Working language English, for documents, code, comments and commit

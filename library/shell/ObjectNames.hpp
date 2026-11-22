@@ -17,6 +17,14 @@ inline const char* const kBarModel = "bar-model";
 inline std::string barSlot(const std::string& place) { return "bar-slot-" + place; }
 inline std::string barPlace(const std::string& place) { return "bar-place-" + place; }
 inline std::string barMedia(const std::string& mediaPlace) { return "bar-media-" + mediaPlace; }
+// The More button at the end of the bar, its menu, its items and the
+// question an item with `confirm` asks.
+inline const char* const kBarMore = "bar-more";
+inline const char* const kMoreMenu = "more-menu";
+inline std::string moreItem(const std::string& id) { return "more-item-" + id; }
+inline const char* const kMoreConfirm = "more-confirm";
+inline const char* const kMoreConfirmYes = "more-confirm-yes";
+inline const char* const kMoreConfirmNo = "more-confirm-no";
 inline const char* const kSettingsDialog = "settings-dialog";
 inline std::string setting(const std::string& section, const std::string& key) { return "setting-" + section + "-" + key; }
 inline const char* const kSettingsClose = "settings-close";

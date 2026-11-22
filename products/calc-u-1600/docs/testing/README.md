@@ -416,7 +416,7 @@ ships, and on what the test project brings:
 
 - **Shipped:** the bundled modules by name (`CE-1600M`, `superRAM`); the bundled media and the
   examples as files of the checkout, by `$c1600`: the module definitions, `blank.floppy.yaml`,
-  `formatted.floppy.yaml` and `empty.cassette.yaml` in `$c1600/frontends/qt6/resources/cards/`,
+  `formatted.floppy.yaml` and `blank.cassette.yaml` in `$c1600/frontends/qt6/resources/cards/`,
   the examples in `$c1600/examples/`, the test fixtures (such as the RENUM ROM) in
   `$c1600/tests/fixtures/`.
 - **Brought:** anything else is a file of the test project, whatever the medium: a module still

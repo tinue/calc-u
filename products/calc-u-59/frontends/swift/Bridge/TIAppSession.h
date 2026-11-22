@@ -301,7 +301,7 @@ typedef struct {
 /// asked before a drag is taken; `done` on the main thread.
 - (void)wouldOpenFile:(NSString *)fileName completion:(void (^)(BOOL takes))done;
 /// `open {files: [{name, path, bytes}], way}`: way is "drop" or "dialog" (the
-/// Preset button's importer). raw nil: the file could not be read. The
+/// importer of Load Preset…). raw nil: the file could not be read. The
 /// session finds out what the file is; a refusal is its notice.
 /// `done(YES)` when it was opened (or kept).
 - (void)openFile:(nullable NSData *)raw path:(nullable NSString *)path fileName:(NSString *)fileName

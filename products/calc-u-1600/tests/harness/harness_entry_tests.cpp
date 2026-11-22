@@ -212,7 +212,7 @@ TEST(every_function_of_the_table) {
     CHECK_EQ(r.line("c1600 cassette record " + (out.path() / "tape.wav").string()), std::string("done\n"));
     CHECK_EQ(r.line("c1600 cassette status"), std::string("done 2\ncassette: recording 0.000000000\nmotor: off\n"));
     CHECK_EQ(r.line("eject cassette"), std::string("done\n"));
-    CHECK_EQ(r.line("cassette { name: Empty }"), std::string("done\n"));   // the bundled blank tape
+    CHECK_EQ(r.line("cassette { name: Blank }"), std::string("done\n"));   // the bundled blank tape
     CHECK(starts(r.line("c1600 cassette status"), "done 2\ncassette: recording "));
     // The save folder; the bundled module
     // definitions.

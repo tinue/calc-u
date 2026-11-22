@@ -17,7 +17,7 @@ your home folder) or in any folder of your own. On the iPhone and the
 iPad, the simplest place is the app's **Calc-U-59** folder of iCloud
 Drive, the save folder it uses for magnetic cards: copy a finished
 preset there (on the Mac, Finder ▸ iCloud Drive ▸ Calc-U-59) and open it
-with **Preset**. Any other folder that syncs to the device works too. On a
+with **More ▸ Load Preset…**. Any other folder that syncs to the device works too. On a
 computer, **Settings ▸ Folders ▸ Presets folder** makes Load Preset…
 start in your presets' folder.
 

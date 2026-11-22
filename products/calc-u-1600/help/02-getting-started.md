@@ -4,6 +4,7 @@ The window, the control bar, the menus and the settings dialog are the
 family's; the [shared part of this chapter](../../../library/help/02-getting-started.md)
 describes them ([the window](../../../library/help/02-getting-started.md#the-window),
 [the menus](../../../library/help/02-getting-started.md#the-menus),
+[desktop and mobile](../../../library/help/02-getting-started.md#desktop-and-mobile),
 [the control bar](../../../library/help/02-getting-started.md#the-control-bar)). This part shows what they hold on the PC-1500, the
 PC-1500A and the PC-1600, and how the keyboard and the faceplate work on
 these models.
@@ -17,17 +18,25 @@ step.
 
 ![The model picker in the control bar](images/02-model-picker.png)
 
-The control bar starts with the model. Then come the memory slots (one on
-the PC-1500 and PC-1500A, two on the PC-1600), and the peripherals:
+The control bar starts with the model, by its short name (1500, 1500A,
+1600; the menus name it in full). Then come the memory slots (one on the
+PC-1500 and PC-1500A, two on the PC-1600), and the peripherals:
 
 - **PC-1500 and PC-1500A:** the buttons **CE-150** and **CE-158**.
-- **PC-1600:** a printer picker (none, CE-150, CE-1600P) and the button
-  **CE-158**.
+- **PC-1600:** a printer picker (No printer, CE-150, CE-1600P) and the
+  button **CE-158**.
 
 While a plotter with a cassette recorder is plugged in, the bar has the
 cassette controls ([BASIC programs](09-basic-programs.md)); while the
 CE-1600P is plugged in, the disk controls follow them
-([Media](04-media.md#the-floppy-disk-pc-1600)).
+([Media](04-media.md#the-floppy-disk-pc-1600)). The **More** button (⋯)
+is at the right edge.
+
+On mobile (the browser version installed on a phone or tablet, a browser that
+asks for the mobile site) the bar keeps the model, the memory slots and
+the disk controls. The peripherals are in **More ▸ Peripherals ▸**, and
+the cassette in **More ▸ Cassette ▸**: its cassettes to choose, then
+**Name & Save…**.
 
 ![The PC-1600 control bar: model, two slots, printer and disk](images/02-control-bar-pc1600.png)
 
@@ -125,8 +134,10 @@ Presets type text too, with `type:` and `key:` steps
 The same emulator runs in the browser at
 [tinue.github.io/1600](https://tinue.github.io/1600), compiled to
 WebAssembly, with the desktop program's faceplate, menus, control bar and
-panels. It is made for tablets and desktop browsers; a phone works, and in
-landscape it shows the faceplate alone. The browser can install it as an
+panels. It is made for tablets and desktop browsers; a phone works:
+installed on the phone or asking for the mobile site, it shows in portrait
+the panels alone, without the faceplate (its keys would be too small),
+and in landscape the faceplate alone. The browser can install it as an
 app, which then runs offline.
 
 A link can choose the model by its name (`model=PC-1500`, `PC-1500A` or

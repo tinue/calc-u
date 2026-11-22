@@ -253,7 +253,7 @@ TEST(mirror_holds_every_callback) {
 
     // tapesChanged -> the topic `media`; the tape status -> c1600.lamps.
     CHECK(f.part().tapeInterfaceAttached());
-    CHECK(f.run(calcu::media::kStartNewCommand, Value::object({{"place", "cassette"}, {"template", f.entry("cassette", "Empty")}, {"name", "mirror"}})).done);
+    CHECK(f.run(calcu::media::kStartNewCommand, Value::object({{"place", "cassette"}, {"template", f.entry("cassette", "Blank")}, {"name", "mirror"}})).done);
     f.call();
     CHECK(f.state<cu1600::LampsPayload>(t::kLamps)->tape.mode == TapeDeck::Mode::Record);
 

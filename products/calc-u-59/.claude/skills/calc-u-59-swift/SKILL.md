@@ -49,8 +49,9 @@ skill).
   `app/TIShellProduct`: `menus` (SwiftUI `Commands` in
   `Views/ShellCommands.swift`, the iPad's menu bar; the items with the roles
   Settings…, About and Quit are left out), `bar` (`Views/ControlBarView.swift`: the model picker, the picker
-  of `slot-1`, the card controls; Preset, Settings and More,
-  `moreItems` with Reset, Cold boot asks first), `paperPlaces` (the
+  of `slot-1`, the card controls; More at the right edge (the traits'
+  platform Mobile), `moreItems` with Load Preset…, Settings…, Reset,
+  Cold boot asks first), `paperPlaces` (the
   PC-100C's button on the paper panel, `Views/PrinterView.swift`), `settingsDialog`
   (`Views/SettingsView.swift` over `cu59::settingsSpec(SwiftIOS)`, a sheet),
   "Loading…" (`LoadingRule`), the notices (`NoticeQueue`: one alert after

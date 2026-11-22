@@ -27,6 +27,7 @@ TEST(shell_product_value_form) {
     i.label = "Mount…";
     i.entry = "t.mount";
     p.items.push_back(i);
+    p.mobileBarMedia = {"magnetic-card"};
     const Value want = Value::object(
         {{"name", "Test-Product"},
          {"helpUrl", "https://example.org/"},
@@ -43,6 +44,7 @@ TEST(shell_product_value_form) {
          {"moduleSlotPinOuts", Value(Value::Array{"module"})},
          {"placesWithoutControl", Value(Value::Array{"host-drive"})},
          {"placesOnPaper", Value(Value::Array{})},
+         {"mobileBarMedia", Value(Value::Array{"magnetic-card"})},
          {"items", Value(Value::Array{Value::object(
                        {{"group", "FileMedia"}, {"id", "mount"}, {"label", "Mount…"}, {"entry", "t.mount"}})})}});
     CHECK_EQ(sessions::toText(shell::toValue(p)), sessions::toText(want));
@@ -75,7 +77,7 @@ TEST(shell_product_form_has_links_and_copy_screen_flag) {
     for (const auto& m : *v.members()) keys.push_back(m.key);
     CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "aboutLinks", "variantLabels",
                                             "barModelLabels", "barSpread", "barShortPickers", "presetFilter", "presetUploads", "copyScreen", "pasteText", "moduleSlotPinOuts",
-                                            "placesWithoutControl", "placesOnPaper", "items"}));
+                                            "placesWithoutControl", "placesOnPaper", "mobileBarMedia", "items"}));
     // A labelled choice row carries its choices; one without does not.
     shell::DialogSpec spec;
     shell::DialogRow style{shell::DialogRow::Widget::Choice, "display", "led-style", "Segment Style"};

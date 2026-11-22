@@ -1,15 +1,12 @@
 // ShellControlBar -- the control bar of the React set: the groups of useCalcuShell's bar
-// model left to right; pickers with the empty place as "None"; a button for
+// model left to right; pickers with the empty place named ("No printer"); a button for
 // a place one peripheral fits; the library's module picker and the media owners'
 // controls as the product hands them in; the product's own controls in the
 // group it names (it reads its own product entries). A group
 // without a control takes no room. Names: control-bar,
 // bar-model, bar-slot-<place>, bar-place-<place>, bar-media-<media place>.
-// In a window without a menu bar the bar
-// also holds Actions (Preset, Settings in End), each a
-// button with the set's icon and its label (`compact`: the label is kept,
-// unseen and out of the flow, so the bar can be measured with it)
-// (bar-action-<id>), and the More button (bar-more, ShellMoreMenu).
+// End holds the More button at the right edge on every platform (bar-more,
+// ShellMoreMenu; `compact`: its icon alone).
 //
 //   <ShellControlBar shell={s} slotPicker={Component?} mediaControls={{kind: Component}}
 //                    extra={{AfterModel|Slots|Places|Media|End: [elements]}} compact={bool} />
@@ -52,22 +49,8 @@ function ShellPlaceControl({ control, onChoose, children }) {
   );
 }
 
-// The set's icons of the bar's actions.
-const CALCU_SHELL_ACTION_ICONS = { reset: "↺", "load-preset": "▤", settings: "⚙", more: "⋯" };
-
-function ShellActionButton({ s, control, compact }) {
-  const item = control.item || {};
-  const disabled = item.enabled === false;
-  return (
-    <button type="button" className="calcu-shell-action" data-calcu={`bar-action-${control.id}`}
-      aria-label={control.label} aria-disabled={disabled ? "true" : undefined}
-      title={disabled && item.reason ? item.reason : control.label}
-      onClick={() => { if (!disabled) s.choose(item); }}>
-      <span className="calcu-shell-action-icon" aria-hidden="true">{CALCU_SHELL_ACTION_ICONS[control.id] || ""}</span>
-      <span className="calcu-shell-action-label calcu-bar-label">{control.label}</span>
-    </button>
-  );
-}
+// The set's icon of the More button.
+const CALCU_SHELL_ACTION_ICONS = { more: "⋯" };
 
 function ShellControlBar({ shell, slotPicker, mediaControls, extra, compact }) {
   const s = shell;
@@ -88,8 +71,6 @@ function ShellControlBar({ shell, slotPicker, mediaControls, extra, compact }) {
       case "button":
       case "picker":
         return <ShellPlaceControl key={c.id} control={c} onChoose={s.choose} />;
-      case "action":
-        return <ShellActionButton key={c.id} s={s} control={c} compact={compact} />;
       case "more":
         return <ShellMoreMenu key="more" shell={s} items={c.choices} label={c.label} compact={compact} />;
       case "media": {

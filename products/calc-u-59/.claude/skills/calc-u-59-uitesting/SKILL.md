@@ -34,8 +34,8 @@ The Swift unit tests are a target of their own, `Calc-U-59Tests/` (plan
 `UnitTests`, hosted by the app with `--settings-file unit-tests.ini`): a second session through
 the real bridge (`TestSession.swift`), the bridge's Debug-only test hooks
 (`rawKeyDown:completion:` and `rawKeyUp:completion:` (the session's raw key-down/key-up, no typing), `offeredHostServices:`, `emulatedTime:`,
-`hostCallCount`); `ShellBridgeTests` checks `TIShell` (the menus, the bar
-without a menu bar, a disabled item's reason, the hit rule, the settings
+`hostCallCount`); `ShellBridgeTests` checks `TIShell` (the menus, the
+mobile bar with More, a disabled item's reason, the hit rule, the settings
 rows and a change, Copy's pasteboard forms, "Loading…").
 `xcodebuild test … -testPlan UnitTests` on a simulator.
 
@@ -179,14 +179,12 @@ The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug pa
 
 | Identifier | Type | Value / Notes |
 |------------|------|---------------|
-| `btn-preset` | Button | Preset on the control bar |
-| `btn-settings` | Button | Settings on the control bar |
 | `control-bar` | Other | The control bar (`ControlBarView`) |
 | `bar-model` | Button | The model picker; label the running model |
 | `bar-slot-slot-1` | Button | The module picker (the `media` topic's entries in their order; closed: the module's ID); its entries `item-module:<id>` (`item-slot-1-none` for the empty slot) |
 | `bar-place-printer` | Button | "PC-100C" at the left of the paper panel's header (iPhone portrait: on the paper page): value `On` / `Off` |
 | `bar-media-card-reader` | Button | Arm Card (or Eject Card while a side passes), TI-59 only |
-| `bar-more` | Button | More: items `more-item-<id>` (`examples`, `reset`, `cold-boot`, `resume`, `help`); Cold boot's confirmation `confirm-cold-boot` |
+| `bar-more` | Button | More, at the right edge of the bar: items `more-item-<id>` (`load-preset`, `examples`, `settings`, `reset`, `cold-boot`, `resume`, `help`; helper `chooseFromMore(app, id)`); Cold boot's confirmation `confirm-cold-boot` |
 | `settings-dialog` | Other | The settings form; rows `setting-<section>-<key>`; `settings-close` (Done) |
 | `loading` | Other | "Loading…" below the display |
 | `faceplate` | Other | The calculator's art: tap a key at a normalised offset (key centres from `app/KeyboardLayout.hpp`, e.g. 1 at 0.2812, 0.8839; R/S at 0.0783, 0.9704) |
@@ -281,4 +279,4 @@ The system document picker is the most fragile part of the test suite. Things th
 
 Things that are stable:
 - Filenames (e.g. `"test_diag.ti59"`) — always your primary locator
-- `btn-preset`, `btn-settings`, `bar-*`, `more-item-*` — our own identifiers
+- `bar-*`, `more-item-*` — our own identifiers

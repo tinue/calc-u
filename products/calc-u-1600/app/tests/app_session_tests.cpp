@@ -129,7 +129,7 @@ TEST(test_cassette_for_ce150_on_pc1600) {
 
 // The tape counter in the machine topic is what the deck had at the last
 // call -- and an operation ends with one, so it is current right after.
-// The record button is `media.start-new` on the empty tape.
+// `media.start-new` on the blank tape: a new tape under a name.
 TEST(test_tape_status_follows_calls) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
@@ -139,7 +139,7 @@ TEST(test_tape_status_follows_calls) {
     auto tapes = [&] { return f.state<cu1600::LampsPayload>(cu1600::topics::kLamps)->tape.mode; };
     CHECK(tapes() == TapeDeck::Mode::Empty);
     const sessions::CallId id = f.send(calcu::media::kStartNewCommand,
-                                       Value::object({{"place", "cassette"}, {"template", f.entry("cassette", "Empty")}, {"name", "side a"}}));
+                                       Value::object({{"place", "cassette"}, {"template", f.entry("cassette", "Blank")}, {"name", "side a"}}));
     const auto r = f.takeReply(id);
     CHECK(r && r->done);
     CHECK(tapes() == TapeDeck::Mode::Empty);   // not seen yet

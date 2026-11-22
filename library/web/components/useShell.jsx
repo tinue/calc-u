@@ -4,8 +4,8 @@
 // so this one carries the set's prefix.)
 //
 //   const s = useCalcuShell(shell, product, {hasQuit: false, shortcuts: false, savedMedia: true});
-//   (traits also `menuBar` (false: no menu bar, the bar has Preset,
-//   Settings and More), `settings`, `about`.)
+//   (traits also `platform` ("desktop": a menu bar; "mobile": none, the
+//   bar keeps what is used while the machine runs), `settings`, `about`.)
 //   s.menus, s.bar, s.panels, s.dialog (the settings rows), s.loading, s.notice,
 //   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" | null)
 //   s.choose(item), s.setSetting(section, key, value), s.closeNotice(yes), s.close()
@@ -16,7 +16,25 @@
 // (optional) is the dialog's spec, else the family sections of the rows the
 // `settings` topic has; `product.keysShown` limits them.
 
-const CALCU_SHELL_WEB_TRAITS = { hasQuit: false, shortcuts: false, savedMedia: true };
+// The page's platform, fixed while it is open: "mobile" for the installed
+// app and for a browser that asks for the mobile site, else "desktop". The
+// browser's own choice decides (Safari's "Request Desktop Website", Chrome's
+// "Desktop site" change what it reports), so a user who wants the desktop
+// page on a phone gets it. `?platform=mobile|desktop` overrides, for trying
+// one on the other.
+function calcuShellPlatform() {
+  // A server-side render (no browser around it) draws the desktop page.
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function" || !window.navigator) return "desktop";
+  const asked = /[?&]platform=(mobile|desktop)\b/.exec((window.location && window.location.search) || "");
+  if (asked) return asked[1];
+  if (window.matchMedia("(display-mode: standalone)").matches) return "mobile";
+  if (window.navigator.standalone === true) return "mobile";
+  const hints = window.navigator.userAgentData;
+  if (hints && typeof hints.mobile === "boolean") return hints.mobile ? "mobile" : "desktop";
+  return /iPhone|iPod|Android.*Mobile|Mobi/.test(window.navigator.userAgent) ? "mobile" : "desktop";
+}
+const CALCU_SHELL_PLATFORM = calcuShellPlatform();
+const CALCU_SHELL_WEB_TRAITS = { hasQuit: false, shortcuts: false, savedMedia: true, platform: CALCU_SHELL_PLATFORM };
 
 function calcuShellNow() {
   return typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -105,6 +123,7 @@ function useCalcuShell(shell, product, traits) {
     else if (item.id === a.settings) { askPresets(); setOpen("settings"); }
     else if (item.id === a.about) setOpen("about");
     else if (item.id === a.savedMedia) setOpen("saved-media");
+    else if (item.id.startsWith("media-name-and-save-")) { if (product.nameAndSave) product.nameAndSave(item.args.place); }
     else if (item.id === a.help) calcuWebHostServices().answer("open-url", { url: product.helpUrl });   // its result is ignored
     else if (item.id === a.copyScreen) { if (product.copyScreen) product.copyScreen(); }
     else if (item.id === a.pasteText) {

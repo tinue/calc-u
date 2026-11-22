@@ -323,6 +323,17 @@ The bar below the calculator that holds the machine's hardware: the
 model, then one picker per module slot and media place.
 _Avoid_: toolbar
 
+**Desktop, mobile**:
+The two platform classes a window is drawn for. Desktop (Qt, a Web page
+in a browser tab on a computer) has a menu bar; mobile (the Swift frontend on iOS, the
+installed Web app, a browser that asks for the mobile site) has none, and
+its control bar keeps only what is used while the machine runs.
+_Avoid_: portrait, landscape (for this: those are layouts)
+
+**More**:
+The button at the right edge of every control bar: a menu of the menus'
+items without what has a control elsewhere.
+
 **Faceplate**:
 The picture of the calculator with its display and its on-screen keys.
 

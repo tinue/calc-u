@@ -38,7 +38,7 @@ const BarControl* controlOf(const std::vector<BarGroupModel>& groups, const std:
 TEST(bar_groups_and_order) {
     const auto b = bar(st::inputs(), st::product());
     // The model picker; the module slots; the other places; the media places; the product's end.
-    CHECK_EQ(describe(b), std::string("[model][slot-1 slot-2][printer aux][card][]"));
+    CHECK_EQ(describe(b), std::string("[model][slot-1 slot-2][printer aux][card][more]"));
     CHECK(b[0].group == BarGroup::AfterModel);
     CHECK(b[1].group == BarGroup::Slots);
     CHECK(b[2].group == BarGroup::Places);
@@ -95,7 +95,7 @@ TEST(place_button_for_one_picker_for_several) {
     CHECK(aux->kind == BarControl::Kind::PlacePicker);
     std::string labels;
     for (const auto& c : aux->choices) labels += c.label + ";";
-    CHECK_EQ(labels, std::string("None;TP-4;TD-21;"));   // the empty place first
+    CHECK_EQ(labels, std::string("No aux;TP-4;TD-21;"));   // the empty place first
     CHECK(aux->choices[0].checked);
     CHECK_EQ(aux->choices[1].command.value, std::string("attach"));
 }
@@ -131,7 +131,7 @@ TEST(place_needing_more_has_no_control) {
 
 TEST(bar_no_entry_no_gap) {
     const auto b = bar(st::inputs(st::controlValue("Model-B")), st::product());
-    CHECK_EQ(describe(b), std::string("[model][][printer][][]"));   // empty groups: a component shows nothing
+    CHECK_EQ(describe(b), std::string("[model][][printer][][more]"));   // empty groups: a component shows nothing
     CHECK(controlOf(b, "slot-1") == nullptr);
     CHECK(controlOf(b, "card") == nullptr);
 }
@@ -176,45 +176,95 @@ TEST(no_bar_without_control_state) {
     CHECK(panels(ShellInputs{}, st::product()).empty());
 }
 
-// A window without a menu bar: Preset, Settings and More, Reset in More.
-TEST(bar_without_menu_bar_keeps_preset_settings_and_more) {
+namespace {
+
+Traits mobile() {
     Traits t{false, false, true};
-    t.menuBar = false;
+    t.platform = Platform::Mobile;
+    return t;
+}
+
+const MenuItem* inMore(const BarControl& m, const std::string& id) {
+    for (const auto& i : m.choices)
+        if (i.id == id) return &i;
+    return nullptr;
+}
+
+} // namespace
+
+// More alone in End, at the right edge, on every platform; Load Preset…
+// and Settings… in it, each following its menu item.
+TEST(bar_more_at_the_right_edge_on_every_platform) {
+    const Traits web{false, false, true};
     const auto p = st::product();
     const auto in = st::inputs();
-    const auto b = bar(in, p, t);
-    CHECK_EQ(describe(b), std::string("[model][slot-1 slot-2][printer aux][card][load-preset settings more]"));
-    CHECK(b[0].group == BarGroup::AfterModel);
-    CHECK(b[4].group == BarGroup::End);
-    const BarControl* preset = controlOf(b, "load-preset");
-    CHECK_EQ(preset->label, std::string("Preset"));
-    CHECK(preset->item.command.value.empty());   // the shell's file dialog
-    CHECK_EQ(controlOf(b, "settings")->label, std::string("Settings"));
-    const BarControl* more = controlOf(b, "more");
-    CHECK(more->kind == BarControl::Kind::More);
-    CHECK_EQ(more->choices.size(), moreItems(menus(in, p, t), p).size());
-    auto inMore = [](const BarControl& m, const std::string& id) -> const MenuItem* {
-        for (const auto& i : m.choices)
-            if (i.id == id) return &i;
-        return nullptr;
-    };
-    const MenuItem* reset = inMore(*more, "reset");
-    CHECK(reset != nullptr);
-    CHECK_EQ(reset->command.value, std::string("reset"));
+    for (const Traits& t : {web, mobile()}) {
+        const auto b = bar(in, p, t);
+        CHECK(b[4].group == BarGroup::End);
+        CHECK(b[4].pushed);
+        CHECK_EQ(b[4].controls.size(), std::size_t{1});
+        const BarControl* more = controlOf(b, "more");
+        CHECK(more->kind == BarControl::Kind::More);
+        CHECK_EQ(more->label, std::string("More"));
+        CHECK(inMore(*more, "load-preset") != nullptr);
+        CHECK(inMore(*more, "load-preset")->command.value.empty());   // the shell's file dialog
+        CHECK(inMore(*more, "settings") != nullptr);
+        CHECK(inMore(*more, "model") == nullptr);   // the model picker is on the bar
+        CHECK_EQ(inMore(*more, "reset")->command.value, std::string("reset"));
+    }
+    const auto b = bar(in, p, web);
+    CHECK_EQ(controlOf(b, "more")->choices.size(), moreItems(menus(in, p, web), p).size());
     // Each item follows its menu item.
     auto cs = st::controlState();
     for (auto& a : cs.actions)
         if (a.command == control::kResetAction) a.available = st::unavailable("An operation runs.");
-    const auto b2 = bar(st::inputs(cs.toValue()), p, t);
-    const MenuItem* reset2 = inMore(*controlOf(b2, "more"), "reset");
-    CHECK(!reset2->enabled);
-    CHECK_EQ(reset2->reason, std::string("An operation runs."));
-    // No Settings button without settings.
-    t.settings = false;
-    const auto b3 = bar(in, p, t);
-    CHECK(controlOf(b3, "settings") == nullptr);
-    // With a menu bar: no action, no More.
-    CHECK_EQ(describe(bar(in, p, Traits{})), std::string("[model][slot-1 slot-2][printer aux][card][]"));
+    const MenuItem* reset = inMore(*controlOf(bar(st::inputs(cs.toValue()), p, web), "more"), "reset");
+    CHECK(!reset->enabled);
+    CHECK_EQ(reset->reason, std::string("An operation runs."));
+    // Without settings, no Settings… in More.
+    Traits none = web;
+    none.settings = false;
+    CHECK(inMore(*controlOf(bar(in, p, none), "more"), "settings") == nullptr);
+}
+
+// Mobile keeps the model picker, the module slots and the media of
+// mobileBarMedia; the places and the other media are reached through More.
+TEST(mobile_bar_drops_places_and_unlisted_media) {
+    auto p = st::product();
+    CHECK_EQ(describe(bar(st::inputs(), p, mobile())), std::string("[model][slot-1 slot-2][][][more]"));
+    p.mobileBarMedia = {"test-card"};
+    CHECK_EQ(describe(bar(st::inputs(), p, mobile())), std::string("[model][slot-1 slot-2][][card][more]"));
+    // Desktop keeps them all, whatever mobileBarMedia holds.
+    p.mobileBarMedia.clear();
+    CHECK_EQ(describe(bar(st::inputs(), p, Traits{false, false, true})),
+             std::string("[model][slot-1 slot-2][printer aux][card][more]"));
+}
+
+// More has Peripherals ▸ only where the places' controls are not shown: on
+// mobile, unless the paper panel has every place with a control.
+TEST(peripherals_in_more_only_on_mobile) {
+    auto p = st::product();
+    const auto in = st::inputs();
+    CHECK(inMore(*controlOf(bar(in, p, Traits{false, false, true}), "more"), "peripherals") == nullptr);
+    CHECK(inMore(*controlOf(bar(in, p, mobile()), "more"), "peripherals") != nullptr);
+    p.placesOnPaper = {"printer", "aux"};
+    CHECK(inMore(*controlOf(bar(in, p, mobile()), "more"), "peripherals") == nullptr);
+    p.placesOnPaper = {"printer"};
+    CHECK(inMore(*controlOf(bar(in, p, mobile()), "more"), "peripherals") != nullptr);
+}
+
+// A place picker's empty entry names its place, so it needs no label; the
+// Peripherals menu has no empty entry.
+TEST(place_picker_empty_entry_names_the_place) {
+    auto cs = st::controlState();
+    cs.places[3].path = machine::PlacePath{{machine::PlaceName{"aux-printer"}}};
+    const auto b = bar(st::inputs(cs.toValue()), st::product());
+    const BarControl* picker = controlOf(b, "aux-printer");
+    CHECK(picker->kind == BarControl::Kind::PlacePicker);
+    CHECK_EQ(picker->choices[0].label, std::string("No aux printer"));
+    CHECK_EQ(picker->shown, std::string("\u2014"));
+    const auto ms = menus(st::inputs(cs.toValue()), st::product(), Traits{});
+    CHECK(findItem(ms, "peripheral-aux-printer-none") == nullptr);
 }
 
 // A spread bar pushes the media group and End; short pickers carry their
@@ -222,7 +272,7 @@ TEST(bar_without_menu_bar_keeps_preset_settings_and_more) {
 TEST(bar_spread_and_short_pickers) {
     ShellProduct p = st::product();
     auto b = bar(st::inputs(), p);
-    for (const auto& g : b) CHECK(!g.pushed);
+    for (const auto& g : b) CHECK_EQ(g.pushed, g.group == BarGroup::End);   // More at the right edge always
     p.barSpread = true;
     p.barShortPickers = true;
     b = bar(st::inputs(), p);
@@ -256,7 +306,7 @@ TEST(place_on_paper_is_on_the_paper_panel) {
     ShellProduct p = st::product();
     p.placesOnPaper = {"printer"};
     const auto b = bar(st::inputs(), p);
-    CHECK_EQ(describe(b), std::string("[model][slot-1 slot-2][aux][card][]"));
+    CHECK_EQ(describe(b), std::string("[model][slot-1 slot-2][aux][card][more]"));
     const auto ps = panels(st::inputs(), p);
     CHECK_EQ(ps[0].places.size(), std::size_t{1});
     CHECK_EQ(ps[0].places[0].id, std::string("printer"));

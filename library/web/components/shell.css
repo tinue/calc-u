@@ -10,6 +10,11 @@
   position: relative;
   z-index: 20;
 }
+/* The menus, the More popup and the dialogs are light whatever the page's
+   theme: their text is dark, not the client's (light on a dark page). */
+.calcu-client .calcu-shell-menubar,
+.calcu-client .calcu-shell-menu-items,
+.calcu-client .calcu-shell-modal { color: #1d1d1f; }
 .calcu-client .calcu-shell-menu { position: relative; }
 .calcu-client .calcu-shell-menu-title {
   border: 0;

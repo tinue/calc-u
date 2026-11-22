@@ -98,6 +98,7 @@ Value toValue(const ShellProduct& p) {
     out.push_back({"moduleSlotPinOuts", strings(p.moduleSlotPinOuts)});
     out.push_back({"placesWithoutControl", strings(p.placesWithoutControl)});
     out.push_back({"placesOnPaper", strings(p.placesOnPaper)});
+    out.push_back({"mobileBarMedia", strings(p.mobileBarMedia)});
     out.push_back({"items", Value(std::move(items))});
     return Value(std::move(out));
 }

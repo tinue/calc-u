@@ -171,7 +171,7 @@ The CALCULATOR tab's STEP is `btn-step`.
 
 On iPhone portrait the pages are calculator → printer → debug (`btn-page-right`), and `btn-page-left` on the calculator page goes straight to debug. The debug page (`DebugView`, holding `btn-tab-calculator`/`btn-tab-cpu`/`btn-tab-log`) exists only when Settings → "Debug Page in Portrait" is on (`[window] portrait-debug-page`, default `false`). A test puts it into the launch's settings file (`launchApp(orientation:settings: ["window.portrait-debug-page=true"])`). `ScreenshotTests` passes it and the other settings its shots show the same way; the module, which is no setting, goes in through attach (`attach slot-1 LE`), so the shots need no setup on a new simulator.
 
-The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug panel side-by-side with the calculator — no paging, no setting to flip. Which layout a window gets is Shared `mobileLayout` (by size, not idiom); `LayoutTests.testWideWindowShowsDebugger` checks it. When a test only needs to reach the debug tabs (e.g. checking the LOG tab's content after a preset runs), prefer running it on an iPad simulator destination to skip this whole prerequisite.
+The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug panel side-by-side with the calculator — no paging, no setting to flip. Which layout a window gets is the library's view rule (`shell::view` on `cu59::viewInputs`, by size, not idiom); `LayoutTests.testWideWindowShowsDebugger` checks it. When a test only needs to reach the debug tabs (e.g. checking the LOG tab's content after a preset runs), prefer running it on an iPad simulator destination to skip this whole prerequisite.
 
 ---
 

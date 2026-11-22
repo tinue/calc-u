@@ -136,8 +136,8 @@ The same emulator runs in the browser at
 WebAssembly, with the desktop program's faceplate, menus, control bar and
 panels. It is made for tablets and desktop browsers; a phone works:
 installed on the phone or asking for the mobile site, it shows in portrait
-the panels alone, without the faceplate (its keys would be too small),
-and in landscape the faceplate alone. In the browser as in the desktop
+the paper alone, without the faceplate (its keys would be too small) and
+without the inspector, and in landscape the faceplate alone. In the browser as in the desktop
 program, the panels are below the faceplate where the window leaves them
 room; in a wide, low window the calculator is alone. The browser can install it as an
 app, which then runs offline.

@@ -16,6 +16,9 @@ View view(const ViewInputs& in) {
     const double least = v.side == ViewSide::Beside ? in.panelsMinWidth : in.panelsMinHeight;
     v.panelsFit = least > 0 && v.room >= least;
     v.panelsAlone = in.panelsAloneOnMobileBelow && in.mobile && v.side == ViewSide::Below && v.panelsFit;
+    const double across = v.side == ViewSide::Beside ? v.room : in.width;
+    v.debuggerFits = v.panelsFit && !v.panelsAlone && in.debuggerMinWidth > 0 &&
+                     across >= in.panelsMinWidth + in.debuggerMinWidth && in.height >= in.debuggerMinHeight;
     return v;
 }
 

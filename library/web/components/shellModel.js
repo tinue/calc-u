@@ -53,7 +53,8 @@ function calcuShellBarFit(faceplate, withoutLabels, withLabels, room = Infinity)
 // panels there); else the product's fallback. On mobile with the room below,
 // panelsAloneOnMobileBelow gives the panels alone.
 // inputs: {width, height, faceplateAspect, fixedWidth, fixedHeight,
-// panelsMinWidth, panelsMinHeight, mobile, panelsAloneOnMobileBelow}.
+// panelsMinWidth, panelsMinHeight, debuggerMinWidth, debuggerMinHeight, mobile,
+// panelsAloneOnMobileBelow}; debuggerFits: the debugger beside the panels.
 function calcuShellView(inputs) {
   const i = inputs;
   const boxWidth = Math.max(0, i.width - (i.fixedWidth || 0));
@@ -64,13 +65,14 @@ function calcuShellView(inputs) {
   const side = boxWidth > boxHeight * aspect ? "beside" : "below";
   const room = side === "beside" ? boxWidth - faceplateWidth : boxHeight - faceplateHeight;
   const least = (side === "beside" ? i.panelsMinWidth : i.panelsMinHeight) || 0;
-  return {
-    side, panelsFit: least > 0 && room >= least,
-    // Only where the room below takes the panels: a sliver of it (a phone in
-    // landscape whose safe area narrows the window) keeps the calculator.
-    panelsAlone: !!i.panelsAloneOnMobileBelow && !!i.mobile && side === "below" && least > 0 && room >= least,
-    faceplateWidth, faceplateHeight, room,
-  };
+  const panelsFit = least > 0 && room >= least;
+  // Only where the room below takes the panels: a sliver of it (a phone in
+  // landscape whose safe area narrows the window) keeps the calculator.
+  const panelsAlone = !!i.panelsAloneOnMobileBelow && !!i.mobile && side === "below" && panelsFit;
+  const across = side === "beside" ? room : i.width;
+  const debuggerFits = panelsFit && !panelsAlone && (i.debuggerMinWidth || 0) > 0 &&
+    across >= (i.panelsMinWidth || 0) + i.debuggerMinWidth && i.height >= (i.debuggerMinHeight || 0);
+  return { side, panelsFit, panelsAlone, debuggerFits, faceplateWidth, faceplateHeight, room };
 }
 
 // "Loading…": shown when an operation has run at full speed for 500 ms

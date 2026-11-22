@@ -92,8 +92,11 @@ struct PrinterView: View {
 
     private var paperStrip: some View {
         ScrollView {
-            if viewModel.paperOwner.isEmpty {
-                Color.clear.frame(height: 1)   // an empty paper under none
+            if viewModel.paperOwner.isEmpty {   // no printer: a hint where the paper would start
+                Text("No printer attached.")
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 12)
+                    .accessibilityIdentifier("paper-hint")
             } else if dotMode {
                 dotStrip
             } else {

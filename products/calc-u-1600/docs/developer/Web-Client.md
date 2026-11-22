@@ -18,8 +18,11 @@ in landscape or in a wide, short window, where the calculator is alone (it
 has no panels beside it). The installed app is not locked to an
 orientation: the printer is seen in portrait. The paper panel is the library's (`CalcuPaperPanel`)
 and is always there, named after the plotter plugged in.
-Narrower than 700 px, the inspector gives way to the printer, or to the
-paper while a plotter is plugged in.
+The inspector sits beside the paper where the view rule's debugger fits
+(`debuggerMinWidth`, 700 px across the window); narrower, it gives way to
+the printer, or to the paper while a plotter is plugged in. The panels
+alone (mobile, upright) are the paper, with its hint "No printer
+attached." without a plotter, and never the inspector.
 
 The page is desktop or mobile (the library's `calcuShellMobile`,
 `library/web/components/useShell.jsx`; `?mobile=0|1` in a

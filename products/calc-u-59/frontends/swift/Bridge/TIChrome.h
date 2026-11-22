@@ -51,6 +51,7 @@ typedef struct {
 @property (class, readonly) CGFloat barGap;
 @property (class, readonly) CGFloat printerMinWidth;
 @property (class, readonly) CGFloat printerMaxWidth;
+@property (class, readonly) CGFloat debuggerMinWidth;
 /// The bar's and the panels' text scale for a faceplate this wide.
 + (CGFloat)textScale:(CGFloat)faceplateWidth;
 @end

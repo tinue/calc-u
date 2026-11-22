@@ -135,3 +135,28 @@ TEST(view_no_panels_on_a_side) {
     in.panelsMinWidth = 100;
     CHECK(shell::view(in).panelsFit);
 }
+
+// The debugger beside the panels: beside the TI-59 where the room takes
+// both and the window is high enough; below the PC-1500 across the
+// window's width; never in the panels alone.
+TEST(view_debugger_fits) {
+    auto in = tall(1400, 900, false);
+    in.debuggerMinWidth = 220;
+    in.debuggerMinHeight = 560;
+    CHECK(shell::view(in).debuggerFits);
+    in.height = 500;   // too low
+    CHECK(!shell::view(in).debuggerFits);
+    in = tall(800, 900, false);   // room for the printer only
+    in.debuggerMinWidth = 220;
+    CHECK(shell::view(in).panelsFit);
+    CHECK(!shell::view(in).debuggerFits);
+    auto w = wide(1000, 900, false);
+    w.debuggerMinWidth = 700;
+    CHECK(shell::view(w).debuggerFits);
+    w.width = 600;
+    CHECK(!shell::view(w).debuggerFits);
+    w = wide(1000, 1400, true);   // mobile, the panels alone
+    w.debuggerMinWidth = 700;
+    CHECK(shell::view(w).panelsAlone);
+    CHECK(!shell::view(w).debuggerFits);
+}

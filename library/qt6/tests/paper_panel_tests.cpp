@@ -184,10 +184,14 @@ TEST(paper_no_owner_no_name_copy_cut_disabled) {
     CHECK(!r.child<QToolButton>("paper-copy")->isEnabled());
     CHECK(!r.child<QToolButton>("paper-cut")->isEnabled());
     const QImage img = grabView(r);
-    bool white = true;
-    for (int y = 0; y < img.height(); y += 7)
+    bool white = true;   // an empty paper below the hint "No printer attached."
+    for (int y = 48; y < img.height(); y += 7)
         for (int x = 0; x < img.width(); x += 7) white = white && img.pixelColor(x, y) == QColor(Qt::white);
-    CHECK(white);   // an empty paper
+    CHECK(white);
+    bool hint = false;
+    for (int y = 0; y < 48; ++y)
+        for (int x = 0; x < img.width(); ++x) hint = hint || img.pixelColor(x, y) != QColor(Qt::white);
+    CHECK(hint);
     // The paper is kept: the printer as owner again shows it.
     r.own(mt::kDotter, kPrinterPlace);
     CHECK(r.child<QToolButton>("paper-copy")->isEnabled());

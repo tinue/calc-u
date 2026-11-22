@@ -1,4 +1,5 @@
 #include "TIChrome.hpp"
+#include "KeyboardLayout.hpp"
 
 namespace cu59 {
 
@@ -102,6 +103,22 @@ std::vector<std::string_view> tiChromeNames() {
     return {kDebugBackground, kDebugHeader, kSection, kTabSelected, kPillOn, kDivider, kColumnLine, kOrange, kRed,
             kYellow, kBlue, kGreen, kHover, kLogText, kDialog, kDialogFooter, kField, kFieldBorder, kListLine,
             kAlternate, kButton, kHighlight, kScrim, kToast, kShadow, kChevron, kInk, kStepCurrent, kHeatmapPc};
+}
+
+calcu::shell::ViewInputs viewInputs(double width, double height, double extraWidth, bool mobile) {
+    const calcu::shell::ChromeSizes& s = tiChrome().sizes;
+    calcu::shell::ViewInputs in;
+    in.width = width;
+    in.height = height;
+    in.faceplateAspect = kCanvasAspect;
+    in.fixedWidth = 2 * s.panelInset + extraWidth;
+    in.fixedHeight = s.barHeight + 2 * s.panelInset;
+    in.panelsMinWidth = s.panelsMinWidth;
+    in.panelsMinHeight = s.panelsMinHeight;
+    in.debuggerMinWidth = s.debuggerMinWidth;
+    in.debuggerMinHeight = s.debuggerMinHeight;
+    in.mobile = mobile;
+    return in;
 }
 
 } // namespace cu59

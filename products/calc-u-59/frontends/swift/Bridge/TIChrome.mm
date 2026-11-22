@@ -42,5 +42,6 @@ static TIChromeColour ti(const calcu::shell::Colour& c) {
 + (CGFloat)barGap { return sizes().barGap; }
 + (CGFloat)printerMinWidth { return sizes().printerMinWidth; }
 + (CGFloat)printerMaxWidth { return sizes().printerMaxWidth; }
++ (CGFloat)debuggerMinWidth { return sizes().debuggerMinWidth; }
 + (CGFloat)textScale:(CGFloat)faceplateWidth { return cu59::tiChrome().textScale(faceplateWidth); }
 @end

@@ -1,5 +1,6 @@
 #pragma once
 #include "shell/Chrome.hpp"
+#include "shell/View.hpp"
 #include <string_view>
 #include <vector>
 
@@ -45,5 +46,11 @@ inline constexpr std::string_view kHeatmapPc = "heatmap-pc";               // th
 const calcu::shell::Chrome& tiChrome();
 // Every name above, for the tests (calcu::shell::checkChrome).
 std::vector<std::string_view> tiChromeNames();
+
+// The view rule's inputs of a native window's room (Qt6, iOS): the
+// faceplate's column with its insets and the bar, the panels and the
+// debugger of the chrome; `extraWidth` what else lies beside the faceplate
+// (the splitter's handles).
+calcu::shell::ViewInputs viewInputs(double width, double height, double extraWidth, bool mobile);
 
 } // namespace cu59

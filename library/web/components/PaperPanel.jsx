@@ -176,6 +176,7 @@ function CalcuPaperPanel({ shell, owner, controls, send, places, onChoose }) {
           )}
         </span>
       </div>
+      {!owner && <p className="calcu-paper-hint" data-calcu="paper-hint">No printer attached.</p>}
       {showText ? (
         <pre className="calcu-paper-text" data-calcu="paper-text">{paper.lines.map((l) => l.text).join("\n")}</pre>
       ) : (

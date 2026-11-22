@@ -210,19 +210,11 @@ void MainWindow::selectAsmFile() {
 void MainWindow::applyView() {
     if (!m_splitter || !m_debug) return;
     const calcu::shell::ChromeSizes& s = ChromeStyle::chrome().sizes;
-    calcu::shell::ViewInputs in;
-    in.width = m_splitter->width();
-    in.height = m_splitter->height();
-    in.faceplateAspect = cu59::kCanvasAspect;
-    // The column's insets and the splitter's dividers beside the faceplate.
-    in.fixedWidth = 2 * s.panelInset + 2 * m_splitter->handleWidth();
-    in.fixedHeight = s.barHeight + 2 * s.panelInset;
-    in.panelsMinWidth = s.panelsMinWidth;
-    in.panelsMinHeight = s.panelsMinHeight;
-    const calcu::shell::View v = calcu::shell::view(in);
+    // The splitter's dividers beside the faceplate.
+    const calcu::shell::View v =
+        calcu::shell::view(cu59::viewInputs(m_splitter->width(), m_splitter->height(), 2 * m_splitter->handleWidth(), false));
     const bool wide = v.side == calcu::shell::ViewSide::Beside && v.panelsFit;
-    const bool debugger = wide && s.debuggerMinWidth > 0 && v.room >= s.panelsMinWidth + s.debuggerMinWidth &&
-                          in.height >= s.debuggerMinHeight;
+    const bool debugger = v.debuggerFits;
     m_paged = !wide;
     QWidget* panels = m_shell->panelArea();
     m_calculator->setVisible(wide || !m_printerPage);

@@ -275,3 +275,16 @@ test("view_no_panels_on_a_side", () => {
   assert.equal(m.calcuShellView(box).panelsFit, false);
   assert.equal(m.calcuShellView(Object.assign(box, { panelsMinWidth: 100 })).panelsFit, true);
 });
+
+test("view_debugger_fits", () => {
+  const debugged = (v, extra) => m.calcuShellView(Object.assign(v, extra)).debuggerFits;
+  assert.equal(debugged(tallView(1400, 900, false), { debuggerMinWidth: 220, debuggerMinHeight: 560 }), true);
+  assert.equal(debugged(tallView(1400, 500, false), { debuggerMinWidth: 220, debuggerMinHeight: 560 }), false);
+  assert.equal(m.calcuShellView(tallView(800, 900, false)).panelsFit, true);
+  assert.equal(debugged(tallView(800, 900, false), { debuggerMinWidth: 220 }), false);
+  assert.equal(debugged(wideView(1000, 900, false), { debuggerMinWidth: 700 }), true);
+  assert.equal(debugged(wideView(600, 900, false), { debuggerMinWidth: 700 }), false);
+  const alone = m.calcuShellView(Object.assign(wideView(1000, 1400, true), { debuggerMinWidth: 700 }));
+  assert.equal(alone.panelsAlone, true);
+  assert.equal(alone.debuggerFits, false);
+});

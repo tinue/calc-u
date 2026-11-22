@@ -216,6 +216,16 @@ test("bar_groups_and_order", () => {
   assert.equal(control(b, "card").mediumKind, "test-card");
 });
 
+test("bar_model_picker_shows_the_bar_names", () => {
+  const p = Object.assign(product(), { barModelLabels: { "Model-A": "A" } });
+  const model = control(m.calcuShellBar(inputs(), p), "model");
+  assert.equal(model.shown, "A");
+  assert.equal(model.choices[0].label, "A");
+  assert.equal(model.choices[1].label, "Model-B");
+  assert.equal(find(m.calcuShellMenus(inputs(), p), "model-Model-A").label, "Model-A");
+  assert.equal(control(m.calcuShellBar(inputs(), product()), "model").shown, "Model-A");
+});
+
 test("bar_slot_numbers_with_two_slots", () => {
   const b = m.calcuShellBar(inputs(), product());
   assert.equal(control(b, "slot-1").label, "1:");
@@ -254,8 +264,9 @@ test("bar_no_entry_no_gap", () => {
 });
 
 test("paper_panel_always_with_or_without_owner", () => {
-  assert.deepEqual(m.calcuShellPanels(inputs()), [{ kind: "paper", owner: "", ownerPlace: "" }]);
-  assert.deepEqual(m.calcuShellPanels(inputs(clone(INPUTS.printerDotter))), [{ kind: "paper", owner: "test-dotter", ownerPlace: "printer" }]);
+  assert.deepEqual(m.calcuShellPanels(inputs(), product()), [{ kind: "paper", owner: "", ownerPlace: "", places: [] }]);
+  assert.deepEqual(m.calcuShellPanels(inputs(clone(INPUTS.printerDotter)), product()),
+    [{ kind: "paper", owner: "test-dotter", ownerPlace: "printer", places: [] }]);
 });
 
 test("shell_reads_no_product_entry", () => {
@@ -266,13 +277,13 @@ test("shell_reads_no_product_entry", () => {
 });
 
 test("printer_change_moves_paper_owner", () => {
-  assert.equal(m.calcuShellPanels(inputs(clone(INPUTS.printerDotter)))[0].owner, "test-dotter");
-  assert.equal(m.calcuShellPanels(inputs(clone(INPUTS.modelA)))[0].owner, "");
+  assert.equal(m.calcuShellPanels(inputs(clone(INPUTS.printerDotter)), product())[0].owner, "test-dotter");
+  assert.equal(m.calcuShellPanels(inputs(clone(INPUTS.modelA)), product())[0].owner, "");
 });
 
 test("no_bar_without_control_state", () => {
   assert.deepEqual(m.calcuShellBar(inputs(null), product()), []);
-  assert.deepEqual(m.calcuShellPanels(inputs(null)), []);
+  assert.deepEqual(m.calcuShellPanels(inputs(null), product()), []);
 });
 
 // The dialog model, on a `settings` topic as SettingsPart writes it.
@@ -524,13 +535,13 @@ test("more_items_are_the_items_without_a_control", () => {
   const ms = m.calcuShellMenus(inp, p, PORTRAIT);
   assert.equal(ms.map((x) => x.id).join(" "), "file machine help");
   assert.equal(ids(m.calcuShellMoreItems(ms, p)),
-    "examples - load-program - import-media saved-media mount-drive - variants-model - cold-boot resume disk-thing - help about");
+    "examples - load-program - import-media saved-media mount-drive - variants-model - reset cold-boot resume disk-thing - help about");
   p.items[1].onBar = true;
   assert.equal(ids(m.calcuShellMoreItems(m.calcuShellMenus(inp, p, PORTRAIT), p)),
-    "examples - load-program - import-media saved-media - variants-model - cold-boot resume disk-thing - help about");
+    "examples - load-program - import-media saved-media - variants-model - reset cold-boot resume disk-thing - help about");
   p.items[0].onBar = true;
   assert.equal(ids(m.calcuShellMoreItems(m.calcuShellMenus(inp, p, PORTRAIT), p)),
-    "examples - import-media saved-media - variants-model - cold-boot resume disk-thing - help about");
+    "examples - import-media saved-media - variants-model - reset cold-boot resume disk-thing - help about");
 });
 
 test("more_cold_boot_asks_first", () => {
@@ -586,28 +597,52 @@ test("no_settings_item_without_settings", () => {
   assert.equal(ids(menu(ms, "help").items), "help");
 });
 
-test("bar_without_menu_bar_keeps_reset_preset_settings_and_more", () => {
+test("bar_without_menu_bar_keeps_preset_settings_and_more", () => {
   const p = product();
   const b = m.calcuShellBar(inputs(), p, PORTRAIT);
-  assert.equal(describeBar(b), "[reset][model][slot-1 slot-2][printer aux][card][load-preset settings more]");
-  assert.equal(b[0].group, "Start");
-  assert.equal(b[5].group, "End");
-  const reset = control(b, "reset");
-  assert.equal(reset.kind, "action");
-  assert.equal(reset.label, "Reset");
-  assert.equal(reset.item.command, "reset");
+  assert.equal(describeBar(b), "[model][slot-1 slot-2][printer aux][card][load-preset settings more]");
+  assert.equal(b[0].group, "AfterModel");
+  assert.equal(b[4].group, "End");
   assert.equal(control(b, "load-preset").label, "Preset");
   assert.equal(control(b, "load-preset").item.command, "");
   assert.equal(control(b, "settings").label, "Settings");
   const more = control(b, "more");
   assert.equal(more.kind, "more");
   assert.equal(more.choices.length, m.calcuShellMoreItems(m.calcuShellMenus(inputs(), p, PORTRAIT), p).length);
+  assert.equal(more.choices.find((i) => i.id === "reset").command, "reset");
   const cs = withAction(clone(INPUTS.modelA), "reset", { available: false, reason: "An operation runs." });
-  const b2 = m.calcuShellBar(inputs(cs), p, PORTRAIT);
-  assert.equal(control(b2, "reset").item.enabled, false);
-  assert.equal(control(b2, "reset").item.reason, "An operation runs.");
+  const reset2 = control(m.calcuShellBar(inputs(cs), p, PORTRAIT), "more").choices.find((i) => i.id === "reset");
+  assert.equal(reset2.enabled, false);
+  assert.equal(reset2.reason, "An operation runs.");
   assert.equal(control(m.calcuShellBar(inputs(), p, Object.assign({}, PORTRAIT, { settings: false })), "settings"), null);
   assert.equal(describeBar(m.calcuShellBar(inputs(), p, WEB)), "[model][slot-1 slot-2][printer aux][card][]");
+});
+
+test("bar_fit_labels_and_width", () => {
+  assert.deepEqual(m.calcuShellBarFit(400, 250, 380), { labels: true, width: 400 });
+  assert.deepEqual(m.calcuShellBarFit(300, 250, 380), { labels: false, width: 300 });
+  assert.deepEqual(m.calcuShellBarFit(200, 250, 380), { labels: false, width: 250 });
+  assert.equal(m.calcuShellBarFit(200, 250, 380, 220).width, 220);
+});
+
+test("bar_spread_and_short_pickers", () => {
+  let b = m.calcuShellBar(inputs(), product());
+  for (const g of b) assert.equal(g.pushed, false);
+  const p = Object.assign(product(), { barSpread: true, barShortPickers: true });
+  b = m.calcuShellBar(inputs(), p);
+  for (const g of b) assert.equal(g.pushed, g.group === "Media" || g.group === "End");
+  assert.equal(control(b, "model").shortShown, true);
+  assert.equal(control(b, "aux").shown, "\u2014");
+});
+
+test("place_on_paper_is_on_the_paper_panel", () => {
+  const p = Object.assign(product(), { placesOnPaper: ["printer"] });
+  assert.equal(describeBar(m.calcuShellBar(inputs(), p)), "[model][slot-1 slot-2][aux][card][]");
+  const ps = m.calcuShellPanels(inputs(), p);
+  assert.equal(ps[0].places.length, 1);
+  assert.equal(ps[0].places[0].id, "printer");
+  assert.equal(ps[0].places[0].kind, "button");
+  assert.equal(m.calcuShellPanels(inputs(), product())[0].places.length, 0);
 });
 
 const styleSpec = () => [{ title: "Look", rows: [{ widget: "choice", section: "test", key: "style", label: "Style", choices: [["one", "The first"]] }] }];

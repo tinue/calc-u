@@ -1,7 +1,10 @@
 #include "qt6/PaperPanel.hpp"
 #include "qt6/PaperPainter.hpp"
+#include <QApplication>
 #include <QFontDatabase>
+#include <QGridLayout>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QPainter>
 #include <QPlainTextEdit>
@@ -33,32 +36,24 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     outer->setContentsMargins(0, 0, 0, 0);
     outer->setSpacing(2);
 
-    auto* header = new QHBoxLayout;
+    // The header: the place controls left, the owner's name centred, the
+    // view control right, each in its own column so none moves another.
+    auto* header = new QGridLayout;
     header->setContentsMargins(4, 2, 4, 2);
+    placesLayout_ = new QHBoxLayout;
+    placesLayout_->setContentsMargins(0, 0, 0, 0);
+    header->addLayout(placesLayout_, 0, 0, Qt::AlignLeft | Qt::AlignVCenter);
     ownerLabel_ = new QLabel(this);
     ownerLabel_->setObjectName(QStringLiteral("paper-owner"));
-    header->addWidget(ownerLabel_);
+    header->addWidget(ownerLabel_, 0, 1, Qt::AlignCenter);
     viewToggle_ = new QToolButton(this);
     viewToggle_->setFocusPolicy(Qt::NoFocus);
     viewToggle_->setObjectName(QStringLiteral("paper-view-toggle"));
     viewToggle_->setCheckable(true);
     viewToggle_->setToolTip(tr("Switches between the marks and the text"));
-    header->addWidget(viewToggle_);
-    controlsBox_ = new QWidget(this);
-    controlsLayout_ = new QHBoxLayout(controlsBox_);
-    controlsLayout_->setContentsMargins(0, 0, 0, 0);
-    header->addWidget(controlsBox_);
-    header->addStretch(1);
-    copy_ = new QToolButton(this);
-    copy_->setFocusPolicy(Qt::NoFocus);
-    copy_->setObjectName(QStringLiteral("paper-copy"));
-    copy_->setText(tr("Copy"));
-    header->addWidget(copy_);
-    cut_ = new QToolButton(this);
-    cut_->setFocusPolicy(Qt::NoFocus);
-    cut_->setObjectName(QStringLiteral("paper-cut"));
-    cut_->setText(tr("Cut"));
-    header->addWidget(cut_);
+    header->addWidget(viewToggle_, 0, 2, Qt::AlignRight | Qt::AlignVCenter);
+    header->setColumnStretch(0, 1);
+    header->setColumnStretch(2, 1);
     outer->addLayout(header);
 
     stack_ = new QStackedWidget(this);
@@ -75,7 +70,28 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     text_->setLineWrapMode(QPlainTextEdit::NoWrap);
     stack_->addWidget(view_);
     stack_->addWidget(text_);
+    setPaperColour(Qt::white);
     outer->addWidget(stack_, 1);
+
+    // Below the paper: the owner's controls left, Copy and Cut right.
+    auto* footer = new QHBoxLayout;
+    footer->setContentsMargins(4, 2, 4, 2);
+    controlsBox_ = new QWidget(this);
+    controlsLayout_ = new QHBoxLayout(controlsBox_);
+    controlsLayout_->setContentsMargins(0, 0, 0, 0);
+    footer->addWidget(controlsBox_);
+    footer->addStretch(1);
+    copy_ = new QToolButton(this);
+    copy_->setFocusPolicy(Qt::NoFocus);
+    copy_->setObjectName(QStringLiteral("paper-copy"));
+    copy_->setText(tr("Copy"));
+    footer->addWidget(copy_);
+    cut_ = new QToolButton(this);
+    cut_->setFocusPolicy(Qt::NoFocus);
+    cut_->setObjectName(QStringLiteral("paper-cut"));
+    cut_->setText(tr("Cut"));
+    footer->addWidget(cut_);
+    outer->addLayout(footer);
 
     toast_ = new QLabel(this);
     toast_->setObjectName(QStringLiteral("paper-toast"));
@@ -199,6 +215,53 @@ void PaperPanel::setOwner(std::optional<machine::PeripheralId> owner) {
     textLinesShown_ = 0;
     text_->clear();
     refresh();
+}
+
+void PaperPanel::setPaperColour(QColor c) {
+    view_->setPaperColour(c);
+    QPalette pal = text_->palette();
+    pal.setColor(QPalette::Base, c);
+    pal.setColor(QPalette::Text, QColor(0x1f, 0x1f, 0x1f));
+    text_->setPalette(pal);
+}
+
+// A place button's icon: the printer (where the platform has one) and the
+// dot, red while the peripheral is plugged in, as in the iOS and Web apps.
+QIcon PaperPanel::placeIcon(const QIcon& printer, bool plugged) {
+    const qreal dpr = qApp->devicePixelRatio();
+    QPixmap pm(QSize(34, 16) * dpr);
+    pm.setDevicePixelRatio(dpr);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    if (!printer.isNull()) printer.paint(&p, QRect(0, 0, 16, 16));
+    p.setPen(Qt::NoPen);
+    p.setBrush(plugged ? QColor(0xff, 0x3b, 0x30) : QColor(128, 128, 128, 102));
+    p.drawEllipse(QRectF(printer.isNull() ? 2 : 22, 4, 8, 8));
+    return QIcon(pm);
+}
+
+void PaperPanel::setPlaces(std::vector<QWidget*> places) {
+    while (QLayoutItem* item = placesLayout_->takeAt(0)) {
+        if (QWidget* w = item->widget()) {
+            w->hide();
+            w->setObjectName(QString());   // gone for the tests before it is deleted
+            w->deleteLater();
+        }
+        delete item;
+    }
+    const QIcon printer = QIcon::fromTheme(QIcon::ThemeIcon::DocumentPrint);
+    for (QWidget* w : places) {
+        w->setParent(this);
+        if (auto* b = qobject_cast<QToolButton*>(w)) {
+            if (b->toolTip().isEmpty()) b->setToolTip(b->text());
+            b->setIcon(placeIcon(printer, b->isChecked()));
+            b->setIconSize(QSize(34, 16));
+            b->setToolButtonStyle(printer.isNull() ? Qt::ToolButtonTextBesideIcon : Qt::ToolButtonIconOnly);
+        }
+        placesLayout_->addWidget(w);
+        w->show();
+    }
 }
 
 void PaperPanel::setControls(std::vector<peripherals::ControlInfo> controls) {
@@ -333,7 +396,7 @@ void PaperView::updateRange(bool follow) {
 
 void PaperView::paintEvent(QPaintEvent*) {
     QPainter p(viewport());
-    p.fillRect(viewport()->rect(), Qt::white);
+    p.fillRect(viewport()->rect(), paperColour_);
     if (!paper_ || paper_->description.width <= 0) return;
     const double k = pointsPerCoord();
     if (k <= 0) return;

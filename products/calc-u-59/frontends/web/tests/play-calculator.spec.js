@@ -90,7 +90,7 @@ const PROGRAM_123_WRITE = PROGRAM_123 + 'keys:\n  - regular-speed:\n  - key: CLR
 const FRESH = preset('partition: 479\n');
 
 // The PC-100C attached (the built-in default has no printer) by
-// the bar's button "PC-100C".
+// its button "PC-100C" on the paper panel.
 async function connectPrinter(page) {
   const toggle = el(page, 'bar-place-printer');
   if ((await toggle.getAttribute('aria-pressed')) !== 'true') await toggle.click();
@@ -253,7 +253,7 @@ test('2nd Pgm 01 shows the Master Library diagnostic cue card', async ({ page })
 test('switching models: TI-58C has no card reader', async ({ page }) => {
   await gotoReady(page);
   await expect(page.getByRole('button', { name: 'Arm Card', exact: true })).toBeVisible();
-  await modelPicker(page).selectOption({ label: 'TI-58C' });
+  await modelPicker(page).selectOption({ label: '58C' });
   await expect(modelPicker(page)).toHaveValue('2');
   await expect(page.getByRole('button', { name: /Arm .*Card/ })).toHaveCount(0);
 });
@@ -505,7 +505,7 @@ test('a dropped card is imported and fitted', async ({ page }) => {
 // A TI-58 has no card reader: refused with a notice.
 test('a card dropped on the TI-58 is refused with a notice', async ({ page }) => {
   await gotoReady(page);
-  await modelPicker(page).selectOption({ label: 'TI-58' });
+  await modelPicker(page).selectOption({ label: '58' });
   await page.waitForTimeout(600);
   await dropFile(page, 'dropped.magnetcard.yaml', cardFile('dropped'));
   await expect(el(page, 'notice')).toContainText('dropped.magnetcard.yaml');   // the notice dialog
@@ -784,18 +784,21 @@ test('the standalone app follows the window as it rotates', async ({ page }) => 
   // iPhone Duo open: the narrow tape's button bar fits it.
   await page.setViewportSize({ width: 880, height: 645 });
   await expect(page.locator('[data-panel=debug]')).toBeVisible();
-  // The paper panel's header wraps in the narrow tape: nothing is cut off.
-  const paperHeader = page.locator('[data-panel=paper] .calcu-paper-header');
-  await expect(paperHeader.locator('[data-calcu=paper-control-PRINT]')).toBeVisible();
-  expect(await paperHeader.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
+  // The row below the paper wraps in the narrow tape: nothing is cut off.
+  const paperRow = page.locator('[data-panel=paper] .calcu-paper-footer');
+  await expect(paperRow.locator('[data-calcu=paper-control-PRINT]')).toBeVisible();
+  expect(await paperRow.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
 
-  // iPad mini: all three panels, icons only; iPad Pro: with labels.
+  // iPad mini and iPad Pro: all three panels; the bar's labels only where
+  // the whole bar fits the calculator with them, and never cut off.
+  const barFits = () => page.locator('.calcu-bar .calcu-shell-bar').evaluate((e) => e.scrollWidth <= e.clientWidth);
   await page.setViewportSize({ width: 1133, height: 744 });
   await expect(page.locator('[data-panel=debug]')).toBeVisible();
-  await expect(page.locator('.calcu-bar').getByText('Crd')).toHaveCount(0);
+  expect(await barFits()).toBe(true);
   await page.setViewportSize({ width: 1366, height: 1000 });
   await expect(page.locator('[data-panel=debug]')).toBeVisible();
   await expect(page.locator('.calcu-bar').getByText('Crd').first()).toBeVisible();
+  expect(await barFits()).toBe(true);
 
   // Back to portrait: pages again.
   await page.setViewportSize({ width: 744, height: 1133 });

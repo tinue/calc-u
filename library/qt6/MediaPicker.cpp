@@ -1,5 +1,7 @@
 #include "qt6/MediaPicker.hpp"
 #include <QStandardItemModel>
+#include <QStyleOptionComboBox>
+#include <QStylePainter>
 
 namespace calcu::qt6 {
 
@@ -14,34 +16,56 @@ void MediaPicker::setPlace(const media::PlaceState& p) {
     setObjectName(QString::fromStdString("media-picker-" + p.place));
     clear();
     ids_.clear();
+    shorts_.clear();
     auto* model = qobject_cast<QStandardItemModel*>(this->model());
     int current = 0;
-    bool listed = !p.holds;
     for (const media::PickerEntry& e : p.picker) {
         addItem(e.group == media::PickerEntry::Group::Empty ? emptyLabel() : QString::fromStdString(e.label));
         const int i = count() - 1;
         ids_.push_back(e.id);
+        shorts_.push_back(QString::fromStdString(media::shortLabel(e)));
         const std::optional<std::string>& tip = e.canChoose ? e.tooltip : e.hint;
         if (tip) setItemData(i, QString::fromStdString(*tip), Qt::ToolTipRole);
         if (model && !e.canChoose) model->item(i)->setEnabled(false);
-        const bool held = p.holds ? (e.group != media::PickerEntry::Group::Empty && e.label == p.holds->name)
-                                  : e.group == media::PickerEntry::Group::Empty;
-        if (held && e.canChoose) {
-            current = i;
-            listed = true;
-        }
-    }
-    // A medium the place holds that no entry lists (a file opened from
-    // where it lies; a tape started under a name before its first write):
-    // shown as what the place holds, not a choice.
-    if (!listed) {
-        addItem(QString::fromStdString(p.holds->name));
-        ids_.push_back(std::string());
-        current = count() - 1;
-        if (model) model->item(current)->setEnabled(false);
+        if (e.chosen) current = i;   // the topic's (a held medium no entry lists: its own entry)
     }
     setCurrentIndex(current);
     filling_ = false;
+    updateGeometry();   // the short label's width
+}
+
+void MediaPicker::setShowShort(bool on) {
+    showShort_ = on;
+    updateGeometry();
+    update();
+}
+
+QString MediaPicker::closedText() const {
+    const int i = currentIndex();
+    return i >= 0 && static_cast<std::size_t>(i) < shorts_.size() ? shorts_[static_cast<std::size_t>(i)] : currentText();
+}
+
+QSize MediaPicker::sizeHint() const {
+    if (!showShort_) return QComboBox::sizeHint();
+    QStyleOptionComboBox opt;
+    initStyleOption(&opt);
+    const QSize text = fontMetrics().size(Qt::TextSingleLine, closedText());
+    return style()->sizeFromContents(QStyle::CT_ComboBox, &opt, text, this);
+}
+
+QSize MediaPicker::minimumSizeHint() const { return showShort_ ? sizeHint() : QComboBox::minimumSizeHint(); }
+
+void MediaPicker::paintEvent(QPaintEvent* e) {
+    if (!showShort_) {
+        QComboBox::paintEvent(e);
+        return;
+    }
+    QStylePainter p(this);
+    QStyleOptionComboBox opt;
+    initStyleOption(&opt);
+    opt.currentText = closedText();
+    p.drawComplexControl(QStyle::CC_ComboBox, opt);
+    p.drawControl(QStyle::CE_ComboBoxLabel, opt);
 }
 
 QString MediaPicker::entryLabel(int i) const { return itemText(i); }

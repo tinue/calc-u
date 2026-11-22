@@ -183,15 +183,18 @@ TEST(control_bar_per_model) {
     auto* model = f.find<QComboBox>(names::kBarModel);
     CHECK(model != nullptr);
     if (!model) return;
-    CHECK(model->count() == 3 && model->itemText(0) == QStringLiteral("TI-59") && model->currentText() == QStringLiteral("TI-59"));
+    CHECK(model->count() == 3 && model->itemText(0) == QStringLiteral("59") && model->currentText() == QStringLiteral("59"));
     // The picker of slot-1: the 14 modules and the empty slot.
     auto* slot = f.find<QWidget>(names::barSlot("slot-1"));
     auto* picker = slot ? slot->findChild<calcu::qt6::MediaPicker*>() : nullptr;
     CHECK(picker != nullptr);
     if (picker) CHECK_EQ(picker->count(), 15);
-    // The button "PC-100C" for the place `printer`, pressed while plugged in.
+    // The button "PC-100C" for the place `printer`, on the paper panel,
+    // pressed while plugged in.
     auto* printer = f.find<QToolButton>(names::barPlace("printer"));
     CHECK(printer && printer->text() == QStringLiteral("PC-100C") && printer->isCheckable() && !printer->isChecked());
+    auto* bar = f.find<QWidget>(names::kControlBar);
+    CHECK(printer && bar && !bar->isAncestorOf(printer));
     if (printer) printer->click();
     CHECK(f.waitFor([&] {
         auto* p = f.find<QToolButton>(names::barPlace("printer"));
@@ -224,7 +227,7 @@ TEST(no_reset_preset_settings_on_the_bar) {
         CHECK(!t.contains(QStringLiteral("Reset")) && !t.contains(QStringLiteral("Preset")));
         CHECK(!t.contains(QStringLiteral("Settings")) && !t.contains(QStringLiteral("Clean")));
     }
-    CHECK(!barButtonTexts(f).empty());   // the bar is there, with the PC-100C and the cards
+    CHECK(!barButtonTexts(f).empty());   // the bar is there, with the cards
 }
 
 TEST(cold_boot_is_the_menu_item) {

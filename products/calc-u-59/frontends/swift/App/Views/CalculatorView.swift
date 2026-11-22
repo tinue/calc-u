@@ -34,6 +34,11 @@ struct CalculatorView: View {
 
     enum PortraitPage { case calc, printer, debug }
     @State private var portraitPage: PortraitPage = .calc
+    /// The faceplate's drawn width and the bar's width without and with its
+    /// labels: the library's rule makes the bar of them (TIBarFit).
+    @State private var faceplateWidth: CGFloat = 0
+    @State private var barWithoutLabels: CGFloat = 0
+    @State private var barWithLabels: CGFloat = 0
     private var debugPageEnabled: Bool { viewModel.portraitDebugPage }
 
     var body: some View {
@@ -98,14 +103,12 @@ struct CalculatorView: View {
         // Side by side when wide, button-navigated pages otherwise
         // (TIViewRules.mobileLayout decides by the window's size and fold)
         GeometryReader { geo in
-            // Hide button labels when the calculator is too narrow to fit them comfortably.
-            let showLabels = TIViewRules.mobileBarLabels(geo.size.width)
             let layout = TIViewRules.mobileLayoutWidth(geo.size.width, height: geo.size.height,
                                                        horizontalFold: Self.hasHorizontalFold(geo))
             if layout != .paged {
                 let printerWidth = TIViewRules.mobilePrinterWidth(layout, width: geo.size.width)
                 HStack(spacing: 0) {
-                    calculatorBody(showLabels: showLabels)
+                    calculatorBody()
                         .fixedSize(horizontal: true, vertical: false)
                     Divider()
                     PrinterView()
@@ -121,7 +124,7 @@ struct CalculatorView: View {
                 }
                 .padding(.top, TIViewRules.mobileTopMargin(geo.safeAreaInsets.top))
             } else {
-                portraitPages(showLabels: showLabels)
+                portraitPages()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .onAppear { portraitPage = .calc }
                     .onChange(of: debugPageEnabled) { _, enabled in
@@ -131,17 +134,28 @@ struct CalculatorView: View {
         }
     }
 
-    private func calculatorBody(showLabels: Bool = true) -> some View {
+    private func calculatorBody() -> some View {
         ZStack {
             Color(red: 29/255, green: 29/255, blue: 28/255)
 
             VStack(spacing: 0) {
                 KeyboardView()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { faceplateWidth = $0 }
                 Spacer()
-                ControlBarView(showLabels: showLabels)
-                    // No ideal width: the faceplate alone sets the column's
-                    // width where the column is sized to its content.
-                    .frame(minWidth: 0, idealWidth: 0, maxWidth: .infinity)
+                let fit = TIBarFit.fit(faceplate: faceplateWidth, withoutLabels: barWithoutLabels, withLabels: barWithLabels)
+                BarWidthLayout(width: fit.width) {
+                    ControlBarView(labels: fit.labels)
+                }
+                .background {   // the bar measured both ways, unseen
+                    VStack {
+                        ControlBarView(labels: false).fixedSize()
+                            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { barWithoutLabels = $0 }
+                        ControlBarView(labels: true).fixedSize()
+                            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { barWithLabels = $0 }
+                    }
+                    .hidden()
+                    .accessibilityHidden(true)
+                }
             }
             .background(Color(white: 29.0/255.0))
             .padding(.horizontal, 8)
@@ -163,11 +177,11 @@ struct CalculatorView: View {
     }
 
     @ViewBuilder
-    private func portraitPages(showLabels: Bool) -> some View {
+    private func portraitPages() -> some View {
         ZStack {
             switch portraitPage {
             case .calc:
-                calculatorBody(showLabels: showLabels)
+                calculatorBody()
                     .overlay(alignment: .topLeading) {
                         if debugPageEnabled {
                             pageArrow(systemImage: "chevron.left", id: "btn-page-left") { portraitPage = .debug }
@@ -211,6 +225,22 @@ struct CalculatorView: View {
         .padding(.top, 2)
         .padding(.horizontal, 8)
         .padding(.bottom, 8)
+    }
+}
+
+/// The control bar at its width (TIBarFit), never wider than the column;
+/// centred under the faceplate by the column.
+private struct BarWidthLayout: Layout {
+    var width: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let bar = subviews.first else { return .zero }
+        let w = min(width, proposal.width ?? .infinity)
+        return CGSize(width: w, height: bar.sizeThatFits(ProposedViewSize(width: w, height: proposal.height)).height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: bounds.height))
     }
 }
 

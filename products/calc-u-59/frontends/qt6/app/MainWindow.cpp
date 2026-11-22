@@ -51,7 +51,14 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
     pal.setColor(QPalette::Window, ChromeStyle::kPanel);
     panels->setPalette(pal);
     panels->setContentsMargins(8, 8, 8, 8);
-    panels->setMaximumWidth(320);
+    panels->setMaximumWidth(400);   // the printer's buttons in one row below the paper
+    // The paper panel's text grows with the faceplate, as the bar's does.
+    const QFont base = panels->font();
+    connect(m_calculator, &CalculatorPanel::fontScaleChanged, panels, [panels, base](double scale) {
+        QFont f = base;
+        f.setPointSizeF(base.pointSizeF() * scale);
+        panels->setFont(f);
+    });
     m_debug = new DebugPanel(*m_controller, m_splitter);
     m_debug->setObjectName(QStringLiteral("debugpanel"));
     m_splitter->addWidget(m_calculator);
@@ -124,10 +131,11 @@ calcu::shell::ShellProduct MainWindow::product() {
 
 // The PC-100C's controls on the paper panel while it owns it:
 // PRINT and ADV keys, TRACE a switch at its position, as the control state
-// lists them.
+// lists them; the paper in the apps' cream.
 void MainWindow::followPrinter() {
     auto* paper = qobject_cast<calcu::qt6::PaperPanel*>(m_shell->panelArea()->panel("paper"));
     if (!paper) return;
+    paper->setPaperColour(ChromeStyle::kPaper);
     paper->setControls(m_controller->printerControls());
 }
 

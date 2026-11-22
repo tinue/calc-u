@@ -13,6 +13,7 @@ const char* groupText(PickerEntry::Group g) {
     case PickerEntry::Group::UserTemplate: return "user-template";
     case PickerEntry::Group::Instance: return "instance";
     case PickerEntry::Group::Module: return "module";
+    case PickerEntry::Group::Held: return "held";
     }
     return "";
 }
@@ -25,13 +26,21 @@ Value itemValue(const KindState::Item& i) {
 }
 
 Value entryValue(const PickerEntry& e) {
-    Value::Object o{{"group", groupText(e.group)}, {"id", e.id}, {"label", e.label}, {"canChoose", e.canChoose}};
+    Value::Object o{{"group", groupText(e.group)}, {"id", e.id}, {"label", e.label}, {"short", shortLabel(e)},
+                    {"canChoose", e.canChoose}, {"chosen", e.chosen}};
     if (e.tooltip) o.push_back({"tooltip", *e.tooltip});
     if (e.hint) o.push_back({"hint", *e.hint});
     return Value(std::move(o));
 }
 
 } // namespace
+
+std::string shortLabel(const PickerEntry& e) {
+    static const std::string kModule = "module:";
+    if (e.group == PickerEntry::Group::Empty) return "\u2014";
+    if (e.group == PickerEntry::Group::Module && e.id.rfind(kModule, 0) == 0) return e.id.substr(kModule.size());
+    return e.label;
+}
 
 Value MediaState::toValue() const {
     Value::Array ks;

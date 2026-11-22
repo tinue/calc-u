@@ -1,6 +1,7 @@
 # Changelog
 
 ## [0.9.0] - work in progress
+- **Web calculator** In the portrait layout, Reset is in More, before Cold boot, no longer a button on the bar.
 - **About** The About shows the version and in parentheses the commit it was built from, also on the web: `pre-` before it for a pre-release, `-dirty` after it for a build with changes not committed.
 
 ### New

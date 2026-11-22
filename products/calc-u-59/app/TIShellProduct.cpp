@@ -2,6 +2,7 @@
 #include "KeyIds.hpp"
 #include "KeyboardLayout.hpp"
 #include "Settings.hpp"
+#include "../core/TICatalogue.hpp"
 #include "shell/ValueForms.hpp"
 #include <utility>
 #include <vector>
@@ -24,12 +25,16 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
     p.aboutLinks = {{"GitHub", "https://github.com/tinue/calc-u"},
                     {"Support", "https://github.com/tinue/calc-u/issues"},
                     {"Privacy", "https://github.com/tinue/calc-u/blob/main/products/calc-u-59/PRIVACY.md"}};
+    p.barModelLabels = {{"TI-59", "59"}, {"TI-58", "58"}, {"TI-58C", "58C"}};
+    p.barSpread = true;          // model and module left, the cards in the middle, the rest right
+    p.barShortPickers = true;    // "59", "ML": the bar fits beside the faceplate
     p.presetFilter = "Presets (*.ti59 *.ti58 *.ti58c)";
     // What a preset can name: modules, keystroke programs and magnetic cards
     // (.module.yaml, .keystrokes.yaml, .magnetcard.yaml).
     p.presetUploads = ".ti59,.ti58,.ti58c,.yaml";
     // Neither Copy Screen nor Paste Text, so no Edit menu.
     p.moduleSlotPinOuts = {"module-slot"};
+    p.placesOnPaper = {kTIPrinterPlace.value};   // the PC-100C's button over its paper
     for (const auto& [id, label] : {std::pair{kItemArmCard, "Arm Card…"}, std::pair{kItemArmFreshCard, "Arm Fresh Card…"}}) {
         shell::ProductItem i;
         i.group = shell::MenuGroup::FileMedia;

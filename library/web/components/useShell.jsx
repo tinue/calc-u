@@ -4,7 +4,7 @@
 // so this one carries the set's prefix.)
 //
 //   const s = useCalcuShell(shell, product, {hasQuit: false, shortcuts: false, savedMedia: true});
-//   (traits also `menuBar` (false: no menu bar, the bar has Reset, Preset,
+//   (traits also `menuBar` (false: no menu bar, the bar has Preset,
 //   Settings and More), `settings`, `about`.)
 //   s.menus, s.bar, s.panels, s.dialog (the settings rows), s.loading, s.notice,
 //   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" | null)
@@ -76,7 +76,7 @@ function useCalcuShell(shell, product, traits) {
   // The bar's actions and the More items follow the same inputs as the menus.
   const bar = React.useMemo(() => calcuShellBar(inputs, product, t),
     [controlState, presetList, runState, media, product, traitsKey]);
-  const panels = React.useMemo(() => calcuShellPanels(inputs), [controlState]);
+  const panels = React.useMemo(() => calcuShellPanels(inputs, product), [controlState, product]);
   const spec = product.settingsSpec || calcuShellFamilySections((settings && settings.rows) || [], product.keysShown);
   const dialog = calcuShellDialog(settings || null, presetList, spec);
 

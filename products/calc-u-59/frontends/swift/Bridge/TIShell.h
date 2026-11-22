@@ -76,13 +76,21 @@ typedef NS_ENUM(NSInteger, TIBarControlKind) {
 };
 
 typedef NS_ENUM(NSInteger, TIBarGroup) {
-    TIBarGroupStart,
     TIBarGroupAfterModel,
     TIBarGroupSlots,
     TIBarGroupPlaces,
     TIBarGroupMedia,
     TIBarGroupEnd,
 };
+
+/// The bar below the faceplate (calcu::shell::barFit): its width and whether
+/// it shows its labels.
+@interface TIBarFit : NSObject
+@property (nonatomic, readonly) CGFloat width;
+@property (nonatomic, readonly) BOOL labels;
++ (TIBarFit *)fitForFaceplate:(CGFloat)faceplate withoutLabels:(CGFloat)without withLabels:(CGFloat)with
+    NS_SWIFT_NAME(fit(faceplate:withoutLabels:withLabels:));
+@end
 
 /// A control of the bar (calcu::shell::BarControl).
 @interface TIBarControl : NSObject
@@ -91,6 +99,11 @@ typedef NS_ENUM(NSInteger, TIBarGroup) {
 @property (nonatomic, readonly, copy) NSString *controlID;   ///< "model", a place, a media place
 @property (nonatomic, readonly, copy) NSString *label;
 @property (nonatomic, readonly) BOOL plugged;                ///< a place button: shown as pressed
+/// A picker: what it shows closed where `shortShown` (the model's bar name, the chosen ID, "—").
+@property (nonatomic, readonly, copy) NSString *shown;
+@property (nonatomic, readonly) BOOL shortShown;
+/// Its group takes up the room before it (a spread bar: the media group, End).
+@property (nonatomic, readonly) BOOL groupPushed;
 /// A picker: its entries (the running one checked); a button: its one choice; More: its items.
 @property (nonatomic, readonly, copy) NSArray<TIMenuItem *> *choices;
 @property (nonatomic, readonly, copy) NSString *mediumKind;
@@ -153,6 +166,8 @@ extern NSString *const TIShellActionHelp;
 @property (nonatomic, readonly) NSString *modelID;
 /// The paper panel's owner (the paper panel shows its paper), "" while none is attached.
 @property (nonatomic, readonly) NSString *paperOwner;
+/// The place controls on the paper panel (the product's placesOnPaper: the PC-100C), group Places.
+@property (nonatomic, readonly) NSArray<TIBarControl *> *paperPlaces;
 /// A setting's value now (the `settings` topic), "" when it has none.
 - (NSString *)settingValueInSection:(NSString *)section key:(NSString *)key NS_SWIFT_NAME(setting(_:_:));
 /// A setting changed, applied and written at once (`set-setting`); nil: its default.

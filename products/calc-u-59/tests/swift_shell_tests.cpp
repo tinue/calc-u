@@ -166,43 +166,48 @@ TEST(shortcuts_no_about_no_quit) {
     CHECK(shell::findItem(ms, shell::actions::kQuit) == nullptr);
 }
 
-// The bar per model: the model picker first, the
-// picker of slot-1 with the 14 modules and None, the button PC-100C, the
-// card controls on the TI-59 only.
+// The bar per model: the model picker first (59, 58, 58C), the
+// picker of slot-1 with the 14 modules and None, the card controls on the
+// TI-59 only; the button PC-100C on the paper panel.
 TEST(control_bar_per_model) {
     SKIP_UNLESS(roms(), kSkip);
     using K = shell::BarControl::Kind;
     for (const auto model : {cu59::ModelId{cu59::kTI59}, cu59::ModelId{cu59::kTI58}, cu59::ModelId{cu59::kTI58C}}) {
         SwiftRig s(model);
         const auto bar = shell::bar(s.inputs(), product(), swiftTraits());
-        CHECK(control(bar, K::ModelPicker) != nullptr);
+        const auto* picker = control(bar, K::ModelPicker);
+        CHECK(picker != nullptr);
+        if (picker) CHECK_EQ(picker->shown, model.value.substr(3));   // "TI-58C" → "58C"
         const auto* slot = control(bar, K::SlotPicker, "slot-1");
         CHECK(slot != nullptr);
         if (slot) {
             CHECK_EQ(slot->choices.size(), std::size_t{15});   // None and the 14 modules
             CHECK(!slot->choices.empty() && slot->choices[0].label == "None");
         }
-        const auto* printer = control(bar, K::PlaceButton, "printer");
-        CHECK(printer && printer->label == "PC-100C");
+        CHECK(control(bar, K::PlaceButton, "printer") == nullptr);
+        const auto ps = shell::panels(s.inputs(), product());
+        CHECK(ps.size() == 1 && ps[0].kind == "paper" && ps[0].places.size() == 1);
+        if (ps.size() == 1 && ps[0].places.size() == 1)
+            CHECK(ps[0].places[0].kind == K::PlaceButton && ps[0].places[0].label == "PC-100C");
         CHECK((control(bar, K::Media, "card-reader") != nullptr) == (model == cu59::ModelId{cu59::kTI59}));
     }
 }
 
-// Without a menu bar the bar keeps Reset, Preset and Settings,
-// and More holds Examples, Cold boot, Resume and the help.
-TEST(more_holds_examples_cold_boot_resume_help) {
+// Without a menu bar the bar keeps Preset and Settings, and More holds
+// Examples, Reset, Cold boot, Resume and the help.
+TEST(more_holds_examples_reset_cold_boot_resume_help) {
     SKIP_UNLESS(roms(), kSkip);
     using K = shell::BarControl::Kind;
     SwiftRig s;
     const auto in = s.inputs();
     const auto bar = shell::bar(in, product(), swiftTraits());
-    CHECK(control(bar, K::Action, "reset") != nullptr);
+    CHECK(control(bar, K::Action, "reset") == nullptr);
     CHECK(control(bar, K::Action, shell::actions::kLoadPreset) != nullptr);
     CHECK(control(bar, K::Action, shell::actions::kSettings) != nullptr);
     const auto* more = control(bar, K::More);
     CHECK(more != nullptr);
     if (!more) return;
-    CHECK((ids(more->choices) == std::vector<std::string>{"examples", "cold-boot", "resume", shell::actions::kHelp}));
+    CHECK((ids(more->choices) == std::vector<std::string>{"examples", "reset", "cold-boot", "resume", shell::actions::kHelp}));
     const auto more2 = shell::moreItems(shell::menus(in, product(), swiftTraits()), product());
     CHECK(ids(more2) == ids(more->choices));
 }

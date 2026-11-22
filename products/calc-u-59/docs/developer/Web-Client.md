@@ -52,9 +52,9 @@ calc-engine-worker.js → library-worker.js ── wasm/calcu59-core.{js,wasm} �
 | `src/painters.js` | Canvas painting: the LED (`LedRenderer`), the cue card's draw list (`CueCardRenderer`); the images and canvas sizes through the library's `calcImage` and `sizeCanvas` (`library/web/src/canvas.js`) |
 | `src/CalculatorFace.jsx` | Artwork, LED and cue card overlays, pressed-key effect (`held-keys`); the pointer is the React set's `useShellFaceplate` on `c59.faceplate-map` (a press on a fitted card's corner: `c59.tap-card`); transparent key buttons for assistive technology (`KeyboardWidget`) |
 | `src/Dialogs.jsx` | Card picker on the `media` topic (Arm Card, Arm Fresh Card; the replace question by the library's `calcuAskedQuestion`) (`CardPickerDialog`); File ▸ Saved Media… is the library's `ShellSavedMedia` |
-| `src/Paper.jsx` | The PC-100C's pane: the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), owner from the control state, which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (the library's `set-control`; their positions are the `control-state`'s `controls`), Copy and Cut its `paper.copy` / `paper.cut` (Qt6: `calcu::qt6::PaperPanel`). The PC-100C is attached by the bar's button "PC-100C" |
+| `src/Paper.jsx` | The PC-100C's pane: the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), owner from the control state, which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (the library's `set-control`; their positions are the `control-state`'s `controls`), Copy and Cut its `paper.copy` / `paper.cut` (Qt6: `calcu::qt6::PaperPanel`). The PC-100C is attached by its button "PC-100C" at the left of the panel's header (the panel model's `places`) |
 | `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) on the debug part's product topics `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view` and the library's `log`; Run and the CALCULATOR tab follow the `control-state` entries `c59.asm-run`, `c59.calculator-tab` (TRACE can always be pressed); FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` |
-| `src/CalcU59.jsx` | The component `CalcU59`, put together from the React set's shell: the menu bar (wide) or the bar's Reset, Preset, Settings and More (portrait), the shell's control bar with the module picker (the library's `ShellSlotPicker`) and the card controls, the shell's dialogs, the storage banner, "ROMs missing"; the product's data and faceplate maps through the library's `useShellProduct` and `useFaceplateMaps`; the two layouts, focus and physical keyboard (the library's `calcuHostKeys`), drag and drop (the library's `open {way: drop, upload: true}`; the library's `calcuFileDrop`: a drop of exactly one file; `calcuOpenFiles`), keyboard feedback (`[keyboard] feedback`) (`MainWindow`) |
+| `src/CalcU59.jsx` | The component `CalcU59`, put together from the React set's shell: the menu bar (wide) or the bar's Preset, Settings and More (portrait; Reset in More), the shell's control bar with the module picker (the library's `ShellSlotPicker`) and the card controls, the shell's dialogs, the storage banner, "ROMs missing"; the product's data and faceplate maps through the library's `useShellProduct` and `useFaceplateMaps`; the two layouts, focus and physical keyboard (the library's `calcuHostKeys`), drag and drop (the library's `open {way: drop, upload: true}`; the library's `calcuFileDrop`: a drop of exactly one file; `calcuOpenFiles`), keyboard feedback (`[keyboard] feedback`) (`MainWindow`) |
 | `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle` (without the full set: a session without a machine and the topic `roms-missing`), the settings file, the shell's part, the library's `SettingsPart` and ControlPart (with the debug panel's product entries), `TIAppPart::sessionParts()` (the library's parts with the TI rules, the bundle of `/presets`; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
 | `calc.css` | Tokens, fonts and every rule the client needs |
 | `fonts/` | Archivo (WOFF2, SIL OFL 1.1), for the cue card, as the family `Calc-U Archivo` |
@@ -96,7 +96,9 @@ About texts and links, the settings spec of the layout); the faceplate is
 `c59.faceplate-map {model}` (the hit map in pixels of the 2064 × 4075 base
 image, the card area, each key's rectangle, the card's corners); the
 heatmap's grid `c59.heatmap-grid`; the LED shapes
-`c59.led-geometry`, the PWA's layout rules `c59.mobile-rules`
+`c59.led-geometry`, the PWA's layout rules `c59.mobile-rules`, the debug
+tabs' headers `c59.debug-headers` (app/'s `debugHeader`: title, buttons
+left to right, wide and narrow labels, colours, `narrowBelow`)
 (`app/TIWebPart`). The start is the shell's `start` command with
 the `model` and `preset` props. The paper, the run state and the trace are
 the library's topics (`papers`, `paper PC-100C`, `paper-copies`,
@@ -231,8 +233,9 @@ a name no host page uses. Sizes that follow the width are inline styles.
 
 `app/index.html` mounts `CalcU59` with `layout="auto"`, the keyboard
 and an install banner. It follows the window as the iOS app does (the app layer's
-`mobileLayout`, `mobilePrinterWidth`, `mobileBarLabels`, through
-the request `c59.mobile-rules`): pages when taller than wide; calculator,
+`mobileLayout`, `mobilePrinterWidth`, through
+the request `c59.mobile-rules`; the bar's labels by the library's
+`calcuShellBarFit`, measured with and without them): pages when taller than wide; calculator,
 printer and debugger from 820 × 560 px; calculator and printer below that
 (a phone in landscape). The manifest's orientation is `any`: Safari can't lock
 one, so the layout adapts instead. A browser can't see a fold, so a half-open

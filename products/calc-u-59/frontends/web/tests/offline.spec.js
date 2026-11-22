@@ -43,7 +43,7 @@ test('the installed app starts without a connection and runs every model', async
 
   // A model or module not started with is read later, by a synchronous request.
   const model = app.locator('[data-calcu="bar-model"]');   // the shell's model picker
-  for (const name of ['TI-58C', 'TI-58', 'TI-59']) {
+  for (const name of ['58C', '58', '59']) {
     await model.selectOption({ label: name });
     await expect(model).toHaveValue(await model.locator(`option:text-is("${name}")`).getAttribute('value'));
     await app.waitForTimeout(500);

@@ -86,7 +86,7 @@ test('the constant memory is ti58c.memory.yaml in the save folder', async ({ pag
 // TI-58C, a value stored, a page load: the last model and the value come back.
 test('the constant memory and the last model are kept across a page load', async ({ page }) => {
   await gotoReady(page);
-  await modelPicker(page).selectOption({ label: 'TI-58C' });
+  await modelPicker(page).selectOption({ label: '58C' });
   await expect(modelPicker(page)).toHaveValue('2');
   await page.waitForTimeout(1500);   // the TI-58C boots
   await press(page, ['CLR', '7', '=']);
@@ -113,7 +113,7 @@ test('no calcu59 key read or written', async ({ page }) => {
   });
   await gotoReady(page);
   await setStartupModel(page, 'TI-58C');
-  await modelPicker(page).selectOption({ label: 'TI-58C' });
+  await modelPicker(page).selectOption({ label: '58C' });
   await page.waitForTimeout(1500);
   const keys = await page.evaluate(() => window.__calcuKeys);
   expect(keys.filter((k) => k.startsWith('calcu59/'))).toEqual([]);

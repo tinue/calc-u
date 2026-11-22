@@ -303,9 +303,15 @@ control of the form key is pressed (`on: true`) or let up. Refused: `No
   place word. `holds`: `{name, template, unsaved, writeProtected, side?}`.
   `passing`: the side passing through now. `waits`: the machine waits for
   a medium now.
-- A picker entry: `{group, id, label, canChoose, tooltip?, hint?}`;
-  `group` is `empty`, `bundled-template`, `user-template`, `instance` or
-  `module`; `id` is what `media.choose` and `media.arm` take back.
+- A picker entry: `{group, id, label, short, canChoose, chosen, tooltip?, hint?}`;
+  `group` is `empty`, `bundled-template`, `user-template`, `instance`,
+  `module` or `held`; `id` is what `media.choose` and `media.arm` take back;
+  `chosen` marks the one entry of what the place holds (the `empty` entry
+  while it holds nothing); a medium held that no other entry lists (a file
+  opened from where it lies, a tape started under a name before its first
+  write) comes last as a `held` entry, never `canChoose`;
+  `short` is what a picker shows of the chosen entry where room is short:
+  a `module` entry's module ID (`ML`), `—` for `empty`, else `label`.
 - `media.eject` is `media.choose` with the empty entry. `media.import`
   without `paths` asks the `file-picker`; refused when nobody offers one
   (`No file picker is offered.`). `media.export` asks `keep-file`, the

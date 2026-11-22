@@ -7,9 +7,10 @@
 // every top-level name starts with `calcuShell` or `CALCU_SHELL`.
 //
 //   calcuShellMenus(inputs, product, traits) → [{id, label, items}]
-//   calcuShellBar(inputs, product, traits) → [{group, controls}]
+//   calcuShellBar(inputs, product, traits) → [{group, controls, pushed}]
+//   calcuShellBarFit(faceplate, withoutLabels, withLabels, room?) → {width, labels}
 //   calcuShellMoreItems(menus, product) → the items of the More button
-//   calcuShellPanels(inputs) → [{kind, owner, ownerPlace}]
+//   calcuShellPanels(inputs, product) → [{kind, owner, ownerPlace, places}]
 //   calcuShellFamilySections(rows, keysShown) → spec; calcuShellDialog(settings, presetList, spec)
 //   calcuShellLoading() → {busy(runs, full, now), shown(now), due()}
 //   calcuShellNotices() → {push, refusal, current, close, answer, waiting}
@@ -19,7 +20,8 @@
 // inputs: {controlState, busy, presetList, runState, romsMissing, settings, media}, each the
 // topic's value or null. product: the JS form of ShellProduct: {name, version, build,
 // helpUrl, aboutLabel, aboutLines, aboutLinks: [[label, url]], variantLabels: {id: label},
-// copyScreen: fn | null, pasteText, moduleSlotPinOuts: [...], placesWithoutControl: [...],
+// barModelLabels: {id: label}, barSpread, barShortPickers,
+// copyScreen: fn | null, pasteText, moduleSlotPinOuts: [...], placesWithoutControl: [...], placesOnPaper: [...],
 // items: [{group, id, label, entry, act, onBar, mediaPlace}]}; groups as in C++: "FileOpen", "FileKinds",
 // "FileMedia", "FileEnd", "Edit", "MachineEnd", "Help".
 // traits: {hasQuit, shortcuts, savedMedia, menuBar, settings, about} (menuBar
@@ -274,7 +276,7 @@ function calcuShellMenus(inputs, product, traits) {
 // control on a bar without a menu bar; one separator between the groups
 // that remain, never first, last or twice; Cold boot asks first.
 function calcuShellMoreItems(menus, product) {
-  const own = ["load-preset", "settings", "quit", "reset", "model", "peripherals"];
+  const own = ["load-preset", "settings", "quit", "model", "peripherals"];
   const onBar = (i) => own.includes(i.id) || (product.items || []).some((p) => p.id === i.id && p.onBar);
   const out = [];
   let pending = false;
@@ -313,50 +315,95 @@ function calcuShellBar(inputs, product, traits) {
   if (!calcuShellStarted(inputs)) return [];
   const t = Object.assign({}, CALCU_SHELL_TRAITS, traits || {});
   const cs = inputs.controlState;
-  const groups = CALCU_SHELL_BAR_GROUPS.map((group) => ({ group, controls: [] }));
-  groups[0].controls.push({ kind: "model", id: "model", label: "", plugged: false, choices: calcuShellModelItems(cs), entry: null, mediumKind: "" });
+  const groups = CALCU_SHELL_BAR_GROUPS.map((group) => ({ group, controls: [], pushed: false }));
+  // The bar's model names (a choice's label is the model ID); label: the running model's.
+  const barNames = product.barModelLabels || {};
+  const choices = calcuShellModelItems(cs).map((c) => Object.assign(c, { label: barNames[c.label] || c.label }));
+  const running = choices.find((c) => c.checked);
+  groups[0].controls.push({ kind: "model", id: "model", label: "", shown: running ? running.label : "",
+    shortShown: !!product.barShortPickers, plugged: false, choices, entry: null, mediumKind: "" });
+  // A spread bar: the room before the media group and End is taken up.
+  groups[3].pushed = groups[4].pushed = !!product.barSpread;
   const places = calcuShellList(cs, "places");
   const slotCount = places.filter((p) => calcuShellPlaceKind(p, product) === "slot").length;
   let slot = 0;
+  const onPaper = product.placesOnPaper || [];
   for (const place of places) {
-    const id = calcuShellText(place, "place");
-    const kind = calcuShellPlaceKind(place, product);
-    const c = { kind: "", id, label: "", plugged: false, choices: [], entry: place, mediumKind: "" };
-    if (kind === "slot") {
-      slot += 1;
-      Object.assign(c, { kind: "slot", label: slotCount > 1 ? `${slot}:` : "", choices: calcuShellPlaceChoices(place, true) });
-      groups[1].controls.push(c);
-    } else if (kind === "button") {
-      const f = calcuShellList(place, "fitting")[0];
-      Object.assign(c, { kind: "button", label: calcuShellText(f, "name"), plugged: f.plugged === true, choices: calcuShellPlaceChoices(place, false) });
-      groups[2].controls.push(c);
-    } else if (kind === "picker") {
-      Object.assign(c, { kind: "picker", choices: calcuShellPlaceChoices(place, true) });
-      groups[2].controls.push(c);
-    }
+    if (onPaper.includes(calcuShellText(place, "place"))) continue;   // on the paper panel
+    const isSlot = calcuShellPlaceKind(place, product) === "slot";
+    if (isSlot) slot += 1;
+    const c = calcuShellPlaceControl(place, product, isSlot && slotCount > 1 ? `${slot}:` : "");
+    if (c) groups[isSlot ? 1 : 2].controls.push(c);
   }
   for (const m of calcuShellList(cs, "mediaPlaces"))
     groups[3].controls.push({ kind: "media", id: calcuShellText(m, "id"), label: "", plugged: false, choices: [], entry: m, mediumKind: calcuShellText(m, "kind") });
   if (t.menuBar !== false) return groups;
-  // A window without a menu bar. Start holds Reset; End Preset,
-  // Settings and More, each following its menu item.
+  // A window without a menu bar. End holds Preset, Settings and More
+  // (with Reset), each following its menu item.
   const menus = calcuShellMenus(inputs, product, t);
   const action = (id, label) => {
     const item = calcuShellFindItem(menus, id);
     return item ? { kind: "action", id, label, plugged: false, choices: [], entry: null, mediumKind: "", item } : null;
   };
-  const start = { group: "Start", controls: [action("reset", "Reset")].filter(Boolean) };
   groups[4].controls.push(...[action("load-preset", "Preset"), action("settings", "Settings")].filter(Boolean));
   groups[4].controls.push({ kind: "more", id: "more", label: "More", plugged: false, choices: calcuShellMoreItems(menus, product), entry: null, mediumKind: "" });
-  return [start, ...groups];
+  return groups;
 }
 
-function calcuShellPanels(inputs) {
-  return calcuShellList(inputs && inputs.controlState, "panels").map((p) => ({
-    kind: calcuShellText(p, "kind"),
-    owner: p.owner ? calcuShellText(p.owner, "peripheral") : "",
-    ownerPlace: p.owner ? calcuShellText(p.owner, "place") : "",
-  }));
+// The bar below a faceplate (C++ shell::barFit): labels only where the whole
+// bar fits the faceplate with them; as wide as the faceplate, wider where the
+// controls need more, never wider than the room.
+function calcuShellBarFit(faceplate, withoutLabels, withLabels, room = Infinity) {
+  const labels = withLabels <= faceplate;
+  return { labels, width: Math.min(room, Math.max(faceplate, labels ? withLabels : withoutLabels)) };
+}
+
+// A place's control: a module slot's picker (its label "n:" given), a
+// button where one peripheral fits, a picker where several do; null for a
+// place without a control.
+function calcuShellPlaceControl(place, product, slotLabel) {
+  const kind = calcuShellPlaceKind(place, product);
+  const id = calcuShellText(place, "place");
+  const c = { kind: "", id, label: "", shown: "", shortShown: !!product.barShortPickers, plugged: false, choices: [], entry: place, mediumKind: "" };
+  // A picker's short text: the chosen entry's ID, "—" for none.
+  const shownOf = (choices) => {
+    const i = choices.find((x) => x.checked);
+    if (!i) return "\u2014";
+    const prefix = `peripheral-${id}-`;
+    const word = i.id.startsWith(prefix) ? i.id.slice(prefix.length) : i.label;
+    return word === "none" ? "\u2014" : word;
+  };
+  if (kind === "slot") {
+    const choices = calcuShellPlaceChoices(place, true);
+    return Object.assign(c, { kind: "slot", label: slotLabel, choices, shown: shownOf(choices) });
+  }
+  if (kind === "button") {
+    const f = calcuShellList(place, "fitting")[0];
+    return Object.assign(c, { kind: "button", label: calcuShellText(f, "name"), plugged: f.plugged === true, choices: calcuShellPlaceChoices(place, false) });
+  }
+  if (kind === "picker") {
+    const choices = calcuShellPlaceChoices(place, true);
+    return Object.assign(c, { kind: "picker", choices, shown: shownOf(choices) });
+  }
+  return null;
+}
+
+// places: on the paper panel, the controls of the product's placesOnPaper.
+function calcuShellPanels(inputs, product) {
+  const cs = inputs && inputs.controlState;
+  const onPaper = (product && product.placesOnPaper) || [];
+  return calcuShellList(cs, "panels").map((p) => {
+    const kind = calcuShellText(p, "kind");
+    const places = kind !== "paper" ? [] : calcuShellList(cs, "places")
+      .filter((place) => onPaper.includes(calcuShellText(place, "place")))
+      .map((place) => calcuShellPlaceControl(place, product, "")).filter(Boolean);
+    return {
+      kind,
+      owner: p.owner ? calcuShellText(p.owner, "peripheral") : "",
+      ownerPlace: p.owner ? calcuShellText(p.owner, "place") : "",
+      places,
+    };
+  });
 }
 
 // The family sections for the keys the `settings` topic has (keysShown:
@@ -554,7 +601,7 @@ function calcuShellAbout(product) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    calcuShellMenus, calcuShellFindItem, calcuShellBar, calcuShellPanels, calcuShellFamilySections,
+    calcuShellMenus, calcuShellFindItem, calcuShellBar, calcuShellBarFit, calcuShellPanels, calcuShellFamilySections,
     calcuShellDialog, calcuShellWithTilde, calcuShellLoading, calcuShellNotices, calcuShellKeyAt,
     calcuShellPointer, calcuShellAbout, calcuShellMoreItems, CALCU_SHELL_LOADING_MS, CALCU_SHELL_COLD_BOOT_QUESTION,
   };

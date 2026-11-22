@@ -1,10 +1,10 @@
 // CalcU59 — the web client, and the one global calc.js exposes
 // (docs/developer/Web-Client.md has the props). Put together from the React set's
 // shell: in the wide layout the shell's menu bar (File, Machine, Help; no
-// Edit), in the portrait layout no menu bar and the bar's Reset, Preset,
+// Edit), in the portrait layout no menu bar and the bar's Preset,
 // Settings and More; in every calculator column the shell's control bar (the
-// model picker, the library's module picker of `slot-1`, the button
-// "PC-100C", the card controls); the shell's
+// model picker, the library's module picker of `slot-1`, the card
+// controls); the button "PC-100C" on the paper pane; the shell's
 // settings, About, notices, "Loading…", the storage banner and "ROMs
 // missing". The product's data come from `c59.shell-product` and
 // `c59.faceplate-map` (app/TIShellProduct, TIWebPart). Two layouts, and
@@ -20,7 +20,7 @@
 
 const BAR_HEIGHT = 50;
 const FACE_PADDING = 8;
-const PRINTER_MIN = 220, PRINTER_MAX = 320, DEBUG_MIN = 220;
+const PRINTER_MIN = 240, PRINTER_MAX = 400, DEBUG_MIN = 220;
 // The narrowest artwork whose control bar still fits (labelled in wide, icons
 // in portrait). Below it the client keeps its size and the page scrolls, as
 // the apps' windows have a minimum size.
@@ -84,7 +84,7 @@ function BarButton({ icon, label, compact, title, name, className = "", ...rest 
   return (
     <button type="button" className={`calcu-barbutton ${className}`} title={title || name || label} aria-label={name || label} {...rest}>
       <span className="calcu-icon" aria-hidden="true">{icon}</span>
-      {!compact && <span>{label}</span>}
+      <span className="calcu-bar-label">{label}</span>
     </button>
   );
 }
@@ -113,12 +113,46 @@ function CardControls({ shell, entry }) {
 }
 const C59_MEDIA_CONTROLS = { "magnetic-card": CardControls };
 
-function CalculatorColumn({ page, faceWidth, compact, width }) {
+// The bar measured with and without its labels ("Crd", "Preset"; a
+// compact bar keeps them unseen and out of the flow), and the library's rule
+// (calcuShellBarFit) decides: the labels, and the bar's width.
+function useBarFit(ref, faceplate) {
+  const [m, setM] = React.useState({ without: 0, with: 0 });
+  const measure = React.useCallback(() => {
+    const host = ref.current;
+    const bar = host && host.querySelector(".calcu-shell-bar");
+    if (!bar) return;
+    const style = getComputedStyle(host), barStyle = getComputedStyle(bar);
+    const gap = parseFloat(barStyle.columnGap) || 0;
+    const groups = Array.from(bar.children);
+    let content = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + gap * Math.max(0, groups.length - 1);
+    for (const g of groups) content += g.scrollWidth;
+    let labels = 0;
+    for (const l of bar.querySelectorAll(".calcu-bar-label")) labels += l.offsetWidth + 4;   // the label and its gap
+    const compact = bar.classList.contains("calcu-shell-compact");
+    const next = compact ? { without: content, with: content + labels } : { without: content - labels, with: content };
+    setM((old) => (Math.abs(old.without - next.without) < 1 && Math.abs(old.with - next.with) < 1 ? old : next));
+  }, [ref]);
+  React.useLayoutEffect(measure);
+  React.useEffect(() => {
+    if (typeof ResizeObserver === "undefined" || !ref.current) return undefined;
+    const o = new ResizeObserver(measure);
+    o.observe(ref.current);
+    return () => o.disconnect();
+  }, [measure]);
+  return m.with ? calcuShellBarFit(faceplate, m.without, m.with) : { labels: true, width: faceplate };
+}
+
+function CalculatorColumn({ page, faceWidth, width }) {
   const { shell, s, faceplate, model } = page;
+  const barRef = React.useRef(null);
+  const body = faceWidth + 2 * FACE_PADDING;   // the calculator's body, the bar's width where it fits
+  const fit = useBarFit(barRef, body);
+  const compact = !fit.labels;
   return (
-    <div className="calcu-calc" style={{ width: width || faceWidth + 2 * FACE_PADDING }}>
+    <div className="calcu-calc" style={{ width: Math.max(width || body, fit.width) }}>
       <div className="calcu-face-pad"><CalculatorFace shell={shell} faceplate={faceplate} model={model} width={faceWidth} /></div>
-      <div className={"calcu-bar" + (compact ? " calcu-compact" : "")}>
+      <div ref={barRef} className={"calcu-bar" + (compact ? " calcu-compact" : "")}>
         <C59_BAR.Provider value={{ compact, cardDialog: page.cardDialog }}>
           <ShellControlBar shell={s} compact={compact} slotPicker={SlotPicker} mediaControls={C59_MEDIA_CONTROLS} />
         </C59_BAR.Provider>
@@ -145,8 +179,8 @@ function Divider({ onDrag }) {
 /// The rules of the embedded layout="wide": the artwork's size follows the
 /// window, within limits, and the debugger is always there.
 const EMBEDDED_WIDE = {
-  embedded: true, printerMin: PRINTER_MIN, printerMax: PRINTER_MAX, printerStart: 260,
-  debugger: true, barLabels: true, compactPrinterBar: false,
+  embedded: true, printerMin: PRINTER_MIN, printerMax: PRINTER_MAX, printerStart: 360,
+  debugger: true, compactPrinterBar: false,
 };
 
 /// `rules` is EMBEDDED_WIDE or (layout="auto") app/'s mobile rules: the
@@ -158,8 +192,8 @@ function WideLayout({ page, width, height, rules }) {
   const faceWidth = rules.embedded
     ? Math.max(FACE_MIN.wide, Math.min(room ? faceWidthFor(room) : 420, width * 0.4))
     : Math.max(FACE_MIN_AUTO, faceWidthFor(room));
-  const compact = !rules.barLabels || faceWidth < FACE_MIN.wide;
-  const columnWidth = Math.max(faceWidth + 2 * FACE_PADDING, compact ? minimumWidth(true) : 0);
+  // At least as wide as the icons-only bar needs (the portrait minimum).
+  const columnWidth = Math.max(faceWidth + 2 * FACE_PADDING, minimumWidth(true));
   const total = columnHeight(faceWidth, room);
   const { printerMin, printerMax, debugger: hasDebugger } = rules;
   const [printerWidth, setPrinterWidth] = React.useState(rules.printerStart ?? printerMax);
@@ -167,9 +201,9 @@ function WideLayout({ page, width, height, rules }) {
   const pw = Math.max(printerMin, Math.min(printerMax, printerWidth, free - (hasDebugger ? DEBUG_MIN : 0)));
   return (
     <div className="calcu-wide" style={{ height: total }}>
-      <CalculatorColumn page={page} faceWidth={faceWidth} width={columnWidth} compact={compact} />
+      <CalculatorColumn page={page} faceWidth={faceWidth} width={columnWidth} />
       <div className="calcu-vline" />
-      <div style={{ width: pw, flex: "none", display: "flex" }}><PaperPane shell={page.shell} owner={page.paperOwner} /></div>
+      <div style={{ width: pw, flex: "none", display: "flex" }}><PaperPane shell={page.shell} owner={page.paperOwner} places={page.paperPlaces} onChoose={page.s.choose} /></div>
       {hasDebugger && <Divider onDrag={(dx) => setPrinterWidth(Math.max(printerMin, Math.min(printerMax, pw + dx)))} />}
       {hasDebugger && <Debugger />}
     </div>
@@ -195,9 +229,9 @@ function PortraitLayout({ page, width, height }) {
           its corners instead of the screen's. */}
       <div className="calcu-column" style={{ width: faceWidth + 2 * FACE_PADDING }}>
         <div className="calcu-page" hidden={view !== "calc"}>
-          <CalculatorColumn page={page} faceWidth={faceWidth} compact={true} />
+          <CalculatorColumn page={page} faceWidth={faceWidth} />
         </div>
-        {view === "printer" && <div className="calcu-page calcu-page-printer"><PaperPane shell={page.shell} owner={page.paperOwner} /></div>}
+        {view === "printer" && <div className="calcu-page calcu-page-printer"><PaperPane shell={page.shell} owner={page.paperOwner} places={page.paperPlaces} onChoose={page.s.choose} /></div>}
         {view === "calc" ? chevron("right") : chevron("left")}
       </div>
     </div>
@@ -206,7 +240,7 @@ function PortraitLayout({ page, width, height }) {
 
 // Before `c59.shell-product` answered: the shell's frame with nothing of
 // the product's yet.
-const C59_NO_PRODUCT = { name: "Calc-U-59", items: [], variantLabels: {}, moduleSlotPinOuts: [], placesWithoutControl: [] };
+const C59_NO_PRODUCT = { name: "Calc-U-59", items: [], variantLabels: {}, barModelLabels: {}, moduleSlotPinOuts: [], placesWithoutControl: [], placesOnPaper: [] };
 
 // The props (docs/developer/Web-Client.md): the embedding interface's width,
 // keyboard (on by default), layout ("portrait", the default, "wide" or
@@ -323,8 +357,9 @@ function CalcU59(props) {
   // ── Drag and drop any file: the session's `open {way: drop, upload}` ─
   const drop = calcuFileDrop(shell ? openFiles : null);
 
-  const paperOwner = (s.panels.find((p) => p.kind === "paper") || {}).owner || "";
-  const page = { shell, s, faceplate: maps[model] || null, model, paperOwner, cardDialog: setCardDialog };
+  const paper = s.panels.find((p) => p.kind === "paper") || {};
+  const paperOwner = paper.owner || "";
+  const page = { shell, s, faceplate: maps[model] || null, model, paperOwner, paperPlaces: paper.places || [], cardDialog: setCardDialog };
   const romsMissing = !!s.romsMissing && !s.started;
   const failed = start === "failed";
   const Layout = portrait ? PortraitLayout : WideLayout;

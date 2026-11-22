@@ -25,8 +25,6 @@ WidthRange mobilePrinterWidth(MobileLayout layout, double width) {
     return {290, 360};
 }
 
-bool mobileBarLabels(double width) { return width >= 1300; }
-
 bool compactPrinterBar(double printerWidth) { return printerWidth < 280; }
 
 std::string partitionLine(int programRegCount, int dataRegCount) {
@@ -130,6 +128,18 @@ std::string hexBin16(uint16_t v) {
         if (i % 4 == 0 && i) s += ' ';
     }
     return s + "]";
+}
+
+DebugHeader debugHeader(bool cpu) {
+    DebugHeader h;
+    h.title = cpu ? "CPU DEBUG" : "CALCULATOR DEBUG";
+    h.narrowTitle = cpu ? "CPU" : "DEBUG";
+    h.buttons = {{"resume", "RESUME", "RESUME", 0xFF9500},
+                 {"freeze", "FREEZE", "FREEZE", 0xFFFFFF},
+                 {"freeze-on-start", "FREEZE ON START", "F.START", 0xFFFFFF},
+                 {"armed", "ARMED", "ARMED", 0xFFCC00},
+                 {"step", "STEP", "STEP", 0x32ADE6}};
+    return h;
 }
 
 } // namespace cu59

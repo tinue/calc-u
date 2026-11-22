@@ -10,8 +10,9 @@ shows the PC-100C.
 
 ## Attaching the printer
 
-The button **PC-100C** on the control bar attaches and detaches the
-printer; its dot shows whether it is attached. **Machine ▸ Peripherals ▸**
+The button **PC-100C** at the left of the paper panel's header attaches
+and detaches the printer; it shows the printer, pressed while it is
+attached (on the iPhone and iPad its dot turns red). **Machine ▸ Peripherals ▸**
 and a preset's `printer: PC-100C` do the same. Without a startup preset,
 Calc-U-59 starts without the printer.
 
@@ -23,7 +24,7 @@ memory ([What differs by model](09-models.md)).
 ## The printer's controls
 
 While the PC-100C is attached, the paper panel has the printer's own
-controls:
+controls, in the row below the paper:
 
 - **PRINT** prints the display.
 - **ADV** advances the paper while you hold it.

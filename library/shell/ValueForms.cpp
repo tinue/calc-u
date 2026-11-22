@@ -68,6 +68,8 @@ Value toValue(const DialogSpec& spec) {
 Value toValue(const ShellProduct& p) {
     Value::Object variantLabels;
     for (const auto& [id, label] : p.variantLabels) variantLabels.push_back({id, Value(label)});
+    Value::Object barModelLabels;
+    for (const auto& [id, label] : p.barModelLabels) barModelLabels.push_back({id, Value(label)});
     Value::Array items;
     for (const auto& i : p.items) {
         Value::Object item{{"group", Value(menuGroupName(i.group))}, {"id", Value(i.id)}, {"label", Value(i.label)},
@@ -86,12 +88,16 @@ Value toValue(const ShellProduct& p) {
         out.push_back({"aboutLinks", Value(std::move(links))});
     }
     out.push_back({"variantLabels", Value(std::move(variantLabels))});
+    out.push_back({"barModelLabels", Value(std::move(barModelLabels))});
+    out.push_back({"barSpread", Value(p.barSpread)});
+    out.push_back({"barShortPickers", Value(p.barShortPickers)});
     out.push_back({"presetFilter", Value(p.presetFilter)});
     out.push_back({"presetUploads", Value(p.presetUploads)});
     out.push_back({"copyScreen", Value(static_cast<bool>(p.copyScreen))});   // whether the product has the item
     out.push_back({"pasteText", Value(p.pasteText)});
     out.push_back({"moduleSlotPinOuts", strings(p.moduleSlotPinOuts)});
     out.push_back({"placesWithoutControl", strings(p.placesWithoutControl)});
+    out.push_back({"placesOnPaper", strings(p.placesOnPaper)});
     out.push_back({"items", Value(std::move(items))});
     return Value(std::move(out));
 }

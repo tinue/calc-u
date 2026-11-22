@@ -84,6 +84,7 @@ set(CALCU59_QT_SOURCES
   app/CardPickerDialog.cpp
   app/AppPaths.cpp
   app/debug/DebugPanel.cpp
+  app/debug/DebugHeaderRow.cpp
   app/debug/LiveDebugWidget.cpp
   app/debug/CpuInspectorWidget.cpp
   app/debug/RomHeatmapWidget.cpp

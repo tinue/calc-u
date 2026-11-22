@@ -55,6 +55,23 @@ TEST(bar_groups_and_order) {
     CHECK_EQ(read::text(card->entry, "id"), std::string("card"));
 }
 
+// The model picker shows the product's bar names, the menus the model IDs;
+// a model without a bar name shows its ID.
+TEST(bar_model_picker_shows_the_bar_names) {
+    ShellProduct p = st::product();
+    p.barModelLabels = {{"Model-A", "A"}};
+    const auto b = bar(st::inputs(), p);
+    const BarControl* model = controlOf(b, "model");
+    CHECK_EQ(model->shown, std::string("A"));
+    CHECK_EQ(model->choices[0].label, std::string("A"));
+    CHECK_EQ(model->choices[1].label, std::string("Model-B"));
+    const auto ms = menus(st::inputs(), p, Traits{});
+    CHECK_EQ(findItem(ms, "model-Model-A")->label, std::string("Model-A"));
+    const auto plain = bar(st::inputs(), st::product());
+    CHECK_EQ(controlOf(plain, "model")->shown, std::string("Model-A"));
+    CHECK(!controlOf(plain, "model")->shortShown);
+}
+
 TEST(bar_slot_numbers_with_two_slots) {
     const auto b = bar(st::inputs(), st::product());
     CHECK_EQ(controlOf(b, "slot-1")->label, std::string("1:"));
@@ -121,12 +138,12 @@ TEST(bar_no_entry_no_gap) {
 
 TEST(paper_panel_always_with_or_without_owner) {
     auto cs = st::controlState();
-    auto ps = panels(st::inputs(cs.toValue()));
+    auto ps = panels(st::inputs(cs.toValue()), st::product());
     CHECK_EQ(ps.size(), std::size_t{1});
     CHECK_EQ(ps[0].kind, std::string("paper"));
     CHECK_EQ(ps[0].owner, std::string(""));
     st::plug(cs, "printer", "test-dotter");
-    ps = panels(st::inputs(cs.toValue()));
+    ps = panels(st::inputs(cs.toValue()), st::product());
     CHECK_EQ(ps.size(), std::size_t{1});
     CHECK_EQ(ps[0].owner, std::string("test-dotter"));
     CHECK_EQ(ps[0].ownerPlace, std::string("printer"));
@@ -147,33 +164,28 @@ TEST(shell_reads_no_product_entry) {
 TEST(printer_change_moves_paper_owner) {
     auto cs = st::controlState();
     st::plug(cs, "printer", "test-dotter");
-    const auto plugged = panels(st::inputs(cs.toValue()));
+    const auto plugged = panels(st::inputs(cs.toValue()), st::product());
     CHECK_EQ(plugged[0].owner, std::string("test-dotter"));
     cs = st::controlState();   // removed: an empty paper under none
-    const auto removed = panels(st::inputs(cs.toValue()));
+    const auto removed = panels(st::inputs(cs.toValue()), st::product());
     CHECK_EQ(removed[0].owner, std::string(""));
 }
 
 TEST(no_bar_without_control_state) {
     CHECK(bar(ShellInputs{}, st::product()).empty());
-    CHECK(panels(ShellInputs{}).empty());
+    CHECK(panels(ShellInputs{}, st::product()).empty());
 }
 
-// A window without a menu bar.
-TEST(bar_without_menu_bar_keeps_reset_preset_settings_and_more) {
+// A window without a menu bar: Preset, Settings and More, Reset in More.
+TEST(bar_without_menu_bar_keeps_preset_settings_and_more) {
     Traits t{false, false, true};
     t.menuBar = false;
     const auto p = st::product();
     const auto in = st::inputs();
     const auto b = bar(in, p, t);
-    CHECK_EQ(describe(b), std::string("[reset][model][slot-1 slot-2][printer aux][card][load-preset settings more]"));
-    CHECK(b[0].group == BarGroup::Start);
-    CHECK(b[1].group == BarGroup::AfterModel);
-    CHECK(b[5].group == BarGroup::End);
-    const BarControl* reset = controlOf(b, "reset");
-    CHECK(reset->kind == BarControl::Kind::Action);
-    CHECK_EQ(reset->label, std::string("Reset"));
-    CHECK_EQ(reset->item.command.value, std::string("reset"));
+    CHECK_EQ(describe(b), std::string("[model][slot-1 slot-2][printer aux][card][load-preset settings more]"));
+    CHECK(b[0].group == BarGroup::AfterModel);
+    CHECK(b[4].group == BarGroup::End);
     const BarControl* preset = controlOf(b, "load-preset");
     CHECK_EQ(preset->label, std::string("Preset"));
     CHECK(preset->item.command.value.empty());   // the shell's file dialog
@@ -181,16 +193,73 @@ TEST(bar_without_menu_bar_keeps_reset_preset_settings_and_more) {
     const BarControl* more = controlOf(b, "more");
     CHECK(more->kind == BarControl::Kind::More);
     CHECK_EQ(more->choices.size(), moreItems(menus(in, p, t), p).size());
-    // Each action follows its menu item.
+    auto inMore = [](const BarControl& m, const std::string& id) -> const MenuItem* {
+        for (const auto& i : m.choices)
+            if (i.id == id) return &i;
+        return nullptr;
+    };
+    const MenuItem* reset = inMore(*more, "reset");
+    CHECK(reset != nullptr);
+    CHECK_EQ(reset->command.value, std::string("reset"));
+    // Each item follows its menu item.
     auto cs = st::controlState();
     for (auto& a : cs.actions)
         if (a.command == control::kResetAction) a.available = st::unavailable("An operation runs.");
     const auto b2 = bar(st::inputs(cs.toValue()), p, t);
-    CHECK(!controlOf(b2, "reset")->item.enabled);
-    CHECK_EQ(controlOf(b2, "reset")->item.reason, std::string("An operation runs."));
+    const MenuItem* reset2 = inMore(*controlOf(b2, "more"), "reset");
+    CHECK(!reset2->enabled);
+    CHECK_EQ(reset2->reason, std::string("An operation runs."));
     // No Settings button without settings.
     t.settings = false;
-    CHECK(controlOf(bar(in, p, t), "settings") == nullptr);
-    // With a menu bar: no Start group, no action, no More.
+    const auto b3 = bar(in, p, t);
+    CHECK(controlOf(b3, "settings") == nullptr);
+    // With a menu bar: no action, no More.
     CHECK_EQ(describe(bar(in, p, Traits{})), std::string("[model][slot-1 slot-2][printer aux][card][]"));
+}
+
+// A spread bar pushes the media group and End; short pickers carry their
+// short text (the chosen entry's ID, "—" for none).
+TEST(bar_spread_and_short_pickers) {
+    ShellProduct p = st::product();
+    auto b = bar(st::inputs(), p);
+    for (const auto& g : b) CHECK(!g.pushed);
+    p.barSpread = true;
+    p.barShortPickers = true;
+    b = bar(st::inputs(), p);
+    for (const auto& g : b) CHECK_EQ(g.pushed, g.group == BarGroup::Media || g.group == BarGroup::End);
+    CHECK(controlOf(b, "model")->shortShown);
+    CHECK(controlOf(b, "slot-1")->shortShown);
+    CHECK_EQ(controlOf(b, "aux")->shown, std::string("\u2014"));   // nothing plugged into aux
+    auto cs = st::controlState();
+    st::plug(cs, "aux", "test-dotter-2");
+    const auto plugged = bar(st::inputs(cs.toValue()), p);
+    CHECK_EQ(controlOf(plugged, "aux")->shown, std::string("test-dotter-2"));
+}
+
+// Labels only where the whole bar fits the faceplate with them; the bar as
+// wide as the faceplate, wider where the icons alone need more, within the room.
+TEST(bar_fit_labels_and_width) {
+    auto f = barFit(400, 250, 380);
+    CHECK(f.labels);
+    CHECK_EQ(f.width, 400.0);
+    f = barFit(300, 250, 380);
+    CHECK(!f.labels);
+    CHECK_EQ(f.width, 300.0);
+    f = barFit(200, 250, 380);
+    CHECK(!f.labels);
+    CHECK_EQ(f.width, 250.0);   // wider than the faceplate: the icons need it
+    CHECK_EQ(barFit(200, 250, 380, 220).width, 220.0);   // never past the room
+}
+
+// A place on the paper: its control on the paper panel, not on the bar.
+TEST(place_on_paper_is_on_the_paper_panel) {
+    ShellProduct p = st::product();
+    p.placesOnPaper = {"printer"};
+    const auto b = bar(st::inputs(), p);
+    CHECK_EQ(describe(b), std::string("[model][slot-1 slot-2][aux][card][]"));
+    const auto ps = panels(st::inputs(), p);
+    CHECK_EQ(ps[0].places.size(), std::size_t{1});
+    CHECK_EQ(ps[0].places[0].id, std::string("printer"));
+    CHECK(ps[0].places[0].kind == BarControl::Kind::PlaceButton);
+    CHECK(panels(st::inputs(), st::product())[0].places.empty());
 }

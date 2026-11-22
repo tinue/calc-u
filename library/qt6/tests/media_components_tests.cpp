@@ -25,7 +25,7 @@ PlaceState slot() {
     p.picker = {PickerEntry{G::Empty, "", "", std::nullopt, true, std::nullopt},
                 PickerEntry{G::BundledTemplate, "bundled:Blank.testmodule.yaml", "Blank", std::string("An empty module"), true, std::nullopt},
                 PickerEntry{G::UserTemplate, "saved:Mine.testmodule.yaml", "Mine", std::nullopt, true, std::nullopt},
-                PickerEntry{G::Instance, "saved:Bank.testmodule.yaml", "Bank", std::string("My bank"), true, std::nullopt},
+                PickerEntry{G::Instance, "saved:Bank.testmodule.yaml", "Bank", std::string("My bank"), true, std::nullopt, true},   // held
                 PickerEntry{G::Instance, "saved:Later.testmodule.yaml", "Later", std::nullopt, false,
                             std::string("Another operation runs.")},
                 PickerEntry{G::Module, "module:test-module", "Test module", std::nullopt, true, std::nullopt}};

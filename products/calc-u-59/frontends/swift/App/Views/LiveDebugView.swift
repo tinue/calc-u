@@ -46,53 +46,13 @@ struct LiveDebugView: View {
         // FREEZE and FREEZE ON START: cu59::freezeButtons.
         let use = vm.buttons(for: .calculator)
         let freeze = vm.freezeButtons(for: .calculator)
-        let freezeEnabled = freeze.freeze
-        let narrow = baseFontSize < 13
-        return HStack(spacing: 8) {
-            Text(narrow ? "DEBUG" : "CALCULATOR DEBUG")
-                .font(.caption.bold())
-                .foregroundStyle(.white.opacity(0.6))
-            Spacer()
-
-
-            // RESUME sits at the far left, away from STEP, to avoid accidental
-            // taps while stepping.
-            Button("RESUME") { vm.resume() }
-                .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.orange)
-                .opacity(use.resume ? 1 : 0.4)
-                .disabled(!use.resume)
-                .accessibilityIdentifier("btn-resume")
-
-            Button("FREEZE") { vm.freeze(from: .calculator) }
-                .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.white)
-                .opacity(freezeEnabled ? 1 : 0.4)
-                .disabled(!freezeEnabled)
-                .accessibilityIdentifier("btn-freeze")
-
-            Button(narrow ? "F.START" : "FREEZE ON START") { vm.freezeOnNextPCChange() }
-                .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.white)
-                .opacity(freeze.freezeOnStart && !freeze.armed ? 1 : 0.4)
-                .disabled(!freeze.freezeOnStart || freeze.armed)
-                .accessibilityIdentifier("btn-freeze-on-start")
-
-            Button("ARMED") { vm.pendingFreezeOnPCChange.toggle() }
-                .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.yellow)
-                .opacity(freeze.armed ? 1 : 0.4)
-                .disabled(!freeze.armed)
-                .accessibilityIdentifier("btn-freeze-armed")
-
-            // Tap to single-step; hold to auto-step at 2 steps/second.
-            HoldRepeatButton(title: "STEP", color: .cyan, baseFontSize: baseFontSize,
-                             enabled: use.step) { vm.stepKeycode() }
-                .accessibilityIdentifier("btn-step")
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Color(white: 0.07))
+        return DebugHeaderView(cpu: false, baseFontSize: baseFontSize, buttons: [
+            "resume": .init(enabled: use.resume) { vm.resume() },
+            "freeze": .init(enabled: freeze.freeze) { vm.freeze(from: .calculator) },
+            "freeze-on-start": .init(enabled: freeze.freezeOnStart && !freeze.armed) { vm.freezeOnNextPCChange() },
+            "armed": .init(enabled: freeze.armed) { vm.pendingFreezeOnPCChange.toggle() },
+            "step": .init(enabled: use.step) { vm.stepKeycode() },
+        ])
     }
 
     // MARK: - DEBUG Section

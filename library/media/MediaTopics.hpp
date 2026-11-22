@@ -32,14 +32,21 @@ inline const sessions::CommandName kExportCommand{"media.export"};            //
 inline const sessions::CommandName kDeleteCommand{"media.delete"};            // {kind, name, confirmed?}
 
 struct PickerEntry {
-    enum class Group { Empty, BundledTemplate, UserTemplate, Instance, Module } group = Group::Empty;
+    // Held: what the place holds where no other entry lists it (a file
+    // opened from where it lies, a tape started under a name before its
+    // first write); shown, never chosen.
+    enum class Group { Empty, BundledTemplate, UserTemplate, Instance, Module, Held } group = Group::Empty;
     std::string id;                         // what `media.choose` takes back
     std::string label;                      // the name; a module that is not a medium: the listing's label
     std::optional<std::string> tooltip;     // the description
     bool canChoose = true;                  // false: not now
     std::optional<std::string> hint;        // why not now
+    bool chosen = false;                    // what the place holds (the empty entry while it holds nothing)
     bool operator==(const PickerEntry&) const = default;
 };
+// What a picker shows of its chosen entry where room is short: a module's
+// ID ("ML"), "—" for the empty place, the label otherwise.
+std::string shortLabel(const PickerEntry&);
 
 struct PlaceState {
     std::string place;                      // the place word

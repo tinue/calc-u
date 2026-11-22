@@ -57,6 +57,7 @@ Shell::Shell(QMainWindow& window, SessionHost& host, shell::ShellProduct product
     menuBar_ = new ShellMenus(*window_.menuBar(), *this);
     bar_ = new ShellControlBar(*this);
     panels_ = new PanelArea(host_);
+    panels_->setChoose([this](const shell::MenuItem& i) { choose(i); });
     romsMissing_ = new RomsMissingView();
     noticeView_ = new ShellNotices(&window_);
     loadingView_ = new ShellLoading(window_.centralWidget() ? window_.centralWidget() : &window_);
@@ -114,7 +115,7 @@ void Shell::registerSlotPicker(Factory f) {
 
 void Shell::registerPanel(std::string kind, std::function<QWidget*(QWidget*)> f) {
     panels_->registerPanel(std::move(kind), std::move(f));
-    panels_->set(shell::panels(inputs_));
+    panels_->set(shell::panels(inputs_, product_));
 }
 
 void Shell::setChoosers(ShellChoosers c) {
@@ -188,7 +189,7 @@ void Shell::refresh(const QString&) {
     menuBar_->set(menus_);
     bar_->set(shell::bar(inputs_, product_, options_.traits));
     bar_->setVisible(inputs_.started());   // no bar before the start (ROMs missing)
-    panels_->set(shell::panels(inputs_));
+    panels_->set(shell::panels(inputs_, product_));
     const bool missing = !inputs_.started() && !inputs_.romsMissing.isNull();
     static_cast<RomsMissingView*>(romsMissing_)->setMessage(q(shell::read::text(inputs_.romsMissing, "text")));
     romsMissing_->setVisible(missing);

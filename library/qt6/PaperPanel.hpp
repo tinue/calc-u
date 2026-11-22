@@ -4,6 +4,8 @@
 #include "peripherals/Controls.hpp"
 #include "sessions/Messages.hpp"
 #include <QAbstractScrollArea>
+#include <QColor>
+#include <QIcon>
 #include <QWidget>
 #include <functional>
 #include <map>
@@ -26,9 +28,11 @@ class QHBoxLayout;
 //   in by the shell, or none; setControls(): its controls with their state;
 // - setSender(): where its commands go: `paper.copy {owner}`, `paper.cut
 //   {owner, copy: true}`, `set-control {peripheral, control, on}`.
-// The header shows the owner's name, the view control (with a text layer),
-// the owner's controls, Copy and Cut; below it the paper, scrolled with the
-// wheel or by touch without a scroll bar, or the text in a fixed-width font.
+// The header shows the shell's place controls on the paper (setPlaces)
+// left, the owner's name centred and the view control (with a text layer)
+// right; below it the paper, scrolled with the wheel or by touch without a
+// scroll bar, or the text in a fixed-width font; below the paper the
+// owner's controls left, Copy and Cut right.
 // A Copy or Cut is answered by a toast inside the panel for 1.8 s.
 //
 // Object names: paper-panel, paper-owner, paper-view-toggle, paper-copy,
@@ -52,6 +56,11 @@ public:
     void deliver(const sessions::Message&);
     void setOwner(std::optional<machine::PeripheralId>);
     void setControls(std::vector<peripherals::ControlInfo>);
+    // The shell's place controls on the paper, first in the header (the
+    // panel area makes them); a button shows the printer icon where the
+    // platform has one, its name as the tooltip.
+    void setPlaces(std::vector<QWidget*>);
+    static QIcon placeIcon(const QIcon& printer, bool plugged);
     void setSender(Sender s) { sender_ = std::move(s); }
 
     // What the panel shows now (the tests, the shell).
@@ -60,6 +69,9 @@ public:
     void showText(bool on);                      // as the view control does
     bool paperEmpty() const;                     // the paper shown has nothing on it (or there is none)
     PaperView* paperView() const { return view_; }
+    // The paper's colour in both views (white by default); the text view
+    // prints in near-black on it, whatever the window's palette.
+    void setPaperColour(QColor);
 
     struct Shown {
         paper::PaperDescription description;
@@ -84,6 +96,7 @@ private:
     std::optional<machine::PeripheralId> owner_;
     std::vector<peripherals::ControlInfo> controls_;
 
+    QHBoxLayout* placesLayout_;
     QLabel* ownerLabel_;
     QToolButton* viewToggle_;
     QWidget* controlsBox_;
@@ -105,6 +118,7 @@ class PaperView : public QAbstractScrollArea {
 public:
     explicit PaperView(QWidget* parent = nullptr);
     void setPaper(const PaperPanel::Shown*);   // nullptr: an empty paper without a description
+    void setPaperColour(QColor c) { paperColour_ = c; viewport()->update(); }
     int scrollPosition() const;
     int scrollEnd() const;
     double pointsPerCoord() const;
@@ -117,6 +131,7 @@ private:
     void updateRange(bool follow);
     const PaperPanel::Shown* paper_ = nullptr;
     paper::Coord top_ = 0, bottom_ = 0;
+    QColor paperColour_ = Qt::white;
 };
 
 } // namespace calcu::qt6

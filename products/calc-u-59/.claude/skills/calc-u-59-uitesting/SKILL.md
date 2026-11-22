@@ -180,14 +180,13 @@ The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug pa
 | Identifier | Type | Value / Notes |
 |------------|------|---------------|
 | `btn-preset` | Button | Preset on the control bar |
-| `btn-reset` | Button | Reset on the control bar |
 | `btn-settings` | Button | Settings on the control bar |
 | `control-bar` | Other | The control bar (`ControlBarView`) |
 | `bar-model` | Button | The model picker; label the running model |
-| `bar-slot-slot-1` | Button | The module picker; its entries `item-peripheral-slot-1-<id>` (`-none` for the empty slot) |
-| `bar-place-printer` | Button | "PC-100C": value `On` / `Off` |
+| `bar-slot-slot-1` | Button | The module picker (the `media` topic's entries in their order; closed: the module's ID); its entries `item-module:<id>` (`item-slot-1-none` for the empty slot) |
+| `bar-place-printer` | Button | "PC-100C" at the left of the paper panel's header (iPhone portrait: on the paper page): value `On` / `Off` |
 | `bar-media-card-reader` | Button | Arm Card (or Eject Card while a side passes), TI-59 only |
-| `bar-more` | Button | More: items `more-item-<id>` (`examples`, `cold-boot`, `resume`, `help`); Cold boot's confirmation `confirm-cold-boot` |
+| `bar-more` | Button | More: items `more-item-<id>` (`examples`, `reset`, `cold-boot`, `resume`, `help`); Cold boot's confirmation `confirm-cold-boot` |
 | `settings-dialog` | Other | The settings form; rows `setting-<section>-<key>`; `settings-close` (Done) |
 | `loading` | Other | "Loading…" below the display |
 | `faceplate` | Other | The calculator's art: tap a key at a normalised offset (key centres from `app/KeyboardLayout.hpp`, e.g. 1 at 0.2812, 0.8839; R/S at 0.0783, 0.9704) |
@@ -282,4 +281,4 @@ The system document picker is the most fragile part of the test suite. Things th
 
 Things that are stable:
 - Filenames (e.g. `"test_diag.ti59"`) — always your primary locator
-- `btn-preset`, `btn-reset`, `btn-settings`, `bar-*`, `more-item-*` — our own identifiers
+- `btn-preset`, `btn-settings`, `bar-*`, `more-item-*` — our own identifiers

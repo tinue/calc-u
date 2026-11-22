@@ -55,9 +55,9 @@ TEST(calc_u_1600_forms_unchanged) {
     const Value v = calcu::shell::toValue(cu1600::shellProduct("1.0", "", false));
     std::vector<std::string> keys;
     for (const auto& m : *v.members()) keys.push_back(m.key);
-    CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "aboutLinks", "variantLabels", "presetFilter",
+    CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "aboutLinks", "variantLabels", "barModelLabels", "barSpread", "barShortPickers", "presetFilter",
                                             "presetUploads",
-                                            "copyScreen", "pasteText", "moduleSlotPinOuts", "placesWithoutControl", "items"}));
+                                            "copyScreen", "pasteText", "moduleSlotPinOuts", "placesWithoutControl", "placesOnPaper", "items"}));
     CHECK(*v.find("copyScreen")->boolean());
     for (const Value& item : *v.find("items")->elements()) {
         std::vector<std::string> fields;

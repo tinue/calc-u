@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <QColor>
 #include <QString>
 #include <cstdint>
@@ -37,21 +38,35 @@ inline QString pillButton() {
         .arg(rgb(kPill), rgb(gray(0.18)), rgb(gray(0.15)));
 }
 
-/// Plain text button on a bar (Reset, Preset, …): no frame, dims when pressed.
-inline QString barButton() {
+/// Plain text button on a bar (Reset, Preset, …): no frame, dims when
+/// pressed; the bar's pickers as plain text without a box or an arrow,
+/// opening their list (the iOS bar's menus). `scale`: the text's size
+/// relative to a faceplate 440 px wide (fontScale).
+inline QString barButton(double scale = 1.0) {
     return QStringLiteral(
-        "QToolButton { color: white; background: transparent; border: none; padding: 4px 6px; }"
+        "QToolButton { color: white; background: transparent; border: none; padding: 4px 6px; font-size: %1px; }"
         "QToolButton:pressed { color: rgba(255,255,255,0.5); }"
-        "QToolButton:disabled { color: rgba(255,255,255,0.35); }");
+        "QToolButton:disabled { color: rgba(255,255,255,0.35); }"
+        "QComboBox { color: white; background: transparent; border: none; padding: 4px 6px;"
+        " font-weight: 600; font-size: %2px; }"
+        "QComboBox:disabled { color: rgba(255,255,255,0.35); }"
+        "QComboBox::drop-down { width: 0px; border: none; }"
+        "QComboBox::down-arrow { image: none; width: 0px; }")
+        .arg(qRound(13 * scale)).arg(qRound(14 * scale));
 }
 
+/// The bar's and the paper panel's text size for a faceplate this wide: as
+/// designed at 440 px, growing with the faceplate up to twice that, so the
+/// texts keep their size next to the calculator's.
+inline double fontScale(double faceplateWidth) { return std::clamp(faceplateWidth / 440.0, 1.0, 2.0); }
+
 /// Monospaced header action (RESUME / FREEZE / … in the debug headers).
-inline QString headerButton(const QColor& color) {
+inline QString headerButton(const QColor& color, int pixelSize = 13) {
     return QStringLiteral(
         "QToolButton { color: %1; background: transparent; border: none; font-weight: bold;"
-        " font-family: monospace; }"
+        " font-family: monospace; font-size: %5px; }"
         "QToolButton:disabled { color: rgba(%2,%3,%4,0.4); }")
-        .arg(rgb(color)).arg(color.red()).arg(color.green()).arg(color.blue());
+        .arg(rgb(color)).arg(color.red()).arg(color.green()).arg(color.blue()).arg(pixelSize);
 }
 
 } // namespace ChromeStyle

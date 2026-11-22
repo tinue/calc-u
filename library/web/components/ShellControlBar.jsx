@@ -6,14 +6,17 @@
 // without a control takes no room. Names: control-bar,
 // bar-model, bar-slot-<place>, bar-place-<place>, bar-media-<media place>.
 // In a window without a menu bar the bar
-// also holds Actions (Reset in Start; Preset, Settings in End), each a
-// button with the set's icon and its label unless `compact`
+// also holds Actions (Preset, Settings in End), each a
+// button with the set's icon and its label (`compact`: the label is kept,
+// unseen and out of the flow, so the bar can be measured with it)
 // (bar-action-<id>), and the More button (bar-more, ShellMoreMenu).
 //
 //   <ShellControlBar shell={s} slotPicker={Component?} mediaControls={{kind: Component}}
-//                    extra={{Start|AfterModel|Slots|Places|Media|End: [elements]}} compact={bool} />
+//                    extra={{AfterModel|Slots|Places|Media|End: [elements]}} compact={bool} />
 //
-// slotPicker and mediaControls get {shell: s, entry} (the place or media place entry).
+// slotPicker and mediaControls get {shell: s, entry} (the place or media place
+// entry); slotPicker also `short` (the bar model's shortShown). A group the
+// model pushes (a spread bar) takes up the room before it.
 
 function ShellPicker({ name, choices, onChoose }) {
   const current = choices.findIndex((c) => c.checked);
@@ -31,6 +34,24 @@ function ShellPicker({ name, choices, onChoose }) {
   );
 }
 
+// A place's control, on the bar or on the paper panel: a button where one
+// peripheral fits (pressed while plugged in), a picker where several do.
+// Name: bar-place-<place>. `children`: the button's content (its label).
+function ShellPlaceControl({ control, onChoose, children }) {
+  const c = control;
+  if (c.kind === "picker") return <ShellPicker name={`bar-place-${c.id}`} choices={c.choices} onChoose={onChoose} />;
+  const choice = c.choices[0] || {};
+  const disabled = choice.enabled === false;
+  return (
+    <button type="button" className={"calcu-shell-place" + (c.plugged ? " calcu-shell-plugged" : "")}
+      data-calcu={`bar-place-${c.id}`} aria-label={c.label} aria-pressed={c.plugged} aria-disabled={disabled ? "true" : undefined}
+      title={disabled && choice.reason ? choice.reason : c.label}
+      onClick={() => { if (!disabled) onChoose(choice); }}>
+      {children === undefined ? c.label : children}
+    </button>
+  );
+}
+
 // The set's icons of the bar's actions.
 const CALCU_SHELL_ACTION_ICONS = { reset: "↺", "load-preset": "▤", settings: "⚙", more: "⋯" };
 
@@ -43,7 +64,7 @@ function ShellActionButton({ s, control, compact }) {
       title={disabled && item.reason ? item.reason : control.label}
       onClick={() => { if (!disabled) s.choose(item); }}>
       <span className="calcu-shell-action-icon" aria-hidden="true">{CALCU_SHELL_ACTION_ICONS[control.id] || ""}</span>
-      {!compact && <span className="calcu-shell-action-label">{control.label}</span>}
+      <span className="calcu-shell-action-label calcu-bar-label">{control.label}</span>
     </button>
   );
 }
@@ -60,23 +81,13 @@ function ShellControlBar({ shell, slotPicker, mediaControls, extra, compact }) {
         return (
           <span key={c.id} className="calcu-shell-slot" data-calcu={`bar-slot-${c.id}`}>
             {c.label && <span className="calcu-shell-slot-number">{c.label}</span>}
-            {Slot ? <Slot shell={s} entry={c.entry} /> : <ShellPicker name={`bar-slot-picker-${c.id}`} choices={c.choices} onChoose={s.choose} />}
+            {Slot ? <Slot shell={s} entry={c.entry} short={c.shortShown} />
+              : <ShellPicker name={`bar-slot-picker-${c.id}`} choices={c.choices} onChoose={s.choose} />}
           </span>
         );
-      case "button": {
-        const choice = c.choices[0] || {};
-        const disabled = choice.enabled === false;
-        return (
-          <button key={c.id} type="button" className={"calcu-shell-place" + (c.plugged ? " calcu-shell-plugged" : "")}
-            data-calcu={`bar-place-${c.id}`} aria-pressed={c.plugged} aria-disabled={disabled ? "true" : undefined}
-            title={disabled && choice.reason ? choice.reason : undefined}
-            onClick={() => { if (!disabled) s.choose(choice); }}>
-            {c.label}
-          </button>
-        );
-      }
+      case "button":
       case "picker":
-        return <ShellPicker key={c.id} name={`bar-place-${c.id}`} choices={c.choices} onChoose={s.choose} />;
+        return <ShellPlaceControl key={c.id} control={c} onChoose={s.choose} />;
       case "action":
         return <ShellActionButton key={c.id} s={s} control={c} compact={compact} />;
       case "more":
@@ -90,13 +101,14 @@ function ShellControlBar({ shell, slotPicker, mediaControls, extra, compact }) {
     }
   };
   return (
-    <div className="calcu-shell-bar" data-calcu="control-bar">
+    <div className={"calcu-shell-bar" + (compact ? " calcu-shell-compact" : "")} data-calcu="control-bar">
       {s.bar.map((g) => {
         const own = (extra && extra[g.group]) || [];
         const shown = g.controls.map(render).filter(Boolean);
         if (!shown.length && !own.length) return null;   // no entry, no control, no gap
         return (
-          <span key={g.group} className="calcu-shell-bar-group" data-calcu={`bar-group-${g.group}`}>
+          <span key={g.group} className={"calcu-shell-bar-group" + (g.pushed ? " calcu-shell-pushed" : "")}
+            data-calcu={`bar-group-${g.group}`}>
             {shown}
             {own}
           </span>

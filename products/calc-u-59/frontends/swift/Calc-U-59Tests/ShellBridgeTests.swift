@@ -23,12 +23,17 @@ final class ShellBridgeTests: XCTestCase {
         XCTAssertEqual(menus.last?.items.first?.label, "Calc-U-59 Help")
         // The TI-59 has the card items.
         XCTAssertNotNil(t.session.shell.item("arm-card"))
-        // Reset, Preset, Settings on the bar, the rest behind More.
+        // The model picker first; Preset, Settings on the bar, the rest
+        // behind More; the PC-100C on the paper panel.
         let bar = t.session.shell.bar
-        XCTAssertEqual(bar.first?.kind, .action)
-        XCTAssertEqual(bar.filter { $0.kind == .action }.compactMap { $0.item?.itemID }, ["reset", "load-preset", "settings"])
+        XCTAssertEqual(bar.first?.kind, .modelPicker)
+        XCTAssertEqual(bar.first?.shown, "59")
+        XCTAssertEqual(bar.filter { $0.kind == .action }.compactMap { $0.item?.itemID }, ["load-preset", "settings"])
+        XCTAssertFalse(bar.contains { $0.kind == .placeButton })
+        XCTAssertEqual(t.session.shell.paperPlaces.map(\.controlID), ["printer"])
         let more = bar.first { $0.kind == .more }
-        XCTAssertEqual(more?.choices.filter { $0.kind != .separator }.map(\.itemID), ["examples", "cold-boot", "resume", "help"])
+        XCTAssertEqual(more?.choices.filter { $0.kind != .separator }.map(\.itemID),
+                       ["examples", "reset", "cold-boot", "resume", "help"])
     }
 
     /// An entry that is not available now is disabled, with its reason.
@@ -91,8 +96,8 @@ final class ShellBridgeTests: XCTestCase {
     /// Copy of the paper: one pasteboard entry with the picture and the text.
     func test_paper_copy_forms() throws {
         let t = try started()
-        // The PC-100C into its place (the bar's button), then a feed.
-        let printer = try XCTUnwrap(t.session.shell.bar.first { $0.kind == .placeButton && $0.controlID == "printer" })
+        // The PC-100C into its place (its button on the paper panel), then a feed.
+        let printer = try XCTUnwrap(t.session.shell.paperPlaces.first { $0.kind == .placeButton && $0.controlID == "printer" })
         let attach = try XCTUnwrap(printer.choices.first)
         XCTAssertNil(t.session.shell.choose(attach))
         XCTAssertTrue(TestSession.until(15) { t.session.shell.paperOwner == "PC-100C" }, "the PC-100C was not attached")

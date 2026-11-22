@@ -41,27 +41,57 @@ function Section({ title, extra, children }) {
 const Run = ({ white = 0.85, color, children }) => <span style={{ color: color || grey(white) }}>{children}</span>;
 const Gap = () => <span>{"   "}</span>;
 
-const RUN_CONTROL_LABELS = { pause: "FREEZE", step: "STEP", resume: "RESUME" };
+// The debug tabs' headers as app/ describes them for every GUI
+// (`c59.debug-headers`: title, buttons left to right with their labels and
+// colours, the narrow rule); asked once per page.
+let debugHeaders = null;
+function useDebugHeaders(shell) {
+  const [h, setH] = React.useState(debugHeaders);
+  React.useEffect(() => {
+    if (h || !shell) return;
+    shell.request("c59.debug-headers", {}).then((r) => {
+      if (r.done) { debugHeaders = r.value; setH(r.value); }
+    });
+  }, [shell]);
+  return h;
+}
+// app/'s button IDs → the library's run-control buttons.
+const RUN_CONTROL_OF = { resume: "resume", freeze: "pause", step: "step" };
 
 /// A product entry of the control state: usable unless it says not.
 const usable = (entries, name) => !entries || !entries[name] || entries[name].available !== false;
 
 /// FREEZE / STEP / RESUME (the run-control buttons of the tab's level) and
-/// FREEZE ON START / ARMED for one tab.
-function FreezeHeader({ title, narrowTitle, cpu, narrow }) {
+/// A tab's header as app/'s debugHeader describes it (the order, the labels
+/// and the colours as CSS variables, for the library's run-control buttons
+/// too), at the panel's base font size (`size`).
+function FreezeHeader({ cpu, size }) {
   const { shell } = usePage();
   const rs = useRun(shell);
+  const all = useDebugHeaders(shell);
+  const h = all && (cpu ? all.cpu : all.calculator);
+  const narrow = !!all && size < all.narrowBelow;
+  const look = { "--calcu-hb-size": `${size}px` };
+  const labels = {};
+  const text = {};
+  (h ? h.buttons : []).forEach((b, i) => {
+    const name = RUN_CONTROL_OF[b.id] || b.id;
+    look[`--calcu-hb-order-${name}`] = i + 1;
+    look[`--calcu-hb-colour-${name}`] = b.colour;
+    text[name] = narrow ? b.narrowLabel : b.label;
+    if (RUN_CONTROL_OF[b.id]) labels[name] = text[name];
+  });
   const level = cpu ? "cpu" : "program";
   const armed = cpu ? rs.scanArmed : rs.pcArmed;
   const canArm = !rs.frozen && !armed;
   return (
-    <div className="calcu-debug-header">
-      <span className="calcu-debug-title">{narrow ? narrowTitle : title}</span>
-      <CalcuRunControlButtons shell={shell} level={level} labels={RUN_CONTROL_LABELS} />
-      <button type="button" className="calcu-hb" disabled={!canArm}
-        onClick={() => shell.send("pause-on-start", { level })}>{narrow ? "F.START" : "FREEZE ON START"}</button>
-      <button type="button" className="calcu-hb calcu-hb-yellow" disabled={!armed}
-        onClick={() => shell.send("pause-on-start", { off: true })}>ARMED</button>
+    <div className="calcu-debug-header" style={look}>
+      <span className="calcu-debug-title">{h ? (narrow ? h.narrowTitle : h.title) : ""}</span>
+      <CalcuRunControlButtons shell={shell} level={level} labels={labels} />
+      <button type="button" className="calcu-hb" data-calcu="freeze-on-start" disabled={!canArm}
+        onClick={() => shell.send("pause-on-start", { level })}>{text["freeze-on-start"]}</button>
+      <button type="button" className="calcu-hb" data-calcu="freeze-armed" disabled={!armed}
+        onClick={() => shell.send("pause-on-start", { off: true })}>{text.armed}</button>
     </div>
   );
 }
@@ -77,7 +107,7 @@ function useScrollTo(ref, index, mode, deps) {
   }, deps);
 }
 
-function LiveDebug({ font, narrow }) {
+function LiveDebug({ font }) {
   const { shell } = usePage();
   const s = useTopic(shell, "c59.calculator-debug") || null;
   const listing = useTopic(shell, "c59.program-listing") || null;
@@ -92,7 +122,7 @@ function LiveDebug({ font, narrow }) {
   const dim = (on) => (on ? 0.85 : 0.4);
   return (
     <div className="calcu-debug-tab" style={{ fontSize: font }}>
-      <FreezeHeader title="CALCULATOR DEBUG" narrowTitle="DEBUG" narrow={narrow} />
+      <FreezeHeader size={font - 2} />
       {s && <>
         <div className="calcu-debug-fixed">
           <Section title="DEBUG"><Run white={0.65}>{s.fA}</Run><Gap /><Run white={0.65}>{s.fB}</Run><Gap /><Run>{s.hir0}</Run></Section>
@@ -200,7 +230,7 @@ function AsmOverlay() {
 }
 
 const NO_ROWS = [];
-function CpuInspector({ data, font, narrow }) {
+function CpuInspector({ data, font }) {
   const { shell } = usePage();
   const rows = useTopic(shell, "c59.cpu-debug") || NO_ROWS;
   const frozen = useRun(shell).frozen;
@@ -217,7 +247,7 @@ function CpuInspector({ data, font, narrow }) {
   const value = grey(0.85);
   return (
     <div className="calcu-debug-tab" style={{ fontSize: font }}>
-      <FreezeHeader title="CPU DEBUG" narrowTitle="CPU" cpu={true} narrow={narrow} />
+      <FreezeHeader cpu={true} size={font - 2} />
       <div className="calcu-cpu-list" ref={listRef}>
         {rows.map((r, i) => (
           <div key={i} onClick={() => setPicked(i)}
@@ -345,7 +375,6 @@ function Debugger() {
     return () => ro.disconnect();
   }, [shell, data]);
 
-  const narrow = font < 13;
   return (
     <div className="calcu-debugger" data-panel="debug" ref={rootRef}>
       <div className="calcu-tabs" role="tablist">
@@ -354,8 +383,8 @@ function Debugger() {
             onClick={() => setTab(i)}>{t}</button>
         ))}
       </div>
-      {data && shown === 0 && <LiveDebug font={font + 2} narrow={narrow} />}
-      {data && shown === 1 && <CpuInspector data={data} font={font + 2} narrow={narrow} />}
+      {data && shown === 0 && <LiveDebug font={font + 2} />}
+      {data && shown === 1 && <CpuInspector data={data} font={font + 2} />}
       {data && shown === 2 && <LogTab />}
     </div>
   );

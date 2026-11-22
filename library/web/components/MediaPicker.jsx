@@ -2,12 +2,13 @@
 // media components of the React component set. They draw the topic `media`
 // as it is; no rule lives here. The shell places them.
 //
-//   <CalcuMediaPicker place={placeState} send={fn} />
+//   <CalcuMediaPicker place={placeState} send={fn} short={bool} />
 //     one control-bar picker from a place's entries (PlaceState of the topic
 //     `media`): the empty place, the templates, the instances, the modules;
 //     an entry's description is its tooltip; an entry that cannot be chosen
 //     now is disabled, with its hint as the tooltip. Choosing
-//     sends `media.choose {place, entry}`.
+//     sends `media.choose {place, entry}`. `short`: closed, it shows the
+//     chosen entry's `short` ("ML") and is as wide as that; open, the labels.
 //   <CalcuNameAndSaveDialog place={placeState} prompt="Instance name:"
 //                           send={fn} ask={fn?} onClose={fn} />
 //     the name, and the write-protect switch where the medium has one still
@@ -65,24 +66,12 @@ function calcuPickerLabel(entry) {
   return entry.group === "empty" ? "(empty)" : entry.label;
 }
 
-function CalcuMediaPicker({ place, send }) {
+function CalcuMediaPicker({ place, send, short }) {
   if (!place) return null;
   const entries = place.picker || [];
-  const held = place.holds ? place.holds.name : null;
-  let current = 0;
-  let listed = held === null;
-  entries.forEach((e, i) => {
-    if (!e.canChoose) return;
-    if (held !== null ? e.group !== "empty" && e.label === held : e.group === "empty") {
-      current = i;
-      listed = true;
-    }
-  });
-  // A medium the place holds that no entry lists (a tape started under a
-  // name, its file written at the first motor stop): shown
-  // as what the place holds.
-  if (!listed) current = entries.length;
-  return (
+  // The entry the topic marks chosen (a held medium no entry lists has its own).
+  const current = Math.max(0, entries.findIndex((e) => e.chosen));
+  const select = (
     <select className="calcu-media-picker" data-calcu={`media-picker-${place.place}`} value={String(current)}
       onChange={(ev) => {
         const e = entries[Number(ev.target.value)];
@@ -94,8 +83,16 @@ function CalcuMediaPicker({ place, send }) {
           {calcuPickerLabel(e)}
         </option>
       ))}
-      {listed ? null : <option key="held" value={String(entries.length)} disabled>{held}</option>}
     </select>
+  );
+  if (!short) return select;
+  // The short text shown; the select laid over it, transparent, opens the list.
+  const shown = entries.length ? (entries[current].short || calcuPickerLabel(entries[current])) : "";
+  return (
+    <span className="calcu-picker-short">
+      <span className="calcu-picker-shown" aria-hidden="true">{shown}</span>
+      {select}
+    </span>
   );
 }
 

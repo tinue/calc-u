@@ -14,7 +14,7 @@ namespace calcu::shell {
 
 // {name, helpUrl, aboutLabel, aboutLines: [...], aboutLinks: [[label, url]]
 //  (only when there is one), variantLabels: {id: label}, presetFilter,
-//  copyScreen, pasteText, moduleSlotPinOuts: [...], placesWithoutControl:
+//  presetUploads, copyScreen, pasteText, moduleSlotPinOuts: [...], placesWithoutControl:
 //  [...], items: [{group, id, label, entry, onBar?, mediaPlace?}]}.
 // Not in it: `version`, `build` (the page has its own). `copyScreen` says
 // whether the product has the item; the page adds its own act.

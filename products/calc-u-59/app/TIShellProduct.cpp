@@ -25,6 +25,9 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
                     {"Support", "https://github.com/tinue/calc-u/issues"},
                     {"Privacy", "https://github.com/tinue/calc-u/blob/main/products/calc-u-59/PRIVACY.md"}};
     p.presetFilter = "Presets (*.ti59 *.ti58 *.ti58c)";
+    // What a preset can name: modules, keystroke programs and magnetic cards
+    // (.module.yaml, .keystrokes.yaml, .magnetcard.yaml).
+    p.presetUploads = ".ti59,.ti58,.ti58c,.yaml";
     // Neither Copy Screen nor Paste Text, so no Edit menu.
     p.moduleSlotPinOuts = {"module-slot"};
     for (const auto& [id, label] : {std::pair{kItemArmCard, "Arm Card…"}, std::pair{kItemArmFreshCard, "Arm Fresh Card…"}}) {

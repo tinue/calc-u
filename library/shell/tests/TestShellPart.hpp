@@ -131,6 +131,7 @@ inline ShellProduct product() {
     p.aboutLinks = {{"Source", "https://example.org/source"}, {"Privacy", "https://example.org/privacy"}};
     p.variantLabels = {{"Model-A", "Revision"}, {"test-plotter", "Pen"}};
     p.presetFilter = "Presets (*.test)";
+    p.presetUploads = ".test";
     p.moduleSlotPinOuts = {"module"};
     p.placesWithoutControl = {"host-drive"};
     p.items.push_back(ProductItem{MenuGroup::FileKinds, "load-program", "Load Program…", "", {}});

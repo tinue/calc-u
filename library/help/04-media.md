@@ -116,8 +116,9 @@ do the same thing:
 - drop it on the window;
 - open it with the product from your file manager (Open With);
 - name it when you start the product;
-- choose it in **File ▸ Load Preset…**, which offers presets and all
-  files.
+- choose it in **File ▸ Load Preset…**, which offers presets only, like
+  every item that loads one kind of file (in the browser also the files a
+  preset names, see below).
 
 A drop takes one file: a drop of several files is ignored. On the
 desktop, a file you drop or open with the product brings the window to
@@ -141,10 +142,16 @@ fits only one of them. Otherwise, and when the medium's place is not
 there now, a notice says where such a medium is chosen.
 
 In the browser an opened file cannot be written back, so a medium is
-first imported into the save folder ([Saved media](#saved-media)). In
-the browser's file dialog you can pick several files at once: they are
-taken as one folder, and the preset among them is opened, so that the
-files it names are found.
+first imported into the save folder ([Saved media](#saved-media)).
+
+The browser cannot look into the folder a preset lies in, so a preset
+brings only the files chosen with it. In **File ▸ Load Preset…**, pick
+the preset together with every file it names (its tape, card, disk,
+module or program files); the dialog offers those kinds of files too.
+They are taken as one folder, the preset among them is opened, and a
+file it names is found by its name alone, whatever folder the preset
+gives. A file it names that was not chosen is refused with a notice that
+names it.
 
 A file you open while an operation runs, or before the product has
 finished starting, is kept and opened as soon as the product is free.

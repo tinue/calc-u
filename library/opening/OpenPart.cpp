@@ -127,6 +127,11 @@ void OpenPart::afterCall(SessionContext& c, pacing::WallTime) {
 
 CommandOutcome OpenPart::open(const OpenRequest& req, SessionContext& c) {
     if (req.files.size() > 1) return openSeveral(req, c);
+    // An uploaded preset alone goes into an upload folder as well, so that
+    // a file it names is refused with the advice to choose it with it.
+    if (req.upload && setup_.uploadFolder && setup_.presets &&
+        classify(req.files.front(), req.way, setup_).what == Classified::What::Preset)
+        return openSeveral(req, c);
     return openOne(req.files.front(), req, c);
 }
 
@@ -181,9 +186,10 @@ CommandOutcome OpenPart::openMedium(const OpenedFile& f, const OpenRequest& req,
                   OpenReply(OpenedAs::Medium, name, place), c);
 }
 
-// Several files from a Web file dialog are one folder; the preset among
-// them is opened by its path there. Without an upload folder only the first
-// file is opened, alone.
+// Several files from a Web file dialog (or one preset) are one folder; the
+// preset among them is opened by its path there, as an upload: a file it
+// names is looked up there by its name. Without an upload folder only the
+// first file is opened, alone.
 CommandOutcome OpenPart::openSeveral(const OpenRequest& req, SessionContext& c) {
     if (!setup_.uploadFolder || !setup_.presets) return openOne(req.files.front(), req, c);
     namespace fs = std::filesystem;
@@ -220,7 +226,8 @@ CommandOutcome OpenPart::openSeveral(const OpenRequest& req, SessionContext& c) 
     const Classified k = classify(*first, req.way, setup_);
     if (k.what == Classified::What::Refused) return refuse(c, k.refusal);   // 1b
     const std::string path = files::fromPath(folder / files::toPath(plainName(*first)));
-    return finish(setup_.presets->loadPreset(Value::object({{"ref", path}}), c), OpenReply(OpenedAs::Preset, plainName(*first)), c);
+    return finish(setup_.presets->loadPreset(Value::object({{"ref", path}, {"upload", Value(true)}}), c),
+                  OpenReply(OpenedAs::Preset, plainName(*first)), c);
 }
 
 } // namespace calcu::opening

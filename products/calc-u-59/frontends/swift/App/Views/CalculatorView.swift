@@ -31,10 +31,6 @@ struct CalculatorView: View {
         UTType(filenameExtension: "ti58") ?? .data,
         UTType(filenameExtension: "ti58c") ?? .data
     ]
-    /// The Preset button's dialog: the preset types and any
-    /// file; the session's `open` finds out what it is.
-    private static let presetDialogTypes = presetTypes + [.item]
-
 
     #if !os(macOS)
     enum PortraitPage { case calc, printer, debug }
@@ -71,7 +67,7 @@ struct CalculatorView: View {
             allowedContentTypes: {
                 switch filePickerMode {
                 case .asm:       return Self.asmTypes
-                case .preset, .none: return Self.presetDialogTypes
+                case .preset, .none: return Self.presetTypes
                 }
             }(),
             allowsMultipleSelection: false
@@ -101,14 +97,13 @@ struct CalculatorView: View {
         #endif
     }
 
-    /// Load Preset… (File menu, ⌘O; the Preset button on iOS): the preset
-    /// types and any file, opened as what it is.
+    /// Load Preset… (File menu, ⌘O; the Preset button on iOS): presets only,
+    /// as every dedicated loader takes its own kind (a drop takes any file).
     private func openPresetDialog() {
         #if os(macOS)
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = Self.presetDialogTypes
-        panel.allowsOtherFileTypes = true
-        panel.message = "Select a .ti59, .ti58, or .ti58c preset, or any file Calc-U-59 opens"
+        panel.allowedContentTypes = Self.presetTypes
+        panel.message = "Select a .ti59, .ti58 or .ti58c preset"
         if panel.runModal() == .OK, let url = panel.url {
             viewModel.loadPreset(url)
         }

@@ -87,6 +87,7 @@ Value toValue(const ShellProduct& p) {
     }
     out.push_back({"variantLabels", Value(std::move(variantLabels))});
     out.push_back({"presetFilter", Value(p.presetFilter)});
+    out.push_back({"presetUploads", Value(p.presetUploads)});
     out.push_back({"copyScreen", Value(static_cast<bool>(p.copyScreen))});   // whether the product has the item
     out.push_back({"pasteText", Value(p.pasteText)});
     out.push_back({"moduleSlotPinOuts", strings(p.moduleSlotPinOuts)});

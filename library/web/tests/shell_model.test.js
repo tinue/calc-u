@@ -23,7 +23,7 @@ function product() {
     name: "Test-Product", version: "1.2.3", build: "abc123", helpUrl: "https://calc-u.org/test/",
     aboutLabel: "", aboutLines: ["A product made for the tests.", "No code of a product."],
     aboutLinks: [["Source", "https://example.org/source"], ["Privacy", "https://example.org/privacy"]],
-    variantLabels: { "Model-A": "Revision", "test-plotter": "Pen" }, presetFilter: ".test",
+    variantLabels: { "Model-A": "Revision", "test-plotter": "Pen" }, presetFilter: ".test", presetUploads: ".test",
     copyScreen: null, pasteText: false, moduleSlotPinOuts: ["module"], placesWithoutControl: ["host-drive"],
     items: [
       { group: "FileKinds", id: "load-program", label: "Load Program…", entry: "" },

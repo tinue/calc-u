@@ -16,6 +16,7 @@ TEST(shell_product_value_form) {
     p.aboutLines = {"one", "two"};
     p.variantLabels = {{"B", "Rev B"}, {"A", "Rev A"}};
     p.presetFilter = "Presets (*.tp)";
+    p.presetUploads = ".tp,.yaml";
     p.copyScreen = [] {};   // the form says whether there is the item
     p.pasteText = true;
     p.moduleSlotPinOuts = {"module"};
@@ -33,6 +34,7 @@ TEST(shell_product_value_form) {
          {"aboutLines", Value(Value::Array{"one", "two"})},
          {"variantLabels", Value(Value::Object{{"A", Value("Rev A")}, {"B", Value("Rev B")}})},
          {"presetFilter", "Presets (*.tp)"},
+         {"presetUploads", ".tp,.yaml"},
          {"copyScreen", true},
          {"pasteText", true},
          {"moduleSlotPinOuts", Value(Value::Array{"module"})},
@@ -68,7 +70,7 @@ TEST(shell_product_form_has_links_and_copy_screen_flag) {
     std::vector<std::string> keys;
     for (const auto& m : *v.members()) keys.push_back(m.key);
     CHECK(keys == (std::vector<std::string>{"name", "helpUrl", "aboutLabel", "aboutLines", "aboutLinks", "variantLabels",
-                                            "presetFilter", "copyScreen", "pasteText", "moduleSlotPinOuts",
+                                            "presetFilter", "presetUploads", "copyScreen", "pasteText", "moduleSlotPinOuts",
                                             "placesWithoutControl", "items"}));
     // A labelled choice row carries its choices; one without does not.
     shell::DialogSpec spec;

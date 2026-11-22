@@ -256,7 +256,7 @@ function CalcU1600(props) {
   // names, as one folder).
   const { product, ready: productReady } = useShellProduct(shell, {
     request: "c1600.shell-product", fallback: C1600_NO_PRODUCT, version: CalcU1600.version, build: CalcU1600.build,
-    copyScreen, openFiles, presetAccept: ".pc1500,.pc1500a,.pc1600,.bas,.bbin,.bin,.wav,.yaml",
+    copyScreen, openFiles,
     acts: { "load-basic-program": () => pickProgram("basic"), "load-machine-code": () => pickProgram("code") },
   });
 

@@ -73,8 +73,8 @@ landscape on a large screen) — its column in
 - **`frontends/swift/Bridge/`, the Qt adapters and `frontends/web/bindings.cpp` translate types only.**
 - **The Qt6 and Web windows are put together from the library's shell**
   (the Swift frontend natively: `Bridge/TIShell` computes the same models,
-  SwiftUI draws them): the menus, the control bar (and the
-  More button where there is no menu bar), the settings dialog, About,
+  SwiftUI draws them): the menus, the control bar (with More on every
+  bar), the settings dialog, About,
   Help, notices and "Loading…" are drawn from the library's models over
   the control state, with the product's data in `app/TIShellProduct`. A
   new menu item or setting row goes into that model (`shellProduct()`,

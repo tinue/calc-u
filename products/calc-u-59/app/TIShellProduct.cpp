@@ -60,33 +60,26 @@ void labelFolders(shell::DialogSpec& spec) {
 
 // The rows and labels of the Swift
 // settings (frontends/swift/App/Views/SettingsView.swift at 7bdd51c).
-shell::DialogSpec swiftSpec(bool mac, const std::string& versionLine) {
+shell::DialogSpec swiftSpec(const std::string& versionLine) {
     using W = shell::DialogRow::Widget;
-    // The Mac's file dialogs start in the loaders' folders; the iOS file
-    // importer takes no start folder.
-    std::vector<std::string> keys{"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C"};
-    if (mac) keys.insert(keys.end(), kFolderKeys.begin(), kFolderKeys.end());
+    // No folder rows: the iOS file importer takes no start folder.
+    const std::vector<std::string> keys{"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C"};
     shell::DialogSpec spec = shell::familySections(settings::settingsDecl(), keys);
-    labelFolders(spec);
     for (auto& s : spec.sections)
         if (s.title == "General") s.rows.push_back({W::Note, "general", "version", versionLine});
     shell::DialogRow style{W::Choice, "display", "led-style", "Segment Style"};
     style.choices = {{"modernized", "Modernized"}, {"classic", "Classic"}};
     spec.sections.push_back({"Display", {style}});
-    if (!mac) {
-        shell::DialogRow feedback{W::Choice, "keyboard", "feedback", "Keyboard Feedback"};
-        feedback.choices = {{"off", "Off"}, {"haptic", "Haptic"}, {"click", "Click Sound"}};
-        spec.sections.push_back({"Keyboard", {feedback}});
-        // The values true and false, drawn as a Toggle.
-        shell::DialogRow page{W::Choice, "window", "portrait-debug-page", "Debug Page in Portrait"};
-        page.choices = {{"true", "On"}, {"false", "Off"}};
-        spec.sections.push_back({"Layout", {page}});
-    }
+    shell::DialogRow feedback{W::Choice, "keyboard", "feedback", "Keyboard Feedback"};
+    feedback.choices = {{"off", "Off"}, {"haptic", "Haptic"}, {"click", "Click Sound"}};
+    spec.sections.push_back({"Keyboard", {feedback}});
+    // The values true and false, drawn as a Toggle.
+    shell::DialogRow page{W::Choice, "window", "portrait-debug-page", "Debug Page in Portrait"};
+    page.choices = {{"true", "On"}, {"false", "Off"}};
+    spec.sections.push_back({"Layout", {page}});
     shell::DialogRow location{W::Choice, "trace", "location", "Save Location"};
     location.choices = {{"app-support", "Local (App Library)"}, {"icloud", "iCloud"}};
-    if (mac) location.choices.push_back({"folder", "Custom Folder"});
     shell::DialogSection tracing{"Tracing", {location}};
-    if (mac) tracing.rows.push_back({W::Folder, "trace", "folder", "Trace folder"});
     tracing.rows.push_back({W::Integer, "trace", "max-file-size-mb", "Maximum file size (MB)"});
     spec.sections.push_back(std::move(tracing));
     return spec;
@@ -96,7 +89,7 @@ shell::DialogSpec swiftSpec(bool mac, const std::string& versionLine) {
 
 shell::DialogSpec settingsSpec(ShellFrontend f, const std::string& versionLine) {
     using W = shell::DialogRow::Widget;
-    if (f == ShellFrontend::SwiftMac || f == ShellFrontend::SwiftIOS) return swiftSpec(f == ShellFrontend::SwiftMac, versionLine);
+    if (f == ShellFrontend::SwiftIOS) return swiftSpec(versionLine);
     std::vector<std::string> keys{"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C"};
     if (f == ShellFrontend::Qt6) {
         keys.push_back("storage.save-folder");

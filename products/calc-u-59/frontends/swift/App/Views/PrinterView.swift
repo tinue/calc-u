@@ -5,8 +5,8 @@ import SwiftUI
 // under none while no printer is attached (the bar's "PC-100C" plugs it in).
 // Drawn from the marks and the text of the library's topic `paper PC-100C`,
 // which the bridge keeps; Copy and Cut are the session's commands (the
-// library makes the picture, the bridge puts it on the pasteboard: macOS
-// two entries, the picture first; iOS one with both).
+// library makes the picture, the bridge puts it on the pasteboard: one
+// entry with both).
 struct PrinterView: View {
     @Environment(EmulatorViewModel.self) var viewModel
     @State private var dotMode = true

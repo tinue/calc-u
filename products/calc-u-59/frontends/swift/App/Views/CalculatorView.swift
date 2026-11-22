@@ -19,9 +19,6 @@ struct CalculatorView: View {
         Binding(
             get: { filePickerMode },
             set: { newMode in
-                #if os(macOS)
-                if newMode == .asm { openAsmDialog(); return }   // a panel, to start in its folder
-                #endif
                 filePickerMode = newMode
                 if newMode != nil { filePickerPresented = true }
             }
@@ -35,11 +32,9 @@ struct CalculatorView: View {
         UTType(filenameExtension: "ti58c") ?? .data
     ]
 
-    #if !os(macOS)
     enum PortraitPage { case calc, printer, debug }
     @State private var portraitPage: PortraitPage = .calc
     private var debugPageEnabled: Bool { viewModel.portraitDebugPage }
-    #endif
 
     var body: some View {
         layout
@@ -55,14 +50,12 @@ struct CalculatorView: View {
                 onArmFresh: { name, confirmed, asked in viewModel.armFreshCard(name: name, confirmed: confirmed, asked: asked) }
             )
         }
-        #if !os(macOS)
         .sheet(isPresented: Binding(get: { viewModel.settingsSheetShown },
                                     set: { viewModel.settingsSheetShown = $0 })) {
             SettingsView()
                 .environment(viewModel)
         }
-        #endif
-        // The shell asks for the file dialog (Load Preset…) and the settings (iOS).
+        // The shell asks for the file dialog (Load Preset…) and the settings.
         .onChange(of: viewModel.presetDialogSerial) { openPresetDialog() }
         .onChange(of: viewModel.settingsSerial) { viewModel.settingsSheetShown = true }
         .fileImporter(
@@ -92,64 +85,18 @@ struct CalculatorView: View {
             case .none:      break
             }
         }
-        #if os(macOS)
-        .dropDestination(for: URL.self) { urls, _ in
-            guard urls.count == 1, let url = urls.first, url.isFileURL else { return false }
-            return viewModel.openDroppedFile(url)
-        }
-        #endif
     }
 
-    /// Load Preset… (File menu, ⌘O; the Preset button on iOS): presets only,
-    /// as every dedicated loader takes its own kind (a drop takes any file).
+    /// Load Preset… (the Preset button; File menu, ⌘O on the iPad's menu bar):
+    /// presets only, as every dedicated loader takes its own kind.
     private func openPresetDialog() {
-        #if os(macOS)
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = Self.presetTypes
-        panel.message = "Select a .ti59, .ti58 or .ti58c preset"
-        panel.directoryURL = viewModel.startFolder("presets")
-        if panel.runModal() == .OK, let url = panel.url {
-            viewModel.rememberFolder("presets", of: url)
-            viewModel.loadPreset(url)
-        }
-        #else
         filePickerModeBinding.wrappedValue = .preset
-        #endif
     }
-
-    #if os(macOS)
-    /// The ASM overlay's Select File on the Mac: a panel that starts in
-    /// `[folders] asm-overlays` (iOS: the file importer).
-    private func openAsmDialog() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = Self.asmTypes
-        panel.message = "Select an ASM overlay"
-        panel.directoryURL = viewModel.startFolder("asm-overlays")
-        if panel.runModal() == .OK, let url = panel.url {
-            viewModel.rememberFolder("asm-overlays", of: url)
-            viewModel.loadASMOverlayFile(url)
-        }
-    }
-    #endif
 
     @ViewBuilder
     private var layout: some View {
-        #if os(macOS)
-        // macOS: calculator | printer | debug
-        // Calculator uses its intrinsic width; debug panel absorbs extra space.
-        HStack(spacing: 0) {
-            calculatorBody()
-                .fixedSize(horizontal: true, vertical: false)
-            Divider()
-            PrinterView()
-                .frame(minWidth: 220, maxWidth: 320)
-            Divider()
-            DebugView(activeFilePickerMode: filePickerModeBinding)
-                .frame(minWidth: 220)
-        }
-        #else
-        // iOS/iPadOS: side-by-side when wide, button-navigated pages otherwise
-        // (Shared mobileLayout decides by the window's size and fold)
+        // Side by side when wide, button-navigated pages otherwise
+        // (TIViewRules.mobileLayout decides by the window's size and fold)
         GeometryReader { geo in
             // Hide button labels when the calculator is too narrow to fit them comfortably.
             let showLabels = TIViewRules.mobileBarLabels(geo.size.width)
@@ -182,7 +129,6 @@ struct CalculatorView: View {
                     }
             }
         }
-        #endif
     }
 
     private func calculatorBody(showLabels: Bool = true) -> some View {
@@ -209,7 +155,6 @@ struct CalculatorView: View {
         var id: Int { mode == .arm ? 0 : 1 }
     }
 
-    #if !os(macOS)
     /// An active fold across the window (iPhone Duo half open, "laptop" pose).
     /// https://developer.apple.com/documentation/technologyoverviews/preparing-your-app-for-iphone-duo
     private static func hasHorizontalFold(_ geo: GeometryProxy) -> Bool {
@@ -267,7 +212,6 @@ struct CalculatorView: View {
         .padding(.horizontal, 8)
         .padding(.bottom, 8)
     }
-    #endif
 }
 
 #Preview {

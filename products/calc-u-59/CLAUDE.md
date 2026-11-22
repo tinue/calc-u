@@ -100,7 +100,7 @@ landscape on a large screen) — its column in
   every test and its group; `../../tools/run_tests.sh calc-u-59 <substring>`
   runs the matching `TEST`s of the one runner `CalcU59Tests`,
   `library/testing/`),
-  `xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 -destination platform=macOS build`,
+  `xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 -destination 'generic/platform=iOS Simulator' build`,
   and the web client, which compiles both layers too:
   `frontends/web/build.sh && frontends/web/run-tests.sh` (`frontends/web/dist/` is gitignored; CI builds it).
   `app/` is C++20 and standard-library-only, and runs on one

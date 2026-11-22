@@ -136,18 +136,6 @@ TEST(every_place_from_the_passed_dirs) {
     CHECK(p.serialLinkFolder() == std::optional<std::string>(save));
     CHECK_EQ(p.saveFolderFile("ti58c.memory.yaml"), save + "/ti58c.memory.yaml");
     CHECK(p.folder(Folder::Cassettes) == std::optional<std::string>(save + "/Cassettes"));
-    // A folder the user chose through the platform is passed in like a host directory.
-    HostDirs s;
-    s.frontend = FrontendKind::Swift;
-    s.home = "/Users/u";
-    s.saveFolder = "/icloud/Documents";
-    s.applicationSupport = "/app-support";
-    s.chosenTraceFolder = [] { return std::string("/Volumes/Traces"); };
-    const SettingsFile sf = SettingsFile::defaultsOnly(testProduct());
-    SettingsFile chosen = SettingsFile::defaultsOnly(testProduct());
-    chosen.set("trace", "location", "folder");
-    CHECK(Paths(chosen, s).traceFolder() == std::optional<std::string>("/Volumes/Traces"));
-    CHECK(Paths(sf, s).traceFolder() == std::optional<std::string>("/app-support"));
 }
 
 TEST(qt6_save_folder_home_product_or_override) {
@@ -273,28 +261,15 @@ TEST(swift_screenshots_save_folder_traces_by_location) {
     CHECK(!Paths(def, s).serialLinkFolder());
     const SettingsFile icloud = withValues(ini, "[trace]\nlocation = icloud\n");
     CHECK(Paths(icloud, s).traceFolder() == std::optional<std::string>("/icloud/Documents"));
-    // With `folder`: the folder the bookmark grants, passed in ...
+    // [trace] folder is Qt6's; an unknown location has the default.
     const SettingsFile folder = withValues(ini, "[trace]\nlocation = folder\nfolder = /plain/path\n");
-    std::string granted = "/granted";
-    s.chosenTraceFolder = [&granted] { return granted; };
-    const Paths asked(folder, s);
-    CHECK(asked.traceFolder() == std::optional<std::string>("/granted"));
-    granted = "/granted-later";   // asked each time
-    CHECK(asked.traceFolder() == std::optional<std::string>("/granted-later"));
-    // ... without a usable grant, the plain path of [trace] folder, then Application Support.
-    granted.clear();
-    CHECK(asked.traceFolder() == std::optional<std::string>("/plain/path"));
-    s.chosenTraceFolder = nullptr;
-    CHECK(Paths(folder, s).traceFolder() == std::optional<std::string>("/plain/path"));
-    const SettingsFile bare = withValues(ini, "[trace]\nlocation = folder\n");
-    CHECK(Paths(bare, s).traceFolder() == std::optional<std::string>("/app-support"));
-    // An unknown location has the default.
+    CHECK(Paths(folder, s).traceFolder() == std::optional<std::string>("/app-support"));
     const SettingsFile odd = withValues(ini, "[trace]\nlocation = moon\n");
     CHECK(Paths(odd, s).traceFolder() == std::optional<std::string>("/app-support"));
 }
 
-// On Swift iOS the iCloud trace location is asked at each trace start (the
-// host's callback, beside the bookmark's); while it cannot be used the trace
+// On Swift the iCloud trace location is asked at each trace start (the
+// host's callback); while it cannot be used the trace
 // folder is refused, nothing is made. Another location does not ask it.
 TEST(swift_icloud_trace_location_asked_at_each_ensure) {
     TempDir dir;

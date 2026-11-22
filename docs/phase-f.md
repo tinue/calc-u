@@ -49,15 +49,6 @@ and `docs/Process.md` until the closing check at its end has passed.
     the same count into `c1600.program-opened`; it handles a reset, not
     the 500 kept items (after 500 opened programs no more are taken).
 
-- **Mac UI tests** (`CalcU59UITestsMac`): six of 21 fail, none of them
-  from a change of 2026-11-21 (two checked on the `main` before it):
-  `test_a_key_under_the_pointer` (a click at a place within the faceplate
-  does not even move the pointer, while buttons and menus are clicked),
-  `test_an_example` (no cue card), `test_the_printer` ("no operation
-  started"), `testRomMissingShowsMessage` (the text does not name the
-  file), `test_card_read_by_its_corner` and
-  `test_fresh_card_written_and_listed` (no name field in the card dialog).
-  The iOS suite passes.
 - **Help pictures**: the pictures to retake are listed by name in
   `docs/help-site.md`, "Help content" (Calc-U-59: six, from the Swift app;
   Calc-U-1600: ten, `tools/make_screenshots.sh <chapter>` from iTerm2).
@@ -68,8 +59,8 @@ and `docs/Process.md` until the closing check at its end has passed.
   sense-bound ones. The user decides.
 - **Documentation sweep, for the user to decide** (the documents were
   left as they are):
-  - Swift Settings: no Choose… for a startup preset, no Reset for the
-    trace folder (the shared help describes both).
+  - Swift Settings: no Choose… for a startup preset (the shared help
+    describes it).
   - Calc-U-1600: the Debug server (DAP) row shows `true`/`false`; the
     empty cassette's Name & Save (09-basic-programs); `pc1600-module-class`
     is not checked against its four values or the header bytes
@@ -138,8 +129,8 @@ tag; its notes are the CHANGELOG entry.
 
 - [ ] Every Checkpoint entry of both products (`ctest -L checkpoint`),
       and the Longer group in full, with the screen unlocked.
-- [ ] The Swift tests from the main checkout: Mac build, UnitTests
-      (macOS and iOS), UIRegressionTests on the simulators of
+- [ ] The Swift tests from the main checkout: the iOS simulator build,
+      UnitTests, UIRegressionTests on the simulators of
       `bin/simulators.yaml` (`bin/simulators setup` first), CardTests.
 - [ ] The Qt6 apps by hand on macOS, Windows and Linux from the
       pre-release assets: start, presets, media, paper, debugger, settings,
@@ -263,7 +254,8 @@ from the old repositories. The CHANGELOG entries are written from them.
 - Changing the module, or connecting or disconnecting the PC-100C, power-cycles the calculator: the TI-58 and TI-59 lose program and data registers; the TI-58C keeps its constant memory.
 - The TI-58C keeps its constant memory across starts only while no startup preset is set for it; a startup preset cold boots it. A TI-58C built from a preset or a startup preset never writes the constant memory file, so loading an example keeps your constant memory for the next TI-58C started from the file (2.3.0: a load kept registers H00 to H03, and the file mirrored whatever ran).
 - A second key pressed while another is held no longer releases the first; both reach the calculator.
-- Menus and the control bar follow the family structure. Where there is a menu bar (Windows and Linux, macOS, the web calculator's wide layout), Reset, Cold boot (was "Clean"), Load Preset and Settings are menu items and leave the bar; "Clean" with Ctrl or Command held is gone. Where there is none (iOS, the web calculator's portrait layout), the three buttons stay, a More button holds Examples, Cold boot and Help, and the long press for "Clean" is gone. The PC-100C is connected with a button on the bar, not in the printer panel. On macOS the model picker moves from the window toolbar to the bar, and Help is new. The Machine menu has Resume. The web calculator shows a notice as a dialog instead of a line below the calculator.
+- Calc-U-59 on the Mac is the desktop app of Windows and Linux (Qt), a signed DMG from CI; the Swift app is the iPhone and iPad app, not offered on Macs, and keeps iCloud.
+- Menus and the control bar follow the family structure. Where there is a menu bar (the desktop app on macOS, Windows and Linux, the web calculator's wide layout), Reset, Cold boot (was "Clean"), Load Preset and Settings are menu items and leave the bar; "Clean" with Ctrl or Command held is gone. Where there is none (iOS, the web calculator's portrait layout), the three buttons stay, a More button holds Examples, Cold boot and Help, and the long press for "Clean" is gone. The PC-100C is connected with a button on the bar, not in the printer panel. The Machine menu has Resume. The web calculator shows a notice as a dialog instead of a line below the calculator.
 - The TI-58C's constant memory is in place before the ROM starts, so the partition and the display format come back at a start, as on the real calculator (2.3.0 restored the registers after the ROM's start-up).
 - A damaged constant memory file and a failed write of it are reported with a notice (2.3.0: silent).
 - A Reset, a power cycle (a module change, the PC-100C connected or disconnected) and a Cold boot keep the fitted cue card, on every model (2.3.0: it was taken away); a fitted magnetic card can still be fed afterwards. The constant memory file remembers the fitted cue card.
@@ -306,13 +298,13 @@ from the old repositories. The CHANGELOG entries are written from them.
 - Windows, Linux and web: the settings dialog has "Startup model" with "Last used" first (2.3.0: "Startup Calculator", with "Last Used" last on Windows and Linux), "Save folder" (2.3.0: "Card Folder"), the Windows and Linux rows grouped in Storage, Folders and Tracing (2.3.0: "Files"), a Startup presets section, every change applied at once (2.3.0: the module and, on the web, the trace size when the dialog closed), and the version as a line under General.
 - Windows and Linux: when a ROM file is missing, the window opens and shows which files are missing in place of the calculator, and Help and About work (2.3.0: a message box, then the app quit). A notice is shown without a title (2.3.0: a title taken from the sentence).
 - Web: while what is saved is not kept (another tab, unreadable or unavailable storage), the storage sentence stays in a line above the calculator, besides its notice (2.3.0: a status line until dismissed).
-- macOS and iOS: a notice is an alert with only its sentence and OK, and several are shown one after the other (2.3.0: a titled alert, a second one replacing the first). "Loading…" is shown during a long load. Settings show the family's rows (Startup model with "Last used" first, a Startup presets section) and no Solid State Module; the section "Trace File" is "Tracing", and on iOS it also offers where traces go (Local or iCloud). The paper panel shows its printer's name above the paper, and an empty paper while no printer is connected.
+- iOS: a notice is an alert with only its sentence and OK, and several are shown one after the other (2.3.0: a titled alert, a second one replacing the first). "Loading…" is shown during a long load. Settings show the family's rows (Startup model with "Last used" first, a Startup presets section) and no Solid State Module; the section "Trace File" is "Tracing", and it also offers where traces go (Local or iCloud). The paper panel shows its printer's name above the paper, and an empty paper while no printer is connected.
 - A library program without a pre-printed cue card shows the stand-in card of its module, titled with the module's name as the menus show it, such as "Applied Statistics" (2.3.0: the module's printed title, such as "MASTER LIBRARY MODULE -1-"). A card a preset feeds with `card:` as its last item is left at the reader when the program does not take it.
 - Developers: the harness names Calc-U-59 `c59`: `calcu --product c59` (`59` is refused; `Calc-U-59` still works). The product commands are `c59 asm|dump|log-level|heatmap|partition|program|coverage|line-times|run-time|hot-steps|step-trace|step-cost|keycodes` (were `ti59 …`), and the data registers are `c59 data-registers` (was `ti59 registers`; session command `c59.data-registers`, was `c59.registers`). The common command `lcd` is `display-text`. The debug panel's topics carry the prefix: `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view` (`state …` takes the new names); the command for the shown CPU tab is `c59.show-cpu-debug` (was `c59.cpu-debug`). `state c59.printer` is gone (the PC-100C's TRACE switch is in `control-state`, its place in `capabilities`), and `c59.led` is `c59.calc-indicator`. Scripts that call the old names must be changed.
 - The magnetic card file (`.magnetcard.yaml`) and the TI-58C's constant memory file (`ti58c.memory.yaml`) start with a comment line (`# Calc-U-59 magnetic card`, `# Calc-U-59 TI-58C constant memory`); the constant memory file also carries `saved:`, the time of the write, as the card file does.
 - Site authors: the component `calc.js` defines is `CalcU59` (file `src/CalcU59.jsx`), with `CalcU59.portraitWidth(h)`; 2.3.0's global `PlayCalculator` is gone, so a page that mounts it must rename it. The props are the family's shared ones in the order `width`, `keyboard`, `layout` (`portrait`, the default, `wide`, `auto`), `preset`, then `height`, `model`, `workerUrl`, then Calc-U-59's `settings`; `module` is still ignored. The release's `Calc-U-59-web.zip` is a release build; the page's test-only commands `c59.web.key-button-down`/`-up` are gone (the key grid sends `screen-key-down`/`-up`).
 - Windows and Linux: a file dropped onto the window or opened with Open With brings the window to the front, the drop shows as accepted, and the file is opened after the drop, as in Calc-U-1600 (2.3.0: the window stayed where it was, and the drop was opened during the drag). Web: a drop of exactly one file is opened and a drop of more is ignored (2.3.0: the first file of a drop was opened), and no drop reaches the browser.
-- The trace folder and the trace size limit are read at each trace start, so a change in Settings is used by the next trace (2.3.0: those of the app's start). The folder is created and written once at the start of a trace; where that fails, the start is refused with "The trace folder cannot be written: <reason>." (2.3.0: the TRACE button could not be pressed where the folder could not be created, and no write was tried). `[trace] max-file-size-mb` accepts zero and negatives, which mean 50 MiB (2.3.0: the settings dialog started at 1). macOS: the folder chosen is the one its bookmark grants, at each trace.
+- The trace folder and the trace size limit are read at each trace start, so a change in Settings is used by the next trace (2.3.0: those of the app's start). The folder is created and written once at the start of a trace; where that fails, the start is refused with "The trace folder cannot be written: <reason>." (2.3.0: the TRACE button could not be pressed where the folder could not be created, and no write was tried). `[trace] max-file-size-mb` accepts zero and negatives, which mean 50 MiB (2.3.0: the settings dialog started at 1).
 - Web: a preset's `screenshot:` step offers the picture as a download, as Calc-U-1600's page does (2.3.0: it was written into the browser's save folder, where nobody could reach it); the LOG tab lists only traces.
 - Developers: the harness command and the preset step that set a control of the PC-100C (`set-control`) without a PC-100C plugged in are refused with "No PC-100C is plugged in." (2.3.0: accepted). No GUI can send it then.
 - Windows, Linux and web: the paper panel's PRINT and ADV keys show as pressed while they are held (2.3.0: always drawn up); the TRACE switch shows its actual position.

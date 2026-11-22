@@ -129,7 +129,7 @@ Everything that isn't drawing: `docs/developer/App-Layer.md`.
 | the library's `calcu::qt6::RunControlButtons` (FREEZE, STEP, RESUME of each debug tab) | `HoldRepeatButton.swift` |
 | `ChromeStyle.hpp` | `ChromeControlStyles.swift` |
 | the shell's `ShellSettingsDialog` (`cu59::settingsSpec`), `AppSettings.hpp`, `AppPaths` | `SettingsView`, `AppSettings.swift`, `CardStorage.swift` |
-| the shell's `ShellAbout` (`cu59::shellProduct`'s texts and links, the window icon, "Built with Qt") | `AppInfo.swift` |
+| the shell's `ShellAbout` (`cu59::shellProduct`'s texts and links, the window icon, "Built with Qt") | — (no About on iOS) |
 
 ## Build
 

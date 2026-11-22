@@ -4,7 +4,6 @@ import XCTest
 /// from the session's product topics; these drive it as a user does.
 /// The overlay's scenario needs an `.asm` file on the device and
 /// is ScreenshotTests.testAsmOverlay.
-#if !os(macOS)
 final class DebugPanelTests: XCTestCase {
 
     override func setUpWithError() throws {
@@ -101,4 +100,3 @@ final class DebugPanelTests: XCTestCase {
         attachScreenshot(app, name: "Debug panel — LOG tab")
     }
 }
-#endif

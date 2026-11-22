@@ -46,13 +46,7 @@ std::optional<std::string> Paths::traceFolder() const {
         if (auto over = folderValue("trace", "folder")) return over;
         return saveFolder();
     case FrontendKind::Swift: {
-        const std::string location = settings_->text("trace", "location");
-        if (location == "icloud") return saveFolder();
-        if (location == "folder") {
-            if (dirs_.chosenTraceFolder)
-                if (std::string chosen = dirs_.chosenTraceFolder(); !chosen.empty()) return chosen;
-            if (auto plain = folderValue("trace", "folder")) return plain;
-        }
+        if (settings_->text("trace", "location") == "icloud") return saveFolder();
         return dirs_.applicationSupport;
     }
     case FrontendKind::Given:

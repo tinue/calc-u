@@ -14,16 +14,13 @@ final class FilePickerTests: XCTestCase {
 
     /// Leave the simulator in portrait after all tests complete so the next run
     /// starts in the expected orientation without a rotation dance.
-    #if !os(macOS)
     override class func tearDown() {
         XCUIDevice.shared.orientation = .portrait
         super.tearDown()
     }
-    #endif
 
     // MARK: - Tests
 
-    #if !os(macOS)
     /// The Preset button must open the document picker sheet.
     @MainActor
     func testFilePickerOpens() throws {
@@ -98,5 +95,4 @@ final class FilePickerTests: XCTestCase {
         XCTAssertTrue(cancelButton.waitForNonExistence(timeout: 5), "Picker did not dismiss")
         XCTAssertFalse(cancelButton.waitForExistence(timeout: 1), "Picker came back after dismissing")
     }
-    #endif
 }

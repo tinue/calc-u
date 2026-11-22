@@ -6,7 +6,7 @@ import SwiftUI
 /// the card controls on the TI-59; on iOS and iPadOS, where no menu bar
 /// can be counted on, Reset, Preset, Settings and More. No control here
 /// decides what the machine offers: a control is enabled exactly when its
-/// entry is available now; on macOS the reason is its help tag.
+/// entry is available now.
 struct ControlBarView: View {
     @Environment(EmulatorViewModel.self) var viewModel
     /// Labels beside the icons; off where the bar is too narrow.
@@ -131,7 +131,6 @@ struct ControlBarView: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .disabled(!(item?.enabled ?? false))
-        .reasonTag(item?.reason ?? "")
         .accessibilityLabel(control.label)
         .accessibilityValue(control.plugged ? "On" : "Off")
         .accessibilityIdentifier("bar-place-\(control.controlID)")
@@ -213,7 +212,6 @@ struct MenuItems: View {
                     if item.checked { Label(item.label, systemImage: "checkmark") } else { Text(item.label) }
                 }
                 .disabled(!item.enabled)
-                .reasonTag(item.reason)
                 .accessibilityIdentifier("\(prefix)\(item.itemID)")
             }
         }
@@ -266,16 +264,5 @@ extension View {
     func labelStyle(showLabel: Bool) -> some View {
         if showLabel { self.labelStyle(.titleAndIcon) }
         else { self.labelStyle(.iconOnly) }
-    }
-
-    /// Why a control cannot be used, as its help tag on macOS (which
-    /// XCUITest reads as the element's accessibility help); not shown on iOS.
-    @ViewBuilder
-    func reasonTag(_ reason: String) -> some View {
-        #if os(macOS)
-        if reason.isEmpty { self } else { self.help(reason) }
-        #else
-        self
-        #endif
     }
 }

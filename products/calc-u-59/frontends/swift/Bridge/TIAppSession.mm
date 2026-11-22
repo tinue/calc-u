@@ -2,11 +2,7 @@
 #import "TIShell+Session.h"
 #import "BridgeConvert.h"
 #import "TIFileFormats+Cpp.h"
-#if TARGET_OS_OSX
-#import <AppKit/AppKit.h>
-#else
 #import <UIKit/UIKit.h>
-#endif
 #include <calcu59/core/PC100C.hpp>
 #include <calcu59/core/PC100CPaper.hpp>
 #include <calcu59/core/TICatalogue.hpp>
@@ -20,7 +16,7 @@
 #include <calcu59/app/Settings.hpp>
 #include <calcu59/app/TIShellProduct.hpp>
 #include "typing/TypingTopics.hpp"
-#if DEBUG && (TARGET_OS_OSX || TARGET_OS_SIMULATOR)
+#if DEBUG && TARGET_OS_SIMULATOR
 #include <calcu59/app/HarnessProduct.hpp>
 #include "harness/attach/AttachPort.hpp"
 #endif
@@ -267,13 +263,8 @@ TIChange changeOf(const cs::TopicName& t) {
 // the app's own.
 cs::HostServices statedServices() {
     cs::HostServices services;
-#if TARGET_OS_OSX
-    services.offered = {cs::HostService::ClipboardText, cs::HostService::ClipboardImage, cs::HostService::FilePicker,
-                        cs::HostService::FolderPicker, cs::HostService::KeepFile, cs::HostService::OpenUrl};
-#else
     services.offered = {cs::HostService::ClipboardText, cs::HostService::ClipboardImage, cs::HostService::FilePicker,
                         cs::HostService::KeepFile, cs::HostService::OpenUrl, cs::HostService::Haptics};
-#endif
     return services;
 }
 
@@ -310,39 +301,17 @@ cs::ServiceAnswer answerService(const cs::ServiceAsk& ask) {
         NSData* png = [NSData dataWithBytes:b->bytes()->data() length:b->bytes()->size()];
         const cs::Value* t = ask.args.find("text");
         NSString* text = t && t->string() ? ns(*t->string()) : nil;
-#if TARGET_OS_OSX
-        NSImage* image = [[NSImage alloc] initWithData:png];
-        if (!image) return cs::ServiceAnswer{false, cs::Value(), "The picture cannot be read."};
-        const double dpi = cs::realArg(ask.args, "dotsPerInch", 0);
-        NSBitmapImageRep* rep = image.representations.count ? (NSBitmapImageRep*)image.representations.firstObject : nil;
-        if (dpi > 0 && rep) image.size = NSMakeSize(rep.pixelsWide * 72.0 / dpi, rep.pixelsHigh * 72.0 / dpi);
-        NSPasteboard* pb = NSPasteboard.generalPasteboard;
-        [pb clearContents];
-        NSMutableArray<id<NSPasteboardWriting>>* objects = [NSMutableArray arrayWithObject:image];   // the picture first
-        if (text) [objects addObject:text];
-        if (![pb writeObjects:objects]) return cs::ServiceAnswer{false, cs::Value(), "The clipboard refused it."};
-#else
         NSMutableDictionary* item = [NSMutableDictionary dictionaryWithObject:png forKey:@"public.png"];
         if (text) item[@"public.utf8-plain-text"] = text;
         UIPasteboard.generalPasteboard.items = @[item];
-#endif
         return cs::ServiceAnswer{true, cs::Value(), {}};
     }
     if (ask.service == HostService::ClipboardText) {
         if (const cs::Value* t = ask.args.find("text"); t && t->string()) {
-#if TARGET_OS_OSX
-            [NSPasteboard.generalPasteboard clearContents];
-            [NSPasteboard.generalPasteboard setString:ns(*t->string()) forType:NSPasteboardTypeString];
-#else
             UIPasteboard.generalPasteboard.string = ns(*t->string());
-#endif
             return cs::ServiceAnswer{true, cs::Value(), {}};
         }
-#if TARGET_OS_OSX
-        NSString* now = [NSPasteboard.generalPasteboard stringForType:NSPasteboardTypeString];
-#else
         NSString* now = UIPasteboard.generalPasteboard.string;
-#endif
         return cs::ServiceAnswer{true, cs::Value::object({{"text", now ? cpp(now) : std::string()}}), {}};
     }
     return cs::ServiceAnswer{false, cs::Value(), "This frontend does not answer " + std::string(cs::serviceName(ask.service)) + "."};
@@ -439,16 +408,9 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         dirs.settingsBase = cpp(start.settingsBase);
         dirs.saveFolder = cpp(start.saveFolder);
         dirs.applicationSupport = cpp([start.settingsBase stringByAppendingPathComponent:@"Calc-U-59"]);
-        // The bookmark's folder, asked at each trace start.
-        if (NSString* _Nullable (^chosen)(void) = start.chosenTraceFolder)
-            dirs.chosenTraceFolder = [chosen] {
-                @autoreleasepool { return cpp(chosen()); }
-            };
-        // iOS: the iCloud trace location only while signed in, asked at each
-        // trace start beside the bookmark.
-#if !TARGET_OS_OSX
+        // The iCloud trace location only while signed in, asked at each
+        // trace start.
         dirs.iCloudAvailable = [] { return NSFileManager.defaultManager.ubiquityIdentityToken != nil; };
-#endif
         const auto& decl = cu59::settings::settingsDecl();
         std::optional<std::string> path;
         if (start.settingsFile) path = cpp(start.settingsFile);
@@ -470,7 +432,7 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         setup.files = std::make_shared<CoordinatedFiles>(delegate);
         // Where traces go is the places' by [trace] location,
         // read at each trace start with the folder made and written once;
-        // iOS: iCloud only while signed in (dirs, above). The stated host
+        // iCloud only while signed in (dirs, above). The stated host
         // services (the session asks none of them yet).
         const cs::HostServices services = statedServices();
         __weak TIAppSession* weakSelf = self;
@@ -670,7 +632,7 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 }
 - (void)continueSession { _thread->continueCalls(); }
 
-#if DEBUG && (TARGET_OS_OSX || TARGET_OS_SIMULATOR)
+#if DEBUG && TARGET_OS_SIMULATOR
 - (BOOL)openAttachWithArguments:(NSArray<NSString *> *)arguments {
     std::vector<std::string> args;
     for (NSString* a in arguments) args.push_back(cpp(a));
@@ -736,24 +698,6 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (double)calcIndicatorOpacity {
     const auto* l = _mirror.stateOf<cu59::TICalcIndicatorState>(cu59::topics::kCalcIndicator);
     return l ? l->calcIndicatorOpacity : 0;
-}
-- (void)hostKeyDownPhysical:(NSString *)physical named:(NSString *)named produced:(uint32_t)produced
-                    carried:(uint32_t)carried shift:(BOOL)shift control:(BOOL)control alt:(BOOL)alt
-                    command:(BOOL)command {
-    calcu::typing::HostKeyEvent e;
-    e.physical = cpp(physical);
-    e.named = calcu::typing::namedKeyOf(cpp(named));
-    e.produced = produced;
-    e.carried = carried;
-    e.mods.shift = shift == YES;
-    e.mods.control = control == YES;
-    e.mods.alt = alt == YES;
-    e.mods.command = command == YES;
-    e.mods.macHost = true;
-    [self send:calcu::typing::kHostKeyDown value:calcu::typing::toValue(e)];
-}
-- (void)hostKeyUpPhysical:(NSString *)physical {
-    [self send:calcu::typing::kHostKeyUp args:{{"physical", cpp(physical)}}];
 }
 - (void)focusLost { [self send:calcu::typing::kFocusLost]; }
 - (NSInteger)heldKey {
@@ -836,7 +780,7 @@ static const char* const kCardReaderPlace = "card-reader";
 }
 - (void)ejectCard { [self send:calcu::media::kEjectCommand args:{{"place", kCardReaderPlace}}]; }
 
-// ── Presets (the content, on iOS and on macOS) ─────────────────────────────
+// ── Presets (the content) ────────────────────────────────────────────
 
 - (void)loadPresetContent:(NSData *)raw name:(NSString *)name {
     if (!raw) {

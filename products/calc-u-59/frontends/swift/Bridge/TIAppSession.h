@@ -115,10 +115,6 @@ typedef struct {
 /// The bundled examples (the app's folder `examples`, bundle.yaml).
 @property (nonatomic, copy) NSString *examplesFolder;
 @property (nonatomic, copy) NSString *saveFolder;     ///< cards and ti58c.memory.yaml (CardStorage)
-/// macOS: the folder the security-scoped bookmark of `[trace] folder` grants,
-/// nil for none; called on the session thread at each trace
-/// start, so that a folder chosen later is the next trace's.
-@property (nonatomic, copy, nullable) NSString * _Nullable (^chosenTraceFolder)(void);
 @end
 
 /// ProgramSource raw values follow the C++ enumerator order:
@@ -201,7 +197,7 @@ typedef struct {
 - (void)suspendWithCompletion:(nullable void (^)(void))done;
 /// Calls again, then continue.
 - (void)continueSession NS_SWIFT_NAME(continueSession());
-#if DEBUG && (TARGET_OS_OSX || TARGET_OS_SIMULATOR)
+#if DEBUG && TARGET_OS_SIMULATOR
 /// Harness attach on 127.0.0.1, the port `--attach-port N` names, else 59059
 /// NO, and a line of the session's log, when it is not available.
 - (BOOL)openAttachWithArguments:(NSArray<NSString *> *)arguments;
@@ -228,12 +224,7 @@ typedef struct {
 @property (nonatomic, readonly) TIDisplaySnapshot display;
 @property (nonatomic, readonly) double calcIndicatorOpacity;
 // Keys are the library's typing: on-screen keys through the shell's
-// pointer rule (TIShell), host keys as the host reports them (the
-// product's keyboard map, app/TITyping, decides), focus loss.
-- (void)hostKeyDownPhysical:(NSString *)physical named:(NSString *)named produced:(uint32_t)produced
-                    carried:(uint32_t)carried shift:(BOOL)shift control:(BOOL)control alt:(BOOL)alt
-                    command:(BOOL)command;
-- (void)hostKeyUpPhysical:(NSString *)physical;
+// pointer rule (TIShell); focus loss lets every held key up.
 - (void)focusLost;
 /// The key drawn pressed (the last one live input holds, `held-keys`): row×5 + col, -1 none.
 @property (nonatomic, readonly) NSInteger heldKey;

@@ -96,8 +96,8 @@ endif()
 
 # The product entry of the harness `calcu` (library/harness/cli/):
 # not in calcu59_shared, so the Web build and the Swift Release and device
-# builds carry none of it; the Swift Debug builds for macOS and the simulator
-# link it for harness attach. It finds the ROMs in the folder the tests use.
+# builds carry none of it; the Swift Debug builds for the simulator link it
+# for harness attach. It finds the ROMs in the folder the tests use.
 add_library(calcu59_harness STATIC ${SHARED_ROOT}/HarnessProduct.cpp ${SHARED_ROOT}/TIHarnessCommands.cpp)
 target_link_libraries(calcu59_harness PUBLIC calcu59_shared)
 target_link_libraries(calcu59_harness PRIVATE calcu_warnings)
@@ -214,8 +214,8 @@ if(CALCU_TESTS)
                    COMMAND sh -c "${reset_iphone} && xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
 -testPlan UnitTests -destination \"${iphone}\""
                    PROPERTIES RUN_SERIAL TRUE)
-    # The Release Mac app, the Release XCFramework and the
-    # Debug iOS device app have no attach; the Release app's entitlements.
+    # The Release iOS device app, the Release XCFramework and the
+    # Debug iOS device app have no attach.
     calcu_add_test(CalcU59NoAttachInRelease longer COMMAND sh frontends/swift/check_no_attach.sh
                    PROPERTIES RUN_SERIAL TRUE)
   endif()
@@ -230,24 +230,12 @@ if(CALCU_TESTS)
   calcu_add_test(CalcU59Tests.checkpoint checkpoint COMMAND CalcU59Tests --group checkpoint PROPERTIES TIMEOUT 900)
   if(APPLE)
     # The App Store set into appstore/screenshots (the iPhone Duo is opened
-    # flat by hand) and the XCUITests on macOS.
+    # flat by hand).
     calcu_add_test(CalcU59AppStoreScreenshots checkpoint COMMAND bin/run-screenshots)
-    calcu_add_test(CalcU59UITestsMac checkpoint
-                   COMMAND xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59
-                           -testPlan UIRegressionTests -destination platform=macOS)
-    # The Swift unit tests on macOS (macOS's services).
-    calcu_add_test(CalcU59SwiftUnitTestsMac checkpoint
-                   COMMAND xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59
-                           -testPlan UnitTests -destination platform=macOS
-                   PROPERTIES RUN_SERIAL TRUE TIMEOUT 1200)
     # Pacing on the iOS simulator: one minute over attach.
     calcu_add_test(CalcU59PacingIOS checkpoint
                    COMMAND sh -c "${reset_iphone} && xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
 -testPlan PacingCheckpoint -destination \"${iphone}\""
-                   PROPERTIES RUN_SERIAL TRUE TIMEOUT 1200)
-    # Attach and pacing on the Mac: the Debug app
-    # through `calcu attach`; shows a grey window over every screen for 30 s.
-    calcu_add_test(CalcU59MacAttach checkpoint COMMAND sh tests/mac_attach_check.sh $<TARGET_FILE:calcu>
                    PROPERTIES RUN_SERIAL TRUE TIMEOUT 1200)
   endif()
 endif()

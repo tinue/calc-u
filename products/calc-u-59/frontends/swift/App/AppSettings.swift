@@ -4,9 +4,7 @@ import Foundation
 // written by the library's SettingsPart on the session thread, the views read the
 // `settings` topic through `TIShell` and change a value with `set-setting`
 // (TIShell.setSetting). What stays here is the platform's: where the file
-// lives, the launch argument of a Debug build that names a file of its own,
-// and the security-scoped bookmark macOS grants for a chosen trace folder
-// which is not a setting.
+// lives, and the launch argument of a Debug build that names a file of its own.
 
 // MARK: - The values the views draw with
 
@@ -37,19 +35,6 @@ enum KeyboardFeedbackType: Int, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Places
-
-/// The one platform-store key: the security-scoped bookmark macOS grants for a
-/// chosen trace folder. It is not a setting.
-nonisolated private let traceFolderBookmarkKey = "traceCustomPathBookmark"
-
-#if os(macOS)
-/// The bookmark last resolved and the folder it granted (nil: none), with its
-/// access opened; asked from the session thread (`chosenTraceFolder`).
-nonisolated(unsafe) private var resolvedTraceFolder: (bookmark: Data, url: URL?)?
-nonisolated private let resolvedTraceFolderLock = NSLock()
-#endif
-
 enum AppSettings {
 
     /// Application Support (inside the sandbox container): the settings
@@ -69,70 +54,6 @@ enum AppSettings {
         return path.hasPrefix("/") ? path : (NSTemporaryDirectory() as NSString).appendingPathComponent(path)
         #else
         return nil
-        #endif
-    }
-
-    /// The folder the bookmark of `[trace] folder` grants (macOS); nil without
-    /// a usable bookmark. The session asks it at each trace start, on its own
-    /// thread (the open panel's grant is the frontend's, the
-    /// bookmark carries it to the next launch): a bookmark is
-    /// resolved once, its folder opened until another bookmark replaces it.
-    nonisolated static func chosenTraceFolder() -> String? {
-        #if os(macOS)
-        guard let bookmarkData = UserDefaults.standard.data(forKey: traceFolderBookmarkKey) else { return nil }
-        resolvedTraceFolderLock.lock()
-        defer { resolvedTraceFolderLock.unlock() }
-        if let kept = resolvedTraceFolder, kept.bookmark == bookmarkData { return kept.url?.path }
-        resolvedTraceFolder?.url?.stopAccessingSecurityScopedResource()
-        let url = resolveTraceFolderBookmark(bookmarkData)
-        resolvedTraceFolder = (bookmarkData, url)
-        return url?.path
-        #else
-        return nil
-        #endif
-    }
-
-    #if os(macOS)
-    /// The folder of a bookmark, its access opened; nil when it is stale or
-    /// cannot be resolved (the plain path of `[trace] folder` is used then).
-    nonisolated private static func resolveTraceFolderBookmark(_ bookmarkData: Data) -> URL? {
-        var isStale = false
-        do {
-            let url = try URL(resolvingBookmarkData: bookmarkData, options: .withSecurityScope, relativeTo: nil,
-                              bookmarkDataIsStale: &isStale)
-            if isStale {
-                print("[AppSettings] the bookmark of the trace folder is stale: the plain path is used")
-                return nil
-            }
-            if !url.startAccessingSecurityScopedResource() {
-                print("[AppSettings] no sandbox extension for \(url.path): traces there will fail")
-            }
-            return url
-        } catch {
-            print("[AppSettings] the bookmark of the trace folder cannot be resolved: \(error)")
-            return nil
-        }
-    }
-    #endif
-
-    /// Whether a chosen trace folder needs to be chosen again (a path, no bookmark).
-    static func traceFolderNeedsReauthorization(path: String) -> Bool {
-        #if os(macOS)
-        return !path.isEmpty && UserDefaults.standard.data(forKey: traceFolderBookmarkKey) == nil
-        #else
-        return false
-        #endif
-    }
-
-    /// Keeps the bookmark of a trace folder the user chose (macOS; the path
-    /// itself is `[trace] folder`, set through the session).
-    static func keepTraceFolderBookmark(_ url: URL) {
-        #if os(macOS)
-        if let bookmark = try? url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil) {
-            UserDefaults.standard.set(bookmark, forKey: traceFolderBookmarkKey)
-        } else {
-            UserDefaults.standard.removeObject(forKey: traceFolderBookmarkKey)
-        }
         #endif
     }
 }

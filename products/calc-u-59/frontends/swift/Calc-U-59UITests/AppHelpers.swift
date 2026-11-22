@@ -16,10 +16,8 @@ let uiTestAttachPort: UInt16 = 59162
 extension XCTestCase {
 
     /// A settings file for one launch, with these values ("section.key=value"),
-    /// in the runner's temporary folder; the app is given its full path. The
-    /// simulator's app reads it there; the Mac runner is sandboxed, and the
-    /// Mac Debug app may read its temporary folder
-    /// (Calc-U-59-Debug-macOS.entitlements).
+    /// in the runner's temporary folder; the app is given its full path and
+    /// reads it there (the simulator).
     func writeSettingsFile(_ values: [String]) -> String {
         var sections: [String: [String]] = [:]
         var order: [String] = []
@@ -46,13 +44,6 @@ extension XCTestCase {
         let app = XCUIApplication()
         app.launchArguments += ["--settings-file", writeSettingsFile(settings),
                                 "--attach-port", String(uiTestAttachPort)] + arguments
-        #if os(macOS)
-        // A window of one size, tall enough for the full bar (the card
-        // buttons need a faceplate as wide as the bar): the window's saved
-        // frame is the app's, shared with every earlier launch. The argument
-        // domain overrides it for this launch only.
-        app.launchArguments += ["-NSWindow Frame calculator", "100 100 1200 750 0 0 2560 1410 "]
-        #endif
         app.launch()
         return app
     }
@@ -131,7 +122,6 @@ extension XCTestCase {
         XCTAssertTrue(reply.first?.hasPrefix("done") ?? false, "the session is not idle: \(reply)")
     }
 
-    #if !os(macOS)
     /// Launch the app after forcing the simulator into a known orientation.
     ///
     /// Setting orientation before launch avoids an iPad simulator quirk where
@@ -190,7 +180,6 @@ extension XCTestCase {
         cell.tap()
         waitForOperation(harness, timeout: idleTimeout, endsPaused: endsPaused, preset: file)
     }
-    #endif
 
     /// Attach a labelled screenshot to the current test result (always kept).
     func attachScreenshot(_ app: XCUIApplication, name: String) {

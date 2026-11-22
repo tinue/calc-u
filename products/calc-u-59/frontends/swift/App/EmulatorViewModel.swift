@@ -202,20 +202,14 @@ class EmulatorViewModel {
     var fittedCardName: String?
     /// The saved cards, as Arm Card lists them.
     var savedCards: [TISavedCard] = []
-    #if os(macOS)
-    /// The dropped card in the reader, whose security scope is still open.
-    @ObservationIgnored private var droppedCardScope: URL?
-    /// Files opened with the app before its session had started.
-    @ObservationIgnored private var filesBeforeStart: [URL] = []
-    #endif
 
     // ── Cue card and module ──────────────────────────────────────────────────
     var cueCardContent: CueCardContent? = nil
     /// The fitted card's corner lit while that side is read: 0 left, 1 right.
     var litCardCorner: Int? = nil
 
-    /// The key a physical-keyboard press is holding down (`row * 5 + col`), so
-    /// `KeyboardView` shows it depressed as for a pointer press.
+    /// The key live input holds down (the session's `held-keys`, `row * 5 + col`),
+    /// so `KeyboardView` shows it depressed as for a pointer press.
     var keyboardHeldKey: Int? = nil
 
     // ── The calculator (the app session via Bridge/TIAppSession)
@@ -232,10 +226,6 @@ class EmulatorViewModel {
     @ObservationIgnored private var loadingCheck: DispatchWorkItem?
     /// The session, made once the save folder is resolved (start()).
     private var controller: TIAppSession { session! }
-    /// Held for the app's lifetime so macOS never App-Naps the background emulation
-    /// queue while the window is unfocused/occluded — App Nap can otherwise stall the
-    /// emulation thread's step() loop entirely.
-    private var appNapActivityToken: NSObjectProtocol?
 
     init() {
         switch ROMLoader.lookUp() {
@@ -246,14 +236,6 @@ class EmulatorViewModel {
             romsMissingText = missing.text
             return
         }
-        // .latencyCritical: without it macOS coalesces the session thread's
-        // timers while the window is covered, the waits overshoot past the
-        // pacer's lag limit and the machine falls behind (measured without
-        // it: 17 s behind in 30 s of a covered window).
-        appNapActivityToken = ProcessInfo.processInfo.beginActivity(
-            options: [.userInitiated, .idleSystemSleepDisabled, .latencyCritical],
-            reason: "TI-59 CPU emulation must keep running at real-time pace in the background"
-        )
         Task { await self.start() }
     }
 
@@ -273,20 +255,13 @@ class EmulatorViewModel {
         start.settingsFile = AppSettings.launchSettingsFile
         start.examplesFolder = Bundle.main.url(forResource: "examples", withExtension: nil)?.path ?? ""
         start.saveFolder = CardStorage.directoryURL.path
-        // Asked at each trace start, on the session thread.
-        start.chosenTraceFolder = { @Sendable in AppSettings.chosenTraceFolder() }
         let made = TIAppSession(roms: romSet, start: start, delegate: platform)
         session = made
         shell = made.shell
         if let problem = made.settingsProblem { print("[Settings] \(problem)") }
-        #if DEBUG && (os(macOS) || targetEnvironment(simulator))
+        #if DEBUG && targetEnvironment(simulator)
         // Harness attach: `calcu attach`, the port of --attach-port, else 59059.
         session?.openAttach(withArguments: ProcessInfo.processInfo.arguments)
-        #endif
-        #if os(macOS)
-        let waiting = filesBeforeStart
-        filesBeforeStart = []
-        openWith(waiting)
         #endif
     }
 
@@ -295,12 +270,8 @@ class EmulatorViewModel {
     /// debug freeze survives. On iOS inside a background task until then.
     func suspendForBackground() {
         guard let session else { return }
-        #if os(iOS)
         let task = UIApplication.shared.beginBackgroundTask(withName: "Suspend Calc-U-59")
         session.suspend { UIApplication.shared.endBackgroundTask(task) }
-        #else
-        session.suspend(completion: nil)
-        #endif
     }
 
     func resumeFromBackground() {
@@ -339,18 +310,14 @@ class EmulatorViewModel {
     }
     /// The feedback of a key press and of Reset on iOS ([keyboard] feedback).
     func keyFeedback() {
-        #if os(iOS)
         switch keyboardFeedback {
         case .off: break
         case .haptic: haptic.impactOccurred()
         case .click: AudioServicesPlaySystemSound(1104)
         }
-        #endif
     }
     func feedbackForReset() { keyFeedback() }
-    #if os(iOS)
     @ObservationIgnored private let haptic = UIImpactFeedbackGenerator(style: .rigid)
-    #endif
 
     /// A menu item of the shell by id (the card items, for the bar's card controls).
     func menuItem(_ id: String) -> TIMenuItem? {
@@ -371,15 +338,6 @@ class EmulatorViewModel {
         if pointerKey != k { pointerKey = k }
     }
 
-    /// A physical key as the host reports it (macOS): its identity, a name for
-    /// Escape / Return / Enter, the character it produced, the letter it
-    /// carries, the modifiers. The session's keyboard map decides.
-    func hostKeyDown(physical: String, named: String, produced: UInt32, carried: UInt32,
-                     shift: Bool, control: Bool, option: Bool, command: Bool) {
-        session?.hostKeyDownPhysical(physical, named: named, produced: produced, carried: carried,
-                                     shift: shift, control: control, alt: option, command: command)
-    }
-    func hostKeyUp(physical: String) { session?.hostKeyUpPhysical(physical) }
     /// The calculator view lost the focus or went away: every key held comes
     /// up, after its minimum hold.
     func keyboardRelease() { session?.focusLost() }
@@ -411,14 +369,6 @@ class EmulatorViewModel {
         case TIShellActionLoadPreset: presetDialogSerial &+= 1
         case TIShellActionSettings: settingsSerial &+= 1
         case TIShellActionHelp: openHelp()
-        case TIShellActionAbout:
-            #if os(macOS)
-            NSApp.orderFrontStandardAboutPanel(options: AppInfo.aboutPanelOptions)
-            #endif
-        case TIShellActionQuit:
-            #if os(macOS)
-            NSApp.terminate(nil)
-            #endif
         case "arm-card": cardPickerMode = .arm
         case "arm-fresh-card": cardPickerMode = .armFresh
         default: break
@@ -428,32 +378,12 @@ class EmulatorViewModel {
     /// Help ▸ "Calc-U-59 Help": the help in the browser.
     func openHelp() {
         guard let url = URL(string: TIShell.helpURL) else { return }
-        #if os(macOS)
-        NSWorkspace.shared.open(url)
-        #else
         UIApplication.shared.open(url)
-        #endif
     }
 
     /// A setting changed, applied and written at once; nil: its default.
     func setSetting(_ section: String, _ key: String, _ value: String?) {
         shell?.setSetting(section, key, value: value)
-    }
-
-    /// Where the Mac's file dialog for a kind of file starts (`[folders]
-    /// <kind>`); nil before any folder was used: the sandbox's home folder is
-    /// no place to start, the panel then picks its own.
-    func startFolder(_ kind: String) -> URL? {
-        guard let path = shell?.startFolder(kind), !path.isEmpty,
-              URL(fileURLWithPath: path).standardizedFileURL != URL(fileURLWithPath: NSHomeDirectory()).standardizedFileURL
-        else { return nil }
-        return URL(fileURLWithPath: path, isDirectory: true)
-    }
-
-    /// After a pick: the file's folder is where the dialog starts next time,
-    /// unless a fixed folder is set.
-    func rememberFolder(_ kind: String, of url: URL) {
-        shell?.rememberFolder(kind, ofFile: url.path)
     }
 
     /// The notice alert's buttons: OK, or Yes and No for a question.
@@ -478,10 +408,7 @@ class EmulatorViewModel {
     private func syncShell() {
         guard let shell else { return }
         if started != shell.started { started = shell.started }
-        if modelID != shell.modelID {
-            modelID = shell.modelID
-            releaseDroppedCardScope()
-        }
+        if modelID != shell.modelID { modelID = shell.modelID }
         menus = shell.menus
         moreItems = shell.moreItems
         barControls = shell.bar
@@ -509,12 +436,6 @@ class EmulatorViewModel {
         DispatchQueue.main.asyncAfter(deadline: .now() + due + 0.01, execute: check)
     }
 
-    /// The trace folder the user chose (macOS): `[trace] folder` and its bookmark.
-    func chooseTraceFolder(_ url: URL) {
-        AppSettings.keepTraceFolderBookmark(url)
-        setSetting("trace", "folder", url.path)
-    }
-
     // MARK: - Magnetic card reader
 
     func ejectIfSwiping() {
@@ -523,7 +444,6 @@ class EmulatorViewModel {
 
     /// Arm Card: a saved card fitted for the user to feed.
     func armCard(_ card: TISavedCard) {
-        releaseDroppedCardScope()
         session?.armCard(card)
     }
 
@@ -532,20 +452,12 @@ class EmulatorViewModel {
         session?.armFreshCard(name, confirmed: confirmed) { [weak self] question, refusal in
             if let question { asked(question); return }
             if let refusal { self?.shell?.pushNotice(refusal); self?.syncNotices() }
-            else { self?.releaseDroppedCardScope() }
             asked(nil)
         }
     }
 
     /// A press at canvas position (x, y), each 0…1: true if it hit a corner of the fitted card.
     func tapCard(x: Double, y: Double) -> Bool { session?.tapCardAt(x: x, y: y) ?? false }
-
-    private func releaseDroppedCardScope() {
-        #if os(macOS)
-        droppedCardScope?.stopAccessingSecurityScopedResource()
-        droppedCardScope = nil
-        #endif
-    }
 
     func ejectCard() { session?.ejectCard() }
 
@@ -597,47 +509,10 @@ class EmulatorViewModel {
     /// as what it is (a preset, an ASM overlay, a keystroke program, a card);
     /// its content goes over (the picked file is readable only inside
     /// its security scope). A refusal is the session's notice.
-    func loadPreset(_ url: URL) { open(url, way: "dialog") }
-
-    #if os(macOS)
-    /// A file dropped on the window: `open {way: drop}`; the
-    /// session finds out what it is. SwiftUI's drop tells the file's name only
-    /// at the drop, so any one file is taken and a name the session does not
-    /// take gets its notice there (the bridge's
-    /// `wouldOpenFile`, `open-would-take`, is there for a drag that can tell).
-    /// A card can be anywhere on disk and is written back while it is
-    /// fitted, so its security scope stays open until it is replaced or gone.
-    @discardableResult
-    func openDroppedFile(_ url: URL) -> Bool {
-        open(url, way: "drop")
-        return true
-    }
-
-    /// Files from the Finder's Open With (or a double-click):
-    /// `open {way: open-with}`, each as what it is. Files that come with the
-    /// launch arrive before the session has started and wait for it.
-    func openWith(_ urls: [URL]) {
-        guard session != nil else {
-            filesBeforeStart += urls
-            return
-        }
-        for url in urls { open(url, way: "open-with") }
-    }
-    #endif
-
-    private func open(_ url: URL, way: String) {
+    func loadPreset(_ url: URL) {
         let scoped = url.startAccessingSecurityScopedResource()
-        // The security scope of an opened card stays open until the reply and
-        // the card state say it is fitted.
-        session?.openFile(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent, way: way) { [weak self] opened in
-            guard let self else { return }
-            #if os(macOS)
-            if opened && self.controller.cardFitted && url.lastPathComponent.lowercased().hasSuffix(".magnetcard.yaml") {
-                self.releaseDroppedCardScope()
-                if scoped { self.droppedCardScope = url }
-                return
-            }
-            #endif
+        // The scope stays open until the session has replied.
+        session?.openFile(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent, way: "dialog") { _ in
             if scoped { url.stopAccessingSecurityScopedResource() }
         }
     }
@@ -697,7 +572,6 @@ class EmulatorViewModel {
         if c.contains(.card) {
             let state: CardState = controller.cardPassing ? .swiping : .noCard
             if cardState != state { cardState = state }
-            if !controller.cardFitted { releaseDroppedCardScope() }
             if fittedCardName != controller.fittedCardName { fittedCardName = controller.fittedCardName }
             savedCards = controller.savedCards
         }

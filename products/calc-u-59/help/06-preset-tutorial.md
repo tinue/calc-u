@@ -11,12 +11,13 @@ the reference, [The preset's TI sections](10-preset-sections.md).
 
 A preset is just a text file, so it is usually easiest to write and edit
 it on a computer with a proper text editor, then get the finished file
-onto whichever device runs Calc-U-59. With Apple devices, the simplest
-way is to keep your presets in the **Calc-U-59** folder of iCloud Drive
-on your Mac, the save folder the app uses for magnetic cards, and let
-iCloud bring it to your iPhone or iPad; open a preset there with
-**Preset** (Load Preset…). On Windows and Linux, keep them in any folder;
-to get them onto a phone, any folder that syncs to it works. On a
+onto whichever device runs Calc-U-59. On the Mac, Windows and Linux,
+keep your presets in the save folder of the desktop app (`Calc-U-59` in
+your home folder) or in any folder of your own. On the iPhone and the
+iPad, the simplest place is the app's **Calc-U-59** folder of iCloud
+Drive, the save folder it uses for magnetic cards: copy a finished
+preset there (on the Mac, Finder ▸ iCloud Drive ▸ Calc-U-59) and open it
+with **Preset**. Any other folder that syncs to the device works too. On a
 computer, **Settings ▸ Folders ▸ Presets folder** makes Load Preset…
 start in your presets' folder.
 

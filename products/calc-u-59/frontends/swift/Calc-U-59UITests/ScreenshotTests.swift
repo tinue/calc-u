@@ -10,7 +10,6 @@ import XCTest
 ///
 /// Landscape shots run through bin/run-screenshots are taken by that script;
 /// see saveScreenshot(fallbackName:).
-#if !os(macOS)
 final class ScreenshotTests: XCTestCase {
 
     override func setUpWithError() throws {
@@ -354,4 +353,3 @@ final class ScreenshotTests: XCTestCase {
         attachScreenshot(app, name: "Texas — test_texas.ti59 complete")
     }
 }
-#endif

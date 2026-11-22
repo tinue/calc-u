@@ -1,13 +1,11 @@
 import SwiftUI
 
-/// The shell's menus in the menu bar: File's items take the place of the `.newItem` group,
-/// Machine is a menu of its own, Help takes the place of the `.help` group.
-/// The items come from the library's menu model (`TIShell.menus`); an item
-/// that cannot be used now is disabled, not left out. Settings…, About and
-/// Quit are the application menu's own (the Settings scene, the About panel,
-/// macOS's Quit), so the items with those roles are left to it. The
-/// shortcuts are key equivalents, taken before the keyboard map sees the key.
-/// The same commands serve the iPad's menu bar.
+/// The shell's menus in the iPad's menu bar: File's items take the place of the
+/// `.newItem` group, Machine is a menu of its own, Help takes the place of the
+/// `.help` group. The items come from the library's menu model
+/// (`TIShell.menus`); an item that cannot be used now is disabled, not left
+/// out. Items with a role of the platform's own menu are left out (Settings is
+/// the bar's). The shortcuts are key equivalents of a hardware keyboard.
 struct ShellCommands: Commands {
     let viewModel: EmulatorViewModel
 
@@ -32,11 +30,6 @@ struct ShellCommands: Commands {
                 Button("Calc-U-59 Help") { viewModel.openHelp() }
             }
         }
-        #if os(macOS)
-        CommandGroup(replacing: .appInfo) {
-            Button("About Calc-U-59") { viewModel.perform(TIShellActionAbout) }   // the system's panel
-        }
-        #endif
     }
 }
 
@@ -76,7 +69,6 @@ struct ShellMenuItems: View {
                 }
                 .disabled(!item.enabled)
                 .keyboardShortcut(Self.shortcut(item.shortcut))
-                .reasonTag(item.reason)
             }
         }
     }

@@ -1,15 +1,14 @@
 #!/bin/sh
 # A release build, or any build for a real iPhone or
 # iPad, contains no harness attach: no AttachEndpoint or AttachedHarness and
-# none of attach's texts in its code, and the Release app does not ask for
-# incoming connections.
+# none of attach's texts in its code.
 #
 #   check_no_attach.sh --sources        what decides it in the sources (Frequent,
 #                                       CTest CalcU59NoAttachSources)
 #   check_no_attach.sh --binary <file>  one binary or static library; the app
 #                                       target's build phase runs it on every
 #                                       Release and device build
-#   check_no_attach.sh                  builds the Release Mac app (signed), the
+#   check_no_attach.sh                  builds the Release iOS device app, the
 #                                       Release XCFramework and the Debug iOS
 #                                       device app, and checks them all (Longer,
 #                                       CTest CalcU59NoAttachInRelease; a few
@@ -41,22 +40,23 @@ check_binary() {
 
 check_sources() {
   cd "$HERE"
-  # build_xcframework.sh: attach only for Debug, only in the macos and
-  # ios-simulator slices; the device slice never.
+  # build_xcframework.sh: attach only for Debug, only in the ios-simulator
+  # slice; the device slice never.
   /usr/bin/grep -q '^\[ "\$CONFIG" = Debug \] && DEV_ATTACH=ON$' build_xcframework.sh ||
     fail "build_xcframework.sh: attach is not tied to the Debug configuration"
   /usr/bin/grep -qE '^slice ios OFF ' build_xcframework.sh || fail "build_xcframework.sh: the device slice may have attach"
-  [ "$(/usr/bin/grep -cE '^slice (macos|ios-simulator) "\$DEV_ATTACH"' build_xcframework.sh)" = 2 ] ||
-    fail "build_xcframework.sh: attach in other slices than Debug macos and ios-simulator"
+  [ "$(/usr/bin/grep -cE '^slice [a-z-]+ "\$DEV_ATTACH"' build_xcframework.sh)" = 1 ] &&
+    /usr/bin/grep -qE '^slice ios-simulator "\$DEV_ATTACH"' build_xcframework.sh ||
+    fail "build_xcframework.sh: attach in another slice than the Debug ios-simulator"
   # The call sites: the bridge's and the Swift frontend's, under the same guard.
-  guard='DEBUG && (TARGET_OS_OSX || TARGET_OS_SIMULATOR)'
+  guard='DEBUG && TARGET_OS_SIMULATOR'
   n=$(/usr/bin/grep -c "^#if $guard" Bridge/TIAppSession.h Bridge/TIAppSession.mm | awk -F: '{s+=$2} END {print s}')
   [ "$n" -ge 3 ] || fail "TIAppSession: attach is not under #if $guard"
   /usr/bin/grep -n 'openAttach' App/*.swift | /usr/bin/grep -q . || fail "no openAttach call found in App/"
-  awk '/^ *#if DEBUG && \(os\(macOS\) \|\| targetEnvironment\(simulator\)\)/ {g=1} /^ *#endif/ {g=0}
+  awk '/^ *#if DEBUG && targetEnvironment\(simulator\)/ {g=1} /^ *#endif/ {g=0}
        /openAttach/ && !g {print FILENAME ":" FNR ": " $0; bad=1} END {exit bad}' App/*.swift ||
-    fail "App/: openAttach outside #if DEBUG && (os(macOS) || targetEnvironment(simulator))"
-  [ $status = 0 ] && echo "ok: attach only in Debug builds for macOS and the simulator"
+    fail "App/: openAttach outside #if DEBUG && targetEnvironment(simulator)"
+  [ $status = 0 ] && echo "ok: attach only in Debug builds for the simulator"
 }
 
 case "${1:-}" in
@@ -72,16 +72,12 @@ REPO="$(cd "$HERE/../../../.." && pwd)"
 DD="$REPO/build/xcode-no-attach"
 XCF="$REPO/build/xcframework-59"
 cd "$HERE"
-echo "building the Release Mac app ..."
+echo "building the Release iOS device app (unsigned) ..."
 xcodebuild build -project Calc-U-59.xcodeproj -scheme Calc-U-59 -configuration Release \
-  -destination 'generic/platform=macOS' -derivedDataPath "$DD" -quiet || fail "the Release Mac build failed"
-app="$DD/Build/Products/Release/Calc-U-59.app"
-check_binary "$app/Contents/MacOS/Calc-U-59"
-for s in macos-arm64_x86_64 ios-arm64 ios-arm64_x86_64-simulator; do check_binary "$XCF/CalcU59.xcframework/$s/libCalcU59.a"; done
-ent=$(codesign -d --entitlements - --xml "$app" 2>/dev/null)
-[ -n "$ent" ] || fail "the Release Mac app is not signed: its entitlements cannot be read"
-echo "$ent" | /usr/bin/grep -q 'com.apple.security.network.server' && fail "the Release Mac app has com.apple.security.network.server"
-echo "$ent" | /usr/bin/grep -q 'com.apple.security.app-sandbox' || fail "the Release Mac app's entitlements have no sandbox key (not the file of Release?)"
+  -destination 'generic/platform=iOS' -derivedDataPath "$DD" CODE_SIGNING_ALLOWED=NO -quiet ||
+  fail "the Release iOS device build failed"
+check_binary "$DD/Build/Products/Release-iphoneos/Calc-U-59.app/Calc-U-59"
+for s in ios-arm64 ios-arm64_x86_64-simulator; do check_binary "$XCF/CalcU59.xcframework/$s/libCalcU59.a"; done
 echo "building the Debug iOS device app (unsigned) ..."
 xcodebuild build -project Calc-U-59.xcodeproj -scheme Calc-U-59 -configuration Debug \
   -destination 'generic/platform=iOS' -derivedDataPath "$DD" CODE_SIGNING_ALLOWED=NO -quiet ||
@@ -90,5 +86,5 @@ check_binary "$DD/Build/Products/Debug-iphoneos/Calc-U-59.app/Calc-U-59"
 check_binary "$XCF/Debug/ios/libCalcU59.a"
 # The XCFramework is the Debug one again for the next Xcode build of the
 # Debug app (it is made for one configuration at a time).
-[ $status = 0 ] && echo "ok: no attach in the Release and device builds; the Release app takes no incoming connections"
+[ $status = 0 ] && echo "ok: no attach in the Release and device builds"
 exit $status

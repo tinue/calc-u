@@ -406,7 +406,7 @@ protocol of `serve`, as a second listener without host services.
 
 | Case | Rule |
 |---|---|
-| Builds | Only where `CALCU_ATTACH` is defined: POSIX development and test trees (the Qt6 apps), Debug builds of the Swift app on macOS and the iOS simulator. Never in a release build, a device build, or on Windows |
+| Builds | Only where `CALCU_ATTACH` is defined: POSIX development and test trees (the Qt6 apps), Debug builds of the Swift app on the iOS simulator. Never in a release build, a device build, or on Windows |
 | Address | TCP, bound to `127.0.0.1` only. No authentication beyond that |
 | Port | The app's launch argument `--attach-port N` or `--attach-port=N` (1 to 65535; another value is ignored), else 59059. `--attach-port 0` lets the system pick one (the Qt6 apps) |
 | Bind fails | The app runs on; a line of the session's log: `Attach is not available on port <port>: <problem>.` |

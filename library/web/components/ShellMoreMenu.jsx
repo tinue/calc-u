@@ -34,16 +34,20 @@ function ShellMoreMenu({ shell, items, label, compact }) {
     const width = Math.min(p.width, c.width - 8);
     const left = Math.max(c.left + 4, Math.min(b.right, c.right - 4) - width);
     // Below the button, or above it when the window has no room below (the
-    // bar sits at the bottom of the calculator).
-    const below = b.bottom + p.height <= window.innerHeight;
-    const top = below ? b.bottom : Math.max(0, b.top - p.height);
-    setPlace({ left, top, maxWidth: c.width - 8 });
+    // bar sits at the bottom of the calculator); as high as that room, the
+    // rest scrolls (a phone in landscape is low).
+    const roomBelow = window.innerHeight - b.bottom - 4, roomAbove = b.top - 4;
+    const below = p.height <= roomBelow || roomBelow >= roomAbove;
+    const maxHeight = Math.max(0, below ? roomBelow : roomAbove);
+    const top = below ? b.bottom : Math.max(4, b.top - Math.min(p.height, maxHeight));
+    setPlace({ left, top, maxWidth: c.width - 8, maxHeight });
   }, [open]);
   const choose = (item) => {
     if (item.confirm) { setAsking(item); return; }
     s.choose(item);
   };
-  const style = place ? { left: place.left, top: place.top, maxWidth: place.maxWidth } : { visibility: "hidden" };
+  const style = place ? { left: place.left, top: place.top, maxWidth: place.maxWidth, maxHeight: place.maxHeight }
+    : { visibility: "hidden" };
   return (
     <span className="calcu-shell-more" ref={ref}>
       <button type="button" className="calcu-shell-action" data-calcu="bar-more" aria-haspopup="true" aria-expanded={open}

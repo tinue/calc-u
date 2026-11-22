@@ -10,8 +10,16 @@
 // `onChoose`: in place of s.choose (the More menu asks first).
 function ShellMenuItems({ s, items, onDone, prefix = "item-", onChoose }) {
   const [sub, setSub] = React.useState(null);
+  const ref = React.useRef(null);
+  // A submenu that opens inline in the More popup comes into view (the
+  // popup scrolls; a low window shows only part of it).
+  React.useEffect(() => {
+    const ul = ref.current;
+    if (ul && ul.parentElement && ul.parentElement.closest(".calcu-shell-more-popup") && ul.parentElement.tagName === "LI")
+      ul.scrollIntoView({ block: "nearest" });
+  }, []);
   return (
-    <ul className="calcu-shell-menu-items" role="menu">
+    <ul className="calcu-shell-menu-items" role="menu" ref={ref}>
       {items.map((item, i) => {
         if (item.kind === "separator") return <li key={`sep-${i}`} className="calcu-shell-separator" role="separator" />;
         const disabled = item.enabled === false;

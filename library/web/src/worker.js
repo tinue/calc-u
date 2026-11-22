@@ -55,9 +55,27 @@
     postStart("failed", why);
   }
 
+  // A call at full speed runs the machine for most of a frame. A browser
+  // may call the timer much rarer than asked (iOS throttles a worker's
+  // timer), and one such call per tick would leave full speed at about real
+  // time: while the calls use their whole allowance, call again, until
+  // 7/8 of the time since the last tick is used. At regular speed a call
+  // returns at once, and one call is made.
+  const FULL_CALL_MS = 10;   // a call this long ran at full speed
+  const MOST_MS = 100;       // the longest stretch the worker keeps to itself
+  let lastTick = null;
   function tick() {
+    const start = performance.now();
+    const gap = lastTick === null ? FRAME_MS : Math.min(start - lastTick, MOST_MS);
+    lastTick = start;
     try {
-      host.call();
+      let before = start;
+      for (;;) {
+        host.call();
+        const now = performance.now();
+        if (now - before < FULL_CALL_MS || now - start >= gap * 7 / 8 - FULL_CALL_MS) break;
+        before = now;
+      }
     } catch (e) {
       fail(errorText(e));
     }

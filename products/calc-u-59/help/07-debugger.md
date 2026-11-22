@@ -108,9 +108,8 @@ into the trace folder ([the family's rules](../../../library/help/07-debugger.md
 
 | System | Trace folder |
 |---|---|
-| macOS | the app's own storage (Application Support), its iCloud folder or the trace folder, as Settings ▸ Tracing ▸ Save Location says |
-| iPhone, iPad | the app's own storage (Application Support), or its iCloud folder when Settings ▸ Tracing says iCloud |
-| Windows, Linux | the save folder, unless Settings ▸ Tracing ▸ Trace folder names another |
+| iPhone, iPad | the app's own storage (Application Support), or its iCloud folder when Settings ▸ Tracing ▸ Save Location says iCloud |
+| macOS, Windows, Linux | the save folder, unless Settings ▸ Tracing ▸ Trace folder names another |
 | the browser | a trace that ended is offered to download, in the wide layout |
 
 Only one trace runs at a time, the button's or a preset's; it holds the

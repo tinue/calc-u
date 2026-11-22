@@ -153,8 +153,8 @@ the simulators and takes a while.
    `frontends/swift/App/Assets.xcassets`, `frontends/swift/Calc-U-59UITests/ScreenshotTests.swift`,
    `examples/screentest/` or GUI-related `app/` files.
 3. Open each shot that has such commits and decide whether the change is visible
-   in it on iOS. A later commit alone proves nothing: a Mac-only change or a
-   change to a screen the shot does not show leaves it current.
+   in it. A later commit alone proves nothing: a change to a screen the
+   shot does not show leaves it current.
 
 **Help set** (the pictures in `help/images/`): open them and
 compare them with the current UI as the code and App Store set describe it.
@@ -171,7 +171,7 @@ Run all of these, including when this session changed no code: a release needs
 them passing on the final tree.
 
 - The three builds in `CLAUDE.md` § "Frontend Parity": `../../tools/run_tests.sh calc-u-59`,
-  `xcodebuild` for macOS, and `frontends/web/build.sh && frontends/web/run-tests.sh`.
+  `xcodebuild` for the iOS simulator, and `frontends/web/build.sh && frontends/web/run-tests.sh`.
 - `../../tools/run_qt.sh 59 --build`.
 - The site's build, check and tests, as `site-59` describes.
 

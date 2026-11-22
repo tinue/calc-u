@@ -11,9 +11,8 @@ Unsorted collection of ideas, bugs, observations etc.
 - **Enable/disable persistency** - For TI-58/59 (TI-58C always is persistent by design)
 
 ## UI
-- **Unified Mac input surface** — the target design: on macOS the whole window is one keyboard surface, every key has exactly one meaning, and focus stops being a concept. The three panels only remain separate because iPhone portrait swipes between them, which is a layout concern, not an input one. `KeyboardView`'s focus scoping (`PhysicalKeyboardModifier`) is a step toward this, with a rough edge: clicking the debug panel silently stops keys reaching the calculator, with no indicator — there is no focus ring, because indicating focus is not where this is heading.
-- **Keyboard support** for debugging panels — the calculator itself is done (macOS app, Qt6 app and the website's `/59/play/`, see `docs/developer/App-Layer.md` § "Physical Keyboard Mapping"); the debug panels and the printer were deliberately left out. On macOS all three panels are visible at once, so Space (R/S vs. STEP) and ⌘C/⌘X (printer tape vs. selected debugger text) have no unambiguous owner. Resolved by the unified surface above: one meaning per key settles the ownership question instead of arbitrating it per panel.
-- **Keyboard support on iPadOS** — an iPad with a hardware keyboard is a plausible case the current macOS-only gating excludes. The map and the view-model machinery are already platform-neutral; only `KeyboardView`'s `#if os(macOS)` and a focus story for the portrait page navigation would need work.
+- **Keyboard support** for debugging panels — the calculator itself is done (the Qt6 app and the website's `/59/play/`, see `docs/developer/App-Layer.md` § "Physical Keyboard Mapping"); the debug panels and the printer were deliberately left out. On the desktop all three panels are visible at once, so Space (R/S vs. STEP) and Ctrl+C/Ctrl+X (printer tape vs. selected debugger text) have no unambiguous owner.
+- **Keyboard support on iPadOS** — an iPad with a hardware keyboard is a plausible case. The map is platform-neutral (`app/TITyping`); the Swift app's `KeyboardView` and a focus story for the portrait page navigation would need work.
 
 ## Debugger
 ### CPU Debugger

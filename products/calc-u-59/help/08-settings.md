@@ -18,10 +18,10 @@ preset sets them at a start.
 | Section | Setting | Where |
 |---|---|---|
 | General | **Startup model**: "Last used", TI-59, TI-58, TI-58C; and the version | everywhere |
-| Startup presets | one row per model: "None", the bundled startup preset of that model, or (Windows, Linux) a file | everywhere |
-| Storage | **Save folder** | Windows, Linux |
+| Startup presets | one row per model: "None", the bundled startup preset of that model, or (macOS, Windows, Linux) a file | everywhere |
+| Storage | **Save folder** | macOS, Windows, Linux |
 | Folders | the **Presets folder**, where Load Preset… starts, and the **ASM overlay folder**, where the ASM overlay's Select File starts; each the folder last used until you choose one, **Reset** goes back to it | macOS, Windows, Linux |
-| Tracing | **Save Location**, where traces go: Local or iCloud, on macOS also Custom Folder (macOS, iPhone, iPad); **Trace folder** (macOS, Windows, Linux); **Maximum file size** in MB (everywhere but the browser's portrait layout) | as named |
+| Tracing | **Save Location**, where traces go: Local or iCloud (iPhone, iPad); **Trace folder** (macOS, Windows, Linux); **Maximum file size** in MB (everywhere but the browser's portrait layout) | as named |
 | Display | **Segment Style**: "Modernized" or "Classic" | macOS, iPhone, iPad, Windows, Linux |
 | Keyboard | **Keyboard Feedback**: "Off", "Haptic" (iPhone, iPad), "Click Sound" | iPhone, iPad; the browser's portrait layout |
 | Layout | **Debug Page in Portrait** | iPhone, iPad |

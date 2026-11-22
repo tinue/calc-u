@@ -64,8 +64,7 @@ wide layout):
 | Help | Calc-U-59 Help; About Calc-U-59 |
 
 Calc-U-59 has no Edit menu: it has neither Copy Screen nor Paste Text.
-On macOS, Settings…, About and Quit are in the application menu, and the
-menus Edit, View and Window that macOS gives every app stay. The
+On macOS, Settings…, About and Quit are in the application menu. The
 shortcuts are those of the family: Load Preset… Ctrl+O (⌘O), Reset
 Ctrl+R (⌘R), Cold boot Ctrl+Shift+R (⇧⌘R).
 
@@ -74,16 +73,15 @@ portrait layout), the control bar keeps the buttons **Reset**,
 **Preset** and **Settings**, and the **More** button (⋯) holds
 Examples ▸, the media items (in the browser), Cold boot, which asks
 first, Resume, Calc-U-59 Help, and About in the browser. On the iPad,
-the menu bar iPadOS gives an app shows the same menus as on macOS.
+the menu bar iPadOS gives an app shows File, Machine and Help, without
+Settings…, About and Quit.
 
 **Help ▸ Calc-U-59 Help** opens [calc-u.org/59](https://calc-u.org/59/) in
 your browser.
 
 ## The window on each system
 
-- **macOS** (the Swift app): the calculator, the paper panel and the
-  debug panel side by side.
-- **Windows and Linux** (the Qt6 app): the calculator, the paper panel
+- **Mac, Windows and Linux** (the desktop app): the calculator, the paper panel
   and the debug panel side by side, with dividers you can move; the
   window comes back at its last size and place.
 - **iPhone**: portrait only. The calculator fills the screen; the

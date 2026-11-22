@@ -9,7 +9,7 @@ user-invocable: true
 The third GUI next to the Swift and Qt6 apps: `core/` + `app/` compiled
 with Emscripten, the library's app session run single-threaded in the
 library's Web Worker (`library/web/`); React only draws
-and forwards input. Two layouts: wide (as the macOS/Qt window: calculator,
+and forwards input. Two layouts: wide (as the desktop window, the Qt `MainWindow`: calculator,
 printer, debugger) and portrait (as the iPhone: calculator and printer
 pages; the PWA). Orient new GUI work on the Qt app's widget of the same
 name (`Web-Client.md` § "Layout of `frontends/web/`" maps them).

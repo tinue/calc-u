@@ -8,8 +8,8 @@ to write.
 
 | GUI | Language / toolkit | Uses |
 |---|---|---|
-| Swift app (`frontends/swift/App/`) — macOS, iOS | Swift + SwiftUI | `core/` + `app/` through ObjC++ wrappers in `frontends/swift/Bridge/` |
-| Qt6 app (`frontends/qt6/`) — Windows, Linux (macOS: development only) | C++ + Qt Widgets | `core/` + `app/` directly |
+| Swift app (`frontends/swift/App/`) — iOS, iPadOS | Swift + SwiftUI | `core/` + `app/` through ObjC++ wrappers in `frontends/swift/Bridge/` |
+| Qt6 app (`frontends/qt6/`) — macOS, Windows, Linux | C++ + Qt Widgets | `core/` + `app/` directly |
 | Web client (`frontends/web/`) — browsers, embedded by the website | JS + React, engine in WASM | `core/` + `app/` compiled with Emscripten; `frontends/web/bindings.cpp` is the adapter (`Web-Client.md`) |
 
 All three share all non-GUI code and are tracked in `Frontend-Parity.md`. The

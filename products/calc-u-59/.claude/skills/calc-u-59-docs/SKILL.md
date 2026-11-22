@@ -104,7 +104,7 @@ These files are best-effort reverse-engineering, not authoritative hardware docu
 | `CHANGELOG.md` | Version history (keep entries under the correct version heading) |
 | `TODO.md` | Development task list |
 | `PRIVACY.md` | App Store privacy policy |
-| `THIRD-PARTY-NOTICES.md` | Qt6 (LGPLv3), web-client (React, Archivo) and ROM-image notices; shipped with the Windows and Linux packages |
+| `THIRD-PARTY-NOTICES.md` | Qt6 (LGPLv3), web-client (React, Archivo) and ROM-image notices; shipped with the Mac, Windows and Linux packages |
 
 ---
 
@@ -133,7 +133,7 @@ Triggered by the user saying **"update documentation"** (or similar) after finis
 
 4. **Update reference docs** (`docs/developer/Core-Architecture.md`, `docs/developer/App-Layer.md`, `docs/developer/Debug-API.md`, `docs/developer/Frontend-Parity.md`, `docs/developer/Web-Client.md`, `docs/developer/New-GUI-Guide.md`, `docs/developer/Harness.md`, `docs/developer/Idle.md`, and `rom/*.md`) for anything the diff invalidated: register model, SCOM layout, PC encoding, models, bridge/debug API surface, settings, file formats.
 
-5. **Update the help (`help/`, and `library/help/` where both products change).** Update its chapters for anything user-facing in any GUI: new settings, module behaviour, install steps (Mac, iOS, Windows, Linux), preset keys and steps, file formats, speed or accuracy; run `tools/help check calc-u-59`. The site renders the help asset of the release. What stays the site's (the software collection, the articles derived from `rom/*.md`, the example copies under `59/software-files/`) is updated in `../calc-u-site` under its own `site-59` skill and `CLAUDE.md`, committed there. Leave the web client alone: the site fetches `59/calc/` from a release by its own rules.
+5. **Update the help (`help/`, and `library/help/` where both products change).** Update its chapters for anything user-facing in any GUI: new settings, module behaviour, install steps (iPhone and iPad, Mac, Windows, Linux), preset keys and steps, file formats, speed or accuracy; run `tools/help check calc-u-59`. The site renders the help asset of the release. What stays the site's (the software collection, the articles derived from `rom/*.md`, the example copies under `59/software-files/`) is updated in `../calc-u-site` under its own `site-59` skill and `CLAUDE.md`, committed there. Leave the web client alone: the site fetches `59/calc/` from a release by its own rules.
 
 6. **The web client** (`frontends/web/`): if the diff touched `core/`, `app/`, `roms/` or `frontends/web/`, build and test it as the calc-u-59-web skill says. The site picks up a new build by pinning the release's `Calc-U-59-web.zip`.
 
@@ -143,10 +143,10 @@ Triggered by the user saying **"update documentation"** (or similar) after finis
 
 ## Global Rules
 
-1. **Compile, don't run.** Do not launch the Xcode iOS Simulator or run the built Mac app — that is the user's job. When runtime verification is needed, ask the user to launch the app and explain precisely what behaviour or output to look for.
+1. **Compile, don't run.** Do not launch the Xcode iOS Simulator or run the built apps — that is the user's job. When runtime verification is needed, ask the user to launch the app and explain precisely what behaviour or output to look for.
 
 2. **Commit often.** Commit after each logical unit of work; push as the root `CLAUDE.md` says.
 
-3. **Build on macOS.** Verify Swift-facing changes with a macOS build; build for iOS only when explicitly required (commands: `calc-u-59-swift` skill, § "Build Verification"). Doc-only changes need no build.
+3. **Build the Swift app.** Verify Swift-facing changes with the iOS simulator build (command: `calc-u-59-swift` skill, § "Build Verification"). Doc-only changes need no build.
 
 4. **Cite your sources.** When referencing a hardware spec, standard, or external document, include the https URL (or a pointer to the local reference file) inline in the relevant documentation paragraph or code comment.

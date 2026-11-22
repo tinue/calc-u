@@ -85,8 +85,8 @@ card format 3, [Media files](10-media-files.md)), named after the card:
 
 | System | Save folder |
 |---|---|
-| macOS, iPhone, iPad | the app's iCloud storage (Finder: iCloud Drive ▸ Calc-U-59), or its local Documents folder when iCloud is off |
-| Windows, Linux | `Calc-U-59` in your home folder, unless **Settings ▸ Storage ▸ Save folder** names another |
+| iPhone, iPad | the app's iCloud storage (iCloud Drive ▸ Calc-U-59), or its local Documents folder when iCloud is off |
+| macOS, Windows, Linux | `Calc-U-59` in your home folder, unless **Settings ▸ Storage ▸ Save folder** names another |
 | the browser | the browser's storage for the page, from one visit to the next; **Import Media…** brings a card file in, **Saved Media…** lists, downloads and deletes cards |
 
 A card file opened from elsewhere, by a drop or with Open With, is used

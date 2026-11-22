@@ -216,12 +216,12 @@ refusal is then a notice only, and a question becomes the notice
 
 ## 7. The ways in
 
-| Way | Qt6 | Swift (Calc-U-59, macOS) | Web |
+| Way | Qt6 (macOS, Windows, Linux) | Swift (Calc-U-59, iOS and iPadOS) | Web |
 |---|---|---|---|
-| `drop` | one file dragged onto the window; the window is raised first | one file dropped onto the window | exactly one file dropped onto the page; a drop of more is ignored. `upload: true` |
+| `drop` | one file dragged onto the window; the window is raised first | none | exactly one file dropped onto the page; a drop of more is ignored. `upload: true` |
 | `open-with` | macOS: a file opened from Finder or dropped onto the Dock icon, also at a cold launch | none | none |
 | `start` | the last argument after the program's name that does not start with `-` and names an existing file, opened once the window is shown | none | none |
-| `dialog` | the file chosen in Load Preset… | the file chosen in Load Preset… | the files chosen in Load Preset… (the product's `presetUploads`: the presets and the files a preset can name), `upload: true` |
+| `dialog` | the file chosen in Load Preset… | the file chosen in the file importer of Load Preset… | the files chosen in Load Preset… (the product's `presetUploads`: the presets and the files a preset can name), `upload: true` |
 | `harness` | the harness's `open <path>` | — | — |
 
 A drag shows a pointer that accepts only one file the session would take

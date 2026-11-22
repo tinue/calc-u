@@ -40,7 +40,8 @@ const cs::HostDirs& HostFolders::hostDirs() {
 
 shell::HostSettings& HostFolders::settings() {
     if (!settings_) {
-        settings_ = std::make_unique<shell::HostSettings>(decl_, hostDirs());
+        const bool ownFolders = chosen_.has_value();
+        settings_ = std::make_unique<shell::HostSettings>(decl_, hostDirs(), std::nullopt, !ownFolders);
         if (!settings_->problem().empty()) qWarning("Settings: %s", settings_->problem().c_str());
     }
     return *settings_;

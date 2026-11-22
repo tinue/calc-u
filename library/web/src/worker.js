@@ -171,6 +171,8 @@
       product: CONFIG.name,
       dirs: { settingsBase: `${CONFIG.mount}/settings`, saveFolder: `${CONFIG.mount}/${CONFIG.name}`, home: "" },
       storage,
+      // `?bare=1` on the worker's URL: a fresh install starts bare (the demo and test pages).
+      bare: /[?&]bare=1\b/.test(self.location.search),
       post: (message, transfer) => postMessage(message, transfer),
     });
     const why = host.failure();

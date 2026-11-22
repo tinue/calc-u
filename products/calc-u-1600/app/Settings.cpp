@@ -15,7 +15,11 @@ cs::ProductDecl makeDecl() {
     d.fallbackModel = "PC-1500A";
     d.keys.push_back(cs::family::startupModel());
     d.keys.push_back(cs::family::startupLastModel());
-    for (const std::string& m : d.models) d.keys.push_back(cs::family::presetFor(m));
+    // A fresh install starts each model with its bundled startup preset
+    // (its printer and modules).
+    d.keys.push_back(cs::family::presetFor("PC-1500", "examples:startup/default-pc1500.pc1500"));
+    d.keys.push_back(cs::family::presetFor("PC-1500A", "examples:startup/default-pc1500a.pc1500a"));
+    d.keys.push_back(cs::family::presetFor("PC-1600", "examples:startup/default-pc1600.pc1600"));
     d.keys.push_back(cs::family::saveFolder());
     d.keys.push_back(cs::family::cassetteFolder());
     d.keys.push_back(cs::family::traceFolder());

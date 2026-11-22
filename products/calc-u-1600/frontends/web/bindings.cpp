@@ -29,12 +29,13 @@ struct WebParts {
     std::unique_ptr<cu1600::AppPaths> paths;
     std::unique_ptr<cu1600::SharpAppPart> part;
     std::unique_ptr<cu1600::SharpWebPart> web;
-    explicit WebParts(const calcu::settings::HostDirs& dirs) : settings(cu1600::settingsDecl(), dirs) {}
+    WebParts(const calcu::settings::HostDirs& dirs, bool firstValues)
+        : settings(cu1600::settingsDecl(), dirs, std::nullopt, firstValues) {}
 };
 
 calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
     const calcu::settings::HostDirs dirs = start.placesDirs();
-    auto parts = std::make_shared<WebParts>(dirs);
+    auto parts = std::make_shared<WebParts>(dirs, start.firstValues);
     parts->paths = std::make_unique<cu1600::AppPaths>(parts->typed, dirs,
                                                       cu1600::BundleDirs{start.bundleDir, start.presetsDir});
     cu1600::SharpAppPartOptions options;

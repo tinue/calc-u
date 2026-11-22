@@ -37,7 +37,9 @@ public:
 
     // The host folders of this platform: home and the settings base.
     settings::HostDirs platformHostDirs() const;
-    // Folders of its own for this run; before anything reads a setting or a path.
+    // Folders of its own for this run (the tests, the probes, the
+    // screenshots): its first start is bare, without the keys' first
+    // values. Before anything reads a setting or a path.
     void useHostDirs(const settings::HostDirs& dirs) { chosen_ = dirs; }
     // The folders of the run: the chosen ones, else the platform's (fixed at the first use).
     const settings::HostDirs& hostDirs();

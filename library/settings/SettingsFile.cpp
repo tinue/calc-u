@@ -55,7 +55,7 @@ SettingsFile SettingsFile::defaultsOnly(const ProductDecl& product) {
     return f;
 }
 
-SettingsFile SettingsFile::open(const ProductDecl& product, std::string path) {
+SettingsFile SettingsFile::open(const ProductDecl& product, std::string path, bool firstValues) {
     SettingsFile f;
     f.product_ = &product;
     f.path_ = std::move(path);
@@ -67,9 +67,13 @@ SettingsFile SettingsFile::open(const ProductDecl& product, std::string path) {
             f.problem_ = f.path_ + " cannot be read; the settings have their defaults and are not saved in this run";
             return f;
         }
-        // The first start: written at once, with every key at its default.
+        // The first start: written at once, with every key at its default
+        // or its first value.
         f.outcome_ = Outcome::Created;
         f.writable_ = true;
+        if (firstValues)
+            for (const KeyDecl& k : product.keys)
+                if (!k.firstValue.empty()) f.doc_.set(k.section, k.key, k.firstValue);
         const FileWrite w = writeFileAtomically(f.path_, f.doc_.text());
         if (!w.ok) f.problem_ = w.problem;
         return f;

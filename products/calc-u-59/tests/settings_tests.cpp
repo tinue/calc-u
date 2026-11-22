@@ -173,8 +173,14 @@ TEST(first_start_defaults_and_writes_file) {
     CHECK(fs::exists(path));
     const std::string text = readText(path);
     CHECK(text.rfind("format-version = 1", 0) == 0);
-    for (const cs::KeyDecl& k : d.keys)
-        CHECK(text.find(k.defaultValue.empty() ? k.key + " =\n" : k.key + " = " + k.defaultValue) != std::string::npos);
+    // Every key at its first value or its default: the TI-59 and the TI-58
+    // with their startup presets, the TI-58C without.
+    for (const cs::KeyDecl& k : d.keys) {
+        const std::string& v = k.firstValue.empty() ? k.defaultValue : k.firstValue;
+        CHECK(text.find(v.empty() ? k.key + " =\n" : k.key + " = " + v) != std::string::npos);
+    }
+    CHECK(text.find("TI-59 = examples:startup/default-ti59.ti59\n") != std::string::npos);
+    CHECK(text.find("TI-58C =\n") != std::string::npos);
     // A change survives a new start.
     {
         cs::SettingsFile f = cs::SettingsFile::open(d, path);

@@ -36,7 +36,7 @@ namespace calcu::shell {
 class HostSettings {
 public:
     HostSettings(const settings::ProductDecl& decl, settings::HostDirs dirs,
-                 std::optional<std::string> filePath = std::nullopt);
+                 std::optional<std::string> filePath = std::nullopt, bool firstValues = true);
     HostSettings(const HostSettings&) = delete;
     HostSettings& operator=(const HostSettings&) = delete;
 

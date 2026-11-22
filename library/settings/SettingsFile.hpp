@@ -19,7 +19,7 @@ namespace calcu::settings {
 
 enum class Outcome {
     Read,          // the file was read
-    Created,       // there was none; it was written with every key at its default
+    Created,       // there was none; it was written with every key at its default (or its first value)
     Unreadable,    // not INI: defaults, nothing written
     NoVersion,     // no `format-version`: defaults, nothing written
     OtherVersion,  // another format version: defaults, nothing written
@@ -28,7 +28,9 @@ enum class Outcome {
 
 class SettingsFile {
 public:
-    static SettingsFile open(const ProductDecl& product, std::string path);
+    // `firstValues` false: a new file takes every key's default, its first
+    // value too (a test's or a demo page's fresh start, bare).
+    static SettingsFile open(const ProductDecl& product, std::string path, bool firstValues = true);
     static SettingsFile defaultsOnly(const ProductDecl& product);
 
     Outcome outcome() const { return outcome_; }

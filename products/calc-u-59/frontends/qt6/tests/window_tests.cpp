@@ -257,14 +257,11 @@ TEST(settings_sections_and_rows) {
     CHECK(checkList("sections", sections, {"General", "Startup presets", "Storage", "Folders", "Tracing", "Display"}));
     for (const auto& [section, key] : std::vector<std::pair<std::string, std::string>>{
              {"startup", "model"}, {"preset", "TI-59"}, {"preset", "TI-58"}, {"preset", "TI-58C"},
-             {"storage", "save-folder"}, {"folders", "presets"}, {"trace", "folder"}, {"trace", "max-file-size-mb"},
+             {"storage", "save-folder"}, {"folders", "presets"}, {"folders", "asm-overlays"}, {"trace", "folder"}, {"trace", "max-file-size-mb"},
              {"display", "led-style"}})
         CHECK(d->findChild<QWidget*>(QString::fromStdString(names::setting(section, key))) != nullptr);
-    // No Solid State Module row (the module is chosen on the bar), no row for the other [folders] kinds.
-    for (QWidget* w : d->findChildren<QWidget*>()) {
-        CHECK(!w->objectName().contains(QStringLiteral("module")));
-        CHECK(!w->objectName().contains(QStringLiteral("asm-overlays")));
-    }
+    // No Solid State Module row (the module is chosen on the bar).
+    for (QWidget* w : d->findChildren<QWidget*>()) CHECK(!w->objectName().contains(QStringLiteral("module")));
     // General: "Startup model" with "Last used" first; the version line.
     auto* startup = d->findChild<QComboBox*>(QString::fromStdString(names::setting("startup", "model")));
     CHECK(startup && startup->itemText(0) == QStringLiteral("Last used"));

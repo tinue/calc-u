@@ -81,6 +81,25 @@ struct SettingsView: View {
                 .frame(width: 90)
                 .accessibilityIdentifier(id)
             }
+        case .folder where row.section == "folders":
+            // Where a loader's file dialog starts (macOS): the folder last
+            // used, or one chosen here; Reset goes back to the folder last used.
+            VStack(alignment: .leading, spacing: 4) {
+                Text(row.label)
+                HStack {
+                    Text(row.shown == "~" ? "The folder last used" : row.shown)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.head)
+                        .accessibilityIdentifier("\(id)-shown")
+                    Spacer()
+                    Button("Choose…") { chooseStartFolder(row) }
+                        .accessibilityIdentifier(id)
+                    Button("Reset") { viewModel.setSetting(row.section, row.key, nil) }
+                        .disabled(!row.resettable)
+                        .accessibilityIdentifier("\(id)-reset")
+                }
+            }
         case .folder:
             // The trace folder of `[trace] location = folder` (macOS).
             if row.section != "trace" || traceLocation == "folder" {
@@ -127,6 +146,22 @@ struct SettingsView: View {
                 .accessibilityIdentifier(id)
             }
         }
+    }
+
+    /// A loader's start folder: only where its dialog starts, so no grant is
+    /// kept (the open panel reaches any folder).
+    private func chooseStartFolder(_ row: TIDialogRow) {
+        #if os(macOS)
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.message = "Choose the \(row.label.lowercased())"
+        panel.directoryURL = viewModel.startFolder(row.key)
+        if panel.runModal() == .OK, let url = panel.url {
+            viewModel.setSetting(row.section, row.key, url.path)
+        }
+        #endif
     }
 
     private func chooseFolder() {

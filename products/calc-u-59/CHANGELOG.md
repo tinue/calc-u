@@ -27,6 +27,7 @@
 - **Full speed** Full speed is now paced at each tick of the app, so its top speed is a little lower. A preset, a reset or a model switch runs as fast as the host allows also where the calculator waits for a key between its steps.
 - **Examples** Under Examples, `fastmode-sst` is the last of "Programs".
 - **Harness** A scripted R/S, GTO or RST goes in while a program runs, held until the ROM has read it; it used to wait for the key scan and was refused after an hour. `key … hold=<duration>` holds each key that long. `wait-finished` waits until the program has ended, and `idle-state` shows whether the calculator takes keys, waits and has finished. <!-- appstore: skip -->
+- **Start folders** On the Mac, Load Preset… and the ASM overlay's Select File start in the folder last used, or in the one set in Settings ▸ Folders (Presets folder, ASM overlay folder; Reset goes back to the folder last used). Windows and Linux get the ASM overlay folder row too, and the preset row is now "Presets folder".
 - **Mac window** The window comes back at its last size and place.
 - **Mac window** The Mac app has one window; a preset opened from the Finder (Open With, or a double-click) loads into it.
 - **iPad and iPhone** Where the calculator stands beside the paper and the control bar is wider than the calculator (iPad mini, iPhone Duo opened flat), the two card buttons are left out, so the calculator keeps its width; a card armed in another layout is fed by its corner.

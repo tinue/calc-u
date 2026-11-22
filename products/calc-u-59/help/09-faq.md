@@ -3,8 +3,8 @@
 ## Where do preset files live?
 
 Anywhere: they are text files ending in `.ti59`, `.ti58` or `.ti58c`.
-On a computer, **File ▸ Load Preset…** opens them (on Windows and Linux
-**Settings ▸ Folders** sets the folder it starts in), and you can drop one
+On a computer, **File ▸ Load Preset…** opens them (**Settings ▸ Folders**
+sets the folder it starts in), and you can drop one
 on the window or, on Windows, double-click it. On the iPhone and the iPad
 the **Preset** button opens the file picker. See [Presets](06-presets.md).
 

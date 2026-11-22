@@ -19,6 +19,9 @@ struct CalculatorView: View {
         Binding(
             get: { filePickerMode },
             set: { newMode in
+                #if os(macOS)
+                if newMode == .asm { openAsmDialog(); return }   // a panel, to start in its folder
+                #endif
                 filePickerMode = newMode
                 if newMode != nil { filePickerPresented = true }
             }
@@ -104,13 +107,30 @@ struct CalculatorView: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = Self.presetTypes
         panel.message = "Select a .ti59, .ti58 or .ti58c preset"
+        panel.directoryURL = viewModel.startFolder("presets")
         if panel.runModal() == .OK, let url = panel.url {
+            viewModel.rememberFolder("presets", of: url)
             viewModel.loadPreset(url)
         }
         #else
         filePickerModeBinding.wrappedValue = .preset
         #endif
     }
+
+    #if os(macOS)
+    /// The ASM overlay's Select File on the Mac: a panel that starts in
+    /// `[folders] asm-overlays` (iOS: the file importer).
+    private func openAsmDialog() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = Self.asmTypes
+        panel.message = "Select an ASM overlay"
+        panel.directoryURL = viewModel.startFolder("asm-overlays")
+        if panel.runModal() == .OK, let url = panel.url {
+            viewModel.rememberFolder("asm-overlays", of: url)
+            viewModel.loadASMOverlayFile(url)
+        }
+    }
+    #endif
 
     @ViewBuilder
     private var layout: some View {

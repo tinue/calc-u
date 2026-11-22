@@ -15,9 +15,10 @@ onto whichever device runs Calc-U-59. With Apple devices, the simplest
 way is to keep your presets in the **Calc-U-59** folder of iCloud Drive
 on your Mac, the save folder the app uses for magnetic cards, and let
 iCloud bring it to your iPhone or iPad; open a preset there with
-**Preset** (Load Preset…). On Windows and Linux, keep them in any folder
-and set **Settings ▸ Folders ▸ Preset folder** to it; to get them onto a
-phone, any folder that syncs to it works.
+**Preset** (Load Preset…). On Windows and Linux, keep them in any folder;
+to get them onto a phone, any folder that syncs to it works. On a
+computer, **Settings ▸ Folders ▸ Presets folder** makes Load Preset…
+start in your presets' folder.
 
 None of that is needed, though: you can write and edit a preset directly
 on an iPhone or iPad in any text editor that saves plain text, with no

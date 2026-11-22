@@ -87,7 +87,7 @@ final class ShellBridgeTests: XCTestCase {
         XCTAssertTrue(TestSession.until(5) { !t.session.shell.settingsDialog.isEmpty })
         let titles = t.session.shell.settingsDialog.map(\.title)
         #if os(macOS)
-        XCTAssertEqual(titles, ["General", "Startup presets", "Display", "Tracing"])
+        XCTAssertEqual(titles, ["General", "Startup presets", "Folders", "Display", "Tracing"])
         #else
         XCTAssertEqual(titles, ["General", "Startup presets", "Display", "Keyboard", "Layout", "Tracing"])
         #endif
@@ -96,6 +96,24 @@ final class ShellBridgeTests: XCTestCase {
         XCTAssertTrue(TestSession.until(5) { t.session.shell.setting("display", "led-style") == "classic" })
         let text = try String(contentsOf: t.folder.appendingPathComponent("Calc-U-59.ini"), encoding: .utf8)
         XCTAssertTrue(text.contains("led-style = classic"), text)
+    }
+
+    /// A loader's start folder: the folder last used after a pick, a fixed
+    /// one over it, and Reset back to the folder last used.
+    func test_start_folder_last_used_and_fixed() throws {
+        let t = try started()
+        XCTAssertTrue(TestSession.until(5) { !t.session.shell.settingsDialog.isEmpty })
+        let used = t.folder.appendingPathComponent("presets-used").path
+        t.session.shell.rememberFolder("presets", ofFile: used + "/a.ti59")
+        XCTAssertTrue(TestSession.until(5) { t.session.shell.startFolder("presets") == used })
+        let fixed = t.folder.appendingPathComponent("presets-fixed").path
+        t.session.shell.setSetting("folders", "presets", value: fixed)
+        XCTAssertTrue(TestSession.until(5) { t.session.shell.startFolder("presets") == fixed })
+        t.session.shell.rememberFolder("presets", ofFile: used + "/b.ti59")   // a pick keeps the fixed folder
+        XCTAssertTrue(TestSession.until(5) { t.session.shell.startFolder("presets") == fixed })
+        t.session.shell.setSetting("folders", "presets", value: nil)   // Reset
+        XCTAssertTrue(TestSession.until(5) { t.session.shell.setting("folders", "presets").isEmpty })
+        XCTAssertEqual(t.session.shell.startFolder("asm-overlays").isEmpty, false, "another kind starts at home")
     }
 
     /// Copy of the paper: on macOS two entries, the picture

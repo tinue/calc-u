@@ -21,18 +21,18 @@
 // StateReader puts them back. `Io::kRestoring` tells the template which
 // way it runs, for the few parts that rebuild something after a restore.
 //
-// Fields: integers, enums, bool and double (by their bits); std::array
-// and std::vector of them (a vector as a count and its items), std::deque,
-// std::string. `fixed(v)` reads a vector only into the size it has now: a
-// part whose memory size comes from its definition (a module's RAM).
+// Fields: integers, enums, bool, float and double (by their bits);
+// std::array and std::vector of them (a vector as a count and its items),
+// std::deque, std::string; a struct by its own `stateIo(Io&)`, field by
+// field, so that no padding byte reaches the state and two saves of the same
+// machine are the same bytes. `fixed(v)` reads a vector only into the size
+// it has now: a part whose memory size comes from its definition (a module's
+// RAM).
 //
 // A reader that meets another tag, a record of another length or the end
 // of the bytes stops: every later field reads as zero and ok() is false
 // with the reason. The caller then puts the state from before back
 // (TIMachine::restoreState): a refused restore changes nothing.
-//
-// `raw(v)` takes a plain struct of the core as its bytes (a display
-// snapshot, a latched processor frame): the same build reads what it wrote.
 
 namespace cu59 {
 
@@ -62,10 +62,16 @@ public:
             std::uint64_t bits = 0;
             std::memcpy(&bits, &v, sizeof bits);
             put(bits);
+        } else if constexpr (std::is_same_v<T, float>) {
+            std::uint32_t bits = 0;
+            std::memcpy(&bits, &v, sizeof bits);
+            put(bits);
         } else if constexpr (std::is_integral_v<T>) {
             put(v);
         } else if constexpr (std::is_array_v<T>) {
             for (const auto& x : v) (*this)(x);
+        } else if constexpr (requires(T& t) { t.stateIo(*this); }) {
+            const_cast<T&>(v).stateIo(*this);   // the writer only reads the fields
         } else {
             container(v);
         }
@@ -73,13 +79,6 @@ public:
     }
     template <class T>
     StateWriter& fixed(const std::vector<T>& v) { return (*this)(v); }
-    template <class T>
-    StateWriter& raw(const T& v) {
-        static_assert(std::is_trivially_copyable_v<T>);
-        const auto* b = reinterpret_cast<const std::uint8_t*>(&v);
-        m_out.insert(m_out.end(), b, b + sizeof(T));
-        return *this;
-    }
 
     std::vector<std::uint8_t> take() { return std::move(m_out); }
 
@@ -147,10 +146,16 @@ public:
             std::uint64_t bits = 0;
             get(bits);
             std::memcpy(&v, &bits, sizeof bits);
+        } else if constexpr (std::is_same_v<T, float>) {
+            std::uint32_t bits = 0;
+            get(bits);
+            std::memcpy(&v, &bits, sizeof bits);
         } else if constexpr (std::is_integral_v<T>) {
             get(v);
         } else if constexpr (std::is_array_v<T>) {
             for (auto& x : v) (*this)(x);
+        } else if constexpr (requires(T& t) { t.stateIo(*this); }) {
+            v.stateIo(*this);
         } else {
             container(v);
         }
@@ -165,18 +170,6 @@ public:
             return *this;
         }
         return (*this)(v);
-    }
-
-    template <class T>
-    StateReader& raw(T& v) {
-        static_assert(std::is_trivially_copyable_v<T>);
-        if (!m_ok || m_pos + sizeof(T) > limit()) {
-            fail("the state ends inside a record");
-            return *this;
-        }
-        std::memcpy(&v, m_in.data() + m_pos, sizeof(T));
-        m_pos += sizeof(T);
-        return *this;
     }
 
     bool ok() const { return m_ok; }

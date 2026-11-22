@@ -36,16 +36,6 @@ and `docs/Process.md` until the closing check at its end has passed.
   "Sanitizers"; three findings were fixed with the option: a signed
   overflow in Calc-U-1600's debugger expressions, two uses after free in
   test code):
-  - Calc-U-59's machine state writes structs as their bytes
-    (`StateWriter::raw` in `core/TIStateRecords.hpp`: `RAM_MASK`,
-    `m_lastDisplay`, `m_stepBoundary` in `TMC0501::stateIo`), padding and
-    all: the padding carries whatever the memory held, so two saves of the
-    same state can differ in those bytes. The machine runs on the same
-    after a restore; `restore_continues_identically_*` and
-    `with_printer_module_and_card_in_reader` fail in `build/asan` only (one
-    byte of `DisplaySnapshot`'s padding), and may with another compiler.
-    Proposed: the fields one by one (a change of the state's bytes,
-    `docs/formats/`).
   - The harness's unpaced advance (`HarnessHost::command`, a key that
     waits) flushes the session after every piece, and each flush computes
     the control state anew (`ControlPart::beforeFlush`), though nothing

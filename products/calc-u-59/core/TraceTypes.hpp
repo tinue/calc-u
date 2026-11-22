@@ -44,6 +44,14 @@ struct CpuFrame {
     uint8_t  displayOn;  ///< 1 when a digit or decimal dot was driven in the last digit-counter revolution, else 0.
     uint8_t  maxDigitDecay; ///< Number of positions (0..12) driven in that revolution (the trace
                             ///< format's field of that name).
+
+    /// Its fields for the machine state (TIStateRecords.hpp), one by one.
+    template <class Io>
+    void stateIo(Io& io) {
+        io(seqno)(pc)(opcode)(digit)(postDigit)(cycleWeight)(KR)(SR)(fA)(fB)(cpuFlags)(R5);
+        io(A)(B)(C)(D)(E)(SCOM)(Sout)(EXT)(PREG)(flags)(m_libAddr);
+        io(REG_ADDR)(RAM_ADDR)(RAM_OP)(m_libAddrReadPos)(displayOn)(maxDigitDecay);
+    }
 };
 
 // ── Debug event ───────────────────────────────────────────────────────────────
@@ -67,4 +75,7 @@ struct TIStepBoundary {
     uint16_t libExecPC;
     bool atStep;        ///< false: idle entry
     uint64_t count;
+
+    template <class Io>
+    void stateIo(Io& io) { io(cpu)(libExecPC)(atStep)(count); }
 };

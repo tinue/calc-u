@@ -33,6 +33,9 @@ struct DisplaySnapshot {
     uint32_t pollTicks{0};        ///< Weighted cycles the interval covered (time = pollTicks / instruction rate).
     float    calcIndicator{0.0f}; ///< mean drive of the C LED (SH pin) over the last poll interval:
                                   ///<   RUN mode: the number of set fA bits; IDLE mode: fA bit 14. (0.0–16.0)
+
+    template <class Io>
+    void stateIo(Io& io) { io(digits)(ctrl)(suppressedMask)(digitDuty)(dpDuty)(pollTicks)(calcIndicator); }
 };
 
 // ── Internal CPU flags ────────────────────────────────────────────────────────
@@ -110,7 +113,11 @@ struct TiConnectors {
 class TMC0501 {
 public:
     // Field mask descriptor (moved here for use in member variables)
-    struct MaskInfo { uint8_t start, end, cpos, cval; };
+    struct MaskInfo {
+        uint8_t start, end, cpos, cval;
+        template <class Io>
+        void stateIo(Io& io) { io(start)(end)(cpos)(cval); }
+    };
 
     explicit TMC0501(ROM& rom, RAM& ram);
 
@@ -315,15 +322,15 @@ public:
     void stateIo(Io& io) {
         io.begin("CPU ");
         io(A)(B)(C)(D)(E)(SCOM)(KR)(SR)(fA)(fB)(EXT)(PREG)(Sout)(flags)(R5)(digit)(addr);
-        io(REG_ADDR)(RAM_ADDR)(RAM_OP).raw(RAM_MASK);
+        io(REG_ADDR)(RAM_ADDR)(RAM_OP)(RAM_MASK);
         io(m_libExecPC)(m_cardSwitchCol)(m_cardPresent)(m_waitingForCard)(m_cardFullData)(m_cardBankBuffer);
         std::uint64_t cardPtr = m_cardPtr;
         io(cardPtr)(m_cardMode)(m_lastWrittenBank);
         m_cardPtr = static_cast<std::size_t>(cardPtr);
-        io(m_digitSegmentsA)(m_digitSegmentsB)(m_digitLitTicks)(m_dpLitTicks).raw(m_lastDisplay);
+        io(m_digitSegmentsA)(m_digitSegmentsB)(m_digitLitTicks)(m_dpLitTicks)(m_lastDisplay);
         io(m_digitSuppressedMask)(m_zeroSuppressRunning)(m_drivenThisRev)(m_drivenLastRev);
         io(m_cSteps)(m_pollSteps)(m_elapsedTicks)(key)(m_pendingOpcode)(m_lastStepWasHWPoll)(m_keySamples);
-        io.raw(m_stepBoundary);
+        io(m_stepBoundary);
         io.end();
     }
 

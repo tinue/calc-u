@@ -198,7 +198,7 @@ static std::vector<cu59::LabelSpan> spansFrom(NSArray<TILabelSpan*>* spans) {
 + (CGFloat)decimalGlowBlurPerDiameter { return cu59::kDecimalGlowBlurPerDiameter; }
 + (CGFloat)decimalGlowOpacity { return cu59::kDecimalGlowOpacity; }
 
-+ (CGFloat)printerWidthUnits { return pc100cpaper::kWidthUnits; }
++ (CGFloat)printerWidthUnits { return double(pc100cpaper::kPaperWidth) / calcu::paper::kPerUnit; }
 + (CGFloat)printerDotRadiusFraction { return pc100cpaper::kDotRadiusFraction; }
 + (CGFloat)printerPaperPaddingX { return 6; }
 + (CGFloat)printerPaperPaddingY { return 8; }

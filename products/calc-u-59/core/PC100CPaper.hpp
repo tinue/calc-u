@@ -32,6 +32,10 @@ inline constexpr double kCharStepUnits = 5.0 + kCharGap;                 ///< 6.
 
 // The same in the paper's Coord (ten-thousandths of a unit).
 inline constexpr Coord kWidth = 1'290'700;
+// The roll is 2.5 inch wide, wider than the head's line: 63.5 mm in the
+// paper's unit of 0.43 mm, the line centred on it.
+inline constexpr Coord kPaperWidth = 1'476'744;
+inline constexpr Coord kMargin = (kPaperWidth - kWidth) / 2;
 inline constexpr Coord kLine = 101'800;
 inline constexpr Coord kFeed = 70'900;
 inline constexpr Coord kCharStep = 65'300;
@@ -45,7 +49,8 @@ extern const char* const kCharacters[64];
 /// The 5 × 7 font, by code: each row a mask, bit 4 the leftmost column.
 extern const std::uint8_t kFont[64][7];
 
-/// The unit 430/1000 mm, 129.07 units wide and all of it printable,
+/// The unit 430/1000 mm, the 2.5 inch roll (147.67 units) with the head's
+/// 129.07 units printable in its middle,
 /// dots 0.76 units across, the greys of 0 to 20 heating cycles,
 /// pictures at 600 dpi, a text layer.
 const calcu::paper::PaperDescription& description();

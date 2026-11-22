@@ -31,7 +31,6 @@ NSString *const TIShellActionHelp = @"help";
 @property (nonatomic, readwrite, copy) NSString *itemID;
 @property (nonatomic, readwrite, copy) NSString *label;
 @property (nonatomic, readwrite) BOOL enabled;
-@property (nonatomic, readwrite) BOOL checkable;
 @property (nonatomic, readwrite) BOOL checked;
 @property (nonatomic, readwrite, copy) NSString *reason;
 @property (nonatomic, readwrite, copy) NSString *confirm;
@@ -60,7 +59,6 @@ NSString *const TIShellActionHelp = @"help";
 @property (nonatomic, readwrite, copy) NSString *label;
 @property (nonatomic, readwrite) BOOL plugged;
 @property (nonatomic, readwrite, copy) NSArray<TIMenuItem *> *choices;
-@property (nonatomic, readwrite, copy) NSString *mediumKind;
 @end
 @interface TIBarFit ()
 @property (nonatomic, readwrite) CGFloat width;
@@ -88,9 +86,6 @@ NSString *const TIShellActionHelp = @"help";
 @property (nonatomic, readwrite, copy) NSString *shown;
 @property (nonatomic, readwrite, copy) NSArray<NSString *> *choiceValues;
 @property (nonatomic, readwrite, copy) NSArray<NSString *> *choiceLabels;
-@property (nonatomic, readwrite) BOOL resettable;
-@property (nonatomic, readwrite, nullable) NSNumber *minimum;
-@property (nonatomic, readwrite, nullable) NSNumber *maximum;
 @property (nonatomic, readwrite) BOOL isToggle;
 @end
 @implementation TIDialogRow
@@ -112,7 +107,6 @@ TIMenuItem *itemFrom(const shell::MenuItem &i) {
     t.itemID = ns(i.id);
     t.label = ns(i.label);
     t.enabled = i.enabled;
-    t.checkable = i.checkable;
     t.checked = i.checked;
     t.reason = ns(i.reason);
     t.confirm = ns(i.confirm);
@@ -236,7 +230,6 @@ static TIBarControl *controlFrom(const shell::BarControl &c, shell::BarGroup gro
     t.label = ns(c.label);
     t.plugged = c.plugged;
     t.choices = itemsFrom(c.choices);
-    t.mediumKind = ns(c.mediumKind);
     return t;
 }
 
@@ -274,9 +267,6 @@ static TIBarControl *controlFrom(const shell::BarControl &c, shell::BarGroup gro
             t.choiceValues = values;
             t.choiceLabels = labels;
             t.isToggle = r.row.widget == shell::DialogRow::Widget::Choice && r.choices.size() == 2 && truth && falsity;
-            t.resettable = r.resettable;
-            t.minimum = r.min ? @(*r.min) : nil;
-            t.maximum = r.max ? @(*r.max) : nil;
             [rows addObject:t];
         }
         TIDialogSection *s = [[TIDialogSection alloc] init];
@@ -420,8 +410,6 @@ static TIBarControl *controlFrom(const shell::BarControl &c, shell::BarGroup gro
 }
 - (NSInteger)pointerKey { return _lastKey; }
 
-+ (NSString *)versionText { return ns(product().version); }
-+ (NSString *)buildId { return ns(product().build); }
 + (NSArray<NSString *> *)aboutLines {
     NSMutableArray *out = [NSMutableArray array];
     for (const auto &l : product().aboutLines) [out addObject:ns(l)];

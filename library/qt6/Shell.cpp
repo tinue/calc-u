@@ -99,8 +99,8 @@ void Shell::setFaceplate(QWidget* faceplate, shell::HitMap map, FaceplateGeometr
     refresh(QString());
 }
 
-void Shell::addBarControl(shell::BarGroup group, std::string after, QWidget* w) {
-    bar_->addProductControl(group, std::move(after), w);
+void Shell::addBarControl(shell::BarGroup group, QWidget* w) {
+    bar_->addProductControl(group, w);
 }
 
 void Shell::registerMediaControls(std::string kind, Factory f) {

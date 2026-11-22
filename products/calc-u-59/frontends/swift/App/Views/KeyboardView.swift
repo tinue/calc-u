@@ -18,8 +18,6 @@ struct KeyboardView: View {
 
     // ── Colors ──────────────────────────────────────────────────────────
 
-    private static let cardEdge = Color(red: 0x0A/255.0, green: 0x08/255.0, blue: 0x06/255.0)
-    private static let maroon = Color(red: 0x1C/255.0, green: 0x06/255.0, blue: 0x06/255.0)
 
     /// The art by the control state's model (no copy of the model facts).
     private var canvasImageName: String { viewModel.modelID == "TI-59" || viewModel.modelID.isEmpty ? "ti59_base" : "ti58_base" }

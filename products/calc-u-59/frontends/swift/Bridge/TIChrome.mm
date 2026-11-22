@@ -21,7 +21,6 @@ static TIChromeColour ti(const calcu::shell::Colour& c) {
 + (TIChromeColour)pillPressed { return ti(colours().pillPressed); }
 + (TIChromeColour)pillOff { return ti(colours().pillOff); }
 + (TIChromeColour)pillText { return ti(colours().pillText); }
-+ (TIChromeColour)pillTextOff { return ti(colours().pillTextOff); }
 + (TIChromeColour)output { return ti(colours().output); }
 + (TIChromeColour)outputText { return ti(colours().outputText); }
 + (TIChromeColour)outputBorder { return ti(colours().outputBorder); }
@@ -43,5 +42,4 @@ static TIChromeColour ti(const calcu::shell::Colour& c) {
 + (CGFloat)printerMinWidth { return sizes().printerMinWidth; }
 + (CGFloat)printerMaxWidth { return sizes().printerMaxWidth; }
 + (CGFloat)debuggerMinWidth { return sizes().debuggerMinWidth; }
-+ (CGFloat)textScale:(CGFloat)faceplateWidth { return cu59::tiChrome().textScale(faceplateWidth); }
 @end

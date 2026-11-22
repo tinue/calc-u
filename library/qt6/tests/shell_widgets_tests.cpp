@@ -231,14 +231,14 @@ TEST(bar_on_widgets) {
         CHECK(ids.contains(QString::fromStdString(names::moreItem("settings"))));
         CHECK(ids.contains(QString::fromStdString(names::moreItem("quit"))));
     }
-    // A product control in the group it names.
+    // A product control at the end of the group it names.
     auto* extra = new QToolButton();
     extra->setObjectName(QStringLiteral("tp-disk"));
     extra->setText(QStringLiteral("Disk"));
-    w.shell->addBarControl(shell::BarGroup::Places, "printer", extra);
+    w.shell->addBarControl(shell::BarGroup::Places, extra);
     w.settle();
     CHECK(x(w.find<QWidget>(names::barPlace("printer"))) < x(extra));
-    CHECK(x(extra) < x(aux));
+    CHECK(x(aux) < x(extra));
     // The model picker sends the switch.
     model->activated(1);
     w.settle();

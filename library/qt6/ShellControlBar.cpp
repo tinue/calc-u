@@ -302,11 +302,11 @@ void ShellControlBar::set(const std::vector<shell::BarGroupModel>& model) {
     for (std::size_t g = 0; g < groups_.size(); ++g) layoutGroup(static_cast<shell::BarGroup>(g));
 }
 
-void ShellControlBar::addProductControl(shell::BarGroup group, std::string after, QWidget* w) {
+void ShellControlBar::addProductControl(shell::BarGroup group, QWidget* w) {
     const auto g = static_cast<std::size_t>(group);
     w->setParent(groups_[g]);
     w->show();   // shown until its product hides it
-    productWidgets_[g].push_back(Product{std::move(after), w});
+    productWidgets_[g].push_back(w);
     layoutGroup(group);
 }
 
@@ -314,26 +314,17 @@ void ShellControlBar::layoutGroup(shell::BarGroup group) {
     const auto g = static_cast<std::size_t>(group);
     auto* l = static_cast<QHBoxLayout*>(groups_[g]->layout());
     while (l->count() > 0) delete l->takeAt(0);   // the items only; the widgets stay
+    // The shell's controls, then the product's: theirs at the end of the
+    // group, so no shell control moves when one comes or goes.
     std::vector<QWidget*> order;
-    auto productsAfter = [&](const std::string& id) {
-        for (const auto& p : productWidgets_[g])
-            if (p.after == id) order.push_back(p.widget);
-    };
-    for (const auto& [id, w] : shellWidgets_[g]) {
-        order.push_back(w);
-        productsAfter(id);
-    }
-    for (const auto& p : productWidgets_[g]) {   // after "" or a control that is not there: at the end
-        bool placed = std::find(order.begin(), order.end(), p.widget) != order.end();
-        if (!placed) order.push_back(p.widget);
-    }
+    for (const auto& [id, w] : shellWidgets_[g]) order.push_back(w);
+    for (QWidget* w : productWidgets_[g]) order.push_back(w);
     bool any = false;
     for (QWidget* w : order) {
         l->addWidget(w);
         // A product's control keeps the visibility its product gives it
         // (shown from its own product entry); the shell's are shown.
-        const bool product = std::any_of(productWidgets_[g].begin(), productWidgets_[g].end(),
-                                         [w](const Product& p) { return p.widget == w; });
+        const bool product = std::find(productWidgets_[g].begin(), productWidgets_[g].end(), w) != productWidgets_[g].end();
         if (!product) w->show();
         any = any || !w->isHidden();
     }

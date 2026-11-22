@@ -25,7 +25,6 @@ This skill covers all work inside `frontends/swift/Calc-U-59UITests/`.
 | `HarnessClient.swift` | A line client for harness attach: `connect(port:)`, `command(_:)` (message lines skipped), `closedByPeer()` |
 | `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `display-text`, `wait` on the app's clock, `quit`; Home and back, a command refused while suspended; a press on `led-display` for full speed while a program runs, then a touch on R/S of the faceplate. In `UIRegressionTests` |
 | `PacingTests.swift` | A TI-59 keeps one minute, `ticks` over attach on port 59161. Checkpoint: only in the test plan `PacingCheckpoint`, skipped by `UIRegressionTests` |
-| `Calc_U_59UITestsLaunchTests.swift` | Default launch test (auto-generated, rarely edited) |
 | `UIRegressionTests.xctestplan` | Local regression test plan (no CI job runs XCUITests) |
 | `Screenshots.xctestplan` | Test plan for the screenshot run (`bin/run-screenshots`) |
 | `PacingCheckpoint.xctestplan` | `PacingTests` only (CTest `CalcU59PacingIOS`, Checkpoint) |

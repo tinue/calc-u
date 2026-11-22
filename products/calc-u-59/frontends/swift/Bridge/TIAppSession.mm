@@ -358,7 +358,6 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
 @property (nonatomic, readwrite, copy) NSString *entryID;
 @property (nonatomic, readwrite, copy) NSString *label;
 @property (nonatomic, readwrite, copy) NSString *shortLabel;
-@property (nonatomic, readwrite, copy, nullable) NSString *tooltip;
 @property (nonatomic, readwrite) BOOL canChoose;
 @property (nonatomic, readwrite) BOOL chosen;
 @end
@@ -428,7 +427,6 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         auto settings = std::make_shared<calcu::shell::HostSettings>(decl, dirs, path);
         st::SettingsFile* file = &settings->file();
         const st::Paths* paths = &settings->paths();
-        _settingsFilePath = ns(file->path());
         _settingsProblem = file->problem().empty() ? nil : ns(file->problem());
 
         cu59::TIAppSetup setup;
@@ -802,8 +800,6 @@ static const char* const kCardReaderPlace = "card-reader";
         t.entryID = ns(e.id);
         t.label = e.group == G::Empty ? @"None" : ns(e.label);
         t.shortLabel = ns(calcu::media::shortLabel(e));
-        const auto& tip = e.canChoose ? e.tooltip : e.hint;
-        t.tooltip = tip ? ns(*tip) : nil;
         t.canChoose = e.canChoose;
         t.chosen = e.chosen;
         [out addObject:t];
@@ -875,11 +871,6 @@ static const char* const kCardReaderPlace = "card-reader";
 - (BOOL)calculatorTabAvailable {
     const auto* c = [self controlState];
     return !c || entryAvailable(c, cu59::entries::kCalculatorTab) ? YES : NO;   // before the first state: yes
-}
-- (NSString *)calculatorTabReason {
-    std::string why;
-    entryAvailable([self controlState], cu59::entries::kCalculatorTab, &why);
-    return ns(why);
 }
 + (TIButtonUse)buttonUseFor:(TIRunLevel)level hasState:(BOOL)hasState paused:(BOOL)paused owner:(TIRunLevel)owner {
     calcu::debugger::RunState s;

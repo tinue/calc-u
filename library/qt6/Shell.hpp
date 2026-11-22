@@ -74,7 +74,7 @@ public:
         std::function<bool(double x, double y)> productFirst = {};   // a press the product takes, in hit-map units
     };
     void setFaceplate(QWidget*, shell::HitMap, FaceplateGeometry);
-    void addBarControl(shell::BarGroup, std::string after, QWidget*);
+    void addBarControl(shell::BarGroup, QWidget*);   // at the end of the group
     using Factory = std::function<QWidget*(const sessions::Value& entry, QWidget* parent)>;
     void registerMediaControls(std::string mediumKind, Factory);   // the library's medium kinds; the TI card
     void registerSlotPicker(Factory);                              // the library's module picker

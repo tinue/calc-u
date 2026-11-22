@@ -99,7 +99,6 @@ typedef struct {
 @property (nonatomic, readonly, copy) NSString *entryID;      ///< what `media.choose` takes
 @property (nonatomic, readonly, copy) NSString *label;        ///< the name ("Master Library")
 @property (nonatomic, readonly, copy) NSString *shortLabel;   ///< the closed picker's text ("ML", "—")
-@property (nonatomic, readonly, copy, nullable) NSString *tooltip;
 @property (nonatomic, readonly) BOOL canChoose;               ///< false: not now
 @property (nonatomic, readonly) BOOL chosen;                  ///< what the place holds
 @end
@@ -202,7 +201,6 @@ typedef struct {
 /// The settings file's problem when it was opened, nil when none.
 @property (nonatomic, readonly, nullable) NSString *settingsProblem;
 /// The settings file of this session (its path).
-@property (nonatomic, readonly) NSString *settingsFilePath;
 /// Suspend is carried out (the TI-58C memory written), then no more
 /// calls; `done` on the main thread once the suspend was carried out.
 - (void)suspendWithCompletion:(nullable void (^)(void))done;
@@ -324,7 +322,6 @@ typedef struct {
 // the CALCULATOR tab can be used, and why not.
 @property (nonatomic, readonly) BOOL asmRunAvailable;
 @property (nonatomic, readonly) BOOL calculatorTabAvailable;
-@property (nonatomic, readonly) NSString *calculatorTabReason;
 /// The rule itself, for a run state given by its fields (the unit tests).
 + (TIButtonUse)buttonUseFor:(TIRunLevel)level hasState:(BOOL)hasState paused:(BOOL)paused
                       owner:(TIRunLevel)owner NS_SWIFT_NAME(buttonUse(for:hasState:paused:owner:));

@@ -135,7 +135,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         return new TapeControl(*m_controller, p);
     });
     m_disk = new DiskControl(*m_controller, nullptr);
-    m_shell->addBarControl(calcu::shell::BarGroup::Media, "", m_disk);
+    m_shell->addBarControl(calcu::shell::BarGroup::Media, m_disk);
     m_disk->refresh();
 
     connect(&host(), &calcu::qt6::SessionHost::topicChanged, this, &MainWindow::onTopic);

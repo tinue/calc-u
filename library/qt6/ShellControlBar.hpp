@@ -43,7 +43,7 @@ public:
 
     ShellControlBar(Shell&, QWidget* parent = nullptr);
     void set(const std::vector<shell::BarGroupModel>&);
-    void addProductControl(shell::BarGroup, std::string after, QWidget*);
+    void addProductControl(shell::BarGroup, QWidget*);   // at the end of the group
     void setSlotFactory(Factory f) {   // the next set() builds anew
         slotFactory_ = std::move(f);
         shown_.clear();
@@ -61,10 +61,6 @@ protected:
 
 
 private:
-    struct Product {
-        std::string after;
-        QWidget* widget;
-    };
     QWidget* build(const shell::BarControl&, QWidget* parent);
     Choose choose() { return [this](const shell::MenuItem& i) { chooseItem(i); }; }
     void chooseItem(const shell::MenuItem&);
@@ -79,7 +75,7 @@ private:
     static constexpr std::size_t kGroups = 5;   // one per shell::BarGroup
     std::array<QWidget*, kGroups> groups_{};
     std::array<std::vector<std::pair<std::string, QWidget*>>, kGroups> shellWidgets_;
-    std::array<std::vector<Product>, kGroups> productWidgets_;
+    std::array<std::vector<QWidget*>, kGroups> productWidgets_;
     std::string shown_;
     Factory slotFactory_;
     std::map<std::string, Factory> mediaFactories_;

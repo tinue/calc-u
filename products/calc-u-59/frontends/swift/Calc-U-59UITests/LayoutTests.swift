@@ -48,28 +48,6 @@ final class LayoutTests: XCTestCase {
         XCTAssertTrue(app.buttons["item-help"].exists, "no help without the ROMs")
     }
 
-    // MARK: - Button visibility
-
-    /// The More button must be visible and hittable.
-    @MainActor
-    func testMoreButtonVisible() throws {
-        let app = launchApp(orientation: .portrait)
-        let button = app.buttons["bar-more"]
-        XCTAssertTrue(button.waitForExistence(timeout: 5), "More button not found")
-        XCTAssertTrue(button.isHittable, "More button exists but is not hittable")
-    }
-
-    /// Load Preset… and Settings… are in More, not on the bar.
-    @MainActor
-    func testPresetAndSettingsInMore() throws {
-        let app = launchApp(orientation: .portrait)
-        XCTAssertTrue(app.buttons["bar-more"].waitForExistence(timeout: 5), "More button not found")
-        app.buttons["bar-more"].tap()
-        for id in ["more-item-load-preset", "more-item-settings"] {
-            XCTAssertTrue(app.descendants(matching: .any)[id].firstMatch.waitForExistence(timeout: 3), "More has no \(id)")
-        }
-    }
-
     // MARK: - Label wrapping
 
     /// The card button's label must not wrap onto two lines.

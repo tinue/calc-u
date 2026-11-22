@@ -1,13 +1,11 @@
 # Colour literals check_chrome_colours.sh lets pass, each with its reason.
 # Faceplate and display artwork, not chrome: the LED's colours come from
-# app/LedGeometry, the card edge and the maroon of the TI's case are the
-# artwork's.
+# app/LedGeometry.
 frontends/qt6/app/LedRenderer.cpp
 # The faceplate's keys and the cue card's ink: the artwork's black.
 frontends/qt6/app/KeyboardWidget.cpp	Qt::black
 frontends/qt6/app/CueCardRenderer.cpp	Qt::black
 frontends/swift/App/Views/LEDDisplayView.swift
-frontends/swift/App/Views/KeyboardView.swift	static let (cardEdge|maroon)
 frontends/web/src/painters.js
 frontends/web/src/CalculatorFace.jsx
 # The development page around the client and the installed app's page and

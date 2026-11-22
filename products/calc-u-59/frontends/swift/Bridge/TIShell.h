@@ -26,7 +26,6 @@ typedef NS_ENUM(NSInteger, TIMenuItemKind) {
 @property (nonatomic, readonly, copy) NSString *itemID;   ///< stable: `item-<id>`, `more-item-<id>`
 @property (nonatomic, readonly, copy) NSString *label;
 @property (nonatomic, readonly) BOOL enabled;
-@property (nonatomic, readonly) BOOL checkable;
 @property (nonatomic, readonly) BOOL checked;
 @property (nonatomic, readonly, copy) NSString *reason;   ///< why it cannot be used now
 /// A question asked before it is carried out (Cold boot behind More), "" for none.
@@ -84,7 +83,6 @@ typedef NS_ENUM(NSInteger, TIBarGroup) {
 @property (nonatomic, readonly) BOOL groupPushed;
 /// A picker: its entries (the running one checked); a button: its one choice; More: its items.
 @property (nonatomic, readonly, copy) NSArray<TIMenuItem *> *choices;
-@property (nonatomic, readonly, copy) NSString *mediumKind;
 @end
 
 typedef NS_ENUM(NSInteger, TIDialogWidget) {
@@ -107,9 +105,6 @@ typedef NS_ENUM(NSInteger, TIDialogWidget) {
 @property (nonatomic, readonly, copy) NSString *shown;   ///< a folder with `~`
 @property (nonatomic, readonly, copy) NSArray<NSString *> *choiceValues;
 @property (nonatomic, readonly, copy) NSArray<NSString *> *choiceLabels;
-@property (nonatomic, readonly) BOOL resettable;
-@property (nonatomic, readonly, nullable) NSNumber *minimum;
-@property (nonatomic, readonly, nullable) NSNumber *maximum;
 /// A choice of `true` and `false`, drawn as a Toggle.
 @property (nonatomic, readonly) BOOL isToggle;
 @end
@@ -191,8 +186,6 @@ extern NSString *const TIShellActionHelp;
 /// The version with the build number (3.0.0-0) and the build ID
 /// (tools/build-id.cmake: the commit, pre- while the CHANGELOG entry is
 /// open, -dirty), as the About and the Settings show them.
-@property (class, nonatomic, readonly) NSString *versionText;
-@property (class, nonatomic, readonly) NSString *buildId;
 @property (class, nonatomic, readonly) NSArray<NSString *> *aboutLines;
 @property (class, nonatomic, readonly) NSArray<NSArray<NSString *> *> *aboutLinks;   ///< [label, address]
 @property (class, nonatomic, readonly) NSString *helpURL;

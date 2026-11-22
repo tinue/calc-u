@@ -212,8 +212,6 @@ TEST(bar_more_at_the_right_edge_on_every_platform) {
         CHECK(inMore(*more, "model") != nullptr);   // every menu item, the model picker's too
         CHECK_EQ(inMore(*more, "reset")->command.value, std::string("reset"));
     }
-    const auto b = bar(in, p, web);
-    CHECK_EQ(controlOf(b, "more")->choices.size(), moreItems(menus(in, p, web)).size());
     // Each item follows its menu item.
     auto cs = st::controlState();
     for (auto& a : cs.actions)

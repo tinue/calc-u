@@ -30,7 +30,6 @@ typedef struct {
 @property (class, readonly) TIChromeColour pillPressed;
 @property (class, readonly) TIChromeColour pillOff;
 @property (class, readonly) TIChromeColour pillText;
-@property (class, readonly) TIChromeColour pillTextOff;
 @property (class, readonly) TIChromeColour output;
 @property (class, readonly) TIChromeColour outputText;
 @property (class, readonly) TIChromeColour outputBorder;
@@ -53,7 +52,6 @@ typedef struct {
 @property (class, readonly) CGFloat printerMaxWidth;
 @property (class, readonly) CGFloat debuggerMinWidth;
 /// The bar's and the panels' text scale for a faceplate this wide.
-+ (CGFloat)textScale:(CGFloat)faceplateWidth;
 @end
 
 NS_ASSUME_NONNULL_END

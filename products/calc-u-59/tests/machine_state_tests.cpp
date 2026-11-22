@@ -4,11 +4,14 @@
 // then restores in the same run, and in a second run set up the same way
 // after another time, and compares.
 #include "../app/HarnessProduct.hpp"
+#include "../core/TIStateRecords.hpp"
 #include "TestHarness.hpp"
 #include "harness/Run.hpp"
 #include "machine/Machine.hpp"
 #include "media/MediaPlace.hpp"
+#include <cstring>
 #include <filesystem>
+#include <new>
 #include <fstream>
 #include <iterator>
 #include <memory>
@@ -16,6 +19,43 @@
 #include <vector>
 
 using namespace calcu::harness;
+
+// A struct goes into the state field by field: its padding bytes never do,
+// so two saves of the same machine are the same bytes.
+namespace {
+struct Padded {
+    std::uint8_t a = 0;
+    float f = 0;   // three padding bytes before it
+    std::uint16_t b = 0;
+    template <class Io>
+    void stateIo(Io& io) { io(a)(f)(b); }
+};
+} // namespace
+
+TEST(state_record_struct_by_its_fields) {
+    auto save = [](std::uint8_t fill) {
+        alignas(Padded) unsigned char memory[sizeof(Padded)];
+        std::memset(memory, fill, sizeof memory);   // what the memory held before
+        auto* p = new (memory) Padded;
+        p->a = 7;
+        p->f = 1.5f;
+        p->b = 0x1234;
+        cu59::StateWriter w;
+        w.begin("TEST");
+        w(*p);
+        w.end();
+        return w.take();
+    };
+    const auto one = save(0x00), two = save(0xFF);
+    CHECK(one == two);
+    CHECK_EQ(one.size(), std::size_t{8 + 1 + 4 + 2});
+    Padded back;
+    cu59::StateReader r(one);
+    r.begin("TEST");
+    r(back);
+    r.end();
+    CHECK(r.ok() && back.a == 7 && back.f == 1.5f && back.b == 0x1234);
+}
 
 namespace {
 

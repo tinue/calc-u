@@ -37,7 +37,12 @@ cs::ProductDecl makeDecl() {
     d.fallbackModel = "TI-59";
     d.keys.push_back(cs::family::startupModel());
     d.keys.push_back(cs::family::startupLastModel());
-    for (const std::string& m : d.models) d.keys.push_back(cs::family::presetFor(m));
+    // A fresh install starts each model with its bundled startup preset
+    // (the Master Library and the PC-100C); the TI-58C with none, as a
+    // preset cold boots it and its constant memory would not come back.
+    d.keys.push_back(cs::family::presetFor("TI-59", "examples:startup/default-ti59.ti59"));
+    d.keys.push_back(cs::family::presetFor("TI-58", "examples:startup/default-ti58.ti58"));
+    d.keys.push_back(cs::family::presetFor("TI-58C"));
     d.keys.push_back(cs::family::saveFolder());
     d.keys.push_back(cs::family::traceFolder());
     d.keys.push_back(cs::family::traceMaxFileSizeMb());

@@ -37,6 +37,10 @@ struct WebStart {
     settings::HostDirs dirs;             // FrontendKind::Web, settingsBase, saveFolder
     std::string bundleDir = "/bundle", presetsDir = "/presets", uploadsDir = "/uploads";
     StorageMode storage = StorageMode::Kept;
+    // A new settings file with the keys' first values (a fresh install's
+    // startup presets); false: bare (the worker's `?bare=1`, the demo and
+    // test pages).
+    bool firstValues = true;
     std::string storageSentence;         // sentences.js; empty when kept
     // The shell's own part (web.start, web.storage): the factory lists it
     // first among the session's parts.

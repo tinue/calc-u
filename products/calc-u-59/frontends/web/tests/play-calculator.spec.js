@@ -781,6 +781,14 @@ test('a preset screenshot is offered as a download, not listed as a trace', asyn
 
 // ── The standalone app (app/) ────────────────────────────────────────────
 
+// A fresh install starts the TI-59 with its startup preset: the Master
+// Library and the PC-100C (the demo page starts bare).
+test('the installed app starts with the startup preset', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 1000 });
+  await page.goto('app/');
+  await expect(el(page, 'paper-owner')).toHaveText('PC-100C', { timeout: 15000 });
+});
+
 test('the standalone app follows the window as it rotates', async ({ page }) => {
   // iPhone: portrait pages; in landscape calculator and printer.
   await page.setViewportSize({ width: 440, height: 956 });

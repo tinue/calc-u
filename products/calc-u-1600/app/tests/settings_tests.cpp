@@ -165,7 +165,18 @@ TEST(first_start_defaults_and_writes_file) {
     CHECK(file.outcome() == cs::Outcome::Created);
     CHECK(fs::exists(path));
     const std::string text = readText(path);
-    CHECK(text == cs::SettingsFile::defaultText(cu1600::settingsDecl()));
+    // The defaults but each model's startup preset (its first value).
+    std::string want = cs::SettingsFile::defaultText(cu1600::settingsDecl());
+    for (const char* m : {"PC-1500", "PC-1500A", "PC-1600"}) {
+        const std::string empty = std::string(m) + " =\n";
+        const auto at = want.find(empty);
+        CHECK(at != std::string::npos);
+        if (at == std::string::npos) continue;
+        std::string file = std::string(m) == "PC-1500" ? "default-pc1500.pc1500"
+                         : std::string(m) == "PC-1500A" ? "default-pc1500a.pc1500a" : "default-pc1600.pc1600";
+        want.replace(at, empty.size(), std::string(m) + " = examples:startup/" + file + "\n");
+    }
+    CHECK(text == want);
     CHECK(text.rfind("format-version = 1\n", 0) == 0);
 
     cu1600::Settings s(file);

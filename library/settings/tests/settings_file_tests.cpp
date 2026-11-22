@@ -156,6 +156,25 @@ TEST(settings_first_start_writes_version_and_every_key) {
     CHECK(SettingsFile::open(testProduct(), iniPath(dir)).outcome() == Outcome::Read);
 }
 
+// A key's first value goes into a new file (a fresh install's startup
+// preset); a run without a file and a file without the key keep the default.
+TEST(settings_first_value_only_in_a_new_file) {
+    ProductDecl d = testProduct();
+    for (KeyDecl& k : d.keys)
+        if (k.section == "preset" && k.key == "Model-A") k.firstValue = "examples:startup/a.test";
+    TempDir dir;
+    const SettingsFile f = SettingsFile::open(d, iniPath(dir));
+    CHECK(f.outcome() == Outcome::Created);
+    CHECK_EQ(f.text("preset", "Model-A"), std::string("examples:startup/a.test"));
+    CHECK_EQ(f.text("preset", "Model-B"), std::string());
+    CHECK(readText(iniPath(dir)).find("Model-A = examples:startup/a.test\n") != std::string::npos);
+    CHECK_EQ(SettingsFile::open(d, iniPath(dir)).text("preset", "Model-A"), std::string("examples:startup/a.test"));
+    CHECK_EQ(SettingsFile::defaultsOnly(d).text("preset", "Model-A"), std::string());
+    TempDir other;
+    writeText(iniPath(other), "format-version = 1\n[preset]\nModel-B =\n");
+    CHECK_EQ(SettingsFile::open(d, iniPath(other)).text("preset", "Model-A"), std::string());
+}
+
 TEST(settings_no_version_line_starts_with_defaults_and_says_so) {
     TempDir dir;
     const std::string noVersion = "[test]\nname = mine\n";

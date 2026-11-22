@@ -39,6 +39,10 @@ browser's storage for the page.
 - `[preset] PC-1500A`: the startup preset of the PC-1500A; empty: none.
 - `[preset] PC-1600`: the startup preset of the PC-1600; empty: none.
 
+The first start sets each to the model's bundled startup preset: the
+CE-150 and a CE-163F on the PC-1500 and PC-1500A, the CE-1600P with its
+floppy and a CE-1600M and a CE-1601M (a RAM disk) on the PC-1600.
+
 A startup preset is applied at each start and each switch to its model
 ([Presets](06-presets.md)).
 

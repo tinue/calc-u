@@ -44,11 +44,12 @@ struct WebParts {
     calcu::shell::HostSettings settings;
     std::unique_ptr<cu59::TIAppPart> app;
     std::unique_ptr<cu59::TIWebPart> web;
-    explicit WebParts(const calcu::settings::HostDirs& dirs) : settings(s59::settingsDecl(), dirs) {}
+    WebParts(const calcu::settings::HostDirs& dirs, bool firstValues)
+        : settings(s59::settingsDecl(), dirs, std::nullopt, firstValues) {}
 };
 
 calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
-    auto parts = std::make_shared<WebParts>(start.placesDirs());
+    auto parts = std::make_shared<WebParts>(start.placesDirs(), start.firstValues);
     std::error_code ec;
     std::filesystem::create_directories(start.dirs.saveFolder, ec);
 

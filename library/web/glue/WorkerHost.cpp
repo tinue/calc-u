@@ -85,6 +85,7 @@ WorkerHost::WorkerHost(const AppSessionFactory& factory, val start)
     const val storage = start["storage"];
     start_.storage = storageModeNamed(text(storage, "mode"));
     start_.storageSentence = text(storage, "sentence");
+    start_.firstValues = !start["bare"].isTrue();
     start_.shellPart = part_.get();
     try {
         WebSession made = factory(start_);

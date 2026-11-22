@@ -30,6 +30,11 @@ struct KeyDecl {
     std::optional<long> min, max;      // Integer; outside -> the default
     bool writtenByApp = false;         // [window], [folders], last-model
     std::string help;                  // one line; above the key in a new file, and for the help's settings chapter
+    // Written in place of the default into a new settings file (a
+    // frontend's first start), where a fresh install starts with more
+    // than the default: a model's startup preset. A run without a file
+    // (the harness) and a file that lacks the key take the default.
+    std::string firstValue;
 };
 
 struct ProductDecl {
@@ -51,7 +56,7 @@ inline constexpr int kFormatVersion = 1;
 namespace family {
 KeyDecl startupModel();                              // [startup] model = last
 KeyDecl startupLastModel();                          // [startup] last-model (app)
-KeyDecl presetFor(const std::string& model);         // [preset] <model>
+KeyDecl presetFor(const std::string& model, const std::string& firstPreset = {});   // [preset] <model>
 KeyDecl saveFolder();                                // [storage] save-folder
 KeyDecl cassetteFolder();                                // [storage] cassette-folder
 KeyDecl traceFolder();                               // [trace] folder

@@ -7,8 +7,8 @@
 namespace calcu::shell {
 
 HostSettings::HostSettings(const settings::ProductDecl& decl, settings::HostDirs dirs,
-                           std::optional<std::string> filePath)
-    : file_(settings::SettingsFile::open(decl, filePath ? *filePath : settings::settingsFilePath(decl, dirs))),
+                           std::optional<std::string> filePath, bool firstValues)
+    : file_(settings::SettingsFile::open(decl, filePath ? *filePath : settings::settingsFilePath(decl, dirs), firstValues)),
       paths_(file_, std::move(dirs)) {}
 
 namespace detail {

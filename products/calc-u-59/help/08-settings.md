@@ -33,12 +33,16 @@ Done. On iOS there is no About; the version is in General.
 
 `[preset] <model>` of the family has one key per model here:
 
-- `[preset] TI-59`: the startup preset of the TI-59; empty: none.
-- `[preset] TI-58`: the startup preset of the TI-58; empty: none.
-- `[preset] TI-58C`: the startup preset of the TI-58C; empty: none. A
-  TI-58C built from a startup preset starts from a cold boot, and the
-  constant memory file is neither read nor written for it
-  ([Constant memory](09-constant-memory.md)).
+- `[preset] TI-59`: the startup preset of the TI-59; empty: none. The
+  first start sets it to the bundled one (the Master Library and the
+  PC-100C).
+- `[preset] TI-58`: the startup preset of the TI-58; empty: none. The
+  first start sets it to the bundled one (the Master Library and the
+  PC-100C).
+- `[preset] TI-58C`: the startup preset of the TI-58C; empty: none, also
+  at the first start. A TI-58C built from a startup preset starts from a
+  cold boot, and the constant memory file is neither read nor written
+  for it ([Constant memory](09-constant-memory.md)).
 
 Without a startup preset a model starts with the Master Library module
 and no printer.

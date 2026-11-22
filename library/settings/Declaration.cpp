@@ -102,6 +102,8 @@ std::vector<std::string> checkDeclaration(const ProductDecl& product) {
             problems.push_back(where + ": declared twice");
         if (!d.defaultValue.empty() && !accepts(product, d, d.defaultValue))
             problems.push_back(where + ": the key does not accept its default");
+        if (!d.firstValue.empty() && !accepts(product, d, d.firstValue))
+            problems.push_back(where + ": the key does not accept its first value");
     }
     return problems;
 }
@@ -117,8 +119,10 @@ KeyDecl startupLastModel() {
     d.writtenByApp = true;
     return d;
 }
-KeyDecl presetFor(const std::string& model) {
-    return key("preset", model, ValueKind::Text, "", "The startup preset of the " + model + "; empty: none.");
+KeyDecl presetFor(const std::string& model, const std::string& firstPreset) {
+    KeyDecl d = key("preset", model, ValueKind::Text, "", "The startup preset of the " + model + "; empty: none.");
+    d.firstValue = firstPreset;
+    return d;
 }
 KeyDecl saveFolder() {
     return key("storage", "save-folder", ValueKind::Path, "",

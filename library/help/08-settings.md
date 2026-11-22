@@ -29,7 +29,8 @@ default.
 
 All settings are kept in one text file, `<Product>.ini`, named after the
 product as it is written. It is written when the product first starts,
-with every key at its default and a comment line above each key, and
+with every key at its default (a model's startup preset at the bundled
+one, where the product names it) and a comment line above each key, and
 again whenever a setting changes. It is read when the product starts,
 and not again while it runs: to edit it by hand, quit the product
 first.
@@ -66,7 +67,7 @@ product itself.
 |---|---|---|
 | `[startup] model` | `last` | The startup model: `last` (the model used last) or a model's name. A value that is neither counts as `last` |
 | `[startup] last-model` | empty | The model used last; written by the product. A model built by a preset counts too. If it names no model of the product, the product's fallback model starts |
-| `[preset] <model>` | empty | One key per model, named after the model: the startup preset of that model, a path or a bundled preset. Empty: none, so the model is built as the product's built-in default machine |
+| `[preset] <model>` | empty; at the first start the model's bundled startup preset, where the product has one | One key per model, named after the model: the startup preset of that model, a path or a bundled preset. Empty: none, so the model is built as the product's built-in default machine |
 | `[storage] save-folder` | empty | The save folder, where instances, screenshots, traces and serial links go. Empty: a folder named after the product in your home folder (desktop frontends) |
 | `[storage] cassette-folder` | empty | The folder for cassettes. Empty: `Cassettes` in the save folder |
 | `[trace] folder` | empty | The folder for traces. Empty: the save folder |

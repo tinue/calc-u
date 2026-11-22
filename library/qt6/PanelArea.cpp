@@ -1,4 +1,6 @@
 #include "qt6/PanelArea.hpp"
+#include "qt6/ChromeStyle.hpp"
+#include <QEvent>
 #include "control/ControlState.hpp"
 #include "qt6/PaperPanel.hpp"
 #include "qt6/SessionHost.hpp"
@@ -54,6 +56,7 @@ void PanelArea::set(const std::vector<shell::Panel>& panels) {
             if (!w) continue;
             panels_[p.kind] = w;
             layout_->addWidget(w, 1);
+            styleChrome();
         }
         if (auto* paper = qobject_cast<PaperPanel*>(w)) {   // always, with or without an owner
             paper->setOwner(p.owner.empty() ? std::nullopt : std::optional<machine::PeripheralId>(machine::PeripheralId{p.owner}));
@@ -72,6 +75,23 @@ void PanelArea::set(const std::vector<shell::Panel>& panels) {
         }
         w->show();
     }
+}
+
+void PanelArea::setChrome(const shell::Chrome* c) {
+    chrome_ = c;
+    styleChrome();
+}
+
+void PanelArea::styleChrome() {
+    if (!chrome_) return;
+    const shell::ChromeColours& c = chrome_->colours(chrome::darkAppearance(this));
+    for (auto& [kind, w] : panels_)
+        if (auto* paper = qobject_cast<PaperPanel*>(w)) paper->setChrome(c, chrome_->sizes);
+}
+
+void PanelArea::changeEvent(QEvent* e) {
+    if (e->type() == QEvent::PaletteChange) styleChrome();
+    QWidget::changeEvent(e);
 }
 
 void PanelArea::deliver(const sessions::Message& m) {

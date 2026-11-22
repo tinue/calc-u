@@ -15,25 +15,9 @@
 /* ---------- Tokens ------------------------------------------------------ */
 /* The colours and the panels' and the bar's sizes are the product's chrome
    (app/TIChrome, the apps' dark chrome), set on this element by CalcU59
-   from the engine's answer; until it came, these neutral system colours. */
+   from the engine's answer; until it came, these neutral system colours
+   for the product's own names (the common ones are the library's, shell.css). */
 .calcu-client {
-  --calcu-window: Canvas;
-  --calcu-text: CanvasText;
-  --calcu-text-dim: GrayText;
-  --calcu-header: Canvas;
-  --calcu-header-text: CanvasText;
-  --calcu-button-bar: Canvas;
-  --calcu-pill: ButtonFace;
-  --calcu-pill-hover: ButtonFace;
-  --calcu-pill-pressed: ButtonFace;
-  --calcu-pill-off: ButtonFace;
-  --calcu-pill-text: ButtonText;
-  --calcu-pill-text-off: GrayText;
-  --calcu-output: Canvas;
-  --calcu-output-text: CanvasText;
-  --calcu-output-border: GrayText;
-  --calcu-plugged: Highlight;
-  --calcu-unplugged: GrayText;
   --calcu-debug-background: Canvas;
   --calcu-debug-header: Canvas;
   --calcu-section: Canvas;
@@ -54,9 +38,7 @@
   --calcu-field-border: GrayText;
   --calcu-list-line: GrayText;
   --calcu-highlight: Highlight;
-  --calcu-scrim: transparent;
   --calcu-toast: Canvas;
-  --calcu-shadow: transparent;
   --calcu-chevron: ButtonFace;
   --calcu-font:         -apple-system, BlinkMacSystemFont, "Segoe UI", "Calc-U Archivo", Roboto, Helvetica, Arial, sans-serif;
   --calcu-mono:         Menlo, "SF Mono", Consolas, "DejaVu Sans Mono", monospace;

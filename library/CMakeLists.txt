@@ -156,6 +156,8 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
     calcu_add_test(LibraryPlatformStoreCheck frequent
                    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/settings/tests/check_platform_stores_test.sh
                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    # No colour literal in the component sets (the products' chrome).
+    calcu_add_test(LibraryChromeColours frequent COMMAND sh ${CMAKE_SOURCE_DIR}/tools/check_chrome_colours.sh .)
     # No product code in the shell and the component sets.
     calcu_add_test(LibraryShellNoProduct frequent COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/qt6/tests/check_no_product_code.sh)
   endif()

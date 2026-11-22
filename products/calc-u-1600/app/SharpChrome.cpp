@@ -3,6 +3,7 @@
 namespace cu1600 {
 
 using calcu::shell::Colour;
+namespace colour = calcu::shell::colour;
 
 namespace {
 
@@ -34,15 +35,22 @@ calcu::shell::ChromeColours light() {
         {std::string(chrome::kSeparator), grey(200)},
         {std::string(chrome::kAccent), Colour::rgb(0x007bff)},
         {std::string(chrome::kAccentText), grey(255)},
-        {std::string(chrome::kMenu), grey(246, 250)},
-        {std::string(chrome::kMenuBorder), grey(0, 31)},
-        {std::string(chrome::kMenuHover), Colour::rgb(0x007bff)},
+        {std::string(colour::kMenu), grey(246, 250)},
+        {std::string(colour::kMenuText), Colour::rgb(0x1d1d1f)},
+        {std::string(colour::kMenuBorder), grey(0, 31)},
+        {std::string(colour::kMenuHover), Colour::rgb(0x007bff)},
+        {std::string(colour::kMenuHoverText), grey(255)},
         {std::string(chrome::kLampOff), grey(136)},
         {std::string(chrome::kLampOn), Colour::rgb(0x2ecc40)},
         {std::string(chrome::kHint), Colour::rgb(0xb45309)},
         {std::string(chrome::kKeyPressed), grey(255, 64)},
-        {std::string(chrome::kScrim), grey(0, 31)},
-        {std::string(chrome::kShadow), grey(0, 46)},
+        {std::string(colour::kScrim), grey(0, 31)},
+        {std::string(colour::kShadow), grey(0, 46)},
+        {std::string(colour::kAlert), Colour::rgb(0xb00020)},
+        {std::string(colour::kBanner), Colour::rgb(0xfff4c2)},
+        {std::string(colour::kBannerText), Colour::rgb(0x5c4a00)},
+        {std::string(colour::kPaper), grey(255)},   // white whatever the appearance: the pens' inks
+        {std::string(colour::kPaperText), Colour::rgb(0x1d1d1f)},
         {std::string(chrome::kModalShadow), grey(0, 71)},
         {std::string(chrome::kBannerBorder), Colour::rgb(0xe6d27a)},
     };
@@ -74,8 +82,12 @@ calcu::shell::ChromeColours dark() {
     set(chrome::kControlHover, grey(69));
     set(chrome::kControlPressed, grey(80));
     set(chrome::kSeparator, grey(74));
-    set(chrome::kMenu, Colour{44, 44, 46, 250});
-    set(chrome::kMenuBorder, grey(255, 31));
+    set(colour::kMenu, Colour{44, 44, 46, 250});
+    set(colour::kMenuText, grey(232));
+    set(colour::kMenuBorder, grey(255, 31));
+    set(colour::kAlert, Colour::rgb(0xff6b6b));
+    set(colour::kBanner, Colour::rgb(0x4a3f10));
+    set(colour::kBannerText, Colour::rgb(0xffe9a0));
     return k;
 }
 
@@ -90,6 +102,7 @@ calcu::shell::Chrome make() {
     s.panelInset = 6;
     s.barHeight = 40;
     s.barGap = 6;
+    s.barPills = true;
     s.slotPickerEm = 9;   // the longest module ID ("CE-1600M"), whatever it shows
     // The view rule (shell::view): the panels' row below the wide
     // faceplate, at least this high; none beside it.
@@ -110,8 +123,10 @@ const calcu::shell::Chrome& sharpChrome() {
 
 std::vector<std::string_view> sharpChromeNames() {
     using namespace chrome;
-    return {kControl, kControlHover, kControlPressed, kSeparator, kAccent, kAccentText, kMenu, kMenuBorder, kMenuHover,
-            kLampOff, kLampOn, kHint, kKeyPressed, kScrim, kShadow, kModalShadow, kBannerBorder};
+    std::vector<std::string_view> names{kControl, kControlHover, kControlPressed, kSeparator, kAccent, kAccentText,
+                                        kLampOff, kLampOn, kHint, kKeyPressed, kModalShadow, kBannerBorder};
+    for (std::string_view n : calcu::shell::shellColourNames()) names.push_back(n);
+    return names;
 }
 
 } // namespace cu1600

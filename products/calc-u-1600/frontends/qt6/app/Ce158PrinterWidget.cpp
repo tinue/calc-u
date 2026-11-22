@@ -88,10 +88,8 @@ void Ce158PrinterWidget::applyChrome() {
     const calcu::shell::ChromeColours& c = chrome.colours(ch::darkAppearance(this));
     m_header->setStyleSheet(ch::header(c, chrome.sizes));
     m_serialLabel->setStyleSheet(QString("background-color: %1; color: %2;").arg(ch::qcss(c.buttonBar), ch::qcss(c.outputText)));
-    m_output->setStyleSheet(QString("QPlainTextEdit { background-color: %1; color: %2; border: 1px solid %3; border-top: none; }")
-                                .arg(ch::qcss(c.output), ch::qcss(c.outputText), ch::qcss(c.outputBorder)));
-    m_buttonBar->setStyleSheet(QStringLiteral("#panel-buttons { %1 }").arg(ch::buttonBar(c, chrome.sizes)) +
-                               ch::pills(c, chrome.sizes, QStringLiteral("QPushButton")));
+    m_output->setStyleSheet(ch::output(c, QStringLiteral("QPlainTextEdit")));
+    m_buttonBar->setStyleSheet(ch::panelButtons(c, chrome.sizes, QStringLiteral("QPushButton")));
 }
 
 void Ce158PrinterWidget::onFrameTick() {

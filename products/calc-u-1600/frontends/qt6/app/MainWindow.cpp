@@ -141,7 +141,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(&host(), &calcu::qt6::SessionHost::topicChanged, this, &MainWindow::onTopic);
     connect(&host(), &calcu::qt6::SessionHost::called, this, [this] {
         followTraceAndLog();
-        applyPaperChrome(false);
         if (m_ce158Printer->isVisible()) m_ce158Printer->onFrameTick();
         if (auto* d = m_shell->settingsDialog(); d && d->isVisible()) refreshSerialStatus();
     });
@@ -242,17 +241,6 @@ void MainWindow::followTraceAndLog() {
     m_traceShown = trace;
     m_logShown = level;
     m_shell->productChanged();
-}
-
-// The library's paper panel in the product's chrome, as the INSPECTOR and
-// the CE-158's panel: when it appears, and at each change of appearance.
-void MainWindow::applyPaperChrome(bool appearanceChanged) {
-    auto* paper = qobject_cast<calcu::qt6::PaperPanel*>(m_shell->panelArea()->panel("paper"));
-    if (!paper || (paper == m_paperStyled && !appearanceChanged)) return;
-    m_paperStyled = paper;
-    const calcu::shell::Chrome& chrome = cu1600::sharpChrome();
-    const calcu::shell::ChromeColours& c = chrome.colours(calcu::qt6::chrome::darkAppearance(this));
-    paper->setChrome(c, chrome.sizes);
 }
 
 void MainWindow::onTopic(const QString& topic) {
@@ -631,7 +619,6 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event) {
 
 void MainWindow::changeEvent(QEvent* event) {
     if (event->type() == QEvent::ActivationChange && !isActiveWindow()) releaseHeldKeys();
-    if (event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange) applyPaperChrome(true);
     QMainWindow::changeEvent(event);
 }
 

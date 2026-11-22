@@ -1,0 +1,8 @@
+# Colour literals check_chrome_colours.sh lets pass in the component sets,
+# each with its reason (the products' chrome is not there yet, or the
+# element is outside .calcu-client).
+# The `?pace=1` line: a measuring aid over the whole page.
+web/src/shell.js	background:rgba
+# The installed app's install banner, drawn by the app page around the
+# client: iOS's share symbol in the system's blue.
+web/app/app.jsx	SymbolShare

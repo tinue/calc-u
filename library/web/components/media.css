@@ -15,7 +15,7 @@
 }
 .calcu-client .calcu-media-row { display: flex; align-items: center; gap: 6px; }
 .calcu-client .calcu-media-buttons { display: flex; justify-content: flex-end; gap: 6px; }
-.calcu-client .calcu-media-problem { color: #a00000; }
+.calcu-client .calcu-media-problem { color: var(--calcu-alert); }
 .calcu-client .calcu-media-table { border-collapse: collapse; }
 .calcu-client .calcu-media-table td { padding: 2px 6px; }
 .calcu-client .calcu-media-none { font-style: italic; }

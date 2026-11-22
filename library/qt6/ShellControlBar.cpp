@@ -185,7 +185,7 @@ void ShellControlBar::setChrome(const shell::Chrome* c) {
 }
 
 void ShellControlBar::styleMore() {
-    if (!more_ || !chrome_) return;
+    if (!more_ || !chrome_ || !chrome_->sizes.barPills) return;
     const shell::ChromeColours& c = chrome_->colours(chrome::darkAppearance(this));
     more_->setStyleSheet(chrome::pills(c, chrome_->sizes, QStringLiteral("QToolButton")));
 }

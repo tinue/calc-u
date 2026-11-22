@@ -80,9 +80,9 @@ public:
     void registerSlotPicker(Factory);                              // the library's module picker
     void registerPanel(std::string kind, std::function<QWidget*(QWidget* parent)>);   // the library's paper panel by default
     void setChoosers(ShellChoosers);
-    // The product's chrome (its app/ Chrome, alive as long as the shell)
-    // for a product whose bar has pills: More is a pill of it. Without it
-    // More takes the bar's own style.
+    // The product's chrome (its app/ Chrome, alive as long as the shell):
+    // the paper panel in it, and More a pill of it where the product's bar
+    // has pills (ChromeSizes::barPills), else the bar's own style.
     void setChrome(const shell::Chrome&);
 
     // What the shell shows now (the tests, the scenarios).

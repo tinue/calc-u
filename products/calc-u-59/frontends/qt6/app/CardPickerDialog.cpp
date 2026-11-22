@@ -1,4 +1,5 @@
 #include "CardPickerDialog.hpp"
+#include "ChromeStyle.hpp"
 #include <QDir>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -52,7 +53,7 @@ CardPickerDialog::CardPickerDialog(Mode mode, const std::vector<calcu::media::Pi
 
     auto* footer = new QHBoxLayout;
     auto* path = new QLabel(QDir::toNativeSeparators(folder), this);
-    path->setStyleSheet(QStringLiteral("color: gray; font-size: 10px;"));
+    path->setStyleSheet(QStringLiteral("color: %1; font-size: 10px;").arg(calcu::qt6::chrome::qcss(ChromeStyle::colours().textDim)));
     path->setTextInteractionFlags(Qt::TextSelectableByMouse);
     footer->addWidget(path, 1);
     auto* cancel = new QPushButton(QStringLiteral("Cancel"), this);

@@ -240,7 +240,9 @@ no globals besides `CalcU59`.
 heights, the inset, the pill's shape, the bar's height and gap), which
 `c59.shell-product` carries and `CalcU59` sets on its root
 (`calcuChromeStyle`, `library/web/components/useShellProduct.jsx`); until the
-engine answers they fall back to neutral system colours. `CalcU59` takes
+engine answers they fall back to neutral system colours (the common ones
+and the shell's menus, dialogs, banner and paper in the library's
+`shell.css`, the product's own in `calc.css`). `CalcU59` takes
 the bar's height and the printer column's width range from the same
 chrome. The font family is `Calc-U Archivo`, a name no host page uses.
 Sizes that follow the width are inline styles.

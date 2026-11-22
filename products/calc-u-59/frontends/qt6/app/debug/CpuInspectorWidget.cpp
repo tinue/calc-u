@@ -70,9 +70,10 @@ CpuInspectorWidget::CpuInspectorWidget(EmulatorController& controller, QWidget* 
 
     m_list = new QListWidget(this);
     m_list->setFixedHeight(200);
-    m_list->setStyleSheet(QStringLiteral("QListWidget { background: %1; border: none; color: white; }"
-                                         "QListWidget::item:selected { background: %2; color: white; }")
-                              .arg(ChromeStyle::rgb(cu59::chrome::kDebugBackground), ChromeStyle::rgb(cu59::chrome::kTabSelected)));
+    m_list->setStyleSheet(QStringLiteral("QListWidget { background: %1; border: none; color: %3; }"
+                                         "QListWidget::item:selected { background: %2; color: %3; }")
+                              .arg(ChromeStyle::rgb(cu59::chrome::kDebugBackground), ChromeStyle::rgb(cu59::chrome::kTabSelected),
+                                   calcu::qt6::chrome::qcss(ChromeStyle::colours().text)));
     connect(m_list, &QListWidget::currentRowChanged, this, [this](int row) {
         m_selected = row;
         refreshDetails();

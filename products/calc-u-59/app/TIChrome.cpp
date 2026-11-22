@@ -4,6 +4,7 @@
 namespace cu59 {
 
 using calcu::shell::Colour;
+namespace colour = calcu::shell::colour;
 
 namespace {
 
@@ -51,9 +52,20 @@ calcu::shell::Chrome make() {
         {std::string(chrome::kAlternate), Colour::rgb(0x2d2d2d)},
         {std::string(chrome::kButton), Colour::rgb(0x323232)},
         {std::string(chrome::kHighlight), Colour::rgb(0x0a84ff)},
-        {std::string(chrome::kScrim), Colour{0, 0, 0, 140}},
+        {std::string(colour::kScrim), Colour{0, 0, 0, 140}},
         {std::string(chrome::kToast), Colour{0, 0, 0, 191}},
-        {std::string(chrome::kShadow), Colour{0, 0, 0, 153}},
+        {std::string(colour::kShadow), Colour{0, 0, 0, 153}},
+        // The Web's menus and dialogs, light on the dark chrome as iOS's.
+        {std::string(colour::kMenu), Colour::rgb(0xffffff)},
+        {std::string(colour::kMenuText), Colour::rgb(0x1d1d1f)},
+        {std::string(colour::kMenuBorder), Colour::rgb(0xbbbbbb)},
+        {std::string(colour::kMenuHover), Colour::rgb(0xe4ecf7)},
+        {std::string(colour::kMenuHoverText), Colour::rgb(0x1d1d1f)},
+        {std::string(colour::kAlert), Colour::rgb(0xb00020)},
+        {std::string(colour::kBanner), Colour::rgb(0xfff4c2)},
+        {std::string(colour::kBannerText), Colour::rgb(0x5c4a00)},
+        {std::string(colour::kPaper), Colour{245, 240, 224, 255}},   // the PC-100C's cream paper
+        {std::string(colour::kPaperText), Colour::rgb(0x1d1d1f)},
         {std::string(chrome::kChevron), Colour{60, 60, 60, 179}},
         {std::string(chrome::kInk), Colour::grey(0.12)},
         {std::string(chrome::kStepCurrent), Colour{153, 255, 153, 255}},
@@ -100,9 +112,11 @@ const calcu::shell::Chrome& tiChrome() {
 
 std::vector<std::string_view> tiChromeNames() {
     using namespace chrome;
-    return {kDebugBackground, kDebugHeader, kSection, kTabSelected, kPillOn, kDivider, kColumnLine, kOrange, kRed,
+    std::vector<std::string_view> names{kDebugBackground, kDebugHeader, kSection, kTabSelected, kPillOn, kDivider, kColumnLine, kOrange, kRed,
             kYellow, kBlue, kGreen, kHover, kLogText, kDialog, kDialogFooter, kField, kFieldBorder, kListLine,
-            kAlternate, kButton, kHighlight, kScrim, kToast, kShadow, kChevron, kInk, kStepCurrent, kHeatmapPc};
+            kAlternate, kButton, kHighlight, kToast, kChevron, kInk, kStepCurrent, kHeatmapPc};
+    for (std::string_view n : calcu::shell::shellColourNames()) names.push_back(n);
+    return names;
 }
 
 calcu::shell::ViewInputs viewInputs(double width, double height, double extraWidth, bool mobile) {

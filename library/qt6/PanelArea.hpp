@@ -2,6 +2,7 @@
 #include "sessions/Messages.hpp"
 #include "qt6/ShellControlBar.hpp"
 #include "shell/BarModel.hpp"
+#include "shell/Chrome.hpp"
 #include <QWidget>
 #include <functional>
 #include <map>
@@ -32,13 +33,22 @@ public:
     void addPanel(QWidget*);   // a product's panel, from its own product entry
     QWidget* panel(const std::string& kind) const;
     void deliver(const sessions::Message&);   // to the panels that read topics (the paper panel)
+    // The product's chrome (alive as long as the area): the paper panel
+    // in it, light or dark with the window.
+    void setChrome(const shell::Chrome*);
+
+protected:
+    void changeEvent(QEvent*) override;
 
 private:
+    void styleChrome();
+
     SessionHost& host_;
     QBoxLayout* layout_;
     std::map<std::string, Factory> factories_;
     std::map<std::string, QWidget*> panels_;
     Choose choose_;
+    const shell::Chrome* chrome_ = nullptr;
     std::string placesShown_;   // the paper's place controls as last built
 };
 

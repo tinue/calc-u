@@ -65,7 +65,7 @@ public:
     void setPlaces(std::vector<QWidget*>);
     static QIcon placeIcon(const QIcon& printer, const QColor& dot);
     // The product's chrome (shell/Chrome): the header and the button bar
-    // line up with the panels beside it.
+    // line up with the panels beside it; the paper's colours.
     void setChrome(const shell::ChromeColours&, const shell::ChromeSizes&);
     void setSender(Sender s) { sender_ = std::move(s); }
 
@@ -75,9 +75,6 @@ public:
     void showText(bool on);                      // as the view control does
     bool paperEmpty() const;                     // the paper shown has nothing on it (or there is none)
     PaperView* paperView() const { return view_; }
-    // The paper's colour in both views (white by default); the text view
-    // prints in near-black on it, whatever the window's palette.
-    void setPaperColour(QColor);
 
     struct Shown {
         paper::PaperDescription description;
@@ -104,7 +101,7 @@ private:
 
     QWidget* header_;
     QWidget* footer_;
-    QColor plugged_{Qt::red}, unplugged_{Qt::gray};
+    QColor plugged_, unplugged_;   // the chrome's (setChrome)
     QHBoxLayout* placesLayout_;
     QLabel* ownerLabel_;
     QToolButton* viewToggle_;
@@ -140,7 +137,7 @@ private:
     void updateRange(bool follow);
     const PaperPanel::Shown* paper_ = nullptr;
     paper::Coord top_ = 0, bottom_ = 0;
-    QColor paperColour_ = Qt::white;
+    QColor paperColour_;   // the chrome's paper; until it came, the palette's base
 };
 
 } // namespace calcu::qt6

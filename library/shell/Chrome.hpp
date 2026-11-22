@@ -59,6 +59,26 @@ struct ChromeColours {
     Colour named(std::string_view name) const;
 };
 
+// The colours of `more` the component sets draw the shell with (the Web's
+// menus, dialogs, notices and banner; the paper of every paper panel):
+// every product's chrome has them, its tests check them (checkChrome with
+// shellColourNames()).
+namespace colour {
+inline constexpr std::string_view kMenu = "menu";                    // a menu, the More popup, a dialog
+inline constexpr std::string_view kMenuText = "menu-text";
+inline constexpr std::string_view kMenuBorder = "menu-border";       // its border and separators
+inline constexpr std::string_view kMenuHover = "menu-hover";         // the item under the pointer
+inline constexpr std::string_view kMenuHoverText = "menu-hover-text";
+inline constexpr std::string_view kScrim = "scrim";                  // behind a dialog
+inline constexpr std::string_view kShadow = "shadow";                // a menu's, a dialog's, a pressed control's
+inline constexpr std::string_view kAlert = "alert";                  // a destructive item, a problem
+inline constexpr std::string_view kBanner = "banner";                // the storage banner
+inline constexpr std::string_view kBannerText = "banner-text";
+inline constexpr std::string_view kPaper = "paper";                  // a printer's paper
+inline constexpr std::string_view kPaperText = "paper-text";         // its text view
+} // namespace colour
+std::vector<std::string_view> shellColourNames();
+
 // The shape of a pill button, in logical pixels. Both products' pills.
 struct PillShape {
     double height = 24, radius = 6, paddingX = 8, paddingY = 4;
@@ -72,6 +92,7 @@ struct ChromeSizes {
     double pillFontSize = 0;            // 0: the panel's font
     bool pillBold = false;
     double barHeight = 40, barGap = 6;  // the control bar
+    bool barPills = false;              // its buttons are pills (else plain text)
     double slotPickerEm = 9;            // a module slot's picker, whatever it shows
     double printerMinWidth = 0, printerMaxWidth = 0;   // the printer column (desktop, embedded); 0: none
     double debuggerMinWidth = 0, debuggerMinHeight = 0;   // the debugger beside the printer; 0: none

@@ -157,7 +157,7 @@ position: 0
 - A `.wav` on its own is not a cassette but a program file: opened or
   dropped, it is loaded as a program ([BASIC programs](09-basic-programs.md)).
 
-The bundled template is **Empty**, a blank cassette.
+The bundled template is **Blank**, a blank cassette.
 
 ## From 0.8
 

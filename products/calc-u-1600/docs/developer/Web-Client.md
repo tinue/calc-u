@@ -9,11 +9,14 @@ One build (`frontends/web/dist/`) serves two uses:
 
 It is made for landscape screens and tablets; a phone works (touch takes
 the nearest key, the menus are taller on touch screens) but gets the
-calculator alone in landscape. The calculator comes first: the faceplate is as large as the client
-allows, and the panels (inspector, paper, printer) appear only when
-the faceplate spans the full width and leaves at least 220 px below it --
-in portrait and in tall windows, not on a phone in landscape or in a wide,
-short window. The paper panel is the library's (`CalcuPaperPanel`)
+calculator alone in landscape. The view is the library's rule
+(`calcuShellView`, as the Qt window's `shell::view`, on app/'s chrome
+`SharpChrome`): the faceplate is as large as the client allows, and the
+panels (inspector, paper, printer) appear only when the room left below it
+is at least `panelsMinHeight` (200 px) -- in tall windows, not on a phone
+in landscape or in a wide, short window, where the calculator is alone (it
+has no panels beside it). The installed app is not locked to an
+orientation: the printer is seen in portrait. The paper panel is the library's (`CalcuPaperPanel`)
 and is always there, named after the plotter plugged in.
 Narrower than 700 px, the inspector gives way to the printer, or to the
 paper while a plotter is plugged in.
@@ -26,8 +29,8 @@ with More on both (Load Preset… and Settings… in it). The mobile bar
 keeps the model, the slots and the disk controls (`mobileBarMedia` of
 `app/SharpShellProduct`): the peripherals are in More ▸ Peripherals ▸, the
 cassette in More ▸ Cassette ▸ (its entries, then Name & Save…). Where the
-panels have room below the faceplate on mobile (a phone in portrait),
-the panels alone are shown, without the faceplate.
+room is below the faceplate on mobile (a phone in portrait), the panels
+alone are shown, without the faceplate.
 
 ```mermaid
 flowchart LR

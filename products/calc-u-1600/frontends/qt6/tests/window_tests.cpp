@@ -443,6 +443,24 @@ TEST(layout_faceplate_bar_panel_row) {
     if (paper) CHECK(paper->x() < ce158->x());
 }
 
+// The view rule: a window whose room below the faceplate is too small for
+// the panels' row shows the calculator alone, the bar right below the
+// faceplate; a taller one has the panels again.
+TEST(short_window_calculator_alone) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f;
+    QWidget* face = f.w().faceplate();
+    QWidget* bar = f.find<QWidget>(names::kControlBar);
+    CHECK(f.w().panelsShown());
+    f.w().resize(1430, 600);
+    f.run(50);
+    CHECK(!f.w().panelsShown());
+    CHECK(bar && bar->geometry().top() - face->geometry().bottom() <= 8);
+    f.w().resize(1430, 1000);
+    f.run(50);
+    CHECK(f.w().panelsShown());
+}
+
 // ── Copy Screen ─────────────────────────────────────────────────────────
 
 TEST(copy_screen_picture_and_text) {

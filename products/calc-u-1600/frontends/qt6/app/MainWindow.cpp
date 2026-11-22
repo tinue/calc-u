@@ -26,9 +26,11 @@
 #include "sessions/LibraryTopics.hpp"
 #include "shell/Inputs.hpp"
 #include "shell/ObjectNames.hpp"
+#include "shell/View.hpp"
 #include "typing/TypingTopics.hpp"
 
 #include <QAction>
+#include <algorithm>
 #include <QApplication>
 #include <QBoxLayout>
 #include <QClipboard>
@@ -80,7 +82,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     m_controller = std::make_unique<MachineController>(this);
 
-    // The layout: the faceplate, below it the bar, below it the panel row.
+    // The layout: the faceplate, below it the bar, below it the panel row
+    // (where the view rule gives it room, applyView).
     auto* central = new QWidget(this);
     m_faceplate = new FaceplateWidget(central);
     m_faceplate->setObjectName(QStringLiteral("faceplate"));
@@ -104,6 +107,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     calcu::qt6::PanelArea* panels = m_shell->panelArea();
     panels->setParent(central);
     layout->addWidget(panels, 1);
+    // Without the panels the faceplate keeps its height for its width
+    // and the bar stays right below it.
+    layout->addStretch(0);
+    m_panels = panels;
+    central->installEventFilter(this);
     // The INSPECTOR always, first, at 2:1 to the paper panel; the
     // CE-158's printer panel last, while its product entry says so.
     m_inspector = new DebugPanel(m_controller.get(), panels);
@@ -647,7 +655,31 @@ void MainWindow::disarmShiftTap() {
     qApp->removeEventFilter(this);
 }
 
+bool MainWindow::panelsShown() const { return m_panels && !m_panels->isHidden(); }
+
+void MainWindow::applyView() {
+    QWidget* central = centralWidget();
+    if (!central || !m_panels || !m_faceplate) return;
+    const calcu::shell::ChromeSizes& s = cu1600::sharpChrome().sizes;
+    const QMargins margins = central->layout()->contentsMargins();
+    const int spacing = central->layout()->spacing();
+    calcu::shell::ViewInputs in;
+    in.width = central->width();
+    in.height = central->height();
+    const int probe = 1000;
+    in.faceplateAspect = static_cast<double>(probe) / std::max(1, m_faceplate->heightForWidth(probe));
+    in.fixedWidth = margins.left() + margins.right();
+    const int bar = std::max(static_cast<int>(s.barHeight), m_shell->controlBar()->sizeHint().height());
+    in.fixedHeight = margins.top() + margins.bottom() + bar + 2 * spacing;
+    in.panelsMinWidth = s.panelsMinWidth;
+    in.panelsMinHeight = s.panelsMinHeight;
+    const calcu::shell::View v = calcu::shell::view(in);
+    // The panels have a row of their own only below the faceplate.
+    m_panels->setVisible(v.side == calcu::shell::ViewSide::Below && v.panelsFit);
+}
+
 bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == centralWidget() && event->type() == QEvent::Resize) applyView();
     if (event->type() == QEvent::MouseButtonPress) disarmShiftTap(); // a Shift-click
     return QMainWindow::eventFilter(watched, event);
 }

@@ -73,6 +73,10 @@ function createShell({ product, workerUrl, start, services }) {
       }
       return;
     }
+    if (m.topic === "web.pace") {   // the worker's pace, shown with ?pace=1 only
+      calcuPaceOverlay(m.value, state.topics.busy);
+      return;
+    }
     if (m.topic === "web.start") {
       if (m.value && m.value.state === "failed") failWith(m.value.failure);
       else if (state.start === "starting") set({ ...state, start: "running", topics: { ...state.topics, [m.topic]: m.value } });
@@ -148,3 +152,21 @@ function createShell({ product, workerUrl, start, services }) {
     },
   };
 }
+
+// `?pace=1`: a line at the top of the page with the worker's pace (how often
+// its timer fires, the calls per tick, the share of time it computes) and
+// the speed, to see what a browser grants the worker.
+function calcuPaceOverlay(p, busy) {
+  if (typeof document === "undefined" || !/[?&]pace=1\b/.test(location.search)) return;
+  let el = document.getElementById("calcu-pace");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "calcu-pace";
+    el.style.cssText = "position:fixed;left:0;top:0;z-index:99;padding:2px 6px;font:11px ui-monospace,monospace;" +
+      "background:rgba(0,0,0,0.7);color:#fff;pointer-events:none";
+    document.body.appendChild(el);
+  }
+  el.textContent = `ticks/s ${p.ticksPerSecond}  calls/tick ${p.callsPerTick}  busy ${p.busyPercent}%  ` +
+    `longest gap ${p.longestGapMs} ms  speed ${(busy && busy.speed) || "?"}`;
+}
+

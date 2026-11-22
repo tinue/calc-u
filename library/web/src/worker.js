@@ -64,20 +64,36 @@
   const FULL_CALL_MS = 10;   // a call this long ran at full speed
   const MOST_MS = 100;       // the longest stretch the worker keeps to itself
   let lastTick = null;
+  // The pace of the calls, once a second, for the page's `?pace=1` overlay
+  // (shell.js): ticks, calls, the time spent in them, the longest gap.
+  const pace = { since: null, ticks: 0, calls: 0, busy: 0, longest: 0 };
   function tick() {
     const start = performance.now();
     const gap = lastTick === null ? FRAME_MS : Math.min(start - lastTick, MOST_MS);
+    if (lastTick !== null) pace.longest = Math.max(pace.longest, start - lastTick);
     lastTick = start;
     try {
       let before = start;
       for (;;) {
         host.call();
+        pace.calls += 1;
         const now = performance.now();
         if (now - before < FULL_CALL_MS || now - start >= gap * 7 / 8 - FULL_CALL_MS) break;
         before = now;
       }
     } catch (e) {
       fail(errorText(e));
+    }
+    const end = performance.now();
+    pace.ticks += 1;
+    pace.busy += end - start;
+    if (pace.since === null) pace.since = start;
+    if (end - pace.since >= 1000) {
+      const secs = (end - pace.since) / 1000;
+      postMessage({ kind: "state", topic: "web.pace", value: {
+        ticksPerSecond: Math.round(pace.ticks / secs), callsPerTick: +(pace.calls / pace.ticks).toFixed(1),
+        busyPercent: Math.round(pace.busy / (end - pace.since) * 100), longestGapMs: Math.round(pace.longest) } });
+      Object.assign(pace, { since: end, ticks: 0, calls: 0, busy: 0, longest: 0 });
     }
   }
 

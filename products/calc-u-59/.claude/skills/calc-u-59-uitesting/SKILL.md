@@ -15,7 +15,7 @@ This skill covers all work inside `frontends/swift/Calc-U-59UITests/`.
 | File | Purpose |
 |------|---------|
 | `AppHelpers.swift` | Shared helpers: `launchApp(settings:arguments:)`, `launchApp(orientation:settings:arguments:)` (a settings file of the launch's own, `--settings-file`, and attach on port 59162), `writeSettingsFile(_:)`, `attachHarness()`, `waitIdle(_:)`, `waitForOperation(_:timeout:endsPaused:)` (the busy topic says one runs, then the reply to the bare `wait`), `navigateToOnMyIPhone(_:targetFile:)`, `loadPreset(_:file:idleTimeout:harness:endsPaused:)` (Preset button → picker → wait through attach; `endsPaused` for a preset that ends paused, which is never idle: the `run-state` topic is read instead of the bare `wait`, which would wait until resumed), `attachScreenshot()` |
-| `FamilyStructureTests.swift` | The family's scenarios, shared with the Qt and Web tests (`test_the_menus`, `test_command_r_resets`, `test_application_menu`, `test_the_bar`, `test_the_settings`, `test_loading_sign_during_a_long_load`, `test_notices_one_after_the_other`, `test_help`, `test_a_key_under_the_pointer`, `test_an_example`, `test_the_printer`, `test_one_picture_per_layout`) and the Swift frontend's own (`test_more_cold_boot_asks_first`, `test_settings_file_by_path`, `test_notice_over_the_settings_sheet`, `test_no_card_controls_on_the_ti58`, `test_iphone_portrait_reaches_every_control`, `test_paper_cut_in_dot_mode`); iOS in `UIRegressionTests`, macOS branches for `CalcU59UITestsMac` |
+| `FamilyStructureTests.swift` | The family's scenarios, shared with the Qt and Web tests (`test_the_menus`, `test_command_r_resets`, `test_application_menu`, `test_the_bar`, `test_the_settings`, `test_loading_sign_during_a_long_load`, `test_notices_one_after_the_other`, `test_help`, `test_a_key_under_the_pointer`, `test_an_example`, `test_the_printer`, `test_one_picture_per_layout`) and the Swift frontend's own (`test_more_cold_boot_asks_first`, `test_settings_file_by_path`, `test_notice_over_the_settings_sheet`, `test_no_card_controls_on_the_ti58`, `test_iphone_portrait_reaches_every_control`, `test_paper_cut_in_dot_mode`); in `UIRegressionTests` |
 | `LayoutTests.swift` | Button visibility, label-wrapping, portrait/landscape screenshots |
 | `FilePickerTests.swift` | File picker opens; reopens after cancel (regression for iPad popover dismiss bug) |
 | `PresetLoadTests.swift` | End-to-end load of `test_diag.ti59` via the file picker, its end through attach |
@@ -23,7 +23,7 @@ This skill covers all work inside `frontends/swift/Calc-U-59UITests/`.
 | `ScreenshotTests.swift` | App Store screenshot capture (driven by `bin/run-screenshots`); writes PNGs to the dir named in `/tmp/calc-u-59-screenshot-dir`. Its settings in a settings file, the module (LE) and R/S through attach. The runner names each test in full and fails a shot that writes no PNG. Its overlay shot is the debug panel's scenario `testAsmOverlay` (`test_stopwatch.asm`, ASM format 2.0, from `1-Testfiles`) |
 | `DebugPanelTests.swift` | The debug panel's scenarios: `testCalculatorFreezeStepResume` (FREEZE, `btn-step`, RESUME on the CALCULATOR tab; R/S through attach), `testTabsAndLabels`; in `UIRegressionTests`, iOS |
 | `HarnessClient.swift` | A line client for harness attach: `connect(port:)`, `command(_:)` (message lines skipped), `closedByPeer()` |
-| `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `display-text`, `wait` on the app's clock, `quit`; Home and back, a command refused while suspended; a press on `led-display` for full speed while a program runs, then a touch on R/S of the faceplate. In `UIRegressionTests`; the last two iOS only |
+| `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `display-text`, `wait` on the app's clock, `quit`; Home and back, a command refused while suspended; a press on `led-display` for full speed while a program runs, then a touch on R/S of the faceplate. In `UIRegressionTests` |
 | `PacingTests.swift` | A TI-59 keeps one minute, `ticks` over attach on port 59161. Checkpoint: only in the test plan `PacingCheckpoint`, skipped by `UIRegressionTests` |
 | `Calc_U_59UITestsLaunchTests.swift` | Default launch test (auto-generated, rarely edited) |
 | `UIRegressionTests.xctestplan` | Local regression test plan (no CI job runs XCUITests) |
@@ -37,23 +37,17 @@ the real bridge (`TestSession.swift`), the bridge's Debug-only test hooks
 `hostCallCount`); `ShellBridgeTests` checks `TIShell` (the menus, the bar
 without a menu bar, a disabled item's reason, the hit rule, the settings
 rows and a change, Copy's pasteboard forms, "Loading…").
-`xcodebuild test … -testPlan UnitTests` on a simulator or
-`-destination platform=macOS`; no runner permission is needed on the Mac.
+`xcodebuild test … -testPlan UnitTests` on a simulator.
 
-The file-picker, preset and orientation tests are `#if !os(macOS)` guarded; `LayoutTests` also has macOS branches.
+Every UI test runs on an iOS simulator; the app has no macOS build.
 
 **No test aids; attach and a settings file.** The app has no
 `--UITesting`, no hidden R/S button and no `keystroke-playback-status`
 (CTest `CalcU59NoTestAids`). A test launches through the helpers, which
 write a settings file of the launch's own (`writeSettingsFile`, the
 runner's temporary folder, given by its full path; the simulator's app
-reads it there — checked by `test_settings_file_by_path`; the Mac runner
-is sandboxed, and the Mac Debug app may read and write its `tmp/`
-(`Calc-U-59-Debug-macOS.entitlements`, Debug for macOS only) and pass
-`--settings-file` and `--attach-port`. On macOS each launch also sets the
-window's frame (1200 × 750, `-NSWindow Frame calculator`): the saved frame
-is shared with every earlier launch, and in a short window the bar leaves
-out the card buttons. A test that needs the session (a load's end, the
+reads it there — checked by `test_settings_file_by_path`) and pass
+`--settings-file` and `--attach-port`. A test that needs the session (a load's end, the
 display as text, emulated time, the module) attaches: the runner, in the
 same simulator, connects with `HarnessClient` to 127.0.0.1 and sends
 `calcu serve` commands (`wait 1s`, `key-down R/S`, `display-text`, `ticks`,
@@ -63,17 +57,10 @@ a running program (an overlay among them) is `key-down`/`key-up`. The
 attached registry has every `calcu serve` command, `preset <path>` and
 `open <path>` among them. Each
 simulator needs a port of its own: the helpers use 59162, `AttachTests`
-59160, `PacingTests` 59161. A notice is an alert on iOS and a sheet on
-the Mac window: `notice(app)`, `noticeText(app, contains:)` and
-`closeNotice(app)` in `FamilyStructureTests` (iOS: tap OK by its label,
-the alert's button drops the identifier `notice-ok`; Mac: Return, as a
-scripted click does not reach the sheet's default button).
-
-**macOS runs** need the runner's permission to control the computer:
-System Settings ▸ Privacy & Security ▸ "Gerätesteuerung und Datenzugriff"
-(macOS 27; was Accessibility), `Calc-U-59UITests-Runner.app` of the Debug
-build products added and on. Without it no synthesized click reaches the
-window (menus still do).
+59160, `PacingTests` 59161. A notice is an alert: `notice(app)`,
+`noticeText(app, contains:)` and `closeNotice(app)` in
+`FamilyStructureTests` (tap OK by its label, the alert's button drops the
+identifier `notice-ok`).
 
 ---
 
@@ -192,16 +179,16 @@ The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug pa
 
 | Identifier | Type | Value / Notes |
 |------------|------|---------------|
-| `btn-preset` | Button | Preset on the control bar (iOS; macOS: File ▸ Load Preset…) |
-| `btn-reset` | Button | Reset on the control bar (iOS; macOS: Machine ▸ Reset) |
-| `btn-settings` | Button | Settings on the control bar (iOS) |
+| `btn-preset` | Button | Preset on the control bar |
+| `btn-reset` | Button | Reset on the control bar |
+| `btn-settings` | Button | Settings on the control bar |
 | `control-bar` | Other | The control bar (`ControlBarView`) |
 | `bar-model` | Button | The model picker; label the running model |
 | `bar-slot-slot-1` | Button | The module picker; its entries `item-peripheral-slot-1-<id>` (`-none` for the empty slot) |
 | `bar-place-printer` | Button | "PC-100C": value `On` / `Off` |
 | `bar-media-card-reader` | Button | Arm Card (or Eject Card while a side passes), TI-59 only |
-| `bar-more` | Button | More (iOS): items `more-item-<id>` (`examples`, `cold-boot`, `resume`, `help`); Cold boot's confirmation `confirm-cold-boot` |
-| `settings-dialog` | Other | The settings form; rows `setting-<section>-<key>`; iOS `settings-close` (Done) |
+| `bar-more` | Button | More: items `more-item-<id>` (`examples`, `cold-boot`, `resume`, `help`); Cold boot's confirmation `confirm-cold-boot` |
+| `settings-dialog` | Other | The settings form; rows `setting-<section>-<key>`; `settings-close` (Done) |
 | `loading` | Other | "Loading…" below the display |
 | `faceplate` | Other | The calculator's art: tap a key at a normalised offset (key centres from `app/KeyboardLayout.hpp`, e.g. 1 at 0.2812, 0.8839; R/S at 0.0783, 0.9704) |
 | `cue-card` | Other | The cue card shown: label its title, value its template |

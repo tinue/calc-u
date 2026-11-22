@@ -7,6 +7,9 @@ user-invocable: true
 # Calc-U-59 Swift GUI
 
 This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/Views/`, and `frontends/swift/Bridge/`.
+The Swift app is the iPhone and iPad app (iOS and iPadOS only, played by
+touch; its debugger for looking). The Mac app is the Qt6 app (calc-u-59-qt
+skill).
 
 - App structure, files, threading, bridge: `docs/developer/App-Layer.md`
   § "The Swift frontend".
@@ -32,9 +35,9 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   cannot be written refuses the start); FREEZE and FREEZE ON START
   `cu59::freezeButtons` (`freezeButtonsFor:`). The tab a `debug-panel:` step
   asks for arrives as `showDebugPanel:` when c59.debug-view's `requests` grows.
-- Opening a file: the macOS drop and the Preset button's
-  importer (the preset types and any file) send the library's `open`
-  (`openFile:path:fileName:way:completion:`, way `drop` or `dialog`); the
+- Opening a file: the Preset button's importer (the preset types) sends
+  the library's `open`
+  (`openFile:path:fileName:way:completion:`, way `dialog`); the
   session finds out what the file is (a preset, a card, an ASM overlay, a
   keystroke program) and a refusal is its notice. `wouldOpenFile:` asks
   `open-would-take`. No Swift code tells a file's kind; test
@@ -44,13 +47,13 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
   last Value of each input topic (`control-state`, `busy`, `run-state`,
   `roms-missing`, `settings`, `media`, the `preset-list` reply) with
   `app/TIShellProduct`: `menus` (SwiftUI `Commands` in
-  `Views/ShellCommands.swift`; Settings…, About, Quit are the application
-  menu's), `bar` (`Views/ControlBarView.swift`: the model picker, the picker
-  of `slot-1`, "PC-100C", the card controls; on iOS Reset, Preset, Settings
+  `Views/ShellCommands.swift`, the iPad's menu bar; the items with the roles
+  Settings…, About and Quit are left out), `bar` (`Views/ControlBarView.swift`: the model picker, the picker
+  of `slot-1`, "PC-100C", the card controls; Reset, Preset, Settings
   and More, `moreItems`, Cold boot asks first), `settingsDialog`
-  (`Views/SettingsView.swift` over `cu59::settingsSpec(SwiftMac|SwiftIOS)`),
+  (`Views/SettingsView.swift` over `cu59::settingsSpec(SwiftIOS)`, a sheet),
   "Loading…" (`LoadingRule`), the notices (`NoticeQueue`: one alert after
-  the other, at the window's root and over the iOS settings sheet) and the
+  the other, at the window's root and over the settings sheet) and the
   pointer on the faceplate (`PointerTracker` on `cu59::faceplateHitMap`,
   `pointerDown/Move/Up` in points with the points per base-image pixel).
   `choose:` sends an item's command (a refusal becomes a notice) or hands
@@ -62,23 +65,18 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
 - Settings: the settings file is the session's. The bridge
   opens `Calc-U-59.ini` (or the Debug build's `--settings-file`; the
   library's `calcu::shell::HostSettings`) and
-  hands the file to the session thread (the trace folder is the places',
-  read at each trace start: `TISessionStart.chosenTraceFolder`
-  is a block the session thread calls for the bookmark's folder,
-  `AppSettings.chosenTraceFolder()`, nonisolated; on iOS
-  `HostDirs::iCloudAvailable` beside it refuses the iCloud location while
-  signed out), where the library's `SettingsPart` (made
+  hands the file to the session thread (the trace location, Local or
+  iCloud, is read at each trace start; `HostDirs::iCloudAvailable` refuses
+  the iCloud location while signed out), where the library's `SettingsPart` (made
   by `makeAppSession`'s `calcu::shell::HostSessionSetup`) (with `alsoShown` `window.portrait-debug-page`) and
   the library's start read and write it; views read the values through
   `TIShell.setting(_:_:)` and change one with `setSetting` (`set-setting`).
-  Only the macOS trace-folder bookmark stays in UserDefaults
-  (`AppSettings.swift`).
+  Nothing is kept in UserDefaults.
 - The paper panel: `PrinterView` draws the library's topic
   `paper PC-100C` (dots and text the bridge keeps) under its owner's name
   (`TIShell.paperOwner`), an empty paper under none; Copy and Cut are
   `paper.copy` / `paper.cut`, the picture the library's, the pasteboard
-  entry the bridge's (`clipboard-image`: macOS two entries, the picture
-  first; iOS one); PRINT, ADV, TRACE are `set-control`.
+  entry the bridge's (`clipboard-image`: one entry, a PNG); PRINT, ADV, TRACE are `set-control`.
   `docs/developer/App-Layer.md` § "Printer".
 - TI-59 background: the calc-u-59-core skill's Domain Primer. SwiftUI
   practice: the swiftui-pro skill.
@@ -102,7 +100,7 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    `media.*` commands (`savedCards`, `armCard:`,
    `armFreshCard:confirmed:` with the `asks:` replace question, `ejectCard`);
    `c59.tap-card` feeds a corner.
-   **Harness attach (Debug, macOS and simulator only):** the app opens its
+   **Harness attach (Debug, simulator only):** the app opens its
    session on 127.0.0.1, port `--attach-port N`, else 59059; `calcu attach
    [--port N]` drives it (`library/harness/attach/`; one port per simulator).
    The attached registry has every command of the serve form (`preset`
@@ -115,8 +113,6 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    build phase of every Release and device build, the full build check in
    Longer. The XCFramework phase must keep its declared output, or a Release
    build after a Debug one links the Debug XCFramework.
-   The Mac app's App Nap activity is `.latencyCritical`: without it a covered
-   window loses emulated time.
 2. **Parity.** A user-visible change here needs the matching Qt change, and
    the web change if the feature is in the web's scope, on the same branch —
    or a `Pending (Qt)` / `Pending (Web)` row in `docs/developer/Frontend-Parity.md`.
@@ -128,7 +124,7 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
 5. **Keep the Dynamic Type cap.** `CalculatorView.body` limits Dynamic Type
    to `.small ... .large`. Wider sizes break the layout (the TI-59 card bar
    first).
-6. **Compile, don't run.** Never launch the simulator or the built Mac app;
+6. **Compile, don't run.** Never launch the simulator;
    ask the user to, saying exactly what to look for.
 7. **Commit often;** push as the root `CLAUDE.md` says.
 8. **Cite sources.** A hardware spec or external document gets its https URL
@@ -136,15 +132,15 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
 
 ## Build Verification
 
-Every change needs a macOS build:
+Every change needs the iOS simulator build:
 
 ```bash
-xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme "Calc-U-59" \
-  -destination "platform=macOS" build
+xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
+  -destination 'generic/platform=iOS Simulator' build
 ```
 
-Build for iOS only when a task or test explicitly needs it, and only on a
-simulator from `bin/simulators.yaml`. `bin/simulators status` lists them with
+A build for one simulator, when a task or test needs it, takes a simulator
+from `bin/simulators.yaml`. `bin/simulators status` lists them with
 their UDIDs; never hard-code a model name from memory.
 
 ```bash

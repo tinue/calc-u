@@ -34,8 +34,8 @@ holds what the last TI-58C left.
 ## Where it lies
 
 `ti58c.memory.yaml` lies in the save folder: in the app's iCloud
-storage on macOS, the iPhone and the iPad, `Calc-U-59` in your home
-folder on Windows and Linux, the browser's storage for the page in the
+storage on the iPhone and the iPad, `Calc-U-59` in your home
+folder on macOS, Windows and Linux, the browser's storage for the page in the
 browser. It is not a medium: no picker lists it, and opening or dropping
 it is refused with a notice. A damaged file, or a write that fails, is
 reported with a notice. The format is in [Media files](10-media-files.md).

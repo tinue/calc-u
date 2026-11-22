@@ -215,7 +215,7 @@ too.
       `ipad-2752x2064-asm.png`, `iphone-duo-2852x2006.png`) and the two cue
       card pictures that show a magnetic card's side badges on a preset's
       plain card (`cuecard-key-grid.png`, `cuecard-single-label.png`); take
-      the two missing ones (the macOS window with its menus; the iPhone's
+      the two missing ones (the Mac window with its menus, from the Qt app; the iPhone's
       bar with the More menu open). Every picture with the calculator shows
       the new faceplate and cue cards then (also `iphone-debug.png`).
 - [ ] Calc-U-1600: retake with `tools/make_screenshots.sh <chapter>` from a

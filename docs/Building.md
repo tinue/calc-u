@@ -258,14 +258,15 @@ kit and `ilammy/msvc-dev-cmd`'s `arm64` toolchain (Calc-U-1600: the
 Windows ARM64 machine, run the steps above from an ARM64 developer prompt
 (`vcvarsall.bat arm64`) with the ARM64 Qt kit.
 
-## Calc-U-59's Swift app (macOS, iOS, iPadOS)
+## Calc-U-59's Swift app (iOS, iPadOS)
 
-Open `products/calc-u-59/frontends/swift/Calc-U-59.xcodeproj` in Xcode,
-or:
+The Swift app is the iPhone and iPad app; Calc-U-59's Mac app is the Qt6
+app above. Open `products/calc-u-59/frontends/swift/Calc-U-59.xcodeproj`
+in Xcode, or:
 
 ```sh
 xcodebuild -project products/calc-u-59/frontends/swift/Calc-U-59.xcodeproj \
-  -scheme Calc-U-59 -destination platform=macOS build
+  -scheme Calc-U-59 -destination 'generic/platform=iOS Simulator' build
 ```
 
 The Swift app links `CalcU59.xcframework`, which

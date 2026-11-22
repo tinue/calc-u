@@ -144,7 +144,7 @@ uv run python tools/disasm.py --emit-cpp > /tmp/generated.cpp
    say precisely what to look for. Harness runs (`calcu --product c59`,
    `docs/developer/Harness.md`) are fine.
 
-2. **Build on macOS.** Verify Swift-facing changes with a macOS build; build for iOS only when explicitly required (commands: `calc-u-59-swift` skill, § "Build Verification").
+2. **Build the Swift app.** Verify Swift-facing changes with the iOS simulator build (command: `calc-u-59-swift` skill, § "Build Verification").
 
 3. **Commit often.** Commit after each logical unit of work; push as the root `CLAUDE.md` says.
 

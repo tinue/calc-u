@@ -25,7 +25,7 @@ frontends host it) in emulated time only, so two runs give the same replies.
   `calcu_serve.find_calcu`), else `build/tools` built on first use.
 - `calcu attach [--port N] [--json] [--messages]` drives the session of a
   running app: a development or test build of the Qt6 app (`CALCU_ATTACH`)
-  or a Debug build of the Swift app (macOS and simulator) listens on
+  or a Debug build of the Swift app on the iOS simulator listens on
   `--attach-port N`, else 59059.
 - `calcu --help` lists every command; the IDE run configuration is
   `.run/calcu-59.run.xml` (repository root).

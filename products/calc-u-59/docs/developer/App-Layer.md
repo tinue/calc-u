@@ -163,7 +163,7 @@ The app layer has no thread of its own but one host adapter:
 
 | Frontend | Where the session runs |
 |---|---|
-| Swift | the library's native threaded host `calcu::shell::SessionThread` (`library/shell/SessionThread.*`): builds, calls about 60 times a second and destroys the session on one thread (QoS user-initiated). Posts in one FIFO, messages out in one FIFO to the main thread, one wake per batch. In Debug builds for macOS and the simulator it also hosts harness attach (`library/harness/attach/`) |
+| Swift | the library's native threaded host `calcu::shell::SessionThread` (`library/shell/SessionThread.*`): builds, calls about 60 times a second and destroys the session on one thread (QoS user-initiated). Posts in one FIFO, messages out in one FIFO to the main thread, one wake per batch. In Debug builds for the simulator it also hosts harness attach (`library/harness/attach/`) |
 | Qt6 | the GUI thread: a 60 Hz `QTimer` calls the session |
 | Web | the library's Web Worker (`library/web/src/worker.js`): a 60 Hz `setInterval` calls the session through the library's `WorkerHost` |
 
@@ -176,11 +176,8 @@ Nothing else in the app layer locks: `FrameSampler`,
 |---|---|
 | Main | SwiftUI, every `TIAppSession` call (each posts a command and returns at once), `SessionDelegate` callbacks, all `@Observable` writes |
 | Session thread (`calcu::shell::SessionThread`) | The app session: built, called about 60 times a second, destroyed there; the machine, the presets, the card and `ti58c.memory.yaml` files (through `NSFileCoordinator`) |
-| Attach I/O thread (Debug, macOS and simulator) | `calcu::harness::AttachEndpoint`: the socket on 127.0.0.1; lines go to the session thread |
+| Attach I/O thread (Debug, simulator) | `calcu::harness::AttachEndpoint`: the socket on 127.0.0.1; lines go to the session thread |
 | Global utility queue | `CardStorage.warmUp()` before the session is made — `url(forUbiquityContainerIdentifier:)` blocks and returns nil on the main thread |
-
-The view model holds an App Nap activity token for its lifetime, so macOS
-never stalls the session thread while the window is covered.
 
 #### Messages, not a refresh timer
 
@@ -192,15 +189,15 @@ those and assigns a property only when it differs, because `@Observable`
 notifies on equal writes too.
 
 On `.background` the app sends suspend (`suspend(completion:)`: carried out
-— the TI-58C's memory written — then the thread stops calling; on iOS inside
+— the TI-58C's memory written — then the thread stops calling, inside
 a background task); on `.active` it sends continue. A debug freeze survives.
 
 #### Harness attach (Debug)
 
-A Debug build for macOS or the simulator opens its session to the harness
+A Debug build for the simulator opens its session to the harness
 on 127.0.0.1, the port of the launch argument `--attach-port N`, else
 59059 (`openAttach(withArguments:)`); `calcu attach [--port N]` on the Mac
-drives it, and `Calc-U-59UITests/HarnessClient.swift` from an XCUITest.
+that runs the simulator drives it, and `Calc-U-59UITests/HarnessClient.swift` from an XCUITest.
 Only the Debug configuration has `com.apple.security.network.server`
 (`Calc-U-59-Debug.entitlements`); Release and device builds have no attach.
 
@@ -259,9 +256,9 @@ bit 4 is the card-detect line. Scanning: `Core-Architecture.md`
 
 ## Physical Keyboard Mapping
 
-Computer keyboards drive the calculator in the macOS Swift app, the Qt6 app
-and the web client (`frontends/web/`, with its `keyboard` prop). iOS/iPadOS have no
-keyboard input. The debugger and printer panels take no calculator
+Computer keyboards drive the calculator in the Qt6 app and the web client
+(`frontends/web/`, with its `keyboard` prop). The Swift app (iPhone and
+iPad) has no keyboard input. The debugger and printer panels take no calculator
 keys: Space (R/S vs. STEP) and Cmd/Ctrl+C (printer tape vs. selected text)
 would have no single owner.
 
@@ -338,8 +335,7 @@ engine with the TI profile (`app/TITyping.hpp`):
 Keys reach the calculator only while it has focus. It takes focus at launch
 and on every click on the calculator. There is no focus indicator, so
 clicking into the debug panel silently stops keys reaching the calculator.
-This is a stepping stone: the Mac is meant to end up with one input surface
-where every key has one meaning (`TODO.md` § UI). Panels that need keys
+Panels that need keys
 themselves (the CPU inspector's arrow keys) take focus on click, never on
 appear. The web client is focusable (`tabIndex=0`, focused on
 pointer-down with `preventScroll`) but not focused on load, so Tab still
@@ -405,8 +401,7 @@ into the running machine from step 000 (no cold boot), a `.rom.yaml` and
 part through the media part: fitted where it lies on the TI-59 and written back there (an
 upload on the Web is imported into the save folder first), refused with a
 notice on the TI-58/58C and while a card passes; a `.u59` or `.bin` file is no file
-of the product. A refusal is the session's notice. On the Mac, the file's security
-scope stays open while a card is fitted, because a write goes back to it.
+of the product. A refusal is the session's notice.
 
 Card file format: magnetic card format 3 (`docs/formats/media.md` §1;
 `app/TIMagneticCardKind`).
@@ -581,17 +576,17 @@ Snapshot fields and freeze semantics: `Debug-API.md`.
 
 ## The Swift frontend
 
-The Swift app (`frontends/swift/App/`, `frontends/swift/Bridge/`) for macOS and iOS/iPadOS
-is a renderer over the app session with `TIAppPart` (through
+The Swift app (`frontends/swift/App/`, `frontends/swift/Bridge/`) for iOS and iPadOS
+(the Mac app is the Qt6 app) is a renderer over the app session with `TIAppPart` (through
 `frontends/swift/Bridge/TIAppSession` on the library's `calcu::shell::SessionThread`);
 its threads are under "Threads" above.
 
 ### Layer Overview
 
 ```
-CalcU59App                    (Calc-U-59App.swift: scene, background/active, macOS Settings + About)
+CalcU59App                    (Calc-U-59App.swift: scene, background/active, the iPad's menu bar)
 └─ CalculatorView             (adaptive layout, toolbar, card bar, file importer, alerts)
-    ├─ KeyboardView           (calculator art, hit test, LED + cue-card overlays, physical keys)
+    ├─ KeyboardView           (calculator art, hit test, LED + cue-card overlays)
     │   ├─ LEDDisplayView
     │   └─ CueCardView
     ├─ PrinterView            (the PC-100C's paper, PRINT / T / ADV, copy, cut)
@@ -611,18 +606,18 @@ EmulatorViewModel (@Observable, main thread)
 
 | File | Role |
 |---|---|
-| `Calc-U-59App.swift` | App entry; suspends on background, resumes on active; the family's menus (`ShellCommands`); macOS Settings scene and About panel; `RomsMissingView` with the Help item |
+| `Calc-U-59App.swift` | App entry; suspends on background, resumes on active; the family's menus (`ShellCommands`); `RomsMissingView` with the Help item |
 | `EmulatorViewModel.swift` | The `@Observable` face of the app session: sends the commands, copies the topics into observable properties; holds `TIShell` and copies the shell's models (menus, More items, bar, settings rows, the paper's owner, "Loading…", the notice shown) at each change of their inputs; the pointer on the faceplate through the shell's rule; Swift mirrors of the debug snapshot and `ProgramSource` |
 | `ROMLoader.swift` | The ROM lookup over the bundle's resource folder (`TIRomSet`; a "ROMs missing" text in place of the calculator) |
 | `CardStorage.swift` | The save folder (cards, `ti58c.memory.yaml`): iCloud Documents container, else local Documents |
-| `AppSettings.swift` | Where the settings file lives (Application Support), the Debug-only `--settings-file`, and the security-scoped bookmark of a chosen trace folder, the one value kept in UserDefaults, the only thing kept outside the settings file; the settings themselves are the session's |
-| `AppInfo.swift` | Version and the macOS About panel; its texts and links are `TIShell`'s (`app/TIShellProduct`) |
+| `AppSettings.swift` | Where the settings file lives (Application Support), the Debug-only `--settings-file`; the settings themselves are the session's |
+| `AppInfo.swift` | Version; texts and links are `TIShell`'s (`app/TIShellProduct`) |
 | `CueCardContent.swift` | Swift cue-card value type and its `TICueCard` conversion |
-| `Views/CalculatorView.swift` | Root view; macOS side-by-side and iOS layouts — pages, or side by side with or without the debugger, as `TIViewRules.mobileLayout` (Shared `mobileLayout`) says for the window's size and an active fold (iPhone Duo), with the printer's width (`mobilePrinterWidth`) and a top margin for windows without a top inset (`mobileTopMargin`); the control bar (`ControlBarView`); the notice alert; Load Preset…'s file dialog (the preset types, the library's `open`), the settings sheet (iOS) and the ASM file importer; the macOS drop (`open`) |
-| `Views/ControlBarView.swift` | The control bar from `TIShell.bar`: the model picker, the picker of `slot-1`, the button "PC-100C", the card controls (`CardControls`); on iOS Reset, Preset, Settings and More (Cold boot asks first); a disabled control's reason as its help tag on macOS |
-| `Views/ShellCommands.swift` | The family's menus File, Machine, Help as SwiftUI `Commands` from `TIShell.menus`, the shortcuts as key equivalents |
-| `Views/KeyboardView.swift` | Calculator art; the pointer through the library's rule (`TIShell` on `cu59::faceplateHitMap`: the key, the display for full speed; the card's corners first), pressed-key effect, haptics / click, "Loading…" below the display, `PhysicalKeyboardModifier` (macOS) |
-| `Views/UIKitTouchTracking.swift` | iOS raw-touch tracker that replaces `DragGesture` for keys (iOS 27 fires `onEnded` early) |
+| `Views/CalculatorView.swift` | Root view; the layouts — pages, or side by side with or without the debugger, as `TIViewRules.mobileLayout` (Shared `mobileLayout`) says for the window's size and an active fold (iPhone Duo), with the printer's width (`mobilePrinterWidth`) and a top margin for windows without a top inset (`mobileTopMargin`); the control bar (`ControlBarView`); the notice alert; Load Preset…'s file importer (the preset types, the library's `open`), the settings sheet and the ASM file importer |
+| `Views/ControlBarView.swift` | The control bar from `TIShell.bar`: the model picker, the picker of `slot-1`, the button "PC-100C", the card controls (`CardControls`); Reset, Preset, Settings and More (Cold boot asks first) |
+| `Views/ShellCommands.swift` | The family's menus File, Machine, Help in the iPad's menu bar as SwiftUI `Commands` from `TIShell.menus`, the shortcuts as key equivalents |
+| `Views/KeyboardView.swift` | Calculator art; the pointer through the library's rule (`TIShell` on `cu59::faceplateHitMap`: the key, the display for full speed; the card's corners first), pressed-key effect, haptics / click, "Loading…" below the display |
+| `Views/UIKitTouchTracking.swift` | Raw-touch tracker that replaces `DragGesture` for keys (iOS 27 fires `onEnded` early) |
 | `Views/LEDDisplayView.swift` | 12-digit LED in a SwiftUI `Canvas` |
 | `Views/CueCardView.swift` | Cue card on its template art |
 | `Views/PrinterView.swift` | The paper panel: the owner's paper under its name, an empty paper under none; dots by band (`PaperBand`) or text; Copy and Cut are the session's |
@@ -631,7 +626,7 @@ EmulatorViewModel (@Observable, main thread)
 | `Views/LiveDebugView.swift`, `Views/CPUInspectorView.swift` | CALCULATOR and CPU tabs |
 | `Views/HoldRepeatButton.swift` | Fires on press, repeats every 0.25 s while held and while step can be used (STEP) |
 | `Views/ChromeControlStyles.swift` | Dark chrome button and menu styles |
-| `Views/SettingsView.swift` | The settings from `TIShell.settingsDialog` (`cu59::settingsSpec(SwiftMac/SwiftIOS)`): a choice is a picker (true and false a toggle), a number a field, the macOS trace folder Choose…; a change is `set-setting` at once; the notice alert over the iOS sheet |
+| `Views/SettingsView.swift` | The settings from `TIShell.settingsDialog` (`cu59::settingsSpec(SwiftIOS)`): a choice is a picker (true and false a toggle), a number a field; a change is `set-setting` at once; the notice alert over the sheet |
 
 ### Build
 
@@ -672,10 +667,9 @@ Never import the three ObjC++-only headers from the bridging header.
 
 **The family structure.** The window is drawn from the library's
 shell models, computed by `TIShell` in the bridge from the same
-topics the Qt6 and React sets read: the menus (`ShellCommands`, on macOS
-and in the iPad's menu bar; Settings…, About and Quit are the application
-menu's), the control bar (`ControlBarView`; without a menu bar Reset,
-Preset, Settings and More), the settings (`SettingsView`), "Loading…" and
+topics the Qt6 and React sets read: the menus (`ShellCommands`, in the iPad's menu bar; the items with the
+roles Settings…, About and Quit are left out), the control bar
+(`ControlBarView`, with Reset, Preset, Settings and More), the settings (`SettingsView`), "Loading…" and
 the notices (one alert after the other). No Swift view decides what the
 machine offers; a control or item is enabled exactly when its entry is.
 
@@ -683,12 +677,8 @@ machine offers; a control or item is enabled exactly when its entry is.
 pixel of the base image) to `TIShell`, whose library rule finds the key on
 `cu59::faceplateHitMap` and sends `screen-key-down`/`-up` (a held display
 is `speed {full}`); a press on the fitted card's corner goes first to
-`tapCard`. On iOS, key touches go through
-`UIKitTouchTracker`; macOS keeps `DragGesture(minimumDistance: 0)`.
-Physical keys (macOS only) go through `PhysicalKeyboardModifier`, which
-subscribes to `.down` and `.up` only (dropping auto-repeat) and releases the
-held key when focus is lost. Mapping, timing and focus rules:
-§ "Physical Keyboard Mapping".
+`tapCard`. Key touches go through `UIKitTouchTracker`. Timing rules:
+§ "Physical Keyboard Mapping" ("Injection timing").
 
 **LED.** `LEDDisplayView` draws each cell in a `Canvas` with the shared
 segments and shear, the glow and bloom as blurred copies under the crisp
@@ -709,7 +699,7 @@ reset marker empties it), the view model files the dots by band of 10 units,
 and `PrinterView` draws the bands in view (`PaperBand`) or the selectable
 text. Copy sends `paper.copy`: the library makes the picture at 600 dpi and
 asks for `clipboard-image`, which the bridge puts on the pasteboard
-(macOS: `NSImage` at its physical size; iOS: PNG) with the text; the toast
+(a PNG) with the text; the toast
 follows `paper-copies` ("Copied to clipboard" / "Copy failed"). Cut sends
 `paper.cut {copy: true}`; `printerClearID` resets the text view's identity
 to drop a selection. PRINT, ADV and TRACE send `set-control`.
@@ -725,13 +715,11 @@ of `app/TIDebugPart` and the library's `log`; the buttons send its commands
 `c59.asm-run`, `c59.asm-clear`); Run, TRACE and the CALCULATOR tab follow
 the control state's product entries.
 
-**Opening files.** A file dropped on the macOS window and a file picked with
-the Preset button (the preset types only) go to the session's
-`open` (way `drop` or `dialog`) with their bytes and path; the
-session finds out what it is, and a refusal arrives as its notice (an alert).
-Load Preset… is the File menu's (⌘O) on macOS and the bar's Preset on iOS.
-A card's security scope stays open while it is fitted (written back where
-it lies).
+**Opening files.** A file picked with the file importer of Load Preset…
+(the bar's Preset, File ▸ Load Preset… ⌘O in the iPad's menu bar; the
+preset types only) goes to the session's `open` (way `dialog`) with its
+bytes and path; the session finds out what it is, and a refusal arrives as
+its notice (an alert).
 
 **Storage.** Cards (`.magnetcard.yaml`, the library's media part) and
 `ti58c.memory.yaml` live in the `CardStorage` folder (iCloud Documents when
@@ -743,9 +731,8 @@ Support, opened by the bridge and then the session thread's (the library's
 path in the app's temporary folder), the one launch argument of the UI and
 unit tests. Traces go to the trace location from Settings (read at each
 trace start): Local
-(`~/Library/Application Support/Calc-U-59`), iCloud (the card folder; on iOS
-refused while signed out, `HostDirs::iCloudAvailable`) or a
-custom folder (macOS, security-scoped bookmark, `HostDirs::chosenTraceFolder`).
+(`Calc-U-59` in the app's Application Support) or iCloud (the card folder;
+refused while signed out, `HostDirs::iCloudAvailable`).
 The save folder and the folder for screenshots are read when used too, so a
 change in Settings applies at once.
 

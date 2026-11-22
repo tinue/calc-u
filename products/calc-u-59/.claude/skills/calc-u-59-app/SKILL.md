@@ -47,7 +47,7 @@ drawing rules: `docs/developer/App-Layer.md`. Don't restate them here.
    texts and links, the settings dialog per frontend and layout, the
    faceplate's hit map) is `app/TIShellProduct`, one source for every
    frontend (Swift through `Bridge/TIShell`, its settings
-   per system `ShellFrontend::SwiftMac`/`SwiftIOS`); a new menu item or
+   `ShellFrontend::SwiftIOS`); a new menu item or
    settings row goes there. Without the
    full ROM set the session is made with the lookup's result
    (`TIAppSetup::roms`) and no machine; the library's StartupPart publishes

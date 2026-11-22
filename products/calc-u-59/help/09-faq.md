@@ -27,9 +27,9 @@ endings (Explorer: "Show file extensions"; Finder: Settings ▸ Advanced ▸
 ## Where do magnetic cards live?
 
 In the save folder, as `<name>.magnetcard.yaml`: the app's iCloud storage
-on macOS, the iPhone and the iPad (Finder: iCloud Drive ▸ Calc-U-59), or
+on the iPhone and the iPad (iCloud Drive ▸ Calc-U-59), or
 its local folder when iCloud is off; `Calc-U-59` in your home folder on
-Windows and Linux, unless **Settings ▸ Storage ▸ Save folder** names
+macOS, Windows and Linux, unless **Settings ▸ Storage ▸ Save folder** names
 another; the browser's storage in the browser. Use the **Crd** buttons to
 arm one ([Magnetic cards](04-magnetic-cards.md)).
 

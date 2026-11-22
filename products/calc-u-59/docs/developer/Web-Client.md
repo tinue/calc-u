@@ -8,7 +8,7 @@ with React components that only draw what it sends and
 forward input to it. It has the
 apps' features (`Frontend-Parity.md`, the Web column) in two layouts:
 
-- **wide** — calculator | printer | debugger, as the macOS window and the
+- **wide** — calculator | printer | debugger, as the desktop window, the
   Qt `MainWindow`;
 - **portrait** — one page at a time, calculator or printer, switched with
   corner chevrons, as the iPhone layout; no debugger, no traces.

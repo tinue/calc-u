@@ -105,7 +105,7 @@ test('only the messages of the session protocol', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page);
   await page.getByRole('button', { name: '5', exact: true }).click();
-  await request(page, 'c59.mobile-rules', { w: 400, h: 800 });
+  await request(page, 'c59.debug-headers', {});
   const { sent, received } = await page.evaluate(() => ({
     sent: window.__calcuSent.map((m) => m && m.kind),
     received: window.__calcuReceived.map((m) => m && m.kind),

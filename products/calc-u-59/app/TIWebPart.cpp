@@ -93,16 +93,6 @@ Value webDebugHeaders() {
     return Value::object({{"calculator", one(false)}, {"cpu", one(true)}, {"narrowBelow", kDebugHeaderNarrowBelow}});
 }
 
-Value webMobileRules(double w, double h) {
-    const auto layout = mobileLayout(w, h, false);
-    const auto printer = mobilePrinterWidth(layout, w);
-    return Value::object({{"paged", layout == MobileLayout::Paged},
-                          {"debugger", layout == MobileLayout::CalcPrinterDebugger},
-                          {"printerMin", printer.min},
-                          {"printerMax", printer.max},
-                          {"compactPrinterBar", compactPrinterBar(printer.max)}});
-}
-
 } // namespace
 
 TIWebPart::TIWebPart() = default;
@@ -198,7 +188,6 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
         return answer("c59.heatmap-grid", Value::object({{"cols", kHeatmapCols}, {"rows", kHeatmapRows}, {"colors", Value(std::move(colors))}}));
     });
     req("c59.led-geometry", [](const Value& a) { return answer("c59.led-geometry", webLedGeometry(realArg(a, "w"), realArg(a, "h"))); });
-    req("c59.mobile-rules", [](const Value& a) { return answer("c59.mobile-rules", webMobileRules(realArg(a, "w"), realArg(a, "h"))); });
     req("c59.debug-headers", [](const Value&) { return answer("c59.debug-headers", webDebugHeaders()); });
 }
 

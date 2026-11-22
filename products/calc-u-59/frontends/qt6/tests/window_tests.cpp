@@ -386,6 +386,39 @@ TEST(three_columns_with_dividers) {
     CHECK(f.w().grab().save(out + QStringLiteral("/calc-u-59-qt6.png")));
 }
 
+// The view rule: a window too narrow for the printer beside the faceplate
+// shows one page at a time, the chevron switching them; a short one leaves
+// the debugger out.
+TEST(narrow_window_pages_short_window_no_debugger) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f;
+    QWidget* calculator = f.w().splitter()->widget(0);
+    QWidget* panels = f.w().shell().panelArea();
+    QWidget* debug = f.w().splitter()->widget(2);
+    CHECK(!f.w().paged() && debug->isVisible());
+    f.w().resize(1200, 500);
+    f.run(50);
+    CHECK(!f.w().paged() && panels->isVisible() && !debug->isVisible());
+    f.w().resize(400, 900);
+    f.run(50);
+    CHECK(f.w().paged());
+    CHECK(calculator->isVisible() && !panels->isVisible() && !debug->isVisible());
+    QToolButton* chevron = f.w().pageChevron();
+    CHECK(chevron && chevron->isVisible());
+    // The bar right below the faceplate, whatever the page's height.
+    QWidget* bar = f.find<QWidget>(names::kControlBar);
+    CHECK(bar && bar->geometry().top() - f.w().keyboard()->geometry().bottom() <= 2);
+    chevron->click();
+    f.run(50);
+    CHECK(!calculator->isVisible() && panels->isVisible());
+    chevron->click();
+    f.run(50);
+    CHECK(calculator->isVisible() && !panels->isVisible());
+    f.w().resize(1200, 900);
+    f.run(50);
+    CHECK(!f.w().paged() && calculator->isVisible() && panels->isVisible() && debug->isVisible() && !chevron->isVisible());
+}
+
 // ── The faceplate's input ─────────────────────────────────────────────────
 
 TEST(key_under_pointer_ti59_ti58) {

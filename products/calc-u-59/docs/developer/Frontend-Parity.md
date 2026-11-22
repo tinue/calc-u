@@ -4,6 +4,10 @@ All three GUIs run the same `core/` and `app/` code; this table tracks
 the GUI on top. Every user-visible feature has a row; a change to one
 frontend updates its row on the same branch. The web client (`frontends/web/`, `Web-Client.md`) has two layouts:
 wide (as the desktop window, the Qt `MainWindow`) and portrait (as the iPhone, no debugger).
+The Qt window and the Web's `auto` layout pick their view with the
+library's view rule (`shell::view`): the printer (and the debugger, where
+there is room) beside the faceplate where the room beside takes it, else
+the pages; the iPhone app stays upright in portrait.
 The platform class is apart from the layout: Qt is desktop (a menu bar),
 the Swift frontend mobile (none), the Web desktop in a browser tab on a
 computer and mobile when installed or when the browser asks for the
@@ -99,7 +103,8 @@ not in the Swift app (desktop and browser tools).
 | About (icon, version, summary, links) | — (no About in the iPhone and iPad app) | shell (Help ▸ About Calc-U-59; the window icon, "Built with Qt") | shell (desktop: Help ▸ About; More ▸ About; no icon) | `TIShellProduct` | Qt and Web | |
 | Settings | Swift shell (`settingsSpec(SwiftIOS)`: General, Startup presets, Display, Keyboard, Layout, Tracing; a sheet with Done) | shell (`cu59::settingsSpec(Qt6)`: General, Startup presets, Storage, Folders, Tracing, Display) | shell (`settingsSpec(WebWide/WebPortrait)`: General, Startup presets, Tracing (wide), Keyboard (portrait); no Settings with the prop `settings` off) | `Settings`, the library's `SettingsPart`, `TIShellProduct` | All | every change applied at once; More ▸ Settings… on every bar |
 | Help (user guide link) | Swift shell (More ▸ Calc-U-59 Help; the iPad's menu bar: Help ▸ Calc-U-59 Help; also without the ROMs) | shell (Help ▸ Calc-U-59 Help) | shell (desktop: Help menu; More ▸ Calc-U-59 Help) | `TIShellProduct` | All | opens `https://calc-u.org/59/` |
-| iOS layouts (portrait pages, iPhone; side by side, iPad and iPhone Duo), haptics, click sound | `CalculatorView`, `KeyboardView` | — | `CalcU59` (portrait layout; the PWA's `auto` layout, keyboard feedback) | `DebugText` (`mobileLayout`) | Swift only / Web only | Swift: iOS only: pages when tall or folded; side by side when wide: calculator and printer, plus the debugger on iPad and iPhone Duo; web: the PWA picks the same layouts by the window's size (no fold), click via WebAudio only (no haptics in a browser) |
+| The view by the window's size (side by side or pages) | `CalculatorView` (iPhone upright; iPad: `DebugText`'s `mobileLayout`, with the fold) | `MainWindow::applyView` (the pages' chevron at the window's top corner) | `CalcU59` (the PWA's `auto` layout) | the library's `shell::view`, `TIChrome` (`panelsMinWidth`, `debuggerMinWidth`, `debuggerMinHeight`) | All | Swift: pages on the iPhone; iPad pages when tall or folded, side by side when wide; Qt and Web: the view rule, the debugger where the room and the height take it |
+| Haptics, click sound | `KeyboardView` | — | `CalcU59` (portrait layout, the PWA; keyboard feedback) | — | Swift only / Web only | click via WebAudio only (no haptics in a browser) |
 | UI test launch argument (`--settings-file`, Debug only) | `AppSettings` | — | — | — | Swift only | no other test aids in the app (CTest `CalcU59NoTestAids`); the tests drive the session through harness attach |
 | `--grab <png>` offscreen screenshot | — | `main.cpp` | — | — | Qt only | developer check |
 | Installable PWA, offline | — | — | `app/` | — | Web only | layout follows the window as on iOS (rotates; pages, or side by side); all three models, every module and preset offline |

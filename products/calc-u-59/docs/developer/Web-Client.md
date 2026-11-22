@@ -13,7 +13,10 @@ apps' features (`Frontend-Parity.md`, the Web column) in two layouts:
 - **portrait** — one page at a time, calculator or printer, switched with
   corner chevrons, as the iPhone layout; no debugger, no traces.
 
-The installable PWA (`app/`) picks between them by the window's size.
+The installable PWA (`app/`) picks between them by the window's size with
+the library's view rule (`shell::view`, in JS `calcuShellView`): the room
+beside the faceplate that takes the printer column gives wide, anything
+else portrait.
 
 Apart from the layout, the page is desktop or mobile (the library's
 `calcuShellPlatform`, `library/web/components/useShell.jsx`): mobile for
@@ -102,7 +105,7 @@ About texts and links, the settings spec of the layout); the faceplate is
 `c59.faceplate-map {model}` (the hit map in pixels of the 2064 × 4075 base
 image, the card area, each key's rectangle, the card's corners); the
 heatmap's grid `c59.heatmap-grid`; the LED shapes
-`c59.led-geometry`, the PWA's layout rules `c59.mobile-rules`, the debug
+`c59.led-geometry`, the debug
 tabs' headers `c59.debug-headers` (app/'s `debugHeader`: title, buttons
 left to right, wide and narrow labels, colours, `narrowBelow`)
 (`app/TIWebPart`). The start is the shell's `start` command with
@@ -243,14 +246,17 @@ Sizes that follow the width are inline styles.
 ### The PWA (`app/`)
 
 `app/index.html` mounts `CalcU59` with `layout="auto"`, the keyboard
-and an install banner. It follows the window as the iOS app does (the app layer's
-`mobileLayout`, `mobilePrinterWidth`, through
-the request `c59.mobile-rules`; the bar's labels by the library's
-`calcuShellBarFit`, measured with and without them): pages when taller than wide; calculator,
-printer and debugger from 820 × 560 px; calculator and printer below that
-(a phone in landscape). The manifest's orientation is `any`: Safari can't lock
-one, so the layout adapts instead. A browser can't see a fold, so a half-open
-foldable counts as its whole window. WebKit in a Home Screen app returns from landscape
+and an install banner. It follows the window with the library's view rule
+(`calcuShellView` on app/'s chrome, `TIChrome`; the bar's labels by the
+library's `calcuShellBarFit`, measured with and without them): the
+faceplate as large as the window allows; where the room left beside it is
+at least `panelsMinWidth`, calculator and printer side by side, with the
+debugger where that room also takes `debuggerMinWidth` and the window is
+`debuggerMinHeight` tall (not a phone in landscape); else the pages (a
+phone in portrait, a narrow window). The manifest's orientation is
+`portrait`, the faceplate's own: Android keeps the installed app upright,
+Safari ignores it, and the layout follows the window there. A browser can't
+see a fold, so a half-open foldable counts as its whole window. WebKit in a Home Screen app returns from landscape
 with the document scrolled by the status bar's height but drawn unscrolled, so
 touches land too low; the library's `app.jsx` resets the scroll. Only an installed app in the
 iOS simulator or on a device shows it, not Playwright. `#root` is fixed to the viewport and a

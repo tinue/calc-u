@@ -29,7 +29,7 @@
 //   sends the library's screen-key-down/-up, a dropped file is the library's
 //   `open`); every other command is TIAppPart's (`c59.*`);
 // - the cards are the library's `media` topic and `media.*` commands;
-// - requests for the drawing material: `c59.led-geometry`, `c59.mobile-rules`
+// - requests for the drawing material: `c59.led-geometry`,
 //   `c59.faceplate-map`, `c59.heatmap-grid`, `c59.shell-product`.
 // It lives in the app layer so that it builds and is tested natively; the Web
 // engine (frontends/web/bindings.cpp) only adds it to the session. Settings:

@@ -85,7 +85,10 @@ your browser.
 
 - **Mac, Windows and Linux** (the desktop app): the calculator, the paper panel
   and the debug panel side by side, with dividers you can move; the
-  window comes back at its last size and place.
+  window comes back at its last size and place. In a window too low for
+  the debugger it is left out; in one too narrow for the paper beside the
+  calculator, the calculator and the paper are pages you turn with the
+  arrow in the top corner.
 - **iPhone**: portrait only. The calculator fills the screen; the
   printer and the debugger are pages you turn with the arrows in the top
   corners (the debugger only with Settings ▸ Layout ▸ Debug Page in
@@ -99,7 +102,10 @@ your browser.
   or installed as an app): the **wide** layout with the paper and the
   debugger; the **portrait** layout with the paper as a second page. In a
   tab on a computer the page has the menu bar; installed on a phone or
-  tablet it has none. An installed app follows the device's rotation.
+  tablet it has none. Installed, it chooses by the window as the desktop
+  app does: the paper beside the calculator where there is room for it
+  (the debugger too on a larger screen), else the pages. On Android the
+  installed app stays upright, as the calculator is.
 
 ![The calculator, the paper and the debugger on an iPad in landscape](images/ipad-13-2752x2064.png)
 

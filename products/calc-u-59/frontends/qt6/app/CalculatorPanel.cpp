@@ -4,6 +4,7 @@
 #include "KeyboardWidget.hpp"
 #include "shell/BarModel.hpp"
 #include <QEvent>
+#include <QResizeEvent>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <algorithm>
@@ -46,10 +47,18 @@ void CalculatorPanel::setShellWidgets(QWidget* controlBar, QWidget* romsMissing)
     row->addWidget(controlBar, 1000);
     row->addStretch(1);
     col->addLayout(row);
+    col->addStretch(0);
     m_bar = controlBar;
     m_keyboard->installEventFilter(this);   // the faceplate's size
     controlBar->installEventFilter(this);   // its controls came or went
     fitBar();
+}
+
+void CalculatorPanel::resizeEvent(QResizeEvent* e) {
+    const double inset = ChromeStyle::chrome().sizes.panelInset;
+    const int tallest = static_cast<int>(std::ceil((width() - 2 * inset) / cu59::kCanvasAspect));
+    if (m_keyboard->maximumHeight() != tallest) m_keyboard->setMaximumHeight(std::max(1, tallest));
+    QWidget::resizeEvent(e);
 }
 
 bool CalculatorPanel::eventFilter(QObject* o, QEvent* e) {

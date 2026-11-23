@@ -88,7 +88,6 @@ public:
     void addBarControl(shell::BarGroup, QWidget*);   // at the end of the group
     using Factory = std::function<QWidget*(const sessions::Value& entry, QWidget* parent)>;
     void registerMediaControls(std::string mediumKind, Factory);   // the library's medium kinds; the TI card
-    void setSlotPicker(SlotPickerOptions);                         // the library's module picker's options
     void registerPanel(std::string kind, std::function<QWidget*(QWidget* parent)>);   // the library's paper panel by default
     void setChoosers(ShellChoosers);
     // The product's chrome (its app/ Chrome, alive as long as the shell):
@@ -115,6 +114,10 @@ public:
     void openAbout();
     void loadPreset();
     void openHelp();
+    // Name & Save of a media place: the media components' dialog with the
+    // product's prompt for the place (shell::nameAndSavePrompt). The bar's
+    // slot buttons, the place's submenu and a product's media control use it.
+    void nameAndSave(const std::string& place);
     // The start folder of a file dialog of `kind` (settings section [folders]).
     QString startFolder(const std::string& kind) const;
     void rememberFolder(const std::string& kind, const QString& file);

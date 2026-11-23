@@ -298,8 +298,10 @@ QWidget* ShellControlBar::build(const BarControl& c, QWidget* parent) {
         auto* l = new QHBoxLayout(w);
         l->setContentsMargins(0, 0, 0, 0);
         if (!c.label.empty()) l->addWidget(new QLabel(QString::fromStdString(c.label), w));
+        std::function<void(const std::string&)> save;
+        if (shell_.product().nameAndSave.slotButtons) save = [this](const std::string& place) { shell_.nameAndSave(place); };
         auto* picker = new SlotPicker(
-            shell_.host(), c.entry, slotOptions_, chrome_ ? chrome_->sizes.slotPickerEm : 0,
+            shell_.host(), c.entry, std::move(save), chrome_ ? chrome_->sizes.slotPickerEm : 0,
             [this](const sessions::CommandName& n, sessions::Value args) { shell_.sendChecked(n, std::move(args)); }, w);
         picker->picker()->setShowShort(c.shortShown);
         l->addWidget(picker);

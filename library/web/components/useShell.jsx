@@ -9,14 +9,18 @@
 //   page is mobile when CALCU_SHELL_MOBILE. shellArgs: the product's own
 //   args of its shell, as its Web part reads them.)
 //   s.menus, s.bar, s.panels, s.dialog (the settings rows), s.loading, s.notice,
-//   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" | null)
+//   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" |
+//   "name-and-save" | null), s.naming (the place Name & Save is open for)
 //   s.choose(item), s.setSetting(section, key, value), s.closeNotice(yes), s.close()
+//   s.nameAndSave(place): the Name & Save dialog of a media place (ShellDialogs),
+//   for the place's submenu, the slot pickers' buttons and the product's own
+//   media controls
 //
 // `product` is the page's form of the product's data (`*.shell-product`):
 // its name, help address and About, `product.loadPreset` (optional) in
 // place of the shell's Load Preset… (a product that opens the picked files
-// through the session's `open`), `copyScreen`, `nameAndSave(place)` and its
-// items' acts by id.
+// through the session's `open`), `copyScreen`, `nameAndSave` ({slotButtons,
+// prompt, prompts}: ShellProduct::nameAndSave) and its items' acts by id.
 
 // Whether the page is mobile, fixed while it is open: true for the
 // installed app and for a browser that asks for the mobile site, else
@@ -54,6 +58,7 @@ function useCalcuShell(shell, product, traits, shellArgs) {
   const media = useTopic(shell, "media");
   const models = useTopic(shell, "web.shell") || CALCU_SHELL_NO_MODELS;
   const [open, setOpen] = React.useState(null);
+  const [naming, setNaming] = React.useState(null);
   const [, setVersion] = React.useState(0);
   const rerender = React.useCallback(() => setVersion((v) => v + 1), []);
   const notices = React.useRef(null);
@@ -110,6 +115,10 @@ function useCalcuShell(shell, product, traits, shellArgs) {
       sendChecked("load-preset", { content: text, name: files[0].name });
     });
   };
+  const nameAndSave = (place) => {
+    setNaming(place);
+    setOpen("name-and-save");
+  };
   const choose = (item) => {
     if (!item || item.enabled === false) return;
     if (item.command) { sendChecked(item.command, item.args); return; }
@@ -118,7 +127,7 @@ function useCalcuShell(shell, product, traits, shellArgs) {
     else if (item.id === a.settings) setOpen("settings");
     else if (item.id === a.about) setOpen("about");
     else if (item.id === a.savedMedia) setOpen("saved-media");
-    else if (item.id.startsWith("media-name-and-save-")) { if (product.nameAndSave) product.nameAndSave(item.args.place); }
+    else if (item.id.startsWith(a.nameAndSavePrefix)) nameAndSave(item.args.place);
     else if (item.id === a.help) calcuWebHostServices().answer("open-url", { url: product.helpUrl });   // its result is ignored
     else if (item.id === a.copyScreen) { if (product.copyScreen) product.copyScreen(); }
     else if (item.id === a.pasteText) {
@@ -131,11 +140,11 @@ function useCalcuShell(shell, product, traits, shellArgs) {
   };
   const current = notices.current.current();
   return {
-    shell, product, traits: t, inputs, menus, bar, panels, dialog, open,
+    shell, product, traits: t, inputs, menus, bar, panels, dialog, open, naming,
     started: !!controlState, romsMissing: romsMissing || null,
     loading: loading.current.shown(calcuShellNow()),
     notice: current,
-    choose, sendChecked,
+    choose, sendChecked, nameAndSave,
     setSetting: (section, key, value) => sendChecked("set-setting", { section, key, value }),
     closeNotice: (yes) => {
       const again = notices.current.answer(!!yes);

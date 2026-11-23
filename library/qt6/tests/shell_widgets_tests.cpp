@@ -256,8 +256,7 @@ TEST(bar_on_widgets) {
 // slot holds no medium that can be named and saved. More never draws the
 // platform's menu arrow.
 TEST(slot_picker_name_and_save_and_more_look) {
-    TestWindow w;
-    w.shell->setSlotPicker({true, QStringLiteral("Instance name:")});
+    TestWindow w(true, TestWindow::defaultOptions(), [](shell::ShellProduct& p) { p.nameAndSave.slotButtons = true; });
     w.settle();
     auto* save = w.find<QPushButton>("media-save-slot-1");
     CHECK(save != nullptr && !save->isEnabled());

@@ -438,10 +438,37 @@ test('the blank tape is saved under its name', async ({ page }) => {
   await page.locator(c('media-picker-cassette')).selectOption({ label: 'Blank' });
   await expect(page.locator(c('name-and-save-cassette'))).toBeEnabled({ timeout: 30000 });
   await page.locator(c('name-and-save-cassette')).click();
+  await expect(nameAndSave(page)).toContainText('Cassette name:');
   const name = `Rec ${Date.now()}`;
   await page.locator(c('media-name')).fill(name);
   await page.locator(c('media-save')).click();
   await expect.poll(() => shown(page.locator(c('media-picker-cassette'))), { timeout: 30000 }).toBe(name);
+});
+
+// Mobile: the cassette is chosen in More ▸ Cassette ▸, whose Name & Save…
+// is the shell's dialog with the product's prompt.
+test('More has the cassette with Name & Save on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await gotoReady(page, '?mobile=1');
+  expect((await h.send(page, 'attach', { place: 'printer', peripheral: 'CE-150' })).done).toBe(true);
+  const more = page.locator(c('bar-more'));
+  const cassette = page.locator(c('more-item-media-cassette'));
+  const save = page.locator(c('more-item-media-name-and-save-cassette'));
+  await more.click();
+  await cassette.click();
+  await expect(save).toHaveAttribute('aria-disabled', 'true');   // nothing to save yet
+  await cassette.locator('li', { hasText: 'Blank' }).click();
+  await expect.poll(async () => {
+    const m = await h.topic(page, 'media');
+    const p = ((m && m.places) || []).find((x) => x.place === 'cassette');
+    return !!(p && p.nameAndSave);
+  }, { timeout: 30000 }).toBe(true);
+  await more.click();
+  await cassette.click();
+  await save.click();
+  await expect(nameAndSave(page)).toContainText('Cassette name:');
+  await nameAndSave(page).getByRole('button', { name: 'Cancel' }).click();
+  await expect(nameAndSave(page)).toHaveCount(0);
 });
 
 test('headerless code asks the address, then NEW and CALL', async ({ page }) => {

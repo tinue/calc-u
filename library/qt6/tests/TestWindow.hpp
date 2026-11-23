@@ -10,6 +10,7 @@
 #include "shell/SettingsPart.hpp"
 #include <QMainWindow>
 #include <QString>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -30,7 +31,9 @@ namespace calcu::qt6::test {
 
 class TestWindow {
 public:
-    explicit TestWindow(bool withControlState = true, ShellOptions options = defaultOptions());
+    // `product`: changes the test product before the shell takes it.
+    explicit TestWindow(bool withControlState = true, ShellOptions options = defaultOptions(),
+                        const std::function<void(shell::ShellProduct&)>& product = {});
     ~TestWindow();
 
     static ShellOptions defaultOptions() { return {}; }

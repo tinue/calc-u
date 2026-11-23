@@ -125,11 +125,6 @@ void Shell::registerMediaControls(std::string kind, Factory f) {
     refresh(QString());
 }
 
-void Shell::setSlotPicker(SlotPickerOptions o) {
-    bar_->setSlotOptions(std::move(o));
-    refresh(QString());
-}
-
 void Shell::registerPanel(std::string kind, std::function<QWidget*(QWidget*)> f) {
     panels_->registerPanel(std::move(kind), std::move(f));
     panels_->set(shell::panels(inputs_, product_));
@@ -252,6 +247,7 @@ void Shell::choose(const shell::MenuItem& item) {
     else if (item.id == a::kAbout) openAbout();
     else if (item.id == a::kHelp) openHelp();
     else if (item.id == a::kQuit) window_.close();
+    else if (item.id.rfind(a::kNameAndSavePrefix, 0) == 0) nameAndSave(shell::read::text(item.args, "place"));
     else if (item.id == a::kCopyScreen) {
         if (product_.copyScreen) product_.copyScreen();
     } else if (item.id == a::kPasteText) {
@@ -273,6 +269,10 @@ void Shell::openSettings() {
     askPresetList();   // the startup presets as the preset list has them now
     settings_->refresh();
     settings_->open();   // window-modal, no nested loop
+}
+
+void Shell::nameAndSave(const std::string& place) {
+    qt6::nameAndSave(host_, &window_, place, q(shell::nameAndSavePrompt(product_, place)));
 }
 
 void Shell::openAbout() {

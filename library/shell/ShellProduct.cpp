@@ -19,6 +19,11 @@ AboutModel about(const ShellProduct& p) {
     return a;
 }
 
+std::string nameAndSavePrompt(const ShellProduct& p, const std::string& place) {
+    auto it = p.nameAndSave.prompts.find(place);
+    return it != p.nameAndSave.prompts.end() ? it->second : p.nameAndSave.prompt;
+}
+
 namespace {
 
 void eachItem(const std::vector<ProductItem>& items, const std::function<void(const ProductItem&)>& f) {

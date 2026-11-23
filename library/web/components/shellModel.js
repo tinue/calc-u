@@ -18,6 +18,7 @@
 const CALCU_SHELL_ACTIONS = {
   loadPreset: "load-preset", savedMedia: "saved-media", settings: "settings", quit: "quit",
   copyScreen: "copy-screen", pasteText: "paste-text", help: "help", about: "about",
+  nameAndSavePrefix: "media-name-and-save-",
 };
 const CALCU_SHELL_LOADING_MS = 500;
 // The notice queue's question rule, as shell::kAsksPrefix (Notices.cpp): "asks:"

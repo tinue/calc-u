@@ -74,10 +74,6 @@ public:
     ShellControlBar(Shell&, QWidget* parent = nullptr);
     void set(const std::vector<shell::BarGroupModel>&);
     void addProductControl(shell::BarGroup, QWidget*);   // at the end of the group
-    void setSlotOptions(SlotPickerOptions o) {   // the next set() builds anew
-        slotOptions_ = std::move(o);
-        shown_.reset();
-    }
     void setMediaFactory(std::string kind, Factory f) {
         mediaFactories_[std::move(kind)] = std::move(f);
         shown_.reset();
@@ -116,7 +112,6 @@ private:
     std::array<std::vector<std::pair<std::string, QWidget*>>, kGroups> shellWidgets_;
     std::array<std::vector<QWidget*>, kGroups> productWidgets_;
     std::optional<std::vector<shell::BarGroupModel>> shown_;   // the model the widgets were built of
-    SlotPickerOptions slotOptions_;
     std::map<std::string, Factory> mediaFactories_;
     const shell::Chrome* chrome_ = nullptr;
     QToolButton* more_ = nullptr;

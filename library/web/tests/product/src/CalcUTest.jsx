@@ -20,7 +20,8 @@
 // In the product Test-M, whose session hosts the library's
 // MediaPart, the media control of the bar is the React set's media
 // components over the topic `media`: a CalcuMediaPicker per place, with a
-// Name & Save button (CalcuNameAndSaveDialog) where the place offers it;
+// Name & Save button (the shell's dialog, its prompt the product's) where the
+// place offers it;
 // File ▸ Saved Media… shows CalcuSavedMediaDialog.
 // With the prop `faceOrigin` (host page:
 // origin=N) the hit map's (0, 0) is N logical pixels into the faceplate, and
@@ -36,6 +37,7 @@ const CALCU_TEST_SHELL_PRODUCT = {
   aboutLabel: "", aboutLines: ["A product made for the tests.", "No code of a product."],
   aboutLinks: [["Source", "https://example.org/source"], ["Privacy", "https://example.org/privacy"]],
   presetUploads: ".test", copyScreen: null,
+  nameAndSave: { slotButtons: false, prompt: "Instance name:", prompts: {} },
   acts: { "load-program": () => { if (typeof window !== "undefined") window.calcuTestActs = (window.calcuTestActs || 0) + 1; } },
 };
 // TestShellPart.hpp's hitMap(): keys 1 to 3 in a row, the display above.
@@ -53,7 +55,6 @@ const CALCU_TEST_MEDIA = { "test-card": CalcUTestCard };
 // Test-M: every place of the topic `media`, whatever the scripted
 // control state names.
 function CalcUTestMediaPlaces({ shell }) {
-  const [naming, setNaming] = React.useState(null);
   const media = shell.inputs.media;
   const places = (media && media.places) || [];
   const send = (c, a) => shell.shell.send(c, a);
@@ -63,14 +64,10 @@ function CalcUTestMediaPlaces({ shell }) {
         <span key={p.place}>
           <CalcuMediaPicker place={p} send={send} />
           {p.nameAndSave ? (
-            <button type="button" data-calcu={`media-name-and-save-${p.place}`} onClick={() => setNaming(p.place)}>Name &amp; Save</button>
+            <button type="button" data-calcu={`media-name-and-save-${p.place}`} onClick={() => shell.nameAndSave(p.place)}>Name &amp; Save</button>
           ) : null}
         </span>
       ))}
-      {naming ? (
-        <CalcuNameAndSaveDialog place={places.find((p) => p.place === naming)} prompt="Instance name:" send={send}
-          onClose={() => setNaming(null)} />
-      ) : null}
     </span>
   );
 }

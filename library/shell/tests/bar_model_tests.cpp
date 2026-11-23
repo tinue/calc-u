@@ -216,7 +216,8 @@ TEST(bar_more_at_the_right_edge_on_every_platform) {
     auto cs = st::controlState();
     for (auto& a : cs.actions)
         if (a.command == control::kResetAction) a.available = st::unavailable("An operation runs.");
-    const MenuItem* reset = inMore(*controlOf(bar(st::inputs(cs.toValue()), p, web), "more"), "reset");
+    const auto unavailable = bar(st::inputs(cs.toValue()), p, web);   // kept: reset points into it
+    const MenuItem* reset = inMore(*controlOf(unavailable, "more"), "reset");
     CHECK(!reset->enabled);
     CHECK_EQ(reset->reason, std::string("An operation runs."));
     // Without settings, no Settings… in More.

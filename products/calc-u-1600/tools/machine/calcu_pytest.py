@@ -1,10 +1,11 @@
-"""The pytest plugin of the driver: the fixtures `make_machine` and `machine_class`, and the path
-names of pytest.ini.
+"""The pytest plugin of the driver: the fixtures `make_machine` and `machine_class`, the path
+names of pytest.ini and the run's report (report.py).
 
     [pytest]
     pythonpath = <checkout>/products/calc-u-1600/tools/machine <checkout>/library/harness/python
     calcu_paths =
         cards = test-cards
+    calcu_report = reports
 
 The project's conftest.py loads the plugin, `pytest_plugins = ["calcu_pytest"]`; `-p calcu_pytest`
 in `addopts` fails, as pytest loads `-p` plugins before it reads `pythonpath`.
@@ -18,12 +19,28 @@ import itertools
 
 import pytest
 
+import report
 from machine import Machine, MachineError
 
 
 def pytest_addoption(parser):
     parser.addini("calcu_paths", "names for folders: `name = path`, one per line, relative to the root",
                   type="linelist", default=[])
+    parser.addini("calcu_report", "a folder for a report of each run, relative to the root; none: no report",
+                  default="")
+    parser.addini("calcu_report_title", "the report's title; default: the root's folder name", default="")
+
+
+def pytest_addhooks(pluginmanager):
+    pluginmanager.add_hookspecs(report.Hooks)
+
+
+def pytest_configure(config):
+    folder = config.getini("calcu_report")
+    if not folder or hasattr(config, "workerinput"):   # the workers' results reach the controller
+        return
+    title = config.getini("calcu_report_title") or config.rootpath.name
+    config.pluginmanager.register(report.Reporter(title, config.rootpath / folder), "calcu_report")
 
 
 def _path_names(config) -> dict[str, str]:

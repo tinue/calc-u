@@ -62,7 +62,7 @@ void PeripheralsPart::machineChanged(sessions::SessionContext& c) {
 }
 
 void PeripheralsPart::operationEnded(sessions::SessionContext& c) {
-    if (machine::Machine* m = c.machine()) setClocksFromHost(*m, hostDateTime(c.hostTime()));
+    if (machine::Machine* m = c.machine(); m && c.clockFollowsHost()) setClocksFromHost(*m, hostDateTime(c.hostTime()));
 }
 
 } // namespace calcu::peripherals

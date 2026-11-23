@@ -63,6 +63,7 @@ struct HostSessionSetup {
     std::vector<sessions::SessionPart*> after;
     pacing::WallClock clock;   // default: the steady clock
     std::function<std::chrono::system_clock::time_point()> hostTime;   // default: the system clock
+    bool clockFollowsHost = true;   // AppSessionSetup::clockFollowsHost
     sessions::Hosting hosting = sessions::Hosting::Paced;
     std::optional<std::uint32_t> jitterSeed;
     // The product's part and what it and the host's parts need (settings,

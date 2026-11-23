@@ -39,6 +39,7 @@ std::unique_ptr<sessions::AppSession> hostSessionOf(HostSessionSetup setup, std:
     sessions::AppSessionSetup s;
     s.clock = setup.clock ? std::move(setup.clock) : pacing::WallClock(&pacing::steadyWallTime);
     s.hostTime = std::move(setup.hostTime);
+    s.clockFollowsHost = setup.clockFollowsHost;
     s.parts = std::move(parts);
     s.hosting = setup.hosting;
     s.jitterSeed = setup.jitterSeed;

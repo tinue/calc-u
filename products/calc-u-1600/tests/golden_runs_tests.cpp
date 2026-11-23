@@ -149,7 +149,7 @@ struct Run {
     }
 
     void powerCycle(const std::string& attach) {
-        bool cycle = m->readDisplay().on;   // a machine that is off only gets the change
+        bool cycle = !sharptest::switchedOff(*m);   // a machine that is off only gets the change
         if (!attach.empty()) {
             std::string err;
             const char* id = attach == "ce150" ? sharp::kCE150 : attach == "ce158" ? sharp::kCE158 : sharp::kCE1600P;

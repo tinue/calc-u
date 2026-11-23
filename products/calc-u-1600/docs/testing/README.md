@@ -462,7 +462,8 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
   A module file is used as the app uses it: one with `template: true` is never written, one
   without (an instance, as `card()` saves it) gets the machine's writes back. Give a test project's
   module fixtures `template: true`, so tests run side by side never see each other's writes; read
-  what the machine wrote with `card(n)`.
+  what the machine wrote with `card(n)`. A module file without `battery: true` (a ROM module) is
+  plugged as the module it defines and never written.
   The other media are always paths: `floppy("$c1600/frontends/qt6/resources/cards/formatted.floppy.yaml")`,
   `floppy("disks/progs.floppy.yaml")`.
 - `host_drive` is a folder on your computer, found like any path; usually an absolute one or a
@@ -531,11 +532,49 @@ Reads:
 | `peek(target, space, address, count, bank=, vbank=)` | memory bytes, without side effects. On the PC-1600, `bank=3, vbank=1` reads the hidden ROM bank 3b and `vbank=0` bank 3, whatever port 3DH selects now; the banks are in [the harness's PC-1500/1600 commands](../developer/Harness.md) |
 | `expect_memory(target, space, address, values, …)` | raises unless the bytes match |
 | `save_state(path)`, `restore_state(path)` | the whole machine |
-| `run_to(target, address, timeout)` | runs until the CPU reaches the address; seconds taken |
+| `run_to(target, address, timeout)` | runs until the CPU reaches the address and stays paused there; seconds taken. A paused machine runs on first, so a `run_to` to where it stands comes back there the next time round |
+| `registers(target)` | the registers by name, as numbers |
+| `set_register(target, name, value)`, `poke(target, space, address, values, bank=, vbank=)` | write a register, memory bytes |
+| `step(count=1)`, `resume()` | steps the paused machine, lets it run on; the run state (`paused`, `reason`, …) |
+
+The real-time clock is set once, when the machine is built (2000-01-01 00:00:00), and then runs in
+machine time: a program that sets it keeps its time for the rest of the test.
 
 Key names: a letter, digit or `+ - * / = ( ) .`; `enter`, `space`, `cl`, `mode`, `shift`, `def`,
 `sml`, `rcl`, `rsv`, `off`, `up`, `down`, `left`, `right`, `f1`–`f6`, `on` (or `break`); on the
 PC-1600 also `ctrl`, `kbii`, `bs`.
+
+### The run's report
+
+With `calcu_report` in `pytest.ini`, each run writes a Markdown report into that folder (relative
+to the test project root): `latest.md` and one file per run, the last 20 kept. The plugin is
+spellbound's.
+
+```ini
+[pytest]
+calcu_report = reports
+calcu_report_title = superRAM r4 regression
+```
+
+- The verdict: `**PASSED**, complete`, or `**FAILED**`, or `PARTIAL: …` with why the run did not
+  cover the suite (`-m`, `-k`, `--lf`, `--deselect`, `--maxfail`, single files or tests, an abort).
+  A run without tests is FAILED. The terminal shows the verdict with the report's path.
+- What was tested on what: the time and length of the run, the test project's commit (with
+  `+ uncommitted changes`), the Calc-U checkout (`git describe --dirty`), the `calcu` program, one
+  hash over the ROM images.
+- A table per test file (passed, failed, error, skipped; an error is a failed setup or teardown),
+  a total, and per failure its test and the first line of its message.
+
+Facts of the project's own, such as the program under test, come from the hook
+`pytest_calcu_report_facts` in `conftest.py`:
+
+```python
+from report import sha256
+
+def pytest_calcu_report_facts(config):
+    program = config.rootpath / "build" / "PROG.BIN"
+    return {"PROG.BIN": f"{program} {sha256(program)}"}
+```
 
 ## Appendix: how it works
 
@@ -548,7 +587,8 @@ flowchart LR
 
 | Part | Where | Does |
 |---|---|---|
-| `calcu_pytest` | `products/calc-u-1600/tools/machine/` | the pytest plugin: the `make_machine` fixture, the path names |
+| `calcu_pytest` | `products/calc-u-1600/tools/machine/` | the pytest plugin: the `make_machine` fixture, the path names, the report |
+| `report.py` | same folder | the run's report |
 | `Machine` | same folder, `machine.py` | the PC-1500/1600 part: models, slots, media, bus ROMs, `card()`, `listing()` |
 | `cardimage.py` | same folder | reads saved module files into bytes, and the RAM disk on them |
 | `Session` | `library/harness/python/calcu_machine.py` | the part common to every Calc-U product: steps, reads, path names, starting and ending `calcu` |

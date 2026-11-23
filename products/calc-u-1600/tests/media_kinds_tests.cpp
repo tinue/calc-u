@@ -126,8 +126,10 @@ TEST(card_v1_read_and_written) {
     CHECK(saved.find("\nsaved: 2026-11-16T10:00:00Z\n") != std::string::npos);
     CHECK(saved.find("\nformat: memory-module\nformat-version: 1\n") != std::string::npos);
     CHECK(saved.rfind("# Calc-U-1600 memory module instance -- generated from ", 0) == 0);
-    // A definition without a battery is a module, not a medium.
-    CHECK(module.codec->read(text(fs::path(kCards) / "ce151.module.yaml"), {}).status == ReadOutcome::Status::NotMedium);
+    // A definition without a battery is a module, not a medium; it still gives the module.
+    const ReadOutcome plain = module.codec->read(text(fs::path(kCards) / "ce151.module.yaml"), {});
+    CHECK(plain.status == ReadOutcome::Status::NotMedium);
+    CHECK(dynamic_cast<const sharp::ModuleContent*>(plain.info.content.get()) != nullptr);
 }
 
 TEST(card_file_kept_but_content_name_template_mark) {

@@ -50,6 +50,7 @@ struct DebugOptions {
     bool cpu = true;
     enum class Folder { Writable, None, NotWritable } folder = Folder::Writable;
     bool handOver = false;
+    bool clockFollowsHost = true;
     sessions::HostServices services;
     long limitMb = 0;
     std::optional<mt::TestProgram> program;
@@ -76,6 +77,7 @@ public:
         sessions::AppSessionSetup s;
         s.clock = clock.fn();
         s.hostTime = [this] { return hostNow; };
+        s.clockFollowsHost = o.clockFollowsHost;
         s.parts = {&peripherals, presetsPart.get(), startupPart.get(), &typing, &debugger};
         s.hosting = o.hosting;
         s.jitterSeed = 1;

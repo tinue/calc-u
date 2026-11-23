@@ -95,6 +95,7 @@ struct Found {
     Binding binding;
     Content content;
     MediumInfo info;
+    bool medium = true;   // false: a module file that is no medium, plugged without a binding
 };
 
 std::optional<Found> resolveByName(MediaPart& part, const KindDecl& k, const std::string& name, int line, ReadContext& ctx,
@@ -110,7 +111,7 @@ std::optional<Found> resolveByName(MediaPart& part, const KindDecl& k, const std
 }
 
 std::optional<Found> resolveByFile(MediaPart& part, const KindDecl& k, const std::string& path, int line, ReadContext& ctx,
-                                   const std::string& verb) {
+                                   const std::string& verb, bool moduleTaken = false) {
     const std::string file = baseName(path);
     if (!hasSuffix(file, k)) {
         ctx.error(line, verb + ": the file " + file + " is not a " + k.label + " (" + k.suffix + ").");
@@ -126,6 +127,14 @@ std::optional<Found> resolveByFile(MediaPart& part, const KindDecl& k, const std
         if (auto* v = std::get_if<std::vector<std::uint8_t>>(&c)) return std::string(v->begin(), v->end());
         return std::nullopt;
     });
+    if (moduleTaken && r.status == ReadOutcome::Status::NotMedium && r.info.content) {
+        Found f;
+        f.info = r.info;
+        f.content = r.info.content;
+        f.binding.name = nameOf(r.info, file, k);
+        f.medium = false;
+        return f;
+    }
     if (r.unreadable()) {
         ctx.error(line, verb + ": the " + k.label + " file " + file + " cannot be read" + (r.problem.empty() ? "." : ": " + r.problem));
         return std::nullopt;
@@ -445,7 +454,7 @@ presets::PlaceResolution resolvePlace(MediaPart& part, const machine::PlaceName&
             return presets::PlaceResolution{How::Error, {}};
         }
         k = byFile;
-        found = resolveByFile(part, *k, path, line, ctx, key);
+        found = resolveByFile(part, *k, path, line, ctx, key, true);
         if (!found) return presets::PlaceResolution{How::Error, {}};
     } else {
         return {};
@@ -457,6 +466,7 @@ presets::PlaceResolution resolvePlace(MediaPart& part, const machine::PlaceName&
         return presets::PlaceResolution{How::Error, {}};
     }
     req->place = at;
+    if (!found->medium) return presets::PlaceResolution{How::Done, std::move(*req)};   // a module only
     found->binding.peripheral = req->peripheral.value;
     part.registerModule(req->content, found->binding);   // bound after the build
     return presets::PlaceResolution{How::Done, std::move(*req)};

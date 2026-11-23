@@ -191,6 +191,24 @@ def test_run_to_an_address(tmp_path):
         Machine(tmp_path / "b").run_to("SC7852", 0x0005, timeout=0.1)
 
 
+
+def test_run_to_where_it_stands_runs_round_once_more(tmp_path):
+    loop = tmp_path / "loop.bin"
+    loop.write_bytes(bytes([0x00, 0x00, 0x18, 0xFC]))   # NOP, NOP, then back to the first NOP
+    machine = Machine(tmp_path).command(f"c1600 load-code {loop} address=0xD000").command("type CALL &D000")
+    machine.run_to("SC7852", 0xD001, timeout=1)
+    assert machine.run_to("SC7852", 0xD001, timeout=1) > 0
+    machine.run_to("SC7852", 0xD002, timeout=1)
+    assert machine.registers("SC7852")["pc"] == 0xD002
+    assert machine.step(2)["reason"] == "step"
+    assert machine.registers("SC7852")["pc"] == 0xD001
+    machine.set_register("SC7852", "hl", 0x1234)
+    assert machine.registers("SC7852")["hl"] == 0x1234
+    machine.poke("SC7852", "memory", 0xC000, bytes([7, 8]))
+    assert machine.peek("SC7852", "memory", 0xC000, 2) == bytes([7, 8])
+    assert not machine.resume()["paused"]
+
+
 # Modules and media of your own: module files by path, floppy disks, eject.
 
 

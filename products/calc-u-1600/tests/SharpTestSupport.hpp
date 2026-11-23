@@ -83,6 +83,14 @@ inline bool haveModelRoms(const char* model, const std::optional<VariantId>& v =
 
 inline PlacePath place(const char* p) { return PlacePath{{PlaceName{p}}}; }
 
+// The machine's power is off. Not its display: a program switches that off
+// on its own, and the ROMs do so before they cut the power.
+inline bool switchedOff(Machine& m) {
+    if (PC1600Machine* p = sharp::pc1600Of(m)) return p->isPoweredOff();
+    if (PC1500Machine* p = sharp::pc1500Of(m)) return p->cpu().poweredOff();
+    return false;
+}
+
 // A peripheral request with its ROM images; `ok` false when one is missing.
 inline PeripheralRequest request(const Catalogue& cat, const char* id, const char* where,
                                  std::optional<VariantId> variant = std::nullopt, bool* ok = nullptr) {

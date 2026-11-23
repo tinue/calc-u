@@ -211,7 +211,7 @@ TEST(missing_rom_ends_at_start_naming_files) {
 
 // ── The clock ───────────────────────────────────────────────────────────
 
-TEST(fixed_instant_by_default_at_build_and_after_operation) {
+TEST(fixed_instant_by_default_at_build_only) {
     TestRun run({}, mt::kDot);   // test-dot's component rtc
     CHECK(run.server != nullptr);
     if (!run.server) return;
@@ -225,8 +225,10 @@ TEST(fixed_instant_by_default_at_build_and_after_operation) {
     run.line("wait 3s");
     CHECK(clock->read().second == std::optional<int>(3));   // the clock runs on ticks
     run.line("test operation 1000000");
-    CHECK_EQ(clock->setCalls, sets + 1);
-    CHECK(clock->read() == fixed);   // handed the same instant again
+    CHECK_EQ(clock->setCalls, sets);   // not handed again: a clock the program set stays
+    CHECK(clock->read().second == std::optional<int>(4));
+    run.line("sync-clock");
+    CHECK(clock->read() == fixed);
 }
 
 TEST(clock_option_names_instant) {
@@ -252,6 +254,9 @@ TEST(clock_host_hands_host_time) {
     const auto f = run.machine().clock()->read();
     CHECK((f.day == before.day && f.month == before.month) || (f.day == after.day && f.month == after.month));
     CHECK((f.hour == before.hour && f.minute == before.minute) || (f.hour == after.hour && f.minute == after.minute));
+    const int sets = run.machine().clock()->setCalls;
+    run.line("test operation 1000");
+    CHECK_EQ(run.machine().clock()->setCalls, sets + 1);   // the host's time after every operation
 }
 
 // ── Determinism ─────────────────────────────────────────────────────────

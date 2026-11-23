@@ -127,6 +127,10 @@ RunSetup::~RunSetup() {
     if (!runFolder_.empty()) fs::remove_all(files::toPath(runFolder_), ec);
 }
 
+// A fixed instant is handed only at a build and `sync-clock`; from there the
+// machine's clock runs in emulated time.
+bool RunSetup::clockFollowsHost() const { return options_.clock == ClockMode::Host; }
+
 std::function<std::chrono::system_clock::time_point()> RunSetup::hostTime() const {
     switch (options_.clock) {
     case ClockMode::Host: return [] { return std::chrono::system_clock::now(); };
@@ -170,6 +174,7 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
         return pacing::WallTime{0};
     };
     setup.hostTime = s->setup_->hostTime();
+    setup.clockFollowsHost = s->setup_->clockFollowsHost();
     setup.hosting = sessions::Hosting::VirtualTime;
     // The one order (LibraryParts): the control part, the run's state part
     // among the host's, the library's and the product's parts.

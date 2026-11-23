@@ -50,7 +50,7 @@ bool switchOff(Machine& m) {
     m.keyDown(KeyId{"off"});
     m.advance(frameTicks(m) * 4);
     m.keyUp(KeyId{"off"});
-    return runUntil(m, [&] { return !m.readDisplay().on; }, 3);
+    return runUntil(m, [&] { return switchedOff(m); }, 3);
 }
 
 } // namespace
@@ -116,6 +116,29 @@ TEST(whole_instructions_of_the_bus_owner) {
             }
         }
     }
+}
+
+TEST(pc1600_display_off_only_with_both_controllers_off) {
+    SKIP_UNLESS(haveAll(), "Sharp ROMs missing");
+    auto m = bootedSharp(sharp::sharpCatalogue(), "PC-1600");
+    PC1600Machine* p = sharp::pc1600Of(*m);
+    CHECK(p != nullptr);
+    if (!p) return;
+    auto lit = [&] {
+        const auto f = std::get<DotMatrixFrame>(m->readDisplay().frame);
+        return std::count(f.dots.begin(), f.dots.end(), std::uint8_t{1});
+    };
+    const auto all = lit();
+    CHECK(m->readDisplay().on && all > 0);   // the prompt
+    p->display().writeIO(0x58, 0x3E);        // IC2 alone: its columns, the prompt's, go dark
+    CHECK(m->readDisplay().on);
+    CHECK(lit() < all);
+    p->display().writeIO(0x50, 0x3E);        // both
+    CHECK(!m->readDisplay().on);
+    CHECK_EQ(lit(), 0);
+    p->display().writeIO(0x50, 0x3F);        // the RAM kept what it held
+    CHECK(m->readDisplay().on);
+    CHECK_EQ(lit(), all);
 }
 
 TEST(off_machine_counts_ticks_clock_runs_display_off) {

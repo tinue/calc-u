@@ -224,6 +224,16 @@ void PaperPanel::setOwner(std::optional<machine::PeripheralId> owner) {
     refresh();
 }
 
+// The platform's printer icon; Qt before 6.7 (Ubuntu 24.04's 6.4) knows
+// only the theme's name for it.
+static QIcon printerIcon() {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    return QIcon::fromTheme(QIcon::ThemeIcon::DocumentPrint);
+#else
+    return QIcon::fromTheme(QStringLiteral("document-print"));
+#endif
+}
+
 // The panel in the product's chrome: the header and the button bar at
 // its heights and colours, every button in them a pill, the paper's body
 // with the output border, the place dot's colours.
@@ -243,7 +253,7 @@ void PaperPanel::setChrome(const shell::ChromeColours& c, const shell::ChromeSiz
     pal.setColor(QPalette::Base, paper);
     pal.setColor(QPalette::Text, qcolour(c.named(shell::colour::kPaperText)));
     text_->setPalette(pal);
-    const QIcon printer = QIcon::fromTheme(QIcon::ThemeIcon::DocumentPrint);
+    const QIcon printer = printerIcon();
     for (QToolButton* b : header_->findChildren<QToolButton*>())
         if (b != viewToggle_) b->setIcon(placeIcon(printer, b->isChecked() ? plugged_ : unplugged_));
 }
@@ -273,7 +283,7 @@ void PaperPanel::setPlaces(std::vector<QWidget*> places) {
         }
         delete item;
     }
-    const QIcon printer = QIcon::fromTheme(QIcon::ThemeIcon::DocumentPrint);
+    const QIcon printer = printerIcon();
     for (QWidget* w : places) {
         w->setParent(this);
         if (auto* b = qobject_cast<QToolButton*>(w)) {

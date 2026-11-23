@@ -206,10 +206,7 @@ public:
     int ioWritten(uint8_t port) const { return m_ioWritten[port] > 0xFF ? -1 : m_ioWritten[port]; }
     /// A debugger's OUT: the same write to the port as the instruction's, with
     /// its effects, kept by ioWritten(); no watchpoint sees it.
-    void debugOut(uint8_t port, uint8_t v) {
-        m_ioWritten[port] = v;
-        bus.writeIO(port, v);
-    }
+    void debugOut(uint8_t port, uint8_t v) { ioWrite(port, v); }
 
     /// The debugger's always-on history of the last retired instructions
     /// (see HistoryRing.hpp). Recorded on every step() regardless of the

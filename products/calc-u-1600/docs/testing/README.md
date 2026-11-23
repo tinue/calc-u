@@ -4,8 +4,8 @@ Write pytest tests that run on an emulated PC-1500, PC-1500A or PC-1600: press k
 plug modules and media, then check the display, memory, modules or the BASIC program. Each test gets
 a fresh machine; many run in parallel.
 
-The test driver began as the one "spellbound" wrote for the tests of the superRAM module.
-It is developed further together with spellbound, in this repository.
+The test driver is a pytest plugin on the harness `calcu`, in `tools/machine/`.
+It is developed together with "spellbound", in this repository.
 
 Contents: [1 Setup](#1-setup) · [2 A test project](#2-a-test-project) ·
 [3 Example: MODE 1 and memory modules](#3-example-mode-1-and-memory-modules) ·

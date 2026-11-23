@@ -289,8 +289,7 @@ private:
     void storeME0(uint16_t a, uint8_t v) { if (m_watches) m_watches->check(a, v, true, 0); bus.writeME0(a, v); }
     void storeME1(uint16_t a, uint8_t v) {
         if (m_watches) m_watches->check(a, v, true, 1);
-        m_me1Written[a] = v;
-        bus.writeME1(a, v);
+        debugStoreME1(a, v);
     }
 
     // ── Fetch helpers ────────────────────────────────────────────────────

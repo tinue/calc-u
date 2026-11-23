@@ -250,7 +250,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   same card with a 5-bit (D0-D4) latch and 32 x 32 KB banks = 1 MB. `PC1600Memory::writeIO()` (routes 28-2FH to the card as an
   `ioWrite`), `tests/pc1600_slot_module_tests.cpp`
   (`test_trigger_latch_modules_in_slot2…`),
-  `tests/memory_card_tests.cpp` (`test_superram_16way_vertical_banking_direct`, `test_superram_r4_card_yaml_if_present`).
+  `tests/memory_card_tests.cpp` (`test_four_bit_vertical_latch_direct`, `test_superram_r4_card_yaml_if_present`).
   What is *not* modelled: `PC1600Bank`'s own Port 28H latch is a bare
   readback register (`slot2VerticalBank()`), consulted only by the debug
   panel and the bank tests — the live decode is entirely card-side.

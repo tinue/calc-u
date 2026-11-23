@@ -477,13 +477,13 @@ public:
     bool pokeCell(std::size_t target, std::size_t space, std::uint64_t address, std::uint8_t value, BankSelect bank) override {
         if (space == 2) return false;   // the written views are what the CPUs wrote
         // I/O and ME1: a real OUT or store, with its effects, as the CPU's.
-        if (target == kZ80 && space == 1) {
-            m_machine.sc7852().debugOut(static_cast<std::uint8_t>(address), value);
-            return true;
-        }
-        if (target != kZ80 && space == 1) {
-            LhBanked b(m_machine, bank);
-            m_machine.lh5803().debugStoreME1(static_cast<std::uint16_t>(address), value);
+        if (space == 1) {
+            if (target == kZ80) {
+                m_machine.sc7852().debugOut(static_cast<std::uint8_t>(address), value);
+            } else {
+                LhBanked b(m_machine, bank);
+                m_machine.lh5803().debugStoreME1(static_cast<std::uint16_t>(address), value);
+            }
             return true;
         }
         if (target == kZ80) {

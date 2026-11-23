@@ -778,7 +778,7 @@ bool ShotRunner::capture(const ShotCaptureSpec& spec, QString* error) {
             break;
         case Target::LcdImage: {
             // What Edit > Copy Screen puts on the clipboard: the dot matrix at
-            // its physical size (see MainWindow::copyScreenToClipboard()).
+            // its physical size (see MainWindow::copyScreen()).
             const QImage image = m_window->screenImage();
             if (!ShotCapture::savePng(image, file, error)) return false;
             break;

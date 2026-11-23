@@ -18,9 +18,10 @@
 //     b6:b5:b4  (3-bit)  bank select 0-7,   page C only (8000-BFFF)
 //     b7        1-bit    bank select, page D only (C000-FFFF)
 //
-//   Port 28H (write-only) — Slot 2 "vertical bank" select, 0-7 (superRAM
-//   hardware extends this to 0-15, exposed for parity even though nothing
-//   in this project reads past 7). Orthogonal to Port 31H's page-C field —
+//   Port 28H (write-only) — Slot 2 "vertical bank" select: 0-7 behind
+//   Sharp's 3-bit (D0-D2) latch, 0-31 behind a 5-bit (D0-D4) one (1 MB,
+//   the most the Sharp ROM works with); kept here as the full byte, since
+//   the card's latch decides the width. Orthogonal to Port 31H's page-C field —
 //   this selects which 32KB "vertical bank" the module attached to Slot 2
 //   exposes, decoded on the module side, not the mainboard. This class
 //   only remembers the last-written value (slot2VerticalBank(), consumed
@@ -86,8 +87,8 @@ public:
 
     // ── Port 28H ──────────────────────────────────────────────────────
     void    writePort28(uint8_t value) { m_port28 = value; }
-    /// Last value written to Port 28H (0-7 on stock hardware, 0-15 on
-    /// superRAM). Not independently readable on real hardware; exposed
+    /// Last value written to Port 28H, the whole byte (a card's latch uses
+    /// D0-D2 or up to D0-D4). Not independently readable on real hardware; exposed
     /// here for debug/test purposes only.
     uint8_t slot2VerticalBank() const { return m_port28; }
 

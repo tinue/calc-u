@@ -101,7 +101,7 @@ calcu::shell::Chrome make() {
     s.barHeight = 40;
     s.barGap = 6;
     s.barPills = true;
-    s.slotPickerEm = 9;   // the longest module ID ("CE-1600M"), whatever it shows
+    s.slotPickerEm = 10.5;   // the longest module name ("superRAM r4"), whatever it shows
     // The view rule (shell::view): the panels' row below the wide
     // faceplate, at least this high; none beside it.
     s.panelsMinHeight = 200;

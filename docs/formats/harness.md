@@ -403,6 +403,15 @@ setter `harness`. A machine without a debug target refuses every one with
   started 8 bits of a cell, little-endian, an unreadable cell as 0. A
   relative path is relative to the output folder of the run; attached, to
   the app's working directory.
+- **`peek` and `poke` on a space of I/O.** A `peek` reads a cell
+  without an effect, so a cell whose read has one (a device register)
+  is `unreadable`. A `poke` is the CPU's own write, with its effects: on a
+  port space an `OUT`, on a memory space with I/O in it a store, as the
+  program's instruction would do it; the space of the values last
+  written keeps it, as it keeps the program's. A space of the values last
+  written is not written (`The cell <address> of <space> cannot be
+  written.`). After a `poke` the `display` is read again, so a poke into
+  display memory or a display port shows at once.
 - `expect-register` is refused with `The register <name> is <value>.`,
   `expect-memory` at the first cell that differs with `The cell <address>
   of <space> is <value>.` (or `is unreadable.`, `holds none.`). A refused

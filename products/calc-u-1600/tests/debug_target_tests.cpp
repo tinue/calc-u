@@ -306,7 +306,7 @@ TEST(pc1500_target) {
     uint8_t b = 0;
     CHECK(target.peek(1, debug::kSpaceMain, 0x7A00, &b) && b == 0x99);
     CHECK(!target.poke(1, debug::kSpaceMain, 0xC000, 0x00));
-    CHECK(!target.poke(1, debug::kSpaceME1, 0x7A00, 0x00));
+    CHECK(target.poke(1, debug::kSpaceME1, 0x7A00, 0x00));   // ME1: the CPU's own store
 
     // A write watch on the RAM the ROM keeps updating while idle stops
     // right after the writing instruction.
@@ -683,20 +683,18 @@ TEST(conformance_on_every_model) {
     }
 }
 
-TEST(rom_empty_cells_and_io_refuse_a_write) {
+TEST(rom_and_empty_cells_refuse_a_write) {
     auto m = built("PC-1500A");
     SKIP_UNLESS(m != nullptr, "ROMs missing");
     calcu::machine::DebugTarget& t = m->debugging()->target(0);
-    const std::size_t me0 = spaceOf(t, "me0"), me1 = spaceOf(t, "me1");
+    const std::size_t me0 = spaceOf(t, "me0");
     CHECK(!t.poke(me0, 0xC000, 0x00, {}));    // ROM
     CHECK(t.poke(me0, 0x7A00, 0x99, {}));     // RAM
     CHECK(t.peek(me0, 0x7A00, {}).value == 0x99);
-    CHECK(!t.poke(me1, 0xF000, 0x00, {}));    // I/O
     auto p = built("PC-1600");
     SKIP_UNLESS(p != nullptr, "ROMs missing");
     calcu::machine::DebugTarget& z = p->debugging()->target(0);
     CHECK(!z.poke(spaceOf(z, "memory"), 0x0000, 0x00, {}));   // the system ROM
-    CHECK(!z.poke(spaceOf(z, "io"), 0x31, 0x00, {}));         // I/O is never written through the target
 }
 
 TEST(me1_never_written_device_cells_unreadable) {
@@ -704,7 +702,6 @@ TEST(me1_never_written_device_cells_unreadable) {
     SKIP_UNLESS(m != nullptr, "ROMs missing");
     calcu::machine::DebugTarget& t = m->debugging()->target(0);
     const std::size_t me1 = spaceOf(t, "me1");
-    for (std::uint64_t a : {0x0000u, 0x7A00u, 0xF000u, 0xF00Fu}) CHECK(!t.poke(me1, a, 0x12, {}));
     // The LH5811's register block reads as unreadable, without a side effect.
     CHECK(t.peek(me1, 0xF00B, {}).kind == CellRead::Unreadable || t.peek(me1, 0xF00B, {}).kind == CellRead::Value);
     auto p = built("PC-1600");
@@ -825,3 +822,32 @@ TEST(vertical_banks_of_a_slot_2_module) {
 }
 
 } // namespace
+
+// A poke on an I/O space is the CPU's own write, with its effects: an OUT
+// of the SC7852, a store to ME1 of the LH5801/LH5803; the written views keep it.
+TEST(poke_on_io_and_me1_is_a_real_write) {
+    auto a = built("PC-1500A");
+    auto p = built("PC-1600");
+    SKIP_UNLESS(a != nullptr && p != nullptr, "ROMs missing");
+    for (auto* m : {a.get(), p.get()}) {
+        m->coldBoot();
+        for (int i = 0; i < 60; ++i) m->advance(m->descriptor().tickRate / 60);
+    }
+    // PC-1500A: the LH5811's DDA (ME1 F00C) takes the value and reads it back.
+    calcu::machine::DebugTarget& lh = a->debugging()->target(0);
+    CHECK(lh.poke(spaceOf(lh, "me1"), 0xF00C, 0x5A, {}));
+    CHECK_EQ(lh.peek(spaceOf(lh, "me1"), 0xF00C, {}).value, std::uint64_t{0x5A});
+    CHECK_EQ(lh.peek(spaceOf(lh, "me1-written"), 0xF00C, {}).value, std::uint64_t{0x5A});
+    CHECK(!lh.poke(spaceOf(lh, "me1-written"), 0xF00C, 0x00, {}));   // a written view is not written
+    // PC-1600: OUT (58H),3EH switches IC2's display off.
+    calcu::machine::DebugTarget& z = p->debugging()->target(0);
+    CHECK(z.poke(spaceOf(z, "io"), 0x58, 0x3E, {}));
+    CHECK_EQ(z.peek(spaceOf(z, "io-written"), 0x58, {}).value, std::uint64_t{0x3E});
+    const auto parts = p->readDisplay().parts;
+    CHECK(parts.size() == 2 && parts[0].name == "IC2" && !parts[0].on && parts[1].on);
+    CHECK(!z.poke(spaceOf(z, "io-written"), 0x58, 0x3F, {}));
+    // The LH5803's ME1 store is kept in its written view.
+    calcu::machine::DebugTarget& lh3 = p->debugging()->target(1);
+    CHECK(lh3.poke(spaceOf(lh3, "me1"), 0xF00C, 0x21, {}));
+    CHECK_EQ(lh3.peek(spaceOf(lh3, "me1-written"), 0xF00C, {}).value, std::uint64_t{0x21});
+}

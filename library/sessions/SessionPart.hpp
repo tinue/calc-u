@@ -83,6 +83,9 @@ public:
     // started, while one runs. Its end sends no reply; a failure is a
     // notice.
     virtual bool startOperation(Operation) { return false; }
+    // A part changed the machine outside a run (a poke): the `display`
+    // topic is read again now, not only after the next slice.
+    virtual void machineEdited() {}
 
 protected:
     ~SessionContext() = default;

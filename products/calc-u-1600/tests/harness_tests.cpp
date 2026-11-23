@@ -243,6 +243,23 @@ TEST(harness_peek_bank_and_vbank) {
     h.server->finish();
 }
 
+// A poke on io is the SC7852's OUT: OUT (58H),3EH switches IC2's display
+// off, and `display` shows it at once, without a wait.
+TEST(harness_poke_io_is_an_out) {
+    SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-new.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    PaperHarness h;
+    CHECK(h.server != nullptr);
+    if (!h.server) return;
+    CHECK_EQ(h.reply("model PC-1600"), std::string("done\n"));
+    h.reply("wait");
+    CHECK_EQ(h.reply("poke SC7852 io 0x58 0x3E"), std::string("done\n"));
+    const std::string d = h.reply("display");
+    CHECK(d.find("\non: true\nparts: IC2 off, IC3 on\n") != std::string::npos);
+    CHECK_EQ(h.reply("peek SC7852 io-written 0x58"), std::string("done 1\n0x58: 0x3e\n"));
+    CHECK(h.reply("poke SC7852 io-written 0x58 0x3F").rfind("refused: ", 0) == 0);
+    h.server->finish();
+}
+
 // ---- The loaders under `c1600` ----
 
 namespace {

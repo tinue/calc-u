@@ -198,6 +198,12 @@ public:
     /// or -1 (the debugger's `me1-written` view of the
     /// cells that read back unreadable). Reading it has no effect.
     int me1Written(uint16_t addr) const { return m_me1Written[addr] > 0xFF ? -1 : m_me1Written[addr]; }
+    /// A debugger's store to ME1: the same write as an instruction's, with its
+    /// effects on the I/O there, kept by me1Written(); no watchpoint sees it.
+    void debugStoreME1(uint16_t a, uint8_t v) {
+        m_me1Written[a] = v;
+        bus.writeME1(a, v);
+    }
 
     /// Continue from a breakpoint: the instruction at the current PC
     /// executes once even though it is a breakpoint. The skip is tied to

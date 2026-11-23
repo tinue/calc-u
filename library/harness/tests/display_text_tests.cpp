@@ -157,7 +157,7 @@ TEST(json_arrays) {
     CHECK_EQ(run.line("display"),
              std::string("{\"done\":true,\"result\":{\"kind\":\"segments\",\"segments\":[\"A\",\"B\",\"C\",\"D\",\"E\",\"F\",\"G\",\"DP\"],"
                          "\"positions\":[[1,1,1,1,1,1,0,0],[0,1,1,0,0,0,0,0],[1,1,1,1,1,1,0,0]],\"indicators\":[1],"
-                         "\"indicatorNames\":[\"C\"],\"on\":true},\"reason\":null}\n"));
+                         "\"indicatorNames\":[\"C\"],\"on\":true,\"parts\":[]},\"reason\":null}\n"));
     TestRun dot(o, mt::kDot);
     CHECK(dot.server != nullptr);
     if (!dot.server) return;
@@ -165,4 +165,26 @@ TEST(json_arrays) {
     // After the start's 16 668 ticks: row 0's dot at (16 668 / 16) % 12 = 9; RUN off.
     CHECK(r.find("\"kind\":\"dots\",\"rows\":[[0,0,0,0,0,0,0,0,0,1,0,0],") != std::string::npos);
     CHECK(r.find("\"indicators\":[0,0],\"indicatorNames\":[\"RUN\",\"BUSY\"],\"on\":true") != std::string::npos);
+}
+
+// A display switched in parts: each part's own switch after `on`, in text
+// and in JSON; a display switched as a whole has no `parts:` line.
+TEST(display_parts_after_on) {
+    DisplayOutput o;
+    o.frame = SegmentFrame{};
+    o.parts = {{"IC2", false}, {"IC3", true}};
+    const DisplayDescriptor d;
+    const std::vector<std::string> lines = displayLines(o, d);
+    CHECK(!lines.empty() && lines.back() == "parts: IC2 off, IC3 on");
+    CHECK(lines.size() >= 2 && lines[lines.size() - 2] == "on: true");
+    const Value v = displayValue(o, d);
+    const Value* parts = v.find("parts");
+    CHECK(parts && parts->elements() && parts->elements()->size() == 2);
+    if (!parts || !parts->elements() || parts->elements()->empty()) return;
+    const Value& first = parts->elements()->front();
+    CHECK(first.find("name") && first.find("name")->string() && *first.find("name")->string() == "IC2");
+    CHECK(first.find("on") && first.find("on")->boolean() && !*first.find("on")->boolean());
+    o.parts.clear();
+    const std::vector<std::string> whole = displayLines(o, d);
+    CHECK(!whole.empty() && whole.back() == "on: true");
 }

@@ -6,7 +6,11 @@ namespace calcu::sessions {
 using machine::DisplayOutput;
 
 bool sameDisplay(const DisplayOutput& a, const DisplayOutput& b) {
-    if (a.on != b.on || a.frame.index() != b.frame.index() || a.indicators.size() != b.indicators.size()) return false;
+    if (a.on != b.on || a.frame.index() != b.frame.index() || a.indicators.size() != b.indicators.size() ||
+        a.parts.size() != b.parts.size())
+        return false;
+    for (std::size_t i = 0; i < a.parts.size(); ++i)
+        if (a.parts[i].name != b.parts[i].name || a.parts[i].on != b.parts[i].on) return false;
     for (std::size_t i = 0; i < a.indicators.size(); ++i) {
         const auto &x = a.indicators[i], &y = b.indicators[i];
         if (x.name != y.name || x.on != y.on || x.brightness != y.brightness) return false;
@@ -62,7 +66,12 @@ Value DisplayState::toValue() const {
     for (const auto& i : output.indicators)
         indicators.push_back(
             Value::object({{"name", std::string(i.name)}, {"on", i.on}, {"brightness", brightness(i.brightness)}}));
-    return Value::object({{"on", output.on}, {"frame", std::move(frame)}, {"indicators", Value(std::move(indicators))}});
+    Value::Array parts;
+    for (const auto& p : output.parts) parts.push_back(Value::object({{"name", p.name}, {"on", p.on}}));
+    return Value::object({{"on", output.on},
+                          {"frame", std::move(frame)},
+                          {"indicators", Value(std::move(indicators))},
+                          {"parts", Value(std::move(parts))}});
 }
 
 Value BusyState::toValue() const {

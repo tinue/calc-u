@@ -166,9 +166,13 @@ DisplayOutput PC1600Machine::readDisplay() {
             dots[static_cast<std::size_t>(row) * PC1600Display::kWidth + col] = snap.pixels[row][col] ? 1 : 0;
     // The display is on while CK0 runs, the system has power (the sub-CPU
     // cutting power leaves CK0 as it was) and a controller drives its columns.
-    const bool on = snap.clockEnabled && !isPoweredOff() && snap.controllerOn;
-    return sharp::displayOutput(descriptor(), on, PC1600Display::kWidth, PC1600Display::kHeight,
-                                std::move(dots), snap.statusLine);
+    const bool on = snap.clockEnabled && !isPoweredOff() && (snap.ic2On || snap.ic3On);
+    DisplayOutput out = sharp::displayOutput(descriptor(), on, PC1600Display::kWidth, PC1600Display::kHeight,
+                                             std::move(dots), snap.statusLine);
+    // Each controller by its own switch (a 0x3E or 0x3F command), so one
+    // switched off can be told from dots that are 0.
+    out.parts = {{"IC2", snap.ic2On}, {"IC3", snap.ic3On}};
+    return out;
 }
 
 ExpansionCard* PC1600Machine::moduleIn(const PlaceName& p) {
@@ -999,7 +1003,8 @@ PC1600DisplaySnapshot PC1600Machine::displaySnapshot() const {
     PC1600DisplaySnapshot snap;
     const PC1600Display& disp = m_z80Mem.display();
     snap.clockEnabled = disp.clockEnabled();
-    snap.controllerOn = disp.anyControllerOn();
+    snap.ic2On = disp.ic2On();
+    snap.ic3On = disp.ic3On();
     for (int y = 0; y < PC1600Display::kHeight; y++) {
         for (int x = 0; x < PC1600Display::kWidth; x++) {
             snap.pixels[y][x] = disp.pixel(x, y);

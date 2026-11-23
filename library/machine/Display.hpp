@@ -23,10 +23,17 @@ struct IndicatorOutput {
     bool on;
     std::optional<float> brightness;
 };
+// A part of the display that is switched on and off on its own (one of
+// the PC-1600's two display controllers). Its dots show 0 while it is off.
+struct DisplayPart {
+    std::string name;
+    bool on = true;
+};
 struct DisplayOutput {
     bool on = true;          // a display that is off shows nothing
     std::variant<SegmentFrame, DotMatrixFrame> frame;
     std::vector<IndicatorOutput> indicators;
+    std::vector<DisplayPart> parts;   // empty: the display is switched as a whole
 };
 
 } // namespace calcu::machine

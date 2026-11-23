@@ -1,17 +1,11 @@
-"""Tests of the run report (report.py) and of switching it on through calcu_pytest."""
+"""Tests of the run report (report.py); a product's plugin switching it on is tested with the plugin."""
 
 from collections import defaultdict
 from datetime import datetime
-from pathlib import Path
 from types import SimpleNamespace
 
 from calcu_machine import calcu_program
-from report import KEEP_REPORTS, LATEST, calcu_facts, incomplete_reasons, project_commit, render, store
-
-HERE = Path(__file__).resolve().parent
-PYTHONPATH = f"{HERE} {HERE.parents[3] / 'library' / 'harness' / 'python'}"
-
-pytest_plugins = ["pytester"]
+from report import KEEP_REPORTS, LATEST, calcu_facts, incomplete_reasons, project_commit, render, rom_images_hash, store
 
 
 def counts(**outcomes):
@@ -71,43 +65,21 @@ def test_store_keeps_last_runs(tmp_path):
 
 
 def test_facts_name_the_checkout_and_program(tmp_path):
-    facts = calcu_facts()
+    roms = tmp_path / "roms"
+    roms.mkdir()
+    (roms / "A.ROM").write_bytes(b"\x01\x02")
+    facts = calcu_facts(roms)
     assert facts["Calc-U"] != "unknown"
     assert facts["calcu"] == calcu_program()
-    assert len(facts["ROM images"]) == 64
+    assert facts["ROM images"] == rom_images_hash(roms) and len(facts["ROM images"]) == 64
     assert project_commit(tmp_path) == "not in a git repository"
 
 
-def test_report_switched_on_with_facts_of_the_project(pytester):
-    pytester.makeini(f"""
-        [pytest]
-        pythonpath = {PYTHONPATH}
-        calcu_report = reports
-        calcu_report_title = My suite
-    """)
-    pytester.makeconftest("""
-        pytest_plugins = ["calcu_pytest"]
-
-        def pytest_calcu_report_facts(config):
-            return {"Program": "p.bin 1234"}
-    """)
-    pytester.makepyfile(test_a="def test_ok():\n    pass\n\ndef test_bad():\n    assert 1 == 2\n")
-    result = pytester.runpytest("-p", "no:cacheprovider")
-    result.assert_outcomes(passed=1, failed=1)
-    result.stdout.fnmatch_lines(["report: *.md, **FAILED**, complete"])
-    text = (pytester.path / "reports" / LATEST).read_text()
-    assert text.startswith("# My suite\n")
-    assert "| Program | `p.bin 1234` |" in text
-    assert "| `test_a.py` | 1 | 1 | 0 | 0 |" in text
-    assert "- `test_a.py::test_bad`: assert 1 == 2" in text
-
-
-def test_no_report_without_the_setting(pytester):
-    pytester.makeini(f"""
-        [pytest]
-        pythonpath = {PYTHONPATH}
-    """)
-    pytester.makeconftest('pytest_plugins = ["calcu_pytest"]')
-    pytester.makepyfile("def test_ok():\n    pass\n")
-    pytester.runpytest("-p", "no:cacheprovider").assert_outcomes(passed=1)
-    assert not (pytester.path / "reports").exists()
+def test_rom_images_hash_takes_names_and_bytes_of_the_images(tmp_path):
+    (tmp_path / "A.ROM").write_bytes(b"\x01")
+    (tmp_path / "notes.txt").write_text("not an image")
+    first = rom_images_hash(tmp_path)
+    (tmp_path / "notes.txt").write_text("changed")
+    assert rom_images_hash(tmp_path) == first
+    (tmp_path / "b.bin").write_bytes(b"\x02")
+    assert rom_images_hash(tmp_path) != first

@@ -36,18 +36,21 @@ TEST(command_reply_and_changed_state_at_once) {
     CHECK(std::get<ReplyMessage>(got[1]).done);
 }
 
-TEST(machine_output_only_with_host_calls) {
+// The display is read again after every command: a change outside a run
+// (a key, a poke, a set register) shows at once, without a host call; an
+// unchanged display sends nothing.
+TEST(display_read_again_after_every_command) {
     Rig r;
     r.build();
     r.call();
     const int before = r.fe.stateMessages(kDisplayTopic);
     CHECK(before >= 1);
-    // A key changes the machine's display output, but the command does not
-    // read it: the display goes out with the next host call.
-    CHECK(r.fe.reply(r.send("key-down", Value::object({{"key", "1"}})))->done);
+    CHECK(r.fe.reply(r.send("tp.log", Value::object({{"text", "not on the display"}})))->done);
     CHECK_EQ(r.fe.stateMessages(kDisplayTopic), before);
-    r.call();
+    CHECK(r.fe.reply(r.send("key-down", Value::object({{"key", "1"}})))->done);
     CHECK_EQ(r.fe.stateMessages(kDisplayTopic), before + 1);
+    const auto* shown = r.fe.state<DisplayState>(kDisplayTopic);
+    CHECK(shown && sameDisplay(shown->output, r.m->readDisplay()));
 }
 
 TEST(stream_sends_exactly_what_was_appended) {

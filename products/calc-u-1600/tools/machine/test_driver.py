@@ -191,7 +191,6 @@ def test_run_to_an_address(tmp_path):
         Machine(tmp_path / "b").run_to("SC7852", 0x0005, timeout=0.1)
 
 
-
 def test_run_to_where_it_stands_runs_round_once_more(tmp_path):
     loop = tmp_path / "loop.bin"
     loop.write_bytes(bytes([0x00, 0x00, 0x18, 0xFC]))   # NOP, NOP, then back to the first NOP

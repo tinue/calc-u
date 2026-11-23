@@ -1,4 +1,5 @@
 #include "peripherals/RealTimeClock.hpp"
+#include "sessions/SessionPart.hpp"
 #include <ctime>
 
 namespace calcu::peripherals {
@@ -35,6 +36,16 @@ void setClocksFromHost(machine::Machine& m, const HostDateTime& h) {
     const ClockFields f = fieldsOf(h);
     for (const auto& e : m.capabilities(RealTimeClock::kKind))
         if (auto* c = machine::capabilityAs<RealTimeClock>(m, e.id)) c->set(f, h.millisecond);
+}
+
+HostDateTime setClocksFromHost(sessions::SessionContext& c) {
+    const HostDateTime h = hostDateTime(c.hostTime());
+    if (machine::Machine* m = c.machine()) setClocksFromHost(*m, h);
+    return h;
+}
+
+void followHostClock(sessions::SessionContext& c) {
+    if (c.clockFollowsHost()) setClocksFromHost(c);
 }
 
 } // namespace calcu::peripherals

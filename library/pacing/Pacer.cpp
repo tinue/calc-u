@@ -110,7 +110,6 @@ void Pacer::unpaced(WallTime callStart, SliceRunner& runner, PaceResult& res) {
         if (end <= ran_) continue;
         const SliceResult s = run(runner, end - ran_, clock_(), res);
         ranOne = true;
-        res.ranUnpaced = true;
         if (s.stoppedEarly) return;   // a debugger stop ends the call
         if (s.waitsForInput) {
             // This slice is slice 1 of a paced schedule that starts where the

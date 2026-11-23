@@ -42,8 +42,9 @@ protected:
 struct PaceResult {
     machine::Ticks ticksRun = 0;
     int slices = 0;
-    bool ranUnpaced = false;   // a slice ran unpaced; for tests and the log
-    bool lagDropped = false;   // the lag was dropped; for tests and the log
+    // The lag grew beyond kLagLimit and was dropped: the call rebased the
+    // schedule on now instead of catching up.
+    bool lagDropped = false;
 };
 
 class Pacer {

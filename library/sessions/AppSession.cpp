@@ -119,9 +119,6 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     CallId currentCall() const override { return current; }
     pacing::WallTime wallTime() const override { return setup.clock ? setup.clock() : pacing::WallTime{0}; }
     bool virtualTime() const override { return setup.hosting == Hosting::VirtualTime; }
-    void machineEdited() override {
-        if (ms.generation() == seenGeneration) readDisplay();   // else syncMachine reads it
-    }
     bool startOperation(Operation op) override {
         if (running) return false;
         start(0, 0, std::move(op));   // call 0: no reply (endOperation)
@@ -164,6 +161,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     void stepOperation(pacing::PaceResult&);
     void syncMachine();
     void readDisplay();
+    void rereadDisplay(bool ran);
     void sound(bool discard);
     void flush();
     void deliver(const Out&);
@@ -379,7 +377,7 @@ void AppSession::Impl::start(ListenerId l, CallId id, Operation op) {
     if (setup.hosting == Hosting::VirtualTime && !running->over()) {   // in one go
         running->step(std::numeric_limits<std::uint64_t>::max());
         if (!running->over()) running->failure = OperationResult{false, "The operation did not finish."};
-        if (ms.generation() == seenGeneration) readDisplay();   // else syncMachine reads it
+        rereadDisplay(true);
     }
     if (running->over()) endOperation();
 }
@@ -421,6 +419,14 @@ void AppSession::Impl::stepOperation(pacing::PaceResult& res) {
 
 void AppSession::Impl::readDisplay() {
     if (machine::Machine* m = ms.machine()) displayState->set(std::make_shared<DisplayState>(m->readDisplay()));
+}
+
+// After a run (`ran`) or a command, which may have edited the machine (a
+// poke into display RAM, a set register): the display of the same machine
+// is read again; a new machine's is read by syncMachine. An unchanged
+// display sends nothing (StateTopic::flush).
+void AppSession::Impl::rereadDisplay(bool ran) {
+    if (ran && ms.generation() == seenGeneration) readDisplay();
 }
 
 void AppSession::Impl::syncMachine() {
@@ -562,9 +568,8 @@ void AppSession::call(pacing::WallTime now) {
     const bool full = s.commanded == Speed::Full;
     if (operation) s.stepOperation(res);
     else res = s.ms.pace(s.commanded);
-    const bool changed = s.ms.generation() != s.seenGeneration;
+    s.rereadDisplay(res.ticksRun > 0);
     s.syncMachine();
-    if (!changed && res.ticksRun > 0) s.readDisplay();
     for (SessionPart* p : s.setup.parts) p->afterCall(s, now);
     s.syncMachine();
     s.sound(full || operation);
@@ -575,6 +580,7 @@ CallId AppSession::send(ListenerId l, Command c) {
     Impl& s = *impl_;
     const CallId id = ++s.nextCall;
     s.runCommand(l, id, c);
+    s.rereadDisplay(true);
     s.syncMachine();
     s.flush();
     return id;
@@ -620,9 +626,8 @@ Ticks AppSession::advanceUnpaced(Ticks ticks) {
     Impl& s = *impl_;
     if (s.running) return 0;
     const Ticks ran = s.ms.advanceUnpaced(ticks);
-    const bool changed = s.ms.generation() != s.seenGeneration;
+    s.rereadDisplay(ran > 0);
     s.syncMachine();
-    if (!changed && ran > 0) s.readDisplay();
     // The parts' per-call duties, as call() runs them. A host in
     // virtual time has no wall clock to read.
     const pacing::WallTime now = s.setup.hosting == Hosting::VirtualTime ? pacing::WallTime{0} : s.wallTime();

@@ -6,9 +6,12 @@
 
 // The generic kind real-time clock. The clock advances in the core by ticks
 // only; nothing in a machine reads the host's clock. Whoever builds a
-// machine or runs an operation on it hands it the host's date and time
-// the app session, through its peripherals part
-// (PeripheralsPart.hpp).
+// machine or runs an operation on it hands it the host's date and time:
+// the app session, through its peripherals part (PeripheralsPart.hpp).
+
+namespace calcu::sessions {
+class SessionContext;
+}
 
 namespace calcu::peripherals {
 
@@ -39,5 +42,10 @@ public:
 HostDateTime hostDateTime(std::chrono::system_clock::time_point t);
 // Sets every real-time clock capability of the machine.
 void setClocksFromHost(machine::Machine&, const HostDateTime&);
+// Sets the session's machine, if any, to the host's date and time at the
+// session's host time, and returns that date and time.
+HostDateTime setClocksFromHost(sessions::SessionContext&);
+// setClocksFromHost while the session's clock follows the host's.
+void followHostClock(sessions::SessionContext&);
 
 } // namespace calcu::peripherals

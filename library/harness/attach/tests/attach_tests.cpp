@@ -4,6 +4,7 @@
 // product's session on the test machine `test-seg` (100,000 ticks a
 // second), and client sockets in the test.
 
+#include "LineInput.hpp"
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 #include "TestProduct.hpp"
@@ -555,16 +556,6 @@ std::optional<std::string> replyLine(Client& c) {
         auto l = c.line();
         if (!l || (l->rfind("message ", 0) != 0 && l->rfind("{\"message\":", 0) != 0)) return l;
     }
-}
-
-std::function<std::optional<std::string>()> input(std::vector<std::string> lines) {
-    auto q = std::make_shared<std::deque<std::string>>(lines.begin(), lines.end());
-    return [q]() -> std::optional<std::string> {
-        if (q->empty()) return std::nullopt;
-        std::string l = q->front();
-        q->pop_front();
-        return l;
-    };
 }
 
 } // namespace

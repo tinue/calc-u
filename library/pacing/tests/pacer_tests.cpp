@@ -177,8 +177,7 @@ TEST(full_speed_stops_at_14_ms_of_the_supplied_clock) {
         r.runner.costPerSlice = kMs;   // the host takes 1 ms per slice
         const WallTime start = r.clock.now;
         const PaceResult res = r.pacer.pace(Speed::Full, r.runner);
-        CHECK_EQ(res.slices, 14);
-        CHECK(res.ranUnpaced);
+        CHECK_EQ(res.slices, 14);   // unpaced: one slice per ms of the allowance
         CHECK(r.clock.now - start >= Pacer::kFullSpeedAllowance);
         CHECK(r.clock.now - start < Pacer::kFullSpeedAllowance + kMs);
         CHECK(res.ticksRun >= 14 * (v.slice / 2));   // far beyond the 14 ms due
@@ -257,7 +256,7 @@ TEST(waiting_at_full_speed_waits_one_slice_after_last_unpaced) {
         for (int i = 0; i < 60 && nextAt == WallTime{0}; ++i) {
             const PaceResult res = r.call(kMs, Speed::Full);
             if (r.runner.slices.size() > seen) nextAt = r.clock.now - kMs * static_cast<long>(res.slices);
-            CHECK(!res.ranUnpaced);
+            CHECK(res.slices <= 1);   // paced, not slice after slice at full speed
         }
         CHECK(nextAt - lastUnpacedEnd >= std::chrono::milliseconds(20));
         if (!jitter) CHECK(nextAt - lastUnpacedEnd < std::chrono::milliseconds(21));
@@ -284,12 +283,10 @@ TEST(not_waiting_returns_to_full_speed) {
     // The next paced slice reports "not waiting": full speed again, in the same call.
     PaceResult res{};
     for (int i = 0; i < 40 && res.slices == 0; ++i) res = r.call(kMs, Speed::Full);
-    CHECK(res.ranUnpaced);
-    CHECK(res.slices >= 14);
+    CHECK(res.slices >= 14);   // unpaced
     CHECK(r.runner.slices.size() - before >= 14);
     const PaceResult next = r.call(k60Hz, Speed::Full);
     CHECK_EQ(next.slices, 14);
-    CHECK(next.ranUnpaced);
 }
 
 // --- starting afresh ----------------------------------------------------------

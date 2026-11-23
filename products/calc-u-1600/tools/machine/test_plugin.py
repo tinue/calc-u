@@ -1,6 +1,9 @@
-"""Tests of the pytest plugin calcu_pytest, on a small suite of their own (pytester)."""
+"""Tests of the pytest plugin calcu_pytest, on a small suite of their own (pytester), the run report
+(library/harness/python/report.py) switched on through it among them."""
 
 from pathlib import Path
+
+from report import LATEST
 
 HERE = Path(__file__).resolve().parent
 PYTHONPATH = f"{HERE} {HERE.parents[3] / 'library' / 'harness' / 'python'}"
@@ -54,3 +57,38 @@ def test_a_wrong_path_name_line_is_a_usage_error(pytester):
     pytester.makepyfile("def test_x(make_machine):\n    make_machine()\n")
     result = pytester.runpytest("-p", "no:cacheprovider")
     result.stdout.fnmatch_lines(["*calcu_paths*not `name = path`*"])
+
+
+def test_report_switched_on_with_facts_of_the_project(pytester):
+    pytester.makeini(f"""
+        [pytest]
+        pythonpath = {PYTHONPATH}
+        calcu_report = reports
+        calcu_report_title = My suite
+    """)
+    pytester.makeconftest("""
+        pytest_plugins = ["calcu_pytest"]
+
+        def pytest_calcu_report_facts(config):
+            return {"Program": "p.bin 1234"}
+    """)
+    pytester.makepyfile(test_a="def test_ok():\n    pass\n\ndef test_bad():\n    assert 1 == 2\n")
+    result = pytester.runpytest("-p", "no:cacheprovider")
+    result.assert_outcomes(passed=1, failed=1)
+    result.stdout.fnmatch_lines(["report: *.md, **FAILED**, complete"])
+    text = (pytester.path / "reports" / LATEST).read_text()
+    assert text.startswith("# My suite\n")
+    assert "| Program | `p.bin 1234` |" in text
+    assert "| `test_a.py` | 1 | 1 | 0 | 0 |" in text
+    assert "- `test_a.py::test_bad`: assert 1 == 2" in text
+
+
+def test_no_report_without_the_setting(pytester):
+    pytester.makeini(f"""
+        [pytest]
+        pythonpath = {PYTHONPATH}
+    """)
+    pytester.makeconftest('pytest_plugins = ["calcu_pytest"]')
+    pytester.makepyfile("def test_ok():\n    pass\n")
+    pytester.runpytest("-p", "no:cacheprovider").assert_outcomes(passed=1)
+    assert not (pytester.path / "reports").exists()

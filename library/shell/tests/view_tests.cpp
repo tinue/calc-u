@@ -34,7 +34,7 @@ shell::ViewInputs wide(double w, double h, bool mobile) {
     in.panelsMinWidth = 0;
     in.panelsMinHeight = 200;
     in.mobile = mobile;
-    in.panelsAloneOnMobileBelow = true;
+    in.faceplateUsableWidth = 600;
     return in;
 }
 } // namespace
@@ -102,6 +102,31 @@ TEST(view_wide_phone_landscape_safe_area) {
     CHECK(!v.panelsAlone);
 }
 
+// A tablet: in its natural orientation (landscape) the faceplate always
+// shows, the panels in the room below it; upright the faceplate is wide
+// enough to use, so it stays too, with the panels below.
+TEST(view_wide_tablet_landscape) {
+    const auto v = shell::view(wide(1366, 1024, true));
+    CHECK(v.side == ViewSide::Below);
+    CHECK(v.panelsFit);
+    CHECK(!v.panelsAlone);
+}
+
+TEST(view_wide_tablet_portrait) {
+    const auto v = shell::view(wide(1024, 1366, true));
+    CHECK(v.side == ViewSide::Below);
+    CHECK(v.panelsFit);
+    CHECK(!v.panelsAlone);
+}
+
+// The TI-59 on a tablet turned to landscape: the faceplate with the
+// panels beside it.
+TEST(view_tall_tablet_landscape) {
+    const auto v = shell::view(tall(1366, 1024, true));
+    CHECK(v.side == ViewSide::Beside);
+    CHECK(v.panelsFit);
+}
+
 // The faceplate fills the box less the fixed parts in one direction, its
 // proportions kept; the room is what is left in the other.
 TEST(view_faceplate_fitted) {
@@ -155,7 +180,7 @@ TEST(view_debugger_fits) {
     CHECK(shell::view(w).debuggerFits);
     w.width = 600;
     CHECK(!shell::view(w).debuggerFits);
-    w = wide(1000, 1400, true);   // mobile, the panels alone
+    w = wide(393, 852, true);   // a phone upright, the panels alone
     w.debuggerMinWidth = 700;
     CHECK(shell::view(w).panelsAlone);
     CHECK(!shell::view(w).debuggerFits);

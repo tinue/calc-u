@@ -15,7 +15,11 @@ View view(const ViewInputs& in) {
     v.room = v.side == ViewSide::Beside ? boxWidth - v.faceplateWidth : boxHeight - v.faceplateHeight;
     const double least = v.side == ViewSide::Beside ? in.panelsMinWidth : in.panelsMinHeight;
     v.panelsFit = least > 0 && v.room >= least;
-    v.panelsAlone = in.panelsAloneOnMobileBelow && in.mobile && v.side == ViewSide::Below && v.panelsFit;
+    // The natural orientation always shows the faceplate; turned, only a
+    // faceplate too narrow to use gives way to the panels.
+    const bool turned = (aspect >= 1) != (in.width >= in.height);
+    v.panelsAlone = in.mobile && turned && v.side == ViewSide::Below && v.panelsFit &&
+                    v.faceplateWidth < in.faceplateUsableWidth;
     const double across = v.side == ViewSide::Beside ? v.room : in.width;
     v.debuggerFits = v.panelsFit && !v.panelsAlone && in.debuggerMinWidth > 0 &&
                      across >= in.panelsMinWidth + in.debuggerMinWidth && in.height >= in.debuggerMinHeight;

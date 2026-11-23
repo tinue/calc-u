@@ -108,6 +108,22 @@ test('the mobile panels alone are the paper without the inspector and the bar', 
   await expect(page.locator('.calcu-controlbar')).toBeVisible();
 });
 
+// A tablet on mobile: landscape is the calculator's natural orientation and
+// always shows it; upright its faceplate is wide enough to use, so it stays
+// too. Both with the panels below, the paper's header whole.
+test('a mobile tablet shows the calculator with its panels either way', async ({ page }) => {
+  for (const size of [{ width: 1366, height: 1024 }, { width: 1024, height: 1366 }]) {
+    await page.setViewportSize(size);
+    await gotoReady(page, '?mobile=1');
+    await expect(page.locator('.calcu-controlbar')).toBeVisible();
+    await expect(page.locator(c('paper-panel'))).toBeVisible();
+    const header = await page.locator('.calcu-paper-header').boundingBox();
+    const panel = await page.locator(c('paper-panel')).boundingBox();
+    expect(header.y).toBeGreaterThanOrEqual(panel.y);
+    expect(header.height).toBeGreaterThanOrEqual(27);
+  }
+});
+
 test('the client has the keyboard from the start, no click needed', async ({ page }) => {
   await gotoReady(page);
   await expect(page.locator('.calcu-client')).toBeFocused();

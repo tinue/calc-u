@@ -206,7 +206,7 @@ const tallView = (width, height, mobile) => ({ width, height, faceplateAspect: 2
   fixedHeight: 50 + 16 + (mobile ? 0 : VIEW_MENU), panelsMinWidth: 256, panelsMinHeight: 0, mobile });
 const wideView = (width, height, mobile) => ({ width, height, faceplateAspect: 4000 / 1760, fixedWidth: 0,
   fixedHeight: 40 + (mobile ? 0 : VIEW_MENU), panelsMinWidth: 0, panelsMinHeight: 200, mobile,
-  panelsAloneOnMobileBelow: true });
+  faceplateUsableWidth: 600 });
 
 test("view_tall_desktop_ordinary", () => {
   const v = m.calcuShellView(tallView(1400, 900, false));
@@ -267,6 +267,26 @@ test("view_wide_phone_landscape_safe_area", () => {
   assert.equal(v.panelsAlone, false);
 });
 
+test("view_wide_tablet_landscape", () => {
+  const v = m.calcuShellView(wideView(1366, 1024, true));
+  assert.equal(v.side, "below");
+  assert.equal(v.panelsFit, true);
+  assert.equal(v.panelsAlone, false);
+});
+
+test("view_wide_tablet_portrait", () => {
+  const v = m.calcuShellView(wideView(1024, 1366, true));
+  assert.equal(v.side, "below");
+  assert.equal(v.panelsFit, true);
+  assert.equal(v.panelsAlone, false);
+});
+
+test("view_tall_tablet_landscape", () => {
+  const v = m.calcuShellView(tallView(1366, 1024, true));
+  assert.equal(v.side, "beside");
+  assert.equal(v.panelsFit, true);
+});
+
 test("view_faceplate_fitted", () => {
   const box = { width: 1000, height: 540, faceplateAspect: 2, fixedWidth: 0, fixedHeight: 40 };
   let v = m.calcuShellView(box);
@@ -294,7 +314,7 @@ test("view_debugger_fits", () => {
   assert.equal(debugged(tallView(800, 900, false), { debuggerMinWidth: 220 }), false);
   assert.equal(debugged(wideView(1000, 900, false), { debuggerMinWidth: 700 }), true);
   assert.equal(debugged(wideView(600, 900, false), { debuggerMinWidth: 700 }), false);
-  const alone = m.calcuShellView(Object.assign(wideView(1000, 1400, true), { debuggerMinWidth: 700 }));
+  const alone = m.calcuShellView(Object.assign(wideView(393, 852, true), { debuggerMinWidth: 700 }));
   assert.equal(alone.panelsAlone, true);
   assert.equal(alone.debuggerFits, false);
 });

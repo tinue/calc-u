@@ -101,6 +101,10 @@ struct ChromeSizes {
     // The view rule's panels (shell::view): the least room they take beside
     // the faceplate (a width) and below it (a height); 0: no panels there.
     double panelsMinWidth = 0, panelsMinHeight = 0;
+    // The least faceplate width whose keys a finger can use: a mobile
+    // window turned against the faceplate's orientation shows the panels
+    // alone below it (shell::view); 0: never.
+    double faceplateUsableWidth = 0;
     // The bar's and the panels' text keeps its size next to the faceplate:
     // as designed at `textScaleWidth`, growing with a wider faceplate up to
     // `textScaleMax` times. 0: the text never scales.
@@ -131,7 +135,7 @@ struct Chrome {
 //  pillRadius, pillPaddingX, pillPaddingY, pillFontSize, pillBold,
 //  barHeight, barGap, slotPickerEm, printerMinWidth, printerMaxWidth,
 //  debuggerMinWidth, debuggerMinHeight, panelsMinWidth, panelsMinHeight,
-//  textScaleWidth, textScaleMax, paperRowCompactWidth, paperRowGap,
+//  faceplateUsableWidth, textScaleWidth, textScaleMax, paperRowCompactWidth, paperRowGap,
 //  paperRowCompactGap}}; colour names in kebab-case, as the Web's
 // custom properties (`--calcu-pill-text`).
 sessions::Value toValue(const Chrome&);

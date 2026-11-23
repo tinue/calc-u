@@ -16,7 +16,10 @@ panels (inspector, paper, printer) appear only when the room left below it
 is at least `panelsMinHeight` (200 px) -- in tall windows, not on a phone
 in landscape or in a wide, short window, where the calculator is alone (it
 has no panels beside it). The installed app is not locked to an
-orientation: the printer is seen in portrait. The paper panel is the library's (`CalcuPaperPanel`)
+orientation: in landscape, its natural orientation, the faceplate is
+always shown; upright, a faceplate narrower than `faceplateUsableWidth`
+(600 px, a phone) gives way to the panels alone, a tablet keeps it with
+the panels below. The paper panel is the library's (`CalcuPaperPanel`)
 and is always there, named after the plotter plugged in.
 The inspector sits beside the paper where the view rule's debugger fits
 (`debuggerMinWidth`, 700 px across the window); narrower, it gives way to

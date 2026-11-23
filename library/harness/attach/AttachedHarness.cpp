@@ -125,6 +125,17 @@ void AttachedHarness::process() {
 }
 
 void AttachedHarness::runLine(const std::string& text) {
+    // `json` is the attach transport's, not a harness command: the registry
+    // does not know it, so it is taken before the line is parsed.
+    const std::string line = trimmed(text);
+    const std::string word = line.substr(0, line.find_first_of(" \t"));
+    if (word == "json") {
+        if (suspended_ && suspended_()) return reply(refusedReply(kSuspended));
+        const std::string arg = trimmed(std::string_view(line).substr(word.size()));
+        if (arg != "on" && arg != "off") return reply(refusedReply(kJsonUsage));
+        json_ = arg == "on";
+        return reply(doneReply());
+    }
     auto parsed = parseLine(text, registry_);
     if (auto* refusal = std::get_if<std::string>(&parsed)) {
         if (suspended_ && suspended_()) return reply(refusedReply(kSuspended));
@@ -133,10 +144,6 @@ void AttachedHarness::runLine(const std::string& text) {
     const CommandLine& cl = std::get<CommandLine>(parsed);
     if (cl.path.empty()) return;
     if (suspended_ && suspended_()) return reply(refusedReply(kSuspended));
-    if (cl.path.size() == 1 && cl.path[0] == "json") {   // the attach transport's, not a harness command
-        json_ = trimmed(cl.argText) != "off";
-        return reply(doneReply());
-    }
     if (cl.path.size() == 1 && cl.path[0] == "wait") {   // on the app's clock
         if (cl.argText.empty()) {   // until idle, the session's operation on the app's clock
             const machine::MachineDescriptor* d = host_->descriptor();

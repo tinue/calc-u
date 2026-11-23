@@ -115,9 +115,17 @@ int runAttach(const std::vector<std::string>& args, const std::function<std::opt
         return 2;
     }
     Line in{fd, {}};
-    if (json) {   // the app formats JSON from now on
+    if (json) {   // the app formats JSON from now on, if it says so in JSON
+        std::string answer;
         sendLine(fd, "json on");
-        relayReply(in, true, false, [](const std::string&) {});
+        relayReply(in, false, false, [&](const std::string& l) { answer += l; });
+        if (answer.rfind("{\"done\":true", 0) != 0) {
+            while (!answer.empty() && answer.back() == '\n') answer.pop_back();
+            err("The app did not switch to JSON: " + (answer.empty() ? std::string("no reply") : answer) + "\n");
+            sendLine(fd, "quit");
+            ::close(fd);
+            return 2;
+        }
     }
     while (auto l = readLine()) {
         std::string line = *l;

@@ -109,10 +109,6 @@ and `docs/Process.md` until the closing check at its end has passed.
   calc-u-site skill `site-59` (a line names `StateFileFormat.md`). VS Code
   users of Calc-U-1600 re-create `launch.json`/`tasks.json` for the debug
   type `c1600`.
-- **Harness attach**: `json on` over attach is refused ("unknown command
-  json", the line is parsed before `json` is checked), and `calcu attach
-  --json` then reads plain replies as JSON. The attach CLI test uses a
-  fake app and does not catch it.
 - **Smaller findings**: Swift `xcodebuild` fails from a worktree under
   `.claude/worktrees/` (works from the main checkout); the Playwright drag
   test is flaky locally; `examples/memory/maxed-out-mem.pc1600` says INIT "F" is needed

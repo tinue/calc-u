@@ -30,6 +30,7 @@ namespace calcu::harness {
 class AttachedHarness {
 public:
     static constexpr const char* kSuspended = "the app is suspended";
+    static constexpr const char* kJsonUsage = "usage: json on|off";
 
     AttachedHarness(sessions::AppSession&, HarnessProduct&, AttachEndpoint&, std::function<bool()> callsSuspended,
                     parts::LibraryParts& parts);

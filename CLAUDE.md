@@ -106,7 +106,8 @@ view, `barFit`, "Loading…", notices, the pointer).
   underneath) when it takes the panels' minimum (the chrome's
   `panelsMinWidth`/`panelsMinHeight`), else the product's fallback
   (Calc-U-59: its pages; Calc-U-1600: the calculator alone, the panels
-  alone on mobile with the room below). Desktop follows its window's
+  alone on mobile with the room below, without the bar: the bar goes
+  with the faceplate). Desktop follows its window's
   size, mobile its rotation; where an app can lock its orientation it is
   locked to the faceplate's (Calc-U-59: portrait), Calc-U-1600 is not.
 - Look and layout values live in the product's chrome (`app/TIChrome`,

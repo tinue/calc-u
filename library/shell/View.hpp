@@ -33,8 +33,8 @@ struct ViewInputs {
     // window; 0: the product has none.
     double debuggerMinWidth = 0, debuggerMinHeight = 0;
     // On mobile where the room below takes the panels: the panels alone,
-    // without the faceplate (a phone in portrait, whose keys would be too
-    // small). A sliver of room below (a phone in landscape whose safe
+    // without the faceplate and its bar (a phone in portrait, whose keys
+    // would be too small; turned, the calculator has the bar). A sliver of room below (a phone in landscape whose safe
     // area makes the window a little narrower) keeps the calculator.
     bool panelsAloneOnMobileBelow = false;
 };

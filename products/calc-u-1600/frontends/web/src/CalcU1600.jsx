@@ -392,11 +392,13 @@ function CalcU1600(props) {
   const showInspector = panelRoom && !view.panelsAlone && (view.debuggerFits || !(showPaper || showPrinter));
   const anyPanel = showInspector || showPaper || showPrinter;
   // The panels alone: the paper over the whole width; the keys are too
-  // small to use there, so the calculator is used turned.
+  // small to use there, so the calculator is used turned. The bar goes
+  // with the faceplate: turned, the calculator has it.
   const panelsOnly = view.panelsAlone && anyPanel;
 
   const romsMissing = !!s.romsMissing && !s.started;
   const failed = start === "failed";
+  const faceHidden = panelsOnly && !romsMissing && !failed;
   return (
     <div className="calcu-client" ref={rootRef} tabIndex={0} style={{ ...chromeStyle, width: W, height: H }}
       data-ready={ready ? "true" : "false"} data-model={model}
@@ -415,13 +417,13 @@ function CalcU1600(props) {
       {!mobile && <ShellMenuBar shell={s} />}
       {/* The library's storage sentence. */}
       <ShellStorageBanner shell={shell} />
-      <div className="calcu-face-row" style={panelsOnly && !romsMissing && !failed ? { display: "none" } : undefined}>
+      <div className="calcu-face-row" style={faceHidden ? { display: "none" } : undefined}>
         {romsMissing && <ShellRomsMissing shell={s} />}
         {failed && !romsMissing && <div className="calcu-shell-roms-missing" data-calcu="start-failed" role="alert">{failure}</div>}
         {!romsMissing && !failed && <Faceplate shell={shell} model={model} map={maps[model] || null} width={faceWidth} shiftFlash={shiftFlash} />}
       </div>
       <C1600Bar.Provider value={bar}>
-        <div className="calcu-controlbar">
+        <div className="calcu-controlbar" style={faceHidden ? { display: "none" } : undefined}>
           <ShellControlBar shell={s} slotPicker={SlotControls} mediaControls={C1600_MEDIA_CONTROLS}
             extra={{ Media: [<DiskControls key="disk" s={s} />] }} />
         </div>

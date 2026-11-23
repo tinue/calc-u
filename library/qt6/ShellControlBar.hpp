@@ -1,10 +1,12 @@
 #pragma once
 #include "shell/Chrome.hpp"
 #include "shell/BarModel.hpp"
+#include "qt6/SlotPicker.hpp"
 #include <QWidget>
 #include <array>
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -15,9 +17,9 @@ class QToolButton;
 
 // The control bar of the Qt6 shell: one container per group, left to right;
 // QComboBox pickers whose disabled items carry the reason as their tooltip;
-// checkable QToolButtons for the one-peripheral places; the library's module
-// picker and the media owners' controls from registered factories; the
-// product's own controls in the group it names; at the end the More button,
+// checkable QToolButtons for the one-peripheral places; a module slot's
+// picker (SlotPicker); the media owners' controls from registered factories;
+// the product's own controls in the group it names; at the end the More button,
 // a menu of the bar model's More items. A group without a control
 // is hidden: no gap. A group the model pushes takes up the room before it
 // (a spread bar); a picker the model shows short shows its short text
@@ -44,13 +46,13 @@ public:
     ShellControlBar(Shell&, QWidget* parent = nullptr);
     void set(const std::vector<shell::BarGroupModel>&);
     void addProductControl(shell::BarGroup, QWidget*);   // at the end of the group
-    void setSlotFactory(Factory f) {   // the next set() builds anew
-        slotFactory_ = std::move(f);
-        shown_.clear();
+    void setSlotOptions(SlotPickerOptions o) {   // the next set() builds anew
+        slotOptions_ = std::move(o);
+        shown_.reset();
     }
     void setMediaFactory(std::string kind, Factory f) {
         mediaFactories_[std::move(kind)] = std::move(f);
-        shown_.clear();
+        shown_.reset();
     }
     QWidget* group(shell::BarGroup g) const { return groups_[static_cast<std::size_t>(g)]; }
     // The product's chrome: More is a pill of it, light or dark with the window.
@@ -76,14 +78,14 @@ private:
     std::array<QWidget*, kGroups> groups_{};
     std::array<std::vector<std::pair<std::string, QWidget*>>, kGroups> shellWidgets_;
     std::array<std::vector<QWidget*>, kGroups> productWidgets_;
-    std::string shown_;
-    Factory slotFactory_;
+    std::optional<std::vector<shell::BarGroupModel>> shown_;   // the model the widgets were built of
+    SlotPickerOptions slotOptions_;
     std::map<std::string, Factory> mediaFactories_;
     const shell::Chrome* chrome_ = nullptr;
     QToolButton* more_ = nullptr;
     QMenu* moreMenu_ = nullptr;
     std::vector<shell::MenuItem> moreItems_;
-    std::string moreShown_;
+    std::optional<std::vector<shell::MenuItem>> moreShown_;   // the items the menu was filled with
 };
 
 } // namespace calcu::qt6

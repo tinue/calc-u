@@ -1,7 +1,6 @@
 #include "MachineController.hpp"
 
 #include <QDebug>
-#include <QEventLoop>
 #include <QTimer>
 
 #include <algorithm>
@@ -63,17 +62,6 @@ void MachineController::start() {
 
 void MachineController::send(const sessions::CommandName& name, sessions::Value args, Reply done) {
     host().send(name, std::move(args), std::move(done));
-}
-
-sessions::ReplyMessage MachineController::sendAndWait(const sessions::CommandName& name, sessions::Value args) {
-    QEventLoop loop;
-    std::optional<sessions::ReplyMessage> got;
-    host().send(name, std::move(args), [&](const sessions::ReplyMessage& r) {
-        got = r;
-        loop.quit();
-    });
-    if (!got) loop.exec();
-    return *got;
 }
 
 sessions::ReplyMessage MachineController::ask(const sessions::RequestName& name, sessions::Value args) {
@@ -164,11 +152,6 @@ GrayImage MachineController::currentScreenImage() const {
 bool MachineController::lcdText(LcdText* out) const {
     const auto* d = display();
     return d && app().lcdText(*d, out);
-}
-
-bool MachineController::traceActive() const {
-    const auto* t = state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic);
-    return t && t->running;
 }
 
 calcu::sessions::LogLevel MachineController::logLevel() const {

@@ -1,5 +1,6 @@
 #pragma once
 #include "qt6/SessionHost.hpp"
+#include "qt6/SlotPicker.hpp"
 #include "shell/BarModel.hpp"
 #include "shell/Chrome.hpp"
 #include "shell/HitMap.hpp"
@@ -77,7 +78,7 @@ public:
     void addBarControl(shell::BarGroup, QWidget*);   // at the end of the group
     using Factory = std::function<QWidget*(const sessions::Value& entry, QWidget* parent)>;
     void registerMediaControls(std::string mediumKind, Factory);   // the library's medium kinds; the TI card
-    void registerSlotPicker(Factory);                              // the library's module picker
+    void setSlotPicker(SlotPickerOptions);                         // the library's module picker's options
     void registerPanel(std::string kind, std::function<QWidget*(QWidget* parent)>);   // the library's paper panel by default
     void setChoosers(ShellChoosers);
     // The product's chrome (its app/ Chrome, alive as long as the shell):
@@ -100,9 +101,6 @@ public:
     void choose(const shell::MenuItem&);
     // A command the shell sends: its refusal becomes a notice or a question.
     void sendChecked(const sessions::CommandName&, sessions::Value args);
-    // The product's own state of its items changed (a toggle's check): the
-    // menus and More are computed anew.
-    void productChanged();
     void openSettings();
     void openAbout();
     void loadPreset();

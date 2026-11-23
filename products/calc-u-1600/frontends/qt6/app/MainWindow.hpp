@@ -1,5 +1,4 @@
 #pragma once
-#include "sessions/LogLevel.hpp"
 #include <QPointer>
 #include <QByteArray>
 #include <QElapsedTimer>
@@ -94,13 +93,8 @@ private:
     std::function<void(const QImage&, const QString&)> m_clipboardSink;
     std::string m_model;   // the control state's running model (the faceplate's art)
 
-    calcu::sessions::LogLevel m_logShown = calcu::sessions::LogLevel::Off;
-    bool m_traceShown = false;
 
     calcu::shell::ShellProduct product();
-    void setTrace(bool on);
-    void setLogLevel(calcu::sessions::LogLevel);
-    void followTraceAndLog();
     void onTopic(const QString& topic);
     void followControlState();
     calcu::qt6::Shell::FaceplateGeometry faceplateGeometry();

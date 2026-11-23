@@ -13,7 +13,6 @@
 #include "debug/DebugPanel.hpp"
 #include "qt6/AskedSend.hpp"
 #include "qt6/FileOpening.hpp"
-#include "qt6/MediaPicker.hpp"
 #include "qt6/PanelArea.hpp"
 #include "qt6/PaperPanel.hpp"
 #include "qt6/SessionHost.hpp"
@@ -83,21 +82,7 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
                           calcu::qt6::Shell::FaceplateGeometry{[this] { return m_keyboard->scale(); },
                                                                [this] { return m_keyboard->origin(); },
                                                                [this](double x, double y) { return m_keyboard->cardTakes(x, y); }});
-    // The library's slot picker (the modules by description in menu-sort
-    // order and the empty slot) and the magnetic card controls.
-    m_shell->registerSlotPicker([this](const calcu::sessions::Value& entry, QWidget* p) -> QWidget* {
-        auto* picker = new calcu::qt6::MediaPicker(p);
-        const std::string place = calcu::shell::read::text(entry, "place");
-        picker->setSender([this](const calcu::sessions::CommandName& n, calcu::sessions::Value v) {
-            m_controller->sendCommand(n, std::move(v));
-        });
-        auto refresh = [this, picker, place] {
-            if (const auto* s = m_controller->mediaPlace(place)) picker->setPlace(*s);
-        };
-        refresh();
-        connect(m_controller.get(), &EmulatorController::cardStateChanged, picker, refresh);
-        return picker;
-    });
+    // The magnetic card controls (the module slot's picker is the shell's).
     m_shell->registerMediaControls("magnetic-card", [this](const calcu::sessions::Value&, QWidget* p) -> QWidget* {
         auto* cards = new CardControls(*m_controller, p);
         connect(cards, &CardControls::armRequested, this, &MainWindow::armCard);

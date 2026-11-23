@@ -108,8 +108,8 @@ void Shell::registerMediaControls(std::string kind, Factory f) {
     refresh(QString());
 }
 
-void Shell::registerSlotPicker(Factory f) {
-    bar_->setSlotFactory(std::move(f));
+void Shell::setSlotPicker(SlotPickerOptions o) {
+    bar_->setSlotOptions(std::move(o));
     refresh(QString());
 }
 
@@ -130,6 +130,7 @@ void Shell::setChoosers(ShellChoosers c) {
 void Shell::setChrome(const shell::Chrome& c) {
     bar_->setChrome(&c);
     panels_->setChrome(&c);
+    refresh(QString());
 }
 
 bool Shell::loadingShown() const { return loadingView_ && !loadingView_->isHidden(); }
@@ -190,6 +191,7 @@ void Shell::refresh(const QString&) {
     inputs_.romsMissing = host_.value(n.romsMissing);
     inputs_.settings = host_.value(n.settings);
     inputs_.media = host_.value(n.media);
+    for (const auto& t : shell::productTopics(product_)) inputs_.productTopics[t.value] = host_.value(t);
     menus_ = shell::menus(inputs_, product_, options_.traits);
     menuBar_->set(menus_);
     bar_->set(shell::bar(inputs_, product_, options_.traits));
@@ -201,8 +203,6 @@ void Shell::refresh(const QString&) {
     if (faceplate_) faceplate_->setVisible(!missing);
     if (settings_ && settings_->isVisible()) settings_->refresh();
 }
-
-void Shell::productChanged() { refresh(QString()); }
 
 void Shell::sendChecked(const sessions::CommandName& name, sessions::Value args) {
     sessions::Command sent{name, args};

@@ -36,7 +36,7 @@ private:
     Shell& shell_;
     std::vector<std::string> order_;
     std::map<std::string, QMenu*> menus_;
-    std::map<std::string, std::string> shown_;   // a menu's model as text
+    std::map<std::string, std::vector<shell::MenuItem>> shown_;   // a menu's items as filled
     int rebuilds_ = 0;
 };
 

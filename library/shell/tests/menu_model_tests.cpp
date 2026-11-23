@@ -409,29 +409,45 @@ TEST(no_settings_item_without_settings) {   // and Traits::about
     CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help"));
 }
 
-// A native frontend's own toggles and submenus among the product's items.
+// The product's toggles and submenus follow topics of the session and send
+// their commands: a toggle sends its checkedArgs while checked, a choice
+// nothing while it is the one that runs.
 TEST(product_toggle_and_submenu) {
     auto p = st::product();
-    bool tracing = true;
     ProductItem trace{MenuGroup::MachineEnd, "trace", "Trace", "", {}};
-    trace.checked = [&tracing] { return tracing; };
+    trace.command = sessions::CommandName{"trace"};
+    trace.args = Value::object({{"button", true}});
+    trace.checkedBy = ProductItem::Check{sessions::TopicName{"trace"}, "running", Value(true), Value::object({{"off", true}})};
     ProductItem log{MenuGroup::MachineEnd, "log", "Log", "", {}};
-    for (const char* id : {"log-off", "log-info"}) {
-        ProductItem level{MenuGroup::MachineEnd, id, id, "", {}};
-        level.checked = [id] { return std::string(id) == "log-info"; };
+    for (const char* id : {"off", "info"}) {
+        ProductItem level{MenuGroup::MachineEnd, std::string("log-") + id, id, "", {}};
+        level.command = sessions::CommandName{"log-level"};
+        level.args = Value::object({{"level", id}});
+        level.checkedBy = ProductItem::Check{sessions::TopicName{"log-level"}, "level", Value(id)};
         log.children.push_back(level);
     }
     p.items.push_back(trace);
     p.items.push_back(log);
-    auto ms = menus(st::inputs(), p, kQt);
+    CHECK_EQ(productTopics(p).size(), std::size_t{2});
+    CHECK(checkShellProduct(p, st::inputs().controlState).empty());
+    auto in = st::inputs();
+    // No topic yet: nothing checked, each sends its command.
+    auto ms = menus(in, p, kQt);
     const MenuItem* t = findItem(ms, "trace");
-    CHECK(t && t->checkable && t->checked);
+    CHECK(t && t->checkable && !t->checked && t->command.value == "trace" && read::flag(t->args, "button"));
+    in.productTopics["trace"] = Value::object({{"running", true}});
+    in.productTopics["log-level"] = Value::object({{"level", "info"}});
+    ms = menus(in, p, kQt);
+    t = findItem(ms, "trace");
+    CHECK(t && t->checked && t->command.value == "trace" && read::flag(t->args, "off"));
     const MenuItem* l = findItem(ms, "log");
     CHECK(l && l->kind == MenuItem::Kind::Submenu);
     CHECK_EQ(join(ids(l->children)), std::string("log-off log-info"));
-    CHECK(!findItem(ms, "log-off")->checked);
-    CHECK(findItem(ms, "log-info")->checked);
-    tracing = false;
-    ms = menus(st::inputs(), p, kQt);
-    CHECK(!findItem(ms, "trace")->checked);
+    const MenuItem* off = findItem(ms, "log-off");
+    CHECK(off && !off->checked && off->command.value == "log-level" && read::text(off->args, "level") == "off");
+    const MenuItem* info = findItem(ms, "log-info");
+    CHECK(info && info->checked && info->command.value.empty());
+    // An item that follows a topic and sends nothing is a problem of the data.
+    p.items.back().children.front().command = {};
+    CHECK(!checkShellProduct(p, st::inputs().controlState).empty());
 }

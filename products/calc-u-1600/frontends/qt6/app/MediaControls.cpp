@@ -2,7 +2,6 @@
 #include "app/SharpChrome.hpp"
 #include "qt6/ChromeStyle.hpp"
 
-#include <QFontInfo>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -14,7 +13,7 @@
 #include "control/ControlState.hpp"
 #include "media/MediaTopics.hpp"
 #include "qt6/MediaPicker.hpp"
-#include "qt6/NameAndSaveDialog.hpp"
+#include "qt6/SlotPicker.hpp"
 #include "shell/Inputs.hpp"
 
 namespace sessions = calcu::sessions;
@@ -63,33 +62,7 @@ void MediaPlaceControl::refresh() {
 }
 
 void MediaPlaceControl::nameAndSave(const QString& prompt) {
-    const calcu::media::MediaState* s = m_controller.media();
-    const calcu::media::PlaceState* p = s ? s->place(m_place) : nullptr;
-    if (!p) return;
-    calcu::qt6::NameAndSaveDialog dialog(window());
-    dialog.setPlace(*p);
-    dialog.setPrompt(prompt);   // "Instance name:" or "Disk name:"
-    dialog.setSender([this](const sessions::CommandName& name, sessions::Value args) -> std::string {
-        // The save with the switch on is an operation (its power cycle).
-        const sessions::ReplyMessage r = m_controller.sendAndWait(name, std::move(args));
-        return r.done ? std::string() : r.reason;
-    });
-    dialog.exec();
-}
-
-SlotControl::SlotControl(MachineController& c, std::string place, QWidget* parent) : MediaPlaceControl(c, place, parent) {
-    auto* l = new QHBoxLayout(this);
-    l->setContentsMargins(0, 0, 0, 0);
-    l->setSpacing(2);
-    l->addWidget(m_picker);
-    // One width whatever it shows (the chrome's, in em), so the bar's
-    // controls never move when a module comes or goes.
-    if (const double em = cu1600::sharpChrome().sizes.slotPickerEm; em > 0)
-        m_picker->setFixedWidth(qRound(em * QFontInfo(m_picker->font()).pixelSize()));
-    m_save = compactButton(this, tr("Name & Save"), QString::fromStdString("media-save-" + m_place));
-    l->addWidget(m_save);
-    connect(m_save, &QPushButton::clicked, this, [this] { nameAndSave(tr("Instance name:")); });
-    refresh();
+    calcu::qt6::nameAndSave(m_controller.host(), window(), m_place, prompt);
 }
 
 DiskControl::DiskControl(MachineController& c, QWidget* parent) : MediaPlaceControl(c, "floppy", parent) {

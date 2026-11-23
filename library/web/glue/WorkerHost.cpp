@@ -162,7 +162,12 @@ void WorkerHost::receive(val message) {
         setup.traits.mobile = shell::read::flag(args, "mobile");
         setup.traits.settings = shell::read::flag(args, "settings", true);
         setup.traits.about = shell::read::flag(args, "about", true);
+        const std::vector<s::TopicName> followed = shell::productTopics(setup.product);
         models_.set(std::move(setup));
+        // The topics the product's items follow as they are now: their
+        // states may have come before the page's traits.
+        for (const auto& t : followed)
+            if (const s::PayloadPtr* p = listener_.mirror().state(t)) models_.take(s::StateMessage{t, *p});
         postedModels_ = s::Value();
         postShell();
         return;

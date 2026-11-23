@@ -28,7 +28,8 @@ public:
     // value() is null.
     void set(ModelSetup);
 
-    // A message the session sent; true when it changed an input of the models.
+    // A message the session sent; true when it changed an input of the models
+    // (the shell's topics and, once set(), those the product's items follow).
     bool take(const sessions::Message&);
     // The reply to the preset-list request.
     void takePresetList(const sessions::ReplyMessage&);

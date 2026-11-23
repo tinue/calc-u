@@ -30,11 +30,15 @@ struct MenuItem {
     // such where the platform has it (iOS).
     std::string confirm;
     bool destructive = false;
+
+    bool operator==(const MenuItem&) const = default;
 };
 
 struct Menu {
     std::string id, label;   // "file", "File"
     std::vector<MenuItem> items;
+
+    bool operator==(const Menu&) const = default;
 };
 
 // What a window offers. Qt6: {true, true, false}; Web: {false, false,

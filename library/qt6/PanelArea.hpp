@@ -49,7 +49,7 @@ private:
     std::map<std::string, QWidget*> panels_;
     Choose choose_;
     const shell::Chrome* chrome_ = nullptr;
-    std::string placesShown_;   // the paper's place controls as last built
+    std::vector<shell::BarControl> placesShown_;   // the paper's place controls as last built
 };
 
 } // namespace calcu::qt6

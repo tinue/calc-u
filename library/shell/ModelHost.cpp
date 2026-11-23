@@ -19,6 +19,9 @@ bool ModelHost::take(const sessions::Message& m) {
     else if (s->topic == names_.romsMissing) input = &inputs_.romsMissing;
     else if (s->topic == names_.settings) input = &inputs_.settings;
     else if (s->topic == names_.media) input = &inputs_.media;
+    else if (setup_)   // a topic the product's items follow
+        for (const auto& t : productTopics(setup_->product))
+            if (s->topic == t) input = &inputs_.productTopics[t.value];
     if (!input) return false;
     sessions::Value v = s->state ? s->state->toValue() : sessions::Value();
     if (v == *input) return false;

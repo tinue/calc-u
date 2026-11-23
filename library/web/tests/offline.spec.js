@@ -65,6 +65,15 @@ test('the new release from the next start, all files, old cache gone, store unto
     expect((await request(page, 'tp.bundle', { name: 'version.txt' })).value.text).toBe('1.0.0');
     await page.close();
 
+    // The old release goes once no window of the app is open; WebKit lets
+    // the new one take over a moment later. Watched from a page outside the
+    // app's scope, which is no window of the app.
+    const outside = await context.newPage();
+    await outside.goto(appUrl.replace(/\/app\/$/, '/not-the-app'));
+    await expect.poll(() => outside.evaluate((scope) => navigator.serviceWorker.getRegistration(scope)
+      .then((r) => !!r && !r.waiting && !r.installing), appUrl), { timeout: 30000 }).toBe(true);
+    await outside.close();
+
     // The next start: every file of the new release, the old cache gone.
     const next = await context.newPage();
     await next.goto(appUrl);

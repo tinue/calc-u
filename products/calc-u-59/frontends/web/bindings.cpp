@@ -71,8 +71,8 @@ calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
     parts->web->bind(*parts->app);
 
     // The one order (parts::LibraryParts): the library's ControlPart (the
-    // control state with the product entries c59.asm-run and
-    // c59.calculator-tab), the shell's part and SettingsPart, the
+    // control state with the product entries c59.asm-run,
+    // c59.calculator-tab and c59.card-controls), the shell's part and SettingsPart, the
     // library's and the product's, the Web part last.
     calcu::shell::HostSessionSetup host;
     host.settings = &parts->settings;

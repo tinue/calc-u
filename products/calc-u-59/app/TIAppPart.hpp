@@ -1,6 +1,7 @@
 #pragma once
 #include "ConstantMemoryKeeper.hpp"
 #include "CueCard.hpp"
+#include "TIControlRules.hpp"
 #include "TIDebugPart.hpp"
 #include "TIFileKinds.hpp"
 #include "media/FileAccess.hpp"
@@ -285,6 +286,7 @@ private:
     TILevelRules m_levelRules;
     ProgramMemoryPart m_memoryPart;
     TIDebugPart m_debugPart;
+    TIControlRules m_controlRules;
     TIFileKinds m_fileKinds;
     calcu::parts::LibraryParts m_lib;
 

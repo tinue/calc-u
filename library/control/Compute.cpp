@@ -35,7 +35,11 @@ public:
         panels(out);
         controls(out);
         actions(out);
-        if (setup_.rules) setup_.rules->productEntries(m_, out.productEntries);
+        if (setup_.rules) {
+            std::vector<ProductEntry> entries;
+            setup_.rules->productEntries(m_, out, entries);
+            out.productEntries = std::move(entries);
+        }
         return out;
     }
 

@@ -35,7 +35,7 @@ public:
             if (k == key) return why;
         return std::nullopt;
     }
-    void productEntries(const machine::Machine& m, std::vector<ProductEntry>& out) const override {
+    void productEntries(const machine::Machine& m, const ControlState&, std::vector<ProductEntry>& out) const override {
         if (!entry) return;
         last = sessions::valuePayload(kTestEntry, sessions::Value::object({{"model", m.model().value}}));
         out.push_back(ProductEntry{kTestEntry, last});

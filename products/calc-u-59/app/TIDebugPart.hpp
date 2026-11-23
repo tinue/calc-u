@@ -1,7 +1,8 @@
 #pragma once
 #include "DebugModel.hpp"
 #include "DebugSnapshots.hpp"
-#include "control/ControlRules.hpp"
+#include "control/ControlState.hpp"
+#include "machine/Machine.hpp"
 #include "debugger/DebuggerPart.hpp"
 #include "roms/RomSet.hpp"
 #include "sessions/Messages.hpp"
@@ -144,7 +145,7 @@ struct TIDebugSetup {
     bool alwaysShown = false;
 };
 
-class TIDebugPart final : public calcu::sessions::SessionPart, public calcu::control::ControlRules {
+class TIDebugPart final : public calcu::sessions::SessionPart {
 public:
     explicit TIDebugPart(TIDebugSetup setup);
     TIDebugPart(const TIDebugPart&) = delete;
@@ -160,8 +161,8 @@ public:
     void machineRestarted(calcu::sessions::SessionContext&, calcu::sessions::Restart) override;
     void operationEnded(calcu::sessions::SessionContext&) override;
 
-    // ControlRules.
-    void productEntries(const calcu::machine::Machine&, std::vector<calcu::control::ProductEntry>&) const override;
+    /// The panel's product entries of the control state (TIControlRules).
+    void productEntries(const calcu::machine::Machine&, std::vector<calcu::control::ProductEntry>&) const;
 
     // ── The flows, as the commands run them (public for the tests).
     /// The step `debug-panel:`: `calculator` is passed

@@ -179,9 +179,9 @@ void writeFile(const QString& path, const std::string& text) {
 
 } // namespace
 
-// On the shell's bar (the media place's controls), two "Crd"
-// buttons, Arm Card and Arm Fresh Card, while no card passes; Eject Card
-// while one does; on the TI-58 none at all.
+// On the shell's bar (the media place's controls), as the control state
+// declares them: two "Crd" buttons, Arm Card and Arm Fresh Card, while no
+// card passes; Eject Card while one does; on the TI-58 none at all.
 TEST(card_buttons_and_eject_by_card_state) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     Fixture f;
@@ -191,13 +191,15 @@ TEST(card_buttons_and_eject_by_card_state) {
     auto controls = [&] { return f.find<CardControls>(names::barMedia("card-reader")); };
     CHECK(f.waitFor([&] { return controls() != nullptr; }, 2000));
     auto button = [&](const char* name) { return controls() ? buttonNamed(*controls(), QString::fromLatin1(name)) : nullptr; };
-    CHECK(button("Arm Card") && button("Arm Fresh Card") && button("Eject Card"));
+    CHECK(f.waitFor([&] { return button("Arm Card") && button("Arm Fresh Card"); }));
     if (!button("Arm Card")) return;
+    CHECK(!button("Eject Card") || button("Eject Card")->isHidden());   // made once the control state declares it
     CHECK(button("Arm Card")->text().endsWith(QStringLiteral("Crd")) && button("Arm Fresh Card")->text().endsWith(QStringLiteral("Crd")));
-    CHECK(f.waitFor([&] { return !button("Arm Card")->isHidden() && !button("Arm Fresh Card")->isHidden() && button("Eject Card")->isHidden(); }));
+    CHECK(button("Arm Card")->toolTip() == QStringLiteral("Arm Card") && button("Arm Card")->isEnabled());
     CHECK(f.c().armFreshCard(QStringLiteral("Qt13"), true).isEmpty());
     f.c().sendCommand(calcu::media::kFeedCommand, Value::object({{"place", "card-reader"}, {"side", 0}}));
-    CHECK(f.waitFor([&] { return button("Arm Card") && button("Arm Card")->isHidden() && !button("Eject Card")->isHidden(); }));
+    CHECK(f.waitFor([&] { return button("Arm Card") && button("Arm Card")->isHidden() && button("Eject Card") && !button("Eject Card")->isHidden(); }));
+    if (!button("Eject Card")) return;
     button("Eject Card")->click();
     CHECK(f.waitFor([&] { return button("Arm Card") && !button("Arm Card")->isHidden() && button("Eject Card")->isHidden(); }));
     f.command("model", Value::object({{"name", "TI-58"}}));   // no card reader: no card control

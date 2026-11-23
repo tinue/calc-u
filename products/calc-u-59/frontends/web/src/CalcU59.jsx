@@ -97,23 +97,27 @@ function BarButton({ icon, label, title, name, className = "", ...rest }) {
 }
 
 // The card controls, the media controls of the kind
-// `magnetic-card` on the shell's bar: Arm Card and Arm Fresh Card (both
-// "Crd") while no card passes, Eject Card while one does; disabled with the
-// media place's reason while it cannot be used (`insert`). Arm Card and Arm
-// Fresh Card are the product items of the same names (their dialogs).
-function CardControls({ shell, entry }) {
-  const reader = cardReaderOf(shell.inputs.media);
-  const swiping = !!reader && reader.passing !== undefined && reader.passing !== null;
-  const ok = calcuShellAvailability(entry, "insert");
-  if (swiping)
-    return <BarButton icon="⏏" label="Eject Card"
-      onClick={() => shell.shell.send("media.eject", { place: "card-reader" })} />;
+// `magnetic-card` on the shell's bar, as the control state declares them
+// (`c59.card-controls`): Arm Card and Arm Fresh Card (both "Crd") while no
+// card passes, Eject Card while one does; disabled with the reason as their
+// tooltip while they cannot be used. Arm Card and Arm Fresh Card are the
+// product items of the same names (their dialogs).
+function CardControls({ shell }) {
+  const cs = shell.inputs.controlState;
+  const entry = cs && cs.product ? cs.product["c59.card-controls"] : null;
+  const acts = {
+    "arm-card": () => shell.choose({ id: "arm-card" }),
+    "arm-fresh-card": () => shell.choose({ id: "arm-fresh-card" }),
+    "eject-card": () => shell.shell.send("media.eject", { place: "card-reader" }),
+  };
   return (
     <React.Fragment>
-      <BarButton icon="⤓" label="Crd" name="Arm Card" disabled={!ok.now}
-        title={ok.now ? "Arm Card" : ok.reason} onClick={() => shell.choose({ id: "arm-card" })} />
-      <BarButton icon="＋" label="Crd" name="Arm Fresh Card" disabled={!ok.now}
-        title={ok.now ? "Arm Fresh Card" : ok.reason} onClick={() => shell.choose({ id: "arm-fresh-card" })} />
+      {calcuShellList(entry, "controls").map((c) => {
+        const ok = calcuShellAvailability(c);
+        const name = calcuShellText(c, "name");
+        return <BarButton key={c.id} icon={calcuShellText(c, "icon")} label={calcuShellText(c, "label")} name={name}
+          disabled={!ok.now} title={ok.now ? name : ok.reason} onClick={acts[c.id]} />;
+      })}
     </React.Fragment>
   );
 }

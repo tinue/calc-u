@@ -43,6 +43,9 @@ The control bar below the calculator holds, from left to right:
    ([Magnetic cards](04-magnetic-cards.md));
 4. the **More** button (⋯), at the right edge.
 
+Where the bar is wide enough, the buttons show their labels beside
+their icons (**Crd**, **More**); else the icons alone.
+
 The bar is the same on a desktop and on mobile.
 
 The button **PC-100C**, which attaches or detaches the printer, is at
@@ -52,7 +55,7 @@ the left of the paper panel's header, above the paper it prints on
 Changing the module, or attaching or detaching the PC-100C, goes through
 a power cycle, as on the real calculator ([What differs by
 model](09-models.md)). While a preset loads, the model, module, printer
-and card controls are disabled.
+and card controls are disabled; the card buttons' tooltip says why.
 
 ## The menus
 

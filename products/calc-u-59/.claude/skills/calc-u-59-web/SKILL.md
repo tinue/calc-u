@@ -43,7 +43,7 @@ Never edit the calculator there — that copy is generated.
    right edge on both (`ShellMoreMenu`, Load Preset… and Settings… in it),
    `ShellControlBar` in each calculator column (the model
    picker, the library's `CalcuMediaPicker` for `slot-1`,
-   the product's card controls as the media controls of `magnetic-card`),
+   the product's card controls as the media controls of `magnetic-card`, drawn from the control state's `c59.card-controls`),
    the button "PC-100C" on the paper panel (the panel model's `places`),
    `ShellDialogs` (settings, About, notices, "Loading…"),
    `ShellStorageBanner`, `ShellRomsMissing`, and `useShellFaceplate` on the

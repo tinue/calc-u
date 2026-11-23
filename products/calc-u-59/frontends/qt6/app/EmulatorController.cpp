@@ -236,6 +236,10 @@ bool EmulatorController::cardPassing() const {
     const auto* p = cardReader();
     return p && p->passing.has_value();
 }
+std::vector<cu59::CardControl> EmulatorController::cardControls() const {
+    const auto* c = state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+    return c ? cu59::cardControlsOf(*c) : std::vector<cu59::CardControl>{};
+}
 std::vector<calcu::media::PickerEntry> EmulatorController::savedCards() const {
     std::vector<calcu::media::PickerEntry> out;
     if (const auto* p = cardReader())

@@ -38,7 +38,8 @@ std::optional<std::string> SharpControlRules::unavailable(const calcu::control::
     return std::nullopt;
 }
 
-void SharpControlRules::productEntries(const Machine& m, std::vector<calcu::control::ProductEntry>& out) const {
+void SharpControlRules::productEntries(const Machine& m, const calcu::control::ControlState&,
+                                       std::vector<calcu::control::ProductEntry>& out) const {
     const bool pc1600 = m.model().value == sharp::kPC1600;
     const std::string printer = pluggedAt(m, sharp::kPrinter);
     const bool ce1600p = printer == sharp::kCE1600P;

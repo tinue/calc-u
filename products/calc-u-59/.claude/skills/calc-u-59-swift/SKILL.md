@@ -48,7 +48,7 @@ skill).
   `roms-missing`, `settings`, `media`, the `preset-list` reply) with
   `app/TIShellProduct`: `menus` (no menu bar: the item lookup by id),
   `bar` (`Views/ControlBarView.swift`: the model picker, the picker
-  of `slot-1`, the card controls; More at the right edge (the traits'
+  of `slot-1`, the card controls (the control state's `c59.card-controls`, `TIAppSession.cardControls`); More at the right edge, "⋯ More" where the bar fits its labels (the traits'
   platform Mobile), `moreItems`: every menu item under its heading,
   Cold boot asks first), `paperPlaces` (the
   PC-100C's button on the paper panel, `Views/PrinterView.swift`), `settingsDialog`

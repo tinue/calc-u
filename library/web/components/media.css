@@ -19,3 +19,5 @@
 .calcu-client .calcu-media-table { border-collapse: collapse; }
 .calcu-client .calcu-media-table td { padding: 2px 6px; }
 .calcu-client .calcu-media-none { font-style: italic; }
+/* Inside a modal (ShellModal) the modal gives the room around it. */
+.calcu-client .calcu-shell-modal-body > .calcu-media-dialog { padding: 0; min-width: 0; }

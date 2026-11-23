@@ -2,26 +2,9 @@
 // has no window of ours to open): the card dialogs (Qt6: app/
 // CardPickerDialog, on the library's media topic), opened by the product
 // items Arm Card… and Arm Fresh Card… (File menu, or the bar's card
-// controls). The preset picker, Settings and About are the shell's: Load
-// Preset… and Examples ▸, ShellSettings, ShellAbout; File ▸ Saved Media…
-// is the library's ShellSavedMedia.
-
-function Dialog({ title, onClose, children, footer }) {
-  React.useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [onClose]);
-  return (
-    <div className="calcu-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="calcu-dialog" role="dialog" aria-label={title}>
-        <div className="calcu-dialog-title">{title}</div>
-        <div className="calcu-dialog-body">{children}</div>
-        {footer && <div className="calcu-dialog-footer">{footer}</div>}
-      </div>
-    </div>
-  );
-}
+// controls), in the React set's ShellModal. The preset picker, Settings and
+// About are the shell's: Load Preset… and Examples ▸, ShellSettings,
+// ShellAbout; File ▸ Saved Media… is the library's ShellSavedMedia.
 
 function readFileInput(e, as) {
   const file = e.target.files && e.target.files[0];
@@ -64,22 +47,23 @@ function CardPicker({ shell, mode, onClose }) {
   };
 
   return (
-    <Dialog
+    <ShellModal
+      name="card-picker"
       title={fresh ? "Arm Fresh Card" : "Arm Card"}
       onClose={onClose}
-      footer={<>
+      buttons={<>
         <button type="button" onClick={onClose}>Cancel</button>
         {asking
-          ? <button type="button" className="calcu-primary" onClick={() => start(true)}>Replace</button>
-          : <button type="button" className="calcu-primary" disabled={fresh ? !name.trim() : !selected}
+          ? <button type="button" className="calcu-shell-default" onClick={() => start(true)}>Replace</button>
+          : <button type="button" className="calcu-shell-default" disabled={fresh ? !name.trim() : !selected}
                     onClick={fresh ? () => start(false) : () => arm(selected)}>Arm</button>}
       </>}
     >
-      {asking && <p role="alert">{asking}</p>}
-      {problem && <p role="alert">{problem}</p>}
+      {asking && <p role="alert" className="calcu-shell-notice-text">{asking}</p>}
+      {problem && <p role="alert" className="calcu-shell-problem">{problem}</p>}
       {fresh && (
         <input
-          className="calcu-textfield"
+          type="text"
           aria-label="Card name"
           value={name}
           autoFocus
@@ -102,7 +86,7 @@ function CardPicker({ shell, mode, onClose }) {
           </li>
         ))}
       </ul>
-    </Dialog>
+    </ShellModal>
   );
 }
 

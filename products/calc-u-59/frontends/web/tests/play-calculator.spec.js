@@ -485,7 +485,7 @@ test('no per card download or upload in the card picker', async ({ page }) => {
   await importCard(page, 'One.magnetcard.yaml', cardFile('One'));
   for (const which of [ARM, ARM_FRESH]) {
     await page.getByRole('button', which).click();
-    const dialog = page.locator('.calcu-dialog');
+    const dialog = page.locator('[data-calcu=card-picker]');
     await expect(dialog.locator('input[type=file]')).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: /Download/ })).toHaveCount(0);
     await expect(dialog).not.toContainText('Cards last for this page session');

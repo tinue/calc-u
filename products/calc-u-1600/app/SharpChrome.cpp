@@ -42,7 +42,6 @@ calcu::shell::ChromeColours light() {
         {std::string(colour::kMenuHoverText), grey(255)},
         {std::string(chrome::kLampOff), grey(136)},
         {std::string(chrome::kLampOn), Colour::rgb(0x2ecc40)},
-        {std::string(chrome::kHint), Colour::rgb(0xb45309)},
         {std::string(chrome::kKeyPressed), grey(255, 64)},
         {std::string(colour::kScrim), grey(0, 31)},
         {std::string(colour::kShadow), grey(0, 46)},
@@ -51,7 +50,6 @@ calcu::shell::ChromeColours light() {
         {std::string(colour::kBannerText), Colour::rgb(0x5c4a00)},
         {std::string(colour::kPaper), grey(255)},   // white whatever the appearance: the pens' inks
         {std::string(colour::kPaperText), Colour::rgb(0x1d1d1f)},
-        {std::string(chrome::kModalShadow), grey(0, 71)},
         {std::string(chrome::kBannerBorder), Colour::rgb(0xe6d27a)},
     };
     return k;
@@ -124,7 +122,7 @@ const calcu::shell::Chrome& sharpChrome() {
 std::vector<std::string_view> sharpChromeNames() {
     using namespace chrome;
     std::vector<std::string_view> names{kControl, kControlHover, kControlPressed, kSeparator, kAccent, kAccentText,
-                                        kLampOff, kLampOn, kHint, kKeyPressed, kModalShadow, kBannerBorder};
+                                        kLampOff, kLampOn, kKeyPressed, kBannerBorder};
     for (std::string_view n : calcu::shell::shellColourNames()) names.push_back(n);
     return names;
 }

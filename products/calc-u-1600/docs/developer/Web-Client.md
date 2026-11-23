@@ -135,7 +135,8 @@ builds the test build and tests it, then builds `--release`, checks it
   `.calcu-key[aria-label=<key>]`, `[data-panel=inspector|paper|printer]`
   (`data-empty`; the paper panel's own names are `[data-calcu=paper-owner]`,
   `paper-copy`, `paper-cut`, … of `library/web/components/PaperPanel.jsx`),
-  `[data-dialog=...]`. `pause` and `resume` are the library's run control;
+  the product's dialogs (`machinecode`, `loaded`, `choice`, `name-and-save`;
+  `frontends/web/src/Dialogs.jsx`). `pause` and `resume` are the library's run control;
   the title follows the `run-state` topic.
 - **Same origin.** The worker and the service worker must come from the
   page's origin.

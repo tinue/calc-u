@@ -66,7 +66,7 @@ function ShellMoreMenu({ shell, items, label, icon }) {
           buttons={<React.Fragment>
             <button type="button" data-calcu="more-confirm-no" onClick={() => setAsking(null)}>Cancel</button>
             <button type="button" data-calcu="more-confirm-yes"
-              className={asking.destructive ? "calcu-shell-destructive" : undefined}
+              className={asking.destructive ? "calcu-shell-default calcu-shell-destructive" : "calcu-shell-default"}
               onClick={() => { const item = asking; setAsking(null); s.choose(Object.assign({}, item, { confirm: "" })); }}>
               {asking.label}
             </button>

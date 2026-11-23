@@ -1,23 +1,37 @@
-// ShellModal -- the one modal frame of the React set:
-// a dialog over the component, which takes the pointer while it is open
-// (a notice must be closed before the window can be used again); and
-// ShellDialogs, which shows the settings dialog, About, the notice and
-// "Loading…" of useCalcuShell.
+// ShellModal -- the one modal frame of the React set, the shell's dialogs'
+// and the products' own: a dialog over the component, which takes the
+// pointer while it is open (a notice must be closed before the window can be
+// used again) and keeps every key from the calculator; Escape is onClose.
+// Opened, it takes the focus unless a child took it (autoFocus): the
+// default button (`calcu-shell-default`), else the dialog itself, so that
+// Escape always reaches it. And ShellDialogs, which shows
+// the settings dialog, About, the notice and "Loading…" of useCalcuShell.
 //
-//   <ShellModal name="settings-dialog" title="Settings" onClose={fn}>…</ShellModal>
+//   <ShellModal name="settings-dialog" title="Settings" onClose={fn} buttons={…}>…</ShellModal>
 //   <ShellDialogs shell={s} savedMedia={Component?} />
 //
 // savedMedia: the library's saved media dialog (CalcuSavedMediaDialog), shown for
 // File ▸ Saved Media… with {shell: s.shell, onClose}.
 
 function ShellModal({ name, title, onClose, children, buttons }) {
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el || el.contains(document.activeElement)) return;
+    const button = el.querySelector("button.calcu-shell-default:not(:disabled)");
+    (button || el).focus({ preventScroll: true });
+  }, []);
   return (
     <div className="calcu-shell-modal-backdrop">
       <div className="calcu-shell-modal" role="dialog" aria-modal="true" aria-label={title || undefined} data-calcu={name}
-        onKeyDown={(e) => { if (e.key === "Escape" && onClose) onClose(); }}>
+        ref={ref} tabIndex={-1}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Escape" && onClose) onClose();
+        }}>
         {title && <div className="calcu-shell-modal-title">{title}</div>}
         <div className="calcu-shell-modal-body">{children}</div>
-        <div className="calcu-shell-modal-buttons">{buttons}</div>
+        {buttons && <div className="calcu-shell-modal-buttons">{buttons}</div>}
       </div>
     </div>
   );

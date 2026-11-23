@@ -1,32 +1,22 @@
 # Changelog
 
 ## [3.0.0] - work in progress
-- **One code base** Calc-U-59 is rebuilt on a library it shares with Calc-U-1600 (one repository, tinue/calc-u), so menus, Settings, the control bar, presets, the debugger and the saved files follow one structure on every platform. The consequence: this release reads nothing 2.3.0 wrote. Presets and ASM overlays have a new format, magnetic cards and the TI-58C's constant memory are new files, and the settings start at their defaults; the help's "Media files", "From 2.3.0" shows how to convert your files.
+- **One code base** Calc-U-59 is rebuilt on a library it shares with Calc-U-1600 (one repository, tinue/calc-u), so menus, Settings, presets, the debugger and the saved files follow one structure on every platform. The consequence: this release reads nothing 2.3.0 wrote. Presets, ASM overlays, magnetic cards and the TI-58C's constant memory have new formats, and the settings start at their defaults; the help's "Media files", "From 2.3.0" shows how to convert your files.
 - **Mac** The Mac app is the desktop app of Windows and Linux (Qt, `Calc-U-59-mac-aarch64.dmg`, Apple silicon, macOS 15.8 or later) instead of the iPad app, and it no longer syncs through iCloud by itself: cards and the TI-58C's memory are kept in `Calc-U-59` in your home folder, and you can choose the Calc-U-59 folder in iCloud Drive as the save folder in Settings. <!-- appstore: skip -->
 
 ### New and changed
-- **Presets** The format is YAML with key IDs (`- key: Pgm`) instead of matrix codes. A preset builds its calculator from a cold boot and names its model, runs at full speed with "Loading…" (unless `- regular-speed:`), waits after each item until the calculator is idle and fails an item past its `timeout:`; a preset with an error is refused whole, its first error shown with its line. New steps: `expect:`, `not-expect:`, `screenshot:`.
-- **Startup** Settings has a startup preset per model and "Startup model" with "Last used" first. Without a startup preset the app starts a TI-59 with the Master Library module and no printer; the module is chosen with a picker on the control bar.
-- **Magnetic cards** A card is a file named after the card (`<name>.magnetcard.yaml`) and is listed by its name; its sides are 0 and 1; it carries its own cue card. "Fit Card" and "Fit Fresh Card" are "Arm Card" and "Arm Fresh Card".
-- **Power cycle** Changing the module or connecting or disconnecting the PC-100C power-cycles the calculator, as on the real one: the TI-58 and TI-59 lose their program and data, the TI-58C keeps its constant memory, which is in place before the ROM starts, so its partition and display format come back at a start.
-- **Keyboard** A key is held for 100 ms of emulated time and until the ROM has read it, so Adv feeds the same lines at every speed and a tap of R/S during printing stops the program. A key stays the one first pressed when the pointer moves on.
-- **Faceplate** The calculator and the cue cards are drawn anew: flat keys lit from the top, TI-58C lettering, warm gold legends, cue cards with straight rules. A key's on-screen area is its cap.
-- **Opening files** A file is opened as what it is (preset, card, ASM overlay, keystroke program). A keystroke program file (`.keystrokes.yaml`) goes into the running calculator without a cold boot. A file that cannot be used is refused with a notice.
-- **Debugger** The LOG button sets the level of the log (Off, Info, Debug). On iOS, traces go to Application Support by default instead of iCloud; Settings ▸ Tracing chooses Local or iCloud.
-- **Control bar** Every bar ends with More, which holds every menu item; the model picker names the models 59, 58 and 58C. On the iPhone and iPad, Reset, Preset and Settings stay on the bar, and Examples, Cold boot and Help are in More.
-- **Web calculator** The wide layout has the menus; Import Media… and Saved Media… manage the magnetic cards. All ROM files are cached at the start, so every model and module works offline, and a new release takes over at the next start. <!-- appstore: skip -->
-- **Web embedding** For site authors: the component is `CalcU59` (was `PlayCalculator`), with the props `width`, `keyboard` (on by default), `layout`, `preset`, `height`, `model` (the model's name), `workerUrl`, `settings`; the `module` prop is gone. <!-- appstore: skip -->
-- **Harness** For scripts: the product is `c59` (`calcu --product c59`), its commands `c59 …` (were `ti59 …`), and `lcd` is `display-text`. <!-- appstore: skip -->
+- **Presets** A new format (YAML, key IDs such as `- key: Pgm`). A preset builds its calculator from a cold boot, runs at full speed, waits after each item until the calculator is idle and is refused whole on an error; new steps `expect:`, `not-expect:`, `screenshot:`. Settings has a startup preset per model.
+- **Magnetic cards** A card is a file named after the card, with its own cue card; its sides are 0 and 1, and "Fit Card" is "Arm Card".
+- **Calculator** Changing the module or the printer power-cycles the calculator, as on the real one; the TI-58C's constant memory brings back its partition and display format at a start. A key is held long enough for the ROM to read it, so Adv and R/S behave the same at every speed. The faceplate and the cue cards are drawn anew.
+- **Control bar** Every bar ends with More, which holds every menu item; the module is chosen with a picker on the bar. On iOS, traces go to Application Support by default instead of iCloud.
+- **Web calculator** Menus in the wide layout, Import Media… and Saved Media… for the cards, and every model and module works offline. Site authors: the component is `CalcU59` (was `PlayCalculator`). <!-- appstore: skip -->
 
 ### Fixed
 - **Accuracy** At regular speed the TI-59 and the TI-58C ran 0.13 % and 0.10 % slow.
 - **Keyboard** At full speed one press of Adv fed many lines, and a second key pressed while another was held released the first.
-- **Reset** A Reset set the partition of the TI-59 and TI-58 back to the ROM's default.
-- **Printer** The PC-100C's TRACE switch went off at each disconnect and model switch.
-- **Debugger** An armed CPU FREEZE ON START did not fire on a Reset of the TI-59 and TI-58.
+- **Calculator** A Reset set the partition back to the ROM's default; the PC-100C's TRACE switch went off at each disconnect and model switch; an armed CPU FREEZE ON START did not fire on a Reset.
 - **Presets** A `card:` or `arm:` naming a card that did not exist put a blank card in and saved it under that name.
-- **Settings** A changed save folder or screenshot folder was used only after a restart.
-- **Web calculator** A preset's `screenshot:` was written into the browser's storage, out of reach; it is now a download. <!-- appstore: skip -->
+- **Settings** A changed save folder was used only after a restart.
 
 ## [2.3.0] - 2026-11-07
 - **Web calculator** The installed web app now follows the device's rotation, like the iOS app. Held upright it shows the calculator and printer pages. In landscape, tablets, an opened iPhone Duo and large desktop windows show the calculator, the printer and the debugger side by side, and a phone shows the calculator and the printer. Settings then also offers the Maximum Trace File Size. <!-- appstore: skip -->

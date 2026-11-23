@@ -17,62 +17,33 @@
 
 ### New and changed
 
-- **The help is the user guide**, the same chapters as Calc-U-59's where
-  the two products work alike; each release carries it as
-  `Calc-U-1600-help.zip`, and calc-u.org/1600 shows it.
-- **The CE-150's cassette works on the PC-1600**, in MODE 1, with
-  PC-1500 tapes.
-- **Two large Slot 2 modules for the PC-1600:** the 256K custom (256 KB,
-  initialised: 32 KB expansion memory and the RAM disk S2:) and the
-  superRAM r4 by spellbound (1 MB, blank; it is initialised with
-  SRAMINIT.BIN, which comes with the module, not with Calc-U-1600).
-- **Presets** wait after each item until the machine is idle and fail an
-  item past `timeout:`; a disk command on the CE-1600F is done before the
-  next item. A preset is checked before the running machine is given up,
-  and a refused one leaves it alone. New: `expect:` and `not-expect:`
-  with regular expressions, `screenshot:`, `cut-paper:`, `skip-wait:`,
-  `let-it-finish:`.
-- **Startup presets:** Settings has one per model, and a fresh install
-  starts each model with its bundled one (its printer and modules).
-- **Full speed** runs a waiting machine at real time, so the prompt and a
-  program waiting for a key no longer spin; a preset, a load or a reset
-  still runs as fast as the host allows.
-- **Pause and Resume** on the desktop and the Web: the run control pauses
-  the machine, Machine ▸ Resume continues it.
-- **Keys:** a held key stays down until it is released, so the ROM's own
-  auto-repeat works. A click within 24 pixels of a key presses it, and
-  the desktop faceplate takes touch.
-- **Modules and peripherals:** choosing a module power-cycles the machine,
-  as on the real device (the memory is kept; the ROM asks `NEW0? :CHECK`).
-  A Cold boot empties a RAM module without a battery (CE-151, CE-155).
-  The CE-1600P and the CE-158 cannot be attached together.
-- **Media:** modules, disks and cassettes have Name & Save and the same
-  pickers on the desktop and the Web; a cassette has a name and a
-  description. A failed autosave is reported with a notice.
-- **Opening files:** a dropped or opened file is opened as what it is: a
-  BASIC or machine-code program goes to its loader, a module, disk or
-  cassette file into its place, a preset is loaded.
-- **The paper panel is always shown,** and the CE-150's and the
-  CE-1600P's paper is kept through detaching, a module or model switch,
-  until Cut.
-- **Control bar and menus:** on the PC-1600 a printer picker (none,
-  CE-150, CE-1600P) and a CE-158 button; every bar ends with More (⋯),
-  which holds every menu item. Reset All is Cold boot. A mobile window
-  (the installed Web app, a browser asking for the mobile site) has no
-  menu bar; in portrait it shows the paper alone, in landscape the
-  calculator with its bar.
-- **A missing ROM file** no longer ends the desktop app: the window lists
-  the missing files in place of the calculator.
-- **Web version:** a new release takes over at the next start; Import
-  Media… takes modules, disks and cassettes. For site authors,
-  `CalcU1600` takes the family's props (`width`, `keyboard`, `layout`,
-  `preset`, `height`, `model`, `workerUrl`), and `model` takes the
-  model's name only.
-- **Windows and Linux:** the presets open with Calc-U-1600 from the file
-  manager (Open With), as on macOS.
-- **Automated tests with pytest:** a test driver on the harness
-  (`tools/machine/`) with its guide `docs/testing/README.md`, developed
-  together with spellbound.
+- **The help is the user guide,** shared with Calc-U-59 where the two
+  work alike, and shown on calc-u.org/1600.
+- **Presets** wait after each item until the machine is idle, are
+  checked before the running machine is given up, and gain `expect:`
+  and `not-expect:` (with regular expressions), `screenshot:` and
+  `cut-paper:`. Settings has a startup preset per model, and a fresh
+  install starts each model with its bundled one.
+- **New hardware:** the CE-150's cassette works on the PC-1600 (MODE 1,
+  PC-1500 tapes); two large Slot 2 modules, the 256K custom (256 KB,
+  initialised) and the superRAM r4 by spellbound (1 MB, blank; its
+  initialisation program SRAMINIT.BIN comes with the module, not with
+  Calc-U-1600).
+- **Modules and media:** choosing a module power-cycles the machine, as
+  on the real device; modules, disks and cassettes have Name & Save and
+  the same pickers on the desktop and the Web; a dropped or opened file
+  goes where it belongs (program to its loader, module, disk or cassette
+  into its place).
+- **Machine:** Pause and Resume; full speed runs a waiting machine at
+  real time, so the prompt no longer spins; a held key stays down, so the
+  ROM's own auto-repeat works. The paper panel is always shown and keeps
+  its paper through detaching and model switches until Cut.
+- **Control bar and menus:** on the PC-1600 a printer picker and a CE-158
+  button; every bar ends with More (⋯), which holds every menu item;
+  Reset All is Cold boot. On a phone the installed Web app shows the
+  paper in portrait and the calculator in landscape.
+- **For developers:** automated tests with pytest (`tools/machine/`,
+  `docs/testing/README.md`), developed together with spellbound.
 
 ### Fixed
 
@@ -82,10 +53,8 @@
   the paper, over the earlier plot.
 - **A PC-1500 machine-code load** that met a byte that is not RAM wrote
   the rest and then failed; it now writes nothing.
-- **A cassette or disk name with a `"` or a line end** was written, and
-  the file could not be read again; it is now refused.
-- **Web: `?preset=examples:…`** did not find the preset (the prefix was
-  doubled).
+- **A cassette or disk name with a `"`** was written, and the file could
+  not be read again; it is now refused.
 
 ## [0.8.1] - 2026-11-14
 

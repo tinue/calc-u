@@ -52,12 +52,15 @@ calcu::shell::Chrome make() {
         {std::string(colour::kScrim), Colour{0, 0, 0, 140}},
         {std::string(chrome::kToast), Colour{0, 0, 0, 191}},
         {std::string(colour::kShadow), Colour{0, 0, 0, 153}},
-        // The Web's menus and dialogs, light on the dark chrome as iOS's.
-        {std::string(colour::kMenu), Colour::rgb(0xffffff)},
-        {std::string(colour::kMenuText), Colour::rgb(0x1d1d1f)},
-        {std::string(colour::kMenuBorder), Colour::rgb(0xbbbbbb)},
-        {std::string(colour::kMenuHover), Colour::rgb(0xe4ecf7)},
-        {std::string(colour::kMenuHoverText), Colour::rgb(0x1d1d1f)},
+        // The Web's menus and dialogs in the faceplate's colours: cream as
+        // the PC-100C's paper, the gold of the = key for the lit item and
+        // the default button. The dark set below has the dark grey instead.
+        {std::string(colour::kMenu), Colour{245, 240, 224, 255}},
+        {std::string(colour::kMenuText), Colour::rgb(0x1f1f1f)},
+        {std::string(colour::kMenuBorder), Colour::rgb(0xcfc6ad)},
+        {std::string(colour::kMenuHover), Colour::rgb(0xa07a2e)},
+        {std::string(colour::kMenuHoverText), white},
+        {std::string(colour::kLink), Colour::rgb(0x7a5410)},
         {std::string(colour::kAlert), Colour::rgb(0xb00020)},
         {std::string(colour::kBanner), Colour::rgb(0xfff4c2)},
         {std::string(colour::kBannerText), Colour::rgb(0x5c4a00)},
@@ -69,6 +72,19 @@ calcu::shell::Chrome make() {
         {std::string(chrome::kStepCurrent), Colour{153, 255, 153, 255}},
         {std::string(chrome::kHeatmapPc), Colour::rgb(0x00ff00)},
     };
+
+    // The dark appearance changes only the Web's menus and dialogs: the
+    // window is dark in both.
+    calcu::shell::ChromeColours& d = c.dark.emplace(k);
+    auto set = [&d](std::string_view name, Colour colour) {
+        for (auto& [n, v] : d.more)
+            if (n == name) v = colour;
+    };
+    set(colour::kMenu, Colour::rgb(0x252525));
+    set(colour::kMenuText, Colour::rgb(0xf0ece2));
+    set(colour::kMenuBorder, white.withAlpha(0.16));
+    set(colour::kLink, Colour::rgb(0xe0b45a));
+    set(colour::kAlert, Colour::rgb(0xff6b6b));
 
     calcu::shell::ChromeSizes& s = c.sizes;
     // The printer's header and the debugger's tab row; the printer's

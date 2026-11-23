@@ -16,7 +16,7 @@ std::string css(const Colour& c) {
 
 std::vector<std::string_view> shellColourNames() {
     using namespace colour;
-    return {kMenu, kMenuText, kMenuBorder, kMenuHover, kMenuHoverText, kScrim, kShadow, kAlert, kBanner, kBannerText,
+    return {kMenu, kMenuText, kMenuBorder, kMenuHover, kMenuHoverText, kLink, kScrim, kShadow, kAlert, kBanner, kBannerText,
             kBannerBorder, kPaper, kPaperText};
 }
 

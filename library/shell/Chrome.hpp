@@ -71,6 +71,7 @@ inline constexpr std::string_view kMenuHover = "menu-hover";         // the item
 inline constexpr std::string_view kMenuHoverText = "menu-hover-text";
 inline constexpr std::string_view kScrim = "scrim";                  // behind a dialog
 inline constexpr std::string_view kShadow = "shadow";                // a menu's, a dialog's, a pressed control's
+inline constexpr std::string_view kLink = "link";                    // a link in a dialog
 inline constexpr std::string_view kAlert = "alert";                  // a destructive item, a problem
 inline constexpr std::string_view kBanner = "banner";                // the storage banner
 inline constexpr std::string_view kBannerText = "banner-text";

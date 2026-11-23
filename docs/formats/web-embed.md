@@ -207,11 +207,13 @@ with the wall time.
 |---|---|---|
 | `web.start` | state | `{state: "running" \| "failed", failure}` |
 | `web.storage` | state | `{mode, sentence}`: §5 |
-| `web.shell` | state | `{menus, bar, panels, dialog}`: the shell's models for the page's last `shell` message |
+| `web.shell` | state | `{menus, bar, panels, dialog, nameAndSave}`: the shell's models for the page's last `shell` message |
 
 The shell's models are the library's (`library/shell/`: `menus`, `bar`,
 `panels`, the settings `dialog`) over the session's topics and the
-`preset-list` reply, in the Value forms of `library/shell/ValueForms.hpp`;
+`preset-list` reply, in the Value forms of `library/shell/ValueForms.hpp`,
+and `nameAndSave` `{place: prompt}`, the Name & Save dialog's prompt
+(`shell::nameAndSavePrompt`) for each place of the topic `media`;
 the worker computes them anew after each message and call and sends them
 when they changed. The `shell` message names the page's traits — `mobile`
 (true: the mobile bar, no menu bar), `settings` and `about` (false: no

@@ -41,10 +41,14 @@ public:
     bool presetListWanted();
     const sessions::RequestName& presetListRequest() const { return names_.presetList; }
 
-    // {menus, bar, panels, dialog} (ValueForms); null before set().
+    // {menus, bar, panels, dialog} (ValueForms) and nameAndSave: {place:
+    // prompt}, the Name & Save dialog's prompt (nameAndSavePrompt) for each
+    // place of the topic `media`; null before set().
     sessions::Value value() const;
 
 private:
+    sessions::Value nameAndSavePrompts(const ShellProduct&) const;
+
     std::optional<ModelSetup> setup_;
     InputNames names_;
     ShellInputs inputs_;

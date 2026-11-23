@@ -39,11 +39,10 @@ function ShellModal({ name, title, onClose, children, buttons }) {
   );
 }
 
-// The prompt as shell::nameAndSavePrompt gives it: the place's, else the product's.
+// The place's prompt from the worker's models (`web.shell`'s nameAndSave).
 function ShellNameAndSave({ shell }) {
   const s = shell;
-  const n = (s.product && s.product.nameAndSave) || {};
-  const prompt = (n.prompts && n.prompts[s.naming]) || n.prompt;
+  const prompt = (s.nameAndSavePrompts || {})[s.naming];
   return (
     <ShellModal title="Name & Save" name="name-and-save" onClose={s.close}>
       <CalcuNameAndSaveDialog place={calcuMediaPlace(s.inputs.media, s.naming)} prompt={prompt}

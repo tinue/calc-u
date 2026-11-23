@@ -22,20 +22,15 @@ TEST(shell_product_value_form) {
                                       {"aboutLabel", "About Test…"},
                                       {"aboutLines", Value(Value::Array{"one", "two"})},
                                       {"presetUploads", ".tp,.yaml"},
-                                      {"nameAndSave", Value::object({{"slotButtons", false},
-                                                                     {"prompt", "Name:"},
-                                                                     {"prompts", Value(Value::Object{})}})},
+                                      {"nameAndSave", Value::object({{"slotButtons", false}})},
                                       {"items", Value(Value::Array{Value::object({{"id", "mount"}, {"label", "Mount…"}})})}});
     CHECK_EQ(sessions::toText(shell::toValue(p)), sessions::toText(want));
     p.aboutLinks = {{"Source", "https://example.org/src"}};
     CHECK_EQ(sessions::toText(*shell::toValue(p).find("aboutLinks")),
              sessions::toText(Value(Value::Array{Value(Value::Array{"Source", "https://example.org/src"})})));
     p.nameAndSave.slotButtons = true;
-    p.nameAndSave.prompts = {{"disk", "Disk name:"}};
     CHECK_EQ(sessions::toText(*shell::toValue(p).find("nameAndSave")),
-             sessions::toText(Value::object({{"slotButtons", true},
-                                             {"prompt", "Name:"},
-                                             {"prompts", Value::object({{"disk", "Disk name:"}})}})));
+             sessions::toText(Value::object({{"slotButtons", true}})));
 }
 
 // A menu item with every member, its kind, role and shortcut by name.

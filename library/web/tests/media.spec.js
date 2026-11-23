@@ -91,8 +91,8 @@ test('name and save asks the name', async ({ page }) => {
   await el(page, 'media-picker-disk').selectOption({ label: 'Blank' });
   await expect(el(page, 'media-name-and-save-disk')).toBeVisible();   // a template that can change
   await el(page, 'media-name-and-save-disk').click();
-  // The shell's dialog with the product's prompt.
-  await expect(el(page, 'name-and-save')).toContainText('Instance name:');
+  // The shell's dialog with the product's prompt for the place.
+  await expect(el(page, 'name-and-save')).toContainText('Disk name:');
   await expect(el(page, 'media-save')).toBeDisabled();   // no name yet
   await el(page, 'media-name').fill('Named');
   await el(page, 'media-save').click();

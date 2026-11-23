@@ -37,7 +37,7 @@ const CALCU_TEST_SHELL_PRODUCT = {
   aboutLabel: "", aboutLines: ["A product made for the tests.", "No code of a product."],
   aboutLinks: [["Source", "https://example.org/source"], ["Privacy", "https://example.org/privacy"]],
   presetUploads: ".test", copyScreen: null,
-  nameAndSave: { slotButtons: false, prompt: "Instance name:", prompts: {} },
+  nameAndSave: { slotButtons: false },
   acts: { "load-program": () => { if (typeof window !== "undefined") window.calcuTestActs = (window.calcuTestActs || 0) + 1; } },
 };
 // TestShellPart.hpp's hitMap(): keys 1 to 3 in a row, the display above.

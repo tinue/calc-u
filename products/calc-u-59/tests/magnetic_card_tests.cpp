@@ -366,3 +366,21 @@ TEST(no_stand_in_made_at_run_time) {
     CHECK(moduleCueCards(*testroms::romSet(), "XX", [&](const std::string& p) { problem = p; }).empty());
     CHECK(problem.find("XX.rom.yaml") != std::string::npos);
 }
+
+// A template's insert notice is read, and a card written from it (Name &
+// Save) keeps it.
+TEST(magnetic_card_insert_notice_read_and_kept) {
+    const std::string text = writeMagneticCardFile(*card(bank(1, 0x22), std::nullopt), "Setup", "", true, std::nullopt,
+                                                   "2026-11-16T10:00:00Z", "Read side 2 first.");
+    CHECK(text.find("insert-notice: \"Read side 2 first.\"\ntemplate: true\n") != std::string::npos);
+    const ReadOutcome r = read(text);
+    CHECK(r.status == ReadOutcome::Status::Read && r.info.isTemplate && r.info.insertNotice == "Read side 2 first.");
+    MediumCodec::Write w;
+    w.name = "Mine";
+    w.content = r.info.content;
+    w.source = text;
+    std::string problem;
+    const auto out = codec().write(w, problem);
+    CHECK(out.size() == 1 && out[0].bytes.find("insert-notice: \"Read side 2 first.\"\n") != std::string::npos &&
+          out[0].bytes.find("template:") == std::string::npos);
+}

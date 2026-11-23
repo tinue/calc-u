@@ -33,7 +33,8 @@ instance is the same kind of file, a `.module.yaml`, written from the
 template it came from:
 
 - everything but the content, the name and the template mark is kept as
-  the template has it: the addressing, the hosts, the description;
+  the template has it: the addressing, the hosts, the description, the
+  insert notice;
 - `module-name:` is the name you gave in Name & Save;
 - the region's `initial-content:` holds what the module's memory held,
   as `addressed-hex`;
@@ -87,6 +88,7 @@ sides:
 | `format-version` | yes | `2` (version 1, of Calc-U-1600 0.8, named the sides `a` and `b`) |
 | `disk-name` | yes | The name tag, shown in the disk picker; not empty, without `"` or a line break |
 | `description` | no | One line, the picker's tooltip. Name & Save and every later write keep it |
+| `insert-notice` | no | One line shown when you put the template in ([Media](../../../library/help/04-media.md#templates-and-instances)). Name & Save and every later write keep it |
 | `template` | no | `true`: a template, never written |
 | `saved` | no | The time of the last write (UTC, ISO 8601); for information |
 | `sides` | yes | Exactly the keys `0` and `1` |
@@ -139,6 +141,7 @@ position: 0
 | `format-version` | yes | `1` |
 | `cassette-name` | yes | The name tag, shown in the cassette picker; without `"` or a line break |
 | `description` | no | One line about the cassette |
+| `insert-notice` | no | One line shown when you put the template in ([Media](../../../library/help/04-media.md#templates-and-instances)) |
 | `template` | no | `true`: a template; its sound file is never written either |
 | `saved` | no | The time of the last write (UTC, ISO 8601); for information |
 | `audio` | yes | The sound file, by `file:` only, relative to the cassette definition |

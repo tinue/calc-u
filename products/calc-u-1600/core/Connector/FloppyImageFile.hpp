@@ -42,6 +42,7 @@ constexpr long kFloppyFormatVersion = 2;
 struct FloppyFile {
     std::string diskName;
     std::string description;  // `description:`, one line for a tooltip; "" = none
+    std::string insertNotice; // `insert-notice:`, shown when the template is inserted; "" = none
     // `template: true`: a read-only starting disk the app never writes to,
     // wherever the file lives; Name & Save copies it into an instance
     // (formatFloppyFile() writes the key only when asked to). No key = an instance,
@@ -71,11 +72,13 @@ inline calcu::media::HeaderRules floppyHeaderRules() {
 // is the time of the save, ISO 8601 UTC (the session's host time).
 inline std::string formatFloppyFile(const std::string& diskName, const std::vector<uint8_t>& image,
                                     bool asTemplate, const std::string& description,
-                                    const std::string& saved) {
+                                    const std::string& saved, const std::string& insertNotice = {}) {
     std::string out;
     out.reserve(4096);
-    out += calcu::media::headerText({"Calc-U-1600 CE-1600F floppy disk image", floppy_detail::kFormatTag,
-                                     kFloppyFormatVersion, "disk-name", diskName, description, asTemplate, saved});
+    calcu::media::Header header{"Calc-U-1600 CE-1600F floppy disk image", floppy_detail::kFormatTag,
+                                kFloppyFormatVersion, "disk-name", diskName, description, asTemplate, saved};
+    header.insertNotice = insertNotice;
+    out += calcu::media::headerText(header);
     out += "sides:\n";
     for (size_t side = 0; side < 2; ++side) {
         const auto first = image.begin() + static_cast<std::ptrdiff_t>(side * CE1600FCard::kSideSize);
@@ -97,10 +100,11 @@ inline bool parseFloppyFile(const std::string& text, FloppyFile* out, std::strin
     if (!calcu::formats::parseYaml(text, &root, error)) return false;
     calcu::media::Header header;
     if (!calcu::media::readHeader(root, floppyHeaderRules(), &header, error)) return false;
-    if (!root.requireOnlyKeys({"format", "format-version", "disk-name", "description", "template", "saved", "sides"}, error))
+    if (!root.requireOnlyKeys({"format", "format-version", "disk-name", "description", "insert-notice", "template", "saved", "sides"}, error))
         return false;
     out->diskName = header.name;
     out->description = header.description;
+    out->insertNotice = header.insertNotice;
     out->isTemplate = header.isTemplate;
     const calcu::formats::YamlNode* sides = root.find("sides");
     if (!sides || !sides->isMap()) {

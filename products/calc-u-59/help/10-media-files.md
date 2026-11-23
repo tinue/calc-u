@@ -55,6 +55,7 @@ sides:
 | `format-version` | yes | `3` |
 | `card-name` | yes | The card's name, which the card dialogs list; no `"` and no line break |
 | `description` | no | One line about the card |
+| `insert-notice` | no | One line shown when you put the template in ([Media](../../../library/help/04-media.md#templates-and-instances)) |
 | `template` | no | `true`: a template, which is never written |
 | `saved` | no | The time of the last write, `YYYY-MM-DDTHH:MM:SSZ` (UTC); for your information |
 | `cue-card` | no | The card's labels ([below](#the-cue-card-block)) |
@@ -75,8 +76,8 @@ Each side:
 - A card made in Calc-U-59 is saved as `<card-name>.magnetcard.yaml` in
   the save folder.
 - A write rewrites the file whole. It replaces only the side that was
-  written, keeps the name, the description, the template mark and the
-  cue card, and sets `saved`. Comments in the file are not kept; the
+  written, keeps the name, the description, the insert notice, the
+  template mark and the cue card, and sets `saved`. Comments in the file are not kept; the
   file starts with the comment line `# Calc-U-59 magnetic card`.
 - A card saved without a cue card shows one titled with its name.
 - The corners show the banks of the written sides; they follow from the

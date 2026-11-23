@@ -18,6 +18,7 @@ struct Header {
     std::string description;   // written when not empty
     bool isTemplate = false;   // `template: true` when set
     std::string savedAt;       // `saved:` when not empty (ISO-8601 UTC, isoTime)
+    std::string insertNotice;  // `insert-notice:`, written after `description` when not empty
 };
 
 // A YAML scalar as the writers quote it (docs/formats/README.md: no escape
@@ -25,7 +26,8 @@ struct Header {
 std::string quotedScalar(const std::string&);
 
 // The header's lines, each ending in '\n': the comment, `format`,
-// `format-version`, the name key, `description`, `template`, `saved`.
+// `format-version`, the name key, `description`, `insert-notice`, `template`,
+// `saved`.
 std::string headerText(const Header&);
 
 // What a reader expects of a header.
@@ -37,7 +39,8 @@ struct HeaderRules {
 };
 
 // Checks `format` and `format-version` of a parsed file and reads the name
-// key, `description`, `template` and `saved` into `out` (no `comment`).
+// key, `description`, `insert-notice`, `template` and `saved` into `out` (no
+// `comment`).
 // False with `problem` set (no full stop) when the file is no mapping, has
 // another format, another or no version, or no name; `out->formatVersion`
 // is then the version the file carries (0: none), so a caller can tell a

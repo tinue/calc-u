@@ -13,6 +13,7 @@ std::string headerText(const Header& h) {
     out += "format-version: " + std::to_string(h.formatVersion) + "\n";
     if (!h.nameKey.empty()) out += h.nameKey + ": " + quotedScalar(h.name) + "\n";
     if (!h.description.empty()) out += "description: " + quotedScalar(h.description) + "\n";
+    if (!h.insertNotice.empty()) out += "insert-notice: " + quotedScalar(h.insertNotice) + "\n";
     if (h.isTemplate) out += "template: true\n";
     if (!h.savedAt.empty()) out += "saved: " + h.savedAt + "\n";
     return out;
@@ -46,6 +47,7 @@ bool readHeader(const formats::YamlNode& root, const HeaderRules& rules, Header*
         }
     }
     if (const formats::YamlNode* d = root.find("description"); d && !d->asString(&out->description, problem)) return false;
+    if (const formats::YamlNode* n = root.find("insert-notice"); n && !n->asString(&out->insertNotice, problem)) return false;
     if (const formats::YamlNode* t = root.find("template"); t && !t->asBool(&out->isTemplate, problem)) return false;
     if (const formats::YamlNode* s = root.find("saved"); s && !s->asString(&out->savedAt, problem)) return false;
     return true;

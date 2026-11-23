@@ -577,6 +577,12 @@ is one). The magnetic card's one template is the fresh card, which is
 always there and has no file.
 _Avoid_: bundled card, default
 
+**Insert notice**:
+The line a template's file may carry (`insert-notice`), shown as a notice
+when the user puts the template into its place; never for an instance,
+nor when a preset inserts it.
+_Avoid_: insert warning, popup
+
 **Instance**:
 A medium whose file is not a template (no `template: true`), wherever
 it came from; it saves itself in place after each change.

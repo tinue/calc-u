@@ -156,6 +156,9 @@ struct MemoryCardDefinition {
     // RAM"); "" = none. Name & Save keeps it (the card is spliced into its
     // source file).
     std::string description;
+    // `insert-notice:` -- shown when the template is inserted by hand; ""
+    // = none. Name & Save keeps the line, as it keeps the description.
+    std::string insertNotice;
     std::vector<CardHost> compatibleHosts;
     CardHost terminology = CardHost::PC1500;
     std::vector<Region> regions;
@@ -1363,7 +1366,7 @@ inline bool parseMemoryCardDefinition(const std::string& yamlText, MemoryCardDef
     }
     if (!calcu::formats::requireFormatVersion(root, kCardFormatVersion, "module definition", error)) return false;
     if (!root.requireOnlyKeys(
-            {"format", "format-version", "module-name", "description", "saved", "compatible-hosts",
+            {"format", "format-version", "module-name", "description", "insert-notice", "saved", "compatible-hosts",
              "definition-terminology", "regions", "notes", "battery", "template"},
             error))
         return false;
@@ -1379,6 +1382,9 @@ inline bool parseMemoryCardDefinition(const std::string& yamlText, MemoryCardDef
     if (!nameN->asString(&out->moduleName, error)) return false;
     if (const calcu::formats::YamlNode* descriptionN = root.find("description")) {
         if (!descriptionN->asString(&out->description, error)) return false;
+    }
+    if (const calcu::formats::YamlNode* noticeN = root.find("insert-notice")) {
+        if (!noticeN->asString(&out->insertNotice, error)) return false;
     }
 
     if (const calcu::formats::YamlNode* batteryN = root.find("battery")) {

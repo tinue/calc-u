@@ -30,6 +30,7 @@ is written, in its current version, `format-version: 1`.
 | `format-version` | yes | Integer; this document is version **1**. |
 | `module-name` | yes | Short identifier for the module (e.g. `CE-155`, `CE-1600M`). Shown as it is in the module picker, and what a preset's `slot-N: { name: … }` resolves against (§8). Unique within a folder of modules. |
 | `description` | no | One line about the module (e.g. `"8 KB static RAM"`), the picker's tooltip for it. A saved instance keeps its template's. |
+| `insert-notice` | no | One line shown when you plug the template in by hand ([Media](../../../library/help/04-media.md#templates-and-instances)); the superRAM r4 names the program it needs. A saved instance keeps it and shows nothing. |
 | `compatible-hosts` | yes | List, non-empty, drawn from `PC-1500`, `PC-1500A`, `PC-1600-Slot-1`, `PC-1600-Slot-2`. The loader's **only** compatibility check: a host not on this list is declined; a host on it gets no further test. |
 | `definition-terminology` | yes | Exactly one of the same four identifiers. Names the pin-name vocabulary every `chip-select` / `signal` / `line` field in the file is resolved against, once, at parse time. Must appear in `compatible-hosts`. |
 | `regions` | yes | List of one or more region maps (§2). |

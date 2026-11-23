@@ -46,7 +46,7 @@ std::vector<KindDecl> testKinds(const TestKindFolders& = {});
 struct TestFile {
     std::string format = "test-disk";
     int version = 2;
-    std::string name, description, content;
+    std::string name, description, insertNotice, content;
     bool isTemplate = false;
     std::optional<bool> writeProtect;
     std::string companion;

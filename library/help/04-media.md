@@ -25,6 +25,12 @@ flowchart LR
 Each medium carries its name inside its file. The file's name counts
 only for a file that carries none.
 
+A template can carry an **insert notice**, something you need to know
+before you use the medium. It is shown when you put the template in
+(from its place's picker, by Start new, or by opening or dropping its
+file). A medium you saved from it keeps the text but no longer shows it,
+and a preset that puts the template in shows nothing.
+
 ## The save folder
 
 Your instances and user templates live in the **save folder**. You

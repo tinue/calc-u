@@ -239,13 +239,14 @@ function CpuInspector({ data, font }) {
   const { shell } = usePage();
   const rows = useTopic(shell, "c59.cpu-debug") || NO_ROWS;
   const frozen = useRun(shell).frozen;
-  const [picked, setPicked] = React.useState(-1);
+  // A row picked holds only for the rows it was picked from: new rows (a
+  // STEP shifts them) select the current instruction anew, as in Qt and Swift.
+  const [picked, setPicked] = React.useState({ rows: null, index: -1 });
   const listRef = React.useRef(null);
   const current = rows.findIndex((r) => r.current);
   // Running: follow the newest; frozen: the current instruction, unless one was picked.
   const auto = frozen ? current : rows.length - 1;
-  React.useEffect(() => setPicked(-1), [frozen]);
-  const selected = frozen && picked >= 0 && picked < rows.length ? picked : auto;
+  const selected = frozen && picked.rows === rows && picked.index < rows.length ? picked.index : auto;
   useScrollTo(listRef, selected, frozen ? "center" : "bottom", [rows]);
   // Running, only the newest row carries registers (bindings.cpp postCpu).
   const f = rows[selected] && rows[selected].registers ? rows[selected] : undefined;
@@ -255,8 +256,8 @@ function CpuInspector({ data, font }) {
       <FreezeHeader cpu={true} size={font - 2} />
       <div className="calcu-cpu-list" ref={listRef}>
         {rows.map((r, i) => (
-          <div key={i} onClick={() => setPicked(i)}
-            className={i === selected ? "calcu-cpu-selected" : ""}
+          <div key={i} onClick={() => setPicked({ rows, index: i })}
+            className={i === selected ? "calcu-cpu-selected" : ""} data-current={r.current ? "true" : undefined}
             style={{ color: grey(r.history ? 0.9 : 0.35), background: r.current ? tint("green", 0.35) : undefined }}>
             {r.text}
           </div>

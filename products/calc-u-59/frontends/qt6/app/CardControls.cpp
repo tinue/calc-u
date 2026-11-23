@@ -47,7 +47,6 @@ const QString kCrd = QStringLiteral(" Crd"), kEject = QStringLiteral(" Eject Car
 } // namespace
 
 void CardControls::setShowLabels(bool on) {
-    m_labels = on;
     m_arm->setText(kArmIcon + (on ? kCrd : QString()));
     m_fresh->setText(kFreshIcon + (on ? kCrd : QString()));
     m_eject->setText(kEjectIcon + (on ? kEject : QString()));

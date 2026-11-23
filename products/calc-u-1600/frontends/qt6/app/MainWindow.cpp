@@ -92,7 +92,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 #ifdef Q_OS_WIN
     serialPorts = false;   // no host links on Windows
 #endif
-    m_shell = new calcu::qt6::Shell(*this, host(), product(), cu1600::settingsSpec(true, serialPorts));
+    calcu::qt6::ShellOptions options;
+    options.copyScreen = [this] { copyScreen(); };
+    m_shell = new calcu::qt6::Shell(*this, host(), product(), cu1600::settingsSpec(true, serialPorts), std::move(options));
     m_shell->setChrome(cu1600::sharpChrome());
     auto* layout = new QVBoxLayout(central);
     layout->setContentsMargins(6, 6, 6, 4);
@@ -190,7 +192,6 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 
 calcu::shell::ShellProduct MainWindow::product() {
     calcu::shell::ShellProduct p = cu1600::shellProduct(APP_VERSION, APP_BUILD_ID, /*withHostFolders=*/true, /*withTrace=*/true);
-    p.copyScreen = [this] { copyScreen(); };
     for (auto& item : p.items) {
         if (item.id == cu1600::kItemLoadBasic) item.act = [this] { chooseProgram(false); };
         else if (item.id == cu1600::kItemLoadCode) item.act = [this] { chooseProgram(true); };

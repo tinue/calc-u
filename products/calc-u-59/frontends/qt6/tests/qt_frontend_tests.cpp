@@ -82,14 +82,20 @@ TEST(paper_panel_print_adv_held_trace_switch_view_control) {
     CHECK(print->text() == printText && trace->text() == QStringLiteral("T") && adv->text() == QStringLiteral("ADV"));
     CHECK(print->x() < trace->x() && trace->x() < adv->x());
     CHECK(trace->isCheckable() && !trace->isChecked());
+    // TRACE's position as the control state has it.
+    const auto traceOn = [&] {
+        for (const auto& c : f.c().printerControls())
+            if (c.id.value == "TRACE") return c.on;
+        return false;
+    };
     trace->click();   // set-control TRACE on
-    CHECK(f.waitFor([&] { return f.c().printerTrace(); }));
+    CHECK(f.waitFor(traceOn));
     CHECK(f.waitFor([&] { return named<QToolButton>(*panel, "paper-control-TRACE")->isChecked(); }, 2000));
     auto* view = named<QToolButton>(*panel, "paper-view-toggle");
     CHECK(view != nullptr && view->isVisible());
     CHECK(!panel->showsText());
     trace->click();   // TRACE back off for the other cases
-    CHECK(f.waitFor([&] { return !f.c().printerTrace(); }));
+    CHECK(f.waitFor([&] { return !traceOn(); }));
     f.find<QToolButton>(names::barPlace("printer"))->click();
     CHECK(f.waitFor([&] { return !f.c().printerConnected(); }));
     CHECK(f.waitFor([&] { return panel->ownerName().empty(); }, 2000));

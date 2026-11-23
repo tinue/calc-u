@@ -196,11 +196,12 @@ TEST(log_level_and_trace_in_machine_menu) {
     QAction* trace = f.action(cu1600::kItemTrace);
     CHECK(info && trace && info->isCheckable() && trace->isCheckable() && !trace->isChecked());
     CHECK(f.action(cu1600::kItemLogOff) && f.action(cu1600::kItemLogOff)->isChecked());
+    const auto level = [&] { return calcu::shell::read::text(f.w().host().value(calcu::sessions::kLogLevelTopic), "level"); };
     if (info) info->trigger();
-    CHECK(f.waitFor([&] { return f.w().controller()->logLevel() == calcu::sessions::LogLevel::Info; }, 5000));
+    CHECK(f.waitFor([&] { return level() == "info"; }, 5000));
     CHECK(f.waitFor([&] { return f.action(cu1600::kItemLogInfo) && f.action(cu1600::kItemLogInfo)->isChecked(); }, 5000));
     if (QAction* off = f.action(cu1600::kItemLogOff)) off->trigger();
-    CHECK(f.waitFor([&] { return f.w().controller()->logLevel() == calcu::sessions::LogLevel::Off; }, 5000));
+    CHECK(f.waitFor([&] { return level() == "off"; }, 5000));
 }
 
 TEST(copy_log_selection_while_inspector_text_selected) {

@@ -15,11 +15,6 @@ class CardControls : public QWidget {
     Q_OBJECT
 public:
     explicit CardControls(EmulatorController& controller, QWidget* parent = nullptr);
-    /// The icons alone, or with "Crd" / "Eject Card" beside them.
-    void setShowLabels(bool on);   // the bar decides (its BarLabels)
-    bool showsLabels() const { return m_labels; }
-    /// How much wider the visible buttons are with their labels.
-    int labelsWidth() const;
 
 signals:
     void armRequested();
@@ -27,9 +22,12 @@ signals:
 
 private:
     void refresh();
+    /// The icons alone, or with "Crd" / "Eject Card" beside them.
+    void setShowLabels(bool on);   // the bar decides (its BarLabels)
+    /// How much wider the visible buttons are with their labels.
+    int labelsWidth() const;
     EmulatorController& m_controller;
     QToolButton* m_arm;
     QToolButton* m_fresh;
     QToolButton* m_eject;
-    bool m_labels = true;
 };

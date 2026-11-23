@@ -55,9 +55,8 @@ std::vector<std::string> checkShellProduct(const ShellProduct& p, const sessions
         for (const auto& f : read::elements(place, "fitting"))
             if (read::elements(f, "variants").size() > 1) needsLabel(read::text(f, "id"));
     std::set<std::string> ids;
-    for (const auto& item : p.items)
-        if (!ids.insert(item.id).second) problems.push_back("The item id " + item.id + " is given twice.");
     eachItem(p.items, [&](const ProductItem& i) {
+        if (!ids.insert(i.id).second) problems.push_back("The item id " + i.id + " is given twice.");
         if (i.checkedBy && i.command.value.empty()) problems.push_back("The item " + i.id + " follows a topic and sends no command.");
     });
     return problems;

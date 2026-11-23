@@ -160,5 +160,6 @@ The engine's Emscripten flags live in the product's `CMakeLists.txt`
 (`calcu59_web`); the tree is configured once — delete `../../build/web`
 after an Emscripten upgrade.
 
-CI: job `web` in the repository's `.github/workflows/calc-u-59.yml` (emsdk pinned to the local
-`emcc --version`; bump both together). Artifacts: `docs/developer/Web-Client.md`.
+CI: job `web` in the repository's `.github/workflows/calc-u-59.yml` (emsdk 6.0.13, the
+release the build images run, the same in `calc-u-1600.yml` and `ci/linux/`; the local
+`emcc` may be newer). Artifacts: `docs/developer/Web-Client.md`.

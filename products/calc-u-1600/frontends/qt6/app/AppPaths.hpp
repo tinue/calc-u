@@ -9,9 +9,9 @@
 // Path resolution for bundled resources and the memory-module feature --
 // the one place that tells the library where this host's folders are and
 // where bundled resources (*.module.yaml templates AND ROM images, side by
-// side) live. Bundled resources ship as loose files next to the executable
-// (not Qt's .qrc embedding, since Core's scanMemoryCardDirectory() and
-// the ROM lookup read a real filesystem directory). The places the app
+// side) live. Bundled resources ship as loose files in the app's data folder
+// (calcu::qt6::bundledDataDir), not Qt's .qrc embedding, since Core's
+// scanMemoryCardDirectory() and the ROM lookup read a real directory. The places the app
 // writes to come from the library (calcu::settings::Paths): the
 // save folder defaults to ~/Calc-U-1600 on every platform (not
 // QStandardPaths::AppDataLocation, no iCloud); the settings file,
@@ -36,7 +36,7 @@ void useBundleDirs(const cu1600::BundleDirs& dirs);
 
 // The cu1600::AppPaths every call below forwards to (app/AppPaths.hpp
 // has the rules); built on first use from the bundled resources folder
-// next to the executable and the host folders.
+// (calcu::qt6::bundledDataDir) and the host folders.
 cu1600::AppPaths& paths();
 
 // ~/Calc-U-1600 (home dir, non-dotted), created if missing.

@@ -112,8 +112,8 @@ endif()
 target_link_libraries(CalcU1600Qt PRIVATE calcu1600_shared calcu_qt6)
 
 # ---- App icon (macOS bundle icon; Windows' equivalent is the WIN32
-# block's calc-u-1600.rc above, Linux's is the AppImage's --icon-file in
-# calc-u-1600.yml). The source is the Icon Composer bundle
+# block's calc-u-1600.rc above, Linux's is resources/linux/calc-u-1600.png,
+# installed by calcu_qt6_bundle_sync below). The source is the Icon Composer bundle
 # resources/macos/AppIcon.icon (macOS 26+ masks, sizes and shades it). The CI runner's Xcode can't compile .icon, so its actool
 # output is committed, same as the vendored libsharpdx.a above: Assets.car
 # (macOS 26+) and AppIcon.icns (fallback for older macOS). Regenerate both
@@ -125,7 +125,7 @@ if(APPLE)
   set(APP_ICON_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/AppIcon.icns
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/Assets.car)
-  calcu_qt6_bundle_files(CalcU1600Qt Resources ${APP_ICON_FILES})
+  calcu_qt6_bundle_files(CalcU1600Qt data ${APP_ICON_FILES})
   # Explicit bundle identifier (same ch.erzberger.* namespace as
   # SharpDataExchange's ch.erzberger.SharpDataExchange) -- needed for
   # stable codesigning/notarization identity across CI runs, rather than
@@ -171,20 +171,16 @@ list(APPEND BUNDLED_ROM_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/pc1600-hostdrive/PC1600-P1-B7-HOSTDRIVE.bin)
 set(BUNDLED_RESOURCE_FILES ${MODULE_FILES} ${FLOPPY_FILES} ${CASSETTE_FILES} ${BUNDLED_ROM_FILES})
 
-# Inside the .app bundle Contents/Resources (AppPaths::bundledResourcesDir()
-# resolves applicationDirPath()/../Resources); on Windows and Linux a
+# The app's data: inside the .app bundle Contents/Resources, else a
 # "resources" folder next to the executable, so a plain `cmake --build`
-# gives a runnable, self-contained build folder.
-if(APPLE)
-  set(BUNDLED_RESOURCES Resources)
-else()
-  set(BUNDLED_RESOURCES resources)
-endif()
-calcu_qt6_bundle_files(CalcU1600Qt ${BUNDLED_RESOURCES} ${BUNDLED_RESOURCE_FILES})
+# gives a runnable, self-contained build folder; share/calc-u-1600 when
+# installed on Linux (AppPaths::bundledResourcesDir(), the library's
+# calcu::qt6::bundledDataDir).
+calcu_qt6_bundle_files(CalcU1600Qt data ${BUNDLED_RESOURCE_FILES})
 
 # ---- Bundled example presets:
 # the bundle file examples/bundle.yaml and exactly the files it lists, each
-# `{ file: … }` (the presets and their files), loose under Resources/examples
+# `{ file: … }` (the presets and their files), loose in the data's examples/
 # (AppPaths::bundledExamplesDir(); the preset list reads them). The Web build
 # (frontends/web/build.js) takes the same list. ----
 set(EXAMPLES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../examples)
@@ -197,10 +193,10 @@ foreach(line IN LISTS EXAMPLE_FILE_LINES)
 endforeach()
 list(REMOVE_DUPLICATES EXAMPLE_FILES)
 
-calcu_qt6_bundle_files(CalcU1600Qt ${BUNDLED_RESOURCES}/examples ${EXAMPLES_SRC_DIR}/bundle.yaml)
+calcu_qt6_bundle_files(CalcU1600Qt data/examples ${EXAMPLES_SRC_DIR}/bundle.yaml)
 foreach(example_file IN LISTS EXAMPLE_FILES)
   get_filename_component(example_dir "${example_file}" DIRECTORY)
-  calcu_qt6_bundle_files(CalcU1600Qt ${BUNDLED_RESOURCES}/examples/${example_dir} ${EXAMPLES_SRC_DIR}/${example_file})
+  calcu_qt6_bundle_files(CalcU1600Qt data/examples/${example_dir} ${EXAMPLES_SRC_DIR}/${example_file})
 endforeach()
 
 # ---- License / third-party-notice files -- ships GPLv3 (this project)
@@ -215,14 +211,13 @@ set(LICENSE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/../../licenses/GPL-3.0.txt
 )
 
-# Resources/licenses in the bundle, else licenses next to the executable.
-if(APPLE)
-  calcu_qt6_bundle_files(CalcU1600Qt Resources/licenses ${LICENSE_FILES})
-else()
-  calcu_qt6_bundle_files(CalcU1600Qt licenses ${LICENSE_FILES})
-endif()
-# The app's bundled folders hold exactly the files above.
-calcu_qt6_bundle_sync(CalcU1600Qt)
+# Resources/licenses in the bundle, else licenses next to the executable;
+# share/doc/calc-u-1600 when installed on Linux.
+calcu_qt6_bundle_files(CalcU1600Qt licenses ${LICENSE_FILES})
+# The app's bundled folders hold exactly the files above; the install rules
+# (library/qt6/CMakeLists.txt has the layouts).
+calcu_qt6_bundle_sync(CalcU1600Qt DESKTOP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/resources/linux/calc-u-1600.desktop
+                                  ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/linux/calc-u-1600.png)
 
 # CalcU1600QtTests, the window put together from the shell, its session on
 # the real ROMs (a bundle folder of the tests' own), offscreen; the

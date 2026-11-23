@@ -2,6 +2,10 @@
 # Linux, the web client (frontends/web/), the help, plus the C++ test suite.
 # Every run step works in the product directory.
 #
+# The Linux and Windows packages are made of `cmake --install` of
+# build/release (the layouts: library/qt6/CMakeLists.txt,
+# calcu_qt6_bundle_sync).
+#
 # Run by hand (workflow_dispatch) — ReleaseIt's `release` dispatches it for a
 # pre-release and attaches the artifacts (release.yaml). The macOS job embeds
 # the Qt frameworks (macdeployqt), then the repository's action
@@ -91,8 +95,9 @@ jobs:
       - name: Install emsdk
         uses: mymindstorm/setup-emsdk@v16
         with:
-          # Keep in step with the local toolchain (emcc --version).
-          version: 6.0.12
+          # The release the build images run (7.x does not), the same as
+          # calc-u-1600.yml's and ci/linux's; not the local toolchain's.
+          version: 6.0.13
       - name: Install Node
         uses: actions/setup-node@v7
         with:
@@ -157,17 +162,18 @@ jobs:
           EXTRA_PLATFORM_PLUGINS: "libqwayland-egl.so;libqwayland-generic.so"
         run: |
           set -euo pipefail
-          mkdir -p AppDir/usr/bin
-          cp $QT_BUILD/Calc-U-59 AppDir/usr/bin/
+          # The install rules lay out the AppDir: usr/bin/Calc-U-59,
+          # usr/share/calc-u-59 (the bundled examples), usr/share/doc/calc-u-59
+          # (the licences, Qt's LGPLv3 among them), the .desktop file and the
+          # icon, which linuxdeploy takes from usr/share.
+          cmake --install $RELEASE_BUILD --prefix "$PWD/AppDir/usr"
           curl -fsSL -o linuxdeploy.AppImage \
             https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${{ matrix.arch }}.AppImage
           curl -fsSL -o linuxdeploy-plugin-qt.AppImage \
             https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-${{ matrix.arch }}.AppImage
           chmod +x linuxdeploy.AppImage linuxdeploy-plugin-qt.AppImage
           export PATH="$PWD:$PATH"
-          ./linuxdeploy.AppImage --appdir=AppDir --executable=AppDir/usr/bin/Calc-U-59 \
-            --desktop-file=frontends/qt6/resources/linux/calc-u-59.desktop \
-            --icon-file=frontends/qt6/resources/linux/calc-u-59.png --plugin=qt
+          ./linuxdeploy.AppImage --appdir=AppDir --executable=AppDir/usr/bin/Calc-U-59 --plugin=qt
           QT_PLUGINS_DIR=$("$QMAKE" -query QT_INSTALL_PLUGINS)
           # Wayland EGL rendering and the desktop's platform theme (dark/light, dialogs).
           for dir in wayland-graphics-integration-client platformthemes styles; do
@@ -185,9 +191,6 @@ jobs:
             'HERE="$(dirname "$(readlink -f "$0")")"' \
             'exec "$HERE/AppRun.qt" "$@"' > AppDir/AppRun
           chmod +x AppDir/AppRun
-          # Qt is LGPLv3: ship its licence and our notices inside the image.
-          mkdir -p AppDir/usr/share/doc/calc-u-59
-          cp -r ../../LICENSE NOTICE THIRD-PARTY-NOTICES.md licenses AppDir/usr/share/doc/calc-u-59/
           ./linuxdeploy.AppImage --appdir=AppDir --output=appimage
       - name: Upload artifact
         uses: actions/upload-artifact@v6
@@ -287,13 +290,11 @@ jobs:
       - name: Run calcu (the harness CLI with Calc-U-59)
         run: cmake "-DCALCU=${{ env.RELEASE_BUILD }}/library/harness/cli/calcu.exe" -P tests/calcu_runs.cmake
       - name: Stage the app folder
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path frontends/qt6/dist | Out-Null
-          Copy-Item $env:QT_BUILD/Calc-U-59.exe frontends/qt6/dist/
-          Copy-Item ../../LICENSE, NOTICE, THIRD-PARTY-NOTICES.md frontends/qt6/dist/
-          Copy-Item licenses frontends/qt6/dist/licenses -Recurse
-          windeployqt --release --compiler-runtime frontends/qt6/dist/Calc-U-59.exe
+        # The install rules: build/release/install/Calc-U-59/ with
+        # Calc-U-59.exe, resources\ (the bundled examples), licenses\, and
+        # Qt's DLLs with the MSVC runtime (windeployqt --compiler-runtime,
+        # run by the install); the .iss packages that folder.
+        run: cmake --install ${{ env.RELEASE_BUILD }} --prefix ${{ env.RELEASE_BUILD }}/install
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup -y

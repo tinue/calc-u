@@ -10,7 +10,9 @@
 #   gcc        one tree with both products, the Qt frontends and the tests:
 #              the build of the workflows' library, core-tests and linux
 #              jobs, then the CTest entries those jobs run (not the Qt
-#              window tests, which no Linux job runs)
+#              window tests, which no Linux job runs); among them
+#              CalcUQtInstallLayout, the `cmake --install` layout the linux
+#              jobs make their AppImages of (no AppImage is made here)
 #   web-59     calc-u-59.yml `web` up to its tests (web image only; no zip)
 #   web-1600   calc-u-1600.yml `web` up to the release dist/ and its check,
 #              and the library's Web shell tests (web image only; no zip)
@@ -22,10 +24,10 @@ sharpdx() {  # the 1600 jobs' "Fetch sharpdx", once per volume
     || products/calc-u-1600/tools/fetch_sharpdx.sh
 }
 
-emsdk() {  # emsdk <version>: the web job's setup-emsdk, without ccache
+emsdk() {  # the web jobs' setup-emsdk (the image's one release), without ccache
   unset CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER
-  # shellcheck disable=SC1090
-  source "/opt/emsdk-$1/emsdk_env.sh" >/dev/null 2>&1
+  # shellcheck disable=SC1091
+  source /opt/emsdk/emsdk_env.sh >/dev/null 2>&1
 }
 
 job() {
@@ -37,12 +39,12 @@ job() {
       ctest --test-dir build/linux --output-on-failure -j8 \
         -E '^(calcu_qt6_tests|calcu_qt6_scenarios|CalcU59QtTests|CalcU1600QtTests)' ;;
     web-59)
-      emsdk 6.0.12 && cd products/calc-u-59 &&
+      emsdk && cd products/calc-u-59 &&
       frontends/web/build.sh &&
       (cd frontends/web && npm ci --no-audit --no-fund) &&
       frontends/web/run-tests.sh --reporter=line ;;
     web-1600)
-      emsdk 6.0.13 && cd products/calc-u-1600 &&
+      emsdk && cd products/calc-u-1600 &&
       tools/build_wasm_check.sh &&
       frontends/web/build.sh &&
       (cd frontends/web && npm ci --no-audit --no-fund) &&

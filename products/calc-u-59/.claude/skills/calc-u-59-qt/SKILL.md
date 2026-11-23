@@ -148,26 +148,41 @@ packaging jobs in CI configure the root into `build/release`
 Qt comes from Homebrew on macOS (`/opt/homebrew/opt/qt`, found automatically).
 The version is read from the Xcode project's `MARKETING_VERSION`.
 
-## Packaging (CI only)
+## Installing and packaging
 
-- **macOS** arm64 (`mac-aarch64`, macos-15, Homebrew's Qt): macdeployqt,
+- **`cmake --install`** of a tree is a local install with the machine's Qt
+  (macOS and Linux deploy no Qt; Windows runs `windeployqt` on the
+  installed program). Without `--prefix`: `~/Applications` (the `.app`),
+  `~/.local` (`bin/Calc-U-59`, `share/calc-u-59/`, `share/doc/calc-u-59/`,
+  the `.desktop` file and the 256×256 icon), `%LOCALAPPDATA%\Programs`
+  (`Calc-U-59\Calc-U-59.exe` with `resources\`, `licenses\`). The
+  layouts and the rules are the library's `calcu_qt6_bundle_files` (places
+  `data[/<folder>]`, `licenses`) and `calcu_qt6_bundle_sync(<target>
+  DESKTOP_FILE … ICON …)` (`library/qt6/CMakeLists.txt`): each build also
+  brings the bundle's `Contents/Resources` (else `resources/` and
+  `licenses/` next to the program) to exactly those files, removing any
+  other. The app finds its data through the library's
+  `calcu::qt6::bundledDataDir("calc-u-59")` (`AppPaths::bundledExamplesDir`;
+  Linux: `../share/calc-u-59` first). CTest `CalcUQtInstallLayout` installs
+  a Qt tree into a folder of its own and checks the layout.
+- **macOS** arm64 (`mac-aarch64`, macos-15, Homebrew's Qt, CI): the
+  build tree's `.app`, macdeployqt,
   then the repository's action `.github/actions/mac-sign-dmg` (Developer ID,
   hardened runtime, notarized and stapled `.app` and `.dmg`;
   `docs/macos-signing.md`). The bundle id is `ch.erzberger.CalcU59Qt`; the
-  icon is `resources/macos/Assets.car` + `AppIcon.icns` (`tools/gen_qt_icons.sh`);
-  the licenses go into `Contents/Resources/licenses`. The macOS host
+  icon is `resources/macos/Assets.car` + `AppIcon.icns` (`tools/gen_qt_icons.sh`).
+  The macOS host
   settings (App Nap, window restoration, press-and-hold) are the library's
   `qt6/MacHost`, applied in `main.cpp`.
-- **Linux** x86_64 / aarch64: linuxdeploy + Qt plugin → AppImage, with the
+- **Linux** x86_64 / aarch64 (CI): `cmake --install build/release --prefix
+  AppDir/usr`, then linuxdeploy + Qt plugin → AppImage (the desktop file
+  and icon from `AppDir/usr/share`), with the
   Wayland and platform-theme plugins and a GTK-theme `AppRun` wrapper.
-- **Windows** x86_64 / arm64: windeployqt → Inno Setup
-  (`frontends/qt6/resources/windows/calc-u-59.iss`, preset associations).
-- The files beside the program (the icon, the bundled examples, the
-  licenses) are listed with the library's `calcu_qt6_bundle_files` and
-  `calcu_qt6_bundle_sync` (`library/qt6/CMakeLists.txt`): each build brings
-  the bundle's `Contents/Resources` (else `resources/` next to the program)
-  to exactly those files, removing any other.
-- `LICENSE`, `NOTICE`, `THIRD-PARTY-NOTICES.md` and `licenses/` (Qt LGPLv3)
-  ship in every package: next to the Windows executable, in
-  `usr/share/doc/calc-u-59/` inside the AppImage, in
+- **Windows** x86_64 / arm64 (CI): `cmake --install build/release --prefix
+  build/release/install` (with windeployqt) → Inno Setup
+  (`frontends/qt6/resources/windows/calc-u-59.iss` packages
+  `build\release\install\Calc-U-59`, preset associations).
+- `LICENSE`, `NOTICE`, `THIRD-PARTY-NOTICES.md`, `LGPL-3.0.txt` (Qt) and
+  `GPL-3.0.txt` ship in every package: in `licenses\` next to the Windows
+  executable, in `usr/share/doc/calc-u-59/` inside the AppImage, in
   `Contents/Resources/licenses` of the Mac bundle.

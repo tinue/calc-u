@@ -21,6 +21,7 @@
 //   useShellState(shell, select)   a slice of the shell's state
 //   useTopic(shell, name, select)  the last state of a topic
 //   useStream(shell, name)         what a stream topic appended since its last reset
+//   calcuStreamAfter(items, marker)  a stream's items after an item taken before
 //
 // embedProps only names and defaults the props; whether a model or a
 // preset names something is the session's start.
@@ -95,4 +96,14 @@ function useTopic(shell, name, select) {
 
 function useStream(shell, name) {
   return useShellState(shell, (st) => st.streams[name] || CALCU_NO_ITEMS);
+}
+
+// The items of a stream after `marker`, an item of it taken before. Items
+// are told apart by identity: each comes once over postMessage, so no item of
+// a reset or a later one is the marker. A marker no longer among the items
+// (a reset, or more than CALCU_STREAM_KEEP items since) leaves them all.
+function calcuStreamAfter(items, marker) {
+  if (!marker) return items;
+  const i = items.lastIndexOf(marker);
+  return i < 0 ? items : items.slice(i + 1);
 }

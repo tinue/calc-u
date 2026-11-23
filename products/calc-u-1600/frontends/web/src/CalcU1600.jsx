@@ -214,13 +214,15 @@ function CalcU1600(props) {
   // of Load BASIC Program… or Load Machine Code… without its file dialog.
   // A WAV with several files asks which one; the file chosen goes to the
   // flow of its own kind. One flow at a time: one that comes meanwhile is
-  // dropped with a log line.
-  const programsSeen = React.useRef(0);
+  // dropped with a log line. The last program taken marks the place in the
+  // stream (which keeps only its last items and starts anew on a reset).
+  const programTaken = React.useRef(null);
   React.useEffect(() => {
-    if (programs.length < programsSeen.current) programsSeen.current = 0;
-    if (!shell || programs.length <= programsSeen.current || dialogs.open) return;
-    const p = programs[programsSeen.current];
-    programsSeen.current += 1;
+    if (!shell || dialogs.open) return;
+    const fresh = calcuStreamAfter(programs, programTaken.current);
+    if (!fresh.length) return;
+    const p = fresh[0];
+    programTaken.current = p;
     if (programFlow.current) { console.log(`[open] a program flow runs; dropped ${p.name}`); return; }
     programFlow.current = true;
     (async () => {

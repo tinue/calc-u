@@ -2,12 +2,13 @@
 // any paper from its marks and names no printer; the shell places it in its
 // area for panels.
 //
-//   <CalcuPaperPanel shell={shell} owner={peripheralId | null}
-//                    controls={[{id, form: "key" | "switch", on, label?, shortLabel?}]}
+//   <CalcuPaperPanel shell={shell} owner={peripheralId | null} ownerPlace={place | null}
+//                    controls={[{id, form: "key" | "switch", on, label?, shortLabel?}]?}
 //                    send={fn?} places={[bar control]} onChoose={fn} />
 //
-// owner: the printer plugged in, from the control state; controls:
-// that printer's controls; places: the shell's place controls on the paper
+// owner, ownerPlace: the printer plugged in and its place, from the control
+// state's panel; controls: that printer's controls, by default the control
+// state's of the owner on its place; places: the shell's place controls on the paper
 // (the panel model's), first in the header, onChoose(item) carrying out
 // their choice (the shell's choose); send(command, args) defaults to
 // shell.send. The header holds the places left, the owner's name centred
@@ -92,8 +93,12 @@ function CalcuPaperControl({ control, compact, onSet }) {
   );
 }
 
-function CalcuPaperPanel({ shell, owner, controls, send, places, onChoose }) {
+const CALCU_PAPER_NO_CONTROLS = [];
+
+function CalcuPaperPanel({ shell, owner, ownerPlace, controls: given, send, places, onChoose }) {
   const state = useCalcuPaper(shell);
+  const all = useTopic(shell, "control-state", (cs) => (cs && cs.controls) || CALCU_PAPER_NO_CONTROLS);
+  const controls = given || all.filter((c) => c.peripheral === owner && c.place === ownerPlace);
   const entry = calcuPaperOf(state.papers, owner);
   const name = entry ? entry.owner : "";
   const description = entry ? entry.description : null;

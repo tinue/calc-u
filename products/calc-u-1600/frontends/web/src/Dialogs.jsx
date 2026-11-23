@@ -1,8 +1,8 @@
 // The product's own dialogs: those of the program-file flows (the
-// machine-code start address and its result, "Load which one?"), the
-// media's Name & Save, and a notice as the shell's for what a flow refuses,
-// each in the React set's ShellModal. Settings, About, the shell's notices
-// and "Loading…" are the React set's (ShellDialogs). Each is shown through
+// machine-code start address and its result, "Load which one?"), each in
+// the React set's ShellModal. Settings, About, the notices (a flow's refusal
+// too, through the shell's notify) and "Loading…" are the React set's
+// (ShellDialogs). Each is shown through
 // useDialogs()'s ask(), which resolves with the answer (null: cancelled), so
 // the flows in CalcU1600.jsx read like MainWindow's.
 
@@ -13,18 +13,6 @@ function OkCancel({ ok, cancel, label = "OK", disabled = false }) {
       <button type="button" onClick={cancel}>Cancel</button>
       <button type="button" className="calcu-shell-default" disabled={disabled} onClick={ok}>{label}</button>
     </React.Fragment>
-  );
-}
-
-// A notice of the product's own flows (a file that cannot be read, a
-// refused plan): as the shell's notice: the sentence
-// as it is, no title, OK.
-function NoticeDialog({ text, done }) {
-  return (
-    <ShellModal name="notice" onClose={() => done(true)}
-      buttons={<button type="button" className="calcu-shell-default" data-calcu="notice-ok" autoFocus onClick={() => done(true)}>OK</button>}>
-      <p className="calcu-shell-notice-text">{text}</p>
-    </ShellModal>
   );
 }
 
@@ -46,14 +34,14 @@ function ChoiceDialog({ title, text, options, done }) {
 // Load is enabled only while it holds. Done with the text, or null.
 function AddressDialog({ shell, plan, bytes, index, done }) {
   const [text, setText] = React.useState(plan.proposed || "");
-  const [check, setCheck] = React.useState({ valid: false, hint: "", problem: false });
+  const [check, setCheck] = React.useState({ valid: false, hint: "" });
   React.useEffect(() => {
     let live = true;
     shell.request("c1600.code-plan", { bytes, file: index || 0, address: text }).then((r) => {
       if (!live) return;
       const p = r.done ? r.value : { refusal: r.reason };
-      if (p.needsAddress) setCheck({ valid: false, hint: "", problem: false });
-      else setCheck({ valid: !p.refusal, hint: p.refusal || p.where || "", problem: !!p.refusal });
+      if (p.needsAddress) setCheck({ valid: false, hint: "" });
+      else setCheck({ valid: !p.refusal, hint: p.refusal || p.where || "" });
     });
     return () => { live = false; };
   }, [text]);
@@ -70,7 +58,7 @@ function AddressDialog({ shell, plan, bytes, index, done }) {
         <span className="calcu-shell-setting-label">Length:</span><span>{plan.length} bytes</span>
       </div>
       {plan.cpuNote && <p className="calcu-shell-notice-text">{plan.cpuNote}</p>}
-      {check.hint && <p className={check.problem ? "calcu-shell-problem" : "calcu-shell-notice-text"}>{check.hint}</p>}
+      {check.hint && <p className={check.valid ? "calcu-shell-notice-text" : "calcu-shell-problem"}>{check.hint}</p>}
     </ShellModal>
   );
 }
@@ -95,7 +83,7 @@ function LoadedDialog({ result, done }) {
 }
 
 const DIALOGS = {
-  notice: NoticeDialog, choice: ChoiceDialog,
+  choice: ChoiceDialog,
   address: AddressDialog, loaded: LoadedDialog,
 };
 

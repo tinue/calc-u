@@ -11,7 +11,8 @@
 //   calcuShellPaperRowCompact(sizes, rowWidth) → bool
 //   calcuShellView(inputs) → {side, panelsFit, panelsAlone, faceplateWidth, faceplateHeight, room}
 //   calcuShellLoading() → {busy(runs, full, now), shown(now), due()}
-//   calcuShellNotices() → {push, refusal, current, close, answer, waiting}
+//   calcuShellNotices() → {push, refusal, current, close, answer, waiting}; current() is
+//     {seq, text, question, command}, seq numbering the notices queued
 //   calcuShellKeyAt(map, scale, x, y); calcuShellPointer(map, scale) → {down, move, up, releaseAll}
 //   calcuShellAbout(product)
 //   calcuShellList, calcuShellText, calcuShellAvailability: reading the topics' Values
@@ -102,13 +103,15 @@ function calcuShellLoading() {
 function calcuShellNotices() {
   const queue = [];
   let last = "";
-  const push = (sentence) => { last = sentence; queue.push({ text: sentence, question: false, command: null }); };
+  let seq = 0;
+  const push = (sentence) => { last = sentence; queue.push({ seq: ++seq, text: sentence, question: false, command: null }); };
   return {
     push,
     refusal(reason, sent) {
       const r = reason || "";
       if (r.startsWith(CALCU_SHELL_ASKS)) {
-        queue.push({ text: r.slice(CALCU_SHELL_ASKS.length).replace(/^ +/, ""), question: true, command: sent || null });
+        queue.push({ seq: ++seq, text: r.slice(CALCU_SHELL_ASKS.length).replace(/^ +/, ""), question: true,
+          command: sent || null });
         return;
       }
       if (!r || r === last || r === CALCU_SHELL_STOPPED) return;

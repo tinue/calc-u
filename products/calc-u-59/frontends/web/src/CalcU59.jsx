@@ -87,7 +87,7 @@ function KeyFeedback({ shell, enabled }) {
 // The library's module picker of `slot-1` (ShellSlotPicker).
 const SlotPicker = (props) => <ShellSlotPicker {...props} label="Solid State Module" />;
 
-function BarButton({ icon, label, compact, title, name, className = "", ...rest }) {
+function BarButton({ icon, label, title, name, className = "", ...rest }) {
   return (
     <button type="button" className={`calcu-barbutton ${className}`} title={title || name || label} aria-label={name || label} {...rest}>
       <span className="calcu-icon" aria-hidden="true">{icon}</span>
@@ -99,22 +99,21 @@ function BarButton({ icon, label, compact, title, name, className = "", ...rest 
 // The card controls, the media controls of the kind
 // `magnetic-card` on the shell's bar: Arm Card and Arm Fresh Card (both
 // "Crd") while no card passes, Eject Card while one does; disabled with the
-// media place's reason while it cannot be used (`insert`).
-const C59_BAR = React.createContext(null);
+// media place's reason while it cannot be used (`insert`). Arm Card and Arm
+// Fresh Card are the product items of the same names (their dialogs).
 function CardControls({ shell, entry }) {
-  const bar = React.useContext(C59_BAR);
   const reader = cardReaderOf(shell.inputs.media);
   const swiping = !!reader && reader.passing !== undefined && reader.passing !== null;
   const ok = calcuShellAvailability(entry, "insert");
   if (swiping)
-    return <BarButton icon="⏏" label="Eject Card" compact={bar.compact}
+    return <BarButton icon="⏏" label="Eject Card"
       onClick={() => shell.shell.send("media.eject", { place: "card-reader" })} />;
   return (
     <React.Fragment>
-      <BarButton icon="⤓" label="Crd" name="Arm Card" compact={bar.compact} disabled={!ok.now}
-        title={ok.now ? "Arm Card" : ok.reason} onClick={() => bar.cardDialog("arm")} />
-      <BarButton icon="＋" label="Crd" name="Arm Fresh Card" compact={bar.compact} disabled={!ok.now}
-        title={ok.now ? "Arm Fresh Card" : ok.reason} onClick={() => bar.cardDialog("fresh")} />
+      <BarButton icon="⤓" label="Crd" name="Arm Card" disabled={!ok.now}
+        title={ok.now ? "Arm Card" : ok.reason} onClick={() => shell.choose({ id: "arm-card" })} />
+      <BarButton icon="＋" label="Crd" name="Arm Fresh Card" disabled={!ok.now}
+        title={ok.now ? "Arm Fresh Card" : ok.reason} onClick={() => shell.choose({ id: "arm-fresh-card" })} />
     </React.Fragment>
   );
 }
@@ -125,14 +124,11 @@ function CalculatorColumn({ page, faceWidth, width }) {
   const barRef = React.useRef(null);
   const body = faceWidth + 2 * FACE_PADDING;   // the calculator's body, the bar's width where it fits
   const fit = useShellBarFit(barRef, body);   // the labels ("Crd", "Preset") and the width
-  const compact = !fit.labels;
   return (
     <div className="calcu-calc" style={{ width: Math.max(width || body, fit.width) }}>
       <div className="calcu-face-pad"><CalculatorFace shell={shell} faceplate={faceplate} model={model} width={faceWidth} /></div>
-      <div ref={barRef} className={"calcu-bar" + (compact ? " calcu-compact" : "")}>
-        <C59_BAR.Provider value={{ compact, cardDialog: page.cardDialog }}>
-          <ShellControlBar shell={s} compact={compact} slotPicker={SlotPicker} mediaControls={C59_MEDIA_CONTROLS} />
-        </C59_BAR.Provider>
+      <div ref={barRef} className="calcu-bar">
+        <ShellControlBar shell={s} compact={!fit.labels} slotPicker={SlotPicker} mediaControls={C59_MEDIA_CONTROLS} />
       </div>
     </div>
   );
@@ -194,7 +190,7 @@ function WideLayout({ page, width, height, rules }) {
     <div className="calcu-wide" style={{ height: total }}>
       <CalculatorColumn page={page} faceWidth={faceWidth} width={columnWidth} />
       <div className="calcu-vline" />
-      <div style={{ width: pw, flex: "none", display: "flex" }}><PaperPane shell={page.shell} owner={page.paperOwner} places={page.paperPlaces} onChoose={page.s.choose} /></div>
+      <div style={{ width: pw, flex: "none", display: "flex" }}><PaperPane shell={page.shell} paper={page.paper} onChoose={page.s.choose} /></div>
       {hasDebugger && <Divider onDrag={(dx) => setPrinterWidth(Math.max(printerMin, Math.min(printerMax, pw + dx)))} />}
       {hasDebugger && <Debugger />}
     </div>
@@ -223,7 +219,7 @@ function PortraitLayout({ page, width, height: whole }) {
         <div className="calcu-page" hidden={view !== "calc"}>
           <CalculatorColumn page={page} faceWidth={faceWidth} />
         </div>
-        {view === "printer" && <div className="calcu-page calcu-page-printer"><PaperPane shell={page.shell} owner={page.paperOwner} places={page.paperPlaces} onChoose={page.s.choose} /></div>}
+        {view === "printer" && <div className="calcu-page calcu-page-printer"><PaperPane shell={page.shell} paper={page.paper} onChoose={page.s.choose} /></div>}
         {view === "calc" ? chevron("right") : chevron("left")}
       </div>
     </div>
@@ -305,14 +301,14 @@ function CalcU59(props) {
 
   // Keyboard feedback is for touch screens: portrait, and the PWA in any layout.
   const touch = layout !== "wide";
-  const modalOpen = !!s.open || !!s.notice || !!cardDialog;
 
   // ── Physical keyboard ────────────────────────────────────────────────
   // Only with keyboard={true}, and only while the calculator itself has
-  // focus (not a control in it): Tab keeps working as Tab. A key with
+  // focus (not a control in it, nor a dialog, which keeps its keys):
+  // Tab keeps working as Tab. A key with
   // Control, Alt or Command is the browser's; the product's keyboard map in
   // the worker (app/TITyping's TIKeyboardMap) decides what the others press.
-  const ownsKeys = (e) => keyboard && shell && s.started && !modalOpen &&
+  const ownsKeys = (e) => keyboard && shell && s.started &&
     (e.target === rootRef.current || (e.target.classList && e.target.classList.contains("calcu-key")));
   const claimed = (e) => {
     if (!ownsKeys(e) || e.ctrlKey || e.altKey || e.metaKey) return false;
@@ -352,9 +348,7 @@ function CalcU59(props) {
   const drop = calcuFileDrop(shell ? openFiles : null);
 
   const paper = s.panels.find((p) => p.kind === "paper") || {};
-  const paperOwner = paper.owner || "";
-  const page = { shell, s, faceplate: maps[model] || null, model, paperOwner, paperPlaces: paper.places || [], cardDialog: setCardDialog,
-    menuHeight: menuBar ? MENU_HEIGHT : 0 };
+  const page = { shell, s, faceplate: maps[model] || null, model, paper, menuHeight: menuBar ? MENU_HEIGHT : 0 };
   const romsMissing = !!s.romsMissing && !s.started;
   const failed = start === "failed";
   const Layout = portrait ? PortraitLayout : WideLayout;

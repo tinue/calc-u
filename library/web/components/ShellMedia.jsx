@@ -12,6 +12,12 @@
 //     (nameAndSave.slotButtons) a Name & Save button (`icon` its glyph;
 //     data-calcu="name-and-save-<place>"), usable while the place's medium
 //     can be named and saved, which opens the shell's dialog
+//   <ShellNameAndSaveButton shell={s} place={word} label={text?} icon={element} />
+//     the Name & Save button of a media place, for the slot pickers and a
+//     product's own media controls: usable while the place's medium can be
+//     named and saved, it opens the shell's dialog; `label` names the place
+//     in the button's accessible name (default: the place's word);
+//     data-calcu="name-and-save-<place>"
 
 function ShellSavedMedia({ shell, onClose }) {
   const media = useTopic(shell, "media");
@@ -30,13 +36,18 @@ function ShellSlotPicker({ shell, entry, label, icon, short }) {
   return (
     <fieldset className="calcu-bar-fieldset" disabled={!ok.now} title={ok.now ? undefined : ok.reason} aria-label={label}>
       <CalcuMediaPicker place={place} send={(c, a) => shell.shell.send(c, a)} short={short} />
-      {button && (
-        <button type="button" className="calcu-iconbutton" disabled={!place || !place.nameAndSave} title="Name & Save"
-          data-calcu={`name-and-save-${word}`} aria-label={`Name & Save ${word.replace("-", " ")}`}
-          onClick={() => shell.nameAndSave(word)}>
-          {icon}
-        </button>
-      )}
+      {button && <ShellNameAndSaveButton shell={shell} place={word} icon={icon} />}
     </fieldset>
+  );
+}
+
+function ShellNameAndSaveButton({ shell, place, label, icon }) {
+  const medium = calcuMediaPlace(shell.inputs.media, place);
+  return (
+    <button type="button" className="calcu-iconbutton" disabled={!medium || !medium.nameAndSave} title="Name & Save"
+      data-calcu={`name-and-save-${place}`} aria-label={`Name & Save ${label || place.replace("-", " ")}`}
+      onClick={() => shell.nameAndSave(place)}>
+      {icon}
+    </button>
   );
 }

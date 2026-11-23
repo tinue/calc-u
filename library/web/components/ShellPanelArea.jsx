@@ -18,7 +18,7 @@ function ShellPanelArea({ shell, panels, children }) {
       {s.panels.map((p) => {
         const Panel = given[p.kind] || (p.kind === "paper" && typeof CalcuPaperPanel !== "undefined" ? CalcuPaperPanel : null);
         if (!Panel) return null;
-        return <Panel key={p.kind} shell={s.shell} owner={p.owner || null} ownerPlace={p.ownerPlace || null} controls={[]}
+        return <Panel key={p.kind} shell={s.shell} owner={p.owner || null} ownerPlace={p.ownerPlace || null}
           places={p.places} onChoose={s.choose} />;
       })}
       {children}

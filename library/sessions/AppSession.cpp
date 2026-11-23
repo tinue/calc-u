@@ -119,6 +119,9 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     CallId currentCall() const override { return current; }
     pacing::WallTime wallTime() const override { return setup.clock ? setup.clock() : pacing::WallTime{0}; }
     bool virtualTime() const override { return setup.hosting == Hosting::VirtualTime; }
+    void machineEdited() override {
+        if (ms.generation() == seenGeneration) readDisplay();   // else syncMachine reads it
+    }
     bool startOperation(Operation op) override {
         if (running) return false;
         start(0, 0, std::move(op));   // call 0: no reply (endOperation)

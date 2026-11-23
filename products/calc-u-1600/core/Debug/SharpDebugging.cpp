@@ -383,8 +383,13 @@ public:
         return readable ? CellRead{CellRead::Value, v} : CellRead{CellRead::Unreadable, 0};
     }
     bool pokeCell(std::size_t, std::size_t space, std::uint64_t address, std::uint8_t value, BankSelect bank) override {
-        if (space != 0) return false;   // ME1 is I/O on the PC-1500
+        if (space == 2) return false;   // the written view is what the CPU wrote
         Banked b(m_machine, bank);
+        // ME1 is I/O: a real store, with its effects, as the CPU's.
+        if (space == 1) {
+            m_machine.cpu().debugStoreME1(static_cast<std::uint16_t>(address), value);
+            return true;
+        }
         return m_machine.memory().poke(static_cast<std::uint16_t>(address), value);
     }
     int bankAt(std::size_t, std::uint16_t) const override { return -1; }
@@ -470,7 +475,17 @@ public:
         return readable ? CellRead{CellRead::Value, v} : CellRead{CellRead::Unreadable, 0};
     }
     bool pokeCell(std::size_t target, std::size_t space, std::uint64_t address, std::uint8_t value, BankSelect bank) override {
-        if (space != 0) return false;   // I/O, ME1 and the written views are not written through the target
+        if (space == 2) return false;   // the written views are what the CPUs wrote
+        // I/O and ME1: a real OUT or store, with its effects, as the CPU's.
+        if (target == kZ80 && space == 1) {
+            m_machine.sc7852().debugOut(static_cast<std::uint8_t>(address), value);
+            return true;
+        }
+        if (target != kZ80 && space == 1) {
+            LhBanked b(m_machine, bank);
+            m_machine.lh5803().debugStoreME1(static_cast<std::uint16_t>(address), value);
+            return true;
+        }
         if (target == kZ80) {
             PageBanked b(m_machine, static_cast<std::uint16_t>(address), bank);
             return m_machine.pokeMemory(static_cast<std::uint16_t>(address), &value, 1);

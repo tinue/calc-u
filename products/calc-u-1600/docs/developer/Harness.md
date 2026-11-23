@@ -52,7 +52,7 @@ link`.
 | `expect`, `not-expect` | text in one line of `display-text`, or `/regex/` |
 | `screenshot <name>` | Copy Screen's picture, into `--output-folder` |
 | debug targets | PC-1500, PC-1500A: `LH5801`; PC-1600: `SC7852`, `LH5803` |
-| `peek`, `poke` spaces | `LH5801`, `LH5803`: `me0`, `me1`, `me1-written`, `bank=` PU × 2 + PV; `SC7852`: `memory`, `io`, `io-written`; `peek … file=<file>` writes the bytes to a file |
+| `peek`, `poke` spaces | `LH5801`, `LH5803`: `me0`, `me1`, `me1-written`, `bank=` PU × 2 + PV; `SC7852`: `memory`, `io`, `io-written`; `peek … file=<file>` writes the bytes to a file. A `poke` on `me1` is the CPU's store to ME1, on `io` the SC7852's `OUT`, with their effects (`poke SC7852 io 0x58 0x3E` switches IC2's display off); `me1-written` and `io-written` keep it and take no poke. A `peek` on `io` reads the bank ports `&28`, `&31`, `&3C` only; on `me1` a register whose read has an effect is `unreadable` |
 | `bank=`, `vbank=` of `SC7852 memory` | `bank=` the page's bank in port 31H. `vbank=` on page B (4000–7FFF) the ROM half of bank 3, port 3DH bit 2: `0` bank 3, `1` the hidden bank 3b, whatever the port selects now (`bank=3 vbank=1`); on page C (8000–BFFF) the vertical bank of the module in slot 2 (port 28H). The kanji ROM of the Japanese models (bank 4 of page C with port 3DH = 02H, as the ROM's SELJROM sets it) is not emulated: bank 4 of page C reads as open bus, FFH, with or without it |
 | `paper` | `paper text\|marks\|png <path>\|copy\|cut [CE-150\|CE-1600P]`, `cut-paper`; `paper text` is refused (`The CE-150 has no text layer.`): the plotters draw marks only |
 | media places | `slot-1`, `slot-2` (modules), `floppy` (CE-1600P, sides 0 and 1), `cassette-recorder` (CE-150 on the PC-1500/1500A, CE-1600P) |

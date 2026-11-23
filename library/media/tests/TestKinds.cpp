@@ -65,6 +65,7 @@ public:
         }
         r.status = ReadOutcome::Status::Read;
         r.info.description = f["description"];
+        r.info.insertNotice = f["insert-notice"];
         r.info.isTemplate = f["template"] == "true";
         r.info.hasWriteProtect = module_;
         r.info.writeProtected = f["write-protect"] == "true";
@@ -83,10 +84,13 @@ public:
         t.name = w.name;
         t.isTemplate = w.asTemplate;
         if (module_) t.writeProtect = w.writeProtected.value_or(false);
-        if (w.source) {   // the description is kept (as Calc-U-1600's codecs do)
+        if (w.source) {   // the description and insert notice are kept (as Calc-U-1600's codecs do)
             bool ok = true;
             auto f = fields(*w.source, &ok);
-            if (ok) t.description = f["description"];
+            if (ok) {
+                t.description = f["description"];
+                t.insertNotice = f["insert-notice"];
+            }
         }
         const std::size_t plus = content.find('+');
         t.content = content.substr(0, plus);
@@ -115,6 +119,7 @@ std::string TestFile::text() const {
     std::string out = "format: " + format + "\nformat-version: " + std::to_string(version) + "\n";
     if (!name.empty()) out += "name: " + name + "\n";
     if (!description.empty()) out += "description: " + description + "\n";
+    if (!insertNotice.empty()) out += "insert-notice: " + insertNotice + "\n";
     if (isTemplate) out += "template: true\n";
     if (writeProtect) out += std::string("write-protect: ") + (*writeProtect ? "true" : "false") + "\n";
     if (!companion.empty()) out += "companion: " + companion + "\n";

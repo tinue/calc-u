@@ -179,3 +179,58 @@ TEST(picker_slot_without_media_listed_by_the_listing) {
     MediaFixture g(plain);
     CHECK(!g.place("a"));
 }
+
+// A template's `insert-notice` is shown when the user puts it in (a choice,
+// an open, a module slot once its plug is done); an instance saved from it
+// keeps the text and shows nothing, nor does a preset.
+namespace {
+const char* const kNotice = "Run the setup program first.";
+TestFile withNotice(TestFile t) {
+    t.insertNotice = kNotice;
+    return t;
+}
+} // namespace
+
+TEST(insert_notice_shown_for_a_template_not_for_its_instance) {
+    FixtureOptions o = onDot();
+    o.prepare = [](auto&, auto& b) { b.write("disks/Setup.testdisk.yaml", withNotice(disk("Setup", "s")).text()); };
+    MediaFixture f(o);
+    f.notices();
+    CHECK(f.ok("media.choose", choose("disk", "bundled:Setup.testdisk.yaml")));
+    CHECK((f.notices() == std::vector<std::string>{kNotice}));
+    CHECK(f.ok("media.name-and-save", Value::object({{"place", "disk"}, {"name", "Mine"}})));
+    CHECK_EQ(field(f.saved("Mine.testdisk.yaml"), "insert-notice"), std::string(kNotice));   // kept
+    CHECK(f.ok("media.eject", Value::object({{"place", "disk"}})));
+    CHECK(f.ok("media.choose", choose("disk", "saved:Mine.testdisk.yaml")));
+    CHECK(f.notices().empty());
+    CHECK(f.ok("media.open-file", Value::object({{"name", "Mine.testdisk.yaml"}, {"path", f.saveRoot / "Mine.testdisk.yaml"},
+                                                 {"place", "disk"}})));
+    CHECK(f.notices().empty());
+}
+
+TEST(insert_notice_shown_for_an_opened_template_not_by_a_preset) {
+    FixtureOptions o = onDot();
+    o.prepare = [](auto& s, auto&) { s.write("Tpl.testdisk.yaml", withNotice(disk("Tpl", "t", true)).text()); };
+    MediaFixture f(o);
+    CHECK(f.done(f.load(header("test-dot") + "keys:\n  - test-disk: { name: Tpl }\n")));
+    CHECK(f.notices().empty());
+    CHECK(f.ok("media.eject", Value::object({{"place", "disk"}})));
+    CHECK(f.ok("media.open-file", Value::object({{"name", "Tpl.testdisk.yaml"}, {"path", f.saveRoot / "Tpl.testdisk.yaml"},
+                                                 {"place", "disk"}})));
+    CHECK((f.notices() == std::vector<std::string>{kNotice}));
+}
+
+TEST(insert_notice_shown_once_the_module_is_plugged) {
+    FixtureOptions o = slotFixture();
+    const auto prepare = o.prepare;
+    o.prepare = [prepare](auto& s, auto& b) {
+        prepare(s, b);
+        s.write("Init.testmodule.yaml", withNotice(moduleFile("Init", "i", true)).text());
+    };
+    MediaFixture f(o);
+    CHECK(f.done(f.load(header() + "slot-1: test-module\n")));
+    f.notices();
+    CHECK(f.ok("media.choose", choose("slot-1", "saved:Init.testmodule.yaml")));
+    CHECK(f.module() && f.module()->bytes() == "i");
+    CHECK((f.notices() == std::vector<std::string>{kNotice}));
+}

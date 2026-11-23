@@ -125,7 +125,9 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         if (!p || !p->passThrough) return Refused{"A medium is armed only for a pass-through place."};
         Resolved r = resolveEntry(*p, sessions::textArg(a, "entry"));
         if (r.refusal) return Refused{*r.refusal};
+        const Binding chosen = r.binding;
         if (auto e = arm(c, word, std::move(r.binding), std::move(r.content))) return Refused{*e};
+        noticeInserted(c, chosen);
         return done();
     });
     s.command(kFeedCommand, [this](const Value& a, SessionContext& c) -> CommandOutcome {
@@ -179,10 +181,12 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         b.unsaved = true;
         if (p->passThrough) {   // fitted, for the user to feed
             if (auto e = arm(c, word, std::move(b), std::move(r.content))) return Refused{*e};
+            noticeInserted(c, r.binding);
             return done();
         }
         if (auto e = insert(c, word, std::move(b), std::move(r.content), p->sides.empty() ? 0 : p->sides[0]))
             return Refused{*e};
+        noticeInserted(c, r.binding);
         return done();
     });
     s.command(kOpenFileCommand, [this](const Value& a, SessionContext& c) { return openFile(a, c); });
@@ -425,6 +429,7 @@ Binding MediaPart::bindingFor(const ShelfEntry& e) const {
     b.kind = e.kind;
     b.name = e.name;
     b.description = e.description;
+    if (e.isTemplate) b.insertNotice = e.info.insertNotice;
     b.origin = e.origin;
     b.isTemplate = e.isTemplate;
     b.path = e.path;
@@ -501,6 +506,7 @@ void MediaPart::bindSlots(SessionContext& c) {
         if (const auto pend = pendingSlot_.find(p.word); pend != pendingSlot_.end() && plugged &&
                                                           plugged->value == pend->second.peripheral) {
             Binding b = pend->second;
+            noticeInserted(c, b);   // only a choice or an open waits here: the plug is done
             b.written = revisionOf(m, p);
             bindings_[p.word] = std::move(b);
             pendingSlot_.erase(pend);
@@ -668,6 +674,10 @@ bool MediaPart::hasPlace(SessionContext& c, const std::string& word) {
 const Binding* MediaPart::bindingOf(const std::string& word) const {
     const auto it = bindings_.find(word);
     return it == bindings_.end() ? nullptr : &it->second;
+}
+
+void MediaPart::noticeInserted(SessionContext& c, const Binding& b) {
+    if (b.isTemplate && !b.insertNotice.empty()) c.notice(b.insertNotice);
 }
 
 std::optional<std::string> MediaPart::insert(SessionContext& c, const std::string& word, Binding b, Content content, int side) {
@@ -1092,6 +1102,7 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
         b.kind = &k;
         b.name = nameOf(info, fileName, k);
         b.description = info.description;
+        if (info.isTemplate) b.insertNotice = info.insertNotice;
         b.origin = Origin::Opened;
         b.isTemplate = info.isTemplate;
         b.path = path;
@@ -1113,11 +1124,14 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
         b.peripheral = req->peripheral.value;
         return changeSlot(c, *p, std::move(req), std::move(b));
     }
+    const Binding opened = b;
     if (p->passThrough) {   // fitted, not fed
         if (auto e = arm(c, word, std::move(b), std::move(info.content))) return Refused{*e};
+        noticeInserted(c, opened);
         return done();
     }
     if (auto e = insert(c, word, std::move(b), std::move(info.content), p->sides.empty() ? 0 : p->sides[0])) return Refused{*e};
+    noticeInserted(c, opened);
     return done();
 }
 
@@ -1233,13 +1247,17 @@ CommandOutcome MediaPart::choose(SessionContext& c, const std::string& word, con
         if (r.binding.kind) b = r.binding;
         return changeSlot(c, *p, std::move(r.module), std::move(b));
     }
+    const Binding chosen = r.binding;
     if (p->passThrough) {   // fitted, not fed
         if (auto e = arm(c, word, std::move(r.binding), std::move(r.content))) c.notice(*e);
+        else noticeInserted(c, chosen);
         return done();
     }
     if (auto e = insert(c, word, std::move(r.binding), std::move(r.content), p->sides.empty() ? 0 : p->sides[0])) {
         eject(c, word);
         c.notice(*e);
+    } else {
+        noticeInserted(c, chosen);
     }
     return done();
 }

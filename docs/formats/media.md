@@ -28,6 +28,15 @@ is stored:
 - **Name & Save** gives a template a name and saves a copy as an
   instance, without the `template` key. A preset's `saveas:` can also
   save a copy as a template ([preset.md §5.2.1](preset.md#521-saveas)).
+- **`insert-notice`** (every kind, optional): one line the user has to
+  know before using the medium (a module that needs its own setup
+  program). When the user puts a template that carries it into its place
+  (a choice in the place's picker, Start new, an opened or dropped file;
+  a module slot once the module is plugged), the product shows it as a
+  notice. An instance shows nothing, though it keeps the line: Name &
+  Save, autosave and a preset's `saveas:` keep it as they keep
+  `description`. A preset or a startup preset that inserts a template
+  shows nothing either.
 - The magnetic card has one template, the **fresh** card (§1). It is
   always there and has no file.
 - A medium is addressed by its name tag or by its file
@@ -42,7 +51,7 @@ is stored:
   time of the write. So does the constant memory file (§4). Readers
   ignore the comment; `saved` is informational.
 - **The header** (`format`, `format-version`, the name tag,
-  `description`, `template`, `saved`) is read alike for every kind and
+  `description`, `insert-notice`, `template`, `saved`) is read alike for every kind and
   for the constant memory file: `format` and `template` exactly as
   written, the name tag required and not empty (the constant memory file
   has none). A file of another `format` or another `format-version`
@@ -92,6 +101,7 @@ sides:
 | `format-version` | yes | `3` |
 | `card-name` | yes | The name tag. Must not contain `"` or a newline |
 | `description` | no | One line about the card |
+| `insert-notice` | no | One line, shown when the template is inserted (Templates and instances) |
 | `template` | no | `true`: a template |
 | `saved` | no | ISO-8601 UTC time of the last write, `YYYY-MM-DDTHH:MM:SSZ`. Informational |
 | `cue-card` | no | The card's labels ([cue-card.md](cue-card.md)) |
@@ -145,7 +155,7 @@ card, from the implicit template.
 - A write into a card file rewrites the file whole, in the key order of
   §1.1, after the comment line `# Calc-U-59 magnetic card`. It replaces
   only the side that was written, keeps `card-name`, `description`,
-  `template` and `cue-card` as they were, and sets `saved` to the time of
+  `insert-notice`, `template` and `cue-card` as they were, and sets `saved` to the time of
   the write. Other comments in the file are not kept.
 - A template card is never written; the product makes an instance first
   or refuses the write.
@@ -201,6 +211,7 @@ Side 1 of the example is unformatted; side 0 has just been through
 | `format-version` | yes | `2` |
 | `disk-name` | yes | The name tag; non-empty. Writers double-quote it, so it must not contain `"` or a newline |
 | `description` | no | One line, the picker's tooltip. Written double-quoted, or single-quoted when it holds a `"`. Name & Save and autosave keep it |
+| `insert-notice` | no | One line, shown when the template is inserted (Templates and instances). Quoted as `description`; Name & Save and autosave keep it |
 | `template` | no | `true`: a template. Written only by a preset's `saveas:` as a template; Name & Save never writes it |
 | `saved` | no | ISO-8601 UTC time of the last write, `YYYY-MM-DDTHH:MM:SSZ`. Informational |
 | `sides` | yes | Exactly the keys `0` and `1` |
@@ -228,8 +239,8 @@ not follow this section. Converting version 1 (Calc-U-1600 0.8.x) is
 
 - Writers emit, in this order: the comment line
   `# Calc-U-1600 CE-1600F floppy disk image`, `format`, `format-version`,
-  `disk-name`, `description` (when set), `template` (when true), `saved`,
-  `sides`. Indent 2 spaces per level; `addressed-hex` in its canonical
+  `disk-name`, `description` (when set), `insert-notice` (when set),
+  `template` (when true), `saved`, `sides`. Indent 2 spaces per level; `addressed-hex` in its canonical
   form ([README.md §1.1](README.md#11-byte-blocks)).
 - `saved` is set on every write; the file is always rewritten whole.
 - Calc-U-1600 keeps an inserted disk in memory and rewrites the whole
@@ -270,6 +281,7 @@ position: 0
 | `format-version` | yes | `1` |
 | `cassette-name` | yes | The name tag. Must not contain `"` or a newline |
 | `description` | no | One line about the cassette |
+| `insert-notice` | no | One line, shown when the template is inserted (Templates and instances) |
 | `template` | no | `true`: a template. Its sound file is never written either |
 | `saved` | no | ISO-8601 UTC time of the last write. Informational |
 | `audio` | yes | The sound file, by `file:` only, relative to the cassette definition |
@@ -283,7 +295,8 @@ position: 0
   by any relative path.
 - Writers emit, in this order: the comment line `# Calc-U-1600 cassette`,
   `format`, `format-version`, `cassette-name`, `description` (when set),
-  `template` (when true), `saved`, `audio`, `position`.
+  `insert-notice` (when set), `template` (when true), `saved`, `audio`,
+  `position`.
 - Several recordings on one tape are part of the sound, not of this
   format. Which recorder connection a cassette is used on belongs to the
   machine, not to the cassette.

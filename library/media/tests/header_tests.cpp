@@ -7,13 +7,14 @@
 using namespace calcu::media;
 
 TEST(header_all_lines_in_order) {
-    const Header h{"Calc-U test card", "test-card", 3, "card-name", "Mine", "Two \"words\"", true,
-                   "2026-11-15T10:00:00Z"};
+    Header h{"Calc-U test card", "test-card", 3, "card-name", "Mine", "Two \"words\"", true, "2026-11-15T10:00:00Z"};
+    h.insertNotice = "Run SETUP first.";
     CHECK_EQ(headerText(h), std::string("# Calc-U test card\n"
                                         "format: test-card\n"
                                         "format-version: 3\n"
                                         "card-name: \"Mine\"\n"
                                         "description: 'Two \"words\"'\n"
+                                        "insert-notice: \"Run SETUP first.\"\n"
                                         "template: true\n"
                                         "saved: 2026-11-15T10:00:00Z\n"));
 }

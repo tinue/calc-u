@@ -146,6 +146,23 @@ TEST(picker_lists_what_fits_the_slot_in_order) {
     }
 }
 
+// The bundled superRAM r4 says, once it is plugged, that it needs its
+// initialisation program; the instance saved from it says nothing.
+TEST(superram_r4_template_shows_its_insert_notice) {
+    SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
+    SessionFixture f("calcu-media-session-test");
+    CHECK(f.start("PC-1600"));
+    f.notices();
+    CHECK(f.choose("slot-2", "superRAM r4").done);
+    const std::vector<std::string> n = f.notices();
+    CHECK(n.size() == 1 && n[0].find("SRAMINIT.BIN") != std::string::npos);
+    CHECK(f.nameAndSave("slot-2", "My superRAM").done);
+    CHECK(f.choose("slot-2", "CE-1601M").done);
+    f.notices();
+    CHECK(f.choose("slot-2", "My superRAM").done);
+    CHECK(f.notices().empty());
+}
+
 TEST(choose_is_replace_power_cycle_memory_kept) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-media-session-test");

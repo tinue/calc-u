@@ -14,10 +14,10 @@
 
 namespace cu59 {
 
-/// The card's name, description and cue card, carried through a pass by the
+/// The card's name, description, insert notice and cue card, carried through a pass by the
 /// core unread, so the card given back keeps them.
 struct TICardLabel final : calcu::machine::ProductData {
-    std::string name, description;
+    std::string name, description, insertNotice;
     std::optional<CueCardContent> cueCard;
     bool isTemplate = false;
 };
@@ -43,6 +43,7 @@ CueCardContent fittedCardCue(const TIMagneticCardData* card, const std::string& 
 /// the default partition of an in-file side that never passed is the one
 /// of its definition, else the TI-59's at power-on (60 program registers).
 std::string writeMagneticCardFile(const TIMagneticCardData& card, const std::string& name, const std::string& description,
-                                  bool isTemplate, const std::optional<CueCardContent>& cueCard, const std::string& savedAt);
+                                  bool isTemplate, const std::optional<CueCardContent>& cueCard, const std::string& savedAt,
+                                  const std::string& insertNotice = {});
 
 } // namespace cu59

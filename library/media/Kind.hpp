@@ -24,6 +24,9 @@ using Content = std::shared_ptr<const machine::ProductData>;
 struct MediumInfo {                 // all the library knows of a file
     std::string name;               // the name tag; empty when the file has none
     std::string description;
+    // `insert-notice`: shown when a template of the file is inserted by
+    // hand (a choice, an open), never for an instance or by a preset.
+    std::string insertNotice;
     bool isTemplate = false;
     int formatVersion = 0;
     bool writeProtected = false;    // the switch is on in the file

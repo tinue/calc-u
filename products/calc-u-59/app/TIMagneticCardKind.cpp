@@ -118,13 +118,14 @@ public:
                                       &header, &error))
             return unreadable(error);
         for (const auto& [k, n] : root.map)
-            if (k != "format" && k != "format-version" && k != "card-name" && k != "description" && k != "template" &&
+            if (k != "format" && k != "format-version" && k != "card-name" && k != "description" && k != "insert-notice" && k != "template" &&
                 k != "saved" && k != "cue-card" && k != "sides")
                 return unreadable("line " + std::to_string(n.line) + ": unknown key " + k + ".");
         auto card = std::make_shared<TIMagneticCardData>();
         auto label = std::make_shared<TICardLabel>();
         label->name = header.name;
         label->description = header.description;
+        label->insertNotice = header.insertNotice;
         label->isTemplate = header.isTemplate;
         if (const YamlNode* c = root.find("cue-card")) {
             std::string why;
@@ -152,6 +153,7 @@ public:
         out.status = ReadOutcome::Status::Read;
         out.info.name = label->name;
         out.info.description = label->description;
+        out.info.insertNotice = label->insertNotice;
         out.info.isTemplate = label->isTemplate;
         out.info.formatVersion = header.formatVersion;
         out.info.hasWriteProtect = false;   // a bank's protection is the calculator's
@@ -166,10 +168,11 @@ public:
             return {};
         }
         TIMagneticCardData out = *card;
-        std::string description;
+        std::string description, insertNotice;
         std::optional<CueCardContent> cue;
         if (const TICardLabel* l = cardLabelOf(*card)) {
             description = l->description;
+            insertNotice = l->insertNotice;
             cue = l->cueCard;
         }
         if (w.source) {   // the file as it is, only the written side replaced
@@ -185,6 +188,7 @@ public:
             }
             if (const TICardLabel* l = from ? cardLabelOf(*from) : nullptr) {
                 description = l->description;
+                insertNotice = l->insertNotice;
                 cue = l->cueCard;
             }
         }
@@ -194,16 +198,18 @@ public:
             problem = "A card name has no \" and no line end.";
             return {};
         }
-        return {calcu::media::FileOut{{}, writeMagneticCardFile(out, name, description, w.asTemplate, cue, w.savedAt)}};
+        return {calcu::media::FileOut{{}, writeMagneticCardFile(out, name, description, w.asTemplate, cue, w.savedAt, insertNotice)}};
     }
 };
 
 } // namespace
 
 std::string writeMagneticCardFile(const TIMagneticCardData& card, const std::string& name, const std::string& description,
-                                  bool isTemplate, const std::optional<CueCardContent>& cueCard, const std::string& savedAt) {
-    std::string out = calcu::media::headerText(
-        {"Calc-U-59 magnetic card", "ti59-magnetic-card", 3, "card-name", name, description, isTemplate, savedAt});
+                                  bool isTemplate, const std::optional<CueCardContent>& cueCard, const std::string& savedAt,
+                                  const std::string& insertNotice) {
+    calcu::media::Header header{"Calc-U-59 magnetic card", "ti59-magnetic-card", 3, "card-name", name, description, isTemplate, savedAt};
+    header.insertNotice = insertNotice;
+    std::string out = calcu::media::headerText(header);
     CueCardContent cue;
     if (cueCard) cue = *cueCard;
     else cue.title = name;   // media.md §1.4: a card saved without a cue card

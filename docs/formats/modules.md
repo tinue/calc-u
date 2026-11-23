@@ -93,6 +93,7 @@ four independent dimensions; none can be inferred from another:
 | `format-version` | yes | `1` |
 | `module-name` | yes | The name tag (`CE-155`, `CE-1600M`), shown in the module picker; what `slot-N: { name: … }` resolves against. Unique within a folder of modules |
 | `description` | no | One line (`"8 KB static RAM"`), the picker's tooltip. A saved instance keeps its template's |
+| `insert-notice` | no | One line, shown when a battery-backed template is plugged in by the user ([media.md, Templates and instances](media.md#templates-and-instances)): the superRAM r4 names the setup program it needs. A saved instance keeps the line and shows nothing |
 | `compatible-hosts` | yes | A non-empty list from `PC-1500`, `PC-1500A`, `PC-1600-Slot-1`, `PC-1600-Slot-2`. The loader's only compatibility check |
 | `definition-terminology` | yes | One of the same four. The vocabulary every `chip-select` / `signal` / `line` name in the file is resolved against. Must be in `compatible-hosts` |
 | `regions` | yes | A list of one or more regions (§1.3) |

@@ -69,6 +69,7 @@ public:
         r.info.formatVersion = static_cast<int>(kCardFormatVersion);
         r.info.name = def.moduleName;
         r.info.description = def.description;
+        r.info.insertNotice = def.insertNotice;
         if (!def.battery) {   // a module that is not a medium: plugged, never saved
             r.status = ReadOutcome::Status::NotMedium;
             r.problem = "It is not a battery-backed module.";
@@ -121,16 +122,16 @@ private:
 
 // ── Floppy disk (`.floppy.yaml`, version 2) ─────────────────────────────
 
-// The description of a disk's file, read from its header only (the part
-// before `sides:`, so the image is not decoded); empty when it has none.
-std::string floppyDescription(const std::string& text) {
+// The header of a disk's file, read alone (the part before `sides:`, so
+// the image is not decoded); empty when it cannot be read.
+calcu::media::Header floppyHeader(const std::string& text) {
     calcu::formats::YamlNode root;
     calcu::media::Header header;
     std::string error;
     if (!calcu::formats::parseYaml(text.substr(0, text.find("\nsides:")), &root, &error) ||
         !calcu::media::readHeader(root, floppyHeaderRules(), &header, &error))
         return {};
-    return header.description;
+    return header;
 }
 
 class FloppyCodec final : public MediumCodec {
@@ -144,6 +145,7 @@ public:
         r.info.formatVersion = static_cast<int>(kFloppyFormatVersion);
         r.info.name = disk.diskName;
         r.info.description = disk.description;
+        r.info.insertNotice = disk.insertNotice;
         r.info.isTemplate = disk.isTemplate;
         r.info.content = std::make_shared<sharp::FloppyContent>(std::move(disk.image));
         return r;
@@ -156,15 +158,15 @@ public:
             return {};
         }
         if (!writableName(w.name, "disk", problem)) return {};
-        const std::string description = w.source ? floppyDescription(*w.source) : std::string();   // kept
-        return {FileOut{"", formatFloppyFile(w.name, disk->image, w.asTemplate, description, w.savedAt)}};
+        const calcu::media::Header kept = w.source ? floppyHeader(*w.source) : calcu::media::Header{};
+        return {FileOut{"", formatFloppyFile(w.name, disk->image, w.asTemplate, kept.description, w.savedAt, kept.insertNotice)}};
     }
 };
 
 // ── Cassette (`.cassette.yaml`, version 1, with its WAV) ─────────────────────
 
 struct CassetteDefinition {
-    std::string name, description, audio;
+    std::string name, description, insertNotice, audio;
     bool isTemplate = false;
 };
 std::optional<CassetteDefinition> cassetteDefinition(const std::string& text, std::string* error) {
@@ -173,11 +175,12 @@ std::optional<CassetteDefinition> cassetteDefinition(const std::string& text, st
     calcu::media::Header header;
     if (!calcu::media::readHeader(root, {"cassette", "cassette definition", 1, "cassette-name"}, &header, error))
         return std::nullopt;
-    if (!root.requireOnlyKeys({"format", "format-version", "cassette-name", "description", "template", "saved", "audio", "position"}, error))
+    if (!root.requireOnlyKeys({"format", "format-version", "cassette-name", "description", "insert-notice", "template", "saved", "audio", "position"}, error))
         return std::nullopt;
     CassetteDefinition t;
     t.name = header.name;
     t.description = header.description;
+    t.insertNotice = header.insertNotice;
     t.isTemplate = header.isTemplate;
     const auto* a = root.find("audio");
     const auto* file = a && a->isMap() ? a->find("file") : nullptr;
@@ -211,6 +214,7 @@ public:
         r.info.formatVersion = 1;
         r.info.name = t->name;
         r.info.description = t->description;
+        r.info.insertNotice = t->insertNotice;
         r.info.isTemplate = t->isTemplate;
         r.info.companions = {t->audio};
         r.info.content = std::make_shared<sharp::TapeContent>(std::move(sound));
@@ -226,16 +230,18 @@ public:
         if (!writableName(w.name, "cassette", problem)) return {};
         // A definition written again keeps its sound file's path; a
         // copy (Name & Save) gets its WAV beside it, named after its file.
-        std::string description, audio = w.fileStem + ".wav";
+        std::string description, insertNotice, audio = w.fileStem + ".wav";
         if (w.source) {
             std::string error;
             if (const auto t = cassetteDefinition(*w.source, &error)) {
                 description = t->description;
+                insertNotice = t->insertNotice;
                 if (t->name == w.name) audio = t->audio;
             }
         }
-        std::string text = media::headerText(
-            {"Calc-U-1600 cassette", "cassette", 1, "cassette-name", w.name, description, w.asTemplate, w.savedAt});
+        media::Header header{"Calc-U-1600 cassette", "cassette", 1, "cassette-name", w.name, description, w.asTemplate, w.savedAt};
+        header.insertNotice = insertNotice;
+        std::string text = media::headerText(header);
         text += "audio: { file: " + media::quotedScalar(audio) + " }\nposition: 0\n";
         return {FileOut{"", text}, FileOut{audio, std::string(tape->wav.begin(), tape->wav.end())}};
     }

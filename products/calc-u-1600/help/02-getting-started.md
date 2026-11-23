@@ -139,7 +139,11 @@ installed on the phone or asking for the mobile site, it shows in portrait
 the paper alone, without the faceplate (its keys would be too small), its
 control bar and the inspector, and in landscape the faceplate with its bar. In the browser as in the desktop
 program, the panels are below the faceplate where the window leaves them
-room; in a wide, low window the calculator is alone. The browser can install it as an
+room; in a wide, low window the calculator is alone. The inspector sits
+beside the paper in a window at least 700 points wide; narrower, the row
+shows one of them: the paper while a plotter is plugged in, else the
+inspector. The control bar is as wide as the faceplate and leaves out its
+labels ("Cassette:", "Disk:", "More") where it would be wider with them. The browser can install it as an
 app, which then runs offline. A new release takes over at the next start,
 or at once with **Reload** in the banner "A new version is ready.".
 

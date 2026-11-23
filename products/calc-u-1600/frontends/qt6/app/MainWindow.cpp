@@ -102,7 +102,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     // instead of letterboxing the calculator body.
     layout->addWidget(m_faceplate, 0);
     layout->addWidget(m_shell->romsMissingView(), 0);
-    layout->addWidget(m_shell->controlBar(), 0);
+    // The bar centred under the faceplate, as wide as the library's rule
+    // lets it be (fitBar).
+    layout->addLayout(m_shell->centredBarRow(), 0);
+    connect(m_faceplate, &FaceplateWidget::artChanged, this, &MainWindow::fitBar);
     calcu::qt6::PanelArea* panels = m_shell->panelArea();
     panels->setParent(central);
     layout->addWidget(panels, 1);
@@ -230,8 +233,8 @@ void MainWindow::followControlState() {
         m_faceplate->setModel(calcu::machine::ModelId{model});
         m_shell->setFaceplate(m_faceplate, cu1600::faceplateHitMap(calcu::machine::ModelId{model}), faceplateGeometry());
     }
-    const bool printer = calcu::shell::read::flag(productEntry(cs, cu1600::kCe158PrinterPanelEntry), "shown");
-    m_ce158Printer->setVisible(printer);
+    applyView();   // the model's faceplate may have other proportions
+    applyPanels();
     m_disk->refresh();
     // Queued after the shell's own rebuild of the menus (it runs first).
     QTimer::singleShot(0, this, [this] { applyCopyLabel(); });
@@ -615,9 +618,37 @@ void MainWindow::applyView() {
     in.fixedHeight = margins.top() + margins.bottom() + bar + 2 * spacing;
     in.panelsMinWidth = s.panelsMinWidth;
     in.panelsMinHeight = s.panelsMinHeight;
+    in.debuggerMinWidth = s.debuggerMinWidth;
+    in.debuggerMinHeight = s.debuggerMinHeight;
     const calcu::shell::View v = calcu::shell::view(in);
     // The panels have a row of their own only below the faceplate.
     m_panels->setVisible(v.side == calcu::shell::ViewSide::Below && v.panelsFit);
+    if (v.debuggerFits != m_debuggerFits) {
+        m_debuggerFits = v.debuggerFits;
+        applyPanels();
+    }
+    fitBar();
+}
+
+void MainWindow::applyPanels() {
+    if (!m_panels || !m_inspector || !m_ce158Printer) return;
+    const calcu::sessions::Value cs = host().value(calcu::control::kControlStateTopic);
+    std::string paperOwner;
+    for (const auto& p : calcu::shell::read::elements(cs, "panels"))
+        if (calcu::shell::read::text(p, "kind") == "paper")
+            if (const calcu::sessions::Value* o = p.find("owner")) paperOwner = calcu::shell::read::text(*o, "peripheral");
+    const bool printer = calcu::shell::read::flag(productEntry(cs, cu1600::kCe158PrinterPanelEntry), "shown");
+    const bool paper = m_debuggerFits || !paperOwner.empty();
+    m_panels->setShown("paper", paper);
+    m_ce158Printer->setVisible(printer);
+    m_inspector->setVisible(m_debuggerFits || !(paper || printer));
+}
+
+void MainWindow::fitBar() {
+    if (!m_shell || !m_faceplate || !centralWidget()) return;
+    const QMargins margins = centralWidget()->layout()->contentsMargins();
+    const double face = m_faceplate->artWidth();
+    if (face > 0) m_shell->fitBar(face, centralWidget()->width() - margins.left() - margins.right());
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event) {

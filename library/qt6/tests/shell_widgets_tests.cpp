@@ -8,6 +8,7 @@
 #include "qt6/PanelArea.hpp"
 #include "qt6/PaperPanel.hpp"
 #include "qt6/RunControlButtons.hpp"
+#include "qt6/ShellControlBar.hpp"
 #include "qt6/ShellSettingsDialog.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "shell/ObjectNames.hpp"
@@ -16,6 +17,7 @@
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QGroupBox>
+#include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
 #include <QPixmap>
@@ -27,6 +29,7 @@
 #include <QStandardItemModel>
 #include <QToolButton>
 #include <QtGlobal>
+#include <cmath>
 #include <cstdio>
 #ifdef CALCU_QT_TEST
 #include <QTest>
@@ -724,4 +727,36 @@ TEST(about_shows_the_window_icon) {
     CHECK(icon != nullptr);
     CHECK(icon && !icon->pixmap().isNull());
     QApplication::setWindowIcon(before);
+}
+
+// The bar below a faceplate by the library's rule (shell::barFit): its
+// labels (a control's BarLabels, More's "More") where the whole bar fits the
+// faceplate with them, then as wide as the faceplate; narrower, without
+// them and as wide as its controls need.
+TEST(bar_fitted_below_a_faceplate) {
+    TestWindow w;
+    auto* extra = new QWidget();
+    auto* row = new QHBoxLayout(extra);
+    row->setContentsMargins(0, 0, 0, 0);
+    auto* label = new QLabel(QStringLiteral("Tape:"), extra);
+    row->addWidget(label);
+    row->addWidget(new QToolButton(extra));
+    qt6::barLabel(label);
+    w.shell->addBarControl(shell::BarGroup::Media, extra);
+    w.settle();
+    auto* bar = w.find<qt6::ShellControlBar>(names::kControlBar);
+    auto* more = w.find<QToolButton>(names::kBarMore);
+    CHECK(bar && more);
+    if (!bar || !more) return;
+    w.shell->fitBar(4000);
+    w.settle();
+    CHECK(bar->showsLabels() && label->isVisibleTo(bar) && more->text().contains(QStringLiteral("More")));
+    CHECK_EQ(bar->maximumWidth(), 4000);
+    w.shell->fitBar(4000, 3000);   // never wider than the room
+    w.settle();
+    CHECK_EQ(bar->maximumWidth(), 3000);
+    w.shell->fitBar(10);
+    w.settle();
+    CHECK(!bar->showsLabels() && !label->isVisibleTo(bar) && !more->text().contains(QStringLiteral("More")));
+    CHECK(std::abs(bar->maximumWidth() - bar->sizeHint().width()) < 4);
 }

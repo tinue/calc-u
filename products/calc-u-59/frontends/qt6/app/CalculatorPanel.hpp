@@ -3,6 +3,9 @@
 
 class EmulatorController;
 class KeyboardWidget;
+namespace calcu::qt6 {
+class Shell;
+}
 
 // The calculator column: the faceplate above, the shell's control bar below,
 // and the shell's "ROMs missing" text in place of
@@ -20,8 +23,8 @@ signals:
     void fontScaleChanged(double scale);
 
 public:
-    /// The shell's widgets, placed below and in place of the faceplate.
-    void setShellWidgets(QWidget* controlBar, QWidget* romsMissing);
+    /// The shell's bar (fitted below the faceplate) and "ROMs missing" (in place of it).
+    void setShellWidgets(calcu::qt6::Shell&);
 
 protected:
     bool eventFilter(QObject*, QEvent*) override;
@@ -36,5 +39,6 @@ private:
 
     KeyboardWidget* m_keyboard;
     QWidget* m_bar = nullptr;
+    calcu::qt6::Shell* m_shell = nullptr;
     double m_fontScale = 0;
 };

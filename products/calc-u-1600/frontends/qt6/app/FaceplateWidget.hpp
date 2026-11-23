@@ -37,6 +37,13 @@ public:
     LcdWidget* lcdWidget() const { return m_lcd; }
     // Logical pixels per pixel of the art as shown now (the hit map's scale).
     double artScale() const;
+    // The art's width as shown (the bar below is fitted to it).
+    double artWidth() const;
+
+signals:
+    void artChanged();   // its size or its model changed
+
+public:
     // Where the art's (0, 0) lies in the widget: the art is letterboxed
     // (centred, aspect kept), so the hit map starts there, not at the corner.
     QPointF artOrigin() const;

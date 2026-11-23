@@ -89,7 +89,9 @@ A shot without `preset:` continues from where the previous one left off.
 The window is set to the shot's size when the shot starts, and again after
 each `preset:` or `reset`, since a model switch changes the minimum size.
 Two limits apply. A window can't be narrower than its layout: the PC-1600's
-control bar needs about 1430, or 1620 with the Tape group showing. It also
+control bar needs about 1300 with the CE-1600P's cassette and disk controls
+(without its labels: the bar leaves them out where it would be wider than
+the faceplate with them). It also
 can't be taller than the screen. If the real size differs from the
 requested one, the capture logs a `note: window is …`. Give the shot a `window:` that fits: the plotter shot
 uses `1430x1280`, so the paper panel shows the whole figure.

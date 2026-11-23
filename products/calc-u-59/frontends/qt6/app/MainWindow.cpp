@@ -43,7 +43,7 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
     m_shell = new calcu::qt6::Shell(*this, host(), product(),
                                     cu59::settingsSpec(cu59::ShellFrontend::Qt6, calcu::shell::about(product()).version));
     m_shell->setChrome(ChromeStyle::chrome());
-    m_calculator->setShellWidgets(m_shell->controlBar(), m_shell->romsMissingView());
+    m_calculator->setShellWidgets(*m_shell);
 
     // The paper panel in the shell's panel area, the splitter's second
     // column.

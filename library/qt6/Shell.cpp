@@ -15,6 +15,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QHBoxLayout>
 #include <QMainWindow>
 #include <QMenuBar>
 #include <QTimer>
@@ -79,6 +80,22 @@ Shell::Shell(QMainWindow& window, SessionHost& host, shell::ShellProduct product
 Shell::~Shell() = default;
 
 QWidget* Shell::controlBar() { return bar_; }
+
+QHBoxLayout* Shell::centredBarRow() {
+    // Expanding up to its maximum (fitBar() sets it), centred between two
+    // stretches that take only what is left: a widget laid out with an
+    // alignment would keep its size hint instead.
+    bar_->setSizePolicy(QSizePolicy::Expanding, bar_->sizePolicy().verticalPolicy());
+    auto* row = new QHBoxLayout;
+    row->setContentsMargins(0, 0, 0, 0);
+    row->setSpacing(0);
+    row->addStretch(1);
+    row->addWidget(bar_, 1000);
+    row->addStretch(1);
+    return row;
+}
+
+void Shell::fitBar(double faceplate, double room) { bar_->fitBelow(faceplate, room); }
 PanelArea* Shell::panelArea() { return panels_; }
 QWidget* Shell::romsMissingView() { return romsMissing_; }
 

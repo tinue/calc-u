@@ -86,6 +86,7 @@ Value toValue(const Chrome& chrome) {
                                  {"debuggerMinHeight", s.debuggerMinHeight},
                                  {"panelsMinWidth", s.panelsMinWidth},
                                  {"panelsMinHeight", s.panelsMinHeight},
+                                 {"faceplateUsableWidth", s.faceplateUsableWidth},
                                  {"textScaleWidth", s.textScaleWidth},
                                  {"textScaleMax", s.textScaleMax},
                                  {"paperRowCompactWidth", s.paperRowCompactWidth},

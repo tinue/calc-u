@@ -60,11 +60,13 @@ function calcuShellPaperRowCompact(sizes, rowWidth) {
 // allows, its proportions kept; the room left over lies "beside" it (the
 // window relatively wider) or "below" it, and picks the view. The panels go
 // there only when that room is at least their minimum on that side (0: no
-// panels there); else the product's fallback. On mobile with the room below,
-// panelsAloneOnMobileBelow gives the panels alone.
+// panels there); else the product's fallback. A window in the faceplate's
+// orientation always shows it; a mobile one turned the other way shows the
+// panels alone where the faceplate would be narrower than
+// faceplateUsableWidth (a phone).
 // inputs: {width, height, faceplateAspect, fixedWidth, fixedHeight,
 // panelsMinWidth, panelsMinHeight, debuggerMinWidth, debuggerMinHeight, mobile,
-// panelsAloneOnMobileBelow}; debuggerFits: the debugger beside the panels.
+// faceplateUsableWidth}; debuggerFits: the debugger beside the panels.
 function calcuShellView(inputs) {
   const i = inputs;
   const boxWidth = Math.max(0, i.width - (i.fixedWidth || 0));
@@ -76,9 +78,11 @@ function calcuShellView(inputs) {
   const room = side === "beside" ? boxWidth - faceplateWidth : boxHeight - faceplateHeight;
   const least = (side === "beside" ? i.panelsMinWidth : i.panelsMinHeight) || 0;
   const panelsFit = least > 0 && room >= least;
-  // Only where the room below takes the panels: a sliver of it (a phone in
-  // landscape whose safe area narrows the window) keeps the calculator.
-  const panelsAlone = !!i.panelsAloneOnMobileBelow && !!i.mobile && side === "below" && panelsFit;
+  // The natural orientation always shows the faceplate; turned, only a
+  // faceplate too narrow to use gives way to the panels.
+  const turned = (aspect >= 1) !== (i.width >= i.height);
+  const panelsAlone = !!i.mobile && turned && side === "below" && panelsFit &&
+    faceplateWidth < (i.faceplateUsableWidth || 0);
   const across = side === "beside" ? room : i.width;
   const debuggerFits = panelsFit && !panelsAlone && (i.debuggerMinWidth || 0) > 0 &&
     across >= (i.panelsMinWidth || 0) + i.debuggerMinWidth && i.height >= (i.debuggerMinHeight || 0);

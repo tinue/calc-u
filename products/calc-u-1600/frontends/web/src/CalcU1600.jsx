@@ -345,15 +345,15 @@ function CalcU1600(props) {
   const menuHeight = mobile ? 0 : MENU_HEIGHT;   // mobile has no menu bar
   // The library's view rule on app/'s chrome: the faceplate as large as
   // the window allows; the panels' row below it where the room below takes
-  // it, else the calculator alone (a phone in landscape); on mobile with the
-  // room below (a phone in portrait) the panels alone.
+  // it, else the calculator alone (a phone in landscape); a phone upright
+  // (mobile, the faceplate too narrow to use) the panels alone.
   const sizes = (chrome && chrome.sizes) || {};
   const view = calcuShellView({
     width: W, height: H, faceplateAspect: FACE_ASPECT[model] || FACE_ASPECT[DEFAULT_MODEL],
     fixedHeight: menuHeight + (sizes.barHeight || BAR_HEIGHT_UNTIL_CHROME),
     panelsMinWidth: sizes.panelsMinWidth || 0, panelsMinHeight: sizes.panelsMinHeight || 0,
     debuggerMinWidth: sizes.debuggerMinWidth || 0, debuggerMinHeight: sizes.debuggerMinHeight || 0,
-    mobile, panelsAloneOnMobileBelow: true,
+    mobile, faceplateUsableWidth: sizes.faceplateUsableWidth || 0,
   });
   const faceWidth = Math.max(200, view.faceplateWidth);
   // The bar below the faceplate by the library's rule: its labels

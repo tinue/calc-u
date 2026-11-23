@@ -8,9 +8,14 @@
 // the view: the panels next to the faceplate, or underneath it. Where that
 // room is less than the panels' minimum, the panels do not go there and the
 // product's fallback applies (Calc-U-59: its pages; Calc-U-1600: the
-// calculator alone, or on mobile with the room below the panels alone).
+// calculator alone).
+// Every calculator has its natural orientation, its faceplate's (the TI-59
+// portrait, the PC-1500/1600 landscape): a window in it always shows the
+// whole faceplate, and the panels only take what is left. Only a mobile
+// window turned the other way may leave the faceplate out, and only where
+// it would be too narrow to use (a phone): then the panels are alone.
 // A desktop window changes its view with its size, a mobile one with its
-// rotation; only the panels-alone case is mobile's alone.
+// rotation.
 
 namespace calcu::shell {
 
@@ -32,11 +37,12 @@ struct ViewInputs {
     // side (below: across the window's width) and the least height of the
     // window; 0: the product has none.
     double debuggerMinWidth = 0, debuggerMinHeight = 0;
-    // On mobile where the room below takes the panels: the panels alone,
-    // without the faceplate and its bar (a phone in portrait, whose keys
-    // would be too small; turned, the calculator has the bar). A sliver of room below (a phone in landscape whose safe
-    // area makes the window a little narrower) keeps the calculator.
-    bool panelsAloneOnMobileBelow = false;
+    // The least faceplate width whose keys a finger can use (the chrome's
+    // faceplateUsableWidth). A mobile window turned against the faceplate's
+    // orientation, with the room below taking the panels, shows the panels
+    // alone where the faceplate would be narrower (a phone; turned, the
+    // calculator has the bar); 0: never.
+    double faceplateUsableWidth = 0;
 };
 
 struct View {

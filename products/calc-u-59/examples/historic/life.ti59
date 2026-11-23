@@ -18,7 +18,9 @@
 # The article notes that a mutation can hit an occupied cell, which then prints
 # as 1 or higher instead of 0.
 #
-# The article gives no start pattern. This preset enters a glider and presses C.
+# The article gives no start pattern. This preset enters a glider heading for
+# an eater in the opposite corner and presses C. The eater has eaten the glider
+# in generation 14; once that field is printed, the preset presses R/S.
 #
 # The article: a full field takes 5 min 57 s to compute and 2 min 20 s to print;
 # an empty field 27 s and 8 s.
@@ -604,7 +606,7 @@ cue-card:
 keys:
   - regular-speed:
   - key: E  # clear, print the headline
-  - key: 1 A  # row 1
+  - key: 1 A  # row 1: the glider
   - key: 2 B  # column 2
   - key: 2 A  # row 2
   - key: 3 B  # column 3
@@ -612,4 +614,19 @@ keys:
   - key: 1 B  # column 1
   - key: 2 B  # column 2
   - key: 3 B  # column 3
+  - key: 7 A  # row 7: the eater
+  - key: 7 B  # column 7
+  - key: 8 B  # column 8
+  - key: 8 A  # row 8
+  - key: 7 B  # column 7
+  - key: 9 B  # column 9
+  - key: 9 A  # row 9
+  - key: 9 B  # column 9
+  - key: 1 0 A  # row 10
+  - key: 9 B  # column 9
+  - key: 1 0 B  # column 10
   - key: C  # run
+  - skip-wait:
+  - wait: 4860s  # generation 14, the eater alone, has been printed
+  - skip-wait:
+  - key: R/S  # stop

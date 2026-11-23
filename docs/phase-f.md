@@ -92,12 +92,6 @@ and `docs/Process.md` until the closing check at its end has passed.
   are module instances, so every test writes them back. Tell spellbound:
   give the fixtures `template: true` (never written) and prepare the card
   in that test.
-- **Specifications not written**: Calc-U-1600's trace file (`CALCU1600_TRACE.bin` and its siblings by model) has
-  no page in `docs/formats/` (Calc-U-59's is `docs/formats/trace.md`).
-- **Media topic and the Sharp media places**: the machine knows when a
-  Sharp tape or serial port is awaited (`awaitsMedium()`), but the places'
-  `waitsForMedium()` stays false, so the media topic never shows them as
-  waiting.
 - **Calc-U-59 checks by hand**: a loaded ASM overlay on a model switch
   (removed or kept); the preset format's speed-dependent `Adv` text
   against the behaviour; the tutorial's iCloud advice; `.keystrokes.yaml`
@@ -109,15 +103,9 @@ and `docs/Process.md` until the closing check at its end has passed.
   calc-u-site skill `site-59` (a line names `StateFileFormat.md`). VS Code
   users of Calc-U-1600 re-create `launch.json`/`tasks.json` for the debug
   type `c1600`.
-- **Harness attach**: `json on` over attach is refused ("unknown command
-  json", the line is parsed before `json` is checked), and `calcu attach
-  --json` then reads plain replies as JSON. The attach CLI test uses a
-  fake app and does not catch it.
 - **Smaller findings**: Swift `xcodebuild` fails from a worktree under
   `.claude/worktrees/` (works from the main checkout); the Playwright drag
-  test is flaky locally; `examples/memory/maxed-out-mem.pc1600` says INIT "F" is needed
-  before "M"/"P", which the research says is not true; the Duo debug
-  header wraps mid-word.
+  test is flaky locally; the Duo debug header wraps mid-word.
 
 ## The coming period: pre-releases and testing
 

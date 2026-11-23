@@ -19,7 +19,7 @@ using namespace calcu::machine;
 
 struct PC1600Machine::Kinds {
     explicit Kinds(PC1600Machine& m)
-        : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), floppy(m),
+        : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck(), [&m] { return m.tapeAwaited(); }), clock(m), floppy(m),
           drive(driveOf(m)), printerPort(m), hostDrive(m), call(m) {}
 
     static sharp::FloppyPlace::Drive driveOf(PC1600Machine& m) {

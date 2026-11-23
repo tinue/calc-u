@@ -26,6 +26,7 @@ Terms follow `docs/GLOSSARY.md`.
 | [harness.md](harness.md) | The harness `calcu`: replies, JSON, options, exit codes, the common commands, serve and attach |
 | [session-protocol.md](session-protocol.md) | The messages between a session and its listeners: kinds, order, the library's topics, commands and requests |
 | [trace.md](trace.md) | Calc-U-59's binary trace file: header, records, the CPU frame of each instruction |
+| [trace-1600.md](trace-1600.md) | Calc-U-1600's binary trace file: header, records, the LH5801/LH5803 and the Z-80 frames of each instruction |
 
 The product commands of the harness and the DAP server are specified next
 to their code: `products/calc-u-59/docs/developer/Harness.md`,

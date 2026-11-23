@@ -308,6 +308,11 @@
 
 ### Fixed
 
+- **Harness:** while CLOAD waits for the tape (no cassette in, or the tape
+  at its end), the media state (`state media`) shows the cassette as
+  waiting (`"waits":true`). Over harness attach, `json on` and `json off`
+  switch the replies to JSON and back, and `calcu attach --json` ends
+  with a reason when the app does not switch.
 - **Desktop: Tab is MODE again.** The buttons and pickers of the control
   bar and the paper panel no longer take the keyboard focus, so Tab
   reaches the calculator instead of moving the focus to them.

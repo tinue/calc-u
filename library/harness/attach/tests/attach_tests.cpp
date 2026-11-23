@@ -7,6 +7,7 @@
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 #include "TestProduct.hpp"
+#include "harness/attach/AttachClient.hpp"
 #include "harness/attach/AttachEndpoint.hpp"
 #include "harness/attach/AttachPort.hpp"
 #include "harness/attach/AttachedHarness.hpp"
@@ -544,4 +545,95 @@ TEST(attach_bare_wait_ends_when_idle) {
         CHECK(t >= 0 && t < 1'000'000);   // the test machine is idle almost at once
         CHECK(r[3] == "hour reached: no");
     }
+}
+
+namespace {
+
+// The next line that is not a message line, plain or JSON.
+std::optional<std::string> replyLine(Client& c) {
+    for (;;) {
+        auto l = c.line();
+        if (!l || (l->rfind("message ", 0) != 0 && l->rfind("{\"message\":", 0) != 0)) return l;
+    }
+}
+
+std::function<std::optional<std::string>()> input(std::vector<std::string> lines) {
+    auto q = std::make_shared<std::deque<std::string>>(lines.begin(), lines.end());
+    return [q]() -> std::optional<std::string> {
+        if (q->empty()) return std::nullopt;
+        std::string l = q->front();
+        q->pop_front();
+        return l;
+    };
+}
+
+} // namespace
+
+// `json on` and `json off` are the attach's own: taken before the line is
+// parsed as a harness command, they switch the replies and message lines.
+TEST(json_on_and_off_switch_the_replies) {
+    TestApp app;
+    CHECK(app.open().ok);
+    app.start();
+    Client c(app.endpoint->port());
+    c.send("json on");
+    CHECK(replyLine(c) == std::optional<std::string>("{\"done\":true,\"result\":null,\"reason\":null}"));
+    c.send("ticks");
+    const auto ticks = replyLine(c);
+    CHECK(ticks && ticks->rfind("{\"done\":true,\"result\":{", 0) == 0);
+    c.send("nonsense");
+    const auto refused = replyLine(c);
+    CHECK(refused && refused->rfind("{\"done\":false,", 0) == 0);
+    // The key changes the display: its message line is JSON too.
+    c.send("key-down 1");
+    c.send("key-up 1");
+    std::this_thread::sleep_for(200ms);
+    c.send("json off");
+    bool jsonMessage = false;
+    std::optional<std::string> l;
+    for (int i = 0; i < 50; ++i) {
+        l = c.line();
+        if (!l || *l == "done") break;
+        jsonMessage = jsonMessage || l->rfind("{\"message\":{\"topic\":\"display\",\"value\":", 0) == 0;
+    }
+    CHECK(l == std::optional<std::string>("done"));   // json off's, in plain
+    CHECK(jsonMessage);
+    c.send("ticks");
+    CHECK(c.reply().at(0) == "done 2");
+    c.send("json maybe");
+    CHECK(replyLine(c) == std::optional<std::string>(std::string("refused: ") + AttachedHarness::kJsonUsage));
+}
+
+// `calcu attach` against the app's side of attach (not a stand-in): with
+// --json every reply is one JSON line, without it the plain reply.
+TEST(calcu_attach_through_the_app) {
+    TestApp app;
+    CHECK(app.open().ok);
+    app.start();
+    const std::string port = std::to_string(app.endpoint->port());
+    std::string out, err;
+    CHECK_EQ(runAttach({"--port", port, "--json"}, input({"ticks", "display-text"}),
+                       [&](const std::string& s) { out += s; }, [&](const std::string& s) { err += s; }),
+             0);
+    CHECK_EQ(err, std::string());
+    std::vector<std::string> got;
+    for (std::size_t at = 0; at < out.size();) {
+        const auto nl = out.find('\n', at);
+        got.push_back(out.substr(at, nl - at));
+        at = nl == std::string::npos ? out.size() : nl + 1;
+    }
+    CHECK_EQ(got.size(), std::size_t{2});
+    for (const auto& g : got) CHECK(g.rfind("{\"done\":true,\"result\":", 0) == 0);
+    // The endpoint takes one harness at a time: the next once this one is gone.
+    for (int i = 0; i < 400; ++i) {
+        bool attached = true;
+        app.onApp([&] { attached = app.harness->attached(); });
+        if (!attached) break;
+        std::this_thread::sleep_for(5ms);
+    }
+    out.clear();
+    CHECK_EQ(runAttach({"--port", port}, input({"ticks"}), [&](const std::string& s) { out += s; },
+                       [&](const std::string& s) { err += s; }),
+             0);
+    CHECK(out.rfind("done 2\nticks: ", 0) == 0);
 }

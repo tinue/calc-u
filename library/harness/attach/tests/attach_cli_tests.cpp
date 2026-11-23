@@ -21,6 +21,7 @@ struct EchoApp final : AttachInbox {
     std::mutex m;
     std::vector<std::string> lines;
     int detached = 0;
+    bool refuseJson = false;   // an app that does not know `json on`
     void post(AttachEvent e) override {
         if (e.kind == AttachEvent::Kind::Detached) {
             std::lock_guard<std::mutex> lock(m);
@@ -31,6 +32,7 @@ struct EchoApp final : AttachInbox {
             std::lock_guard<std::mutex> lock(m);
             lines.push_back(e.line);
         }
+        if (e.line == "json on" && refuseJson) return endpoint.write(e.client, {"refused: unknown command json"});
         if (e.line == "json on") return endpoint.write(e.client, {"{\"done\":true,\"result\":null,\"reason\":null}"});
         endpoint.write(e.client, {"message display x", "done 1", e.line});
     }
@@ -81,6 +83,19 @@ TEST(calcu_attach_relays_lines) {
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     std::lock_guard<std::mutex> lock(app.m);
     CHECK(std::find(app.lines.begin(), app.lines.end(), "json on") != app.lines.end());   // --json sends `json on` first
+}
+
+// An app that answers `json on` in plain: its replies would not be JSON.
+TEST(calcu_attach_json_refused_by_the_app) {
+    EchoApp app;
+    app.refuseJson = true;
+    CHECK(app.endpoint.open().ok);
+    std::string out, err;
+    const int status = runAttach({"--port", std::to_string(app.endpoint.port()), "--json"}, input({"ticks"}),
+                                 [&](const std::string& s) { out += s; }, [&](const std::string& s) { err += s; });
+    CHECK_EQ(status, 2);
+    CHECK_EQ(err, std::string("The app did not switch to JSON: refused: unknown command json\n"));
+    CHECK_EQ(out, std::string());
 }
 
 TEST(options_that_do_not_apply_are_refused) {

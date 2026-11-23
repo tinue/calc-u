@@ -302,7 +302,7 @@ TEST(cassette_comment_and_saved) {
 // and is written when the motor stops (takeWriteNow) -- the deck's part.
 TEST(cassette_place_blank_records_tape_with_sound_plays) {
     TapeDeck deck(1'000'000.0);
-    sharp::CassettePlace place(deck);
+    sharp::CassettePlace place(deck, [] { return false; });
     CHECK(place.writesWhenAsked());
     CHECK(!place.side());
     CHECK(place.insert(std::make_shared<sharp::TapeContent>(wavMono16Bytes({}, 48000)), 0).ok);

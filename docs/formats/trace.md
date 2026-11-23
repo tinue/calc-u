@@ -6,7 +6,8 @@ and by any other tool that wants the CPU's log. A trace started with the
 TRACE button is called `CALCU59_TRACE.bin`, `CALCU58_TRACE.bin` or
 `CALCU58C_TRACE.bin` after the model; a preset's `trace:` step and the
 harness's `trace` name their own file. Each trace starts a fresh file. All
-multi-byte fields are little-endian.
+multi-byte fields are little-endian. Calc-U-1600's trace file is a format
+of its own ([trace-1600.md](trace-1600.md)).
 
 Terms follow `docs/GLOSSARY.md`.
 

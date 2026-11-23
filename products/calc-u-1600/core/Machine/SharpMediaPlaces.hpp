@@ -82,16 +82,18 @@ private:
 // The cassette recorder of a CE-150 or CE-1600P: the media place `cassette-recorder`.
 // Recording onto a blank tape keeps the sound in the place; it is written
 // each time the motor stops and when the tape leaves (writesWhenAsked).
+// It waits for a medium while the machine's tape loader waits for an edge
+// the cassette does not give (the machine's tapeAwaited).
 class CassettePlace final : public calcu::media::MediaPlace {
 public:
-    explicit CassettePlace(TapeDeck& deck) : m_deck(deck) {}
+    CassettePlace(TapeDeck& deck, std::function<bool()> awaited) : m_deck(deck), m_awaited(std::move(awaited)) {}
     calcu::machine::MediaPlaceId id() const override { return calcu::machine::MediaPlaceId{"cassette-recorder"}; }
     Inserted insert(calcu::media::Content, int side) override;
     calcu::media::Content eject() override;
     std::optional<int> side() const override;
     calcu::media::Content content() const override;
     std::uint64_t revision() const override;
-    bool waitsForMedium() const override { return false; }
+    bool waitsForMedium() const override { return m_awaited && m_awaited(); }
     bool takeWriteNow() override { return m_deck.takeStopped(); }
     bool writesWhenAsked() const override { return true; }
 
@@ -108,6 +110,7 @@ public:
 
 private:
     TapeDeck& m_deck;
+    std::function<bool()> m_awaited;
     std::shared_ptr<const TapeContent> m_played;   // the tape in play mode, as it came
 };
 

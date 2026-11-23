@@ -40,6 +40,7 @@ calcu::shell::ChromeColours light() {
         {std::string(colour::kMenuBorder), grey(0, 31)},
         {std::string(colour::kMenuHover), Colour::rgb(0x007bff)},
         {std::string(colour::kMenuHoverText), grey(255)},
+        {std::string(colour::kLink), Colour::rgb(0x0058d0)},
         {std::string(chrome::kLampOff), grey(136)},
         {std::string(chrome::kLampOn), Colour::rgb(0x2ecc40)},
         {std::string(chrome::kKeyPressed), grey(255, 64)},
@@ -83,6 +84,7 @@ calcu::shell::ChromeColours dark() {
     set(colour::kMenu, Colour{44, 44, 46, 250});
     set(colour::kMenuText, grey(232));
     set(colour::kMenuBorder, grey(255, 31));
+    set(colour::kLink, Colour::rgb(0x5aa9ff));
     set(colour::kAlert, Colour::rgb(0xff6b6b));
     set(colour::kBanner, Colour::rgb(0x4a3f10));
     set(colour::kBannerText, Colour::rgb(0xffe9a0));

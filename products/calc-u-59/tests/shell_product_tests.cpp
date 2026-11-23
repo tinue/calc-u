@@ -10,6 +10,7 @@
 #include "control/ControlState.hpp"
 #include "shell/MenuModel.hpp"
 #include "shell/ValueForms.hpp"
+#include <algorithm>
 #include <cstdio>
 #include <filesystem>
 #include <string>
@@ -167,14 +168,28 @@ TEST(roms_missing_topic_without_a_machine) {
     app.session->close();
 }
 
-// The chrome: every colour the GUIs name is there; dark only; the printer's
-// width range and the text scale as the GUIs use them.
+// The chrome: every colour the GUIs name is there; the dark set changes
+// only the Web's menus and dialogs (the window is dark in both); the
+// printer's width range and the text scale as the GUIs use them.
 TEST(ti_chrome_complete) {
     const shell::Chrome& c = cu59::tiChrome();
     const auto problems = shell::checkChrome(c, cu59::tiChromeNames());
     for (const auto& p : problems) std::printf("  %s\n", p.c_str());
     CHECK(problems.empty());
-    CHECK(!c.dark.has_value());
+    CHECK(c.dark.has_value());
+    if (c.dark) {
+        const std::vector<std::string_view> webOnly{shell::colour::kMenu, shell::colour::kMenuText,
+                                                    shell::colour::kMenuBorder, shell::colour::kLink,
+                                                    shell::colour::kAlert};
+        CHECK_EQ(shell::css(c.dark->window), shell::css(c.light.window));
+        CHECK_EQ(shell::css(c.dark->text), shell::css(c.light.text));
+        for (const auto& [name, colour] : c.light.more) {
+            const bool differs = shell::css(c.dark->named(name)) != shell::css(colour);
+            const bool allowed = std::find(webOnly.begin(), webOnly.end(), name) != webOnly.end();
+            if (differs && !allowed) std::printf("  dark changes %s\n", name.c_str());
+            CHECK(!differs || allowed);
+        }
+    }
     CHECK(c.sizes.printerMinWidth < c.sizes.printerMaxWidth);
     CHECK_EQ(c.textScale(880), 2.0);
     CHECK(shell::toValue(c).find("sizes") != nullptr);

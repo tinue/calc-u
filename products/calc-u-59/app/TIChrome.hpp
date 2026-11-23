@@ -6,7 +6,8 @@
 
 // Calc-U-59's look and layout values: one source for the Qt6 stylesheets,
 // the Swift views (through the bridge's TIChrome) and the Web page (the
-// `chrome` of `c59.shell-product`). Dark only, the apps' dark chrome.
+// `chrome` of `c59.shell-product`). The apps' chrome is dark; only the Web's
+// menus and dialogs follow the system's appearance.
 
 namespace cu59 {
 

@@ -604,7 +604,6 @@ cue-card:
   E: clear
 
 keys:
-  - regular-speed:
   - key: E  # clear, print the headline
   - key: 1 A  # row 1: the glider
   - key: 2 B  # column 2

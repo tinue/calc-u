@@ -172,7 +172,19 @@ test('the web settings', async ({ page }) => {
     const v = (s, k) => (rows.find((r) => r.section === s && r.key === k) || {}).value;
     return [v('startup', 'model'), v('preset', 'PC-1500A')];
   }).toEqual(['PC-1600', 'examples:startup/default-pc1500a.pc1500a']);
-  // Kept in Calc-U-1600.ini over a reload.
+  // Kept in Calc-U-1600.ini over a reload, once the file has reached the
+  // browser's storage (IndexedDB "/persist", written a moment later).
+  await expect.poll(() => page.evaluate(() => new Promise((resolve) => {
+    const open = indexedDB.open('/persist');
+    open.onsuccess = () => {
+      const get = open.result.transaction('FILE_DATA').objectStore('FILE_DATA')
+        .get('/persist/settings/Calc-U-1600/Calc-U-1600.ini');
+      get.onsuccess = () => resolve(get.result && get.result.contents
+        ? new TextDecoder().decode(get.result.contents) : '');
+      get.onerror = () => resolve('');
+    };
+    open.onerror = () => resolve('');
+  })), { timeout: 10000 }).toMatch(/PC-1600[\s\S]*default-pc1500a|default-pc1500a[\s\S]*PC-1600/);
   await page.reload();
   await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator('.calcu-face[data-model="PC-1600"]')).toHaveCount(1, { timeout: 30000 });

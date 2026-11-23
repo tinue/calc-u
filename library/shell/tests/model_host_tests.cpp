@@ -39,13 +39,13 @@ TEST(model_host_null_until_set) {
     ModelHost h;
     CHECK(h.take(state("control-state", st::controlValue())));
     CHECK(h.value().isNull());
-    h.set(setup());
+    h.set(setup(), {});
     CHECK(!h.value().isNull());
 }
 
 TEST(model_host_serves_the_menus_bar_panels_and_dialog) {
     ModelHost h;
-    h.set(setup());
+    h.set(setup(), {});
     CHECK(h.take(state("control-state", st::controlValue())));
     const Value v = h.value();
     CHECK_EQ(ids(*v.find("menus")), std::string("file machine help"));   // no Edit item in the product
@@ -64,8 +64,72 @@ TEST(model_host_takes_only_changed_inputs) {
     ModelHost h;
     CHECK(h.take(state("control-state", st::controlValue())));
     CHECK(!h.take(state("control-state", st::controlValue())));   // the same again
-    CHECK(!h.take(state("busy", Value::object({{"operationRuns", true}}))));   // no model reads it
-    CHECK(!h.take(state("display", Value())));
+    CHECK(h.take(state("busy", Value::object({{"operationRuns", true}}))));
+    CHECK(!h.take(state("display", Value())));   // no input of the shell's
+}
+
+namespace {
+
+// A product with one item that follows the topic `trace`.
+ModelSetup followingSetup() {
+    ModelSetup s = setup();
+    ProductItem trace{MenuGroup::MachineEnd, "trace", "Trace", "", {}};
+    trace.command = sessions::CommandName{"trace"};
+    trace.checkedBy = ProductItem::Check{sessions::TopicName{"trace"}, "running", Value(true)};
+    s.product.items.push_back(trace);
+    return s;
+}
+
+// The item `trace`, in the menus or a submenu of theirs: checked.
+bool checkedIn(const Value::Array& items) {
+    for (const auto& i : items)
+        if (read::text(i, "id") == "trace" ? read::flag(i, "checked") : checkedIn(read::elements(i, "children"))) return true;
+    return false;
+}
+
+bool traceChecked(const ModelHost& h) {
+    const Value v = h.value();
+    for (const auto& m : read::elements(v, "menus"))
+        if (checkedIn(read::elements(m, "items"))) return true;
+    return false;
+}
+
+} // namespace
+
+TEST(model_host_follows_the_product_topics_from_set_on) {
+    ModelHost h;
+    CHECK(!h.take(state("trace", Value::object({{"running", true}}))));   // not followed before set()
+    h.set(followingSetup(), {});
+    CHECK(h.take(state("control-state", st::controlValue())));
+    CHECK(!traceChecked(h));
+    CHECK(h.take(state("trace", Value::object({{"running", true}}))));
+    CHECK(traceChecked(h));
+    CHECK(!h.take(state("trace", Value::object({{"running", true}}))));   // the same again
+}
+
+TEST(model_host_set_takes_the_followed_topics_that_came_before) {
+    sessions::TopicMirror states;
+    states.deliver(state("trace", Value::object({{"running", true}})));
+    ModelHost h;
+    h.set(followingSetup(), states);
+    CHECK(h.take(state("control-state", st::controlValue())));
+    CHECK(traceChecked(h));
+}
+
+TEST(take_state_keeps_the_shell_topics_and_the_followed_ones) {
+    ShellInputs in;
+    const InputNames names;
+    auto take = [&](const char* topic, Value v) {
+        return takeState(in, names, std::get<sessions::StateMessage>(state(topic, std::move(v))));
+    };
+    CHECK(take("media", Value::object({{"kinds", Value(Value::Array{})}})));
+    CHECK(!in.media.isNull());
+    CHECK(!take("trace", Value(true)));   // not followed
+    CHECK(in.productTopics.empty());
+    in.productTopics["trace"];
+    CHECK(take("trace", Value(true)));
+    CHECK(!take("trace", Value(true)));
+    CHECK(in.productTopics["trace"] == Value(true));
 }
 
 TEST(model_host_asks_the_preset_list_at_start_and_after_settings) {
@@ -78,7 +142,7 @@ TEST(model_host_asks_the_preset_list_at_start_and_after_settings) {
     r.done = true;
     r.result = sessions::valuePayload("preset-list", st::presetList());
     h.takePresetList(r);
-    h.set(setup());
+    h.set(setup(), {});
     CHECK(h.take(state("control-state", st::controlValue())));
     // The examples of the preset list are File ▸ Examples.
     const Value menus = *h.value().find("menus");

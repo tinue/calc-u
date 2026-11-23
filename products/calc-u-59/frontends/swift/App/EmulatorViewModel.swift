@@ -87,6 +87,8 @@ class EmulatorViewModel {
     private(set) var settingsSections: [TIDialogSection] = []
     /// The paper panel's owner, "" while no printer is attached.
     private(set) var paperOwner: String = ""
+    /// The paper panel's hint while no printer is attached, else "".
+    private(set) var paperHint: String = ""
     /// "Loading…" is shown.
     private(set) var loadingShown: Bool = false
     /// The notice shown now, each in turn; a question has Yes and No.
@@ -119,8 +121,8 @@ class EmulatorViewModel {
         }
     }
     var printerClearID: Int = 0   // incremented on cut to reset Text identity and drop selection
-    /// The outcome of the last Copy: "Copied to clipboard" or "Copy failed".
-    var paperCopyMessage: String? = nil
+    /// The outcome of the last Copy, as the panel shows it.
+    var paperCopyMessage: String = ""
     var paperCopySerial: Int = 0
     /// The PC-100C's controls as the control state lists them (none without one).
     var printerControls: [TIPaperControl] = []
@@ -423,6 +425,7 @@ class EmulatorViewModel {
         }
         settingsSections = shell.settingsDialog
         if paperOwner != shell.paperOwner { paperOwner = shell.paperOwner }
+        if paperHint != shell.paperHint { paperHint = shell.paperHint }
         let led = LEDFontStyle(setting: shell.setting("display", "led-style"))
         if ledStyle != led { ledStyle = led }
         let feedback = KeyboardFeedbackType(setting: shell.setting("keyboard", "feedback"))
@@ -641,8 +644,8 @@ class EmulatorViewModel {
 
     fileprivate func cardWritten() { if let controller = session { savedCards = controller.savedCards } }
 
-    fileprivate func paperCopied(_ outcome: Int) {
-        paperCopyMessage = outcome == 2 ? "Copy failed" : "Copied to clipboard"
+    fileprivate func paperCopied(_ text: String) {
+        paperCopyMessage = text
         paperCopySerial &+= 1
     }
 
@@ -680,7 +683,7 @@ final class SessionDelegate: NSObject, TIAppSessionDelegate {
     func diagnostic(_ message: String) { EmulatorViewModel.diagnostic(message) }
     func changed(_ changes: TIChange) { target?.apply(changes) }
     func cardWritten() { target?.cardWritten() }
-    func paperCopied(_ outcome: Int) { target?.paperCopied(outcome) }
+    func paperCopied(_ text: String) { target?.paperCopied(text) }
 }
 
 // ── Live Debug Snapshot ───────────────────────────────────────────────────────

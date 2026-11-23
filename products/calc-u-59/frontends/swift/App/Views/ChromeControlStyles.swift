@@ -46,14 +46,10 @@ extension Color {
 enum Chrome {
     static let window = Color(TIChrome.window)
     static let text = Color(TIChrome.text)
-    static let textDim = Color(TIChrome.textDim)
     static let header = Color(TIChrome.header)
     static let headerText = Color(TIChrome.headerText)
     static let buttonBar = Color(TIChrome.buttonBar)
     static let pill = Color(TIChrome.pill)
-    static let pillHover = Color(TIChrome.pillHover)
-    static let pillPressed = Color(TIChrome.pillPressed)
-    static let pillOff = Color(TIChrome.pillOff)
     static let pillText = Color(TIChrome.pillText)
     static let output = Color(TIChrome.output)
     static let outputText = Color(TIChrome.outputText)
@@ -65,7 +61,6 @@ enum Chrome {
     static let debugHeader = named("debug-header")
     static let section = named("section")
     static let tabSelected = named("tab-selected")
-    static let divider = named("divider")
     static let orange = named("orange")
     static let red = named("red")
     static let yellow = named("yellow")
@@ -92,16 +87,14 @@ enum Chrome {
 }
 
 extension View {
-    /// A pill button's look (the chrome's shape, colours and font); a pill
-    /// at least `minWidth` wide where given.
-    func chromePill(minWidth: CGFloat? = nil, fill: Color = Chrome.pill) -> some View {
+    /// A pill button's look (the chrome's shape, colours and font).
+    func chromePill() -> some View {
         let shape = Chrome.pillShape
         return font(Chrome.pillFont)
             .foregroundStyle(Chrome.pillText)
-            .frame(minWidth: minWidth)
             .padding(.horizontal, shape.paddingX)
             .frame(minHeight: shape.height)
-            .background(fill)
+            .background(Chrome.pill)
             .clipShape(RoundedRectangle(cornerRadius: shape.radius))
     }
 }

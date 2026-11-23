@@ -140,6 +140,7 @@ std::vector<Panel> panels(const ShellInputs& in, const ShellProduct& product) {
             p.owner = read::text(*o, "peripheral");
             p.ownerPlace = read::text(*o, "place");
         }
+        if (p.kind == "paper" && p.owner.empty()) p.hint = kNoPrinterAttached;
         if (p.kind == "paper")
             for (const auto& place : read::elements(in.controlState, "places"))
                 if (product.placesOnPaper.count(read::text(place, "place")))

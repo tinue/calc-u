@@ -13,15 +13,16 @@
 const NO_CONTROLS = [];
 const PRINTER_PLACE = "printer";   // kTIPrinterPlace (core/TICatalogue.hpp)
 
-// `owner`: the paper panel's owner of the control state ("PC-100C" or "");
-// `places`, `onChoose`: the shell's place controls on the paper and its choose.
-function PaperPane({ shell, owner, places, onChoose }) {
+// `owner`, `hint`: the paper panel's owner of the control state ("PC-100C" or "")
+// and its hint while there is none; `places`, `onChoose`: the shell's place
+// controls on the paper and its choose.
+function PaperPane({ shell, owner, hint, places, onChoose }) {
   const all = useTopic(shell, "control-state", (cs) => (cs && cs.controls) || NO_CONTROLS);
   const controls = all.filter((c) => c.place === PRINTER_PLACE)
     .map(({ id, form, on, label, shortLabel }) => ({ id, form, on, label, shortLabel }));
   return (
     <div className="calcu-printer" data-panel="paper">
-      <CalcuPaperPanel shell={shell} owner={owner || null} controls={controls} places={places} onChoose={onChoose} />
+      <CalcuPaperPanel shell={shell} owner={owner || null} hint={hint} controls={controls} places={places} onChoose={onChoose} />
     </div>
   );
 }

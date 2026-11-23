@@ -108,7 +108,7 @@ messages: the library's topics (`display`, `busy`, `notices`, `log`,
 topics `c59.calc-indicator` (the LED frame of the frame sampler and the C
 indicator), `c59.cue-card` (the cue card
 shown, whether the fitted card is on show, its lit corner). The PC-100C in
-`printer` and the positions of its PRINT, ADV and TRACE are the library's
+`printer` and its PRINT, TRACE and ADV (labels PRINT/PRN, T, ADV; positions) are the library's
 `control-state` (`places`, `controls`). The part sets them after
 each flow from what it left, and the session sends one when its value
 changed (their payloads compare by content). Their value forms are fixed:

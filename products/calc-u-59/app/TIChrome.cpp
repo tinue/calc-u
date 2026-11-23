@@ -61,6 +61,7 @@ calcu::shell::Chrome make() {
         {std::string(colour::kAlert), Colour::rgb(0xb00020)},
         {std::string(colour::kBanner), Colour::rgb(0xfff4c2)},
         {std::string(colour::kBannerText), Colour::rgb(0x5c4a00)},
+        {std::string(colour::kBannerBorder), Colour::rgb(0xe6d27a)},
         {std::string(colour::kPaper), Colour{245, 240, 224, 255}},   // the PC-100C's cream paper
         {std::string(colour::kPaperText), Colour::rgb(0x1d1d1f)},
         {std::string(chrome::kChevron), Colour{60, 60, 60, 179}},

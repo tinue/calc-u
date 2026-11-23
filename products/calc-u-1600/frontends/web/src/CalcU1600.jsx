@@ -378,7 +378,8 @@ function CalcU1600(props) {
   const barRef = React.useRef(null);
   const barFit = useShellBarFit(barRef, faceWidth, W);
   const panelRoom = view.panelsAlone || (view.side === "below" && view.panelsFit);
-  const paperOwner = (s.panels.find((p) => p.kind === "paper") || {}).owner || "";
+  const paperPanel = s.panels.find((p) => p.kind === "paper") || {};
+  const paperOwner = paperPanel.owner || "";
   const printerEntry = cs && cs.product ? cs.product["c1600.ce158-printer-panel"] : null;
   // The paper panel with or without a plotter, the inspector beside it
   // where the view rule's debugger fits. Narrower, the paper gives way to
@@ -430,7 +431,7 @@ function CalcU1600(props) {
         <div className="calcu-panels">
           <ShellPanelArea shell={s} panels={C1600_PANELS}>
             {showInspector && <Inspector shell={shell} />}
-            {showPaper && <PaperDock shell={shell} owner={paperOwner} />}
+            {showPaper && <PaperDock shell={shell} owner={paperOwner} hint={paperPanel.hint} />}
             {showPrinter && <Ce158Printer shell={shell} />}
           </ShellPanelArea>
         </div>

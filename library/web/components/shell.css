@@ -31,6 +31,7 @@
   --calcu-alert: CanvasText;
   --calcu-banner: Mark;
   --calcu-banner-text: MarkText;
+  --calcu-banner-border: GrayText;
   --calcu-paper: Canvas;
   --calcu-paper-text: CanvasText;
 }
@@ -244,6 +245,7 @@
   padding: 5px 12px;
   background: var(--calcu-banner);
   color: var(--calcu-banner-text);
+  border-bottom: 1px solid var(--calcu-banner-border);
   font: 12px system-ui, sans-serif;
 }
 /* A group the bar model pushes (a spread bar: the media group, End). */

@@ -194,7 +194,7 @@ function WideLayout({ page, width, height, rules }) {
     <div className="calcu-wide" style={{ height: total }}>
       <CalculatorColumn page={page} faceWidth={faceWidth} width={columnWidth} />
       <div className="calcu-vline" />
-      <div style={{ width: pw, flex: "none", display: "flex" }}><PaperPane shell={page.shell} owner={page.paperOwner} places={page.paperPlaces} onChoose={page.s.choose} /></div>
+      <div style={{ width: pw, flex: "none", display: "flex" }}><PaperPane shell={page.shell} owner={page.paperOwner} hint={page.paperHint} places={page.paperPlaces} onChoose={page.s.choose} /></div>
       {hasDebugger && <Divider onDrag={(dx) => setPrinterWidth(Math.max(printerMin, Math.min(printerMax, pw + dx)))} />}
       {hasDebugger && <Debugger />}
     </div>
@@ -223,7 +223,7 @@ function PortraitLayout({ page, width, height: whole }) {
         <div className="calcu-page" hidden={view !== "calc"}>
           <CalculatorColumn page={page} faceWidth={faceWidth} />
         </div>
-        {view === "printer" && <div className="calcu-page calcu-page-printer"><PaperPane shell={page.shell} owner={page.paperOwner} places={page.paperPlaces} onChoose={page.s.choose} /></div>}
+        {view === "printer" && <div className="calcu-page calcu-page-printer"><PaperPane shell={page.shell} owner={page.paperOwner} hint={page.paperHint} places={page.paperPlaces} onChoose={page.s.choose} /></div>}
         {view === "calc" ? chevron("right") : chevron("left")}
       </div>
     </div>
@@ -353,7 +353,7 @@ function CalcU59(props) {
 
   const paper = s.panels.find((p) => p.kind === "paper") || {};
   const paperOwner = paper.owner || "";
-  const page = { shell, s, faceplate: maps[model] || null, model, paperOwner, paperPlaces: paper.places || [], cardDialog: setCardDialog,
+  const page = { shell, s, faceplate: maps[model] || null, model, paperOwner, paperHint: paper.hint || "", paperPlaces: paper.places || [], cardDialog: setCardDialog,
     menuHeight: menuBar ? MENU_HEIGHT : 0 };
   const romsMissing = !!s.romsMissing && !s.started;
   const failed = start === "failed";

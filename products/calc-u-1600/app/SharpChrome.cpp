@@ -48,9 +48,9 @@ calcu::shell::ChromeColours light() {
         {std::string(colour::kAlert), Colour::rgb(0xb00020)},
         {std::string(colour::kBanner), Colour::rgb(0xfff4c2)},
         {std::string(colour::kBannerText), Colour::rgb(0x5c4a00)},
+        {std::string(colour::kBannerBorder), Colour::rgb(0xe6d27a)},
         {std::string(colour::kPaper), grey(255)},   // white whatever the appearance: the pens' inks
         {std::string(colour::kPaperText), Colour::rgb(0x1d1d1f)},
-        {std::string(chrome::kBannerBorder), Colour::rgb(0xe6d27a)},
     };
     return k;
 }
@@ -122,7 +122,7 @@ const calcu::shell::Chrome& sharpChrome() {
 std::vector<std::string_view> sharpChromeNames() {
     using namespace chrome;
     std::vector<std::string_view> names{kControl, kControlHover, kControlPressed, kSeparator, kAccent, kAccentText,
-                                        kLampOff, kLampOn, kKeyPressed, kBannerBorder};
+                                        kLampOff, kLampOn, kKeyPressed};
     for (std::string_view n : calcu::shell::shellColourNames()) names.push_back(n);
     return names;
 }

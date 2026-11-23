@@ -75,9 +75,13 @@ skill).
   Nothing is kept in UserDefaults.
 - The paper panel: `PrinterView` draws the library's topic
   `paper PC-100C` (dots and text the bridge keeps) under its owner's name
-  (`TIShell.paperOwner`), an empty paper under none; Copy and Cut are
+  (`TIShell.paperOwner`), under none an empty paper with the panel
+  model's hint (`TIShell.paperHint`); Copy and Cut are
   `paper.copy` / `paper.cut`, the picture the library's, the pasteboard
-  entry the bridge's (`clipboard-image`: one entry, a PNG); PRINT, ADV, TRACE are `set-control`.
+  entry the bridge's (`clipboard-image`: one entry, a PNG), the toast the
+  library's text of the outcome. The row below is `printerControls`: the
+  control state's PRINT, TRACE and ADV with its labels (the short ones where
+  `TIViewRules.paperRowCompact` says), each `set-control`.
   `docs/developer/App-Layer.md` § "Printer".
 - TI-59 background: the calc-u-59-core skill's Domain Primer. SwiftUI
   practice: the swiftui-pro skill.

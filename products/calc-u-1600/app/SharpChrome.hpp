@@ -22,7 +22,6 @@ inline constexpr std::string_view kAccentText = "accent-text";
 inline constexpr std::string_view kLampOff = "lamp-off";                 // a tape or disk lamp
 inline constexpr std::string_view kLampOn = "lamp-on";
 inline constexpr std::string_view kKeyPressed = "key-pressed";           // over a pressed key of the faceplate
-inline constexpr std::string_view kBannerBorder = "banner-border";       // the storage banner's
 } // namespace chrome
 
 const calcu::shell::Chrome& sharpChrome();

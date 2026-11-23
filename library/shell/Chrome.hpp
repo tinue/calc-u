@@ -74,6 +74,7 @@ inline constexpr std::string_view kShadow = "shadow";                // a menu's
 inline constexpr std::string_view kAlert = "alert";                  // a destructive item, a problem
 inline constexpr std::string_view kBanner = "banner";                // the storage banner
 inline constexpr std::string_view kBannerText = "banner-text";
+inline constexpr std::string_view kBannerBorder = "banner-border";   // its edge towards the client
 inline constexpr std::string_view kPaper = "paper";                  // a printer's paper
 inline constexpr std::string_view kPaperText = "paper-text";         // its text view
 } // namespace colour

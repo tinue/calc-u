@@ -137,6 +137,8 @@ extern NSString *const TIShellActionHelp;
 @property (nonatomic, readonly) NSString *modelID;
 /// The paper panel's owner (the paper panel shows its paper), "" while none is attached.
 @property (nonatomic, readonly) NSString *paperOwner;
+/// What the paper panel shows where the paper would start while none is attached, else "".
+@property (nonatomic, readonly) NSString *paperHint;
 /// The place controls on the paper panel (the product's placesOnPaper: the PC-100C), group Places.
 @property (nonatomic, readonly) NSArray<TIBarControl *> *paperPlaces;
 /// A setting's value now (the `settings` topic), "" when it has none.

@@ -31,7 +31,12 @@ mobile site. Desktop has the menu bar, mobile none; the control bar ends
 with More on both (Load Preset… and Settings… in it). The mobile bar
 keeps the model, the slots and the disk controls (`mobileBarMedia` of
 `app/SharpShellProduct`): the peripherals are in More ▸ Peripherals ▸, the
-cassette in More ▸ Cassette ▸ (its entries, then Name & Save…). Where the
+cassette in More ▸ Cassette ▸ (its entries, then Name & Save…). The bar
+is fitted under the faceplate by the library's rule (`useShellBarFit`,
+`calcuShellBarFit`, as on Calc-U-59): the labels "Cassette:" and "Disk:"
+only where the whole bar fits the faceplate's width with them; as wide as
+the faceplate, wider where the controls need more, never wider than the
+window. Where the
 room is below the faceplate on mobile (a phone in portrait), the panels
 alone are shown, without the faceplate.
 

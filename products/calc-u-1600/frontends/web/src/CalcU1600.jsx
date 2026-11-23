@@ -382,6 +382,10 @@ function CalcU1600(props) {
     mobile, panelsAloneOnMobileBelow: true,
   });
   const faceWidth = Math.max(200, view.faceplateWidth);
+  // The bar below the faceplate by the library's rule: its labels
+  // ("Cassette:", "Disk:") and its width, centred under the faceplate.
+  const barRef = React.useRef(null);
+  const barFit = useShellBarFit(barRef, faceWidth, W);
   const panelRoom = view.panelsAlone || (view.side === "below" && view.panelsFit);
   const paperOwner = (s.panels.find((p) => p.kind === "paper") || {}).owner || "";
   const printerEntry = cs && cs.product ? cs.product["c1600.ce158-printer-panel"] : null;
@@ -425,8 +429,9 @@ function CalcU1600(props) {
         {!romsMissing && !failed && <Faceplate shell={shell} model={model} map={maps[model] || null} width={faceWidth} shiftFlash={shiftFlash} />}
       </div>
       <C1600Bar.Provider value={bar}>
-        <div className="calcu-controlbar" style={faceHidden ? { display: "none" } : undefined}>
-          <ShellControlBar shell={s} slotPicker={SlotControls} mediaControls={C1600_MEDIA_CONTROLS}
+        <div className="calcu-controlbar" ref={barRef}
+          style={faceHidden ? { display: "none" } : { width: barFit.width, alignSelf: "center" }}>
+          <ShellControlBar shell={s} compact={!barFit.labels} slotPicker={SlotControls} mediaControls={C1600_MEDIA_CONTROLS}
             extra={{ Media: [<DiskControls key="disk" s={s} />] }} />
         </div>
       </C1600Bar.Provider>

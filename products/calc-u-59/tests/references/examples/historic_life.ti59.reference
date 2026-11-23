@@ -1,4 +1,4 @@
-example: life.ti59
+example: historic/life.ti59
 display: |0|
 partition: 70 program registers
 --- ram

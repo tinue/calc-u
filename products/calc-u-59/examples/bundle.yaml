@@ -19,7 +19,7 @@ groups:
       - preset: { file: sum.ti59 }
       - preset: { file: characters.ti59 }
       - preset: { file: fastmode-sst.ti59 }
-      - preset: { file: life.ti59 }
+      - preset: { file: historic/life.ti59 }
   - group: Printer pictures
     examples:
       - preset: { file: printer-interrupt.ti59 }

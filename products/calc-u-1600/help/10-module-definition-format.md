@@ -226,7 +226,7 @@ A banked region's top-level `addressing` (§2) is a **pure gate** — "is
 this access one my banking applies to at all" — so it carries only
 terms, no `span` / `maps-to`. All slice mapping happens in `bank-window`,
 which carries its own full addressing spec so a second, independent
-sub-range (CE-1601M / *superRAM* `PVOUT`) can be expressed as
+sub-range (the `PVOUT` of the CE-1601M, 256K custom and superRAM r4) can be expressed as
 "selected-bank AND half-select line", one level deeper. Inside
 `bank-window`, `span` / `maps-to` offsets are into the current bank's
 `bank-size` slice.

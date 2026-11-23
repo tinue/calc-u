@@ -85,7 +85,7 @@ TEST(test_port28_write_readback_round_trip) {
     CHECK(bank.slot2VerticalBank() == 0);
     bank.writePort28(5);
     CHECK(bank.slot2VerticalBank() == 5);
-    bank.writePort28(255); // superRAM-range value; no range check at this layer
+    bank.writePort28(255); // the full byte: the card, not this layer, masks it to its latch width
     CHECK(bank.slot2VerticalBank() == 255);
 }
 

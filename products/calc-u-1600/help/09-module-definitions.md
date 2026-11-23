@@ -181,7 +181,7 @@ type, its content type doesn't tell you whether it's banked, and so on.
 
 | # | Dimension | Values | Specified |
 |---|---|---|---|
-| D1 | **Addressing** | chip-select set (with AND/OR combination) · address-line qualifier (specific lines at specific levels, not a bus-window compare) · direct memory-range match — see §4 | Once per region. If the region is banked, a *second* addressing spec of the same shape nests inside it as the bank window's own sub-range (needed for CE-1601M/*superRAM*'s PVOUT — see §6/§9) |
+| D1 | **Addressing** | chip-select set (with AND/OR combination) · address-line qualifier (specific lines at specific levels, not a bus-window compare) · direct memory-range match — see §4 | Once per region. If the region is banked, a *second* addressing spec of the same shape nests inside it as the bank window's own sub-range (needed for the PVOUT of the CE-1601M, 256K custom and superRAM r4 — see §6/§9) |
 | D2 | **Content** | Regular (CPU-read/writable) · ROM (bytes carried inline in the definition file, never CPU-writable) · Flash (optional initial content carried inline in the definition file, CPU-rewritable at runtime via a command-sequence protocol) — see §5 | Once per region if unbanked. If banked, once **per bank-range** (not necessarily once per region) — see §5's split-bank note |
 | D3 | **Banking presence** | Unbanked · Banked | Once per region — see §6 |
 | D4 | **Bank latch mechanism** *(only if D3 = Banked)* | Trigger-based (a strobe — a pin, or an `OUT` to a port — whose assertion is the instant the module samples a bank-data source and latches it internally: CE-163 samples the address bus, CE-1601M the data bus) · Line-based (an always-visible signal group read live, no internal latch — expressible but unexercised) — plus which signal(s)/pin(s) and which bus domain | Once per region — see §6 |
@@ -266,7 +266,7 @@ This same sub-model is reused, unmodified, in two other places:
 - A region's own top-level addressing (when unbanked, or as the "is this
   a bank-selecting access at all" condition when banked).
 - The **bank window**'s addressing, nested one level inside a banked
-  region (§6) — needed because CE-1601M/*superRAM* apply a second,
+  region (§6) — needed because the CE-1601M, 256K custom and superRAM r4 apply a second,
   independent line-level condition (the `PVOUT` half-select) *inside*
   whichever bank is currently selected, which is exactly "chip-select
   (the selected bank) AND a required line level (`PVOUT`)," the same
@@ -437,10 +437,10 @@ outside this spec's scope, and changes nothing here.
       PC-1500, `S5` on PC-1500A), a memory-write pulse; the sampled
       source is the **address** bus (`A0` confirmed; `A0`–`A3` for the
       16-bank recreation).
-    - **CE-1601M / *superRAM*** — the strobe is an **`OUT (28H)`** I/O
+    - **CE-1601M, 256K custom, superRAM r4** — the strobe is an **`OUT (28H)`** I/O
       write (Sharp's "vertical bank register"); the sampled source is the
-      **data** bus — the byte written (`D0`–`D2` for CE-1601M's 8-way
-      decoder, `D0`–`D4` for the *superRAM r4*'s 5-bit register). Port 28H is
+      **data** bus — the byte written (`D0`–`D2` for the 8-way decoder
+      of the CE-1601M and 256K custom, `D0`–`D4` for the superRAM r4's 5-bit register). Port 28H is
       decoded *on the module*, so the module — not the mainboard — holds
       the latched value.
 
@@ -455,13 +455,13 @@ outside this spec's scope, and changes nothing here.
     bank number in one of its own registers and drives it continuously
     onto the lines). Field: which line(s), and the **bank data source
     domain** (the address/select-line domain). No confirmed module needs
-    this today — CE-1601M/*superRAM* look line-based from the host side
+    this today — the CE-1601M and its kin look line-based from the host side
     but latch internally (above), so they are trigger-based — but the
     shape stays expressible for a future module that genuinely wires a
     live host register straight through. This is what "Horizontal"
     denotes in the descriptive terminology (§3).
 
-**Naming trap:** Sharp's own TRM calls the CE-1601M/*superRAM* mechanism
+**Naming trap:** Sharp's own TRM calls the CE-1601M mechanism
 the "vertical bank register" (Port 28H). It is tempting to read "register"
 as "the host holds it, so the module just reads a live line" — i.e.
 Line-based. But Port 28H is decoded *on the module*: the `OUT (28H)` is a
@@ -587,26 +587,27 @@ through them:
 | CE-1600M | RAM1/RAM2 | Regular | Unbanked (native host bank selection, invisible on the connector) | — | PC-1600 Slot 1, PC-1600 Slot 2 |
 | CE-1601M | RAM1 (Slot 2) | Regular, both banks | Banked | Trigger-based: `OUT (28H)` write; source `D0`–`D2` (data domain — the module decodes/latches Port 28H itself); bank window nests a `PVOUT` half-select (D1, one level deeper — see §4) | PC-1600 Slot 2 only (the Port 28H strobe doesn't reach Slot 1) |
 | CE-1620M | Same as CE-1600M | ROM | Unbanked | — | PC-1600 Slot 1, PC-1600 Slot 2 |
-| PC-1600 Slot 2 "maxed out" (*superRAM*-alike) | RAM1 | Regular, all banks | Banked | Trigger-based: `OUT (28H)` write; source `D0`–`D4` (5-bit register latched on the module, the superRAM r4); same PVOUT nesting as CE-1601M | PC-1600 Slot 2 only |
+| 256K custom (PC-1600 Slot 2 "maxed out") | RAM1 | Regular, all 8 banks (256 KB) | Banked | Trigger-based: `OUT (28H)` write; source `D0`–`D2`, as CE-1601M with every bank fitted; same PVOUT nesting | PC-1600 Slot 2 only — expressed as the bundled `256k-custom.module.yaml` |
+| superRAM r4 | RAM1 | Regular, all 32 banks (1 MB) | Banked | Trigger-based: `OUT (28H)` write; source `D0`–`D4` (5-bit register latched on the module); same PVOUT nesting as CE-1601M | PC-1600 Slot 2 only — expressed as the bundled `superRAMr4.module.yaml` |
 
 Three structural points this table confirms rather than just illustrates:
 
-1. **D1's nesting requirement is real, not hypothetical** — CE-1601M and
-   *superRAM* both need a bank-select condition combined with an
+1. **D1's nesting requirement is real, not hypothetical** — the CE-1601M, 256K custom and
+   superRAM r4 all need a bank-select condition combined with an
    independent `PVOUT` half-select inside whichever bank is currently
    active; the bank window (§6) carries its own full D1 spec rather than a
-   bare address range specifically because of these two rows.
+   bare address range specifically because of these rows.
 2. **CE-163F confirms the split-content case is real, not hypothetical
    either** (§5) — its 8 Regular banks followed by 8 Flash banks, one
    D2 value changing partway through an otherwise-uniform bank range, is
    exactly what §5's `{bank range → content kind}` list form exists for.
    No confirmed module mixes ROM with either of the other two kinds within
-   one banked region, or nests Flash inside CE-1601M/*superRAM*-style
+   one banked region, or nests Flash inside CE-1601M-style
    sub-banked territory — those remain unexercised but expressible,
    because D2/D3/D4 being genuinely independent dimensions is what makes
    future hypothetical or modern-recreation modules (an R/W-plus-ROM-bank
    cartridge, say) expressible without a spec change.
-3. **The "maxed out" row is one definition covering both hosts, with one
+3. **The PC-1500/1500A "maxed out" row is one definition covering both hosts, with one
    host running it partially dormant** — compatibility is an author
    choice, not a pin-derived pass/fail (§1), so a single file using pin 5
    can declare both PC-1500 and PC-1500A compatible: it reaches the true

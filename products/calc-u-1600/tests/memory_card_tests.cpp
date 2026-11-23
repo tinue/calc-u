@@ -100,12 +100,12 @@ const char* kCe1601mYaml =
     "            span: 0x4000\n"
     "            maps-to: 0x4000\n";
 
-// superRAM -- the "maxed-out Slot 2" card: mechanically a CE-1601M with a
-// 4-bit vertical-bank register (D0-D3, not D0-D2) and all 16 x 32 KB banks
-// fitted = 512 KB. Same trigger-based OUT (28H) / data-domain latch, same
-// PVOUT half-select nesting.
-const char* kSuperRamYaml =
-    "format-version: 1\nmodule-name: superRAM\n"
+// A CE-1601M-class card with a 4-bit vertical-bank latch (D0-D3, not
+// D0-D2) and all 16 x 32 KB banks fitted = 512 KB: the latch width is the
+// definition's, not the host's. Same trigger-based OUT (28H) / data-domain
+// latch, same PVOUT half-select nesting.
+const char* kFourBitLatchYaml =
+    "format-version: 1\nmodule-name: four-bit-latch\n"
     "compatible-hosts: [PC-1600-Slot-2]\n"
     "definition-terminology: PC-1600-Slot-2\n"
     "regions:\n"
@@ -724,14 +724,14 @@ TEST(test_debug_bank_count) {
     }
 }
 
-// ── superRAM: CE-1601M mechanism with a 4-bit (D0-D3) vertical-bank latch ─
+// ── CE-1601M mechanism with a 4-bit (D0-D3) vertical-bank latch ─────────
 
-TEST(test_superram_16way_vertical_banking_direct) {
+TEST(test_four_bit_vertical_latch_direct) {
     // Slot 2 only -- same gate as the CE-1601M.
-    CHECK(buildCard(kSuperRamYaml, CardHost::PC1600Slot1) == nullptr);
-    CHECK(buildCard(kSuperRamYaml, CardHost::PC1500) == nullptr);
+    CHECK(buildCard(kFourBitLatchYaml, CardHost::PC1600Slot1) == nullptr);
+    CHECK(buildCard(kFourBitLatchYaml, CardHost::PC1500) == nullptr);
 
-    auto sd = buildCard(kSuperRamYaml, CardHost::PC1600Slot2);
+    auto sd = buildCard(kFourBitLatchYaml, CardHost::PC1600Slot2);
     CHECK(sd != nullptr);
     if (!sd) return;
 
@@ -784,10 +784,10 @@ TEST(test_superram_16way_vertical_banking_direct) {
 
 // End to end through PC1600Memory: OUT (28H) forwards the whole byte
 // (including D3) to the Slot 2 card's latch.
-TEST(test_superram_end_to_end_through_pc1600) {
+TEST(test_four_bit_vertical_latch_through_pc1600) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
-    mem.attachSlot2Card(buildCard(kSuperRamYaml, CardHost::PC1600Slot2));
+    mem.attachSlot2Card(buildCard(kFourBitLatchYaml, CardHost::PC1600Slot2));
 
     mem.writeIO(0x31, static_cast<uint8_t>(2 << 4));  // page-C bank 2 -> Slot 2, PVOUT low
     mem.writeIO(0x28, 0);

@@ -33,7 +33,7 @@ import json
 # ── Constants (must match core/PC1500/PC1500TraceFile.cpp) ──
 
 MAGIC   = 0x50433135   # 'PC15'
-VERSION = 3            # v3: registers are pre-execution (layout as v2: 25-byte TRACE_EVENT, TRACE_EVENT_Z80)
+VERSION = 3            # the only version: registers as before the instruction ran
 
 REC_SESSION_START = 0x01
 REC_TRACE_EVENT   = 0x02
@@ -72,7 +72,7 @@ def _parse_file_header(f):
     return version
 
 def _parse_trace_event(payload):
-    """25-byte TRACE_EVENT payload (v2, LH5801-shaped) -> dict. See
+    """25-byte TRACE_EVENT payload (LH5801-shaped) -> dict. See
     core/PC1500/PC1500TraceFile.cpp's frame-writing code for the exact field
     order this mirrors. Used by both the PC-1500/1500A's own CPU and the
     PC-1600's LH5803 co-processor -- 'cpuId' says which."""

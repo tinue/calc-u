@@ -689,6 +689,8 @@ TEST(rom_and_empty_cells_refuse_a_write) {
     calcu::machine::DebugTarget& t = m->debugging()->target(0);
     const std::size_t me0 = spaceOf(t, "me0");
     CHECK(!t.poke(me0, 0xC000, 0x00, {}));    // ROM
+    CHECK(!t.poke(me0, 0x0000, 0x00, {}));    // the module area, no module: open bus
+    CHECK(t.peek(me0, 0x0000, {}).value == 0xFF);
     CHECK(t.poke(me0, 0x7A00, 0x99, {}));     // RAM
     CHECK(t.peek(me0, 0x7A00, {}).value == 0x99);
     auto p = built("PC-1600");
@@ -697,13 +699,15 @@ TEST(rom_and_empty_cells_refuse_a_write) {
     CHECK(!z.poke(spaceOf(z, "memory"), 0x0000, 0x00, {}));   // the system ROM
 }
 
-TEST(me1_never_written_device_cells_unreadable) {
+TEST(me1_device_cells_peek_without_side_effect) {
     auto m = built("PC-1500A");
     SKIP_UNLESS(m != nullptr, "ROMs missing");
     calcu::machine::DebugTarget& t = m->debugging()->target(0);
     const std::size_t me1 = spaceOf(t, "me1");
-    // The LH5811's register block reads as unreadable, without a side effect.
-    CHECK(t.peek(me1, 0xF00B, {}).kind == CellRead::Unreadable || t.peek(me1, 0xF00B, {}).kind == CellRead::Value);
+    // The LH5811's interrupt flags read as a value, and a peek leaves them as they are.
+    const CellRead flags = t.peek(me1, 0xF00B, {});
+    CHECK(flags.kind == CellRead::Value);
+    CHECK(t.peek(me1, 0xF00B, {}).value == flags.value);
     auto p = built("PC-1600");
     SKIP_UNLESS(p != nullptr, "ROMs missing");
     calcu::machine::DebugTarget& lh = p->debugging()->target(1);

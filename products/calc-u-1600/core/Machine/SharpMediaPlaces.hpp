@@ -93,7 +93,7 @@ public:
     std::optional<int> side() const override;
     calcu::media::Content content() const override;
     std::uint64_t revision() const override;
-    bool waitsForMedium() const override { return m_awaited && m_awaited(); }
+    bool waitsForMedium() const override { return m_awaited(); }
     bool takeWriteNow() override { return m_deck.takeStopped(); }
     bool writesWhenAsked() const override { return true; }
 

@@ -125,8 +125,7 @@ if(APPLE)
   set(APP_ICON_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/AppIcon.icns
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/Assets.car)
-  set_source_files_properties(${APP_ICON_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-  target_sources(CalcU1600Qt PRIVATE ${APP_ICON_FILES})
+  calcu_qt6_bundle_files(CalcU1600Qt Resources ${APP_ICON_FILES})
   # Explicit bundle identifier (same ch.erzberger.* namespace as
   # SharpDataExchange's ch.erzberger.SharpDataExchange) -- needed for
   # stable codesigning/notarization identity across CI runs, rather than
@@ -155,16 +154,16 @@ set_target_properties(CalcU1600Qt PROPERTIES OUTPUT_NAME "Calc-U-1600")
 # read a real filesystem directory, so these must be real files on
 # disk) ----
 set(CARD_RESOURCES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources/cards)
-file(GLOB MODULE_FILES ${CARD_RESOURCES_SRC_DIR}/*.module.yaml)
+file(GLOB MODULE_FILES CONFIGURE_DEPENDS ${CARD_RESOURCES_SRC_DIR}/*.module.yaml)
 # Bundled CE-1600F floppy disks (*.floppy.yaml, Connector/FloppyImageFile.hpp)
 # -- listed in the disk picker ahead of the user's saved ones.
-file(GLOB FLOPPY_FILES ${CARD_RESOURCES_SRC_DIR}/*.floppy.yaml)
+file(GLOB FLOPPY_FILES CONFIGURE_DEPENDS ${CARD_RESOURCES_SRC_DIR}/*.floppy.yaml)
 # The bundled cassette template "Blank" (*.cassette.yaml with its sound).
-file(GLOB CASSETTE_FILES ${CARD_RESOURCES_SRC_DIR}/*.cassette.yaml ${CARD_RESOURCES_SRC_DIR}/*.wav)
+file(GLOB CASSETTE_FILES CONFIGURE_DEPENDS ${CARD_RESOURCES_SRC_DIR}/*.cassette.yaml ${CARD_RESOURCES_SRC_DIR}/*.wav)
 set(ROM_RESOURCES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../roms)
 # The ROM full set as roms/fetch_roms.sh fetches it: the dumps and the
 # CE-502B's module definition.
-file(GLOB BUNDLED_ROM_FILES ${ROM_RESOURCES_SRC_DIR}/*.ROM ${ROM_RESOURCES_SRC_DIR}/*.bin
+file(GLOB BUNDLED_ROM_FILES CONFIGURE_DEPENDS ${ROM_RESOURCES_SRC_DIR}/*.ROM ${ROM_RESOURCES_SRC_DIR}/*.bin
      ${ROM_RESOURCES_SRC_DIR}/*.module.yaml)
 # Calc-U-1600's own PC-1600 host-directory drive ROM: tracked in the repo
 # (roms/ holds only the gitignored original dumps).
@@ -172,26 +171,16 @@ list(APPEND BUNDLED_ROM_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/pc1600-hostdrive/PC1600-P1-B7-HOSTDRIVE.bin)
 set(BUNDLED_RESOURCE_FILES ${MODULE_FILES} ${FLOPPY_FILES} ${CASSETTE_FILES} ${BUNDLED_ROM_FILES})
 
+# Inside the .app bundle Contents/Resources (AppPaths::bundledResourcesDir()
+# resolves applicationDirPath()/../Resources); on Windows and Linux a
+# "resources" folder next to the executable, so a plain `cmake --build`
+# gives a runnable, self-contained build folder.
 if(APPLE)
-  # Inside the .app bundle: Contents/Resources -- AppPaths::
-  # bundledResourcesDir() resolves applicationDirPath()/../Resources
-  # (Contents/MacOS/../Resources) to land here.
-  set_source_files_properties(${BUNDLED_RESOURCE_FILES} PROPERTIES
-    MACOSX_PACKAGE_LOCATION "Resources")
-  target_sources(CalcU1600Qt PRIVATE ${BUNDLED_RESOURCE_FILES})
+  set(BUNDLED_RESOURCES Resources)
 else()
-  # Windows/Linux: a "resources" directory copied next to the built
-  # executable at build time, so a plain `cmake --build` produces a
-  # runnable, self-contained build dir.
-  add_custom_command(TARGET CalcU1600Qt POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-            "$<TARGET_FILE_DIR:CalcU1600Qt>/resources"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${BUNDLED_RESOURCE_FILES}
-            "$<TARGET_FILE_DIR:CalcU1600Qt>/resources"
-    COMMENT "Copying bundled .module.yaml/ROM resources next to the executable")
-  install(FILES ${BUNDLED_RESOURCE_FILES} DESTINATION resources)
+  set(BUNDLED_RESOURCES resources)
 endif()
+calcu_qt6_bundle_files(CalcU1600Qt ${BUNDLED_RESOURCES} ${BUNDLED_RESOURCE_FILES})
 
 # ---- Bundled example presets:
 # the bundle file examples/bundle.yaml and exactly the files it lists, each
@@ -208,31 +197,11 @@ foreach(line IN LISTS EXAMPLE_FILE_LINES)
 endforeach()
 list(REMOVE_DUPLICATES EXAMPLE_FILES)
 
-if(APPLE)
-  set_source_files_properties(${EXAMPLES_SRC_DIR}/bundle.yaml PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/examples")
-  target_sources(CalcU1600Qt PRIVATE ${EXAMPLES_SRC_DIR}/bundle.yaml)
-endif()
+calcu_qt6_bundle_files(CalcU1600Qt ${BUNDLED_RESOURCES}/examples ${EXAMPLES_SRC_DIR}/bundle.yaml)
 foreach(example_file IN LISTS EXAMPLE_FILES)
   get_filename_component(example_dir "${example_file}" DIRECTORY)
-  set(source ${EXAMPLES_SRC_DIR}/${example_file})
-  if(APPLE)
-    set_source_files_properties(${source} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/examples/${example_dir}")
-    target_sources(CalcU1600Qt PRIVATE ${source})
-  else()
-    add_custom_command(TARGET CalcU1600Qt POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:CalcU1600Qt>/resources/examples/${example_dir}"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${source}
-              "$<TARGET_FILE_DIR:CalcU1600Qt>/resources/examples/${example_dir}"
-      COMMENT "Copying the bundled example ${example_file}")
-    install(FILES ${source} DESTINATION resources/examples/${example_dir})
-  endif()
+  calcu_qt6_bundle_files(CalcU1600Qt ${BUNDLED_RESOURCES}/examples/${example_dir} ${EXAMPLES_SRC_DIR}/${example_file})
 endforeach()
-if(NOT APPLE)
-  add_custom_command(TARGET CalcU1600Qt POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${EXAMPLES_SRC_DIR}/bundle.yaml
-            "$<TARGET_FILE_DIR:CalcU1600Qt>/resources/examples")
-  install(FILES ${EXAMPLES_SRC_DIR}/bundle.yaml DESTINATION resources/examples)
-endif()
 
 # ---- License / third-party-notice files -- ships GPLv3 (this project)
 # and LGPLv3 (bundled Qt6) license text alongside the binary, so LGPLv3's
@@ -246,20 +215,14 @@ set(LICENSE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/../../licenses/GPL-3.0.txt
 )
 
+# Resources/licenses in the bundle, else licenses next to the executable.
 if(APPLE)
-  set_source_files_properties(${LICENSE_FILES} PROPERTIES
-    MACOSX_PACKAGE_LOCATION "Resources/licenses")
-  target_sources(CalcU1600Qt PRIVATE ${LICENSE_FILES})
+  calcu_qt6_bundle_files(CalcU1600Qt Resources/licenses ${LICENSE_FILES})
 else()
-  add_custom_command(TARGET CalcU1600Qt POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-            "$<TARGET_FILE_DIR:CalcU1600Qt>/licenses"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${LICENSE_FILES}
-            "$<TARGET_FILE_DIR:CalcU1600Qt>/licenses"
-    COMMENT "Copying license/third-party-notice files next to the executable")
-  install(FILES ${LICENSE_FILES} DESTINATION licenses)
+  calcu_qt6_bundle_files(CalcU1600Qt licenses ${LICENSE_FILES})
 endif()
+# The app's bundled folders hold exactly the files above.
+calcu_qt6_bundle_sync(CalcU1600Qt)
 
 # CalcU1600QtTests, the window put together from the shell, its session on
 # the real ROMs (a bundle folder of the tests' own), offscreen; the

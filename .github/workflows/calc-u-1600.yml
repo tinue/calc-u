@@ -522,7 +522,7 @@ jobs:
           Copy-Item $env:QT_BUILD/Calc-U-1600.exe frontends/qt6/dist/
           # AppPaths::bundledCardResourcesDir() expects a "resources" folder
           # (the *.module.yaml files and ROM images) next to the .exe --
-          # CMakeLists.txt's POST_BUILD step places one at $QT_BUILD/resources,
+          # the build (calcu_qt6_bundle_sync) places one at $QT_BUILD/resources,
           # but that doesn't end up in frontends/qt6/dist/ on its own.
           Copy-Item $env:QT_BUILD/resources frontends/qt6/dist/resources -Recurse
           # --compiler-runtime bundles the MSVC redistributable DLLs too,

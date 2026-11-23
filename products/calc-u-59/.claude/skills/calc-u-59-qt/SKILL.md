@@ -162,6 +162,11 @@ The version is read from the Xcode project's `MARKETING_VERSION`.
   Wayland and platform-theme plugins and a GTK-theme `AppRun` wrapper.
 - **Windows** x86_64 / arm64: windeployqt → Inno Setup
   (`frontends/qt6/resources/windows/calc-u-59.iss`, preset associations).
+- The files beside the program (the icon, the bundled examples, the
+  licenses) are listed with the library's `calcu_qt6_bundle_files` and
+  `calcu_qt6_bundle_sync` (`library/qt6/CMakeLists.txt`): each build brings
+  the bundle's `Contents/Resources` (else `resources/` next to the program)
+  to exactly those files, removing any other.
 - `LICENSE`, `NOTICE`, `THIRD-PARTY-NOTICES.md` and `licenses/` (Qt LGPLv3)
   ship in every package: next to the Windows executable, in
   `usr/share/doc/calc-u-59/` inside the AppImage, in

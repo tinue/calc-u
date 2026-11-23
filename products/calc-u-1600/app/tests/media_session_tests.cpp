@@ -125,7 +125,7 @@ TEST(picker_lists_what_fits_the_slot_in_order) {
     // modules that are not media (no battery), each only where it fits.
     CHECK(!p->picker.empty() && p->picker.front().group == G::Empty);
     std::vector<std::string> bundled = labels(f, "slot-2", G::BundledTemplate);
-    CHECK(has(bundled, "CE-1601M") && has(bundled, "superRAM") && has(bundled, "CE-1600M"));
+    CHECK(has(bundled, "CE-1601M") && has(bundled, "superRAM r4") && has(bundled, "256K custom") && has(bundled, "CE-1600M"));
     CHECK(std::is_sorted(bundled.begin(), bundled.end(), [](const std::string& a, const std::string& b) {
         std::string x = a, y = b;
         for (auto& c : x) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
@@ -135,7 +135,7 @@ TEST(picker_lists_what_fits_the_slot_in_order) {
     CHECK(!has(labels(f, "slot-2", G::Module), "CE-151"));   // slot 1 only
     const std::vector<std::string> slot1Modules = labels(f, "slot-1", G::Module);
     CHECK(has(slot1Modules, "CE-151") && has(slot1Modules, "CE-155"));
-    CHECK(!has(labels(f, "slot-1", G::BundledTemplate), "superRAM"));
+    CHECK(!has(labels(f, "slot-1", G::BundledTemplate), "superRAM r4"));
     // Each label once (a module of the catalogue is its bundled template).
     for (const std::string& l : bundled) CHECK(std::count(bundled.begin(), bundled.end(), l) == 1);
     // Groups in order.

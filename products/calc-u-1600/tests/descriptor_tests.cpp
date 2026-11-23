@@ -178,11 +178,11 @@ TEST(peripheral_descriptors) {
     SKIP_UNLESS(std::filesystem::exists(std::string(cardsDir()) + "/ce161.module.yaml"), "module definitions missing");
     const Catalogue c = catalogueWithModules();
     auto p = [&](const char* id) { return c.peripheral(PeripheralId{id}); };
-    for (const char* m : {"CE-151", "CE-155", "CE-161", "CE-1638", "CE-163F", "CE-1600M", "CE-1601M", "superRAM"})
+    for (const char* m : {"CE-151", "CE-155", "CE-161", "CE-1638", "CE-163F", "CE-1600M", "CE-1601M", "256K custom", "superRAM r4"})
         CHECK(p(m) != nullptr);
     const bool ce502b = testRomSet() != nullptr;   // from the ROM set
     if (ce502b) CHECK(p("CE-502B") != nullptr);
-    CHECK_EQ(c.peripherals().size(), std::size_t(ce502b ? 14 : 13));   // 4, the bus ROM + the nine modules
+    CHECK_EQ(c.peripherals().size(), std::size_t(ce502b ? 15 : 14));   // 4, the bus ROM + the ten modules
 
     const PeripheralDescriptor* ce150 = p("CE-150");
     CHECK(ce150 && ce150->roms.at(0).fileName == "CE-150.ROM");
@@ -224,7 +224,7 @@ TEST(module_fit_table) {
     struct Row { const char* module; bool p15, s1, s2; };
     const Row rows[] = {{"CE-151", true, true, false},   {"CE-155", true, true, false},  {"CE-161", true, true, true},
                         {"CE-1638", true, true, true},   {"CE-163F", true, true, true},  {"CE-502B", true, false, false},
-                        {"CE-1600M", false, true, true}, {"CE-1601M", false, false, true}, {"superRAM", false, false, true}};
+                        {"CE-1600M", false, true, true}, {"CE-1601M", false, false, true}, {"256K custom", false, false, true}, {"superRAM r4", false, false, true}};
     auto fits = [&](const char* model, const char* place, const char* module) {
         const auto info = c.place(ModelId{model}, PlaceName{place});
         return info && std::find(info->fitting.begin(), info->fitting.end(), PeripheralId{module}) != info->fitting.end();
@@ -265,7 +265,7 @@ TEST(machines_conform) {
     plugs.push_back({"PC-1600", {request(c, "CE-1600P", "printer", VariantId{"Old"}), request(c, "host-drive", "host-drive"),
                                  moduleRequest("CE-1600M", "slot-1"), moduleRequest("CE-1601M", "slot-2")}});
     plugs.push_back({"PC-1600", {request(c, "CE-150", "printer"), request(c, "CE-158", "interface"),
-                                 moduleRequest("CE-151", "slot-1"), moduleRequest("superRAM", "slot-2")}});
+                                 moduleRequest("CE-151", "slot-1"), moduleRequest("superRAM r4", "slot-2")}});
     plugs.push_back({"PC-1600", {moduleRequest("CE-155", "slot-1"), moduleRequest("CE-161", "slot-2")}});
     for (auto& pl : plugs) {
         const std::size_t n = pl.peripherals.size();

@@ -131,7 +131,7 @@ TEST(test_battery_card_block_keeps_uniform_banks) {
 
 // Minimal single-region, single-bank battery-style module definition, for
 // splice/parse round-tripping without depending on a real bundled file.
-// Real battery cards (CE-1638/CE-1601M/superram) are always *banked* --
+// Real battery cards (CE-1638/CE-1601M/superRAM r4) are always *banked* --
 // initial-content:'s `bank:` field is only valid on a banked region -- so
 // this uses a trivial trigger-based banking with bank-count: 1 to match
 // that shape rather than an unbanked region.

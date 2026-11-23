@@ -245,12 +245,12 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   data bus on `OUT (28H)` and selects which 32 KB chip sits behind the
   8000-BFFF window, with PVOUT (Port 31H b4) as the nested 16 KB
   half-select. `frontends/qt6/resources/cards/ce1601m.module.yaml` ships two vertical
-  banks populated behind a 3-bit (D0-D2) latch; `superram.module.yaml` is the
-  same card with a 4-bit (D0-D3) latch and all 16 x 32 KB banks fitted =
-  512 KB. `PC1600Memory::writeIO()` (routes 28-2FH to the card as an
+  banks populated behind a 3-bit (D0-D2) latch; `256k-custom.module.yaml`
+  fits all 8 banks of that latch (256 KB), `superRAMr4.module.yaml` is the
+  same card with a 5-bit (D0-D4) latch and 32 x 32 KB banks = 1 MB. `PC1600Memory::writeIO()` (routes 28-2FH to the card as an
   `ioWrite`), `tests/pc1600_slot_module_tests.cpp`
   (`test_trigger_latch_modules_in_slot2…`),
-  `tests/memory_card_tests.cpp` (`test_superram_16way_vertical_banking_direct`).
+  `tests/memory_card_tests.cpp` (`test_superram_16way_vertical_banking_direct`, `test_superram_r4_card_yaml_if_present`).
   What is *not* modelled: `PC1600Bank`'s own Port 28H latch is a bare
   readback register (`slot2VerticalBank()`), consulted only by the debug
   panel and the bank tests — the live decode is entirely card-side.

@@ -3,7 +3,7 @@
 Every memory module of Calc-U-1600 is described by a **module definition**,
 a `.module.yaml` file: which connector pins enable it, what memory sits behind
 them, and optionally what it starts with. The bundled modules (CE-151,
-CE-155, CE-161, CE-1638, CE-163F, CE-1600M, CE-1601M, superRAM, and the
+CE-155, CE-161, CE-1638, CE-163F, CE-1600M, CE-1601M, 256K custom, superRAM r4, and the
 CE-502B of the ROM set) are module definitions, and you can write your own.
 This page first shows how, then explains what a definition must express and
 why. Every key of the file is in
@@ -440,7 +440,7 @@ outside this spec's scope, and changes nothing here.
     - **CE-1601M / *superRAM*** — the strobe is an **`OUT (28H)`** I/O
       write (Sharp's "vertical bank register"); the sampled source is the
       **data** bus — the byte written (`D0`–`D2` for CE-1601M's 8-way
-      decoder, `D0`–`D3` for *superRAM*'s 4-bit register). Port 28H is
+      decoder, `D0`–`D4` for the *superRAM r4*'s 5-bit register). Port 28H is
       decoded *on the module*, so the module — not the mainboard — holds
       the latched value.
 
@@ -587,7 +587,7 @@ through them:
 | CE-1600M | RAM1/RAM2 | Regular | Unbanked (native host bank selection, invisible on the connector) | — | PC-1600 Slot 1, PC-1600 Slot 2 |
 | CE-1601M | RAM1 (Slot 2) | Regular, both banks | Banked | Trigger-based: `OUT (28H)` write; source `D0`–`D2` (data domain — the module decodes/latches Port 28H itself); bank window nests a `PVOUT` half-select (D1, one level deeper — see §4) | PC-1600 Slot 2 only (the Port 28H strobe doesn't reach Slot 1) |
 | CE-1620M | Same as CE-1600M | ROM | Unbanked | — | PC-1600 Slot 1, PC-1600 Slot 2 |
-| PC-1600 Slot 2 "maxed out" (*superRAM*-alike) | RAM1 | Regular, all banks | Banked | Trigger-based: `OUT (28H)` write; source `D0`–`D3` (4-bit register latched on the module); same PVOUT nesting as CE-1601M | PC-1600 Slot 2 only |
+| PC-1600 Slot 2 "maxed out" (*superRAM*-alike) | RAM1 | Regular, all banks | Banked | Trigger-based: `OUT (28H)` write; source `D0`–`D4` (5-bit register latched on the module, the superRAM r4); same PVOUT nesting as CE-1601M | PC-1600 Slot 2 only |
 
 Three structural points this table confirms rather than just illustrates:
 

@@ -8,7 +8,7 @@ CASES = {
     "CE-163F in 2":       ({"slot_2": "CE-163F"}, ACCEPTED),
     "CE-1600M in 1":      ({"slot_1": "CE-1600M"}, REFUSED),
     "CE-1600M in 2":      ({"slot_2": "CE-1600M"}, REFUSED),
-    "superRAM in 2":      ({"slot_2": "superRAM"}, REFUSED),
+    "superRAM in 2":      ({"slot_2": "superRAM r4"}, REFUSED),
     "CE-155 and CE-1638": ({"slot_1": "CE-155", "slot_2": "CE-1638"}, REFUSED),
     "a module file in 2": ({"slot_2": "$c1600/examples/dwx/CE-1601M - Progs.module.yaml"}, REFUSED),
 }

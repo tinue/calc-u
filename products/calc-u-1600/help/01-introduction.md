@@ -32,7 +32,7 @@ flowchart LR
     P15 --> S["Memory slot<br/>(CE-151, CE-155, CE-161, CE-1638, …)"]
     P15 --> C150["CE-150 plotter"]
     P15 --> C158["CE-158 interface<br/>(serial and printer port)"]
-    P16 --> S1["Slot 1 / Slot 2<br/>(CE-1600M, CE-1601M, superRAM, …)"]
+    P16 --> S1["Slot 1 / Slot 2<br/>(CE-1600M, CE-1601M, superRAM r4, …)"]
     P16 --> C16P["CE-1600P plotter"] --> C16F["CE-1600F floppy drive"]
     P16 --> C150
     P16 --> C158

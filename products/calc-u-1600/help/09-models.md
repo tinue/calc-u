@@ -30,7 +30,7 @@ Each of them ends when the machine is ready for keys again.
 **Memory modules.** A Reset and a power cycle keep what is in a module. A
 Cold boot also empties a RAM module that has no battery of its own (CE-151,
 CE-155), as the real device would; a battery-backed module (CE-161,
-CE-1638, CE-163F, CE-1600M, CE-1601M, superRAM, and your own with
+CE-1638, CE-163F, CE-1600M, CE-1601M, 256K custom, superRAM r4, and your own with
 `battery: true`) keeps its content.
 
 **The clock.** After a Reset or a Cold boot the calculator's clock is set

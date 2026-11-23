@@ -38,7 +38,8 @@ leaves the other slot and the disk alone.
 | CE-502B | PC-1500/1500A | "Statistics" program module (ROM) | – |
 | CE-1600M | PC-1600 Slot 1 or 2 | 32 KB RAM | yes |
 | CE-1601M | PC-1600 Slot 2 | 64 KB banked RAM | yes |
-| superRAM | PC-1600 Slot 2 | 512 KB banked RAM (fictional, a fully loaded Slot 2) | yes |
+| 256K custom | PC-1600 Slot 2 | 256 KB banked RAM of no particular make, initialised: 32 KB expansion memory and the RAM disk S2: (220,160 bytes free) | yes |
+| superRAM r4 | PC-1600 Slot 2 | 1 MB banked RAM by spellbound, blank: it is initialised with SRAMINIT.BIN, which comes with the module, not with Calc-U-1600 | yes |
 
 A module without a battery (the CE-151, the CE-155) loses its contents at
 a Cold boot; a battery-backed one keeps them

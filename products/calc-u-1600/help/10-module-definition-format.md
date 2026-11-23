@@ -323,7 +323,8 @@ bytes: |
 | `ce155.module.yaml` | CE-155, 8 KB | one `address-bits` group (the on-module `AD11–AD13` decoder) OR'd with three bare-strobe `span` groups; an author-declared host list covering PC-1500 and PC-1600 Slot 1. |
 | `ce1600m.module.yaml` | CE-1600M, 32 KB | `PVOUT` folded into addressing as a half-select line — unbanked despite two physical halves; one Slot-1-terminology file declared for both PC-1600 slots (`RAM2` resolves to the pin-4 enable on both). |
 | `ce1601m.module.yaml` | CE-1601M, 64 KB | Trigger-based vertical banking — `trigger: { io-port: 0x28 }`, `source-domain: data` (the byte written by `OUT (28H)`); `bank-window` nesting the `PVOUT` half-select. |
-| `superram.module.yaml` | superRAM, 512 KB | The CE-1601M mechanism with a 4-bit (`D0`–`D3`) `OUT (28H)` latch and all 16 × 32 KB vertical banks fitted; PC-1600 Slot 2 only. |
+| `256k-custom.module.yaml` | 256K custom, 256 KB | The CE-1601M mechanism with all 8 × 32 KB vertical banks of its 3-bit (`D0`–`D2`) latch fitted; initialised (`addressed-hex` blocks as `INIT"S2:","F"` then `"M"` leave it); PC-1600 Slot 2 only. |
+| `superRAMr4.module.yaml` | superRAM r4, 1 MB | The CE-1601M mechanism with a 5-bit (`D0`–`D4`) `OUT (28H)` latch and 32 × 32 KB vertical banks; blank; PC-1600 Slot 2 only. |
 | `ce1638.module.yaml` | CE-1638, 128 KB | A single-kind banked region — trigger-based, address-domain, 8 banks sampling `A0`-`A2`. |
 | `CE-502B.module.yaml` (comes with the ROMs) | CE-502B, 16 KB ROM | `content: rom` with one `addressed-hex` block covering the whole region: a Sharp program module (ROM header at &0000, BASIC program from &00C5) on Y0. |
 | `ce163f.module.yaml` | CE-163F, 256 KB | `content: by-bank:` (§4) splitting one 16-bank region into Regular (0-7) and Flash (8-15) content, and a `flash` `protocol:` block including `command-address-mask` for its real low-11-bit command decode quirk. |

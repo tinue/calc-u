@@ -17,7 +17,7 @@
 // section survives untouched.
 //
 // Known v1 limit: assumes exactly one region per card (true of every
-// battery card today -- CE-163F, CE-1600M, CE-1601M, CE-1638, superram). A
+// battery card today -- CE-163F, CE-1600M, CE-1601M, CE-1638, 256K custom, superRAM r4). A
 // future multi-region battery card would need spliceBatteryCardInstance()
 // to target a specific region by name.
 

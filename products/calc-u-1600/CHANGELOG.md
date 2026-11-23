@@ -17,6 +17,11 @@
 - **Pause and Resume in both versions.** The run control can pause the
   machine in the desktop and the Web version, Machine ▸ Resume continues
   it, and the title "Paused (debugger)" shows whoever paused it.
+- **Two large Slot 2 modules for the PC-1600:** the 256K custom (256 KB,
+  initialised: 32 KB expansion memory and the RAM disk S2:) and the
+  superRAM r4 by spellbound (1 MB, blank; it is initialised with
+  SRAMINIT.BIN, which comes with the module, not with Calc-U-1600). They
+  replace the superRAM (512 KB).
 - **A new plotter example:** Examples ▸ Plotter ▸ "Rectangles 4 pens"
   (`plotter/rectangles-1600.pc1600`) draws four nested rectangles on the
   CE-1600P, one in each colour. The help's paper and overview pictures

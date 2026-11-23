@@ -264,7 +264,7 @@
 @media (pointer: coarse) {
   .calcu-client .calcu-shell-menubar { height: 40px; }
   .calcu-client .calcu-shell-menu-title { padding: 0 14px; height: 40px; }
-  .calcu-client .calcu-shell-item { padding-top: 8px; padding-bottom: 8px; }
+  .calcu-client .calcu-shell-row { padding-top: 8px; padding-bottom: 8px; }
 }
 /* The shell's bar fills the page's 40 px row, on one line. */
 .calcu-client .calcu-controlbar > .calcu-shell-bar { flex: 1; flex-wrap: nowrap; padding: 0; gap: 10px; overflow: hidden; }

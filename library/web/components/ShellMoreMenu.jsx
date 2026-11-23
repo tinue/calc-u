@@ -1,7 +1,8 @@
 // ShellMoreMenu -- the More button at the end of every bar: the button
 // (its icon; its label, a bar label: unseen on a compact bar, and measured
 // with the others) opens a popup of the menus' items (ShellMenuItems)
-// anchored to it, kept inside the client's width; an item
+// anchored to it, kept inside the client's width, its submenus opening
+// inline (ShellMenuItems `inline`); an item
 // with `confirm` asks first in a ShellModal with the item's label and
 // Cancel. The items are the bar model's `choices`, computed again at
 // every change of an input. Names: bar-more, more-menu,
@@ -32,7 +33,12 @@ function ShellMoreMenu({ shell, items, label, icon }) {
     const c = client.getBoundingClientRect();
     const b = ref.current.getBoundingClientRect();
     const p = popup.getBoundingClientRect();
-    const width = Math.min(p.width, c.width - 8);
+    // As wide as its widest entry with every submenu open, measured once:
+    // opening a submenu then neither wraps its entries nor moves the popup's
+    // left edge.
+    const sizer = ref.current.querySelector(".calcu-shell-more-sizer");
+    const natural = sizer ? Math.ceil(sizer.getBoundingClientRect().width) : 0;
+    const width = Math.min(Math.max(p.width, natural), c.width - 8);
     const left = Math.max(c.left + 4, Math.min(b.right, c.right - 4) - width);
     // Below the button, or above it when the window has no room below (the
     // bar sits at the bottom of the calculator); as high as that room, the
@@ -41,13 +47,13 @@ function ShellMoreMenu({ shell, items, label, icon }) {
     const below = p.height <= roomBelow || roomBelow >= roomAbove;
     const maxHeight = Math.max(0, below ? roomBelow : roomAbove);
     const top = below ? b.bottom : Math.max(4, b.top - Math.min(p.height, maxHeight));
-    setPlace({ left, top, maxWidth: c.width - 8, maxHeight });
+    setPlace({ left, top, width, maxHeight });
   }, [open]);
   const choose = (item) => {
     if (item.confirm) { setAsking(item); return; }
     s.choose(item);
   };
-  const style = place ? { left: place.left, top: place.top, maxWidth: place.maxWidth, maxHeight: place.maxHeight }
+  const style = place ? { left: place.left, top: place.top, width: place.width, maxHeight: place.maxHeight }
     : { visibility: "hidden" };
   return (
     <span className="calcu-shell-more" ref={ref}>
@@ -58,7 +64,12 @@ function ShellMoreMenu({ shell, items, label, icon }) {
       </button>
       {open && (
         <div className="calcu-shell-more-popup" data-calcu="more-menu" style={style}>
-          <ShellMenuItems s={s} items={items} prefix="more-item-" onChoose={choose} onDone={() => setOpen(false)} />
+          <ShellMenuItems s={s} items={items} prefix="more-item-" onChoose={choose} onDone={() => setOpen(false)} inline />
+        </div>
+      )}
+      {open && !place && (
+        <div className="calcu-shell-more-popup calcu-shell-more-sizer" aria-hidden="true">
+          <ShellMenuItems s={s} items={items} inline sizer />
         </div>
       )}
       {asking && (

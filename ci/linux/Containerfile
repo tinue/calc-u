@@ -41,11 +41,10 @@ ARG NODE_VERSION=24.11.1
 RUN arch=$(dpkg --print-architecture | sed 's/amd64/x64/') \
     && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${arch}.tar.xz" \
        | tar -xJ -C /usr/local --strip-components=1
-# The two products pin different Emscripten releases: 6.0.12 (Calc-U-59),
-# 6.0.13 (Calc-U-1600). One emsdk each; jobs.sh sources the product's.
-RUN for v in 6.0.12 6.0.13; do \
-      git clone --depth 1 https://github.com/emscripten-core/emsdk.git /opt/emsdk-$v \
-      && /opt/emsdk-$v/emsdk install $v && /opt/emsdk-$v/emsdk activate $v \
-      && rm -rf /opt/emsdk-$v/downloads; \
-    done
+# The one Emscripten release of both web jobs (setup-emsdk's version);
+# jobs.sh sources it.
+ARG EMSDK_VERSION=6.0.13
+RUN git clone --depth 1 https://github.com/emscripten-core/emsdk.git /opt/emsdk \
+    && /opt/emsdk/emsdk install ${EMSDK_VERSION} && /opt/emsdk/emsdk activate ${EMSDK_VERSION} \
+    && rm -rf /opt/emsdk/downloads
 WORKDIR /work

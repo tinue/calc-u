@@ -147,6 +147,8 @@ jobs:
 
       - uses: mymindstorm/setup-emsdk@v16
         with:
+          # The release the build images run (7.x does not), the same as
+          # calc-u-59.yml's and ci/linux's; not the local toolchain's.
           version: 6.0.13
 
       - uses: actions/setup-node@v7

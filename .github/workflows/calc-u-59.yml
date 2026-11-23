@@ -95,8 +95,9 @@ jobs:
       - name: Install emsdk
         uses: mymindstorm/setup-emsdk@v16
         with:
-          # Keep in step with the local toolchain (emcc --version).
-          version: 6.0.12
+          # The release the build images run (7.x does not), the same as
+          # calc-u-1600.yml's and ci/linux's; not the local toolchain's.
+          version: 6.0.13
       - name: Install Node
         uses: actions/setup-node@v7
         with:

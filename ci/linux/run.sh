@@ -72,14 +72,15 @@ ignored() {
 # the stale object (seen once: a link error and a crash of CalcU1600CoreTests that a
 # fresh volume did not have).
 # run_in <target> <job>...: the copy, then the jobs, in that target's image.
-# A web job gets its own build/web per product, since each product's
-# Emscripten differs and build.sh always uses build/web.
+# A web job gets its own build/web per product (the volume
+# calcu-ci-<job>-tree), since the two jobs may run at once and build.sh
+# always uses build/web; both use the image's one Emscripten (/opt/emsdk).
 run_in() {
   target=$1; shift
   image=$(image_of "$target")
   web_mounts=""
   for j in "$@"; do
-    case "$j" in web-*) web_mounts="$web_mounts -v calcu-ci-$j:/work/build/web" ;; esac
+    case "$j" in web-*) web_mounts="$web_mounts -v calcu-ci-$j-tree:/work/build/web" ;; esac
   done
   # label=disable: SELinux in the Podman machine gave files a container
   # made in a web volume a private category, so the next container could

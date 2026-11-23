@@ -103,7 +103,7 @@ Frequent group.
 | Job | What | |
 |---|---|---|
 | `gcc` | one tree (RelWithDebInfo) with both products, the Qt frontends and the tests: the code the workflows' `library`, `core-tests` and `linux` jobs build, then the CTest entries those jobs run, without the Qt window tests (`calcu_qt6_*`, `CalcU59QtTests`, `CalcU1600QtTests`), which no Linux job runs; `CalcUQtInstallLayout` checks the Linux install layout the `linux` jobs package from | default |
-| `web-59`, `web-1600` | `web` up to the tests, each product's Emscripten, in the web image: the `web` jobs' Playwright container with their build tools; `web-1600` also runs the library's Web shell tests | when named |
+| `web-59`, `web-1600` | `web` up to the tests, with the workflows' one Emscripten (6.0.13), in the web image: the `web` jobs' Playwright container with their build tools; `web-1600` also runs the library's Web shell tests | when named |
 
 `ci/linux/run.sh web-1600` runs one job. The working tree is copied into a
 volume without what git ignores (but the ROMs), so builds never write into

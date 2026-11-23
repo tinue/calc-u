@@ -47,6 +47,7 @@ link`.
 | `type <text>` | the text and ENTER; replies when ENTER is up |
 | `wait` (idle), `wait-finished`, `idle-state` | the questions and their signals per model: [Idle](Idle.md) |
 | `display-text` | the rows of text, the cell under the cursor read as the character the ROM saved there (`app/LcdTextPart`), then `indicators:` and `not text:`, or `display off` |
+| `display` | PC-1600: `parts: IC2 on\|off, IC3 on\|off`, each display controller by its own switch (command `&3E` off, `&3F` on, at port `&58` IC2, `&54` IC3, `&50` both; e.g. BASIC `OUT &58,&3E`); `on: false` only with both off. The PC-1500/1500A's display is switched as a whole (no `parts:`) |
 | `audio <file.wav>` | the piezo's sound into a WAV |
 | `expect`, `not-expect` | text in one line of `display-text`, or `/regex/` |
 | `screenshot <name>` | Copy Screen's picture, into `--output-folder` |

@@ -124,7 +124,7 @@ silence.
 
 | Name | Shape | Arguments | Value |
 |---|---|---|---|
-| `display` | state | — | `{on, frame, indicators: [{name, on, brightness}]}`; `frame`: `{kind: "segments", positions: [{lit: [bool], brightness, segmentBrightness: [..]}]}` or `{kind: "dots", width, height, dots (bytes, row-major, 0 or 1)}`; a brightness is a real or null |
+| `display` | state | — | `{on, frame, indicators: [{name, on, brightness}], parts: [{name, on}]}`; `parts`: the parts switched on and off on their own (empty: the display is switched as a whole); `frame`: `{kind: "segments", positions: [{lit: [bool], brightness, segmentBrightness: [..]}]}` or `{kind: "dots", width, height, dots (bytes, row-major, 0 or 1)}`; a brightness is a real or null |
 | `busy` | state | — | `{operationRuns, speed: "regular" \| "full"}` |
 | `notices` | stream, no history | — | `{sentence}`: one English sentence for the user |
 | `log` | stream, since reset | — | `{text}` |

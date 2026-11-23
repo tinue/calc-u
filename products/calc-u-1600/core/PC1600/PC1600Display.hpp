@@ -89,6 +89,10 @@ public:
     /// A 0x3E command switches a controller's columns off; the panel shows
     /// nothing only when both are off. Their RAM keeps what it holds.
     bool anyControllerOn() const { return m_ic2.displayOn || m_ic3.displayOn; }
+    /// IC2 drives columns 0-63 and 128-155, IC3 columns 64-127 and the
+    /// status symbols; each is switched on and off on its own.
+    bool ic2On() const { return m_ic2.displayOn; }
+    bool ic3On() const { return m_ic3.displayOn; }
 
     /// Direct pixel readout for rendering (not part of the hardware
     /// interface): true = pixel on. Out-of-range (x,y) always returns

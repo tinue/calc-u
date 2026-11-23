@@ -128,17 +128,27 @@ TEST(pc1600_display_off_only_with_both_controllers_off) {
         const auto f = std::get<DotMatrixFrame>(m->readDisplay().frame);
         return std::count(f.dots.begin(), f.dots.end(), std::uint8_t{1});
     };
+    // The display's parts, each controller by its own switch: "IC2 on IC3 off".
+    auto parts = [&] {
+        std::string s;
+        for (const auto& x : m->readDisplay().parts) s += (s.empty() ? "" : " ") + x.name + (x.on ? " on" : " off");
+        return s;
+    };
     const auto all = lit();
     CHECK(m->readDisplay().on && all > 0);   // the prompt
+    CHECK_EQ(parts(), std::string("IC2 on IC3 on"));
     p->display().writeIO(0x58, 0x3E);        // IC2 alone: its columns, the prompt's, go dark
     CHECK(m->readDisplay().on);
     CHECK(lit() < all);
+    CHECK_EQ(parts(), std::string("IC2 off IC3 on"));
     p->display().writeIO(0x50, 0x3E);        // both
     CHECK(!m->readDisplay().on);
     CHECK_EQ(lit(), 0);
+    CHECK_EQ(parts(), std::string("IC2 off IC3 off"));
     p->display().writeIO(0x50, 0x3F);        // the RAM kept what it held
     CHECK(m->readDisplay().on);
     CHECK_EQ(lit(), all);
+    CHECK_EQ(parts(), std::string("IC2 on IC3 on"));
 }
 
 TEST(off_machine_counts_ticks_clock_runs_display_off) {

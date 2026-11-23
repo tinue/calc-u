@@ -182,7 +182,7 @@ A usage error is `refused: usage: <the command's usage>`.
 | `key <key ID> … [hold=<duration>]` | — (when the last key is up) | — |
 | `type <text>` | — (when ENTER is up) | — |
 | `display-text` | the rows; `indicators: <names>`; `not text: <n>` (dot matrix only); or the single line `display off` | `{on, rows: [..], indicators: [{name, brightness}], notText}` |
-| `display` | dot matrix: one line per row of dots, each `1` or `0`; segments: `segments: <names>`, then `<position> <bits>` per position; then `indicators: <bits>`, `names: <names>`, `on: true\|false` | `{kind: "dots", rows: [[0,1,…]]}` or `{kind: "segments", segments: [..], positions: [[0,1,…]]}`, then `indicators: [0,1,…], indicatorNames: [..], on` |
+| `display` | dot matrix: one line per row of dots, each `1` or `0`; segments: `segments: <names>`, then `<position> <bits>` per position; then `indicators: <bits>`, `names: <names>`, `on: true\|false`, and for a display switched in parts `parts: <name> on\|off, …` | `{kind: "dots", rows: [[0,1,…]]}` or `{kind: "segments", segments: [..], positions: [[0,1,…]]}`, then `indicators: [0,1,…], indicatorNames: [..], on, parts: [{name, on}]` (empty for a display switched as a whole) |
 | `state <topic>` | a state topic: its value as one line of JSON (`null` when never sent); a stream topic: `reset` when it started over since the last read, then each item appended since, one line of JSON each | `{topic, shape: "state", state}` or `{topic, shape: "stream", reset, items: [..]}` |
 | `capabilities` | `capability <kind> <id> <owner>` per capability; `place <path> <peripheral>[:<variant>] …` or `place <path> empty` per place | `{capabilities: [{kind, id, owner}], places: [{place, plugged: ["<peripheral>[:<variant>]", …]}]}` |
 | `ticks` | `ticks: <n>`, `seconds: <s>` | `{ticks, seconds}` |
@@ -193,8 +193,14 @@ A usage error is `refused: usage: <the command's usage>`.
 
 - `on` is false while the display shows nothing, its dots and indicators
   all 0: it has no power or clock, or the program switched it off (the
-  PC-1500's DISP; on the PC-1600 both display controllers, `&3E`). Part
-  of a display switched off shows as dots that are 0.
+  PC-1500's DISP; on the PC-1600 both display controllers, `&3E`).
+- `parts` names the parts of a display that are switched on and off on
+  their own, each with its own switch: the PC-1600's two display
+  controllers, `IC2` (columns 0–63 and 128–155) and `IC3` (columns
+  64–127 and the indicators). With one part off and the other on, `on`
+  stays true and the part that is off shows dots that are 0:
+  `parts: IC2 off, IC3 on`. A part's switch says nothing about power or
+  the clock; `on` does.
 
 - **Keys.** `key-down` and `key-up` take the key ID, the ID in any case,
   or another spelling of the key in any case; an unknown key is refused

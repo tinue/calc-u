@@ -173,6 +173,11 @@ std::vector<std::string> displayLines(const DisplayOutput& o, const machine::Dis
     for (const auto& x : names) n += " " + x;
     out.push_back(n);
     out.push_back(std::string("on: ") + (o.on ? "true" : "false"));
+    if (!o.parts.empty()) {
+        std::string p = "parts:";
+        for (const auto& x : o.parts) p += " " + x.name + (x.on ? " on" : " off") + (&x == &o.parts.back() ? "" : ",");
+        out.push_back(p);
+    }
     return out;
 }
 
@@ -212,6 +217,14 @@ Value displayValue(const DisplayOutput& o, const machine::DisplayDescriptor& d) 
     v.set("indicators", std::move(bitsV));
     v.set("indicatorNames", std::move(namesV));
     v.set("on", o.on);
+    Value parts = Value::array();
+    for (const auto& x : o.parts) {
+        Value part = Value::object();
+        part.set("name", x.name);
+        part.set("on", x.on);
+        parts.push(std::move(part));
+    }
+    v.set("parts", std::move(parts));
     return v;
 }
 

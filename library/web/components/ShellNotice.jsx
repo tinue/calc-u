@@ -12,10 +12,10 @@ function ShellNotice({ shell }) {
   const buttons = n.question ? (
     <React.Fragment>
       <button type="button" data-calcu="notice-no" onClick={() => s.closeNotice(false)}>No</button>
-      <button type="button" data-calcu="notice-yes" ref={ok} onClick={() => s.closeNotice(true)}>Yes</button>
+      <button type="button" className="calcu-shell-default" data-calcu="notice-yes" ref={ok} onClick={() => s.closeNotice(true)}>Yes</button>
     </React.Fragment>
   ) : (
-    <button type="button" data-calcu="notice-ok" ref={ok} onClick={() => s.closeNotice(true)}>OK</button>
+    <button type="button" className="calcu-shell-default" data-calcu="notice-ok" ref={ok} onClick={() => s.closeNotice(true)}>OK</button>
   );
   return (
     <ShellModal name="notice" onClose={() => s.closeNotice(false)} buttons={buttons}>

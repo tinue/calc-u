@@ -263,7 +263,7 @@ test('paper panel always shown, named while a plotter is plugged in', async ({ p
 
 const PRODUCT = path.join(__dirname, '..', '..', '..');
 const CARDS = path.join(PRODUCT, 'frontends', 'qt6', 'resources', 'cards');
-const nameAndSave = (page) => page.locator('[data-dialog=name-and-save]');
+const nameAndSave = (page) => page.locator('[data-calcu=name-and-save]');
 const slot1 = (page) => page.locator(c('media-picker-slot-1'));
 const saveSlot1 = (page) => page.locator(c('name-and-save-slot-1'));
 
@@ -450,14 +450,14 @@ test('headerless code asks the address, then NEW and CALL', async ({ page }) => 
   const chooser = page.waitForEvent('filechooser');
   await menu(page, 'file', 'load-machine-code');
   await (await chooser).setFiles(path.join(FIXTURES, 'rtn4.bin'));
-  const dialog = page.locator('[data-dialog=machinecode]');
+  const dialog = page.locator('[data-calcu=machinecode]');
   await expect(dialog.locator('input')).toHaveValue('&C0C5');
   await dialog.locator('input').fill('zz');
   await expect(dialog).toContainText('Not a hex address');
   await expect(dialog.getByRole('button', { name: 'Load' })).toBeDisabled();
   await dialog.locator('input').fill('&C0C5');
   await dialog.getByRole('button', { name: 'Load' }).click();
-  const loaded = page.locator('[data-dialog=loaded]');
+  const loaded = page.locator('[data-calcu=loaded]');
   await expect(loaded).toContainText('Loaded 4 bytes at &C0C5');
   await expect(loaded).toContainText('CALL &C0C5');
   await loaded.getByRole('button', { name: 'OK' }).click();
@@ -482,7 +482,7 @@ test('a WAV with several programs asks which one', async ({ page }) => {
   const chooser = page.waitForEvent('filechooser');
   await menu(page, 'file', 'load-basic-program');
   await (await chooser).setFiles({ name: 'two.wav', mimeType: 'audio/wav', buffer: doubledTape() });
-  const dialog = page.locator('[data-dialog=choice]');
+  const dialog = page.locator('[data-calcu=choice]');
   await expect(dialog).toContainText('two.wav holds 2 files. Load which one?');
   await expect(dialog.locator('option')).toHaveCount(2);
   await dialog.getByRole('button', { name: 'OK' }).click();
@@ -518,8 +518,8 @@ test('the loaded dialog and the CALL in the input line, not started', async ({ p
   const chooser = page.waitForEvent('filechooser');
   await menu(page, 'file', 'load-machine-code');
   await (await chooser).setFiles({ name: 'ret.bin', mimeType: 'application/octet-stream', buffer: file });
-  await expect(page.locator('[data-dialog=machinecode]')).toHaveCount(0);
-  const loaded = page.locator('[data-dialog=loaded]');
+  await expect(page.locator('[data-calcu=machinecode]')).toHaveCount(0);
+  const loaded = page.locator('[data-calcu=loaded]');
   await expect(loaded).toContainText('Keep BASIC from overwriting it:');
   await expect(loaded).toContainText('Start it:');
   await expect(loaded).toContainText('CALL &C100');
@@ -602,13 +602,13 @@ test('a dropped WAV with several programs asks which one, then loads by its kind
   await gotoReady(page);
   await notBusy(page);
   await dropFile(page, 'two.wav', doubledTape());
-  const dialog = page.locator('[data-dialog=choice]');
+  const dialog = page.locator('[data-calcu=choice]');
   await expect(dialog).toContainText('two.wav holds 2 files. Load which one?', { timeout: 30000 });
   await expect(dialog.locator('option')).toHaveCount(2);
   await dialog.getByRole('button', { name: 'OK' }).click();
   await expect(dialog).toHaveCount(0);
   // A BASIC file: the BASIC loader, which says nothing when it loads.
-  await expect(page.locator('[data-dialog=machinecode]')).toHaveCount(0);
+  await expect(page.locator('[data-calcu=machinecode]')).toHaveCount(0);
 });
 
 test('a dropped headerless .bin asks the address', async ({ page }) => {
@@ -618,7 +618,7 @@ test('a dropped headerless .bin asks the address', async ({ page }) => {
   const block = [0x21, 0x00, 0x80, 0x06, 0x10, 0x7E, 0xFE, 0x20, 0x28, 0x01, 0x23, 0x10, 0xF8, 0xCD, 0x00, 0x10, 0xC9];
   const code = Buffer.from(Array(8).fill(block).flat());
   await dropFile(page, 'loop.bin', code);
-  const dialog = page.locator('[data-dialog=machinecode]');
+  const dialog = page.locator('[data-calcu=machinecode]');
   await expect(dialog.locator('input')).toHaveValue('&C0C5', { timeout: 30000 });
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   // Named .rom it is nothing the product opens: a notice.

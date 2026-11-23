@@ -45,10 +45,7 @@ calcu::shell::Chrome make() {
         {std::string(chrome::kHover), Colour{255, 214, 0, 217}},
         {std::string(chrome::kLogText), Colour::grey(0.85)},
         {std::string(chrome::kDialog), Colour::rgb(0x252525)},
-        {std::string(chrome::kDialogFooter), Colour::rgb(0x222222)},
         {std::string(chrome::kField), Colour::rgb(0x1c1c1c)},
-        {std::string(chrome::kFieldBorder), Colour::rgb(0x555555)},
-        {std::string(chrome::kListLine), Colour::rgb(0x333333)},
         {std::string(chrome::kAlternate), Colour::rgb(0x2d2d2d)},
         {std::string(chrome::kButton), Colour::rgb(0x323232)},
         {std::string(chrome::kHighlight), Colour::rgb(0x0a84ff)},
@@ -113,7 +110,7 @@ const calcu::shell::Chrome& tiChrome() {
 std::vector<std::string_view> tiChromeNames() {
     using namespace chrome;
     std::vector<std::string_view> names{kDebugBackground, kDebugHeader, kSection, kTabSelected, kPillOn, kDivider, kColumnLine, kOrange, kRed,
-            kYellow, kBlue, kGreen, kHover, kLogText, kDialog, kDialogFooter, kField, kFieldBorder, kListLine,
+            kYellow, kBlue, kGreen, kHover, kLogText, kDialog, kField,
             kAlternate, kButton, kHighlight, kToast, kChevron, kInk, kStepCurrent, kHeatmapPc};
     for (std::string_view n : calcu::shell::shellColourNames()) names.push_back(n);
     return names;

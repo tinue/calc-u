@@ -17,13 +17,11 @@ inline constexpr std::string_view kControl = "control";                  // a bu
 inline constexpr std::string_view kControlHover = "control-hover";
 inline constexpr std::string_view kControlPressed = "control-pressed";
 inline constexpr std::string_view kSeparator = "separator";
-inline constexpr std::string_view kAccent = "accent";                    // a checked toggle, the default button
+inline constexpr std::string_view kAccent = "accent";                    // a checked toggle
 inline constexpr std::string_view kAccentText = "accent-text";
 inline constexpr std::string_view kLampOff = "lamp-off";                 // a tape or disk lamp
 inline constexpr std::string_view kLampOn = "lamp-on";
-inline constexpr std::string_view kHint = "hint";                        // a hint in a dialog
 inline constexpr std::string_view kKeyPressed = "key-pressed";           // over a pressed key of the faceplate
-inline constexpr std::string_view kModalShadow = "modal-shadow";
 inline constexpr std::string_view kBannerBorder = "banner-border";       // the storage banner's
 } // namespace chrome
 

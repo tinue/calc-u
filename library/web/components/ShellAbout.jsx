@@ -6,7 +6,7 @@ function ShellAbout({ shell }) {
   const a = calcuShellAbout(s.product);
   return (
     <ShellModal name="about-dialog" title={a.title} onClose={s.close}
-      buttons={<button type="button" data-calcu="about-close" onClick={s.close}>OK</button>}>
+      buttons={<button type="button" className="calcu-shell-default" data-calcu="about-close" onClick={s.close}>OK</button>}>
       <div className="calcu-shell-about-name" data-calcu="about-name">{a.name}</div>
       <div className="calcu-shell-about-version" data-calcu="about-version">{a.version}</div>
       {a.lines.map((l, i) => <p key={i}>{l}</p>)}

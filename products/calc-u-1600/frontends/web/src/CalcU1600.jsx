@@ -287,7 +287,7 @@ function CalcU1600(props) {
     const el = rootRef.current;
     if (!keyboard || !el) return;
     setTimeout(() => {
-      if (el.querySelector(".calcu-modal, .calcu-shell-modal")) return;
+      if (el.querySelector(".calcu-shell-modal")) return;
       const active = document.activeElement;
       if (active && active !== document.body && !el.contains(active)) return;
       if (active && active !== el && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) return;
@@ -299,7 +299,7 @@ function CalcU1600(props) {
   // button after the tap, a menu title on its first letter typed on a
   // hardware keyboard).
   const onFocusCapture = (e) => {
-    if (e.target.tagName === "BUTTON" && !e.target.closest(".calcu-modal, .calcu-shell-modal")) reclaimFocus();
+    if (e.target.tagName === "BUTTON" && !e.target.closest(".calcu-shell-modal")) reclaimFocus();
   };
 
   // ── Media flows ─────────────────────────────────────────────────────
@@ -407,7 +407,7 @@ function CalcU1600(props) {
       onPointerUp={reclaimFocus}
       onFocusCapture={onFocusCapture}
       onChange={(e) => {
-        if (e.target.tagName === "SELECT" && !e.target.closest(".calcu-modal, .calcu-shell-modal")) { e.target.blur(); reclaimFocus(); }
+        if (e.target.tagName === "SELECT" && !e.target.closest(".calcu-shell-modal")) { e.target.blur(); reclaimFocus(); }
       }}
       onPaste={(e) => {
         const text = e.clipboardData && e.clipboardData.getData("text/plain");

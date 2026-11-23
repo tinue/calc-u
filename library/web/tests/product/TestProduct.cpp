@@ -449,12 +449,15 @@ calcu::web::WebSession makeTestSession(const WebStart& w) {
     if (parts->media) setup.parts.push_back(parts->media.get());
     setup.hosting = s::Hosting::Paced;
     setup.owned = std::move(parts);
-    // The shell: TestShellPart.hpp's product with Paste Text (an Edit menu),
-    // the family sections of its settings.
+    // The shell: TestShellPart.hpp's product with Paste Text (an Edit menu)
+    // and a Name & Save prompt of its own for the disk, the family sections
+    // of its settings.
     return {std::make_unique<s::AppSession>(std::move(setup)), [decl = declFor(w.product)](const s::Value&) {
                 calcu::shell::ModelSetup m;
                 m.product = calcu::shell::test::product();
                 m.product.pasteText = true;
+                m.product.nameAndSave.prompt = "Instance name:";
+                m.product.nameAndSave.prompts = {{"disk", "Disk name:"}};
                 m.spec = calcu::shell::familySections(decl);
                 return m;
             }};

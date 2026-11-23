@@ -35,7 +35,19 @@ sessions::Value ModelHost::value() const {
     return sessions::Value::object({{"menus", toValue(menus(inputs_, p, t))},
                                     {"bar", toValue(bar(inputs_, p, t))},
                                     {"panels", toValue(panels(inputs_, p))},
-                                    {"dialog", toValue(dialog(inputs_.settings, inputs_.presetList, setup_->spec))}});
+                                    {"dialog", toValue(dialog(inputs_.settings, inputs_.presetList, setup_->spec))},
+                                    {"nameAndSave", nameAndSavePrompts(p)}});
+}
+
+// Every place of the topic `media`, not only those that offer Name & Save
+// now: an open dialog keeps its prompt when the place's offer changes.
+sessions::Value ModelHost::nameAndSavePrompts(const ShellProduct& p) const {
+    sessions::Value::Object out;
+    for (const auto& place : read::elements(inputs_.media, "places")) {
+        const std::string name = read::text(place, "place");
+        out.push_back({name, sessions::Value(nameAndSavePrompt(p, name))});
+    }
+    return sessions::Value(std::move(out));
 }
 
 } // namespace calcu::shell

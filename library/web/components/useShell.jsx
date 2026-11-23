@@ -10,7 +10,8 @@
 //   args of its shell, as its Web part reads them.)
 //   s.menus, s.bar, s.panels, s.dialog (the settings rows), s.loading, s.notice,
 //   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" |
-//   "name-and-save" | null), s.naming (the place Name & Save is open for)
+//   "name-and-save" | null), s.naming (the place Name & Save is open for),
+//   s.nameAndSavePrompts ({place: prompt}, the models' nameAndSave)
 //   s.choose(item), s.setSetting(section, key, value), s.closeNotice(yes), s.close()
 //   s.notify(text): a notice of the page's own, queued with the session's
 //   s.nameAndSave(place): the Name & Save dialog of a media place (ShellDialogs),
@@ -20,8 +21,9 @@
 // `product` is the page's form of the product's data (`*.shell-product`):
 // its name, help address and About, `product.loadPreset` (optional) in
 // place of the shell's Load Preset… (a product that opens the picked files
-// through the session's `open`), `copyScreen`, `nameAndSave` ({slotButtons,
-// prompt, prompts}: ShellProduct::nameAndSave) and its items' acts by id.
+// through the session's `open`), `copyScreen`, `nameAndSave` ({slotButtons}:
+// ShellProduct::nameAndSave) and its items' acts by id. The Name & Save
+// prompts by place are the models' (`s.nameAndSavePrompts`).
 
 // Whether the page is mobile, fixed while it is open: true for the
 // installed app and for a browser that asks for the mobile site, else
@@ -42,7 +44,7 @@ function calcuShellMobile() {
 }
 const CALCU_SHELL_MOBILE = calcuShellMobile();
 const CALCU_SHELL_WEB_TRAITS = { mobile: CALCU_SHELL_MOBILE, settings: true, about: true };
-const CALCU_SHELL_NO_MODELS = { menus: [], bar: [], panels: [], dialog: [] };
+const CALCU_SHELL_NO_MODELS = { menus: [], bar: [], panels: [], dialog: [], nameAndSave: {} };
 
 function calcuShellNow() {
   return typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -98,6 +100,7 @@ function useCalcuShell(shell, product, traits, shellArgs) {
   const inputs = { controlState: controlState || null, busy: busy || null, runState: runState || null,
     romsMissing: romsMissing || null, settings: settings || null, media: media || null };
   const { menus, bar, panels, dialog } = models;
+  const nameAndSavePrompts = models.nameAndSave || {};
 
   const sendChecked = (name, args) => {
     if (!shell) return Promise.resolve({ done: false });
@@ -141,7 +144,7 @@ function useCalcuShell(shell, product, traits, shellArgs) {
   };
   const current = notices.current.current();
   return {
-    shell, product, traits: t, inputs, menus, bar, panels, dialog, open, naming,
+    shell, product, traits: t, inputs, menus, bar, panels, dialog, open, naming, nameAndSavePrompts,
     started: !!controlState, romsMissing: romsMissing || null,
     loading: loading.current.shown(calcuShellNow()),
     notice: current,

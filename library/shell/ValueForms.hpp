@@ -16,8 +16,9 @@ namespace calcu::shell {
 
 // What the page needs of the product beside the models: {name, helpUrl,
 // aboutLabel, aboutLines: [...], aboutLinks: [[label, url]] (only when there
-// is one), presetUploads, nameAndSave: {slotButtons, prompt, prompts:
-// {place: prompt}}, items: [{id, label}]} (the page acts on its items by id). Not in it: `version`, `build` (the page has its own).
+// is one), presetUploads, nameAndSave: {slotButtons}, items: [{id, label}]}
+// (the page acts on its items by id). Not in it: `version`, `build` (the page
+// has its own), the Name & Save prompts (ModelHost serves them by place).
 sessions::Value toValue(const ShellProduct&);
 
 // {distance, display: {x, y, w, h}, keys: [{name, x, y, w, h}]}, in the

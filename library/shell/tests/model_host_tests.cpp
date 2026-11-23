@@ -60,6 +60,20 @@ TEST(model_host_serves_the_menus_bar_panels_and_dialog) {
     CHECK(read::flag(groups.elements()->back(), "pushed"));
 }
 
+TEST(model_host_serves_the_name_and_save_prompt_of_each_media_place) {
+    ModelSetup s = setup();
+    s.product.nameAndSave.prompt = "Instance name:";
+    s.product.nameAndSave.prompts = {{"floppy", "Disk name:"}};
+    ModelHost h;
+    h.set(s, {});
+    CHECK_EQ(sessions::toText(*h.value().find("nameAndSave")), sessions::toText(Value(Value::Object{})));   // no media topic yet
+    auto place = [](const char* name, bool offers) { return Value::object({{"place", name}, {"nameAndSave", offers}}); };
+    CHECK(h.take(state("media", Value::object({{"kinds", Value(Value::Array{})},
+                                                {"places", Value(Value::Array{place("slot-1", true), place("floppy", false)})}}))));
+    CHECK_EQ(sessions::toText(*h.value().find("nameAndSave")),
+             sessions::toText(Value::object({{"slot-1", "Instance name:"}, {"floppy", "Disk name:"}})));
+}
+
 TEST(model_host_takes_only_changed_inputs) {
     ModelHost h;
     CHECK(h.take(state("control-state", st::controlValue())));

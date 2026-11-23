@@ -107,7 +107,7 @@ calcu_qt6_moc_compat(CalcU59Qt)
 # cue cards) and the calculator and cue-card artwork from the Swift app's
 # asset catalog. The app finds the ROMs through QtResourceBundle and the
 # lookup ----
-file(GLOB ROM_TXT ${REPO_ROOT}/roms/*.txt ${REPO_ROOT}/roms/*.rom.yaml)
+file(GLOB ROM_TXT CONFIGURE_DEPENDS ${REPO_ROOT}/roms/*.txt ${REPO_ROOT}/roms/*.rom.yaml)
 foreach(f ${ROM_TXT})
   get_filename_component(name ${f} NAME)
   set_source_files_properties(${f} PROPERTIES QT_RESOURCE_ALIAS ${name})
@@ -166,8 +166,7 @@ if(APPLE)
   set(APP_ICON_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/AppIcon.icns
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/Assets.car)
-  set_source_files_properties(${APP_ICON_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-  target_sources(CalcU59Qt PRIVATE ${APP_ICON_FILES})
+  calcu_qt6_bundle_files(CalcU59Qt Resources ${APP_ICON_FILES})
   set_target_properties(CalcU59Qt PROPERTIES
     MACOSX_BUNDLE_ICON_FILE AppIcon
     MACOSX_BUNDLE_GUI_IDENTIFIER ch.erzberger.CalcU59Qt
@@ -197,30 +196,15 @@ foreach(line IN LISTS EXAMPLE_FILE_LINES)
 endforeach()
 list(REMOVE_DUPLICATES EXAMPLE_FILES)
 if(APPLE)
-  set_source_files_properties(${EXAMPLES_SRC_DIR}/bundle.yaml PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/examples")
-  target_sources(CalcU59Qt PRIVATE ${EXAMPLES_SRC_DIR}/bundle.yaml)
+  set(BUNDLED_EXAMPLES Resources/examples)
+else()
+  set(BUNDLED_EXAMPLES resources/examples)
 endif()
+calcu_qt6_bundle_files(CalcU59Qt ${BUNDLED_EXAMPLES} ${EXAMPLES_SRC_DIR}/bundle.yaml)
 foreach(example_file IN LISTS EXAMPLE_FILES)
   get_filename_component(example_dir "${example_file}" DIRECTORY)
-  set(source ${EXAMPLES_SRC_DIR}/${example_file})
-  if(APPLE)
-    set_source_files_properties(${source} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/examples/${example_dir}")
-    target_sources(CalcU59Qt PRIVATE ${source})
-  else()
-    add_custom_command(TARGET CalcU59Qt POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:CalcU59Qt>/resources/examples/${example_dir}"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${source}
-              "$<TARGET_FILE_DIR:CalcU59Qt>/resources/examples/${example_dir}"
-      COMMENT "Copying the bundled example ${example_file}")
-    install(FILES ${source} DESTINATION bin/resources/examples/${example_dir})
-  endif()
+  calcu_qt6_bundle_files(CalcU59Qt ${BUNDLED_EXAMPLES}/${example_dir} ${EXAMPLES_SRC_DIR}/${example_file})
 endforeach()
-if(NOT APPLE)
-  add_custom_command(TARGET CalcU59Qt POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${EXAMPLES_SRC_DIR}/bundle.yaml
-            "$<TARGET_FILE_DIR:CalcU59Qt>/resources/examples")
-  install(FILES ${EXAMPLES_SRC_DIR}/bundle.yaml DESTINATION bin/resources/examples)
-endif()
 
 # ---- License and third-party notice files: GPLv3 (this project) and
 # LGPLv3 (the bundled Qt6) travel with every distributed build. In the
@@ -234,9 +218,10 @@ if(APPLE)
     ${REPO_ROOT}/THIRD-PARTY-NOTICES.md
     ${REPO_ROOT}/licenses/LGPL-3.0.txt
     ${REPO_ROOT}/licenses/GPL-3.0.txt)
-  set_source_files_properties(${LICENSE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/licenses")
-  target_sources(CalcU59Qt PRIVATE ${LICENSE_FILES})
+  calcu_qt6_bundle_files(CalcU59Qt Resources/licenses ${LICENSE_FILES})
 endif()
+# The app's bundled folders hold exactly the files above.
+calcu_qt6_bundle_sync(CalcU59Qt INSTALL_DIR bin)
 
 # CalcU59QtTests: the app's widgets
 # on its EmulatorController, the session on the real ROMs (compiled in as

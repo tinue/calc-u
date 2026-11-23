@@ -27,7 +27,7 @@ const MachineDescriptor& descriptorOf(PC1500Variant model) {
 
 // The capability objects, each over the core.
 struct PC1500Machine::Kinds {
-    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), printerPort(m), call(m) {}
+    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck(), [&m] { return m.tapeAwaited(); }), clock(m), printerPort(m), call(m) {}
 
     sharp::PC1500LoaderMemory memory;
     struct Inspector final : sharp::InspectorViews {

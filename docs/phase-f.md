@@ -94,10 +94,6 @@ and `docs/Process.md` until the closing check at its end has passed.
   in that test.
 - **Specifications not written**: Calc-U-1600's trace file (`CALCU1600_TRACE.bin` and its siblings by model) has
   no page in `docs/formats/` (Calc-U-59's is `docs/formats/trace.md`).
-- **Media topic and the Sharp media places**: the machine knows when a
-  Sharp tape or serial port is awaited (`awaitsMedium()`), but the places'
-  `waitsForMedium()` stays false, so the media topic never shows them as
-  waiting.
 - **Calc-U-59 checks by hand**: a loaded ASM overlay on a model switch
   (removed or kept); the preset format's speed-dependent `Adv` text
   against the behaviour; the tutorial's iCloud advice; `.keystrokes.yaml`

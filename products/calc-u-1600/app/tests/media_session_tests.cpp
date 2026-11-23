@@ -322,3 +322,51 @@ TEST(tape_counter_text) {
     CHECK_EQ(l.tapeCounter(), std::string("● 0:09"));
     CHECK_EQ(l.tapeTip(), std::string("Recording onto hanoi"));
 }
+
+// CLOAD with no cassette in: the topic `media` shows the cassette place
+// waiting for a medium (the machine's tape loader waits for an edge), as
+// Calc-U-59's shows its card reader; BREAK ends the wait.
+namespace {
+
+bool cassetteWaits(SessionFixture& f) {
+    const auto* m = f.state<media::MediaState>(media::kMediaTopic);
+    const media::PlaceState* p = m ? m->place("cassette") : nullptr;
+    return p && p->waits;
+}
+
+void cloadWaitsUntilBreak(SessionFixture& f) {
+    f.runFor(1);
+    CHECK(!cassetteWaits(f));
+    f.typeLine("CLOAD");
+    CHECK(f.runUntilTyped(10));
+    f.runFor(1);
+    CHECK(cassetteWaits(f));
+    CHECK(f.mediaPlace("cassette") && f.mediaPlace("cassette")->waits);
+    f.tap("on");   // BREAK
+    f.runFor(1);
+    CHECK(!cassetteWaits(f));
+}
+
+} // namespace
+
+TEST(cassette_waits_while_cload_awaits_the_tape_pc1500) {
+    SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
+    SessionFixture f("calcu-media-session-test");
+    CHECK(f.start("PC-1500A"));
+    CHECK(f.attach("CE-150"));
+    f.runFor(2);
+    f.tap("cl");   // the memory changed: NEW0? :CHECK
+    f.runFor(0.5);
+    f.typeLine("NEW0");
+    CHECK(f.runUntilTyped(10));
+    cloadWaitsUntilBreak(f);
+}
+
+TEST(cassette_waits_while_cload_awaits_the_tape_pc1600) {
+    SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
+    SessionFixture f("calcu-media-session-test");
+    CHECK(f.start("PC-1600"));
+    CHECK(f.attach("CE-1600P"));
+    f.runFor(2);
+    cloadWaitsUntilBreak(f);
+}

@@ -194,6 +194,12 @@ Not counted as waiting for a medium:
   `SerialPortQueues::incoming()`, bytes queued or still with the other side,
   which the feed (`app/SerialScripts.cpp`) and a host link report
   (`SerialPort::setPeerSending`).
+- The media topic: the cassette place (`sharp::CassettePlace`,
+  `core/Machine/SharpMediaPlaces.hpp`) waits for a medium while
+  `tapeAwaited()` holds, so the topic `media` shows the place `cassette`
+  with `waits` as Calc-U-59's shows its card reader. The serial ports are
+  peripherals, not media places: their wait is the idle signal only. The
+  CE-1600F's drive never waits.
 - The stretch and the sample: `app/SharpPresetRules.cpp`; the keys that do not wait:
   `app/SharpTyping.cpp` (ON/BREAK, at most 0.2 s). At full speed the machine
   runs at real time while W holds (`library/pacing/Pacer.cpp`), except

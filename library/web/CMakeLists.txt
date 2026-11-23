@@ -61,6 +61,7 @@ if(CALCU_TESTS)
                            ${CMAKE_CURRENT_SOURCE_DIR}/tests/shell_model.test.js    # the shell's models
                            ${CMAKE_CURRENT_SOURCE_DIR}/tests/host_keys.test.js      # host keys
                            ${CMAKE_CURRENT_SOURCE_DIR}/tests/embed_props.test.js    # the shared props
+                           ${CMAKE_CURRENT_SOURCE_DIR}/tests/streams.test.js        # the stream topics
                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endif()
   if(NOT WIN32)

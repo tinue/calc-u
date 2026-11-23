@@ -33,22 +33,6 @@ and `docs/Process.md` until the closing check at its end has passed.
 
 ### Open items
 
-- **Stale indices in the Web frontends** (from a scan of every frontend
-  for the printer crash's kind of bug; Swift and Qt have no other case):
-  - Calc-U-1600 CE-158 panel (`frontends/web/src/Panels.jsx` `Ce158Printer`):
-    Clear keeps a count into the stream `c1600.printer`, which keeps its
-    last 500 items (`library/web/src/shell.js`) and can be reset: after
-    500 items and a Clear the panel stays empty for good (and Save saves
-    nothing); after a reset new output stays hidden. Qt keeps its own
-    buffer. Proposed: a marker of the last item cleared, dropped on a reset.
-  - Calc-U-59 Web CPU inspector (`frontends/web/src/Debugger.jsx`): the
-    picked row is an index kept over a STEP, which shifts the rows, so the
-    registers shown are another instruction's. Qt and Swift select the
-    current instruction anew. Proposed: drop the pick when the rows change.
-  - Calc-U-1600 Web (`frontends/web/src/CalcU1600.jsx`, `programsSeen`):
-    the same count into `c1600.program-opened`; it handles a reset, not
-    the 500 kept items (after 500 opened programs no more are taken).
-
 - **Help pictures**: the pictures to retake are listed by name in
   `docs/help-site.md`, "Help content" (Calc-U-59: six, from the Swift app;
   Calc-U-1600: ten, `tools/make_screenshots.sh <chapter>` from iTerm2).

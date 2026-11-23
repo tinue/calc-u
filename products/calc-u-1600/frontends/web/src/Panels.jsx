@@ -96,12 +96,13 @@ function PaperDock({ shell, owner }) {
   );
 }
 
-// The CE-158's printer output: the stream topic `c1600.printer` since the
-// last Clear.
+// The CE-158's printer output: the stream topic `c1600.printer` after the
+// last item cleared (a marker, not a count: the stream keeps only its last
+// items and starts anew on a reset).
 function Ce158Printer({ shell }) {
   const printed = useStream(shell, "c1600.printer");
-  const [cleared, setCleared] = React.useState(0);
-  const items = printed.slice(Math.min(cleared, printed.length));
+  const [lastCleared, setLastCleared] = React.useState(null);
+  const items = calcuStreamAfter(printed, lastCleared);
   const text = items.map((p) => p.text).join("");
   const outRef = React.useRef(null);
   React.useLayoutEffect(() => {
@@ -115,7 +116,7 @@ function Ce158Printer({ shell }) {
         <React.Fragment>
           <button type="button" className="calcu-pill" disabled={empty} title="Save the printed bytes, exactly as sent, to a file."
             onClick={() => downloadBytes("ce158-printout.txt", new Blob(items.map((p) => p.bytes)))}>Save…</button>
-          <button type="button" className="calcu-pill" disabled={empty} onClick={() => setCleared(printed.length)}>Clear</button>
+          <button type="button" className="calcu-pill" disabled={empty} onClick={() => setLastCleared(items[items.length - 1])}>Clear</button>
         </React.Fragment>
       }>
       <div className="calcu-printer-serial">RS-232C: not available in the browser</div>

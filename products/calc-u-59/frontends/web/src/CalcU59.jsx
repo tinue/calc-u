@@ -120,41 +120,11 @@ function CardControls({ shell, entry }) {
 }
 const C59_MEDIA_CONTROLS = { "magnetic-card": CardControls };
 
-// The bar measured with and without its labels ("Crd", "Preset"; a
-// compact bar keeps them unseen and out of the flow), and the library's rule
-// (calcuShellBarFit) decides: the labels, and the bar's width.
-function useBarFit(ref, faceplate) {
-  const [m, setM] = React.useState({ without: 0, with: 0 });
-  const measure = React.useCallback(() => {
-    const host = ref.current;
-    const bar = host && host.querySelector(".calcu-shell-bar");
-    if (!bar) return;
-    const style = getComputedStyle(host), barStyle = getComputedStyle(bar);
-    const gap = parseFloat(barStyle.columnGap) || 0;
-    const groups = Array.from(bar.children);
-    let content = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + gap * Math.max(0, groups.length - 1);
-    for (const g of groups) content += g.scrollWidth;
-    let labels = 0;
-    for (const l of bar.querySelectorAll(".calcu-bar-label")) labels += l.offsetWidth + 4;   // the label and its gap
-    const compact = bar.classList.contains("calcu-shell-compact");
-    const next = compact ? { without: content, with: content + labels } : { without: content - labels, with: content };
-    setM((old) => (Math.abs(old.without - next.without) < 1 && Math.abs(old.with - next.with) < 1 ? old : next));
-  }, [ref]);
-  React.useLayoutEffect(measure);
-  React.useEffect(() => {
-    if (typeof ResizeObserver === "undefined" || !ref.current) return undefined;
-    const o = new ResizeObserver(measure);
-    o.observe(ref.current);
-    return () => o.disconnect();
-  }, [measure]);
-  return m.with ? calcuShellBarFit(faceplate, m.without, m.with) : { labels: true, width: faceplate };
-}
-
 function CalculatorColumn({ page, faceWidth, width }) {
   const { shell, s, faceplate, model } = page;
   const barRef = React.useRef(null);
   const body = faceWidth + 2 * FACE_PADDING;   // the calculator's body, the bar's width where it fits
-  const fit = useBarFit(barRef, body);
+  const fit = useShellBarFit(barRef, body);   // the labels ("Crd", "Preset") and the width
   const compact = !fit.labels;
   return (
     <div className="calcu-calc" style={{ width: Math.max(width || body, fit.width) }}>

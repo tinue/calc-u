@@ -65,6 +65,55 @@ test('no shortcut is bound', async ({ page }) => {
   await expect(page.locator(c('settings-dialog'))).toHaveCount(0);
 });
 
+// The library's bar fit (calcuShellBarFit, C++ shell::barFit), as on
+// Calc-U-59: under a wide faceplate the bar is as wide as the faceplate,
+// centred under it, with its labels; where the controls with them need
+// more than the faceplate gives, the labels go, and the bar is as wide as
+// the faceplate or the controls need, never wider than the window.
+test('the control bar fits the faceplate', async ({ page }) => {
+  await page.setViewportSize(TALL);
+  await h.gotoReady(page);
+  await page.locator(c('bar-place-printer')).click();
+  await expect(page.locator(c('bar-media-cassette-recorder'))).toBeVisible({ timeout: 30000 });
+  const label = page.locator(`${c('bar-media-cassette-recorder')} .calcu-bar-label`);
+  const box = async (sel) => page.locator(sel).boundingBox();
+  let face = await box('.calcu-face'), bar = await box('.calcu-controlbar');
+  expect(Math.abs(bar.width - face.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(bar.x - face.x)).toBeLessThanOrEqual(1);
+  await expect(label).toBeVisible();
+  await expect(page.locator(c('control-bar'))).not.toHaveClass(/calcu-shell-compact/);
+  // Narrow: the faceplate is narrower than the controls with their labels.
+  await page.setViewportSize({ width: 560, height: 1000 });
+  await expect(page.locator(c('control-bar'))).toHaveClass(/calcu-shell-compact/);
+  await expect(label).toBeHidden();
+  face = await box('.calcu-face');
+  bar = await box('.calcu-controlbar');
+  const client = await box('.calcu-client');
+  expect(bar.width).toBeGreaterThanOrEqual(face.width - 1);
+  expect(bar.width).toBeLessThanOrEqual(client.width + 0.5);
+  // Wide again: the labels come back.
+  await page.setViewportSize(TALL);
+  await expect(label).toBeVisible();
+});
+
+// Every width settles: the labels never switch at every render (More's
+// label is measured as the others are), with the PC-1600's longest bar.
+test('the control bar settles at every width', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.setViewportSize(TALL);
+  await h.gotoReady(page);
+  await h.pickModel(page, 'PC-1600');
+  await page.locator(c('bar-place-printer')).selectOption({ label: 'CE-1600P' });
+  await expect(page.locator(c('media-picker-floppy'))).toBeEnabled({ timeout: 30000 });
+  for (let width = 1600; width >= 600; width -= 7) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  }
+  await expect(page.locator(c('control-bar'))).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('the control bar per model', async ({ page }) => {
   await page.setViewportSize(TALL);
   await h.gotoReady(page);

@@ -750,6 +750,31 @@ test('FREEZE STEP RESUME of both tabs follow the run state', async ({ page }) =>
   }
 });
 
+// A row picked on the CPU tab holds only for its rows: a STEP shifts them,
+// and the current instruction is selected anew (as in Qt and Swift).
+test('a STEP on the CPU tab selects the current instruction anew', async ({ page }) => {
+  await gotoReady(page);
+  const debug = page.locator('[data-panel=debug]');
+  await debug.getByRole('tab', { name: 'CPU', exact: true }).click();
+  const button = (name) => debug.locator(`[data-calcu=run-control-${name}]`);
+  await button('pause').click();
+  await expect(button('step')).toBeEnabled({ timeout: 5000 });
+  const rows = debug.locator('.calcu-cpu-list > div');
+  const selected = debug.locator('.calcu-cpu-list > .calcu-cpu-selected');
+  await expect(selected).toHaveAttribute('data-current', 'true', { timeout: 5000 });
+  const current = await rows.evaluateAll((rs) => rs.findIndex((r) => r.dataset.current === 'true'));
+  expect(current).toBeGreaterThan(0);
+  await rows.nth(current - 1).click();
+  await expect(rows.nth(current - 1)).toHaveClass(/calcu-cpu-selected/);
+  await expect(selected).not.toHaveAttribute('data-current', 'true');
+  const before = await debug.locator('.calcu-cpu-list').textContent();
+  await button('step').dispatchEvent('pointerdown', { pointerId: 3 });
+  await button('step').dispatchEvent('pointerup', { pointerId: 3 });
+  await expect.poll(() => debug.locator('.calcu-cpu-list').textContent(), { timeout: 5000 }).not.toBe(before);
+  await expect(selected).toHaveAttribute('data-current', 'true');
+  await button('resume').click();
+});
+
 test('a trace is downloaded when switched off', async ({ page }) => {
   await gotoReady(page);
   const debug = page.locator('[data-panel=debug]');

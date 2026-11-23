@@ -53,10 +53,6 @@ function SaveIcon() {
   );
 }
 
-// The product's own controls and the media controls it hands the shell's
-// bar get the page's actions through this context.
-const C1600Bar = React.createContext(null);
-
 // The module picker of a slot (the library's ShellSlotPicker), with its
 // Name & Save button (the product's nameAndSave.slotButtons).
 function SlotControls(props) {
@@ -65,20 +61,17 @@ function SlotControls(props) {
 
 // The cassette's controls (the shell's media control of the kind
 // `cassette`): the tape picker (Blank records into memory), Name & Save,
-// the counter with the motor (`c1600.lamps`).
+// the counter with the motor (`c1600.lamps`, read here: a running tape
+// re-renders these controls only).
 function TapeControls({ shell, entry }) {
-  const bar = React.useContext(C1600Bar);
+  const lamps = useTopic(shell.shell, "c1600.lamps");
   const place = calcuMediaPlace(shell.inputs.media, "cassette");
   const ok = calcuShellAvailability(entry, "insert");
-  const lamps = bar.lamps;
   return (
     <fieldset className="calcu-bar-fieldset" disabled={!ok.now} title={ok.now ? undefined : ok.reason}>
       <span className="calcu-bar-label">Cassette:</span>
-      <CalcuMediaPicker place={place} send={bar.send} />
-      <button type="button" className="calcu-iconbutton" disabled={!place || !place.nameAndSave} title="Name & Save"
-        data-calcu="name-and-save-cassette" aria-label="Name & Save cassette" onClick={() => shell.nameAndSave("cassette")}>
-        <SaveIcon />
-      </button>
+      <CalcuMediaPicker place={place} send={(c, a) => shell.shell.send(c, a)} />
+      <ShellNameAndSaveButton shell={shell} place="cassette" icon={<SaveIcon />} />
       <span className={`calcu-tape-counter${lamps && lamps.tapeMotor ? " on" : ""}${!lamps || lamps.tapeEmpty ? " empty" : ""}`}
         data-lamp="tape" title={lamps ? lamps.tapeTip : "No cassette"}>
         {lamps ? lamps.tapeCounter : "0:00"}
@@ -92,30 +85,27 @@ function TapeControls({ shell, entry }) {
 // `c1600.disk-controls`), last on the bar; usable while no operation runs
 // (the media place's insert, its reason the tooltip).
 function DiskControls({ s }) {
-  const bar = React.useContext(C1600Bar);
+  const lamps = useTopic(s.shell, "c1600.lamps");
   const cs = s.inputs.controlState;
   const entry = cs && cs.product ? cs.product["c1600.disk-controls"] : null;
   if (!entry || !entry.shown) return null;
   const floppy = calcuShellList(cs, "mediaPlaces").find((m) => calcuShellText(m, "id") === "floppy");
   const insert = floppy ? calcuShellAvailability(floppy, "insert") : { now: true, reason: "" };
-  const ok = insert;
-  const place = ok.now ? calcuMediaPlace(s.inputs.media, "floppy") : null;
+  const place = insert.now ? calcuMediaPlace(s.inputs.media, "floppy") : null;
   const side = place && place.holds && place.holds.side ? 1 : 0;
+  const send = (c, a) => s.shell.send(c, a);
   return (
-    <fieldset className="calcu-bar-fieldset" data-calcu="bar-disk" disabled={!ok.now} title={ok.now ? undefined : ok.reason}>
+    <fieldset className="calcu-bar-fieldset" data-calcu="bar-disk" disabled={!insert.now} title={insert.now ? undefined : insert.reason}>
       <span className="calcu-bar-label">Disk:</span>
-      {place ? <CalcuMediaPicker place={place} send={bar.send} />
+      {place ? <CalcuMediaPicker place={place} send={send} />
         : <select className="calcu-media-picker" data-calcu="media-picker-floppy" disabled><option>(empty)</option></select>}
       <button type="button" className="calcu-button calcu-compact" disabled={!place || !place.holds}
         title="Eject and turn the disk over" data-calcu="disk-side" aria-label="Disk side"
-        onClick={() => bar.send("media.turn", { place: "floppy" })}>
+        onClick={() => send("media.turn", { place: "floppy" })}>
         {String(side)}
       </button>
-      <button type="button" className="calcu-iconbutton" disabled={!place || !place.nameAndSave} title="Name & Save"
-        data-calcu="name-and-save-floppy" aria-label="Name & Save disk" onClick={() => s.nameAndSave("floppy")}>
-        <SaveIcon />
-      </button>
-      <span className={`calcu-lamp${bar.lamps && bar.lamps.floppyMotor ? " on" : ""}`} data-lamp="floppy"
+      <ShellNameAndSaveButton shell={s} place="floppy" label="disk" icon={<SaveIcon />} />
+      <span className={`calcu-lamp${lamps && lamps.floppyMotor ? " on" : ""}`} data-lamp="floppy"
         title="Drive active -- wait for this to go dark before turning the disk over">●</span>
     </fieldset>
   );
@@ -155,10 +145,9 @@ function CalcU1600(props) {
 
   const start = useShellState(shell, (st) => st.start);
   const failure = useShellState(shell, (st) => st.failure);
-  const lamps = useTopic(shell, "c1600.lamps");
   const programs = useStream(shell, "c1600.program-opened");
 
-  const tell = (text) => dialogs.ask("notice", { text });
+  const tell = (text) => { if (sRef.current) sRef.current.notify(text); };
   const sendChecked = (name, args) => (sRef.current ? sRef.current.sendChecked(name, args) : Promise.resolve({ done: false }));
   const send = (name, args) => (shell ? shell.send(name, args || null) : Promise.resolve({ done: false, reason: "" }));
 
@@ -302,12 +291,6 @@ function CalcU1600(props) {
     if (e.target.tagName === "BUTTON" && !e.target.closest(".calcu-shell-modal")) reclaimFocus();
   };
 
-  // ── Media flows ─────────────────────────────────────────────────────
-  const bar = {
-    send,
-    lamps,
-  };
-
   // ── Keyboard (MainWindow::keyPressEvent / keyReleaseEvent) ──────────
   const releaseHeldKeys = () => {
     if (hostKeys.current.focusLost() && shell) send("focus-lost");   // every held key comes up
@@ -419,13 +402,11 @@ function CalcU1600(props) {
         {failed && !romsMissing && <div className="calcu-shell-roms-missing" data-calcu="start-failed" role="alert">{failure}</div>}
         {!romsMissing && !failed && <Faceplate shell={shell} model={model} map={maps[model] || null} width={faceWidth} shiftFlash={shiftFlash} />}
       </div>
-      <C1600Bar.Provider value={bar}>
-        <div className="calcu-controlbar" ref={barRef}
-          style={faceHidden ? { display: "none" } : { width: barFit.width, alignSelf: "center" }}>
-          <ShellControlBar shell={s} compact={!barFit.labels} slotPicker={SlotControls} mediaControls={C1600_MEDIA_CONTROLS}
-            extra={{ Media: [<DiskControls key="disk" s={s} />] }} />
-        </div>
-      </C1600Bar.Provider>
+      <div className="calcu-controlbar" ref={barRef}
+        style={faceHidden ? { display: "none" } : { width: barFit.width, alignSelf: "center" }}>
+        <ShellControlBar shell={s} compact={!barFit.labels} slotPicker={SlotControls} mediaControls={C1600_MEDIA_CONTROLS}
+          extra={{ Media: [<DiskControls key="disk" s={s} />] }} />
+      </div>
       {anyPanel && s.started && (
         <div className="calcu-panels">
           <ShellPanelArea shell={s} panels={C1600_PANELS}>

@@ -12,6 +12,7 @@
 //   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" |
 //   "name-and-save" | null), s.naming (the place Name & Save is open for)
 //   s.choose(item), s.setSetting(section, key, value), s.closeNotice(yes), s.close()
+//   s.notify(text): a notice of the page's own, queued with the session's
 //   s.nameAndSave(place): the Name & Save dialog of a media place (ShellDialogs),
 //   for the place's submenu, the slot pickers' buttons and the product's own
 //   media controls
@@ -149,6 +150,10 @@ function useCalcuShell(shell, product, traits, shellArgs) {
     closeNotice: (yes) => {
       const again = notices.current.answer(!!yes);
       if (again) sendChecked(again.name, again.args);
+      rerender();
+    },
+    notify: (text) => {
+      notices.current.push(text);
       rerender();
     },
     close: () => setOpen(null),

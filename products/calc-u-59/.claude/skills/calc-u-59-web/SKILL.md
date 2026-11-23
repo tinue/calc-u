@@ -62,9 +62,9 @@ Never edit the calculator there — that copy is generated.
    name with `.png`) and `sizeCanvas`, `calcuAskedQuestion` (the card
    picker's replace question), `calcuMediaPlace`; the shell is the library's
    `useShell` with the page's host services (`createC59Traces`).
-   The page reads the library's `run-state`, `busy` and `held-keys`, and
-   the PC-100C's controls from the control state's `controls`
-   (`src/Paper.jsx`).
+   The page reads the library's `run-state`, `busy` and `held-keys`; the
+   paper panel takes the PC-100C's controls from the control state's
+   `controls` itself (`src/Paper.jsx` hands it the panel's owner and place).
    A trace is handed over with `keep-file` when it ends; the page lists it.
    The debug panel draws the product topics of `app/TIDebugPart`:
    `c59.calculator-debug`, `c59.program-listing` (the whole listing while

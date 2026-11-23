@@ -98,11 +98,9 @@ function calcuChromeStyle(chrome, dark) {
   style["--calcu-bar-height"] = px(s.barHeight);
   style["--calcu-bar-gap"] = px(s.barGap);
   if (s.slotPickerEm) style["--calcu-slot-picker-width"] = `${s.slotPickerEm}em`;
-  if (s.paperRowCompactWidth !== undefined) {
-    style["--calcu-paper-row-compact-width"] = String(s.paperRowCompactWidth);
-    style["--calcu-paper-row-gap"] = px(s.paperRowGap);
-    style["--calcu-paper-row-compact-gap"] = px(s.paperRowCompactGap);
-  }
+  style["--calcu-paper-row-compact-width"] = String(s.paperRowCompactWidth);
+  style["--calcu-paper-row-gap"] = px(s.paperRowGap);
+  style["--calcu-paper-row-compact-gap"] = px(s.paperRowCompactGap);
   if (s.printerMaxWidth) {
     style["--calcu-printer-min-width"] = px(s.printerMinWidth);
     style["--calcu-printer-max-width"] = px(s.printerMaxWidth);

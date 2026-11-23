@@ -20,6 +20,7 @@
 - **After a Reset or a Cold boot** a plotter started again at the top of the paper, over the earlier plot.
 - **A PC-1500 machine-code load** that met a byte that is not RAM wrote the rest and then failed; it now writes nothing.
 - **A cassette or disk name with a `"`** was written, and the file could not be read again; it is now refused.
+- **Desktop:** a disk, cassette or module the machine refused was left without a word; the reason is now shown.
 
 ## [0.8.1] - 2026-11-14
 

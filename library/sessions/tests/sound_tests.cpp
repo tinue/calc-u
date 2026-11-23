@@ -66,6 +66,28 @@ TEST(full_speed_and_operation_sound_thrown_away) {
     CHECK(got <= madeFor(r.ticks() - t0, 8000) + 1);
 }
 
+TEST(full_speed_sound_thrown_away_while_the_machine_waits) {
+    // A waiting machine runs at full speed at the pace of regular speed; its
+    // sound goes to the sink no more than that of an unpaced slice.
+    Rig r(withSink());
+    r.build(mt::kDot, 8000);
+    r.waits(true);
+    r.call();
+    r.call();
+    CHECK(r.session->machineSession().waitsForInput());
+    CHECK(samplesIn(r.fe) > 0);   // the sink is open
+    const std::size_t mark = r.fe.log.size();
+    r.send("speed", Value::object({{"full", true}}));
+    Ticks ran = 0;
+    for (int i = 0; i < 5; ++i) {
+        const Ticks t0 = r.ticks();
+        r.call();
+        ran = r.ticks() - t0;
+    }
+    CHECK(ran > 0 && ran < 2 * mt::kDotRate / 60);   // paced: one frame's ticks
+    CHECK_EQ(samplesIn(r.fe, mark), std::size_t(0));
+}
+
 TEST(no_sink_thrown_away) {
     Rig r;   // the frontend states no audio sink
     r.build(mt::kDot, 8000);

@@ -42,7 +42,7 @@ protected:
 struct PaceResult {
     machine::Ticks ticksRun = 0;
     int slices = 0;
-    bool ranUnpaced = false;   // a full-speed slice ran: the session throws its sound away
+    bool ranUnpaced = false;   // a slice ran unpaced; for tests and the log
     bool lagDropped = false;   // the lag was dropped; for tests and the log
 };
 

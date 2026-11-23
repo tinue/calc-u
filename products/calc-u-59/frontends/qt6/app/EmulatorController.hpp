@@ -56,11 +56,10 @@ public:
     /// The running model ("TI-59", …); empty before the first control state.
     std::string modelId() const;
     bool isTI59() const { return modelId() == "TI-59"; }
-    /// The PC-100C in `printer`, its controls (PRINT, ADV, TRACE) and TRACE's
-    /// position: the control state's `places` and `controls`.
+    /// The PC-100C in `printer` and its controls (PRINT, ADV, TRACE): the
+    /// control state's `places` and `controls`.
     bool printerConnected() const;
     std::vector<calcu::peripherals::ControlInfo> printerControls() const;
-    bool printerTrace() const;
     /// `[display] led-style` as the `settings` topic has it.
     cu59::LedStyle ledStyle() const;
 
@@ -82,8 +81,6 @@ public:
     void sendCommand(const calcu::sessions::CommandName& name, calcu::sessions::Value args) { send(name, std::move(args)); }
 
     // ── Magnetic cards: the library's media topic and commands ──
-    /// A place of the media topic (`slot-1`'s picker); nullptr without one.
-    const calcu::media::PlaceState* mediaPlace(const std::string& place) const;
     /// The card reader `card-reader` (TI-59 only); nullptr without one.
     const calcu::media::PlaceState* cardReader() const;
     /// A card passes through the reader now (Eject Card instead of the Crd buttons).
@@ -181,6 +178,8 @@ private:
     calcu::sessions::ReplyMessage ask(const calcu::sessions::RequestName& name, calcu::sessions::Value args);
     template <class P> const P* state(const calcu::sessions::TopicName& t) const { return m_session->host().topics().stateOf<P>(t); }
     void onMessage(const calcu::sessions::Message&);
+    /// A place of the media topic; nullptr without one.
+    const calcu::media::PlaceState* mediaPlace(const std::string& place) const;
     void topicChanged(const QString&);
     void dump(const char* what) { send(cu59::commands::kDump, calcu::sessions::Value::object({{"what", what}})); }
 

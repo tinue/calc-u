@@ -33,10 +33,7 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
     // What a preset can name: programs (.bas, .bbin, .bin, a tape's .wav), ROM
     // files (.bin), module, disk and cassette files (.yaml).
     p.presetUploads = ".pc1500,.pc1500a,.pc1600,.bas,.bbin,.bin,.wav,.yaml";
-    // Copy Screen is each frontend's own act; this placeholder says
-    // that the product has the item, so the page's form of it
-    // (`c1600.shell-product`) stays as it was.
-    p.copyScreen = [] {};
+    p.copyScreen = true;
     p.pasteText = true;
     p.moduleSlotPinOuts = {sharp::kPC1500SlotPinOut, sharp::kPC1600Slot1PinOut, sharp::kPC1600Slot2PinOut};
     // The host drive needs a folder (File ▸ Host Drive…); a bus

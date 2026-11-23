@@ -1,7 +1,6 @@
 #pragma once
 #include "shell/Chrome.hpp"
 #include "shell/BarModel.hpp"
-#include "qt6/SlotPicker.hpp"
 #include <QWidget>
 #include <array>
 #include <functional>

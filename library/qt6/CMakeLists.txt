@@ -22,7 +22,6 @@ add_library(calcu_qt6 STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/ClipboardService.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/RunControlButtons.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/MediaPicker.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/SlotPicker.cpp           # a module slot's picker on the bar
   ${CMAKE_CURRENT_SOURCE_DIR}/NameAndSaveDialog.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/AskedSend.cpp)           # the `asks:` round trip of media commands
 # The shell.
@@ -34,6 +33,8 @@ target_sources(calcu_qt6 PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/Shell.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ShellMenus.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ShellControlBar.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MediaPlaceControl.cpp    # one media place on the bar
+  ${CMAKE_CURRENT_SOURCE_DIR}/SlotPicker.cpp           # a module slot's picker on the bar
   ${CMAKE_CURRENT_SOURCE_DIR}/ShellSettingsDialog.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ShellLoading.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ShellNotices.cpp

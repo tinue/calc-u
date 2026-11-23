@@ -35,7 +35,7 @@ std::string join(const std::vector<std::string>& xs) {
 
 TEST(menus_and_items_in_order) {
     auto p = st::product();
-    p.copyScreen = [] {};
+    p.copyScreen = true;
     p.pasteText = true;
     const auto ms = menus(st::inputs(), p, kQt);
     CHECK_EQ(join(menuIds(ms)), std::string("file edit machine help"));
@@ -136,7 +136,7 @@ TEST(peripherals_menu_attach_replace_and_detach) {
 
 TEST(menu_shortcuts_qt_and_none_on_web) {
     auto p = st::product();
-    p.copyScreen = [] {};
+    p.copyScreen = true;
     p.pasteText = true;
     const auto qt = menus(st::inputs(), p, kQt);
     CHECK(findItem(qt, "load-preset")->shortcut == MenuItem::Shortcut::LoadPreset);
@@ -246,6 +246,21 @@ TEST(check_shell_product_reports_missing_labels) {
     p.items.push_back(p.items.front());
     const auto problems = checkShellProduct(p, st::controlValue());
     CHECK_EQ(problems.size(), std::size_t{2});
+}
+
+// The shell finds an item by its id through the whole tree, so an id is
+// unique among the submenus' items too.
+TEST(check_shell_product_refuses_a_duplicate_child_id) {
+    auto p = st::product();
+    ProductItem sub;
+    sub.group = MenuGroup::MachineEnd;
+    sub.id = "sub";
+    sub.label = "Sub";
+    sub.children.push_back(p.items.front());
+    p.items.push_back(sub);
+    const auto problems = checkShellProduct(p, st::controlValue());
+    CHECK_EQ(problems.size(), std::size_t{1});
+    CHECK_EQ(problems.front(), "The item id " + p.items.front().id + " is given twice.");
 }
 
 // ── The More button ──

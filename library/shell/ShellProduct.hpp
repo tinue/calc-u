@@ -74,9 +74,9 @@ struct ShellProduct {
     // and every file a preset can name. A page has no folder to look in, so
     // the preset is chosen together with its files.
     std::string presetUploads;
-    // Edit items: Copy Screen is the product's, so it
-    // is its function; Paste Text is the shell's, switched on here.
-    std::function<void()> copyScreen;
+    // Edit items the product has: Copy Screen (each frontend draws the
+    // screen, so each brings its act) and Paste Text (the shell's).
+    bool copyScreen = false;
     bool pasteText = false;
     std::set<std::string> moduleSlotPinOuts;        // the pin-outs of module slots
     std::set<std::string> placesWithoutControl;     // "host-drive"

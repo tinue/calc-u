@@ -13,7 +13,6 @@
 #include "app/dap/DapPart.hpp"
 #include "debug/DapSocket.hpp"
 #include "debugger/RunState.hpp"
-#include "media/MediaTopics.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "typing/TypingTopics.hpp"
 
@@ -154,11 +153,6 @@ bool MachineController::lcdText(LcdText* out) const {
     return d && app().lcdText(*d, out);
 }
 
-calcu::sessions::LogLevel MachineController::logLevel() const {
-    const auto* l = state<calcu::sessions::LogLevelState>(calcu::sessions::kLogLevelTopic);
-    return l ? l->level : calcu::sessions::LogLevel::Off;
-}
-
 bool MachineController::machinePaused() const {
     const auto* s = state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
     return s && s->paused;
@@ -167,10 +161,6 @@ bool MachineController::machinePaused() const {
 cu1600::LampsPayload MachineController::lamps() const {
     const auto* p = state<cu1600::LampsPayload>(cu1600::topics::kLamps);
     return p ? *p : cu1600::LampsPayload{};
-}
-
-const calcu::media::MediaState* MachineController::media() const {
-    return state<calcu::media::MediaState>(calcu::media::kMediaTopic);
 }
 
 std::optional<std::string> MachineController::setDapRunPort(long port) {

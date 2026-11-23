@@ -39,11 +39,6 @@ public:
     double artScale() const;
     // The art's width as shown (the bar below is fitted to it).
     double artWidth() const;
-
-signals:
-    void artChanged();   // its size or its model changed
-
-public:
     // Where the art's (0, 0) lies in the widget: the art is letterboxed
     // (centred, aspect kept), so the hit map starts there, not at the corner.
     QPointF artOrigin() const;
@@ -55,6 +50,9 @@ public:
     // (the PC-1600's two SHIFT keys) is drawn on the one pressed. Never
     // takes the press.
     bool notePress(double artX, double artY);
+
+signals:
+    void artChanged();   // its size or its model changed
 
 protected:
     void paintEvent(QPaintEvent* event) override;

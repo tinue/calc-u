@@ -6,7 +6,6 @@
 #include "shell/Chrome.hpp"
 #include <QAbstractScrollArea>
 #include <QColor>
-#include <QIcon>
 #include <QWidget>
 #include <functional>
 #include <map>
@@ -67,11 +66,6 @@ public:
     // panel area makes them); a button shows the printer icon where the
     // platform has one, its name as the tooltip.
     void setPlaces(std::vector<QWidget*>);
-    static QIcon placeIcon(const QIcon& printer, const QColor& dot);
-    static QIcon switchDot(const QColor& dot);
-    enum class Action { Copy, Cut };
-    static constexpr int kActionIconPoints = 16;
-    static QIcon actionIcon(Action, const QColor& on, const QColor& off);
     bool compact() const { return compact_; }   // the row's short labels and gap are on
     // The product's chrome (shell/Chrome): the header and the button bar
     // line up with the panels beside it; the paper's colours.

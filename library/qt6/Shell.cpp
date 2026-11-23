@@ -1,5 +1,7 @@
 #include "qt6/Shell.hpp"
+#include "media/MediaTopics.hpp"
 #include "qt6/FaceplateInput.hpp"
+#include "qt6/NameAndSaveDialog.hpp"
 #include "qt6/PanelArea.hpp"
 #include "qt6/RomsMissingView.hpp"
 #include "qt6/ShellAbout.hpp"
@@ -12,6 +14,7 @@
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
+#include <QEventLoop>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -22,6 +25,7 @@
 #include <QtDebug>
 #include <algorithm>
 #include <chrono>
+#include <optional>
 #include <variant>
 
 namespace calcu::qt6 {
@@ -249,7 +253,7 @@ void Shell::choose(const shell::MenuItem& item) {
     else if (item.id == a::kQuit) window_.close();
     else if (item.id.rfind(a::kNameAndSavePrefix, 0) == 0) nameAndSave(shell::read::text(item.args, "place"));
     else if (item.id == a::kCopyScreen) {
-        if (product_.copyScreen) product_.copyScreen();
+        if (options_.copyScreen) options_.copyScreen();
     } else if (item.id == a::kPasteText) {
         sendChecked(shell::commands::kPaste, sessions::Value::object({{"text", choosers_.clipboardText().toStdString()}}));
     } else {
@@ -272,7 +276,24 @@ void Shell::openSettings() {
 }
 
 void Shell::nameAndSave(const std::string& place) {
-    qt6::nameAndSave(host_, &window_, place, q(shell::nameAndSavePrompt(product_, place)));
+    const auto* state = host_.topics().stateOf<media::MediaState>(media::kMediaTopic);
+    const media::PlaceState* p = state ? state->place(place) : nullptr;
+    if (!p) return;
+    NameAndSaveDialog dialog(&window_);
+    dialog.setPlace(*p);
+    dialog.setPrompt(q(shell::nameAndSavePrompt(product_, place)));
+    // A save with the power on is an operation: the dialog waits for its reply.
+    dialog.setSender([this](const sessions::CommandName& name, sessions::Value args) -> std::string {
+        QEventLoop loop;
+        std::optional<sessions::ReplyMessage> got;
+        host_.send(name, std::move(args), [&](const sessions::ReplyMessage& r) {
+            got = r;
+            loop.quit();
+        });
+        if (!got) loop.exec();
+        return got->done ? std::string() : got->reason;
+    });
+    dialog.exec();
 }
 
 void Shell::openAbout() {

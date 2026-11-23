@@ -1,7 +1,6 @@
 #include "EmulatorController.hpp"
 #include "AppPaths.hpp"
 #include "KeyIds.hpp"
-#include "PC100C.hpp"
 #include "ProductRoms.hpp"
 #include "QtResourceBundle.hpp"
 #include "TICatalogue.hpp"
@@ -191,11 +190,6 @@ bool EmulatorController::printerConnected() const {
 std::vector<calcu::peripherals::ControlInfo> EmulatorController::printerControls() const {
     const auto* c = state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
     return c ? c->controlsAt(kPrinterPath) : std::vector<calcu::peripherals::ControlInfo>{};
-}
-bool EmulatorController::printerTrace() const {
-    for (const auto& c : printerControls())
-        if (c.id == ::PC100C::kTrace) return c.on;
-    return false;
 }
 cu59::LedStyle EmulatorController::ledStyle() const {
     const Value v = m_session->host().value(calcu::shell::kSettingsTopic);

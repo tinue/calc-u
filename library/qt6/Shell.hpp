@@ -1,6 +1,5 @@
 #pragma once
 #include "qt6/SessionHost.hpp"
-#include "qt6/SlotPicker.hpp"
 #include "shell/BarModel.hpp"
 #include "shell/Chrome.hpp"
 #include "shell/HitMap.hpp"
@@ -48,6 +47,7 @@ struct ShellOptions {
     bool logToPlatform = true;   // each line of the log to qInfo()
     shell::Traits traits{true, true, false};
     shell::InputNames names{};
+    std::function<void()> copyScreen;   // Edit ▸ Copy Screen, where the product has it
 };
 
 // The file and folder dialogs and the browser (the tests replace them).

@@ -178,7 +178,9 @@ builds); `MainWindow` is put together from `calcu::qt6::Shell`, which draws
 the menus, the control bar, Settings, About, the notices, "Loading…" and
 "ROMs missing" from the topics and sends the library's commands, and keeps
 the product's: the faceplate and LCD, the media controls of the bar
-(`MediaControls`), the INSPECTOR and the CE-158 panel, the program flows,
+(`MediaControls`: the disk and the cassette on the library's
+media place control `calcu::qt6::MediaPlaceControl`, as the module
+slots' `SlotPicker`), the INSPECTOR and the CE-158 panel, the program flows,
 the physical-key map and the Shift-tap timer. `AudioOutput` is the
 QAudioSink behind a `SoundFeed`. The `--shots` runner and the pacing probe
 are clients of attach. The Web engine does it in the

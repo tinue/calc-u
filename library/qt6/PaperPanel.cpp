@@ -28,6 +28,93 @@ using sessions::Value;
 namespace {
 const CommandName kSetControl{"set-control"};   // the peripherals' PeripheralsPart
 const std::string kStreamPrefix = "paper ";
+
+// The dot of a place button and of a switch: the chrome's plugged colour
+// while on, its unplugged one while off.
+constexpr qreal kDotPoints = 8;
+
+void drawDot(QPainter& p, QPointF topLeft, const QColor& dot) {
+    p.setPen(Qt::NoPen);
+    p.setBrush(dot);
+    p.drawEllipse(QRectF(topLeft, QSizeF(kDotPoints, kDotPoints)));
+}
+
+QPixmap transparentPixmap(QSize points) {
+    const qreal dpr = qApp->devicePixelRatio();
+    QPixmap pm(points * dpr);
+    pm.setDevicePixelRatio(dpr);
+    pm.fill(Qt::transparent);
+    return pm;
+}
+
+QIcon switchDot(const QColor& dot) {
+    QPixmap pm = transparentPixmap(QSize(kDotPoints, kDotPoints));
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    drawDot(p, QPointF(0, 0), dot);
+    return QIcon(pm);
+}
+
+// A place button's icon: the printer (where the platform has one) and the dot.
+QIcon placeIcon(const QIcon& printer, const QColor& dot) {
+    QPixmap pm = transparentPixmap(QSize(34, 16));
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    if (!printer.isNull()) printer.paint(&p, QRect(0, 0, 16, 16));
+    drawDot(p, QPointF(printer.isNull() ? 2 : 22, 4), dot);
+    return QIcon(pm);
+}
+
+enum class Action { Copy, Cut };
+constexpr int kActionIconPoints = 16;
+
+// Copy (two sheets, one over the other) and Cut (scissors) in the pill's
+// text colour, and in its disabled text colour while disabled.
+QIcon actionIcon(Action a, const QColor& on, const QColor& off) {
+    const auto draw = [&](const QColor& colour) {
+        QPixmap pm = transparentPixmap(QSize(kActionIconPoints, kActionIconPoints));
+        QPainter p(&pm);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.scale(kActionIconPoints / 16.0, kActionIconPoints / 16.0);   // drawn on a 16-point grid
+        QPen pen(colour, 1.4);
+        pen.setCapStyle(Qt::RoundCap);
+        pen.setJoinStyle(Qt::RoundJoin);
+        p.setPen(pen);
+        p.setBrush(Qt::NoBrush);
+        if (a == Action::Copy) {
+            p.drawRoundedRect(QRectF(5.5, 1.5, 8, 10), 1.5, 1.5);
+            // The sheet below shows only outside the one above.
+            QPainterPath back;
+            back.moveTo(5.5, 4.5);
+            back.lineTo(2.5, 4.5);
+            back.lineTo(2.5, 14.5);
+            back.lineTo(10.5, 14.5);
+            back.lineTo(10.5, 11.5);
+            p.drawPath(back);
+        } else {
+            p.drawEllipse(QRectF(2, 10, 4, 4));
+            p.drawEllipse(QRectF(10, 10, 4, 4));
+            p.drawLine(QPointF(5.4, 10.6), QPointF(11.5, 1.5));
+            p.drawLine(QPointF(10.6, 10.6), QPointF(4.5, 1.5));
+        }
+        return pm;
+    };
+    QIcon icon;
+    icon.addPixmap(draw(on), QIcon::Normal);
+    icon.addPixmap(draw(off), QIcon::Disabled);
+    return icon;
+}
+
+// The platform's printer icon; Qt before 6.7 (Ubuntu 24.04's 6.4) knows
+// only the theme's name for it.
+QIcon printerIcon() {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    return QIcon::fromTheme(QIcon::ThemeIcon::DocumentPrint);
+#else
+    return QIcon::fromTheme(QStringLiteral("document-print"));
+#endif
+}
+
 } // namespace
 
 // ── PaperPanel ───────────────────────────────────────────────────────────
@@ -231,16 +318,6 @@ void PaperPanel::setOwner(std::optional<machine::PeripheralId> owner) {
     refresh();
 }
 
-// The platform's printer icon; Qt before 6.7 (Ubuntu 24.04's 6.4) knows
-// only the theme's name for it.
-static QIcon printerIcon() {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
-    return QIcon::fromTheme(QIcon::ThemeIcon::DocumentPrint);
-#else
-    return QIcon::fromTheme(QStringLiteral("document-print"));
-#endif
-}
-
 // The panel in the product's chrome: the header and the button bar at
 // its heights and colours, every button in them a pill (a switch's pill
 // stays as it is: its dot shows the position), the paper's body with the
@@ -277,61 +354,6 @@ void PaperPanel::setChrome(const shell::ChromeColours& c, const shell::ChromeSiz
     applyCompact();
 }
 
-// A switch's dot: the chrome's plugged colour while on, its unplugged one
-// while off, as a place button's dot.
-QIcon PaperPanel::switchDot(const QColor& dot) {
-    const qreal dpr = qApp->devicePixelRatio();
-    QPixmap pm(QSize(8, 8) * dpr);
-    pm.setDevicePixelRatio(dpr);
-    pm.fill(Qt::transparent);
-    QPainter p(&pm);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setPen(Qt::NoPen);
-    p.setBrush(dot);
-    p.drawEllipse(QRectF(0, 0, 8, 8));
-    return QIcon(pm);
-}
-
-// Copy (two sheets, one over the other) and Cut (scissors) in the pill's
-// text colour, and in its disabled text colour while disabled.
-QIcon PaperPanel::actionIcon(Action a, const QColor& on, const QColor& off) {
-    const qreal dpr = qApp->devicePixelRatio();
-    const auto draw = [&](const QColor& colour) {
-        QPixmap pm(QSize(kActionIconPoints, kActionIconPoints) * dpr);
-        pm.setDevicePixelRatio(dpr);
-        pm.fill(Qt::transparent);
-        QPainter p(&pm);
-        p.setRenderHint(QPainter::Antialiasing);
-        p.scale(kActionIconPoints / 16.0, kActionIconPoints / 16.0);   // drawn on a 16-point grid
-        QPen pen(colour, 1.4);
-        pen.setCapStyle(Qt::RoundCap);
-        pen.setJoinStyle(Qt::RoundJoin);
-        p.setPen(pen);
-        p.setBrush(Qt::NoBrush);
-        if (a == Action::Copy) {
-            p.drawRoundedRect(QRectF(5.5, 1.5, 8, 10), 1.5, 1.5);
-            // The sheet below shows only outside the one above.
-            QPainterPath back;
-            back.moveTo(5.5, 4.5);
-            back.lineTo(2.5, 4.5);
-            back.lineTo(2.5, 14.5);
-            back.lineTo(10.5, 14.5);
-            back.lineTo(10.5, 11.5);
-            p.drawPath(back);
-        } else {
-            p.drawEllipse(QRectF(2, 10, 4, 4));
-            p.drawEllipse(QRectF(10, 10, 4, 4));
-            p.drawLine(QPointF(5.4, 10.6), QPointF(11.5, 1.5));
-            p.drawLine(QPointF(10.6, 10.6), QPointF(4.5, 1.5));
-        }
-        return pm;
-    };
-    QIcon icon;
-    icon.addPixmap(draw(on), QIcon::Normal);
-    icon.addPixmap(draw(off), QIcon::Disabled);
-    return icon;
-}
-
 // The row as the library's rule has it for the panel's width: compact, the
 // controls' short labels and the compact gap; else their labels and the gap.
 void PaperPanel::applyCompact() {
@@ -348,22 +370,6 @@ void PaperPanel::applyCompact() {
 void PaperPanel::resizeEvent(QResizeEvent* e) {
     QWidget::resizeEvent(e);
     if (shell::paperRowCompact(sizes_, width()) != compact_) applyCompact();
-}
-
-// A place button's icon: the printer (where the platform has one) and the
-// dot in the chrome's plugged or unplugged colour.
-QIcon PaperPanel::placeIcon(const QIcon& printer, const QColor& dot) {
-    const qreal dpr = qApp->devicePixelRatio();
-    QPixmap pm(QSize(34, 16) * dpr);
-    pm.setDevicePixelRatio(dpr);
-    pm.fill(Qt::transparent);
-    QPainter p(&pm);
-    p.setRenderHint(QPainter::Antialiasing);
-    if (!printer.isNull()) printer.paint(&p, QRect(0, 0, 16, 16));
-    p.setPen(Qt::NoPen);
-    p.setBrush(dot);
-    p.drawEllipse(QRectF(printer.isNull() ? 2 : 22, 4, 8, 8));
-    return QIcon(pm);
 }
 
 void PaperPanel::setPlaces(std::vector<QWidget*> places) {

@@ -202,7 +202,8 @@ Not counted as waiting for a medium:
   CE-1600F's drive never waits.
 - The stretch and the sample: `app/SharpPresetRules.cpp`; the keys that do not wait:
   `app/SharpTyping.cpp` (ON/BREAK, at most 0.2 s). At full speed the machine
-  runs at real time while W holds (`library/pacing/Pacer.cpp`), except
+  runs at real time while W holds (`library/pacing/Pacer.cpp`), its sound
+  not played as at every full speed (`library/sessions/AppSession.cpp`), except
   during an operation (a preset, a load, the debugger's set-up), which never
   reports waiting and runs as fast as the host allows (`library/sessions/AppSession.cpp`).
 - The cases as tests: `tests/harness/idle_tests.cpp`.

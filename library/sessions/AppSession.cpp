@@ -554,6 +554,9 @@ void AppSession::call(pacing::WallTime now) {
     for (SessionPart* p : s.setup.parts) p->beforeCall(s, now);
     pacing::PaceResult res;
     const bool operation = s.running != nullptr;
+    // Full speed throws its sound away in every slice: also where the pacer
+    // runs a waiting machine at the pace of regular speed.
+    const bool full = s.commanded == Speed::Full;
     if (operation) s.stepOperation(res);
     else res = s.ms.pace(s.commanded);
     const bool changed = s.ms.generation() != s.seenGeneration;
@@ -561,7 +564,7 @@ void AppSession::call(pacing::WallTime now) {
     if (!changed && res.ticksRun > 0) s.readDisplay();
     for (SessionPart* p : s.setup.parts) p->afterCall(s, now);
     s.syncMachine();
-    s.sound(res.ranUnpaced || operation);
+    s.sound(full || operation);
     s.flush();
 }
 

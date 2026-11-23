@@ -26,7 +26,9 @@ for tool in emcmake cmake ninja node; do
   fi
 done
 
-if [ ! -f "$BUILD/CMakeCache.txt" ]; then
+# Configured again where the cache lacks the Release type: such a tree builds
+# an unoptimised engine, slow enough to fail the tests that wait on it.
+if [ ! -f "$BUILD/CMakeCache.txt" ] || ! grep -q '^CMAKE_BUILD_TYPE:STRING=Release$' "$BUILD/CMakeCache.txt"; then
   emcmake cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release >/dev/null
 fi
 cmake --build "$BUILD" --target calcu_web_test_product

@@ -103,9 +103,19 @@ private:
     void refreshSerialStatus();
     // The library's view rule (shell::view on app/'s chrome): the panels'
     // row below the faceplate where the room below takes it, else the
-    // calculator alone.
+    // calculator alone; the INSPECTOR beside the paper where the rule's
+    // debugger fits (debuggerMinWidth).
     void applyView();
+    // Which panels the row holds (applyPanels): the paper with or without
+    // a plotter and the INSPECTOR beside it where the debugger fits;
+    // narrower, the paper only while a plotter is plugged in, the INSPECTOR
+    // while neither paper nor the CE-158's printer is shown.
+    void applyPanels();
+    // The bar below the faceplate, fitted to the art's width
+    // (shell::barFit, Shell::fitBar).
+    void fitBar();
     calcu::qt6::PanelArea* m_panels = nullptr;
+    bool m_debuggerFits = false;   // the view rule's, as last applied
 
     // The two program flows, behind File ▸ Load BASIC Program… and
     // Load Machine Code… (after their dialog, which remembers the folder) and

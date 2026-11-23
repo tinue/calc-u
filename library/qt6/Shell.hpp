@@ -15,11 +15,13 @@
 #include <QString>
 #include <QUrl>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
+class QHBoxLayout;
 class QMainWindow;
 class QTimer;
 class QWidget;
@@ -64,6 +66,14 @@ public:
     ~Shell() override;
 
     QWidget* controlBar();            // the product places it below its faceplate
+    // A row of the product's layout that holds the bar centred under the
+    // faceplate, as wide as fitBar() lets it be.
+    QHBoxLayout* centredBarRow();
+    // The bar below a faceplate this wide, in a room this wide: its labels
+    // and width by the library's rule (shell::barFit); the product calls it
+    // whenever its faceplate's size changes, the bar refits itself when its
+    // controls change.
+    void fitBar(double faceplate, double room = std::numeric_limits<double>::infinity());
     PanelArea* panelArea();           // the product places it in its layout
     QWidget* romsMissingView();       // shown by the shell in place of the faceplate
     void setFaceplate(QWidget*, shell::HitMap, std::function<double()> scale);

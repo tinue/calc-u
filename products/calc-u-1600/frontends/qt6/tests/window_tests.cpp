@@ -34,9 +34,11 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
+#include <QToolButton>
 #include <QMessageBox>
 #include <QKeyEvent>
 #include <algorithm>
+#include <cmath>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPlainTextEdit>
@@ -459,6 +461,56 @@ TEST(short_window_calculator_alone) {
     f.w().resize(1430, 1000);
     f.run(50);
     CHECK(f.w().panelsShown());
+}
+
+// The view rule's debugger (SharpChrome's debuggerMinWidth): a window
+// narrower than it has the INSPECTOR or the paper, the paper only while a
+// plotter is plugged in; a wide one both, the INSPECTOR first.
+TEST(narrow_window_inspector_or_paper) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f;
+    QWidget* inspector = f.w().inspector();
+    QWidget* paper = f.w().shell().panelArea()->panel("paper");
+    f.w().resize(640, 1000);
+    f.run(50);
+    CHECK(f.w().panelsShown());
+    CHECK(inspector->isVisible() && paper && !paper->isVisible());
+    f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-150"}}));
+    CHECK(f.waitFor([&] { return paper->isVisible() && !inspector->isVisible(); }, 3000));
+    f.w().resize(1430, 1000);
+    f.run(50);
+    CHECK(inspector->isVisible() && paper->isVisible() && inspector->x() < paper->x());
+}
+
+// The bar below the faceplate by the library's rule (shell::barFit): as
+// wide as the faceplate's art, centred under it; its labels ("Cassette:",
+// "More") only where the whole bar fits the art with them.
+TEST(bar_fitted_below_the_faceplate) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f;
+    f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-150"}}));
+    auto* bar = f.find<QWidget>(names::kControlBar);
+    auto* more = f.find<QToolButton>(names::kBarMore);
+    CHECK(f.waitFor([&] { return f.find<QWidget>("media-picker-cassette") != nullptr; }, 15000));
+    if (!f.find<QWidget>("media-picker-cassette")) return;
+    f.w().resize(1430, 1000);
+    f.run(50);
+    const double art = f.w().faceplate()->artWidth();
+    CHECK(std::abs(bar->width() - art) <= 2);
+    const int centre = f.w().faceplate()->mapTo(&f.w(), QPoint(f.w().faceplate()->width() / 2, 0)).x();
+    CHECK(std::abs(bar->mapTo(&f.w(), QPoint(bar->width() / 2, 0)).x() - centre) <= 2);
+    QWidget* cassette = f.find<QWidget>("media-picker-cassette")->parentWidget();
+    auto cassetteLabel = [&] {
+        for (QLabel* l : cassette->findChildren<QLabel*>())
+            if (l->text() == QStringLiteral("Cassette:")) return l;
+        return static_cast<QLabel*>(nullptr);
+    };
+    CHECK(cassetteLabel() && cassetteLabel()->isVisible() && more->text().contains(QStringLiteral("More")));
+    // Narrow: the labels go, the bar is as wide as its controls need.
+    f.w().resize(520, 1000);
+    f.run(100);
+    CHECK(cassetteLabel() && !cassetteLabel()->isVisible() && !more->text().contains(QStringLiteral("More")));
+    CHECK(bar->width() >= f.w().faceplate()->artWidth() - 2);
 }
 
 // ── Copy Screen ─────────────────────────────────────────────────────────

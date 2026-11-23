@@ -73,6 +73,8 @@ double FaceplateWidget::artScale() const {
     return m_fitted.art.w / m_layout->imageWidth;
 }
 
+double FaceplateWidget::artWidth() const { return m_fitted.art.valid() ? m_fitted.art.w : 0; }
+
 QPointF FaceplateWidget::artOrigin() const {
     return QPointF(m_fitted.art.x, m_fitted.art.y);
 }
@@ -93,6 +95,7 @@ bool FaceplateWidget::notePress(double artX, double artY) {
 void FaceplateWidget::relayout() {
     m_fitted = m_layout ? KeyLayout::fitLayout(*m_layout, width(), height()) : KeyLayout::FittedLayout{};
     if (m_fitted.art.valid()) m_lcd->setGeometry(toQRect(m_fitted.lcd));
+    emit artChanged();
 }
 
 void FaceplateWidget::paintEvent(QPaintEvent*) {

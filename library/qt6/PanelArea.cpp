@@ -67,8 +67,13 @@ void PanelArea::set(const std::vector<shell::Panel>& panels) {
                 paper->setPlaces(std::move(places));
             }
         }
-        w->show();
+        w->setVisible(!left_[p.kind]);
     }
+}
+
+void PanelArea::setShown(const std::string& kind, bool shown) {
+    left_[kind] = !shown;
+    if (QWidget* w = panel(kind)) w->setVisible(shown);
 }
 
 void PanelArea::setChrome(const shell::Chrome* c) {

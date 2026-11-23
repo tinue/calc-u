@@ -32,6 +32,9 @@ public:
     void registerPanel(std::string kind, Factory);
     void addPanel(QWidget*);   // a product's panel, from its own product entry
     QWidget* panel(const std::string& kind) const;
+    // A listed panel the product's view leaves out for now (Calc-U-1600's
+    // paper without a plotter in a narrow window); shown again with true.
+    void setShown(const std::string& kind, bool shown);
     void deliver(const sessions::Message&);   // to the panels that read topics (the paper panel)
     // The product's chrome (alive as long as the area): the paper panel
     // in it, light or dark with the window.
@@ -47,6 +50,7 @@ private:
     QBoxLayout* layout_;
     std::map<std::string, Factory> factories_;
     std::map<std::string, QWidget*> panels_;
+    std::map<std::string, bool> left_;   // setShown(kind, false)
     Choose choose_;
     const shell::Chrome* chrome_ = nullptr;
     std::vector<shell::BarControl> placesShown_;   // the paper's place controls as last built

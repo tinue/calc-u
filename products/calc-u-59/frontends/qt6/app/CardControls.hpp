@@ -16,7 +16,7 @@ class CardControls : public QWidget {
 public:
     explicit CardControls(EmulatorController& controller, QWidget* parent = nullptr);
     /// The icons alone, or with "Crd" / "Eject Card" beside them.
-    void setShowLabels(bool on);
+    void setShowLabels(bool on);   // the bar decides (its BarLabels)
     bool showsLabels() const { return m_labels; }
     /// How much wider the visible buttons are with their labels.
     int labelsWidth() const;

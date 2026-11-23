@@ -1,6 +1,7 @@
 #include "CardControls.hpp"
 #include "ChromeStyle.hpp"
 #include "EmulatorController.hpp"
+#include "qt6/ShellControlBar.hpp"
 #include <QHBoxLayout>
 #include <QToolButton>
 
@@ -22,6 +23,9 @@ CardControls::CardControls(EmulatorController& controller, QWidget* parent) : QW
     m_fresh = button(QString(), QStringLiteral("Arm Fresh Card"));
     m_eject = button(QString(), QStringLiteral("Eject Card"));
     setShowLabels(true);
+    // "Crd" and "Eject Card" are the bar's labels: shown where the bar fits
+    // the faceplate with them (the shell's fitting, shell::barFit).
+    new calcu::qt6::BarLabels(this, [this] { return labelsWidth(); }, [this](bool on) { setShowLabels(on); });
     connect(m_arm, &QToolButton::clicked, this, &CardControls::armRequested);
     connect(m_fresh, &QToolButton::clicked, this, &CardControls::armFreshRequested);
     connect(m_eject, &QToolButton::clicked, this, [this] { m_controller.ejectCard(); });

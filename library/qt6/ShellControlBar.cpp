@@ -7,6 +7,7 @@
 #include <QComboBox>
 #include <QEvent>
 #include <QFont>
+#include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
@@ -16,6 +17,7 @@
 #include <QTimer>
 #include <QToolButton>
 #include <algorithm>
+#include <cstdlib>
 
 namespace calcu::qt6 {
 
@@ -151,7 +153,11 @@ QWidget* ShellControlBar::moreButton(const BarControl& c, QWidget* parent) {
         });
     }
     more_->setParent(parent);
-    more_->setText(QString::fromStdString(c.icon + " " + c.label));
+    moreIcon_ = c.icon;
+    moreLabel_ = c.label;
+    more_->setText(moreText(labels_));
+    more_->setToolTip(QString::fromStdString(c.label));
+    more_->setAccessibleName(QString::fromStdString(c.label));
     styleMore();
     moreItems_ = c.choices;
     fillMoreMenu();
@@ -179,6 +185,71 @@ void ShellControlBar::styleMore() {
 void ShellControlBar::changeEvent(QEvent* e) {
     if (e->type() == QEvent::PaletteChange) styleMore();
     QWidget::changeEvent(e);
+}
+
+BarLabels::BarLabels(QWidget* control, std::function<int()> width, std::function<void(bool)> show)
+    : QObject(control), control_(control), width_(std::move(width)), show_(std::move(show)) {}
+
+BarLabels* barLabel(QLabel* label) {
+    return new BarLabels(
+        label->parentWidget(),
+        [label] {
+            const QLayout* l = label->parentWidget() ? label->parentWidget()->layout() : nullptr;
+            return label->sizeHint().width() + (l ? std::max(0, l->spacing()) : 0);
+        },
+        [label](bool shown) { label->setVisible(shown); });
+}
+
+QString ShellControlBar::moreText(bool labels) const {
+    return QString::fromStdString(labels && !moreLabel_.empty() ? moreIcon_ + " " + moreLabel_ : moreIcon_);
+}
+
+void ShellControlBar::fitBelow(double faceplate, double room) {
+    faceplate_ = faceplate;
+    room_ = room;
+    refit();
+}
+
+// Again whenever a control came, went or changed its size (also after
+// the labels switched: the same result then, no further round).
+bool ShellControlBar::event(QEvent* e) {
+    const bool handled = QWidget::event(e);
+    if (e->type() == QEvent::LayoutRequest) refit();
+    return handled;
+}
+
+void ShellControlBar::refit() {
+    if (faceplate_ <= 0) return;
+    // Every control's labels as the bar shows them now (a control made
+    // since comes with its own).
+    const QList<BarLabels*> all = findChildren<BarLabels*>();
+    for (BarLabels* l : all) l->show(labels_);
+    // The bar with and without its labels, from the text widths, so that
+    // switching them asks for no second round.
+    int labels = 0;
+    for (BarLabels* l : all)
+        if (l->control() && l->control()->isVisibleTo(this)) labels += l->width();
+    if (more_ && more_->isVisibleTo(this) && !moreLabel_.empty()) {
+        const QFontMetrics fm = more_->fontMetrics();
+        labels += fm.horizontalAdvance(moreText(true)) - fm.horizontalAdvance(moreText(false));
+    }
+    const int shown = sizeHint().width();
+    const int without = labels_ ? shown - labels : shown, with = without + labels;
+    // The two measurements differ by rounding; a change smaller than that
+    // is no change, or a faceplate as wide as that difference would switch
+    // the labels at every round.
+    if (std::abs(without - without_) >= 4 || std::abs(with - with_) >= 4) {
+        without_ = without;
+        with_ = with;
+    }
+    const shell::BarFit fit = shell::barFit(faceplate_, without_, with_, room_);
+    if (fit.labels != labels_) {
+        labels_ = fit.labels;
+        for (BarLabels* l : all) l->show(labels_);
+        if (more_) more_->setText(moreText(labels_));
+    }
+    const int width = static_cast<int>(fit.width);
+    if (maximumWidth() != width) setMaximumWidth(std::max(1, width));
 }
 
 void ShellControlBar::fillMoreMenu() {

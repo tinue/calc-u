@@ -13,6 +13,7 @@
 #include "control/ControlState.hpp"
 #include "media/MediaTopics.hpp"
 #include "qt6/MediaPicker.hpp"
+#include "qt6/ShellControlBar.hpp"
 #include "qt6/SlotPicker.hpp"
 #include "shell/Inputs.hpp"
 
@@ -70,7 +71,9 @@ DiskControl::DiskControl(MachineController& c, QWidget* parent) : MediaPlaceCont
     auto* l = new QHBoxLayout(this);
     l->setContentsMargins(0, 0, 0, 0);
     l->setSpacing(2);
-    l->addWidget(new QLabel(tr("Disk:"), this));
+    auto* label = new QLabel(tr("Disk:"), this);
+    l->addWidget(label);
+    calcu::qt6::barLabel(label);   // left out where the bar would not fit the faceplate
     l->addWidget(m_picker);
     m_side = new QPushButton(QStringLiteral("0"), this);
     m_side->setFocusPolicy(Qt::NoFocus);
@@ -111,7 +114,9 @@ TapeControl::TapeControl(MachineController& c, QWidget* parent) : MediaPlaceCont
     auto* l = new QHBoxLayout(this);
     l->setContentsMargins(0, 0, 0, 0);
     l->setSpacing(2);
-    l->addWidget(new QLabel(tr("Cassette:"), this));
+    auto* label = new QLabel(tr("Cassette:"), this);
+    l->addWidget(label);
+    calcu::qt6::barLabel(label);   // left out where the bar would not fit the faceplate
     m_picker->setToolTip(tr("A cassette to play (CLOAD)"));
     l->addWidget(m_picker);
     // The blank tape records into memory; Name & Save keeps it under a name.

@@ -413,6 +413,32 @@ TEST(preset_loaded_then_paused_command_typed_when_running) {
     CHECK(fx.screen().find("42") != std::string::npos);
 }
 
+// A bus ROM entered by the project's `command`: no key of it goes down in the
+// set-up, so the time the client takes before configurationDone (the paused
+// machine lets a held key's hold pass in host time) loses none of it.
+TEST(bus_rom_command_typed_whole_after_a_slow_configuration_done) {
+    SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
+    SessionFixture fx;
+    CHECK(started(fx));
+    const fs::path project = fx.root / "debug.pc1500a";
+    const std::string rom = fs::absolute("tests/fixtures/listings/sdas-lh5801/busrom").string();
+    {
+        std::ofstream f(project);
+        f << "format-version: 2\nmodel: PC-1500A\nbus-rom:\n  - file: " << rom << ".bin\n    address: 0x8000\n"
+          << "debug:\n  command: CALL &8000\n  listings:\n    - " << rom << ".rst\n";
+    }
+    Client c(fx);
+    c.begin();
+    c.request("attach", obj({{"project", Value(project.string())}}));
+    const Value bps = c.request("setFunctionBreakpoints", obj({{"breakpoints", Value(Value::Array{obj({{"name", Value("BUSHIT")}})})}}));
+    const Value* list = bps.find("breakpoints");
+    CHECK(list && list->elements() && !list->elements()->empty() && cu1600::dap::boolOf(list->elements()->front(), "verified"));
+    fx.runFor(0.5);   // the client is slow to send configurationDone
+    c.request("configurationDone");
+    const auto stop = c.event("stopped");
+    CHECK(stop && cu1600::dap::textOf(*stop, "reason") == "breakpoint");
+}
+
 TEST(reset_stops_at_the_reset_vector_over_when_it_stops) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROM set");
     SessionFixture fx;

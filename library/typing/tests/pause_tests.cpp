@@ -56,3 +56,20 @@ TEST(waiting_press_waits_for_run) {
     CHECK_EQ(r.log(from).size(), std::size_t(2));
     CHECK(r.reply(k) && r.reply(k)->done);
 }
+
+// Paused and typed in one go, with no host call or command of the part
+// between (the DAP's set-up): the press waits for the run, it does not go
+// down on the paused machine.
+TEST(press_typed_right_after_a_pause_waits_for_run) {
+    TypingRig r(calcu::sessions::Hosting::Paced);
+    r.run(100);
+    const std::size_t from = r.m->keyEvents().size();
+    r.session->machineSession().setPaused(true);
+    r.part.engine().typeKeys({Press{calcu::machine::KeyId{"1"}}}, Origin::Typed, false, std::nullopt);
+    CHECK(r.log(from).empty());
+    for (int i = 0; i < 20; ++i) r.call(16ms);
+    CHECK(r.log(from).empty());
+    r.session->machineSession().setPaused(false);
+    for (int i = 0; i < 20; ++i) r.call(16ms);
+    CHECK_EQ(r.log(from).size(), std::size_t(2));
+}

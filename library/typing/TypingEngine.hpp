@@ -161,6 +161,7 @@ private:
     bool releaseDue(const Down&, machine::Ticks now) const;
     void release(std::size_t index, machine::Ticks now);
     void requestRelease(Down&);
+    void notePaused(bool paused);   // the pause taken over, the holds seen afresh
     bool blocked(machine::Ticks now, bool forLive) const;
     bool startFront(machine::Ticks now);
     void keyDown(const machine::KeyId&, machine::Ticks now);
